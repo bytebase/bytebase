@@ -7133,7 +7133,6 @@ The severity level for SQL review rules.
 | LEVEL_UNSPECIFIED | 0 | Unspecified level. |
 | ERROR | 1 | Rule violation is an error. |
 | WARNING | 2 | Rule violation is a warning. |
-| DISABLED | 3 | Rule is disabled. |
 
 
  

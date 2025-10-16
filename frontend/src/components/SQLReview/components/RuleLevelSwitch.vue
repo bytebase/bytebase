@@ -47,17 +47,7 @@ const availableLevel = computed(() => {
       title: t("sql-review.level.warning"),
       class: "warning",
     },
-    {
-      level: SQLReviewRuleLevel.DISABLED,
-      title: t("sql-review.level.disabled"),
-      class: "",
-    },
-  ].filter((item) => {
-    if (props.editable) {
-      return item.level !== SQLReviewRuleLevel.DISABLED;
-    }
-    return props.level === item.level;
-  });
+  ].filter((item) => props.editable || props.level === item.level);
 });
 </script>
 

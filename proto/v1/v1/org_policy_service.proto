@@ -378,8 +378,6 @@ enum SQLReviewRuleLevel {
   ERROR = 1;
   // Rule violation is a warning.
   WARNING = 2;
-  // Rule is disabled.
-  DISABLED = 3;
 }
 
 // MaskingExceptionPolicy is the allowlist of users who can access sensitive data.

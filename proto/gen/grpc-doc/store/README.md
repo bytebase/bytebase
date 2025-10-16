@@ -3739,7 +3739,6 @@ QueryDataPolicy is the policy configuration for querying data.
 | LEVEL_UNSPECIFIED | 0 |  |
 | ERROR | 1 |  |
 | WARNING | 2 |  |
-| DISABLED | 3 |  |
 
 
  

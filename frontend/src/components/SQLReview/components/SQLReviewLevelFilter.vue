@@ -29,11 +29,7 @@ import { SQLReviewRuleLevel } from "@/types/proto-es/v1/org_policy_service_pb";
 import type { RuleListWithCategory } from "./SQLReviewCategoryTabFilter.vue";
 import SQLRuleLevelBadge from "./SQLRuleLevelBadge.vue";
 
-const LEVEL_LIST = [
-  SQLReviewRuleLevel.ERROR,
-  SQLReviewRuleLevel.WARNING,
-  SQLReviewRuleLevel.DISABLED,
-];
+const LEVEL_LIST = [SQLReviewRuleLevel.ERROR, SQLReviewRuleLevel.WARNING];
 
 const props = withDefaults(
   defineProps<{
@@ -73,8 +69,6 @@ const sqlReviewRuleLevelToString = (level: SQLReviewRuleLevel): string => {
       return "ERROR";
     case SQLReviewRuleLevel.WARNING:
       return "WARNING";
-    case SQLReviewRuleLevel.DISABLED:
-      return "DISABLED";
     default:
       return "UNKNOWN";
   }

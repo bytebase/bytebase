@@ -97,8 +97,6 @@ const sqlReviewRuleLevelToString = (level: SQLReviewRuleLevel): string => {
       return "ERROR";
     case SQLReviewRuleLevel.WARNING:
       return "WARNING";
-    case SQLReviewRuleLevel.DISABLED:
-      return "DISABLED";
     default:
       return "UNKNOWN";
   }

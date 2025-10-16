@@ -552,9 +552,6 @@ func SQLReviewCheck(
 		if rule.Engine != storepb.Engine_ENGINE_UNSPECIFIED && rule.Engine != checkContext.DBType {
 			continue
 		}
-		if rule.Level == storepb.SQLReviewRuleLevel_DISABLED {
-			continue
-		}
 
 		ruleType := SQLReviewRuleType(rule.Type)
 		if !isRuleAllowed(ruleType, checkContext.ChangeType) {

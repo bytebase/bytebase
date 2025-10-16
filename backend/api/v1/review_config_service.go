@@ -121,6 +121,9 @@ func (s *ReviewConfigService) UpdateReviewConfig(ctx context.Context, req *conne
 		case "title":
 			patch.Name = &req.Msg.ReviewConfig.Title
 		case "rules":
+			if err := validateSQLReviewRules(req.Msg.ReviewConfig.Rules); err != nil {
+				return nil, connect.NewError(connect.CodeInvalidArgument, err)
+			}
 			ruleList, err := convertToSQLReviewRules(req.Msg.ReviewConfig.Rules)
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to convert rules"))
@@ -289,6 +292,9 @@ func validateSQLReviewRules(rules []*v1pb.SQLReviewRule) error {
 		return errors.Errorf("invalid payload, rule list cannot be empty")
 	}
 	for _, rule := range rules {
+		if rule.Level == v1pb.SQLReviewRuleLevel_LEVEL_UNSPECIFIED {
+			return errors.Errorf("invalid rule level: LEVEL_UNSPECIFIED is not allowed for rule %q", rule.Type)
+		}
 		ruleType := advisor.SQLReviewRuleType(rule.Type)
 		// TODO(rebelice): add other SQL review rule validation.
 		switch ruleType {

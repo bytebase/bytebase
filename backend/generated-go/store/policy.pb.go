@@ -29,7 +29,6 @@ const (
 	SQLReviewRuleLevel_LEVEL_UNSPECIFIED SQLReviewRuleLevel = 0
 	SQLReviewRuleLevel_ERROR             SQLReviewRuleLevel = 1
 	SQLReviewRuleLevel_WARNING           SQLReviewRuleLevel = 2
-	SQLReviewRuleLevel_DISABLED          SQLReviewRuleLevel = 3
 )
 
 // Enum value maps for SQLReviewRuleLevel.
@@ -38,13 +37,11 @@ var (
 		0: "LEVEL_UNSPECIFIED",
 		1: "ERROR",
 		2: "WARNING",
-		3: "DISABLED",
 	}
 	SQLReviewRuleLevel_value = map[string]int32{
 		"LEVEL_UNSPECIFIED": 0,
 		"ERROR":             1,
 		"WARNING":           2,
-		"DISABLED":          3,
 	}
 )
 
@@ -1331,12 +1328,11 @@ const file_store_policy_proto_rawDesc = "" +
 	"\vRestriction\x12\x1b\n" +
 	"\x17RESTRICTION_UNSPECIFIED\x10\x00\x12\f\n" +
 	"\bFALLBACK\x10\x01\x12\f\n" +
-	"\bDISALLOW\x10\x02*Q\n" +
+	"\bDISALLOW\x10\x02*C\n" +
 	"\x12SQLReviewRuleLevel\x12\x15\n" +
 	"\x11LEVEL_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05ERROR\x10\x01\x12\v\n" +
-	"\aWARNING\x10\x02\x12\f\n" +
-	"\bDISABLED\x10\x03B\x14Z\x12generated-go/storeb\x06proto3"
+	"\aWARNING\x10\x02B\x14Z\x12generated-go/storeb\x06proto3"
 
 var (
 	file_store_policy_proto_rawDescOnce sync.Once

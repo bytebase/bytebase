@@ -1,7 +1,6 @@
 import { t, te } from "@/plugins/i18n";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { SQLReviewRuleLevel } from "@/types/proto-es/v1/org_policy_service_pb";
-import type { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { engineToString } from "@/utils/v1/common-conversions";
 import sqlReviewSchema from "./sql-review-schema.yaml";
 import sqlReviewDevTemplate from "./sql-review.dev.yaml";
@@ -167,7 +166,7 @@ export const getRuleMapByEngine = (
     }
     map.get(engine)?.set(rule.type, {
       ...rule,
-      level: rule.level || SQLReviewRuleLevel.DISABLED,
+      level: rule.level,
       engine,
       componentList: rule.componentList || [],
     });
@@ -183,9 +182,9 @@ const convertRuleTemplateV2Raw = (
     const engineKey = rawRule.engine as keyof typeof Engine;
     const engine = Engine[engineKey] ?? Engine.ENGINE_UNSPECIFIED;
 
-    // Convert level string key to enum value
-    const levelKey = rawRule.level as keyof typeof SQLReviewRuleLevel;
-    const level = SQLReviewRuleLevel[levelKey] ?? SQLReviewRuleLevel.DISABLED;
+    // Schema rules from YAML don't have levels (enforced by tests).
+    // WARNING is the default severity when users add these rules to their policies.
+    const level = SQLReviewRuleLevel.WARNING;
 
     return {
       ...rawRule,
@@ -231,9 +230,19 @@ export const TEMPLATE_LIST_V2: SQLReviewPolicyTemplateV2[] = (function () {
         continue;
       }
 
-      // Convert level string to enum
+      // Convert level string to enum - all template rules must have a level
+      if (!rule.level) {
+        throw new Error(
+          `Template rule ${rule.type} is missing required 'level' field in template ${template.id}`
+        );
+      }
       const levelKey = rule.level as keyof typeof SQLReviewRuleLevel;
-      const level = SQLReviewRuleLevel[levelKey] ?? SQLReviewRuleLevel.DISABLED;
+      const level = SQLReviewRuleLevel[levelKey];
+      if (level === undefined) {
+        throw new Error(
+          `Template rule ${rule.type} has invalid level '${rule.level}' in template ${template.id}`
+        );
+      }
 
       ruleList.push({
         ...ruleTemplate,
@@ -798,11 +807,4 @@ export const getRuleLocalization = (
     title,
     description,
   };
-};
-
-export const ruleIsAvailableInSubscription = (
-  _ruleType: string,
-  _subscriptionPlan: PlanType
-): boolean => {
-  return true;
 };

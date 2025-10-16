@@ -910,13 +910,6 @@ export enum SQLReviewRuleLevel {
    * @generated from enum value: WARNING = 2;
    */
   WARNING = 2,
-
-  /**
-   * Rule is disabled.
-   *
-   * @generated from enum value: DISABLED = 3;
-   */
-  DISABLED = 3,
 }
 
 /**

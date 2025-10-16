@@ -20,7 +20,6 @@ import { BBButtonConfirm } from "@/bbkit";
 import Resource from "@/components/v2/ResourceOccupiedModal/Resource.vue";
 import { pushNotification, useSQLReviewStore } from "@/store";
 import type { SQLReviewPolicy } from "@/types";
-import { SQLReviewRuleLevel } from "@/types/proto-es/v1/org_policy_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { getHighlightHTMLByRegExp } from "@/utils";
 
@@ -85,15 +84,7 @@ const columns = computed(
         title: t("sql-review.enabled-rules"),
         key: "rules",
         render: (review: SQLReviewPolicy) => {
-          return (
-            <span>
-              {
-                review.ruleList.filter(
-                  (r) => r.level !== SQLReviewRuleLevel.DISABLED
-                ).length
-              }
-            </span>
-          );
+          return <span>{review.ruleList.length}</span>;
         },
       },
       {

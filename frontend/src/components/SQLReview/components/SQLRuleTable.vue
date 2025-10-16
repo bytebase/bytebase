@@ -38,30 +38,6 @@
         >
           <div class="flex justify-between items-center gap-x-2">
             <div class="flex items-center gap-x-1">
-              <NTooltip
-                v-if="!isRuleAvailable(rule)"
-                trigger="hover"
-                :show-arrow="false"
-              >
-                <template #trigger>
-                  <div class="flex justify-center">
-                    <heroicons-outline:exclamation
-                      class="h-5 w-5 text-yellow-600"
-                    />
-                  </div>
-                </template>
-                <span class="whitespace-nowrap">
-                  {{
-                    $t("sql-review.not-available-for-free", {
-                      plan: $t(
-                        `subscription.plan.${PlanType[
-                          currentPlan
-                        ].toLowerCase()}.title`
-                      ),
-                    })
-                  }}
-                </span>
-              </NTooltip>
               <span>
                 {{ getRuleLocalization(rule.type, rule.engine).title }}
                 <a
@@ -78,25 +54,28 @@
               :checked="selectedRuleKeys.includes(getRuleKey(rule))"
               @update:checked="(_) => toggleRule(rule)"
             />
-            <div v-else class="flex items-center space-x-2">
+            <div v-else class="flex items-center gap-x-2">
               <PencilIcon
                 v-if="editable"
-                class="w-4 h-4"
+                class="w-4 h-4 cursor-pointer hover:text-accent"
                 @click="setActiveRule(rule)"
               />
-              <NSwitch
+              <NButton
+                v-if="editable"
+                secondary
+                type="error"
                 size="small"
-                :disabled="!editable || !isRuleAvailable(rule)"
-                :value="rule.level !== SQLReviewRuleLevel.DISABLED"
-                @update-value="(val) => toggleActivity(rule, val)"
-              />
+                @click="$emit('rule-remove', rule)"
+              >
+                {{ $t("common.delete") }}
+              </NButton>
             </div>
           </div>
           <RuleLevelSwitch
             v-if="!hideLevel"
             class="text-xs"
             :level="rule.level"
-            :disabled="!editable || !isRuleAvailable(rule)"
+            :disabled="!editable"
             @level-change="updateLevel(rule, $event)"
           />
           <p class="textinfolabel">
@@ -109,7 +88,7 @@
     <SQLRuleEditDialog
       v-if="state.activeRule"
       :rule="state.activeRule"
-      :disabled="!editable || !isRuleAvailable(state.activeRule)"
+      :disabled="!editable"
       @cancel="state.activeRule = undefined"
       @update:rule="onRuleChanged"
     />
@@ -118,22 +97,13 @@
 
 <script lang="tsx" setup>
 import { ExternalLinkIcon, PencilIcon } from "lucide-vue-next";
-import {
-  NSwitch,
-  NCheckbox,
-  NDataTable,
-  NButton,
-  NDivider,
-  NTooltip,
-} from "naive-ui";
+import { NCheckbox, NDataTable, NButton, NDivider } from "naive-ui";
 import type { DataTableColumn } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { useCurrentPlan } from "@/store";
 import type { RuleTemplateV2 } from "@/types";
-import { getRuleLocalization, ruleIsAvailableInSubscription } from "@/types";
+import { getRuleLocalization } from "@/types";
 import { SQLReviewRuleLevel } from "@/types/proto-es/v1/org_policy_service_pb";
-import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import RuleConfig from "./RuleConfigComponents/RuleConfig.vue";
 import RuleLevelSwitch from "./RuleLevelSwitch.vue";
 import type { RuleListWithCategory } from "./SQLReviewCategoryTabFilter.vue";
@@ -169,11 +139,11 @@ const emit = defineEmits<{
     rule: RuleTemplateV2,
     update: Partial<RuleTemplateV2>
   ): void;
+  (event: "rule-remove", rule: RuleTemplateV2): void;
   (event: "update:selectedRuleKeys", keys: string[]): void;
 }>();
 
 const { t } = useI18n();
-const currentPlan = useCurrentPlan();
 const state = reactive<LocalState>({
   activeRule: undefined,
 });
@@ -230,22 +200,6 @@ const columns = computed(() => {
       },
     },
     {
-      title: t("sql-review.rule.active"),
-      key: "active",
-      width: "5rem",
-      hide: props.hideLevel,
-      render: (rule: RuleTemplateV2) => {
-        return (
-          <NSwitch
-            size={"small"}
-            disabled={!props.editable || !isRuleAvailable(rule)}
-            value={rule.level !== SQLReviewRuleLevel.DISABLED}
-            onUpdate:value={(val) => toggleActivity(rule, val)}
-          />
-        );
-      },
-    },
-    {
       title: t("common.name"),
       resizable: true,
       key: "name",
@@ -272,7 +226,7 @@ const columns = computed(() => {
         return (
           <RuleLevelSwitch
             level={rule.level}
-            disabled={!props.editable || !isRuleAvailable(rule)}
+            disabled={!props.editable}
             onLevel-change={(on) => updateLevel(rule, on)}
           />
         );
@@ -282,15 +236,23 @@ const columns = computed(() => {
       title: t("common.operations"),
       hide: props.supportSelect,
       key: "operations",
-      width: "10rem",
+      width: "12rem",
       render: (rule: RuleTemplateV2) => {
         return (
-          <NButton
-            disabled={!isRuleAvailable(rule)}
-            onClick={() => setActiveRule(rule)}
-          >
-            {props.editable ? t("common.edit") : t("common.view")}
-          </NButton>
+          <div class="flex items-center gap-x-2">
+            <NButton onClick={() => setActiveRule(rule)}>
+              {props.editable ? t("common.edit") : t("common.view")}
+            </NButton>
+            {props.editable && (
+              <NButton
+                secondary
+                type="error"
+                onClick={() => emit("rule-remove", rule)}
+              >
+                {t("common.delete")}
+              </NButton>
+            )}
+          </div>
         );
       },
     },
@@ -324,19 +286,8 @@ const toggleRule = (rule: RuleTemplateV2) => {
   }
 };
 
-const isRuleAvailable = (rule: RuleTemplateV2) => {
-  return ruleIsAvailableInSubscription(rule.type, currentPlan.value);
-};
-
 const setActiveRule = (rule: RuleTemplateV2) => {
   state.activeRule = rule;
-};
-
-const toggleActivity = (rule: RuleTemplateV2, on: boolean) => {
-  updateLevel(
-    rule,
-    on ? SQLReviewRuleLevel.WARNING : SQLReviewRuleLevel.DISABLED
-  );
 };
 
 const onRuleChanged = (update: Partial<RuleTemplateV2>) => {

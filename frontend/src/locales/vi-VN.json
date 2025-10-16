@@ -2359,7 +2359,6 @@
     "no-permission": "Chỉ DBA hoặc Quản trị viên mới có quyền tạo hoặc cập nhật chính sách đánh giá.",
     "delete": "Xóa chính sách đánh giá SQL",
     "input-then-press-enter": "Nhập giá trị sau đó nhấn enter để thêm",
-    "not-available-for-free": "Quy tắc không khả dụng cho {plan}",
     "attach-resource": {
       "no-linked-resources": "Không có tài nguyên nào được đính kèm",
       "change-resources": "Thay đổi tài nguyên đính kèm",
@@ -2387,7 +2386,6 @@
       }
     },
     "rule": {
-      "active": "Đang hoạt động"
     },
     "enabled-rules": "Quy tắc được bật",
     "rule-detail": "Chi tiết quy tắc",
@@ -2399,8 +2397,7 @@
     "level": {
       "name": "Cấp độ",
       "error": "Lỗi",
-      "warning": "Cảnh báo",
-      "disabled": "Đã tắt"
+      "warning": "Cảnh báo"
     }
   },
   "audit-log": {

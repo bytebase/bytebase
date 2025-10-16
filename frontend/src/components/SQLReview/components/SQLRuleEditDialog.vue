@@ -30,18 +30,6 @@
       </div>
       <div class="space-y-1">
         <h3 class="text-lg text-control font-medium">
-          {{ $t("sql-review.rule.active") }}
-        </h3>
-        <div class="flex items-center gap-x-2 text-sm">
-          <NSwitch
-            :disabled="disabled"
-            :value="state.level !== SQLReviewRuleLevel.DISABLED"
-            @update-value="toggleActivity"
-          />
-        </div>
-      </div>
-      <div class="space-y-1">
-        <h3 class="text-lg text-control font-medium">
           {{ $t("sql-review.level.name") }}
         </h3>
         <div class="flex items-center gap-x-2 text-sm">
@@ -88,7 +76,7 @@
 </template>
 
 <script lang="ts" setup>
-import { NButton, NSwitch } from "naive-ui";
+import { NButton } from "naive-ui";
 import { nextTick, reactive, watch, ref } from "vue";
 import { BBModal, BBTextField } from "@/bbkit";
 import { payloadValueListToComponentList } from "@/components/SQLReview/components";
@@ -122,10 +110,6 @@ const state = reactive<LocalState>({
     props.rule.comment ||
     getRuleLocalization(props.rule.type, props.rule.engine).description,
 });
-
-const toggleActivity = (on: boolean) => {
-  state.level = on ? SQLReviewRuleLevel.WARNING : SQLReviewRuleLevel.DISABLED;
-};
 
 watch(
   () => props.rule.level,

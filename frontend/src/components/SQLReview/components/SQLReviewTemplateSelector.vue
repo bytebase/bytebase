@@ -98,7 +98,6 @@ import Resource from "@/components/v2/ResourceOccupiedModal/Resource.vue";
 import { useSQLReviewPolicyList } from "@/store";
 import type { SQLReviewPolicyTemplateV2 } from "@/types";
 import { TEMPLATE_LIST_V2 as builtInTemplateList } from "@/types";
-import { SQLReviewRuleLevel } from "@/types/proto-es/v1/org_policy_service_pb";
 import { rulesToTemplate } from "./utils";
 
 const props = withDefaults(
@@ -121,7 +120,7 @@ defineEmits<{
 const reviewPolicyList = useSQLReviewPolicyList();
 
 const reviewPolicyTemplateList = computed(() => {
-  return reviewPolicyList.value.map((r) => rulesToTemplate(r, false));
+  return reviewPolicyList.value.map((r) => rulesToTemplate(r));
 });
 
 const isSelectedTemplate = (template: SQLReviewPolicyTemplateV2) => {
@@ -129,8 +128,6 @@ const isSelectedTemplate = (template: SQLReviewPolicyTemplateV2) => {
 };
 
 const enabledRuleCount = (template: SQLReviewPolicyTemplateV2) => {
-  return template.ruleList.filter(
-    (rule) => rule.level !== SQLReviewRuleLevel.DISABLED
-  ).length;
+  return template.ruleList.length;
 };
 </script>

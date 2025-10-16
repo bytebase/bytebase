@@ -2359,7 +2359,6 @@
     "no-permission": "Only DBA or Admin has permission to create or update review policy.",
     "delete": "Delete SQL review policy",
     "input-then-press-enter": "Input the value then press enter to add",
-    "not-available-for-free": "Rule is not available for {plan}",
     "attach-resource": {
       "no-linked-resources": "No attached resources",
       "change-resources": "Change attached resources",
@@ -2387,7 +2386,6 @@
       }
     },
     "rule": {
-      "active": "Active"
     },
     "enabled-rules": "Enabled rules",
     "rule-detail": "Rule detail",
@@ -2399,8 +2397,7 @@
     "level": {
       "name": "Level",
       "error": "Error",
-      "warning": "Warning",
-      "disabled": "Disabled"
+      "warning": "Warning"
     }
   },
   "audit-log": {
