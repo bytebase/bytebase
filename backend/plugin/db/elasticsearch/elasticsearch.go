@@ -68,9 +68,23 @@ func (client *BasicAuthClient) Do(method string, route []byte, queryString []byt
 		return nil, errors.Wrapf(err, "failed to parse base URL")
 	}
 
-	fullURL := baseURL.JoinPath(string(route)).String()
+	// Split route into path and query parameters
+	// The route may contain query parameters (e.g., "/_mapping?pretty")
+	// We need to separate them to avoid URL-encoding the '?' character
+	routeStr := string(route)
+	pathPart, queryPart, hasQuery := strings.Cut(routeStr, "?")
 
-	req, err := http.NewRequest(method, fullURL, bytes.NewReader(queryString))
+	// Join only the path part (without query parameters)
+	// This ensures JoinPath only processes the actual path
+	fullURL := baseURL.JoinPath(pathPart)
+
+	// Add query parameters if present in the route
+	// Assign directly to RawQuery to preserve the query string as-is
+	if hasQuery {
+		fullURL.RawQuery = queryPart
+	}
+
+	req, err := http.NewRequest(method, fullURL.String(), bytes.NewReader(queryString))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to init a HTTP request")
 	}
