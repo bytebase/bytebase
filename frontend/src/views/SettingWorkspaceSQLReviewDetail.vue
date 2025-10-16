@@ -80,6 +80,7 @@
           :rule-list="ruleListFilteredByEngine"
           :editable="hasUpdateReviwConfigPermission"
           @rule-upsert="markChange"
+          @rule-remove="removeRule"
         />
       </template>
     </SQLReviewTabsByEngine>
@@ -295,6 +296,14 @@ const markChange = (
     .get(rule.engine)
     ?.set(rule.type, Object.assign(selectedRule, overrides));
 
+  state.rulesUpdated = true;
+};
+
+const removeRule = (rule: RuleTemplateV2) => {
+  state.ruleMapByEngine.get(rule.engine)?.delete(rule.type);
+  if (state.ruleMapByEngine.get(rule.engine)?.size === 0) {
+    state.ruleMapByEngine.delete(rule.engine);
+  }
   state.rulesUpdated = true;
 };
 
