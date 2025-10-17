@@ -573,7 +573,7 @@ func (q *querySpanExtractor) findFunctionDefine(schemaName, funcName string, nAr
 
 	function := candidates[0]
 	functionName := fmt.Sprintf("%s.%s", function.schemaName, funcName)
-	columns, err := q.getColumnsForFunction(functionName, function.metadata.Definition)
+	columns, err := q.getColumnsFromFunction(functionName, function.metadata.Definition)
 	if err != nil {
 		return nil, &parsererror.FunctionNotSupportedError{
 			Err:      err,
@@ -698,6 +698,564 @@ const (
 	languageTypePLPGSQL
 )
 
+// nolint:unused
+func (q *querySpanExtractor) getColumnsFromFunction(name, definition string) ([]base.QuerySpanResult, error) {
+	res, err := ParsePostgreSQL(definition)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse function definition: %s", definition)
+	}
+
+	// Navigate: root -> stmtblock -> stmt -> createfunctionstmt
+	root, ok := res.Tree.(*postgresql.RootContext)
+	if !ok {
+		return nil, errors.Errorf("expecting RootContext but got %T", res.Tree)
+	}
+
+	stmtblock := root.Stmtblock()
+	if stmtblock == nil {
+		return nil, errors.Errorf("expecting stmtblock but got nil")
+	}
+
+	stmtmulti := stmtblock.Stmtmulti()
+	if stmtmulti == nil {
+		return nil, errors.Errorf("expecting stmtmulti but got nil")
+	}
+
+	stmts := stmtmulti.AllStmt()
+	if len(stmts) != 1 {
+		return nil, errors.Errorf("expecting 1 statement, but got %d", len(stmts))
+	}
+
+	stmt := stmts[0]
+	createFuncStmt := stmt.Createfunctionstmt()
+	if createFuncStmt == nil {
+		return nil, errors.Errorf("expecting Createfunctionstmt but got nil")
+	}
+
+	// Extract language from function options
+	language, err := q.extractLanguageFromCreateFunction(createFuncStmt, name)
+	if err != nil {
+		return nil, err
+	}
+
+	// Extract AS body from function options
+	_, err = q.extractAsBodyFromCreateFunction(createFuncStmt, name)
+	if err != nil {
+		return nil, err
+	}
+
+	switch language {
+	case languageTypeSQL:
+		// SQL functions will be handled below
+		return q.getColumnsFromSQLFunction(createFuncStmt, name)
+	case languageTypePLPGSQL:
+		return q.getColumnsFromPLPGSQLFunction(createFuncStmt, name, definition)
+	default:
+		return nil, errors.Errorf("unsupported language type: %v", language)
+	}
+}
+
+// nolint:unused
+func (q *querySpanExtractor) getColumnsFromSQLFunction(createFuncStmt postgresql.ICreatefunctionstmtContext, name string) ([]base.QuerySpanResult, error) {
+	asBody, err := q.extractAsBodyFromCreateFunction(createFuncStmt, name)
+	if err != nil {
+		return nil, err
+	}
+
+	columnNames, err := q.extractParameterNamesFromCreateFunction(createFuncStmt, name)
+	if err != nil {
+		return nil, err
+	}
+
+	newQ := newQuerySpanExtractor(q.defaultDatabase, q.searchPath, q.gCtx)
+	span, err := newQ.getQuerySpan(q.ctx, asBody)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get query span for function: %s", name)
+	}
+	if span.NotFoundError != nil {
+		return nil, errors.Wrapf(span.NotFoundError, "failed to get query span for function: %s", name)
+	}
+	for source := range span.SourceColumns {
+		q.sourceColumnsInFunction[source] = true
+	}
+
+	if len(columnNames) != len(span.Results) {
+		return nil, errors.Errorf("expecting %d columns but got %d for function: %s", len(columnNames), len(span.Results), name)
+	}
+	for i, columnName := range columnNames {
+		span.Results[i].Name = columnName
+	}
+	return span.Results, nil
+}
+
+// nolint:unused
+func (q *querySpanExtractor) getColumnsFromPLPGSQLFunction(createFuncStmt postgresql.ICreatefunctionstmtContext, name, definition string) ([]base.QuerySpanResult, error) {
+	// Extract OUT/TABLE parameter names
+	columnNames, err := q.extractParameterNamesFromCreateFunction(createFuncStmt, name)
+	if err != nil {
+		return nil, err
+	}
+
+	// Extract AS body
+	asBody, err := q.extractAsBodyFromCreateFunction(createFuncStmt, name)
+	if err != nil {
+		return nil, err
+	}
+
+	// Try simple extraction first (extract RETURN QUERY statements)
+	simpleResult, err := q.getColumnsFromSimplePLPGSQL(name, asBody, columnNames)
+	if err == nil {
+		return simpleResult, nil
+	}
+
+	// Fall back to complex extraction
+	return q.getColumnsFromComplexPLPGSQL(name, columnNames, definition)
+}
+
+// getColumnsFromSimplePLPGSQL extracts query spans from simple PL/pgSQL functions with RETURN QUERY.
+// nolint:unused
+func (q *querySpanExtractor) getColumnsFromSimplePLPGSQL(name, asBody string, columnNames []string) ([]base.QuerySpanResult, error) {
+	// Parse the PL/pgSQL body to extract RETURN QUERY statements
+	sqlList, err := extractReturnQueryStatements(asBody)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(sqlList) == 0 {
+		return nil, errors.Errorf("no RETURN QUERY statements found in function: %s", name)
+	}
+
+	// Initialize result with column names and empty source columns
+	var leftQuerySpanResult []base.QuerySpanResult
+	for _, columnName := range columnNames {
+		leftQuerySpanResult = append(leftQuerySpanResult, base.QuerySpanResult{
+			Name:          columnName,
+			SourceColumns: base.SourceColumnSet{},
+		})
+	}
+
+	// Process each RETURN QUERY statement and merge source columns
+	for _, sql := range sqlList {
+		newQ := newQuerySpanExtractor(q.defaultDatabase, q.searchPath, q.gCtx)
+		span, err := newQ.getQuerySpan(q.ctx, sql)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get query span for function: %s", name)
+		}
+		if span.NotFoundError != nil {
+			return nil, errors.Wrapf(span.NotFoundError, "failed to get query span for function: %s", name)
+		}
+
+		rightQuerySpanResult := span.Results
+		if len(leftQuerySpanResult) != len(rightQuerySpanResult) {
+			return nil, errors.Errorf("expecting %d columns but got %d for function: %s", len(leftQuerySpanResult), len(rightQuerySpanResult), name)
+		}
+		for source := range span.SourceColumns {
+			q.sourceColumnsInFunction[source] = true
+		}
+
+		// Merge source columns
+		var result []base.QuerySpanResult
+		for i, leftSpanResult := range leftQuerySpanResult {
+			rightSpanResult := rightQuerySpanResult[i]
+			newResourceColumns, _ := base.MergeSourceColumnSet(leftSpanResult.SourceColumns, rightSpanResult.SourceColumns)
+			result = append(result, base.QuerySpanResult{
+				Name:          leftSpanResult.Name,
+				SourceColumns: newResourceColumns,
+			})
+		}
+		leftQuerySpanResult = result
+	}
+
+	return leftQuerySpanResult, nil
+}
+
+// extractReturnQueryStatements extracts all RETURN QUERY SELECT statements from PL/pgSQL body.
+func extractReturnQueryStatements(asBody string) ([]string, error) {
+	// Parse the PL/pgSQL body as a pl_block (BEGIN...END block)
+	res, err := ParsePostgreSQLPLBlock(asBody)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse PL/pgSQL body")
+	}
+
+	listener := &returnQueryListener{
+		tokenStream: res.Tokens,
+		sqlList:     []string{},
+	}
+	antlr.ParseTreeWalkerDefault.Walk(listener, res.Tree)
+
+	return listener.sqlList, nil
+}
+
+// returnQueryListener walks the AST to find all RETURN QUERY statements.
+type returnQueryListener struct {
+	*postgresql.BasePostgreSQLParserListener
+	tokenStream antlr.TokenStream
+	sqlList     []string
+}
+
+// EnterStmt_return is called when entering a RETURN statement.
+func (l *returnQueryListener) EnterStmt_return(ctx *postgresql.Stmt_returnContext) {
+	// Check if this is RETURN QUERY (not RETURN NEXT or plain RETURN)
+	if ctx.QUERY() == nil {
+		return
+	}
+
+	// Check if it's RETURN QUERY SELECT (not RETURN QUERY EXECUTE)
+	if ctx.Selectstmt() == nil {
+		return
+	}
+
+	// Extract the SELECT statement text using GetTextFromInterval
+	selectStmt := ctx.Selectstmt()
+	start := selectStmt.GetStart().GetTokenIndex()
+	stop := selectStmt.GetStop().GetTokenIndex()
+	interval := antlr.NewInterval(start, stop)
+	sqlText := l.tokenStream.GetTextFromInterval(interval)
+
+	l.sqlList = append(l.sqlList, sqlText)
+}
+
+func (q *querySpanExtractor) getColumnsFromComplexPLPGSQL(name string, columnNames []string, definition string) ([]base.QuerySpanResult, error) {
+	res, err := ParsePostgreSQL(definition)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse PLpgSQL function body for function %s", name)
+	}
+
+	listener := &plpgSQLListener{
+		q:         q,
+		variables: make(map[string]*base.QuerySpanResult),
+	}
+	antlr.ParseTreeWalkerDefault.Walk(listener, res.Tree)
+	if listener.err != nil {
+		return nil, errors.Wrapf(listener.err, "failed to extract table source from PLpgSQL function body for function %s", name)
+	}
+	if listener.span == nil {
+		return nil, errors.Errorf("failed to extract table source from PLpgSQL function body for function %s", name)
+	}
+	if listener.span.NotFoundError != nil {
+		return nil, errors.Wrapf(listener.span.NotFoundError, "failed to extract table source from PLpgSQL function body for function %s", name)
+	}
+	if len(columnNames) != len(listener.span.Results) {
+		return nil, errors.Errorf("expecting %d columns but got %d for function: %s", len(columnNames), len(listener.span.Results), name)
+	}
+	var result []base.QuerySpanResult
+	for i, columnName := range columnNames {
+		result = append(result, base.QuerySpanResult{
+			Name:          columnName,
+			SourceColumns: listener.span.Results[i].SourceColumns,
+		})
+	}
+	return result, nil
+}
+
+// extractLanguageFromCreateFunction extracts the LANGUAGE clause from a CREATE FUNCTION statement.
+// Returns languageTypeSQL (default) or languageTypePLPGSQL, or error if the language is unsupported.
+// nolint:unused
+func (*querySpanExtractor) extractLanguageFromCreateFunction(createFuncStmt postgresql.ICreatefunctionstmtContext, funcName string) (languageType, error) {
+	// Default language is SQL if not specified
+	language := languageTypeSQL
+
+	// Parse function options to find LANGUAGE
+	createOptList := createFuncStmt.Createfunc_opt_list()
+	if createOptList == nil {
+		// No options specified, use default
+		return language, nil
+	}
+
+	for _, item := range createOptList.AllCreatefunc_opt_item() {
+		if item == nil {
+			continue
+		}
+
+		// Check if this option is LANGUAGE
+		if item.LANGUAGE() == nil {
+			continue
+		}
+
+		// Extract language value
+		langNode := item.Nonreservedword_or_sconst()
+		if langNode == nil {
+			continue
+		}
+
+		// Get the language text and normalize it
+		langText := langNode.GetText()
+		// Remove quotes if present (e.g., 'sql' -> sql)
+
+		langText = strings.ToLower(langText)
+
+		switch langText {
+		case "sql":
+			language = languageTypeSQL
+		case "plpgsql":
+			language = languageTypePLPGSQL
+		default:
+			return language, &parsererror.TypeNotSupportedError{
+				Type:  "function language",
+				Name:  langText,
+				Extra: fmt.Sprintf("function: %s", funcName),
+			}
+		}
+
+		// Found the language, no need to continue
+		break
+	}
+
+	return language, nil
+}
+
+// extractAsBodyFromCreateFunction extracts the AS body (function definition) from a CREATE FUNCTION statement.
+// Returns the function body SQL/PL/pgSQL code with quotes removed and escaped quotes unescaped.
+// nolint:unused
+func (*querySpanExtractor) extractAsBodyFromCreateFunction(createFuncStmt postgresql.ICreatefunctionstmtContext, funcName string) (string, error) {
+	createOptList := createFuncStmt.Createfunc_opt_list()
+	if createOptList == nil {
+		return "", errors.Errorf("no function options found for function: %s", funcName)
+	}
+
+	for _, item := range createOptList.AllCreatefunc_opt_item() {
+		if item == nil {
+			continue
+		}
+
+		// Check if this option is AS
+		if item.AS() == nil {
+			continue
+		}
+
+		// Extract AS body
+		funcAs := item.Func_as()
+		if funcAs == nil {
+			continue
+		}
+
+		// Get the function body from the first string constant
+		allSconst := funcAs.AllSconst()
+		if len(allSconst) == 0 {
+			continue
+		}
+
+		// Check for C-style function definition: AS 'obj_file', 'link_symbol'
+		// This is a legacy format for C language functions that we don't support
+		if len(allSconst) > 1 || funcAs.COMMA() != nil {
+			return "", &parsererror.TypeNotSupportedError{
+				Type:  "function",
+				Name:  funcName,
+				Extra: "C-style function with object file and link symbol is not supported",
+			}
+		}
+
+		// Get the raw text preserving all whitespace using token stream interval
+		sconstCtx := allSconst[0]
+		parser := sconstCtx.GetParser()
+		if parser == nil {
+			return "", errors.Errorf("parser is nil for function: %s", funcName)
+		}
+		tokenStream := parser.GetTokenStream()
+
+		// Use GetTextFromInterval to preserve exact whitespace
+		start := sconstCtx.GetStart().GetTokenIndex()
+		stop := sconstCtx.GetStop().GetTokenIndex()
+		interval := antlr.NewInterval(start, stop)
+		sconst := tokenStream.GetTextFromInterval(interval)
+
+		if len(sconst) < 2 {
+			return "", errors.Errorf("invalid AS body for function: %s", funcName)
+		}
+
+		// Unescape PostgreSQL string constant based on its type
+		asBody, err := unescapePostgreSQLString(sconst)
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to unescape AS body for function: %s", funcName)
+		}
+
+		return asBody, nil
+	}
+
+	return "", errors.Errorf("AS body not found for function: %s", funcName)
+}
+
+// unescapePostgreSQLString unescapes a PostgreSQL string constant based on its type.
+// Handles: StringConstant, EscapeStringConstant, UnicodeEscapeStringConstant, DollarStringConstant.
+func unescapePostgreSQLString(s string) (string, error) {
+	if len(s) < 2 {
+		return "", errors.Errorf("string too short: %s", s)
+	}
+
+	// Dollar-quoted string: $$...$$, $tag$...$tag$
+	// No escaping, just remove delimiters
+	if strings.HasPrefix(s, "$") {
+		firstDollar := strings.Index(s[1:], "$")
+		if firstDollar == -1 {
+			return "", errors.Errorf("invalid dollar-quoted string")
+		}
+		delimiter := s[:firstDollar+2] // e.g., "$$" or "$tag$"
+		body := strings.TrimPrefix(s, delimiter)
+		body = strings.TrimSuffix(body, delimiter)
+		return body, nil
+	}
+
+	// Escape string constant: E'...'
+	// Supports backslash escapes: \n, \t, \r, \\, \', etc.
+	if strings.HasPrefix(s, "E'") || strings.HasPrefix(s, "e'") {
+		if !strings.HasSuffix(s, "'") {
+			return "", errors.Errorf("unterminated escape string constant")
+		}
+		body := s[2 : len(s)-1]
+		return unescapeEscapeString(body), nil
+	}
+
+	// Unicode escape string constant: U&'...'
+	// Supports unicode escapes: \XXXX or \+XXXXXX
+	if strings.HasPrefix(s, "U&'") || strings.HasPrefix(s, "u&'") {
+		if !strings.HasSuffix(s, "'") {
+			return "", errors.Errorf("unterminated unicode escape string constant")
+		}
+		body := s[3 : len(s)-1]
+		return unescapeUnicodeEscapeString(body), nil
+	}
+
+	// Standard string constant: '...'
+	// Only '' is escaped as '
+	if strings.HasPrefix(s, "'") && strings.HasSuffix(s, "'") {
+		body := s[1 : len(s)-1]
+		// Unescape doubled single quotes
+		return strings.ReplaceAll(body, "''", "'"), nil
+	}
+
+	return "", errors.Errorf("unknown string constant type: %s", s)
+}
+
+// unescapeEscapeString unescapes E'...' style strings with backslash escapes.
+func unescapeEscapeString(s string) string {
+	var result strings.Builder
+	i := 0
+	for i < len(s) {
+		if s[i] == '\\' && i+1 < len(s) {
+			switch s[i+1] {
+			case 'n':
+				result.WriteByte('\n')
+			case 't':
+				result.WriteByte('\t')
+			case 'r':
+				result.WriteByte('\r')
+			case 'b':
+				result.WriteByte('\b')
+			case 'f':
+				result.WriteByte('\f')
+			case '\\':
+				result.WriteByte('\\')
+			case '\'':
+				result.WriteByte('\'')
+			case '"':
+				result.WriteByte('"')
+			default:
+				// Unknown escape, keep as-is
+				result.WriteByte(s[i])
+				result.WriteByte(s[i+1])
+			}
+			i += 2
+		} else if s[i] == '\'' && i+1 < len(s) && s[i+1] == '\'' {
+			// Handle '' as escaped '
+			result.WriteByte('\'')
+			i += 2
+		} else {
+			result.WriteByte(s[i])
+			i++
+		}
+	}
+	return result.String()
+}
+
+// unescapeUnicodeEscapeString unescapes U&'...' style strings with unicode escapes.
+func unescapeUnicodeEscapeString(s string) string {
+	// For now, implement basic unicode escape support
+	// Full implementation would need to handle \XXXX and \+XXXXXX patterns
+	// This is a simplified version
+	result := s
+	// Unescape doubled single quotes first
+	result = strings.ReplaceAll(result, "''", "'")
+	// TODO: Add proper unicode escape handling if needed
+	return result
+}
+
+// extractParameterNamesFromCreateFunction extracts OUT/TABLE parameter names from CREATE FUNCTION.
+// Returns column names from OUT parameters and RETURNS TABLE columns.
+// nolint:unused,unparam
+func (q *querySpanExtractor) extractParameterNamesFromCreateFunction(createFuncStmt postgresql.ICreatefunctionstmtContext, _ string) ([]string, error) {
+	var columnNames []string
+
+	// Extract OUT parameters from func_args_with_defaults
+	funcArgs := createFuncStmt.Func_args_with_defaults()
+	if funcArgs != nil && funcArgs.Func_args_with_defaults_list() != nil {
+		for _, argWithDefault := range funcArgs.Func_args_with_defaults_list().AllFunc_arg_with_default() {
+			if argWithDefault == nil {
+				continue
+			}
+			funcArg := argWithDefault.Func_arg()
+			if funcArg == nil {
+				continue
+			}
+
+			// Check if this is an OUT or INOUT parameter
+			argClass := funcArg.Arg_class()
+			if argClass == nil {
+				continue
+			}
+
+			// Check for OUT_P (OUT mode) or INOUT
+			if argClass.OUT_P() == nil && argClass.INOUT() == nil {
+				continue
+			}
+
+			// Extract parameter name
+			// func_arg can be: arg_class param_name? func_type | param_name arg_class? func_type | func_type
+			var paramName string
+			if funcArg.Param_name() != nil {
+				paramName = q.extractParamName(funcArg.Param_name())
+			}
+
+			// If OUT parameter has a name, add it to column names
+			if paramName != "" {
+				columnNames = append(columnNames, paramName)
+			}
+		}
+	}
+
+	// Extract TABLE columns from RETURNS TABLE clause
+	if createFuncStmt.TABLE() != nil && createFuncStmt.Table_func_column_list() != nil {
+		for _, tableCol := range createFuncStmt.Table_func_column_list().AllTable_func_column() {
+			if tableCol == nil || tableCol.Param_name() == nil {
+				continue
+			}
+			paramName := q.extractParamName(tableCol.Param_name())
+			if paramName != "" {
+				columnNames = append(columnNames, paramName)
+			}
+		}
+	}
+
+	return columnNames, nil
+}
+
+// extractParamName extracts the parameter name from param_name context.
+// param_name can be: type_function_name | builtin_function_name | LEFT | RIGHT
+// nolint:unused
+func (*querySpanExtractor) extractParamName(paramNameCtx postgresql.IParam_nameContext) string {
+	if paramNameCtx == nil {
+		return ""
+	}
+
+	// Handle type_function_name (most common case)
+	if paramNameCtx.Type_function_name() != nil {
+		return normalizePostgreSQLTypeFunctionName(paramNameCtx.Type_function_name())
+	}
+
+	// Handle builtin_function_name, LEFT, RIGHT
+	return strings.ToLower(paramNameCtx.GetText())
+}
+
+// nolint: unused
 func (q *querySpanExtractor) getColumnsForFunction(name, definition string) ([]base.QuerySpanResult, error) {
 	res, err := pgquery.Parse(definition)
 	if err != nil {
@@ -764,6 +1322,7 @@ func (q *querySpanExtractor) getColumnsForFunction(name, definition string) ([]b
 	}
 }
 
+// nolint:unused
 func (q *querySpanExtractor) extractTableSourceFromPLPGSQLFunction(createFunc *pgquery.Node_CreateFunctionStmt, name, definition string) ([]base.QuerySpanResult, error) {
 	var columnNames []string
 	for _, parameter := range createFunc.CreateFunctionStmt.Parameters {
@@ -797,6 +1356,7 @@ func (q *querySpanExtractor) extractTableSourceFromPLPGSQLFunction(createFunc *p
 	return q.extractTableSourceFromComplexPLPGSQL(name, columnNames, definition)
 }
 
+// nolint:unused
 func (q *querySpanExtractor) extractTableSourceFromComplexPLPGSQL(name string, columnNames []string, definition string) ([]base.QuerySpanResult, error) {
 	res, err := ParsePostgreSQL(definition)
 	if err != nil {
@@ -900,6 +1460,7 @@ func (l *plpgSQLListener) EnterStmt_return(ctx *postgresql.Stmt_returnContext) {
 	l.span, l.err = newQ.getQuerySpan(l.q.ctx, ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Selectstmt()))
 }
 
+// nolint:unused
 func (q *querySpanExtractor) extractTableSourceFromSimplePLPGSQL(name string, jsonData []any, columnNames []string) ([]base.QuerySpanResult, error) {
 	var sqlList []string
 	for _, value := range jsonData {
@@ -954,6 +1515,7 @@ func (q *querySpanExtractor) extractTableSourceFromSimplePLPGSQL(name string, js
 	return leftQuerySpanResult, nil
 }
 
+// nolint:unused
 func extractSQLListFromJSONData(jsonData map[string]any) []string {
 	var sqlList []string
 	if jsonData["PLpgSQL_stmt_return_query"] != nil {
@@ -976,6 +1538,7 @@ func extractSQLListFromJSONData(jsonData map[string]any) []string {
 	return sqlList
 }
 
+// nolint:unused
 func extractSQL(data any) string {
 	if data == nil {
 		return ""
@@ -997,6 +1560,7 @@ func extractSQL(data any) string {
 	return ""
 }
 
+// nolint:unused
 func (q *querySpanExtractor) extractTableSourceFromSQLFunction(createFunc *pgquery.Node_CreateFunctionStmt, name string, asBody string) ([]base.QuerySpanResult, error) {
 	newQ := newQuerySpanExtractor(q.defaultDatabase, q.searchPath, q.gCtx)
 	span, err := newQ.getQuerySpan(q.ctx, asBody)

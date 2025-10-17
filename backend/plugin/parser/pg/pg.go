@@ -51,6 +51,44 @@ func ParsePostgreSQL(sql string) (*ParseResult, error) {
 	return result, nil
 }
 
+// ParsePostgreSQLPLBlock parses the given PL/pgSQL block (BEGIN...END) and returns the ParseResult.
+// Use the PostgreSQL parser based on antlr4, starting from pl_block rule.
+func ParsePostgreSQLPLBlock(plBlock string) (*ParseResult, error) {
+	lexer := parser.NewPostgreSQLLexer(antlr.NewInputStream(plBlock))
+	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	p := parser.NewPostgreSQLParser(stream)
+	lexerErrorListener := &base.ParseErrorListener{
+		Statement: plBlock,
+	}
+	lexer.RemoveErrorListeners()
+	lexer.AddErrorListener(lexerErrorListener)
+
+	parserErrorListener := &base.ParseErrorListener{
+		Statement: plBlock,
+	}
+	p.RemoveErrorListeners()
+	p.AddErrorListener(parserErrorListener)
+
+	p.BuildParseTrees = true
+
+	// Parse starting from pl_block rule instead of root
+	tree := p.Pl_block()
+	if lexerErrorListener.Err != nil {
+		return nil, lexerErrorListener.Err
+	}
+
+	if parserErrorListener.Err != nil {
+		return nil, parserErrorListener.Err
+	}
+
+	result := &ParseResult{
+		Tree:   tree,
+		Tokens: stream,
+	}
+
+	return result, nil
+}
+
 // nolint:unused
 func normalizePostgreSQLTableAlias(ctx parser.ITable_aliasContext) string {
 	if ctx == nil {
