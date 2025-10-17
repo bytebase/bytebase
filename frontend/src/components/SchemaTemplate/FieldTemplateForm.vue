@@ -131,13 +131,11 @@
               {{ $t("schema-template.form.default-value") }}
             </label>
             <div class="flex flex-row items-center relative">
-              <DropdownInput
-                :value="getColumnDefaultDisplayString(state.column!) || null"
-                :options="defaultValueOptions"
+              <DefaultValueCell
+                :column="state.column"
                 :disabled="readonly"
-                :allow-filter="true"
-                :placeholder="getColumnDefaultValuePlaceholder(state.column!)"
-                @update:value="handleColumnDefaultChange"
+                border="1px solid rgb(224, 224, 230)"
+                @update="handleColumnDefaultSelect"
               />
             </div>
           </div>
@@ -222,13 +220,6 @@
     @apply="onClassificationSelect"
   />
 
-  <ColumnDefaultValueExpressionModal
-    v-if="state.showColumnDefaultValueExpressionModal"
-    :expression="state.column!.default"
-    @close="state.showColumnDefaultValueExpressionModal = false"
-    @update:expression="handleSelectedColumnDefaultValueExpressionChange"
-  />
-
   <SemanticTypesDrawer
     :show="state.showSemanticTypesDrawer"
     :semantic-type-list="semanticTypeList"
@@ -247,13 +238,8 @@ import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { LabelListEditor } from "@/components/Label";
 import RequiredStar from "@/components/RequiredStar.vue";
-import {
-  getColumnDefaultDisplayString,
-  getColumnDefaultValuePlaceholder,
-  getDefaultValueByKey,
-  getColumnDefaultValueOptions,
-} from "@/components/SchemaEditorLite";
-import { ColumnDefaultValueExpressionModal } from "@/components/SchemaEditorLite";
+import { DefaultValueCell } from "@/components/SchemaEditorLite/Panels/TableColumnEditor/components";
+import type { DefaultValue } from "@/components/SchemaEditorLite/utils";
 import SemanticTypesDrawer from "@/components/SensitiveData/components/SemanticTypesDrawer.vue";
 import {
   DrawerContent,
@@ -263,7 +249,10 @@ import {
 } from "@/components/v2";
 import { useSettingV1Store, useNotificationStore } from "@/store";
 import { ColumnCatalogSchema } from "@/types/proto-es/v1/database_catalog_service_pb";
-import { ColumnMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
+import {
+  ColumnMetadataSchema,
+  type ColumnMetadata,
+} from "@/types/proto-es/v1/database_service_pb";
 import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto-es/v1/setting_service_pb";
 import {
   SchemaTemplateSetting_FieldTemplateSchema,
@@ -291,8 +280,8 @@ const emit = defineEmits(["dismiss"]);
 interface LocalState extends SchemaTemplateSetting_FieldTemplate {
   showClassificationDrawer: boolean;
   showSemanticTypesDrawer: boolean;
-  showColumnDefaultValueExpressionModal: boolean;
   kvList: { key: string; value: string }[];
+  column: ColumnMetadata;
 }
 
 const state = reactive<LocalState>({
@@ -300,12 +289,11 @@ const state = reactive<LocalState>({
     id: props.template.id,
     engine: props.template.engine,
     category: props.template.category,
-    column: createProto(ColumnMetadataSchema, props.template.column ?? {}),
     catalog: createProto(ColumnCatalogSchema, props.template.catalog ?? {}),
   }),
+  column: createProto(ColumnMetadataSchema, props.template.column ?? {}),
   showClassificationDrawer: false,
   showSemanticTypesDrawer: false,
-  showColumnDefaultValueExpressionModal: false,
   kvList: [],
 });
 const { t } = useI18n();
@@ -371,18 +359,6 @@ const categoryOptions = computed(() => {
   return categoryList.value.map<SelectOption>((category) => ({
     label: category,
     value: category,
-  }));
-});
-
-const defaultValueOptions = computed(() => {
-  if (!state.column) return [];
-  return getColumnDefaultValueOptions(
-    state.engine,
-    state.column.type
-  ).map<SelectOption>((opt) => ({
-    value: opt.key,
-    label: opt.label as string,
-    defaultValue: opt.value,
   }));
 });
 
@@ -482,52 +458,9 @@ const onClassificationSelect = (id: string) => {
   state.catalog.classification = id;
 };
 
-const handleColumnDefaultChange = (key: string) => {
-  const value = getDefaultValueByKey(key);
-  if (value) {
-    handleColumnDefaultSelect(key);
-    return;
-  }
-
-  handleColumnDefaultInput(key);
-};
-const handleColumnDefaultInput = (value: string) => {
-  const { column } = state;
-  if (!column) return;
-
-  column.hasDefault = true;
-  column.default = value;
-};
-const handleColumnDefaultSelect = (key: string) => {
-  const { column } = state;
-  if (!column) return;
-
-  if (key === "expression") {
-    state.showColumnDefaultValueExpressionModal = true;
-    return;
-  }
-
-  const defaultValue = getDefaultValueByKey(key);
-  if (!defaultValue || !state.column) {
-    return;
-  }
-
+const handleColumnDefaultSelect = (defaultValue: DefaultValue) => {
   state.column.hasDefault = defaultValue.hasDefault;
   state.column.default = defaultValue.default;
-  if (state.column.hasDefault && state.column.default === "NULL") {
-    state.column.nullable = true;
-  }
-};
-
-const handleSelectedColumnDefaultValueExpressionChange = (
-  expression: string
-) => {
-  if (!state.column) {
-    return;
-  }
-  state.column.hasDefault = true;
-  state.column.default = expression;
-  state.showColumnDefaultValueExpressionModal = false;
 };
 
 const onSemanticTypeApply = async (semanticType: string) => {
