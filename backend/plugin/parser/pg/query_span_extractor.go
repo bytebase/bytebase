@@ -747,7 +747,7 @@ func (q *querySpanExtractor) getColumnsFromFunction(name, definition string) ([]
 	switch language {
 	case languageTypeSQL:
 		// SQL functions will be handled below
-		return q.getColumnsFromSQLFunction(createFuncStmt, name, definition)
+		return q.getColumnsFromSQLFunction(createFuncStmt, name)
 	case languageTypePLPGSQL:
 		return q.getColumnsFromPLPGSQLFunction(createFuncStmt, name, definition)
 	default:
@@ -755,7 +755,8 @@ func (q *querySpanExtractor) getColumnsFromFunction(name, definition string) ([]
 	}
 }
 
-func (q *querySpanExtractor) getColumnsFromSQLFunction(createFuncStmt postgresql.ICreatefunctionstmtContext, name, definition string) ([]base.QuerySpanResult, error) {
+// nolint:unused
+func (q *querySpanExtractor) getColumnsFromSQLFunction(createFuncStmt postgresql.ICreatefunctionstmtContext, name string) ([]base.QuerySpanResult, error) {
 	asBody, err := q.extractAsBodyFromCreateFunction(createFuncStmt, name)
 	if err != nil {
 		return nil, err
@@ -1321,6 +1322,7 @@ func (q *querySpanExtractor) getColumnsForFunction(name, definition string) ([]b
 	}
 }
 
+// nolint:unused
 func (q *querySpanExtractor) extractTableSourceFromPLPGSQLFunction(createFunc *pgquery.Node_CreateFunctionStmt, name, definition string) ([]base.QuerySpanResult, error) {
 	var columnNames []string
 	for _, parameter := range createFunc.CreateFunctionStmt.Parameters {
@@ -1354,6 +1356,7 @@ func (q *querySpanExtractor) extractTableSourceFromPLPGSQLFunction(createFunc *p
 	return q.extractTableSourceFromComplexPLPGSQL(name, columnNames, definition)
 }
 
+// nolint:unused
 func (q *querySpanExtractor) extractTableSourceFromComplexPLPGSQL(name string, columnNames []string, definition string) ([]base.QuerySpanResult, error) {
 	res, err := ParsePostgreSQL(definition)
 	if err != nil {
@@ -1457,6 +1460,7 @@ func (l *plpgSQLListener) EnterStmt_return(ctx *postgresql.Stmt_returnContext) {
 	l.span, l.err = newQ.getQuerySpan(l.q.ctx, ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Selectstmt()))
 }
 
+// nolint:unused
 func (q *querySpanExtractor) extractTableSourceFromSimplePLPGSQL(name string, jsonData []any, columnNames []string) ([]base.QuerySpanResult, error) {
 	var sqlList []string
 	for _, value := range jsonData {
@@ -1511,6 +1515,7 @@ func (q *querySpanExtractor) extractTableSourceFromSimplePLPGSQL(name string, js
 	return leftQuerySpanResult, nil
 }
 
+// nolint:unused
 func extractSQLListFromJSONData(jsonData map[string]any) []string {
 	var sqlList []string
 	if jsonData["PLpgSQL_stmt_return_query"] != nil {
@@ -1533,6 +1538,7 @@ func extractSQLListFromJSONData(jsonData map[string]any) []string {
 	return sqlList
 }
 
+// nolint:unused
 func extractSQL(data any) string {
 	if data == nil {
 		return ""
@@ -1554,6 +1560,7 @@ func extractSQL(data any) string {
 	return ""
 }
 
+// nolint:unused
 func (q *querySpanExtractor) extractTableSourceFromSQLFunction(createFunc *pgquery.Node_CreateFunctionStmt, name string, asBody string) ([]base.QuerySpanResult, error) {
 	newQ := newQuerySpanExtractor(q.defaultDatabase, q.searchPath, q.gCtx)
 	span, err := newQ.getQuerySpan(q.ctx, asBody)
