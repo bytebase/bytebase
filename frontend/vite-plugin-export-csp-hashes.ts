@@ -1,8 +1,8 @@
-import type { Plugin } from 'vite';
-import { writeFileSync, readFileSync, readdirSync, statSync } from 'fs';
-import { resolve, dirname, join } from 'path';
-import { fileURLToPath } from 'url';
-import { createHash } from 'crypto';
+import { createHash } from "crypto";
+import { writeFileSync, readFileSync, readdirSync, statSync } from "fs";
+import { resolve, dirname, join } from "path";
+import { fileURLToPath } from "url";
+import type { Plugin } from "vite";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -42,7 +42,7 @@ function findHtmlFiles(dir: string): string[] {
 
       if (stat.isDirectory()) {
         files.push(...findHtmlFiles(fullPath));
-      } else if (entry.endsWith('.html')) {
+      } else if (entry.endsWith(".html")) {
         files.push(fullPath);
       }
     }
@@ -57,7 +57,7 @@ function findHtmlFiles(dir: string): string[] {
  * Compute SHA-256 hash of a string
  */
 function computeSha256(content: string): string {
-  return createHash('sha256').update(content).digest('base64');
+  return createHash("sha256").update(content).digest("base64");
 }
 
 /**
@@ -70,12 +70,12 @@ function computeSha256(content: string): string {
  * 4. Exports everything to a JSON file that the backend reads
  */
 export function exportCspHashes(): Plugin {
-  let outDir = '../backend/server/dist';
+  let outDir = "";
 
   return {
-    name: 'export-csp-hashes',
-    apply: 'build',
-    enforce: 'post', // Run after other plugins including @vitejs/plugin-legacy
+    name: "export-csp-hashes",
+    apply: "build",
+    enforce: "post", // Run after other plugins including @vitejs/plugin-legacy
 
     configResolved(config) {
       outDir = config.build.outDir;
@@ -84,29 +84,40 @@ export function exportCspHashes(): Plugin {
     async closeBundle() {
       try {
         const allHashes = new Set<string>();
-        const inlineScriptSources: Array<{ file: string; content: string; hash: string }> = [];
+        const inlineScriptSources: Array<{
+          file: string;
+          content: string;
+          hash: string;
+        }> = [];
 
         // 1. Get CSP hashes from @vitejs/plugin-legacy
         try {
-          const legacyPlugin = await import('@vitejs/plugin-legacy');
+          const legacyPlugin = await import("@vitejs/plugin-legacy");
           const cspHashes = legacyPlugin.cspHashes;
 
           if (cspHashes && cspHashes.length > 0) {
             cspHashes.forEach((hash: string) => {
               allHashes.add(`'sha256-${hash}'`);
             });
-            console.log(`✓ Loaded ${cspHashes.length} hashes from @vitejs/plugin-legacy`);
+            console.log(
+              `✓ Loaded ${cspHashes.length} hashes from @vitejs/plugin-legacy`
+            );
           }
         } catch (error) {
-          console.warn('⚠️  Could not load hashes from @vitejs/plugin-legacy:', error);
+          console.warn(
+            "⚠️  Could not load hashes from @vitejs/plugin-legacy:",
+            error
+          );
         }
 
         // 2. Scan built HTML files for inline scripts
         const htmlFiles = findHtmlFiles(outDir);
-        console.log(`✓ Scanning ${htmlFiles.length} HTML files for inline scripts...`);
+        console.log(
+          `✓ Scanning ${htmlFiles.length} HTML files for inline scripts...`
+        );
 
         for (const htmlFile of htmlFiles) {
-          const html = readFileSync(htmlFile, 'utf-8');
+          const html = readFileSync(htmlFile, "utf-8");
           const inlineScripts = extractInlineScripts(html);
 
           for (const scriptContent of inlineScripts) {
@@ -115,22 +126,28 @@ export function exportCspHashes(): Plugin {
 
             allHashes.add(cspHash);
             inlineScriptSources.push({
-              file: htmlFile.replace(outDir, '').replace(/\\/g, '/'),
-              content: scriptContent.length > 60 ? scriptContent.substring(0, 60) + '...' : scriptContent,
-              hash: cspHash
+              file: htmlFile.replace(outDir, "").replace(/\\/g, "/"),
+              content:
+                scriptContent.length > 60
+                  ? scriptContent.substring(0, 60) + "..."
+                  : scriptContent,
+              hash: cspHash,
             });
           }
         }
 
         // Get plugin version
-        let pluginVersion = 'unknown';
+        let pluginVersion = "unknown";
         try {
-          const pkgPath = resolve(__dirname, 'node_modules/@vitejs/plugin-legacy/package.json');
-          const pkgData = readFileSync(pkgPath, 'utf-8');
+          const pkgPath = resolve(
+            __dirname,
+            "node_modules/@vitejs/plugin-legacy/package.json"
+          );
+          const pkgData = readFileSync(pkgPath, "utf-8");
           const pkg = JSON.parse(pkgData);
           pluginVersion = pkg.version;
         } catch {
-          pluginVersion = 'unknown';
+          pluginVersion = "unknown";
         }
 
         // Prepare the output
@@ -138,19 +155,19 @@ export function exportCspHashes(): Plugin {
           scriptHashes: Array.from(allHashes),
           generatedAt: new Date().toISOString(),
           pluginVersion,
-          sources: inlineScriptSources
+          sources: inlineScriptSources,
         };
 
         // Write to backend server directory
-        const outputPath = join(outDir, 'csp-hashes.json');
+        const outputPath = join(outDir, "csp-hashes.json");
         writeFileSync(outputPath, JSON.stringify(output, null, 2));
 
-        console.log('✓ CSP hashes exported to:', outputPath);
+        console.log("✓ CSP hashes exported to:", outputPath);
         console.log(`  Total script hashes: ${output.scriptHashes.length}`);
         console.log(`  Inline scripts found: ${inlineScriptSources.length}`);
 
         if (inlineScriptSources.length > 0) {
-          console.log('\n  Inline script sources:');
+          console.log("\n  Inline script sources:");
           inlineScriptSources.forEach((src, i) => {
             console.log(`    ${i + 1}. ${src.file}`);
             console.log(`       Content: ${src.content}`);
@@ -158,9 +175,9 @@ export function exportCspHashes(): Plugin {
           });
         }
       } catch (error) {
-        console.error('❌ Failed to export CSP hashes:', error);
+        console.error("❌ Failed to export CSP hashes:", error);
         // Don't fail the build, just warn
       }
-    }
+    },
   };
 }
