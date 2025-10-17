@@ -737,9 +737,15 @@ func (q *querySpanExtractor) getColumnsFromFunction(name, definition string) ([]
 		return nil, err
 	}
 
-	slog.Info("Successfully extracted language from Createfunctionstmt", "function", name, "language", language)
+	// Extract AS body from function options
+	asBody, err := q.extractAsBodyFromCreateFunction(createFuncStmt, name)
+	if err != nil {
+		return nil, err
+	}
 
-	// TODO: Extract AS body and column names from createFuncStmt
+	slog.Info("Successfully extracted function metadata", "function", name, "language", language, "bodyLength", len(asBody))
+
+	// TODO: Extract column names from createFuncStmt
 	// For now, fall back to pg_query implementation
 	return q.getColumnsForFunction(name, definition)
 }
@@ -797,6 +803,180 @@ func (q *querySpanExtractor) extractLanguageFromCreateFunction(createFuncStmt po
 	}
 
 	return language, nil
+}
+
+// extractAsBodyFromCreateFunction extracts the AS body (function definition) from a CREATE FUNCTION statement.
+// Returns the function body SQL/PL/pgSQL code with quotes removed and escaped quotes unescaped.
+func (q *querySpanExtractor) extractAsBodyFromCreateFunction(createFuncStmt postgresql.ICreatefunctionstmtContext, funcName string) (string, error) {
+	createOptList := createFuncStmt.Createfunc_opt_list()
+	if createOptList == nil {
+		return "", errors.Errorf("no function options found for function: %s", funcName)
+	}
+
+	for _, item := range createOptList.AllCreatefunc_opt_item() {
+		if item == nil {
+			continue
+		}
+
+		// Check if this option is AS
+		if item.AS() == nil {
+			continue
+		}
+
+		// Extract AS body
+		funcAs := item.Func_as()
+		if funcAs == nil {
+			continue
+		}
+
+		// Get the function body from the first string constant
+		allSconst := funcAs.AllSconst()
+		if len(allSconst) == 0 {
+			continue
+		}
+
+		// Check for C-style function definition: AS 'obj_file', 'link_symbol'
+		// This is a legacy format for C language functions that we don't support
+		if len(allSconst) > 1 || funcAs.COMMA() != nil {
+			return "", &parsererror.TypeNotSupportedError{
+				Type:  "function",
+				Name:  funcName,
+				Extra: "C-style function with object file and link symbol is not supported",
+			}
+		}
+
+		// Get the raw text preserving all whitespace using token stream interval
+		sconstCtx := allSconst[0]
+		parser := sconstCtx.GetParser()
+		if parser == nil {
+			return "", errors.Errorf("parser is nil for function: %s", funcName)
+		}
+		tokenStream := parser.GetTokenStream()
+
+		// Use GetTextFromInterval to preserve exact whitespace
+		start := sconstCtx.GetStart().GetTokenIndex()
+		stop := sconstCtx.GetStop().GetTokenIndex()
+		interval := antlr.NewInterval(start, stop)
+		sconst := tokenStream.GetTextFromInterval(interval)
+
+		if len(sconst) < 2 {
+			return "", errors.Errorf("invalid AS body for function: %s", funcName)
+		}
+
+		// Unescape PostgreSQL string constant based on its type
+		asBody, err := unescapePostgreSQLString(sconst)
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to unescape AS body for function: %s", funcName)
+		}
+
+		return asBody, nil
+	}
+
+	return "", errors.Errorf("AS body not found for function: %s", funcName)
+}
+
+// unescapePostgreSQLString unescapes a PostgreSQL string constant based on its type.
+// Handles: StringConstant, EscapeStringConstant, UnicodeEscapeStringConstant, DollarStringConstant.
+func unescapePostgreSQLString(s string) (string, error) {
+	if len(s) < 2 {
+		return "", errors.Errorf("string too short: %s", s)
+	}
+
+	// Dollar-quoted string: $$...$$, $tag$...$tag$
+	// No escaping, just remove delimiters
+	if strings.HasPrefix(s, "$") {
+		firstDollar := strings.Index(s[1:], "$")
+		if firstDollar == -1 {
+			return "", errors.Errorf("invalid dollar-quoted string")
+		}
+		delimiter := s[:firstDollar+2] // e.g., "$$" or "$tag$"
+		body := strings.TrimPrefix(s, delimiter)
+		body = strings.TrimSuffix(body, delimiter)
+		return body, nil
+	}
+
+	// Escape string constant: E'...'
+	// Supports backslash escapes: \n, \t, \r, \\, \', etc.
+	if strings.HasPrefix(s, "E'") || strings.HasPrefix(s, "e'") {
+		if !strings.HasSuffix(s, "'") {
+			return "", errors.Errorf("unterminated escape string constant")
+		}
+		body := s[2 : len(s)-1]
+		return unescapeEscapeString(body), nil
+	}
+
+	// Unicode escape string constant: U&'...'
+	// Supports unicode escapes: \XXXX or \+XXXXXX
+	if strings.HasPrefix(s, "U&'") || strings.HasPrefix(s, "u&'") {
+		if !strings.HasSuffix(s, "'") {
+			return "", errors.Errorf("unterminated unicode escape string constant")
+		}
+		body := s[3 : len(s)-1]
+		return unescapeUnicodeEscapeString(body), nil
+	}
+
+	// Standard string constant: '...'
+	// Only '' is escaped as '
+	if strings.HasPrefix(s, "'") && strings.HasSuffix(s, "'") {
+		body := s[1 : len(s)-1]
+		// Unescape doubled single quotes
+		return strings.ReplaceAll(body, "''", "'"), nil
+	}
+
+	return "", errors.Errorf("unknown string constant type: %s", s)
+}
+
+// unescapeEscapeString unescapes E'...' style strings with backslash escapes.
+func unescapeEscapeString(s string) string {
+	var result strings.Builder
+	i := 0
+	for i < len(s) {
+		if s[i] == '\\' && i+1 < len(s) {
+			switch s[i+1] {
+			case 'n':
+				result.WriteByte('\n')
+			case 't':
+				result.WriteByte('\t')
+			case 'r':
+				result.WriteByte('\r')
+			case 'b':
+				result.WriteByte('\b')
+			case 'f':
+				result.WriteByte('\f')
+			case '\\':
+				result.WriteByte('\\')
+			case '\'':
+				result.WriteByte('\'')
+			case '"':
+				result.WriteByte('"')
+			default:
+				// Unknown escape, keep as-is
+				result.WriteByte(s[i])
+				result.WriteByte(s[i+1])
+			}
+			i += 2
+		} else if s[i] == '\'' && i+1 < len(s) && s[i+1] == '\'' {
+			// Handle '' as escaped '
+			result.WriteByte('\'')
+			i += 2
+		} else {
+			result.WriteByte(s[i])
+			i++
+		}
+	}
+	return result.String()
+}
+
+// unescapeUnicodeEscapeString unescapes U&'...' style strings with unicode escapes.
+func unescapeUnicodeEscapeString(s string) string {
+	// For now, implement basic unicode escape support
+	// Full implementation would need to handle \XXXX and \+XXXXXX patterns
+	// This is a simplified version
+	result := s
+	// Unescape doubled single quotes first
+	result = strings.ReplaceAll(result, "''", "'")
+	// TODO: Add proper unicode escape handling if needed
+	return result
 }
 
 func (q *querySpanExtractor) getColumnsForFunction(name, definition string) ([]base.QuerySpanResult, error) {
