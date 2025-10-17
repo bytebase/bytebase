@@ -573,7 +573,7 @@ func (q *querySpanExtractor) findFunctionDefine(schemaName, funcName string, nAr
 
 	function := candidates[0]
 	functionName := fmt.Sprintf("%s.%s", function.schemaName, funcName)
-	columns, err := q.getColumnsForFunction(functionName, function.metadata.Definition)
+	columns, err := q.getColumnsFromFunction(functionName, function.metadata.Definition)
 	if err != nil {
 		return nil, &parsererror.FunctionNotSupportedError{
 			Err:      err,
@@ -698,6 +698,7 @@ const (
 	languageTypePLPGSQL
 )
 
+// nolint:unused
 func (q *querySpanExtractor) getColumnsFromFunction(name, definition string) ([]base.QuerySpanResult, error) {
 	res, err := ParsePostgreSQL(definition)
 	if err != nil {
@@ -738,21 +739,218 @@ func (q *querySpanExtractor) getColumnsFromFunction(name, definition string) ([]
 	}
 
 	// Extract AS body from function options
+	_, err = q.extractAsBodyFromCreateFunction(createFuncStmt, name)
+	if err != nil {
+		return nil, err
+	}
+
+	switch language {
+	case languageTypeSQL:
+		// SQL functions will be handled below
+		return q.getColumnsFromSQLFunction(createFuncStmt, name, definition)
+	case languageTypePLPGSQL:
+		return q.getColumnsFromPLPGSQLFunction(createFuncStmt, name, definition)
+	default:
+		return nil, errors.Errorf("unsupported language type: %v", language)
+	}
+}
+
+func (q *querySpanExtractor) getColumnsFromSQLFunction(createFuncStmt postgresql.ICreatefunctionstmtContext, name, definition string) ([]base.QuerySpanResult, error) {
 	asBody, err := q.extractAsBodyFromCreateFunction(createFuncStmt, name)
 	if err != nil {
 		return nil, err
 	}
 
-	slog.Info("Successfully extracted function metadata", "function", name, "language", language, "bodyLength", len(asBody))
+	columnNames, err := q.extractParameterNamesFromCreateFunction(createFuncStmt, name)
+	if err != nil {
+		return nil, err
+	}
 
-	// TODO: Extract column names from createFuncStmt
-	// For now, fall back to pg_query implementation
-	return q.getColumnsForFunction(name, definition)
+	newQ := newQuerySpanExtractor(q.defaultDatabase, q.searchPath, q.gCtx)
+	span, err := newQ.getQuerySpan(q.ctx, asBody)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get query span for function: %s", name)
+	}
+	if span.NotFoundError != nil {
+		return nil, errors.Wrapf(span.NotFoundError, "failed to get query span for function: %s", name)
+	}
+	for source := range span.SourceColumns {
+		q.sourceColumnsInFunction[source] = true
+	}
+
+	if len(columnNames) != len(span.Results) {
+		return nil, errors.Errorf("expecting %d columns but got %d for function: %s", len(columnNames), len(span.Results), name)
+	}
+	for i, columnName := range columnNames {
+		span.Results[i].Name = columnName
+	}
+	return span.Results, nil
+}
+
+// nolint:unused
+func (q *querySpanExtractor) getColumnsFromPLPGSQLFunction(createFuncStmt postgresql.ICreatefunctionstmtContext, name, definition string) ([]base.QuerySpanResult, error) {
+	// Extract OUT/TABLE parameter names
+	columnNames, err := q.extractParameterNamesFromCreateFunction(createFuncStmt, name)
+	if err != nil {
+		return nil, err
+	}
+
+	// Extract AS body
+	asBody, err := q.extractAsBodyFromCreateFunction(createFuncStmt, name)
+	if err != nil {
+		return nil, err
+	}
+
+	// Try simple extraction first (extract RETURN QUERY statements)
+	simpleResult, err := q.getColumnsFromSimplePLPGSQL(name, asBody, columnNames)
+	if err == nil {
+		return simpleResult, nil
+	}
+
+	// Fall back to complex extraction
+	return q.getColumnsFromComplexPLPGSQL(name, columnNames, definition)
+}
+
+// getColumnsFromSimplePLPGSQL extracts query spans from simple PL/pgSQL functions with RETURN QUERY.
+// nolint:unused
+func (q *querySpanExtractor) getColumnsFromSimplePLPGSQL(name, asBody string, columnNames []string) ([]base.QuerySpanResult, error) {
+	// Parse the PL/pgSQL body to extract RETURN QUERY statements
+	sqlList, err := extractReturnQueryStatements(asBody)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(sqlList) == 0 {
+		return nil, errors.Errorf("no RETURN QUERY statements found in function: %s", name)
+	}
+
+	// Initialize result with column names and empty source columns
+	var leftQuerySpanResult []base.QuerySpanResult
+	for _, columnName := range columnNames {
+		leftQuerySpanResult = append(leftQuerySpanResult, base.QuerySpanResult{
+			Name:          columnName,
+			SourceColumns: base.SourceColumnSet{},
+		})
+	}
+
+	// Process each RETURN QUERY statement and merge source columns
+	for _, sql := range sqlList {
+		newQ := newQuerySpanExtractor(q.defaultDatabase, q.searchPath, q.gCtx)
+		span, err := newQ.getQuerySpan(q.ctx, sql)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get query span for function: %s", name)
+		}
+		if span.NotFoundError != nil {
+			return nil, errors.Wrapf(span.NotFoundError, "failed to get query span for function: %s", name)
+		}
+
+		rightQuerySpanResult := span.Results
+		if len(leftQuerySpanResult) != len(rightQuerySpanResult) {
+			return nil, errors.Errorf("expecting %d columns but got %d for function: %s", len(leftQuerySpanResult), len(rightQuerySpanResult), name)
+		}
+		for source := range span.SourceColumns {
+			q.sourceColumnsInFunction[source] = true
+		}
+
+		// Merge source columns
+		var result []base.QuerySpanResult
+		for i, leftSpanResult := range leftQuerySpanResult {
+			rightSpanResult := rightQuerySpanResult[i]
+			newResourceColumns, _ := base.MergeSourceColumnSet(leftSpanResult.SourceColumns, rightSpanResult.SourceColumns)
+			result = append(result, base.QuerySpanResult{
+				Name:          leftSpanResult.Name,
+				SourceColumns: newResourceColumns,
+			})
+		}
+		leftQuerySpanResult = result
+	}
+
+	return leftQuerySpanResult, nil
+}
+
+// extractReturnQueryStatements extracts all RETURN QUERY SELECT statements from PL/pgSQL body.
+func extractReturnQueryStatements(asBody string) ([]string, error) {
+	// Parse the PL/pgSQL body as a pl_block (BEGIN...END block)
+	res, err := ParsePostgreSQLPLBlock(asBody)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse PL/pgSQL body")
+	}
+
+	listener := &returnQueryListener{
+		tokenStream: res.Tokens,
+		sqlList:     []string{},
+	}
+	antlr.ParseTreeWalkerDefault.Walk(listener, res.Tree)
+
+	return listener.sqlList, nil
+}
+
+// returnQueryListener walks the AST to find all RETURN QUERY statements.
+type returnQueryListener struct {
+	*postgresql.BasePostgreSQLParserListener
+	tokenStream antlr.TokenStream
+	sqlList     []string
+}
+
+// EnterStmt_return is called when entering a RETURN statement.
+func (l *returnQueryListener) EnterStmt_return(ctx *postgresql.Stmt_returnContext) {
+	// Check if this is RETURN QUERY (not RETURN NEXT or plain RETURN)
+	if ctx.QUERY() == nil {
+		return
+	}
+
+	// Check if it's RETURN QUERY SELECT (not RETURN QUERY EXECUTE)
+	if ctx.Selectstmt() == nil {
+		return
+	}
+
+	// Extract the SELECT statement text using GetTextFromInterval
+	selectStmt := ctx.Selectstmt()
+	start := selectStmt.GetStart().GetTokenIndex()
+	stop := selectStmt.GetStop().GetTokenIndex()
+	interval := antlr.NewInterval(start, stop)
+	sqlText := l.tokenStream.GetTextFromInterval(interval)
+
+	l.sqlList = append(l.sqlList, sqlText)
+}
+
+func (q *querySpanExtractor) getColumnsFromComplexPLPGSQL(name string, columnNames []string, definition string) ([]base.QuerySpanResult, error) {
+	res, err := ParsePostgreSQL(definition)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse PLpgSQL function body for function %s", name)
+	}
+
+	listener := &plpgSQLListener{
+		q:         q,
+		variables: make(map[string]*base.QuerySpanResult),
+	}
+	antlr.ParseTreeWalkerDefault.Walk(listener, res.Tree)
+	if listener.err != nil {
+		return nil, errors.Wrapf(listener.err, "failed to extract table source from PLpgSQL function body for function %s", name)
+	}
+	if listener.span == nil {
+		return nil, errors.Errorf("failed to extract table source from PLpgSQL function body for function %s", name)
+	}
+	if listener.span.NotFoundError != nil {
+		return nil, errors.Wrapf(listener.span.NotFoundError, "failed to extract table source from PLpgSQL function body for function %s", name)
+	}
+	if len(columnNames) != len(listener.span.Results) {
+		return nil, errors.Errorf("expecting %d columns but got %d for function: %s", len(columnNames), len(listener.span.Results), name)
+	}
+	var result []base.QuerySpanResult
+	for i, columnName := range columnNames {
+		result = append(result, base.QuerySpanResult{
+			Name:          columnName,
+			SourceColumns: listener.span.Results[i].SourceColumns,
+		})
+	}
+	return result, nil
 }
 
 // extractLanguageFromCreateFunction extracts the LANGUAGE clause from a CREATE FUNCTION statement.
 // Returns languageTypeSQL (default) or languageTypePLPGSQL, or error if the language is unsupported.
-func (q *querySpanExtractor) extractLanguageFromCreateFunction(createFuncStmt postgresql.ICreatefunctionstmtContext, funcName string) (languageType, error) {
+// nolint:unused
+func (*querySpanExtractor) extractLanguageFromCreateFunction(createFuncStmt postgresql.ICreatefunctionstmtContext, funcName string) (languageType, error) {
 	// Default language is SQL if not specified
 	language := languageTypeSQL
 
@@ -807,7 +1005,8 @@ func (q *querySpanExtractor) extractLanguageFromCreateFunction(createFuncStmt po
 
 // extractAsBodyFromCreateFunction extracts the AS body (function definition) from a CREATE FUNCTION statement.
 // Returns the function body SQL/PL/pgSQL code with quotes removed and escaped quotes unescaped.
-func (q *querySpanExtractor) extractAsBodyFromCreateFunction(createFuncStmt postgresql.ICreatefunctionstmtContext, funcName string) (string, error) {
+// nolint:unused
+func (*querySpanExtractor) extractAsBodyFromCreateFunction(createFuncStmt postgresql.ICreatefunctionstmtContext, funcName string) (string, error) {
 	createOptList := createFuncStmt.Createfunc_opt_list()
 	if createOptList == nil {
 		return "", errors.Errorf("no function options found for function: %s", funcName)
@@ -977,6 +1176,82 @@ func unescapeUnicodeEscapeString(s string) string {
 	result = strings.ReplaceAll(result, "''", "'")
 	// TODO: Add proper unicode escape handling if needed
 	return result
+}
+
+// extractParameterNamesFromCreateFunction extracts OUT/TABLE parameter names from CREATE FUNCTION.
+// Returns column names from OUT parameters and RETURNS TABLE columns.
+// nolint:unused,unparam
+func (q *querySpanExtractor) extractParameterNamesFromCreateFunction(createFuncStmt postgresql.ICreatefunctionstmtContext, _ string) ([]string, error) {
+	var columnNames []string
+
+	// Extract OUT parameters from func_args_with_defaults
+	funcArgs := createFuncStmt.Func_args_with_defaults()
+	if funcArgs != nil && funcArgs.Func_args_with_defaults_list() != nil {
+		for _, argWithDefault := range funcArgs.Func_args_with_defaults_list().AllFunc_arg_with_default() {
+			if argWithDefault == nil {
+				continue
+			}
+			funcArg := argWithDefault.Func_arg()
+			if funcArg == nil {
+				continue
+			}
+
+			// Check if this is an OUT or INOUT parameter
+			argClass := funcArg.Arg_class()
+			if argClass == nil {
+				continue
+			}
+
+			// Check for OUT_P (OUT mode) or INOUT
+			if argClass.OUT_P() == nil && argClass.INOUT() == nil {
+				continue
+			}
+
+			// Extract parameter name
+			// func_arg can be: arg_class param_name? func_type | param_name arg_class? func_type | func_type
+			var paramName string
+			if funcArg.Param_name() != nil {
+				paramName = q.extractParamName(funcArg.Param_name())
+			}
+
+			// If OUT parameter has a name, add it to column names
+			if paramName != "" {
+				columnNames = append(columnNames, paramName)
+			}
+		}
+	}
+
+	// Extract TABLE columns from RETURNS TABLE clause
+	if createFuncStmt.TABLE() != nil && createFuncStmt.Table_func_column_list() != nil {
+		for _, tableCol := range createFuncStmt.Table_func_column_list().AllTable_func_column() {
+			if tableCol == nil || tableCol.Param_name() == nil {
+				continue
+			}
+			paramName := q.extractParamName(tableCol.Param_name())
+			if paramName != "" {
+				columnNames = append(columnNames, paramName)
+			}
+		}
+	}
+
+	return columnNames, nil
+}
+
+// extractParamName extracts the parameter name from param_name context.
+// param_name can be: type_function_name | builtin_function_name | LEFT | RIGHT
+// nolint:unused
+func (*querySpanExtractor) extractParamName(paramNameCtx postgresql.IParam_nameContext) string {
+	if paramNameCtx == nil {
+		return ""
+	}
+
+	// Handle type_function_name (most common case)
+	if paramNameCtx.Type_function_name() != nil {
+		return normalizePostgreSQLTypeFunctionName(paramNameCtx.Type_function_name())
+	}
+
+	// Handle builtin_function_name, LEFT, RIGHT
+	return strings.ToLower(paramNameCtx.GetText())
 }
 
 func (q *querySpanExtractor) getColumnsForFunction(name, definition string) ([]base.QuerySpanResult, error) {
