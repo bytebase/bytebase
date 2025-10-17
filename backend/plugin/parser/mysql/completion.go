@@ -1233,10 +1233,9 @@ func skipHeadingSQLs(statement string, caretLine int, caretOffset int) (string, 
 		return statement, caretLine, caretOffset
 	}
 
-	caretLine-- // Convert to 0-based.
-
 	start := 0
 	for i, sql := range list {
+		// sql.End uses 1-based line and column
 		sqlEndLine := int(sql.End.GetLine())
 		sqlEndColumn := int(sql.End.GetColumn())
 		if sqlEndLine > caretLine || (sqlEndLine == caretLine && sqlEndColumn >= caretOffset) {
@@ -1247,11 +1246,11 @@ func skipHeadingSQLs(statement string, caretLine int, caretOffset int) (string, 
 			}
 			previousSQLEndLine := int(list[i-1].End.GetLine())
 			previousSQLEndColumn := int(list[i-1].End.GetColumn())
-			newCaretLine = caretLine - previousSQLEndLine + 1 // Convert to 1-based.
+			newCaretLine = caretLine - previousSQLEndLine + 1
 			if caretLine == previousSQLEndLine {
 				// The caret is in the same line as the last line of the previous SQL statement.
 				// We need to adjust the caret offset.
-				newCaretOffset = caretOffset - previousSQLEndColumn - 1 // Convert to 0-based.
+				newCaretOffset = caretOffset - previousSQLEndColumn
 			}
 			break
 		}
