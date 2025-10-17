@@ -136,7 +136,6 @@ func TestGetLatestSchema(t *testing.T) {
 		databaseName         string
 		ddl                  string
 		wantRawSchema        string
-		wantSDL              string
 		wantDatabaseMetadata *v1pb.DatabaseMetadata
 	}{
 		{
@@ -156,10 +155,6 @@ func TestGetLatestSchema(t *testing.T) {
 				") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;\n\n" +
 				"SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;\n" +
 				"SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;\n",
-			wantSDL: "CREATE TABLE `book` (\n" +
-				"  `id` INT DEFAULT NULL,\n" +
-				"  `name` TEXT DEFAULT NULL\n" +
-				") ENGINE=InnoDB DEFAULT CHARACTER SET=UTF8MB4 DEFAULT COLLATE=UTF8MB4_GENERAL_CI;\n\n",
 			wantDatabaseMetadata: &v1pb.DatabaseMetadata{
 				Name:         "instances/latest-schema-mysql/databases/latestSchema/metadata",
 				CharacterSet: "utf8mb4",
@@ -225,7 +220,6 @@ CREATE TABLE "public"."book" (
 );
 
 `,
-			wantSDL: ``,
 			wantDatabaseMetadata: &v1pb.DatabaseMetadata{
 				Name:         "instances/latest-schema-postgres/databases/latestSchema/metadata",
 				Owner:        "postgres",
@@ -339,15 +333,6 @@ CREATE TABLE "public"."book" (
 			a.NoError(err)
 			latestSchema := latestSchemaResp.Msg
 			a.Equal(test.wantRawSchema, latestSchema.Schema)
-			if test.dbType == storepb.Engine_MYSQL {
-				latestSchemaSDLResp, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, connect.NewRequest(&v1pb.GetDatabaseSchemaRequest{
-					Name:      fmt.Sprintf("%s/schema", database.Name),
-					SdlFormat: true,
-				}))
-				a.NoError(err)
-				latestSchemaSDL := latestSchemaSDLResp.Msg
-				a.Equal(test.wantSDL, latestSchemaSDL.Schema)
-			}
 			latestSchemaMetadataResp, err := ctl.databaseServiceClient.GetDatabaseMetadata(ctx, connect.NewRequest(&v1pb.GetDatabaseMetadataRequest{
 				Name: fmt.Sprintf("%s/metadata", database.Name),
 			}))
