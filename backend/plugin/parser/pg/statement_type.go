@@ -6,6 +6,14 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast"
 )
 
+// StatementTypeWithPosition contains statement type and its position information.
+type StatementTypeWithPosition struct {
+	Type string
+	// Line is the one-based line number where the statement ends.
+	Line int
+	Text string
+}
+
 func GetStatementTypes(asts any) ([]string, error) {
 	nodes, ok := asts.([]ast.Node)
 	if !ok {
@@ -21,6 +29,25 @@ func GetStatementTypes(asts any) ([]string, error) {
 		sqlTypes = append(sqlTypes, sqlType)
 	}
 	return sqlTypes, nil
+}
+
+// GetStatementTypesWithPositions returns statement types with position information.
+// The line numbers are one-based.
+func GetStatementTypesWithPositions(asts any) ([]StatementTypeWithPosition, error) {
+	nodes, ok := asts.([]ast.Node)
+	if !ok {
+		return nil, errors.Errorf("invalid ast type %T", asts)
+	}
+	var results []StatementTypeWithPosition
+	for _, node := range nodes {
+		stmtType := getStatementType(node)
+		results = append(results, StatementTypeWithPosition{
+			Type: stmtType,
+			Line: node.LastLine(),
+			Text: node.Text(),
+		})
+	}
+	return results, nil
 }
 
 func getStatementType(node ast.Node) string {
