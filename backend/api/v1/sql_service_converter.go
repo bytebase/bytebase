@@ -1,8 +1,16 @@
 package v1
 
 import (
+	"context"
+	"fmt"
+
+	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 func convertChangeType(t v1pb.CheckRequest_ChangeType) storepb.PlanCheckRunConfig_ChangeDatabaseType {
@@ -42,4 +50,34 @@ func convertAdviceStatus(status storepb.Advice_Status) v1pb.Advice_Level {
 	default:
 		return v1pb.Advice_ADVICE_LEVEL_UNSPECIFIED
 	}
+}
+
+func (s *SQLService) convertToV1QueryHistory(ctx context.Context, history *store.QueryHistoryMessage) (*v1pb.QueryHistory, error) {
+	user, err := s.store.GetUserByID(ctx, history.CreatorUID)
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		return nil, errors.Errorf("cannot found user with id %d", history.CreatorUID)
+	}
+
+	historyType := v1pb.QueryHistory_TYPE_UNSPECIFIED
+	switch history.Type {
+	case store.QueryHistoryTypeExport:
+		historyType = v1pb.QueryHistory_EXPORT
+	case store.QueryHistoryTypeQuery:
+		historyType = v1pb.QueryHistory_QUERY
+	default:
+	}
+
+	return &v1pb.QueryHistory{
+		Name:       fmt.Sprintf("queryHistories/%d", history.UID),
+		Statement:  history.Statement,
+		Error:      history.Payload.Error,
+		Database:   history.Database,
+		Creator:    common.FormatUserEmail(user.Email),
+		CreateTime: timestamppb.New(history.CreatedAt),
+		Duration:   history.Payload.Duration,
+		Type:       historyType,
+	}, nil
 }
