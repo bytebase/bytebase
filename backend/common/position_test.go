@@ -9,40 +9,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
-func TestConvertPositionToANTLRPosition(t *testing.T) {
-	testCases := []struct {
-		description string
-		text        string
-		position    *storepb.Position
-		want        *ANTLRPosition
-	}{
-		{
-			description: "empty text",
-			text:        "",
-			position:    &storepb.Position{Line: 0, Column: 0},
-			want:        &ANTLRPosition{Line: 1, Column: 0},
-		},
-		{
-			description: "ascii",
-			text:        "hello, world",
-			position:    &storepb.Position{Line: 0, Column: 6},
-			want:        &ANTLRPosition{Line: 1, Column: 6},
-		},
-		{
-			description: "multi-bytes characters",
-			text:        "你好\n世界",
-			position:    &storepb.Position{Line: 1, Column: 3},
-			want:        &ANTLRPosition{Line: 2, Column: 1},
-		},
-	}
-
-	a := require.New(t)
-	for _, tc := range testCases {
-		got := ConvertPositionToANTLRPosition(tc.position, tc.text)
-		a.Equalf(tc.want, got, "Test case: %s", tc.description)
-	}
-}
-
 func TestConvertANTLRPositionToPosition(t *testing.T) {
 	testCases := []struct {
 		description   string
