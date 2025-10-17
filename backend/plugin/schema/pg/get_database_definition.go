@@ -2900,13 +2900,10 @@ func writeCheckConstraintSDL(out io.Writer, check *storepb.CheckConstraintMetada
 	if _, err := io.WriteString(out, check.Name); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(out, `" CHECK (`); err != nil {
+	if _, err := io.WriteString(out, `" CHECK `); err != nil {
 		return err
 	}
 	if _, err := io.WriteString(out, check.Expression); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, ")"); err != nil {
 		return err
 	}
 	return nil

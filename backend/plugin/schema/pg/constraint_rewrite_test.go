@@ -38,7 +38,7 @@ func TestConstraintRewriteOperations(t *testing.T) {
 					{Name: "age", Type: "INTEGER", Nullable: true},
 				},
 				CheckConstraints: []*storepb.CheckConstraintMetadata{
-					{Name: "chk_age_positive", Expression: "age > 0"},
+					{Name: "chk_age_positive", Expression: "(age > 0)"},
 				},
 			},
 			previousTable: &storepb.TableMetadata{
@@ -80,7 +80,7 @@ func TestConstraintRewriteOperations(t *testing.T) {
 					{Name: "age", Type: "INTEGER", Nullable: true},
 				},
 				CheckConstraints: []*storepb.CheckConstraintMetadata{
-					{Name: "chk_age_positive", Expression: "age > 0"},
+					{Name: "chk_age_positive", Expression: "(age > 0)"},
 				},
 			},
 			expectedSDL: `CREATE TABLE test (
@@ -148,7 +148,7 @@ func TestConstraintRewriteOperations(t *testing.T) {
 					{Name: "category_id", Type: "INTEGER", Nullable: true},
 				},
 				CheckConstraints: []*storepb.CheckConstraintMetadata{
-					{Name: "chk_price_positive", Expression: "price > 0"},
+					{Name: "chk_price_positive", Expression: "(price > 0)"},
 				},
 				ForeignKeys: []*storepb.ForeignKeyMetadata{
 					{
@@ -725,7 +725,7 @@ func TestConstraintModificationOperations(t *testing.T) {
 					{Name: "age", Type: "INTEGER", Nullable: true},
 				},
 				CheckConstraints: []*storepb.CheckConstraintMetadata{
-					{Name: "chk_age_positive", Expression: "age >= 0"},
+					{Name: "chk_age_positive", Expression: "(age >= 0)"},
 				},
 			},
 			previousTable: &storepb.TableMetadata{
@@ -735,7 +735,7 @@ func TestConstraintModificationOperations(t *testing.T) {
 					{Name: "age", Type: "INTEGER", Nullable: true},
 				},
 				CheckConstraints: []*storepb.CheckConstraintMetadata{
-					{Name: "chk_age_positive", Expression: "age > 0"},
+					{Name: "chk_age_positive", Expression: "(age > 0)"},
 				},
 			},
 			description: "Should modify check constraint expression",

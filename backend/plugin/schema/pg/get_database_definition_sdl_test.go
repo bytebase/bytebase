@@ -1,12 +1,14 @@
 package pg
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
@@ -144,7 +146,7 @@ func TestGetDatabaseDefinitionSDLFormat(t *testing.T) {
 								CheckConstraints: []*storepb.CheckConstraintMetadata{
 									{
 										Name:       "users_age_check",
-										Expression: "age >= 0",
+										Expression: "(age >= 0)",
 									},
 								},
 							},
@@ -1066,4 +1068,250 @@ $$`,
 
 	t.Logf("Normal format result: %q", resultNormal)
 	t.Logf("SDL format result: %q", resultSDL)
+}
+
+// TestCheckConstraintNotValidFormat tests that CHECK constraints with NOT VALID
+// are formatted correctly without extra parentheses around the expression
+func TestCheckConstraintNotValidFormat(t *testing.T) {
+	tests := []struct {
+		name     string
+		metadata *storepb.DatabaseSchemaMetadata
+		expected string
+	}{
+		{
+			name: "Check constraint with NOT VALID",
+			metadata: &storepb.DatabaseSchemaMetadata{
+				Schemas: []*storepb.SchemaMetadata{
+					{
+						Name: "public",
+						Tables: []*storepb.TableMetadata{
+							{
+								Name: "namespace_settings",
+								Columns: []*storepb.ColumnMetadata{
+									{
+										Name:     "namespace_id",
+										Type:     "bigint",
+										Nullable: false,
+									},
+									{
+										Name:     "default_branch_protection_defaults",
+										Type:     "jsonb",
+										Nullable: true,
+									},
+								},
+								Indexes: []*storepb.IndexMetadata{
+									{
+										Name:        "namespace_settings_pkey",
+										Expressions: []string{"namespace_id"},
+										Primary:     true,
+									},
+								},
+								CheckConstraints: []*storepb.CheckConstraintMetadata{
+									{
+										Name:       "default_branch_protection_defaults_size_constraint",
+										Expression: "(octet_length(default_branch_protection_defaults::text) <= 1024) NOT VALID",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: `CREATE TABLE "public"."namespace_settings" (
+    "namespace_id" bigint NOT NULL,
+    "default_branch_protection_defaults" jsonb,
+    CONSTRAINT "namespace_settings_pkey" PRIMARY KEY (namespace_id),
+    CONSTRAINT "default_branch_protection_defaults_size_constraint" CHECK (octet_length(default_branch_protection_defaults::text) <= 1024) NOT VALID
+);
+
+`,
+		},
+		{
+			name: "Multiple check constraints with and without NOT VALID",
+			metadata: &storepb.DatabaseSchemaMetadata{
+				Schemas: []*storepb.SchemaMetadata{
+					{
+						Name: "test",
+						Tables: []*storepb.TableMetadata{
+							{
+								Name: "table1",
+								Columns: []*storepb.ColumnMetadata{
+									{
+										Name:     "id",
+										Type:     "serial",
+										Nullable: false,
+									},
+									{
+										Name:     "data",
+										Type:     "jsonb",
+										Nullable: true,
+									},
+									{
+										Name:     "age",
+										Type:     "integer",
+										Nullable: true,
+									},
+								},
+								Indexes: []*storepb.IndexMetadata{
+									{
+										Name:        "table1_pkey",
+										Expressions: []string{"id"},
+										Primary:     true,
+									},
+								},
+								CheckConstraints: []*storepb.CheckConstraintMetadata{
+									{
+										Name:       "table1_data_size_check",
+										Expression: "(octet_length(data::text) <= 1024) NOT VALID",
+									},
+									{
+										Name:       "table1_age_check",
+										Expression: "(age >= 18)",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: `CREATE SCHEMA IF NOT EXISTS "test";
+
+CREATE TABLE "test"."table1" (
+    "id" serial NOT NULL,
+    "data" jsonb,
+    "age" integer,
+    CONSTRAINT "table1_pkey" PRIMARY KEY (id),
+    CONSTRAINT "table1_data_size_check" CHECK (octet_length(data::text) <= 1024) NOT VALID,
+    CONSTRAINT "table1_age_check" CHECK (age >= 18)
+);
+
+`,
+		},
+		{
+			name: "Regular check constraint without NOT VALID",
+			metadata: &storepb.DatabaseSchemaMetadata{
+				Schemas: []*storepb.SchemaMetadata{
+					{
+						Name: "public",
+						Tables: []*storepb.TableMetadata{
+							{
+								Name: "users",
+								Columns: []*storepb.ColumnMetadata{
+									{
+										Name:     "id",
+										Type:     "serial",
+										Nullable: false,
+									},
+									{
+										Name:     "age",
+										Type:     "integer",
+										Nullable: true,
+									},
+								},
+								Indexes: []*storepb.IndexMetadata{
+									{
+										Name:        "users_pkey",
+										Expressions: []string{"id"},
+										Primary:     true,
+									},
+								},
+								CheckConstraints: []*storepb.CheckConstraintMetadata{
+									{
+										Name:       "users_age_check",
+										Expression: "(age >= 0)",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: `CREATE TABLE "public"."users" (
+    "id" serial NOT NULL,
+    "age" integer,
+    CONSTRAINT "users_pkey" PRIMARY KEY (id),
+    CONSTRAINT "users_age_check" CHECK (age >= 0)
+);
+
+`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := schema.GetDefinitionContext{
+				SDLFormat: true,
+			}
+
+			result, err := GetDatabaseDefinition(ctx, tt.metadata)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, result)
+
+			// Additional validation: ensure NOT VALID (if present) is outside parentheses
+			if strings.Contains(tt.expected, "NOT VALID") {
+				// Check that we don't have the incorrect format: CHECK (...) NOT VALID)
+				assert.NotContains(t, result, ") NOT VALID)", "NOT VALID should not be inside closing parenthesis")
+				// Check that we have the correct format: CHECK (...) NOT VALID
+				assert.Contains(t, result, ") NOT VALID", "NOT VALID should be after CHECK expression parenthesis")
+			}
+
+			// Validate that the generated SQL can be parsed without errors using ANTLR parser
+			_, err = pgparser.ParsePostgreSQL(result)
+			require.NoError(t, err, "Generated SQL should be parseable by PostgreSQL parser")
+		})
+	}
+}
+
+// TestCheckConstraintNotValidFormatNormalMode tests that CHECK constraints with NOT VALID
+// are formatted correctly in normal (non-SDL) mode
+func TestCheckConstraintNotValidFormatNormalMode(t *testing.T) {
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "namespace_settings",
+						Columns: []*storepb.ColumnMetadata{
+							{
+								Name:     "namespace_id",
+								Type:     "bigint",
+								Nullable: false,
+							},
+							{
+								Name:     "default_branch_protection_defaults",
+								Type:     "jsonb",
+								Nullable: true,
+							},
+						},
+						CheckConstraints: []*storepb.CheckConstraintMetadata{
+							{
+								Name:       "default_branch_protection_defaults_size_constraint",
+								Expression: "(octet_length(default_branch_protection_defaults::text) <= 1024) NOT VALID",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Test normal format (SDLFormat: false)
+	ctx := schema.GetDefinitionContext{
+		SDLFormat: false,
+	}
+
+	result, err := GetDatabaseDefinition(ctx, metadata)
+	require.NoError(t, err)
+
+	// Verify the CHECK constraint is output correctly in the CREATE TABLE statement
+	assert.Contains(t, result, `CONSTRAINT "default_branch_protection_defaults_size_constraint" CHECK (octet_length(default_branch_protection_defaults::text) <= 1024) NOT VALID`)
+
+	// Additional validation: ensure NOT VALID is outside parentheses (not inside extra parentheses)
+	assert.NotContains(t, result, ") NOT VALID)", "NOT VALID should not be inside closing parenthesis")
+	assert.Contains(t, result, ") NOT VALID", "NOT VALID should be after CHECK expression parenthesis")
+
+	// Validate that the generated SQL can be parsed without errors using ANTLR parser
+	_, err = pgparser.ParsePostgreSQL(result)
+	require.NoError(t, err, "Generated SQL should be parseable by PostgreSQL parser")
 }
