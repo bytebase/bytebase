@@ -13,8 +13,6 @@ import (
 // SchemaTransformer is the interface for schema SDL format transformer.
 type SchemaTransformer interface {
 	Transform(schema string) (string, error)
-	Check(schema string) (int, error)
-	Normalize(schema string, standard string) (string, error)
 }
 
 var (
@@ -46,26 +44,4 @@ func SchemaTransform(engineType storepb.Engine, schema string) (string, error) {
 		return "", errors.Errorf("engine: unknown engine type %v", engineType)
 	}
 	return p.Transform(schema)
-}
-
-// CheckFormat checks the schema format.
-func CheckFormat(engineType storepb.Engine, schema string) (int, error) {
-	transformMu.RLock()
-	p, ok := transformers[engineType]
-	transformMu.RUnlock()
-	if !ok {
-		return 0, errors.Errorf("engine: unknown engine type %v", engineType)
-	}
-	return p.Check(schema)
-}
-
-// Normalize normalizes the schema format. The schema and standard should be SDL format.
-func Normalize(engineType storepb.Engine, schema string, standard string) (string, error) {
-	transformMu.RLock()
-	p, ok := transformers[engineType]
-	transformMu.RUnlock()
-	if !ok {
-		return "", errors.Errorf("engine: unknown engine type %v", engineType)
-	}
-	return p.Normalize(schema, standard)
 }
