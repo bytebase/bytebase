@@ -44,8 +44,6 @@ const (
 	SQLServiceExportProcedure = "/bytebase.v1.SQLService/Export"
 	// SQLServiceCheckProcedure is the fully-qualified name of the SQLService's Check RPC.
 	SQLServiceCheckProcedure = "/bytebase.v1.SQLService/Check"
-	// SQLServicePrettyProcedure is the fully-qualified name of the SQLService's Pretty RPC.
-	SQLServicePrettyProcedure = "/bytebase.v1.SQLService/Pretty"
 	// SQLServiceDiffMetadataProcedure is the fully-qualified name of the SQLService's DiffMetadata RPC.
 	SQLServiceDiffMetadataProcedure = "/bytebase.v1.SQLService/DiffMetadata"
 	// SQLServiceAICompletionProcedure is the fully-qualified name of the SQLService's AICompletion RPC.
@@ -69,9 +67,6 @@ type SQLServiceClient interface {
 	// Validates SQL statements against review rules.
 	// Permissions required: bb.databases.check
 	Check(context.Context, *connect.Request[v1.CheckRequest]) (*connect.Response[v1.CheckResponse], error)
-	// Formats and normalizes SQL schema definitions.
-	// Permissions required: None
-	Pretty(context.Context, *connect.Request[v1.PrettyRequest]) (*connect.Response[v1.PrettyResponse], error)
 	// Computes schema differences between two database metadata.
 	// Permissions required: None
 	DiffMetadata(context.Context, *connect.Request[v1.DiffMetadataRequest]) (*connect.Response[v1.DiffMetadataResponse], error)
@@ -121,12 +116,6 @@ func NewSQLServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...
 			connect.WithSchema(sQLServiceMethods.ByName("Check")),
 			connect.WithClientOptions(opts...),
 		),
-		pretty: connect.NewClient[v1.PrettyRequest, v1.PrettyResponse](
-			httpClient,
-			baseURL+SQLServicePrettyProcedure,
-			connect.WithSchema(sQLServiceMethods.ByName("Pretty")),
-			connect.WithClientOptions(opts...),
-		),
 		diffMetadata: connect.NewClient[v1.DiffMetadataRequest, v1.DiffMetadataResponse](
 			httpClient,
 			baseURL+SQLServiceDiffMetadataProcedure,
@@ -149,7 +138,6 @@ type sQLServiceClient struct {
 	searchQueryHistories *connect.Client[v1.SearchQueryHistoriesRequest, v1.SearchQueryHistoriesResponse]
 	export               *connect.Client[v1.ExportRequest, v1.ExportResponse]
 	check                *connect.Client[v1.CheckRequest, v1.CheckResponse]
-	pretty               *connect.Client[v1.PrettyRequest, v1.PrettyResponse]
 	diffMetadata         *connect.Client[v1.DiffMetadataRequest, v1.DiffMetadataResponse]
 	aICompletion         *connect.Client[v1.AICompletionRequest, v1.AICompletionResponse]
 }
@@ -179,11 +167,6 @@ func (c *sQLServiceClient) Check(ctx context.Context, req *connect.Request[v1.Ch
 	return c.check.CallUnary(ctx, req)
 }
 
-// Pretty calls bytebase.v1.SQLService.Pretty.
-func (c *sQLServiceClient) Pretty(ctx context.Context, req *connect.Request[v1.PrettyRequest]) (*connect.Response[v1.PrettyResponse], error) {
-	return c.pretty.CallUnary(ctx, req)
-}
-
 // DiffMetadata calls bytebase.v1.SQLService.DiffMetadata.
 func (c *sQLServiceClient) DiffMetadata(ctx context.Context, req *connect.Request[v1.DiffMetadataRequest]) (*connect.Response[v1.DiffMetadataResponse], error) {
 	return c.diffMetadata.CallUnary(ctx, req)
@@ -211,9 +194,6 @@ type SQLServiceHandler interface {
 	// Validates SQL statements against review rules.
 	// Permissions required: bb.databases.check
 	Check(context.Context, *connect.Request[v1.CheckRequest]) (*connect.Response[v1.CheckResponse], error)
-	// Formats and normalizes SQL schema definitions.
-	// Permissions required: None
-	Pretty(context.Context, *connect.Request[v1.PrettyRequest]) (*connect.Response[v1.PrettyResponse], error)
 	// Computes schema differences between two database metadata.
 	// Permissions required: None
 	DiffMetadata(context.Context, *connect.Request[v1.DiffMetadataRequest]) (*connect.Response[v1.DiffMetadataResponse], error)
@@ -259,12 +239,6 @@ func NewSQLServiceHandler(svc SQLServiceHandler, opts ...connect.HandlerOption) 
 		connect.WithSchema(sQLServiceMethods.ByName("Check")),
 		connect.WithHandlerOptions(opts...),
 	)
-	sQLServicePrettyHandler := connect.NewUnaryHandler(
-		SQLServicePrettyProcedure,
-		svc.Pretty,
-		connect.WithSchema(sQLServiceMethods.ByName("Pretty")),
-		connect.WithHandlerOptions(opts...),
-	)
 	sQLServiceDiffMetadataHandler := connect.NewUnaryHandler(
 		SQLServiceDiffMetadataProcedure,
 		svc.DiffMetadata,
@@ -289,8 +263,6 @@ func NewSQLServiceHandler(svc SQLServiceHandler, opts ...connect.HandlerOption) 
 			sQLServiceExportHandler.ServeHTTP(w, r)
 		case SQLServiceCheckProcedure:
 			sQLServiceCheckHandler.ServeHTTP(w, r)
-		case SQLServicePrettyProcedure:
-			sQLServicePrettyHandler.ServeHTTP(w, r)
 		case SQLServiceDiffMetadataProcedure:
 			sQLServiceDiffMetadataHandler.ServeHTTP(w, r)
 		case SQLServiceAICompletionProcedure:
@@ -322,10 +294,6 @@ func (UnimplementedSQLServiceHandler) Export(context.Context, *connect.Request[v
 
 func (UnimplementedSQLServiceHandler) Check(context.Context, *connect.Request[v1.CheckRequest]) (*connect.Response[v1.CheckResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SQLService.Check is not implemented"))
-}
-
-func (UnimplementedSQLServiceHandler) Pretty(context.Context, *connect.Request[v1.PrettyRequest]) (*connect.Response[v1.PrettyResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SQLService.Pretty is not implemented"))
 }
 
 func (UnimplementedSQLServiceHandler) DiffMetadata(context.Context, *connect.Request[v1.DiffMetadataRequest]) (*connect.Response[v1.DiffMetadataResponse], error) {

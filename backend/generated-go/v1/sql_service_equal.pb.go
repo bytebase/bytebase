@@ -475,41 +475,6 @@ func (x *ExportResponse) Equal(y *ExportResponse) bool {
 	return true
 }
 
-func (x *PrettyRequest) Equal(y *PrettyRequest) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Engine != y.Engine {
-		return false
-	}
-	if x.CurrentSchema != y.CurrentSchema {
-		return false
-	}
-	if x.ExpectedSchema != y.ExpectedSchema {
-		return false
-	}
-	return true
-}
-
-func (x *PrettyResponse) Equal(y *PrettyResponse) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.CurrentSchema != y.CurrentSchema {
-		return false
-	}
-	if x.ExpectedSchema != y.ExpectedSchema {
-		return false
-	}
-	return true
-}
-
 func (x *CheckRequest) Equal(y *CheckRequest) bool {
 	if x == y {
 		return true

@@ -36,7 +36,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/transform"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
@@ -1848,32 +1847,6 @@ func sanitizeCommentForSchemaMetadata(dbSchema *storepb.DatabaseSchemaMetadata, 
 			}
 		}
 	}
-}
-
-// Pretty returns pretty format SDL.
-func (*SQLService) Pretty(_ context.Context, req *connect.Request[v1pb.PrettyRequest]) (*connect.Response[v1pb.PrettyResponse], error) {
-	request := req.Msg
-	engine := convertEngine(request.Engine)
-	if _, err := transform.CheckFormat(engine, request.ExpectedSchema); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("User SDL is not SDL format: %s", err.Error()))
-	}
-	if _, err := transform.CheckFormat(engine, request.CurrentSchema); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("Dumped SDL is not SDL format: %s", err.Error()))
-	}
-
-	prettyExpectedSchema, err := transform.SchemaTransform(engine, request.ExpectedSchema)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to transform user SDL: %s", err.Error()))
-	}
-	prettyCurrentSchema, err := transform.Normalize(engine, request.CurrentSchema, prettyExpectedSchema)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to normalize dumped SDL: %s", err.Error()))
-	}
-
-	return connect.NewResponse(&v1pb.PrettyResponse{
-		CurrentSchema:  prettyCurrentSchema,
-		ExpectedSchema: prettyExpectedSchema,
-	}), nil
 }
 
 // GetQueriableDataSource try to returns the RO data source, and will returns the admin data source if not exist the RO data source.
