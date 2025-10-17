@@ -63,6 +63,7 @@ const (
 	StatementNoAlgorithmOption                Code = 236
 	StatementNoLockOption                     Code = 237
 	StatementObjectOwnerCheck                 Code = 238
+	StatementDisallowedInSDL                  Code = 239
 
 	// 301 ～ 399 naming error code
 	// 301 table naming advisor error code.

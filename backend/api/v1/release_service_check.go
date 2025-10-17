@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -379,7 +380,7 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 			}
 		}
 
-		// Perform syntax check for declarative files
+		// Perform syntax check and statement type check for declarative files
 		for _, file := range files {
 			checkResult := &v1pb.CheckReleaseResponse_CheckResult{
 				File:   file.Path,
@@ -391,15 +392,57 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 
 			// Check if any syntax error in the statement.
 			if common.EngineSupportSyntaxCheck(engine) {
-				_, syntaxAdvices := s.sheetManager.GetASTsForChecks(engine, statement)
+				asts, syntaxAdvices := s.sheetManager.GetASTsForChecks(engine, statement)
 				if len(syntaxAdvices) > 0 {
 					for _, advice := range syntaxAdvices {
 						checkResult.Advices = append(checkResult.Advices, convertToV1Advice(advice))
 					}
+				} else {
+					// Only check statement types if there are no syntax errors
+					statementsWithPos, err := getStatementTypesWithPositionsForEngine(engine, asts)
+					if err != nil {
+						checkResult.Advices = append(checkResult.Advices, &v1pb.Advice{
+							Status:  v1pb.Advice_ERROR,
+							Code:    advisor.Internal.Int32(),
+							Title:   "Failed to parse statement types",
+							Content: err.Error(),
+						})
+					} else {
+						// Check all statement types against whitelist and collect disallowed ones with positions
+						for _, stmt := range statementsWithPos {
+							if !isAllowedInSDL(stmt.Type) {
+								// Create a separate advice for each disallowed statement with position
+								advice := &v1pb.Advice{
+									Status: v1pb.Advice_ERROR,
+									Code:   advisor.StatementDisallowedInSDL.Int32(),
+									Title:  "Disallowed statement in SDL file",
+									Content: fmt.Sprintf(
+										"Statement type '%s' is not allowed in SDL files.\n\n"+
+											"SDL files should only contain CREATE and COMMENT statements to declare the desired schema.\n\n"+
+											"Common fixes:\n"+
+											"- To modify an object: Update its CREATE statement in the SDL file\n"+
+											"- To rename an object: Change the name in its CREATE statement\n"+
+											"- To remove an object: Delete its CREATE statement from the SDL file\n"+
+											"- Do not use ALTER, RENAME, DROP, or DML statements (INSERT/UPDATE/DELETE)\n\n"+
+											"Statement text:\n%s",
+										stmt.Type,
+										stmt.Text,
+									),
+								}
+								// Set position information if available
+								if stmt.Line > 0 {
+									advice.StartPosition = &v1pb.Position{
+										Line: int32(stmt.Line),
+									}
+								}
+								checkResult.Advices = append(checkResult.Advices, advice)
+							}
+						}
+					}
 				}
 			}
 
-			// Only add to results if there are syntax errors
+			// Only add to results if there are advices
 			if len(checkResult.Advices) > 0 {
 				results = append(results, checkResult)
 				for _, advice := range checkResult.Advices {
@@ -546,5 +589,60 @@ func convertRiskLevel(riskLevel storepb.RiskLevel) (v1pb.RiskLevel, error) {
 		return v1pb.RiskLevel_HIGH, nil
 	default:
 		return v1pb.RiskLevel_RISK_LEVEL_UNSPECIFIED, errors.Errorf("unexpected risk level %v", riskLevel)
+	}
+}
+
+// allowedSDLStatementTypes defines the whitelist of statement types allowed in SDL files.
+// SDL files should only contain CREATE and COMMENT statements to declare the desired schema.
+var allowedSDLStatementTypes = map[string]bool{
+	// CREATE statements - declare new objects
+	"CREATE_TABLE":     true,
+	"CREATE_INDEX":     true,
+	"CREATE_VIEW":      true,
+	"CREATE_SEQUENCE":  true,
+	"CREATE_FUNCTION":  true,
+	"CREATE_PROCEDURE": true,
+	"CREATE_SCHEMA":    true,
+
+	// COMMENT - metadata annotations
+	"COMMENT": true,
+}
+
+// isAllowedInSDL checks if a statement type is allowed in SDL files.
+func isAllowedInSDL(stmtType string) bool {
+	return allowedSDLStatementTypes[stmtType]
+}
+
+// statementTypeWithPosition contains statement type and its position information.
+type statementTypeWithPosition struct {
+	Type string
+	// Line is the one-based line number where the statement ends.
+	Line int
+	Text string
+}
+
+// getStatementTypesWithPositionsForEngine returns statement types with position info for the given engine and ASTs.
+// The line numbers are one-based.
+// Currently only PostgreSQL is supported.
+func getStatementTypesWithPositionsForEngine(engine storepb.Engine, asts any) ([]statementTypeWithPosition, error) {
+	switch engine {
+	case storepb.Engine_POSTGRES, storepb.Engine_COCKROACHDB, storepb.Engine_REDSHIFT:
+		pgStmts, err := pg.GetStatementTypesWithPositions(asts)
+		if err != nil {
+			return nil, err
+		}
+		// Convert pg.StatementTypeWithPosition to local statementTypeWithPosition
+		result := make([]statementTypeWithPosition, len(pgStmts))
+		for i, stmt := range pgStmts {
+			result[i] = statementTypeWithPosition{
+				Type: stmt.Type,
+				Line: stmt.Line,
+				Text: stmt.Text,
+			}
+		}
+		return result, nil
+	default:
+		// For unsupported engines, return empty list (skip check)
+		return []statementTypeWithPosition{}, nil
 	}
 }
