@@ -9,6 +9,11 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// loadCSPHashes returns empty hashes in dev mode since frontend is served separately.
+func loadCSPHashes() []string {
+	return []string{}
+}
+
 func embedFrontend(e *echo.Echo) {
 	slog.Info("Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.")
 
