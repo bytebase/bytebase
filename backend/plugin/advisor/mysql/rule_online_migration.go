@@ -62,7 +62,7 @@ func (*OnlineMigrationAdvisor) Check(ctx context.Context, checkCtx advisor.Conte
 					Title:         title,
 					Content:       fmt.Sprintf("Needs database %q to save temporary data for online migration but it does not exist", ghostDatabaseName),
 					Code:          advisor.DatabaseNotExists.Int32(),
-					StartPosition: common.FirstLinePosition,
+					StartPosition: nil,
 				},
 			}, nil
 		}

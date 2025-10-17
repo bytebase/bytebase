@@ -47,7 +47,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 			Title:         title,
 			Content:       fmt.Sprintf("The size of the SQL statements exceeds the maximum limit of %d bytes for backup", common.MaxSheetCheckSize),
 			Code:          advisor.BuiltinPriorBackupCheck.Int32(),
-			StartPosition: common.FirstLinePosition,
+			StartPosition: nil,
 		})
 	}
 
@@ -73,7 +73,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 			Title:         title,
 			Content:       fmt.Sprintf("Need database %q to do prior backup but it does not exist", databaseName),
 			Code:          advisor.DatabaseNotExists.Int32(),
-			StartPosition: common.FirstLinePosition,
+			StartPosition: nil,
 		})
 	}
 
@@ -99,7 +99,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 					Title:         title,
 					Content:       fmt.Sprintf("Prior backup cannot handle mixed DML statements on the same table %q", key),
 					Code:          advisor.BuiltinPriorBackupCheck.Int32(),
-					StartPosition: common.FirstLinePosition,
+					StartPosition: nil,
 				})
 				break
 			}
