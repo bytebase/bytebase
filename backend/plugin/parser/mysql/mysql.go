@@ -241,7 +241,8 @@ func parseInputStream(input *antlr.InputStream, statement string) ([]*ParseResul
 			Tokens:   tokens,
 			BaseLine: s.BaseLine,
 		})
-		baseLine = int(s.End.Line)
+		// s.End.Line is 1-based, but baseLine should be 0-based
+		baseLine = int(s.End.Line) - 1
 	}
 
 	return result, nil

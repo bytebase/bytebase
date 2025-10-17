@@ -360,13 +360,29 @@ PageToken is used internally for obfuscating pagination tokens.
 <a name="bytebase-store-Position"></a>
 
 ### Position
-Position in a text expressed as one-based line and one-based column.
+Position in a text.
+Line is 0-based, Column is 1-based.
+
+Why this mixed numbering?
+- Line is 0-based to match LSP (https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#position)
+  and common programming practice (arrays/lists are 0-indexed)
+- Column is 1-based to match user expectations (text editors show &#34;column 1&#34; for the first character)
+
+Handling unknown positions:
+- If the entire position is unknown, leave this field as nil/undefined
+- If only line is known, set line and leave column as 0 (e.g., line=5, column=0)
+- If only column is known (rare), set column and leave line as 0
+Frontends should check for nil/undefined/zero values and handle them appropriately.
+
+When displaying to users, convert to 1-based: display &#34;line X&#34; as &#34;line X&#43;1&#34;.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| line | [int32](#int32) |  | Line position in a text (one-based). |
-| column | [int32](#int32) |  | Column position in a text (one-based). |
+| line | [int32](#int32) |  | Line position in a text (zero-based). First line of the text is line 0, second line is line 1, etc. |
+| column | [int32](#int32) |  | Column position in a text (one-based). Column is measured in Unicode code points (characters/runes), not bytes or grapheme clusters. First character of the line is column 1. A value of 0 indicates the column information is unknown.
+
+Examples: - &#34;SELECT * FROM t&#34; - column 8 is &#39;*&#39; - &#34;SELECT 你好 FROM t&#34; - column 8 is &#39;你&#39; (even though it&#39;s at byte offset 7) - &#34;SELECT 😀 FROM t&#34; - column 8 is &#39;😀&#39; (even though it&#39;s 4 bytes in UTF-8) |
 
 
 

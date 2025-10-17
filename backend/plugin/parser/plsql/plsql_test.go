@@ -34,7 +34,11 @@ func TestPLSQLParser(t *testing.T) {
 		},
 		{
 			statement:    "SELECT * FROM t1 WHERE c1 = ",
-			errorMessage: "Syntax error at line 0:26 \nrelated text: SELECT * FROM t1 WHERE c1 =",
+			errorMessage: "Syntax error at line 1:27 \nrelated text: SELECT * FROM t1 WHERE c1 =",
+		},
+		{
+			statement:    "SELECT 1 FROM DUAL;\n   SELEC 5 FROM DUAL;\nSELECT 6 FROM DUAL;",
+			errorMessage: "Syntax error at line 2:10 \nrelated text: SELECT 1 FROM DUAL;\n   SELEC 5",
 		},
 	}
 

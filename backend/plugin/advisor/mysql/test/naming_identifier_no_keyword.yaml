@@ -6,10 +6,10 @@
     - status: 3
       code: 201
       title: Syntax error
-      content: "Syntax error at line 1:13 \nrelated text: CREATE TABLE interval"
+      content: "Syntax error at line 1:14 \nrelated text: CREATE TABLE interval"
       startposition:
         line: 1
-        column: 13
+        column: 14
       endposition: null
 - statement: CREATE TABLE execute(id int)
   changeType: 1

@@ -98,10 +98,32 @@ enum ExportFormat {
 }
 
 // Position in a text expressed as one-based line and one-based column.
+// We use 1-based numbering to match the majority of industry standards:
+// - Monaco Editor uses 1-based (https://microsoft.github.io/monaco-editor/typedoc/interfaces/IPosition.html)
+// - GitHub Actions uses 1-based (https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-error-message)
+// - Most text editors display 1-based positions to users
+// Note: LSP uses 0-based (https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#position),
+// but we follow the canonical user-facing standards.
+//
+// Handling unknown positions:
+// - If the entire position is unknown, leave this field as nil/undefined
+// - If only line is known, set line and leave column as 0 (e.g., line=5, column=0)
+// - If only column is known (rare), set column and leave line as 0
+// Frontends should check for nil/undefined/zero values and handle them appropriately.
 message Position {
   // Line position in a text (one-based).
+  // First line of the text is line 1.
+  // A value of 0 indicates the line information is unknown.
   int32 line = 1;
   // Column position in a text (one-based).
+  // Column is measured in Unicode code points (characters/runes), not bytes or grapheme clusters.
+  // First character of the line is column 1.
+  // A value of 0 indicates the column information is unknown.
+  //
+  // Examples:
+  // - "SELECT * FROM t" - column 8 is '*'
+  // - "SELECT 你好 FROM t" - column 8 is '你' (even though it's at byte offset 7)
+  // - "SELECT 😀 FROM t" - column 8 is '😀' (even though it's 4 bytes in UTF-8)
   int32 column = 2;
 }
 

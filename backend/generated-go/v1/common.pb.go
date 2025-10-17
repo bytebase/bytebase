@@ -505,12 +505,35 @@ func (RiskLevel) EnumDescriptor() ([]byte, []int) {
 	return file_v1_common_proto_rawDescGZIP(), []int{6}
 }
 
-// Position in a text expressed as one-based line and one-based column.
+// Position in a text.
+// Line is 0-based, Column is 1-based.
+//
+// Why this mixed numbering?
+//   - Line is 0-based to match LSP (https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#position)
+//     and common programming practice (arrays/lists are 0-indexed)
+//   - Column is 1-based to match user expectations (text editors show "column 1" for the first character)
+//
+// Handling unknown positions:
+// - If the entire position is unknown, leave this field as nil/undefined
+// - If only line is known, set line and leave column as 0 (e.g., line=5, column=0)
+// - If only column is known (rare), set column and leave line as 0
+// Frontends should check for nil/undefined/zero values and handle them appropriately.
+//
+// When displaying to users, convert to 1-based: display "line X" as "line X+1".
 type Position struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Line position in a text (one-based).
+	// Line position in a text (zero-based).
+	// First line of the text is line 0, second line is line 1, etc.
 	Line int32 `protobuf:"varint,1,opt,name=line,proto3" json:"line,omitempty"`
 	// Column position in a text (one-based).
+	// Column is measured in Unicode code points (characters/runes), not bytes or grapheme clusters.
+	// First character of the line is column 1.
+	// A value of 0 indicates the column information is unknown.
+	//
+	// Examples:
+	// - "SELECT * FROM t" - column 8 is '*'
+	// - "SELECT 你好 FROM t" - column 8 is '你' (even though it's at byte offset 7)
+	// - "SELECT 😀 FROM t" - column 8 is '😀' (even though it's 4 bytes in UTF-8)
 	Column        int32 `protobuf:"varint,2,opt,name=column,proto3" json:"column,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

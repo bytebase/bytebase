@@ -20,7 +20,11 @@ func TestPostgreSQLParser(t *testing.T) {
 		},
 		{
 			statement:    "SELECT a > (select max(a) from t1) FROM",
-			errorMessage: "Syntax error at line 0:39 \nrelated text: SELECT a > (select max(a) from t1) FROM",
+			errorMessage: "Syntax error at line 1:40 \nrelated text: SELECT a > (select max(a) from t1) FROM",
+		},
+		{
+			statement:    "SELECT 1;\n   SELEC 5;\nSELECT 6;",
+			errorMessage: "Syntax error at line 2:4 \nrelated text: SELECT 1;\n   SELEC",
 		},
 	}
 
