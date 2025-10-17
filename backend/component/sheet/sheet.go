@@ -505,7 +505,7 @@ func calculatePostgresErrorLine(statement string) int {
 
 	for _, singleSQL := range singleSQLs {
 		if _, err := pgrawparser.Parse(pgrawparser.ParseContext{}, singleSQL.Text); err != nil {
-			return int(singleSQL.End.GetLine()) + 1
+			return int(singleSQL.End.GetLine())
 		}
 	}
 

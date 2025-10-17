@@ -48,7 +48,11 @@ func TestParseSnowSQL(t *testing.T) {
 	}{
 		{
 			sql: `SELECT t.a, t.b FRO table_name t;`,
-			err: "Syntax error at line 0:31 \nrelated text: SELECT t.a, t.b FRO table_name t",
+			err: "Syntax error at line 1:32 \nrelated text: SELECT t.a, t.b FRO table_name t",
+		},
+		{
+			sql: "SELECT 1;\n   SELEC 5;\nSELECT 6;",
+			err: "Syntax error at line 2:4 \nrelated text: SELECT 1;\n   SELEC",
 		},
 	}
 

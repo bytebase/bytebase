@@ -26,11 +26,11 @@
       sourcetablename: test
       targettablename: _rollback_test_db
       startposition:
-        line: 0
-        column: 0
+        line: 1
+        column: 1
       endposition:
-        line: 6
-        column: 45
+        line: 7
+        column: 46
 - input: |-
     UPDATE db1.t1 SET c1 = 1 WHERE c1 = 2;
     UPDATE db2.t2 SET c1 = 1 WHERE c1 = 2;
@@ -42,11 +42,11 @@
       sourcetablename: t1
       targettablename: _rollback_0_t1
       startposition:
-        line: 0
-        column: 0
+        line: 1
+        column: 1
       endposition:
-        line: 0
-        column: 37
+        line: 1
+        column: 38
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_1_t2` LIKE `db2`.`t2`;
         INSERT INTO `backupDB`.`_rollback_1_t2` SELECT `t2`.* FROM db2.t2 WHERE c1 = 2;
@@ -54,11 +54,11 @@
       sourcetablename: t2
       targettablename: _rollback_1_t2
       startposition:
-        line: 1
-        column: 0
+        line: 2
+        column: 1
       endposition:
-        line: 1
-        column: 37
+        line: 2
+        column: 38
 - input: DELETE test FROM test, test2 as t2 where test.id = t2.id;
   result:
     - statement: |-
@@ -68,11 +68,11 @@
       sourcetablename: test
       targettablename: _rollback_0_test
       startposition:
-        line: 0
-        column: 0
+        line: 1
+        column: 1
       endposition:
-        line: 0
-        column: 56
+        line: 1
+        column: 57
 - input: DELETE t1, t2 FROM test as t1, test2 as t2 WHERE t1.id = t2.id;
   result:
     - statement: |-
@@ -82,11 +82,11 @@
       sourcetablename: test
       targettablename: _rollback_0_test
       startposition:
-        line: 0
-        column: 0
+        line: 1
+        column: 1
       endposition:
-        line: 0
-        column: 62
+        line: 1
+        column: 63
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_0_test2` LIKE `db`.`test2`;
         INSERT INTO `backupDB`.`_rollback_0_test2` SELECT `t2`.* FROM test as t1, test2 as t2 WHERE t1.id = t2.id;
@@ -94,11 +94,11 @@
       sourcetablename: test2
       targettablename: _rollback_0_test2
       startposition:
-        line: 0
-        column: 0
+        line: 1
+        column: 1
       endposition:
-        line: 0
-        column: 62
+        line: 1
+        column: 63
 - input: DELETE FROM t1, t2 USING test as t1, test2 as t2 WHERE t1.id = t2.id;
   result:
     - statement: |-
@@ -108,11 +108,11 @@
       sourcetablename: test
       targettablename: _rollback_0_test
       startposition:
-        line: 0
-        column: 0
+        line: 1
+        column: 1
       endposition:
-        line: 0
-        column: 68
+        line: 1
+        column: 69
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_0_test2` LIKE `db`.`test2`;
         INSERT INTO `backupDB`.`_rollback_0_test2` SELECT `t2`.* FROM test as t1, test2 as t2 WHERE t1.id = t2.id;
@@ -120,11 +120,11 @@
       sourcetablename: test2
       targettablename: _rollback_0_test2
       startposition:
-        line: 0
-        column: 0
+        line: 1
+        column: 1
       endposition:
-        line: 0
-        column: 68
+        line: 1
+        column: 69
 - input: DELETE FROM test as t1 WHERE t1.c1 = 1;
   result:
     - statement: |-
@@ -134,11 +134,11 @@
       sourcetablename: test
       targettablename: _rollback_0_test
       startposition:
-        line: 0
-        column: 0
+        line: 1
+        column: 1
       endposition:
-        line: 0
-        column: 38
+        line: 1
+        column: 39
 - input: DELETE FROM test WHERE c1 = 1;
   result:
     - statement: |-
@@ -148,11 +148,11 @@
       sourcetablename: test
       targettablename: _rollback_0_test
       startposition:
-        line: 0
-        column: 0
+        line: 1
+        column: 1
       endposition:
-        line: 0
-        column: 29
+        line: 1
+        column: 30
 - input: UPDATE test x SET x.c1 = 1 WHERE x.c1 = 1
   result:
     - statement: |-
@@ -162,11 +162,11 @@
       sourcetablename: test
       targettablename: _rollback_0_test
       startposition:
-        line: 0
-        column: 0
+        line: 1
+        column: 1
       endposition:
-        line: 0
-        column: 40
+        line: 1
+        column: 41
 - input: UPDATE test SET c1 = 1 WHERE c1=2;
   result:
     - statement: |-
@@ -176,11 +176,11 @@
       sourcetablename: test
       targettablename: _rollback_0_test
       startposition:
-        line: 0
-        column: 0
+        line: 1
+        column: 1
       endposition:
-        line: 0
-        column: 33
+        line: 1
+        column: 34
 - input: UPDATE test t1, test2 t2 SET t1.c1 = 1 WHERE t1.c1 = t2.c1;
   result:
     - statement: |-
@@ -190,11 +190,11 @@
       sourcetablename: test
       targettablename: _rollback_0_test
       startposition:
-        line: 0
-        column: 0
+        line: 1
+        column: 1
       endposition:
-        line: 0
-        column: 58
+        line: 1
+        column: 59
 - input: UPDATE test t1, test2 t2 SET t1.c1 = 1, t2.c2 = 2 WHERE t1.c1 = t2.c1;
   result:
     - statement: |-
@@ -204,11 +204,11 @@
       sourcetablename: test
       targettablename: _rollback_0_test
       startposition:
-        line: 0
-        column: 0
+        line: 1
+        column: 1
       endposition:
-        line: 0
-        column: 69
+        line: 1
+        column: 70
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_0_test2` LIKE `db`.`test2`;
         INSERT INTO `backupDB`.`_rollback_0_test2` SELECT `t2`.* FROM test t1, test2 t2 WHERE t1.c1 = t2.c1;
@@ -216,11 +216,11 @@
       sourcetablename: test2
       targettablename: _rollback_0_test2
       startposition:
-        line: 0
-        column: 0
+        line: 1
+        column: 1
       endposition:
-        line: 0
-        column: 69
+        line: 1
+        column: 70
 - input: |-
     UPDATE test t1 SET t1.c1 = 2 WHERE t1.c1 = 1 ;
     UPDATE test t2 SET t2.c1 = 3 WHERE t2.c1 = 5 ;
@@ -232,11 +232,11 @@
       sourcetablename: test
       targettablename: _rollback_0_test
       startposition:
-        line: 0
-        column: 0
+        line: 1
+        column: 1
       endposition:
-        line: 0
-        column: 45
+        line: 1
+        column: 46
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_1_test` LIKE `db`.`test`;
         INSERT INTO `backupDB`.`_rollback_1_test` SELECT `t2`.* FROM test t2 WHERE t2.c1 = 5;
@@ -244,8 +244,8 @@
       sourcetablename: test
       targettablename: _rollback_1_test
       startposition:
-        line: 1
-        column: 0
+        line: 2
+        column: 1
       endposition:
-        line: 1
-        column: 45
+        line: 2
+        column: 46

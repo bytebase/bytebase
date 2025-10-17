@@ -12,14 +12,14 @@
       {
         "status":  "ERROR",
         "title":  "Syntax error",
-        "content":  "Syntax error at line 1:20 \nrelated text: CREATE TABLE user(id)",
+        "content":  "Syntax error at line 1:21 \nrelated text: CREATE TABLE user(id)",
         "code":  201,
         "sqlReviewReport":  {
           "line":  1,
-          "column":  20,
+          "column":  21,
           "startPosition":  {
             "line":  1,
-            "column":  20
+            "column":  21
           }
         }
       }

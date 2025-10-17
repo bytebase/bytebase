@@ -115,11 +115,39 @@ func TestMySQLCreateTableSetLine(t *testing.T) {
 }
 
 func TestTiDBParserError(t *testing.T) {
-	_, err := ParseTiDB("SELECT 𝄞𝄞hello TO world;", "", "")
-	require.Error(t, err)
-	syntaxErr, ok := err.(*base.SyntaxError)
-	require.True(t, ok)
-	require.Equal(t, int32(0), syntaxErr.Position.GetLine())
-	require.Equal(t, int32(22), syntaxErr.Position.GetColumn())
-	require.Equal(t, `line 1 column 23 near "TO world;" `, syntaxErr.Message)
+	tests := []struct {
+		statement    string
+		expectedLine int32
+		expectedCol  int32
+		expectedMsg  string
+	}{
+		{
+			statement:    "SELECT 𝄞𝄞hello TO world;",
+			expectedLine: 1,
+			expectedCol:  23,
+			expectedMsg:  `line 1 column 23 near "TO world;" `,
+		},
+		{
+			statement:    "SELECT 1;\nSELEC 5;\nSELECT 6;",
+			expectedLine: 2,
+			expectedCol:  6,
+			expectedMsg:  "line 2 column 6 near \"SELEC 5;\nSELECT 6;\" ",
+		},
+		{
+			statement:    "SELECT 1;\n   SELEC 5;\nSELECT 6;",
+			expectedLine: 2,
+			expectedCol:  9,
+			expectedMsg:  "line 2 column 9 near \"SELEC 5;\nSELECT 6;\" ",
+		},
+	}
+
+	for _, test := range tests {
+		_, err := ParseTiDB(test.statement, "", "")
+		require.Error(t, err)
+		syntaxErr, ok := err.(*base.SyntaxError)
+		require.True(t, ok)
+		require.Equal(t, test.expectedLine, syntaxErr.Position.GetLine())
+		require.Equal(t, test.expectedCol, syntaxErr.Position.GetColumn())
+		require.Equal(t, test.expectedMsg, syntaxErr.Message)
+	}
 }
