@@ -333,10 +333,9 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     const [composed] = await upsertDatabaseMap([updated]);
     return composed;
   };
-  const fetchDatabaseSchema = async (database: string, sdlFormat = false) => {
+  const fetchDatabaseSchema = async (database: string) => {
     const request = create(GetDatabaseSchemaRequestSchema, {
       name: `${database}/schema`,
-      sdlFormat,
     });
     const schema =
       await databaseServiceClientConnect.getDatabaseSchema(request);

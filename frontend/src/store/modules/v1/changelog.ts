@@ -78,7 +78,6 @@ export const useChangelogStore = defineStore("changelog", () => {
     const request = create(GetChangelogRequestSchema, {
       name: params.name,
       view: params.view,
-      sdlFormat: params.sdlFormat,
     });
     const changelog = await databaseServiceClientConnect.getChangelog(request);
     cache.setEntity(
