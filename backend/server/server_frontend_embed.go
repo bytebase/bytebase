@@ -17,6 +17,11 @@ import (
 //go:embed dist
 var embeddedFiles embed.FS
 
+// getCSPHashesFromEmbedded reads the CSP hashes JSON file from the embedded filesystem.
+func getCSPHashesFromEmbedded(path string) ([]byte, error) {
+	return embeddedFiles.ReadFile(path)
+}
+
 func getFileSystem(path string) http.FileSystem {
 	fs, err := fs.Sub(embeddedFiles, path)
 	if err != nil {

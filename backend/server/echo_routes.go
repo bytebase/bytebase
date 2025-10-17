@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 
@@ -112,7 +111,7 @@ func recoverMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
-// loadCSPHashes loads CSP hashes from the frontend build output.
+// loadCSPHashes loads CSP hashes from the embedded frontend build output or filesystem.
 // Falls back to hardcoded hashes if the file doesn't exist.
 func loadCSPHashes() []string {
 	cspHashesCacheLock.RLock()
@@ -150,7 +149,7 @@ func loadCSPHashes() []string {
 	fallbackHashes := []string{
 		"'sha256-MS6/3FCg4WjP9gwgaBGwLpRCY6fZBgwmhVCdrPrNf3E='", // Safari 10 nomodule fix
 		"'sha256-tQjf8gvb2ROOMapIxFvFAYBeUJ0v1HCbOcSmDNXGtDo='", // SystemJS inline code
-		"'sha256-ZxAi3a7m9Mzbc+Z1LGuCCK5Xee6reDkEPRas66H9KSo='", // Modern browser detection (FIXED)
+		"'sha256-ZxAi3a7m9Mzbc+Z1LGuCCK5Xee6reDkEPRas66H9KSo='", // Modern browser detection
 		"'sha256-+5XkZFazzJo8n0iOP4ti/cLCMUudTf//Mzkb7xNPXIc='", // Dynamic fallback
 	}
 
