@@ -2182,10 +2182,6 @@
       "on-update": "Khi cập nhật"
     },
     "default": {
-      "no-default": "Không mặc định",
-      "expression": "Biểu thức",
-      "null": "NULL",
-      "value": "Giá trị",
       "placeholder": "Nhập giá trị mặc định hoặc để trống nếu không có giá trị mặc định"
     },
     "message": {
@@ -2385,8 +2381,7 @@
         "confirm-override-description": "Quy tắc của bạn sẽ bị ghi đè"
       }
     },
-    "rule": {
-    },
+    "rule": {},
     "enabled-rules": "Quy tắc được bật",
     "rule-detail": "Chi tiết quy tắc",
     "view-definition": "Xem định nghĩa",

@@ -2182,10 +2182,6 @@
       "on-update": "On Update"
     },
     "default": {
-      "no-default": "No default",
-      "expression": "Expression",
-      "null": "NULL",
-      "value": "Value",
       "placeholder": "Enter default value or leave empty for no default"
     },
     "message": {
@@ -2385,8 +2381,7 @@
         "confirm-override-description": "Your rules will be overridden"
       }
     },
-    "rule": {
-    },
+    "rule": {},
     "enabled-rules": "Enabled rules",
     "rule-detail": "Rule detail",
     "view-definition": "View definition",

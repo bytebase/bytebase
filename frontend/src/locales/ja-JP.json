@@ -2182,10 +2182,6 @@
       "on-update": "アップデート時"
     },
     "default": {
-      "no-default": "デフォルト値なし",
-      "expression": "式",
-      "null": "NULL",
-      "value": "値",
       "placeholder": "デフォルト値を入力するか、デフォルト値がない場合は空白のままにします"
     },
     "message": {
@@ -2385,8 +2381,7 @@
         "confirm-override-description": "以前のルールは上書きされます"
       }
     },
-    "rule": {
-    },
+    "rule": {},
     "enabled-rules": "開かれたルールの数",
     "rule-detail": "ルールの詳細",
     "view-definition": "ビューの定義",

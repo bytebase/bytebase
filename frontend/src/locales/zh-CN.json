@@ -2182,10 +2182,6 @@
       "on-update": "更新时"
     },
     "default": {
-      "no-default": "无默认值",
-      "expression": "表达式",
-      "null": "NULL",
-      "value": "值",
       "placeholder": "输入默认值或留空以不使用默认值"
     },
     "message": {
@@ -2385,8 +2381,7 @@
         "confirm-override-description": "之前的规则将会被覆盖"
       }
     },
-    "rule": {
-    },
+    "rule": {},
     "enabled-rules": "开启的规则数",
     "rule-detail": "规则详情",
     "view-definition": "查看定义",
