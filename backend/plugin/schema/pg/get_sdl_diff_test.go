@@ -1022,7 +1022,7 @@ CREATE UNIQUE INDEX "users_email_key" ON ONLY "public"."users" ("email");`,
     "order_id" bigint DEFAULT nextval('orders_order_id_seq'::regclass) NOT NULL,
     "customer_name" text NOT NULL,
     CONSTRAINT "orders_pkey" PRIMARY KEY (order_id),
-    CONSTRAINT "orders_customer_name_check" CHECK ((length(customer_name) > 0))
+    CONSTRAINT "orders_customer_name_check" CHECK (length(customer_name) > 0)
 );`,
 			previousUserSDLText: `CREATE TABLE orders (
     order_id BIGSERIAL PRIMARY KEY,

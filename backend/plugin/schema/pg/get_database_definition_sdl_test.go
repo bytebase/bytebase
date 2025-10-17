@@ -146,7 +146,7 @@ func TestGetDatabaseDefinitionSDLFormat(t *testing.T) {
 								CheckConstraints: []*storepb.CheckConstraintMetadata{
 									{
 										Name:       "users_age_check",
-										Expression: "age >= 0",
+										Expression: "(age >= 0)",
 									},
 								},
 							},
