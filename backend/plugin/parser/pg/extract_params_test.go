@@ -13,7 +13,6 @@ func TestExtractParameterNamesFromCreateFunction(t *testing.T) {
 		name       string
 		definition string
 		want       []string
-		wantErr    bool
 	}{
 		{
 			name: "OUT parameters",
@@ -88,12 +87,7 @@ $$ LANGUAGE SQL;`,
 			require.NotNil(t, createFuncStmt)
 
 			q := &querySpanExtractor{}
-			got, err := q.extractParameterNamesFromCreateFunction(createFuncStmt, "test_func")
-
-			if tt.wantErr {
-				assert.Error(t, err)
-				return
-			}
+			got := q.extractParameterNamesFromCreateFunction(createFuncStmt)
 
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, got, "parameter names mismatch")
