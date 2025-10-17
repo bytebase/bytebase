@@ -26,42 +26,40 @@ var (
 )
 
 // loadCSPHashes loads CSP hashes from the embedded frontend build output.
-// Falls back to hardcoded hashes if the file doesn't exist.
 // Uses sync.Once to ensure hashes are loaded only once.
 func loadCSPHashes() []string {
 	cspHashesOnce.Do(func() {
-		// Try to load from embedded filesystem
 		hashFilePath := "dist/csp-hashes.json"
 		data, err := embeddedFiles.ReadFile(hashFilePath)
-
-		if err == nil {
-			var hashes struct {
-				ScriptHashes  []string `json:"scriptHashes"`
-				GeneratedAt   string   `json:"generatedAt"`
-				PluginVersion string   `json:"pluginVersion"`
-			}
-			if err := json.Unmarshal(data, &hashes); err == nil && len(hashes.ScriptHashes) > 0 {
-				cspHashesCache = hashes.ScriptHashes
-				slog.Info("Loaded CSP hashes from embedded frontend build",
-					"path", hashFilePath,
-					"plugin_version", hashes.PluginVersion,
-					"hash_count", len(hashes.ScriptHashes))
-				return
-			}
+		if err != nil {
+			slog.Error("Failed to read CSP hashes from embedded assets",
+				"path", hashFilePath,
+				"error", err)
+			panic("CSP hashes file not found in embedded build - this is a build error")
 		}
 
-		// Fallback to hardcoded hashes for @vitejs/plugin-legacy@7.2.1
-		// These are stable as long as the plugin version is pinned with ~ in package.json
-		cspHashesCache = []string{
-			"'sha256-MS6/3FCg4WjP9gwgaBGwLpRCY6fZBgwmhVCdrPrNf3E='", // Safari 10 nomodule fix
-			"'sha256-tQjf8gvb2ROOMapIxFvFAYBeUJ0v1HCbOcSmDNXGtDo='", // SystemJS inline code
-			"'sha256-ZxAi3a7m9Mzbc+Z1LGuCCK5Xee6reDkEPRas66H9KSo='", // Modern browser detection
-			"'sha256-+5XkZFazzJo8n0iOP4ti/cLCMUudTf//Mzkb7xNPXIc='", // Dynamic fallback
+		var hashes struct {
+			ScriptHashes  []string `json:"scriptHashes"`
+			GeneratedAt   string   `json:"generatedAt"`
+			PluginVersion string   `json:"pluginVersion"`
+		}
+		if err := json.Unmarshal(data, &hashes); err != nil {
+			slog.Error("Failed to unmarshal CSP hashes",
+				"path", hashFilePath,
+				"error", err)
+			panic("Invalid CSP hashes file format - this is a build error")
 		}
 
-		slog.Warn("CSP hash file not found in embedded assets, using fallback hashes",
+		if len(hashes.ScriptHashes) == 0 {
+			slog.Error("CSP hashes file contains no hashes", "path", hashFilePath)
+			panic("Empty CSP hashes - this is a build error")
+		}
+
+		cspHashesCache = hashes.ScriptHashes
+		slog.Info("Loaded CSP hashes from embedded frontend build",
 			"path", hashFilePath,
-			"error", err)
+			"plugin_version", hashes.PluginVersion,
+			"hash_count", len(hashes.ScriptHashes))
 	})
 
 	return cspHashesCache
