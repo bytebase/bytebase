@@ -24,13 +24,6 @@
     />
   </div>
 
-  <ColumnDefaultValueExpressionModal
-    v-if="editColumnDefaultValueExpressionContext"
-    :expression="editColumnDefaultValueExpressionContext.default"
-    @close="editColumnDefaultValueExpressionContext = undefined"
-    @update:expression="handleSelectColumnDefaultValueExpression"
-  />
-
   <SemanticTypesDrawer
     v-if="state.pendingUpdateColumn"
     :show="state.showSemanticTypesDrawer"
@@ -80,10 +73,9 @@ import type {
 } from "@/types/proto-es/v1/database_service_pb";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import ColumnDefaultValueExpressionModal from "../../Modals/ColumnDefaultValueExpressionModal.vue";
 import { useSchemaEditorContext } from "../../context";
 import type { EditStatus } from "../../types";
-import type { DefaultValueOption } from "../../utils";
+import type { DefaultValue } from "../../utils";
 import { markUUID } from "../common";
 import {
   DataTypeCell,
@@ -201,7 +193,6 @@ const tableBodyHeight = computed(() => {
 const layoutReady = computed(() => tableHeaderHeight.value > 0);
 const { t } = useI18n();
 const settingStore = useSettingV1Store();
-const editColumnDefaultValueExpressionContext = ref<ColumnMetadata>();
 
 const metadataForColumn = (column: ColumnMetadata) => {
   return {
@@ -449,9 +440,7 @@ const columns = computed(() => {
         return h(DefaultValueCell, {
           column,
           disabled: props.readonly || props.disableAlterColumn(column),
-          engine: props.engine,
-          onInput: (value) => handleColumnDefaultInput(column, value),
-          onSelect: (option) => handleColumnDefaultSelect(column, option),
+          onUpdate: (option) => handleColumnDefaultSelect(column, option),
         });
       },
     },
@@ -635,48 +624,11 @@ const schemaTemplateColumnTypes = computed(() => {
   return [];
 });
 
-const handleColumnDefaultInput = (column: ColumnMetadata, value: string) => {
-  if (!column.hasDefault) return;
-  if (column.default === "NULL") return;
-
-  column.default = value;
-  markColumnStatus(column, "updated");
-};
-
 const handleColumnDefaultSelect = (
   column: ColumnMetadata,
-  option: DefaultValueOption
+  defaultValue: DefaultValue
 ) => {
-  const defaults = option.value;
-  if (!defaults.hasDefault) {
-    Object.assign(column, defaults);
-    markColumnStatus(column, "updated");
-    return;
-  }
-  if (defaults.default === "NULL") {
-    Object.assign(column, defaults);
-    markColumnStatus(column, "updated");
-    return;
-  }
-  if (typeof defaults.default === "string") {
-    Object.assign(column, {
-      ...defaults,
-      // copy current editing string to column.default
-      default: column.default ?? defaults.default ?? "",
-    });
-    markColumnStatus(column, "updated");
-    return;
-  }
-};
-
-const handleSelectColumnDefaultValueExpression = (expression: string) => {
-  const column = editColumnDefaultValueExpressionContext.value;
-  if (!column) {
-    return;
-  }
-  column.hasDefault = true;
-  column.default = expression;
-
+  Object.assign(column, defaultValue);
   markColumnStatus(column, "updated");
 };
 

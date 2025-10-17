@@ -233,7 +233,7 @@ import { State } from "@/types/proto-es/v1/common_pb";
 import {
   instanceV1HasAlterSchema,
   isDatabaseV1Queryable,
-  allowUsingSchemaEditor,
+  engineSupportsSchemaEditor,
   extractProjectResourceName,
 } from "@/utils";
 
@@ -352,7 +352,7 @@ const createMigration = async (
   if (type === "bb.issue.database.schema.update") {
     if (
       database.value.state === State.ACTIVE &&
-      allowUsingSchemaEditor([database.value])
+      engineSupportsSchemaEditor(database.value.instanceResource.engine)
     ) {
       state.showSchemaEditorModal = true;
       return;

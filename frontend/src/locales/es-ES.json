@@ -2182,10 +2182,6 @@
       "on-update": "En actualización"
     },
     "default": {
-      "no-default": "Sin valor predeterminado",
-      "expression": "Expresión",
-      "null": "NULL",
-      "value": "Valor",
       "placeholder": "Introduzca un valor predeterminado o déjelo vacío si no hay ningún valor predeterminado"
     },
     "message": {
@@ -2385,8 +2381,7 @@
         "confirm-override-description": "Sus reglas serán anuladas"
       }
     },
-    "rule": {
-    },
+    "rule": {},
     "enabled-rules": "Reglas habilitadas",
     "rule-detail": "Detalle de la regla",
     "view-definition": "Ver definición",

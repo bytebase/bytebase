@@ -34,7 +34,7 @@ import {
   Undo2Icon,
   InfoIcon,
 } from "lucide-vue-next";
-import { NPopconfirm, NInput, NDataTable, NTooltip } from "naive-ui";
+import { NPopconfirm, NInput, NDataTable, NTooltip, NEllipsis } from "naive-ui";
 import type { DataTableColumn } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
@@ -151,10 +151,10 @@ const columnList = computed(() => {
     {
       key: "id",
       title: "ID",
-      width: 350,
+      ellipsis: true,
       resizable: true,
       render: (item) => {
-        return <h3 class="break-normal">{item.item.id}</h3>;
+        return <NEllipsis class="break-normal">{item.item.id}</NEllipsis>;
       },
     },
     {
