@@ -4,13 +4,7 @@ import { Engine } from "@/types/proto-es/v1/common_pb";
 export * from "./filter";
 
 export const engineSupportsSchemaEditor = (engine: Engine) => {
-  if ([Engine.MYSQL, Engine.TIDB].includes(engine)) {
-    return true;
-  }
-  if ([Engine.POSTGRES].includes(engine)) {
-    return true;
-  }
-  return false;
+  return [Engine.MYSQL, Engine.TIDB, Engine.POSTGRES].includes(engine);
 };
 
 export const allowUsingSchemaEditor = (
