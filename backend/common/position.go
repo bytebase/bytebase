@@ -2,7 +2,6 @@
 package common
 
 import (
-	"strings"
 	"unicode/utf8"
 
 	lsp "github.com/bytebase/lsp-protocol"
@@ -74,43 +73,6 @@ func ConvertANTLRLineToPosition(line int) *storepb.Position {
 
 // UTF16Position is a position in a text expressed as zero-based line and zero-based column counted in UTF-16 code units.
 type UTF16Position = lsp.Position
-
-// ConvertPositionToUTF16Position converts a Position to a UTF16Position in a given text.
-// If the Position is nil, it returns a UTF16Position with line and character set to 0.
-// If the line in Position is out of the end of text, replace it with the last line.
-// If the column in Position is out of the end of line, replace it with the last column.
-func ConvertPositionToUTF16Position(p *storepb.Position, text string) *UTF16Position {
-	if p == nil {
-		return &UTF16Position{
-			Line:      0,
-			Character: 0,
-		}
-	}
-	lines := strings.Split(text, "\n")
-	lineNumber := p.Line
-	if lineNumber >= int32(len(lines)) {
-		lineNumber = int32(len(lines)) - 1
-	}
-	u16CodeUnits := 0
-	byteOffset := 0
-	line := lines[lineNumber]
-	for _, r := range line {
-		if byteOffset >= int(p.Column) {
-			break
-		}
-		byteOffset += len(string(r))
-		u16CodeUnits++
-		if r > 0xFFFF {
-			// Need surrogate pair.
-			u16CodeUnits++
-		}
-	}
-
-	return &UTF16Position{
-		Line:      uint32(lineNumber),
-		Character: uint32(u16CodeUnits),
-	}
-}
 
 func ConvertTiDBParserErrorPositionToPosition(line, column int) *storepb.Position {
 	if line < 1 {
