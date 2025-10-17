@@ -1619,11 +1619,6 @@ paths:
                         - CHANGELOG_VIEW_FULL
                     type: string
                     format: enum
-                - name: sdlFormat
-                  in: query
-                  description: Format the schema dump into SDL format.
-                  schema:
-                    type: boolean
             responses:
                 "200":
                     description: OK
@@ -2242,11 +2237,6 @@ paths:
                   required: true
                   schema:
                     type: string
-                - name: sdlFormat
-                  in: query
-                  description: Format the schema dump into SDL format.
-                  schema:
-                    type: boolean
             responses:
                 "200":
                     description: OK
@@ -7637,33 +7627,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v1/sql/pretty:
-        post:
-            tags:
-                - SQLService
-            description: |-
-                Formats and normalizes SQL schema definitions.
-                 Permissions required: None
-            operationId: SQLService_Pretty
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/PrettyRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/PrettyResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
     /v1/subscription:
         get:
             tags:
@@ -10426,9 +10389,6 @@ components:
                         The resource name of the changelog
                          Format:
                          instances/{instance}/databases/{database}/changelogs/{changelog}
-                sdlFormat:
-                    type: boolean
-                    description: Format the schema dump into SDL format.
         DiffSchemaResponse:
             type: object
             properties:
@@ -12525,59 +12485,6 @@ components:
                     description: When the current query started.
                     format: date-time
             description: PostgreSQL session information read from `pg_stat_activity`.
-        PrettyRequest:
-            type: object
-            properties:
-                engine:
-                    enum:
-                        - ENGINE_UNSPECIFIED
-                        - CLICKHOUSE
-                        - MYSQL
-                        - POSTGRES
-                        - SNOWFLAKE
-                        - SQLITE
-                        - TIDB
-                        - MONGODB
-                        - REDIS
-                        - ORACLE
-                        - SPANNER
-                        - MSSQL
-                        - REDSHIFT
-                        - MARIADB
-                        - OCEANBASE
-                        - STARROCKS
-                        - DORIS
-                        - HIVE
-                        - ELASTICSEARCH
-                        - BIGQUERY
-                        - DYNAMODB
-                        - DATABRICKS
-                        - COCKROACHDB
-                        - COSMOSDB
-                        - TRINO
-                        - CASSANDRA
-                    type: string
-                    format: enum
-                currentSchema:
-                    type: string
-                    description: |-
-                        The SDL format SQL schema information that was dumped from a database
-                         engine. This information will be sorted to match the order of statements in
-                         the userSchema.
-                expectedSchema:
-                    type: string
-                    description: |-
-                        The expected SDL schema. This schema will be checked for correctness and
-                         normalized.
-        PrettyResponse:
-            type: object
-            properties:
-                currentSchema:
-                    type: string
-                    description: The pretty-formatted version of current schema.
-                expectedSchema:
-                    type: string
-                    description: The expected SDL schema after normalizing.
         PreviewRolloutRequest:
             required:
                 - project

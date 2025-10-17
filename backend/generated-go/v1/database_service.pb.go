@@ -1374,9 +1374,7 @@ type GetDatabaseSchemaRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the database to retrieve schema.
 	// Format: instances/{instance}/databases/{database}/schema
-	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// Format the schema dump into SDL format.
-	SdlFormat     bool `protobuf:"varint,2,opt,name=sdl_format,json=sdlFormat,proto3" json:"sdl_format,omitempty"`
+	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1418,13 +1416,6 @@ func (x *GetDatabaseSchemaRequest) GetName() string {
 	return ""
 }
 
-func (x *GetDatabaseSchemaRequest) GetSdlFormat() bool {
-	if x != nil {
-		return x.SdlFormat
-	}
-	return false
-}
-
 type DiffSchemaRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the database or changelog.
@@ -1436,9 +1427,7 @@ type DiffSchemaRequest struct {
 	//
 	//	*DiffSchemaRequest_Schema
 	//	*DiffSchemaRequest_Changelog
-	Target isDiffSchemaRequest_Target `protobuf_oneof:"target"`
-	// Format the schema dump into SDL format.
-	SdlFormat     bool `protobuf:"varint,4,opt,name=sdl_format,json=sdlFormat,proto3" json:"sdl_format,omitempty"`
+	Target        isDiffSchemaRequest_Target `protobuf_oneof:"target"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1503,13 +1492,6 @@ func (x *DiffSchemaRequest) GetChangelog() string {
 		}
 	}
 	return ""
-}
-
-func (x *DiffSchemaRequest) GetSdlFormat() bool {
-	if x != nil {
-		return x.SdlFormat
-	}
-	return false
 }
 
 type isDiffSchemaRequest_Target interface {
@@ -5623,10 +5605,8 @@ type GetChangelogRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the changelog to retrieve.
 	// Format: instances/{instance}/databases/{database}/changelogs/{changelog}
-	Name string        `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	View ChangelogView `protobuf:"varint,2,opt,name=view,proto3,enum=bytebase.v1.ChangelogView" json:"view,omitempty"`
-	// Format the schema dump into SDL format.
-	SdlFormat     bool `protobuf:"varint,3,opt,name=sdl_format,json=sdlFormat,proto3" json:"sdl_format,omitempty"`
+	Name          string        `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	View          ChangelogView `protobuf:"varint,2,opt,name=view,proto3,enum=bytebase.v1.ChangelogView" json:"view,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5673,13 +5653,6 @@ func (x *GetChangelogRequest) GetView() ChangelogView {
 		return x.View
 	}
 	return ChangelogView_CHANGELOG_VIEW_UNSPECIFIED
-}
-
-func (x *GetChangelogRequest) GetSdlFormat() bool {
-	if x != nil {
-		return x.SdlFormat
-	}
-	return false
 }
 
 type Changelog struct {
@@ -6036,19 +6009,15 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\x04name\x18\x01 \x01(\tB%\xe0A\x02\xfaA\x1f\n" +
 	"\x1dbytebase.com/DatabaseMetadataR\x04name\x12\x16\n" +
 	"\x06filter\x18\x02 \x01(\tR\x06filter\x12\x14\n" +
-	"\x05limit\x18\x03 \x01(\x05R\x05limit\"r\n" +
+	"\x05limit\x18\x03 \x01(\x05R\x05limit\"S\n" +
 	"\x18GetDatabaseSchemaRequest\x127\n" +
 	"\x04name\x18\x01 \x01(\tB#\xe0A\x02\xfaA\x1d\n" +
-	"\x1bbytebase.com/DatabaseSchemaR\x04name\x12\x1d\n" +
-	"\n" +
-	"sdl_format\x18\x02 \x01(\bR\tsdlFormat\"\xa9\x01\n" +
+	"\x1bbytebase.com/DatabaseSchemaR\x04name\"\x8a\x01\n" +
 	"\x11DiffSchemaRequest\x121\n" +
 	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x04name\x12\x18\n" +
 	"\x06schema\x18\x02 \x01(\tH\x00R\x06schema\x12\x1e\n" +
-	"\tchangelog\x18\x03 \x01(\tH\x00R\tchangelog\x12\x1d\n" +
-	"\n" +
-	"sdl_format\x18\x04 \x01(\bR\tsdlFormatB\b\n" +
+	"\tchangelog\x18\x03 \x01(\tH\x00R\tchangelogB\b\n" +
 	"\x06target\"(\n" +
 	"\x12DiffSchemaResponse\x12\x12\n" +
 	"\x04diff\x18\x01 \x01(\tR\x04diff\"\xde\x05\n" +
@@ -6473,13 +6442,11 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\n" +
 	"changelogs\x18\x01 \x03(\v2\x16.bytebase.v1.ChangelogR\n" +
 	"changelogs\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xa0\x01\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x81\x01\n" +
 	"\x13GetChangelogRequest\x12:\n" +
 	"\x04name\x18\x01 \x01(\tB&\xe0A\x02\xfaA \n" +
 	"\x1ebytebase.com/DatabaseChangelogR\x04name\x12.\n" +
-	"\x04view\x18\x02 \x01(\x0e2\x1a.bytebase.v1.ChangelogViewR\x04view\x12\x1d\n" +
-	"\n" +
-	"sdl_format\x18\x03 \x01(\bR\tsdlFormat\"\xf2\a\n" +
+	"\x04view\x18\x02 \x01(\x0e2\x1a.bytebase.v1.ChangelogViewR\x04view\"\xf2\a\n" +
 	"\tChangelog\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12;\n" +
 	"\vcreate_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\n" +

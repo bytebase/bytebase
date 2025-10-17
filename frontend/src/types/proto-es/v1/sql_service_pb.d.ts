@@ -920,64 +920,6 @@ export declare type ExportResponse = Message<"bytebase.v1.ExportResponse"> & {
 export declare const ExportResponseSchema: GenMessage<ExportResponse>;
 
 /**
- * @generated from message bytebase.v1.PrettyRequest
- */
-export declare type PrettyRequest = Message<"bytebase.v1.PrettyRequest"> & {
-  /**
-   * @generated from field: bytebase.v1.Engine engine = 1;
-   */
-  engine: Engine;
-
-  /**
-   * The SDL format SQL schema information that was dumped from a database
-   * engine. This information will be sorted to match the order of statements in
-   * the userSchema.
-   *
-   * @generated from field: string current_schema = 2;
-   */
-  currentSchema: string;
-
-  /**
-   * The expected SDL schema. This schema will be checked for correctness and
-   * normalized.
-   *
-   * @generated from field: string expected_schema = 3;
-   */
-  expectedSchema: string;
-};
-
-/**
- * Describes the message bytebase.v1.PrettyRequest.
- * Use `create(PrettyRequestSchema)` to create a new message.
- */
-export declare const PrettyRequestSchema: GenMessage<PrettyRequest>;
-
-/**
- * @generated from message bytebase.v1.PrettyResponse
- */
-export declare type PrettyResponse = Message<"bytebase.v1.PrettyResponse"> & {
-  /**
-   * The pretty-formatted version of current schema.
-   *
-   * @generated from field: string current_schema = 1;
-   */
-  currentSchema: string;
-
-  /**
-   * The expected SDL schema after normalizing.
-   *
-   * @generated from field: string expected_schema = 2;
-   */
-  expectedSchema: string;
-};
-
-/**
- * Describes the message bytebase.v1.PrettyResponse.
- * Use `create(PrettyResponseSchema)` to create a new message.
- */
-export declare const PrettyResponseSchema: GenMessage<PrettyResponse>;
-
-/**
  * @generated from message bytebase.v1.CheckRequest
  */
 export declare type CheckRequest = Message<"bytebase.v1.CheckRequest"> & {
@@ -1466,17 +1408,6 @@ export declare const SQLService: GenService<{
     methodKind: "unary";
     input: typeof CheckRequestSchema;
     output: typeof CheckResponseSchema;
-  },
-  /**
-   * Formats and normalizes SQL schema definitions.
-   * Permissions required: None
-   *
-   * @generated from rpc bytebase.v1.SQLService.Pretty
-   */
-  pretty: {
-    methodKind: "unary";
-    input: typeof PrettyRequestSchema;
-    output: typeof PrettyResponseSchema;
   },
   /**
    * Computes schema differences between two database metadata.

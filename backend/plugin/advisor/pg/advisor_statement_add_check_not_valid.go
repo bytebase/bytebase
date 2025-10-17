@@ -7,7 +7,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast"
@@ -66,7 +65,7 @@ func (checker *statementAddCheckNotValidChecker) Visit(in ast.Node) ast.Visitor 
 				Code:          advisor.StatementAddCheckWithValidation.Int32(),
 				Title:         checker.title,
 				Content:       "Adding check constraints with validation will block reads and writes. You can add check constraints not valid and then validate separately",
-				StartPosition: common.ConvertPGParserLineToPosition(checker.line),
+				StartPosition: newPositionAtLineStart(checker.line),
 			})
 		}
 	}

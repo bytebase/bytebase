@@ -9,7 +9,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast"
@@ -74,7 +73,7 @@ func (checker *tableDropNamingConventionChecker) Visit(in ast.Node) ast.Visitor 
 					Code:          advisor.TableDropNamingConventionMismatch.Int32(),
 					Title:         checker.title,
 					Content:       fmt.Sprintf("`%s` mismatches drop table naming convention, naming format should be %q", table.Name, checker.format),
-					StartPosition: common.ConvertPGParserLineToPosition(node.LastLine()),
+					StartPosition: newPositionAtLineStart(node.LastLine()),
 				})
 			}
 		}

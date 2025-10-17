@@ -5,7 +5,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/db/pg"
@@ -47,7 +46,7 @@ func (*NonTransactionalAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 				Code:          advisor.StatementNonTransactional.Int32(),
 				Title:         checker.title,
 				Content:       "This statement is non-transactional",
-				StartPosition: common.ConvertPGParserLineToPosition(checker.line),
+				StartPosition: newPositionAtLineStart(checker.line),
 			})
 		}
 	}

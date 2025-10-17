@@ -60,7 +60,7 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor
 				Title:         title,
 				Content:       fmt.Sprintf("Data change can only run DML, \"%s\" is not DML", stmt.Text()),
 				Code:          advisor.BuiltinPriorBackupCheck.Int32(),
-				StartPosition: common.ConvertPGParserLineToPosition(stmt.LastLine()),
+				StartPosition: newPositionAtLineStart(stmt.LastLine()),
 			})
 		}
 	}
@@ -72,7 +72,7 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor
 			Title:         title,
 			Content:       fmt.Sprintf("Need schema %q to do prior backup but it does not exist", schemaName),
 			Code:          advisor.SchemaNotExists.Int32(),
-			StartPosition: common.FirstLinePosition,
+			StartPosition: nil,
 		})
 	}
 
@@ -100,7 +100,7 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor
 					Title:         title,
 					Content:       fmt.Sprintf("The statement type is not the same for all statements on the same table %q", key),
 					Code:          advisor.BuiltinPriorBackupCheck.Int32(),
-					StartPosition: common.FirstLinePosition,
+					StartPosition: nil,
 				})
 				break
 			}

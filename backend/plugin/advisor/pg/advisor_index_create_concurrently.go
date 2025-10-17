@@ -7,7 +7,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast"
@@ -86,7 +85,7 @@ func (checker *indexCreateConcurrentlyChecker) Visit(in ast.Node) ast.Visitor {
 				Code:          advisor.CreateIndexUnconcurrently.Int32(),
 				Title:         checker.title,
 				Content:       "Creating indexes will block writes on the table, unless use CONCURRENTLY",
-				StartPosition: common.ConvertPGParserLineToPosition(in.LastLine()),
+				StartPosition: newPositionAtLineStart(in.LastLine()),
 			})
 		}
 	case *ast.DropIndexStmt:
@@ -96,7 +95,7 @@ func (checker *indexCreateConcurrentlyChecker) Visit(in ast.Node) ast.Visitor {
 				Code:          advisor.DropIndexUnconcurrently.Int32(),
 				Title:         checker.title,
 				Content:       "Droping indexes will block writes on the table, unless use CONCURRENTLY",
-				StartPosition: common.ConvertPGParserLineToPosition(in.LastLine()),
+				StartPosition: newPositionAtLineStart(in.LastLine()),
 			})
 		}
 	}

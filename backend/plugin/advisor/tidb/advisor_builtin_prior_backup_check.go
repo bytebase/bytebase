@@ -85,7 +85,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 			Title:         title,
 			Content:       fmt.Sprintf("Need database %q to do prior backup but it does not exist", databaseName),
 			Code:          advisor.DatabaseNotExists.Int32(),
-			StartPosition: common.FirstLinePosition,
+			StartPosition: nil,
 		})
 	}
 
@@ -95,7 +95,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 			Title:         title,
 			Content:       fmt.Sprintf("Prior backup is feasible only with up to %d statements that are either UPDATE or DELETE, or if all UPDATEs target the same table with a PRIMARY or UNIQUE KEY in the WHERE clause", maxMixedDMLCount),
 			Code:          advisor.BuiltinPriorBackupCheck.Int32(),
-			StartPosition: common.FirstLinePosition,
+			StartPosition: nil,
 		})
 	}
 

@@ -24,7 +24,6 @@ const (
 	SQLService_SearchQueryHistories_FullMethodName = "/bytebase.v1.SQLService/SearchQueryHistories"
 	SQLService_Export_FullMethodName               = "/bytebase.v1.SQLService/Export"
 	SQLService_Check_FullMethodName                = "/bytebase.v1.SQLService/Check"
-	SQLService_Pretty_FullMethodName               = "/bytebase.v1.SQLService/Pretty"
 	SQLService_DiffMetadata_FullMethodName         = "/bytebase.v1.SQLService/DiffMetadata"
 	SQLService_AICompletion_FullMethodName         = "/bytebase.v1.SQLService/AICompletion"
 )
@@ -50,9 +49,6 @@ type SQLServiceClient interface {
 	// Validates SQL statements against review rules.
 	// Permissions required: bb.databases.check
 	Check(ctx context.Context, in *CheckRequest, opts ...grpc.CallOption) (*CheckResponse, error)
-	// Formats and normalizes SQL schema definitions.
-	// Permissions required: None
-	Pretty(ctx context.Context, in *PrettyRequest, opts ...grpc.CallOption) (*PrettyResponse, error)
 	// Computes schema differences between two database metadata.
 	// Permissions required: None
 	DiffMetadata(ctx context.Context, in *DiffMetadataRequest, opts ...grpc.CallOption) (*DiffMetadataResponse, error)
@@ -122,16 +118,6 @@ func (c *sQLServiceClient) Check(ctx context.Context, in *CheckRequest, opts ...
 	return out, nil
 }
 
-func (c *sQLServiceClient) Pretty(ctx context.Context, in *PrettyRequest, opts ...grpc.CallOption) (*PrettyResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(PrettyResponse)
-	err := c.cc.Invoke(ctx, SQLService_Pretty_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *sQLServiceClient) DiffMetadata(ctx context.Context, in *DiffMetadataRequest, opts ...grpc.CallOption) (*DiffMetadataResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DiffMetadataResponse)
@@ -173,9 +159,6 @@ type SQLServiceServer interface {
 	// Validates SQL statements against review rules.
 	// Permissions required: bb.databases.check
 	Check(context.Context, *CheckRequest) (*CheckResponse, error)
-	// Formats and normalizes SQL schema definitions.
-	// Permissions required: None
-	Pretty(context.Context, *PrettyRequest) (*PrettyResponse, error)
 	// Computes schema differences between two database metadata.
 	// Permissions required: None
 	DiffMetadata(context.Context, *DiffMetadataRequest) (*DiffMetadataResponse, error)
@@ -206,9 +189,6 @@ func (UnimplementedSQLServiceServer) Export(context.Context, *ExportRequest) (*E
 }
 func (UnimplementedSQLServiceServer) Check(context.Context, *CheckRequest) (*CheckResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Check not implemented")
-}
-func (UnimplementedSQLServiceServer) Pretty(context.Context, *PrettyRequest) (*PrettyResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Pretty not implemented")
 }
 func (UnimplementedSQLServiceServer) DiffMetadata(context.Context, *DiffMetadataRequest) (*DiffMetadataResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DiffMetadata not implemented")
@@ -316,24 +296,6 @@ func _SQLService_Check_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SQLService_Pretty_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PrettyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SQLServiceServer).Pretty(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SQLService_Pretty_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SQLServiceServer).Pretty(ctx, req.(*PrettyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _SQLService_DiffMetadata_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DiffMetadataRequest)
 	if err := dec(in); err != nil {
@@ -392,10 +354,6 @@ var SQLService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Check",
 			Handler:    _SQLService_Check_Handler,
-		},
-		{
-			MethodName: "Pretty",
-			Handler:    _SQLService_Pretty_Handler,
 		},
 		{
 			MethodName: "DiffMetadata",

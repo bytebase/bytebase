@@ -252,9 +252,6 @@ func (x *GetDatabaseSchemaRequest) Equal(y *GetDatabaseSchemaRequest) bool {
 	if x.Name != y.Name {
 		return false
 	}
-	if x.SdlFormat != y.SdlFormat {
-		return false
-	}
 	return true
 }
 
@@ -272,9 +269,6 @@ func (x *DiffSchemaRequest) Equal(y *DiffSchemaRequest) bool {
 		return false
 	}
 	if x.GetChangelog() != y.GetChangelog() {
-		return false
-	}
-	if x.SdlFormat != y.SdlFormat {
 		return false
 	}
 	return true
@@ -1813,9 +1807,6 @@ func (x *GetChangelogRequest) Equal(y *GetChangelogRequest) bool {
 		return false
 	}
 	if x.View != y.View {
-		return false
-	}
-	if x.SdlFormat != y.SdlFormat {
 		return false
 	}
 	return true

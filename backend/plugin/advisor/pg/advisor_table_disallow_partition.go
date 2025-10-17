@@ -8,7 +8,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast"
@@ -79,7 +78,7 @@ func (checker *tableDisallowPartitionChecker) Visit(in ast.Node) ast.Visitor {
 			Code:          code.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("Table partition is forbidden, but \"%s\" creates", checker.text),
-			StartPosition: common.ConvertPGParserLineToPosition(checker.line),
+			StartPosition: newPositionAtLineStart(checker.line),
 		})
 	}
 

@@ -12,7 +12,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
-	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/transform"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -129,24 +128,6 @@ func (s *DatabaseService) GetChangelog(ctx context.Context, req *connect.Request
 	}
 
 	converted := s.convertToChangelog(database, changelog)
-	if req.Msg.SdlFormat {
-		switch instance.Metadata.GetEngine() {
-		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-			sdlSchema, err := transform.SchemaTransform(storepb.Engine_MYSQL, converted.Schema)
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert schema to sdl format"))
-			}
-			converted.Schema = sdlSchema
-			converted.SchemaSize = int64(len(sdlSchema))
-			sdlSchema, err = transform.SchemaTransform(storepb.Engine_MYSQL, converted.PrevSchema)
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert previous schema to sdl format"))
-			}
-			converted.PrevSchema = sdlSchema
-			converted.PrevSchemaSize = int64(len(sdlSchema))
-		default:
-		}
-	}
 	return connect.NewResponse(converted), nil
 }
 

@@ -1880,14 +1880,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.PrettyRequest"><span class="badge">M</span>PrettyRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.PrettyResponse"><span class="badge">M</span>PrettyResponse</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.QueryHistory"><span class="badge">M</span>QueryHistory</a>
                 </li>
               
@@ -7315,13 +7307,6 @@ Format:
 instances/{instance}/databases/{database}/changelogs/{changelog} </p></td>
                 </tr>
               
-                <tr>
-                  <td>sdl_format</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Format the schema dump into SDL format. </p></td>
-                </tr>
-              
             </tbody>
           </table>
 
@@ -7866,13 +7851,6 @@ Format: instances/{instance}/databases/{database}/changelogs/{changelog} </p></t
                   <td><p> </p></td>
                 </tr>
               
-                <tr>
-                  <td>sdl_format</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Format the schema dump into SDL format. </p></td>
-                </tr>
-              
             </tbody>
           </table>
 
@@ -7976,13 +7954,6 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td></td>
                   <td><p>The name of the database to retrieve schema.
 Format: instances/{instance}/databases/{database}/schema </p></td>
-                </tr>
-              
-                <tr>
-                  <td>sdl_format</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Format the schema dump into SDL format. </p></td>
                 </tr>
               
             </tbody>
@@ -20988,78 +20959,6 @@ Oracle and search path in Postgres. </p></td>
 
         
       
-        <h3 id="bytebase.v1.PrettyRequest">PrettyRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>engine</td>
-                  <td><a href="#bytebase.v1.Engine">Engine</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>current_schema</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The SDL format SQL schema information that was dumped from a database
-engine. This information will be sorted to match the order of statements in
-the userSchema. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>expected_schema</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The expected SDL schema. This schema will be checked for correctness and
-normalized. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.PrettyResponse">PrettyResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>current_schema</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The pretty-formatted version of current schema. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>expected_schema</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The expected SDL schema after normalizing. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.QueryHistory">QueryHistory</h3>
         <p></p>
 
@@ -22076,14 +21975,6 @@ Permissions required: bb.databases.check</p></td>
               </tr>
             
               <tr>
-                <td>Pretty</td>
-                <td><a href="#bytebase.v1.PrettyRequest">PrettyRequest</a></td>
-                <td><a href="#bytebase.v1.PrettyResponse">PrettyResponse</a></td>
-                <td><p>Formats and normalizes SQL schema definitions.
-Permissions required: None</p></td>
-              </tr>
-            
-              <tr>
                 <td>DiffMetadata</td>
                 <td><a href="#bytebase.v1.DiffMetadataRequest">DiffMetadataRequest</a></td>
                 <td><a href="#bytebase.v1.DiffMetadataResponse">DiffMetadataResponse</a></td>
@@ -22177,16 +22068,6 @@ Permissions required: None (authenticated users only, requires AI to be enabled)
                 <td>Check</td>
                 <td>POST</td>
                 <td>/v1/sql/check</td>
-                <td>*</td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>Pretty</td>
-                <td>POST</td>
-                <td>/v1/sql/pretty</td>
                 <td>*</td>
               </tr>
               

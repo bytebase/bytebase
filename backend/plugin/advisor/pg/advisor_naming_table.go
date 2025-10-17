@@ -7,7 +7,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast"
@@ -84,7 +83,7 @@ func (checker *namingTableConventionChecker) Visit(node ast.Node) ast.Visitor {
 				Code:          advisor.NamingTableConventionMismatch.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf(`"%s" mismatches table naming convention, naming format should be %q`, tableName, checker.format),
-				StartPosition: common.ConvertPGParserLineToPosition(node.LastLine()),
+				StartPosition: newPositionAtLineStart(node.LastLine()),
 			})
 		}
 		if checker.maxLength > 0 && len(tableName) > checker.maxLength {
@@ -93,7 +92,7 @@ func (checker *namingTableConventionChecker) Visit(node ast.Node) ast.Visitor {
 				Code:          advisor.NamingTableConventionMismatch.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("\"%s\" mismatches table naming convention, its length should be within %d characters", tableName, checker.maxLength),
-				StartPosition: common.ConvertPGParserLineToPosition(node.LastLine()),
+				StartPosition: newPositionAtLineStart(node.LastLine()),
 			})
 		}
 	}

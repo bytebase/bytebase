@@ -7,7 +7,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
@@ -96,7 +95,7 @@ func (checker *columnNoNullChecker) generateAdviceList() []*storepb.Advice {
 			Code:          advisor.ColumnCannotNull.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf(`Column "%s" in %s cannot have NULL value`, column.column, column.normalizeTableName()),
-			StartPosition: common.ConvertPGParserLineToPosition(checker.nullableColumns[column]),
+			StartPosition: newPositionAtLineStart(checker.nullableColumns[column]),
 		})
 	}
 

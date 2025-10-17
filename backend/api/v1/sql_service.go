@@ -21,7 +21,6 @@ import (
 	celoverloads "github.com/google/cel-go/common/overloads"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -37,7 +36,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/transform"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
@@ -1257,36 +1255,6 @@ func (s *SQLService) SearchQueryHistories(ctx context.Context, req *connect.Requ
 	return connect.NewResponse(resp), nil
 }
 
-func (s *SQLService) convertToV1QueryHistory(ctx context.Context, history *store.QueryHistoryMessage) (*v1pb.QueryHistory, error) {
-	user, err := s.store.GetUserByID(ctx, history.CreatorUID)
-	if err != nil {
-		return nil, err
-	}
-	if user == nil {
-		return nil, errors.Errorf("cannot found user with id %d", history.CreatorUID)
-	}
-
-	historyType := v1pb.QueryHistory_TYPE_UNSPECIFIED
-	switch history.Type {
-	case store.QueryHistoryTypeExport:
-		historyType = v1pb.QueryHistory_EXPORT
-	case store.QueryHistoryTypeQuery:
-		historyType = v1pb.QueryHistory_QUERY
-	default:
-	}
-
-	return &v1pb.QueryHistory{
-		Name:       fmt.Sprintf("queryHistories/%d", history.UID),
-		Statement:  history.Statement,
-		Error:      history.Payload.Error,
-		Database:   history.Database,
-		Creator:    common.FormatUserEmail(user.Email),
-		CreateTime: timestamppb.New(history.CreatedAt),
-		Duration:   history.Payload.Duration,
-		Type:       historyType,
-	}, nil
-}
-
 func BuildGetLinkedDatabaseMetadataFunc(storeInstance *store.Store, engine storepb.Engine) parserbase.GetLinkedDatabaseMetadataFunc {
 	if engine != storepb.Engine_ORACLE {
 		return nil
@@ -1814,30 +1782,6 @@ func getUseDatabaseOwner(ctx context.Context, stores *store.Store, instance *sto
 	return project.Setting.PostgresDatabaseTenantMode, nil
 }
 
-func convertToV1Advice(advice *storepb.Advice) *v1pb.Advice {
-	return &v1pb.Advice{
-		Status:        convertAdviceStatus(advice.Status),
-		Code:          int32(advice.Code),
-		Title:         advice.Title,
-		Content:       advice.Content,
-		StartPosition: convertToPosition(advice.StartPosition),
-		EndPosition:   convertToPosition(advice.EndPosition),
-	}
-}
-
-func convertAdviceStatus(status storepb.Advice_Status) v1pb.Advice_Level {
-	switch status {
-	case storepb.Advice_SUCCESS:
-		return v1pb.Advice_SUCCESS
-	case storepb.Advice_WARNING:
-		return v1pb.Advice_WARNING
-	case storepb.Advice_ERROR:
-		return v1pb.Advice_ERROR
-	default:
-		return v1pb.Advice_ADVICE_LEVEL_UNSPECIFIED
-	}
-}
-
 func (*SQLService) DiffMetadata(_ context.Context, req *connect.Request[v1pb.DiffMetadataRequest]) (*connect.Response[v1pb.DiffMetadataResponse], error) {
 	request := req.Msg
 	switch request.Engine {
@@ -1903,32 +1847,6 @@ func sanitizeCommentForSchemaMetadata(dbSchema *storepb.DatabaseSchemaMetadata, 
 			}
 		}
 	}
-}
-
-// Pretty returns pretty format SDL.
-func (*SQLService) Pretty(_ context.Context, req *connect.Request[v1pb.PrettyRequest]) (*connect.Response[v1pb.PrettyResponse], error) {
-	request := req.Msg
-	engine := convertEngine(request.Engine)
-	if _, err := transform.CheckFormat(engine, request.ExpectedSchema); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("User SDL is not SDL format: %s", err.Error()))
-	}
-	if _, err := transform.CheckFormat(engine, request.CurrentSchema); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("Dumped SDL is not SDL format: %s", err.Error()))
-	}
-
-	prettyExpectedSchema, err := transform.SchemaTransform(engine, request.ExpectedSchema)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to transform user SDL: %s", err.Error()))
-	}
-	prettyCurrentSchema, err := transform.Normalize(engine, request.CurrentSchema, prettyExpectedSchema)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to normalize dumped SDL: %s", err.Error()))
-	}
-
-	return connect.NewResponse(&v1pb.PrettyResponse{
-		CurrentSchema:  prettyCurrentSchema,
-		ExpectedSchema: prettyExpectedSchema,
-	}), nil
 }
 
 // GetQueriableDataSource try to returns the RO data source, and will returns the admin data source if not exist the RO data source.

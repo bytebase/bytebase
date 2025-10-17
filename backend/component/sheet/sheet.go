@@ -253,7 +253,7 @@ func syntaxCheck(dbType storepb.Engine, statement string) (any, []*storepb.Advic
 			Code:          InternalErrorCode,
 			Title:         "Unsupported database type",
 			Content:       fmt.Sprintf("Unsupported database type %s", dbType),
-			StartPosition: common.FirstLinePosition,
+			StartPosition: nil,
 		},
 	}
 }
@@ -278,7 +278,7 @@ func dorisSyntaxCheck(statement string) (any, []*storepb.Advice) {
 				Code:          InternalErrorCode,
 				Title:         "Parse error",
 				Content:       err.Error(),
-				StartPosition: common.FirstLinePosition,
+				StartPosition: nil,
 			},
 		}
 	}
@@ -298,7 +298,7 @@ func cockroachdbSyntaxCheck(statement string) (any, []*storepb.Advice) {
 				Code:          InternalErrorCode,
 				Title:         "Parse error",
 				Content:       err.Error(),
-				StartPosition: common.FirstLinePosition,
+				StartPosition: nil,
 			},
 		}
 	}
@@ -329,7 +329,7 @@ func partiqlSyntaxCheck(statement string) (any, []*storepb.Advice) {
 				Code:          InternalErrorCode,
 				Title:         "Parse error",
 				Content:       err.Error(),
-				StartPosition: common.FirstLinePosition,
+				StartPosition: nil,
 			},
 		}
 	}
@@ -360,7 +360,7 @@ func mssqlSyntaxCheck(statement string) (any, []*storepb.Advice) {
 				Code:          InternalErrorCode,
 				Title:         "Parse error",
 				Content:       err.Error(),
-				StartPosition: common.FirstLinePosition,
+				StartPosition: nil,
 			},
 		}
 	}
@@ -391,7 +391,7 @@ func snowflakeSyntaxCheck(statement string) (any, []*storepb.Advice) {
 				Code:          InternalErrorCode,
 				Title:         "Parse error",
 				Content:       err.Error(),
-				StartPosition: common.FirstLinePosition,
+				StartPosition: nil,
 			},
 		}
 	}
@@ -421,7 +421,7 @@ func oracleSyntaxCheck(statement string) (any, []*storepb.Advice) {
 				Code:          InternalErrorCode,
 				Title:         "Parse error",
 				Content:       err.Error(),
-				StartPosition: common.FirstLinePosition,
+				StartPosition: nil,
 			},
 		}
 	}
@@ -486,7 +486,7 @@ func redshiftSyntaxCheck(statement string) (any, []*storepb.Advice) {
 				Code:          InternalErrorCode,
 				Title:         "Parse error",
 				Content:       err.Error(),
-				StartPosition: common.FirstLinePosition,
+				StartPosition: nil,
 			},
 		}
 	}
@@ -542,7 +542,7 @@ func mysqlSyntaxCheck(statement string) (any, []*storepb.Advice) {
 				Code:          InternalErrorCode,
 				Title:         "Parse error",
 				Content:       err.Error(),
-				StartPosition: common.FirstLinePosition,
+				StartPosition: nil,
 			},
 		}
 	}
@@ -577,7 +577,7 @@ func tidbSyntaxCheck(statement string) (any, []*storepb.Advice) {
 				Code:          InternalErrorCode,
 				Title:         "Syntax error",
 				Content:       err.Error(),
-				StartPosition: common.FirstLinePosition,
+				StartPosition: nil,
 			},
 		}
 	}

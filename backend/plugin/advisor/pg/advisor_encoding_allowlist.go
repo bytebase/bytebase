@@ -7,7 +7,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast"
@@ -90,7 +89,7 @@ func (checker *encodingAllowlistChecker) Visit(in ast.Node) ast.Visitor {
 			Code:          code.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("\"%s\" used disabled encoding '%s'", checker.text, disabledEncoding),
-			StartPosition: common.ConvertPGParserLineToPosition(line),
+			StartPosition: newPositionAtLineStart(line),
 		})
 	}
 

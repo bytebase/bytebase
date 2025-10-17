@@ -8,7 +8,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast"
@@ -64,7 +63,7 @@ func (checker *statementDisallowCommitChecker) Visit(in ast.Node) ast.Visitor {
 			Code:          advisor.StatementDisallowCommit.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("Commit is not allowed, related statement: \"%s\"", in.Text()),
-			StartPosition: common.ConvertPGParserLineToPosition(in.LastLine()),
+			StartPosition: newPositionAtLineStart(in.LastLine()),
 		})
 	}
 

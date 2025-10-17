@@ -9,7 +9,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
@@ -115,7 +114,7 @@ func (checker *indexTotalNumberLimitChecker) generateAdvice() []*storepb.Advice 
 				Code:          advisor.IndexCountExceedsLimit.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("The count of index in table %q.%q should be no more than %d, but found %d", table.schema, table.table, checker.max, tableInfo.CountIndex()),
-				StartPosition: common.ConvertPGParserLineToPosition(table.line),
+				StartPosition: newPositionAtLineStart(table.line),
 			})
 		}
 	}

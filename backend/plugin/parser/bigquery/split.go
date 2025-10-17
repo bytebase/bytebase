@@ -42,7 +42,7 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 			antlrPosition := base.FirstDefaultChannelTokenPosition(buf)
 			sqls = append(sqls, base.SingleSQL{
 				Text:     bufStr.String(),
-				BaseLine: common.ConvertANTLRLineToPositionLine(buf[0].GetLine()),
+				BaseLine: buf[0].GetLine() - 1,
 				End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
 					Line:   int32(buf[len(buf)-1].GetLine()),
 					Column: int32(buf[len(buf)-1].GetColumn()),

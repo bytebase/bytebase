@@ -315,10 +315,7 @@ watch(
         continue;
       }
       const db = databaseStore.getDatabaseByName(name);
-      const schema = await databaseStore.fetchDatabaseSchema(
-        db.name,
-        false /* sdlFormat */
-      );
+      const schema = await databaseStore.fetchDatabaseSchema(db.name);
       databaseSchemaCache.value[name] = schema.schema;
       if (schemaDiffCache.value[name]) {
         continue;
@@ -331,7 +328,6 @@ watch(
                 case: "changelog",
                 value: props.changelogSourceSchema.changelogName,
               },
-              sdlFormat: false,
             })
           : create(DiffSchemaRequestSchema, {
               name: db.name,
@@ -339,7 +335,6 @@ watch(
                 case: "schema",
                 value: props.sourceSchemaString,
               },
-              sdlFormat: false,
             });
 
         const diffResp = await databaseStore.diffSchema(diffRequest);

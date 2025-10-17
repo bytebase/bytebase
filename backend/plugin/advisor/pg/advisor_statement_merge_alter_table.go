@@ -9,7 +9,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast"
@@ -73,7 +72,7 @@ func (checker *statementMergeAlterTableChecker) generateAdvice() []*storepb.Advi
 				Code:          advisor.StatementRedundantAlterTable.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("There are %d statements to modify table `%s`", table.count, table.name),
-				StartPosition: common.ConvertPGParserLineToPosition(table.line),
+				StartPosition: newPositionAtLineStart(table.line),
 			})
 		}
 	}
