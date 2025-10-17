@@ -1254,6 +1254,7 @@ func (*querySpanExtractor) extractParamName(paramNameCtx postgresql.IParam_nameC
 	return strings.ToLower(paramNameCtx.GetText())
 }
 
+// nolint: unused
 func (q *querySpanExtractor) getColumnsForFunction(name, definition string) ([]base.QuerySpanResult, error) {
 	res, err := pgquery.Parse(definition)
 	if err != nil {
