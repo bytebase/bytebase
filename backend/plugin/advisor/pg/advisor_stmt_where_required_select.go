@@ -6,7 +6,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast"
@@ -74,7 +73,7 @@ func (checker *whereRequirementForSelectChecker) Visit(node ast.Node) ast.Visito
 			Code:          code.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("\"%s\" requires WHERE clause", checker.text),
-			StartPosition: common.ConvertPGParserLineToPosition(checker.line),
+			StartPosition: newPositionAtLineStart(checker.line),
 		})
 	}
 	return checker

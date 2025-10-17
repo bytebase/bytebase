@@ -8,7 +8,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast"
@@ -73,7 +72,7 @@ func (checker *statementMaximumLimitValueChecker) Visit(in ast.Node) ast.Visitor
 				Code:          advisor.StatementExceedMaximumLimitValue.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("The limit value %d exceeds the maximum allowed value %d", *node.Limit, checker.limitMaxValue),
-				StartPosition: common.ConvertPGParserLineToPosition(checker.line),
+				StartPosition: newPositionAtLineStart(checker.line),
 			})
 		}
 	}

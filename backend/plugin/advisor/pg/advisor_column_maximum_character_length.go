@@ -8,7 +8,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast"
@@ -112,7 +111,7 @@ func (checker *columnMaximumCharacterLengthChecker) Visit(in ast.Node) ast.Visit
 			Code:          advisor.CharLengthExceedsLimit.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf(`The length of the CHAR column %q in table %s is bigger than %d, please use VARCHAR instead`, columnName, tableName, checker.maximum),
-			StartPosition: common.ConvertPGParserLineToPosition(line),
+			StartPosition: newPositionAtLineStart(line),
 		})
 	}
 

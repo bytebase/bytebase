@@ -111,10 +111,3 @@ func ConvertPGParserErrorCursorPosToPosition(cursorPos int, text string) *storep
 		Column: int32(column),
 	}
 }
-
-func ConvertPGParserLineToPosition(line int) *storepb.Position {
-	return &storepb.Position{
-		Line:   int32(line),
-		Column: 0,
-	}
-}

@@ -8,7 +8,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast"
@@ -83,7 +82,7 @@ func (checker *commentConventionChecker) Visit(node ast.Node) ast.Visitor {
 			Code:          advisor.CommentTooLong.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("The length of comment should be within %d characters", checker.maxLength),
-			StartPosition: common.ConvertPGParserLineToPosition(comment.line),
+			StartPosition: newPositionAtLineStart(comment.line),
 		})
 	}
 

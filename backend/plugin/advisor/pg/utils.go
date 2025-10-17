@@ -4,6 +4,7 @@ package pg
 import (
 	"fmt"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast"
 )
 
@@ -42,4 +43,14 @@ func normalizeTableName(table *ast.TableDef) string {
 		return fmt.Sprintf("%q", table.Name)
 	}
 	return fmt.Sprintf("%q.%q", schema, table.Name)
+}
+
+// newPositionAtLineStart creates a Position at the start of the given line.
+// The line number is used as-is (typically from PostgreSQL parser which uses
+// 0-based line numbers), and column is set to 0.
+func newPositionAtLineStart(line int) *storepb.Position {
+	return &storepb.Position{
+		Line:   int32(line),
+		Column: 0,
+	}
 }

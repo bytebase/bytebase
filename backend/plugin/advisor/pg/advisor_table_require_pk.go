@@ -6,7 +6,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
@@ -113,7 +112,7 @@ func (checker *tableRequirePKChecker) Visit(node ast.Node) ast.Visitor {
 				missingPK.Name,
 				checker.text,
 			),
-			StartPosition: common.ConvertPGParserLineToPosition(node.LastLine()),
+			StartPosition: newPositionAtLineStart(node.LastLine()),
 		})
 	}
 

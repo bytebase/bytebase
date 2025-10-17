@@ -6,7 +6,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast"
@@ -57,7 +56,7 @@ func (*NoLeadingWildcardLikeAdvisor) Check(_ context.Context, checkCtx advisor.C
 				Code:          advisor.StatementLeadingWildcardLike.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("\"%s\" uses leading wildcard LIKE", checker.text),
-				StartPosition: common.ConvertPGParserLineToPosition(stmt.LastLine()),
+				StartPosition: newPositionAtLineStart(stmt.LastLine()),
 			})
 		}
 	}

@@ -6,7 +6,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast"
@@ -89,7 +88,7 @@ func (checker *tableNoFKChecker) Visit(node ast.Node) ast.Visitor {
 				tableHasFK.Name,
 				checker.text,
 			),
-			StartPosition: common.ConvertPGParserLineToPosition(node.LastLine()),
+			StartPosition: newPositionAtLineStart(node.LastLine()),
 		})
 	}
 
