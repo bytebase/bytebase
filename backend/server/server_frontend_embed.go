@@ -20,13 +20,6 @@ import (
 //go:embed dist
 var embeddedFiles embed.FS
 
-// CSPHashes contains the Content Security Policy hashes exported by the frontend build.
-type CSPHashes struct {
-	ScriptHashes  []string `json:"scriptHashes"`
-	GeneratedAt   string   `json:"generatedAt"`
-	PluginVersion string   `json:"pluginVersion"`
-}
-
 var (
 	cspHashesCache []string
 	cspHashesOnce  sync.Once
@@ -42,7 +35,11 @@ func loadCSPHashes() []string {
 		data, err := embeddedFiles.ReadFile(hashFilePath)
 
 		if err == nil {
-			var hashes CSPHashes
+			var hashes struct {
+				ScriptHashes  []string `json:"scriptHashes"`
+				GeneratedAt   string   `json:"generatedAt"`
+				PluginVersion string   `json:"pluginVersion"`
+			}
 			if err := json.Unmarshal(data, &hashes); err == nil && len(hashes.ScriptHashes) > 0 {
 				cspHashesCache = hashes.ScriptHashes
 				slog.Info("Loaded CSP hashes from embedded frontend build",
