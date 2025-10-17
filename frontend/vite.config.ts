@@ -11,6 +11,7 @@ import IconsResolver from "unplugin-icons/resolver";
 import Icons from "unplugin-icons/vite";
 import Components from "unplugin-vue-components/vite";
 import { defineConfig } from "vite";
+import { exportCspHashes } from "./vite-plugin-export-csp-hashes";
 
 const SERVER_PORT = parseInt(process.env.PORT ?? "3000", 10) ?? 3000;
 const LOCAL_ENDPOINT = "http://localhost:8080";
@@ -49,6 +50,8 @@ export default defineConfig({
     CodeInspectorPlugin({
       bundler: "vite",
     }),
+    // Export CSP hashes from @vitejs/plugin-legacy for backend to use
+    exportCspHashes(),
   ],
   build: {
     chunkSizeWarningLimit: 1000,

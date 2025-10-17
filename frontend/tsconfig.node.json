@@ -1,6 +1,6 @@
 {
   "extends": "@tsconfig/node22/tsconfig.json",
-  "include": ["vite.config.*", "vitest.config.*"],
+  "include": ["vite.config.*", "vitest.config.*", "vite-plugin-*.ts"],
   "compilerOptions": {
     "composite": true,
     "noEmit": true,
