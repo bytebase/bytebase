@@ -4,7 +4,6 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
-	"sync"
 
 	"github.com/labstack/echo-contrib/prometheus"
 	"github.com/labstack/echo/v4"
@@ -18,18 +17,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
-)
-
-// CSPHashes contains the Content Security Policy hashes exported by the frontend build.
-type CSPHashes struct {
-	ScriptHashes  []string `json:"scriptHashes"`
-	GeneratedAt   string   `json:"generatedAt"`
-	PluginVersion string   `json:"pluginVersion"`
-}
-
-var (
-	cspHashesCache     *CSPHashes
-	cspHashesCacheLock sync.RWMutex
 )
 
 func configureEchoRouters(
@@ -107,61 +94,6 @@ func recoverMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		}()
 		return next(c)
 	}
-}
-
-// loadCSPHashes loads CSP hashes from the embedded frontend build output or filesystem.
-// Falls back to hardcoded hashes if the file doesn't exist.
-func loadCSPHashes() []string {
-	cspHashesCacheLock.RLock()
-	if cspHashesCache != nil {
-		defer cspHashesCacheLock.RUnlock()
-		return cspHashesCache.ScriptHashes
-	}
-	cspHashesCacheLock.RUnlock()
-
-	cspHashesCacheLock.Lock()
-	defer cspHashesCacheLock.Unlock()
-
-	// Double-check after acquiring write lock
-	if cspHashesCache != nil {
-		return cspHashesCache.ScriptHashes
-	}
-
-	// Try to load from frontend build output
-	hashFilePath := filepath.Join("dist", "csp-hashes.json")
-	data, err := os.ReadFile(hashFilePath)
-	if err == nil {
-		var hashes CSPHashes
-		if err := json.Unmarshal(data, &hashes); err == nil && len(hashes.ScriptHashes) > 0 {
-			cspHashesCache = &hashes
-			slog.Info("Loaded CSP hashes from frontend build",
-				"path", hashFilePath,
-				"plugin_version", hashes.PluginVersion,
-				"hash_count", len(hashes.ScriptHashes))
-			return hashes.ScriptHashes
-		}
-	}
-
-	// Fallback to hardcoded hashes for @vitejs/plugin-legacy@7.2.1
-	// These are stable as long as the plugin version is pinned with ~ in package.json
-	fallbackHashes := []string{
-		"'sha256-MS6/3FCg4WjP9gwgaBGwLpRCY6fZBgwmhVCdrPrNf3E='", // Safari 10 nomodule fix
-		"'sha256-tQjf8gvb2ROOMapIxFvFAYBeUJ0v1HCbOcSmDNXGtDo='", // SystemJS inline code
-		"'sha256-ZxAi3a7m9Mzbc+Z1LGuCCK5Xee6reDkEPRas66H9KSo='", // Modern browser detection
-		"'sha256-+5XkZFazzJo8n0iOP4ti/cLCMUudTf//Mzkb7xNPXIc='", // Dynamic fallback
-	}
-
-	cspHashesCache = &CSPHashes{
-		ScriptHashes:  fallbackHashes,
-		PluginVersion: "7.2.1",
-		GeneratedAt:   "fallback",
-	}
-
-	slog.Warn("CSP hash file not found, using fallback hashes",
-		"path", hashFilePath,
-		"error", err)
-
-	return fallbackHashes
 }
 
 func securityHeadersMiddleware(next echo.HandlerFunc) echo.HandlerFunc {

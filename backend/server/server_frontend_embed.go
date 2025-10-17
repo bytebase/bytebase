@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"log/slog"
 	"net/http"
+	"sync"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -18,6 +19,18 @@ import (
 //go:embed dist/assets/*
 //go:embed dist
 var embeddedFiles embed.FS
+
+// CSPHashes contains the Content Security Policy hashes exported by the frontend build.
+type CSPHashes struct {
+	ScriptHashes  []string `json:"scriptHashes"`
+	GeneratedAt   string   `json:"generatedAt"`
+	PluginVersion string   `json:"pluginVersion"`
+}
+
+var (
+	cspHashesCache     *CSPHashes
+	cspHashesCacheLock sync.RWMutex
+)
 
 // loadCSPHashes loads CSP hashes from the embedded frontend build output.
 // Falls back to hardcoded hashes if the file doesn't exist.
