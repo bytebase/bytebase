@@ -22,7 +22,6 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/transform"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
@@ -866,29 +865,7 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, req *connect.Re
 		}
 		dbSchema = newDBSchema
 	}
-	// We only support MySQL engine for now.
 	schemaString := string(dbSchema.GetSchema())
-	if req.Msg.SdlFormat {
-		switch instance.Metadata.GetEngine() {
-		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-			sdlSchema, err := transform.SchemaTransform(storepb.Engine_MYSQL, schemaString)
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert schema to sdl format, error %v", err.Error()))
-			}
-			schemaString = sdlSchema
-		case storepb.Engine_POSTGRES:
-			// Use the new SDL format for PostgreSQL
-			sdlSchema, err := schema.GetDatabaseDefinition(instance.Metadata.GetEngine(), schema.GetDefinitionContext{
-				SkipBackupSchema: true,
-				SDLFormat:        true,
-			}, dbSchema.GetMetadata())
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert PostgreSQL schema to SDL format, error %v", err.Error()))
-			}
-			schemaString = sdlSchema
-		default:
-		}
-	}
 	return connect.NewResponse(&v1pb.DatabaseSchema{Schema: schemaString}), nil
 }
 
@@ -1146,9 +1123,8 @@ func (s *DatabaseService) getSourceSchema(ctx context.Context, request *v1pb.Dif
 	if strings.Contains(request.Name, common.ChangelogPrefix) {
 		changeHistory, err := s.GetChangelog(ctx, &connect.Request[v1pb.GetChangelogRequest]{
 			Msg: &v1pb.GetChangelogRequest{
-				Name:      request.Name,
-				View:      v1pb.ChangelogView_CHANGELOG_VIEW_FULL,
-				SdlFormat: true,
+				Name: request.Name,
+				View: v1pb.ChangelogView_CHANGELOG_VIEW_FULL,
 			},
 		})
 		if err != nil {
@@ -1159,8 +1135,7 @@ func (s *DatabaseService) getSourceSchema(ctx context.Context, request *v1pb.Dif
 
 	databaseSchema, err := s.GetDatabaseSchema(ctx, &connect.Request[v1pb.GetDatabaseSchemaRequest]{
 		Msg: &v1pb.GetDatabaseSchemaRequest{
-			Name:      fmt.Sprintf("%s/schema", request.Name),
-			SdlFormat: request.SdlFormat,
+			Name: fmt.Sprintf("%s/schema", request.Name),
 		},
 	})
 	if err != nil {
@@ -1181,9 +1156,8 @@ func (s *DatabaseService) getTargetSchema(ctx context.Context, request *v1pb.Dif
 	if changeHistoryID != "" {
 		changeHistory, err := s.GetChangelog(ctx, &connect.Request[v1pb.GetChangelogRequest]{
 			Msg: &v1pb.GetChangelogRequest{
-				Name:      changeHistoryID,
-				View:      v1pb.ChangelogView_CHANGELOG_VIEW_FULL,
-				SdlFormat: true,
+				Name: changeHistoryID,
+				View: v1pb.ChangelogView_CHANGELOG_VIEW_FULL,
 			},
 		})
 		if err != nil {

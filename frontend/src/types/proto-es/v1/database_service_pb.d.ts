@@ -404,13 +404,6 @@ export declare type GetDatabaseSchemaRequest = Message<"bytebase.v1.GetDatabaseS
    * @generated from field: string name = 1;
    */
   name: string;
-
-  /**
-   * Format the schema dump into SDL format.
-   *
-   * @generated from field: bool sdl_format = 2;
-   */
-  sdlFormat: boolean;
 };
 
 /**
@@ -455,13 +448,6 @@ export declare type DiffSchemaRequest = Message<"bytebase.v1.DiffSchemaRequest">
     value: string;
     case: "changelog";
   } | { case: undefined; value?: undefined };
-
-  /**
-   * Format the schema dump into SDL format.
-   *
-   * @generated from field: bool sdl_format = 4;
-   */
-  sdlFormat: boolean;
 };
 
 /**
@@ -3120,13 +3106,6 @@ export declare type GetChangelogRequest = Message<"bytebase.v1.GetChangelogReque
    * @generated from field: bytebase.v1.ChangelogView view = 2;
    */
   view: ChangelogView;
-
-  /**
-   * Format the schema dump into SDL format.
-   *
-   * @generated from field: bool sdl_format = 3;
-   */
-  sdlFormat: boolean;
 };
 
 /**

@@ -1619,11 +1619,6 @@ paths:
                         - CHANGELOG_VIEW_FULL
                     type: string
                     format: enum
-                - name: sdlFormat
-                  in: query
-                  description: Format the schema dump into SDL format.
-                  schema:
-                    type: boolean
             responses:
                 "200":
                     description: OK
@@ -2242,11 +2237,6 @@ paths:
                   required: true
                   schema:
                     type: string
-                - name: sdlFormat
-                  in: query
-                  description: Format the schema dump into SDL format.
-                  schema:
-                    type: boolean
             responses:
                 "200":
                     description: OK
@@ -10399,9 +10389,6 @@ components:
                         The resource name of the changelog
                          Format:
                          instances/{instance}/databases/{database}/changelogs/{changelog}
-                sdlFormat:
-                    type: boolean
-                    description: Format the schema dump into SDL format.
         DiffSchemaResponse:
             type: object
             properties:

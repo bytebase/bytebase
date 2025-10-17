@@ -356,9 +356,6 @@ message GetDatabaseSchemaRequest {
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/DatabaseSchema"}
   ];
-
-  // Format the schema dump into SDL format.
-  bool sdl_format = 2;
 }
 
 message DiffSchemaRequest {
@@ -380,9 +377,6 @@ message DiffSchemaRequest {
     // instances/{instance}/databases/{database}/changelogs/{changelog}
     string changelog = 3;
   }
-
-  // Format the schema dump into SDL format.
-  bool sdl_format = 4;
 }
 
 message DiffSchemaResponse {
@@ -1442,9 +1436,6 @@ message GetChangelogRequest {
   ];
 
   ChangelogView view = 2;
-
-  // Format the schema dump into SDL format.
-  bool sdl_format = 3;
 }
 
 message Changelog {

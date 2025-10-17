@@ -2385,7 +2385,6 @@ DependencyColumn is the metadata for dependency columns.
 | name | [string](#string) |  | The name of the database or changelog. Format: database: instances/{instance}/databases/{database} changelog: instances/{instance}/databases/{database}/changelogs/{changelog} |
 | schema | [string](#string) |  | The target schema. |
 | changelog | [string](#string) |  | The resource name of the changelog Format: instances/{instance}/databases/{database}/changelogs/{changelog} |
-| sdl_format | [bool](#bool) |  | Format the schema dump into SDL format. |
 
 
 
@@ -2590,7 +2589,6 @@ FunctionMetadata is the metadata for functions.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the changelog to retrieve. Format: instances/{instance}/databases/{database}/changelogs/{changelog} |
 | view | [ChangelogView](#bytebase-v1-ChangelogView) |  |  |
-| sdl_format | [bool](#bool) |  | Format the schema dump into SDL format. |
 
 
 
@@ -2642,7 +2640,6 @@ For example: schema == &#34;schema-a&#34; table == &#34;table-a&#34; table.match
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the database to retrieve schema. Format: instances/{instance}/databases/{database}/schema |
-| sdl_format | [bool](#bool) |  | Format the schema dump into SDL format. |
 
 
 
