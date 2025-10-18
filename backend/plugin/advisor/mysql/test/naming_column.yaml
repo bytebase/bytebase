@@ -6,7 +6,7 @@
       title: naming.column
       content: '`book`.`creatorId` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: CREATE TABLE book(id int, gbhzmtchhsjzyrhdroxmyouwloxqezowdvhcbqalqcgqhfbjnvmhwrbggezmzeusx int);
@@ -17,7 +17,7 @@
       title: naming.column
       content: '`book`.`gbhzmtchhsjzyrhdroxmyouwloxqezowdvhcbqalqcgqhfbjnvmhwrbggezmzeusx` mismatches column naming convention, its length should be within 64 characters'
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: CREATE TABLE book(id int, creator_id int);
@@ -33,7 +33,7 @@
       title: naming.column
       content: '`book`.`creatorId` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
     - status: 2
@@ -41,7 +41,7 @@
       title: naming.column
       content: '`book`.`gbhzmtchhsjzyrhdroxmyouwloxqezowdvhcbqalqcgqhfbjnvmhwrbggezmzeusx` mismatches column naming convention, its length should be within 64 characters'
       startposition:
-        line: 2
+        line: 3
         column: 0
       endposition: null
 - statement: |
@@ -54,7 +54,7 @@
       title: naming.column
       content: '`tech_book`.`gbhzmtchhsjzyrhdroxmyouwloxqezowdvhcbqalqcgqhfbjnvmhwrbggezmzeusx` mismatches column naming convention, its length should be within 64 characters'
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -72,7 +72,7 @@
       title: naming.column
       content: '`book`.`creatorId` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       startposition:
-        line: 6
+        line: 7
         column: 0
       endposition: null
 - statement: |-
@@ -95,7 +95,7 @@
       title: naming.column
       content: '`book`.`contentString` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       startposition:
-        line: 5
+        line: 6
         column: 0
       endposition: null
 - statement: |-
@@ -112,7 +112,7 @@
       title: naming.column
       content: '`book`.`contentString` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       startposition:
-        line: 5
+        line: 6
         column: 0
       endposition: null
     - status: 2
@@ -120,7 +120,7 @@
       title: naming.column
       content: '`book`.`personAge` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       startposition:
-        line: 5
+        line: 6
         column: 0
       endposition: null
 - statement: |-
@@ -140,7 +140,7 @@
       title: naming.column
       content: '`book`.`createdTs` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       startposition:
-        line: 2
+        line: 3
         column: 0
       endposition: null
     - status: 2
@@ -148,7 +148,7 @@
       title: naming.column
       content: '`book`.`updaterId` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       startposition:
-        line: 3
+        line: 4
         column: 0
       endposition: null
     - status: 2
@@ -156,7 +156,7 @@
       title: naming.column
       content: '`student`.`createdTs` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       startposition:
-        line: 7
+        line: 8
         column: 0
       endposition: null
     - status: 2
@@ -164,6 +164,6 @@
       title: naming.column
       content: '`student`.`updatedTs` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       startposition:
-        line: 8
+        line: 9
         column: 0
       endposition: null

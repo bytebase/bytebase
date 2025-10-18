@@ -52,9 +52,11 @@ func ConvertANTLRPositionToPosition(a *ANTLRPosition, text string) *storepb.Posi
 }
 
 func ConvertANTLRLineToPosition(line int) *storepb.Position {
-	positionLine := line - 1
-	if line == 0 {
-		positionLine = 0
+	// ANTLR line numbers are 1-based, and Position uses 1-based line numbering.
+	// Just pass through the value, handling the 0 case for safety.
+	positionLine := line
+	if line < 1 {
+		positionLine = 1
 	}
 	return &storepb.Position{
 		Line: int32(positionLine),

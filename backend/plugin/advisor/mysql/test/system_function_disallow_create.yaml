@@ -22,6 +22,6 @@
           RETURN result;
         END;" creates
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null

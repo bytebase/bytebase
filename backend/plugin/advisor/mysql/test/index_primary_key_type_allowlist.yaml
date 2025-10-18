@@ -6,7 +6,7 @@
       title: index.primary-key-type-allowlist
       content: The column `id` in table `t` is one of the primary key, but its type "varchar" is not in allowlist
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: CREATE TABLE t(id INT PRIMARY KEY);
@@ -19,7 +19,7 @@
       title: index.primary-key-type-allowlist
       content: The column `id` in table `t` is one of the primary key, but its type "varchar" is not in allowlist
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: CREATE TABLE t(id INT, id2 VARCHAR(5), id3 VARCHAR(5), PRIMARY KEY(id, id2, id3));
@@ -30,7 +30,7 @@
       title: index.primary-key-type-allowlist
       content: The column `id2` in table `t` is one of the primary key, but its type "varchar" is not in allowlist
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
     - status: 2
@@ -38,7 +38,7 @@
       title: index.primary-key-type-allowlist
       content: The column `id3` in table `t` is one of the primary key, but its type "varchar" is not in allowlist
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: CREATE TABLE t(id INT, id2 BIGINT, PRIMARY KEY(id, id2));

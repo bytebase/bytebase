@@ -2974,7 +2974,7 @@ Example: UpdateRole with allow_missing requires both bb.roles.update
 
       
         <h3 id="bytebase.v1.Position">Position</h3>
-        <p>Position in a text.</p><p>Line is 0-based, Column is 1-based.</p><p>Why this mixed numbering?</p><p>- Line is 0-based to match LSP (https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#position)</p><p>and common programming practice (arrays/lists are 0-indexed)</p><p>- Column is 1-based to match user expectations (text editors show "column 1" for the first character)</p><p>Handling unknown positions:</p><p>- If the entire position is unknown, leave this field as nil/undefined</p><p>- If only line is known, set line and leave column as 0 (e.g., line=5, column=0)</p><p>- If only column is known (rare), set column and leave line as 0</p><p>Frontends should check for nil/undefined/zero values and handle them appropriately.</p><p>When displaying to users, convert to 1-based: display "line X" as "line X+1".</p>
+        <p>Position in a text expressed as one-based line and one-based column.</p><p>We use 1-based numbering to match the majority of industry standards:</p><p>- Monaco Editor uses 1-based (https://microsoft.github.io/monaco-editor/typedoc/interfaces/IPosition.html)</p><p>- GitHub Actions uses 1-based (https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-error-message)</p><p>- Most text editors display 1-based positions to users</p><p>Note: LSP uses 0-based (https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#position),</p><p>but we follow the canonical user-facing standards.</p><p>Handling unknown positions:</p><p>- If the entire position is unknown, leave this field as nil/undefined</p><p>- If only line is known, set line and leave column as 0 (e.g., line=5, column=0)</p><p>- If only column is known (rare), set column and leave line as 0</p><p>Frontends should check for nil/undefined/zero values and handle them appropriately.</p>
 
         
           <table class="field-table">
@@ -2987,8 +2987,9 @@ Example: UpdateRole with allow_missing requires both bb.roles.update
                   <td>line</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>Line position in a text (zero-based).
-First line of the text is line 0, second line is line 1, etc. </p></td>
+                  <td><p>Line position in a text (one-based).
+First line of the text is line 1.
+A value of 0 indicates the line information is unknown. </p></td>
                 </tr>
               
                 <tr>

@@ -14,7 +14,7 @@
       title: column.disallow-set-charset
       content: Disallow set column charset but "CREATE TABLE t1(a varchar(20) CHARSET ascii);" does
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
     - status: 2

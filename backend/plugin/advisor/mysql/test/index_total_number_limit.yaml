@@ -52,7 +52,7 @@
       title: index.total-number-limit
       content: The count of index in table `t` should be no more than 5, but found 6
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: |-

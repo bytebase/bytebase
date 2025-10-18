@@ -8,6 +8,6 @@
       title: statement.maximum-join-table-count
       content: '"select name from hello join world on hello.id = world.id join baby on world.id = baby.id;" exceeds the maximum number of joins 2.'
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null

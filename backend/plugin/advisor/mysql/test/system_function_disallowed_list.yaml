@@ -8,7 +8,7 @@
       title: system.function.disallowed-list
       content: Function "RAND" is disallowed, but "SELECT RAND();" uses
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -40,6 +40,6 @@
       title: system.function.disallowed-list
       content: Function "SLEEP" is disallowed, but "SELECT SLEEP(5);" uses
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null

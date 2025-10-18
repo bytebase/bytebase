@@ -6,7 +6,7 @@
       title: schema.backward-compatibility
       content: '"ALTER TABLE tech_book CHANGE name f2 TEXT;" may cause incompatibility with the existing data and code'
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book MODIFY name TEXT;
@@ -17,7 +17,7 @@
       title: schema.backward-compatibility
       content: '"ALTER TABLE tech_book MODIFY name TEXT;" may cause incompatibility with the existing data and code'
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book MODIFY name TEXT NULL;
@@ -28,7 +28,7 @@
       title: schema.backward-compatibility
       content: '"ALTER TABLE tech_book MODIFY name TEXT NULL;" may cause incompatibility with the existing data and code'
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book MODIFY name TEXT NOT NULL;
@@ -39,7 +39,7 @@
       title: schema.backward-compatibility
       content: '"ALTER TABLE tech_book MODIFY name TEXT NOT NULL;" may cause incompatibility with the existing data and code'
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book MODIFY name TEXT COMMENT 'bla';
@@ -50,6 +50,6 @@
       title: schema.backward-compatibility
       content: '"ALTER TABLE tech_book MODIFY name TEXT COMMENT ''bla'';" may cause incompatibility with the existing data and code'
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null

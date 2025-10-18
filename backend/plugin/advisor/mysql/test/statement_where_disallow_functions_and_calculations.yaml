@@ -6,6 +6,6 @@
       title: statement.where.disallow-functions-and-calculations
       content: Function is disallowed in where clause, but "SELECT * FROM employee WHERE id = RAND();" uses
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null

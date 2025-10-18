@@ -12,7 +12,7 @@
       title: column.required
       content: 'Table `t1` requires columns: created_ts, creator_id, id, updated_ts, updater_id'
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
     - status: 2
@@ -159,7 +159,7 @@
       title: column.required
       content: 'Table `book` requires columns: updater_id'
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -191,7 +191,7 @@
       title: column.required
       content: 'Table `book` requires columns: creator_id'
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
     - status: 2

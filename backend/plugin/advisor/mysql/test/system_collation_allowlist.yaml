@@ -56,7 +56,7 @@
       title: system.collation.allowlist
       content: '"CREATE TABLE t(a int) COLLATE utf8mb4_polish_ci;" used disabled collation ''utf8mb4_polish_ci'''
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: CREATE TABLE t(a varchar(255));
@@ -69,7 +69,7 @@
       title: system.collation.allowlist
       content: '"CREATE TABLE t(a int) COLLATE latin1_bin;" used disabled collation ''latin1_bin'''
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -93,7 +93,7 @@
       title: system.collation.allowlist
       content: '"ALTER DATABASE test COLLATE latin1_bin;" used disabled collation ''latin1_bin'''
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: CREATE TABLE t(a varchar(255) CHARACTER SET latin1 COLLATE latin1_bin);
@@ -104,7 +104,7 @@
       title: system.collation.allowlist
       content: '"CREATE TABLE t(a varchar(255) CHARACTER SET latin1 COLLATE latin1_bin);" used disabled collation ''latin1_bin'''
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: |-

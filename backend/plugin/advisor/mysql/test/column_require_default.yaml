@@ -89,7 +89,7 @@
       title: column.require-default
       content: Column `tech_book`.`b` doesn't have DEFAULT.
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: |-

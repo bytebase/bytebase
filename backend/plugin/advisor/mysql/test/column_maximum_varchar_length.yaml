@@ -8,7 +8,7 @@
       title: column.maximum-varchar-length
       content: The length of the VARCHAR column `t1.name` is bigger than 2560
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: |-

@@ -524,25 +524,24 @@ func (x *PageToken) GetOffset() int32 {
 	return 0
 }
 
-// Position in a text.
-// Line is 0-based, Column is 1-based.
-//
-// Why this mixed numbering?
-//   - Line is 0-based to match LSP (https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#position)
-//     and common programming practice (arrays/lists are 0-indexed)
-//   - Column is 1-based to match user expectations (text editors show "column 1" for the first character)
+// Position in a text expressed as one-based line and one-based column.
+// We use 1-based numbering to match the majority of industry standards:
+// - Monaco Editor uses 1-based (https://microsoft.github.io/monaco-editor/typedoc/interfaces/IPosition.html)
+// - GitHub Actions uses 1-based (https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-error-message)
+// - Most text editors display 1-based positions to users
+// Note: LSP uses 0-based (https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#position),
+// but we follow the canonical user-facing standards.
 //
 // Handling unknown positions:
 // - If the entire position is unknown, leave this field as nil/undefined
 // - If only line is known, set line and leave column as 0 (e.g., line=5, column=0)
 // - If only column is known (rare), set column and leave line as 0
 // Frontends should check for nil/undefined/zero values and handle them appropriately.
-//
-// When displaying to users, convert to 1-based: display "line X" as "line X+1".
 type Position struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Line position in a text (zero-based).
-	// First line of the text is line 0, second line is line 1, etc.
+	// Line position in a text (one-based).
+	// First line of the text is line 1.
+	// A value of 0 indicates the line information is unknown.
 	Line int32 `protobuf:"varint,1,opt,name=line,proto3" json:"line,omitempty"`
 	// Column position in a text (one-based).
 	// Column is measured in Unicode code points (characters/runes), not bytes or grapheme clusters.
