@@ -2,24 +2,22 @@
   result:
     - |-
       {
-        "status":  "SUCCESS",
-        "title":  "OK"
+        "status": "SUCCESS",
+        "title": "OK"
       }
   run: false
 - statement: CREATE TABLE user(id);
   result:
     - |-
       {
-        "status":  "ERROR",
-        "title":  "Syntax error",
-        "content":  "Syntax error at line 1:21 \nrelated text: CREATE TABLE user(id)",
-        "code":  201,
-        "sqlReviewReport":  {
-          "line":  1,
-          "column":  21,
-          "startPosition":  {
-            "line":  1,
-            "column":  21
+        "status": "ERROR",
+        "title": "Syntax error",
+        "content": "Syntax error at line 1:21 \nrelated text: CREATE TABLE user(id)",
+        "code": 201,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1,
+            "column": 21
           }
         }
       }
@@ -28,252 +26,302 @@
   result:
     - |-
       {
-        "status":  "ERROR",
-        "title":  "engine.mysql.use-innodb",
-        "content":  "\"CREATE TABLE userTable(id INT NOT NULL,name VARCHAR(255) CHARSET ascii,roomId INT,time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',content BLOB NOT NULL COMMENT 'comment',json_content JSON NOT NULL COMMENT 'comment',INDEX idx1(name),UNIQUE KEY uk1(id, name),FOREIGN KEY fk1(roomId) REFERENCES room(id),INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin;\" doesn't use InnoDB engine",
-        "code":  501,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "ERROR",
+        "title": "engine.mysql.use-innodb",
+        "content": "\"CREATE TABLE userTable(id INT NOT NULL,name VARCHAR(255) CHARSET ascii,roomId INT,time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',content BLOB NOT NULL COMMENT 'comment',json_content JSON NOT NULL COMMENT 'comment',INDEX idx1(name),UNIQUE KEY uk1(id, name),FOREIGN KEY fk1(roomId) REFERENCES room(id),INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin;\" doesn't use InnoDB engine",
+        "code": 501,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "ERROR",
-        "title":  "table.require-pk",
-        "content":  "Table `userTable` requires PRIMARY KEY",
-        "code":  601,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "ERROR",
+        "title": "table.require-pk",
+        "content": "Table `userTable` requires PRIMARY KEY",
+        "code": 601,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "ERROR",
-        "title":  "table.no-foreign-key",
-        "content":  "Foreign key is not allowed in the table `userTable`",
-        "code":  602,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "ERROR",
+        "title": "table.no-foreign-key",
+        "content": "Foreign key is not allowed in the table `userTable`",
+        "code": 602,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "ERROR",
-        "title":  "column.type-disallow-list",
-        "content":  "Disallow column type JSON but column `userTable`.`json_content` is",
-        "code":  411,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "ERROR",
+        "title": "column.type-disallow-list",
+        "content": "Disallow column type JSON but column `userTable`.`json_content` is",
+        "code": 411,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "WARNING",
-        "title":  "naming.table",
-        "content":  "`userTable` mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
-        "code":  301,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "WARNING",
+        "title": "naming.table",
+        "content": "`userTable` mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
+        "code": 301,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "WARNING",
-        "title":  "naming.column",
-        "content":  "`userTable`.`roomId` mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
-        "code":  302,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "WARNING",
+        "title": "naming.column",
+        "content": "`userTable`.`roomId` mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
+        "code": 302,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "WARNING",
-        "title":  "naming.index.idx",
-        "content":  "Index in table `userTable` mismatches the naming convention, expect \"^$|^idx_userTable_name$\" but found `idx1`",
-        "code":  303,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "WARNING",
+        "title": "naming.index.idx",
+        "content": "Index in table `userTable` mismatches the naming convention, expect \"^$|^idx_userTable_name$\" but found `idx1`",
+        "code": 303,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "WARNING",
-        "title":  "naming.index.uk",
-        "content":  "Unique key in table `userTable` mismatches the naming convention, expect \"^$|^uk_userTable_id_name$\" but found `uk1`",
-        "code":  304,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "WARNING",
+        "title": "naming.index.uk",
+        "content": "Unique key in table `userTable` mismatches the naming convention, expect \"^$|^uk_userTable_id_name$\" but found `uk1`",
+        "code": 304,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "WARNING",
-        "title":  "naming.index.fk",
-        "content":  "Foreign key in table `userTable` mismatches the naming convention, expect \"^$|^fk_userTable_roomId_room_id$\" but found `fk1`",
-        "code":  305,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "WARNING",
+        "title": "naming.index.fk",
+        "content": "Foreign key in table `userTable` mismatches the naming convention, expect \"^$|^fk_userTable_roomId_room_id$\" but found `fk1`",
+        "code": 305,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "WARNING",
-        "title":  "table.comment",
-        "content":  "Table `userTable` requires comments",
-        "code":  1032,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "WARNING",
+        "title": "table.comment",
+        "content": "Table `userTable` requires comments",
+        "code": 1032,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "WARNING",
-        "title":  "column.required",
-        "content":  "Table `userTable` requires columns: created_ts, creator_id, updated_ts, updater_id",
-        "code":  401,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "WARNING",
+        "title": "column.required",
+        "content": "Table `userTable` requires columns: created_ts, creator_id, updated_ts, updater_id",
+        "code": 401,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "WARNING",
-        "title":  "column.no-null",
-        "content":  "`userTable`.`name` cannot have NULL value",
-        "code":  402,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "WARNING",
+        "title": "column.no-null",
+        "content": "`userTable`.`name` cannot have NULL value",
+        "code": 402,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "WARNING",
-        "title":  "column.no-null",
-        "content":  "`userTable`.`roomId` cannot have NULL value",
-        "code":  402,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "WARNING",
+        "title": "column.no-null",
+        "content": "`userTable`.`roomId` cannot have NULL value",
+        "code": 402,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "WARNING",
-        "title":  "column.set-default-for-not-null",
-        "content":  "Column `userTable`.`id` is NOT NULL but doesn't have DEFAULT",
-        "code":  404,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "WARNING",
+        "title": "column.set-default-for-not-null",
+        "content": "Column `userTable`.`id` is NOT NULL but doesn't have DEFAULT",
+        "code": 404,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "WARNING",
-        "title":  "column.comment",
-        "content":  "Column `userTable`.`id` requires comments",
-        "code":  1032,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "WARNING",
+        "title": "column.comment",
+        "content": "Column `userTable`.`id` requires comments",
+        "code": 1032,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "WARNING",
-        "title":  "column.comment",
-        "content":  "Column `userTable`.`name` requires comments",
-        "code":  1032,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "WARNING",
+        "title": "column.comment",
+        "content": "Column `userTable`.`name` requires comments",
+        "code": 1032,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "WARNING",
-        "title":  "column.comment",
-        "content":  "Column `userTable`.`roomId` requires comments",
-        "code":  1032,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "WARNING",
+        "title": "column.comment",
+        "content": "Column `userTable`.`roomId` requires comments",
+        "code": 1032,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "WARNING",
-        "title":  "column.disallow-set-charset",
-        "content":  "Disallow set column charset but \"CREATE TABLE userTable(id INT NOT NULL,name VARCHAR(255) CHARSET ascii,roomId INT,time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',content BLOB NOT NULL COMMENT 'comment',json_content JSON NOT NULL COMMENT 'comment',INDEX idx1(name),UNIQUE KEY uk1(id, name),FOREIGN KEY fk1(roomId) REFERENCES room(id),INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin;\" does",
-        "code":  414,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "WARNING",
+        "title": "column.disallow-set-charset",
+        "content": "Disallow set column charset but \"CREATE TABLE userTable(id INT NOT NULL,name VARCHAR(255) CHARSET ascii,roomId INT,time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',content BLOB NOT NULL COMMENT 'comment',json_content JSON NOT NULL COMMENT 'comment',INDEX idx1(name),UNIQUE KEY uk1(id, name),FOREIGN KEY fk1(roomId) REFERENCES room(id),INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin;\" does",
+        "code": 414,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "WARNING",
-        "title":  "column.current-time-count-limit",
-        "content":  "Table `userTable` has 2 ON UPDATE CURRENT_TIMESTAMP() columns. The count greater than 1.",
-        "code":  419,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "WARNING",
+        "title": "column.current-time-count-limit",
+        "content": "Table `userTable` has 2 ON UPDATE CURRENT_TIMESTAMP() columns. The count greater than 1.",
+        "code": 419,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "WARNING",
-        "title":  "column.require-default",
-        "content":  "Column `userTable`.`id` doesn't have DEFAULT.",
-        "code":  420,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "WARNING",
+        "title": "column.require-default",
+        "content": "Column `userTable`.`id` doesn't have DEFAULT.",
+        "code": 420,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "WARNING",
-        "title":  "column.require-default",
-        "content":  "Column `userTable`.`name` doesn't have DEFAULT.",
-        "code":  420,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "WARNING",
+        "title": "column.require-default",
+        "content": "Column `userTable`.`name` doesn't have DEFAULT.",
+        "code": 420,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "WARNING",
-        "title":  "column.require-default",
-        "content":  "Column `userTable`.`roomId` doesn't have DEFAULT.",
-        "code":  420,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "WARNING",
+        "title": "column.require-default",
+        "content": "Column `userTable`.`roomId` doesn't have DEFAULT.",
+        "code": 420,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "WARNING",
-        "title":  "index.type-no-blob",
-        "content":  "Columns in index must not be BLOB but `userTable`.`content` is blob",
-        "code":  804,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "WARNING",
+        "title": "index.type-no-blob",
+        "content": "Columns in index must not be BLOB but `userTable`.`content` is blob",
+        "code": 804,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "WARNING",
-        "title":  "system.charset.allowlist",
-        "content":  "\"CREATE TABLE userTable(id INT NOT NULL,name VARCHAR(255) CHARSET ascii,roomId INT,time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',content BLOB NOT NULL COMMENT 'comment',json_content JSON NOT NULL COMMENT 'comment',INDEX idx1(name),UNIQUE KEY uk1(id, name),FOREIGN KEY fk1(roomId) REFERENCES room(id),INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin;\" used disabled charset 'ascii'",
-        "code":  1001,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "WARNING",
+        "title": "system.charset.allowlist",
+        "content": "\"CREATE TABLE userTable(id INT NOT NULL,name VARCHAR(255) CHARSET ascii,roomId INT,time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',content BLOB NOT NULL COMMENT 'comment',json_content JSON NOT NULL COMMENT 'comment',INDEX idx1(name),UNIQUE KEY uk1(id, name),FOREIGN KEY fk1(roomId) REFERENCES room(id),INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin;\" used disabled charset 'ascii'",
+        "code": 1001,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "WARNING",
-        "title":  "system.collation.allowlist",
-        "content":  "\"CREATE TABLE userTable(id INT NOT NULL,name VARCHAR(255) CHARSET ascii,roomId INT,time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',content BLOB NOT NULL COMMENT 'comment',json_content JSON NOT NULL COMMENT 'comment',INDEX idx1(name),UNIQUE KEY uk1(id, name),FOREIGN KEY fk1(roomId) REFERENCES room(id),INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin;\" used disabled collation 'latin1_bin'",
-        "code":  1201,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "WARNING",
+        "title": "system.collation.allowlist",
+        "content": "\"CREATE TABLE userTable(id INT NOT NULL,name VARCHAR(255) CHARSET ascii,roomId INT,time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',content BLOB NOT NULL COMMENT 'comment',json_content JSON NOT NULL COMMENT 'comment',INDEX idx1(name),UNIQUE KEY uk1(id, name),FOREIGN KEY fk1(roomId) REFERENCES room(id),INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin;\" used disabled collation 'latin1_bin'",
+        "code": 1201,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
   run: false
@@ -281,62 +329,74 @@
   result:
     - |-
       {
-        "status":  "ERROR",
-        "title":  "column.auto-increment-must-integer",
-        "content":  "Auto-increment column `t_auto`.`auto_id` requires integer type",
-        "code":  410,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "ERROR",
+        "title": "column.auto-increment-must-integer",
+        "content": "Auto-increment column `t_auto`.`auto_id` requires integer type",
+        "code": 410,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "WARNING",
-        "title":  "naming.column.auto-increment",
-        "content":  "`t_auto`.`auto_id` mismatches auto_increment column naming convention, naming format should be \"^id$\"",
-        "code":  307,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "WARNING",
+        "title": "naming.column.auto-increment",
+        "content": "`t_auto`.`auto_id` mismatches auto_increment column naming convention, naming format should be \"^id$\"",
+        "code": 307,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "WARNING",
-        "title":  "column.required",
-        "content":  "Table `t_auto` requires columns: created_ts, creator_id, id, updated_ts, updater_id",
-        "code":  401,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "WARNING",
+        "title": "column.required",
+        "content": "Table `t_auto` requires columns: created_ts, creator_id, id, updated_ts, updater_id",
+        "code": 401,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "WARNING",
-        "title":  "column.auto-increment-initial-value",
-        "content":  "The initial auto-increment value in table `t_auto` is 2, which doesn't equal 20",
-        "code":  416,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "WARNING",
+        "title": "column.auto-increment-initial-value",
+        "content": "The initial auto-increment value in table `t_auto` is 2, which doesn't equal 20",
+        "code": 416,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "WARNING",
-        "title":  "column.auto-increment-must-unsigned",
-        "content":  "Auto-increment column `t_auto`.`auto_id` is not UNSIGNED type",
-        "code":  417,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "WARNING",
+        "title": "column.auto-increment-must-unsigned",
+        "content": "Auto-increment column `t_auto`.`auto_id` is not UNSIGNED type",
+        "code": 417,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "WARNING",
-        "title":  "index.pk-type-limit",
-        "content":  "Columns in primary key must be INT/BIGINT but `t_auto`.`auto_id` is varchar(20)",
-        "code":  803,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "WARNING",
+        "title": "index.pk-type-limit",
+        "content": "Columns in primary key must be INT/BIGINT but `t_auto`.`auto_id` is varchar(20)",
+        "code": 803,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
   run: false
@@ -344,32 +404,38 @@
   result:
     - |-
       {
-        "status":  "ERROR",
-        "title":  "statement.where.require.update-delete",
-        "content":  "\"DELETE FROM tech_book;\" requires WHERE clause",
-        "code":  202,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "ERROR",
+        "title": "statement.where.require.update-delete",
+        "content": "\"DELETE FROM tech_book;\" requires WHERE clause",
+        "code": 202,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "ERROR",
-        "title":  "statement.dml-dry-run",
-        "content":  "\"DELETE FROM tech_book\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist",
-        "code":  208,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "ERROR",
+        "title": "statement.dml-dry-run",
+        "content": "\"DELETE FROM tech_book\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist",
+        "code": 208,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "WARNING",
-        "title":  "statement.affected-row-limit",
-        "content":  "\"DELETE FROM tech_book;\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist",
-        "code":  209,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "WARNING",
+        "title": "statement.affected-row-limit",
+        "content": "\"DELETE FROM tech_book;\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist",
+        "code": 209,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
   run: false
@@ -377,32 +443,38 @@
   result:
     - |-
       {
-        "status":  "ERROR",
-        "title":  "statement.where.no-leading-wildcard-like",
-        "content":  "\"DELETE FROM tech_book WHERE name like \"%abc\";\" uses leading wildcard LIKE",
-        "code":  204,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "ERROR",
+        "title": "statement.where.no-leading-wildcard-like",
+        "content": "\"DELETE FROM tech_book WHERE name like \"%abc\";\" uses leading wildcard LIKE",
+        "code": 204,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "ERROR",
-        "title":  "statement.dml-dry-run",
-        "content":  "\"DELETE FROM tech_book WHERE name like \"%abc\"\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist",
-        "code":  208,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "ERROR",
+        "title": "statement.dml-dry-run",
+        "content": "\"DELETE FROM tech_book WHERE name like \"%abc\"\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist",
+        "code": 208,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "WARNING",
-        "title":  "statement.affected-row-limit",
-        "content":  "\"DELETE FROM tech_book WHERE name like \"%abc\";\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist",
-        "code":  209,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "WARNING",
+        "title": "statement.affected-row-limit",
+        "content": "\"DELETE FROM tech_book WHERE name like \"%abc\";\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist",
+        "code": 209,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
   run: false
@@ -410,52 +482,62 @@
   result:
     - |-
       {
-        "status":  "ERROR",
-        "title":  "statement.select.no-select-all",
-        "content":  "\"INSERT INTO t_copy SELECT * FROM t;\" uses SELECT all",
-        "code":  203,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "ERROR",
+        "title": "statement.select.no-select-all",
+        "content": "\"INSERT INTO t_copy SELECT * FROM t;\" uses SELECT all",
+        "code": 203,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "ERROR",
-        "title":  "statement.where.require.select",
-        "content":  "\"INSERT INTO t_copy SELECT * FROM t;\" requires WHERE clause",
-        "code":  202,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "ERROR",
+        "title": "statement.where.require.select",
+        "content": "\"INSERT INTO t_copy SELECT * FROM t;\" requires WHERE clause",
+        "code": 202,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "ERROR",
-        "title":  "statement.dml-dry-run",
-        "content":  "\"INSERT INTO t_copy SELECT * FROM t\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.t_copy' doesn't exist",
-        "code":  208,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "ERROR",
+        "title": "statement.dml-dry-run",
+        "content": "\"INSERT INTO t_copy SELECT * FROM t\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.t_copy' doesn't exist",
+        "code": 208,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "WARNING",
-        "title":  "statement.insert.row-limit",
-        "content":  "\"INSERT INTO t_copy SELECT * FROM t;\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.t_copy' doesn't exist",
-        "code":  1101,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "WARNING",
+        "title": "statement.insert.row-limit",
+        "content": "\"INSERT INTO t_copy SELECT * FROM t;\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.t_copy' doesn't exist",
+        "code": 1101,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "WARNING",
-        "title":  "statement.insert.must-specify-column",
-        "content":  "The INSERT statement must specify columns but \"INSERT INTO t_copy SELECT * FROM t;\" does not",
-        "code":  1107,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "WARNING",
+        "title": "statement.insert.must-specify-column",
+        "content": "The INSERT statement must specify columns but \"INSERT INTO t_copy SELECT * FROM t;\" does not",
+        "code": 1107,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
   run: false
@@ -463,22 +545,26 @@
   result:
     - |-
       {
-        "status":  "ERROR",
-        "title":  "statement.dml-dry-run",
-        "content":  "\"INSERT INTO t VALUES (1, 1, now(), 1, now())\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.t' doesn't exist",
-        "code":  208,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "ERROR",
+        "title": "statement.dml-dry-run",
+        "content": "\"INSERT INTO t VALUES (1, 1, now(), 1, now())\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.t' doesn't exist",
+        "code": 208,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "WARNING",
-        "title":  "statement.insert.must-specify-column",
-        "content":  "The INSERT statement must specify columns but \"INSERT INTO t VALUES (1, 1, now(), 1, now());\" does not",
-        "code":  1107,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "WARNING",
+        "title": "statement.insert.must-specify-column",
+        "content": "The INSERT statement must specify columns but \"INSERT INTO t VALUES (1, 1, now(), 1, now());\" does not",
+        "code": 1107,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
   run: false
@@ -486,22 +572,26 @@
   result:
     - |-
       {
-        "status":  "ERROR",
-        "title":  "statement.dml-dry-run",
-        "content":  "\"DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = 'bytebase')\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist",
-        "code":  208,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "ERROR",
+        "title": "statement.dml-dry-run",
+        "content": "\"DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = 'bytebase')\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist",
+        "code": 208,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "WARNING",
-        "title":  "statement.affected-row-limit",
-        "content":  "\"DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = 'bytebase');\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist",
-        "code":  209,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "WARNING",
+        "title": "statement.affected-row-limit",
+        "content": "\"DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = 'bytebase');\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist",
+        "code": 209,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
   run: false
@@ -509,12 +599,14 @@
   result:
     - |-
       {
-        "status":  "ERROR",
-        "title":  "statement.disallow-commit",
-        "content":  "Commit is not allowed, related statement: \"COMMIT;\"",
-        "code":  206,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "ERROR",
+        "title": "statement.disallow-commit",
+        "content": "Commit is not allowed, related statement: \"COMMIT;\"",
+        "code": 206,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
   run: false
@@ -522,44 +614,46 @@
   result:
     - |-
       {
-        "status":  "SUCCESS",
-        "title":  "OK"
+        "status": "SUCCESS",
+        "title": "OK"
       }
   run: true
 - statement: INSERT INTO user(id, name) values (1, 'a'), (2, 'b'), (3, 'c'), (4, 'd'), (5, 'e')
   result:
     - |-
       {
-        "status":  "SUCCESS",
-        "title":  "OK"
+        "status": "SUCCESS",
+        "title": "OK"
       }
   run: true
 - statement: DELETE FROM user WHERE id < 10
   result:
     - |-
       {
-        "status":  "SUCCESS",
-        "title":  "OK"
+        "status": "SUCCESS",
+        "title": "OK"
       }
   run: false
 - statement: INSERT INTO user(id, name) values (6, 'f'), (7, 'g'), (8, 'h'), (9, 'i'), (10, 'j')
   result:
     - |-
       {
-        "status":  "SUCCESS",
-        "title":  "OK"
+        "status": "SUCCESS",
+        "title": "OK"
       }
   run: true
 - statement: DELETE FROM user WHERE id <= 10
   result:
     - |-
       {
-        "status":  "WARNING",
-        "title":  "statement.affected-row-limit",
-        "content":  "\"DELETE FROM user WHERE id <= 10;\" affected 10 rows (estimated). The count exceeds 5.",
-        "code":  209,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "WARNING",
+        "title": "statement.affected-row-limit",
+        "content": "\"DELETE FROM user WHERE id <= 10;\" affected 10 rows (estimated). The count exceeds 5.",
+        "code": 209,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
   run: false
@@ -577,12 +671,14 @@
   result:
     - |-
       {
-        "status":  "WARNING",
-        "title":  "statement.insert.row-limit",
-        "content":  "\"INSERT INTO user(id, name) SELECT id, name FROM (SELECT 1 AS id, 'a' AS name WHERE 1=1 UNION ALL\n      SELECT 2 AS id, 'b' AS name WHERE 1=1 UNION ALL\n      SELECT 3 AS id, 'c' AS name WHERE 1=1 UNION ALL\n      SELECT 4 AS id, 'd' AS name WHERE 1=1 UNION ALL\n      SELECT 5 AS id, 'e' AS name WHERE 1=1 UNION ALL\n      SELECT 6 AS id, 'f' AS name WHERE 1=1 UNION ALL\n      SELECT 7 AS id, 'g' AS name WHERE 1=1 UNION ALL\n      SELECT 8 AS id, 'h' AS name WHERE 1=1 UNION ALL\n      SELECT 9 AS id, 'i' AS name WHERE 1=1 UNION ALL\n      SELECT 10 AS id, 'j' AS name WHERE 1=1) value_table WHERE 1=1;\" inserts 10 rows. The count exceeds 5.",
-        "code":  1101,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "WARNING",
+        "title": "statement.insert.row-limit",
+        "content": "\"INSERT INTO user(id, name) SELECT id, name FROM (SELECT 1 AS id, 'a' AS name WHERE 1=1 UNION ALL\n      SELECT 2 AS id, 'b' AS name WHERE 1=1 UNION ALL\n      SELECT 3 AS id, 'c' AS name WHERE 1=1 UNION ALL\n      SELECT 4 AS id, 'd' AS name WHERE 1=1 UNION ALL\n      SELECT 5 AS id, 'e' AS name WHERE 1=1 UNION ALL\n      SELECT 6 AS id, 'f' AS name WHERE 1=1 UNION ALL\n      SELECT 7 AS id, 'g' AS name WHERE 1=1 UNION ALL\n      SELECT 8 AS id, 'h' AS name WHERE 1=1 UNION ALL\n      SELECT 9 AS id, 'i' AS name WHERE 1=1 UNION ALL\n      SELECT 10 AS id, 'j' AS name WHERE 1=1) value_table WHERE 1=1;\" inserts 10 rows. The count exceeds 5.",
+        "code": 1101,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
   run: false
@@ -590,12 +686,14 @@
   result:
     - |-
       {
-        "status":  "WARNING",
-        "title":  "statement.disallow-limit",
-        "content":  "LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but \"INSERT INTO user(id, name) SELECT id, name FROM user WHERE id=1 LIMIT 1;\" uses",
-        "code":  1103,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "WARNING",
+        "title": "statement.disallow-limit",
+        "content": "LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but \"INSERT INTO user(id, name) SELECT id, name FROM user WHERE id=1 LIMIT 1;\" uses",
+        "code": 1103,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
   run: false
@@ -603,12 +701,14 @@
   result:
     - |-
       {
-        "status":  "WARNING",
-        "title":  "table.disallow-partition",
-        "content":  "Table partition is forbidden, but \"ALTER TABLE user PARTITION BY HASH(id) PARTITIONS 8;\" creates",
-        "code":  608,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "WARNING",
+        "title": "table.disallow-partition",
+        "content": "Table partition is forbidden, but \"ALTER TABLE user PARTITION BY HASH(id) PARTITIONS 8;\" creates",
+        "code": 608,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
   run: false
@@ -618,55 +718,62 @@
   result:
     - |-
       {
-        "status":  "WARNING",
-        "title":  "statement.merge-alter-table",
-        "content":  "There are 2 statements to modify table `user`",
-        "code":  207,
-        "sqlReviewReport":  {
-          "line":  1,
-          "startPosition":  {
-            "line":  1
+        "status": "WARNING",
+        "title": "statement.merge-alter-table",
+        "content": "There are 2 statements to modify table `user`",
+        "code": 207,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 2
           }
         }
       }
     - |-
       {
-        "status":  "WARNING",
-        "title":  "column.disallow-change-type",
-        "content":  "\"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' COMMENT 'COMMENT' FIRST;\" changes column type",
-        "code":  403,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "WARNING",
+        "title": "column.disallow-change-type",
+        "content": "\"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' COMMENT 'COMMENT' FIRST;\" changes column type",
+        "code": 403,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "WARNING",
-        "title":  "column.disallow-change",
-        "content":  "\"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' COMMENT 'COMMENT' FIRST;\" contains CHANGE COLUMN statement",
-        "code":  406,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "WARNING",
+        "title": "column.disallow-change",
+        "content": "\"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' COMMENT 'COMMENT' FIRST;\" contains CHANGE COLUMN statement",
+        "code": 406,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "WARNING",
-        "title":  "column.disallow-changing-order",
-        "content":  "\"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' COMMENT 'COMMENT' FIRST;\" changes column order",
-        "code":  407,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "WARNING",
+        "title": "column.disallow-changing-order",
+        "content": "\"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' COMMENT 'COMMENT' FIRST;\" changes column order",
+        "code": 407,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "WARNING",
-        "title":  "schema.backward-compatibility",
-        "content":  "\"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' COMMENT 'COMMENT' FIRST;\" may cause incompatibility with the existing data and code",
-        "code":  111,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "WARNING",
+        "title": "schema.backward-compatibility",
+        "content": "\"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' COMMENT 'COMMENT' FIRST;\" may cause incompatibility with the existing data and code",
+        "code": 111,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
   run: false
@@ -674,22 +781,26 @@
   result:
     - |-
       {
-        "status":  "ERROR",
-        "title":  "table.drop-naming-convention",
-        "content":  "`user` mismatches drop table naming convention, naming format should be \"_delete$\"",
-        "code":  603,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "ERROR",
+        "title": "table.drop-naming-convention",
+        "content": "`user` mismatches drop table naming convention, naming format should be \"_delete$\"",
+        "code": 603,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
     - |-
       {
-        "status":  "WARNING",
-        "title":  "schema.backward-compatibility",
-        "content":  "\"DROP TABLE user;\" may cause incompatibility with the existing data and code",
-        "code":  103,
-        "sqlReviewReport":  {
-          "startPosition":  {}
+        "status": "WARNING",
+        "title": "schema.backward-compatibility",
+        "content": "\"DROP TABLE user;\" may cause incompatibility with the existing data and code",
+        "code": 103,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
         }
       }
   run: false

@@ -8,6 +8,6 @@
       title: system.view.disallow-create
       content: View is forbidden, but "CREATE VIEW get_one AS SELECT 1;" creates
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null

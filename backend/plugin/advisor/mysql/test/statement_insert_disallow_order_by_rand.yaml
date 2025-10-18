@@ -10,7 +10,7 @@
       title: statement.insert.disallow-order-by-rand
       content: '"INSERT INTO tech_book SELECT * FROM tech_book ORDER BY rand();" uses ORDER BY RAND in the INSERT statement'
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -23,6 +23,6 @@
       title: statement.insert.disallow-order-by-rand
       content: '"INSERT INTO tech_book SELECT * FROM tech_book ORDER BY RAND() LIMIT 1;" uses ORDER BY RAND in the INSERT statement'
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null

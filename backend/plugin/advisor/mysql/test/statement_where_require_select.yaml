@@ -12,7 +12,7 @@
       title: statement.where.require.select
       content: '"SELECT id FROM book;" requires WHERE clause'
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |
@@ -40,7 +40,7 @@
           FROM book
           );" requires WHERE clause
       startposition:
-        line: 4
+        line: 5
         column: 0
       endposition: null
 - statement: |

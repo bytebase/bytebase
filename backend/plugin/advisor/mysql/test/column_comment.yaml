@@ -18,7 +18,7 @@
       title: column.comment
       content: Column `userTable`.`id` requires comments
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
     - status: 2
@@ -26,7 +26,7 @@
       title: column.comment
       content: Column `userTable`.`name` requires comments
       startposition:
-        line: 2
+        line: 3
         column: 0
       endposition: null
     - status: 2
@@ -34,7 +34,7 @@
       title: column.comment
       content: Column `userTable`.`roomId` requires comments
       startposition:
-        line: 3
+        line: 4
         column: 0
       endposition: null
 - statement: |
@@ -65,9 +65,43 @@
       title: column.comment
       content: The length of column `t`.`a` comment should be within 10 characters
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
+    - status: 2
+      code: 1032
+      title: column.comment
+      content: Column `t`.`b` requires comments
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+    - status: 2
+      code: 1032
+      title: column.comment
+      content: Column `t`.`c` requires comments
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a int COMMENT 'comment');
+    ALTER TABLE t ADD COLUMN b int;
+  changeType: 1
+  want:
+    - status: 2
+      code: 1032
+      title: column.comment
+      content: Column `t`.`b` requires comments
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a int COMMENT 'comment');
+    ALTER TABLE t ADD COLUMN (b int, c int);
+  changeType: 1
+  want:
     - status: 2
       code: 1032
       title: column.comment
@@ -81,41 +115,7 @@
       title: column.comment
       content: Column `t`.`c` requires comments
       startposition:
-        line: 3
-        column: 0
-      endposition: null
-- statement: |-
-    CREATE TABLE t(a int COMMENT 'comment');
-    ALTER TABLE t ADD COLUMN b int;
-  changeType: 1
-  want:
-    - status: 2
-      code: 1032
-      title: column.comment
-      content: Column `t`.`b` requires comments
-      startposition:
-        line: 1
-        column: 0
-      endposition: null
-- statement: |-
-    CREATE TABLE t(a int COMMENT 'comment');
-    ALTER TABLE t ADD COLUMN (b int, c int);
-  changeType: 1
-  want:
-    - status: 2
-      code: 1032
-      title: column.comment
-      content: Column `t`.`b` requires comments
-      startposition:
-        line: 1
-        column: 0
-      endposition: null
-    - status: 2
-      code: 1032
-      title: column.comment
-      content: Column `t`.`c` requires comments
-      startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -128,7 +128,7 @@
       title: column.comment
       content: The length of column `t`.`a` comment should be within 10 characters
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
     - status: 2
@@ -136,7 +136,7 @@
       title: column.comment
       content: Column `t`.`b` requires comments
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -149,7 +149,7 @@
       title: column.comment
       content: The length of column `t`.`b` comment should be within 10 characters
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
     - status: 2
@@ -157,7 +157,7 @@
       title: column.comment
       content: Column `t`.`b` requires comments
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -170,7 +170,7 @@
       title: column.comment
       content: The length of column `t`.`b` comment should be within 10 characters
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
     - status: 2
@@ -178,6 +178,6 @@
       title: column.comment
       content: The length of column `t`.`b` comment should be within 10 characters
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null

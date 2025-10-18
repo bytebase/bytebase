@@ -10,7 +10,7 @@
       title: naming.identifier.no-keyword
       content: Identifier "CONNECT" is a keyword and should be avoided
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -25,7 +25,7 @@
       title: naming.identifier.no-keyword
       content: Identifier "connect" is a keyword and should be avoided
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -46,7 +46,7 @@
       title: naming.identifier.no-keyword
       content: Identifier "connect" is a keyword and should be avoided
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -63,7 +63,7 @@
       title: naming.identifier.no-keyword
       content: Identifier "connect" is a keyword and should be avoided
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: ALTER TABLE mytable RENAME COLUMN name TO age;

@@ -6,7 +6,7 @@
       title: naming.table
       content: '"techBook" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: CREATE TABLE "rlcmidzlevbivwvcntihenpoibtsdfasdfasdfiutqeb"(id int, name varchar(255))
@@ -19,7 +19,7 @@
       title: naming.table
       content: '"TECH_BOOK" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: CREATE TABLE techBook(id int, name varchar(255))
@@ -30,7 +30,7 @@
       title: naming.table
       content: '"TECHBOOK" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: CREATE TABLE book(id int, name varchar(255))
@@ -41,7 +41,7 @@
       title: naming.table
       content: '"BOOK" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book RENAME TO "TechBook"
@@ -52,7 +52,7 @@
       title: naming.table
       content: '"TechBook" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -65,7 +65,7 @@
       title: naming.table
       content: '"TECHBOOK" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
     - status: 2
@@ -73,7 +73,7 @@
       title: naming.table
       content: '"TECH_BOOK_TMP" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -86,6 +86,6 @@
       title: naming.table
       content: '"TECH_BOOK" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null

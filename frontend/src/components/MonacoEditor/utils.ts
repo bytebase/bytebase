@@ -152,6 +152,10 @@ export const positionWithOffset = (
   if (!selection || selection.isEmpty()) {
     return [line, column];
   }
-  const pos = selection.getStartPosition().delta(line - 1, column);
-  return [pos.lineNumber, pos.column - 1];
+  // Convert 1-based relative position to absolute position.
+  // Position proto uses 1-based line and column.
+  // Monaco also uses 1-based line and column.
+  // delta() takes 0-based offsets, so subtract 1 from both.
+  const pos = selection.getStartPosition().delta(line - 1, column - 1);
+  return [pos.lineNumber, pos.column];
 };

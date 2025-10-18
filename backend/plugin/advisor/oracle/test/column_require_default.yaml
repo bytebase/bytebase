@@ -6,7 +6,7 @@
       title: column.require-default
       content: Column "A" doesn't have default value
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -21,6 +21,6 @@
       title: column.require-default
       content: Column "A" doesn't have default value
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null

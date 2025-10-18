@@ -13,6 +13,6 @@
         Trigger is forbidden, but "CREATE TRIGGER ins_sum BEFORE INSERT ON account
            FOR EACH ROW SET @sum = @sum + NEW.amount;" creates
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null

@@ -29,7 +29,7 @@
       title: table.require-pk
       content: Table CUSTOMER requires PRIMARY KEY.
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -47,7 +47,7 @@
       title: table.require-pk
       content: Table CUSTOMER requires PRIMARY KEY.
       startposition:
-        line: 6
+        line: 7
         column: 0
       endposition: null
 - statement: |-
@@ -90,7 +90,7 @@
       title: table.require-pk
       content: Table CUSTOMER requires PRIMARY KEY.
       startposition:
-        line: 8
+        line: 9
         column: 0
       endposition: null
 - statement: |-
@@ -126,7 +126,7 @@
       title: table.require-pk
       content: Table CUSTOMER requires PRIMARY KEY.
       startposition:
-        line: 23
+        line: 24
         column: 0
       endposition: null
     - status: 2
@@ -134,6 +134,6 @@
       title: table.require-pk
       content: Table ORDERING requires PRIMARY KEY.
       startposition:
-        line: 24
+        line: 25
         column: 0
       endposition: null

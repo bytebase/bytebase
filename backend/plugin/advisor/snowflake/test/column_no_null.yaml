@@ -12,7 +12,7 @@
       title: column.no-null
       content: Column AGE is nullable, which is not allowed.
       startposition:
-        line: 3
+        line: 4
         column: 0
       endposition: null
     - status: 2
@@ -20,7 +20,7 @@
       title: column.no-null
       content: Column ADDRESS is nullable, which is not allowed.
       startposition:
-        line: 4
+        line: 5
         column: 0
       endposition: null
 - statement: |-
@@ -38,7 +38,7 @@
       title: column.no-null
       content: Column ADDRESS is nullable, which is not allowed.
       startposition:
-        line: 4
+        line: 5
         column: 0
       endposition: null
 - statement: |-
@@ -57,7 +57,7 @@
       title: column.no-null
       content: Column AGE is nullable, which is not allowed.
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: ALTER TABLE a ADD COLUMN age INT NOT NULL;
@@ -70,6 +70,6 @@
       title: column.no-null
       content: After dropping NOT NULL of column AGE, it will be nullable, which is not allowed.
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null

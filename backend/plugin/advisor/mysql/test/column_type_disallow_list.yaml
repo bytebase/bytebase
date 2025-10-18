@@ -8,7 +8,7 @@
       title: column.type-disallow-list
       content: Disallow column type JSON but column `t`.`a` is
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -21,7 +21,7 @@
       title: column.type-disallow-list
       content: Disallow column type JSON but column `t`.`a` is
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -34,7 +34,7 @@
       title: column.type-disallow-list
       content: Disallow column type JSON but column `t`.`a` is
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
     - status: 2
@@ -42,7 +42,7 @@
       title: column.type-disallow-list
       content: Disallow column type JSON but column `t`.`b` is
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -55,7 +55,7 @@
       title: column.type-disallow-list
       content: Disallow column type JSON but column `t`.`a` is
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -68,6 +68,6 @@
       title: column.type-disallow-list
       content: Disallow column type JSON but column `t`.`c` is
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null

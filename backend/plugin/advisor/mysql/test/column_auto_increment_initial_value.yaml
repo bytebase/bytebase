@@ -12,7 +12,7 @@
       title: column.auto-increment-initial-value
       content: The initial auto-increment value in table `t2` is 2, which doesn't equal 20
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -27,6 +27,6 @@
       title: column.auto-increment-initial-value
       content: The initial auto-increment value in table `t` is 100, which doesn't equal 20
       startposition:
-        line: 3
+        line: 4
         column: 0
       endposition: null

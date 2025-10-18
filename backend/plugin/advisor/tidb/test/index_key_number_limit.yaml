@@ -12,7 +12,7 @@
       title: index.key-number-limit
       content: The number of index `pk` in table `t` should be not greater than 5
       startposition:
-        line: 3
+        line: 4
         column: 0
       endposition: null
 - statement: |-
@@ -25,7 +25,7 @@
       title: index.key-number-limit
       content: The number of index `idx` in table `t` should be not greater than 5
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -38,7 +38,7 @@
       title: index.key-number-limit
       content: The number of index `uk` in table `t` should be not greater than 5
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -51,6 +51,6 @@
       title: index.key-number-limit
       content: The number of index `uk` in table `t` should be not greater than 5
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null

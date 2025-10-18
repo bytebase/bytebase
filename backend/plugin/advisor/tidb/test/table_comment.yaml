@@ -6,7 +6,7 @@
       title: table.comment
       content: The length of table `t` comment should be within 10 characters
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: CREATE TABLE t(a int)
@@ -17,7 +17,7 @@
       title: table.comment
       content: Table `t` requires comments
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: CREATE TABLE t(a int) COMMENT 'sdlfkjalkseblkjduafelbnlsdfkljayue'
@@ -28,6 +28,6 @@
       title: table.comment
       content: The length of table `t` comment should be within 10 characters
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null

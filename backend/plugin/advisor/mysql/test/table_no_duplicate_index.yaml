@@ -34,7 +34,7 @@
       title: table.no-duplicate-index
       content: '`users` has duplicate index `idx_username_duplicate`'
       startposition:
-        line: 6
+        line: 7
         column: 0
       endposition: null
 - statement: |-
@@ -53,7 +53,7 @@
       title: table.no-duplicate-index
       content: '`orders` has duplicate index ``'
       startposition:
-        line: 6
+        line: 7
         column: 0
       endposition: null
 - statement: |-
@@ -73,7 +73,7 @@
       title: table.no-duplicate-index
       content: '`orders` has duplicate index `idx_duplicate`'
       startposition:
-        line: 8
+        line: 9
         column: 0
       endposition: null
 - statement: |-
@@ -91,7 +91,7 @@
       title: table.no-duplicate-index
       content: '`orders` has duplicate index `idx_customer_id_duplicate`'
       startposition:
-        line: 6
+        line: 7
         column: 0
       endposition: null
 - statement: |-
@@ -109,7 +109,7 @@
       title: table.no-duplicate-index
       content: '`orders` has duplicate index `idx_customer_duplicate`'
       startposition:
-        line: 6
+        line: 7
         column: 0
       endposition: null
 - statement: |-

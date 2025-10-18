@@ -10,7 +10,7 @@
       title: table.require-pk
       content: Table `no_pk` requires PRIMARY KEY
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
     - status: 2
@@ -18,7 +18,7 @@
       title: table.require-pk
       content: Table `no_pk_fork` requires PRIMARY KEY
       startposition:
-        line: 3
+        line: 4
         column: 0
       endposition: null
 - statement: CREATE TABLE t(id INT PRIMARY KEY)
@@ -33,7 +33,7 @@
       title: table.require-pk
       content: Table `t` requires PRIMARY KEY
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -54,7 +54,7 @@
       title: table.require-pk
       content: Table `t` requires PRIMARY KEY
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -67,7 +67,7 @@
       title: table.require-pk
       content: Table `t` requires PRIMARY KEY
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -100,7 +100,7 @@
       title: table.require-pk
       content: Table `t` requires PRIMARY KEY
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book ADD COLUMN a int, DROP COLUMN id, DROP COLUMN name
@@ -111,7 +111,7 @@
       title: table.require-pk
       content: Table `tech_book` requires PRIMARY KEY
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book DROP COLUMN name
@@ -126,6 +126,6 @@
       title: table.require-pk
       content: Table `tech_book` requires PRIMARY KEY
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null

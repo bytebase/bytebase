@@ -10,7 +10,7 @@
       title: table.require-pk
       content: Table "TEST_DB"."T" requires PRIMARY KEY.
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -31,6 +31,6 @@
       title: table.require-pk
       content: Table "TEST_DB"."T" requires PRIMARY KEY.
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null

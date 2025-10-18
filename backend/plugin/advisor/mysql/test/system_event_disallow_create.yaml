@@ -24,6 +24,6 @@
           SELECT NOW(), data
           FROM main_table;" creates
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null

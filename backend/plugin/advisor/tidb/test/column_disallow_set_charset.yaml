@@ -12,7 +12,7 @@
       title: column.disallow-set-charset
       content: Disallow set column charset but "CREATE TABLE t(a varchar(20) CHARSET ascii)" does
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book ADD COLUMN a varchar(20) CHARSET ascii
@@ -23,7 +23,7 @@
       title: column.disallow-set-charset
       content: Disallow set column charset but "ALTER TABLE tech_book ADD COLUMN a varchar(20) CHARSET ascii" does
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book MODIFY COLUMN id varchar(20) CHARSET ascii
@@ -34,7 +34,7 @@
       title: column.disallow-set-charset
       content: Disallow set column charset but "ALTER TABLE tech_book MODIFY COLUMN id varchar(20) CHARSET ascii" does
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book CHANGE COLUMN name name varchar(20) CHARSET ascii
@@ -45,6 +45,6 @@
       title: column.disallow-set-charset
       content: Disallow set column charset but "ALTER TABLE tech_book CHANGE COLUMN name name varchar(20) CHARSET ascii" does
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null

@@ -6,6 +6,6 @@
       title: database.drop-empty-database
       content: Database `test` is not allowed to drop if not empty
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null

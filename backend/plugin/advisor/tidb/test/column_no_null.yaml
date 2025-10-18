@@ -9,7 +9,7 @@
       title: column.no-null
       content: '`book`.`id` cannot have NULL value'
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
     - status: 2
@@ -17,7 +17,7 @@
       title: column.no-null
       content: '`book`.`name` cannot have NULL value'
       startposition:
-        line: 2
+        line: 3
         column: 0
       endposition: null
 - statement: CREATE TABLE book(id int PRIMARY KEY, name varchar(255))
@@ -28,7 +28,7 @@
       title: column.no-null
       content: '`book`.`name` cannot have NULL value'
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: CREATE TABLE book(id int NOT NULL, name varchar(255))
@@ -39,7 +39,7 @@
       title: column.no-null
       content: '`book`.`name` cannot have NULL value'
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: CREATE TABLE book(id int PRIMARY KEY, name varchar(255) NOT NULL)
@@ -54,7 +54,7 @@
       title: column.no-null
       content: '`book`.`id` cannot have NULL value'
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -71,7 +71,7 @@
       title: column.no-null
       content: '`book`.`name` cannot have NULL value'
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-

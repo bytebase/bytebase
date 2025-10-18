@@ -6,7 +6,7 @@
       title: naming.table.no-keyword
       content: Table name "table" is a keyword identifier and should be avoided.
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: CREATE TABLE "rlcmidzlevbivwvcntihenpoibtsdfasdfasdfiutqeb"(id int, name varchar(255))
@@ -19,7 +19,7 @@
       title: naming.table.no-keyword
       content: Table name "AVG" is a keyword identifier and should be avoided.
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book RENAME TO avg
@@ -30,7 +30,7 @@
       title: naming.table.no-keyword
       content: Table name "AVG" is a keyword identifier and should be avoided.
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: |-

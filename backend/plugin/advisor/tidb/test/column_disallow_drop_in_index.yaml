@@ -12,7 +12,7 @@
       title: column.disallow-drop-in-index
       content: '`t`.`b` cannot drop index column'
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -25,7 +25,7 @@
       title: column.disallow-drop-in-index
       content: '`t`.`c` cannot drop index column'
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -44,7 +44,7 @@
       title: column.disallow-drop-in-index
       content: '`t`.`a` cannot drop index column'
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
     - status: 2
@@ -52,6 +52,6 @@
       title: column.disallow-drop-in-index
       content: '`t`.`c` cannot drop index column'
       startposition:
-        line: 2
+        line: 3
         column: 0
       endposition: null

@@ -27,7 +27,7 @@
       title: index.type-allow-list
       content: Index type `SPATIAL` is not allowed
       startposition:
-        line: 4
+        line: 5
         column: 0
       endposition: null
 - statement: |-
@@ -43,6 +43,6 @@
       title: index.type-allow-list
       content: Index type `FULLTEXT` is not allowed
       startposition:
-        line: 4
+        line: 5
         column: 0
       endposition: null

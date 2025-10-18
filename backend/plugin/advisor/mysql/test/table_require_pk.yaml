@@ -18,7 +18,7 @@
       title: table.require-pk
       content: Table `userTable` requires PRIMARY KEY
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: |
@@ -45,7 +45,7 @@
       title: table.require-pk
       content: Table `t2` requires PRIMARY KEY
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -59,7 +59,7 @@
       title: table.require-pk
       content: Table `t2` requires PRIMARY KEY
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -77,7 +77,7 @@
       title: table.require-pk
       content: Table `t2` requires PRIMARY KEY
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -100,7 +100,7 @@
       title: table.require-pk
       content: Table `t` requires PRIMARY KEY
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -113,7 +113,7 @@
       title: table.require-pk
       content: Table `t` requires PRIMARY KEY
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -147,7 +147,7 @@
       title: table.require-pk
       content: Table `t` requires PRIMARY KEY
       startposition:
-        line: 2
+        line: 3
         column: 0
       endposition: null
 - statement: |-
@@ -160,7 +160,7 @@
       title: table.require-pk
       content: Table `tech_book` requires PRIMARY KEY
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book DROP COLUMN name;
@@ -175,7 +175,7 @@
       title: table.require-pk
       content: Table `tech_book` requires PRIMARY KEY
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -188,6 +188,6 @@
       title: table.require-pk
       content: Table `tech_book` requires PRIMARY KEY
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null

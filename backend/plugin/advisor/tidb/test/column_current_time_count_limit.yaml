@@ -13,7 +13,7 @@
       title: column.current-time-count-limit
       content: Table `t` has 3 DEFAULT CURRENT_TIMESTAMP() columns. The count greater than 2.
       startposition:
-        line: 4
+        line: 5
         column: 0
       endposition: null
 - statement: |-
@@ -28,7 +28,7 @@
       title: column.current-time-count-limit
       content: Table `t` has 2 ON UPDATE CURRENT_TIMESTAMP() columns. The count greater than 1.
       startposition:
-        line: 3
+        line: 4
         column: 0
       endposition: null
 - statement: |-
@@ -41,6 +41,6 @@
       title: column.current-time-count-limit
       content: Table `tech_book` has 2 ON UPDATE CURRENT_TIMESTAMP() columns. The count greater than 1.
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null

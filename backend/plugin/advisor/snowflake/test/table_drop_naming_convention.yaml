@@ -8,6 +8,6 @@
       title: table.drop-naming-convention
       content: '"FOO" mismatches drop table naming convention, naming format should be "_delete$"'
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
