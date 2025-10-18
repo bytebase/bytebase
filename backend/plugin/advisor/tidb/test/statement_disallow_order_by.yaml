@@ -8,7 +8,7 @@
       title: statement.disallow-order-by
       content: ORDER BY clause is forbidden in DELETE and UPDATE statements, but "UPDATE tech_book SET name = 'my name' ORDER BY id" uses
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: DELETE FROM tech_book ORDER BY id
@@ -19,6 +19,6 @@
       title: statement.disallow-order-by
       content: ORDER BY clause is forbidden in DELETE and UPDATE statements, but "DELETE FROM tech_book ORDER BY id" uses
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null

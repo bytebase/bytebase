@@ -24,7 +24,7 @@
       title: statement.where.no-leading-wildcard-like
       content: '"SELECT * FROM t WHERE a LIKE ''%abc'';" uses leading wildcard LIKE'
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |
@@ -37,7 +37,7 @@
       title: statement.where.no-leading-wildcard-like
       content: '"SELECT * FROM t WHERE a LIKE ''abc'' OR a LIKE ''%abc'';" uses leading wildcard LIKE'
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |
@@ -57,7 +57,7 @@
         WHERE a LIKE '%acc'
           OR a LIKE '%abc';" uses leading wildcard LIKE
       startposition:
-        line: 3
+        line: 4
         column: 0
       endposition: null
     - status: 2
@@ -69,7 +69,7 @@
         WHERE a LIKE '%acc'
           OR a LIKE '%abc';" uses leading wildcard LIKE
       startposition:
-        line: 4
+        line: 5
         column: 0
       endposition: null
 - statement: |
@@ -93,7 +93,7 @@
             OR a LIKE '%abc'
           ) t1;" uses leading wildcard LIKE
       startposition:
-        line: 4
+        line: 5
         column: 0
       endposition: null
     - status: 2
@@ -107,6 +107,6 @@
             OR a LIKE '%abc'
           ) t1;" uses leading wildcard LIKE
       startposition:
-        line: 5
+        line: 6
         column: 0
       endposition: null

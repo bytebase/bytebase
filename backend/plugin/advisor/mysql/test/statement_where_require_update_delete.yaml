@@ -12,7 +12,7 @@
       title: statement.where.require.update-delete
       content: '"DELETE FROM book;" requires WHERE clause'
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |
@@ -25,7 +25,7 @@
       title: statement.where.require.update-delete
       content: '"UPDATE book SET id = 1;" requires WHERE clause'
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |

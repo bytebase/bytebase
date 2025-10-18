@@ -7,6 +7,6 @@
       title: statement.maximum-limit-value
       content: The limit value 1000000 exceeds the maximum allowed value 1000
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null

@@ -8,7 +8,7 @@
       title: column.auto-increment-must-unsigned
       content: Auto-increment column `t`.`a` is not UNSIGNED type
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: |-

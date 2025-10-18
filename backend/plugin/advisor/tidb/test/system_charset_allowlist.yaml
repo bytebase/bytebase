@@ -10,7 +10,7 @@
       title: system.charset.allowlist
       content: '"CREATE TABLE t(a int) CHARSET ascii" used disabled charset ''ascii'''
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -34,7 +34,7 @@
       title: system.charset.allowlist
       content: '"ALTER DATABASE test CHARSET ascii" used disabled charset ''ascii'''
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: CREATE TABLE t(a varchar(255) CHARSET ascii)
@@ -45,7 +45,7 @@
       title: system.charset.allowlist
       content: '"CREATE TABLE t(a varchar(255) CHARSET ascii)" used disabled charset ''ascii'''
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: |-

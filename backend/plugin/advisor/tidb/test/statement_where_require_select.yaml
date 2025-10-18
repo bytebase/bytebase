@@ -6,7 +6,7 @@
       title: statement.where.require.select
       content: '"SELECT id FROM tech_book" requires WHERE clause'
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: SELECT id FROM tech_book WHERE id > 0
@@ -19,7 +19,7 @@
       title: statement.where.require.select
       content: '"SELECT id FROM tech_book WHERE id > (SELECT max(id) FROM tech_book)" requires WHERE clause'
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: SELECT CURDATE()

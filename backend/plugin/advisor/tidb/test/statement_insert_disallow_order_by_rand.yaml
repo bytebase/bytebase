@@ -8,6 +8,6 @@
       title: statement.insert.disallow-order-by-rand
       content: '"INSERT INTO tech_book SELECT * FROM tech_book ORDER BY rand()" uses ORDER BY RAND in the INSERT statement'
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null

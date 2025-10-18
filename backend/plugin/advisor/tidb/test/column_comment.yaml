@@ -54,7 +54,7 @@
       title: column.comment
       content: The length of column `t`.`a` comment should be within 10 characters
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
     - status: 2
@@ -75,7 +75,7 @@
       title: column.comment
       content: The length of column `t`.`b` comment should be within 10 characters
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
     - status: 2
@@ -96,7 +96,7 @@
       title: column.comment
       content: The length of column `t`.`b` comment should be within 10 characters
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
     - status: 2
