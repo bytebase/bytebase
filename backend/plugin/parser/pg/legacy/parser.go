@@ -7,11 +7,24 @@ import (
 	pgquery "github.com/pganalyze/pg_query_go/v6"
 	"github.com/pkg/errors"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/tokenizer"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast"
 )
+
+func init() {
+	RegisterParser()
+}
+
+// RegisterParser registers the PostgreSQL parser.
+// Returns []ast.Node (github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast) on success.
+func RegisterParser() {
+	base.RegisterParseFunc(storepb.Engine_POSTGRES, func(statement string) (any, error) {
+		return Parse(ParseContext{}, statement)
+	})
+}
 
 const (
 	operatorLike    string = "~~"

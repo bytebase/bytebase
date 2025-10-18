@@ -11,9 +11,28 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/mysql-parser"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/tokenizer"
 )
+
+func init() {
+	RegisterParser()
+}
+
+// RegisterParser registers the MySQL parser.
+// Returns []*ParseResult on success.
+func RegisterParser() {
+	base.RegisterParseFunc(storepb.Engine_MYSQL, func(statement string) (any, error) {
+		return ParseMySQL(statement)
+	})
+	base.RegisterParseFunc(storepb.Engine_MARIADB, func(statement string) (any, error) {
+		return ParseMySQL(statement)
+	})
+	base.RegisterParseFunc(storepb.Engine_OCEANBASE, func(statement string) (any, error) {
+		return ParseMySQL(statement)
+	})
+}
 
 // ParseResult is the result of parsing a MySQL statement.
 type ParseResult struct {

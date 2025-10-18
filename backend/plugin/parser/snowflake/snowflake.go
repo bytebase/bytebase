@@ -7,9 +7,29 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/snowsql-parser"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/utils"
 )
+
+func init() {
+	RegisterParser()
+}
+
+// RegisterParser registers the Snowflake parser.
+// Returns antlr.Tree on success.
+func RegisterParser() {
+	base.RegisterParseFunc(storepb.Engine_SNOWFLAKE, func(statement string) (any, error) {
+		result, err := ParseSnowSQL(statement + ";")
+		if err != nil {
+			return nil, err
+		}
+		if result == nil {
+			return nil, nil
+		}
+		return result.Tree, nil
+	})
+}
 
 type ParseResult struct {
 	Tree   antlr.Tree

@@ -9,8 +9,28 @@ import (
 
 	parser "github.com/bytebase/tsql-parser"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
+
+func init() {
+	RegisterParser()
+}
+
+// RegisterParser registers the T-SQL parser.
+// Returns antlr.Tree on success.
+func RegisterParser() {
+	base.RegisterParseFunc(storepb.Engine_MSSQL, func(statement string) (any, error) {
+		result, err := ParseTSQL(statement)
+		if err != nil {
+			return nil, err
+		}
+		if result == nil {
+			return nil, nil
+		}
+		return result.Tree, nil
+	})
+}
 
 type ParseResult struct {
 	Tree   antlr.Tree

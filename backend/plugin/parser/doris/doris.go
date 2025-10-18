@@ -4,8 +4,25 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/doris-parser"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
+
+func init() {
+	RegisterParser()
+}
+
+// RegisterParser registers the Doris parser.
+// Returns *ParseResult on success.
+func RegisterParser() {
+	base.RegisterParseFunc(storepb.Engine_DORIS, func(statement string) (any, error) {
+		result, err := ParseDorisSQL(statement)
+		if err != nil {
+			return nil, err
+		}
+		return result, nil
+	})
+}
 
 // ParseResult is the result of parsing a MySQL statement.
 type ParseResult struct {

@@ -6,8 +6,29 @@ import (
 	crrawparser "github.com/cockroachdb/cockroachdb-parser/pkg/sql/parser"
 	"github.com/cockroachdb/cockroachdb-parser/pkg/sql/parser/statements"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/utils"
 )
+
+func init() {
+	RegisterParser()
+}
+
+// RegisterParser registers the CockroachDB parser.
+// Returns statements.Statements (github.com/cockroachdb/cockroachdb-parser/pkg/sql/parser/statements) on success.
+func RegisterParser() {
+	base.RegisterParseFunc(storepb.Engine_COCKROACHDB, func(statement string) (any, error) {
+		result, err := ParseCockroachDBSQL(statement)
+		if err != nil {
+			return nil, err
+		}
+		if result == nil {
+			return nil, nil
+		}
+		return result.Stmts, nil
+	})
+}
 
 type ParseResult struct {
 	Stmts statements.Statements

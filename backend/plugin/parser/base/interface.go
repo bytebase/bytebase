@@ -29,6 +29,7 @@ var (
 	spans                   = make(map[storepb.Engine]GetQuerySpanFunc)
 	transformDMLToSelect    = make(map[storepb.Engine]TransformDMLToSelectFunc)
 	generateRestoreSQL      = make(map[storepb.Engine]GenerateRestoreSQLFunc)
+	parsers                 = make(map[storepb.Engine]ParseFunc)
 )
 
 type ValidateSQLForEditorFunc func(string) (bool, bool, error)
@@ -46,6 +47,11 @@ type GetQuerySpanFunc func(ctx context.Context, gCtx GetQuerySpanContext, statem
 type TransformDMLToSelectFunc func(ctx context.Context, tCtx TransformContext, statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]BackupStatement, error)
 
 type GenerateRestoreSQLFunc func(ctx context.Context, rCtx RestoreContext, statement string, backupItem *storepb.PriorBackupDetail_Item) (string, error)
+
+// ParseFunc is the interface for parsing SQL statements and returning an AST.
+// The return type varies by database engine. See RegisterParser() in each parser package for details.
+// Common types: []ast.Node, antlr.Tree, []*ParseResult, statements.Statements.
+type ParseFunc func(statement string) (any, error)
 
 func RegisterQueryValidator(engine storepb.Engine, f ValidateSQLForEditorFunc) {
 	mux.Lock()
@@ -265,6 +271,24 @@ func GenerateRestoreSQL(ctx context.Context, engine storepb.Engine, rCtx Restore
 		return "", errors.Errorf("engine %s is not supported", engine)
 	}
 	return f(ctx, rCtx, statement, backupItem)
+}
+
+func RegisterParseFunc(engine storepb.Engine, f ParseFunc) {
+	mux.Lock()
+	defer mux.Unlock()
+	if _, dup := parsers[engine]; dup {
+		panic(fmt.Sprintf("Register called twice %s", engine))
+	}
+	parsers[engine] = f
+}
+
+// Parse parses the SQL statement and returns the AST.
+func Parse(engine storepb.Engine, statement string) (any, error) {
+	f, ok := parsers[engine]
+	if !ok {
+		return nil, errors.Errorf("engine %s is not supported", engine)
+	}
+	return f(statement)
 }
 
 type ChangeSummary struct {
