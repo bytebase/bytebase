@@ -245,7 +245,9 @@
       "double-comfirm": "削除を確認するには、{name} と入力してください。",
       "notification": "リソース '{name}' を正常に削除しました。"
     },
-    "collapse": "閉じる"
+    "collapse": "閉じる",
+    "line": "行",
+    "column": "列"
   },
   "error-page": {
     "go-back-home": "ホームページに戻る"

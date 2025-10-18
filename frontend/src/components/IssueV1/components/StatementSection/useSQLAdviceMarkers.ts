@@ -16,20 +16,27 @@ export const useSQLAdviceMarkers = (
     if (isCreating.value) {
       if (!advices) return [];
       if (!advices.value) return [];
-      return advices.value.map<AdviceOption>((advice) => {
-        const line = advice.startPosition?.line ?? 0;
-        const column = advice.startPosition?.column ?? Number.MAX_SAFE_INTEGER;
-        const code = advice.code;
-        return {
-          severity: advice.status === Advice_Level.ERROR ? "ERROR" : "WARNING",
-          message: advice.content,
-          source: `${advice.title} (${code}) L${line}:C${column}`,
-          startLineNumber: line,
-          endLineNumber: line,
-          startColumn: column,
-          endColumn: column,
-        };
-      });
+      return advices.value
+        .filter((advice) => {
+          // Filter out advices without valid position (line 0 means unknown)
+          const line = advice.startPosition?.line ?? 0;
+          return line > 0;
+        })
+        .map<AdviceOption>((advice) => {
+          const line = advice.startPosition!.line;
+          const column = advice.startPosition!.column || 1;
+          const code = advice.code;
+          return {
+            severity:
+              advice.status === Advice_Level.ERROR ? "ERROR" : "WARNING",
+            message: advice.content,
+            source: `${advice.title} (${code}) L${line}:C${column}`,
+            startLineNumber: line,
+            endLineNumber: line,
+            startColumn: column,
+            endColumn: column,
+          };
+        });
     } else {
       const { selectedTask, getPlanCheckRunsForTask } = context;
       const planCheckRunList = getPlanCheckRunsForTask(selectedTask.value);
@@ -66,12 +73,18 @@ const getLatestAdviceOptions = (planCheckRunList: PlanCheckRun[]) => {
         result.report?.case === "sqlReviewReport" &&
         result.report.value.startPosition !== undefined
     )
-    .map<AdviceOption>((result) => {
+    .filter((result) => {
+      // Filter out results without valid position (line 0 means unknown)
       const sqlReviewReport =
         result.report?.case === "sqlReviewReport" ? result.report.value : null;
       const line = sqlReviewReport?.startPosition?.line ?? 0;
-      const column =
-        sqlReviewReport?.startPosition?.column ?? Number.MAX_SAFE_INTEGER;
+      return line > 0;
+    })
+    .map<AdviceOption>((result) => {
+      const sqlReviewReport =
+        result.report?.case === "sqlReviewReport" ? result.report.value : null;
+      const line = sqlReviewReport!.startPosition!.line;
+      const column = sqlReviewReport!.startPosition!.column || 1;
       const code = result.code;
       return {
         severity: result.status === Advice_Level.ERROR ? "ERROR" : "WARNING",

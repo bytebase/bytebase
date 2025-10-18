@@ -245,7 +245,9 @@
       "double-comfirm": "Để xác nhận xóa, vui lòng nhập: {name}",
       "notification": "Xóa thành công tài nguyên '{name}'."
     },
-    "collapse": "Sụp đổ"
+    "collapse": "Sụp đổ",
+    "line": "Dòng",
+    "column": "Cột"
   },
   "error-page": {
     "go-back-home": "Về trang chủ"
