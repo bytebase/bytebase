@@ -15,19 +15,17 @@ import (
 )
 
 func init() {
-	RegisterParser()
+	base.RegisterParseFunc(storepb.Engine_ORACLE, parsePLSQLForRegistry)
 }
 
-// RegisterParser registers the PL/SQL parser.
+// parsePLSQLForRegistry is the ParseFunc for PL/SQL.
 // Returns antlr.Tree on success.
-func RegisterParser() {
-	base.RegisterParseFunc(storepb.Engine_ORACLE, func(statement string) (any, error) {
-		tree, _, err := ParsePLSQL(statement + ";")
-		if err != nil {
-			return nil, err
-		}
-		return tree, nil
-	})
+func parsePLSQLForRegistry(statement string) (any, error) {
+	tree, _, err := ParsePLSQL(statement + ";")
+	if err != nil {
+		return nil, err
+	}
+	return tree, nil
 }
 
 type Version struct {

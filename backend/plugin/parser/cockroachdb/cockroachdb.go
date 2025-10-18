@@ -12,22 +12,20 @@ import (
 )
 
 func init() {
-	RegisterParser()
+	base.RegisterParseFunc(storepb.Engine_COCKROACHDB, parseCockroachDBForRegistry)
 }
 
-// RegisterParser registers the CockroachDB parser.
+// parseCockroachDBForRegistry is the ParseFunc for CockroachDB.
 // Returns statements.Statements (github.com/cockroachdb/cockroachdb-parser/pkg/sql/parser/statements) on success.
-func RegisterParser() {
-	base.RegisterParseFunc(storepb.Engine_COCKROACHDB, func(statement string) (any, error) {
-		result, err := ParseCockroachDBSQL(statement)
-		if err != nil {
-			return nil, err
-		}
-		if result == nil {
-			return nil, nil
-		}
-		return result.Stmts, nil
-	})
+func parseCockroachDBForRegistry(statement string) (any, error) {
+	result, err := ParseCockroachDBSQL(statement)
+	if err != nil {
+		return nil, err
+	}
+	if result == nil {
+		return nil, nil
+	}
+	return result.Stmts, nil
 }
 
 type ParseResult struct {

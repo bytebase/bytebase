@@ -9,19 +9,17 @@ import (
 )
 
 func init() {
-	RegisterParser()
+	base.RegisterParseFunc(storepb.Engine_DORIS, parseDorisForRegistry)
 }
 
-// RegisterParser registers the Doris parser.
+// parseDorisForRegistry is the ParseFunc for Doris.
 // Returns *ParseResult on success.
-func RegisterParser() {
-	base.RegisterParseFunc(storepb.Engine_DORIS, func(statement string) (any, error) {
-		result, err := ParseDorisSQL(statement)
-		if err != nil {
-			return nil, err
-		}
-		return result, nil
-	})
+func parseDorisForRegistry(statement string) (any, error) {
+	result, err := ParseDorisSQL(statement)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 // ParseResult is the result of parsing a MySQL statement.

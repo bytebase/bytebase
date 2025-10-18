@@ -17,21 +17,15 @@ import (
 )
 
 func init() {
-	RegisterParser()
+	base.RegisterParseFunc(storepb.Engine_MYSQL, parseMySQLForRegistry)
+	base.RegisterParseFunc(storepb.Engine_MARIADB, parseMySQLForRegistry)
+	base.RegisterParseFunc(storepb.Engine_OCEANBASE, parseMySQLForRegistry)
 }
 
-// RegisterParser registers the MySQL parser.
+// parseMySQLForRegistry is the ParseFunc for MySQL, MariaDB, and OceanBase.
 // Returns []*ParseResult on success.
-func RegisterParser() {
-	base.RegisterParseFunc(storepb.Engine_MYSQL, func(statement string) (any, error) {
-		return ParseMySQL(statement)
-	})
-	base.RegisterParseFunc(storepb.Engine_MARIADB, func(statement string) (any, error) {
-		return ParseMySQL(statement)
-	})
-	base.RegisterParseFunc(storepb.Engine_OCEANBASE, func(statement string) (any, error) {
-		return ParseMySQL(statement)
-	})
+func parseMySQLForRegistry(statement string) (any, error) {
+	return ParseMySQL(statement)
 }
 
 // ParseResult is the result of parsing a MySQL statement.

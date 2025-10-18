@@ -25,12 +25,6 @@ import (
 )
 
 func init() {
-	RegisterParser()
-}
-
-// RegisterParser registers the TiDB parser.
-// Returns []ast.StmtNode (github.com/pingcap/tidb/pkg/parser/ast) on success.
-func RegisterParser() {
 	base.RegisterParseFunc(storepb.Engine_TIDB, ParseTiDBForSyntaxCheck)
 }
 

@@ -12,22 +12,20 @@ import (
 )
 
 func init() {
-	RegisterParser()
+	base.RegisterParseFunc(storepb.Engine_REDSHIFT, parseRedshiftForRegistry)
 }
 
-// RegisterParser registers the Redshift parser.
+// parseRedshiftForRegistry is the ParseFunc for Redshift.
 // Returns antlr.Tree on success.
-func RegisterParser() {
-	base.RegisterParseFunc(storepb.Engine_REDSHIFT, func(statement string) (any, error) {
-		result, err := ParseRedshift(statement)
-		if err != nil {
-			return nil, err
-		}
-		if result == nil {
-			return nil, nil
-		}
-		return result.Tree, nil
-	})
+func parseRedshiftForRegistry(statement string) (any, error) {
+	result, err := ParseRedshift(statement)
+	if err != nil {
+		return nil, err
+	}
+	if result == nil {
+		return nil, nil
+	}
+	return result.Tree, nil
 }
 
 // ParseResult is the result of parsing a Redshift statement.

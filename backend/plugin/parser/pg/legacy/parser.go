@@ -15,15 +15,13 @@ import (
 )
 
 func init() {
-	RegisterParser()
+	base.RegisterParseFunc(storepb.Engine_POSTGRES, parsePostgresForRegistry)
 }
 
-// RegisterParser registers the PostgreSQL parser.
+// parsePostgresForRegistry is the ParseFunc for PostgreSQL.
 // Returns []ast.Node (github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast) on success.
-func RegisterParser() {
-	base.RegisterParseFunc(storepb.Engine_POSTGRES, func(statement string) (any, error) {
-		return Parse(ParseContext{}, statement)
-	})
+func parsePostgresForRegistry(statement string) (any, error) {
+	return Parse(ParseContext{}, statement)
 }
 
 const (

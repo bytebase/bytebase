@@ -14,22 +14,20 @@ import (
 )
 
 func init() {
-	RegisterParser()
+	base.RegisterParseFunc(storepb.Engine_MSSQL, parseTSQLForRegistry)
 }
 
-// RegisterParser registers the T-SQL parser.
+// parseTSQLForRegistry is the ParseFunc for T-SQL.
 // Returns antlr.Tree on success.
-func RegisterParser() {
-	base.RegisterParseFunc(storepb.Engine_MSSQL, func(statement string) (any, error) {
-		result, err := ParseTSQL(statement)
-		if err != nil {
-			return nil, err
-		}
-		if result == nil {
-			return nil, nil
-		}
-		return result.Tree, nil
-	})
+func parseTSQLForRegistry(statement string) (any, error) {
+	result, err := ParseTSQL(statement)
+	if err != nil {
+		return nil, err
+	}
+	if result == nil {
+		return nil, nil
+	}
+	return result.Tree, nil
 }
 
 type ParseResult struct {

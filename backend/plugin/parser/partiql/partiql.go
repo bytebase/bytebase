@@ -13,22 +13,20 @@ import (
 )
 
 func init() {
-	RegisterParser()
+	base.RegisterParseFunc(storepb.Engine_DYNAMODB, parsePartiQLForRegistry)
 }
 
-// RegisterParser registers the PartiQL parser.
+// parsePartiQLForRegistry is the ParseFunc for PartiQL.
 // Returns antlr.Tree on success.
-func RegisterParser() {
-	base.RegisterParseFunc(storepb.Engine_DYNAMODB, func(statement string) (any, error) {
-		result, err := ParsePartiQL(statement)
-		if err != nil {
-			return nil, err
-		}
-		if result == nil {
-			return nil, nil
-		}
-		return result.Tree, nil
-	})
+func parsePartiQLForRegistry(statement string) (any, error) {
+	result, err := ParsePartiQL(statement)
+	if err != nil {
+		return nil, err
+	}
+	if result == nil {
+		return nil, nil
+	}
+	return result.Tree, nil
 }
 
 type ParseResult struct {

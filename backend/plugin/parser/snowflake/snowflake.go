@@ -13,22 +13,20 @@ import (
 )
 
 func init() {
-	RegisterParser()
+	base.RegisterParseFunc(storepb.Engine_SNOWFLAKE, parseSnowflakeForRegistry)
 }
 
-// RegisterParser registers the Snowflake parser.
+// parseSnowflakeForRegistry is the ParseFunc for Snowflake.
 // Returns antlr.Tree on success.
-func RegisterParser() {
-	base.RegisterParseFunc(storepb.Engine_SNOWFLAKE, func(statement string) (any, error) {
-		result, err := ParseSnowSQL(statement + ";")
-		if err != nil {
-			return nil, err
-		}
-		if result == nil {
-			return nil, nil
-		}
-		return result.Tree, nil
-	})
+func parseSnowflakeForRegistry(statement string) (any, error) {
+	result, err := ParseSnowSQL(statement + ";")
+	if err != nil {
+		return nil, err
+	}
+	if result == nil {
+		return nil, nil
+	}
+	return result.Tree, nil
 }
 
 type ParseResult struct {
