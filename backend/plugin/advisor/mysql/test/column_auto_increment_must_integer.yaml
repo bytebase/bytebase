@@ -20,7 +20,7 @@
       title: column.auto-increment-must-integer
       content: Auto-increment column `t2`.`a` requires integer type
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -33,7 +33,7 @@
       title: column.auto-increment-must-integer
       content: Auto-increment column `t`.`a` requires integer type
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -46,7 +46,7 @@
       title: column.auto-increment-must-integer
       content: Auto-increment column `t`.`a` requires integer type
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -59,7 +59,7 @@
       title: column.auto-increment-must-integer
       content: Auto-increment column `t`.`a` requires integer type
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -73,7 +73,7 @@
       title: column.auto-increment-must-integer
       content: Auto-increment column `t`.`a` requires integer type
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -86,6 +86,6 @@
       title: column.auto-increment-must-integer
       content: Auto-increment column `t`.`a` requires integer type
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null

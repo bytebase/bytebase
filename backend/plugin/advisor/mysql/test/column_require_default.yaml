@@ -11,7 +11,7 @@
       title: column.require-default
       content: Column `t`.`b` doesn't have DEFAULT.
       startposition:
-        line: 2
+        line: 3
         column: 0
       endposition: null
 - statement: |-
@@ -56,7 +56,7 @@
       title: column.require-default
       content: Column `t`.`a` doesn't have DEFAULT.
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -70,7 +70,7 @@
       title: column.require-default
       content: Column `tech_book`.`b` doesn't have DEFAULT.
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
     - status: 2
@@ -78,7 +78,7 @@
       title: column.require-default
       content: Column `tech_book`.`a` doesn't have DEFAULT.
       startposition:
-        line: 2
+        line: 3
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book ADD COLUMN (a BLOB, b timestamp);
@@ -103,7 +103,7 @@
       title: column.require-default
       content: Column `tech_book`.`b` doesn't have DEFAULT.
       startposition:
-        line: 2
+        line: 3
         column: 0
       endposition: null
 - statement: |-

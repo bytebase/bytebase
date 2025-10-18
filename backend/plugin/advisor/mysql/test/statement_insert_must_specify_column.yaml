@@ -19,6 +19,6 @@
       title: statement.insert.must-specify-column
       content: The INSERT statement must specify columns but "INSERT INTO tech_book VALUES (1, '1');" does not
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null

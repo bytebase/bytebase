@@ -34,7 +34,7 @@
       title: column.auto-increment-must-unsigned
       content: Auto-increment column `t`.`a` is not UNSIGNED type
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -48,7 +48,7 @@
       title: column.auto-increment-must-unsigned
       content: Auto-increment column `t`.`a` is not UNSIGNED type
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -62,6 +62,6 @@
       title: column.auto-increment-must-unsigned
       content: Auto-increment column `t`.`a` is not UNSIGNED type
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null

@@ -13,7 +13,7 @@
       title: table.comment
       content: Comment is required for table "TEST_DB"."T"
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -27,7 +27,7 @@
       title: table.comment
       content: Comment is required for table "TEST_DB"."D"
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -41,7 +41,7 @@
       title: table.comment
       content: Comment is required for table "TEST_DB"."T"
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -54,6 +54,6 @@
       title: table.comment
       content: Table "TEST_DB"."T" comment is too long. The length of comment should be within 10 characters
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null

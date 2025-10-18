@@ -32,7 +32,7 @@
       title: column.required
       content: 'Table `book` requires columns: creator_id'
       startposition:
-        line: 6
+        line: 7
         column: 0
       endposition: null
 - statement: |-
@@ -59,7 +59,7 @@
       title: column.required
       content: 'Table `book` requires columns: creator_id'
       startposition:
-        line: 6
+        line: 7
         column: 0
       endposition: null
 - statement: |-
@@ -86,7 +86,7 @@
       title: column.required
       content: 'Table `book` requires columns: creator_id'
       startposition:
-        line: 6
+        line: 7
         column: 0
       endposition: null
 - statement: |-
@@ -113,7 +113,7 @@
       title: column.required
       content: 'Table `book` requires columns: updater_id'
       startposition:
-        line: 4
+        line: 5
         column: 0
       endposition: null
 - statement: |-
@@ -142,7 +142,7 @@
       title: column.required
       content: 'Table `book` requires columns: creator_id'
       startposition:
-        line: 4
+        line: 5
         column: 0
       endposition: null
     - status: 2
@@ -150,7 +150,7 @@
       title: column.required
       content: 'Table `student` requires columns: creator_id, updater_id'
       startposition:
-        line: 8
+        line: 9
         column: 0
       endposition: null
 - statement: |-

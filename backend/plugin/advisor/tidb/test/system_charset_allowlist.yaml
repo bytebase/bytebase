@@ -23,7 +23,7 @@
       title: system.charset.allowlist
       content: '"ALTER TABLE t CHARSET ascii" used disabled charset ''ascii'''
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: ALTER DATABASE test CHARSET ascii
@@ -58,7 +58,7 @@
       title: system.charset.allowlist
       content: '"ALTER TABLE t ADD COLUMN a varchar(255) CHARSET ascii" used disabled charset ''ascii'''
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -71,7 +71,7 @@
       title: system.charset.allowlist
       content: '"ALTER TABLE t MODIFY COLUMN a varchar(255) CHARSET ascii" used disabled charset ''ascii'''
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -84,7 +84,7 @@
       title: system.charset.allowlist
       content: '"ALTER TABLE t CHANGE COLUMN a a varchar(255) CHARSET ascii" used disabled charset ''ascii'''
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: /* this is a comment */

@@ -10,7 +10,7 @@
       title: statement.merge-alter-table
       content: There are 2 statements to modify table `tech_book`
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -25,7 +25,7 @@
       title: statement.merge-alter-table
       content: There are 2 statements to modify table `t`
       startposition:
-        line: 2
+        line: 3
         column: 0
       endposition: null
     - status: 2
@@ -33,7 +33,7 @@
       title: statement.merge-alter-table
       content: There are 2 statements to modify table `tech_book`
       startposition:
-        line: 3
+        line: 4
         column: 0
       endposition: null
 - statement: |-
@@ -48,7 +48,7 @@
       title: statement.merge-alter-table
       content: There are 2 statements to modify table `tech_book`
       startposition:
-        line: 2
+        line: 3
         column: 0
       endposition: null
     - status: 2
@@ -56,6 +56,6 @@
       title: statement.merge-alter-table
       content: There are 2 statements to modify table `t`
       startposition:
-        line: 3
+        line: 4
         column: 0
       endposition: null

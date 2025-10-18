@@ -10,7 +10,7 @@
       title: column.no-null
       content: Column "ID" is nullable, which is not allowed.
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
     - status: 2
@@ -18,7 +18,7 @@
       title: column.no-null
       content: Column "NAME" is nullable, which is not allowed.
       startposition:
-        line: 2
+        line: 3
         column: 0
       endposition: null
 - statement: CREATE TABLE book(id int, name varchar(255), PRIMARY KEY (id))
@@ -29,7 +29,7 @@
       title: column.no-null
       content: Column "NAME" is nullable, which is not allowed.
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: CREATE TABLE book(id int PRIMARY KEY, name varchar(255))
@@ -40,7 +40,7 @@
       title: column.no-null
       content: Column "NAME" is nullable, which is not allowed.
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: CREATE TABLE book(id int NOT NULL, name varchar(255))
@@ -51,7 +51,7 @@
       title: column.no-null
       content: Column "NAME" is nullable, which is not allowed.
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: CREATE TABLE book(id int PRIMARY KEY, name varchar(255) NOT NULL)
@@ -64,7 +64,7 @@
       title: column.no-null
       content: Column "READER" is nullable, which is not allowed.
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -83,7 +83,7 @@
       title: column.no-null
       content: Column "NAME" is nullable, which is not allowed.
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: -- this is a comment

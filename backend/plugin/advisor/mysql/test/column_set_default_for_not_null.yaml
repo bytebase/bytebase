@@ -19,7 +19,7 @@
       title: column.set-default-for-not-null
       content: Column `book`.`id` is NOT NULL but doesn't have DEFAULT
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -42,7 +42,7 @@
       title: column.set-default-for-not-null
       content: Column `book`.`id` is NOT NULL but doesn't have DEFAULT
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -55,7 +55,7 @@
       title: column.set-default-for-not-null
       content: Column `book`.`b` is NOT NULL but doesn't have DEFAULT
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
     - status: 2
@@ -63,7 +63,7 @@
       title: column.set-default-for-not-null
       content: Column `book`.`c` is NOT NULL but doesn't have DEFAULT
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -76,7 +76,7 @@
       title: column.set-default-for-not-null
       content: Column `book`.`id` is NOT NULL but doesn't have DEFAULT
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -97,7 +97,7 @@
       title: column.set-default-for-not-null
       content: Column `book`.`id` is NOT NULL but doesn't have DEFAULT
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-

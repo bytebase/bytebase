@@ -14,7 +14,7 @@
       title: column.maximum-character-length
       content: The length of the CHAR column `t2.name` is bigger than 20, please use VARCHAR instead
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -27,7 +27,7 @@
       title: column.maximum-character-length
       content: The length of the CHAR column `tech_book.name_2` is bigger than 20, please use VARCHAR instead
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -40,7 +40,7 @@
       title: column.maximum-character-length
       content: The length of the CHAR column `tech_book.name` is bigger than 20, please use VARCHAR instead
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -53,6 +53,6 @@
       title: column.maximum-character-length
       content: The length of the CHAR column `tech_book.name` is bigger than 20, please use VARCHAR instead
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null

@@ -17,7 +17,7 @@
       title: column.comment
       content: Comment is required for column "TEST_DB"."T"."A"
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -30,7 +30,7 @@
       title: column.comment
       content: Comment is required for column "TEST_DB"."T"."D"
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -44,6 +44,6 @@
       title: column.comment
       content: Comment is required for column "TEST_DB"."T"."A"
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null

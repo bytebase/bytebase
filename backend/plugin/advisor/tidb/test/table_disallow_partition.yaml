@@ -16,7 +16,7 @@
                 PARTITION p1 VALUES LESS THAN (11)
               )" creates
       startposition:
-        line: 3
+        line: 4
         column: 0
       endposition: null
 - statement: |-
@@ -35,6 +35,6 @@
                 PARTITION p1 VALUES LESS THAN (11)
               )" creates
       startposition:
-        line: 3
+        line: 4
         column: 0
       endposition: null

@@ -12,7 +12,7 @@
       title: column.comment
       content: The length of column `t`.`a` comment should be within 10 characters
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
     - status: 2
@@ -20,7 +20,7 @@
       title: column.comment
       content: Column `t`.`b` requires comments
       startposition:
-        line: 2
+        line: 3
         column: 0
       endposition: null
     - status: 2
@@ -28,7 +28,7 @@
       title: column.comment
       content: Column `t`.`c` requires comments
       startposition:
-        line: 3
+        line: 4
         column: 0
       endposition: null
 - statement: |-
@@ -41,7 +41,7 @@
       title: column.comment
       content: Column `t`.`b` requires comments
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -62,7 +62,7 @@
       title: column.comment
       content: Column `t`.`b` requires comments
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -83,7 +83,7 @@
       title: column.comment
       content: Column `t`.`b` requires comments
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -104,6 +104,6 @@
       title: column.comment
       content: The length of column `t`.`b` comment should be within 10 characters
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null

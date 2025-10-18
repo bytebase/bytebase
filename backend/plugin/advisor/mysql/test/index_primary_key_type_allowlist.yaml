@@ -55,7 +55,7 @@
       title: index.primary-key-type-allowlist
       content: The column `id` in table `t` is one of the primary key, but its type "varchar" is not in allowlist
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -72,7 +72,7 @@
       title: index.primary-key-type-allowlist
       content: The column `id` in table `t` is one of the primary key, but its type "varchar" is not in allowlist
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -85,7 +85,7 @@
       title: index.primary-key-type-allowlist
       content: The column `id2` in table `t` is one of the primary key, but its type "varchar" is not in allowlist
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
     - status: 2
@@ -93,7 +93,7 @@
       title: index.primary-key-type-allowlist
       content: The column `id3` in table `t` is one of the primary key, but its type "varchar" is not in allowlist
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -114,7 +114,7 @@
       title: index.primary-key-type-allowlist
       content: The column `id` in table `t` is one of the primary key, but its type "varchar" is not in allowlist
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -127,7 +127,7 @@
       title: index.primary-key-type-allowlist
       content: The column `id2` in table `t` is one of the primary key, but its type "varchar" is not in allowlist
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
     - status: 2
@@ -135,7 +135,7 @@
       title: index.primary-key-type-allowlist
       content: The column `id3` in table `t` is one of the primary key, but its type "varchar" is not in allowlist
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -156,7 +156,7 @@
       title: index.primary-key-type-allowlist
       content: The column `id` in table `t` is one of the primary key, but its type "varchar" is not in allowlist
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -173,7 +173,7 @@
       title: index.primary-key-type-allowlist
       content: The column `id2` in table `t` is one of the primary key, but its type "varchar" is not in allowlist
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-

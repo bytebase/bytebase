@@ -55,7 +55,7 @@
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -72,7 +72,7 @@
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -85,7 +85,7 @@
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id2` is varchar(5)
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
     - status: 2
@@ -93,7 +93,7 @@
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id3` is varchar(5)
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -114,7 +114,7 @@
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -127,7 +127,7 @@
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id2` is varchar(5)
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
     - status: 2
@@ -135,7 +135,7 @@
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id3` is varchar(5)
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -156,7 +156,7 @@
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -173,7 +173,7 @@
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id2` is varchar(5)
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-

@@ -32,7 +32,7 @@
           FOREIGN KEY fk1(roomId) REFERENCES room(id),
           INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin;" used disabled collation 'latin1_bin'
       startposition:
-        line: 11
+        line: 12
         column: 0
       endposition: null
 - statement: |
@@ -82,7 +82,7 @@
       title: system.collation.allowlist
       content: '"ALTER TABLE t COLLATE latin1_bin;" used disabled collation ''latin1_bin'''
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: ALTER DATABASE test COLLATE latin1_bin;
@@ -117,7 +117,7 @@
       title: system.collation.allowlist
       content: '"ALTER TABLE t ADD COLUMN a varchar(255) CHARACTER SET latin1 COLLATE latin1_bin;" used disabled collation ''latin1_bin'''
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -130,7 +130,7 @@
       title: system.collation.allowlist
       content: '"ALTER TABLE t MODIFY COLUMN a varchar(255) CHARACTER SET latin1 COLLATE latin1_bin;" used disabled collation ''latin1_bin'''
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -143,6 +143,6 @@
       title: system.collation.allowlist
       content: '"ALTER TABLE t CHANGE COLUMN a a varchar(255) CHARACTER SET latin1 COLLATE latin1_bin;" used disabled collation ''latin1_bin'''
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null

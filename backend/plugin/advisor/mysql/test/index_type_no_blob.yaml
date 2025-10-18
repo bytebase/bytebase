@@ -18,7 +18,7 @@
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `userTable`.`content` is blob
       startposition:
-        line: 11
+        line: 12
         column: 0
       endposition: null
 - statement: |
@@ -138,7 +138,7 @@
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`b` is blob
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -151,7 +151,7 @@
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`b` is blob
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
     - status: 2
@@ -159,7 +159,7 @@
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`lb` is longblob
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
     - status: 2
@@ -167,7 +167,7 @@
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`mb` is mediumblob
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -180,7 +180,7 @@
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`b` is blob
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
     - status: 2
@@ -188,7 +188,7 @@
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`lb` is longblob
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
     - status: 2
@@ -196,7 +196,7 @@
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`mb` is mediumblob
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -216,7 +216,7 @@
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`b` is blob
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
     - status: 2
@@ -224,7 +224,7 @@
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`mb` is mediumblob
       startposition:
-        line: 2
+        line: 3
         column: 0
       endposition: null
     - status: 2
@@ -232,7 +232,7 @@
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`lb` is longblob
       startposition:
-        line: 3
+        line: 4
         column: 0
       endposition: null
 - statement: |-
@@ -250,7 +250,7 @@
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`b` is blob
       startposition:
-        line: 2
+        line: 3
         column: 0
       endposition: null
 - statement: |-
@@ -264,6 +264,6 @@
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`d` is blob
       startposition:
-        line: 2
+        line: 3
         column: 0
       endposition: null

@@ -12,7 +12,7 @@
       title: table.no-foreign-key
       content: FOREIGN KEY is not allowed in the table CUSTOMER.
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -30,7 +30,7 @@
       title: table.no-foreign-key
       content: FOREIGN KEY is not allowed in the table CUSTOMER.
       startposition:
-        line: 5
+        line: 6
         column: 0
       endposition: null
 - statement: |-
@@ -48,7 +48,7 @@
       title: table.no-foreign-key
       content: FOREIGN KEY is not allowed in the table CUSTOMER.
       startposition:
-        line: 6
+        line: 7
         column: 0
       endposition: null
 - statement: |-
@@ -66,7 +66,7 @@
       title: table.no-foreign-key
       content: FOREIGN KEY is not allowed in the table "ANOTHER_SCHEMA"."CUSTOMER".
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -99,6 +99,6 @@
       title: table.no-foreign-key
       content: FOREIGN KEY is not allowed in the table CUSTOMER.
       startposition:
-        line: 12
+        line: 13
         column: 0
       endposition: null

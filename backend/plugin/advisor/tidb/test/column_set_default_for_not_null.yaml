@@ -19,7 +19,7 @@
       title: column.set-default-for-not-null
       content: Column `book`.`id` is NOT NULL but doesn't have DEFAULT
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -42,7 +42,7 @@
       title: column.set-default-for-not-null
       content: Column `book`.`id` is NOT NULL but doesn't have DEFAULT
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -55,7 +55,7 @@
       title: column.set-default-for-not-null
       content: Column `book`.`id` is NOT NULL but doesn't have DEFAULT
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -76,7 +76,7 @@
       title: column.set-default-for-not-null
       content: Column `book`.`id` is NOT NULL but doesn't have DEFAULT
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: "\n\t\t\t\tCREATE TABLE book(uid int, id int);\n\t\t\t\tALTER TABLE book \n\t\t\t\t\tCHANGE COLUMN uid uid int NOT NULL DEFAULT 0,\n\t\t\t\t\tMODIFY COLUMN id int PRIMARY KEY DEFAULT 0,\n\t\t\t\t\tADD COLUMN name varchar(20) NOT NULL DEFAULT ''\n\t\t\t\t"

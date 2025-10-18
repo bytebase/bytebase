@@ -29,7 +29,7 @@
           age INT
         );" uses
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: SELECT SLEEP(5);

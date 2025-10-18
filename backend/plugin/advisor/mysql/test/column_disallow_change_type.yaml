@@ -10,7 +10,7 @@
       title: column.disallow-change-type
       content: '"ALTER TABLE tech_book MODIFY id INTEGER;" changes column type'
       startposition:
-        line: 2
+        line: 3
         column: 0
       endposition: null
     - status: 2
@@ -18,7 +18,7 @@
       title: column.disallow-change-type
       content: '"ALTER TABLE tech_book MODIFY id INTEGER UNSIGNED;" changes column type'
       startposition:
-        line: 3
+        line: 4
         column: 0
       endposition: null
 - statement: |-
@@ -31,7 +31,7 @@
       title: column.disallow-change-type
       content: '"ALTER TABLE tech_book MODIFY id int(4);" changes column type'
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -52,7 +52,7 @@
       title: column.disallow-change-type
       content: '"ALTER TABLE tech_book MODIFY id smallint;" changes column type'
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book CHANGE name uname varchar(20);

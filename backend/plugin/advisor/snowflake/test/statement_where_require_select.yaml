@@ -6,7 +6,7 @@
       title: statement.where.require.select
       content: WHERE clause is required for SELECT statement.
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: SELECT * FROM t;
@@ -17,7 +17,7 @@
       title: statement.where.require.select
       content: WHERE clause is required for SELECT statement.
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: SELECT * FROM t WHERE b = 2;
@@ -39,7 +39,7 @@
       title: statement.where.require.select
       content: WHERE clause is required for SELECT statement.
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
     - status: 2
@@ -47,7 +47,7 @@
       title: statement.where.require.select
       content: WHERE clause is required for SELECT statement.
       startposition:
-        line: 4
+        line: 5
         column: 0
       endposition: null
 - statement: |-
@@ -63,7 +63,7 @@
       title: statement.where.require.select
       content: WHERE clause is required for SELECT statement.
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: SELECT 1;

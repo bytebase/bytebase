@@ -6,7 +6,7 @@
       title: naming.identifier.case
       content: Identifier "table" should be upper case
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: CREATE TABLE tt(id int, name varchar(255))
@@ -19,7 +19,7 @@
       title: naming.identifier.case
       content: Identifier "Tt" should be upper case
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book RENAME TO analyze

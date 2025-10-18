@@ -8,7 +8,7 @@
       title: column.type-disallow-list
       content: Disallow column type JSON but column "B" is
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -21,7 +21,7 @@
       title: column.type-disallow-list
       content: Disallow column type JSON but column "A" is
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -34,7 +34,7 @@
       title: column.type-disallow-list
       content: Disallow column type BINARY_FLOAT but column "D" is
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: CREATE TABLE t(a int, b BINARY_FLOAT);
@@ -45,7 +45,7 @@
       title: column.type-disallow-list
       content: Disallow column type BINARY_FLOAT but column "B" is
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -58,6 +58,6 @@
       title: column.type-disallow-list
       content: Disallow column type BINARY_FLOAT but column "A" is
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null

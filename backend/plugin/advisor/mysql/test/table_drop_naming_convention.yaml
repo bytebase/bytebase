@@ -13,7 +13,7 @@
       title: table.drop-naming-convention
       content: '`foo` mismatches drop table naming convention, naming format should be "_delete$"'
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -28,6 +28,6 @@
       title: table.drop-naming-convention
       content: '`bar` mismatches drop table naming convention, naming format should be "_delete$"'
       startposition:
-        line: 3
+        line: 4
         column: 0
       endposition: null

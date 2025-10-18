@@ -12,7 +12,7 @@
       title: column.disallow-changing-order
       content: '"ALTER TABLE t MODIFY COLUMN a int FIRST;" changes column order'
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -25,7 +25,7 @@
       title: column.disallow-changing-order
       content: '"ALTER TABLE t CHANGE COLUMN a1 a int FIRST;" changes column order'
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -38,7 +38,7 @@
       title: column.disallow-changing-order
       content: '"ALTER TABLE t MODIFY COLUMN a int AFTER b;" changes column order'
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -51,6 +51,6 @@
       title: column.disallow-changing-order
       content: '"ALTER TABLE t CHANGE COLUMN a1 a int AFTER b;" changes column order'
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null

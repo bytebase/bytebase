@@ -12,6 +12,6 @@
       title: column.disallow-change
       content: '"ALTER TABLE t CHANGE COLUMN b a int;" contains CHANGE COLUMN statement'
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null

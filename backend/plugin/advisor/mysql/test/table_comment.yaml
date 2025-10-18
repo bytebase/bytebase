@@ -8,7 +8,7 @@
       title: table.comment
       content: The length of table `t` comment should be within 10 characters
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -21,7 +21,7 @@
       title: table.comment
       content: Table `t` requires comments
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -34,6 +34,6 @@
       title: table.comment
       content: The length of table `t` comment should be within 10 characters
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null

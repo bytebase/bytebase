@@ -6,7 +6,7 @@
       title: schema.backward-compatibility
       content: Drop database "DB" may cause incompatibility with the existing data and code
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: DROP SCHEMA SCHEMA1;
@@ -17,7 +17,7 @@
       title: schema.backward-compatibility
       content: Drop schema "TEST_DB.SCHEMA1" may cause incompatibility with the existing data and code
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: DROP TABLE T;
@@ -28,7 +28,7 @@
       title: schema.backward-compatibility
       content: Drop table "TEST_DB.PUBLIC.T" may cause incompatibility with the existing data and code
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: ALTER TABLE T DROP COLUMN COL1;
@@ -39,7 +39,7 @@
       title: schema.backward-compatibility
       content: Drop column "COL1" may cause incompatibility with the existing data and code
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -52,7 +52,7 @@
       title: schema.backward-compatibility
       content: Drop table "TEST_DB.PUBLIC.T" may cause incompatibility with the existing data and code
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
