@@ -21,7 +21,45 @@ func init() {
 // parsePostgresForRegistry is the ParseFunc for PostgreSQL.
 // Returns []ast.Node (github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast) on success.
 func parsePostgresForRegistry(statement string) (any, error) {
-	return Parse(ParseContext{}, statement)
+	nodes, err := Parse(ParseContext{}, statement)
+	if err != nil {
+		// For ConvertError, return as-is (will be handled by convertErrorToAdvice in sheet.go)
+		if _, ok := err.(*ConvertError); ok {
+			return nil, err
+		}
+		// For other errors, wrap in base.SyntaxError with proper line number
+		line := calculatePostgresErrorLine(statement)
+		return nil, &base.SyntaxError{
+			Position: &storepb.Position{
+				Line: int32(line),
+			},
+			Message: err.Error(),
+		}
+	}
+	// Filter out nil nodes
+	var res []ast.Node
+	for _, node := range nodes {
+		if node != nil {
+			res = append(res, node)
+		}
+	}
+	return res, nil
+}
+
+// calculatePostgresErrorLine calculates the line number where the PostgreSQL error occurred.
+func calculatePostgresErrorLine(statement string) int {
+	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_POSTGRES, statement)
+	if err != nil {
+		return 1
+	}
+
+	for _, singleSQL := range singleSQLs {
+		if _, err := Parse(ParseContext{}, singleSQL.Text); err != nil {
+			return int(singleSQL.End.GetLine())
+		}
+	}
+
+	return 1
 }
 
 const (
