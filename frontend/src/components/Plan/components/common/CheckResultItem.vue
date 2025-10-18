@@ -13,8 +13,17 @@
       <div v-if="content" class="text-sm text-control">
         {{ content }}
       </div>
-      <div v-if="position" class="text-sm mt-1 text-control-light">
-        Line {{ position.line }}, Column {{ position.column }}
+      <div
+        v-if="position && (position.line > 0 || position.column > 0)"
+        class="text-sm mt-1 text-control-light"
+      >
+        <template v-if="position.line > 0">
+          {{ $t("common.line") }} {{ position.line }}
+        </template>
+        <template v-if="position.line > 0 && position.column > 0">, </template>
+        <template v-if="position.column > 0">
+          {{ $t("common.column") }} {{ position.column }}
+        </template>
       </div>
       <div
         v-if="affectedRows !== undefined"

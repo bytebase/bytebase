@@ -245,7 +245,9 @@
       "double-comfirm": "Para confirmar la eliminación, escriba: {name}",
       "notification": "Se eliminó exitosamente el recurso '{name}'."
     },
-    "collapse": "Colapsar"
+    "collapse": "Colapsar",
+    "line": "Línea",
+    "column": "Columna"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"

@@ -15,7 +15,13 @@
     </div>
     <div class="flex items-center gap-1">
       <span>{{ title }}</span>
-      <NButton size="tiny" quaternary type="primary" @click="doScroll">
+      <NButton
+        v-if="hasValidPosition"
+        size="tiny"
+        quaternary
+        type="primary"
+        @click="doScroll"
+      >
         L{{ position.startLine }}:C{{ position.startColumn }}
       </NButton>
     </div>
@@ -50,16 +56,22 @@ const title = computed(() => {
   return parts.join(" ");
 });
 
+const hasValidPosition = computed(() => {
+  const { advice } = props;
+  // Position with line 0 means unknown position
+  return (advice.startPosition?.line ?? 0) > 0;
+});
+
 const position = computed(() => {
   const { advice, executeParams } = props;
   const [startLine, startColumn] = positionWithOffset(
-    advice.startPosition?.line ?? 0,
-    advice.startPosition?.column ?? Number.MAX_SAFE_INTEGER,
+    advice.startPosition?.line ?? 1,
+    advice.startPosition?.column || 1,
     executeParams?.selection
   );
   const [endLine, endColumn] = positionWithOffset(
-    advice.endPosition?.line ?? 0,
-    advice.endPosition?.column ?? Number.MAX_SAFE_INTEGER,
+    advice.endPosition?.line ?? startLine,
+    advice.endPosition?.column || startColumn,
     executeParams?.selection
   );
   return {

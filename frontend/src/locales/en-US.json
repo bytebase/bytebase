@@ -245,7 +245,9 @@
       "double-comfirm": "To confirm deletion, please type: {name}",
       "notification": "Successfully delete the resource '{name}'."
     },
-    "collapse": "Collapse"
+    "collapse": "Collapse",
+    "line": "Line",
+    "column": "Column"
   },
   "error-page": {
     "go-back-home": "Go back home"
