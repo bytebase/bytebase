@@ -19,9 +19,59 @@ import (
 	parser "github.com/bytebase/tidb-parser"
 
 	"github.com/bytebase/bytebase/backend/common"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/tokenizer"
 )
+
+func init() {
+	base.RegisterParseFunc(storepb.Engine_TIDB, ParseTiDBForSyntaxCheck)
+}
+
+// ParseTiDBForSyntaxCheck parses TiDB SQL for syntax checking purposes.
+func ParseTiDBForSyntaxCheck(statement string) (any, error) {
+	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_TIDB, statement)
+	if err != nil {
+		return nil, err
+	}
+
+	p := newTiDBParser()
+	var returnNodes []ast.StmtNode
+	baseLine := 0
+	for _, singleSQL := range singleSQLs {
+		nodes, _, err := p.Parse(singleSQL.Text, "", "")
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse statement at line %d", baseLine)
+		}
+
+		if len(nodes) != 1 {
+			continue
+		}
+
+		node := nodes[0]
+		node.SetText(nil, singleSQL.Text)
+		node.SetOriginTextPosition(int(singleSQL.End.GetLine()))
+		if n, ok := node.(*ast.CreateTableStmt); ok {
+			if err := SetLineForMySQLCreateTableStmt(n); err != nil {
+				return nil, errors.Wrapf(err, "failed to set line for create table statement at line %d", singleSQL.End.GetLine())
+			}
+		}
+		returnNodes = append(returnNodes, node)
+		baseLine = int(singleSQL.End.GetLine())
+	}
+
+	return returnNodes, nil
+}
+
+func newTiDBParser() *tidbparser.Parser {
+	p := tidbparser.New()
+
+	// To support MySQL8 window function syntax.
+	// See https://github.com/bytebase/bytebase/issues/175.
+	p.EnableWindowFunc(true)
+
+	return p
+}
 
 // ParseTiDB parses the given SQL statement and returns the AST.
 func ParseTiDB(sql string, charset string, collation string) ([]ast.StmtNode, error) {

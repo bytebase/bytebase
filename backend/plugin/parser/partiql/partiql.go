@@ -7,9 +7,27 @@ import (
 
 	parser "github.com/bytebase/partiql-parser"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/utils"
 )
+
+func init() {
+	base.RegisterParseFunc(storepb.Engine_DYNAMODB, parsePartiQLForRegistry)
+}
+
+// parsePartiQLForRegistry is the ParseFunc for PartiQL.
+// Returns antlr.Tree on success.
+func parsePartiQLForRegistry(statement string) (any, error) {
+	result, err := ParsePartiQL(statement)
+	if err != nil {
+		return nil, err
+	}
+	if result == nil {
+		return nil, nil
+	}
+	return result.Tree, nil
+}
 
 type ParseResult struct {
 	Tree   antlr.Tree

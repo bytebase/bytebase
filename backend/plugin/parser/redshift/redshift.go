@@ -6,9 +6,27 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/redshift"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/utils"
 )
+
+func init() {
+	base.RegisterParseFunc(storepb.Engine_REDSHIFT, parseRedshiftForRegistry)
+}
+
+// parseRedshiftForRegistry is the ParseFunc for Redshift.
+// Returns antlr.Tree on success.
+func parseRedshiftForRegistry(statement string) (any, error) {
+	result, err := ParseRedshift(statement)
+	if err != nil {
+		return nil, err
+	}
+	if result == nil {
+		return nil, nil
+	}
+	return result.Tree, nil
+}
 
 // ParseResult is the result of parsing a Redshift statement.
 type ParseResult struct {

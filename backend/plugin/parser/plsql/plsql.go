@@ -10,8 +10,23 @@ import (
 	parser "github.com/bytebase/plsql-parser"
 	"github.com/pkg/errors"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
+
+func init() {
+	base.RegisterParseFunc(storepb.Engine_ORACLE, parsePLSQLForRegistry)
+}
+
+// parsePLSQLForRegistry is the ParseFunc for PL/SQL.
+// Returns antlr.Tree on success.
+func parsePLSQLForRegistry(statement string) (any, error) {
+	tree, _, err := ParsePLSQL(statement + ";")
+	if err != nil {
+		return nil, err
+	}
+	return tree, nil
+}
 
 type Version struct {
 	First  int
