@@ -251,7 +251,7 @@ func convertErrorToAdvice(err error) []*storepb.Advice {
 		{
 			Status:        storepb.Advice_ERROR,
 			Code:          InternalErrorCode,
-			Title:         "Parse error",
+			Title:         SyntaxErrorTitle,
 			Content:       err.Error(),
 			StartPosition: nil,
 		},

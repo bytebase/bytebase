@@ -283,6 +283,17 @@ func RegisterParseFunc(engine storepb.Engine, f ParseFunc) {
 }
 
 // Parse parses the SQL statement and returns the AST.
+// The return type (any) varies by database engine:
+//   - TiDB: []ast.StmtNode (github.com/pingcap/tidb/pkg/parser/ast)
+//   - MySQL, MariaDB, OceanBase: []*ParseResult (github.com/bytebase/bytebase/backend/plugin/parser/mysql)
+//   - PostgreSQL: []ast.Node (github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast)
+//   - CockroachDB: statements.Statements (github.com/cockroachdb/cockroachdb-parser/pkg/sql/parser/statements)
+//   - Redshift: antlr.Tree
+//   - Oracle: antlr.Tree
+//   - Snowflake: antlr.Tree
+//   - MSSQL: antlr.Tree
+//   - DynamoDB (PartiQL): antlr.Tree
+//   - Doris: *ParseResult (github.com/bytebase/bytebase/backend/plugin/parser/doris)
 func Parse(engine storepb.Engine, statement string) (any, error) {
 	f, ok := parsers[engine]
 	if !ok {
