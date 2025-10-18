@@ -25,6 +25,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/doris"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	partiqlparser "github.com/bytebase/bytebase/backend/plugin/parser/partiql"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
@@ -429,6 +430,34 @@ func oracleSyntaxCheck(statement string) (any, []*storepb.Advice) {
 }
 
 func postgresSyntaxCheck(statement string) (any, []*storepb.Advice) {
+	// Use ANTLR-based parser to get precise position information (line and column)
+	_, err := pgparser.ParsePostgreSQL(statement)
+	if err != nil {
+		if syntaxErr, ok := err.(*base.SyntaxError); ok {
+			return nil, []*storepb.Advice{
+				{
+					Status:        storepb.Advice_ERROR,
+					Code:          StatementSyntaxErrorCode,
+					Title:         SyntaxErrorTitle,
+					Content:       syntaxErr.Message,
+					StartPosition: syntaxErr.Position,
+				},
+			}
+		}
+		return nil, []*storepb.Advice{
+			{
+				Status:  storepb.Advice_ERROR,
+				Code:    StatementSyntaxErrorCode,
+				Title:   SyntaxErrorTitle,
+				Content: err.Error(),
+				StartPosition: &storepb.Position{
+					Line: int32(calculatePostgresErrorLine(statement)),
+				},
+			},
+		}
+	}
+
+	// Convert to pgrawparser nodes for compatibility with existing code
 	nodes, err := pgrawparser.Parse(pgrawparser.ParseContext{}, statement)
 	if err != nil {
 		if _, ok := err.(*pgrawparser.ConvertError); ok {
@@ -444,6 +473,7 @@ func postgresSyntaxCheck(statement string) (any, []*storepb.Advice) {
 				},
 			}
 		}
+		// Should not reach here since ParsePostgreSQL already validated syntax
 		return nil, []*storepb.Advice{
 			{
 				Status:  storepb.Advice_ERROR,
