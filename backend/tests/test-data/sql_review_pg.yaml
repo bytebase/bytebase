@@ -51,7 +51,7 @@
         "code": 601,
         "sqlReviewReport": {
           "startPosition": {
-            "line": 6
+            "line": 7
           }
         }
       }
@@ -63,7 +63,7 @@
         "code": 602,
         "sqlReviewReport": {
           "startPosition": {
-            "line": 6
+            "line": 7
           }
         }
       }
@@ -75,7 +75,7 @@
         "code": 301,
         "sqlReviewReport": {
           "startPosition": {
-            "line": 6
+            "line": 7
           }
         }
       }
@@ -87,7 +87,7 @@
         "code": 302,
         "sqlReviewReport": {
           "startPosition": {
-            "line": 3
+            "line": 4
           }
         }
       }
@@ -99,7 +99,7 @@
         "code": 304,
         "sqlReviewReport": {
           "startPosition": {
-            "line": 4
+            "line": 5
           }
         }
       }
@@ -111,7 +111,7 @@
         "code": 305,
         "sqlReviewReport": {
           "startPosition": {
-            "line": 5
+            "line": 6
           }
         }
       }
@@ -123,7 +123,7 @@
         "code": 401,
         "sqlReviewReport": {
           "startPosition": {
-            "line": 6
+            "line": 7
           }
         }
       }
@@ -135,7 +135,7 @@
         "code": 402,
         "sqlReviewReport": {
           "startPosition": {
-            "line": 1
+            "line": 2
           }
         }
       }
@@ -147,7 +147,7 @@
         "code": 402,
         "sqlReviewReport": {
           "startPosition": {
-            "line": 2
+            "line": 3
           }
         }
       }
@@ -159,7 +159,7 @@
         "code": 402,
         "sqlReviewReport": {
           "startPosition": {
-            "line": 3
+            "line": 4
           }
         }
       }
@@ -173,7 +173,9 @@
         "content": "\"DELETE FROM t\" requires WHERE clause",
         "code": 202,
         "sqlReviewReport": {
-          "startPosition": {}
+          "startPosition": {
+            "line": 1
+          }
         }
       }
   run: false
@@ -186,7 +188,9 @@
         "content": "\"DELETE FROM t WHERE a like '%abc'\" uses leading wildcard LIKE",
         "code": 204,
         "sqlReviewReport": {
-          "startPosition": {}
+          "startPosition": {
+            "line": 1
+          }
         }
       }
   run: false
@@ -232,7 +236,9 @@
         "content": "Primary key in table \"tech_book\" mismatches the naming convention, expect \"^$|^pk_tech_book_id$\" but found \"pk1\"",
         "code": 306,
         "sqlReviewReport": {
-          "startPosition": {}
+          "startPosition": {
+            "line": 1
+          }
         }
       }
   run: false

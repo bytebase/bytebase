@@ -15,7 +15,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy"
 	tsqlbatch "github.com/bytebase/bytebase/backend/plugin/parser/tsql/batch"
 	"github.com/bytebase/bytebase/backend/store"
 
@@ -231,19 +230,6 @@ func convertErrorToAdvice(err error) []*storepb.Advice {
 				Title:         SyntaxErrorTitle,
 				Content:       syntaxErr.Message,
 				StartPosition: syntaxErr.Position,
-			},
-		}
-	}
-	if _, ok := err.(*pgrawparser.ConvertError); ok {
-		return []*storepb.Advice{
-			{
-				Status:  storepb.Advice_ERROR,
-				Code:    InternalErrorCode,
-				Title:   "Parser conversion error",
-				Content: err.Error(),
-				StartPosition: &storepb.Position{
-					Line: int32(1),
-				},
 			},
 		}
 	}

@@ -18,7 +18,7 @@
       title: statement.add-foreign-key-not-valid
       content: Adding foreign keys with validation will block reads and writes. You can add check foreign keys not valid and then validate separately
       startposition:
-        line: 11
+        line: 12
         column: 0
       endposition: null
 - statement: |-

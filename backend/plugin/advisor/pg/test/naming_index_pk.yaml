@@ -8,7 +8,7 @@
       title: naming.index.pk
       content: Primary key in table "tech_book" mismatches the naming convention, expect "^$|^pk_tech_book_id_name$" but found "tech_book_id_name"
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book ADD CONSTRAINT udmhjtnsaablcmjhqcznfiwtnevcehcvw PRIMARY KEY (id, name)
@@ -19,7 +19,7 @@
       title: naming.index.pk
       content: Primary key in table "tech_book" mismatches the naming convention, expect "^$|^pk_tech_book_id_name$" but found "udmhjtnsaablcmjhqcznfiwtnevcehcvw"
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: CREATE TABLE book(id INT, name VARCHAR(20), CONSTRAINT pk_book_name PRIMARY KEY (name))
@@ -38,7 +38,7 @@
       title: naming.index.pk
       content: Primary key in table "book" mismatches the naming convention, expect "^$|^pk_book_name$" but found "tech_book_name"
       startposition:
-        line: 4
+        line: 5
         column: 0
       endposition: null
 - statement: CREATE TABLE book(id INT, name VARCHAR(20), PRIMARY KEY (name))
@@ -55,7 +55,7 @@
       title: naming.index.pk
       content: Primary key in table "tech_book" mismatches the naming convention, expect "^$|^pk_tech_book_id_name$" but found "pk_tech_book"
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book RENAME CONSTRAINT old_pk TO pk_tech_book_id_name
@@ -68,7 +68,7 @@
       title: naming.index.pk
       content: Primary key in table "tech_book" mismatches the naming convention, expect "^$|^pk_tech_book_id_name$" but found "pk_tech_book"
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: ALTER INDEX old_pk RENAME TO pk_tech_book_id_name
@@ -81,6 +81,6 @@
       title: naming.index.pk
       content: Primary key in table "tech_book" mismatches the naming convention, expect "^$|^pk_tech_book_id_name$" but found "pk_tech_book"
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null

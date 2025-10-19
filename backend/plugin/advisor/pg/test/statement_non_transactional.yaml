@@ -8,7 +8,7 @@
       title: statement.non-transactional
       content: This statement is non-transactional
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: VACUUM FULL tech_book
@@ -19,6 +19,6 @@
       title: statement.non-transactional
       content: This statement is non-transactional
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null

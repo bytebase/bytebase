@@ -6,7 +6,7 @@
       title: statement.create-specify-schema
       content: Table schema should be specified.
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: CREATE TABLE public.t(id int);

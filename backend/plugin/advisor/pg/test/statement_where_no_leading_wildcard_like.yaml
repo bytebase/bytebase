@@ -8,7 +8,7 @@
       title: statement.where.no-leading-wildcard-like
       content: '"SELECT * FROM t WHERE a LIKE ''%abc''" uses leading wildcard LIKE'
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: SELECT * FROM t WHERE a LIKE 'abc' OR a LIKE '%abc'
@@ -19,7 +19,7 @@
       title: statement.where.no-leading-wildcard-like
       content: '"SELECT * FROM t WHERE a LIKE ''abc'' OR a LIKE ''%abc''" uses leading wildcard LIKE'
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: SELECT * FROM t WHERE a LIKE '%acc' OR a LIKE '%abc'
@@ -30,7 +30,7 @@
       title: statement.where.no-leading-wildcard-like
       content: '"SELECT * FROM t WHERE a LIKE ''%acc'' OR a LIKE ''%abc''" uses leading wildcard LIKE'
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: SELECT * FROM (SELECT * FROM t WHERE a LIKE '%acc' OR a LIKE '%abc') t1
@@ -41,6 +41,6 @@
       title: statement.where.no-leading-wildcard-like
       content: '"SELECT * FROM (SELECT * FROM t WHERE a LIKE ''%acc'' OR a LIKE ''%abc'') t1" uses leading wildcard LIKE'
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null

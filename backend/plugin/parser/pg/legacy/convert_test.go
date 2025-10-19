@@ -3483,8 +3483,8 @@ func TestPGCreateTableSetLine(t *testing.T) {
 				
 			)
 			`,
-			columnLineList:     []int{2, 2, 3, 4},
-			constraintLineList: []int{5, 6, 7, 7, 10},
+			columnLineList:     []int{3, 3, 4, 5},
+			constraintLineList: []int{6, 7, 8, 8, 11},
 		},
 		{
 			// test for Windows.
@@ -3499,8 +3499,8 @@ func TestPGCreateTableSetLine(t *testing.T) {
 				"\r\n" +
 				"FOREIGN KEY (a, b, c) REFERENCES t1(a, b, c)" + "\r\n" +
 				")",
-			columnLineList:     []int{2, 2, 3, 4},
-			constraintLineList: []int{5, 6, 7, 7, 9},
+			columnLineList:     []int{3, 3, 4, 5},
+			constraintLineList: []int{6, 7, 8, 8, 10},
 		},
 		{
 			statement: `
@@ -3509,7 +3509,7 @@ func TestPGCreateTableSetLine(t *testing.T) {
 				b int CHECK(b>1), c int UNIQUE
 			)
 			`,
-			columnLineList:     []int{2, 3, 3},
+			columnLineList:     []int{3, 4, 4},
 			constraintLineList: []int{},
 		},
 		{
@@ -3521,8 +3521,8 @@ func TestPGCreateTableSetLine(t *testing.T) {
 				UNIQUE(name)
 			)
 			`,
-			columnLineList:     []int{2, 3},
-			constraintLineList: []int{4, 5},
+			columnLineList:     []int{3, 4},
+			constraintLineList: []int{5, 6},
 		},
 	}
 

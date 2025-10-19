@@ -9,7 +9,7 @@
       title: statement.disallow-commit
       content: 'Commit is not allowed, related statement: "COMMIT;"'
       startposition:
-        line: 2
+        line: 3
         column: 0
       endposition: null
 - statement: |-
@@ -27,7 +27,7 @@
       title: statement.disallow-commit
       content: 'Commit is not allowed, related statement: "COMMIT;"'
       startposition:
-        line: 2
+        line: 3
         column: 0
       endposition: null
     - status: 2
@@ -35,6 +35,6 @@
       title: statement.disallow-commit
       content: 'Commit is not allowed, related statement: "COMMIT;"'
       startposition:
-        line: 6
+        line: 7
         column: 0
       endposition: null

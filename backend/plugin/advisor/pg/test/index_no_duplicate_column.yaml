@@ -11,7 +11,7 @@
       title: index.no-duplicate-column
       content: PRIMARY KEY "" has duplicate column "t"."a"
       startposition:
-        line: 2
+        line: 3
         column: 0
       endposition: null
 - statement: |-
@@ -24,7 +24,7 @@
       title: index.no-duplicate-column
       content: INDEX "idx_a" has duplicate column "t"."a"
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -37,7 +37,7 @@
       title: index.no-duplicate-column
       content: UNIQUE KEY "uk_a" has duplicate column "t"."a"
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -50,7 +50,7 @@
       title: index.no-duplicate-column
       content: PRIMARY KEY "pk_a" has duplicate column "t"."a"
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -63,6 +63,6 @@
       title: index.no-duplicate-column
       content: FOREIGN KEY "fk_a" has duplicate column "t"."a"
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
