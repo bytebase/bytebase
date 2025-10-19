@@ -10,7 +10,7 @@
       title: table.comment
       content: Comment is required for table `t`
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -24,7 +24,7 @@
       title: table.comment
       content: Comment is required for table `d`
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -38,7 +38,7 @@
       title: table.comment
       content: Comment is required for table `t`
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -52,7 +52,7 @@
       title: table.comment
       content: Comment is required for table `t`
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -65,6 +65,6 @@
       title: table.comment
       content: Table `t` comment is too long. The length of comment should be within 10 characters
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null

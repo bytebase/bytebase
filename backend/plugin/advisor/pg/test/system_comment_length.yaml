@@ -8,7 +8,7 @@
       title: system.comment.length
       content: The length of comment should be within 20 characters
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: comment on table public is 'is a table name'
@@ -21,6 +21,6 @@
       title: system.comment.length
       content: The length of comment should be within 20 characters
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null

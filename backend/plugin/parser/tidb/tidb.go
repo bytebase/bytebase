@@ -37,11 +37,21 @@ func ParseTiDBForSyntaxCheck(statement string) (any, error) {
 
 	p := newTiDBParser()
 	var returnNodes []ast.StmtNode
-	baseLine := 0
 	for _, singleSQL := range singleSQLs {
 		nodes, _, err := p.Parse(singleSQL.Text, "", "")
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to parse statement at line %d", baseLine)
+			// Convert parser error to SyntaxError with proper position
+			syntaxErr := convertParserError(err)
+			// Adjust the line number to be absolute (relative to the full statement)
+			// The TiDB parser reports line numbers relative to singleSQL.Text (starting at 1)
+			// We need to add the offset to get the absolute line number
+			if se, ok := syntaxErr.(*base.SyntaxError); ok && se.Position != nil {
+				// errorLine is 1-based relative to singleSQL.Text
+				// singleSQL.BaseLine is 0-based line number of the first line in the original statement
+				// Absolute line (1-based) = BaseLine (0-based) + errorLine (1-based)
+				se.Position.Line = int32(singleSQL.BaseLine) + se.Position.Line
+			}
+			return nil, syntaxErr
 		}
 
 		if len(nodes) != 1 {
@@ -57,7 +67,6 @@ func ParseTiDBForSyntaxCheck(statement string) (any, error) {
 			}
 		}
 		returnNodes = append(returnNodes, node)
-		baseLine = int(singleSQL.End.GetLine())
 	}
 
 	return returnNodes, nil

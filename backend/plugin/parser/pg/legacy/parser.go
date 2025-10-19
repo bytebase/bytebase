@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	pgquery "github.com/pganalyze/pg_query_go/v6"
+	"github.com/pganalyze/pg_query_go/v6/parser"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -23,17 +24,14 @@ func init() {
 func parsePostgresForRegistry(statement string) (any, error) {
 	nodes, err := Parse(ParseContext{}, statement)
 	if err != nil {
-		// For ConvertError, return as-is (will be handled by convertErrorToAdvice in sheet.go)
-		if _, ok := err.(*ConvertError); ok {
+		// If it's already a SyntaxError, return it as-is
+		if _, ok := err.(*base.SyntaxError); ok {
 			return nil, err
 		}
-		// For other errors, wrap in base.SyntaxError with proper line number
-		line := calculatePostgresErrorLine(statement)
+		// Otherwise, wrap it as a SyntaxError with line 1
 		return nil, &base.SyntaxError{
-			Position: &storepb.Position{
-				Line: int32(line),
-			},
-			Message: err.Error(),
+			Position: &storepb.Position{Line: 1},
+			Message:  err.Error(),
 		}
 	}
 	// Filter out nil nodes
@@ -44,22 +42,6 @@ func parsePostgresForRegistry(statement string) (any, error) {
 		}
 	}
 	return res, nil
-}
-
-// calculatePostgresErrorLine calculates the line number where the PostgreSQL error occurred.
-func calculatePostgresErrorLine(statement string) int {
-	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_POSTGRES, statement)
-	if err != nil {
-		return 1
-	}
-
-	for _, singleSQL := range singleSQLs {
-		if _, err := Parse(ParseContext{}, singleSQL.Text); err != nil {
-			return int(singleSQL.End.GetLine())
-		}
-	}
-
-	return 1
 }
 
 const (
@@ -94,10 +76,11 @@ func (ctx DeparseContext) WriteIndent(buf *strings.Builder, indent string) error
 func Parse(_ ParseContext, statement string) ([]ast.Node, error) {
 	res, err := pgquery.Parse(statement)
 	if err != nil {
-		return nil, err
+		// Extract line number from parser error's cursor position
+		return nil, convertParserError(statement, err)
 	}
 
-	// sikp the setting line stage
+	// skip the setting line stage
 	if len(res.Stmts) == 0 {
 		return nil, nil
 	}
@@ -121,6 +104,32 @@ func Parse(_ ParseContext, statement string) ([]ast.Node, error) {
 		nodeList = append(nodeList, node)
 	}
 	return nodeList, nil
+}
+
+// convertParserError converts a pgquery parser error to a base.SyntaxError with the correct line number.
+// It extracts the line number from the parser.Error's Cursorpos field.
+func convertParserError(statement string, err error) error {
+	line := int32(1)
+
+	// Try to extract cursor position from parser.Error
+	if perr, ok := err.(*parser.Error); ok {
+		if perr.Cursorpos > 0 {
+			// Count newlines up to cursor position to get line number
+			// Cursorpos is 1-based byte offset
+			lineCount := 1
+			for i := 0; i < perr.Cursorpos-1 && i < len(statement); i++ {
+				if statement[i] == '\n' {
+					lineCount++
+				}
+			}
+			line = int32(lineCount)
+		}
+	}
+
+	return &base.SyntaxError{
+		Position: &storepb.Position{Line: line},
+		Message:  err.Error(),
+	}
 }
 
 // splitSQL splits the given SQL statement into multiple SQL statements.

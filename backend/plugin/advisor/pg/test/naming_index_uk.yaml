@@ -8,7 +8,7 @@
       title: naming.index.uk
       content: Unique key in table "tech_book" mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found "tech_book_id_name"
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: CREATE UNIQUE INDEX dzfzqbhnkiiegdhvqjeqoevesfuwcmokrehxlapoqj ON tech_book(id, name)
@@ -19,7 +19,7 @@
       title: naming.index.uk
       content: Unique key in table "tech_book" mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found "dzfzqbhnkiiegdhvqjeqoevesfuwcmokrehxlapoqj"
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book ADD CONSTRAINT uk_tech_book_id_name UNIQUE (id, name)
@@ -32,7 +32,7 @@
       title: naming.index.uk
       content: Unique key in table "tech_book" mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found "tech_book_id_name"
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: CREATE TABLE book(id INT PRIMARY KEY, name VARCHAR(20), CONSTRAINT uk_book_name UNIQUE (name))
@@ -51,7 +51,7 @@
       title: naming.index.uk
       content: Unique key in table "book" mismatches the naming convention, expect "^$|^uk_book_name$" but found "book_name"
       startposition:
-        line: 4
+        line: 5
         column: 0
       endposition: null
 - statement: CREATE TABLE book(id INT PRIMARY KEY, name VARCHAR(20), UNIQUE (name))
@@ -68,7 +68,7 @@
       title: naming.index.uk
       content: Unique key in table "tech_book" mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found "uk_tech_book"
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book RENAME CONSTRAINT old_uk TO uk_tech_book_id_name
@@ -81,7 +81,7 @@
       title: naming.index.uk
       content: Unique key in table "tech_book" mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found "uk_tech_book"
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: ALTER INDEX old_uk RENAME TO uk_tech_book_id_name
@@ -94,6 +94,6 @@
       title: naming.index.uk
       content: Unique key in table "tech_book" mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found "uk_tech_book"
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null

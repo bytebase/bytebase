@@ -13,7 +13,7 @@
       title: index.primary-key-type-allowlist
       content: The column "a" is one of the primary key, but its type "character varying(20)" is not in allowlist
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -28,6 +28,6 @@
       title: index.primary-key-type-allowlist
       content: The column "a" is one of the primary key, but its type "character varying(20)" is not in allowlist
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null

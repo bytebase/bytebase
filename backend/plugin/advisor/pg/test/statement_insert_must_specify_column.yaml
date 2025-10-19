@@ -8,6 +8,6 @@
       title: statement.insert.must-specify-column
       content: The INSERT statement must specify columns but "INSERT INTO tech_book VALUES (1, '1')" does not
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null

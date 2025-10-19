@@ -10,7 +10,7 @@
       title: table.require-pk
       content: 'Table "public"."t" requires PRIMARY KEY, related statement: "CREATE TABLE t(id INT)"'
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: ALTER TABLE "tech_book" DROP CONSTRAINT "old_pk"
@@ -21,7 +21,7 @@
       title: table.require-pk
       content: 'Table "public"."tech_book" requires PRIMARY KEY, related statement: "ALTER TABLE \"tech_book\" DROP CONSTRAINT \"old_pk\""'
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: ALTER TABLE "tech_book" DROP CONSTRAINT "old_index"
@@ -36,7 +36,7 @@
       title: table.require-pk
       content: 'Table "public"."tech_book" requires PRIMARY KEY, related statement: "ALTER TABLE \"tech_book\" DROP COLUMN id"'
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: |-

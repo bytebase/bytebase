@@ -10,7 +10,7 @@
       title: naming.fully-qualified
       content: 'unqualified object name: ''pokesv2'''
       startposition:
-        line: 3
+        line: 4
         column: 0
       endposition: null
 - statement: |-
@@ -24,7 +24,7 @@
       title: naming.fully-qualified
       content: 'unqualified object name: ''seq'''
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -40,7 +40,7 @@
       title: naming.fully-qualified
       content: 'unqualified object name: ''pokesv1'''
       startposition:
-        line: 3
+        line: 4
         column: 0
       endposition: null
 - statement: DROP TRIGGER test_trigger ON public.pokes;
@@ -55,7 +55,7 @@
       title: naming.fully-qualified
       content: 'unqualified object name: ''pokesv1'''
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -69,7 +69,7 @@
       title: naming.fully-qualified
       content: 'unqualified object name: ''pokesv1'''
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -85,7 +85,7 @@
       title: naming.fully-qualified
       content: 'unqualified object name: ''pokesv1'''
       startposition:
-        line: 3
+        line: 4
         column: 0
       endposition: null
 - statement: "CREATE TABLE public.pokes (foo int); \nSELECT * FROM (SELECT (id) FROM tech_book) AS foo;"
@@ -96,7 +96,7 @@
       title: naming.fully-qualified
       content: 'unqualified object name: ''tech_book'''
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: "CREATE TABLE public.pokes (foo int);\nWITH foo1 AS (SELECT * FROM public.tech_book) \nSELECT * FROM foo1;"

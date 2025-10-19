@@ -6,7 +6,7 @@
       title: naming.column
       content: '"book"."creatorId" mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: CREATE TABLE book(id int, qavszgslczmsacubtvyymzhojfytkcmon int)
@@ -25,7 +25,7 @@
       title: naming.column
       content: '"book"."creatorId" mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -42,7 +42,7 @@
       title: naming.column
       content: '"book"."creatorId" mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       startposition:
-        line: 1
+        line: 2
         column: 0
       endposition: null
 - statement: |-

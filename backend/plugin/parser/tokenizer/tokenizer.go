@@ -375,10 +375,10 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.SingleSQL, error) {
 	var res []base.SingleSQL
 	delimiter := []rune{';'}
 
-	// TODO(zp):Start position.
 	t.skipBlank()
 	t.emptyStatement = true
 	startPos := t.cursor
+	startLine := t.line // Track the starting line number (1-based)
 	for {
 		switch {
 		case t.char(0) == eofRune:
@@ -387,6 +387,8 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.SingleSQL, error) {
 				if t.f == nil {
 					res = append(res, base.SingleSQL{
 						Text: s,
+						// BaseLine is 0-based line number, so subtract 1 from 1-based startLine
+						BaseLine: startLine - 1,
 						// Consider this text:
 						// CREATE TABLE t(
 						//   a int
@@ -416,7 +418,9 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.SingleSQL, error) {
 			text := t.getString(startPos, t.pos()-startPos)
 			if t.f == nil {
 				res = append(res, base.SingleSQL{
-					Text:            text,
+					Text: text,
+					// BaseLine is 0-based line number, so subtract 1 from 1-based startLine
+					BaseLine:        startLine - 1,
 					End:             &store.Position{Line: int32(t.line)},
 					Empty:           t.emptyStatement,
 					ByteOffsetStart: t.getByteOffset(int(startPos)),
@@ -428,6 +432,7 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.SingleSQL, error) {
 				return nil, err
 			}
 			startPos = t.pos()
+			startLine = t.line // Update startLine for next statement
 			t.emptyStatement = true
 		// deal with the DELIMITER statement, see https://dev.mysql.com/doc/refman/8.0/en/stored-programs-defining.html
 		case t.equalWordCaseInsensitive(delimiterRuneList):
@@ -439,7 +444,9 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.SingleSQL, error) {
 			text := t.getString(startPos, t.pos()-startPos)
 			if t.f == nil {
 				res = append(res, base.SingleSQL{
-					Text:            text,
+					Text: text,
+					// BaseLine is 0-based line number, so subtract 1 from 1-based startLine
+					BaseLine:        startLine - 1,
 					End:             &store.Position{Line: int32(t.line)},
 					Empty:           false,
 					ByteOffsetStart: t.getByteOffset(int(startPos)),
@@ -451,6 +458,7 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.SingleSQL, error) {
 				return nil, err
 			}
 			startPos = t.pos()
+			startLine = t.line // Update startLine for next statement
 			t.emptyStatement = true
 		case t.char(0) == '/' && t.char(1) == '*':
 			if err := t.scanComment(); err != nil {
@@ -619,6 +627,7 @@ func (t *Tokenizer) SplitPostgreSQLMultiSQL() ([]base.SingleSQL, error) {
 	t.skipBlank()
 	t.emptyStatement = true
 	startPos := t.cursor
+	startLine := t.line // Track the starting line number (1-based)
 	for {
 		switch {
 		case t.char(0) == '/' && t.char(1) == '*':
@@ -651,9 +660,11 @@ func (t *Tokenizer) SplitPostgreSQLMultiSQL() ([]base.SingleSQL, error) {
 			text := t.getString(startPos, t.pos()-startPos)
 			if t.f == nil {
 				res = append(res, base.SingleSQL{
-					Text:  text,
-					End:   &store.Position{Line: int32(t.line - 1)},
-					Empty: t.emptyStatement,
+					Text: text,
+					// BaseLine is 0-based line number, so subtract 1 from 1-based startLine
+					BaseLine: startLine - 1,
+					End:      &store.Position{Line: int32(t.line)},
+					Empty:    t.emptyStatement,
 				})
 			}
 			t.skipBlank()
@@ -661,6 +672,7 @@ func (t *Tokenizer) SplitPostgreSQLMultiSQL() ([]base.SingleSQL, error) {
 				return nil, err
 			}
 			startPos = t.pos()
+			startLine = t.line // Update startLine for next statement
 			t.emptyStatement = true
 		case t.char(0) == eofRune:
 			s := t.getString(startPos, t.pos())
@@ -668,6 +680,8 @@ func (t *Tokenizer) SplitPostgreSQLMultiSQL() ([]base.SingleSQL, error) {
 				if t.f == nil {
 					res = append(res, base.SingleSQL{
 						Text: s,
+						// BaseLine is 0-based line number, so subtract 1 from 1-based startLine
+						BaseLine: startLine - 1,
 						// Consider this text:
 						// CREATE TABLE t(
 						//   a int
@@ -676,12 +690,12 @@ func (t *Tokenizer) SplitPostgreSQLMultiSQL() ([]base.SingleSQL, error) {
 						// EOF line
 						//
 						// Our current location is the EOF line.
-						// The line t.line is the line of ')',
+						// The line t.line is the line after ')',
 						// but we want to get the line of last line of the SQL
 						// which means the line of ')'.
 						// So we need minus the aboveNonBlankLineDistance.
 						End: &store.Position{
-							Line: int32(t.line - t.aboveNonBlankLineDistance() - 1),
+							Line: int32(t.line - t.aboveNonBlankLineDistance()),
 						},
 						Empty: t.emptyStatement,
 					})

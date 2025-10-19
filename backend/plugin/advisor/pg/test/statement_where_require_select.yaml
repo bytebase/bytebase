@@ -6,7 +6,7 @@
       title: statement.where.require.select
       content: '"SELECT a FROM t" requires WHERE clause'
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: SELECT a FROM t WHERE a > 0
@@ -19,7 +19,7 @@
       title: statement.where.require.select
       content: '"SELECT a FROM t WHERE a > (SELECT max(id) FROM user)" requires WHERE clause'
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: SELECT 1

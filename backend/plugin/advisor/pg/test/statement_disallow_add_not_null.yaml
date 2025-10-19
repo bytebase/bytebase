@@ -6,7 +6,7 @@
       title: statement.disallow-add-not-null
       content: Setting NOT NULL will block reads and writes. You can use CHECK ("name" IS NOT NULL) instead
       startposition:
-        line: 0
+        line: 1
         column: 0
       endposition: null
 - statement: |-
