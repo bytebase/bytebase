@@ -23,7 +23,6 @@ const (
 	SQLService_AdminExecute_FullMethodName         = "/bytebase.v1.SQLService/AdminExecute"
 	SQLService_SearchQueryHistories_FullMethodName = "/bytebase.v1.SQLService/SearchQueryHistories"
 	SQLService_Export_FullMethodName               = "/bytebase.v1.SQLService/Export"
-	SQLService_Check_FullMethodName                = "/bytebase.v1.SQLService/Check"
 	SQLService_DiffMetadata_FullMethodName         = "/bytebase.v1.SQLService/DiffMetadata"
 	SQLService_AICompletion_FullMethodName         = "/bytebase.v1.SQLService/AICompletion"
 )
@@ -46,9 +45,6 @@ type SQLServiceClient interface {
 	// Exports query results to a file format.
 	// Permissions required: bb.databases.get
 	Export(ctx context.Context, in *ExportRequest, opts ...grpc.CallOption) (*ExportResponse, error)
-	// Validates SQL statements against review rules.
-	// Permissions required: bb.databases.check
-	Check(ctx context.Context, in *CheckRequest, opts ...grpc.CallOption) (*CheckResponse, error)
 	// Computes schema differences between two database metadata.
 	// Permissions required: None
 	DiffMetadata(ctx context.Context, in *DiffMetadataRequest, opts ...grpc.CallOption) (*DiffMetadataResponse, error)
@@ -108,16 +104,6 @@ func (c *sQLServiceClient) Export(ctx context.Context, in *ExportRequest, opts .
 	return out, nil
 }
 
-func (c *sQLServiceClient) Check(ctx context.Context, in *CheckRequest, opts ...grpc.CallOption) (*CheckResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CheckResponse)
-	err := c.cc.Invoke(ctx, SQLService_Check_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *sQLServiceClient) DiffMetadata(ctx context.Context, in *DiffMetadataRequest, opts ...grpc.CallOption) (*DiffMetadataResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DiffMetadataResponse)
@@ -156,9 +142,6 @@ type SQLServiceServer interface {
 	// Exports query results to a file format.
 	// Permissions required: bb.databases.get
 	Export(context.Context, *ExportRequest) (*ExportResponse, error)
-	// Validates SQL statements against review rules.
-	// Permissions required: bb.databases.check
-	Check(context.Context, *CheckRequest) (*CheckResponse, error)
 	// Computes schema differences between two database metadata.
 	// Permissions required: None
 	DiffMetadata(context.Context, *DiffMetadataRequest) (*DiffMetadataResponse, error)
@@ -186,9 +169,6 @@ func (UnimplementedSQLServiceServer) SearchQueryHistories(context.Context, *Sear
 }
 func (UnimplementedSQLServiceServer) Export(context.Context, *ExportRequest) (*ExportResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Export not implemented")
-}
-func (UnimplementedSQLServiceServer) Check(context.Context, *CheckRequest) (*CheckResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Check not implemented")
 }
 func (UnimplementedSQLServiceServer) DiffMetadata(context.Context, *DiffMetadataRequest) (*DiffMetadataResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DiffMetadata not implemented")
@@ -278,24 +258,6 @@ func _SQLService_Export_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SQLService_Check_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CheckRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SQLServiceServer).Check(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SQLService_Check_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SQLServiceServer).Check(ctx, req.(*CheckRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _SQLService_DiffMetadata_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DiffMetadataRequest)
 	if err := dec(in); err != nil {
@@ -350,10 +312,6 @@ var SQLService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Export",
 			Handler:    _SQLService_Export_Handler,
-		},
-		{
-			MethodName: "Check",
-			Handler:    _SQLService_Check_Handler,
 		},
 		{
 			MethodName: "DiffMetadata",

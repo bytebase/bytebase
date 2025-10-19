@@ -70,17 +70,6 @@ service SQLService {
     option (bytebase.v1.audit) = true;
   }
 
-  // Validates SQL statements against review rules.
-  // Permissions required: bb.databases.check
-  rpc Check(CheckRequest) returns (CheckResponse) {
-    option (google.api.http) = {
-      post: "/v1/sql/check"
-      body: "*"
-    };
-    option (bytebase.v1.permission) = "bb.databases.check";
-    option (bytebase.v1.auth_method) = IAM;
-  }
-
   // Computes schema differences between two database metadata.
   // Permissions required: None
   rpc DiffMetadata(DiffMetadataRequest) returns (DiffMetadataResponse) {
@@ -419,33 +408,6 @@ message ExportRequest {
 message ExportResponse {
   // The export file content.
   bytes content = 1;
-}
-
-message CheckRequest {
-  // The database name to check against.
-  // Format: instances/{instance}/databases/{database}
-  string name = 2 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/Database"}
-  ];
-
-  string statement = 1;
-
-  enum ChangeType {
-    CHANGE_TYPE_UNSPECIFIED = 0;
-    DDL = 1;
-    DDL_GHOST = 2;
-    DML = 3;
-    SQL_EDITOR = 4;
-  }
-  ChangeType change_type = 4;
-}
-
-message CheckResponse {
-  repeated Advice advices = 1;
-
-  // The count of affected rows of the statement on the target database.
-  int64 affected_rows = 2;
 }
 
 message DiffMetadataRequest {

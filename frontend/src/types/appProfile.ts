@@ -8,7 +8,6 @@ export type AppFeatures = {
   "bb.feature.hide-help": boolean;
   "bb.feature.hide-quick-start": boolean;
   "bb.feature.hide-trial": boolean;
-  "bb.feature.sql-editor.sql-check-style": "PREFLIGHT" | "NOTIFICATION";
 };
 
 export type AppProfile = {
@@ -21,6 +20,5 @@ export const defaultAppProfile = (): AppProfile => ({
     "bb.feature.hide-help": false,
     "bb.feature.hide-quick-start": false,
     "bb.feature.hide-trial": false,
-    "bb.feature.sql-editor.sql-check-style": "NOTIFICATION",
   },
 });

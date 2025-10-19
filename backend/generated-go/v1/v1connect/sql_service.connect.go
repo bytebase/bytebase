@@ -42,8 +42,6 @@ const (
 	SQLServiceSearchQueryHistoriesProcedure = "/bytebase.v1.SQLService/SearchQueryHistories"
 	// SQLServiceExportProcedure is the fully-qualified name of the SQLService's Export RPC.
 	SQLServiceExportProcedure = "/bytebase.v1.SQLService/Export"
-	// SQLServiceCheckProcedure is the fully-qualified name of the SQLService's Check RPC.
-	SQLServiceCheckProcedure = "/bytebase.v1.SQLService/Check"
 	// SQLServiceDiffMetadataProcedure is the fully-qualified name of the SQLService's DiffMetadata RPC.
 	SQLServiceDiffMetadataProcedure = "/bytebase.v1.SQLService/DiffMetadata"
 	// SQLServiceAICompletionProcedure is the fully-qualified name of the SQLService's AICompletion RPC.
@@ -64,9 +62,6 @@ type SQLServiceClient interface {
 	// Exports query results to a file format.
 	// Permissions required: bb.databases.get
 	Export(context.Context, *connect.Request[v1.ExportRequest]) (*connect.Response[v1.ExportResponse], error)
-	// Validates SQL statements against review rules.
-	// Permissions required: bb.databases.check
-	Check(context.Context, *connect.Request[v1.CheckRequest]) (*connect.Response[v1.CheckResponse], error)
 	// Computes schema differences between two database metadata.
 	// Permissions required: None
 	DiffMetadata(context.Context, *connect.Request[v1.DiffMetadataRequest]) (*connect.Response[v1.DiffMetadataResponse], error)
@@ -110,12 +105,6 @@ func NewSQLServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...
 			connect.WithSchema(sQLServiceMethods.ByName("Export")),
 			connect.WithClientOptions(opts...),
 		),
-		check: connect.NewClient[v1.CheckRequest, v1.CheckResponse](
-			httpClient,
-			baseURL+SQLServiceCheckProcedure,
-			connect.WithSchema(sQLServiceMethods.ByName("Check")),
-			connect.WithClientOptions(opts...),
-		),
 		diffMetadata: connect.NewClient[v1.DiffMetadataRequest, v1.DiffMetadataResponse](
 			httpClient,
 			baseURL+SQLServiceDiffMetadataProcedure,
@@ -137,7 +126,6 @@ type sQLServiceClient struct {
 	adminExecute         *connect.Client[v1.AdminExecuteRequest, v1.AdminExecuteResponse]
 	searchQueryHistories *connect.Client[v1.SearchQueryHistoriesRequest, v1.SearchQueryHistoriesResponse]
 	export               *connect.Client[v1.ExportRequest, v1.ExportResponse]
-	check                *connect.Client[v1.CheckRequest, v1.CheckResponse]
 	diffMetadata         *connect.Client[v1.DiffMetadataRequest, v1.DiffMetadataResponse]
 	aICompletion         *connect.Client[v1.AICompletionRequest, v1.AICompletionResponse]
 }
@@ -160,11 +148,6 @@ func (c *sQLServiceClient) SearchQueryHistories(ctx context.Context, req *connec
 // Export calls bytebase.v1.SQLService.Export.
 func (c *sQLServiceClient) Export(ctx context.Context, req *connect.Request[v1.ExportRequest]) (*connect.Response[v1.ExportResponse], error) {
 	return c.export.CallUnary(ctx, req)
-}
-
-// Check calls bytebase.v1.SQLService.Check.
-func (c *sQLServiceClient) Check(ctx context.Context, req *connect.Request[v1.CheckRequest]) (*connect.Response[v1.CheckResponse], error) {
-	return c.check.CallUnary(ctx, req)
 }
 
 // DiffMetadata calls bytebase.v1.SQLService.DiffMetadata.
@@ -191,9 +174,6 @@ type SQLServiceHandler interface {
 	// Exports query results to a file format.
 	// Permissions required: bb.databases.get
 	Export(context.Context, *connect.Request[v1.ExportRequest]) (*connect.Response[v1.ExportResponse], error)
-	// Validates SQL statements against review rules.
-	// Permissions required: bb.databases.check
-	Check(context.Context, *connect.Request[v1.CheckRequest]) (*connect.Response[v1.CheckResponse], error)
 	// Computes schema differences between two database metadata.
 	// Permissions required: None
 	DiffMetadata(context.Context, *connect.Request[v1.DiffMetadataRequest]) (*connect.Response[v1.DiffMetadataResponse], error)
@@ -233,12 +213,6 @@ func NewSQLServiceHandler(svc SQLServiceHandler, opts ...connect.HandlerOption) 
 		connect.WithSchema(sQLServiceMethods.ByName("Export")),
 		connect.WithHandlerOptions(opts...),
 	)
-	sQLServiceCheckHandler := connect.NewUnaryHandler(
-		SQLServiceCheckProcedure,
-		svc.Check,
-		connect.WithSchema(sQLServiceMethods.ByName("Check")),
-		connect.WithHandlerOptions(opts...),
-	)
 	sQLServiceDiffMetadataHandler := connect.NewUnaryHandler(
 		SQLServiceDiffMetadataProcedure,
 		svc.DiffMetadata,
@@ -261,8 +235,6 @@ func NewSQLServiceHandler(svc SQLServiceHandler, opts ...connect.HandlerOption) 
 			sQLServiceSearchQueryHistoriesHandler.ServeHTTP(w, r)
 		case SQLServiceExportProcedure:
 			sQLServiceExportHandler.ServeHTTP(w, r)
-		case SQLServiceCheckProcedure:
-			sQLServiceCheckHandler.ServeHTTP(w, r)
 		case SQLServiceDiffMetadataProcedure:
 			sQLServiceDiffMetadataHandler.ServeHTTP(w, r)
 		case SQLServiceAICompletionProcedure:
@@ -290,10 +262,6 @@ func (UnimplementedSQLServiceHandler) SearchQueryHistories(context.Context, *con
 
 func (UnimplementedSQLServiceHandler) Export(context.Context, *connect.Request[v1.ExportRequest]) (*connect.Response[v1.ExportResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SQLService.Export is not implemented"))
-}
-
-func (UnimplementedSQLServiceHandler) Check(context.Context, *connect.Request[v1.CheckRequest]) (*connect.Response[v1.CheckResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SQLService.Check is not implemented"))
 }
 
 func (UnimplementedSQLServiceHandler) DiffMetadata(context.Context, *connect.Request[v1.DiffMetadataRequest]) (*connect.Response[v1.DiffMetadataResponse], error) {

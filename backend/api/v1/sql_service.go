@@ -33,11 +33,9 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
-	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -1596,47 +1594,6 @@ func (*SQLService) getUser(ctx context.Context) (*store.UserMessage, error) {
 	return user, nil
 }
 
-func (s *SQLService) Check(ctx context.Context, req *connect.Request[v1pb.CheckRequest]) (*connect.Response[v1pb.CheckResponse], error) {
-	request := req.Msg
-	if len(request.Statement) > common.MaxSheetCheckSize {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("statement size exceeds maximum allowed size %dKB", common.MaxSheetCheckSize/1024))
-	}
-
-	database, err := getDatabaseMessage(ctx, s.store, request.Name)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.New(err.Error()))
-	}
-
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		ResourceID: &database.InstanceID,
-	})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get instance, error: %v", err))
-	}
-	if instance == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", database.InstanceID))
-	}
-
-	checkResponse := &v1pb.CheckResponse{}
-	changeType := convertChangeType(request.ChangeType)
-	// Get SQL summary report for the statement and target database.
-	// Including affected rows.
-	summaryReport, err := plancheck.GetSQLSummaryReport(ctx, s.store, s.sheetManager, s.dbFactory, database, request.Statement)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get SQL summary report, error: %v", err))
-	}
-	if summaryReport != nil {
-		checkResponse.AffectedRows = summaryReport.AffectedRows
-	}
-
-	_, adviceList, err := s.SQLReviewCheck(ctx, request.Statement, changeType, instance, database)
-	if err != nil {
-		return nil, err
-	}
-	checkResponse.Advices = adviceList
-	return connect.NewResponse(checkResponse), nil
-}
-
 func getClassificationByProject(ctx context.Context, stores *store.Store, projectID string) *storepb.DataClassificationSetting_DataClassificationConfig {
 	project, err := stores.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
@@ -1659,113 +1616,8 @@ func getClassificationByProject(ctx context.Context, stores *store.Store, projec
 	return classificationConfig
 }
 
-// SQLReviewCheck checks the SQL statement against the SQL review policy bind to given environment.
-func (s *SQLService) SQLReviewCheck(
-	ctx context.Context,
-	statement string,
-	changeType storepb.PlanCheckRunConfig_ChangeDatabaseType,
-	instance *store.InstanceMessage,
-	database *store.DatabaseMessage,
-) (storepb.Advice_Status, []*v1pb.Advice, error) {
-	if !common.EngineSupportSQLReview(instance.Metadata.GetEngine()) || database == nil {
-		return storepb.Advice_SUCCESS, nil, nil
-	}
-
-	dbSchema, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
-		InstanceID:   database.InstanceID,
-		DatabaseName: database.DatabaseName,
-	})
-	if err != nil {
-		return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to fetch database schema for database %s", database.String())
-	}
-	if dbSchema == nil {
-		if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database); err != nil {
-			return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to sync database schema for database %s", database.String())
-		}
-		dbSchema, err = s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
-			InstanceID:   database.InstanceID,
-			DatabaseName: database.DatabaseName,
-		})
-		if err != nil {
-			return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to fetch database schema for database %s", database.String())
-		}
-		if dbSchema == nil {
-			return storepb.Advice_ERROR, nil, errors.Wrapf(err, "cannot found schema for database %s", database.String())
-		}
-	}
-	dbMetadata := dbSchema.GetMetadata()
-
-	catalog, err := catalog.NewCatalog(ctx, s.store, database.InstanceID, database.DatabaseName, instance.Metadata.GetEngine(), store.IsObjectCaseSensitive(instance), dbMetadata)
-	if err != nil {
-		return storepb.Advice_ERROR, nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create a catalog: %v", err))
-	}
-
-	useDatabaseOwner, err := getUseDatabaseOwner(ctx, s.store, instance, database, changeType)
-	if err != nil {
-		return storepb.Advice_ERROR, nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get use database owner: %v", err))
-	}
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{UseDatabaseOwner: useDatabaseOwner})
-	if err != nil {
-		return storepb.Advice_ERROR, nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get database driver: %v", err))
-	}
-	defer driver.Close(ctx)
-	connection := driver.GetDB()
-
-	classificationConfig := getClassificationByProject(ctx, s.store, database.ProjectID)
-	context := advisor.SQLReviewCheckContext{
-		Charset:                  dbMetadata.CharacterSet,
-		Collation:                dbMetadata.Collation,
-		ChangeType:               changeType,
-		DBSchema:                 dbMetadata,
-		DBType:                   instance.Metadata.GetEngine(),
-		Catalog:                  catalog,
-		Driver:                   connection,
-		CurrentDatabase:          database.DatabaseName,
-		ClassificationConfig:     classificationConfig,
-		UsePostgresDatabaseOwner: useDatabaseOwner,
-		ListDatabaseNamesFunc:    BuildListDatabaseNamesFunc(s.store),
-		InstanceID:               instance.ResourceID,
-		IsObjectCaseSensitive:    store.IsObjectCaseSensitive(instance),
-	}
-
-	reviewConfig, err := s.store.GetReviewConfigForDatabase(ctx, database)
-	if err != nil {
-		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
-			// Continue to check the builtin rules.
-			reviewConfig = &storepb.ReviewConfigPayload{}
-		} else {
-			return storepb.Advice_ERROR, nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get SQL review policy with error: %v", err))
-		}
-	}
-
-	res, err := advisor.SQLReviewCheck(ctx, s.sheetManager, statement, reviewConfig.SqlReviewRules, context)
-	if err != nil {
-		return storepb.Advice_ERROR, nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to exec SQL review with error: %v", err))
-	}
-
-	adviceLevel := storepb.Advice_SUCCESS
-	var advices []*v1pb.Advice
-	for _, advice := range res {
-		switch advice.Status {
-		case storepb.Advice_WARNING:
-			if adviceLevel != storepb.Advice_ERROR {
-				adviceLevel = storepb.Advice_WARNING
-			}
-		case storepb.Advice_ERROR:
-			adviceLevel = storepb.Advice_ERROR
-		case storepb.Advice_SUCCESS, storepb.Advice_STATUS_UNSPECIFIED:
-			continue
-		default:
-		}
-
-		advices = append(advices, convertToV1Advice(advice))
-	}
-
-	return adviceLevel, advices, nil
-}
-
-func getUseDatabaseOwner(ctx context.Context, stores *store.Store, instance *store.InstanceMessage, database *store.DatabaseMessage, changeType storepb.PlanCheckRunConfig_ChangeDatabaseType) (bool, error) {
-	if instance.Metadata.GetEngine() != storepb.Engine_POSTGRES || changeType == storepb.PlanCheckRunConfig_SQL_EDITOR {
+func getUseDatabaseOwner(ctx context.Context, stores *store.Store, instance *store.InstanceMessage, database *store.DatabaseMessage) (bool, error) {
+	if instance.Metadata.GetEngine() != storepb.Engine_POSTGRES {
 		return false, nil
 	}
 

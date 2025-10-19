@@ -1,13 +1,8 @@
 import { create } from "@bufbuild/protobuf";
 import { Code } from "@connectrpc/connect";
-import { createContextValues } from "@connectrpc/connect";
-import Emittery from "emittery";
-import { head, isEmpty, cloneDeep } from "lodash-es";
+import { isEmpty, cloneDeep } from "lodash-es";
 import { v4 as uuidv4 } from "uuid";
 import { markRaw, reactive } from "vue";
-import { STATEMENT_SKIP_CHECK_THRESHOLD } from "@/components/SQLCheck/common";
-import { sqlServiceClientConnect } from "@/grpcweb";
-import { ignoredCodesContextKey } from "@/grpcweb/context-key";
 import { t } from "@/plugins/i18n";
 import {
   pushNotification,
@@ -16,7 +11,6 @@ import {
   useSQLEditorTabStore,
   useSQLStore,
   useSQLEditorQueryHistoryStore,
-  useAppFeature,
   hasFeature,
   batchGetOrFetchDatabases,
   useDatabaseV1Store,
@@ -27,7 +21,6 @@ import type {
   BBNotificationStyle,
   SQLEditorQueryParams,
   SQLEditorConnection,
-  SQLEditorTab,
   QueryContextStatus,
   SQLEditorDatabaseQueryContext,
   QueryDataSourceType,
@@ -36,13 +29,7 @@ import { isValidDatabaseName } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
 import {
-  CheckRequestSchema,
-  CheckRequest_ChangeType as NewCheckRequest_ChangeType,
   QueryRequestSchema,
-} from "@/types/proto-es/v1/sql_service_pb";
-import type { Advice } from "@/types/proto-es/v1/sql_service_pb";
-import {
-  Advice_Level,
   QueryOptionSchema,
 } from "@/types/proto-es/v1/sql_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
@@ -50,21 +37,10 @@ import {
   getValidDataSourceByPolicy,
   hasPermissionToCreateChangeDatabaseIssue,
 } from "@/utils";
-import { extractGrpcErrorMessage } from "@/utils/grpcweb";
 import { flattenNoSQLResult } from "./utils";
 
 // QUERY_INTERVAL_LIMIT is the minimal gap between two queries
 const QUERY_INTERVAL_LIMIT = 1000;
-
-const events = new Emittery<{
-  "update:advices": {
-    tab: SQLEditorTab;
-    params: SQLEditorQueryParams;
-    advices: Advice[];
-  };
-}>();
-
-type SQLCheckResult = { passed: boolean; advices?: Advice[] };
 
 const useExecuteSQL = () => {
   const state = reactive<{
@@ -75,7 +51,6 @@ const useExecuteSQL = () => {
   const tabStore = useSQLEditorTabStore();
   const sqlEditorStore = useSQLEditorStore();
   const queryHistoryStore = useSQLEditorQueryHistoryStore();
-  const sqlCheckStyle = useAppFeature("bb.feature.sql-editor.sql-check-style");
 
   const notify = (
     type: BBNotificationStyle,
@@ -112,69 +87,6 @@ const useExecuteSQL = () => {
       tab.databaseQueryContexts = new Map();
     }
     return true;
-  };
-
-  const check = async (
-    abortController: AbortController,
-    params: SQLEditorQueryParams
-  ): Promise<SQLCheckResult> => {
-    const tab = tabStore.currentTab;
-    if (!tab) {
-      return { passed: false };
-    }
-
-    if (!params) {
-      return { passed: false };
-    }
-    if (new Blob([params.statement]).size > STATEMENT_SKIP_CHECK_THRESHOLD) {
-      return { passed: true };
-    }
-    const request = create(CheckRequestSchema, {
-      name: params.connection.database,
-      statement: params.statement,
-      changeType: NewCheckRequest_ChangeType.SQL_EDITOR,
-    });
-    const response = await sqlServiceClientConnect.check(request, {
-      contextValues: createContextValues().set(ignoredCodesContextKey, [
-        Code.PermissionDenied,
-      ]),
-      signal: abortController?.signal,
-    });
-    const advices = response.advices;
-    events.emit("update:advices", { tab, params, advices });
-    return { passed: advices.length === 0, advices };
-  };
-
-  const notifyAdvices = (advices: Advice[]) => {
-    let adviceStatus: "SUCCESS" | "ERROR" | "WARNING" = "SUCCESS";
-    let adviceNotifyMessage = "";
-    for (const advice of advices) {
-      if (advice.status === Advice_Level.SUCCESS) {
-        continue;
-      }
-
-      if (advice.status === Advice_Level.ERROR) {
-        adviceStatus = "ERROR";
-      } else if (adviceStatus !== "ERROR") {
-        adviceStatus = "WARNING";
-      }
-
-      adviceNotifyMessage += `${Advice_Level[advice.status]}: ${
-        advice.title
-      }\n`;
-      if (advice.content) {
-        adviceNotifyMessage += `${advice.content}\n`;
-      }
-    }
-
-    if (adviceStatus !== "SUCCESS") {
-      const notifyStyle = adviceStatus === "ERROR" ? "CRITICAL" : "WARN";
-      notify(
-        notifyStyle,
-        t("sql-editor.sql-review-result"),
-        adviceNotifyMessage
-      );
-    }
   };
 
   const getDataSourceId = (
@@ -349,58 +261,15 @@ const useExecuteSQL = () => {
       changeContextStatus(context, "DONE");
     };
 
-    const abort = (error: string, advices: Advice[] = []) => {
-      notify("WARN", t("sql-editor.request-cancelled"));
-      return finish({
-        error,
-        results: [],
-        advices,
-        status: Code.Aborted,
-      });
-    };
-
     const { abortController } = context;
     if (!abortController) {
       return;
     }
     const sqlStore = useSQLStore();
 
-    const checkBehavior = context.params.skipCheck
-      ? "SKIP"
-      : sqlCheckStyle.value;
-    let checkResult: SQLCheckResult = { passed: true };
-    if (checkBehavior !== "SKIP") {
-      try {
-        checkResult = await check(abortController, context.params);
-      } catch (error) {
-        return abort(extractGrpcErrorMessage(error));
-      }
-    }
-    if (checkBehavior === "PREFLIGHT" && !checkResult.passed) {
-      return abort(
-        head(checkResult.advices)?.content ?? "",
-        checkResult.advices
-      );
-    }
-    if (
-      checkBehavior === "NOTIFICATION" &&
-      !checkResult.passed &&
-      checkResult.advices
-    ) {
-      const { advices } = checkResult;
-      const errorAdvice = advices.find(
-        (advice) => advice.status === Advice_Level.ERROR
-      );
-      if (errorAdvice) {
-        notifyAdvices(advices);
-        return abort(errorAdvice.content, advices);
-      }
-    }
-
     const dataSourceId = context.params.connection.dataSourceId;
     if (!dataSourceId) {
       return finish({
-        advices: [],
         error: t("sql-editor.no-data-source"),
         results: [],
         status: Code.NotFound,
@@ -411,7 +280,6 @@ const useExecuteSQL = () => {
       // Once any one of the batch queries is aborted, don't go further
       // and mock an "Aborted" result for the rest queries.
       return finish({
-        advices: [],
         error: t("sql-editor.request-aborted"),
         results: [],
         status: Code.Aborted,
@@ -458,10 +326,6 @@ const useExecuteSQL = () => {
       flattenNoSQLResult(resultSet);
     }
 
-    if (checkBehavior === "NOTIFICATION") {
-      notifyAdvices(checkResult.advices ?? []);
-    }
-
     if (resultSet.error) {
       // The error message should be consistent with the one from the backend.
       if (isOnlySelectError(resultSet)) {
@@ -483,7 +347,6 @@ const useExecuteSQL = () => {
   };
 
   return {
-    events,
     execute,
     runQuery,
   };

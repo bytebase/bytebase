@@ -154,12 +154,9 @@ func (e *StatementAdviseExecutor) runReview(
 		return nil, common.Wrapf(err, common.Internal, "failed to create a catalog")
 	}
 
-	useDatabaseOwner := false
-	if changeType != storepb.PlanCheckRunConfig_SQL_EDITOR {
-		useDatabaseOwner, err = getUseDatabaseOwner(ctx, e.store, instance, database)
-		if err != nil {
-			return nil, common.Wrapf(err, common.Internal, "failed to get use database owner")
-		}
+	useDatabaseOwner, err := getUseDatabaseOwner(ctx, e.store, instance, database)
+	if err != nil {
+		return nil, common.Wrapf(err, common.Internal, "failed to get use database owner")
 	}
 	driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{UseDatabaseOwner: useDatabaseOwner})
 	if err != nil {

@@ -47,10 +47,8 @@ import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
 import {
   extensionNameOfLanguage,
   formatEditorContent,
-  positionWithOffset,
 } from "@/components/MonacoEditor/utils";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { useAIActions } from "@/plugins/ai";
 import { useAIContext } from "@/plugins/ai/logic";
 import * as promptUtils from "@/plugins/ai/logic/prompt";
@@ -60,9 +58,8 @@ import {
   useSQLEditorTabStore,
   useConnectionOfCurrentSQLEditorTab,
 } from "@/store";
-import type { SQLDialect, SQLEditorQueryParams, SQLEditorTab } from "@/types";
+import type { SQLDialect, SQLEditorQueryParams } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
-import { Advice_Level, type Advice } from "@/types/proto-es/v1/sql_service_pb";
 import {
   nextAnimationFrame,
   useInstanceV1EditorLanguage,
@@ -88,7 +85,6 @@ const {
 const { currentTab, isSwitchingTab } = storeToRefs(tabStore);
 const AIContext = useAIContext();
 
-const { events: executeSQLEvents } = useExecuteSQL();
 const monacoEditorRef = ref<InstanceType<typeof MonacoEditor>>();
 
 const content = computed(() => currentTab.value?.statement ?? "");
@@ -324,44 +320,6 @@ const handleEditorReady = (
   );
 };
 
-const updateAdvices = (
-  tab: SQLEditorTab,
-  params: SQLEditorQueryParams,
-  advices: Advice[]
-) => {
-  tab.editorState.advices = advices.map<AdviceOption>((advice) => {
-    const [startLine, startColumn] = positionWithOffset(
-      advice.startPosition?.line ?? 1,
-      advice.startPosition?.column ?? Number.MAX_SAFE_INTEGER,
-      params.selection
-    );
-    const [endLine, endColumn] = positionWithOffset(
-      advice.endPosition?.line ?? advice.startPosition?.line ?? 1,
-      advice.endPosition?.column ??
-        advice.startPosition?.column ??
-        Number.MAX_SAFE_INTEGER,
-      params.selection
-    );
-    const code = advice.code;
-    const source = [`L${startLine}:C${startColumn}`];
-    if (code > 0) {
-      source.unshift(`(${code})`);
-    }
-    if (advice.title) {
-      source.unshift(advice.title);
-    }
-    return {
-      severity: advice.status === Advice_Level.ERROR ? "ERROR" : "WARNING",
-      message: advice.content,
-      source: source.join(" "),
-      startLineNumber: startLine,
-      endLineNumber: endLine,
-      startColumn: startColumn,
-      endColumn: endColumn,
-    };
-  });
-};
-
 const handleUploadFile = (content: string) => {
   const editor = activeSQLEditorRef.value;
   if (!editor) return;
@@ -422,15 +380,6 @@ useEmitteryEventListener(
         editorEvents.emit("set-editor-selection", selection);
       });
     }
-  }
-);
-
-useEmitteryEventListener(
-  executeSQLEvents,
-  "update:advices",
-  ({ tab, params, advices }) => {
-    if (tab.id !== currentTab.value?.id) return;
-    updateAdvices(tab, params, advices);
   }
 );
 
