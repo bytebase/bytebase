@@ -1994,7 +1994,6 @@
     "notify-empty-statement": "Vui lòng nhập câu lệnh SQL của bạn vào trình soạn thảo",
     "can-not-execute-query": "Không thể thực hiện truy vấn khi đang tải dữ liệu.",
     "invalid-database": "Cơ sở dữ liệu không hợp lệ {database}",
-    "request-cancelled": "Yêu cầu đã bị hủy",
     "request-aborted": "Người dùng đã hủy yêu cầu",
     "no-data-source": "Không có nguồn dữ liệu có thể truy vấn. Vui lòng kiểm tra chính sách truy vấn nguồn dữ liệu trên môi trường hoặc dự án.",
     "rows": "dòng | dòng",
@@ -2024,7 +2023,6 @@
     "save-sheet": "Lưu trang tính",
     "save-sheet-input-placeholder": "Vui lòng nhập tên trang tính",
     "format": "Định dạng",
-    "sql-review-result": "Kết quả đánh giá SQL",
     "visualize-explain": "Trực quan hóa Giải thích",
     "rows-upper-limit": "đã đạt đến giới hạn kết quả truy vấn",
     "close-sheet": "Đóng trang tính",
@@ -2119,7 +2117,6 @@
     "manage-connections": "Quản lý kết nối",
     "view-detail": "Xem chi tiết",
     "generate-sql": "Tạo SQL",
-    "run-anyway": "Vẫn chạy",
     "no-project": {
       "not-member-of-any-projects": "Bạn không phải là thành viên của bất kỳ dự án nào.",
       "go-to-create": "Đi tới tạo",

@@ -1994,7 +1994,6 @@
     "notify-empty-statement": "请在编辑器中输入 SQL 语句",
     "can-not-execute-query": "加载数据时无法执行查询",
     "invalid-database": "数据库 {database} 无效",
-    "request-cancelled": "请求已取消",
     "request-aborted": "用户中止了请求",
     "no-data-source": "没有可查询的数据源。请检查环境或项目的数据源查询策略。",
     "rows": "条记录",
@@ -2024,7 +2023,6 @@
     "save-sheet": "保存工作表",
     "save-sheet-input-placeholder": "请输入工作表名称",
     "format": "格式化",
-    "sql-review-result": "SQL 检查结果",
     "visualize-explain": "可视化 Explain",
     "rows-upper-limit": "到达查询结果条数上限",
     "close-sheet": "关闭工作表",
@@ -2119,7 +2117,6 @@
     "manage-connections": "管理连接",
     "view-detail": "查看详情",
     "generate-sql": "生成 SQL",
-    "run-anyway": "仍要运行",
     "no-project": {
       "not-member-of-any-projects": "你不是任何项目的成员。",
       "go-to-create": "去创建",

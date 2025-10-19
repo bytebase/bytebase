@@ -1994,7 +1994,6 @@
     "notify-empty-statement": "エディターに SQL ステートメントを入力してください",
     "can-not-execute-query": "データのロード中にクエリを実行できません",
     "invalid-database": "無効なデータベース {database}",
-    "request-cancelled": "リクエストはキャンセルされました",
     "request-aborted": "ユーザーがリクエストを中止しました",
     "no-data-source": "クエリ可能なデータソースがありません。環境またはプロジェクトのデータソースクエリポリシーを確認してください。",
     "rows": "記録",
@@ -2024,7 +2023,6 @@
     "save-sheet": "ワークシートの保存",
     "save-sheet-input-placeholder": "ワークシート名を入力してください",
     "format": "フォーマット",
-    "sql-review-result": "SQLチェック結果",
     "visualize-explain": "視覚化の説明",
     "rows-upper-limit": "クエリ結果の数が上限に達しました",
     "close-sheet": "ワークシートを閉じる",
@@ -2119,7 +2117,6 @@
     "manage-connections": "接続を管理する",
     "view-detail": "詳細を見る",
     "generate-sql": "SQLの生成",
-    "run-anyway": "とにかく走ってください",
     "no-project": {
       "not-member-of-any-projects": "あなたはどのプロジェクトのメンバーでもありません。",
       "go-to-create": "作成に行く",

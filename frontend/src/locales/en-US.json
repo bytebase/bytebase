@@ -1994,7 +1994,6 @@
     "notify-empty-statement": "Please input your SQL statements in the editor",
     "can-not-execute-query": "Cannot execute query when loading data.",
     "invalid-database": "Invalid database {database}",
-    "request-cancelled": "Request cancelled",
     "request-aborted": "User aborted the request",
     "no-data-source": "No queriable data source. Please check the data source query policy on environment or project.",
     "rows": "row | rows",
@@ -2024,7 +2023,6 @@
     "save-sheet": "Save Sheet",
     "save-sheet-input-placeholder": "Please input a sheet name",
     "format": "Format",
-    "sql-review-result": "SQL review result",
     "visualize-explain": "Visualize Explain",
     "rows-upper-limit": "reached the limit of query results",
     "close-sheet": "Close sheet",
@@ -2119,7 +2117,6 @@
     "manage-connections": "Manage connections",
     "view-detail": "View detail",
     "generate-sql": "Generate SQL",
-    "run-anyway": "Run anyway",
     "no-project": {
       "not-member-of-any-projects": "You are not any member of any projects.",
       "go-to-create": "Go to create",

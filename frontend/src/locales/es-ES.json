@@ -1994,7 +1994,6 @@
     "notify-empty-statement": "Ingrese sus declaraciones SQL en el editor",
     "can-not-execute-query": "No se puede ejecutar la consulta al cargar datos.",
     "invalid-database": "Base de datos no válida {database}",
-    "request-cancelled": "Solicitud cancelada",
     "request-aborted": "El usuario abortó la solicitud",
     "no-data-source": "No se puede consultar ninguna fuente de datos. Consulte la política de consulta de fuentes de datos del entorno o proyecto.",
     "rows": "fila | filas",
@@ -2024,7 +2023,6 @@
     "save-sheet": "Guardar hoja",
     "save-sheet-input-placeholder": "Por favor, ingresa un nombre para la hoja",
     "format": "Formato",
-    "sql-review-result": "Resultado de la revisión SQL",
     "visualize-explain": "Visualizar explicación",
     "rows-upper-limit": "se ha alcanzado el límite de resultados de la consulta",
     "close-sheet": "Cerrar hoja",
@@ -2119,7 +2117,6 @@
     "manage-connections": "Gestionar las conexiones",
     "view-detail": "Ver detalle",
     "generate-sql": "Generar SQL",
-    "run-anyway": "Corre de todos modos",
     "no-project": {
       "not-member-of-any-projects": "No eres miembro de ningún proyecto.",
       "go-to-create": "ir a crear",
