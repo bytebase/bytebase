@@ -11,21 +11,23 @@ import (
 )
 
 var (
-	mux                            sync.Mutex
-	getDatabaseDefinitions         = make(map[storepb.Engine]getDatabaseDefinition)
-	getSchemaDefinitions           = make(map[storepb.Engine]getSchemaDefinition)
-	getTableDefinitions            = make(map[storepb.Engine]getTableDefinition)
-	getViewDefinitions             = make(map[storepb.Engine]getViewDefinition)
-	getMaterializedViewDefinitions = make(map[storepb.Engine]getMaterializedViewDefinition)
-	getFunctionDefinitions         = make(map[storepb.Engine]getFunctionDefinition)
-	getProcedureDefinitions        = make(map[storepb.Engine]getProcedureDefinition)
-	getSequenceDefinitions         = make(map[storepb.Engine]getSequenceDefinition)
-	getDatabaseMetadataMap         = make(map[storepb.Engine]getDatabaseMetadata)
-	generateMigrations             = make(map[storepb.Engine]generateMigration)
-	getSDLDiffs                    = make(map[storepb.Engine]getSDLDiff)
+	mux                             sync.Mutex
+	getDatabaseDefinitions          = make(map[storepb.Engine]getDatabaseDefinition)
+	getSchemaDefinitions            = make(map[storepb.Engine]getSchemaDefinition)
+	getTableDefinitions             = make(map[storepb.Engine]getTableDefinition)
+	getViewDefinitions              = make(map[storepb.Engine]getViewDefinition)
+	getMaterializedViewDefinitions  = make(map[storepb.Engine]getMaterializedViewDefinition)
+	getFunctionDefinitions          = make(map[storepb.Engine]getFunctionDefinition)
+	getProcedureDefinitions         = make(map[storepb.Engine]getProcedureDefinition)
+	getSequenceDefinitions          = make(map[storepb.Engine]getSequenceDefinition)
+	getDatabaseMetadataMap          = make(map[storepb.Engine]getDatabaseMetadata)
+	generateMigrations              = make(map[storepb.Engine]generateMigration)
+	getSDLDiffs                     = make(map[storepb.Engine]getSDLDiff)
+	getMultiFileDatabaseDefinitions = make(map[storepb.Engine]getMultiFileDatabaseDefinition)
 )
 
 type getDatabaseDefinition func(GetDefinitionContext, *storepb.DatabaseSchemaMetadata) (string, error)
+type getMultiFileDatabaseDefinition func(GetDefinitionContext, *storepb.DatabaseSchemaMetadata) (*MultiFileSchemaResult, error)
 type getSchemaDefinition func(*storepb.SchemaMetadata) (string, error)
 type getTableDefinition func(string, *storepb.TableMetadata, []*storepb.SequenceMetadata) (string, error)
 type getViewDefinition func(string, *storepb.ViewMetadata) (string, error)
@@ -41,6 +43,23 @@ type GetDefinitionContext struct {
 	SkipBackupSchema bool
 	PrintHeader      bool
 	SDLFormat        bool
+	// MultiFileFormat indicates whether to generate multi-file SDL output.
+	// When true, the result should be organized as multiple files.
+	MultiFileFormat bool
+}
+
+// SchemaFile represents a single file in a multi-file schema output.
+type SchemaFile struct {
+	// Name is the file path or name (e.g., "schemas/public/tables/users.sql")
+	Name string
+	// Content is the file content
+	Content string
+}
+
+// MultiFileSchemaResult represents the result of multi-file schema generation.
+type MultiFileSchemaResult struct {
+	// Files is the list of schema files organized by type
+	Files []SchemaFile
 }
 
 func RegisterGetSequenceDefinition(engine storepb.Engine, f getSequenceDefinition) {
@@ -228,4 +247,21 @@ func GetSDLDiff(engine storepb.Engine, currentSDLText, previousUserSDLText strin
 		return nil, errors.Errorf("engine %s is not supported", engine)
 	}
 	return f(currentSDLText, previousUserSDLText, currentSchema, previousSchema)
+}
+
+func RegisterGetMultiFileDatabaseDefinition(engine storepb.Engine, f getMultiFileDatabaseDefinition) {
+	mux.Lock()
+	defer mux.Unlock()
+	if _, dup := getMultiFileDatabaseDefinitions[engine]; dup {
+		panic(fmt.Sprintf("Register called twice %s", engine))
+	}
+	getMultiFileDatabaseDefinitions[engine] = f
+}
+
+func GetMultiFileDatabaseDefinition(engine storepb.Engine, ctx GetDefinitionContext, metadata *storepb.DatabaseSchemaMetadata) (*MultiFileSchemaResult, error) {
+	f, ok := getMultiFileDatabaseDefinitions[engine]
+	if !ok {
+		return nil, errors.Errorf("engine %s is not supported for multi-file database definition", engine)
+	}
+	return f(ctx, metadata)
 }

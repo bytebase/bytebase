@@ -40,6 +40,7 @@ func init() {
 	schema.RegisterGetMaterializedViewDefinition(storepb.Engine_POSTGRES, GetMaterializedViewDefinition)
 	schema.RegisterGetFunctionDefinition(storepb.Engine_POSTGRES, GetFunctionDefinition)
 	schema.RegisterGetSequenceDefinition(storepb.Engine_POSTGRES, GetSequenceDefinition)
+	schema.RegisterGetMultiFileDatabaseDefinition(storepb.Engine_POSTGRES, GetMultiFileDatabaseDefinition)
 }
 
 func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.DatabaseSchemaMetadata) (string, error) {
@@ -3002,4 +3003,175 @@ func writeForeignKeyConstraintSDL(out io.Writer, fk *storepb.ForeignKeyMetadata)
 		}
 	}
 	return nil
+}
+
+// GetMultiFileDatabaseDefinition generates multi-file SDL schema for PostgreSQL.
+func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.DatabaseSchemaMetadata) (*schema.MultiFileSchemaResult, error) {
+	metadata = filterBackupSchemaIfNecessary(ctx, metadata)
+
+	if len(metadata.Schemas) == 0 {
+		return &schema.MultiFileSchemaResult{Files: []schema.SchemaFile{}}, nil
+	}
+
+	var files []schema.SchemaFile
+
+	// Build skip sequences map (for serial and identity columns)
+	skipSequences := buildSkipSequencesMap(metadata)
+
+	// Build table sequences map for each table
+	tableSequencesMap := buildTableSequencesMap(metadata)
+
+	// Generate files for each schema
+	for _, schemaMetadata := range metadata.Schemas {
+		if schemaMetadata.SkipDump {
+			continue
+		}
+
+		schemaName := schemaMetadata.Name
+		if schemaName == "" {
+			schemaName = "public"
+		}
+
+		// Generate sequence files (standalone sequences only)
+		for _, sequence := range schemaMetadata.Sequences {
+			if sequence.SkipDump {
+				continue
+			}
+			// Skip sequences that belong to serial or identity columns
+			sequenceKey := schemaName + "." + sequence.Name
+			if skipSequences[sequenceKey] {
+				continue
+			}
+
+			var buf strings.Builder
+			if err := writeSequenceSDL(&buf, schemaName, sequence); err != nil {
+				return nil, errors.Wrapf(err, "failed to generate sequence SDL for %s.%s", schemaName, sequence.Name)
+			}
+			files = append(files, schema.SchemaFile{
+				Name:    fmt.Sprintf("schemas/%s/sequences/%s.sql", schemaName, sequence.Name),
+				Content: buf.String() + ";\n",
+			})
+		}
+
+		// Generate table files
+		for _, table := range schemaMetadata.Tables {
+			if table.SkipDump {
+				continue
+			}
+
+			// Get sequences for this table
+			tableKey := schemaName + "." + table.Name
+			tableSequences := tableSequencesMap[tableKey]
+
+			var buf strings.Builder
+			// Write CREATE TABLE statement in SDL format
+			if err := writeCreateTableSDL(&buf, schemaName, table, tableSequences); err != nil {
+				return nil, errors.Wrapf(err, "failed to generate table SDL for %s.%s", schemaName, table.Name)
+			}
+			buf.WriteString(";\n\n")
+
+			// Write CREATE INDEX statements for non-constraint indexes
+			if err := writeIndexesSDL(&buf, schemaName, table); err != nil {
+				return nil, errors.Wrapf(err, "failed to generate indexes SDL for %s.%s", schemaName, table.Name)
+			}
+
+			files = append(files, schema.SchemaFile{
+				Name:    fmt.Sprintf("schemas/%s/tables/%s.sql", schemaName, table.Name),
+				Content: buf.String(),
+			})
+		}
+
+		// Generate view files
+		for _, view := range schemaMetadata.Views {
+			if view.SkipDump {
+				continue
+			}
+
+			var buf strings.Builder
+			if err := writeViewSDL(&buf, schemaName, view); err != nil {
+				return nil, errors.Wrapf(err, "failed to generate view SDL for %s.%s", schemaName, view.Name)
+			}
+			files = append(files, schema.SchemaFile{
+				Name:    fmt.Sprintf("schemas/%s/views/%s.sql", schemaName, view.Name),
+				Content: buf.String() + ";\n",
+			})
+		}
+
+		// Generate function files
+		for _, function := range schemaMetadata.Functions {
+			if function.SkipDump {
+				continue
+			}
+
+			var buf strings.Builder
+			if err := writeFunctionSDL(&buf, schemaName, function); err != nil {
+				return nil, errors.Wrapf(err, "failed to generate function SDL for %s.%s", schemaName, function.Name)
+			}
+			files = append(files, schema.SchemaFile{
+				Name:    fmt.Sprintf("schemas/%s/functions/%s.sql", schemaName, function.Name),
+				Content: buf.String() + ";\n",
+			})
+		}
+	}
+
+	return &schema.MultiFileSchemaResult{Files: files}, nil
+}
+
+// buildSkipSequencesMap builds a map of sequences that should be skipped (serial and identity sequences).
+func buildSkipSequencesMap(metadata *storepb.DatabaseSchemaMetadata) map[string]bool {
+	skipSequences := make(map[string]bool)
+	for _, schema := range metadata.Schemas {
+		if schema.SkipDump {
+			continue
+		}
+		for _, table := range schema.Tables {
+			if table.SkipDump {
+				continue
+			}
+			for _, column := range table.Columns {
+				// Check for serial columns
+				isSerial, _ := isSerialColumn(column, table.Name, schema.Sequences)
+				if isSerial {
+					for _, sequence := range schema.Sequences {
+						if sequence.OwnerTable == table.Name && sequence.OwnerColumn == column.Name {
+							sequenceKey := schema.Name + "." + sequence.Name
+							skipSequences[sequenceKey] = true
+							break
+						}
+					}
+				}
+				// Check for identity columns
+				if isIdentityColumn(column) {
+					for _, sequence := range schema.Sequences {
+						if sequence.OwnerTable == table.Name && sequence.OwnerColumn == column.Name {
+							sequenceKey := schema.Name + "." + sequence.Name
+							skipSequences[sequenceKey] = true
+							break
+						}
+					}
+				}
+			}
+		}
+	}
+	return skipSequences
+}
+
+// buildTableSequencesMap builds a map of sequences by table for easy lookup during table creation.
+func buildTableSequencesMap(metadata *storepb.DatabaseSchemaMetadata) map[string][]*storepb.SequenceMetadata {
+	tableSequencesMap := make(map[string][]*storepb.SequenceMetadata)
+	for _, schema := range metadata.Schemas {
+		if schema.SkipDump {
+			continue
+		}
+		for _, sequence := range schema.Sequences {
+			if sequence.SkipDump {
+				continue
+			}
+			if sequence.OwnerTable != "" {
+				tableKey := schema.Name + "." + sequence.OwnerTable
+				tableSequencesMap[tableKey] = append(tableSequencesMap[tableKey], sequence)
+			}
+		}
+	}
+	return tableSequencesMap
 }
