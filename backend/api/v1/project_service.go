@@ -17,6 +17,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/emptypb"
 
@@ -919,6 +920,11 @@ func (s *ProjectService) AddWebhook(ctx context.Context, req *connect.Request[v1
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
+	// Validate webhook URL against allowed domains
+	if err := webhookplugin.ValidateWebhookURL(create.Payload.GetType(), create.Payload.GetUrl()); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid webhook URL"))
+	}
+
 	if _, err := s.store.CreateProjectWebhookV2(ctx, project.ResourceID, create); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -987,15 +993,22 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("webhook %q not found", req.Msg.Webhook.Url))
 	}
 
-	update := &store.UpdateProjectWebhookMessage{}
+	// Start with existing webhook payload
+	// nolint:revive
+	updatedPayload := proto.Clone(webhook.Payload).(*storepb.ProjectWebhook)
+
 	for _, path := range req.Msg.UpdateMask.Paths {
 		switch path {
 		case "type":
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("type cannot be updated"))
 		case "title":
-			update.Title = &req.Msg.Webhook.Title
+			updatedPayload.Title = req.Msg.Webhook.Title
 		case "url":
-			update.URL = &req.Msg.Webhook.Url
+			updatedPayload.Url = req.Msg.Webhook.Url
+			// Validate webhook URL against allowed domains
+			if err := webhookplugin.ValidateWebhookURL(updatedPayload.Type, updatedPayload.Url); err != nil {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid webhook URL"))
+			}
 		case "notification_type":
 			types, err := convertToStoreActivityTypes(req.Msg.Webhook.NotificationTypes)
 			if err != nil {
@@ -1004,14 +1017,16 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, req *connect.Request
 			if len(types) == 0 {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("notification types should not be empty"))
 			}
-			update.Events = types
+			updatedPayload.Activities = types
 		case "direct_message":
-			update.Payload = &storepb.ProjectWebhook{
-				DirectMessage: req.Msg.Webhook.DirectMessage,
-			}
+			updatedPayload.DirectMessage = req.Msg.Webhook.DirectMessage
 		default:
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid field %q", path))
 		}
+	}
+
+	update := &store.UpdateProjectWebhookMessage{
+		Payload: updatedPayload,
 	}
 
 	if _, err := s.store.UpdateProjectWebhookV2(ctx, project.ResourceID, webhook.ID, update); err != nil {
@@ -1107,17 +1122,22 @@ func (s *ProjectService) TestWebhook(ctx context.Context, req *connect.Request[v
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
+	// Validate webhook URL against allowed domains
+	if err := webhookplugin.ValidateWebhookURL(webhook.Payload.GetType(), webhook.Payload.GetUrl()); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid webhook URL"))
+	}
+
 	resp := &v1pb.TestWebhookResponse{}
 	err = webhookplugin.Post(
-		webhook.Type,
+		webhook.Payload.GetType(),
 		webhookplugin.Context{
-			URL:         webhook.URL,
+			URL:         webhook.Payload.GetUrl(),
 			Level:       webhookplugin.WebhookInfo,
 			EventType:   storepb.Activity_ISSUE_CREATE.String(),
-			Title:       fmt.Sprintf("Test webhook %q", webhook.Title),
-			TitleZh:     fmt.Sprintf("测试 webhook %q", webhook.Title),
+			Title:       fmt.Sprintf("Test webhook %q", webhook.Payload.GetTitle()),
+			TitleZh:     fmt.Sprintf("测试 webhook %q", webhook.Payload.GetTitle()),
 			Description: "This is a test",
-			Link:        fmt.Sprintf("%s/projects/%s/webhooks/%s", setting.ExternalUrl, project.ResourceID, fmt.Sprintf("%s-%d", slug.Make(webhook.Title), webhook.ID)),
+			Link:        fmt.Sprintf("%s/projects/%s/webhooks/%s", setting.ExternalUrl, project.ResourceID, fmt.Sprintf("%s-%d", slug.Make(webhook.Payload.GetTitle()), webhook.ID)),
 			ActorID:     common.SystemBotID,
 			ActorName:   "Bytebase",
 			ActorEmail:  s.store.GetSystemBotUser(ctx).Email,

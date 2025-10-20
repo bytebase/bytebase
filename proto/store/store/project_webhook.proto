@@ -55,8 +55,16 @@ message ProjectWebhook {
     LARK = 8;
   }
 
+  // Webhook type.
+  Type type = 1;
+  // Webhook title.
+  string title = 2;
+  // Webhook URL.
+  string url = 3;
+  // List of activities that trigger this webhook.
+  repeated Activity.Type activities = 4;
   // If direct_message is set, the notification is sent directly
   // to the persons and url will be ignored.
   // IM integration setting should be set for this function to work.
-  bool direct_message = 1;
+  bool direct_message = 5;
 }

@@ -10,8 +10,8 @@ import (
 )
 
 var (
-	// AllowedDomains maps webhook types to their allowed domains.
-	AllowedDomains = map[storepb.ProjectWebhook_Type][]string{
+	// allowedDomains maps webhook types to their allowed domains.
+	allowedDomains = map[storepb.ProjectWebhook_Type][]string{
 		storepb.ProjectWebhook_SLACK: {
 			"hooks.slack.com",
 			"hooks.slack-gov.com",
@@ -58,13 +58,13 @@ func ValidateWebhookURL(webhookType storepb.ProjectWebhook_Type, webhookURL stri
 	}
 
 	// Get allowed domains for this webhook type
-	allowedDomains, ok := AllowedDomains[webhookType]
+	allowedDomainsForType, ok := allowedDomains[webhookType]
 	if !ok {
 		return errors.Errorf("unknown webhook type: %s", webhookType)
 	}
 
 	// Merge with test-only allowed domains
-	allAllowedDomains := append([]string{}, allowedDomains...)
+	allAllowedDomains := append([]string{}, allowedDomainsForType...)
 	if testDomains, exists := TestOnlyAllowedDomains[webhookType]; exists {
 		allAllowedDomains = append(allAllowedDomains, testDomains...)
 	}
@@ -88,5 +88,5 @@ func ValidateWebhookURL(webhookType storepb.ProjectWebhook_Type, webhookURL stri
 	}
 
 	return errors.Errorf("webhook URL domain %q is not allowed for webhook type %s (allowed domains: %v)",
-		hostname, webhookType, allowedDomains)
+		hostname, webhookType, allowedDomainsForType)
 }

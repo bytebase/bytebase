@@ -20,6 +20,23 @@ func (x *ProjectWebhook) Equal(y *ProjectWebhook) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
+	if x.Type != y.Type {
+		return false
+	}
+	if x.Title != y.Title {
+		return false
+	}
+	if x.Url != y.Url {
+		return false
+	}
+	if len(x.Activities) != len(y.Activities) {
+		return false
+	}
+	for i := 0; i < len(x.Activities); i++ {
+		if x.Activities[i] != y.Activities[i] {
+			return false
+		}
+	}
 	if x.DirectMessage != y.DirectMessage {
 		return false
 	}

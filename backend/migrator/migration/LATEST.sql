@@ -108,12 +108,6 @@ CREATE UNIQUE INDEX idx_project_unique_resource_id ON project(resource_id);
 CREATE TABLE project_webhook (
     id serial PRIMARY KEY,
     project text NOT NULL REFERENCES project(resource_id),
-    -- Enum name from ProjectWebhook.Type (proto/store/store/project_webhook.proto)
-    type text NOT NULL,
-    name text NOT NULL,
-    url text NOT NULL,
-    -- Array of enum names from Activity.Type (proto/store/store/project_webhook.proto)
-    event_list text ARRAY NOT NULL,
     -- Stored as ProjectWebhook (proto/store/store/project_webhook.proto)
     payload jsonb NOT NULL DEFAULT '{}'
 );

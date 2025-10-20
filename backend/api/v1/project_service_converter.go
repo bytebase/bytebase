@@ -16,7 +16,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
-	webhookplugin "github.com/bytebase/bytebase/backend/plugin/webhook"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 )
@@ -41,21 +40,16 @@ func convertToStoreProjectWebhookMessage(webhook *v1pb.Webhook) (*store.ProjectW
 		return nil, err
 	}
 
-	// Validate webhook URL against allowed domains
-	if err := webhookplugin.ValidateWebhookURL(storeType, webhook.Url); err != nil {
-		return nil, common.Errorf(common.Invalid, "invalid webhook URL: %v", err)
-	}
-
 	activityTypes, err := convertToStoreActivityTypes(webhook.NotificationTypes)
 	if err != nil {
 		return nil, err
 	}
 	return &store.ProjectWebhookMessage{
-		Type:   storeType,
-		URL:    webhook.Url,
-		Title:  webhook.Title,
-		Events: activityTypes,
 		Payload: &storepb.ProjectWebhook{
+			Type:          storeType,
+			Title:         webhook.Title,
+			Url:           webhook.Url,
+			Activities:    activityTypes,
 			DirectMessage: webhook.DirectMessage,
 		},
 	}, nil
@@ -301,10 +295,10 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 	for _, webhook := range projectMessage.Webhooks {
 		projectWebhooks = append(projectWebhooks, &v1pb.Webhook{
 			Name:              fmt.Sprintf("%s/%s%d", common.FormatProject(projectMessage.ResourceID), common.WebhookIDPrefix, webhook.ID),
-			Type:              convertToV1WebhookType(webhook.Type),
-			Title:             webhook.Title,
-			Url:               webhook.URL,
-			NotificationTypes: convertToV1ActivityTypes(webhook.Events),
+			Type:              convertToV1WebhookType(webhook.Payload.GetType()),
+			Title:             webhook.Payload.GetTitle(),
+			Url:               webhook.Payload.GetUrl(),
+			NotificationTypes: convertToV1ActivityTypes(webhook.Payload.GetActivities()),
 			DirectMessage:     webhook.Payload.GetDirectMessage(),
 		})
 	}
