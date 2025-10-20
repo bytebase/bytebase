@@ -141,7 +141,7 @@ func (p *IdentityProvider) Authenticate(username, password string) (*storepb.Ide
 			0,
 			0,
 			false,
-			strings.ReplaceAll(p.config.UserFilter, "%s", username),
+			ldap.EscapeFilter(strings.ReplaceAll(p.config.UserFilter, "%s", username)),
 			[]string{"dn", p.config.FieldMapping.Identifier, p.config.FieldMapping.DisplayName},
 			nil,
 		),
