@@ -113,6 +113,7 @@
     - [Database](#bytebase-v1-Database)
     - [Database.LabelsEntry](#bytebase-v1-Database-LabelsEntry)
     - [DatabaseMetadata](#bytebase-v1-DatabaseMetadata)
+    - [DatabaseSDLSchema](#bytebase-v1-DatabaseSDLSchema)
     - [DatabaseSchema](#bytebase-v1-DatabaseSchema)
     - [DependencyColumn](#bytebase-v1-DependencyColumn)
     - [DependencyTable](#bytebase-v1-DependencyTable)
@@ -130,6 +131,7 @@
     - [GetChangelogRequest](#bytebase-v1-GetChangelogRequest)
     - [GetDatabaseMetadataRequest](#bytebase-v1-GetDatabaseMetadataRequest)
     - [GetDatabaseRequest](#bytebase-v1-GetDatabaseRequest)
+    - [GetDatabaseSDLSchemaRequest](#bytebase-v1-GetDatabaseSDLSchemaRequest)
     - [GetDatabaseSchemaRequest](#bytebase-v1-GetDatabaseSchemaRequest)
     - [GetSchemaStringRequest](#bytebase-v1-GetSchemaStringRequest)
     - [GetSchemaStringResponse](#bytebase-v1-GetSchemaStringResponse)
@@ -163,6 +165,7 @@
     - [ChangelogView](#bytebase-v1-ChangelogView)
     - [ColumnMetadata.IdentityGeneration](#bytebase-v1-ColumnMetadata-IdentityGeneration)
     - [GenerationMetadata.Type](#bytebase-v1-GenerationMetadata-Type)
+    - [GetDatabaseSDLSchemaRequest.SDLFormat](#bytebase-v1-GetDatabaseSDLSchemaRequest-SDLFormat)
     - [GetSchemaStringRequest.ObjectType](#bytebase-v1-GetSchemaStringRequest-ObjectType)
     - [StreamMetadata.Mode](#bytebase-v1-StreamMetadata-Mode)
     - [StreamMetadata.Type](#bytebase-v1-StreamMetadata-Type)
@@ -2337,6 +2340,22 @@ Format: instances/{instance}/databases/{database}/metadata |
 
 
 
+<a name="bytebase-v1-DatabaseSDLSchema"></a>
+
+### DatabaseSDLSchema
+DatabaseSDLSchema contains the schema in SDL format.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema | [bytes](#bytes) |  | The SDL schema content. - For SINGLE_FILE format: contains the complete SDL schema as a text string. - For MULTI_FILE format: contains the ZIP archive as binary data. |
+| content_type | [string](#string) |  | The MIME type of the schema content. Indicates how the client should interpret the schema field. Examples: - &#34;text/plain; charset=utf-8&#34; for SINGLE_FILE format - &#34;application/zip&#34; for MULTI_FILE format |
+
+
+
+
+
+
 <a name="bytebase-v1-DatabaseSchema"></a>
 
 ### DatabaseSchema
@@ -2636,6 +2655,22 @@ For example: schema == &#34;schema-a&#34; table == &#34;table-a&#34; table.match
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the database to retrieve. Format: instances/{instance}/databases/{database} |
+
+
+
+
+
+
+<a name="bytebase-v1-GetDatabaseSDLSchemaRequest"></a>
+
+### GetDatabaseSDLSchemaRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the database to retrieve SDL schema. Format: instances/{instance}/databases/{database}/sdlSchema |
+| format | [GetDatabaseSDLSchemaRequest.SDLFormat](#bytebase-v1-GetDatabaseSDLSchemaRequest-SDLFormat) |  | The format of the SDL schema output. |
 
 
 
@@ -3281,6 +3316,19 @@ MigrationType is the type for imperative schema migration.
 
 
 
+<a name="bytebase-v1-GetDatabaseSDLSchemaRequest-SDLFormat"></a>
+
+### GetDatabaseSDLSchemaRequest.SDLFormat
+SDLFormat specifies the output format for SDL schema.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SDL_FORMAT_UNSPECIFIED | 0 | Unspecified format. Defaults to SINGLE_FILE. |
+| SINGLE_FILE | 1 | Single file format: returns the complete SDL schema as a single file. |
+| MULTI_FILE | 2 | Multi-file format: returns the SDL schema as a ZIP archive containing multiple files organized by schema objects (tables, views, functions, etc.). |
+
+
+
 <a name="bytebase-v1-GetSchemaStringRequest-ObjectType"></a>
 
 ### GetSchemaStringRequest.ObjectType
@@ -3384,6 +3432,7 @@ DatabaseService manages databases and their schemas.
 | BatchSyncDatabases | [BatchSyncDatabasesRequest](#bytebase-v1-BatchSyncDatabasesRequest) | [BatchSyncDatabasesResponse](#bytebase-v1-BatchSyncDatabasesResponse) | Synchronizes multiple databases in a single batch operation. Permissions required: bb.databases.sync |
 | GetDatabaseMetadata | [GetDatabaseMetadataRequest](#bytebase-v1-GetDatabaseMetadataRequest) | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) | Retrieves database metadata including tables, columns, and indexes. Permissions required: bb.databases.getSchema |
 | GetDatabaseSchema | [GetDatabaseSchemaRequest](#bytebase-v1-GetDatabaseSchemaRequest) | [DatabaseSchema](#bytebase-v1-DatabaseSchema) | Retrieves database schema as DDL statements. Permissions required: bb.databases.getSchema |
+| GetDatabaseSDLSchema | [GetDatabaseSDLSchemaRequest](#bytebase-v1-GetDatabaseSDLSchemaRequest) | [DatabaseSDLSchema](#bytebase-v1-DatabaseSDLSchema) | Retrieves database schema in SDL (Schema Definition Language) format. Permissions required: bb.databases.getSchema |
 | DiffSchema | [DiffSchemaRequest](#bytebase-v1-DiffSchemaRequest) | [DiffSchemaResponse](#bytebase-v1-DiffSchemaResponse) | Compares and generates migration statements between two schemas. Permissions required: bb.databases.get |
 | ListChangelogs | [ListChangelogsRequest](#bytebase-v1-ListChangelogsRequest) | [ListChangelogsResponse](#bytebase-v1-ListChangelogsResponse) | Lists migration history for a database. Permissions required: bb.changelogs.list |
 | GetChangelog | [GetChangelogRequest](#bytebase-v1-GetChangelogRequest) | [Changelog](#bytebase-v1-Changelog) | Retrieves a specific changelog entry. Permissions required: bb.changelogs.get |

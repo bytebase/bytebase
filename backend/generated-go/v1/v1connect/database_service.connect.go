@@ -60,6 +60,9 @@ const (
 	// DatabaseServiceGetDatabaseSchemaProcedure is the fully-qualified name of the DatabaseService's
 	// GetDatabaseSchema RPC.
 	DatabaseServiceGetDatabaseSchemaProcedure = "/bytebase.v1.DatabaseService/GetDatabaseSchema"
+	// DatabaseServiceGetDatabaseSDLSchemaProcedure is the fully-qualified name of the DatabaseService's
+	// GetDatabaseSDLSchema RPC.
+	DatabaseServiceGetDatabaseSDLSchemaProcedure = "/bytebase.v1.DatabaseService/GetDatabaseSDLSchema"
 	// DatabaseServiceDiffSchemaProcedure is the fully-qualified name of the DatabaseService's
 	// DiffSchema RPC.
 	DatabaseServiceDiffSchemaProcedure = "/bytebase.v1.DatabaseService/DiffSchema"
@@ -103,6 +106,9 @@ type DatabaseServiceClient interface {
 	// Retrieves database schema as DDL statements.
 	// Permissions required: bb.databases.getSchema
 	GetDatabaseSchema(context.Context, *connect.Request[v1.GetDatabaseSchemaRequest]) (*connect.Response[v1.DatabaseSchema], error)
+	// Retrieves database schema in SDL (Schema Definition Language) format.
+	// Permissions required: bb.databases.getSchema
+	GetDatabaseSDLSchema(context.Context, *connect.Request[v1.GetDatabaseSDLSchemaRequest]) (*connect.Response[v1.DatabaseSDLSchema], error)
 	// Compares and generates migration statements between two schemas.
 	// Permissions required: bb.databases.get
 	DiffSchema(context.Context, *connect.Request[v1.DiffSchemaRequest]) (*connect.Response[v1.DiffSchemaResponse], error)
@@ -182,6 +188,12 @@ func NewDatabaseServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			connect.WithSchema(databaseServiceMethods.ByName("GetDatabaseSchema")),
 			connect.WithClientOptions(opts...),
 		),
+		getDatabaseSDLSchema: connect.NewClient[v1.GetDatabaseSDLSchemaRequest, v1.DatabaseSDLSchema](
+			httpClient,
+			baseURL+DatabaseServiceGetDatabaseSDLSchemaProcedure,
+			connect.WithSchema(databaseServiceMethods.ByName("GetDatabaseSDLSchema")),
+			connect.WithClientOptions(opts...),
+		),
 		diffSchema: connect.NewClient[v1.DiffSchemaRequest, v1.DiffSchemaResponse](
 			httpClient,
 			baseURL+DatabaseServiceDiffSchemaProcedure,
@@ -220,6 +232,7 @@ type databaseServiceClient struct {
 	batchSyncDatabases   *connect.Client[v1.BatchSyncDatabasesRequest, v1.BatchSyncDatabasesResponse]
 	getDatabaseMetadata  *connect.Client[v1.GetDatabaseMetadataRequest, v1.DatabaseMetadata]
 	getDatabaseSchema    *connect.Client[v1.GetDatabaseSchemaRequest, v1.DatabaseSchema]
+	getDatabaseSDLSchema *connect.Client[v1.GetDatabaseSDLSchemaRequest, v1.DatabaseSDLSchema]
 	diffSchema           *connect.Client[v1.DiffSchemaRequest, v1.DiffSchemaResponse]
 	listChangelogs       *connect.Client[v1.ListChangelogsRequest, v1.ListChangelogsResponse]
 	getChangelog         *connect.Client[v1.GetChangelogRequest, v1.Changelog]
@@ -271,6 +284,11 @@ func (c *databaseServiceClient) GetDatabaseSchema(ctx context.Context, req *conn
 	return c.getDatabaseSchema.CallUnary(ctx, req)
 }
 
+// GetDatabaseSDLSchema calls bytebase.v1.DatabaseService.GetDatabaseSDLSchema.
+func (c *databaseServiceClient) GetDatabaseSDLSchema(ctx context.Context, req *connect.Request[v1.GetDatabaseSDLSchemaRequest]) (*connect.Response[v1.DatabaseSDLSchema], error) {
+	return c.getDatabaseSDLSchema.CallUnary(ctx, req)
+}
+
 // DiffSchema calls bytebase.v1.DatabaseService.DiffSchema.
 func (c *databaseServiceClient) DiffSchema(ctx context.Context, req *connect.Request[v1.DiffSchemaRequest]) (*connect.Response[v1.DiffSchemaResponse], error) {
 	return c.diffSchema.CallUnary(ctx, req)
@@ -320,6 +338,9 @@ type DatabaseServiceHandler interface {
 	// Retrieves database schema as DDL statements.
 	// Permissions required: bb.databases.getSchema
 	GetDatabaseSchema(context.Context, *connect.Request[v1.GetDatabaseSchemaRequest]) (*connect.Response[v1.DatabaseSchema], error)
+	// Retrieves database schema in SDL (Schema Definition Language) format.
+	// Permissions required: bb.databases.getSchema
+	GetDatabaseSDLSchema(context.Context, *connect.Request[v1.GetDatabaseSDLSchemaRequest]) (*connect.Response[v1.DatabaseSDLSchema], error)
 	// Compares and generates migration statements between two schemas.
 	// Permissions required: bb.databases.get
 	DiffSchema(context.Context, *connect.Request[v1.DiffSchemaRequest]) (*connect.Response[v1.DiffSchemaResponse], error)
@@ -395,6 +416,12 @@ func NewDatabaseServiceHandler(svc DatabaseServiceHandler, opts ...connect.Handl
 		connect.WithSchema(databaseServiceMethods.ByName("GetDatabaseSchema")),
 		connect.WithHandlerOptions(opts...),
 	)
+	databaseServiceGetDatabaseSDLSchemaHandler := connect.NewUnaryHandler(
+		DatabaseServiceGetDatabaseSDLSchemaProcedure,
+		svc.GetDatabaseSDLSchema,
+		connect.WithSchema(databaseServiceMethods.ByName("GetDatabaseSDLSchema")),
+		connect.WithHandlerOptions(opts...),
+	)
 	databaseServiceDiffSchemaHandler := connect.NewUnaryHandler(
 		DatabaseServiceDiffSchemaProcedure,
 		svc.DiffSchema,
@@ -439,6 +466,8 @@ func NewDatabaseServiceHandler(svc DatabaseServiceHandler, opts ...connect.Handl
 			databaseServiceGetDatabaseMetadataHandler.ServeHTTP(w, r)
 		case DatabaseServiceGetDatabaseSchemaProcedure:
 			databaseServiceGetDatabaseSchemaHandler.ServeHTTP(w, r)
+		case DatabaseServiceGetDatabaseSDLSchemaProcedure:
+			databaseServiceGetDatabaseSDLSchemaHandler.ServeHTTP(w, r)
 		case DatabaseServiceDiffSchemaProcedure:
 			databaseServiceDiffSchemaHandler.ServeHTTP(w, r)
 		case DatabaseServiceListChangelogsProcedure:
@@ -490,6 +519,10 @@ func (UnimplementedDatabaseServiceHandler) GetDatabaseMetadata(context.Context, 
 
 func (UnimplementedDatabaseServiceHandler) GetDatabaseSchema(context.Context, *connect.Request[v1.GetDatabaseSchemaRequest]) (*connect.Response[v1.DatabaseSchema], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.DatabaseService.GetDatabaseSchema is not implemented"))
+}
+
+func (UnimplementedDatabaseServiceHandler) GetDatabaseSDLSchema(context.Context, *connect.Request[v1.GetDatabaseSDLSchemaRequest]) (*connect.Response[v1.DatabaseSDLSchema], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.DatabaseService.GetDatabaseSDLSchema is not implemented"))
 }
 
 func (UnimplementedDatabaseServiceHandler) DiffSchema(context.Context, *connect.Request[v1.DiffSchemaRequest]) (*connect.Response[v1.DiffSchemaResponse], error) {
