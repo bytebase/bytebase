@@ -16,6 +16,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	webhookplugin "github.com/bytebase/bytebase/backend/plugin/webhook"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 )
@@ -39,6 +40,12 @@ func convertToStoreProjectWebhookMessage(webhook *v1pb.Webhook) (*store.ProjectW
 	if err != nil {
 		return nil, err
 	}
+
+	// Validate webhook URL against allowed domains
+	if err := webhookplugin.ValidateWebhookURL(tp, webhook.Url); err != nil {
+		return nil, common.Errorf(common.Invalid, "invalid webhook URL: %v", err)
+	}
+
 	activityTypes, err := convertToActivityTypeStrings(webhook.NotificationTypes)
 	if err != nil {
 		return nil, err
