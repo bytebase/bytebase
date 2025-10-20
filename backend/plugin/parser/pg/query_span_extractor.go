@@ -201,9 +201,7 @@ func buildFunctionDefinitionDetail(funcDef *functionDefinition) (*functionDefini
 	funcArgsWithDefaults := createFuncStmt.Func_args_with_defaults()
 	var params []postgresql.IFunc_arg_with_defaultContext
 	if l := funcArgsWithDefaults.Func_args_with_defaults_list(); l != nil {
-		for _, arg := range l.AllFunc_arg_with_default() {
-			params = append(params, arg)
-		}
+		params = append(params, l.AllFunc_arg_with_default()...)
 	}
 
 	var nDefaultPram, nVariadicParam int
@@ -225,7 +223,6 @@ func buildFunctionDefinitionDetail(funcDef *functionDefinition) (*functionDefini
 		nParam:         len(params),
 		function:       funcDef,
 	}, nil
-
 }
 
 // getFunctionCandidates returns the function candidates for the function call.
