@@ -48,8 +48,8 @@ type GetDefinitionContext struct {
 	MultiFileFormat bool
 }
 
-// SchemaFile represents a single file in a multi-file schema output.
-type SchemaFile struct {
+// File represents a single file in a multi-file schema output.
+type File struct {
 	// Name is the file path or name (e.g., "schemas/public/tables/users.sql")
 	Name string
 	// Content is the file content
@@ -59,7 +59,7 @@ type SchemaFile struct {
 // MultiFileSchemaResult represents the result of multi-file schema generation.
 type MultiFileSchemaResult struct {
 	// Files is the list of schema files organized by type
-	Files []SchemaFile
+	Files []File
 }
 
 func RegisterGetSequenceDefinition(engine storepb.Engine, f getSequenceDefinition) {

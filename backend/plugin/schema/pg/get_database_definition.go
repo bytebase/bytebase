@@ -3010,10 +3010,10 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 	metadata = filterBackupSchemaIfNecessary(ctx, metadata)
 
 	if len(metadata.Schemas) == 0 {
-		return &schema.MultiFileSchemaResult{Files: []schema.SchemaFile{}}, nil
+		return &schema.MultiFileSchemaResult{Files: []schema.File{}}, nil
 	}
 
-	var files []schema.SchemaFile
+	var files []schema.File
 
 	// Build skip sequences map (for serial and identity columns)
 	skipSequences := buildSkipSequencesMap(metadata)
@@ -3047,7 +3047,7 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 			if err := writeSequenceSDL(&buf, schemaName, sequence); err != nil {
 				return nil, errors.Wrapf(err, "failed to generate sequence SDL for %s.%s", schemaName, sequence.Name)
 			}
-			files = append(files, schema.SchemaFile{
+			files = append(files, schema.File{
 				Name:    fmt.Sprintf("schemas/%s/sequences/%s.sql", schemaName, sequence.Name),
 				Content: buf.String() + ";\n",
 			})
@@ -3075,7 +3075,7 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 				return nil, errors.Wrapf(err, "failed to generate indexes SDL for %s.%s", schemaName, table.Name)
 			}
 
-			files = append(files, schema.SchemaFile{
+			files = append(files, schema.File{
 				Name:    fmt.Sprintf("schemas/%s/tables/%s.sql", schemaName, table.Name),
 				Content: buf.String(),
 			})
@@ -3091,7 +3091,7 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 			if err := writeViewSDL(&buf, schemaName, view); err != nil {
 				return nil, errors.Wrapf(err, "failed to generate view SDL for %s.%s", schemaName, view.Name)
 			}
-			files = append(files, schema.SchemaFile{
+			files = append(files, schema.File{
 				Name:    fmt.Sprintf("schemas/%s/views/%s.sql", schemaName, view.Name),
 				Content: buf.String() + ";\n",
 			})
@@ -3107,7 +3107,7 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 			if err := writeFunctionSDL(&buf, schemaName, function); err != nil {
 				return nil, errors.Wrapf(err, "failed to generate function SDL for %s.%s", schemaName, function.Name)
 			}
-			files = append(files, schema.SchemaFile{
+			files = append(files, schema.File{
 				Name:    fmt.Sprintf("schemas/%s/functions/%s.sql", schemaName, function.Name),
 				Content: buf.String() + ";\n",
 			})
