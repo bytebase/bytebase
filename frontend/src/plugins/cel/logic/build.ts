@@ -72,6 +72,15 @@ export const buildCELExpr = async (
     if (isStringExpr(condition)) {
       const { operator, args } = condition;
       const [factor, value] = args;
+      if (operator === "@not_contains") {
+        return wrapCallExpr("!_", [
+          wrapCallExpr(
+            "contains",
+            [wrapConstExpr(value)],
+            wrapIdentExpr(factor)
+          ),
+        ]);
+      }
       return wrapCallExpr(
         operator,
         [wrapConstExpr(value)],

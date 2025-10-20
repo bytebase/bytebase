@@ -109,7 +109,7 @@ export const resolveCELExpr = (expr: CELExpr): SimpleExpr => {
         return resolveCompareExpr(expr);
       }
       if (isStringOperator(operator)) {
-        return resolveStringExpr(expr);
+        return resolveStringExpr(expr, negative);
       }
       if (isCollectionOperator(operator)) {
         return resolveCollectionExpr(expr, negative);
@@ -179,12 +179,18 @@ const resolveCompareExpr = (expr: CELExpr): CompareExpr => {
   throw new Error(`cannot resolve expr ${JSON.stringify(expr)}`);
 };
 
-const resolveStringExpr = (expr: CELExpr): StringExpr => {
+const resolveStringExpr = (
+  expr: CELExpr,
+  negative: boolean = false
+): StringExpr => {
   const callExpr =
     expr.exprKind?.case === "callExpr" ? expr.exprKind.value : null;
   if (!callExpr)
     throw new Error(`Expected callExpr but got ${expr.exprKind?.case}`);
-  const operator = callExpr.function as StringOperator;
+  let operator = callExpr.function as StringOperator;
+  if (negative && operator == "contains") {
+    operator = "@not_contains";
+  }
   const factor = getFactorName(callExpr.target!);
   const value = callExpr.args[0];
   return {
@@ -203,7 +209,7 @@ const resolveCollectionExpr = (
   if (!callExpr)
     throw new Error(`Expected callExpr but got ${expr.exprKind?.case}`);
   let operator = callExpr.function as CollectionOperator;
-  if (negative) {
+  if (negative && operator == "@in") {
     operator = "@not_in";
   }
   const [factorExpr, valuesExpr] = callExpr.args;

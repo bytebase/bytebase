@@ -39,6 +39,8 @@ export type CollectionOperator = (typeof CollectionOperatorList)[number];
 
 export const StringOperatorList = [
   "contains",
+  "@not_contains",
+  "matches",
   "matches",
   "startsWith",
   "endsWith",
