@@ -873,7 +873,7 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, req *connect.Re
 
 // GetDatabaseSDLSchema gets the SDL schema of a database.
 func (s *DatabaseService) GetDatabaseSDLSchema(ctx context.Context, req *connect.Request[v1pb.GetDatabaseSDLSchemaRequest]) (*connect.Response[v1pb.DatabaseSDLSchema], error) {
-	instanceID, databaseName, err := common.GetInstanceDatabaseID(req.Msg.Name)
+	instanceID, databaseName, err := common.TrimSuffixAndGetInstanceDatabaseID(req.Msg.Name, common.SDLSchemaSuffix)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
 	}

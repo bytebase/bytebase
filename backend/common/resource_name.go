@@ -50,9 +50,10 @@ const (
 	FileNamePrefix             = "files/"
 	RevisionNamePrefix         = "revisions/"
 
-	SchemaSuffix   = "/schema"
-	MetadataSuffix = "/metadata"
-	CatalogSuffix  = "/catalog"
+	SchemaSuffix    = "/schema"
+	SDLSchemaSuffix = "/sdlSchema"
+	MetadataSuffix  = "/metadata"
+	CatalogSuffix   = "/catalog"
 
 	UserBindingPrefix  = "user:"
 	GroupBindingPrefix = "group:"
