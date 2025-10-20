@@ -10,10 +10,6 @@ UPDATE project_webhook SET type = 'FEISHU' WHERE type = 'bb.plugin.webhook.feish
 UPDATE project_webhook SET type = 'WECOM' WHERE type = 'bb.plugin.webhook.wecom';
 UPDATE project_webhook SET type = 'LARK' WHERE type = 'bb.plugin.webhook.lark';
 
--- Add new check constraint for enum names
-ALTER TABLE project_webhook ADD CONSTRAINT project_webhook_type_check
-    CHECK (type IN ('SLACK', 'DISCORD', 'TEAMS', 'DINGTALK', 'FEISHU', 'WECOM', 'LARK'));
-
 -- Convert event_list from "bb.webhook.event.*" format to enum names
 UPDATE project_webhook
 SET event_list = ARRAY(
