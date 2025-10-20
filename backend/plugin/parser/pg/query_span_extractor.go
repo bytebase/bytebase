@@ -9,8 +9,6 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
-	pgquery "github.com/pganalyze/pg_query_go/v6"
-
 	parsererror "github.com/bytebase/bytebase/backend/plugin/parser/errors"
 
 	"github.com/bytebase/parser/postgresql"
@@ -161,48 +159,68 @@ func (q *querySpanExtractor) findFunctionDefine(schemaName, funcName string, nAr
 type functionDefinitionDetail struct {
 	nDefaultParam  int
 	nVariadicParam int
-	params         []*pgquery.FunctionParameter
+	nParam         int
 	function       *functionDefinition
 }
 
 func buildFunctionDefinitionDetail(funcDef *functionDefinition) (*functionDefinitionDetail, error) {
 	function := funcDef.metadata
 	definition := function.GetProto().GetDefinition()
-	res, err := pgquery.Parse(definition)
+	res, err := ParsePostgreSQL(definition)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse function definition: %s", definition)
 	}
-	if len(res.Stmts) != 1 {
-		return nil, errors.Errorf("expecting 1 statement, but got %d", len(res.Stmts))
-	}
-	createFunc, ok := res.Stmts[0].Stmt.Node.(*pgquery.Node_CreateFunctionStmt)
+
+	// Navigate: root -> stmtblock -> stmt -> createfunctionstmt
+	root, ok := res.Tree.(*postgresql.RootContext)
 	if !ok {
-		return nil, errors.Errorf("expecting CreateFunctionStmt but got %T", res.Stmts[0].Stmt.Node)
+		return nil, errors.Errorf("expecting RootContext but got %T", res.Tree)
 	}
-	var params []*pgquery.FunctionParameter
-	for _, param := range createFunc.CreateFunctionStmt.Parameters {
-		funcPara := param.GetFunctionParameter()
-		if funcPara == nil {
-			continue
-		}
-		if funcPara.GetMode() == pgquery.FunctionParameterMode_FUNC_PARAM_TABLE || funcPara.GetMode() == pgquery.FunctionParameterMode_FUNCTION_PARAMETER_MODE_UNDEFINED {
-			continue
-		}
-		params = append(params, funcPara)
+
+	stmtblock := root.Stmtblock()
+	if stmtblock == nil {
+		return nil, errors.Errorf("expecting stmtblock but got nil")
 	}
-	var nDefaultParam, nVariadicParam int
+
+	stmtmulti := stmtblock.Stmtmulti()
+	if stmtmulti == nil {
+		return nil, errors.Errorf("expecting stmtmulti but got nil")
+	}
+
+	stmts := stmtmulti.AllStmt()
+	if len(stmts) != 1 {
+		return nil, errors.Errorf("expecting 1 statement, but got %d", len(stmts))
+	}
+
+	stmt := stmts[0]
+	createFuncStmt := stmt.Createfunctionstmt()
+	if createFuncStmt == nil {
+		return nil, errors.Errorf("expecting Createfunctionstmt but got nil")
+	}
+
+	funcArgsWithDefaults := createFuncStmt.Func_args_with_defaults()
+	var params []postgresql.IFunc_arg_with_defaultContext
+	if l := funcArgsWithDefaults.Func_args_with_defaults_list(); l != nil {
+		params = append(params, l.AllFunc_arg_with_default()...)
+	}
+
+	var nDefaultPram, nVariadicParam int
 	for _, param := range params {
-		if param.GetMode() == pgquery.FunctionParameterMode_FUNC_PARAM_VARIADIC {
-			nVariadicParam++
+		if param.A_expr() != nil {
+			nDefaultPram++
 		}
-		if param.GetDefexpr() != nil {
-			nDefaultParam++
+
+		if c := param.Func_arg().Arg_class(); c != nil {
+			if c.VARIADIC() != nil {
+				nVariadicParam++
+			}
 		}
 	}
+
 	return &functionDefinitionDetail{
-		nDefaultParam:  nDefaultParam,
+		nDefaultParam:  nDefaultPram,
 		nVariadicParam: nVariadicParam,
-		params:         params,
+		nParam:         len(params),
 		function:       funcDef,
 	}, nil
 }
@@ -243,15 +261,15 @@ func getFunctionCandidates(functions []*functionDefinition, nArgs int, funcName 
 	for _, d := range detail {
 		// If there are no default and variadic parameters, the number of arguments must match the number of parameters.
 		if d.nDefaultParam == 0 && d.nVariadicParam == 0 {
-			if nArgs == len(d.params) {
+			if nArgs == d.nParam {
 				candidates = append(candidates, d.function)
 			}
 			continue
 		}
 
 		// Default parameter matches 0 or 1 argument, and variadic parameter matches 0 or more arguments.
-		lbound := len(d.params) - d.nDefaultParam - d.nVariadicParam
-		ubound := len(d.params)
+		lbound := d.nParam - d.nDefaultParam - d.nVariadicParam
+		ubound := d.nParam
 		if d.nVariadicParam > 0 && ubound < nArgs {
 			// Hack to make variadic parameter match 0 or more arguments.
 			ubound = nArgs
