@@ -12,7 +12,6 @@ import (
 	parsererror "github.com/bytebase/bytebase/backend/plugin/parser/errors"
 
 	"github.com/bytebase/parser/postgresql"
-	pgparser "github.com/bytebase/parser/postgresql"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -172,7 +171,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	// The resultTableSource should have been populated by EnterStmtmulti
 	if q.resultTableSource == nil {
 		// If not populated, try to extract it now
-		root, ok := parseResult.Tree.(*pgparser.RootContext)
+		root, ok := parseResult.Tree.(*postgresql.RootContext)
 		if !ok {
 			return nil, errors.Errorf("failed to assert parse tree to RootContext")
 		}
@@ -1314,7 +1313,7 @@ func (q *querySpanExtractor) getColumnsForMaterializedView(definition string) ([
 	return span.Results, nil
 }
 
-func (q *querySpanExtractor) EnterStmtmulti(sm *pgparser.StmtmultiContext) {
+func (q *querySpanExtractor) EnterStmtmulti(sm *postgresql.StmtmultiContext) {
 	if len(sm.AllStmt()) != 1 {
 		q.err = errors.Errorf("malformed query, expected 1 query but got %d", len(sm.AllStmt()))
 		return
@@ -1332,7 +1331,7 @@ func (q *querySpanExtractor) EnterStmtmulti(sm *pgparser.StmtmultiContext) {
 	q.resultTableSource = tableSource
 }
 
-func (q *querySpanExtractor) extractTableSourceFromStmt(stmt pgparser.IStmtContext) (base.TableSource, error) {
+func (q *querySpanExtractor) extractTableSourceFromStmt(stmt postgresql.IStmtContext) (base.TableSource, error) {
 	switch {
 	case stmt.Explainstmt() != nil:
 		// Handle EXPLAIN statement
@@ -1369,12 +1368,12 @@ func (q *querySpanExtractor) extractTableSourceFromStmt(stmt pgparser.IStmtConte
 	}
 }
 
-func (q *querySpanExtractor) extractTableSourceFromSelectstmt(selectstmt pgparser.ISelectstmtContext) (base.TableSource, error) {
+func (q *querySpanExtractor) extractTableSourceFromSelectstmt(selectstmt postgresql.ISelectstmtContext) (base.TableSource, error) {
 	selectNoParens := getSelectNoParensFromSelectStmt(selectstmt)
 	return q.extractTableSourceFromSelectNoParens(selectNoParens)
 }
 
-func (q *querySpanExtractor) extractTableSourceFromSelectNoParens(selectNoParens pgparser.ISelect_no_parensContext) (base.TableSource, error) {
+func (q *querySpanExtractor) extractTableSourceFromSelectNoParens(selectNoParens postgresql.ISelect_no_parensContext) (base.TableSource, error) {
 	// Reset the table sources from the FROM clause after exit the SELECT statement.
 	previousTableSourcesFromLength := len(q.tableSourcesFrom)
 	defer func() {
@@ -1420,7 +1419,7 @@ func (q *querySpanExtractor) extractTableSourceFromSelectNoParens(selectNoParens
 	return q.mergeSimpleSelectIntersectsWithOperators(allSimpleSelects, operators)
 }
 
-func (q *querySpanExtractor) recordCTEs(with pgparser.IWith_clauseContext) (restoreCTELength int, err error) {
+func (q *querySpanExtractor) recordCTEs(with postgresql.IWith_clauseContext) (restoreCTELength int, err error) {
 	previousCTELength := len(q.ctes)
 	recursive := with.RECURSIVE() != nil
 	for _, cte := range with.Cte_list().AllCommon_table_expr() {
@@ -1458,7 +1457,7 @@ func (q *querySpanExtractor) recordCTEs(with pgparser.IWith_clauseContext) (rest
 // then performs iterative closure computation to resolve all column dependencies.
 // A recursive CTE has the structure: base_case UNION [ALL] recursive_case
 // We use a simple strategy: the last part after UNION is the recursive part.
-func (q *querySpanExtractor) extractTableSourceFromRecursiveCTE(cte pgparser.ICommon_table_exprContext, cteName string, colAliasNames []string) (*base.PseudoTable, error) {
+func (q *querySpanExtractor) extractTableSourceFromRecursiveCTE(cte postgresql.ICommon_table_exprContext, cteName string, colAliasNames []string) (*base.PseudoTable, error) {
 	selectStmt := cte.Preparablestmt().Selectstmt()
 	if selectStmt == nil {
 		return nil, errors.Errorf("malformed recursive CTE, expected SELECT statement in CTE but got others")
@@ -1544,7 +1543,7 @@ func (q *querySpanExtractor) extractTableSourceFromRecursiveCTE(cte pgparser.ICo
 	return cteTableSource, nil
 }
 
-func (q *querySpanExtractor) extractTableSourceFromNonRecursiveCTE(cte pgparser.ICommon_table_exprContext, cteName string, colAliasNames []string) (*base.PseudoTable, error) {
+func (q *querySpanExtractor) extractTableSourceFromNonRecursiveCTE(cte postgresql.ICommon_table_exprContext, cteName string, colAliasNames []string) (*base.PseudoTable, error) {
 	selectStmt := cte.Preparablestmt().Selectstmt()
 	if selectStmt == nil {
 		return nil, errors.Errorf("malformed CTE, expected SELECT statement in CTE but got others")
@@ -1569,7 +1568,7 @@ func (q *querySpanExtractor) extractTableSourceFromNonRecursiveCTE(cte pgparser.
 }
 
 // extractOperatorsFromSelectClause extracts set operators from a select_clause
-func (*querySpanExtractor) extractOperatorsFromSelectClause(selectClause pgparser.ISelect_clauseContext) ([]SetOperator, error) {
+func (*querySpanExtractor) extractOperatorsFromSelectClause(selectClause postgresql.ISelect_clauseContext) ([]SetOperator, error) {
 	if selectClause == nil {
 		return nil, errors.New("nil select_clause")
 	}
@@ -1589,16 +1588,16 @@ func (*querySpanExtractor) extractOperatorsFromSelectClause(selectClause pgparse
 			var op SetOperator
 
 			switch tokenType {
-			case pgparser.PostgreSQLParserUNION:
+			case postgresql.PostgreSQLParserUNION:
 				op.Type = "UNION"
 				op.IsDistinct = true // Default to DISTINCT
 				// Check for ALL/DISTINCT modifier
 				if i+1 < len(children) {
 					if nextToken, ok := children[i+1].(antlr.TerminalNode); ok {
-						if nextToken.GetSymbol().GetTokenType() == pgparser.PostgreSQLParserALL {
+						if nextToken.GetSymbol().GetTokenType() == postgresql.PostgreSQLParserALL {
 							op.IsDistinct = false
 							i++ // Skip ALL token
-						} else if nextToken.GetSymbol().GetTokenType() == pgparser.PostgreSQLParserDISTINCT {
+						} else if nextToken.GetSymbol().GetTokenType() == postgresql.PostgreSQLParserDISTINCT {
 							op.IsDistinct = true
 							i++ // Skip DISTINCT token
 						}
@@ -1606,16 +1605,16 @@ func (*querySpanExtractor) extractOperatorsFromSelectClause(selectClause pgparse
 				}
 				operators = append(operators, op)
 
-			case pgparser.PostgreSQLParserEXCEPT:
+			case postgresql.PostgreSQLParserEXCEPT:
 				op.Type = "EXCEPT"
 				op.IsDistinct = true // Default to DISTINCT
 				// Check for ALL/DISTINCT modifier
 				if i+1 < len(children) {
 					if nextToken, ok := children[i+1].(antlr.TerminalNode); ok {
-						if nextToken.GetSymbol().GetTokenType() == pgparser.PostgreSQLParserALL {
+						if nextToken.GetSymbol().GetTokenType() == postgresql.PostgreSQLParserALL {
 							op.IsDistinct = false
 							i++ // Skip ALL token
-						} else if nextToken.GetSymbol().GetTokenType() == pgparser.PostgreSQLParserDISTINCT {
+						} else if nextToken.GetSymbol().GetTokenType() == postgresql.PostgreSQLParserDISTINCT {
 							op.IsDistinct = true
 							i++ // Skip DISTINCT token
 						}
@@ -1623,16 +1622,16 @@ func (*querySpanExtractor) extractOperatorsFromSelectClause(selectClause pgparse
 				}
 				operators = append(operators, op)
 
-			case pgparser.PostgreSQLParserINTERSECT:
+			case postgresql.PostgreSQLParserINTERSECT:
 				op.Type = "INTERSECT"
 				op.IsDistinct = true // Default to DISTINCT
 				// Check for ALL/DISTINCT modifier
 				if i+1 < len(children) {
 					if nextToken, ok := children[i+1].(antlr.TerminalNode); ok {
-						if nextToken.GetSymbol().GetTokenType() == pgparser.PostgreSQLParserALL {
+						if nextToken.GetSymbol().GetTokenType() == postgresql.PostgreSQLParserALL {
 							op.IsDistinct = false
 							i++ // Skip ALL token
-						} else if nextToken.GetSymbol().GetTokenType() == pgparser.PostgreSQLParserDISTINCT {
+						} else if nextToken.GetSymbol().GetTokenType() == postgresql.PostgreSQLParserDISTINCT {
 							op.IsDistinct = true
 							i++ // Skip DISTINCT token
 						}
@@ -1665,10 +1664,10 @@ type SetOperator struct {
 // - recursivePart: The part after the last UNION/UNION ALL (the recursive query)
 // - recursiveOperator: The operator connecting the base to the recursive part (must be UNION [ALL])
 // Note: The recursive part must be connected with UNION [ALL], not EXCEPT or INTERSECT.
-func splitRecursiveCTEParts(selectNoParens pgparser.ISelect_no_parensContext) (
-	baseParts []pgparser.ISimple_select_intersectContext,
+func splitRecursiveCTEParts(selectNoParens postgresql.ISelect_no_parensContext) (
+	baseParts []postgresql.ISimple_select_intersectContext,
 	baseOperators []SetOperator,
-	recursivePart pgparser.ISimple_select_intersectContext,
+	recursivePart postgresql.ISimple_select_intersectContext,
 	recursiveOperator *SetOperator,
 	err error) {
 	if selectNoParens == nil || selectNoParens.Select_clause() == nil {
@@ -1700,7 +1699,7 @@ func splitRecursiveCTEParts(selectNoParens pgparser.ISelect_no_parensContext) (
 			var op SetOperator
 
 			switch tokenType {
-			case pgparser.PostgreSQLParserUNION:
+			case postgresql.PostgreSQLParserUNION:
 				op.Type = "UNION"
 				// Check if next token is ALL or DISTINCT
 				op.IsDistinct = true // Default to DISTINCT
@@ -1708,10 +1707,10 @@ func splitRecursiveCTEParts(selectNoParens pgparser.ISelect_no_parensContext) (
 					if nextToken, ok := children[i+1].(antlr.TerminalNode); ok {
 						nextType := nextToken.GetSymbol().GetTokenType()
 						switch nextType {
-						case pgparser.PostgreSQLParserALL:
+						case postgresql.PostgreSQLParserALL:
 							op.IsDistinct = false
 							i++
-						case pgparser.PostgreSQLParserDISTINCT:
+						case postgresql.PostgreSQLParserDISTINCT:
 							op.IsDistinct = true
 							i++
 						default:
@@ -1722,7 +1721,7 @@ func splitRecursiveCTEParts(selectNoParens pgparser.ISelect_no_parensContext) (
 				lastUnionIndex = partIndex
 				partIndex++
 
-			case pgparser.PostgreSQLParserEXCEPT:
+			case postgresql.PostgreSQLParserEXCEPT:
 				op.Type = "EXCEPT"
 				// Check if next token is ALL or DISTINCT
 				op.IsDistinct = true // Default to DISTINCT
@@ -1730,10 +1729,10 @@ func splitRecursiveCTEParts(selectNoParens pgparser.ISelect_no_parensContext) (
 					if nextToken, ok := children[i+1].(antlr.TerminalNode); ok {
 						nextType := nextToken.GetSymbol().GetTokenType()
 						switch nextType {
-						case pgparser.PostgreSQLParserALL:
+						case postgresql.PostgreSQLParserALL:
 							op.IsDistinct = false
 							i++
-						case pgparser.PostgreSQLParserDISTINCT:
+						case postgresql.PostgreSQLParserDISTINCT:
 							op.IsDistinct = true
 							i++
 						default:
@@ -1743,7 +1742,7 @@ func splitRecursiveCTEParts(selectNoParens pgparser.ISelect_no_parensContext) (
 				allOperators = append(allOperators, op)
 				partIndex++
 
-			case pgparser.PostgreSQLParserINTERSECT:
+			case postgresql.PostgreSQLParserINTERSECT:
 				op.Type = "INTERSECT"
 				// Check if next token is ALL or DISTINCT
 				op.IsDistinct = true // Default to DISTINCT
@@ -1751,10 +1750,10 @@ func splitRecursiveCTEParts(selectNoParens pgparser.ISelect_no_parensContext) (
 					if nextToken, ok := children[i+1].(antlr.TerminalNode); ok {
 						nextType := nextToken.GetSymbol().GetTokenType()
 						switch nextType {
-						case pgparser.PostgreSQLParserALL:
+						case postgresql.PostgreSQLParserALL:
 							op.IsDistinct = false
 							i++
-						case pgparser.PostgreSQLParserDISTINCT:
+						case postgresql.PostgreSQLParserDISTINCT:
 							op.IsDistinct = true
 							i++
 						default:
@@ -1792,7 +1791,7 @@ func splitRecursiveCTEParts(selectNoParens pgparser.ISelect_no_parensContext) (
 
 // extractTableSourceFromSimpleSelectIntersect processes a simple_select_intersect node and returns its table source.
 // This handles the INTERSECT operations between multiple simple_select_pramary nodes.
-func (q *querySpanExtractor) extractTableSourceFromSimpleSelectIntersect(simpleSelect pgparser.ISimple_select_intersectContext) (base.TableSource, error) {
+func (q *querySpanExtractor) extractTableSourceFromSimpleSelectIntersect(simpleSelect postgresql.ISimple_select_intersectContext) (base.TableSource, error) {
 	if simpleSelect == nil {
 		return nil, errors.New("nil simple_select_intersect")
 	}
@@ -1852,7 +1851,7 @@ func (q *querySpanExtractor) extractTableSourceFromSimpleSelectIntersect(simpleS
 
 // extractTableSourceFromSimpleSelectPrimary processes a simple_select_pramary node and returns its table source.
 // This is the basic building block of SELECT statements, containing the SELECT list, FROM clause, etc.
-func (q *querySpanExtractor) extractTableSourceFromSimpleSelectPrimary(primary pgparser.ISimple_select_pramaryContext) (base.TableSource, error) {
+func (q *querySpanExtractor) extractTableSourceFromSimpleSelectPrimary(primary postgresql.ISimple_select_pramaryContext) (base.TableSource, error) {
 	if primary == nil {
 		return nil, errors.New("nil simple_select_pramary")
 	}
@@ -1911,7 +1910,7 @@ func (q *querySpanExtractor) extractTableSourceFromSimpleSelectPrimary(primary p
 		}
 
 		// Process target list (SELECT items)
-		var targetListContext pgparser.ITarget_listContext
+		var targetListContext postgresql.ITarget_listContext
 		if primary.Opt_target_list() != nil {
 			targetListContext = primary.Opt_target_list().Target_list()
 		} else if primary.Target_list() != nil {
@@ -1953,7 +1952,7 @@ func (q *querySpanExtractor) extractTableSourceFromSimpleSelectPrimary(primary p
 }
 
 // extractTableSourceFromSelectWithParens handles SELECT statements wrapped in parentheses
-func (q *querySpanExtractor) extractTableSourceFromSelectWithParens(selectWithParens pgparser.ISelect_with_parensContext) (base.TableSource, error) {
+func (q *querySpanExtractor) extractTableSourceFromSelectWithParens(selectWithParens postgresql.ISelect_with_parensContext) (base.TableSource, error) {
 	if selectWithParens == nil {
 		return nil, errors.New("nil select_with_parens")
 	}
@@ -1972,7 +1971,7 @@ func (q *querySpanExtractor) extractTableSourceFromSelectWithParens(selectWithPa
 
 // mergeSimpleSelectIntersectsWithOperators combines multiple simple_select_intersect nodes with their respective operators.
 // This properly handles UNION, EXCEPT, INTERSECT with ALL/DISTINCT modifiers.
-func (q *querySpanExtractor) mergeSimpleSelectIntersectsWithOperators(parts []pgparser.ISimple_select_intersectContext, operators []SetOperator) (base.TableSource, error) {
+func (q *querySpanExtractor) mergeSimpleSelectIntersectsWithOperators(parts []postgresql.ISimple_select_intersectContext, operators []SetOperator) (base.TableSource, error) {
 	if len(parts) == 0 {
 		return nil, errors.New("no parts to merge")
 	}
@@ -2066,7 +2065,7 @@ func (*querySpanExtractor) applySetOperator(left, right base.TableSource, op Set
 }
 
 // extractTableSourceFromFromClause processes the FROM clause and returns all table sources
-func (q *querySpanExtractor) extractTableSourceFromFromClause(fromClause pgparser.IFrom_clauseContext) ([]base.TableSource, error) {
+func (q *querySpanExtractor) extractTableSourceFromFromClause(fromClause postgresql.IFrom_clauseContext) ([]base.TableSource, error) {
 	if fromClause == nil || fromClause.From_list() == nil {
 		return nil, nil
 	}
@@ -2085,7 +2084,7 @@ func (q *querySpanExtractor) extractTableSourceFromFromClause(fromClause pgparse
 }
 
 // extractTableSourceFromTableRef extracts table source from a table reference in FROM clause
-func (q *querySpanExtractor) extractTableSourceFromTableRef(tableRef pgparser.ITable_refContext) (base.TableSource, error) {
+func (q *querySpanExtractor) extractTableSourceFromTableRef(tableRef postgresql.ITable_refContext) (base.TableSource, error) {
 	if tableRef == nil {
 		return nil, errors.New("nil table_ref")
 	}
@@ -2235,7 +2234,7 @@ func (*querySpanExtractor) joinTableSources(left, right base.TableSource, natura
 }
 
 // extractTableSourceFromRelationExpr extracts table source from a relation expression (simple table)
-func (q *querySpanExtractor) extractTableSourceFromRelationExpr(relationExpr pgparser.IRelation_exprContext, aliasClause pgparser.IOpt_alias_clauseContext) (base.TableSource, error) {
+func (q *querySpanExtractor) extractTableSourceFromRelationExpr(relationExpr postgresql.IRelation_exprContext, aliasClause postgresql.IOpt_alias_clauseContext) (base.TableSource, error) {
 	if relationExpr == nil {
 		return nil, errors.New("nil relation_expr")
 	}
@@ -2304,7 +2303,7 @@ func (q *querySpanExtractor) extractTableSourceFromRelationExpr(relationExpr pgp
 	return tableSource, nil
 }
 
-func (q *querySpanExtractor) extractTableSourceFromUDF2(funcExprWindowless pgparser.IFunc_expr_windowlessContext, funcAlias pgparser.IFunc_alias_clauseContext) (base.TableSource, error) {
+func (q *querySpanExtractor) extractTableSourceFromUDF2(funcExprWindowless postgresql.IFunc_expr_windowlessContext, funcAlias postgresql.IFunc_alias_clauseContext) (base.TableSource, error) {
 	if funcExprWindowless == nil {
 		return nil, errors.New("nil func_expr_windowless")
 	}
@@ -2328,7 +2327,7 @@ func (q *querySpanExtractor) extractTableSourceFromUDF2(funcExprWindowless pgpar
 }
 
 // extractTableSourceFromFuncTable extracts table source from a function table
-func (q *querySpanExtractor) extractTableSourceFromFuncTable(funcTable pgparser.IFunc_tableContext, funcAlias pgparser.IFunc_alias_clauseContext) (base.TableSource, error) {
+func (q *querySpanExtractor) extractTableSourceFromFuncTable(funcTable postgresql.IFunc_tableContext, funcAlias postgresql.IFunc_alias_clauseContext) (base.TableSource, error) {
 	result := &base.PseudoTable{
 		Name:    "",
 		Columns: []base.QuerySpanResult{},
@@ -2447,7 +2446,7 @@ func applyAliasToTableSource(source base.TableSource, tableAliasName string, col
 	return pseudoTable, nil
 }
 
-func applyTableAliasClauseToTableSource(source base.TableSource, tableAlias pgparser.ITable_alias_clauseContext) (base.TableSource, error) {
+func applyTableAliasClauseToTableSource(source base.TableSource, tableAlias postgresql.ITable_alias_clauseContext) (base.TableSource, error) {
 	aliasName := ""
 	var colAliases []string
 
@@ -2466,7 +2465,7 @@ func applyTableAliasClauseToTableSource(source base.TableSource, tableAlias pgpa
 	return applyAliasToTableSource(source, aliasName, colAliases)
 }
 
-func applyAliasClauseToTableSource(source base.TableSource, aliasClause pgparser.IAlias_clauseContext) (base.TableSource, error) {
+func applyAliasClauseToTableSource(source base.TableSource, aliasClause postgresql.IAlias_clauseContext) (base.TableSource, error) {
 	if aliasClause == nil {
 		return source, nil
 	}
@@ -2490,7 +2489,7 @@ func applyAliasClauseToTableSource(source base.TableSource, aliasClause pgparser
 }
 
 // applyAliasToTableSource applies an alias to a table source
-func applyOptAliasClauseToTableSource(source base.TableSource, aliasClause pgparser.IOpt_alias_clauseContext) (base.TableSource, error) {
+func applyOptAliasClauseToTableSource(source base.TableSource, aliasClause postgresql.IOpt_alias_clauseContext) (base.TableSource, error) {
 	if aliasClause == nil || aliasClause.Table_alias_clause() == nil {
 		return source, nil
 	}
@@ -2498,7 +2497,7 @@ func applyOptAliasClauseToTableSource(source base.TableSource, aliasClause pgpar
 	return applyTableAliasClauseToTableSource(source, aliasClause.Table_alias_clause())
 }
 
-func applyFuncAliasClauseToTableSource(source base.TableSource, funcAlias pgparser.IFunc_alias_clauseContext) (base.TableSource, error) {
+func applyFuncAliasClauseToTableSource(source base.TableSource, funcAlias postgresql.IFunc_alias_clauseContext) (base.TableSource, error) {
 	if funcAlias == nil {
 		return source, nil
 	}
@@ -2526,7 +2525,7 @@ func applyFuncAliasClauseToTableSource(source base.TableSource, funcAlias pgpars
 
 // extractColumnsFromTargetList processes the SELECT target list and returns the result columns.
 // It handles *, table.*, column references, expressions, and aliases.
-func (q *querySpanExtractor) extractColumnsFromTargetList(targetList pgparser.ITarget_listContext, fromFieldList []base.TableSource) ([]base.QuerySpanResult, error) {
+func (q *querySpanExtractor) extractColumnsFromTargetList(targetList postgresql.ITarget_listContext, fromFieldList []base.TableSource) ([]base.QuerySpanResult, error) {
 	if targetList == nil {
 		return nil, nil
 	}
@@ -2535,15 +2534,15 @@ func (q *querySpanExtractor) extractColumnsFromTargetList(targetList pgparser.IT
 
 	for _, targetEl := range targetList.AllTarget_el() {
 		// Check if this is a star expansion
-		if _, ok := targetEl.(*pgparser.Target_starContext); ok {
+		if _, ok := targetEl.(*postgresql.Target_starContext); ok {
 			// Handle SELECT * or SELECT table.*
 			starColumns := q.handleStarExpansion(fromFieldList)
 			result = append(result, starColumns...)
 			continue
 		}
 
-		if _, ok := targetEl.(*pgparser.Target_columnrefContext); ok {
-			columns, err := q.getColumnsFromColumnRef(targetEl.(*pgparser.Target_columnrefContext).Columnref())
+		if _, ok := targetEl.(*postgresql.Target_columnrefContext); ok {
+			columns, err := q.getColumnsFromColumnRef(targetEl.(*postgresql.Target_columnrefContext).Columnref())
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to process column reference in target element")
 			}
@@ -2552,7 +2551,7 @@ func (q *querySpanExtractor) extractColumnsFromTargetList(targetList pgparser.IT
 		}
 
 		// Check if this is a labeled target (expression with optional alias)
-		if labelCtx, ok := targetEl.(*pgparser.Target_labelContext); ok {
+		if labelCtx, ok := targetEl.(*postgresql.Target_labelContext); ok {
 			column, err := q.handleTargetLabel(labelCtx)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to process target element")
@@ -2576,7 +2575,7 @@ func (*querySpanExtractor) handleStarExpansion(fromFieldList []base.TableSource)
 }
 
 // handleTargetLabel handles a labeled target element (expression with optional alias)
-func (q *querySpanExtractor) handleTargetLabel(labelCtx *pgparser.Target_labelContext) (base.QuerySpanResult, error) {
+func (q *querySpanExtractor) handleTargetLabel(labelCtx *postgresql.Target_labelContext) (base.QuerySpanResult, error) {
 	// Get the expression
 	expr := labelCtx.A_expr()
 	if expr == nil {
@@ -2616,7 +2615,7 @@ func (q *querySpanExtractor) handleTargetLabel(labelCtx *pgparser.Target_labelCo
 
 // getFieldNameFromAExpr attempts to extract a meaningful column name from an expression.
 // Returns "?column?" if no meaningful name can be derived.
-func (q *querySpanExtractor) getFieldNameFromAExpr(expr pgparser.IA_exprContext) string {
+func (q *querySpanExtractor) getFieldNameFromAExpr(expr postgresql.IA_exprContext) string {
 	if expr == nil {
 		return pgUnknownFieldName
 	}
@@ -2638,7 +2637,7 @@ func (q *querySpanExtractor) findColumnNameInExpression(node antlr.ParseTree) st
 	}
 
 	// Check if this is a column reference
-	if columnRef, ok := node.(pgparser.IColumnrefContext); ok {
+	if columnRef, ok := node.(postgresql.IColumnrefContext); ok {
 		// Get the column name from the columnref
 		if columnRef.Colid() != nil {
 			colName := NormalizePostgreSQLColid(columnRef.Colid())
@@ -2657,18 +2656,18 @@ func (q *querySpanExtractor) findColumnNameInExpression(node antlr.ParseTree) st
 	}
 
 	switch ctx := node.(type) {
-	case pgparser.IColumnrefContext:
+	case postgresql.IColumnrefContext:
 		if ctx.Colid() != nil {
 			return NormalizePostgreSQLColid(ctx.Colid())
 		}
-	case pgparser.IFunc_exprContext:
+	case postgresql.IFunc_exprContext:
 		// return the function name as the column name
 		_, funcName, _, err := q.extractFunctionElementFromFuncExpr(ctx)
 		if err == nil && funcName != "" {
 			return funcName
 		}
 		return pgUnknownFieldName
-	case pgparser.IFunc_expr_windowlessContext:
+	case postgresql.IFunc_expr_windowlessContext:
 		_, funcName, _, err := q.extractFunctionElementFromFuncExprWindowless(ctx)
 		if err == nil && funcName != "" {
 			return funcName
@@ -2693,7 +2692,7 @@ func (q *querySpanExtractor) findColumnNameInExpression(node antlr.ParseTree) st
 }
 
 // extractSourceColumnSetFromAExpr extracts source columns from an a_expr node
-func (q *querySpanExtractor) extractSourceColumnSetFromAExpr(expr pgparser.IA_exprContext) (base.SourceColumnSet, error) {
+func (q *querySpanExtractor) extractSourceColumnSetFromAExpr(expr postgresql.IA_exprContext) (base.SourceColumnSet, error) {
 	if expr == nil {
 		return base.SourceColumnSet{}, nil
 	}
@@ -2713,10 +2712,10 @@ func (q *querySpanExtractor) extractSourceColumnSetFromNode(node antlr.ParseTree
 
 	// Handle specific node types (similar to pg_query_go's switch statement)
 	switch ctx := node.(type) {
-	case pgparser.IColumnrefContext:
+	case postgresql.IColumnrefContext:
 		// Handle column reference directly
 		return q.getSourceColumnSetFromColumnRef(ctx)
-	case pgparser.IFunc_exprContext:
+	case postgresql.IFunc_exprContext:
 		// Handle function calls
 		// Process function arguments recursively
 		argsResult, err := q.extractSourceColumnSetFromFuncExpr(ctx)
@@ -2727,7 +2726,7 @@ func (q *querySpanExtractor) extractSourceColumnSetFromNode(node antlr.ParseTree
 			argsResult, _ = base.MergeSourceColumnSet(argsResult, udfResult)
 		}
 		return argsResult, nil
-	case pgparser.ISelect_with_parensContext:
+	case postgresql.ISelect_with_parensContext:
 		sourceColumnSet := make(base.SourceColumnSet)
 		// Subquery in SELECT fields is special.
 		// It can be the non-associated or associated subquery.
@@ -2775,7 +2774,7 @@ func (q *querySpanExtractor) extractSourceColumnSetFromNode(node antlr.ParseTree
 	return result, nil
 }
 
-func (q *querySpanExtractor) getColumnsFromColumnRef(ctx pgparser.IColumnrefContext) ([]base.QuerySpanResult, error) {
+func (q *querySpanExtractor) getColumnsFromColumnRef(ctx postgresql.IColumnrefContext) ([]base.QuerySpanResult, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -2887,7 +2886,7 @@ func (q *querySpanExtractor) getColumnsFromColumnRef(ctx pgparser.IColumnrefCont
 }
 
 // getSourceColumnSetFromColumnRef extracts source columns from a column reference.
-func (q *querySpanExtractor) getSourceColumnSetFromColumnRef(ctx pgparser.IColumnrefContext) (base.SourceColumnSet, error) {
+func (q *querySpanExtractor) getSourceColumnSetFromColumnRef(ctx postgresql.IColumnrefContext) (base.SourceColumnSet, error) {
 	if ctx == nil {
 		return base.SourceColumnSet{}, nil
 	}
@@ -2931,7 +2930,7 @@ func (q *querySpanExtractor) findTableInFromNew(tableName string) base.TableSour
 }
 
 // extractSourceColumnSetFromFuncExpr extracts source columns from a function expression
-func (q *querySpanExtractor) extractSourceColumnSetFromFuncExpr(funcExpr pgparser.IFunc_exprContext) (base.SourceColumnSet, error) {
+func (q *querySpanExtractor) extractSourceColumnSetFromFuncExpr(funcExpr postgresql.IFunc_exprContext) (base.SourceColumnSet, error) {
 	result := make(base.SourceColumnSet)
 
 	// Handle function application
@@ -2984,7 +2983,7 @@ func (q *querySpanExtractor) extractSourceColumnSetFromFuncExpr(funcExpr pgparse
 	return result, nil
 }
 
-func getSelectNoParensFromSelectStmt(selectstmt pgparser.ISelectstmtContext) pgparser.ISelect_no_parensContext {
+func getSelectNoParensFromSelectStmt(selectstmt postgresql.ISelectstmtContext) postgresql.ISelect_no_parensContext {
 	if selectstmt == nil {
 		return nil
 	}
@@ -3002,7 +3001,7 @@ func getSelectNoParensFromSelectStmt(selectstmt pgparser.ISelectstmtContext) pgp
 	return nil
 }
 
-func getSelectNoParensFromSelectWithParens(selectWithParens pgparser.ISelect_with_parensContext) pgparser.ISelect_no_parensContext {
+func getSelectNoParensFromSelectWithParens(selectWithParens postgresql.ISelect_with_parensContext) postgresql.ISelect_no_parensContext {
 	if selectWithParens == nil {
 		return nil
 	}
@@ -3020,7 +3019,7 @@ func getSelectNoParensFromSelectWithParens(selectWithParens pgparser.ISelect_wit
 	return nil
 }
 
-func (q *querySpanExtractor) extractSourceColumnSetFromUDF2(funcExpr pgparser.IFunc_exprContext) (base.SourceColumnSet, error) {
+func (q *querySpanExtractor) extractSourceColumnSetFromUDF2(funcExpr postgresql.IFunc_exprContext) (base.SourceColumnSet, error) {
 	schemaName, funcName, err := q.extractFunctionNameFromFuncExpr(funcExpr)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract function name")
@@ -3041,7 +3040,7 @@ func (q *querySpanExtractor) extractSourceColumnSetFromUDF2(funcExpr pgparser.IF
 	return result, nil
 }
 
-func (*querySpanExtractor) extractFunctionElementFromFuncExpr(funcExpr pgparser.IFunc_exprContext) (string, string, []antlr.ParseTree, error) {
+func (*querySpanExtractor) extractFunctionElementFromFuncExpr(funcExpr postgresql.IFunc_exprContext) (string, string, []antlr.ParseTree, error) {
 	args := getArgumentsFromFunctionExpr(funcExpr)
 	switch {
 	case funcExpr.Func_application() != nil:
@@ -3071,7 +3070,7 @@ func (*querySpanExtractor) extractFunctionElementFromFuncExpr(funcExpr pgparser.
 	return "", "", nil, errors.New("unable to extract function name")
 }
 
-func (*querySpanExtractor) extractFunctionElementFromFuncExprWindowless(funcExprWindowless pgparser.IFunc_expr_windowlessContext) (string, string, []antlr.ParseTree, error) {
+func (*querySpanExtractor) extractFunctionElementFromFuncExprWindowless(funcExprWindowless postgresql.IFunc_expr_windowlessContext) (string, string, []antlr.ParseTree, error) {
 	args := getArgumentsFromFunctionExprWindowless(funcExprWindowless)
 	switch {
 	case funcExprWindowless.Func_application() != nil:
@@ -3101,7 +3100,7 @@ func (*querySpanExtractor) extractFunctionElementFromFuncExprWindowless(funcExpr
 	return "", "", nil, errors.New("unable to extract function name")
 }
 
-func (*querySpanExtractor) extractFunctionNameFromFuncExpr(funcExpr pgparser.IFunc_exprContext) (string, string, error) {
+func (*querySpanExtractor) extractFunctionNameFromFuncExpr(funcExpr postgresql.IFunc_exprContext) (string, string, error) {
 	switch {
 	case funcExpr.Func_application() != nil:
 		funcName := funcExpr.Func_application().Func_name()
@@ -3142,7 +3141,7 @@ func (*querySpanExtractor) extractFunctionNameFromFuncExpr(funcExpr pgparser.IFu
 	return "", "", errors.New("unable to extract function name")
 }
 
-func (*querySpanExtractor) extractNFunctionArgsFromFuncExpr(funcExpr pgparser.IFunc_exprContext) int {
+func (*querySpanExtractor) extractNFunctionArgsFromFuncExpr(funcExpr postgresql.IFunc_exprContext) int {
 	if funcExpr == nil {
 		return 0
 	}
@@ -3337,7 +3336,7 @@ func (*querySpanExtractor) extractNFunctionArgsFromFuncExpr(funcExpr pgparser.IF
 	return 0
 }
 
-func getArgumentsFromFunctionExpr(funcExpr pgparser.IFunc_exprContext) []antlr.ParseTree {
+func getArgumentsFromFunctionExpr(funcExpr postgresql.IFunc_exprContext) []antlr.ParseTree {
 	var result []antlr.ParseTree
 	if funcExpr == nil {
 		return result
@@ -3376,7 +3375,7 @@ func getArgumentsFromFunctionExpr(funcExpr pgparser.IFunc_exprContext) []antlr.P
 		} else if f.POSITION() != nil {
 			if list := f.Position_list(); list != nil {
 				for _, child := range list.GetChildren() {
-					if expr, ok := child.(pgparser.IA_exprContext); ok {
+					if expr, ok := child.(postgresql.IA_exprContext); ok {
 						result = append(result, expr)
 					}
 				}
@@ -3471,7 +3470,7 @@ func getArgumentsFromFunctionExpr(funcExpr pgparser.IFunc_exprContext) []antlr.P
 	return result
 }
 
-func getArgumentsFromFunctionExprWindowless(funcExprWindowless pgparser.IFunc_expr_windowlessContext) []antlr.ParseTree {
+func getArgumentsFromFunctionExprWindowless(funcExprWindowless postgresql.IFunc_expr_windowlessContext) []antlr.ParseTree {
 	var result []antlr.ParseTree
 	if funcExprWindowless == nil {
 		return result
@@ -3510,7 +3509,7 @@ func getArgumentsFromFunctionExprWindowless(funcExprWindowless pgparser.IFunc_ex
 		} else if f.POSITION() != nil {
 			if list := f.Position_list(); list != nil {
 				for _, child := range list.GetChildren() {
-					if expr, ok := child.(pgparser.IA_exprContext); ok {
+					if expr, ok := child.(postgresql.IA_exprContext); ok {
 						result = append(result, expr)
 					}
 				}
@@ -3605,7 +3604,7 @@ func getArgumentsFromFunctionExprWindowless(funcExprWindowless pgparser.IFunc_ex
 	return result
 }
 
-func getArgumentsFromFuncArgList(funcArgList pgparser.IFunc_arg_listContext) []antlr.ParseTree {
+func getArgumentsFromFuncArgList(funcArgList postgresql.IFunc_arg_listContext) []antlr.ParseTree {
 	var result []antlr.ParseTree
 	if funcArgList == nil {
 		return result
@@ -3616,7 +3615,7 @@ func getArgumentsFromFuncArgList(funcArgList pgparser.IFunc_arg_listContext) []a
 	return result
 }
 
-func getArgumentsFromJSONNameAndValueList(jsonNameAndValueList pgparser.IJson_name_and_value_listContext) []antlr.ParseTree {
+func getArgumentsFromJSONNameAndValueList(jsonNameAndValueList postgresql.IJson_name_and_value_listContext) []antlr.ParseTree {
 	var result []antlr.ParseTree
 	if jsonNameAndValueList == nil {
 		return result
@@ -3627,7 +3626,7 @@ func getArgumentsFromJSONNameAndValueList(jsonNameAndValueList pgparser.IJson_na
 	return result
 }
 
-func getArgumentsFromJSONValueExprList(jsonValueExprList pgparser.IJson_value_expr_listContext) []antlr.ParseTree {
+func getArgumentsFromJSONValueExprList(jsonValueExprList postgresql.IJson_value_expr_listContext) []antlr.ParseTree {
 	var result []antlr.ParseTree
 	if jsonValueExprList == nil {
 		return result
@@ -3638,7 +3637,7 @@ func getArgumentsFromJSONValueExprList(jsonValueExprList pgparser.IJson_value_ex
 	return result
 }
 
-func (q *querySpanExtractor) extractTableSourceFromSystemFunctionNew(funcName string, args []antlr.ParseTree, alias pgparser.IFunc_alias_clauseContext) (base.TableSource, error) {
+func (q *querySpanExtractor) extractTableSourceFromSystemFunctionNew(funcName string, args []antlr.ParseTree, alias postgresql.IFunc_alias_clauseContext) (base.TableSource, error) {
 	switch strings.ToLower(funcName) {
 	case generateSeries:
 		// https://neon.com/postgresql/postgresql-tutorial/postgresql-generate_series
