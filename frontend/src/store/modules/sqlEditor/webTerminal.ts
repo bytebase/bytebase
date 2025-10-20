@@ -196,7 +196,6 @@ const createStreamingQueryController = () => {
         });
         events.emit("result", {
           error: "",
-          advices: [],
           ...response,
         });
       },
@@ -206,7 +205,6 @@ const createStreamingQueryController = () => {
         const result: SQLResultSetV1 = {
           error: extractGrpcErrorMessage(error),
           status: extractGrpcStatusCode(error),
-          advices: [],
           results: [],
         };
         if (result.status === Code.Aborted && !result.error) {

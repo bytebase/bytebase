@@ -554,9 +554,6 @@ func SQLReviewCheck(
 		}
 
 		ruleType := SQLReviewRuleType(rule.Type)
-		if !isRuleAllowed(ruleType, checkContext.ChangeType) {
-			continue
-		}
 
 		adviceList, err := Check(
 			ctx,

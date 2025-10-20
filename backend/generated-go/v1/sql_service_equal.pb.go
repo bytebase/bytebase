@@ -475,46 +475,6 @@ func (x *ExportResponse) Equal(y *ExportResponse) bool {
 	return true
 }
 
-func (x *CheckRequest) Equal(y *CheckRequest) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Name != y.Name {
-		return false
-	}
-	if x.Statement != y.Statement {
-		return false
-	}
-	if x.ChangeType != y.ChangeType {
-		return false
-	}
-	return true
-}
-
-func (x *CheckResponse) Equal(y *CheckResponse) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if len(x.Advices) != len(y.Advices) {
-		return false
-	}
-	for i := 0; i < len(x.Advices); i++ {
-		if !x.Advices[i].Equal(y.Advices[i]) {
-			return false
-		}
-	}
-	if x.AffectedRows != y.AffectedRows {
-		return false
-	}
-	return true
-}
-
 func (x *DiffMetadataRequest) Equal(y *DiffMetadataRequest) bool {
 	if x == y {
 		return true

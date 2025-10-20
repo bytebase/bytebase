@@ -7600,33 +7600,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v1/sql/check:
-        post:
-            tags:
-                - SQLService
-            description: |-
-                Validates SQL statements against review rules.
-                 Permissions required: bb.databases.check
-            operationId: SQLService_Check
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/CheckRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/CheckResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
     /v1/subscription:
         get:
             tags:
@@ -9574,37 +9547,6 @@ components:
                     description: The risk level of the statement on the target.
                     format: enum
             description: Check result for a single release file on a target database.
-        CheckRequest:
-            required:
-                - name
-            type: object
-            properties:
-                name:
-                    type: string
-                    description: |-
-                        The database name to check against.
-                         Format: instances/{instance}/databases/{database}
-                statement:
-                    type: string
-                changeType:
-                    enum:
-                        - CHANGE_TYPE_UNSPECIFIED
-                        - DDL
-                        - DDL_GHOST
-                        - DML
-                        - SQL_EDITOR
-                    type: string
-                    format: enum
-        CheckResponse:
-            type: object
-            properties:
-                advices:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/Advice'
-                affectedRows:
-                    type: string
-                    description: The count of affected rows of the statement on the target database.
         ColumnCatalog:
             type: object
             properties:

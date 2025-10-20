@@ -42,7 +42,6 @@ const overrideAppFeatures = (
       "bb.feature.hide-quick-start": true,
       "bb.feature.hide-help": true,
       "bb.feature.hide-trial": true,
-      "bb.feature.sql-editor.sql-check-style": "PREFLIGHT",
     });
   }
 };

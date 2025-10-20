@@ -3379,7 +3379,6 @@ Note: DDL, DML, and DDL_GHOST values align with MigrationType enum values.
 | DML | 2 |  |
 | SDL | 3 |  |
 | DDL_GHOST | 4 |  |
-| SQL_EDITOR | 5 |  |
 
 
  

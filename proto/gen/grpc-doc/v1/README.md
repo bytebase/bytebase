@@ -438,8 +438,6 @@
     - [AdminExecuteRequest](#bytebase-v1-AdminExecuteRequest)
     - [AdminExecuteResponse](#bytebase-v1-AdminExecuteResponse)
     - [Advice](#bytebase-v1-Advice)
-    - [CheckRequest](#bytebase-v1-CheckRequest)
-    - [CheckResponse](#bytebase-v1-CheckResponse)
     - [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest)
     - [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse)
     - [ExportRequest](#bytebase-v1-ExportRequest)
@@ -460,7 +458,6 @@
     - [SearchQueryHistoriesResponse](#bytebase-v1-SearchQueryHistoriesResponse)
   
     - [Advice.Level](#bytebase-v1-Advice-Level)
-    - [CheckRequest.ChangeType](#bytebase-v1-CheckRequest-ChangeType)
     - [QueryHistory.Type](#bytebase-v1-QueryHistory-Type)
     - [QueryOption.RedisRunCommandsOn](#bytebase-v1-QueryOption-RedisRunCommandsOn)
     - [QueryResult.Message.Level](#bytebase-v1-QueryResult-Message-Level)
@@ -7317,39 +7314,6 @@ OrgPolicyService manages organizational policies at various resource levels.
 
 
 
-<a name="bytebase-v1-CheckRequest"></a>
-
-### CheckRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The database name to check against. Format: instances/{instance}/databases/{database} |
-| statement | [string](#string) |  |  |
-| change_type | [CheckRequest.ChangeType](#bytebase-v1-CheckRequest-ChangeType) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-CheckResponse"></a>
-
-### CheckResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| advices | [Advice](#bytebase-v1-Advice) | repeated |  |
-| affected_rows | [int64](#int64) |  | The count of affected rows of the statement on the target database. |
-
-
-
-
-
-
 <a name="bytebase-v1-DiffMetadataRequest"></a>
 
 ### DiffMetadataRequest
@@ -7719,21 +7683,6 @@ Level represents the severity level of the advice.
 
 
 
-<a name="bytebase-v1-CheckRequest-ChangeType"></a>
-
-### CheckRequest.ChangeType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| CHANGE_TYPE_UNSPECIFIED | 0 |  |
-| DDL | 1 |  |
-| DDL_GHOST | 2 |  |
-| DML | 3 |  |
-| SQL_EDITOR | 4 |  |
-
-
-
 <a name="bytebase-v1-QueryHistory-Type"></a>
 
 ### QueryHistory.Type
@@ -7792,7 +7741,6 @@ SQLService executes SQL queries and manages query operations.
 | AdminExecute | [AdminExecuteRequest](#bytebase-v1-AdminExecuteRequest) stream | [AdminExecuteResponse](#bytebase-v1-AdminExecuteResponse) stream | Executes SQL with admin privileges via streaming connection. Permissions required: bb.sql.admin |
 | SearchQueryHistories | [SearchQueryHistoriesRequest](#bytebase-v1-SearchQueryHistoriesRequest) | [SearchQueryHistoriesResponse](#bytebase-v1-SearchQueryHistoriesResponse) | SearchQueryHistories searches query histories for the caller. Permissions required: None (only returns caller&#39;s own query histories) |
 | Export | [ExportRequest](#bytebase-v1-ExportRequest) | [ExportResponse](#bytebase-v1-ExportResponse) | Exports query results to a file format. Permissions required: bb.databases.get |
-| Check | [CheckRequest](#bytebase-v1-CheckRequest) | [CheckResponse](#bytebase-v1-CheckResponse) | Validates SQL statements against review rules. Permissions required: bb.databases.check |
 | DiffMetadata | [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest) | [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse) | Computes schema differences between two database metadata. Permissions required: None |
 | AICompletion | [AICompletionRequest](#bytebase-v1-AICompletionRequest) | [AICompletionResponse](#bytebase-v1-AICompletionResponse) | Provides AI-powered SQL completion and generation. Permissions required: None (authenticated users only, requires AI to be enabled) |
 

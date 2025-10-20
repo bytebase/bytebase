@@ -1,4 +1,3 @@
-import { create as createProto } from "@bufbuild/protobuf";
 import { Code, ConnectError, createContextValues } from "@connectrpc/connect";
 import { defineStore } from "pinia";
 import { sqlServiceClientConnect } from "@/grpcweb";
@@ -7,39 +6,11 @@ import {
   ignoredCodesContextKey,
 } from "@/grpcweb/context-key";
 import type { SQLResultSetV1 } from "@/types";
-import { PlanCheckRun_ResultSchema } from "@/types/proto-es/v1/plan_service_pb";
 import type {
   ExportRequest,
   QueryRequest,
 } from "@/types/proto-es/v1/sql_service_pb";
-import {
-  type Advice,
-  AdviceSchema,
-  Advice_Level,
-} from "@/types/proto-es/v1/sql_service_pb";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
-
-export const getSqlReviewReports = (err: unknown): Advice[] => {
-  const advices: Advice[] = [];
-  if (err instanceof ConnectError) {
-    for (const report of err.findDetails(PlanCheckRun_ResultSchema)) {
-      const startPosition =
-        report.report.case === "sqlReviewReport"
-          ? report.report.value.startPosition
-          : undefined;
-      advices.push(
-        createProto(AdviceSchema, {
-          status: Advice_Level.ERROR,
-          code: report.code,
-          title: report.title || "SQL Review Failed",
-          content: report.content,
-          startPosition: startPosition,
-        })
-      );
-    }
-  }
-  return advices;
-};
 
 export const useSQLStore = defineStore("sql", () => {
   const query = async (
@@ -57,14 +28,12 @@ export const useSQLStore = defineStore("sql", () => {
       });
       return {
         error: "",
-        advices: [],
         results: newResponse.results,
       };
     } catch (err) {
       return {
         error: extractGrpcErrorMessage(err),
         results: [],
-        advices: getSqlReviewReports(err),
         status: err instanceof ConnectError ? err.code : Code.Unknown,
       };
     }

@@ -503,7 +503,7 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 	}
 
 	dbMetadata := dbSchema.GetMetadata()
-	useDatabaseOwner, err := getUseDatabaseOwner(ctx, s.store, instance, database, changeType)
+	useDatabaseOwner, err := getUseDatabaseOwner(ctx, s.store, instance, database)
 	if err != nil {
 		return storepb.Advice_ERROR, nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get use database owner"))
 	}

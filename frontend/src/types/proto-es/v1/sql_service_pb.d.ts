@@ -920,93 +920,6 @@ export declare type ExportResponse = Message<"bytebase.v1.ExportResponse"> & {
 export declare const ExportResponseSchema: GenMessage<ExportResponse>;
 
 /**
- * @generated from message bytebase.v1.CheckRequest
- */
-export declare type CheckRequest = Message<"bytebase.v1.CheckRequest"> & {
-  /**
-   * The database name to check against.
-   * Format: instances/{instance}/databases/{database}
-   *
-   * @generated from field: string name = 2;
-   */
-  name: string;
-
-  /**
-   * @generated from field: string statement = 1;
-   */
-  statement: string;
-
-  /**
-   * @generated from field: bytebase.v1.CheckRequest.ChangeType change_type = 4;
-   */
-  changeType: CheckRequest_ChangeType;
-};
-
-/**
- * Describes the message bytebase.v1.CheckRequest.
- * Use `create(CheckRequestSchema)` to create a new message.
- */
-export declare const CheckRequestSchema: GenMessage<CheckRequest>;
-
-/**
- * @generated from enum bytebase.v1.CheckRequest.ChangeType
- */
-export enum CheckRequest_ChangeType {
-  /**
-   * @generated from enum value: CHANGE_TYPE_UNSPECIFIED = 0;
-   */
-  CHANGE_TYPE_UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: DDL = 1;
-   */
-  DDL = 1,
-
-  /**
-   * @generated from enum value: DDL_GHOST = 2;
-   */
-  DDL_GHOST = 2,
-
-  /**
-   * @generated from enum value: DML = 3;
-   */
-  DML = 3,
-
-  /**
-   * @generated from enum value: SQL_EDITOR = 4;
-   */
-  SQL_EDITOR = 4,
-}
-
-/**
- * Describes the enum bytebase.v1.CheckRequest.ChangeType.
- */
-export declare const CheckRequest_ChangeTypeSchema: GenEnum<CheckRequest_ChangeType>;
-
-/**
- * @generated from message bytebase.v1.CheckResponse
- */
-export declare type CheckResponse = Message<"bytebase.v1.CheckResponse"> & {
-  /**
-   * @generated from field: repeated bytebase.v1.Advice advices = 1;
-   */
-  advices: Advice[];
-
-  /**
-   * The count of affected rows of the statement on the target database.
-   *
-   * @generated from field: int64 affected_rows = 2;
-   */
-  affectedRows: bigint;
-};
-
-/**
- * Describes the message bytebase.v1.CheckResponse.
- * Use `create(CheckResponseSchema)` to create a new message.
- */
-export declare const CheckResponseSchema: GenMessage<CheckResponse>;
-
-/**
  * @generated from message bytebase.v1.DiffMetadataRequest
  */
 export declare type DiffMetadataRequest = Message<"bytebase.v1.DiffMetadataRequest"> & {
@@ -1397,17 +1310,6 @@ export declare const SQLService: GenService<{
     methodKind: "unary";
     input: typeof ExportRequestSchema;
     output: typeof ExportResponseSchema;
-  },
-  /**
-   * Validates SQL statements against review rules.
-   * Permissions required: bb.databases.check
-   *
-   * @generated from rpc bytebase.v1.SQLService.Check
-   */
-  check: {
-    methodKind: "unary";
-    input: typeof CheckRequestSchema;
-    output: typeof CheckResponseSchema;
   },
   /**
    * Computes schema differences between two database metadata.
