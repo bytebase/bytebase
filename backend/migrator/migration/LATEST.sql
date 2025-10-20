@@ -109,7 +109,7 @@ CREATE TABLE project_webhook (
     id serial PRIMARY KEY,
     project text NOT NULL REFERENCES project(resource_id),
     -- Enum name from ProjectWebhook.Type (proto/store/store/project_webhook.proto)
-    type text NOT NULL,
+    type text NOT NULL CHECK (type IN ('SLACK', 'DISCORD', 'TEAMS', 'DINGTALK', 'FEISHU', 'WECOM', 'LARK')),
     name text NOT NULL,
     url text NOT NULL,
     -- Array of enum names from Activity.Type (proto/store/store/project_webhook.proto)

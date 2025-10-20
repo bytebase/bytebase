@@ -1,3 +1,6 @@
+-- Drop the old check constraint that enforces "bb.plugin.webhook.*" format
+ALTER TABLE project_webhook DROP CONSTRAINT IF EXISTS project_webhook_type_check;
+
 -- Convert webhook type from "bb.plugin.webhook.*" format to enum names
 UPDATE project_webhook SET type = 'SLACK' WHERE type = 'bb.plugin.webhook.slack';
 UPDATE project_webhook SET type = 'DISCORD' WHERE type = 'bb.plugin.webhook.discord';
@@ -6,6 +9,10 @@ UPDATE project_webhook SET type = 'DINGTALK' WHERE type = 'bb.plugin.webhook.din
 UPDATE project_webhook SET type = 'FEISHU' WHERE type = 'bb.plugin.webhook.feishu';
 UPDATE project_webhook SET type = 'WECOM' WHERE type = 'bb.plugin.webhook.wecom';
 UPDATE project_webhook SET type = 'LARK' WHERE type = 'bb.plugin.webhook.lark';
+
+-- Add new check constraint for enum names
+ALTER TABLE project_webhook ADD CONSTRAINT project_webhook_type_check
+    CHECK (type IN ('SLACK', 'DISCORD', 'TEAMS', 'DINGTALK', 'FEISHU', 'WECOM', 'LARK'));
 
 -- Convert event_list from "bb.webhook.event.*" format to enum names
 UPDATE project_webhook
