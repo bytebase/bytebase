@@ -3881,6 +3881,10 @@ Activity types for webhook notifications.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| type | [ProjectWebhook.Type](#bytebase-store-ProjectWebhook-Type) |  | Webhook type. |
+| title | [string](#string) |  | Webhook title. |
+| url | [string](#string) |  | Webhook URL. |
+| activities | [Activity.Type](#bytebase-store-Activity-Type) | repeated | List of activities that trigger this webhook. |
 | direct_message | [bool](#bool) |  | If direct_message is set, the notification is sent directly to the persons and url will be ignored. IM integration setting should be set for this function to work. |
 
 

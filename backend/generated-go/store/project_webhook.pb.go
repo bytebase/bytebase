@@ -217,10 +217,18 @@ func (*Activity) Descriptor() ([]byte, []int) {
 
 type ProjectWebhook struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
+	// Webhook type.
+	Type ProjectWebhook_Type `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.store.ProjectWebhook_Type" json:"type,omitempty"`
+	// Webhook title.
+	Title string `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	// Webhook URL.
+	Url string `protobuf:"bytes,3,opt,name=url,proto3" json:"url,omitempty"`
+	// List of activities that trigger this webhook.
+	Activities []Activity_Type `protobuf:"varint,4,rep,packed,name=activities,proto3,enum=bytebase.store.Activity_Type" json:"activities,omitempty"`
 	// If direct_message is set, the notification is sent directly
 	// to the persons and url will be ignored.
 	// IM integration setting should be set for this function to work.
-	DirectMessage bool `protobuf:"varint,1,opt,name=direct_message,json=directMessage,proto3" json:"direct_message,omitempty"`
+	DirectMessage bool `protobuf:"varint,5,opt,name=direct_message,json=directMessage,proto3" json:"direct_message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -255,6 +263,34 @@ func (*ProjectWebhook) Descriptor() ([]byte, []int) {
 	return file_store_project_webhook_proto_rawDescGZIP(), []int{1}
 }
 
+func (x *ProjectWebhook) GetType() ProjectWebhook_Type {
+	if x != nil {
+		return x.Type
+	}
+	return ProjectWebhook_TYPE_UNSPECIFIED
+}
+
+func (x *ProjectWebhook) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *ProjectWebhook) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+func (x *ProjectWebhook) GetActivities() []Activity_Type {
+	if x != nil {
+		return x.Activities
+	}
+	return nil
+}
+
 func (x *ProjectWebhook) GetDirectMessage() bool {
 	if x != nil {
 		return x.DirectMessage
@@ -278,9 +314,15 @@ const file_store_project_webhook_proto_rawDesc = "" +
 	"\x13ISSUE_STATUS_UPDATE\x10\x04\x12\x19\n" +
 	"\x15ISSUE_APPROVAL_NOTIFY\x10\x15\x12&\n" +
 	"\"ISSUE_PIPELINE_STAGE_STATUS_UPDATE\x10\x05\x12)\n" +
-	"%ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE\x10\x16\"\xa7\x01\n" +
-	"\x0eProjectWebhook\x12%\n" +
-	"\x0edirect_message\x18\x01 \x01(\bR\rdirectMessage\"n\n" +
+	"%ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE\x10\x16\"\xc7\x02\n" +
+	"\x0eProjectWebhook\x127\n" +
+	"\x04type\x18\x01 \x01(\x0e2#.bytebase.store.ProjectWebhook.TypeR\x04type\x12\x14\n" +
+	"\x05title\x18\x02 \x01(\tR\x05title\x12\x10\n" +
+	"\x03url\x18\x03 \x01(\tR\x03url\x12=\n" +
+	"\n" +
+	"activities\x18\x04 \x03(\x0e2\x1d.bytebase.store.Activity.TypeR\n" +
+	"activities\x12%\n" +
+	"\x0edirect_message\x18\x05 \x01(\bR\rdirectMessage\"n\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05SLACK\x10\x01\x12\v\n" +
@@ -313,11 +355,13 @@ var file_store_project_webhook_proto_goTypes = []any{
 	(*ProjectWebhook)(nil),   // 3: bytebase.store.ProjectWebhook
 }
 var file_store_project_webhook_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	1, // 0: bytebase.store.ProjectWebhook.type:type_name -> bytebase.store.ProjectWebhook.Type
+	0, // 1: bytebase.store.ProjectWebhook.activities:type_name -> bytebase.store.Activity.Type
+	2, // [2:2] is the sub-list for method output_type
+	2, // [2:2] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_store_project_webhook_proto_init() }

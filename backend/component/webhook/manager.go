@@ -329,17 +329,17 @@ func (m *Manager) postWebhookList(ctx context.Context, webhookCtx *webhook.Conte
 
 	for _, hook := range webhookList {
 		webhookCtx := *webhookCtx
-		webhookCtx.URL = hook.URL
+		webhookCtx.URL = hook.Payload.GetUrl()
 		webhookCtx.CreatedTS = time.Now().Unix()
 		webhookCtx.DirectMessage = hook.Payload.GetDirectMessage()
 		go func(webhookCtx *webhook.Context, hook *store.ProjectWebhookMessage) {
 			if err := common.Retry(ctx, func() error {
-				return webhook.Post(hook.Type, *webhookCtx)
+				return webhook.Post(hook.Payload.GetType(), *webhookCtx)
 			}); err != nil {
 				// The external webhook endpoint might be invalid which is out of our code control, so we just emit a warning
 				slog.Warn("Failed to post webhook event on activity",
-					slog.String("webhook type", hook.Type.String()),
-					slog.String("webhook name", hook.Title),
+					slog.String("webhook type", hook.Payload.GetType().String()),
+					slog.String("webhook name", hook.Payload.GetTitle()),
 					slog.String("activity type", webhookCtx.EventType),
 					slog.String("title", webhookCtx.Title),
 					log.BBError(err))
