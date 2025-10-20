@@ -602,6 +602,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.DatabaseSDLSchema"><span class="badge">M</span>DatabaseSDLSchema</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.DatabaseSchema"><span class="badge">M</span>DatabaseSchema</a>
                 </li>
               
@@ -667,6 +671,10 @@
               
                 <li>
                   <a href="#bytebase.v1.GetDatabaseRequest"><span class="badge">M</span>GetDatabaseRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.GetDatabaseSDLSchemaRequest"><span class="badge">M</span>GetDatabaseSDLSchemaRequest</a>
                 </li>
               
                 <li>
@@ -796,6 +804,10 @@
               
                 <li>
                   <a href="#bytebase.v1.GenerationMetadata.Type"><span class="badge">E</span>GenerationMetadata.Type</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.GetDatabaseSDLSchemaRequest.SDLFormat"><span class="badge">E</span>GetDatabaseSDLSchemaRequest.SDLFormat</a>
                 </li>
               
                 <li>
@@ -7176,6 +7188,43 @@ Format: instances/{instance}/databases/{database}/metadata </p></td>
 
         
       
+        <h3 id="bytebase.v1.DatabaseSDLSchema">DatabaseSDLSchema</h3>
+        <p>DatabaseSDLSchema contains the schema in SDL format.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>schema</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>The SDL schema content.
+- For SINGLE_FILE format: contains the complete SDL schema as a text string.
+- For MULTI_FILE format: contains the ZIP archive as binary data. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>content_type</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The MIME type of the schema content.
+Indicates how the client should interpret the schema field.
+Examples:
+- &#34;text/plain; charset=utf-8&#34; for SINGLE_FILE format
+- &#34;application/zip&#34; for MULTI_FILE format </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.DatabaseSchema">DatabaseSchema</h3>
         <p>DatabaseSchema is the metadata for databases.</p>
 
@@ -7927,6 +7976,38 @@ Default 0, means no limit. </p></td>
                   <td></td>
                   <td><p>The name of the database to retrieve.
 Format: instances/{instance}/databases/{database} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.GetDatabaseSDLSchemaRequest">GetDatabaseSDLSchemaRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the database to retrieve SDL schema.
+Format: instances/{instance}/databases/{database}/sdlSchema </p></td>
+                </tr>
+              
+                <tr>
+                  <td>format</td>
+                  <td><a href="#bytebase.v1.GetDatabaseSDLSchemaRequest.SDLFormat">GetDatabaseSDLSchemaRequest.SDLFormat</a></td>
+                  <td></td>
+                  <td><p>The format of the SDL schema output. </p></td>
                 </tr>
               
             </tbody>
@@ -9922,6 +10003,36 @@ The API will default to the BASIC view.</p></td>
           </tbody>
         </table>
       
+        <h3 id="bytebase.v1.GetDatabaseSDLSchemaRequest.SDLFormat">GetDatabaseSDLSchemaRequest.SDLFormat</h3>
+        <p>SDLFormat specifies the output format for SDL schema.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>SDL_FORMAT_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p>Unspecified format. Defaults to SINGLE_FILE.</p></td>
+              </tr>
+            
+              <tr>
+                <td>SINGLE_FILE</td>
+                <td>1</td>
+                <td><p>Single file format: returns the complete SDL schema as a single file.</p></td>
+              </tr>
+            
+              <tr>
+                <td>MULTI_FILE</td>
+                <td>2</td>
+                <td><p>Multi-file format: returns the SDL schema as a ZIP archive containing
+multiple files organized by schema objects (tables, views, functions, etc.).</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
         <h3 id="bytebase.v1.GetSchemaStringRequest.ObjectType">GetSchemaStringRequest.ObjectType</h3>
         <p></p>
         <table class="enum-table">
@@ -10224,6 +10335,14 @@ Permissions required: bb.databases.getSchema</p></td>
               </tr>
             
               <tr>
+                <td>GetDatabaseSDLSchema</td>
+                <td><a href="#bytebase.v1.GetDatabaseSDLSchemaRequest">GetDatabaseSDLSchemaRequest</a></td>
+                <td><a href="#bytebase.v1.DatabaseSDLSchema">DatabaseSDLSchema</a></td>
+                <td><p>Retrieves database schema in SDL (Schema Definition Language) format.
+Permissions required: bb.databases.getSchema</p></td>
+              </tr>
+            
+              <tr>
                 <td>DiffSchema</td>
                 <td><a href="#bytebase.v1.DiffSchemaRequest">DiffSchemaRequest</a></td>
                 <td><a href="#bytebase.v1.DiffSchemaResponse">DiffSchemaResponse</a></td>
@@ -10380,6 +10499,16 @@ Permissions required: bb.databases.getSchema</p></td>
                 <td>GetDatabaseSchema</td>
                 <td>GET</td>
                 <td>/v1/{name=instances/*/databases/*/schema}</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>GetDatabaseSDLSchema</td>
+                <td>GET</td>
+                <td>/v1/{name=instances/*/databases/*/sdlSchema}</td>
                 <td></td>
               </tr>
               
