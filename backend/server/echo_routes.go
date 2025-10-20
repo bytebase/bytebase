@@ -110,7 +110,7 @@ func securityHeadersMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		"script-src 'self' " + strings.Join(scriptHashes, " ") + " 'wasm-unsafe-eval'; " +
 		"style-src 'self' 'unsafe-inline'; " +
 		"img-src 'self' data: blob:; " +
-		"connect-src 'self' data: ws: wss:; " +
+		"connect-src 'self' data: ws: wss: https://api.github.com; " +
 		"font-src 'self'; " +
 		"object-src 'none'; " +
 		"base-uri 'self'; " +
