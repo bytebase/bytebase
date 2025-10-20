@@ -1,0 +1,35 @@
+- statement: SELECT 1
+  changeType: 1
+  want:
+    - status: 2
+      code: 0
+      title: Hello World Test
+      content: hello world
+      startposition:
+        line: 0
+        column: 0
+      endposition: null
+- statement: ""
+  changeType: 1
+  want:
+    - status: 2
+      code: 0
+      title: Hello World Test
+      content: hello world
+      startposition:
+        line: 0
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE test(id int);
+    INSERT INTO test VALUES (1);
+  changeType: 1
+  want:
+    - status: 2
+      code: 0
+      title: Hello World Test
+      content: hello world
+      startposition:
+        line: 0
+        column: 0
+      endposition: null
