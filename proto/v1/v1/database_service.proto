@@ -114,6 +114,14 @@ service DatabaseService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Retrieves database schema in SDL (Schema Definition Language) format.
+  // Permissions required: bb.databases.getSchema
+  rpc GetDatabaseSDLSchema(GetDatabaseSDLSchemaRequest) returns (DatabaseSDLSchema) {
+    option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/sdlSchema}"};
+    option (bytebase.v1.permission) = "bb.databases.getSchema";
+    option (bytebase.v1.auth_method) = IAM;
+  }
+
   // Compares and generates migration statements between two schemas.
   // Permissions required: bb.databases.get
   rpc DiffSchema(DiffSchemaRequest) returns (DiffSchemaResponse) {
@@ -356,6 +364,31 @@ message GetDatabaseSchemaRequest {
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/DatabaseSchema"}
   ];
+}
+
+message GetDatabaseSDLSchemaRequest {
+  // The name of the database to retrieve SDL schema.
+  // Format: instances/{instance}/databases/{database}/sdlSchema
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Database"}
+  ];
+
+  // SDLFormat specifies the output format for SDL schema.
+  enum SDLFormat {
+    // Unspecified format. Defaults to SINGLE_FILE.
+    SDL_FORMAT_UNSPECIFIED = 0;
+
+    // Single file format: returns the complete SDL schema as a single file.
+    SINGLE_FILE = 1;
+
+    // Multi-file format: returns the SDL schema as a ZIP archive containing
+    // multiple files organized by schema objects (tables, views, functions, etc.).
+    MULTI_FILE = 2;
+  }
+
+  // The format of the SDL schema output.
+  SDLFormat format = 2;
 }
 
 message DiffSchemaRequest {
@@ -1303,6 +1336,21 @@ message ForeignKeyMetadata {
 message DatabaseSchema {
   // The schema dump from database.
   string schema = 1;
+}
+
+// DatabaseSDLSchema contains the schema in SDL format.
+message DatabaseSDLSchema {
+  // The SDL schema content.
+  // - For SINGLE_FILE format: contains the complete SDL schema as a text string.
+  // - For MULTI_FILE format: contains the ZIP archive as binary data.
+  bytes schema = 1;
+
+  // The MIME type of the schema content.
+  // Indicates how the client should interpret the schema field.
+  // Examples:
+  // - "text/plain; charset=utf-8" for SINGLE_FILE format
+  // - "application/zip" for MULTI_FILE format
+  string content_type = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message ChangedResources {

@@ -413,6 +413,66 @@ export declare type GetDatabaseSchemaRequest = Message<"bytebase.v1.GetDatabaseS
 export declare const GetDatabaseSchemaRequestSchema: GenMessage<GetDatabaseSchemaRequest>;
 
 /**
+ * @generated from message bytebase.v1.GetDatabaseSDLSchemaRequest
+ */
+export declare type GetDatabaseSDLSchemaRequest = Message<"bytebase.v1.GetDatabaseSDLSchemaRequest"> & {
+  /**
+   * The name of the database to retrieve SDL schema.
+   * Format: instances/{instance}/databases/{database}/sdlSchema
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * The format of the SDL schema output.
+   *
+   * @generated from field: bytebase.v1.GetDatabaseSDLSchemaRequest.SDLFormat format = 2;
+   */
+  format: GetDatabaseSDLSchemaRequest_SDLFormat;
+};
+
+/**
+ * Describes the message bytebase.v1.GetDatabaseSDLSchemaRequest.
+ * Use `create(GetDatabaseSDLSchemaRequestSchema)` to create a new message.
+ */
+export declare const GetDatabaseSDLSchemaRequestSchema: GenMessage<GetDatabaseSDLSchemaRequest>;
+
+/**
+ * SDLFormat specifies the output format for SDL schema.
+ *
+ * @generated from enum bytebase.v1.GetDatabaseSDLSchemaRequest.SDLFormat
+ */
+export enum GetDatabaseSDLSchemaRequest_SDLFormat {
+  /**
+   * Unspecified format. Defaults to SINGLE_FILE.
+   *
+   * @generated from enum value: SDL_FORMAT_UNSPECIFIED = 0;
+   */
+  SDL_FORMAT_UNSPECIFIED = 0,
+
+  /**
+   * Single file format: returns the complete SDL schema as a single file.
+   *
+   * @generated from enum value: SINGLE_FILE = 1;
+   */
+  SINGLE_FILE = 1,
+
+  /**
+   * Multi-file format: returns the SDL schema as a ZIP archive containing
+   * multiple files organized by schema objects (tables, views, functions, etc.).
+   *
+   * @generated from enum value: MULTI_FILE = 2;
+   */
+  MULTI_FILE = 2,
+}
+
+/**
+ * Describes the enum bytebase.v1.GetDatabaseSDLSchemaRequest.SDLFormat.
+ */
+export declare const GetDatabaseSDLSchemaRequest_SDLFormatSchema: GenEnum<GetDatabaseSDLSchemaRequest_SDLFormat>;
+
+/**
  * @generated from message bytebase.v1.DiffSchemaRequest
  */
 export declare type DiffSchemaRequest = Message<"bytebase.v1.DiffSchemaRequest"> & {
@@ -2820,6 +2880,39 @@ export declare type DatabaseSchema = Message<"bytebase.v1.DatabaseSchema"> & {
 export declare const DatabaseSchemaSchema: GenMessage<DatabaseSchema>;
 
 /**
+ * DatabaseSDLSchema contains the schema in SDL format.
+ *
+ * @generated from message bytebase.v1.DatabaseSDLSchema
+ */
+export declare type DatabaseSDLSchema = Message<"bytebase.v1.DatabaseSDLSchema"> & {
+  /**
+   * The SDL schema content.
+   * - For SINGLE_FILE format: contains the complete SDL schema as a text string.
+   * - For MULTI_FILE format: contains the ZIP archive as binary data.
+   *
+   * @generated from field: bytes schema = 1;
+   */
+  schema: Uint8Array;
+
+  /**
+   * The MIME type of the schema content.
+   * Indicates how the client should interpret the schema field.
+   * Examples:
+   * - "text/plain; charset=utf-8" for SINGLE_FILE format
+   * - "application/zip" for MULTI_FILE format
+   *
+   * @generated from field: string content_type = 2;
+   */
+  contentType: string;
+};
+
+/**
+ * Describes the message bytebase.v1.DatabaseSDLSchema.
+ * Use `create(DatabaseSDLSchemaSchema)` to create a new message.
+ */
+export declare const DatabaseSDLSchemaSchema: GenMessage<DatabaseSDLSchema>;
+
+/**
  * @generated from message bytebase.v1.ChangedResources
  */
 export declare type ChangedResources = Message<"bytebase.v1.ChangedResources"> & {
@@ -3573,6 +3666,17 @@ export declare const DatabaseService: GenService<{
     methodKind: "unary";
     input: typeof GetDatabaseSchemaRequestSchema;
     output: typeof DatabaseSchemaSchema;
+  },
+  /**
+   * Retrieves database schema in SDL (Schema Definition Language) format.
+   * Permissions required: bb.databases.getSchema
+   *
+   * @generated from rpc bytebase.v1.DatabaseService.GetDatabaseSDLSchema
+   */
+  getDatabaseSDLSchema: {
+    methodKind: "unary";
+    input: typeof GetDatabaseSDLSchemaRequestSchema;
+    output: typeof DatabaseSDLSchemaSchema;
   },
   /**
    * Compares and generates migration statements between two schemas.

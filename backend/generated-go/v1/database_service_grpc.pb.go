@@ -28,6 +28,7 @@ const (
 	DatabaseService_BatchSyncDatabases_FullMethodName   = "/bytebase.v1.DatabaseService/BatchSyncDatabases"
 	DatabaseService_GetDatabaseMetadata_FullMethodName  = "/bytebase.v1.DatabaseService/GetDatabaseMetadata"
 	DatabaseService_GetDatabaseSchema_FullMethodName    = "/bytebase.v1.DatabaseService/GetDatabaseSchema"
+	DatabaseService_GetDatabaseSDLSchema_FullMethodName = "/bytebase.v1.DatabaseService/GetDatabaseSDLSchema"
 	DatabaseService_DiffSchema_FullMethodName           = "/bytebase.v1.DatabaseService/DiffSchema"
 	DatabaseService_ListChangelogs_FullMethodName       = "/bytebase.v1.DatabaseService/ListChangelogs"
 	DatabaseService_GetChangelog_FullMethodName         = "/bytebase.v1.DatabaseService/GetChangelog"
@@ -67,6 +68,9 @@ type DatabaseServiceClient interface {
 	// Retrieves database schema as DDL statements.
 	// Permissions required: bb.databases.getSchema
 	GetDatabaseSchema(ctx context.Context, in *GetDatabaseSchemaRequest, opts ...grpc.CallOption) (*DatabaseSchema, error)
+	// Retrieves database schema in SDL (Schema Definition Language) format.
+	// Permissions required: bb.databases.getSchema
+	GetDatabaseSDLSchema(ctx context.Context, in *GetDatabaseSDLSchemaRequest, opts ...grpc.CallOption) (*DatabaseSDLSchema, error)
 	// Compares and generates migration statements between two schemas.
 	// Permissions required: bb.databases.get
 	DiffSchema(ctx context.Context, in *DiffSchemaRequest, opts ...grpc.CallOption) (*DiffSchemaResponse, error)
@@ -179,6 +183,16 @@ func (c *databaseServiceClient) GetDatabaseSchema(ctx context.Context, in *GetDa
 	return out, nil
 }
 
+func (c *databaseServiceClient) GetDatabaseSDLSchema(ctx context.Context, in *GetDatabaseSDLSchemaRequest, opts ...grpc.CallOption) (*DatabaseSDLSchema, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DatabaseSDLSchema)
+	err := c.cc.Invoke(ctx, DatabaseService_GetDatabaseSDLSchema_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *databaseServiceClient) DiffSchema(ctx context.Context, in *DiffSchemaRequest, opts ...grpc.CallOption) (*DiffSchemaResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DiffSchemaResponse)
@@ -252,6 +266,9 @@ type DatabaseServiceServer interface {
 	// Retrieves database schema as DDL statements.
 	// Permissions required: bb.databases.getSchema
 	GetDatabaseSchema(context.Context, *GetDatabaseSchemaRequest) (*DatabaseSchema, error)
+	// Retrieves database schema in SDL (Schema Definition Language) format.
+	// Permissions required: bb.databases.getSchema
+	GetDatabaseSDLSchema(context.Context, *GetDatabaseSDLSchemaRequest) (*DatabaseSDLSchema, error)
 	// Compares and generates migration statements between two schemas.
 	// Permissions required: bb.databases.get
 	DiffSchema(context.Context, *DiffSchemaRequest) (*DiffSchemaResponse, error)
@@ -300,6 +317,9 @@ func (UnimplementedDatabaseServiceServer) GetDatabaseMetadata(context.Context, *
 }
 func (UnimplementedDatabaseServiceServer) GetDatabaseSchema(context.Context, *GetDatabaseSchemaRequest) (*DatabaseSchema, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetDatabaseSchema not implemented")
+}
+func (UnimplementedDatabaseServiceServer) GetDatabaseSDLSchema(context.Context, *GetDatabaseSDLSchemaRequest) (*DatabaseSDLSchema, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetDatabaseSDLSchema not implemented")
 }
 func (UnimplementedDatabaseServiceServer) DiffSchema(context.Context, *DiffSchemaRequest) (*DiffSchemaResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DiffSchema not implemented")
@@ -496,6 +516,24 @@ func _DatabaseService_GetDatabaseSchema_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DatabaseService_GetDatabaseSDLSchema_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDatabaseSDLSchemaRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DatabaseServiceServer).GetDatabaseSDLSchema(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DatabaseService_GetDatabaseSDLSchema_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DatabaseServiceServer).GetDatabaseSDLSchema(ctx, req.(*GetDatabaseSDLSchemaRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _DatabaseService_DiffSchema_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DiffSchemaRequest)
 	if err := dec(in); err != nil {
@@ -610,6 +648,10 @@ var DatabaseService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetDatabaseSchema",
 			Handler:    _DatabaseService_GetDatabaseSchema_Handler,
+		},
+		{
+			MethodName: "GetDatabaseSDLSchema",
+			Handler:    _DatabaseService_GetDatabaseSDLSchema_Handler,
 		},
 		{
 			MethodName: "DiffSchema",

@@ -255,6 +255,22 @@ func (x *GetDatabaseSchemaRequest) Equal(y *GetDatabaseSchemaRequest) bool {
 	return true
 }
 
+func (x *GetDatabaseSDLSchemaRequest) Equal(y *GetDatabaseSDLSchemaRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
+		return false
+	}
+	if x.Format != y.Format {
+		return false
+	}
+	return true
+}
+
 func (x *DiffSchemaRequest) Equal(y *DiffSchemaRequest) bool {
 	if x == y {
 		return true
@@ -1577,6 +1593,22 @@ func (x *DatabaseSchema) Equal(y *DatabaseSchema) bool {
 		return x == nil && y == nil
 	}
 	if x.Schema != y.Schema {
+		return false
+	}
+	return true
+}
+
+func (x *DatabaseSDLSchema) Equal(y *DatabaseSDLSchema) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if string(x.Schema) != string(y.Schema) {
+		return false
+	}
+	if x.ContentType != y.ContentType {
 		return false
 	}
 	return true
