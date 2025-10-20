@@ -291,9 +291,24 @@ func (m *Manager) generateInstance(
 	}
 
 	// Need to sync database schema so we can configure sensitive data policy and create the schema
-	// update issue later.
-	if err := schemaSyncer.SyncDatabaseSchema(ctx, testDatabase); err != nil {
+	// update issue later. Also establish a baseline for schema rollback.
+	syncHistory, err := schemaSyncer.SyncDatabaseSchemaToHistory(ctx, testDatabase)
+	if err != nil {
 		return errors.Wrapf(err, "failed to sync sample database schema %v", dbName)
+	}
+
+	if _, err := m.store.CreateChangelog(ctx, &store.ChangelogMessage{
+		InstanceID:         testDatabase.InstanceID,
+		DatabaseName:       dbName,
+		Status:             store.ChangelogStatusDone,
+		PrevSyncHistoryUID: &syncHistory,
+		SyncHistoryUID:     &syncHistory,
+		Payload: &storepb.ChangelogPayload{
+			Type:      storepb.ChangelogPayload_BASELINE,
+			GitCommit: m.profile.GitCommit,
+		},
+	}); err != nil {
+		return errors.Wrapf(err, "failed to create baseline changelog for %v", dbName)
 	}
 	return nil
 }
