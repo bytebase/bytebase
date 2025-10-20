@@ -8,6 +8,8 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
+
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 // DiscordWebhookResponse is the API message for Discord webhook response.
@@ -44,7 +46,7 @@ type DiscordWebhook struct {
 }
 
 func init() {
-	Register("bb.plugin.webhook.discord", &DiscordReceiver{})
+	Register(storepb.ProjectWebhook_DISCORD, &DiscordReceiver{})
 }
 
 // DiscordReceiver is the receiver for Discord.

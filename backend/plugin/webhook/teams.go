@@ -8,6 +8,8 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
+
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 var themeColor = "4f46e5"
@@ -51,7 +53,7 @@ type TeamsWebhook struct {
 }
 
 func init() {
-	Register("bb.plugin.webhook.teams", &TeamsReceiver{})
+	Register(storepb.ProjectWebhook_TEAMS, &TeamsReceiver{})
 }
 
 // TeamsReceiver is the receiver for Teams.

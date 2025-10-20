@@ -1100,9 +1100,21 @@
             <ul>
               
                 <li>
-                  <a href="#bytebase.store.ProjectWebhookPayload"><span class="badge">M</span>ProjectWebhookPayload</a>
+                  <a href="#bytebase.store.Activity"><span class="badge">M</span>Activity</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.store.ProjectWebhook"><span class="badge">M</span>ProjectWebhook</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#bytebase.store.Activity.Type"><span class="badge">E</span>Activity.Type</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.ProjectWebhook.Type"><span class="badge">E</span>ProjectWebhook.Type</a>
+                </li>
               
               
               
@@ -10491,7 +10503,14 @@ If enabled, issues cannot be created when SQL review finds errors. </p></td>
       <p></p>
 
       
-        <h3 id="bytebase.store.ProjectWebhookPayload">ProjectWebhookPayload</h3>
+        <h3 id="bytebase.store.Activity">Activity</h3>
+        <p>Activity types for webhook notifications.</p>
+
+        
+
+        
+      
+        <h3 id="bytebase.store.ProjectWebhook">ProjectWebhook</h3>
         <p></p>
 
         
@@ -10518,6 +10537,140 @@ IM integration setting should be set for this function to work. </p></td>
         
       
 
+      
+        <h3 id="bytebase.store.Activity.Type">Activity.Type</h3>
+        <p>Activity type enumeration.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p>Unspecified type.</p></td>
+              </tr>
+            
+              <tr>
+                <td>NOTIFY_ISSUE_APPROVED</td>
+                <td>23</td>
+                <td><p>Notifications via webhooks.
+
+NOTIFY_ISSUE_APPROVED represents the issue approved notification.</p></td>
+              </tr>
+            
+              <tr>
+                <td>NOTIFY_PIPELINE_ROLLOUT</td>
+                <td>24</td>
+                <td><p>NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification.</p></td>
+              </tr>
+            
+              <tr>
+                <td>ISSUE_CREATE</td>
+                <td>1</td>
+                <td><p>Issue related activity types.
+
+ISSUE_CREATE represents creating an issue.</p></td>
+              </tr>
+            
+              <tr>
+                <td>ISSUE_COMMENT_CREATE</td>
+                <td>2</td>
+                <td><p>ISSUE_COMMENT_CREATE represents commenting on an issue.</p></td>
+              </tr>
+            
+              <tr>
+                <td>ISSUE_FIELD_UPDATE</td>
+                <td>3</td>
+                <td><p>ISSUE_FIELD_UPDATE represents updating the issue field, likes title, description, etc.</p></td>
+              </tr>
+            
+              <tr>
+                <td>ISSUE_STATUS_UPDATE</td>
+                <td>4</td>
+                <td><p>ISSUE_STATUS_UPDATE represents the issue status change, including OPEN, CLOSE, CANCEL for now.</p></td>
+              </tr>
+            
+              <tr>
+                <td>ISSUE_APPROVAL_NOTIFY</td>
+                <td>21</td>
+                <td><p>ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval.</p></td>
+              </tr>
+            
+              <tr>
+                <td>ISSUE_PIPELINE_STAGE_STATUS_UPDATE</td>
+                <td>5</td>
+                <td><p>ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now.</p></td>
+              </tr>
+            
+              <tr>
+                <td>ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE</td>
+                <td>22</td>
+                <td><p>ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.ProjectWebhook.Type">ProjectWebhook.Type</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p>Unspecified type.</p></td>
+              </tr>
+            
+              <tr>
+                <td>SLACK</td>
+                <td>1</td>
+                <td><p>Slack integration.</p></td>
+              </tr>
+            
+              <tr>
+                <td>DISCORD</td>
+                <td>2</td>
+                <td><p>Discord integration.</p></td>
+              </tr>
+            
+              <tr>
+                <td>TEAMS</td>
+                <td>3</td>
+                <td><p>Microsoft Teams integration.</p></td>
+              </tr>
+            
+              <tr>
+                <td>DINGTALK</td>
+                <td>4</td>
+                <td><p>DingTalk integration.</p></td>
+              </tr>
+            
+              <tr>
+                <td>FEISHU</td>
+                <td>5</td>
+                <td><p>Feishu integration.</p></td>
+              </tr>
+            
+              <tr>
+                <td>WECOM</td>
+                <td>6</td>
+                <td><p>WeCom (WeChat Work) integration.</p></td>
+              </tr>
+            
+              <tr>
+                <td>LARK</td>
+                <td>8</td>
+                <td><p>Lark integration.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
       
 
       

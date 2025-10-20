@@ -3,7 +3,17 @@
 
 package store
 
-func (x *ProjectWebhookPayload) Equal(y *ProjectWebhookPayload) bool {
+func (x *Activity) Equal(y *Activity) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	return true
+}
+
+func (x *ProjectWebhook) Equal(y *ProjectWebhook) bool {
 	if x == y {
 		return true
 	}

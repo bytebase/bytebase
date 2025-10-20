@@ -8334,7 +8334,6 @@ PlanService manages deployment plans for database changes.
 
 ### Activity
 Activity types for webhook notifications.
-TODO(zp): move to activity later.
 
 
 
@@ -8737,7 +8736,7 @@ The project&#39;s `name` field is used to identify the project to update. Format
 | title | [string](#string) |  | title is the title of the webhook. |
 | url | [string](#string) |  | url is the url of the webhook, should be unique within the project. |
 | direct_message | [bool](#bool) |  | if direct_message is set, the notification is sent directly to the persons and url will be ignored. IM integration setting should be set for this function to work. |
-| notification_types | [Activity.Type](#bytebase-v1-Activity-Type) | repeated | notification_types is the list of activities types that the webhook is interested in. Bytebase will only send notifications to the webhook if the activity type is in the list. It should not be empty, and should be a subset of the following: - TYPE_ISSUE_CREATED - TYPE_ISSUE_STATUS_UPDATE - TYPE_ISSUE_PIPELINE_STAGE_UPDATE - TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE - TYPE_ISSUE_FIELD_UPDATE - TYPE_ISSUE_COMMENT_CREATE |
+| notification_types | [Activity.Type](#bytebase-v1-Activity-Type) | repeated | notification_types is the list of activities types that the webhook is interested in. Bytebase will only send notifications to the webhook if the activity type is in the list. It should not be empty, and should be a subset of the following: - ISSUE_CREATE - ISSUE_COMMENT_CREATE - ISSUE_FIELD_UPDATE - ISSUE_STATUS_UPDATE - ISSUE_APPROVAL_NOTIFY - ISSUE_PIPELINE_STAGE_STATUS_UPDATE - ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE - NOTIFY_ISSUE_APPROVED - NOTIFY_PIPELINE_ROLLOUT |
 
 
 

@@ -791,12 +791,15 @@ export declare type Webhook = Message<"bytebase.v1.Webhook"> & {
    * notification_types is the list of activities types that the webhook is interested in.
    * Bytebase will only send notifications to the webhook if the activity type is in the list.
    * It should not be empty, and should be a subset of the following:
-   * - TYPE_ISSUE_CREATED
-   * - TYPE_ISSUE_STATUS_UPDATE
-   * - TYPE_ISSUE_PIPELINE_STAGE_UPDATE
-   * - TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE
-   * - TYPE_ISSUE_FIELD_UPDATE
-   * - TYPE_ISSUE_COMMENT_CREATE
+   * - ISSUE_CREATE
+   * - ISSUE_COMMENT_CREATE
+   * - ISSUE_FIELD_UPDATE
+   * - ISSUE_STATUS_UPDATE
+   * - ISSUE_APPROVAL_NOTIFY
+   * - ISSUE_PIPELINE_STAGE_STATUS_UPDATE
+   * - ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE
+   * - NOTIFY_ISSUE_APPROVED
+   * - NOTIFY_PIPELINE_ROLLOUT
    *
    * @generated from field: repeated bytebase.v1.Activity.Type notification_types = 5;
    */
@@ -879,7 +882,6 @@ export declare const Webhook_TypeSchema: GenEnum<Webhook_Type>;
 
 /**
  * Activity types for webhook notifications.
- * TODO(zp): move to activity later.
  *
  * @generated from message bytebase.v1.Activity
  */

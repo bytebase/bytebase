@@ -14,6 +14,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/webhook"
 )
 
@@ -50,7 +51,7 @@ type MessagePayload struct {
 }
 
 func init() {
-	webhook.Register("bb.plugin.webhook.slack", &Receiver{})
+	webhook.Register(storepb.ProjectWebhook_SLACK, &Receiver{})
 }
 
 // Receiver is the receiver for Slack.

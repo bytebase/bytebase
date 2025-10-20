@@ -267,7 +267,7 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) 
 	}
 	s.webhookManager.CreateEvent(ctx, &webhook.Event{
 		Actor:   s.store.GetSystemBotUser(ctx),
-		Type:    common.EventTypeTaskRunStatusUpdate,
+		Type:    storepb.Activity_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE,
 		Comment: "",
 		Issue:   webhook.NewIssue(issue),
 		Rollout: webhook.NewRollout(pipeline),
@@ -854,7 +854,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 				// create "stage ends" activity.
 				s.webhookManager.CreateEvent(ctx, &webhook.Event{
 					Actor:   s.store.GetSystemBotUser(ctx),
-					Type:    common.EventTypeStageStatusUpdate,
+					Type:    storepb.Activity_ISSUE_PIPELINE_STAGE_STATUS_UPDATE,
 					Comment: "",
 					Issue:   webhook.NewIssue(issueN),
 					Rollout: webhook.NewRollout(pipeline),
@@ -896,7 +896,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 					}
 					s.webhookManager.CreateEvent(ctx, &webhook.Event{
 						Actor:   s.store.GetSystemBotUser(ctx),
-						Type:    common.EventTypeIssueRolloutReady,
+						Type:    storepb.Activity_NOTIFY_PIPELINE_ROLLOUT,
 						Comment: "",
 						Issue:   webhook.NewIssue(issueN),
 						Project: webhook.NewProject(project),
@@ -942,7 +942,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 
 						s.webhookManager.CreateEvent(ctx, &webhook.Event{
 							Actor:   s.store.GetSystemBotUser(ctx),
-							Type:    common.EventTypeIssueStatusUpdate,
+							Type:    storepb.Activity_ISSUE_STATUS_UPDATE,
 							Comment: "",
 							Issue:   webhook.NewIssue(updatedIssue),
 							Project: webhook.NewProject(project),
@@ -987,7 +987,7 @@ func (s *SchedulerV2) createActivityForTaskRunStatusUpdate(ctx context.Context, 
 		}
 		s.webhookManager.CreateEvent(ctx, &webhook.Event{
 			Actor:   s.store.GetSystemBotUser(ctx),
-			Type:    common.EventTypeTaskRunStatusUpdate,
+			Type:    storepb.Activity_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE,
 			Comment: "",
 			Issue:   webhook.NewIssue(issue),
 			Rollout: webhook.NewRollout(rollout),
