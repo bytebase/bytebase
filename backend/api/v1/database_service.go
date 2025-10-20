@@ -1519,7 +1519,7 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Requ
 	}
 }
 
-func (s *DatabaseService) getSingleFileSDL(_ context.Context, engine storepb.Engine, metadata *storepb.DatabaseSchemaMetadata) (*connect.Response[v1pb.DatabaseSDLSchema], error) {
+func (*DatabaseService) getSingleFileSDL(_ context.Context, engine storepb.Engine, metadata *storepb.DatabaseSchemaMetadata) (*connect.Response[v1pb.DatabaseSDLSchema], error) {
 	sdlText, err := schema.GetDatabaseDefinition(engine, schema.GetDefinitionContext{
 		SkipBackupSchema: true,
 		SDLFormat:        true,
@@ -1534,6 +1534,6 @@ func (s *DatabaseService) getSingleFileSDL(_ context.Context, engine storepb.Eng
 	}), nil
 }
 
-func (s *DatabaseService) getMultiFileSDL(_ context.Context, _ storepb.Engine, _ *storepb.DatabaseSchemaMetadata, _ string) (*connect.Response[v1pb.DatabaseSDLSchema], error) {
+func (*DatabaseService) getMultiFileSDL(_ context.Context, _ storepb.Engine, _ *storepb.DatabaseSchemaMetadata, _ string) (*connect.Response[v1pb.DatabaseSDLSchema], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.Errorf("multi-file SDL format is not yet implemented"))
 }
