@@ -869,6 +869,77 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, req *connect.Re
 	return connect.NewResponse(&v1pb.DatabaseSchema{Schema: schemaString}), nil
 }
 
+// GetDatabaseSDLSchema gets the SDL schema of a database.
+func (s *DatabaseService) GetDatabaseSDLSchema(ctx context.Context, req *connect.Request[v1pb.GetDatabaseSDLSchemaRequest]) (*connect.Response[v1pb.DatabaseSDLSchema], error) {
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(req.Msg.Name)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
+	}
+
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get instance %s", instanceID)
+	}
+	if instance == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", instanceID))
+	}
+
+	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		InstanceID:      &instanceID,
+		DatabaseName:    &databaseName,
+		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("%v", err.Error()))
+	}
+	if database == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", databaseName))
+	}
+
+	dbSchema, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		InstanceID:   database.InstanceID,
+		DatabaseName: database.DatabaseName,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("%v", err.Error()))
+	}
+	if dbSchema == nil {
+		if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to sync database schema for database %q, error %v", databaseName, err))
+		}
+		newDBSchema, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+			InstanceID:   database.InstanceID,
+			DatabaseName: database.DatabaseName,
+		})
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("%v", err.Error()))
+		}
+		if newDBSchema == nil {
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database schema %q not found", databaseName))
+		}
+		dbSchema = newDBSchema
+	}
+
+	metadata := dbSchema.GetMetadata()
+	if metadata == nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("database metadata not found for database %q", databaseName))
+	}
+
+	format := req.Msg.Format
+	if format == v1pb.GetDatabaseSDLSchemaRequest_SDL_FORMAT_UNSPECIFIED {
+		format = v1pb.GetDatabaseSDLSchemaRequest_SINGLE_FILE
+	}
+
+	switch format {
+	case v1pb.GetDatabaseSDLSchemaRequest_SINGLE_FILE:
+		return s.getSingleFileSDL(ctx, instance.Metadata.Engine, metadata)
+	case v1pb.GetDatabaseSDLSchemaRequest_MULTI_FILE:
+		return s.getMultiFileSDL(ctx, instance.Metadata.Engine, metadata, databaseName)
+	default:
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported SDL format: %v", format))
+	}
+}
+
 // DiffSchema diff the database schema.
 func (s *DatabaseService) DiffSchema(ctx context.Context, req *connect.Request[v1pb.DiffSchemaRequest]) (*connect.Response[v1pb.DiffSchemaResponse], error) {
 	// Check if target is changelog - use new metadata-based approach
@@ -1446,4 +1517,23 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Requ
 	default:
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported schema type %v", req.Msg.Type))
 	}
+}
+
+func (s *DatabaseService) getSingleFileSDL(_ context.Context, engine storepb.Engine, metadata *storepb.DatabaseSchemaMetadata) (*connect.Response[v1pb.DatabaseSDLSchema], error) {
+	sdlText, err := schema.GetDatabaseDefinition(engine, schema.GetDefinitionContext{
+		SkipBackupSchema: true,
+		SDLFormat:        true,
+	}, metadata)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate SDL schema: %v", err))
+	}
+
+	return connect.NewResponse(&v1pb.DatabaseSDLSchema{
+		Schema:      []byte(sdlText),
+		ContentType: "text/plain; charset=utf-8",
+	}), nil
+}
+
+func (s *DatabaseService) getMultiFileSDL(_ context.Context, _ storepb.Engine, _ *storepb.DatabaseSchemaMetadata, _ string) (*connect.Response[v1pb.DatabaseSDLSchema], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.Errorf("multi-file SDL format is not yet implemented"))
 }
