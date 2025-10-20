@@ -997,7 +997,7 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, req *connect.Request
 		case "url":
 			update.URL = &req.Msg.Webhook.Url
 		case "notification_type":
-			types, err := convertToActivityTypeStrings(req.Msg.Webhook.NotificationTypes)
+			types, err := convertToStoreActivityTypes(req.Msg.Webhook.NotificationTypes)
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, err)
 			}
@@ -1006,7 +1006,7 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, req *connect.Request
 			}
 			update.Events = types
 		case "direct_message":
-			update.Payload = &storepb.ProjectWebhookPayload{
+			update.Payload = &storepb.ProjectWebhook{
 				DirectMessage: req.Msg.Webhook.DirectMessage,
 			}
 		default:
@@ -1113,7 +1113,7 @@ func (s *ProjectService) TestWebhook(ctx context.Context, req *connect.Request[v
 		webhookplugin.Context{
 			URL:         webhook.URL,
 			Level:       webhookplugin.WebhookInfo,
-			EventType:   string(common.EventTypeIssueCreate),
+			EventType:   storepb.Activity_ISSUE_CREATE.String(),
 			Title:       fmt.Sprintf("Test webhook %q", webhook.Title),
 			TitleZh:     fmt.Sprintf("测试 webhook %q", webhook.Title),
 			Description: "This is a test",

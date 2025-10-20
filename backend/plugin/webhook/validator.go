@@ -5,45 +5,47 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 var (
 	// AllowedDomains maps webhook types to their allowed domains.
-	AllowedDomains = map[string][]string{
-		"bb.plugin.webhook.slack": {
+	AllowedDomains = map[storepb.ProjectWebhook_Type][]string{
+		storepb.ProjectWebhook_SLACK: {
 			"hooks.slack.com",
 			"hooks.slack-gov.com",
 		},
-		"bb.plugin.webhook.discord": {
+		storepb.ProjectWebhook_DISCORD: {
 			"discord.com",
 			"discordapp.com",
 		},
-		"bb.plugin.webhook.teams": {
+		storepb.ProjectWebhook_TEAMS: {
 			".office.com",    // Matches *.office.com
 			".office365.com", // Matches *.office365.com
 		},
-		"bb.plugin.webhook.dingtalk": {
+		storepb.ProjectWebhook_DINGTALK: {
 			"oapi.dingtalk.com",
 			"api.dingtalk.com",
 		},
-		"bb.plugin.webhook.feishu": {
+		storepb.ProjectWebhook_FEISHU: {
 			"open.feishu.cn",
 		},
-		"bb.plugin.webhook.lark": {
+		storepb.ProjectWebhook_LARK: {
 			"open.larksuite.com",
 		},
-		"bb.plugin.webhook.wecom": {
+		storepb.ProjectWebhook_WECOM: {
 			"qyapi.weixin.qq.com",
 		},
 	}
 
 	// TestOnlyAllowedDomains contains additional domains allowed for testing purposes only.
 	// This should only be modified in test files.
-	TestOnlyAllowedDomains = map[string][]string{}
+	TestOnlyAllowedDomains = map[storepb.ProjectWebhook_Type][]string{}
 )
 
 // ValidateWebhookURL validates that the webhook URL matches the allowed domains for the webhook type.
-func ValidateWebhookURL(webhookType, webhookURL string) error {
+func ValidateWebhookURL(webhookType storepb.ProjectWebhook_Type, webhookURL string) error {
 	// Parse URL
 	u, err := url.Parse(webhookURL)
 	if err != nil {

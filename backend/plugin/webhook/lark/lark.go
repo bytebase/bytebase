@@ -15,6 +15,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/webhook"
 )
 
@@ -95,7 +96,7 @@ type Webhook struct {
 }
 
 func init() {
-	webhook.Register("bb.plugin.webhook.lark", &larkReceiver{})
+	webhook.Register(storepb.ProjectWebhook_LARK, &larkReceiver{})
 }
 
 // larkReceiver is the receiver for Lark.

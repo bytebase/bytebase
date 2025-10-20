@@ -66,7 +66,7 @@ func (m *Manager) CreateEvent(ctx context.Context, e *Event) {
 	go m.postWebhookList(ctx, webhookCtx, webhookList)
 }
 
-func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, eventType common.EventType) (*webhook.Context, error) {
+func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, eventType storepb.Activity_Type) (*webhook.Context, error) {
 	var webhookCtx webhook.Context
 	var mentions []string
 	var mentionUsers []*store.UserMessage
@@ -87,11 +87,11 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 		link = fmt.Sprintf("%s/projects/%s/rollouts/%d", setting.ExternalUrl, e.Project.ResourceID, e.Rollout.UID)
 	}
 	switch e.Type {
-	case common.EventTypeIssueCreate:
+	case storepb.Activity_ISSUE_CREATE:
 		title = "Issue created"
 		titleZh = "创建工单"
 
-	case common.EventTypeIssueStatusUpdate:
+	case storepb.Activity_ISSUE_STATUS_UPDATE:
 		switch e.Issue.Status {
 		case "OPEN":
 			title = "Issue reopened"
@@ -108,11 +108,11 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 			titleZh = "工单状态变更"
 		}
 
-	case common.EventTypeIssueCommentCreate:
+	case storepb.Activity_ISSUE_COMMENT_CREATE:
 		title = "Comment created"
 		titleZh = "工单新评论"
 
-	case common.EventTypeIssueUpdate:
+	case storepb.Activity_ISSUE_FIELD_UPDATE:
 		update := e.IssueUpdate
 		switch update.Path {
 		case "description":
@@ -126,7 +126,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 			titleZh = "工单信息变更"
 		}
 
-	case common.EventTypeStageStatusUpdate:
+	case storepb.Activity_ISSUE_PIPELINE_STAGE_STATUS_UPDATE:
 		u := e.StageStatusUpdate
 		if e.Issue != nil {
 			stageID := u.StageID
@@ -138,7 +138,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 		title = "Stage ends"
 		titleZh = "阶段结束"
 
-	case common.EventTypeTaskRunStatusUpdate:
+	case storepb.Activity_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE:
 		u := e.TaskRunStatusUpdate
 		switch u.Status {
 		case storepb.TaskRun_PENDING.String():
@@ -166,7 +166,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 			titleZh = "任务状态变更"
 		}
 
-	case common.EventTypeIssueApprovalPass:
+	case storepb.Activity_NOTIFY_ISSUE_APPROVED:
 		title = "Issue approved"
 		titleZh = "工单审批通过"
 
@@ -178,7 +178,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 			mentions = append(mentions, phone)
 		}
 
-	case common.EventTypeIssueRolloutReady:
+	case storepb.Activity_NOTIFY_PIPELINE_ROLLOUT:
 		u := e.IssueRolloutReady
 		title = "Issue is waiting for rollout"
 		titleZh = "工单待发布"
@@ -222,7 +222,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 			}
 		}
 
-	case common.EventTypeIssueApprovalCreate:
+	case storepb.Activity_ISSUE_APPROVAL_NOTIFY:
 		roleWithPrefix := e.IssueApprovalCreate.Role
 
 		title = "Issue approval needed"
@@ -338,7 +338,7 @@ func (m *Manager) postWebhookList(ctx context.Context, webhookCtx *webhook.Conte
 			}); err != nil {
 				// The external webhook endpoint might be invalid which is out of our code control, so we just emit a warning
 				slog.Warn("Failed to post webhook event on activity",
-					slog.String("webhook type", hook.Type),
+					slog.String("webhook type", hook.Type.String()),
 					slog.String("webhook name", hook.Title),
 					slog.String("activity type", webhookCtx.EventType),
 					slog.String("title", webhookCtx.Title),
@@ -398,10 +398,9 @@ func ChangeIssueStatus(ctx context.Context, stores *store.Store, webhookManager 
 		return errors.Wrapf(err, "failed to update issue %q's status", issue.Title)
 	}
 
-	// In the ChangeIssueStatus function
 	webhookManager.CreateEvent(ctx, &Event{
 		Actor:   updater,
-		Type:    common.EventTypeIssueStatusUpdate,
+		Type:    storepb.Activity_ISSUE_STATUS_UPDATE,
 		Comment: comment,
 		Issue:   NewIssue(updatedIssue),
 		Project: NewProject(updatedIssue.Project),

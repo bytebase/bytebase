@@ -234,7 +234,11 @@
     - [Project.LabelsEntry](#bytebase-store-Project-LabelsEntry)
   
 - [store/project_webhook.proto](#store_project_webhook-proto)
-    - [ProjectWebhookPayload](#bytebase-store-ProjectWebhookPayload)
+    - [Activity](#bytebase-store-Activity)
+    - [ProjectWebhook](#bytebase-store-ProjectWebhook)
+  
+    - [Activity.Type](#bytebase-store-Activity-Type)
+    - [ProjectWebhook.Type](#bytebase-store-ProjectWebhook-Type)
   
 - [store/query_history.proto](#store_query_history-proto)
     - [QueryHistoryPayload](#bytebase-store-QueryHistoryPayload)
@@ -3859,9 +3863,19 @@ ExecutionRetryPolicy defines retry behavior for failed task executions.
 
 
 
-<a name="bytebase-store-ProjectWebhookPayload"></a>
+<a name="bytebase-store-Activity"></a>
 
-### ProjectWebhookPayload
+### Activity
+Activity types for webhook notifications.
+
+
+
+
+
+
+<a name="bytebase-store-ProjectWebhook"></a>
+
+### ProjectWebhook
 
 
 
@@ -3874,6 +3888,48 @@ ExecutionRetryPolicy defines retry behavior for failed task executions.
 
 
  
+
+
+<a name="bytebase-store-Activity-Type"></a>
+
+### Activity.Type
+Activity type enumeration.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 | Unspecified type. |
+| NOTIFY_ISSUE_APPROVED | 23 | Notifications via webhooks.
+
+NOTIFY_ISSUE_APPROVED represents the issue approved notification. |
+| NOTIFY_PIPELINE_ROLLOUT | 24 | NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification. |
+| ISSUE_CREATE | 1 | Issue related activity types.
+
+ISSUE_CREATE represents creating an issue. |
+| ISSUE_COMMENT_CREATE | 2 | ISSUE_COMMENT_CREATE represents commenting on an issue. |
+| ISSUE_FIELD_UPDATE | 3 | ISSUE_FIELD_UPDATE represents updating the issue field, likes title, description, etc. |
+| ISSUE_STATUS_UPDATE | 4 | ISSUE_STATUS_UPDATE represents the issue status change, including OPEN, CLOSE, CANCEL for now. |
+| ISSUE_APPROVAL_NOTIFY | 21 | ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval. |
+| ISSUE_PIPELINE_STAGE_STATUS_UPDATE | 5 | ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now. |
+| ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE | 22 | ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED. |
+
+
+
+<a name="bytebase-store-ProjectWebhook-Type"></a>
+
+### ProjectWebhook.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 | Unspecified type. |
+| SLACK | 1 | Slack integration. |
+| DISCORD | 2 | Discord integration. |
+| TEAMS | 3 | Microsoft Teams integration. |
+| DINGTALK | 4 | DingTalk integration. |
+| FEISHU | 5 | Feishu integration. |
+| WECOM | 6 | WeCom (WeChat Work) integration. |
+| LARK | 8 | Lark integration. |
+
 
  
 

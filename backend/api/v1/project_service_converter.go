@@ -36,55 +36,55 @@ func convertToProtoAny(i any) (*anypb.Any, error) {
 }
 
 func convertToStoreProjectWebhookMessage(webhook *v1pb.Webhook) (*store.ProjectWebhookMessage, error) {
-	tp, err := convertToAPIWebhookTypeString(webhook.Type)
+	storeType, err := convertToStoreWebhookType(webhook.Type)
 	if err != nil {
 		return nil, err
 	}
 
 	// Validate webhook URL against allowed domains
-	if err := webhookplugin.ValidateWebhookURL(tp, webhook.Url); err != nil {
+	if err := webhookplugin.ValidateWebhookURL(storeType, webhook.Url); err != nil {
 		return nil, common.Errorf(common.Invalid, "invalid webhook URL: %v", err)
 	}
 
-	activityTypes, err := convertToActivityTypeStrings(webhook.NotificationTypes)
+	activityTypes, err := convertToStoreActivityTypes(webhook.NotificationTypes)
 	if err != nil {
 		return nil, err
 	}
 	return &store.ProjectWebhookMessage{
-		Type:   tp,
+		Type:   storeType,
 		URL:    webhook.Url,
 		Title:  webhook.Title,
 		Events: activityTypes,
-		Payload: &storepb.ProjectWebhookPayload{
+		Payload: &storepb.ProjectWebhook{
 			DirectMessage: webhook.DirectMessage,
 		},
 	}, nil
 }
 
-func convertToActivityTypeStrings(types []v1pb.Activity_Type) ([]string, error) {
-	var result []string
+func convertToStoreActivityTypes(types []v1pb.Activity_Type) ([]storepb.Activity_Type, error) {
+	var result []storepb.Activity_Type
 	for _, tp := range types {
 		switch tp {
 		case v1pb.Activity_TYPE_UNSPECIFIED:
 			return nil, common.Errorf(common.Invalid, "activity type must not be unspecified")
 		case v1pb.Activity_ISSUE_CREATE:
-			result = append(result, string(common.EventTypeIssueCreate))
+			result = append(result, storepb.Activity_ISSUE_CREATE)
 		case v1pb.Activity_ISSUE_COMMENT_CREATE:
-			result = append(result, string(common.EventTypeIssueCommentCreate))
+			result = append(result, storepb.Activity_ISSUE_COMMENT_CREATE)
 		case v1pb.Activity_ISSUE_FIELD_UPDATE:
-			result = append(result, string(common.EventTypeIssueUpdate))
+			result = append(result, storepb.Activity_ISSUE_FIELD_UPDATE)
 		case v1pb.Activity_ISSUE_STATUS_UPDATE:
-			result = append(result, string(common.EventTypeIssueStatusUpdate))
+			result = append(result, storepb.Activity_ISSUE_STATUS_UPDATE)
 		case v1pb.Activity_ISSUE_APPROVAL_NOTIFY:
-			result = append(result, string(common.EventTypeIssueApprovalCreate))
+			result = append(result, storepb.Activity_ISSUE_APPROVAL_NOTIFY)
 		case v1pb.Activity_ISSUE_PIPELINE_STAGE_STATUS_UPDATE:
-			result = append(result, string(common.EventTypeStageStatusUpdate))
+			result = append(result, storepb.Activity_ISSUE_PIPELINE_STAGE_STATUS_UPDATE)
 		case v1pb.Activity_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE:
-			result = append(result, string(common.EventTypeTaskRunStatusUpdate))
+			result = append(result, storepb.Activity_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE)
 		case v1pb.Activity_NOTIFY_ISSUE_APPROVED:
-			result = append(result, string(common.EventTypeIssueApprovalPass))
+			result = append(result, storepb.Activity_NOTIFY_ISSUE_APPROVED)
 		case v1pb.Activity_NOTIFY_PIPELINE_ROLLOUT:
-			result = append(result, string(common.EventTypeIssueRolloutReady))
+			result = append(result, storepb.Activity_NOTIFY_PIPELINE_ROLLOUT)
 		default:
 			return nil, common.Errorf(common.Invalid, "unsupported activity type: %v", tp)
 		}
@@ -92,27 +92,27 @@ func convertToActivityTypeStrings(types []v1pb.Activity_Type) ([]string, error) 
 	return result, nil
 }
 
-func convertNotificationTypeStrings(types []string) []v1pb.Activity_Type {
+func convertToV1ActivityTypes(types []storepb.Activity_Type) []v1pb.Activity_Type {
 	var result []v1pb.Activity_Type
 	for _, tp := range types {
 		switch tp {
-		case string(common.EventTypeIssueCreate):
+		case storepb.Activity_ISSUE_CREATE:
 			result = append(result, v1pb.Activity_ISSUE_CREATE)
-		case string(common.EventTypeIssueCommentCreate):
+		case storepb.Activity_ISSUE_COMMENT_CREATE:
 			result = append(result, v1pb.Activity_ISSUE_COMMENT_CREATE)
-		case string(common.EventTypeIssueUpdate):
+		case storepb.Activity_ISSUE_FIELD_UPDATE:
 			result = append(result, v1pb.Activity_ISSUE_FIELD_UPDATE)
-		case string(common.EventTypeIssueStatusUpdate):
+		case storepb.Activity_ISSUE_STATUS_UPDATE:
 			result = append(result, v1pb.Activity_ISSUE_STATUS_UPDATE)
-		case string(common.EventTypeIssueApprovalCreate):
+		case storepb.Activity_ISSUE_APPROVAL_NOTIFY:
 			result = append(result, v1pb.Activity_ISSUE_APPROVAL_NOTIFY)
-		case string(common.EventTypeStageStatusUpdate):
+		case storepb.Activity_ISSUE_PIPELINE_STAGE_STATUS_UPDATE:
 			result = append(result, v1pb.Activity_ISSUE_PIPELINE_STAGE_STATUS_UPDATE)
-		case string(common.EventTypeTaskRunStatusUpdate):
+		case storepb.Activity_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE:
 			result = append(result, v1pb.Activity_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE)
-		case string(common.EventTypeIssueApprovalPass):
+		case storepb.Activity_NOTIFY_ISSUE_APPROVED:
 			result = append(result, v1pb.Activity_NOTIFY_ISSUE_APPROVED)
-		case string(common.EventTypeIssueRolloutReady):
+		case storepb.Activity_NOTIFY_PIPELINE_ROLLOUT:
 			result = append(result, v1pb.Activity_NOTIFY_PIPELINE_ROLLOUT)
 		default:
 			result = append(result, v1pb.Activity_TYPE_UNSPECIFIED)
@@ -121,45 +121,44 @@ func convertNotificationTypeStrings(types []string) []v1pb.Activity_Type {
 	return result
 }
 
-func convertToAPIWebhookTypeString(tp v1pb.Webhook_Type) (string, error) {
+func convertToStoreWebhookType(tp v1pb.Webhook_Type) (storepb.ProjectWebhook_Type, error) {
 	switch tp {
 	case v1pb.Webhook_TYPE_UNSPECIFIED:
-		return "", common.Errorf(common.Invalid, "webhook type must not be unspecified")
-	// TODO(zp): find a better way to place the "bb.plugin.webhook.*".
+		return storepb.ProjectWebhook_TYPE_UNSPECIFIED, common.Errorf(common.Invalid, "webhook type must not be unspecified")
 	case v1pb.Webhook_SLACK:
-		return "bb.plugin.webhook.slack", nil
+		return storepb.ProjectWebhook_SLACK, nil
 	case v1pb.Webhook_DISCORD:
-		return "bb.plugin.webhook.discord", nil
+		return storepb.ProjectWebhook_DISCORD, nil
 	case v1pb.Webhook_TEAMS:
-		return "bb.plugin.webhook.teams", nil
+		return storepb.ProjectWebhook_TEAMS, nil
 	case v1pb.Webhook_DINGTALK:
-		return "bb.plugin.webhook.dingtalk", nil
+		return storepb.ProjectWebhook_DINGTALK, nil
 	case v1pb.Webhook_FEISHU:
-		return "bb.plugin.webhook.feishu", nil
+		return storepb.ProjectWebhook_FEISHU, nil
 	case v1pb.Webhook_WECOM:
-		return "bb.plugin.webhook.wecom", nil
+		return storepb.ProjectWebhook_WECOM, nil
 	case v1pb.Webhook_LARK:
-		return "bb.plugin.webhook.lark", nil
+		return storepb.ProjectWebhook_LARK, nil
 	default:
-		return "", common.Errorf(common.Invalid, "webhook type %q is not supported", tp)
+		return storepb.ProjectWebhook_TYPE_UNSPECIFIED, common.Errorf(common.Invalid, "webhook type %q is not supported", tp)
 	}
 }
 
-func convertWebhookTypeString(tp string) v1pb.Webhook_Type {
+func convertToV1WebhookType(tp storepb.ProjectWebhook_Type) v1pb.Webhook_Type {
 	switch tp {
-	case "bb.plugin.webhook.slack":
+	case storepb.ProjectWebhook_SLACK:
 		return v1pb.Webhook_SLACK
-	case "bb.plugin.webhook.discord":
+	case storepb.ProjectWebhook_DISCORD:
 		return v1pb.Webhook_DISCORD
-	case "bb.plugin.webhook.teams":
+	case storepb.ProjectWebhook_TEAMS:
 		return v1pb.Webhook_TEAMS
-	case "bb.plugin.webhook.dingtalk":
+	case storepb.ProjectWebhook_DINGTALK:
 		return v1pb.Webhook_DINGTALK
-	case "bb.plugin.webhook.feishu":
+	case storepb.ProjectWebhook_FEISHU:
 		return v1pb.Webhook_FEISHU
-	case "bb.plugin.webhook.wecom":
+	case storepb.ProjectWebhook_WECOM:
 		return v1pb.Webhook_WECOM
-	case "bb.plugin.webhook.lark":
+	case storepb.ProjectWebhook_LARK:
 		return v1pb.Webhook_LARK
 	default:
 		return v1pb.Webhook_TYPE_UNSPECIFIED
@@ -302,10 +301,10 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 	for _, webhook := range projectMessage.Webhooks {
 		projectWebhooks = append(projectWebhooks, &v1pb.Webhook{
 			Name:              fmt.Sprintf("%s/%s%d", common.FormatProject(projectMessage.ResourceID), common.WebhookIDPrefix, webhook.ID),
-			Type:              convertWebhookTypeString(webhook.Type),
+			Type:              convertToV1WebhookType(webhook.Type),
 			Title:             webhook.Title,
 			Url:               webhook.URL,
-			NotificationTypes: convertNotificationTypeStrings(webhook.Events),
+			NotificationTypes: convertToV1ActivityTypes(webhook.Events),
 			DirectMessage:     webhook.Payload.GetDirectMessage(),
 		})
 	}

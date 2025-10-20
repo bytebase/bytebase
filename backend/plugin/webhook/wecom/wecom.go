@@ -16,6 +16,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/webhook"
 )
 
@@ -37,7 +38,7 @@ type Webhook struct {
 }
 
 func init() {
-	webhook.Register("bb.plugin.webhook.wecom", &Receiver{})
+	webhook.Register(storepb.ProjectWebhook_WECOM, &Receiver{})
 }
 
 // Receiver is the receiver for WeCom.

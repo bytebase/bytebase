@@ -17,19 +17,19 @@ import (
 // ProjectWebhookMessage is the store model for an project webhook.
 type ProjectWebhookMessage struct {
 	// Type is the webhook type (e.g. SLACK, DISCORD, etc.).
-	Type string
+	Type storepb.ProjectWebhook_Type
 	// Title is the webhook name.
 	Title string
 	// URL is the webhook URL.
 	URL string
 	// Events is the list of activities that the webhook is interested in.
-	Events []string
+	Events []storepb.Activity_Type
 	// Output only fields.
 	//
 	// ID is the unique identifier of the project webhook.
 	ID        int
 	ProjectID string
-	Payload   *storepb.ProjectWebhookPayload
+	Payload   *storepb.ProjectWebhook
 }
 
 // UpdateProjectWebhookMessage is the message for updating project webhooks.
@@ -39,8 +39,8 @@ type UpdateProjectWebhookMessage struct {
 	// URL is the webhook URL.
 	URL *string
 	// Events is the list of activities that the webhook is interested in.
-	Events  []string
-	Payload *storepb.ProjectWebhookPayload
+	Events  []storepb.Activity_Type
+	Payload *storepb.ProjectWebhook
 }
 
 // FindProjectWebhookMessage is the message for finding project webhooks,
@@ -49,7 +49,7 @@ type FindProjectWebhookMessage struct {
 	ID        *int
 	ProjectID *string
 	URL       *string
-	EventType *common.EventType
+	EventType *storepb.Activity_Type
 }
 
 // CreateProjectWebhookV2 creates an instance of ProjectWebhook.
@@ -75,6 +75,12 @@ func (s *Store) CreateProjectWebhookV2(ctx context.Context, projectID string, cr
 		payload = p
 	}
 
+	// Convert events to string array (enum names)
+	events := make([]string, len(create.Events))
+	for i, event := range create.Events {
+		events[i] = event.String()
+	}
+
 	projectWebhook := ProjectWebhookMessage{
 		Type:      create.Type,
 		Title:     create.Title,
@@ -91,10 +97,10 @@ func (s *Store) CreateProjectWebhookV2(ctx context.Context, projectID string, cr
 
 	if err := tx.QueryRowContext(ctx, query,
 		projectID,
-		create.Type,
+		create.Type.String(),
 		create.Title,
 		create.URL,
-		create.Events,
+		events,
 		payload,
 	).Scan(
 		&projectWebhook.ID,
@@ -170,7 +176,12 @@ func (s *Store) UpdateProjectWebhookV2(ctx context.Context, projectResourceID st
 		set, args = append(set, fmt.Sprintf("url = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := update.Events; v != nil {
-		set, args = append(set, fmt.Sprintf("event_list = $%d", len(args)+1)), append(args, v)
+		// Convert events to string array (enum names)
+		events := make([]string, len(v))
+		for i, event := range v {
+			events[i] = event.String()
+		}
+		set, args = append(set, fmt.Sprintf("event_list = $%d", len(args)+1)), append(args, events)
 	}
 	if v := update.Payload; v != nil {
 		p, err := protojson.Marshal(v)
@@ -183,9 +194,10 @@ func (s *Store) UpdateProjectWebhookV2(ctx context.Context, projectResourceID st
 	args = append(args, projectWebhookID)
 
 	projectWebhook := ProjectWebhookMessage{
-		Payload: &storepb.ProjectWebhookPayload{},
+		Payload: &storepb.ProjectWebhook{},
 	}
 	var txtArray pgtype.TextArray
+	var webhookType string
 	var payload []byte
 	// Execute update query with RETURNING.
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
@@ -198,7 +210,7 @@ func (s *Store) UpdateProjectWebhookV2(ctx context.Context, projectResourceID st
 	).Scan(
 		&projectWebhook.ID,
 		&projectWebhook.ProjectID,
-		&projectWebhook.Type,
+		&webhookType,
 		&projectWebhook.Title,
 		&projectWebhook.URL,
 		&txtArray,
@@ -209,9 +221,25 @@ func (s *Store) UpdateProjectWebhookV2(ctx context.Context, projectResourceID st
 		}
 		return nil, err
 	}
-	if err := txtArray.AssignTo(&projectWebhook.Events); err != nil {
+	webhookTypeValue, ok := storepb.ProjectWebhook_Type_value[webhookType]
+	if !ok {
+		return nil, errors.Errorf("invalid webhook type in database: %s", webhookType)
+	}
+	projectWebhook.Type = storepb.ProjectWebhook_Type(webhookTypeValue)
+
+	var eventStrs []string
+	if err := txtArray.AssignTo(&eventStrs); err != nil {
 		return nil, err
 	}
+	projectWebhook.Events = make([]storepb.Activity_Type, len(eventStrs))
+	for i, eventStr := range eventStrs {
+		eventValue, ok := storepb.Activity_Type_value[eventStr]
+		if !ok {
+			return nil, errors.Errorf("invalid activity type in database: %s", eventStr)
+		}
+		projectWebhook.Events[i] = storepb.Activity_Type(eventValue)
+	}
+
 	if err := common.ProtojsonUnmarshaler.Unmarshal(payload, projectWebhook.Payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal")
 	}
@@ -276,14 +304,15 @@ func (*Store) findProjectWebhookImplV2(ctx context.Context, txn *sql.Tx, find *F
 	var projectWebhooks []*ProjectWebhookMessage
 	for rows.Next() {
 		projectWebhook := ProjectWebhookMessage{
-			Payload: &storepb.ProjectWebhookPayload{},
+			Payload: &storepb.ProjectWebhook{},
 		}
 		var txtArray pgtype.TextArray
+		var webhookType string
 		var payload []byte
 
 		if err := rows.Scan(
 			&projectWebhook.ID,
-			&projectWebhook.Type,
+			&webhookType,
 			&projectWebhook.Title,
 			&projectWebhook.URL,
 			&txtArray,
@@ -292,16 +321,32 @@ func (*Store) findProjectWebhookImplV2(ctx context.Context, txn *sql.Tx, find *F
 			return nil, err
 		}
 
-		if err := txtArray.AssignTo(&projectWebhook.Events); err != nil {
+		webhookTypeValue, ok := storepb.ProjectWebhook_Type_value[webhookType]
+		if !ok {
+			return nil, errors.Errorf("invalid webhook type in database: %s", webhookType)
+		}
+		projectWebhook.Type = storepb.ProjectWebhook_Type(webhookTypeValue)
+
+		var eventStrs []string
+		if err := txtArray.AssignTo(&eventStrs); err != nil {
 			return nil, err
 		}
+		projectWebhook.Events = make([]storepb.Activity_Type, len(eventStrs))
+		for i, eventStr := range eventStrs {
+			eventValue, ok := storepb.Activity_Type_value[eventStr]
+			if !ok {
+				return nil, errors.Errorf("invalid activity type in database: %s", eventStr)
+			}
+			projectWebhook.Events[i] = storepb.Activity_Type(eventValue)
+		}
+
 		if err := common.ProtojsonUnmarshaler.Unmarshal(payload, projectWebhook.Payload); err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal")
 		}
 
 		if v := find.EventType; v != nil {
 			for _, activity := range projectWebhook.Events {
-				if common.EventType(activity) == *v {
+				if activity == *v {
 					projectWebhooks = append(projectWebhooks, &projectWebhook)
 					break
 				}

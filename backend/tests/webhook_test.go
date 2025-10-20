@@ -16,6 +16,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	webhookplugin "github.com/bytebase/bytebase/backend/plugin/webhook"
 )
@@ -101,10 +102,10 @@ func parseSlackWebhook(body []byte) (title, description string, err error) {
 // TestWebhookIntegration tests webhook functionality.
 func TestWebhookIntegration(t *testing.T) {
 	// Allow localhost for testing
-	webhookplugin.TestOnlyAllowedDomains["bb.plugin.webhook.slack"] = []string{"127.0.0.1", "localhost", "[::1]"}
+	webhookplugin.TestOnlyAllowedDomains[storepb.ProjectWebhook_SLACK] = []string{"127.0.0.1", "localhost", "[::1]"}
 	defer func() {
 		// Clean up after test
-		delete(webhookplugin.TestOnlyAllowedDomains, "bb.plugin.webhook.slack")
+		delete(webhookplugin.TestOnlyAllowedDomains, storepb.ProjectWebhook_SLACK)
 	}()
 
 	ctx := context.Background()
