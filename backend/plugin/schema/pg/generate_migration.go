@@ -1045,6 +1045,11 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 		return err
 	}
 
+	// Handle sequence ownership changes (must be after all tables are created)
+	if err := generateSequenceOwnershipChanges(buf, diff); err != nil {
+		return err
+	}
+
 	// Handle enum type comment changes
 	return generateEnumTypeCommentChanges(buf, diff)
 }
@@ -2631,6 +2636,85 @@ func generateSequenceCommentChanges(buf *strings.Builder, diff *schema.MetadataD
 			}
 		}
 	}
+	return nil
+}
+
+// generateSequenceOwnershipChanges generates ALTER SEQUENCE OWNED BY statements for sequence ownership changes
+func generateSequenceOwnershipChanges(buf *strings.Builder, diff *schema.MetadataDiff) error {
+	for _, seqDiff := range diff.SequenceChanges {
+		if seqDiff.Action == schema.MetadataDiffActionAlter {
+			// Handle ownership changes using AST nodes
+			if seqDiff.NewASTNode != nil {
+				// Adding or modifying ownership - extract SQL from NewASTNode
+				if err := writeMigrationAlterSequenceFromAST(buf, seqDiff.NewASTNode); err != nil {
+					return errors.Wrapf(err, "failed to generate ALTER SEQUENCE for %s.%s",
+						seqDiff.SchemaName, seqDiff.SequenceName)
+				}
+			} else if seqDiff.OldASTNode != nil {
+				// Removing ownership - generate ALTER SEQUENCE ... OWNED BY NONE
+				if err := writeMigrationRemoveSequenceOwnership(buf, seqDiff.SchemaName, seqDiff.SequenceName); err != nil {
+					return errors.Wrapf(err, "failed to remove ownership for %s.%s",
+						seqDiff.SchemaName, seqDiff.SequenceName)
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// writeMigrationAlterSequenceFromAST writes ALTER SEQUENCE statement from AST node
+func writeMigrationAlterSequenceFromAST(out *strings.Builder, astNode any) error {
+	if astNode == nil {
+		return errors.New("AST node is nil")
+	}
+
+	// Extract the original SQL text from the AST node
+	var alterSQL string
+
+	// Try to cast to PostgreSQL AlterseqstmtContext
+	if ctx, ok := astNode.(*pgparser.AlterseqstmtContext); ok {
+		// First try to get text using token stream
+		if tokenStream := ctx.GetParser().GetTokenStream(); tokenStream != nil {
+			start := ctx.GetStart()
+			stop := ctx.GetStop()
+			if start != nil && stop != nil {
+				alterSQL = tokenStream.GetTextFromTokens(start, stop)
+			}
+		}
+
+		// Fallback to GetText() if token stream approach failed
+		if alterSQL == "" {
+			alterSQL = ctx.GetText()
+		}
+	} else {
+		return errors.Errorf("unsupported AST node type for ALTER SEQUENCE: %T", astNode)
+	}
+
+	if alterSQL == "" {
+		return errors.New("failed to extract ALTER SEQUENCE SQL from AST node")
+	}
+
+	// Write the ALTER SQL
+	_, _ = out.WriteString(alterSQL)
+	// Ensure statement ends with semicolon
+	if !strings.HasSuffix(strings.TrimSpace(alterSQL), ";") {
+		_, _ = out.WriteString(";")
+	}
+	_, _ = out.WriteString("\n\n")
+
+	return nil
+}
+
+// writeMigrationRemoveSequenceOwnership writes ALTER SEQUENCE OWNED BY NONE statement
+//
+//nolint:unparam
+func writeMigrationRemoveSequenceOwnership(out *strings.Builder, schema, sequence string) error {
+	_, _ = out.WriteString(`ALTER SEQUENCE "`)
+	_, _ = out.WriteString(schema)
+	_, _ = out.WriteString(`"."`)
+	_, _ = out.WriteString(sequence)
+	_, _ = out.WriteString(`" OWNED BY NONE;`)
+	_, _ = out.WriteString("\n\n")
 	return nil
 }
 

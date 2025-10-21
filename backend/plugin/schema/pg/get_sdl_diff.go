@@ -180,11 +180,45 @@ func (l *sdlChunkExtractor) EnterCreateseqstmt(ctx *parser.CreateseqstmtContext)
 	}
 
 	chunk := &schema.SDLChunk{
-		Identifier: schemaQualifiedName,
-		ASTNode:    ctx,
+		Identifier:      schemaQualifiedName,
+		ASTNode:         ctx,
+		AlterStatements: []antlr.ParserRuleContext{},
 	}
 
 	l.chunks.Sequences[schemaQualifiedName] = chunk
+}
+
+func (l *sdlChunkExtractor) EnterAlterseqstmt(ctx *parser.AlterseqstmtContext) {
+	// Extract the sequence name from ALTER SEQUENCE statement
+	if ctx.Qualified_name() == nil {
+		return
+	}
+
+	identifier := pgparser.NormalizePostgreSQLQualifiedName(ctx.Qualified_name())
+	identifierStr := strings.Join(identifier, ".")
+
+	// Ensure schema.sequenceName format
+	var schemaQualifiedName string
+	if strings.Contains(identifierStr, ".") {
+		schemaQualifiedName = identifierStr
+	} else {
+		schemaQualifiedName = "public." + identifierStr
+	}
+
+	// Find the corresponding CREATE SEQUENCE chunk and append this ALTER statement
+	if chunk, exists := l.chunks.Sequences[schemaQualifiedName]; exists {
+		chunk.AlterStatements = append(chunk.AlterStatements, ctx)
+	} else {
+		// If CREATE SEQUENCE doesn't exist yet, create a placeholder chunk
+		// This handles cases where ALTER appears before CREATE in the SDL text
+		// (though this is unusual, we handle it for robustness)
+		chunk := &schema.SDLChunk{
+			Identifier:      schemaQualifiedName,
+			ASTNode:         nil, // No CREATE statement yet
+			AlterStatements: []antlr.ParserRuleContext{ctx},
+		}
+		l.chunks.Sequences[schemaQualifiedName] = chunk
+	}
 }
 
 func (l *sdlChunkExtractor) EnterCreatefunctionstmt(ctx *parser.CreatefunctionstmtContext) {
@@ -566,6 +600,51 @@ func parseIdentifier(identifier string) (schemaName, objectName string) {
 		return parts[0], parts[1]
 	}
 	return "public", identifier
+}
+
+// extractAlterTexts extracts and concatenates text from a list of ALTER statement nodes
+func extractAlterTexts(alterNodes []antlr.ParserRuleContext) string {
+	if len(alterNodes) == 0 {
+		return ""
+	}
+
+	var parts []string
+	for _, node := range alterNodes {
+		text := extractTextFromNode(node)
+		if text != "" {
+			parts = append(parts, text)
+		}
+	}
+	return strings.Join(parts, "\n\n")
+}
+
+// extractTextFromNode extracts text from a parser rule context node
+func extractTextFromNode(node antlr.ParserRuleContext) string {
+	if node == nil {
+		return ""
+	}
+
+	// Check for interfaces that have the required methods
+	type parserContext interface {
+		GetParser() antlr.Parser
+		GetStart() antlr.Token
+		GetStop() antlr.Token
+	}
+
+	if ruleContext, ok := node.(parserContext); ok {
+		if parser := ruleContext.GetParser(); parser != nil {
+			if tokenStream := parser.GetTokenStream(); tokenStream != nil {
+				start := ruleContext.GetStart()
+				stop := ruleContext.GetStop()
+				if start != nil && stop != nil {
+					return tokenStream.GetTextFromTokens(start, stop)
+				}
+			}
+		}
+	}
+
+	// Fallback to node's GetText method
+	return node.GetText()
 }
 
 // createTableExtractor extracts CREATE TABLE AST node from parse tree
@@ -1527,11 +1606,12 @@ func processFunctionChanges(currentChunks, previousChunks *schema.SDLChunks, cur
 
 // processSequenceChanges analyzes sequence changes between current and previous chunks
 // Following the text-first comparison pattern for performance optimization
+// Supports fine-grained diff: if only ALTER SEQUENCE OWNED BY changed, generate ALTER instead of DROP+CREATE
 func processSequenceChanges(currentChunks, previousChunks *schema.SDLChunks, currentDBSDLChunks *currentDatabaseSDLChunks, diff *schema.MetadataDiff) {
 	// Process current sequences to find created and modified sequences
 	for _, currentChunk := range currentChunks.Sequences {
 		if previousChunk, exists := previousChunks.Sequences[currentChunk.Identifier]; exists {
-			// Sequence exists in both - check if modified by comparing text first
+			// Sequence exists in both - check if modified
 			currentText := currentChunk.GetText()
 			previousText := previousChunk.GetText()
 			if currentText != previousText {
@@ -1539,26 +1619,118 @@ func processSequenceChanges(currentChunks, previousChunks *schema.SDLChunks, cur
 				if currentDBSDLChunks.shouldSkipChunkDiffForUsability(currentText, currentChunk.Identifier) {
 					continue
 				}
-				// Sequence was modified - use drop and recreate pattern (PostgreSQL standard)
+
+				// Fine-grained comparison: check if only ALTER statements changed
+				currentCreateText := extractTextFromNode(currentChunk.ASTNode)
+				previousCreateText := extractTextFromNode(previousChunk.ASTNode)
+				currentAlterTexts := extractAlterTexts(currentChunk.AlterStatements)
+				previousAlterTexts := extractAlterTexts(previousChunk.AlterStatements)
+
+				createChanged := currentCreateText != previousCreateText
+				alterChanged := currentAlterTexts != previousAlterTexts
+
 				schemaName, sequenceName := parseIdentifier(currentChunk.Identifier)
-				diff.SequenceChanges = append(diff.SequenceChanges, &schema.SequenceDiff{
-					Action:       schema.MetadataDiffActionDrop,
-					SchemaName:   schemaName,
-					SequenceName: sequenceName,
-					OldSequence:  nil, // Will be populated when SDL drift detection is implemented
-					NewSequence:  nil, // Will be populated when SDL drift detection is implemented
-					OldASTNode:   previousChunk.ASTNode,
-					NewASTNode:   nil,
-				})
-				diff.SequenceChanges = append(diff.SequenceChanges, &schema.SequenceDiff{
-					Action:       schema.MetadataDiffActionCreate,
-					SchemaName:   schemaName,
-					SequenceName: sequenceName,
-					OldSequence:  nil, // Will be populated when SDL drift detection is implemented
-					NewSequence:  nil, // Will be populated when SDL drift detection is implemented
-					OldASTNode:   nil,
-					NewASTNode:   currentChunk.ASTNode,
-				})
+
+				if createChanged && alterChanged {
+					// Both CREATE and ALTER changed - use drop and recreate
+					diff.SequenceChanges = append(diff.SequenceChanges, &schema.SequenceDiff{
+						Action:       schema.MetadataDiffActionDrop,
+						SchemaName:   schemaName,
+						SequenceName: sequenceName,
+						OldSequence:  nil,
+						NewSequence:  nil,
+						OldASTNode:   previousChunk.ASTNode,
+						NewASTNode:   nil,
+					})
+					diff.SequenceChanges = append(diff.SequenceChanges, &schema.SequenceDiff{
+						Action:       schema.MetadataDiffActionCreate,
+						SchemaName:   schemaName,
+						SequenceName: sequenceName,
+						OldSequence:  nil,
+						NewSequence:  nil,
+						OldASTNode:   nil,
+						NewASTNode:   currentChunk.ASTNode,
+					})
+					// Also need to add ALTER if current has ALTER statements
+					if len(currentChunk.AlterStatements) > 0 {
+						for _, alterNode := range currentChunk.AlterStatements {
+							diff.SequenceChanges = append(diff.SequenceChanges, &schema.SequenceDiff{
+								Action:       schema.MetadataDiffActionAlter,
+								SchemaName:   schemaName,
+								SequenceName: sequenceName,
+								OldSequence:  nil,
+								NewSequence:  nil,
+								OldASTNode:   nil,
+								NewASTNode:   alterNode,
+							})
+						}
+					}
+				} else if createChanged {
+					// Only CREATE changed - use drop and recreate
+					diff.SequenceChanges = append(diff.SequenceChanges, &schema.SequenceDiff{
+						Action:       schema.MetadataDiffActionDrop,
+						SchemaName:   schemaName,
+						SequenceName: sequenceName,
+						OldSequence:  nil,
+						NewSequence:  nil,
+						OldASTNode:   previousChunk.ASTNode,
+						NewASTNode:   nil,
+					})
+					diff.SequenceChanges = append(diff.SequenceChanges, &schema.SequenceDiff{
+						Action:       schema.MetadataDiffActionCreate,
+						SchemaName:   schemaName,
+						SequenceName: sequenceName,
+						OldSequence:  nil,
+						NewSequence:  nil,
+						OldASTNode:   nil,
+						NewASTNode:   currentChunk.ASTNode,
+					})
+					// Preserve ALTER if it exists in current
+					if len(currentChunk.AlterStatements) > 0 {
+						for _, alterNode := range currentChunk.AlterStatements {
+							diff.SequenceChanges = append(diff.SequenceChanges, &schema.SequenceDiff{
+								Action:       schema.MetadataDiffActionAlter,
+								SchemaName:   schemaName,
+								SequenceName: sequenceName,
+								OldSequence:  nil,
+								NewSequence:  nil,
+								OldASTNode:   nil,
+								NewASTNode:   alterNode,
+							})
+						}
+					}
+				} else if alterChanged {
+					// Only ALTER changed - generate ALTER statements
+					// This handles ownership changes without recreating the sequence
+					if len(currentChunk.AlterStatements) > 0 {
+						// Adding or modifying ALTER statements
+						for _, alterNode := range currentChunk.AlterStatements {
+							diff.SequenceChanges = append(diff.SequenceChanges, &schema.SequenceDiff{
+								Action:       schema.MetadataDiffActionAlter,
+								SchemaName:   schemaName,
+								SequenceName: sequenceName,
+								OldSequence:  nil,
+								NewSequence:  nil,
+								OldASTNode:   nil,
+								NewASTNode:   alterNode,
+							})
+						}
+					} else if len(previousChunk.AlterStatements) > 0 {
+						// Removing ALTER statements - use the previous ALTER node to represent the removal
+						// The migration generator should interpret this as removing the ownership
+						for _, alterNode := range previousChunk.AlterStatements {
+							diff.SequenceChanges = append(diff.SequenceChanges, &schema.SequenceDiff{
+								Action:       schema.MetadataDiffActionAlter,
+								SchemaName:   schemaName,
+								SequenceName: sequenceName,
+								OldSequence:  nil,
+								NewSequence:  nil,
+								OldASTNode:   alterNode,
+								NewASTNode:   nil,
+							})
+						}
+					}
+				}
 			}
 			// If text is identical, skip - no changes detected
 		} else {

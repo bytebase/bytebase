@@ -919,6 +919,58 @@ CREATE INDEX "idx_documents_default_opclass" ON ONLY "public"."documents" (title
 
 `,
 		},
+		{
+			name: "Sequence with ownership (non-serial, non-identity)",
+			metadata: &storepb.DatabaseSchemaMetadata{
+				Schemas: []*storepb.SchemaMetadata{
+					{
+						Name: "public",
+						Sequences: []*storepb.SequenceMetadata{
+							{
+								Name:        "custom_seq",
+								DataType:    "bigint",
+								Start:       "100",
+								Increment:   "5",
+								MinValue:    "100",
+								MaxValue:    "9223372036854775807",
+								Cycle:       false,
+								CacheSize:   "10",
+								OwnerTable:  "orders",
+								OwnerColumn: "order_number",
+							},
+						},
+						Tables: []*storepb.TableMetadata{
+							{
+								Name: "orders",
+								Columns: []*storepb.ColumnMetadata{
+									{
+										Name:     "id",
+										Type:     "INTEGER",
+										Nullable: false,
+									},
+									{
+										Name:     "order_number",
+										Type:     "BIGINT",
+										Nullable: false,
+										Default:  "nextval('custom_seq'::regclass)",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: `CREATE SEQUENCE "public"."custom_seq" AS bigint START WITH 100 INCREMENT BY 5 MINVALUE 100 MAXVALUE 9223372036854775807 NO CYCLE CACHE 10;
+
+CREATE TABLE "public"."orders" (
+    "id" INTEGER NOT NULL,
+    "order_number" BIGINT DEFAULT nextval('custom_seq'::regclass) NOT NULL
+);
+
+ALTER SEQUENCE "public"."custom_seq" OWNED BY "public"."orders"."order_number";
+
+`,
+		},
 	}
 
 	for _, tt := range tests {

@@ -5,13 +5,49 @@ import (
 )
 
 type SDLChunk struct {
-	Identifier string
-	ASTNode    antlr.ParserRuleContext // The parsed AST node for this chunk
+	Identifier      string
+	ASTNode         antlr.ParserRuleContext   // The parsed AST node for this chunk (e.g., CREATE SEQUENCE)
+	AlterStatements []antlr.ParserRuleContext // Additional ALTER statements for this object (e.g., ALTER SEQUENCE OWNED BY)
 }
 
 // GetText extracts text from the AST node using its own token stream
+// For chunks with ALTER statements, it combines the main statement with all ALTER statements
 func (c *SDLChunk) GetText() string {
 	if c.ASTNode == nil {
+		return ""
+	}
+
+	// Extract text from the main AST node (e.g., CREATE SEQUENCE)
+	mainText := extractTextFromNode(c.ASTNode)
+
+	// If there are no ALTER statements, return just the main text
+	if len(c.AlterStatements) == 0 {
+		return mainText
+	}
+
+	// Combine main statement with ALTER statements
+	parts := []string{mainText}
+	for _, alterNode := range c.AlterStatements {
+		alterText := extractTextFromNode(alterNode)
+		if alterText != "" {
+			parts = append(parts, alterText)
+		}
+	}
+
+	// Join with double newline to match SDL format
+	result := ""
+	for i, part := range parts {
+		if i > 0 {
+			result += "\n\n"
+		}
+		result += part
+	}
+	return result
+}
+
+// extractTextFromNode is a helper function to extract text from a parser rule context
+func extractTextFromNode(node antlr.ParserRuleContext) string {
+	if node == nil {
 		return ""
 	}
 
@@ -22,7 +58,7 @@ func (c *SDLChunk) GetText() string {
 		GetStop() antlr.Token
 	}
 
-	if ruleContext, ok := c.ASTNode.(parserContext); ok {
+	if ruleContext, ok := node.(parserContext); ok {
 		if parser := ruleContext.GetParser(); parser != nil {
 			if tokenStream := parser.GetTokenStream(); tokenStream != nil {
 				start := ruleContext.GetStart()
@@ -35,7 +71,7 @@ func (c *SDLChunk) GetText() string {
 	}
 
 	// Fallback to node's GetText method
-	return c.ASTNode.GetText()
+	return node.GetText()
 }
 
 type SDLChunks struct {

@@ -2270,6 +2270,25 @@ func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 			}
 		}
 
+		// Write ALTER SEQUENCE OWNED BY statements for sequences that have owners
+		// but are not serial or identity sequences
+		for _, sequence := range schema.Sequences {
+			if sequence.SkipDump {
+				continue
+			}
+			// Skip sequences that belong to serial or identity columns
+			sequenceKey := schema.Name + "." + sequence.Name
+			if skipSequences[sequenceKey] {
+				continue
+			}
+			// Write ALTER SEQUENCE OWNED BY for sequences with owners
+			if sequence.OwnerTable != "" && sequence.OwnerColumn != "" {
+				if err := writeAlterSequenceOwnedBy(&buf, schema.Name, sequence); err != nil {
+					return "", err
+				}
+			}
+		}
+
 		// Write views after tables
 		for _, view := range schema.Views {
 			if view.SkipDump {
@@ -3058,9 +3077,19 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 			if err := writeSequenceSDL(&buf, schemaName, sequence); err != nil {
 				return nil, errors.Wrapf(err, "failed to generate sequence SDL for %s.%s", schemaName, sequence.Name)
 			}
+			buf.WriteString(";\n")
+
+			// Add ALTER SEQUENCE OWNED BY for sequences with owners
+			if sequence.OwnerTable != "" && sequence.OwnerColumn != "" {
+				buf.WriteString("\n")
+				if err := writeAlterSequenceOwnedBy(&buf, schemaName, sequence); err != nil {
+					return nil, errors.Wrapf(err, "failed to generate ALTER SEQUENCE OWNED BY for %s.%s", schemaName, sequence.Name)
+				}
+			}
+
 			files = append(files, schema.File{
 				Name:    fmt.Sprintf("schemas/%s/sequences/%s.sql", schemaName, sequence.Name),
-				Content: buf.String() + ";\n",
+				Content: buf.String(),
 			})
 		}
 
