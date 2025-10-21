@@ -108,11 +108,7 @@ CREATE UNIQUE INDEX idx_project_unique_resource_id ON project(resource_id);
 CREATE TABLE project_webhook (
     id serial PRIMARY KEY,
     project text NOT NULL REFERENCES project(resource_id),
-    type text NOT NULL CHECK (type LIKE 'bb.plugin.webhook.%'),
-    name text NOT NULL,
-    url text NOT NULL,
-    event_list text ARRAY NOT NULL,
-    -- Stored as ProjectWebhookPayload (proto/store/store/project_webhook.proto)
+    -- Stored as ProjectWebhook (proto/store/store/project_webhook.proto)
     payload jsonb NOT NULL DEFAULT '{}'
 );
 

@@ -476,7 +476,7 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 
 	s.webhookManager.CreateEvent(ctx, &webhook.Event{
 		Actor:   user,
-		Type:    common.EventTypeIssueCreate,
+		Type:    storepb.Activity_ISSUE_CREATE,
 		Comment: "",
 		Issue:   webhook.NewIssue(issue),
 		Project: webhook.NewProject(issue.Project),
@@ -566,7 +566,7 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 
 	s.webhookManager.CreateEvent(ctx, &webhook.Event{
 		Actor:   user,
-		Type:    common.EventTypeIssueCreate,
+		Type:    storepb.Activity_ISSUE_CREATE,
 		Comment: "",
 		Issue:   webhook.NewIssue(issue),
 		Project: webhook.NewProject(issue.Project),
@@ -667,7 +667,7 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, reques
 
 	s.webhookManager.CreateEvent(ctx, &webhook.Event{
 		Actor:   user,
-		Type:    common.EventTypeIssueCreate,
+		Type:    storepb.Activity_ISSUE_CREATE,
 		Comment: "",
 		Issue:   webhook.NewIssue(issue),
 		Project: webhook.NewProject(issue.Project),
@@ -798,7 +798,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 
 		s.webhookManager.CreateEvent(ctx, &webhook.Event{
 			Actor:   s.store.GetSystemBotUser(ctx),
-			Type:    common.EventTypeIssueApprovalCreate,
+			Type:    storepb.Activity_ISSUE_APPROVAL_NOTIFY,
 			Comment: "",
 			Issue:   webhook.NewIssue(issue),
 			Project: webhook.NewProject(issue.Project),
@@ -816,7 +816,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 		// notify issue approved
 		s.webhookManager.CreateEvent(ctx, &webhook.Event{
 			Actor:   s.store.GetSystemBotUser(ctx),
-			Type:    common.EventTypeIssueApprovalPass,
+			Type:    storepb.Activity_NOTIFY_ISSUE_APPROVED,
 			Comment: "",
 			Issue:   webhook.NewIssue(issue),
 			Project: webhook.NewProject(issue.Project),
@@ -843,7 +843,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 			}
 			s.webhookManager.CreateEvent(ctx, &webhook.Event{
 				Actor:   user,
-				Type:    common.EventTypeIssueRolloutReady,
+				Type:    storepb.Activity_NOTIFY_PIPELINE_ROLLOUT,
 				Comment: "",
 				Issue:   webhook.NewIssue(issue),
 				Project: webhook.NewProject(issue.Project),
@@ -1045,7 +1045,7 @@ func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1
 
 		s.webhookManager.CreateEvent(ctx, &webhook.Event{
 			Actor:   s.store.GetSystemBotUser(ctx),
-			Type:    common.EventTypeIssueApprovalCreate,
+			Type:    storepb.Activity_ISSUE_APPROVAL_NOTIFY,
 			Comment: "",
 			Issue:   webhook.NewIssue(issue),
 			Project: webhook.NewProject(issue.Project),
@@ -1189,7 +1189,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 
 			webhookEvents = append(webhookEvents, &webhook.Event{
 				Actor:   user,
-				Type:    common.EventTypeIssueUpdate,
+				Type:    storepb.Activity_ISSUE_FIELD_UPDATE,
 				Comment: "",
 				Issue:   webhook.NewIssue(issue),
 				Project: webhook.NewProject(issue.Project),
@@ -1220,7 +1220,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 
 			webhookEvents = append(webhookEvents, &webhook.Event{
 				Actor:   user,
-				Type:    common.EventTypeIssueUpdate,
+				Type:    storepb.Activity_ISSUE_FIELD_UPDATE,
 				Comment: "",
 				Issue:   webhook.NewIssue(issue),
 				Project: webhook.NewProject(issue.Project),
@@ -1337,7 +1337,7 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, req *connect
 			func() {
 				s.webhookManager.CreateEvent(ctx, &webhook.Event{
 					Actor:   user,
-					Type:    common.EventTypeIssueStatusUpdate,
+					Type:    storepb.Activity_ISSUE_STATUS_UPDATE,
 					Comment: req.Msg.Reason,
 					Issue:   webhook.NewIssue(updatedIssue),
 					Project: webhook.NewProject(updatedIssue.Project),
@@ -1433,7 +1433,7 @@ func (s *IssueService) CreateIssueComment(ctx context.Context, req *connect.Requ
 
 	s.webhookManager.CreateEvent(ctx, &webhook.Event{
 		Actor:   user,
-		Type:    common.EventTypeIssueCommentCreate,
+		Type:    storepb.Activity_ISSUE_COMMENT_CREATE,
 		Comment: req.Msg.IssueComment.Comment,
 		Issue:   webhook.NewIssue(issue),
 		Project: webhook.NewProject(issue.Project),

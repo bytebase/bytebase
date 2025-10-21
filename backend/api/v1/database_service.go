@@ -1,6 +1,8 @@
 package v1
 
 import (
+	"archive/zip"
+	"bytes"
 	"context"
 	"fmt"
 	"slices"
@@ -871,7 +873,7 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, req *connect.Re
 
 // GetDatabaseSDLSchema gets the SDL schema of a database.
 func (s *DatabaseService) GetDatabaseSDLSchema(ctx context.Context, req *connect.Request[v1pb.GetDatabaseSDLSchemaRequest]) (*connect.Response[v1pb.DatabaseSDLSchema], error) {
-	instanceID, databaseName, err := common.GetInstanceDatabaseID(req.Msg.Name)
+	instanceID, databaseName, err := common.TrimSuffixAndGetInstanceDatabaseID(req.Msg.Name, common.SDLSchemaSuffix)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
 	}
@@ -1534,6 +1536,37 @@ func (*DatabaseService) getSingleFileSDL(_ context.Context, engine storepb.Engin
 	}), nil
 }
 
-func (*DatabaseService) getMultiFileSDL(_ context.Context, _ storepb.Engine, _ *storepb.DatabaseSchemaMetadata, _ string) (*connect.Response[v1pb.DatabaseSDLSchema], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.Errorf("multi-file SDL format is not yet implemented"))
+func (*DatabaseService) getMultiFileSDL(_ context.Context, engine storepb.Engine, metadata *storepb.DatabaseSchemaMetadata, _ string) (*connect.Response[v1pb.DatabaseSDLSchema], error) {
+	// Get multi-file schema from schema package
+	result, err := schema.GetMultiFileDatabaseDefinition(engine, schema.GetDefinitionContext{
+		SkipBackupSchema: true,
+		SDLFormat:        true,
+		MultiFileFormat:  true,
+	}, metadata)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate multi-file SDL schema: %v", err))
+	}
+
+	// Create ZIP archive
+	var buf bytes.Buffer
+	zipWriter := zip.NewWriter(&buf)
+
+	for _, file := range result.Files {
+		writer, err := zipWriter.Create(file.Name)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create zip entry %s: %v", file.Name, err))
+		}
+		if _, err := writer.Write([]byte(file.Content)); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to write content to %s: %v", file.Name, err))
+		}
+	}
+
+	if err := zipWriter.Close(); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to close zip writer: %v", err))
+	}
+
+	return connect.NewResponse(&v1pb.DatabaseSDLSchema{
+		Schema:      buf.Bytes(),
+		ContentType: "application/zip",
+	}), nil
 }

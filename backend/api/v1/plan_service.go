@@ -1002,6 +1002,9 @@ func (s *PlanService) RunPlanChecks(ctx context.Context, request *connect.Reques
 	if plan == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan not found"))
 	}
+	if storePlanConfigHasRelease(plan.Config) {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot run plan checks because plan %q has release", plan.Name))
+	}
 
 	var planCheckRuns []*store.PlanCheckRunMessage
 	if req.SpecId != nil {

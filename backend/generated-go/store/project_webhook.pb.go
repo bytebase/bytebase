@@ -21,30 +21,184 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type ProjectWebhookPayload struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// If direct_message is set, the notification is sent directly
-	// to the persons and url will be ignored.
-	// IM integration setting should be set for this function to work.
-	DirectMessage bool `protobuf:"varint,1,opt,name=direct_message,json=directMessage,proto3" json:"direct_message,omitempty"`
+// Activity type enumeration.
+type Activity_Type int32
+
+const (
+	// Unspecified type.
+	Activity_TYPE_UNSPECIFIED Activity_Type = 0
+	// Notifications via webhooks.
+	//
+	// NOTIFY_ISSUE_APPROVED represents the issue approved notification.
+	Activity_NOTIFY_ISSUE_APPROVED Activity_Type = 23
+	// NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification.
+	Activity_NOTIFY_PIPELINE_ROLLOUT Activity_Type = 24
+	// Issue related activity types.
+	//
+	// ISSUE_CREATE represents creating an issue.
+	Activity_ISSUE_CREATE Activity_Type = 1
+	// ISSUE_COMMENT_CREATE represents commenting on an issue.
+	Activity_ISSUE_COMMENT_CREATE Activity_Type = 2
+	// ISSUE_FIELD_UPDATE represents updating the issue field, likes title, description, etc.
+	Activity_ISSUE_FIELD_UPDATE Activity_Type = 3
+	// ISSUE_STATUS_UPDATE represents the issue status change, including OPEN, CLOSE, CANCEL for now.
+	Activity_ISSUE_STATUS_UPDATE Activity_Type = 4
+	// ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval.
+	Activity_ISSUE_APPROVAL_NOTIFY Activity_Type = 21
+	// ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now.
+	Activity_ISSUE_PIPELINE_STAGE_STATUS_UPDATE Activity_Type = 5
+	// ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED.
+	Activity_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE Activity_Type = 22
+)
+
+// Enum value maps for Activity_Type.
+var (
+	Activity_Type_name = map[int32]string{
+		0:  "TYPE_UNSPECIFIED",
+		23: "NOTIFY_ISSUE_APPROVED",
+		24: "NOTIFY_PIPELINE_ROLLOUT",
+		1:  "ISSUE_CREATE",
+		2:  "ISSUE_COMMENT_CREATE",
+		3:  "ISSUE_FIELD_UPDATE",
+		4:  "ISSUE_STATUS_UPDATE",
+		21: "ISSUE_APPROVAL_NOTIFY",
+		5:  "ISSUE_PIPELINE_STAGE_STATUS_UPDATE",
+		22: "ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE",
+	}
+	Activity_Type_value = map[string]int32{
+		"TYPE_UNSPECIFIED":                      0,
+		"NOTIFY_ISSUE_APPROVED":                 23,
+		"NOTIFY_PIPELINE_ROLLOUT":               24,
+		"ISSUE_CREATE":                          1,
+		"ISSUE_COMMENT_CREATE":                  2,
+		"ISSUE_FIELD_UPDATE":                    3,
+		"ISSUE_STATUS_UPDATE":                   4,
+		"ISSUE_APPROVAL_NOTIFY":                 21,
+		"ISSUE_PIPELINE_STAGE_STATUS_UPDATE":    5,
+		"ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE": 22,
+	}
+)
+
+func (x Activity_Type) Enum() *Activity_Type {
+	p := new(Activity_Type)
+	*p = x
+	return p
+}
+
+func (x Activity_Type) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (Activity_Type) Descriptor() protoreflect.EnumDescriptor {
+	return file_store_project_webhook_proto_enumTypes[0].Descriptor()
+}
+
+func (Activity_Type) Type() protoreflect.EnumType {
+	return &file_store_project_webhook_proto_enumTypes[0]
+}
+
+func (x Activity_Type) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use Activity_Type.Descriptor instead.
+func (Activity_Type) EnumDescriptor() ([]byte, []int) {
+	return file_store_project_webhook_proto_rawDescGZIP(), []int{0, 0}
+}
+
+type ProjectWebhook_Type int32
+
+const (
+	// Unspecified type.
+	ProjectWebhook_TYPE_UNSPECIFIED ProjectWebhook_Type = 0
+	// Slack integration.
+	ProjectWebhook_SLACK ProjectWebhook_Type = 1
+	// Discord integration.
+	ProjectWebhook_DISCORD ProjectWebhook_Type = 2
+	// Microsoft Teams integration.
+	ProjectWebhook_TEAMS ProjectWebhook_Type = 3
+	// DingTalk integration.
+	ProjectWebhook_DINGTALK ProjectWebhook_Type = 4
+	// Feishu integration.
+	ProjectWebhook_FEISHU ProjectWebhook_Type = 5
+	// WeCom (WeChat Work) integration.
+	ProjectWebhook_WECOM ProjectWebhook_Type = 6
+	// Lark integration.
+	ProjectWebhook_LARK ProjectWebhook_Type = 8
+)
+
+// Enum value maps for ProjectWebhook_Type.
+var (
+	ProjectWebhook_Type_name = map[int32]string{
+		0: "TYPE_UNSPECIFIED",
+		1: "SLACK",
+		2: "DISCORD",
+		3: "TEAMS",
+		4: "DINGTALK",
+		5: "FEISHU",
+		6: "WECOM",
+		8: "LARK",
+	}
+	ProjectWebhook_Type_value = map[string]int32{
+		"TYPE_UNSPECIFIED": 0,
+		"SLACK":            1,
+		"DISCORD":          2,
+		"TEAMS":            3,
+		"DINGTALK":         4,
+		"FEISHU":           5,
+		"WECOM":            6,
+		"LARK":             8,
+	}
+)
+
+func (x ProjectWebhook_Type) Enum() *ProjectWebhook_Type {
+	p := new(ProjectWebhook_Type)
+	*p = x
+	return p
+}
+
+func (x ProjectWebhook_Type) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ProjectWebhook_Type) Descriptor() protoreflect.EnumDescriptor {
+	return file_store_project_webhook_proto_enumTypes[1].Descriptor()
+}
+
+func (ProjectWebhook_Type) Type() protoreflect.EnumType {
+	return &file_store_project_webhook_proto_enumTypes[1]
+}
+
+func (x ProjectWebhook_Type) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ProjectWebhook_Type.Descriptor instead.
+func (ProjectWebhook_Type) EnumDescriptor() ([]byte, []int) {
+	return file_store_project_webhook_proto_rawDescGZIP(), []int{1, 0}
+}
+
+// Activity types for webhook notifications.
+type Activity struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ProjectWebhookPayload) Reset() {
-	*x = ProjectWebhookPayload{}
+func (x *Activity) Reset() {
+	*x = Activity{}
 	mi := &file_store_project_webhook_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ProjectWebhookPayload) String() string {
+func (x *Activity) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ProjectWebhookPayload) ProtoMessage() {}
+func (*Activity) ProtoMessage() {}
 
-func (x *ProjectWebhookPayload) ProtoReflect() protoreflect.Message {
+func (x *Activity) ProtoReflect() protoreflect.Message {
 	mi := &file_store_project_webhook_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -56,12 +210,88 @@ func (x *ProjectWebhookPayload) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ProjectWebhookPayload.ProtoReflect.Descriptor instead.
-func (*ProjectWebhookPayload) Descriptor() ([]byte, []int) {
+// Deprecated: Use Activity.ProtoReflect.Descriptor instead.
+func (*Activity) Descriptor() ([]byte, []int) {
 	return file_store_project_webhook_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *ProjectWebhookPayload) GetDirectMessage() bool {
+type ProjectWebhook struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Webhook type.
+	Type ProjectWebhook_Type `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.store.ProjectWebhook_Type" json:"type,omitempty"`
+	// Webhook title.
+	Title string `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	// Webhook URL.
+	Url string `protobuf:"bytes,3,opt,name=url,proto3" json:"url,omitempty"`
+	// List of activities that trigger this webhook.
+	Activities []Activity_Type `protobuf:"varint,4,rep,packed,name=activities,proto3,enum=bytebase.store.Activity_Type" json:"activities,omitempty"`
+	// If direct_message is set, the notification is sent directly
+	// to the persons and url will be ignored.
+	// IM integration setting should be set for this function to work.
+	DirectMessage bool `protobuf:"varint,5,opt,name=direct_message,json=directMessage,proto3" json:"direct_message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ProjectWebhook) Reset() {
+	*x = ProjectWebhook{}
+	mi := &file_store_project_webhook_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ProjectWebhook) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ProjectWebhook) ProtoMessage() {}
+
+func (x *ProjectWebhook) ProtoReflect() protoreflect.Message {
+	mi := &file_store_project_webhook_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ProjectWebhook.ProtoReflect.Descriptor instead.
+func (*ProjectWebhook) Descriptor() ([]byte, []int) {
+	return file_store_project_webhook_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *ProjectWebhook) GetType() ProjectWebhook_Type {
+	if x != nil {
+		return x.Type
+	}
+	return ProjectWebhook_TYPE_UNSPECIFIED
+}
+
+func (x *ProjectWebhook) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *ProjectWebhook) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+func (x *ProjectWebhook) GetActivities() []Activity_Type {
+	if x != nil {
+		return x.Activities
+	}
+	return nil
+}
+
+func (x *ProjectWebhook) GetDirectMessage() bool {
 	if x != nil {
 		return x.DirectMessage
 	}
@@ -72,9 +302,37 @@ var File_store_project_webhook_proto protoreflect.FileDescriptor
 
 const file_store_project_webhook_proto_rawDesc = "" +
 	"\n" +
-	"\x1bstore/project_webhook.proto\x12\x0ebytebase.store\">\n" +
-	"\x15ProjectWebhookPayload\x12%\n" +
-	"\x0edirect_message\x18\x01 \x01(\bR\rdirectMessageB\x14Z\x12generated-go/storeb\x06proto3"
+	"\x1bstore/project_webhook.proto\x12\x0ebytebase.store\"\xac\x02\n" +
+	"\bActivity\"\x9f\x02\n" +
+	"\x04Type\x12\x14\n" +
+	"\x10TYPE_UNSPECIFIED\x10\x00\x12\x19\n" +
+	"\x15NOTIFY_ISSUE_APPROVED\x10\x17\x12\x1b\n" +
+	"\x17NOTIFY_PIPELINE_ROLLOUT\x10\x18\x12\x10\n" +
+	"\fISSUE_CREATE\x10\x01\x12\x18\n" +
+	"\x14ISSUE_COMMENT_CREATE\x10\x02\x12\x16\n" +
+	"\x12ISSUE_FIELD_UPDATE\x10\x03\x12\x17\n" +
+	"\x13ISSUE_STATUS_UPDATE\x10\x04\x12\x19\n" +
+	"\x15ISSUE_APPROVAL_NOTIFY\x10\x15\x12&\n" +
+	"\"ISSUE_PIPELINE_STAGE_STATUS_UPDATE\x10\x05\x12)\n" +
+	"%ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE\x10\x16\"\xc7\x02\n" +
+	"\x0eProjectWebhook\x127\n" +
+	"\x04type\x18\x01 \x01(\x0e2#.bytebase.store.ProjectWebhook.TypeR\x04type\x12\x14\n" +
+	"\x05title\x18\x02 \x01(\tR\x05title\x12\x10\n" +
+	"\x03url\x18\x03 \x01(\tR\x03url\x12=\n" +
+	"\n" +
+	"activities\x18\x04 \x03(\x0e2\x1d.bytebase.store.Activity.TypeR\n" +
+	"activities\x12%\n" +
+	"\x0edirect_message\x18\x05 \x01(\bR\rdirectMessage\"n\n" +
+	"\x04Type\x12\x14\n" +
+	"\x10TYPE_UNSPECIFIED\x10\x00\x12\t\n" +
+	"\x05SLACK\x10\x01\x12\v\n" +
+	"\aDISCORD\x10\x02\x12\t\n" +
+	"\x05TEAMS\x10\x03\x12\f\n" +
+	"\bDINGTALK\x10\x04\x12\n" +
+	"\n" +
+	"\x06FEISHU\x10\x05\x12\t\n" +
+	"\x05WECOM\x10\x06\x12\b\n" +
+	"\x04LARK\x10\bB\x14Z\x12generated-go/storeb\x06proto3"
 
 var (
 	file_store_project_webhook_proto_rawDescOnce sync.Once
@@ -88,16 +346,22 @@ func file_store_project_webhook_proto_rawDescGZIP() []byte {
 	return file_store_project_webhook_proto_rawDescData
 }
 
-var file_store_project_webhook_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_store_project_webhook_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_store_project_webhook_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_store_project_webhook_proto_goTypes = []any{
-	(*ProjectWebhookPayload)(nil), // 0: bytebase.store.ProjectWebhookPayload
+	(Activity_Type)(0),       // 0: bytebase.store.Activity.Type
+	(ProjectWebhook_Type)(0), // 1: bytebase.store.ProjectWebhook.Type
+	(*Activity)(nil),         // 2: bytebase.store.Activity
+	(*ProjectWebhook)(nil),   // 3: bytebase.store.ProjectWebhook
 }
 var file_store_project_webhook_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	1, // 0: bytebase.store.ProjectWebhook.type:type_name -> bytebase.store.ProjectWebhook.Type
+	0, // 1: bytebase.store.ProjectWebhook.activities:type_name -> bytebase.store.Activity.Type
+	2, // [2:2] is the sub-list for method output_type
+	2, // [2:2] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_store_project_webhook_proto_init() }
@@ -110,13 +374,14 @@ func file_store_project_webhook_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_project_webhook_proto_rawDesc), len(file_store_project_webhook_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   1,
+			NumEnums:      2,
+			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_store_project_webhook_proto_goTypes,
 		DependencyIndexes: file_store_project_webhook_proto_depIdxs,
+		EnumInfos:         file_store_project_webhook_proto_enumTypes,
 		MessageInfos:      file_store_project_webhook_proto_msgTypes,
 	}.Build()
 	File_store_project_webhook_proto = out.File
