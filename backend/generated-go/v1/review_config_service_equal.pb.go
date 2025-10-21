@@ -15,12 +15,6 @@ func (x *ListReviewConfigsRequest) Equal(y *ListReviewConfigsRequest) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.PageSize != y.PageSize {
-		return false
-	}
-	if x.PageToken != y.PageToken {
-		return false
-	}
 	return true
 }
 
@@ -38,9 +32,6 @@ func (x *ListReviewConfigsResponse) Equal(y *ListReviewConfigsResponse) bool {
 		if !x.ReviewConfigs[i].Equal(y.ReviewConfigs[i]) {
 			return false
 		}
-	}
-	if x.NextPageToken != y.NextPageToken {
-		return false
 	}
 	return true
 }

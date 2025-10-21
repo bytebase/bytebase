@@ -76,20 +76,7 @@ func (Role_Type) EnumDescriptor() ([]byte, []int) {
 }
 
 type ListRolesRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Pagination is not currently implemented. This field is reserved for future use.
-	// The maximum number of roles to return. The service may return fewer than
-	// this value.
-	// If unspecified, at most 10 reviews will be returned.
-	// The maximum value is 1000; values above 1000 will be coerced to 1000.
-	PageSize int32 `protobuf:"varint,1,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// Pagination is not currently implemented. This field is reserved for future use.
-	// A page token, received from a previous `ListRoles` call.
-	// Provide this to retrieve the subsequent page.
-	//
-	// When paginating, all other parameters provided to `ListRoles` must match
-	// the call that provided the page token.
-	PageToken     string `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -124,27 +111,10 @@ func (*ListRolesRequest) Descriptor() ([]byte, []int) {
 	return file_v1_role_service_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *ListRolesRequest) GetPageSize() int32 {
-	if x != nil {
-		return x.PageSize
-	}
-	return 0
-}
-
-func (x *ListRolesRequest) GetPageToken() string {
-	if x != nil {
-		return x.PageToken
-	}
-	return ""
-}
-
 type ListRolesResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The roles from the specified request.
-	Roles []*Role `protobuf:"bytes,1,rep,name=roles,proto3" json:"roles,omitempty"`
-	// A token, which can be sent as `page_token` to retrieve the next page.
-	// If this field is omitted, there are no subsequent pages.
-	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
+	Roles         []*Role `protobuf:"bytes,1,rep,name=roles,proto3" json:"roles,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -184,13 +154,6 @@ func (x *ListRolesResponse) GetRoles() []*Role {
 		return x.Roles
 	}
 	return nil
-}
-
-func (x *ListRolesResponse) GetNextPageToken() string {
-	if x != nil {
-		return x.NextPageToken
-	}
-	return ""
 }
 
 type CreateRoleRequest struct {
@@ -493,14 +456,10 @@ var File_v1_role_service_proto protoreflect.FileDescriptor
 
 const file_v1_role_service_proto_rawDesc = "" +
 	"\n" +
-	"\x15v1/role_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x13v1/annotation.proto\"N\n" +
-	"\x10ListRolesRequest\x12\x1b\n" +
-	"\tpage_size\x18\x01 \x01(\x05R\bpageSize\x12\x1d\n" +
-	"\n" +
-	"page_token\x18\x02 \x01(\tR\tpageToken\"d\n" +
+	"\x15v1/role_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x13v1/annotation.proto\"\x12\n" +
+	"\x10ListRolesRequest\"<\n" +
 	"\x11ListRolesResponse\x12'\n" +
-	"\x05roles\x18\x01 \x03(\v2\x11.bytebase.v1.RoleR\x05roles\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"]\n" +
+	"\x05roles\x18\x01 \x03(\v2\x11.bytebase.v1.RoleR\x05roles\"]\n" +
 	"\x11CreateRoleRequest\x12*\n" +
 	"\x04role\x18\x01 \x01(\v2\x11.bytebase.v1.RoleB\x03\xe0A\x02R\x04role\x12\x1c\n" +
 	"\arole_id\x18\x02 \x01(\tB\x03\xe0A\x02R\x06roleId\"?\n" +

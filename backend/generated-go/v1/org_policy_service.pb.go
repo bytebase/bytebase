@@ -604,21 +604,8 @@ type ListPoliciesRequest struct {
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// Filter by specific policy type.
 	PolicyType *PolicyType `protobuf:"varint,2,opt,name=policy_type,json=policyType,proto3,enum=bytebase.v1.PolicyType,oneof" json:"policy_type,omitempty"`
-	// Pagination is not currently implemented. This field is reserved for future use.
-	// The maximum number of policies to return. The service may return fewer than
-	// this value.
-	// If unspecified, at most 10 policies will be returned.
-	// The maximum value is 1000; values above 1000 will be coerced to 1000.
-	PageSize int32 `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// Pagination is not currently implemented. This field is reserved for future use.
-	// A page token, received from a previous `ListPolicies` call.
-	// Provide this to retrieve the subsequent page.
-	//
-	// When paginating, all other parameters provided to `ListPolicies` must match
-	// the call that provided the page token.
-	PageToken string `protobuf:"bytes,4,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	// Show deleted policies if specified.
-	ShowDeleted   bool `protobuf:"varint,5,opt,name=show_deleted,json=showDeleted,proto3" json:"show_deleted,omitempty"`
+	ShowDeleted   bool `protobuf:"varint,3,opt,name=show_deleted,json=showDeleted,proto3" json:"show_deleted,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -667,20 +654,6 @@ func (x *ListPoliciesRequest) GetPolicyType() PolicyType {
 	return PolicyType_POLICY_TYPE_UNSPECIFIED
 }
 
-func (x *ListPoliciesRequest) GetPageSize() int32 {
-	if x != nil {
-		return x.PageSize
-	}
-	return 0
-}
-
-func (x *ListPoliciesRequest) GetPageToken() string {
-	if x != nil {
-		return x.PageToken
-	}
-	return ""
-}
-
 func (x *ListPoliciesRequest) GetShowDeleted() bool {
 	if x != nil {
 		return x.ShowDeleted
@@ -691,10 +664,7 @@ func (x *ListPoliciesRequest) GetShowDeleted() bool {
 type ListPoliciesResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The policies from the specified request.
-	Policies []*Policy `protobuf:"bytes,1,rep,name=policies,proto3" json:"policies,omitempty"`
-	// A token, which can be sent as `page_token` to retrieve the next page.
-	// If this field is omitted, there are no subsequent pages.
-	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
+	Policies      []*Policy `protobuf:"bytes,1,rep,name=policies,proto3" json:"policies,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -734,13 +704,6 @@ func (x *ListPoliciesResponse) GetPolicies() []*Policy {
 		return x.Policies
 	}
 	return nil
-}
-
-func (x *ListPoliciesResponse) GetNextPageToken() string {
-	if x != nil {
-		return x.NextPageToken
-	}
-	return ""
 }
 
 type Policy struct {
@@ -1661,19 +1624,15 @@ const file_v1_org_policy_service_proto_rawDesc = "" +
 	"\x13bytebase.com/PolicyR\x04name\"C\n" +
 	"\x10GetPolicyRequest\x12/\n" +
 	"\x04name\x18\x01 \x01(\tB\x1b\xe0A\x02\xfaA\x15\n" +
-	"\x13bytebase.com/PolicyR\x04name\"\xf8\x01\n" +
+	"\x13bytebase.com/PolicyR\x04name\"\xbc\x01\n" +
 	"\x13ListPoliciesRequest\x123\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1b\xe0A\x02\xfaA\x15\x12\x13bytebase.com/PolicyR\x06parent\x12=\n" +
 	"\vpolicy_type\x18\x02 \x01(\x0e2\x17.bytebase.v1.PolicyTypeH\x00R\n" +
-	"policyType\x88\x01\x01\x12\x1b\n" +
-	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\x12\x1d\n" +
-	"\n" +
-	"page_token\x18\x04 \x01(\tR\tpageToken\x12!\n" +
-	"\fshow_deleted\x18\x05 \x01(\bR\vshowDeletedB\x0e\n" +
-	"\f_policy_type\"o\n" +
+	"policyType\x88\x01\x01\x12!\n" +
+	"\fshow_deleted\x18\x03 \x01(\bR\vshowDeletedB\x0e\n" +
+	"\f_policy_type\"G\n" +
 	"\x14ListPoliciesResponse\x12/\n" +
-	"\bpolicies\x18\x01 \x03(\v2\x13.bytebase.v1.PolicyR\bpolicies\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xb8\a\n" +
+	"\bpolicies\x18\x01 \x03(\v2\x13.bytebase.v1.PolicyR\bpolicies\"\xb8\a\n" +
 	"\x06Policy\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12.\n" +
 	"\x13inherit_from_parent\x18\x04 \x01(\bR\x11inheritFromParent\x12+\n" +

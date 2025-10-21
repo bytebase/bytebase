@@ -25,19 +25,7 @@ const (
 )
 
 type ListReviewConfigsRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Pagination is not currently implemented. This field is reserved for future use.
-	// The maximum number of SQL review configs to return. The service may return fewer than
-	// this value.
-	// If unspecified, at most 10 SQL review configs will be returned.
-	// The maximum value is 1000; values above 1000 will be coerced to 1000.
-	PageSize int32 `protobuf:"varint,1,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// Pagination is not currently implemented. This field is reserved for future use.
-	// A page token, provide this to retrieve the subsequent page.
-	//
-	// When paginating, all other parameters provided to `ListReviewConfigs` must match
-	// the call that provided the page token.
-	PageToken     string `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -72,27 +60,10 @@ func (*ListReviewConfigsRequest) Descriptor() ([]byte, []int) {
 	return file_v1_review_config_service_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *ListReviewConfigsRequest) GetPageSize() int32 {
-	if x != nil {
-		return x.PageSize
-	}
-	return 0
-}
-
-func (x *ListReviewConfigsRequest) GetPageToken() string {
-	if x != nil {
-		return x.PageToken
-	}
-	return ""
-}
-
 type ListReviewConfigsResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The SQL review configs from the specified request.
 	ReviewConfigs []*ReviewConfig `protobuf:"bytes,1,rep,name=review_configs,json=reviewConfigs,proto3" json:"review_configs,omitempty"`
-	// A token, which can be sent as `page_token` to retrieve the next page.
-	// If this field is omitted, there are no subsequent pages.
-	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -132,13 +103,6 @@ func (x *ListReviewConfigsResponse) GetReviewConfigs() []*ReviewConfig {
 		return x.ReviewConfigs
 	}
 	return nil
-}
-
-func (x *ListReviewConfigsResponse) GetNextPageToken() string {
-	if x != nil {
-		return x.NextPageToken
-	}
-	return ""
 }
 
 type CreateReviewConfigRequest struct {
@@ -431,14 +395,10 @@ var File_v1_review_config_service_proto protoreflect.FileDescriptor
 
 const file_v1_review_config_service_proto_rawDesc = "" +
 	"\n" +
-	"\x1ev1/review_config_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x13v1/annotation.proto\x1a\x1bv1/org_policy_service.proto\"V\n" +
-	"\x18ListReviewConfigsRequest\x12\x1b\n" +
-	"\tpage_size\x18\x01 \x01(\x05R\bpageSize\x12\x1d\n" +
-	"\n" +
-	"page_token\x18\x02 \x01(\tR\tpageToken\"\x85\x01\n" +
+	"\x1ev1/review_config_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x13v1/annotation.proto\x1a\x1bv1/org_policy_service.proto\"\x1a\n" +
+	"\x18ListReviewConfigsRequest\"]\n" +
 	"\x19ListReviewConfigsResponse\x12@\n" +
-	"\x0ereview_configs\x18\x01 \x03(\v2\x19.bytebase.v1.ReviewConfigR\rreviewConfigs\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"`\n" +
+	"\x0ereview_configs\x18\x01 \x03(\v2\x19.bytebase.v1.ReviewConfigR\rreviewConfigs\"`\n" +
 	"\x19CreateReviewConfigRequest\x12C\n" +
 	"\rreview_config\x18\x01 \x01(\v2\x19.bytebase.v1.ReviewConfigB\x03\xe0A\x02R\freviewConfig\"\xc2\x01\n" +
 	"\x19UpdateReviewConfigRequest\x12C\n" +

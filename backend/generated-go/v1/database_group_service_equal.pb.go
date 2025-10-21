@@ -19,12 +19,6 @@ func (x *ListDatabaseGroupsRequest) Equal(y *ListDatabaseGroupsRequest) bool {
 	if x.Parent != y.Parent {
 		return false
 	}
-	if x.PageSize != y.PageSize {
-		return false
-	}
-	if x.PageToken != y.PageToken {
-		return false
-	}
 	if x.View != y.View {
 		return false
 	}
@@ -45,9 +39,6 @@ func (x *ListDatabaseGroupsResponse) Equal(y *ListDatabaseGroupsResponse) bool {
 		if !x.DatabaseGroups[i].Equal(y.DatabaseGroups[i]) {
 			return false
 		}
-	}
-	if x.NextPageToken != y.NextPageToken {
-		return false
 	}
 	return true
 }

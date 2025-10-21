@@ -85,21 +85,8 @@ type ListDatabaseGroupsRequest struct {
 	// The parent resource whose database groups are to be listed.
 	// Format: projects/{project}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
-	// Pagination is not currently implemented. This field is reserved for future use.
-	// The maximum number of database groups to return. The service may return fewer than
-	// this value.
-	// If unspecified, at most 50 database groups will be returned.
-	// The maximum value is 1000; values above 1000 will be coerced to 1000.
-	PageSize int32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// Pagination is not currently implemented. This field is reserved for future use.
-	// A page token, received from a previous `ListDatabaseGroups` call.
-	// Provide this to retrieve the subsequent page.
-	//
-	// When paginating, all other parameters provided to `ListDatabaseGroups` must match
-	// the call that provided the page token.
-	PageToken string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	// The view to return. Defaults to DATABASE_GROUP_VIEW_BASIC.
-	View          DatabaseGroupView `protobuf:"varint,4,opt,name=view,proto3,enum=bytebase.v1.DatabaseGroupView" json:"view,omitempty"`
+	View          DatabaseGroupView `protobuf:"varint,2,opt,name=view,proto3,enum=bytebase.v1.DatabaseGroupView" json:"view,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -141,20 +128,6 @@ func (x *ListDatabaseGroupsRequest) GetParent() string {
 	return ""
 }
 
-func (x *ListDatabaseGroupsRequest) GetPageSize() int32 {
-	if x != nil {
-		return x.PageSize
-	}
-	return 0
-}
-
-func (x *ListDatabaseGroupsRequest) GetPageToken() string {
-	if x != nil {
-		return x.PageToken
-	}
-	return ""
-}
-
 func (x *ListDatabaseGroupsRequest) GetView() DatabaseGroupView {
 	if x != nil {
 		return x.View
@@ -167,12 +140,8 @@ type ListDatabaseGroupsResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The database groups from the specified request.
 	DatabaseGroups []*DatabaseGroup `protobuf:"bytes,1,rep,name=database_groups,json=databaseGroups,proto3" json:"database_groups,omitempty"`
-	// Pagination is not currently implemented. This field is reserved for future use.
-	// A token, which can be sent as `page_token` to retrieve the next page.
-	// If this field is omitted, there are no subsequent pages.
-	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *ListDatabaseGroupsResponse) Reset() {
@@ -210,13 +179,6 @@ func (x *ListDatabaseGroupsResponse) GetDatabaseGroups() []*DatabaseGroup {
 		return x.DatabaseGroups
 	}
 	return nil
-}
-
-func (x *ListDatabaseGroupsResponse) GetNextPageToken() string {
-	if x != nil {
-		return x.NextPageToken
-	}
-	return ""
 }
 
 // Request message for getting a database group.
@@ -605,17 +567,13 @@ var File_v1_database_group_service_proto protoreflect.FileDescriptor
 
 const file_v1_database_group_service_proto_rawDesc = "" +
 	"\n" +
-	"\x1fv1/database_group_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x16google/type/expr.proto\x1a\x13v1/annotation.proto\"\xc1\x01\n" +
+	"\x1fv1/database_group_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x16google/type/expr.proto\x1a\x13v1/annotation.proto\"\x85\x01\n" +
 	"\x19ListDatabaseGroupsRequest\x124\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
-	"\x14bytebase.com/ProjectR\x06parent\x12\x1b\n" +
-	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
-	"\n" +
-	"page_token\x18\x03 \x01(\tR\tpageToken\x122\n" +
-	"\x04view\x18\x04 \x01(\x0e2\x1e.bytebase.v1.DatabaseGroupViewR\x04view\"\x89\x01\n" +
+	"\x14bytebase.com/ProjectR\x06parent\x122\n" +
+	"\x04view\x18\x02 \x01(\x0e2\x1e.bytebase.v1.DatabaseGroupViewR\x04view\"a\n" +
 	"\x1aListDatabaseGroupsResponse\x12C\n" +
-	"\x0fdatabase_groups\x18\x01 \x03(\v2\x1a.bytebase.v1.DatabaseGroupR\x0edatabaseGroups\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x85\x01\n" +
+	"\x0fdatabase_groups\x18\x01 \x03(\v2\x1a.bytebase.v1.DatabaseGroupR\x0edatabaseGroups\"\x85\x01\n" +
 	"\x17GetDatabaseGroupRequest\x126\n" +
 	"\x04name\x18\x01 \x01(\tB\"\xe0A\x02\xfaA\x1c\n" +
 	"\x1abytebase.com/DatabaseGroupR\x04name\x122\n" +

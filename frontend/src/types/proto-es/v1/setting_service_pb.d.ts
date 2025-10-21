@@ -20,28 +20,6 @@ export declare const file_v1_setting_service: GenFile;
  * @generated from message bytebase.v1.ListSettingsRequest
  */
 export declare type ListSettingsRequest = Message<"bytebase.v1.ListSettingsRequest"> & {
-  /**
-   * Pagination is not currently implemented. This field is reserved for future use.
-   * The maximum number of settings to return. The service may return fewer than
-   * this value.
-   * If unspecified, at most 10 settings will be returned.
-   * The maximum value is 1000; values above 1000 will be coerced to 1000.
-   *
-   * @generated from field: int32 page_size = 1;
-   */
-  pageSize: number;
-
-  /**
-   * Pagination is not currently implemented. This field is reserved for future use.
-   * A page token, received from a previous `ListSettings` call.
-   * Provide this to retrieve the subsequent page.
-   *
-   * When paginating, all other parameters provided to `ListSettings` must match
-   * the call that provided the page token.
-   *
-   * @generated from field: string page_token = 2;
-   */
-  pageToken: string;
 };
 
 /**
@@ -60,14 +38,6 @@ export declare type ListSettingsResponse = Message<"bytebase.v1.ListSettingsResp
    * @generated from field: repeated bytebase.v1.Setting settings = 1;
    */
   settings: Setting[];
-
-  /**
-   * A token, which can be sent as `page_token` to retrieve the next page.
-   * If this field is omitted, there are no subsequent pages.
-   *
-   * @generated from field: string next_page_token = 2;
-   */
-  nextPageToken: string;
 };
 
 /**

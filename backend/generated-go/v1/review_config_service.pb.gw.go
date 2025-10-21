@@ -62,8 +62,6 @@ func local_request_ReviewConfigService_CreateReviewConfig_0(ctx context.Context,
 	return msg, metadata, err
 }
 
-var filter_ReviewConfigService_ListReviewConfigs_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
-
 func request_ReviewConfigService_ListReviewConfigs_0(ctx context.Context, marshaler runtime.Marshaler, client ReviewConfigServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
 		protoReq ListReviewConfigsRequest
@@ -71,12 +69,6 @@ func request_ReviewConfigService_ListReviewConfigs_0(ctx context.Context, marsha
 	)
 	if req.Body != nil {
 		_, _ = io.Copy(io.Discard, req.Body)
-	}
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ReviewConfigService_ListReviewConfigs_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := client.ListReviewConfigs(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
@@ -87,12 +79,6 @@ func local_request_ReviewConfigService_ListReviewConfigs_0(ctx context.Context, 
 		protoReq ListReviewConfigsRequest
 		metadata runtime.ServerMetadata
 	)
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ReviewConfigService_ListReviewConfigs_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
 	msg, err := server.ListReviewConfigs(ctx, &protoReq)
 	return msg, metadata, err
 }

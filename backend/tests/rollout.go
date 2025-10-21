@@ -129,7 +129,7 @@ func (ctl *controller) waitRollout(ctx context.Context, issueName, rolloutName s
 				case v1pb.Task_SKIPPED:
 					continue
 				case v1pb.Task_FAILED:
-					resp, err := ctl.rolloutServiceClient.ListTaskRuns(ctx, connect.NewRequest(&v1pb.ListTaskRunsRequest{Parent: task.Name, PageSize: 1}))
+					resp, err := ctl.rolloutServiceClient.ListTaskRuns(ctx, connect.NewRequest(&v1pb.ListTaskRunsRequest{Parent: task.Name}))
 					if err != nil {
 						return err
 					}

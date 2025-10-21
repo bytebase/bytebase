@@ -17,28 +17,6 @@ export declare const file_v1_risk_service: GenFile;
  * @generated from message bytebase.v1.ListRisksRequest
  */
 export declare type ListRisksRequest = Message<"bytebase.v1.ListRisksRequest"> & {
-  /**
-   * Pagination is not currently implemented. This field is reserved for future use.
-   * The maximum number of risks to return. The service may return fewer than
-   * this value.
-   * If unspecified, at most 10 risks will be returned.
-   * The maximum value is 1000; values above 1000 will be coerced to 1000.
-   *
-   * @generated from field: int32 page_size = 1;
-   */
-  pageSize: number;
-
-  /**
-   * Pagination is not currently implemented. This field is reserved for future use.
-   * A page token, received from a previous `ListRisks` call.
-   * Provide this to retrieve the subsequent page.
-   *
-   * When paginating, all other parameters provided to `ListRisks` must match
-   * the call that provided the page token.
-   *
-   * @generated from field: string page_token = 2;
-   */
-  pageToken: string;
 };
 
 /**
@@ -55,14 +33,6 @@ export declare type ListRisksResponse = Message<"bytebase.v1.ListRisksResponse">
    * @generated from field: repeated bytebase.v1.Risk risks = 1;
    */
   risks: Risk[];
-
-  /**
-   * A token, which can be sent as `page_token` to retrieve the next page.
-   * If this field is omitted, there are no subsequent pages.
-   *
-   * @generated from field: string next_page_token = 2;
-   */
-  nextPageToken: string;
 };
 
 /**

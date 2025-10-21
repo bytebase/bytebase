@@ -28,12 +28,6 @@ func (x *ListIdentityProvidersRequest) Equal(y *ListIdentityProvidersRequest) bo
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.PageSize != y.PageSize {
-		return false
-	}
-	if x.PageToken != y.PageToken {
-		return false
-	}
 	return true
 }
 
@@ -51,9 +45,6 @@ func (x *ListIdentityProvidersResponse) Equal(y *ListIdentityProvidersResponse) 
 		if !x.IdentityProviders[i].Equal(y.IdentityProviders[i]) {
 			return false
 		}
-	}
-	if x.NextPageToken != y.NextPageToken {
-		return false
 	}
 	return true
 }

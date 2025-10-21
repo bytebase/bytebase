@@ -16,27 +16,6 @@ export declare const file_v1_review_config_service: GenFile;
  * @generated from message bytebase.v1.ListReviewConfigsRequest
  */
 export declare type ListReviewConfigsRequest = Message<"bytebase.v1.ListReviewConfigsRequest"> & {
-  /**
-   * Pagination is not currently implemented. This field is reserved for future use.
-   * The maximum number of SQL review configs to return. The service may return fewer than
-   * this value.
-   * If unspecified, at most 10 SQL review configs will be returned.
-   * The maximum value is 1000; values above 1000 will be coerced to 1000.
-   *
-   * @generated from field: int32 page_size = 1;
-   */
-  pageSize: number;
-
-  /**
-   * Pagination is not currently implemented. This field is reserved for future use.
-   * A page token, provide this to retrieve the subsequent page.
-   *
-   * When paginating, all other parameters provided to `ListReviewConfigs` must match
-   * the call that provided the page token.
-   *
-   * @generated from field: string page_token = 2;
-   */
-  pageToken: string;
 };
 
 /**
@@ -55,14 +34,6 @@ export declare type ListReviewConfigsResponse = Message<"bytebase.v1.ListReviewC
    * @generated from field: repeated bytebase.v1.ReviewConfig review_configs = 1;
    */
   reviewConfigs: ReviewConfig[];
-
-  /**
-   * A token, which can be sent as `page_token` to retrieve the next page.
-   * If this field is omitted, there are no subsequent pages.
-   *
-   * @generated from field: string next_page_token = 2;
-   */
-  nextPageToken: string;
 };
 
 /**

@@ -895,7 +895,6 @@ const cancelTasks = async () => {
       eligibleTasks.value.map(async (task) => {
         const request = create(ListTaskRunsRequestSchema, {
           parent: task.name,
-          pageSize: 10,
         });
         return rolloutServiceClientConnect
           .listTaskRuns(request)

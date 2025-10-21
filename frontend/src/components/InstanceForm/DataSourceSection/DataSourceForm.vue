@@ -262,7 +262,7 @@
             >
               <NRadio
                 :value="
-                  DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED
+                  DataSourceExternalSecret_SecretType.SECRET_TYPE_UNSPECIFIED
                 "
               >
                 {{ $t("instance.password-type.password") }}
@@ -304,7 +304,7 @@
           <div
             v-if="
               state.passwordType ===
-              DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED
+              DataSourceExternalSecret_SecretType.SECRET_TYPE_UNSPECIFIED
             "
           >
             <label class="textlabel block">
@@ -1090,7 +1090,7 @@ const {
 } = specs;
 
 const state = reactive<LocalState>({
-  passwordType: DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED,
+  passwordType: DataSourceExternalSecret_SecretType.SECRET_TYPE_UNSPECIFIED,
 });
 
 // Use a simpler approach to track new parameters
@@ -1113,7 +1113,7 @@ watch(
       state.passwordType = externalSecret.secretType;
     } else {
       state.passwordType =
-        DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED;
+        DataSourceExternalSecret_SecretType.SECRET_TYPE_UNSPECIFIED;
     }
   },
   { immediate: true, deep: true }
@@ -1201,7 +1201,7 @@ const supportedAuthenticationTypes = computed(() => {
 
 const secretInputPlaceholder = computed(() => {
   switch (state.passwordType) {
-    case DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED:
+    case DataSourceExternalSecret_SecretType.SECRET_TYPE_UNSPECIFIED:
       return `${t("common.password")} - ${t("common.write-only")}`;
     case DataSourceExternalSecret_SecretType.VAULT_KV_V2:
       switch (props.dataSource.externalSecret?.authType) {
@@ -1251,7 +1251,7 @@ const secretKeyLabel = computed(() => {
 const changeSecretType = (secretType: DataSourceExternalSecret_SecretType) => {
   const ds = props.dataSource;
   switch (secretType) {
-    case DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED:
+    case DataSourceExternalSecret_SecretType.SECRET_TYPE_UNSPECIFIED:
       ds.externalSecret = undefined;
       break;
     case DataSourceExternalSecret_SecretType.VAULT_KV_V2:

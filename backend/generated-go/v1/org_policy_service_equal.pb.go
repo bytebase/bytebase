@@ -90,12 +90,6 @@ func (x *ListPoliciesRequest) Equal(y *ListPoliciesRequest) bool {
 	if p, q := x.PolicyType, y.PolicyType; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
 		return false
 	}
-	if x.PageSize != y.PageSize {
-		return false
-	}
-	if x.PageToken != y.PageToken {
-		return false
-	}
 	if x.ShowDeleted != y.ShowDeleted {
 		return false
 	}
@@ -116,9 +110,6 @@ func (x *ListPoliciesResponse) Equal(y *ListPoliciesResponse) bool {
 		if !x.Policies[i].Equal(y.Policies[i]) {
 			return false
 		}
-	}
-	if x.NextPageToken != y.NextPageToken {
-		return false
 	}
 	return true
 }

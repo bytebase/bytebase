@@ -379,9 +379,9 @@ type SearchProjectsRequest struct {
 	// - labels.{key}: the project label, support "==" and "in" operators.
 	//
 	// For example:
-	// name = "project name"
+	// name == "project name"
 	// name.matches("project name")
-	// resource_id = "project id"
+	// resource_id == "project id"
 	// resource_id.matches("project id")
 	// exclude_default == true
 	// state == "DELETED"
@@ -389,8 +389,8 @@ type SearchProjectsRequest struct {
 	// labels.tier == "critical"
 	// labels.environment in ["staging", "prod"]
 	// You can combine filter conditions like:
-	// name = "project name" && resource_id.matches("project id")
-	// name.matches("project name") || resource_id = "project id"
+	// name == "project name" && resource_id.matches("project id")
+	// name.matches("project name") || resource_id == "project id"
 	// labels.environment == "production" && labels.tier == "critical"
 	Filter string `protobuf:"bytes,2,opt,name=filter,proto3" json:"filter,omitempty"`
 	// The maximum number of projects to return. The service may return fewer than

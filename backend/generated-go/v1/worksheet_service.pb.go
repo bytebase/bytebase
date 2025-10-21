@@ -423,20 +423,7 @@ type SearchWorksheetsRequest struct {
 	// starred == false
 	// visibility in ["PRIVATE", "PROJECT_READ", "PROJECT_WRITE"]
 	// visibility == "PRIVATE"
-	Filter string `protobuf:"bytes,1,opt,name=filter,proto3" json:"filter,omitempty"`
-	// Pagination is not currently implemented. This field is reserved for future use.
-	// The maximum number of worksheets to return. The service may return fewer than
-	// this value.
-	// If unspecified, at most 10 worksheets will be returned.
-	// The maximum value is 1000; values above 1000 will be coerced to 1000.
-	PageSize int32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// Pagination is not currently implemented. This field is reserved for future use.
-	// A page token, received from a previous `SearchWorksheets` call.
-	// Provide this to retrieve the subsequent page.
-	//
-	// When paginating, all other parameters provided to `SearchWorksheets` must match
-	// the call that provided the page token.
-	PageToken     string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	Filter        string `protobuf:"bytes,1,opt,name=filter,proto3" json:"filter,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -478,28 +465,10 @@ func (x *SearchWorksheetsRequest) GetFilter() string {
 	return ""
 }
 
-func (x *SearchWorksheetsRequest) GetPageSize() int32 {
-	if x != nil {
-		return x.PageSize
-	}
-	return 0
-}
-
-func (x *SearchWorksheetsRequest) GetPageToken() string {
-	if x != nil {
-		return x.PageToken
-	}
-	return ""
-}
-
 type SearchWorksheetsResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The worksheets that matched the search criteria.
-	Worksheets []*Worksheet `protobuf:"bytes,1,rep,name=worksheets,proto3" json:"worksheets,omitempty"`
-	// Pagination is not currently implemented. This field is reserved for future use.
-	// A token, which can be sent as `page_token` to retrieve the next page.
-	// If this field is omitted, there are no subsequent pages.
-	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
+	Worksheets    []*Worksheet `protobuf:"bytes,1,rep,name=worksheets,proto3" json:"worksheets,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -539,13 +508,6 @@ func (x *SearchWorksheetsResponse) GetWorksheets() []*Worksheet {
 		return x.Worksheets
 	}
 	return nil
-}
-
-func (x *SearchWorksheetsResponse) GetNextPageToken() string {
-	if x != nil {
-		return x.NextPageToken
-	}
-	return ""
 }
 
 type Worksheet struct {
@@ -712,17 +674,13 @@ const file_v1_worksheet_service_proto_rawDesc = "" +
 	"\tworksheet\x18\x01 \x01(\tB\x03\xe0A\x02R\tworksheet\x12\x18\n" +
 	"\astarred\x18\x02 \x01(\bR\astarred\"1\n" +
 	"\x16DeleteWorksheetRequest\x12\x17\n" +
-	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x02R\x04name\"m\n" +
+	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x02R\x04name\"1\n" +
 	"\x17SearchWorksheetsRequest\x12\x16\n" +
-	"\x06filter\x18\x01 \x01(\tR\x06filter\x12\x1b\n" +
-	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
-	"\n" +
-	"page_token\x18\x03 \x01(\tR\tpageToken\"z\n" +
+	"\x06filter\x18\x01 \x01(\tR\x06filter\"R\n" +
 	"\x18SearchWorksheetsResponse\x126\n" +
 	"\n" +
 	"worksheets\x18\x01 \x03(\v2\x16.bytebase.v1.WorksheetR\n" +
-	"worksheets\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xaa\x04\n" +
+	"worksheets\"\xaa\x04\n" +
 	"\tWorksheet\x12\x1a\n" +
 	"\x04name\x18\x01 \x01(\tB\x06\xe0A\x02\xe0A\x05R\x04name\x12\x1d\n" +
 	"\aproject\x18\x02 \x01(\tB\x03\xe0A\x02R\aproject\x12\x1a\n" +
@@ -745,9 +703,9 @@ const file_v1_worksheet_service_proto_rawDesc = "" +
 	"\x16VISIBILITY_UNSPECIFIED\x10\x00\x12\x10\n" +
 	"\fPROJECT_READ\x10\x01\x12\x11\n" +
 	"\rPROJECT_WRITE\x10\x02\x12\v\n" +
-	"\aPRIVATE\x10\x032\x87\a\n" +
-	"\x10WorksheetService\x12\x88\x01\n" +
-	"\x0fCreateWorksheet\x12#.bytebase.v1.CreateWorksheetRequest\x1a\x16.bytebase.v1.Worksheet\"8\xdaA\x10parent,worksheet\x90\xea0\x02\x82\xd3\xe4\x93\x02\x1b:\tworksheet\"\x0e/v1/worksheets\x12t\n" +
+	"\aPRIVATE\x10\x032\x80\a\n" +
+	"\x10WorksheetService\x12\x81\x01\n" +
+	"\x0fCreateWorksheet\x12#.bytebase.v1.CreateWorksheetRequest\x1a\x16.bytebase.v1.Worksheet\"1\xdaA\tworksheet\x90\xea0\x02\x82\xd3\xe4\x93\x02\x1b:\tworksheet\"\x0e/v1/worksheets\x12t\n" +
 	"\fGetWorksheet\x12 .bytebase.v1.GetWorksheetRequest\x1a\x16.bytebase.v1.Worksheet\"*\xdaA\x04name\x90\xea0\x02\x82\xd3\xe4\x93\x02\x19\x12\x17/v1/{name=worksheets/*}\x12\x85\x01\n" +
 	"\x10SearchWorksheets\x12$.bytebase.v1.SearchWorksheetsRequest\x1a%.bytebase.v1.SearchWorksheetsResponse\"$\x90\xea0\x02\x82\xd3\xe4\x93\x02\x1a:\x01*\"\x15/v1/worksheets:search\x12\xa0\x01\n" +
 	"\x0fUpdateWorksheet\x12#.bytebase.v1.UpdateWorksheetRequest\x1a\x16.bytebase.v1.Worksheet\"P\xdaA\x15worksheet,update_mask\x90\xea0\x02\x82\xd3\xe4\x93\x02.:\tworksheet2!/v1/{worksheet.name=worksheets/*}\x12\xca\x01\n" +

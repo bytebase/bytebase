@@ -146,20 +146,7 @@ type ListChangelistsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The parent, which owns this collection of changelists.
 	// Format: projects/{project}
-	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
-	// Pagination is not currently implemented. This field is reserved for future use.
-	// The maximum number of changelists to return. The service may return fewer than
-	// this value.
-	// If unspecified, at most 50 changelists will be returned.
-	// The maximum value is 1000; values above 1000 will be coerced to 1000.
-	PageSize int32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// Pagination is not currently implemented. This field is reserved for future use.
-	// A page token, received from a previous `ListChangelists` call.
-	// Provide this to retrieve the subsequent page.
-	//
-	// When paginating, all other parameters provided to `ListChangelists` must match
-	// the call that provided the page token.
-	PageToken     string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	Parent        string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -201,28 +188,11 @@ func (x *ListChangelistsRequest) GetParent() string {
 	return ""
 }
 
-func (x *ListChangelistsRequest) GetPageSize() int32 {
-	if x != nil {
-		return x.PageSize
-	}
-	return 0
-}
-
-func (x *ListChangelistsRequest) GetPageToken() string {
-	if x != nil {
-		return x.PageToken
-	}
-	return ""
-}
-
 // Response message for listing changelists.
 type ListChangelistsResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The changelists from the specified request.
-	Changelists []*Changelist `protobuf:"bytes,1,rep,name=changelists,proto3" json:"changelists,omitempty"`
-	// A token, which can be sent as `page_token` to retrieve the next page.
-	// If this field is omitted, there are no subsequent pages.
-	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
+	Changelists   []*Changelist `protobuf:"bytes,1,rep,name=changelists,proto3" json:"changelists,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -262,13 +232,6 @@ func (x *ListChangelistsResponse) GetChangelists() []*Changelist {
 		return x.Changelists
 	}
 	return nil
-}
-
-func (x *ListChangelistsResponse) GetNextPageToken() string {
-	if x != nil {
-		return x.NextPageToken
-	}
-	return ""
 }
 
 // Request message for updating a changelist.
@@ -543,16 +506,12 @@ const file_v1_changelist_service_proto_rawDesc = "" +
 	"\rchangelist_id\x18\x03 \x01(\tB\x03\xe0A\x02R\fchangelistId\"K\n" +
 	"\x14GetChangelistRequest\x123\n" +
 	"\x04name\x18\x01 \x01(\tB\x1f\xe0A\x02\xfaA\x19\n" +
-	"\x17bytebase.com/ChangelistR\x04name\"\x8a\x01\n" +
+	"\x17bytebase.com/ChangelistR\x04name\"N\n" +
 	"\x16ListChangelistsRequest\x124\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
-	"\x14bytebase.com/ProjectR\x06parent\x12\x1b\n" +
-	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
-	"\n" +
-	"page_token\x18\x03 \x01(\tR\tpageToken\"|\n" +
+	"\x14bytebase.com/ProjectR\x06parent\"T\n" +
 	"\x17ListChangelistsResponse\x129\n" +
-	"\vchangelists\x18\x01 \x03(\v2\x17.bytebase.v1.ChangelistR\vchangelists\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xb9\x01\n" +
+	"\vchangelists\x18\x01 \x03(\v2\x17.bytebase.v1.ChangelistR\vchangelists\"\xb9\x01\n" +
 	"\x17UpdateChangelistRequest\x12<\n" +
 	"\n" +
 	"changelist\x18\x01 \x01(\v2\x17.bytebase.v1.ChangelistB\x03\xe0A\x02R\n" +

@@ -1711,7 +1711,7 @@ When paginating, all other parameters provided to `ListInstances` must match the
 
 Supported filters: - name: the instance name, support &#34;==&#34; and &#34;.matches()&#34; operator. - resource_id: the instance id, support &#34;==&#34; and &#34;.matches()&#34; operator. - environment: the environment full name in &#34;environments/{id}&#34; format, support &#34;==&#34; operator. - state: the instance state, check State enum for values, support &#34;==&#34; operator. - engine: the instance engine, check Engine enum for values. Support &#34;==&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34; operator. - host: the instance host, support &#34;==&#34; and &#34;.matches()&#34; operator. - port: the instance port, support &#34;==&#34; and &#34;.matches()&#34; operator. - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator. - labels.{key}: the instance label, support &#34;==&#34; and &#34;in&#34; operators.
 
-For example: name == &#34;sample instance&#34; name.matches(&#34;sample&#34;) resource_id = &#34;sample-instance&#34; resource_id.matches(&#34;sample&#34;) state == &#34;DELETED&#34; environment == &#34;environments/test&#34; environment == &#34;&#34; (find instances which environment is not set) engine == &#34;MYSQL&#34; engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;] !(engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;]) host == &#34;127.0.0.1&#34; host.matches(&#34;127.0&#34;) port == &#34;54321&#34; port.matches(&#34;543&#34;) labels.org_group == &#34;infrastructure&#34; labels.environment in [&#34;prod&#34;, &#34;production&#34;] project == &#34;projects/sample-project&#34; You can combine filter conditions like: name.matches(&#34;sample&#34;) &amp;&amp; environment == &#34;environments/test&#34; host == &#34;127.0.0.1&#34; &amp;&amp; port == &#34;54321&#34; |
+For example: name == &#34;sample instance&#34; name.matches(&#34;sample&#34;) resource_id == &#34;sample-instance&#34; resource_id.matches(&#34;sample&#34;) state == &#34;DELETED&#34; environment == &#34;environments/test&#34; environment == &#34;&#34; (find instances which environment is not set) engine == &#34;MYSQL&#34; engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;] !(engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;]) host == &#34;127.0.0.1&#34; host.matches(&#34;127.0&#34;) port == &#34;54321&#34; port.matches(&#34;543&#34;) labels.org_group == &#34;infrastructure&#34; labels.environment in [&#34;prod&#34;, &#34;production&#34;] project == &#34;projects/sample-project&#34; You can combine filter conditions like: name.matches(&#34;sample&#34;) &amp;&amp; environment == &#34;environments/test&#34; host == &#34;127.0.0.1&#34; &amp;&amp; port == &#34;54321&#34; |
 
 
 
@@ -1913,7 +1913,7 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| SAECRET_TYPE_UNSPECIFIED | 0 | Unspecified secret type. |
+| SECRET_TYPE_UNSPECIFIED | 0 | Unspecified secret type. |
 | VAULT_KV_V2 | 1 | ref: https://developer.hashicorp.com/vault/api-docs/secret/kv/kv-v2 |
 | AWS_SECRETS_MANAGER | 2 | ref: https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html |
 | GCP_SECRET_MANAGER | 3 | ref: https://cloud.google.com/secret-manager/docs |
@@ -4507,14 +4507,6 @@ The response message for getting a setting.
 
 
 
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| page_size | [int32](#int32) |  | Pagination is not currently implemented. This field is reserved for future use. The maximum number of settings to return. The service may return fewer than this value. If unspecified, at most 10 settings will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Pagination is not currently implemented. This field is reserved for future use. A page token, received from a previous `ListSettings` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListSettings` must match the call that provided the page token. |
-
-
 
 
 
@@ -4528,7 +4520,6 @@ When paginating, all other parameters provided to `ListSettings` must match the 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | settings | [Setting](#bytebase-v1-Setting) | repeated | The settings from the specified request. |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
 
 
 
@@ -5580,7 +5571,7 @@ Severity level for audit log entries.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| DEFAULT | 0 | Default severity level. |
+| SEVERITY_UNSPECIFIED | 0 | Unspecified severity level. |
 | DEBUG | 1 | Debug-level information. |
 | INFO | 2 | Informational messages. |
 | NOTICE | 3 | Notable events. |
@@ -5915,10 +5906,6 @@ Request message for listing changelists.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent, which owns this collection of changelists. Format: projects/{project} |
-| page_size | [int32](#int32) |  | Pagination is not currently implemented. This field is reserved for future use. The maximum number of changelists to return. The service may return fewer than this value. If unspecified, at most 50 changelists will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Pagination is not currently implemented. This field is reserved for future use. A page token, received from a previous `ListChangelists` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListChangelists` must match the call that provided the page token. |
 
 
 
@@ -5934,7 +5921,6 @@ Response message for listing changelists.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | changelists | [Changelist](#bytebase-v1-Changelist) | repeated | The changelists from the specified request. |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
 
 
 
@@ -6087,10 +6073,6 @@ Request message for listing database groups.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent resource whose database groups are to be listed. Format: projects/{project} |
-| page_size | [int32](#int32) |  | Pagination is not currently implemented. This field is reserved for future use. The maximum number of database groups to return. The service may return fewer than this value. If unspecified, at most 50 database groups will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Pagination is not currently implemented. This field is reserved for future use. A page token, received from a previous `ListDatabaseGroups` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListDatabaseGroups` must match the call that provided the page token. |
 | view | [DatabaseGroupView](#bytebase-v1-DatabaseGroupView) |  | The view to return. Defaults to DATABASE_GROUP_VIEW_BASIC. |
 
 
@@ -6107,7 +6089,6 @@ Response message for listing database groups.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | database_groups | [DatabaseGroup](#bytebase-v1-DatabaseGroup) | repeated | The database groups from the specified request. |
-| next_page_token | [string](#string) |  | Pagination is not currently implemented. This field is reserved for future use. A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
 
 
 
@@ -6525,14 +6506,6 @@ LDAPIdentityProviderConfig is the structure for LDAP identity provider config.
 
 
 
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| page_size | [int32](#int32) |  | Pagination is not currently implemented. This field is reserved for future use. The maximum number of identity providers to return. The service may return fewer than this value. If unspecified, at most 10 will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Pagination is not currently implemented. This field is reserved for future use. A page token, received from a previous `ListIdentityProviders` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListIdentityProviders` must match the call that provided the page token. |
-
-
 
 
 
@@ -6546,7 +6519,6 @@ When paginating, all other parameters provided to `ListIdentityProviders` must m
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | identity_providers | [IdentityProvider](#bytebase-v1-IdentityProvider) | repeated | The identity providers from the specified request. |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
 
 
 
@@ -6841,10 +6813,6 @@ Policy for controlling which data sources can be queried in the SQL editor.
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent, which owns this collection of policies. Format: {resource type}/{resource id} |
 | policy_type | [PolicyType](#bytebase-v1-PolicyType) | optional | Filter by specific policy type. |
-| page_size | [int32](#int32) |  | Pagination is not currently implemented. This field is reserved for future use. The maximum number of policies to return. The service may return fewer than this value. If unspecified, at most 10 policies will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Pagination is not currently implemented. This field is reserved for future use. A page token, received from a previous `ListPolicies` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListPolicies` must match the call that provided the page token. |
 | show_deleted | [bool](#bool) |  | Show deleted policies if specified. |
 
 
@@ -6861,7 +6829,6 @@ When paginating, all other parameters provided to `ListPolicies` must match the 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | policies | [Policy](#bytebase-v1-Policy) | repeated | The policies from the specified request. |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
 
 
 
@@ -7870,10 +7837,6 @@ SQLService executes SQL queries and manages query operations.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent, which owns this collection of plan check runs. Format: projects/{project}/plans/{plan} |
-| page_size | [int32](#int32) |  | Pagination is not currently implemented. This field is reserved for future use. The maximum number of plan check runs to return. The service may return fewer than this value. If unspecified, at most 10 plan check runs will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Pagination is not currently implemented. This field is reserved for future use. A page token, received from a previous `ListPlanCheckRuns` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListPlanCheckRuns` must match the call that provided the page token. |
 | latest_only | [bool](#bool) |  | If set to true, only the latest plan check run will be returned. |
 | filter | [string](#string) |  | Filter is used to filter plan check runs returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
@@ -7895,7 +7858,6 @@ For example: status in [&#34;DONE&#34;, &#34;FAILED&#34;] status == &#34;RUNNING
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | plan_check_runs | [PlanCheckRun](#bytebase-v1-PlanCheckRun) | repeated | The plan check runs from the specified request. |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
 
 
 
@@ -8614,7 +8576,7 @@ Execution retry policy configuration.
 
 Supported filters: - name: the project name, support &#34;==&#34; and &#34;.matches()&#34; operator. - resource_id: the project id, support &#34;==&#34; and &#34;.matches()&#34; operator. - exclude_default: if not include the default project, should be &#34;true&#34; or &#34;false&#34;, support &#34;==&#34; operator. - state: check the State enum for the values, support &#34;==&#34; operator. - labels.{key}: the project label, support &#34;==&#34; and &#34;in&#34; operators.
 
-For example: name = &#34;project name&#34; name.matches(&#34;project name&#34;) resource_id = &#34;project id&#34; resource_id.matches(&#34;project id&#34;) exclude_default == true state == &#34;DELETED&#34; labels.environment == &#34;production&#34; labels.tier == &#34;critical&#34; labels.environment in [&#34;staging&#34;, &#34;prod&#34;] You can combine filter conditions like: name = &#34;project name&#34; &amp;&amp; resource_id.matches(&#34;project id&#34;) name.matches(&#34;project name&#34;) || resource_id = &#34;project id&#34; labels.environment == &#34;production&#34; &amp;&amp; labels.tier == &#34;critical&#34; |
+For example: name == &#34;project name&#34; name.matches(&#34;project name&#34;) resource_id == &#34;project id&#34; resource_id.matches(&#34;project id&#34;) exclude_default == true state == &#34;DELETED&#34; labels.environment == &#34;production&#34; labels.tier == &#34;critical&#34; labels.environment in [&#34;staging&#34;, &#34;prod&#34;] You can combine filter conditions like: name == &#34;project name&#34; &amp;&amp; resource_id.matches(&#34;project id&#34;) name.matches(&#34;project name&#34;) || resource_id == &#34;project id&#34; labels.environment == &#34;production&#34; &amp;&amp; labels.tier == &#34;critical&#34; |
 | page_size | [int32](#int32) |  | The maximum number of projects to return. The service may return fewer than this value. If unspecified, at most 10 projects will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | A page token, received from a previous `SearchProjects` call. Provide this to retrieve the subsequent page.
 
@@ -9202,14 +9164,6 @@ ReleaseService manages releases for coordinating deployments.
 
 
 
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| page_size | [int32](#int32) |  | Pagination is not currently implemented. This field is reserved for future use. The maximum number of SQL review configs to return. The service may return fewer than this value. If unspecified, at most 10 SQL review configs will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Pagination is not currently implemented. This field is reserved for future use. A page token, provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListReviewConfigs` must match the call that provided the page token. |
-
-
 
 
 
@@ -9223,7 +9177,6 @@ When paginating, all other parameters provided to `ListReviewConfigs` must match
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | review_configs | [ReviewConfig](#bytebase-v1-ReviewConfig) | repeated | The SQL review configs from the specified request. |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
 
 
 
@@ -9533,14 +9486,6 @@ RevisionService manages schema revision history.
 
 
 
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| page_size | [int32](#int32) |  | Pagination is not currently implemented. This field is reserved for future use. The maximum number of risks to return. The service may return fewer than this value. If unspecified, at most 10 risks will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Pagination is not currently implemented. This field is reserved for future use. A page token, received from a previous `ListRisks` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListRisks` must match the call that provided the page token. |
-
-
 
 
 
@@ -9554,7 +9499,6 @@ When paginating, all other parameters provided to `ListRisks` must match the cal
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | risks | [Risk](#bytebase-v1-Risk) | repeated |  |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
 
 
 
@@ -9710,14 +9654,6 @@ This value should be 4-63 characters, and valid characters are /[a-z][A-Z][0-9]/
 
 
 
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| page_size | [int32](#int32) |  | Pagination is not currently implemented. This field is reserved for future use. The maximum number of roles to return. The service may return fewer than this value. If unspecified, at most 10 reviews will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Pagination is not currently implemented. This field is reserved for future use. A page token, received from a previous `ListRoles` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListRoles` must match the call that provided the page token. |
-
-
 
 
 
@@ -9731,7 +9667,6 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | roles | [Role](#bytebase-v1-Role) | repeated | The roles from the specified request. |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
 
 
 
@@ -10026,10 +9961,6 @@ For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; update_time &
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent, which owns this collection of plans. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} Use &#34;projects/{project}/rollouts/{rollout}/stages/-/tasks/-&#34; to list all taskRuns from a rollout. |
-| page_size | [int32](#int32) |  | Pagination is not currently implemented. This field is reserved for future use. The maximum number of taskRuns to return. The service may return fewer than this value. If unspecified, at most 10 taskRuns will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Pagination is not currently implemented. This field is reserved for future use. A page token, received from a previous `ListTaskRuns` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListTaskRuns` must match the call that provided the page token. |
 
 
 
@@ -10045,7 +9976,6 @@ When paginating, all other parameters provided to `ListTaskRuns` must match the 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | task_runs | [TaskRun](#bytebase-v1-TaskRun) | repeated | The taskRuns from the specified request. |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
 
 
 
@@ -11188,10 +11118,6 @@ SubscriptionService manages enterprise subscriptions and licensing.
 Supported filter: - creator: the worksheet creator in &#34;users/{email}&#34; format, support &#34;==&#34; and &#34;!=&#34; operator. - starred: should be &#34;true&#34; or &#34;false&#34;, filter starred/unstarred sheets, support &#34;==&#34; operator. - visibility: check Visibility enum in the Worksheet message for values, support &#34;==&#34; and &#34;in [xx]&#34; operator.
 
 For example: creator == &#34;users/{email}&#34; creator != &#34;users/{email}&#34; starred == true starred == false visibility in [&#34;PRIVATE&#34;, &#34;PROJECT_READ&#34;, &#34;PROJECT_WRITE&#34;] visibility == &#34;PRIVATE&#34; |
-| page_size | [int32](#int32) |  | Pagination is not currently implemented. This field is reserved for future use. The maximum number of worksheets to return. The service may return fewer than this value. If unspecified, at most 10 worksheets will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Pagination is not currently implemented. This field is reserved for future use. A page token, received from a previous `SearchWorksheets` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `SearchWorksheets` must match the call that provided the page token. |
 
 
 
@@ -11207,7 +11133,6 @@ When paginating, all other parameters provided to `SearchWorksheets` must match 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | worksheets | [Worksheet](#bytebase-v1-Worksheet) | repeated | The worksheets that matched the search criteria. |
-| next_page_token | [string](#string) |  | Pagination is not currently implemented. This field is reserved for future use. A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
 
 
 

@@ -749,21 +749,8 @@ type ListPlanCheckRunsRequest struct {
 	// The parent, which owns this collection of plan check runs.
 	// Format: projects/{project}/plans/{plan}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
-	// Pagination is not currently implemented. This field is reserved for future use.
-	// The maximum number of plan check runs to return. The service may return fewer than
-	// this value.
-	// If unspecified, at most 10 plan check runs will be returned.
-	// The maximum value is 1000; values above 1000 will be coerced to 1000.
-	PageSize int32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// Pagination is not currently implemented. This field is reserved for future use.
-	// A page token, received from a previous `ListPlanCheckRuns` call.
-	// Provide this to retrieve the subsequent page.
-	//
-	// When paginating, all other parameters provided to `ListPlanCheckRuns` must match
-	// the call that provided the page token.
-	PageToken string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	// If set to true, only the latest plan check run will be returned.
-	LatestOnly bool `protobuf:"varint,4,opt,name=latest_only,json=latestOnly,proto3" json:"latest_only,omitempty"`
+	LatestOnly bool `protobuf:"varint,2,opt,name=latest_only,json=latestOnly,proto3" json:"latest_only,omitempty"`
 	// Filter is used to filter plan check runs returned in the list.
 	// The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 	//
@@ -776,7 +763,7 @@ type ListPlanCheckRunsRequest struct {
 	// status == "RUNNING"
 	// result_status in ["SUCCESS", "ERROR"]
 	// result_status == "WARNING"
-	Filter        string `protobuf:"bytes,5,opt,name=filter,proto3" json:"filter,omitempty"`
+	Filter        string `protobuf:"bytes,3,opt,name=filter,proto3" json:"filter,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -818,20 +805,6 @@ func (x *ListPlanCheckRunsRequest) GetParent() string {
 	return ""
 }
 
-func (x *ListPlanCheckRunsRequest) GetPageSize() int32 {
-	if x != nil {
-		return x.PageSize
-	}
-	return 0
-}
-
-func (x *ListPlanCheckRunsRequest) GetPageToken() string {
-	if x != nil {
-		return x.PageToken
-	}
-	return ""
-}
-
 func (x *ListPlanCheckRunsRequest) GetLatestOnly() bool {
 	if x != nil {
 		return x.LatestOnly
@@ -850,9 +823,6 @@ type ListPlanCheckRunsResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The plan check runs from the specified request.
 	PlanCheckRuns []*PlanCheckRun `protobuf:"bytes,1,rep,name=plan_check_runs,json=planCheckRuns,proto3" json:"plan_check_runs,omitempty"`
-	// A token, which can be sent as `page_token` to retrieve the next page.
-	// If this field is omitted, there are no subsequent pages.
-	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -892,13 +862,6 @@ func (x *ListPlanCheckRunsResponse) GetPlanCheckRuns() []*PlanCheckRun {
 		return x.PlanCheckRuns
 	}
 	return nil
-}
-
-func (x *ListPlanCheckRunsResponse) GetNextPageToken() string {
-	if x != nil {
-		return x.NextPageToken
-	}
-	return ""
 }
 
 type RunPlanChecksRequest struct {
@@ -2022,19 +1985,15 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\x14DatabaseGroupMapping\x12%\n" +
 	"\x0edatabase_group\x18\x01 \x01(\tR\rdatabaseGroup\x12\x1c\n" +
 	"\tdatabases\x18\x02 \x03(\tR\tdatabases:7\xeaA4\n" +
-	"\x11bytebase.com/Plan\x12\x1fprojects/{project}/plans/{plan}\"\xc2\x01\n" +
+	"\x11bytebase.com/Plan\x12\x1fprojects/{project}/plans/{plan}\"\x86\x01\n" +
 	"\x18ListPlanCheckRunsRequest\x121\n" +
 	"\x06parent\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
-	"\x11bytebase.com/PlanR\x06parent\x12\x1b\n" +
-	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
-	"\n" +
-	"page_token\x18\x03 \x01(\tR\tpageToken\x12\x1f\n" +
-	"\vlatest_only\x18\x04 \x01(\bR\n" +
+	"\x11bytebase.com/PlanR\x06parent\x12\x1f\n" +
+	"\vlatest_only\x18\x02 \x01(\bR\n" +
 	"latestOnly\x12\x16\n" +
-	"\x06filter\x18\x05 \x01(\tR\x06filter\"\x86\x01\n" +
+	"\x06filter\x18\x03 \x01(\tR\x06filter\"^\n" +
 	"\x19ListPlanCheckRunsResponse\x12A\n" +
-	"\x0fplan_check_runs\x18\x01 \x03(\v2\x19.bytebase.v1.PlanCheckRunR\rplanCheckRuns\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"o\n" +
+	"\x0fplan_check_runs\x18\x01 \x03(\v2\x19.bytebase.v1.PlanCheckRunR\rplanCheckRuns\"o\n" +
 	"\x14RunPlanChecksRequest\x12-\n" +
 	"\x04name\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
 	"\x11bytebase.com/PlanR\x04name\x12\x1c\n" +

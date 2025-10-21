@@ -634,32 +634,9 @@ export declare type ListPlanCheckRunsRequest = Message<"bytebase.v1.ListPlanChec
   parent: string;
 
   /**
-   * Pagination is not currently implemented. This field is reserved for future use.
-   * The maximum number of plan check runs to return. The service may return fewer than
-   * this value.
-   * If unspecified, at most 10 plan check runs will be returned.
-   * The maximum value is 1000; values above 1000 will be coerced to 1000.
-   *
-   * @generated from field: int32 page_size = 2;
-   */
-  pageSize: number;
-
-  /**
-   * Pagination is not currently implemented. This field is reserved for future use.
-   * A page token, received from a previous `ListPlanCheckRuns` call.
-   * Provide this to retrieve the subsequent page.
-   *
-   * When paginating, all other parameters provided to `ListPlanCheckRuns` must match
-   * the call that provided the page token.
-   *
-   * @generated from field: string page_token = 3;
-   */
-  pageToken: string;
-
-  /**
    * If set to true, only the latest plan check run will be returned.
    *
-   * @generated from field: bool latest_only = 4;
+   * @generated from field: bool latest_only = 2;
    */
   latestOnly: boolean;
 
@@ -677,7 +654,7 @@ export declare type ListPlanCheckRunsRequest = Message<"bytebase.v1.ListPlanChec
    * result_status in ["SUCCESS", "ERROR"]
    * result_status == "WARNING"
    *
-   * @generated from field: string filter = 5;
+   * @generated from field: string filter = 3;
    */
   filter: string;
 };
@@ -698,14 +675,6 @@ export declare type ListPlanCheckRunsResponse = Message<"bytebase.v1.ListPlanChe
    * @generated from field: repeated bytebase.v1.PlanCheckRun plan_check_runs = 1;
    */
   planCheckRuns: PlanCheckRun[];
-
-  /**
-   * A token, which can be sent as `page_token` to retrieve the next page.
-   * If this field is omitted, there are no subsequent pages.
-   *
-   * @generated from field: string next_page_token = 2;
-   */
-  nextPageToken: string;
 };
 
 /**

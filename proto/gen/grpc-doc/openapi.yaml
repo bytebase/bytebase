@@ -346,28 +346,6 @@ paths:
                         - DATA_QUERY
                     type: string
                     format: enum
-                - name: pageSize
-                  in: query
-                  description: |-
-                    Pagination is not currently implemented. This field is reserved for future use.
-                     The maximum number of policies to return. The service may return fewer than
-                     this value.
-                     If unspecified, at most 10 policies will be returned.
-                     The maximum value is 1000; values above 1000 will be coerced to 1000.
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pageToken
-                  in: query
-                  description: |-
-                    Pagination is not currently implemented. This field is reserved for future use.
-                     A page token, received from a previous `ListPolicies` call.
-                     Provide this to retrieve the subsequent page.
-
-                     When paginating, all other parameters provided to `ListPolicies` must match
-                     the call that provided the page token.
-                  schema:
-                    type: string
                 - name: showDeleted
                   in: query
                   description: Show deleted policies if specified.
@@ -784,29 +762,6 @@ paths:
                 Lists all configured identity providers (public endpoint for login page).
                  Permissions required: None
             operationId: IdentityProviderService_ListIdentityProviders
-            parameters:
-                - name: pageSize
-                  in: query
-                  description: |-
-                    Pagination is not currently implemented. This field is reserved for future use.
-                     The maximum number of identity providers to return. The service may return fewer than
-                     this value.
-                     If unspecified, at most 10 will be returned.
-                     The maximum value is 1000; values above 1000 will be coerced to 1000.
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pageToken
-                  in: query
-                  description: |-
-                    Pagination is not currently implemented. This field is reserved for future use.
-                     A page token, received from a previous `ListIdentityProviders` call.
-                     Provide this to retrieve the subsequent page.
-
-                     When paginating, all other parameters provided to `ListIdentityProviders` must match
-                     the call that provided the page token.
-                  schema:
-                    type: string
             responses:
                 "200":
                     description: OK
@@ -1042,7 +997,7 @@ paths:
                      For example:
                      name == "sample instance"
                      name.matches("sample")
-                     resource_id = "sample-instance"
+                     resource_id == "sample-instance"
                      resource_id.matches("sample")
                      state == "DELETED"
                      environment == "environments/test"
@@ -1776,28 +1731,6 @@ paths:
                         - DATA_QUERY
                     type: string
                     format: enum
-                - name: pageSize
-                  in: query
-                  description: |-
-                    Pagination is not currently implemented. This field is reserved for future use.
-                     The maximum number of policies to return. The service may return fewer than
-                     this value.
-                     If unspecified, at most 10 policies will be returned.
-                     The maximum value is 1000; values above 1000 will be coerced to 1000.
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pageToken
-                  in: query
-                  description: |-
-                    Pagination is not currently implemented. This field is reserved for future use.
-                     A page token, received from a previous `ListPolicies` call.
-                     Provide this to retrieve the subsequent page.
-
-                     When paginating, all other parameters provided to `ListPolicies` must match
-                     the call that provided the page token.
-                  schema:
-                    type: string
                 - name: showDeleted
                   in: query
                   description: Show deleted policies if specified.
@@ -2673,28 +2606,6 @@ paths:
                         - DATA_QUERY
                     type: string
                     format: enum
-                - name: pageSize
-                  in: query
-                  description: |-
-                    Pagination is not currently implemented. This field is reserved for future use.
-                     The maximum number of policies to return. The service may return fewer than
-                     this value.
-                     If unspecified, at most 10 policies will be returned.
-                     The maximum value is 1000; values above 1000 will be coerced to 1000.
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pageToken
-                  in: query
-                  description: |-
-                    Pagination is not currently implemented. This field is reserved for future use.
-                     A page token, received from a previous `ListPolicies` call.
-                     Provide this to retrieve the subsequent page.
-
-                     When paginating, all other parameters provided to `ListPolicies` must match
-                     the call that provided the page token.
-                  schema:
-                    type: string
                 - name: showDeleted
                   in: query
                   description: Show deleted policies if specified.
@@ -3271,28 +3182,6 @@ paths:
                         - DATA_QUERY
                     type: string
                     format: enum
-                - name: pageSize
-                  in: query
-                  description: |-
-                    Pagination is not currently implemented. This field is reserved for future use.
-                     The maximum number of policies to return. The service may return fewer than
-                     this value.
-                     If unspecified, at most 10 policies will be returned.
-                     The maximum value is 1000; values above 1000 will be coerced to 1000.
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pageToken
-                  in: query
-                  description: |-
-                    Pagination is not currently implemented. This field is reserved for future use.
-                     A page token, received from a previous `ListPolicies` call.
-                     Provide this to retrieve the subsequent page.
-
-                     When paginating, all other parameters provided to `ListPolicies` must match
-                     the call that provided the page token.
-                  schema:
-                    type: string
                 - name: showDeleted
                   in: query
                   description: Show deleted policies if specified.
@@ -3752,28 +3641,6 @@ paths:
                   required: true
                   schema:
                     type: string
-                - name: pageSize
-                  in: query
-                  description: |-
-                    Pagination is not currently implemented. This field is reserved for future use.
-                     The maximum number of changelists to return. The service may return fewer than
-                     this value.
-                     If unspecified, at most 50 changelists will be returned.
-                     The maximum value is 1000; values above 1000 will be coerced to 1000.
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pageToken
-                  in: query
-                  description: |-
-                    Pagination is not currently implemented. This field is reserved for future use.
-                     A page token, received from a previous `ListChangelists` call.
-                     Provide this to retrieve the subsequent page.
-
-                     When paginating, all other parameters provided to `ListChangelists` must match
-                     the call that provided the page token.
-                  schema:
-                    type: string
             responses:
                 "200":
                     description: OK
@@ -3960,28 +3827,6 @@ paths:
                   in: path
                   description: The project id.
                   required: true
-                  schema:
-                    type: string
-                - name: pageSize
-                  in: query
-                  description: |-
-                    Pagination is not currently implemented. This field is reserved for future use.
-                     The maximum number of database groups to return. The service may return fewer than
-                     this value.
-                     If unspecified, at most 50 database groups will be returned.
-                     The maximum value is 1000; values above 1000 will be coerced to 1000.
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pageToken
-                  in: query
-                  description: |-
-                    Pagination is not currently implemented. This field is reserved for future use.
-                     A page token, received from a previous `ListDatabaseGroups` call.
-                     Provide this to retrieve the subsequent page.
-
-                     When paginating, all other parameters provided to `ListDatabaseGroups` must match
-                     the call that provided the page token.
                   schema:
                     type: string
                 - name: view
@@ -5033,28 +4878,6 @@ paths:
                   required: true
                   schema:
                     type: string
-                - name: pageSize
-                  in: query
-                  description: |-
-                    Pagination is not currently implemented. This field is reserved for future use.
-                     The maximum number of plan check runs to return. The service may return fewer than
-                     this value.
-                     If unspecified, at most 10 plan check runs will be returned.
-                     The maximum value is 1000; values above 1000 will be coerced to 1000.
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pageToken
-                  in: query
-                  description: |-
-                    Pagination is not currently implemented. This field is reserved for future use.
-                     A page token, received from a previous `ListPlanCheckRuns` call.
-                     Provide this to retrieve the subsequent page.
-
-                     When paginating, all other parameters provided to `ListPlanCheckRuns` must match
-                     the call that provided the page token.
-                  schema:
-                    type: string
                 - name: latestOnly
                   in: query
                   description: If set to true, only the latest plan check run will be returned.
@@ -5233,28 +5056,6 @@ paths:
                         - DATA_QUERY
                     type: string
                     format: enum
-                - name: pageSize
-                  in: query
-                  description: |-
-                    Pagination is not currently implemented. This field is reserved for future use.
-                     The maximum number of policies to return. The service may return fewer than
-                     this value.
-                     If unspecified, at most 10 policies will be returned.
-                     The maximum value is 1000; values above 1000 will be coerced to 1000.
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pageToken
-                  in: query
-                  description: |-
-                    Pagination is not currently implemented. This field is reserved for future use.
-                     A page token, received from a previous `ListPolicies` call.
-                     Provide this to retrieve the subsequent page.
-
-                     When paginating, all other parameters provided to `ListPolicies` must match
-                     the call that provided the page token.
-                  schema:
-                    type: string
                 - name: showDeleted
                   in: query
                   description: Show deleted policies if specified.
@@ -5937,28 +5738,6 @@ paths:
                   in: path
                   description: The task id.
                   required: true
-                  schema:
-                    type: string
-                - name: pageSize
-                  in: query
-                  description: |-
-                    Pagination is not currently implemented. This field is reserved for future use.
-                     The maximum number of taskRuns to return. The service may return fewer than
-                     this value.
-                     If unspecified, at most 10 taskRuns will be returned.
-                     The maximum value is 1000; values above 1000 will be coerced to 1000.
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pageToken
-                  in: query
-                  description: |-
-                    Pagination is not currently implemented. This field is reserved for future use.
-                     A page token, received from a previous `ListTaskRuns` call.
-                     Provide this to retrieve the subsequent page.
-
-                     When paginating, all other parameters provided to `ListTaskRuns` must match
-                     the call that provided the page token.
                   schema:
                     type: string
             responses:
@@ -6960,28 +6739,6 @@ paths:
                 Lists all SQL review configurations.
                  Permissions required: bb.reviewConfigs.list
             operationId: ReviewConfigService_ListReviewConfigs
-            parameters:
-                - name: pageSize
-                  in: query
-                  description: |-
-                    Pagination is not currently implemented. This field is reserved for future use.
-                     The maximum number of SQL review configs to return. The service may return fewer than
-                     this value.
-                     If unspecified, at most 10 SQL review configs will be returned.
-                     The maximum value is 1000; values above 1000 will be coerced to 1000.
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pageToken
-                  in: query
-                  description: |-
-                    Pagination is not currently implemented. This field is reserved for future use.
-                     A page token, provide this to retrieve the subsequent page.
-
-                     When paginating, all other parameters provided to `ListReviewConfigs` must match
-                     the call that provided the page token.
-                  schema:
-                    type: string
             responses:
                 "200":
                     description: OK
@@ -7128,29 +6885,6 @@ paths:
                 Lists all risk assessment rules.
                  Permissions required: bb.risks.list
             operationId: RiskService_ListRisks
-            parameters:
-                - name: pageSize
-                  in: query
-                  description: |-
-                    Pagination is not currently implemented. This field is reserved for future use.
-                     The maximum number of risks to return. The service may return fewer than
-                     this value.
-                     If unspecified, at most 10 risks will be returned.
-                     The maximum value is 1000; values above 1000 will be coerced to 1000.
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pageToken
-                  in: query
-                  description: |-
-                    Pagination is not currently implemented. This field is reserved for future use.
-                     A page token, received from a previous `ListRisks` call.
-                     Provide this to retrieve the subsequent page.
-
-                     When paginating, all other parameters provided to `ListRisks` must match
-                     the call that provided the page token.
-                  schema:
-                    type: string
             responses:
                 "200":
                     description: OK
@@ -7297,29 +7031,6 @@ paths:
                 Lists roles in the workspace.
                  Permissions required: bb.roles.list
             operationId: RoleService_ListRoles
-            parameters:
-                - name: pageSize
-                  in: query
-                  description: |-
-                    Pagination is not currently implemented. This field is reserved for future use.
-                     The maximum number of roles to return. The service may return fewer than
-                     this value.
-                     If unspecified, at most 10 reviews will be returned.
-                     The maximum value is 1000; values above 1000 will be coerced to 1000.
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pageToken
-                  in: query
-                  description: |-
-                    Pagination is not currently implemented. This field is reserved for future use.
-                     A page token, received from a previous `ListRoles` call.
-                     Provide this to retrieve the subsequent page.
-
-                     When paginating, all other parameters provided to `ListRoles` must match
-                     the call that provided the page token.
-                  schema:
-                    type: string
             responses:
                 "200":
                     description: OK
@@ -7504,29 +7215,6 @@ paths:
                 Lists all workspace settings.
                  Permissions required: bb.settings.list
             operationId: SettingService_ListSettings
-            parameters:
-                - name: pageSize
-                  in: query
-                  description: |-
-                    Pagination is not currently implemented. This field is reserved for future use.
-                     The maximum number of settings to return. The service may return fewer than
-                     this value.
-                     If unspecified, at most 10 settings will be returned.
-                     The maximum value is 1000; values above 1000 will be coerced to 1000.
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pageToken
-                  in: query
-                  description: |-
-                    Pagination is not currently implemented. This field is reserved for future use.
-                     A page token, received from a previous `ListSettings` call.
-                     Provide this to retrieve the subsequent page.
-
-                     When paginating, all other parameters provided to `ListSettings` must match
-                     the call that provided the page token.
-                  schema:
-                    type: string
             responses:
                 "200":
                     description: OK
@@ -8882,7 +8570,7 @@ components:
                          For example: /bytebase.v1.SQLService/Query or bb.project.repository.push
                 severity:
                     enum:
-                        - DEFAULT
+                        - SEVERITY_UNSPECIFIED
                         - DEBUG
                         - INFO
                         - NOTICE
@@ -11601,11 +11289,6 @@ components:
                     items:
                         $ref: '#/components/schemas/Changelist'
                     description: The changelists from the specified request.
-                nextPageToken:
-                    type: string
-                    description: |-
-                        A token, which can be sent as `page_token` to retrieve the next page.
-                         If this field is omitted, there are no subsequent pages.
             description: Response message for listing changelists.
         ListChangelogsResponse:
             type: object
@@ -11628,12 +11311,6 @@ components:
                     items:
                         $ref: '#/components/schemas/DatabaseGroup'
                     description: The database groups from the specified request.
-                nextPageToken:
-                    type: string
-                    description: |-
-                        Pagination is not currently implemented. This field is reserved for future use.
-                         A token, which can be sent as `page_token` to retrieve the next page.
-                         If this field is omitted, there are no subsequent pages.
             description: Response message for listing database groups.
         ListDatabasesResponse:
             type: object
@@ -11670,11 +11347,6 @@ components:
                     items:
                         $ref: '#/components/schemas/IdentityProvider'
                     description: The identity providers from the specified request.
-                nextPageToken:
-                    type: string
-                    description: |-
-                        A token, which can be sent as `page_token` to retrieve the next page.
-                         If this field is omitted, there are no subsequent pages.
         ListInstanceDatabaseRequest:
             required:
                 - name
@@ -11758,11 +11430,6 @@ components:
                     items:
                         $ref: '#/components/schemas/PlanCheckRun'
                     description: The plan check runs from the specified request.
-                nextPageToken:
-                    type: string
-                    description: |-
-                        A token, which can be sent as `page_token` to retrieve the next page.
-                         If this field is omitted, there are no subsequent pages.
         ListPlansResponse:
             type: object
             properties:
@@ -11784,11 +11451,6 @@ components:
                     items:
                         $ref: '#/components/schemas/Policy'
                     description: The policies from the specified request.
-                nextPageToken:
-                    type: string
-                    description: |-
-                        A token, which can be sent as `page_token` to retrieve the next page.
-                         If this field is omitted, there are no subsequent pages.
         ListProjectsResponse:
             type: object
             properties:
@@ -11823,11 +11485,6 @@ components:
                     items:
                         $ref: '#/components/schemas/ReviewConfig'
                     description: The SQL review configs from the specified request.
-                nextPageToken:
-                    type: string
-                    description: |-
-                        A token, which can be sent as `page_token` to retrieve the next page.
-                         If this field is omitted, there are no subsequent pages.
         ListRevisionsResponse:
             type: object
             properties:
@@ -11848,11 +11505,6 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/Risk'
-                nextPageToken:
-                    type: string
-                    description: |-
-                        A token, which can be sent as `page_token` to retrieve the next page.
-                         If this field is omitted, there are no subsequent pages.
         ListRolesResponse:
             type: object
             properties:
@@ -11861,11 +11513,6 @@ components:
                     items:
                         $ref: '#/components/schemas/Role'
                     description: The roles from the specified request.
-                nextPageToken:
-                    type: string
-                    description: |-
-                        A token, which can be sent as `page_token` to retrieve the next page.
-                         If this field is omitted, there are no subsequent pages.
         ListRolloutsResponse:
             type: object
             properties:
@@ -11887,11 +11534,6 @@ components:
                     items:
                         $ref: '#/components/schemas/Setting'
                     description: The settings from the specified request.
-                nextPageToken:
-                    type: string
-                    description: |-
-                        A token, which can be sent as `page_token` to retrieve the next page.
-                         If this field is omitted, there are no subsequent pages.
         ListTaskRunsResponse:
             type: object
             properties:
@@ -11900,11 +11542,6 @@ components:
                     items:
                         $ref: '#/components/schemas/TaskRun'
                     description: The taskRuns from the specified request.
-                nextPageToken:
-                    type: string
-                    description: |-
-                        A token, which can be sent as `page_token` to retrieve the next page.
-                         If this field is omitted, there are no subsequent pages.
         ListUsersResponse:
             type: object
             properties:
@@ -13826,9 +13463,9 @@ components:
                          - labels.{key}: the project label, support "==" and "in" operators.
 
                          For example:
-                         name = "project name"
+                         name == "project name"
                          name.matches("project name")
-                         resource_id = "project id"
+                         resource_id == "project id"
                          resource_id.matches("project id")
                          exclude_default == true
                          state == "DELETED"
@@ -13836,8 +13473,8 @@ components:
                          labels.tier == "critical"
                          labels.environment in ["staging", "prod"]
                          You can combine filter conditions like:
-                         name = "project name" && resource_id.matches("project id")
-                         name.matches("project name") || resource_id = "project id"
+                         name == "project name" && resource_id.matches("project id")
+                         name.matches("project name") || resource_id == "project id"
                          labels.environment == "production" && labels.tier == "critical"
                 pageSize:
                     type: integer
@@ -13954,24 +13591,6 @@ components:
                          starred == false
                          visibility in ["PRIVATE", "PROJECT_READ", "PROJECT_WRITE"]
                          visibility == "PRIVATE"
-                pageSize:
-                    type: integer
-                    description: |-
-                        Pagination is not currently implemented. This field is reserved for future use.
-                         The maximum number of worksheets to return. The service may return fewer than
-                         this value.
-                         If unspecified, at most 10 worksheets will be returned.
-                         The maximum value is 1000; values above 1000 will be coerced to 1000.
-                    format: int32
-                pageToken:
-                    type: string
-                    description: |-
-                        Pagination is not currently implemented. This field is reserved for future use.
-                         A page token, received from a previous `SearchWorksheets` call.
-                         Provide this to retrieve the subsequent page.
-
-                         When paginating, all other parameters provided to `SearchWorksheets` must match
-                         the call that provided the page token.
         SearchWorksheetsResponse:
             type: object
             properties:
@@ -13980,12 +13599,6 @@ components:
                     items:
                         $ref: '#/components/schemas/Worksheet'
                     description: The worksheets that matched the search criteria.
-                nextPageToken:
-                    type: string
-                    description: |-
-                        Pagination is not currently implemented. This field is reserved for future use.
-                         A token, which can be sent as `page_token` to retrieve the next page.
-                         If this field is omitted, there are no subsequent pages.
         SemanticTypeSetting:
             type: object
             properties:

@@ -468,7 +468,7 @@ message Database {
 message DatabaseMetadata {
   option (google.api.resource) = {
     type: "bytebase.com/DatabaseMetadata"
-    pattern: "bytebase.com/Database/databases/{database}/metadata"
+    pattern: "instances/{instance}/databases/{database}/metadata"
   };
 
   // The database metadata name.

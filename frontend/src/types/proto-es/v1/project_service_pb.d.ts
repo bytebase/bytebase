@@ -129,9 +129,9 @@ export declare type SearchProjectsRequest = Message<"bytebase.v1.SearchProjectsR
    * - labels.{key}: the project label, support "==" and "in" operators.
    *
    * For example:
-   * name = "project name"
+   * name == "project name"
    * name.matches("project name")
-   * resource_id = "project id"
+   * resource_id == "project id"
    * resource_id.matches("project id")
    * exclude_default == true
    * state == "DELETED"
@@ -139,8 +139,8 @@ export declare type SearchProjectsRequest = Message<"bytebase.v1.SearchProjectsR
    * labels.tier == "critical"
    * labels.environment in ["staging", "prod"]
    * You can combine filter conditions like:
-   * name = "project name" && resource_id.matches("project id")
-   * name.matches("project name") || resource_id = "project id"
+   * name == "project name" && resource_id.matches("project id")
+   * name.matches("project name") || resource_id == "project id"
    * labels.environment == "production" && labels.tier == "critical"
    *
    * @generated from field: string filter = 2;

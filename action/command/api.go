@@ -225,27 +225,10 @@ func (c *Client) ListPlanCheckRuns(ctx context.Context, r *v1pb.ListPlanCheckRun
 }
 
 func (c *Client) ListAllPlanCheckRuns(ctx context.Context, planName string) (*v1pb.ListPlanCheckRunsResponse, error) {
-	resp := &v1pb.ListPlanCheckRunsResponse{}
 	request := &v1pb.ListPlanCheckRunsRequest{
-		Parent:    planName,
-		PageSize:  c.options.PageSize,
-		PageToken: "",
+		Parent: planName,
 	}
-	for {
-		if err := ctx.Err(); err != nil {
-			return nil, err
-		}
-		listResp, err := c.ListPlanCheckRuns(ctx, request)
-		if err != nil {
-			return nil, err
-		}
-		resp.PlanCheckRuns = append(resp.PlanCheckRuns, listResp.PlanCheckRuns...)
-		if listResp.NextPageToken == "" {
-			break
-		}
-		request.PageToken = listResp.NextPageToken
-	}
-	return resp, nil
+	return c.ListPlanCheckRuns(ctx, request)
 }
 
 func (c *Client) GetRollout(ctx context.Context, rolloutName string) (*v1pb.Rollout, error) {
@@ -284,27 +267,10 @@ func (c *Client) ListTaskRuns(ctx context.Context, r *v1pb.ListTaskRunsRequest) 
 }
 
 func (c *Client) ListAllTaskRuns(ctx context.Context, rolloutName string) (*v1pb.ListTaskRunsResponse, error) {
-	resp := &v1pb.ListTaskRunsResponse{}
 	request := &v1pb.ListTaskRunsRequest{
-		Parent:    rolloutName + "/stages/-/tasks/-",
-		PageSize:  c.options.PageSize,
-		PageToken: "",
+		Parent: rolloutName + "/stages/-/tasks/-",
 	}
-	for {
-		if err := ctx.Err(); err != nil {
-			return nil, err
-		}
-		listResp, err := c.ListTaskRuns(ctx, request)
-		if err != nil {
-			return nil, err
-		}
-		resp.TaskRuns = append(resp.TaskRuns, listResp.TaskRuns...)
-		if listResp.NextPageToken == "" {
-			break
-		}
-		request.PageToken = listResp.NextPageToken
-	}
-	return resp, nil
+	return c.ListTaskRuns(ctx, request)
 }
 
 func (c *Client) BatchCancelTaskRuns(ctx context.Context, r *v1pb.BatchCancelTaskRunsRequest) (*v1pb.BatchCancelTaskRunsResponse, error) {

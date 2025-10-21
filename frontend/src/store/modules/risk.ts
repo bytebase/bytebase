@@ -19,9 +19,7 @@ export const useRiskStore = defineStore("risk", () => {
   });
 
   const fetchRiskList = async () => {
-    const request = create(ListRisksRequestSchema, {
-      pageSize: 100,
-    });
+    const request = create(ListRisksRequestSchema, {});
     const response = await riskServiceClientConnect.listRisks(request);
     _riskList.value = response.risks;
     return riskList.value;

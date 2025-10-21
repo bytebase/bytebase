@@ -326,20 +326,7 @@ func (AISetting_Provider) EnumDescriptor() ([]byte, []int) {
 }
 
 type ListSettingsRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Pagination is not currently implemented. This field is reserved for future use.
-	// The maximum number of settings to return. The service may return fewer than
-	// this value.
-	// If unspecified, at most 10 settings will be returned.
-	// The maximum value is 1000; values above 1000 will be coerced to 1000.
-	PageSize int32 `protobuf:"varint,1,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// Pagination is not currently implemented. This field is reserved for future use.
-	// A page token, received from a previous `ListSettings` call.
-	// Provide this to retrieve the subsequent page.
-	//
-	// When paginating, all other parameters provided to `ListSettings` must match
-	// the call that provided the page token.
-	PageToken     string `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -374,27 +361,10 @@ func (*ListSettingsRequest) Descriptor() ([]byte, []int) {
 	return file_v1_setting_service_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *ListSettingsRequest) GetPageSize() int32 {
-	if x != nil {
-		return x.PageSize
-	}
-	return 0
-}
-
-func (x *ListSettingsRequest) GetPageToken() string {
-	if x != nil {
-		return x.PageToken
-	}
-	return ""
-}
-
 type ListSettingsResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The settings from the specified request.
-	Settings []*Setting `protobuf:"bytes,1,rep,name=settings,proto3" json:"settings,omitempty"`
-	// A token, which can be sent as `page_token` to retrieve the next page.
-	// If this field is omitted, there are no subsequent pages.
-	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
+	Settings      []*Setting `protobuf:"bytes,1,rep,name=settings,proto3" json:"settings,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -434,13 +404,6 @@ func (x *ListSettingsResponse) GetSettings() []*Setting {
 		return x.Settings
 	}
 	return nil
-}
-
-func (x *ListSettingsResponse) GetNextPageToken() string {
-	if x != nil {
-		return x.NextPageToken
-	}
-	return ""
 }
 
 // The request message for getting a setting.
@@ -2975,14 +2938,10 @@ var File_v1_setting_service_proto protoreflect.FileDescriptor
 
 const file_v1_setting_service_proto_rawDesc = "" +
 	"\n" +
-	"\x18v1/setting_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a google/protobuf/field_mask.proto\x1a\x16google/type/expr.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a!v1/database_catalog_service.proto\x1a\x19v1/database_service.proto\x1a\x16v1/issue_service.proto\"Q\n" +
-	"\x13ListSettingsRequest\x12\x1b\n" +
-	"\tpage_size\x18\x01 \x01(\x05R\bpageSize\x12\x1d\n" +
-	"\n" +
-	"page_token\x18\x02 \x01(\tR\tpageToken\"p\n" +
+	"\x18v1/setting_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a google/protobuf/field_mask.proto\x1a\x16google/type/expr.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a!v1/database_catalog_service.proto\x1a\x19v1/database_service.proto\x1a\x16v1/issue_service.proto\"\x15\n" +
+	"\x13ListSettingsRequest\"H\n" +
 	"\x14ListSettingsResponse\x120\n" +
-	"\bsettings\x18\x01 \x03(\v2\x14.bytebase.v1.SettingR\bsettings\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"E\n" +
+	"\bsettings\x18\x01 \x03(\v2\x14.bytebase.v1.SettingR\bsettings\"E\n" +
 	"\x11GetSettingRequest\x120\n" +
 	"\x04name\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/SettingR\x04name\"D\n" +

@@ -50,12 +50,6 @@ func (x *ListChangelistsRequest) Equal(y *ListChangelistsRequest) bool {
 	if x.Parent != y.Parent {
 		return false
 	}
-	if x.PageSize != y.PageSize {
-		return false
-	}
-	if x.PageToken != y.PageToken {
-		return false
-	}
 	return true
 }
 
@@ -73,9 +67,6 @@ func (x *ListChangelistsResponse) Equal(y *ListChangelistsResponse) bool {
 		if !x.Changelists[i].Equal(y.Changelists[i]) {
 			return false
 		}
-	}
-	if x.NextPageToken != y.NextPageToken {
-		return false
 	}
 	return true
 }

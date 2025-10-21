@@ -815,7 +815,6 @@ func (s *PlanService) ListPlanCheckRuns(ctx context.Context, request *connect.Re
 
 	return connect.NewResponse(&v1pb.ListPlanCheckRunsResponse{
 		PlanCheckRuns: converted,
-		NextPageToken: "",
 	}), nil
 }
 

@@ -32,7 +32,6 @@ import {
   CreateRolloutRequestSchema,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import { extractProjectResourceName, hasProjectPermissionV2 } from "@/utils";
-import { DEFAULT_PAGE_SIZE } from "../common";
 
 export interface ComposeIssueConfig {
   withPlan?: boolean;
@@ -89,7 +88,6 @@ export const composeIssue = async (
     if (hasProjectPermissionV2(projectEntity, "bb.taskRuns.list")) {
       const request = create(ListTaskRunsRequestSchema, {
         parent: `${issue.rollout}/stages/-/tasks/-`,
-        pageSize: DEFAULT_PAGE_SIZE,
       });
       const response = await rolloutServiceClientConnect.listTaskRuns(request);
       const taskRuns = response.taskRuns;
