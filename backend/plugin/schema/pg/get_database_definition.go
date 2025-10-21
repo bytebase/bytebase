@@ -2827,44 +2827,55 @@ func writeSequenceSDL(out io.Writer, schemaName string, sequence *storepb.Sequen
 		return err
 	}
 
-	// Add data type if not default (bigint)
-	if sequence.DataType != "" && sequence.DataType != "bigint" {
+	// Add data type (always output for consistency with non-SDL format)
+	if sequence.DataType != "" {
 		if _, err := fmt.Fprintf(out, " AS %s", sequence.DataType); err != nil {
 			return err
 		}
 	}
 
-	// Add START WITH if not default (1)
-	if sequence.Start != "" && sequence.Start != "1" {
+	// Add START WITH (always output for consistency with non-SDL format)
+	if sequence.Start != "" {
 		if _, err := fmt.Fprintf(out, " START WITH %s", sequence.Start); err != nil {
 			return err
 		}
 	}
 
-	// Add INCREMENT BY if not default (1)
-	if sequence.Increment != "" && sequence.Increment != "1" {
+	// Add INCREMENT BY (always output for consistency with non-SDL format)
+	if sequence.Increment != "" {
 		if _, err := fmt.Fprintf(out, " INCREMENT BY %s", sequence.Increment); err != nil {
 			return err
 		}
 	}
 
-	// Add MINVALUE if specified and not default
-	if sequence.MinValue != "" && sequence.MinValue != "1" && sequence.MinValue != "-9223372036854775808" {
+	// Add MINVALUE (always output for consistency with non-SDL format)
+	if sequence.MinValue != "" {
 		if _, err := fmt.Fprintf(out, " MINVALUE %s", sequence.MinValue); err != nil {
 			return err
 		}
 	}
 
-	// Add MAXVALUE if specified and not default
-	if sequence.MaxValue != "" && sequence.MaxValue != "9223372036854775807" {
+	// Add MAXVALUE (always output for consistency with non-SDL format)
+	if sequence.MaxValue != "" {
 		if _, err := fmt.Fprintf(out, " MAXVALUE %s", sequence.MaxValue); err != nil {
 			return err
 		}
 	}
 
-	// Add CYCLE if true (NO CYCLE is the default)
+	// Add CYCLE/NO CYCLE (always output for consistency with non-SDL format)
 	if sequence.Cycle {
 		if _, err := io.WriteString(out, " CYCLE"); err != nil {
+			return err
+		}
+	} else {
+		if _, err := io.WriteString(out, " NO CYCLE"); err != nil {
+			return err
+		}
+	}
+
+	// Add CACHE (new field to match non-SDL format)
+	if sequence.CacheSize != "" {
+		if _, err := fmt.Fprintf(out, " CACHE %s", sequence.CacheSize); err != nil {
 			return err
 		}
 	}

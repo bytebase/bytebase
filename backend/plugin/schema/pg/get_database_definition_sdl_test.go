@@ -637,7 +637,7 @@ $$;
 					},
 				},
 			},
-			expected: `CREATE SEQUENCE "public"."independent_seq";
+			expected: `CREATE SEQUENCE "public"."independent_seq" AS bigint START WITH 1 INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 NO CYCLE;
 
 CREATE SEQUENCE "public"."order_seq" AS integer START WITH 1000 INCREMENT BY 10 MINVALUE 1000 MAXVALUE 999999 CYCLE;
 
