@@ -9,6 +9,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/bmatcuk/doublestar/v4"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/action/world"
@@ -19,7 +20,8 @@ const versionFormat = "20060102.150405"
 
 // getReleaseFiles returns the release files and the digest of the release.
 func getReleaseFiles(w *world.World) ([]*v1pb.Release_File, string, error) {
-	matches, err := filepath.Glob(w.FilePattern)
+	// Use doublestar for recursive glob support (**/*.sql)
+	matches, err := doublestar.FilepathGlob(w.FilePattern)
 	if err != nil {
 		return nil, "", err
 	}
