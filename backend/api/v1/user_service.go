@@ -304,16 +304,11 @@ func parseListUserFilter(find *store.FindUserMessage, filter string) error {
 
 // CreateUser creates a user.
 func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v1pb.CreateUserRequest]) (*connect.Response[v1pb.User], error) {
-	if err := s.userCountGuard(ctx); err != nil {
-		return nil, err
-	}
-
-	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find workspace setting, error: %v", err))
-	}
-
 	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DISALLOW_SELF_SERVICE_SIGNUP); err == nil {
+		setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find workspace setting, error: %v", err))
+		}
 		if setting.DisallowSignup || s.profile.SaaS {
 			callerUser, ok := GetUserFromContext(ctx)
 			if !ok {
@@ -342,8 +337,13 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 	if err != nil {
 		return nil, err
 	}
-	if request.Msg.User.UserType != v1pb.UserType_SERVICE_ACCOUNT && request.Msg.User.UserType != v1pb.UserType_USER {
+	if principalType != storepb.PrincipalType_SERVICE_ACCOUNT && principalType != storepb.PrincipalType_END_USER {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("support user and service account only"))
+	}
+	if principalType == storepb.PrincipalType_END_USER {
+		if err := s.userCountGuard(ctx); err != nil {
+			return nil, err
+		}
 	}
 
 	count, err := s.store.CountUsers(ctx, storepb.PrincipalType_END_USER)
@@ -746,10 +746,6 @@ func (s *UserService) hasExtraWorkspaceAdmin(ctx context.Context, policy *storep
 
 // UndeleteUser undeletes a user.
 func (s *UserService) UndeleteUser(ctx context.Context, request *connect.Request[v1pb.UndeleteUserRequest]) (*connect.Response[v1pb.User], error) {
-	if err := s.userCountGuard(ctx); err != nil {
-		return nil, err
-	}
-
 	callerUser, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("failed to get caller user"))
@@ -775,6 +771,11 @@ func (s *UserService) UndeleteUser(ctx context.Context, request *connect.Request
 	}
 	if !user.MemberDeleted {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("user %q is already active", userID))
+	}
+	if user.Type == storepb.PrincipalType_END_USER {
+		if err := s.userCountGuard(ctx); err != nil {
+			return nil, err
+		}
 	}
 
 	user, err = s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{Delete: &undeletePatch})
@@ -929,7 +930,7 @@ func generateRandSecret(accountName string) (string, error) {
 // generateRecoveryCodes generates n recovery codes.
 func generateRecoveryCodes(n int) ([]string, error) {
 	recoveryCodes := make([]string, n)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		code, err := common.RandomString(10)
 		if err != nil {
 			return nil, err
