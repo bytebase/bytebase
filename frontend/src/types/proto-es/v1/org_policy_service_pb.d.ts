@@ -151,32 +151,9 @@ export declare type ListPoliciesRequest = Message<"bytebase.v1.ListPoliciesReque
   policyType?: PolicyType;
 
   /**
-   * Pagination is not currently implemented. This field is reserved for future use.
-   * The maximum number of policies to return. The service may return fewer than
-   * this value.
-   * If unspecified, at most 10 policies will be returned.
-   * The maximum value is 1000; values above 1000 will be coerced to 1000.
-   *
-   * @generated from field: int32 page_size = 3;
-   */
-  pageSize: number;
-
-  /**
-   * Pagination is not currently implemented. This field is reserved for future use.
-   * A page token, received from a previous `ListPolicies` call.
-   * Provide this to retrieve the subsequent page.
-   *
-   * When paginating, all other parameters provided to `ListPolicies` must match
-   * the call that provided the page token.
-   *
-   * @generated from field: string page_token = 4;
-   */
-  pageToken: string;
-
-  /**
    * Show deleted policies if specified.
    *
-   * @generated from field: bool show_deleted = 5;
+   * @generated from field: bool show_deleted = 3;
    */
   showDeleted: boolean;
 };
@@ -197,14 +174,6 @@ export declare type ListPoliciesResponse = Message<"bytebase.v1.ListPoliciesResp
    * @generated from field: repeated bytebase.v1.Policy policies = 1;
    */
   policies: Policy[];
-
-  /**
-   * A token, which can be sent as `page_token` to retrieve the next page.
-   * If this field is omitted, there are no subsequent pages.
-   *
-   * @generated from field: string next_page_token = 2;
-   */
-  nextPageToken: string;
 };
 
 /**

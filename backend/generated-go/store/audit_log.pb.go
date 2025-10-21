@@ -27,21 +27,21 @@ const (
 type AuditLog_Severity int32
 
 const (
-	AuditLog_DEFAULT   AuditLog_Severity = 0
-	AuditLog_DEBUG     AuditLog_Severity = 1
-	AuditLog_INFO      AuditLog_Severity = 2
-	AuditLog_NOTICE    AuditLog_Severity = 3
-	AuditLog_WARNING   AuditLog_Severity = 4
-	AuditLog_ERROR     AuditLog_Severity = 5
-	AuditLog_CRITICAL  AuditLog_Severity = 6
-	AuditLog_ALERT     AuditLog_Severity = 7
-	AuditLog_EMERGENCY AuditLog_Severity = 8
+	AuditLog_SEVERITY_UNSPECIFIED AuditLog_Severity = 0
+	AuditLog_DEBUG                AuditLog_Severity = 1
+	AuditLog_INFO                 AuditLog_Severity = 2
+	AuditLog_NOTICE               AuditLog_Severity = 3
+	AuditLog_WARNING              AuditLog_Severity = 4
+	AuditLog_ERROR                AuditLog_Severity = 5
+	AuditLog_CRITICAL             AuditLog_Severity = 6
+	AuditLog_ALERT                AuditLog_Severity = 7
+	AuditLog_EMERGENCY            AuditLog_Severity = 8
 )
 
 // Enum value maps for AuditLog_Severity.
 var (
 	AuditLog_Severity_name = map[int32]string{
-		0: "DEFAULT",
+		0: "SEVERITY_UNSPECIFIED",
 		1: "DEBUG",
 		2: "INFO",
 		3: "NOTICE",
@@ -52,15 +52,15 @@ var (
 		8: "EMERGENCY",
 	}
 	AuditLog_Severity_value = map[string]int32{
-		"DEFAULT":   0,
-		"DEBUG":     1,
-		"INFO":      2,
-		"NOTICE":    3,
-		"WARNING":   4,
-		"ERROR":     5,
-		"CRITICAL":  6,
-		"ALERT":     7,
-		"EMERGENCY": 8,
+		"SEVERITY_UNSPECIFIED": 0,
+		"DEBUG":                1,
+		"INFO":                 2,
+		"NOTICE":               3,
+		"WARNING":              4,
+		"ERROR":                5,
+		"CRITICAL":             6,
+		"ALERT":                7,
+		"EMERGENCY":            8,
 	}
 )
 
@@ -184,7 +184,7 @@ func (x *AuditLog) GetSeverity() AuditLog_Severity {
 	if x != nil {
 		return x.Severity
 	}
-	return AuditLog_DEFAULT
+	return AuditLog_SEVERITY_UNSPECIFIED
 }
 
 func (x *AuditLog) GetRequest() string {
@@ -289,7 +289,7 @@ var File_store_audit_log_proto protoreflect.FileDescriptor
 
 const file_store_audit_log_proto_rawDesc = "" +
 	"\n" +
-	"\x15store/audit_log.proto\x12\x0ebytebase.store\x1a\x19google/protobuf/any.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x17google/rpc/status.proto\"\xbf\x04\n" +
+	"\x15store/audit_log.proto\x12\x0ebytebase.store\x1a\x19google/protobuf/any.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x17google/rpc/status.proto\"\xcd\x04\n" +
 	"\bAuditLog\x12\x16\n" +
 	"\x06parent\x18\x01 \x01(\tR\x06parent\x12\x16\n" +
 	"\x06method\x18\x02 \x01(\tR\x06method\x12\x1a\n" +
@@ -302,9 +302,9 @@ const file_store_audit_log_proto_rawDesc = "" +
 	"\alatency\x18\t \x01(\v2\x19.google.protobuf.DurationR\alatency\x127\n" +
 	"\fservice_data\x18\n" +
 	" \x01(\v2\x14.google.protobuf.AnyR\vserviceData\x12J\n" +
-	"\x10request_metadata\x18\v \x01(\v2\x1f.bytebase.store.RequestMetadataR\x0frequestMetadata\"x\n" +
-	"\bSeverity\x12\v\n" +
-	"\aDEFAULT\x10\x00\x12\t\n" +
+	"\x10request_metadata\x18\v \x01(\v2\x1f.bytebase.store.RequestMetadataR\x0frequestMetadata\"\x85\x01\n" +
+	"\bSeverity\x12\x18\n" +
+	"\x14SEVERITY_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05DEBUG\x10\x01\x12\b\n" +
 	"\x04INFO\x10\x02\x12\n" +
 	"\n" +

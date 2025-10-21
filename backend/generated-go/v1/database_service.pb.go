@@ -6218,7 +6218,7 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:E\xeaAB\n" +
 	"\x15bytebase.com/Database\x12)instances/{instance}/databases/{database}B\x0e\n" +
 	"\f_environmentB\x18\n" +
-	"\x16_effective_environmentJ\x04\b\x02\x10\x03\"\xf0\x02\n" +
+	"\x16_effective_environmentJ\x04\b\x02\x10\x03\"\xef\x02\n" +
 	"\x10DatabaseMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x125\n" +
 	"\aschemas\x18\x02 \x03(\v2\x1b.bytebase.v1.SchemaMetadataR\aschemas\x12#\n" +
@@ -6229,8 +6229,8 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"extensions\x12\x14\n" +
 	"\x05owner\x18\a \x01(\tR\x05owner\x12\x1f\n" +
 	"\vsearch_path\x18\b \x01(\tR\n" +
-	"searchPath:W\xeaAT\n" +
-	"\x1dbytebase.com/DatabaseMetadata\x123bytebase.com/Database/databases/{database}/metadata\"\xc7\x06\n" +
+	"searchPath:V\xeaAS\n" +
+	"\x1dbytebase.com/DatabaseMetadata\x122instances/{instance}/databases/{database}/metadata\"\xc7\x06\n" +
 	"\x0eSchemaMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x122\n" +
 	"\x06tables\x18\x02 \x03(\v2\x1a.bytebase.v1.TableMetadataR\x06tables\x12K\n" +

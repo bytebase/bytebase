@@ -16,12 +16,6 @@ func (x *ListRisksRequest) Equal(y *ListRisksRequest) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.PageSize != y.PageSize {
-		return false
-	}
-	if x.PageToken != y.PageToken {
-		return false
-	}
 	return true
 }
 
@@ -39,9 +33,6 @@ func (x *ListRisksResponse) Equal(y *ListRisksResponse) bool {
 		if !x.Risks[i].Equal(y.Risks[i]) {
 			return false
 		}
-	}
-	if x.NextPageToken != y.NextPageToken {
-		return false
 	}
 	return true
 }

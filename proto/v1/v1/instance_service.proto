@@ -210,7 +210,7 @@ message ListInstancesRequest {
   // For example:
   // name == "sample instance"
   // name.matches("sample")
-  // resource_id = "sample-instance"
+  // resource_id == "sample-instance"
   // resource_id.matches("sample")
   // state == "DELETED"
   // environment == "environments/test"
@@ -460,7 +460,7 @@ message Instance {
 message DataSourceExternalSecret {
   enum SecretType {
     // Unspecified secret type.
-    SAECRET_TYPE_UNSPECIFIED = 0;
+    SECRET_TYPE_UNSPECIFIED = 0;
     // ref: https://developer.hashicorp.com/vault/api-docs/secret/kv/kv-v2
     VAULT_KV_V2 = 1;
     // ref: https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html

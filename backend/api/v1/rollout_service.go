@@ -430,8 +430,7 @@ func (s *RolloutService) ListTaskRuns(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to task runs, error: %v", err))
 	}
 	return connect.NewResponse(&v1pb.ListTaskRunsResponse{
-		TaskRuns:      taskRunsV1,
-		NextPageToken: "",
+		TaskRuns: taskRunsV1,
 	}), nil
 }
 

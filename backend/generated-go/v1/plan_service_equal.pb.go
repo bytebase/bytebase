@@ -388,12 +388,6 @@ func (x *ListPlanCheckRunsRequest) Equal(y *ListPlanCheckRunsRequest) bool {
 	if x.Parent != y.Parent {
 		return false
 	}
-	if x.PageSize != y.PageSize {
-		return false
-	}
-	if x.PageToken != y.PageToken {
-		return false
-	}
 	if x.LatestOnly != y.LatestOnly {
 		return false
 	}
@@ -417,9 +411,6 @@ func (x *ListPlanCheckRunsResponse) Equal(y *ListPlanCheckRunsResponse) bool {
 		if !x.PlanCheckRuns[i].Equal(y.PlanCheckRuns[i]) {
 			return false
 		}
-	}
-	if x.NextPageToken != y.NextPageToken {
-		return false
 	}
 	return true
 }

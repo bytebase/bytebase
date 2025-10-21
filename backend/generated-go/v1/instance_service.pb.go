@@ -82,7 +82,7 @@ type DataSourceExternalSecret_SecretType int32
 
 const (
 	// Unspecified secret type.
-	DataSourceExternalSecret_SAECRET_TYPE_UNSPECIFIED DataSourceExternalSecret_SecretType = 0
+	DataSourceExternalSecret_SECRET_TYPE_UNSPECIFIED DataSourceExternalSecret_SecretType = 0
 	// ref: https://developer.hashicorp.com/vault/api-docs/secret/kv/kv-v2
 	DataSourceExternalSecret_VAULT_KV_V2 DataSourceExternalSecret_SecretType = 1
 	// ref: https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html
@@ -94,16 +94,16 @@ const (
 // Enum value maps for DataSourceExternalSecret_SecretType.
 var (
 	DataSourceExternalSecret_SecretType_name = map[int32]string{
-		0: "SAECRET_TYPE_UNSPECIFIED",
+		0: "SECRET_TYPE_UNSPECIFIED",
 		1: "VAULT_KV_V2",
 		2: "AWS_SECRETS_MANAGER",
 		3: "GCP_SECRET_MANAGER",
 	}
 	DataSourceExternalSecret_SecretType_value = map[string]int32{
-		"SAECRET_TYPE_UNSPECIFIED": 0,
-		"VAULT_KV_V2":              1,
-		"AWS_SECRETS_MANAGER":      2,
-		"GCP_SECRET_MANAGER":       3,
+		"SECRET_TYPE_UNSPECIFIED": 0,
+		"VAULT_KV_V2":             1,
+		"AWS_SECRETS_MANAGER":     2,
+		"GCP_SECRET_MANAGER":      3,
 	}
 )
 
@@ -423,7 +423,7 @@ type ListInstancesRequest struct {
 	// For example:
 	// name == "sample instance"
 	// name.matches("sample")
-	// resource_id = "sample-instance"
+	// resource_id == "sample-instance"
 	// resource_id.matches("sample")
 	// state == "DELETED"
 	// environment == "environments/test"
@@ -1615,7 +1615,7 @@ func (x *DataSourceExternalSecret) GetSecretType() DataSourceExternalSecret_Secr
 	if x != nil {
 		return x.SecretType
 	}
-	return DataSourceExternalSecret_SAECRET_TYPE_UNSPECIFIED
+	return DataSourceExternalSecret_SECRET_TYPE_UNSPECIFIED
 }
 
 func (x *DataSourceExternalSecret) GetUrl() string {
@@ -2796,7 +2796,7 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:0\xeaA-\n" +
 	"\x15bytebase.com/Instance\x12\x14instances/{instance}B\x0e\n" +
-	"\f_environment\"\x84\a\n" +
+	"\f_environment\"\x83\a\n" +
 	"\x18DataSourceExternalSecret\x12Q\n" +
 	"\vsecret_type\x18\x01 \x01(\x0e20.bytebase.v1.DataSourceExternalSecret.SecretTypeR\n" +
 	"secretType\x12\x10\n" +
@@ -2819,10 +2819,10 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"SecretType\x12\x1b\n" +
 	"\x17SECRET_TYPE_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05PLAIN\x10\x01\x12\x0f\n" +
-	"\vENVIRONMENT\x10\x02\"l\n" +
+	"\vENVIRONMENT\x10\x02\"k\n" +
 	"\n" +
-	"SecretType\x12\x1c\n" +
-	"\x18SAECRET_TYPE_UNSPECIFIED\x10\x00\x12\x0f\n" +
+	"SecretType\x12\x1b\n" +
+	"\x17SECRET_TYPE_UNSPECIFIED\x10\x00\x12\x0f\n" +
 	"\vVAULT_KV_V2\x10\x01\x12\x17\n" +
 	"\x13AWS_SECRETS_MANAGER\x10\x02\x12\x16\n" +
 	"\x12GCP_SECRET_MANAGER\x10\x03\"D\n" +

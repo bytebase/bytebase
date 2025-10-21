@@ -229,20 +229,7 @@ func (x *GetIdentityProviderRequest) GetName() string {
 }
 
 type ListIdentityProvidersRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Pagination is not currently implemented. This field is reserved for future use.
-	// The maximum number of identity providers to return. The service may return fewer than
-	// this value.
-	// If unspecified, at most 10 will be returned.
-	// The maximum value is 1000; values above 1000 will be coerced to 1000.
-	PageSize int32 `protobuf:"varint,1,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// Pagination is not currently implemented. This field is reserved for future use.
-	// A page token, received from a previous `ListIdentityProviders` call.
-	// Provide this to retrieve the subsequent page.
-	//
-	// When paginating, all other parameters provided to `ListIdentityProviders` must match
-	// the call that provided the page token.
-	PageToken     string `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -277,29 +264,12 @@ func (*ListIdentityProvidersRequest) Descriptor() ([]byte, []int) {
 	return file_v1_idp_service_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *ListIdentityProvidersRequest) GetPageSize() int32 {
-	if x != nil {
-		return x.PageSize
-	}
-	return 0
-}
-
-func (x *ListIdentityProvidersRequest) GetPageToken() string {
-	if x != nil {
-		return x.PageToken
-	}
-	return ""
-}
-
 type ListIdentityProvidersResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The identity providers from the specified request.
 	IdentityProviders []*IdentityProvider `protobuf:"bytes,1,rep,name=identity_providers,json=identityProviders,proto3" json:"identity_providers,omitempty"`
-	// A token, which can be sent as `page_token` to retrieve the next page.
-	// If this field is omitted, there are no subsequent pages.
-	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *ListIdentityProvidersResponse) Reset() {
@@ -337,13 +307,6 @@ func (x *ListIdentityProvidersResponse) GetIdentityProviders() []*IdentityProvid
 		return x.IdentityProviders
 	}
 	return nil
-}
-
-func (x *ListIdentityProvidersResponse) GetNextPageToken() string {
-	if x != nil {
-		return x.NextPageToken
-	}
-	return ""
 }
 
 type CreateIdentityProviderRequest struct {
@@ -1319,14 +1282,10 @@ const file_v1_idp_service_proto_rawDesc = "" +
 	"\x14v1/idp_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x13v1/annotation.proto\"J\n" +
 	"\x1aGetIdentityProviderRequest\x12,\n" +
 	"\x04name\x18\x01 \x01(\tB\x18\xe0A\x02\xfaA\x12\n" +
-	"\x10bytebase.com/IdPR\x04name\"Z\n" +
-	"\x1cListIdentityProvidersRequest\x12\x1b\n" +
-	"\tpage_size\x18\x01 \x01(\x05R\bpageSize\x12\x1d\n" +
-	"\n" +
-	"page_token\x18\x02 \x01(\tR\tpageToken\"\x95\x01\n" +
+	"\x10bytebase.com/IdPR\x04name\"\x1e\n" +
+	"\x1cListIdentityProvidersRequest\"m\n" +
 	"\x1dListIdentityProvidersResponse\x12L\n" +
-	"\x12identity_providers\x18\x01 \x03(\v2\x1d.bytebase.v1.IdentityProviderR\x11identityProviders\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xc7\x01\n" +
+	"\x12identity_providers\x18\x01 \x03(\v2\x1d.bytebase.v1.IdentityProviderR\x11identityProviders\"\xc7\x01\n" +
 	"\x1dCreateIdentityProviderRequest\x12O\n" +
 	"\x11identity_provider\x18\x01 \x01(\v2\x1d.bytebase.v1.IdentityProviderB\x03\xe0A\x02R\x10identityProvider\x120\n" +
 	"\x14identity_provider_id\x18\x02 \x01(\tR\x12identityProviderId\x12#\n" +

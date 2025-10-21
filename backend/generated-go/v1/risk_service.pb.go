@@ -90,20 +90,7 @@ func (Risk_Source) EnumDescriptor() ([]byte, []int) {
 }
 
 type ListRisksRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Pagination is not currently implemented. This field is reserved for future use.
-	// The maximum number of risks to return. The service may return fewer than
-	// this value.
-	// If unspecified, at most 10 risks will be returned.
-	// The maximum value is 1000; values above 1000 will be coerced to 1000.
-	PageSize int32 `protobuf:"varint,1,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// Pagination is not currently implemented. This field is reserved for future use.
-	// A page token, received from a previous `ListRisks` call.
-	// Provide this to retrieve the subsequent page.
-	//
-	// When paginating, all other parameters provided to `ListRisks` must match
-	// the call that provided the page token.
-	PageToken     string `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -138,26 +125,9 @@ func (*ListRisksRequest) Descriptor() ([]byte, []int) {
 	return file_v1_risk_service_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *ListRisksRequest) GetPageSize() int32 {
-	if x != nil {
-		return x.PageSize
-	}
-	return 0
-}
-
-func (x *ListRisksRequest) GetPageToken() string {
-	if x != nil {
-		return x.PageToken
-	}
-	return ""
-}
-
 type ListRisksResponse struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	Risks []*Risk                `protobuf:"bytes,1,rep,name=risks,proto3" json:"risks,omitempty"`
-	// A token, which can be sent as `page_token` to retrieve the next page.
-	// If this field is omitted, there are no subsequent pages.
-	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Risks         []*Risk                `protobuf:"bytes,1,rep,name=risks,proto3" json:"risks,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -197,13 +167,6 @@ func (x *ListRisksResponse) GetRisks() []*Risk {
 		return x.Risks
 	}
 	return nil
-}
-
-func (x *ListRisksResponse) GetNextPageToken() string {
-	if x != nil {
-		return x.NextPageToken
-	}
-	return ""
 }
 
 type CreateRiskRequest struct {
@@ -554,14 +517,10 @@ var File_v1_risk_service_proto protoreflect.FileDescriptor
 
 const file_v1_risk_service_proto_rawDesc = "" +
 	"\n" +
-	"\x15v1/risk_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x16google/type/expr.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\"N\n" +
-	"\x10ListRisksRequest\x12\x1b\n" +
-	"\tpage_size\x18\x01 \x01(\x05R\bpageSize\x12\x1d\n" +
-	"\n" +
-	"page_token\x18\x02 \x01(\tR\tpageToken\"d\n" +
+	"\x15v1/risk_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x16google/type/expr.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\"\x12\n" +
+	"\x10ListRisksRequest\"<\n" +
 	"\x11ListRisksResponse\x12'\n" +
-	"\x05risks\x18\x01 \x03(\v2\x11.bytebase.v1.RiskR\x05risks\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"?\n" +
+	"\x05risks\x18\x01 \x03(\v2\x11.bytebase.v1.RiskR\x05risks\"?\n" +
 	"\x11CreateRiskRequest\x12*\n" +
 	"\x04risk\x18\x01 \x01(\v2\x11.bytebase.v1.RiskB\x03\xe0A\x02R\x04risk\"?\n" +
 	"\x0eGetRiskRequest\x12-\n" +

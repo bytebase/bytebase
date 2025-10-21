@@ -15,12 +15,6 @@ func (x *ListRolesRequest) Equal(y *ListRolesRequest) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.PageSize != y.PageSize {
-		return false
-	}
-	if x.PageToken != y.PageToken {
-		return false
-	}
 	return true
 }
 
@@ -38,9 +32,6 @@ func (x *ListRolesResponse) Equal(y *ListRolesResponse) bool {
 		if !x.Roles[i].Equal(y.Roles[i]) {
 			return false
 		}
-	}
-	if x.NextPageToken != y.NextPageToken {
-		return false
 	}
 	return true
 }

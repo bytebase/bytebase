@@ -197,32 +197,13 @@ message ListPoliciesRequest {
   // Filter by specific policy type.
   optional PolicyType policy_type = 2;
 
-  // Pagination is not currently implemented. This field is reserved for future use.
-  // The maximum number of policies to return. The service may return fewer than
-  // this value.
-  // If unspecified, at most 10 policies will be returned.
-  // The maximum value is 1000; values above 1000 will be coerced to 1000.
-  int32 page_size = 3;
-
-  // Pagination is not currently implemented. This field is reserved for future use.
-  // A page token, received from a previous `ListPolicies` call.
-  // Provide this to retrieve the subsequent page.
-  //
-  // When paginating, all other parameters provided to `ListPolicies` must match
-  // the call that provided the page token.
-  string page_token = 4;
-
   // Show deleted policies if specified.
-  bool show_deleted = 5;
+  bool show_deleted = 3;
 }
 
 message ListPoliciesResponse {
   // The policies from the specified request.
   repeated Policy policies = 1;
-
-  // A token, which can be sent as `page_token` to retrieve the next page.
-  // If this field is omitted, there are no subsequent pages.
-  string next_page_token = 2;
 }
 
 message Policy {

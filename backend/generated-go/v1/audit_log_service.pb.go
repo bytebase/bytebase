@@ -30,8 +30,8 @@ const (
 type AuditLog_Severity int32
 
 const (
-	// Default severity level.
-	AuditLog_DEFAULT AuditLog_Severity = 0
+	// Unspecified severity level.
+	AuditLog_SEVERITY_UNSPECIFIED AuditLog_Severity = 0
 	// Debug-level information.
 	AuditLog_DEBUG AuditLog_Severity = 1
 	// Informational messages.
@@ -53,7 +53,7 @@ const (
 // Enum value maps for AuditLog_Severity.
 var (
 	AuditLog_Severity_name = map[int32]string{
-		0: "DEFAULT",
+		0: "SEVERITY_UNSPECIFIED",
 		1: "DEBUG",
 		2: "INFO",
 		3: "NOTICE",
@@ -64,15 +64,15 @@ var (
 		8: "EMERGENCY",
 	}
 	AuditLog_Severity_value = map[string]int32{
-		"DEFAULT":   0,
-		"DEBUG":     1,
-		"INFO":      2,
-		"NOTICE":    3,
-		"WARNING":   4,
-		"ERROR":     5,
-		"CRITICAL":  6,
-		"ALERT":     7,
-		"EMERGENCY": 8,
+		"SEVERITY_UNSPECIFIED": 0,
+		"DEBUG":                1,
+		"INFO":                 2,
+		"NOTICE":               3,
+		"WARNING":              4,
+		"ERROR":                5,
+		"CRITICAL":             6,
+		"ALERT":                7,
+		"EMERGENCY":            8,
 	}
 )
 
@@ -516,7 +516,7 @@ func (x *AuditLog) GetSeverity() AuditLog_Severity {
 	if x != nil {
 		return x.Severity
 	}
-	return AuditLog_DEFAULT
+	return AuditLog_SEVERITY_UNSPECIFIED
 }
 
 func (x *AuditLog) GetResource() string {
@@ -696,7 +696,7 @@ const file_v1_audit_log_service_proto_rawDesc = "" +
 	"page_token\x18\x06 \x01(\tR\tpageToken\"[\n" +
 	"\x17ExportAuditLogsResponse\x12\x18\n" +
 	"\acontent\x18\x01 \x01(\fR\acontent\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xfc\x04\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x8a\x05\n" +
 	"\bAuditLog\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12@\n" +
 	"\vcreate_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
@@ -711,9 +711,9 @@ const file_v1_audit_log_service_proto_rawDesc = "" +
 	"\alatency\x18\n" +
 	" \x01(\v2\x19.google.protobuf.DurationR\alatency\x127\n" +
 	"\fservice_data\x18\v \x01(\v2\x14.google.protobuf.AnyR\vserviceData\x12G\n" +
-	"\x10request_metadata\x18\f \x01(\v2\x1c.bytebase.v1.RequestMetadataR\x0frequestMetadata\"x\n" +
-	"\bSeverity\x12\v\n" +
-	"\aDEFAULT\x10\x00\x12\t\n" +
+	"\x10request_metadata\x18\f \x01(\v2\x1c.bytebase.v1.RequestMetadataR\x0frequestMetadata\"\x85\x01\n" +
+	"\bSeverity\x12\x18\n" +
+	"\x14SEVERITY_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05DEBUG\x10\x01\x12\b\n" +
 	"\x04INFO\x10\x02\x12\n" +
 	"\n" +

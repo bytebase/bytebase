@@ -188,8 +188,8 @@ message AuditLog {
 
   // Severity level for audit log entries.
   enum Severity {
-    // Default severity level.
-    DEFAULT = 0;
+    // Unspecified severity level.
+    SEVERITY_UNSPECIFIED = 0;
     // Debug-level information.
     DEBUG = 1;
     // Informational messages.

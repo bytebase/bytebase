@@ -309,11 +309,11 @@ export declare const AuditLogSchema: GenMessage<AuditLog>;
  */
 export enum AuditLog_Severity {
   /**
-   * Default severity level.
+   * Unspecified severity level.
    *
-   * @generated from enum value: DEFAULT = 0;
+   * @generated from enum value: SEVERITY_UNSPECIFIED = 0;
    */
-  DEFAULT = 0,
+  SEVERITY_UNSPECIFIED = 0,
 
   /**
    * Debug-level information.

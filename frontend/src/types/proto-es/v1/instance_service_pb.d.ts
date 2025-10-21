@@ -82,7 +82,7 @@ export declare type ListInstancesRequest = Message<"bytebase.v1.ListInstancesReq
    * For example:
    * name == "sample instance"
    * name.matches("sample")
-   * resource_id = "sample-instance"
+   * resource_id == "sample-instance"
    * resource_id.matches("sample")
    * state == "DELETED"
    * environment == "environments/test"
@@ -800,9 +800,9 @@ export enum DataSourceExternalSecret_SecretType {
   /**
    * Unspecified secret type.
    *
-   * @generated from enum value: SAECRET_TYPE_UNSPECIFIED = 0;
+   * @generated from enum value: SECRET_TYPE_UNSPECIFIED = 0;
    */
-  SAECRET_TYPE_UNSPECIFIED = 0,
+  SECRET_TYPE_UNSPECIFIED = 0,
 
   /**
    * ref: https://developer.hashicorp.com/vault/api-docs/secret/kv/kv-v2

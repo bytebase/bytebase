@@ -16,12 +16,6 @@ func (x *ListSettingsRequest) Equal(y *ListSettingsRequest) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.PageSize != y.PageSize {
-		return false
-	}
-	if x.PageToken != y.PageToken {
-		return false
-	}
 	return true
 }
 
@@ -39,9 +33,6 @@ func (x *ListSettingsResponse) Equal(y *ListSettingsResponse) bool {
 		if !x.Settings[i].Equal(y.Settings[i]) {
 			return false
 		}
-	}
-	if x.NextPageToken != y.NextPageToken {
-		return false
 	}
 	return true
 }

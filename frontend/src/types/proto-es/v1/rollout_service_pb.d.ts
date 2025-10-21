@@ -345,29 +345,6 @@ export declare type ListTaskRunsRequest = Message<"bytebase.v1.ListTaskRunsReque
    * @generated from field: string parent = 1;
    */
   parent: string;
-
-  /**
-   * Pagination is not currently implemented. This field is reserved for future use.
-   * The maximum number of taskRuns to return. The service may return fewer than
-   * this value.
-   * If unspecified, at most 10 taskRuns will be returned.
-   * The maximum value is 1000; values above 1000 will be coerced to 1000.
-   *
-   * @generated from field: int32 page_size = 2;
-   */
-  pageSize: number;
-
-  /**
-   * Pagination is not currently implemented. This field is reserved for future use.
-   * A page token, received from a previous `ListTaskRuns` call.
-   * Provide this to retrieve the subsequent page.
-   *
-   * When paginating, all other parameters provided to `ListTaskRuns` must match
-   * the call that provided the page token.
-   *
-   * @generated from field: string page_token = 3;
-   */
-  pageToken: string;
 };
 
 /**
@@ -386,14 +363,6 @@ export declare type ListTaskRunsResponse = Message<"bytebase.v1.ListTaskRunsResp
    * @generated from field: repeated bytebase.v1.TaskRun task_runs = 1;
    */
   taskRuns: TaskRun[];
-
-  /**
-   * A token, which can be sent as `page_token` to retrieve the next page.
-   * If this field is omitted, there are no subsequent pages.
-   *
-   * @generated from field: string next_page_token = 2;
-   */
-  nextPageToken: string;
 };
 
 /**

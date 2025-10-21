@@ -27,32 +27,9 @@ export declare type ListDatabaseGroupsRequest = Message<"bytebase.v1.ListDatabas
   parent: string;
 
   /**
-   * Pagination is not currently implemented. This field is reserved for future use.
-   * The maximum number of database groups to return. The service may return fewer than
-   * this value.
-   * If unspecified, at most 50 database groups will be returned.
-   * The maximum value is 1000; values above 1000 will be coerced to 1000.
-   *
-   * @generated from field: int32 page_size = 2;
-   */
-  pageSize: number;
-
-  /**
-   * Pagination is not currently implemented. This field is reserved for future use.
-   * A page token, received from a previous `ListDatabaseGroups` call.
-   * Provide this to retrieve the subsequent page.
-   *
-   * When paginating, all other parameters provided to `ListDatabaseGroups` must match
-   * the call that provided the page token.
-   *
-   * @generated from field: string page_token = 3;
-   */
-  pageToken: string;
-
-  /**
    * The view to return. Defaults to DATABASE_GROUP_VIEW_BASIC.
    *
-   * @generated from field: bytebase.v1.DatabaseGroupView view = 4;
+   * @generated from field: bytebase.v1.DatabaseGroupView view = 2;
    */
   view: DatabaseGroupView;
 };
@@ -75,15 +52,6 @@ export declare type ListDatabaseGroupsResponse = Message<"bytebase.v1.ListDataba
    * @generated from field: repeated bytebase.v1.DatabaseGroup database_groups = 1;
    */
   databaseGroups: DatabaseGroup[];
-
-  /**
-   * Pagination is not currently implemented. This field is reserved for future use.
-   * A token, which can be sent as `page_token` to retrieve the next page.
-   * If this field is omitted, there are no subsequent pages.
-   *
-   * @generated from field: string next_page_token = 2;
-   */
-  nextPageToken: string;
 };
 
 /**

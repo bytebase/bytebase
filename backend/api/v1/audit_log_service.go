@@ -203,8 +203,8 @@ func convertToAuditLog(ctx context.Context, stores *store.Store, l *store.AuditL
 
 func convertToAuditLogSeverity(s storepb.AuditLog_Severity) v1pb.AuditLog_Severity {
 	switch s {
-	case storepb.AuditLog_DEFAULT:
-		return v1pb.AuditLog_DEFAULT
+	case storepb.AuditLog_SEVERITY_UNSPECIFIED:
+		return v1pb.AuditLog_SEVERITY_UNSPECIFIED
 	case storepb.AuditLog_DEBUG:
 		return v1pb.AuditLog_DEBUG
 	case storepb.AuditLog_INFO:
@@ -222,7 +222,7 @@ func convertToAuditLogSeverity(s storepb.AuditLog_Severity) v1pb.AuditLog_Severi
 	case storepb.AuditLog_EMERGENCY:
 		return v1pb.AuditLog_EMERGENCY
 	default:
-		return v1pb.AuditLog_DEFAULT
+		return v1pb.AuditLog_SEVERITY_UNSPECIFIED
 	}
 }
 

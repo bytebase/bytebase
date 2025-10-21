@@ -742,7 +742,7 @@ Metadata about the request.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| DEFAULT | 0 |  |
+| SEVERITY_UNSPECIFIED | 0 |  |
 | DEBUG | 1 |  |
 | INFO | 2 |  |
 | NOTICE | 3 |  |
