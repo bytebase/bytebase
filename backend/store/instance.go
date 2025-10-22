@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -12,6 +11,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -118,17 +118,18 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 	if instanceCreate.EnvironmentID != nil && *instanceCreate.EnvironmentID != "" {
 		environment = instanceCreate.EnvironmentID
 	}
-	if _, err := tx.ExecContext(ctx, `
+	q := qb.Q().Space(`
 			INSERT INTO instance (
 				resource_id,
 				environment,
 				metadata
-			) VALUES ($1, $2, $3)
-		`,
-		instanceCreate.ResourceID,
-		environment,
-		metadataBytes,
-	); err != nil {
+			) VALUES (?, ?, ?)
+		`, instanceCreate.ResourceID, environment, metadataBytes)
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return nil, err
 	}
 
@@ -147,18 +148,28 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 
 // UpdateInstanceV2 updates an instance.
 func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessage) (*InstanceMessage, error) {
-	set, args, where := []string{}, []any{}, []string{}
+	q := qb.Q().Space("UPDATE instance SET")
+	first := true
+	hasWhere := false
+
 	if v := patch.EnvironmentID; v != nil {
+		if !first {
+			q.Space(",")
+		}
 		if *v == "" {
 			// Unset the environment by setting it to NULL
-			set = append(set, fmt.Sprintf("environment = $%d", len(args)+1))
-			args = append(args, nil)
+			q.Space("environment = ?", nil)
 		} else {
-			set, args = append(set, fmt.Sprintf("environment = $%d", len(args)+1)), append(args, *v)
+			q.Space("environment = ?", *v)
 		}
+		first = false
 	}
 	if v := patch.Deleted; v != nil {
-		set, args = append(set, fmt.Sprintf(`deleted = $%d`, len(args)+1)), append(args, *v)
+		if !first {
+			q.Space(",")
+		}
+		q.Space("deleted = ?", *v)
+		first = false
 	}
 	if v := patch.Metadata; v != nil {
 		redacted, err := s.obfuscateInstance(ctx, v)
@@ -169,20 +180,37 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		if err != nil {
 			return nil, err
 		}
-		set, args = append(set, fmt.Sprintf("metadata = $%d", len(args)+1)), append(args, metadata)
-	}
-	if v := patch.ResourceID; v != nil {
-		where, args = append(where, fmt.Sprintf("resource_id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.FindByEnvironmentID; v != nil {
-		where, args = append(where, fmt.Sprintf("environment = $%d", len(args)+1)), append(args, *v)
+		if !first {
+			q.Space(",")
+		}
+		q.Space("metadata = ?", metadata)
+		first = false
 	}
 
-	if len(set) == 0 {
+	if first {
 		return nil, errors.New("no update field specified")
 	}
-	if len(where) == 0 {
+
+	q.Space("WHERE")
+	if v := patch.ResourceID; v != nil {
+		q.Space("resource_id = ?", *v)
+		hasWhere = true
+	}
+	if v := patch.FindByEnvironmentID; v != nil {
+		if hasWhere {
+			q.Space("AND")
+		}
+		q.Space("environment = ?", *v)
+		hasWhere = true
+	}
+
+	if !hasWhere {
 		return nil, errors.Errorf("empty where")
+	}
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
@@ -191,16 +219,10 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	}
 	defer tx.Rollback()
 
-	if len(set) > 0 {
-		query := fmt.Sprintf(`
-			UPDATE instance
-			SET `+strings.Join(set, ", ")+`
-			WHERE %s
-		`, strings.Join(where, " AND "))
-		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
-			return nil, err
-		}
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+		return nil, err
 	}
+
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -214,12 +236,11 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 }
 
 func (s *Store) listInstanceImplV2(ctx context.Context, txn *sql.Tx, find *FindInstanceMessage) ([]*InstanceMessage, error) {
-	where, args := []string{"TRUE"}, []any{}
+	q := qb.Q()
 	joinDSQuery := ""
 	joinDBQuery := ""
 	if filter := find.Filter; filter != nil {
-		where = append(where, filter.Where)
-		args = append(args, filter.Args...)
+		q.And(ConvertDollarPlaceholders(filter.Where), filter.Args...)
 		if hasHostPortFilter(filter.Where) {
 			joinDSQuery = "CROSS JOIN jsonb_array_elements(instance.metadata -> 'dataSources') AS ds"
 		}
@@ -228,35 +249,52 @@ func (s *Store) listInstanceImplV2(ctx context.Context, txn *sql.Tx, find *FindI
 		}
 	}
 	if v := find.ResourceID; v != nil {
-		where, args = append(where, fmt.Sprintf("instance.resource_id = $%d", len(args)+1)), append(args, *v)
+		q.And("instance.resource_id = ?", *v)
 	}
 	if v := find.ResourceIDs; v != nil {
-		where, args = append(where, fmt.Sprintf("instance.resource_id = ANY($%d)", len(args)+1)), append(args, *v)
+		q.And("instance.resource_id = ANY(?)", *v)
 	}
 	if !find.ShowDeleted {
-		where, args = append(where, fmt.Sprintf("instance.deleted = $%d", len(args)+1)), append(args, false)
+		q.And("instance.deleted = ?", false)
 	}
 
-	query := fmt.Sprintf(`
+	whereSQL, whereArgs, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build where clause")
+	}
+
+	query := qb.Q().Space(`
 		SELECT DISTINCT ON (resource_id)
 			instance.resource_id,
 			instance.environment,
 			instance.deleted,
 			instance.metadata
-		FROM instance
-		%s
-		%s
-		WHERE %s
-		ORDER BY resource_id`, joinDSQuery, joinDBQuery, strings.Join(where, " AND "))
+		FROM instance`)
+	if joinDSQuery != "" {
+		query.Space(joinDSQuery)
+	}
+	if joinDBQuery != "" {
+		query.Space(joinDBQuery)
+	}
+	if whereSQL != "" {
+		query.Space("WHERE")
+		query.Space(whereSQL, whereArgs...)
+	}
+	query.Space("ORDER BY resource_id")
 	if v := find.Limit; v != nil {
-		query += fmt.Sprintf(" LIMIT %d", *v)
+		query.Space("LIMIT ?", *v)
 	}
 	if v := find.Offset; v != nil {
-		query += fmt.Sprintf(" OFFSET %d", *v)
+		query.Space("OFFSET ?", *v)
+	}
+
+	querySQL, queryArgs, err := query.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
 	var instanceMessages []*InstanceMessage
-	rows, err := txn.QueryContext(ctx, query, args...)
+	rows, err := txn.QueryContext(ctx, querySQL, queryArgs...)
 	if err != nil {
 		return nil, err
 	}
@@ -298,12 +336,15 @@ func hasHostPortFilter(where string) bool {
 	return strings.Contains(where, "ds ->> 'host'") || strings.Contains(where, "ds ->> 'port'")
 }
 
-var countActivateInstanceQuery = "SELECT COUNT(1) FROM instance WHERE (metadata ? 'activation') AND (metadata->>'activation')::boolean = TRUE AND deleted = FALSE"
-
 // GetActivatedInstanceCount gets the number of activated instances.
 func (s *Store) GetActivatedInstanceCount(ctx context.Context) (int, error) {
+	q := qb.Q().Space("SELECT COUNT(1) FROM instance WHERE (metadata ? 'activation') AND (metadata->>'activation')::boolean = TRUE AND deleted = FALSE")
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to build sql")
+	}
 	var count int
-	if err := s.GetDB().QueryRowContext(ctx, countActivateInstanceQuery).Scan(&count); err != nil {
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&count); err != nil {
 		return 0, err
 	}
 	return count, nil
@@ -511,91 +552,146 @@ func (s *Store) DeleteInstance(ctx context.Context, resourceID string) error {
 
 	// Delete query_history entries that reference this instance
 	// The database field contains instance reference like 'instances/{instance}/databases/{database}'
-	if _, err := tx.ExecContext(ctx, `
+	q := qb.Q().Space(`
 		DELETE FROM query_history
-		WHERE database LIKE 'instances/' || $1 || '/databases/%'
-	`, resourceID); err != nil {
+		WHERE database LIKE 'instances/' || ? || '/databases/%'
+	`, resourceID)
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return errors.Wrapf(err, "failed to delete query_history for instance %s", resourceID)
 	}
 
 	// Delete task_run_log entries for tasks associated with this instance
-	if _, err := tx.ExecContext(ctx, `
+	q = qb.Q().Space(`
 		DELETE FROM task_run_log
 		WHERE task_run_id IN (
 			SELECT tr.id FROM task_run tr
 			JOIN task t ON tr.task_id = t.id
-			WHERE t.instance = $1
+			WHERE t.instance = ?
 		)
-	`, resourceID); err != nil {
+	`, resourceID)
+	query, args, err = q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return errors.Wrapf(err, "failed to delete task_run_log for instance %s", resourceID)
 	}
 
 	// Delete task_run entries for tasks associated with this instance
-	if _, err := tx.ExecContext(ctx, `
+	q = qb.Q().Space(`
 		DELETE FROM task_run
 		WHERE task_id IN (
-			SELECT id FROM task WHERE instance = $1
+			SELECT id FROM task WHERE instance = ?
 		)
-	`, resourceID); err != nil {
+	`, resourceID)
+	query, args, err = q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return errors.Wrapf(err, "failed to delete task_run for instance %s", resourceID)
 	}
 
 	// Delete tasks associated with this instance
-	if _, err := tx.ExecContext(ctx, `
-		DELETE FROM task WHERE instance = $1
-	`, resourceID); err != nil {
+	q = qb.Q().Space(`
+		DELETE FROM task WHERE instance = ?
+	`, resourceID)
+	query, args, err = q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return errors.Wrapf(err, "failed to delete tasks for instance %s", resourceID)
 	}
 
 	// Delete changelogs associated with this instance
-	if _, err := tx.ExecContext(ctx, `
-		DELETE FROM changelog WHERE instance = $1
-	`, resourceID); err != nil {
+	q = qb.Q().Space(`
+		DELETE FROM changelog WHERE instance = ?
+	`, resourceID)
+	query, args, err = q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return errors.Wrapf(err, "failed to delete changelogs for instance %s", resourceID)
 	}
 
 	// Delete sync_history associated with this instance
-	if _, err := tx.ExecContext(ctx, `
-		DELETE FROM sync_history WHERE instance = $1
-	`, resourceID); err != nil {
+	q = qb.Q().Space(`
+		DELETE FROM sync_history WHERE instance = ?
+	`, resourceID)
+	query, args, err = q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return errors.Wrapf(err, "failed to delete sync_history for instance %s", resourceID)
 	}
 
 	// Delete revisions associated with this instance
-	if _, err := tx.ExecContext(ctx, `
-		DELETE FROM revision WHERE instance = $1
-	`, resourceID); err != nil {
+	q = qb.Q().Space(`
+		DELETE FROM revision WHERE instance = ?
+	`, resourceID)
+	query, args, err = q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return errors.Wrapf(err, "failed to delete revisions for instance %s", resourceID)
 	}
 
 	// Update worksheets to nullify instance and db_name references
-	if _, err := tx.ExecContext(ctx, `
+	q = qb.Q().Space(`
 		UPDATE worksheet
 		SET instance = NULL, db_name = NULL
-		WHERE instance = $1
-	`, resourceID); err != nil {
+		WHERE instance = ?
+	`, resourceID)
+	query, args, err = q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return errors.Wrapf(err, "failed to update worksheets for instance %s", resourceID)
 	}
 
 	// Delete db_schema entries associated with databases on this instance
-	if _, err := tx.ExecContext(ctx, `
-		DELETE FROM db_schema WHERE instance = $1
-	`, resourceID); err != nil {
+	q = qb.Q().Space(`
+		DELETE FROM db_schema WHERE instance = ?
+	`, resourceID)
+	query, args, err = q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return errors.Wrapf(err, "failed to delete db_schema for instance %s", resourceID)
 	}
 
 	// Delete databases associated with this instance
-	if _, err := tx.ExecContext(ctx, `
-		DELETE FROM db WHERE instance = $1
-	`, resourceID); err != nil {
+	q = qb.Q().Space(`
+		DELETE FROM db WHERE instance = ?
+	`, resourceID)
+	query, args, err = q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return errors.Wrapf(err, "failed to delete databases for instance %s", resourceID)
 	}
 
 	// Finally, delete the instance itself (only if it's marked as deleted)
-	result, err := tx.ExecContext(ctx, `
+	q = qb.Q().Space(`
 		DELETE FROM instance
-		WHERE resource_id = $1 AND deleted = TRUE
+		WHERE resource_id = ? AND deleted = TRUE
 	`, resourceID)
+	query, args, err = q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+	result, err := tx.ExecContext(ctx, query, args...)
 	if err != nil {
 		return errors.Wrapf(err, "failed to delete instance %s", resourceID)
 	}

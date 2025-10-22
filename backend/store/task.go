@@ -4,15 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"slices"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -111,32 +110,35 @@ func (s *Store) FindBlockingTaskByVersion(ctx context.Context, pipelineUID int, 
 	if err != nil {
 		return nil, err
 	}
-	query := `
-		SELECT
-			task.id,
-			task.payload->>'schemaVersion'
-		FROM task
-		LEFT JOIN pipeline ON task.pipeline_id = pipeline.id
-		LEFT JOIN issue ON pipeline.id = issue.pipeline_id
-		LEFT JOIN LATERAL (
-			SELECT COALESCE(
-				(SELECT
-					task_run.status
-				FROM task_run
-				WHERE task_run.task_id = task.id
-				ORDER BY task_run.id DESC
-				LIMIT 1
-				), 'NOT_STARTED'
-			) AS status
-		) AS latest_task_run ON TRUE
-		WHERE task.pipeline_id = $1 AND task.instance = $2 AND task.db_name = $3
-		AND task.payload->>'schemaVersion' IS NOT NULL
-		AND (task.payload->>'skipped')::BOOLEAN IS NOT TRUE
-		AND latest_task_run.status != 'DONE'
-		AND COALESCE(issue.status, 'OPEN') = 'OPEN'
-		ORDER BY task.id ASC
-	`
-	rows, err := s.GetDB().QueryContext(ctx, query, pipelineUID, instanceID, databaseName)
+	q := qb.Q().
+		Space("SELECT").
+		Space("task.id,").
+		Space("task.payload->>'schemaVersion'").
+		Space("FROM task").
+		Space("LEFT JOIN pipeline ON task.pipeline_id = pipeline.id").
+		Space("LEFT JOIN issue ON pipeline.id = issue.pipeline_id").
+		Space("LEFT JOIN LATERAL (").
+		Space("SELECT COALESCE(").
+		Space("(SELECT").
+		Space("task_run.status").
+		Space("FROM task_run").
+		Space("WHERE task_run.task_id = task.id").
+		Space("ORDER BY task_run.id DESC").
+		Space("LIMIT 1").
+		Space("), 'NOT_STARTED'").
+		Space(") AS status").
+		Space(") AS latest_task_run ON TRUE").
+		Space("WHERE task.pipeline_id = ? AND task.instance = ? AND task.db_name = ?", pipelineUID, instanceID, databaseName).
+		Space("AND task.payload->>'schemaVersion' IS NOT NULL").
+		Space("AND (task.payload->>'skipped')::BOOLEAN IS NOT TRUE").
+		Space("AND latest_task_run.status != 'DONE'").
+		Space("AND COALESCE(issue.status, 'OPEN') = 'OPEN'").
+		Space("ORDER BY task.id ASC")
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+	rows, err := s.GetDB().QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -162,22 +164,6 @@ func (s *Store) FindBlockingTaskByVersion(ctx context.Context, pipelineUID int, 
 }
 
 func (*Store) createTasks(ctx context.Context, txn *sql.Tx, creates ...*TaskMessage) ([]*TaskMessage, error) {
-	query := `INSERT INTO task (
-			pipeline_id,
-			instance,
-			db_name,
-			environment,
-			type,
-			payload
-		) SELECT
-			unnest(CAST($1 AS INTEGER[])),
-			unnest(CAST($2 AS TEXT[])),
-			unnest(CAST($3 AS TEXT[])),
-			unnest(CAST($4 AS TEXT[])),
-			unnest(CAST($5 AS TEXT[])),
-			unnest(CAST($6 AS JSONB[]))
-		RETURNING id, pipeline_id, instance, db_name, environment, type, payload`
-
 	var (
 		pipelineIDs  []int
 		instances    []string
@@ -202,15 +188,29 @@ func (*Store) createTasks(ctx context.Context, txn *sql.Tx, creates ...*TaskMess
 		payloads = append(payloads, payload)
 	}
 
+	q := qb.Q().
+		Space("INSERT INTO task (").
+		Space("pipeline_id,").
+		Space("instance,").
+		Space("db_name,").
+		Space("environment,").
+		Space("type,").
+		Space("payload").
+		Space(") SELECT").
+		Space("unnest(CAST(? AS INTEGER[])),", pipelineIDs).
+		Space("unnest(CAST(? AS TEXT[])),", instances).
+		Space("unnest(CAST(? AS TEXT[])),", databases).
+		Space("unnest(CAST(? AS TEXT[])),", environments).
+		Space("unnest(CAST(? AS TEXT[])),", types).
+		Space("unnest(CAST(? AS JSONB[]))", payloads).
+		Space("RETURNING id, pipeline_id, instance, db_name, environment, type, payload")
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
 	var tasks []*TaskMessage
-	rows, err := txn.QueryContext(ctx, query,
-		pipelineIDs,
-		instances,
-		databases,
-		environments,
-		types,
-		payloads,
-	)
+	rows, err := txn.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to query")
 	}
@@ -250,70 +250,69 @@ func (*Store) createTasks(ctx context.Context, txn *sql.Tx, creates ...*TaskMess
 }
 
 func (*Store) listTasksTx(ctx context.Context, txn *sql.Tx, find *TaskFind) ([]*TaskMessage, error) {
-	where, args := []string{"TRUE"}, []any{}
+	q := qb.Q().
+		Space("SELECT").
+		Space("task.id,").
+		Space("task.pipeline_id,").
+		Space("task.instance,").
+		Space("task.db_name,").
+		Space("task.environment,").
+		Space("COALESCE(latest_task_run.status, ?) AS latest_task_run_status,", storepb.TaskRun_NOT_STARTED.String()).
+		Space("task.type,").
+		Space("task.payload,").
+		Space("latest_task_run.updated_at,").
+		Space("latest_task_run.run_at").
+		Space("FROM task").
+		Space("LEFT JOIN LATERAL (").
+		Space("SELECT").
+		Space("task_run.status,").
+		Space("task_run.updated_at,").
+		Space("task_run.run_at").
+		Space("FROM task_run").
+		Space("WHERE task_run.task_id = task.id").
+		Space("ORDER BY task_run.id DESC").
+		Space("LIMIT 1").
+		Space(") AS latest_task_run ON TRUE").
+		Space("WHERE TRUE")
 	if v := find.ID; v != nil {
-		where, args = append(where, fmt.Sprintf("task.id = $%d", len(args)+1)), append(args, *v)
+		q.Space("AND task.id = ?", *v)
 	}
 	if v := find.IDs; v != nil {
-		where, args = append(where, fmt.Sprintf("task.id = ANY($%d)", len(args)+1)), append(args, *v)
+		q.Space("AND task.id = ANY(?)", *v)
 	}
 	if v := find.PipelineID; v != nil {
-		where, args = append(where, fmt.Sprintf("task.pipeline_id = $%d", len(args)+1)), append(args, *v)
+		q.Space("AND task.pipeline_id = ?", *v)
 	}
 	if v := find.Environment; v != nil {
-		where, args = append(where, fmt.Sprintf("task.environment = $%d", len(args)+1)), append(args, *v)
+		q.Space("AND task.environment = ?", *v)
 	}
 	if v := find.InstanceID; v != nil {
-		where, args = append(where, fmt.Sprintf("task.instance = $%d", len(args)+1)), append(args, *v)
+		q.Space("AND task.instance = ?", *v)
 	}
 	if v := find.DatabaseName; v != nil {
-		where, args = append(where, fmt.Sprintf("task.db_name = $%d", len(args)+1)), append(args, *v)
+		q.Space("AND task.db_name = ?", *v)
 	}
 	if v := find.LatestTaskRunStatusList; v != nil {
 		var statusStrings []string
 		for _, status := range *v {
 			statusStrings = append(statusStrings, status.String())
 		}
-		where = append(where, fmt.Sprintf("latest_task_run.status = ANY($%d)", len(args)+1))
-		args = append(args, statusStrings)
+		q.Space("AND latest_task_run.status = ANY(?)", statusStrings)
 	}
 	if v := find.TypeList; v != nil {
-		var list []string
+		typeStrings := []string{}
 		for _, taskType := range *v {
-			list = append(list, fmt.Sprintf("$%d", len(args)+1))
-			args = append(args, taskType.String())
+			typeStrings = append(typeStrings, taskType.String())
 		}
-		where = append(where, fmt.Sprintf("task.type in (%s)", strings.Join(list, ",")))
+		q.Space("AND task.type = ANY(?)", typeStrings)
 	}
+	q.Space("ORDER BY task.id ASC")
 
-	args = append(args, storepb.TaskRun_NOT_STARTED.String())
-	rows, err := txn.QueryContext(ctx, fmt.Sprintf(`
-		SELECT
-			task.id,
-			task.pipeline_id,
-			task.instance,
-			task.db_name,
-			task.environment,
-			COALESCE(latest_task_run.status, $%d) AS latest_task_run_status,
-			task.type,
-			task.payload,
-			latest_task_run.updated_at,
-			latest_task_run.run_at
-		FROM task
-		LEFT JOIN LATERAL (
-			SELECT
-				task_run.status,
-				task_run.updated_at,
-				task_run.run_at
-			FROM task_run
-			WHERE task_run.task_id = task.id
-			ORDER BY task_run.id DESC
-			LIMIT 1
-		) AS latest_task_run ON TRUE
-		WHERE %s
-		ORDER BY task.id ASC`, len(args), strings.Join(where, " AND ")),
-		args...,
-	)
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+	rows, err := txn.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -384,43 +383,97 @@ func (s *Store) ListTasks(ctx context.Context, find *TaskFind) ([]*TaskMessage, 
 // UpdateTaskV2 updates an existing task.
 // Returns ENOTFOUND if task does not exist.
 func (s *Store) UpdateTaskV2(ctx context.Context, patch *TaskPatch) (*TaskMessage, error) {
-	set, args := []string{}, []any{}
+	q := qb.Q().Space("UPDATE task SET")
+
+	needsComma := false
 	if v := patch.DatabaseName; v != nil {
-		set, args = append(set, fmt.Sprintf("db_name = $%d", len(args)+1)), append(args, *v)
+		if needsComma {
+			q.Space(",")
+		}
+		q.Space("db_name = ?", *v)
+		needsComma = true
 	}
 	if v := patch.Type; v != nil {
-		set, args = append(set, fmt.Sprintf("type = $%d", len(args)+1)), append(args, v.String())
+		if needsComma {
+			q.Space(",")
+		}
+		q.Space("type = ?", v.String())
+		needsComma = true
 	}
-	var payloadSet []string
+
+	payloadParts := qb.Q()
+	hasPayload := false
 	if v := patch.SheetID; v != nil {
-		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('sheetId', $%d::INT)`, len(args)+1)), append(args, *v)
+		if hasPayload {
+			payloadParts.Space("||")
+		}
+		payloadParts.Space("jsonb_build_object('sheetId', ?::INT)", *v)
+		hasPayload = true
 	}
 	if v := patch.SchemaVersion; v != nil {
-		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('schemaVersion', $%d::TEXT)`, len(args)+1)), append(args, *v)
+		if hasPayload {
+			payloadParts.Space("||")
+		}
+		payloadParts.Space("jsonb_build_object('schemaVersion', ?::TEXT)", *v)
+		hasPayload = true
 	}
 	if v := patch.ExportFormat; v != nil {
-		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('format', $%d::INT)`, len(args)+1)), append(args, *v)
+		if hasPayload {
+			payloadParts.Space("||")
+		}
+		payloadParts.Space("jsonb_build_object('format', ?::INT)", *v)
+		hasPayload = true
 	}
 	if v := patch.ExportPassword; v != nil {
-		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('password', $%d::TEXT)`, len(args)+1)), append(args, *v)
+		if hasPayload {
+			payloadParts.Space("||")
+		}
+		payloadParts.Space("jsonb_build_object('password', ?::TEXT)", *v)
+		hasPayload = true
 	}
 	if v := patch.EnablePriorBackup; v != nil {
-		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('enablePriorBackup', $%d::BOOLEAN)`, len(args)+1)), append(args, *v)
+		if hasPayload {
+			payloadParts.Space("||")
+		}
+		payloadParts.Space("jsonb_build_object('enablePriorBackup', ?::BOOLEAN)", *v)
+		hasPayload = true
 	}
 	if v := patch.MigrateType; v != nil {
-		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('migrateType', $%d::TEXT)`, len(args)+1)), append(args, v.String())
+		if hasPayload {
+			payloadParts.Space("||")
+		}
+		payloadParts.Space("jsonb_build_object('migrateType', ?::TEXT)", v.String())
+		hasPayload = true
 	}
 	if v := patch.Flags; v != nil {
 		jsonb, err := json.Marshal(v)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to marshal flags")
 		}
-		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('flags', $%d::JSONB)`, len(args)+1)), append(args, jsonb)
+		if hasPayload {
+			payloadParts.Space("||")
+		}
+		payloadParts.Space("jsonb_build_object('flags', ?::JSONB)", jsonb)
+		hasPayload = true
 	}
-	if len(payloadSet) != 0 {
-		set = append(set, fmt.Sprintf(`payload = payload || %s`, strings.Join(payloadSet, "||")))
+	if hasPayload {
+		if needsComma {
+			q.Space(",")
+		}
+		payloadQuery, payloadArgs, err := payloadParts.ToSQL()
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to build payload sql")
+		}
+		q.Space("payload = payload || "+payloadQuery, payloadArgs...)
 	}
-	args = append(args, patch.ID)
+
+	q.Space("WHERE id = ?", patch.ID).
+		Space("RETURNING id, pipeline_id, instance, db_name, environment, type, payload")
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
@@ -431,14 +484,7 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *TaskPatch) (*TaskMessag
 	task := &TaskMessage{}
 	var payload []byte
 	var typeString string
-	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
-		UPDATE task
-		SET `+strings.Join(set, ", ")+`
-		WHERE id = $%d
-		RETURNING id, pipeline_id, instance, db_name, environment, type, payload
-	`, len(args)),
-		args...,
-	).Scan(
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(
 		&task.ID,
 		&task.PipelineID,
 		&task.InstanceID,
@@ -472,11 +518,14 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *TaskPatch) (*TaskMessag
 
 // BatchSkipTasks batch skip tasks.
 func (s *Store) BatchSkipTasks(ctx context.Context, taskUIDs []int, comment string) error {
-	query := `
-	UPDATE task
-	SET payload = payload || jsonb_build_object('skipped', $1::BOOLEAN) || jsonb_build_object('skippedReason', $2::TEXT)
-	WHERE id = ANY($3)`
-	args := []any{true, comment, taskUIDs}
+	q := qb.Q().
+		Space("UPDATE task").
+		Space("SET payload = payload || jsonb_build_object('skipped', ?::BOOLEAN) || jsonb_build_object('skippedReason', ?::TEXT)", true, comment).
+		Space("WHERE id = ANY(?)", taskUIDs)
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
 
 	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return errors.Wrapf(err, "failed to batch skip tasks")
@@ -493,20 +542,25 @@ func (s *Store) BatchSkipTasks(ctx context.Context, taskUIDs []int, comment stri
 // 5. are the first task in the pipeline for their environment
 // 6. are not data export tasks.
 func (s *Store) ListTasksToAutoRollout(ctx context.Context, environments []string) ([]int, error) {
-	rows, err := s.GetDB().QueryContext(ctx, `
-	SELECT
-		task.pipeline_id,
-		task.environment,
-		task.id
-	FROM task
-	LEFT JOIN pipeline ON pipeline.id = task.pipeline_id
-	LEFT JOIN issue ON issue.pipeline_id = pipeline.id
-	WHERE NOT EXISTS (SELECT 1 FROM task_run WHERE task_run.task_id = task.id)
-	AND task.type != 'DATABASE_EXPORT'
-	AND COALESCE((task.payload->>'skipped')::BOOLEAN, FALSE) IS FALSE
-	AND COALESCE(issue.status, 'OPEN') = 'OPEN'
-	AND task.environment = ANY($1)
-	ORDER BY task.pipeline_id, task.id`, environments)
+	q := qb.Q().
+		Space("SELECT").
+		Space("task.pipeline_id,").
+		Space("task.environment,").
+		Space("task.id").
+		Space("FROM task").
+		Space("LEFT JOIN pipeline ON pipeline.id = task.pipeline_id").
+		Space("LEFT JOIN issue ON issue.pipeline_id = pipeline.id").
+		Space("WHERE NOT EXISTS (SELECT 1 FROM task_run WHERE task_run.task_id = task.id)").
+		Space("AND task.type != 'DATABASE_EXPORT'").
+		Space("AND COALESCE((task.payload->>'skipped')::BOOLEAN, FALSE) IS FALSE").
+		Space("AND COALESCE(issue.status, 'OPEN') = 'OPEN'").
+		Space("AND task.environment = ANY(?)", environments).
+		Space("ORDER BY task.pipeline_id, task.id")
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+	rows, err := s.GetDB().QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}

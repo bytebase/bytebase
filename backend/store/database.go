@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -11,6 +10,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -150,26 +150,30 @@ func (s *Store) CreateDatabaseDefault(ctx context.Context, create *DatabaseMessa
 
 // createDatabaseDefault only creates a default database with charset, collation only in the default project.
 func (*Store) createDatabaseDefaultImpl(ctx context.Context, txn *sql.Tx, projectID, instanceID string, create *DatabaseMessage) (int, error) {
-	query := `
+	q := qb.Q().Space(`
 		INSERT INTO db (
 			instance,
 			project,
 			name,
 			deleted
 		)
-		VALUES ($1, $2, $3, $4)
+		VALUES (?, ?, ?, ?)
 		ON CONFLICT (instance, name) DO UPDATE SET
 			deleted = EXCLUDED.deleted
-		RETURNING id`
-	var databaseUID int
-	if err := txn.QueryRowContext(ctx, query,
+		RETURNING id`,
 		instanceID,
 		projectID,
 		create.DatabaseName,
 		false,
-	).Scan(
-		&databaseUID,
-	); err != nil {
+	)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to build sql")
+	}
+
+	var databaseUID int
+	if err := txn.QueryRowContext(ctx, query, args...).Scan(&databaseUID); err != nil {
 		return 0, err
 	}
 	return databaseUID, nil
@@ -192,7 +196,8 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 	if create.EnvironmentID != nil && *create.EnvironmentID != "" {
 		environment = create.EnvironmentID
 	}
-	query := `
+
+	q := qb.Q().Space(`
 		INSERT INTO db (
 			instance,
 			project,
@@ -201,24 +206,28 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 			deleted,
 			metadata
 		)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		VALUES (?, ?, ?, ?, ?, ?)
 		ON CONFLICT (instance, name) DO UPDATE SET
 			project = EXCLUDED.project,
 			environment = EXCLUDED.environment,
 			name = EXCLUDED.name,
 			metadata = EXCLUDED.metadata
-		RETURNING id`
-	var databaseUID int
-	if err := tx.QueryRowContext(ctx, query,
+		RETURNING id`,
 		create.InstanceID,
 		create.ProjectID,
 		environment,
 		create.DatabaseName,
 		create.Deleted,
 		metadataString,
-	).Scan(
-		&databaseUID,
-	); err != nil {
+	)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
+	var databaseUID int
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(&databaseUID); err != nil {
 		return nil, err
 	}
 	if err := tx.Commit(); err != nil {
@@ -232,19 +241,33 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 
 // UpdateDatabase updates a database.
 func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage) (*DatabaseMessage, error) {
-	set, args := []string{}, []any{}
+	q := qb.Q().Space("UPDATE db SET")
+	first := true
+
 	if v := patch.ProjectID; v != nil {
-		set, args = append(set, fmt.Sprintf("project = $%d", len(args)+1)), append(args, *v)
+		if !first {
+			q.Space(",")
+		}
+		q.Space("project = ?", *v)
+		first = false
 	}
 	if v := patch.EnvironmentID; v != nil {
-		if *v == "" {
-			set = append(set, "environment = NULL")
-		} else {
-			set, args = append(set, fmt.Sprintf("environment = $%d", len(args)+1)), append(args, *v)
+		if !first {
+			q.Space(",")
 		}
+		if *v == "" {
+			q.Space("environment = NULL")
+		} else {
+			q.Space("environment = ?", *v)
+		}
+		first = false
 	}
 	if v := patch.Deleted; v != nil {
-		set, args = append(set, fmt.Sprintf("deleted = $%d", len(args)+1)), append(args, *v)
+		if !first {
+			q.Space(",")
+		}
+		q.Space("deleted = ?", *v)
+		first = false
 	}
 	if fs := patch.MetadataUpdates; len(fs) > 0 {
 		database, err := s.GetDatabaseV2(ctx, &FindDatabaseMessage{
@@ -262,26 +285,28 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 		if err != nil {
 			return nil, err
 		}
-		set, args = append(set, fmt.Sprintf("metadata = $%d", len(args)+1)), append(args, metadataBytes)
+		if !first {
+			q.Space(",")
+		}
+		q.Space("metadata = ?", metadataBytes)
+		first = false
 	}
-	args = append(args, patch.InstanceID, patch.DatabaseName)
+
+	q.Space("WHERE instance = ? AND name = ? RETURNING id", patch.InstanceID, patch.DatabaseName)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback()
+
 	var databaseUID int
-	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
-		UPDATE db
-		SET `+strings.Join(set, ", ")+`
-		WHERE instance = $%d AND name = $%d
-		RETURNING id
-	`, len(args)-1, len(args)),
-		args...,
-	).Scan(
-		&databaseUID,
-	); err != nil {
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(&databaseUID); err != nil {
 		return nil, err
 	}
 	if err := tx.Commit(); err != nil {
@@ -295,31 +320,56 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 
 // BatchUpdateDatabases update databases in batch.
 func (s *Store) BatchUpdateDatabases(ctx context.Context, databases []*DatabaseMessage, update *BatchUpdateDatabases) ([]*DatabaseMessage, error) {
-	set, args, wheres := []string{}, []any{}, []string{}
+	q := qb.Q().Space("UPDATE db SET")
+	setFirst := true
+
 	if update.ProjectID != nil {
-		set, args = append(set, fmt.Sprintf("project = $%d", len(args)+1)), append(args, *update.ProjectID)
+		if !setFirst {
+			q.Space(",")
+		}
+		q.Space("project = ?", *update.ProjectID)
+		setFirst = false
 	}
 	if v := update.EnvironmentID; v != nil {
-		if *v == "" {
-			set = append(set, "environment = NULL")
-		} else {
-			set, args = append(set, fmt.Sprintf("environment = $%d", len(args)+1)), append(args, *v)
+		if !setFirst {
+			q.Space(",")
 		}
+		if *v == "" {
+			q.Space("environment = NULL")
+		} else {
+			q.Space("environment = ?", *v)
+		}
+		setFirst = false
 	}
-	if len(set) == 0 {
+	if setFirst {
 		return nil, errors.New("no update field specified")
 	}
 
+	q.Space("WHERE")
+	whereFirst := true
+
 	if v := update.FindByEnvironmentID; v != nil {
-		wheres, args = append(wheres, fmt.Sprintf("environment = $%d", len(args)+1)), append(args, *v)
+		if !whereFirst {
+			q.Space("OR")
+		}
+		q.Space("environment = ?", *v)
+		whereFirst = false
 	}
 
 	for _, database := range databases {
-		wheres = append(wheres, fmt.Sprintf("(db.instance = $%d AND db.name = $%d)", len(args)+1, len(args)+2))
-		args = append(args, database.InstanceID, database.DatabaseName)
+		if !whereFirst {
+			q.Space("OR")
+		}
+		q.Space("(db.instance = ? AND db.name = ?)", database.InstanceID, database.DatabaseName)
+		whereFirst = false
 	}
-	if len(wheres) == 0 {
+	if whereFirst {
 		return nil, errors.Errorf("empty where")
+	}
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
@@ -327,12 +377,8 @@ func (s *Store) BatchUpdateDatabases(ctx context.Context, databases []*DatabaseM
 		return nil, err
 	}
 	defer tx.Rollback()
-	if _, err := tx.ExecContext(ctx, fmt.Sprintf(`
-			UPDATE db
-			SET `+strings.Join(set, ", ")+`
-			WHERE %s;`, strings.Join(wheres, " OR ")),
-		args...,
-	); err != nil {
+
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return nil, err
 	}
 
@@ -368,46 +414,7 @@ func (s *Store) BatchUpdateDatabases(ctx context.Context, databases []*DatabaseM
 }
 
 func (*Store) listDatabaseImplV2(ctx context.Context, txn *sql.Tx, find *FindDatabaseMessage) ([]*DatabaseMessage, error) {
-	where, args := []string{"TRUE"}, []any{}
-	joinQuery := ""
-	if filter := find.Filter; filter != nil {
-		where = append(where, filter.Where)
-		args = append(args, filter.Args...)
-
-		if strings.Contains(filter.Where, "ds.metadata->'schemas'") {
-			joinQuery = "INNER JOIN db_schema ds ON db.instance = ds.instance AND db.name = ds.db_name"
-		}
-	}
-	if v := find.ProjectID; v != nil {
-		where, args = append(where, fmt.Sprintf("db.project = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.EffectiveEnvironmentID; v != nil {
-		where, args = append(where, fmt.Sprintf(`
-		COALESCE(
-			db.environment,
-			instance.environment
-		) = $%d`, len(args)+1)), append(args, *v)
-	}
-	if v := find.InstanceID; v != nil {
-		where, args = append(where, fmt.Sprintf("db.instance = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.DatabaseName; v != nil {
-		if find.IsCaseSensitive {
-			where, args = append(where, fmt.Sprintf("db.name = $%d", len(args)+1)), append(args, *v)
-		} else {
-			where, args = append(where, fmt.Sprintf("LOWER(db.name) = LOWER($%d)", len(args)+1)), append(args, *v)
-		}
-	}
-	if v := find.Engine; v != nil {
-		where, args = append(where, fmt.Sprintf("instance.metadata->>'engine' = $%d", len(args)+1)), append(args, *v)
-	}
-	if !find.ShowDeleted {
-		where, args = append(where, fmt.Sprintf("instance.deleted = $%d", len(args)+1)), append(args, false)
-		// We don't show databases that are deleted by users already.
-		where, args = append(where, fmt.Sprintf("db.deleted = $%d", len(args)+1)), append(args, false)
-	}
-
-	query := fmt.Sprintf(`
+	q := qb.Q().Space(`
 		SELECT
 			db.project,
 			COALESCE(
@@ -419,22 +426,66 @@ func (*Store) listDatabaseImplV2(ctx context.Context, txn *sql.Tx, find *FindDat
 			db.name,
 			db.deleted,
 			db.metadata
-		FROM db
-		%s
-		LEFT JOIN instance ON db.instance = instance.resource_id
-		WHERE %s
-		ORDER BY db.project, db.instance, db.name`, joinQuery, strings.Join(where, " AND "))
+		FROM db`)
+
+	joinQuery := ""
+	if filter := find.Filter; filter != nil {
+		if strings.Contains(filter.Where, "ds.metadata->'schemas'") {
+			joinQuery = "INNER JOIN db_schema ds ON db.instance = ds.instance AND db.name = ds.db_name"
+		}
+	}
+	if joinQuery != "" {
+		q.Space(joinQuery)
+	}
+
+	q.Space("LEFT JOIN instance ON db.instance = instance.resource_id WHERE TRUE")
+
+	if filter := find.Filter; filter != nil {
+		q.And(filter.Where, filter.Args...)
+	}
+	if v := find.ProjectID; v != nil {
+		q.And("db.project = ?", *v)
+	}
+	if v := find.EffectiveEnvironmentID; v != nil {
+		q.And(`COALESCE(
+			db.environment,
+			instance.environment
+		) = ?`, *v)
+	}
+	if v := find.InstanceID; v != nil {
+		q.And("db.instance = ?", *v)
+	}
+	if v := find.DatabaseName; v != nil {
+		if find.IsCaseSensitive {
+			q.And("db.name = ?", *v)
+		} else {
+			q.And("LOWER(db.name) = LOWER(?)", *v)
+		}
+	}
+	if v := find.Engine; v != nil {
+		q.And("instance.metadata->>'engine' = ?", *v)
+	}
+	if !find.ShowDeleted {
+		q.And("instance.deleted = ?", false)
+		q.And("db.deleted = ?", false)
+	}
+
+	q.Space("ORDER BY db.project, db.instance, db.name")
+
 	if v := find.Limit; v != nil {
-		query += fmt.Sprintf(" LIMIT %d", *v)
+		q.Space("LIMIT ?", *v)
 	}
 	if v := find.Offset; v != nil {
-		query += fmt.Sprintf(" OFFSET %d", *v)
+		q.Space("OFFSET ?", *v)
+	}
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
 	var databaseMessages []*DatabaseMessage
-	rows, err := txn.QueryContext(ctx, query,
-		args...,
-	)
+	rows, err := txn.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
