@@ -68,7 +68,6 @@
     },
     "revert": "元に戻す",
     "confirm-to-revert": "編集を元に戻してもよろしいですか?",
-    "apply": "適用",
     "reorder": "並び替え",
     "id": "ID",
     "name": "名前",
@@ -1467,6 +1466,7 @@
     "delete": "この環境を削除します",
     "delete-description": "環境を削除すると、関連するインスタンスとデータベースからも削除されます。@:common.cannot-undo-this-action",
     "create": "環境を作成する",
+    "reorder": "環境の並べ替え",
     "successfully-updated-environment": "環境「{name}」は正常に更新されました",
     "production-environment": "本番環境",
     "access-control": {

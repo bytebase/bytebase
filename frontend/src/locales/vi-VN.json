@@ -68,7 +68,6 @@
     },
     "revert": "Hoàn tác",
     "confirm-to-revert": "Xác nhận hoàn tác chỉnh sửa của bạn?",
-    "apply": "Áp dụng",
     "reorder": "Sắp xếp lại",
     "id": "ID",
     "name": "Tên",
@@ -1467,6 +1466,7 @@
     "delete": "Xóa môi trường này",
     "delete-description": "Xóa môi trường cũng sẽ xóa nó khỏi các phiên bản và cơ sở dữ liệu liên quan. @:common.cannot-undo-this-action",
     "create": "Tạo môi trường",
+    "reorder": "Sắp xếp lại môi trường",
     "successfully-updated-environment": "Đã cập nhật thành công môi trường '{name}'.",
     "production-environment": "Môi trường sản xuất",
     "access-control": {

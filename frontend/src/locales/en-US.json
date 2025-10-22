@@ -68,7 +68,6 @@
     },
     "revert": "Revert",
     "confirm-to-revert": "Confirm to revert your editing?",
-    "apply": "Apply",
     "reorder": "Reorder",
     "id": "ID",
     "name": "Name",
@@ -1467,6 +1466,7 @@
     "delete": "Delete this environment",
     "delete-description": "Delete environment will also remove it from related instances and databases. @:common.cannot-undo-this-action",
     "create": "Create Environment",
+    "reorder": "Reorder Environments",
     "successfully-updated-environment": "Successfully updated environment '{name}'.",
     "production-environment": "Production environment",
     "access-control": {
