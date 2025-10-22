@@ -4,6 +4,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/postgresql"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -51,6 +52,9 @@ type MetadataDiff struct {
 
 	// Event changes
 	EventChanges []*EventDiff
+
+	// Comment changes
+	CommentChanges []*CommentDiff
 }
 
 // nolint
@@ -244,6 +248,34 @@ type EventDiff struct {
 	EventName string
 	OldEvent  *storepb.EventMetadata
 	NewEvent  *storepb.EventMetadata
+}
+
+// CommentObjectType represents the type of database object that has a comment.
+type CommentObjectType string
+
+const (
+	CommentObjectTypeSchema   CommentObjectType = "SCHEMA"
+	CommentObjectTypeTable    CommentObjectType = "TABLE"
+	CommentObjectTypeColumn   CommentObjectType = "COLUMN"
+	CommentObjectTypeView     CommentObjectType = "VIEW"
+	CommentObjectTypeFunction CommentObjectType = "FUNCTION"
+	CommentObjectTypeSequence CommentObjectType = "SEQUENCE"
+	CommentObjectTypeIndex    CommentObjectType = "INDEX"
+)
+
+// CommentDiff represents changes to database object comments.
+// Comments are tracked independently to avoid triggering object recreation when only comments change.
+type CommentDiff struct {
+	Action     MetadataDiffAction // CREATE or ALTER (no DROP since object deletion removes comments automatically)
+	ObjectType CommentObjectType
+	SchemaName string
+	ObjectName string // table/view/function/sequence/index name
+	ColumnName string // only used for COLUMN comments
+	IndexName  string // only used for table-level INDEX comments
+	OldComment string
+	NewComment string
+	OldASTNode antlr.ParserRuleContext
+	NewASTNode antlr.ParserRuleContext
 }
 
 // GetDatabaseSchemaDiff compares two model.DatabaseSchema instances and returns the differences.

@@ -76,6 +76,7 @@ func GetSDLDiff(currentSDLText, previousUserSDLText string, currentSchema, previ
 		ProcedureChanges:        []*schema.ProcedureDiff{},
 		SequenceChanges:         []*schema.SequenceDiff{},
 		EnumTypeChanges:         []*schema.EnumTypeDiff{},
+		CommentChanges:          []*schema.CommentDiff{},
 	}
 
 	// Process table changes
@@ -96,17 +97,23 @@ func GetSDLDiff(currentSDLText, previousUserSDLText string, currentSchema, previ
 	// Process sequence changes
 	processSequenceChanges(currentChunks, previousChunks, currentDBSDLChunks, diff)
 
+	// Process comment changes (must be after all object changes are processed)
+	processCommentChanges(currentChunks, previousChunks, diff)
+
 	return diff, nil
 }
 
 func ChunkSDLText(sdlText string) (*schema.SDLChunks, error) {
 	if strings.TrimSpace(sdlText) == "" {
 		return &schema.SDLChunks{
-			Tables:    make(map[string]*schema.SDLChunk),
-			Views:     make(map[string]*schema.SDLChunk),
-			Functions: make(map[string]*schema.SDLChunk),
-			Indexes:   make(map[string]*schema.SDLChunk),
-			Sequences: make(map[string]*schema.SDLChunk),
+			Tables:         make(map[string]*schema.SDLChunk),
+			Views:          make(map[string]*schema.SDLChunk),
+			Functions:      make(map[string]*schema.SDLChunk),
+			Indexes:        make(map[string]*schema.SDLChunk),
+			Sequences:      make(map[string]*schema.SDLChunk),
+			Schemas:        make(map[string]*schema.SDLChunk),
+			ColumnComments: make(map[string]map[string]antlr.ParserRuleContext),
+			IndexComments:  make(map[string]map[string]antlr.ParserRuleContext),
 		}, nil
 	}
 
@@ -118,11 +125,14 @@ func ChunkSDLText(sdlText string) (*schema.SDLChunks, error) {
 	extractor := &sdlChunkExtractor{
 		sdlText: sdlText,
 		chunks: &schema.SDLChunks{
-			Tables:    make(map[string]*schema.SDLChunk),
-			Views:     make(map[string]*schema.SDLChunk),
-			Functions: make(map[string]*schema.SDLChunk),
-			Indexes:   make(map[string]*schema.SDLChunk),
-			Sequences: make(map[string]*schema.SDLChunk),
+			Tables:         make(map[string]*schema.SDLChunk),
+			Views:          make(map[string]*schema.SDLChunk),
+			Functions:      make(map[string]*schema.SDLChunk),
+			Indexes:        make(map[string]*schema.SDLChunk),
+			Sequences:      make(map[string]*schema.SDLChunk),
+			Schemas:        make(map[string]*schema.SDLChunk),
+			ColumnComments: make(map[string]map[string]antlr.ParserRuleContext),
+			IndexComments:  make(map[string]map[string]antlr.ParserRuleContext),
 		},
 		tokens: parseResult.Tokens,
 	}
@@ -319,6 +329,187 @@ func (l *sdlChunkExtractor) EnterViewstmt(ctx *parser.ViewstmtContext) {
 	l.chunks.Views[schemaQualifiedName] = chunk
 }
 
+func (l *sdlChunkExtractor) EnterCommentstmt(ctx *parser.CommentstmtContext) {
+	// Extract the comment text (can be sconst or NULL)
+	// We store the entire AST node, not just the comment text
+
+	// Check for COLUMN comment: COMMENT ON COLUMN any_name IS comment_text
+	if ctx.COLUMN() != nil {
+		if ctx.Any_name() != nil {
+			// Extract schema.table.column from any_name
+			anyName := pgparser.NormalizePostgreSQLAnyName(ctx.Any_name())
+			if len(anyName) >= 3 {
+				// Format: schema.table.column
+				schemaName := anyName[0]
+				tableName := anyName[1]
+				columnName := anyName[2]
+				tableIdentifier := schemaName + "." + tableName
+
+				// Ensure the map for this table exists
+				if l.chunks.ColumnComments[tableIdentifier] == nil {
+					l.chunks.ColumnComments[tableIdentifier] = make(map[string]antlr.ParserRuleContext)
+				}
+				l.chunks.ColumnComments[tableIdentifier][columnName] = ctx
+			} else if len(anyName) == 2 {
+				// Format: table.column (assume public schema)
+				tableName := anyName[0]
+				columnName := anyName[1]
+				tableIdentifier := "public." + tableName
+
+				if l.chunks.ColumnComments[tableIdentifier] == nil {
+					l.chunks.ColumnComments[tableIdentifier] = make(map[string]antlr.ParserRuleContext)
+				}
+				l.chunks.ColumnComments[tableIdentifier][columnName] = ctx
+			}
+		}
+		return
+	}
+
+	// Check for FUNCTION comment: COMMENT ON FUNCTION function_with_argtypes IS comment_text
+	if ctx.FUNCTION() != nil {
+		if ctx.Function_with_argtypes() != nil {
+			funcWithArgsCtx := ctx.Function_with_argtypes()
+
+			// Extract function name from func_name
+			var funcNameParts []string
+			if funcWithArgsCtx.Func_name() != nil {
+				funcNameParts = pgparser.NormalizePostgreSQLFuncName(funcWithArgsCtx.Func_name())
+			} else if funcWithArgsCtx.Colid() != nil {
+				// Single identifier case
+				funcNameParts = []string{pgparser.NormalizePostgreSQLColid(funcWithArgsCtx.Colid())}
+			} else {
+				// Fallback: use the whole text
+				funcNameParts = []string{funcWithArgsCtx.GetText()}
+			}
+
+			// Determine schema name
+			var schemaName string
+			var funcName string
+			if len(funcNameParts) >= 2 {
+				schemaName = funcNameParts[0]
+				funcName = funcNameParts[1]
+			} else if len(funcNameParts) == 1 {
+				schemaName = "public"
+				funcName = funcNameParts[0]
+			} else {
+				return
+			}
+
+			// Try to find matching function by name prefix (schema.funcname)
+			// This is necessary because CREATE FUNCTION uses parameter names and normalized types,
+			// while COMMENT ON FUNCTION may use different type representations
+			funcNamePrefix := schemaName + "." + funcName
+			var matchedChunk *schema.SDLChunk
+			for identifier, chunk := range l.chunks.Functions {
+				if strings.HasPrefix(identifier, funcNamePrefix+"(") || identifier == funcNamePrefix {
+					matchedChunk = chunk
+					break
+				}
+			}
+
+			if matchedChunk != nil {
+				// Add comment to the existing function chunk
+				matchedChunk.CommentStatements = append(matchedChunk.CommentStatements, ctx)
+			}
+			// If no match found, we don't create a new chunk because the function
+			// should already exist from CREATE FUNCTION statement
+		}
+		return
+	}
+
+	// Check for object_type_any_name: TABLE, SEQUENCE, VIEW, INDEX, etc.
+	if ctx.Object_type_any_name() != nil && ctx.Any_name() != nil {
+		objectType := ctx.Object_type_any_name().GetText()
+		anyName := pgparser.NormalizePostgreSQLAnyName(ctx.Any_name())
+
+		var identifier string
+		if len(anyName) >= 2 {
+			// Format: schema.object
+			identifier = strings.Join(anyName, ".")
+		} else if len(anyName) == 1 {
+			// Format: object (assume public schema)
+			identifier = "public." + anyName[0]
+		} else {
+			return
+		}
+
+		// Route to appropriate chunk map based on object type
+		switch strings.ToUpper(objectType) {
+		case "TABLE":
+			if chunk, exists := l.chunks.Tables[identifier]; exists {
+				chunk.CommentStatements = append(chunk.CommentStatements, ctx)
+			} else {
+				chunk := &schema.SDLChunk{
+					Identifier:        identifier,
+					ASTNode:           nil,
+					CommentStatements: []antlr.ParserRuleContext{ctx},
+				}
+				l.chunks.Tables[identifier] = chunk
+			}
+		case "VIEW":
+			if chunk, exists := l.chunks.Views[identifier]; exists {
+				chunk.CommentStatements = append(chunk.CommentStatements, ctx)
+			} else {
+				chunk := &schema.SDLChunk{
+					Identifier:        identifier,
+					ASTNode:           nil,
+					CommentStatements: []antlr.ParserRuleContext{ctx},
+				}
+				l.chunks.Views[identifier] = chunk
+			}
+		case "SEQUENCE":
+			if chunk, exists := l.chunks.Sequences[identifier]; exists {
+				chunk.CommentStatements = append(chunk.CommentStatements, ctx)
+			} else {
+				chunk := &schema.SDLChunk{
+					Identifier:        identifier,
+					ASTNode:           nil,
+					CommentStatements: []antlr.ParserRuleContext{ctx},
+				}
+				l.chunks.Sequences[identifier] = chunk
+			}
+		case "INDEX":
+			if chunk, exists := l.chunks.Indexes[identifier]; exists {
+				chunk.CommentStatements = append(chunk.CommentStatements, ctx)
+			} else {
+				chunk := &schema.SDLChunk{
+					Identifier:        identifier,
+					ASTNode:           nil,
+					CommentStatements: []antlr.ParserRuleContext{ctx},
+				}
+				l.chunks.Indexes[identifier] = chunk
+			}
+		default:
+			// Unsupported object type for comment tracking (e.g., MATERIALIZED VIEW, FOREIGN TABLE)
+			// We skip these for now
+		}
+		return
+	}
+
+	// Check for object_type_name: SCHEMA, DATABASE, etc.
+	if ctx.Object_type_name() != nil && ctx.Name() != nil {
+		objectType := ctx.Object_type_name().GetText()
+		name := pgparser.NormalizePostgreSQLName(ctx.Name())
+
+		if strings.ToUpper(objectType) == "SCHEMA" {
+			if chunk, exists := l.chunks.Schemas[name]; exists {
+				chunk.CommentStatements = append(chunk.CommentStatements, ctx)
+			} else {
+				chunk := &schema.SDLChunk{
+					Identifier:        name,
+					ASTNode:           nil,
+					CommentStatements: []antlr.ParserRuleContext{ctx},
+				}
+				l.chunks.Schemas[name] = chunk
+			}
+		}
+		return
+	}
+
+	// Check for object_type_name_on_any_name: TRIGGER, RULE, POLICY (we don't track these currently)
+	// These are table-level objects that we may want to support in the future
+}
+
 // processTableChanges processes changes to tables by comparing SDL chunks
 // nolint:unparam
 func processTableChanges(currentChunks, previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseSchema, currentDBSDLChunks *currentDatabaseSDLChunks, diff *schema.MetadataDiff) error {
@@ -327,9 +518,9 @@ func processTableChanges(currentChunks, previousChunks *schema.SDLChunks, curren
 		schemaName, tableName := parseIdentifier(currentChunk.Identifier)
 
 		if previousChunk, exists := previousChunks.Tables[currentChunk.Identifier]; exists {
-			// Table exists in both - check if modified
-			currentText := currentChunk.GetText()
-			previousText := previousChunk.GetText()
+			// Table exists in both - check if modified (excluding comments)
+			currentText := currentChunk.GetTextWithoutComments()
+			previousText := previousChunk.GetTextWithoutComments()
 			if currentText != previousText {
 				// Apply usability check: skip diff if current chunk matches database metadata SDL
 				if currentDBSDLChunks.shouldSkipChunkDiffForUsability(currentText, currentChunk.Identifier) {
@@ -1481,9 +1672,9 @@ func processViewChanges(currentChunks, previousChunks *schema.SDLChunks, current
 	// Process current views to find created and modified views
 	for _, currentChunk := range currentChunks.Views {
 		if previousChunk, exists := previousChunks.Views[currentChunk.Identifier]; exists {
-			// View exists in both - check if modified by comparing text first
-			currentText := currentChunk.GetText()
-			previousText := previousChunk.GetText()
+			// View exists in both - check if modified by comparing text first (excluding comments)
+			currentText := currentChunk.GetTextWithoutComments()
+			previousText := previousChunk.GetTextWithoutComments()
 			if currentText != previousText {
 				// Apply usability check: skip diff if current chunk matches database metadata SDL
 				if currentDBSDLChunks.shouldSkipChunkDiffForUsability(currentText, currentChunk.Identifier) {
@@ -1550,9 +1741,9 @@ func processFunctionChanges(currentChunks, previousChunks *schema.SDLChunks, cur
 	// Process current functions to find created and modified functions
 	for _, currentChunk := range currentChunks.Functions {
 		if previousChunk, exists := previousChunks.Functions[currentChunk.Identifier]; exists {
-			// Function exists in both - check if modified by comparing text first
-			currentText := currentChunk.GetText()
-			previousText := previousChunk.GetText()
+			// Function exists in both - check if modified by comparing text first (excluding comments)
+			currentText := currentChunk.GetTextWithoutComments()
+			previousText := previousChunk.GetTextWithoutComments()
 			if currentText != previousText {
 				// Apply usability check: skip diff if current chunk matches database metadata SDL
 				if currentDBSDLChunks.shouldSkipChunkDiffForUsability(currentText, currentChunk.Identifier) {
@@ -1611,9 +1802,9 @@ func processSequenceChanges(currentChunks, previousChunks *schema.SDLChunks, cur
 	// Process current sequences to find created and modified sequences
 	for _, currentChunk := range currentChunks.Sequences {
 		if previousChunk, exists := previousChunks.Sequences[currentChunk.Identifier]; exists {
-			// Sequence exists in both - check if modified
-			currentText := currentChunk.GetText()
-			previousText := previousChunk.GetText()
+			// Sequence exists in both - check if modified (excluding comments)
+			currentText := currentChunk.GetTextWithoutComments()
+			previousText := previousChunk.GetTextWithoutComments()
 			if currentText != previousText {
 				// Apply usability check: skip diff if current chunk matches database metadata SDL
 				if currentDBSDLChunks.shouldSkipChunkDiffForUsability(currentText, currentChunk.Identifier) {
@@ -4022,4 +4213,252 @@ func (e *sequenceExtractor) EnterCreateseqstmt(ctx *parser.CreateseqstmtContext)
 	if e.result != nil && *e.result == nil {
 		*e.result = ctx
 	}
+}
+
+// processCommentChanges processes comment changes for all database objects
+// It must be called after all object changes have been processed to determine
+// which objects were created or dropped (those should not generate comment diffs)
+func processCommentChanges(currentChunks, previousChunks *schema.SDLChunks, diff *schema.MetadataDiff) {
+	// Build sets of created and dropped objects to avoid generating comment diffs for them
+	createdObjects := buildCreatedObjectsSet(diff)
+	droppedObjects := buildDroppedObjectsSet(diff)
+
+	// Process object-level comments
+	processObjectComments(currentChunks.Tables, previousChunks.Tables, schema.CommentObjectTypeTable, createdObjects, droppedObjects, diff)
+	processObjectComments(currentChunks.Views, previousChunks.Views, schema.CommentObjectTypeView, createdObjects, droppedObjects, diff)
+	processObjectComments(currentChunks.Functions, previousChunks.Functions, schema.CommentObjectTypeFunction, createdObjects, droppedObjects, diff)
+	processObjectComments(currentChunks.Sequences, previousChunks.Sequences, schema.CommentObjectTypeSequence, createdObjects, droppedObjects, diff)
+	processObjectComments(currentChunks.Indexes, previousChunks.Indexes, schema.CommentObjectTypeIndex, createdObjects, droppedObjects, diff)
+	processObjectComments(currentChunks.Schemas, previousChunks.Schemas, schema.CommentObjectTypeSchema, createdObjects, droppedObjects, diff)
+
+	// Process column comments
+	processColumnComments(currentChunks, previousChunks, createdObjects, droppedObjects, diff)
+}
+
+// buildCreatedObjectsSet builds a set of object identifiers that were created
+func buildCreatedObjectsSet(diff *schema.MetadataDiff) map[string]bool {
+	created := make(map[string]bool)
+
+	for _, tableDiff := range diff.TableChanges {
+		if tableDiff.Action == schema.MetadataDiffActionCreate {
+			identifier := tableDiff.SchemaName + "." + tableDiff.TableName
+			created[identifier] = true
+		}
+	}
+
+	for _, viewDiff := range diff.ViewChanges {
+		if viewDiff.Action == schema.MetadataDiffActionCreate {
+			identifier := viewDiff.SchemaName + "." + viewDiff.ViewName
+			created[identifier] = true
+		}
+	}
+
+	for _, funcDiff := range diff.FunctionChanges {
+		if funcDiff.Action == schema.MetadataDiffActionCreate {
+			identifier := funcDiff.SchemaName + "." + funcDiff.FunctionName
+			created[identifier] = true
+		}
+	}
+
+	for _, seqDiff := range diff.SequenceChanges {
+		if seqDiff.Action == schema.MetadataDiffActionCreate {
+			identifier := seqDiff.SchemaName + "." + seqDiff.SequenceName
+			created[identifier] = true
+		}
+	}
+
+	return created
+}
+
+// buildDroppedObjectsSet builds a set of object identifiers that were dropped
+func buildDroppedObjectsSet(diff *schema.MetadataDiff) map[string]bool {
+	dropped := make(map[string]bool)
+
+	for _, tableDiff := range diff.TableChanges {
+		if tableDiff.Action == schema.MetadataDiffActionDrop {
+			identifier := tableDiff.SchemaName + "." + tableDiff.TableName
+			dropped[identifier] = true
+		}
+	}
+
+	for _, viewDiff := range diff.ViewChanges {
+		if viewDiff.Action == schema.MetadataDiffActionDrop {
+			identifier := viewDiff.SchemaName + "." + viewDiff.ViewName
+			dropped[identifier] = true
+		}
+	}
+
+	for _, funcDiff := range diff.FunctionChanges {
+		if funcDiff.Action == schema.MetadataDiffActionDrop {
+			identifier := funcDiff.SchemaName + "." + funcDiff.FunctionName
+			dropped[identifier] = true
+		}
+	}
+
+	for _, seqDiff := range diff.SequenceChanges {
+		if seqDiff.Action == schema.MetadataDiffActionDrop {
+			identifier := seqDiff.SchemaName + "." + seqDiff.SequenceName
+			dropped[identifier] = true
+		}
+	}
+
+	return dropped
+}
+
+// processObjectComments processes comment changes for a specific object type
+// droppedObjects is intentionally unused because we only process objects in currentMap,
+// and dropped objects won't appear there.
+func processObjectComments(currentMap, previousMap map[string]*schema.SDLChunk, objectType schema.CommentObjectType, createdObjects, _ map[string]bool, diff *schema.MetadataDiff) {
+	// Process all objects in current chunks
+	for identifier, currentChunk := range currentMap {
+		// Skip if object was created (comment will be in CREATE statement)
+		if createdObjects[identifier] {
+			continue
+		}
+
+		previousChunk := previousMap[identifier]
+		if previousChunk == nil {
+			// Object doesn't exist in previous - this shouldn't happen as it should be in createdObjects
+			continue
+		}
+
+		// Extract comment text from both chunks
+		currentCommentText := extractCommentTextFromChunk(currentChunk)
+		previousCommentText := extractCommentTextFromChunk(previousChunk)
+
+		// If comments are different, generate a CommentDiff
+		if currentCommentText != previousCommentText {
+			schemaName, objectName := parseIdentifier(identifier)
+			action := schema.MetadataDiffActionAlter
+			if previousCommentText == "" {
+				action = schema.MetadataDiffActionCreate
+			}
+
+			diff.CommentChanges = append(diff.CommentChanges, &schema.CommentDiff{
+				Action:     action,
+				ObjectType: objectType,
+				SchemaName: schemaName,
+				ObjectName: objectName,
+				OldComment: previousCommentText,
+				NewComment: currentCommentText,
+				OldASTNode: getFirstCommentNode(previousChunk.CommentStatements),
+				NewASTNode: getFirstCommentNode(currentChunk.CommentStatements),
+			})
+		}
+	}
+}
+
+// processColumnComments processes column comment changes
+func processColumnComments(currentChunks, previousChunks *schema.SDLChunks, createdObjects, droppedObjects map[string]bool, diff *schema.MetadataDiff) {
+	// Process all tables in current chunks
+	allTableIdentifiers := make(map[string]bool)
+	for identifier := range currentChunks.ColumnComments {
+		allTableIdentifiers[identifier] = true
+	}
+	for identifier := range previousChunks.ColumnComments {
+		allTableIdentifiers[identifier] = true
+	}
+
+	for tableIdentifier := range allTableIdentifiers {
+		// Skip if table was created or dropped
+		if createdObjects[tableIdentifier] || droppedObjects[tableIdentifier] {
+			continue
+		}
+
+		currentColumns := currentChunks.ColumnComments[tableIdentifier]
+		previousColumns := previousChunks.ColumnComments[tableIdentifier]
+
+		// Find all column names
+		allColumnNames := make(map[string]bool)
+		for columnName := range currentColumns {
+			allColumnNames[columnName] = true
+		}
+		for columnName := range previousColumns {
+			allColumnNames[columnName] = true
+		}
+
+		// Compare each column's comment
+		for columnName := range allColumnNames {
+			currentNode := currentColumns[columnName]
+			previousNode := previousColumns[columnName]
+
+			currentCommentText := extractCommentTextFromNode(currentNode)
+			previousCommentText := extractCommentTextFromNode(previousNode)
+
+			if currentCommentText != previousCommentText {
+				schemaName, tableName := parseIdentifier(tableIdentifier)
+				action := schema.MetadataDiffActionAlter
+				if previousCommentText == "" {
+					action = schema.MetadataDiffActionCreate
+				}
+
+				diff.CommentChanges = append(diff.CommentChanges, &schema.CommentDiff{
+					Action:     action,
+					ObjectType: schema.CommentObjectTypeColumn,
+					SchemaName: schemaName,
+					ObjectName: tableName,
+					ColumnName: columnName,
+					OldComment: previousCommentText,
+					NewComment: currentCommentText,
+					OldASTNode: previousNode,
+					NewASTNode: currentNode,
+				})
+			}
+		}
+	}
+}
+
+// extractCommentTextFromChunk extracts the comment text from a chunk's comment statements
+func extractCommentTextFromChunk(chunk *schema.SDLChunk) string {
+	if chunk == nil || len(chunk.CommentStatements) == 0 {
+		return ""
+	}
+
+	// Get the first comment statement (there should typically only be one)
+	return extractCommentTextFromNode(chunk.CommentStatements[0])
+}
+
+// extractCommentTextFromNode extracts comment text from a COMMENT ON statement AST node
+func extractCommentTextFromNode(node antlr.ParserRuleContext) string {
+	if node == nil {
+		return ""
+	}
+
+	// Try to cast to CommentstmtContext
+	commentStmt, ok := node.(*parser.CommentstmtContext)
+	if !ok {
+		return ""
+	}
+
+	// Get the comment_text
+	if commentStmt.Comment_text() == nil {
+		return ""
+	}
+
+	commentTextCtx := commentStmt.Comment_text()
+
+	// Check if it's NULL_P
+	if commentTextCtx.NULL_P() != nil {
+		return "" // NULL comment means no comment
+	}
+
+	// Get the sconst (string constant)
+	if commentTextCtx.Sconst() != nil {
+		text := commentTextCtx.Sconst().GetText()
+		// Remove surrounding quotes
+		if len(text) >= 2 && text[0] == '\'' && text[len(text)-1] == '\'' {
+			return text[1 : len(text)-1]
+		}
+		return text
+	}
+
+	return ""
+}
+
+// getFirstCommentNode returns the first comment AST node from a list, or nil if empty
+func getFirstCommentNode(nodes []antlr.ParserRuleContext) antlr.ParserRuleContext {
+	if len(nodes) == 0 {
+		return nil
+	}
+	return nodes[0]
 }
