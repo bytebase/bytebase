@@ -29,7 +29,6 @@ func NewRolloutCommand(w *world.World) *cobra.Command {
 		RunE:              runRollout(w),
 	}
 	cmdRollout.Flags().StringVar(&w.ReleaseTitle, "release-title", "", "The title of the release. Generated from project and current timestamp if not provided.")
-	cmdRollout.Flags().StringVar(&w.CheckPlan, "check-plan", "SKIP", "Whether to check the plan and fail on warning/error. Valid values: SKIP, FAIL_ON_WARNING, FAIL_ON_ERROR")
 	cmdRollout.Flags().StringVar(&w.TargetStage, "target-stage", "", "Rollout up to the target stage. Format: environments/{environment}.")
 	cmdRollout.Flags().StringVar(&w.Plan, "plan", "", "The plan to rollout. Format: projects/{project}/plans/{plan}. Shadows file-pattern and targets.")
 	return cmdRollout
@@ -43,11 +42,6 @@ func rolloutPreRun(w *world.World) func(*cobra.Command, []string) error {
 					return err
 				}
 			}
-		}
-		switch w.CheckPlan {
-		case "SKIP", "FAIL_ON_WARNING", "FAIL_ON_ERROR":
-		default:
-			return errors.Errorf("invalid check-plan value: %s. Valid values: SKIP, FAIL_ON_WARNING, FAIL_ON_ERROR", w.CheckPlan)
 		}
 		if w.ReleaseTitle == "" {
 			w.ReleaseTitle = fmt.Sprintf("[%s] %s", strings.TrimPrefix(w.Project, "projects/"), time.Now().UTC().Format(time.RFC3339))
@@ -130,85 +124,12 @@ func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
 		}
 		w.OutputMap.Plan = plan.Name
 
-		if err := runAndWaitForPlanChecks(ctx, w, client, plan.Name); err != nil {
-			return errors.Wrapf(err, "failed to run and wait for plan checks")
-		}
-
 		if err := runAndWaitForRollout(ctx, w, client, plan.Name); err != nil {
 			return errors.Wrapf(err, "failed to run and wait for rollout")
 		}
 
 		return nil
 	}
-}
-func runAndWaitForPlanChecks(ctx context.Context, w *world.World, client *Client, planName string) error {
-	if w.CheckPlan == "SKIP" {
-		return nil
-	}
-	for {
-		if ctx.Err() != nil {
-			return errors.Wrapf(ctx.Err(), "context cancelled")
-		}
-
-		runs, err := client.ListAllPlanCheckRuns(ctx, planName)
-		if err != nil {
-			return errors.Wrapf(err, "failed to list plan checks")
-		}
-		if len(runs.PlanCheckRuns) == 0 {
-			w.Logger.Info("running plan checks")
-			_, err := client.RunPlanChecks(ctx, &v1pb.RunPlanChecksRequest{
-				Name: planName,
-			})
-			if err != nil {
-				return errors.Wrapf(err, "failed to run plan checks")
-			}
-			continue
-		}
-		var failedCount, canceledCount, runningCount int
-		var errorCount, warningCount int
-		for _, run := range runs.PlanCheckRuns {
-			switch run.Status {
-			case v1pb.PlanCheckRun_FAILED:
-				failedCount++
-			case v1pb.PlanCheckRun_CANCELED:
-				canceledCount++
-			case v1pb.PlanCheckRun_RUNNING:
-				runningCount++
-			case v1pb.PlanCheckRun_DONE:
-				for _, result := range run.Results {
-					switch result.Status {
-					case v1pb.Advice_ERROR:
-						errorCount++
-					case v1pb.Advice_WARNING:
-						warningCount++
-					default:
-						// Other result statuses don't affect counts
-					}
-				}
-			default:
-				// Other run statuses don't affect counts
-			}
-		}
-		if failedCount > 0 {
-			return errors.Errorf("found failed plan checks. view on Bytebase")
-		}
-		if canceledCount > 0 {
-			return errors.Errorf("found canceled plan checks. view on Bytebase")
-		}
-		if errorCount > 0 {
-			return errors.Errorf("found error plan checks. view on Bytebase")
-		}
-		if warningCount > 0 && w.CheckPlan == "FAIL_ON_WARNING" {
-			return errors.Errorf("found warning plan checks. view on Bytebase")
-		}
-		if runningCount == 0 {
-			break
-		}
-		w.Logger.Info("waiting for plan checks to complete", "runningCount", runningCount)
-		time.Sleep(5 * time.Second)
-	}
-
-	return nil
 }
 
 func runAndWaitForRollout(ctx context.Context, w *world.World, client *Client, planName string) error {
