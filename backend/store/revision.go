@@ -87,7 +87,7 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 		q.Space("OFFSET ?", *v)
 	}
 
-	query, args, err := q.ToSql()
+	query, args, err := q.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
