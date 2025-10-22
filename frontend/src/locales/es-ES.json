@@ -608,7 +608,7 @@
           "days": "Días"
         },
         "inactive-timeout": {
-          "self": "Tiempo de inactividad",
+          "self": "Tiempo de espera de sesión inactiva",
           "description": "Tiempo de expiración de la sesión si no se detecta actividad del usuario. Los usuarios serán forzados a cerrar sesión cuando alcancen el límite.",
           "hours": "Horas"
         },
