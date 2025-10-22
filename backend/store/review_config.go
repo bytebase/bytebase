@@ -3,13 +3,12 @@ package store
 import (
 	"context"
 	"database/sql"
-	"fmt"
-	"strings"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -52,10 +51,23 @@ func (s *Store) GetReviewConfig(ctx context.Context, id string) (*ReviewConfigMe
 
 // ListReviewConfigs lists all sql review.
 func (s *Store) ListReviewConfigs(ctx context.Context, find *FindReviewConfigMessage) ([]*ReviewConfigMessage, error) {
-	where, args := []string{"TRUE"}, []any{}
+	q := qb.Q().Space(`
+		SELECT
+			id,
+			enabled,
+			name,
+			payload
+		FROM review_config
+		WHERE TRUE
+	`)
 
 	if v := find.ID; v != nil {
-		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
+		q.And("id = ?", *v)
+	}
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
 	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
@@ -64,16 +76,7 @@ func (s *Store) ListReviewConfigs(ctx context.Context, find *FindReviewConfigMes
 	}
 	defer tx.Rollback()
 
-	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
-		SELECT
-			id,
-			enabled,
-			name,
-			payload
-		FROM review_config
-		WHERE %s`, strings.Join(where, " AND ")),
-		args...,
-	)
+	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -121,14 +124,19 @@ func (s *Store) CreateReviewConfig(ctx context.Context, create *ReviewConfigMess
 		return nil, err
 	}
 
-	query := `
+	q := qb.Q().Space(`
 		INSERT INTO review_config (
 			id,
 			name,
 			payload
 		)
-		VALUES ($1, $2, $3)
-	`
+		VALUES (?, ?, ?)
+	`, create.ID, create.Name, payload)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
@@ -136,11 +144,7 @@ func (s *Store) CreateReviewConfig(ctx context.Context, create *ReviewConfigMess
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.ExecContext(ctx, query,
-		create.ID,
-		create.Name,
-		payload,
-	); err != nil {
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
@@ -157,13 +161,20 @@ func (s *Store) CreateReviewConfig(ctx context.Context, create *ReviewConfigMess
 
 // DeleteReviewConfig deletes sql review by ID.
 func (s *Store) DeleteReviewConfig(ctx context.Context, id string) error {
+	q := qb.Q().Space("DELETE FROM review_config WHERE id = ?", id)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.ExecContext(ctx, `DELETE FROM review_config WHERE id = $1`, id); err != nil {
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return err
 	}
 
@@ -172,38 +183,53 @@ func (s *Store) DeleteReviewConfig(ctx context.Context, id string) error {
 
 // UpdateReviewConfig updates the sql review.
 func (s *Store) UpdateReviewConfig(ctx context.Context, patch *PatchReviewConfigMessage) (*ReviewConfigMessage, error) {
-	set, args := []string{}, []any{}
+	q := qb.Q().Space("UPDATE review_config SET")
+
+	first := true
 	if v := patch.Enforce; v != nil {
-		set, args = append(set, fmt.Sprintf("enabled = $%d", len(args)+1)), append(args, *v)
+		if !first {
+			q.Space(",")
+		}
+		q.Space("enabled = ?", *v)
+		first = false
 	}
 	if v := patch.Name; v != nil {
-		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
+		if !first {
+			q.Space(",")
+		}
+		q.Space("name = ?", *v)
+		first = false
 	}
 	if v := patch.Payload; v != nil {
 		payload, err := protojson.Marshal(v)
 		if err != nil {
 			return nil, err
 		}
-		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, payload)
+		if !first {
+			q.Space(",")
+		}
+		q.Space("payload = ?", payload)
 	}
-	args = append(args, patch.ID)
+
+	q.Space("WHERE id = ?", patch.ID)
+	q.Space(`
+		RETURNING
+			id,
+			enabled,
+			name,
+			payload
+	`)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback()
-
-	query := fmt.Sprintf(`
-		UPDATE review_config
-		SET `+strings.Join(set, ", ")+`
-		WHERE id = $%d
-		RETURNING
-			id,
-			enabled,
-			name,
-			payload
-		`, len(args))
 
 	var sqlReview ReviewConfigMessage
 	var payload []byte

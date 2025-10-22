@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"log/slog"
 	"strings"
 	"time"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -115,13 +115,20 @@ func (s *Store) GetUserByEmail(ctx context.Context, email string) (*UserMessage,
 }
 
 func (s *Store) StatUsers(ctx context.Context) ([]*UserStat, error) {
-	rows, err := s.GetDB().QueryContext(ctx, `
-	SELECT
-		COUNT(*),
-		type,
-		deleted
-	FROM principal
-	GROUP BY type, deleted`)
+	q := qb.Q().Space(`
+		SELECT
+			COUNT(*),
+			type,
+			deleted
+		FROM principal
+		GROUP BY type, deleted
+	`)
+	sql, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
+	rows, err := s.GetDB().QueryContext(ctx, sql, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -202,28 +209,6 @@ func (s *Store) listAndCacheAllUsers(ctx context.Context) error {
 }
 
 func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*UserMessage, error) {
-	where, args := []string{"TRUE"}, []any{}
-	if filter := find.Filter; filter != nil {
-		where = append(where, filter.Where)
-		args = append(args, filter.Args...)
-	}
-	if v := find.ID; v != nil {
-		where, args = append(where, fmt.Sprintf("principal.id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.Email; v != nil {
-		if *v == common.AllUsers {
-			where, args = append(where, fmt.Sprintf("principal.email = $%d", len(args)+1)), append(args, *v)
-		} else {
-			where, args = append(where, fmt.Sprintf("principal.email = $%d", len(args)+1)), append(args, strings.ToLower(*v))
-		}
-	}
-	if v := find.Type; v != nil {
-		where, args = append(where, fmt.Sprintf("principal.type = $%d", len(args)+1)), append(args, v.String())
-	}
-	if !find.ShowDeleted {
-		where, args = append(where, fmt.Sprintf("principal.deleted = $%d", len(args)+1)), append(args, false)
-	}
-
 	var with, join string
 	if v := find.ProjectID; v != nil {
 		with = `WITH all_members AS (
@@ -246,7 +231,8 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 	} else {
 		with = "WITH"
 	}
-	query := with + ` user_groups AS (
+
+	q := qb.Q().Space(with + ` user_groups AS (
 		SELECT
 			principal.id AS user_id,
 			COALESCE(ARRAY_AGG(user_group.email ORDER BY user_group.email) FILTER (WHERE user_group.email IS NOT NULL), '{}') AS groups
@@ -271,17 +257,45 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 		user_groups.groups
 	FROM principal
 	INNER JOIN user_groups ON principal.id = user_groups.user_id
-	` + join + ` WHERE ` + strings.Join(where, " AND ") + ` ORDER BY type DESC, created_at ASC`
+	` + join + ` WHERE TRUE`)
+
+	if filter := find.Filter; filter != nil {
+		// Convert $1, $2, etc. to ? for qb
+		q.And(ConvertDollarPlaceholders(filter.Where), filter.Args...)
+	}
+	if v := find.ID; v != nil {
+		q.And("principal.id = ?", *v)
+	}
+	if v := find.Email; v != nil {
+		if *v == common.AllUsers {
+			q.And("principal.email = ?", *v)
+		} else {
+			q.And("principal.email = ?", strings.ToLower(*v))
+		}
+	}
+	if v := find.Type; v != nil {
+		q.And("principal.type = ?", v.String())
+	}
+	if !find.ShowDeleted {
+		q.And("principal.deleted = ?", false)
+	}
+
+	q.Space("ORDER BY type DESC, created_at ASC")
 
 	if v := find.Limit; v != nil {
-		query += fmt.Sprintf(" LIMIT %d", *v)
+		q.Space("LIMIT ?", *v)
 	}
 	if v := find.Offset; v != nil {
-		query += fmt.Sprintf(" OFFSET %d", *v)
+		q.Space("OFFSET ?", *v)
+	}
+
+	sql, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
 	var userMessages []*UserMessage
-	rows, err := txn.QueryContext(ctx, query, args...)
+	rows, err := txn.QueryContext(ctx, sql, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -356,23 +370,26 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage) (*UserMessa
 		return nil, err
 	}
 
-	set := []string{"email", "name", "type", "password_hash", "phone", "profile"}
-	args := []any{create.Email, create.Name, create.Type.String(), create.PasswordHash, create.Phone, profileBytes}
-	placeholder := []string{}
-	for index := range set {
-		placeholder = append(placeholder, fmt.Sprintf("$%d", index+1))
+	q := qb.Q().Space(`
+		INSERT INTO principal (
+			email,
+			name,
+			type,
+			password_hash,
+			phone,
+			profile
+		)
+		VALUES (?, ?, ?, ?, ?, ?)
+		RETURNING id, created_at
+	`, create.Email, create.Name, create.Type.String(), create.PasswordHash, create.Phone, profileBytes)
+
+	sql, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
 	var userID int
-	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
-			INSERT INTO principal (
-				%s
-			)
-			VALUES (%s)
-			RETURNING id, created_at
-		`, strings.Join(set, ","), strings.Join(placeholder, ",")),
-		args...,
-	).Scan(&userID, &create.CreatedAt); err != nil {
+	if err := tx.QueryRowContext(ctx, sql, args...).Scan(&userID, &create.CreatedAt); err != nil {
 		return nil, err
 	}
 
@@ -402,44 +419,87 @@ func (s *Store) UpdateUser(ctx context.Context, currentUser *UserMessage, patch 
 		return nil, errors.Errorf("cannot update system bot")
 	}
 
-	principalSet, principalArgs := []string{}, []any{}
+	q := qb.Q().Space("UPDATE principal SET")
+	hasUpdate := false
+
 	if v := patch.Delete; v != nil {
-		principalSet, principalArgs = append(principalSet, fmt.Sprintf("deleted = $%d", len(principalArgs)+1)), append(principalArgs, *v)
+		if hasUpdate {
+			q.Join(", ", "deleted = ?", *v)
+		} else {
+			q.Space("deleted = ?", *v)
+			hasUpdate = true
+		}
 	}
 	if v := patch.Email; v != nil {
-		principalSet, principalArgs = append(principalSet, fmt.Sprintf("email = $%d", len(principalArgs)+1)), append(principalArgs, strings.ToLower(*v))
+		if hasUpdate {
+			q.Join(", ", "email = ?", strings.ToLower(*v))
+		} else {
+			q.Space("email = ?", strings.ToLower(*v))
+			hasUpdate = true
+		}
 	}
 	if v := patch.Name; v != nil {
-		principalSet, principalArgs = append(principalSet, fmt.Sprintf("name = $%d", len(principalArgs)+1)), append(principalArgs, *v)
+		if hasUpdate {
+			q.Join(", ", "name = ?", *v)
+		} else {
+			q.Space("name = ?", *v)
+			hasUpdate = true
+		}
 	}
 	if v := patch.PasswordHash; v != nil {
-		principalSet, principalArgs = append(principalSet, fmt.Sprintf("password_hash = $%d", len(principalArgs)+1)), append(principalArgs, *v)
+		if hasUpdate {
+			q.Join(", ", "password_hash = ?", *v)
+		} else {
+			q.Space("password_hash = ?", *v)
+			hasUpdate = true
+		}
 		if patch.Profile == nil {
 			patch.Profile = currentUser.Profile
 			patch.Profile.LastChangePasswordTime = timestamppb.New(time.Now())
 		}
 	}
 	if v := patch.Phone; v != nil {
-		principalSet, principalArgs = append(principalSet, fmt.Sprintf("phone = $%d", len(principalArgs)+1)), append(principalArgs, *v)
+		if hasUpdate {
+			q.Join(", ", "phone = ?", *v)
+		} else {
+			q.Space("phone = ?", *v)
+			hasUpdate = true
+		}
 	}
 	if v := patch.MFAConfig; v != nil {
 		mfaConfigBytes, err := protojson.Marshal(v)
 		if err != nil {
 			return nil, err
 		}
-		principalSet, principalArgs = append(principalSet, fmt.Sprintf("mfa_config = $%d", len(principalArgs)+1)), append(principalArgs, mfaConfigBytes)
+		if hasUpdate {
+			q.Join(", ", "mfa_config = ?", mfaConfigBytes)
+		} else {
+			q.Space("mfa_config = ?", mfaConfigBytes)
+			hasUpdate = true
+		}
 	}
 	if v := patch.Profile; v != nil {
 		profileBytes, err := protojson.Marshal(v)
 		if err != nil {
 			return nil, err
 		}
-		principalSet, principalArgs = append(principalSet, fmt.Sprintf("profile = $%d", len(principalArgs)+1)), append(principalArgs, profileBytes)
+		if hasUpdate {
+			q.Join(", ", "profile = ?", profileBytes)
+		} else {
+			q.Space("profile = ?", profileBytes)
+			hasUpdate = true
+		}
 	}
-	principalArgs = append(principalArgs, currentUser.ID)
 
-	if len(principalSet) == 0 {
+	if !hasUpdate {
 		return currentUser, nil
+	}
+
+	q.Where("id = ?", currentUser.ID)
+
+	sql, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
@@ -448,13 +508,7 @@ func (s *Store) UpdateUser(ctx context.Context, currentUser *UserMessage, patch 
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.ExecContext(ctx, fmt.Sprintf(`
-		UPDATE principal
-		SET `+strings.Join(principalSet, ", ")+`
-		WHERE id = $%d
-	`, len(principalArgs)),
-		principalArgs...,
-	); err != nil {
+	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
 		return nil, err
 	}
 

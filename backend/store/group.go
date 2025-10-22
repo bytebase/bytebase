@@ -230,33 +230,40 @@ func (s *Store) UpdateGroup(ctx context.Context, email string, patch *UpdateGrou
 	set, args := []string{}, []any{}
 
 	if v := patch.Title; v != nil {
-		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
+		set, args = append(set, "name = ?"), append(args, *v)
 	}
 	if v := patch.Description; v != nil {
-		set, args = append(set, fmt.Sprintf("description = $%d", len(args)+1)), append(args, *v)
+		set, args = append(set, "description = ?"), append(args, *v)
 	}
 	if v := patch.Payload; v != nil {
 		payload, err := protojson.Marshal(v)
 		if err != nil {
 			return nil, err
 		}
-		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, payload)
+		set, args = append(set, "payload = ?"), append(args, payload)
 	}
 	args = append(args, email)
 
-	var group GroupMessage
-	var payload []byte
-
-	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
+	q := qb.Q().Space(fmt.Sprintf(`
 		UPDATE user_group
 		SET %s
-		WHERE email = $%d
+		WHERE email = ?
 		RETURNING
 			email,
 			name,
 			description,
 			payload
-		`, strings.Join(set, ", "), len(set)+1), args...).Scan(
+		`, strings.Join(set, ", ")), args...)
+
+	query, queryArgs, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
+	var group GroupMessage
+	var payload []byte
+
+	if err := tx.QueryRowContext(ctx, query, queryArgs...).Scan(
 		&group.Email,
 		&group.Title,
 		&group.Description,
@@ -287,7 +294,13 @@ func (s *Store) DeleteGroup(ctx context.Context, email string) error {
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.ExecContext(ctx, `DELETE FROM user_group WHERE email = $1`, email); err != nil {
+	q := qb.Q().Space("DELETE FROM user_group WHERE email = ?", email)
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return err
 	}
 
