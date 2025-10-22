@@ -44,12 +44,14 @@
   <div class="mb-7 mt-4 lg:mt-0" @click="handleValueFieldClick">
     <p class="font-medium flex flex-row justify-start items-center">
       <span class="mr-2">{{
-        $t("settings.general.workspace.inactive-timeout.self")
+        $t("settings.general.workspace.inactive-session-timeout.self")
       }}</span>
       <FeatureBadge :feature="PlanFeature.FEATURE_SIGN_IN_FREQUENCY_CONTROL" />
     </p>
     <p class="text-sm text-gray-400 mt-1">
-      {{ $t("settings.general.workspace.inactive-timeout.description") }}
+      {{
+        $t("settings.general.workspace.inactive-session-timeout.description")
+      }}
     </p>
     <NTooltip placement="top-start" :disabled="allowChangeSetting">
       <template #trigger>
@@ -60,7 +62,9 @@
             :disabled="!allowChangeSetting"
           />
           <span class="textinfo text-sm">
-            {{ $t("settings.general.workspace.inactive-timeout.hours") }}
+            {{
+              $t("settings.general.workspace.inactive-session-timeout.hours")
+            }}
           </span>
         </div>
       </template>

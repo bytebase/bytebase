@@ -607,7 +607,7 @@
           "hours": "時間",
           "days": "日"
         },
-        "inactive-timeout": {
+        "inactive-session-timeout": {
           "self": "非アクティブセッションタイムアウト",
           "description": "ユーザーの活動が検出されない場合のセッション有効期限です。ユーザーが制限時間に達すると、強制的にログアウトされます。",
           "hours": "時間"

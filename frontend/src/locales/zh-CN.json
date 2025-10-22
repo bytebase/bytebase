@@ -607,7 +607,7 @@
           "hours": "小时",
           "days": "天数"
         },
-        "inactive-timeout": {
+        "inactive-session-timeout": {
           "self": "非活动会话超时",
           "description": "未检测到用户活动时的会话过期时间。用户达到限制时将被强制退出登录。",
           "hours": "小时"
