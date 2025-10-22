@@ -479,6 +479,9 @@ func (l *sdlChunkExtractor) EnterCommentstmt(ctx *parser.CommentstmtContext) {
 				}
 				l.chunks.Indexes[identifier] = chunk
 			}
+		default:
+			// Unsupported object type for comment tracking (e.g., MATERIALIZED VIEW, FOREIGN TABLE)
+			// We skip these for now
 		}
 		return
 	}
@@ -4303,7 +4306,9 @@ func buildDroppedObjectsSet(diff *schema.MetadataDiff) map[string]bool {
 }
 
 // processObjectComments processes comment changes for a specific object type
-func processObjectComments(currentMap, previousMap map[string]*schema.SDLChunk, objectType schema.CommentObjectType, createdObjects, droppedObjects map[string]bool, diff *schema.MetadataDiff) {
+// droppedObjects is intentionally unused because we only process objects in currentMap,
+// and dropped objects won't appear there.
+func processObjectComments(currentMap, previousMap map[string]*schema.SDLChunk, objectType schema.CommentObjectType, createdObjects, _ map[string]bool, diff *schema.MetadataDiff) {
 	// Process all objects in current chunks
 	for identifier, currentChunk := range currentMap {
 		// Skip if object was created (comment will be in CREATE statement)
