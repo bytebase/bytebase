@@ -200,59 +200,29 @@ func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMe
 		return nil, err
 	}
 
-	q := qb.Q().Space("UPDATE issue SET")
-	first := true
-
-	if !first {
-		q.Space(",")
-	}
-	q.Space("updated_at = ?", time.Now())
-	first = false
+	set := qb.Q()
+	set.Comma("updated_at = ?", time.Now())
 
 	if v := patch.PipelineUID; v != nil {
-		if !first {
-			q.Space(",")
-		}
-		q.Space("pipeline_id = ?", *v)
-		first = false
+		set.Comma("pipeline_id = ?", *v)
 	}
 	if v := patch.Title; v != nil {
-		if !first {
-			q.Space(",")
-		}
-		q.Space("name = ?", *v)
-		first = false
+		set.Comma("name = ?", *v)
 	}
 	if v := patch.Status; v != nil {
-		if !first {
-			q.Space(",")
-		}
-		q.Space("status = ?", v.String())
-		first = false
+		set.Comma("status = ?", v.String())
 	}
 	if v := patch.Description; v != nil {
-		if !first {
-			q.Space(",")
-		}
-		q.Space("description = ?", *v)
-		first = false
+		set.Comma("description = ?", *v)
 	}
 	if v := patch.PayloadUpsert; v != nil {
 		p, err := protojson.Marshal(v)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to marshal patch.PayloadUpsert")
 		}
-		if !first {
-			q.Space(",")
-		}
-		q.Space("payload = payload || ?", p)
-		first = false
+		set.Comma("payload = payload || ?", p)
 	} else if patch.RemoveLabels {
-		if !first {
-			q.Space(",")
-		}
-		q.Space("payload = payload || jsonb_build_object('labels', ?::JSONB)", nil)
-		first = false
+		set.Comma("payload = payload || jsonb_build_object('labels', ?::JSONB)", nil)
 	}
 
 	if patch.Title != nil || patch.Description != nil {
@@ -266,13 +236,10 @@ func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMe
 		}
 
 		tsVector := getTSVector(fmt.Sprintf("%s %s", title, description))
-		if !first {
-			q.Space(",")
-		}
-		q.Space("ts_vector = ?", tsVector)
+		set.Comma("ts_vector = ?", tsVector)
 	}
 
-	q.Space("WHERE id = ?", uid)
+	q := qb.Q().Space("UPDATE issue SET ?", set).Space("WHERE id = ?", uid)
 
 	query, args, err := q.ToSQL()
 	if err != nil {

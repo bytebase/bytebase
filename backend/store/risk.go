@@ -242,49 +242,31 @@ func (s *Store) CreateRisk(ctx context.Context, risk *RiskMessage) (*RiskMessage
 
 // UpdateRisk updates a risk.
 func (s *Store) UpdateRisk(ctx context.Context, patch *UpdateRiskMessage, id int64) (*RiskMessage, error) {
-	q := qb.Q().Space("UPDATE risk SET")
-	first := true
+	set := qb.Q()
 	if v := patch.Name; v != nil {
-		if !first {
-			q.Space(",")
-		}
-		q.Space("name = ?", *v)
-		first = false
+		set.Comma("name = ?", *v)
 	}
 	if v := patch.Active; v != nil {
-		if !first {
-			q.Space(",")
-		}
-		q.Space("active = ?", *v)
-		first = false
+		set.Comma("active = ?", *v)
 	}
 	if v := patch.Level; v != nil {
-		if !first {
-			q.Space(",")
-		}
 		// Convert enum to database string using .String() method
-		q.Space("level = ?", v.String())
-		first = false
+		set.Comma("level = ?", v.String())
 	}
 	if v := patch.Source; v != nil {
-		if !first {
-			q.Space(",")
-		}
-		q.Space("source = ?", *v)
-		first = false
+		set.Comma("source = ?", *v)
 	}
 	if v := patch.Expression; v != nil {
 		expressionBytes, err := protojson.Marshal(patch.Expression)
 		if err != nil {
 			return nil, err
 		}
-		if !first {
-			q.Space(",")
-		}
-		q.Space("expression = ?", string(expressionBytes))
-		first = false
+		set.Comma("expression = ?", string(expressionBytes))
 	}
-	q.Space("WHERE id = ?", id)
+	if set.Len() == 0 {
+		return nil, errors.New("no fields to update")
+	}
+	q := qb.Q().Space("UPDATE risk SET ?", set).Space("WHERE id = ?", id)
 
 	query, args, err := q.ToSQL()
 	if err != nil {

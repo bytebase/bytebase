@@ -173,36 +173,25 @@ func (s *Store) UpdateIdentityProvider(ctx context.Context, patch *UpdateIdentit
 }
 
 func (*Store) updateIdentityProviderImpl(ctx context.Context, txn *sql.Tx, patch *UpdateIdentityProviderMessage) (*IdentityProviderMessage, error) {
-	q := qb.Q().Space("UPDATE idp SET")
-	first := true
-
+	set := qb.Q()
 	if v := patch.Title; v != nil {
-		if !first {
-			q.Space(",")
-		}
-		q.Space("name = ?", *v)
-		first = false
+		set.Comma("name = ?", *v)
 	}
 	if v := patch.Domain; v != nil {
-		if !first {
-			q.Space(",")
-		}
-		q.Space("domain = ?", *v)
-		first = false
+		set.Comma("domain = ?", *v)
 	}
 	if v := patch.Config; v != nil {
 		configBytes, err := getConfigBytes(v)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to marshal identity provider config")
 		}
-		if !first {
-			q.Space(",")
-		}
-		q.Space("config = ?", string(configBytes))
+		set.Comma("config = ?", string(configBytes))
+	}
+	if set.Len() == 0 {
+		return nil, errors.New("no fields to update")
 	}
 
-	q.Space("WHERE resource_id = ?", patch.ResourceID)
-	q.Space(`
+	q := qb.Q().Space("UPDATE idp SET ?", set).Space("WHERE resource_id = ?", patch.ResourceID).Space(`
 		RETURNING
 			resource_id,
 			name,

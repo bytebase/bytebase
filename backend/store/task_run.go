@@ -119,12 +119,12 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 
 	q.Space("ORDER BY task_run.id ASC")
 
-	sql, args, err := q.ToSQL()
+	query, args, err := q.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	rows, err := s.GetDB().QueryContext(ctx, sql, args...)
+	rows, err := s.GetDB().QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -247,13 +247,13 @@ func (s *Store) UpdateTaskRunStartAt(ctx context.Context, taskRunID int) error {
 		RETURNING (SELECT pipeline_id FROM task WHERE task.id = task_run.task_id)
 	`, taskRunID)
 
-	sql, args, err := q.ToSQL()
+	query, args, err := q.ToSQL()
 	if err != nil {
 		return errors.Wrapf(err, "failed to build sql")
 	}
 
 	var pipelineID int
-	if err := s.GetDB().QueryRowContext(ctx, sql, args...).Scan(&pipelineID); err != nil {
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&pipelineID); err != nil {
 		return errors.Wrapf(err, "failed to update task run start at")
 	}
 
@@ -414,33 +414,24 @@ func (*Store) checkTaskRunsExist(ctx context.Context, txn *sql.Tx, taskIDs []int
 
 // patchTaskRunStatusImpl updates a taskRun status. Returns the new state of the taskRun after update.
 func (*Store) patchTaskRunStatusImpl(ctx context.Context, txn *sql.Tx, patch *TaskRunStatusPatch) (*TaskRunMessage, error) {
-	q := qb.Q().Space("UPDATE task_run SET")
-	first := true
+	set := qb.Q()
 
-	q.Space("updated_at = ?, status = ?", time.Now(), patch.Status.String())
-	first = false
+	set.Comma("updated_at = ?, status = ?", time.Now(), patch.Status.String())
 
 	if v := patch.Code; v != nil {
-		if !first {
-			q.Space(",")
-		}
-		q.Space("code = ?", *v)
-		first = false
+		set.Comma("code = ?", *v)
 	}
 	if v := patch.Result; v != nil {
 		result := "{}"
 		if *v != "" {
 			result = *v
 		}
-		if !first {
-			q.Space(",")
-		}
-		q.Space("result = ?", result)
-		first = false
+		set.Comma("result = ?", result)
 	}
 
-	q.Space("WHERE id = ?", patch.ID)
-	q.Space("RETURNING id, creator_id, created_at, updated_at, task_id, status, code, result")
+	q := qb.Q().Space("UPDATE task_run SET ?", set).
+		Space("WHERE id = ?", patch.ID).
+		Space("RETURNING id, creator_id, created_at, updated_at, task_id, status, code, result")
 
 	query, args, err := q.ToSQL()
 	if err != nil {

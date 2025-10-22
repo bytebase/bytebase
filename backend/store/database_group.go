@@ -168,29 +168,22 @@ func (*Store) listDatabaseGroupImpl(ctx context.Context, txn *sql.Tx, find *Find
 
 // UpdateDatabaseGroup updates a database group.
 func (s *Store) UpdateDatabaseGroup(ctx context.Context, projectID, resourceID string, patch *UpdateDatabaseGroupMessage) (*DatabaseGroupMessage, error) {
-	q := qb.Q().Space("UPDATE db_group SET")
-
-	first := true
+	set := qb.Q()
 	if v := patch.Title; v != nil {
-		if !first {
-			q.Space(",")
-		}
-		q.Space("name = ?", *v)
-		first = false
+		set.Comma("name = ?", *v)
 	}
 	if v := patch.Expression; v != nil {
 		exprBytes, err := protojson.Marshal(patch.Expression)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to marshal expression")
 		}
-		if !first {
-			q.Space(",")
-		}
-		q.Space("expression = ?", exprBytes)
+		set.Comma("expression = ?", exprBytes)
+	}
+	if set.Len() == 0 {
+		return nil, errors.New("no fields to update")
 	}
 
-	q.Space("WHERE project = ? AND resource_id = ?", projectID, resourceID)
-	q.Space("RETURNING project, resource_id, name, expression")
+	q := qb.Q().Space("UPDATE db_group SET ?", set).Space("WHERE project = ? AND resource_id = ?", projectID, resourceID).Space("RETURNING project, resource_id, name, expression")
 
 	query, args, err := q.ToSQL()
 	if err != nil {

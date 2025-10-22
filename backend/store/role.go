@@ -190,22 +190,12 @@ func (s *Store) ListRoles(ctx context.Context) ([]*RoleMessage, error) {
 
 // UpdateRole updates an existing role.
 func (s *Store) UpdateRole(ctx context.Context, patch *UpdateRoleMessage) (*RoleMessage, error) {
-	q := qb.Q().Space("UPDATE role SET")
-	first := true
-
+	set := qb.Q()
 	if v := patch.Name; v != nil {
-		if !first {
-			q.Space(",")
-		}
-		q.Space("name = ?", *v)
-		first = false
+		set.Comma("name = ?", *v)
 	}
 	if v := patch.Description; v != nil {
-		if !first {
-			q.Space(",")
-		}
-		q.Space("description = ?", *v)
-		first = false
+		set.Comma("description = ?", *v)
 	}
 	if v := patch.Permissions; v != nil {
 		p := &storepb.RolePermissions{}
@@ -216,14 +206,13 @@ func (s *Store) UpdateRole(ctx context.Context, patch *UpdateRoleMessage) (*Role
 		if err != nil {
 			return nil, err
 		}
-		if !first {
-			q.Space(",")
-		}
-		q.Space("permissions = ?", permissionBytes)
+		set.Comma("permissions = ?", permissionBytes)
+	}
+	if set.Len() == 0 {
+		return nil, errors.New("no fields to update")
 	}
 
-	q.Space("WHERE resource_id = ?", patch.ResourceID)
-	q.Space("RETURNING name, description, permissions")
+	q := qb.Q().Space("UPDATE role SET ?", set).Space("WHERE resource_id = ?", patch.ResourceID).Space("RETURNING name, description, permissions")
 
 	query, args, err := q.ToSQL()
 	if err != nil {

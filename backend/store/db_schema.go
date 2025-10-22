@@ -148,21 +148,19 @@ func (s *Store) UpsertDBSchema(
 
 // UpdateDBSchema updates a database schema.
 func (s *Store) UpdateDBSchema(ctx context.Context, instanceID, databaseName string, patch *UpdateDBSchemaMessage) error {
-	q := qb.Q().Space("UPDATE db_schema SET")
-	first := true
+	set := qb.Q()
 	if v := patch.Config; v != nil {
 		bytes, err := protojson.Marshal(v)
 		if err != nil {
 			return err
 		}
-		if !first {
-			q.Space(",")
-		}
-		q.Space("config = ?", bytes)
-		first = false
+		set.Comma("config = ?", bytes)
+	}
+	if set.Len() == 0 {
+		return errors.New("no fields to update")
 	}
 
-	q.Where("instance = ? AND db_name = ?", instanceID, databaseName)
+	q := qb.Q().Space("UPDATE db_schema SET ?", set).Where("instance = ? AND db_name = ?", instanceID, databaseName)
 
 	query, args, err := q.ToSQL()
 	if err != nil {

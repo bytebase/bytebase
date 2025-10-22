@@ -241,42 +241,32 @@ func (s *Store) BatchUpdateProjectsV2(ctx context.Context, patches []*UpdateProj
 }
 
 func updateProjectImplV2(ctx context.Context, txn *sql.Tx, patch *UpdateProjectMessage) error {
-	q := qb.Q().Space("UPDATE project SET")
-	first := true
+	set := qb.Q()
+
 	if v := patch.Title; v != nil {
-		if !first {
-			q.Space(",")
-		}
-		q.Space("name = ?", *v)
-		first = false
+		set.Comma("name = ?", *v)
 	}
 	if v := patch.Delete; v != nil {
-		if !first {
-			q.Space(",")
-		}
-		q.Space("deleted = ?", *v)
-		first = false
+		set.Comma("deleted = ?", *v)
 	}
 	if v := patch.DataClassificationConfigID; v != nil {
-		if !first {
-			q.Space(",")
-		}
-		q.Space("data_classification_config_id = ?", *v)
-		first = false
+		set.Comma("data_classification_config_id = ?", *v)
 	}
 	if v := patch.Setting; v != nil {
 		payload, err := protojson.Marshal(patch.Setting)
 		if err != nil {
 			return err
 		}
-		if !first {
-			q.Space(",")
-		}
-		q.Space("setting = ?", payload)
-		first = false
+		set.Comma("setting = ?", payload)
 	}
 
-	q.Space("WHERE resource_id = ?", patch.ResourceID)
+	if set.Len() == 0 {
+		return errors.New("no fields to update")
+	}
+
+	q := qb.Q().Space("UPDATE project SET ?", set).
+		Space("WHERE resource_id = ?", patch.ResourceID)
+
 	sql, args, err := q.ToSQL()
 	if err != nil {
 		return err

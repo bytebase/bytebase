@@ -183,36 +183,25 @@ func (s *Store) DeleteReviewConfig(ctx context.Context, id string) error {
 
 // UpdateReviewConfig updates the sql review.
 func (s *Store) UpdateReviewConfig(ctx context.Context, patch *PatchReviewConfigMessage) (*ReviewConfigMessage, error) {
-	q := qb.Q().Space("UPDATE review_config SET")
-
-	first := true
+	set := qb.Q()
 	if v := patch.Enforce; v != nil {
-		if !first {
-			q.Space(",")
-		}
-		q.Space("enabled = ?", *v)
-		first = false
+		set.Comma("enabled = ?", *v)
 	}
 	if v := patch.Name; v != nil {
-		if !first {
-			q.Space(",")
-		}
-		q.Space("name = ?", *v)
-		first = false
+		set.Comma("name = ?", *v)
 	}
 	if v := patch.Payload; v != nil {
 		payload, err := protojson.Marshal(v)
 		if err != nil {
 			return nil, err
 		}
-		if !first {
-			q.Space(",")
-		}
-		q.Space("payload = ?", payload)
+		set.Comma("payload = ?", payload)
+	}
+	if set.Len() == 0 {
+		return nil, errors.New("no fields to update")
 	}
 
-	q.Space("WHERE id = ?", patch.ID)
-	q.Space(`
+	q := qb.Q().Space("UPDATE review_config SET ?", set).Space("WHERE id = ?", patch.ID).Space(`
 		RETURNING
 			id,
 			enabled,

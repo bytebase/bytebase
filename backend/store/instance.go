@@ -148,28 +148,18 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 
 // UpdateInstanceV2 updates an instance.
 func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessage) (*InstanceMessage, error) {
-	q := qb.Q().Space("UPDATE instance SET")
-	first := true
-	hasWhere := false
+	set := qb.Q()
 
 	if v := patch.EnvironmentID; v != nil {
-		if !first {
-			q.Space(",")
-		}
 		if *v == "" {
 			// Unset the environment by setting it to NULL
-			q.Space("environment = ?", nil)
+			set.Comma("environment = ?", nil)
 		} else {
-			q.Space("environment = ?", *v)
+			set.Comma("environment = ?", *v)
 		}
-		first = false
 	}
 	if v := patch.Deleted; v != nil {
-		if !first {
-			q.Space(",")
-		}
-		q.Space("deleted = ?", *v)
-		first = false
+		set.Comma("deleted = ?", *v)
 	}
 	if v := patch.Metadata; v != nil {
 		redacted, err := s.obfuscateInstance(ctx, v)
@@ -180,33 +170,27 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		if err != nil {
 			return nil, err
 		}
-		if !first {
-			q.Space(",")
-		}
-		q.Space("metadata = ?", metadata)
-		first = false
+		set.Comma("metadata = ?", metadata)
 	}
 
-	if first {
+	if set.Len() == 0 {
 		return nil, errors.New("no update field specified")
 	}
 
-	q.Space("WHERE")
+	where := qb.Q()
 	if v := patch.ResourceID; v != nil {
-		q.Space("resource_id = ?", *v)
-		hasWhere = true
+		where.And("resource_id = ?", *v)
 	}
 	if v := patch.FindByEnvironmentID; v != nil {
-		if hasWhere {
-			q.Space("AND")
-		}
-		q.Space("environment = ?", *v)
-		hasWhere = true
+		where.And("environment = ?", *v)
 	}
 
-	if !hasWhere {
+	if where.Len() == 0 {
 		return nil, errors.Errorf("empty where")
 	}
+
+	q := qb.Q().Space("UPDATE instance SET ?", set).
+		Space("WHERE ?", where)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
