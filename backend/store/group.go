@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -92,18 +93,11 @@ func (s *Store) ListGroups(ctx context.Context, find *FindGroupMessage) ([]*Grou
 }
 
 func (*Store) listGroupImpl(ctx context.Context, txn *sql.Tx, find *FindGroupMessage) ([]*GroupMessage, error) {
-	where, args := []string{"TRUE"}, []any{}
-	if filter := find.Filter; filter != nil {
-		where = append(where, filter.Where)
-		args = append(args, filter.Args...)
-	}
-	if v := find.Email; v != nil {
-		where, args = append(where, fmt.Sprintf("email = $%d", len(args)+1)), append(args, *v)
-	}
+	q := qb.Q()
 
-	var with, join string
+	// Build CTE for project filtering if needed
 	if v := find.ProjectID; v != nil {
-		with = `WITH all_members AS (
+		q.Space(`WITH all_members AS (
 			SELECT
 				jsonb_array_elements_text(jsonb_array_elements(policy.payload->'bindings')->'members') AS member,
 				jsonb_array_elements(policy.payload->'bindings')->>'role' AS role
@@ -112,22 +106,43 @@ func (*Store) listGroupImpl(ctx context.Context, txn *sql.Tx, find *FindGroupMes
 		),
 		project_members AS (
 			SELECT ARRAY_AGG(member) AS members FROM all_members WHERE role NOT LIKE 'roles/workspace%'
-		)`
-		join = `INNER JOIN project_members ON (CONCAT('groups/', user_group.email) = ANY(project_members.members) OR '` + common.AllUsers + `' = ANY(project_members.members))`
+		)`)
 	}
 
-	query := with + `
-	SELECT
-		user_group.email,
-		user_group.name,
-		user_group.description,
-		user_group.payload
-	FROM user_group ` + join + ` WHERE ` + strings.Join(where, " AND ") + ` ORDER BY email`
+	q.Space(`
+		SELECT
+			user_group.email,
+			user_group.name,
+			user_group.description,
+			user_group.payload
+		FROM user_group`)
+
+	// Add join for project filtering if needed
+	if v := find.ProjectID; v != nil {
+		q.Space(`INNER JOIN project_members ON (CONCAT('groups/', user_group.email) = ANY(project_members.members) OR '` + common.AllUsers + `' = ANY(project_members.members))`)
+	}
+
+	q.Space("WHERE TRUE")
+
+	if filter := find.Filter; filter != nil {
+		// Convert $1, $2, etc. to ? for qb
+		q.And(ConvertDollarPlaceholders(filter.Where), filter.Args...)
+	}
+	if v := find.Email; v != nil {
+		q.And("email = ?", *v)
+	}
+
+	q.Space("ORDER BY email")
 	if v := find.Limit; v != nil {
-		query += fmt.Sprintf(" LIMIT %d", *v)
+		q.Space("LIMIT ?", *v)
 	}
 	if v := find.Offset; v != nil {
-		query += fmt.Sprintf(" OFFSET %d", *v)
+		q.Space("OFFSET ?", *v)
+	}
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
 	var groups []*GroupMessage
@@ -168,17 +183,23 @@ func (s *Store) CreateGroup(ctx context.Context, create *GroupMessage) (*GroupMe
 		create.Payload = &storepb.GroupPayload{}
 	}
 
-	query := `
+	payloadBytes, err := protojson.Marshal(create.Payload)
+	if err != nil {
+		return nil, err
+	}
+
+	q := qb.Q().Space(`
 		INSERT INTO user_group (
 			email,
 			name,
 			description,
 			payload
-		) VALUES ($1, $2, $3, $4)
-	`
-	payloadBytes, err := protojson.Marshal(create.Payload)
+		) VALUES (?, ?, ?, ?)
+	`, create.Email, create.Title, create.Description, payloadBytes)
+
+	query, args, err := q.ToSQL()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
@@ -187,14 +208,7 @@ func (s *Store) CreateGroup(ctx context.Context, create *GroupMessage) (*GroupMe
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.ExecContext(
-		ctx,
-		query,
-		create.Email,
-		create.Title,
-		create.Description,
-		payloadBytes,
-	); err != nil {
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return nil, err
 	}
 

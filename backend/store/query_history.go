@@ -2,8 +2,6 @@ package store
 
 import (
 	"context"
-	"fmt"
-	"strings"
 	"time"
 
 	"google.golang.org/protobuf/encoding/protojson"
@@ -11,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -64,13 +63,7 @@ func (s *Store) CreateQueryHistory(ctx context.Context, create *QueryHistoryMess
 		return nil, err
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	if err := tx.QueryRowContext(ctx, `
+	q := qb.Q().Space(`
 		INSERT INTO query_history (
 			creator_id,
 			project_id,
@@ -79,7 +72,7 @@ func (s *Store) CreateQueryHistory(ctx context.Context, create *QueryHistoryMess
 			type,
 			payload
 		)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		VALUES (?, ?, ?, ?, ?, ?)
 		RETURNING
 			id,
 			created_at
@@ -90,7 +83,20 @@ func (s *Store) CreateQueryHistory(ctx context.Context, create *QueryHistoryMess
 		create.Statement,
 		create.Type,
 		payload,
-	).Scan(
+	)
+
+	sql, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	if err := tx.QueryRowContext(ctx, sql, args...).Scan(
 		&create.UID,
 		&create.CreatedAt,
 	); err != nil {
@@ -105,34 +111,7 @@ func (s *Store) CreateQueryHistory(ctx context.Context, create *QueryHistoryMess
 
 // ListQueryHistories lists the query history.
 func (s *Store) ListQueryHistories(ctx context.Context, find *FindQueryHistoryMessage) ([]*QueryHistoryMessage, error) {
-	where, args := []string{"TRUE"}, []any{}
-	if filter := find.Filter; filter != nil {
-		where = append(where, filter.Where)
-		args = append(args, filter.Args...)
-	}
-
-	if v := find.CreatorUID; v != nil {
-		where, args = append(where, fmt.Sprintf("query_history.creator_id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.ProjectID; v != nil {
-		where, args = append(where, fmt.Sprintf("query_history.project_id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.Instance; v != nil {
-		where, args = append(where, fmt.Sprintf("query_history.database LIKE $%d", len(args)+1)), append(args, *v)
-	} else if v := find.Database; v != nil {
-		where, args = append(where, fmt.Sprintf("query_history.database = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.Type; v != nil {
-		where, args = append(where, fmt.Sprintf("query_history.type = $%d", len(args)+1)), append(args, *v)
-	}
-
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	query := fmt.Sprintf(`
+	q := qb.Q().Space(`
 		SELECT
 			query_history.id,
 			query_history.creator_id,
@@ -143,18 +122,49 @@ func (s *Store) ListQueryHistories(ctx context.Context, find *FindQueryHistoryMe
 			query_history.type,
 			query_history.payload
 		FROM query_history
-		WHERE %s
-		ORDER BY id DESC
-	`, strings.Join(where, " AND "))
-	if v := find.Limit; v != nil {
-		query += fmt.Sprintf(" LIMIT %d", *v)
+		WHERE TRUE
+	`)
+
+	if filter := find.Filter; filter != nil {
+		// Convert $1, $2, etc. to ? for qb
+		q.And(ConvertDollarPlaceholders(filter.Where), filter.Args...)
 	}
-	if v := find.Offset; v != nil {
-		query += fmt.Sprintf(" OFFSET %d", *v)
+	if v := find.CreatorUID; v != nil {
+		q.And("query_history.creator_id = ?", *v)
+	}
+	if v := find.ProjectID; v != nil {
+		q.And("query_history.project_id = ?", *v)
+	}
+	if v := find.Instance; v != nil {
+		q.And("query_history.database LIKE ?", *v)
+	} else if v := find.Database; v != nil {
+		q.And("query_history.database = ?", *v)
+	}
+	if v := find.Type; v != nil {
+		q.And("query_history.type = ?", *v)
 	}
 
+	q.Space("ORDER BY id DESC")
+	if v := find.Limit; v != nil {
+		q.Space("LIMIT ?", *v)
+	}
+	if v := find.Offset; v != nil {
+		q.Space("OFFSET ?", *v)
+	}
+
+	sql, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
 	var queryHistories []*QueryHistoryMessage
-	rows, err := tx.QueryContext(ctx, query, args...)
+	rows, err := tx.QueryContext(ctx, sql, args...)
 	if err != nil {
 		return nil, err
 	}

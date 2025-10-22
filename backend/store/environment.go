@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -24,13 +25,20 @@ func (s *Store) GetEnvironmentByID(ctx context.Context, id string) (*storepb.Env
 func (s *Store) CheckDatabaseUseEnvironment(ctx context.Context, id string) (bool, error) {
 	var exists bool
 
-	if err := s.GetDB().QueryRowContext(ctx, `
+	q := qb.Q().Space(`
 		SELECT EXISTS (
 			SELECT 1
-			FROM db 
-			WHERE db.environment = $1
+			FROM db
+			WHERE db.environment = ?
 		)
-	`, id).Scan(&exists); err != nil {
+	`, id)
+
+	sql, args, err := q.ToSQL()
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to build sql")
+	}
+
+	if err := s.GetDB().QueryRowContext(ctx, sql, args...).Scan(&exists); err != nil {
 		return false, errors.Wrapf(err, "failed to check if databases uses environment %q", id)
 	}
 

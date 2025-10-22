@@ -11,6 +11,8 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/backend/common/qb"
 )
 
 // DBConnectionManager manages database connections with support for dynamic updates.
@@ -204,11 +206,24 @@ func createConnection(ctx context.Context, pgURL string) (*sql.DB, error) {
 
 	// Configure connection pool
 	var maxConns, reservedConns int
-	if err := db.QueryRowContext(ctx, `SHOW max_connections`).Scan(&maxConns); err != nil {
+	q := qb.Q().Space("SHOW max_connections")
+	sql, args, err := q.ToSQL()
+	if err != nil {
+		db.Close()
+		return nil, errors.Wrap(err, "failed to build sql")
+	}
+	if err := db.QueryRowContext(ctx, sql, args...).Scan(&maxConns); err != nil {
 		db.Close()
 		return nil, errors.Wrap(err, "failed to get max_connections")
 	}
-	if err := db.QueryRowContext(ctx, `SHOW superuser_reserved_connections`).Scan(&reservedConns); err != nil {
+
+	q = qb.Q().Space("SHOW superuser_reserved_connections")
+	sql, args, err = q.ToSQL()
+	if err != nil {
+		db.Close()
+		return nil, errors.Wrap(err, "failed to build sql")
+	}
+	if err := db.QueryRowContext(ctx, sql, args...).Scan(&reservedConns); err != nil {
 		db.Close()
 		return nil, errors.Wrap(err, "failed to get superuser_reserved_connections")
 	}
