@@ -168,7 +168,9 @@ func TestQuery_ConditionalBuilding(t *testing.T) {
 	if name != "" {
 		q.And("name = ?", name)
 	}
-	q.And("status = ?", *status)
+	if status != nil { //nolint:govet
+		q.And("status = ?", *status)
+	}
 
 	sql, args, err := q.ToSQL()
 	require.NoError(t, err)
