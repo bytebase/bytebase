@@ -607,6 +607,11 @@
           "hours": "Horas",
           "days": "Días"
         },
+        "inactive-timeout": {
+          "self": "Tiempo de inactividad",
+          "description": "Tiempo de expiración de la sesión si no se detecta actividad del usuario. Los usuarios serán forzados a cerrar sesión cuando alcancen el límite.",
+          "hours": "Horas"
+        },
         "maximum-role-expiration": {
           "self": "Caducidad máxima del rol",
           "description": "La expiración máxima del rol es el período máximo durante el cual se puede otorgar un rol a un usuario y se aplicará a todos los roles del proyecto excepto al propietario del proyecto.",
@@ -1527,7 +1532,12 @@
       "content": "Lo redirigiremos a la página de inicio."
     },
     "token-expired-title": "Token expirado",
-    "token-expired-description": "El token ha expirado, por favor inicia sesión nuevamente"
+    "token-expired-description": "El token ha expirado, por favor inicia sesión nuevamente",
+    "inactive-modal": {
+      "title": "Tu sesión está a punto de terminar",
+      "description": "Has estado inactivo un tiempo. Por tu seguridad, cerraremos tu sesión automáticamente en {minutes} minutos.",
+      "stay-signed-in": "Permanecer conectado"
+    }
   },
   "policy": {
     "rollout": {

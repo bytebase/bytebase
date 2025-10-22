@@ -1,6 +1,6 @@
 <template>
   <BBModal
-    :show="shouldShow"
+    :show="true"
     :trap-focus="true"
     :show-close="false"
     :mask-closable="false"
@@ -22,31 +22,13 @@
 
 <script lang="tsx" setup>
 import { NButton } from "naive-ui";
-import { computed } from "vue";
-import { useRoute } from "vue-router";
 import { BBModal } from "@/bbkit";
 import { useAuthStore } from "@/store";
-import { isAuthRelatedRoute } from "@/utils/auth";
 import Signin from "@/views/auth/Signin.vue";
 
-const route = useRoute();
 const authStore = useAuthStore();
 
 const logout = () => {
-  authStore.unauthenticatedOccurred = false;
   authStore.logout();
 };
-
-const shouldShow = computed(() => {
-  // Do not show the modal when the user is in auth related pages.
-  if (route.name && isAuthRelatedRoute(route.name as string)) {
-    return false;
-  }
-
-  if (!authStore.isLoggedIn) {
-    return false;
-  }
-
-  return authStore.unauthenticatedOccurred;
-});
 </script>

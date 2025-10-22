@@ -607,6 +607,11 @@
           "hours": "Hour(s)",
           "days": "Day(s)"
         },
+        "inactive-timeout": {
+          "self": "Inactive timeout",
+          "description": "The session expiration time if no activity is detected for the user. The users will be forced to log out when they reach the limit.",
+          "hours": "Hour(s)"
+        },
         "maximum-role-expiration": {
           "self": "Maximum role expiration",
           "description": "Maximum role expiration is the maximum period a role can be granted to a user, will apply on all project roles expect the project owner.",
@@ -1527,7 +1532,12 @@
       "content": "We will refirect you to the home page."
     },
     "token-expired-title": "Token expired",
-    "token-expired-description": "Token has expired, please login again"
+    "token-expired-description": "Token has expired, please login again",
+    "inactive-modal": {
+      "title": "Your session is about to end",
+      "description": "You've been inactive for a while. For your security, we'll automatically sign you out in {minutes} minutes.",
+      "stay-signed-in": "Stay signed in"
+    }
   },
   "policy": {
     "rollout": {

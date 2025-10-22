@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -254,12 +255,7 @@ func GetTokenFromHeaders(headers http.Header) (string, error) {
 }
 
 func audienceContains(audience jwt.ClaimStrings, token string) bool {
-	for _, v := range audience {
-		if v == token {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(audience, token)
 }
 
 type claimsMessage struct {

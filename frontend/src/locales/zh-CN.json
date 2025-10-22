@@ -607,6 +607,11 @@
           "hours": "小时",
           "days": "天数"
         },
+        "inactive-timeout": {
+          "self": "非活动超时",
+          "description": "未检测到用户活动时的会话过期时间。用户达到限制时将被强制退出登录。",
+          "hours": "小时"
+        },
         "maximum-role-expiration": {
           "self": "角色最大过期时间",
           "description": "角色最大过期时间是可以赋予用户角色时所能设置的最大过期时间，会应用在项目所有者之外的其他项目角色上。",
@@ -1527,7 +1532,12 @@
       "content": "我们将把您重定向到主页。"
     },
     "token-expired-title": "Token 已过期",
-    "token-expired-description": "Token 已过期，请重新登录"
+    "token-expired-description": "Token 已过期，请重新登录",
+    "inactive-modal": {
+      "title": "您的会话即将结束",
+      "description": "您已有一段时间未活动。为了您的安全，我们将在{minutes}分钟后自动退出您的登录。",
+      "stay-signed-in": "保持登录状态"
+    }
   },
   "policy": {
     "rollout": {

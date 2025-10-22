@@ -607,6 +607,12 @@
           "hours": "Giờ",
           "days": "Ngày"
         },
+        "inactive-timeout": {
+          "self": "Thời gian chờ khi không hoạt động",
+          "description": "Thời gian hết hạn phiên nếu không phát hiện hoạt động từ người dùng. Người dùng sẽ bị buộc phải đăng xuất khi đạt đến giới hạn.",
+          "Your session is about to end": "Phiên của bạn sắp kết thúc",
+          "hours": "Giờ"
+        },
         "maximum-role-expiration": {
           "self": "Thời gian hết hạn vai trò tối đa",
           "description": "Thời hạn vai trò tối đa là thời hạn tối đa mà một vai trò có thể được cấp cho người dùng, sẽ áp dụng cho tất cả các vai trò trong dự án ngoại trừ chủ sở hữu dự án.",
@@ -1527,7 +1533,12 @@
       "content": "Chúng tôi sẽ chuyển hướng bạn đến trang chủ."
     },
     "token-expired-title": "Mã thông báo đã hết hạn",
-    "token-expired-description": "Mã thông báo đã hết hạn, vui lòng đăng nhập lại"
+    "token-expired-description": "Mã thông báo đã hết hạn, vui lòng đăng nhập lại",
+    "inactive-modal": {
+      "title": "Phiên của bạn sắp kết thúc",
+      "description": "Bạn đã không hoạt động trong một thời gian. Để bảo mật cho bạn, chúng tôi sẽ tự động đăng xuất bạn sau {minutes} phút nữa.",
+      "stay-signed-in": "Tiếp tục duy trì đăng nhập"
+    }
   },
   "policy": {
     "rollout": {

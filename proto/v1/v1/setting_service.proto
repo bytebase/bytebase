@@ -214,6 +214,9 @@ message WorkspaceProfileSetting {
 
   // Whether to enable metric collection for the workspace.
   bool enable_metric_collection = 13;
+
+  // The session expiration time if not activity detected for the user. Value <= 0 means no limit.
+  google.protobuf.Duration inactive_session_timeout = 14;
 }
 
 message Announcement {

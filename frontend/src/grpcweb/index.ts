@@ -29,14 +29,22 @@ import { SubscriptionService } from "@/types/proto-es/v1/subscription_service_pb
 import { UserService } from "@/types/proto-es/v1/user_service_pb";
 import { WorksheetService } from "@/types/proto-es/v1/worksheet_service_pb";
 import { WorkspaceService } from "@/types/proto-es/v1/workspace_service_pb";
-import { authInterceptor, errorNotificationInterceptor } from "./middlewares";
+import {
+  authInterceptor,
+  errorNotificationInterceptor,
+  activeInterceptor,
+} from "./middlewares";
 
 const address = import.meta.env.BB_GRPC_LOCAL || window.location.origin;
 
 const transport = createConnectTransport({
   baseUrl: address,
   useBinaryFormat: true,
-  interceptors: [authInterceptor, errorNotificationInterceptor],
+  interceptors: [
+    authInterceptor,
+    activeInterceptor,
+    errorNotificationInterceptor,
+  ],
   fetch: (input, init) => fetch(input, { ...init, credentials: "include" }),
 });
 

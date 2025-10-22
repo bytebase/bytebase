@@ -607,6 +607,11 @@
           "hours": "時間",
           "days": "日"
         },
+        "inactive-timeout": {
+          "self": "非アクティブ タイムアウト",
+          "description": "ユーザーの活動が検出されない場合のセッション有効期限です。ユーザーが制限時間に達すると、強制的にログアウトされます。",
+          "hours": "時間"
+        },
         "maximum-role-expiration": {
           "self": "最大ロール有効期限",
           "description": "最大ロール有効期限は、ロールをユーザーに付与できる最大期間であり、プロジェクト所有者を除くすべてのプロジェクト ロールに適用されます。",
@@ -1527,7 +1532,12 @@
       "content": "ホームページへリダイレクトさせていただきます。"
     },
     "token-expired-title": "トークンの有効期限が切れました",
-    "token-expired-description": "トークンの有効期限が切れています。再度ログインしてください。"
+    "token-expired-description": "トークンの有効期限が切れています。再度ログインしてください。",
+    "inactive-modal": {
+      "title": "セッションの有効期限が近づいています",
+      "description": "しばらく操作がありませんでした。セキュリティのため、{minutes}分後に自動的にログアウトします。",
+      "stay-signed-in": "ログインしたままにする"
+    }
   },
   "policy": {
     "rollout": {

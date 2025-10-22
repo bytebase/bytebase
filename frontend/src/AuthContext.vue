@@ -1,12 +1,17 @@
 <template>
   <slot></slot>
-  <SigninModal />
+  <template v-if="!isAuthRoute && authStore.isLoggedIn">
+    <!-- Do not show the modal when the user is in auth related pages. -->
+    <SigninModal v-if="authStore.unauthenticatedOccurred" />
+    <InactiveRemindModal v-else />
+  </template>
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from "vue";
+import { onMounted, onUnmounted, ref, watch, computed } from "vue";
 import { useRouter } from "vue-router";
 import { isAuthRelatedRoute } from "@/utils/auth";
+import InactiveRemindModal from "@/views/auth/InactiveRemindModal.vue";
 import SigninModal from "@/views/auth/SigninModal.vue";
 import { t } from "./plugins/i18n";
 import { WORKSPACE_ROOT_MODULE } from "./router/dashboard/workspaceRoutes";
@@ -33,6 +38,13 @@ const roleStore = useRoleStore();
 
 const authCheckIntervalId = ref<NodeJS.Timeout>();
 
+const isAuthRoute = computed(() => {
+  return (
+    router.currentRoute.value.name &&
+    isAuthRelatedRoute(router.currentRoute.value.name.toString())
+  );
+});
+
 onMounted(() => {
   // Periodically checks if the user's session is still valid.
   // Skips check if user is not logged in or on an auth-related route.
@@ -40,10 +52,7 @@ onMounted(() => {
     if (!authStore.isLoggedIn || authStore.unauthenticatedOccurred) {
       return;
     }
-    if (
-      router.currentRoute.value.name &&
-      isAuthRelatedRoute(router.currentRoute.value.name.toString())
-    ) {
+    if (isAuthRoute.value) {
       return;
     }
 
