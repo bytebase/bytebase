@@ -3,14 +3,13 @@ package store
 import (
 	"context"
 	"database/sql"
-	"fmt"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -45,45 +44,7 @@ type FindRevisionMessage struct {
 // ListRevisions lists revisions.
 // The results are ordered by version desc.
 func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([]*RevisionMessage, error) {
-	where, args := []string{"TRUE"}, []any{}
-
-	if v := find.UID; v != nil {
-		where = append(where, fmt.Sprintf("id = $%d", len(args)+1))
-		args = append(args, *v)
-	}
-	if v := find.InstanceID; v != nil {
-		where = append(where, fmt.Sprintf("instance = $%d", len(args)+1))
-		args = append(args, *v)
-	}
-	if v := find.DatabaseName; v != nil {
-		where = append(where, fmt.Sprintf("db_name = $%d", len(args)+1))
-		args = append(args, *v)
-	}
-	if v := find.Type; v != nil {
-		where = append(where, fmt.Sprintf("payload->>'type' = $%d", len(args)+1))
-		args = append(args, v.String())
-	}
-	if v := find.Version; v != nil {
-		where = append(where, fmt.Sprintf("version = $%d", len(args)+1))
-		args = append(args, *v)
-	}
-	if v := find.Versions; v != nil {
-		where = append(where, fmt.Sprintf("version = ANY($%d)", len(args)+1))
-		args = append(args, *v)
-	}
-	if !find.ShowDeleted {
-		where = append(where, "deleted_at IS NULL")
-	}
-
-	limitOffsetClause := ""
-	if v := find.Limit; v != nil {
-		limitOffsetClause += fmt.Sprintf(" LIMIT %d", *v)
-	}
-	if v := find.Offset; v != nil {
-		limitOffsetClause += fmt.Sprintf(" OFFSET %d", *v)
-	}
-
-	query := fmt.Sprintf(`
+	q := qb.Q().Space(`
 		SELECT
 			id,
 			instance,
@@ -94,10 +55,42 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 			version,
 			payload
 		FROM revision
-		WHERE %s
-		ORDER BY version DESC
-		%s
-	`, strings.Join(where, " AND "), limitOffsetClause)
+		WHERE TRUE
+	`)
+
+	if v := find.UID; v != nil {
+		q.And("id = ?", *v)
+	}
+	if v := find.InstanceID; v != nil {
+		q.And("instance = ?", *v)
+	}
+	if v := find.DatabaseName; v != nil {
+		q.And("db_name = ?", *v)
+	}
+	if v := find.Type; v != nil {
+		q.And("payload->>'type' = ?", v.String())
+	}
+	if v := find.Version; v != nil {
+		q.And("version = ?", *v)
+	}
+	if v := find.Versions; v != nil {
+		q.And("version = ANY(?)", *v)
+	}
+	if !find.ShowDeleted {
+		q.And("deleted_at IS NULL")
+	}
+	q.Space("ORDER BY version DESC")
+	if v := find.Limit; v != nil {
+		q.Space("LIMIT ?", *v)
+	}
+	if v := find.Offset; v != nil {
+		q.Space("OFFSET ?", *v)
+	}
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
 
 	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
