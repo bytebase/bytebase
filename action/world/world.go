@@ -37,12 +37,6 @@ type World struct {
 
 	// bytebase-action rollout flags
 	ReleaseTitle string // The title of the release
-	// An enum to determine should we run plan checks and fail on warning or error.
-	// Valid values:
-	// - SKIP
-	// - FAIL_ON_WARNING
-	// - FAIL_ON_ERROR
-	CheckPlan string
 	// Rollout up to the target-stage.
 	// Format: environments/{environment}
 	TargetStage string
