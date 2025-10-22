@@ -51,6 +51,7 @@ const MAX_NOTIFICATION_DISPLAY_COUNT = 3;
 
 const route = useRoute();
 const router = useRouter();
+// TODO(ed): can we remove it?
 const { key } = provideAppRootContext();
 const notificationStore = useNotificationStore();
 

@@ -588,6 +588,13 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
    * @generated from field: bool enable_metric_collection = 13;
    */
   enableMetricCollection: boolean;
+
+  /**
+   * The session expiration time if not activity detected for the user. Value <= 0 means no limit.
+   *
+   * @generated from field: google.protobuf.Duration inactive_session_timeout = 14;
+   */
+  inactiveSessionTimeout?: Duration;
 };
 
 /**

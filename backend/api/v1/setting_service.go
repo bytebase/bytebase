@@ -213,6 +213,11 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("refresh token duration should be at least one hour"))
 				}
 				oldSetting.TokenDuration = payload.TokenDuration
+			case "value.workspace_profile_setting_value.inactive_session_timeout":
+				if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_SIGN_IN_FREQUENCY_CONTROL); err != nil {
+					return nil, connect.NewError(connect.CodePermissionDenied, err)
+				}
+				oldSetting.InactiveSessionTimeout = payload.InactiveSessionTimeout
 			case "value.workspace_profile_setting_value.announcement":
 				if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DASHBOARD_ANNOUNCEMENT); err != nil {
 					return nil, connect.NewError(connect.CodePermissionDenied, err)

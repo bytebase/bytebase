@@ -217,15 +217,14 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
       }
 
       // It's time to fetch the release
-      if (new Date().getTime() >= this.releaseInfo.nextCheckTs) {
+      if (Date.now() >= this.releaseInfo.nextCheckTs) {
         const release = await this.fetchLatestRelease();
         if (!release) {
           return false;
         }
 
         // check till 24 hours later
-        this.releaseInfo.nextCheckTs =
-          new Date().getTime() + 24 * 60 * 60 * 1000;
+        this.releaseInfo.nextCheckTs = Date.now() + 24 * 60 * 60 * 1000;
 
         if (semverCompare(release.tag_name, this.releaseInfo.latest.tag_name)) {
           this.releaseInfo.ignoreRemindModalTillNextRelease = false;

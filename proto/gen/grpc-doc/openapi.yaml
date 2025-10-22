@@ -14928,6 +14928,10 @@ components:
                 enableMetricCollection:
                     type: boolean
                     description: Whether to enable metric collection for the workspace.
+                inactiveSessionTimeout:
+                    pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
+                    type: string
+                    description: The session expiration time if not activity detected for the user. Value <= 0 means no limit.
 tags:
     - name: ActuatorService
       description: ActuatorService manages system health and operational information.

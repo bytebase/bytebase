@@ -163,6 +163,7 @@ export const useAuthStore = defineStore("auth_v1", () => {
     } catch {
       // nothing
     } finally {
+      unauthenticatedOccurred.value = false;
       const pathname = location.pathname;
       // Replace and reload the page to clear frontend state directly.
       window.location.href = router.resolve({

@@ -4716,6 +4716,7 @@ ISSUE_CREATE represents creating an issue. |
 | database_change_mode | [DatabaseChangeMode](#bytebase-store-DatabaseChangeMode) |  | The workspace database change mode. |
 | disallow_password_signin | [bool](#bool) |  | Whether to disallow password signin. (Except workspace admins) |
 | enable_metric_collection | [bool](#bool) |  | Whether to enable metric collection for the workspace. |
+| inactive_session_timeout | [google.protobuf.Duration](#google-protobuf-Duration) |  | The session expiration time if not activity detected for the user. Value &lt;= 0 means no limit. |
 
 
 
