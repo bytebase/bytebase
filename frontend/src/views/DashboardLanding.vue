@@ -131,8 +131,7 @@
 
 <script lang="tsx" setup>
 import { computedAsync } from "@vueuse/core";
-import { Volume2Icon } from "lucide-vue-next";
-import { SettingsIcon, GripVerticalIcon } from "lucide-vue-next";
+import { Volume2Icon, SettingsIcon, GripVerticalIcon } from "lucide-vue-next";
 import { NButton, NCheckbox, NDivider } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";

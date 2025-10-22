@@ -16,22 +16,19 @@
         :tab="() => renderTab(item.data, index)"
       >
         <EnvironmentDetail
-          v-if="!state.reorder"
           :environment-name="item.id"
           :buttons-class="buttonsClass"
           @delete="doDelete"
         />
       </NTabPane>
       <template #suffix>
-        <div
-          v-if="!state.reorder"
-          class="flex items-center justify-end space-x-2 px-2 pb-1"
-        >
+        <div class="flex items-center justify-end space-x-2 px-2 pb-1">
           <NButton
             v-if="
               hasWorkspacePermissionV2('bb.settings.get') &&
               hasWorkspacePermissionV2('bb.settings.set')
             "
+            :disabled="environmentList.length <= 1"
             @click="startReorder"
           >
             <template #icon>
@@ -52,21 +49,9 @@
         </div>
       </template>
     </NTabs>
-    <div v-if="state.reorder" class="flex justify-start pt-5 gap-x-3 px-5">
-      <NButton @click.prevent="discardReorder">
-        {{ $t("common.cancel") }}
-      </NButton>
-      <NButton
-        type="primary"
-        :disabled="!orderChanged"
-        @click.prevent="doReorder"
-      >
-        {{ $t("common.apply") }}
-      </NButton>
-    </div>
   </div>
 
-  <Drawer v-model:show="state.showCreateModal">
+  <Drawer :show="state.showCreateModal" @close="discardReorder">
     <EnvironmentForm
       :create="true"
       :environment="getEnvironmentCreate()"
@@ -85,20 +70,54 @@
       </DrawerContent>
     </EnvironmentForm>
   </Drawer>
+
+  <Drawer v-model:show="state.reorder" :close-on-esc="true">
+    <DrawerContent
+      :title="$t('environment.reorder')"
+      class="w-[30rem] max-w-[90vw]"
+    >
+      <div>
+        <Draggable
+          v-model="state.reorderedEnvironmentList"
+          item-key="id"
+          animation="300"
+        >
+          <template
+            #item="{ element, index }: { element: Environment; index: number }"
+          >
+            <div
+              :key="element.id"
+              class="flex items-center justify-between p-2 hover:bg-gray-100 rounded-sm cursor-grab"
+            >
+              <div class="flex items-center gap-x-2">
+                <span class="textinfo"> {{ index + 1 }}.</span>
+                <EnvironmentV1Name :environment="element" :link="false" />
+              </div>
+              <GripVerticalIcon class="w-5 h-5 text-gray-500" />
+            </div>
+          </template>
+        </Draggable>
+      </div>
+      <template #footer>
+        <div class="flex items-center justify-end gap-x-2">
+          <NButton @click="discardReorder">{{ $t("common.cancel") }}</NButton>
+          <NButton type="primary" :disabled="!orderChanged" @click="doReorder">
+            {{ $t("common.confirm") }}
+          </NButton>
+        </div>
+      </template>
+    </DrawerContent>
+  </Drawer>
 </template>
 
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
-import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  PlusIcon,
-  ListOrderedIcon,
-} from "lucide-vue-next";
+import { PlusIcon, ListOrderedIcon, GripVerticalIcon } from "lucide-vue-next";
 import { NTabs, NTabPane, NButton } from "naive-ui";
 import { onMounted, computed, reactive, watch, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import Draggable from "vuedraggable";
 import type { BBTabItem } from "@/bbkit/types";
 import {
   EnvironmentForm,
@@ -106,7 +125,7 @@ import {
   Buttons as EnvironmentFormButtons,
 } from "@/components/EnvironmentForm";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { EnvironmentV1Name, MiniActionButton } from "@/components/v2";
+import { EnvironmentV1Name } from "@/components/v2";
 import {
   useUIStateStore,
   useEnvironmentV1Store,
@@ -123,7 +142,7 @@ import type { Policy } from "@/types/proto-es/v1/org_policy_service_pb";
 import { PolicyResourceType } from "@/types/proto-es/v1/org_policy_service_pb";
 import { EnvironmentSetting_EnvironmentSchema } from "@/types/proto-es/v1/setting_service_pb";
 import type { Environment } from "@/types/v1/environment";
-import { arraySwap, hasWorkspacePermissionV2 } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import { type VueClass } from "@/utils";
 import EnvironmentDetail from "@/views/EnvironmentDetail.vue";
 
@@ -192,17 +211,11 @@ watch(
 const environmentList = useEnvironmentV1List();
 
 const tabItemList = computed((): BBTabItem[] => {
-  if (environmentList.value) {
-    const list = state.reorder
-      ? state.reorderedEnvironmentList
-      : environmentList.value;
-    return list.map((item, index: number): BBTabItem => {
-      const title = `${index + 1}. ${item.title}`;
-      const id = item.id;
-      return { title, id, data: item };
-    });
-  }
-  return [];
+  return environmentList.value.map((item, index: number): BBTabItem => {
+    const title = `${index + 1}. ${item.title}`;
+    const id = item.id;
+    return { title, id, data: item };
+  });
 });
 
 const getEnvironmentCreate = () => {
@@ -248,12 +261,6 @@ const startReorder = () => {
 
 const stopReorder = () => {
   state.reorder = false;
-  state.reorderedEnvironmentList = [];
-};
-
-const reorderEnvironment = (sourceIndex: number, targetIndex: number) => {
-  arraySwap(state.reorderedEnvironmentList, sourceIndex, targetIndex);
-  selectEnvironment(targetIndex);
 };
 
 const orderChanged = computed(() => {
@@ -274,6 +281,11 @@ const doReorder = () => {
     .reorderEnvironmentList(state.reorderedEnvironmentList)
     .then(() => {
       stopReorder();
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.updated"),
+      });
     });
 };
 
@@ -305,43 +317,12 @@ const onTabChange = (id: string) => {
 };
 
 const renderTab = (env: Environment, index: number) => {
-  const child = [
+  return h("div", { class: "flex items-center space-x-2 py-1" }, [
+    h("span", { class: "text-opacity-60" }, `${index + 1}.`),
     h(EnvironmentV1Name, {
       environment: env,
       link: false,
     }),
-  ];
-  if (state.reorder) {
-    if (index > 0) {
-      child.unshift(
-        h(
-          MiniActionButton,
-          {
-            onClick: () => reorderEnvironment(index, index - 1),
-          },
-          {
-            default: () => h(ChevronLeftIcon, { class: "w-4 h-4" }),
-          }
-        )
-      );
-    }
-    if (index < tabItemList.value.length - 1) {
-      child.push(
-        h(
-          MiniActionButton,
-          {
-            onClick: () => reorderEnvironment(index, index + 1),
-          },
-          {
-            default: () => h(ChevronRightIcon, { class: "w-4 h-4" }),
-          }
-        )
-      );
-    }
-  } else {
-    child.unshift(h("span", { class: "text-opacity-60" }, `${index + 1}.`));
-  }
-
-  return h("div", { class: "flex items-center space-x-2 py-1" }, child);
+  ]);
 };
 </script>
