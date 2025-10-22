@@ -610,7 +610,6 @@
         "inactive-session-timeout": {
           "self": "Thời gian chờ phiên không hoạt động",
           "description": "Thời gian hết hạn phiên nếu không phát hiện hoạt động từ người dùng. Người dùng sẽ bị buộc phải đăng xuất khi đạt đến giới hạn.",
-          "Your session is about to end": "Phiên của bạn sắp kết thúc",
           "hours": "Giờ"
         },
         "maximum-role-expiration": {
