@@ -49,7 +49,7 @@ func makePart(text string, params ...any) QueryPart {
 		// Check if the parameter is a *Query
 		if nestedQuery, ok := param.(*Query); ok {
 			// Expand the nested query inline - use toRawSql which keeps ? placeholders
-			nestedSQL, nestedParams, err := nestedQuery.toRawSql()
+			nestedSQL, nestedParams, err := nestedQuery.toRawSQL()
 			if err != nil {
 				errs = append(errs, errors.Wrap(err, "failed to expand nested query"))
 				continue
@@ -71,9 +71,9 @@ func makePart(text string, params ...any) QueryPart {
 	}
 }
 
-// toRawSql concatenates all parts and returns SQL with ? placeholders (not $1, $2, etc).
+// toRawSQL concatenates all parts and returns SQL with ? placeholders (not $1, $2, etc).
 // This is used internally for query composition.
-func (q *Query) toRawSql() (string, []any, error) {
+func (q *Query) toRawSQL() (string, []any, error) {
 	if q == nil {
 		return "", nil, errors.New("cannot generate SQL from nil Query")
 	}
@@ -122,9 +122,9 @@ func (q *Query) Len() int {
 	return len(q.parts)
 }
 
-// ToSql generates PostgreSQL-compatible SQL with $1, $2, ... placeholders.
+// ToSQL generates PostgreSQL-compatible SQL with $1, $2, ... placeholders.
 // Returns the SQL string, parameters slice, and any error.
-func (q *Query) ToSql() (string, []any, error) {
+func (q *Query) ToSQL() (string, []any, error) {
 	if q == nil {
 		return "", nil, errors.New("cannot generate SQL from nil Query")
 	}
