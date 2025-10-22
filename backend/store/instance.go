@@ -220,65 +220,51 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 }
 
 func (s *Store) listInstanceImplV2(ctx context.Context, txn *sql.Tx, find *FindInstanceMessage) ([]*InstanceMessage, error) {
-	q := qb.Q()
-	joinDSQuery := ""
-	joinDBQuery := ""
+	where := qb.Q().Space("TRUE")
+	from := qb.Q().Space("instance")
 	if filter := find.Filter; filter != nil {
-		q.And(ConvertDollarPlaceholders(filter.Where), filter.Args...)
+		where.And(ConvertDollarPlaceholders(filter.Where), filter.Args...)
 		if hasHostPortFilter(filter.Where) {
-			joinDSQuery = "CROSS JOIN jsonb_array_elements(instance.metadata -> 'dataSources') AS ds"
+			from.Space("CROSS JOIN jsonb_array_elements(instance.metadata -> 'dataSources') AS ds")
 		}
 		if strings.Contains(filter.Where, "db.project") {
-			joinDBQuery = "LEFT JOIN db ON db.instance = instance.resource_id"
+			from.Space("LEFT JOIN db ON db.instance = instance.resource_id")
 		}
 	}
 	if v := find.ResourceID; v != nil {
-		q.And("instance.resource_id = ?", *v)
+		where.And("instance.resource_id = ?", *v)
 	}
 	if v := find.ResourceIDs; v != nil {
-		q.And("instance.resource_id = ANY(?)", *v)
+		where.And("instance.resource_id = ANY(?)", *v)
 	}
 	if !find.ShowDeleted {
-		q.And("instance.deleted = ?", false)
+		where.And("instance.deleted = ?", false)
 	}
 
-	whereSQL, whereArgs, err := q.ToSQL()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build where clause")
-	}
-
-	query := qb.Q().Space(`
+	q := qb.Q().Space(`
 		SELECT DISTINCT ON (resource_id)
 			instance.resource_id,
 			instance.environment,
 			instance.deleted,
 			instance.metadata
-		FROM instance`)
-	if joinDSQuery != "" {
-		query.Space(joinDSQuery)
-	}
-	if joinDBQuery != "" {
-		query.Space(joinDBQuery)
-	}
-	if whereSQL != "" {
-		query.Space("WHERE")
-		query.Space(whereSQL, whereArgs...)
-	}
-	query.Space("ORDER BY resource_id")
+		FROM ?
+		WHERE ?
+		ORDER BY resource_id
+	`, from, where)
 	if v := find.Limit; v != nil {
-		query.Space("LIMIT ?", *v)
+		q.Space("LIMIT ?", *v)
 	}
 	if v := find.Offset; v != nil {
-		query.Space("OFFSET ?", *v)
+		q.Space("OFFSET ?", *v)
 	}
 
-	querySQL, queryArgs, err := query.ToSQL()
+	query, queryArgs, err := q.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
 	var instanceMessages []*InstanceMessage
-	rows, err := txn.QueryContext(ctx, querySQL, queryArgs...)
+	rows, err := txn.QueryContext(ctx, query, queryArgs...)
 	if err != nil {
 		return nil, err
 	}
