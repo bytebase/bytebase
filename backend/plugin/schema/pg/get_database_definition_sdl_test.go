@@ -1373,3 +1373,151 @@ func TestCheckConstraintNotValidFormatNormalMode(t *testing.T) {
 	_, err = pgparser.ParsePostgreSQL(result)
 	require.NoError(t, err, "Generated SQL should be parseable by PostgreSQL parser")
 }
+
+func TestGetDatabaseDefinitionSDLFormat_WithComments(t *testing.T) {
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name:    "test_schema",
+				Comment: "Test schema for comments",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name:    "users",
+						Comment: "Users table with comments",
+						Columns: []*storepb.ColumnMetadata{
+							{
+								Name:     "id",
+								Type:     "SERIAL",
+								Nullable: false,
+								Comment:  "User ID",
+							},
+							{
+								Name:     "name",
+								Type:     "VARCHAR(255)",
+								Nullable: false,
+								Comment:  "User name",
+							},
+							{
+								Name:     "email",
+								Type:     "VARCHAR(320)",
+								Nullable: true,
+								Comment:  "User email address",
+							},
+						},
+						Indexes: []*storepb.IndexMetadata{
+							{
+								Name:        "idx_users_email",
+								Expressions: []string{"email"},
+								Unique:      false,
+								Primary:     false,
+								Comment:     "Index on email column",
+							},
+						},
+					},
+				},
+				Views: []*storepb.ViewMetadata{
+					{
+						Name:       "active_users",
+						Definition: "SELECT id, name, email FROM test_schema.users WHERE active = true",
+						Comment:    "View of active users",
+					},
+				},
+				Functions: []*storepb.FunctionMetadata{
+					{
+						Name:       "get_user_count",
+						Signature:  "get_user_count()",
+						Definition: "CREATE FUNCTION test_schema.get_user_count() RETURNS INTEGER AS $$ BEGIN RETURN (SELECT COUNT(*) FROM test_schema.users); END; $$ LANGUAGE plpgsql",
+						Comment:    "Function to get user count",
+					},
+				},
+				Sequences: []*storepb.SequenceMetadata{
+					{
+						Name:      "custom_seq",
+						DataType:  "bigint",
+						Start:     "1",
+						Increment: "1",
+						MinValue:  "1",
+						MaxValue:  "9223372036854775807",
+						Cycle:     false,
+						CacheSize: "1",
+						Comment:   "Custom sequence for testing",
+					},
+				},
+			},
+		},
+	}
+
+	ctx := schema.GetDefinitionContext{
+		SDLFormat: true,
+	}
+
+	result, err := GetDatabaseDefinition(ctx, metadata)
+	require.NoError(t, err)
+
+	// Verify schema comment
+	assert.Contains(t, result, `CREATE SCHEMA IF NOT EXISTS "test_schema";`)
+	assert.Contains(t, result, `COMMENT ON SCHEMA "test_schema" IS 'Test schema for comments';`)
+
+	// Verify table comment
+	assert.Contains(t, result, `COMMENT ON TABLE "test_schema"."users" IS 'Users table with comments';`)
+
+	// Verify column comments
+	assert.Contains(t, result, `COMMENT ON COLUMN "test_schema"."users"."id" IS 'User ID';`)
+	assert.Contains(t, result, `COMMENT ON COLUMN "test_schema"."users"."name" IS 'User name';`)
+	assert.Contains(t, result, `COMMENT ON COLUMN "test_schema"."users"."email" IS 'User email address';`)
+
+	// Verify view comment
+	assert.Contains(t, result, `COMMENT ON VIEW "test_schema"."active_users" IS 'View of active users';`)
+
+	// Verify function comment
+	assert.Contains(t, result, `COMMENT ON FUNCTION "test_schema"."get_user_count()" IS 'Function to get user count';`)
+
+	// Verify sequence comment
+	assert.Contains(t, result, `COMMENT ON SEQUENCE "test_schema"."custom_seq" IS 'Custom sequence for testing';`)
+
+	// Verify index comment
+	assert.Contains(t, result, `COMMENT ON INDEX "test_schema"."idx_users_email" IS 'Index on email column';`)
+
+	// Validate that the generated SQL can be parsed without errors using ANTLR parser
+	_, err = pgparser.ParsePostgreSQL(result)
+	require.NoError(t, err, "Generated SQL should be parseable by PostgreSQL parser")
+}
+
+func TestGetDatabaseDefinitionSDLFormat_WithCommentsEscaping(t *testing.T) {
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name:    "test_table",
+						Comment: "Table with 'single quotes' and \"double quotes\"",
+						Columns: []*storepb.ColumnMetadata{
+							{
+								Name:     "id",
+								Type:     "INTEGER",
+								Nullable: false,
+								Comment:  "Column with 'quoted' text",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	ctx := schema.GetDefinitionContext{
+		SDLFormat: true,
+	}
+
+	result, err := GetDatabaseDefinition(ctx, metadata)
+	require.NoError(t, err)
+
+	// Verify that single quotes are properly escaped
+	assert.Contains(t, result, `COMMENT ON TABLE "public"."test_table" IS 'Table with ''single quotes'' and "double quotes"';`)
+	assert.Contains(t, result, `COMMENT ON COLUMN "public"."test_table"."id" IS 'Column with ''quoted'' text';`)
+
+	// Validate that the generated SQL can be parsed without errors using ANTLR parser
+	_, err = pgparser.ParsePostgreSQL(result)
+	require.NoError(t, err, "Generated SQL should be parseable by PostgreSQL parser")
+}
