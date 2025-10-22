@@ -59,7 +59,9 @@
             class="w-24 mr-4"
             :disabled="!allowChangeSetting"
           />
-          {{ $t("settings.general.workspace.inactive-timeout.hours") }}
+          <span class="textinfo text-sm">
+            {{ $t("settings.general.workspace.inactive-timeout.hours") }}
+          </span>
         </div>
       </template>
       <span class="text-sm text-gray-400 -translate-y-2">
