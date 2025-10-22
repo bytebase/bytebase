@@ -1373,3 +1373,266 @@ func TestCheckConstraintNotValidFormatNormalMode(t *testing.T) {
 	_, err = pgparser.ParsePostgreSQL(result)
 	require.NoError(t, err, "Generated SQL should be parseable by PostgreSQL parser")
 }
+
+func TestGetDatabaseDefinitionSDLFormat_WithComments(t *testing.T) {
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name:    "test_schema",
+				Comment: "Test schema for comments",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name:    "users",
+						Comment: "Users table with comments",
+						Columns: []*storepb.ColumnMetadata{
+							{
+								Name:     "id",
+								Type:     "SERIAL",
+								Nullable: false,
+								Comment:  "User ID",
+							},
+							{
+								Name:     "name",
+								Type:     "VARCHAR(255)",
+								Nullable: false,
+								Comment:  "User name",
+							},
+							{
+								Name:     "email",
+								Type:     "VARCHAR(320)",
+								Nullable: true,
+								Comment:  "User email address",
+							},
+						},
+						Indexes: []*storepb.IndexMetadata{
+							{
+								Name:        "idx_users_email",
+								Expressions: []string{"email"},
+								Unique:      false,
+								Primary:     false,
+								Comment:     "Index on email column",
+							},
+						},
+					},
+				},
+				Views: []*storepb.ViewMetadata{
+					{
+						Name:       "active_users",
+						Definition: "SELECT id, name, email FROM test_schema.users WHERE active = true",
+						Comment:    "View of active users",
+					},
+				},
+				Functions: []*storepb.FunctionMetadata{
+					{
+						Name:       "get_user_count",
+						Signature:  "get_user_count()",
+						Definition: "CREATE FUNCTION test_schema.get_user_count() RETURNS INTEGER AS $$ BEGIN RETURN (SELECT COUNT(*) FROM test_schema.users); END; $$ LANGUAGE plpgsql",
+						Comment:    "Function to get user count",
+					},
+				},
+				Sequences: []*storepb.SequenceMetadata{
+					{
+						Name:      "custom_seq",
+						DataType:  "bigint",
+						Start:     "1",
+						Increment: "1",
+						MinValue:  "1",
+						MaxValue:  "9223372036854775807",
+						Cycle:     false,
+						CacheSize: "1",
+						Comment:   "Custom sequence for testing",
+					},
+				},
+			},
+		},
+	}
+
+	ctx := schema.GetDefinitionContext{
+		SDLFormat: true,
+	}
+
+	result, err := GetDatabaseDefinition(ctx, metadata)
+	require.NoError(t, err)
+
+	// Verify schema comment
+	assert.Contains(t, result, `CREATE SCHEMA IF NOT EXISTS "test_schema";`)
+	assert.Contains(t, result, `COMMENT ON SCHEMA "test_schema" IS 'Test schema for comments';`)
+
+	// Verify table comment
+	assert.Contains(t, result, `COMMENT ON TABLE "test_schema"."users" IS 'Users table with comments';`)
+
+	// Verify column comments
+	assert.Contains(t, result, `COMMENT ON COLUMN "test_schema"."users"."id" IS 'User ID';`)
+	assert.Contains(t, result, `COMMENT ON COLUMN "test_schema"."users"."name" IS 'User name';`)
+	assert.Contains(t, result, `COMMENT ON COLUMN "test_schema"."users"."email" IS 'User email address';`)
+
+	// Verify view comment
+	assert.Contains(t, result, `COMMENT ON VIEW "test_schema"."active_users" IS 'View of active users';`)
+
+	// Verify function comment
+	assert.Contains(t, result, `COMMENT ON FUNCTION "test_schema"."get_user_count()" IS 'Function to get user count';`)
+
+	// Verify sequence comment
+	assert.Contains(t, result, `COMMENT ON SEQUENCE "test_schema"."custom_seq" IS 'Custom sequence for testing';`)
+
+	// Verify index comment
+	assert.Contains(t, result, `COMMENT ON INDEX "test_schema"."idx_users_email" IS 'Index on email column';`)
+
+	// Validate that the generated SQL can be parsed without errors using ANTLR parser
+	_, err = pgparser.ParsePostgreSQL(result)
+	require.NoError(t, err, "Generated SQL should be parseable by PostgreSQL parser")
+}
+
+func TestGetDatabaseDefinitionSDLFormat_WithCommentsEscaping(t *testing.T) {
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name:    "test_table",
+						Comment: "Table with 'single quotes' and \"double quotes\"",
+						Columns: []*storepb.ColumnMetadata{
+							{
+								Name:     "id",
+								Type:     "INTEGER",
+								Nullable: false,
+								Comment:  "Column with 'quoted' text",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	ctx := schema.GetDefinitionContext{
+		SDLFormat: true,
+	}
+
+	result, err := GetDatabaseDefinition(ctx, metadata)
+	require.NoError(t, err)
+
+	// Verify that single quotes are properly escaped
+	assert.Contains(t, result, `COMMENT ON TABLE "public"."test_table" IS 'Table with ''single quotes'' and "double quotes"';`)
+	assert.Contains(t, result, `COMMENT ON COLUMN "public"."test_table"."id" IS 'Column with ''quoted'' text';`)
+
+	// Validate that the generated SQL can be parsed without errors using ANTLR parser
+	_, err = pgparser.ParsePostgreSQL(result)
+	require.NoError(t, err, "Generated SQL should be parseable by PostgreSQL parser")
+}
+
+func TestGetMultiFileDatabaseDefinition_WithComments(t *testing.T) {
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name:    "app_schema",
+				Comment: "Application schema",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name:    "products",
+						Comment: "Product catalog",
+						Columns: []*storepb.ColumnMetadata{
+							{
+								Name:     "id",
+								Type:     "INTEGER",
+								Nullable: false,
+								Comment:  "Product ID",
+							},
+							{
+								Name:     "name",
+								Type:     "TEXT",
+								Nullable: false,
+								Comment:  "Product name",
+							},
+						},
+						Indexes: []*storepb.IndexMetadata{
+							{
+								Name:        "idx_products_name",
+								Expressions: []string{"name"},
+								Unique:      false,
+								Primary:     false,
+								Comment:     "Index for product search",
+							},
+						},
+					},
+				},
+				Views: []*storepb.ViewMetadata{
+					{
+						Name:       "active_products",
+						Definition: "SELECT id, name FROM app_schema.products WHERE active = true",
+						Comment:    "View of active products",
+					},
+				},
+				Functions: []*storepb.FunctionMetadata{
+					{
+						Name:       "count_products",
+						Signature:  "count_products()",
+						Definition: "CREATE FUNCTION app_schema.count_products() RETURNS INTEGER AS $$ BEGIN RETURN (SELECT COUNT(*) FROM app_schema.products); END; $$ LANGUAGE plpgsql",
+						Comment:    "Returns product count",
+					},
+				},
+				Sequences: []*storepb.SequenceMetadata{
+					{
+						Name:      "order_seq",
+						DataType:  "bigint",
+						Start:     "1",
+						Increment: "1",
+						MinValue:  "1",
+						MaxValue:  "9223372036854775807",
+						Cycle:     false,
+						CacheSize: "1",
+						Comment:   "Sequence for orders",
+					},
+				},
+			},
+		},
+	}
+
+	ctx := schema.GetDefinitionContext{
+		SDLFormat: true,
+	}
+
+	result, err := GetMultiFileDatabaseDefinition(ctx, metadata)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	// Build a map for easier testing
+	fileMap := make(map[string]string)
+	for _, file := range result.Files {
+		fileMap[file.Name] = file.Content
+	}
+
+	// Verify sequence file with comment
+	sequenceFile, ok := fileMap["schemas/app_schema/sequences/order_seq.sql"]
+	require.True(t, ok, "sequence file should exist")
+	assert.Contains(t, sequenceFile, `CREATE SEQUENCE "app_schema"."order_seq"`)
+	assert.Contains(t, sequenceFile, `COMMENT ON SEQUENCE "app_schema"."order_seq" IS 'Sequence for orders';`)
+
+	// Verify table file with comments
+	tableFile, ok := fileMap["schemas/app_schema/tables/products.sql"]
+	require.True(t, ok, "table file should exist")
+	assert.Contains(t, tableFile, `CREATE TABLE "app_schema"."products"`)
+	assert.Contains(t, tableFile, `COMMENT ON TABLE "app_schema"."products" IS 'Product catalog';`)
+	assert.Contains(t, tableFile, `COMMENT ON COLUMN "app_schema"."products"."id" IS 'Product ID';`)
+	assert.Contains(t, tableFile, `COMMENT ON COLUMN "app_schema"."products"."name" IS 'Product name';`)
+	assert.Contains(t, tableFile, `COMMENT ON INDEX "app_schema"."idx_products_name" IS 'Index for product search';`)
+
+	// Verify view file with comment
+	viewFile, ok := fileMap["schemas/app_schema/views/active_products.sql"]
+	require.True(t, ok, "view file should exist")
+	assert.Contains(t, viewFile, `CREATE VIEW "app_schema"."active_products"`)
+	assert.Contains(t, viewFile, `COMMENT ON VIEW "app_schema"."active_products" IS 'View of active products';`)
+
+	// Verify function file with comment
+	functionFile, ok := fileMap["schemas/app_schema/functions/count_products.sql"]
+	require.True(t, ok, "function file should exist")
+	assert.Contains(t, functionFile, `CREATE FUNCTION app_schema.count_products()`)
+	assert.Contains(t, functionFile, `COMMENT ON FUNCTION "app_schema"."count_products()" IS 'Returns product count';`)
+
+	// Validate that each file's SQL can be parsed
+	for fileName, content := range fileMap {
+		_, err := pgparser.ParsePostgreSQL(content)
+		require.NoError(t, err, "SQL in file %s should be parseable by PostgreSQL parser", fileName)
+	}
+}

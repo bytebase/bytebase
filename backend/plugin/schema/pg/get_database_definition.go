@@ -2149,6 +2149,13 @@ func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 		if err := writeSchema(&buf, schema); err != nil {
 			return "", err
 		}
+
+		// Write schema comment if present
+		if len(schema.Comment) > 0 {
+			if err := writeSchemaCommentSDL(&buf, schema); err != nil {
+				return "", err
+			}
+		}
 	}
 
 	// Build a map of serial and identity sequences that should be skipped
@@ -2215,6 +2222,14 @@ func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 			if _, err := buf.WriteString(";\n\n"); err != nil {
 				return "", err
 			}
+
+			// Write sequence comment if present
+			if len(sequence.Comment) > 0 {
+				if err := writeSequenceCommentSDL(&buf, schema.Name, sequence); err != nil {
+					return "", err
+				}
+			}
+
 			// Track sequences with owners for later ownership establishment
 			if sequence.OwnerTable != "" && sequence.OwnerColumn != "" {
 				tableID := getObjectID(schema.Name, sequence.OwnerTable)
@@ -2264,9 +2279,37 @@ func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 				return "", err
 			}
 
+			// Write table comment if present
+			if len(table.Comment) > 0 {
+				if err := writeTableCommentSDL(&buf, schema.Name, table); err != nil {
+					return "", err
+				}
+			}
+
+			// Write column comments if present
+			for _, column := range table.Columns {
+				if len(column.Comment) > 0 {
+					if err := writeColumnCommentSDL(&buf, schema.Name, table.Name, column); err != nil {
+						return "", err
+					}
+				}
+			}
+
 			// Write CREATE INDEX statements for non-constraint indexes
 			if err := writeIndexesSDL(&buf, schema.Name, table); err != nil {
 				return "", err
+			}
+
+			// Write index comments if present
+			for _, index := range table.Indexes {
+				// Only write comment for standalone indexes (not primary key or unique constraint indexes)
+				if !index.Primary && !index.Unique {
+					if len(index.Comment) > 0 {
+						if err := writeIndexCommentSDL(&buf, schema.Name, index); err != nil {
+							return "", err
+						}
+					}
+				}
 			}
 		}
 
@@ -2302,6 +2345,13 @@ func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 			if _, err := buf.WriteString(";\n\n"); err != nil {
 				return "", err
 			}
+
+			// Write view comment if present
+			if len(view.Comment) > 0 {
+				if err := writeViewCommentSDL(&buf, schema.Name, view); err != nil {
+					return "", err
+				}
+			}
 		}
 
 		// Write functions and procedures after views
@@ -2316,6 +2366,13 @@ func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 
 			if _, err := buf.WriteString(";\n\n"); err != nil {
 				return "", err
+			}
+
+			// Write function comment if present
+			if len(function.Comment) > 0 {
+				if err := writeFunctionCommentSDL(&buf, schema.Name, function); err != nil {
+					return "", err
+				}
 			}
 		}
 	}
@@ -3079,6 +3136,14 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 			}
 			buf.WriteString(";\n")
 
+			// Add sequence comment if present
+			if len(sequence.Comment) > 0 {
+				buf.WriteString("\n")
+				if err := writeSequenceCommentSDL(&buf, schemaName, sequence); err != nil {
+					return nil, errors.Wrapf(err, "failed to generate sequence comment for %s.%s", schemaName, sequence.Name)
+				}
+			}
+
 			// Add ALTER SEQUENCE OWNED BY for sequences with owners
 			if sequence.OwnerTable != "" && sequence.OwnerColumn != "" {
 				buf.WriteString("\n")
@@ -3110,9 +3175,37 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 			}
 			buf.WriteString(";\n\n")
 
+			// Write table comment if present
+			if len(table.Comment) > 0 {
+				if err := writeTableCommentSDL(&buf, schemaName, table); err != nil {
+					return nil, errors.Wrapf(err, "failed to generate table comment for %s.%s", schemaName, table.Name)
+				}
+			}
+
+			// Write column comments if present
+			for _, column := range table.Columns {
+				if len(column.Comment) > 0 {
+					if err := writeColumnCommentSDL(&buf, schemaName, table.Name, column); err != nil {
+						return nil, errors.Wrapf(err, "failed to generate column comment for %s.%s.%s", schemaName, table.Name, column.Name)
+					}
+				}
+			}
+
 			// Write CREATE INDEX statements for non-constraint indexes
 			if err := writeIndexesSDL(&buf, schemaName, table); err != nil {
 				return nil, errors.Wrapf(err, "failed to generate indexes SDL for %s.%s", schemaName, table.Name)
+			}
+
+			// Write index comments if present
+			for _, index := range table.Indexes {
+				// Only write comment for standalone indexes (not primary key or unique constraint indexes)
+				if !index.Primary && !index.Unique {
+					if len(index.Comment) > 0 {
+						if err := writeIndexCommentSDL(&buf, schemaName, index); err != nil {
+							return nil, errors.Wrapf(err, "failed to generate index comment for %s.%s", schemaName, index.Name)
+						}
+					}
+				}
 			}
 
 			files = append(files, schema.File{
@@ -3131,9 +3224,19 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 			if err := writeViewSDL(&buf, schemaName, view); err != nil {
 				return nil, errors.Wrapf(err, "failed to generate view SDL for %s.%s", schemaName, view.Name)
 			}
+			buf.WriteString(";\n")
+
+			// Write view comment if present
+			if len(view.Comment) > 0 {
+				buf.WriteString("\n")
+				if err := writeViewCommentSDL(&buf, schemaName, view); err != nil {
+					return nil, errors.Wrapf(err, "failed to generate view comment for %s.%s", schemaName, view.Name)
+				}
+			}
+
 			files = append(files, schema.File{
 				Name:    fmt.Sprintf("schemas/%s/views/%s.sql", schemaName, view.Name),
-				Content: buf.String() + ";\n",
+				Content: buf.String(),
 			})
 		}
 
@@ -3147,9 +3250,19 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 			if err := writeFunctionSDL(&buf, schemaName, function); err != nil {
 				return nil, errors.Wrapf(err, "failed to generate function SDL for %s.%s", schemaName, function.Name)
 			}
+			buf.WriteString(";\n")
+
+			// Write function comment if present
+			if len(function.Comment) > 0 {
+				buf.WriteString("\n")
+				if err := writeFunctionCommentSDL(&buf, schemaName, function); err != nil {
+					return nil, errors.Wrapf(err, "failed to generate function comment for %s.%s", schemaName, function.Name)
+				}
+			}
+
 			files = append(files, schema.File{
 				Name:    fmt.Sprintf("schemas/%s/functions/%s.sql", schemaName, function.Name),
-				Content: buf.String() + ";\n",
+				Content: buf.String(),
 			})
 		}
 	}
@@ -3214,4 +3327,188 @@ func buildTableSequencesMap(metadata *storepb.DatabaseSchemaMetadata) map[string
 		}
 	}
 	return tableSequencesMap
+}
+
+// SDL Comment Functions
+
+func writeSchemaCommentSDL(out io.Writer, schema *storepb.SchemaMetadata) error {
+	if _, err := io.WriteString(out, `COMMENT ON SCHEMA "`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, schema.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `" IS '`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, escapeSingleQuote(schema.Comment)); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `';`); err != nil {
+		return err
+	}
+	_, err := io.WriteString(out, "\n\n")
+	return err
+}
+
+func writeTableCommentSDL(out io.Writer, schemaName string, table *storepb.TableMetadata) error {
+	if _, err := io.WriteString(out, `COMMENT ON TABLE "`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, schemaName); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, table.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `" IS '`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, escapeSingleQuote(table.Comment)); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `';`); err != nil {
+		return err
+	}
+	_, err := io.WriteString(out, "\n\n")
+	return err
+}
+
+func writeColumnCommentSDL(out io.Writer, schemaName, tableName string, column *storepb.ColumnMetadata) error {
+	if _, err := io.WriteString(out, `COMMENT ON COLUMN "`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, schemaName); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, tableName); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, column.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `" IS '`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, escapeSingleQuote(column.Comment)); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `';`); err != nil {
+		return err
+	}
+	_, err := io.WriteString(out, "\n\n")
+	return err
+}
+
+func writeViewCommentSDL(out io.Writer, schemaName string, view *storepb.ViewMetadata) error {
+	if _, err := io.WriteString(out, `COMMENT ON VIEW "`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, schemaName); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, view.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `" IS '`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, escapeSingleQuote(view.Comment)); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `';`); err != nil {
+		return err
+	}
+	_, err := io.WriteString(out, "\n\n")
+	return err
+}
+
+func writeFunctionCommentSDL(out io.Writer, schemaName string, function *storepb.FunctionMetadata) error {
+	if _, err := io.WriteString(out, `COMMENT ON FUNCTION "`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, schemaName); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, function.Signature); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `" IS '`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, escapeSingleQuote(function.Comment)); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `';`); err != nil {
+		return err
+	}
+	_, err := io.WriteString(out, "\n\n")
+	return err
+}
+
+func writeSequenceCommentSDL(out io.Writer, schemaName string, sequence *storepb.SequenceMetadata) error {
+	if _, err := io.WriteString(out, `COMMENT ON SEQUENCE "`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, schemaName); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, sequence.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `" IS '`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, escapeSingleQuote(sequence.Comment)); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `';`); err != nil {
+		return err
+	}
+	_, err := io.WriteString(out, "\n\n")
+	return err
+}
+
+func writeIndexCommentSDL(out io.Writer, schemaName string, index *storepb.IndexMetadata) error {
+	if _, err := io.WriteString(out, `COMMENT ON INDEX "`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, schemaName); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, index.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `" IS '`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, escapeSingleQuote(index.Comment)); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `';`); err != nil {
+		return err
+	}
+	_, err := io.WriteString(out, "\n\n")
+	return err
 }
