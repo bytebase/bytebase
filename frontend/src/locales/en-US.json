@@ -608,7 +608,7 @@
           "days": "Day(s)"
         },
         "inactive-timeout": {
-          "self": "Inactive timeout",
+          "self": "Inactive session timeout",
           "description": "The session expiration time if no activity is detected for the user. The users will be forced to log out when they reach the limit.",
           "hours": "Hour(s)"
         },
