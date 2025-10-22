@@ -3,14 +3,13 @@ package store
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"slices"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -72,32 +71,7 @@ type TaskRunStatusPatch struct {
 
 // ListTaskRunsV2 lists task runs.
 func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([]*TaskRunMessage, error) {
-	where, args := []string{"TRUE"}, []any{}
-	if v := find.UID; v != nil {
-		where, args = append(where, fmt.Sprintf("task_run.id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.UIDs; v != nil {
-		where, args = append(where, fmt.Sprintf("task_run.id = ANY($%d)", len(args)+1)), append(args, *v)
-	}
-	if v := find.TaskUID; v != nil {
-		where, args = append(where, fmt.Sprintf("task_run.task_id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.Environment; v != nil {
-		where, args = append(where, fmt.Sprintf("task.environment = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.PipelineUID; v != nil {
-		where, args = append(where, fmt.Sprintf("task.pipeline_id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.Status; v != nil {
-		list := []string{}
-		for _, status := range *v {
-			list = append(list, fmt.Sprintf("$%d", len(args)+1))
-			args = append(args, status.String())
-		}
-		where = append(where, fmt.Sprintf("task_run.status in (%s)", strings.Join(list, ",")))
-	}
-
-	rows, err := s.GetDB().QueryContext(ctx, fmt.Sprintf(`
+	q := qb.Q().Space(`
 		SELECT
 			task_run.id,
 			task_run.creator_id,
@@ -117,10 +91,40 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 		LEFT JOIN task ON task.id = task_run.task_id
 		LEFT JOIN pipeline ON pipeline.id = task.pipeline_id
 		LEFT JOIN project ON project.resource_id = pipeline.project
-		WHERE %s
-		ORDER BY task_run.id ASC`, strings.Join(where, " AND ")),
-		args...,
-	)
+		WHERE TRUE
+	`)
+
+	if v := find.UID; v != nil {
+		q.And("task_run.id = ?", *v)
+	}
+	if v := find.UIDs; v != nil {
+		q.And("task_run.id = ANY(?)", *v)
+	}
+	if v := find.TaskUID; v != nil {
+		q.And("task_run.task_id = ?", *v)
+	}
+	if v := find.Environment; v != nil {
+		q.And("task.environment = ?", *v)
+	}
+	if v := find.PipelineUID; v != nil {
+		q.And("task.pipeline_id = ?", *v)
+	}
+	if v := find.Status; v != nil {
+		var statusStrings []string
+		for _, status := range *v {
+			statusStrings = append(statusStrings, status.String())
+		}
+		q.And("task_run.status = ANY(?)", statusStrings)
+	}
+
+	q.Space("ORDER BY task_run.id ASC")
+
+	sql, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
+	rows, err := s.GetDB().QueryContext(ctx, sql, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -213,10 +217,14 @@ func (s *Store) UpdateTaskRunStatus(ctx context.Context, patch *TaskRunStatusPat
 	}
 
 	// Get the pipeline ID for cache invalidation
+	q := qb.Q().Space("SELECT pipeline_id FROM task WHERE id = ?", taskRun.TaskUID)
+	sql, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
 	var pipelineID int
-	if err := tx.QueryRowContext(ctx, `
-		SELECT pipeline_id FROM task WHERE id = $1
-	`, taskRun.TaskUID).Scan(&pipelineID); err != nil {
+	if err := tx.QueryRowContext(ctx, sql, args...).Scan(&pipelineID); err != nil {
 		return nil, errors.Wrapf(err, "failed to get pipeline ID for task %d", taskRun.TaskUID)
 	}
 
@@ -232,13 +240,20 @@ func (s *Store) UpdateTaskRunStatus(ctx context.Context, patch *TaskRunStatusPat
 
 func (s *Store) UpdateTaskRunStartAt(ctx context.Context, taskRunID int) error {
 	// Get the pipeline ID for cache invalidation
-	var pipelineID int
-	if err := s.GetDB().QueryRowContext(ctx, `
+	q := qb.Q().Space(`
 		UPDATE task_run
 		SET started_at = now(), updated_at = now()
-		WHERE id = $1
+		WHERE id = ?
 		RETURNING (SELECT pipeline_id FROM task WHERE task.id = task_run.task_id)
-	`, taskRunID).Scan(&pipelineID); err != nil {
+	`, taskRunID)
+
+	sql, args, err := q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+
+	var pipelineID int
+	if err := s.GetDB().QueryRowContext(ctx, sql, args...).Scan(&pipelineID); err != nil {
 		return errors.Wrapf(err, "failed to update task run start at")
 	}
 
@@ -294,16 +309,21 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creatorID int, create
 }
 
 func (*Store) getTaskNextAttempt(ctx context.Context, txn *sql.Tx, taskIDs []int) ([]int, error) {
-	query := `
-	WITH tasks AS (
-		SELECT id FROM unnest(CAST($1 AS INTEGER[])) AS id
-	)
-	SELECT
-		(SELECT COALESCE(MAX(attempt)+1, 0) FROM task_run WHERE task_run.task_id = tasks.id)
-	FROM tasks ORDER BY tasks.id ASC;
-	`
+	q := qb.Q().Space(`
+		WITH tasks AS (
+			SELECT id FROM unnest(CAST(? AS INTEGER[])) AS id
+		)
+		SELECT
+			(SELECT COALESCE(MAX(attempt)+1, 0) FROM task_run WHERE task_run.task_id = tasks.id)
+		FROM tasks ORDER BY tasks.id ASC
+	`, taskIDs)
 
-	rows, err := txn.QueryContext(ctx, query, taskIDs)
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
+	rows, err := txn.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to query")
 	}
@@ -337,7 +357,7 @@ func (*Store) createPendingTaskRunsTx(ctx context.Context, txn *sql.Tx, creatorI
 		runAts = append(runAts, create.RunAt)
 	}
 
-	query := `
+	q := qb.Q().Space(`
 		INSERT INTO task_run (
 			creator_id,
 			task_id,
@@ -346,40 +366,46 @@ func (*Store) createPendingTaskRunsTx(ctx context.Context, txn *sql.Tx, creatorI
 			attempt,
 			status
 		) SELECT
-			$1,
-			unnest(CAST($2 AS INTEGER[])),
-			unnest(CAST($3 AS INTEGER[])),
-			unnest(CAST($4 AS TIMESTAMPTZ[])),
-			unnest(CAST($5 AS INTEGER[])),
-			$6
-	`
-	if _, err := txn.ExecContext(ctx, query,
-		creatorID,
-		taskUIDs,
-		sheetUIDs,
-		runAts,
-		attempts,
-		storepb.TaskRun_PENDING.String(),
-	); err != nil {
+			?,
+			unnest(CAST(? AS INTEGER[])),
+			unnest(CAST(? AS INTEGER[])),
+			unnest(CAST(? AS TIMESTAMPTZ[])),
+			unnest(CAST(? AS INTEGER[])),
+			?
+	`, creatorID, taskUIDs, sheetUIDs, runAts, attempts, storepb.TaskRun_PENDING.String())
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+
+	if _, err := txn.ExecContext(ctx, query, args...); err != nil {
 		return errors.Wrapf(err, "failed to create pending task runs")
 	}
 	return nil
 }
 
 func (*Store) checkTaskRunsExist(ctx context.Context, txn *sql.Tx, taskIDs []int, statuses []storepb.TaskRun_Status) (bool, error) {
-	query := `
-	SELECT EXISTS (
-		SELECT 1
-		FROM task_run
-		WHERE task_run.task_id = ANY($1) AND task_run.status = ANY($2)
-	)`
-
-	var exist bool
 	var statusStrings []string
 	for _, status := range statuses {
 		statusStrings = append(statusStrings, status.String())
 	}
-	if err := txn.QueryRowContext(ctx, query, taskIDs, statusStrings).Scan(&exist); err != nil {
+
+	q := qb.Q().Space(`
+		SELECT EXISTS (
+			SELECT 1
+			FROM task_run
+			WHERE task_run.task_id = ANY(?) AND task_run.status = ANY(?)
+		)
+	`, taskIDs, statusStrings)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to build sql")
+	}
+
+	var exist bool
+	if err := txn.QueryRowContext(ctx, query, args...).Scan(&exist); err != nil {
 		return false, errors.Wrapf(err, "failed to query if task runs exist")
 	}
 
@@ -388,32 +414,42 @@ func (*Store) checkTaskRunsExist(ctx context.Context, txn *sql.Tx, taskIDs []int
 
 // patchTaskRunStatusImpl updates a taskRun status. Returns the new state of the taskRun after update.
 func (*Store) patchTaskRunStatusImpl(ctx context.Context, txn *sql.Tx, patch *TaskRunStatusPatch) (*TaskRunMessage, error) {
-	set, args := []string{"updated_at = $1", "status = $2"}, []any{time.Now(), patch.Status.String()}
+	q := qb.Q().Space("UPDATE task_run SET")
+	first := true
+
+	q.Space("updated_at = ?, status = ?", time.Now(), patch.Status.String())
+	first = false
+
 	if v := patch.Code; v != nil {
-		set, args = append(set, fmt.Sprintf("code = $%d", len(args)+1)), append(args, *v)
+		if !first {
+			q.Space(",")
+		}
+		q.Space("code = ?", *v)
+		first = false
 	}
 	if v := patch.Result; v != nil {
 		result := "{}"
 		if *v != "" {
 			result = *v
 		}
-		set, args = append(set, fmt.Sprintf("result = $%d", len(args)+1)), append(args, result)
+		if !first {
+			q.Space(",")
+		}
+		q.Space("result = ?", result)
+		first = false
 	}
 
-	// Build WHERE clause.
-	where := []string{"TRUE"}
-	where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, patch.ID)
+	q.Space("WHERE id = ?", patch.ID)
+	q.Space("RETURNING id, creator_id, created_at, updated_at, task_id, status, code, result")
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
 
 	var taskRun TaskRunMessage
 	var statusString string
-	if err := txn.QueryRowContext(ctx, `
-		UPDATE task_run
-		SET `+strings.Join(set, ", ")+`
-		WHERE `+strings.Join(where, " AND ")+`
-		RETURNING id, creator_id, created_at, updated_at, task_id, status, code, result
-	`,
-		args...,
-	).Scan(
+	if err := txn.QueryRowContext(ctx, query, args...).Scan(
 		&taskRun.ID,
 		&taskRun.CreatorID,
 		&taskRun.CreatedAt,
@@ -457,27 +493,7 @@ func (s *Store) ListTaskRun(ctx context.Context, find *TaskRunFind) ([]*TaskRunM
 }
 
 func (*Store) findTaskRunImpl(ctx context.Context, txn *sql.Tx, find *TaskRunFind) ([]*TaskRunMessage, error) {
-	where, args := []string{"TRUE"}, []any{}
-	if v := find.TaskID; v != nil {
-		where, args = append(where, fmt.Sprintf("task_run.task_id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.Environment; v != nil {
-		where, args = append(where, fmt.Sprintf("task.environment = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.PipelineID; v != nil {
-		where, args = append(where, fmt.Sprintf("task.pipeline_id = $%d", len(args)+1)), append(args, *v)
-	}
-
-	if v := find.StatusList; v != nil {
-		list := []string{}
-		for _, status := range *v {
-			list = append(list, fmt.Sprintf("$%d", len(args)+1))
-			args = append(args, status)
-		}
-		where = append(where, fmt.Sprintf("task_run.status in (%s)", strings.Join(list, ",")))
-	}
-
-	rows, err := txn.QueryContext(ctx, fmt.Sprintf(`
+	q := qb.Q().Space(`
 		SELECT
 			task_run.id,
 			task_run.creator_id,
@@ -491,10 +507,34 @@ func (*Store) findTaskRunImpl(ctx context.Context, txn *sql.Tx, find *TaskRunFin
 			task.environment
 		FROM task_run
 		JOIN task ON task.id = task_run.task_id
-		WHERE %s
-		ORDER BY task_run.id ASC`, strings.Join(where, " AND ")),
-		args...,
-	)
+		WHERE TRUE
+	`)
+
+	if v := find.TaskID; v != nil {
+		q.And("task_run.task_id = ?", *v)
+	}
+	if v := find.Environment; v != nil {
+		q.And("task.environment = ?", *v)
+	}
+	if v := find.PipelineID; v != nil {
+		q.And("task.pipeline_id = ?", *v)
+	}
+	if v := find.StatusList; v != nil {
+		var statusValues []any
+		for _, status := range *v {
+			statusValues = append(statusValues, status)
+		}
+		q.And("task_run.status = ANY(?)", statusValues)
+	}
+
+	q.Space("ORDER BY task_run.id ASC")
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
+	rows, err := txn.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -534,12 +574,19 @@ func (s *Store) BatchCancelTaskRuns(ctx context.Context, taskRunIDs []int) error
 	}
 
 	// Get affected pipeline IDs for cache invalidation
-	rows, err := s.GetDB().QueryContext(ctx, `
+	q := qb.Q().Space(`
 		SELECT DISTINCT task.pipeline_id
 		FROM task_run
 		JOIN task ON task.id = task_run.task_id
-		WHERE task_run.id = ANY($1)
+		WHERE task_run.id = ANY(?)
 	`, taskRunIDs)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+
+	rows, err := s.GetDB().QueryContext(ctx, query, args...)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get pipeline IDs")
 	}
@@ -557,11 +604,18 @@ func (s *Store) BatchCancelTaskRuns(ctx context.Context, taskRunIDs []int) error
 		return errors.Wrapf(err, "failed to iterate pipeline IDs")
 	}
 
-	query := `
+	q2 := qb.Q().Space(`
 		UPDATE task_run
-		SET status = $1, updated_at = now()
-		WHERE id = ANY($2)`
-	if _, err := s.GetDB().ExecContext(ctx, query, storepb.TaskRun_CANCELED.String(), taskRunIDs); err != nil {
+		SET status = ?, updated_at = now()
+		WHERE id = ANY(?)
+	`, storepb.TaskRun_CANCELED.String(), taskRunIDs)
+
+	query2, args2, err := q2.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+
+	if _, err := s.GetDB().ExecContext(ctx, query2, args2...); err != nil {
 		return err
 	}
 
