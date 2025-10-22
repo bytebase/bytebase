@@ -3,12 +3,11 @@ package store
 import (
 	"context"
 	"database/sql"
-	"fmt"
-	"strings"
 
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -266,14 +265,17 @@ func (s *Store) GetSecret(ctx context.Context) (string, error) {
 
 // UpsertSettingV2 upserts the setting by name.
 func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage) (*SettingMessage, error) {
-	fields := []string{"name", "value"}
-	updateFields := []string{"value = EXCLUDED.value"}
-	valuePlaceholders, args := []string{"$1", "$2"}, []any{update.Name.String(), update.Value}
+	q := qb.Q().Space(`
+		INSERT INTO setting (name, value)
+		VALUES (?, ?)
+		ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value
+		RETURNING name, value
+	`, update.Name.String(), update.Value)
 
-	query := `INSERT INTO setting (` + strings.Join(fields, ", ") + `) 
-		VALUES (` + strings.Join(valuePlaceholders, ", ") + `) 
-		ON CONFLICT (name) DO UPDATE SET ` + strings.Join(updateFields, ", ") + `
-		RETURNING name, value`
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
@@ -328,12 +330,17 @@ func (s *Store) CreateSettingIfNotExistV2(ctx context.Context, create *SettingMe
 		return settings[0], false, nil
 	}
 
-	fields := []string{"name", "value"}
-	valuesPlaceholders, args := []string{"$1", "$2"}, []any{create.Name.String(), create.Value}
+	q := qb.Q().Space(`
+		INSERT INTO setting (name, value)
+		VALUES (?, ?)
+		RETURNING name, value
+	`, create.Name.String(), create.Value)
 
-	query := `INSERT INTO setting (` + strings.Join(fields, ",") + `)
-		VALUES (` + strings.Join(valuesPlaceholders, ",") + `)
-		RETURNING name, value`
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, false, errors.Wrapf(err, "failed to build sql")
+	}
+
 	var setting SettingMessage
 	var nameString string
 	if err := tx.QueryRowContext(ctx, query, args...).Scan(
@@ -357,13 +364,19 @@ func (s *Store) CreateSettingIfNotExistV2(ctx context.Context, create *SettingMe
 
 // DeleteSettingV2 deletes a setting by the name.
 func (s *Store) DeleteSettingV2(ctx context.Context, name storepb.SettingName) error {
+	q := qb.Q().Space("DELETE FROM setting WHERE name = ?", name.String())
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(err, "failed to begin transaction")
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.ExecContext(ctx, `DELETE FROM setting WHERE name = $1`, name.String()); err != nil {
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return err
 	}
 
@@ -376,16 +389,21 @@ func (s *Store) DeleteSettingV2(ctx context.Context, name storepb.SettingName) e
 }
 
 func listSettingV2Impl(ctx context.Context, txn *sql.Tx, find *FindSettingMessage) ([]*SettingMessage, error) {
-	where, args := []string{"TRUE"}, []any{}
-	if v := find.Name; v != nil {
-		where, args = append(where, fmt.Sprintf("name = $%d", len(args)+1)), append(args, v.String())
-	}
-	rows, err := txn.QueryContext(ctx, `
+	q := qb.Q().Space(`
 		SELECT
 			name,
 			value
 		FROM setting
-		WHERE `+strings.Join(where, " AND "), args...)
+		WHERE TRUE
+	`)
+	if v := find.Name; v != nil {
+		q.And("name = ?", v.String())
+	}
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+	rows, err := txn.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
