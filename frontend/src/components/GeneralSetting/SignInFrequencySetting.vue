@@ -59,12 +59,7 @@
             class="w-24 mr-4"
             :disabled="!allowChangeSetting"
           />
-          <NRadioGroup :value="'HOURS'" :disabled="!allowChangeSetting">
-            <NRadio
-              :value="'HOURS'"
-              :label="$t('settings.general.workspace.inactive-timeout.hours')"
-            />
-          </NRadioGroup>
+          {{ $t("settings.general.workspace.inactive-timeout.hours") }}
         </div>
       </template>
       <span class="text-sm text-gray-400 -translate-y-2">
