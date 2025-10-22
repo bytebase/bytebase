@@ -3136,6 +3136,14 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 			}
 			buf.WriteString(";\n")
 
+			// Add sequence comment if present
+			if len(sequence.Comment) > 0 {
+				buf.WriteString("\n")
+				if err := writeSequenceCommentSDL(&buf, schemaName, sequence); err != nil {
+					return nil, errors.Wrapf(err, "failed to generate sequence comment for %s.%s", schemaName, sequence.Name)
+				}
+			}
+
 			// Add ALTER SEQUENCE OWNED BY for sequences with owners
 			if sequence.OwnerTable != "" && sequence.OwnerColumn != "" {
 				buf.WriteString("\n")
@@ -3167,9 +3175,37 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 			}
 			buf.WriteString(";\n\n")
 
+			// Write table comment if present
+			if len(table.Comment) > 0 {
+				if err := writeTableCommentSDL(&buf, schemaName, table); err != nil {
+					return nil, errors.Wrapf(err, "failed to generate table comment for %s.%s", schemaName, table.Name)
+				}
+			}
+
+			// Write column comments if present
+			for _, column := range table.Columns {
+				if len(column.Comment) > 0 {
+					if err := writeColumnCommentSDL(&buf, schemaName, table.Name, column); err != nil {
+						return nil, errors.Wrapf(err, "failed to generate column comment for %s.%s.%s", schemaName, table.Name, column.Name)
+					}
+				}
+			}
+
 			// Write CREATE INDEX statements for non-constraint indexes
 			if err := writeIndexesSDL(&buf, schemaName, table); err != nil {
 				return nil, errors.Wrapf(err, "failed to generate indexes SDL for %s.%s", schemaName, table.Name)
+			}
+
+			// Write index comments if present
+			for _, index := range table.Indexes {
+				// Only write comment for standalone indexes (not primary key or unique constraint indexes)
+				if !index.Primary && !index.Unique {
+					if len(index.Comment) > 0 {
+						if err := writeIndexCommentSDL(&buf, schemaName, index); err != nil {
+							return nil, errors.Wrapf(err, "failed to generate index comment for %s.%s", schemaName, index.Name)
+						}
+					}
+				}
 			}
 
 			files = append(files, schema.File{
@@ -3188,9 +3224,19 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 			if err := writeViewSDL(&buf, schemaName, view); err != nil {
 				return nil, errors.Wrapf(err, "failed to generate view SDL for %s.%s", schemaName, view.Name)
 			}
+			buf.WriteString(";\n")
+
+			// Write view comment if present
+			if len(view.Comment) > 0 {
+				buf.WriteString("\n")
+				if err := writeViewCommentSDL(&buf, schemaName, view); err != nil {
+					return nil, errors.Wrapf(err, "failed to generate view comment for %s.%s", schemaName, view.Name)
+				}
+			}
+
 			files = append(files, schema.File{
 				Name:    fmt.Sprintf("schemas/%s/views/%s.sql", schemaName, view.Name),
-				Content: buf.String() + ";\n",
+				Content: buf.String(),
 			})
 		}
 
@@ -3204,9 +3250,19 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 			if err := writeFunctionSDL(&buf, schemaName, function); err != nil {
 				return nil, errors.Wrapf(err, "failed to generate function SDL for %s.%s", schemaName, function.Name)
 			}
+			buf.WriteString(";\n")
+
+			// Write function comment if present
+			if len(function.Comment) > 0 {
+				buf.WriteString("\n")
+				if err := writeFunctionCommentSDL(&buf, schemaName, function); err != nil {
+					return nil, errors.Wrapf(err, "failed to generate function comment for %s.%s", schemaName, function.Name)
+				}
+			}
+
 			files = append(files, schema.File{
 				Name:    fmt.Sprintf("schemas/%s/functions/%s.sql", schemaName, function.Name),
-				Content: buf.String() + ";\n",
+				Content: buf.String(),
 			})
 		}
 	}

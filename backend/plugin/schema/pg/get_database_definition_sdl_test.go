@@ -1521,3 +1521,118 @@ func TestGetDatabaseDefinitionSDLFormat_WithCommentsEscaping(t *testing.T) {
 	_, err = pgparser.ParsePostgreSQL(result)
 	require.NoError(t, err, "Generated SQL should be parseable by PostgreSQL parser")
 }
+
+func TestGetMultiFileDatabaseDefinition_WithComments(t *testing.T) {
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name:    "app_schema",
+				Comment: "Application schema",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name:    "products",
+						Comment: "Product catalog",
+						Columns: []*storepb.ColumnMetadata{
+							{
+								Name:     "id",
+								Type:     "INTEGER",
+								Nullable: false,
+								Comment:  "Product ID",
+							},
+							{
+								Name:     "name",
+								Type:     "TEXT",
+								Nullable: false,
+								Comment:  "Product name",
+							},
+						},
+						Indexes: []*storepb.IndexMetadata{
+							{
+								Name:        "idx_products_name",
+								Expressions: []string{"name"},
+								Unique:      false,
+								Primary:     false,
+								Comment:     "Index for product search",
+							},
+						},
+					},
+				},
+				Views: []*storepb.ViewMetadata{
+					{
+						Name:       "active_products",
+						Definition: "SELECT id, name FROM app_schema.products WHERE active = true",
+						Comment:    "View of active products",
+					},
+				},
+				Functions: []*storepb.FunctionMetadata{
+					{
+						Name:       "count_products",
+						Signature:  "count_products()",
+						Definition: "CREATE FUNCTION app_schema.count_products() RETURNS INTEGER AS $$ BEGIN RETURN (SELECT COUNT(*) FROM app_schema.products); END; $$ LANGUAGE plpgsql",
+						Comment:    "Returns product count",
+					},
+				},
+				Sequences: []*storepb.SequenceMetadata{
+					{
+						Name:      "order_seq",
+						DataType:  "bigint",
+						Start:     "1",
+						Increment: "1",
+						MinValue:  "1",
+						MaxValue:  "9223372036854775807",
+						Cycle:     false,
+						CacheSize: "1",
+						Comment:   "Sequence for orders",
+					},
+				},
+			},
+		},
+	}
+
+	ctx := schema.GetDefinitionContext{
+		SDLFormat: true,
+	}
+
+	result, err := GetMultiFileDatabaseDefinition(ctx, metadata)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	// Build a map for easier testing
+	fileMap := make(map[string]string)
+	for _, file := range result.Files {
+		fileMap[file.Name] = file.Content
+	}
+
+	// Verify sequence file with comment
+	sequenceFile, ok := fileMap["schemas/app_schema/sequences/order_seq.sql"]
+	require.True(t, ok, "sequence file should exist")
+	assert.Contains(t, sequenceFile, `CREATE SEQUENCE "app_schema"."order_seq"`)
+	assert.Contains(t, sequenceFile, `COMMENT ON SEQUENCE "app_schema"."order_seq" IS 'Sequence for orders';`)
+
+	// Verify table file with comments
+	tableFile, ok := fileMap["schemas/app_schema/tables/products.sql"]
+	require.True(t, ok, "table file should exist")
+	assert.Contains(t, tableFile, `CREATE TABLE "app_schema"."products"`)
+	assert.Contains(t, tableFile, `COMMENT ON TABLE "app_schema"."products" IS 'Product catalog';`)
+	assert.Contains(t, tableFile, `COMMENT ON COLUMN "app_schema"."products"."id" IS 'Product ID';`)
+	assert.Contains(t, tableFile, `COMMENT ON COLUMN "app_schema"."products"."name" IS 'Product name';`)
+	assert.Contains(t, tableFile, `COMMENT ON INDEX "app_schema"."idx_products_name" IS 'Index for product search';`)
+
+	// Verify view file with comment
+	viewFile, ok := fileMap["schemas/app_schema/views/active_products.sql"]
+	require.True(t, ok, "view file should exist")
+	assert.Contains(t, viewFile, `CREATE VIEW "app_schema"."active_products"`)
+	assert.Contains(t, viewFile, `COMMENT ON VIEW "app_schema"."active_products" IS 'View of active products';`)
+
+	// Verify function file with comment
+	functionFile, ok := fileMap["schemas/app_schema/functions/count_products.sql"]
+	require.True(t, ok, "function file should exist")
+	assert.Contains(t, functionFile, `CREATE FUNCTION app_schema.count_products()`)
+	assert.Contains(t, functionFile, `COMMENT ON FUNCTION "app_schema"."count_products()" IS 'Returns product count';`)
+
+	// Validate that each file's SQL can be parsed
+	for fileName, content := range fileMap {
+		_, err := pgparser.ParsePostgreSQL(content)
+		require.NoError(t, err, "SQL in file %s should be parseable by PostgreSQL parser", fileName)
+	}
+}
