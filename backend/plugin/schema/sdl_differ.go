@@ -5,13 +5,15 @@ import (
 )
 
 type SDLChunk struct {
-	Identifier      string
-	ASTNode         antlr.ParserRuleContext   // The parsed AST node for this chunk (e.g., CREATE SEQUENCE)
-	AlterStatements []antlr.ParserRuleContext // Additional ALTER statements for this object (e.g., ALTER SEQUENCE OWNED BY)
+	Identifier        string
+	ASTNode           antlr.ParserRuleContext   // The parsed AST node for this chunk (e.g., CREATE SEQUENCE)
+	AlterStatements   []antlr.ParserRuleContext // Additional ALTER statements for this object (e.g., ALTER SEQUENCE OWNED BY)
+	CommentStatements []antlr.ParserRuleContext // COMMENT ON statements for this object
 }
 
 // GetText extracts text from the AST node using its own token stream
 // For chunks with ALTER statements, it combines the main statement with all ALTER statements
+// For chunks with COMMENT statements, it combines them as well
 func (c *SDLChunk) GetText() string {
 	if c.ASTNode == nil {
 		return ""
@@ -20,12 +22,52 @@ func (c *SDLChunk) GetText() string {
 	// Extract text from the main AST node (e.g., CREATE SEQUENCE)
 	mainText := extractTextFromNode(c.ASTNode)
 
+	// Collect all parts: main, ALTER statements, and COMMENT statements
+	parts := []string{mainText}
+
+	// Add ALTER statements
+	for _, alterNode := range c.AlterStatements {
+		alterText := extractTextFromNode(alterNode)
+		if alterText != "" {
+			parts = append(parts, alterText)
+		}
+	}
+
+	// Add COMMENT statements
+	for _, commentNode := range c.CommentStatements {
+		commentText := extractTextFromNode(commentNode)
+		if commentText != "" {
+			parts = append(parts, commentText)
+		}
+	}
+
+	// Join with double newline to match SDL format
+	result := ""
+	for i, part := range parts {
+		if i > 0 {
+			result += "\n\n"
+		}
+		result += part
+	}
+	return result
+}
+
+// GetTextWithoutComments extracts text excluding COMMENT ON statements
+// This is used for comparing object definitions without considering comments
+func (c *SDLChunk) GetTextWithoutComments() string {
+	if c.ASTNode == nil {
+		return ""
+	}
+
+	// Extract text from the main AST node
+	mainText := extractTextFromNode(c.ASTNode)
+
 	// If there are no ALTER statements, return just the main text
 	if len(c.AlterStatements) == 0 {
 		return mainText
 	}
 
-	// Combine main statement with ALTER statements
+	// Combine main statement with ALTER statements (excluding COMMENT statements)
 	parts := []string{mainText}
 	for _, alterNode := range c.AlterStatements {
 		alterText := extractTextFromNode(alterNode)
@@ -80,6 +122,13 @@ type SDLChunks struct {
 	Functions map[string]*SDLChunk // key: function name/identifier
 	Indexes   map[string]*SDLChunk // key: index name/identifier
 	Sequences map[string]*SDLChunk // key: sequence name/identifier
+	Schemas   map[string]*SDLChunk // key: schema name/identifier
+
+	// Column comments: map[schemaName.tableName][columnName] -> COMMENT ON COLUMN AST node
+	ColumnComments map[string]map[string]antlr.ParserRuleContext
+
+	// Index comments for table-level indexes: map[schemaName.tableName][indexName] -> COMMENT ON INDEX AST node
+	IndexComments map[string]map[string]antlr.ParserRuleContext
 }
 
 type SDLDiff struct {
