@@ -222,6 +222,110 @@ func TestSequenceSDLDiff(t *testing.T) {
 			expectedSequenceChanges: 0, // SERIAL sequences are handled at table level, not explicit sequence level
 			expectedActions:         []schema.MetadataDiffAction{},
 		},
+		{
+			name: "Add ALTER SEQUENCE OWNED BY to existing sequence",
+			previousSDL: `
+				CREATE TABLE orders (
+					id BIGINT PRIMARY KEY,
+					order_number BIGINT NOT NULL
+				);
+
+				CREATE SEQUENCE custom_seq AS bigint START WITH 100 INCREMENT BY 5 MINVALUE 100 MAXVALUE 9223372036854775807 NO CYCLE CACHE 10;
+			`,
+			currentSDL: `
+				CREATE TABLE orders (
+					id BIGINT PRIMARY KEY,
+					order_number BIGINT NOT NULL
+				);
+
+				CREATE SEQUENCE custom_seq AS bigint START WITH 100 INCREMENT BY 5 MINVALUE 100 MAXVALUE 9223372036854775807 NO CYCLE CACHE 10;
+
+				ALTER SEQUENCE custom_seq OWNED BY orders.order_number;
+			`,
+			expectedSequenceChanges: 1, // Only ALTER (ownership changed)
+			expectedActions:         []schema.MetadataDiffAction{schema.MetadataDiffActionAlter},
+		},
+		{
+			name: "Modify ALTER SEQUENCE OWNED BY (change owner)",
+			previousSDL: `
+				CREATE TABLE orders (
+					id BIGINT PRIMARY KEY,
+					order_number BIGINT NOT NULL
+				);
+				CREATE TABLE products (
+					id BIGINT PRIMARY KEY,
+					product_code BIGINT NOT NULL
+				);
+
+				CREATE SEQUENCE custom_seq AS bigint START WITH 100 INCREMENT BY 5 NO CYCLE;
+
+				ALTER SEQUENCE custom_seq OWNED BY orders.order_number;
+			`,
+			currentSDL: `
+				CREATE TABLE orders (
+					id BIGINT PRIMARY KEY,
+					order_number BIGINT NOT NULL
+				);
+				CREATE TABLE products (
+					id BIGINT PRIMARY KEY,
+					product_code BIGINT NOT NULL
+				);
+
+				CREATE SEQUENCE custom_seq AS bigint START WITH 100 INCREMENT BY 5 NO CYCLE;
+
+				ALTER SEQUENCE custom_seq OWNED BY products.product_code;
+			`,
+			expectedSequenceChanges: 1, // Only ALTER (ownership changed)
+			expectedActions:         []schema.MetadataDiffAction{schema.MetadataDiffActionAlter},
+		},
+		{
+			name: "Remove ALTER SEQUENCE OWNED BY",
+			previousSDL: `
+				CREATE TABLE orders (
+					id BIGINT PRIMARY KEY,
+					order_number BIGINT NOT NULL
+				);
+
+				CREATE SEQUENCE custom_seq AS bigint START WITH 100 INCREMENT BY 5 NO CYCLE;
+
+				ALTER SEQUENCE custom_seq OWNED BY orders.order_number;
+			`,
+			currentSDL: `
+				CREATE TABLE orders (
+					id BIGINT PRIMARY KEY,
+					order_number BIGINT NOT NULL
+				);
+
+				CREATE SEQUENCE custom_seq AS bigint START WITH 100 INCREMENT BY 5 NO CYCLE;
+			`,
+			expectedSequenceChanges: 1, // Only ALTER (ownership removed)
+			expectedActions:         []schema.MetadataDiffAction{schema.MetadataDiffActionAlter},
+		},
+		{
+			name: "No change when ALTER SEQUENCE OWNED BY is identical",
+			previousSDL: `
+				CREATE TABLE orders (
+					id BIGINT PRIMARY KEY,
+					order_number BIGINT NOT NULL
+				);
+
+				CREATE SEQUENCE custom_seq AS bigint START WITH 100 INCREMENT BY 5 NO CYCLE;
+
+				ALTER SEQUENCE custom_seq OWNED BY orders.order_number;
+			`,
+			currentSDL: `
+				CREATE TABLE orders (
+					id BIGINT PRIMARY KEY,
+					order_number BIGINT NOT NULL
+				);
+
+				CREATE SEQUENCE custom_seq AS bigint START WITH 100 INCREMENT BY 5 NO CYCLE;
+
+				ALTER SEQUENCE custom_seq OWNED BY orders.order_number;
+			`,
+			expectedSequenceChanges: 0, // No changes
+			expectedActions:         []schema.MetadataDiffAction{},
+		},
 	}
 
 	for _, tt := range tests {
@@ -261,6 +365,13 @@ func TestSequenceSDLDiff(t *testing.T) {
 						"Sequence diff %d should have OldASTNode for DROP action", i)
 					assert.Nil(t, seqDiff.NewASTNode,
 						"Sequence diff %d should not have NewASTNode for DROP action", i)
+				case schema.MetadataDiffActionAlter:
+					// ALTER action can have either NewASTNode (adding/modifying) or OldASTNode (removing)
+					// but not both and not neither
+					hasNew := seqDiff.NewASTNode != nil
+					hasOld := seqDiff.OldASTNode != nil
+					assert.True(t, hasNew != hasOld,
+						"Sequence diff %d should have exactly one of NewASTNode or OldASTNode for ALTER action", i)
 				default:
 					t.Errorf("Unexpected action %v for sequence diff %d", seqDiff.Action, i)
 				}

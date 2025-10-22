@@ -275,6 +275,120 @@ func TestMultipleSequencesHandling(t *testing.T) {
 	assert.Equal(t, 2, sequenceCount, "Should create both sequences")
 }
 
+func TestSequenceOwnershipMigrationIntegration(t *testing.T) {
+	tests := []struct {
+		name              string
+		previousSDL       string
+		currentSDL        string
+		expectedMigration string
+		notExpected       string
+	}{
+		{
+			name: "Add ALTER SEQUENCE OWNED BY to existing sequence",
+			previousSDL: `
+				CREATE TABLE orders (
+					id BIGINT PRIMARY KEY,
+					order_number BIGINT NOT NULL
+				);
+
+				CREATE SEQUENCE custom_seq AS bigint START WITH 100 INCREMENT BY 5 MINVALUE 100 MAXVALUE 9223372036854775807 NO CYCLE CACHE 10;
+			`,
+			currentSDL: `
+				CREATE TABLE orders (
+					id BIGINT PRIMARY KEY,
+					order_number BIGINT NOT NULL
+				);
+
+				CREATE SEQUENCE custom_seq AS bigint START WITH 100 INCREMENT BY 5 MINVALUE 100 MAXVALUE 9223372036854775807 NO CYCLE CACHE 10;
+
+				ALTER SEQUENCE custom_seq OWNED BY orders.order_number;
+			`,
+			expectedMigration: "ALTER SEQUENCE custom_seq OWNED BY orders.order_number;",
+			notExpected:       "DROP SEQUENCE",
+		},
+		{
+			name: "Modify ALTER SEQUENCE OWNED BY (change owner)",
+			previousSDL: `
+				CREATE TABLE orders (
+					id BIGINT PRIMARY KEY,
+					order_number BIGINT NOT NULL
+				);
+				CREATE TABLE products (
+					id BIGINT PRIMARY KEY,
+					product_code BIGINT NOT NULL
+				);
+
+				CREATE SEQUENCE custom_seq AS bigint START WITH 100 INCREMENT BY 5 NO CYCLE;
+
+				ALTER SEQUENCE custom_seq OWNED BY orders.order_number;
+			`,
+			currentSDL: `
+				CREATE TABLE orders (
+					id BIGINT PRIMARY KEY,
+					order_number BIGINT NOT NULL
+				);
+				CREATE TABLE products (
+					id BIGINT PRIMARY KEY,
+					product_code BIGINT NOT NULL
+				);
+
+				CREATE SEQUENCE custom_seq AS bigint START WITH 100 INCREMENT BY 5 NO CYCLE;
+
+				ALTER SEQUENCE custom_seq OWNED BY products.product_code;
+			`,
+			expectedMigration: "ALTER SEQUENCE custom_seq OWNED BY products.product_code;",
+			notExpected:       "DROP SEQUENCE",
+		},
+		{
+			name: "Remove ALTER SEQUENCE OWNED BY",
+			previousSDL: `
+				CREATE TABLE orders (
+					id BIGINT PRIMARY KEY,
+					order_number BIGINT NOT NULL
+				);
+
+				CREATE SEQUENCE custom_seq AS bigint START WITH 100 INCREMENT BY 5 NO CYCLE;
+
+				ALTER SEQUENCE custom_seq OWNED BY orders.order_number;
+			`,
+			currentSDL: `
+				CREATE TABLE orders (
+					id BIGINT PRIMARY KEY,
+					order_number BIGINT NOT NULL
+				);
+
+				CREATE SEQUENCE custom_seq AS bigint START WITH 100 INCREMENT BY 5 NO CYCLE;
+			`,
+			expectedMigration: `ALTER SEQUENCE "public"."custom_seq" OWNED BY NONE;`,
+			notExpected:       "DROP SEQUENCE",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Get SDL diff
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil, nil)
+			require.NoError(t, err)
+			require.NotNil(t, diff)
+
+			// Generate migration SQL
+			migrationSQL, err := generateMigration(diff)
+			require.NoError(t, err)
+			assert.NotEmpty(t, migrationSQL, "Migration SQL should not be empty")
+
+			// Verify expected ALTER SEQUENCE is present
+			assert.Contains(t, migrationSQL, tt.expectedMigration,
+				"Migration should contain expected ALTER SEQUENCE statement")
+
+			// Verify DROP SEQUENCE is not present (we're using ALTER, not DROP+CREATE)
+			if tt.notExpected != "" {
+				assert.NotContains(t, migrationSQL, tt.notExpected,
+					"Migration should not contain DROP SEQUENCE")
+			}
+		})
+	}
+}
+
 // Helper function to check if a string contains a substring (sequence tests)
 func containsSequenceString(s, substr string) bool {
 	return strings.Contains(s, substr)
