@@ -307,3 +307,58 @@ func TestQuery_ErrorHandling(t *testing.T) {
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "nil Query")
 }
+
+func TestQuery_Comma(t *testing.T) {
+	// Build a SET clause with comma separators
+	set := Q()
+	set.Comma("name = ?", "Alice")
+	set.Comma("email = ?", "alice@example.com")
+	set.Comma("active = ?", true)
+
+	sql, args, err := set.ToSQL()
+	require.NoError(t, err)
+	require.Equal(t, "name = $1, email = $2, active = $3", sql)
+	require.Equal(t, []any{"Alice", "alice@example.com", true}, args)
+}
+
+func TestQuery_CommaInUpdate(t *testing.T) {
+	// Realistic UPDATE with conditional SET fields
+	name := "Alice"
+	active := true
+
+	set := Q()
+	if name != "" {
+		set.Comma("name = ?", name)
+	}
+	set.Comma("active = ?", active)
+
+	q := Q().Space("UPDATE users SET ?", set).
+		Space("WHERE id = ?", 123)
+
+	sql, args, err := q.ToSQL()
+	require.NoError(t, err)
+	require.Equal(t, "UPDATE users SET name = $1, active = $2 WHERE id = $3", sql)
+	require.Equal(t, []any{"Alice", true, 123}, args)
+}
+
+func TestQuery_CommaWithNullHandling(t *testing.T) {
+	// UPDATE with NULL assignment
+	projectID := "proj-1"
+	environmentID := "" // Empty string means NULL
+
+	set := Q()
+	set.Comma("project = ?", projectID)
+	if environmentID == "" {
+		set.Comma("environment = NULL")
+	} else {
+		set.Comma("environment = ?", environmentID)
+	}
+
+	q := Q().Space("UPDATE db SET ?", set).
+		Space("WHERE instance = ? AND name = ?", "inst-1", "db-1")
+
+	sql, args, err := q.ToSQL()
+	require.NoError(t, err)
+	require.Equal(t, "UPDATE db SET project = $1, environment = NULL WHERE instance = $2 AND name = $3", sql)
+	require.Equal(t, []any{"proj-1", "inst-1", "db-1"}, args)
+}

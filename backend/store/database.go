@@ -241,33 +241,20 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 
 // UpdateDatabase updates a database.
 func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage) (*DatabaseMessage, error) {
-	q := qb.Q().Space("UPDATE db SET")
-	first := true
+	set := qb.Q()
 
 	if v := patch.ProjectID; v != nil {
-		if !first {
-			q.Space(",")
-		}
-		q.Space("project = ?", *v)
-		first = false
+		set.Comma("project = ?", *v)
 	}
 	if v := patch.EnvironmentID; v != nil {
-		if !first {
-			q.Space(",")
-		}
 		if *v == "" {
-			q.Space("environment = NULL")
+			set.Comma("environment = NULL")
 		} else {
-			q.Space("environment = ?", *v)
+			set.Comma("environment = ?", *v)
 		}
-		first = false
 	}
 	if v := patch.Deleted; v != nil {
-		if !first {
-			q.Space(",")
-		}
-		q.Space("deleted = ?", *v)
-		first = false
+		set.Comma("deleted = ?", *v)
 	}
 	if fs := patch.MetadataUpdates; len(fs) > 0 {
 		database, err := s.GetDatabaseV2(ctx, &FindDatabaseMessage{
@@ -285,14 +272,15 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 		if err != nil {
 			return nil, err
 		}
-		if !first {
-			q.Space(",")
-		}
-		q.Space("metadata = ?", metadataBytes)
-		first = false
+		set.Comma("metadata = ?", metadataBytes)
 	}
 
-	q.Space("WHERE instance = ? AND name = ? RETURNING id", patch.InstanceID, patch.DatabaseName)
+	if set.Len() == 0 {
+		return nil, errors.New("no fields to update")
+	}
+
+	q := qb.Q().Space("UPDATE db SET ?", set).
+		Space("WHERE instance = ? AND name = ? RETURNING id", patch.InstanceID, patch.DatabaseName)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -320,52 +308,37 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 
 // BatchUpdateDatabases update databases in batch.
 func (s *Store) BatchUpdateDatabases(ctx context.Context, databases []*DatabaseMessage, update *BatchUpdateDatabases) ([]*DatabaseMessage, error) {
-	q := qb.Q().Space("UPDATE db SET")
-	setFirst := true
+	set := qb.Q()
 
 	if update.ProjectID != nil {
-		if !setFirst {
-			q.Space(",")
-		}
-		q.Space("project = ?", *update.ProjectID)
-		setFirst = false
+		set.Comma("project = ?", *update.ProjectID)
 	}
 	if v := update.EnvironmentID; v != nil {
-		if !setFirst {
-			q.Space(",")
-		}
 		if *v == "" {
-			q.Space("environment = NULL")
+			set.Comma("environment = NULL")
 		} else {
-			q.Space("environment = ?", *v)
+			set.Comma("environment = ?", *v)
 		}
-		setFirst = false
 	}
-	if setFirst {
+	if set.Len() == 0 {
 		return nil, errors.New("no update field specified")
 	}
 
-	q.Space("WHERE")
-	whereFirst := true
+	where := qb.Q()
 
 	if v := update.FindByEnvironmentID; v != nil {
-		if !whereFirst {
-			q.Space("OR")
-		}
-		q.Space("environment = ?", *v)
-		whereFirst = false
+		where.Or("environment = ?", *v)
 	}
 
 	for _, database := range databases {
-		if !whereFirst {
-			q.Space("OR")
-		}
-		q.Space("(db.instance = ? AND db.name = ?)", database.InstanceID, database.DatabaseName)
-		whereFirst = false
+		where.Or("(db.instance = ? AND db.name = ?)", database.InstanceID, database.DatabaseName)
 	}
-	if whereFirst {
+	if where.Len() == 0 {
 		return nil, errors.Errorf("empty where")
 	}
+
+	q := qb.Q().Space("UPDATE db SET ?", set).
+		Space("WHERE ?", where)
 
 	query, args, err := q.ToSQL()
 	if err != nil {

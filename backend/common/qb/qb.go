@@ -109,6 +109,11 @@ func (q *Query) Or(text string, params ...any) *Query {
 	return q.Join(" OR ", text, params...)
 }
 
+// Comma adds a query part with a comma separator. Convenience wrapper for Join(", ", ...).
+func (q *Query) Comma(text string, params ...any) *Query {
+	return q.Join(", ", text, params...)
+}
+
 // Where adds a WHERE clause.
 func (q *Query) Where(text string, params ...any) *Query {
 	return q.Join(" WHERE ", text, params...)
