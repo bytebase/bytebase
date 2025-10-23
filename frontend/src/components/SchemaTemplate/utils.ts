@@ -103,47 +103,46 @@ export const mockMetadataFromTableTemplate = (
   const db = {
     ...unknownDatabase(),
   };
-  const tableMetadata =
-    cloneDeep(template.table) ?? create(TableMetadataSchema, {});
-  const schemaMetadata = create(SchemaMetadataSchema, {
-    name: "",
-    tables: [tableMetadata],
-  });
 
-  const tableCatalog =
-    cloneDeep(template.catalog) ??
-    create(TableCatalogSchema, {
-      name: "",
-      kind: {
-        case: "columns",
-        value: create(TableCatalog_ColumnsSchema, {}),
-      },
-    });
   const databaseMetadata = create(DatabaseMetadataSchema, {
     name: db.name,
     schemas: [
       create(SchemaMetadataSchema, {
         name: "",
-        tables: [cloneDeep(template.table) ?? create(TableMetadataSchema, {})],
+        tables: [
+          cloneDeep(template.table) ??
+            create(TableMetadataSchema, {
+              name: "",
+              columns: [],
+            }),
+        ],
       }),
     ],
   });
-  const schemaCatalog = create(SchemaCatalogSchema, {
-    name: "",
-    tables: [tableCatalog],
-  });
+
   const databaseCatalog = create(DatabaseCatalogSchema, {
     name: db.name,
-    schemas: [schemaCatalog],
+    schemas: [
+      create(SchemaCatalogSchema, {
+        name: "",
+        tables: [
+          cloneDeep(template.catalog) ??
+            create(TableCatalogSchema, {
+              name: "",
+              kind: {
+                case: "columns",
+                value: create(TableCatalog_ColumnsSchema, {}),
+              },
+            }),
+        ],
+      }),
+    ],
   });
+
   return reactive({
     db,
     databaseMetadata,
     databaseCatalog,
-    schemaCatalog,
-    schemaMetadata,
-    tableCatalog,
-    tableMetadata,
     id: template.id,
     category: template.category,
     engine: template.engine,

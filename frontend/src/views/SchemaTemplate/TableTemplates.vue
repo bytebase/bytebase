@@ -78,8 +78,6 @@ import { engineList } from "@/components/SchemaTemplate/utils";
 import { Drawer, SearchBox } from "@/components/v2";
 import { useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { TableCatalogSchema } from "@/types/proto-es/v1/database_catalog_service_pb";
-import { TableMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
 import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto-es/v1/setting_service_pb";
 import {
   Setting_SettingName,
@@ -108,12 +106,6 @@ const initialTemplate = (): SchemaTemplateSetting_TableTemplate =>
     id: uuidv1(),
     engine: props.engine ?? Engine.MYSQL,
     category: "",
-    table: createProto(TableMetadataSchema, {
-      name: "",
-      userComment: "",
-      columns: [],
-    }),
-    catalog: createProto(TableCatalogSchema, {}),
   });
 
 const state = reactive<LocalState>({

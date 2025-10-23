@@ -120,10 +120,6 @@
         "
         :disable-alter-column="disableAlterColumn"
         :show-database-catalog-column="false"
-        @drop="handleDropColumn"
-        @restore="handleRestoreColumn"
-        @reorder="handleReorderColumn"
-        @primary-key-set="setColumnPrimaryKey"
         @foreign-key-edit="handleEditColumnForeignKey"
         @foreign-key-click="gotoForeignKeyReferencedTable"
       />
@@ -185,14 +181,12 @@
 
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
-import { cloneDeep, head, pull } from "lodash-es";
+import { cloneDeep, head } from "lodash-es";
 import { ArrowLeftIcon, PlusIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, reactive, ref } from "vue";
-import { useI18n } from "vue-i18n";
 import { IndexIcon, TablePartitionIcon } from "@/components/Icon";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { pushNotification } from "@/store/modules";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
@@ -215,19 +209,10 @@ import {
 } from "@/types/proto-es/v1/database_service_pb";
 import type { ColumnMetadata as NewColumnMetadata } from "@/types/proto-es/v1/database_service_pb";
 import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto-es/v1/setting_service_pb";
-import {
-  arraySwap,
-  instanceV1AllowsReorderColumns,
-  randomString,
-} from "@/utils";
+import { instanceV1AllowsReorderColumns, randomString } from "@/utils";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
 import EditColumnForeignKeyModal from "../Modals/EditColumnForeignKeyModal.vue";
 import { useSchemaEditorContext } from "../context";
-import {
-  removeColumnFromAllForeignKeys,
-  removeColumnPrimaryKey,
-  upsertColumnPrimaryKey,
-} from "../edit";
 import {
   engineSupportsEditIndexes,
   engineSupportsEditTablePartitions,
@@ -261,19 +246,16 @@ interface LocalState {
   showFeatureModal: boolean;
 }
 
-const { t } = useI18n();
 const {
   readonly,
   events,
   options,
   addTab,
   markEditStatus,
-  removeEditStatus,
   getSchemaStatus,
   getTableStatus,
   getColumnStatus,
   getDatabaseCatalog,
-  removeColumnCatalog,
   upsertColumnCatalog,
   queuePendingScrollToColumn,
   selectionEnabled,
@@ -391,16 +373,6 @@ const disableAlterColumn = (column: ColumnMetadata): boolean => {
   return (
     isDroppedSchema.value || isDroppedTable.value || isDroppedColumn(column)
   );
-};
-
-const setColumnPrimaryKey = (column: ColumnMetadata, isPrimaryKey: boolean) => {
-  if (isPrimaryKey) {
-    column.nullable = false;
-    upsertColumnPrimaryKey(engine.value, props.table, column.name);
-  } else {
-    removeColumnPrimaryKey(props.table, column.name);
-  }
-  markColumnStatus(column, "updated");
 };
 
 const handleAddColumn = () => {
@@ -556,63 +528,15 @@ const handleEditColumnForeignKey = (
   state.showEditColumnForeignKeyModal = true;
 };
 
-const handleDropColumn = (column: ColumnMetadata) => {
-  const { table } = props;
-  // Disallow to drop the last column.
-  const nonDroppedColumns = table.columns.filter((column) => {
-    return statusForColumn(column) !== "dropped";
-  });
-  if (nonDroppedColumns.length === 1) {
-    pushNotification({
-      module: "bytebase",
-      style: "CRITICAL",
-      title: t("schema-editor.message.cannot-drop-the-last-column"),
-    });
-    return;
-  }
-  const status = statusForColumn(column);
-  if (status === "created") {
-    pull(table.columns, column);
-    table.columns = table.columns.filter((col) => col !== column);
-
-    removeColumnPrimaryKey(table, column.name);
-    removeColumnFromAllForeignKeys(table, column.name);
-    removeColumnCatalog({
-      database: props.db.name,
-      schema: props.schema.name,
-      table: props.table.name,
-      column: column.name,
-    });
-  } else {
-    markColumnStatus(column, "dropped");
-  }
-};
-
-const handleRestoreColumn = (column: ColumnMetadata) => {
-  if (statusForColumn(column) === "created") {
-    return;
-  }
-  removeEditStatus(props.db, metadataForColumn(column), /* recursive */ false);
-};
-
-const handleReorderColumn = (
-  column: ColumnMetadata,
-  index: number,
-  delta: -1 | 1
-) => {
-  const target = index + delta;
-  const { columns } = props.table;
-  if (target < 0) return;
-  if (target >= columns.length) return;
-  arraySwap(columns, index, target);
-};
-
 const mocked = computed(() => {
   const { db, database, schema, table } = props;
   const databaseCatalog = getDatabaseCatalog(db.name);
 
   const mockedTable = cloneDeep(table);
   mockedTable.columns = mockedTable.columns.filter((column) => {
+    if (!column.name) {
+      return false;
+    }
     const status = getColumnStatus(db, { schema, table, column });
     return status !== "dropped";
   });

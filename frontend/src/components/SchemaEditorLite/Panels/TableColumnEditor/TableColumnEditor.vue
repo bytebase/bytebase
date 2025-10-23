@@ -50,16 +50,22 @@
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
 import { useElementSize } from "@vueuse/core";
-import { pick } from "lodash-es";
+import { pick, pull } from "lodash-es";
 import type { DataTableColumn, DataTableInst } from "naive-ui";
 import { NCheckbox, NDataTable } from "naive-ui";
 import { computed, h, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.vue";
 import LabelEditorDrawer from "@/components/LabelEditorDrawer.vue";
+import {
+  removeColumnPrimaryKey,
+  upsertColumnPrimaryKey,
+  changeColumnNameInPrimaryKey,
+  removeColumnFromAllForeignKeys,
+} from "@/components/SchemaEditorLite";
 import SemanticTypesDrawer from "@/components/SensitiveData/components/SemanticTypesDrawer.vue";
 import { InlineInput } from "@/components/v2";
-import { useSettingV1Store, hasFeature } from "@/store";
+import { useSettingV1Store, hasFeature, pushNotification } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { ColumnCatalog } from "@/types/proto-es/v1/database_catalog_service_pb";
@@ -73,6 +79,7 @@ import type {
 } from "@/types/proto-es/v1/database_service_pb";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import { arraySwap } from "@/utils";
 import { useSchemaEditorContext } from "../../context";
 import type { EditStatus } from "../../types";
 import type { DefaultValue } from "../../utils";
@@ -128,14 +135,6 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  (event: "drop", column: ColumnMetadata): void;
-  (event: "restore", column: ColumnMetadata): void;
-  (
-    event: "reorder",
-    column: ColumnMetadata,
-    index: number,
-    delta: -1 | 1
-  ): void;
   (
     event: "foreign-key-edit",
     column: ColumnMetadata,
@@ -145,11 +144,6 @@ const emit = defineEmits<{
     event: "foreign-key-click",
     column: ColumnMetadata,
     fk: ForeignKeyMetadata
-  ): void;
-  (
-    event: "primary-key-set",
-    column: ColumnMetadata,
-    isPrimaryKey: boolean
   ): void;
 }>();
 
@@ -163,6 +157,7 @@ const {
   showClassificationColumn: canShowClassificationColumn,
   selectionEnabled,
   markEditStatus,
+  removeEditStatus,
   getColumnStatus,
   getColumnCatalog,
   removeColumnCatalog,
@@ -250,6 +245,63 @@ const primaryKey = computed(() => {
   return props.table.indexes.find((idx) => idx.primary);
 });
 
+const setColumnPrimaryKey = (column: ColumnMetadata, isPrimaryKey: boolean) => {
+  if (isPrimaryKey) {
+    column.nullable = false;
+    upsertColumnPrimaryKey(props.engine, props.table, column.name);
+  } else {
+    removeColumnPrimaryKey(props.table, column.name);
+  }
+  markColumnStatus(column, "updated");
+};
+
+const handleReorderColumn = (index: number, delta: -1 | 1) => {
+  const target = index + delta;
+  const { columns } = props.table;
+  if (target < 0) return;
+  if (target >= columns.length) return;
+  arraySwap(columns, index, target);
+};
+
+const handleDropColumn = (column: ColumnMetadata) => {
+  const { table } = props;
+  // Disallow to drop the last column.
+  const nonDroppedColumns = table.columns.filter((column) => {
+    return statusForColumn(column) !== "dropped";
+  });
+  if (nonDroppedColumns.length === 1) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: t("schema-editor.message.cannot-drop-the-last-column"),
+    });
+    return;
+  }
+  const status = statusForColumn(column);
+  if (status === "created") {
+    pull(table.columns, column);
+    table.columns = table.columns.filter((col) => col !== column);
+
+    removeColumnPrimaryKey(table, column.name);
+    removeColumnFromAllForeignKeys(table, column.name);
+    removeColumnCatalog({
+      database: props.db.name,
+      schema: props.schema.name,
+      table: props.table.name,
+      column: column.name,
+    });
+  } else {
+    markColumnStatus(column, "dropped");
+  }
+};
+
+const handleRestoreColumn = (column: ColumnMetadata) => {
+  if (statusForColumn(column) === "created") {
+    return;
+  }
+  removeEditStatus(props.db, metadataForColumn(column), /* recursive */ false);
+};
+
 const showClassification = computed(() => {
   return (
     props.showClassificationColumn === "ALWAYS" ||
@@ -317,7 +369,7 @@ const columns = computed(() => {
           allowMoveUp: index > 0,
           allowMoveDown: index < shownColumnList.value.length - 1,
           disabled: props.disableChangeTable,
-          onReorder: (delta: -1 | 1) => emit("reorder", column, index, delta),
+          onReorder: (delta: -1 | 1) => handleReorderColumn(index, delta),
         });
       },
     },
@@ -328,6 +380,7 @@ const columns = computed(() => {
       minWidth: 140,
       className: "input-cell",
       render: (column) => {
+        const isPk = isColumnPrimaryKey(column);
         return h(InlineInput, {
           value: column.name,
           disabled: props.readonly || props.disableAlterColumn(column),
@@ -357,6 +410,10 @@ const columns = computed(() => {
             });
             const oldStatus = statusForColumn(column);
 
+            const oldName = column.name;
+            if (isPk) {
+              changeColumnNameInPrimaryKey(props.table, oldName, value);
+            }
             column.name = value;
             markColumnStatus(column, "updated", oldStatus);
           },
@@ -529,7 +586,7 @@ const columns = computed(() => {
             !props.allowChangePrimaryKeys ||
             props.disableAlterColumn(column),
           "onUpdate:checked": (checked: boolean) =>
-            emit("primary-key-set", column, checked),
+            setColumnPrimaryKey(column, checked),
         });
       },
     },
@@ -587,8 +644,8 @@ const columns = computed(() => {
         return h(OperationCell, {
           dropped: isDroppedColumn(column),
           disabled: props.disableChangeTable,
-          onDrop: () => emit("drop", column),
-          onRestore: () => emit("restore", column),
+          onDrop: () => handleDropColumn(column),
+          onRestore: () => handleRestoreColumn(column),
         });
       },
     },

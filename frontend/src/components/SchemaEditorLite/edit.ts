@@ -55,6 +55,23 @@ export const removeColumnPrimaryKey = (
   }
 };
 
+export const changeColumnNameInPrimaryKey = (
+  table: TableMetadata,
+  oldName: string,
+  newName: string
+) => {
+  const pkIndex = table.indexes.findIndex((idx) => idx.primary);
+  if (pkIndex < 0) {
+    return;
+  }
+  const pk = table.indexes[pkIndex];
+  const columnIndex = pk.expressions.indexOf(oldName);
+  if (columnIndex < 0) {
+    return;
+  }
+  pk.expressions[columnIndex] = newName;
+};
+
 export const upsertColumnFromForeignKey = (
   fk: ForeignKeyMetadata,
   columnName: string,

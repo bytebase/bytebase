@@ -480,7 +480,7 @@ const renderEmptyGeneratedDDLContent = (databases: ComposedDatabase[]) => {
   const children = databases.map((database) => {
     return (
       <li>
-        {t("schema-editor.nothing-changed-for-database", {
+        {t("schema-editor.failed-to-generate-ddl-for-database", {
           database: database.databaseName,
         })}
       </li>
@@ -513,7 +513,7 @@ const confirmCreateIssueWithEmptyStatement = (
     content: () => renderEmptyGeneratedDDLContent(databases),
     style: "z-index: 100000",
     negativeText: t("common.cancel"),
-    positiveText: t("common.continue-anyway"),
+    positiveText: t("schema-editor.continue-with-empty-sql"),
     closeOnEsc: false,
     maskClosable: false,
     onClose: () => {
