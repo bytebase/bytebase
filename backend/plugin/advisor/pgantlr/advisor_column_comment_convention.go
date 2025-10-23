@@ -5,14 +5,12 @@ import (
 	"fmt"
 
 	"github.com/antlr4-go/antlr/v4"
-	"github.com/pkg/errors"
 
 	parser "github.com/bytebase/parser/postgresql"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -28,9 +26,9 @@ type ColumnCommentConventionAdvisor struct {
 }
 
 func (*ColumnCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	tree, err := pg.ParsePostgreSQL(checkCtx.Statements)
+	tree, err := getANTLRTree(checkCtx)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse statement")
+		return nil, err
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)

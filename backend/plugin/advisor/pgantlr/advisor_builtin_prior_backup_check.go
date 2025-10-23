@@ -48,9 +48,9 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor
 	var adviceList []*storepb.Advice
 
 	// Check for DDL statements in DML context
-	tree, err := pg.ParsePostgreSQL(checkCtx.Statements)
+	tree, err := getANTLRTree(checkCtx)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse statement")
+		return nil, err
 	}
 
 	ddlChecker := &ddlChecker{
