@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -439,17 +439,22 @@ func (s *Store) CreatePolicyV2(ctx context.Context, create *PolicyMessage) (*Pol
 
 // UpdatePolicyV2 updates the policy.
 func (s *Store) UpdatePolicyV2(ctx context.Context, patch *UpdatePolicyMessage) (*PolicyMessage, error) {
-	set, args := []string{"updated_at = $1"}, []any{time.Now()}
+	set := qb.Q()
+	set.Comma("updated_at = ?", time.Now())
 	if v := patch.InheritFromParent; v != nil {
-		set, args = append(set, fmt.Sprintf("inherit_from_parent = $%d", len(args)+1)), append(args, *v)
+		set.Comma("inherit_from_parent = ?", *v)
 	}
 	if v := patch.Payload; v != nil {
-		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, *v)
+		set.Comma("payload = ?", *v)
 	}
 	if v := patch.Enforce; v != nil {
-		set, args = append(set, fmt.Sprintf(`enforce = $%d`, len(args)+1)), append(args, *v)
+		set.Comma("enforce = ?", *v)
 	}
-	args = append(args, patch.ResourceType, patch.Resource, patch.Type.String())
+
+	query, args, err := qb.Q().Space("UPDATE policy SET ? WHERE resource_type = ? AND resource = ? AND type = ? RETURNING payload, inherit_from_parent, enforce, updated_at", set, patch.ResourceType, patch.Resource, patch.Type.String()).ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
@@ -463,18 +468,7 @@ func (s *Store) UpdatePolicyV2(ctx context.Context, patch *UpdatePolicyMessage) 
 		Type:         patch.Type,
 	}
 
-	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
-			UPDATE policy
-			SET `+strings.Join(set, ", ")+`
-			WHERE resource_type = $%d AND resource = $%d AND type =$%d
-			RETURNING
-				payload,
-				inherit_from_parent,
-				enforce,
-				updated_at
-		`, len(args)-2, len(args)-1, len(args)),
-		args...,
-	).Scan(
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(
 		&policy.Payload,
 		&policy.InheritFromParent,
 		&policy.Enforce,
@@ -497,18 +491,24 @@ func (s *Store) UpdatePolicyV2(ctx context.Context, patch *UpdatePolicyMessage) 
 
 // DeletePolicyV2 deletes the policy.
 func (s *Store) DeletePolicyV2(ctx context.Context, policy *PolicyMessage) error {
+	q := qb.Q().Space("DELETE FROM policy WHERE resource_type = ? AND resource = ? AND type = ?",
+		policy.ResourceType,
+		policy.Resource,
+		policy.Type.String(),
+	)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.ExecContext(ctx,
-		`DELETE FROM policy WHERE resource_type = $1 AND resource = $2 AND type = $3`,
-		policy.ResourceType,
-		policy.Resource,
-		policy.Type.String(),
-	); err != nil {
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return err
 	}
 
@@ -522,7 +522,8 @@ func (s *Store) DeletePolicyV2(ctx context.Context, policy *PolicyMessage) error
 
 func upsertPolicyV2Impl(ctx context.Context, txn *sql.Tx, create *PolicyMessage) (*PolicyMessage, error) {
 	create.UpdatedAt = time.Now()
-	if _, err := txn.ExecContext(ctx, `
+
+	q := qb.Q().Space(`
 		INSERT INTO policy (
 			resource_type,
 			resource,
@@ -532,13 +533,13 @@ func upsertPolicyV2Impl(ctx context.Context, txn *sql.Tx, create *PolicyMessage)
 			enforce,
 			updated_at
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(resource_type, resource, type) DO UPDATE SET
 			inherit_from_parent = EXCLUDED.inherit_from_parent,
 			payload = EXCLUDED.payload,
 			enforce = EXCLUDED.enforce,
 			updated_at = EXCLUDED.updated_at
-		`,
+	`,
 		create.ResourceType.String(),
 		create.Resource,
 		create.InheritFromParent,
@@ -546,28 +547,21 @@ func upsertPolicyV2Impl(ctx context.Context, txn *sql.Tx, create *PolicyMessage)
 		create.Payload,
 		create.Enforce,
 		create.UpdatedAt,
-	); err != nil {
+	)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
+	if _, err := txn.ExecContext(ctx, query, args...); err != nil {
 		return nil, err
 	}
 	return create, nil
 }
 
 func (*Store) listPolicyImplV2(ctx context.Context, txn *sql.Tx, find *FindPolicyMessage) ([]*PolicyMessage, error) {
-	where, args := []string{"TRUE"}, []any{}
-	if v := find.ResourceType; v != nil {
-		where, args = append(where, fmt.Sprintf("resource_type = $%d", len(args)+1)), append(args, v.String())
-	}
-	if v := find.Resource; v != nil {
-		where, args = append(where, fmt.Sprintf("resource = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.Type; v != nil {
-		where, args = append(where, fmt.Sprintf("type = $%d", len(args)+1)), append(args, v.String())
-	}
-	if !find.ShowAll {
-		where, args = append(where, fmt.Sprintf("enforce = $%d", len(args)+1)), append(args, true)
-	}
-
-	rows, err := txn.QueryContext(ctx, `
+	q := qb.Q().Space(`
 		SELECT
 			updated_at,
 			resource_type,
@@ -577,9 +571,28 @@ func (*Store) listPolicyImplV2(ctx context.Context, txn *sql.Tx, find *FindPolic
 			payload,
 			enforce
 		FROM policy
-		WHERE `+strings.Join(where, " AND "),
-		args...,
-	)
+		WHERE TRUE
+	`)
+
+	if v := find.ResourceType; v != nil {
+		q.And("resource_type = ?", v.String())
+	}
+	if v := find.Resource; v != nil {
+		q.And("resource = ?", *v)
+	}
+	if v := find.Type; v != nil {
+		q.And("type = ?", v.String())
+	}
+	if !find.ShowAll {
+		q.And("enforce = ?", true)
+	}
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
+	rows, err := txn.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}

@@ -6,13 +6,13 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -111,29 +111,12 @@ func (s *Store) GetSheet(ctx context.Context, find *FindSheetMessage) (*SheetMes
 
 // listSheets returns a list of sheets.
 func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*SheetMessage, error) {
-	where, args := []string{"TRUE"}, []any{}
-
-	if v := find.UID; v != nil {
-		where, args = append(where, fmt.Sprintf("sheet.id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.CreatorID; v != nil {
-		where, args = append(where, fmt.Sprintf("sheet.creator_id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.ProjectID; v != nil {
-		where, args = append(where, fmt.Sprintf("sheet.project = $%d", len(args)+1)), append(args, *v)
-	}
 	statementField := fmt.Sprintf("LEFT(sheet_blob.content, %d)", common.MaxSheetSize)
 	if find.LoadFull {
 		statementField = "sheet_blob.content"
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
+	q := qb.Q().Space(fmt.Sprintf(`
 		SELECT
 			sheet.id,
 			sheet.creator_id,
@@ -146,9 +129,30 @@ func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*Shee
 			OCTET_LENGTH(sheet_blob.content)
 		FROM sheet
 		LEFT JOIN sheet_blob ON sheet.sha256 = sheet_blob.sha256
-		WHERE %s`, statementField, strings.Join(where, " AND ")),
-		args...,
-	)
+		WHERE TRUE`, statementField))
+
+	if v := find.UID; v != nil {
+		q.And("sheet.id = ?", *v)
+	}
+	if v := find.CreatorID; v != nil {
+		q.And("sheet.creator_id = ?", *v)
+	}
+	if v := find.ProjectID; v != nil {
+		q.And("sheet.project = ?", *v)
+	}
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
+	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -208,7 +212,7 @@ func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMe
 		return nil, errors.Wrapf(err, "failed to create sheet blobs")
 	}
 
-	query := `
+	q := qb.Q().Space(`
 		INSERT INTO sheet (
 			creator_id,
 			project,
@@ -216,22 +220,21 @@ func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMe
 			sha256,
 			payload
 		)
-		VALUES ($1, $2, $3, $4, $5)
+		VALUES (?, ?, ?, ?, ?)
 		RETURNING id, created_at
-	`
+	`, create.CreatorID, create.ProjectID, create.Title, create.Sha256, payload)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback()
-	if err := tx.QueryRowContext(ctx, query,
-		create.CreatorID,
-		create.ProjectID,
-		create.Title,
-		create.Sha256,
-		payload,
-	).Scan(
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(
 		&create.UID,
 		&create.CreatedAt,
 	); err != nil {
@@ -278,7 +281,7 @@ func (s *Store) BatchCreateSheet(ctx context.Context, projectID string, creates 
 		return nil, errors.Wrapf(err, "failed to create sheet blobs")
 	}
 
-	query := `
+	q := qb.Q().Space(`
 		INSERT INTO sheet (
 			creator_id,
 			project,
@@ -286,13 +289,18 @@ func (s *Store) BatchCreateSheet(ctx context.Context, projectID string, creates 
 			sha256,
 			payload
 		) SELECT
-			$1,
-			$2,
-			unnest(CAST($3 AS TEXT[])),
-			unnest(CAST($4 AS BYTEA[])),
-			unnest(CAST($5 AS JSONB[]))
+			?,
+			?,
+			unnest(CAST(? AS TEXT[])),
+			unnest(CAST(? AS BYTEA[])),
+			unnest(CAST(? AS JSONB[]))
 		RETURNING id, created_at
-	`
+	`, creatorUID, projectID, names, sha256s, payloads)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
@@ -300,7 +308,7 @@ func (s *Store) BatchCreateSheet(ctx context.Context, projectID string, creates 
 	}
 	defer tx.Rollback()
 
-	rows, err := tx.QueryContext(ctx, query, creatorUID, projectID, names, sha256s, payloads)
+	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to query")
 	}
@@ -331,17 +339,22 @@ func (s *Store) BatchCreateSheet(ctx context.Context, projectID string, creates 
 }
 
 func (s *Store) BatchCreateSheetBlob(ctx context.Context, sha256s [][]byte, contents []string) error {
-	query := `
+	q := qb.Q().Space(`
 		INSERT INTO sheet_blob (
 			sha256,
 			content
 		) SELECT
-		 	unnest(CAST($1 AS BYTEA[])),
-			unnest(CAST($2 AS TEXT[]))
+		 	unnest(CAST(? AS BYTEA[])),
+			unnest(CAST(? AS TEXT[]))
 		ON CONFLICT DO NOTHING
-	`
+	`, sha256s, contents)
 
-	if _, err := s.GetDB().ExecContext(ctx, query, sha256s, contents); err != nil {
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return errors.Wrapf(err, "failed to exec")
 	}
 
@@ -360,17 +373,21 @@ func (s *Store) PatchSheet(ctx context.Context, patch *PatchSheetMessage) (*Shee
 		return nil, errors.Wrapf(err, "failed to create sheet blobs")
 	}
 
-	var uid int
-	if err := s.GetDB().QueryRowContext(ctx, `
+	q := qb.Q().Space(`
 		UPDATE sheet
 		SET
-			sha256 = $1
-		WHERE id = $2
+			sha256 = ?
+		WHERE id = ?
 		RETURNING id
-	`,
-		h[:],
-		patch.UID,
-	).Scan(
+	`, h[:], patch.UID)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
+	var uid int
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
 		&uid,
 	); err != nil {
 		if err == sql.ErrNoRows {

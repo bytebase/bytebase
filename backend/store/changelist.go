@@ -3,14 +3,13 @@ package store
 import (
 	"context"
 	"database/sql"
-	"fmt"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -56,13 +55,27 @@ func (s *Store) GetChangelist(ctx context.Context, find *FindChangelistMessage) 
 
 // ListChangelists returns a list of changelists.
 func (s *Store) ListChangelists(ctx context.Context, find *FindChangelistMessage) ([]*ChangelistMessage, error) {
-	where, args := []string{"TRUE"}, []any{}
+	q := qb.Q().Space(`
+		SELECT
+			creator_id,
+			updated_at,
+			project,
+			name,
+			payload
+		FROM changelist
+		WHERE TRUE
+	`)
 
 	if v := find.ProjectID; v != nil {
-		where, args = append(where, fmt.Sprintf("changelist.project = $%d", len(args)+1)), append(args, *v)
+		q.And("changelist.project = ?", *v)
 	}
 	if v := find.ResourceID; v != nil {
-		where, args = append(where, fmt.Sprintf("changelist.name = $%d", len(args)+1)), append(args, *v)
+		q.And("changelist.name = ?", *v)
+	}
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
 	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
@@ -71,17 +84,7 @@ func (s *Store) ListChangelists(ctx context.Context, find *FindChangelistMessage
 	}
 	defer tx.Rollback()
 
-	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
-		SELECT
-			creator_id,
-			updated_at,
-			project,
-			name,
-			payload
-		FROM changelist
-		WHERE %s`, strings.Join(where, " AND ")),
-		args...,
-	)
+	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -128,30 +131,28 @@ func (s *Store) CreateChangelist(ctx context.Context, create *ChangelistMessage)
 		return nil, err
 	}
 
-	query := `
+	q := qb.Q().Space(`
 		INSERT INTO changelist (
 			creator_id,
 			project,
 			name,
 			payload
 		)
-		VALUES ($1, $2, $3, $4)
-		RETURNING updated_at;
-	`
+		VALUES (?, ?, ?, ?)
+		RETURNING updated_at
+	`, create.CreatorID, create.ProjectID, create.ResourceID, payload)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback()
-	if err := tx.QueryRowContext(ctx, query,
-		create.CreatorID,
-		create.ProjectID,
-		create.ResourceID,
-		payload,
-	).Scan(
-		&create.UpdatedAt,
-	); err != nil {
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(&create.UpdatedAt); err != nil {
 		return nil, err
 	}
 	if err := tx.Commit(); err != nil {
@@ -163,25 +164,27 @@ func (s *Store) CreateChangelist(ctx context.Context, create *ChangelistMessage)
 
 // UpdateChangelist updates a changelist.
 func (s *Store) UpdateChangelist(ctx context.Context, update *UpdateChangelistMessage) error {
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return errors.Wrapf(err, "failed to begin transaction")
-	}
-
-	set, args := []string{"updated_at = $1"}, []any{time.Now()}
+	q := qb.Q().Space("UPDATE changelist SET updated_at = ?", time.Now())
 	if v := update.Payload; v != nil {
 		payload, err := protojson.Marshal(update.Payload)
 		if err != nil {
 			return err
 		}
-		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, payload)
+		q.Comma("payload = ?", payload)
 	}
-	args = append(args, update.ProjectID, update.ResourceID)
+	q.Space("WHERE project = ? AND name = ?", update.ProjectID, update.ResourceID)
 
-	if _, err := tx.ExecContext(ctx, fmt.Sprintf(`
-		UPDATE changelist
-		SET `+strings.Join(set, ", ")+`
-		WHERE project = $%d AND name = $%d`, len(set)+1, len(set)+2), args...); err != nil {
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return errors.Wrapf(err, "failed to begin transaction")
+	}
+
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return err
 	}
 
@@ -190,16 +193,23 @@ func (s *Store) UpdateChangelist(ctx context.Context, update *UpdateChangelistMe
 
 // DeleteChangelist deletes a changelist.
 func (s *Store) DeleteChangelist(ctx context.Context, projectID, resourceID string) error {
+	q := qb.Q().Space(`
+		DELETE FROM changelist
+		WHERE changelist.project = ? AND changelist.name = ?
+	`, projectID, resourceID)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.ExecContext(ctx, `
-		DELETE FROM changelist
-		WHERE changelist.project = $1 AND changelist.name = $2;`,
-		projectID, resourceID); err != nil {
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return err
 	}
 

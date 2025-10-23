@@ -5,7 +5,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strings"
 
 	lru "github.com/hashicorp/golang-lru/v2"
 
@@ -175,12 +174,4 @@ func getDatabaseCacheKey(instanceID, databaseName string) string {
 
 func getDatabaseGroupCacheKey(projectID, resourceID string) string {
 	return fmt.Sprintf("%s/%s", projectID, resourceID)
-}
-
-func getPlaceholders(start int, count int) string {
-	var placeholders []string
-	for i := start; i < start+count; i++ {
-		placeholders = append(placeholders, fmt.Sprintf("$%d", i))
-	}
-	return fmt.Sprintf("(%s)", strings.Join(placeholders, ","))
 }

@@ -4,13 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -88,28 +88,12 @@ func (s *Store) GetWorkSheet(ctx context.Context, find *FindWorkSheetMessage, cu
 
 // ListWorkSheets returns a list of sheets.
 func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, currentPrincipalID int) ([]*WorkSheetMessage, error) {
-	where, args := []string{"TRUE"}, []any{}
-	if filter := find.Filter; filter != nil {
-		where = append(where, filter.Where)
-		args = append(args, filter.Args...)
-	}
-
-	if v := find.UID; v != nil {
-		where, args = append(where, fmt.Sprintf("worksheet.id = $%d", len(args)+1)), append(args, *v)
-	}
-
 	statementField := fmt.Sprintf("LEFT(worksheet.statement, %d)", common.MaxSheetSize)
 	if find.LoadFull {
 		statementField = "worksheet.statement"
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
+	q := qb.Q().Space(fmt.Sprintf(`
 		SELECT
 			worksheet.id,
 			worksheet.creator_id,
@@ -125,9 +109,28 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, 
 			COALESCE(worksheet_organizer.starred, FALSE)
 		FROM worksheet
 		LEFT JOIN worksheet_organizer ON worksheet_organizer.worksheet_id = worksheet.id AND worksheet_organizer.principal_id = %d
-		WHERE %s`, statementField, currentPrincipalID, strings.Join(where, " AND ")),
-		args...,
-	)
+		WHERE TRUE`, statementField, currentPrincipalID))
+
+	if filter := find.Filter; filter != nil {
+		q.And(ConvertDollarPlaceholders(filter.Where), filter.Args...)
+	}
+
+	if v := find.UID; v != nil {
+		q.And("worksheet.id = ?", *v)
+	}
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
+	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -172,7 +175,7 @@ func (s *Store) CreateWorkSheet(ctx context.Context, create *WorkSheetMessage) (
 		return nil, err
 	}
 
-	query := `
+	q := qb.Q().Space(`
 		INSERT INTO worksheet (
 			creator_id,
 			project,
@@ -183,25 +186,21 @@ func (s *Store) CreateWorkSheet(ctx context.Context, create *WorkSheetMessage) (
 			visibility,
 			payload
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 		RETURNING id, created_at, updated_at, OCTET_LENGTH(statement)
-	`
+	`, create.CreatorID, create.ProjectID, create.InstanceID, create.DatabaseName, create.Title, create.Statement, create.Visibility, payload)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback()
-	if err := tx.QueryRowContext(ctx, query,
-		create.CreatorID,
-		create.ProjectID,
-		create.InstanceID,
-		create.DatabaseName,
-		create.Title,
-		create.Statement,
-		create.Visibility,
-		payload,
-	).Scan(
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(
 		&create.UID,
 		&create.CreatedAt,
 		&create.UpdatedAt,
@@ -244,10 +243,21 @@ func (s *Store) DeleteWorkSheet(ctx context.Context, sheetUID int) error {
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.ExecContext(ctx, `DELETE FROM worksheet_organizer WHERE worksheet_id = $1`, sheetUID); err != nil {
+	q1 := qb.Q().Space(`DELETE FROM worksheet_organizer WHERE worksheet_id = ?`, sheetUID)
+	query1, args1, err := q1.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+	if _, err := tx.ExecContext(ctx, query1, args1...); err != nil {
 		return err
 	}
-	if _, err := tx.ExecContext(ctx, `DELETE FROM worksheet WHERE id = $1`, sheetUID); err != nil {
+
+	q2 := qb.Q().Space(`DELETE FROM worksheet WHERE id = ?`, sheetUID)
+	query2, args2, err := q2.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+	if _, err := tx.ExecContext(ctx, query2, args2...); err != nil {
 		return err
 	}
 
@@ -256,30 +266,29 @@ func (s *Store) DeleteWorkSheet(ctx context.Context, sheetUID int) error {
 
 // patchWorkSheetImpl updates a sheet's name/statement/visibility/instance/db_name/project.
 func patchWorkSheetImpl(ctx context.Context, txn *sql.Tx, patch *PatchWorkSheetMessage) error {
-	set, args := []string{"updated_at = $1"}, []any{time.Now()}
+	set := qb.Q()
+	set.Comma("updated_at = ?", time.Now())
 	if v := patch.Title; v != nil {
-		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
+		set.Comma("name = ?", *v)
 	}
 	if v := patch.Statement; v != nil {
-		set, args = append(set, fmt.Sprintf("statement = $%d", len(args)+1)), append(args, *v)
+		set.Comma("statement = ?", *v)
 	}
 	if v := patch.Visibility; v != nil {
-		set, args = append(set, fmt.Sprintf("visibility = $%d", len(args)+1)), append(args, *v)
+		set.Comma("visibility = ?", *v)
 	}
 	if v := patch.InstanceID; v != nil {
-		set, args = append(set, fmt.Sprintf("instance = $%d", len(args)+1)), append(args, *v)
+		set.Comma("instance = ?", *v)
 	}
 	if v := patch.DatabaseName; v != nil {
-		set, args = append(set, fmt.Sprintf("db_name = $%d", len(args)+1)), append(args, *v)
+		set.Comma("db_name = ?", *v)
 	}
-	args = append(args, patch.UID)
 
-	query := fmt.Sprintf(`
-		UPDATE worksheet
-		SET `+strings.Join(set, ", ")+`
-		WHERE id = $%d`, len(args))
-	if _, err := txn.ExecContext(ctx, query, args...,
-	); err != nil {
+	query, args, err := qb.Q().Space("UPDATE worksheet SET ? WHERE id = ?", set, patch.UID).ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+	if _, err := txn.ExecContext(ctx, query, args...); err != nil {
 		return err
 	}
 	return nil
@@ -303,23 +312,25 @@ func (s *Store) UpsertWorksheetOrganizer(ctx context.Context, organizer *Workshe
 	}
 	defer tx.Rollback()
 
-	query := `
+	q := qb.Q().Space(`
 	  INSERT INTO worksheet_organizer (
 			worksheet_id,
 			principal_id,
 			starred
 		)
-		VALUES ($1, $2, $3)
+		VALUES (?, ?, ?)
 		ON CONFLICT(worksheet_id, principal_id) DO UPDATE SET
 			starred = EXCLUDED.starred
 		RETURNING id, worksheet_id, principal_id, starred
-	`
+	`, organizer.WorksheetUID, organizer.PrincipalUID, organizer.Starred)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
 	var worksheetOrganizer WorksheetOrganizerMessage
-	if err := tx.QueryRowContext(ctx, query,
-		organizer.WorksheetUID,
-		organizer.PrincipalUID,
-		organizer.Starred,
-	).Scan(
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(
 		&worksheetOrganizer.UID,
 		&worksheetOrganizer.WorksheetUID,
 		&worksheetOrganizer.PrincipalUID,

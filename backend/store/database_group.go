@@ -3,14 +3,13 @@ package store
 import (
 	"context"
 	"database/sql"
-	"fmt"
-	"strings"
 
 	"github.com/pkg/errors"
 	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/qb"
 )
 
 // DatabaseGroupMessage is the message for database groups.
@@ -35,17 +34,18 @@ type UpdateDatabaseGroupMessage struct {
 
 // DeleteDatabaseGroup deletes a database group.
 func (s *Store) DeleteDatabaseGroup(ctx context.Context, projectID, resourceID string) error {
-	query := `
-	DELETE
-		FROM db_group
-	WHERE project = $1 AND resource_id = $2
-	`
+	q := qb.Q().Space("DELETE FROM db_group WHERE project = ? AND resource_id = ?", projectID, resourceID)
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to begin transaction")
 	}
 	defer tx.Rollback()
-	if _, err := tx.ExecContext(ctx, query, projectID, resourceID); err != nil {
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return errors.Wrapf(err, "failed to execute")
 	}
 	if err := tx.Commit(); err != nil {
@@ -111,20 +111,30 @@ func (s *Store) GetDatabaseGroup(ctx context.Context, find *FindDatabaseGroupMes
 }
 
 func (*Store) listDatabaseGroupImpl(ctx context.Context, txn *sql.Tx, find *FindDatabaseGroupMessage) ([]*DatabaseGroupMessage, error) {
-	where, args := []string{"TRUE"}, []any{}
+	q := qb.Q().Space(`
+		SELECT
+			project,
+			resource_id,
+			name,
+			expression
+		FROM db_group
+		WHERE TRUE
+	`)
+
 	if v := find.ProjectID; v != nil {
-		where, args = append(where, fmt.Sprintf("project = $%d", len(args)+1)), append(args, *v)
+		q.And("project = ?", *v)
 	}
 	if v := find.ResourceID; v != nil {
-		where, args = append(where, fmt.Sprintf("resource_id = $%d", len(args)+1)), append(args, *v)
+		q.And("resource_id = ?", *v)
 	}
-	fields := []string{
-		"project",
-		"resource_id",
-		"name",
-		"expression",
+
+	q.Space("ORDER BY project, resource_id ASC")
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
 	}
-	query := fmt.Sprintf(`SELECT %s FROM db_group WHERE %s ORDER BY project, resource_id ASC;`, strings.Join(fields, ","), strings.Join(where, " AND "))
+
 	var databaseGroups []*DatabaseGroupMessage
 	rows, err := txn.QueryContext(ctx, query, args...)
 	if err != nil {
@@ -158,24 +168,27 @@ func (*Store) listDatabaseGroupImpl(ctx context.Context, txn *sql.Tx, find *Find
 
 // UpdateDatabaseGroup updates a database group.
 func (s *Store) UpdateDatabaseGroup(ctx context.Context, projectID, resourceID string, patch *UpdateDatabaseGroupMessage) (*DatabaseGroupMessage, error) {
-	set, args := []string{}, []any{}
+	set := qb.Q()
 	if v := patch.Title; v != nil {
-		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
+		set.Comma("name = ?", *v)
 	}
 	if v := patch.Expression; v != nil {
 		exprBytes, err := protojson.Marshal(patch.Expression)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to marshal expression")
 		}
-		set, args = append(set, fmt.Sprintf("expression = $%d", len(args)+1)), append(args, exprBytes)
+		set.Comma("expression = ?", exprBytes)
 	}
-	args = append(args, projectID, resourceID)
-	query := fmt.Sprintf(`
-		UPDATE db_group SET
-			%s
-		WHERE project = $%d AND resource_id = $%d
-		RETURNING project, resource_id, name, expression;
-	`, strings.Join(set, ", "), len(args)-1, len(args))
+	if set.Len() == 0 {
+		return nil, errors.New("no fields to update")
+	}
+
+	q := qb.Q().Space("UPDATE db_group SET ? WHERE project = ? AND resource_id = ? RETURNING project, resource_id, name, expression", set, projectID, resourceID)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
@@ -210,17 +223,23 @@ func (s *Store) UpdateDatabaseGroup(ctx context.Context, projectID, resourceID s
 
 // CreateDatabaseGroup creates a database group.
 func (s *Store) CreateDatabaseGroup(ctx context.Context, create *DatabaseGroupMessage) (*DatabaseGroupMessage, error) {
-	query := `
-	INSERT INTO db_group (
-		project,
-		resource_id,
-		name,
-		expression
-	) VALUES ($1, $2, $3, $4);
-	`
 	exprBytes, err := protojson.Marshal(create.Expression)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to marshal expression")
+	}
+
+	q := qb.Q().Space(`
+		INSERT INTO db_group (
+			project,
+			resource_id,
+			name,
+			expression
+		) VALUES (?, ?, ?, ?)
+	`, create.ProjectID, create.ResourceID, create.Title, exprBytes)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
@@ -229,14 +248,7 @@ func (s *Store) CreateDatabaseGroup(ctx context.Context, create *DatabaseGroupMe
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.ExecContext(
-		ctx,
-		query,
-		create.ProjectID,
-		create.ResourceID,
-		create.Title,
-		exprBytes,
-	); err != nil {
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return nil, errors.Wrapf(err, "failed to scan")
 	}
 	if err := tx.Commit(); err != nil {

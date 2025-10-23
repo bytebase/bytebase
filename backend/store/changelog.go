@@ -15,6 +15,7 @@ import (
 	exprpb "google.golang.org/genproto/googleapis/api/expr/v1alpha1"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -71,25 +72,6 @@ type UpdateChangelogMessage struct {
 }
 
 func (s *Store) CreateChangelog(ctx context.Context, create *ChangelogMessage) (int64, error) {
-	query := `
-		INSERT INTO changelog (
-			instance,
-			db_name,
-			status,
-			prev_sync_history_id,
-			sync_history_id,
-			payload
-		) VALUES (
-		 	$1,
-			$2,
-			$3,
-			$4,
-			$5,
-			$6
-		)
-		RETURNING id
-	`
-
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to begin tx")
@@ -101,8 +83,32 @@ func (s *Store) CreateChangelog(ctx context.Context, create *ChangelogMessage) (
 		return 0, errors.Wrapf(err, "failed to marshal")
 	}
 
+	q := qb.Q().Space(`
+		INSERT INTO changelog (
+			instance,
+			db_name,
+			status,
+			prev_sync_history_id,
+			sync_history_id,
+			payload
+		) VALUES (
+		 	?,
+			?,
+			?,
+			?,
+			?,
+			?
+		)
+		RETURNING id
+	`, create.InstanceID, create.DatabaseName, create.Status, create.PrevSyncHistoryUID, create.SyncHistoryUID, p)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to build sql")
+	}
+
 	var id int64
-	if err := tx.QueryRowContext(ctx, query, create.InstanceID, create.DatabaseName, create.Status, create.PrevSyncHistoryUID, create.SyncHistoryUID, p).Scan(&id); err != nil {
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(&id); err != nil {
 		return 0, errors.Wrapf(err, "failed to insert")
 	}
 
@@ -114,30 +120,25 @@ func (s *Store) CreateChangelog(ctx context.Context, create *ChangelogMessage) (
 }
 
 func (s *Store) UpdateChangelog(ctx context.Context, update *UpdateChangelogMessage) error {
-	args := []any{update.UID}
-	var set []string
-
+	set := qb.Q()
 	if v := update.SyncHistoryUID; v != nil {
-		set = append(set, fmt.Sprintf("sync_history_id = $%d", len(args)+1))
-		args = append(args, *v)
+		set.Comma("sync_history_id = ?", *v)
 	}
 	if v := update.RevisionUID; v != nil {
-		set = append(set, fmt.Sprintf(`payload = payload || '{"revision": "%d"}'`, *v))
+		set.Comma("payload = payload || jsonb_build_object('revision', ?::BIGINT)", *v)
 	}
 	if v := update.Status; v != nil {
-		set = append(set, fmt.Sprintf("status = $%d", len(args)+1))
-		args = append(args, *v)
+		set.Comma("status = ?", *v)
 	}
 
-	if len(set) == 0 {
+	if set.Len() == 0 {
 		return errors.Errorf("update nothing")
 	}
 
-	query := fmt.Sprintf(`
-		UPDATE changelog
-		SET %s
-		WHERE id = $1
-	`, strings.Join(set, " , "))
+	query, args, err := qb.Q().Space("UPDATE changelog SET ? WHERE id = ?", set, update.UID).ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
@@ -157,36 +158,6 @@ func (s *Store) UpdateChangelog(ctx context.Context, update *UpdateChangelogMess
 }
 
 func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) ([]*ChangelogMessage, error) {
-	where, args := []string{"TRUE"}, []any{}
-	if v := find.UID; v != nil {
-		where, args = append(where, fmt.Sprintf("changelog.id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.InstanceID; v != nil {
-		where, args = append(where, fmt.Sprintf("changelog.instance = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.DatabaseName; v != nil {
-		where, args = append(where, fmt.Sprintf("changelog.db_name = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.ResourcesFilter; v != nil {
-		text, err := generateResourceFilter(*v, "changelog.payload")
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to generate resource filter from %q", *v)
-		}
-		if text != "" {
-			where = append(where, text)
-		}
-	}
-	if v := find.Status; v != nil {
-		where, args = append(where, fmt.Sprintf("changelog.status = $%d", len(args)+1)), append(args, string(*v))
-	}
-	if find.HasSyncHistory {
-		where = append(where, "changelog.sync_history_id IS NOT NULL")
-	}
-	if len(find.TypeList) > 0 {
-		where = append(where, fmt.Sprintf("changelog.payload->>'type' = ANY($%d)", len(args)+1))
-		args = append(args, find.TypeList)
-	}
-
 	truncateSize := 512
 	if common.IsDev() {
 		truncateSize = 4
@@ -204,7 +175,7 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 		sheetField = "sheet_blob.content"
 	}
 
-	query := fmt.Sprintf(`
+	q := qb.Q().Space(fmt.Sprintf(`
 		SELECT
 			changelog.id,
 			changelog.created_at,
@@ -223,18 +194,52 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 		LEFT JOIN sync_history sh_cur ON sh_cur.id = changelog.sync_history_id
 		LEFT JOIN sheet ON sheet.id::text = split_part(changelog.payload->>'sheet', '/', 4)
 		LEFT JOIN sheet_blob ON sheet.sha256 = sheet_blob.sha256
-		WHERE %s
-		ORDER BY changelog.id DESC
+		WHERE TRUE
 	`,
 		shPreField,
 		shCurField,
 		sheetField,
-		strings.Join(where, " AND "))
+	))
+
+	if v := find.UID; v != nil {
+		q.And("changelog.id = ?", *v)
+	}
+	if v := find.InstanceID; v != nil {
+		q.And("changelog.instance = ?", *v)
+	}
+	if v := find.DatabaseName; v != nil {
+		q.And("changelog.db_name = ?", *v)
+	}
+	if v := find.ResourcesFilter; v != nil {
+		text, err := generateResourceFilter(*v, "changelog.payload")
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to generate resource filter from %q", *v)
+		}
+		if text != "" {
+			q.And(text)
+		}
+	}
+	if v := find.Status; v != nil {
+		q.And("changelog.status = ?", string(*v))
+	}
+	if find.HasSyncHistory {
+		q.And("changelog.sync_history_id IS NOT NULL")
+	}
+	if len(find.TypeList) > 0 {
+		q.And("changelog.payload->>'type' = ANY(?)", find.TypeList)
+	}
+
+	q.Space("ORDER BY changelog.id DESC")
 	if v := find.Limit; v != nil {
-		query += fmt.Sprintf(" LIMIT %d", *v)
+		q.Space("LIMIT ?", *v)
 	}
 	if v := find.Offset; v != nil {
-		query += fmt.Sprintf(" OFFSET %d", *v)
+		q.Space("OFFSET ?", *v)
+	}
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
 	rows, err := s.GetDB().QueryContext(ctx, query, args...)

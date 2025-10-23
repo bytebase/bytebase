@@ -2,14 +2,13 @@ package store
 
 import (
 	"context"
-	"fmt"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -53,26 +52,7 @@ func (s *Store) GetIssueComment(ctx context.Context, find *FindIssueCommentMessa
 }
 
 func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMessage) ([]*IssueCommentMessage, error) {
-	where := []string{"TRUE"}
-	args := []any{}
-	if v := find.UID; v != nil {
-		where = append(where, fmt.Sprintf("id = $%d", len(args)+1))
-		args = append(args, *v)
-	}
-	if v := find.IssueUID; v != nil {
-		where = append(where, fmt.Sprintf("issue_id = $%d", len(args)+1))
-		args = append(args, *v)
-	}
-
-	limitOffsetClause := ""
-	if v := find.Limit; v != nil {
-		limitOffsetClause = fmt.Sprintf(" LIMIT %d", *v)
-	}
-	if v := find.Offset; v != nil {
-		limitOffsetClause += fmt.Sprintf(" OFFSET %d", *v)
-	}
-
-	rows, err := s.GetDB().QueryContext(ctx, fmt.Sprintf(`
+	q := qb.Q().Space(`
 		SELECT
 			id,
 			creator_id,
@@ -82,10 +62,30 @@ func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMess
 			payload
 		FROM
 			issue_comment
-		WHERE %s
-		ORDER BY id ASC
-		%s
-	`, strings.Join(where, " AND "), limitOffsetClause), args...)
+		WHERE TRUE
+	`)
+
+	if v := find.UID; v != nil {
+		q.And("id = ?", *v)
+	}
+	if v := find.IssueUID; v != nil {
+		q.And("issue_id = ?", *v)
+	}
+
+	q.Space("ORDER BY id ASC")
+	if v := find.Limit; v != nil {
+		q.Space("LIMIT ?", *v)
+	}
+	if v := find.Offset; v != nil {
+		q.Space("OFFSET ?", *v)
+	}
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
+	rows, err := s.GetDB().QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to query context")
 	}
@@ -147,24 +147,29 @@ func (s *Store) CreateIssueCommentTaskUpdateStatus(ctx context.Context, issueUID
 }
 
 func (s *Store) CreateIssueComment(ctx context.Context, create *IssueCommentMessage, creatorUID int) (*IssueCommentMessage, error) {
-	query := `
-		INSERT INTO issue_comment (
-			creator_id,
-			issue_id,
-			payload
-		) VALUES (
-			$1,
-			$2,
-			$3
-		) RETURNING id, created_at, updated_at
-	`
-
 	payload, err := protojson.Marshal(create.Payload)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to marshal payload")
 	}
 
-	if err := s.GetDB().QueryRowContext(ctx, query, creatorUID, create.IssueUID, payload).Scan(&create.UID, &create.CreatedAt, &create.UpdatedAt); err != nil {
+	q := qb.Q().Space(`
+		INSERT INTO issue_comment (
+			creator_id,
+			issue_id,
+			payload
+		) VALUES (
+			?,
+			?,
+			?
+		) RETURNING id, created_at, updated_at
+	`, creatorUID, create.IssueUID, payload)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&create.UID, &create.CreatedAt, &create.UpdatedAt); err != nil {
 		return nil, errors.Wrapf(err, "failed to insert")
 	}
 
@@ -179,13 +184,19 @@ func (s *Store) CreateIssueComment(ctx context.Context, create *IssueCommentMess
 }
 
 func (s *Store) UpdateIssueComment(ctx context.Context, patch *UpdateIssueCommentMessage) error {
-	set, args := []string{"updated_at = $1"}, []any{time.Now()}
+	q := qb.Q().Space("UPDATE issue_comment SET updated_at = ?", time.Now())
 
 	if v := patch.Comment; v != nil {
-		set, args = append(set, fmt.Sprintf("payload = payload || jsonb_build_object('comment',$%d::TEXT)", len(args)+1)), append(args, *v)
+		q.Join(", ", "payload = payload || jsonb_build_object('comment',?::TEXT)", *v)
 	}
-	args = append(args, patch.UID)
-	query := `UPDATE issue_comment SET ` + strings.Join(set, ", ") + fmt.Sprintf(` WHERE id = $%d`, len(args))
+
+	q.Space("WHERE id = ?", patch.UID)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+
 	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return errors.Wrapf(err, "failed to update issue comment")
 	}

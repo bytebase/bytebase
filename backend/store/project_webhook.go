@@ -3,13 +3,12 @@ package store
 import (
 	"context"
 	"database/sql"
-	"fmt"
-	"strings"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -39,14 +38,6 @@ type FindProjectWebhookMessage struct {
 
 // CreateProjectWebhookV2 creates an instance of ProjectWebhook.
 func (s *Store) CreateProjectWebhookV2(ctx context.Context, projectID string, create *ProjectWebhookMessage) (*ProjectWebhookMessage, error) {
-	query := `
-		INSERT INTO project_webhook (
-			project,
-			payload
-		)
-		VALUES ($1, $2)
-		RETURNING id
-	`
 	payload := []byte("{}")
 	if create.Payload != nil {
 		p, err := protojson.Marshal(create.Payload)
@@ -61,15 +52,26 @@ func (s *Store) CreateProjectWebhookV2(ctx context.Context, projectID string, cr
 		Payload:   create.Payload,
 	}
 
+	q := qb.Q().Space(`
+		INSERT INTO project_webhook (
+			project,
+			payload
+		)
+		VALUES (?, ?)
+		RETURNING id
+	`, projectID, payload)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin transaction")
 	}
 
-	if err := tx.QueryRowContext(ctx, query,
-		projectID,
-		payload,
-	).Scan(
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(
 		&projectWebhook.ID,
 	); err != nil {
 		if err == sql.ErrNoRows {
@@ -145,20 +147,24 @@ func (s *Store) UpdateProjectWebhookV2(ctx context.Context, projectResourceID st
 		payload = p
 	}
 
+	q := qb.Q().Space(`
+		UPDATE project_webhook
+		SET payload = ?
+		WHERE id = ?
+		RETURNING id, project, payload
+	`, payload, projectWebhookID)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
 	projectWebhook := ProjectWebhookMessage{
 		Payload: &storepb.ProjectWebhook{},
 	}
 	var returnedPayload []byte
 	// Execute update query with RETURNING.
-	if err := tx.QueryRowContext(ctx, `
-		UPDATE project_webhook
-		SET payload = $1
-		WHERE id = $2
-		RETURNING id, project, payload
-	`,
-		payload,
-		projectWebhookID,
-	).Scan(
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(
 		&projectWebhook.ID,
 		&projectWebhook.ProjectID,
 		&returnedPayload,
@@ -183,12 +189,19 @@ func (s *Store) UpdateProjectWebhookV2(ctx context.Context, projectResourceID st
 
 // DeleteProjectWebhookV2 deletes an existing projectWebhook by projectUID and url.
 func (s *Store) DeleteProjectWebhookV2(ctx context.Context, projectResourceID string, projectWebhookUID int) error {
+	q := qb.Q().Space("DELETE FROM project_webhook WHERE id = ?", projectWebhookUID)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to begin transaction")
 	}
 
-	if _, err := tx.ExecContext(ctx, `DELETE FROM project_webhook WHERE id = $1`, projectWebhookUID); err != nil {
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return err
 	}
 
@@ -201,27 +214,31 @@ func (s *Store) DeleteProjectWebhookV2(ctx context.Context, projectResourceID st
 }
 
 func (*Store) findProjectWebhookImplV2(ctx context.Context, txn *sql.Tx, find *FindProjectWebhookMessage) ([]*ProjectWebhookMessage, error) {
-	// Build WHERE clause.
-	where, args := []string{"TRUE"}, []any{}
-	if v := find.ID; v != nil {
-		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.ProjectID; v != nil {
-		where, args = append(where, fmt.Sprintf("project = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.URL; v != nil {
-		where, args = append(where, fmt.Sprintf("payload->>'url' = $%d", len(args)+1)), append(args, *v)
-	}
-
-	rows, err := txn.QueryContext(ctx, `
+	q := qb.Q().Space(`
 		SELECT
 			id,
 			project,
 			payload
 		FROM project_webhook
-		WHERE `+strings.Join(where, " AND "),
-		args...,
-	)
+		WHERE TRUE
+	`)
+
+	if v := find.ID; v != nil {
+		q.And("id = ?", *v)
+	}
+	if v := find.ProjectID; v != nil {
+		q.And("project = ?", *v)
+	}
+	if v := find.URL; v != nil {
+		q.And("payload->>'url' = ?", *v)
+	}
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
+	rows, err := txn.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}

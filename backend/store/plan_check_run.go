@@ -2,14 +2,13 @@ package store
 
 import (
 	"context"
-	"fmt"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -74,18 +73,24 @@ func (s *Store) CreatePlanCheckRuns(ctx context.Context, plan *PlanMessage, crea
 		return nil
 	}
 
-	var query strings.Builder
-	var values []any
-	if _, err := query.WriteString(`INSERT INTO plan_check_run (
-		plan_id,
-		status,
-		type,
-		config,
-		result
-	) VALUES
-	`); err != nil {
+	txn, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
 		return err
 	}
+	defer txn.Rollback()
+
+	// Delete existing plan check runs
+	q := qb.Q().Space("DELETE FROM plan_check_run WHERE plan_id = ?", plan.UID)
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build delete sql")
+	}
+	if _, err := txn.ExecContext(ctx, query, args...); err != nil {
+		return errors.Wrapf(err, "failed to delete plan check run for plan %d", plan.UID)
+	}
+
+	// Insert new plan check runs
+	q = qb.Q().Space("INSERT INTO plan_check_run (plan_id, status, type, config, result) VALUES")
 	for i, create := range creates {
 		config, err := protojson.Marshal(create.Config)
 		if err != nil {
@@ -95,32 +100,16 @@ func (s *Store) CreatePlanCheckRuns(ctx context.Context, plan *PlanMessage, crea
 		if err != nil {
 			return errors.Wrapf(err, "failed to marshal create result %v", create.Result)
 		}
-		values = append(values,
-			create.PlanUID,
-			create.Status,
-			create.Type,
-			config,
-			result,
-		)
-		if i != 0 {
-			if _, err := query.WriteString(","); err != nil {
-				return err
-			}
+		if i > 0 {
+			q.Space(",")
 		}
-		count := 5
-		if _, err := query.WriteString(getPlaceholders(i*count+1, count)); err != nil {
-			return err
-		}
+		q.Space("(?, ?, ?, ?, ?)", create.PlanUID, create.Status, create.Type, config, result)
 	}
-	txn, err := s.GetDB().BeginTx(ctx, nil)
+	query, args, err = q.ToSQL()
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to build insert sql")
 	}
-	defer txn.Rollback()
-	if _, err := txn.ExecContext(ctx, "DELETE FROM plan_check_run WHERE plan_id = $1", plan.UID); err != nil {
-		return errors.Wrapf(err, "failed to delete plan check run for plan %d", plan.UID)
-	}
-	if _, err := txn.ExecContext(ctx, query.String(), values...); err != nil {
+	if _, err := txn.ExecContext(ctx, query, args...); err != nil {
 		return errors.Wrapf(err, "failed to execute insert")
 	}
 	return txn.Commit()
@@ -128,31 +117,7 @@ func (s *Store) CreatePlanCheckRuns(ctx context.Context, plan *PlanMessage, crea
 
 // ListPlanCheckRuns returns a list of plan check runs based on find.
 func (s *Store) ListPlanCheckRuns(ctx context.Context, find *FindPlanCheckRunMessage) ([]*PlanCheckRunMessage, error) {
-	where, args := []string{"TRUE"}, []any{}
-	if v := find.PlanUID; v != nil {
-		where = append(where, fmt.Sprintf("plan_check_run.plan_id = $%d", len(args)+1))
-		args = append(args, *v)
-	}
-	if v := find.UIDs; v != nil {
-		where, args = append(where, fmt.Sprintf("plan_check_run.id = ANY($%d)", len(args)+1)), append(args, *v)
-	}
-	if v := find.Status; v != nil {
-		where = append(where, fmt.Sprintf("plan_check_run.status = ANY($%d)", len(args)+1))
-		args = append(args, *v)
-	}
-	if v := find.Type; v != nil {
-		where = append(where, fmt.Sprintf("plan_check_run.type = ANY($%d)", len(args)+1))
-		args = append(args, *v)
-	}
-	if v := find.ResultStatus; v != nil {
-		statusStrings := make([]string, len(*v))
-		for i, status := range *v {
-			statusStrings[i] = status.String()
-		}
-		where = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM jsonb_array_elements(plan_check_run.result->'results') AS elem WHERE elem->>'status' = ANY($%d))", len(args)+1))
-		args = append(args, statusStrings)
-	}
-	query := fmt.Sprintf(`
+	q := qb.Q().Space(`
 SELECT
 	plan_check_run.id,
 	plan_check_run.created_at,
@@ -163,8 +128,31 @@ SELECT
 	plan_check_run.config,
 	plan_check_run.result
 FROM plan_check_run
-WHERE %s
-ORDER BY plan_check_run.id ASC`, strings.Join(where, " AND "))
+WHERE TRUE`)
+	if v := find.PlanUID; v != nil {
+		q.Space("AND plan_check_run.plan_id = ?", *v)
+	}
+	if v := find.UIDs; v != nil {
+		q.Space("AND plan_check_run.id = ANY(?)", *v)
+	}
+	if v := find.Status; v != nil {
+		q.Space("AND plan_check_run.status = ANY(?)", *v)
+	}
+	if v := find.Type; v != nil {
+		q.Space("AND plan_check_run.type = ANY(?)", *v)
+	}
+	if v := find.ResultStatus; v != nil {
+		statusStrings := make([]string, len(*v))
+		for i, status := range *v {
+			statusStrings[i] = status.String()
+		}
+		q.Space("AND EXISTS (SELECT 1 FROM jsonb_array_elements(plan_check_run.result->'results') AS elem WHERE elem->>'status' = ANY(?))", statusStrings)
+	}
+	q.Space("ORDER BY plan_check_run.id ASC")
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
 	rows, err := s.GetDB().QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
@@ -212,14 +200,18 @@ func (s *Store) UpdatePlanCheckRun(ctx context.Context, status PlanCheckRunStatu
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal result %v", result)
 	}
-	query := `
+	q := qb.Q().Space(`
     UPDATE plan_check_run
     SET
-		updated_at = $1,
-		status = $2,
-		result = $3
-	WHERE id = $4`
-	if _, err := s.GetDB().ExecContext(ctx, query, time.Now(), status, resultBytes, uid); err != nil {
+		updated_at = ?,
+		status = ?,
+		result = ?
+	WHERE id = ?`, time.Now(), status, resultBytes, uid)
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return errors.Wrapf(err, "failed to update plan check run")
 	}
 	return nil
@@ -227,13 +219,17 @@ func (s *Store) UpdatePlanCheckRun(ctx context.Context, status PlanCheckRunStatu
 
 // BatchCancelPlanCheckRuns updates the status of planCheckRuns to CANCELED.
 func (s *Store) BatchCancelPlanCheckRuns(ctx context.Context, planCheckRunUIDs []int) error {
-	query := `
+	q := qb.Q().Space(`
 		UPDATE plan_check_run
-		SET 
-			status = $1, 
-			updated_at = $2
-		WHERE id = ANY($3)`
-	if _, err := s.GetDB().ExecContext(ctx, query, PlanCheckRunStatusCanceled, time.Now(), planCheckRunUIDs); err != nil {
+		SET
+			status = ?,
+			updated_at = ?
+		WHERE id = ANY(?)`, PlanCheckRunStatusCanceled, time.Now(), planCheckRunUIDs)
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return err
 	}
 	return nil

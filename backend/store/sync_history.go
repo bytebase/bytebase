@@ -4,11 +4,11 @@ import (
 	"context"
 	"time"
 
+	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
-	"github.com/pkg/errors"
-
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -23,7 +23,7 @@ type SyncHistory struct {
 }
 
 func (s *Store) GetSyncHistoryByUID(ctx context.Context, uid int64) (*SyncHistory, error) {
-	query := `
+	q := qb.Q().Space(`
 		SELECT
 			id,
 			created_at,
@@ -32,14 +32,20 @@ func (s *Store) GetSyncHistoryByUID(ctx context.Context, uid int64) (*SyncHistor
 			metadata,
 			raw_dump
 		FROM sync_history
-		WHERE id = $1
-	`
+		WHERE id = ?
+	`, uid)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
 	h := SyncHistory{
 		Metadata: &storepb.DatabaseSchemaMetadata{},
 	}
 
 	var m []byte
-	if err := s.GetDB().QueryRowContext(ctx, query, uid).Scan(
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
 		&h.UID,
 		&h.CreatedAt,
 		&h.InstanceID,
@@ -64,16 +70,22 @@ func (s *Store) CreateSyncHistory(ctx context.Context, instanceID, databaseName 
 		return 0, errors.Wrapf(err, "failed to marshal")
 	}
 
-	query := `
+	q := qb.Q().Space(`
 		INSERT INTO sync_history (
 			instance,
 			db_name,
 			metadata,
 			raw_dump
 		)
-		VALUES ($1, $2, $3, $4)
+		VALUES (?, ?, ?, ?)
 		RETURNING id
-	`
+	`, instanceID, databaseName, metadataBytes, schema)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to build sql")
+	}
+
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to begin tx")
@@ -81,14 +93,7 @@ func (s *Store) CreateSyncHistory(ctx context.Context, instanceID, databaseName 
 	defer tx.Rollback()
 
 	var id int64
-	if err := tx.QueryRowContext(ctx, query,
-		instanceID,
-		databaseName,
-		metadataBytes,
-		schema,
-	).Scan(
-		&id,
-	); err != nil {
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(&id); err != nil {
 		return 0, errors.Wrapf(err, "failed to insert")
 	}
 	if err := tx.Commit(); err != nil {

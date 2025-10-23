@@ -10,6 +10,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -25,39 +26,51 @@ func (s *Store) CreateTaskRunLogS(ctx context.Context, taskRunUID int, t time.Ti
 }
 
 func (s *Store) CreateTaskRunLog(ctx context.Context, taskRunUID int, t time.Time, deployID string, e *storepb.TaskRunLog) error {
-	query := `
-		INSERT INTO task_run_log (
-			task_run_id,
-			created_at,
-			payload
-		) VALUES (
-			$1,
-			$2,
-			$3
-		)
-	`
 	e.DeployId = deployID
 	p, err := protojson.Marshal(e)
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal task run log")
 	}
-	if _, err := s.GetDB().ExecContext(ctx, query, taskRunUID, t, p); err != nil {
+
+	q := qb.Q().Space(`
+		INSERT INTO task_run_log (
+			task_run_id,
+			created_at,
+			payload
+		) VALUES (
+			?,
+			?,
+			?
+		)
+	`, taskRunUID, t, p)
+
+	sql, args, err := q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+
+	if _, err := s.GetDB().ExecContext(ctx, sql, args...); err != nil {
 		return errors.Wrapf(err, "failed to create task run log")
 	}
 	return nil
 }
 
 func (s *Store) ListTaskRunLogs(ctx context.Context, taskRunUID int) ([]*TaskRunLog, error) {
-	query := `
+	q := qb.Q().Space(`
 		SELECT
 			created_at,
 			payload
 		FROM task_run_log
-		WHERE task_run_log.task_run_id = $1
+		WHERE task_run_log.task_run_id = ?
 		ORDER BY id
-	`
+	`, taskRunUID)
 
-	rows, err := s.GetDB().QueryContext(ctx, query, taskRunUID)
+	sql, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
+	rows, err := s.GetDB().QueryContext(ctx, sql, args...)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to query task run log")
 	}

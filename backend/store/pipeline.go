@@ -3,13 +3,12 @@ package store
 import (
 	"context"
 	"database/sql"
-	"fmt"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/qb"
 )
 
 // PipelineMessage is the message for pipelines.
@@ -125,20 +124,31 @@ func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *
 
 // returns func() to invalidate cache.
 func (s *Store) updatePipelineUIDOfIssueAndPlan(ctx context.Context, txn *sql.Tx, planUID int64, pipelineUID int) (func(), error) {
-	if _, err := txn.ExecContext(ctx, `
+	q := qb.Q().Space(`
 		UPDATE plan
-		SET pipeline_id = $1
-		WHERE id = $2
-	`, pipelineUID, planUID); err != nil {
+		SET pipeline_id = ?
+		WHERE id = ?
+	`, pipelineUID, planUID)
+	querySQL, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+	if _, err := txn.ExecContext(ctx, querySQL, args...); err != nil {
 		return nil, errors.Wrapf(err, "failed to update plan pipeline_id")
 	}
-	var issueUID int
-	if err := txn.QueryRowContext(ctx, `
+
+	q = qb.Q().Space(`
 		UPDATE issue
-		SET pipeline_id = $1
-		WHERE plan_id = $2
+		SET pipeline_id = ?
+		WHERE plan_id = ?
 		RETURNING id
-	`, pipelineUID, planUID).Scan(&issueUID); err != nil {
+	`, pipelineUID, planUID)
+	querySQL, args, err = q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+	var issueUID int
+	if err := txn.QueryRowContext(ctx, querySQL, args...).Scan(&issueUID); err != nil {
 		if err != sql.ErrNoRows {
 			return nil, errors.Wrapf(err, "failed to update issue pipeline_id")
 		}
@@ -152,11 +162,13 @@ func (s *Store) updatePipelineUIDOfIssueAndPlan(ctx context.Context, txn *sql.Tx
 }
 
 func lockPlanAndGetPipelineUID(ctx context.Context, txn *sql.Tx, planUID int64) (*int, error) {
-	query := `
-		SELECT pipeline_id FROM plan WHERE id = $1 FOR UPDATE
-	`
+	q := qb.Q().Space("SELECT pipeline_id FROM plan WHERE id = ? FOR UPDATE", planUID)
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
 	var uid sql.NullInt32
-	if err := txn.QueryRowContext(ctx, query, planUID).Scan(&uid); err != nil {
+	if err := txn.QueryRowContext(ctx, query, args...).Scan(&uid); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, errors.Errorf("plan %d not found", planUID)
 		}
@@ -171,25 +183,26 @@ func lockPlanAndGetPipelineUID(ctx context.Context, txn *sql.Tx, planUID int64) 
 }
 
 func (*Store) createPipeline(ctx context.Context, txn *sql.Tx, create *PipelineMessage, creatorUID int) (*PipelineMessage, error) {
-	query := `
+	q := qb.Q().Space(`
 		INSERT INTO pipeline (
 			project,
 			creator_id
 		)
 		VALUES (
-			$1,
-			$2
+			?,
+			?
 		)
 		RETURNING id, created_at
-	`
+	`, create.ProjectID, creatorUID)
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
 	pipeline := &PipelineMessage{
 		ProjectID:  create.ProjectID,
 		CreatorUID: creatorUID,
 	}
-	if err := txn.QueryRowContext(ctx, query,
-		create.ProjectID,
-		creatorUID,
-	).Scan(
+	if err := txn.QueryRowContext(ctx, query, args...).Scan(
 		&pipeline.ID,
 		&pipeline.CreatedAt,
 	); err != nil {
@@ -225,18 +238,7 @@ func (s *Store) GetPipelineV2ByID(ctx context.Context, id int) (*PipelineMessage
 
 // ListPipelineV2 lists pipelines.
 func (s *Store) ListPipelineV2(ctx context.Context, find *PipelineFind) ([]*PipelineMessage, error) {
-	where, args := []string{"TRUE"}, []any{}
-	if filter := find.Filter; filter != nil {
-		where = append(where, filter.Where)
-		args = append(args, filter.Args...)
-	}
-	if v := find.ID; v != nil {
-		where, args = append(where, fmt.Sprintf("pipeline.id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.ProjectID; v != nil {
-		where, args = append(where, fmt.Sprintf("pipeline.project = $%d", len(args)+1)), append(args, *v)
-	}
-	query := fmt.Sprintf(`
+	q := qb.Q().Space(`
 		SELECT
 			pipeline.id,
 			pipeline.creator_id,
@@ -254,13 +256,30 @@ func (s *Store) ListPipelineV2(ctx context.Context, find *PipelineFind) ([]*Pipe
 			) AS updated_at
 		FROM pipeline
 		LEFT JOIN issue ON pipeline.id = issue.pipeline_id
-		WHERE %s
-		ORDER BY pipeline.id DESC`, strings.Join(where, " AND "))
+		WHERE TRUE
+	`)
+
+	if filter := find.Filter; filter != nil {
+		q.And(ConvertDollarPlaceholders(filter.Where), filter.Args...)
+	}
+	if v := find.ID; v != nil {
+		q.And("pipeline.id = ?", *v)
+	}
+	if v := find.ProjectID; v != nil {
+		q.And("pipeline.project = ?", *v)
+	}
+
+	q.Space("ORDER BY pipeline.id DESC")
 	if v := find.Limit; v != nil {
-		query += fmt.Sprintf(" LIMIT %d", *v)
+		q.Space("LIMIT ?", *v)
 	}
 	if v := find.Offset; v != nil {
-		query += fmt.Sprintf(" OFFSET %d", *v)
+		q.Space("OFFSET ?", *v)
+	}
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
 	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})

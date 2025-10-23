@@ -3,12 +3,12 @@ package store
 import (
 	"context"
 	"database/sql"
-	"fmt"
-	"strings"
 
+	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -35,16 +35,22 @@ type RoleUsedByResource struct {
 }
 
 func (s *Store) GetResourcesUsedByRole(ctx context.Context, role string) ([]*RoleUsedByResource, error) {
-	query := `
+	q := qb.Q().Space(`
 		SELECT resource, resource_type FROM policy
 		CROSS JOIN LATERAL jsonb_array_elements(payload->'bindings') AS binding
 		WHERE
-			type = $1 AND
+			type = ? AND
 			COALESCE(jsonb_array_length(binding->'members'), 0) > 0 AND
-			binding->>'role' = $2
-		GROUP BY resource, resource_type;
-	`
-	rows, err := s.GetDB().QueryContext(ctx, query, storepb.Policy_IAM.String(), role)
+			binding->>'role' = ?
+		GROUP BY resource, resource_type
+	`, storepb.Policy_IAM.String(), role)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
+	rows, err := s.GetDB().QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -69,11 +75,6 @@ func (s *Store) GetResourcesUsedByRole(ctx context.Context, role string) ([]*Rol
 
 // CreateRole creates a new role.
 func (s *Store) CreateRole(ctx context.Context, create *RoleMessage) (*RoleMessage, error) {
-	query := `
-		INSERT INTO
-			role (resource_id, name, description, permissions)
-		VALUES ($1, $2, $3, $4)
-	`
 	p := &storepb.RolePermissions{}
 	for k := range create.Permissions {
 		p.Permissions = append(p.Permissions, k)
@@ -82,7 +83,19 @@ func (s *Store) CreateRole(ctx context.Context, create *RoleMessage) (*RoleMessa
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.GetDB().ExecContext(ctx, query, create.ResourceID, create.Name, create.Description, permissionBytes); err != nil {
+
+	q := qb.Q().Space(`
+		INSERT INTO
+			role (resource_id, name, description, permissions)
+		VALUES (?, ?, ?, ?)
+	`, create.ResourceID, create.Name, create.Description, permissionBytes)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return nil, err
 	}
 	s.rolesCache.Add(create.ResourceID, create)
@@ -94,17 +107,24 @@ func (s *Store) GetRole(ctx context.Context, resourceID string) (*RoleMessage, e
 	if v, ok := s.rolesCache.Get(resourceID); ok && s.enableCache {
 		return v, nil
 	}
-	query := `
+
+	q := qb.Q().Space(`
 		SELECT
 			name, description, permissions
 		FROM role
-		WHERE resource_id = $1
-	`
+		WHERE resource_id = ?
+	`, resourceID)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
 	role := &RoleMessage{
 		Permissions: map[string]bool{},
 	}
 	var permissions []byte
-	if err := s.GetDB().QueryRowContext(ctx, query, resourceID).Scan(&role.Name, &role.Description, &permissions); err != nil {
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&role.Name, &role.Description, &permissions); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -124,12 +144,18 @@ func (s *Store) GetRole(ctx context.Context, resourceID string) (*RoleMessage, e
 
 // ListRoles returns a list of roles.
 func (s *Store) ListRoles(ctx context.Context) ([]*RoleMessage, error) {
-	query := `
+	q := qb.Q().Space(`
 		SELECT
 			resource_id, name, description, permissions
 		FROM role
-	`
-	rows, err := s.GetDB().QueryContext(ctx, query)
+	`)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
+	rows, err := s.GetDB().QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -164,12 +190,12 @@ func (s *Store) ListRoles(ctx context.Context) ([]*RoleMessage, error) {
 
 // UpdateRole updates an existing role.
 func (s *Store) UpdateRole(ctx context.Context, patch *UpdateRoleMessage) (*RoleMessage, error) {
-	set, args := []string{}, []any{}
+	set := qb.Q()
 	if v := patch.Name; v != nil {
-		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
+		set.Comma("name = ?", *v)
 	}
 	if v := patch.Description; v != nil {
-		set, args = append(set, fmt.Sprintf("description = $%d", len(args)+1)), append(args, *v)
+		set.Comma("description = ?", *v)
 	}
 	if v := patch.Permissions; v != nil {
 		p := &storepb.RolePermissions{}
@@ -180,16 +206,23 @@ func (s *Store) UpdateRole(ctx context.Context, patch *UpdateRoleMessage) (*Role
 		if err != nil {
 			return nil, err
 		}
-		set, args = append(set, fmt.Sprintf("permissions = $%d", len(args)+1)), append(args, permissionBytes)
+		set.Comma("permissions = ?", permissionBytes)
 	}
-	args = append(args, patch.ResourceID)
+	if set.Len() == 0 {
+		return nil, errors.New("no fields to update")
+	}
 
-	query := fmt.Sprintf(`
+	q := qb.Q().Space(`
 		UPDATE role
-		SET `+strings.Join(set, ", ")+`
-		WHERE resource_id = $%d
+		SET ?
+		WHERE resource_id = ?
 		RETURNING name, description, permissions
-	`, len(args))
+	`, set, patch.ResourceID)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
 
 	role := &RoleMessage{
 		ResourceID:  patch.ResourceID,
@@ -214,11 +247,17 @@ func (s *Store) UpdateRole(ctx context.Context, patch *UpdateRoleMessage) (*Role
 
 // DeleteRole deletes an existing role.
 func (s *Store) DeleteRole(ctx context.Context, resourceID string) error {
-	query := `
+	q := qb.Q().Space(`
 		DELETE FROM role
-		WHERE resource_id = $1
-	`
-	if _, err := s.GetDB().ExecContext(ctx, query, resourceID); err != nil {
+		WHERE resource_id = ?
+	`, resourceID)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return err
 	}
 	s.rolesCache.Remove(resourceID)

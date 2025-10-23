@@ -45,24 +45,44 @@ func makePart(text string, params ...any) QueryPart {
 	var newParams []any
 	var errs []error
 
+	// Use unique delimiters to avoid conflicts with nested query ? characters
+	const placeholder = "\x00QB_PLACEHOLDER\x00"
+	const escapeMarker = "\x00QB_ESCAPE\x00"
+
+	// First, temporarily replace ?? (escaped ?) with a marker to preserve it
+	text = strings.ReplaceAll(text, "??", escapeMarker)
+
+	// Then, mark all remaining single ? placeholders with a unique marker
+	// This prevents nested queries' ? characters from interfering with subsequent replacements
+	text = strings.ReplaceAll(text, "?", placeholder)
+
 	for _, param := range params {
 		// Check if the parameter is a *Query
 		if nestedQuery, ok := param.(*Query); ok {
-			// Expand the nested query inline - use toRawSql which keeps ? placeholders
+			// Expand the nested query inline - use toRawSQL which keeps ? placeholders
 			nestedSQL, nestedParams, err := nestedQuery.toRawSQL()
 			if err != nil {
 				errs = append(errs, errors.Wrap(err, "failed to expand nested query"))
 				continue
 			}
-			// Replace the first ? with the nested SQL
-			text = strings.Replace(text, "?", nestedSQL, 1)
+			// Replace the first placeholder with the nested SQL
+			text = strings.Replace(text, placeholder, nestedSQL, 1)
 			// Add the nested params to our param list
 			newParams = append(newParams, nestedParams...)
 		} else {
-			// Regular parameter
+			// Regular parameter - replace placeholder with ?
+			text = strings.Replace(text, placeholder, "?", 1)
 			newParams = append(newParams, param)
 		}
 	}
+
+	// Check for leftover placeholders (more ? than parameters provided)
+	if strings.Contains(text, placeholder) {
+		errs = append(errs, errors.New("mismatched parameters: more ? placeholders than parameters provided"))
+	}
+
+	// Restore ?? escape sequences
+	text = strings.ReplaceAll(text, escapeMarker, "??")
 
 	return QueryPart{
 		Text:   text,
@@ -109,6 +129,11 @@ func (q *Query) Or(text string, params ...any) *Query {
 	return q.Join(" OR ", text, params...)
 }
 
+// Comma adds a query part with a comma separator. Convenience wrapper for Join(", ", ...).
+func (q *Query) Comma(text string, params ...any) *Query {
+	return q.Join(", ", text, params...)
+}
+
 // Where adds a WHERE clause.
 func (q *Query) Where(text string, params ...any) *Query {
 	return q.Join(" WHERE ", text, params...)
@@ -124,6 +149,10 @@ func (q *Query) Len() int {
 
 // ToSQL generates PostgreSQL-compatible SQL with $1, $2, ... placeholders.
 // Returns the SQL string, parameters slice, and any error.
+//
+// Placeholder rules:
+// - Single ? → parameter placeholder (converted to $1, $2, etc.)
+// - Double ?? → literal ? in SQL (for PostgreSQL JSONB operators like ?, ?|, ?&)
 func (q *Query) ToSQL() (string, []any, error) {
 	if q == nil {
 		return "", nil, errors.New("cannot generate SQL from nil Query")
@@ -145,19 +174,30 @@ func (q *Query) ToSQL() (string, []any, error) {
 
 	sql := sqlBuilder.String()
 
-	// Second pass: replace ? placeholders with $1, $2, etc.
-	sqlParts := strings.Split(sql, "?")
-	if len(sqlParts)-1 != len(params) {
+	// Second pass: replace ? placeholders with $1, $2, etc., handling ?? escape sequence
+	// Use a unique delimiter that won't appear in SQL
+	const delimiter = "\x00"
+	// Replace ?? with delimiter temporarily
+	sql = strings.ReplaceAll(sql, "??", delimiter)
+	// Split on remaining ? (these are all placeholders)
+	parts := strings.Split(sql, "?")
+
+	// Verify parameter count matches
+	if len(parts)-1 != len(params) {
 		return "", nil, errors.New("mismatched parameters: ? placeholders count does not match params count")
 	}
 
+	// Build final SQL with $1, $2, etc.
 	var builder strings.Builder
 	for i := range params {
-		builder.WriteString(sqlParts[i])
+		builder.WriteString(parts[i])
 		builder.WriteString("$")
 		builder.WriteString(strconv.Itoa(i + 1))
 	}
-	builder.WriteString(sqlParts[len(sqlParts)-1])
+	builder.WriteString(parts[len(parts)-1])
 
-	return builder.String(), params, nil
+	// Replace delimiter back to ?
+	finalSQL := strings.ReplaceAll(builder.String(), delimiter, "?")
+
+	return finalSQL, params, nil
 }

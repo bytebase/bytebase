@@ -3,13 +3,12 @@ package store
 import (
 	"context"
 	"database/sql"
-	"fmt"
-	"strings"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -69,7 +68,8 @@ func (s *Store) CreateIdentityProvider(ctx context.Context, create *IdentityProv
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to marshal identity provider config")
 	}
-	if _, err := tx.ExecContext(ctx, `
+
+	q := qb.Q().Space(`
 		INSERT INTO idp (
 			resource_id,
 			name,
@@ -77,14 +77,15 @@ func (s *Store) CreateIdentityProvider(ctx context.Context, create *IdentityProv
 			type,
 			config
 		)
-		VALUES ($1, $2, $3, $4, $5)
-		`,
-		create.ResourceID,
-		create.Title,
-		create.Domain,
-		create.Type.String(),
-		configBytes,
-	); err != nil {
+		VALUES (?, ?, ?, ?, ?)
+	`, create.ResourceID, create.Title, create.Domain, create.Type.String(), configBytes)
+
+	sql, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
+	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
 		return nil, err
 	}
 
@@ -172,38 +173,45 @@ func (s *Store) UpdateIdentityProvider(ctx context.Context, patch *UpdateIdentit
 }
 
 func (*Store) updateIdentityProviderImpl(ctx context.Context, txn *sql.Tx, patch *UpdateIdentityProviderMessage) (*IdentityProviderMessage, error) {
-	set, args := []string{}, []any{}
+	set := qb.Q()
 	if v := patch.Title; v != nil {
-		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
+		set.Comma("name = ?", *v)
 	}
 	if v := patch.Domain; v != nil {
-		set, args = append(set, fmt.Sprintf("domain = $%d", len(args)+1)), append(args, *v)
+		set.Comma("domain = ?", *v)
 	}
 	if v := patch.Config; v != nil {
 		configBytes, err := getConfigBytes(v)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to marshal identity provider config")
 		}
-		set, args = append(set, fmt.Sprintf("config = $%d", len(args)+1)), append(args, string(configBytes))
+		set.Comma("config = ?", string(configBytes))
 	}
-	args = append(args, patch.ResourceID)
+	if set.Len() == 0 {
+		return nil, errors.New("no fields to update")
+	}
 
-	identityProvider := &IdentityProviderMessage{}
-	var identityProviderType string
-	var identityProviderConfig string
-	if err := txn.QueryRowContext(ctx, fmt.Sprintf(`
+	q := qb.Q().Space(`
 		UPDATE idp
-		SET `+strings.Join(set, ", ")+`
-		WHERE resource_id = $%d
+		SET ?
+		WHERE resource_id = ?
 		RETURNING
 			resource_id,
 			name,
 			domain,
 			type,
 			config
-	`, len(args)),
-		args...,
-	).Scan(
+	`, set, patch.ResourceID)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
+	identityProvider := &IdentityProviderMessage{}
+	var identityProviderType string
+	var identityProviderConfig string
+	if err := txn.QueryRowContext(ctx, query, args...).Scan(
 		&identityProvider.ResourceID,
 		&identityProvider.Title,
 		&identityProvider.Domain,
@@ -222,12 +230,7 @@ func (*Store) updateIdentityProviderImpl(ctx context.Context, txn *sql.Tx, patch
 }
 
 func (*Store) listIdentityProvidersImpl(ctx context.Context, txn *sql.Tx, find *FindIdentityProviderMessage) ([]*IdentityProviderMessage, error) {
-	where, args := []string{"TRUE"}, []any{}
-	if v := find.ResourceID; v != nil {
-		where, args = append(where, fmt.Sprintf("resource_id = $%d", len(args)+1)), append(args, *v)
-	}
-
-	rows, err := txn.QueryContext(ctx, `
+	q := qb.Q().Space(`
 		SELECT
 			resource_id,
 			name,
@@ -235,9 +238,21 @@ func (*Store) listIdentityProvidersImpl(ctx context.Context, txn *sql.Tx, find *
 			type,
 			config
 		FROM idp
-		WHERE `+strings.Join(where, " AND ")+` ORDER BY id ASC`,
-		args...,
-	)
+		WHERE TRUE
+	`)
+
+	if v := find.ResourceID; v != nil {
+		q.And("resource_id = ?", *v)
+	}
+
+	q.Space("ORDER BY id ASC")
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
+	rows, err := txn.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -275,10 +290,13 @@ func (s *Store) DeleteIdentityProvider(ctx context.Context, resourceID string) e
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.ExecContext(ctx, `
-		DELETE FROM idp
-		WHERE resource_id = $1
-	`, resourceID); err != nil {
+	q := qb.Q().Space("DELETE FROM idp WHERE resource_id = ?", resourceID)
+	sql, args, err := q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+
+	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
 		return err
 	}
 

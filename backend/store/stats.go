@@ -3,12 +3,11 @@ package store
 import (
 	"context"
 	"database/sql"
-	"fmt"
-	"strings"
 
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/metric"
 )
@@ -28,11 +27,13 @@ func (s *Store) CountUsers(ctx context.Context, userType storepb.PrincipalType) 
 
 	count := 0
 
-	if err := tx.QueryRowContext(ctx, `
-	SELECT COUNT(*)
-	FROM principal
-	WHERE principal.type = $1`,
-		userType.String()).Scan(&count); err != nil {
+	q := qb.Q().Space("SELECT COUNT(*) FROM principal WHERE principal.type = ?", userType.String())
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to build sql")
+	}
+
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(&count); err != nil {
 		return 0, err
 	}
 
@@ -45,15 +46,15 @@ func (s *Store) CountUsers(ctx context.Context, userType storepb.PrincipalType) 
 
 // CountInstance counts the number of instances.
 func (s *Store) CountInstance(ctx context.Context, find *CountInstanceMessage) (int, error) {
-	where, args := []string{"instance.deleted = $1"}, []any{false}
+	q := qb.Q().Space("SELECT count(1) FROM instance WHERE instance.deleted = ?", false)
 	if v := find.EnvironmentID; v != nil {
-		where, args = append(where, fmt.Sprintf("instance.environment = $%d", len(args)+1)), append(args, *v)
+		q = q.Space("AND instance.environment = ?", *v)
 	}
-	query := `
-		SELECT
-			count(1)
-		FROM instance
-		WHERE ` + strings.Join(where, " AND ")
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to build sql")
+	}
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
@@ -79,13 +80,14 @@ func (s *Store) CountActiveUsers(ctx context.Context) (int, error) {
 	}
 	defer tx.Rollback()
 
-	query := `
-		SELECT
-			count(DISTINCT principal.id)
-		FROM principal
-		WHERE principal.deleted = $1 AND principal.type = $2`
+	q := qb.Q().Space("SELECT count(DISTINCT principal.id) FROM principal WHERE principal.deleted = ? AND principal.type = ?", false, storepb.PrincipalType_END_USER.String())
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to build sql")
+	}
+
 	var count int
-	if err := tx.QueryRowContext(ctx, query, false, storepb.PrincipalType_END_USER.String()).Scan(&count); err != nil {
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(&count); err != nil {
 		if err == sql.ErrNoRows {
 			return 0, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
@@ -106,13 +108,14 @@ func (s *Store) CountProjects(ctx context.Context) (int, error) {
 	}
 	defer tx.Rollback()
 
+	q := qb.Q().Space("SELECT COUNT(1) FROM project WHERE deleted = FALSE")
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to build sql")
+	}
+
 	var count int
-	if err := tx.QueryRowContext(ctx, `
-		SELECT
-			COUNT(1)
-		FROM project
-		WHERE deleted = FALSE`,
-	).Scan(&count); err != nil {
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(&count); err != nil {
 		return 0, err
 	}
 	if err := tx.Commit(); err != nil {
@@ -130,12 +133,14 @@ func (s *Store) CountIssues(ctx context.Context) (int, error) {
 	}
 	defer tx.Rollback()
 
+	q := qb.Q().Space("SELECT COUNT(1) FROM issue WHERE id > ?", 101)
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to build sql")
+	}
+
 	var count int
-	if err := tx.QueryRowContext(ctx, `
-		SELECT COUNT(1)
-		FROM issue
-		WHERE id > 101
-	`).Scan(&count); err != nil {
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(&count); err != nil {
 		return 0, err
 	}
 	if err := tx.Commit(); err != nil {
@@ -153,12 +158,13 @@ func (s *Store) CountInstanceGroupByEngineAndEnvironmentID(ctx context.Context) 
 	}
 	defer tx.Rollback()
 
-	rows, err := tx.QueryContext(ctx, `
-		SELECT metadata->>'engine' AS engine, environment, COUNT(1)
-		FROM instance
-		WHERE id > 101 AND deleted = FALSE
-		GROUP BY engine, environment`,
-	)
+	q := qb.Q().Space("SELECT metadata->>'engine' AS engine, environment, COUNT(1) FROM instance WHERE id > ? AND deleted = FALSE GROUP BY engine, environment", 101)
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
+	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}

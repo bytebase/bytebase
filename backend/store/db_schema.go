@@ -3,12 +3,12 @@ package store
 import (
 	"context"
 	"database/sql"
-	"fmt"
-	"strings"
 
+	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -29,9 +29,18 @@ func (s *Store) GetDBSchema(ctx context.Context, find *FindDBSchemaMessage) (*mo
 		return v, nil
 	}
 
-	where, args := []string{"TRUE"}, []any{}
-	where, args = append(where, fmt.Sprintf("instance = $%d", len(args)+1)), append(args, find.InstanceID)
-	where, args = append(where, fmt.Sprintf("db_name = $%d", len(args)+1)), append(args, find.DatabaseName)
+	q := qb.Q().Space(`
+		SELECT
+			metadata,
+			raw_dump,
+			config
+		FROM db_schema
+		WHERE instance = ? AND db_name = ?`, find.InstanceID, find.DatabaseName)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
 
 	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
@@ -40,15 +49,7 @@ func (s *Store) GetDBSchema(ctx context.Context, find *FindDBSchemaMessage) (*mo
 	defer tx.Rollback()
 
 	var metadata, schema, config []byte
-	if err := tx.QueryRowContext(ctx, `
-		SELECT
-			metadata,
-			raw_dump,
-			config
-		FROM db_schema
-		WHERE `+strings.Join(where, " AND "),
-		args...,
-	).Scan(
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(
 		&metadata,
 		&schema,
 		&config,
@@ -90,7 +91,7 @@ func (s *Store) UpsertDBSchema(
 		return err
 	}
 
-	query := `
+	q := qb.Q().Space(`
 		INSERT INTO db_schema (
 			instance,
 			db_name,
@@ -99,14 +100,26 @@ func (s *Store) UpsertDBSchema(
 			config,
 			todo
 		)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		VALUES (?, ?, ?, ?, ?, ?)
 		ON CONFLICT(instance, db_name) DO UPDATE SET
 			metadata = EXCLUDED.metadata,
 			raw_dump = EXCLUDED.raw_dump,
 			config = EXCLUDED.config,
 			todo = EXCLUDED.todo
-		RETURNING metadata, raw_dump, config
-	`
+		RETURNING metadata, raw_dump, config`,
+		instanceID,
+		databaseName,
+		metadataBytes,
+		// Convert to string because []byte{} is null which violates db schema constraints.
+		string(dbSchema),
+		configBytes,
+		todo)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -114,15 +127,7 @@ func (s *Store) UpsertDBSchema(
 	defer tx.Rollback()
 
 	var metadata, schema, config []byte
-	if err := tx.QueryRowContext(ctx, query,
-		instanceID,
-		databaseName,
-		metadataBytes,
-		// Convert to string because []byte{} is null which violates db schema constraints.
-		string(dbSchema),
-		configBytes,
-		todo,
-	).Scan(
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(
 		&metadata,
 		&schema,
 		&config,
@@ -143,29 +148,31 @@ func (s *Store) UpsertDBSchema(
 
 // UpdateDBSchema updates a database schema.
 func (s *Store) UpdateDBSchema(ctx context.Context, instanceID, databaseName string, patch *UpdateDBSchemaMessage) error {
-	set, args := []string{}, []any{}
+	set := qb.Q()
 	if v := patch.Config; v != nil {
 		bytes, err := protojson.Marshal(v)
 		if err != nil {
 			return err
 		}
-		set, args = append(set, fmt.Sprintf("config = $%d", len(args)+1)), append(args, bytes)
+		set.Comma("config = ?", bytes)
+	}
+	if set.Len() == 0 {
+		return errors.New("no fields to update")
 	}
 
-	where := []string{"TRUE"}
-	where, args = append(where, fmt.Sprintf("instance = $%d", len(args)+1)), append(args, instanceID)
-	where, args = append(where, fmt.Sprintf("db_name = $%d", len(args)+1)), append(args, databaseName)
+	q := qb.Q().Space("UPDATE db_schema SET ? WHERE instance = ? AND db_name = ?", set, instanceID, databaseName)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
-	if _, err := tx.ExecContext(ctx, `
-			UPDATE db_schema
-			SET `+strings.Join(set, ", ")+`
-			WHERE `+strings.Join(where, " AND "), args...,
-	); err != nil {
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return err
 	}
 	if err := tx.Commit(); err != nil {
@@ -187,7 +194,7 @@ type DBSchemaWithTodo struct {
 
 // ListDBSchemasWithTodo lists all db_schemas with todo = true.
 func (s *Store) ListDBSchemasWithTodo(ctx context.Context, engineType storepb.Engine, limit int) ([]*DBSchemaWithTodo, error) {
-	rows, err := s.GetDB().QueryContext(ctx, `
+	q := qb.Q().Space(`
 		SELECT
 			db_schema.id,
 			db_schema.instance,
@@ -195,9 +202,15 @@ func (s *Store) ListDBSchemasWithTodo(ctx context.Context, engineType storepb.En
 			db_schema.metadata
 		FROM db_schema
 		LEFT JOIN instance ON db_schema.instance = instance.resource_id
-		WHERE db_schema.todo = true AND instance.metadata->>'engine' = $1
-		LIMIT $2
-	`, engineType.String(), limit)
+		WHERE db_schema.todo = true AND instance.metadata->>'engine' = ?
+		LIMIT ?`, engineType.String(), limit)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
+	rows, err := s.GetDB().QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -225,17 +238,20 @@ func (s *Store) ListDBSchemasWithTodo(ctx context.Context, engineType storepb.En
 
 // UpdateDBSchemaTodo updates the todo column of a db_schema.
 func (s *Store) UpdateDBSchemaTodo(ctx context.Context, id int, todo bool) error {
+	q := qb.Q().Space("UPDATE db_schema SET todo = ? WHERE id = ?", todo, id)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.ExecContext(ctx, `
-		UPDATE db_schema
-		SET todo = $1
-		WHERE id = $2
-	`, todo, id); err != nil {
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return err
 	}
 
@@ -244,17 +260,20 @@ func (s *Store) UpdateDBSchemaTodo(ctx context.Context, id int, todo bool) error
 
 // UpdateDBSchemaMetadata updates the metadata of a db_schema.
 func (s *Store) UpdateDBSchemaMetadata(ctx context.Context, id int, metadata string) error {
+	q := qb.Q().Space("UPDATE db_schema SET metadata = ? WHERE id = ?", metadata, id)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.ExecContext(ctx, `
-		UPDATE db_schema
-		SET metadata = $1
-		WHERE id = $2
-	`, metadata, id); err != nil {
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return err
 	}
 
@@ -265,17 +284,20 @@ func (s *Store) UpdateDBSchemaMetadata(ctx context.Context, id int, metadata str
 // This is used by the migrator to avoid race conditions with the sync process.
 // The WHERE condition ensures atomic check-and-update, preventing any race conditions.
 func (s *Store) UpdateDBSchemaMetadataIfTodo(ctx context.Context, id int, metadata string) error {
+	q := qb.Q().Space("UPDATE db_schema SET metadata = ?, todo = false WHERE id = ? AND todo = true", metadata, id)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	result, err := tx.ExecContext(ctx, `
-		UPDATE db_schema
-		SET metadata = $1, todo = false
-		WHERE id = $2 AND todo = true
-	`, metadata, id)
+	result, err := tx.ExecContext(ctx, query, args...)
 	if err != nil {
 		return err
 	}

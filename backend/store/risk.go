@@ -3,14 +3,13 @@ package store
 import (
 	"context"
 	"database/sql"
-	"fmt"
-	"strings"
 
 	"github.com/pkg/errors"
 	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -55,7 +54,7 @@ type UpdateRiskMessage struct {
 
 // GetRisk gets a risk.
 func (s *Store) GetRisk(ctx context.Context, id int64) (*RiskMessage, error) {
-	query := `
+	q := qb.Q().Space(`
 		SELECT
 			id,
 			source,
@@ -64,7 +63,12 @@ func (s *Store) GetRisk(ctx context.Context, id int64) (*RiskMessage, error) {
 			active,
 			expression
 		FROM risk
-		WHERE id = $1`
+		WHERE id = ?`, id)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
 
 	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
@@ -75,7 +79,7 @@ func (s *Store) GetRisk(ctx context.Context, id int64) (*RiskMessage, error) {
 	var risk RiskMessage
 	var expressionBytes []byte
 	var levelStr string
-	if err := tx.QueryRowContext(ctx, query, id).Scan(
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(
 		&risk.ID,
 		&risk.Source,
 		&levelStr,
@@ -115,7 +119,7 @@ func (s *Store) ListRisks(ctx context.Context) ([]*RiskMessage, error) {
 		return v, nil
 	}
 
-	query := `
+	q := qb.Q().Space(`
 		SELECT
 			id,
 			source,
@@ -125,7 +129,12 @@ func (s *Store) ListRisks(ctx context.Context) ([]*RiskMessage, error) {
 			expression
 		FROM risk
 		ORDER BY source, level DESC, id
-	`
+	`)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
 
 	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
@@ -133,7 +142,7 @@ func (s *Store) ListRisks(ctx context.Context) ([]*RiskMessage, error) {
 	}
 	defer tx.Rollback()
 
-	rows, err := tx.QueryContext(ctx, query)
+	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to query %s", query)
 	}
@@ -183,19 +192,25 @@ func (s *Store) ListRisks(ctx context.Context) ([]*RiskMessage, error) {
 
 // CreateRisk creates a risk.
 func (s *Store) CreateRisk(ctx context.Context, risk *RiskMessage) (*RiskMessage, error) {
-	query := `
+	expressionBytes, err := protojson.Marshal(risk.Expression)
+	if err != nil {
+		return nil, err
+	}
+
+	q := qb.Q().Space(`
 		INSERT INTO risk (
 			source,
 			level,
 			name,
 			active,
 			expression
-		) VALUES ($1, $2, $3, $4, $5)
+		) VALUES (?, ?, ?, ?, ?)
 		RETURNING id
-	`
-	expressionBytes, err := protojson.Marshal(risk.Expression)
+	`, risk.Source, risk.Level.String(), risk.Name, risk.Active, string(expressionBytes))
+
+	query, args, err := q.ToSQL()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
@@ -206,7 +221,7 @@ func (s *Store) CreateRisk(ctx context.Context, risk *RiskMessage) (*RiskMessage
 
 	var id int64
 	// Convert enum to database string using .String() method
-	if err := tx.QueryRowContext(ctx, query, risk.Source, risk.Level.String(), risk.Name, risk.Active, string(expressionBytes)).Scan(&id); err != nil {
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(&id); err != nil {
 		return nil, err
 	}
 
@@ -227,28 +242,36 @@ func (s *Store) CreateRisk(ctx context.Context, risk *RiskMessage) (*RiskMessage
 
 // UpdateRisk updates a risk.
 func (s *Store) UpdateRisk(ctx context.Context, patch *UpdateRiskMessage, id int64) (*RiskMessage, error) {
-	set, args := []string{}, []any{}
+	set := qb.Q()
 	if v := patch.Name; v != nil {
-		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
+		set.Comma("name = ?", *v)
 	}
 	if v := patch.Active; v != nil {
-		set, args = append(set, fmt.Sprintf("active = $%d", len(args)+1)), append(args, *v)
+		set.Comma("active = ?", *v)
 	}
 	if v := patch.Level; v != nil {
 		// Convert enum to database string using .String() method
-		set, args = append(set, fmt.Sprintf("level = $%d", len(args)+1)), append(args, v.String())
+		set.Comma("level = ?", v.String())
 	}
 	if v := patch.Source; v != nil {
-		set, args = append(set, fmt.Sprintf("source = $%d", len(args)+1)), append(args, *v)
+		set.Comma("source = ?", *v)
 	}
 	if v := patch.Expression; v != nil {
 		expressionBytes, err := protojson.Marshal(patch.Expression)
 		if err != nil {
 			return nil, err
 		}
-		set, args = append(set, fmt.Sprintf("expression = $%d", len(args)+1)), append(args, string(expressionBytes))
+		set.Comma("expression = ?", string(expressionBytes))
 	}
-	args = append(args, id)
+	if set.Len() == 0 {
+		return nil, errors.New("no fields to update")
+	}
+	q := qb.Q().Space("UPDATE risk SET ? WHERE id = ?", set, id)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
@@ -256,12 +279,7 @@ func (s *Store) UpdateRisk(ctx context.Context, patch *UpdateRiskMessage, id int
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.ExecContext(ctx, `
-		UPDATE risk
-		SET `+strings.Join(set, ", ")+`
-		WHERE id = `+fmt.Sprintf("$%d", len(args)),
-		args...,
-	); err != nil {
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return nil, err
 	}
 
@@ -274,13 +292,20 @@ func (s *Store) UpdateRisk(ctx context.Context, patch *UpdateRiskMessage, id int
 }
 
 func (s *Store) DeleteRisk(ctx context.Context, id int64) error {
+	q := qb.Q().Space("DELETE FROM risk WHERE id = ?", id)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(err, "failed to begin tx")
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.ExecContext(ctx, `DELETE FROM risk WHERE id = $1`, id); err != nil {
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return err
 	}
 

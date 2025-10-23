@@ -3,14 +3,13 @@ package store
 import (
 	"context"
 	"database/sql"
-	"fmt"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -43,23 +42,28 @@ type UpdateReleaseMessage struct {
 }
 
 func (s *Store) CreateRelease(ctx context.Context, release *ReleaseMessage, creatorUID int) (*ReleaseMessage, error) {
-	query := `
+	p, err := protojson.Marshal(release.Payload)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to marshal release payload")
+	}
+
+	q := qb.Q().Space(`
 		INSERT INTO release (
 			creator_id,
 			project,
 			digest,
 			payload
 		) VALUES (
-			$1,
-			$2,
-			$3,
-			$4
+			?,
+			?,
+			?,
+			?
 		) RETURNING id, created_at
-	`
+	`, creatorUID, release.ProjectID, release.Digest, p)
 
-	p, err := protojson.Marshal(release.Payload)
+	query, args, err := q.ToSQL()
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to marshal release payload")
+		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
@@ -70,12 +74,7 @@ func (s *Store) CreateRelease(ctx context.Context, release *ReleaseMessage, crea
 
 	var id int64
 	var createdTime time.Time
-	if err := tx.QueryRowContext(ctx, query,
-		creatorUID,
-		release.ProjectID,
-		release.Digest,
-		p,
-	).Scan(&id, &createdTime); err != nil {
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(&id, &createdTime); err != nil {
 		return nil, errors.Wrapf(err, "failed to insert release")
 	}
 
@@ -105,24 +104,7 @@ func (s *Store) GetRelease(ctx context.Context, uid int64) (*ReleaseMessage, err
 }
 
 func (s *Store) ListReleases(ctx context.Context, find *FindReleaseMessage) ([]*ReleaseMessage, error) {
-	where, args := []string{"TRUE"}, []any{}
-	if v := find.ProjectID; v != nil {
-		where = append(where, fmt.Sprintf("project = $%d", len(args)+1))
-		args = append(args, *v)
-	}
-	if v := find.UID; v != nil {
-		where = append(where, fmt.Sprintf("id= $%d", len(args)+1))
-		args = append(args, *v)
-	}
-	if v := find.Digest; v != nil {
-		where = append(where, fmt.Sprintf("digest = $%d", len(args)+1))
-		args = append(args, *v)
-	}
-	if !find.ShowDeleted {
-		where, args = append(where, fmt.Sprintf("deleted = $%d", len(args)+1)), append(args, false)
-	}
-
-	query := fmt.Sprintf(`
+	q := qb.Q().Space(`
 		SELECT
 			id,
 			deleted,
@@ -132,15 +114,33 @@ func (s *Store) ListReleases(ctx context.Context, find *FindReleaseMessage) ([]*
 			created_at,
 			payload
 		FROM release
-		WHERE %s
-		ORDER BY release.id DESC
-	`, strings.Join(where, " AND "))
+		WHERE TRUE
+	`)
 
+	if v := find.ProjectID; v != nil {
+		q.And("project = ?", *v)
+	}
+	if v := find.UID; v != nil {
+		q.And("id = ?", *v)
+	}
+	if v := find.Digest; v != nil {
+		q.And("digest = ?", *v)
+	}
+	if !find.ShowDeleted {
+		q.And("deleted = ?", false)
+	}
+
+	q.Space("ORDER BY release.id DESC")
 	if v := find.Limit; v != nil {
-		query += fmt.Sprintf(" LIMIT %d", *v)
+		q.Space("LIMIT ?", *v)
 	}
 	if v := find.Offset; v != nil {
-		query += fmt.Sprintf(" OFFSET %d", *v)
+		q.Space("OFFSET ?", *v)
+	}
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
 	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
@@ -193,23 +193,26 @@ func (s *Store) ListReleases(ctx context.Context, find *FindReleaseMessage) ([]*
 }
 
 func (s *Store) UpdateRelease(ctx context.Context, update *UpdateReleaseMessage) (*ReleaseMessage, error) {
-	set, args := []string{}, []any{}
-
+	set := qb.Q()
 	if v := update.Deleted; v != nil {
-		set, args = append(set, fmt.Sprintf(`deleted = $%d`, len(args)+1)), append(args, *v)
+		set.Comma("deleted = ?", *v)
 	}
 	if v := update.Payload; v != nil {
 		payload, err := protojson.Marshal(update.Payload)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to marshal payload")
 		}
-		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, payload)
+		set.Comma("payload = ?", payload)
 	}
-	if len(set) == 0 {
+
+	if set.Len() == 0 {
 		return nil, errors.New("no update field provided")
 	}
 
-	args = append(args, update.UID)
+	query, args, err := qb.Q().Space("UPDATE release SET ? WHERE id = ?", set, update.UID).ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
@@ -217,7 +220,7 @@ func (s *Store) UpdateRelease(ctx context.Context, update *UpdateReleaseMessage)
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.ExecContext(ctx, fmt.Sprintf(`UPDATE release SET %s WHERE id = $%d`, strings.Join(set, ", "), len(args)), args...); err != nil {
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return nil, errors.Wrapf(err, "failed to query row")
 	}
 

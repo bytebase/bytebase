@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -38,57 +39,63 @@ type AuditLogFind struct {
 }
 
 func (s *Store) CreateAuditLog(ctx context.Context, payload *storepb.AuditLog) error {
-	query := `
-		INSERT INTO audit_log (payload) VALUES ($1)
-	`
-
 	p, err := protojson.Marshal(payload)
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal payload")
 	}
 
-	if _, err := s.GetDB().ExecContext(ctx, query, p); err != nil {
+	q := qb.Q().Space("INSERT INTO audit_log (payload) VALUES (?)", p)
+	sql, args, err := q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+
+	if _, err := s.GetDB().ExecContext(ctx, sql, args...); err != nil {
 		return errors.Wrapf(err, "failed to create audit log")
 	}
 	return nil
 }
 
 func (s *Store) SearchAuditLogs(ctx context.Context, find *AuditLogFind) ([]*AuditLog, error) {
-	where, args := []string{"TRUE"}, []any{}
-	if v := find.Filter; v != nil {
-		where = append(where, v.Where)
-		args = append(args, v.Args...)
-	}
-	if v := find.Project; v != nil {
-		where = append(where, fmt.Sprintf("payload->>'parent' = $%d", len(args)+1))
-		args = append(args, *v)
-	}
-
-	query := fmt.Sprintf(`
+	q := qb.Q().Space(`
 		SELECT
 			id,
 			created_at,
 			payload
 		FROM audit_log
-		WHERE %s`, strings.Join(where, " AND "))
+		WHERE TRUE
+	`)
+
+	if v := find.Filter; v != nil {
+		// Convert $1, $2, etc. to ? for qb
+		q.And(ConvertDollarPlaceholders(v.Where), v.Args...)
+	}
+	if v := find.Project; v != nil {
+		q.And("payload->>'parent' = ?", *v)
+	}
 
 	if len(find.OrderByKeys) > 0 {
 		orderBy := []string{}
 		for _, v := range find.OrderByKeys {
 			orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
 		}
-		query += fmt.Sprintf(" ORDER BY %s", strings.Join(orderBy, ", "))
+		q.Space(fmt.Sprintf("ORDER BY %s", strings.Join(orderBy, ", ")))
 	} else {
-		query += " ORDER BY id DESC"
+		q.Space("ORDER BY id DESC")
 	}
 	if v := find.Limit; v != nil {
-		query += fmt.Sprintf(" LIMIT %d", *v)
+		q.Space("LIMIT ?", *v)
 	}
 	if v := find.Offset; v != nil {
-		query += fmt.Sprintf(" OFFSET %d", *v)
+		q.Space("OFFSET ?", *v)
 	}
 
-	rows, err := s.GetDB().QueryContext(ctx, query, args...)
+	sql, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
+	rows, err := s.GetDB().QueryContext(ctx, sql, args...)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to query context")
 	}

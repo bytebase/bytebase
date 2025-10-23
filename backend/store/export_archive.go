@@ -3,14 +3,13 @@ package store
 import (
 	"context"
 	"database/sql"
-	"fmt"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -43,10 +42,23 @@ func (s *Store) GetExportArchive(ctx context.Context, find *FindExportArchiveMes
 
 // ListExportArchives lists export archives.
 func (s *Store) ListExportArchives(ctx context.Context, find *FindExportArchiveMessage) ([]*ExportArchiveMessage, error) {
-	where, args := []string{"TRUE"}, []any{}
+	q := qb.Q().Space(`
+		SELECT
+			id,
+			created_at,
+			bytes,
+			payload
+		FROM export_archive
+		WHERE TRUE
+	`)
 
 	if v := find.UID; v != nil {
-		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
+		q.And("id = ?", *v)
+	}
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
 	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
@@ -55,17 +67,7 @@ func (s *Store) ListExportArchives(ctx context.Context, find *FindExportArchiveM
 	}
 	defer tx.Rollback()
 
-	query := fmt.Sprintf(`
-		SELECT
-			id,
-			created_at,
-			bytes,
-			payload
-		FROM export_archive
-		WHERE %s`, strings.Join(where, " AND "))
-	rows, err := tx.QueryContext(ctx, query,
-		args...,
-	)
+	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -108,26 +110,26 @@ func (s *Store) CreateExportArchive(ctx context.Context, create *ExportArchiveMe
 		return nil, err
 	}
 
-	query := `
+	q := qb.Q().Space(`
 		INSERT INTO export_archive (
 			bytes,
 			payload
 		)
-		VALUES ($1, $2)
-		RETURNING id;
-	`
+		VALUES (?, ?)
+		RETURNING id
+	`, create.Bytes, payload)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback()
-	if err := tx.QueryRowContext(ctx, query,
-		create.Bytes,
-		payload,
-	).Scan(
-		&create.UID,
-	); err != nil {
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(&create.UID); err != nil {
 		return nil, err
 	}
 	if err := tx.Commit(); err != nil {
@@ -139,13 +141,19 @@ func (s *Store) CreateExportArchive(ctx context.Context, create *ExportArchiveMe
 
 // DeleteExportArchive deletes a export archive.
 func (s *Store) DeleteExportArchive(ctx context.Context, uid int) error {
+	q := qb.Q().Space("DELETE FROM export_archive WHERE id = ?", uid)
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.ExecContext(ctx, `DELETE FROM export_archive WHERE id = $1;`, uid); err != nil {
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return err
 	}
 
@@ -157,12 +165,13 @@ func (s *Store) DeleteExportArchive(ctx context.Context, uid int) error {
 func (s *Store) DeleteExpiredExportArchives(ctx context.Context, retentionPeriod time.Duration) (int64, error) {
 	cutoffTime := time.Now().Add(-retentionPeriod)
 
-	query := `
-		DELETE FROM export_archive 
-		WHERE created_at < $1
-	`
+	q := qb.Q().Space("DELETE FROM export_archive WHERE created_at < ?", cutoffTime)
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to build sql")
+	}
 
-	result, err := s.GetDB().ExecContext(ctx, query, cutoffTime)
+	result, err := s.GetDB().ExecContext(ctx, query, args...)
 	if err != nil {
 		return 0, err
 	}
