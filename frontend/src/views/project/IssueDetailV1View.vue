@@ -63,8 +63,11 @@ onMounted(() => {
   const isCreatingDatabasePlan = plan.value.specs.every(
     (spec) => spec.config.case === "createDatabaseConfig"
   );
-  // Redirect to legacy layout if new layout is disabled and the plan is not a database creation plan.
-  if (!enabledNewLayout.value && !isCreatingDatabasePlan) {
+  const isExportDataPlan = plan.value.specs.every(
+    (spec) => spec.config.case === "exportDataConfig"
+  );
+  // Redirect to legacy layout if new layout is disabled and the plan is not a database creation or export data plan.
+  if (!enabledNewLayout.value && !isCreatingDatabasePlan && !isExportDataPlan) {
     const legacyIssueSlug = issueV1Slug(
       `projects/${props.projectId}/issues/${props.issueId}`,
       "issue"
