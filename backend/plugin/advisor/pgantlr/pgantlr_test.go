@@ -9,8 +9,11 @@ import (
 
 func TestPostgreSQLANTLRRules(t *testing.T) {
 	antlrRules := []advisor.SQLReviewRuleType{
-		HelloWorldRule,                      // Test advisor to verify framework works
-		advisor.BuiltinRulePriorBackupCheck, // Migrated from legacy
+		HelloWorldRule,                                  // Test advisor to verify framework works
+		advisor.BuiltinRulePriorBackupCheck,             // Migrated from legacy
+		advisor.SchemaRuleCollationAllowlist,            // Migrated from legacy
+		advisor.SchemaRuleColumnCommentConvention,       // Migrated from legacy
+		advisor.SchemaRuleColumnDefaultDisallowVolatile, // Migrated from legacy
 		// Add real rules here as you migrate them from legacy pg/ folder
 		// Example:
 		// advisor.SchemaRuleStatementDisallowCommit,
@@ -29,4 +32,5 @@ func TestPostgreSQLANTLRRules(t *testing.T) {
 var advisorNeedMockData = map[advisor.SQLReviewRuleType]bool{
 	// advisor.SchemaRuleFullyQualifiedObjectName: true,
 	advisor.BuiltinRulePriorBackupCheck: true,
+	// New advisors don't need mock data
 }

@@ -1,0 +1,35 @@
+- statement: CREATE TABLE t(a text COLLATE utf8mb4_0900_ai_ci)
+  changeType: 1
+- statement: CREATE TABLE t(a text COLLATE "unknown")
+  changeType: 1
+  want:
+    - status: 2
+      code: 1201
+      title: system.collation.allowlist
+      content: Use disabled collation "unknown", related statement "CREATE TABLE t(a text COLLATE "unknown")"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book ADD COLUMN c1 text COLLATE "unknown"
+  changeType: 1
+  want:
+    - status: 2
+      code: 1201
+      title: system.collation.allowlist
+      content: Use disabled collation "unknown", related statement "ALTER TABLE tech_book ADD COLUMN c1 text COLLATE "unknown""
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book ALTER COLUMN id TYPE text COLLATE "unknown"
+  changeType: 1
+  want:
+    - status: 2
+      code: 1201
+      title: system.collation.allowlist
+      content: Use disabled collation "unknown", related statement "ALTER TABLE tech_book ALTER COLUMN id TYPE text COLLATE "unknown""
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
