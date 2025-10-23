@@ -185,7 +185,6 @@ import { cloneDeep, head } from "lodash-es";
 import { ArrowLeftIcon, PlusIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, reactive, ref } from "vue";
-import { useI18n } from "vue-i18n";
 import { IndexIcon, TablePartitionIcon } from "@/components/Icon";
 import { Drawer, DrawerContent } from "@/components/v2";
 import type { ComposedDatabase } from "@/types";
@@ -247,19 +246,16 @@ interface LocalState {
   showFeatureModal: boolean;
 }
 
-const { t } = useI18n();
 const {
   readonly,
   events,
   options,
   addTab,
   markEditStatus,
-  removeEditStatus,
   getSchemaStatus,
   getTableStatus,
   getColumnStatus,
   getDatabaseCatalog,
-  removeColumnCatalog,
   upsertColumnCatalog,
   queuePendingScrollToColumn,
   selectionEnabled,
