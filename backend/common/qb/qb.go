@@ -129,6 +129,10 @@ func (q *Query) Len() int {
 
 // ToSQL generates PostgreSQL-compatible SQL with $1, $2, ... placeholders.
 // Returns the SQL string, parameters slice, and any error.
+//
+// Placeholder rules:
+// - Single ? → parameter placeholder (converted to $1, $2, etc.)
+// - Double ?? → literal ? in SQL (for PostgreSQL JSONB operators like ?, ?|, ?&)
 func (q *Query) ToSQL() (string, []any, error) {
 	if q == nil {
 		return "", nil, errors.New("cannot generate SQL from nil Query")
@@ -150,19 +154,30 @@ func (q *Query) ToSQL() (string, []any, error) {
 
 	sql := sqlBuilder.String()
 
-	// Second pass: replace ? placeholders with $1, $2, etc.
-	sqlParts := strings.Split(sql, "?")
-	if len(sqlParts)-1 != len(params) {
+	// Second pass: replace ? placeholders with $1, $2, etc., handling ?? escape sequence
+	// Use a unique delimiter that won't appear in SQL
+	const delimiter = "\x00"
+	// Replace ?? with delimiter temporarily
+	sql = strings.ReplaceAll(sql, "??", delimiter)
+	// Split on remaining ? (these are all placeholders)
+	parts := strings.Split(sql, "?")
+
+	// Verify parameter count matches
+	if len(parts)-1 != len(params) {
 		return "", nil, errors.New("mismatched parameters: ? placeholders count does not match params count")
 	}
 
+	// Build final SQL with $1, $2, etc.
 	var builder strings.Builder
 	for i := range params {
-		builder.WriteString(sqlParts[i])
+		builder.WriteString(parts[i])
 		builder.WriteString("$")
 		builder.WriteString(strconv.Itoa(i + 1))
 	}
-	builder.WriteString(sqlParts[len(sqlParts)-1])
+	builder.WriteString(parts[len(parts)-1])
 
-	return builder.String(), params, nil
+	// Replace delimiter back to ?
+	finalSQL := strings.ReplaceAll(builder.String(), delimiter, "?")
+
+	return finalSQL, params, nil
 }

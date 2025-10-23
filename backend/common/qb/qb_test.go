@@ -308,6 +308,90 @@ func TestQuery_ErrorHandling(t *testing.T) {
 	require.Contains(t, err.Error(), "nil Query")
 }
 
+func TestQuery_JSONBExistsOperator(t *testing.T) {
+	// Test the ? operator (key existence check)
+	q := Q().Space("SELECT * FROM tasks").
+		Where("payload ?? 'schema_version'")
+	sql, args, err := q.ToSQL()
+	require.NoError(t, err)
+	require.Equal(t, "SELECT * FROM tasks WHERE payload ? 'schema_version'", sql)
+	require.Empty(t, args)
+}
+
+func TestQuery_JSONBExistsAnyOperator(t *testing.T) {
+	// Test the ?| operator (any key exists)
+	q := Q().Space("DELETE FROM issue_comment").
+		Where("(payload->'taskUpdate')??|'{toEarliestAllowedTime, fromEarliestAllowedTime}'")
+	sql, args, err := q.ToSQL()
+	require.NoError(t, err)
+	require.Equal(t, "DELETE FROM issue_comment WHERE (payload->'taskUpdate')?|'{toEarliestAllowedTime, fromEarliestAllowedTime}'", sql)
+	require.Empty(t, args)
+}
+
+func TestQuery_JSONBExistsAllOperator(t *testing.T) {
+	// Test the ?& operator (all keys exist)
+	q := Q().Space("SELECT * FROM issues").
+		Where("payload->'labels' ??& ?::TEXT[]", []string{"bug", "critical"})
+	sql, args, err := q.ToSQL()
+	require.NoError(t, err)
+	require.Equal(t, "SELECT * FROM issues WHERE payload->'labels' ?& $1::TEXT[]", sql)
+	require.Equal(t, []any{[]string{"bug", "critical"}}, args)
+}
+
+func TestQuery_JSONBMixedOperators(t *testing.T) {
+	// Test mixing JSONB operators with regular parameters
+	q := Q().Space("SELECT * FROM tasks").
+		Where("instance = ?", "prod").
+		And("payload ?? 'type'").
+		And("payload->>'status' = ?", "completed")
+	sql, args, err := q.ToSQL()
+	require.NoError(t, err)
+	require.Equal(t, "SELECT * FROM tasks WHERE instance = $1 AND payload ? 'type' AND payload->>'status' = $2", sql)
+	require.Equal(t, []any{"prod", "completed"}, args)
+}
+
+func TestQuery_JSONBComplexQuery(t *testing.T) {
+	// Realistic example from the codebase
+	q := Q().Space("SELECT * FROM revision").
+		Where("TRUE").
+		And("instance = ?", "prod").
+		And("db_name = ?", "main").
+		And("payload->>'type' = ?", "MIGRATE").
+		And("payload ?? 'schema_version'").
+		And("deleted_at IS NULL").
+		Space("ORDER BY version DESC").
+		Space("LIMIT ?", 10)
+	sql, args, err := q.ToSQL()
+	require.NoError(t, err)
+	require.Equal(t, "SELECT * FROM revision WHERE TRUE AND instance = $1 AND db_name = $2 AND payload->>'type' = $3 AND payload ? 'schema_version' AND deleted_at IS NULL ORDER BY version DESC LIMIT $4", sql)
+	require.Equal(t, []any{"prod", "main", "MIGRATE", 10}, args)
+}
+
+func TestQuery_EscapedQuestionMarks(t *testing.T) {
+	// Test multiple ?? in a row - need to escape each ?
+	q := Q().Space("SELECT '??????' as question_marks")
+	sql, args, err := q.ToSQL()
+	require.NoError(t, err)
+	require.Equal(t, "SELECT '???' as question_marks", sql)
+	require.Empty(t, args)
+}
+
+func TestQuery_JSONBWithComposition(t *testing.T) {
+	// Test JSONB operators with query composition
+	labelFilter := Q().Space("payload->'labels' ??& ?::TEXT[]", []string{"important"})
+	typeFilter := Q().Space("payload ?? 'type'")
+
+	q := Q().Space("SELECT * FROM issues").
+		Where("?", labelFilter).
+		And("?", typeFilter).
+		And("status = ?", "open")
+
+	sql, args, err := q.ToSQL()
+	require.NoError(t, err)
+	require.Equal(t, "SELECT * FROM issues WHERE payload->'labels' ?& $1::TEXT[] AND payload ? 'type' AND status = $2", sql)
+	require.Equal(t, []any{[]string{"important"}, "open"}, args)
+}
+
 func TestQuery_Comma(t *testing.T) {
 	// Build a SET clause with comma separators
 	set := Q()

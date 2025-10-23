@@ -170,7 +170,7 @@ func (s *Store) UpdateChangelist(ctx context.Context, update *UpdateChangelistMe
 		if err != nil {
 			return err
 		}
-		q.Space(", payload = ?", payload)
+		q.Comma("payload = ?", payload)
 	}
 	q.Space("WHERE project = ? AND name = ?", update.ProjectID, update.ResourceID)
 

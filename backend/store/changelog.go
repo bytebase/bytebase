@@ -120,34 +120,22 @@ func (s *Store) CreateChangelog(ctx context.Context, create *ChangelogMessage) (
 }
 
 func (s *Store) UpdateChangelog(ctx context.Context, update *UpdateChangelogMessage) error {
-	var set []string
-	var args []any
-
+	set := qb.Q()
 	if v := update.SyncHistoryUID; v != nil {
-		set = append(set, "sync_history_id = ?")
-		args = append(args, *v)
+		set.Comma("sync_history_id = ?", *v)
 	}
 	if v := update.RevisionUID; v != nil {
-		set = append(set, fmt.Sprintf(`payload = payload || '{"revision": "%d"}'`, *v))
+		set.Comma("payload = payload || jsonb_build_object('revision', ?::BIGINT)", *v)
 	}
 	if v := update.Status; v != nil {
-		set = append(set, "status = ?")
-		args = append(args, *v)
+		set.Comma("status = ?", *v)
 	}
 
-	if len(set) == 0 {
+	if set.Len() == 0 {
 		return errors.Errorf("update nothing")
 	}
 
-	args = append(args, update.UID)
-
-	q := qb.Q().Space(fmt.Sprintf(`
-		UPDATE changelog
-		SET %s
-		WHERE id = ?
-	`, strings.Join(set, " , ")), args...)
-
-	query, finalArgs, err := q.ToSQL()
+	query, args, err := qb.Q().Space("UPDATE changelog SET ? WHERE id = ?", set, update.UID).ToSQL()
 	if err != nil {
 		return errors.Wrapf(err, "failed to build sql")
 	}
@@ -158,7 +146,7 @@ func (s *Store) UpdateChangelog(ctx context.Context, update *UpdateChangelogMess
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.ExecContext(ctx, query, finalArgs...); err != nil {
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return errors.Wrapf(err, "failed to update")
 	}
 

@@ -383,94 +383,49 @@ func (s *Store) ListTasks(ctx context.Context, find *TaskFind) ([]*TaskMessage, 
 // UpdateTaskV2 updates an existing task.
 // Returns ENOTFOUND if task does not exist.
 func (s *Store) UpdateTaskV2(ctx context.Context, patch *TaskPatch) (*TaskMessage, error) {
-	q := qb.Q().Space("UPDATE task SET")
-
-	needsComma := false
+	set := qb.Q()
 	if v := patch.DatabaseName; v != nil {
-		if needsComma {
-			q.Space(",")
-		}
-		q.Space("db_name = ?", *v)
-		needsComma = true
+		set.Comma("db_name = ?", *v)
 	}
 	if v := patch.Type; v != nil {
-		if needsComma {
-			q.Space(",")
-		}
-		q.Space("type = ?", v.String())
-		needsComma = true
+		set.Comma("type = ?", v.String())
 	}
 
 	payloadParts := qb.Q()
-	hasPayload := false
 	if v := patch.SheetID; v != nil {
-		if hasPayload {
-			payloadParts.Space("||")
-		}
-		payloadParts.Space("jsonb_build_object('sheetId', ?::INT)", *v)
-		hasPayload = true
+		payloadParts.Join(" || ", "jsonb_build_object('sheetId', ?::INT)", *v)
 	}
 	if v := patch.SchemaVersion; v != nil {
-		if hasPayload {
-			payloadParts.Space("||")
-		}
-		payloadParts.Space("jsonb_build_object('schemaVersion', ?::TEXT)", *v)
-		hasPayload = true
+		payloadParts.Join(" || ", "jsonb_build_object('schemaVersion', ?::TEXT)", *v)
 	}
 	if v := patch.ExportFormat; v != nil {
-		if hasPayload {
-			payloadParts.Space("||")
-		}
-		payloadParts.Space("jsonb_build_object('format', ?::INT)", *v)
-		hasPayload = true
+		payloadParts.Join(" || ", "jsonb_build_object('format', ?::INT)", *v)
 	}
 	if v := patch.ExportPassword; v != nil {
-		if hasPayload {
-			payloadParts.Space("||")
-		}
-		payloadParts.Space("jsonb_build_object('password', ?::TEXT)", *v)
-		hasPayload = true
+		payloadParts.Join(" || ", "jsonb_build_object('password', ?::TEXT)", *v)
 	}
 	if v := patch.EnablePriorBackup; v != nil {
-		if hasPayload {
-			payloadParts.Space("||")
-		}
-		payloadParts.Space("jsonb_build_object('enablePriorBackup', ?::BOOLEAN)", *v)
-		hasPayload = true
+		payloadParts.Join(" || ", "jsonb_build_object('enablePriorBackup', ?::BOOLEAN)", *v)
 	}
 	if v := patch.MigrateType; v != nil {
-		if hasPayload {
-			payloadParts.Space("||")
-		}
-		payloadParts.Space("jsonb_build_object('migrateType', ?::TEXT)", v.String())
-		hasPayload = true
+		payloadParts.Join(" || ", "jsonb_build_object('migrateType', ?::TEXT)", v.String())
 	}
 	if v := patch.Flags; v != nil {
 		jsonb, err := json.Marshal(v)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to marshal flags")
 		}
-		if hasPayload {
-			payloadParts.Space("||")
-		}
-		payloadParts.Space("jsonb_build_object('flags', ?::JSONB)", jsonb)
-		hasPayload = true
+		payloadParts.Join(" || ", "jsonb_build_object('flags', ?::JSONB)", jsonb)
 	}
-	if hasPayload {
-		if needsComma {
-			q.Space(",")
-		}
-		payloadQuery, payloadArgs, err := payloadParts.ToSQL()
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to build payload sql")
-		}
-		q.Space("payload = payload || "+payloadQuery, payloadArgs...)
+	if payloadParts.Len() > 0 {
+		set.Comma("payload = payload || ?", payloadParts)
 	}
 
-	q.Space("WHERE id = ?", patch.ID).
-		Space("RETURNING id, pipeline_id, instance, db_name, environment, type, payload")
+	if set.Len() == 0 {
+		return nil, errors.Errorf("no fields to update")
+	}
 
-	query, args, err := q.ToSQL()
+	query, args, err := qb.Q().Space(`UPDATE task SET ? WHERE id = ? RETURNING id, pipeline_id, instance, db_name, environment, type, payload`, set, patch.ID).ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}

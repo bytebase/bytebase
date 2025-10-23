@@ -344,7 +344,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		where.And("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = issue.pipeline_id AND task.environment = ?)", *v)
 	}
 	if len(find.LabelList) != 0 {
-		where.And("payload->'labels' ?& ?::TEXT[]", find.LabelList)
+		where.And("payload->'labels' ??& ?::TEXT[]", find.LabelList)
 	}
 	if find.NoPipeline {
 		where.And("issue.pipeline_id IS NULL")

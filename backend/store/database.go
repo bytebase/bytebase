@@ -279,8 +279,7 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 		return nil, errors.New("no fields to update")
 	}
 
-	q := qb.Q().Space("UPDATE db SET ?", set).
-		Space("WHERE instance = ? AND name = ? RETURNING id", patch.InstanceID, patch.DatabaseName)
+	q := qb.Q().Space("UPDATE db SET ? WHERE instance = ? AND name = ? RETURNING id", set, patch.InstanceID, patch.DatabaseName)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -337,8 +336,7 @@ func (s *Store) BatchUpdateDatabases(ctx context.Context, databases []*DatabaseM
 		return nil, errors.Errorf("empty where")
 	}
 
-	q := qb.Q().Space("UPDATE db SET ?", set).
-		Space("WHERE ?", where)
+	q := qb.Q().Space("UPDATE db SET ? WHERE ?", set, where)
 
 	query, args, err := q.ToSQL()
 	if err != nil {

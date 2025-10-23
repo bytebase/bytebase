@@ -160,7 +160,7 @@ func (s *Store) UpdateDBSchema(ctx context.Context, instanceID, databaseName str
 		return errors.New("no fields to update")
 	}
 
-	q := qb.Q().Space("UPDATE db_schema SET ?", set).Where("instance = ? AND db_name = ?", instanceID, databaseName)
+	q := qb.Q().Space("UPDATE db_schema SET ? WHERE instance = ? AND db_name = ?", set, instanceID, databaseName)
 
 	query, args, err := q.ToSQL()
 	if err != nil {

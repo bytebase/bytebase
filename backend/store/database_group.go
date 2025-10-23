@@ -183,7 +183,7 @@ func (s *Store) UpdateDatabaseGroup(ctx context.Context, projectID, resourceID s
 		return nil, errors.New("no fields to update")
 	}
 
-	q := qb.Q().Space("UPDATE db_group SET ?", set).Space("WHERE project = ? AND resource_id = ?", projectID, resourceID).Space("RETURNING project, resource_id, name, expression")
+	q := qb.Q().Space("UPDATE db_group SET ? WHERE project = ? AND resource_id = ? RETURNING project, resource_id, name, expression", set, projectID, resourceID)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
