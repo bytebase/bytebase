@@ -68,7 +68,6 @@
     },
     "revert": "恢复",
     "confirm-to-revert": "确定撤销编辑？",
-    "apply": "应用",
     "reorder": "排序",
     "id": "ID",
     "name": "名称",
@@ -1467,6 +1466,7 @@
     "delete": "删除此环境",
     "delete-description": "删除环境也会将其从相关实例和数据库中删除。@:common.cannot-undo-this-action",
     "create": "创建环境",
+    "reorder": "重新排序环境",
     "successfully-updated-environment": "环境'{name}'更新成功",
     "production-environment": "生产环境",
     "access-control": {

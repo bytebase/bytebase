@@ -329,6 +329,32 @@ func (l *sdlChunkExtractor) EnterViewstmt(ctx *parser.ViewstmtContext) {
 	l.chunks.Views[schemaQualifiedName] = chunk
 }
 
+func (l *sdlChunkExtractor) EnterCreateschemastmt(ctx *parser.CreateschemastmtContext) {
+	// Extract schema name
+	var schemaName string
+
+	// Schema name can be either from optschemaname or colid
+	if ctx.Colid() != nil {
+		schemaName = pgparser.NormalizePostgreSQLColid(ctx.Colid())
+	} else if ctx.Optschemaname() != nil && ctx.Optschemaname().Colid() != nil {
+		schemaName = pgparser.NormalizePostgreSQLColid(ctx.Optschemaname().Colid())
+	} else {
+		// Skip if we can't determine schema name
+		return
+	}
+
+	// Skip pg_catalog and information_schema
+	if schemaName == "pg_catalog" || schemaName == "information_schema" {
+		return
+	}
+
+	// Create chunk for this schema
+	l.chunks.Schemas[schemaName] = &schema.SDLChunk{
+		Identifier: schemaName,
+		ASTNode:    ctx,
+	}
+}
+
 func (l *sdlChunkExtractor) EnterCommentstmt(ctx *parser.CommentstmtContext) {
 	// Extract the comment text (can be sconst or NULL)
 	// We store the entire AST node, not just the comment text
@@ -4328,7 +4354,17 @@ func processObjectComments(currentMap, previousMap map[string]*schema.SDLChunk, 
 
 		// If comments are different, generate a CommentDiff
 		if currentCommentText != previousCommentText {
-			schemaName, objectName := parseIdentifier(identifier)
+			var schemaName, objectName string
+
+			// For SCHEMA objects, identifier is just the schema name
+			// For other objects, identifier is "schema.object"
+			if objectType == schema.CommentObjectTypeSchema {
+				schemaName = identifier
+				objectName = identifier // For schemas, objectName is also the schema name
+			} else {
+				schemaName, objectName = parseIdentifier(identifier)
+			}
+
 			action := schema.MetadataDiffActionAlter
 			if previousCommentText == "" {
 				action = schema.MetadataDiffActionCreate

@@ -1051,7 +1051,12 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 	}
 
 	// Handle enum type comment changes
-	return generateEnumTypeCommentChanges(buf, diff)
+	if err := generateEnumTypeCommentChanges(buf, diff); err != nil {
+		return err
+	}
+
+	// Handle SDL-based comment changes (from SDL diff mode)
+	return generateCommentChangesFromSDL(buf, diff)
 }
 
 func generateCreateTable(schemaName, tableName string, table *storepb.TableMetadata, includeForeignKeys bool) (string, error) {
@@ -2896,6 +2901,61 @@ func writeCommentOnType(out *strings.Builder, schema, typeName, comment string) 
 	}
 	_, _ = out.WriteString(`;`)
 	_, _ = out.WriteString("\n")
+}
+
+// generateCommentChangesFromSDL generates COMMENT ON statements from SDL-based comment diffs
+// This handles comment changes detected from SDL diff mode (AST-based)
+func generateCommentChangesFromSDL(buf *strings.Builder, diff *schema.MetadataDiff) error {
+	if len(diff.CommentChanges) == 0 {
+		return nil
+	}
+
+	for _, commentDiff := range diff.CommentChanges {
+		// Extract the new comment text from the AST node
+		newComment := extractCommentFromDiff(commentDiff)
+
+		switch commentDiff.ObjectType {
+		case schema.CommentObjectTypeSchema:
+			writeCommentOnSchema(buf, commentDiff.SchemaName, newComment)
+
+		case schema.CommentObjectTypeTable:
+			writeCommentOnTable(buf, commentDiff.SchemaName, commentDiff.ObjectName, newComment)
+
+		case schema.CommentObjectTypeColumn:
+			writeCommentOnColumn(buf, commentDiff.SchemaName, commentDiff.ObjectName, commentDiff.ColumnName, newComment)
+
+		case schema.CommentObjectTypeView:
+			writeCommentOnView(buf, commentDiff.SchemaName, commentDiff.ObjectName, newComment)
+
+		case schema.CommentObjectTypeFunction:
+			// For functions, ObjectName contains the function signature
+			writeCommentOnFunction(buf, commentDiff.SchemaName, commentDiff.ObjectName, newComment)
+
+		case schema.CommentObjectTypeSequence:
+			writeCommentOnSequence(buf, commentDiff.SchemaName, commentDiff.ObjectName, newComment)
+
+		case schema.CommentObjectTypeIndex:
+			// Index name is stored in IndexName field
+			indexName := commentDiff.IndexName
+			if indexName == "" {
+				// Fallback to ObjectName if IndexName is not set
+				indexName = commentDiff.ObjectName
+			}
+			writeCommentOnIndex(buf, commentDiff.SchemaName, indexName, newComment)
+
+		default:
+			// Unknown object type, skip
+			continue
+		}
+	}
+
+	return nil
+}
+
+// extractCommentFromDiff extracts the comment text from a CommentDiff
+// It uses the NewComment field which contains the extracted comment text
+func extractCommentFromDiff(commentDiff *schema.CommentDiff) string {
+	return commentDiff.NewComment
 }
 
 // convertToCreateOrReplace uses ANTLR parser to safely convert CREATE FUNCTION to CREATE OR REPLACE FUNCTION
