@@ -426,3 +426,318 @@ COMMENT ON TABLE "public"."users" IS 'Basic user table';
 	require.Contains(t, migrationSQL, "email")
 	require.Contains(t, migrationSQL, "User table with email")
 }
+
+func TestFunctionMigration_NewFunctionWithComment(t *testing.T) {
+	currentSDL := `
+CREATE FUNCTION "public"."calculate_tax"(amount numeric) RETURNS numeric
+	LANGUAGE plpgsql
+	AS $$
+BEGIN
+	RETURN amount * 0.1;
+END;
+$$;
+
+COMMENT ON FUNCTION "public"."calculate_tax"(numeric) IS 'Calculate 10% tax';
+`
+
+	previousSDL := ``
+
+	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+	require.NoError(t, err)
+
+	migrationSQL, err := generateMigration(diff)
+	require.NoError(t, err)
+
+	t.Logf("Generated migration SQL:\n%s", migrationSQL)
+
+	// Should contain both CREATE FUNCTION and COMMENT ON FUNCTION
+	require.Contains(t, migrationSQL, "CREATE FUNCTION")
+	require.Contains(t, migrationSQL, "COMMENT ON FUNCTION")
+	require.Contains(t, migrationSQL, "calculate_tax")
+	require.Contains(t, migrationSQL, "Calculate 10% tax")
+}
+
+func TestViewMigration_NewViewWithComment(t *testing.T) {
+	currentSDL := `
+CREATE TABLE "public"."users" (
+	"id" integer NOT NULL,
+	"name" text,
+	"active" boolean
+);
+
+CREATE VIEW "public"."active_users" AS SELECT * FROM users WHERE active = true;
+
+COMMENT ON VIEW "public"."active_users" IS 'View of all active users';
+`
+
+	previousSDL := `
+CREATE TABLE "public"."users" (
+	"id" integer NOT NULL,
+	"name" text,
+	"active" boolean
+);
+`
+
+	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+	require.NoError(t, err)
+
+	migrationSQL, err := generateMigration(diff)
+	require.NoError(t, err)
+
+	t.Logf("Generated migration SQL:\n%s", migrationSQL)
+
+	// Should contain both CREATE VIEW and COMMENT ON VIEW
+	require.Contains(t, migrationSQL, "CREATE VIEW")
+	require.Contains(t, migrationSQL, "COMMENT ON VIEW")
+	require.Contains(t, migrationSQL, "active_users")
+	require.Contains(t, migrationSQL, "View of all active users")
+}
+
+func TestIndexMigration_NewIndexWithComment(t *testing.T) {
+	currentSDL := `
+CREATE TABLE "public"."products" (
+	"id" integer NOT NULL,
+	"name" text,
+	"price" numeric
+);
+
+CREATE INDEX "idx_products_name" ON "public"."products" (name);
+
+COMMENT ON INDEX "public"."idx_products_name" IS 'Index for product name lookup';
+`
+
+	previousSDL := `
+CREATE TABLE "public"."products" (
+	"id" integer NOT NULL,
+	"name" text,
+	"price" numeric
+);
+`
+
+	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+	require.NoError(t, err)
+
+	migrationSQL, err := generateMigration(diff)
+	require.NoError(t, err)
+
+	t.Logf("Generated migration SQL:\n%s", migrationSQL)
+
+	// Should contain both CREATE INDEX and COMMENT ON INDEX
+	require.Contains(t, migrationSQL, "CREATE INDEX")
+	require.Contains(t, migrationSQL, "COMMENT ON INDEX")
+	require.Contains(t, migrationSQL, "idx_products_name")
+	require.Contains(t, migrationSQL, "Index for product name lookup")
+}
+
+func TestTableMigration_NewTableWithComment(t *testing.T) {
+	currentSDL := `
+CREATE TABLE "public"."users" (
+	"id" integer NOT NULL,
+	"name" text,
+	"email" varchar(255)
+);
+
+COMMENT ON TABLE "public"."users" IS 'User information table';
+`
+	previousSDL := ``
+
+	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+	require.NoError(t, err)
+
+	migrationSQL, err := generateMigration(diff)
+	require.NoError(t, err)
+
+	t.Logf("Generated migration SQL:\n%s", migrationSQL)
+
+	// Should contain both CREATE TABLE and COMMENT ON TABLE
+	require.Contains(t, migrationSQL, "CREATE TABLE")
+	require.Contains(t, migrationSQL, "COMMENT ON TABLE")
+	require.Contains(t, migrationSQL, "users")
+	require.Contains(t, migrationSQL, "User information table")
+}
+
+func TestColumnMigration_AddColumnWithComment(t *testing.T) {
+	currentSDL := `
+CREATE TABLE "public"."users" (
+	"id" integer NOT NULL,
+	"name" text,
+	"email" varchar(255)
+);
+
+COMMENT ON COLUMN "public"."users"."email" IS 'User email address';
+`
+	previousSDL := `
+CREATE TABLE "public"."users" (
+	"id" integer NOT NULL,
+	"name" text
+);
+`
+
+	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+	require.NoError(t, err)
+
+	migrationSQL, err := generateMigration(diff)
+	require.NoError(t, err)
+
+	t.Logf("Generated migration SQL:\n%s", migrationSQL)
+
+	// Should contain both ADD COLUMN and COMMENT ON COLUMN
+	require.Contains(t, migrationSQL, "ADD COLUMN")
+	require.Contains(t, migrationSQL, "COMMENT ON COLUMN")
+	require.Contains(t, migrationSQL, "email")
+	require.Contains(t, migrationSQL, "User email address")
+}
+
+func TestColumnMigration_AddMultipleColumnsWithComments(t *testing.T) {
+	currentSDL := `
+CREATE TABLE "public"."users" (
+	"id" integer NOT NULL,
+	"name" text,
+	"email" varchar(255),
+	"phone" varchar(20),
+	"age" integer
+);
+
+COMMENT ON COLUMN "public"."users"."email" IS 'User email address';
+COMMENT ON COLUMN "public"."users"."phone" IS 'User phone number';
+`
+	previousSDL := `
+CREATE TABLE "public"."users" (
+	"id" integer NOT NULL,
+	"name" text
+);
+`
+
+	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+	require.NoError(t, err)
+
+	migrationSQL, err := generateMigration(diff)
+	require.NoError(t, err)
+
+	t.Logf("Generated migration SQL:\n%s", migrationSQL)
+
+	// Should contain ADD COLUMN for all new columns
+	require.Contains(t, migrationSQL, "ADD COLUMN")
+	require.Contains(t, migrationSQL, "email")
+	require.Contains(t, migrationSQL, "phone")
+	require.Contains(t, migrationSQL, "age")
+
+	// Should contain COMMENT ON COLUMN for columns with comments
+	require.Contains(t, migrationSQL, "COMMENT ON COLUMN")
+	require.Contains(t, migrationSQL, "User email address")
+	require.Contains(t, migrationSQL, "User phone number")
+}
+
+func TestColumnMigration_AddColumnAndModifyExistingComment(t *testing.T) {
+	currentSDL := `
+CREATE TABLE "public"."users" (
+	"id" integer NOT NULL,
+	"name" text,
+	"email" varchar(255)
+);
+
+COMMENT ON COLUMN "public"."users"."name" IS 'Updated: User full name';
+COMMENT ON COLUMN "public"."users"."email" IS 'User email address';
+`
+	previousSDL := `
+CREATE TABLE "public"."users" (
+	"id" integer NOT NULL,
+	"name" text
+);
+
+COMMENT ON COLUMN "public"."users"."name" IS 'User name';
+`
+
+	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+	require.NoError(t, err)
+
+	migrationSQL, err := generateMigration(diff)
+	require.NoError(t, err)
+
+	t.Logf("Generated migration SQL:\n%s", migrationSQL)
+
+	// Should contain ADD COLUMN for the new column
+	require.Contains(t, migrationSQL, "ADD COLUMN")
+	require.Contains(t, migrationSQL, "email")
+
+	// Should contain COMMENT ON COLUMN for both new and modified comments
+	require.Contains(t, migrationSQL, "COMMENT ON COLUMN")
+	require.Contains(t, migrationSQL, "Updated: User full name")
+	require.Contains(t, migrationSQL, "User email address")
+}
+
+func TestSequenceMigration_NewSequenceWithOwner(t *testing.T) {
+	tests := []struct {
+		name        string
+		currentSDL  string
+		previousSDL string
+		wantSQL     string
+	}{
+		{
+			name: "add new sequence with owner",
+			currentSDL: `
+CREATE TABLE "public"."users" (
+	"id" integer NOT NULL,
+	"name" text
+);
+
+CREATE SEQUENCE "public"."user_id_seq" AS integer START WITH 1 INCREMENT BY 1;
+
+ALTER SEQUENCE "public"."user_id_seq" OWNED BY "public"."users"."id";
+`,
+			previousSDL: `
+CREATE TABLE "public"."users" (
+	"id" integer NOT NULL,
+	"name" text
+);
+`,
+			wantSQL: `CREATE SEQUENCE "public"."user_id_seq" AS integer START WITH 1 INCREMENT BY 1;
+
+ALTER SEQUENCE "public"."user_id_seq" OWNED BY "public"."users"."id";
+
+`,
+		},
+		{
+			name: "add new sequence with owner and comment",
+			currentSDL: `
+CREATE TABLE "public"."products" (
+	"id" integer NOT NULL,
+	"name" text
+);
+
+CREATE SEQUENCE "public"."product_id_seq" AS bigint START WITH 100 INCREMENT BY 1;
+
+ALTER SEQUENCE "public"."product_id_seq" OWNED BY "public"."products"."id";
+
+COMMENT ON SEQUENCE "public"."product_id_seq" IS 'Product ID sequence';
+`,
+			previousSDL: `
+CREATE TABLE "public"."products" (
+	"id" integer NOT NULL,
+	"name" text
+);
+`,
+			wantSQL: `CREATE SEQUENCE "public"."product_id_seq" AS bigint START WITH 100 INCREMENT BY 1;
+
+ALTER SEQUENCE "public"."product_id_seq" OWNED BY "public"."products"."id";
+
+COMMENT ON SEQUENCE "public"."product_id_seq" IS 'Product ID sequence';
+`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil, nil)
+			require.NoError(t, err)
+
+			migrationSQL, err := generateMigration(diff)
+			require.NoError(t, err)
+
+			t.Logf("Generated migration SQL:\n%s", migrationSQL)
+			t.Logf("Expected SQL:\n%s", tt.wantSQL)
+
+			require.Equal(t, tt.wantSQL, migrationSQL)
+		})
+	}
+}

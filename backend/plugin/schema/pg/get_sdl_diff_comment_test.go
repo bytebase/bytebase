@@ -347,7 +347,7 @@ COMMENT ON FUNCTION add_numbers(INT, INT) IS 'Adds two numbers';`,
 	}
 }
 
-// TestCommentDiff_ObjectCreateWithComment tests that creating an object with comment doesn't generate CommentDiff
+// TestCommentDiff_ObjectCreateWithComment tests that creating an object with comment generates CommentDiff
 func TestCommentDiff_ObjectCreateWithComment(t *testing.T) {
 	tests := []struct {
 		name                 string
@@ -367,7 +367,7 @@ CREATE TABLE users (
 
 COMMENT ON TABLE users IS 'User table';`,
 			wantTableDiffCount:   1,
-			wantCommentDiffCount: 0, // No comment diff because table is created
+			wantCommentDiffCount: 1, // CommentDiff is generated for the table comment
 		},
 		{
 			name:        "create table with column comment",
@@ -380,7 +380,7 @@ CREATE TABLE users (
 
 COMMENT ON COLUMN users.name IS 'User name';`,
 			wantTableDiffCount:   1,
-			wantCommentDiffCount: 0, // No comment diff because table is created
+			wantCommentDiffCount: 1, // CommentDiff is generated for the column comment
 		},
 	}
 
