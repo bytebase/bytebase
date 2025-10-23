@@ -3472,13 +3472,24 @@ func applyStandaloneIndexChangesToChunks(previousChunks *schema.SDLChunks, curre
 		}
 	}
 
-	// Process index modifications: update existing chunks
+	// Process index modifications: update existing chunks or create if chunk doesn't exist
 	for indexKey, currentIndex := range currentIndexes {
 		if previousIndex, exists := previousIndexes[indexKey]; exists {
-			// Index exists in both - check if it needs modification
-			err := updateIndexChunkIfNeeded(previousChunks, currentIndex, previousIndex, indexKey)
-			if err != nil {
-				return errors.Wrapf(err, "failed to update index chunk for %s", indexKey)
+			// Index exists in both metadata
+			// Check if chunk exists in SDL - if not, create it; otherwise update it
+			if _, chunkExists := previousChunks.Indexes[indexKey]; chunkExists {
+				// Chunk exists - update if needed
+				err := updateIndexChunkIfNeeded(previousChunks, currentIndex, previousIndex, indexKey)
+				if err != nil {
+					return errors.Wrapf(err, "failed to update index chunk for %s", indexKey)
+				}
+			} else {
+				// Chunk doesn't exist in SDL but index exists in database
+				// Create chunk to add it to SDL
+				err := createIndexChunk(previousChunks, currentIndex, indexKey)
+				if err != nil {
+					return errors.Wrapf(err, "failed to create index chunk for %s", indexKey)
+				}
 			}
 		}
 	}
@@ -3731,13 +3742,24 @@ func applyFunctionChangesToChunks(previousChunks *schema.SDLChunks, currentSchem
 		}
 	}
 
-	// Process function modifications: update existing chunks
+	// Process function modifications: update existing chunks or create if chunk doesn't exist
 	for functionKey, currentFunction := range currentFunctions {
 		if previousFunction, exists := previousFunctions[functionKey]; exists {
-			// Function exists in both - check if it needs modification
-			err := updateFunctionChunkIfNeeded(previousChunks, currentFunction, previousFunction, functionKey)
-			if err != nil {
-				return errors.Wrapf(err, "failed to update function chunk for %s", functionKey)
+			// Function exists in both metadata
+			// Check if chunk exists in SDL - if not, create it; otherwise update it
+			if _, chunkExists := previousChunks.Functions[functionKey]; chunkExists {
+				// Chunk exists - update if needed
+				err := updateFunctionChunkIfNeeded(previousChunks, currentFunction, previousFunction, functionKey)
+				if err != nil {
+					return errors.Wrapf(err, "failed to update function chunk for %s", functionKey)
+				}
+			} else {
+				// Chunk doesn't exist in SDL but function exists in database
+				// Create chunk to add it to SDL
+				err := createFunctionChunk(previousChunks, currentFunction, functionKey)
+				if err != nil {
+					return errors.Wrapf(err, "failed to create function chunk for %s", functionKey)
+				}
 			}
 		}
 	}
@@ -4071,6 +4093,10 @@ func applySequenceChangesToChunks(previousChunks *schema.SDLChunks, currentSchem
 	// Process sequence additions: create new sequence chunks
 	for sequenceKey, currentSequence := range currentSequences {
 		if _, exists := previousSequences[sequenceKey]; !exists {
+			// Skip sequences owned by tables (e.g., SERIAL columns) - they should be managed by their owner tables
+			if currentSequence.OwnerTable != "" {
+				continue
+			}
 			// New sequence - create a chunk for it
 			err := createSequenceChunk(previousChunks, currentSequence, sequenceKey)
 			if err != nil {
@@ -4079,13 +4105,29 @@ func applySequenceChangesToChunks(previousChunks *schema.SDLChunks, currentSchem
 		}
 	}
 
-	// Process sequence modifications: update existing chunks
+	// Process sequence modifications: update existing chunks or create if chunk doesn't exist
 	for sequenceKey, currentSequence := range currentSequences {
 		if previousSequence, exists := previousSequences[sequenceKey]; exists {
-			// Sequence exists in both - check if it needs modification
-			err := updateSequenceChunkIfNeeded(previousChunks, currentSequence, previousSequence, sequenceKey)
-			if err != nil {
-				return errors.Wrapf(err, "failed to update sequence chunk for %s", sequenceKey)
+			// Sequence exists in both metadata
+			// Check if chunk exists in SDL - if not, create it; otherwise update it
+			if _, chunkExists := previousChunks.Sequences[sequenceKey]; chunkExists {
+				// Chunk exists - update if needed
+				err := updateSequenceChunkIfNeeded(previousChunks, currentSequence, previousSequence, sequenceKey)
+				if err != nil {
+					return errors.Wrapf(err, "failed to update sequence chunk for %s", sequenceKey)
+				}
+			} else {
+				// Chunk doesn't exist in SDL but sequence exists in database
+				// Skip sequences owned by tables (e.g., SERIAL columns) - they should be managed by their owner tables
+				// We only skip if the chunk doesn't exist in SDL, meaning it's not explicitly defined by the user
+				if currentSequence.OwnerTable != "" {
+					continue
+				}
+				// Create chunk to add it to SDL
+				err := createSequenceChunk(previousChunks, currentSequence, sequenceKey)
+				if err != nil {
+					return errors.Wrapf(err, "failed to create sequence chunk for %s", sequenceKey)
+				}
 			}
 		}
 	}
@@ -4803,13 +4845,24 @@ func applyViewChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, p
 		}
 	}
 
-	// Process view modifications: update existing chunks
+	// Process view modifications: update existing chunks or create if chunk doesn't exist
 	for viewKey, currentView := range currentViews {
 		if previousView, exists := previousViews[viewKey]; exists {
-			// View exists in both - check if it needs modification
-			err := updateViewChunkIfNeeded(previousChunks, currentView, previousView, viewKey)
-			if err != nil {
-				return errors.Wrapf(err, "failed to update view chunk for %s", viewKey)
+			// View exists in both metadata
+			// Check if chunk exists in SDL - if not, create it; otherwise update it
+			if _, chunkExists := previousChunks.Views[viewKey]; chunkExists {
+				// Chunk exists - update if needed
+				err := updateViewChunkIfNeeded(previousChunks, currentView, previousView, viewKey)
+				if err != nil {
+					return errors.Wrapf(err, "failed to update view chunk for %s", viewKey)
+				}
+			} else {
+				// Chunk doesn't exist in SDL but view exists in database
+				// Create chunk to add it to SDL
+				err := createViewChunk(previousChunks, currentView, viewKey)
+				if err != nil {
+					return errors.Wrapf(err, "failed to create view chunk for %s", viewKey)
+				}
 			}
 		}
 	}

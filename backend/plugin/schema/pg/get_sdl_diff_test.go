@@ -3242,6 +3242,299 @@ COMMENT   ON   SEQUENCE   public.preserve_seq   IS   'Unchanged comment';`,
 	}
 }
 
+func TestApplySequenceChangesToChunks_OwnedSequenceNotInSDL(t *testing.T) {
+	tests := []struct {
+		name                string
+		previousUserSDLText string
+		currentSchema       *model.DatabaseSchema
+		previousSchema      *model.DatabaseSchema
+		expectSequenceChunk bool
+		sequenceKey         string
+	}{
+		{
+			name: "serial_sequence_not_in_sdl_should_not_create_chunk",
+			// User SDL only contains CREATE TABLE, not the sequence created by SERIAL
+			previousUserSDLText: `CREATE TABLE public.users (
+    id SERIAL PRIMARY KEY,
+    name TEXT
+);`,
+			previousSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "users",
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "id", Type: "integer", Default: "nextval('users_id_seq'::regclass)"},
+										{Name: "name", Type: "text"},
+									},
+								},
+							},
+							Sequences: []*storepb.SequenceMetadata{
+								{
+									Name:        "users_id_seq",
+									DataType:    "bigint",
+									Start:       "1",
+									Increment:   "1",
+									MinValue:    "1",
+									MaxValue:    "9223372036854775807",
+									Cycle:       false,
+									CacheSize:   "1",
+									OwnerTable:  "users",
+									OwnerColumn: "id",
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			currentSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "users",
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "id", Type: "integer", Default: "nextval('users_id_seq'::regclass)"},
+										{Name: "name", Type: "text"},
+									},
+								},
+							},
+							Sequences: []*storepb.SequenceMetadata{
+								{
+									Name:        "users_id_seq",
+									DataType:    "bigint",
+									Start:       "1",
+									Increment:   "2", // Changed increment
+									MinValue:    "1",
+									MaxValue:    "9223372036854775807",
+									Cycle:       false,
+									CacheSize:   "1",
+									OwnerTable:  "users",
+									OwnerColumn: "id",
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			expectSequenceChunk: false,
+			sequenceKey:         "public.users_id_seq",
+		},
+		{
+			name: "identity_sequence_not_in_sdl_should_not_create_chunk",
+			// User SDL only contains CREATE TABLE with IDENTITY column, not the sequence
+			previousUserSDLText: `CREATE TABLE public.products (
+    id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name TEXT
+);`,
+			previousSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "products",
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "id", Type: "integer", Default: "nextval('products_id_seq'::regclass)"},
+										{Name: "name", Type: "text"},
+									},
+								},
+							},
+							Sequences: []*storepb.SequenceMetadata{
+								{
+									Name:        "products_id_seq",
+									DataType:    "bigint",
+									Start:       "1",
+									Increment:   "1",
+									MinValue:    "1",
+									MaxValue:    "9223372036854775807",
+									Cycle:       false,
+									CacheSize:   "1",
+									OwnerTable:  "products",
+									OwnerColumn: "id",
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			currentSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "products",
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "id", Type: "integer", Default: "nextval('products_id_seq'::regclass)"},
+										{Name: "name", Type: "text"},
+									},
+								},
+							},
+							Sequences: []*storepb.SequenceMetadata{
+								{
+									Name:        "products_id_seq",
+									DataType:    "bigint",
+									Start:       "1",
+									Increment:   "5", // Changed increment
+									MinValue:    "1",
+									MaxValue:    "9223372036854775807",
+									Cycle:       false,
+									CacheSize:   "1",
+									OwnerTable:  "products",
+									OwnerColumn: "id",
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			expectSequenceChunk: false,
+			sequenceKey:         "public.products_id_seq",
+		},
+		{
+			name: "owned_sequence_explicitly_in_sdl_should_update_chunk",
+			// User explicitly defined the sequence in SDL, so it should be updated
+			previousUserSDLText: `CREATE SEQUENCE public.orders_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+CREATE TABLE public.orders (
+    id INT DEFAULT nextval('orders_id_seq'),
+    amount DECIMAL
+);
+
+ALTER SEQUENCE public.orders_id_seq OWNED BY public.orders.id;`,
+			previousSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "orders",
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "id", Type: "integer", Default: "nextval('orders_id_seq'::regclass)"},
+										{Name: "amount", Type: "numeric"},
+									},
+								},
+							},
+							Sequences: []*storepb.SequenceMetadata{
+								{
+									Name:        "orders_id_seq",
+									DataType:    "bigint",
+									Start:       "1",
+									Increment:   "1",
+									MinValue:    "1",
+									MaxValue:    "9223372036854775807",
+									Cycle:       false,
+									CacheSize:   "1",
+									OwnerTable:  "orders",
+									OwnerColumn: "id",
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			currentSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "orders",
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "id", Type: "integer", Default: "nextval('orders_id_seq'::regclass)"},
+										{Name: "amount", Type: "numeric"},
+									},
+								},
+							},
+							Sequences: []*storepb.SequenceMetadata{
+								{
+									Name:        "orders_id_seq",
+									DataType:    "bigint",
+									Start:       "1",
+									Increment:   "10", // Changed increment
+									MinValue:    "1",
+									MaxValue:    "9223372036854775807",
+									Cycle:       false,
+									CacheSize:   "1",
+									OwnerTable:  "orders",
+									OwnerColumn: "id",
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			expectSequenceChunk: true,
+			sequenceKey:         "public.orders_id_seq",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Parse previous SDL text into chunks
+			previousChunks, err := ChunkSDLText(tt.previousUserSDLText)
+			require.NoError(t, err)
+
+			// Apply sequence changes to chunks (this is what happens during drift handling)
+			err = applySequenceChangesToChunks(previousChunks, tt.currentSchema, tt.previousSchema)
+			require.NoError(t, err)
+
+			// Verify whether sequence chunk was created/updated
+			_, exists := previousChunks.Sequences[tt.sequenceKey]
+			if tt.expectSequenceChunk {
+				require.True(t, exists, "Expected sequence chunk to exist for %s", tt.sequenceKey)
+			} else {
+				require.False(t, exists, "Expected sequence chunk NOT to exist for %s (owned sequences not in SDL should not be created)", tt.sequenceKey)
+			}
+		})
+	}
+}
+
 func TestApplyFunctionChangesToChunks_CommentDrift(t *testing.T) {
 	tests := []struct {
 		name                      string
