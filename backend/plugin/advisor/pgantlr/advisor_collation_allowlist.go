@@ -169,15 +169,6 @@ func (*collationAllowlistChecker) extractCollationNameFromAnyName(anyName parser
 func (c *collationAllowlistChecker) addAdvice(collation string, ctx antlr.ParserRuleContext) {
 	text := c.tokens.GetTextFromRuleContext(ctx)
 
-	// Check if the next token after the context is a semicolon
-	stopIndex := ctx.GetStop().GetTokenIndex()
-	if stopIndex+1 < c.tokens.Size() {
-		nextToken := c.tokens.Get(stopIndex + 1)
-		if nextToken.GetText() == ";" {
-			text += ";"
-		}
-	}
-
 	c.adviceList = append(c.adviceList, &storepb.Advice{
 		Status:  c.level,
 		Code:    advisor.DisabledCollation.Int32(),

@@ -14,6 +14,9 @@ func TestPostgreSQLANTLRRules(t *testing.T) {
 		advisor.SchemaRuleCollationAllowlist,            // Migrated from legacy
 		advisor.SchemaRuleColumnCommentConvention,       // Migrated from legacy
 		advisor.SchemaRuleColumnDefaultDisallowVolatile, // Migrated from legacy
+		advisor.SchemaRuleColumnDisallowChangeType,      // Migrated from legacy
+		advisor.SchemaRuleColumnMaximumCharacterLength,  // Migrated from legacy
+		advisor.SchemaRuleColumnNotNull,                 // Migrated from legacy
 		// Add real rules here as you migrate them from legacy pg/ folder
 		// Example:
 		// advisor.SchemaRuleStatementDisallowCommit,
@@ -32,5 +35,6 @@ func TestPostgreSQLANTLRRules(t *testing.T) {
 var advisorNeedMockData = map[advisor.SQLReviewRuleType]bool{
 	// advisor.SchemaRuleFullyQualifiedObjectName: true,
 	advisor.BuiltinRulePriorBackupCheck: true,
-	// New advisors don't need mock data
+	advisor.SchemaRuleColumnNotNull:     true, // Needs metadata for PRIMARY KEY USING INDEX case
+	// Other advisors don't need mock data
 }

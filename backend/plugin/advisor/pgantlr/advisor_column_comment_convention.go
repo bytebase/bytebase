@@ -199,33 +199,6 @@ func (*columnCommentConventionChecker) extractTableName(qualifiedNames []parser.
 	return parts[len(parts)-1]
 }
 
-// splitIdentifier splits a qualified identifier by dots, handling quoted parts
-func splitIdentifier(s string) []string {
-	var parts []string
-	var current string
-	inQuote := false
-
-	for i := 0; i < len(s); i++ {
-		ch := s[i]
-		if ch == '"' {
-			inQuote = !inQuote
-		} else if ch == '.' && !inQuote {
-			if current != "" {
-				parts = append(parts, current)
-				current = ""
-			}
-		} else {
-			current += string(ch)
-		}
-	}
-
-	if current != "" {
-		parts = append(parts, current)
-	}
-
-	return parts
-}
-
 func (*columnCommentConventionChecker) extractStringConstant(sconst parser.ISconstContext) string {
 	if sconst == nil {
 		return ""

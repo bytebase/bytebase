@@ -221,19 +221,8 @@ type ddlChecker struct {
 	adviceList []*storepb.Advice
 }
 
-func (c *ddlChecker) getStatementTextWithSemicolon(ctx antlr.ParserRuleContext) string {
-	text := c.tokens.GetTextFromRuleContext(ctx)
-
-	// Check if the next token after the context is a semicolon
-	stopIndex := ctx.GetStop().GetTokenIndex()
-	if stopIndex+1 < c.tokens.Size() {
-		nextToken := c.tokens.Get(stopIndex + 1)
-		if nextToken.GetText() == ";" {
-			text += ";"
-		}
-	}
-
-	return text
+func (c *ddlChecker) getStatementText(ctx antlr.ParserRuleContext) string {
+	return c.tokens.GetTextFromRuleContext(ctx)
 }
 
 func (c *ddlChecker) EnterEveryRule(ctx antlr.ParserRuleContext) {
@@ -246,7 +235,7 @@ func (c *ddlChecker) EnterEveryRule(ctx antlr.ParserRuleContext) {
 		c.adviceList = append(c.adviceList, &storepb.Advice{
 			Status:  c.level,
 			Title:   c.title,
-			Content: fmt.Sprintf("Data change can only run DML, \"%s\" is not DML", c.getStatementTextWithSemicolon(ctx)),
+			Content: fmt.Sprintf("Data change can only run DML, \"%s\" is not DML", c.getStatementText(ctx)),
 			Code:    advisor.BuiltinPriorBackupCheck.Int32(),
 			StartPosition: &storepb.Position{
 				Line:   int32(ctx.GetStart().GetLine()),
@@ -297,21 +286,6 @@ type dmlExtractor struct {
 
 	dmls   []statementInfo
 	offset int
-}
-
-func isTopLevel(ctx antlr.Tree) bool {
-	if ctx == nil {
-		return true
-	}
-
-	switch ctx := ctx.(type) {
-	case *parser.RootContext, *parser.StmtblockContext:
-		return true
-	case *parser.StmtmultiContext, *parser.StmtContext:
-		return isTopLevel(ctx.GetParent())
-	default:
-		return false
-	}
 }
 
 func (e *dmlExtractor) ExitStmt(ctx *parser.StmtContext) {
