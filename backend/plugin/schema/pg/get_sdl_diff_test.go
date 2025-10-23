@@ -2444,3 +2444,2180 @@ func TestConvertDatabaseSchemaToSDL_SerialAndIdentitySequences(t *testing.T) {
 		})
 	}
 }
+
+func TestApplySequenceChangesToChunks_PreservesAlterAndComment(t *testing.T) {
+	tests := []struct {
+		name                       string
+		previousUserSDLText        string
+		currentSchema              *model.DatabaseSchema
+		previousSchema             *model.DatabaseSchema
+		shouldPreserveAlter        bool
+		shouldPreserveComment      bool
+		expectedAlterCount         int
+		expectedCommentCount       int
+		expectedSequenceProperties map[string]string // Properties that should change
+	}{
+		{
+			name: "preserve_alter_sequence_on_metadata_change",
+			previousUserSDLText: `CREATE SEQUENCE public.my_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.my_seq OWNED BY public.users.id;
+
+COMMENT ON SEQUENCE public.my_seq IS 'User ID sequence';`,
+			currentSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Sequences: []*storepb.SequenceMetadata{
+								{
+									Name:        "my_seq",
+									DataType:    "bigint",
+									Start:       "1",
+									Increment:   "2", // Changed from 1 to 2
+									MinValue:    "1",
+									MaxValue:    "9223372036854775807",
+									Cycle:       false,
+									CacheSize:   "1",
+									OwnerTable:  "users",
+									OwnerColumn: "id",
+									Comment:     "User ID sequence",
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			previousSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Sequences: []*storepb.SequenceMetadata{
+								{
+									Name:        "my_seq",
+									DataType:    "bigint",
+									Start:       "1",
+									Increment:   "1",
+									MinValue:    "1",
+									MaxValue:    "9223372036854775807",
+									Cycle:       false,
+									CacheSize:   "1",
+									OwnerTable:  "users",
+									OwnerColumn: "id",
+									Comment:     "User ID sequence",
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			shouldPreserveAlter:   true,
+			shouldPreserveComment: true,
+			expectedAlterCount:    1,
+			expectedCommentCount:  1,
+			expectedSequenceProperties: map[string]string{
+				"INCREMENT": "2",
+			},
+		},
+		{
+			name: "preserve_comment_only",
+			previousUserSDLText: `CREATE SEQUENCE public.counter_seq
+    START WITH 100
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+COMMENT ON SEQUENCE public.counter_seq IS 'Global counter';`,
+			currentSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Sequences: []*storepb.SequenceMetadata{
+								{
+									Name:      "counter_seq",
+									DataType:  "bigint",
+									Start:     "100",
+									Increment: "5", // Changed
+									MinValue:  "1",
+									MaxValue:  "9223372036854775807",
+									Cycle:     false,
+									CacheSize: "1",
+									Comment:   "Global counter",
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			previousSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Sequences: []*storepb.SequenceMetadata{
+								{
+									Name:      "counter_seq",
+									DataType:  "bigint",
+									Start:     "100",
+									Increment: "1",
+									MinValue:  "1",
+									MaxValue:  "9223372036854775807",
+									Cycle:     false,
+									CacheSize: "1",
+									Comment:   "Global counter",
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			shouldPreserveAlter:   false,
+			shouldPreserveComment: true,
+			expectedAlterCount:    0,
+			expectedCommentCount:  1,
+			expectedSequenceProperties: map[string]string{
+				"INCREMENT": "5",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Parse previous SDL
+			previousChunks, err := ChunkSDLText(tt.previousUserSDLText)
+			require.NoError(t, err)
+			require.NotNil(t, previousChunks)
+
+			// Log original chunks
+			t.Log("=== Previous SDL Chunks (Before Drift Handling) ===")
+			for identifier, chunk := range previousChunks.Sequences {
+				t.Logf("Sequence %s:", identifier)
+				t.Logf("  Text: %s", chunk.GetText())
+				t.Logf("  AlterStatements count: %d", len(chunk.AlterStatements))
+				t.Logf("  CommentStatements count: %d", len(chunk.CommentStatements))
+			}
+
+			// Apply drift handling
+			err = applySequenceChangesToChunks(previousChunks, tt.currentSchema, tt.previousSchema)
+			require.NoError(t, err)
+
+			// Log chunks after drift handling
+			t.Log("=== Previous SDL Chunks (After Drift Handling) ===")
+			for identifier, chunk := range previousChunks.Sequences {
+				t.Logf("Sequence %s:", identifier)
+				t.Logf("  Text: %s", chunk.GetText())
+				t.Logf("  AlterStatements count: %d", len(chunk.AlterStatements))
+				t.Logf("  CommentStatements count: %d", len(chunk.CommentStatements))
+			}
+
+			// Verify sequence exists
+			sequenceChunk := previousChunks.Sequences["public.my_seq"]
+			if tt.name == "preserve_comment_only" {
+				sequenceChunk = previousChunks.Sequences["public.counter_seq"]
+			}
+			require.NotNil(t, sequenceChunk, "Sequence chunk should exist after drift handling")
+
+			// Get full text
+			fullText := sequenceChunk.GetText()
+			t.Logf("Full sequence text:\n%s", fullText)
+
+			// Verify ALTER statements are preserved
+			if tt.shouldPreserveAlter {
+				assert.Equal(t, tt.expectedAlterCount, len(sequenceChunk.AlterStatements),
+					"ALTER statements should be preserved during drift handling")
+				if tt.expectedAlterCount > 0 {
+					assert.Contains(t, fullText, "ALTER SEQUENCE",
+						"Full text should contain ALTER SEQUENCE statement")
+					assert.Contains(t, fullText, "OWNED BY",
+						"Full text should contain OWNED BY clause")
+				}
+			} else {
+				assert.Equal(t, tt.expectedAlterCount, len(sequenceChunk.AlterStatements),
+					"Should have expected number of ALTER statements")
+			}
+
+			// Verify COMMENT statements are preserved
+			if tt.shouldPreserveComment {
+				assert.Equal(t, tt.expectedCommentCount, len(sequenceChunk.CommentStatements),
+					"COMMENT statements should be preserved during drift handling")
+				if tt.expectedCommentCount > 0 {
+					assert.Contains(t, fullText, "COMMENT ON SEQUENCE",
+						"Full text should contain COMMENT ON SEQUENCE statement")
+				}
+			} else {
+				assert.Equal(t, tt.expectedCommentCount, len(sequenceChunk.CommentStatements),
+					"Should have expected number of COMMENT statements")
+			}
+
+			// Verify that sequence properties were updated
+			createText := extractTextFromNode(sequenceChunk.ASTNode)
+			for property, expectedValue := range tt.expectedSequenceProperties {
+				assert.Contains(t, createText, expectedValue,
+					"CREATE SEQUENCE should reflect the new %s value", property)
+			}
+		})
+	}
+}
+
+func TestApplySequenceChangesToChunks_OwnerDrift(t *testing.T) {
+	tests := []struct {
+		name                    string
+		previousUserSDLText     string
+		currentSchema           *model.DatabaseSchema
+		previousSchema          *model.DatabaseSchema
+		expectedAlterStatements int
+		expectedOwnerTable      string
+		expectedOwnerColumn     string
+	}{
+		{
+			name: "sequence_owner_drifted_from_users_to_posts",
+			previousUserSDLText: `CREATE SEQUENCE public.my_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.my_seq OWNED BY public.users.id;`,
+			currentSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Sequences: []*storepb.SequenceMetadata{
+								{
+									Name:        "my_seq",
+									DataType:    "bigint",
+									Start:       "1",
+									Increment:   "1",
+									MinValue:    "1",
+									MaxValue:    "9223372036854775807",
+									Cycle:       false,
+									CacheSize:   "1",
+									OwnerTable:  "posts", // Changed from "users"
+									OwnerColumn: "id",
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			previousSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Sequences: []*storepb.SequenceMetadata{
+								{
+									Name:        "my_seq",
+									DataType:    "bigint",
+									Start:       "1",
+									Increment:   "1",
+									MinValue:    "1",
+									MaxValue:    "9223372036854775807",
+									Cycle:       false,
+									CacheSize:   "1",
+									OwnerTable:  "users",
+									OwnerColumn: "id",
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			expectedAlterStatements: 1,
+			expectedOwnerTable:      "posts",
+			expectedOwnerColumn:     "id",
+		},
+		{
+			name: "sequence_owner_removed",
+			previousUserSDLText: `CREATE SEQUENCE public.counter_seq
+    START WITH 100
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.counter_seq OWNED BY public.users.id;`,
+			currentSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Sequences: []*storepb.SequenceMetadata{
+								{
+									Name:        "counter_seq",
+									DataType:    "bigint",
+									Start:       "100",
+									Increment:   "1",
+									MinValue:    "1",
+									MaxValue:    "9223372036854775807",
+									Cycle:       false,
+									CacheSize:   "1",
+									OwnerTable:  "", // Owner removed
+									OwnerColumn: "",
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			previousSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Sequences: []*storepb.SequenceMetadata{
+								{
+									Name:        "counter_seq",
+									DataType:    "bigint",
+									Start:       "100",
+									Increment:   "1",
+									MinValue:    "1",
+									MaxValue:    "9223372036854775807",
+									Cycle:       false,
+									CacheSize:   "1",
+									OwnerTable:  "users",
+									OwnerColumn: "id",
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			expectedAlterStatements: 0, // Should be removed
+			expectedOwnerTable:      "",
+			expectedOwnerColumn:     "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Parse previous SDL
+			previousChunks, err := ChunkSDLText(tt.previousUserSDLText)
+			require.NoError(t, err)
+			require.NotNil(t, previousChunks)
+
+			// Log original chunks
+			t.Log("=== Previous SDL Chunks (Before Drift Handling) ===")
+			for identifier, chunk := range previousChunks.Sequences {
+				t.Logf("Sequence %s:", identifier)
+				t.Logf("  Text: %s", chunk.GetText())
+				t.Logf("  AlterStatements count: %d", len(chunk.AlterStatements))
+			}
+
+			// Apply drift handling
+			err = applySequenceChangesToChunks(previousChunks, tt.currentSchema, tt.previousSchema)
+			require.NoError(t, err)
+
+			// Log chunks after drift handling
+			t.Log("=== Previous SDL Chunks (After Drift Handling) ===")
+			for identifier, chunk := range previousChunks.Sequences {
+				t.Logf("Sequence %s:", identifier)
+				t.Logf("  Text: %s", chunk.GetText())
+				t.Logf("  AlterStatements count: %d", len(chunk.AlterStatements))
+			}
+
+			// Get the sequence chunk
+			var sequenceChunk *schema.SDLChunk
+			for _, chunk := range previousChunks.Sequences {
+				sequenceChunk = chunk
+				break
+			}
+			require.NotNil(t, sequenceChunk, "Sequence chunk should exist after drift handling")
+
+			// Get full text
+			fullText := sequenceChunk.GetText()
+			t.Logf("Full sequence text:\n%s", fullText)
+
+			// Verify ALTER statements count
+			assert.Equal(t, tt.expectedAlterStatements, len(sequenceChunk.AlterStatements),
+				"ALTER statements count should match expected")
+
+			// Verify the ALTER statement content matches the expected owner
+			if tt.expectedAlterStatements > 0 {
+				// Should contain ALTER SEQUENCE with correct owner
+				// The owner reference can be in format: "table"."column" or table.column
+				assert.Contains(t, fullText, "ALTER SEQUENCE",
+					"Full text should contain ALTER SEQUENCE statement")
+				assert.Contains(t, fullText, "OWNED BY",
+					"ALTER SEQUENCE should contain OWNED BY clause")
+				// Check that it references the correct table and column (with or without quotes/schema)
+				assert.Contains(t, fullText, tt.expectedOwnerTable,
+					"ALTER SEQUENCE should reference the correct owner table: %s", tt.expectedOwnerTable)
+				assert.Contains(t, fullText, tt.expectedOwnerColumn,
+					"ALTER SEQUENCE should reference the correct owner column: %s", tt.expectedOwnerColumn)
+			} else {
+				// Should NOT contain ALTER SEQUENCE
+				assert.NotContains(t, fullText, "ALTER SEQUENCE",
+					"Full text should NOT contain ALTER SEQUENCE when owner is removed")
+			}
+		})
+	}
+}
+
+func TestApplySequenceChangesToChunks_CommentDrift(t *testing.T) {
+	tests := []struct {
+		name                      string
+		previousUserSDLText       string
+		currentSchema             *model.DatabaseSchema
+		previousSchema            *model.DatabaseSchema
+		expectedCommentStatements int
+		expectedCommentText       string
+	}{
+		{
+			name: "comment_changed_but_sequence_definition_unchanged",
+			previousUserSDLText: `CREATE SEQUENCE public.my_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+COMMENT ON SEQUENCE public.my_seq IS 'Old comment';`,
+			currentSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Sequences: []*storepb.SequenceMetadata{
+								{
+									Name:      "my_seq",
+									DataType:  "bigint",
+									Start:     "1",
+									Increment: "1",
+									MinValue:  "1",
+									MaxValue:  "9223372036854775807",
+									Cycle:     false,
+									CacheSize: "1",
+									Comment:   "New comment", // Changed
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			previousSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Sequences: []*storepb.SequenceMetadata{
+								{
+									Name:      "my_seq",
+									DataType:  "bigint",
+									Start:     "1",
+									Increment: "1",
+									MinValue:  "1",
+									MaxValue:  "9223372036854775807",
+									Cycle:     false,
+									CacheSize: "1",
+									Comment:   "Old comment",
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			expectedCommentStatements: 1,
+			expectedCommentText:       "New comment",
+		},
+		{
+			name: "comment_added_when_previously_none",
+			previousUserSDLText: `CREATE SEQUENCE public.new_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;`,
+			currentSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Sequences: []*storepb.SequenceMetadata{
+								{
+									Name:      "new_seq",
+									DataType:  "bigint",
+									Start:     "1",
+									Increment: "1",
+									MinValue:  "1",
+									MaxValue:  "9223372036854775807",
+									Cycle:     false,
+									CacheSize: "1",
+									Comment:   "New comment added", // Added
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			previousSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Sequences: []*storepb.SequenceMetadata{
+								{
+									Name:      "new_seq",
+									DataType:  "bigint",
+									Start:     "1",
+									Increment: "1",
+									MinValue:  "1",
+									MaxValue:  "9223372036854775807",
+									Cycle:     false,
+									CacheSize: "1",
+									Comment:   "", // No comment before
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			expectedCommentStatements: 1,
+			expectedCommentText:       "New comment added",
+		},
+		{
+			name: "comment_removed",
+			previousUserSDLText: `CREATE SEQUENCE public.counter_seq
+    START WITH 100
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+COMMENT ON SEQUENCE public.counter_seq IS 'Some comment';`,
+			currentSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Sequences: []*storepb.SequenceMetadata{
+								{
+									Name:      "counter_seq",
+									DataType:  "bigint",
+									Start:     "100",
+									Increment: "1",
+									MinValue:  "1",
+									MaxValue:  "9223372036854775807",
+									Cycle:     false,
+									CacheSize: "1",
+									Comment:   "", // Removed
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			previousSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Sequences: []*storepb.SequenceMetadata{
+								{
+									Name:      "counter_seq",
+									DataType:  "bigint",
+									Start:     "100",
+									Increment: "1",
+									MinValue:  "1",
+									MaxValue:  "9223372036854775807",
+									Cycle:     false,
+									CacheSize: "1",
+									Comment:   "Some comment",
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			expectedCommentStatements: 0,
+			expectedCommentText:       "",
+		},
+		{
+			name: "comment_unchanged_should_preserve_original_format",
+			previousUserSDLText: `CREATE SEQUENCE public.preserve_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+COMMENT   ON   SEQUENCE   public.preserve_seq   IS   'Unchanged comment';`,
+			currentSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Sequences: []*storepb.SequenceMetadata{
+								{
+									Name:      "preserve_seq",
+									DataType:  "bigint",
+									Start:     "1",
+									Increment: "1",
+									MinValue:  "1",
+									MaxValue:  "9223372036854775807",
+									Cycle:     false,
+									CacheSize: "1",
+									Comment:   "Unchanged comment", // Same as before
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			previousSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Sequences: []*storepb.SequenceMetadata{
+								{
+									Name:      "preserve_seq",
+									DataType:  "bigint",
+									Start:     "1",
+									Increment: "1",
+									MinValue:  "1",
+									MaxValue:  "9223372036854775807",
+									Cycle:     false,
+									CacheSize: "1",
+									Comment:   "Unchanged comment", // Same
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			expectedCommentStatements: 1,
+			expectedCommentText:       "Unchanged comment",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Parse previous SDL
+			previousChunks, err := ChunkSDLText(tt.previousUserSDLText)
+			require.NoError(t, err)
+			require.NotNil(t, previousChunks)
+
+			// Log original chunks
+			t.Log("=== Previous SDL Chunks (Before Drift Handling) ===")
+			for identifier, chunk := range previousChunks.Sequences {
+				t.Logf("Sequence %s:", identifier)
+				t.Logf("  Text: %s", chunk.GetText())
+				t.Logf("  CommentStatements count: %d", len(chunk.CommentStatements))
+			}
+
+			// Apply drift handling
+			err = applySequenceChangesToChunks(previousChunks, tt.currentSchema, tt.previousSchema)
+			require.NoError(t, err)
+
+			// Log chunks after drift handling
+			t.Log("=== Previous SDL Chunks (After Drift Handling) ===")
+			for identifier, chunk := range previousChunks.Sequences {
+				t.Logf("Sequence %s:", identifier)
+				t.Logf("  Text: %s", chunk.GetText())
+				t.Logf("  CommentStatements count: %d", len(chunk.CommentStatements))
+			}
+
+			// Get the sequence chunk
+			var sequenceChunk *schema.SDLChunk
+			for _, chunk := range previousChunks.Sequences {
+				sequenceChunk = chunk
+				break
+			}
+			require.NotNil(t, sequenceChunk, "Sequence chunk should exist after drift handling")
+
+			// Get full text
+			fullText := sequenceChunk.GetText()
+			t.Logf("Full sequence text:\n%s", fullText)
+
+			// Verify COMMENT statements count
+			assert.Equal(t, tt.expectedCommentStatements, len(sequenceChunk.CommentStatements),
+				"COMMENT statements count should match expected")
+
+			// Verify the COMMENT statement content
+			if tt.expectedCommentStatements > 0 && tt.expectedCommentText != "" {
+				// Use Contains with "COMMENT" and "SEQUENCE" to be flexible with formatting
+				assert.Contains(t, fullText, "COMMENT",
+					"Full text should contain COMMENT statement")
+				assert.Contains(t, fullText, "SEQUENCE",
+					"Full text should mention SEQUENCE")
+				assert.Contains(t, fullText, tt.expectedCommentText,
+					"COMMENT should contain the expected text: %s", tt.expectedCommentText)
+			} else if tt.expectedCommentText == "" && tt.expectedCommentStatements == 0 {
+				// Either no comment or empty comment
+				assert.NotContains(t, fullText, "COMMENT ON SEQUENCE",
+					"Full text should NOT contain COMMENT ON SEQUENCE when comment is removed")
+			}
+		})
+	}
+}
+
+func TestApplyFunctionChangesToChunks_CommentDrift(t *testing.T) {
+	tests := []struct {
+		name                      string
+		previousUserSDLText       string
+		currentSchema             *model.DatabaseSchema
+		previousSchema            *model.DatabaseSchema
+		expectedCommentStatements int
+		expectedCommentText       string
+	}{
+		{
+			name: "function_comment_changed_but_definition_unchanged",
+			previousUserSDLText: `CREATE FUNCTION public.calculate_total(amount INTEGER) RETURNS INTEGER AS $$
+BEGIN
+    RETURN amount * 2;
+END;
+$$ LANGUAGE plpgsql;
+COMMENT ON FUNCTION public.calculate_total(INTEGER) IS 'Old comment';`,
+			currentSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Functions: []*storepb.FunctionMetadata{
+								{
+									Name:       "calculate_total",
+									Definition: "CREATE FUNCTION public.calculate_total(amount INTEGER) RETURNS INTEGER AS $$\nBEGIN\n    RETURN amount * 2;\nEND;\n$$ LANGUAGE plpgsql",
+									Comment:    "New comment", // Changed from "Old comment"
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			previousSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Functions: []*storepb.FunctionMetadata{
+								{
+									Name:       "calculate_total",
+									Definition: "CREATE FUNCTION public.calculate_total(amount INTEGER) RETURNS INTEGER AS $$\nBEGIN\n    RETURN amount * 2;\nEND;\n$$ LANGUAGE plpgsql",
+									Comment:    "Old comment",
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			expectedCommentStatements: 1,
+			expectedCommentText:       "New comment",
+		},
+		{
+			name: "function_comment_added_when_previously_none",
+			previousUserSDLText: `CREATE FUNCTION public.add_numbers(a INTEGER, b INTEGER) RETURNS INTEGER AS $$
+BEGIN
+    RETURN a + b;
+END;
+$$ LANGUAGE plpgsql;`,
+			currentSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Functions: []*storepb.FunctionMetadata{
+								{
+									Name:       "add_numbers",
+									Definition: "CREATE FUNCTION public.add_numbers(a INTEGER, b INTEGER) RETURNS INTEGER AS $$\nBEGIN\n    RETURN a + b;\nEND;\n$$ LANGUAGE plpgsql",
+									Comment:    "Adds two numbers", // Added
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			previousSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Functions: []*storepb.FunctionMetadata{
+								{
+									Name:       "add_numbers",
+									Definition: "CREATE FUNCTION public.add_numbers(a INTEGER, b INTEGER) RETURNS INTEGER AS $$\nBEGIN\n    RETURN a + b;\nEND;\n$$ LANGUAGE plpgsql",
+									Comment:    "", // No comment before
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			expectedCommentStatements: 1,
+			expectedCommentText:       "Adds two numbers",
+		},
+		{
+			name: "function_comment_removed",
+			previousUserSDLText: `CREATE FUNCTION public.process_data(input_text TEXT) RETURNS TEXT AS $$
+BEGIN
+    RETURN upper(input_text);
+END;
+$$ LANGUAGE plpgsql;
+COMMENT ON FUNCTION public.process_data(TEXT) IS 'Old comment';`,
+			currentSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Functions: []*storepb.FunctionMetadata{
+								{
+									Name:       "process_data",
+									Definition: "CREATE FUNCTION public.process_data(input_text TEXT) RETURNS TEXT AS $$\nBEGIN\n    RETURN upper(input_text);\nEND;\n$$ LANGUAGE plpgsql",
+									Comment:    "", // Comment removed
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			previousSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Functions: []*storepb.FunctionMetadata{
+								{
+									Name:       "process_data",
+									Definition: "CREATE FUNCTION public.process_data(input_text TEXT) RETURNS TEXT AS $$\nBEGIN\n    RETURN upper(input_text);\nEND;\n$$ LANGUAGE plpgsql",
+									Comment:    "Old comment",
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			expectedCommentStatements: 0,
+			expectedCommentText:       "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Parse previous SDL
+			previousChunks, err := ChunkSDLText(tt.previousUserSDLText)
+			require.NoError(t, err)
+			require.NotNil(t, previousChunks)
+
+			// Log original chunks
+			t.Log("=== Previous SDL Chunks (Before Drift Handling) ===")
+			for identifier, chunk := range previousChunks.Functions {
+				t.Logf("Function %s:", identifier)
+				t.Logf("  Text: %s", chunk.GetText())
+				t.Logf("  CommentStatements count: %d", len(chunk.CommentStatements))
+			}
+
+			// Apply drift handling
+			err = applyFunctionChangesToChunks(previousChunks, tt.currentSchema, tt.previousSchema)
+			require.NoError(t, err)
+
+			// Log chunks after drift handling
+			t.Log("=== Previous SDL Chunks (After Drift Handling) ===")
+			for identifier, chunk := range previousChunks.Functions {
+				t.Logf("Function %s:", identifier)
+				t.Logf("  Text: %s", chunk.GetText())
+				t.Logf("  CommentStatements count: %d", len(chunk.CommentStatements))
+			}
+
+			// Get the function chunk
+			var functionChunk *schema.SDLChunk
+			for _, chunk := range previousChunks.Functions {
+				functionChunk = chunk
+				break
+			}
+			require.NotNil(t, functionChunk, "Function chunk should exist after drift handling")
+
+			// Get full text
+			fullText := functionChunk.GetText()
+			t.Logf("Full function text:\n%s", fullText)
+
+			// Verify COMMENT statements count
+			assert.Equal(t, tt.expectedCommentStatements, len(functionChunk.CommentStatements),
+				"COMMENT statements count should match expected")
+
+			// Verify COMMENT content
+			if tt.expectedCommentStatements > 0 {
+				assert.Contains(t, fullText, "COMMENT ON FUNCTION",
+					"Full text should contain COMMENT ON FUNCTION statement")
+				assert.Contains(t, fullText, tt.expectedCommentText,
+					"COMMENT should contain the expected text: %s", tt.expectedCommentText)
+			} else {
+				// Should NOT contain COMMENT ON FUNCTION
+				assert.NotContains(t, fullText, "COMMENT ON FUNCTION",
+					"Full text should NOT contain COMMENT ON FUNCTION when comment is removed")
+			}
+		})
+	}
+}
+
+func TestApplyIndexChangesToChunks_CommentDrift(t *testing.T) {
+	tests := []struct {
+		name                      string
+		previousUserSDLText       string
+		currentSchema             *model.DatabaseSchema
+		previousSchema            *model.DatabaseSchema
+		expectedCommentStatements int
+		expectedCommentText       string
+	}{
+		{
+			name: "index_comment_changed_but_definition_unchanged",
+			previousUserSDLText: `CREATE TABLE public.users (
+    id INTEGER PRIMARY KEY,
+    email TEXT
+);
+
+CREATE INDEX idx_users_email ON public.users (email);
+
+COMMENT ON INDEX public.idx_users_email IS 'Old comment';`,
+			currentSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "users",
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "id", Type: "integer"},
+										{Name: "email", Type: "text"},
+									},
+									Indexes: []*storepb.IndexMetadata{
+										{
+											Name:        "idx_users_email",
+											Expressions: []string{"email"},
+											Type:        "btree",
+											Unique:      false,
+											Primary:     false,
+											Comment:     "New comment", // Changed from "Old comment"
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			previousSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "users",
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "id", Type: "integer"},
+										{Name: "email", Type: "text"},
+									},
+									Indexes: []*storepb.IndexMetadata{
+										{
+											Name:        "idx_users_email",
+											Expressions: []string{"email"},
+											Type:        "btree",
+											Unique:      false,
+											Primary:     false,
+											Comment:     "Old comment",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			expectedCommentStatements: 1,
+			expectedCommentText:       "New comment",
+		},
+		{
+			name: "index_comment_added_when_previously_none",
+			previousUserSDLText: `CREATE TABLE public.products (
+    id INTEGER PRIMARY KEY,
+    name TEXT
+);
+
+CREATE INDEX idx_products_name ON public.products (name);`,
+			currentSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "products",
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "id", Type: "integer"},
+										{Name: "name", Type: "text"},
+									},
+									Indexes: []*storepb.IndexMetadata{
+										{
+											Name:        "idx_products_name",
+											Expressions: []string{"name"},
+											Type:        "btree",
+											Unique:      false,
+											Primary:     false,
+											Comment:     "Index for product names", // Added
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			previousSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "products",
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "id", Type: "integer"},
+										{Name: "name", Type: "text"},
+									},
+									Indexes: []*storepb.IndexMetadata{
+										{
+											Name:        "idx_products_name",
+											Expressions: []string{"name"},
+											Type:        "btree",
+											Unique:      false,
+											Primary:     false,
+											Comment:     "", // No comment before
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			expectedCommentStatements: 1,
+			expectedCommentText:       "Index for product names",
+		},
+		{
+			name: "index_comment_removed",
+			previousUserSDLText: `CREATE TABLE public.posts (
+    id INTEGER PRIMARY KEY,
+    title TEXT
+);
+
+CREATE UNIQUE INDEX idx_posts_title ON public.posts (title);
+
+COMMENT ON INDEX public.idx_posts_title IS 'Old comment';`,
+			currentSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "posts",
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "id", Type: "integer"},
+										{Name: "title", Type: "text"},
+									},
+									Indexes: []*storepb.IndexMetadata{
+										{
+											Name:        "idx_posts_title",
+											Expressions: []string{"title"},
+											Type:        "btree",
+											Unique:      true,
+											Primary:     false,
+											Comment:     "", // Comment removed
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			previousSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "posts",
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "id", Type: "integer"},
+										{Name: "title", Type: "text"},
+									},
+									Indexes: []*storepb.IndexMetadata{
+										{
+											Name:        "idx_posts_title",
+											Expressions: []string{"title"},
+											Type:        "btree",
+											Unique:      true,
+											Primary:     false,
+											Comment:     "Old comment",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			expectedCommentStatements: 0,
+			expectedCommentText:       "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Parse previous SDL
+			previousChunks, err := ChunkSDLText(tt.previousUserSDLText)
+			require.NoError(t, err)
+			require.NotNil(t, previousChunks)
+
+			// Log original chunks
+			t.Log("=== Previous SDL Chunks (Before Drift Handling) ===")
+			for identifier, chunk := range previousChunks.Indexes {
+				t.Logf("Index %s:", identifier)
+				t.Logf("  Text: %s", chunk.GetText())
+				t.Logf("  CommentStatements count: %d", len(chunk.CommentStatements))
+			}
+
+			// Apply drift handling
+			err = applyStandaloneIndexChangesToChunks(previousChunks, tt.currentSchema, tt.previousSchema)
+			require.NoError(t, err)
+
+			// Log chunks after drift handling
+			t.Log("=== Previous SDL Chunks (After Drift Handling) ===")
+			for identifier, chunk := range previousChunks.Indexes {
+				t.Logf("Index %s:", identifier)
+				t.Logf("  Text: %s", chunk.GetText())
+				t.Logf("  CommentStatements count: %d", len(chunk.CommentStatements))
+			}
+
+			// Get the index chunk
+			var indexChunk *schema.SDLChunk
+			for _, chunk := range previousChunks.Indexes {
+				indexChunk = chunk
+				break
+			}
+			require.NotNil(t, indexChunk, "Index chunk should exist after drift handling")
+
+			// Get full text
+			fullText := indexChunk.GetText()
+			t.Logf("Full index text:\n%s", fullText)
+
+			// Verify COMMENT statements count
+			assert.Equal(t, tt.expectedCommentStatements, len(indexChunk.CommentStatements),
+				"COMMENT statements count should match expected")
+
+			// Verify COMMENT content
+			if tt.expectedCommentStatements > 0 {
+				assert.Contains(t, fullText, "COMMENT ON INDEX",
+					"Full text should contain COMMENT ON INDEX statement")
+				assert.Contains(t, fullText, tt.expectedCommentText,
+					"COMMENT should contain the expected text: %s", tt.expectedCommentText)
+			} else {
+				// Should NOT contain COMMENT ON INDEX
+				assert.NotContains(t, fullText, "COMMENT ON INDEX",
+					"Full text should NOT contain COMMENT ON INDEX when comment is removed")
+			}
+		})
+	}
+}
+
+func TestApplyViewChangesToChunks_CommentDrift(t *testing.T) {
+	tests := []struct {
+		name                      string
+		previousUserSDLText       string
+		currentSchema             *model.DatabaseSchema
+		previousSchema            *model.DatabaseSchema
+		expectedCommentStatements int
+		expectedCommentText       string
+	}{
+		{
+			name: "view_comment_changed_but_definition_unchanged",
+			previousUserSDLText: `CREATE VIEW public.user_emails AS
+SELECT id, email FROM users;
+
+COMMENT ON VIEW public.user_emails IS 'Old comment';`,
+			currentSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Views: []*storepb.ViewMetadata{
+								{
+									Name:       "user_emails",
+									Definition: "SELECT id, email FROM users",
+									Comment:    "New comment", // Changed from "Old comment"
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			previousSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Views: []*storepb.ViewMetadata{
+								{
+									Name:       "user_emails",
+									Definition: "SELECT id, email FROM users",
+									Comment:    "Old comment",
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			expectedCommentStatements: 1,
+			expectedCommentText:       "New comment",
+		},
+		{
+			name: "view_comment_added_when_previously_none",
+			previousUserSDLText: `CREATE VIEW public.admin_users AS
+SELECT * FROM users WHERE role = 'admin';`,
+			currentSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Views: []*storepb.ViewMetadata{
+								{
+									Name:       "admin_users",
+									Definition: "SELECT * FROM users WHERE role = 'admin'",
+									Comment:    "View of admin users", // Added
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			previousSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Views: []*storepb.ViewMetadata{
+								{
+									Name:       "admin_users",
+									Definition: "SELECT * FROM users WHERE role = 'admin'",
+									Comment:    "", // No comment before
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			expectedCommentStatements: 1,
+			expectedCommentText:       "View of admin users",
+		},
+		{
+			name: "view_comment_removed",
+			previousUserSDLText: `CREATE VIEW public.active_users AS
+SELECT * FROM users WHERE active = true;
+
+COMMENT ON VIEW public.active_users IS 'Old comment';`,
+			currentSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Views: []*storepb.ViewMetadata{
+								{
+									Name:       "active_users",
+									Definition: "SELECT * FROM users WHERE active = true",
+									Comment:    "", // Comment removed
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			previousSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Views: []*storepb.ViewMetadata{
+								{
+									Name:       "active_users",
+									Definition: "SELECT * FROM users WHERE active = true",
+									Comment:    "Old comment",
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			expectedCommentStatements: 0,
+			expectedCommentText:       "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Parse previous SDL
+			previousChunks, err := ChunkSDLText(tt.previousUserSDLText)
+			require.NoError(t, err)
+			require.NotNil(t, previousChunks)
+
+			// Log original chunks
+			t.Log("=== Previous SDL Chunks (Before Drift Handling) ===")
+			for identifier, chunk := range previousChunks.Views {
+				t.Logf("View %s:", identifier)
+				t.Logf("  Text: %s", chunk.GetText())
+				t.Logf("  CommentStatements count: %d", len(chunk.CommentStatements))
+			}
+
+			// Apply drift handling
+			err = applyViewChangesToChunks(previousChunks, tt.currentSchema, tt.previousSchema)
+			require.NoError(t, err)
+
+			// Log chunks after drift handling
+			t.Log("=== Previous SDL Chunks (After Drift Handling) ===")
+			for identifier, chunk := range previousChunks.Views {
+				t.Logf("View %s:", identifier)
+				t.Logf("  Text: %s", chunk.GetText())
+				t.Logf("  CommentStatements count: %d", len(chunk.CommentStatements))
+			}
+
+			// Get the view chunk
+			var viewChunk *schema.SDLChunk
+			for _, chunk := range previousChunks.Views {
+				viewChunk = chunk
+				break
+			}
+			require.NotNil(t, viewChunk, "View chunk should exist after drift handling")
+
+			// Get full text
+			fullText := viewChunk.GetText()
+			t.Logf("Full view text:\n%s", fullText)
+
+			// Verify COMMENT statements count
+			assert.Equal(t, tt.expectedCommentStatements, len(viewChunk.CommentStatements),
+				"COMMENT statements count should match expected")
+
+			// Verify COMMENT content
+			if tt.expectedCommentStatements > 0 {
+				assert.Contains(t, fullText, "COMMENT ON VIEW",
+					"Full text should contain COMMENT ON VIEW statement")
+				assert.Contains(t, fullText, tt.expectedCommentText,
+					"COMMENT should contain the expected text: %s", tt.expectedCommentText)
+			} else {
+				// Should NOT contain COMMENT ON VIEW
+				assert.NotContains(t, fullText, "COMMENT ON VIEW",
+					"Full text should NOT contain COMMENT ON VIEW when comment is removed")
+			}
+		})
+	}
+}
+
+func TestApplyTableChangesToChunk_CommentDrift(t *testing.T) {
+	tests := []struct {
+		name                      string
+		previousUserSDLText       string
+		currentSchema             *model.DatabaseSchema
+		previousSchema            *model.DatabaseSchema
+		expectedCommentStatements int
+		expectedCommentText       string
+	}{
+		{
+			name: "table_comment_changed_but_definition_unchanged",
+			previousUserSDLText: `CREATE TABLE public.products (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL
+);
+
+COMMENT ON TABLE public.products IS 'Old comment';`,
+			currentSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "products",
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "id", Type: "integer"},
+										{Name: "name", Type: "text", Nullable: false},
+									},
+									Comment: "New comment", // Changed from "Old comment"
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			previousSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "products",
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "id", Type: "integer"},
+										{Name: "name", Type: "text", Nullable: false},
+									},
+									Comment: "Old comment",
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			expectedCommentStatements: 1,
+			expectedCommentText:       "New comment",
+		},
+		{
+			name: "table_comment_added_when_previously_none",
+			previousUserSDLText: `CREATE TABLE public.customers (
+    id INTEGER PRIMARY KEY,
+    email TEXT NOT NULL
+);`,
+			currentSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "customers",
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "id", Type: "integer"},
+										{Name: "email", Type: "text", Nullable: false},
+									},
+									Comment: "Customer information table", // Added
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			previousSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "customers",
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "id", Type: "integer"},
+										{Name: "email", Type: "text", Nullable: false},
+									},
+									Comment: "", // No comment before
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			expectedCommentStatements: 1,
+			expectedCommentText:       "Customer information table",
+		},
+		{
+			name: "table_comment_removed",
+			previousUserSDLText: `CREATE TABLE public.orders (
+    order_id INTEGER PRIMARY KEY,
+    total NUMERIC
+);
+
+COMMENT ON TABLE public.orders IS 'Old comment';`,
+			currentSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "orders",
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "order_id", Type: "integer"},
+										{Name: "total", Type: "numeric"},
+									},
+									Comment: "", // Comment removed
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			previousSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "orders",
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "order_id", Type: "integer"},
+										{Name: "total", Type: "numeric"},
+									},
+									Comment: "Old comment",
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			expectedCommentStatements: 0,
+			expectedCommentText:       "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Parse previous SDL
+			previousChunks, err := ChunkSDLText(tt.previousUserSDLText)
+			require.NoError(t, err)
+			require.NotNil(t, previousChunks)
+
+			// Log original chunks
+			t.Log("=== Previous SDL Chunks (Before Drift Handling) ===")
+			for identifier, chunk := range previousChunks.Tables {
+				t.Logf("Table %s:", identifier)
+				t.Logf("  Text: %s", chunk.GetText())
+				t.Logf("  CommentStatements count: %d", len(chunk.CommentStatements))
+			}
+
+			// Apply drift handling
+			err = applyMinimalChangesToChunks(previousChunks, tt.currentSchema, tt.previousSchema)
+			require.NoError(t, err)
+
+			// Log chunks after drift handling
+			t.Log("=== Previous SDL Chunks (After Drift Handling) ===")
+			for identifier, chunk := range previousChunks.Tables {
+				t.Logf("Table %s:", identifier)
+				t.Logf("  Text: %s", chunk.GetText())
+				t.Logf("  CommentStatements count: %d", len(chunk.CommentStatements))
+			}
+
+			// Get the table chunk
+			var tableChunk *schema.SDLChunk
+			for _, chunk := range previousChunks.Tables {
+				tableChunk = chunk
+				break
+			}
+			require.NotNil(t, tableChunk, "Table chunk should exist after drift handling")
+
+			// Get full text
+			fullText := tableChunk.GetText()
+			t.Logf("Full table text:\n%s", fullText)
+
+			// Verify COMMENT statements count
+			assert.Equal(t, tt.expectedCommentStatements, len(tableChunk.CommentStatements),
+				"COMMENT statements count should match expected")
+
+			// Verify COMMENT content
+			if tt.expectedCommentStatements > 0 {
+				assert.Contains(t, fullText, "COMMENT ON TABLE",
+					"Full text should contain COMMENT ON TABLE statement")
+				assert.Contains(t, fullText, tt.expectedCommentText,
+					"COMMENT should contain the expected text: %s", tt.expectedCommentText)
+			} else {
+				// Should NOT contain COMMENT ON TABLE
+				assert.NotContains(t, fullText, "COMMENT ON TABLE",
+					"Full text should NOT contain COMMENT ON TABLE when comment is removed")
+			}
+		})
+	}
+}
+
+func TestApplyColumnCommentChanges(t *testing.T) {
+	tests := []struct {
+		name                      string
+		previousUserSDLText       string
+		currentSchema             *model.DatabaseSchema
+		previousSchema            *model.DatabaseSchema
+		expectedColumnComments    map[string]map[string]string // tableKey -> columnName -> comment
+		shouldContainCommentOn    []string                     // Expected COMMENT ON COLUMN statements
+		shouldNotContainCommentOn []string                     // Should not contain these
+	}{
+		{
+			name: "column_comment_changed_but_table_definition_unchanged",
+			previousUserSDLText: `CREATE TABLE public.products (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL
+);
+
+COMMENT ON COLUMN public.products.name IS 'Old column comment';`,
+			currentSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "products",
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "id", Type: "integer"},
+										{Name: "name", Type: "text", Nullable: false, Comment: "New column comment"},
+									},
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			previousSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "products",
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "id", Type: "integer"},
+										{Name: "name", Type: "text", Nullable: false, Comment: "Old column comment"},
+									},
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			expectedColumnComments: map[string]map[string]string{
+				"public.products": {
+					"name": "New column comment",
+				},
+			},
+			shouldContainCommentOn: []string{
+				`COMMENT ON COLUMN "public"."products"."name" IS 'New column comment'`,
+			},
+		},
+		{
+			name: "column_comment_added_when_previously_none",
+			previousUserSDLText: `CREATE TABLE public.inventory (
+    id INTEGER PRIMARY KEY,
+    quantity INTEGER NOT NULL
+);`,
+			currentSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "inventory",
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "id", Type: "integer"},
+										{Name: "quantity", Type: "integer", Nullable: false, Comment: "Available quantity"}, // Added
+									},
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			previousSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "inventory",
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "id", Type: "integer"},
+										{Name: "quantity", Type: "integer", Nullable: false, Comment: ""}, // No comment before
+									},
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			expectedColumnComments: map[string]map[string]string{
+				"public.inventory": {
+					"quantity": "Available quantity",
+				},
+			},
+			shouldContainCommentOn: []string{
+				`COMMENT ON COLUMN "public"."inventory"."quantity" IS 'Available quantity'`,
+			},
+		},
+		{
+			name: "column_comment_removed",
+			previousUserSDLText: `CREATE TABLE public.orders (
+    order_id INTEGER PRIMARY KEY,
+    total NUMERIC
+);
+
+COMMENT ON COLUMN public.orders.total IS 'Old column comment';`,
+			currentSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "orders",
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "order_id", Type: "integer"},
+										{Name: "total", Type: "numeric", Comment: ""}, // Comment removed
+									},
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			previousSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "orders",
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "order_id", Type: "integer"},
+										{Name: "total", Type: "numeric", Comment: "Old column comment"},
+									},
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			expectedColumnComments: map[string]map[string]string{},
+			shouldNotContainCommentOn: []string{
+				`COMMENT ON COLUMN "public"."orders"."total"`,
+			},
+		},
+		{
+			name: "multiple_column_comments_changed",
+			previousUserSDLText: `CREATE TABLE public.users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+COMMENT ON COLUMN public.users.username IS 'Old username comment';
+COMMENT ON COLUMN public.users.email IS 'Old email comment';`,
+			currentSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "users",
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "id", Type: "integer"},
+										{Name: "username", Type: "character varying", Nullable: false, Comment: "New username comment"},
+										{Name: "email", Type: "character varying", Nullable: false, Comment: "New email comment"},
+										{Name: "created_at", Type: "timestamp without time zone"},
+									},
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			previousSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "users",
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "id", Type: "integer"},
+										{Name: "username", Type: "character varying", Nullable: false, Comment: "Old username comment"},
+										{Name: "email", Type: "character varying", Nullable: false, Comment: "Old email comment"},
+										{Name: "created_at", Type: "timestamp without time zone"},
+									},
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			expectedColumnComments: map[string]map[string]string{
+				"public.users": {
+					"username": "New username comment",
+					"email":    "New email comment",
+				},
+			},
+			shouldContainCommentOn: []string{
+				`COMMENT ON COLUMN "public"."users"."username" IS 'New username comment'`,
+				`COMMENT ON COLUMN "public"."users"."email" IS 'New email comment'`,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Parse previous SDL
+			previousChunks, err := ChunkSDLText(tt.previousUserSDLText)
+			require.NoError(t, err)
+			require.NotNil(t, previousChunks)
+
+			// Log original chunks
+			t.Log("=== Previous SDL Chunks (Before Drift Handling) ===")
+			for identifier, chunk := range previousChunks.Tables {
+				t.Logf("Table %s:", identifier)
+				t.Logf("  CREATE TABLE text: %s", chunk.GetText())
+			}
+			if len(previousChunks.ColumnComments) > 0 {
+				t.Logf("ColumnComments count: %d", len(previousChunks.ColumnComments))
+				for tableKey, cols := range previousChunks.ColumnComments {
+					t.Logf("  Table %s: %d columns with comments", tableKey, len(cols))
+					for colName, colComment := range cols {
+						t.Logf("    Column %s: %s", colName, colComment.GetText())
+					}
+				}
+			}
+
+			// Apply drift handling
+			err = applyMinimalChangesToChunks(previousChunks, tt.currentSchema, tt.previousSchema)
+			require.NoError(t, err)
+
+			// Log chunks after drift handling
+			t.Log("=== Previous SDL Chunks (After Drift Handling) ===")
+			for identifier, chunk := range previousChunks.Tables {
+				t.Logf("Table %s:", identifier)
+				t.Logf("  CREATE TABLE text: %s", chunk.GetText())
+			}
+			if len(previousChunks.ColumnComments) > 0 {
+				t.Logf("ColumnComments count: %d", len(previousChunks.ColumnComments))
+				for tableKey, cols := range previousChunks.ColumnComments {
+					t.Logf("  Table %s: %d columns with comments", tableKey, len(cols))
+					for colName, colComment := range cols {
+						t.Logf("    Column %s: %s", colName, colComment.GetText())
+					}
+				}
+			}
+
+			// Verify column comments
+			for tableKey, expectedCols := range tt.expectedColumnComments {
+				actualCols, exists := previousChunks.ColumnComments[tableKey]
+				assert.True(t, exists, "Table %s should have column comments", tableKey)
+
+				for colName, expectedComment := range expectedCols {
+					commentNode, exists := actualCols[colName]
+					assert.True(t, exists, "Column %s should have a comment", colName)
+					if exists {
+						commentText := commentNode.GetText()
+						t.Logf("Column %s comment text: %s", colName, commentText)
+						assert.Contains(t, commentText, expectedComment,
+							"Column comment should contain expected text")
+					}
+				}
+
+				// Verify expected columns count
+				assert.Equal(t, len(expectedCols), len(actualCols),
+					"Number of column comments should match")
+			}
+
+			// If no column comments expected, verify map is empty or table key doesn't exist
+			if len(tt.expectedColumnComments) == 0 {
+				for _, shouldNotContain := range tt.shouldNotContainCommentOn {
+					found := false
+					for _, cols := range previousChunks.ColumnComments {
+						for _, commentNode := range cols {
+							if strings.Contains(commentNode.GetText(), shouldNotContain) {
+								found = true
+								break
+							}
+						}
+						if found {
+							break
+						}
+					}
+					assert.False(t, found, "Should not contain: %s", shouldNotContain)
+				}
+			}
+
+			// Verify CREATE TABLE statement is preserved and contains expected COMMENT statements
+			for tableKey := range tt.expectedColumnComments {
+				tableChunk, exists := previousChunks.Tables[tableKey]
+				assert.True(t, exists, "Table chunk should exist")
+				if exists {
+					tableText := tableChunk.GetText()
+					t.Logf("Table text:\n%s", tableText)
+
+					// Verify CREATE TABLE is preserved (should start with CREATE TABLE)
+					assert.Contains(t, tableText, "CREATE TABLE",
+						"CREATE TABLE statement should be preserved")
+
+					// Verify it contains expected COMMENT statements
+					for _, expectedComment := range tt.shouldContainCommentOn {
+						// Check in ColumnComments map
+						// Note: GetText() removes whitespace, so we normalize both strings for comparison
+						normalizedExpected := strings.ReplaceAll(expectedComment, " ", "")
+						found := false
+						if cols, ok := previousChunks.ColumnComments[tableKey]; ok {
+							for _, commentNode := range cols {
+								normalizedActual := strings.ReplaceAll(commentNode.GetText(), " ", "")
+								if strings.Contains(normalizedActual, normalizedExpected) {
+									found = true
+									break
+								}
+							}
+						}
+						assert.True(t, found, "Should contain COMMENT: %s", expectedComment)
+					}
+				}
+			}
+		})
+	}
+}

@@ -2137,6 +2137,18 @@ func applyMinimalChangesToChunks(previousChunks *schema.SDLChunks, currentSchema
 		return errors.Wrap(err, "failed to apply sequence changes")
 	}
 
+	// Process view changes: apply minimal changes to view chunks
+	err = applyViewChangesToChunks(previousChunks, currentSchema, previousSchema)
+	if err != nil {
+		return errors.Wrap(err, "failed to apply view changes")
+	}
+
+	// Process column comment changes: sync column comments based on metadata
+	err = applyColumnCommentChanges(previousChunks, currentSchema, previousSchema)
+	if err != nil {
+		return errors.Wrap(err, "failed to apply column comment changes")
+	}
+
 	return nil
 }
 
@@ -2216,6 +2228,14 @@ func applyTableChangesToChunk(chunk *schema.SDLChunk, currentTable, previousTabl
 
 	// Update the chunk with the new AST node
 	chunk.ASTNode = newCreateTableNode
+
+	// Synchronize COMMENT ON TABLE statements only if comment has changed
+	if currentTable.Comment != previousTable.Comment {
+		schemaName, tableName := parseIdentifier(chunk.Identifier)
+		if err := syncObjectCommentStatements(chunk, currentTable.Comment, "TABLE", schemaName, tableName); err != nil {
+			return errors.Wrapf(err, "failed to sync COMMENT statements for table %s", chunk.Identifier)
+		}
+	}
 
 	return nil
 }
@@ -3530,32 +3550,63 @@ func updateIndexChunkIfNeeded(chunks *schema.SDLChunks, currentIndex, previousIn
 		return nil
 	}
 
-	// Check if the index definition has changed
-	if !indexDefinitionsEqual(currentIndex.IndexMetadata, previousIndex.IndexMetadata) {
-		// Index has changed - regenerate the chunk
-		err := createIndexChunk(chunks, currentIndex, indexKey)
+	// Get the existing chunk
+	chunk, exists := chunks.Indexes[indexKey]
+	if !exists {
+		return errors.Errorf("index chunk not found for key %s", indexKey)
+	}
+
+	// Check if the CREATE INDEX definition has changed (excluding comment)
+	definitionChanged := !indexDefinitionsEqualExcludingComment(currentIndex.IndexMetadata, previousIndex.IndexMetadata)
+
+	if definitionChanged {
+		// Index definition has changed - regenerate the CREATE INDEX chunk
+		indexSDL := generateCreateIndexSDL(currentIndex)
+		if indexSDL == "" {
+			return errors.New("failed to generate SDL for index")
+		}
+
+		// Parse the SDL to get AST node
+		parseResult, err := pgparser.ParsePostgreSQL(indexSDL)
 		if err != nil {
-			return errors.Wrapf(err, "failed to recreate index chunk for %s", indexKey)
+			return errors.Wrapf(err, "failed to parse generated index SDL: %s", indexSDL)
+		}
+
+		// Extract the CREATE INDEX AST node
+		var indexASTNode *parser.IndexstmtContext
+		antlr.ParseTreeWalkerDefault.Walk(&indexExtractor{
+			result: &indexASTNode,
+		}, parseResult.Tree)
+
+		if indexASTNode == nil {
+			return errors.New("failed to extract CREATE INDEX AST node")
+		}
+
+		// Update the CREATE INDEX AST node
+		chunk.ASTNode = indexASTNode
+	}
+
+	// Synchronize COMMENT ON INDEX statements only if comment has changed
+	if currentIndex.Comment != previousIndex.Comment {
+		schemaName := currentIndex.SchemaName
+		if schemaName == "" {
+			schemaName = "public"
+		}
+		if err := syncObjectCommentStatements(chunk, currentIndex.Comment, "INDEX", schemaName, currentIndex.Name); err != nil {
+			return errors.Wrapf(err, "failed to sync COMMENT statements for index %s", indexKey)
 		}
 	}
 
 	return nil
 }
 
-// deleteIndexChunk removes an index chunk from the chunks
-func deleteIndexChunk(chunks *schema.SDLChunks, indexKey string) {
-	if chunks != nil && chunks.Indexes != nil {
-		delete(chunks.Indexes, indexKey)
-	}
-}
-
-// indexDefinitionsEqual compares two index definitions to see if they are equivalent
-func indexDefinitionsEqual(index1, index2 *storepb.IndexMetadata) bool {
+// indexDefinitionsEqualExcludingComment compares two index definitions excluding comments
+func indexDefinitionsEqualExcludingComment(index1, index2 *storepb.IndexMetadata) bool {
 	if index1 == nil || index2 == nil {
 		return false
 	}
 
-	// Compare basic properties
+	// Compare basic properties (excluding comment)
 	if index1.Name != index2.Name ||
 		index1.Unique != index2.Unique ||
 		index1.Type != index2.Type ||
@@ -3578,9 +3629,27 @@ func indexDefinitionsEqual(index1, index2 *storepb.IndexMetadata) bool {
 		}
 	}
 
-	// Note: PostgreSQL IndexMetadata doesn't have a Where field in the current schema
-	// Index WHERE clauses are handled differently in the system
-	// For now, we'll consider indexes equal if all other fields match
+	return true
+}
+
+// deleteIndexChunk removes an index chunk from the chunks
+func deleteIndexChunk(chunks *schema.SDLChunks, indexKey string) {
+	if chunks != nil && chunks.Indexes != nil {
+		delete(chunks.Indexes, indexKey)
+	}
+}
+
+// indexDefinitionsEqual compares two index definitions to see if they are equivalent
+func indexDefinitionsEqual(index1, index2 *storepb.IndexMetadata) bool {
+	// First check everything except comment
+	if !indexDefinitionsEqualExcludingComment(index1, index2) {
+		return false
+	}
+
+	// Then check comment
+	if index1.Comment != index2.Comment {
+		return false
+	}
 
 	return true
 }
@@ -3805,12 +3874,37 @@ func updateFunctionChunkIfNeeded(chunks *schema.SDLChunks, currentFunction, prev
 		return nil
 	}
 
-	// Check if function definitions are different
-	if !functionDefinitionsEqual(currentFunction, previousFunction) {
-		// Function was modified - update the chunk
-		err := updateFunctionChunk(chunks, currentFunction, functionKey)
+	// Get the existing chunk
+	chunk, exists := chunks.Functions[functionKey]
+	if !exists {
+		return errors.Errorf("function chunk not found for key %s", functionKey)
+	}
+
+	// Check if the CREATE FUNCTION definition has changed (excluding comment)
+	definitionChanged := !functionDefinitionsEqualExcludingComment(currentFunction, previousFunction)
+
+	if definitionChanged {
+		// Function definition has changed - regenerate the CREATE FUNCTION chunk
+		sdl := generateCreateFunctionSDL(currentFunction)
+		if sdl == "" {
+			return errors.Errorf("failed to generate SDL for function %s", functionKey)
+		}
+
+		// Parse the SDL to get the AST node
+		astNode, err := extractFunctionASTFromSDL(sdl)
 		if err != nil {
-			return errors.Wrapf(err, "failed to update function chunk for %s", functionKey)
+			return errors.Wrapf(err, "failed to extract AST from generated function SDL for %s", functionKey)
+		}
+
+		// Update the CREATE FUNCTION AST node
+		chunk.ASTNode = astNode
+	}
+
+	// Synchronize COMMENT ON FUNCTION statements only if comment has changed
+	if currentFunction.Comment != previousFunction.Comment {
+		schemaName, functionName := parseIdentifier(functionKey)
+		if err := syncObjectCommentStatements(chunk, currentFunction.Comment, "FUNCTION", schemaName, functionName); err != nil {
+			return errors.Wrapf(err, "failed to sync COMMENT statements for function %s", functionKey)
 		}
 	}
 
@@ -3818,38 +3912,7 @@ func updateFunctionChunkIfNeeded(chunks *schema.SDLChunks, currentFunction, prev
 }
 
 // updateFunctionChunk updates an existing function chunk with new definition
-func updateFunctionChunk(chunks *schema.SDLChunks, function *storepb.FunctionMetadata, functionKey string) error {
-	if function == nil || chunks == nil {
-		return nil
-	}
-
-	// Generate new function SDL
-	sdl := generateCreateFunctionSDL(function)
-	if sdl == "" {
-		return errors.Errorf("failed to generate SDL for function %s", functionKey)
-	}
-
-	// Parse the SDL to get the AST node
-	astNode, err := extractFunctionASTFromSDL(sdl)
-	if err != nil {
-		return errors.Wrapf(err, "failed to extract AST from generated function SDL for %s", functionKey)
-	}
-
-	// Update the existing chunk
-	if chunk := chunks.Functions[functionKey]; chunk != nil {
-		chunk.ASTNode = astNode
-	} else {
-		// Create new chunk if it doesn't exist
-		chunk := &schema.SDLChunk{
-			Identifier: functionKey,
-			ASTNode:    astNode,
-		}
-		chunks.Functions[functionKey] = chunk
-	}
-
-	return nil
-}
-
+// This function synchronizes the CREATE FUNCTION and COMMENT ON FUNCTION statements
 // deleteFunctionChunk removes a function chunk from the chunks
 func deleteFunctionChunk(chunks *schema.SDLChunks, functionKey string) {
 	if chunks != nil && chunks.Functions != nil {
@@ -3895,6 +3958,21 @@ func extractFunctionTextFromAST(functionAST *parser.CreatefunctionstmtContext) s
 
 // functionDefinitionsEqual compares two function definitions to see if they are equivalent
 func functionDefinitionsEqual(function1, function2 *storepb.FunctionMetadata) bool {
+	// First check everything except comment
+	if !functionDefinitionsEqualExcludingComment(function1, function2) {
+		return false
+	}
+
+	// Then check comment
+	if function1.Comment != function2.Comment {
+		return false
+	}
+
+	return true
+}
+
+// functionDefinitionsEqualExcludingComment compares two function definitions excluding comments
+func functionDefinitionsEqualExcludingComment(function1, function2 *storepb.FunctionMetadata) bool {
 	if function1 == nil && function2 == nil {
 		return true
 	}
@@ -4080,12 +4158,48 @@ func updateSequenceChunkIfNeeded(chunks *schema.SDLChunks, currentSequence, prev
 		return nil
 	}
 
-	// Check if sequence definitions are different
-	if !sequenceDefinitionsEqual(currentSequence, previousSequence) {
-		// Sequence was modified - update the chunk
-		err := updateSequenceChunk(chunks, currentSequence, sequenceKey)
+	// Get the existing chunk
+	chunk, exists := chunks.Sequences[sequenceKey]
+	if !exists {
+		return errors.Errorf("sequence chunk not found for key %s", sequenceKey)
+	}
+
+	// Check if the CREATE SEQUENCE definition has changed (excluding comment and owner)
+	definitionChanged := !sequenceDefinitionsEqualExcludingCommentAndOwner(currentSequence, previousSequence)
+
+	if definitionChanged {
+		// Sequence definition has changed - regenerate the CREATE SEQUENCE chunk
+		schemaName := extractSchemaFromSequenceKey(sequenceKey)
+		sdl := generateCreateSequenceSDL(schemaName, currentSequence)
+		if sdl == "" {
+			return errors.Errorf("failed to generate SDL for sequence %s", sequenceKey)
+		}
+
+		// Parse the SDL to get the AST node for CREATE SEQUENCE
+		astNode, err := extractSequenceASTFromSDL(sdl)
 		if err != nil {
-			return errors.Wrapf(err, "failed to update sequence chunk for %s", sequenceKey)
+			return errors.Wrapf(err, "failed to extract AST from generated sequence SDL for %s", sequenceKey)
+		}
+
+		// Update the CREATE SEQUENCE AST node
+		chunk.ASTNode = astNode
+	}
+
+	schemaName := extractSchemaFromSequenceKey(sequenceKey)
+
+	// Synchronize ALTER SEQUENCE OWNED BY statements only if owner has changed
+	ownerChanged := currentSequence.OwnerTable != previousSequence.OwnerTable ||
+		currentSequence.OwnerColumn != previousSequence.OwnerColumn
+	if ownerChanged {
+		if err := syncAlterSequenceStatements(chunk, currentSequence, schemaName); err != nil {
+			return errors.Wrapf(err, "failed to sync ALTER statements for sequence %s", sequenceKey)
+		}
+	}
+
+	// Synchronize COMMENT ON SEQUENCE statements only if comment has changed
+	if currentSequence.Comment != previousSequence.Comment {
+		if err := syncCommentStatements(chunk, currentSequence, schemaName); err != nil {
+			return errors.Wrapf(err, "failed to sync COMMENT statements for sequence %s", sequenceKey)
 		}
 	}
 
@@ -4093,37 +4207,163 @@ func updateSequenceChunkIfNeeded(chunks *schema.SDLChunks, currentSequence, prev
 }
 
 // updateSequenceChunk updates an existing sequence chunk with new definition
-func updateSequenceChunk(chunks *schema.SDLChunks, sequence *storepb.SequenceMetadata, sequenceKey string) error {
-	if sequence == nil || chunks == nil {
+// This function synchronizes the CREATE SEQUENCE, ALTER SEQUENCE, and COMMENT ON SEQUENCE statements
+// based on the current sequence metadata from the database
+// syncAlterSequenceStatements synchronizes ALTER SEQUENCE OWNED BY statements in the chunk
+// based on the current OwnerTable and OwnerColumn from sequence metadata
+func syncAlterSequenceStatements(chunk *schema.SDLChunk, sequence *storepb.SequenceMetadata, schemaName string) error {
+	if chunk == nil || sequence == nil {
 		return nil
 	}
 
-	// Generate new sequence SDL
-	schemaName := extractSchemaFromSequenceKey(sequenceKey)
-	sdl := generateCreateSequenceSDL(schemaName, sequence)
-	if sdl == "" {
-		return errors.Errorf("failed to generate SDL for sequence %s", sequenceKey)
-	}
+	// Check if sequence has an owner
+	hasOwner := sequence.OwnerTable != "" && sequence.OwnerColumn != ""
 
-	// Parse the SDL to get the AST node
-	astNode, err := extractSequenceASTFromSDL(sdl)
-	if err != nil {
-		return errors.Wrapf(err, "failed to extract AST from generated sequence SDL for %s", sequenceKey)
-	}
+	if hasOwner {
+		// Generate ALTER SEQUENCE OWNED BY statement
+		alterSDL := fmt.Sprintf("ALTER SEQUENCE \"%s\".\"%s\" OWNED BY \"%s\".\"%s\";",
+			schemaName, sequence.Name, sequence.OwnerTable, sequence.OwnerColumn)
 
-	// Update the existing chunk
-	if chunk := chunks.Sequences[sequenceKey]; chunk != nil {
-		chunk.ASTNode = astNode
-	} else {
-		// Create new chunk if it doesn't exist
-		chunk := &schema.SDLChunk{
-			Identifier: sequenceKey,
-			ASTNode:    astNode,
+		// Parse to get AST node
+		alterNode, err := extractAlterSequenceASTFromSDL(alterSDL)
+		if err != nil {
+			return errors.Wrapf(err, "failed to parse ALTER SEQUENCE statement")
 		}
-		chunks.Sequences[sequenceKey] = chunk
+
+		// Replace all existing ALTER statements with the new one
+		// (There should only be one ALTER SEQUENCE OWNED BY statement per sequence)
+		chunk.AlterStatements = []antlr.ParserRuleContext{alterNode}
+	} else {
+		// No owner - remove all ALTER SEQUENCE statements
+		chunk.AlterStatements = nil
 	}
 
 	return nil
+}
+
+// syncCommentStatements synchronizes COMMENT ON SEQUENCE statements in the chunk
+// based on the current Comment field from sequence metadata
+func syncCommentStatements(chunk *schema.SDLChunk, sequence *storepb.SequenceMetadata, schemaName string) error {
+	if chunk == nil || sequence == nil {
+		return nil
+	}
+
+	// Use the generic comment sync function
+	return syncObjectCommentStatements(chunk, sequence.Comment, "SEQUENCE", schemaName, sequence.Name)
+}
+
+// syncObjectCommentStatements is a generic function to synchronize COMMENT statements for any object type
+// objectType should be "SEQUENCE", "TABLE", "VIEW", "FUNCTION", "INDEX", etc.
+func syncObjectCommentStatements(chunk *schema.SDLChunk, comment, objectType, schemaName, objectName string) error {
+	if chunk == nil {
+		return nil
+	}
+
+	// Check if object has a comment
+	hasComment := comment != ""
+
+	if hasComment {
+		// Generate COMMENT ON <objectType> statement
+		// Escape single quotes in comment text
+		escapedComment := strings.ReplaceAll(comment, "'", "''")
+		commentSDL := fmt.Sprintf("COMMENT ON %s \"%s\".\"%s\" IS '%s';",
+			objectType, schemaName, objectName, escapedComment)
+
+		// Parse to get AST node
+		commentNode, err := extractCommentASTFromSDL(commentSDL)
+		if err != nil {
+			return errors.Wrapf(err, "failed to parse COMMENT ON %s statement", objectType)
+		}
+
+		// Replace all existing COMMENT statements with the new one
+		// (There should only be one COMMENT ON statement per object)
+		chunk.CommentStatements = []antlr.ParserRuleContext{commentNode}
+	} else {
+		// No comment - remove all COMMENT statements
+		chunk.CommentStatements = nil
+	}
+
+	return nil
+}
+
+// extractAlterSequenceASTFromSDL parses an ALTER SEQUENCE SDL and extracts the AST node
+func extractAlterSequenceASTFromSDL(sdl string) (antlr.ParserRuleContext, error) {
+	if sdl == "" {
+		return nil, errors.New("empty ALTER SEQUENCE SDL provided")
+	}
+
+	parseResult, err := pgparser.ParsePostgreSQL(sdl)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse ALTER SEQUENCE SDL")
+	}
+
+	tree := parseResult.Tree
+	if tree == nil {
+		return nil, errors.New("parse result tree is nil")
+	}
+
+	// Extract the ALTER SEQUENCE node
+	var result *parser.AlterseqstmtContext
+	extractor := &alterSequenceExtractor{result: &result}
+	antlr.NewParseTreeWalker().Walk(extractor, tree)
+
+	if result == nil {
+		return nil, errors.New("failed to extract ALTER SEQUENCE AST node from SDL")
+	}
+
+	return result, nil
+}
+
+// extractCommentASTFromSDL parses a COMMENT ON SDL and extracts the AST node
+func extractCommentASTFromSDL(sdl string) (antlr.ParserRuleContext, error) {
+	if sdl == "" {
+		return nil, errors.New("empty COMMENT SDL provided")
+	}
+
+	parseResult, err := pgparser.ParsePostgreSQL(sdl)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse COMMENT SDL")
+	}
+
+	tree := parseResult.Tree
+	if tree == nil {
+		return nil, errors.New("parse result tree is nil")
+	}
+
+	// Extract the COMMENT node
+	var result *parser.CommentstmtContext
+	extractor := &commentExtractor{result: &result}
+	antlr.NewParseTreeWalker().Walk(extractor, tree)
+
+	if result == nil {
+		return nil, errors.New("failed to extract COMMENT AST node from SDL")
+	}
+
+	return result, nil
+}
+
+// alterSequenceExtractor extracts ALTER SEQUENCE statement from AST
+type alterSequenceExtractor struct {
+	*parser.BasePostgreSQLParserListener
+	result **parser.AlterseqstmtContext
+}
+
+func (e *alterSequenceExtractor) EnterAlterseqstmt(ctx *parser.AlterseqstmtContext) {
+	if *e.result == nil {
+		*e.result = ctx
+	}
+}
+
+// commentExtractor extracts COMMENT statement from AST
+type commentExtractor struct {
+	*parser.BasePostgreSQLParserListener
+	result **parser.CommentstmtContext
+}
+
+func (e *commentExtractor) EnterCommentstmt(ctx *parser.CommentstmtContext) {
+	if *e.result == nil {
+		*e.result = ctx
+	}
 }
 
 // deleteSequenceChunk removes a sequence chunk from the chunks
@@ -4154,6 +4394,27 @@ func generateCreateSequenceSDL(schemaName string, sequence *storepb.SequenceMeta
 
 // sequenceDefinitionsEqual compares two sequence definitions to see if they are equivalent
 func sequenceDefinitionsEqual(sequence1, sequence2 *storepb.SequenceMetadata) bool {
+	// First check everything except comment and owner
+	if !sequenceDefinitionsEqualExcludingCommentAndOwner(sequence1, sequence2) {
+		return false
+	}
+
+	// Then check owner
+	if sequence1.OwnerTable != sequence2.OwnerTable ||
+		sequence1.OwnerColumn != sequence2.OwnerColumn {
+		return false
+	}
+
+	// Finally check comment
+	if sequence1.Comment != sequence2.Comment {
+		return false
+	}
+
+	return true
+}
+
+// sequenceDefinitionsEqualExcludingCommentAndOwner compares two sequence definitions excluding comments and owner
+func sequenceDefinitionsEqualExcludingCommentAndOwner(sequence1, sequence2 *storepb.SequenceMetadata) bool {
 	if sequence1 == nil && sequence2 == nil {
 		return true
 	}
@@ -4166,16 +4427,14 @@ func sequenceDefinitionsEqual(sequence1, sequence2 *storepb.SequenceMetadata) bo
 		return false
 	}
 
-	// Compare sequence parameters
+	// Compare sequence parameters (excluding OwnerTable, OwnerColumn, and Comment)
 	if sequence1.DataType != sequence2.DataType ||
 		sequence1.Start != sequence2.Start ||
 		sequence1.Increment != sequence2.Increment ||
 		sequence1.MaxValue != sequence2.MaxValue ||
 		sequence1.MinValue != sequence2.MinValue ||
 		sequence1.CacheSize != sequence2.CacheSize ||
-		sequence1.Cycle != sequence2.Cycle ||
-		sequence1.OwnerTable != sequence2.OwnerTable ||
-		sequence1.OwnerColumn != sequence2.OwnerColumn {
+		sequence1.Cycle != sequence2.Cycle {
 		return false
 	}
 
@@ -4497,4 +4756,369 @@ func getFirstCommentNode(nodes []antlr.ParserRuleContext) antlr.ParserRuleContex
 		return nil
 	}
 	return nodes[0]
+}
+
+// applyViewChangesToChunks applies minimal changes to CREATE VIEW chunks
+// This handles creation, modification, and deletion of view statements
+func applyViewChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseSchema) error {
+	if currentSchema == nil || previousSchema == nil || previousChunks == nil {
+		return nil
+	}
+
+	// Get view differences by comparing schema metadata
+	currentMetadata := currentSchema.GetMetadata()
+	previousMetadata := previousSchema.GetMetadata()
+	if currentMetadata == nil || previousMetadata == nil {
+		return nil
+	}
+
+	// Build view maps for current and previous schemas
+	currentViews := make(map[string]*storepb.ViewMetadata)
+	previousViews := make(map[string]*storepb.ViewMetadata)
+
+	// Collect all views from current schema
+	for _, schema := range currentMetadata.Schemas {
+		for _, view := range schema.Views {
+			viewKey := formatViewKey(schema.Name, view.Name)
+			currentViews[viewKey] = view
+		}
+	}
+
+	// Collect all views from previous schema
+	for _, schema := range previousMetadata.Schemas {
+		for _, view := range schema.Views {
+			viewKey := formatViewKey(schema.Name, view.Name)
+			previousViews[viewKey] = view
+		}
+	}
+
+	// Process view additions: create new view chunks
+	for viewKey, currentView := range currentViews {
+		if _, exists := previousViews[viewKey]; !exists {
+			// New view - create a chunk for it
+			err := createViewChunk(previousChunks, currentView, viewKey)
+			if err != nil {
+				return errors.Wrapf(err, "failed to create view chunk for %s", viewKey)
+			}
+		}
+	}
+
+	// Process view modifications: update existing chunks
+	for viewKey, currentView := range currentViews {
+		if previousView, exists := previousViews[viewKey]; exists {
+			// View exists in both - check if it needs modification
+			err := updateViewChunkIfNeeded(previousChunks, currentView, previousView, viewKey)
+			if err != nil {
+				return errors.Wrapf(err, "failed to update view chunk for %s", viewKey)
+			}
+		}
+	}
+
+	// Process view deletions: remove dropped view chunks
+	for viewKey := range previousViews {
+		if _, exists := currentViews[viewKey]; !exists {
+			// View was dropped - remove it from chunks
+			deleteViewChunk(previousChunks, viewKey)
+		}
+	}
+
+	return nil
+}
+
+// formatViewKey creates a consistent key for view identification
+func formatViewKey(schemaName, viewName string) string {
+	if schemaName == "" {
+		schemaName = "public"
+	}
+	return schemaName + "." + viewName
+}
+
+// createViewChunk creates a new CREATE VIEW chunk and adds it to the chunks
+func createViewChunk(chunks *schema.SDLChunks, view *storepb.ViewMetadata, viewKey string) error {
+	if view == nil || chunks == nil {
+		return nil
+	}
+
+	// Generate SDL text for the view
+	schemaName, _ := parseIdentifier(viewKey)
+	viewSDL := generateCreateViewSDL(schemaName, view)
+	if viewSDL == "" {
+		return errors.New("failed to generate SDL for view")
+	}
+
+	// Parse the SDL to get AST node
+	parseResult, err := pgparser.ParsePostgreSQL(viewSDL)
+	if err != nil {
+		return errors.Wrapf(err, "failed to parse generated view SDL: %s", viewSDL)
+	}
+
+	// Extract the CREATE VIEW AST node
+	var viewASTNode *parser.ViewstmtContext
+	antlr.ParseTreeWalkerDefault.Walk(&viewExtractor{
+		result: &viewASTNode,
+	}, parseResult.Tree)
+
+	if viewASTNode == nil {
+		return errors.New("failed to extract CREATE VIEW AST node")
+	}
+
+	// Create and add the chunk
+	chunk := &schema.SDLChunk{
+		Identifier: viewKey,
+		ASTNode:    viewASTNode,
+	}
+
+	if chunks.Views == nil {
+		chunks.Views = make(map[string]*schema.SDLChunk)
+	}
+	chunks.Views[viewKey] = chunk
+
+	return nil
+}
+
+// updateViewChunkIfNeeded updates an existing view chunk if the view definition has changed
+func updateViewChunkIfNeeded(chunks *schema.SDLChunks, currentView, previousView *storepb.ViewMetadata, viewKey string) error {
+	if currentView == nil || previousView == nil || chunks == nil {
+		return nil
+	}
+
+	// Get the existing chunk
+	chunk, exists := chunks.Views[viewKey]
+	if !exists {
+		return errors.Errorf("view chunk not found for key %s", viewKey)
+	}
+
+	// Check if the CREATE VIEW definition has changed (excluding comment)
+	definitionChanged := !viewDefinitionsEqualExcludingComment(currentView, previousView)
+
+	if definitionChanged {
+		// View definition has changed - regenerate the CREATE VIEW chunk
+		schemaName, _ := parseIdentifier(viewKey)
+		viewSDL := generateCreateViewSDL(schemaName, currentView)
+		if viewSDL == "" {
+			return errors.New("failed to generate SDL for view")
+		}
+
+		// Parse the SDL to get AST node
+		parseResult, err := pgparser.ParsePostgreSQL(viewSDL)
+		if err != nil {
+			return errors.Wrapf(err, "failed to parse generated view SDL: %s", viewSDL)
+		}
+
+		// Extract the CREATE VIEW AST node
+		var viewASTNode *parser.ViewstmtContext
+		antlr.ParseTreeWalkerDefault.Walk(&viewExtractor{
+			result: &viewASTNode,
+		}, parseResult.Tree)
+
+		if viewASTNode == nil {
+			return errors.New("failed to extract CREATE VIEW AST node")
+		}
+
+		// Update the CREATE VIEW AST node
+		chunk.ASTNode = viewASTNode
+	}
+
+	// Synchronize COMMENT ON VIEW statements only if comment has changed
+	if currentView.Comment != previousView.Comment {
+		schemaName, _ := parseIdentifier(viewKey)
+		if err := syncObjectCommentStatements(chunk, currentView.Comment, "VIEW", schemaName, currentView.Name); err != nil {
+			return errors.Wrapf(err, "failed to sync COMMENT statements for view %s", viewKey)
+		}
+	}
+
+	return nil
+}
+
+// deleteViewChunk removes a view chunk from the chunks
+func deleteViewChunk(chunks *schema.SDLChunks, viewKey string) {
+	if chunks != nil && chunks.Views != nil {
+		delete(chunks.Views, viewKey)
+	}
+}
+
+// viewDefinitionsEqualExcludingComment compares two view definitions excluding comments
+func viewDefinitionsEqualExcludingComment(view1, view2 *storepb.ViewMetadata) bool {
+	if view1 == nil || view2 == nil {
+		return false
+	}
+
+	// Compare name and definition (excluding comment)
+	if view1.Name != view2.Name ||
+		view1.Definition != view2.Definition {
+		return false
+	}
+
+	return true
+}
+
+// generateCreateViewSDL generates SDL text for a CREATE VIEW statement
+func generateCreateViewSDL(schemaName string, view *storepb.ViewMetadata) string {
+	if view == nil {
+		return ""
+	}
+
+	var buf strings.Builder
+	if err := writeViewSDL(&buf, schemaName, view); err != nil {
+		return ""
+	}
+
+	return buf.String()
+}
+
+// viewExtractor is a walker to extract CREATE VIEW AST nodes
+type viewExtractor struct {
+	parser.BasePostgreSQLParserListener
+	result **parser.ViewstmtContext
+}
+
+func (e *viewExtractor) EnterViewstmt(ctx *parser.ViewstmtContext) {
+	if e.result != nil && *e.result == nil {
+		*e.result = ctx
+	}
+}
+
+// applyColumnCommentChanges applies minimal changes to column comments based on schema metadata
+// This function only updates COMMENT ON COLUMN statements without modifying CREATE TABLE statements
+func applyColumnCommentChanges(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseSchema) error {
+	if currentSchema == nil || previousSchema == nil || previousChunks == nil {
+		return nil
+	}
+
+	// Get table metadata from schemas
+	currentMetadata := currentSchema.GetMetadata()
+	previousMetadata := previousSchema.GetMetadata()
+	if currentMetadata == nil || previousMetadata == nil {
+		return nil
+	}
+
+	// Build table maps for current and previous schemas
+	currentTables := make(map[string]*storepb.TableMetadata)
+	previousTables := make(map[string]*storepb.TableMetadata)
+
+	// Collect all tables from current schema
+	for _, schema := range currentMetadata.Schemas {
+		schemaName := schema.Name
+		if schemaName == "" {
+			schemaName = "public"
+		}
+		for _, table := range schema.Tables {
+			tableKey := schemaName + "." + table.Name
+			currentTables[tableKey] = table
+		}
+	}
+
+	// Collect all tables from previous schema
+	for _, schema := range previousMetadata.Schemas {
+		schemaName := schema.Name
+		if schemaName == "" {
+			schemaName = "public"
+		}
+		for _, table := range schema.Tables {
+			tableKey := schemaName + "." + table.Name
+			previousTables[tableKey] = table
+		}
+	}
+
+	// Initialize ColumnComments map if needed
+	if previousChunks.ColumnComments == nil {
+		previousChunks.ColumnComments = make(map[string]map[string]antlr.ParserRuleContext)
+	}
+
+	// Process tables that exist in both schemas
+	for tableKey, currentTable := range currentTables {
+		previousTable, exists := previousTables[tableKey]
+		if !exists {
+			// Table is new, skip (will be handled by table creation)
+			continue
+		}
+
+		// Build column maps
+		currentColumns := make(map[string]*storepb.ColumnMetadata)
+		previousColumns := make(map[string]*storepb.ColumnMetadata)
+
+		for _, col := range currentTable.Columns {
+			currentColumns[col.Name] = col
+		}
+		for _, col := range previousTable.Columns {
+			previousColumns[col.Name] = col
+		}
+
+		// Process columns that exist in both versions
+		for columnName, currentColumn := range currentColumns {
+			previousColumn, colExists := previousColumns[columnName]
+			if !colExists {
+				// Column is new, skip (will be handled by column addition)
+				continue
+			}
+
+			// Check if comment has changed
+			if currentColumn.Comment != previousColumn.Comment {
+				err := syncColumnComment(previousChunks, tableKey, columnName, currentColumn.Comment)
+				if err != nil {
+					return errors.Wrapf(err, "failed to sync comment for column %s.%s", tableKey, columnName)
+				}
+			}
+		}
+
+		// Process columns that were dropped - remove their comments
+		for columnName := range previousColumns {
+			if _, exists := currentColumns[columnName]; !exists {
+				// Column was dropped - remove its comment
+				if previousChunks.ColumnComments[tableKey] != nil {
+					delete(previousChunks.ColumnComments[tableKey], columnName)
+					if len(previousChunks.ColumnComments[tableKey]) == 0 {
+						delete(previousChunks.ColumnComments, tableKey)
+					}
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+// syncColumnComment synchronizes a single column comment in the chunks
+func syncColumnComment(chunks *schema.SDLChunks, tableKey, columnName, comment string) error {
+	if chunks == nil {
+		return nil
+	}
+
+	// Parse table key to get schema and table names
+	schemaName, tableName := parseIdentifier(tableKey)
+
+	// If comment is empty, remove the comment statement
+	if comment == "" {
+		if chunks.ColumnComments[tableKey] != nil {
+			delete(chunks.ColumnComments[tableKey], columnName)
+			if len(chunks.ColumnComments[tableKey]) == 0 {
+				delete(chunks.ColumnComments, tableKey)
+			}
+		}
+		return nil
+	}
+
+	// Generate COMMENT ON COLUMN statement
+	escapedComment := strings.ReplaceAll(comment, "'", "''")
+	commentSDL := fmt.Sprintf("COMMENT ON COLUMN \"%s\".\"%s\".\"%s\" IS '%s';",
+		schemaName, tableName, columnName, escapedComment)
+
+	// Parse the SDL to get AST node
+	commentNode, err := extractCommentASTFromSDL(commentSDL)
+	if err != nil {
+		return errors.Wrapf(err, "failed to parse column comment SDL: %s", commentSDL)
+	}
+
+	// Initialize maps if needed
+	if chunks.ColumnComments == nil {
+		chunks.ColumnComments = make(map[string]map[string]antlr.ParserRuleContext)
+	}
+	if chunks.ColumnComments[tableKey] == nil {
+		chunks.ColumnComments[tableKey] = make(map[string]antlr.ParserRuleContext)
+	}
+
+	// Update the comment node
+	chunks.ColumnComments[tableKey][columnName] = commentNode
+
+	return nil
 }
