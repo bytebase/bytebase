@@ -617,6 +617,42 @@ func processTableChanges(currentChunks, previousChunks *schema.SDLChunks, curren
 					ColumnChanges: []*schema.ColumnDiff{}, // Empty - table creation automatically creates all columns
 				}
 				diff.TableChanges = append(diff.TableChanges, tableDiff)
+				// Add COMMENT ON TABLE diffs if they exist
+				if len(currentChunk.CommentStatements) > 0 {
+					for _, commentNode := range currentChunk.CommentStatements {
+						commentText := extractCommentTextFromNode(commentNode)
+						diff.CommentChanges = append(diff.CommentChanges, &schema.CommentDiff{
+							Action:     schema.MetadataDiffActionCreate,
+							ObjectType: schema.CommentObjectTypeTable,
+							SchemaName: schemaName,
+							ObjectName: tableName,
+							OldComment: "",
+							NewComment: commentText,
+							OldASTNode: nil,
+							NewASTNode: commentNode,
+						})
+					}
+				}
+				// Add COMMENT ON COLUMN diffs if they exist
+				tableIdentifier := currentChunk.Identifier
+				if columnComments := currentChunks.ColumnComments[tableIdentifier]; len(columnComments) > 0 {
+					for columnName, commentNode := range columnComments {
+						commentText := extractCommentTextFromNode(commentNode)
+						if commentText != "" {
+							diff.CommentChanges = append(diff.CommentChanges, &schema.CommentDiff{
+								Action:     schema.MetadataDiffActionCreate,
+								ObjectType: schema.CommentObjectTypeColumn,
+								SchemaName: schemaName,
+								ObjectName: tableName,
+								ColumnName: columnName,
+								OldComment: "",
+								NewComment: commentText,
+								OldASTNode: nil,
+								NewASTNode: commentNode,
+							})
+						}
+					}
+				}
 			}
 		}
 	}
@@ -1600,6 +1636,23 @@ func processStandaloneIndexChanges(currentChunks, previousChunks *schema.SDLChun
 				Action:     schema.MetadataDiffActionCreate,
 				NewASTNode: currentChunk.ASTNode,
 			})
+			// Add COMMENT ON INDEX diffs if they exist
+			if len(currentChunk.CommentStatements) > 0 {
+				schemaName, indexName := parseIdentifier(currentChunk.Identifier)
+				for _, commentNode := range currentChunk.CommentStatements {
+					commentText := extractCommentTextFromNode(commentNode)
+					diff.CommentChanges = append(diff.CommentChanges, &schema.CommentDiff{
+						Action:     schema.MetadataDiffActionCreate,
+						ObjectType: schema.CommentObjectTypeIndex,
+						SchemaName: schemaName,
+						ObjectName: indexName,
+						OldComment: "",
+						NewComment: commentText,
+						OldASTNode: nil,
+						NewASTNode: commentNode,
+					})
+				}
+			}
 		}
 	}
 
@@ -1755,6 +1808,22 @@ func processViewChanges(currentChunks, previousChunks *schema.SDLChunks, current
 				OldASTNode: nil,
 				NewASTNode: currentChunk.ASTNode,
 			})
+			// Add COMMENT ON VIEW diffs if they exist
+			if len(currentChunk.CommentStatements) > 0 {
+				for _, commentNode := range currentChunk.CommentStatements {
+					commentText := extractCommentTextFromNode(commentNode)
+					diff.CommentChanges = append(diff.CommentChanges, &schema.CommentDiff{
+						Action:     schema.MetadataDiffActionCreate,
+						ObjectType: schema.CommentObjectTypeView,
+						SchemaName: schemaName,
+						ObjectName: viewName,
+						OldComment: "",
+						NewComment: commentText,
+						OldASTNode: nil,
+						NewASTNode: commentNode,
+					})
+				}
+			}
 		}
 	}
 
@@ -1815,6 +1884,22 @@ func processFunctionChanges(currentChunks, previousChunks *schema.SDLChunks, cur
 				OldASTNode:   nil,
 				NewASTNode:   currentChunk.ASTNode,
 			})
+			// Add COMMENT ON FUNCTION diffs if they exist
+			if len(currentChunk.CommentStatements) > 0 {
+				for _, commentNode := range currentChunk.CommentStatements {
+					commentText := extractCommentTextFromNode(commentNode)
+					diff.CommentChanges = append(diff.CommentChanges, &schema.CommentDiff{
+						Action:     schema.MetadataDiffActionCreate,
+						ObjectType: schema.CommentObjectTypeFunction,
+						SchemaName: schemaName,
+						ObjectName: functionName,
+						OldComment: "",
+						NewComment: commentText,
+						OldASTNode: nil,
+						NewASTNode: commentNode,
+					})
+				}
+			}
 		}
 	}
 
@@ -1968,6 +2053,7 @@ func processSequenceChanges(currentChunks, previousChunks *schema.SDLChunks, cur
 		} else {
 			// New sequence
 			schemaName, sequenceName := parseIdentifier(currentChunk.Identifier)
+			// Add CREATE SEQUENCE diff
 			diff.SequenceChanges = append(diff.SequenceChanges, &schema.SequenceDiff{
 				Action:       schema.MetadataDiffActionCreate,
 				SchemaName:   schemaName,
@@ -1977,6 +2063,36 @@ func processSequenceChanges(currentChunks, previousChunks *schema.SDLChunks, cur
 				OldASTNode:   nil,
 				NewASTNode:   currentChunk.ASTNode,
 			})
+			// Add ALTER SEQUENCE OWNED BY diffs if they exist
+			if len(currentChunk.AlterStatements) > 0 {
+				for _, alterNode := range currentChunk.AlterStatements {
+					diff.SequenceChanges = append(diff.SequenceChanges, &schema.SequenceDiff{
+						Action:       schema.MetadataDiffActionAlter,
+						SchemaName:   schemaName,
+						SequenceName: sequenceName,
+						OldSequence:  nil,
+						NewSequence:  nil,
+						OldASTNode:   nil,
+						NewASTNode:   alterNode,
+					})
+				}
+			}
+			// Add COMMENT ON SEQUENCE diffs if they exist
+			if len(currentChunk.CommentStatements) > 0 {
+				for _, commentNode := range currentChunk.CommentStatements {
+					commentText := extractCommentTextFromNode(commentNode)
+					diff.CommentChanges = append(diff.CommentChanges, &schema.CommentDiff{
+						Action:     schema.MetadataDiffActionCreate,
+						ObjectType: schema.CommentObjectTypeSequence,
+						SchemaName: schemaName,
+						ObjectName: sequenceName,
+						OldComment: "",
+						NewComment: commentText,
+						OldASTNode: nil,
+						NewASTNode: commentNode,
+					})
+				}
+			}
 		}
 	}
 
