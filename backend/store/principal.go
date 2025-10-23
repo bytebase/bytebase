@@ -209,30 +209,30 @@ func (s *Store) listAndCacheAllUsers(ctx context.Context) error {
 }
 
 func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*UserMessage, error) {
-	var with, join string
+	with := qb.Q()
+	from := qb.Q().Space("principal INNER JOIN user_groups ON principal.id = user_groups.user_id")
+	where := qb.Q().Space("TRUE")
+
+	// Build CTE for project filtering if needed
 	if v := find.ProjectID; v != nil {
-		with = `WITH all_members AS (
+		with.Space(`WITH all_members AS (
 			SELECT
 				jsonb_array_elements_text(jsonb_array_elements(policy.payload->'bindings')->'members') AS member,
 				jsonb_array_elements(policy.payload->'bindings')->>'role' AS role
 			FROM policy
-			WHERE ((resource_type = '` + storepb.Policy_PROJECT.String() + `' AND resource = 'projects/` + *v + `') OR resource_type = '` + storepb.Policy_WORKSPACE.String() + `') AND type = '` + storepb.Policy_IAM.String() + `'
+			WHERE ((resource_type = ? AND resource = ?) OR resource_type = ?) AND type = ?
 		),
 		project_members AS (
 			SELECT ARRAY_AGG(member) AS members FROM all_members WHERE role NOT LIKE 'roles/workspace%'
-		)`
-		join = `INNER JOIN project_members ON (CONCAT('users/', principal.id) = ANY(project_members.members) OR '` + common.AllUsers + `' = ANY(project_members.members))`
+		),`, storepb.Policy_PROJECT.String(), "projects/"+*v, storepb.Policy_WORKSPACE.String(), storepb.Policy_IAM.String())
+		from.Space(`INNER JOIN project_members ON (CONCAT('users/', principal.id) = ANY(project_members.members) OR ? = ANY(project_members.members))`, common.AllUsers)
+	} else {
+		with.Space(`WITH`)
 	}
 
 	// Join the user_group table to find groups for each user.
 	// The user will be stored in the user_group.payload.members.member field, the member is in the "users/{id}" format
-	if strings.HasPrefix(with, "WITH") {
-		with += ","
-	} else {
-		with = "WITH"
-	}
-
-	q := qb.Q().Space(with + ` user_groups AS (
+	with.Space(`user_groups AS (
 		SELECT
 			principal.id AS user_id,
 			COALESCE(ARRAY_AGG(user_group.email ORDER BY user_group.email) FILTER (WHERE user_group.email IS NOT NULL), '{}') AS groups
@@ -242,45 +242,46 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 			WHERE m->>'member' = CONCAT('users/', principal.id)
 		)
 		GROUP BY principal.id
-	)
-	SELECT
-		principal.id AS user_id,
-		principal.deleted,
-		principal.email,
-		principal.name,
-		principal.type,
-		principal.password_hash,
-		principal.mfa_config,
-		principal.phone,
-		principal.profile,
-		principal.created_at,
-		user_groups.groups
-	FROM principal
-	INNER JOIN user_groups ON principal.id = user_groups.user_id
-	` + join + ` WHERE TRUE`)
+	)`)
 
 	if filter := find.Filter; filter != nil {
-		// Convert $1, $2, etc. to ? for qb
-		q.And(ConvertDollarPlaceholders(filter.Where), filter.Args...)
+		where.And(ConvertDollarPlaceholders(filter.Where), filter.Args...)
 	}
 	if v := find.ID; v != nil {
-		q.And("principal.id = ?", *v)
+		where.And("principal.id = ?", *v)
 	}
 	if v := find.Email; v != nil {
 		if *v == common.AllUsers {
-			q.And("principal.email = ?", *v)
+			where.And("principal.email = ?", *v)
 		} else {
-			q.And("principal.email = ?", strings.ToLower(*v))
+			where.And("principal.email = ?", strings.ToLower(*v))
 		}
 	}
 	if v := find.Type; v != nil {
-		q.And("principal.type = ?", v.String())
+		where.And("principal.type = ?", v.String())
 	}
 	if !find.ShowDeleted {
-		q.And("principal.deleted = ?", false)
+		where.And("principal.deleted = ?", false)
 	}
 
-	q.Space("ORDER BY type DESC, created_at ASC")
+	q := qb.Q().Space("?", with)
+	q.Space(`
+		SELECT
+			principal.id AS user_id,
+			principal.deleted,
+			principal.email,
+			principal.name,
+			principal.type,
+			principal.password_hash,
+			principal.mfa_config,
+			principal.phone,
+			principal.profile,
+			principal.created_at,
+			user_groups.groups
+		FROM ?
+		WHERE ?
+		ORDER BY type DESC, created_at ASC
+	`, from, where)
 
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)

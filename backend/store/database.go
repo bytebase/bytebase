@@ -387,6 +387,45 @@ func (s *Store) BatchUpdateDatabases(ctx context.Context, databases []*DatabaseM
 }
 
 func (*Store) listDatabaseImplV2(ctx context.Context, txn *sql.Tx, find *FindDatabaseMessage) ([]*DatabaseMessage, error) {
+	from := qb.Q().Space("db")
+	where := qb.Q().Space("TRUE")
+
+	if filter := find.Filter; filter != nil {
+		where.And(filter.Where, filter.Args...)
+		if strings.Contains(filter.Where, "ds.metadata->'schemas'") {
+			from.Space("INNER JOIN db_schema ds ON db.instance = ds.instance AND db.name = ds.db_name")
+		}
+	}
+
+	from.Space("LEFT JOIN instance ON db.instance = instance.resource_id")
+
+	if v := find.ProjectID; v != nil {
+		where.And("db.project = ?", *v)
+	}
+	if v := find.EffectiveEnvironmentID; v != nil {
+		where.And(`COALESCE(
+			db.environment,
+			instance.environment
+		) = ?`, *v)
+	}
+	if v := find.InstanceID; v != nil {
+		where.And("db.instance = ?", *v)
+	}
+	if v := find.DatabaseName; v != nil {
+		if find.IsCaseSensitive {
+			where.And("db.name = ?", *v)
+		} else {
+			where.And("LOWER(db.name) = LOWER(?)", *v)
+		}
+	}
+	if v := find.Engine; v != nil {
+		where.And("instance.metadata->>'engine' = ?", *v)
+	}
+	if !find.ShowDeleted {
+		where.And("instance.deleted = ?", false)
+		where.And("db.deleted = ?", false)
+	}
+
 	q := qb.Q().Space(`
 		SELECT
 			db.project,
@@ -399,51 +438,10 @@ func (*Store) listDatabaseImplV2(ctx context.Context, txn *sql.Tx, find *FindDat
 			db.name,
 			db.deleted,
 			db.metadata
-		FROM db`)
-
-	joinQuery := ""
-	if filter := find.Filter; filter != nil {
-		if strings.Contains(filter.Where, "ds.metadata->'schemas'") {
-			joinQuery = "INNER JOIN db_schema ds ON db.instance = ds.instance AND db.name = ds.db_name"
-		}
-	}
-	if joinQuery != "" {
-		q.Space(joinQuery)
-	}
-
-	q.Space("LEFT JOIN instance ON db.instance = instance.resource_id WHERE TRUE")
-
-	if filter := find.Filter; filter != nil {
-		q.And(filter.Where, filter.Args...)
-	}
-	if v := find.ProjectID; v != nil {
-		q.And("db.project = ?", *v)
-	}
-	if v := find.EffectiveEnvironmentID; v != nil {
-		q.And(`COALESCE(
-			db.environment,
-			instance.environment
-		) = ?`, *v)
-	}
-	if v := find.InstanceID; v != nil {
-		q.And("db.instance = ?", *v)
-	}
-	if v := find.DatabaseName; v != nil {
-		if find.IsCaseSensitive {
-			q.And("db.name = ?", *v)
-		} else {
-			q.And("LOWER(db.name) = LOWER(?)", *v)
-		}
-	}
-	if v := find.Engine; v != nil {
-		q.And("instance.metadata->>'engine' = ?", *v)
-	}
-	if !find.ShowDeleted {
-		q.And("instance.deleted = ?", false)
-		q.And("db.deleted = ?", false)
-	}
-
-	q.Space("ORDER BY db.project, db.instance, db.name")
+		FROM ?
+		WHERE ?
+		ORDER BY db.project, db.instance, db.name
+	`, from, where)
 
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)

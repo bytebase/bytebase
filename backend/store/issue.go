@@ -271,50 +271,50 @@ func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMe
 // ListIssueV2 returns the list of issues by find query.
 func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*IssueMessage, error) {
 	orderByClause := "ORDER BY issue.id DESC"
-	fromClause := qb.Q().Space("issue")
+	from := qb.Q().Space("issue")
+	where := qb.Q()
 
-	q := qb.Q()
 	if v := find.UID; v != nil {
-		q.And("issue.id = ?", *v)
+		where.And("issue.id = ?", *v)
 	}
 	if v := find.PipelineID; v != nil {
-		q.And("issue.pipeline_id = ?", *v)
+		where.And("issue.pipeline_id = ?", *v)
 	}
 	if v := find.PlanUID; v != nil {
-		q.And("issue.plan_id = ?", *v)
+		where.And("issue.plan_id = ?", *v)
 	}
 	if v := find.ProjectID; v != nil {
-		q.And("issue.project = ?", *v)
+		where.And("issue.project = ?", *v)
 	}
 	if v := find.ProjectIDs; v != nil {
-		q.And("issue.project = ANY(?)", *v)
+		where.And("issue.project = ANY(?)", *v)
 	}
 	if v := find.InstanceResourceID; v != nil {
-		q.And("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = issue.pipeline_id AND task.instance = ?)", *v)
+		where.And("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = issue.pipeline_id AND task.instance = ?)", *v)
 	}
 	if find.InstanceID != nil && find.DatabaseName != nil {
-		q.And("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = issue.pipeline_id AND task.instance = ? AND task.db_name = ?)", *find.InstanceID, *find.DatabaseName)
+		where.And("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = issue.pipeline_id AND task.instance = ? AND task.db_name = ?)", *find.InstanceID, *find.DatabaseName)
 	}
 	if v := find.CreatorID; v != nil {
-		q.And("issue.creator_id = ?", *v)
+		where.And("issue.creator_id = ?", *v)
 	}
 	if v := find.CreatedAtBefore; v != nil {
-		q.And("issue.created_at < ?", *v)
+		where.And("issue.created_at < ?", *v)
 	}
 	if v := find.CreatedAtAfter; v != nil {
-		q.And("issue.created_at > ?", *v)
+		where.And("issue.created_at > ?", *v)
 	}
 	if v := find.Types; v != nil {
 		typeStrings := make([]string, 0, len(*v))
 		for _, t := range *v {
 			typeStrings = append(typeStrings, t.String())
 		}
-		q.And("issue.type = ANY(?)", typeStrings)
+		where.And("issue.type = ANY(?)", typeStrings)
 	}
 	if v := find.Query; v != nil && *v != "" {
 		if tsQuery := getTSQuery(*v); tsQuery != "" {
-			fromClause.Space("LEFT JOIN CAST(? AS tsquery) AS query ON TRUE", tsQuery)
-			q.And("issue.ts_vector @@ query")
+			from.Space("LEFT JOIN CAST(? AS tsquery) AS query ON TRUE", tsQuery)
+			where.And("issue.ts_vector @@ query")
 			orderByClause = "ORDER BY ts_rank(issue.ts_vector, query) DESC, issue.id DESC"
 		}
 	}
@@ -323,7 +323,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		for _, status := range find.StatusList {
 			statusStrings = append(statusStrings, status.String())
 		}
-		q.And("issue.status = ANY(?)", statusStrings)
+		where.And("issue.status = ANY(?)", statusStrings)
 	}
 	if v := find.TaskTypes; v != nil {
 		taskTypeStrings := make([]string, 0, len(*v))
@@ -335,86 +335,74 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 			for _, mt := range *find.MigrateTypes {
 				migrateTypeStrings = append(migrateTypeStrings, mt.String())
 			}
-			q.And("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = issue.pipeline_id AND task.type = ANY(?) AND task.payload->>'migrateType' = ANY(?))", taskTypeStrings, migrateTypeStrings)
+			where.And("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = issue.pipeline_id AND task.type = ANY(?) AND task.payload->>'migrateType' = ANY(?))", taskTypeStrings, migrateTypeStrings)
 		} else {
-			q.And("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = issue.pipeline_id AND task.type = ANY(?))", taskTypeStrings)
+			where.And("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = issue.pipeline_id AND task.type = ANY(?))", taskTypeStrings)
 		}
 	}
 	if v := find.EnvironmentID; v != nil {
-		q.And("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = issue.pipeline_id AND task.environment = ?)", *v)
+		where.And("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = issue.pipeline_id AND task.environment = ?)", *v)
 	}
 	if len(find.LabelList) != 0 {
-		q.And("payload->'labels' ?& ?::TEXT[]", find.LabelList)
+		where.And("payload->'labels' ?& ?::TEXT[]", find.LabelList)
 	}
 	if find.NoPipeline {
-		q.And("issue.pipeline_id IS NULL")
+		where.And("issue.pipeline_id IS NULL")
 	}
 
-	fromSQL, fromArgs, err := fromClause.ToSQL()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build from clause")
-	}
-
-	whereSQL, whereArgs, err := q.ToSQL()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build where clause")
-	}
-
-	selectQuery := qb.Q().Space(`
-	SELECT
-		issue.id,
-		issue.creator_id,
-		issue.created_at,
-		issue.updated_at,
-		issue.project,
-		issue.pipeline_id,
-		issue.plan_id,
-		COALESCE(plan.name, issue.name) AS name,
-		issue.status,
-		issue.type,
-		COALESCE(plan.description, issue.description) AS description,
-		issue.payload,
-		COALESCE(task_run_status_count.status_count, '{}'::jsonb)
-	FROM`)
-	selectQuery.Space(fromSQL, fromArgs...)
-	selectQuery.Space(`
-	LEFT JOIN plan ON issue.plan_id = plan.id
-	LEFT JOIN LATERAL (
+	q := qb.Q().Space(`
 		SELECT
-			jsonb_object_agg(t.status, t.count) AS status_count
-		FROM (
+			issue.id,
+			issue.creator_id,
+			issue.created_at,
+			issue.updated_at,
+			issue.project,
+			issue.pipeline_id,
+			issue.plan_id,
+			COALESCE(plan.name, issue.name) AS name,
+			issue.status,
+			issue.type,
+			COALESCE(plan.description, issue.description) AS description,
+			issue.payload,
+			COALESCE(task_run_status_count.status_count, '{}'::jsonb)
+		FROM ?
+		LEFT JOIN plan ON issue.plan_id = plan.id
+		LEFT JOIN LATERAL (
 			SELECT
-				t.status,
-				count(*) AS count
+				jsonb_object_agg(t.status, t.count) AS status_count
 			FROM (
 				SELECT
-					CASE COALESCE((task.payload->>'skipped')::BOOLEAN, FALSE)
-						WHEN TRUE THEN 'SKIPPED'
-						ELSE latest_task_run.status
-					END AS status
-				FROM task
-				LEFT JOIN LATERAL(
-					SELECT COALESCE(
-						(SELECT task_run.status FROM task_run WHERE task_run.task_id = task.id ORDER BY task_run.id DESC LIMIT 1), 'NOT_STARTED'
-					) AS status
-				) AS latest_task_run ON TRUE
-				WHERE task.pipeline_id = issue.pipeline_id
+					t.status,
+					count(*) AS count
+				FROM (
+					SELECT
+						CASE COALESCE((task.payload->>'skipped')::BOOLEAN, FALSE)
+							WHEN TRUE THEN 'SKIPPED'
+							ELSE latest_task_run.status
+						END AS status
+					FROM task
+					LEFT JOIN LATERAL(
+						SELECT COALESCE(
+							(SELECT task_run.status FROM task_run WHERE task_run.task_id = task.id ORDER BY task_run.id DESC LIMIT 1), 'NOT_STARTED'
+						) AS status
+					) AS latest_task_run ON TRUE
+					WHERE task.pipeline_id = issue.pipeline_id
+				) AS t
+				GROUP BY t.status
 			) AS t
-			GROUP BY t.status
-		) AS t
-	) AS task_run_status_count ON TRUE
-	WHERE`)
-	selectQuery.Space(whereSQL, whereArgs...)
-	selectQuery.Space(orderByClause)
+		) AS task_run_status_count ON TRUE
+		WHERE ?
+	`, from, where)
+	q.Space(orderByClause)
 
 	if v := find.Limit; v != nil {
-		selectQuery.Space("LIMIT ?", *v)
+		q.Space("LIMIT ?", *v)
 	}
 	if v := find.Offset; v != nil {
-		selectQuery.Space("OFFSET ?", *v)
+		q.Space("OFFSET ?", *v)
 	}
 
-	query, args, err := selectQuery.ToSQL()
+	query, args, err := q.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
