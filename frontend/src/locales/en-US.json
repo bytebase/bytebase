@@ -2146,7 +2146,8 @@
     "sync-sql-from-schema-editor": "Sync SQL from Schema Editor",
     "raw-sql": "Raw SQL",
     "search-database-and-table": "Search database and table",
-    "nothing-changed-for-database": "Nothing changed for database {database}",
+    "failed-to-generate-ddl-for-database": "Failed to generate the DDL for database {database}",
+    "continue-with-empty-sql": "Continue with empty SQL",
     "actions": {
       "create-schema": "Create schema",
       "drop-schema": "Drop schema",

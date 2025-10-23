@@ -48,6 +48,7 @@ import {
   useElementSize,
   useLocalStorage,
   useParentElement,
+  useDebounceFn,
 } from "@vueuse/core";
 import { ChevronDownIcon } from "lucide-vue-next";
 import { computed, toRef, ref, watch } from "vue";
@@ -93,10 +94,7 @@ const status = ref<"pending" | "success" | "error">("success");
 const data = ref<string>("");
 const error = ref<Error | null>(null);
 
-// Track whether we've fetched at least once when expanded
-const hasFetchedOnce = ref(false);
-
-const fetchSchemaString = async () => {
+const fetchSchemaString = useDebounceFn(async () => {
   if (!expanded.value) {
     data.value = "";
     status.value = "success";
@@ -123,42 +121,26 @@ const fetchSchemaString = async () => {
 
     data.value = response.schemaString;
     status.value = "success";
-    hasFetchedOnce.value = true;
   } catch (err) {
     error.value = new Error(extractGrpcErrorMessage(err));
     status.value = "error";
   }
-};
+});
 
-// Only fetch when the panel is expanded for the first time
-// Subsequent fetches will only happen on manual trigger
 watch(
-  expanded,
-  (newExpanded) => {
-    if (newExpanded && !hasFetchedOnce.value && mocked.value) {
+  () => mocked.value,
+  () => {
+    if (expanded.value) {
       fetchSchemaString();
     }
   },
-  { immediate: true }
+  { deep: true, immediate: true }
 );
-
-// Reset hasFetchedOnce when panel is collapsed
-watch(expanded, (newExpanded) => {
-  if (!newExpanded) {
-    hasFetchedOnce.value = false;
-    data.value = "";
-  }
-});
 
 // Listen for refresh-preview events
 useEmitteryEventListener(events, "refresh-preview", () => {
   if (expanded.value && mocked.value) {
     fetchSchemaString();
   }
-});
-
-// Expose method to trigger manual refresh
-defineExpose({
-  refresh: fetchSchemaString,
 });
 </script>

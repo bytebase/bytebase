@@ -99,6 +99,41 @@ export const useEditStatus = () => {
     return "normal";
   };
 
+  const replaceTableName = (
+    database: ComposedDatabase,
+    metadata: {
+      schema: SchemaMetadata;
+      table: TableMetadata;
+    },
+    newName: string
+  ) => {
+    const key = keyForResource(database, metadata);
+
+    const sections = key.split("/");
+    sections.pop();
+    sections.push(newName);
+    const newKey = sections.join("/");
+    if (key === newKey) {
+      return;
+    }
+
+    const pathMap = new Map<string /* old path */, string /* new path */>();
+    for (const path of dirtyPathsArray.value) {
+      if (!dirtyPaths.value.has(path)) {
+        continue;
+      }
+      if (path.startsWith(key)) {
+        pathMap.set(path, path.replace(key, newKey));
+      }
+    }
+
+    for (const [oldPath, newPath] of pathMap.entries()) {
+      const status = dirtyPaths.value.get(oldPath)!;
+      dirtyPaths.value.delete(oldPath);
+      dirtyPaths.value.set(newPath, status);
+    }
+  };
+
   const getColumnStatus = (
     database: ComposedDatabase,
     metadata: {
@@ -181,8 +216,10 @@ export const useEditStatus = () => {
     dirtyPaths.value.clear();
   };
 
+  const isDirty = computed(() => dirtyPaths.value.size > 0);
+
   return {
-    dirtyPaths,
+    isDirty,
     markEditStatus,
     markEditStatusByKey,
     getEditStatusByKey,
@@ -195,5 +232,6 @@ export const useEditStatus = () => {
     getProcedureStatus,
     getFunctionStatus,
     getViewStatus,
+    replaceTableName,
   };
 };

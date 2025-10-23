@@ -2146,7 +2146,8 @@
     "sync-sql-from-schema-editor": "Đồng bộ SQL từ Trình soạn thảo lược đồ",
     "raw-sql": "SQL thô",
     "search-database-and-table": "Tìm kiếm cơ sở dữ liệu và bảng",
-    "nothing-changed-for-database": "Không có gì thay đổi cho cơ sở dữ liệu {database}",
+    "failed-to-generate-ddl-for-database": "Không thể tạo DDL cho cơ sở dữ liệu {database}",
+    "continue-with-empty-sql": "Tiếp tục với SQL trống",
     "actions": {
       "create-schema": "Tạo lược đồ",
       "drop-schema": "Xóa lược đồ",

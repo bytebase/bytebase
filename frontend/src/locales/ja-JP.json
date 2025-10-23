@@ -2146,7 +2146,8 @@
     "sync-sql-from-schema-editor": "スキーマエディタからSQLを同期する",
     "raw-sql": "SQL文",
     "search-database-and-table": "データベースとテーブルを検索する",
-    "nothing-changed-for-database": "データベース {database} には何も変更されていません",
+    "failed-to-generate-ddl-for-database": "データベース {database} の DDL 生成に失敗しました",
+    "continue-with-empty-sql": "空のSQLで続行",
     "actions": {
       "create-schema": "新しいスキーマ",
       "drop-schema": "スキーマの削除",

@@ -158,7 +158,7 @@ const refreshPreview = () => {
 defineExpose({
   applyMetadataEdit,
   refreshPreview,
-  isDirty: computed(() => context.dirtyPaths.value.size > 0),
+  isDirty: context.isDirty,
 });
 </script>
 

@@ -68,7 +68,7 @@
               <RequiredStar />
             </label>
             <NInput
-              :value="editing.tableMetadata.name"
+              :value="tableMetadata.name"
               :disabled="readonly"
               placeholder="table name"
               @update:value="handleUpdateTableName"
@@ -81,7 +81,7 @@
               {{ $t("schema-template.form.comment") }}
             </label>
             <NInput
-              v-model:value="editing.tableMetadata.userComment"
+              v-model:value="tableMetadata.userComment"
               type="textarea"
               :autosize="{ minRows: 3, maxRows: 3 }"
               :disabled="readonly"
@@ -116,17 +116,14 @@
               :show-foreign-key="false"
               :db="editing.db"
               :database="editing.databaseMetadata"
-              :schema="editing.schemaMetadata"
-              :table="editing.tableMetadata"
+              :schema="schemaMetadata"
+              :table="tableMetadata"
               :engine="editing.engine"
               :allow-change-primary-keys="true"
               :allow-reorder-columns="allowReorderColumns"
               :max-body-height="640"
               :show-database-catalog-column="true"
               :show-classification-column="'ALWAYS'"
-              @drop="handleDropColumn"
-              @reorder="handleReorderColumn"
-              @primary-key-set="setColumnPrimaryKey"
             />
           </div>
         </div>
@@ -178,19 +175,16 @@
 
 <script lang="ts" setup>
 import { create as createProto } from "@bufbuild/protobuf";
-import { cloneDeep, isEqual, pull } from "lodash-es";
+import { cloneDeep, isEqual } from "lodash-es";
 import { PencilIcon, PlusIcon, XIcon } from "lucide-vue-next";
 import type { SelectOption } from "naive-ui";
 import { NButton, NInput } from "naive-ui";
-import { computed, reactive, ref, toRef } from "vue";
+import { computed, onMounted, reactive, ref, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 import RequiredStar from "@/components/RequiredStar.vue";
 import {
   TableColumnEditor,
   provideSchemaEditorContext,
-  removeColumnFromAllForeignKeys,
-  removeColumnPrimaryKey,
-  upsertColumnPrimaryKey,
   type EditStatus,
   type EditTarget,
 } from "@/components/SchemaEditorLite";
@@ -208,7 +202,6 @@ import {
   ColumnMetadataSchema,
   type ColumnMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
-import { type ColumnMetadata as OldColumnMetadata } from "@/types/proto-es/v1/database_service_pb";
 import {
   SchemaTemplateSettingSchema,
   Setting_SettingName,
@@ -216,7 +209,7 @@ import {
   type SchemaTemplateSetting_TableTemplate,
   ValueSchema as SettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
-import { arraySwap, instanceV1AllowsReorderColumns } from "@/utils";
+import { instanceV1AllowsReorderColumns } from "@/utils";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
 import ClassificationLevelBadge from "./ClassificationLevelBadge.vue";
 import SelectClassificationDrawer from "./SelectClassificationDrawer.vue";
@@ -245,13 +238,21 @@ const editing = computed(() => {
   return mockMetadataFromTableTemplate(props.template);
 });
 
+const isCreate = computed(() => !props.template.table?.name);
+
+const schemaMetadata = computed(
+  () => editing.value.databaseMetadata.schemas[0]
+);
+
+const tableMetadata = computed(() => schemaMetadata.value.tables[0]);
+
 const targets = computed(() => {
   const target: EditTarget = {
     database: editing.value.db,
     metadata: editing.value.databaseMetadata,
-    baselineMetadata: editing.value.databaseMetadata,
+    baselineMetadata: cloneDeep(editing.value.databaseMetadata),
     catalog: editing.value.databaseCatalog,
-    baselineCatalog: editing.value.databaseCatalog,
+    baselineCatalog: cloneDeep(editing.value.databaseCatalog),
   };
   return [target];
 });
@@ -265,6 +266,28 @@ const context = provideSchemaEditorContext({
   hidePreview: ref(false),
 });
 
+onMounted(() => {
+  context.markEditStatus(
+    editing.value.db,
+    {
+      schema: schemaMetadata.value,
+      table: tableMetadata.value,
+    },
+    isCreate.value ? "created" : "normal"
+  );
+  for (const column of tableMetadata.value.columns) {
+    context.markEditStatus(
+      editing.value.db,
+      {
+        schema: schemaMetadata.value,
+        table: tableMetadata.value,
+        column,
+      },
+      isCreate.value ? "created" : "normal"
+    );
+  }
+});
+
 const state = reactive<LocalState>({
   showClassificationDrawer: false,
   showFieldTemplateDrawer: false,
@@ -275,8 +298,8 @@ const settingStore = useSettingV1Store();
 const tableCatalog = computed(() =>
   context.getTableCatalog({
     database: editing.value.databaseMetadata.name,
-    schema: editing.value.schemaMetadata.name,
-    table: editing.value.tableMetadata.name,
+    schema: schemaMetadata.value.name,
+    table: tableMetadata.value.name,
   })
 );
 
@@ -288,8 +311,8 @@ const tableClassificationId = computed({
     context.upsertTableCatalog(
       {
         database: editing.value.databaseCatalog.name,
-        schema: editing.value.schemaCatalog.name,
-        table: editing.value.tableMetadata.name,
+        schema: schemaMetadata.value.name,
+        table: tableMetadata.value.name,
       },
       (catalog) => {
         catalog.classification = id ?? "";
@@ -299,15 +322,11 @@ const tableClassificationId = computed({
 });
 
 const metadataForColumn = (column: ColumnMetadata) => {
-  const {
-    databaseMetadata: database,
-    schemaMetadata: schema,
-    tableMetadata: table,
-  } = editing.value;
+  const { databaseMetadata: database } = editing.value;
   return {
     database: database,
-    schema: schema,
-    table: table,
+    schema: schemaMetadata.value,
+    table: tableMetadata.value,
     column: column,
   };
 };
@@ -327,12 +346,28 @@ const allowReorderColumns = computed(() => {
   return instanceV1AllowsReorderColumns(editing.value.engine);
 });
 
+const validColumns = computed(() => {
+  return tableMetadata.value.columns.filter((col) => {
+    if (!col.name || !col.type) {
+      return false;
+    }
+    const status = context.getColumnStatus(
+      editing.value.db,
+      metadataForColumn(col)
+    );
+    return status !== "dropped";
+  });
+});
+
 const submitDisabled = computed(() => {
-  const { tableMetadata, category } = editing.value;
-  if (!tableMetadata.name || tableMetadata.columns.length === 0) {
+  const { category } = editing.value;
+  if (!tableMetadata.value.name) {
     return true;
   }
-  if (tableMetadata.columns.some((col) => !col.name || !col.type)) {
+  if (tableMetadata.value.columns.some((col) => !col.name || !col.type)) {
+    return true;
+  }
+  if (validColumns.value.length === 0) {
     return true;
   }
   if (
@@ -349,6 +384,10 @@ const submitDisabled = computed(() => {
 const onSubmit = async () => {
   const template = rebuildTableTemplateFromMetadata({
     ...editing.value,
+    tableMetadata: {
+      ...tableMetadata.value,
+      columns: [...validColumns.value],
+    },
     tableCatalog: tableCatalog.value
       ? tableCatalog.value
       : createProto(TableCatalogSchema, {}),
@@ -396,55 +435,20 @@ const onSubmit = async () => {
 };
 
 const onColumnAdd = () => {
-  const {
-    db,
-    databaseMetadata: database,
-    schemaMetadata: schema,
-    tableMetadata: table,
-  } = editing.value;
+  const { db, databaseMetadata: database } = editing.value;
   const column = createProto(ColumnMetadataSchema, {});
-  table.columns.push(column);
+  tableMetadata.value.columns.push(column);
   markColumnStatus(column, "created");
 
   context.queuePendingScrollToColumn({
     db,
     metadata: {
       database: database,
-      schema: schema,
-      table: table,
+      schema: schemaMetadata.value,
+      table: tableMetadata.value,
       column: column,
     },
   });
-};
-
-const handleDropColumn = (column: ColumnMetadata) => {
-  const { tableMetadata } = editing.value;
-  pull(tableMetadata.columns, column);
-  tableMetadata.columns = tableMetadata.columns.filter((col) => col !== column);
-
-  removeColumnPrimaryKey(tableMetadata, column.name);
-  removeColumnFromAllForeignKeys(tableMetadata, column.name);
-  // Convert back to update proto-es tableMetadata
-  context.removeColumnCatalog({
-    database: editing.value.databaseCatalog.name,
-    schema: editing.value.schemaCatalog.name,
-    table: editing.value.tableMetadata.name,
-    column: column.name,
-  });
-};
-
-const setColumnPrimaryKey = (column: ColumnMetadata, isPrimaryKey: boolean) => {
-  if (isPrimaryKey) {
-    column.nullable = false;
-    upsertColumnPrimaryKey(
-      editing.value.engine,
-      editing.value.tableMetadata,
-      column.name
-    );
-  } else {
-    removeColumnPrimaryKey(editing.value.tableMetadata, column.name);
-  }
-  markColumnStatus(column, "updated");
 };
 
 const handleApplyColumnTemplate = (
@@ -454,18 +458,18 @@ const handleApplyColumnTemplate = (
   if (!template.column) {
     return;
   }
-  const { db, tableMetadata, engine } = editing.value;
+  const { db, engine } = editing.value;
   if (template.engine !== engine) {
     return;
   }
   const column = cloneDeep(template.column);
-  tableMetadata.columns.push(column);
+  tableMetadata.value.columns.push(column);
   if (template.catalog) {
     context.upsertColumnCatalog(
       {
         database: editing.value.databaseCatalog.name,
-        schema: editing.value.schemaCatalog.name,
-        table: editing.value.tableCatalog.name,
+        schema: schemaMetadata.value.name,
+        table: tableMetadata.value.name,
         column: template.column.name,
       },
       (config) => {
@@ -480,24 +484,12 @@ const handleApplyColumnTemplate = (
   });
 };
 
-const handleReorderColumn = (
-  column: OldColumnMetadata,
-  index: number,
-  delta: -1 | 1
-) => {
-  const target = index + delta;
-  const { columns } = editing.value.tableMetadata;
-  if (target < 0) return;
-  if (target >= columns.length) return;
-  arraySwap(columns, index, target);
-};
-
 const handleUpdateTableName = (name: string) => {
   context.upsertTableCatalog(
     {
       database: editing.value.databaseCatalog.name,
-      schema: editing.value.schemaCatalog.name,
-      table: editing.value.tableMetadata.name,
+      schema: schemaMetadata.value.name,
+      table: tableMetadata.value.name,
     },
     (catalog) => {
       catalog.name = name;
@@ -505,9 +497,17 @@ const handleUpdateTableName = (name: string) => {
   );
   context.removeTableCatalog({
     database: editing.value.databaseCatalog.name,
-    schema: editing.value.schemaCatalog.name,
-    table: editing.value.tableMetadata.name,
+    schema: schemaMetadata.value.name,
+    table: tableMetadata.value.name,
   });
-  editing.value.tableMetadata.name = name;
+  context.replaceTableName(
+    editing.value.db,
+    {
+      schema: schemaMetadata.value,
+      table: tableMetadata.value,
+    },
+    name
+  );
+  tableMetadata.value.name = name;
 };
 </script>
