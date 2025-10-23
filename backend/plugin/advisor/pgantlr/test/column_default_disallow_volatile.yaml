@@ -1,0 +1,13 @@
+- statement: CREATE TABLE t(a serial primary key, b int default 1, c boolean default true, d int default current_user)
+  changeType: 1
+- statement: ALTER TABLE tech_book ADD COLUMN b timestamp default now();
+  changeType: 1
+  want:
+    - status: 2
+      code: 420
+      title: column.default-disallow-volatile
+      content: Column "tech_book"."b" in schema "public" has volatile DEFAULT
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

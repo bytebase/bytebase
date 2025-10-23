@@ -1,0 +1,55 @@
+- statement: |-
+    CREATE TABLE t(a int);
+    COMMENT ON COLUMN t.a IS 'comments';
+  changeType: 1
+- statement: CREATE TABLE t(a int);
+  changeType: 1
+  want:
+    - status: 2
+      code: 1032
+      title: column.comment
+      content: Comment is required for column `t.a`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a int);
+    COMMENT ON COLUMN t.a IS 'loooooooong comments';
+  changeType: 1
+  want:
+    - status: 2
+      code: 1301
+      title: column.comment
+      content: Column `t.a` comment is too long. The length of comment should be within 10 characters
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a int, d text);
+    COMMENT ON COLUMN t.a IS 'comments';
+  changeType: 1
+  want:
+    - status: 2
+      code: 1032
+      title: column.comment
+      content: Comment is required for column `t.d`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a int);
+    COMMENT ON COLUMN t.a IS 'loooooooong comments';
+    COMMENT ON COLUMN t.a IS NULL;
+  changeType: 1
+  want:
+    - status: 2
+      code: 1032
+      title: column.comment
+      content: Comment is required for column `t.a`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
