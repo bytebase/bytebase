@@ -338,22 +338,22 @@ func TestIndexTableNameExtraction(t *testing.T) {
 		{
 			name:         "Simple table name",
 			indexSQL:     "CREATE INDEX idx_test ON users(email);",
-			expectedName: "users",
+			expectedName: "public.users", // Defaults to public schema
 		},
 		{
 			name:         "Qualified table name",
 			indexSQL:     "CREATE INDEX idx_test ON public.users(email);",
-			expectedName: "users",
+			expectedName: "public.users",
 		},
 		{
 			name:         "Custom schema",
 			indexSQL:     "CREATE INDEX idx_test ON myschema.products(name);",
-			expectedName: "products",
+			expectedName: "myschema.products",
 		},
 		{
 			name:         "Complex index with WHERE clause",
 			indexSQL:     "CREATE INDEX idx_active_users ON public.users(email) WHERE active = true;",
-			expectedName: "users",
+			expectedName: "public.users",
 		},
 	}
 
@@ -376,6 +376,140 @@ func TestIndexTableNameExtraction(t *testing.T) {
 			tableName := extractTableNameFromIndex(indexChunk.ASTNode)
 			assert.Equal(t, tt.expectedName, tableName,
 				"Expected table name '%s', got '%s'", tt.expectedName, tableName)
+		})
+	}
+}
+
+// TestIndexSchemaNameExtraction tests that index schema names are correctly extracted
+// This is a regression test for the bug where indexes in non-public schemas
+// were incorrectly identified as belonging to the public schema
+func TestIndexSchemaNameExtraction(t *testing.T) {
+	tests := []struct {
+		name               string
+		previousUserSDL    string
+		currentSDL         string
+		expectedSchemaName string
+		expectedTableName  string
+		expectedIndexCount int
+	}{
+		{
+			name:            "Index in company schema",
+			previousUserSDL: "",
+			currentSDL: `
+CREATE SCHEMA company;
+
+CREATE TABLE "company"."employees" (
+	"id" integer NOT NULL,
+	"first_name" character varying(50) NOT NULL,
+	"email" character varying(100) NOT NULL
+);
+
+CREATE INDEX "idx_employees_email" ON "company"."employees" (email);
+			`,
+			expectedSchemaName: "company",
+			expectedTableName:  "employees",
+			expectedIndexCount: 1,
+		},
+		{
+			name: "Index in custom schema with multiple indexes",
+			previousUserSDL: `
+CREATE SCHEMA myapp;
+
+CREATE TABLE "myapp"."products" (
+	"id" integer NOT NULL,
+	"name" text,
+	"price" numeric
+);
+			`,
+			currentSDL: `
+CREATE SCHEMA myapp;
+
+CREATE TABLE "myapp"."products" (
+	"id" integer NOT NULL,
+	"name" text,
+	"price" numeric
+);
+
+CREATE INDEX "idx_products_name" ON "myapp"."products" (name);
+CREATE INDEX "idx_products_price" ON "myapp"."products" (price);
+			`,
+			expectedSchemaName: "myapp",
+			expectedTableName:  "products",
+			expectedIndexCount: 2,
+		},
+		{
+			name: "Mixed schemas - should only affect correct schema",
+			previousUserSDL: `
+CREATE SCHEMA company;
+CREATE SCHEMA sales;
+
+CREATE TABLE "company"."employees" (
+	"id" integer NOT NULL,
+	"name" text
+);
+
+CREATE TABLE "sales"."orders" (
+	"id" integer NOT NULL,
+	"amount" numeric
+);
+			`,
+			currentSDL: `
+CREATE SCHEMA company;
+CREATE SCHEMA sales;
+
+CREATE TABLE "company"."employees" (
+	"id" integer NOT NULL,
+	"name" text
+);
+
+CREATE TABLE "sales"."orders" (
+	"id" integer NOT NULL,
+	"amount" numeric
+);
+
+CREATE INDEX "idx_employees_name" ON "company"."employees" (name);
+			`,
+			expectedSchemaName: "company",
+			expectedTableName:  "employees",
+			expectedIndexCount: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousUserSDL, nil, nil)
+			require.NoError(t, err)
+			require.NotNil(t, diff)
+
+			// Find the table change for our expected table
+			var targetTableDiff *schema.TableDiff
+			for _, tableDiff := range diff.TableChanges {
+				if tableDiff.SchemaName == tt.expectedSchemaName && tableDiff.TableName == tt.expectedTableName {
+					targetTableDiff = tableDiff
+					break
+				}
+			}
+
+			require.NotNil(t, targetTableDiff,
+				"Expected to find table change for %s.%s", tt.expectedSchemaName, tt.expectedTableName)
+
+			// Verify schema name is correct (not defaulting to "public")
+			assert.Equal(t, tt.expectedSchemaName, targetTableDiff.SchemaName,
+				"Expected schema name '%s', got '%s'", tt.expectedSchemaName, targetTableDiff.SchemaName)
+
+			// Verify table name is correct
+			assert.Equal(t, tt.expectedTableName, targetTableDiff.TableName,
+				"Expected table name '%s', got '%s'", tt.expectedTableName, targetTableDiff.TableName)
+
+			// Verify index count
+			assert.Equal(t, tt.expectedIndexCount, len(targetTableDiff.IndexChanges),
+				"Expected %d index changes, got %d", tt.expectedIndexCount, len(targetTableDiff.IndexChanges))
+
+			// Verify all index changes have CREATE action
+			for _, indexChange := range targetTableDiff.IndexChanges {
+				assert.Equal(t, schema.MetadataDiffActionCreate, indexChange.Action,
+					"Expected CREATE action for index")
+			}
 		})
 	}
 }

@@ -1558,9 +1558,11 @@ func processStandaloneIndexChanges(currentChunks, previousChunks *schema.SDLChun
 	}
 
 	// Initialize map with all existing table diffs for efficient lookups
+	// Use schema.table format as key for consistency with extractTableNameFromIndex
 	affectedTables := make(map[string]*schema.TableDiff, len(diff.TableChanges))
 	for _, tableDiff := range diff.TableChanges {
-		affectedTables[tableDiff.TableName] = tableDiff
+		qualifiedTableName := tableDiff.SchemaName + "." + tableDiff.TableName
+		affectedTables[qualifiedTableName] = tableDiff
 	}
 
 	// Step 1: Process current indexes to find created and modified indexes
@@ -1641,7 +1643,8 @@ func getStandaloneIndexText(astNode any) string {
 	return indexStmt.GetText()
 }
 
-// extractTableNameFromIndex extracts the table name from a CREATE INDEX statement
+// extractTableNameFromIndex extracts the fully qualified table name from a CREATE INDEX statement
+// Returns schema.table format, defaulting to public schema if not specified
 func extractTableNameFromIndex(astNode any) string {
 	indexStmt, ok := astNode.(*parser.IndexstmtContext)
 	if !ok || indexStmt == nil {
@@ -1651,11 +1654,19 @@ func extractTableNameFromIndex(astNode any) string {
 	// Extract table name from relation_expr in CREATE INDEX ... ON table_name
 	if relationExpr := indexStmt.Relation_expr(); relationExpr != nil {
 		if qualifiedName := relationExpr.Qualified_name(); qualifiedName != nil {
-			// Extract qualified name and return the table name (without schema)
+			// Extract qualified name parts
 			qualifiedNameParts := pgparser.NormalizePostgreSQLQualifiedName(qualifiedName)
-			if len(qualifiedNameParts) > 0 {
-				return qualifiedNameParts[len(qualifiedNameParts)-1] // Return the last part (table name)
+			if len(qualifiedNameParts) == 0 {
+				return ""
 			}
+
+			// Return fully qualified name (schema.table)
+			if len(qualifiedNameParts) == 1 {
+				// No schema specified, default to public
+				return "public." + qualifiedNameParts[0]
+			}
+			// Schema is specified
+			return strings.Join(qualifiedNameParts, ".")
 		}
 	}
 
@@ -1663,18 +1674,22 @@ func extractTableNameFromIndex(astNode any) string {
 }
 
 // getOrCreateTableDiff finds an existing table diff or creates a new one for the given table
+// tableName should be in schema.table format
 func getOrCreateTableDiff(diff *schema.MetadataDiff, tableName string, affectedTables map[string]*schema.TableDiff) *schema.TableDiff {
 	// Check if we already have this table in our map
 	if tableDiff, exists := affectedTables[tableName]; exists {
 		return tableDiff
 	}
 
+	// Parse schema and table name from tableName (format: schema.table)
+	schemaName, tableNameOnly := parseIdentifier(tableName)
+
 	// Create a new table diff for standalone index changes
 	// We set Action to ALTER since we're modifying an existing table by adding/removing indexes
 	newTableDiff := &schema.TableDiff{
 		Action:                  schema.MetadataDiffActionAlter,
-		SchemaName:              "public", // Default schema for PostgreSQL
-		TableName:               tableName,
+		SchemaName:              schemaName,
+		TableName:               tableNameOnly,
 		OldTable:                nil, // Will be populated when SDL drift detection is implemented
 		NewTable:                nil, // Will be populated when SDL drift detection is implemented
 		OldASTNode:              nil, // No table-level AST changes for standalone indexes
@@ -3472,25 +3487,20 @@ func applyStandaloneIndexChangesToChunks(previousChunks *schema.SDLChunks, curre
 		}
 	}
 
-	// Process index modifications: update existing chunks or create if chunk doesn't exist
+	// Process index modifications: update existing chunks
 	for indexKey, currentIndex := range currentIndexes {
 		if previousIndex, exists := previousIndexes[indexKey]; exists {
 			// Index exists in both metadata
-			// Check if chunk exists in SDL - if not, create it; otherwise update it
+			// Only update if chunk exists in SDL (user explicitly defined it)
+			// If chunk doesn't exist, skip - we don't force-add database objects that user didn't define
 			if _, chunkExists := previousChunks.Indexes[indexKey]; chunkExists {
 				// Chunk exists - update if needed
 				err := updateIndexChunkIfNeeded(previousChunks, currentIndex, previousIndex, indexKey)
 				if err != nil {
 					return errors.Wrapf(err, "failed to update index chunk for %s", indexKey)
 				}
-			} else {
-				// Chunk doesn't exist in SDL but index exists in database
-				// Create chunk to add it to SDL
-				err := createIndexChunk(previousChunks, currentIndex, indexKey)
-				if err != nil {
-					return errors.Wrapf(err, "failed to create index chunk for %s", indexKey)
-				}
 			}
+			// If chunk doesn't exist, skip - user didn't define this index in SDL
 		}
 	}
 
@@ -3742,25 +3752,20 @@ func applyFunctionChangesToChunks(previousChunks *schema.SDLChunks, currentSchem
 		}
 	}
 
-	// Process function modifications: update existing chunks or create if chunk doesn't exist
+	// Process function modifications: update existing chunks
 	for functionKey, currentFunction := range currentFunctions {
 		if previousFunction, exists := previousFunctions[functionKey]; exists {
 			// Function exists in both metadata
-			// Check if chunk exists in SDL - if not, create it; otherwise update it
+			// Only update if chunk exists in SDL (user explicitly defined it)
+			// If chunk doesn't exist, skip - we don't force-add database objects that user didn't define
 			if _, chunkExists := previousChunks.Functions[functionKey]; chunkExists {
 				// Chunk exists - update if needed
 				err := updateFunctionChunkIfNeeded(previousChunks, currentFunction, previousFunction, functionKey)
 				if err != nil {
 					return errors.Wrapf(err, "failed to update function chunk for %s", functionKey)
 				}
-			} else {
-				// Chunk doesn't exist in SDL but function exists in database
-				// Create chunk to add it to SDL
-				err := createFunctionChunk(previousChunks, currentFunction, functionKey)
-				if err != nil {
-					return errors.Wrapf(err, "failed to create function chunk for %s", functionKey)
-				}
 			}
+			// If chunk doesn't exist, skip - user didn't define this function in SDL
 		}
 	}
 
@@ -4105,30 +4110,20 @@ func applySequenceChangesToChunks(previousChunks *schema.SDLChunks, currentSchem
 		}
 	}
 
-	// Process sequence modifications: update existing chunks or create if chunk doesn't exist
+	// Process sequence modifications: update existing chunks
 	for sequenceKey, currentSequence := range currentSequences {
 		if previousSequence, exists := previousSequences[sequenceKey]; exists {
 			// Sequence exists in both metadata
-			// Check if chunk exists in SDL - if not, create it; otherwise update it
+			// Only update if chunk exists in SDL (user explicitly defined it)
+			// If chunk doesn't exist, skip - we don't force-add database objects that user didn't define
 			if _, chunkExists := previousChunks.Sequences[sequenceKey]; chunkExists {
 				// Chunk exists - update if needed
 				err := updateSequenceChunkIfNeeded(previousChunks, currentSequence, previousSequence, sequenceKey)
 				if err != nil {
 					return errors.Wrapf(err, "failed to update sequence chunk for %s", sequenceKey)
 				}
-			} else {
-				// Chunk doesn't exist in SDL but sequence exists in database
-				// Skip sequences owned by tables (e.g., SERIAL columns) - they should be managed by their owner tables
-				// We only skip if the chunk doesn't exist in SDL, meaning it's not explicitly defined by the user
-				if currentSequence.OwnerTable != "" {
-					continue
-				}
-				// Create chunk to add it to SDL
-				err := createSequenceChunk(previousChunks, currentSequence, sequenceKey)
-				if err != nil {
-					return errors.Wrapf(err, "failed to create sequence chunk for %s", sequenceKey)
-				}
 			}
+			// If chunk doesn't exist, skip - user didn't define this sequence in SDL
 		}
 	}
 
@@ -4845,25 +4840,20 @@ func applyViewChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, p
 		}
 	}
 
-	// Process view modifications: update existing chunks or create if chunk doesn't exist
+	// Process view modifications: update existing chunks
 	for viewKey, currentView := range currentViews {
 		if previousView, exists := previousViews[viewKey]; exists {
 			// View exists in both metadata
-			// Check if chunk exists in SDL - if not, create it; otherwise update it
+			// Only update if chunk exists in SDL (user explicitly defined it)
+			// If chunk doesn't exist, skip - we don't force-add database objects that user didn't define
 			if _, chunkExists := previousChunks.Views[viewKey]; chunkExists {
 				// Chunk exists - update if needed
 				err := updateViewChunkIfNeeded(previousChunks, currentView, previousView, viewKey)
 				if err != nil {
 					return errors.Wrapf(err, "failed to update view chunk for %s", viewKey)
 				}
-			} else {
-				// Chunk doesn't exist in SDL but view exists in database
-				// Create chunk to add it to SDL
-				err := createViewChunk(previousChunks, currentView, viewKey)
-				if err != nil {
-					return errors.Wrapf(err, "failed to create view chunk for %s", viewKey)
-				}
 			}
+			// If chunk doesn't exist, skip - user didn't define this view in SDL
 		}
 	}
 

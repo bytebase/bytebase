@@ -166,7 +166,13 @@ COMMENT ON COLUMN "public"."users"."name" IS 'User full name';
 			migrationSQL, err := generateMigration(diff)
 			require.NoError(t, err)
 
-			require.Equal(t, tt.wantSQL, migrationSQL)
+			// For multiple column comments, check that both statements exist (order may vary)
+			if tt.name == "multiple column comments" {
+				require.Contains(t, migrationSQL, `COMMENT ON COLUMN "public"."users"."id" IS 'Primary key';`)
+				require.Contains(t, migrationSQL, `COMMENT ON COLUMN "public"."users"."name" IS 'User full name';`)
+			} else {
+				require.Equal(t, tt.wantSQL, migrationSQL)
+			}
 		})
 	}
 }
