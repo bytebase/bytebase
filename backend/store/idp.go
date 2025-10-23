@@ -191,14 +191,17 @@ func (*Store) updateIdentityProviderImpl(ctx context.Context, txn *sql.Tx, patch
 		return nil, errors.New("no fields to update")
 	}
 
-	q := qb.Q().Space("UPDATE idp SET ?", set).Space("WHERE resource_id = ?", patch.ResourceID).Space(`
+	q := qb.Q().Space(`
+		UPDATE idp
+		SET ?
+		WHERE resource_id = ?
 		RETURNING
 			resource_id,
 			name,
 			domain,
 			type,
 			config
-	`)
+	`, set, patch.ResourceID)
 
 	query, args, err := q.ToSQL()
 	if err != nil {

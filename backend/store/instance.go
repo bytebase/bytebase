@@ -308,7 +308,7 @@ func hasHostPortFilter(where string) bool {
 
 // GetActivatedInstanceCount gets the number of activated instances.
 func (s *Store) GetActivatedInstanceCount(ctx context.Context) (int, error) {
-	q := qb.Q().Space("SELECT COUNT(1) FROM instance WHERE (metadata ? 'activation') AND (metadata->>'activation')::boolean = TRUE AND deleted = FALSE")
+	q := qb.Q().Space("SELECT COUNT(1) FROM instance WHERE (metadata ?? 'activation') AND (metadata->>'activation')::boolean = TRUE AND deleted = FALSE")
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to build sql")

@@ -239,7 +239,7 @@ func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMe
 		set.Comma("ts_vector = ?", tsVector)
 	}
 
-	q := qb.Q().Space("UPDATE issue SET ?", set).Space("WHERE id = ?", uid)
+	q := qb.Q().Space("UPDATE issue SET ? WHERE id = ?", set, uid)
 
 	query, args, err := q.ToSQL()
 	if err != nil {

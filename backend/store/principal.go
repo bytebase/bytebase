@@ -420,85 +420,46 @@ func (s *Store) UpdateUser(ctx context.Context, currentUser *UserMessage, patch 
 		return nil, errors.Errorf("cannot update system bot")
 	}
 
-	q := qb.Q().Space("UPDATE principal SET")
-	hasUpdate := false
-
+	set := qb.Q()
 	if v := patch.Delete; v != nil {
-		if hasUpdate {
-			q.Join(", ", "deleted = ?", *v)
-		} else {
-			q.Space("deleted = ?", *v)
-			hasUpdate = true
-		}
+		set.Comma("deleted = ?", *v)
 	}
 	if v := patch.Email; v != nil {
-		if hasUpdate {
-			q.Join(", ", "email = ?", strings.ToLower(*v))
-		} else {
-			q.Space("email = ?", strings.ToLower(*v))
-			hasUpdate = true
-		}
+		set.Comma("email = ?", strings.ToLower(*v))
 	}
 	if v := patch.Name; v != nil {
-		if hasUpdate {
-			q.Join(", ", "name = ?", *v)
-		} else {
-			q.Space("name = ?", *v)
-			hasUpdate = true
-		}
+		set.Comma("name = ?", *v)
 	}
 	if v := patch.PasswordHash; v != nil {
-		if hasUpdate {
-			q.Join(", ", "password_hash = ?", *v)
-		} else {
-			q.Space("password_hash = ?", *v)
-			hasUpdate = true
-		}
+		set.Comma("password_hash = ?", *v)
 		if patch.Profile == nil {
 			patch.Profile = currentUser.Profile
 			patch.Profile.LastChangePasswordTime = timestamppb.New(time.Now())
 		}
 	}
 	if v := patch.Phone; v != nil {
-		if hasUpdate {
-			q.Join(", ", "phone = ?", *v)
-		} else {
-			q.Space("phone = ?", *v)
-			hasUpdate = true
-		}
+		set.Comma("phone = ?", *v)
 	}
 	if v := patch.MFAConfig; v != nil {
 		mfaConfigBytes, err := protojson.Marshal(v)
 		if err != nil {
 			return nil, err
 		}
-		if hasUpdate {
-			q.Join(", ", "mfa_config = ?", mfaConfigBytes)
-		} else {
-			q.Space("mfa_config = ?", mfaConfigBytes)
-			hasUpdate = true
-		}
+		set.Comma("mfa_config = ?", mfaConfigBytes)
 	}
 	if v := patch.Profile; v != nil {
 		profileBytes, err := protojson.Marshal(v)
 		if err != nil {
 			return nil, err
 		}
-		if hasUpdate {
-			q.Join(", ", "profile = ?", profileBytes)
-		} else {
-			q.Space("profile = ?", profileBytes)
-			hasUpdate = true
-		}
+		set.Comma("profile = ?", profileBytes)
 	}
 
-	if !hasUpdate {
+	if set.Len() == 0 {
 		return currentUser, nil
 	}
 
-	q.Where("id = ?", currentUser.ID)
-
-	sql, args, err := q.ToSQL()
+	sql, args, err := qb.Q().Space("UPDATE principal SET ? WHERE id = ?", set, currentUser.ID).ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}

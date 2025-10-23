@@ -439,25 +439,19 @@ func (s *Store) CreatePolicyV2(ctx context.Context, create *PolicyMessage) (*Pol
 
 // UpdatePolicyV2 updates the policy.
 func (s *Store) UpdatePolicyV2(ctx context.Context, patch *UpdatePolicyMessage) (*PolicyMessage, error) {
-	q := qb.Q().Space("UPDATE policy SET")
-	q.Space("updated_at = ?", time.Now())
-
+	set := qb.Q()
+	set.Comma("updated_at = ?", time.Now())
 	if v := patch.InheritFromParent; v != nil {
-		q.Space(",")
-		q.Space("inherit_from_parent = ?", *v)
+		set.Comma("inherit_from_parent = ?", *v)
 	}
 	if v := patch.Payload; v != nil {
-		q.Space(",")
-		q.Space("payload = ?", *v)
+		set.Comma("payload = ?", *v)
 	}
 	if v := patch.Enforce; v != nil {
-		q.Space(",")
-		q.Space("enforce = ?", *v)
+		set.Comma("enforce = ?", *v)
 	}
-	q.Space("WHERE resource_type = ? AND resource = ? AND type = ?", patch.ResourceType, patch.Resource, patch.Type.String())
-	q.Space("RETURNING payload, inherit_from_parent, enforce, updated_at")
 
-	query, args, err := q.ToSQL()
+	query, args, err := qb.Q().Space("UPDATE policy SET ? WHERE resource_type = ? AND resource = ? AND type = ? RETURNING payload, inherit_from_parent, enforce, updated_at", set, patch.ResourceType, patch.Resource, patch.Type.String()).ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}

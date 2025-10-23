@@ -201,13 +201,16 @@ func (s *Store) UpdateReviewConfig(ctx context.Context, patch *PatchReviewConfig
 		return nil, errors.New("no fields to update")
 	}
 
-	q := qb.Q().Space("UPDATE review_config SET ?", set).Space("WHERE id = ?", patch.ID).Space(`
+	q := qb.Q().Space(`
+		UPDATE review_config
+		SET ?
+		WHERE id = ?
 		RETURNING
 			id,
 			enabled,
 			name,
 			payload
-	`)
+	`, set, patch.ID)
 
 	query, args, err := q.ToSQL()
 	if err != nil {

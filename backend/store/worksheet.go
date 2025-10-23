@@ -266,25 +266,25 @@ func (s *Store) DeleteWorkSheet(ctx context.Context, sheetUID int) error {
 
 // patchWorkSheetImpl updates a sheet's name/statement/visibility/instance/db_name/project.
 func patchWorkSheetImpl(ctx context.Context, txn *sql.Tx, patch *PatchWorkSheetMessage) error {
-	q := qb.Q().Space(`UPDATE worksheet SET updated_at = ?`, time.Now())
+	set := qb.Q()
+	set.Comma("updated_at = ?", time.Now())
 	if v := patch.Title; v != nil {
-		q.Space(", name = ?", *v)
+		set.Comma("name = ?", *v)
 	}
 	if v := patch.Statement; v != nil {
-		q.Space(", statement = ?", *v)
+		set.Comma("statement = ?", *v)
 	}
 	if v := patch.Visibility; v != nil {
-		q.Space(", visibility = ?", *v)
+		set.Comma("visibility = ?", *v)
 	}
 	if v := patch.InstanceID; v != nil {
-		q.Space(", instance = ?", *v)
+		set.Comma("instance = ?", *v)
 	}
 	if v := patch.DatabaseName; v != nil {
-		q.Space(", db_name = ?", *v)
+		set.Comma("db_name = ?", *v)
 	}
-	q.Space("WHERE id = ?", patch.UID)
 
-	query, args, err := q.ToSQL()
+	query, args, err := qb.Q().Space("UPDATE worksheet SET ? WHERE id = ?", set, patch.UID).ToSQL()
 	if err != nil {
 		return errors.Wrapf(err, "failed to build sql")
 	}

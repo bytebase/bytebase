@@ -266,7 +266,7 @@ func (s *Store) UpdateRisk(ctx context.Context, patch *UpdateRiskMessage, id int
 	if set.Len() == 0 {
 		return nil, errors.New("no fields to update")
 	}
-	q := qb.Q().Space("UPDATE risk SET ?", set).Space("WHERE id = ?", id)
+	q := qb.Q().Space("UPDATE risk SET ? WHERE id = ?", set, id)
 
 	query, args, err := q.ToSQL()
 	if err != nil {

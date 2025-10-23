@@ -193,35 +193,23 @@ func (s *Store) ListReleases(ctx context.Context, find *FindReleaseMessage) ([]*
 }
 
 func (s *Store) UpdateRelease(ctx context.Context, update *UpdateReleaseMessage) (*ReleaseMessage, error) {
-	q := qb.Q().Space("UPDATE release SET")
-	hasUpdate := false
-
+	set := qb.Q()
 	if v := update.Deleted; v != nil {
-		if hasUpdate {
-			q.Space(",")
-		}
-		q.Space("deleted = ?", *v)
-		hasUpdate = true
+		set.Comma("deleted = ?", *v)
 	}
 	if v := update.Payload; v != nil {
 		payload, err := protojson.Marshal(update.Payload)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to marshal payload")
 		}
-		if hasUpdate {
-			q.Space(",")
-		}
-		q.Space("payload = ?", payload)
-		hasUpdate = true
+		set.Comma("payload = ?", payload)
 	}
 
-	if !hasUpdate {
+	if set.Len() == 0 {
 		return nil, errors.New("no update field provided")
 	}
 
-	q.Space("WHERE id = ?", update.UID)
-
-	query, args, err := q.ToSQL()
+	query, args, err := qb.Q().Space("UPDATE release SET ? WHERE id = ?", set, update.UID).ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}

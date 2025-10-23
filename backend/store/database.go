@@ -389,7 +389,7 @@ func (*Store) listDatabaseImplV2(ctx context.Context, txn *sql.Tx, find *FindDat
 	where := qb.Q().Space("TRUE")
 
 	if filter := find.Filter; filter != nil {
-		where.And(filter.Where, filter.Args...)
+		where.And(ConvertDollarPlaceholders(filter.Where), filter.Args...)
 		if strings.Contains(filter.Where, "ds.metadata->'schemas'") {
 			from.Space("INNER JOIN db_schema ds ON db.instance = ds.instance AND db.name = ds.db_name")
 		}
@@ -450,7 +450,7 @@ func (*Store) listDatabaseImplV2(ctx context.Context, txn *sql.Tx, find *FindDat
 
 	query, args, err := q.ToSQL()
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
+		return nil, errors.Wrapf(err, "failed to build sql %+v", q)
 	}
 
 	var databaseMessages []*DatabaseMessage

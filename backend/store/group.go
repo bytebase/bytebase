@@ -3,12 +3,9 @@ package store
 import (
 	"context"
 	"database/sql"
-	"fmt"
-	"strings"
-
-	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/qb"
@@ -223,48 +220,48 @@ func (s *Store) CreateGroup(ctx context.Context, create *GroupMessage) (*GroupMe
 
 // UpdateGroup updates a group.
 func (s *Store) UpdateGroup(ctx context.Context, email string, patch *UpdateGroupMessage) (*GroupMessage, error) {
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to begin transaction")
-	}
-
-	set, args := []string{}, []any{}
+	set := qb.Q()
 
 	if v := patch.Title; v != nil {
-		set, args = append(set, "name = ?"), append(args, *v)
+		set.Comma("name = ?", *v)
 	}
 	if v := patch.Description; v != nil {
-		set, args = append(set, "description = ?"), append(args, *v)
+		set.Comma("description = ?", *v)
 	}
 	if v := patch.Payload; v != nil {
 		payload, err := protojson.Marshal(v)
 		if err != nil {
 			return nil, err
 		}
-		set, args = append(set, "payload = ?"), append(args, payload)
+		set.Comma("payload = ?", payload)
 	}
-	args = append(args, email)
 
-	q := qb.Q().Space(fmt.Sprintf(`
+	q := qb.Q().Space(`
 		UPDATE user_group
-		SET %s
+		SET ?
 		WHERE email = ?
 		RETURNING
 			email,
 			name,
 			description,
 			payload
-		`, strings.Join(set, ", ")), args...)
+	`, set, email)
 
-	query, queryArgs, err := q.ToSQL()
+	query, args, err := q.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
 	var group GroupMessage
 	var payload []byte
 
-	if err := tx.QueryRowContext(ctx, query, queryArgs...).Scan(
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(
 		&group.Email,
 		&group.Title,
 		&group.Description,

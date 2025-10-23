@@ -212,7 +212,12 @@ func (s *Store) UpdateRole(ctx context.Context, patch *UpdateRoleMessage) (*Role
 		return nil, errors.New("no fields to update")
 	}
 
-	q := qb.Q().Space("UPDATE role SET ?", set).Space("WHERE resource_id = ?", patch.ResourceID).Space("RETURNING name, description, permissions")
+	q := qb.Q().Space(`
+		UPDATE role
+		SET ?
+		WHERE resource_id = ?
+		RETURNING name, description, permissions
+	`, set, patch.ResourceID)
 
 	query, args, err := q.ToSQL()
 	if err != nil {

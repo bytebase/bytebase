@@ -278,8 +278,7 @@ func updateProjectImplV2(ctx context.Context, txn *sql.Tx, patch *UpdateProjectM
 }
 
 func (s *Store) listProjectImplV2(ctx context.Context, txn *sql.Tx, find *FindProjectMessage) ([]*ProjectMessage, error) {
-	q := qb.Q().Space("SELECT resource_id, name, data_classification_config_id, setting, deleted")
-	q.Space("FROM project WHERE TRUE")
+	q := qb.Q().Space("SELECT resource_id, name, data_classification_config_id, setting, deleted FROM project WHERE TRUE")
 	if filter := find.Filter; filter != nil {
 		q.And(ConvertDollarPlaceholders(filter.Where), filter.Args...)
 	}
