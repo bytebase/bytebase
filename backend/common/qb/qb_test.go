@@ -710,7 +710,6 @@ func TestQuery_CTE(t *testing.T) {
 }
 
 func TestQuery_RegressionTest_BatchUpdateDatabase(t *testing.T) {
-
 	// Multiple database conditions
 	databases := []struct {
 		InstanceID   string
