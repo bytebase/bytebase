@@ -45,24 +45,44 @@ func makePart(text string, params ...any) QueryPart {
 	var newParams []any
 	var errs []error
 
+	// Use unique delimiters to avoid conflicts with nested query ? characters
+	const placeholder = "\x00QB_PLACEHOLDER\x00"
+	const escapeMarker = "\x00QB_ESCAPE\x00"
+
+	// First, temporarily replace ?? (escaped ?) with a marker to preserve it
+	text = strings.ReplaceAll(text, "??", escapeMarker)
+
+	// Then, mark all remaining single ? placeholders with a unique marker
+	// This prevents nested queries' ? characters from interfering with subsequent replacements
+	text = strings.ReplaceAll(text, "?", placeholder)
+
 	for _, param := range params {
 		// Check if the parameter is a *Query
 		if nestedQuery, ok := param.(*Query); ok {
-			// Expand the nested query inline - use toRawSql which keeps ? placeholders
+			// Expand the nested query inline - use toRawSQL which keeps ? placeholders
 			nestedSQL, nestedParams, err := nestedQuery.toRawSQL()
 			if err != nil {
 				errs = append(errs, errors.Wrap(err, "failed to expand nested query"))
 				continue
 			}
-			// Replace the first ? with the nested SQL
-			text = strings.Replace(text, "?", nestedSQL, 1)
+			// Replace the first placeholder with the nested SQL
+			text = strings.Replace(text, placeholder, nestedSQL, 1)
 			// Add the nested params to our param list
 			newParams = append(newParams, nestedParams...)
 		} else {
-			// Regular parameter
+			// Regular parameter - replace placeholder with ?
+			text = strings.Replace(text, placeholder, "?", 1)
 			newParams = append(newParams, param)
 		}
 	}
+
+	// Check for leftover placeholders (more ? than parameters provided)
+	if strings.Contains(text, placeholder) {
+		errs = append(errs, errors.New("mismatched parameters: more ? placeholders than parameters provided"))
+	}
+
+	// Restore ?? escape sequences
+	text = strings.ReplaceAll(text, escapeMarker, "??")
 
 	return QueryPart{
 		Text:   text,
