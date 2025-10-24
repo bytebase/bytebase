@@ -4078,10 +4078,15 @@ func createFunctionChunk(chunks *schema.SDLChunks, function *storepb.FunctionMet
 		ASTNode:    astNode,
 	}
 
-	// Add COMMENT ON FUNCTION if the function has a comment
+	// Add COMMENT ON FUNCTION/PROCEDURE if the function has a comment
 	if function.Comment != "" {
+		// Determine if this is a PROCEDURE or FUNCTION by checking the definition
+		objectType := "FUNCTION"
+		if strings.Contains(strings.ToUpper(function.Definition), "CREATE PROCEDURE") {
+			objectType = "PROCEDURE"
+		}
 		schemaName, functionName := parseIdentifier(functionKey)
-		if err := syncObjectCommentStatements(chunk, function.Comment, "FUNCTION", schemaName, functionName); err != nil {
+		if err := syncObjectCommentStatements(chunk, function.Comment, objectType, schemaName, functionName); err != nil {
 			return errors.Wrapf(err, "failed to add COMMENT statements for function %s", functionKey)
 		}
 	}
@@ -4127,10 +4132,15 @@ func updateFunctionChunkIfNeeded(chunks *schema.SDLChunks, currentFunction, prev
 		chunk.ASTNode = astNode
 	}
 
-	// Synchronize COMMENT ON FUNCTION statements only if comment has changed
+	// Synchronize COMMENT ON FUNCTION/PROCEDURE statements only if comment has changed
 	if currentFunction.Comment != previousFunction.Comment {
+		// Determine if this is a PROCEDURE or FUNCTION by checking the definition
+		objectType := "FUNCTION"
+		if strings.Contains(strings.ToUpper(currentFunction.Definition), "CREATE PROCEDURE") {
+			objectType = "PROCEDURE"
+		}
 		schemaName, functionName := parseIdentifier(functionKey)
-		if err := syncObjectCommentStatements(chunk, currentFunction.Comment, "FUNCTION", schemaName, functionName); err != nil {
+		if err := syncObjectCommentStatements(chunk, currentFunction.Comment, objectType, schemaName, functionName); err != nil {
 			return errors.Wrapf(err, "failed to sync COMMENT statements for function %s", functionKey)
 		}
 	}
