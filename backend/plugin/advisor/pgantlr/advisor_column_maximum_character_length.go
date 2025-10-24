@@ -101,8 +101,7 @@ func (c *columnMaximumCharacterLengthChecker) EnterAltertablestmt(ctx *parser.Al
 		return
 	}
 
-	text := ctx.Relation_expr().Qualified_name().GetText()
-	parts := splitIdentifier(text)
+	parts := normalizeQualifiedName(ctx.Relation_expr().Qualified_name())
 	if len(parts) == 0 {
 		return
 	}
@@ -154,8 +153,7 @@ func (*columnMaximumCharacterLengthChecker) extractTableName(qualifiedNames []pa
 		return ""
 	}
 
-	text := qualifiedNames[0].GetText()
-	parts := splitIdentifier(text)
+	parts := normalizeQualifiedName(qualifiedNames[0])
 	if len(parts) == 0 {
 		return ""
 	}

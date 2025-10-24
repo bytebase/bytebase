@@ -166,13 +166,7 @@ func (*columnNoNullChecker) extractTableName(qualifiedNames []parser.IQualified_
 		return ""
 	}
 
-	text := qualifiedNames[0].GetText()
-	parts := splitIdentifier(text)
-	if len(parts) == 0 {
-		return ""
-	}
-
-	return parts[len(parts)-1]
+	return extractTableName(qualifiedNames[0])
 }
 
 func (c *columnNoNullChecker) addColumn(schema, table, column string, line int) {

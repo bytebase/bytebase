@@ -29,37 +29,6 @@ func isTopLevel(ctx antlr.Tree) bool {
 	}
 }
 
-// splitIdentifier splits a qualified identifier by dots, handling quoted parts.
-// For example:
-//   - "public.table" -> ["public", "table"]
-//   - "\"public\".\"table\"" -> ["public", "table"]
-//   - "table" -> ["table"]
-func splitIdentifier(s string) []string {
-	var parts []string
-	var current string
-	inQuote := false
-
-	for i := 0; i < len(s); i++ {
-		ch := s[i]
-		if ch == '"' {
-			inQuote = !inQuote
-		} else if ch == '.' && !inQuote {
-			if current != "" {
-				parts = append(parts, current)
-				current = ""
-			}
-		} else {
-			current += string(ch)
-		}
-	}
-
-	if current != "" {
-		parts = append(parts, current)
-	}
-
-	return parts
-}
-
 // getANTLRTree extracts the ANTLR parse tree from the advisor context.
 // The AST must be pre-parsed and passed via checkCtx.AST (e.g., in tests or by the framework).
 // This enforces proper AST caching and makes any missing cache obvious.

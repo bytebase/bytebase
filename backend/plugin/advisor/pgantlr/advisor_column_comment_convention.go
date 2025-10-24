@@ -151,12 +151,9 @@ func (c *columnCommentConventionChecker) EnterCommentstmt(ctx *parser.Commentstm
 	}
 
 	// Extract table.column name from any_name
-	// any_name is like: table.column
+	// any_name is like: table.column or schema.table.column
 	anyName := ctx.Any_name()
-	text := anyName.GetText()
-
-	// Split by dot to get table and column
-	parts := splitIdentifier(text)
+	parts := normalizeAnyName(anyName)
 	if len(parts) < 2 {
 		return
 	}
@@ -184,17 +181,8 @@ func (*columnCommentConventionChecker) extractTableName(qualifiedNames []parser.
 		return ""
 	}
 
-	// Take the first qualified name
-	text := qualifiedNames[0].GetText()
-
-	// Remove schema if present (e.g., "public.table" -> "table")
-	parts := splitIdentifier(text)
-	if len(parts) == 0 {
-		return ""
-	}
-
-	// Return the last part (table name)
-	return parts[len(parts)-1]
+	// Return the last part (table name) from qualified name
+	return extractTableName(qualifiedNames[0])
 }
 
 func (*columnCommentConventionChecker) extractStringConstant(sconst parser.ISconstContext) string {

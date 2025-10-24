@@ -65,7 +65,7 @@ func (c *columnRequireDefaultChecker) EnterCreatestmt(ctx *parser.CreatestmtCont
 		return
 	}
 
-	tableName := c.extractTableName(qualifiedNames[0])
+	tableName := extractTableName(qualifiedNames[0])
 	if tableName == "" {
 		return
 	}
@@ -106,7 +106,7 @@ func (c *columnRequireDefaultChecker) EnterAltertablestmt(ctx *parser.Altertable
 		return
 	}
 
-	tableName := c.extractTableName(ctx.Relation_expr().Qualified_name())
+	tableName := extractTableName(ctx.Relation_expr().Qualified_name())
 	if tableName == "" {
 		return
 	}
@@ -137,21 +137,6 @@ func (c *columnRequireDefaultChecker) EnterAltertablestmt(ctx *parser.Altertable
 			}
 		}
 	}
-}
-
-func (*columnRequireDefaultChecker) extractTableName(qualifiedNameCtx parser.IQualified_nameContext) string {
-	if qualifiedNameCtx == nil {
-		return ""
-	}
-
-	text := qualifiedNameCtx.GetText()
-	parts := splitIdentifier(text)
-	if len(parts) == 0 {
-		return ""
-	}
-
-	// Return the last part (table name)
-	return parts[len(parts)-1]
 }
 
 // hasDefault checks if a column definition has a DEFAULT clause

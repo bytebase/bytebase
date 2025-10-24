@@ -89,7 +89,7 @@ func (c *columnRequirementChecker) EnterCreatestmt(ctx *parser.CreatestmtContext
 		return
 	}
 
-	tableName := c.extractTableName(qualifiedNames[0])
+	tableName := extractTableName(qualifiedNames[0])
 	if tableName == "" {
 		return
 	}
@@ -135,7 +135,7 @@ func (c *columnRequirementChecker) EnterAltertablestmt(ctx *parser.Altertablestm
 		return
 	}
 
-	tableName := c.extractTableName(ctx.Relation_expr().Qualified_name())
+	tableName := extractTableName(ctx.Relation_expr().Qualified_name())
 	if tableName == "" {
 		return
 	}
@@ -181,7 +181,7 @@ func (c *columnRequirementChecker) EnterRenamestmt(ctx *parser.RenamestmtContext
 	// Get table name
 	var tableName string
 	if ctx.Relation_expr() != nil && ctx.Relation_expr().Qualified_name() != nil {
-		tableName = c.extractTableName(ctx.Relation_expr().Qualified_name())
+		tableName = extractTableName(ctx.Relation_expr().Qualified_name())
 	}
 	if tableName == "" {
 		return
@@ -209,19 +209,4 @@ func (c *columnRequirementChecker) EnterRenamestmt(ctx *parser.RenamestmtContext
 			},
 		})
 	}
-}
-
-func (*columnRequirementChecker) extractTableName(qualifiedNameCtx parser.IQualified_nameContext) string {
-	if qualifiedNameCtx == nil {
-		return ""
-	}
-
-	text := qualifiedNameCtx.GetText()
-	parts := splitIdentifier(text)
-	if len(parts) == 0 {
-		return ""
-	}
-
-	// Return the last part (table name)
-	return parts[len(parts)-1]
 }
