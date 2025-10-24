@@ -145,7 +145,7 @@ func (*columnRequireDefaultChecker) hasDefault(colDef parser.IColumnDefContext) 
 	// Check if the type is serial/bigserial/smallserial (which have implicit defaults)
 	if colDef.Typename() != nil && colDef.Typename().Simpletypename() != nil {
 		simpleType := colDef.Typename().Simpletypename()
-		typeText := simpleType.GetText()
+		typeText := normalizeTypeName(simpleType.GetText())
 		// serial, bigserial, smallserial all have implicit DEFAULT nextval()
 		if typeText == "serial" || typeText == "bigserial" || typeText == "smallserial" {
 			return true
