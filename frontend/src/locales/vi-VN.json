@@ -1362,7 +1362,6 @@
     "password-write-only": "YOUR_DB_PWD - chỉ ghi",
     "password-type": {
       "password": "Mật khẩu",
-      "password-tip": "Bạn cũng có thể chỉ định điểm cuối quản lý bí mật bên ngoài",
       "google-iam": "Google Cloud SQL IAM",
       "aws-iam": "AWS RDS IAM",
       "azure-iam": "Azure IAM",

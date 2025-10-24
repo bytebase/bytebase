@@ -1362,7 +1362,6 @@
     "password-write-only": "SU_DB_PWD - solo escritura",
     "password-type": {
       "password": "Contraseña",
-      "password-tip": "También puede especificar un punto final de gestión de secreto externo",
       "google-iam": "Google Cloud SQL IAM",
       "aws-iam": "AWS RDS IAM",
       "azure-iam": "Azure IAM",

@@ -310,18 +310,6 @@
             <label class="textlabel block">
               {{ $t("common.password") }}
             </label>
-            <div v-if="!hideAdvancedFeatures" class="flex space-x-2 text-sm">
-              <div class="textinfolabel">
-                {{ $t("instance.password-type.password-tip") }}
-              </div>
-              <LearnMoreLink
-                url="https://docs.bytebase.com/get-started/connect/overview/#use-secret-manager?source=console"
-                class="ml-1 text-sm"
-              />
-              <FeatureBadge
-                :feature="PlanFeature.FEATURE_EXTERNAL_SECRET_MANAGER"
-              />
-            </div>
             <div class="mt-2">
               <NCheckbox
                 v-if="!isCreating && allowUsingEmptyPassword"
