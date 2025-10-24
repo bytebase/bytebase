@@ -1,0 +1,15 @@
+- statement: INSERT INTO tech_book values(1, 'a')
+  changeType: 1
+- statement: INSERT INTO tech_book values(1, 'a'), (2, 'b'), (3, 'c'), (4, 'd'), (5, 'e'), (6, 'f')
+  changeType: 1
+  want:
+    - status: 2
+      code: 1101
+      title: statement.insert.row-limit
+      content: The statement "INSERT INTO tech_book values(1, 'a'), (2, 'b'), (3, 'c'), (4, 'd'), (5, 'e'), (6, 'f')" inserts 6 rows. The count exceeds 5.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: INSERT INTO tech_book SELECT * FROM tech_book;
+  changeType: 1
