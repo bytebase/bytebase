@@ -2,14 +2,9 @@
   <div class="w-full mx-auto space-y-4">
     <div class="textinfolabel">
       {{ $t("project.members.description") }}
-      <a
-        href="https://docs.bytebase.com/administration/roles/?source=console#project-roles"
-        target="_blank"
-        class="normal-link inline-flex flex-row items-center"
-      >
-        {{ $t("common.learn-more") }}
-        <heroicons-outline:external-link class="w-4 h-4" />
-      </a>
+      <LearnMoreLink
+        url="https://docs.bytebase.com/administration/roles/?source=console#project-roles"
+      />
     </div>
 
     <NTabs v-model:value="state.selectedTab" type="bar" animated>
@@ -112,6 +107,7 @@ import { cloneDeep } from "lodash-es";
 import { NButton, NTabPane, NTabs, useDialog } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import MemberDataTable from "@/components/Member/MemberDataTable/index.vue";
 import MemberDataTableByRole from "@/components/Member/MemberDataTableByRole.vue";
 import type { MemberBinding } from "@/components/Member/types";

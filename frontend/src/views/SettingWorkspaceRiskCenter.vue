@@ -7,14 +7,9 @@
   <div class="w-full space-y-4 text-sm">
     <div class="textinfolabel">
       {{ $t("custom-approval.risk.description") }}
-      <a
-        href="https://docs.bytebase.com/administration/risk-center"
-        target="_blank"
-        class="normal-link inline-flex flex-row items-center"
-      >
-        {{ $t("common.learn-more") }}
-        <heroicons-outline:external-link class="w-4 h-4" />
-      </a>
+      <LearnMoreLink
+        url="https://docs.bytebase.com/administration/risk-center?source=console"
+      />
     </div>
     <RiskCenter v-if="state.ready" />
     <div v-else class="w-full py-[4rem] flex justify-center items-center">
@@ -41,6 +36,7 @@ import {
 } from "@/components/CustomApproval/Settings/components/RiskCenter";
 import { provideRiskFilter } from "@/components/CustomApproval/Settings/components/common";
 import { FeatureAttention, FeatureModal } from "@/components/FeatureGuard";
+import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { featureToRef, useRiskStore } from "@/store";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";

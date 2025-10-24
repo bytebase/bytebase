@@ -3,14 +3,9 @@
     <div class="w-full flex flex-row justify-between items-center">
       <div class="textinfolabel mr-4">
         {{ $t("settings.sso.description") }}
-        <a
-          href="https://docs.bytebase.com/administration/sso/overview?source=console"
-          class="normal-link inline-flex flex-row items-center"
-          target="_blank"
-        >
-          {{ $t("common.learn-more") }}
-          <heroicons-outline:external-link class="w-4 h-4" />
-        </a>
+        <LearnMoreLink
+          url="https://docs.bytebase.com/administration/sso/overview?source=console"
+        />
       </div>
     </div>
 
@@ -37,6 +32,7 @@ import { computed, reactive, ref, watchEffect } from "vue";
 import { BBSpin } from "@/bbkit";
 import { FeatureModal } from "@/components/FeatureGuard";
 import { IdentityProviderEditForm } from "@/components/IdentityProvider";
+import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { useIdentityProviderStore } from "@/store/modules/idp";
 import { idpNamePrefix } from "@/store/modules/v1/common";
 import type { IdentityProvider } from "@/types/proto-es/v1/idp_service_pb";

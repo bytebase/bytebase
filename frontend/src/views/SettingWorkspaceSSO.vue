@@ -2,14 +2,9 @@
   <div class="w-full space-y-4">
     <div class="textinfolabel">
       {{ $t("settings.sso.description") }}
-      <a
-        href="https://docs.bytebase.com/administration/sso/overview?source=console"
-        class="normal-link inline-flex flex-row items-center"
-        target="_blank"
-      >
-        {{ $t("common.learn-more") }}
-        <heroicons-outline:external-link class="w-4 h-4" />
-      </a>
+      <LearnMoreLink
+        url="https://docs.bytebase.com/administration/sso/overview?source=console"
+      />
     </div>
     <div class="w-full flex flex-row justify-end items-center">
       <NButton
@@ -57,6 +52,7 @@ import {
   IdentityProviderTable,
   IdentityProviderCreateWizard,
 } from "@/components/IdentityProvider";
+import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { WORKSPACE_ROUTE_IDENTITY_PROVIDER_DETAIL } from "@/router/dashboard/workspaceRoutes";
 import { featureToRef, getIdentityProviderResourceId } from "@/store";
 import { useIdentityProviderStore } from "@/store/modules/idp";

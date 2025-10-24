@@ -287,13 +287,10 @@
                 {{
                   $t("settings.sso.form.user-information-mapping-description")
                 }}
-                <a
-                  href="https://docs.bytebase.com/administration/sso/oauth2#user-information-field-mapping?source=console"
-                  class="text-blue-600 hover:text-blue-800 underline"
-                  target="_blank"
-                >
-                  {{ $t("common.learn-more") }}
-                </a>
+                <LearnMoreLink
+                  class="ml-1"
+                  url="https://docs.bytebase.com/administration/sso/oauth2#user-information-field-mapping?source=console"
+                />
               </p>
             </div>
 

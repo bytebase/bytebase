@@ -34,22 +34,21 @@
       </div>
 
       <div v-if="features.includes('TIER')" class="flex flex-col gap-y-2">
-        <label class="font-medium flex items-center">
-          {{ $t("policy.environment-tier.name") }}
-          <FeatureBadge :feature="PlanFeature.FEATURE_ENVIRONMENT_TIERS" />
-        </label>
-        <p class="text-sm text-gray-600">
-          <i18n-t tag="span" keypath="policy.environment-tier.description">
-            <template #newline><br /></template>
-          </i18n-t>
-          <a
-            class="inline-flex items-center text-blue-600 ml-1 hover:underline"
-            href="https://docs.bytebase.com/change-database/environment-policy/overview/?source=console#environment-tier"
-            target="_blank"
-            >{{ $t("common.learn-more")
-            }}<heroicons-outline:external-link class="w-4 h-4"
-          /></a>
-        </p>
+        <div class="gap-y-1">
+          <label class="font-medium flex items-center">
+            {{ $t("policy.environment-tier.name") }}
+            <FeatureBadge :feature="PlanFeature.FEATURE_ENVIRONMENT_TIERS" />
+          </label>
+          <p class="text-sm text-gray-600">
+            <i18n-t tag="span" keypath="policy.environment-tier.description">
+              <template #newline><br /></template>
+            </i18n-t>
+            <LearnMoreLink
+              class="ml-1"
+              url="https://docs.bytebase.com/change-database/environment-policy/overview/?source=console#environment-tier"
+            />
+          </p>
+        </div>
         <NCheckbox
           :checked="state.environment.tags.protected === 'protected'"
           :disabled="!allowEdit"
@@ -69,27 +68,27 @@
         v-if="features.includes('ROLLOUT_POLICY')"
         class="flex flex-col gap-y-2"
       >
-        <div class="flex items-baseline space-x-2">
-          <label class="font-medium">
-            {{ $t("policy.rollout.name") }}
-          </label>
-          <span
-            v-show="!create && valueChanged('rolloutPolicy')"
-            class="textlabeltip"
-          >
-            {{ $t("policy.rollout.tip") }}
-          </span>
-        </div>
-        <div class="textinfolabel">
-          {{ $t("policy.rollout.info", { permission: "bb.taskRuns.create" }) }}
-          <a
-            class="inline-flex items-center text-blue-600 ml-1 hover:underline"
-            href="https://docs.bytebase.com/change-database/environment-policy/rollout-policy/?source=console"
-            target="_blank"
-          >
-            {{ $t("common.learn-more") }}
-            <heroicons-outline:external-link class="w-4 h-4" />
-          </a>
+        <div class="gap-y-1">
+          <div class="flex items-baseline space-x-2">
+            <label class="font-medium">
+              {{ $t("policy.rollout.name") }}
+            </label>
+            <span
+              v-show="!create && valueChanged('rolloutPolicy')"
+              class="textlabeltip"
+            >
+              {{ $t("policy.rollout.tip") }}
+            </span>
+          </div>
+          <div class="textinfolabel">
+            {{
+              $t("policy.rollout.info", { permission: "bb.taskRuns.create" })
+            }}
+            <LearnMoreLink
+              class="ml-1"
+              url="https://docs.bytebase.com/change-database/environment-policy/rollout-policy/?source=console"
+            />
+          </div>
         </div>
         <RolloutPolicyConfig
           v-model:policy="state.rolloutPolicy"
@@ -155,6 +154,7 @@ import { NCheckbox, NInput, NColorPicker } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBButtonConfirm } from "@/bbkit";
+import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
