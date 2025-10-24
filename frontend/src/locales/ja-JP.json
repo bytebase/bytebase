@@ -1362,7 +1362,6 @@
     "password-write-only": "YOUR_DB_PWD - 書き込み専用",
     "password-type": {
       "password": "パスワード",
-      "password-tip": "外部のパスワード管理サービスのエンドポイントを指定することもできます",
       "google-iam": "Google Cloud SQL IAM",
       "aws-iam": "AWS RDS IAM",
       "azure-iam": "Azure IAM",

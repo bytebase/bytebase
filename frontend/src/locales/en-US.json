@@ -1362,7 +1362,6 @@
     "password-write-only": "YOUR_DB_PWD - write only",
     "password-type": {
       "password": "Password",
-      "password-tip": "You can also specify external secret manage endpoint",
       "google-iam": "Google Cloud SQL IAM",
       "aws-iam": "AWS RDS IAM",
       "azure-iam": "Azure IAM",
