@@ -2,14 +2,9 @@
   <div class="w-full space-y-4">
     <div class="textinfolabel">
       {{ $t("settings.im-integration.description") }}
-      <a
-        class="normal-link inline-flex items-center"
-        href="https://docs.bytebase.com/change-database/webhook?source=console"
-        target="__BLANK"
-      >
-        {{ $t("common.learn-more") }}
-        <heroicons-outline:external-link class="w-4 h-4 ml-1" />
-      </a>
+      <LearnMoreLink
+        url="https://docs.bytebase.com/change-database/webhook?source=console"
+      />
     </div>
     <NTabs v-model:value="state.selectedTab" type="line" animated>
       <NTabPane v-for="item in imList" :key="item.type" :name="item.type">
@@ -56,6 +51,7 @@ import { computed, watch, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBAttention } from "@/bbkit";
 import BBTextField from "@/bbkit/BBTextField.vue";
+import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import WebhookTypeIcon from "@/components/Project/WebhookTypeIcon.vue";
 import { useSettingV1Store, pushNotification } from "@/store";
 import { Webhook_Type } from "@/types/proto-es/v1/project_service_pb";

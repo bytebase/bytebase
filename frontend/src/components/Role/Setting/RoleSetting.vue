@@ -2,14 +2,9 @@
   <div class="space-y-4">
     <div class="textinfolabel">
       {{ $t("role.setting.description") }}
-      <a
-        href="https://docs.bytebase.com/administration/roles?source=console"
-        class="normal-link text-sm inline-flex flex-row items-center"
-        target="_blank"
-      >
-        {{ $t("common.learn-more") }}
-        <heroicons-outline:external-link class="w-4 h-4" />
-      </a>
+      <LearnMoreLink
+        url="https://docs.bytebase.com/administration/roles?source=console"
+      />
     </div>
     <div class="w-full flex flex-row justify-end items-center">
       <NButton
@@ -63,6 +58,7 @@ import { NButton } from "naive-ui";
 import { computed, onMounted, reactive, ref } from "vue";
 import { BBSpin } from "@/bbkit";
 import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
+import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { featureToRef, useRoleStore } from "@/store";
 import { PRESET_ROLES } from "@/types";
 import type { Role } from "@/types/proto-es/v1/role_service_pb";

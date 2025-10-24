@@ -287,13 +287,10 @@
                 {{
                   $t("settings.sso.form.user-information-mapping-description")
                 }}
-                <a
-                  href="https://docs.bytebase.com/administration/sso/oauth2#user-information-field-mapping?source=console"
-                  class="text-blue-600 hover:text-blue-800 underline"
-                  target="_blank"
-                >
-                  {{ $t("common.learn-more") }}
-                </a>
+                <LearnMoreLink
+                  class="ml-1"
+                  url="https://docs.bytebase.com/administration/sso/oauth2#user-information-field-mapping?source=console"
+                />
               </p>
             </div>
 
@@ -455,6 +452,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBAttention, BBTextField } from "@/bbkit";
 import { FeatureBadge } from "@/components/FeatureGuard";
+import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";

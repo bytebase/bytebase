@@ -101,13 +101,10 @@
           </h1>
           <p class="text-base text-gray-600 mt-3">
             {{ $t("settings.sso.form.user-information-mapping-description") }}
-            <a
-              href="https://docs.bytebase.com/administration/sso/oauth2#user-information-field-mapping?source=console"
-              class="text-blue-600 hover:text-blue-800 underline ml-1"
-              target="_blank"
-            >
-              {{ $t("common.learn-more") }}
-            </a>
+            <LearnMoreLink
+              class="ml-1"
+              url="https://docs.bytebase.com/administration/sso/oauth2#user-information-field-mapping?source=console"
+            />
           </p>
         </div>
         <div class="flex-1 mt-4 lg:px-4 lg:mt-0 space-y-6">
@@ -253,6 +250,7 @@ import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBTextField, BBButtonConfirm } from "@/bbkit";
+import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { ResourceIdField } from "@/components/v2";
 import { WORKSPACE_ROUTE_IDENTITY_PROVIDERS } from "@/router/dashboard/workspaceRoutes";

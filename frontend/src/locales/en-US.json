@@ -1543,7 +1543,7 @@
     "rollout": {
       "name": "Rollout Policy",
       "tip": "The policy is applied to issues retroactively.",
-      "info": "Tasks can be executed by users with '{permission}' permission or the following roles",
+      "info": "Tasks can be executed by users with '{permission}' permission or the following roles.",
       "auto": "Automatic",
       "auto-info": "If all check pass, the change will be rolled out and executed automatically.",
       "checkers": {

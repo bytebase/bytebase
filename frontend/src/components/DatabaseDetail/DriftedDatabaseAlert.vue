@@ -7,13 +7,10 @@
     <div class="flex items-center justify-between gap-4">
       <div class="flex-1">
         {{ $t("database.drifted.schema-drift-detected.description") }}
-        <a
-          href="https://docs.bytebase.com/change-database/drift-detection/?source=console"
-          target="_blank"
-          class="text-accent hover:underline ml-1"
-        >
-          {{ $t("common.learn-more") }}
-        </a>
+        <LearnMoreLink
+          class="ml-1"
+          url="https://docs.bytebase.com/change-database/drift-detection/?source=console"
+        />
       </div>
       <div class="flex justify-end items-center gap-2">
         <NButton size="small" @click="state.showSchemaDiffModal = true">
@@ -59,6 +56,7 @@ import { NAlert, NButton } from "naive-ui";
 import { reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBModal } from "@/bbkit";
+import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { DiffEditor } from "@/components/MonacoEditor";
 import {
   pushNotification,

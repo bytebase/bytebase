@@ -2,14 +2,9 @@
   <div class="mx-auto space-y-4">
     <div class="textinfolabel">
       {{ $t("sql-review.description") }}
-      <a
-        href="https://docs.bytebase.com/sql-review/review-rules"
-        target="_blank"
-        class="normal-link inline-flex flex-row items-center"
-      >
-        {{ $t("common.learn-more") }}
-        <heroicons-outline:external-link class="w-4 h-4" />
-      </a>
+      <LearnMoreLink
+        url="https://docs.bytebase.com/sql-review/review-rules?source=console"
+      />
     </div>
 
     <div class="flex justify-end items-center gap-x-2">
@@ -57,6 +52,7 @@ import { NButton } from "naive-ui";
 import { NEmpty } from "naive-ui";
 import { watchEffect, ref, computed } from "vue";
 import { useRouter } from "vue-router";
+import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import SQLReviewPolicyTable from "@/components/SQLReview/components/SQLReviewPolicyTable.vue";
 import { SearchBox } from "@/components/v2";
 import { WORKSPACE_ROUTE_SQL_REVIEW_CREATE } from "@/router/dashboard/workspaceRoutes";

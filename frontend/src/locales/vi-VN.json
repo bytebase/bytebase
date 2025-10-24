@@ -1543,7 +1543,7 @@
     "rollout": {
       "name": "Chính sách triển khai",
       "tip": "Chính sách được áp dụng cho các vấn đề hồi tố.",
-      "info": "Các tác vụ có thể được thực hiện bởi người dùng có quyền 'taskRuns.Create' hoặc các vai trò sau",
+      "info": "Các tác vụ có thể được thực hiện bởi người dùng có quyền 'taskRuns.Create' hoặc các vai trò sau.",
       "auto": "Triển khai tự động",
       "auto-info": "Nếu tất cả kiểm tra vượt qua, thay đổi sẽ được triển khai và thực hiện tự động.",
       "checkers": {
