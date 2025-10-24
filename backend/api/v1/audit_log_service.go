@@ -3,18 +3,14 @@ package v1
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"connectrpc.com/connect"
+	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/google/cel-go/cel"
-	celast "github.com/google/cel-go/common/ast"
-	celoperators "github.com/google/cel-go/common/operators"
-	"github.com/pkg/errors"
-
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/qb"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -42,20 +38,20 @@ func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *connect.
 	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_AUDIT_LOG); err != nil {
 		return nil, connect.NewError(connect.CodePermissionDenied, err)
 	}
-	filter, err := s.getSearchAuditLogsFilter(ctx, request.Msg.Filter)
+	filterQ, err := s.store.GetSearchAuditLogsFilter(ctx, request.Msg.Filter)
 	if err != nil {
-		return nil, err
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	// Apply retention-based filtering based on the plan
 	retentionCutoff := s.licenseService.GetAuditLogRetentionCutoff()
 	if retentionCutoff != nil {
-		filter = s.applyRetentionFilter(filter, retentionCutoff)
+		filterQ = applyRetentionFilter(filterQ, retentionCutoff)
 	}
 
 	orderByKeys, err := getSearchAuditLogsOrderByKeys(request.Msg.OrderBy)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get order by keys"))
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	offset, err := parseLimitAndOffset(&pageSize{
@@ -76,19 +72,19 @@ func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *connect.
 		Project:     project,
 		Limit:       &limitPlusOne,
 		Offset:      &offset.offset,
-		Filter:      filter,
+		FilterQ:     filterQ,
 		OrderByKeys: orderByKeys,
 	}
 	auditLogs, err := s.store.SearchAuditLogs(ctx, auditLogFind)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get audit logs"))
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	var nextPageToken string
 	if len(auditLogs) == limitPlusOne {
 		auditLogs = auditLogs[:offset.limit]
 		if nextPageToken, err = offset.getNextPageToken(); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get next page token"))
+			return nil, connect.NewError(connect.CodeInternal, err)
 		}
 	}
 
@@ -226,95 +222,6 @@ func convertToAuditLogSeverity(s storepb.AuditLog_Severity) v1pb.AuditLog_Severi
 	}
 }
 
-func (s *AuditLogService) getSearchAuditLogsFilter(ctx context.Context, filter string) (*store.ListResourceFilter, error) {
-	if filter == "" {
-		return nil, nil
-	}
-
-	e, err := cel.NewEnv()
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to create cel env"))
-	}
-	ast, iss := e.Parse(filter)
-	if iss != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String()))
-	}
-
-	var getFilter func(expr celast.Expr) (string, error)
-	var positionalArgs []any
-
-	getFilter = func(expr celast.Expr) (string, error) {
-		switch expr.Kind() {
-		case celast.CallKind:
-			functionName := expr.AsCall().FunctionName()
-			switch functionName {
-			case celoperators.LogicalOr:
-				return getSubConditionFromExpr(expr, getFilter, "OR")
-			case celoperators.LogicalAnd:
-				return getSubConditionFromExpr(expr, getFilter, "AND")
-			case celoperators.Equals:
-				variable, rawValue := getVariableAndValueFromExpr(expr)
-				value, ok := rawValue.(string)
-				if !ok {
-					return "", errors.Errorf("expect string, got %T, hint: filter literals should be string", rawValue)
-				}
-				switch variable {
-				case "resource", "method", "user", "severity":
-				default:
-					return "", errors.Errorf("unknown variable %s", variable)
-				}
-				if variable == "user" {
-					// Convert user email to user id.
-					// e.g. users/y@bb.com -> users/101
-					user, err := s.getUserByIdentifier(ctx, value)
-					if err != nil {
-						return "", err
-					}
-					value = fmt.Sprintf("%s%d", common.UserNamePrefix, user.ID)
-				}
-				positionalArgs = append(positionalArgs, value)
-				return fmt.Sprintf("payload->>'%s'=$%d", variable, len(positionalArgs)), nil
-
-			case celoperators.GreaterEquals, celoperators.LessEquals:
-				variable, rawValue := getVariableAndValueFromExpr(expr)
-				value, ok := rawValue.(string)
-				if !ok {
-					return "", errors.Errorf("expect string, got %T, hint: filter literals should be string", rawValue)
-				}
-				if variable != "create_time" {
-					return "", errors.Errorf(`">=" and "<=" are only supported for "create_time"`)
-				}
-
-				t, err := time.Parse(time.RFC3339, value)
-				if err != nil {
-					return "", errors.Errorf("failed to parse time %v, error: %v", value, err)
-				}
-				positionalArgs = append(positionalArgs, t)
-				if functionName == celoperators.GreaterEquals {
-					return fmt.Sprintf("created_at >= $%d", len(positionalArgs)), nil
-				}
-				return fmt.Sprintf("created_at <= $%d", len(positionalArgs)), nil
-
-			default:
-				return "", errors.Errorf("unexpected function %v", functionName)
-			}
-
-		default:
-			return "", errors.Errorf("unexpected expr kind %v", expr.Kind())
-		}
-	}
-
-	where, err := getFilter(ast.NativeRep().Expr())
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get filter"))
-	}
-
-	return &store.ListResourceFilter{
-		Args:  positionalArgs,
-		Where: "(" + where + ")",
-	}, nil
-}
-
 func getSearchAuditLogsOrderByKeys(orderBy string) ([]store.OrderByKey, error) {
 	keys, err := parseOrderBy(orderBy)
 	if err != nil {
@@ -343,37 +250,20 @@ func getSearchAuditLogsOrderByKeys(orderBy string) ([]store.OrderByKey, error) {
 	return orderByKeys, nil
 }
 
-func (s *AuditLogService) getUserByIdentifier(ctx context.Context, identifier string) (*store.UserMessage, error) {
-	email := strings.TrimPrefix(identifier, "users/")
-	if email == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("invalid empty creator identifier"))
-	}
-	user, err := s.store.GetUserByEmail(ctx, email)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, `failed to find user "%s"`, email))
-	}
-	if user == nil {
-		return nil, errors.Errorf("cannot found user %s", email)
-	}
-	return user, nil
-}
-
 // applyRetentionFilter merges retention-based filtering with user-provided filters.
-func (*AuditLogService) applyRetentionFilter(userFilter *store.ListResourceFilter, cutoff *time.Time) *store.ListResourceFilter {
+func applyRetentionFilter(userFilterQ *qb.Query, cutoff *time.Time) *qb.Query {
 	if cutoff == nil {
-		return userFilter
+		return userFilterQ
 	}
 
-	if userFilter == nil {
-		return &store.ListResourceFilter{
-			Where: "(created_at >= $1)",
-			Args:  []any{*cutoff},
-		}
+	retentionQ := qb.Q().Space("created_at >= ?", *cutoff)
+	if userFilterQ == nil {
+		return qb.Q().Space("(?)", retentionQ)
 	}
 
 	// Combine with existing filter using AND
-	return &store.ListResourceFilter{
-		Where: fmt.Sprintf("(%s) AND (created_at >= $%d)", userFilter.Where, len(userFilter.Args)+1),
-		Args:  append(userFilter.Args, *cutoff),
-	}
+	q := qb.Q()
+	q.Space("?", userFilterQ)
+	q.And("?", retentionQ)
+	return qb.Q().Space("(?)", q)
 }

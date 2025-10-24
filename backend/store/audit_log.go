@@ -6,9 +6,11 @@ import (
 	"strings"
 	"time"
 
-	"google.golang.org/protobuf/encoding/protojson"
-
+	"github.com/google/cel-go/cel"
+	celast "github.com/google/cel-go/common/ast"
+	celoperators "github.com/google/cel-go/common/operators"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/qb"
@@ -32,7 +34,7 @@ type AuditLog struct {
 
 type AuditLogFind struct {
 	Project     *string
-	Filter      *ListResourceFilter
+	FilterQ     *qb.Query
 	Limit       *int
 	Offset      *int
 	OrderByKeys []OrderByKey
@@ -66,9 +68,8 @@ func (s *Store) SearchAuditLogs(ctx context.Context, find *AuditLogFind) ([]*Aud
 		WHERE TRUE
 	`)
 
-	if v := find.Filter; v != nil {
-		// Convert $1, $2, etc. to ? for qb
-		q.And(ConvertDollarPlaceholders(v.Where), v.Args...)
+	if filterQ := find.FilterQ; filterQ != nil {
+		q.And("?", filterQ)
 	}
 	if v := find.Project; v != nil {
 		q.And("payload->>'parent' = ?", *v)
@@ -128,4 +129,108 @@ func (s *Store) SearchAuditLogs(ctx context.Context, find *AuditLogFind) ([]*Aud
 	}
 
 	return logs, nil
+}
+
+func (s *Store) GetSearchAuditLogsFilter(ctx context.Context, filter string) (*qb.Query, error) {
+	if filter == "" {
+		return nil, nil
+	}
+
+	e, err := cel.NewEnv()
+	if err != nil {
+		return nil, errors.New("failed to create cel env")
+	}
+	ast, iss := e.Parse(filter)
+	if iss != nil {
+		return nil, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String())
+	}
+
+	var getFilter func(expr celast.Expr) (*qb.Query, error)
+
+	getFilter = func(expr celast.Expr) (*qb.Query, error) {
+		q := qb.Q()
+		switch expr.Kind() {
+		case celast.CallKind:
+			functionName := expr.AsCall().FunctionName()
+			switch functionName {
+			case celoperators.LogicalOr:
+				for _, arg := range expr.AsCall().Args() {
+					qq, err := getFilter(arg)
+					if err != nil {
+						return nil, err
+					}
+					q.Or("?", qq)
+				}
+				return qb.Q().Space("(?)", q), nil
+			case celoperators.LogicalAnd:
+				for _, arg := range expr.AsCall().Args() {
+					qq, err := getFilter(arg)
+					if err != nil {
+						return nil, err
+					}
+					q.And("?", qq)
+				}
+				return qb.Q().Space("(?)", q), nil
+			case celoperators.Equals:
+				variable, rawValue := getVariableAndValueFromExpr(expr)
+				value, ok := rawValue.(string)
+				if !ok {
+					return nil, errors.Errorf("expect string, got %T, hint: filter literals should be string", rawValue)
+				}
+				switch variable {
+				case "resource", "method", "user", "severity":
+				default:
+					return nil, errors.Errorf("unknown variable %s", variable)
+				}
+				if variable == "user" {
+					// Convert user email to user id.
+					// e.g. users/y@bb.com -> users/101
+					email := strings.TrimPrefix(value, "users/")
+					if email == "" {
+						return nil, errors.New("invalid empty creator identifier")
+					}
+					user, err := s.GetUserByEmail(ctx, email)
+					if err != nil {
+						return nil, errors.Wrapf(err, `failed to find user "%s"`, email)
+					}
+					if user == nil {
+						return nil, errors.Errorf("cannot found user %s", email)
+					}
+					value = fmt.Sprintf("%s%d", common.UserNamePrefix, user.ID)
+				}
+				return qb.Q().Space(fmt.Sprintf("payload->>'%s' = ?", variable), value), nil
+
+			case celoperators.GreaterEquals, celoperators.LessEquals:
+				variable, rawValue := getVariableAndValueFromExpr(expr)
+				value, ok := rawValue.(string)
+				if !ok {
+					return nil, errors.Errorf("expect string, got %T, hint: filter literals should be string", rawValue)
+				}
+				if variable != "create_time" {
+					return nil, errors.Errorf(`">=" and "<=" are only supported for "create_time"`)
+				}
+
+				t, err := time.Parse(time.RFC3339, value)
+				if err != nil {
+					return nil, errors.Errorf("failed to parse time %v, error: %v", value, err)
+				}
+				if functionName == celoperators.GreaterEquals {
+					return qb.Q().Space("created_at >= ?", t), nil
+				}
+				return qb.Q().Space("created_at <= ?", t), nil
+
+			default:
+				return nil, errors.Errorf("unexpected function %v", functionName)
+			}
+
+		default:
+			return nil, errors.Errorf("unexpected expr kind %v", expr.Kind())
+		}
+	}
+
+	q, err := getFilter(ast.NativeRep().Expr())
+	if err != nil {
+		return nil, err
+	}
+	return qb.Q().Space("(?)", q), nil
 }
