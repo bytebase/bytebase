@@ -28,6 +28,7 @@ func TestPostgreSQLANTLRRules(t *testing.T) {
 		advisor.SchemaRuleIndexTotalNumberLimit,              // Migrated from legacy
 		advisor.SchemaRuleRequiredColumn,                     // Migrated from legacy
 		advisor.SchemaRuleStatementInsertDisallowOrderByRand, // Migrated from legacy
+		advisor.SchemaRuleStatementInsertMustSpecifyColumn,   // Migrated from legacy
 		// Add real rules here as you migrate them from legacy pg/ folder
 		// Example:
 		// advisor.SchemaRuleStatementDisallowCommit,
