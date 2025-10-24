@@ -12,10 +12,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
-	"github.com/bytebase/bytebase/backend/component/sheet"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
+	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 // TestCase is the data struct for test.
@@ -48,7 +48,6 @@ func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbTyp
 	err = yaml.Unmarshal(byteValue, &tests)
 	require.NoError(t, err, rule)
 
-	sm := sheet.NewManager(nil)
 	for i, tc := range tests {
 		// Add engine types here for mocked database metadata.
 		var schemaMetadata *storepb.DatabaseSchemaMetadata
@@ -71,6 +70,10 @@ func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbTyp
 			payload = ""
 		}
 
+		// Parse SQL using ANTLR for pgantlr advisors
+		tree, err := pg.ParsePostgreSQL(tc.Statement)
+		require.NoError(t, err, "Failed to parse SQL: %s", tc.Statement)
+
 		ruleList := []*storepb.SQLReviewRule{
 			{
 				Type:    string(rule),
@@ -79,21 +82,24 @@ func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbTyp
 			},
 		}
 
-		checkCtx := advisor.SQLReviewCheckContext{
-			Charset:                  "",
-			Collation:                "",
-			DBType:                   dbType,
-			Catalog:                  &testCatalog{finder: finder},
-			Driver:                   nil,
-			CurrentDatabase:          "TEST_DB",
-			DBSchema:                 schemaMetadata,
-			ChangeType:               tc.ChangeType,
-			EnablePriorBackup:        true,
-			NoAppendBuiltin:          true,
-			UsePostgresDatabaseOwner: true,
-		}
-
-		adviceList, err := advisor.SQLReviewCheck(context.Background(), sm, tc.Statement, ruleList, checkCtx)
+		// Call the advisor directly with ANTLR AST
+		adviceList, err := advisor.Check(
+			context.Background(),
+			dbType,
+			rule,
+			advisor.Context{
+				DBSchema:                 schemaMetadata,
+				ChangeType:               tc.ChangeType,
+				EnablePriorBackup:        true,
+				AST:                      tree, // Pass ANTLR parse result
+				Statements:               tc.Statement,
+				Rule:                     ruleList[0],
+				Catalog:                  finder,
+				Driver:                   nil,
+				CurrentDatabase:          "TEST_DB",
+				UsePostgresDatabaseOwner: true,
+			},
+		)
 
 		// Sort adviceList by (line, content) for consistent comparison
 		slices.SortFunc(adviceList, func(x, y *storepb.Advice) int {
@@ -135,12 +141,4 @@ func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbTyp
 		err = os.WriteFile(filepath, byteValue, 0644)
 		require.NoError(t, err)
 	}
-}
-
-type testCatalog struct {
-	finder *catalog.Finder
-}
-
-func (c *testCatalog) GetFinder() *catalog.Finder {
-	return c.finder
 }

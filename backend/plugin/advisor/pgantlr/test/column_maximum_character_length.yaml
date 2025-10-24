@@ -1,0 +1,37 @@
+- statement: CREATE TABLE t(name char(20));
+  changeType: 1
+- statement: CREATE TABLE t(name varchar(225));
+  changeType: 1
+- statement: CREATE TABLE t(name char(225));
+  changeType: 1
+  want:
+    - status: 2
+      code: 415
+      title: column.maximum-character-length
+      content: The length of the CHAR column "name" in table "t" is bigger than 20, please use VARCHAR instead
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE public.tech_book ADD COLUMN name_2 char(225)
+  changeType: 1
+  want:
+    - status: 2
+      code: 415
+      title: column.maximum-character-length
+      content: The length of the CHAR column "name_2" in table "public"."tech_book" is bigger than 20, please use VARCHAR instead
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book ALTER COLUMN name SET DATA TYPE char(225)
+  changeType: 1
+  want:
+    - status: 2
+      code: 415
+      title: column.maximum-character-length
+      content: The length of the CHAR column "name" in table "tech_book" is bigger than 20, please use VARCHAR instead
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
