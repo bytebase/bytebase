@@ -25,6 +25,7 @@ func TestPostgreSQLANTLRRules(t *testing.T) {
 		advisor.SchemaRuleIndexKeyNumberLimit,           // Migrated from legacy
 		advisor.SchemaRuleIndexNoDuplicateColumn,        // Migrated from legacy
 		advisor.SchemaRuleIndexPrimaryKeyTypeAllowlist,  // Migrated from legacy
+		advisor.SchemaRuleIndexTotalNumberLimit,         // Migrated from legacy
 		advisor.SchemaRuleRequiredColumn,                // Migrated from legacy
 		// Add real rules here as you migrate them from legacy pg/ folder
 		// Example:
@@ -43,7 +44,8 @@ func TestPostgreSQLANTLRRules(t *testing.T) {
 // Add SQL review type here if you need metadata for test.
 var advisorNeedMockData = map[advisor.SQLReviewRuleType]bool{
 	// advisor.SchemaRuleFullyQualifiedObjectName: true,
-	advisor.BuiltinRulePriorBackupCheck: true,
-	advisor.SchemaRuleColumnNotNull:     true, // Needs metadata for PRIMARY KEY USING INDEX case
+	advisor.BuiltinRulePriorBackupCheck:     true,
+	advisor.SchemaRuleColumnNotNull:         true, // Needs metadata for PRIMARY KEY USING INDEX case
+	advisor.SchemaRuleIndexTotalNumberLimit: true, // Needs catalog to count indexes
 	// Other advisors don't need mock data
 }

@@ -54,6 +54,16 @@ func extractTableName(ctx parser.IQualified_nameContext) string {
 	return parts[len(parts)-1]
 }
 
+// extractSchemaName extracts the schema name (first component) from a qualified name.
+// Returns empty string if only table name is provided (implying default schema).
+func extractSchemaName(ctx parser.IQualified_nameContext) string {
+	parts := pg.NormalizePostgreSQLQualifiedName(ctx)
+	if len(parts) <= 1 {
+		return ""
+	}
+	return parts[0]
+}
+
 // extractIntegerConstant extracts an integer value from an Iconst context.
 // Returns the integer value and an error if parsing fails.
 func extractIntegerConstant(ctx parser.IIconstContext) (int, error) {
