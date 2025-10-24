@@ -112,7 +112,7 @@ const columns = computed(() => {
             row.scope === "project" &&
             props.allowEdit && (
               <NPopconfirm
-                positive-Click={() =>
+                onPositiveClick={() =>
                   emit("revoke-role", row.name, row.id.endsWith(".expired"))
                 }
                 v-slots={{

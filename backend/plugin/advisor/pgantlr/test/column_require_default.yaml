@@ -1,0 +1,62 @@
+- statement: |-
+    CREATE TABLE t(
+      a int not null,
+      b text,
+      primary key (a)
+    );
+  changeType: 1
+  want:
+    - status: 2
+      code: 420
+      title: column.require-default
+      content: Column "t"."a" in schema "public" doesn't have DEFAULT
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 420
+      title: column.require-default
+      content: Column "t"."b" in schema "public" doesn't have DEFAULT
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: CREATE TABLE t(a serial primary key, b int default 1)
+  changeType: 1
+- statement: |-
+    CREATE TABLE t(
+      a int,
+      b int default 1
+    )
+  changeType: 1
+  want:
+    - status: 2
+      code: 420
+      title: column.require-default
+      content: Column "t"."a" in schema "public" doesn't have DEFAULT
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE tech_book ADD COLUMN a BLOB;
+    ALTER TABLE tech_book ADD COLUMN b timestamp;
+  changeType: 1
+  want:
+    - status: 2
+      code: 420
+      title: column.require-default
+      content: Column "tech_book"."a" in schema "public" doesn't have DEFAULT
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 420
+      title: column.require-default
+      content: Column "tech_book"."b" in schema "public" doesn't have DEFAULT
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

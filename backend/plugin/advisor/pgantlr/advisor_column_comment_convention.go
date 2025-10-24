@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -96,7 +97,7 @@ func (c *columnCommentConventionChecker) EnterCreatestmt(ctx *parser.CreatestmtC
 		allElements := ctx.Opttableelementlist().Tableelementlist().AllTableelement()
 		for _, elem := range allElements {
 			if elem.ColumnDef() != nil && elem.ColumnDef().Colid() != nil {
-				columnName := elem.ColumnDef().Colid().GetText()
+				columnName := pg.NormalizePostgreSQLColid(elem.ColumnDef().Colid())
 				c.columns = append(c.columns, columnInfo{
 					schema: "public", // Default schema
 					table:  tableName,
@@ -128,7 +129,7 @@ func (c *columnCommentConventionChecker) EnterAltertablestmt(ctx *parser.Alterta
 		for _, cmd := range allCmds {
 			// ADD COLUMN
 			if cmd.ADD_P() != nil && cmd.ColumnDef() != nil && cmd.ColumnDef().Colid() != nil {
-				columnName := cmd.ColumnDef().Colid().GetText()
+				columnName := pg.NormalizePostgreSQLColid(cmd.ColumnDef().Colid())
 				c.columns = append(c.columns, columnInfo{
 					schema: "public", // Default schema
 					table:  tableName,
@@ -151,12 +152,9 @@ func (c *columnCommentConventionChecker) EnterCommentstmt(ctx *parser.Commentstm
 	}
 
 	// Extract table.column name from any_name
-	// any_name is like: table.column
+	// any_name is like: table.column or schema.table.column
 	anyName := ctx.Any_name()
-	text := anyName.GetText()
-
-	// Split by dot to get table and column
-	parts := splitIdentifier(text)
+	parts := pg.NormalizePostgreSQLAnyName(anyName)
 	if len(parts) < 2 {
 		return
 	}
@@ -167,7 +165,7 @@ func (c *columnCommentConventionChecker) EnterCommentstmt(ctx *parser.Commentstm
 	// Extract comment text
 	comment := ""
 	if ctx.Comment_text() != nil && ctx.Comment_text().Sconst() != nil {
-		comment = c.extractStringConstant(ctx.Comment_text().Sconst())
+		comment = extractStringConstant(ctx.Comment_text().Sconst())
 	}
 
 	c.comments = append(c.comments, commentInfo{
@@ -184,30 +182,8 @@ func (*columnCommentConventionChecker) extractTableName(qualifiedNames []parser.
 		return ""
 	}
 
-	// Take the first qualified name
-	text := qualifiedNames[0].GetText()
-
-	// Remove schema if present (e.g., "public.table" -> "table")
-	parts := splitIdentifier(text)
-	if len(parts) == 0 {
-		return ""
-	}
-
-	// Return the last part (table name)
-	return parts[len(parts)-1]
-}
-
-func (*columnCommentConventionChecker) extractStringConstant(sconst parser.ISconstContext) string {
-	if sconst == nil {
-		return ""
-	}
-
-	// Get the text and remove surrounding quotes
-	text := sconst.GetText()
-	if len(text) >= 2 && text[0] == '\'' && text[len(text)-1] == '\'' {
-		return text[1 : len(text)-1]
-	}
-	return text
+	// Return the last part (table name) from qualified name
+	return extractTableName(qualifiedNames[0])
 }
 
 func (c *columnCommentConventionChecker) generateAdvice() []*storepb.Advice {
