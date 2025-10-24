@@ -1,0 +1,67 @@
+- statement: CREATE TABLE t(name char(20));
+  changeType: 1
+- statement: CREATE TABLE t(name varchar(225));
+  changeType: 1
+- statement: CREATE TABLE t(name char(225), PRIMARY KEY (name));
+  changeType: 1
+- statement: CREATE TABLE t(id int, name char(225), c1 int, c2 int, c3 int, c4 int, CONSTRAINT t_id_name PRIMARY KEY (id, name, c1, c2, c3, c4));
+  changeType: 1
+  want:
+    - status: 2
+      code: 802
+      title: index.key-number-limit
+      content: The number of keys of index "t_id_name" in table "t" should be not greater than 5
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE t(id int, name char(225), c1 int, c2 int, c3 int, c4 int, CONSTRAINT t_id_name UNIQUE (id, name, c1, c2, c3, c4));
+  changeType: 1
+  want:
+    - status: 2
+      code: 802
+      title: index.key-number-limit
+      content: The number of keys of index "t_id_name" in table "t" should be not greater than 5
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE address(id int, phone varchar(225), c1 int, c2 int, c3 int, c4 int);
+    CREATE INDEX idx_address_phone ON address(id, phone, c1, c2, c3, c4);
+  changeType: 1
+  want:
+    - status: 2
+      code: 802
+      title: index.key-number-limit
+      content: The number of keys of index "idx_address_phone" in table "address" should be not greater than 5
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE address(id int, phone varchar(225), c1 int, c2 int, c3 int, c4 int);
+    CREATE UNIQUE INDEX idx_address_phone ON address(id, phone, c2, c1, c3, c4);
+  changeType: 1
+  want:
+    - status: 2
+      code: 802
+      title: index.key-number-limit
+      content: The number of keys of index "idx_address_phone" in table "address" should be not greater than 5
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE address(id int, phone varchar(225), c1 int, c2 int, c3 int, c4 int);
+    ALTER TABLE address ADD CONSTRAINT address_id_name UNIQUE (id, phone, c1, c2, c3, c4);
+  changeType: 1
+  want:
+    - status: 2
+      code: 802
+      title: index.key-number-limit
+      content: The number of keys of index "address_id_name" in table "address" should be not greater than 5
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
