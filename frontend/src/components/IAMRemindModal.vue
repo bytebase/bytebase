@@ -22,7 +22,7 @@
         </span>
       </NCheckbox>
 
-      <div class="mt-7 flex justify-end space-x-2">
+      <div class="mt-7 flex justify-end gap-x-2">
         <NButton @click="onClose">
           {{ $t("common.dismiss") }}
         </NButton>

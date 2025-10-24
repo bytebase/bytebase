@@ -17,7 +17,7 @@
         :autofocus="true"
       />
     </div>
-    <div class="w-full flex items-center justify-end mt-2 space-x-3">
+    <div class="w-full flex items-center justify-end mt-2 gap-x-2">
       <NButton @click="dismissModal">
         {{ $t("common.cancel") }}
       </NButton>

@@ -20,7 +20,7 @@
             }}
           </span>
         </div>
-        <div class="w-full flex items-center justify-end space-x-3">
+        <div class="w-full flex items-center justify-end gap-x-2">
           <NButton quaternary @click="logout">
             {{ $t("common.logout") }}
           </NButton>

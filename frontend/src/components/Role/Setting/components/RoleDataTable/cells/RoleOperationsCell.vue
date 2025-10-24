@@ -1,5 +1,5 @@
 <template>
-  <div v-if="isCustomRole(role.name)" class="w-full flex justify-end space-x-2">
+  <div v-if="isCustomRole(role.name)" class="w-full flex justify-end gap-x-2">
     <NButton size="tiny" :disabled="!allowUpdate" @click="$emit('edit', role)">
       {{ $t("common.edit") }}
     </NButton>

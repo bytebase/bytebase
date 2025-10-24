@@ -28,7 +28,7 @@
         </div>
       </div>
     </div>
-    <div class="mt-7 flex justify-end space-x-2">
+    <div class="mt-7 flex justify-end gap-x-2">
       <NButton @click.prevent="$emit('close')">
         {{ $t("schema-template.column-type-restriction.back-to-edit") }}
       </NButton>

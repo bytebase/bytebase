@@ -12,7 +12,7 @@
       </a>
     </div>
 
-    <div class="flex justify-end items-center space-x-2">
+    <div class="flex justify-end items-center gap-x-2">
       <SearchBox
         v-model:value="searchText"
         style="max-width: 100%"

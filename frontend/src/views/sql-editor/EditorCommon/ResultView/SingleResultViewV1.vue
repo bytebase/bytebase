@@ -43,7 +43,7 @@
           <span class="ml-2">{{ $t("sql-editor.rows-upper-limit") }}</span>
         </span>
       </div>
-      <div class="flex justify-between items-center shrink-0 gap-x-3">
+      <div class="flex justify-between items-center shrink-0 gap-x-2">
         <div class="flex items-center">
           <NSwitch v-model:value="state.vertical" size="small" />
           <span class="ml-1 whitespace-nowrap text-sm text-gray-500">
@@ -143,7 +143,7 @@
     <div
       class="w-full flex items-center justify-between text-xs mt-1 gap-x-4 text-control-light"
     >
-      <div class="flex flex-1 items-center space-x-2">
+      <div class="flex flex-1 items-center gap-x-2">
         <RichDatabaseName :database="database" />
         <NTooltip :disabled="!isSupported">
           <template #trigger>
@@ -157,7 +157,7 @@
           {{ $t("common.click-to-copy") }}
         </NTooltip>
       </div>
-      <div class="shrink-0 space-x-2">
+      <div class="shrink-0 gap-x-2">
         <NButton
           v-if="showVisualizeButton"
           text

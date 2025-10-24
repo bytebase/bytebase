@@ -79,7 +79,7 @@
     </template>
     <template #footer>
       <div class="flex justify-end items-center">
-        <div class="flex items-center gap-x-3">
+        <div class="flex items-center gap-x-2">
           <NButton @click.prevent="onDismiss">
             {{ $t("common.cancel") }}
           </NButton>

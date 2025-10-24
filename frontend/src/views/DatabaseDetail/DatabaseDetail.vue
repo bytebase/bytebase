@@ -152,7 +152,7 @@
       <div class="col-span-1 w-96">
         {{ $t("database.incorrect-project-warning") }}
       </div>
-      <div class="pt-6 flex justify-end space-x-3">
+      <div class="pt-6 flex justify-end gap-x-2">
         <NButton @click.prevent="state.showIncorrectProjectModal = false">
           {{ $t("common.cancel") }}
         </NButton>

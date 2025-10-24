@@ -48,7 +48,7 @@
             class="w-full h-full shrink-0 flex flex-row justify-between items-center"
           >
             <div>{{ $t("sql-editor.self") }}</div>
-            <div class="flex flex-row justify-end items-center space-x-3">
+            <div class="flex flex-row justify-end items-center gap-x-2">
               <SQLUploadButton
                 :loading="state.isUploadingFile"
                 @update:sql="(statement) => (state.editStatement = statement)"
@@ -85,7 +85,7 @@
 
     <div class="w-full flex flex-row justify-between items-center">
       <div class="flex flex-row items-center text-sm text-gray-500"></div>
-      <div class="flex justify-end items-center space-x-3">
+      <div class="flex justify-end items-center gap-x-2">
         <NButton @click="dismissModal">
           {{ $t("common.cancel") }}
         </NButton>

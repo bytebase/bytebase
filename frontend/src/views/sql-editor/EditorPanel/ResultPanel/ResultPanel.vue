@@ -22,7 +22,7 @@
           <NTooltip>
             <template #trigger>
               <div
-                class="flex items-center space-x-2"
+                class="flex items-center gap-x-2"
                 @contextmenu.stop.prevent="
                   handleContextMenuShow(context.id, $event)
                 "

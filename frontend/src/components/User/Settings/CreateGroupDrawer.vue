@@ -111,7 +111,7 @@
             </template>
           </RemoveGroupButton>
 
-          <div class="flex-1 flex flex-row items-center justify-end gap-x-3">
+          <div class="flex-1 flex flex-row items-center justify-end gap-x-2">
             <NButton @click="$emit('close')">
               {{ $t("common.cancel") }}
             </NButton>

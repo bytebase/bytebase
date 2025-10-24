@@ -7,7 +7,7 @@
       @keyup.enter="handleSaveSheet"
     />
   </div>
-  <div class="mt-4 flex justify-end space-x-2">
+  <div class="mt-4 flex justify-end gap-x-2">
     <NButton @click="emit('close')">{{ $t("common.close") }}</NButton>
     <NButton type="primary" @click="handleSaveSheet">
       {{ $t("common.save") }}
