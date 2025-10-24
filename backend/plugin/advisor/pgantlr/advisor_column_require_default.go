@@ -3,6 +3,7 @@ package pgantlr
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 
@@ -10,6 +11,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -77,7 +79,7 @@ func (c *columnRequireDefaultChecker) EnterCreatestmt(ctx *parser.CreatestmtCont
 			if elem.ColumnDef() != nil {
 				colDef := elem.ColumnDef()
 				if colDef.Colid() != nil {
-					columnName := normalizeColid(colDef.Colid())
+					columnName := pg.NormalizePostgreSQLColid(colDef.Colid())
 					// Check if column has DEFAULT
 					if !c.hasDefault(colDef) {
 						c.adviceList = append(c.adviceList, &storepb.Advice{
@@ -119,7 +121,7 @@ func (c *columnRequireDefaultChecker) EnterAltertablestmt(ctx *parser.Altertable
 			if cmd.ADD_P() != nil && cmd.ColumnDef() != nil {
 				colDef := cmd.ColumnDef()
 				if colDef.Colid() != nil {
-					columnName := normalizeColid(colDef.Colid())
+					columnName := pg.NormalizePostgreSQLColid(colDef.Colid())
 					// Check if column has DEFAULT
 					if !c.hasDefault(colDef) {
 						c.adviceList = append(c.adviceList, &storepb.Advice{
@@ -145,7 +147,7 @@ func (*columnRequireDefaultChecker) hasDefault(colDef parser.IColumnDefContext) 
 	// Check if the type is serial/bigserial/smallserial (which have implicit defaults)
 	if colDef.Typename() != nil && colDef.Typename().Simpletypename() != nil {
 		simpleType := colDef.Typename().Simpletypename()
-		typeText := normalizeTypeName(simpleType.GetText())
+		typeText := strings.ToLower(simpleType.GetText())
 		// serial, bigserial, smallserial all have implicit DEFAULT nextval()
 		if typeText == "serial" || typeText == "bigserial" || typeText == "smallserial" {
 			return true

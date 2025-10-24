@@ -10,6 +10,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -79,7 +80,7 @@ func (c *columnMaximumCharacterLengthChecker) EnterCreatestmt(ctx *parser.Create
 			if elem.ColumnDef() != nil {
 				colDef := elem.ColumnDef()
 				if colDef.Colid() != nil && colDef.Typename() != nil {
-					columnName := normalizeColid(colDef.Colid())
+					columnName := pg.NormalizePostgreSQLColid(colDef.Colid())
 					charLength := c.getCharLength(colDef.Typename())
 					if charLength > c.maximum {
 						c.addAdvice(tableName, columnName, ctx.GetStart().GetLine())
@@ -100,7 +101,7 @@ func (c *columnMaximumCharacterLengthChecker) EnterAltertablestmt(ctx *parser.Al
 		return
 	}
 
-	parts := normalizeQualifiedName(ctx.Relation_expr().Qualified_name())
+	parts := pg.NormalizePostgreSQLQualifiedName(ctx.Relation_expr().Qualified_name())
 	if len(parts) == 0 {
 		return
 	}
@@ -121,7 +122,7 @@ func (c *columnMaximumCharacterLengthChecker) EnterAltertablestmt(ctx *parser.Al
 			if cmd.ADD_P() != nil && cmd.ColumnDef() != nil {
 				colDef := cmd.ColumnDef()
 				if colDef.Colid() != nil && colDef.Typename() != nil {
-					columnName := normalizeColid(colDef.Colid())
+					columnName := pg.NormalizePostgreSQLColid(colDef.Colid())
 					charLength := c.getCharLength(colDef.Typename())
 					if charLength > c.maximum {
 						c.addAdvice(tableName, columnName, ctx.GetStart().GetLine())
@@ -135,7 +136,7 @@ func (c *columnMaximumCharacterLengthChecker) EnterAltertablestmt(ctx *parser.Al
 				// Get column name
 				allColids := cmd.AllColid()
 				if len(allColids) > 0 {
-					columnName := normalizeColid(allColids[0])
+					columnName := pg.NormalizePostgreSQLColid(allColids[0])
 					charLength := c.getCharLength(cmd.Typename())
 					if charLength > c.maximum {
 						c.addAdvice(tableName, columnName, ctx.GetStart().GetLine())
@@ -152,7 +153,7 @@ func (*columnMaximumCharacterLengthChecker) extractTableName(qualifiedNames []pa
 		return ""
 	}
 
-	parts := normalizeQualifiedName(qualifiedNames[0])
+	parts := pg.NormalizePostgreSQLQualifiedName(qualifiedNames[0])
 	if len(parts) == 0 {
 		return ""
 	}

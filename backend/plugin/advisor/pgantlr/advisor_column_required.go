@@ -12,6 +12,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -99,7 +100,7 @@ func (c *columnRequirementChecker) EnterCreatestmt(ctx *parser.CreatestmtContext
 		allElements := ctx.Opttableelementlist().Tableelementlist().AllTableelement()
 		for _, elem := range allElements {
 			if elem.ColumnDef() != nil && elem.ColumnDef().Colid() != nil {
-				columnName := normalizeColid(elem.ColumnDef().Colid())
+				columnName := pg.NormalizePostgreSQLColid(elem.ColumnDef().Colid())
 				delete(c.requiredColumns, columnName)
 			}
 		}
@@ -148,7 +149,7 @@ func (c *columnRequirementChecker) EnterAltertablestmt(ctx *parser.Altertablestm
 			if cmd.DROP() != nil {
 				allColids := cmd.AllColid()
 				if len(allColids) > 0 {
-					columnName := normalizeColid(allColids[0])
+					columnName := pg.NormalizePostgreSQLColid(allColids[0])
 					// Check if this is a required column (O(1) lookup)
 					if c.requiredColumnsMap[columnName] {
 						c.adviceList = append(c.adviceList, &storepb.Advice{
@@ -193,8 +194,8 @@ func (c *columnRequirementChecker) EnterRenamestmt(ctx *parser.RenamestmtContext
 		return
 	}
 
-	oldName := normalizeName(allNames[0])
-	newName := normalizeName(allNames[1])
+	oldName := pg.NormalizePostgreSQLName(allNames[0])
+	newName := pg.NormalizePostgreSQLName(allNames[1])
 
 	// Check if renaming away from a required column name (O(1) lookup)
 	if c.requiredColumnsMap[oldName] && oldName != newName {

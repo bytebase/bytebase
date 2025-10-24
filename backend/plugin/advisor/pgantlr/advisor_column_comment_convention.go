@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -96,7 +97,7 @@ func (c *columnCommentConventionChecker) EnterCreatestmt(ctx *parser.CreatestmtC
 		allElements := ctx.Opttableelementlist().Tableelementlist().AllTableelement()
 		for _, elem := range allElements {
 			if elem.ColumnDef() != nil && elem.ColumnDef().Colid() != nil {
-				columnName := normalizeColid(elem.ColumnDef().Colid())
+				columnName := pg.NormalizePostgreSQLColid(elem.ColumnDef().Colid())
 				c.columns = append(c.columns, columnInfo{
 					schema: "public", // Default schema
 					table:  tableName,
@@ -128,7 +129,7 @@ func (c *columnCommentConventionChecker) EnterAltertablestmt(ctx *parser.Alterta
 		for _, cmd := range allCmds {
 			// ADD COLUMN
 			if cmd.ADD_P() != nil && cmd.ColumnDef() != nil && cmd.ColumnDef().Colid() != nil {
-				columnName := normalizeColid(cmd.ColumnDef().Colid())
+				columnName := pg.NormalizePostgreSQLColid(cmd.ColumnDef().Colid())
 				c.columns = append(c.columns, columnInfo{
 					schema: "public", // Default schema
 					table:  tableName,
@@ -153,7 +154,7 @@ func (c *columnCommentConventionChecker) EnterCommentstmt(ctx *parser.Commentstm
 	// Extract table.column name from any_name
 	// any_name is like: table.column or schema.table.column
 	anyName := ctx.Any_name()
-	parts := normalizeAnyName(anyName)
+	parts := pg.NormalizePostgreSQLAnyName(anyName)
 	if len(parts) < 2 {
 		return
 	}

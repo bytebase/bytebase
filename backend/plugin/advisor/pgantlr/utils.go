@@ -2,7 +2,6 @@ package pgantlr
 
 import (
 	"strconv"
-	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/postgresql"
@@ -45,46 +44,14 @@ func getANTLRTree(checkCtx advisor.Context) (*pg.ParseResult, error) {
 	return parseResult, nil
 }
 
-// Normalization helper functions for PostgreSQL identifiers.
-// These functions wrap the parser's normalization utilities to provide
-// consistent handling of quoted/unquoted identifiers across all advisors.
-
-// normalizeColid normalizes a column identifier.
-// Unquoted identifiers are lowercased, quoted identifiers preserve case.
-func normalizeColid(ctx parser.IColidContext) string {
-	return pg.NormalizePostgreSQLColid(ctx)
-}
-
-// normalizeName normalizes a generic name.
-func normalizeName(ctx parser.INameContext) string {
-	return pg.NormalizePostgreSQLName(ctx)
-}
-
-// normalizeQualifiedName normalizes a qualified name and returns components.
-// Returns a slice like [schema, table] or [table] depending on the qualified name.
-func normalizeQualifiedName(ctx parser.IQualified_nameContext) []string {
-	return pg.NormalizePostgreSQLQualifiedName(ctx)
-}
-
-// normalizeAnyName normalizes an any_name and returns components.
-func normalizeAnyName(ctx parser.IAny_nameContext) []string {
-	return pg.NormalizePostgreSQLAnyName(ctx)
-}
-
 // extractTableName extracts the table name (last component) from a qualified name.
 // Handles both "schema.table" and "table" formats.
 func extractTableName(ctx parser.IQualified_nameContext) string {
-	parts := normalizeQualifiedName(ctx)
+	parts := pg.NormalizePostgreSQLQualifiedName(ctx)
 	if len(parts) == 0 {
 		return ""
 	}
 	return parts[len(parts)-1]
-}
-
-// normalizeTypeName normalizes a type name for comparison.
-// Returns lowercase version to enable case-insensitive comparison.
-func normalizeTypeName(typename string) string {
-	return strings.ToLower(typename)
 }
 
 // extractIntegerConstant extracts an integer value from an Iconst context.
