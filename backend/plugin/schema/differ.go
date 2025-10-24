@@ -2042,6 +2042,13 @@ func FilterPostgresArchiveSchema(diff *MetadataDiff) *MetadataDiff {
 		}
 	}
 
+	// Filter comment changes
+	for _, commentChange := range diff.CommentChanges {
+		if commentChange.SchemaName != archiveSchemaName {
+			filtered.CommentChanges = append(filtered.CommentChanges, commentChange)
+		}
+	}
+
 	// Events are database-level objects, not schema-specific, so copy them all
 	filtered.EventChanges = diff.EventChanges
 
