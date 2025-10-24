@@ -58,7 +58,7 @@
           </i18n-t>
         </p>
       </div>
-      <div class="mt-7 flex justify-end space-x-2">
+      <div class="mt-7 flex justify-end gap-x-2">
         <NButton
           v-if="!hasPermission"
           type="primary"

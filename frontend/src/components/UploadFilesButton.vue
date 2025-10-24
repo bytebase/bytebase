@@ -31,7 +31,7 @@
       <NUpload :file-list="uploadFileList" disabled trigger-class="!hidden">
       </NUpload>
     </div>
-    <div class="w-full flex items-center justify-end mt-4 space-x-2">
+    <div class="w-full flex items-center justify-end mt-4 gap-x-2">
       <NButton quaternary @click="closeModal">
         {{ $t("common.cancel") }}
       </NButton>

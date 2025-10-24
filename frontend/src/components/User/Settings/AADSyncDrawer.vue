@@ -101,7 +101,7 @@
         </div>
       </template>
       <template #footer>
-        <div class="flex flex-row items-center justify-end gap-x-3">
+        <div class="flex flex-row items-center justify-end gap-x-2">
           <NButton @click="$emit('close')">
             {{ $t("common.cancel") }}
           </NButton>

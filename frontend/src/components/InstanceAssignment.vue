@@ -42,7 +42,7 @@
 
       <template #footer>
         <div class="w-full flex justify-between items-center">
-          <div class="w-full flex justify-end items-center gap-x-3">
+          <div class="w-full flex justify-end items-center gap-x-2">
             <NButton @click.prevent="cancel">
               {{ $t("common.cancel") }}
             </NButton>

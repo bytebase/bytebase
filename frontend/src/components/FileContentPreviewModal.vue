@@ -20,7 +20,7 @@
         />
         <NSpin v-if="isLoading" class="absolute inset-0" />
       </div>
-      <div class="w-full flex justify-end space-x-2">
+      <div class="w-full flex justify-end gap-x-2">
         <NButton @click="$emit('cancel')">
           {{ $t("common.cancel") }}
         </NButton>
