@@ -3,7 +3,6 @@ package pgantlr
 import (
 	"context"
 	"fmt"
-	"slices"
 
 	"github.com/antlr4-go/antlr/v4"
 
@@ -11,7 +10,6 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 )
 
 var (
@@ -42,15 +40,11 @@ func (*ColumnRequireDefaultAdvisor) Check(_ context.Context, checkCtx advisor.Co
 		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
 		level:                        level,
 		title:                        string(checkCtx.Rule.Type),
-		catalog:                      checkCtx.Catalog,
-		columnSet:                    make(map[string]columnRequireDefaultData),
 	}
 
-	if checker.catalog != nil && checker.catalog.Final.Usable() {
-		antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
-	}
+	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
-	return checker.generateAdvice(), nil
+	return checker.adviceList, nil
 }
 
 type columnRequireDefaultChecker struct {
@@ -59,15 +53,6 @@ type columnRequireDefaultChecker struct {
 	adviceList []*storepb.Advice
 	level      storepb.Advice_Status
 	title      string
-	columnSet  map[string]columnRequireDefaultData
-	catalog    *catalog.Finder
-}
-
-type columnRequireDefaultData struct {
-	schema string
-	table  string
-	name   string
-	line   int
 }
 
 func (c *columnRequireDefaultChecker) EnterCreatestmt(ctx *parser.CreatestmtContext) {
@@ -85,13 +70,28 @@ func (c *columnRequireDefaultChecker) EnterCreatestmt(ctx *parser.CreatestmtCont
 		return
 	}
 
-	// Track all columns
+	// Check all columns for DEFAULT clause
 	if ctx.Opttableelementlist() != nil && ctx.Opttableelementlist().Tableelementlist() != nil {
 		allElements := ctx.Opttableelementlist().Tableelementlist().AllTableelement()
 		for _, elem := range allElements {
-			if elem.ColumnDef() != nil && elem.ColumnDef().Colid() != nil {
-				columnName := elem.ColumnDef().Colid().GetText()
-				c.addColumn("public", tableName, columnName, elem.GetStart().GetLine())
+			if elem.ColumnDef() != nil {
+				colDef := elem.ColumnDef()
+				if colDef.Colid() != nil {
+					columnName := colDef.Colid().GetText()
+					// Check if column has DEFAULT
+					if !c.hasDefault(colDef) {
+						c.adviceList = append(c.adviceList, &storepb.Advice{
+							Status:  c.level,
+							Code:    advisor.NoDefault.Int32(),
+							Title:   c.title,
+							Content: fmt.Sprintf("Column %q.%q in schema %q doesn't have DEFAULT", tableName, columnName, "public"),
+							StartPosition: &storepb.Position{
+								Line:   int32(elem.GetStart().GetLine()),
+								Column: 0,
+							},
+						})
+					}
+				}
 			}
 		}
 	}
@@ -116,15 +116,30 @@ func (c *columnRequireDefaultChecker) EnterAltertablestmt(ctx *parser.Altertable
 		allCmds := ctx.Alter_table_cmds().AllAlter_table_cmd()
 		for _, cmd := range allCmds {
 			// ADD COLUMN
-			if cmd.ADD_P() != nil && cmd.ColumnDef() != nil && cmd.ColumnDef().Colid() != nil {
-				columnName := cmd.ColumnDef().Colid().GetText()
-				c.addColumn("public", tableName, columnName, ctx.GetStart().GetLine())
+			if cmd.ADD_P() != nil && cmd.ColumnDef() != nil {
+				colDef := cmd.ColumnDef()
+				if colDef.Colid() != nil {
+					columnName := colDef.Colid().GetText()
+					// Check if column has DEFAULT
+					if !c.hasDefault(colDef) {
+						c.adviceList = append(c.adviceList, &storepb.Advice{
+							Status:  c.level,
+							Code:    advisor.NoDefault.Int32(),
+							Title:   c.title,
+							Content: fmt.Sprintf("Column %q.%q in schema %q doesn't have DEFAULT", tableName, columnName, "public"),
+							StartPosition: &storepb.Position{
+								Line:   int32(ctx.GetStart().GetLine()),
+								Column: 0,
+							},
+						})
+					}
+				}
 			}
 		}
 	}
 }
 
-func (c *columnRequireDefaultChecker) extractTableName(qualifiedNameCtx parser.IQualified_nameContext) string {
+func (*columnRequireDefaultChecker) extractTableName(qualifiedNameCtx parser.IQualified_nameContext) string {
 	if qualifiedNameCtx == nil {
 		return ""
 	}
@@ -139,53 +154,37 @@ func (c *columnRequireDefaultChecker) extractTableName(qualifiedNameCtx parser.I
 	return parts[len(parts)-1]
 }
 
-func (c *columnRequireDefaultChecker) addColumn(schema string, table string, column string, line int) {
-	if schema == "" {
-		schema = "public"
-	}
-
-	c.columnSet[fmt.Sprintf("%s.%s.%s", schema, table, column)] = columnRequireDefaultData{
-		schema: schema,
-		table:  table,
-		name:   column,
-		line:   line,
-	}
-}
-
-func (c *columnRequireDefaultChecker) generateAdvice() []*storepb.Advice {
-	var columnList []columnRequireDefaultData
-	for _, column := range c.columnSet {
-		columnList = append(columnList, column)
-	}
-	slices.SortFunc(columnList, func(i, j columnRequireDefaultData) int {
-		if i.line < j.line {
-			return -1
-		}
-		if i.line > j.line {
-			return 1
-		}
-		return 0
-	})
-
-	for _, column := range columnList {
-		columnInfo := c.catalog.Final.FindColumn(&catalog.ColumnFind{
-			SchemaName: column.schema,
-			TableName:  column.table,
-			ColumnName: column.name,
-		})
-		if columnInfo != nil && !columnInfo.HasDefault() {
-			c.adviceList = append(c.adviceList, &storepb.Advice{
-				Status:  c.level,
-				Code:    advisor.NoDefault.Int32(),
-				Title:   c.title,
-				Content: fmt.Sprintf("Column %q.%q in schema %q doesn't have DEFAULT", column.table, column.name, column.schema),
-				StartPosition: &storepb.Position{
-					Line:   int32(column.line),
-					Column: 0,
-				},
-			})
+// hasDefault checks if a column definition has a DEFAULT clause
+// or uses a type that implicitly includes a default (like serial, bigserial, smallserial)
+func (*columnRequireDefaultChecker) hasDefault(colDef parser.IColumnDefContext) bool {
+	// Check if the type is serial/bigserial/smallserial (which have implicit defaults)
+	if colDef.Typename() != nil && colDef.Typename().Simpletypename() != nil {
+		simpleType := colDef.Typename().Simpletypename()
+		typeText := simpleType.GetText()
+		// serial, bigserial, smallserial all have implicit DEFAULT nextval()
+		if typeText == "serial" || typeText == "bigserial" || typeText == "smallserial" {
+			return true
 		}
 	}
 
-	return c.adviceList
+	// Check for explicit DEFAULT constraint
+	if colDef.Colquallist() == nil {
+		return false
+	}
+
+	allConstraints := colDef.Colquallist().AllColconstraint()
+	for _, constraint := range allConstraints {
+		if constraint.Colconstraintelem() == nil {
+			continue
+		}
+
+		elem := constraint.Colconstraintelem()
+
+		// Check for DEFAULT constraint
+		if elem.DEFAULT() != nil {
+			return true
+		}
+	}
+
+	return false
 }
