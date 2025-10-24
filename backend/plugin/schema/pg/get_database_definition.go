@@ -2085,7 +2085,13 @@ func writeFunction(out io.Writer, schema string, function *storepb.FunctionMetad
 }
 
 func writeFunctionComment(out io.Writer, schema string, function *storepb.FunctionMetadata) error {
-	if _, err := io.WriteString(out, `COMMENT ON FUNCTION "`); err != nil {
+	// Determine if this is a PROCEDURE or FUNCTION by checking the definition
+	objectType := "FUNCTION"
+	if strings.Contains(strings.ToUpper(function.Definition), "CREATE PROCEDURE") {
+		objectType = "PROCEDURE"
+	}
+
+	if _, err := io.WriteString(out, "COMMENT ON "+objectType+" \""); err != nil {
 		return err
 	}
 
@@ -3450,7 +3456,13 @@ func writeViewCommentSDL(out io.Writer, schemaName string, view *storepb.ViewMet
 }
 
 func writeFunctionCommentSDL(out io.Writer, schemaName string, function *storepb.FunctionMetadata) error {
-	if _, err := io.WriteString(out, `COMMENT ON FUNCTION "`); err != nil {
+	// Determine if this is a PROCEDURE or FUNCTION by checking the definition
+	objectType := "FUNCTION"
+	if strings.Contains(strings.ToUpper(function.Definition), "CREATE PROCEDURE") {
+		objectType = "PROCEDURE"
+	}
+
+	if _, err := io.WriteString(out, "COMMENT ON "+objectType+" \""); err != nil {
 		return err
 	}
 	if _, err := io.WriteString(out, schemaName); err != nil {

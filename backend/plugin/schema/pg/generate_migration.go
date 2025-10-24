@@ -810,7 +810,7 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 			}
 			// Add function comment for newly created functions
 			if funcDiff.Action == schema.MetadataDiffActionCreate && funcDiff.NewFunction != nil && funcDiff.NewFunction.Comment != "" {
-				writeCommentOnFunction(buf, funcDiff.SchemaName, funcDiff.NewFunction.Signature, funcDiff.NewFunction.Comment)
+				writeCommentOnFunction(buf, funcDiff.SchemaName, funcDiff.NewFunction.Signature, funcDiff.NewFunction.Comment, funcDiff.NewFunction.Definition)
 			}
 		}
 
@@ -930,7 +930,7 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 				}
 				// Add function comment for newly created or altered functions
 				if (funcDiff.Action == schema.MetadataDiffActionCreate || funcDiff.Action == schema.MetadataDiffActionAlter) && funcDiff.NewFunction != nil && funcDiff.NewFunction.Comment != "" {
-					writeCommentOnFunction(buf, funcDiff.SchemaName, funcDiff.NewFunction.Signature, funcDiff.NewFunction.Comment)
+					writeCommentOnFunction(buf, funcDiff.SchemaName, funcDiff.NewFunction.Signature, funcDiff.NewFunction.Comment, funcDiff.NewFunction.Definition)
 				}
 			}
 		}
@@ -2617,7 +2617,7 @@ func generateFunctionCommentChanges(buf *strings.Builder, diff *schema.MetadataD
 
 			// If comments are different, generate COMMENT ON FUNCTION statement
 			if oldComment != newComment {
-				writeCommentOnFunction(buf, funcDiff.SchemaName, funcDiff.NewFunction.Signature, newComment)
+				writeCommentOnFunction(buf, funcDiff.SchemaName, funcDiff.NewFunction.Signature, newComment, funcDiff.NewFunction.Definition)
 			}
 		}
 	}
@@ -2803,9 +2803,17 @@ func writeCommentOnMaterializedView(out *strings.Builder, schema, view, comment 
 	_, _ = out.WriteString("\n")
 }
 
-// writeCommentOnFunction writes a COMMENT ON FUNCTION statement
-func writeCommentOnFunction(out *strings.Builder, schema, signature, comment string) {
-	_, _ = out.WriteString(`COMMENT ON FUNCTION "`)
+// writeCommentOnFunction writes a COMMENT ON FUNCTION/PROCEDURE statement
+func writeCommentOnFunction(out *strings.Builder, schema, signature, comment, definition string) {
+	// Determine if this is a PROCEDURE or FUNCTION by checking the definition
+	objectType := "FUNCTION"
+	if strings.Contains(strings.ToUpper(definition), "CREATE PROCEDURE") {
+		objectType = "PROCEDURE"
+	}
+
+	_, _ = out.WriteString(`COMMENT ON `)
+	_, _ = out.WriteString(objectType)
+	_, _ = out.WriteString(` "`)
 	_, _ = out.WriteString(schema)
 	_, _ = out.WriteString(`".`)
 	_, _ = out.WriteString(signature)
@@ -2929,7 +2937,19 @@ func generateCommentChangesFromSDL(buf *strings.Builder, diff *schema.MetadataDi
 
 		case schema.CommentObjectTypeFunction:
 			// For functions, ObjectName contains the function signature
-			writeCommentOnFunction(buf, commentDiff.SchemaName, commentDiff.ObjectName, newComment)
+			// Try to find the function definition to determine if it's a FUNCTION or PROCEDURE
+			functionDefinition := ""
+			functionKey := commentDiff.SchemaName + "." + commentDiff.ObjectName
+			for _, funcDiff := range diff.FunctionChanges {
+				if funcDiff.NewFunction != nil {
+					funcKey := funcDiff.SchemaName + "." + funcDiff.NewFunction.Signature
+					if funcKey == functionKey {
+						functionDefinition = funcDiff.NewFunction.Definition
+						break
+					}
+				}
+			}
+			writeCommentOnFunction(buf, commentDiff.SchemaName, commentDiff.ObjectName, newComment, functionDefinition)
 
 		case schema.CommentObjectTypeSequence:
 			writeCommentOnSequence(buf, commentDiff.SchemaName, commentDiff.ObjectName, newComment)

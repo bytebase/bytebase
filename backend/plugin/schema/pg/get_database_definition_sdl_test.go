@@ -1934,3 +1934,64 @@ ALTER SEQUENCE "public"."test_sequence2" OWNED BY "public"."test_table"."id";
 	_, err = pgparser.ParsePostgreSQL(result)
 	require.NoError(t, err, "Generated SQL should be parseable by PostgreSQL parser")
 }
+
+func TestGetDatabaseDefinitionSDLFormat_ProcedureWithComment(t *testing.T) {
+	// This test verifies that PROCEDURE comments are correctly generated with
+	// COMMENT ON PROCEDURE (not COMMENT ON FUNCTION)
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Functions: []*storepb.FunctionMetadata{
+					{
+						Name:      "get_user_count",
+						Signature: "get_user_count()",
+						Definition: `CREATE FUNCTION "public"."get_user_count"() RETURNS integer
+    LANGUAGE sql
+    AS $$
+    SELECT COUNT(*)::integer FROM users;
+$$`,
+						Comment: "Function to count users",
+					},
+					{
+						Name:      "update_user_name",
+						Signature: "update_user_name(user_id integer, new_name character varying)",
+						Definition: `CREATE PROCEDURE "public"."update_user_name"(IN user_id integer, IN new_name character varying)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    UPDATE users
+    SET name = new_name
+    WHERE id = user_id;
+END;
+$$`,
+						Comment: "Procedure to update user name",
+					},
+				},
+			},
+		},
+	}
+
+	ctx := schema.GetDefinitionContext{
+		SDLFormat: true,
+	}
+
+	result, err := GetDatabaseDefinition(ctx, metadata)
+	require.NoError(t, err)
+
+	// Verify that FUNCTION has COMMENT ON FUNCTION
+	assert.Contains(t, result, `COMMENT ON FUNCTION "public"."get_user_count()" IS 'Function to count users';`,
+		"Function comment should use COMMENT ON FUNCTION")
+
+	// Verify that PROCEDURE has COMMENT ON PROCEDURE (not COMMENT ON FUNCTION)
+	assert.Contains(t, result, `COMMENT ON PROCEDURE "public"."update_user_name(user_id integer, new_name character varying)" IS 'Procedure to update user name';`,
+		"Procedure comment should use COMMENT ON PROCEDURE")
+
+	// Verify that we don't incorrectly use COMMENT ON FUNCTION for the procedure
+	assert.NotContains(t, result, `COMMENT ON FUNCTION "public"."update_user_name`,
+		"Procedure comment should NOT use COMMENT ON FUNCTION")
+
+	// Validate that the generated SQL can be parsed
+	_, err = pgparser.ParsePostgreSQL(result)
+	require.NoError(t, err, "Generated SQL should be parseable by PostgreSQL parser")
+}
