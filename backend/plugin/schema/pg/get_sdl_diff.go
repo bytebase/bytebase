@@ -1627,6 +1627,23 @@ func processStandaloneIndexChanges(currentChunks, previousChunks *schema.SDLChun
 					Action:     schema.MetadataDiffActionCreate,
 					NewASTNode: currentChunk.ASTNode,
 				})
+				// Add COMMENT ON INDEX diffs if they exist in the new version
+				if len(currentChunk.CommentStatements) > 0 {
+					schemaName, indexName := parseIdentifier(currentChunk.Identifier)
+					for _, commentNode := range currentChunk.CommentStatements {
+						commentText := extractCommentTextFromNode(commentNode)
+						diff.CommentChanges = append(diff.CommentChanges, &schema.CommentDiff{
+							Action:     schema.MetadataDiffActionCreate,
+							ObjectType: schema.CommentObjectTypeIndex,
+							SchemaName: schemaName,
+							ObjectName: indexName,
+							OldComment: "",
+							NewComment: commentText,
+							OldASTNode: nil,
+							NewASTNode: commentNode,
+						})
+					}
+				}
 			}
 			// If text is identical, skip - no changes detected
 		} else {
@@ -1794,6 +1811,22 @@ func processViewChanges(currentChunks, previousChunks *schema.SDLChunks, current
 					OldASTNode: nil,
 					NewASTNode: currentChunk.ASTNode,
 				})
+				// Add COMMENT ON VIEW diffs if they exist
+				if len(currentChunk.CommentStatements) > 0 {
+					for _, commentNode := range currentChunk.CommentStatements {
+						commentText := extractCommentTextFromNode(commentNode)
+						diff.CommentChanges = append(diff.CommentChanges, &schema.CommentDiff{
+							Action:     schema.MetadataDiffActionCreate,
+							ObjectType: schema.CommentObjectTypeView,
+							SchemaName: schemaName,
+							ObjectName: viewName,
+							OldComment: "",
+							NewComment: commentText,
+							OldASTNode: nil,
+							NewASTNode: commentNode,
+						})
+					}
+				}
 			}
 			// If text is identical, skip - no changes detected
 		} else {
@@ -1982,6 +2015,22 @@ func processSequenceChanges(currentChunks, previousChunks *schema.SDLChunks, cur
 							})
 						}
 					}
+					// Add COMMENT ON SEQUENCE diffs if they exist in the new version
+					if len(currentChunk.CommentStatements) > 0 {
+						for _, commentNode := range currentChunk.CommentStatements {
+							commentText := extractCommentTextFromNode(commentNode)
+							diff.CommentChanges = append(diff.CommentChanges, &schema.CommentDiff{
+								Action:     schema.MetadataDiffActionCreate,
+								ObjectType: schema.CommentObjectTypeSequence,
+								SchemaName: schemaName,
+								ObjectName: sequenceName,
+								OldComment: "",
+								NewComment: commentText,
+								OldASTNode: nil,
+								NewASTNode: commentNode,
+							})
+						}
+					}
 				} else if createChanged {
 					// Only CREATE changed - use drop and recreate
 					diff.SequenceChanges = append(diff.SequenceChanges, &schema.SequenceDiff{
@@ -2013,6 +2062,22 @@ func processSequenceChanges(currentChunks, previousChunks *schema.SDLChunks, cur
 								NewSequence:  nil,
 								OldASTNode:   nil,
 								NewASTNode:   alterNode,
+							})
+						}
+					}
+					// Add COMMENT ON SEQUENCE diffs if they exist in the new version
+					if len(currentChunk.CommentStatements) > 0 {
+						for _, commentNode := range currentChunk.CommentStatements {
+							commentText := extractCommentTextFromNode(commentNode)
+							diff.CommentChanges = append(diff.CommentChanges, &schema.CommentDiff{
+								Action:     schema.MetadataDiffActionCreate,
+								ObjectType: schema.CommentObjectTypeSequence,
+								SchemaName: schemaName,
+								ObjectName: sequenceName,
+								OldComment: "",
+								NewComment: commentText,
+								OldASTNode: nil,
+								NewASTNode: commentNode,
 							})
 						}
 					}
@@ -3673,6 +3738,17 @@ func createIndexChunk(chunks *schema.SDLChunks, extIndex *extendedIndexMetadata,
 		ASTNode:    indexASTNode,
 	}
 
+	// Add COMMENT ON INDEX if the index has a comment
+	if extIndex.Comment != "" {
+		schemaName := extIndex.SchemaName
+		if schemaName == "" {
+			schemaName = "public"
+		}
+		if err := syncObjectCommentStatements(chunk, extIndex.Comment, "INDEX", schemaName, extIndex.Name); err != nil {
+			return errors.Wrapf(err, "failed to add COMMENT statements for index %s", indexKey)
+		}
+	}
+
 	if chunks.Indexes == nil {
 		chunks.Indexes = make(map[string]*schema.SDLChunk)
 	}
@@ -4002,6 +4078,14 @@ func createFunctionChunk(chunks *schema.SDLChunks, function *storepb.FunctionMet
 		ASTNode:    astNode,
 	}
 
+	// Add COMMENT ON FUNCTION if the function has a comment
+	if function.Comment != "" {
+		schemaName, functionName := parseIdentifier(functionKey)
+		if err := syncObjectCommentStatements(chunk, function.Comment, "FUNCTION", schemaName, functionName); err != nil {
+			return errors.Wrapf(err, "failed to add COMMENT statements for function %s", functionKey)
+		}
+	}
+
 	// Ensure Functions map is initialized
 	if chunks.Functions == nil {
 		chunks.Functions = make(map[string]*schema.SDLChunk)
@@ -4294,6 +4378,13 @@ func createSequenceChunk(chunks *schema.SDLChunks, sequence *storepb.SequenceMet
 	chunk := &schema.SDLChunk{
 		Identifier: sequenceKey,
 		ASTNode:    astNode,
+	}
+
+	// Add COMMENT ON SEQUENCE if the sequence has a comment
+	if sequence.Comment != "" {
+		if err := syncCommentStatements(chunk, sequence, schemaName); err != nil {
+			return errors.Wrapf(err, "failed to add COMMENT statements for sequence %s", sequenceKey)
+		}
 	}
 
 	// Ensure Sequences map is initialized
@@ -5027,6 +5118,23 @@ func createViewChunk(chunks *schema.SDLChunks, view *storepb.ViewMetadata, viewK
 		ASTNode:    viewASTNode,
 	}
 
+	// Add comment if the view has one
+	if view.Comment != "" {
+		commentSQL := generateCommentOnViewSQL(schemaName, view.Name, view.Comment)
+		commentParseResult, err := pgparser.ParsePostgreSQL(commentSQL)
+		if err == nil && commentParseResult.Tree != nil {
+			// Extract COMMENT ON VIEW AST node
+			var commentASTNode *parser.CommentstmtContext
+			antlr.ParseTreeWalkerDefault.Walk(&commentExtractor{
+				result: &commentASTNode,
+			}, commentParseResult.Tree)
+
+			if commentASTNode != nil {
+				chunk.CommentStatements = []antlr.ParserRuleContext{commentASTNode}
+			}
+		}
+	}
+
 	if chunks.Views == nil {
 		chunks.Views = make(map[string]*schema.SDLChunk)
 	}
@@ -5123,6 +5231,16 @@ func generateCreateViewSDL(schemaName string, view *storepb.ViewMetadata) string
 	}
 
 	return buf.String()
+}
+
+// generateCommentOnViewSQL generates a COMMENT ON VIEW statement
+func generateCommentOnViewSQL(schemaName, viewName, comment string) string {
+	if schemaName == "" {
+		schemaName = "public"
+	}
+	// Escape single quotes in comment
+	escapedComment := strings.ReplaceAll(comment, "'", "''")
+	return fmt.Sprintf("COMMENT ON VIEW \"%s\".\"%s\" IS '%s';", schemaName, viewName, escapedComment)
 }
 
 // viewExtractor is a walker to extract CREATE VIEW AST nodes
