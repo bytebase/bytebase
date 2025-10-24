@@ -38,7 +38,7 @@ func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *connect.
 	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_AUDIT_LOG); err != nil {
 		return nil, connect.NewError(connect.CodePermissionDenied, err)
 	}
-	filterQ, err := s.store.GetSearchAuditLogsFilter(ctx, request.Msg.Filter)
+	filterQ, err := store.GetSearchAuditLogsFilter(ctx, s.store, request.Msg.Filter)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}

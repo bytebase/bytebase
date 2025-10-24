@@ -131,7 +131,7 @@ func (s *Store) SearchAuditLogs(ctx context.Context, find *AuditLogFind) ([]*Aud
 	return logs, nil
 }
 
-func (s *Store) GetSearchAuditLogsFilter(ctx context.Context, filter string) (*qb.Query, error) {
+func GetSearchAuditLogsFilter(ctx context.Context, s *Store, filter string) (*qb.Query, error) {
 	if filter == "" {
 		return nil, nil
 	}
