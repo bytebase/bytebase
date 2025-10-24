@@ -1,6 +1,8 @@
 package pgantlr
 
 import (
+	"strconv"
+
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/postgresql"
 	"github.com/pkg/errors"
@@ -26,37 +28,6 @@ func isTopLevel(ctx antlr.Tree) bool {
 	}
 }
 
-// splitIdentifier splits a qualified identifier by dots, handling quoted parts.
-// For example:
-//   - "public.table" -> ["public", "table"]
-//   - "\"public\".\"table\"" -> ["public", "table"]
-//   - "table" -> ["table"]
-func splitIdentifier(s string) []string {
-	var parts []string
-	var current string
-	inQuote := false
-
-	for i := 0; i < len(s); i++ {
-		ch := s[i]
-		if ch == '"' {
-			inQuote = !inQuote
-		} else if ch == '.' && !inQuote {
-			if current != "" {
-				parts = append(parts, current)
-				current = ""
-			}
-		} else {
-			current += string(ch)
-		}
-	}
-
-	if current != "" {
-		parts = append(parts, current)
-	}
-
-	return parts
-}
-
 // getANTLRTree extracts the ANTLR parse tree from the advisor context.
 // The AST must be pre-parsed and passed via checkCtx.AST (e.g., in tests or by the framework).
 // This enforces proper AST caching and makes any missing cache obvious.
@@ -71,4 +42,43 @@ func getANTLRTree(checkCtx advisor.Context) (*pg.ParseResult, error) {
 	}
 
 	return parseResult, nil
+}
+
+// extractTableName extracts the table name (last component) from a qualified name.
+// Handles both "schema.table" and "table" formats.
+func extractTableName(ctx parser.IQualified_nameContext) string {
+	parts := pg.NormalizePostgreSQLQualifiedName(ctx)
+	if len(parts) == 0 {
+		return ""
+	}
+	return parts[len(parts)-1]
+}
+
+// extractIntegerConstant extracts an integer value from an Iconst context.
+// Returns the integer value and an error if parsing fails.
+func extractIntegerConstant(ctx parser.IIconstContext) (int, error) {
+	if ctx == nil {
+		return 0, errors.New("iconst context is nil")
+	}
+	text := ctx.GetText()
+	val, err := strconv.Atoi(text)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to parse integer constant: %s", text)
+	}
+	return val, nil
+}
+
+// extractStringConstant extracts a string value from an Sconst context.
+// Removes surrounding quotes and handles basic escape sequences.
+func extractStringConstant(ctx parser.ISconstContext) string {
+	if ctx == nil {
+		return ""
+	}
+
+	text := ctx.GetText()
+	// Remove surrounding single quotes
+	if len(text) >= 2 && text[0] == '\'' && text[len(text)-1] == '\'' {
+		return text[1 : len(text)-1]
+	}
+	return text
 }

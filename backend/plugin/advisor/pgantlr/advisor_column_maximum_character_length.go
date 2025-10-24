@@ -3,7 +3,6 @@ package pgantlr
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"github.com/antlr4-go/antlr/v4"
 
@@ -11,6 +10,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -80,7 +80,7 @@ func (c *columnMaximumCharacterLengthChecker) EnterCreatestmt(ctx *parser.Create
 			if elem.ColumnDef() != nil {
 				colDef := elem.ColumnDef()
 				if colDef.Colid() != nil && colDef.Typename() != nil {
-					columnName := colDef.Colid().GetText()
+					columnName := pg.NormalizePostgreSQLColid(colDef.Colid())
 					charLength := c.getCharLength(colDef.Typename())
 					if charLength > c.maximum {
 						c.addAdvice(tableName, columnName, ctx.GetStart().GetLine())
@@ -101,8 +101,7 @@ func (c *columnMaximumCharacterLengthChecker) EnterAltertablestmt(ctx *parser.Al
 		return
 	}
 
-	text := ctx.Relation_expr().Qualified_name().GetText()
-	parts := splitIdentifier(text)
+	parts := pg.NormalizePostgreSQLQualifiedName(ctx.Relation_expr().Qualified_name())
 	if len(parts) == 0 {
 		return
 	}
@@ -123,7 +122,7 @@ func (c *columnMaximumCharacterLengthChecker) EnterAltertablestmt(ctx *parser.Al
 			if cmd.ADD_P() != nil && cmd.ColumnDef() != nil {
 				colDef := cmd.ColumnDef()
 				if colDef.Colid() != nil && colDef.Typename() != nil {
-					columnName := colDef.Colid().GetText()
+					columnName := pg.NormalizePostgreSQLColid(colDef.Colid())
 					charLength := c.getCharLength(colDef.Typename())
 					if charLength > c.maximum {
 						c.addAdvice(tableName, columnName, ctx.GetStart().GetLine())
@@ -137,7 +136,7 @@ func (c *columnMaximumCharacterLengthChecker) EnterAltertablestmt(ctx *parser.Al
 				// Get column name
 				allColids := cmd.AllColid()
 				if len(allColids) > 0 {
-					columnName := allColids[0].GetText()
+					columnName := pg.NormalizePostgreSQLColid(allColids[0])
 					charLength := c.getCharLength(cmd.Typename())
 					if charLength > c.maximum {
 						c.addAdvice(tableName, columnName, ctx.GetStart().GetLine())
@@ -154,8 +153,7 @@ func (*columnMaximumCharacterLengthChecker) extractTableName(qualifiedNames []pa
 		return ""
 	}
 
-	text := qualifiedNames[0].GetText()
-	parts := splitIdentifier(text)
+	parts := pg.NormalizePostgreSQLQualifiedName(qualifiedNames[0])
 	if len(parts) == 0 {
 		return ""
 	}
@@ -204,9 +202,9 @@ func (*columnMaximumCharacterLengthChecker) getCharLength(typename parser.ITypen
 
 	// Now check if it has a size
 	if character.Iconst() != nil {
-		sizeText := character.Iconst().GetText()
-		size, err := strconv.Atoi(sizeText)
+		size, err := extractIntegerConstant(character.Iconst())
 		if err != nil {
+			// If parsing fails, return 0 (no length limit to check)
 			return 0
 		}
 		return size

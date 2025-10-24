@@ -12,6 +12,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -89,7 +90,7 @@ func (c *columnRequirementChecker) EnterCreatestmt(ctx *parser.CreatestmtContext
 		return
 	}
 
-	tableName := c.extractTableName(qualifiedNames[0])
+	tableName := extractTableName(qualifiedNames[0])
 	if tableName == "" {
 		return
 	}
@@ -99,7 +100,7 @@ func (c *columnRequirementChecker) EnterCreatestmt(ctx *parser.CreatestmtContext
 		allElements := ctx.Opttableelementlist().Tableelementlist().AllTableelement()
 		for _, elem := range allElements {
 			if elem.ColumnDef() != nil && elem.ColumnDef().Colid() != nil {
-				columnName := elem.ColumnDef().Colid().GetText()
+				columnName := pg.NormalizePostgreSQLColid(elem.ColumnDef().Colid())
 				delete(c.requiredColumns, columnName)
 			}
 		}
@@ -135,7 +136,7 @@ func (c *columnRequirementChecker) EnterAltertablestmt(ctx *parser.Altertablestm
 		return
 	}
 
-	tableName := c.extractTableName(ctx.Relation_expr().Qualified_name())
+	tableName := extractTableName(ctx.Relation_expr().Qualified_name())
 	if tableName == "" {
 		return
 	}
@@ -148,7 +149,7 @@ func (c *columnRequirementChecker) EnterAltertablestmt(ctx *parser.Altertablestm
 			if cmd.DROP() != nil {
 				allColids := cmd.AllColid()
 				if len(allColids) > 0 {
-					columnName := allColids[0].GetText()
+					columnName := pg.NormalizePostgreSQLColid(allColids[0])
 					// Check if this is a required column (O(1) lookup)
 					if c.requiredColumnsMap[columnName] {
 						c.adviceList = append(c.adviceList, &storepb.Advice{
@@ -181,7 +182,7 @@ func (c *columnRequirementChecker) EnterRenamestmt(ctx *parser.RenamestmtContext
 	// Get table name
 	var tableName string
 	if ctx.Relation_expr() != nil && ctx.Relation_expr().Qualified_name() != nil {
-		tableName = c.extractTableName(ctx.Relation_expr().Qualified_name())
+		tableName = extractTableName(ctx.Relation_expr().Qualified_name())
 	}
 	if tableName == "" {
 		return
@@ -193,8 +194,8 @@ func (c *columnRequirementChecker) EnterRenamestmt(ctx *parser.RenamestmtContext
 		return
 	}
 
-	oldName := allNames[0].GetText()
-	newName := allNames[1].GetText()
+	oldName := pg.NormalizePostgreSQLName(allNames[0])
+	newName := pg.NormalizePostgreSQLName(allNames[1])
 
 	// Check if renaming away from a required column name (O(1) lookup)
 	if c.requiredColumnsMap[oldName] && oldName != newName {
@@ -209,19 +210,4 @@ func (c *columnRequirementChecker) EnterRenamestmt(ctx *parser.RenamestmtContext
 			},
 		})
 	}
-}
-
-func (*columnRequirementChecker) extractTableName(qualifiedNameCtx parser.IQualified_nameContext) string {
-	if qualifiedNameCtx == nil {
-		return ""
-	}
-
-	text := qualifiedNameCtx.GetText()
-	parts := splitIdentifier(text)
-	if len(parts) == 0 {
-		return ""
-	}
-
-	// Return the last part (table name)
-	return parts[len(parts)-1]
 }

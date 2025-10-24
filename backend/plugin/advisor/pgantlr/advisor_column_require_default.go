@@ -3,6 +3,7 @@ package pgantlr
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 
@@ -10,6 +11,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -65,7 +67,7 @@ func (c *columnRequireDefaultChecker) EnterCreatestmt(ctx *parser.CreatestmtCont
 		return
 	}
 
-	tableName := c.extractTableName(qualifiedNames[0])
+	tableName := extractTableName(qualifiedNames[0])
 	if tableName == "" {
 		return
 	}
@@ -77,7 +79,7 @@ func (c *columnRequireDefaultChecker) EnterCreatestmt(ctx *parser.CreatestmtCont
 			if elem.ColumnDef() != nil {
 				colDef := elem.ColumnDef()
 				if colDef.Colid() != nil {
-					columnName := colDef.Colid().GetText()
+					columnName := pg.NormalizePostgreSQLColid(colDef.Colid())
 					// Check if column has DEFAULT
 					if !c.hasDefault(colDef) {
 						c.adviceList = append(c.adviceList, &storepb.Advice{
@@ -106,7 +108,7 @@ func (c *columnRequireDefaultChecker) EnterAltertablestmt(ctx *parser.Altertable
 		return
 	}
 
-	tableName := c.extractTableName(ctx.Relation_expr().Qualified_name())
+	tableName := extractTableName(ctx.Relation_expr().Qualified_name())
 	if tableName == "" {
 		return
 	}
@@ -119,7 +121,7 @@ func (c *columnRequireDefaultChecker) EnterAltertablestmt(ctx *parser.Altertable
 			if cmd.ADD_P() != nil && cmd.ColumnDef() != nil {
 				colDef := cmd.ColumnDef()
 				if colDef.Colid() != nil {
-					columnName := colDef.Colid().GetText()
+					columnName := pg.NormalizePostgreSQLColid(colDef.Colid())
 					// Check if column has DEFAULT
 					if !c.hasDefault(colDef) {
 						c.adviceList = append(c.adviceList, &storepb.Advice{
@@ -139,28 +141,13 @@ func (c *columnRequireDefaultChecker) EnterAltertablestmt(ctx *parser.Altertable
 	}
 }
 
-func (*columnRequireDefaultChecker) extractTableName(qualifiedNameCtx parser.IQualified_nameContext) string {
-	if qualifiedNameCtx == nil {
-		return ""
-	}
-
-	text := qualifiedNameCtx.GetText()
-	parts := splitIdentifier(text)
-	if len(parts) == 0 {
-		return ""
-	}
-
-	// Return the last part (table name)
-	return parts[len(parts)-1]
-}
-
 // hasDefault checks if a column definition has a DEFAULT clause
 // or uses a type that implicitly includes a default (like serial, bigserial, smallserial)
 func (*columnRequireDefaultChecker) hasDefault(colDef parser.IColumnDefContext) bool {
 	// Check if the type is serial/bigserial/smallserial (which have implicit defaults)
 	if colDef.Typename() != nil && colDef.Typename().Simpletypename() != nil {
 		simpleType := colDef.Typename().Simpletypename()
-		typeText := simpleType.GetText()
+		typeText := strings.ToLower(simpleType.GetText())
 		// serial, bigserial, smallserial all have implicit DEFAULT nextval()
 		if typeText == "serial" || typeText == "bigserial" || typeText == "smallserial" {
 			return true

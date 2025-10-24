@@ -11,6 +11,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -87,7 +88,7 @@ func (c *columnDefaultDisallowVolatileChecker) EnterAltertablestmt(ctx *parser.A
 			if cmd.ADD_P() != nil && cmd.ColumnDef() != nil {
 				colDef := cmd.ColumnDef()
 				if colDef.Colid() != nil {
-					columnName := colDef.Colid().GetText()
+					columnName := pg.NormalizePostgreSQLColid(colDef.Colid())
 
 					// Check if this column has a volatile DEFAULT
 					if c.hasVolatileDefault(colDef) {
