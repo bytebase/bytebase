@@ -1697,8 +1697,6 @@ func TestGetDatabaseDefinitionSDLFormat_SerialColumnWithSequence(t *testing.T) {
 	result, err := GetDatabaseDefinition(ctx, metadata)
 	require.NoError(t, err)
 
-	t.Logf("Generated SDL:\n%s", result)
-
 	// The SDL should contain the table definition with serial type
 	require.Contains(t, result, `CREATE TABLE "public"."users"`)
 	require.Contains(t, result, `"id" serial`)
@@ -1808,11 +1806,6 @@ func TestGetMultiFileDatabaseDefinition_SerialColumnWithSequence(t *testing.T) {
 		fileMap[file.Name] = file.Content
 	}
 
-	t.Logf("Generated files:")
-	for name, content := range fileMap {
-		t.Logf("\n=== %s ===\n%s", name, content)
-	}
-
 	// Verify users table file exists and contains serial column
 	usersFile, ok := fileMap["schemas/public/tables/users.sql"]
 	require.True(t, ok, "users table file should exist")
@@ -1907,8 +1900,6 @@ func TestGetDatabaseDefinitionSDLFormat_MultipleSequencesClaimingOwnership(t *te
 
 	result, err := GetDatabaseDefinition(ctx, metadata)
 	require.NoError(t, err)
-
-	t.Logf("Generated SDL:\n%s", result)
 
 	expected := `CREATE SEQUENCE "public"."test_sequence2" AS integer START WITH 1 INCREMENT BY 1 MINVALUE 1 MAXVALUE 2147483647 NO CYCLE;
 
