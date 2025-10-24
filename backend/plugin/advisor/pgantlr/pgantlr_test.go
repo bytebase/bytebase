@@ -30,6 +30,7 @@ func TestPostgreSQLANTLRRules(t *testing.T) {
 		advisor.SchemaRuleStatementInsertDisallowOrderByRand, // Migrated from legacy
 		advisor.SchemaRuleStatementInsertMustSpecifyColumn,   // Migrated from legacy
 		advisor.SchemaRuleStatementInsertRowLimit,            // Migrated from legacy
+		advisor.SchemaRuleColumnNaming,                       // Migrated from legacy
 		// Add real rules here as you migrate them from legacy pg/ folder
 		// Example:
 		// advisor.SchemaRuleStatementDisallowCommit,
