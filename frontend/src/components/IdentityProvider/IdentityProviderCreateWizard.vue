@@ -452,6 +452,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBAttention, BBTextField } from "@/bbkit";
 import { FeatureBadge } from "@/components/FeatureGuard";
+import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";

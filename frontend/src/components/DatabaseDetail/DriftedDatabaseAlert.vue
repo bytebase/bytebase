@@ -56,6 +56,7 @@ import { NAlert, NButton } from "naive-ui";
 import { reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBModal } from "@/bbkit";
+import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { DiffEditor } from "@/components/MonacoEditor";
 import {
   pushNotification,
