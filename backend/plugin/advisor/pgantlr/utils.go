@@ -2,6 +2,7 @@ package pgantlr
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/postgresql"
@@ -54,6 +55,16 @@ func extractTableName(ctx parser.IQualified_nameContext) string {
 	return parts[len(parts)-1]
 }
 
+// extractSchemaName extracts the schema name (first component) from a qualified name.
+// Returns empty string if only table name is provided (implying default schema).
+func extractSchemaName(ctx parser.IQualified_nameContext) string {
+	parts := pg.NormalizePostgreSQLQualifiedName(ctx)
+	if len(parts) <= 1 {
+		return ""
+	}
+	return parts[0]
+}
+
 // extractIntegerConstant extracts an integer value from an Iconst context.
 // Returns the integer value and an error if parsing fails.
 func extractIntegerConstant(ctx parser.IIconstContext) (int, error) {
@@ -81,4 +92,29 @@ func extractStringConstant(ctx parser.ISconstContext) string {
 		return text[1 : len(text)-1]
 	}
 	return text
+}
+
+// extractStatementText extracts a statement from the full statements text using line numbers.
+// Handles multi-line statements by extracting all lines from startLine to endLine.
+func extractStatementText(statementsText string, startLine, endLine int) string {
+	lines := strings.Split(statementsText, "\n")
+	if startLine < 1 || startLine > len(lines) {
+		return ""
+	}
+
+	// Convert to 0-indexed
+	startIdx := startLine - 1
+	endIdx := endLine - 1
+
+	if endIdx >= len(lines) {
+		endIdx = len(lines) - 1
+	}
+
+	// Extract the lines for this statement
+	var stmtLines []string
+	for i := startIdx; i <= endIdx; i++ {
+		stmtLines = append(stmtLines, lines[i])
+	}
+
+	return strings.TrimSpace(strings.Join(stmtLines, " "))
 }
