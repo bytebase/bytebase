@@ -144,16 +144,24 @@ func (c *columnTypeDisallowListChecker) checkType(tableName, columnName string, 
 		return
 	}
 
-	// Get the type text and normalize to lowercase for comparison
-	typeText := strings.ToLower(typename.GetText())
+	// Get the type text
+	typeText := typename.GetText()
 
-	// Check if this type is in the disallow list
-	if c.typeRestriction[typeText] {
+	// Check if this type is equivalent to any type in the disallow list
+	var matchedDisallowedType string
+	for disallowedType := range c.typeRestriction {
+		if areTypesEquivalent(typeText, disallowedType) {
+			matchedDisallowedType = disallowedType
+			break
+		}
+	}
+
+	if matchedDisallowedType != "" {
 		c.adviceList = append(c.adviceList, &storepb.Advice{
 			Status:  c.level,
 			Code:    advisor.DisabledColumnType.Int32(),
 			Title:   c.title,
-			Content: fmt.Sprintf("Disallow column type %s but column %q.%q is", strings.ToUpper(typeText), tableName, columnName),
+			Content: fmt.Sprintf("Disallow column type %s but column %q.%q is", strings.ToUpper(matchedDisallowedType), tableName, columnName),
 			StartPosition: &storepb.Position{
 				Line:   int32(line),
 				Column: 0,

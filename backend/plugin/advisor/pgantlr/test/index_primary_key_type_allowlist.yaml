@@ -1,0 +1,33 @@
+- statement: CREATE TABLE t(a SERIAL PRIMARY KEY);
+  changeType: 1
+- statement: CREATE TABLE t(a BIGSERIAL, PRIMARY KEY(a));
+  changeType: 1
+- statement: |-
+    CREATE TABLE t(
+      a varchar(20) PRIMARY KEY
+    );
+  changeType: 1
+  want:
+    - status: 2
+      code: 803
+      title: index.primary-key-type-allowlist
+      content: The column "a" is one of the primary key, but its type "character varying(20)" is not in allowlist
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(
+      a varchar(20),
+      PRIMARY KEY(a)
+    );
+  changeType: 1
+  want:
+    - status: 2
+      code: 803
+      title: index.primary-key-type-allowlist
+      content: The column "a" is one of the primary key, but its type "character varying(20)" is not in allowlist
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

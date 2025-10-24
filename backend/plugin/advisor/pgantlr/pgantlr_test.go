@@ -11,6 +11,7 @@ func TestPostgreSQLANTLRRules(t *testing.T) {
 	antlrRules := []advisor.SQLReviewRuleType{
 		HelloWorldRule,                                  // Test advisor to verify framework works
 		advisor.BuiltinRulePriorBackupCheck,             // Migrated from legacy
+		advisor.SchemaRuleCharsetAllowlist,              // Migrated from legacy
 		advisor.SchemaRuleCollationAllowlist,            // Migrated from legacy
 		advisor.SchemaRuleColumnCommentConvention,       // Migrated from legacy
 		advisor.SchemaRuleColumnDefaultDisallowVolatile, // Migrated from legacy
@@ -20,6 +21,10 @@ func TestPostgreSQLANTLRRules(t *testing.T) {
 		advisor.SchemaRuleColumnRequireDefault,          // Migrated from legacy
 		advisor.SchemaRuleColumnTypeDisallowList,        // Migrated from legacy
 		advisor.SchemaRuleCommentLength,                 // Migrated from legacy
+		advisor.SchemaRuleCreateIndexConcurrently,       // Migrated from legacy
+		advisor.SchemaRuleIndexKeyNumberLimit,           // Migrated from legacy
+		advisor.SchemaRuleIndexNoDuplicateColumn,        // Migrated from legacy
+		advisor.SchemaRuleIndexPrimaryKeyTypeAllowlist,  // Migrated from legacy
 		advisor.SchemaRuleRequiredColumn,                // Migrated from legacy
 		// Add real rules here as you migrate them from legacy pg/ folder
 		// Example:
