@@ -18,6 +18,7 @@ func TestPostgreSQLANTLRRules(t *testing.T) {
 		advisor.SchemaRuleColumnMaximumCharacterLength,  // Migrated from legacy
 		advisor.SchemaRuleColumnNotNull,                 // Migrated from legacy
 		advisor.SchemaRuleColumnRequireDefault,          // Migrated from legacy
+		advisor.SchemaRuleColumnTypeDisallowList,        // Migrated from legacy
 		advisor.SchemaRuleRequiredColumn,                // Migrated from legacy
 		// Add real rules here as you migrate them from legacy pg/ folder
 		// Example:
