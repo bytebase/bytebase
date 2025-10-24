@@ -1,0 +1,26 @@
+- statement: comment on column public.name is 'is a column name'
+  changeType: 1
+- statement: comment on column public.name is 'is a  to long column name'
+  changeType: 1
+  want:
+    - status: 2
+      code: 1301
+      title: system.comment.length
+      content: The length of comment should be within 20 characters
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: comment on table public is 'is a table name'
+  changeType: 1
+- statement: comment on table public is 'is a  to long table name long long long long long long long'
+  changeType: 1
+  want:
+    - status: 2
+      code: 1301
+      title: system.comment.length
+      content: The length of comment should be within 20 characters
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
