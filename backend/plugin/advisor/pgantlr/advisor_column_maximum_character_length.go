@@ -3,7 +3,6 @@ package pgantlr
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"github.com/antlr4-go/antlr/v4"
 
@@ -202,9 +201,9 @@ func (*columnMaximumCharacterLengthChecker) getCharLength(typename parser.ITypen
 
 	// Now check if it has a size
 	if character.Iconst() != nil {
-		sizeText := character.Iconst().GetText()
-		size, err := strconv.Atoi(sizeText)
+		size, err := extractIntegerConstant(character.Iconst())
 		if err != nil {
+			// If parsing fails, return 0 (no length limit to check)
 			return 0
 		}
 		return size
