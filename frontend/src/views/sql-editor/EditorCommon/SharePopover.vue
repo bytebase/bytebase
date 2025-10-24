@@ -41,7 +41,7 @@
             @click="handleChangeAccess(option)"
           >
             <div class="access-content--prefix">
-              <div class="flex space-x-2 items-center">
+              <div class="flex gap-x-2 items-center">
                 <component :is="option.icon" class="h-5 w-5" />
                 <h2 class="text-md flex">
                   {{ option.label }}

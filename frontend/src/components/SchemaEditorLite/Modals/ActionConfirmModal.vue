@@ -8,7 +8,7 @@
     <div class="w-80 mb-6">
       <p>{{ props.description }}</p>
     </div>
-    <div class="w-full flex items-center justify-end mt-2 gap-x-3">
+    <div class="w-full flex items-center justify-end mt-2 gap-x-2">
       <NButton v-bind="negativeButtonProps" @click="dismissModal">
         {{ $t("common.cancel") }}
       </NButton>

@@ -27,11 +27,11 @@
     <div class="execute-hint-content mt-4 flex justify-between">
       <div
         v-if="actions.issue && actions.admin"
-        class="flex justify-start items-center space-x-2"
+        class="flex justify-start items-center gap-x-2"
       >
         <AdminModeButton @enter="$emit('close')" />
       </div>
-      <div class="flex flex-1 justify-end items-center space-x-2">
+      <div class="flex flex-1 justify-end items-center gap-x-2">
         <NButton @click="handleClose">{{ $t("common.close") }}</NButton>
         <NButton
           v-if="actions.issue"

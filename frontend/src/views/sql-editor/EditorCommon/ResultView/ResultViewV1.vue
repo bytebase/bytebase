@@ -37,7 +37,7 @@
             <template #tab>
               <NTooltip>
                 <template #trigger>
-                  <div class="flex items-center space-x-2">
+                  <div class="flex items-center gap-x-2">
                     <span>{{ tabName(i) }}</span>
                     <Info
                       v-if="result.error"
