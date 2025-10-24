@@ -1125,7 +1125,7 @@ func (s *SQLService) SearchQueryHistories(ctx context.Context, req *connect.Requ
 	}
 	filterQ, err := store.GetListQueryHistoryFilter(request.Filter)
 	if err != nil {
-		return nil, err
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	find.FilterQ = filterQ
 

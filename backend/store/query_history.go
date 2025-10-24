@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"connectrpc.com/connect"
 	"github.com/google/cel-go/cel"
 	celast "github.com/google/cel-go/common/ast"
 	celoperators "github.com/google/cel-go/common/operators"
@@ -215,11 +214,11 @@ func GetListQueryHistoryFilter(filter string) (*qb.Query, error) {
 
 	e, err := cel.NewEnv()
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create cel env"))
+		return nil, errors.Errorf("failed to create cel env")
 	}
 	ast, iss := e.Parse(filter)
 	if iss != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String()))
+		return nil, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String())
 	}
 
 	var getFilter func(expr celast.Expr) (*qb.Query, error)
@@ -229,7 +228,7 @@ func GetListQueryHistoryFilter(filter string) (*qb.Query, error) {
 		case "project":
 			projectID, err := common.GetProjectID(value.(string))
 			if err != nil {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid project filter %q", value))
+				return nil, errors.Errorf("invalid project filter %q", value)
 			}
 			return qb.Q().Space("query_history.project_id = ?", projectID), nil
 		case "database":
@@ -242,7 +241,7 @@ func GetListQueryHistoryFilter(filter string) (*qb.Query, error) {
 		case "statement":
 			return qb.Q().Space("query_history.statement LIKE ?", value), nil
 		default:
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q", variable))
+			return nil, errors.Errorf("unsupport variable %q", variable)
 		}
 	}
 
@@ -277,22 +276,22 @@ func GetListQueryHistoryFilter(filter string) (*qb.Query, error) {
 				variable := expr.AsCall().Target().AsIdent()
 				args := expr.AsCall().Args()
 				if len(args) != 1 {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`invalid args for %q`, variable))
+					return nil, errors.Errorf(`invalid args for %q`, variable)
 				}
 				value := args[0].AsLiteral().Value()
 				if variable != "statement" {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`only "statement" support %q operator, but found %q`, celoverloads.Matches, variable))
+					return nil, errors.Errorf(`only "statement" support %q operator, but found %q`, celoverloads.Matches, variable)
 				}
 				strValue, ok := value.(string)
 				if !ok {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("expect string, got %T, hint: filter literals should be string", value))
+					return nil, errors.Errorf("expect string, got %T, hint: filter literals should be string", value)
 				}
 				return parseToSQL("statement", "%"+strValue+"%")
 			default:
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unexpected function %v", functionName))
+				return nil, errors.Errorf("unexpected function %v", functionName)
 			}
 		default:
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unexpected expr kind %v", expr.Kind()))
+			return nil, errors.Errorf("unexpected expr kind %v", expr.Kind())
 		}
 	}
 
