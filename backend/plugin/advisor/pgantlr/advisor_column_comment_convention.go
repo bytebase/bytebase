@@ -165,7 +165,7 @@ func (c *columnCommentConventionChecker) EnterCommentstmt(ctx *parser.Commentstm
 	// Extract comment text
 	comment := ""
 	if ctx.Comment_text() != nil && ctx.Comment_text().Sconst() != nil {
-		comment = c.extractStringConstant(ctx.Comment_text().Sconst())
+		comment = extractStringConstant(ctx.Comment_text().Sconst())
 	}
 
 	c.comments = append(c.comments, commentInfo{
@@ -184,19 +184,6 @@ func (*columnCommentConventionChecker) extractTableName(qualifiedNames []parser.
 
 	// Return the last part (table name) from qualified name
 	return extractTableName(qualifiedNames[0])
-}
-
-func (*columnCommentConventionChecker) extractStringConstant(sconst parser.ISconstContext) string {
-	if sconst == nil {
-		return ""
-	}
-
-	// Get the text and remove surrounding quotes
-	text := sconst.GetText()
-	if len(text) >= 2 && text[0] == '\'' && text[len(text)-1] == '\'' {
-		return text[1 : len(text)-1]
-	}
-	return text
 }
 
 func (c *columnCommentConventionChecker) generateAdvice() []*storepb.Advice {
