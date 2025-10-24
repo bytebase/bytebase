@@ -1,7 +1,7 @@
 <template>
   <template v-if="isCreating">
     <div class="w-full flex justify-between items-center" v-bind="$attrs">
-      <div class="w-full flex justify-end items-center gap-x-3">
+      <div class="w-full flex justify-end items-center gap-x-2">
         <NButton
           v-if="allowCancel"
           quaternary

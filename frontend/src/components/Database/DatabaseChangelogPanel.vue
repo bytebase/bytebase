@@ -12,7 +12,7 @@
           <ChangeTypeSelect v-model:change-type="state.selectedChangeType" />
         </div>
       </div>
-      <div class="flex flex-row justify-end items-center grow space-x-2">
+      <div class="flex flex-row justify-end items-center grow gap-x-2">
         <BBSpin
           v-if="state.loading"
           :size="20"

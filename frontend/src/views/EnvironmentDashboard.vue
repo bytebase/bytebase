@@ -22,7 +22,7 @@
         />
       </NTabPane>
       <template #suffix>
-        <div class="flex items-center justify-end space-x-2 px-2 pb-1">
+        <div class="flex items-center justify-end gap-x-2 px-2 pb-1">
           <NButton
             v-if="
               hasWorkspacePermissionV2('bb.settings.get') &&

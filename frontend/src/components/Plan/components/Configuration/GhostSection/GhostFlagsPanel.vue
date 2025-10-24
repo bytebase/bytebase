@@ -17,7 +17,7 @@
         </div>
       </template>
       <template #footer>
-        <div class="flex flex-row justify-end gap-x-3">
+        <div class="flex flex-row justify-end gap-x-2">
           <NButton @click="close">{{ $t("common.cancel") }}</NButton>
           <NTooltip :disabled="errors.length === 0">
             <template #trigger>

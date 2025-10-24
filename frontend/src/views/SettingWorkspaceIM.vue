@@ -27,7 +27,7 @@
         </div>
       </NTabPane>
     </NTabs>
-    <div class="flex items-center justify-end space-x-2 pt-2">
+    <div class="flex items-center justify-end gap-x-2 pt-2">
       <NButton
         v-if="dataChanged"
         :disabled="state.loading"

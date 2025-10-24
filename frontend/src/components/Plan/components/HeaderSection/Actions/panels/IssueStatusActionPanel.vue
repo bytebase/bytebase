@@ -39,7 +39,7 @@
         class="w-full flex flex-row justify-between items-center gap-2"
       >
         <div></div>
-        <div class="flex justify-end gap-x-3">
+        <div class="flex justify-end gap-x-2">
           <NButton quaternary @click="$emit('close')">
             {{ $t("common.close") }}
           </NButton>
