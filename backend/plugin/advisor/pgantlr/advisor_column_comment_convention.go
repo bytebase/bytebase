@@ -96,7 +96,7 @@ func (c *columnCommentConventionChecker) EnterCreatestmt(ctx *parser.CreatestmtC
 		allElements := ctx.Opttableelementlist().Tableelementlist().AllTableelement()
 		for _, elem := range allElements {
 			if elem.ColumnDef() != nil && elem.ColumnDef().Colid() != nil {
-				columnName := elem.ColumnDef().Colid().GetText()
+				columnName := normalizeColid(elem.ColumnDef().Colid())
 				c.columns = append(c.columns, columnInfo{
 					schema: "public", // Default schema
 					table:  tableName,
@@ -128,7 +128,7 @@ func (c *columnCommentConventionChecker) EnterAltertablestmt(ctx *parser.Alterta
 		for _, cmd := range allCmds {
 			// ADD COLUMN
 			if cmd.ADD_P() != nil && cmd.ColumnDef() != nil && cmd.ColumnDef().Colid() != nil {
-				columnName := cmd.ColumnDef().Colid().GetText()
+				columnName := normalizeColid(cmd.ColumnDef().Colid())
 				c.columns = append(c.columns, columnInfo{
 					schema: "public", // Default schema
 					table:  tableName,

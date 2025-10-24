@@ -99,7 +99,7 @@ func (c *columnRequirementChecker) EnterCreatestmt(ctx *parser.CreatestmtContext
 		allElements := ctx.Opttableelementlist().Tableelementlist().AllTableelement()
 		for _, elem := range allElements {
 			if elem.ColumnDef() != nil && elem.ColumnDef().Colid() != nil {
-				columnName := elem.ColumnDef().Colid().GetText()
+				columnName := normalizeColid(elem.ColumnDef().Colid())
 				delete(c.requiredColumns, columnName)
 			}
 		}
@@ -148,7 +148,7 @@ func (c *columnRequirementChecker) EnterAltertablestmt(ctx *parser.Altertablestm
 			if cmd.DROP() != nil {
 				allColids := cmd.AllColid()
 				if len(allColids) > 0 {
-					columnName := allColids[0].GetText()
+					columnName := normalizeColid(allColids[0])
 					// Check if this is a required column (O(1) lookup)
 					if c.requiredColumnsMap[columnName] {
 						c.adviceList = append(c.adviceList, &storepb.Advice{
@@ -193,8 +193,8 @@ func (c *columnRequirementChecker) EnterRenamestmt(ctx *parser.RenamestmtContext
 		return
 	}
 
-	oldName := allNames[0].GetText()
-	newName := allNames[1].GetText()
+	oldName := normalizeName(allNames[0])
+	newName := normalizeName(allNames[1])
 
 	// Check if renaming away from a required column name (O(1) lookup)
 	if c.requiredColumnsMap[oldName] && oldName != newName {

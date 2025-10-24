@@ -80,7 +80,7 @@ func (c *columnMaximumCharacterLengthChecker) EnterCreatestmt(ctx *parser.Create
 			if elem.ColumnDef() != nil {
 				colDef := elem.ColumnDef()
 				if colDef.Colid() != nil && colDef.Typename() != nil {
-					columnName := colDef.Colid().GetText()
+					columnName := normalizeColid(colDef.Colid())
 					charLength := c.getCharLength(colDef.Typename())
 					if charLength > c.maximum {
 						c.addAdvice(tableName, columnName, ctx.GetStart().GetLine())
@@ -123,7 +123,7 @@ func (c *columnMaximumCharacterLengthChecker) EnterAltertablestmt(ctx *parser.Al
 			if cmd.ADD_P() != nil && cmd.ColumnDef() != nil {
 				colDef := cmd.ColumnDef()
 				if colDef.Colid() != nil && colDef.Typename() != nil {
-					columnName := colDef.Colid().GetText()
+					columnName := normalizeColid(colDef.Colid())
 					charLength := c.getCharLength(colDef.Typename())
 					if charLength > c.maximum {
 						c.addAdvice(tableName, columnName, ctx.GetStart().GetLine())
@@ -137,7 +137,7 @@ func (c *columnMaximumCharacterLengthChecker) EnterAltertablestmt(ctx *parser.Al
 				// Get column name
 				allColids := cmd.AllColid()
 				if len(allColids) > 0 {
-					columnName := allColids[0].GetText()
+					columnName := normalizeColid(allColids[0])
 					charLength := c.getCharLength(cmd.Typename())
 					if charLength > c.maximum {
 						c.addAdvice(tableName, columnName, ctx.GetStart().GetLine())

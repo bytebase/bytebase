@@ -77,7 +77,7 @@ func (c *columnRequireDefaultChecker) EnterCreatestmt(ctx *parser.CreatestmtCont
 			if elem.ColumnDef() != nil {
 				colDef := elem.ColumnDef()
 				if colDef.Colid() != nil {
-					columnName := colDef.Colid().GetText()
+					columnName := normalizeColid(colDef.Colid())
 					// Check if column has DEFAULT
 					if !c.hasDefault(colDef) {
 						c.adviceList = append(c.adviceList, &storepb.Advice{
@@ -119,7 +119,7 @@ func (c *columnRequireDefaultChecker) EnterAltertablestmt(ctx *parser.Altertable
 			if cmd.ADD_P() != nil && cmd.ColumnDef() != nil {
 				colDef := cmd.ColumnDef()
 				if colDef.Colid() != nil {
-					columnName := colDef.Colid().GetText()
+					columnName := normalizeColid(colDef.Colid())
 					// Check if column has DEFAULT
 					if !c.hasDefault(colDef) {
 						c.adviceList = append(c.adviceList, &storepb.Advice{

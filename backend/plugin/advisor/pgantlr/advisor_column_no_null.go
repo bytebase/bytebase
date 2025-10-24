@@ -93,7 +93,7 @@ func (c *columnNoNullChecker) EnterCreatestmt(ctx *parser.CreatestmtContext) {
 			if elem.ColumnDef() != nil {
 				colDef := elem.ColumnDef()
 				if colDef.Colid() != nil {
-					columnName := colDef.Colid().GetText()
+					columnName := normalizeColid(colDef.Colid())
 					// Add column as nullable by default
 					c.addColumn("public", tableName, columnName, elem.GetStart().GetLine())
 
@@ -129,7 +129,7 @@ func (c *columnNoNullChecker) EnterAltertablestmt(ctx *parser.AltertablestmtCont
 			if cmd.ADD_P() != nil && cmd.ColumnDef() != nil {
 				colDef := cmd.ColumnDef()
 				if colDef.Colid() != nil {
-					columnName := colDef.Colid().GetText()
+					columnName := normalizeColid(colDef.Colid())
 					c.addColumn("public", tableName, columnName, ctx.GetStart().GetLine())
 					c.removeColumnByColConstraints("public", tableName, colDef)
 				}
@@ -139,7 +139,7 @@ func (c *columnNoNullChecker) EnterAltertablestmt(ctx *parser.AltertablestmtCont
 			if cmd.ALTER() != nil && cmd.SET() != nil && cmd.NOT() != nil && cmd.NULL_P() != nil {
 				allColids := cmd.AllColid()
 				if len(allColids) > 0 {
-					columnName := allColids[0].GetText()
+					columnName := normalizeColid(allColids[0])
 					c.removeColumn("public", tableName, columnName)
 				}
 			}
@@ -148,7 +148,7 @@ func (c *columnNoNullChecker) EnterAltertablestmt(ctx *parser.AltertablestmtCont
 			if cmd.ALTER() != nil && cmd.DROP() != nil && cmd.NOT() != nil && cmd.NULL_P() != nil {
 				allColids := cmd.AllColid()
 				if len(allColids) > 0 {
-					columnName := allColids[0].GetText()
+					columnName := normalizeColid(allColids[0])
 					c.addColumn("public", tableName, columnName, ctx.GetStart().GetLine())
 				}
 			}
@@ -194,7 +194,7 @@ func (c *columnNoNullChecker) removeColumnByColConstraints(schema, table string,
 		return
 	}
 
-	columnName := colDef.Colid().GetText()
+	columnName := normalizeColid(colDef.Colid())
 	allConstraints := colDef.Colquallist().AllColconstraint()
 	for _, constraint := range allConstraints {
 		if constraint.Colconstraintelem() == nil {
@@ -229,7 +229,7 @@ func (c *columnNoNullChecker) removeColumnByTableConstraint(schema, table string
 		allColumnElems := elem.Columnlist().AllColumnElem()
 		for _, columnElem := range allColumnElems {
 			if columnElem.Colid() != nil {
-				c.removeColumn(schema, table, columnElem.Colid().GetText())
+				c.removeColumn(schema, table, normalizeColid(columnElem.Colid()))
 			}
 		}
 		return
@@ -239,7 +239,7 @@ func (c *columnNoNullChecker) removeColumnByTableConstraint(schema, table string
 	if elem.PRIMARY() != nil && elem.KEY() != nil && elem.Existingindex() != nil {
 		existingIndex := elem.Existingindex()
 		if existingIndex.Name() != nil {
-			indexName := existingIndex.Name().GetText()
+			indexName := normalizeName(existingIndex.Name())
 			// Try to find index in catalog
 			if c.catalog != nil {
 				_, index := c.catalog.Origin.FindIndex(&catalog.IndexFind{
