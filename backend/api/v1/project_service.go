@@ -11,8 +11,6 @@ import (
 	"connectrpc.com/connect"
 	"github.com/google/cel-go/cel"
 	celast "github.com/google/cel-go/common/ast"
-	celoperators "github.com/google/cel-go/common/operators"
-	celoverloads "github.com/google/cel-go/common/overloads"
 	"github.com/gosimple/slug"
 	"github.com/pkg/errors"
 	"google.golang.org/genproto/googleapis/type/expr"
@@ -83,11 +81,11 @@ func (s *ProjectService) ListProjects(ctx context.Context, req *connect.Request[
 		Limit:       &limitPlusOne,
 		Offset:      &offset.offset,
 	}
-	filter, err := getListProjectFilter(req.Msg.Filter)
+	filterQ, err := store.GetListProjectFilter(req.Msg.Filter)
 	if err != nil {
-		return nil, err
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	find.Filter = filter
+	find.FilterQ = filterQ
 	projects, err := s.store.ListProjectV2(ctx, find)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
@@ -108,113 +106,6 @@ func (s *ProjectService) ListProjects(ctx context.Context, req *connect.Request[
 		response.Projects = append(response.Projects, convertToProject(project))
 	}
 	return connect.NewResponse(response), nil
-}
-
-func getListProjectFilter(filter string) (*store.ListResourceFilter, error) {
-	if filter == "" {
-		return nil, nil
-	}
-	e, err := cel.NewEnv()
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create cel env"))
-	}
-	ast, iss := e.Parse(filter)
-	if iss != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String()))
-	}
-
-	var getFilter func(expr celast.Expr) (string, error)
-	var positionalArgs []any
-
-	parseToSQL := func(variable, value any) (string, error) {
-		switch variable {
-		case "name":
-			positionalArgs = append(positionalArgs, value.(string))
-			return fmt.Sprintf("project.name = $%d", len(positionalArgs)), nil
-		case "resource_id":
-			positionalArgs = append(positionalArgs, value.(string))
-			return fmt.Sprintf("project.resource_id = $%d", len(positionalArgs)), nil
-		case "exclude_default":
-			if excludeDefault, ok := value.(bool); excludeDefault && ok {
-				positionalArgs = append(positionalArgs, common.DefaultProjectID)
-				return fmt.Sprintf("project.resource_id != $%d", len(positionalArgs)), nil
-			}
-			return "TRUE", nil
-		case "state":
-			v1State, ok := v1pb.State_value[value.(string)]
-			if !ok {
-				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid state filter %q", value))
-			}
-			positionalArgs = append(positionalArgs, v1pb.State(v1State) == v1pb.State_DELETED)
-			return fmt.Sprintf("project.deleted = $%d", len(positionalArgs)), nil
-		default:
-			// Check if it's a label filter (e.g., "labels.environment" == "production")
-			varStr, ok := variable.(string)
-			if !ok {
-				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q", variable))
-			}
-			if labelKey, ok := strings.CutPrefix(varStr, "labels."); ok {
-				return parseToLabelFilterSQL("project.setting", labelKey, value)
-			}
-			return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q", variable))
-		}
-	}
-
-	getFilter = func(expr celast.Expr) (string, error) {
-		switch expr.Kind() {
-		case celast.CallKind:
-			functionName := expr.AsCall().FunctionName()
-			switch functionName {
-			case celoperators.LogicalOr:
-				return getSubConditionFromExpr(expr, getFilter, "OR")
-			case celoperators.LogicalAnd:
-				return getSubConditionFromExpr(expr, getFilter, "AND")
-			case celoperators.Equals:
-				variable, value := getVariableAndValueFromExpr(expr)
-				return parseToSQL(variable, value)
-			case celoverloads.Matches:
-				variable := expr.AsCall().Target().AsIdent()
-				args := expr.AsCall().Args()
-				if len(args) != 1 {
-					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`invalid args for %q`, variable))
-				}
-				value := args[0].AsLiteral().Value()
-				strValue, ok := value.(string)
-				if !ok {
-					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("expect string, got %T, hint: filter literals should be string", value))
-				}
-
-				switch variable {
-				case "name":
-					return "LOWER(project.name) LIKE '%" + strings.ToLower(strValue) + "%'", nil
-				case "resource_id":
-					return "LOWER(project.resource_id) LIKE '%" + strings.ToLower(strValue) + "%'", nil
-				default:
-					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q", variable))
-				}
-			case celoperators.In:
-				variable, value := getVariableAndValueFromExpr(expr)
-				if labelKey, ok := strings.CutPrefix(variable, "labels."); ok {
-					return parseToLabelFilterSQL("project.setting", labelKey, value)
-				}
-				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unexpected %v operator for %v", functionName, variable))
-			default:
-				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unexpected function %v", functionName))
-			}
-		default:
-			return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unexpected expr kind %v", expr.Kind()))
-		}
-	}
-
-	where, err := getFilter(ast.NativeRep().Expr())
-	if err != nil {
-		return nil, err
-	}
-
-	return &store.ListResourceFilter{
-		Args:  positionalArgs,
-		Where: "(" + where + ")",
-	}, nil
 }
 
 // SearchProjects searches all projects on which the user has bb.projects.get permission.
@@ -239,11 +130,11 @@ func (s *ProjectService) SearchProjects(ctx context.Context, req *connect.Reques
 		Limit:       &limitPlusOne,
 		Offset:      &offset.offset,
 	}
-	filter, err := getListProjectFilter(req.Msg.Filter)
+	filterQ, err := store.GetListProjectFilter(req.Msg.Filter)
 	if err != nil {
-		return nil, err
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	find.Filter = filter
+	find.FilterQ = filterQ
 
 	projects, err := s.store.ListProjectV2(ctx, find)
 	if err != nil {

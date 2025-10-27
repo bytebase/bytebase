@@ -6,16 +6,13 @@ import (
 	"testing"
 	"time"
 
-	"connectrpc.com/connect"
 	"github.com/google/go-cmp/cmp"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/store"
@@ -369,73 +366,6 @@ func TestFindIamPolicyDeltas(t *testing.T) {
 		deltas := findIamPolicyDeltas(test.oldPolicy, test.newIamPolicy)
 		if !cmp.Equal(test.want, deltas, protocmp.Transform()) {
 			t.Fatalf("index %d\n%s", i, cmp.Diff(test.want, deltas, protocmp.Transform()))
-		}
-	}
-}
-
-func TestListProjectFilter(t *testing.T) {
-	testCases := []struct {
-		input string
-		want  *store.ListResourceFilter
-		error *connect.Error
-	}{
-		{
-			input: `title == "sample project"`,
-			error: connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q", "title")),
-		},
-		{
-			input: `name == "sample project"`,
-			want: &store.ListResourceFilter{
-				Where: `(project.name = $1)`,
-				Args:  []any{"sample project"},
-			},
-		},
-		{
-			input: `name.matches("Sample")`,
-			want: &store.ListResourceFilter{
-				Where: `(LOWER(project.name) LIKE '%sample%')`,
-			},
-		},
-		{
-			input: `resource_id == "sample-project"`,
-			want: &store.ListResourceFilter{
-				Where: `(project.resource_id = $1)`,
-				Args:  []any{"sample-project"},
-			},
-		},
-		{
-			input: `resource_id.matches("sample")`,
-			want: &store.ListResourceFilter{
-				Where: `(LOWER(project.resource_id) LIKE '%sample%')`,
-			},
-		},
-		{
-			input: `exclude_default == true`,
-			want: &store.ListResourceFilter{
-				Where: `(project.resource_id != $1)`,
-				Args:  []any{common.DefaultProjectID},
-			},
-		},
-		{
-			input: `(name.matches("sample") || resource_id.matches("Sample")) && exclude_default == true`,
-			want: &store.ListResourceFilter{
-				Where: `(((LOWER(project.name) LIKE '%sample%') OR (LOWER(project.resource_id) LIKE '%sample%')) AND (project.resource_id != $1))`,
-				Args:  []any{common.DefaultProjectID},
-			},
-		},
-	}
-
-	for _, tc := range testCases {
-		filter, err := getListProjectFilter(tc.input)
-		if tc.error != nil {
-			require.Error(t, err)
-			connectErr := new(connect.Error)
-			require.True(t, errors.As(err, &connectErr))
-			require.Equal(t, tc.error.Message(), connectErr.Message())
-			require.Equal(t, tc.error.Code(), connectErr.Code())
-		} else {
-			require.NoError(t, err)
-			require.Equal(t, tc.want.Where, filter.Where)
 		}
 	}
 }
