@@ -1,0 +1,15 @@
+- statement: alter table tech_book alter column name set not null;
+  changeType: 1
+  want:
+    - status: 2
+      code: 212
+      title: statement.disallow-add-not-null
+      content: Setting NOT NULL will block reads and writes. You can use CHECK ("name" IS NOT NULL) instead
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    alter table tech_book add constraint check_name_not_null check(name IS NOT NULL) NOT VALID;
+    alter table tech_book validate constraint check_name_not_null;
+  changeType: 1

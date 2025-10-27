@@ -44,6 +44,7 @@ func TestPostgreSQLANTLRRules(t *testing.T) {
 		advisor.SchemaRuleStatementAddCheckNotValid,          // Migrated from legacy
 		advisor.SchemaRuleStatementAffectedRowLimit,          // Migrated from legacy
 		advisor.SchemaRuleStatementDisallowAddColumnWithDefault, // Migrated from legacy
+		advisor.SchemaRuleStatementDisallowAddNotNull,        // Migrated from legacy
 		// advisor.SchemaRuleTableRequirePK,                     // WIP - needs debugging
 		// Add real rules here as you migrate them from legacy pg/ folder
 		// Example:
