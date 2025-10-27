@@ -70,15 +70,15 @@ func TestGetListUserFilter(t *testing.T) {
 		{
 			name:     "user_type in list",
 			filter:   `user_type in ["SERVICE_ACCOUNT", "USER"]`,
-			wantSQL:  "(principal.type IN ($1,$2))",
-			wantArgs: []any{storepb.PrincipalType_SERVICE_ACCOUNT.String(), storepb.PrincipalType_END_USER.String()},
+			wantSQL:  "(principal.type = ANY($1))",
+			wantArgs: []any{[]any{storepb.PrincipalType_SERVICE_ACCOUNT.String(), storepb.PrincipalType_END_USER.String()}},
 			wantErr:  false,
 		},
 		{
 			name:     "user_type not in list",
 			filter:   `!(user_type in ["SERVICE_ACCOUNT"])`,
-			wantSQL:  "(principal.type NOT IN ($1))",
-			wantArgs: []any{storepb.PrincipalType_SERVICE_ACCOUNT.String()},
+			wantSQL:  "((NOT (principal.type = ANY($1))))",
+			wantArgs: []any{[]any{storepb.PrincipalType_SERVICE_ACCOUNT.String()}},
 			wantErr:  false,
 		},
 		{
