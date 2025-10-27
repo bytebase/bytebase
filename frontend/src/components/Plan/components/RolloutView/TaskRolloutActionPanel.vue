@@ -501,7 +501,7 @@ const validationErrors = computed(() => {
   const errors: string[] = [];
 
   // Permission errors - always block rollout
-  if (!canRolloutTasks(eligibleTasks.value)) {
+  if (!canRolloutTasks(eligibleTasks.value, issue.value)) {
     errors.push(t("task.no-permission"));
   }
 
