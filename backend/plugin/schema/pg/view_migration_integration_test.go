@@ -380,7 +380,7 @@ func TestDropMultipleTablesAndViews_CorrectOrder(t *testing.T) {
 	// Note: In AST-only mode, we cannot reliably extract foreign key dependencies,
 	// so table DROP order may not respect FK constraints. The FKs are dropped before tables anyway,
 	// so the migration will succeed even if the table order is not optimal.
-	t.Logf("Note: Products should be dropped before categories (FK dependency), but AST-only mode may not enforce this")
+	t.Log("Note: Products should be dropped before categories (FK dependency), but AST-only mode may not enforce this")
 }
 
 func TestCreateTableAndDependentView_CorrectOrder(t *testing.T) {
