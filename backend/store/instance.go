@@ -3,16 +3,21 @@ package store
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"strings"
 
+	"github.com/google/cel-go/cel"
+	celast "github.com/google/cel-go/common/ast"
+	celoperators "github.com/google/cel-go/common/operators"
+	celoverloads "github.com/google/cel-go/common/overloads"
 	"github.com/pkg/errors"
-
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 // InstanceMessage is the message for instance.
@@ -41,7 +46,7 @@ type FindInstanceMessage struct {
 	ShowDeleted bool
 	Limit       *int
 	Offset      *int
-	Filter      *ListResourceFilter
+	FilterQ     *qb.Query
 }
 
 // GetInstanceV2 gets an instance by the resource_id.
@@ -222,12 +227,13 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 func (s *Store) listInstanceImplV2(ctx context.Context, txn *sql.Tx, find *FindInstanceMessage) ([]*InstanceMessage, error) {
 	where := qb.Q().Space("TRUE")
 	from := qb.Q().Space("instance")
-	if filter := find.Filter; filter != nil {
-		where.And(ConvertDollarPlaceholders(filter.Where), filter.Args...)
-		if hasHostPortFilter(filter.Where) {
+	if filterQ := find.FilterQ; filterQ != nil {
+		where.And("?", filterQ)
+		filterSQL, _, _ := filterQ.ToSQL()
+		if hasHostPortFilter(filterSQL) {
 			from.Space("CROSS JOIN jsonb_array_elements(instance.metadata -> 'dataSources') AS ds")
 		}
-		if strings.Contains(filter.Where, "db.project") {
+		if strings.Contains(filterSQL, "db.project") {
 			from.Space("LEFT JOIN db ON db.instance = instance.resource_id")
 		}
 	}
@@ -682,4 +688,216 @@ func (s *Store) DeleteInstance(ctx context.Context, resourceID string) error {
 	s.instanceCache.Remove(getInstanceCacheKey(resourceID))
 
 	return nil
+}
+
+func GetListInstanceFilter(filter string) (*qb.Query, error) {
+	if filter == "" {
+		return nil, nil
+	}
+
+	e, err := cel.NewEnv()
+	if err != nil {
+		return nil, errors.Errorf("failed to create cel env")
+	}
+	ast, iss := e.Parse(filter)
+	if iss != nil {
+		return nil, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String())
+	}
+
+	var getFilter func(expr celast.Expr) (*qb.Query, error)
+
+	parseToLabelFilterSQL := func(resource, key string, value any) (*qb.Query, error) {
+		switch v := value.(type) {
+		case string:
+			return qb.Q().Space(fmt.Sprintf("%s->'labels'->>'%s' = ?", resource, key), v), nil
+		case []any:
+			if len(v) == 0 {
+				return nil, errors.Errorf("empty label filter")
+			}
+
+			labelValueList := make([]any, len(v))
+			for i, raw := range v {
+				str, ok := raw.(string)
+				if !ok {
+					return nil, errors.Errorf("label value must be string, got %T", raw)
+				}
+				labelValueList[i] = str
+			}
+			placeholders := strings.Repeat("?,", len(labelValueList))
+			placeholders = placeholders[:len(placeholders)-1]
+			return qb.Q().Space(fmt.Sprintf("%s->'labels'->>'%s' IN (%s)", resource, key, placeholders), labelValueList...), nil
+		default:
+			return nil, errors.Errorf("empty value %v for label filter", value)
+		}
+	}
+
+	parseToSQL := func(variable, value any) (*qb.Query, error) {
+		// Handle label filters like "labels.org_group"
+		if varStr, ok := variable.(string); ok {
+			if labelKey, ok := strings.CutPrefix(varStr, "labels."); ok {
+				return parseToLabelFilterSQL("instance.metadata", labelKey, value)
+			}
+		}
+
+		switch variable {
+		case "name":
+			return qb.Q().Space("instance.metadata->>'title' = ?", value.(string)), nil
+		case "resource_id":
+			return qb.Q().Space("instance.resource_id = ?", value.(string)), nil
+		case "environment":
+			environment, ok := value.(string)
+			if !ok {
+				return nil, errors.Errorf("failed to parse value %v to string", value)
+			}
+			if environment != "" {
+				environmentID, err := common.GetEnvironmentID(environment)
+				if err != nil {
+					return nil, errors.Errorf("invalid environment filter %q", value)
+				}
+				return qb.Q().Space("instance.environment = ?", environmentID), nil
+			}
+			return qb.Q().Space("instance.environment IS NULL"), nil
+		case "state":
+			v1State, ok := v1pb.State_value[value.(string)]
+			if !ok {
+				return nil, errors.Errorf("invalid state filter %q", value)
+			}
+			return qb.Q().Space("instance.deleted = ?", v1pb.State(v1State) == v1pb.State_DELETED), nil
+		case "engine":
+			v1Engine, ok := v1pb.Engine_value[value.(string)]
+			if !ok {
+				return nil, errors.Errorf("invalid engine filter %q", value)
+			}
+			engine := convertEngine(v1pb.Engine(v1Engine))
+			return qb.Q().Space("instance.metadata->>'engine' = ?", engine), nil
+		case "host":
+			return qb.Q().Space("ds ->> 'host' = ?", value.(string)), nil
+		case "port":
+			return qb.Q().Space("ds ->> 'port' = ?", value.(string)), nil
+		case "project":
+			projectID, err := common.GetProjectID(value.(string))
+			if err != nil {
+				return nil, errors.Errorf("invalid project filter %q", value)
+			}
+			return qb.Q().Space("db.project = ?", projectID), nil
+		default:
+			return nil, errors.Errorf("unsupport variable %q", variable)
+		}
+	}
+
+	parseToEngineSQL := func(expr celast.Expr, relation string) (*qb.Query, error) {
+		variable, value := getVariableAndValueFromExpr(expr)
+		if variable != "engine" {
+			return nil, errors.Errorf(`only "engine" support "engine in [xx]"/"!(engine in [xx])" operator`)
+		}
+		if value == nil {
+			return nil, errors.Errorf(`empty value %v for "%s" operator`, value, relation)
+		}
+		list, ok := value.([]any)
+		if !ok {
+			return nil, errors.Errorf(`expect list, got %T, hint: filter engine in ["xx"]`, value)
+		}
+		if len(list) == 0 {
+			return nil, errors.Errorf(`empty value %v for "%s" operator`, value, relation)
+		}
+
+		var engineList []string
+		for _, raw := range list {
+			engine, ok := raw.(string)
+			if !ok {
+				return nil, errors.Errorf(`expect string, got %T for engine %v`, raw, raw)
+			}
+			v1Engine, ok := v1pb.Engine_value[engine]
+			if !ok {
+				return nil, errors.Errorf(`invalid engine filter %q`, engine)
+			}
+			storeEngine := convertEngine(v1pb.Engine(v1Engine))
+			engineList = append(engineList, fmt.Sprintf("'%s'", storeEngine))
+		}
+		return qb.Q().Space(fmt.Sprintf("instance.metadata->>'engine' %s (%s)", relation, strings.Join(engineList, ","))), nil
+	}
+
+	getFilter = func(expr celast.Expr) (*qb.Query, error) {
+		q := qb.Q()
+		switch expr.Kind() {
+		case celast.CallKind:
+			functionName := expr.AsCall().FunctionName()
+			switch functionName {
+			case celoperators.LogicalOr:
+				for _, arg := range expr.AsCall().Args() {
+					qq, err := getFilter(arg)
+					if err != nil {
+						return nil, err
+					}
+					q.Or("?", qq)
+				}
+				return qb.Q().Space("(?)", q), nil
+			case celoperators.LogicalAnd:
+				for _, arg := range expr.AsCall().Args() {
+					qq, err := getFilter(arg)
+					if err != nil {
+						return nil, err
+					}
+					q.And("?", qq)
+				}
+				return qb.Q().Space("(?)", q), nil
+			case celoperators.Equals:
+				variable, value := getVariableAndValueFromExpr(expr)
+				return parseToSQL(variable, value)
+			case celoverloads.Matches:
+				variable := expr.AsCall().Target().AsIdent()
+				args := expr.AsCall().Args()
+				if len(args) != 1 {
+					return nil, errors.Errorf(`invalid args for %q`, variable)
+				}
+				value := args[0].AsLiteral().Value()
+				strValue, ok := value.(string)
+				if !ok {
+					return nil, errors.Errorf("expect string, got %T, hint: filter literals should be string", value)
+				}
+				if strValue == "" {
+					return nil, errors.Errorf(`empty value for %q`, variable)
+				}
+
+				switch variable {
+				case "name":
+					return qb.Q().Space("LOWER(instance.metadata->>'title') LIKE ?", "%"+strings.ToLower(strValue)+"%"), nil
+				case "resource_id":
+					return qb.Q().Space("LOWER(instance.resource_id) LIKE ?", "%"+strings.ToLower(strValue)+"%"), nil
+				case "host", "port":
+					return qb.Q().Space(fmt.Sprintf("ds ->> '%s' LIKE ?", variable), "%"+strValue+"%"), nil
+				default:
+					return nil, errors.Errorf("unsupport variable %q", variable)
+				}
+			case celoperators.In:
+				variable, value := getVariableAndValueFromExpr(expr)
+				if variable == "engine" {
+					return parseToEngineSQL(expr, "IN")
+				} else if labelKey, ok := strings.CutPrefix(variable, "labels."); ok {
+					return parseToLabelFilterSQL("instance.metadata", labelKey, value)
+				}
+				return nil, errors.Errorf("unsupport variable %q", variable)
+			case celoperators.LogicalNot:
+				args := expr.AsCall().Args()
+				if len(args) != 1 {
+					return nil, errors.Errorf(`only support !(engine in ["{engine1}", "{engine2}"]) format`)
+				}
+				return parseToEngineSQL(args[0], "NOT IN")
+			default:
+				return nil, errors.Errorf("unexpected function %v", functionName)
+			}
+		default:
+			return nil, errors.Errorf("unexpected expr kind %v", expr.Kind())
+		}
+	}
+
+	q, err := getFilter(ast.NativeRep().Expr())
+	if err != nil {
+		return nil, err
+	}
+	return qb.Q().Space("(?)", q), nil
+}
+
+func convertEngine(engine v1pb.Engine) string {
+	return storepb.Engine_name[int32(engine)]
 }
