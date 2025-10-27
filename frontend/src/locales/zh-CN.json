@@ -313,6 +313,7 @@
     "no-skippable-tasks": "没有可跳过的任务",
     "no-cancellable-tasks": "没有可取消的任务",
     "no-permission": "无权限执行该操作",
+    "data-export-creator-only": "只有工单创建者可以执行数据导出任务",
     "scheduled-time": "计划时间",
     "select-scheduled-time": "选择计划时间",
     "error": {
