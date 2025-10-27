@@ -1392,6 +1392,12 @@ func isFunctionProcedure(astNode any, definition string) bool {
 			// If FUNCTION() returns non-nil, it's a FUNCTION
 			return ctx.PROCEDURE() != nil
 		}
+		// Check if it's a CommentstmtContext (COMMENT ON FUNCTION/PROCEDURE)
+		if ctx, ok := astNode.(*pgparser.CommentstmtContext); ok {
+			// If PROCEDURE() returns non-nil, it's a COMMENT ON PROCEDURE
+			// If FUNCTION() returns non-nil (and PROCEDURE is nil), it's a COMMENT ON FUNCTION
+			return ctx.PROCEDURE() != nil
+		}
 	}
 
 	// Fall back to checking definition string (for metadata mode or when AST is not available)
@@ -3026,6 +3032,11 @@ func generateCommentChangesFromSDL(buf *strings.Builder, diff *schema.MetadataDi
 						break
 					}
 				}
+			}
+			// If we didn't find the function AST node from FunctionChanges, use the comment AST node
+			// to determine if it's a FUNCTION or PROCEDURE
+			if functionASTNode == nil && commentDiff.NewASTNode != nil {
+				functionASTNode = commentDiff.NewASTNode
 			}
 			writeCommentOnFunction(buf, commentDiff.SchemaName, commentDiff.ObjectName, newComment, functionASTNode, functionDefinition)
 
