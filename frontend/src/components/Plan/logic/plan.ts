@@ -7,6 +7,7 @@ import {
   unknownDatabase,
 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
+import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 
@@ -60,7 +61,9 @@ export const databaseEngineForSpec = async (
   }
   if (isValidDatabaseGroupName(target)) {
     const dbGroupStore = useDBGroupStore();
-    const dbGroup = await dbGroupStore.getOrFetchDBGroupByName(target);
+    const dbGroup = await dbGroupStore.getOrFetchDBGroupByName(target, {
+      view: DatabaseGroupView.FULL,
+    });
     // Might be flaky: use the first database in the db group
     const dbName = head(dbGroup.matchedDatabases)?.name;
     if (dbName) {

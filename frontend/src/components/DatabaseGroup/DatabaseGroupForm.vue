@@ -15,7 +15,7 @@
             (id) =>
               dbGroupStore.getOrFetchDBGroupByName(
                 `${props.project.name}/${databaseGroupNamePrefix}${id}`,
-                { silent: true }
+                { silent: true, view: DatabaseGroupView.FULL }
               )
           "
         />
@@ -91,6 +91,7 @@ import type { Expr as CELExpr } from "@/types/proto-es/google/api/expr/v1alpha1/
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import {
   DatabaseGroupSchema,
+  DatabaseGroupView,
   type DatabaseGroup,
 } from "@/types/proto-es/v1/database_group_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
@@ -147,7 +148,7 @@ onMounted(async () => {
   state.placeholder = databaseGroupEntity.title;
   const fetchedDatabaseGroup = await dbGroupStore.getOrFetchDBGroupByName(
     databaseGroup.name,
-    { silent: true }
+    { silent: true, view: DatabaseGroupView.FULL }
   );
   if (fetchedDatabaseGroup?.databaseExpr?.expression) {
     // Convert CEL expression to simple expression
