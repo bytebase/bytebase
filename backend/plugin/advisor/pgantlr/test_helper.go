@@ -16,6 +16,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	pglegacy "github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy"
 )
 
 // TestCase is the data struct for test.
@@ -73,6 +74,14 @@ func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbTyp
 		// Parse SQL using ANTLR for pgantlr advisors
 		tree, err := pg.ParsePostgreSQL(tc.Statement)
 		require.NoError(t, err, "Failed to parse SQL: %s", tc.Statement)
+
+		// Also parse with legacy parser for catalog WalkThrough
+		if needMetaData {
+			legacyAST, err := pglegacy.Parse(pglegacy.ParseContext{}, tc.Statement)
+			require.NoError(t, err, "Failed to parse SQL with legacy parser: %s", tc.Statement)
+			err = finder.WalkThrough(legacyAST)
+			require.NoError(t, err, "Failed to walk through catalog: %s", tc.Statement)
+		}
 
 		ruleList := []*storepb.SQLReviewRule{
 			{

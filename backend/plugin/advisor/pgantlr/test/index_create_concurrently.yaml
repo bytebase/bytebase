@@ -1,0 +1,22 @@
+- statement: create index on tech_book(id);
+  changeType: 1
+  want:
+    - status: 2
+      code: 814
+      title: index.create-concurrently
+      content: Creating indexes will block writes on the table, unless use CONCURRENTLY
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: create index concurrently on tech_book(id);
+  changeType: 1
+- statement: |
+    CREATE TABLE feed_subscription (
+      id uuid NOT NULL DEFAULT gen_random_uuid(),
+      userId uuid NOT NULL,
+      projectId uuid,
+      CONSTRAINT PK_feed_subscription PRIMARY KEY (id)
+    );
+    CREATE INDEX IDX_feed_subscription_userId ON feed_subscription (userId);
+  changeType: 1

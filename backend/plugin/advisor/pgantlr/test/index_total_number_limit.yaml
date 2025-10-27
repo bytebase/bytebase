@@ -1,0 +1,57 @@
+- statement: CREATE TABLE t(a int, b int, c int, unique (a, b, c))
+  changeType: 1
+- statement: CREATE INDEX idx_id_name on tech_book(id, name)
+  changeType: 1
+- statement: |-
+    CREATE INDEX idx_id_name_1 on tech_book(id, name);
+    CREATE INDEX idx_id_name_2 on tech_book(id, name);
+    CREATE INDEX idx_id_name_3 on tech_book(id, name);
+    CREATE INDEX idx_id_name_4 on tech_book(id, name);
+    CREATE INDEX idx_id_name_5 on tech_book(id, name);
+  changeType: 1
+  want:
+    - status: 2
+      code: 813
+      title: index.total-number-limit
+      content: The count of index in table "public"."tech_book" should be no more than 5, but found 8
+      startposition:
+        line: 5
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a int PRIMARY KEY, b int, c int);
+    CREATE INDEX idx_a_b_1 on t(a, b);
+    CREATE INDEX idx_a_b_2 on t(a, b);
+    CREATE INDEX idx_a_b_3 on t(a, b);
+    CREATE INDEX idx_a_b_4 on t(a, b);
+    CREATE INDEX idx_a_b_5 on t(a, b);
+  changeType: 1
+  want:
+    - status: 2
+      code: 813
+      title: index.total-number-limit
+      content: The count of index in table "public"."t" should be no more than 5, but found 6
+      startposition:
+        line: 6
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(
+      a int PRIMARY KEY,
+      b int,
+      c int,
+      CONSTRAINT idx_a_b_1 UNIQUE (a, b),
+      CONSTRAINT idx_a_b_2 UNIQUE (a, b),
+      CONSTRAINT idx_a_b_3 UNIQUE (a, b),
+      CONSTRAINT idx_a_b_4 UNIQUE (a, b),
+      CONSTRAINT idx_a_b_5 UNIQUE (a, b));
+  changeType: 1
+  want:
+    - status: 2
+      code: 813
+      title: index.total-number-limit
+      content: The count of index in table "public"."t" should be no more than 5, but found 6
+      startposition:
+        line: 9
+        column: 0
+      endposition: null

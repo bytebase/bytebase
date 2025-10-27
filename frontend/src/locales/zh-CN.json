@@ -1362,7 +1362,6 @@
     "password-write-only": "YOUR_DB_PWD - 仅写入",
     "password-type": {
       "password": "密码",
-      "password-tip": "您也可以指定外部的密码管理服务 endpoint",
       "google-iam": "Google Cloud SQL IAM",
       "aws-iam": "AWS RDS IAM",
       "azure-iam": "Azure IAM",

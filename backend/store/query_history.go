@@ -4,9 +4,12 @@ import (
 	"context"
 	"time"
 
-	"google.golang.org/protobuf/encoding/protojson"
-
+	"github.com/google/cel-go/cel"
+	celast "github.com/google/cel-go/common/ast"
+	celoperators "github.com/google/cel-go/common/operators"
+	celoverloads "github.com/google/cel-go/common/overloads"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/qb"
@@ -51,9 +54,9 @@ type FindQueryHistoryMessage struct {
 	Database *string
 	Type     *QueryHistoryType
 
-	Limit  *int
-	Offset *int
-	Filter *ListResourceFilter
+	Limit   *int
+	Offset  *int
+	FilterQ *qb.Query
 }
 
 // CreateQueryHistory creates the query history.
@@ -125,9 +128,8 @@ func (s *Store) ListQueryHistories(ctx context.Context, find *FindQueryHistoryMe
 		WHERE TRUE
 	`)
 
-	if filter := find.Filter; filter != nil {
-		// Convert $1, $2, etc. to ? for qb
-		q.And(ConvertDollarPlaceholders(filter.Where), filter.Args...)
+	if filterQ := find.FilterQ; filterQ != nil {
+		q.And("?", filterQ)
 	}
 	if v := find.CreatorUID; v != nil {
 		q.And("query_history.creator_id = ?", *v)
@@ -203,4 +205,99 @@ func (s *Store) ListQueryHistories(ctx context.Context, find *FindQueryHistoryMe
 	}
 
 	return queryHistories, nil
+}
+
+func GetListQueryHistoryFilter(filter string) (*qb.Query, error) {
+	if filter == "" {
+		return nil, nil
+	}
+
+	e, err := cel.NewEnv()
+	if err != nil {
+		return nil, errors.Errorf("failed to create cel env")
+	}
+	ast, iss := e.Parse(filter)
+	if iss != nil {
+		return nil, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String())
+	}
+
+	var getFilter func(expr celast.Expr) (*qb.Query, error)
+
+	parseToSQL := func(variable, value any) (*qb.Query, error) {
+		switch variable {
+		case "project":
+			projectID, err := common.GetProjectID(value.(string))
+			if err != nil {
+				return nil, errors.Errorf("invalid project filter %q", value)
+			}
+			return qb.Q().Space("query_history.project_id = ?", projectID), nil
+		case "database":
+			return qb.Q().Space("query_history.database = ?", value.(string)), nil
+		case "instance":
+			return qb.Q().Space("query_history.database LIKE ?", value.(string)), nil
+		case "type":
+			historyType := QueryHistoryType(value.(string))
+			return qb.Q().Space("query_history.type = ?", historyType), nil
+		case "statement":
+			return qb.Q().Space("query_history.statement LIKE ?", value), nil
+		default:
+			return nil, errors.Errorf("unsupport variable %q", variable)
+		}
+	}
+
+	getFilter = func(expr celast.Expr) (*qb.Query, error) {
+		q := qb.Q()
+		switch expr.Kind() {
+		case celast.CallKind:
+			functionName := expr.AsCall().FunctionName()
+			switch functionName {
+			case celoperators.LogicalOr:
+				for _, arg := range expr.AsCall().Args() {
+					qq, err := getFilter(arg)
+					if err != nil {
+						return nil, err
+					}
+					q.Or("?", qq)
+				}
+				return qb.Q().Space("(?)", q), nil
+			case celoperators.LogicalAnd:
+				for _, arg := range expr.AsCall().Args() {
+					qq, err := getFilter(arg)
+					if err != nil {
+						return nil, err
+					}
+					q.And("?", qq)
+				}
+				return qb.Q().Space("(?)", q), nil
+			case celoperators.Equals:
+				variable, value := getVariableAndValueFromExpr(expr)
+				return parseToSQL(variable, value)
+			case celoverloads.Matches:
+				variable := expr.AsCall().Target().AsIdent()
+				args := expr.AsCall().Args()
+				if len(args) != 1 {
+					return nil, errors.Errorf(`invalid args for %q`, variable)
+				}
+				value := args[0].AsLiteral().Value()
+				if variable != "statement" {
+					return nil, errors.Errorf(`only "statement" support %q operator, but found %q`, celoverloads.Matches, variable)
+				}
+				strValue, ok := value.(string)
+				if !ok {
+					return nil, errors.Errorf("expect string, got %T, hint: filter literals should be string", value)
+				}
+				return parseToSQL("statement", "%"+strValue+"%")
+			default:
+				return nil, errors.Errorf("unexpected function %v", functionName)
+			}
+		default:
+			return nil, errors.Errorf("unexpected expr kind %v", expr.Kind())
+		}
+	}
+
+	q, err := getFilter(ast.NativeRep().Expr())
+	if err != nil {
+		return nil, err
+	}
+	return qb.Q().Space("(?)", q), nil
 }

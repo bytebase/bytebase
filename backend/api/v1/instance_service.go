@@ -20,7 +20,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/sampleinstance"
-	"github.com/bytebase/bytebase/backend/component/secret"
 	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -465,10 +464,7 @@ func (s *InstanceService) checkDataSource(instance *store.InstanceMessage, dataS
 		if dataSource.GetExternalSecret() != nil {
 			return missingFeatureError
 		}
-		if ok, _ := secret.GetExternalSecretURL(dataSource.GetPassword()); !ok {
-			return nil
-		}
-		return missingFeatureError
+		return nil
 	}
 
 	// Validate extra connection parameters for MySQL-based engines

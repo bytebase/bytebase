@@ -7,68 +7,60 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/backend/common/qb"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
-	"github.com/bytebase/bytebase/backend/store"
 )
 
 func TestApplyRetentionFilter(t *testing.T) {
-	s := &AuditLogService{}
 	now := time.Now()
 	sevenDaysAgo := now.AddDate(0, 0, -7)
 
 	tests := []struct {
-		name        string
-		userFilter  *store.ListResourceFilter
-		cutoff      *time.Time
-		wantFilter  *store.ListResourceFilter
-		description string
+		name           string
+		userFilterQ    *qb.Query
+		cutoff         *time.Time
+		wantSQLPattern []string // Pattern to match in SQL
+		description    string
 	}{
 		{
-			name: "No retention cutoff (Enterprise plan)",
-			userFilter: &store.ListResourceFilter{
-				Where: "(payload->>'method'=$1)",
-				Args:  []any{"/bytebase.v1.SQLService/Query"},
-			},
-			cutoff: nil,
-			wantFilter: &store.ListResourceFilter{
-				Where: "(payload->>'method'=$1)",
-				Args:  []any{"/bytebase.v1.SQLService/Query"},
+			name:        "No retention cutoff (Enterprise plan)",
+			userFilterQ: qb.Q().Space("payload->>'method' = ?", "/bytebase.v1.SQLService/Query"),
+			cutoff:      nil,
+			wantSQLPattern: []string{
+				"payload->>'method' = $1",
 			},
 			description: "Should return user filter unchanged when no cutoff",
 		},
 		{
-			name:       "Apply retention to empty filter (Team plan)",
-			userFilter: nil,
-			cutoff:     &sevenDaysAgo,
-			wantFilter: &store.ListResourceFilter{
-				Where: "(created_at >= $1)",
-				Args:  []any{sevenDaysAgo},
+			name:        "Apply retention to empty filter (Team plan)",
+			userFilterQ: nil,
+			cutoff:      &sevenDaysAgo,
+			wantSQLPattern: []string{
+				"created_at >= $1",
 			},
 			description: "Should create retention filter when no user filter",
 		},
 		{
-			name: "Merge retention with existing filter (Team plan)",
-			userFilter: &store.ListResourceFilter{
-				Where: "(payload->>'method'=$1)",
-				Args:  []any{"/bytebase.v1.SQLService/Query"},
-			},
-			cutoff: &sevenDaysAgo,
-			wantFilter: &store.ListResourceFilter{
-				Where: "((payload->>'method'=$1)) AND (created_at >= $2)",
-				Args:  []any{"/bytebase.v1.SQLService/Query", sevenDaysAgo},
+			name:        "Merge retention with existing filter (Team plan)",
+			userFilterQ: qb.Q().Space("payload->>'method' = ?", "/bytebase.v1.SQLService/Query"),
+			cutoff:      &sevenDaysAgo,
+			wantSQLPattern: []string{
+				"payload->>'method' = $1",
+				"AND",
+				"created_at >= $2",
 			},
 			description: "Should combine user filter with retention filter using AND",
 		},
 		{
-			name: "Complex filter with retention",
-			userFilter: &store.ListResourceFilter{
-				Where: "(payload->>'method'=$1 AND payload->>'severity'=$2)",
-				Args:  []any{"/bytebase.v1.SQLService/Query", "ERROR"},
-			},
-			cutoff: &sevenDaysAgo,
-			wantFilter: &store.ListResourceFilter{
-				Where: "((payload->>'method'=$1 AND payload->>'severity'=$2)) AND (created_at >= $3)",
-				Args:  []any{"/bytebase.v1.SQLService/Query", "ERROR", sevenDaysAgo},
+			name:        "Complex filter with retention",
+			userFilterQ: qb.Q().Space("payload->>'method' = ?", "/bytebase.v1.SQLService/Query").And("payload->>'severity' = ?", "ERROR"),
+			cutoff:      &sevenDaysAgo,
+			wantSQLPattern: []string{
+				"payload->>'method' = $1",
+				"AND",
+				"payload->>'severity' = $2",
+				"AND",
+				"created_at >= $3",
 			},
 			description: "Should handle complex filters with multiple conditions",
 		},
@@ -76,21 +68,29 @@ func TestApplyRetentionFilter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := s.applyRetentionFilter(tt.userFilter, tt.cutoff)
+			got := applyRetentionFilter(tt.userFilterQ, tt.cutoff)
 
 			require.NotNil(t, got, tt.description)
-			assert.Equal(t, tt.wantFilter.Where, got.Where, "WHERE clause should match")
-			assert.Equal(t, len(tt.wantFilter.Args), len(got.Args), "Number of args should match")
 
-			// For time comparisons, we just check the type and rough equality
-			for i, arg := range tt.wantFilter.Args {
-				if timeArg, ok := arg.(time.Time); ok {
-					gotTimeArg, ok := got.Args[i].(time.Time)
-					require.True(t, ok, "Argument %d should be a time.Time", i)
-					assert.WithinDuration(t, timeArg, gotTimeArg, time.Second, "Time arguments should be within 1 second")
-				} else {
-					assert.Equal(t, arg, got.Args[i], "Argument %d should match", i)
+			sql, args, err := got.ToSQL()
+			require.NoError(t, err)
+
+			// Check that all expected patterns are in the SQL
+			for _, pattern := range tt.wantSQLPattern {
+				assert.Contains(t, sql, pattern, "SQL should contain expected pattern: %s", pattern)
+			}
+
+			// For time comparisons in args, we just check the type
+			hasTimeArg := false
+			for _, arg := range args {
+				if _, ok := arg.(time.Time); ok {
+					hasTimeArg = true
+					break
 				}
+			}
+
+			if tt.cutoff != nil {
+				assert.True(t, hasTimeArg, "Should have time argument when cutoff is set")
 			}
 		})
 	}

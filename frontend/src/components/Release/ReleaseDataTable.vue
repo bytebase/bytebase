@@ -102,9 +102,11 @@ const columnList = computed(
             <div class="flex flex-col items-start gap-1">
               {showFiles.map((file) => (
                 <p class="w-full truncate">
-                  <NTag class="mr-2" v-if="schemaVersion" size="small" round>
-                    {file.version}
-                  </NTag>
+                  {file.version && (
+                    <NTag class="mr-2" size="small" round>
+                      {file.version}
+                    </NTag>
+                  )}
                   {getReleaseFileStatement(file)}
                 </p>
               ))}

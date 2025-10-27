@@ -2085,7 +2085,13 @@ func writeFunction(out io.Writer, schema string, function *storepb.FunctionMetad
 }
 
 func writeFunctionComment(out io.Writer, schema string, function *storepb.FunctionMetadata) error {
-	if _, err := io.WriteString(out, `COMMENT ON FUNCTION "`); err != nil {
+	// Determine if this is a PROCEDURE or FUNCTION by checking the definition
+	objectType := "FUNCTION"
+	if strings.Contains(strings.ToUpper(function.Definition), "CREATE PROCEDURE") {
+		objectType = "PROCEDURE"
+	}
+
+	if _, err := io.WriteString(out, "COMMENT ON "+objectType+" \""); err != nil {
 		return err
 	}
 
@@ -2174,9 +2180,16 @@ func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 				// Check for serial columns
 				isSerial, _ := isSerialColumn(column, table.Name, schema.Sequences)
 				if isSerial {
+					// Extract the sequence name from the DEFAULT clause to match the exact sequence
+					// This ensures we skip the correct sequence, especially when multiple sequences
+					// claim ownership of the same column.
+					sequenceName := extractSequenceNameFromNextval(column.Default)
+
 					// Find the sequence that belongs to this serial column
 					for _, sequence := range schema.Sequences {
-						if sequence.OwnerTable == table.Name && sequence.OwnerColumn == column.Name {
+						// Match by sequence name AND ownership to ensure we skip the exact sequence
+						// referenced in the DEFAULT clause
+						if sequence.Name == sequenceName && sequence.OwnerTable == table.Name && sequence.OwnerColumn == column.Name {
 							sequenceKey := schema.Name + "." + sequence.Name
 							skipSequences[sequenceKey] = true
 							break
@@ -3285,8 +3298,15 @@ func buildSkipSequencesMap(metadata *storepb.DatabaseSchemaMetadata) map[string]
 				// Check for serial columns
 				isSerial, _ := isSerialColumn(column, table.Name, schema.Sequences)
 				if isSerial {
+					// Extract the sequence name from the DEFAULT clause to match the exact sequence
+					// This ensures we skip the correct sequence, especially when multiple sequences
+					// claim ownership of the same column.
+					sequenceName := extractSequenceNameFromNextval(column.Default)
+
 					for _, sequence := range schema.Sequences {
-						if sequence.OwnerTable == table.Name && sequence.OwnerColumn == column.Name {
+						// Match by sequence name AND ownership to ensure we skip the exact sequence
+						// referenced in the DEFAULT clause
+						if sequence.Name == sequenceName && sequence.OwnerTable == table.Name && sequence.OwnerColumn == column.Name {
 							sequenceKey := schema.Name + "." + sequence.Name
 							skipSequences[sequenceKey] = true
 							break
@@ -3436,7 +3456,13 @@ func writeViewCommentSDL(out io.Writer, schemaName string, view *storepb.ViewMet
 }
 
 func writeFunctionCommentSDL(out io.Writer, schemaName string, function *storepb.FunctionMetadata) error {
-	if _, err := io.WriteString(out, `COMMENT ON FUNCTION "`); err != nil {
+	// Determine if this is a PROCEDURE or FUNCTION by checking the definition
+	objectType := "FUNCTION"
+	if strings.Contains(strings.ToUpper(function.Definition), "CREATE PROCEDURE") {
+		objectType = "PROCEDURE"
+	}
+
+	if _, err := io.WriteString(out, "COMMENT ON "+objectType+" \""); err != nil {
 		return err
 	}
 	if _, err := io.WriteString(out, schemaName); err != nil {

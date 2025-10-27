@@ -1,0 +1,17 @@
+- statement: CREATE DATABASE test WITH ENCODING 'UTF8'
+  changeType: 1
+- statement: CREATE DATABASE test
+  changeType: 1
+- statement: CREATE DATABASE test WITH ENCODING 'LATIN1'
+  changeType: 1
+  want:
+    - status: 2
+      code: 1001
+      title: system.charset.allowlist
+      content: '"" used disabled encoding ''latin1'''
+      startposition:
+        line: 0
+        column: 0
+      endposition: null
+- statement: /* this is a comment */
+  changeType: 1

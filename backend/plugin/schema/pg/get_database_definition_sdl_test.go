@@ -1636,3 +1636,362 @@ func TestGetMultiFileDatabaseDefinition_WithComments(t *testing.T) {
 		require.NoError(t, err, "SQL in file %s should be parseable by PostgreSQL parser", fileName)
 	}
 }
+func TestGetDatabaseDefinitionSDLFormat_SerialColumnWithSequence(t *testing.T) {
+	// This test reproduces the issue where a SERIAL column causes duplicate CREATE SEQUENCE statements
+	// SERIAL columns automatically create sequences, so we should NOT output separate CREATE SEQUENCE for them
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Sequences: []*storepb.SequenceMetadata{
+					{
+						Name:        "users_id_seq",
+						DataType:    "integer",
+						Start:       "1",
+						Increment:   "1",
+						MinValue:    "1",
+						MaxValue:    "2147483647",
+						Cycle:       false,
+						OwnerTable:  "users",
+						OwnerColumn: "id",
+						Comment:     "Sequence for users id - should NOT appear in SDL",
+					},
+					{
+						Name:       "independent_seq",
+						DataType:   "bigint",
+						Start:      "1",
+						Increment:  "1",
+						MinValue:   "1",
+						MaxValue:   "9223372036854775807",
+						Cycle:      false,
+						OwnerTable: "", // Independent sequence - should appear in SDL
+						Comment:    "Independent sequence - should appear in SDL",
+					},
+				},
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "users",
+						Columns: []*storepb.ColumnMetadata{
+							{
+								Name:     "id",
+								Type:     "integer",
+								Nullable: false,
+								Default:  "nextval('users_id_seq'::regclass)",
+							},
+							{
+								Name:     "name",
+								Type:     "text",
+								Nullable: false,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	ctx := schema.GetDefinitionContext{
+		SDLFormat: true,
+	}
+
+	result, err := GetDatabaseDefinition(ctx, metadata)
+	require.NoError(t, err)
+
+	// The SDL should contain the table definition with serial type
+	require.Contains(t, result, `CREATE TABLE "public"."users"`)
+	require.Contains(t, result, `"id" serial`)
+	require.Contains(t, result, `"name" text NOT NULL`)
+
+	// The SDL SHOULD contain the independent sequence
+	require.Contains(t, result, `CREATE SEQUENCE "public"."independent_seq"`,
+		"SDL should contain CREATE SEQUENCE for independent sequences")
+
+	// The SDL should NOT contain a separate CREATE SEQUENCE statement for users_id_seq
+	// because the sequence is owned by the serial column (created implicitly by SERIAL type)
+	require.NotContains(t, result, `CREATE SEQUENCE "public"."users_id_seq"`,
+		"SDL should NOT contain CREATE SEQUENCE for sequence owned by a column (created implicitly by SERIAL)")
+}
+
+func TestGetMultiFileDatabaseDefinition_SerialColumnWithSequence(t *testing.T) {
+	// This test verifies that multi-file format correctly handles serial columns and their sequences
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Sequences: []*storepb.SequenceMetadata{
+					{
+						Name:        "users_id_seq",
+						DataType:    "integer",
+						Start:       "1",
+						Increment:   "1",
+						MinValue:    "1",
+						MaxValue:    "2147483647",
+						Cycle:       false,
+						OwnerTable:  "users",
+						OwnerColumn: "id",
+						Comment:     "Sequence for users id - should NOT appear as separate file",
+					},
+					{
+						Name:       "independent_seq",
+						DataType:   "bigint",
+						Start:      "1",
+						Increment:  "1",
+						MinValue:   "1",
+						MaxValue:   "9223372036854775807",
+						Cycle:      false,
+						OwnerTable: "", // Independent sequence - not owned by any column
+						Comment:    "Independent sequence - should appear as separate file",
+					},
+					{
+						Name:       "custom_seq",
+						DataType:   "bigint",
+						Start:      "100",
+						Increment:  "5",
+						MinValue:   "100",
+						MaxValue:   "9223372036854775807",
+						Cycle:      false,
+						OwnerTable: "", // Not owned by a column (independent sequence)
+						Comment:    "Custom sequence for orders - should appear as separate file",
+					},
+				},
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "users",
+						Columns: []*storepb.ColumnMetadata{
+							{
+								Name:     "id",
+								Type:     "integer",
+								Nullable: false,
+								Default:  "nextval('users_id_seq'::regclass)",
+							},
+							{
+								Name:     "name",
+								Type:     "text",
+								Nullable: false,
+							},
+						},
+					},
+					{
+						Name: "orders",
+						Columns: []*storepb.ColumnMetadata{
+							{
+								Name:     "id",
+								Type:     "integer",
+								Nullable: false,
+							},
+							{
+								Name:     "order_number",
+								Type:     "bigint",
+								Nullable: false,
+								Default:  "nextval('custom_seq'::regclass)",
+								Comment:  "Order number using custom sequence",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	ctx := schema.GetDefinitionContext{
+		SDLFormat: true,
+	}
+
+	result, err := GetMultiFileDatabaseDefinition(ctx, metadata)
+	require.NoError(t, err)
+
+	// Build a map of files for easy lookup
+	fileMap := make(map[string]string)
+	for _, file := range result.Files {
+		fileMap[file.Name] = file.Content
+	}
+
+	// Verify users table file exists and contains serial column
+	usersFile, ok := fileMap["schemas/public/tables/users.sql"]
+	require.True(t, ok, "users table file should exist")
+	require.Contains(t, usersFile, `"id" serial`, "users table should use serial type")
+	require.Contains(t, usersFile, `"name" text NOT NULL`)
+
+	// Verify orders table file exists
+	ordersFile, ok := fileMap["schemas/public/tables/orders.sql"]
+	require.True(t, ok, "orders table file should exist")
+	require.Contains(t, ordersFile, `"id" integer NOT NULL`)
+	require.Contains(t, ordersFile, `"order_number" bigint DEFAULT nextval('custom_seq'::regclass) NOT NULL`,
+		"order_number should use custom_seq via DEFAULT nextval()")
+
+	// Verify independent sequence file exists with comment
+	independentSeqFile, ok := fileMap["schemas/public/sequences/independent_seq.sql"]
+	require.True(t, ok, "independent_seq file should exist")
+	require.Contains(t, independentSeqFile, `CREATE SEQUENCE "public"."independent_seq"`)
+	require.Contains(t, independentSeqFile, `COMMENT ON SEQUENCE "public"."independent_seq" IS 'Independent sequence - should appear as separate file'`)
+
+	// Verify custom sequence file exists with comment (no ALTER SEQUENCE OWNED BY because it's independent)
+	customSeqFile, ok := fileMap["schemas/public/sequences/custom_seq.sql"]
+	require.True(t, ok, "custom_seq file should exist")
+	require.Contains(t, customSeqFile, `CREATE SEQUENCE "public"."custom_seq"`)
+	require.Contains(t, customSeqFile, `COMMENT ON SEQUENCE "public"."custom_seq" IS 'Custom sequence for orders - should appear as separate file'`)
+	require.NotContains(t, customSeqFile, `ALTER SEQUENCE`, "Independent sequence should not have ALTER SEQUENCE OWNED BY")
+
+	// Verify users_id_seq does NOT have a separate file (it's a serial sequence)
+	_, ok = fileMap["schemas/public/sequences/users_id_seq.sql"]
+	require.False(t, ok, "users_id_seq should NOT have a separate file because it's owned by a serial column")
+
+	// Total files should be: 2 tables + 2 sequences = 4 files
+	require.Equal(t, 4, len(result.Files), "Should have exactly 4 files (2 tables + 2 sequences)")
+}
+
+func TestGetDatabaseDefinitionSDLFormat_MultipleSequencesClaimingOwnership(t *testing.T) {
+	// This test verifies that when multiple sequences claim ownership of the same column,
+	// only the sequence referenced in the DEFAULT clause is skipped (treated as serial sequence).
+	// The other sequences should still be output as CREATE SEQUENCE statements.
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Sequences: []*storepb.SequenceMetadata{
+					{
+						Name:        "test_sequence2",
+						DataType:    "integer",
+						Start:       "1",
+						Increment:   "1",
+						MinValue:    "1",
+						MaxValue:    "2147483647",
+						Cycle:       false,
+						OwnerTable:  "test_table",
+						OwnerColumn: "id",
+					},
+					{
+						Name:        "test_table_id_seq",
+						DataType:    "integer",
+						Start:       "1",
+						Increment:   "1",
+						MinValue:    "1",
+						MaxValue:    "2147483647",
+						Cycle:       false,
+						OwnerTable:  "test_table",
+						OwnerColumn: "id",
+					},
+				},
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "test_table",
+						Columns: []*storepb.ColumnMetadata{
+							{
+								Name:     "id",
+								Type:     "integer",
+								Nullable: false,
+								Default:  "nextval('test_table_id_seq'::regclass)",
+							},
+							{
+								Name:     "name",
+								Type:     "text",
+								Nullable: false,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	ctx := schema.GetDefinitionContext{
+		SDLFormat: true,
+	}
+
+	result, err := GetDatabaseDefinition(ctx, metadata)
+	require.NoError(t, err)
+
+	expected := `CREATE SEQUENCE "public"."test_sequence2" AS integer START WITH 1 INCREMENT BY 1 MINVALUE 1 MAXVALUE 2147483647 NO CYCLE;
+
+CREATE TABLE "public"."test_table" (
+    "id" serial,
+    "name" text NOT NULL
+);
+
+ALTER SEQUENCE "public"."test_sequence2" OWNED BY "public"."test_table"."id";
+
+`
+
+	assert.Equal(t, expected, result)
+
+	// Verify that test_sequence2 is output (not skipped)
+	assert.Contains(t, result, `CREATE SEQUENCE "public"."test_sequence2"`,
+		"test_sequence2 should be output because it's not referenced in DEFAULT clause")
+
+	// Verify that test_sequence2 has ALTER SEQUENCE OWNED BY statement
+	assert.Contains(t, result, `ALTER SEQUENCE "public"."test_sequence2" OWNED BY "public"."test_table"."id"`,
+		"test_sequence2 should have ALTER SEQUENCE OWNED BY because metadata indicates it's owned by the column")
+
+	// Verify that test_table_id_seq is NOT output (skipped)
+	assert.NotContains(t, result, `CREATE SEQUENCE "public"."test_table_id_seq"`,
+		"test_table_id_seq should be skipped because it's referenced in DEFAULT clause and treated as serial")
+
+	// Verify that the column uses serial type
+	assert.Contains(t, result, `"id" serial`,
+		"Column should use serial type because it references test_table_id_seq which is owned by it")
+
+	// Validate that the generated SQL can be parsed
+	_, err = pgparser.ParsePostgreSQL(result)
+	require.NoError(t, err, "Generated SQL should be parseable by PostgreSQL parser")
+}
+
+func TestGetDatabaseDefinitionSDLFormat_ProcedureWithComment(t *testing.T) {
+	// This test verifies that PROCEDURE comments are correctly generated with
+	// COMMENT ON PROCEDURE (not COMMENT ON FUNCTION)
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Functions: []*storepb.FunctionMetadata{
+					{
+						Name:      "get_user_count",
+						Signature: "get_user_count()",
+						Definition: `CREATE FUNCTION "public"."get_user_count"() RETURNS integer
+    LANGUAGE sql
+    AS $$
+    SELECT COUNT(*)::integer FROM users;
+$$`,
+						Comment: "Function to count users",
+					},
+					{
+						Name:      "update_user_name",
+						Signature: "update_user_name(user_id integer, new_name character varying)",
+						Definition: `CREATE PROCEDURE "public"."update_user_name"(IN user_id integer, IN new_name character varying)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    UPDATE users
+    SET name = new_name
+    WHERE id = user_id;
+END;
+$$`,
+						Comment: "Procedure to update user name",
+					},
+				},
+			},
+		},
+	}
+
+	ctx := schema.GetDefinitionContext{
+		SDLFormat: true,
+	}
+
+	result, err := GetDatabaseDefinition(ctx, metadata)
+	require.NoError(t, err)
+
+	// Verify that FUNCTION has COMMENT ON FUNCTION
+	assert.Contains(t, result, `COMMENT ON FUNCTION "public"."get_user_count()" IS 'Function to count users';`,
+		"Function comment should use COMMENT ON FUNCTION")
+
+	// Verify that PROCEDURE has COMMENT ON PROCEDURE (not COMMENT ON FUNCTION)
+	assert.Contains(t, result, `COMMENT ON PROCEDURE "public"."update_user_name(user_id integer, new_name character varying)" IS 'Procedure to update user name';`,
+		"Procedure comment should use COMMENT ON PROCEDURE")
+
+	// Verify that we don't incorrectly use COMMENT ON FUNCTION for the procedure
+	assert.NotContains(t, result, `COMMENT ON FUNCTION "public"."update_user_name`,
+		"Procedure comment should NOT use COMMENT ON FUNCTION")
+
+	// Validate that the generated SQL can be parsed
+	_, err = pgparser.ParsePostgreSQL(result)
+	require.NoError(t, err, "Generated SQL should be parseable by PostgreSQL parser")
+}
