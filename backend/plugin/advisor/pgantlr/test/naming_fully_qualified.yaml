@@ -1,0 +1,103 @@
+- statement: |-
+    CREATE TABLE public.pokesv1 (foo int, bar varchar);
+    INSERT INTO public.pokesv1 VALUES (1, '1');
+    CREATE TABLE public.pokes (foo int);
+    CREATE TABLE pokesv2 (foo int, bar varchar);
+  changeType: 1
+  want:
+    - status: 2
+      code: 310
+      title: naming.fully-qualified
+      content: 'unqualified object name: ''pokesv2'''
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE SEQUENCE public.seq;
+    CREATE SEQUENCE seq;
+    DROP SEQUENCE public.seq
+  changeType: 1
+  want:
+    - status: 2
+      code: 310
+      title: naming.fully-qualified
+      content: 'unqualified object name: ''seq'''
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TRIGGER test_trigger
+    AFTER INSERT ON pokesv1
+    FOR EACH ROW
+    EXECUTE PROCEDURE trigger_function();
+    INSERT INTO bbdev.public.pokesv1 VALUES (1, '1');
+  changeType: 1
+  want:
+    - status: 2
+      code: 310
+      title: naming.fully-qualified
+      content: 'unqualified object name: ''pokesv1'''
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: DROP TRIGGER test_trigger ON public.pokes;
+  changeType: 1
+- statement: |-
+    CREATE TABLE public.pokesv1 (foo int, bar varchar);
+    ALTER TABLE pokesv1 RENAME TO pokesv2;
+  changeType: 1
+  want:
+    - status: 2
+      code: 310
+      title: naming.fully-qualified
+      content: 'unqualified object name: ''pokesv1'''
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE public.pokesv1 (foo int);
+    INSERT INTO pokesv1(foo) VALUES (1);
+    INSERT INTO public.pokesv1 VALUES (2);
+  changeType: 1
+  want:
+    - status: 2
+      code: 310
+      title: naming.fully-qualified
+      content: 'unqualified object name: ''pokesv1'''
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE public.pokesv1 (foo int);
+    UPDATE public.pokesv1 SET foo = 1 WHERE 1=1;
+    UPDATE public.pokesv1 SET foo = 2 WHERE foo=1;
+    UPDATE pokesv1 SET foo = 1 WHERE 1=1;
+    UPDATE public.pokesv1 SET foo = 1 WHERE 1 > 1;
+  changeType: 1
+  want:
+    - status: 2
+      code: 310
+      title: naming.fully-qualified
+      content: 'unqualified object name: ''pokesv1'''
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: "CREATE TABLE public.pokes (foo int); \nSELECT * FROM (SELECT (id) FROM tech_book) AS foo;"
+  changeType: 1
+  want:
+    - status: 2
+      code: 310
+      title: naming.fully-qualified
+      content: 'unqualified object name: ''tech_book'''
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: "CREATE TABLE public.pokes (foo int);\nWITH foo1 AS (SELECT * FROM public.tech_book) \nSELECT * FROM foo1;"
+  changeType: 1

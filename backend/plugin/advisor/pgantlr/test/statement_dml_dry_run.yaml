@@ -1,0 +1,4 @@
+- statement: INSERT INTO tech_book values(1, 'a')
+  changeType: 1
+- statement: DELETE FROM tech_book
+  changeType: 1
