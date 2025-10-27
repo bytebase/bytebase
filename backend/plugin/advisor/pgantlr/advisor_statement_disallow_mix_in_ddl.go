@@ -100,7 +100,7 @@ func (c *statementDisallowMixInDDLChecker) EnterDeletestmt(ctx *parser.Deletestm
 	c.addDMLAdvice(ctx, "DELETE")
 }
 
-func (c *statementDisallowMixInDDLChecker) addDMLAdvice(ctx antlr.ParserRuleContext, stmtType string) {
+func (c *statementDisallowMixInDDLChecker) addDMLAdvice(ctx antlr.ParserRuleContext, _ string) {
 	// Extract the statement text including semicolon using character positions
 	startPos := ctx.GetStart().GetStart()
 	stopPos := ctx.GetStop().GetStop()

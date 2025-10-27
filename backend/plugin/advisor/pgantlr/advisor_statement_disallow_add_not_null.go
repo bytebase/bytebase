@@ -69,9 +69,9 @@ func (c *statementDisallowAddNotNullChecker) EnterAltertablestmt(ctx *parser.Alt
 			// Check for ALTER COLUMN ... SET NOT NULL
 			if cmd.ALTER() != nil && cmd.SET() != nil && cmd.NOT() != nil && cmd.NULL_P() != nil {
 				// Get the column name
-				allColIds := cmd.AllColid()
-				if len(allColIds) > 0 {
-					columnName := pgparser.NormalizePostgreSQLColid(allColIds[0])
+				allColIDs := cmd.AllColid()
+				if len(allColIDs) > 0 {
+					columnName := pgparser.NormalizePostgreSQLColid(allColIDs[0])
 					c.adviceList = append(c.adviceList, &storepb.Advice{
 						Status:  c.level,
 						Code:    advisor.StatementAddNotNull.Int32(),
