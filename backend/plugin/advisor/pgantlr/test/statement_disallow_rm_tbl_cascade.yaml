@@ -1,0 +1,52 @@
+- statement: TRUNCATE TABLE issues CASCADE;
+  changeType: 1
+  want:
+    - status: 2
+      code: 213
+      title: statement.disallow-rm-tbl-cascade
+      content: The use of CASCADE is not permitted when removing a table
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE users (
+        tenant_id integer REFERENCES tenants ON DELETE CASCADE,
+        user_id integer NOT NULL,
+        PRIMARY KEY (tenant_id, user_id)
+    );
+  changeType: 1
+- statement: |-
+    CREATE TABLE users (
+      tenant_id integer,
+      user_id integer NOT NULL,
+      PRIMARY KEY (tenant_id, user_id)
+    );
+    COMMENT ON TABLE users IS 'CASCADE COMMENT';
+  changeType: 1
+- statement: |-
+    TRUNCATE TABLE tech_book CASCADE;
+    DROP TABLE tech_book CASCADE;
+    CREATE TABLE users (
+      tenant_id integer REFERENCES tenants ON DELETE CASCADE,
+      user_id integer NOT NULL,
+      PRIMARY KEY (tenant_id, user_id)
+    );
+  changeType: 1
+  want:
+    - status: 2
+      code: 213
+      title: statement.disallow-rm-tbl-cascade
+      content: The use of CASCADE is not permitted when removing a table
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 213
+      title: statement.disallow-rm-tbl-cascade
+      content: The use of CASCADE is not permitted when removing a table
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

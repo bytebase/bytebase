@@ -1,0 +1,68 @@
+- statement: ALTER TABLE tech_book ADD CONSTRAINT fk_tech_book_author_id_author_id FOREIGN KEY (author_id) REFERENCES author (id)
+  changeType: 1
+- statement: ALTER TABLE tech_book ADD CONSTRAINT fk_author_id FOREIGN KEY (author_id) REFERENCES author (id)
+  changeType: 1
+  want:
+    - status: 2
+      code: 305
+      title: naming.index.fk
+      content: Foreign key in table "tech_book" mismatches the naming convention, expect "^$|^fk_tech_book_author_id_author_id$" but found "fk_author_id"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book ADD CONSTRAINT wlwflloczhmazamdotbibvqrrzyhmvkslvyzpmlmxt FOREIGN KEY (author_id) REFERENCES author (id)
+  changeType: 1
+  want:
+    - status: 2
+      code: 305
+      title: naming.index.fk
+      content: Foreign key in table "tech_book" mismatches the naming convention, expect "^$|^fk_tech_book_author_id_author_id$" but found "wlwflloczhmazamdotbibvqrrzyhmvkslvyzpmlmxt"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book ADD COLUMN author_id INT CONSTRAINT fk_tech_book_author_id_author_id REFERENCES author (id)
+  changeType: 1
+- statement: ALTER TABLE tech_book ADD COLUMN author_id INT CONSTRAINT fk_author_id REFERENCES author (id)
+  changeType: 1
+  want:
+    - status: 2
+      code: 305
+      title: naming.index.fk
+      content: Foreign key in table "tech_book" mismatches the naming convention, expect "^$|^fk_tech_book_author_id_author_id$" but found "fk_author_id"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE book(id INT, author_id INT, CONSTRAINT fk_book_author_id_author_id FOREIGN KEY (author_id) REFERENCES author (id))
+  changeType: 1
+- statement: CREATE TABLE book(id INT, author_id INT, CONSTRAINT fk_book_author_id FOREIGN KEY (author_id) REFERENCES author (id))
+  changeType: 1
+  want:
+    - status: 2
+      code: 305
+      title: naming.index.fk
+      content: Foreign key in table "book" mismatches the naming convention, expect "^$|^fk_book_author_id_author_id$" but found "fk_book_author_id"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE book(id INT, author_id INT CONSTRAINT fk_book_author_id_author_id REFERENCES author (id))
+  changeType: 1
+- statement: |-
+    -- this is the first line.
+            CREATE TABLE book(
+              id INT,
+              author_id INT CONSTRAINT fk_book_author_id REFERENCES author (id)
+            )
+  changeType: 1
+  want:
+    - status: 2
+      code: 305
+      title: naming.index.fk
+      content: Foreign key in table "book" mismatches the naming convention, expect "^$|^fk_book_author_id_author_id$" but found "fk_book_author_id"
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
