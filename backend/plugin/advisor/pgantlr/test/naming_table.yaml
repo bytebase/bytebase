@@ -1,0 +1,64 @@
+- statement: CREATE TABLE "techBook"(id int, name varchar(255))
+  changeType: 1
+  want:
+    - status: 2
+      code: 301
+      title: naming.table
+      content: '"techBook" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE "rlcmidzlevbivwvcntihenpoibtiutqeb"(id int, name varchar(255))
+  changeType: 1
+- statement: CREATE TABLE _techBook(id int, name varchar(255))
+  changeType: 1
+  want:
+    - status: 2
+      code: 301
+      title: naming.table
+      content: '"_techbook" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE techBook(id int, name varchar(255))
+  changeType: 1
+- statement: CREATE TABLE book(id int, name varchar(255))
+  changeType: 1
+- statement: ALTER TABLE tech_book RENAME TO "TechBook"
+  changeType: 1
+  want:
+    - status: 2
+      code: 301
+      title: naming.table
+      content: '"TechBook" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    create table techBook(id int);
+    ALTER TABLE techBook RENAME TO tech_book_tmp;
+  changeType: 1
+- statement: |-
+    CREATE TABLE _techBook(id int, name varchar(255));
+                ALTER TABLE tech_book RENAME TO "TechBook";
+  changeType: 1
+  want:
+    - status: 2
+      code: 301
+      title: naming.table
+      content: '"_techbook" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 301
+      title: naming.table
+      content: '"TechBook" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
