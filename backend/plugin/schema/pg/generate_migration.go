@@ -3108,6 +3108,38 @@ func generateCommentChangesFromSDL(buf *strings.Builder, diff *schema.MetadataDi
 		return nil
 	}
 
+	// Build a set of tables being dropped
+	// When a table is dropped, its comments are automatically removed
+	tablesBeingDropped := make(map[string]bool)
+	for _, tableDiff := range diff.TableChanges {
+		if tableDiff.Action == schema.MetadataDiffActionDrop {
+			tableKey := tableDiff.SchemaName + "." + tableDiff.TableName
+			tablesBeingDropped[tableKey] = true
+		}
+	}
+
+	// Build a set of columns being dropped
+	// When a column is dropped, its comment is automatically removed
+	columnsBeingDropped := make(map[string]bool)
+	for _, tableDiff := range diff.TableChanges {
+		if tableDiff.Action == schema.MetadataDiffActionAlter {
+			for _, colDiff := range tableDiff.ColumnChanges {
+				if colDiff.Action == schema.MetadataDiffActionDrop {
+					var columnName string
+					if colDiff.OldColumn != nil {
+						columnName = colDiff.OldColumn.Name
+					} else if colDiff.OldASTNode != nil {
+						columnName = extractColumnNameFromAST(colDiff.OldASTNode)
+					}
+					if columnName != "" {
+						columnKey := tableDiff.SchemaName + "." + tableDiff.TableName + "." + columnName
+						columnsBeingDropped[columnKey] = true
+					}
+				}
+			}
+		}
+	}
+
 	for _, commentDiff := range diff.CommentChanges {
 		// Extract the new comment text from the AST node
 		newComment := extractCommentFromDiff(commentDiff)
@@ -3117,9 +3149,19 @@ func generateCommentChangesFromSDL(buf *strings.Builder, diff *schema.MetadataDi
 			writeCommentOnSchema(buf, commentDiff.SchemaName, newComment)
 
 		case schema.CommentObjectTypeTable:
+			// Skip comment generation for tables being dropped
+			tableKey := commentDiff.SchemaName + "." + commentDiff.ObjectName
+			if tablesBeingDropped[tableKey] {
+				continue
+			}
 			writeCommentOnTable(buf, commentDiff.SchemaName, commentDiff.ObjectName, newComment)
 
 		case schema.CommentObjectTypeColumn:
+			// Skip comment generation for columns being dropped
+			columnKey := commentDiff.SchemaName + "." + commentDiff.ObjectName + "." + commentDiff.ColumnName
+			if columnsBeingDropped[columnKey] {
+				continue
+			}
 			writeCommentOnColumn(buf, commentDiff.SchemaName, commentDiff.ObjectName, commentDiff.ColumnName, newComment)
 
 		case schema.CommentObjectTypeView:
