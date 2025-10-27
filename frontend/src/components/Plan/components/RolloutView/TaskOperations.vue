@@ -95,7 +95,7 @@ const state = reactive<LocalState>({
 });
 
 const { t } = useI18n();
-const { readonly } = usePlanContextWithRollout();
+const { readonly, issue } = usePlanContextWithRollout();
 
 // Action target for the panel
 const actionTarget = computed(() => {
@@ -151,7 +151,7 @@ const canPerformTaskActions = computed(() => {
   if (readonly.value) {
     return false;
   }
-  return canRolloutTasks(props.tasks);
+  return canRolloutTasks(props.tasks, issue.value);
 });
 
 const getDisabledTooltip = (_action: string) => {
