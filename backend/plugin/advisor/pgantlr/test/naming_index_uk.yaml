@@ -86,15 +86,14 @@
       endposition: null
 - statement: ALTER INDEX old_uk RENAME TO uk_tech_book_id_name
   changeType: 1
-# TODO: ALTER INDEX RENAME not fully supported - ANTLR grammar doesn't provide clear API to extract old index name
-# - statement: ALTER INDEX old_uk RENAME TO uk_tech_book
-#   changeType: 1
-#   want:
-#     - status: 2
-#       code: 304
-#       title: naming.index.uk
-#       content: Unique key in table "tech_book" mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found "uk_tech_book"
-#       startposition:
-#         line: 1
-#         column: 0
-#       endposition: null
+- statement: ALTER INDEX old_uk RENAME TO uk_tech_book
+  changeType: 1
+  want:
+    - status: 2
+      code: 304
+      title: naming.index.uk
+      content: Unique key in table "tech_book" mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found "uk_tech_book"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

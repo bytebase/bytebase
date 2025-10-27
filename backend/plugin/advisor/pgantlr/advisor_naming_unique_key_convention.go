@@ -194,21 +194,30 @@ func (c *namingUKConventionChecker) EnterRenamestmt(ctx *parser.RenamestmtContex
 	// Check for ALTER INDEX ... RENAME TO
 	if ctx.INDEX() != nil && ctx.TO() != nil {
 		allNames := ctx.AllName()
-		if len(allNames) >= 2 {
-			oldIndexName := pgparser.NormalizePostgreSQLName(allNames[0])
-			newIndexName := pgparser.NormalizePostgreSQLName(allNames[1])
+		if len(allNames) < 1 {
+			return
+		}
 
-			// "ALTER INDEX name RENAME TO new_name" doesn't take a table name
-			// Look up the index in catalog to determine if it's a unique key
-			if c.catalog != nil {
-				tableName, index := c.findIndex("", "", oldIndexName)
-				if index != nil && index.Unique() && !index.Primary() {
-					metaData := map[string]string{
-						advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList(), "_"),
-						advisor.TableNameTemplateToken:  tableName,
-					}
-					c.checkUniqueKeyName(newIndexName, tableName, metaData, ctx.GetStart().GetLine())
-				}
+		// Get old index name from qualified_name
+		var oldIndexName string
+		if ctx.Qualified_name() != nil {
+			parts := pgparser.NormalizePostgreSQLQualifiedName(ctx.Qualified_name())
+			if len(parts) > 0 {
+				oldIndexName = parts[len(parts)-1]
+			}
+		}
+
+		// Get new index name from the name after TO
+		newIndexName := pgparser.NormalizePostgreSQLName(allNames[0])
+
+		// Look up the index in catalog to determine if it's a unique key
+		if c.catalog != nil && oldIndexName != "" {
+			tableName, index := c.findIndex("", "", oldIndexName)
+			if index != nil && index.Unique() && !index.Primary() {
+				c.checkUniqueKeyName(newIndexName, tableName, map[string]string{
+					advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList(), "_"),
+					advisor.TableNameTemplateToken:  tableName,
+				}, ctx.GetStart().GetLine())
 			}
 		}
 	}
@@ -383,11 +392,4 @@ func (c *namingUKConventionChecker) findIndex(schemaName string, tableName strin
 		TableName:  tableName,
 		IndexName:  indexName,
 	})
-}
-
-func normalizeSchemaName(schemaName string) string {
-	if schemaName == "" {
-		return "public"
-	}
-	return schemaName
 }

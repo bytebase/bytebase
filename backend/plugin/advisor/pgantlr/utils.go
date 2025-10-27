@@ -131,3 +131,11 @@ func getTemplateRegexp(template string, templateList []string, tokens map[string
 
 	return regexp.Compile(template)
 }
+
+// normalizeSchemaName normalizes empty schema names to "public" (PostgreSQL default schema).
+func normalizeSchemaName(schemaName string) string {
+	if schemaName == "" {
+		return "public"
+	}
+	return schemaName
+}

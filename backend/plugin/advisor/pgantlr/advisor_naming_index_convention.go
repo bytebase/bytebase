@@ -115,9 +115,43 @@ func (c *namingIndexConventionChecker) EnterIndexstmt(ctx *parser.IndexstmtConte
 	c.checkIndexName(indexName, tableName, columnList, ctx.GetStart().GetLine())
 }
 
-// TODO(h3n4l): ALTER INDEX RENAME is not currently supported in the ANTLR-based advisor
-// The ANTLR parser does not provide a clear way to extract the old index name from
-// RenamestmtContext for ALTER INDEX statements. This needs further investigation.
+// EnterRenamestmt checks ALTER INDEX ... RENAME TO statements
+func (c *namingIndexConventionChecker) EnterRenamestmt(ctx *parser.RenamestmtContext) {
+	if !isTopLevel(ctx.GetParent()) {
+		return
+	}
+
+	// Check for ALTER INDEX ... RENAME TO
+	if ctx.INDEX() != nil && ctx.TO() != nil {
+		allNames := ctx.AllName()
+		if len(allNames) < 1 {
+			return
+		}
+
+		// Get old index name from qualified_name
+		var oldIndexName string
+		if ctx.Qualified_name() != nil {
+			parts := pgparser.NormalizePostgreSQLQualifiedName(ctx.Qualified_name())
+			if len(parts) > 0 {
+				oldIndexName = parts[len(parts)-1]
+			}
+		}
+
+		// Get new index name from the name after TO
+		newIndexName := pgparser.NormalizePostgreSQLName(allNames[0])
+
+		// Look up the index in catalog to determine if it's a regular index (not unique, not PK)
+		if c.catalog != nil && oldIndexName != "" {
+			tableName, index := c.findIndex("", "", oldIndexName)
+			if index != nil {
+				// Only check if it's a regular index (not unique, not primary)
+				if !index.Unique() && !index.Primary() {
+					c.checkIndexName(newIndexName, tableName, index.ExpressionList(), ctx.GetStart().GetLine())
+				}
+			}
+		}
+	}
+}
 
 func (c *namingIndexConventionChecker) checkIndexName(indexName, tableName string, columnList []string, line int) {
 	metaData := map[string]string{
@@ -165,4 +199,16 @@ func (c *namingIndexConventionChecker) checkIndexName(indexName, tableName strin
 			},
 		})
 	}
+}
+
+// findIndex returns index found in catalogs, nil if not found.
+func (c *namingIndexConventionChecker) findIndex(schemaName string, tableName string, indexName string) (string, *catalog.IndexState) {
+	if c.catalog == nil {
+		return "", nil
+	}
+	return c.catalog.Origin.FindIndex(&catalog.IndexFind{
+		SchemaName: normalizeSchemaName(schemaName),
+		TableName:  tableName,
+		IndexName:  indexName,
+	})
 }
