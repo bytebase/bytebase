@@ -34,6 +34,7 @@ func TestPostgreSQLANTLRRules(t *testing.T) {
 		advisor.SchemaRuleSchemaBackwardCompatibility,        // Migrated from legacy
 		advisor.SchemaRuleStatementAddFKNotValid,             // Migrated from legacy
 		advisor.SchemaRuleStatementDisallowCommit,            // Migrated from legacy
+		advisor.SchemaRuleStatementNonTransactional,          // Migrated from legacy
 		// Add real rules here as you migrate them from legacy pg/ folder
 		// Example:
 		// advisor.SchemaRuleStatementDisallowCommit,
