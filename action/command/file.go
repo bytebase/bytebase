@@ -48,6 +48,10 @@ func getReleaseFiles(w *world.World) ([]*v1pb.Release_File, string, error) {
 				if _, err := h.Write(content); err != nil {
 					return nil, "", errors.Wrapf(err, "failed to write file content")
 				}
+				// Add newline separator between files to prevent SQL statements from being concatenated
+				if len(contents) > 0 {
+					contents = append(contents, '\n')
+				}
 				contents = append(contents, content...)
 			}
 			return []*v1pb.Release_File{
