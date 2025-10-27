@@ -1980,15 +1980,15 @@ $$`,
 	require.NoError(t, err)
 
 	// Verify that FUNCTION has COMMENT ON FUNCTION
-	assert.Contains(t, result, `COMMENT ON FUNCTION "public"."get_user_count()" IS 'Function to count users';`,
+	assert.Contains(t, result, `COMMENT ON FUNCTION "public".get_user_count() IS 'Function to count users';`,
 		"Function comment should use COMMENT ON FUNCTION")
 
 	// Verify that PROCEDURE has COMMENT ON PROCEDURE (not COMMENT ON FUNCTION)
-	assert.Contains(t, result, `COMMENT ON PROCEDURE "public"."update_user_name(user_id integer, new_name character varying)" IS 'Procedure to update user name';`,
+	assert.Contains(t, result, `COMMENT ON PROCEDURE "public".update_user_name(user_id integer, new_name character varying) IS 'Procedure to update user name';`,
 		"Procedure comment should use COMMENT ON PROCEDURE")
 
 	// Verify that we don't incorrectly use COMMENT ON FUNCTION for the procedure
-	assert.NotContains(t, result, `COMMENT ON FUNCTION "public"."update_user_name`,
+	assert.NotContains(t, result, `COMMENT ON FUNCTION "public".update_user_name`,
 		"Procedure comment should NOT use COMMENT ON FUNCTION")
 
 	// Validate that the generated SQL can be parsed

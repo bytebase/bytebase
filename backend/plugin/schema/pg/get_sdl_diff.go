@@ -391,8 +391,10 @@ func (l *sdlChunkExtractor) EnterCommentstmt(ctx *parser.CommentstmtContext) {
 		return
 	}
 
-	// Check for FUNCTION comment: COMMENT ON FUNCTION function_with_argtypes IS comment_text
-	if ctx.FUNCTION() != nil {
+	// Check for FUNCTION/PROCEDURE comment
+	// Note: ctx.FUNCTION() is true for both COMMENT ON FUNCTION and COMMENT ON PROCEDURE
+	// We need to check ctx.PROCEDURE() to distinguish between them
+	if ctx.FUNCTION() != nil || ctx.PROCEDURE() != nil {
 		if ctx.Function_with_argtypes() != nil {
 			funcWithArgsCtx := ctx.Function_with_argtypes()
 
@@ -4082,7 +4084,7 @@ func createFunctionChunk(chunks *schema.SDLChunks, function *storepb.FunctionMet
 	if function.Comment != "" {
 		// Determine if this is a PROCEDURE or FUNCTION by checking the definition
 		objectType := "FUNCTION"
-		if strings.Contains(strings.ToUpper(function.Definition), "CREATE PROCEDURE") {
+		if isDefinitionProcedure(function.Definition) {
 			objectType = "PROCEDURE"
 		}
 		schemaName, functionName := parseIdentifier(functionKey)
@@ -4136,7 +4138,7 @@ func updateFunctionChunkIfNeeded(chunks *schema.SDLChunks, currentFunction, prev
 	if currentFunction.Comment != previousFunction.Comment {
 		// Determine if this is a PROCEDURE or FUNCTION by checking the definition
 		objectType := "FUNCTION"
-		if strings.Contains(strings.ToUpper(currentFunction.Definition), "CREATE PROCEDURE") {
+		if isDefinitionProcedure(currentFunction.Definition) {
 			objectType = "PROCEDURE"
 		}
 		schemaName, functionName := parseIdentifier(functionKey)
