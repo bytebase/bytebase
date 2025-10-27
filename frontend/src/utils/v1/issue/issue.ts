@@ -1,10 +1,16 @@
 import dayjs from "dayjs";
 import slug from "slug";
 import { t } from "@/plugins/i18n";
+import {
+  PROJECT_V1_ROUTE_ISSUE_DETAIL,
+  PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
+} from "@/router/dashboard/projectV1";
 import { EMPTY_ID, UNKNOWN_ID, type ComposedIssue } from "@/types";
 import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
+import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
+import { extractProjectResourceName } from "../project";
 
 export const issueV1Slug = (name: string, title: string = "issue") => {
   return [slug(title), extractIssueUID(name)].join("-");
@@ -94,4 +100,86 @@ export const generateIssueTitle = (
   parts.push(`${datetime} ${tz}`);
 
   return parts.join(" ");
+};
+
+/**
+ * Determines whether an issue should use the new CICD layout route.
+ *
+ * Rules:
+ * - Grant request issues: ALWAYS use new layout
+ * - Create database issues: ALWAYS use new layout
+ * - Data export issues: ALWAYS use new layout
+ * - Database changing issues: Use new layout ONLY when enabledNewLayout is true
+ */
+export const shouldUseNewIssueLayout = (
+  issue: { type?: Issue_Type; name?: string },
+  plan?: Plan | { specs?: Array<{ config?: { case?: string } }> },
+  enabledNewLayout = true
+): boolean => {
+  // Grant request issues always use new layout
+  if (issue.type === Issue_Type.GRANT_REQUEST) {
+    return true;
+  }
+
+  // Check if it's a create database or export data plan
+  if (plan?.specs) {
+    const isCreatingDatabasePlan = plan.specs.every(
+      (spec) => spec.config?.case === "createDatabaseConfig"
+    );
+    const isExportDataPlan = plan.specs.every(
+      (spec) => spec.config?.case === "exportDataConfig"
+    );
+
+    if (isCreatingDatabasePlan || isExportDataPlan) {
+      return true;
+    }
+  }
+
+  // Database export issue type always uses new layout
+  if (issue.type === Issue_Type.DATABASE_EXPORT) {
+    return true;
+  }
+
+  // For database changing issues, respect the layout preference
+  return enabledNewLayout;
+};
+
+/**
+ * Gets the appropriate route name and params for an issue based on its type and layout settings.
+ *
+ * @param issue - The issue object (must have name, and optionally type)
+ * @param plan - Optional plan object to check for create database or export data specs
+ * @param enabledNewLayout - Whether the new layout is enabled (default: true)
+ * @returns Route configuration with name and params
+ */
+export const getIssueRoute = (
+  issue: { type?: Issue_Type; name: string; title?: string },
+  plan?: Plan | { specs?: Array<{ config?: { case?: string } }> },
+  enabledNewLayout = true
+): {
+  name: string;
+  params: { projectId: string; issueSlug?: string; issueId?: string };
+} => {
+  const projectId = extractProjectResourceName(issue.name);
+  const useNewLayout = shouldUseNewIssueLayout(issue, plan, enabledNewLayout);
+
+  if (useNewLayout) {
+    // Use new CICD layout route with numeric issueId
+    return {
+      name: PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
+      params: {
+        projectId,
+        issueId: extractIssueUID(issue.name),
+      },
+    };
+  } else {
+    // Use legacy route with issueSlug
+    return {
+      name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+      params: {
+        projectId,
+        issueSlug: issueV1Slug(issue.name, issue.title || "issue"),
+      },
+    };
+  }
 };
