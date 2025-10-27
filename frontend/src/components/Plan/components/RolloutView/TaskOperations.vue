@@ -55,6 +55,9 @@ import { NButton, NScrollbar, NTooltip } from "naive-ui";
 import type { VNode } from "vue";
 import { computed, h, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import { useCurrentUserV1 } from "@/store";
+import { userNamePrefix } from "@/store/modules/v1/common";
+import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import type {
   Task,
@@ -95,7 +98,8 @@ const state = reactive<LocalState>({
 });
 
 const { t } = useI18n();
-const { readonly } = usePlanContextWithRollout();
+const { readonly, issue } = usePlanContextWithRollout();
+const currentUser = useCurrentUserV1();
 
 // Action target for the panel
 const actionTarget = computed(() => {
@@ -151,7 +155,7 @@ const canPerformTaskActions = computed(() => {
   if (readonly.value) {
     return false;
   }
-  return canRolloutTasks(props.tasks);
+  return canRolloutTasks(props.tasks, issue.value);
 });
 
 const getDisabledTooltip = (_action: string) => {
@@ -159,6 +163,14 @@ const getDisabledTooltip = (_action: string) => {
     return t("task.no-tasks-selected");
   }
   if (!canPerformTaskActions.value) {
+    // Special message for data export issues when user is not the creator
+    if (
+      issue.value &&
+      issue.value.type === Issue_Type.DATABASE_EXPORT &&
+      issue.value.creator !== `${userNamePrefix}${currentUser.value.email}`
+    ) {
+      return t("task.data-export-creator-only");
+    }
     return t("task.no-permission");
   }
   return "";

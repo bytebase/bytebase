@@ -100,6 +100,11 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 		}
 	}
 
+	// Build temporary metadata for AST-only mode dependency extraction
+	// This metadata only contains tables and views that are being dropped,
+	// allowing GetQuerySpan to find them when extracting view dependencies
+	tempMetadata := buildTempMetadataForDrop(diff)
+
 	// Add views to graph
 	for _, viewDiff := range diff.ViewChanges {
 		if viewDiff.Action == schema.MetadataDiffActionDrop || viewDiff.Action == schema.MetadataDiffActionAlter {
@@ -150,9 +155,8 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 			dependencies = viewDiff.OldView.DependencyColumns
 		} else if viewDiff.OldASTNode != nil {
 			// Extract dependencies from AST node for AST-only mode
-			// For simplicity, we use an empty schema metadata since we can't build full metadata in migration context
-			// This will only work for simple dependencies within the same database
-			dependencies = getViewDependenciesFromAST(viewDiff.OldASTNode, viewDiff.SchemaName, &storepb.DatabaseSchemaMetadata{})
+			// Use the temporary metadata containing objects being dropped
+			dependencies = getViewDependenciesFromAST(viewDiff.OldASTNode, viewDiff.SchemaName, tempMetadata)
 		}
 
 		for _, dep := range dependencies {
@@ -256,7 +260,8 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 
 		// Drop functions
 		for _, funcDiff := range functionMap {
-			writeDropFunction(buf, funcDiff.SchemaName, funcDiff.FunctionName)
+			definition := getFunctionDefinitionForDrop(funcDiff)
+			writeDropFunction(buf, funcDiff.SchemaName, funcDiff.FunctionName, funcDiff.OldASTNode, definition)
 		}
 
 		// Drop tables
@@ -365,7 +370,8 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 			} else if mvDiff, ok := materializedViewMap[objID]; ok {
 				writeDropMaterializedView(buf, mvDiff.SchemaName, mvDiff.MaterializedViewName)
 			} else if funcDiff, ok := functionMap[objID]; ok {
-				writeDropFunction(buf, funcDiff.SchemaName, funcDiff.FunctionName)
+				definition := getFunctionDefinitionForDrop(funcDiff)
+				writeDropFunction(buf, funcDiff.SchemaName, funcDiff.FunctionName, funcDiff.OldASTNode, definition)
 			} else if tableDiff, ok := tableMap[objID]; ok {
 				// Drop foreign keys before table
 				if tableDiff.OldTable != nil {
@@ -503,7 +509,8 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 
 				// Drop functions
 				for _, fn := range schemaDiff.OldSchema.Functions {
-					writeDropFunction(buf, schemaDiff.SchemaName, fn.Name)
+					// In metadata mode, no AST node is available, so pass nil
+					writeDropFunction(buf, schemaDiff.SchemaName, fn.Name, nil, fn.Definition)
 				}
 
 				// Drop tables (this will handle foreign keys internally)
@@ -606,6 +613,11 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 	// Build dependency graph for all objects being created or altered
 	graph := base.NewGraph()
 
+	// Build temporary metadata for AST-only mode dependency extraction
+	// This metadata contains tables and views that are being created,
+	// allowing GetQuerySpan to find them when extracting view dependencies
+	tempMetadata := buildTempMetadataForCreate(diff)
+
 	// Maps to store different object types
 	viewMap := make(map[string]*schema.ViewDiff)
 	materializedViewMap := make(map[string]*schema.MaterializedViewDiff)
@@ -678,9 +690,8 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 			dependencies = viewDiff.NewView.DependencyColumns
 		} else if viewDiff.NewASTNode != nil {
 			// Extract dependencies from AST node for AST-only mode
-			// For simplicity, we use an empty schema metadata since we can't build full metadata in migration context
-			// This will only work for simple dependencies within the same database
-			dependencies = getViewDependenciesFromAST(viewDiff.NewASTNode, viewDiff.SchemaName, &storepb.DatabaseSchemaMetadata{})
+			// Use the temporary metadata containing objects being created
+			dependencies = getViewDependenciesFromAST(viewDiff.NewASTNode, viewDiff.SchemaName, tempMetadata)
 		}
 
 		for _, dep := range dependencies {
@@ -810,7 +821,7 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 			}
 			// Add function comment for newly created functions
 			if funcDiff.Action == schema.MetadataDiffActionCreate && funcDiff.NewFunction != nil && funcDiff.NewFunction.Comment != "" {
-				writeCommentOnFunction(buf, funcDiff.SchemaName, funcDiff.NewFunction.Signature, funcDiff.NewFunction.Comment, funcDiff.NewFunction.Definition)
+				writeCommentOnFunction(buf, funcDiff.SchemaName, funcDiff.NewFunction.Signature, funcDiff.NewFunction.Comment, funcDiff.NewASTNode, funcDiff.NewFunction.Definition)
 			}
 		}
 
@@ -930,7 +941,7 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 				}
 				// Add function comment for newly created or altered functions
 				if (funcDiff.Action == schema.MetadataDiffActionCreate || funcDiff.Action == schema.MetadataDiffActionAlter) && funcDiff.NewFunction != nil && funcDiff.NewFunction.Comment != "" {
-					writeCommentOnFunction(buf, funcDiff.SchemaName, funcDiff.NewFunction.Signature, funcDiff.NewFunction.Comment, funcDiff.NewFunction.Definition)
+					writeCommentOnFunction(buf, funcDiff.SchemaName, funcDiff.NewFunction.Signature, funcDiff.NewFunction.Comment, funcDiff.NewASTNode, funcDiff.NewFunction.Definition)
 				}
 			}
 		}
@@ -1378,8 +1389,87 @@ func writeDropForeignKey(out *strings.Builder, schema, table, constraint string)
 	_, _ = out.WriteString("\n")
 }
 
-func writeDropFunction(out *strings.Builder, schema, function string) {
-	_, _ = out.WriteString(`DROP FUNCTION IF EXISTS "`)
+// isFunctionProcedure checks if the AST node or definition represents a PROCEDURE (not a FUNCTION)
+// Returns true if it's a PROCEDURE, false if it's a FUNCTION or cannot be determined
+func isFunctionProcedure(astNode any, definition string) bool {
+	// First, try to determine from AST node (most reliable)
+	if astNode != nil {
+		// Check if it's a CreatefunctionstmtContext with PROCEDURE keyword
+		if ctx, ok := astNode.(*pgparser.CreatefunctionstmtContext); ok {
+			// If PROCEDURE() returns non-nil, it's a PROCEDURE
+			// If FUNCTION() returns non-nil, it's a FUNCTION
+			return ctx.PROCEDURE() != nil
+		}
+		// Check if it's a CommentstmtContext (COMMENT ON FUNCTION/PROCEDURE)
+		if ctx, ok := astNode.(*pgparser.CommentstmtContext); ok {
+			// If PROCEDURE() returns non-nil, it's a COMMENT ON PROCEDURE
+			// If FUNCTION() returns non-nil (and PROCEDURE is nil), it's a COMMENT ON FUNCTION
+			return ctx.PROCEDURE() != nil
+		}
+	}
+
+	// Fall back to checking definition string (for metadata mode or when AST is not available)
+	if definition != "" {
+		upperDef := strings.ToUpper(definition)
+		// Check for PROCEDURE keyword in CREATE statement
+		return strings.Contains(upperDef, " PROCEDURE ") ||
+			strings.HasPrefix(upperDef, "CREATE PROCEDURE") ||
+			strings.HasPrefix(upperDef, "CREATE OR REPLACE PROCEDURE")
+	}
+
+	return false
+}
+
+// getFunctionDefinitionForDrop extracts the function definition from either metadata or AST node
+func getFunctionDefinitionForDrop(funcDiff *schema.FunctionDiff) string {
+	// Try metadata first (if available)
+	if funcDiff.OldFunction != nil {
+		return funcDiff.OldFunction.Definition
+	}
+
+	// Fall back to extracting from AST node (AST-only mode)
+	if funcDiff.OldASTNode != nil {
+		// Use generic interface to extract text from any parser rule context
+		type parserContext interface {
+			GetParser() antlr.Parser
+			GetStart() antlr.Token
+			GetStop() antlr.Token
+			GetText() string
+		}
+
+		if ruleContext, ok := funcDiff.OldASTNode.(parserContext); ok {
+			// Try to use token stream first (preserves formatting)
+			if parser := ruleContext.GetParser(); parser != nil {
+				if tokenStream := parser.GetTokenStream(); tokenStream != nil {
+					start := ruleContext.GetStart()
+					stop := ruleContext.GetStop()
+					if start != nil && stop != nil {
+						text := tokenStream.GetTextFromTokens(start, stop)
+						if text != "" {
+							return text
+						}
+					}
+				}
+			}
+			// Fallback to GetText() method
+			return ruleContext.GetText()
+		}
+	}
+
+	// No definition available
+	return ""
+}
+
+func writeDropFunction(out *strings.Builder, schema, function string, astNode any, definition string) {
+	// Determine if this is a PROCEDURE or FUNCTION using AST-based detection
+	objectType := "FUNCTION"
+	if isFunctionProcedure(astNode, definition) {
+		objectType = "PROCEDURE"
+	}
+
+	_, _ = out.WriteString(`DROP `)
+	_, _ = out.WriteString(objectType)
+	_, _ = out.WriteString(` IF EXISTS "`)
 	_, _ = out.WriteString(schema)
 	_, _ = out.WriteString(`"."`)
 
@@ -2011,6 +2101,106 @@ func hasCreateViewsOrFunctions(diff *schema.MetadataDiff) bool {
 	return false
 }
 
+// buildTempMetadataForCreate builds a temporary DatabaseSchemaMetadata containing
+// the tables and views that are being created or altered. This allows GetQuerySpan to
+// find these objects when extracting view dependencies in AST-only mode.
+func buildTempMetadataForCreate(diff *schema.MetadataDiff) *storepb.DatabaseSchemaMetadata {
+	// Group objects by schema
+	schemaMap := make(map[string]*storepb.SchemaMetadata)
+
+	// Collect tables being created or altered
+	for _, tableDiff := range diff.TableChanges {
+		if tableDiff.Action == schema.MetadataDiffActionCreate || tableDiff.Action == schema.MetadataDiffActionAlter {
+			schemaName := tableDiff.SchemaName
+			if schemaMap[schemaName] == nil {
+				schemaMap[schemaName] = &storepb.SchemaMetadata{
+					Name: schemaName,
+				}
+			}
+			// Add table with just the name - that's all GetQuerySpan needs
+			schemaMap[schemaName].Tables = append(schemaMap[schemaName].Tables, &storepb.TableMetadata{
+				Name: tableDiff.TableName,
+			})
+		}
+	}
+
+	// Collect views being created or altered
+	for _, viewDiff := range diff.ViewChanges {
+		if viewDiff.Action == schema.MetadataDiffActionCreate || viewDiff.Action == schema.MetadataDiffActionAlter {
+			schemaName := viewDiff.SchemaName
+			if schemaMap[schemaName] == nil {
+				schemaMap[schemaName] = &storepb.SchemaMetadata{
+					Name: schemaName,
+				}
+			}
+			// Add view with just the name
+			schemaMap[schemaName].Views = append(schemaMap[schemaName].Views, &storepb.ViewMetadata{
+				Name: viewDiff.ViewName,
+			})
+		}
+	}
+
+	// Convert map to slice
+	var schemas []*storepb.SchemaMetadata
+	for _, schemaMeta := range schemaMap {
+		schemas = append(schemas, schemaMeta)
+	}
+
+	return &storepb.DatabaseSchemaMetadata{
+		Schemas: schemas,
+	}
+}
+
+// buildTempMetadataForDrop builds a temporary DatabaseSchemaMetadata containing only
+// the tables and views that are being dropped. This allows GetQuerySpan to find these
+// objects when extracting view dependencies in AST-only mode.
+func buildTempMetadataForDrop(diff *schema.MetadataDiff) *storepb.DatabaseSchemaMetadata {
+	// Group objects by schema
+	schemaMap := make(map[string]*storepb.SchemaMetadata)
+
+	// Collect tables being dropped
+	for _, tableDiff := range diff.TableChanges {
+		if tableDiff.Action == schema.MetadataDiffActionDrop {
+			schemaName := tableDiff.SchemaName
+			if schemaMap[schemaName] == nil {
+				schemaMap[schemaName] = &storepb.SchemaMetadata{
+					Name: schemaName,
+				}
+			}
+			// Add table with just the name - that's all GetQuerySpan needs
+			schemaMap[schemaName].Tables = append(schemaMap[schemaName].Tables, &storepb.TableMetadata{
+				Name: tableDiff.TableName,
+			})
+		}
+	}
+
+	// Collect views being dropped
+	for _, viewDiff := range diff.ViewChanges {
+		if viewDiff.Action == schema.MetadataDiffActionDrop || viewDiff.Action == schema.MetadataDiffActionAlter {
+			schemaName := viewDiff.SchemaName
+			if schemaMap[schemaName] == nil {
+				schemaMap[schemaName] = &storepb.SchemaMetadata{
+					Name: schemaName,
+				}
+			}
+			// Add view with just the name
+			schemaMap[schemaName].Views = append(schemaMap[schemaName].Views, &storepb.ViewMetadata{
+				Name: viewDiff.ViewName,
+			})
+		}
+	}
+
+	// Convert map to slice
+	var schemas []*storepb.SchemaMetadata
+	for _, schemaMeta := range schemaMap {
+		schemas = append(schemas, schemaMeta)
+	}
+
+	return &storepb.DatabaseSchemaMetadata{
+		Schemas: schemas,
+	}
+}
+
 // getObjectID generates a unique identifier for database objects
 func getMigrationObjectID(schema, name string) string {
 	return fmt.Sprintf("%s.%s", schema, name)
@@ -2617,7 +2807,7 @@ func generateFunctionCommentChanges(buf *strings.Builder, diff *schema.MetadataD
 
 			// If comments are different, generate COMMENT ON FUNCTION statement
 			if oldComment != newComment {
-				writeCommentOnFunction(buf, funcDiff.SchemaName, funcDiff.NewFunction.Signature, newComment, funcDiff.NewFunction.Definition)
+				writeCommentOnFunction(buf, funcDiff.SchemaName, funcDiff.NewFunction.Signature, newComment, funcDiff.NewASTNode, funcDiff.NewFunction.Definition)
 			}
 		}
 	}
@@ -2804,10 +2994,10 @@ func writeCommentOnMaterializedView(out *strings.Builder, schema, view, comment 
 }
 
 // writeCommentOnFunction writes a COMMENT ON FUNCTION/PROCEDURE statement
-func writeCommentOnFunction(out *strings.Builder, schema, signature, comment, definition string) {
-	// Determine if this is a PROCEDURE or FUNCTION by checking the definition
+func writeCommentOnFunction(out *strings.Builder, schema, signature, comment string, astNode any, definition string) {
+	// Determine if this is a PROCEDURE or FUNCTION using AST-based detection
 	objectType := "FUNCTION"
-	if strings.Contains(strings.ToUpper(definition), "CREATE PROCEDURE") {
+	if isFunctionProcedure(astNode, definition) {
 		objectType = "PROCEDURE"
 	}
 
@@ -2937,19 +3127,26 @@ func generateCommentChangesFromSDL(buf *strings.Builder, diff *schema.MetadataDi
 
 		case schema.CommentObjectTypeFunction:
 			// For functions, ObjectName contains the function signature
-			// Try to find the function definition to determine if it's a FUNCTION or PROCEDURE
-			functionDefinition := ""
+			// Try to find the function definition and AST node to determine if it's a FUNCTION or PROCEDURE
+			var functionDefinition string
+			var functionASTNode any
 			functionKey := commentDiff.SchemaName + "." + commentDiff.ObjectName
 			for _, funcDiff := range diff.FunctionChanges {
 				if funcDiff.NewFunction != nil {
 					funcKey := funcDiff.SchemaName + "." + funcDiff.NewFunction.Signature
 					if funcKey == functionKey {
 						functionDefinition = funcDiff.NewFunction.Definition
+						functionASTNode = funcDiff.NewASTNode
 						break
 					}
 				}
 			}
-			writeCommentOnFunction(buf, commentDiff.SchemaName, commentDiff.ObjectName, newComment, functionDefinition)
+			// If we didn't find the function AST node from FunctionChanges, use the comment AST node
+			// to determine if it's a FUNCTION or PROCEDURE
+			if functionASTNode == nil && commentDiff.NewASTNode != nil {
+				functionASTNode = commentDiff.NewASTNode
+			}
+			writeCommentOnFunction(buf, commentDiff.SchemaName, commentDiff.ObjectName, newComment, functionASTNode, functionDefinition)
 
 		case schema.CommentObjectTypeSequence:
 			writeCommentOnSequence(buf, commentDiff.SchemaName, commentDiff.ObjectName, newComment)
@@ -3186,24 +3383,35 @@ func getViewDependenciesFromAST(astNode any, schemaName string, fullSchemaMetada
 	queryStatement := strings.TrimSpace(selectStatement)
 
 	// Use GetQuerySpan with the full schema metadata so it can resolve table/view references
-	span, err := pgpluginparser.GetQuerySpan(
-		context.Background(),
-		base.GetQuerySpanContext{
-			GetDatabaseMetadataFunc: func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
-				// Return the full schema metadata so GetQuerySpan can resolve references
-				dbMetadata := model.NewDatabaseMetadata(fullSchemaMetadata, false, false)
-				return databaseName, dbMetadata, nil
+	// Wrap in defer/recover to handle potential panics from incomplete metadata
+	var span *base.QuerySpan
+	var err error
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				// If GetQuerySpan panics (e.g., due to incomplete metadata), treat it as an error
+				err = errors.Errorf("GetQuerySpan panicked: %v", r)
+			}
+		}()
+		span, err = pgpluginparser.GetQuerySpan(
+			context.Background(),
+			base.GetQuerySpanContext{
+				GetDatabaseMetadataFunc: func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
+					// Return the full schema metadata so GetQuerySpan can resolve references
+					dbMetadata := model.NewDatabaseMetadata(fullSchemaMetadata, false, false)
+					return databaseName, dbMetadata, nil
+				},
+				ListDatabaseNamesFunc: func(_ context.Context, _ string) ([]string, error) {
+					// Return empty list - we don't need actual database names for dependency extraction
+					return []string{}, nil
+				},
 			},
-			ListDatabaseNamesFunc: func(_ context.Context, _ string) ([]string, error) {
-				// Return empty list - we don't need actual database names for dependency extraction
-				return []string{}, nil
-			},
-		},
-		queryStatement,
-		"", // database
-		schemaName,
-		false, // case sensitive
-	)
+			queryStatement,
+			"", // database
+			schemaName,
+			false, // case sensitive
+		)
+	}()
 
 	// If error parsing query span, return empty dependencies
 	if err != nil {

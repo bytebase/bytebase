@@ -313,10 +313,13 @@ import {
   pushNotification,
   useEnvironmentV1Store,
   usePolicyByParentAndType,
+  useCurrentUserV1,
 } from "@/store";
+import { userNamePrefix } from "@/store/modules/v1/common";
 import {
   Issue_Approver_Status,
   Issue_ApprovalStatus,
+  Issue_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
   PolicyType,
@@ -360,6 +363,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const { issue, rollout, plan, taskRuns } = usePlanContextWithRollout();
+const currentUser = useCurrentUserV1();
 
 const loading = ref(false);
 const environmentStore = useEnvironmentV1Store();
@@ -501,8 +505,17 @@ const validationErrors = computed(() => {
   const errors: string[] = [];
 
   // Permission errors - always block rollout
-  if (!canRolloutTasks(eligibleTasks.value)) {
-    errors.push(t("task.no-permission"));
+  if (!canRolloutTasks(eligibleTasks.value, issue.value)) {
+    // Special message for data export issues when user is not the creator
+    if (
+      issue.value &&
+      issue.value.type === Issue_Type.DATABASE_EXPORT &&
+      issue.value.creator !== `${userNamePrefix}${currentUser.value.email}`
+    ) {
+      errors.push(t("task.data-export-creator-only"));
+    } else {
+      errors.push(t("task.no-permission"));
+    }
   }
 
   // No active tasks to cancel - blocking error

@@ -313,6 +313,7 @@
     "no-skippable-tasks": "スキップ可能なタスクはありません",
     "no-cancellable-tasks": "キャンセル可能なタスクはありません",
     "no-permission": "この操作を実行する権限がありません",
+    "data-export-creator-only": "問題作成者のみがデータエクスポートタスクを実行できます",
     "scheduled-time": "予定時刻",
     "select-scheduled-time": "予定時刻を選択してください",
     "error": {
@@ -991,6 +992,7 @@
     "waiting-for-review": "モデレート済み",
     "issue-name": "イシュー名",
     "grant-request": {
+      "details": "リクエストの詳細",
       "expired-at": "有効期限",
       "all-databases": "すべてのデータベース",
       "all-databases-tip": "このプロジェクトに属する現在および将来のすべてのデータベース。",
@@ -1595,6 +1597,11 @@
     "no-environment": "このデータベースは環境にバインドされていません",
     "set-environment": "環境を設定する",
     "sync-database": "データベースを同期",
+    "export-schema": "スキーマをエクスポート",
+    "export-schema-single-file": "単一ファイル",
+    "export-schema-multi-file": "複数ファイル (ZIP)",
+    "successfully-exported-schema": "スキーマのエクスポートに成功しました",
+    "failed-to-export-schema": "スキーマのエクスポートに失敗しました",
     "select": "データベースの選択",
     "sync-status": "同期ステータス",
     "last-successful-sync": "最後に成功した同期",

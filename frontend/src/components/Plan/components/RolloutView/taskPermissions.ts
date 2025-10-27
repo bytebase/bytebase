@@ -6,6 +6,8 @@ import {
   usePolicyV1Store,
 } from "@/store";
 import { userNamePrefix, roleNamePrefix } from "@/store/modules/v1/common";
+import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
+import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import {
@@ -16,14 +18,24 @@ import {
 
 /**
  * Check if the current user can rollout the given tasks
+ * - For data export issues: only the issue creator can rollout
  * - If user has bb.taskRuns.create permission → always allow
  * - If user lacks bb.taskRuns.create permission → check environment rollout policy roles
  * @param tasks - Array of tasks to check
+ * @param issue - Optional issue to check for data export special handling
  * @returns true if user can rollout, false otherwise
  */
-export const canRolloutTasks = (tasks: Task[]): boolean => {
+export const canRolloutTasks = (tasks: Task[], issue?: Issue): boolean => {
   if (tasks.length === 0) {
     return false;
+  }
+
+  const currentUser = useCurrentUserV1();
+
+  // Special check for data export issues: only the creator can run tasks
+  if (issue && issue.type === Issue_Type.DATABASE_EXPORT) {
+    const formattedCurrentUser = `${userNamePrefix}${currentUser.value.email}`;
+    return issue.creator === formattedCurrentUser;
   }
 
   const { project } = useCurrentProjectV1();
@@ -37,7 +49,6 @@ export const canRolloutTasks = (tasks: Task[]): boolean => {
   }
 
   // Second check: if no permission, check if user matches environment rollout policy roles
-  const currentUser = useCurrentUserV1();
   const projectIamPolicyStore = useProjectIamPolicyStore();
   const databaseStore = useDatabaseV1Store();
   const policyStore = usePolicyV1Store();

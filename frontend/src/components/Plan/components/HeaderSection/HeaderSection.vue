@@ -32,6 +32,7 @@ import { NButton, NTag } from "naive-ui";
 import { computed } from "vue";
 import { useRoute } from "vue-router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL_V1 } from "@/router/dashboard/projectV1";
+import { isValidPlanName } from "@/utils";
 import { usePlanContext } from "../../logic";
 import { useSidebarContext } from "../../logic/sidebar";
 import Actions from "./Actions";
@@ -58,10 +59,16 @@ const handleMobileSidebarOpen = () => {
 };
 
 const showDraftTag = computed(() => {
-  return !isCreating.value && !plan.value.issue && !plan.value.rollout;
+  return (
+    !isCreating.value &&
+    isValidPlanName(plan.value.name) &&
+    !plan.value.issue &&
+    !plan.value.rollout
+  );
 });
 
 const showDescriptionSection = computed(() => {
-  return !plan.value.issue;
+  // Only show when there's no issue yet (draft plan)
+  return isValidPlanName(plan.value.name) && !plan.value.issue;
 });
 </script>

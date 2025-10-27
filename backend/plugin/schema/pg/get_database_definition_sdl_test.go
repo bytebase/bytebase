@@ -1470,7 +1470,7 @@ func TestGetDatabaseDefinitionSDLFormat_WithComments(t *testing.T) {
 	assert.Contains(t, result, `COMMENT ON VIEW "test_schema"."active_users" IS 'View of active users';`)
 
 	// Verify function comment
-	assert.Contains(t, result, `COMMENT ON FUNCTION "test_schema"."get_user_count()" IS 'Function to get user count';`)
+	assert.Contains(t, result, `COMMENT ON FUNCTION "test_schema".get_user_count() IS 'Function to get user count';`)
 
 	// Verify sequence comment
 	assert.Contains(t, result, `COMMENT ON SEQUENCE "test_schema"."custom_seq" IS 'Custom sequence for testing';`)
@@ -1628,7 +1628,7 @@ func TestGetMultiFileDatabaseDefinition_WithComments(t *testing.T) {
 	functionFile, ok := fileMap["schemas/app_schema/functions/count_products.sql"]
 	require.True(t, ok, "function file should exist")
 	assert.Contains(t, functionFile, `CREATE FUNCTION app_schema.count_products()`)
-	assert.Contains(t, functionFile, `COMMENT ON FUNCTION "app_schema"."count_products()" IS 'Returns product count';`)
+	assert.Contains(t, functionFile, `COMMENT ON FUNCTION "app_schema".count_products() IS 'Returns product count';`)
 
 	// Validate that each file's SQL can be parsed
 	for fileName, content := range fileMap {
@@ -1980,15 +1980,15 @@ $$`,
 	require.NoError(t, err)
 
 	// Verify that FUNCTION has COMMENT ON FUNCTION
-	assert.Contains(t, result, `COMMENT ON FUNCTION "public"."get_user_count()" IS 'Function to count users';`,
+	assert.Contains(t, result, `COMMENT ON FUNCTION "public".get_user_count() IS 'Function to count users';`,
 		"Function comment should use COMMENT ON FUNCTION")
 
 	// Verify that PROCEDURE has COMMENT ON PROCEDURE (not COMMENT ON FUNCTION)
-	assert.Contains(t, result, `COMMENT ON PROCEDURE "public"."update_user_name(user_id integer, new_name character varying)" IS 'Procedure to update user name';`,
+	assert.Contains(t, result, `COMMENT ON PROCEDURE "public".update_user_name(user_id integer, new_name character varying) IS 'Procedure to update user name';`,
 		"Procedure comment should use COMMENT ON PROCEDURE")
 
 	// Verify that we don't incorrectly use COMMENT ON FUNCTION for the procedure
-	assert.NotContains(t, result, `COMMENT ON FUNCTION "public"."update_user_name`,
+	assert.NotContains(t, result, `COMMENT ON FUNCTION "public".update_user_name`,
 		"Procedure comment should NOT use COMMENT ON FUNCTION")
 
 	// Validate that the generated SQL can be parsed

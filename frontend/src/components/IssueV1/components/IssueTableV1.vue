@@ -49,7 +49,7 @@ import { BBAvatar } from "@/bbkit";
 import BatchIssueActionsV1 from "@/components/IssueV1/components/BatchIssueActionsV1.vue";
 import CurrentApproverV1 from "@/components/IssueV1/components/CurrentApproverV1.vue";
 import { useElementVisibilityInScrollParent } from "@/composables/useElementVisibilityInScrollParent";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
 import { useUserStore } from "@/store";
 import {
   getTimeForPbTimestampProtoEs,
@@ -58,10 +58,9 @@ import {
 } from "@/types";
 import {
   getHighlightHTMLByRegExp,
-  extractProjectResourceName,
   humanizeTs,
-  issueV1Slug,
   extractIssueUID,
+  getIssueRoute,
 } from "@/utils";
 import { projectOfIssue } from "../logic";
 import IssueLabelSelector, {
@@ -95,6 +94,7 @@ const props = withDefaults(
 const { t } = useI18n();
 const router = useRouter();
 const userStore = useUserStore();
+const { enabledNewLayout } = useIssueLayoutVersion();
 const state = reactive<LocalState>({
   selectedIssueNameList: new Set(),
 });
@@ -248,12 +248,10 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
 });
 
 const issueUrl = (issue: ComposedIssue) => {
+  const issueRoute = getIssueRoute(issue, undefined, enabledNewLayout.value);
   const route = router.resolve({
-    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-    params: {
-      projectId: extractProjectResourceName(issue.name),
-      issueSlug: issueV1Slug(issue.name, issue.title),
-    },
+    name: issueRoute.name,
+    params: issueRoute.params,
   });
   return route.fullPath;
 };

@@ -329,9 +329,15 @@ func (s *Store) BatchUpdateDatabases(ctx context.Context, databases []*DatabaseM
 		where.Or("environment = ?", *v)
 	}
 
-	for _, database := range databases {
-		where.Or("(db.instance = ? AND db.name = ?)", database.InstanceID, database.DatabaseName)
+	if len(databases) > 0 {
+		var dbInstances, dbNames []string
+		for _, database := range databases {
+			dbInstances = append(dbInstances, database.InstanceID)
+			dbNames = append(dbNames, database.DatabaseName)
+		}
+		where.Or(`(db.instance, db.name) IN (SELECT * FROM unnest(?::TEXT[], ?::TEXT[]))`, dbInstances, dbNames)
 	}
+
 	if where.Len() == 0 {
 		return nil, errors.Errorf("empty where")
 	}

@@ -92,6 +92,7 @@
             :text="false"
             :database="database"
           />
+          <ExportSchemaButton :database="database" />
           <NButton
             v-if="allowTransferDatabase"
             @click.prevent="tryTransferProject"
@@ -210,6 +211,7 @@ import {
   SchemaDiagramButton,
 } from "@/components/DatabaseDetail";
 import DriftedDatabaseAlert from "@/components/DatabaseDetail/DriftedDatabaseAlert.vue";
+import ExportSchemaButton from "@/components/DatabaseDetail/ExportSchemaButton.vue";
 import SyncDatabaseButton from "@/components/DatabaseDetail/SyncDatabaseButton.vue";
 import TransferOutDatabaseForm from "@/components/TransferOutDatabaseForm";
 import { Drawer } from "@/components/v2";

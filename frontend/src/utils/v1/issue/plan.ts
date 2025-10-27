@@ -22,7 +22,7 @@ export const isValidPlanName = (name: string | undefined) => {
     return false;
   }
   const planUID = extractPlanUID(name);
-  return (
+  return Boolean(
     planUID && planUID !== String(EMPTY_ID) && planUID !== String(UNKNOWN_ID)
   );
 };

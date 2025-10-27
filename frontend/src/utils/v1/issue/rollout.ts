@@ -1,10 +1,8 @@
 import { last } from "lodash-es";
-import { stringify } from "qs";
 import { useI18n } from "vue-i18n";
 import { extractCoreDatabaseInfoFromDatabaseCreateTask } from "@/components/IssueV1";
 import { mockDatabase } from "@/components/IssueV1/logic/utils";
 import { useDatabaseV1Store } from "@/store";
-import type { ComposedIssue } from "@/types";
 import {
   EMPTY_TASK_NAME,
   emptyStage,
@@ -25,8 +23,7 @@ import {
   type Task,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
-import { extractProjectResourceName } from "../project";
-import { extractIssueUID, flattenTaskV1List, issueV1Slug } from "./issue";
+import { flattenTaskV1List } from "./issue";
 
 export const extractRolloutUID = (name: string) => {
   const pattern = /(?:^|\/)rollouts\/([^/]+)(?:$|\/)/;
@@ -184,32 +181,6 @@ export const setSheetNameForTask = (task: Task, sheetName: string) => {
   } else if (task.payload?.case === "databaseDataExport") {
     task.payload.value.sheet = sheetName;
   }
-};
-
-export const buildIssueV1LinkWithTask = (
-  issue: ComposedIssue,
-  task: Task,
-  simple = false
-) => {
-  const stage = issue.rolloutEntity?.stages.find(
-    (s) => s.tasks.findIndex((t) => t.name === task.name) >= 0
-  );
-
-  const projectId = extractProjectResourceName(issue.name);
-  const issueSlug = simple
-    ? extractIssueUID(issue.name)
-    : issueV1Slug(issue.name, issue.title);
-  const query: Record<string, string> = {};
-  if (stage) {
-    // Stage UID is now always the environment ID
-    query.stage = extractStageUID(stage.name);
-  }
-  query.task = simple ? extractTaskUID(task.name) : taskV1Slug(task);
-
-  const querystring = stringify(query);
-  const url = `/projects/${projectId}/issues/${issueSlug}?${querystring}`;
-
-  return url;
 };
 
 export const stringifyTaskStatus = (

@@ -8,10 +8,6 @@ import (
 	"strings"
 
 	"connectrpc.com/connect"
-	"github.com/google/cel-go/cel"
-	celast "github.com/google/cel-go/common/ast"
-	celoperators "github.com/google/cel-go/common/operators"
-	celoverloads "github.com/google/cel-go/common/overloads"
 	"github.com/pkg/errors"
 
 	"github.com/pquerna/otp/totp"
@@ -124,8 +120,13 @@ func (s *UserService) ListUsers(ctx context.Context, request *connect.Request[v1
 		Offset:      &offset.offset,
 		ShowDeleted: request.Msg.ShowDeleted,
 	}
-	if err := parseListUserFilter(find, request.Msg.Filter); err != nil {
-		return nil, err
+	filterResult, err := store.GetListUserFilter(request.Msg.Filter)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	if filterResult != nil {
+		find.FilterQ = filterResult.Query
+		find.ProjectID = filterResult.ProjectID
 	}
 	if v := find.ProjectID; v != nil {
 		user, ok := GetUserFromContext(ctx)
@@ -161,145 +162,6 @@ func (s *UserService) ListUsers(ctx context.Context, request *connect.Request[v1
 		response.Users = append(response.Users, convertToUser(user))
 	}
 	return connect.NewResponse(response), nil
-}
-
-func parseListUserFilter(find *store.FindUserMessage, filter string) error {
-	if filter == "" {
-		return nil
-	}
-	e, err := cel.NewEnv()
-	if err != nil {
-		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to create cel env"))
-	}
-	ast, iss := e.Parse(filter)
-	if iss != nil {
-		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String()))
-	}
-
-	var getFilter func(expr celast.Expr) (string, error)
-	var positionalArgs []any
-
-	parseToSQL := func(variable, value any) (string, error) {
-		switch variable {
-		case "email":
-			positionalArgs = append(positionalArgs, value.(string))
-			return fmt.Sprintf("principal.email = $%d", len(positionalArgs)), nil
-		case "name":
-			positionalArgs = append(positionalArgs, value.(string))
-			return fmt.Sprintf("principal.name = $%d", len(positionalArgs)), nil
-		case "user_type":
-			v1UserType, ok := v1pb.UserType_value[value.(string)]
-			if !ok {
-				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid user type filter %q", value))
-			}
-			principalType, err := convertToPrincipalType(v1pb.UserType(v1UserType))
-			if err != nil {
-				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse the user type %q with error: %v", v1UserType, err))
-			}
-			positionalArgs = append(positionalArgs, principalType)
-			return fmt.Sprintf("principal.type = $%d", len(positionalArgs)), nil
-		case "state":
-			v1State, ok := v1pb.State_value[value.(string)]
-			if !ok {
-				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid state filter %q", value))
-			}
-			positionalArgs = append(positionalArgs, v1pb.State(v1State) == v1pb.State_DELETED)
-			return fmt.Sprintf("principal.deleted = $%d", len(positionalArgs)), nil
-		case "project":
-			projectID, err := common.GetProjectID(value.(string))
-			if err != nil {
-				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid project filter %q", value))
-			}
-			find.ProjectID = &projectID
-			return "TRUE", nil
-		default:
-			return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q", variable))
-		}
-	}
-
-	parseToUserTypeSQL := func(expr celast.Expr, relation string) (string, error) {
-		variable, value := getVariableAndValueFromExpr(expr)
-		if variable != "user_type" {
-			return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`only "user_type" support "user_type in [xx]"/"!(user_type in [xx])" operator`))
-		}
-
-		rawTypeList, ok := value.([]any)
-		if !ok {
-			return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid user_type value %q", value))
-		}
-		if len(rawTypeList) == 0 {
-			return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("empty user_type filter"))
-		}
-		userTypeList := []string{}
-		for _, rawType := range rawTypeList {
-			v1UserType, ok := v1pb.UserType_value[rawType.(string)]
-			if !ok {
-				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid user type filter %q", rawType))
-			}
-			principalType, err := convertToPrincipalType(v1pb.UserType(v1UserType))
-			if err != nil {
-				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse the user type %q with error: %v", v1UserType, err))
-			}
-			positionalArgs = append(positionalArgs, principalType)
-			userTypeList = append(userTypeList, fmt.Sprintf("$%d", len(positionalArgs)))
-		}
-
-		return fmt.Sprintf("principal.type %s (%s)", relation, strings.Join(userTypeList, ",")), nil
-	}
-
-	getFilter = func(expr celast.Expr) (string, error) {
-		switch expr.Kind() {
-		case celast.CallKind:
-			functionName := expr.AsCall().FunctionName()
-			switch functionName {
-			case celoperators.LogicalOr:
-				return getSubConditionFromExpr(expr, getFilter, "OR")
-			case celoperators.LogicalAnd:
-				return getSubConditionFromExpr(expr, getFilter, "AND")
-			case celoperators.Equals:
-				variable, value := getVariableAndValueFromExpr(expr)
-				return parseToSQL(variable, value)
-			case celoverloads.Matches:
-				variable := expr.AsCall().Target().AsIdent()
-				args := expr.AsCall().Args()
-				if len(args) != 1 {
-					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`invalid args for %q`, variable))
-				}
-				value := args[0].AsLiteral().Value()
-				if variable != "name" && variable != "email" {
-					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`only "name" and "email" support %q operator, but found %q`, celoverloads.Matches, variable))
-				}
-				strValue, ok := value.(string)
-				if !ok {
-					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("expect string, got %T, hint: filter literals should be string", value))
-				}
-				return "LOWER(principal." + variable + ") LIKE '%" + strings.ToLower(strValue) + "%'", nil
-			case celoperators.In:
-				return parseToUserTypeSQL(expr, "IN")
-			case celoperators.LogicalNot:
-				args := expr.AsCall().Args()
-				if len(args) != 1 {
-					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`only support !(user_type in ["{type1}", "{type2}"]) format`))
-				}
-				return parseToUserTypeSQL(args[0], "NOT IN")
-			default:
-				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unexpected function %v", functionName))
-			}
-		default:
-			return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unexpected expr kind %v", expr.Kind()))
-		}
-	}
-
-	where, err := getFilter(ast.NativeRep().Expr())
-	if err != nil {
-		return err
-	}
-
-	find.Filter = &store.ListResourceFilter{
-		Args:  positionalArgs,
-		Where: "(" + where + ")",
-	}
-	return nil
 }
 
 // CreateUser creates a user.

@@ -25,7 +25,7 @@ import { useCurrentProjectV1 } from "@/store";
 import { isValidRolloutName } from "@/types";
 import { IssueSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { RolloutSchema } from "@/types/proto-es/v1/rollout_service_pb";
-import { isValidIssueName } from "@/utils";
+import { isValidIssueName, isValidPlanName } from "@/utils";
 import { usePlanContext } from "../context";
 import {
   refreshPlan,
@@ -65,16 +65,18 @@ export const provideResourcePoller = () => {
     hasInitialRefresh: false,
     hasInitialResourceSetup: false,
     isPollerRunning: false,
+    isInitializing: false, // Track if initialization is in progress
   });
 
   // Define refresh strategies for each resource
   const resourceStrategies: Record<ResourceType, ResourceRefreshStrategy> = {
     plan: {
-      canRefresh: () => !!plan.value,
+      canRefresh: () => !!plan.value && isValidPlanName(plan.value.name),
       refresh: () => refreshPlan(plan),
     },
     planCheckRuns: {
-      canRefresh: () => !!plan.value && !!planCheckRuns,
+      canRefresh: () =>
+        !!plan.value && isValidPlanName(plan.value.name) && !!planCheckRuns,
       refresh: () =>
         refreshPlanCheckRuns(plan.value, project.value, planCheckRuns),
     },
@@ -102,11 +104,19 @@ export const provideResourcePoller = () => {
     },
     taskRuns: {
       canRefresh: () => !!rollout?.value && !!taskRuns,
-      refresh: () => refreshTaskRuns(rollout.value!, project.value, taskRuns),
+      refresh: () => {
+        if (!rollout.value) return Promise.resolve();
+        return refreshTaskRuns(rollout.value, project.value, taskRuns);
+      },
     },
   };
 
   const planType = computed(() => {
+    // Empty plan or no specs - default to CHANGE_DATABASE
+    if (plan.value.specs.length === 0) {
+      return "CHANGE_DATABASE";
+    }
+
     if (
       plan.value.specs.every(
         (spec) => spec.config.case === "createDatabaseConfig"
@@ -156,40 +166,46 @@ export const provideResourcePoller = () => {
   const initializeExistingResources = async () => {
     if (
       pollerState.value.hasInitialResourceSetup ||
+      pollerState.value.isInitializing ||
       isCreating.value ||
       !plan.value
     ) {
       return;
     }
 
-    pollerState.value.hasInitialResourceSetup = true;
-    const initPromises: Promise<void>[] = [];
+    pollerState.value.isInitializing = true;
+    try {
+      pollerState.value.hasInitialResourceSetup = true;
+      const initPromises: Promise<void>[] = [];
 
-    // Initialize issue if needed
-    if (
-      resourceStrategies.issue.canInitialize?.() &&
-      resourceStrategies.issue.initialize
-    ) {
-      initPromises.push(resourceStrategies.issue.initialize());
-    }
+      // Initialize issue if needed
+      if (
+        resourceStrategies.issue.canInitialize?.() &&
+        resourceStrategies.issue.initialize
+      ) {
+        initPromises.push(resourceStrategies.issue.initialize());
+      }
 
-    // Initialize rollout and taskRuns with proper sequencing
-    if (
-      resourceStrategies.rollout.canInitialize?.() &&
-      resourceStrategies.rollout.initialize
-    ) {
-      initPromises.push(
-        resourceStrategies.rollout.initialize().then(async () => {
-          if (resourceStrategies.taskRuns.canRefresh()) {
-            await resourceStrategies.taskRuns.refresh();
-          }
-        })
-      );
-    }
+      // Initialize rollout and taskRuns with proper sequencing
+      if (
+        resourceStrategies.rollout.canInitialize?.() &&
+        resourceStrategies.rollout.initialize
+      ) {
+        initPromises.push(
+          resourceStrategies.rollout.initialize().then(async () => {
+            if (resourceStrategies.taskRuns.canRefresh()) {
+              await resourceStrategies.taskRuns.refresh();
+            }
+          })
+        );
+      }
 
-    if (initPromises.length > 0) {
-      await Promise.all(initPromises);
-      events.emit("status-changed", { eager: true });
+      if (initPromises.length > 0) {
+        await Promise.all(initPromises);
+        events.emit("status-changed", { eager: true });
+      }
+    } finally {
+      pollerState.value.isInitializing = false;
     }
   };
 
@@ -308,19 +324,31 @@ export const provideResourcePoller = () => {
 
   // Event listeners
   events.on("status-changed", async ({ eager }) => {
-    if (eager) {
-      await refreshResources(resourcesToPolled.value, { isManual: false });
+    try {
+      if (eager) {
+        await refreshResources(resourcesToPolled.value, { isManual: false });
+      }
+    } catch (error) {
+      console.error("Error refreshing resources on status-changed:", error);
     }
   });
 
   events.on("perform-issue-review-action", async () => {
-    await refreshResources(["issue"], { isManual: true });
-    events.emit("status-changed", { eager: true });
+    try {
+      await refreshResources(["issue"], { isManual: true });
+      events.emit("status-changed", { eager: true });
+    } catch (error) {
+      console.error("Error refreshing issue after review action:", error);
+    }
   });
 
   events.on("perform-issue-status-action", async () => {
-    await refreshResources(["issue"], { isManual: true });
-    events.emit("status-changed", { eager: true });
+    try {
+      await refreshResources(["issue"], { isManual: true });
+      events.emit("status-changed", { eager: true });
+    } catch (error) {
+      console.error("Error refreshing issue after status action:", error);
+    }
   });
 
   // Main poller lifecycle management

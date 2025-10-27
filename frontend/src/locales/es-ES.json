@@ -313,6 +313,7 @@
     "no-skippable-tasks": "No hay tareas que se puedan omitir",
     "no-cancellable-tasks": "No hay tareas cancelables",
     "no-permission": "No hay permiso para realizar esta acción",
+    "data-export-creator-only": "Sólo el creador del problema puede ejecutar tareas de exportación de datos",
     "scheduled-time": "Hora programada",
     "select-scheduled-time": "Seleccionar hora programada",
     "error": {
@@ -991,6 +992,7 @@
     "waiting-for-review": "Esperando revisión",
     "issue-name": "Nombre de la incidencia",
     "grant-request": {
+      "details": "Detalles de la solicitud",
       "expired-at": "tiempo de caducidad",
       "all-databases": "todas las bases de datos",
       "all-databases-tip": "Todas las bases de datos actuales y futuras de este proyecto.",
@@ -1595,6 +1597,11 @@
     "no-environment": "Esta base de datos no ha sido vinculada al entorno.",
     "set-environment": "Establecer entorno",
     "sync-database": "Sincronizar base de datos",
+    "export-schema": "Exportar esquema",
+    "export-schema-single-file": "Archivo único",
+    "export-schema-multi-file": "Multi-archivo (ZIP)",
+    "successfully-exported-schema": "Esquema exportado con éxito",
+    "failed-to-export-schema": "Error al exportar el esquema",
     "select": "Seleccionar base de datos",
     "sync-status": "Estado de sincronización",
     "last-successful-sync": "Última sincronización exitosa",

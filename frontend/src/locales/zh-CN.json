@@ -313,6 +313,7 @@
     "no-skippable-tasks": "没有可跳过的任务",
     "no-cancellable-tasks": "没有可取消的任务",
     "no-permission": "无权限执行该操作",
+    "data-export-creator-only": "只有工单创建者可以执行数据导出任务",
     "scheduled-time": "计划时间",
     "select-scheduled-time": "选择计划时间",
     "error": {
@@ -991,6 +992,7 @@
     "waiting-for-review": "等待审核",
     "issue-name": "工单名称",
     "grant-request": {
+      "details": "请求详细",
       "expired-at": "过期时间",
       "all-databases": "所有数据库",
       "all-databases-tip": "所有当前和未来属于这个项目的数据库。",
@@ -1595,6 +1597,11 @@
     "no-environment": "该数据库尚未绑定到环境",
     "set-environment": "设置环境",
     "sync-database": "同步数据库",
+    "export-schema": "导出 Schema",
+    "export-schema-single-file": "单文件",
+    "export-schema-multi-file": "多文件 (ZIP)",
+    "successfully-exported-schema": "成功导出 Schema",
+    "failed-to-export-schema": "导出 Schema 失败",
     "select": "选择数据库",
     "sync-status": "同步状态",
     "last-successful-sync": "最后一次成功的同步",

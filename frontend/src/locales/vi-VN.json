@@ -313,6 +313,7 @@
     "no-skippable-tasks": "Không có nhiệm vụ nào có thể bỏ qua",
     "no-cancellable-tasks": "Không có nhiệm vụ nào có thể hủy bỏ",
     "no-permission": "Không có quyền thực hiện hành động này",
+    "data-export-creator-only": "Chỉ người tạo sự cố mới có thể thực hiện tác vụ xuất dữ liệu",
     "scheduled-time": "Thời gian đã lên lịch",
     "select-scheduled-time": "Chọn thời gian đã lên lịch",
     "error": {
@@ -991,6 +992,7 @@
     "waiting-for-review": "Đang chờ xem xét",
     "issue-name": "Tên vấn đề",
     "grant-request": {
+      "details": "Yêu cầu chi tiết",
       "expired-at": "Hết hạn vào",
       "all-databases": "Tất cả",
       "all-databases-tip": "Tất cả cơ sở dữ liệu hiện tại và tương lai trong dự án này.",
@@ -1595,6 +1597,11 @@
     "no-environment": "Cơ sở dữ liệu này không bị ràng buộc với môi trường",
     "set-environment": "Thiết lập môi trường",
     "sync-database": "Đồng bộ cơ sở dữ liệu",
+    "export-schema": "Xuất schema",
+    "export-schema-single-file": "Tệp đơn",
+    "export-schema-multi-file": "Nhiều tệp (ZIP)",
+    "successfully-exported-schema": "Đã xuất schema thành công",
+    "failed-to-export-schema": "Không thể xuất schema",
     "select": "Chọn cơ sở dữ liệu",
     "sync-status": "Trạng thái đồng bộ",
     "last-successful-sync": "Lần đồng bộ thành công cuối cùng",

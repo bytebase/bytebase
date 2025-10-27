@@ -1,0 +1,13 @@
+- statement: ALTER TABLE tech_book ADD COLUMN c int;
+  changeType: 1
+- statement: ALTER TABLE tech_book ADD COLUMN c int DEFAULT 0;
+  changeType: 1
+  want:
+    - status: 2
+      code: 210
+      title: statement.disallow-add-column-with-default
+      content: Adding column with DEFAULT will locked the whole table and rewriting each rows
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

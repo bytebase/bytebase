@@ -28,6 +28,7 @@ import {
   providePlanCheckRunContext,
   type PlanCheckRunEvents,
 } from "@/components/PlanCheckRun/context";
+import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
 import { useBodyLayoutContext } from "@/layouts/common";
 import {
   PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
@@ -37,9 +38,9 @@ import { projectNamePrefix, useProjectByName, useUIStateStore } from "@/store";
 import {
   extractIssueUID,
   extractProjectResourceName,
-  isDatabaseDataExportIssue,
   isGrantRequestIssue,
   isValidIssueName,
+  shouldUseNewIssueLayout,
 } from "@/utils";
 
 defineOptions({
@@ -54,6 +55,7 @@ const props = defineProps<{
 const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
+const { enabledNewLayout } = useIssueLayoutVersion();
 
 const { project, ready: projectReady } = useProjectByName(
   computed(() => `${projectNamePrefix}${props.projectId}`)
@@ -114,8 +116,14 @@ watch(
   (isReady) => {
     if (!isReady) return;
 
-    // Redirect all data export issues to new layout
-    if (isDatabaseDataExportIssue(issue.value)) {
+    // Determine if this issue should use the new layout based on issue type and user preference
+    const shouldRedirect = shouldUseNewIssueLayout(
+      issue.value,
+      issue.value.planEntity,
+      enabledNewLayout.value
+    );
+
+    if (shouldRedirect) {
       if (isCreating.value) {
         // Redirect creation to plan creation page
         router.replace({

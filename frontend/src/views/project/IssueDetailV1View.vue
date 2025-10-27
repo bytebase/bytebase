@@ -4,10 +4,13 @@
   </div>
   <IssueBaseLayout v-else>
     <!-- Database Create View -->
-    <DatabaseCreateView v-if="planType === PlanType.CREATE_DATABASE" />
+    <DatabaseCreateView v-if="issueType === IssueType.CREATE_DATABASE" />
 
     <!-- Database Export View -->
-    <DatabaseExportView v-else-if="planType === PlanType.EXPORT_DATA" />
+    <DatabaseExportView v-else-if="issueType === IssueType.EXPORT_DATA" />
+
+    <!-- Grant Request View -->
+    <GrantRequestView v-else-if="issueType === IssueType.GRANT_REQUEST" />
 
     <!-- CI/CD View (default) -->
     <DatabaseChangeView v-else />
@@ -22,15 +25,18 @@ import { usePlanContextWithIssue } from "@/components/Plan";
 import DatabaseChangeView from "@/components/Plan/components/IssueReviewView/DatabaseChangeView.vue";
 import DatabaseCreateView from "@/components/Plan/components/IssueReviewView/DatabaseCreateView.vue";
 import DatabaseExportView from "@/components/Plan/components/IssueReviewView/DatabaseExportView.vue";
+import GrantRequestView from "@/components/Plan/components/IssueReviewView/GrantRequestView.vue";
 import IssueBaseLayout from "@/components/Plan/components/IssueReviewView/IssueBaseLayout.vue";
 import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 import { issueV1Slug } from "@/utils";
 
-enum PlanType {
+enum IssueType {
   CREATE_DATABASE = "CREATE_DATABASE",
   CHANGE_DATABASE = "CHANGE_DATABASE",
   EXPORT_DATA = "EXPORT_DATA",
+  GRANT_REQUEST = "GRANT_REQUEST",
 }
 
 const props = defineProps<{
@@ -40,23 +46,28 @@ const props = defineProps<{
 
 const router = useRouter();
 const route = useRoute();
-const { plan } = usePlanContextWithIssue();
+const { plan, issue } = usePlanContextWithIssue();
 const { enabledNewLayout } = useIssueLayoutVersion();
 const isLoading = ref(true);
 
-const planType = computed(() => {
+const issueType = computed(() => {
+  // Check issue type first for grant requests
+  if (issue.value.type === Issue_Type.GRANT_REQUEST) {
+    return IssueType.GRANT_REQUEST;
+  }
+
   if (
     plan.value.specs.every(
       (spec) => spec.config.case === "createDatabaseConfig"
     )
   ) {
-    return PlanType.CREATE_DATABASE;
+    return IssueType.CREATE_DATABASE;
   } else if (
     plan.value.specs.every((spec) => spec.config.case === "exportDataConfig")
   ) {
-    return PlanType.EXPORT_DATA;
+    return IssueType.EXPORT_DATA;
   }
-  return PlanType.CHANGE_DATABASE;
+  return IssueType.CHANGE_DATABASE;
 });
 
 onMounted(() => {
@@ -66,8 +77,14 @@ onMounted(() => {
   const isExportDataPlan = plan.value.specs.every(
     (spec) => spec.config.case === "exportDataConfig"
   );
-  // Redirect to legacy layout if new layout is disabled and the plan is not a database creation or export data plan.
-  if (!enabledNewLayout.value && !isCreatingDatabasePlan && !isExportDataPlan) {
+  const isGrantRequest = issue.value.type === Issue_Type.GRANT_REQUEST;
+  // Redirect to legacy layout if new layout is disabled and the plan is not a database creation, export data plan, or grant request.
+  if (
+    !enabledNewLayout.value &&
+    !isCreatingDatabasePlan &&
+    !isExportDataPlan &&
+    !isGrantRequest
+  ) {
     const legacyIssueSlug = issueV1Slug(
       `projects/${props.projectId}/issues/${props.issueId}`,
       "issue"
