@@ -2,15 +2,10 @@ package v1
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"strings"
 
 	"connectrpc.com/connect"
-	"github.com/google/cel-go/cel"
-	celast "github.com/google/cel-go/common/ast"
-	celoperators "github.com/google/cel-go/common/operators"
-	celoverloads "github.com/google/cel-go/common/overloads"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -70,198 +65,6 @@ func (s *InstanceService) GetInstance(ctx context.Context, req *connect.Request[
 	return connect.NewResponse(result), nil
 }
 
-func parseListInstanceFilter(filter string) (*store.ListResourceFilter, error) {
-	if filter == "" {
-		return nil, nil
-	}
-	e, err := cel.NewEnv()
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to create cel env"))
-	}
-	ast, iss := e.Parse(filter)
-	if iss != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String()))
-	}
-
-	var getFilter func(expr celast.Expr) (string, error)
-	var positionalArgs []any
-
-	parseToSQL := func(variable, value any) (string, error) {
-		// Handle label filters like "labels.org_group"
-		if varStr, ok := variable.(string); ok {
-			if labelKey, ok := strings.CutPrefix(varStr, "labels."); ok {
-				return parseToLabelFilterSQL("instance.metadata", labelKey, value)
-			}
-		}
-
-		switch variable {
-		case "name":
-			positionalArgs = append(positionalArgs, value.(string))
-			return fmt.Sprintf("instance.metadata->>'title' = $%d", len(positionalArgs)), nil
-		case "resource_id":
-			positionalArgs = append(positionalArgs, value.(string))
-			return fmt.Sprintf("instance.resource_id = $%d", len(positionalArgs)), nil
-		case "environment":
-			environment, ok := value.(string)
-			if !ok {
-				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse value %v to string", value))
-			}
-			if environment != "" {
-				environmentID, err := common.GetEnvironmentID(environment)
-				if err != nil {
-					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid environment filter %q", value))
-				}
-				positionalArgs = append(positionalArgs, environmentID)
-				return fmt.Sprintf("instance.environment = $%d", len(positionalArgs)), nil
-			}
-			return "instance.environment IS NULL", nil
-		case "state":
-			v1State, ok := v1pb.State_value[value.(string)]
-			if !ok {
-				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid state filter %q", value))
-			}
-			positionalArgs = append(positionalArgs, v1pb.State(v1State) == v1pb.State_DELETED)
-			return fmt.Sprintf("instance.deleted = $%d", len(positionalArgs)), nil
-		case "engine":
-			v1Engine, ok := v1pb.Engine_value[value.(string)]
-			if !ok {
-				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid engine filter %q", value))
-			}
-			engine := convertEngine(v1pb.Engine(v1Engine))
-			positionalArgs = append(positionalArgs, engine)
-			return fmt.Sprintf("instance.metadata->>'engine' = $%d", len(positionalArgs)), nil
-		case "host":
-			positionalArgs = append(positionalArgs, value.(string))
-			return fmt.Sprintf("ds ->> 'host' = $%d", len(positionalArgs)), nil
-		case "port":
-			positionalArgs = append(positionalArgs, value.(string))
-			return fmt.Sprintf("ds ->> 'port' = $%d", len(positionalArgs)), nil
-		case "project":
-			projectID, err := common.GetProjectID(value.(string))
-			if err != nil {
-				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid project filter %q", value))
-			}
-			positionalArgs = append(positionalArgs, projectID)
-			return fmt.Sprintf("db.project = $%d", len(positionalArgs)), nil
-		default:
-			return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q", variable))
-		}
-	}
-
-	getSubConditionFromExpr := func(expr celast.Expr, getFilter func(expr celast.Expr) (string, error), join string) (string, error) {
-		var args []string
-		for _, arg := range expr.AsCall().Args() {
-			filter, err := getFilter(arg)
-			if err != nil {
-				return "", err
-			}
-			args = append(args, fmt.Sprintf("(%s)", filter))
-		}
-		return strings.Join(args, fmt.Sprintf(" %s ", join)), nil
-	}
-
-	parseToEngineSQL := func(expr celast.Expr, relation string) (string, error) {
-		variable, value := getVariableAndValueFromExpr(expr)
-		if variable != "engine" {
-			return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`only "engine" support "engine in [xx]"/"!(engine in [xx])" operator`))
-		}
-		if value == nil {
-			return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`empty value %v for "%s" operator`, value, relation))
-		}
-		list, ok := value.([]any)
-		if !ok {
-			return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`expect list, got %T, hint: filter engine in ["xx"]`, value))
-		}
-		if len(list) == 0 {
-			return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`empty value %v for "%s" operator`, value, relation))
-		}
-
-		var engineList []string
-		for _, raw := range list {
-			engine, ok := raw.(string)
-			if !ok {
-				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`expect string, got %T for engine %v`, raw, raw))
-			}
-			v1Engine, ok := v1pb.Engine_value[engine]
-			if !ok {
-				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`invalid engine filter %q`, engine))
-			}
-			storeEngine := convertEngine(v1pb.Engine(v1Engine))
-			engineList = append(engineList, fmt.Sprintf("'%s'", storeEngine))
-		}
-		return fmt.Sprintf("instance.metadata->>'engine' %s (%s)", relation, strings.Join(engineList, ",")), nil
-	}
-
-	getFilter = func(expr celast.Expr) (string, error) {
-		switch expr.Kind() {
-		case celast.CallKind:
-			functionName := expr.AsCall().FunctionName()
-			switch functionName {
-			case celoperators.LogicalOr:
-				return getSubConditionFromExpr(expr, getFilter, "OR")
-			case celoperators.LogicalAnd:
-				return getSubConditionFromExpr(expr, getFilter, "AND")
-			case celoperators.Equals:
-				variable, value := getVariableAndValueFromExpr(expr)
-				return parseToSQL(variable, value)
-			case celoverloads.Matches:
-				variable := expr.AsCall().Target().AsIdent()
-				args := expr.AsCall().Args()
-				if len(args) != 1 {
-					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`invalid args for %q`, variable))
-				}
-				value := args[0].AsLiteral().Value()
-				strValue, ok := value.(string)
-				if !ok {
-					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("expect string, got %T, hint: filter literals should be string", value))
-				}
-				if strValue == "" {
-					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`empty value for %q`, variable))
-				}
-
-				switch variable {
-				case "name":
-					return "LOWER(instance.metadata->>'title') LIKE '%" + strings.ToLower(strValue) + "%'", nil
-				case "resource_id":
-					return "LOWER(instance.resource_id) LIKE '%" + strings.ToLower(strValue) + "%'", nil
-				case "host", "port":
-					return "ds ->> '" + variable + "' LIKE '%" + strValue + "%'", nil
-				default:
-					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q", variable))
-				}
-			case celoperators.In:
-				variable, value := getVariableAndValueFromExpr(expr)
-				if variable == "engine" {
-					return parseToEngineSQL(expr, "IN")
-				} else if labelKey, ok := strings.CutPrefix(variable, "labels."); ok {
-					return parseToLabelFilterSQL("instance.metadata", labelKey, value)
-				}
-				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q", variable))
-			case celoperators.LogicalNot:
-				args := expr.AsCall().Args()
-				if len(args) != 1 {
-					return "", connect.NewError(connect.CodeInvalidArgument, errors.New(`only support !(engine in ["{engine1}", "{engine2}"]) format`))
-				}
-				return parseToEngineSQL(args[0], "NOT IN")
-			default:
-				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unexpected function %v", functionName))
-			}
-		default:
-			return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unexpected expr kind %v", expr.Kind()))
-		}
-	}
-
-	where, err := getFilter(ast.NativeRep().Expr())
-	if err != nil {
-		return nil, err
-	}
-
-	return &store.ListResourceFilter{
-		Args:  positionalArgs,
-		Where: "(" + where + ")",
-	}, nil
-}
-
 // ListInstances lists all instances.
 func (s *InstanceService) ListInstances(ctx context.Context, req *connect.Request[v1pb.ListInstancesRequest]) (*connect.Response[v1pb.ListInstancesResponse], error) {
 	offset, err := parseLimitAndOffset(&pageSize{
@@ -279,11 +82,11 @@ func (s *InstanceService) ListInstances(ctx context.Context, req *connect.Reques
 		Limit:       &limitPlusOne,
 		Offset:      &offset.offset,
 	}
-	filter, err := parseListInstanceFilter(req.Msg.Filter)
+	filterQ, err := store.GetListInstanceFilter(req.Msg.Filter)
 	if err != nil {
-		return nil, err
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	find.Filter = filter
+	find.FilterQ = filterQ
 	instances, err := s.store.ListInstancesV2(ctx, find)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
