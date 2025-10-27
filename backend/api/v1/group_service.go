@@ -2,15 +2,9 @@ package v1
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
-	"strings"
 
 	"connectrpc.com/connect"
-	"github.com/google/cel-go/cel"
-	celast "github.com/google/cel-go/common/ast"
-	celoperators "github.com/google/cel-go/common/operators"
-	celoverloads "github.com/google/cel-go/common/overloads"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/emptypb"
 
@@ -74,98 +68,6 @@ func (s *GroupService) BatchGetGroups(ctx context.Context, request *connect.Requ
 	return connect.NewResponse(response), nil
 }
 
-func parseListGroupFilter(find *store.FindGroupMessage, filter string) error {
-	if filter == "" {
-		return nil
-	}
-	e, err := cel.NewEnv()
-	if err != nil {
-		return connect.NewError(connect.CodeInternal, errors.New("failed to create cel env"))
-	}
-	ast, iss := e.Parse(filter)
-	if iss != nil {
-		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String()))
-	}
-
-	var getFilter func(expr celast.Expr) (string, error)
-	var positionalArgs []any
-
-	parseToSQL := func(variable, value any) (string, error) {
-		switch variable {
-		case "title":
-			positionalArgs = append(positionalArgs, value.(string))
-			return fmt.Sprintf("name = $%d", len(positionalArgs)), nil
-		case "email":
-			positionalArgs = append(positionalArgs, value.(string))
-			return fmt.Sprintf("email = $%d", len(positionalArgs)), nil
-		case "project":
-			projectID, err := common.GetProjectID(value.(string))
-			if err != nil {
-				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid project filter %q", value))
-			}
-			find.ProjectID = &projectID
-			return "TRUE", nil
-		default:
-			return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q", variable))
-		}
-	}
-
-	getFilter = func(expr celast.Expr) (string, error) {
-		switch expr.Kind() {
-		case celast.CallKind:
-			functionName := expr.AsCall().FunctionName()
-			switch functionName {
-			case celoperators.LogicalOr:
-				return getSubConditionFromExpr(expr, getFilter, "OR")
-			case celoperators.LogicalAnd:
-				return getSubConditionFromExpr(expr, getFilter, "AND")
-			case celoperators.Equals:
-				variable, value := getVariableAndValueFromExpr(expr)
-				return parseToSQL(variable, value)
-			case celoverloads.Matches:
-				variable := expr.AsCall().Target().AsIdent()
-				args := expr.AsCall().Args()
-				if len(args) != 1 {
-					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`invalid args for %q`, variable))
-				}
-				value := args[0].AsLiteral().Value()
-				strValue, ok := value.(string)
-				if !ok {
-					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("expect string, got %T, hint: filter literals should be string", value))
-				}
-				if strValue == "" {
-					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`empty value for %q`, variable))
-				}
-
-				switch variable {
-				case "title":
-					return "LOWER(name) LIKE '%" + strings.ToLower(strValue) + "%'", nil
-				case "email":
-					return "LOWER(email) LIKE '%" + strings.ToLower(strValue) + "%'", nil
-				default:
-					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q", variable))
-				}
-			default:
-				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unexpected function %v", functionName))
-			}
-		default:
-			return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unexpected expr kind %v", expr.Kind()))
-		}
-	}
-
-	where, err := getFilter(ast.NativeRep().Expr())
-	if err != nil {
-		return err
-	}
-
-	find.Filter = &store.ListResourceFilter{
-		Args:  positionalArgs,
-		Where: "(" + where + ")",
-	}
-
-	return nil
-}
-
 // ListGroups lists all groups.
 func (s *GroupService) ListGroups(ctx context.Context, request *connect.Request[v1pb.ListGroupsRequest]) (*connect.Response[v1pb.ListGroupsResponse], error) {
 	offset, err := parseLimitAndOffset(&pageSize{
@@ -182,9 +84,11 @@ func (s *GroupService) ListGroups(ctx context.Context, request *connect.Request[
 		Limit:  &limitPlusOne,
 		Offset: &offset.offset,
 	}
-	if err := parseListGroupFilter(find, request.Msg.Filter); err != nil {
-		return nil, err
+	filterQ, err := store.GetListGroupFilter(find, request.Msg.Filter)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
+	find.FilterQ = filterQ
 
 	groups, err := s.store.ListGroups(ctx, find)
 	if err != nil {

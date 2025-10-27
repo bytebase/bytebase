@@ -3,7 +3,12 @@ package store
 import (
 	"context"
 	"database/sql"
+	"strings"
 
+	"github.com/google/cel-go/cel"
+	celast "github.com/google/cel-go/common/ast"
+	celoperators "github.com/google/cel-go/common/operators"
+	celoverloads "github.com/google/cel-go/common/overloads"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
@@ -16,7 +21,7 @@ import (
 type FindGroupMessage struct {
 	Email     *string
 	ProjectID *string
-	Filter    *ListResourceFilter
+	FilterQ   *qb.Query
 
 	Limit  *int
 	Offset *int
@@ -109,8 +114,8 @@ func (*Store) listGroupImpl(ctx context.Context, txn *sql.Tx, find *FindGroupMes
 		from.Space(`INNER JOIN project_members ON (CONCAT('groups/', user_group.email) = ANY(project_members.members) OR ? = ANY(project_members.members))`, common.AllUsers)
 	}
 
-	if filter := find.Filter; filter != nil {
-		where.And(ConvertDollarPlaceholders(filter.Where), filter.Args...)
+	if filterQ := find.FilterQ; filterQ != nil {
+		where.And("?", filterQ)
 	}
 	if v := find.Email; v != nil {
 		where.And("email = ?", *v)
@@ -308,4 +313,103 @@ func (s *Store) DeleteGroup(ctx context.Context, email string) error {
 
 	s.groupCache.Remove(email)
 	return nil
+}
+
+func GetListGroupFilter(find *FindGroupMessage, filter string) (*qb.Query, error) {
+	if filter == "" {
+		return nil, nil
+	}
+
+	e, err := cel.NewEnv()
+	if err != nil {
+		return nil, errors.New("failed to create cel env")
+	}
+	ast, iss := e.Parse(filter)
+	if iss != nil {
+		return nil, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String())
+	}
+
+	var getFilter func(expr celast.Expr) (*qb.Query, error)
+
+	parseToSQL := func(variable, value any) (*qb.Query, error) {
+		switch variable {
+		case "title":
+			return qb.Q().Space("name = ?", value.(string)), nil
+		case "email":
+			return qb.Q().Space("email = ?", value.(string)), nil
+		case "project":
+			projectID, err := common.GetProjectID(value.(string))
+			if err != nil {
+				return nil, errors.Errorf("invalid project filter %q", value)
+			}
+			find.ProjectID = &projectID
+			return qb.Q().Space("TRUE"), nil
+		default:
+			return nil, errors.Errorf("unsupport variable %q", variable)
+		}
+	}
+
+	getFilter = func(expr celast.Expr) (*qb.Query, error) {
+		q := qb.Q()
+		switch expr.Kind() {
+		case celast.CallKind:
+			functionName := expr.AsCall().FunctionName()
+			switch functionName {
+			case celoperators.LogicalOr:
+				for _, arg := range expr.AsCall().Args() {
+					qq, err := getFilter(arg)
+					if err != nil {
+						return nil, err
+					}
+					q.Or("?", qq)
+				}
+				return qb.Q().Space("(?)", q), nil
+			case celoperators.LogicalAnd:
+				for _, arg := range expr.AsCall().Args() {
+					qq, err := getFilter(arg)
+					if err != nil {
+						return nil, err
+					}
+					q.And("?", qq)
+				}
+				return qb.Q().Space("(?)", q), nil
+			case celoperators.Equals:
+				variable, value := getVariableAndValueFromExpr(expr)
+				return parseToSQL(variable, value)
+			case celoverloads.Matches:
+				variable := expr.AsCall().Target().AsIdent()
+				args := expr.AsCall().Args()
+				if len(args) != 1 {
+					return nil, errors.Errorf(`invalid args for %q`, variable)
+				}
+				value := args[0].AsLiteral().Value()
+				strValue, ok := value.(string)
+				if !ok {
+					return nil, errors.Errorf("expect string, got %T, hint: filter literals should be string", value)
+				}
+				if strValue == "" {
+					return nil, errors.Errorf(`empty value for %q`, variable)
+				}
+
+				switch variable {
+				case "title":
+					return qb.Q().Space("LOWER(name) LIKE ?", "%"+strings.ToLower(strValue)+"%"), nil
+				case "email":
+					return qb.Q().Space("LOWER(email) LIKE ?", "%"+strings.ToLower(strValue)+"%"), nil
+				default:
+					return nil, errors.Errorf("unsupport variable %q", variable)
+				}
+			default:
+				return nil, errors.Errorf("unexpected function %v", functionName)
+			}
+		default:
+			return nil, errors.Errorf("unexpected expr kind %v", expr.Kind())
+		}
+	}
+
+	q, err := getFilter(ast.NativeRep().Expr())
+	if err != nil {
+		return nil, err
+	}
+	return qb.Q().Space("(?)", q), nil
 }
