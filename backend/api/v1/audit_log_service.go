@@ -106,6 +106,7 @@ func (s *AuditLogService) ExportAuditLogs(ctx context.Context, request *connect.
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("filter is required to export audit logs"))
 	}
 	searchAuditLogsResult, err := s.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
+		Parent:    request.Msg.Parent,
 		Filter:    request.Msg.Filter,
 		OrderBy:   request.Msg.OrderBy,
 		PageSize:  request.Msg.PageSize,
