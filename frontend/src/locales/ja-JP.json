@@ -990,6 +990,7 @@
     "waiting-for-review": "モデレート済み",
     "issue-name": "イシュー名",
     "grant-request": {
+      "details": "リクエストの詳細",
       "expired-at": "有効期限",
       "all-databases": "すべてのデータベース",
       "all-databases-tip": "このプロジェクトに属する現在および将来のすべてのデータベース。",

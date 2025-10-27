@@ -6,16 +6,17 @@ import {
   issueServiceClientConnect,
   rolloutServiceClientConnect,
 } from "@/grpcweb";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { projectNamePrefix, usePlanStore } from "@/store";
 import { EMPTY_ID, UNKNOWN_ID } from "@/types";
-import { GetIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  GetIssueRequestSchema,
+  Issue_Type,
+} from "@/types/proto-es/v1/issue_service_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan, PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
 import { GetRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Rollout, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { emptyPlan } from "@/types/v1/issue/plan";
-import { issueV1Slug } from "@/utils";
 import { createPlanSkeleton } from "./create";
 
 export * from "./create";
@@ -125,14 +126,14 @@ export function useInitializePlan(
       issueResult = newIssue;
 
       if (!issueResult.plan) {
-        // Redirect to legacy issue page for issues without plans.
-        router.replace({
-          name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-          params: {
-            projectId,
-            issueSlug: issueV1Slug(issueResult.name, issueResult.title),
-          },
-        });
+        // Issue without plan - allow it to stay in CICD layout for issue-only view
+        // This is expected for grant requests, but may indicate a problem for other issue types
+        if (issueResult.type !== Issue_Type.GRANT_REQUEST) {
+          console.warn(
+            `Issue ${issueUid} of type ${issueResult.type} has no associated plan`,
+            issueResult
+          );
+        }
         return {
           plan: emptyPlan(),
           issue: issueResult,

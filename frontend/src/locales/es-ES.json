@@ -990,6 +990,7 @@
     "waiting-for-review": "Esperando revisión",
     "issue-name": "Nombre de la incidencia",
     "grant-request": {
+      "details": "Detalles de la solicitud",
       "expired-at": "tiempo de caducidad",
       "all-databases": "todas las bases de datos",
       "all-databases-tip": "Todas las bases de datos actuales y futuras de este proyecto.",

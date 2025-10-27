@@ -20,7 +20,6 @@
               :key="tab"
               :name="tab"
               :tab="tabRender(tab)"
-              @click="handleTabChange(tab)"
             />
 
             <!-- Suffix slot -->
@@ -33,7 +32,7 @@
 
           <div class="flex-1 flex">
             <router-view v-slot="{ Component }">
-              <keep-alive>
+              <keep-alive :max="3">
                 <component :is="Component" />
               </keep-alive>
             </router-view>
@@ -49,9 +48,8 @@
 
 <script lang="tsx" setup>
 import { useTitle } from "@vueuse/core";
-import { CirclePlayIcon, FileDiffIcon, Layers2Icon } from "lucide-vue-next";
-import { NSpin, NTab, NTabs, NTag } from "naive-ui";
-import { computed, ref, toRef, watch } from "vue";
+import { NSpin, NTab, NTabs } from "naive-ui";
+import { computed, ref, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   useRoute,
@@ -68,32 +66,10 @@ import PollerProvider from "@/components/Plan/PollerProvider.vue";
 import { BannerSection, HeaderSection } from "@/components/Plan/components";
 import RefreshIndicator from "@/components/Plan/components/RefreshIndicator.vue";
 import { provideSidebarContext } from "@/components/Plan/logic/sidebar";
+import { useCICDTabNavigation } from "@/components/Plan/logic/useCICDTabNavigation.tsx";
 import { useNavigationGuard } from "@/components/Plan/logic/useNavigationGuard";
 import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
 import { useBodyLayoutContext } from "@/layouts/common";
-import {
-  PROJECT_V1_ROUTE_ISSUE_DETAIL,
-  PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
-  PROJECT_V1_ROUTE_PLAN_DETAIL,
-  PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
-  PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
-  PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
-  PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
-  PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
-} from "@/router/dashboard/projectV1";
-import {
-  extractIssueUID,
-  extractPlanUID,
-  extractProjectResourceName,
-  extractRolloutUID,
-  issueV1Slug,
-} from "@/utils";
-
-enum TabKey {
-  Plan = "plan",
-  Issue = "issue",
-  Rollout = "rollout",
-}
 
 const props = defineProps<{
   projectId: string;
@@ -123,16 +99,18 @@ const planBaseContext = useBasePlanContext({
   issue,
 });
 const { enabledNewLayout } = useIssueLayoutVersion();
-const isLoading = ref(true);
-const isInitialLoad = ref(true);
 const containerRef = ref<HTMLElement>();
 
 const ready = computed(() => {
-  // Only show loading spinner during initial load, not during tab navigation
-  return !isInitialLoad.value && !!plan.value && !isInitializing.value;
+  // Ready when we have either an issue or a valid plan, and initialization is complete
+  return (!!issue.value || !!plan.value) && !isInitializing.value;
 });
 
 const shouldShowNavigation = computed(() => {
+  // Or if we have a valid plan with supported specs
+  if (!plan.value) {
+    return false;
+  }
   return (
     !isCreating.value &&
     plan.value.specs.some(
@@ -158,154 +136,17 @@ providePlanContext({
 
 provideSidebarContext(containerRef);
 
-watch(
-  () => isInitializing.value,
-  () => {
-    if (isInitializing.value) {
-      return;
-    }
-
-    // Mark initial load as complete once data is loaded
-    if (isInitialLoad.value) {
-      isInitialLoad.value = false;
-    }
-
-    // Redirect all non-changeDatabaseConfig plans to the legacy issue page.
-    // Including export data plans.
-    if (
-      plan.value.issue &&
-      plan.value.specs.some(
-        (spec) =>
-          spec.config.case !== "changeDatabaseConfig" &&
-          spec.config.case !== "createDatabaseConfig" &&
-          spec.config.case !== "exportDataConfig"
-      )
-    ) {
-      router.replace({
-        name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-        params: {
-          projectId: extractProjectResourceName(plan.value.name),
-          issueSlug: issueV1Slug(plan.value.issue),
-        },
-        query: route.query,
-      });
-    } else {
-      isLoading.value = false;
-    }
-  }
-);
-
-const tabKey = computed(() => {
-  const routeName = route.name?.toString() as string;
-  if (
-    [
-      PROJECT_V1_ROUTE_PLAN_DETAIL,
-      PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
-      PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
-    ].includes(routeName)
-  ) {
-    return TabKey.Plan;
-  } else if (routeName === PROJECT_V1_ROUTE_ISSUE_DETAIL_V1) {
-    return TabKey.Issue;
-  } else if (
-    [
-      PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
-      PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
-      PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
-    ].includes(routeName)
-  ) {
-    return TabKey.Rollout;
-  }
-  // Fallback to Overview if no specific tab is matched.
-  return TabKey.Plan;
-});
-
-const availableTabs = computed<TabKey[]>(() => {
-  const tabs: TabKey[] = [TabKey.Plan];
-  if (plan.value.issue && enabledNewLayout.value) {
-    tabs.unshift(TabKey.Issue);
-  }
-  if (plan.value.rollout) {
-    tabs.push(TabKey.Rollout);
-  }
-  return tabs;
-});
-
-const tabRender = (tab: TabKey) => {
-  switch (tab) {
-    case TabKey.Issue:
-      return (
-        <div class="flex items-center gap-2">
-          <Layers2Icon size={18} />
-          <span>{t("common.overview")}</span>
-        </div>
-      );
-    case TabKey.Plan:
-      return (
-        <div class="flex items-center gap-2">
-          <FileDiffIcon size={18} />
-          <span>{t("plan.navigator.changes")}</span>
-          {(isCreating.value || plan.value.specs.length > 1) && (
-            <NTag size="tiny" round>
-              {plan.value.specs.length}
-            </NTag>
-          )}
-        </div>
-      );
-    case TabKey.Rollout:
-      return (
-        <div class="flex items-center gap-2">
-          <CirclePlayIcon size={18} />
-          <span>{t("plan.navigator.rollout")}</span>
-        </div>
-      );
-    default:
-      // Fallback to raw tab name.
-      return tab;
-  }
-};
-
-const handleTabChange = (tab: TabKey) => {
-  if (!route || !route.params) {
-    console.warn("Route or route.params is undefined");
-    return;
-  }
-
-  const params = { ...route.params };
-  if (isCreating.value) {
-    params.planId = "create";
-  } else {
-    params.planId = extractPlanUID(plan.value.name);
-    if (plan.value.issue) {
-      params.issueId = extractIssueUID(plan.value.issue);
-    }
-    if (plan.value.rollout) {
-      params.rolloutId = extractRolloutUID(plan.value.rollout);
-    }
-  }
-
-  const query = route.query || {};
-
-  if (tab === TabKey.Issue) {
-    router.push({
-      name: PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
-      params: params,
-      query: query,
-    });
-  } else if (tab === TabKey.Plan) {
-    router.push({
-      name: PROJECT_V1_ROUTE_PLAN_DETAIL,
-      params: params,
-      query: query,
-    });
-  } else if (tab === TabKey.Rollout) {
-    router.push({
-      name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
-      params: params,
-      query: query,
-    });
-  }
-};
+// Tab navigation
+const { tabKey, availableTabs, tabRender, handleTabChange } =
+  useCICDTabNavigation({
+    route,
+    router,
+    plan,
+    issue,
+    isCreating,
+    enabledNewLayout,
+    t,
+  });
 
 const { overrideMainContainerClass } = useBodyLayoutContext();
 
@@ -330,21 +171,15 @@ const documentTitle = computed(() => {
 useTitle(documentTitle);
 
 // Set up navigation guards to check for unsaved changes
-onBeforeRouteLeave(async (_to, _from, next) => {
+const handleRouteNavigation = async (
+  _to: unknown,
+  _from: unknown,
+  next: (proceed?: boolean) => void
+) => {
   const canNavigate = await confirmNavigation();
-  if (canNavigate) {
-    next();
-  } else {
-    next(false);
-  }
-});
+  next(canNavigate);
+};
 
-onBeforeRouteUpdate(async (_to, _from, next) => {
-  const canNavigate = await confirmNavigation();
-  if (canNavigate) {
-    next();
-  } else {
-    next(false);
-  }
-});
+onBeforeRouteLeave(handleRouteNavigation);
+onBeforeRouteUpdate(handleRouteNavigation);
 </script>

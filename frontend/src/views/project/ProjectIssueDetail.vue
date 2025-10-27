@@ -34,6 +34,7 @@ import {
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
 } from "@/router/dashboard/projectV1";
 import { projectNamePrefix, useProjectByName, useUIStateStore } from "@/store";
+import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 import {
   extractIssueUID,
   extractProjectResourceName,
@@ -114,8 +115,19 @@ watch(
   (isReady) => {
     if (!isReady) return;
 
-    // Redirect all data export issues to new layout
-    if (isDatabaseDataExportIssue(issue.value)) {
+    // Determine if this issue should use the new layout
+    const shouldUseNewLayout =
+      // Data export issues always use new layout
+      isDatabaseDataExportIssue(issue.value) ||
+      // Grant request issues always use new layout
+      isGrantRequestIssue(issue.value) ||
+      // Database creation issues always use new layout
+      (issue.value.type === Issue_Type.DATABASE_CHANGE &&
+        issue.value.planEntity?.specs.every(
+          (spec) => spec.config.case === "createDatabaseConfig"
+        ));
+
+    if (shouldUseNewLayout) {
       if (isCreating.value) {
         // Redirect creation to plan creation page
         router.replace({

@@ -82,6 +82,8 @@ import {
   hasProjectPermissionV2,
   extractProjectResourceName,
   extractIssueUID,
+  isValidPlanName,
+  isValidIssueName,
 } from "@/utils";
 import TaskRolloutActionPanel from "../../RolloutView/TaskRolloutActionPanel.vue";
 import { CreateButton } from "./create";
@@ -149,15 +151,38 @@ const rolloutStage = computed(() => {
   );
 });
 
-// Compute available actions based on issue state and user permissions
+/**
+ * Compute available actions based on issue state and user permissions.
+ *
+ * Action priority order:
+ * 1. Plan-level actions (for draft plans): PLAN_REOPEN, PLAN_CLOSE, ISSUE_CREATE
+ * 2. Issue review actions: ISSUE_REVIEW_APPROVE, ISSUE_REVIEW_REJECT, ISSUE_REVIEW_RE_REQUEST
+ * 3. Issue status actions: ISSUE_STATUS_RESOLVE, ISSUE_STATUS_CLOSE, ISSUE_STATUS_REOPEN
+ * 4. Rollout actions: ROLLOUT_START, ROLLOUT_CANCEL
+ *
+ * Special cases:
+ * - Grant requests: Issue-only (no plan), only show issue-related actions
+ * - Draft plans: Plans without issues, show plan management + issue creation
+ * - Deleted plans: Only show PLAN_REOPEN
+ * - Cancelled/Done issues: Only show ISSUE_STATUS_REOPEN
+ */
 const availableActions = computed(() => {
   const actions: UnifiedAction[] = [];
 
   if (isCreating.value) return actions;
 
   const currentUserEmail = currentUser.value.email;
+  const isIssueOnly =
+    !isValidPlanName(plan.value.name) && isValidIssueName(issue.value?.name);
+
+  // For issue-only cases (grant requests, etc.), skip plan-specific actions
+  // and go directly to issue-related actions
+  if (isIssueOnly) {
+    // Issue-only cases should not show plan actions
+    // Continue to issue-related actions below
+  }
   // If no issue exists, show create issue action or close plan action.
-  if (plan.value.issue === "") {
+  else if (plan.value.issue === "") {
     // If rollout exists, no actions are available.
     if (plan.value.rollout !== "") {
       return actions;
@@ -329,9 +354,15 @@ const availableActions = computed(() => {
 
 const primaryAction = computed((): ActionConfig | undefined => {
   const actions = availableActions.value;
+  const isIssueOnly =
+    !isValidPlanName(plan.value.name) && isValidIssueName(issue.value?.name);
 
+  // Skip plan-specific actions for issue-only cases
+  if (isIssueOnly) {
+    // Skip ISSUE_CREATE, PLAN_REOPEN checks and go directly to issue actions
+  }
   // ISSUE_CREATE is the highest priority when no issue exists
-  if (actions.includes("ISSUE_CREATE")) {
+  else if (actions.includes("ISSUE_CREATE")) {
     // Check if all specs have valid statements (not empty)
     const hasValidSpecs = !plan.value.specs.some((spec) => isSpecEmpty(spec));
 
@@ -364,8 +395,8 @@ const primaryAction = computed((): ActionConfig | undefined => {
     };
   }
 
-  // PLAN_REOPEN is primary when plan is deleted
-  if (actions.includes("PLAN_REOPEN")) {
+  // PLAN_REOPEN is primary when plan is deleted (skip for issue-only)
+  if (!isIssueOnly && actions.includes("PLAN_REOPEN")) {
     return { action: "PLAN_REOPEN" };
   }
 
@@ -397,6 +428,8 @@ const primaryAction = computed((): ActionConfig | undefined => {
 
 const secondaryActions = computed((): ActionConfig[] => {
   const actions = availableActions.value;
+  const isIssueOnly =
+    !isValidPlanName(plan.value.name) && isValidIssueName(issue.value?.name);
   const secondary: ActionConfig[] = [];
 
   if (actions.includes("ISSUE_REVIEW_REJECT")) {
@@ -408,7 +441,8 @@ const secondaryActions = computed((): ActionConfig[] => {
   if (actions.includes("ISSUE_STATUS_CLOSE")) {
     secondary.push({ action: "ISSUE_STATUS_CLOSE" });
   }
-  if (actions.includes("PLAN_CLOSE")) {
+  // Skip PLAN_CLOSE for issue-only cases
+  if (!isIssueOnly && actions.includes("PLAN_CLOSE")) {
     secondary.push({ action: "PLAN_CLOSE" });
   }
 
