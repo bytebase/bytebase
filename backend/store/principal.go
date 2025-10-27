@@ -33,7 +33,7 @@ type FindUserMessage struct {
 	Type        *storepb.PrincipalType
 	Limit       *int
 	Offset      *int
-	Filter      *ListResourceFilter
+	FilterQ     *qb.Query
 	ProjectID   *string
 }
 
@@ -244,8 +244,8 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 		GROUP BY principal.id
 	)`)
 
-	if filter := find.Filter; filter != nil {
-		where.And(ConvertDollarPlaceholders(filter.Where), filter.Args...)
+	if filterQ := find.FilterQ; filterQ != nil {
+		where.And("?", filterQ)
 	}
 	if v := find.ID; v != nil {
 		where.And("principal.id = ?", *v)
