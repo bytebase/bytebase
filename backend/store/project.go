@@ -4,7 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 
+	"github.com/google/cel-go/cel"
+	celast "github.com/google/cel-go/common/ast"
+	celoperators "github.com/google/cel-go/common/operators"
+	celoverloads "github.com/google/cel-go/common/overloads"
 	"github.com/pkg/errors"
 	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -12,6 +17,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 // ProjectMessage is the message for project.
@@ -34,7 +40,7 @@ type FindProjectMessage struct {
 	ShowDeleted bool
 	Limit       *int
 	Offset      *int
-	Filter      *ListResourceFilter
+	FilterQ     *qb.Query
 }
 
 // UpdateProjectMessage is the message for updating a project.
@@ -279,8 +285,8 @@ func updateProjectImplV2(ctx context.Context, txn *sql.Tx, patch *UpdateProjectM
 
 func (s *Store) listProjectImplV2(ctx context.Context, txn *sql.Tx, find *FindProjectMessage) ([]*ProjectMessage, error) {
 	q := qb.Q().Space("SELECT resource_id, name, data_classification_config_id, setting, deleted FROM project WHERE TRUE")
-	if filter := find.Filter; filter != nil {
-		q.And(ConvertDollarPlaceholders(filter.Where), filter.Args...)
+	if filterQ := find.FilterQ; filterQ != nil {
+		q.And("?", filterQ)
 	}
 	if v := find.ResourceID; v != nil {
 		q.And("resource_id = ?", *v)
@@ -572,4 +578,154 @@ func (s *Store) DeleteProject(ctx context.Context, resourceID string) error {
 	s.projectCache.Remove(resourceID)
 
 	return nil
+}
+
+func GetListProjectFilter(filter string) (*qb.Query, error) {
+	if filter == "" {
+		return nil, nil
+	}
+
+	e, err := cel.NewEnv()
+	if err != nil {
+		return nil, errors.Errorf("failed to create cel env")
+	}
+	ast, iss := e.Parse(filter)
+	if iss != nil {
+		return nil, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String())
+	}
+
+	var getFilter func(expr celast.Expr) (*qb.Query, error)
+
+	parseToLabelFilterSQL := func(resource, key string, value any) (*qb.Query, error) {
+		switch v := value.(type) {
+		case string:
+			return qb.Q().Space(fmt.Sprintf("%s->'labels'->>'%s' = ?", resource, key), v), nil
+		case []any:
+			if len(v) == 0 {
+				return nil, errors.Errorf("empty label filter")
+			}
+
+			labelValueList := make([]any, len(v))
+			for i, raw := range v {
+				str, ok := raw.(string)
+				if !ok {
+					return nil, errors.Errorf("label value must be string, got %T", raw)
+				}
+				labelValueList[i] = str
+			}
+			placeholders := strings.Repeat("?,", len(labelValueList))
+			placeholders = placeholders[:len(placeholders)-1]
+			return qb.Q().Space(fmt.Sprintf("%s->'labels'->>'%s' IN (%s)", resource, key, placeholders), labelValueList...), nil
+		default:
+			return nil, errors.Errorf("empty value %v for label filter", value)
+		}
+	}
+
+	parseToSQL := func(variable, value any) (*qb.Query, error) {
+		switch variable {
+		case "name":
+			return qb.Q().Space("project.name = ?", value.(string)), nil
+		case "resource_id":
+			return qb.Q().Space("project.resource_id = ?", value.(string)), nil
+		case "exclude_default":
+			if excludeDefault, ok := value.(bool); excludeDefault && ok {
+				return qb.Q().Space("project.resource_id != ?", common.DefaultProjectID), nil
+			}
+			return qb.Q().Space("TRUE"), nil
+		case "state":
+			stateStr, ok := value.(string)
+			if !ok {
+				return nil, errors.Errorf("state value must be string, got %T", value)
+			}
+			// Try with STATE_ prefix first (e.g., "STATE_ACTIVE", "STATE_DELETED")
+			v1State, ok := v1pb.State_value[stateStr]
+			if !ok {
+				// If not found, try without STATE_ prefix (e.g., "ACTIVE", "DELETED")
+				if v, exists := v1pb.State_value[strings.TrimPrefix(stateStr, "STATE_")]; exists {
+					v1State = v
+					ok = true
+				}
+			}
+			if !ok {
+				return nil, errors.Errorf("invalid state filter %q", value)
+			}
+			return qb.Q().Space("project.deleted = ?", v1pb.State(v1State) == v1pb.State_DELETED), nil
+		default:
+			varStr, ok := variable.(string)
+			if !ok {
+				return nil, errors.Errorf("unsupport variable %q", variable)
+			}
+			if labelKey, ok := strings.CutPrefix(varStr, "labels."); ok {
+				return parseToLabelFilterSQL("project.setting", labelKey, value)
+			}
+			return nil, errors.Errorf("unsupport variable %q", variable)
+		}
+	}
+
+	getFilter = func(expr celast.Expr) (*qb.Query, error) {
+		q := qb.Q()
+		switch expr.Kind() {
+		case celast.CallKind:
+			functionName := expr.AsCall().FunctionName()
+			switch functionName {
+			case celoperators.LogicalOr:
+				for _, arg := range expr.AsCall().Args() {
+					qq, err := getFilter(arg)
+					if err != nil {
+						return nil, err
+					}
+					q.Or("?", qq)
+				}
+				return qb.Q().Space("(?)", q), nil
+			case celoperators.LogicalAnd:
+				for _, arg := range expr.AsCall().Args() {
+					qq, err := getFilter(arg)
+					if err != nil {
+						return nil, err
+					}
+					q.And("?", qq)
+				}
+				return qb.Q().Space("(?)", q), nil
+			case celoperators.Equals:
+				variable, value := getVariableAndValueFromExpr(expr)
+				return parseToSQL(variable, value)
+			case celoverloads.Matches:
+				variable := expr.AsCall().Target().AsIdent()
+				args := expr.AsCall().Args()
+				if len(args) != 1 {
+					return nil, errors.Errorf(`invalid args for %q`, variable)
+				}
+				value := args[0].AsLiteral().Value()
+				strValue, ok := value.(string)
+				if !ok {
+					return nil, errors.Errorf("expect string, got %T, hint: filter literals should be string", value)
+				}
+
+				switch variable {
+				case "name":
+					return qb.Q().Space("LOWER(project.name) LIKE ?", "%"+strings.ToLower(strValue)+"%"), nil
+				case "resource_id":
+					return qb.Q().Space("LOWER(project.resource_id) LIKE ?", "%"+strings.ToLower(strValue)+"%"), nil
+				default:
+					return nil, errors.Errorf("unsupport variable %q", variable)
+				}
+			case celoperators.In:
+				variable, value := getVariableAndValueFromExpr(expr)
+				if labelKey, ok := strings.CutPrefix(variable, "labels."); ok {
+					return parseToLabelFilterSQL("project.setting", labelKey, value)
+				}
+				return nil, errors.Errorf("unexpected %v operator for %v", functionName, variable)
+			default:
+				return nil, errors.Errorf("unexpected function %v", functionName)
+			}
+		default:
+			return nil, errors.Errorf("unexpected expr kind %v", expr.Kind())
+		}
+	}
+
+	q, err := getFilter(ast.NativeRep().Expr())
+	if err != nil {
+		return nil, err
+	}
+	return qb.Q().Space("(?)", q), nil
 }
