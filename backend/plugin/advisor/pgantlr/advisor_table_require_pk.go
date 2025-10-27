@@ -145,9 +145,9 @@ func (c *tableRequirePKChecker) EnterAltertablestmt(ctx *parser.AltertablestmtCo
 		for _, cmd := range allCmds {
 			// DROP CONSTRAINT
 			if cmd.DROP() != nil && cmd.CONSTRAINT() != nil {
-				allColIds := cmd.AllColid()
-				if len(allColIds) > 0 {
-					constraintName := pgparser.NormalizePostgreSQLColid(allColIds[0])
+				allColIDs := cmd.AllColid()
+				if len(allColIDs) > 0 {
+					constraintName := pgparser.NormalizePostgreSQLColid(allColIDs[0])
 					// Check if this constraint is a primary key using catalog
 					if c.catalog != nil {
 						_, index := c.catalog.Origin.FindIndex(&catalog.IndexFind{
@@ -165,9 +165,9 @@ func (c *tableRequirePKChecker) EnterAltertablestmt(ctx *parser.AltertablestmtCo
 
 			// DROP COLUMN (check for COLUMN keyword to distinguish from DROP CONSTRAINT)
 			if cmd.DROP() != nil && cmd.Opt_column() != nil {
-				allColIds := cmd.AllColid()
-				if len(allColIds) > 0 && cmd.CONSTRAINT() == nil {
-					columnName := pgparser.NormalizePostgreSQLColid(allColIds[0])
+				allColIDs := cmd.AllColid()
+				if len(allColIDs) > 0 && cmd.CONSTRAINT() == nil {
+					columnName := pgparser.NormalizePostgreSQLColid(allColIDs[0])
 					// Check if this column is part of the primary key using catalog
 					if c.catalog != nil {
 						pk := c.catalog.Origin.FindPrimaryKey(&catalog.PrimaryKeyFind{

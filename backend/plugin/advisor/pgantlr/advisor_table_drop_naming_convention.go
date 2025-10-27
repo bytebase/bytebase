@@ -98,7 +98,7 @@ func (c *tableDropNamingConventionChecker) EnterDropstmt(ctx *parser.DropstmtCon
 
 // extractTableNameFromAnyName extracts the table name from Any_name context.
 // For schema.table, returns "table". For just "table", returns "table".
-func (c *tableDropNamingConventionChecker) extractTableNameFromAnyName(ctx parser.IAny_nameContext) string {
+func (*tableDropNamingConventionChecker) extractTableNameFromAnyName(ctx parser.IAny_nameContext) string {
 	parts := pg.NormalizePostgreSQLAnyName(ctx)
 	if len(parts) == 0 {
 		return ""
