@@ -231,3 +231,138 @@ func TestProcedureSDLDiff(t *testing.T) {
 		})
 	}
 }
+
+func TestProcedureSDLDiff_CommentOnProcedure(t *testing.T) {
+	tests := []struct {
+		name                  string
+		previousSDL           string
+		currentSDL            string
+		expectedSQL           string
+		shouldContain         []string
+		shouldNotContain      []string
+		expectedCommentChange int
+	}{
+		{
+			name:        "Create procedure with COMMENT ON PROCEDURE",
+			previousSDL: ``,
+			currentSDL: `
+				CREATE PROCEDURE new_procedure()
+				LANGUAGE plpgsql
+				AS $$
+				BEGIN
+					RAISE NOTICE 'New procedure executed';
+				END;
+				$$;
+
+				COMMENT ON PROCEDURE "public"."new_procedure"() IS 'A new procedure that raises a notice';
+			`,
+			shouldContain: []string{
+				"CREATE PROCEDURE",
+				"COMMENT ON PROCEDURE",
+				`"public".new_procedure()`,
+			},
+			shouldNotContain: []string{
+				"COMMENT ON FUNCTION",
+			},
+			expectedCommentChange: 1,
+		},
+		{
+			name: "Create procedure with COMMENT ON PROCEDURE - ensure FUNCTION is not used",
+			previousSDL: `
+				CREATE TABLE logs (
+					id SERIAL PRIMARY KEY,
+					message TEXT
+				);
+			`,
+			currentSDL: `
+				CREATE TABLE logs (
+					id SERIAL PRIMARY KEY,
+					message TEXT
+				);
+
+				CREATE PROCEDURE log_message(msg TEXT)
+				LANGUAGE plpgsql
+				AS $$
+				BEGIN
+					INSERT INTO logs (message) VALUES (msg);
+				END;
+				$$;
+
+				COMMENT ON PROCEDURE "public"."log_message"(msg text) IS 'Logs a message to the logs table';
+			`,
+			shouldContain: []string{
+				"CREATE PROCEDURE",
+				"COMMENT ON PROCEDURE",
+				`log_message`,
+			},
+			shouldNotContain: []string{
+				"COMMENT ON FUNCTION",
+			},
+			expectedCommentChange: 1,
+		},
+		{
+			name:        "Mixed - procedure with comment and function with comment",
+			previousSDL: ``,
+			currentSDL: `
+				CREATE FUNCTION test_function()
+				RETURNS void
+				LANGUAGE plpgsql
+				AS $$
+				BEGIN
+					RAISE NOTICE 'Test function executed';
+				END;
+				$$;
+
+				COMMENT ON FUNCTION "public".test_function() IS 'A test function that raises a notice';
+
+				CREATE PROCEDURE test_procedure()
+				LANGUAGE plpgsql
+				AS $$
+				BEGIN
+					RAISE NOTICE 'Test procedure executed';
+				END;
+				$$;
+
+				COMMENT ON PROCEDURE "public"."test_procedure"() IS 'A test procedure that raises a notice';
+			`,
+			shouldContain: []string{
+				"COMMENT ON FUNCTION",
+				"test_function",
+				"COMMENT ON PROCEDURE",
+				"test_procedure",
+			},
+			shouldNotContain:      []string{},
+			expectedCommentChange: 2,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil, nil)
+			require.NoError(t, err)
+			require.NotNil(t, diff)
+
+			// Verify comment changes
+			assert.Equal(t, tt.expectedCommentChange, len(diff.CommentChanges),
+				"Expected %d comment changes, got %d", tt.expectedCommentChange, len(diff.CommentChanges))
+
+			// Generate migration SQL
+			migrationSQL, err := generateMigration(diff)
+			require.NoError(t, err)
+
+			t.Logf("Generated migration SQL:\n%s", migrationSQL)
+
+			// Verify expected strings are present
+			for _, expected := range tt.shouldContain {
+				assert.Contains(t, migrationSQL, expected,
+					"Migration SQL should contain %q", expected)
+			}
+
+			// Verify unwanted strings are not present
+			for _, unwanted := range tt.shouldNotContain {
+				assert.NotContains(t, migrationSQL, unwanted,
+					"Migration SQL should NOT contain %q", unwanted)
+			}
+		})
+	}
+}
