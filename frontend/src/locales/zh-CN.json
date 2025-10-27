@@ -453,7 +453,8 @@
         "secret-token": "Secret Token",
         "secret-token-tip": "将其粘贴到 Entra 中的「Secret Token」字段。",
         "reset-token": "重置密钥",
-        "reset-token-warning": "您需要更新 Entra 应用程序配置。"
+        "reset-token-warning": "您需要更新 Entra 应用程序配置。",
+        "goto-entra-dashboard": "前往 Entra 配置"
       },
       "all-users": "全部用户",
       "search-member": "搜索成员",
@@ -2616,6 +2617,7 @@
       "create-approval-flow": "创建审批流",
       "edit-approval-flow": "编辑审批流",
       "built-in": "内置审批流",
+      "built-in-description": "内置审批流是只读的，不能删除。",
       "custom": "自定义审批流",
       "no-custom-flows": "尚未创建自定义审批流。点击\"创建审批流\"添加。",
       "node": {

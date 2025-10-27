@@ -453,7 +453,8 @@
         "secret-token": "Secret Token",
         "secret-token-tip": "Pegue esto en el campo \"Secret Token\" en Entra.",
         "reset-token": "Restablecer token",
-        "reset-token-warning": "Debe actualizar la configuración de aprovisionamiento de aplicaciones de Entra."
+        "reset-token-warning": "Debe actualizar la configuración de aprovisionamiento de aplicaciones de Entra.",
+        "goto-entra-dashboard": "Ir al panel de control de Entra"
       },
       "all-users": "Todos los usuarios",
       "search-member": "Buscar miembro",
@@ -2616,6 +2617,7 @@
       "create-approval-flow": "Crear flujo de aprobación",
       "edit-approval-flow": "Editar flujo de aprobación",
       "built-in": "Flujos Integrados",
+      "built-in-description": "Los flujos integrados son de solo lectura y no se pueden eliminar.",
       "custom": "Flujos Personalizados",
       "no-custom-flows": "Aún no se han creado flujos de aprobación personalizados. Haga clic en 'Crear Flujo' para agregar uno.",
       "node": {

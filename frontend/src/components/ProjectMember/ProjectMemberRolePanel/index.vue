@@ -397,6 +397,7 @@ const handleDeleteRole = (role: string) => {
     user: props.binding.title,
   });
   dialog.create({
+    type: "error",
     title: title,
     content: t("common.cannot-undo-this-action"),
     positiveText: t("common.revoke"),
@@ -450,6 +451,7 @@ const handleDeleteCondition = async (
 
   dialog.create({
     title: title,
+    type: "error",
     content: t("common.cannot-undo-this-action"),
     positiveText: t("common.revoke"),
     negativeText: t("common.cancel"),

@@ -6,6 +6,7 @@
           <NButton
             quaternary
             size="small"
+            type="error"
             style="--n-padding: 0 6px"
             :disabled="errors.length > 0"
             @click.stop

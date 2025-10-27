@@ -1,6 +1,7 @@
 <template>
   <div class="flex flex-row space-x-2 items-center">
     <ProjectV1Name
+      class="flex-1 max-w-full"
       :project="project"
       :link="link"
       tag="div"

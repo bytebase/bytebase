@@ -2,12 +2,12 @@
   <div class="space-y-6">
     <!-- Built-in Flows Section -->
     <div class="space-y-2">
-      <div class="flex items-center justify-between">
+      <div>
         <h3 class="text-base font-medium">
           {{ $t("custom-approval.approval-flow.built-in") }}
         </h3>
-        <span class="text-sm text-control-light">
-          {{ $t("common.read-only") }}
+        <span class="textinfolabel">
+          {{ $t("custom-approval.approval-flow.built-in-description") }}
         </span>
       </div>
       <NDataTable
@@ -198,6 +198,7 @@ const customColumns = computed((): DataTableColumn<LocalApprovalRule>[] => {
           {allowAdmin.value && (
             <SpinnerButton
               size="small"
+              type="error"
               tooltip={t("custom-approval.approval-flow.delete")}
               onConfirm={() => deleteRule(rule)}
             >

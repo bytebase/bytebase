@@ -453,7 +453,8 @@
         "secret-token": "Mã thông báo bí mật",
         "secret-token-tip": "Dán vào trường \"Secret Token\" trong Entra.",
         "reset-token": "Đặt lại mã thông báo",
-        "reset-token-warning": "Bạn cần cập nhật cấu hình cung cấp ứng dụng Entra."
+        "reset-token-warning": "Bạn cần cập nhật cấu hình cung cấp ứng dụng Entra.",
+        "goto-entra-dashboard": "Đi tới Bảng điều khiển Entra"
       },
       "all-users": "Tất cả người dùng",
       "search-member": "Tìm kiếm thành viên",
@@ -2616,6 +2617,7 @@
       "create-approval-flow": "Tạo quy trình phê duyệt",
       "edit-approval-flow": "Chỉnh sửa quy trình phê duyệt",
       "built-in": "Quy trình Tích hợp sẵn",
+      "built-in-description": "Các luồng tích hợp chỉ có thể đọc và không thể xóa.",
       "custom": "Quy trình Tùy chỉnh",
       "no-custom-flows": "Chưa có quy trình phê duyệt tùy chỉnh nào được tạo. Nhấp vào 'Tạo Quy trình' để thêm.",
       "node": {

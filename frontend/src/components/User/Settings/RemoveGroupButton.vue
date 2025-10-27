@@ -3,6 +3,7 @@
     v-if="allowDelete"
     quaternary
     size="small"
+    type="error"
     @click="handleDeleteGroup"
   >
     <template #icon>

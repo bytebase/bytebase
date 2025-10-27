@@ -200,7 +200,7 @@
         <div class="flex flex-row justify-between items-center">
           <div class="space-x-4 flex flex-row justify-start items-center">
             <BBButtonConfirm
-              :type="'ARCHIVE'"
+              :type="'DELETE'"
               :button-text="$t('settings.sso.delete')"
               :ok-text="$t('common.delete')"
               :confirm-title="$t('settings.sso.delete')"

@@ -118,7 +118,9 @@ const columnList = computed((): ProjectDataTableColumn[] => {
         title: t("common.id"),
         width: 128,
         resizable: true,
-        ellipsis: true,
+        ellipsis: {
+          tooltip: true,
+        },
         render: (project) => {
           return (
             <HighlightLabelText
@@ -133,11 +135,7 @@ const columnList = computed((): ProjectDataTableColumn[] => {
         resizable: true,
         title: t("project.table.name"),
         render: (project) => (
-          <ProjectNameCell
-            mode="ALL_SHORT"
-            project={project}
-            keyword={props.keyword}
-          />
+          <ProjectNameCell project={project} keyword={props.keyword} />
         ),
       },
       {

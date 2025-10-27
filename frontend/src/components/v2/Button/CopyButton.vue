@@ -1,10 +1,10 @@
 <template>
   <NButton
-    v-if="isSupported && !isEmpty"
+    v-if="isSupported"
     v-bind="$attrs"
     :text="text"
     :size="size"
-    :disabled="disabled"
+    :disabled="disabled || isEmpty"
     @click="handleCopy"
   >
     <template #icon>

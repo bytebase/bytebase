@@ -78,7 +78,7 @@
           v-model:value="state.value.sshPrivateKey"
           :resizable="false"
           :disabled="disabled"
-          :placeholder="$t('common.write-only')"
+          :placeholder="$t('common.sensitive-placeholder')"
           class="w-full h-24 mt-2 whitespace-pre-wrap"
         />
       </div>

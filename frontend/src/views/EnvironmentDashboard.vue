@@ -16,6 +16,7 @@
         :tab="() => renderTab(item.data, index)"
       >
         <EnvironmentDetail
+          ref="environmentDetailRefs"
           :environment-name="item.id"
           :buttons-class="buttonsClass"
           @delete="doDelete"
@@ -114,7 +115,7 @@
 import { create } from "@bufbuild/protobuf";
 import { PlusIcon, ListOrderedIcon, GripVerticalIcon } from "lucide-vue-next";
 import { NTabs, NTabPane, NButton } from "naive-ui";
-import { onMounted, computed, reactive, watch, h } from "vue";
+import { onMounted, computed, reactive, watch, h, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import Draggable from "vuedraggable";
@@ -167,6 +168,8 @@ const environmentV1Store = useEnvironmentV1Store();
 const uiStateStore = useUIStateStore();
 const policyV1Store = usePolicyV1Store();
 const router = useRouter();
+const environmentList = useEnvironmentV1List();
+const environmentDetailRefs = ref<InstanceType<typeof EnvironmentDetail>[]>([]);
 
 const state = reactive<LocalState>({
   selectedId: "",
@@ -175,24 +178,38 @@ const state = reactive<LocalState>({
   reorder: false,
 });
 
-const selectEnvironmentOnHash = () => {
-  if (environmentList.value.length <= 0) {
-    return;
-  }
-  const target = router.currentRoute.value.hash.slice(1);
-  for (let i = 0; i < environmentList.value.length; i++) {
-    const id = environmentList.value[i].id;
-    if (id === target) {
-      selectEnvironment(i);
+const selectEnvironment = (index: number) => {
+  const id = environmentList.value[index].id;
+  onTabChange(id);
+};
+
+const onTabChange = (id: string) => {
+  // The NTabPane only render the selected environment,
+  // so we only need to check the 1st environmentDetailRefs
+  if (environmentDetailRefs.value[0]?.isEditing) {
+    if (!window.confirm(t("common.leave-without-saving"))) {
       return;
     }
   }
-  selectEnvironment(0);
+  state.selectedId = id;
+  router.replace({
+    name: router.currentRoute.value.name,
+    hash: "#" + id,
+  });
+};
+
+const selectEnvironmentOnHash = (target: string) => {
+  if (environmentList.value.length <= 0) {
+    return;
+  }
+  const index = Math.max(
+    0,
+    environmentList.value.findIndex((env) => env.id === target)
+  );
+  selectEnvironment(index);
 };
 
 onMounted(() => {
-  selectEnvironmentOnHash();
-
   if (!uiStateStore.getIntroStateByKey("environment.visit")) {
     uiStateStore.saveIntroStateByKey({
       key: "environment.visit",
@@ -203,12 +220,11 @@ onMounted(() => {
 
 watch(
   () => router.currentRoute.value.hash,
-  () => {
-    selectEnvironmentOnHash();
-  }
+  (hash) => {
+    selectEnvironmentOnHash(hash.slice(1));
+  },
+  { immediate: true }
 );
-
-const environmentList = useEnvironmentV1List();
 
 const tabItemList = computed((): BBTabItem[] => {
   return environmentList.value.map((item, index: number): BBTabItem => {
@@ -301,19 +317,6 @@ const doDelete = async (environment: Environment) => {
   if (environmentList.value.length > 0) {
     selectEnvironment(0);
   }
-};
-
-const selectEnvironment = (index: number) => {
-  const id = environmentList.value[index].id;
-  onTabChange(id);
-};
-
-const onTabChange = (id: string) => {
-  state.selectedId = id;
-  router.replace({
-    name: router.currentRoute.value.name,
-    hash: "#" + id,
-  });
 };
 
 const renderTab = (env: Environment, index: number) => {
