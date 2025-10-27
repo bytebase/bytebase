@@ -1596,6 +1596,8 @@
     "set-environment": "環境を設定する",
     "sync-database": "データベースを同期",
     "export-schema": "スキーマをエクスポート",
+    "export-schema-single-file": "単一ファイル",
+    "export-schema-multi-file": "複数ファイル (ZIP)",
     "successfully-exported-schema": "スキーマのエクスポートに成功しました",
     "failed-to-export-schema": "スキーマのエクスポートに失敗しました",
     "select": "データベースの選択",

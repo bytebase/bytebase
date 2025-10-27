@@ -1596,6 +1596,8 @@
     "set-environment": "设置环境",
     "sync-database": "同步数据库",
     "export-schema": "导出 Schema",
+    "export-schema-single-file": "单文件",
+    "export-schema-multi-file": "多文件 (ZIP)",
     "successfully-exported-schema": "成功导出 Schema",
     "failed-to-export-schema": "导出 Schema 失败",
     "select": "选择数据库",

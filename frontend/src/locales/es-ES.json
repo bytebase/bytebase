@@ -1596,6 +1596,8 @@
     "set-environment": "Establecer entorno",
     "sync-database": "Sincronizar base de datos",
     "export-schema": "Exportar esquema",
+    "export-schema-single-file": "Archivo único",
+    "export-schema-multi-file": "Multi-archivo (ZIP)",
     "successfully-exported-schema": "Esquema exportado con éxito",
     "failed-to-export-schema": "Error al exportar el esquema",
     "select": "Seleccionar base de datos",

@@ -1,15 +1,21 @@
 <template>
   <div v-if="available">
-    <NButton :loading="exporting" @click="exportSchema">
-      {{ $t("database.export-schema") }}
-    </NButton>
+    <NDropdown
+      :options="exportOptions"
+      @select="handleExportFormat"
+      trigger="click"
+    >
+      <NButton :loading="exporting">
+        {{ $t("database.export-schema") }}
+      </NButton>
+    </NDropdown>
   </div>
 </template>
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
 import { ConnectError } from "@connectrpc/connect";
-import { NButton } from "naive-ui";
+import { NButton, NDropdown } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { databaseServiceClientConnect } from "@/grpcweb";
@@ -40,22 +46,54 @@ const available = computed(() => {
   );
 });
 
-const exportSchema = async () => {
+const exportOptions = computed(() => [
+  {
+    label: t("database.export-schema-single-file"),
+    key: "single",
+  },
+  {
+    label: t("database.export-schema-multi-file"),
+    key: "multi",
+  },
+]);
+
+const handleExportFormat = (key: string) => {
+  if (key === "single") {
+    exportSchema(GetDatabaseSDLSchemaRequest_SDLFormat.SINGLE_FILE);
+  } else if (key === "multi") {
+    exportSchema(GetDatabaseSDLSchemaRequest_SDLFormat.MULTI_FILE);
+  }
+};
+
+const exportSchema = async (format: GetDatabaseSDLSchemaRequest_SDLFormat) => {
   exporting.value = true;
 
   try {
     const request = create(GetDatabaseSDLSchemaRequestSchema, {
       name: `${props.database.name}/sdlSchema`,
-      format: GetDatabaseSDLSchemaRequest_SDLFormat.SINGLE_FILE,
+      format,
     });
 
     const response =
       await databaseServiceClientConnect.getDatabaseSDLSchema(request);
 
-    const filename = `${props.database.databaseName}_schema.sql`;
-    const content = new TextDecoder().decode(response.schema);
+    let filename: string;
+    let blob: Blob;
 
-    const blob = new Blob([content], { type: "text/plain" });
+    // Check the content type to determine how to handle the response
+    if (response.contentType.includes("application/zip")) {
+      // Multi-file format - ZIP archive
+      filename = `${props.database.databaseName}_schema.zip`;
+      // Create a proper ArrayBuffer by slicing
+      const arrayBuffer = response.schema.slice().buffer;
+      blob = new Blob([arrayBuffer], { type: "application/zip" });
+    } else {
+      // Single file format - text file
+      filename = `${props.database.databaseName}_schema.sql`;
+      const content = new TextDecoder().decode(response.schema);
+      blob = new Blob([content], { type: "text/plain" });
+    }
+
     const downloadLink = document.createElement("a");
     downloadLink.href = URL.createObjectURL(blob);
     downloadLink.download = filename;
