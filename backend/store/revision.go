@@ -141,8 +141,13 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 	return revisions, nil
 }
 
-func (s *Store) GetRevision(ctx context.Context, uid int64) (*RevisionMessage, error) {
-	revisions, err := s.ListRevisions(ctx, &FindRevisionMessage{UID: &uid, ShowDeleted: true})
+func (s *Store) GetRevision(ctx context.Context, uid int64, instanceID, databaseName string) (*RevisionMessage, error) {
+	revisions, err := s.ListRevisions(ctx, &FindRevisionMessage{
+		UID:          &uid,
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseName,
+		ShowDeleted:  true,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -201,11 +206,11 @@ func (s *Store) CreateRevision(ctx context.Context, revision *RevisionMessage) (
 	return revision, nil
 }
 
-func (s *Store) DeleteRevision(ctx context.Context, uid int64, deleterUID int) error {
+func (s *Store) DeleteRevision(ctx context.Context, uid int64, instanceID, databaseName string, deleterUID int) error {
 	query :=
 		`UPDATE revision
 		SET deleter_id = $1, deleted_at = now()
-		WHERE id = $2`
+		WHERE id = $2 AND instance = $3 AND db_name = $4`
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
@@ -213,7 +218,7 @@ func (s *Store) DeleteRevision(ctx context.Context, uid int64, deleterUID int) e
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.ExecContext(ctx, query, deleterUID, uid); err != nil {
+	if _, err := tx.ExecContext(ctx, query, deleterUID, uid, instanceID, databaseName); err != nil {
 		return errors.Wrapf(err, "failed to exec")
 	}
 
