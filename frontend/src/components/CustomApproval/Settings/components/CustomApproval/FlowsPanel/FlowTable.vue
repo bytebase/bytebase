@@ -2,7 +2,7 @@
   <div class="space-y-6">
     <!-- Built-in Flows Section -->
     <div class="space-y-2">
-      <div class="">
+      <div>
         <h3 class="text-base font-medium">
           {{ $t("custom-approval.approval-flow.built-in") }}
         </h3>
