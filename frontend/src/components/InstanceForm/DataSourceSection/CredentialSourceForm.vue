@@ -123,7 +123,7 @@
           "
           class="mt-2 w-full"
           :disabled="!allowEdit"
-          :placeholder="$t('common.write-only')"
+          :placeholder="$t('common.sensitive-placeholder')"
           @update:value="
             (val) => {
               if (dataSource.iamExtension?.case === 'awsCredential') {
@@ -142,7 +142,7 @@
           "
           class="mt-2 w-full"
           :disabled="!allowEdit"
-          :placeholder="$t('common.write-only')"
+          :placeholder="$t('common.sensitive-placeholder')"
           @update:value="
             (val) => {
               if (dataSource.iamExtension?.case === 'awsCredential') {
@@ -161,7 +161,7 @@
           "
           class="mt-2 w-full"
           :disabled="!allowEdit"
-          :placeholder="$t('common.write-only')"
+          :placeholder="$t('common.sensitive-placeholder')"
           @update:value="
             (val) => {
               if (dataSource.iamExtension?.case === 'awsCredential') {

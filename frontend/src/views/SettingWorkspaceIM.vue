@@ -148,7 +148,7 @@ const imList = computed(() => {
             <div class="textlabel">Token</div>
             <BBTextField
               class="mt-2"
-              placeholder={t("common.write-only")}
+              placeholder={t("common.sensitive-placeholder")}
               value={state.setting.slack?.token ?? ""}
               onUpdate:value={(val: string) => {
                 state.setting.slack!.token = val;
@@ -169,7 +169,7 @@ const imList = computed(() => {
               <div class="textlabel">App ID</div>
               <BBTextField
                 class="mt-2"
-                placeholder={t("common.write-only")}
+                placeholder={t("common.sensitive-placeholder")}
                 value={state.setting.feishu?.appId ?? ""}
                 onUpdate:value={(val: string) => {
                   state.setting.feishu!.appId = val;
@@ -180,7 +180,7 @@ const imList = computed(() => {
               <div class="textlabel">App Secret</div>
               <BBTextField
                 class="mt-2"
-                placeholder={t("common.write-only")}
+                placeholder={t("common.sensitive-placeholder")}
                 value={state.setting.feishu?.appSecret ?? ""}
                 onUpdate:value={(val: string) => {
                   state.setting.feishu!.appSecret = val;
@@ -202,7 +202,7 @@ const imList = computed(() => {
               <div class="textlabel">App ID</div>
               <BBTextField
                 class="mt-2"
-                placeholder={t("common.write-only")}
+                placeholder={t("common.sensitive-placeholder")}
                 value={state.setting.lark?.appId ?? ""}
                 onUpdate:value={(val: string) => {
                   state.setting.lark!.appId = val;
@@ -213,7 +213,7 @@ const imList = computed(() => {
               <div class="textlabel">App Secret</div>
               <BBTextField
                 class="mt-2"
-                placeholder={t("common.write-only")}
+                placeholder={t("common.sensitive-placeholder")}
                 value={state.setting.lark?.appSecret ?? ""}
                 onUpdate:value={(val: string) => {
                   state.setting.lark!.appSecret = val;
@@ -235,7 +235,7 @@ const imList = computed(() => {
               <div class="textlabel">Corp ID</div>
               <BBTextField
                 class="mt-2"
-                placeholder={t("common.write-only")}
+                placeholder={t("common.sensitive-placeholder")}
                 value={state.setting.wecom?.corpId ?? ""}
                 onUpdate:value={(val: string) => {
                   state.setting.wecom!.corpId = val;
@@ -246,7 +246,7 @@ const imList = computed(() => {
               <div class="textlabel">Agent ID</div>
               <BBTextField
                 class="mt-2"
-                placeholder={t("common.write-only")}
+                placeholder={t("common.sensitive-placeholder")}
                 value={state.setting.wecom?.agentId ?? ""}
                 onUpdate:value={(val: string) => {
                   state.setting.wecom!.agentId = val;
@@ -257,7 +257,7 @@ const imList = computed(() => {
               <div class="textlabel">Secret</div>
               <BBTextField
                 class="mt-2"
-                placeholder={t("common.write-only")}
+                placeholder={t("common.sensitive-placeholder")}
                 value={state.setting.wecom?.secret ?? ""}
                 onUpdate:value={(val: string) => {
                   state.setting.wecom!.secret = val;
@@ -279,7 +279,7 @@ const imList = computed(() => {
               <div class="textlabel">Client ID</div>
               <BBTextField
                 class="mt-2"
-                placeholder={t("common.write-only")}
+                placeholder={t("common.sensitive-placeholder")}
                 value={state.setting.dingtalk?.clientId ?? ""}
                 onUpdate:value={(val: string) => {
                   state.setting.dingtalk!.clientId = val;
@@ -290,7 +290,7 @@ const imList = computed(() => {
               <div class="textlabel">Client Secret</div>
               <BBTextField
                 class="mt-2"
-                placeholder={t("common.write-only")}
+                placeholder={t("common.sensitive-placeholder")}
                 value={state.setting.dingtalk?.clientSecret ?? ""}
                 onUpdate:value={(val: string) => {
                   state.setting.dingtalk!.clientSecret = val;
@@ -301,7 +301,7 @@ const imList = computed(() => {
               <div class="textlabel">Robot Code</div>
               <BBTextField
                 class="mt-2"
-                placeholder={t("common.write-only")}
+                placeholder={t("common.sensitive-placeholder")}
                 value={state.setting.dingtalk?.robotCode ?? ""}
                 onUpdate:value={(val: string) => {
                   state.setting.dingtalk!.robotCode = val;

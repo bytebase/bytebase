@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="hidden md:grid">
+    <div class="hidden lg:grid">
       <SQLReviewPolicyDataTable
         :review-list="reviewList"
         :filter="filter"
@@ -11,7 +11,7 @@
     </div>
 
     <div
-      class="flex flex-col md:hidden border px-2 pb-4 divide-y space-y-4 divide-block-border"
+      class="flex flex-col lg:hidden border px-2 pb-4 divide-y space-y-4 divide-block-border"
     >
       <div
         v-for="(review, i) in reviewList"

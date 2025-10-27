@@ -17,7 +17,7 @@
     v-if="state.selectedRevisionNameList.size > 0"
     class="sticky w-full flex items-center gap-x-2"
   >
-    <NButton size="small" quaternary @click="onDelete">
+    <NButton size="small" type="error" quaternary @click="onDelete">
       <template #icon>
         <TrashIcon class="w-4 h-auto" />
       </template>

@@ -44,7 +44,7 @@
       <div
         class="flex justify-between w-full pt-4 border-t border-block-border bg-white"
       >
-        <NButton v-if="!isCreating" text @click="doDelete">
+        <NButton v-if="!isCreating" type="error" text @click="doDelete">
           <template #icon>
             <Trash2Icon class="w-4 h-auto" />
           </template>

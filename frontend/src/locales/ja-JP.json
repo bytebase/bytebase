@@ -453,7 +453,8 @@
         "secret-token": "Secret Token",
         "secret-token-tip": "これを Entra の「Secret Token」フィールドに貼り付けます。",
         "reset-token": "トークンをリセット",
-        "reset-token-warning": "Entra アプリケーションのプロビジョニング設定を更新する必要があります。"
+        "reset-token-warning": "Entra アプリケーションのプロビジョニング設定を更新する必要があります。",
+        "goto-entra-dashboard": "Entraダッシュボードへ"
       },
       "all-users": "すべてのユーザー",
       "search-member": "メンバーを検索",
@@ -1595,6 +1596,11 @@
     "no-environment": "このデータベースは環境にバインドされていません",
     "set-environment": "環境を設定する",
     "sync-database": "データベースを同期",
+    "export-schema": "スキーマをエクスポート",
+    "export-schema-single-file": "単一ファイル",
+    "export-schema-multi-file": "複数ファイル (ZIP)",
+    "successfully-exported-schema": "スキーマのエクスポートに成功しました",
+    "failed-to-export-schema": "スキーマのエクスポートに失敗しました",
     "select": "データベースの選択",
     "sync-status": "同期ステータス",
     "last-successful-sync": "最後に成功した同期",
@@ -2616,6 +2622,7 @@
       "create-approval-flow": "承認フローの作成",
       "edit-approval-flow": "承認フローの編集",
       "built-in": "組み込み承認フロー",
+      "built-in-description": "組み込みフローは読み取り専用であり、削除できません。",
       "custom": "カスタム承認フロー",
       "no-custom-flows": "カスタム承認フローがまだ作成されていません。「承認フローを作成」をクリックして追加してください。",
       "node": {

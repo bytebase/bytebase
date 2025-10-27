@@ -4,7 +4,12 @@
       {{ $t("common.edit") }}
     </NButton>
 
-    <NButton v-if="allowDelete" size="tiny" @click="handleDeleteRole">
+    <NButton
+      v-if="allowDelete"
+      size="tiny"
+      type="error"
+      @click="handleDeleteRole"
+    >
       {{ $t("common.delete") }}
     </NButton>
   </div>

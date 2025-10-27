@@ -1,7 +1,13 @@
 <template>
   <NPopconfirm @positive-click="handleDelete">
     <template #trigger>
-      <NButton quaternary size="small" style="--n-padding: 0 6px" @click.stop>
+      <NButton
+        type="error"
+        quaternary
+        size="small"
+        style="--n-padding: 0 6px"
+        @click.stop
+      >
         <template #icon>
           <heroicons:trash />
         </template>
