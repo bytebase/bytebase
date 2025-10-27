@@ -37,6 +37,7 @@ func TestPostgreSQLANTLRRules(t *testing.T) {
 		advisor.SchemaRuleStatementNonTransactional,          // Migrated from legacy
 		advisor.SchemaRuleTableDropNamingConvention,          // Migrated from legacy
 		advisor.SchemaRuleTableDisallowPartition,             // Migrated from legacy
+		advisor.SchemaRuleTableNoFK,                          // Migrated from legacy
 		// Add real rules here as you migrate them from legacy pg/ folder
 		// Example:
 		// advisor.SchemaRuleStatementDisallowCommit,
