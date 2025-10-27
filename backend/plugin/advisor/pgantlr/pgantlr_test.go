@@ -38,6 +38,7 @@ func TestPostgreSQLANTLRRules(t *testing.T) {
 		advisor.SchemaRuleTableDropNamingConvention,          // Migrated from legacy
 		advisor.SchemaRuleTableDisallowPartition,             // Migrated from legacy
 		advisor.SchemaRuleTableNoFK,                          // Migrated from legacy
+		// advisor.SchemaRuleTableRequirePK,                     // WIP - needs debugging
 		// Add real rules here as you migrate them from legacy pg/ folder
 		// Example:
 		// advisor.SchemaRuleStatementDisallowCommit,
@@ -58,5 +59,6 @@ var advisorNeedMockData = map[advisor.SQLReviewRuleType]bool{
 	advisor.BuiltinRulePriorBackupCheck:     true,
 	advisor.SchemaRuleColumnNotNull:         true, // Needs metadata for PRIMARY KEY USING INDEX case
 	advisor.SchemaRuleIndexTotalNumberLimit: true, // Needs catalog to count indexes
+	advisor.SchemaRuleTableRequirePK:        true, // Needs catalog for DROP CONSTRAINT/COLUMN checks
 	// Other advisors don't need mock data
 }
