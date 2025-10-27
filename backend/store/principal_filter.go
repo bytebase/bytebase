@@ -1,7 +1,6 @@
 package store
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/google/cel-go/cel"
@@ -99,7 +98,7 @@ func GetListUserFilter(filter string) (*GetListUserFilterResult, error) {
 		}
 	}
 
-	parseToUserTypeSQL := func(expr celast.Expr, relation string) (*qb.Query, error) {
+	parseToUserTypeSQL := func(expr celast.Expr) (*qb.Query, error) {
 		variable, value := getVariableAndValueFromExpr(expr)
 		if variable != "user_type" {
 			return nil, errors.Errorf(`only "user_type" support "user_type in [xx]"/"!(user_type in [xx])" operator`)
@@ -126,9 +125,7 @@ func GetListUserFilter(filter string) (*GetListUserFilterResult, error) {
 			userTypeList = append(userTypeList, principalType.String())
 		}
 
-		placeholders := strings.Repeat("?,", len(userTypeList))
-		placeholders = placeholders[:len(placeholders)-1]
-		return qb.Q().Space(fmt.Sprintf("principal.type %s (%s)", relation, placeholders), userTypeList...), nil
+		return qb.Q().Space("principal.type = ANY(?)", userTypeList), nil
 	}
 
 	getFilter = func(expr celast.Expr) (*qb.Query, error) {
@@ -174,13 +171,17 @@ func GetListUserFilter(filter string) (*GetListUserFilterResult, error) {
 				}
 				return qb.Q().Space("LOWER(principal."+variable+") LIKE ?", "%"+strings.ToLower(strValue)+"%"), nil
 			case celoperators.In:
-				return parseToUserTypeSQL(expr, "IN")
+				return parseToUserTypeSQL(expr)
 			case celoperators.LogicalNot:
 				args := expr.AsCall().Args()
 				if len(args) != 1 {
 					return nil, errors.Errorf(`only support !(user_type in ["{type1}", "{type2}"]) format`)
 				}
-				return parseToUserTypeSQL(args[0], "NOT IN")
+				qq, err := getFilter(args[0])
+				if err != nil {
+					return nil, err
+				}
+				return q.Space("(NOT (?))", qq), nil
 			default:
 				return nil, errors.Errorf("unexpected function %v", functionName)
 			}
