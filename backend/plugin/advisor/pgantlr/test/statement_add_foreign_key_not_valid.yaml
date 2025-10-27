@@ -1,0 +1,37 @@
+- statement: |-
+    CREATE TABLE task (
+        id SERIAL PRIMARY KEY,
+        row_status row_status NOT NULL DEFAULT 'NORMAL',
+        name TEXT NOT NULL
+    );
+    CREATE TABLE task_run (
+        id SERIAL PRIMARY KEY,
+        task_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        result  JSONB NOT NULL DEFAULT '{}'
+    );
+    ALTER TABLE task_run ADD CONSTRAINT task_run_task_id_fk_task_id FOREIGN KEY (task_id) REFERENCES task (id);
+  changeType: 1
+  want:
+    - status: 2
+      code: 229
+      title: statement.add-foreign-key-not-valid
+      content: Adding foreign keys with validation will block reads and writes. You can add check foreign keys not valid and then validate separately
+      startposition:
+        line: 12
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE task (
+        id SERIAL PRIMARY KEY,
+        row_status row_status NOT NULL DEFAULT 'NORMAL',
+        name TEXT NOT NULL
+    );
+    CREATE TABLE task_run (
+        id SERIAL PRIMARY KEY,
+        task_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        result  JSONB NOT NULL DEFAULT '{}'
+    );
+    ALTER TABLE task_run ADD CONSTRAINT task_run_task_id_fk_task_id FOREIGN KEY (task_id) REFERENCES task (id) NOT VALID;
+  changeType: 1
