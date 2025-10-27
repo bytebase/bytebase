@@ -6,11 +6,15 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
+
+	parser "github.com/bytebase/parser/postgresql"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
@@ -2084,10 +2088,48 @@ func writeFunction(out io.Writer, schema string, function *storepb.FunctionMetad
 	return nil
 }
 
+// isDefinitionProcedure checks if the definition string represents a PROCEDURE (not a FUNCTION)
+// Returns true if it's a PROCEDURE, false if it's a FUNCTION
+// This function uses AST-based parsing for robust detection
+func isDefinitionProcedure(definition string) bool {
+	if definition == "" {
+		return false
+	}
+
+	// Parse the definition to get AST
+	parseResult, err := pgparser.ParsePostgreSQL(definition)
+	if err != nil {
+		// If parsing fails, fall back to string-based detection
+		// This should rarely happen for valid definitions
+		upperDef := strings.ToUpper(definition)
+		return strings.Contains(upperDef, " PROCEDURE ") ||
+			strings.HasPrefix(upperDef, "CREATE PROCEDURE") ||
+			strings.HasPrefix(upperDef, "CREATE OR REPLACE PROCEDURE")
+	}
+
+	tree := parseResult.Tree
+	if tree == nil {
+		return false
+	}
+
+	// Walk the AST to find CREATE FUNCTION/PROCEDURE statement
+	var result *parser.CreatefunctionstmtContext
+	extractor := &functionExtractor{result: &result}
+	antlr.NewParseTreeWalker().Walk(extractor, tree)
+
+	if result == nil {
+		return false
+	}
+
+	// Check if it's a PROCEDURE by examining the AST node
+	// CreatefunctionstmtContext has both FUNCTION() and PROCEDURE() methods
+	return result.PROCEDURE() != nil
+}
+
 func writeFunctionComment(out io.Writer, schema string, function *storepb.FunctionMetadata) error {
 	// Determine if this is a PROCEDURE or FUNCTION by checking the definition
 	objectType := "FUNCTION"
-	if strings.Contains(strings.ToUpper(function.Definition), "CREATE PROCEDURE") {
+	if isDefinitionProcedure(function.Definition) {
 		objectType = "PROCEDURE"
 	}
 
@@ -3458,7 +3500,7 @@ func writeViewCommentSDL(out io.Writer, schemaName string, view *storepb.ViewMet
 func writeFunctionCommentSDL(out io.Writer, schemaName string, function *storepb.FunctionMetadata) error {
 	// Determine if this is a PROCEDURE or FUNCTION by checking the definition
 	objectType := "FUNCTION"
-	if strings.Contains(strings.ToUpper(function.Definition), "CREATE PROCEDURE") {
+	if isDefinitionProcedure(function.Definition) {
 		objectType = "PROCEDURE"
 	}
 
@@ -3468,13 +3510,13 @@ func writeFunctionCommentSDL(out io.Writer, schemaName string, function *storepb
 	if _, err := io.WriteString(out, schemaName); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(out, `"."`); err != nil {
+	if _, err := io.WriteString(out, `".`); err != nil {
 		return err
 	}
 	if _, err := io.WriteString(out, function.Signature); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(out, `" IS '`); err != nil {
+	if _, err := io.WriteString(out, ` IS '`); err != nil {
 		return err
 	}
 	if _, err := io.WriteString(out, escapeSingleQuote(function.Comment)); err != nil {
