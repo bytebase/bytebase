@@ -22,13 +22,18 @@ import { NInput } from "naive-ui";
 import type { CSSProperties } from "vue";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { planServiceClientConnect } from "@/grpcweb";
+import { issueServiceClientConnect, planServiceClientConnect } from "@/grpcweb";
 import {
   pushNotification,
   useCurrentUserV1,
   extractUserId,
   useCurrentProjectV1,
 } from "@/store";
+import {
+  IssueSchema,
+  Issue_Type,
+  UpdateIssueRequestSchema,
+} from "@/types/proto-es/v1/issue_service_pb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { PlanSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
@@ -39,19 +44,25 @@ type ViewMode = "EDIT" | "VIEW";
 const { t } = useI18n();
 const currentUser = useCurrentUserV1();
 const { project } = useCurrentProjectV1();
-const { isCreating, plan, readonly } = usePlanContext();
+const { isCreating, plan, issue, readonly } = usePlanContext();
+
+const isGrantRequest = computed(
+  () => issue.value?.type === Issue_Type.GRANT_REQUEST
+);
 
 const state = reactive({
   isEditing: false,
   isUpdating: false,
-  title: plan.value.title,
+  title: "",
 });
 
 // Watch for changes in issue/plan to update the title
 watch(
-  () => [plan.value],
+  () => [plan.value, issue.value, isGrantRequest.value],
   () => {
-    state.title = plan.value.title;
+    state.title = isGrantRequest.value
+      ? issue.value?.title || ""
+      : plan.value.title;
   },
   { immediate: true }
 );
@@ -85,6 +96,21 @@ const allowEdit = computed(() => {
   if (isCreating.value) {
     return true;
   }
+
+  // For grant requests, check issue permissions
+  if (isGrantRequest.value && issue.value) {
+    // Allowed if current user is the creator.
+    if (extractUserId(issue.value.creator) === currentUser.value.email) {
+      return true;
+    }
+    // Allowed if current user has related permission.
+    if (hasProjectPermissionV2(project.value, "bb.issues.update")) {
+      return true;
+    }
+    return false;
+  }
+
+  // For regular plans, check plan permissions
   // Allowed if current user is the creator.
   if (extractUserId(plan.value.creator) === currentUser.value.email) {
     return true;
@@ -104,6 +130,45 @@ const onBlur = async () => {
 
   if (isCreating.value) {
     cleanup();
+    return;
+  }
+
+  // For grant requests, update issue title
+  if (isGrantRequest.value && issue.value) {
+    if (state.title === issue.value.title) {
+      cleanup();
+      return;
+    }
+    try {
+      state.isUpdating = true;
+      const issuePatch = create(IssueSchema, {
+        ...issue.value,
+        title: state.title,
+      });
+      const request = create(UpdateIssueRequestSchema, {
+        issue: issuePatch,
+        updateMask: { paths: ["title"] },
+      });
+      const response = await issueServiceClientConnect.updateIssue(request);
+      Object.assign(issue.value, response);
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.updated"),
+      });
+    } catch (error) {
+      console.error("Failed to update issue title:", error);
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("common.error"),
+        description: String(error),
+      });
+      // Revert the title - use optional chaining in case issue becomes undefined
+      state.title = issue.value?.title || "";
+    } finally {
+      cleanup();
+    }
     return;
   }
 
@@ -129,6 +194,16 @@ const onBlur = async () => {
       style: "SUCCESS",
       title: t("common.updated"),
     });
+  } catch (error) {
+    console.error("Failed to update plan title:", error);
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: t("common.error"),
+      description: String(error),
+    });
+    // Revert the title
+    state.title = plan.value.title;
   } finally {
     cleanup();
   }
@@ -143,8 +218,12 @@ const onUpdateValue = (value: string) => {
   if (!isCreating.value) {
     return;
   }
-  // When creating, we only update plan title
-  plan.value.title = value;
+  // When creating, update issue title for grant requests, plan title otherwise
+  if (isGrantRequest.value && issue.value) {
+    issue.value.title = value;
+  } else {
+    plan.value.title = value;
+  }
 };
 </script>
 

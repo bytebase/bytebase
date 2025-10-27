@@ -25,15 +25,15 @@
       </div>
       <template #footer>
         <div class="flex items-center justify-end gap-x-2">
-          <NButton @click="$emit('close')">{{ $t("common.cancel") }}</NButton>
+          <NButton quaternary @click="$emit('close')">{{
+            $t("common.cancel")
+          }}</NButton>
           <NButton
             type="primary"
             :disabled="!allowCreate"
             @click="doCreateIssue"
           >
-            <div class="flex items-center gap-1">
-              {{ $t("common.submit") }}
-            </div>
+            {{ $t("common.submit") }}
           </NButton>
         </div>
       </template>
@@ -53,7 +53,7 @@ import { useRouter } from "vue-router";
 import AddProjectMemberForm from "@/components/ProjectMember/AddProjectMember/AddProjectMemberForm.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { issueServiceClientConnect } from "@/grpcweb";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL_V1 } from "@/router/dashboard/projectV1";
 import { useCurrentUserV1, useProjectV1Store } from "@/store";
 import type { DatabaseResource } from "@/types";
 import { getUserEmailInBinding } from "@/types";
@@ -68,8 +68,8 @@ import {
 import {
   generateIssueTitle,
   displayRoleTitle,
-  issueV1Slug,
   extractProjectResourceName,
+  extractIssueUID,
 } from "@/utils";
 
 interface LocalState {
@@ -161,10 +161,10 @@ const doCreateIssue = async () => {
   const response = await issueServiceClientConnect.createIssue(request);
 
   const route = router.resolve({
-    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+    name: PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
     params: {
       projectId: extractProjectResourceName(response.name),
-      issueSlug: issueV1Slug(response.name, response.title),
+      issueId: extractIssueUID(response.name),
     },
   });
 
