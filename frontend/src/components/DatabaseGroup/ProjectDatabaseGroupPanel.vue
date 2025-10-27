@@ -14,10 +14,7 @@ import DatabaseGroupDataTable from "@/components/DatabaseGroup/DatabaseGroupData
 import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/router/dashboard/projectV1";
 import { useDBGroupListByProject } from "@/store";
 import { getProjectNameAndDatabaseGroupName } from "@/store/modules/v1/common";
-import {
-  DatabaseGroupView,
-  type DatabaseGroup,
-} from "@/types/proto-es/v1/database_group_service_pb";
+import type { DatabaseGroup } from "@/types/proto-es/v1/database_group_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 
 const props = defineProps<{
@@ -27,8 +24,7 @@ const props = defineProps<{
 
 const router = useRouter();
 const { dbGroupList, ready } = useDBGroupListByProject(
-  computed(() => props.project.name),
-  DatabaseGroupView.FULL
+  computed(() => props.project.name)
 );
 
 const filteredDbGroupList = computed(() => {
