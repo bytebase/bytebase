@@ -41,6 +41,7 @@ func TestPostgreSQLANTLRRules(t *testing.T) {
 		advisor.SchemaRuleTableNaming,                        // Migrated from legacy
 		advisor.SchemaRuleTableCommentConvention,             // Migrated from legacy
 		advisor.SchemaRuleStatementCreateSpecifySchema,       // Migrated from legacy
+		advisor.SchemaRuleStatementAddCheckNotValid,          // Migrated from legacy
 		// advisor.SchemaRuleTableRequirePK,                     // WIP - needs debugging
 		// Add real rules here as you migrate them from legacy pg/ folder
 		// Example:
