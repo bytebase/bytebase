@@ -65,6 +65,7 @@ const columns = computed((): DataTableColumn<Risk>[] => {
           </NButton>
           {allowDeleteRisk.value && (
             <SpinnerButton
+              type="error"
               size="small"
               tooltip={t("custom-approval.risk-rule.delete")}
               onConfirm={() => deleteRisk(risk)}

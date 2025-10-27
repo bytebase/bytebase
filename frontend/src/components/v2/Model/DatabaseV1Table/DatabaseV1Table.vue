@@ -130,6 +130,7 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
     key: "project",
     title: t("common.project"),
     resizable: true,
+    ellipsis: true,
     render: (data) => (
       <ProjectNameCell
         project={data.projectEntity}
@@ -150,6 +151,9 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
     key: "address",
     title: t("common.address"),
     resizable: true,
+    ellipsis: {
+      tooltip: true,
+    },
     render: (data) => hostPortOfInstanceV1(data.instanceResource),
   };
   const DATABASE_LABELS: DatabaseDataTableColumn = {

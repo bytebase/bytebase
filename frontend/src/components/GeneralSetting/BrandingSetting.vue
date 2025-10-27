@@ -46,6 +46,8 @@
       <div class="flex justify-end gap-x-3">
         <NButton
           v-if="allowEdit && !!state.logoUrl"
+          secondary
+          type="error"
           @click="() => (state.logoUrl = '')"
         >
           {{ $t("common.delete") }}

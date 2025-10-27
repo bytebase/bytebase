@@ -223,12 +223,14 @@ import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import type { ConnectError } from "@connectrpc/connect";
 import { computedAsync, useTitle } from "@vueuse/core";
+import { useEventListener } from "@vueuse/core";
 import { cloneDeep, isEqual } from "lodash-es";
 import type { DropdownOption } from "naive-ui";
 import { NButton, NDropdown, NInput, NTag } from "naive-ui";
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { onBeforeRouteLeave } from "vue-router";
 import EmailInput from "@/components/EmailInput.vue";
 import { FeatureModal } from "@/components/FeatureGuard";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
@@ -372,6 +374,23 @@ const allowSaveEdit = computed(() => {
     !userPasswordRef.value?.passwordHint &&
     !userPasswordRef.value?.passwordMismatch
   );
+});
+
+useEventListener("beforeunload", (e) => {
+  if (!state.editing || !allowSaveEdit.value) {
+    return;
+  }
+  e.returnValue = t("common.leave-without-saving");
+  return e.returnValue;
+});
+
+onBeforeRouteLeave((to, from, next) => {
+  if (state.editing && allowSaveEdit.value) {
+    if (!window.confirm(t("common.leave-without-saving"))) {
+      return;
+    }
+  }
+  next();
 });
 
 const updateUser = <K extends keyof User>(field: K, value: User[K]) => {

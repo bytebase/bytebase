@@ -34,7 +34,7 @@ import {
   Undo2Icon,
   InfoIcon,
 } from "lucide-vue-next";
-import { NPopconfirm, NInput, NDataTable, NTooltip, NEllipsis } from "naive-ui";
+import { NPopconfirm, NInput, NDataTable, NTooltip } from "naive-ui";
 import type { DataTableColumn } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
@@ -151,11 +151,11 @@ const columnList = computed(() => {
     {
       key: "id",
       title: "ID",
-      ellipsis: true,
       resizable: true,
-      render: (item) => {
-        return <NEllipsis class="break-normal">{item.item.id}</NEllipsis>;
+      ellipsis: {
+        tooltip: true,
       },
+      render: (item) => item.item.id,
     },
     {
       key: "title",
@@ -185,10 +185,13 @@ const columnList = computed(() => {
       key: "description",
       title: t("settings.sensitive-data.semantic-types.table.description"),
       resizable: true,
+      ellipsis: {
+        tooltip: true,
+      },
       width: "minmax(min-content, auto)",
       render: (item, row) => {
         if (item.mode === "NORMAL") {
-          return <h3>{item.item.description}</h3>;
+          return item.item.description;
         }
         return (
           <NInput
@@ -271,7 +274,7 @@ const columnList = computed(() => {
               {{
                 trigger: () => {
                   return (
-                    <MiniActionButton>
+                    <MiniActionButton type="error">
                       <TrashIcon class="w-4 h-4" />
                     </MiniActionButton>
                   );
@@ -287,13 +290,18 @@ const columnList = computed(() => {
         }
 
         return (
-          <div>
+          <div class="flex gap-x-2">
+            {item.mode !== "NORMAL" && (
+              <MiniActionButton onClick={() => emit("cancel", row)}>
+                <Undo2Icon class="w-4 h-4" />
+              </MiniActionButton>
+            )}
             {item.mode === "EDIT" && (
               <NPopconfirm onPositiveClick={() => emit("remove", row)}>
                 {{
                   trigger: () => {
                     return (
-                      <MiniActionButton>
+                      <MiniActionButton type="error">
                         <TrashIcon class="w-4 h-4" />
                       </MiniActionButton>
                     );
@@ -305,11 +313,6 @@ const columnList = computed(() => {
                   ),
                 }}
               </NPopconfirm>
-            )}
-            {item.mode !== "NORMAL" && (
-              <MiniActionButton onClick={() => emit("cancel", row)}>
-                <Undo2Icon class="w-4 h-4" />
-              </MiniActionButton>
             )}
             {item.mode !== "NORMAL" && (
               <MiniActionButton

@@ -1,6 +1,7 @@
 <template>
   <EnvironmentForm
     v-if="state.rolloutPolicy"
+    ref="environmentFormRef"
     :environment="state.environment"
     :rollout-policy="state.rolloutPolicy"
     @update="doUpdate"
@@ -17,7 +18,7 @@
 
 <script lang="ts" setup>
 import { cloneDeep, isEqual } from "lodash-es";
-import { computed, reactive, watch, watchEffect } from "vue";
+import { computed, reactive, watch, watchEffect, ref } from "vue";
 import {
   EnvironmentForm,
   Form as EnvironmentFormBody,
@@ -40,7 +41,6 @@ import { type VueClass } from "@/utils";
 
 interface LocalState {
   environment: Environment;
-  showArchiveModal: boolean;
   rolloutPolicy?: Policy;
 }
 
@@ -56,12 +56,12 @@ const emit = defineEmits<{
 
 const environmentV1Store = useEnvironmentV1Store();
 const policyV1Store = usePolicyV1Store();
+const environmentFormRef = ref<InstanceType<typeof EnvironmentForm>>();
 
 const state = reactive<LocalState>({
   environment: environmentV1Store.getEnvironmentByName(
     `${environmentNamePrefix}${props.environmentName}`
   ),
-  showArchiveModal: false,
 });
 
 const stateEnvironmentName = computed(() => {
@@ -141,4 +141,8 @@ const updatePolicy = async (params: {
       break;
   }
 };
+
+defineExpose({
+  isEditing: computed(() => environmentFormRef.value?.isEditing ?? false),
+});
 </script>

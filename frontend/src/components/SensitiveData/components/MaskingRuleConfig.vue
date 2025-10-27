@@ -50,6 +50,7 @@
         <template #trigger>
           <NButton
             quaternary
+            type="error"
             tag="div"
             style="--n-padding: 0 6px; --n-icon-margin: 4px"
             :disabled="disabled"

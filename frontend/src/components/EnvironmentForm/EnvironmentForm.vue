@@ -10,7 +10,7 @@
 
 <script lang="ts" setup>
 import { useEventListener } from "@vueuse/core";
-import { toRef } from "vue";
+import { toRef, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { onBeforeRouteLeave } from "vue-router";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
@@ -62,8 +62,12 @@ const context = provideEnvironmentFormContext({
 });
 const { valueChanged, events, missingFeature } = context;
 
+const isEditing = computed(() => {
+  return !props.create && valueChanged();
+});
+
 useEventListener("beforeunload", (e) => {
-  if (props.create || !valueChanged()) {
+  if (!isEditing.value) {
     return;
   }
   e.returnValue = t("common.leave-without-saving");
@@ -71,7 +75,7 @@ useEventListener("beforeunload", (e) => {
 });
 
 onBeforeRouteLeave((to, from, next) => {
-  if (!props.create && valueChanged()) {
+  if (isEditing.value) {
     if (!window.confirm(t("common.leave-without-saving"))) {
       return;
     }
@@ -109,5 +113,9 @@ useEmitteryEventListener(events, "delete", (environment) => {
 });
 useEmitteryEventListener(events, "cancel", () => {
   emit("cancel");
+});
+
+defineExpose({
+  isEditing,
 });
 </script>

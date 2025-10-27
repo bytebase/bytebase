@@ -134,6 +134,7 @@ const columns = computed(
               {{
                 trigger: () => (
                   <MiniActionButton
+                    type="error"
                     onClick={(e: MouseEvent) => e.stopPropagation()}
                   >
                     <TrashIcon class="w-4 h-4" />
