@@ -4,7 +4,8 @@ import dayOfYear from "dayjs/plugin/dayOfYear";
 import duration from "dayjs/plugin/duration";
 import relativeTime from "dayjs/plugin/relativeTime";
 import utc from "dayjs/plugin/utc";
-import { escapeRegExp, round } from "lodash-es";
+import DOMPurify from "dompurify";
+import { escape as escapeHtml, escapeRegExp, round } from "lodash-es";
 import semver from "semver";
 import { watchEffect, type Ref } from "vue";
 
@@ -189,26 +190,78 @@ export function randomString(
   return result;
 }
 
+/**
+ * Safely highlights search keywords in text by escaping HTML and wrapping matches
+ * in <b> tags. Follows OWASP XSS prevention guidelines with defense-in-depth:
+ * 1. HTML escape to convert any special characters to entities
+ * 2. Apply highlighting with safe markup
+ * 3. Sanitize with DOMPurify to ensure only allowed tags/attributes remain
+ *
+ * This prevents DOM XSS attacks from malicious input in search highlighting.
+ *
+ * @param s - The text to search in
+ * @param k - The keyword to highlight (case-sensitive)
+ * @returns HTML-safe string with highlighted keywords
+ */
 export function getHighlightHTMLByKeyWords(s: string, k: string) {
-  if (!k) return s;
-  return s.replaceAll(k, `<b class="text-accent">${k}</b>`);
+  // Step 1: Escape HTML entities to prevent XSS (converts <, >, &, ", ', ` to entities)
+  const escapedText = escapeHtml(s);
+  if (!k) return escapedText;
+
+  // Step 2: Escape the search keyword and apply highlighting
+  const escapedKeyword = escapeHtml(k);
+  const highlighted = escapedText.replaceAll(
+    escapedKeyword,
+    `<b class="text-accent">${escapedKeyword}</b>`
+  );
+
+  // Step 3: Sanitize with DOMPurify as defense-in-depth (allowlist-based)
+  return DOMPurify.sanitize(highlighted, {
+    ALLOWED_TAGS: ["b"],
+    ALLOWED_ATTR: ["class"],
+  });
 }
 
+/**
+ * Safely highlights text matching a regex pattern by escaping HTML and wrapping
+ * matches in <b> tags. Follows OWASP XSS prevention guidelines with defense-in-depth.
+ *
+ * This prevents DOM XSS attacks from malicious input in search highlighting.
+ *
+ * @param s - The text to search in
+ * @param pattern - String(s) to highlight (converted to escaped regex pattern)
+ * @param caseSensitive - Whether the search should be case-sensitive
+ * @param className - CSS class for the highlight tag (sanitized by DOMPurify)
+ * @returns HTML-safe string with highlighted matches
+ */
 export function getHighlightHTMLByRegExp(
   s: string,
   pattern: string | string[],
   caseSensitive = false,
   className = "text-accent"
 ) {
+  // Step 1: Escape HTML entities to prevent XSS
+  const escapedText = escapeHtml(s);
   if (!pattern || (Array.isArray(pattern) && pattern.length === 0)) {
-    return s;
+    return escapedText;
   }
+
+  // Step 2: Build safe regex pattern and apply highlighting
   pattern = Array.isArray(pattern)
     ? pattern.map((kw) => escapeRegExp(kw)).join("|")
     : escapeRegExp(pattern);
   const flags = caseSensitive ? "g" : "gi";
   const re = new RegExp(pattern, flags);
-  return s.replaceAll(re, (k) => `<b class="${className}">${k}</b>`);
+  const highlighted = escapedText.replaceAll(
+    re,
+    (k) => `<b class="${escapeHtml(className)}">${k}</b>`
+  );
+
+  // Step 3: Sanitize with DOMPurify as defense-in-depth (allowlist-based)
+  return DOMPurify.sanitize(highlighted, {
+    ALLOWED_TAGS: ["b"],
+    ALLOWED_ATTR: ["class"],
+  });
 }
 
 export type Defer<T> = {
