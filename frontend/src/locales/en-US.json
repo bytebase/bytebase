@@ -1594,7 +1594,7 @@
   "database": {
     "no-environment": "This database has not been bound to the environment",
     "set-environment": "Set environment",
-    "sync-database": "Sync database",
+    "sync-database": "Sync Database",
     "select": "Select database",
     "sync-status": "Sync status",
     "last-successful-sync": "Last successful sync",
