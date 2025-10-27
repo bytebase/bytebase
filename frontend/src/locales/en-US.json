@@ -1595,7 +1595,7 @@
   "database": {
     "no-environment": "This database has not been bound to the environment",
     "set-environment": "Set environment",
-    "sync-database": "Sync database",
+    "sync-database": "Sync Database",
     "export-schema": "Export Schema",
     "export-schema-single-file": "Single File",
     "export-schema-multi-file": "Multi-File (ZIP)",
