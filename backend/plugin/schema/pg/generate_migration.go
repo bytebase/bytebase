@@ -100,6 +100,11 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 		}
 	}
 
+	// Build temporary metadata for AST-only mode dependency extraction
+	// This metadata only contains tables and views that are being dropped,
+	// allowing GetQuerySpan to find them when extracting view dependencies
+	tempMetadata := buildTempMetadataForDrop(diff)
+
 	// Add views to graph
 	for _, viewDiff := range diff.ViewChanges {
 		if viewDiff.Action == schema.MetadataDiffActionDrop || viewDiff.Action == schema.MetadataDiffActionAlter {
@@ -150,9 +155,8 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 			dependencies = viewDiff.OldView.DependencyColumns
 		} else if viewDiff.OldASTNode != nil {
 			// Extract dependencies from AST node for AST-only mode
-			// For simplicity, we use an empty schema metadata since we can't build full metadata in migration context
-			// This will only work for simple dependencies within the same database
-			dependencies = getViewDependenciesFromAST(viewDiff.OldASTNode, viewDiff.SchemaName, &storepb.DatabaseSchemaMetadata{})
+			// Use the temporary metadata containing objects being dropped
+			dependencies = getViewDependenciesFromAST(viewDiff.OldASTNode, viewDiff.SchemaName, tempMetadata)
 		}
 
 		for _, dep := range dependencies {
@@ -609,6 +613,11 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 	// Build dependency graph for all objects being created or altered
 	graph := base.NewGraph()
 
+	// Build temporary metadata for AST-only mode dependency extraction
+	// This metadata contains tables and views that are being created,
+	// allowing GetQuerySpan to find them when extracting view dependencies
+	tempMetadata := buildTempMetadataForCreate(diff)
+
 	// Maps to store different object types
 	viewMap := make(map[string]*schema.ViewDiff)
 	materializedViewMap := make(map[string]*schema.MaterializedViewDiff)
@@ -681,9 +690,8 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 			dependencies = viewDiff.NewView.DependencyColumns
 		} else if viewDiff.NewASTNode != nil {
 			// Extract dependencies from AST node for AST-only mode
-			// For simplicity, we use an empty schema metadata since we can't build full metadata in migration context
-			// This will only work for simple dependencies within the same database
-			dependencies = getViewDependenciesFromAST(viewDiff.NewASTNode, viewDiff.SchemaName, &storepb.DatabaseSchemaMetadata{})
+			// Use the temporary metadata containing objects being created
+			dependencies = getViewDependenciesFromAST(viewDiff.NewASTNode, viewDiff.SchemaName, tempMetadata)
 		}
 
 		for _, dep := range dependencies {
@@ -2093,6 +2101,106 @@ func hasCreateViewsOrFunctions(diff *schema.MetadataDiff) bool {
 	return false
 }
 
+// buildTempMetadataForCreate builds a temporary DatabaseSchemaMetadata containing
+// the tables and views that are being created or altered. This allows GetQuerySpan to
+// find these objects when extracting view dependencies in AST-only mode.
+func buildTempMetadataForCreate(diff *schema.MetadataDiff) *storepb.DatabaseSchemaMetadata {
+	// Group objects by schema
+	schemaMap := make(map[string]*storepb.SchemaMetadata)
+
+	// Collect tables being created or altered
+	for _, tableDiff := range diff.TableChanges {
+		if tableDiff.Action == schema.MetadataDiffActionCreate || tableDiff.Action == schema.MetadataDiffActionAlter {
+			schemaName := tableDiff.SchemaName
+			if schemaMap[schemaName] == nil {
+				schemaMap[schemaName] = &storepb.SchemaMetadata{
+					Name: schemaName,
+				}
+			}
+			// Add table with just the name - that's all GetQuerySpan needs
+			schemaMap[schemaName].Tables = append(schemaMap[schemaName].Tables, &storepb.TableMetadata{
+				Name: tableDiff.TableName,
+			})
+		}
+	}
+
+	// Collect views being created or altered
+	for _, viewDiff := range diff.ViewChanges {
+		if viewDiff.Action == schema.MetadataDiffActionCreate || viewDiff.Action == schema.MetadataDiffActionAlter {
+			schemaName := viewDiff.SchemaName
+			if schemaMap[schemaName] == nil {
+				schemaMap[schemaName] = &storepb.SchemaMetadata{
+					Name: schemaName,
+				}
+			}
+			// Add view with just the name
+			schemaMap[schemaName].Views = append(schemaMap[schemaName].Views, &storepb.ViewMetadata{
+				Name: viewDiff.ViewName,
+			})
+		}
+	}
+
+	// Convert map to slice
+	var schemas []*storepb.SchemaMetadata
+	for _, schemaMeta := range schemaMap {
+		schemas = append(schemas, schemaMeta)
+	}
+
+	return &storepb.DatabaseSchemaMetadata{
+		Schemas: schemas,
+	}
+}
+
+// buildTempMetadataForDrop builds a temporary DatabaseSchemaMetadata containing only
+// the tables and views that are being dropped. This allows GetQuerySpan to find these
+// objects when extracting view dependencies in AST-only mode.
+func buildTempMetadataForDrop(diff *schema.MetadataDiff) *storepb.DatabaseSchemaMetadata {
+	// Group objects by schema
+	schemaMap := make(map[string]*storepb.SchemaMetadata)
+
+	// Collect tables being dropped
+	for _, tableDiff := range diff.TableChanges {
+		if tableDiff.Action == schema.MetadataDiffActionDrop {
+			schemaName := tableDiff.SchemaName
+			if schemaMap[schemaName] == nil {
+				schemaMap[schemaName] = &storepb.SchemaMetadata{
+					Name: schemaName,
+				}
+			}
+			// Add table with just the name - that's all GetQuerySpan needs
+			schemaMap[schemaName].Tables = append(schemaMap[schemaName].Tables, &storepb.TableMetadata{
+				Name: tableDiff.TableName,
+			})
+		}
+	}
+
+	// Collect views being dropped
+	for _, viewDiff := range diff.ViewChanges {
+		if viewDiff.Action == schema.MetadataDiffActionDrop || viewDiff.Action == schema.MetadataDiffActionAlter {
+			schemaName := viewDiff.SchemaName
+			if schemaMap[schemaName] == nil {
+				schemaMap[schemaName] = &storepb.SchemaMetadata{
+					Name: schemaName,
+				}
+			}
+			// Add view with just the name
+			schemaMap[schemaName].Views = append(schemaMap[schemaName].Views, &storepb.ViewMetadata{
+				Name: viewDiff.ViewName,
+			})
+		}
+	}
+
+	// Convert map to slice
+	var schemas []*storepb.SchemaMetadata
+	for _, schemaMeta := range schemaMap {
+		schemas = append(schemas, schemaMeta)
+	}
+
+	return &storepb.DatabaseSchemaMetadata{
+		Schemas: schemas,
+	}
+}
+
 // getObjectID generates a unique identifier for database objects
 func getMigrationObjectID(schema, name string) string {
 	return fmt.Sprintf("%s.%s", schema, name)
@@ -3275,24 +3383,35 @@ func getViewDependenciesFromAST(astNode any, schemaName string, fullSchemaMetada
 	queryStatement := strings.TrimSpace(selectStatement)
 
 	// Use GetQuerySpan with the full schema metadata so it can resolve table/view references
-	span, err := pgpluginparser.GetQuerySpan(
-		context.Background(),
-		base.GetQuerySpanContext{
-			GetDatabaseMetadataFunc: func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
-				// Return the full schema metadata so GetQuerySpan can resolve references
-				dbMetadata := model.NewDatabaseMetadata(fullSchemaMetadata, false, false)
-				return databaseName, dbMetadata, nil
+	// Wrap in defer/recover to handle potential panics from incomplete metadata
+	var span *base.QuerySpan
+	var err error
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				// If GetQuerySpan panics (e.g., due to incomplete metadata), treat it as an error
+				err = errors.Errorf("GetQuerySpan panicked: %v", r)
+			}
+		}()
+		span, err = pgpluginparser.GetQuerySpan(
+			context.Background(),
+			base.GetQuerySpanContext{
+				GetDatabaseMetadataFunc: func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
+					// Return the full schema metadata so GetQuerySpan can resolve references
+					dbMetadata := model.NewDatabaseMetadata(fullSchemaMetadata, false, false)
+					return databaseName, dbMetadata, nil
+				},
+				ListDatabaseNamesFunc: func(_ context.Context, _ string) ([]string, error) {
+					// Return empty list - we don't need actual database names for dependency extraction
+					return []string{}, nil
+				},
 			},
-			ListDatabaseNamesFunc: func(_ context.Context, _ string) ([]string, error) {
-				// Return empty list - we don't need actual database names for dependency extraction
-				return []string{}, nil
-			},
-		},
-		queryStatement,
-		"", // database
-		schemaName,
-		false, // case sensitive
-	)
+			queryStatement,
+			"", // database
+			schemaName,
+			false, // case sensitive
+		)
+	}()
 
 	// If error parsing query span, return empty dependencies
 	if err != nil {

@@ -266,3 +266,235 @@ func TestViewDependencyHandlingInAST(t *testing.T) {
 func contains(s, substr string) bool {
 	return strings.Contains(s, substr)
 }
+
+func TestDropTableAndDependentView_CorrectOrder(t *testing.T) {
+	// This test verifies that when dropping both a table and a view that depends on it,
+	// the DROP statements are generated in the correct order:
+	// 1. DROP VIEW first (dependent object)
+	// 2. DROP TABLE second (base object)
+	//
+	// This is critical because PostgreSQL will fail if we try to drop the table first
+	// while the view still depends on it.
+
+	previousSDL := `
+		CREATE TABLE users (
+			id INTEGER PRIMARY KEY,
+			name TEXT NOT NULL,
+			email TEXT NOT NULL
+		);
+
+		CREATE VIEW active_users AS
+		SELECT id, name, email
+		FROM users
+		WHERE email IS NOT NULL;
+	`
+
+	// Both table and view are removed in current SDL
+	currentSDL := ``
+
+	// Get the diff
+	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+	require.NoError(t, err)
+	require.NotNil(t, diff)
+
+	// Should have both table and view changes
+	assert.Len(t, diff.TableChanges, 1, "Should have one table change")
+	assert.Len(t, diff.ViewChanges, 1, "Should have one view change")
+
+	// Generate migration SQL
+	migrationSQL, err := generateMigration(diff)
+	require.NoError(t, err)
+	assert.NotEmpty(t, migrationSQL, "Migration SQL should not be empty")
+
+	t.Logf("Generated migration SQL:\n%s", migrationSQL)
+
+	// Verify both DROP statements are present
+	assert.Contains(t, migrationSQL, "DROP VIEW", "Should contain DROP VIEW statement")
+	assert.Contains(t, migrationSQL, "DROP TABLE", "Should contain DROP TABLE statement")
+
+	// The critical test: VIEW must be dropped BEFORE TABLE
+	// Find the positions of each DROP statement
+	viewDropIndex := strings.Index(migrationSQL, "DROP VIEW")
+	tableDropIndex := strings.Index(migrationSQL, "DROP TABLE")
+
+	assert.True(t, viewDropIndex >= 0, "DROP VIEW statement should be present")
+	assert.True(t, tableDropIndex >= 0, "DROP TABLE statement should be present")
+	assert.True(t, viewDropIndex < tableDropIndex,
+		"DROP VIEW must come before DROP TABLE because view depends on table.\n"+
+			"Current order is incorrect: VIEW at position %d, TABLE at position %d\n"+
+			"Migration SQL:\n%s",
+		viewDropIndex, tableDropIndex, migrationSQL)
+}
+
+func TestDropMultipleTablesAndViews_CorrectOrder(t *testing.T) {
+	// Test with multiple tables and views to ensure proper dependency ordering
+
+	previousSDL := `
+		CREATE TABLE categories (
+			id INTEGER PRIMARY KEY,
+			name TEXT NOT NULL
+		);
+
+		CREATE TABLE products (
+			id INTEGER PRIMARY KEY,
+			name TEXT NOT NULL,
+			category_id INTEGER REFERENCES categories(id)
+		);
+
+		CREATE VIEW product_summary AS
+		SELECT p.id, p.name, c.name as category_name
+		FROM products p
+		JOIN categories c ON p.category_id = c.id;
+	`
+
+	// Remove all objects
+	currentSDL := ``
+
+	// Get the diff
+	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+	require.NoError(t, err)
+	require.NotNil(t, diff)
+
+	// Generate migration SQL
+	migrationSQL, err := generateMigration(diff)
+	require.NoError(t, err)
+	assert.NotEmpty(t, migrationSQL, "Migration SQL should not be empty")
+
+	t.Logf("Generated migration SQL:\n%s", migrationSQL)
+
+	// Verify the view is dropped before both tables
+	viewDropIndex := strings.Index(migrationSQL, "DROP VIEW")
+	productsTableDropIndex := strings.Index(migrationSQL, `DROP TABLE IF EXISTS "public"."products"`)
+	categoriesTableDropIndex := strings.Index(migrationSQL, `DROP TABLE IF EXISTS "public"."categories"`)
+
+	assert.True(t, viewDropIndex >= 0, "DROP VIEW should be present")
+	assert.True(t, productsTableDropIndex >= 0, "DROP TABLE products should be present")
+	assert.True(t, categoriesTableDropIndex >= 0, "DROP TABLE categories should be present")
+
+	// View must be dropped first (this is the critical fix)
+	assert.True(t, viewDropIndex < productsTableDropIndex,
+		"DROP VIEW must come before DROP TABLE products. Migration SQL:\n%s", migrationSQL)
+	assert.True(t, viewDropIndex < categoriesTableDropIndex,
+		"DROP VIEW must come before DROP TABLE categories. Migration SQL:\n%s", migrationSQL)
+
+	// Note: In AST-only mode, we cannot reliably extract foreign key dependencies,
+	// so table DROP order may not respect FK constraints. The FKs are dropped before tables anyway,
+	// so the migration will succeed even if the table order is not optimal.
+	t.Log("Note: Products should be dropped before categories (FK dependency), but AST-only mode may not enforce this")
+}
+
+func TestCreateTableAndDependentView_CorrectOrder(t *testing.T) {
+	// This test verifies that when creating both a table and a view that depends on it,
+	// the CREATE statements are generated in the correct order:
+	// 1. CREATE TABLE first (base object)
+	// 2. CREATE VIEW second (dependent object)
+	//
+	// This is critical because PostgreSQL will fail if we try to create the view first
+	// before the table exists.
+
+	previousSDL := ``
+
+	// Both table and view are added in current SDL
+	currentSDL := `
+		CREATE TABLE users (
+			id INTEGER PRIMARY KEY,
+			name TEXT NOT NULL,
+			email TEXT NOT NULL
+		);
+
+		CREATE VIEW active_users AS
+		SELECT id, name, email
+		FROM users
+		WHERE email IS NOT NULL;
+	`
+
+	// Get the diff
+	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+	require.NoError(t, err)
+	require.NotNil(t, diff)
+
+	// Should have both table and view changes
+	assert.Len(t, diff.TableChanges, 1, "Should have one table change")
+	assert.Len(t, diff.ViewChanges, 1, "Should have one view change")
+
+	// Generate migration SQL
+	migrationSQL, err := generateMigration(diff)
+	require.NoError(t, err)
+	assert.NotEmpty(t, migrationSQL, "Migration SQL should not be empty")
+
+	t.Logf("Generated migration SQL:\n%s", migrationSQL)
+
+	// Verify both CREATE statements are present
+	assert.Contains(t, migrationSQL, "CREATE TABLE", "Should contain CREATE TABLE statement")
+	assert.Contains(t, migrationSQL, "CREATE VIEW", "Should contain CREATE VIEW statement")
+
+	// The critical test: TABLE must be created BEFORE VIEW
+	// Find the positions of each CREATE statement
+	tableCreateIndex := strings.Index(migrationSQL, "CREATE TABLE")
+	viewCreateIndex := strings.Index(migrationSQL, "CREATE VIEW")
+
+	assert.True(t, tableCreateIndex >= 0, "CREATE TABLE statement should be present")
+	assert.True(t, viewCreateIndex >= 0, "CREATE VIEW statement should be present")
+	assert.True(t, tableCreateIndex < viewCreateIndex,
+		"CREATE TABLE must come before CREATE VIEW because view depends on table.\n"+
+			"Current order is incorrect: TABLE at position %d, VIEW at position %d\n"+
+			"Migration SQL:\n%s",
+		tableCreateIndex, viewCreateIndex, migrationSQL)
+}
+
+func TestCreateMultipleTablesAndViews_CorrectOrder(t *testing.T) {
+	// Test with multiple tables and views to ensure proper dependency ordering
+
+	previousSDL := ``
+
+	// Create tables and a view that depends on them
+	currentSDL := `
+		CREATE TABLE categories (
+			id INTEGER PRIMARY KEY,
+			name TEXT NOT NULL
+		);
+
+		CREATE TABLE products (
+			id INTEGER PRIMARY KEY,
+			name TEXT NOT NULL,
+			category_id INTEGER REFERENCES categories(id)
+		);
+
+		CREATE VIEW product_summary AS
+		SELECT p.id, p.name, c.name as category_name
+		FROM products p
+		JOIN categories c ON p.category_id = c.id;
+	`
+
+	// Get the diff
+	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+	require.NoError(t, err)
+	require.NotNil(t, diff)
+
+	// Generate migration SQL
+	migrationSQL, err := generateMigration(diff)
+	require.NoError(t, err)
+	assert.NotEmpty(t, migrationSQL, "Migration SQL should not be empty")
+
+	t.Logf("Generated migration SQL:\n%s", migrationSQL)
+
+	// Verify both tables are created before the view
+	categoriesTableCreateIndex := strings.Index(migrationSQL, `CREATE TABLE categories`)
+	productsTableCreateIndex := strings.Index(migrationSQL, `CREATE TABLE products`)
+	viewCreateIndex := strings.Index(migrationSQL, "CREATE VIEW")
+
+	assert.True(t, categoriesTableCreateIndex >= 0, "CREATE TABLE categories should be present")
+	assert.True(t, productsTableCreateIndex >= 0, "CREATE TABLE products should be present")
+	assert.True(t, viewCreateIndex >= 0, "CREATE VIEW should be present")
+
+	// Both tables must be created before the view (this is the critical fix)
+	assert.True(t, categoriesTableCreateIndex < viewCreateIndex,
+		"CREATE TABLE categories must come before CREATE VIEW. Migration SQL:\n%s", migrationSQL)
+	assert.True(t, productsTableCreateIndex < viewCreateIndex,
+		"CREATE TABLE products must come before CREATE VIEW. Migration SQL:\n%s", migrationSQL)
+
+	// Note: The FK constraint means categories should be created before products,
+	// and the topological sort should handle this correctly
+	assert.True(t, categoriesTableCreateIndex < productsTableCreateIndex,
+		"CREATE TABLE categories should come before CREATE TABLE products (FK dependency). Migration SQL:\n%s", migrationSQL)
+}
