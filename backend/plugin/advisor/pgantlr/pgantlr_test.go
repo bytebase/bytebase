@@ -9,28 +9,44 @@ import (
 
 func TestPostgreSQLANTLRRules(t *testing.T) {
 	antlrRules := []advisor.SQLReviewRuleType{
-		HelloWorldRule,                                       // Test advisor to verify framework works
-		advisor.BuiltinRulePriorBackupCheck,                  // Migrated from legacy
-		advisor.SchemaRuleCharsetAllowlist,                   // Migrated from legacy
-		advisor.SchemaRuleCollationAllowlist,                 // Migrated from legacy
-		advisor.SchemaRuleColumnCommentConvention,            // Migrated from legacy
-		advisor.SchemaRuleColumnDefaultDisallowVolatile,      // Migrated from legacy
-		advisor.SchemaRuleColumnDisallowChangeType,           // Migrated from legacy
-		advisor.SchemaRuleColumnMaximumCharacterLength,       // Migrated from legacy
-		advisor.SchemaRuleColumnNotNull,                      // Migrated from legacy
-		advisor.SchemaRuleColumnRequireDefault,               // Migrated from legacy
-		advisor.SchemaRuleColumnTypeDisallowList,             // Migrated from legacy
-		advisor.SchemaRuleCommentLength,                      // Migrated from legacy
-		advisor.SchemaRuleCreateIndexConcurrently,            // Migrated from legacy
-		advisor.SchemaRuleIndexKeyNumberLimit,                // Migrated from legacy
-		advisor.SchemaRuleIndexNoDuplicateColumn,             // Migrated from legacy
-		advisor.SchemaRuleIndexPrimaryKeyTypeAllowlist,       // Migrated from legacy
-		advisor.SchemaRuleIndexTotalNumberLimit,              // Migrated from legacy
-		advisor.SchemaRuleRequiredColumn,                     // Migrated from legacy
-		advisor.SchemaRuleStatementInsertDisallowOrderByRand, // Migrated from legacy
-		advisor.SchemaRuleStatementInsertMustSpecifyColumn,   // Migrated from legacy
-		advisor.SchemaRuleStatementInsertRowLimit,            // Migrated from legacy
-		advisor.SchemaRuleColumnNaming,                       // Migrated from legacy
+		HelloWorldRule,                                          // Test advisor to verify framework works
+		advisor.BuiltinRulePriorBackupCheck,                     // Migrated from legacy
+		advisor.SchemaRuleCharsetAllowlist,                      // Migrated from legacy
+		advisor.SchemaRuleCollationAllowlist,                    // Migrated from legacy
+		advisor.SchemaRuleColumnCommentConvention,               // Migrated from legacy
+		advisor.SchemaRuleColumnDefaultDisallowVolatile,         // Migrated from legacy
+		advisor.SchemaRuleColumnDisallowChangeType,              // Migrated from legacy
+		advisor.SchemaRuleColumnMaximumCharacterLength,          // Migrated from legacy
+		advisor.SchemaRuleColumnNotNull,                         // Migrated from legacy
+		advisor.SchemaRuleColumnRequireDefault,                  // Migrated from legacy
+		advisor.SchemaRuleColumnTypeDisallowList,                // Migrated from legacy
+		advisor.SchemaRuleCommentLength,                         // Migrated from legacy
+		advisor.SchemaRuleCreateIndexConcurrently,               // Migrated from legacy
+		advisor.SchemaRuleIndexKeyNumberLimit,                   // Migrated from legacy
+		advisor.SchemaRuleIndexNoDuplicateColumn,                // Migrated from legacy
+		advisor.SchemaRuleIndexPrimaryKeyTypeAllowlist,          // Migrated from legacy
+		advisor.SchemaRuleIndexTotalNumberLimit,                 // Migrated from legacy
+		advisor.SchemaRuleRequiredColumn,                        // Migrated from legacy
+		advisor.SchemaRuleStatementInsertDisallowOrderByRand,    // Migrated from legacy
+		advisor.SchemaRuleStatementInsertMustSpecifyColumn,      // Migrated from legacy
+		advisor.SchemaRuleStatementInsertRowLimit,               // Migrated from legacy
+		advisor.SchemaRuleColumnNaming,                          // Migrated from legacy
+		advisor.SchemaRuleSchemaBackwardCompatibility,           // Migrated from legacy
+		advisor.SchemaRuleStatementAddFKNotValid,                // Migrated from legacy
+		advisor.SchemaRuleStatementDisallowCommit,               // Migrated from legacy
+		advisor.SchemaRuleStatementNonTransactional,             // Migrated from legacy
+		advisor.SchemaRuleTableDropNamingConvention,             // Migrated from legacy
+		advisor.SchemaRuleTableDisallowPartition,                // Migrated from legacy
+		advisor.SchemaRuleTableNoFK,                             // Migrated from legacy
+		advisor.SchemaRuleTableNaming,                           // Migrated from legacy
+		advisor.SchemaRuleTableCommentConvention,                // Migrated from legacy
+		advisor.SchemaRuleStatementCreateSpecifySchema,          // Migrated from legacy
+		advisor.SchemaRuleStatementAddCheckNotValid,             // Migrated from legacy
+		advisor.SchemaRuleStatementAffectedRowLimit,             // Migrated from legacy
+		advisor.SchemaRuleStatementDisallowAddColumnWithDefault, // Migrated from legacy
+		advisor.SchemaRuleStatementDisallowAddNotNull,           // Migrated from legacy
+		advisor.SchemaRuleStatementDisallowMixInDDL,             // Migrated from legacy
+		// advisor.SchemaRuleTableRequirePK,                     // WIP - needs debugging
 		// Add real rules here as you migrate them from legacy pg/ folder
 		// Example:
 		// advisor.SchemaRuleStatementDisallowCommit,
@@ -51,5 +67,6 @@ var advisorNeedMockData = map[advisor.SQLReviewRuleType]bool{
 	advisor.BuiltinRulePriorBackupCheck:     true,
 	advisor.SchemaRuleColumnNotNull:         true, // Needs metadata for PRIMARY KEY USING INDEX case
 	advisor.SchemaRuleIndexTotalNumberLimit: true, // Needs catalog to count indexes
+	advisor.SchemaRuleTableRequirePK:        true, // Needs catalog for DROP CONSTRAINT/COLUMN checks
 	// Other advisors don't need mock data
 }

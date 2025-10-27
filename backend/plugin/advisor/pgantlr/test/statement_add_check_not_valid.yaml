@@ -1,0 +1,13 @@
+- statement: alter table tech_book add constraint check_id check(id > 0);
+  changeType: 1
+  want:
+    - status: 2
+      code: 211
+      title: statement.add-check-not-valid
+      content: Adding check constraints with validation will block reads and writes. You can add check constraints not valid and then validate separately
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: alter table tech_book add constraint check_id check(id > 0) NOT VALID;
+  changeType: 1

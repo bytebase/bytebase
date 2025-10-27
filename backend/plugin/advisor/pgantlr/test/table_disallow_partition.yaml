@@ -1,0 +1,24 @@
+- statement: CREATE TABLE t(a int)
+  changeType: 1
+- statement: CREATE TABLE t(a int) PARTITION BY RANGE (a);
+  changeType: 1
+  want:
+    - status: 2
+      code: 608
+      title: table.disallow-partition
+      content: Table partition is forbidden, but "CREATE TABLE t(a int) PARTITION BY RANGE (a);" creates
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book ATTACH PARTITION p1 DEFAULT;
+  changeType: 1
+  want:
+    - status: 2
+      code: 608
+      title: table.disallow-partition
+      content: Table partition is forbidden, but "ALTER TABLE tech_book ATTACH PARTITION p1 DEFAULT;" creates
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

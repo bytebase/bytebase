@@ -1,0 +1,41 @@
+- statement: DELETE FROM tech_book WHERE a > 1;
+  changeType: 1
+  want:
+    - status: 2
+      code: 227
+      title: statement.disallow-mix-in-ddl
+      content: Alter schema can only run DDL, "DELETE FROM tech_book WHERE a > 1;" is not DDL
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: UPDATE tech_book SET id = 1;
+  changeType: 1
+  want:
+    - status: 2
+      code: 227
+      title: statement.disallow-mix-in-ddl
+      content: Alter schema can only run DDL, "UPDATE tech_book SET id = 1;" is not DDL
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book ADD COLUMN author TEXT; UPDATE tech_book SET id = 1;DELETE FROM tech_book WHERE a > 1;
+  changeType: 1
+  want:
+    - status: 2
+      code: 227
+      title: statement.disallow-mix-in-ddl
+      content: Alter schema can only run DDL, "DELETE FROM tech_book WHERE a > 1;" is not DDL
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 227
+      title: statement.disallow-mix-in-ddl
+      content: Alter schema can only run DDL, "UPDATE tech_book SET id = 1;" is not DDL
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

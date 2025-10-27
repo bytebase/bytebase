@@ -1,0 +1,22 @@
+- statement: ALTER TABLE tech_book ADD CONSTRAINT fk_tech_book_author_id_author_id FOREIGN KEY (author_id) REFERENCES author (id)
+  changeType: 1
+  want:
+    - status: 2
+      code: 602
+      title: table.no-foreign-key
+      content: 'Foreign key is not allowed in the table "public"."tech_book", related statement: "ALTER TABLE tech_book ADD CONSTRAINT fk_tech_book_author_id_author_id FOREIGN KEY (author_id) REFERENCES author (id)"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE book(id INT, author_id INT, CONSTRAINT fk_book_author_id_author_id FOREIGN KEY (author_id) REFERENCES author (id))
+  changeType: 1
+  want:
+    - status: 2
+      code: 602
+      title: table.no-foreign-key
+      content: 'Foreign key is not allowed in the table "public"."book", related statement: "CREATE TABLE book(id INT, author_id INT, CONSTRAINT fk_book_author_id_author_id FOREIGN KEY (author_id) REFERENCES author (id))"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
