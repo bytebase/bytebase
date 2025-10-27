@@ -1603,9 +1603,9 @@ func TestGetMultiFileDatabaseDefinition_WithComments(t *testing.T) {
 		fileMap[file.Name] = file.Content
 	}
 
-	// Verify sequence file with comment
-	sequenceFile, ok := fileMap["schemas/app_schema/sequences/order_seq.sql"]
-	require.True(t, ok, "sequence file should exist")
+	// Verify consolidated sequences file with comment (independent sequences go in sequences.sql)
+	sequenceFile, ok := fileMap["schemas/app_schema/sequences.sql"]
+	require.True(t, ok, "sequences.sql file should exist for independent sequences")
 	assert.Contains(t, sequenceFile, `CREATE SEQUENCE "app_schema"."order_seq"`)
 	assert.Contains(t, sequenceFile, `COMMENT ON SEQUENCE "app_schema"."order_seq" IS 'Sequence for orders';`)
 
@@ -1819,25 +1819,26 @@ func TestGetMultiFileDatabaseDefinition_SerialColumnWithSequence(t *testing.T) {
 	require.Contains(t, ordersFile, `"order_number" bigint DEFAULT nextval('custom_seq'::regclass) NOT NULL`,
 		"order_number should use custom_seq via DEFAULT nextval()")
 
-	// Verify independent sequence file exists with comment
-	independentSeqFile, ok := fileMap["schemas/public/sequences/independent_seq.sql"]
+	// Verify the consolidated sequences file exists with both independent sequences
+	sequencesFile, ok := fileMap["schemas/public/sequences.sql"]
 	require.True(t, ok, "independent_seq file should exist")
-	require.Contains(t, independentSeqFile, `CREATE SEQUENCE "public"."independent_seq"`)
-	require.Contains(t, independentSeqFile, `COMMENT ON SEQUENCE "public"."independent_seq" IS 'Independent sequence - should appear as separate file'`)
+	require.Contains(t, sequencesFile, `CREATE SEQUENCE "public"."independent_seq"`)
+	require.Contains(t, sequencesFile, `COMMENT ON SEQUENCE "public"."independent_seq" IS 'Independent sequence - should appear as separate file'`)
+	require.Contains(t, sequencesFile, `CREATE SEQUENCE "public"."custom_seq"`)
+	require.Contains(t, sequencesFile, `COMMENT ON SEQUENCE "public"."custom_seq" IS 'Custom sequence for orders - should appear as separate file'`)
+	require.NotContains(t, sequencesFile, `ALTER SEQUENCE`, "Independent sequences should not have ALTER SEQUENCE OWNED BY")
 
-	// Verify custom sequence file exists with comment (no ALTER SEQUENCE OWNED BY because it's independent)
-	customSeqFile, ok := fileMap["schemas/public/sequences/custom_seq.sql"]
-	require.True(t, ok, "custom_seq file should exist")
-	require.Contains(t, customSeqFile, `CREATE SEQUENCE "public"."custom_seq"`)
-	require.Contains(t, customSeqFile, `COMMENT ON SEQUENCE "public"."custom_seq" IS 'Custom sequence for orders - should appear as separate file'`)
-	require.NotContains(t, customSeqFile, `ALTER SEQUENCE`, "Independent sequence should not have ALTER SEQUENCE OWNED BY")
+	// Verify individual sequence files do NOT exist (they should be in the consolidated file)
+	_, ok = fileMap["schemas/public/sequences/independent_seq.sql"]
+	require.False(t, ok, "independent_seq should NOT have individual file (should be in sequences.sql)")
+	_, ok = fileMap["schemas/public/sequences/custom_seq.sql"]
+	require.False(t, ok, "custom_seq should NOT have individual file (should be in sequences.sql)")
 
-	// Verify users_id_seq does NOT have a separate file (it's a serial sequence)
-	_, ok = fileMap["schemas/public/sequences/users_id_seq.sql"]
-	require.False(t, ok, "users_id_seq should NOT have a separate file because it's owned by a serial column")
+	// Verify users_id_seq does NOT appear in the sequences file (it's a serial sequence)
+	require.NotContains(t, sequencesFile, "users_id_seq", "users_id_seq should NOT appear in sequences.sql because it's owned by a serial column")
 
-	// Total files should be: 2 tables + 2 sequences = 4 files
-	require.Equal(t, 4, len(result.Files), "Should have exactly 4 files (2 tables + 2 sequences)")
+	// Total files should be: 2 tables + 1 sequences file = 3 files
+	require.Equal(t, 3, len(result.Files), "Should have exactly 3 files (2 tables + 1 consolidated sequences file)")
 }
 
 func TestGetDatabaseDefinitionSDLFormat_MultipleSequencesClaimingOwnership(t *testing.T) {

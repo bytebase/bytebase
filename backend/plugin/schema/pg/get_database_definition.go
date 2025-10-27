@@ -3174,7 +3174,8 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 			schemaName = "public"
 		}
 
-		// Generate sequence files (standalone sequences only)
+		// Collect independent sequences (no owner) for this schema
+		var independentSequences []*storepb.SequenceMetadata
 		for _, sequence := range schemaMetadata.Sequences {
 			if sequence.SkipDump {
 				continue
@@ -3185,32 +3186,10 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 				continue
 			}
 
-			var buf strings.Builder
-			if err := writeSequenceSDL(&buf, schemaName, sequence); err != nil {
-				return nil, errors.Wrapf(err, "failed to generate sequence SDL for %s.%s", schemaName, sequence.Name)
+			// Collect independent sequences (no owner)
+			if sequence.OwnerTable == "" || sequence.OwnerColumn == "" {
+				independentSequences = append(independentSequences, sequence)
 			}
-			buf.WriteString(";\n")
-
-			// Add sequence comment if present
-			if len(sequence.Comment) > 0 {
-				buf.WriteString("\n")
-				if err := writeSequenceCommentSDL(&buf, schemaName, sequence); err != nil {
-					return nil, errors.Wrapf(err, "failed to generate sequence comment for %s.%s", schemaName, sequence.Name)
-				}
-			}
-
-			// Add ALTER SEQUENCE OWNED BY for sequences with owners
-			if sequence.OwnerTable != "" && sequence.OwnerColumn != "" {
-				buf.WriteString("\n")
-				if err := writeAlterSequenceOwnedBy(&buf, schemaName, sequence); err != nil {
-					return nil, errors.Wrapf(err, "failed to generate ALTER SEQUENCE OWNED BY for %s.%s", schemaName, sequence.Name)
-				}
-			}
-
-			files = append(files, schema.File{
-				Name:    fmt.Sprintf("schemas/%s/sequences/%s.sql", schemaName, sequence.Name),
-				Content: buf.String(),
-			})
 		}
 
 		// Generate table files
@@ -3259,6 +3238,38 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 						if err := writeIndexCommentSDL(&buf, schemaName, index); err != nil {
 							return nil, errors.Wrapf(err, "failed to generate index comment for %s.%s", schemaName, index.Name)
 						}
+					}
+				}
+			}
+
+			// Write owned sequences (non-serial/non-identity) for this table
+			for _, sequence := range tableSequences {
+				// Skip sequences that belong to serial or identity columns
+				sequenceKey := schemaName + "." + sequence.Name
+				if skipSequences[sequenceKey] {
+					continue
+				}
+
+				// Only include sequences with owners (non-independent sequences)
+				if sequence.OwnerTable != "" && sequence.OwnerColumn != "" {
+					buf.WriteString("\n")
+					if err := writeSequenceSDL(&buf, schemaName, sequence); err != nil {
+						return nil, errors.Wrapf(err, "failed to generate sequence SDL for %s.%s", schemaName, sequence.Name)
+					}
+					buf.WriteString(";\n")
+
+					// Add sequence comment if present
+					if len(sequence.Comment) > 0 {
+						buf.WriteString("\n")
+						if err := writeSequenceCommentSDL(&buf, schemaName, sequence); err != nil {
+							return nil, errors.Wrapf(err, "failed to generate sequence comment for %s.%s", schemaName, sequence.Name)
+						}
+					}
+
+					// Add ALTER SEQUENCE OWNED BY
+					buf.WriteString("\n")
+					if err := writeAlterSequenceOwnedBy(&buf, schemaName, sequence); err != nil {
+						return nil, errors.Wrapf(err, "failed to generate ALTER SEQUENCE OWNED BY for %s.%s", schemaName, sequence.Name)
 					}
 				}
 			}
@@ -3317,6 +3328,34 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 
 			files = append(files, schema.File{
 				Name:    fmt.Sprintf("schemas/%s/functions/%s.sql", schemaName, function.Name),
+				Content: buf.String(),
+			})
+		}
+
+		// Generate a single file for all independent sequences (no owner) in this schema
+		if len(independentSequences) > 0 {
+			var buf strings.Builder
+			for i, sequence := range independentSequences {
+				if i > 0 {
+					buf.WriteString("\n")
+				}
+
+				if err := writeSequenceSDL(&buf, schemaName, sequence); err != nil {
+					return nil, errors.Wrapf(err, "failed to generate sequence SDL for %s.%s", schemaName, sequence.Name)
+				}
+				buf.WriteString(";\n")
+
+				// Add sequence comment if present
+				if len(sequence.Comment) > 0 {
+					buf.WriteString("\n")
+					if err := writeSequenceCommentSDL(&buf, schemaName, sequence); err != nil {
+						return nil, errors.Wrapf(err, "failed to generate sequence comment for %s.%s", schemaName, sequence.Name)
+					}
+				}
+			}
+
+			files = append(files, schema.File{
+				Name:    fmt.Sprintf("schemas/%s/sequences.sql", schemaName),
 				Content: buf.String(),
 			})
 		}
