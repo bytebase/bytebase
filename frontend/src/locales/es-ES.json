@@ -313,6 +313,7 @@
     "no-skippable-tasks": "No hay tareas que se puedan omitir",
     "no-cancellable-tasks": "No hay tareas cancelables",
     "no-permission": "No hay permiso para realizar esta acción",
+    "data-export-creator-only": "Sólo el creador del problema puede ejecutar tareas de exportación de datos",
     "scheduled-time": "Hora programada",
     "select-scheduled-time": "Seleccionar hora programada",
     "error": {

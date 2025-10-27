@@ -313,6 +313,7 @@
     "no-skippable-tasks": "No skippable tasks",
     "no-cancellable-tasks": "No cancellable tasks",
     "no-permission": "No permission to perform this action",
+    "data-export-creator-only": "Only the issue creator can execute data export tasks",
     "scheduled-time": "Scheduled time",
     "select-scheduled-time": "Select scheduled time",
     "error": {
