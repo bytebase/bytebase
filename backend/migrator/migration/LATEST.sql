@@ -238,6 +238,11 @@ CREATE INDEX idx_task_run_task_id ON task_run(task_id);
 
 CREATE UNIQUE INDEX uk_task_run_task_id_attempt ON task_run (task_id, attempt);
 
+-- Partial index for active task runs. Most task runs are in terminal states (DONE, FAILED, CANCELED)
+-- that never change. Queries frequently filter for active statuses (PENDING, RUNNING), so a partial
+-- index is more efficient than a full index on status - smaller size, faster maintenance, better cache efficiency.
+CREATE INDEX idx_task_run_active_status_id ON task_run(status, id) WHERE status IN ('PENDING', 'RUNNING');
+
 ALTER SEQUENCE task_run_id_seq RESTART WITH 101;
 
 CREATE TABLE task_run_log (
