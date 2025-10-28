@@ -617,7 +617,7 @@ func (l *pgAntlrCatalogListener) processAlterTableCmd(schema *SchemaState, table
 	}
 
 	// Handle DROP COLUMN
-	if cmd.DROP() != nil && cmd.COLUMN() != nil {
+	if cmd.DROP() != nil && cmd.Opt_column() != nil {
 		ifExists := cmd.IF_P() != nil && cmd.EXISTS() != nil
 		// AllColid() returns a list - get the first column name
 		allColids := cmd.AllColid()
@@ -691,20 +691,9 @@ func (l *pgAntlrCatalogListener) alterTableDropColumn(schema *SchemaState, table
 		return
 	}
 
-	// Drop the indexes involving the column
-	var dropIndexList []string
-	for _, index := range table.indexSet {
-		for _, key := range index.expressionList {
-			if key == columnName {
-				dropIndexList = append(dropIndexList, index.name)
-				break
-			}
-		}
-	}
-	for _, indexName := range dropIndexList {
-		delete(schema.identifierMap, indexName)
-		delete(table.indexSet, indexName)
-	}
+	// NOTE: In PostgreSQL, indexes that reference dropped columns are kept,
+	// so we don't delete them here. The index expressions will still contain
+	// the dropped column name.
 
 	// Delete the column
 	delete(table.columnSet, columnName)
