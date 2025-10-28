@@ -552,7 +552,7 @@ func (l *pgAntlrCatalogListener) EnterAltertablestmt(ctx *parser.AltertablestmtC
 // DROP statements handling
 // ========================================
 
-// EnterDropstmt handles DROP TABLE/VIEW statements.
+// EnterDropstmt handles DROP TABLE/VIEW/INDEX statements.
 func (l *pgAntlrCatalogListener) EnterDropstmt(ctx *parser.DropstmtContext) {
 	if !isTopLevel(ctx.GetParent()) || l.err != nil {
 		return
@@ -564,8 +564,162 @@ func (l *pgAntlrCatalogListener) EnterDropstmt(ctx *parser.DropstmtContext) {
 
 	l.currentLine = ctx.GetStart().GetLine()
 
-	// TODO: Implement DROP TABLE/VIEW logic
-	// Similar to pgDropTableList() in walk_through_for_pg.go
+	// Check IF EXISTS
+	ifExists := ctx.IF_P() != nil && ctx.EXISTS() != nil
+
+	// Check object type and get list of names
+	if ctx.Object_type_any_name() != nil {
+		objType := ctx.Object_type_any_name()
+		if objType.TABLE() != nil {
+			// DROP TABLE
+			if ctx.Any_name_list() != nil {
+				for _, anyName := range ctx.Any_name_list().AllAny_name() {
+					if err := l.dropTable(anyName, ifExists); err != nil {
+						l.setError(err)
+						return
+					}
+				}
+			}
+		} else if objType.VIEW() != nil {
+			// DROP VIEW
+			if ctx.Any_name_list() != nil {
+				for _, anyName := range ctx.Any_name_list().AllAny_name() {
+					if err := l.dropView(anyName, ifExists); err != nil {
+						l.setError(err)
+						return
+					}
+				}
+			}
+		}
+	} else if ctx.INDEX() != nil {
+		// DROP INDEX
+		if ctx.Any_name_list() != nil {
+			for _, anyName := range ctx.Any_name_list().AllAny_name() {
+				if err := l.dropIndex(anyName, ifExists); err != nil {
+					l.setError(err)
+					return
+				}
+			}
+		}
+	}
+}
+
+func (l *pgAntlrCatalogListener) dropTable(anyName parser.IAny_nameContext, ifExists bool) *WalkThroughError {
+	parts := pgparser.NormalizePostgreSQLAnyName(anyName)
+	if len(parts) == 0 {
+		return nil
+	}
+
+	var schemaName, tableName string
+	if len(parts) == 1 {
+		schemaName = ""
+		tableName = parts[0]
+	} else {
+		schemaName = parts[0]
+		tableName = parts[1]
+	}
+
+	schema, err := l.databaseState.getSchema(schemaName)
+	if err != nil {
+		if ifExists {
+			return nil
+		}
+		return err
+	}
+
+	table, err := schema.pgGetTable(tableName)
+	if err != nil {
+		if ifExists {
+			return nil
+		}
+		return err
+	}
+
+	// Check for view dependencies
+	viewList, err := l.databaseState.existedViewList(table.dependencyView)
+	if err != nil {
+		return err
+	}
+	if len(viewList) > 0 {
+		return &WalkThroughError{
+			Type:    ErrorTypeTableIsReferencedByView,
+			Content: fmt.Sprintf("Cannot drop table %q.%q, it's referenced by view: %s", schema.name, table.name, strings.Join(viewList, ", ")),
+			Payload: viewList,
+		}
+	}
+
+	// Delete all indexes associated with the table
+	for indexName := range table.indexSet {
+		delete(schema.identifierMap, indexName)
+	}
+
+	delete(schema.identifierMap, table.name)
+	delete(schema.tableSet, table.name)
+	return nil
+}
+
+func (l *pgAntlrCatalogListener) dropView(anyName parser.IAny_nameContext, ifExists bool) *WalkThroughError {
+	parts := pgparser.NormalizePostgreSQLAnyName(anyName)
+	if len(parts) == 0 {
+		return nil
+	}
+
+	var schemaName, viewName string
+	if len(parts) == 1 {
+		schemaName = ""
+		viewName = parts[0]
+	} else {
+		schemaName = parts[0]
+		viewName = parts[1]
+	}
+
+	schema, err := l.databaseState.getSchema(schemaName)
+	if err != nil {
+		if ifExists {
+			return nil
+		}
+		return err
+	}
+
+	delete(schema.identifierMap, viewName)
+	delete(schema.viewSet, viewName)
+	return nil
+}
+
+func (l *pgAntlrCatalogListener) dropIndex(anyName parser.IAny_nameContext, ifExists bool) *WalkThroughError {
+	parts := pgparser.NormalizePostgreSQLAnyName(anyName)
+	if len(parts) == 0 {
+		return nil
+	}
+
+	var schemaName, indexName string
+	if len(parts) == 1 {
+		schemaName = ""
+		indexName = parts[0]
+	} else {
+		schemaName = parts[0]
+		indexName = parts[1]
+	}
+
+	schema, err := l.databaseState.getSchema(schemaName)
+	if err != nil {
+		if ifExists {
+			return nil
+		}
+		return err
+	}
+
+	table, index, err := schema.getIndex(indexName)
+	if err != nil {
+		if ifExists {
+			return nil
+		}
+		return err
+	}
+
+	delete(schema.identifierMap, index.name)
+	delete(table.indexSet, index.name)
+	return nil
 }
 
 // TODO: EnterDropindexstmt - Need to find correct ANTLR context name
