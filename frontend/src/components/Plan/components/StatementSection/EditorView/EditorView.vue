@@ -476,7 +476,7 @@ watch(
   sheetStatement,
   (statement, oldStatement) => {
     // Don't overwrite user's edits if they're currently in edit mode
-    if (state.isEditing) {
+    if (editorState.isEditing.value) {
       return;
     }
 
