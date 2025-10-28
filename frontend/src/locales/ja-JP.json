@@ -846,6 +846,7 @@
     "n-similar-activities": "({count} 件の同様のイベント)"
   },
   "issue": {
+    "labels": "イシューラベル",
     "my-issues": "マイイシュー",
     "waiting-approval": "承認待ち",
     "waiting-rollout": "リリース待ち",
@@ -1594,6 +1595,7 @@
     "rollback-tip": "ロールバックする特定の DDL 履歴を選択します。"
   },
   "database": {
+    "labels": "データベースラベル",
     "no-environment": "このデータベースは環境にバインドされていません",
     "set-environment": "環境を設定する",
     "sync-database": "データベースを同期",
@@ -1851,7 +1853,7 @@
       "issue-related": {
         "self": "イシュー関連",
         "labels": {
-          "self": "ラベル",
+          "self": "イシューラベル",
           "description": "問題にラベルを貼って管理できる",
           "configure-labels": "ラベルを設定する",
           "placeholder": "Enterキーを押してタグを追加してください",
@@ -1907,6 +1909,7 @@
         }
       },
       "project-labels": {
+        "self": "プロジェクトラベル",
         "description": "キーバリューラベルでプロジェクトを整理（最大64個）"
       }
     },

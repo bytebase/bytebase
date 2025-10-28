@@ -4,7 +4,7 @@
       <div class="flex-1">
         <div class="flex items-center">
           <p class="text-lg font-medium leading-7 text-main flex">
-            {{ $t("common.labels") }}
+            {{ $t("database.labels") }}
           </p>
         </div>
       </div>

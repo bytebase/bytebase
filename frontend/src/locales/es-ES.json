@@ -846,6 +846,7 @@
     "n-similar-activities": "({count} actividad similar) | ({count} actividades similares)"
   },
   "issue": {
+    "labels": "Etiquetas de problema",
     "my-issues": "Mis Incidencias",
     "waiting-approval": "A la espera de la aprobación",
     "waiting-rollout": "Esperando el lanzamiento",
@@ -1594,6 +1595,7 @@
     "rollback-tip": "Seleccione un historial de DDL específico para revertir."
   },
   "database": {
+    "labels": "Etiquetas de base de datos",
     "no-environment": "Esta base de datos no ha sido vinculada al entorno.",
     "set-environment": "Establecer entorno",
     "sync-database": "Sincronizar base de datos",
@@ -1851,7 +1853,7 @@
       "issue-related": {
         "self": "Problema Relacionado",
         "labels": {
-          "self": "Etiquetas",
+          "self": "Etiquetas de problema",
           "description": "Se pueden colocar etiquetas en los problemas para su gestión.",
           "configure-labels": "Configurar etiquetas",
           "placeholder": "Presione Enter para agregar etiqueta",
@@ -1907,6 +1909,7 @@
         }
       },
       "project-labels": {
+        "self": "Etiquetas de proyecto",
         "description": "Organizar proyectos con etiquetas clave-valor (máximo 64)"
       }
     },

@@ -846,6 +846,7 @@
     "n-similar-activities": "({count} 个相似的活动)"
   },
   "issue": {
+    "labels": "工单标签",
     "my-issues": "我的工单",
     "waiting-approval": "等待审批",
     "waiting-rollout": "等待发布",
@@ -1594,6 +1595,7 @@
     "rollback-tip": "选择要回滚到的某个 DDL 历史记录。"
   },
   "database": {
+    "labels": "数据库标签",
     "no-environment": "该数据库尚未绑定到环境",
     "set-environment": "设置环境",
     "sync-database": "同步数据库",
@@ -1851,7 +1853,7 @@
       "issue-related": {
         "self": "工单相关",
         "labels": {
-          "self": "标签",
+          "self": "工单标签",
           "description": "可以在工单中附加标签以便管理",
           "configure-labels": "配置标签",
           "placeholder": "按 Enter 键添加标签",
@@ -1907,6 +1909,7 @@
         }
       },
       "project-labels": {
+        "self": "项目标签",
         "description": "用键值标签组织项目（最多64个）"
       }
     },
