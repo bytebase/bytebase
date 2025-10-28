@@ -110,9 +110,17 @@ func (c *statementMaximumLimitValueChecker) extractLimitFromSelectNoParens(ctx p
 		return 0
 	}
 
-	// Check for select_limit directly in select_no_parens
+	var selectLimit parser.ISelect_limitContext
 	if ctx.Select_limit() != nil {
-		return c.extractLimitFromSelectLimit(ctx.Select_limit())
+		selectLimit = ctx.Select_limit()
+	}
+	if ctx.Opt_select_limit() != nil {
+		selectLimit = ctx.Opt_select_limit().Select_limit()
+	}
+
+	// Check for select_limit directly in select_no_parens
+	if selectLimit != nil {
+		return c.extractLimitFromSelectLimit(selectLimit)
 	}
 
 	return 0
