@@ -229,7 +229,7 @@ func (d *Driver) getRDSConnection(ctx context.Context, connCfg db.ConnectionConf
 			RootCAs:            rootCertPool,
 			InsecureSkipVerify: true, // We use custom verification
 		}
-		tlsConfig.VerifyPeerCertificate = util.CreateCertificateVerifier(rootCertPool)
+		tlsConfig.VerifyPeerCertificate = util.CreateCertificateVerifier(rootCertPool, connCfg.DataSource.Host)
 	} else {
 		// Backward compatible config without verification
 		tlsConfig = &tls.Config{
