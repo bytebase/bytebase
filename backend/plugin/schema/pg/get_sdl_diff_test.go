@@ -1208,6 +1208,75 @@ func TestShouldSkipChunkDiffForUsability(t *testing.T) {
 		},
 	}
 
+	// Create a schema with table comment for testing comment-related scenarios
+	testSchemaWithComment := model.NewDatabaseSchema(
+		&storepb.DatabaseSchemaMetadata{
+			Name: "test_db",
+			Schemas: []*storepb.SchemaMetadata{
+				{
+					Name: "public",
+					Tables: []*storepb.TableMetadata{
+						{
+							Name:    "products",
+							Comment: "Product catalog table",
+							Columns: []*storepb.ColumnMetadata{
+								{
+									Name:     "id",
+									Type:     "integer",
+									Nullable: false,
+								},
+								{
+									Name:     "name",
+									Type:     "text",
+									Nullable: false,
+								},
+							},
+							Indexes: []*storepb.IndexMetadata{
+								{
+									Name:        "products_pkey",
+									Unique:      true,
+									Primary:     true,
+									KeyLength:   []int64{},
+									Expressions: []string{"id"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		nil,
+		nil,
+		storepb.Engine_POSTGRES,
+		false,
+	)
+
+	// Additional tests for comment-related scenarios
+	commentTests := []struct {
+		name          string
+		chunkText     string
+		chunkID       string
+		currentSchema *model.DatabaseSchema
+		expectedSkip  bool
+		description   string
+	}{
+		{
+			name: "table_with_same_structure_but_comment_format_differs_should_skip",
+			chunkText: `CREATE TABLE "public"."products" (
+    "id" integer NOT NULL,
+    "name" text NOT NULL,
+    CONSTRAINT "products_pkey" PRIMARY KEY (id)
+)`,
+			chunkID:       "public.products",
+			currentSchema: testSchemaWithComment,
+			expectedSkip:  true,
+			description:   "Table structure is identical (both from database and user SDL). In real usage, GetTextWithoutComments() is called before shouldSkipChunkDiffForUsability, so COMMENT is already excluded. This test verifies that identical structure should skip diff.",
+		},
+	}
+
+	// Combine original tests with comment tests
+	tests = append(tests, commentTests...)
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Logf("Test description: %s", tt.description)
