@@ -3,7 +3,6 @@ package v1
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"log/slog"
 
@@ -11,10 +10,6 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
-
-	"github.com/google/cel-go/cel"
-	celast "github.com/google/cel-go/common/ast"
-	celoperators "github.com/google/cel-go/common/operators"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -138,127 +133,6 @@ func (s *WorksheetService) GetWorksheet(
 	return connect.NewResponse(v1pbWorksheet), nil
 }
 
-func (s *WorksheetService) getListSheetFilter(ctx context.Context, callerID int, filter string) (*store.ListResourceFilter, error) {
-	if filter == "" {
-		return nil, nil
-	}
-	e, err := cel.NewEnv()
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create cel env"))
-	}
-	ast, iss := e.Parse(filter)
-	if iss != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String()))
-	}
-
-	var getFilter func(expr celast.Expr) (string, error)
-	var positionalArgs []any
-
-	getUserID := func(name string) (int, error) {
-		creatorEmail := strings.TrimPrefix(name, "users/")
-		if creatorEmail == "" {
-			return 0, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid empty creator identifier"))
-		}
-		user, err := s.store.GetUserByEmail(ctx, creatorEmail)
-		if err != nil {
-			return 0, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get user: %v", err))
-		}
-		if user == nil {
-			return 0, connect.NewError(connect.CodeNotFound, errors.Errorf("user with email %s not found", creatorEmail))
-		}
-		return user.ID, nil
-	}
-
-	parseToSQL := func(variable, value any) (string, error) {
-		switch variable {
-		case "creator":
-			userID, err := getUserID(value.(string))
-			if err != nil {
-				return "", err
-			}
-			positionalArgs = append(positionalArgs, userID)
-			return fmt.Sprintf("worksheet.creator_id = $%d", len(positionalArgs)), nil
-		case "starred":
-			if starred, ok := value.(bool); ok {
-				positionalArgs = append(positionalArgs, callerID)
-				return fmt.Sprintf("worksheet.id IN (SELECT worksheet_id FROM worksheet_organizer WHERE principal_id = $%d AND starred = %v)", len(positionalArgs), starred), nil
-			}
-			return "TRUE", nil
-		case "visibility":
-			visibility, err := convertToStoreWorksheetVisibility(v1pb.Worksheet_Visibility(v1pb.Worksheet_Visibility_value[value.(string)]))
-			if err != nil {
-				return "", err
-			}
-			positionalArgs = append(positionalArgs, visibility)
-			return fmt.Sprintf("worksheet.visibility = $%d", len(positionalArgs)), nil
-		default:
-			return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q", variable))
-		}
-	}
-
-	getFilter = func(expr celast.Expr) (string, error) {
-		switch expr.Kind() {
-		case celast.CallKind:
-			functionName := expr.AsCall().FunctionName()
-			switch functionName {
-			case celoperators.LogicalOr:
-				return getSubConditionFromExpr(expr, getFilter, "OR")
-			case celoperators.LogicalAnd:
-				return getSubConditionFromExpr(expr, getFilter, "AND")
-			case celoperators.Equals:
-				variable, value := getVariableAndValueFromExpr(expr)
-				return parseToSQL(variable, value)
-			case celoperators.NotEquals:
-				variable, value := getVariableAndValueFromExpr(expr)
-				if variable != "creator" {
-					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`only "creator" support "!=" operator`))
-				}
-				userID, err := getUserID(value.(string))
-				if err != nil {
-					return "", err
-				}
-				positionalArgs = append(positionalArgs, userID)
-				return fmt.Sprintf("worksheet.creator_id != $%d", len(positionalArgs)), nil
-			case celoperators.In:
-				variable, value := getVariableAndValueFromExpr(expr)
-				if variable != "visibility" {
-					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`only "visibility" support "visibility in [xx]" filter`))
-				}
-				rawList, ok := value.([]any)
-				if !ok {
-					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid visibility value %q", value))
-				}
-				if len(rawList) == 0 {
-					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("empty visibility filter"))
-				}
-				visibilityList := []string{}
-				for _, raw := range rawList {
-					visibility, err := convertToStoreWorksheetVisibility(v1pb.Worksheet_Visibility(v1pb.Worksheet_Visibility_value[raw.(string)]))
-					if err != nil {
-						return "", err
-					}
-					visibilityList = append(visibilityList, fmt.Sprintf(`'%s'`, visibility))
-				}
-				return fmt.Sprintf(`worksheet.visibility IN (%s)`, strings.Join(visibilityList, ",")), nil
-			default:
-				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unexpected function %v", functionName))
-			}
-		default:
-			return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unexpected expr kind %v", expr.Kind()))
-		}
-	}
-
-	where, err := getFilter(ast.NativeRep().Expr())
-	if err != nil {
-		return nil, err
-	}
-
-	return &store.ListResourceFilter{
-		Args:  positionalArgs,
-		Where: "(" + where + ")",
-	}, nil
-}
-
 // SearchWorksheets returns a list of worksheets based on the search filters.
 func (s *WorksheetService) SearchWorksheets(
 	ctx context.Context,
@@ -280,11 +154,11 @@ func (s *WorksheetService) SearchWorksheets(
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("filter should not be empty"))
 	}
 
-	filter, err := s.getListSheetFilter(ctx, user.ID, request.Filter)
+	filterQ, err := store.GetListSheetFilter(ctx, s.store, user.ID, request.Filter)
 	if err != nil {
-		return nil, err
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	worksheetFind.Filter = filter
+	worksheetFind.FilterQ = filterQ
 
 	worksheetList, err := s.store.ListWorkSheets(ctx, worksheetFind, user.ID)
 	if err != nil {
