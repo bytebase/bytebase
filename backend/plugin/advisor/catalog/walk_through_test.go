@@ -17,6 +17,7 @@ import (
 	// Register postgresql parser driver.
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/sheet"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy"
 )
 
@@ -120,6 +121,60 @@ func TestPostgreSQLWalkThrough(t *testing.T) {
 	}
 }
 
+func TestPostgreSQLANTLRWalkThrough(t *testing.T) {
+	originDatabase := &storepb.DatabaseSchemaMetadata{
+		Name: "postgres",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "test",
+						Columns: []*storepb.ColumnMetadata{
+							{
+								Name:     "id",
+								Type:     "int",
+								Nullable: false,
+							},
+							{
+								Name:     "name",
+								Type:     "varchar(20)",
+								Nullable: true,
+							},
+						},
+					},
+				},
+				Views: []*storepb.ViewMetadata{
+					{
+						Name:       "v1",
+						Definition: "SELECT id, name FROM test",
+						DependencyColumns: []*storepb.DependencyColumn{
+							{
+								Schema: "public",
+								Table:  "test",
+								Column: "id",
+							},
+							{
+								Schema: "public",
+								Table:  "test",
+								Column: "name",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	tests := []string{
+		"pg_walk_through",
+	}
+
+	for _, test := range tests {
+		runANTLRWalkThroughTest(t, test, storepb.Engine_POSTGRES, originDatabase)
+	}
+}
+
 func convertInterfaceSliceToStringSlice(slice []any) []string {
 	var res []string
 	for _, item := range slice {
@@ -152,6 +207,62 @@ func runWalkThroughTest(t *testing.T, file string, engineType storepb.Engine, or
 
 		asts, _ := sm.GetASTsForChecks(engineType, test.Statement)
 		err := state.WalkThrough(asts)
+		if err != nil {
+			err, yes := err.(*WalkThroughError)
+			require.True(t, yes)
+			if err.Payload != nil {
+				actualPayloadText, yes := err.Payload.([]string)
+				require.True(t, yes)
+				expectedPayloadText := convertInterfaceSliceToStringSlice(test.Err.Payload.([]any))
+				err.Payload = nil
+				test.Err.Payload = nil
+				require.Equal(t, test.Err, err)
+				require.Equal(t, expectedPayloadText, actualPayloadText)
+			} else {
+				require.Equal(t, test.Err, err)
+			}
+			continue
+		}
+		require.NoError(t, err, test.Statement)
+
+		want := &storepb.DatabaseSchemaMetadata{}
+		err = common.ProtojsonUnmarshaler.Unmarshal([]byte(test.Want), want)
+		require.NoError(t, err)
+		result := state.convertToDatabaseMetadata()
+		diff := cmp.Diff(want, result, protocmp.Transform())
+		require.Empty(t, diff)
+	}
+}
+
+func runANTLRWalkThroughTest(t *testing.T, file string, engineType storepb.Engine, originDatabase *storepb.DatabaseSchemaMetadata) {
+	tests := []testData{}
+	filepath := filepath.Join("test", file+".yaml")
+	yamlFile, err := os.Open(filepath)
+	require.NoError(t, err)
+	defer yamlFile.Close()
+
+	byteValue, err := io.ReadAll(yamlFile)
+	require.NoError(t, err)
+	err = yaml.Unmarshal(byteValue, &tests)
+	require.NoError(t, err)
+
+	for _, test := range tests {
+		var state *DatabaseState
+		if originDatabase != nil {
+			state = newDatabaseState(originDatabase, &FinderContext{CheckIntegrity: true, EngineType: engineType, IgnoreCaseSensitive: test.IgnoreCaseSensitive})
+		} else {
+			finder := NewEmptyFinder(&FinderContext{CheckIntegrity: false, EngineType: engineType, IgnoreCaseSensitive: test.IgnoreCaseSensitive})
+			state = finder.Origin
+		}
+
+		// Parse using ANTLR parser instead of legacy parser
+		parseResult, parseErr := pgparser.ParsePostgreSQL(test.Statement)
+		if parseErr != nil {
+			t.Fatalf("Failed to parse SQL with ANTLR: %v\nSQL: %s", parseErr, test.Statement)
+		}
+
+		// Call WalkThrough with ANTLR tree
+		err := state.WalkThrough(parseResult)
 		if err != nil {
 			err, yes := err.(*WalkThroughError)
 			require.True(t, yes)
