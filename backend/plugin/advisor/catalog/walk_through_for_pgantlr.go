@@ -214,9 +214,11 @@ func createColumn(schema *SchemaState, table *TableState, columnDef parser.IColu
 
 			// Handle DEFAULT
 			if elem.DEFAULT() != nil {
-				// TODO: Extract default expression
-				defaultValue := "DEFAULT" // Placeholder
-				columnState.defaultValue = &defaultValue
+				// Extract default expression from B_expr
+				if elem.B_expr() != nil {
+					defaultValue := elem.B_expr().GetText()
+					columnState.defaultValue = &defaultValue
+				}
 			}
 
 			// Handle PRIMARY KEY
@@ -252,19 +254,21 @@ func createColumn(schema *SchemaState, table *TableState, columnDef parser.IColu
 					constraintName = pgparser.NormalizePostgreSQLName(qual.Name())
 				}
 
-				// Only create index if constraint has a name (unnamed constraints auto-generated)
-				if constraintName != "" {
-					index := &IndexState{
-						name:           constraintName,
-						expressionList: []string{columnName},
-						indexType:      newStringPointer("btree"),
-						unique:         newTruePointer(),
-						primary:        newFalsePointer(),
-						isConstraint:   true,
-					}
-					table.indexSet[index.name] = index
-					schema.identifierMap[index.name] = true
+				// Generate index name if not specified
+				if constraintName == "" {
+					constraintName = generateIndexName(table.name, []string{columnName}, true)
 				}
+
+				index := &IndexState{
+					name:           constraintName,
+					expressionList: []string{columnName},
+					indexType:      newStringPointer("btree"),
+					unique:         newTruePointer(),
+					primary:        newFalsePointer(),
+					isConstraint:   true,
+				}
+				table.indexSet[index.name] = index
+				schema.identifierMap[index.name] = true
 			}
 		}
 	}
@@ -345,32 +349,35 @@ func createTableConstraint(schema *SchemaState, table *TableState, constraint pa
 			}
 		}
 
-		// Only create index if constraint has a name
-		if constraintName != "" {
-			// Check if identifier already exists
-			if _, exists := schema.identifierMap[constraintName]; exists {
-				return NewRelationExistsError(constraintName, schema.name)
-			}
-
-			// Validate columns exist
-			for _, colName := range columnList {
-				if _, exists := table.columnSet[colName]; !exists {
-					return NewColumnNotExistsError(table.name, colName)
-				}
-			}
-
-			// Create unique index
-			index := &IndexState{
-				name:           constraintName,
-				expressionList: columnList,
-				indexType:      newStringPointer("btree"),
-				unique:         newTruePointer(),
-				primary:        newFalsePointer(),
-				isConstraint:   true,
-			}
-			table.indexSet[index.name] = index
-			schema.identifierMap[index.name] = true
+		// Generate index name if not specified
+		indexName := constraintName
+		if indexName == "" {
+			indexName = generateIndexName(table.name, columnList, true)
 		}
+
+		// Check if identifier already exists
+		if _, exists := schema.identifierMap[indexName]; exists {
+			return NewRelationExistsError(indexName, schema.name)
+		}
+
+		// Validate columns exist
+		for _, colName := range columnList {
+			if _, exists := table.columnSet[colName]; !exists {
+				return NewColumnNotExistsError(table.name, colName)
+			}
+		}
+
+		// Create unique index
+		index := &IndexState{
+			name:           indexName,
+			expressionList: columnList,
+			indexType:      newStringPointer("btree"),
+			unique:         newTruePointer(),
+			primary:        newFalsePointer(),
+			isConstraint:   true,
+		}
+		table.indexSet[index.name] = index
+		schema.identifierMap[index.name] = true
 	}
 
 	// Note: We skip CHECK, FOREIGN KEY, EXCLUSION constraints for now
@@ -1091,9 +1098,6 @@ func generateIndexName(tableName string, columnList []string, isUnique bool) str
 	}
 
 	builder.WriteString("_idx")
-	if isUnique {
-		builder.WriteString("1") // Unique indexes get a "1" suffix initially
-	}
 
 	return builder.String()
 }
