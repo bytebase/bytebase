@@ -530,22 +530,155 @@ func (l *pgAntlrCatalogListener) EnterAltertablestmt(ctx *parser.AltertablestmtC
 
 	l.currentLine = ctx.GetStart().GetLine()
 
-	// TODO: Implement ALTER TABLE logic
-	// Similar to pgAlterTable() in walk_through_for_pg.go
-	// This is complex - handles:
-	// - RENAME COLUMN
-	// - RENAME CONSTRAINT
-	// - RENAME TABLE
-	// - SET SCHEMA
-	// - ADD COLUMN
-	// - DROP COLUMN
-	// - ALTER COLUMN TYPE
-	// - SET DEFAULT
-	// - DROP DEFAULT
-	// - SET NOT NULL
-	// - DROP NOT NULL
-	// - ADD CONSTRAINT
-	// - DROP CONSTRAINT
+	// Extract table name
+	if ctx.Relation_expr() == nil || ctx.Relation_expr().Qualified_name() == nil {
+		return
+	}
+
+	tableName := extractTableName(ctx.Relation_expr().Qualified_name())
+	schemaName := extractSchemaName(ctx.Relation_expr().Qualified_name())
+	databaseName := extractDatabaseName(ctx.Relation_expr().Qualified_name())
+
+	// Check database access
+	if databaseName != "" && l.databaseState.name != databaseName {
+		l.setError(&WalkThroughError{
+			Type:    ErrorTypeAccessOtherDatabase,
+			Content: fmt.Sprintf("Database %q is not the current database %q", databaseName, l.databaseState.name),
+		})
+		return
+	}
+
+	// Get schema and table
+	schema, err := l.databaseState.getSchema(schemaName)
+	if err != nil {
+		l.setError(err)
+		return
+	}
+
+	table, err := schema.pgGetTable(tableName)
+	if err != nil {
+		l.setError(err)
+		return
+	}
+
+	// Process alter table commands
+	if ctx.Alter_table_cmds() == nil {
+		return
+	}
+
+	allCmds := ctx.Alter_table_cmds().AllAlter_table_cmd()
+	for _, cmd := range allCmds {
+		l.processAlterTableCmd(schema, table, cmd)
+		if l.err != nil {
+			return
+		}
+	}
+}
+
+// processAlterTableCmd handles individual ALTER TABLE commands.
+func (l *pgAntlrCatalogListener) processAlterTableCmd(schema *SchemaState, table *TableState, cmd parser.IAlter_table_cmdContext) {
+	// TODO: Implement other ALTER TABLE commands (ADD COLUMN, SET DEFAULT, etc.)
+	// For now, only implement DROP COLUMN and ALTER TYPE as requested
+
+	// Handle DROP COLUMN
+	if cmd.DROP() != nil && cmd.COLUMN() != nil {
+		ifExists := cmd.IF_P() != nil && cmd.EXISTS() != nil
+		// AllColid() returns a list - get the first column name
+		allColids := cmd.AllColid()
+		if len(allColids) > 0 {
+			columnName := pgparser.NormalizePostgreSQLColid(allColids[0])
+			l.alterTableDropColumn(schema, table, columnName, ifExists)
+		}
+		return
+	}
+
+	// Handle ALTER COLUMN TYPE
+	if cmd.ALTER() != nil && cmd.Opt_column() != nil {
+		allColids := cmd.AllColid()
+		if len(allColids) > 0 {
+			columnName := pgparser.NormalizePostgreSQLColid(allColids[0])
+
+			// Check for TYPE keyword
+			if cmd.TYPE_P() != nil && cmd.Typename() != nil {
+				// Extract type string from Typename context
+				typeString := cmd.Typename().GetText()
+				l.alterTableAlterColumnType(schema, table, columnName, typeString)
+			}
+		}
+		return
+	}
+}
+
+// alterTableDropColumn handles DROP COLUMN command.
+func (l *pgAntlrCatalogListener) alterTableDropColumn(schema *SchemaState, table *TableState, columnName string, ifExists bool) {
+	column, exists := table.columnSet[columnName]
+	if !exists {
+		if ifExists {
+			return
+		}
+		l.setError(NewColumnNotExistsError(table.name, columnName))
+		return
+	}
+
+	// Check if column is referenced by any views
+	viewList, err := l.databaseState.existedViewList(column.dependencyView)
+	if err != nil {
+		l.setError(err)
+		return
+	}
+	if len(viewList) > 0 {
+		l.setError(&WalkThroughError{
+			Type:    ErrorTypeColumnIsReferencedByView,
+			Content: fmt.Sprintf("Cannot drop column %q in table %q.%q, it's referenced by view: %s", column.name, schema.name, table.name, strings.Join(viewList, ", ")),
+			Payload: viewList,
+		})
+		return
+	}
+
+	// Drop the indexes involving the column
+	var dropIndexList []string
+	for _, index := range table.indexSet {
+		for _, key := range index.expressionList {
+			if key == columnName {
+				dropIndexList = append(dropIndexList, index.name)
+				break
+			}
+		}
+	}
+	for _, indexName := range dropIndexList {
+		delete(schema.identifierMap, indexName)
+		delete(table.indexSet, indexName)
+	}
+
+	// Delete the column
+	delete(table.columnSet, columnName)
+}
+
+// alterTableAlterColumnType handles ALTER COLUMN TYPE command.
+func (l *pgAntlrCatalogListener) alterTableAlterColumnType(schema *SchemaState, table *TableState, columnName string, typeString string) {
+	column, err := table.getColumn(columnName)
+	if err != nil {
+		l.setError(err)
+		return
+	}
+
+	// Check if column is referenced by any views
+	viewList, viewErr := l.databaseState.existedViewList(column.dependencyView)
+	if viewErr != nil {
+		l.setError(viewErr)
+		return
+	}
+	if len(viewList) > 0 {
+		l.setError(&WalkThroughError{
+			Type:    ErrorTypeColumnIsReferencedByView,
+			Content: fmt.Sprintf("Cannot alter type of column %q in table %q.%q, it's referenced by view: %s", column.name, schema.name, table.name, strings.Join(viewList, ", ")),
+			Payload: viewList,
+		})
+		return
+	}
+
+	// Update column type
+	column.columnType = &typeString
 }
 
 // ========================================
