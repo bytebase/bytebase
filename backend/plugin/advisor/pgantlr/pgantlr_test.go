@@ -34,6 +34,13 @@ func TestPostgreSQLANTLRRules(t *testing.T) {
 		advisor.SchemaRuleStatementInsertDisallowOrderByRand,    // Migrated from legacy
 		advisor.SchemaRuleStatementInsertMustSpecifyColumn,      // Migrated from legacy
 		advisor.SchemaRuleStatementInsertRowLimit,               // Migrated from legacy
+		advisor.SchemaRuleStatementMaximumLimitValue,            // Migrated from legacy
+		advisor.SchemaRuleStatementMergeAlterTable,              // Migrated from legacy
+		advisor.SchemaRuleStatementNoLeadingWildcardLike,        // Migrated from legacy
+		advisor.SchemaRuleStatementNoSelectAll,                  // Migrated from legacy
+		advisor.SchemaRuleStatementObjectOwnerCheck,             // Migrated from legacy
+		advisor.SchemaRuleStatementRequireWhereForSelect,        // Migrated from legacy
+		advisor.SchemaRuleStatementRequireWhereForUpdateDelete,  // Migrated from legacy
 		advisor.SchemaRuleColumnNaming,                          // Migrated from legacy
 		advisor.SchemaRuleSchemaBackwardCompatibility,           // Migrated from legacy
 		advisor.SchemaRuleStatementAddCheckNotValid,             // Migrated from legacy
@@ -66,12 +73,13 @@ func TestPostgreSQLANTLRRules(t *testing.T) {
 
 // Add SQL review type here if you need metadata for test.
 var advisorNeedMockData = map[advisor.SQLReviewRuleType]bool{
-	advisor.BuiltinRulePriorBackupCheck:        true,
-	advisor.SchemaRuleColumnNotNull:            true, // Needs metadata for PRIMARY KEY USING INDEX case
-	advisor.SchemaRuleFullyQualifiedObjectName: true, // Needs metadata for SELECT statement checks
-	advisor.SchemaRuleIDXNaming:                true, // Needs catalog for ALTER INDEX RENAME
-	advisor.SchemaRuleIndexTotalNumberLimit:    true, // Needs catalog to count indexes
-	advisor.SchemaRulePKNaming:                 true, // Needs catalog for PRIMARY KEY USING INDEX
-	advisor.SchemaRuleTableRequirePK:           true, // Needs catalog for DROP CONSTRAINT/COLUMN checks
-	advisor.SchemaRuleUKNaming:                 true, // Needs catalog for UNIQUE USING INDEX
+	advisor.BuiltinRulePriorBackupCheck:         true,
+	advisor.SchemaRuleColumnNotNull:             true, // Needs metadata for PRIMARY KEY USING INDEX case
+	advisor.SchemaRuleFullyQualifiedObjectName:  true, // Needs metadata for SELECT statement checks
+	advisor.SchemaRuleIDXNaming:                 true, // Needs catalog for ALTER INDEX RENAME
+	advisor.SchemaRuleIndexTotalNumberLimit:     true, // Needs catalog to count indexes
+	advisor.SchemaRulePKNaming:                  true, // Needs catalog for PRIMARY KEY USING INDEX
+	advisor.SchemaRuleStatementObjectOwnerCheck: true, // Needs catalog for ownership checks
+	advisor.SchemaRuleTableRequirePK:            true, // Needs catalog for DROP CONSTRAINT/COLUMN checks
+	advisor.SchemaRuleUKNaming:                  true, // Needs catalog for UNIQUE USING INDEX
 }

@@ -1,0 +1,35 @@
+- statement: SELECT * FROM t
+  changeType: 1
+  want:
+    - status: 2
+      code: 203
+      title: statement.select.no-select-all
+      content: '"SELECT * FROM t" uses SELECT all'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: SELECT a, b FROM t
+  changeType: 1
+- statement: SELECT a, b FROM (SELECT * from t1, t2) t
+  changeType: 1
+  want:
+    - status: 2
+      code: 203
+      title: statement.select.no-select-all
+      content: '"SELECT a, b FROM (SELECT * from t1, t2) t" uses SELECT all'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: INSERT INTO t SELECT * FROM t1
+  changeType: 1
+  want:
+    - status: 2
+      code: 203
+      title: statement.select.no-select-all
+      content: '"INSERT INTO t SELECT * FROM t1" uses SELECT all'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

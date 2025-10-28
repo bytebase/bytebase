@@ -1,0 +1,26 @@
+- statement: DELETE FROM t1
+  changeType: 1
+  want:
+    - status: 2
+      code: 202
+      title: statement.where.require.update-delete
+      content: '"DELETE FROM t1" requires WHERE clause'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: UPDATE t1 SET a = 1
+  changeType: 1
+  want:
+    - status: 2
+      code: 202
+      title: statement.where.require.update-delete
+      content: '"UPDATE t1 SET a = 1" requires WHERE clause'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: DELETE FROM t1 WHERE a > 0
+  changeType: 1
+- statement: UPDATE t1 SET a = 1 WHERE a > 10
+  changeType: 1

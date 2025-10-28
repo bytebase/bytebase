@@ -1,0 +1,12 @@
+- statement: |
+    SELECT * FROM employee LIMIT 1000000;
+  changeType: 1
+  want:
+    - status: 2
+      code: 222
+      title: statement.maximum-limit-value
+      content: The limit value 1000000 exceeds the maximum allowed value 1000
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
