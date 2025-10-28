@@ -1,0 +1,26 @@
+- statement: SELECT a FROM t
+  changeType: 1
+  want:
+    - status: 2
+      code: 202
+      title: statement.where.require.select
+      content: '"SELECT a FROM t" requires WHERE clause'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: SELECT a FROM t WHERE a > 0
+  changeType: 1
+- statement: SELECT a FROM t WHERE a > (SELECT max(id) FROM user)
+  changeType: 1
+  want:
+    - status: 2
+      code: 202
+      title: statement.where.require.select
+      content: '"SELECT a FROM t WHERE a > (SELECT max(id) FROM user)" requires WHERE clause'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: SELECT 1
+  changeType: 1
