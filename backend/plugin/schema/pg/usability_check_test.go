@@ -13,13 +13,13 @@ import (
 // TestUsabilityCheck_TableScenarios tests all usability check scenarios for tables
 func TestUsabilityCheck_TableScenarios(t *testing.T) {
 	tests := []struct {
-		name                string
-		currentSDL          string
-		previousSDL         string
-		currentSchema       *model.DatabaseSchema
-		expectTableDiff     bool
-		expectCommentDiff   bool
-		description         string
+		name              string
+		currentSDL        string
+		previousSDL       string
+		currentSchema     *model.DatabaseSchema
+		expectTableDiff   bool
+		expectCommentDiff bool
+		description       string
 	}{
 		{
 			name: "scenario_1_same_structure_same_comment_should_skip_both",
@@ -307,7 +307,7 @@ COMMENT ON TABLE "public"."users" IS 'To be removed';
 				tt.expectCommentDiff, hasCommentDiff, len(diff.CommentChanges))
 
 			if t.Failed() {
-				t.Logf("Full diff result:")
+				t.Log("Full diff result:")
 				t.Logf("  TableChanges: %d", len(diff.TableChanges))
 				for i, tc := range diff.TableChanges {
 					t.Logf("    [%d] %s.%s (Action: %s)", i, tc.SchemaName, tc.TableName, tc.Action)
@@ -474,13 +474,13 @@ COMMENT ON VIEW "public"."active_users" IS 'Old view comment';
 // TestUsabilityCheck_FunctionScenarios tests usability check for functions
 func TestUsabilityCheck_FunctionScenarios(t *testing.T) {
 	tests := []struct {
-		name                string
-		currentSDL          string
-		previousSDL         string
-		currentSchema       *model.DatabaseSchema
-		expectFunctionDiff  bool
-		expectCommentDiff   bool
-		description         string
+		name               string
+		currentSDL         string
+		previousSDL        string
+		currentSchema      *model.DatabaseSchema
+		expectFunctionDiff bool
+		expectCommentDiff  bool
+		description        string
 	}{
 		{
 			name: "function_same_body_same_comment_skip_both",
