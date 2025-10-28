@@ -2,18 +2,15 @@ package v1
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"maps"
 	"slices"
 	"strings"
-	"time"
 
 	"connectrpc.com/connect"
 	"github.com/google/cel-go/cel"
 	celast "github.com/google/cel-go/common/ast"
 	celoperators "github.com/google/cel-go/common/operators"
-	celoverloads "github.com/google/cel-go/common/overloads"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -170,9 +167,11 @@ func (s *PlanService) SearchPlans(ctx context.Context, request *connect.Request[
 	if projectID != "-" {
 		find.ProjectID = &projectID
 	}
-	if err := s.buildPlanFindWithFilter(ctx, find, req.Filter); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to build plan find with filter, error: %v", err))
+	filterQ, err := s.store.GetListPlanFilter(ctx, req.Filter)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
+	find.FilterQ = filterQ
 
 	plans, err := s.store.ListPlans(ctx, find)
 	if err != nil {
@@ -1095,161 +1094,6 @@ func (s *PlanService) BatchCancelPlanCheckRuns(ctx context.Context, request *con
 	}
 
 	return connect.NewResponse(&v1pb.BatchCancelPlanCheckRunsResponse{}), nil
-}
-
-func (s *PlanService) buildPlanFindWithFilter(ctx context.Context, planFind *store.FindPlanMessage, filter string) error {
-	if filter == "" {
-		return nil
-	}
-
-	e, err := cel.NewEnv()
-	if err != nil {
-		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to create cel env"))
-	}
-	ast, iss := e.Parse(filter)
-	if iss != nil {
-		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String()))
-	}
-
-	var getFilter func(expr celast.Expr) (string, error)
-	var positionalArgs []any
-
-	getFilter = func(expr celast.Expr) (string, error) {
-		switch expr.Kind() {
-		case celast.CallKind:
-			functionName := expr.AsCall().FunctionName()
-			switch functionName {
-			case celoperators.LogicalAnd:
-				return getSubConditionFromExpr(expr, getFilter, "AND")
-			case celoperators.Equals:
-				variable, value := getVariableAndValueFromExpr(expr)
-				switch variable {
-				case "creator":
-					user, err := s.getUserByIdentifier(ctx, value.(string))
-					if err != nil {
-						return "", connect.NewError(connect.CodeInternal, errors.Errorf("failed to get user %v with error %v", value, err.Error()))
-					}
-					positionalArgs = append(positionalArgs, user.ID)
-					return fmt.Sprintf("plan.creator_id = $%d", len(positionalArgs)), nil
-				case "has_pipeline":
-					hasPipeline, ok := value.(bool)
-					if !ok {
-						return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`"has_pipeline" should be bool`))
-					}
-					if !hasPipeline {
-						return "plan.pipeline_id IS NULL", nil
-					}
-					return "plan.pipeline_id IS NOT NULL", nil
-				case "has_issue":
-					hasIssue, ok := value.(bool)
-					if !ok {
-						return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`"has_issue" should be bool`))
-					}
-					if !hasIssue {
-						return "issue.id IS NULL", nil
-					}
-					return "issue.id IS NOT NULL", nil
-				case "title":
-					positionalArgs = append(positionalArgs, value)
-					return fmt.Sprintf("plan.name = $%d", len(positionalArgs)), nil
-				case "spec_type":
-					specType, ok := value.(string)
-					if !ok {
-						return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("spec_type value must be a string"))
-					}
-					switch specType {
-					case "create_database_config":
-						return "EXISTS (SELECT 1 FROM jsonb_array_elements(plan.config->'specs') AS spec WHERE spec->>'createDatabaseConfig' IS NOT NULL)", nil
-					case "change_database_config":
-						return "EXISTS (SELECT 1 FROM jsonb_array_elements(plan.config->'specs') AS spec WHERE spec->>'changeDatabaseConfig' IS NOT NULL)", nil
-					case "export_data_config":
-						return "EXISTS (SELECT 1 FROM jsonb_array_elements(plan.config->'specs') AS spec WHERE spec->>'exportDataConfig' IS NOT NULL)", nil
-					default:
-						return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid spec_type value: %s, must be one of: create_database_config, change_database_config, export_data_config", specType))
-					}
-				case "state":
-					v1State, ok := v1pb.State_value[value.(string)]
-					if !ok {
-						return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid state filter %q", value))
-					}
-					positionalArgs = append(positionalArgs, v1pb.State(v1State) == v1pb.State_DELETED)
-					return fmt.Sprintf("plan.deleted = $%d", len(positionalArgs)), nil
-				default:
-					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported variable %q", variable))
-				}
-			case celoperators.GreaterEquals, celoperators.LessEquals:
-				variable, rawValue := getVariableAndValueFromExpr(expr)
-				value, ok := rawValue.(string)
-				if !ok {
-					return "", errors.Errorf("expect string, got %T, hint: filter literals should be string", rawValue)
-				}
-				if variable != "create_time" {
-					return "", errors.Errorf(`">=" and "<=" are only supported for "create_time"`)
-				}
-				t, err := time.Parse(time.RFC3339, value)
-				if err != nil {
-					return "", errors.Errorf("failed to parse time %v, error: %v", value, err)
-				}
-				positionalArgs = append(positionalArgs, t)
-				if functionName == celoperators.GreaterEquals {
-					return fmt.Sprintf("plan.created_at >= $%d", len(positionalArgs)), nil
-				}
-				return fmt.Sprintf("plan.created_at <= $%d", len(positionalArgs)), nil
-			case celoverloads.Matches:
-				variable := expr.AsCall().Target().AsIdent()
-				args := expr.AsCall().Args()
-				if len(args) != 1 {
-					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`invalid args for %q`, variable))
-				}
-				value := args[0].AsLiteral().Value()
-				strValue, ok := value.(string)
-				if !ok {
-					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("expect string, got %T, hint: filter literals should be string", value))
-				}
-				strValue = strings.ToLower(strValue)
-
-				switch variable {
-				case "title":
-					return "LOWER(plan.name) LIKE '%" + strValue + "%'", nil
-				default:
-					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`only "title" supports %q operator, but found %q`, celoverloads.Matches, variable))
-				}
-			default:
-				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported function %v", functionName))
-			}
-		default:
-			return "", errors.Errorf("unexpected expr kind %v", expr.Kind())
-		}
-	}
-
-	where, err := getFilter(ast.NativeRep().Expr())
-	if err != nil {
-		return err
-	}
-
-	if where != "" {
-		planFind.Filter = &store.ListResourceFilter{
-			Where: "(" + where + ")",
-			Args:  positionalArgs,
-		}
-	}
-
-	return nil
-}
-
-func (s *PlanService) getUserByIdentifier(ctx context.Context, identifier string) (*store.UserMessage, error) {
-	email := strings.TrimPrefix(identifier, "users/")
-	if email == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("invalid empty creator identifier"))
-	}
-	user, err := s.store.GetUserByEmail(ctx, email)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf(`failed to find user "%s" with error: %v`, email, err))
-	}
-	if user == nil {
-		return nil, errors.Errorf("cannot found user %s", email)
-	}
-	return user, nil
 }
 
 // diffSpecs checks if there are any specs removed, added or updated in the new plan.
