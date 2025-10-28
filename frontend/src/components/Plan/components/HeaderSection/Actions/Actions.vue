@@ -509,15 +509,6 @@ const getIssueTypeFromPlan = (planValue: Plan): Issue_Type => {
 };
 
 const doCreateIssue = async () => {
-  const createRolloutRequest = create(CreateRolloutRequestSchema, {
-    parent: project.value.name,
-    rollout: {
-      plan: plan.value.name,
-    },
-  });
-  const rollout =
-    await rolloutServiceClientConnect.createRollout(createRolloutRequest);
-
   const createIssueRequest = create(CreateIssueRequestSchema, {
     parent: project.value.name,
     issue: create(IssueSchema, {
@@ -526,11 +517,23 @@ const doCreateIssue = async () => {
       plan: plan.value.name,
       status: IssueStatus.OPEN,
       type: getIssueTypeFromPlan(plan.value),
-      rollout: rollout.name,
+      rollout: "",
     }),
   });
+
+  // Create issue first
   const createdIssue =
     await issueServiceClientConnect.createIssue(createIssueRequest);
+
+  const createRolloutRequest = create(CreateRolloutRequestSchema, {
+    parent: project.value.name,
+    rollout: {
+      plan: plan.value.name,
+    },
+  });
+
+  // Then create rollout
+  await rolloutServiceClientConnect.createRollout(createRolloutRequest);
 
   // Emit status changed to refresh the UI
   events.emit("status-changed", { eager: true });
