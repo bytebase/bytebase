@@ -758,7 +758,8 @@ func (l *pgAntlrCatalogListener) dropIndex(anyName parser.IAny_nameContext, ifEx
 // RENAME statements handling
 // ========================================
 
-// EnterRenamestmt handles RENAME INDEX/CONSTRAINT/TABLE statements.
+// EnterRenamestmt handles RENAME INDEX/CONSTRAINT/TABLE/COLUMN statements.
+// TODO: Implement full RENAME support - currently stubbed to avoid compilation errors
 func (l *pgAntlrCatalogListener) EnterRenamestmt(ctx *parser.RenamestmtContext) {
 	if !isTopLevel(ctx.GetParent()) || l.err != nil {
 		return
@@ -770,12 +771,10 @@ func (l *pgAntlrCatalogListener) EnterRenamestmt(ctx *parser.RenamestmtContext) 
 
 	l.currentLine = ctx.GetStart().GetLine()
 
-	// TODO: Implement RENAME logic
-	// Similar to pgRenameIndex() in walk_through_for_pg.go
-	// Handles:
-	// - ALTER INDEX ... RENAME TO
-	// - ALTER TABLE ... RENAME CONSTRAINT
-	// - ALTER TABLE ... RENAME TO
+	// TODO: Need to determine correct ANTLR context structure for extracting old/new names
+	// For now, just return to make it compile - we'll implement properly after running tests
+	// to see the actual structure
+	return
 }
 
 // ========================================
