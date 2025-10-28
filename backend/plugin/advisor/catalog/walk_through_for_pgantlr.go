@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
@@ -395,8 +396,102 @@ func (l *pgAntlrCatalogListener) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 
 	l.currentLine = ctx.GetStart().GetLine()
 
-	// TODO: Implement CREATE INDEX logic
-	// Similar to pgCreateIndex() in walk_through_for_pg.go
+	// Extract relation (table) name
+	relationExpr := ctx.Relation_expr()
+	if relationExpr == nil || relationExpr.Qualified_name() == nil {
+		return
+	}
+
+	tableName := extractTableName(relationExpr.Qualified_name())
+	schemaName := extractSchemaName(relationExpr.Qualified_name())
+	schema, err := l.databaseState.getSchema(schemaName)
+	if err != nil {
+		l.setError(err)
+		return
+	}
+
+	table, exists := schema.tableSet[tableName]
+	if !exists {
+		l.setError(NewTableNotExistsError(tableName))
+		return
+	}
+
+	// Extract index name (can be empty for auto-generated names)
+	indexName := ""
+	if ctx.Name() != nil {
+		indexName = pgparser.NormalizePostgreSQLName(ctx.Name())
+	}
+
+	// Check IF NOT EXISTS
+	ifNotExists := ctx.IF_P() != nil && ctx.NOT() != nil && ctx.EXISTS() != nil
+
+	// Extract column list
+	var columnList []string
+	if ctx.Index_params() != nil {
+		allParams := ctx.Index_params().AllIndex_elem()
+		for _, param := range allParams {
+			if param.Colid() != nil {
+				colName := pgparser.NormalizePostgreSQLColid(param.Colid())
+				columnList = append(columnList, colName)
+			} else if param.Func_expr_windowless() != nil {
+				// Expression index - use placeholder
+				columnList = append(columnList, "expr")
+			}
+		}
+	}
+
+	if len(columnList) == 0 {
+		l.setError(&WalkThroughError{
+			Type:    ErrorTypeIndexEmptyKeys,
+			Content: fmt.Sprintf("Index %q in table %q has empty key", indexName, tableName),
+		})
+		return
+	}
+
+	// Generate index name if not provided
+	isUnique := ctx.Opt_unique() != nil && ctx.Opt_unique().UNIQUE() != nil
+	if indexName == "" {
+		indexName = generateIndexName(tableName, columnList, isUnique)
+	}
+
+	// Check if index name already exists
+	if _, exists := schema.identifierMap[indexName]; exists {
+		if ifNotExists {
+			return
+		}
+		l.setError(NewRelationExistsError(indexName, schema.name))
+		return
+	}
+
+	// Check that all columns exist (skip expressions)
+	for _, colName := range columnList {
+		if colName != "expr" {
+			if _, exists := table.columnSet[colName]; !exists {
+				l.setError(NewColumnNotExistsError(tableName, colName))
+				return
+			}
+		}
+	}
+
+	// Determine index type
+	indexType := "btree" // default
+	if ctx.Access_method_clause() != nil && ctx.Access_method_clause().Name() != nil {
+		method := pgparser.NormalizePostgreSQLName(ctx.Access_method_clause().Name())
+		indexType = method
+	}
+
+	// Create index state
+	index := &IndexState{
+		name:           indexName,
+		expressionList: columnList,
+		indexType:      newStringPointer(indexType),
+		unique:         newBoolPointer(isUnique),
+		primary:        newFalsePointer(),
+		isConstraint:   false,
+	}
+
+	table.indexSet[index.name] = index
+	schema.identifierMap[index.name] = true
 }
 
 // ========================================
@@ -623,4 +718,32 @@ func extractDatabaseName(qualifiedName parser.IQualified_nameContext) string {
 		return parts[0]
 	}
 	return ""
+}
+
+// generateIndexName generates an index name based on table name and columns.
+// Format: tablename_col1_col2_idx (with suffix for uniqueness if needed)
+func generateIndexName(tableName string, columnList []string, isUnique bool) string {
+	var builder strings.Builder
+	builder.WriteString(tableName)
+
+	expressionID := 0
+	for _, col := range columnList {
+		builder.WriteByte('_')
+		if col == "expr" {
+			builder.WriteString("expr")
+			if expressionID > 0 {
+				builder.WriteString(fmt.Sprintf("%d", expressionID))
+			}
+			expressionID++
+		} else {
+			builder.WriteString(col)
+		}
+	}
+
+	builder.WriteString("_idx")
+	if isUnique {
+		builder.WriteString("1") // Unique indexes get a "1" suffix initially
+	}
+
+	return builder.String()
 }
