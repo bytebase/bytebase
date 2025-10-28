@@ -456,9 +456,9 @@ func GetListSheetFilter(ctx context.Context, s *Store, callerID int, filter stri
 				}
 				visibilityList := []string{}
 				for _, raw := range rawList {
-					visibilityList = append(visibilityList, fmt.Sprintf(`'%s'`, WorkSheetVisibility(raw.(string))))
+					visibilityList = append(visibilityList, raw.(string))
 				}
-				return qb.Q().Space(fmt.Sprintf(`worksheet.visibility IN (%s)`, strings.Join(visibilityList, ","))), nil
+				return qb.Q().Space("worksheet.visibility = ANY(?)", visibilityList), nil
 			default:
 				return nil, errors.Errorf("unexpected function %v", functionName)
 			}
