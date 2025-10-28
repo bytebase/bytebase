@@ -123,7 +123,7 @@ func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *
 }
 
 // returns func() to invalidate cache.
-func (s *Store) updatePipelineUIDOfIssueAndPlan(ctx context.Context, txn *sql.Tx, planUID int64, pipelineUID int) (func(), error) {
+func (*Store) updatePipelineUIDOfIssueAndPlan(ctx context.Context, txn *sql.Tx, planUID int64, pipelineUID int) (func(), error) {
 	q := qb.Q().Space(`
 		UPDATE plan
 		SET pipeline_id = ?
@@ -137,27 +137,8 @@ func (s *Store) updatePipelineUIDOfIssueAndPlan(ctx context.Context, txn *sql.Tx
 		return nil, errors.Wrapf(err, "failed to update plan pipeline_id")
 	}
 
-	q = qb.Q().Space(`
-		UPDATE issue
-		SET pipeline_id = ?
-		WHERE plan_id = ?
-		RETURNING id
-	`, pipelineUID, planUID)
-	querySQL, args, err = q.ToSQL()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
-	}
-	var issueUID int
-	if err := txn.QueryRowContext(ctx, querySQL, args...).Scan(&issueUID); err != nil {
-		if err != sql.ErrNoRows {
-			return nil, errors.Wrapf(err, "failed to update issue pipeline_id")
-		}
-	}
 	return func() {
 		// TODO: need to remove planCache once we add planCache
-		if issueUID != 0 {
-			s.issueCache.Remove(issueUID)
-		}
 	}, nil
 }
 

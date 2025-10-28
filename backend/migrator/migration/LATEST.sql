@@ -307,7 +307,6 @@ CREATE TABLE issue (
     updated_at timestamptz NOT NULL DEFAULT now(),
     project text NOT NULL REFERENCES project(resource_id),
     plan_id bigint REFERENCES plan(id),
-    pipeline_id integer REFERENCES pipeline(id),
     name text NOT NULL,
     status text NOT NULL CHECK (status IN ('OPEN', 'DONE', 'CANCELED')),
     -- type: DATABASE_CHANGE, GRANT_REQUEST, DATABASE_EXPORT
@@ -322,8 +321,6 @@ CREATE TABLE issue (
 CREATE INDEX idx_issue_project ON issue(project);
 
 CREATE INDEX idx_issue_plan_id ON issue(plan_id);
-
-CREATE INDEX idx_issue_pipeline_id ON issue(pipeline_id);
 
 CREATE INDEX idx_issue_creator_id ON issue(creator_id);
 
