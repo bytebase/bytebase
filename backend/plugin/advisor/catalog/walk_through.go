@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 // WalkThroughErrorType is the type of WalkThroughError.
@@ -209,6 +210,18 @@ func (d *DatabaseState) WalkThrough(ast any) error {
 		err := d.mysqlWalkThrough(ast)
 		return err
 	case storepb.Engine_POSTGRES:
+		// Check if this is ANTLR ParseResult or legacy AST
+		if parseResult, ok := ast.(*pgparser.ParseResult); ok {
+			// ANTLR-based walkthrough
+			if err := d.pgAntlrWalkThrough(parseResult.Tree); err != nil {
+				if d.ctx.CheckIntegrity {
+					return err
+				}
+				d.usable = false
+			}
+			return nil
+		}
+		// Legacy AST walkthrough
 		if err := d.pgWalkThrough(ast); err != nil {
 			if d.ctx.CheckIntegrity {
 				return err
