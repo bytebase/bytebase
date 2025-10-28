@@ -183,8 +183,7 @@ func createColumn(schema *SchemaState, table *TableState, columnDef parser.IColu
 	// Get column type
 	var columnType string
 	if columnDef.Typename() != nil {
-		// TODO: We need to deparse the type, for now just use a placeholder
-		columnType = "text" // This should be extracted from Typename() context
+		columnType = extractTypeName(columnDef.Typename())
 	}
 
 	// Create column state
@@ -601,7 +600,7 @@ func (l *pgAntlrCatalogListener) processAlterTableCmd(schema *SchemaState, table
 			// Check for TYPE keyword
 			if cmd.TYPE_P() != nil && cmd.Typename() != nil {
 				// Extract type string from Typename context
-				typeString := cmd.Typename().GetText()
+				typeString := extractTypeName(cmd.Typename())
 				l.alterTableAlterColumnType(schema, table, columnName, typeString)
 			}
 		}
@@ -980,6 +979,38 @@ func isTopLevel(ctx antlr.Tree) bool {
 		return isTopLevel(ctx.GetParent())
 	default:
 		return false
+	}
+}
+
+// extractTypeName extracts the type name from a Typename context.
+// Simply uses GetText() to get the full type representation.
+// PostgreSQL normalizes some type names (e.g., int -> integer),
+// which will be handled by the parser's type normalization.
+func extractTypeName(typename parser.ITypenameContext) string {
+	if typename == nil {
+		return ""
+	}
+
+	// Use GetText() to get the full type string
+	// The parser should have already normalized type names
+	typeText := typename.GetText()
+
+	// Normalize common PostgreSQL type aliases
+	switch strings.ToLower(typeText) {
+	case "int", "int4":
+		return "integer"
+	case "int2":
+		return "smallint"
+	case "int8":
+		return "bigint"
+	case "float4":
+		return "real"
+	case "float8":
+		return "double precision"
+	case "bool":
+		return "boolean"
+	default:
+		return typeText
 	}
 }
 
