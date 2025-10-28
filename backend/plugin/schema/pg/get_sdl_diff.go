@@ -98,7 +98,7 @@ func GetSDLDiff(currentSDLText, previousUserSDLText string, currentSchema, previ
 	processSequenceChanges(currentChunks, previousChunks, currentDBSDLChunks, diff)
 
 	// Process comment changes (must be after all object changes are processed)
-	processCommentChanges(currentChunks, previousChunks, diff)
+	processCommentChanges(currentChunks, previousChunks, currentDBSDLChunks, diff)
 
 	return diff, nil
 }
@@ -2911,9 +2911,10 @@ func columnsEqual(a, b *storepb.ColumnMetadata) bool {
 // currentDatabaseSDLChunks stores pre-computed SDL chunks from current database metadata
 // for performance optimization during usability checks
 type currentDatabaseSDLChunks struct {
-	chunks      map[string]string // maps chunk identifier to normalized SDL text from current database metadata
-	columns     map[string]string // maps "schema.table.column" to normalized column SDL text
-	constraints map[string]string // maps "schema.table.constraint" to normalized constraint SDL text
+	chunks      map[string]string   // maps chunk identifier to normalized SDL text (without comments) from current database metadata
+	comments    map[string][]string // maps chunk identifier to normalized comment texts
+	columns     map[string]string   // maps "schema.table.column" to normalized column SDL text
+	constraints map[string]string   // maps "schema.table.constraint" to normalized constraint SDL text
 }
 
 // buildCurrentDatabaseSDLChunks pre-computes SDL chunks from the current database schema
@@ -2922,6 +2923,7 @@ type currentDatabaseSDLChunks struct {
 func buildCurrentDatabaseSDLChunks(currentSchema *model.DatabaseSchema) (*currentDatabaseSDLChunks, error) {
 	sdlChunks := &currentDatabaseSDLChunks{
 		chunks:      make(map[string]string),
+		comments:    make(map[string][]string),
 		columns:     make(map[string]string),
 		constraints: make(map[string]string),
 	}
@@ -2944,8 +2946,14 @@ func buildCurrentDatabaseSDLChunks(currentSchema *model.DatabaseSchema) (*curren
 	}
 
 	// Populate SDL chunks with normalized chunk texts from current database metadata
+	// Use GetTextWithoutComments() to focus on structural changes only, not comment formatting differences
 	for identifier, chunk := range currentSDLChunks.Tables {
-		sdlChunks.chunks[identifier] = strings.TrimSpace(chunk.GetText())
+		sdlChunks.chunks[identifier] = strings.TrimSpace(chunk.GetTextWithoutComments())
+		// Store comment text for usability check
+		commentText := extractCommentTextFromChunk(chunk)
+		if commentText != "" {
+			sdlChunks.comments[identifier] = []string{commentText}
+		}
 
 		// Extract column and constraint SDL texts for fine-grained usability checks
 		if err := extractColumnAndConstraintSDLTexts(chunk, identifier, sdlChunks); err != nil {
@@ -2955,16 +2963,36 @@ func buildCurrentDatabaseSDLChunks(currentSchema *model.DatabaseSchema) (*curren
 		}
 	}
 	for identifier, chunk := range currentSDLChunks.Views {
-		sdlChunks.chunks[identifier] = strings.TrimSpace(chunk.GetText())
+		sdlChunks.chunks[identifier] = strings.TrimSpace(chunk.GetTextWithoutComments())
+		// Store comment text for usability check
+		commentText := extractCommentTextFromChunk(chunk)
+		if commentText != "" {
+			sdlChunks.comments[identifier] = []string{commentText}
+		}
 	}
 	for identifier, chunk := range currentSDLChunks.Functions {
-		sdlChunks.chunks[identifier] = strings.TrimSpace(chunk.GetText())
+		sdlChunks.chunks[identifier] = strings.TrimSpace(chunk.GetTextWithoutComments())
+		// Store comment text for usability check
+		commentText := extractCommentTextFromChunk(chunk)
+		if commentText != "" {
+			sdlChunks.comments[identifier] = []string{commentText}
+		}
 	}
 	for identifier, chunk := range currentSDLChunks.Sequences {
-		sdlChunks.chunks[identifier] = strings.TrimSpace(chunk.GetText())
+		sdlChunks.chunks[identifier] = strings.TrimSpace(chunk.GetTextWithoutComments())
+		// Store comment text for usability check
+		commentText := extractCommentTextFromChunk(chunk)
+		if commentText != "" {
+			sdlChunks.comments[identifier] = []string{commentText}
+		}
 	}
 	for identifier, chunk := range currentSDLChunks.Indexes {
-		sdlChunks.chunks[identifier] = strings.TrimSpace(chunk.GetText())
+		sdlChunks.chunks[identifier] = strings.TrimSpace(chunk.GetTextWithoutComments())
+		// Store comment text for usability check
+		commentText := extractCommentTextFromChunk(chunk)
+		if commentText != "" {
+			sdlChunks.comments[identifier] = []string{commentText}
+		}
 	}
 
 	return sdlChunks, nil
@@ -3046,6 +3074,32 @@ func (sdlChunks *currentDatabaseSDLChunks) shouldSkipChunkDiffForUsability(chunk
 
 	// If chunk text matches current database metadata SDL, skip the diff (no actual change needed)
 	return normalizedChunkText == currentDatabaseSDLText
+}
+
+// shouldSkipCommentDiff checks if a comment should skip diff comparison
+// by comparing against the pre-computed comment texts from current database metadata
+func shouldSkipCommentDiff(commentText string, objectIdentifier string, sdlChunks *currentDatabaseSDLChunks) bool {
+	if sdlChunks == nil || len(sdlChunks.comments) == 0 {
+		return false
+	}
+
+	// Get the corresponding comment text from current database metadata
+	currentDatabaseComments, exists := sdlChunks.comments[objectIdentifier]
+	if !exists || len(currentDatabaseComments) == 0 {
+		return false
+	}
+
+	// Normalize current comment text for comparison
+	normalizedCommentText := strings.TrimSpace(commentText)
+
+	// Check if comment matches any of the database comments (typically just one)
+	for _, dbComment := range currentDatabaseComments {
+		if normalizedCommentText == strings.TrimSpace(dbComment) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // shouldSkipColumnDiffForUsability checks if a column should skip diff comparison
@@ -4759,18 +4813,18 @@ func (e *sequenceExtractor) EnterCreateseqstmt(ctx *parser.CreateseqstmtContext)
 // processCommentChanges processes comment changes for all database objects
 // It must be called after all object changes have been processed to determine
 // which objects were created or dropped (those should not generate comment diffs)
-func processCommentChanges(currentChunks, previousChunks *schema.SDLChunks, diff *schema.MetadataDiff) {
+func processCommentChanges(currentChunks, previousChunks *schema.SDLChunks, currentDBSDLChunks *currentDatabaseSDLChunks, diff *schema.MetadataDiff) {
 	// Build sets of created and dropped objects to avoid generating comment diffs for them
 	createdObjects := buildCreatedObjectsSet(diff)
 	droppedObjects := buildDroppedObjectsSet(diff)
 
 	// Process object-level comments
-	processObjectComments(currentChunks.Tables, previousChunks.Tables, schema.CommentObjectTypeTable, createdObjects, droppedObjects, diff)
-	processObjectComments(currentChunks.Views, previousChunks.Views, schema.CommentObjectTypeView, createdObjects, droppedObjects, diff)
-	processObjectComments(currentChunks.Functions, previousChunks.Functions, schema.CommentObjectTypeFunction, createdObjects, droppedObjects, diff)
-	processObjectComments(currentChunks.Sequences, previousChunks.Sequences, schema.CommentObjectTypeSequence, createdObjects, droppedObjects, diff)
-	processObjectComments(currentChunks.Indexes, previousChunks.Indexes, schema.CommentObjectTypeIndex, createdObjects, droppedObjects, diff)
-	processObjectComments(currentChunks.Schemas, previousChunks.Schemas, schema.CommentObjectTypeSchema, createdObjects, droppedObjects, diff)
+	processObjectComments(currentChunks.Tables, previousChunks.Tables, schema.CommentObjectTypeTable, createdObjects, droppedObjects, currentDBSDLChunks, diff)
+	processObjectComments(currentChunks.Views, previousChunks.Views, schema.CommentObjectTypeView, createdObjects, droppedObjects, currentDBSDLChunks, diff)
+	processObjectComments(currentChunks.Functions, previousChunks.Functions, schema.CommentObjectTypeFunction, createdObjects, droppedObjects, currentDBSDLChunks, diff)
+	processObjectComments(currentChunks.Sequences, previousChunks.Sequences, schema.CommentObjectTypeSequence, createdObjects, droppedObjects, currentDBSDLChunks, diff)
+	processObjectComments(currentChunks.Indexes, previousChunks.Indexes, schema.CommentObjectTypeIndex, createdObjects, droppedObjects, currentDBSDLChunks, diff)
+	processObjectComments(currentChunks.Schemas, previousChunks.Schemas, schema.CommentObjectTypeSchema, createdObjects, droppedObjects, currentDBSDLChunks, diff)
 
 	// Process column comments
 	processColumnComments(currentChunks, previousChunks, createdObjects, droppedObjects, diff)
@@ -4849,7 +4903,7 @@ func buildDroppedObjectsSet(diff *schema.MetadataDiff) map[string]bool {
 // processObjectComments processes comment changes for a specific object type
 // droppedObjects is intentionally unused because we only process objects in currentMap,
 // and dropped objects won't appear there.
-func processObjectComments(currentMap, previousMap map[string]*schema.SDLChunk, objectType schema.CommentObjectType, createdObjects, _ map[string]bool, diff *schema.MetadataDiff) {
+func processObjectComments(currentMap, previousMap map[string]*schema.SDLChunk, objectType schema.CommentObjectType, createdObjects, _ map[string]bool, currentDBSDLChunks *currentDatabaseSDLChunks, diff *schema.MetadataDiff) {
 	// Process all objects in current chunks
 	for identifier, currentChunk := range currentMap {
 		// Skip if object was created (comment will be in CREATE statement)
@@ -4867,8 +4921,12 @@ func processObjectComments(currentMap, previousMap map[string]*schema.SDLChunk, 
 		currentCommentText := extractCommentTextFromChunk(currentChunk)
 		previousCommentText := extractCommentTextFromChunk(previousChunk)
 
-		// If comments are different, generate a CommentDiff
+		// If comments are different, check usability before generating a CommentDiff
 		if currentCommentText != previousCommentText {
+			// Apply usability check: skip comment diff if current comment matches database metadata
+			if currentDBSDLChunks != nil && shouldSkipCommentDiff(currentCommentText, identifier, currentDBSDLChunks) {
+				continue
+			}
 			var schemaName, objectName string
 
 			// For SCHEMA objects, identifier is just the schema name
