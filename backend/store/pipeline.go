@@ -236,7 +236,8 @@ func (s *Store) ListPipelineV2(ctx context.Context, find *PipelineFind) ([]*Pipe
 				pipeline.created_at
 			) AS updated_at
 		FROM pipeline
-		LEFT JOIN issue ON pipeline.id = issue.pipeline_id
+		LEFT JOIN plan ON plan.pipeline_id = pipeline.id
+		LEFT JOIN issue ON issue.plan_id = plan.id
 		WHERE TRUE
 	`)
 
