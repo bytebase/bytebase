@@ -159,7 +159,6 @@ CREATE TABLE db_schema (
     raw_dump text NOT NULL DEFAULT '',
     -- Stored as DatabaseConfig (proto/store/store/database.proto)
     config jsonb NOT NULL DEFAULT '{}',
-    todo boolean NOT NULL DEFAULT TRUE,
     CONSTRAINT db_schema_instance_db_name_fkey FOREIGN KEY(instance, db_name) REFERENCES db(instance, name)
 );
 

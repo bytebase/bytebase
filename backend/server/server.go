@@ -52,14 +52,13 @@ const (
 // Server is the Bytebase server.
 type Server struct {
 	// Asynchronous runners.
-	taskSchedulerV2       *taskrun.SchedulerV2
-	planCheckScheduler    *plancheck.Scheduler
-	metricReporter        *metricreport.Reporter
-	schemaSyncer          *schemasync.Syncer
-	approvalRunner        *approval.Runner
-	columnDefaultMigrator *runnermigrator.ColumnDefaultMigrator
-	exportArchiveCleaner  *runnermigrator.ExportArchiveCleaner
-	runnerWG              sync.WaitGroup
+	taskSchedulerV2      *taskrun.SchedulerV2
+	planCheckScheduler   *plancheck.Scheduler
+	metricReporter       *metricreport.Reporter
+	schemaSyncer         *schemasync.Syncer
+	approvalRunner       *approval.Runner
+	exportArchiveCleaner *runnermigrator.ExportArchiveCleaner
+	runnerWG             sync.WaitGroup
 
 	webhookManager        *webhook.Manager
 	iamManager            *iam.Manager
@@ -204,9 +203,6 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	statementReportExecutor := plancheck.NewStatementReportExecutor(stores, sheetManager, s.dbFactory)
 	s.planCheckScheduler.Register(store.PlanCheckDatabaseStatementSummaryReport, statementReportExecutor)
 
-	// Column default value migrator
-	s.columnDefaultMigrator = runnermigrator.NewColumnDefaultMigrator(stores, runnermigrator.EnginesNeedingMigration())
-
 	// Export archive cleaner
 	s.exportArchiveCleaner = runnermigrator.NewExportArchiveCleaner(stores)
 
@@ -244,9 +240,6 @@ func (s *Server) Run(ctx context.Context, port int) error {
 
 	s.runnerWG.Add(1)
 	go s.planCheckScheduler.Run(ctx, &s.runnerWG)
-
-	s.runnerWG.Add(1)
-	go s.columnDefaultMigrator.Run(ctx, &s.runnerWG)
 
 	s.runnerWG.Add(1)
 	go s.exportArchiveCleaner.Run(ctx, &s.runnerWG)
