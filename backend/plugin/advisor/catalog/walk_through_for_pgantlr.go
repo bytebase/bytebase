@@ -7,8 +7,9 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
-	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	parser "github.com/bytebase/parser/postgresql"
+
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 // pgAntlrWalkThrough walks through the ANTLR parse tree and builds catalog state.
@@ -908,7 +909,7 @@ func (l *pgAntlrCatalogListener) alterTableSetNotNull(table *TableState, columnN
 }
 
 // renameTable handles RENAME TO for tables.
-func (l *pgAntlrCatalogListener) renameTable(schema *SchemaState, table *TableState, newName string) *WalkThroughError {
+func (*pgAntlrCatalogListener) renameTable(schema *SchemaState, table *TableState, newName string) *WalkThroughError {
 	// Check if new name already exists
 	if _, exists := schema.identifierMap[newName]; exists {
 		return NewRelationExistsError(newName, schema.name)
@@ -929,7 +930,7 @@ func (l *pgAntlrCatalogListener) renameTable(schema *SchemaState, table *TableSt
 }
 
 // renameColumn handles RENAME COLUMN.
-func (l *pgAntlrCatalogListener) renameColumn(table *TableState, oldName string, newName string) *WalkThroughError {
+func (*pgAntlrCatalogListener) renameColumn(table *TableState, oldName string, newName string) *WalkThroughError {
 	column, err := table.getColumn(oldName)
 	if err != nil {
 		return err
@@ -965,7 +966,7 @@ func (l *pgAntlrCatalogListener) renameColumn(table *TableState, oldName string,
 }
 
 // renameConstraint handles RENAME CONSTRAINT.
-func (l *pgAntlrCatalogListener) renameConstraint(schema *SchemaState, table *TableState, oldName string, newName string) *WalkThroughError {
+func (*pgAntlrCatalogListener) renameConstraint(schema *SchemaState, table *TableState, oldName string, newName string) *WalkThroughError {
 	index, exists := table.indexSet[oldName]
 	if !exists {
 		// We haven't dealt with foreign and check constraints, so skip if not exists
@@ -1013,6 +1014,7 @@ func (l *pgAntlrCatalogListener) EnterDropstmt(ctx *parser.DropstmtContext) {
 	// Check object type and get list of names
 	if ctx.Object_type_any_name() != nil {
 		objType := ctx.Object_type_any_name()
+
 		if objType.TABLE() != nil {
 			// DROP TABLE
 			if ctx.Any_name_list() != nil {
@@ -1033,12 +1035,22 @@ func (l *pgAntlrCatalogListener) EnterDropstmt(ctx *parser.DropstmtContext) {
 					}
 				}
 			}
+		} else if objType.INDEX() != nil {
+			// DROP INDEX
+			if ctx.Any_name_list() != nil {
+				for _, anyName := range ctx.Any_name_list().AllAny_name() {
+					if err := l.dropIndex(anyName, ifExists); err != nil {
+						l.setError(err)
+						return
+					}
+				}
+			}
 		}
-	} else if ctx.INDEX() != nil {
-		// DROP INDEX
-		if ctx.Any_name_list() != nil {
-			for _, anyName := range ctx.Any_name_list().AllAny_name() {
-				if err := l.dropIndex(anyName, ifExists); err != nil {
+	} else if ctx.Drop_type_name() != nil && ctx.Drop_type_name().SCHEMA() != nil {
+		// DROP SCHEMA
+		if ctx.Name_list() != nil {
+			for _, schemaName := range ctx.Name_list().AllName() {
+				if err := l.dropSchema(schemaName, ifExists); err != nil {
 					l.setError(err)
 					return
 				}
@@ -1162,6 +1174,33 @@ func (l *pgAntlrCatalogListener) dropIndex(anyName parser.IAny_nameContext, ifEx
 
 	delete(schema.identifierMap, index.name)
 	delete(table.indexSet, index.name)
+	return nil
+}
+
+func (l *pgAntlrCatalogListener) dropSchema(schemaNameCtx parser.INameContext, ifExists bool) *WalkThroughError {
+	schemaName := pgparser.NormalizePostgreSQLName(schemaNameCtx)
+
+	schema, exists := l.databaseState.schemaSet[schemaName]
+	if !exists {
+		if ifExists {
+			return nil
+		}
+		return &WalkThroughError{
+			Type:    ErrorTypeSchemaNotExists,
+			Content: fmt.Sprintf("Schema %q does not exist", schemaName),
+		}
+	}
+
+	// Delete all identifiers in this schema
+	for tableName := range schema.tableSet {
+		delete(schema.identifierMap, tableName)
+	}
+	for viewName := range schema.viewSet {
+		delete(schema.identifierMap, viewName)
+	}
+
+	// Delete the schema
+	delete(l.databaseState.schemaSet, schemaName)
 	return nil
 }
 
@@ -1486,7 +1525,7 @@ func extractDatabaseName(qualifiedName parser.IQualified_nameContext) string {
 
 // generateIndexName generates an index name based on table name and columns.
 // Format: tablename_col1_col2_idx (with suffix for uniqueness if needed)
-func generateIndexName(tableName string, columnList []string, isUnique bool) string {
+func generateIndexName(tableName string, columnList []string, _ bool) string {
 	var builder strings.Builder
 	builder.WriteString(tableName)
 
