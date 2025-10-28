@@ -522,7 +522,8 @@ const doCreateIssue = async () => {
   });
 
   // Create issue first
-  const createdIssue = await issueServiceClientConnect.createIssue(createIssueRequest);
+  const createdIssue =
+    await issueServiceClientConnect.createIssue(createIssueRequest);
 
   const createRolloutRequest = create(CreateRolloutRequestSchema, {
     parent: project.value.name,
