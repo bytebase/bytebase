@@ -589,8 +589,32 @@ func (l *pgAntlrCatalogListener) EnterAltertablestmt(ctx *parser.AltertablestmtC
 
 // processAlterTableCmd handles individual ALTER TABLE commands.
 func (l *pgAntlrCatalogListener) processAlterTableCmd(schema *SchemaState, table *TableState, cmd parser.IAlter_table_cmdContext) {
-	// TODO: Implement other ALTER TABLE commands (ADD COLUMN, SET DEFAULT, etc.)
-	// For now, only implement DROP COLUMN and ALTER TYPE as requested
+	// RENAME operations are handled by EnterRenamestmt, not here
+
+	// Handle ADD COLUMN
+	if cmd.ADD_P() != nil && cmd.COLUMN() != nil {
+		if cmd.ColumnDef() != nil {
+			ifNotExists := cmd.IF_P() != nil && cmd.NOT() != nil && cmd.EXISTS() != nil
+			l.alterTableAddColumn(schema, table, cmd.ColumnDef(), ifNotExists)
+		}
+		return
+	}
+
+	// Handle ADD CONSTRAINT
+	if cmd.ADD_P() != nil && cmd.Tableconstraint() != nil {
+		l.alterTableAddConstraint(schema, table, cmd.Tableconstraint())
+		return
+	}
+
+	// Handle DROP CONSTRAINT
+	if cmd.DROP() != nil && cmd.CONSTRAINT() != nil {
+		ifExists := cmd.IF_P() != nil && cmd.EXISTS() != nil
+		if cmd.Name() != nil {
+			constraintName := pgparser.NormalizePostgreSQLName(cmd.Name())
+			l.alterTableDropConstraint(schema, table, constraintName, ifExists)
+		}
+		return
+	}
 
 	// Handle DROP COLUMN
 	if cmd.DROP() != nil && cmd.COLUMN() != nil {
@@ -604,17 +628,37 @@ func (l *pgAntlrCatalogListener) processAlterTableCmd(schema *SchemaState, table
 		return
 	}
 
-	// Handle ALTER COLUMN TYPE
+	// Handle ALTER COLUMN commands
 	if cmd.ALTER() != nil && cmd.Opt_column() != nil {
 		allColids := cmd.AllColid()
 		if len(allColids) > 0 {
 			columnName := pgparser.NormalizePostgreSQLColid(allColids[0])
 
-			// Check for TYPE keyword
+			// Check for SET DATA TYPE
 			if cmd.TYPE_P() != nil && cmd.Typename() != nil {
-				// Extract type string from Typename context
 				typeString := extractTypeName(cmd.Typename())
 				l.alterTableAlterColumnType(schema, table, columnName, typeString)
+				return
+			}
+
+			// Check for SET/DROP DEFAULT
+			if cmd.Alter_column_default() != nil {
+				altDefault := cmd.Alter_column_default()
+				if altDefault.SET() != nil && altDefault.A_expr() != nil {
+					// SET DEFAULT
+					defaultValue := altDefault.A_expr().GetText()
+					l.alterTableSetDefault(table, columnName, defaultValue)
+				} else if altDefault.DROP() != nil {
+					// DROP DEFAULT
+					l.alterTableDropDefault(table, columnName)
+				}
+				return
+			}
+
+			// Check for SET NOT NULL
+			if cmd.SET() != nil && cmd.NOT() != nil && cmd.NULL_P() != nil {
+				l.alterTableSetNotNull(table, columnName)
+				return
 			}
 		}
 		return
@@ -691,6 +735,271 @@ func (l *pgAntlrCatalogListener) alterTableAlterColumnType(schema *SchemaState, 
 
 	// Update column type
 	column.columnType = &typeString
+}
+
+// alterTableAddColumn handles ADD COLUMN command.
+func (l *pgAntlrCatalogListener) alterTableAddColumn(schema *SchemaState, table *TableState, columndef parser.IColumnDefContext, ifNotExists bool) {
+	if columndef == nil {
+		return
+	}
+
+	columnName := pgparser.NormalizePostgreSQLColid(columndef.Colid())
+
+	// Check if column already exists
+	if _, exists := table.columnSet[columnName]; exists {
+		if ifNotExists {
+			return
+		}
+		l.setError(&WalkThroughError{
+			Type:    ErrorTypeColumnExists,
+			Content: fmt.Sprintf("The column %q already exists in table %q", columnName, table.name),
+		})
+		return
+	}
+
+	// Get position for new column
+	pos := len(table.columnSet) + 1
+
+	// Extract column type
+	var typeString string
+	if columndef.Typename() != nil {
+		typeString = extractTypeName(columndef.Typename())
+	}
+
+	// Create column state
+	columnState := &ColumnState{
+		name:         columnName,
+		position:     &pos,
+		nullable:     newTruePointer(),
+		columnType:   &typeString,
+		defaultValue: nil,
+	}
+	table.columnSet[columnName] = columnState
+
+	// Process column constraints if any (inline processing like in createColumn)
+	if columndef.Colquallist() != nil {
+		allQuals := columndef.Colquallist().AllColconstraint()
+		for _, qual := range allQuals {
+			if qual.Colconstraintelem() == nil {
+				continue
+			}
+			elem := qual.Colconstraintelem()
+
+			// Handle NOT NULL
+			if elem.NOT() != nil && elem.NULL_P() != nil {
+				columnState.nullable = newFalsePointer()
+			}
+
+			// Handle DEFAULT
+			if elem.DEFAULT() != nil {
+				if elem.B_expr() != nil {
+					defaultValue := elem.B_expr().GetText()
+					columnState.defaultValue = &defaultValue
+				}
+			}
+
+			// Handle UNIQUE - creates an index
+			if elem.UNIQUE() != nil && (elem.PRIMARY() == nil || elem.KEY() == nil) {
+				var constraintName string
+				if qual.Name() != nil {
+					constraintName = pgparser.NormalizePostgreSQLName(qual.Name())
+				}
+				if constraintName == "" {
+					constraintName = generateIndexName(table.name, []string{columnName}, true)
+				}
+				// Check for collision
+				if _, exists := schema.identifierMap[constraintName]; exists {
+					constraintName = generateUniqueIndexName(schema, table.name, []string{columnName}, true)
+				}
+				// Create index
+				index := &IndexState{
+					name:           constraintName,
+					expressionList: []string{columnName},
+					indexType:      newStringPointer("btree"),
+					unique:         newTruePointer(),
+					primary:        newFalsePointer(),
+					isConstraint:   true,
+				}
+				table.indexSet[index.name] = index
+				schema.identifierMap[index.name] = true
+			}
+
+			// Handle PRIMARY KEY - creates an index
+			if (elem.PRIMARY() != nil && elem.KEY() != nil) || (elem.UNIQUE() != nil && elem.PRIMARY() != nil) {
+				var constraintName string
+				if qual.Name() != nil {
+					constraintName = pgparser.NormalizePostgreSQLName(qual.Name())
+				}
+				if constraintName == "" {
+					constraintName = schema.pgGeneratePrimaryKeyName(table.name)
+				}
+				// Check for collision
+				if _, exists := schema.identifierMap[constraintName]; exists {
+					l.setError(NewRelationExistsError(constraintName, schema.name))
+					return
+				}
+				columnState.nullable = newFalsePointer()
+				// Create primary key index
+				index := &IndexState{
+					name:           constraintName,
+					expressionList: []string{columnName},
+					indexType:      newStringPointer("btree"),
+					unique:         newTruePointer(),
+					primary:        newTruePointer(),
+					isConstraint:   true,
+				}
+				table.indexSet[index.name] = index
+				schema.identifierMap[index.name] = true
+			}
+		}
+	}
+}
+
+// alterTableAddConstraint handles ADD CONSTRAINT command.
+func (l *pgAntlrCatalogListener) alterTableAddConstraint(schema *SchemaState, table *TableState, constraint parser.ITableconstraintContext) {
+	if constraint == nil {
+		return
+	}
+
+	// Reuse the constraint creation logic from CREATE TABLE
+	err := createTableConstraint(schema, table, constraint)
+	if err != nil {
+		l.setError(err)
+	}
+}
+
+// alterTableDropConstraint handles DROP CONSTRAINT command.
+func (l *pgAntlrCatalogListener) alterTableDropConstraint(schema *SchemaState, table *TableState, constraintName string, ifExists bool) {
+	// Check if constraint exists as an index
+	if index, exists := table.indexSet[constraintName]; exists {
+		delete(schema.identifierMap, index.name)
+		delete(table.indexSet, index.name)
+		return
+	}
+
+	if !ifExists {
+		l.setError(&WalkThroughError{
+			Type:    ErrorTypeConstraintNotExists,
+			Content: fmt.Sprintf("Constraint %q for table %q does not exist", constraintName, table.name),
+		})
+	}
+}
+
+// alterTableSetDefault handles ALTER COLUMN SET DEFAULT command.
+func (l *pgAntlrCatalogListener) alterTableSetDefault(table *TableState, columnName string, defaultValue string) {
+	column, err := table.getColumn(columnName)
+	if err != nil {
+		l.setError(err)
+		return
+	}
+
+	column.defaultValue = &defaultValue
+}
+
+// alterTableDropDefault handles ALTER COLUMN DROP DEFAULT command.
+func (l *pgAntlrCatalogListener) alterTableDropDefault(table *TableState, columnName string) {
+	column, err := table.getColumn(columnName)
+	if err != nil {
+		l.setError(err)
+		return
+	}
+
+	column.defaultValue = nil
+}
+
+// alterTableSetNotNull handles ALTER COLUMN SET NOT NULL command.
+func (l *pgAntlrCatalogListener) alterTableSetNotNull(table *TableState, columnName string) {
+	column, err := table.getColumn(columnName)
+	if err != nil {
+		l.setError(err)
+		return
+	}
+
+	column.nullable = newFalsePointer()
+}
+
+// renameTable handles RENAME TO for tables.
+func (l *pgAntlrCatalogListener) renameTable(schema *SchemaState, table *TableState, newName string) *WalkThroughError {
+	// Check if new name already exists
+	if _, exists := schema.identifierMap[newName]; exists {
+		return NewRelationExistsError(newName, schema.name)
+	}
+
+	// Remove old name from maps
+	delete(schema.identifierMap, table.name)
+	delete(schema.tableSet, table.name)
+
+	// Update table name
+	table.name = newName
+
+	// Add new name to maps
+	schema.identifierMap[table.name] = true
+	schema.tableSet[table.name] = table
+
+	return nil
+}
+
+// renameColumn handles RENAME COLUMN.
+func (l *pgAntlrCatalogListener) renameColumn(table *TableState, oldName string, newName string) *WalkThroughError {
+	column, err := table.getColumn(oldName)
+	if err != nil {
+		return err
+	}
+
+	if oldName == newName {
+		return nil
+	}
+
+	// Check if new name already exists
+	if _, exists := table.columnSet[newName]; exists {
+		return &WalkThroughError{
+			Type:    ErrorTypeColumnExists,
+			Content: fmt.Sprintf("The column %q already exists in table %q", newName, table.name),
+		}
+	}
+
+	// Rename column in all indexes that reference it
+	for _, index := range table.indexSet {
+		for i, key := range index.expressionList {
+			if key == oldName {
+				index.expressionList[i] = newName
+			}
+		}
+	}
+
+	// Update column name
+	delete(table.columnSet, column.name)
+	column.name = newName
+	table.columnSet[column.name] = column
+
+	return nil
+}
+
+// renameConstraint handles RENAME CONSTRAINT.
+func (l *pgAntlrCatalogListener) renameConstraint(schema *SchemaState, table *TableState, oldName string, newName string) *WalkThroughError {
+	index, exists := table.indexSet[oldName]
+	if !exists {
+		// We haven't dealt with foreign and check constraints, so skip if not exists
+		return nil
+	}
+
+	// Check if new name already exists
+	if _, exists := schema.identifierMap[newName]; exists {
+		return NewRelationExistsError(newName, schema.name)
+	}
+
+	// Remove old name from maps
+	delete(schema.identifierMap, index.name)
+	delete(table.indexSet, index.name)
+
+	// Update index name
+	index.name = newName
+
+	// Add new name to maps
+	schema.identifierMap[index.name] = true
+	table.indexSet[index.name] = index
+
+	return nil
 }
 
 // ========================================
@@ -904,7 +1213,6 @@ func (l *pgAntlrCatalogListener) dropIndex(anyName parser.IAny_nameContext, ifEx
 // ========================================
 
 // EnterRenamestmt handles RENAME INDEX/CONSTRAINT/TABLE/COLUMN statements.
-// TODO: Implement full RENAME support - currently stubbed to avoid compilation errors
 func (l *pgAntlrCatalogListener) EnterRenamestmt(ctx *parser.RenamestmtContext) {
 	if !isTopLevel(ctx.GetParent()) || l.err != nil {
 		return
@@ -916,10 +1224,114 @@ func (l *pgAntlrCatalogListener) EnterRenamestmt(ctx *parser.RenamestmtContext) 
 
 	l.currentLine = ctx.GetStart().GetLine()
 
-	// TODO: Need to determine correct ANTLR context structure for extracting old/new names
-	// For now, just return to make it compile - we'll implement properly after running tests
-	// to see the actual structure
-	return
+	// Check if this is INDEX rename (ALTER INDEX ... RENAME TO ...)
+	if ctx.INDEX() != nil {
+		// ALTER INDEX index_name RENAME TO new_name
+		if ctx.Qualified_name() != nil && ctx.AllName() != nil && len(ctx.AllName()) > 0 {
+			indexName := extractTableName(ctx.Qualified_name())
+			schemaName := extractSchemaName(ctx.Qualified_name())
+			newName := pgparser.NormalizePostgreSQLName(ctx.AllName()[0])
+
+			schema, err := l.databaseState.getSchema(schemaName)
+			if err != nil {
+				l.setError(err)
+				return
+			}
+
+			// Find the index across all tables
+			var foundIndex *IndexState
+			var foundTable *TableState
+			for _, table := range schema.tableSet {
+				if index, exists := table.indexSet[indexName]; exists {
+					foundIndex = index
+					foundTable = table
+					break
+				}
+			}
+
+			if foundIndex == nil {
+				// Index not found, silently ignore (PostgreSQL behavior)
+				return
+			}
+
+			if err := l.renameConstraint(schema, foundTable, indexName, newName); err != nil {
+				l.setError(err)
+			}
+		}
+		return
+	}
+
+	// Extract relation (table) if present
+	var tableName, schemaName string
+	if ctx.Relation_expr() != nil && ctx.Relation_expr().Qualified_name() != nil {
+		tableName = extractTableName(ctx.Relation_expr().Qualified_name())
+		schemaName = extractSchemaName(ctx.Relation_expr().Qualified_name())
+	}
+
+	schema, err := l.databaseState.getSchema(schemaName)
+	if err != nil {
+		l.setError(err)
+		return
+	}
+
+	// Check if this is column rename
+	if ctx.Opt_column() != nil {
+		// RENAME COLUMN: ALTER TABLE table RENAME COLUMN oldname TO newname
+		// Column names use Name(), not Colid() in RENAME statements
+		allNames := ctx.AllName()
+		if len(allNames) >= 2 && tableName != "" {
+			oldName := pgparser.NormalizePostgreSQLName(allNames[0])
+			newName := pgparser.NormalizePostgreSQLName(allNames[1])
+
+			table, err := schema.pgGetTable(tableName)
+			if err != nil {
+				l.setError(err)
+				return
+			}
+
+			if err := l.renameColumn(table, oldName, newName); err != nil {
+				l.setError(err)
+			}
+		}
+		return
+	}
+
+	// Check if this is constraint rename
+	if ctx.CONSTRAINT() != nil && tableName != "" {
+		// RENAME CONSTRAINT: ALTER TABLE table RENAME CONSTRAINT oldname TO newname
+		allNames := ctx.AllName()
+		if len(allNames) >= 2 {
+			oldName := pgparser.NormalizePostgreSQLName(allNames[0])
+			newName := pgparser.NormalizePostgreSQLName(allNames[1])
+
+			table, err := schema.pgGetTable(tableName)
+			if err != nil {
+				l.setError(err)
+				return
+			}
+
+			if err := l.renameConstraint(schema, table, oldName, newName); err != nil {
+				l.setError(err)
+			}
+		}
+		return
+	}
+
+	// Otherwise it's table rename: ALTER TABLE oldname RENAME TO newname
+	if tableName != "" && ctx.AllName() != nil && len(ctx.AllName()) > 0 {
+		newName := pgparser.NormalizePostgreSQLName(ctx.AllName()[0])
+
+		table, err := schema.pgGetTable(tableName)
+		if err != nil {
+			l.setError(err)
+			return
+		}
+
+		if err := l.renameTable(schema, table, newName); err != nil {
+			l.setError(err)
+		}
+		return
+	}
 }
 
 // ========================================
