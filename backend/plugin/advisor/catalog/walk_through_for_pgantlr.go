@@ -794,8 +794,41 @@ func (l *pgAntlrCatalogListener) EnterViewstmt(ctx *parser.ViewstmtContext) {
 
 	l.currentLine = ctx.GetStart().GetLine()
 
-	// TODO: Implement CREATE VIEW logic
-	// Similar to pgCreateView() in walk_through_for_pg.go
+	// Extract view name
+	if ctx.Qualified_name() == nil {
+		return
+	}
+
+	viewName := extractTableName(ctx.Qualified_name())
+	schemaName := extractSchemaName(ctx.Qualified_name())
+	databaseName := extractDatabaseName(ctx.Qualified_name())
+
+	// Check if accessing other database
+	if databaseName != "" && l.databaseState.name != databaseName {
+		l.setError(&WalkThroughError{
+			Type:    ErrorTypeAccessOtherDatabase,
+			Content: fmt.Sprintf("Database %q is not the current database %q", databaseName, l.databaseState.name),
+		})
+		return
+	}
+
+	schema, err := l.databaseState.getSchema(schemaName)
+	if err != nil {
+		l.setError(err)
+		return
+	}
+
+	// Check if view already exists - currently we don't check views
+	// This matches the legacy behavior in walk_through_for_pg.go:619-622
+	if _, exists := schema.viewSet[viewName]; exists {
+		return
+	}
+
+	// Create view state
+	view := &ViewState{
+		name: viewName,
+	}
+	schema.viewSet[view.name] = view
 }
 
 // ========================================
