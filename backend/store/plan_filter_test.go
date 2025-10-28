@@ -137,7 +137,7 @@ func TestGetListPlanFilter(t *testing.T) {
 		{
 			name:     "complex AND condition",
 			filter:   `title == "Test Plan" && state == "STATE_ACTIVE" && has_pipeline == true`,
-			wantSQL:  "((plan.name = $1 AND plan.deleted = $2 AND plan.pipeline_id IS NOT NULL))",
+			wantSQL:  "(((plan.name = $1 AND plan.deleted = $2) AND plan.pipeline_id IS NOT NULL))",
 			wantArgs: []any{"Test Plan", false},
 			wantErr:  false,
 		},
