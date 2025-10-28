@@ -38,7 +38,7 @@ type IssueMessage struct {
 	Type            storepb.Issue_Type
 	Description     string
 	Payload         *storepb.Issue
-	PipelineUID     *int
+	PipelineUID     *int // Computed from plan.pipeline_id
 	PlanUID         *int64
 	TaskStatusCount map[string]int32
 
@@ -61,8 +61,6 @@ type UpdateIssueMessage struct {
 	// PayloadUpsert upserts the presented top-level keys.
 	PayloadUpsert *storepb.Issue
 	RemoveLabels  bool
-
-	PipelineUID *int
 }
 
 // FindIssueMessage is the message to find issues.
@@ -71,7 +69,7 @@ type FindIssueMessage struct {
 	ProjectID  *string
 	ProjectIDs *[]string
 	PlanUID    *int64
-	PipelineID *int
+	PipelineID *int // Filter by pipeline_id (computed from plan)
 	// To support pagination, we add into creator.
 	// Only principleID or one of the following three fields can be set.
 	CreatorID       *int
@@ -144,7 +142,6 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 		INSERT INTO issue (
 			creator_id,
 			project,
-			pipeline_id,
 			plan_id,
 			name,
 			status,
@@ -153,7 +150,7 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 			payload,
 			ts_vector
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		RETURNING id`
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
@@ -165,7 +162,6 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 	if err := tx.QueryRowContext(ctx, query,
 		creatorID,
 		create.Project.ResourceID,
-		create.PipelineUID,
 		create.PlanUID,
 		create.Title,
 		create.Status.String(),
@@ -196,9 +192,7 @@ func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMe
 	}
 
 	set, args := []string{"updated_at = $1"}, []any{time.Now()}
-	if v := patch.PipelineUID; v != nil {
-		set, args = append(set, fmt.Sprintf("pipeline_id = $%d", len(args)+1)), append(args, *v)
-	}
+
 	if v := patch.Title; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
@@ -271,7 +265,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		where, args = append(where, fmt.Sprintf("issue.id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.PipelineID; v != nil {
-		where, args = append(where, fmt.Sprintf("issue.pipeline_id = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("plan.pipeline_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.PlanUID; v != nil {
 		where, args = append(where, fmt.Sprintf("issue.plan_id = $%d", len(args)+1)), append(args, *v)
@@ -283,10 +277,10 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		where, args = append(where, fmt.Sprintf("issue.project = ANY($%d)", len(args)+1)), append(args, *v)
 	}
 	if v := find.InstanceResourceID; v != nil {
-		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = issue.pipeline_id AND task.instance = $%d)", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = plan.pipeline_id AND task.instance = $%d)", len(args)+1)), append(args, *v)
 	}
 	if find.InstanceID != nil && find.DatabaseName != nil {
-		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = issue.pipeline_id AND task.instance = $%d AND task.db_name = $%d)", len(args)+1, len(args)+2)), append(args, *find.InstanceID, *find.DatabaseName)
+		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = plan.pipeline_id AND task.instance = $%d AND task.db_name = $%d)", len(args)+1, len(args)+2)), append(args, *find.InstanceID, *find.DatabaseName)
 	}
 	if v := find.CreatorID; v != nil {
 		where, args = append(where, fmt.Sprintf("issue.creator_id = $%d", len(args)+1)), append(args, *v)
@@ -332,16 +326,23 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 			for _, mt := range *find.MigrateTypes {
 				migrateTypeStrings = append(migrateTypeStrings, mt.String())
 			}
-			where = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = issue.pipeline_id AND task.type = ANY($%d) AND task.payload->>'migrateType' = ANY($%d))", len(args)+1, len(args)+2))
+			where = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = plan.pipeline_id AND task.type = ANY($%d) AND task.payload->>'migrateType' = ANY($%d))", len(args)+1, len(args)+2))
 			args = append(args, taskTypeStrings, migrateTypeStrings)
 		} else {
-			where = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = issue.pipeline_id AND task.type = ANY($%d))", len(args)+1))
+			where = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = plan.pipeline_id AND task.type = ANY($%d))", len(args)+1))
 			args = append(args, taskTypeStrings)
 		}
 	}
 	if v := find.EnvironmentID; v != nil {
-		where = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = issue.pipeline_id AND task.environment = $%d)", len(args)+1))
+		where = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = plan.pipeline_id AND task.environment = $%d)", len(args)+1))
 		args = append(args, *v)
+	}
+	if len(find.LabelList) != 0 {
+		where = append(where, fmt.Sprintf("payload->'labels' ??& $%d::TEXT[]", len(args)+1))
+		args = append(args, find.LabelList)
+	}
+	if find.NoPipeline {
+		where = append(where, "plan.pipeline_id IS NULL")
 	}
 	limitOffsetClause := ""
 	if v := find.Limit; v != nil {
@@ -349,13 +350,6 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 	}
 	if v := find.Offset; v != nil {
 		limitOffsetClause += fmt.Sprintf(" OFFSET %d", *v)
-	}
-	if len(find.LabelList) != 0 {
-		where = append(where, fmt.Sprintf("payload->'labels' ?& $%d::TEXT[]", len(args)+1))
-		args = append(args, find.LabelList)
-	}
-	if find.NoPipeline {
-		where = append(where, "issue.pipeline_id IS NULL")
 	}
 
 	var issues []*IssueMessage
@@ -372,7 +366,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		issue.created_at,
 		issue.updated_at,
 		issue.project,
-		issue.pipeline_id,
+		plan.pipeline_id,
 		issue.plan_id,
 		COALESCE(plan.name, issue.name) AS name,
 		issue.status,
@@ -401,7 +395,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 						(SELECT task_run.status FROM task_run WHERE task_run.task_id = task.id ORDER BY task_run.id DESC LIMIT 1), 'NOT_STARTED'
 					) AS status
 				) AS latest_task_run ON TRUE
-				WHERE task.pipeline_id = issue.pipeline_id
+				WHERE task.pipeline_id = plan.pipeline_id
 			) AS t
 			GROUP BY t.status
 		) AS t
@@ -490,16 +484,11 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 
 // BatchUpdateIssueStatuses updates the status of multiple issues.
 func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, issueUIDs []int, status storepb.Issue_Status) error {
-	var ids []string
-	for _, id := range issueUIDs {
-		ids = append(ids, fmt.Sprintf("%d", id))
+	type issueInfo struct {
+		id          int
+		pipelineUID *int
 	}
-	query := fmt.Sprintf(`
-		UPDATE issue
-		SET status = $1
-		WHERE id IN (%s)
-		RETURNING id, pipeline_id;
-	`, strings.Join(ids, ","))
+	var infos []issueInfo
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
@@ -507,38 +496,45 @@ func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, issueUIDs []int, s
 	}
 	defer tx.Rollback()
 
-	rows, err := tx.QueryContext(ctx, query, status.String())
+	// First get the pipeline IDs for cache invalidation
+	selectQuery := `
+		SELECT issue.id, plan.pipeline_id
+		FROM issue
+		LEFT JOIN plan ON issue.plan_id = plan.id
+		WHERE issue.id = ANY($1)
+	`
+	rows, err := tx.QueryContext(ctx, selectQuery, issueUIDs)
 	if err != nil {
 		return errors.Wrapf(err, "failed to query")
 	}
 	defer rows.Close()
-
-	var issueIDs []int
-	var pipelineIDs []int
 	for rows.Next() {
-		var issueID int
-		var pipelineID sql.NullInt32
-		if err := rows.Scan(&issueID, &pipelineID); err != nil {
+		var info issueInfo
+		if err := rows.Scan(&info.id, &info.pipelineUID); err != nil {
 			return errors.Wrapf(err, "failed to scan")
 		}
-		issueIDs = append(issueIDs, issueID)
-		if pipelineID.Valid {
-			pipelineIDs = append(pipelineIDs, int(pipelineID.Int32))
-		}
+		infos = append(infos, info)
 	}
 	if err := rows.Err(); err != nil {
 		return errors.Wrapf(err, "failed to scan issues")
+	}
+
+	// Update the statuses
+	updateQuery := `UPDATE issue SET status = $1 WHERE id = ANY($2)`
+	if _, err := tx.ExecContext(ctx, updateQuery, status.String(), issueUIDs); err != nil {
+		return errors.Wrapf(err, "failed to update")
 	}
 
 	if err := tx.Commit(); err != nil {
 		return errors.Wrapf(err, "failed to commit")
 	}
 
-	for _, issueID := range issueIDs {
-		s.issueCache.Remove(issueID)
-	}
-	for _, pipelineID := range pipelineIDs {
-		s.issueByPipelineCache.Remove(pipelineID)
+	// Invalidate caches
+	for _, info := range infos {
+		s.issueCache.Remove(info.id)
+		if info.pipelineUID != nil {
+			s.issueByPipelineCache.Remove(*info.pipelineUID)
+		}
 	}
 
 	return nil

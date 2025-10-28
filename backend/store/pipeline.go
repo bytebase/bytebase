@@ -58,7 +58,7 @@ func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *
 		createdPipelineUID = createdPipeline.ID
 
 		// update pipeline uid of associated issue and plan
-		if invalidateCacheF, err = s.updatePipelineUIDOfIssueAndPlan(ctx, tx, planUID, createdPipelineUID); err != nil {
+		if invalidateCacheF, err = s.updatePipelineUIDOfPlan(ctx, tx, planUID, createdPipelineUID); err != nil {
 			return 0, errors.Wrapf(err, "failed to update associated plan or issue")
 		}
 	} else {
@@ -124,7 +124,7 @@ func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *
 }
 
 // returns func() to invalidate cache.
-func (s *Store) updatePipelineUIDOfIssueAndPlan(ctx context.Context, txn *sql.Tx, planUID int64, pipelineUID int) (func(), error) {
+func (*Store) updatePipelineUIDOfPlan(ctx context.Context, txn *sql.Tx, planUID int64, pipelineUID int) (func(), error) {
 	if _, err := txn.ExecContext(ctx, `
 		UPDATE plan
 		SET pipeline_id = $1
@@ -132,22 +132,9 @@ func (s *Store) updatePipelineUIDOfIssueAndPlan(ctx context.Context, txn *sql.Tx
 	`, pipelineUID, planUID); err != nil {
 		return nil, errors.Wrapf(err, "failed to update plan pipeline_id")
 	}
-	var issueUID int
-	if err := txn.QueryRowContext(ctx, `
-		UPDATE issue
-		SET pipeline_id = $1
-		WHERE plan_id = $2
-		RETURNING id
-	`, pipelineUID, planUID).Scan(&issueUID); err != nil {
-		if err != sql.ErrNoRows {
-			return nil, errors.Wrapf(err, "failed to update issue pipeline_id")
-		}
-	}
+
 	return func() {
 		// TODO: need to remove planCache once we add planCache
-		if issueUID != 0 {
-			s.issueCache.Remove(issueUID)
-		}
 	}, nil
 }
 
@@ -253,7 +240,8 @@ func (s *Store) ListPipelineV2(ctx context.Context, find *PipelineFind) ([]*Pipe
 				pipeline.created_at
 			) AS updated_at
 		FROM pipeline
-		LEFT JOIN issue ON pipeline.id = issue.pipeline_id
+		LEFT JOIN plan ON plan.pipeline_id = pipeline.id
+		LEFT JOIN issue ON issue.plan_id = plan.id
 		WHERE %s
 		ORDER BY pipeline.id DESC`, strings.Join(where, " AND "))
 	if v := find.Limit; v != nil {

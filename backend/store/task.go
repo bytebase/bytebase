@@ -117,7 +117,8 @@ func (s *Store) FindBlockingTaskByVersion(ctx context.Context, pipelineUID int, 
 			task.payload->>'schemaVersion'
 		FROM task
 		LEFT JOIN pipeline ON task.pipeline_id = pipeline.id
-		LEFT JOIN issue ON pipeline.id = issue.pipeline_id
+		LEFT JOIN plan ON plan.pipeline_id = pipeline.id
+		LEFT JOIN issue ON issue.plan_id = plan.id
 		LEFT JOIN LATERAL (
 			SELECT COALESCE(
 				(SELECT
@@ -500,7 +501,8 @@ func (s *Store) ListTasksToAutoRollout(ctx context.Context, environments []strin
 		task.id
 	FROM task
 	LEFT JOIN pipeline ON pipeline.id = task.pipeline_id
-	LEFT JOIN issue ON issue.pipeline_id = pipeline.id
+	LEFT JOIN plan ON plan.pipeline_id = pipeline.id
+	LEFT JOIN issue ON issue.plan_id = plan.id
 	WHERE NOT EXISTS (SELECT 1 FROM task_run WHERE task_run.task_id = task.id)
 	AND task.type != 'DATABASE_EXPORT'
 	AND COALESCE((task.payload->>'skipped')::BOOLEAN, FALSE) IS FALSE
