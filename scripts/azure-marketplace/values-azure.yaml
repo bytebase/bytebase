@@ -1,0 +1,49 @@
+# Azure Marketplace specific values
+# This file extends the base values.yaml with Azure Marketplace requirements
+
+# Global Azure Marketplace image configuration
+# Azure will retag and host images in their registry
+global:
+  azure:
+    images:
+      bytebase:
+        tag: 3.11.1
+        image: bytebase/bytebase
+        registry: bytebase.azurecr.io
+
+# Standard Bytebase configuration
+bytebase:
+  version: 3.11.1
+  registryMirrorHost: ""
+  option:
+    port: 8080
+    data: "/var/opt/bytebase"
+    external-url: "https://bytebase.example.com"
+    externalPg:
+      url: ""
+      existingPgURLSecret: ""
+      existingPgURLSecretKey: ""
+      pgHost: "host"
+      pgPort: "5432"
+      pgUsername: "username"
+      pgPassword: "password"
+      pgDatabase: "database"
+      existingPgPasswordSecret: ""
+      existingPgPasswordSecretKey: ""
+      escapePassword: false
+  persistence:
+    enabled: true
+    existingClaim: ""
+    storage: 10Gi
+    storageClass: ""
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+    requests:
+      cpu: 1000m
+      memory: 1Gi
+  extraSecretMounts: []
+  extraVolumes: []
+  affinity: {}
+  tolerations: []
