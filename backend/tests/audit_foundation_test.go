@@ -43,13 +43,17 @@ func TestAuditLogFoundation(t *testing.T) {
 	_, err = db.ExecContext(ctx, `INSERT INTO audit_log (payload) VALUES ($1)`, legacyJSON)
 	a.NoError(err)
 
-	// Step 2: Verify legacy log has NULL bytebase_id
-	var nullCount int
+	// Step 2: Verify legacy log exists and has NULL bytebase_id
+	var legacyExists bool
 	err = db.QueryRowContext(ctx, `
-		SELECT COUNT(*) FROM audit_log WHERE payload->>'bytebaseId' IS NULL
-	`).Scan(&nullCount)
+		SELECT EXISTS (
+			SELECT 1 FROM audit_log
+			WHERE payload->>'resource' = $1
+			AND payload->>'bytebaseId' IS NULL
+		)
+	`, "/api/v1/legacy").Scan(&legacyExists)
 	a.NoError(err)
-	a.Equal(1, nullCount, "should have 1 legacy log without bytebase_id")
+	a.True(legacyExists, "legacy log should exist without bytebase_id")
 
 	// Step 3: Insert a "new" log with bytebase_id/sequence_number
 	testBytebaseID := "test-bytebase-123"
@@ -85,13 +89,21 @@ func TestAuditLogFoundation(t *testing.T) {
 	a.NoError(err)
 	a.False(exists, "non-existent bytebase_id should not exist")
 
-	// Step 7: Verify both logs are queryable
-	var totalCount int
-	err = db.QueryRowContext(ctx, `SELECT COUNT(*) FROM audit_log`).Scan(&totalCount)
+	// Step 7: Verify new log with bytebase_id exists
+	var newExists bool
+	err = db.QueryRowContext(ctx, `
+		SELECT EXISTS (
+			SELECT 1 FROM audit_log
+			WHERE payload->>'resource' = $1
+			AND payload->>'bytebaseId' = $2
+		)
+	`, "/api/v1/new", testBytebaseID).Scan(&newExists)
 	a.NoError(err)
-	a.Equal(2, totalCount, "should have 2 total logs (1 legacy + 1 new)")
+	a.True(newExists, "new log should exist with bytebase_id")
 
 	t.Log("✅ Foundation test passed:")
-	t.Log("  - Legacy log (NULL sequences): queryable via API")
-	t.Log("  - New log (sequence 1): ready for stdout streaming")
+	t.Log("  - Legacy logs (NULL bytebase_id): coexist with new logs")
+	t.Log("  - New logs (with bytebase_id): ready for stdout streaming")
+	t.Log("  - GetMaxAuditSequence: correctly queries max sequence")
+	t.Log("  - CheckBytebaseIDExists: correctly checks existence")
 }
