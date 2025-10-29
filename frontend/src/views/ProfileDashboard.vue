@@ -192,7 +192,7 @@
           </p>
           <RegenerateRecoveryCodesView
             v-if="state.showRegenerateRecoveryCodesView"
-            :recovery-codes="currentUser.recoveryCodes"
+            :recovery-codes="currentUser.tempRecoveryCodes"
             @close="state.showRegenerateRecoveryCodesView = false"
           />
         </template>
@@ -223,14 +223,12 @@ import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import type { ConnectError } from "@connectrpc/connect";
 import { computedAsync, useTitle } from "@vueuse/core";
-import { useEventListener } from "@vueuse/core";
 import { cloneDeep, isEqual } from "lodash-es";
 import type { DropdownOption } from "naive-ui";
 import { NButton, NDropdown, NInput, NTag } from "naive-ui";
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { onBeforeRouteLeave } from "vue-router";
 import EmailInput from "@/components/EmailInput.vue";
 import { FeatureModal } from "@/components/FeatureGuard";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
@@ -241,6 +239,7 @@ import UserPassword from "@/components/User/Settings/UserPassword.vue";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
 import ServiceAccountTag from "@/components/misc/ServiceAccountTag.vue";
+import { useRouteChangeGuard } from "@/composables/useRouteChangeGuard";
 import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes";
 import {
   SETTING_ROUTE_PROFILE_TWO_FACTOR,
@@ -376,22 +375,7 @@ const allowSaveEdit = computed(() => {
   );
 });
 
-useEventListener("beforeunload", (e) => {
-  if (!state.editing || !allowSaveEdit.value) {
-    return;
-  }
-  e.returnValue = t("common.leave-without-saving");
-  return e.returnValue;
-});
-
-onBeforeRouteLeave((to, from, next) => {
-  if (state.editing && allowSaveEdit.value) {
-    if (!window.confirm(t("common.leave-without-saving"))) {
-      return;
-    }
-  }
-  next();
-});
+useRouteChangeGuard(computed(() => state.editing && allowSaveEdit.value));
 
 const updateUser = <K extends keyof User>(field: K, value: User[K]) => {
   if (!state.editingUser) return;

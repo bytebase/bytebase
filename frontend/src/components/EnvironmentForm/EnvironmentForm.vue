@@ -9,10 +9,7 @@
 </template>
 
 <script lang="ts" setup>
-import { useEventListener } from "@vueuse/core";
 import { toRef, computed } from "vue";
-import { useI18n } from "vue-i18n";
-import { onBeforeRouteLeave } from "vue-router";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { hasFeature } from "@/store";
 import type { Policy } from "@/types/proto-es/v1/org_policy_service_pb";
@@ -54,7 +51,6 @@ const emit = defineEmits<{
   (event: "cancel"): void;
 }>();
 
-const { t } = useI18n();
 const context = provideEnvironmentFormContext({
   create: toRef(props, "create"),
   environment: toRef(props, "environment"),
@@ -64,23 +60,6 @@ const { valueChanged, events, missingFeature } = context;
 
 const isEditing = computed(() => {
   return !props.create && valueChanged();
-});
-
-useEventListener("beforeunload", (e) => {
-  if (!isEditing.value) {
-    return;
-  }
-  e.returnValue = t("common.leave-without-saving");
-  return e.returnValue;
-});
-
-onBeforeRouteLeave((to, from, next) => {
-  if (isEditing.value) {
-    if (!window.confirm(t("common.leave-without-saving"))) {
-      return;
-    }
-  }
-  next();
 });
 
 useEmitteryEventListener(events, "create", (params) => {

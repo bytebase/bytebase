@@ -3,8 +3,8 @@
     <div class="mx-auto w-full max-w-sm">
       <BytebaseLogo class="mx-auto" />
 
-      <div class="mt-8">
-        <NCard v-if="showSignInForm">
+      <div v-if="showSignInForm" class="mt-8">
+        <NCard>
           <NTabs
             class="card-tabs"
             :default-value="defaultTabValue"

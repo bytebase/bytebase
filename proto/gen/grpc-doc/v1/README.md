@@ -5068,8 +5068,8 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 | password | [string](#string) |  | The password for authentication. Only used during user creation or password updates. |
 | service_key | [string](#string) |  | The service key for service account authentication. Only used for service accounts. |
 | mfa_enabled | [bool](#bool) |  | The mfa_enabled flag means if the user has enabled MFA. |
-| mfa_secret | [string](#string) |  | The mfa_secret is the temporary secret using in two phase verification. |
-| recovery_codes | [string](#string) | repeated | The recovery_codes is the temporary recovery codes using in two phase verification. |
+| temp_otp_secret | [string](#string) |  | Temporary OTP secret used during MFA setup and regeneration. |
+| temp_recovery_codes | [string](#string) | repeated | Temporary recovery codes used during MFA setup and regeneration. |
 | phone | [string](#string) |  | Should be a valid E.164 compliant phone number. Could be empty. |
 | profile | [User.Profile](#bytebase-v1-User-Profile) |  | User profile metadata. |
 | groups | [string](#string) | repeated | The groups for the user. Format: groups/{email} |

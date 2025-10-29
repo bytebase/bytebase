@@ -253,11 +253,11 @@ message User {
   // The mfa_enabled flag means if the user has enabled MFA.
   bool mfa_enabled = 9;
 
-  // The mfa_secret is the temporary secret using in two phase verification.
-  string mfa_secret = 10;
+  // Temporary OTP secret used during MFA setup and regeneration.
+  string temp_otp_secret = 10;
 
-  // The recovery_codes is the temporary recovery codes using in two phase verification.
-  repeated string recovery_codes = 11;
+  // Temporary recovery codes used during MFA setup and regeneration.
+  repeated string temp_recovery_codes = 11;
 
   // Should be a valid E.164 compliant phone number.
   // Could be empty.

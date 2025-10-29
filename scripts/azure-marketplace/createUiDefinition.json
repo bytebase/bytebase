@@ -1,0 +1,293 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/0.1.2-preview/CreateUIDefinition.MultiVm.json#",
+  "handler": "Microsoft.Azure.CreateUIDef",
+  "version": "0.1.2-preview",
+  "parameters": {
+    "config": {
+      "isWizard": false,
+      "basics": {
+        "description": "Bytebase is a database CI/CD tool for DevOps teams. Deploy Bytebase to your Azure Kubernetes Service cluster to manage database schema changes safely and efficiently.",
+        "location": {
+          "label": "Location",
+          "toolTip": "Azure region for deployment",
+          "resourceTypes": [
+            "Microsoft.ContainerService/managedClusters"
+          ]
+        },
+        "resourceGroup": {
+          "allowExisting": true
+        }
+      }
+    },
+    "basics": [
+      {
+        "name": "clusterLookupControl",
+        "type": "Microsoft.Solutions.ArmApiControl",
+        "request": {
+          "method": "GET",
+          "path": "[concat(subscription().id, '/resourcegroups/', resourceGroup().name, '/providers/Microsoft.ContainerService/managedClusters?api-version=2024-01-01')]"
+        }
+      },
+      {
+        "name": "cluster",
+        "type": "Microsoft.Common.DropDown",
+        "label": "AKS Cluster",
+        "toolTip": "Select the Azure Kubernetes Service cluster where Bytebase will be deployed",
+        "constraints": {
+          "allowedValues": "[map(steps('basics').clusterLookupControl.value, (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.id, '\"}')))]",
+          "required": true
+        },
+        "visible": true
+      }
+    ],
+    "steps": [
+      {
+        "name": "bytebaseConfig",
+        "label": "Bytebase Configuration",
+        "elements": [
+          {
+            "name": "namespace",
+            "type": "Microsoft.Common.TextBox",
+            "label": "Kubernetes Namespace",
+            "defaultValue": "bytebase",
+            "toolTip": "The Kubernetes namespace where Bytebase will be deployed",
+            "constraints": {
+              "required": true,
+              "regex": "^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$",
+              "validationMessage": "Namespace must consist of lowercase alphanumeric characters or '-', start and end with alphanumeric character, and be 1-63 characters long"
+            },
+            "visible": true
+          },
+          {
+            "name": "port",
+            "type": "Microsoft.Common.TextBox",
+            "label": "Bytebase Port",
+            "defaultValue": "8080",
+            "toolTip": "Port where Bytebase server will run",
+            "constraints": {
+              "required": true,
+              "regex": "^([1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$",
+              "validationMessage": "Port must be a valid number between 1 and 65535"
+            },
+            "visible": true
+          },
+          {
+            "name": "externalUrl",
+            "type": "Microsoft.Common.TextBox",
+            "label": "External URL",
+            "defaultValue": "",
+            "toolTip": "The external URL where users will access Bytebase (e.g., https://bytebase.example.com)",
+            "placeholder": "https://bytebase.example.com",
+            "constraints": {
+              "required": true,
+              "regex": "^https?://[a-zA-Z0-9][-a-zA-Z0-9.]{0,253}[a-zA-Z0-9](:[0-9]{1,5})?(/.*)?$",
+              "validationMessage": "Must be a valid HTTP or HTTPS URL (max 256 characters)"
+            },
+            "visible": true
+          },
+          {
+            "name": "version",
+            "type": "Microsoft.Common.TextBox",
+            "label": "Bytebase Version",
+            "defaultValue": "3.11.1",
+            "toolTip": "Bytebase version to deploy",
+            "constraints": {
+              "required": true,
+              "regex": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+              "validationMessage": "Version must be in format X.Y.Z (e.g., 3.11.1)"
+            },
+            "visible": true
+          }
+        ]
+      },
+      {
+        "name": "databaseConfig",
+        "label": "Database Configuration",
+        "elements": [
+          {
+            "name": "databaseInfo",
+            "type": "Microsoft.Common.InfoBox",
+            "visible": true,
+            "options": {
+              "icon": "Info",
+              "text": "Bytebase requires an external PostgreSQL database to store metadata. You can provide either a connection string or individual connection parameters."
+            }
+          },
+          {
+            "name": "pgConnectionType",
+            "type": "Microsoft.Common.OptionsGroup",
+            "label": "PostgreSQL Connection Type",
+            "defaultValue": "Connection String",
+            "toolTip": "Choose how to specify PostgreSQL connection details",
+            "constraints": {
+              "allowedValues": [
+                {
+                  "label": "Connection String",
+                  "value": "connectionString"
+                },
+                {
+                  "label": "Individual Parameters",
+                  "value": "parameters"
+                }
+              ],
+              "required": true
+            },
+            "visible": true
+          },
+          {
+            "name": "pgUrl",
+            "type": "Microsoft.Common.TextBox",
+            "label": "PostgreSQL Connection String",
+            "defaultValue": "",
+            "toolTip": "PostgreSQL connection string (e.g., postgresql://user:password@host:5432/database)",
+            "placeholder": "postgresql://user:password@host:5432/database",
+            "constraints": {
+              "required": "[equals(steps('databaseConfig').pgConnectionType, 'connectionString')]",
+              "regex": "^postgresql://[^:]+:[^@]+@[a-zA-Z0-9.-]+(:[0-9]+)?/[a-zA-Z0-9_-]+$",
+              "validationMessage": "Must be a valid PostgreSQL connection string"
+            },
+            "visible": "[equals(steps('databaseConfig').pgConnectionType, 'connectionString')]"
+          },
+          {
+            "name": "pgHost",
+            "type": "Microsoft.Common.TextBox",
+            "label": "PostgreSQL Host",
+            "defaultValue": "",
+            "toolTip": "PostgreSQL server hostname or IP address",
+            "constraints": {
+              "required": "[equals(steps('databaseConfig').pgConnectionType, 'parameters')]",
+              "regex": "^[a-zA-Z0-9][-a-zA-Z0-9.]{0,253}[a-zA-Z0-9]$",
+              "validationMessage": "Must be a valid hostname or IP address (max 255 characters)"
+            },
+            "visible": "[equals(steps('databaseConfig').pgConnectionType, 'parameters')]"
+          },
+          {
+            "name": "pgPort",
+            "type": "Microsoft.Common.TextBox",
+            "label": "PostgreSQL Port",
+            "defaultValue": "5432",
+            "toolTip": "PostgreSQL server port",
+            "constraints": {
+              "required": "[equals(steps('databaseConfig').pgConnectionType, 'parameters')]",
+              "regex": "^([1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$",
+              "validationMessage": "Port must be a valid number between 1 and 65535"
+            },
+            "visible": "[equals(steps('databaseConfig').pgConnectionType, 'parameters')]"
+          },
+          {
+            "name": "pgUsername",
+            "type": "Microsoft.Common.TextBox",
+            "label": "PostgreSQL Username",
+            "defaultValue": "",
+            "toolTip": "PostgreSQL username",
+            "constraints": {
+              "required": "[equals(steps('databaseConfig').pgConnectionType, 'parameters')]",
+              "regex": "^[a-zA-Z0-9_]{1,63}$",
+              "validationMessage": "Username must be 1-63 characters, alphanumeric or underscore"
+            },
+            "visible": "[equals(steps('databaseConfig').pgConnectionType, 'parameters')]"
+          },
+          {
+            "name": "pgPassword",
+            "type": "Microsoft.Common.PasswordBox",
+            "label": {
+              "password": "PostgreSQL Password",
+              "confirmPassword": "Confirm Password"
+            },
+            "toolTip": "PostgreSQL password",
+            "constraints": {
+              "required": "[equals(steps('databaseConfig').pgConnectionType, 'parameters')]"
+            },
+            "options": {
+              "hideConfirmation": false
+            },
+            "visible": "[equals(steps('databaseConfig').pgConnectionType', 'parameters')]"
+          },
+          {
+            "name": "pgDatabase",
+            "type": "Microsoft.Common.TextBox",
+            "label": "PostgreSQL Database",
+            "defaultValue": "bytebase",
+            "toolTip": "PostgreSQL database name",
+            "constraints": {
+              "required": "[equals(steps('databaseConfig').pgConnectionType, 'parameters')]",
+              "regex": "^[a-zA-Z0-9_]{1,63}$",
+              "validationMessage": "Database name must be 1-63 characters, alphanumeric or underscore"
+            },
+            "visible": "[equals(steps('databaseConfig').pgConnectionType, 'parameters')]"
+          }
+        ]
+      },
+      {
+        "name": "storageConfig",
+        "label": "Storage Configuration",
+        "elements": [
+          {
+            "name": "persistenceEnabled",
+            "type": "Microsoft.Common.OptionsGroup",
+            "label": "Enable Persistent Storage",
+            "defaultValue": "Yes",
+            "toolTip": "Enable persistent storage for Bytebase data",
+            "constraints": {
+              "allowedValues": [
+                {
+                  "label": "Yes",
+                  "value": "true"
+                },
+                {
+                  "label": "No",
+                  "value": "false"
+                }
+              ],
+              "required": true
+            },
+            "visible": true
+          },
+          {
+            "name": "storageSize",
+            "type": "Microsoft.Common.TextBox",
+            "label": "Storage Size",
+            "defaultValue": "10Gi",
+            "toolTip": "Size of persistent volume (e.g., 10Gi, 20Gi)",
+            "constraints": {
+              "required": "[equals(steps('storageConfig').persistenceEnabled, 'true')]",
+              "regex": "^[0-9]{1,5}(Gi|Mi|Ti)$",
+              "validationMessage": "Must be a valid size with unit: 1-99999 followed by Gi, Mi, or Ti (e.g., 10Gi, 1Ti)"
+            },
+            "visible": "[equals(steps('storageConfig').persistenceEnabled, 'true')]"
+          },
+          {
+            "name": "storageClass",
+            "type": "Microsoft.Common.TextBox",
+            "label": "Storage Class",
+            "defaultValue": "",
+            "toolTip": "Kubernetes storage class for persistent volume (leave empty for default)",
+            "constraints": {
+              "required": false,
+              "regex": "^$|^[a-z0-9]([-a-z0-9]{0,251}[a-z0-9])?$",
+              "validationMessage": "Storage class must be empty or 1-253 characters of lowercase alphanumeric or '-'"
+            },
+            "visible": "[equals(steps('storageConfig').persistenceEnabled, 'true')]"
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "clusterResourceId": "[basics('cluster')]",
+      "namespace": "[steps('bytebaseConfig').namespace]",
+      "bytebasePort": "[steps('bytebaseConfig').port]",
+      "bytebaseExternalUrl": "[steps('bytebaseConfig').externalUrl]",
+      "bytebaseVersion": "[steps('bytebaseConfig').version]",
+      "pgConnectionType": "[steps('databaseConfig').pgConnectionType]",
+      "pgUrl": "[if(equals(steps('databaseConfig').pgConnectionType, 'connectionString'), steps('databaseConfig').pgUrl, '')]",
+      "pgHost": "[if(equals(steps('databaseConfig').pgConnectionType, 'parameters'), steps('databaseConfig').pgHost, '')]",
+      "pgPort": "[if(equals(steps('databaseConfig').pgConnectionType, 'parameters'), steps('databaseConfig').pgPort, '')]",
+      "pgUsername": "[if(equals(steps('databaseConfig').pgConnectionType, 'parameters'), steps('databaseConfig').pgUsername, '')]",
+      "pgPassword": "[if(equals(steps('databaseConfig').pgConnectionType, 'parameters'), steps('databaseConfig').pgPassword, '')]",
+      "pgDatabase": "[if(equals(steps('databaseConfig').pgConnectionType, 'parameters'), steps('databaseConfig').pgDatabase, '')]",
+      "persistenceEnabled": "[steps('storageConfig').persistenceEnabled]",
+      "storageSize": "[if(equals(steps('storageConfig').persistenceEnabled, 'true'), steps('storageConfig').storageSize, '')]",
+      "storageClass": "[if(equals(steps('storageConfig').persistenceEnabled, 'true'), steps('storageConfig').storageClass, '')]"
+    }
+  }
+}

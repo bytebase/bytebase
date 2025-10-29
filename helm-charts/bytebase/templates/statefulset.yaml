@@ -111,7 +111,31 @@ spec:
       {{- end }}
       containers:
         - name: bytebase
-          {{- if $registryMirrorHost }}
+          {{- if .Values.global }}
+          {{- if .Values.global.azure }}
+          {{- if .Values.global.azure.images }}
+          {{- if .Values.global.azure.images.bytebase }}
+          # Azure Marketplace image path - Microsoft will retag images to their registry
+          image: {{ .Values.global.azure.images.bytebase.registry }}/{{ .Values.global.azure.images.bytebase.image }}:{{ .Values.global.azure.images.bytebase.tag }}
+          {{- else if $registryMirrorHost }}
+          # If user specifies a registry mirror host, we should use that instead of the default.
+          image: {{ trimSuffix "/" $registryMirrorHost }}/bytebase/bytebase:{{ $version }}
+          {{- else }}
+          image: bytebase/bytebase:{{ $version }}
+          {{- end }}
+          {{- else if $registryMirrorHost }}
+          # If user specifies a registry mirror host, we should use that instead of the default.
+          image: {{ trimSuffix "/" $registryMirrorHost }}/bytebase/bytebase:{{ $version }}
+          {{- else }}
+          image: bytebase/bytebase:{{ $version }}
+          {{- end }}
+          {{- else if $registryMirrorHost }}
+          # If user specifies a registry mirror host, we should use that instead of the default.
+          image: {{ trimSuffix "/" $registryMirrorHost }}/bytebase/bytebase:{{ $version }}
+          {{- else }}
+          image: bytebase/bytebase:{{ $version }}
+          {{- end }}
+          {{- else if $registryMirrorHost }}
           # If user specifies a registry mirror host, we should use that instead of the default.
           image: {{ trimSuffix "/" $registryMirrorHost }}/bytebase/bytebase:{{ $version }}
           {{- else }}

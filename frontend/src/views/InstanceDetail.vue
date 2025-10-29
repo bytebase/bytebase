@@ -16,7 +16,7 @@
       </div>
     </div>
 
-    <NTabs v-model:value="state.selectedTab">
+    <NTabs :value="state.selectedTab" @update:value="onTabChange">
       <template #suffix>
         <div class="flex items-center space-x-2">
           <InstanceSyncButton
@@ -36,7 +36,7 @@
         </div>
       </template>
       <NTabPane name="overview" :tab="$t('common.overview')">
-        <InstanceForm class="-mt-2" :instance="instance">
+        <InstanceForm ref="instanceFormRef" class="-mt-2" :instance="instance">
           <InstanceFormBody :hide-archive-restore="hideArchiveRestore" />
           <InstanceFormButtons class="sticky bottom-0 z-10" />
         </InstanceForm>
@@ -115,6 +115,7 @@ import {
   PagedDatabaseTable,
   DatabaseOperations,
 } from "@/components/v2/Model/DatabaseV1Table";
+import { useRouteChangeGuard } from "@/composables/useRouteChangeGuard";
 import { useBodyLayoutContext } from "@/layouts/common";
 import {
   pushNotification,
@@ -173,6 +174,18 @@ const router = useRouter();
 const instanceV1Store = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
 const pagedDatabaseTableRef = ref<InstanceType<typeof PagedDatabaseTable>>();
+const instanceFormRef = ref<InstanceType<typeof InstanceForm>>();
+
+const onTabChange = (tab: InstanceHash) => {
+  if (instanceFormRef.value?.isEditing) {
+    if (!window.confirm(t("common.leave-without-saving"))) {
+      return;
+    }
+  }
+  state.selectedTab = tab;
+};
+
+useRouteChangeGuard(computed(() => instanceFormRef.value?.isEditing ?? false));
 
 const readonlyScopes = computed((): SearchScope[] => [
   { id: "instance", value: props.instanceId, readonly: true },

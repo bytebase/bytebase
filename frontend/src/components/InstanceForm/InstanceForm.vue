@@ -11,10 +11,7 @@
 </template>
 
 <script lang="ts" setup>
-import { useEventListener } from "@vueuse/core";
-import { watch, onMounted, toRef } from "vue";
-import { useI18n } from "vue-i18n";
-import { onBeforeRouteLeave } from "vue-router";
+import { watch, onMounted, toRef, computed } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { useActuatorV1Store, useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
@@ -34,7 +31,6 @@ const emit = defineEmits<{
 
 const settingV1Store = useSettingV1Store();
 const actuatorStore = useActuatorV1Store();
-const { t } = useI18n();
 
 const instance = toRef(props, "instance");
 const hideAdvancedFeatures = toRef(props, "hideAdvancedFeatures");
@@ -47,23 +43,6 @@ const {
   adminDataSource,
   missingFeature,
 } = context;
-
-useEventListener("beforeunload", (e) => {
-  if (isCreating.value || !valueChanged.value) {
-    return;
-  }
-  e.returnValue = t("common.leave-without-saving");
-  return e.returnValue;
-});
-
-onBeforeRouteLeave((to, from, next) => {
-  if (!isCreating.value && valueChanged.value) {
-    if (!window.confirm(t("common.leave-without-saving"))) {
-      return;
-    }
-  }
-  next();
-});
 
 onMounted(async () => {
   if (isCreating.value) {
@@ -102,5 +81,9 @@ watch(
 
 useEmitteryEventListener(events, "dismiss", () => {
   emit("dismiss");
+});
+
+defineExpose({
+  isEditing: computed(() => !isCreating.value && valueChanged.value),
 });
 </script>

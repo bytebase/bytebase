@@ -82,6 +82,7 @@ import { useI18n } from "vue-i18n";
 import { useRoute, useRouter, type LocationQueryRaw } from "vue-router";
 import { BBSpin } from "@/bbkit";
 import { StepTab } from "@/components/v2";
+import { useRouteChangeGuard } from "@/composables/useRouteChangeGuard";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { WORKSPACE_ROOT_MODULE } from "@/router/dashboard/workspaceRoutes";
 import {
@@ -141,6 +142,14 @@ const rawSQLState = reactive<RawSQLState>({
 });
 const targetDatabaseViewRef =
   ref<InstanceType<typeof SelectTargetDatabasesView>>();
+
+useRouteChangeGuard(
+  computed(
+    () =>
+      state.sourceSchemaType === SourceSchemaType.RAW_SQL &&
+      rawSQLState.statement !== ""
+  )
+);
 
 const sourceSchemaString = asyncComputed(async () => {
   if (state.sourceSchemaType === SourceSchemaType.SCHEMA_HISTORY_VERSION) {
