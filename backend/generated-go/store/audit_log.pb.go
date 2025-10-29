@@ -118,11 +118,11 @@ type AuditLog struct {
 	ServiceData *anypb.Any `protobuf:"bytes,10,opt,name=service_data,json=serviceData,proto3" json:"service_data,omitempty"`
 	// Metadata about the operation.
 	RequestMetadata *RequestMetadata `protobuf:"bytes,11,opt,name=request_metadata,json=requestMetadata,proto3" json:"request_metadata,omitempty"`
-	// Server identifier for this Bytebase server
+	// Bytebase deployment identifier (persists across restarts)
 	// Format: {source}-{timestamp}-{random}
 	// Used by log aggregators for deduplication and gap detection
-	ServerId string `protobuf:"bytes,12,opt,name=server_id,json=serverId,proto3" json:"server_id,omitempty"`
-	// Monotonically increasing sequence number within this server
+	BytebaseId string `protobuf:"bytes,12,opt,name=bytebase_id,json=bytebaseId,proto3" json:"bytebase_id,omitempty"`
+	// Monotonically increasing sequence number within this Bytebase deployment
 	// Guaranteed gap-free for stdout integrity: 1, 2, 3, 4, ...
 	// NULL for logs created before this feature was deployed
 	SequenceNumber int64 `protobuf:"varint,13,opt,name=sequence_number,json=sequenceNumber,proto3" json:"sequence_number,omitempty"`
@@ -237,9 +237,9 @@ func (x *AuditLog) GetRequestMetadata() *RequestMetadata {
 	return nil
 }
 
-func (x *AuditLog) GetServerId() string {
+func (x *AuditLog) GetBytebaseId() string {
 	if x != nil {
-		return x.ServerId
+		return x.BytebaseId
 	}
 	return ""
 }
@@ -311,7 +311,7 @@ var File_store_audit_log_proto protoreflect.FileDescriptor
 
 const file_store_audit_log_proto_rawDesc = "" +
 	"\n" +
-	"\x15store/audit_log.proto\x12\x0ebytebase.store\x1a\x19google/protobuf/any.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x17google/rpc/status.proto\"\x93\x05\n" +
+	"\x15store/audit_log.proto\x12\x0ebytebase.store\x1a\x19google/protobuf/any.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x17google/rpc/status.proto\"\x97\x05\n" +
 	"\bAuditLog\x12\x16\n" +
 	"\x06parent\x18\x01 \x01(\tR\x06parent\x12\x16\n" +
 	"\x06method\x18\x02 \x01(\tR\x06method\x12\x1a\n" +
@@ -324,8 +324,9 @@ const file_store_audit_log_proto_rawDesc = "" +
 	"\alatency\x18\t \x01(\v2\x19.google.protobuf.DurationR\alatency\x127\n" +
 	"\fservice_data\x18\n" +
 	" \x01(\v2\x14.google.protobuf.AnyR\vserviceData\x12J\n" +
-	"\x10request_metadata\x18\v \x01(\v2\x1f.bytebase.store.RequestMetadataR\x0frequestMetadata\x12\x1b\n" +
-	"\tserver_id\x18\f \x01(\tR\bserverId\x12'\n" +
+	"\x10request_metadata\x18\v \x01(\v2\x1f.bytebase.store.RequestMetadataR\x0frequestMetadata\x12\x1f\n" +
+	"\vbytebase_id\x18\f \x01(\tR\n" +
+	"bytebaseId\x12'\n" +
 	"\x0fsequence_number\x18\r \x01(\x03R\x0esequenceNumber\"\x85\x01\n" +
 	"\bSeverity\x12\x18\n" +
 	"\x14SEVERITY_UNSPECIFIED\x10\x00\x12\t\n" +

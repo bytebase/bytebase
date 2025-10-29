@@ -711,8 +711,8 @@ Status represents the approver&#39;s decision state.
 | latency | [google.protobuf.Duration](#google-protobuf-Duration) |  | The latency of the RPC. |
 | service_data | [google.protobuf.Any](#google-protobuf-Any) |  | The service-specific data about the request, response, and other activities. |
 | request_metadata | [RequestMetadata](#bytebase-store-RequestMetadata) |  | Metadata about the operation. |
-| server_id | [string](#string) |  | Server identifier for this Bytebase server Format: {source}-{timestamp}-{random} Used by log aggregators for deduplication and gap detection |
-| sequence_number | [int64](#int64) |  | Monotonically increasing sequence number within this server Guaranteed gap-free for stdout integrity: 1, 2, 3, 4, ... NULL for logs created before this feature was deployed |
+| bytebase_id | [string](#string) |  | Bytebase deployment identifier (persists across restarts) Format: {source}-{timestamp}-{random} Used by log aggregators for deduplication and gap detection |
+| sequence_number | [int64](#int64) |  | Monotonically increasing sequence number within this Bytebase deployment Guaranteed gap-free for stdout integrity: 1, 2, 3, 4, ... NULL for logs created before this feature was deployed |
 
 
 

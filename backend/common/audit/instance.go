@@ -15,7 +15,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 )
 
-// GenerateServerID creates guaranteed-unique server identifier
+// GenerateBytebaseID creates guaranteed-unique Bytebase deployment identifier
 // Format: {source}-{timestamp}-{random}
 // Example: "bytebase-prod-20251029-150405-a1b2c3d4e5f6g7h8"
 //
@@ -25,8 +25,8 @@ import (
 //   - random: 16 alphanumeric chars (cryptographically secure)
 //
 // Total max length: 190 + 1 + 15 + 1 + 16 = 223 chars
-func GenerateServerID() (string, error) {
-	// Length constraints for server ID components
+func GenerateBytebaseID() (string, error) {
+	// Length constraints for Bytebase ID components
 	const (
 		maxTotalLen  = 255                                        // Database VARCHAR(255) limit
 		timestampLen = 15                                         // YYYYMMDD-HHMMSS format
@@ -68,62 +68,62 @@ func GenerateServerID() (string, error) {
 	}
 
 	// Combine: source-timestamp-random
-	serverID := fmt.Sprintf("%s-%s-%s", source, timestamp, randomStr)
+	bytebaseID := fmt.Sprintf("%s-%s-%s", source, timestamp, randomStr)
 
-	return serverID, nil
+	return bytebaseID, nil
 }
 
-// ValidateServerID checks if server ID meets constraints
-func ValidateServerID(id string) error {
+// ValidateBytebaseID checks if Bytebase ID meets constraints
+func ValidateBytebaseID(id string) error {
 	if id == "" {
-		return errors.New("server_id cannot be empty")
+		return errors.New("bytebase_id cannot be empty")
 	}
 	if len(id) > 255 {
-		return errors.Errorf("server_id too long: %d chars (max 255)", len(id))
+		return errors.Errorf("bytebase_id too long: %d chars (max 255)", len(id))
 	}
 	return nil
 }
 
-// GenerateServerIDWithRetry generates server ID and verifies uniqueness
+// GenerateBytebaseIDWithRetry generates Bytebase ID and verifies uniqueness
 // Retries on collision (extremely rare with 16-char random)
 //
 // IMPORTANT: Pass *sql.DB directly (not store.Store) to avoid circular dependency
 //
 // TODO(PR#2): Refactor to service layer pattern when implementing Logger
-// - Add UNIQUE constraint on audit_log server_id (or composite key)
+// - Add UNIQUE constraint on audit_log bytebase_id (or composite key)
 // - Create audit/service.go for orchestration
 // - Store should return ErrDuplicateID on constraint violation
 // - Move retry logic to service layer (domain/data/service separation)
-func GenerateServerIDWithRetry(db *sql.DB, maxAttempts int) (string, error) {
+func GenerateBytebaseIDWithRetry(db *sql.DB, maxAttempts int) (string, error) {
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
-		serverID, err := GenerateServerID()
+		bytebaseID, err := GenerateBytebaseID()
 		if err != nil {
-			return "", errors.Wrap(err, "failed to generate server_id")
+			return "", errors.Wrap(err, "failed to generate bytebase_id")
 		}
 
 		// Verify uniqueness by checking JSONB payload
-		// Note: protojson marshaling produces camelCase "serverId"
+		// Note: protojson marshaling produces camelCase "bytebaseId"
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		var count int
 		err = db.QueryRowContext(ctx,
 			`SELECT COUNT(*) FROM audit_log
-			 WHERE payload->>'serverId' = $1`,
-			serverID).Scan(&count)
+			 WHERE payload->>'bytebaseId' = $1`,
+			bytebaseID).Scan(&count)
 		cancel()
 
 		if err != nil {
-			return "", errors.Wrap(err, "failed to check server_id uniqueness")
+			return "", errors.Wrap(err, "failed to check bytebase_id uniqueness")
 		}
 
 		if count == 0 {
-			return serverID, nil
+			return bytebaseID, nil
 		}
 
 		// Collision detected (extremely rare)
-		slog.Warn("Server ID collision detected, retrying",
-			slog.String("server_id", serverID),
+		slog.Warn("Bytebase ID collision detected, retrying",
+			slog.String("bytebase_id", bytebaseID),
 			slog.Int("attempt", attempt))
 	}
 
-	return "", errors.Errorf("failed to generate unique server_id after %d attempts", maxAttempts)
+	return "", errors.Errorf("failed to generate unique bytebase_id after %d attempts", maxAttempts)
 }

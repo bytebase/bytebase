@@ -8,9 +8,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestGenerateServerID(t *testing.T) {
-	t.Run("generates valid server ID", func(t *testing.T) {
-		id, err := GenerateServerID()
+func TestGenerateBytebaseID(t *testing.T) {
+	t.Run("generates valid Bytebase ID", func(t *testing.T) {
+		id, err := GenerateBytebaseID()
 		require.NoError(t, err)
 		require.NotEmpty(t, id)
 
@@ -23,18 +23,18 @@ func TestGenerateServerID(t *testing.T) {
 	})
 
 	t.Run("respects BYTEBASE_INSTANCE_ID env var", func(t *testing.T) {
-		t.Setenv("BYTEBASE_INSTANCE_ID", "test-server")
+		t.Setenv("BYTEBASE_INSTANCE_ID", "test-bytebase")
 
-		id, err := GenerateServerID()
+		id, err := GenerateBytebaseID()
 		require.NoError(t, err)
-		assert.Contains(t, id, "test-server")
+		assert.Contains(t, id, "test-bytebase")
 	})
 
 	t.Run("truncates very long source", func(t *testing.T) {
 		longSource := strings.Repeat("x", 300)
 		t.Setenv("BYTEBASE_INSTANCE_ID", longSource)
 
-		id, err := GenerateServerID()
+		id, err := GenerateBytebaseID()
 		require.NoError(t, err)
 		assert.LessOrEqual(t, len(id), 255)
 	})
@@ -42,7 +42,7 @@ func TestGenerateServerID(t *testing.T) {
 	t.Run("generates unique IDs", func(t *testing.T) {
 		ids := make(map[string]bool)
 		for i := 0; i < 100; i++ {
-			id, err := GenerateServerID()
+			id, err := GenerateBytebaseID()
 			require.NoError(t, err)
 			assert.False(t, ids[id], "duplicate ID: %s", id)
 			ids[id] = true
@@ -50,7 +50,7 @@ func TestGenerateServerID(t *testing.T) {
 	})
 }
 
-func TestValidateServerID(t *testing.T) {
+func TestValidateBytebaseID(t *testing.T) {
 	tests := []struct {
 		name      string
 		id        string
@@ -64,7 +64,7 @@ func TestValidateServerID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := ValidateServerID(tt.id)
+			err := ValidateBytebaseID(tt.id)
 			if tt.wantError {
 				assert.Error(t, err)
 			} else {

@@ -236,21 +236,21 @@ func GetSearchAuditLogsFilter(ctx context.Context, s *Store, filter string) (*qb
 	return qb.Q().Space("(?)", q), nil
 }
 
-// GetMaxAuditSequence loads the maximum sequence number for the given server
-// Returns 0 if no audit logs exist for this server
+// GetMaxAuditSequence loads the maximum sequence number for the given Bytebase deployment
+// Returns 0 if no audit logs exist for this Bytebase deployment
 //
 // # Used during server startup to continue sequences after restart
 //
 // TODO(PR#2): When adding UNIQUE constraint, this will work with service layer pattern
-func (s *Store) GetMaxAuditSequence(ctx context.Context, serverID string) (int64, error) {
+func (s *Store) GetMaxAuditSequence(ctx context.Context, bytebaseID string) (int64, error) {
 	var maxSeq sql.NullInt64
 
 	// Query JSONB payload (protojson produces camelCase keys)
 	q := qb.Q().Space(`
 		SELECT MAX((payload->>'sequenceNumber')::BIGINT)
 		FROM audit_log
-		WHERE payload->>'serverId' = ?
-	`, serverID)
+		WHERE payload->>'bytebaseId' = ?
+	`, bytebaseID)
 
 	sql, args, err := q.ToSQL()
 	if err != nil {
@@ -258,12 +258,12 @@ func (s *Store) GetMaxAuditSequence(ctx context.Context, serverID string) (int64
 	}
 
 	if err := s.GetDB().QueryRowContext(ctx, sql, args...).Scan(&maxSeq); err != nil {
-		return 0, errors.Wrapf(err, "failed to query max sequence for server %s", serverID)
+		return 0, errors.Wrapf(err, "failed to query max sequence for Bytebase deployment %s", bytebaseID)
 	}
 
 	if !maxSeq.Valid {
-		// No rows for this server_id yet - start at 0
-		// Note: Legacy logs (created before this feature) have NULL server_id,
+		// No rows for this bytebase_id yet - start at 0
+		// Note: Legacy logs (created before this feature) have NULL bytebase_id,
 		// so they won't match the WHERE clause and won't affect this result.
 		return 0, nil
 	}
@@ -271,20 +271,20 @@ func (s *Store) GetMaxAuditSequence(ctx context.Context, serverID string) (int64
 	return maxSeq.Int64, nil
 }
 
-// CheckServerIDExists checks if any audit logs exist with the given server_id
-// Used for collision detection during server ID generation
+// CheckBytebaseIDExists checks if any audit logs exist with the given bytebase_id
+// Used for collision detection during Bytebase ID generation
 //
 // TODO(PR#2): Return ErrDuplicateID when implementing service layer with UNIQUE constraint
-func (s *Store) CheckServerIDExists(ctx context.Context, serverID string) (bool, error) {
+func (s *Store) CheckBytebaseIDExists(ctx context.Context, bytebaseID string) (bool, error) {
 	var exists bool
 
 	q := qb.Q().Space(`
 		SELECT EXISTS (
 			SELECT 1
 			FROM audit_log
-			WHERE payload->>'serverId' = ?
+			WHERE payload->>'bytebaseId' = ?
 		)
-	`, serverID)
+	`, bytebaseID)
 
 	sql, args, err := q.ToSQL()
 	if err != nil {
@@ -292,7 +292,7 @@ func (s *Store) CheckServerIDExists(ctx context.Context, serverID string) (bool,
 	}
 
 	if err := s.GetDB().QueryRowContext(ctx, sql, args...).Scan(&exists); err != nil {
-		return false, errors.Wrapf(err, "failed to check server_id existence")
+		return false, errors.Wrapf(err, "failed to check bytebase_id existence")
 	}
 
 	return exists, nil
