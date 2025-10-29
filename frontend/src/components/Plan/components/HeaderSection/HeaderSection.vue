@@ -69,6 +69,8 @@ const showDraftTag = computed(() => {
 
 const showDescriptionSection = computed(() => {
   // Only show when there's no issue yet (draft plan)
-  return isValidPlanName(plan.value.name) && !plan.value.issue;
+  return (
+    (isValidPlanName(plan.value.name) || isCreating.value) && !plan.value.issue
+  );
 });
 </script>

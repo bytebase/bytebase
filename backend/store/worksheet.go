@@ -4,8 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/google/cel-go/cel"
+	celast "github.com/google/cel-go/common/ast"
+	celoperators "github.com/google/cel-go/common/operators"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
@@ -56,7 +60,7 @@ type FindWorkSheetMessage struct {
 	// LoadFull is used if we want to load the full sheet.
 	LoadFull bool
 
-	Filter *ListResourceFilter
+	FilterQ *qb.Query
 }
 
 // PatchWorkSheetMessage is the message to patch a sheet.
@@ -111,8 +115,8 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, 
 		LEFT JOIN worksheet_organizer ON worksheet_organizer.worksheet_id = worksheet.id AND worksheet_organizer.principal_id = %d
 		WHERE TRUE`, statementField, currentPrincipalID))
 
-	if filter := find.Filter; filter != nil {
-		q.And(ConvertDollarPlaceholders(filter.Where), filter.Args...)
+	if filterQ := find.FilterQ; filterQ != nil {
+		q.And("?", filterQ)
 	}
 
 	if v := find.UID; v != nil {
@@ -347,4 +351,125 @@ func (s *Store) UpsertWorksheetOrganizer(ctx context.Context, organizer *Workshe
 	}
 
 	return &worksheetOrganizer, nil
+}
+
+func GetListSheetFilter(ctx context.Context, s *Store, callerID int, filter string) (*qb.Query, error) {
+	if filter == "" {
+		return nil, nil
+	}
+
+	e, err := cel.NewEnv()
+	if err != nil {
+		return nil, errors.New("failed to create cel env")
+	}
+	ast, iss := e.Parse(filter)
+	if iss != nil {
+		return nil, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String())
+	}
+
+	var getFilter func(expr celast.Expr) (*qb.Query, error)
+
+	getUserID := func(name string) (int, error) {
+		creatorEmail := strings.TrimPrefix(name, "users/")
+		if creatorEmail == "" {
+			return 0, errors.New("invalid empty creator identifier")
+		}
+		user, err := s.GetUserByEmail(ctx, creatorEmail)
+		if err != nil {
+			return 0, errors.Errorf("failed to get user: %v", err)
+		}
+		if user == nil {
+			return 0, errors.Errorf("user with email %s not found", creatorEmail)
+		}
+		return user.ID, nil
+	}
+
+	parseToSQL := func(variable, value any) (*qb.Query, error) {
+		switch variable {
+		case "creator":
+			userID, err := getUserID(value.(string))
+			if err != nil {
+				return nil, err
+			}
+			return qb.Q().Space("worksheet.creator_id = ?", userID), nil
+		case "starred":
+			if starred, ok := value.(bool); ok {
+				return qb.Q().Space("worksheet.id IN (SELECT worksheet_id FROM worksheet_organizer WHERE principal_id = ? AND starred = ?)", callerID, starred), nil
+			}
+			return qb.Q().Space("TRUE"), nil
+		case "visibility":
+			visibility := WorkSheetVisibility(value.(string))
+			return qb.Q().Space("worksheet.visibility = ?", visibility), nil
+		default:
+			return nil, errors.Errorf("unsupport variable %q", variable)
+		}
+	}
+
+	getFilter = func(expr celast.Expr) (*qb.Query, error) {
+		q := qb.Q()
+		switch expr.Kind() {
+		case celast.CallKind:
+			functionName := expr.AsCall().FunctionName()
+			switch functionName {
+			case celoperators.LogicalOr:
+				for _, arg := range expr.AsCall().Args() {
+					qq, err := getFilter(arg)
+					if err != nil {
+						return nil, err
+					}
+					q.Or("?", qq)
+				}
+				return qb.Q().Space("(?)", q), nil
+			case celoperators.LogicalAnd:
+				for _, arg := range expr.AsCall().Args() {
+					qq, err := getFilter(arg)
+					if err != nil {
+						return nil, err
+					}
+					q.And("?", qq)
+				}
+				return qb.Q().Space("(?)", q), nil
+			case celoperators.Equals:
+				variable, value := getVariableAndValueFromExpr(expr)
+				return parseToSQL(variable, value)
+			case celoperators.NotEquals:
+				variable, value := getVariableAndValueFromExpr(expr)
+				if variable != "creator" {
+					return nil, errors.Errorf(`only "creator" support "!=" operator`)
+				}
+				userID, err := getUserID(value.(string))
+				if err != nil {
+					return nil, err
+				}
+				return qb.Q().Space("worksheet.creator_id != ?", userID), nil
+			case celoperators.In:
+				variable, value := getVariableAndValueFromExpr(expr)
+				if variable != "visibility" {
+					return nil, errors.Errorf(`only "visibility" support "visibility in [xx]" filter`)
+				}
+				rawList, ok := value.([]any)
+				if !ok {
+					return nil, errors.Errorf("invalid visibility value %q", value)
+				}
+				if len(rawList) == 0 {
+					return nil, errors.New("empty visibility filter")
+				}
+				visibilityList := []string{}
+				for _, raw := range rawList {
+					visibilityList = append(visibilityList, raw.(string))
+				}
+				return qb.Q().Space("worksheet.visibility = ANY(?)", visibilityList), nil
+			default:
+				return nil, errors.Errorf("unexpected function %v", functionName)
+			}
+		default:
+			return nil, errors.Errorf("unexpected expr kind %v", expr.Kind())
+		}
+	}
+
+	q, err := getFilter(ast.NativeRep().Expr())
+	if err != nil {
+		return nil, err
+	}
+	return qb.Q().Space("(?)", q), nil
 }

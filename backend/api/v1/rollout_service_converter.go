@@ -553,24 +553,6 @@ func convertToTaskType(task *store.TaskMessage) v1pb.Task_Type {
 	}
 }
 
-func convertToStoreTaskType(taskType v1pb.Task_Type) storepb.Task_Type {
-	//exhaustive:enforce
-	switch taskType {
-	case v1pb.Task_DATABASE_CREATE:
-		return storepb.Task_DATABASE_CREATE
-	case v1pb.Task_DATABASE_MIGRATE:
-		return storepb.Task_DATABASE_MIGRATE
-	case v1pb.Task_DATABASE_SDL:
-		return storepb.Task_DATABASE_SDL
-	case v1pb.Task_DATABASE_EXPORT:
-		return storepb.Task_DATABASE_EXPORT
-	case v1pb.Task_TYPE_UNSPECIFIED, v1pb.Task_GENERAL:
-		return storepb.Task_TASK_TYPE_UNSPECIFIED
-	default:
-		return storepb.Task_TASK_TYPE_UNSPECIFIED
-	}
-}
-
 // getMigrateTypeFromMigrationType converts v1pb.MigrationType to storepb.MigrationType
 func getMigrateTypeFromMigrationType(migrationType v1pb.MigrationType) storepb.MigrationType {
 	switch migrationType {

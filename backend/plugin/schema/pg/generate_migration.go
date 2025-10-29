@@ -3174,6 +3174,7 @@ func generateCommentChangesFromSDL(buf *strings.Builder, diff *schema.MetadataDi
 			var functionASTNode any
 			functionKey := commentDiff.SchemaName + "." + commentDiff.ObjectName
 			for _, funcDiff := range diff.FunctionChanges {
+				// Check both NewFunction and OldFunction to handle comment removal cases
 				if funcDiff.NewFunction != nil {
 					funcKey := funcDiff.SchemaName + "." + funcDiff.NewFunction.Signature
 					if funcKey == functionKey {
@@ -3182,11 +3183,27 @@ func generateCommentChangesFromSDL(buf *strings.Builder, diff *schema.MetadataDi
 						break
 					}
 				}
+				if funcDiff.OldFunction != nil {
+					funcKey := funcDiff.SchemaName + "." + funcDiff.OldFunction.Signature
+					if funcKey == functionKey {
+						// Only use OldFunction if we haven't found NewFunction
+						if functionDefinition == "" {
+							functionDefinition = funcDiff.OldFunction.Definition
+							functionASTNode = funcDiff.OldASTNode
+						}
+						break
+					}
+				}
 			}
 			// If we didn't find the function AST node from FunctionChanges, use the comment AST node
 			// to determine if it's a FUNCTION or PROCEDURE
-			if functionASTNode == nil && commentDiff.NewASTNode != nil {
-				functionASTNode = commentDiff.NewASTNode
+			// Check both NewASTNode (for adding comments) and OldASTNode (for removing comments)
+			if functionASTNode == nil {
+				if commentDiff.NewASTNode != nil {
+					functionASTNode = commentDiff.NewASTNode
+				} else if commentDiff.OldASTNode != nil {
+					functionASTNode = commentDiff.OldASTNode
+				}
 			}
 			writeCommentOnFunction(buf, commentDiff.SchemaName, commentDiff.ObjectName, newComment, functionASTNode, functionDefinition)
 

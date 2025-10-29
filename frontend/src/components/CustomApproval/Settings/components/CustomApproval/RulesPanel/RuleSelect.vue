@@ -83,6 +83,7 @@ const options = computed(() => {
     "bb.project-owner",
     "bb.workspace-dba",
     "bb.project-owner-workspace-dba",
+    "bb.project-owner-workspace-dba-workspace-admin",
   ];
 
   const builtinOptions = BUILTIN_APPROVAL_FLOWS.filter((flow) =>
