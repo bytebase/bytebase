@@ -27,3 +27,8 @@ bytebase-build
 .idea
 
 .DS_Store
+
+# Azure Marketplace build artifacts
+scripts/azure-marketplace/.cnab/
+scripts/azure-marketplace/*.tgz
+scripts/azure-marketplace/*.backup

@@ -1,0 +1,175 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "clusterResourceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Resource ID of the AKS cluster"
+      }
+    },
+    "namespace": {
+      "type": "string",
+      "defaultValue": "bytebase",
+      "metadata": {
+        "description": "Kubernetes namespace for Bytebase deployment"
+      }
+    },
+    "bytebasePort": {
+      "type": "string",
+      "defaultValue": "8080",
+      "metadata": {
+        "description": "Port for Bytebase server"
+      }
+    },
+    "bytebaseExternalUrl": {
+      "type": "string",
+      "metadata": {
+        "description": "External URL for accessing Bytebase"
+      }
+    },
+    "bytebaseVersion": {
+      "type": "string",
+      "defaultValue": "3.11.1",
+      "metadata": {
+        "description": "Bytebase version to deploy"
+      }
+    },
+    "pgConnectionType": {
+      "type": "string",
+      "defaultValue": "connectionString",
+      "allowedValues": [
+        "connectionString",
+        "parameters"
+      ],
+      "metadata": {
+        "description": "Type of PostgreSQL connection configuration"
+      }
+    },
+    "pgUrl": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "PostgreSQL connection string"
+      }
+    },
+    "pgHost": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "PostgreSQL host"
+      }
+    },
+    "pgPort": {
+      "type": "string",
+      "defaultValue": "5432",
+      "metadata": {
+        "description": "PostgreSQL port"
+      }
+    },
+    "pgUsername": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "PostgreSQL username"
+      }
+    },
+    "pgPassword": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "PostgreSQL password"
+      }
+    },
+    "pgDatabase": {
+      "type": "string",
+      "defaultValue": "bytebase",
+      "metadata": {
+        "description": "PostgreSQL database name"
+      }
+    },
+    "persistenceEnabled": {
+      "type": "string",
+      "defaultValue": "true",
+      "allowedValues": [
+        "true",
+        "false"
+      ],
+      "metadata": {
+        "description": "Enable persistent storage"
+      }
+    },
+    "storageSize": {
+      "type": "string",
+      "defaultValue": "10Gi",
+      "metadata": {
+        "description": "Size of persistent volume"
+      }
+    },
+    "storageClass": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Kubernetes storage class"
+      }
+    }
+  },
+  "variables": {
+    "clusterName": "[last(split(parameters('clusterResourceId'), '/'))]",
+    "extensionName": "bytebase",
+    "pgUrlValue": "[if(equals(parameters('pgConnectionType'), 'connectionString'), parameters('pgUrl'), concat('postgresql://', parameters('pgUsername'), ':', parameters('pgPassword'), '@', parameters('pgHost'), ':', parameters('pgPort'), '/', parameters('pgDatabase')))]",
+    "plan-name": "DONOTMODIFY",
+    "plan-publisher": "DONOTMODIFY",
+    "plan-offerID": "DONOTMODIFY",
+    "releaseTrain": "DONOTMODIFY",
+    "clusterExtensionTypeName": "DONOTMODIFY"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.KubernetesConfiguration/extensions",
+      "apiVersion": "2023-05-01",
+      "name": "[variables('extensionName')]",
+      "scope": "[parameters('clusterResourceId')]",
+      "properties": {
+        "extensionType": "[variables('clusterExtensionTypeName')]",
+        "autoUpgradeMinorVersion": true,
+        "releaseTrain": "[variables('releaseTrain')]",
+        "plan": {
+          "name": "[variables('plan-name')]",
+          "publisher": "[variables('plan-publisher')]",
+          "product": "[variables('plan-offerID')]"
+        },
+        "configurationSettings": {
+          "bytebase.version": "[parameters('bytebaseVersion')]",
+          "bytebase.option.port": "[parameters('bytebasePort')]",
+          "bytebase.option.data": "/var/opt/bytebase",
+          "bytebase.option.external-url": "[parameters('bytebaseExternalUrl')]",
+          "bytebase.option.externalPg.url": "[variables('pgUrlValue')]",
+          "bytebase.persistence.enabled": "[parameters('persistenceEnabled')]",
+          "bytebase.persistence.storage": "[parameters('storageSize')]",
+          "bytebase.persistence.storageClass": "[parameters('storageClass')]"
+        },
+        "configurationProtectedSettings": {},
+        "scope": {
+          "cluster": {
+            "releaseNamespace": "[parameters('namespace')]"
+          }
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "extensionName": {
+      "type": "string",
+      "value": "[variables('extensionName')]"
+    },
+    "clusterName": {
+      "type": "string",
+      "value": "[variables('clusterName')]"
+    },
+    "namespace": {
+      "type": "string",
+      "value": "[parameters('namespace')]"
+    }
+  }
+}

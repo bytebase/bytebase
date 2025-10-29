@@ -1,0 +1,31 @@
+applicationName: bytebase
+version: 3.11.1
+description: Safe database schema change and version control for DevOps teams
+publisher: Bytebase
+helmChart: ../helm-charts/bytebase
+clusterArmTemplate: mainTemplate.json
+uiDefinition: createUiDefinition.json
+registryServer: bytebase.azurecr.io
+
+# This is the registry where your application images are stored
+# For Azure Marketplace, images will be copied to Microsoft's registry
+registries:
+  - name: bytebase.azurecr.io
+    url: bytebase.azurecr.io
+
+# Define the container images used by your application
+images:
+  - image: bytebase.azurecr.io/bytebase/bytebase:3.11.1
+    platform: linux/amd64
+
+# Azure Marketplace cluster extension parameters
+extensionRegistrationParameters:
+  namespace: bytebase
+  extensionType: bytebase
+  releaseTrain: stable
+  releaseNamespace: bytebase
+  defaultScope: cluster
+
+# Supported cluster types: managedClusters (AKS) or connectedClusters (Arc-enabled)
+clusterTypes:
+  - managedClusters
