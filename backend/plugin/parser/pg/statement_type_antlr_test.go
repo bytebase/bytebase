@@ -57,39 +57,89 @@ func TestGetStatementTypesANTLR(t *testing.T) {
 			sql:           "DROP SCHEMA schema1;",
 			expectedTypes: []string{"DROP_SCHEMA"},
 		},
-	{
-		name:          "DROP SEQUENCE",
-		sql:           "DROP SEQUENCE seq1;",
-		expectedTypes: []string{"DROP_SEQUENCE"},
-	},
-	{
-		name:          "DROP EXTENSION",
-		sql:           "DROP EXTENSION postgis;",
-		expectedTypes: []string{"DROP_EXTENSION"},
-	},
-	{
-		name:          "DROP DATABASE",
-		sql:           "DROP DATABASE testdb;",
-		expectedTypes: []string{"DROP_DATABASE"},
-	},
-	{
-		name:          "DROP TYPE",
-		sql:           "DROP TYPE custom_type;",
-		expectedTypes: []string{"DROP_TYPE"},
-	},
-	{
-		name:          "DROP TRIGGER",
-		sql:           "DROP TRIGGER trig1 ON t1;",
-		expectedTypes: []string{"DROP_TRIGGER"},
-	},
-	{
-		name:          "DROP VIEW",
-		sql:           "DROP VIEW v1;",
-		expectedTypes: []string{"DROP_TABLE"},
-	},
 		{
-			name:          "ALTER TABLE",
+			name:          "DROP SEQUENCE",
+			sql:           "DROP SEQUENCE seq1;",
+			expectedTypes: []string{"DROP_SEQUENCE"},
+		},
+		{
+			name:          "DROP EXTENSION",
+			sql:           "DROP EXTENSION postgis;",
+			expectedTypes: []string{"DROP_EXTENSION"},
+		},
+		{
+			name:          "DROP DATABASE",
+			sql:           "DROP DATABASE testdb;",
+			expectedTypes: []string{"DROP_DATABASE"},
+		},
+		{
+			name:          "DROP TYPE",
+			sql:           "DROP TYPE custom_type;",
+			expectedTypes: []string{"DROP_TYPE"},
+		},
+		{
+			name:          "DROP TRIGGER",
+			sql:           "DROP TRIGGER trig1 ON t1;",
+			expectedTypes: []string{"DROP_TRIGGER"},
+		},
+		{
+			name:          "DROP VIEW",
+			sql:           "DROP VIEW v1;",
+			expectedTypes: []string{"DROP_TABLE"},
+		},
+		{
+			name:          "DROP FUNCTION",
+			sql:           "DROP FUNCTION func1();",
+			expectedTypes: []string{"DROP_FUNCTION"},
+		},
+		{
+			name:          "CREATE TYPE",
+			sql:           "CREATE TYPE custom_type AS ENUM ('a', 'b', 'c');",
+			expectedTypes: []string{"CREATE_TYPE"},
+		},
+		{
+			name:          "ALTER TABLE ADD COLUMN",
 			sql:           "ALTER TABLE t1 ADD COLUMN name VARCHAR(100);",
+			expectedTypes: []string{"ALTER_TABLE_ADD_COLUMN_LIST"},
+		},
+		{
+			name:          "ALTER TABLE ADD CONSTRAINT",
+			sql:           "ALTER TABLE t1 ADD CONSTRAINT pk_id PRIMARY KEY (id);",
+			expectedTypes: []string{"ALTER_TABLE_ADD_CONSTRAINT"},
+		},
+		{
+			name:          "ALTER TABLE DROP COLUMN",
+			sql:           "ALTER TABLE t1 DROP COLUMN name;",
+			expectedTypes: []string{"DROP_COLUMN"},
+		},
+		{
+			name:          "ALTER TABLE DROP CONSTRAINT",
+			sql:           "ALTER TABLE t1 DROP CONSTRAINT pk_id;",
+			expectedTypes: []string{"DROP_CONSTRAINT"},
+		},
+		{
+			name:          "ALTER TABLE ALTER COLUMN TYPE",
+			sql:           "ALTER TABLE t1 ALTER COLUMN name TYPE TEXT;",
+			expectedTypes: []string{"ALTER_COLUMN_TYPE"},
+		},
+		{
+			name:          "ALTER TABLE ALTER COLUMN DROP DEFAULT",
+			sql:           "ALTER TABLE t1 ALTER COLUMN name DROP DEFAULT;",
+			expectedTypes: []string{"DROP_DEFAULT"},
+		},
+		{
+			name:          "ALTER TABLE ALTER COLUMN DROP NOT NULL",
+			sql:           "ALTER TABLE t1 ALTER COLUMN name DROP NOT NULL;",
+			expectedTypes: []string{"DROP_NOT_NULL"},
+		},
+		{
+			name:          "ALTER VIEW",
+			sql:           "ALTER VIEW v1 OWNER TO user1;",
+			expectedTypes: []string{"ALTER_VIEW"},
+		},
+		{
+			name:          "ALTER TABLE (generic)",
+			sql:           "ALTER TABLE t1 ENABLE ROW LEVEL SECURITY;",
 			expectedTypes: []string{"ALTER_TABLE"},
 		},
 		{
