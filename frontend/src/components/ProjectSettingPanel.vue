@@ -70,11 +70,10 @@
 </template>
 
 <script lang="ts" setup>
-import { useEventListener } from "@vueuse/core";
 import { NButton } from "naive-ui";
 import { ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { onBeforeRouteLeave } from "vue-router";
+import { useRouteChangeGuard } from "@/composables/useRouteChangeGuard";
 import { pushNotification } from "@/store";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import ProjectArchiveRestoreButton from "./Project/ProjectArchiveRestoreButton.vue";
@@ -110,22 +109,7 @@ const isDirty = computed(() => {
   return settingRefList.value.some((settingRef) => settingRef.value?.isDirty);
 });
 
-useEventListener("beforeunload", (e) => {
-  if (!isDirty.value) {
-    return;
-  }
-  e.returnValue = t("common.leave-without-saving");
-  return e.returnValue;
-});
-
-onBeforeRouteLeave((to, from, next) => {
-  if (isDirty.value) {
-    if (!window.confirm(t("common.leave-without-saving"))) {
-      return;
-    }
-  }
-  next();
-});
+useRouteChangeGuard(isDirty);
 
 const onUpdate = async () => {
   for (const settingRef of settingRefList.value) {

@@ -6,7 +6,7 @@
     </p>
 
     <div
-      class="flex flex-col sm:flex-row sm:flex-wrap justify-start items-stretch gap-x-10 gap-y-4"
+      class="flex flex-col sm:flex-row sm:flex-wrap justify-start items-stretch gap-x-4 gap-y-4"
     >
       <div
         v-for="template in reviewPolicyTemplateList"
@@ -44,10 +44,10 @@
       </div>
     </div>
 
-    <NDivider />
+    <NDivider v-if="reviewPolicyTemplateList.length > 0" />
 
     <div
-      class="flex flex-col sm:flex-row sm:flex-wrap justify-start items-stretch gap-x-10 gap-y-4"
+      class="flex flex-col sm:flex-row sm:flex-wrap justify-start items-stretch gap-x-4 gap-y-4"
     >
       <div
         v-for="template in builtInTemplateList"

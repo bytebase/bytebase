@@ -51,11 +51,10 @@
 </template>
 
 <script lang="ts" setup>
-import { useEventListener } from "@vueuse/core";
 import { NButton } from "naive-ui";
 import { onMounted, ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRoute, onBeforeRouteLeave } from "vue-router";
+import { useRoute } from "vue-router";
 import {
   BrandingSetting,
   SecuritySetting,
@@ -65,6 +64,7 @@ import {
   GeneralSetting,
   ProductImprovementSetting,
 } from "@/components/GeneralSetting";
+import { useRouteChangeGuard } from "@/composables/useRouteChangeGuard";
 import { pushNotification } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 
@@ -148,20 +148,5 @@ const onUpdate = async () => {
   }
 };
 
-useEventListener("beforeunload", (e) => {
-  if (!isDirty.value) {
-    return;
-  }
-  e.returnValue = t("common.leave-without-saving");
-  return e.returnValue;
-});
-
-onBeforeRouteLeave((to, from, next) => {
-  if (isDirty.value) {
-    if (!window.confirm(t("common.leave-without-saving"))) {
-      return;
-    }
-  }
-  next();
-});
+useRouteChangeGuard(isDirty);
 </script>

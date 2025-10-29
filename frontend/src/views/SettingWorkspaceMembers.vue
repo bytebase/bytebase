@@ -43,12 +43,12 @@
       </NTabPane>
 
       <template #suffix>
-        <div class="flex items-center space-x-3">
+        <div class="flex items-center gap-x-2">
           <SearchBox
             v-model:value="state.searchText"
             :placeholder="$t('settings.members.search-member')"
           />
-          <div v-if="allowEdit" class="flex justify-end gap-x-3">
+          <div v-if="allowEdit" class="flex justify-end gap-x-2">
             <NButton
               v-if="state.selectedTab === 'MEMBERS'"
               :disabled="state.selectedMembers.length === 0"
