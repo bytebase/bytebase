@@ -17,7 +17,6 @@ service CelService {
       post: "/v1/cel/batchParse"
       body: "*"
     };
-    option (bytebase.v1.allow_without_credential) = true;
   }
 
   // Converts multiple CEL AST representations back into expression strings.
@@ -27,7 +26,6 @@ service CelService {
       post: "/v1/cel/batchDeparse"
       body: "*"
     };
-    option (bytebase.v1.allow_without_credential) = true;
   }
 }
 
