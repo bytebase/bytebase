@@ -262,7 +262,9 @@ func (s *Store) GetMaxAuditSequence(ctx context.Context, instanceID string) (int
 	}
 
 	if !maxSeq.Valid {
-		// No rows for this instance yet - start at 0
+		// No rows for this instance_id yet - start at 0
+		// Note: Legacy logs (created before this feature) have NULL instance_id,
+		// so they won't match the WHERE clause and won't affect this result.
 		return 0, nil
 	}
 

@@ -26,6 +26,16 @@ import (
 //
 // Total max length: 190 + 1 + 15 + 1 + 16 = 223 chars
 func GenerateInstanceID() (string, error) {
+	// Length constraints for instance ID components
+	const (
+		maxTotalLen  = 255                                        // Database VARCHAR(255) limit
+		timestampLen = 15                                         // YYYYMMDD-HHMMSS format
+		randomLen    = 16                                         // Alphanumeric random string
+		maxSourceLen = maxTotalLen - 2 - timestampLen - randomLen // 190 (2 dashes)
+		hashLen      = 8                                          // 4 bytes -> 8 hex chars
+		truncatedLen = maxSourceLen - 1 - hashLen                 // 181 (reserve space for -hash)
+	)
+
 	// Source priority: BYTEBASE_INSTANCE_ID > HOSTNAME > os.Hostname() > "bytebase"
 	source := os.Getenv("BYTEBASE_INSTANCE_ID")
 	if source == "" {
@@ -40,13 +50,12 @@ func GenerateInstanceID() (string, error) {
 		}
 	}
 
-	// Truncate source to guarantee total length < 255
-	const maxSourceLen = 190
+	// Truncate source to guarantee total length <= 255
 	if len(source) > maxSourceLen {
 		// Hash excess to preserve uniqueness
 		hash := sha256.Sum256([]byte(source))
 		hashHex := hex.EncodeToString(hash[:4])
-		source = source[:170] + "-" + hashHex
+		source = fmt.Sprintf("%s-%s", source[:truncatedLen], hashHex)
 	}
 
 	// Timestamp: YYYYMMDD-HHMMSS (15 chars)
