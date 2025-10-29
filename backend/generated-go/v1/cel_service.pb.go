@@ -211,7 +211,7 @@ var File_v1_cel_service_proto protoreflect.FileDescriptor
 
 const file_v1_cel_service_proto_rawDesc = "" +
 	"\n" +
-	"\x14v1/cel_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a%google/api/expr/v1alpha1/syntax.proto\x1a\x13v1/annotation.proto\"5\n" +
+	"\x14v1/cel_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a%google/api/expr/v1alpha1/syntax.proto\"5\n" +
 	"\x11BatchParseRequest\x12 \n" +
 	"\vexpressions\x18\x01 \x03(\tR\vexpressions\"V\n" +
 	"\x12BatchParseResponse\x12@\n" +
@@ -265,7 +265,6 @@ func file_v1_cel_service_proto_init() {
 	if File_v1_cel_service_proto != nil {
 		return
 	}
-	file_v1_annotation_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
