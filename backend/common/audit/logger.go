@@ -40,6 +40,7 @@ type Logger struct {
 
 // Input represents an audit event submitted by API handlers
 type Input struct {
+	Ctx     context.Context // Request context for cancellation propagation
 	Payload *storepb.AuditLog
 	ResChan chan error // Response channel for synchronous error handling
 }
@@ -119,7 +120,7 @@ func (l *Logger) Log(ctx context.Context, payload *storepb.AuditLog) error {
 
 	// Submit to sequencer (non-blocking with backpressure)
 	select {
-	case l.inputChan <- &Input{Payload: payload, ResChan: resChan}:
+	case l.inputChan <- &Input{Ctx: ctx, Payload: payload, ResChan: resChan}:
 		// Queued successfully
 	case <-l.shutdownCtx.Done():
 		return common.Errorf(common.Internal, "shutdown in progress")
@@ -134,7 +135,7 @@ func (l *Logger) Log(ctx context.Context, payload *storepb.AuditLog) error {
 		return err
 	case <-ctx.Done():
 		return ctx.Err()
-	case <-time.After(5 * time.Second):
+	case <-time.After(500 * time.Millisecond):
 		return common.Errorf(common.Internal, "audit processing timeout")
 	}
 }
@@ -147,6 +148,18 @@ func (l *Logger) runSequencer() {
 		slog.Int64("starting_sequence", l.currentSeq))
 
 	for input := range l.inputChan {
+		// Check if caller's context is cancelled before processing
+		select {
+		case <-input.Ctx.Done():
+			// Request cancelled - skip processing, notify caller
+			select {
+			case input.ResChan <- input.Ctx.Err():
+			default:
+			}
+			continue
+		default:
+		}
+
 		// Process one audit event
 		err := l.processAuditEvent(input.Payload)
 
@@ -188,7 +201,7 @@ func (l *Logger) processAuditEvent(payload *storepb.AuditLog) error {
 		return nil
 	}
 
-	// Both queues full - retry with backoff
+	// Both queues full - retry with backoff to allow recovery
 	return l.handleBothQueuesFailed(payloadCopy, nextSeq)
 }
 
@@ -217,6 +230,7 @@ func (l *Logger) tryQueueDB(payload *storepb.AuditLog) bool {
 }
 
 // handleBothQueuesFailed retries with exponential backoff when both queues full
+// This gives the system time to recover during transient overload spikes
 func (l *Logger) handleBothQueuesFailed(payload *storepb.AuditLog, nextSeq int64) error {
 	// Check if shutting down
 	select {
@@ -229,6 +243,7 @@ func (l *Logger) handleBothQueuesFailed(payload *storepb.AuditLog, nextSeq int64
 	}
 
 	// Normal operation: Retry with exponential backoff (SAME sequence)
+	// This allows stdout writer and DB batcher time to drain their queues
 	backoff := 10 * time.Millisecond
 	maxAttempts := 3
 

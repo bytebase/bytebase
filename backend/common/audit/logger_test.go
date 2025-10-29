@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"golang.org/x/sync/errgroup"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
@@ -414,25 +415,28 @@ func TestSequencerBackpressure(t *testing.T) {
 	}
 
 	// Submit many events rapidly to trigger backpressure
-	var wg sync.WaitGroup
-	errChan := make(chan error, 20)
+	var (
+		mu     sync.Mutex
+		errors []error
+	)
 
+	g := new(errgroup.Group)
 	for i := 0; i < 20; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		g.Go(func() error {
 			if err := logger.Log(ctx, payload); err != nil {
-				errChan <- err
+				mu.Lock()
+				errors = append(errors, err)
+				mu.Unlock()
 			}
-		}()
+			return nil // Don't stop on first error - collect all
+		})
 	}
 
-	wg.Wait()
-	close(errChan)
+	_ = g.Wait()
 
 	// At least one should fail with backpressure (either input queue or output queues full)
 	hasBackpressureError := false
-	for err := range errChan {
+	for _, err := range errors {
 		if strings.Contains(err.Error(), "input queue full") ||
 			strings.Contains(err.Error(), "failed to queue event") ||
 			strings.Contains(err.Error(), "overloaded") {
@@ -507,39 +511,30 @@ func TestSequencerGapFreeUnderConcurrentLoad(t *testing.T) {
 	const eventsPerClient = 100
 	const totalEvents = clients * eventsPerClient // 10,000
 
-	var wg sync.WaitGroup
-	errChan := make(chan error, clients)
-
+	g := new(errgroup.Group)
 	for clientID := 0; clientID < clients; clientID++ {
-		wg.Add(1)
-		go func(id int) {
-			defer wg.Done()
-
+		clientID := clientID // Capture loop variable
+		g.Go(func() error {
 			ctx := context.Background()
 			for i := 0; i < eventsPerClient; i++ {
 				payload := &storepb.AuditLog{
 					Method:   "GET",
-					Resource: fmt.Sprintf("/api/v1/client/%d/event/%d", id, i),
-					User:     fmt.Sprintf("users/client%d@example.com", id),
+					Resource: fmt.Sprintf("/api/v1/client/%d/event/%d", clientID, i),
+					User:     fmt.Sprintf("users/client%d@example.com", clientID),
 					Severity: storepb.AuditLog_INFO,
 				}
 
 				if err := logger.Log(ctx, payload); err != nil {
-					errChan <- err
-					return
+					return err
 				}
 			}
-		}(clientID)
+			return nil
+		})
 	}
 
 	// Wait for all clients to finish
-	wg.Wait()
-	close(errChan)
-
-	// Check for errors
-	for err := range errChan {
-		a.NoError(err, "client encountered error")
-	}
+	err = g.Wait()
+	a.NoError(err, "client encountered error")
 
 	// Drain stdout queue and collect sequences
 	time.Sleep(500 * time.Millisecond) // Give sequencer time
