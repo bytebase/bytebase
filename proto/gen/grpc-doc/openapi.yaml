@@ -14653,14 +14653,14 @@ components:
                 mfaEnabled:
                     type: boolean
                     description: The mfa_enabled flag means if the user has enabled MFA.
-                mfaSecret:
+                tempOtpSecret:
                     type: string
-                    description: The mfa_secret is the temporary secret using in two phase verification.
-                recoveryCodes:
+                    description: Temporary OTP secret used during MFA setup and regeneration.
+                tempRecoveryCodes:
                     type: array
                     items:
                         type: string
-                    description: The recovery_codes is the temporary recovery codes using in two phase verification.
+                    description: Temporary recovery codes used during MFA setup and regeneration.
                 phone:
                     type: string
                     description: |-

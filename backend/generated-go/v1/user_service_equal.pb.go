@@ -221,14 +221,14 @@ func (x *User) Equal(y *User) bool {
 	if x.MfaEnabled != y.MfaEnabled {
 		return false
 	}
-	if x.MfaSecret != y.MfaSecret {
+	if x.TempOtpSecret != y.TempOtpSecret {
 		return false
 	}
-	if len(x.RecoveryCodes) != len(y.RecoveryCodes) {
+	if len(x.TempRecoveryCodes) != len(y.TempRecoveryCodes) {
 		return false
 	}
-	for i := 0; i < len(x.RecoveryCodes); i++ {
-		if x.RecoveryCodes[i] != y.RecoveryCodes[i] {
+	for i := 0; i < len(x.TempRecoveryCodes); i++ {
+		if x.TempRecoveryCodes[i] != y.TempRecoveryCodes[i] {
 			return false
 		}
 	}
