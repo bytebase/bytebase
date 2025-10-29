@@ -3,16 +3,12 @@ package v1
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"log/slog"
 	"slices"
 	"strings"
 	"time"
 
 	"connectrpc.com/connect"
-	"github.com/google/cel-go/cel"
-	celast "github.com/google/cel-go/common/ast"
-	celoperators "github.com/google/cel-go/common/operators"
 	"github.com/jackc/pgtype"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -206,123 +202,12 @@ func (s *RolloutService) buildRolloutFindWithFilter(ctx context.Context, pipelin
 		return nil
 	}
 
-	e, err := cel.NewEnv()
+	filterQ, err := s.store.GetListRolloutFilter(ctx, filter)
 	if err != nil {
-		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to create cel env"))
-	}
-	ast, iss := e.Parse(filter)
-	if iss != nil {
-		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String()))
+		return connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	var getFilter func(expr celast.Expr) (string, error)
-	var positionalArgs []any
-
-	getFilter = func(expr celast.Expr) (string, error) {
-		switch expr.Kind() {
-		case celast.CallKind:
-			functionName := expr.AsCall().FunctionName()
-			switch functionName {
-			case celoperators.LogicalAnd:
-				return getSubConditionFromExpr(expr, getFilter, "AND")
-			case celoperators.Equals:
-				variable, value := getVariableAndValueFromExpr(expr)
-				switch variable {
-				case "creator":
-					user, err := s.getUserByIdentifier(ctx, value.(string))
-					if err != nil {
-						return "", connect.NewError(connect.CodeInternal, errors.Errorf("failed to get user %v with error %v", value, err.Error()))
-					}
-					positionalArgs = append(positionalArgs, user.ID)
-					return fmt.Sprintf("pipeline.creator_id = $%d", len(positionalArgs)), nil
-				case "task_type":
-					taskType, ok := value.(string)
-					if !ok {
-						return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("task_type value must be a string"))
-					}
-					// Validate task type
-					if _, ok := v1pb.Task_Type_value[taskType]; !ok {
-						return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid task_type value: %s", taskType))
-					}
-					// Convert v1pb.Task_Type to storepb.Task_Type
-					v1TaskType := v1pb.Task_Type(v1pb.Task_Type_value[taskType])
-					storeTaskType := convertToStoreTaskType(v1TaskType)
-					// Query tasks that have the specified type
-					positionalArgs = append(positionalArgs, storeTaskType.String())
-					return fmt.Sprintf("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = pipeline.id AND task.type = $%d)", len(positionalArgs)), nil
-				default:
-					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported variable %q", variable))
-				}
-			case celoperators.In:
-				variable, value := getVariableAndValueFromExpr(expr)
-				switch variable {
-				case "task_type":
-					rawList, ok := value.([]any)
-					if !ok {
-						return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid list value %q for %v", value, variable))
-					}
-					if len(rawList) == 0 {
-						return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("empty list value for filter %v", variable))
-					}
-					var placeholders []string
-					for _, raw := range rawList {
-						taskType, ok := raw.(string)
-						if !ok {
-							return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("task_type value must be a string"))
-						}
-						// Validate task type
-						if _, ok := v1pb.Task_Type_value[taskType]; !ok {
-							return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid task_type value: %s", taskType))
-						}
-						// Convert v1pb.Task_Type to storepb.Task_Type
-						v1TaskType := v1pb.Task_Type(v1pb.Task_Type_value[taskType])
-						storeTaskType := convertToStoreTaskType(v1TaskType)
-						positionalArgs = append(positionalArgs, storeTaskType.String())
-						placeholders = append(placeholders, fmt.Sprintf("$%d", len(positionalArgs)))
-					}
-					// Query tasks that have any of the specified types
-					return fmt.Sprintf("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = pipeline.id AND task.type IN (%s))", strings.Join(placeholders, ", ")), nil
-				default:
-					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported variable %q", variable))
-				}
-			case celoperators.GreaterEquals, celoperators.LessEquals:
-				variable, rawValue := getVariableAndValueFromExpr(expr)
-				value, ok := rawValue.(string)
-				if !ok {
-					return "", errors.Errorf("expect string, got %T, hint: filter literals should be string", rawValue)
-				}
-				if variable != "update_time" {
-					return "", errors.Errorf(`">=" and "<=" are only supported for "update_time"`)
-				}
-				t, err := time.Parse(time.RFC3339, value)
-				if err != nil {
-					return "", errors.Errorf("failed to parse time %v, error: %v", value, err)
-				}
-				positionalArgs = append(positionalArgs, t)
-				if functionName == celoperators.GreaterEquals {
-					return fmt.Sprintf("updated_at >= $%d", len(positionalArgs)), nil
-				}
-				return fmt.Sprintf("updated_at <= $%d", len(positionalArgs)), nil
-			default:
-				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported function %v", functionName))
-			}
-		default:
-			return "", errors.Errorf("unexpected expr kind %v", expr.Kind())
-		}
-	}
-
-	where, err := getFilter(ast.NativeRep().Expr())
-	if err != nil {
-		return err
-	}
-
-	if where != "" {
-		pipelineFind.Filter = &store.ListResourceFilter{
-			Where: "(" + where + ")",
-			Args:  positionalArgs,
-		}
-	}
-
+	pipelineFind.FilterQ = filterQ
 	return nil
 }
 
@@ -1183,19 +1068,4 @@ func (s *RolloutService) canUserCancelEnvironmentTaskRun(ctx context.Context, us
 
 func (s *RolloutService) canUserSkipEnvironmentTasks(ctx context.Context, user *store.UserMessage, project *store.ProjectMessage, issue *store.IssueMessage, environment string, creatorUID int) (bool, error) {
 	return s.canUserRunEnvironmentTasks(ctx, user, project, issue, environment, creatorUID)
-}
-
-func (s *RolloutService) getUserByIdentifier(ctx context.Context, identifier string) (*store.UserMessage, error) {
-	email := strings.TrimPrefix(identifier, "users/")
-	if email == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("invalid empty creator identifier"))
-	}
-	user, err := s.store.GetUserByEmail(ctx, email)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf(`failed to find user "%s" with error: %v`, email, err))
-	}
-	if user == nil {
-		return nil, errors.Errorf("cannot found user %s", email)
-	}
-	return user, nil
 }
