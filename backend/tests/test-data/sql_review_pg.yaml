@@ -88,7 +88,7 @@
         "code": 302,
         "sqlReviewReport": {
           "startPosition": {
-            "line": 1
+            "line": 4
           }
         }
       }
@@ -100,7 +100,7 @@
         "code": 304,
         "sqlReviewReport": {
           "startPosition": {
-            "line": 1
+            "line": 5
           }
         }
       }
@@ -136,7 +136,7 @@
         "code": 402,
         "sqlReviewReport": {
           "startPosition": {
-            "line": 1
+            "line": 2
           }
         }
       }
@@ -148,7 +148,7 @@
         "code": 402,
         "sqlReviewReport": {
           "startPosition": {
-            "line": 1
+            "line": 3
           }
         }
       }
@@ -160,7 +160,7 @@
         "code": 402,
         "sqlReviewReport": {
           "startPosition": {
-            "line": 1
+            "line": 4
           }
         }
       }
@@ -236,6 +236,18 @@
         "title": "naming.index.pk",
         "content": "Primary key in table \"tech_book\" mismatches the naming convention, expect \"^$|^pk_tech_book_id$\" but found \"pk1\"",
         "code": 306,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
+        }
+      }
+    - |-
+      {
+        "status": "WARNING",
+        "title": "schema.backward-compatibility",
+        "content": "\"ALTER INDEX pk_tech_book_id RENAME TO pk1\" may cause incompatibility with the existing data and code",
+        "code": 102,
         "sqlReviewReport": {
           "startPosition": {
             "line": 1
