@@ -21,6 +21,12 @@ func init() {
 }
 
 func extractChangedResources(database string, _ string, dbSchema *model.DatabaseSchema, asts any, statement string) (*base.ChangeSummary, error) {
+	// Check if this is ANTLR ParseResult
+	if parseResult, ok := asts.(*ParseResult); ok {
+		return extractChangedResourcesANTLR(database, "", dbSchema, parseResult, statement)
+	}
+
+	// Fall back to legacy AST
 	nodes, ok := asts.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("invalid ast type %T", asts)
