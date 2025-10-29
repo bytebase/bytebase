@@ -295,6 +295,8 @@ CREATE TABLE plan_check_run (
 
 CREATE INDEX idx_plan_check_run_plan_id ON plan_check_run (plan_id);
 
+CREATE INDEX idx_plan_check_run_active_status ON plan_check_run(status, id) WHERE status = 'RUNNING';
+
 ALTER SEQUENCE plan_check_run_id_seq RESTART WITH 101;
 
 -- Plan related END

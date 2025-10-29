@@ -1,0 +1,31 @@
+-- Add partial index on plan_check_run for active statuses
+--
+-- This migration adds a partial index to optimize queries filtering for active plan check runs.
+--
+-- Background:
+-- Plan check runs go through state transitions: RUNNING -> (DONE|FAILED|CANCELED)
+-- Once in a terminal state (DONE, FAILED, CANCELED), status never changes again.
+-- Most plan check runs are in terminal states, but the scheduler frequently queries for RUNNING checks.
+--
+-- Problem:
+-- The plan check scheduler polls every 5 seconds with:
+-- "SELECT ... FROM plan_check_run WHERE status = 'RUNNING' ORDER BY id ASC"
+-- This was doing sequential scans with high cost because there was no index on status.
+--
+-- Solution:
+-- Use a partial index that only covers RUNNING status, following the same pattern as task_run.
+-- This is more efficient than a full index because:
+-- - Smaller index size (only active checks, not all historical completed checks)
+-- - Faster index maintenance (terminal states don't consume index space)
+-- - Better cache efficiency (smaller index fits in memory)
+-- - Matches the query pattern (scheduler filters for RUNNING status)
+--
+-- Example query optimized:
+-- SELECT plan_check_run.id, ... FROM plan_check_run
+-- WHERE plan_check_run.status = 'RUNNING'
+-- ORDER BY plan_check_run.id ASC
+--
+-- The (status, id) index also helps with the ORDER BY id ASC clause.
+
+CREATE INDEX idx_plan_check_run_active_status ON plan_check_run(status, id)
+WHERE status = 'RUNNING';
