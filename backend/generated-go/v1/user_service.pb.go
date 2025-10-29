@@ -625,10 +625,10 @@ type User struct {
 	ServiceKey string `protobuf:"bytes,8,opt,name=service_key,json=serviceKey,proto3" json:"service_key,omitempty"`
 	// The mfa_enabled flag means if the user has enabled MFA.
 	MfaEnabled bool `protobuf:"varint,9,opt,name=mfa_enabled,json=mfaEnabled,proto3" json:"mfa_enabled,omitempty"`
-	// The mfa_secret is the temporary secret using in two phase verification.
-	MfaSecret string `protobuf:"bytes,10,opt,name=mfa_secret,json=mfaSecret,proto3" json:"mfa_secret,omitempty"`
-	// The recovery_codes is the temporary recovery codes using in two phase verification.
-	RecoveryCodes []string `protobuf:"bytes,11,rep,name=recovery_codes,json=recoveryCodes,proto3" json:"recovery_codes,omitempty"`
+	// Temporary OTP secret used during MFA setup and regeneration.
+	TempOtpSecret string `protobuf:"bytes,10,opt,name=temp_otp_secret,json=tempOtpSecret,proto3" json:"temp_otp_secret,omitempty"`
+	// Temporary recovery codes used during MFA setup and regeneration.
+	TempRecoveryCodes []string `protobuf:"bytes,11,rep,name=temp_recovery_codes,json=tempRecoveryCodes,proto3" json:"temp_recovery_codes,omitempty"`
 	// Should be a valid E.164 compliant phone number.
 	// Could be empty.
 	Phone string `protobuf:"bytes,12,opt,name=phone,proto3" json:"phone,omitempty"`
@@ -727,16 +727,16 @@ func (x *User) GetMfaEnabled() bool {
 	return false
 }
 
-func (x *User) GetMfaSecret() string {
+func (x *User) GetTempOtpSecret() string {
 	if x != nil {
-		return x.MfaSecret
+		return x.TempOtpSecret
 	}
 	return ""
 }
 
-func (x *User) GetRecoveryCodes() []string {
+func (x *User) GetTempRecoveryCodes() []string {
 	if x != nil {
-		return x.RecoveryCodes
+		return x.TempRecoveryCodes
 	}
 	return nil
 }
@@ -863,7 +863,7 @@ const file_v1_user_service_proto_rawDesc = "" +
 	"\x11bytebase.com/UserR\x04name\"D\n" +
 	"\x13UndeleteUserRequest\x12-\n" +
 	"\x04name\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
-	"\x11bytebase.com/UserR\x04name\"\xa4\x05\n" +
+	"\x11bytebase.com/UserR\x04name\"\xb6\x05\n" +
 	"\x04User\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12(\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x14\n" +
@@ -874,11 +874,10 @@ const file_v1_user_service_proto_rawDesc = "" +
 	"\vservice_key\x18\b \x01(\tB\x03\xe0A\x04R\n" +
 	"serviceKey\x12\x1f\n" +
 	"\vmfa_enabled\x18\t \x01(\bR\n" +
-	"mfaEnabled\x12\x1d\n" +
-	"\n" +
-	"mfa_secret\x18\n" +
-	" \x01(\tR\tmfaSecret\x12%\n" +
-	"\x0erecovery_codes\x18\v \x03(\tR\rrecoveryCodes\x12\x14\n" +
+	"mfaEnabled\x12&\n" +
+	"\x0ftemp_otp_secret\x18\n" +
+	" \x01(\tR\rtempOtpSecret\x12.\n" +
+	"\x13temp_recovery_codes\x18\v \x03(\tR\x11tempRecoveryCodes\x12\x14\n" +
 	"\x05phone\x18\f \x01(\tR\x05phone\x123\n" +
 	"\aprofile\x18\r \x01(\v2\x19.bytebase.v1.User.ProfileR\aprofile\x12\x1b\n" +
 	"\x06groups\x18\x0e \x03(\tB\x03\xe0A\x03R\x06groups\x1a\xbc\x01\n" +
