@@ -94,6 +94,46 @@ func TestGetStatementTypesANTLR(t *testing.T) {
 				  INSERT INTO t1 (id) VALUES (1);`,
 			expectedTypes: []string{"CREATE_TABLE", "CREATE_INDEX", "INSERT"},
 		},
+		{
+			name:          "RENAME TABLE",
+			sql:           "ALTER TABLE t1 RENAME TO t2;",
+			expectedTypes: []string{"RENAME_TABLE"},
+		},
+		{
+			name:          "RENAME COLUMN",
+			sql:           "ALTER TABLE t1 RENAME COLUMN old_name TO new_name;",
+			expectedTypes: []string{"RENAME_COLUMN"},
+		},
+		{
+			name:          "RENAME COLUMN without COLUMN keyword",
+			sql:           "ALTER TABLE t1 RENAME old_name TO new_name;",
+			expectedTypes: []string{"RENAME_COLUMN"},
+		},
+		{
+			name:          "RENAME CONSTRAINT",
+			sql:           "ALTER TABLE t1 RENAME CONSTRAINT old_constraint TO new_constraint;",
+			expectedTypes: []string{"RENAME_CONSTRAINT"},
+		},
+		{
+			name:          "RENAME INDEX",
+			sql:           "ALTER INDEX idx_old RENAME TO idx_new;",
+			expectedTypes: []string{"RENAME_INDEX"},
+		},
+		{
+			name:          "RENAME SCHEMA",
+			sql:           "ALTER SCHEMA old_schema RENAME TO new_schema;",
+			expectedTypes: []string{"RENAME_SCHEMA"},
+		},
+		{
+			name:          "RENAME SEQUENCE",
+			sql:           "ALTER SEQUENCE seq_old RENAME TO seq_new;",
+			expectedTypes: []string{"RENAME_SEQUENCE"},
+		},
+		{
+			name:          "RENAME VIEW",
+			sql:           "ALTER VIEW v_old RENAME TO v_new;",
+			expectedTypes: []string{"RENAME_VIEW"},
+		},
 	}
 
 	for _, tt := range tests {

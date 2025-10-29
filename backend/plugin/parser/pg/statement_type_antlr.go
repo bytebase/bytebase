@@ -393,7 +393,43 @@ func getRenameStatementType(ctx *parser.RenamestmtContext) string {
 		return ""
 	}
 
-	// For RENAME, we return a generic type since the grammar structure is complex
-	// The legacy code had detailed handling but for now we simplify
+	// Check for ALTER TABLE variants
+	if ctx.TABLE() != nil {
+		// ALTER TABLE ... RENAME CONSTRAINT ... TO ...
+		if ctx.CONSTRAINT() != nil {
+			return "RENAME_CONSTRAINT"
+		}
+		// ALTER TABLE ... RENAME [COLUMN] ... TO ...
+		// RENAME_COLUMN has 2 name elements (old_name, new_name)
+		// RENAME_TABLE has 1 name element (new_table_name)
+		// The table name is in relation_expr, not counted in AllName()
+		if ctx.Opt_column() != nil || len(ctx.AllName()) >= 2 {
+			return "RENAME_COLUMN"
+		}
+		// ALTER TABLE ... RENAME TO ...
+		return "RENAME_TABLE"
+	}
+
+	// Check for ALTER INDEX
+	if ctx.INDEX() != nil {
+		return "RENAME_INDEX"
+	}
+
+	// Check for ALTER SCHEMA
+	if ctx.SCHEMA() != nil {
+		return "RENAME_SCHEMA"
+	}
+
+	// Check for ALTER SEQUENCE
+	if ctx.SEQUENCE() != nil {
+		return "RENAME_SEQUENCE"
+	}
+
+	// Check for ALTER VIEW (includes MATERIALIZED VIEW)
+	if ctx.VIEW() != nil {
+		return "RENAME_VIEW"
+	}
+
+	// Default for other RENAME types (AGGREGATE, COLLATION, DOMAIN, FUNCTION, etc.)
 	return "RENAME"
 }
