@@ -3,8 +3,13 @@ package store
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"strings"
 
+	"github.com/google/cel-go/cel"
+	celast "github.com/google/cel-go/common/ast"
+	celoperators "github.com/google/cel-go/common/operators"
+	celoverloads "github.com/google/cel-go/common/overloads"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -65,9 +70,9 @@ type FindDatabaseMessage struct {
 	// IsCaseSensitive is used to ignore case sensitive when finding database.
 	IsCaseSensitive bool
 
-	Filter *ListResourceFilter
-	Limit  *int
-	Offset *int
+	FilterQ *qb.Query
+	Limit   *int
+	Offset  *int
 }
 
 // GetDatabaseV2 gets a database.
@@ -394,9 +399,11 @@ func (*Store) listDatabaseImplV2(ctx context.Context, txn *sql.Tx, find *FindDat
 	from := qb.Q().Space("db")
 	where := qb.Q().Space("TRUE")
 
-	if filter := find.Filter; filter != nil {
-		where.And(ConvertDollarPlaceholders(filter.Where), filter.Args...)
-		if strings.Contains(filter.Where, "ds.metadata->'schemas'") {
+	if filterQ := find.FilterQ; filterQ != nil {
+		where.And("?", filterQ)
+		// Check if the filter requires the db_schema table for table filtering
+		sql, _, err := filterQ.ToSQL()
+		if err == nil && strings.Contains(sql, "ds.metadata") {
 			from.Space("INNER JOIN db_schema ds ON db.instance = ds.instance AND db.name = ds.db_name")
 		}
 	}
@@ -500,4 +507,221 @@ func (*Store) listDatabaseImplV2(ctx context.Context, txn *sql.Tx, find *FindDat
 	}
 
 	return databaseMessages, nil
+}
+
+func GetListDatabaseFilter(filter string) (*qb.Query, error) {
+	if filter == "" {
+		return nil, nil
+	}
+
+	e, err := cel.NewEnv()
+	if err != nil {
+		return nil, errors.Errorf("failed to create cel env")
+	}
+	ast, iss := e.Parse(filter)
+	if iss != nil {
+		return nil, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String())
+	}
+
+	var getFilter func(expr celast.Expr) (*qb.Query, error)
+
+	parseToLabelFilterSQL := func(resource, key string, value any) (*qb.Query, error) {
+		switch v := value.(type) {
+		case string:
+			return qb.Q().Space(fmt.Sprintf("%s->'labels'->>'%s' = ?", resource, key), v), nil
+		case []any:
+			if len(v) == 0 {
+				return nil, errors.Errorf("empty label filter")
+			}
+			labelValueList := []any{}
+			for _, raw := range v {
+				labelValueList = append(labelValueList, raw.(string))
+			}
+			return qb.Q().Space(fmt.Sprintf("%s->'labels'->>'%s' = ANY(?)", resource, key), labelValueList), nil
+		default:
+			return nil, errors.Errorf("empty value %v for label filter", value)
+		}
+	}
+
+	parseToEngineSQL := func(expr celast.Expr) (*qb.Query, error) {
+		variable, value := getVariableAndValueFromExpr(expr)
+		if variable != "engine" {
+			return nil, errors.Errorf(`only "engine" support "engine in [xx]"/"!(engine in [xx])" operator`)
+		}
+
+		rawEngineList, ok := value.([]any)
+		if !ok {
+			return nil, errors.Errorf("invalid engine value %q", value)
+		}
+		if len(rawEngineList) == 0 {
+			return nil, errors.Errorf("empty engine filter")
+		}
+		engineList := []any{}
+		for _, rawEngine := range rawEngineList {
+			engineValue, ok := storepb.Engine_value[rawEngine.(string)]
+			if !ok {
+				return nil, errors.Errorf("invalid engine filter %q", rawEngine)
+			}
+			engine := storepb.Engine(engineValue)
+			engineList = append(engineList, engine.String())
+		}
+
+		return qb.Q().Space("instance.metadata->>'engine' = ANY(?)", engineList), nil
+	}
+
+	parseToSQL := func(variable, value any) (*qb.Query, error) {
+		switch variable {
+		case "project":
+			projectID, err := common.GetProjectID(value.(string))
+			if err != nil {
+				return nil, errors.Errorf("invalid project filter %q", value)
+			}
+			return qb.Q().Space("db.project = ?", projectID), nil
+		case "instance":
+			instanceID, err := common.GetInstanceID(value.(string))
+			if err != nil {
+				return nil, errors.Errorf("invalid instance filter %q", value)
+			}
+			return qb.Q().Space("db.instance = ?", instanceID), nil
+		case "environment":
+			environment, ok := value.(string)
+			if !ok {
+				return nil, errors.Errorf("failed to parse value %v to string", value)
+			}
+			if environment != "" {
+				environmentID, err := common.GetEnvironmentID(environment)
+				if err != nil {
+					return nil, errors.Errorf("invalid environment filter %q", value)
+				}
+				return qb.Q().Space("COALESCE(db.environment, instance.environment) = ?", environmentID), nil
+			}
+			return qb.Q().Space("db.environment IS NULL AND instance.environment IS NULL"), nil
+		case "engine":
+			engineValue, ok := storepb.Engine_value[value.(string)]
+			if !ok {
+				return nil, errors.Errorf("invalid engine filter %q", value)
+			}
+			engine := storepb.Engine(engineValue)
+			return qb.Q().Space("instance.metadata->>'engine' = ?", engine), nil
+		case "name":
+			return qb.Q().Space("db.name = ?", value), nil
+		case "drifted":
+			drifted, ok := value.(bool)
+			if !ok {
+				return nil, errors.Errorf("invalid drifted filter %q", value)
+			}
+			condition := "IS"
+			if !drifted {
+				condition = "IS NOT"
+			}
+			return qb.Q().Space(fmt.Sprintf("(db.metadata->>'drifted')::boolean %s TRUE", condition)), nil
+		case "exclude_unassigned":
+			if excludeUnassigned, ok := value.(bool); excludeUnassigned && ok {
+				return qb.Q().Space("db.project != ?", common.DefaultProjectID), nil
+			}
+			return qb.Q().Space("TRUE"), nil
+		case "table":
+			return qb.Q().Space(`
+				EXISTS (
+					SELECT 1
+					FROM json_array_elements(ds.metadata->'schemas') AS s,
+						 json_array_elements(s->'tables') AS t
+					WHERE t->>'name' = ?
+				)
+			`, value.(string)), nil
+		default:
+			varStr, ok := variable.(string)
+			if !ok {
+				return nil, errors.Errorf("unsupport variable %q", variable)
+			}
+			if labelKey, ok := strings.CutPrefix(varStr, "labels."); ok {
+				return parseToLabelFilterSQL("db.metadata", labelKey, value)
+			}
+			return nil, errors.Errorf("unsupport variable %q", variable)
+		}
+	}
+
+	getFilter = func(expr celast.Expr) (*qb.Query, error) {
+		q := qb.Q()
+		switch expr.Kind() {
+		case celast.CallKind:
+			functionName := expr.AsCall().FunctionName()
+			switch functionName {
+			case celoperators.LogicalOr:
+				for _, arg := range expr.AsCall().Args() {
+					qq, err := getFilter(arg)
+					if err != nil {
+						return nil, err
+					}
+					q.Or("?", qq)
+				}
+				return qb.Q().Space("(?)", q), nil
+			case celoperators.LogicalAnd:
+				for _, arg := range expr.AsCall().Args() {
+					qq, err := getFilter(arg)
+					if err != nil {
+						return nil, err
+					}
+					q.And("?", qq)
+				}
+				return qb.Q().Space("(?)", q), nil
+			case celoperators.Equals:
+				variable, value := getVariableAndValueFromExpr(expr)
+				return parseToSQL(variable, value)
+			case celoverloads.Matches:
+				variable := expr.AsCall().Target().AsIdent()
+				args := expr.AsCall().Args()
+				if len(args) != 1 {
+					return nil, errors.Errorf(`invalid args for %q`, variable)
+				}
+				value := args[0].AsLiteral().Value()
+				strValue, ok := value.(string)
+				if !ok {
+					return nil, errors.Errorf("expect string, got %T, hint: filter literals should be string", value)
+				}
+				strValue = strings.ToLower(strValue)
+
+				switch variable {
+				case "name":
+					return qb.Q().Space("LOWER(db.name) LIKE ?", "%"+strValue+"%"), nil
+				case "table":
+					return qb.Q().Space(`EXISTS (
+						SELECT 1
+						FROM json_array_elements(ds.metadata->'schemas') AS s,
+						 	 json_array_elements(s->'tables') AS t
+						WHERE t->>'name' LIKE ?`, "%"+strValue+"%"), nil
+				default:
+					return nil, errors.Errorf(`only "name" or "table" support %q operator, but found %q`, celoverloads.Matches, variable)
+				}
+			case celoperators.In:
+				variable, value := getVariableAndValueFromExpr(expr)
+				if variable == "engine" {
+					return parseToEngineSQL(expr)
+				} else if labelKey, ok := strings.CutPrefix(variable, "labels."); ok {
+					return parseToLabelFilterSQL("db.metadata", labelKey, value)
+				}
+				return nil, errors.Errorf("unsupport variable %q", variable)
+			case celoperators.LogicalNot:
+				args := expr.AsCall().Args()
+				if len(args) != 1 {
+					return nil, errors.Errorf(`only support !(engine in ["{engine1}", "{engine2}"]) format`)
+				}
+				qq, err := getFilter(args[0])
+				if err != nil {
+					return nil, err
+				}
+				return qb.Q().Space("(NOT (?))", qq), nil
+			default:
+				return nil, errors.Errorf("unexpected function %v", functionName)
+			}
+		default:
+			return nil, errors.Errorf("unexpected expr kind %v", expr.Kind())
+		}
+	}
+
+	filterQ, err := getFilter(ast.NativeRep().Expr())
+	if err != nil {
+		return nil, err
+	}
+	return qb.Q().Space("(?)", filterQ), nil
 }
