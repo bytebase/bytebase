@@ -70,7 +70,7 @@
     "semver": "7.7.2",
     "slug": "11.0.0",
     "splitpanes": "4.0.4",
-    "sql-formatter": "15.6.9",
+    "sql-formatter": "15.6.10",
     "string-width": "^8.0.0",
     "tailwind-merge": "^3.3.0",
     "uuid": "13.0.0",

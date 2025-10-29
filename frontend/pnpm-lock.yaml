@@ -173,8 +173,8 @@ importers:
         specifier: 4.0.4
         version: 4.0.4(vue@3.5.22(typescript@5.9.3))
       sql-formatter:
-        specifier: 15.6.9
-        version: 15.6.9
+        specifier: 15.6.10
+        version: 15.6.10
       string-width:
         specifier: ^8.0.0
         version: 8.1.0
@@ -4573,8 +4573,8 @@ packages:
     peerDependencies:
       vue: ^3.2.0
 
-  sql-formatter@15.6.9:
-    resolution: {integrity: sha512-r9VKnkRfKW7jbhTgytwbM+JqmFclQYN9L58Z3UTktuy9V1f1Y+rGK3t70Truh2wIOJzvZkzobAQ2PwGjjXsr6Q==}
+  sql-formatter@15.6.10:
+    resolution: {integrity: sha512-0bJOPQrRO/JkjQhiThVayq0hOKnI1tHI+2OTkmT7TGtc6kqS+V7kveeMzRW+RNQGxofmTmet9ILvztyuxv0cJQ==}
     hasBin: true
 
   stackback@0.0.2:
@@ -10456,7 +10456,7 @@ snapshots:
     dependencies:
       vue: 3.5.22(typescript@5.9.3)
 
-  sql-formatter@15.6.9:
+  sql-formatter@15.6.10:
     dependencies:
       argparse: 2.0.1
       nearley: 2.20.1
