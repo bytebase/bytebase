@@ -431,5 +431,6 @@ func getRenameStatementType(ctx *parser.RenamestmtContext) string {
 	}
 
 	// Default for other RENAME types (AGGREGATE, COLLATION, DOMAIN, FUNCTION, etc.)
-	return "RENAME"
+	// Return UNKNOWN to maintain backward compatibility
+	return "UNKNOWN"
 }
