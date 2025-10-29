@@ -681,7 +681,7 @@ func convertToUser(ctx context.Context, user *store.UserMessage) *v1pb.User {
 
 	if user.MFAConfig != nil {
 		convertedUser.MfaEnabled = user.MFAConfig.OtpSecret != ""
-		// Only expose MFA secrets and recovery codes to the user themselves
+		// Only expose temporary MFA secrets and recovery codes to the user themselves
 		if currentUser, ok := GetUserFromContext(ctx); ok && currentUser.ID == user.ID {
 			convertedUser.TempOtpSecret = user.MFAConfig.TempOtpSecret
 			convertedUser.TempRecoveryCodes = user.MFAConfig.TempRecoveryCodes
