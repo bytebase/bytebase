@@ -80,7 +80,6 @@ func (s *Store) UpsertDBSchema(
 	dbMetadata *storepb.DatabaseSchemaMetadata,
 	dbConfig *storepb.DatabaseConfig,
 	dbSchema []byte,
-	todo bool,
 ) error {
 	metadataBytes, err := protojson.Marshal(dbMetadata)
 	if err != nil {
@@ -97,23 +96,20 @@ func (s *Store) UpsertDBSchema(
 			db_name,
 			metadata,
 			raw_dump,
-			config,
-			todo
+			config
 		)
-		VALUES (?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?)
 		ON CONFLICT(instance, db_name) DO UPDATE SET
 			metadata = EXCLUDED.metadata,
 			raw_dump = EXCLUDED.raw_dump,
-			config = EXCLUDED.config,
-			todo = EXCLUDED.todo
+			config = EXCLUDED.config
 		RETURNING metadata, raw_dump, config`,
 		instanceID,
 		databaseName,
 		metadataBytes,
 		// Convert to string because []byte{} is null which violates db schema constraints.
 		string(dbSchema),
-		configBytes,
-		todo)
+		configBytes)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -181,138 +177,6 @@ func (s *Store) UpdateDBSchema(ctx context.Context, instanceID, databaseName str
 	// Invalid the cache and read the value again.
 	s.dbSchemaCache.Remove(getDatabaseCacheKey(instanceID, databaseName))
 	return nil
-}
-
-// DBSchemaWithTodo is a struct for a db_schema with the todo column.
-// It is used for the column default value migration.
-type DBSchemaWithTodo struct {
-	ID         int
-	InstanceID string
-	DBName     string
-	Metadata   string
-}
-
-// ListDBSchemasWithTodo lists all db_schemas with todo = true.
-func (s *Store) ListDBSchemasWithTodo(ctx context.Context, engineType storepb.Engine, limit int) ([]*DBSchemaWithTodo, error) {
-	q := qb.Q().Space(`
-		SELECT
-			db_schema.id,
-			db_schema.instance,
-			db_schema.db_name,
-			db_schema.metadata
-		FROM db_schema
-		LEFT JOIN instance ON db_schema.instance = instance.resource_id
-		WHERE db_schema.todo = true AND instance.metadata->>'engine' = ?
-		LIMIT ?`, engineType.String(), limit)
-
-	query, args, err := q.ToSQL()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
-	}
-
-	rows, err := s.GetDB().QueryContext(ctx, query, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var dbSchemas []*DBSchemaWithTodo
-	for rows.Next() {
-		var dbSchema DBSchemaWithTodo
-		if err := rows.Scan(
-			&dbSchema.ID,
-			&dbSchema.InstanceID,
-			&dbSchema.DBName,
-			&dbSchema.Metadata,
-		); err != nil {
-			return nil, err
-		}
-		dbSchemas = append(dbSchemas, &dbSchema)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return dbSchemas, nil
-}
-
-// UpdateDBSchemaTodo updates the todo column of a db_schema.
-func (s *Store) UpdateDBSchemaTodo(ctx context.Context, id int, todo bool) error {
-	q := qb.Q().Space("UPDATE db_schema SET todo = ? WHERE id = ?", todo, id)
-
-	query, args, err := q.ToSQL()
-	if err != nil {
-		return errors.Wrapf(err, "failed to build sql")
-	}
-
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
-		return err
-	}
-
-	return tx.Commit()
-}
-
-// UpdateDBSchemaMetadata updates the metadata of a db_schema.
-func (s *Store) UpdateDBSchemaMetadata(ctx context.Context, id int, metadata string) error {
-	q := qb.Q().Space("UPDATE db_schema SET metadata = ? WHERE id = ?", metadata, id)
-
-	query, args, err := q.ToSQL()
-	if err != nil {
-		return errors.Wrapf(err, "failed to build sql")
-	}
-
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
-		return err
-	}
-
-	return tx.Commit()
-}
-
-// UpdateDBSchemaMetadataIfTodo updates the metadata and sets todo to false only if todo is currently true.
-// This is used by the migrator to avoid race conditions with the sync process.
-// The WHERE condition ensures atomic check-and-update, preventing any race conditions.
-func (s *Store) UpdateDBSchemaMetadataIfTodo(ctx context.Context, id int, metadata string) error {
-	q := qb.Q().Space("UPDATE db_schema SET metadata = ?, todo = false WHERE id = ? AND todo = true", metadata, id)
-
-	query, args, err := q.ToSQL()
-	if err != nil {
-		return errors.Wrapf(err, "failed to build sql")
-	}
-
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	result, err := tx.ExecContext(ctx, query, args...)
-	if err != nil {
-		return err
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if rowsAffected == 0 {
-		// Schema was already processed by sync, skip update
-		return tx.Rollback()
-	}
-
-	return tx.Commit()
 }
 
 func (s *Store) convertMetadataAndConfig(ctx context.Context, metadata, schema, config []byte, instanceID string) (*model.DatabaseSchema, error) {

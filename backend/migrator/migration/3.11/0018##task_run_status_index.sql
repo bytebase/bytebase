@@ -25,5 +25,5 @@
 -- WHERE task_run.status IN ('RUNNING')
 -- ORDER BY task_run.id ASC
 
-CREATE INDEX CONCURRENTLY idx_task_run_active_status_id ON task_run(status, id)
+CREATE INDEX idx_task_run_active_status_id ON task_run(status, id)
 WHERE status IN ('PENDING', 'RUNNING');

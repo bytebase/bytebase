@@ -846,6 +846,7 @@
     "n-similar-activities": "({count} hoạt động tương tự) | ({count} hoạt động tương tự)"
   },
   "issue": {
+    "labels": "Nhãn vấn đề",
     "my-issues": "Vấn đề của tôi",
     "waiting-approval": "Đang chờ phê duyệt",
     "waiting-rollout": "Đang chờ triển khai",
@@ -1594,6 +1595,7 @@
     "rollback-tip": "Chọn một nhật ký thay đổi DDL cụ thể để hoàn tác."
   },
   "database": {
+    "labels": "Nhãn cơ sở dữ liệu",
     "no-environment": "Cơ sở dữ liệu này không bị ràng buộc với môi trường",
     "set-environment": "Thiết lập môi trường",
     "sync-database": "Đồng bộ cơ sở dữ liệu",
@@ -1851,7 +1853,7 @@
       "issue-related": {
         "self": "Liên quan đến vấn đề",
         "labels": {
-          "self": "Nhãn",
+          "self": "Nhãn vấn đề",
           "description": "Có thể gắn nhãn vào các vấn đề để quản lý",
           "configure-labels": "Cấu hình nhãn",
           "placeholder": "Nhấn Enter để thêm thẻ",
@@ -1907,6 +1909,7 @@
         }
       },
       "project-labels": {
+        "self": "Nhãn dự án",
         "description": "Tổ chức dự án với nhãn khóa-giá trị (tối đa 64)"
       }
     },

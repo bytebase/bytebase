@@ -33,7 +33,7 @@
         </div>
       </div>
 
-      <div class="py-6 lg:flex">
+      <div id="issue-related" class="py-6 lg:flex">
         <div class="text-left lg:w-1/4">
           <h1 class="text-2xl font-bold">
             {{ $t("project.settings.issue-related.self") }}

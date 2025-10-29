@@ -192,7 +192,7 @@
           </p>
           <RegenerateRecoveryCodesView
             v-if="state.showRegenerateRecoveryCodesView"
-            :recovery-codes="currentUser.recoveryCodes"
+            :recovery-codes="currentUser.tempRecoveryCodes"
             @close="state.showRegenerateRecoveryCodesView = false"
           />
         </template>

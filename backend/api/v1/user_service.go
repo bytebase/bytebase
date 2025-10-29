@@ -78,7 +78,7 @@ func (s *UserService) GetUser(ctx context.Context, request *connect.Request[v1pb
 	if user == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("user %d not found", userID))
 	}
-	return connect.NewResponse(convertToUser(user)), nil
+	return connect.NewResponse(convertToUser(ctx, user)), nil
 }
 
 // BatchGetUsers get users in batch.
@@ -100,7 +100,7 @@ func (*UserService) GetCurrentUser(ctx context.Context, _ *connect.Request[empty
 	if !ok || user == nil {
 		return nil, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("authenticated user not found"))
 	}
-	return connect.NewResponse(convertToUser(user)), nil
+	return connect.NewResponse(convertToUser(ctx, user)), nil
 }
 
 // ListUsers lists all users.
@@ -159,7 +159,7 @@ func (s *UserService) ListUsers(ctx context.Context, request *connect.Request[v1
 		NextPageToken: nextPageToken,
 	}
 	for _, user := range users {
-		response.Users = append(response.Users, convertToUser(user))
+		response.Users = append(response.Users, convertToUser(ctx, user))
 	}
 	return connect.NewResponse(response), nil
 }
@@ -293,7 +293,7 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 		},
 	})
 
-	userResponse := convertToUser(user)
+	userResponse := convertToUser(ctx, user)
 	if request.Msg.User.UserType == v1pb.UserType_SERVICE_ACCOUNT {
 		userResponse.ServiceKey = password
 	}
@@ -506,7 +506,7 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update user, error: %v", err))
 	}
 
-	userResponse := convertToUser(user)
+	userResponse := convertToUser(ctx, user)
 	if request.Msg.User.UserType == v1pb.UserType_SERVICE_ACCOUNT && passwordPatch != nil {
 		userResponse.ServiceKey = *passwordPatch
 	}
@@ -644,7 +644,7 @@ func (s *UserService) UndeleteUser(ctx context.Context, request *connect.Request
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	return connect.NewResponse(convertToUser(user)), nil
+	return connect.NewResponse(convertToUser(ctx, user)), nil
 }
 
 func convertToV1UserType(userType storepb.PrincipalType) v1pb.UserType {
@@ -660,7 +660,7 @@ func convertToV1UserType(userType storepb.PrincipalType) v1pb.UserType {
 	}
 }
 
-func convertToUser(user *store.UserMessage) *v1pb.User {
+func convertToUser(ctx context.Context, user *store.UserMessage) *v1pb.User {
 	convertedUser := &v1pb.User{
 		Name:     common.FormatUserUID(user.ID),
 		State:    convertDeletedToState(user.MemberDeleted),
@@ -681,8 +681,11 @@ func convertToUser(user *store.UserMessage) *v1pb.User {
 
 	if user.MFAConfig != nil {
 		convertedUser.MfaEnabled = user.MFAConfig.OtpSecret != ""
-		convertedUser.MfaSecret = user.MFAConfig.TempOtpSecret
-		convertedUser.RecoveryCodes = user.MFAConfig.TempRecoveryCodes
+		// Only expose temporary MFA secrets and recovery codes to the user themselves
+		if currentUser, ok := GetUserFromContext(ctx); ok && currentUser.ID == user.ID {
+			convertedUser.TempOtpSecret = user.MFAConfig.TempOtpSecret
+			convertedUser.TempRecoveryCodes = user.MFAConfig.TempRecoveryCodes
+		}
 	}
 	return convertedUser
 }

@@ -21,6 +21,7 @@
               params: {
                 projectId: getProjectName(project.name),
               },
+              hash: '#issue-related',
             }"
             class="textinfolabel normal-link flex items-center gap-x-2"
           >

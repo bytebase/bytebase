@@ -451,10 +451,9 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 		return 0, errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
 	}
 
-	todo := !common.EngineDBSchemaReadyToMigrate(instance.Metadata.GetEngine())
 	if err := s.store.UpsertDBSchema(ctx,
 		database.InstanceID, database.DatabaseName,
-		databaseMetadata, dbConfig, rawDump, todo,
+		databaseMetadata, dbConfig, rawDump,
 	); err != nil {
 		if strings.Contains(err.Error(), "escape sequence") {
 			if metadataBytes, err := protojson.Marshal(databaseMetadata); err == nil {

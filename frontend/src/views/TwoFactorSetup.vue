@@ -65,7 +65,7 @@
     <template #1>
       <div class="w-full max-w-2xl mx-auto">
         <RecoveryCodesView
-          :recovery-codes="currentUser.recoveryCodes"
+          :recovery-codes="currentUser.tempRecoveryCodes"
           @download="state.recoveryCodesDownloaded = true"
         />
       </div>
@@ -74,7 +74,7 @@
 
   <TwoFactorSecretModal
     v-if="state.showSecretModal"
-    :secret="currentUser.mfaSecret"
+    :secret="currentUser.tempOtpSecret"
     @close="state.showSecretModal = false"
   />
 </template>
@@ -239,7 +239,7 @@ const tryFinishSetup = async () => {
 watch(
   [currentUser],
   async () => {
-    const otpauthUrl = `otpauth://totp/${issuerName}:${currentUser.value.email}?algorithm=SHA1&digits=6&issuer=${issuerName}&period=30&secret=${currentUser.value.mfaSecret}`;
+    const otpauthUrl = `otpauth://totp/${issuerName}:${currentUser.value.email}?algorithm=SHA1&digits=6&issuer=${issuerName}&period=30&secret=${currentUser.value.tempOtpSecret}`;
     state.qrcodeDataUrl = await QRCode.toDataURL(otpauthUrl);
   },
   { deep: true, immediate: true }

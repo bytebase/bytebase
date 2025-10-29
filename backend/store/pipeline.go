@@ -5,10 +5,15 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/google/cel-go/cel"
+	celast "github.com/google/cel-go/common/ast"
+	celoperators "github.com/google/cel-go/common/operators"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/qb"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 // PipelineMessage is the message for pipelines.
@@ -30,10 +35,9 @@ type PipelineFind struct {
 	ID        *int
 	ProjectID *string
 
-	Limit  *int
-	Offset *int
-
-	Filter *ListResourceFilter
+	Limit   *int
+	Offset  *int
+	FilterQ *qb.Query
 }
 
 // CreatePipelineAIO creates a pipeline with tasks all in one.
@@ -57,7 +61,7 @@ func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *
 		createdPipelineUID = createdPipeline.ID
 
 		// update pipeline uid of associated issue and plan
-		if invalidateCacheF, err = s.updatePipelineUIDOfIssueAndPlan(ctx, tx, planUID, createdPipelineUID); err != nil {
+		if invalidateCacheF, err = s.updatePipelineUIDOfPlan(ctx, tx, planUID, createdPipelineUID); err != nil {
 			return 0, errors.Wrapf(err, "failed to update associated plan or issue")
 		}
 	} else {
@@ -123,7 +127,7 @@ func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *
 }
 
 // returns func() to invalidate cache.
-func (s *Store) updatePipelineUIDOfIssueAndPlan(ctx context.Context, txn *sql.Tx, planUID int64, pipelineUID int) (func(), error) {
+func (*Store) updatePipelineUIDOfPlan(ctx context.Context, txn *sql.Tx, planUID int64, pipelineUID int) (func(), error) {
 	q := qb.Q().Space(`
 		UPDATE plan
 		SET pipeline_id = ?
@@ -137,27 +141,8 @@ func (s *Store) updatePipelineUIDOfIssueAndPlan(ctx context.Context, txn *sql.Tx
 		return nil, errors.Wrapf(err, "failed to update plan pipeline_id")
 	}
 
-	q = qb.Q().Space(`
-		UPDATE issue
-		SET pipeline_id = ?
-		WHERE plan_id = ?
-		RETURNING id
-	`, pipelineUID, planUID)
-	querySQL, args, err = q.ToSQL()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
-	}
-	var issueUID int
-	if err := txn.QueryRowContext(ctx, querySQL, args...).Scan(&issueUID); err != nil {
-		if err != sql.ErrNoRows {
-			return nil, errors.Wrapf(err, "failed to update issue pipeline_id")
-		}
-	}
 	return func() {
 		// TODO: need to remove planCache once we add planCache
-		if issueUID != 0 {
-			s.issueCache.Remove(issueUID)
-		}
 	}, nil
 }
 
@@ -255,12 +240,13 @@ func (s *Store) ListPipelineV2(ctx context.Context, find *PipelineFind) ([]*Pipe
 				pipeline.created_at
 			) AS updated_at
 		FROM pipeline
-		LEFT JOIN issue ON pipeline.id = issue.pipeline_id
+		LEFT JOIN plan ON plan.pipeline_id = pipeline.id
+		LEFT JOIN issue ON issue.plan_id = plan.id
 		WHERE TRUE
 	`)
 
-	if filter := find.Filter; filter != nil {
-		q.And(ConvertDollarPlaceholders(filter.Where), filter.Args...)
+	if filterQ := find.FilterQ; filterQ != nil {
+		q.And("?", filterQ)
 	}
 	if v := find.ID; v != nil {
 		q.And("pipeline.id = ?", *v)
@@ -321,4 +307,136 @@ func (s *Store) ListPipelineV2(ctx context.Context, find *PipelineFind) ([]*Pipe
 		s.pipelineCache.Add(pipeline.ID, pipeline)
 	}
 	return pipelines, nil
+}
+
+// GetListRolloutFilter parses a CEL filter expression into a query builder query for listing rollouts.
+func (s *Store) GetListRolloutFilter(ctx context.Context, filter string) (*qb.Query, error) {
+	if filter == "" {
+		return nil, nil
+	}
+
+	e, err := cel.NewEnv()
+	if err != nil {
+		return nil, errors.Errorf("failed to create cel env")
+	}
+	ast, iss := e.Parse(filter)
+	if iss != nil {
+		return nil, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String())
+	}
+
+	var getFilter func(expr celast.Expr) (*qb.Query, error)
+
+	getFilter = func(expr celast.Expr) (*qb.Query, error) {
+		q := qb.Q()
+		switch expr.Kind() {
+		case celast.CallKind:
+			functionName := expr.AsCall().FunctionName()
+			switch functionName {
+			case celoperators.LogicalAnd:
+				for _, arg := range expr.AsCall().Args() {
+					qq, err := getFilter(arg)
+					if err != nil {
+						return nil, err
+					}
+					q.And("?", qq)
+				}
+				return qb.Q().Space("(?)", q), nil
+			case celoperators.Equals:
+				variable, value := getVariableAndValueFromExpr(expr)
+				switch variable {
+				case "creator":
+					user, err := s.getUserByIdentifier(ctx, value.(string))
+					if err != nil {
+						return nil, errors.Errorf("failed to get user %v with error %v", value, err.Error())
+					}
+					return qb.Q().Space("pipeline.creator_id = ?", user.ID), nil
+				case "task_type":
+					taskType, ok := value.(string)
+					if !ok {
+						return nil, errors.Errorf("task_type value must be a string")
+					}
+					if _, ok := v1pb.Task_Type_value[taskType]; !ok {
+						return nil, errors.Errorf("invalid task_type value: %s", taskType)
+					}
+					v1TaskType := v1pb.Task_Type(v1pb.Task_Type_value[taskType])
+					storeTaskType := convertV1ToStoreTaskType(v1TaskType)
+					return qb.Q().Space("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = pipeline.id AND task.type = ?)", storeTaskType.String()), nil
+				default:
+					return nil, errors.Errorf("unsupported variable %q", variable)
+				}
+			case celoperators.In:
+				variable, value := getVariableAndValueFromExpr(expr)
+				switch variable {
+				case "task_type":
+					rawList, ok := value.([]any)
+					if !ok {
+						return nil, errors.Errorf("invalid list value %q for %v", value, variable)
+					}
+					if len(rawList) == 0 {
+						return nil, errors.Errorf("empty list value for filter %v", variable)
+					}
+					var taskTypes []string
+					for _, raw := range rawList {
+						taskType, ok := raw.(string)
+						if !ok {
+							return nil, errors.Errorf("task_type value must be a string")
+						}
+						if _, ok := v1pb.Task_Type_value[taskType]; !ok {
+							return nil, errors.Errorf("invalid task_type value: %s", taskType)
+						}
+						v1TaskType := v1pb.Task_Type(v1pb.Task_Type_value[taskType])
+						storeTaskType := convertV1ToStoreTaskType(v1TaskType)
+						taskTypes = append(taskTypes, storeTaskType.String())
+					}
+					return qb.Q().Space("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = pipeline.id AND task.type = ANY(?))", taskTypes), nil
+				default:
+					return nil, errors.Errorf("unsupported variable %q", variable)
+				}
+			case celoperators.GreaterEquals, celoperators.LessEquals:
+				variable, rawValue := getVariableAndValueFromExpr(expr)
+				value, ok := rawValue.(string)
+				if !ok {
+					return nil, errors.Errorf("expect string, got %T, hint: filter literals should be string", rawValue)
+				}
+				if variable != "update_time" {
+					return nil, errors.Errorf(`">=" and "<=" are only supported for "update_time"`)
+				}
+				t, err := time.Parse(time.RFC3339, value)
+				if err != nil {
+					return nil, errors.Errorf("failed to parse time %v, error: %v", value, err)
+				}
+				if functionName == celoperators.GreaterEquals {
+					return qb.Q().Space("updated_at >= ?", t), nil
+				}
+				return qb.Q().Space("updated_at <= ?", t), nil
+			default:
+				return nil, errors.Errorf("unexpected function %v", functionName)
+			}
+		default:
+			return nil, errors.Errorf("unexpected expr kind %v", expr.Kind())
+		}
+	}
+
+	q, err := getFilter(ast.NativeRep().Expr())
+	if err != nil {
+		return nil, err
+	}
+	return qb.Q().Space("(?)", q), nil
+}
+
+func convertV1ToStoreTaskType(taskType v1pb.Task_Type) storepb.Task_Type {
+	switch taskType {
+	case v1pb.Task_DATABASE_CREATE:
+		return storepb.Task_DATABASE_CREATE
+	case v1pb.Task_DATABASE_MIGRATE:
+		return storepb.Task_DATABASE_MIGRATE
+	case v1pb.Task_DATABASE_SDL:
+		return storepb.Task_DATABASE_SDL
+	case v1pb.Task_DATABASE_EXPORT:
+		return storepb.Task_DATABASE_EXPORT
+	case v1pb.Task_TYPE_UNSPECIFIED, v1pb.Task_GENERAL:
+		return storepb.Task_TASK_TYPE_UNSPECIFIED
+	default:
+		return storepb.Task_TASK_TYPE_UNSPECIFIED
+	}
 }

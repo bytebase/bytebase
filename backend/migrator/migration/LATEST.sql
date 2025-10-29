@@ -159,7 +159,6 @@ CREATE TABLE db_schema (
     raw_dump text NOT NULL DEFAULT '',
     -- Stored as DatabaseConfig (proto/store/store/database.proto)
     config jsonb NOT NULL DEFAULT '{}',
-    todo boolean NOT NULL DEFAULT TRUE,
     CONSTRAINT db_schema_instance_db_name_fkey FOREIGN KEY(instance, db_name) REFERENCES db(instance, name)
 );
 
@@ -296,6 +295,8 @@ CREATE TABLE plan_check_run (
 
 CREATE INDEX idx_plan_check_run_plan_id ON plan_check_run (plan_id);
 
+CREATE INDEX idx_plan_check_run_active_status ON plan_check_run(status, id) WHERE status = 'RUNNING';
+
 ALTER SEQUENCE plan_check_run_id_seq RESTART WITH 101;
 
 -- Plan related END
@@ -308,7 +309,6 @@ CREATE TABLE issue (
     updated_at timestamptz NOT NULL DEFAULT now(),
     project text NOT NULL REFERENCES project(resource_id),
     plan_id bigint REFERENCES plan(id),
-    pipeline_id integer REFERENCES pipeline(id),
     name text NOT NULL,
     status text NOT NULL CHECK (status IN ('OPEN', 'DONE', 'CANCELED')),
     -- type: DATABASE_CHANGE, GRANT_REQUEST, DATABASE_EXPORT
@@ -323,8 +323,6 @@ CREATE TABLE issue (
 CREATE INDEX idx_issue_project ON issue(project);
 
 CREATE INDEX idx_issue_plan_id ON issue(plan_id);
-
-CREATE INDEX idx_issue_pipeline_id ON issue(pipeline_id);
 
 CREATE INDEX idx_issue_creator_id ON issue(creator_id);
 

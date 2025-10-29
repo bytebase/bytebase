@@ -39,7 +39,7 @@ type IssueMessage struct {
 	Type            storepb.Issue_Type
 	Description     string
 	Payload         *storepb.Issue
-	PipelineUID     *int
+	PipelineUID     *int // Computed from plan.pipeline_id
 	PlanUID         *int64
 	TaskStatusCount map[string]int32
 
@@ -62,8 +62,6 @@ type UpdateIssueMessage struct {
 	// PayloadUpsert upserts the presented top-level keys.
 	PayloadUpsert *storepb.Issue
 	RemoveLabels  bool
-
-	PipelineUID *int
 }
 
 // FindIssueMessage is the message to find issues.
@@ -72,7 +70,7 @@ type FindIssueMessage struct {
 	ProjectID  *string
 	ProjectIDs *[]string
 	PlanUID    *int64
-	PipelineID *int
+	PipelineID *int // Filter by pipeline_id (computed from plan)
 	// To support pagination, we add into creator.
 	// Only principleID or one of the following three fields can be set.
 	CreatorID       *int
@@ -146,7 +144,6 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 		INSERT INTO issue (
 			creator_id,
 			project,
-			pipeline_id,
 			plan_id,
 			name,
 			status,
@@ -155,11 +152,10 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 			payload,
 			ts_vector
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 		RETURNING id`,
 		creatorID,
 		create.Project.ResourceID,
-		create.PipelineUID,
 		create.PlanUID,
 		create.Title,
 		create.Status.String(),
@@ -203,9 +199,6 @@ func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMe
 	set := qb.Q()
 	set.Comma("updated_at = ?", time.Now())
 
-	if v := patch.PipelineUID; v != nil {
-		set.Comma("pipeline_id = ?", *v)
-	}
 	if v := patch.Title; v != nil {
 		set.Comma("name = ?", *v)
 	}
@@ -278,7 +271,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		where.And("issue.id = ?", *v)
 	}
 	if v := find.PipelineID; v != nil {
-		where.And("issue.pipeline_id = ?", *v)
+		where.And("plan.pipeline_id = ?", *v)
 	}
 	if v := find.PlanUID; v != nil {
 		where.And("issue.plan_id = ?", *v)
@@ -290,10 +283,10 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		where.And("issue.project = ANY(?)", *v)
 	}
 	if v := find.InstanceResourceID; v != nil {
-		where.And("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = issue.pipeline_id AND task.instance = ?)", *v)
+		where.And("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = plan.pipeline_id AND task.instance = ?)", *v)
 	}
 	if find.InstanceID != nil && find.DatabaseName != nil {
-		where.And("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = issue.pipeline_id AND task.instance = ? AND task.db_name = ?)", *find.InstanceID, *find.DatabaseName)
+		where.And("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = plan.pipeline_id AND task.instance = ? AND task.db_name = ?)", *find.InstanceID, *find.DatabaseName)
 	}
 	if v := find.CreatorID; v != nil {
 		where.And("issue.creator_id = ?", *v)
@@ -335,19 +328,19 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 			for _, mt := range *find.MigrateTypes {
 				migrateTypeStrings = append(migrateTypeStrings, mt.String())
 			}
-			where.And("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = issue.pipeline_id AND task.type = ANY(?) AND task.payload->>'migrateType' = ANY(?))", taskTypeStrings, migrateTypeStrings)
+			where.And("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = plan.pipeline_id AND task.type = ANY(?) AND task.payload->>'migrateType' = ANY(?))", taskTypeStrings, migrateTypeStrings)
 		} else {
-			where.And("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = issue.pipeline_id AND task.type = ANY(?))", taskTypeStrings)
+			where.And("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = plan.pipeline_id AND task.type = ANY(?))", taskTypeStrings)
 		}
 	}
 	if v := find.EnvironmentID; v != nil {
-		where.And("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = issue.pipeline_id AND task.environment = ?)", *v)
+		where.And("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = plan.pipeline_id AND task.environment = ?)", *v)
 	}
 	if len(find.LabelList) != 0 {
 		where.And("payload->'labels' ??& ?::TEXT[]", find.LabelList)
 	}
 	if find.NoPipeline {
-		where.And("issue.pipeline_id IS NULL")
+		where.And("plan.pipeline_id IS NULL")
 	}
 
 	q := qb.Q().Space(`
@@ -357,7 +350,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 			issue.created_at,
 			issue.updated_at,
 			issue.project,
-			issue.pipeline_id,
+			plan.pipeline_id,
 			issue.plan_id,
 			COALESCE(plan.name, issue.name) AS name,
 			issue.status,
@@ -386,7 +379,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 							(SELECT task_run.status FROM task_run WHERE task_run.task_id = task.id ORDER BY task_run.id DESC LIMIT 1), 'NOT_STARTED'
 						) AS status
 					) AS latest_task_run ON TRUE
-					WHERE task.pipeline_id = issue.pipeline_id
+					WHERE task.pipeline_id = plan.pipeline_id
 				) AS t
 				GROUP BY t.status
 			) AS t
@@ -494,12 +487,23 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 
 // BatchUpdateIssueStatuses updates the status of multiple issues.
 func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, issueUIDs []int, status storepb.Issue_Status) error {
-	q := qb.Q().Space("UPDATE issue SET status = ? WHERE id = ANY(?) RETURNING id, pipeline_id", status.String(), issueUIDs)
-
-	query, args, err := q.ToSQL()
+	// First get the pipeline IDs for cache invalidation
+	selectQuery := qb.Q().Space(`
+		SELECT issue.id, plan.pipeline_id
+		FROM issue
+		LEFT JOIN plan ON issue.plan_id = plan.id
+		WHERE issue.id = ANY(?)
+	`, issueUIDs)
+	selectSQL, selectArgs, err := selectQuery.ToSQL()
 	if err != nil {
-		return errors.Wrapf(err, "failed to build sql")
+		return errors.Wrapf(err, "failed to build select sql")
 	}
+
+	type issueInfo struct {
+		id          int
+		pipelineUID *int
+	}
+	var infos []issueInfo
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
@@ -507,38 +511,43 @@ func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, issueUIDs []int, s
 	}
 	defer tx.Rollback()
 
-	rows, err := tx.QueryContext(ctx, query, args...)
+	rows, err := tx.QueryContext(ctx, selectSQL, selectArgs...)
 	if err != nil {
 		return errors.Wrapf(err, "failed to query")
 	}
 	defer rows.Close()
-
-	var issueIDs []int
-	var pipelineIDs []int
 	for rows.Next() {
-		var issueID int
-		var pipelineID sql.NullInt32
-		if err := rows.Scan(&issueID, &pipelineID); err != nil {
+		var info issueInfo
+		if err := rows.Scan(&info.id, &info.pipelineUID); err != nil {
 			return errors.Wrapf(err, "failed to scan")
 		}
-		issueIDs = append(issueIDs, issueID)
-		if pipelineID.Valid {
-			pipelineIDs = append(pipelineIDs, int(pipelineID.Int32))
-		}
+		infos = append(infos, info)
 	}
 	if err := rows.Err(); err != nil {
 		return errors.Wrapf(err, "failed to scan issues")
+	}
+
+	// Update the statuses
+	updateQuery := qb.Q().Space("UPDATE issue SET status = ? WHERE id = ANY(?)", status.String(), issueUIDs)
+	updateSQL, updateArgs, err := updateQuery.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build update sql")
+	}
+
+	if _, err := tx.ExecContext(ctx, updateSQL, updateArgs...); err != nil {
+		return errors.Wrapf(err, "failed to update")
 	}
 
 	if err := tx.Commit(); err != nil {
 		return errors.Wrapf(err, "failed to commit")
 	}
 
-	for _, issueID := range issueIDs {
-		s.issueCache.Remove(issueID)
-	}
-	for _, pipelineID := range pipelineIDs {
-		s.issueByPipelineCache.Remove(pipelineID)
+	// Invalidate caches
+	for _, info := range infos {
+		s.issueCache.Remove(info.id)
+		if info.pipelineUID != nil {
+			s.issueByPipelineCache.Remove(*info.pipelineUID)
+		}
 	}
 
 	return nil
