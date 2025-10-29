@@ -34,6 +34,7 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/elasticsearch"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/partiql"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/redis"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/redshift"
@@ -48,6 +49,7 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/mysql"
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/oceanbase"
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/oracle"
+	_ "github.com/bytebase/bytebase/backend/plugin/advisor/pgantlr"
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/snowflake"
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/tidb"
 

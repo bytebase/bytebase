@@ -15,9 +15,10 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast"
 )
 
-func init() {
-	base.RegisterParseFunc(storepb.Engine_POSTGRES, parsePostgresForRegistry)
-}
+// Disabled legacy parser registration - now using ANTLR parser
+// func init() {
+// 	base.RegisterParseFunc(storepb.Engine_POSTGRES, parsePostgresForRegistry)
+// }
 
 // parsePostgresForRegistry is the ParseFunc for PostgreSQL.
 // Returns []ast.Node (github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast) on success.

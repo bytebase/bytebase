@@ -1,9 +1,5 @@
 package store
 
-import (
-	"regexp"
-)
-
 // RowStatus is the status for a row.
 type RowStatus string
 
@@ -31,17 +27,4 @@ func (s SortOrder) String() string {
 type OrderByKey struct {
 	Key       string
 	SortOrder SortOrder
-}
-
-type ListResourceFilter struct {
-	Args  []any
-	Where string
-}
-
-var dollarPlaceholderRegex = regexp.MustCompile(`\$\d+`)
-
-// ConvertDollarPlaceholders converts PostgreSQL $N placeholders to ? placeholders for qb.
-// This is needed because the API layer creates filters with $1, $2, etc. but qb expects ?.
-func ConvertDollarPlaceholders(where string) string {
-	return dollarPlaceholderRegex.ReplaceAllString(where, "?")
 }

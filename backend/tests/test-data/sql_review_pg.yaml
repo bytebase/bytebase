@@ -24,11 +24,12 @@
       {
         "status": "ERROR",
         "title": "Syntax error",
-        "content": "syntax error at or near \"user\"",
+        "content": "Syntax error at line 1:14 \nrelated text: CREATE TABLE user",
         "code": 201,
         "sqlReviewReport": {
           "startPosition": {
-            "line": 1
+            "line": 1,
+            "column": 14
           }
         }
       }
@@ -47,11 +48,11 @@
       {
         "status": "ERROR",
         "title": "table.require-pk",
-        "content": "Table \"public\".\"userTable\" requires PRIMARY KEY, related statement: \"CREATE TABLE \\\"userTable\\\"(\\n        id INT,\\n        name VARCHAR(255),\\n        \\\"roomId\\\" INT,\\n        CONSTRAINT uk1 UNIQUE (id, name),\\n        CONSTRAINT fk1 FOREIGN KEY (\\\"roomId\\\") REFERENCES room(id)\\n        );\"",
+        "content": "Table \"public\".\"userTable\" requires PRIMARY KEY, related statement: \"CREATE TABLE \\\"userTable\\\"(         id INT,         name VARCHAR(255),         \\\"roomId\\\" INT,         CONSTRAINT uk1 UNIQUE (id, name),         CONSTRAINT fk1 FOREIGN KEY (\\\"roomId\\\") REFERENCES room(id)         );\"",
         "code": 601,
         "sqlReviewReport": {
           "startPosition": {
-            "line": 7
+            "line": 1
           }
         }
       }
@@ -59,11 +60,11 @@
       {
         "status": "ERROR",
         "title": "table.no-foreign-key",
-        "content": "Foreign key is not allowed in the table \"public\".\"userTable\", related statement: \"CREATE TABLE \"userTable\"(\n        id INT,\n        name VARCHAR(255),\n        \"roomId\" INT,\n        CONSTRAINT uk1 UNIQUE (id, name),\n        CONSTRAINT fk1 FOREIGN KEY (\"roomId\") REFERENCES room(id)\n        );\"",
+        "content": "Foreign key is not allowed in the table \"public\".\"userTable\", related statement: \"CREATE TABLE \"userTable\"(         id INT,         name VARCHAR(255),         \"roomId\" INT,         CONSTRAINT uk1 UNIQUE (id, name),         CONSTRAINT fk1 FOREIGN KEY (\"roomId\") REFERENCES room(id)         );\"",
         "code": 602,
         "sqlReviewReport": {
           "startPosition": {
-            "line": 7
+            "line": 1
           }
         }
       }
@@ -75,7 +76,7 @@
         "code": 301,
         "sqlReviewReport": {
           "startPosition": {
-            "line": 7
+            "line": 1
           }
         }
       }
@@ -111,7 +112,7 @@
         "code": 305,
         "sqlReviewReport": {
           "startPosition": {
-            "line": 6
+            "line": 1
           }
         }
       }
@@ -123,7 +124,7 @@
         "code": 401,
         "sqlReviewReport": {
           "startPosition": {
-            "line": 7
+            "line": 1
           }
         }
       }
@@ -235,6 +236,18 @@
         "title": "naming.index.pk",
         "content": "Primary key in table \"tech_book\" mismatches the naming convention, expect \"^$|^pk_tech_book_id$\" but found \"pk1\"",
         "code": 306,
+        "sqlReviewReport": {
+          "startPosition": {
+            "line": 1
+          }
+        }
+      }
+    - |-
+      {
+        "status": "WARNING",
+        "title": "schema.backward-compatibility",
+        "content": "\"ALTER INDEX pk_tech_book_id RENAME TO pk1\" may cause incompatibility with the existing data and code",
+        "code": 102,
         "sqlReviewReport": {
           "startPosition": {
             "line": 1

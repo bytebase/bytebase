@@ -2,6 +2,17 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+# Global Azure Marketplace image configuration
+# This section is used when deploying from Azure Marketplace
+# Azure will retag and host images in their registry
+global:
+  azure:
+    images:
+      bytebase:
+        tag: latest
+        image: bytebase/bytebase
+        registry: docker.io
+
 bytebase:
   version: latest
   registryMirrorHost: ""

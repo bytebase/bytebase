@@ -6,8 +6,19 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/postgresql"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
+
+func init() {
+	base.RegisterParseFunc(storepb.Engine_POSTGRES, parsePostgreSQLForRegistry)
+}
+
+// parsePostgreSQLForRegistry is the ParseFunc for PostgreSQL.
+// Returns *ParseResult containing the ANTLR tree.
+func parsePostgreSQLForRegistry(statement string) (any, error) {
+	return ParsePostgreSQL(statement)
+}
 
 type ParseResult struct {
 	Tree   antlr.Tree

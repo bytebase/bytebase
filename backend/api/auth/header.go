@@ -47,10 +47,6 @@ func GetTokenCookie(ctx context.Context, stores *store.Store, licenseService *en
 		}
 	}
 	isHTTPS := strings.HasPrefix(origin, "https")
-	sameSite := http.SameSiteStrictMode
-	if isHTTPS {
-		sameSite = http.SameSiteNoneMode
-	}
 	tokenDuration := GetTokenDuration(ctx, stores, licenseService)
 	return &http.Cookie{
 		Name:  AccessTokenCookieName,
@@ -66,7 +62,7 @@ func GetTokenCookie(ctx context.Context, stores *store.Store, licenseService *en
 		HttpOnly: true,
 		// See https://github.com/bytebase/bytebase/issues/31.
 		Secure:   isHTTPS,
-		SameSite: sameSite,
+		SameSite: http.SameSiteStrictMode,
 	}
 }
 
