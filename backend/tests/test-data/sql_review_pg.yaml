@@ -24,11 +24,12 @@
       {
         "status": "ERROR",
         "title": "Syntax error",
-        "content": "syntax error at or near \"user\"",
+        "content": "Syntax error at line 1:14 \nrelated text: CREATE TABLE user",
         "code": 201,
         "sqlReviewReport": {
           "startPosition": {
-            "line": 1
+            "line": 1,
+            "column": 14
           }
         }
       }
@@ -47,11 +48,11 @@
       {
         "status": "ERROR",
         "title": "table.require-pk",
-        "content": "Table \"public\".\"userTable\" requires PRIMARY KEY, related statement: \"CREATE TABLE \\\"userTable\\\"(\\n        id INT,\\n        name VARCHAR(255),\\n        \\\"roomId\\\" INT,\\n        CONSTRAINT uk1 UNIQUE (id, name),\\n        CONSTRAINT fk1 FOREIGN KEY (\\\"roomId\\\") REFERENCES room(id)\\n        );\"",
+        "content": "Table \"public\".\"userTable\" requires PRIMARY KEY, related statement: \"CREATE TABLE \\\"userTable\\\"(         id INT,         name VARCHAR(255),         \\\"roomId\\\" INT,         CONSTRAINT uk1 UNIQUE (id, name),         CONSTRAINT fk1 FOREIGN KEY (\\\"roomId\\\") REFERENCES room(id)         );\"",
         "code": 601,
         "sqlReviewReport": {
           "startPosition": {
-            "line": 7
+            "line": 1
           }
         }
       }
@@ -59,11 +60,11 @@
       {
         "status": "ERROR",
         "title": "table.no-foreign-key",
-        "content": "Foreign key is not allowed in the table \"public\".\"userTable\", related statement: \"CREATE TABLE \"userTable\"(\n        id INT,\n        name VARCHAR(255),\n        \"roomId\" INT,\n        CONSTRAINT uk1 UNIQUE (id, name),\n        CONSTRAINT fk1 FOREIGN KEY (\"roomId\") REFERENCES room(id)\n        );\"",
+        "content": "Foreign key is not allowed in the table \"public\".\"userTable\", related statement: \"CREATE TABLE \"userTable\"(         id INT,         name VARCHAR(255),         \"roomId\" INT,         CONSTRAINT uk1 UNIQUE (id, name),         CONSTRAINT fk1 FOREIGN KEY (\"roomId\") REFERENCES room(id)         );\"",
         "code": 602,
         "sqlReviewReport": {
           "startPosition": {
-            "line": 7
+            "line": 1
           }
         }
       }
@@ -75,7 +76,7 @@
         "code": 301,
         "sqlReviewReport": {
           "startPosition": {
-            "line": 7
+            "line": 1
           }
         }
       }
@@ -87,7 +88,7 @@
         "code": 302,
         "sqlReviewReport": {
           "startPosition": {
-            "line": 4
+            "line": 1
           }
         }
       }
@@ -99,7 +100,7 @@
         "code": 304,
         "sqlReviewReport": {
           "startPosition": {
-            "line": 5
+            "line": 1
           }
         }
       }
@@ -111,7 +112,7 @@
         "code": 305,
         "sqlReviewReport": {
           "startPosition": {
-            "line": 6
+            "line": 1
           }
         }
       }
@@ -123,7 +124,7 @@
         "code": 401,
         "sqlReviewReport": {
           "startPosition": {
-            "line": 7
+            "line": 1
           }
         }
       }
@@ -135,7 +136,7 @@
         "code": 402,
         "sqlReviewReport": {
           "startPosition": {
-            "line": 2
+            "line": 1
           }
         }
       }
@@ -147,7 +148,7 @@
         "code": 402,
         "sqlReviewReport": {
           "startPosition": {
-            "line": 3
+            "line": 1
           }
         }
       }
@@ -159,7 +160,7 @@
         "code": 402,
         "sqlReviewReport": {
           "startPosition": {
-            "line": 4
+            "line": 1
           }
         }
       }
