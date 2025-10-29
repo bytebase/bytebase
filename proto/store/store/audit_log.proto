@@ -45,6 +45,16 @@ message AuditLog {
   // Metadata about the operation.
   RequestMetadata request_metadata = 11;
 
+  // Instance identifier for this Bytebase server instance
+  // Format: {source}-{timestamp}-{random}
+  // Used by log aggregators for deduplication and gap detection
+  string instance_id = 12;
+
+  // Monotonically increasing sequence number within this instance
+  // Guaranteed gap-free for stdout integrity: 1, 2, 3, 4, ...
+  // NULL for logs created before this feature was deployed
+  int64 sequence_number = 13;
+
   enum Severity {
     SEVERITY_UNSPECIFIED = 0;
     DEBUG = 1;
