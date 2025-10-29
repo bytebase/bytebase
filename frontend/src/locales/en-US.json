@@ -846,6 +846,7 @@
     "n-similar-activities": "({count} similar activity) | ({count} similar activities)"
   },
   "issue": {
+    "labels": "Issue Labels",
     "my-issues": "My Issues",
     "waiting-approval": "Waiting for Approval",
     "waiting-rollout": "Waiting for Rollout",
@@ -1594,6 +1595,7 @@
     "rollback-tip": "Select a specific DDL changelog to rollback."
   },
   "database": {
+    "labels": "Database Labels",
     "no-environment": "This database has not been bound to the environment",
     "set-environment": "Set environment",
     "sync-database": "Sync Database",
@@ -1851,7 +1853,7 @@
       "issue-related": {
         "self": "Issue Related",
         "labels": {
-          "self": "Labels",
+          "self": "Issue Labels",
           "description": "Labels can be attached in the issues for management",
           "configure-labels": "Configure labels",
           "placeholder": "Press Enter to add tag",
@@ -1907,6 +1909,7 @@
         }
       },
       "project-labels": {
+        "self": "Project Labels",
         "description": "Organize projects with key-value labels (max 64)"
       }
     },

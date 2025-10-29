@@ -338,18 +338,18 @@ export declare type User = Message<"bytebase.v1.User"> & {
   mfaEnabled: boolean;
 
   /**
-   * The mfa_secret is the temporary secret using in two phase verification.
+   * Temporary OTP secret used during MFA setup and regeneration.
    *
-   * @generated from field: string mfa_secret = 10;
+   * @generated from field: string temp_otp_secret = 10;
    */
-  mfaSecret: string;
+  tempOtpSecret: string;
 
   /**
-   * The recovery_codes is the temporary recovery codes using in two phase verification.
+   * Temporary recovery codes used during MFA setup and regeneration.
    *
-   * @generated from field: repeated string recovery_codes = 11;
+   * @generated from field: repeated string temp_recovery_codes = 11;
    */
-  recoveryCodes: string[];
+  tempRecoveryCodes: string[];
 
   /**
    * Should be a valid E.164 compliant phone number.

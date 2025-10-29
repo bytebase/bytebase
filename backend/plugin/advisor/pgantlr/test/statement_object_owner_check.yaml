@@ -1,0 +1,14 @@
+# Basic test cases for statement.object-owner-check advisor
+# Since this advisor requires metadata and owner information, we use simple statements
+# that will pass when the owner matches the current role
+
+- statement: CREATE TABLE public.t(id int);
+  changeType: 1
+- statement: CREATE SCHEMA s1;
+  changeType: 1
+- statement: CREATE SEQUENCE public.seq1;
+  changeType: 1
+- statement: CREATE INDEX idx_t_id ON public.tech_book(id);
+  changeType: 1
+- statement: CREATE TYPE public.mood AS ENUM ('sad', 'happy');
+  changeType: 1

@@ -508,7 +508,19 @@ const handleStatementChange = (value: string) => {
 
 watch(
   sheetStatement,
-  (statement) => {
+  (statement, oldStatement) => {
+    // Don't overwrite user's edits if they're currently in edit mode
+    if (state.isEditing) {
+      return;
+    }
+
+    // Don't overwrite if the user has made local changes since the last
+    // sheet update (i.e., current state doesn't match the old sheet statement)
+    if (oldStatement !== undefined && state.statement !== oldStatement) {
+      return;
+    }
+
+    // Safe to update: not editing and no divergence from previous sheet state
     state.statement = statement;
   },
   { immediate: true }

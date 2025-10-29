@@ -1,0 +1,11 @@
+- statement: SET SESSION ROLE joe; SELECT * FROM t
+  changeType: 1
+- statement: INSERT INTO t (id) VALUES (1);
+  changeType: 2
+  want:
+    - status: 2
+      code: 217
+      title: statement.check-set-role-variable
+      content: No SET ROLE statement found.
+      startposition: null
+      endposition: null

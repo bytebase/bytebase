@@ -159,7 +159,6 @@ CREATE TABLE db_schema (
     raw_dump text NOT NULL DEFAULT '',
     -- Stored as DatabaseConfig (proto/store/store/database.proto)
     config jsonb NOT NULL DEFAULT '{}',
-    todo boolean NOT NULL DEFAULT TRUE,
     CONSTRAINT db_schema_instance_db_name_fkey FOREIGN KEY(instance, db_name) REFERENCES db(instance, name)
 );
 
@@ -238,6 +237,11 @@ CREATE INDEX idx_task_run_task_id ON task_run(task_id);
 
 CREATE UNIQUE INDEX uk_task_run_task_id_attempt ON task_run (task_id, attempt);
 
+-- Partial index for active task runs. Most task runs are in terminal states (DONE, FAILED, CANCELED)
+-- that never change. Queries frequently filter for active statuses (PENDING, RUNNING), so a partial
+-- index is more efficient than a full index on status - smaller size, faster maintenance, better cache efficiency.
+CREATE INDEX idx_task_run_active_status_id ON task_run(status, id) WHERE status IN ('PENDING', 'RUNNING');
+
 ALTER SEQUENCE task_run_id_seq RESTART WITH 101;
 
 CREATE TABLE task_run_log (
@@ -291,6 +295,8 @@ CREATE TABLE plan_check_run (
 
 CREATE INDEX idx_plan_check_run_plan_id ON plan_check_run (plan_id);
 
+CREATE INDEX idx_plan_check_run_active_status ON plan_check_run(status, id) WHERE status = 'RUNNING';
+
 ALTER SEQUENCE plan_check_run_id_seq RESTART WITH 101;
 
 -- Plan related END
@@ -303,7 +309,6 @@ CREATE TABLE issue (
     updated_at timestamptz NOT NULL DEFAULT now(),
     project text NOT NULL REFERENCES project(resource_id),
     plan_id bigint REFERENCES plan(id),
-    pipeline_id integer REFERENCES pipeline(id),
     name text NOT NULL,
     status text NOT NULL CHECK (status IN ('OPEN', 'DONE', 'CANCELED')),
     -- type: DATABASE_CHANGE, GRANT_REQUEST, DATABASE_EXPORT
@@ -318,8 +323,6 @@ CREATE TABLE issue (
 CREATE INDEX idx_issue_project ON issue(project);
 
 CREATE INDEX idx_issue_plan_id ON issue(plan_id);
-
-CREATE INDEX idx_issue_pipeline_id ON issue(pipeline_id);
 
 CREATE INDEX idx_issue_creator_id ON issue(creator_id);
 

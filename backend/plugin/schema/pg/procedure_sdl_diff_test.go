@@ -366,3 +366,224 @@ func TestProcedureSDLDiff_CommentOnProcedure(t *testing.T) {
 		})
 	}
 }
+
+func TestDropColumnWithComment_NoCommentGeneration(t *testing.T) {
+	tests := []struct {
+		name             string
+		previousSDL      string
+		currentSDL       string
+		shouldContain    []string
+		shouldNotContain []string
+	}{
+		{
+			name: "Drop column with comment - should not generate COMMENT ON COLUMN",
+			previousSDL: `
+				CREATE TABLE "public"."test_table" (
+					"id" serial,
+					"name" character varying(100) NOT NULL,
+					"test_column" integer,
+					CONSTRAINT "test_table_pkey" PRIMARY KEY (id)
+				);
+
+				COMMENT ON TABLE "public"."test_table" IS 'A table for testing purposes';
+				COMMENT ON COLUMN "public"."test_table"."test_column" IS 'A test column for various uses';
+			`,
+			currentSDL: `
+				CREATE TABLE "public"."test_table" (
+					"id" serial,
+					"name" character varying(100) NOT NULL,
+					CONSTRAINT "test_table_pkey" PRIMARY KEY (id)
+				);
+
+				COMMENT ON TABLE "public"."test_table" IS 'A table for testing purposes';
+			`,
+			shouldContain: []string{
+				`ALTER TABLE "public"."test_table" DROP COLUMN IF EXISTS "test_column"`,
+			},
+			shouldNotContain: []string{
+				`COMMENT ON COLUMN "public"."test_table"."test_column"`,
+			},
+		},
+		{
+			name: "Drop table with comment - should not generate COMMENT ON TABLE",
+			previousSDL: `
+				CREATE TABLE "public"."test_table" (
+					"id" serial,
+					"name" character varying(100) NOT NULL,
+					CONSTRAINT "test_table_pkey" PRIMARY KEY (id)
+				);
+
+				COMMENT ON TABLE "public"."test_table" IS 'A table for testing purposes';
+			`,
+			currentSDL: ``,
+			shouldContain: []string{
+				`DROP TABLE IF EXISTS "public"."test_table"`,
+			},
+			shouldNotContain: []string{
+				`COMMENT ON TABLE "public"."test_table"`,
+			},
+		},
+		{
+			name: "Drop multiple columns with comments",
+			previousSDL: `
+				CREATE TABLE "public"."test_table" (
+					"id" serial,
+					"name" character varying(100) NOT NULL,
+					"created_at" timestamp(6) without time zone DEFAULT CURRENT_TIMESTAMP,
+					"is_active" boolean DEFAULT true,
+					"description" text,
+					"test_column" integer,
+					CONSTRAINT "test_table_pkey" PRIMARY KEY (id)
+				);
+
+				COMMENT ON TABLE "public"."test_table" IS 'A table for testing purposes';
+				COMMENT ON COLUMN "public"."test_table"."test_column" IS 'A test column for various uses';
+				COMMENT ON COLUMN "public"."test_table"."description" IS 'Description field';
+			`,
+			currentSDL: `
+				CREATE TABLE "public"."test_table" (
+					"id" serial,
+					"name" character varying(100) NOT NULL,
+					"is_active" boolean DEFAULT true,
+					CONSTRAINT "test_table_pkey" PRIMARY KEY (id)
+				);
+
+				COMMENT ON TABLE "public"."test_table" IS 'A table for testing purposes';
+			`,
+			shouldContain: []string{
+				`ALTER TABLE "public"."test_table" DROP COLUMN IF EXISTS "test_column"`,
+				`ALTER TABLE "public"."test_table" DROP COLUMN IF EXISTS "created_at"`,
+				`ALTER TABLE "public"."test_table" DROP COLUMN IF EXISTS "description"`,
+			},
+			shouldNotContain: []string{
+				`COMMENT ON COLUMN "public"."test_table"."test_column"`,
+				`COMMENT ON COLUMN "public"."test_table"."description"`,
+				`COMMENT ON COLUMN "public"."test_table"."created_at"`,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil, nil)
+			require.NoError(t, err)
+			require.NotNil(t, diff)
+
+			// Generate migration SQL
+			migrationSQL, err := generateMigration(diff)
+			require.NoError(t, err)
+
+			t.Logf("Generated migration SQL:\n%s", migrationSQL)
+
+			// Verify expected strings are present
+			for _, expected := range tt.shouldContain {
+				assert.Contains(t, migrationSQL, expected,
+					"Migration SQL should contain %q", expected)
+			}
+
+			// Verify unwanted strings are not present
+			for _, unwanted := range tt.shouldNotContain {
+				assert.NotContains(t, migrationSQL, unwanted,
+					"Migration SQL should NOT contain %q", unwanted)
+			}
+		})
+	}
+}
+func TestRemoveProcedureComment_ShouldUsePROCEDURE(t *testing.T) {
+	tests := []struct {
+		name             string
+		previousSDL      string
+		currentSDL       string
+		shouldContain    []string
+		shouldNotContain []string
+	}{
+		{
+			name: "Remove comment from procedure - should use COMMENT ON PROCEDURE, not FUNCTION",
+			previousSDL: `
+CREATE PROCEDURE "public"."new_procedure"()
+LANGUAGE plpgsql
+AS $$
+BEGIN
+	RAISE NOTICE 'New procedure executed';
+END;
+$$;
+
+COMMENT ON PROCEDURE "public"."new_procedure"() IS 'A new procedure that raises a notice';
+`,
+			currentSDL: `
+CREATE PROCEDURE "public"."new_procedure"()
+LANGUAGE plpgsql
+AS $$
+BEGIN
+	RAISE NOTICE 'New procedure executed';
+END;
+$$;
+`,
+			shouldContain: []string{
+				"COMMENT ON PROCEDURE",
+				`"public".new_procedure() IS NULL`,
+			},
+			shouldNotContain: []string{
+				"COMMENT ON FUNCTION",
+			},
+		},
+		{
+			name: "Update procedure comment - should use COMMENT ON PROCEDURE",
+			previousSDL: `
+CREATE PROCEDURE "public"."log_message"(msg text)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+	INSERT INTO logs (message) VALUES (msg);
+END;
+$$;
+
+COMMENT ON PROCEDURE "public"."log_message"(msg text) IS 'Old comment';
+`,
+			currentSDL: `
+CREATE PROCEDURE "public"."log_message"(msg text)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+	INSERT INTO logs (message) VALUES (msg);
+END;
+$$;
+
+COMMENT ON PROCEDURE "public"."log_message"(msg text) IS 'New comment';
+`,
+			shouldContain: []string{
+				"COMMENT ON PROCEDURE",
+				`"public".log_message(msg text) IS 'New comment'`,
+			},
+			shouldNotContain: []string{
+				"COMMENT ON FUNCTION",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil, nil)
+			require.NoError(t, err)
+			require.NotNil(t, diff)
+
+			// Generate migration SQL
+			migrationSQL, err := generateMigration(diff)
+			require.NoError(t, err)
+
+			t.Logf("Generated migration SQL:\n%s", migrationSQL)
+
+			// Verify expected strings are present
+			for _, expected := range tt.shouldContain {
+				assert.Contains(t, migrationSQL, expected,
+					"Migration SQL should contain %q", expected)
+			}
+
+			// Verify unwanted strings are not present
+			for _, unwanted := range tt.shouldNotContain {
+				assert.NotContains(t, migrationSQL, unwanted,
+					"Migration SQL should NOT contain %q", unwanted)
+			}
+		})
+	}
+}

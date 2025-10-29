@@ -1,0 +1,37 @@
+- statement: CREATE INDEX idx_tech_book_id_name ON tech_book(id, name)
+  changeType: 1
+- statement: CREATE INDEX tech_book_id_name ON tech_book(id, name)
+  changeType: 1
+  want:
+    - status: 2
+      code: 303
+      title: naming.index.idx
+      content: Index in table "tech_book" mismatches the naming convention, expect "^$|^idx_tech_book_id_name$" but found "tech_book_id_name"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE INDEX wfdtqyetsyoovcvikjlyfukxyjxxxhifl ON tech_book(id, name)
+  changeType: 1
+  want:
+    - status: 2
+      code: 303
+      title: naming.index.idx
+      content: Index in table "tech_book" mismatches the naming convention, expect "^$|^idx_tech_book_id_name$" but found "wfdtqyetsyoovcvikjlyfukxyjxxxhifl"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER INDEX old_index RENAME TO idx_tech_book_id_name
+  changeType: 1
+- statement: ALTER INDEX old_index RENAME TO idx_tech_book
+  changeType: 1
+  want:
+    - status: 2
+      code: 303
+      title: naming.index.idx
+      content: Index in table "tech_book" mismatches the naming convention, expect "^$|^idx_tech_book_id_name$" but found "idx_tech_book"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

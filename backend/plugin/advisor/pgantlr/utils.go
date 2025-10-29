@@ -1,6 +1,7 @@
 package pgantlr
 
 import (
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -117,4 +118,24 @@ func extractStatementText(statementsText string, startLine, endLine int) string 
 	}
 
 	return strings.TrimSpace(strings.Join(stmtLines, " "))
+}
+
+// getTemplateRegexp generates a regex pattern by replacing tokens in the template with actual values.
+// Used by naming convention advisors to dynamically build patterns based on metadata.
+func getTemplateRegexp(template string, templateList []string, tokens map[string]string) (*regexp.Regexp, error) {
+	for _, key := range templateList {
+		if token, ok := tokens[key]; ok {
+			template = strings.ReplaceAll(template, key, token)
+		}
+	}
+
+	return regexp.Compile(template)
+}
+
+// normalizeSchemaName normalizes empty schema names to "public" (PostgreSQL default schema).
+func normalizeSchemaName(schemaName string) string {
+	if schemaName == "" {
+		return "public"
+	}
+	return schemaName
 }

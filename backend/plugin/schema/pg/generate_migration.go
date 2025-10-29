@@ -3108,6 +3108,38 @@ func generateCommentChangesFromSDL(buf *strings.Builder, diff *schema.MetadataDi
 		return nil
 	}
 
+	// Build a set of tables being dropped
+	// When a table is dropped, its comments are automatically removed
+	tablesBeingDropped := make(map[string]bool)
+	for _, tableDiff := range diff.TableChanges {
+		if tableDiff.Action == schema.MetadataDiffActionDrop {
+			tableKey := tableDiff.SchemaName + "." + tableDiff.TableName
+			tablesBeingDropped[tableKey] = true
+		}
+	}
+
+	// Build a set of columns being dropped
+	// When a column is dropped, its comment is automatically removed
+	columnsBeingDropped := make(map[string]bool)
+	for _, tableDiff := range diff.TableChanges {
+		if tableDiff.Action == schema.MetadataDiffActionAlter {
+			for _, colDiff := range tableDiff.ColumnChanges {
+				if colDiff.Action == schema.MetadataDiffActionDrop {
+					var columnName string
+					if colDiff.OldColumn != nil {
+						columnName = colDiff.OldColumn.Name
+					} else if colDiff.OldASTNode != nil {
+						columnName = extractColumnNameFromAST(colDiff.OldASTNode)
+					}
+					if columnName != "" {
+						columnKey := tableDiff.SchemaName + "." + tableDiff.TableName + "." + columnName
+						columnsBeingDropped[columnKey] = true
+					}
+				}
+			}
+		}
+	}
+
 	for _, commentDiff := range diff.CommentChanges {
 		// Extract the new comment text from the AST node
 		newComment := extractCommentFromDiff(commentDiff)
@@ -3117,9 +3149,19 @@ func generateCommentChangesFromSDL(buf *strings.Builder, diff *schema.MetadataDi
 			writeCommentOnSchema(buf, commentDiff.SchemaName, newComment)
 
 		case schema.CommentObjectTypeTable:
+			// Skip comment generation for tables being dropped
+			tableKey := commentDiff.SchemaName + "." + commentDiff.ObjectName
+			if tablesBeingDropped[tableKey] {
+				continue
+			}
 			writeCommentOnTable(buf, commentDiff.SchemaName, commentDiff.ObjectName, newComment)
 
 		case schema.CommentObjectTypeColumn:
+			// Skip comment generation for columns being dropped
+			columnKey := commentDiff.SchemaName + "." + commentDiff.ObjectName + "." + commentDiff.ColumnName
+			if columnsBeingDropped[columnKey] {
+				continue
+			}
 			writeCommentOnColumn(buf, commentDiff.SchemaName, commentDiff.ObjectName, commentDiff.ColumnName, newComment)
 
 		case schema.CommentObjectTypeView:
@@ -3132,6 +3174,7 @@ func generateCommentChangesFromSDL(buf *strings.Builder, diff *schema.MetadataDi
 			var functionASTNode any
 			functionKey := commentDiff.SchemaName + "." + commentDiff.ObjectName
 			for _, funcDiff := range diff.FunctionChanges {
+				// Check both NewFunction and OldFunction to handle comment removal cases
 				if funcDiff.NewFunction != nil {
 					funcKey := funcDiff.SchemaName + "." + funcDiff.NewFunction.Signature
 					if funcKey == functionKey {
@@ -3140,11 +3183,27 @@ func generateCommentChangesFromSDL(buf *strings.Builder, diff *schema.MetadataDi
 						break
 					}
 				}
+				if funcDiff.OldFunction != nil {
+					funcKey := funcDiff.SchemaName + "." + funcDiff.OldFunction.Signature
+					if funcKey == functionKey {
+						// Only use OldFunction if we haven't found NewFunction
+						if functionDefinition == "" {
+							functionDefinition = funcDiff.OldFunction.Definition
+							functionASTNode = funcDiff.OldASTNode
+						}
+						break
+					}
+				}
 			}
 			// If we didn't find the function AST node from FunctionChanges, use the comment AST node
 			// to determine if it's a FUNCTION or PROCEDURE
-			if functionASTNode == nil && commentDiff.NewASTNode != nil {
-				functionASTNode = commentDiff.NewASTNode
+			// Check both NewASTNode (for adding comments) and OldASTNode (for removing comments)
+			if functionASTNode == nil {
+				if commentDiff.NewASTNode != nil {
+					functionASTNode = commentDiff.NewASTNode
+				} else if commentDiff.OldASTNode != nil {
+					functionASTNode = commentDiff.OldASTNode
+				}
 			}
 			writeCommentOnFunction(buf, commentDiff.SchemaName, commentDiff.ObjectName, newComment, functionASTNode, functionDefinition)
 

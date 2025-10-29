@@ -24,7 +24,7 @@
     <!-- Project Labels Section -->
     <div>
       <div class="font-medium">
-        {{ $t("common.labels") }}
+        {{ $t("project.settings.project-labels.self") }}
       </div>
       <div class="text-sm text-gray-500 mb-3">
         {{ $t("project.settings.project-labels.description") }}

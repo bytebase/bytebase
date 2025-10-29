@@ -57,13 +57,14 @@ func GetTLSConfig(ds *storepb.DataSource) (*tls.Config, error) {
 	// - VerifyPeerCertificate implements custom verification that handles intermediate certificates
 	// - This pattern allows proper verification even when servers send certificates out of order
 	cfg.InsecureSkipVerify = true
-	cfg.VerifyPeerCertificate = CreateCertificateVerifier(rootCertPool)
+	cfg.VerifyPeerCertificate = CreateCertificateVerifier(rootCertPool, ds.GetHost())
 	return cfg, nil
 }
 
-// CreateCertificateVerifier returns a verification function that properly handles intermediate certificates.
+// CreateCertificateVerifier returns a verification function that properly handles intermediate certificates
+// and validates the hostname matches the certificate.
 // This is exported for use by database drivers that need custom certificate verification.
-func CreateCertificateVerifier(rootCertPool *x509.CertPool) func([][]byte, [][]*x509.Certificate) error {
+func CreateCertificateVerifier(rootCertPool *x509.CertPool, hostname string) func([][]byte, [][]*x509.Certificate) error {
 	return func(rawCerts [][]byte, _ [][]*x509.Certificate) error {
 		if len(rawCerts) == 0 {
 			return errors.Errorf("empty certificate to verify")
@@ -83,10 +84,11 @@ func CreateCertificateVerifier(rootCertPool *x509.CertPool) func([][]byte, [][]*
 			intermediatePool.AddCert(cert)
 		}
 
-		// Verify the certificate chain
+		// Verify the certificate chain and hostname
 		opts := x509.VerifyOptions{
 			Roots:         rootCertPool,
 			Intermediates: intermediatePool,
+			DNSName:       hostname,
 		}
 		if _, err = cert.Verify(opts); err != nil {
 			return errors.Wrap(err, "SSL cert failed to verify")

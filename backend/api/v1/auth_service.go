@@ -194,7 +194,7 @@ func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.Login
 		slog.Error("failed to update user profile", log.BBError(err), slog.String("user", loginUser.Email))
 	}
 
-	response.User = convertToUser(loginUser)
+	response.User = convertToUser(ctx, loginUser)
 
 	s.metricReporter.Report(ctx, &metric.Metric{
 		Name:  metricapi.PrincipalLoginMetricName,

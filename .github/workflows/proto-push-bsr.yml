@@ -1,0 +1,30 @@
+name: Proto push to BSR
+
+on:
+  push:
+    branches:
+      - 'main'
+    paths:
+      - 'proto/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  push-protos:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Setup buf
+        uses: bufbuild/buf-setup-action@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Push to BSR
+        working-directory: proto
+        env:
+          BUF_TOKEN: ${{ secrets.BUF_TOKEN }}
+        run: buf push
