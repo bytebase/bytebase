@@ -1,16 +1,11 @@
 package audit
 
 import (
-	"context"
 	"crypto/sha256"
-	"database/sql"
 	"encoding/hex"
 	"fmt"
-	"log/slog"
 	"os"
 	"time"
-
-	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 )
@@ -64,7 +59,7 @@ func GenerateBytebaseID() (string, error) {
 	// Random: 16 alphanumeric chars (cryptographically secure)
 	randomStr, err := common.RandomString(16)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to generate random string")
+		return "", common.Wrapf(err, common.Internal, "failed to generate random string")
 	}
 
 	// Combine: source-timestamp-random
@@ -76,54 +71,10 @@ func GenerateBytebaseID() (string, error) {
 // ValidateBytebaseID checks if Bytebase ID meets constraints
 func ValidateBytebaseID(id string) error {
 	if id == "" {
-		return errors.New("bytebase_id cannot be empty")
+		return common.Errorf(common.Invalid, "bytebase_id cannot be empty")
 	}
 	if len(id) > 255 {
-		return errors.Errorf("bytebase_id too long: %d chars (max 255)", len(id))
+		return common.Errorf(common.Invalid, "bytebase_id too long: %d chars (max 255)", len(id))
 	}
 	return nil
-}
-
-// GenerateBytebaseIDWithRetry generates Bytebase ID and verifies uniqueness
-// Retries on collision (extremely rare with 16-char random)
-//
-// IMPORTANT: Pass *sql.DB directly (not store.Store) to avoid circular dependency
-//
-// TODO(PR#2): Refactor to service layer pattern when implementing Logger
-// - Add UNIQUE constraint on audit_log bytebase_id (or composite key)
-// - Create audit/service.go for orchestration
-// - Store should return ErrDuplicateID on constraint violation
-// - Move retry logic to service layer (domain/data/service separation)
-func GenerateBytebaseIDWithRetry(db *sql.DB, maxAttempts int) (string, error) {
-	for attempt := 1; attempt <= maxAttempts; attempt++ {
-		bytebaseID, err := GenerateBytebaseID()
-		if err != nil {
-			return "", errors.Wrap(err, "failed to generate bytebase_id")
-		}
-
-		// Verify uniqueness by checking JSONB payload
-		// Note: protojson marshaling produces camelCase "bytebaseId"
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		var count int
-		err = db.QueryRowContext(ctx,
-			`SELECT COUNT(*) FROM audit_log
-			 WHERE payload->>'bytebaseId' = $1`,
-			bytebaseID).Scan(&count)
-		cancel()
-
-		if err != nil {
-			return "", errors.Wrap(err, "failed to check bytebase_id uniqueness")
-		}
-
-		if count == 0 {
-			return bytebaseID, nil
-		}
-
-		// Collision detected (extremely rare)
-		slog.Warn("Bytebase ID collision detected, retrying",
-			slog.String("bytebase_id", bytebaseID),
-			slog.Int("attempt", attempt))
-	}
-
-	return "", errors.Errorf("failed to generate unique bytebase_id after %d attempts", maxAttempts)
 }

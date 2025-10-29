@@ -239,9 +239,7 @@ func GetSearchAuditLogsFilter(ctx context.Context, s *Store, filter string) (*qb
 // GetMaxAuditSequence loads the maximum sequence number for the given Bytebase deployment
 // Returns 0 if no audit logs exist for this Bytebase deployment
 //
-// # Used during server startup to continue sequences after restart
-//
-// TODO(PR#2): When adding UNIQUE constraint, this will work with service layer pattern
+// Used during server startup to continue sequences after restart
 func (s *Store) GetMaxAuditSequence(ctx context.Context, bytebaseID string) (int64, error) {
 	var maxSeq sql.NullInt64
 
@@ -273,8 +271,6 @@ func (s *Store) GetMaxAuditSequence(ctx context.Context, bytebaseID string) (int
 
 // CheckBytebaseIDExists checks if any audit logs exist with the given bytebase_id
 // Used for collision detection during Bytebase ID generation
-//
-// TODO(PR#2): Return ErrDuplicateID when implementing service layer with UNIQUE constraint
 func (s *Store) CheckBytebaseIDExists(ctx context.Context, bytebaseID string) (bool, error) {
 	var exists bool
 
@@ -296,4 +292,32 @@ func (s *Store) CheckBytebaseIDExists(ctx context.Context, bytebaseID string) (b
 	}
 
 	return exists, nil
+}
+
+// EnsureUniqueBytebaseID generates a unique Bytebase deployment identifier with collision retry
+// Returns error if ID generation fails or collision persists after retries
+func (s *Store) EnsureUniqueBytebaseID(ctx context.Context, generateFn func() (string, error), maxAttempts int) (string, error) {
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		bytebaseID, err := generateFn()
+		if err != nil {
+			return "", errors.Wrap(err, "failed to generate bytebase_id")
+		}
+
+		// Check uniqueness using existing method
+		exists, err := s.CheckBytebaseIDExists(ctx, bytebaseID)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to check bytebase_id uniqueness")
+		}
+
+		if !exists {
+			return bytebaseID, nil
+		}
+
+		// Collision detected (astronomically rare with 16-char random)
+		if attempt >= maxAttempts {
+			return "", errors.Errorf("failed to generate unique bytebase_id after %d attempts", maxAttempts)
+		}
+	}
+
+	return "", errors.Errorf("failed to generate unique bytebase_id after %d attempts", maxAttempts)
 }
