@@ -57,6 +57,36 @@ func TestGetStatementTypesANTLR(t *testing.T) {
 			sql:           "DROP SCHEMA schema1;",
 			expectedTypes: []string{"DROP_SCHEMA"},
 		},
+	{
+		name:          "DROP SEQUENCE",
+		sql:           "DROP SEQUENCE seq1;",
+		expectedTypes: []string{"DROP_SEQUENCE"},
+	},
+	{
+		name:          "DROP EXTENSION",
+		sql:           "DROP EXTENSION postgis;",
+		expectedTypes: []string{"DROP_EXTENSION"},
+	},
+	{
+		name:          "DROP DATABASE",
+		sql:           "DROP DATABASE testdb;",
+		expectedTypes: []string{"DROP_DATABASE"},
+	},
+	{
+		name:          "DROP TYPE",
+		sql:           "DROP TYPE custom_type;",
+		expectedTypes: []string{"DROP_TYPE"},
+	},
+	{
+		name:          "DROP TRIGGER",
+		sql:           "DROP TRIGGER trig1 ON t1;",
+		expectedTypes: []string{"DROP_TRIGGER"},
+	},
+	{
+		name:          "DROP VIEW",
+		sql:           "DROP VIEW v1;",
+		expectedTypes: []string{"DROP_TABLE"},
+	},
 		{
 			name:          "ALTER TABLE",
 			sql:           "ALTER TABLE t1 ADD COLUMN name VARCHAR(100);",

@@ -311,6 +311,21 @@ func (c *statementTypeCollectorWithPosition) EnterCommentstmt(ctx *parser.Commen
 	c.addStatement("COMMENT", ctx)
 }
 
+// DROP DATABASE statements
+func (c *statementTypeCollector) EnterDropdbstmt(ctx *parser.DropdbstmtContext) {
+	if !isTopLevel(ctx.GetParent()) {
+		return
+	}
+	c.addType("DROP_DATABASE")
+}
+
+func (c *statementTypeCollectorWithPosition) EnterDropdbstmt(ctx *parser.DropdbstmtContext) {
+	if !isTopLevel(ctx.GetParent()) {
+		return
+	}
+	c.addStatement("DROP_DATABASE", ctx)
+}
+
 // DML statements
 func (c *statementTypeCollector) EnterInsertstmt(ctx *parser.InsertstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
@@ -360,14 +375,26 @@ func getDropStatementType(ctx *parser.DropstmtContext) string {
 		return ""
 	}
 
-	// Check object type
+	// Check TYPE_P for DROP TYPE
+	if ctx.TYPE_P() != nil {
+		return "DROP_TYPE"
+	}
+
+	// Check DOMAIN_P for DROP DOMAIN (not in legacy, return UNKNOWN)
+	if ctx.DOMAIN_P() != nil {
+		return "UNKNOWN"
+	}
+
+	// Check object_type_any_name (TABLE, SEQUENCE, VIEW, INDEX, etc.)
 	if ctx.Object_type_any_name() != nil {
 		objType := ctx.Object_type_any_name()
 		if objType.TABLE() != nil {
 			return "DROP_TABLE"
 		}
 		if objType.VIEW() != nil {
-			return "DROP_TABLE" // Views treated as tables in legacy
+			// Check if MATERIALIZED VIEW or regular VIEW
+			// Both treated as DROP_TABLE in legacy
+			return "DROP_TABLE"
 		}
 		if objType.INDEX() != nil {
 			return "DROP_INDEX"
@@ -375,16 +402,35 @@ func getDropStatementType(ctx *parser.DropstmtContext) string {
 		if objType.SEQUENCE() != nil {
 			return "DROP_SEQUENCE"
 		}
+		// Other types like COLLATION, CONVERSION, STATISTICS not in legacy
+		return "UNKNOWN"
 	}
 
-	// Check drop type name for SCHEMA
-	if ctx.Drop_type_name() != nil && ctx.Drop_type_name().SCHEMA() != nil {
-		return "DROP_SCHEMA"
+	// Check drop_type_name (SCHEMA, EXTENSION, etc.)
+	if ctx.Drop_type_name() != nil {
+		dropType := ctx.Drop_type_name()
+		if dropType.SCHEMA() != nil {
+			return "DROP_SCHEMA"
+		}
+		if dropType.EXTENSION() != nil {
+			return "DROP_EXTENSION"
+		}
+		// Other types like ACCESS METHOD, EVENT TRIGGER, PUBLICATION not in legacy
+		return "UNKNOWN"
 	}
 
-	// Default - could be DROP FUNCTION, DROP TYPE, etc.
-	// We return a generic DROP for unhandled cases
-	return "DROP"
+	// Check object_type_name_on_any_name (TRIGGER, RULE, POLICY with "ON table" syntax)
+	if ctx.Object_type_name_on_any_name() != nil {
+		objTypeOn := ctx.Object_type_name_on_any_name()
+		if objTypeOn.TRIGGER() != nil {
+			return "DROP_TRIGGER"
+		}
+		// RULE and POLICY not in legacy
+		return "UNKNOWN"
+	}
+
+	// Default for unhandled cases
+	return "UNKNOWN"
 }
 
 // getRenameStatementType determines the specific RENAME statement type.
