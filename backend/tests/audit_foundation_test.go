@@ -27,7 +27,7 @@ func TestAuditLogFoundation(t *testing.T) {
 
 	db := s.GetDB()
 
-	// Step 1: Insert a "legacy" log without instance_id/sequence_number
+	// Step 1: Insert a "legacy" log without server_id/sequence_number
 	legacyPayload := &storepb.AuditLog{
 		Method:   "GET",
 		Resource: "/api/v1/legacy",
@@ -43,16 +43,16 @@ func TestAuditLogFoundation(t *testing.T) {
 	_, err = db.ExecContext(ctx, `INSERT INTO audit_log (payload) VALUES ($1)`, legacyJSON)
 	a.NoError(err)
 
-	// Step 2: Verify legacy log has NULL instance_id
+	// Step 2: Verify legacy log has NULL server_id
 	var nullCount int
 	err = db.QueryRowContext(ctx, `
-		SELECT COUNT(*) FROM audit_log WHERE payload->>'instanceId' IS NULL
+		SELECT COUNT(*) FROM audit_log WHERE payload->>'serverId' IS NULL
 	`).Scan(&nullCount)
 	a.NoError(err)
-	a.Equal(1, nullCount, "should have 1 legacy log without instance_id")
+	a.Equal(1, nullCount, "should have 1 legacy log without server_id")
 
-	// Step 3: Insert a "new" log with instance_id/sequence_number
-	testInstanceID := "test-instance-123"
+	// Step 3: Insert a "new" log with server_id/sequence_number
+	testServerID := "test-server-123"
 	newPayload := &storepb.AuditLog{
 		Method:         "POST",
 		Resource:       "/api/v1/new",
@@ -60,7 +60,7 @@ func TestAuditLogFoundation(t *testing.T) {
 		Severity:       storepb.AuditLog_INFO,
 		Request:        `{"new": true}`,
 		Response:       `{"ok": true}`,
-		InstanceId:     testInstanceID,
+		ServerId:       testServerID,
 		SequenceNumber: 1,
 	}
 
@@ -71,19 +71,19 @@ func TestAuditLogFoundation(t *testing.T) {
 	a.NoError(err)
 
 	// Step 4: Verify GetMaxAuditSequence returns 1
-	maxSeq, err := s.GetMaxAuditSequence(ctx, testInstanceID)
+	maxSeq, err := s.GetMaxAuditSequence(ctx, testServerID)
 	a.NoError(err)
 	a.Equal(int64(1), maxSeq, "should return max sequence 1")
 
-	// Step 5: Verify CheckInstanceIDExists returns true
-	exists, err := s.CheckInstanceIDExists(ctx, testInstanceID)
+	// Step 5: Verify CheckServerIDExists returns true
+	exists, err := s.CheckServerIDExists(ctx, testServerID)
 	a.NoError(err)
-	a.True(exists, "instance_id should exist")
+	a.True(exists, "server_id should exist")
 
-	// Step 6: Verify non-existent instance returns false
-	exists, err = s.CheckInstanceIDExists(ctx, "non-existent")
+	// Step 6: Verify non-existent server returns false
+	exists, err = s.CheckServerIDExists(ctx, "non-existent")
 	a.NoError(err)
-	a.False(exists, "non-existent instance_id should not exist")
+	a.False(exists, "non-existent server_id should not exist")
 
 	// Step 7: Verify both logs are queryable
 	var totalCount int

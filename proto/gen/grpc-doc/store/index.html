@@ -2429,10 +2429,10 @@ Some fields are omitted because they are too large or contain sensitive informat
                 </tr>
               
                 <tr>
-                  <td>instance_id</td>
+                  <td>server_id</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Instance identifier for this Bytebase server instance
+                  <td><p>Server identifier for this Bytebase server
 Format: {source}-{timestamp}-{random}
 Used by log aggregators for deduplication and gap detection </p></td>
                 </tr>
@@ -2441,7 +2441,7 @@ Used by log aggregators for deduplication and gap detection </p></td>
                   <td>sequence_number</td>
                   <td><a href="#int64">int64</a></td>
                   <td></td>
-                  <td><p>Monotonically increasing sequence number within this instance
+                  <td><p>Monotonically increasing sequence number within this server
 Guaranteed gap-free for stdout integrity: 1, 2, 3, 4, ...
 NULL for logs created before this feature was deployed </p></td>
                 </tr>

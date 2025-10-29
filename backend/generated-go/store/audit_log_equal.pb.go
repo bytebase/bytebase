@@ -50,7 +50,7 @@ func (x *AuditLog) Equal(y *AuditLog) bool {
 	if !x.RequestMetadata.Equal(y.RequestMetadata) {
 		return false
 	}
-	if x.InstanceId != y.InstanceId {
+	if x.ServerId != y.ServerId {
 		return false
 	}
 	if x.SequenceNumber != y.SequenceNumber {

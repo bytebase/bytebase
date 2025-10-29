@@ -15,7 +15,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 )
 
-// GenerateInstanceID creates guaranteed-unique instance identifier
+// GenerateServerID creates guaranteed-unique server identifier
 // Format: {source}-{timestamp}-{random}
 // Example: "bytebase-prod-20251029-150405-a1b2c3d4e5f6g7h8"
 //
@@ -25,8 +25,8 @@ import (
 //   - random: 16 alphanumeric chars (cryptographically secure)
 //
 // Total max length: 190 + 1 + 15 + 1 + 16 = 223 chars
-func GenerateInstanceID() (string, error) {
-	// Length constraints for instance ID components
+func GenerateServerID() (string, error) {
+	// Length constraints for server ID components
 	const (
 		maxTotalLen  = 255                                        // Database VARCHAR(255) limit
 		timestampLen = 15                                         // YYYYMMDD-HHMMSS format
@@ -68,62 +68,62 @@ func GenerateInstanceID() (string, error) {
 	}
 
 	// Combine: source-timestamp-random
-	instanceID := fmt.Sprintf("%s-%s-%s", source, timestamp, randomStr)
+	serverID := fmt.Sprintf("%s-%s-%s", source, timestamp, randomStr)
 
-	return instanceID, nil
+	return serverID, nil
 }
 
-// ValidateInstanceID checks if instance ID meets constraints
-func ValidateInstanceID(id string) error {
+// ValidateServerID checks if server ID meets constraints
+func ValidateServerID(id string) error {
 	if id == "" {
-		return errors.New("instance_id cannot be empty")
+		return errors.New("server_id cannot be empty")
 	}
 	if len(id) > 255 {
-		return errors.Errorf("instance_id too long: %d chars (max 255)", len(id))
+		return errors.Errorf("server_id too long: %d chars (max 255)", len(id))
 	}
 	return nil
 }
 
-// GenerateInstanceIDWithRetry generates instance ID and verifies uniqueness
+// GenerateServerIDWithRetry generates server ID and verifies uniqueness
 // Retries on collision (extremely rare with 16-char random)
 //
 // IMPORTANT: Pass *sql.DB directly (not store.Store) to avoid circular dependency
 //
 // TODO(PR#2): Refactor to service layer pattern when implementing Logger
-// - Add UNIQUE constraint on audit_log instance_id (or composite key)
+// - Add UNIQUE constraint on audit_log server_id (or composite key)
 // - Create audit/service.go for orchestration
 // - Store should return ErrDuplicateID on constraint violation
 // - Move retry logic to service layer (domain/data/service separation)
-func GenerateInstanceIDWithRetry(db *sql.DB, maxAttempts int) (string, error) {
+func GenerateServerIDWithRetry(db *sql.DB, maxAttempts int) (string, error) {
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
-		instanceID, err := GenerateInstanceID()
+		serverID, err := GenerateServerID()
 		if err != nil {
-			return "", errors.Wrap(err, "failed to generate instance_id")
+			return "", errors.Wrap(err, "failed to generate server_id")
 		}
 
 		// Verify uniqueness by checking JSONB payload
-		// Note: protojson marshaling produces camelCase "instanceId"
+		// Note: protojson marshaling produces camelCase "serverId"
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		var count int
 		err = db.QueryRowContext(ctx,
 			`SELECT COUNT(*) FROM audit_log
-			 WHERE payload->>'instanceId' = $1`,
-			instanceID).Scan(&count)
+			 WHERE payload->>'serverId' = $1`,
+			serverID).Scan(&count)
 		cancel()
 
 		if err != nil {
-			return "", errors.Wrap(err, "failed to check instance_id uniqueness")
+			return "", errors.Wrap(err, "failed to check server_id uniqueness")
 		}
 
 		if count == 0 {
-			return instanceID, nil
+			return serverID, nil
 		}
 
 		// Collision detected (extremely rare)
-		slog.Warn("Instance ID collision detected, retrying",
-			slog.String("instance_id", instanceID),
+		slog.Warn("Server ID collision detected, retrying",
+			slog.String("server_id", serverID),
 			slog.Int("attempt", attempt))
 	}
 
-	return "", errors.Errorf("failed to generate unique instance_id after %d attempts", maxAttempts)
+	return "", errors.Errorf("failed to generate unique server_id after %d attempts", maxAttempts)
 }
