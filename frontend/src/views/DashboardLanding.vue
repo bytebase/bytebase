@@ -92,7 +92,7 @@
         <Draggable v-model="quickLinkList" item-key="id" animation="300">
           <template #item="{ element }: { element: QuickLink }">
             <div
-              class="group flex items-center justify-between p-2 hover:bg-gray-100 rounded-sm cursor-grab"
+              class="flex items-center justify-between p-2 hover:bg-gray-100 rounded-sm cursor-grab"
             >
               <div :key="element.id" class="flex items-center gap-x-2">
                 <NCheckbox
@@ -103,9 +103,7 @@
                 <component :is="element.icon" class="w-5 h-5 text-gray-500" />
                 {{ element.title }}
               </div>
-              <GripVerticalIcon
-                class="w-5 h-5 text-gray-500 hidden group-hover:block"
-              />
+              <GripVerticalIcon class="w-5 h-5 text-gray-500" />
             </div>
           </template>
         </Draggable>

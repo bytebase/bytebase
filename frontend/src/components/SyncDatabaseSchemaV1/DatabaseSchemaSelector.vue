@@ -9,13 +9,12 @@
         {{ $t("common.database") }}
       </span>
       <EnvironmentSelect
-        class="!w-60 mr-3 shrink-0"
+        class="mr-3"
         name="environment"
         :environment-name="state.environmentName"
         @update:environment-name="handleEnvironmentSelect"
       />
       <DatabaseSelect
-        class="!w-128 max-w-full"
         :project-name="project.name"
         :database-name="state.databaseName"
         :environment-name="state.environmentName"
@@ -30,9 +29,7 @@
       <span class="flex w-40 items-center shrink-0 text-sm">
         {{ $t("database.sync-schema.schema-version.self") }}
       </span>
-      <div
-        class="w-192 max-w-full flex flex-row justify-start items-center relative"
-      >
+      <div class="w-full flex flex-row justify-start items-center relative">
         <NSelect
           :loading="isPreparingSchemaVersionOptions"
           :value="state.changelogName"

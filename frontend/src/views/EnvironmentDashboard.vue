@@ -127,6 +127,7 @@ import {
 } from "@/components/EnvironmentForm";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { EnvironmentV1Name } from "@/components/v2";
+import { useRouteChangeGuard } from "@/composables/useRouteChangeGuard";
 import {
   useUIStateStore,
   useEnvironmentV1Store,
@@ -182,6 +183,10 @@ const selectEnvironment = (index: number) => {
   const id = environmentList.value[index].id;
   onTabChange(id);
 };
+
+useRouteChangeGuard(
+  computed(() => environmentDetailRefs.value[0]?.isEditing ?? false)
+);
 
 const onTabChange = (id: string) => {
   // The NTabPane only render the selected environment,

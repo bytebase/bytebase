@@ -63,7 +63,7 @@
       </NTabPane>
 
       <template #suffix>
-        <div class="flex items-center space-x-3">
+        <div class="flex items-center gap-x-2">
           <SearchBox v-model:value="state.activeUserFilterText" />
 
           <NButton
