@@ -89,8 +89,8 @@ func (s *Store) CreateRelease(ctx context.Context, release *ReleaseMessage, crea
 	return release, nil
 }
 
-func (s *Store) GetRelease(ctx context.Context, uid int64) (*ReleaseMessage, error) {
-	releases, err := s.ListReleases(ctx, &FindReleaseMessage{UID: &uid, ShowDeleted: true})
+func (s *Store) GetReleaseV2(ctx context.Context, find *FindReleaseMessage) (*ReleaseMessage, error) {
+	releases, err := s.ListReleases(ctx, find)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list releases")
 	}
@@ -98,9 +98,13 @@ func (s *Store) GetRelease(ctx context.Context, uid int64) (*ReleaseMessage, err
 		return nil, nil
 	}
 	if len(releases) > 1 {
-		return nil, errors.Errorf("found %d releases with uid=%v, expect 1", len(releases), uid)
+		return nil, errors.Errorf("found %d releases, expect 1", len(releases))
 	}
 	return releases[0], nil
+}
+
+func (s *Store) GetReleaseByUID(ctx context.Context, uid int64) (*ReleaseMessage, error) {
+	return s.GetReleaseV2(ctx, &FindReleaseMessage{UID: &uid, ShowDeleted: true})
 }
 
 func (s *Store) ListReleases(ctx context.Context, find *FindReleaseMessage) ([]*ReleaseMessage, error) {
@@ -228,5 +232,5 @@ func (s *Store) UpdateRelease(ctx context.Context, update *UpdateReleaseMessage)
 		return nil, errors.Wrapf(err, "failed to commit tx")
 	}
 
-	return s.GetRelease(ctx, update.UID)
+	return s.GetReleaseByUID(ctx, update.UID)
 }

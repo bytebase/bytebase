@@ -374,7 +374,7 @@ func getTaskCreatesFromChangeDatabaseConfigWithRelease(
 	}
 
 	// Fetch the release
-	release, err := s.GetRelease(ctx, releaseUID)
+	release, err := s.GetReleaseByUID(ctx, releaseUID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get release %d", releaseUID)
 	}
