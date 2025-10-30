@@ -2,7 +2,7 @@
   <NEmpty v-if="templateList.length === 0" class="py-12 border rounded" />
   <div v-else class="flex">
     <div
-      class="hidden sm:flex w-1/5 max-w-xs flex-col space-y-3 border-r mr-5 pr-5"
+      class="hidden lg:flex w-1/5 max-w-xs flex-col space-y-3 border-r mr-5 pr-5"
     >
       <p class="text-lg">
         {{ $t("schema-template.form.category") }}

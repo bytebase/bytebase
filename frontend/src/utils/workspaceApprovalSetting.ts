@@ -121,7 +121,6 @@ const resolveApprovalConfigRules = (rules: LocalApprovalRule[]) => {
     const source = resolveSourceExpr(args[0]);
     if (source === Risk_Source.SOURCE_UNSPECIFIED) return fail(expr, rule);
     const level = resolveLevelExpr(args[1]);
-    if (level === RiskLevel.RISK_LEVEL_UNSPECIFIED) return fail(expr, rule);
 
     // Found a correct (source, level) combination
     parsed.push({
