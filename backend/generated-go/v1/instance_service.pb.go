@@ -2950,7 +2950,8 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\x14BatchUpdateInstances\x12(.bytebase.v1.BatchUpdateInstancesRequest\x1a).bytebase.v1.BatchUpdateInstancesResponse\"C\x8a\xea0\x13bb.instances.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x1e:\x01*\"\x19/v1/instances:batchUpdate\x12\x99\x01\n" +
 	"\rAddDataSource\x12!.bytebase.v1.AddDataSourceRequest\x1a\x15.bytebase.v1.Instance\"N\x8a\xea0\x13bb.instances.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02):\x01*\"$/v1/{name=instances/*}:addDataSource\x12\xa2\x01\n" +
 	"\x10RemoveDataSource\x12$.bytebase.v1.RemoveDataSourceRequest\x1a\x15.bytebase.v1.Instance\"Q\x8a\xea0\x13bb.instances.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02,:\x01*\"'/v1/{name=instances/*}:removeDataSource\x12\xc6\x01\n" +
-	"\x10UpdateDataSource\x12$.bytebase.v1.UpdateDataSourceRequest\x1a\x15.bytebase.v1.Instance\"u\xdaA\x17data_source,update_mask\x8a\xea0\x13bb.instances.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x026:\vdata_source2'/v1/{name=instances/*}:updateDataSourceB6Z4github.com/bytebase/bytebase/backend/generated-go/v1b\x06proto3"
+	"\x10UpdateDataSource\x12$.bytebase.v1.UpdateDataSourceRequest\x1a\x15.bytebase.v1.Instance\"u\xdaA\x17data_source,update_mask\x8a\xea0\x13bb.instances.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x026:\vdata_source2'/v1/{name=instances/*}:updateDataSourceB\xaa\x01\n" +
+	"\x0fcom.bytebase.v1B\x14InstanceServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (
 	file_v1_instance_service_proto_rawDescOnce sync.Once

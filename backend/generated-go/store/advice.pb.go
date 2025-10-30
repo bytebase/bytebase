@@ -180,7 +180,8 @@ const file_store_advice_proto_rawDesc = "" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aSUCCESS\x10\x01\x12\v\n" +
 	"\aWARNING\x10\x02\x12\t\n" +
-	"\x05ERROR\x10\x03J\x04\b\x05\x10\x06B\x14Z\x12generated-go/storeb\x06proto3"
+	"\x05ERROR\x10\x03J\x04\b\x05\x10\x06B\x8e\x01\n" +
+	"\x12com.bytebase.storeB\vAdviceProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
 	file_store_advice_proto_rawDescOnce sync.Once

@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package bytebase.v1;
 
+import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
@@ -178,7 +179,11 @@ message DatabaseGroup {
   string name = 1;
 
   // The short name used in actual databases specified by users.
-  string title = 2;
+  string title = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 200
+  ];
 
   // The condition that is associated with this database group.
   // The syntax and semantics of CEL are documented at https://github.com/google/cel-spec

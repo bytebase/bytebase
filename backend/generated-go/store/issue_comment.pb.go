@@ -602,7 +602,8 @@ const file_store_issue_comment_proto_rawDesc = "" +
 	"\x06schema\x18\x01 \x01(\tR\x06schema\x12\x14\n" +
 	"\x05table\x18\x02 \x01(\tR\x05tableB\x10\n" +
 	"\x0e_original_lineB\a\n" +
-	"\x05eventB\x14Z\x12generated-go/storeb\x06proto3"
+	"\x05eventB\x94\x01\n" +
+	"\x12com.bytebase.storeB\x11IssueCommentProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
 	file_store_issue_comment_proto_rawDescOnce sync.Once

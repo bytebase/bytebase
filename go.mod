@@ -7,6 +7,7 @@ go 1.25.1
 godebug x509negativeserial=1
 
 require (
+	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.9-20250912141014-52f32327d4b0.1
 	cloud.google.com/go/bigquery v1.71.0
 	cloud.google.com/go/cloudsqlconn v1.18.1
 	cloud.google.com/go/secretmanager v1.15.0
@@ -14,6 +15,7 @@ require (
 	connectrpc.com/connect v1.19.0
 	connectrpc.com/cors v0.1.0
 	connectrpc.com/grpcreflect v1.3.0
+	connectrpc.com/validate v0.3.0
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.19.1
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.12.0
 	github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos v1.4.1
@@ -114,6 +116,7 @@ require (
 )
 
 require (
+	buf.build/go/protovalidate v1.0.0 // indirect
 	cel.dev/expr v0.24.0 // indirect
 	cloud.google.com/go/auth v0.16.5 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect

@@ -224,7 +224,8 @@ const file_v1_cel_service_proto_rawDesc = "" +
 	"CelService\x12l\n" +
 	"\n" +
 	"BatchParse\x12\x1e.bytebase.v1.BatchParseRequest\x1a\x1f.bytebase.v1.BatchParseResponse\"\x1d\x82\xd3\xe4\x93\x02\x17:\x01*\"\x12/v1/cel/batchParse\x12t\n" +
-	"\fBatchDeparse\x12 .bytebase.v1.BatchDeparseRequest\x1a!.bytebase.v1.BatchDeparseResponse\"\x1f\x82\xd3\xe4\x93\x02\x19:\x01*\"\x14/v1/cel/batchDeparseB6Z4github.com/bytebase/bytebase/backend/generated-go/v1b\x06proto3"
+	"\fBatchDeparse\x12 .bytebase.v1.BatchDeparseRequest\x1a!.bytebase.v1.BatchDeparseResponse\"\x1f\x82\xd3\xe4\x93\x02\x19:\x01*\"\x14/v1/cel/batchDeparseB\xa5\x01\n" +
+	"\x0fcom.bytebase.v1B\x0fCelServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (
 	file_v1_cel_service_proto_rawDescOnce sync.Once

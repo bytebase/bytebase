@@ -913,7 +913,8 @@ const file_v1_user_service_proto_rawDesc = "" +
 	"UpdateUser\x12\x1e.bytebase.v1.UpdateUserRequest\x1a\x11.bytebase.v1.User\"@\xdaA\x10user,update_mask\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02\x1f:\x04user2\x17/v1/{user.name=users/*}\x12o\n" +
 	"\n" +
 	"DeleteUser\x12\x1e.bytebase.v1.DeleteUserRequest\x1a\x16.google.protobuf.Empty\")\xdaA\x04name\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02\x14*\x12/v1/{name=users/*}\x12s\n" +
-	"\fUndeleteUser\x12 .bytebase.v1.UndeleteUserRequest\x1a\x11.bytebase.v1.User\".\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02 :\x01*\"\x1b/v1/{name=users/*}:undeleteB6Z4github.com/bytebase/bytebase/backend/generated-go/v1b\x06proto3"
+	"\fUndeleteUser\x12 .bytebase.v1.UndeleteUserRequest\x1a\x11.bytebase.v1.User\".\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02 :\x01*\"\x1b/v1/{name=users/*}:undeleteB\xa6\x01\n" +
+	"\x0fcom.bytebase.v1B\x10UserServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (
 	file_v1_user_service_proto_rawDescOnce sync.Once

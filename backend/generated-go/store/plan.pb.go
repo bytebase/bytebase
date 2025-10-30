@@ -685,7 +685,8 @@ const file_store_plan_proto_rawDesc = "" +
 	"\x17database_group_mappings\x18\x02 \x03(\v2:.bytebase.store.PlanConfig.Deployment.DatabaseGroupMappingR\x15databaseGroupMappings\x1a[\n" +
 	"\x14DatabaseGroupMapping\x12%\n" +
 	"\x0edatabase_group\x18\x01 \x01(\tR\rdatabaseGroup\x12\x1c\n" +
-	"\tdatabases\x18\x02 \x03(\tR\tdatabasesB\x14Z\x12generated-go/storeb\x06proto3"
+	"\tdatabases\x18\x02 \x03(\tR\tdatabasesB\x8c\x01\n" +
+	"\x12com.bytebase.storeB\tPlanProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
 	file_store_plan_proto_rawDescOnce sync.Once

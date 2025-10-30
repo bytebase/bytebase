@@ -82,7 +82,8 @@ const file_store_query_history_proto_rawDesc = "" +
 	"\x13QueryHistoryPayload\x12\x19\n" +
 	"\x05error\x18\x01 \x01(\tH\x00R\x05error\x88\x01\x01\x125\n" +
 	"\bduration\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\bdurationB\b\n" +
-	"\x06_errorB\x14Z\x12generated-go/storeb\x06proto3"
+	"\x06_errorB\x94\x01\n" +
+	"\x12com.bytebase.storeB\x11QueryHistoryProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
 	file_store_query_history_proto_rawDescOnce sync.Once

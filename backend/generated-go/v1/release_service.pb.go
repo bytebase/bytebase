@@ -1264,7 +1264,8 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\rUpdateRelease\x12!.bytebase.v1.UpdateReleaseRequest\x1a\x14.bytebase.v1.Release\"\x7f\xdaA\x13release,update_mask\x8a\xea0\x12bb.releases.update\x90\xea0\x01\xa2\xea0\x12bb.releases.create\x82\xd3\xe4\x93\x023:\arelease2(/v1/{release.name=projects/*/releases/*}\x12\x95\x01\n" +
 	"\rDeleteRelease\x12!.bytebase.v1.DeleteReleaseRequest\x1a\x16.google.protobuf.Empty\"I\xdaA\x04name\x8a\xea0\x12bb.releases.delete\x90\xea0\x01\x82\xd3\xe4\x93\x02\"* /v1/{name=projects/*/releases/*}\x12\x9b\x01\n" +
 	"\x0fUndeleteRelease\x12#.bytebase.v1.UndeleteReleaseRequest\x1a\x14.bytebase.v1.Release\"M\x8a\xea0\x14bb.releases.undelete\x90\xea0\x01\x82\xd3\xe4\x93\x02+\")/v1/{name=projects/*/releases/*}:undelete\x12\x9f\x01\n" +
-	"\fCheckRelease\x12 .bytebase.v1.CheckReleaseRequest\x1a!.bytebase.v1.CheckReleaseResponse\"J\x8a\xea0\x11bb.releases.check\x90\xea0\x01\x82\xd3\xe4\x93\x02+:\x01*\"&/v1/{parent=projects/*}/releases:checkB6Z4github.com/bytebase/bytebase/backend/generated-go/v1b\x06proto3"
+	"\fCheckRelease\x12 .bytebase.v1.CheckReleaseRequest\x1a!.bytebase.v1.CheckReleaseResponse\"J\x8a\xea0\x11bb.releases.check\x90\xea0\x01\x82\xd3\xe4\x93\x02+:\x01*\"&/v1/{parent=projects/*}/releases:checkB\xa9\x01\n" +
+	"\x0fcom.bytebase.v1B\x13ReleaseServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (
 	file_v1_release_service_proto_rawDescOnce sync.Once

@@ -541,7 +541,8 @@ const file_v1_changelist_service_proto_rawDesc = "" +
 	"\x0fListChangelists\x12#.bytebase.v1.ListChangelistsRequest\x1a$.bytebase.v1.ListChangelistsResponse\"O\xdaA\x06parent\x8a\xea0\x13bb.changelists.list\x90\xea0\x01\x82\xd3\xe4\x93\x02%\x12#/v1/{parent=projects/*}/changelists\x12\xe5\x01\n" +
 	"\x10UpdateChangelist\x12$.bytebase.v1.UpdateChangelistRequest\x1a\x17.bytebase.v1.Changelist\"\x91\x01\xdaA\x16changelist,update_mask\x8a\xea0\x15bb.changelists.update\x90\xea0\x01\xa2\xea0\x15bb.changelists.create\x82\xd3\xe4\x93\x02<:\n" +
 	"changelist2./v1/{changelist.name=projects/*/changelists/*}\x12\xa1\x01\n" +
-	"\x10DeleteChangelist\x12$.bytebase.v1.DeleteChangelistRequest\x1a\x16.google.protobuf.Empty\"O\xdaA\x04name\x8a\xea0\x15bb.changelists.delete\x90\xea0\x01\x82\xd3\xe4\x93\x02%*#/v1/{name=projects/*/changelists/*}B6Z4github.com/bytebase/bytebase/backend/generated-go/v1b\x06proto3"
+	"\x10DeleteChangelist\x12$.bytebase.v1.DeleteChangelistRequest\x1a\x16.google.protobuf.Empty\"O\xdaA\x04name\x8a\xea0\x15bb.changelists.delete\x90\xea0\x01\x82\xd3\xe4\x93\x02%*#/v1/{name=projects/*/changelists/*}B\xac\x01\n" +
+	"\x0fcom.bytebase.v1B\x16ChangelistServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (
 	file_v1_changelist_service_proto_rawDescOnce sync.Once
