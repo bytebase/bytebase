@@ -100,10 +100,4 @@ func TestAuditLogFoundation(t *testing.T) {
 	`, "/api/v1/new", testBytebaseID).Scan(&newExists)
 	a.NoError(err)
 	a.True(newExists, "new log should exist with bytebase_id")
-
-	t.Log("✅ Foundation test passed:")
-	t.Log("  - Legacy logs (NULL bytebase_id): coexist with new logs")
-	t.Log("  - New logs (with bytebase_id): ready for stdout streaming")
-	t.Log("  - GetMaxAuditSequence: correctly queries max sequence")
-	t.Log("  - CheckBytebaseIDExists: correctly checks existence")
 }
