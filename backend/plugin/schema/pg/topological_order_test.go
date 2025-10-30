@@ -535,6 +535,8 @@ func TestTopologicalOrderDropObjects(t *testing.T) {
 				assert.NotEqual(t, -1, ordersDropIdx, "orders DROP statement should exist")
 				assert.NotEqual(t, -1, customersDropIdx, "customers DROP statement should exist")
 				assert.Less(t, ordersDropIdx, customersDropIdx, "orders (with FK) should be dropped before customers (referenced)")
+			default:
+				t.Fatalf("Unknown test case: %s", tc.name)
 			}
 		})
 	}
@@ -650,6 +652,8 @@ func TestTopologicalOrderAlterWithForeignKey(t *testing.T) {
 				assert.NotEqual(t, -1, newTableCreateIdx, "new_table CREATE statement should exist")
 				assert.NotEqual(t, -1, existingTableAlterIdx, "existing_table ALTER statement should exist")
 				assert.Less(t, newTableCreateIdx, existingTableAlterIdx, "new_table should be created before existing_table is altered to add FK")
+			default:
+				t.Fatalf("Unknown test case: %s", tc.name)
 			}
 		})
 	}
