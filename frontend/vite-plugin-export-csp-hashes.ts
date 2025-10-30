@@ -110,7 +110,37 @@ export function exportCspHashes(): Plugin {
           );
         }
 
-        // 2. Scan built HTML files for inline scripts
+        // 2. Hash dynamically-injected scripts (e.g., iframe content)
+        const dynamicScripts = [
+          "src/components/MarkdownEditor/resize-observer.ts",
+        ];
+        console.log(
+          `✓ Computing hashes for ${dynamicScripts.length} dynamically-injected scripts...`
+        );
+
+        for (const scriptPath of dynamicScripts) {
+          try {
+            const fullPath = resolve(__dirname, scriptPath);
+            const scriptContent = readFileSync(fullPath, "utf-8");
+            const hash = computeSha256(scriptContent);
+            const cspHash = `'sha256-${hash}'`;
+
+            allHashes.add(cspHash);
+            inlineScriptSources.push({
+              file: scriptPath,
+              content:
+                scriptContent.length > 60
+                  ? scriptContent.substring(0, 60) + "..."
+                  : scriptContent,
+              hash: cspHash,
+            });
+            console.log(`  ✓ ${scriptPath} -> ${cspHash}`);
+          } catch (error) {
+            console.warn(`  ⚠️  Failed to hash ${scriptPath}:`, error);
+          }
+        }
+
+        // 3. Scan built HTML files for inline scripts
         const htmlFiles = findHtmlFiles(outDir);
         console.log(
           `✓ Scanning ${htmlFiles.length} HTML files for inline scripts...`
