@@ -2513,7 +2513,10 @@
           "description": "携帯電話の認証アプリを使用してスキャンします。スキャンできない場合は、{action} を実行できます。",
           "enter-the-text": "テキストを入力してください"
         },
-        "verify-code": "アプリケーションのコードを検証する"
+        "verify-code": "アプリケーションのコードを検証する",
+        "time-remaining": "残り時間: {time}",
+        "expired-notice": "このセットアップセッションは期限切れになりました。続行するには再生成してください。",
+        "regenerate": "再生成"
       },
       "download-recovery-codes": {
         "self": "リカバリーコードをダウンロード",

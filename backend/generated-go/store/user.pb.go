@@ -89,8 +89,10 @@ type MFAConfig struct {
 	RecoveryCodes []string `protobuf:"bytes,3,rep,name=recovery_codes,json=recoveryCodes,proto3" json:"recovery_codes,omitempty"`
 	// The temp_recovery_codes are the temporary codes that will replace the recovery_codes in two-phase commits.
 	TempRecoveryCodes []string `protobuf:"bytes,4,rep,name=temp_recovery_codes,json=tempRecoveryCodes,proto3" json:"temp_recovery_codes,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	// The temp_otp_secret_created_time is the timestamp when temp_otp_secret was created. Used to enforce expiration.
+	TempOtpSecretCreatedTime *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=temp_otp_secret_created_time,json=tempOtpSecretCreatedTime,proto3" json:"temp_otp_secret_created_time,omitempty"`
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
 }
 
 func (x *MFAConfig) Reset() {
@@ -147,6 +149,13 @@ func (x *MFAConfig) GetRecoveryCodes() []string {
 func (x *MFAConfig) GetTempRecoveryCodes() []string {
 	if x != nil {
 		return x.TempRecoveryCodes
+	}
+	return nil
+}
+
+func (x *MFAConfig) GetTempOtpSecretCreatedTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.TempOtpSecretCreatedTime
 	}
 	return nil
 }
@@ -216,13 +225,14 @@ var File_store_user_proto protoreflect.FileDescriptor
 
 const file_store_user_proto_rawDesc = "" +
 	"\n" +
-	"\x10store/user.proto\x12\x0ebytebase.store\x1a\x1fgoogle/protobuf/timestamp.proto\"\xa9\x01\n" +
+	"\x10store/user.proto\x12\x0ebytebase.store\x1a\x1fgoogle/protobuf/timestamp.proto\"\x85\x02\n" +
 	"\tMFAConfig\x12\x1d\n" +
 	"\n" +
 	"otp_secret\x18\x01 \x01(\tR\totpSecret\x12&\n" +
 	"\x0ftemp_otp_secret\x18\x02 \x01(\tR\rtempOtpSecret\x12%\n" +
 	"\x0erecovery_codes\x18\x03 \x03(\tR\rrecoveryCodes\x12.\n" +
-	"\x13temp_recovery_codes\x18\x04 \x03(\tR\x11tempRecoveryCodes\"\xc0\x01\n" +
+	"\x13temp_recovery_codes\x18\x04 \x03(\tR\x11tempRecoveryCodes\x12Z\n" +
+	"\x1ctemp_otp_secret_created_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\x18tempOtpSecretCreatedTime\"\xc0\x01\n" +
 	"\vUserProfile\x12B\n" +
 	"\x0flast_login_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\rlastLoginTime\x12U\n" +
 	"\x19last_change_password_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x16lastChangePasswordTime\x12\x16\n" +
@@ -255,13 +265,14 @@ var file_store_user_proto_goTypes = []any{
 	(*timestamppb.Timestamp)(nil), // 3: google.protobuf.Timestamp
 }
 var file_store_user_proto_depIdxs = []int32{
-	3, // 0: bytebase.store.UserProfile.last_login_time:type_name -> google.protobuf.Timestamp
-	3, // 1: bytebase.store.UserProfile.last_change_password_time:type_name -> google.protobuf.Timestamp
-	2, // [2:2] is the sub-list for method output_type
-	2, // [2:2] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	3, // 0: bytebase.store.MFAConfig.temp_otp_secret_created_time:type_name -> google.protobuf.Timestamp
+	3, // 1: bytebase.store.UserProfile.last_login_time:type_name -> google.protobuf.Timestamp
+	3, // 2: bytebase.store.UserProfile.last_change_password_time:type_name -> google.protobuf.Timestamp
+	3, // [3:3] is the sub-list for method output_type
+	3, // [3:3] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_store_user_proto_init() }

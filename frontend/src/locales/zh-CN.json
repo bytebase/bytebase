@@ -2513,7 +2513,10 @@
           "description": "使用您手机中的认证器应用程序进行扫描。如果您无法扫描，可以{action}。",
           "enter-the-text": "输入文本"
         },
-        "verify-code": "验证应用程序的代码"
+        "verify-code": "验证应用程序的代码",
+        "time-remaining": "剩余时间：{time}",
+        "expired-notice": "此设置会话已过期。请重新生成以继续。",
+        "regenerate": "重新生成"
       },
       "download-recovery-codes": {
         "self": "下载恢复码",

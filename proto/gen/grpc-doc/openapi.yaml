@@ -14661,6 +14661,10 @@ components:
                     items:
                         type: string
                     description: Temporary recovery codes used during MFA setup and regeneration.
+                tempOtpSecretCreatedTime:
+                    type: string
+                    description: Timestamp when temp_otp_secret was created. Used by frontend to show countdown timer.
+                    format: date-time
                 phone:
                     type: string
                     description: |-
