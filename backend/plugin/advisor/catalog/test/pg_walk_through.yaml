@@ -262,24 +262,6 @@
               ],
               "indexes": [
                 {
-                  "name": "t_a_b_c_idx",
-                  "expressions": [
-                    "a1",
-                    "b",
-                    "c"
-                  ],
-                  "type": "btree",
-                  "unique": true
-                },
-                {
-                  "name": "t_c_idx",
-                  "expressions": [
-                    "c"
-                  ],
-                  "type": "btree",
-                  "unique": true
-                },
-                {
                   "name": "t_pkey",
                   "expressions": [
                     "a1"

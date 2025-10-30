@@ -464,8 +464,9 @@ func (d *DatabaseState) pgDropColumn(schema *SchemaState, t *TableState, node *a
 	for _, index := range t.indexSet {
 		for _, key := range index.expressionList {
 			// TODO(rebelice): deal with expression key.
-			if key == index.name {
+			if key == node.ColumnName {
 				dropIndexList = append(dropIndexList, index.name)
+				break // Once we find the column in this index, mark for deletion and move to next index
 			}
 		}
 	}
