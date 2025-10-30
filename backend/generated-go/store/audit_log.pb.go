@@ -316,7 +316,8 @@ const file_store_audit_log_proto_rawDesc = "" +
 	"\tEMERGENCY\x10\b\"k\n" +
 	"\x0fRequestMetadata\x12\x1b\n" +
 	"\tcaller_ip\x18\x01 \x01(\tR\bcallerIp\x12;\n" +
-	"\x1acaller_supplied_user_agent\x18\x02 \x01(\tR\x17callerSuppliedUserAgentB\x14Z\x12generated-go/storeb\x06proto3"
+	"\x1acaller_supplied_user_agent\x18\x02 \x01(\tR\x17callerSuppliedUserAgentB\x90\x01\n" +
+	"\x12com.bytebase.storeB\rAuditLogProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
 	file_store_audit_log_proto_rawDescOnce sync.Once

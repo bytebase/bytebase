@@ -692,9 +692,25 @@ func (l *pgAntlrCatalogListener) alterTableDropColumn(schema *SchemaState, table
 		return
 	}
 
-	// NOTE: In PostgreSQL, indexes that reference dropped columns are kept,
-	// so we don't delete them here. The index expressions will still contain
-	// the dropped column name.
+	// Drop the constraints and indexes involving the column.
+	var dropIndexList []string
+
+	for _, index := range table.indexSet {
+		for _, key := range index.expressionList {
+			// TODO(zp): deal with expression key.
+			if key == columnName {
+				dropIndexList = append(dropIndexList, index.name)
+				break // Once we find the column in this index, mark for deletion and move to next index
+			}
+		}
+	}
+	for _, indexName := range dropIndexList {
+		delete(table.indexSet, indexName)
+	}
+
+	// TODO(zp): deal with other constraints.
+
+	// TODO(zp): deal with CASCADE.
 
 	// Delete the column
 	delete(table.columnSet, columnName)

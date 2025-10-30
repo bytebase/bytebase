@@ -138,14 +138,16 @@ func (in *APIAuthInterceptor) WrapStreamingHandler(next connect.StreamingHandler
 	}
 }
 
-// authenticateConnect is a ConnectRPC-specific version that returns ConnectRPC errors.
-func (in *APIAuthInterceptor) authenticateConnect(ctx context.Context, accessTokenStr string) (*store.UserMessage, error) {
+// authenticate is the shared authentication logic that validates JWT tokens.
+// Returns the user and claims, or an error. This is the single source of truth for token validation.
+func (in *APIAuthInterceptor) authenticate(ctx context.Context, accessTokenStr string) (*store.UserMessage, *claimsMessage, error) {
 	if accessTokenStr == "" {
-		return nil, connect.NewError(connect.CodeUnauthenticated, errs.New("access token not found"))
+		return nil, nil, errs.New("access token not found")
 	}
 	if _, ok := in.stateCfg.ExpireCache.Get(accessTokenStr); ok {
-		return nil, connect.NewError(connect.CodeUnauthenticated, errs.New("access token expired"))
+		return nil, nil, errs.New("access token expired")
 	}
+
 	claims := &claimsMessage{}
 	if _, err := jwt.ParseWithClaims(accessTokenStr, claims, func(t *jwt.Token) (any, error) {
 		if t.Method.Alg() != jwt.SigningMethodHS256.Name {
@@ -159,33 +161,43 @@ func (in *APIAuthInterceptor) authenticateConnect(ctx context.Context, accessTok
 		return nil, errs.Errorf("unexpected access token kid=%v", t.Header["kid"])
 	}); err != nil {
 		if errors.Is(err, jwt.ErrTokenExpired) {
-			return nil, connect.NewError(connect.CodeUnauthenticated, errs.New("access token expired"))
+			return nil, nil, errs.New("access token expired")
 		}
-		return nil, connect.NewError(connect.CodeUnauthenticated, errs.New("failed to parse claim"))
+		return nil, nil, errs.New("failed to parse claim")
 	}
+
 	if !audienceContains(claims.Audience, fmt.Sprintf(AccessTokenAudienceFmt, in.profile.Mode)) {
-		return nil, connect.NewError(connect.CodeUnauthenticated, errs.Errorf(
+		return nil, nil, errs.Errorf(
 			"invalid access token, audience mismatch, got %q, expected %q. you may send request to the wrong environment",
 			claims.Audience,
 			fmt.Sprintf(AccessTokenAudienceFmt, in.profile.Mode),
-		))
+		)
 	}
 
 	principalID, err := strconv.Atoi(claims.Subject)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeUnauthenticated, errs.Errorf("malformed ID %q in the access token", claims.Subject))
+		return nil, nil, errs.Errorf("malformed ID %q in the access token", claims.Subject)
 	}
 	user, err := in.store.GetUserByID(ctx, principalID)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeUnauthenticated, errs.Errorf("failed to find user ID %q in the access token", principalID))
+		return nil, nil, errs.Errorf("failed to find user ID %q in the access token", principalID)
 	}
 	if user == nil {
-		return nil, connect.NewError(connect.CodeUnauthenticated, errs.Errorf("user ID %q not exists in the access token", principalID))
+		return nil, nil, errs.Errorf("user ID %q not exists in the access token", principalID)
 	}
 	if user.MemberDeleted {
-		return nil, connect.NewError(connect.CodeUnauthenticated, errs.Errorf("user ID %q has been deactivated by administrators", user.ID))
+		return nil, nil, errs.Errorf("user ID %q has been deactivated by administrators", user.ID)
 	}
 
+	return user, claims, nil
+}
+
+// authenticateConnect is a ConnectRPC-specific version that returns ConnectRPC errors.
+func (in *APIAuthInterceptor) authenticateConnect(ctx context.Context, accessTokenStr string) (*store.UserMessage, error) {
+	user, _, err := in.authenticate(ctx, accessTokenStr)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeUnauthenticated, err)
+	}
 	return user, nil
 }
 
@@ -226,6 +238,22 @@ func GetUserIDFromMFATempToken(token string, mode common.ReleaseMode, secret str
 		return 0, connect.NewError(connect.CodeUnauthenticated, errs.Errorf("malformed ID %q in the MFA temp token", claims.Subject))
 	}
 	return userID, nil
+}
+
+// AuthenticateToken validates a JWT access token and returns the user and token expiry.
+// This is a non-ConnectRPC version that returns regular errors instead of ConnectRPC errors.
+func (in *APIAuthInterceptor) AuthenticateToken(ctx context.Context, accessTokenStr string) (*store.UserMessage, time.Time, error) {
+	user, claims, err := in.authenticate(ctx, accessTokenStr)
+	if err != nil {
+		return nil, time.Time{}, err
+	}
+
+	var tokenExpiry time.Time
+	if claims.ExpiresAt != nil {
+		tokenExpiry = claims.ExpiresAt.Time
+	}
+
+	return user, tokenExpiry, nil
 }
 
 // GetTokenFromHeaders extracts the access token from HTTP headers for ConnectRPC.

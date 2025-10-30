@@ -12,6 +12,7 @@ import (
 
 	"connectrpc.com/connect"
 	"connectrpc.com/grpcreflect"
+	"connectrpc.com/validate"
 	grpcruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
@@ -107,8 +108,15 @@ func configureGrpcRouters(
 		return connect.NewError(connect.CodeInternal, errors.Errorf("error: %v\n%s", p, stack))
 	}
 
+	// Create validation interceptor.
+	validateInterceptor, err := validate.NewInterceptor()
+	if err != nil {
+		return errors.Wrap(err, "failed to create validation interceptor")
+	}
+
 	handlerOpts := connect.WithHandlerOptions(
 		connect.WithInterceptors(
+			validateInterceptor,
 			apiv1.NewDebugInterceptor(metricReporter),
 			auth.New(stores, secret, licenseService, stateCfg, profile),
 			apiv1.NewACLInterceptor(stores, secret, iamManager, profile),

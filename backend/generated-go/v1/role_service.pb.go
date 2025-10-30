@@ -494,7 +494,8 @@ const file_v1_role_service_proto_rawDesc = "" +
 	"\n" +
 	"UpdateRole\x12\x1e.bytebase.v1.UpdateRoleRequest\x1a\x11.bytebase.v1.Role\"f\xdaA\x10role,update_mask\x8a\xea0\x0fbb.roles.update\x90\xea0\x01\x98\xea0\x01\xa2\xea0\x0fbb.roles.create\x82\xd3\xe4\x93\x02\x1f:\x04role2\x17/v1/{role.name=roles/*}\x12\x82\x01\n" +
 	"\n" +
-	"DeleteRole\x12\x1e.bytebase.v1.DeleteRoleRequest\x1a\x16.google.protobuf.Empty\"<\xdaA\x04name\x8a\xea0\x0fbb.roles.delete\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x14*\x12/v1/{name=roles/*}B6Z4github.com/bytebase/bytebase/backend/generated-go/v1b\x06proto3"
+	"DeleteRole\x12\x1e.bytebase.v1.DeleteRoleRequest\x1a\x16.google.protobuf.Empty\"<\xdaA\x04name\x8a\xea0\x0fbb.roles.delete\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x14*\x12/v1/{name=roles/*}B\xa6\x01\n" +
+	"\x0fcom.bytebase.v1B\x10RoleServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (
 	file_v1_role_service_proto_rawDescOnce sync.Once

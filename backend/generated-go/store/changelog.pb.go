@@ -627,7 +627,8 @@ const file_store_changelog_proto_rawDesc = "" +
 	"\x06ranges\x18\x02 \x03(\v2\x15.bytebase.store.RangeR\x06ranges\"]\n" +
 	"\x18ChangedResourceProcedure\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12-\n" +
-	"\x06ranges\x18\x02 \x03(\v2\x15.bytebase.store.RangeR\x06rangesB\x14Z\x12generated-go/storeb\x06proto3"
+	"\x06ranges\x18\x02 \x03(\v2\x15.bytebase.store.RangeR\x06rangesB\x91\x01\n" +
+	"\x12com.bytebase.storeB\x0eChangelogProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
 	file_store_changelog_proto_rawDescOnce sync.Once

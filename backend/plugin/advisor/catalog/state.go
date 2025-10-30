@@ -281,6 +281,11 @@ func (d *DatabaseState) FindPrimaryKey(find *PrimaryKeyFind) *IndexState {
 	return nil
 }
 
+// HasPrimaryKey checks if a table has a primary key.
+func (d *DatabaseState) HasPrimaryKey(find *PrimaryKeyFind) bool {
+	return d.FindPrimaryKey(find) != nil
+}
+
 // ColumnCount is for counting columns.
 type ColumnCount struct {
 	SchemaName string

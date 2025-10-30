@@ -71,7 +71,8 @@ const file_store_role_proto_rawDesc = "" +
 	"\n" +
 	"\x10store/role.proto\x12\x0ebytebase.store\"3\n" +
 	"\x0fRolePermissions\x12 \n" +
-	"\vpermissions\x18\x01 \x03(\tR\vpermissionsB\x14Z\x12generated-go/storeb\x06proto3"
+	"\vpermissions\x18\x01 \x03(\tR\vpermissionsB\x8c\x01\n" +
+	"\x12com.bytebase.storeB\tRoleProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
 	file_store_role_proto_rawDescOnce sync.Once

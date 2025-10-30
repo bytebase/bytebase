@@ -727,7 +727,8 @@ const file_v1_group_service_proto_rawDesc = "" +
 	"\vCreateGroup\x12\x1f.bytebase.v1.CreateGroupRequest\x1a\x12.bytebase.v1.Group\"=\xdaA\x05group\x8a\xea0\x10bb.groups.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x13:\x05group\"\n" +
 	"/v1/groups\x12\xb0\x01\n" +
 	"\vUpdateGroup\x12\x1f.bytebase.v1.UpdateGroupRequest\x1a\x12.bytebase.v1.Group\"l\xdaA\x11group,update_mask\x8a\xea0\x10bb.groups.update\x90\xea0\x02\x98\xea0\x01\xa2\xea0\x10bb.groups.create\x82\xd3\xe4\x93\x02\":\x05group2\x19/v1/{group.name=groups/*}\x12\x86\x01\n" +
-	"\vDeleteGroup\x12\x1f.bytebase.v1.DeleteGroupRequest\x1a\x16.google.protobuf.Empty\">\xdaA\x04name\x8a\xea0\x10bb.groups.delete\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02\x15*\x13/v1/{name=groups/*}B6Z4github.com/bytebase/bytebase/backend/generated-go/v1b\x06proto3"
+	"\vDeleteGroup\x12\x1f.bytebase.v1.DeleteGroupRequest\x1a\x16.google.protobuf.Empty\">\xdaA\x04name\x8a\xea0\x10bb.groups.delete\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02\x15*\x13/v1/{name=groups/*}B\xa7\x01\n" +
+	"\x0fcom.bytebase.v1B\x11GroupServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (
 	file_v1_group_service_proto_rawDescOnce sync.Once

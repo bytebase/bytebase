@@ -332,7 +332,8 @@ const file_store_project_webhook_proto_rawDesc = "" +
 	"\n" +
 	"\x06FEISHU\x10\x05\x12\t\n" +
 	"\x05WECOM\x10\x06\x12\b\n" +
-	"\x04LARK\x10\bB\x14Z\x12generated-go/storeb\x06proto3"
+	"\x04LARK\x10\bB\x96\x01\n" +
+	"\x12com.bytebase.storeB\x13ProjectWebhookProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
 	file_store_project_webhook_proto_rawDescOnce sync.Once
