@@ -199,8 +199,6 @@ func (h *Handler) checkReady() error {
 }
 
 func (h *Handler) checkTokenExpiry() error {
-	h.mu.Lock()
-	defer h.mu.Unlock()
 	if !h.tokenExpiry.IsZero() && time.Now().After(h.tokenExpiry) {
 		return errors.New("access token expired, please reconnect")
 	}
