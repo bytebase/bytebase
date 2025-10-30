@@ -265,9 +265,9 @@ func (*NoopAuditLogger) Run(_ context.Context, wg *sync.WaitGroup) {
 	wg.Done()
 }
 
-// timestamp returns the current UTC timestamp in RFC3339 format
+// timestamp returns the current UTC timestamp in RFC3339Nano format
 func timestamp() string {
-	return time.Now().UTC().Format(time.RFC3339)
+	return time.Now().UTC().Format(time.RFC3339Nano)
 }
 
 // severityToLevel converts protobuf severity enum to log level string
