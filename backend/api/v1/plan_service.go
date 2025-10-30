@@ -61,21 +61,15 @@ func (s *PlanService) GetPlan(ctx context.Context, request *connect.Request[v1pb
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-		ResourceID: &projectID,
+	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{
+		UID:       &planID,
+		ProjectID: &projectID,
 	})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get project, error: %v", err))
-	}
-	if project == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project not found for id: %v", projectID))
-	}
-	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan, error: %v", err))
 	}
 	if plan == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan not found for id: %d", planID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %d not found in project %s", planID, projectID))
 	}
 	convertedPlan, err := convertToPlan(ctx, s.store, plan)
 	if err != nil {
@@ -607,7 +601,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 								}
 								oldSheetName = config.ChangeDatabaseConfig.Sheet
 							}
-							_, sheetUID, err := common.GetProjectResourceIDSheetUID(oldSheetName)
+							sheetProjectID, sheetUID, err := common.GetProjectResourceIDSheetUID(oldSheetName)
 							if err != nil {
 								return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get sheet id from %q, error: %v", oldSheetName, err))
 							}
@@ -616,13 +610,14 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 							}
 
 							sheet, err := s.store.GetSheet(ctx, &store.FindSheetMessage{
-								UID: &sheetUID,
+								UID:       &sheetUID,
+								ProjectID: &sheetProjectID,
 							})
 							if err != nil {
 								return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get sheet %q: %v", oldSheetName, err))
 							}
 							if sheet == nil {
-								return connect.NewError(connect.CodeNotFound, errors.Errorf("sheet %q not found", oldSheetName))
+								return connect.NewError(connect.CodeNotFound, errors.Errorf("sheet %d not found in project %s", sheetUID, sheetProjectID))
 							}
 							doUpdate = true
 							taskPatch.SheetID = &sheet.UID
@@ -761,7 +756,10 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update plan %q: %v", req.Plan.Name, err))
 	}
 
-	updatedPlan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &oldPlan.UID})
+	updatedPlan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{
+		UID:       &oldPlan.UID,
+		ProjectID: &oldPlan.ProjectID,
+	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get updated plan %q: %v", req.Plan.Name, err))
 	}
@@ -993,7 +991,10 @@ func (s *PlanService) RunPlanChecks(ctx context.Context, request *connect.Reques
 	if project == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project not found for id: %v", projectID))
 	}
-	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID})
+	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{
+		UID:       &planID,
+		ProjectID: &projectID,
+	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan, error: %v", err))
 	}

@@ -127,16 +127,16 @@ func (s *RevisionService) CreateRevision(
 	if database == nil || database.Deleted {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %v not found", request.Parent))
 	}
-	_, sheetUID, err := common.GetProjectResourceIDSheetUID(request.Revision.Sheet)
+	sheetProjectID, sheetUID, err := common.GetProjectResourceIDSheetUID(request.Revision.Sheet)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get sheet from %v", request.Revision.Sheet))
 	}
-	sheet, err := s.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID})
+	sheet, err := s.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID, ProjectID: &sheetProjectID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get sheet"))
 	}
 	if sheet == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("sheet %q not found", request.Revision.Sheet))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("sheet %d not found in project %s", sheetUID, sheetProjectID))
 	}
 
 	if request.Revision.TaskRun != "" {
@@ -181,7 +181,7 @@ func (s *RevisionService) CreateRevision(
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to get release and file from %q", request.Revision.File))
 		}
-		release, err := s.store.GetRelease(ctx, releaseUID)
+		release, err := s.store.GetReleaseByUID(ctx, releaseUID)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get release"))
 		}
@@ -281,16 +281,16 @@ func convertToRevisions(ctx context.Context, s *store.Store, parent string, revi
 }
 
 func convertToRevision(ctx context.Context, s *store.Store, parent string, revision *store.RevisionMessage) (*v1pb.Revision, error) {
-	_, sheetUID, err := common.GetProjectResourceIDSheetUID(revision.Payload.Sheet)
+	sheetProjectID, sheetUID, err := common.GetProjectResourceIDSheetUID(revision.Payload.Sheet)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sheetUID from %q", revision.Payload.Sheet)
 	}
-	sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID})
+	sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID, ProjectID: &sheetProjectID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sheet %q", revision.Payload.Sheet)
 	}
 	if sheet == nil {
-		return nil, errors.Errorf("sheet %q not found", revision.Payload.Sheet)
+		return nil, errors.Errorf("sheet %d not found in project %s", sheetUID, sheetProjectID)
 	}
 
 	taskRunName, issueName := revision.Payload.TaskRun, ""

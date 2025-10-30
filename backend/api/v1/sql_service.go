@@ -781,29 +781,34 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) (*v1pb.ExportResponse, error) {
 	// Try to parse as rollout name first (more specific), then fallback to stage name
 	var rolloutID int
+	var projectID string
 	var err error
-	_, rolloutID, err = common.GetProjectIDRolloutID(requestName)
+	projectID, rolloutID, err = common.GetProjectIDRolloutID(requestName)
 	if err != nil {
 		// If rollout parsing fails, try parsing as stage name
-		_, rolloutID, _, err = common.GetProjectIDRolloutIDMaybeStageID(requestName)
+		projectID, rolloutID, _, err = common.GetProjectIDRolloutIDMaybeStageID(requestName)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse request name as rollout or stage: %v", err))
 		}
 	}
-	rollout, err := s.store.GetRollout(ctx, rolloutID)
+
+	pipeline, err := s.store.GetPipelineV2(ctx, &store.PipelineFind{
+		ID:        &rolloutID,
+		ProjectID: &projectID,
+	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get rollout: %v", err))
 	}
-	if rollout == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %d not found", rolloutID))
+	if pipeline == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %d not found in project %s", rolloutID, projectID))
 	}
 
-	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PipelineID: &rollout.ID})
+	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PipelineID: &pipeline.ID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get tasks: %v", err))
 	}
 	if len(tasks) == 0 {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("rollout %d has no task", rollout.ID))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("rollout %d has no task", pipeline.ID))
 	}
 
 	pendingEncrypts := []*encryptContent{}

@@ -425,12 +425,12 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
 	}
-	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID})
+	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID, ProjectID: &projectID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan, error: %v", err))
 	}
 	if plan == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan not found for id: %d", planID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %d not found in project %s", planID, projectID))
 	}
 	planUID = &plan.UID
 	var rolloutUID *int
@@ -439,12 +439,15 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
 		}
-		pipeline, err := s.store.GetPipelineV2ByID(ctx, rolloutID)
+		pipeline, err := s.store.GetPipelineV2(ctx, &store.PipelineFind{
+			ID:        &rolloutID,
+			ProjectID: &projectID,
+		})
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get rollout, error: %v", err))
 		}
 		if pipeline == nil {
-			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout not found for id: %d", rolloutID))
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %d not found in project %s", rolloutID, projectID))
 		}
 		rolloutUID = &pipeline.ID
 	}
@@ -616,12 +619,12 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, reques
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
 	}
-	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID})
+	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID, ProjectID: &projectID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan, error: %v", err))
 	}
 	if plan == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan not found for id: %d", planID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %d not found in project %s", planID, projectID))
 	}
 	planUID = &plan.UID
 	var rolloutUID *int
@@ -630,12 +633,15 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, reques
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
 		}
-		pipeline, err := s.store.GetPipelineV2ByID(ctx, rolloutID)
+		pipeline, err := s.store.GetPipelineV2(ctx, &store.PipelineFind{
+			ID:        &rolloutID,
+			ProjectID: &projectID,
+		})
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get rollout, error: %v", err))
 		}
 		if pipeline == nil {
-			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout not found for id: %d", rolloutID))
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %d not found in project %s", rolloutID, projectID))
 		}
 		rolloutUID = &pipeline.ID
 	}
@@ -1375,13 +1381,19 @@ func (s *IssueService) ListIssueComments(ctx context.Context, req *connect.Reque
 	if req.Msg.PageSize < 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("page size must be non-negative: %d", req.Msg.PageSize))
 	}
-	_, issueUID, err := common.GetProjectIDIssueUID(req.Msg.Parent)
+	projectID, issueUID, err := common.GetProjectIDIssueUID(req.Msg.Parent)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
 	}
-	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{UID: &issueUID})
+	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{
+		UID:       &issueUID,
+		ProjectID: &projectID,
+	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get issue, err: %v", err))
+	}
+	if issue == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("issue %q not found", req.Msg.Parent))
 	}
 
 	offset, err := parseLimitAndOffset(&pageSize{
@@ -1515,16 +1527,19 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, req *connect.Requ
 }
 
 func (s *IssueService) getIssueMessage(ctx context.Context, name string) (*store.IssueMessage, error) {
-	issueID, err := common.GetIssueID(name)
+	projectID, issueUID, err := common.GetProjectIDIssueUID(name)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{UID: &issueID})
+	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{
+		UID:       &issueUID,
+		ProjectID: &projectID,
+	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get issue, error: %v", err))
 	}
 	if issue == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("issue %d not found", issueID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("issue %d not found in project %s", issueUID, projectID))
 	}
 	return issue, nil
 }
