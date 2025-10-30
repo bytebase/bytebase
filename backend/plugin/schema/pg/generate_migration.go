@@ -678,9 +678,9 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 	}
 
 	// Add dependency edges
-	// For tables with foreign keys depending on other tables (CREATE and ALTER operations)
+	// For tables with foreign keys depending on other tables (only for CREATE operations)
+	// Note: ALTER FK additions are handled after all tables are created, so they don't need topological sorting
 	for tableID, tableDiff := range tableMap {
-		//nolint:staticcheck // if-else is clearer than switch for this case with two actions
 		if tableDiff.Action == schema.MetadataDiffActionCreate {
 			// For CREATE: extract all FKs from the table
 			var foreignKeys []*storepb.ForeignKeyMetadata
@@ -698,44 +698,6 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 				if depID != tableID {
 					// Edge from dependency to dependent (referenced table to table with FK)
 					graph.AddEdge(depID, tableID)
-				}
-			}
-		} else if tableDiff.Action == schema.MetadataDiffActionAlter {
-			// For ALTER: extract FKs from new FK constraints being added
-			for _, fkDiff := range tableDiff.ForeignKeyChanges {
-				if fkDiff.Action == schema.MetadataDiffActionCreate {
-					var referencedSchema, referencedTable string
-
-					if fkDiff.NewForeignKey != nil {
-						// Metadata mode: use FK metadata
-						referencedSchema = fkDiff.NewForeignKey.ReferencedSchema
-						referencedTable = fkDiff.NewForeignKey.ReferencedTable
-					} else if fkDiff.NewASTNode != nil {
-						// AST-only mode: extract from AST node
-						if constraintAST, ok := fkDiff.NewASTNode.(pgparser.ITableconstraintContext); ok {
-							if constraintAST.Constraintelem() != nil {
-								elem := constraintAST.Constraintelem()
-								if elem.FOREIGN() != nil && elem.KEY() != nil && elem.Qualified_name() != nil {
-									nameParts := pgpluginparser.NormalizePostgreSQLQualifiedName(elem.Qualified_name())
-									if len(nameParts) == 1 {
-										referencedSchema = tableDiff.SchemaName
-										referencedTable = nameParts[0]
-									} else if len(nameParts) == 2 {
-										referencedSchema = nameParts[0]
-										referencedTable = nameParts[1]
-									}
-								}
-							}
-						}
-					}
-
-					if referencedTable != "" {
-						depID := getMigrationObjectID(referencedSchema, referencedTable)
-						if depID != tableID {
-							// Edge from dependency to dependent (referenced table to table with FK)
-							graph.AddEdge(depID, tableID)
-						}
-					}
 				}
 			}
 		}
