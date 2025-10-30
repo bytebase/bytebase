@@ -44,11 +44,20 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 		title:                        string(checkCtx.Rule.Type),
 		statementsText:               checkCtx.Statements,
 		catalog:                      checkCtx.Catalog,
+		tableMentions:                make(map[string]*tableMention),
 	}
 
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
+	// Simple Solution: Validate final state after walking all statements
+	checker.validateFinalState()
+
 	return checker.adviceList, nil
+}
+
+type tableMention struct {
+	startLine int
+	endLine   int
 }
 
 type tableRequirePKChecker struct {
@@ -59,9 +68,12 @@ type tableRequirePKChecker struct {
 	title          string
 	statementsText string
 	catalog        *catalog.Finder
+
+	// Simple Solution: Track last mention of each table
+	tableMentions map[string]*tableMention // key: "schema.table", value: last mention info
 }
 
-// EnterCreatestmt handles CREATE TABLE - must have PK
+// EnterCreatestmt records CREATE TABLE statements (Simple Solution)
 func (c *tableRequirePKChecker) EnterCreatestmt(ctx *parser.CreatestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
@@ -77,54 +89,15 @@ func (c *tableRequirePKChecker) EnterCreatestmt(ctx *parser.CreatestmtContext) {
 		}
 	}
 
-	hasPK := false
-
-	// Check table-level constraints
-	if ctx.Opttableelementlist() != nil && ctx.Opttableelementlist().Tableelementlist() != nil {
-		allElements := ctx.Opttableelementlist().Tableelementlist().AllTableelement()
-		for _, elem := range allElements {
-			// Check if this is a table constraint with PRIMARY KEY
-			if elem.Tableconstraint() != nil {
-				constraint := elem.Tableconstraint()
-				if constraint.Constraintelem() != nil {
-					constraintElem := constraint.Constraintelem()
-					// Check for PRIMARY KEY or PRIMARY KEY USING INDEX
-					if constraintElem.PRIMARY() != nil && constraintElem.KEY() != nil {
-						hasPK = true
-						break
-					}
-				}
-			}
-
-			// Check column-level constraints
-			if elem.ColumnDef() != nil {
-				columnDef := elem.ColumnDef()
-				if columnDef.Colquallist() != nil {
-					allQuals := columnDef.Colquallist().AllColconstraint()
-					for _, qual := range allQuals {
-						if qual.Colconstraintelem() != nil {
-							constraintElem := qual.Colconstraintelem()
-							// Check for PRIMARY KEY
-							if constraintElem.PRIMARY() != nil && constraintElem.KEY() != nil {
-								hasPK = true
-								break
-							}
-						}
-					}
-					if hasPK {
-						break
-					}
-				}
-			}
-		}
-	}
-
-	if !hasPK {
-		c.addMissingPKAdvice(schemaName, tableName, ctx)
+	// Simple Solution: Just record the table mention (ALWAYS update for last occurrence)
+	key := fmt.Sprintf("%s.%s", schemaName, tableName)
+	c.tableMentions[key] = &tableMention{
+		startLine: ctx.GetStart().GetLine(),
+		endLine:   ctx.GetStop().GetLine(),
 	}
 }
 
-// EnterAltertablestmt handles ALTER TABLE DROP CONSTRAINT / DROP COLUMN
+// EnterAltertablestmt records ALTER TABLE statements (Simple Solution)
 func (c *tableRequirePKChecker) EnterAltertablestmt(ctx *parser.AltertablestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
@@ -139,66 +112,85 @@ func (c *tableRequirePKChecker) EnterAltertablestmt(ctx *parser.AltertablestmtCo
 		}
 	}
 
-	// Check all alter table commands
-	if ctx.Alter_table_cmds() != nil {
-		allCmds := ctx.Alter_table_cmds().AllAlter_table_cmd()
-		for _, cmd := range allCmds {
-			// DROP CONSTRAINT
-			if cmd.DROP() != nil && cmd.CONSTRAINT() != nil {
-				allColIDs := cmd.AllColid()
-				if len(allColIDs) > 0 {
-					constraintName := pgparser.NormalizePostgreSQLColid(allColIDs[0])
-					// Check if this constraint is a primary key using catalog
-					if c.catalog != nil {
-						_, index := c.catalog.Origin.FindIndex(&catalog.IndexFind{
-							SchemaName: schemaName,
-							TableName:  tableName,
-							IndexName:  constraintName,
-						})
-						if index != nil && index.Primary() {
-							c.addMissingPKAdvice(schemaName, tableName, ctx)
-							return
-						}
-					}
-				}
-			}
+	// Simple Solution: Just record the table mention (ALWAYS update for last occurrence)
+	key := fmt.Sprintf("%s.%s", schemaName, tableName)
+	c.tableMentions[key] = &tableMention{
+		startLine: ctx.GetStart().GetLine(),
+		endLine:   ctx.GetStop().GetLine(),
+	}
+}
 
-			// DROP COLUMN (check for COLUMN keyword to distinguish from DROP CONSTRAINT)
-			if cmd.DROP() != nil && cmd.Opt_column() != nil {
-				allColIDs := cmd.AllColid()
-				if len(allColIDs) > 0 && cmd.CONSTRAINT() == nil {
-					columnName := pgparser.NormalizePostgreSQLColid(allColIDs[0])
-					// Check if this column is part of the primary key using catalog
-					if c.catalog != nil {
-						pk := c.catalog.Origin.FindPrimaryKey(&catalog.PrimaryKeyFind{
-							SchemaName: schemaName,
-							TableName:  tableName,
-						})
-						if pk != nil {
-							for _, column := range pk.ExpressionList() {
-								if column == columnName {
-									c.addMissingPKAdvice(schemaName, tableName, ctx)
-									return
-								}
-							}
-						}
-					}
-				}
+// EnterDropstmt handles DROP TABLE - remove from tracking
+func (c *tableRequirePKChecker) EnterDropstmt(ctx *parser.DropstmtContext) {
+	if !isTopLevel(ctx.GetParent()) {
+		return
+	}
+
+	// Check if this is DROP TABLE
+	if ctx.Object_type_any_name() == nil || ctx.Object_type_any_name().TABLE() == nil {
+		return
+	}
+
+	// Remove all dropped tables from tracking (simplified - best effort)
+	// Note: For the Simple Solution, not handling DROP TABLE perfectly is acceptable
+	// since dropped tables won't be in catalog.Final anyway
+	if ctx.Any_name_list() != nil {
+		allNames := ctx.Any_name_list().AllAny_name()
+		for _, anyName := range allNames {
+			if anyName.Colid() != nil {
+				// Simple table name (most common case)
+				name := pgparser.NormalizePostgreSQLColid(anyName.Colid())
+				key := fmt.Sprintf("public.%s", name)
+				delete(c.tableMentions, key)
 			}
+			// For qualified names, we skip for simplicity - they won't cause false positives
+			// because catalog.Final won't have dropped tables
 		}
 	}
 }
 
-func (c *tableRequirePKChecker) addMissingPKAdvice(schemaName, tableName string, ctx antlr.ParserRuleContext) {
-	stmtText := extractStatementText(c.statementsText, ctx.GetStart().GetLine(), ctx.GetStop().GetLine())
-	c.adviceList = append(c.adviceList, &storepb.Advice{
-		Status:  c.level,
-		Code:    advisor.TableNoPK.Int32(),
-		Title:   c.title,
-		Content: fmt.Sprintf("Table %q.%q requires PRIMARY KEY, related statement: %q", schemaName, tableName, stmtText),
-		StartPosition: &storepb.Position{
-			Line:   int32(ctx.GetStart().GetLine()),
-			Column: 0,
-		},
-	})
+// validateFinalState checks all mentioned tables against catalog.Final (Simple Solution)
+func (c *tableRequirePKChecker) validateFinalState() {
+	for tableKey, mention := range c.tableMentions {
+		// Parse table key: "schema.table"
+		schemaName, tableName := parseTableKey(tableKey)
+
+		// Check catalog.Final for PRIMARY KEY
+		hasPK := c.catalog.Final.HasPrimaryKey(&catalog.PrimaryKeyFind{
+			SchemaName: schemaName,
+			TableName:  tableName,
+		})
+
+		if !hasPK {
+			content := fmt.Sprintf("Table %q.%q requires PRIMARY KEY", schemaName, tableName)
+
+			// Extract and include the related statement
+			statement := extractStatementText(c.statementsText, mention.startLine, mention.endLine)
+			if statement != "" {
+				content = fmt.Sprintf("%s, related statement: %q", content, statement)
+			}
+
+			c.adviceList = append(c.adviceList, &storepb.Advice{
+				Status:  c.level,
+				Code:    advisor.TableNoPK.Int32(),
+				Title:   c.title,
+				Content: content,
+				StartPosition: &storepb.Position{
+					Line:   int32(mention.startLine),
+					Column: 0,
+				},
+			})
+		}
+	}
+}
+
+// parseTableKey splits "schema.table" into schema and table name
+func parseTableKey(key string) (string, string) {
+	// Simple split on first dot
+	for i := 0; i < len(key); i++ {
+		if key[i] == '.' {
+			return key[:i], key[i+1:]
+		}
+	}
+	return "public", key
 }

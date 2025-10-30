@@ -62,6 +62,7 @@ func TestPostgreSQLANTLRRules(t *testing.T) {
 		advisor.SchemaRuleTableDropNamingConvention,             // Migrated from legacy
 		advisor.SchemaRuleTableNaming,                           // Migrated from legacy
 		advisor.SchemaRuleTableNoFK,                             // Migrated from legacy
+		advisor.SchemaRuleTableRequirePK,                        // Migrated from legacy - BYT-7917 fix
 		advisor.SchemaRuleUKNaming,                              // Migrated from legacy
 	}
 
