@@ -107,10 +107,11 @@ func (l *StdoutLogger) Log(ctx context.Context, log *storepb.AuditLog) error {
 
 // Run starts the stdout logger goroutine following the standard runner pattern
 func (l *StdoutLogger) Run(ctx context.Context, wg *sync.WaitGroup) {
+	defer wg.Done()
+	defer l.drainEvents()
+
 	heartbeatTicker := time.NewTicker(l.heartbeatInterval)
 	defer heartbeatTicker.Stop()
-	defer l.drainEvents()
-	defer wg.Done()
 
 	slog.Info("stdout audit logger started",
 		slog.Int("buffer_size", cap(l.eventChan)),
@@ -264,9 +265,9 @@ func (*NoopAuditLogger) Run(_ context.Context, wg *sync.WaitGroup) {
 	wg.Done()
 }
 
-// timestamp returns the current UTC timestamp in RFC3339Nano format
+// timestamp returns the current UTC timestamp in RFC3339 format
 func timestamp() string {
-	return time.Now().UTC().Format(time.RFC3339Nano)
+	return time.Now().UTC().Format(time.RFC3339)
 }
 
 // severityToLevel converts protobuf severity enum to log level string

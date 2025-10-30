@@ -202,14 +202,8 @@ func TestStdoutLogger_GracefulShutdown(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	// Give logger time to process events before shutdown
-	time.Sleep(50 * time.Millisecond)
-
 	cancel()
 	wg.Wait()
-
-	// Give drainEvents() time to complete after wg.Done()
-	time.Sleep(50 * time.Millisecond)
 
 	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
 	assert.Equal(t, 10, len(lines))
