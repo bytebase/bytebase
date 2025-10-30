@@ -45,17 +45,6 @@ type FindTaskRunMessage struct {
 	Status      *[]storepb.TaskRun_Status
 }
 
-// TaskRunFind is the API message for finding task runs.
-type TaskRunFind struct {
-	// Related fields
-	TaskID      *int
-	Environment *string
-	PipelineID  *int
-
-	// Domain specific fields
-	StatusList *[]storepb.TaskRun_Status
-}
-
 // TaskRunStatusPatch is the API message for patching a task run.
 type TaskRunStatusPatch struct {
 	ID int
@@ -188,19 +177,24 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 	return taskRuns, nil
 }
 
-// GetTaskRun gets a task run by uid.
-func (s *Store) GetTaskRun(ctx context.Context, uid int) (*TaskRunMessage, error) {
-	taskRuns, err := s.ListTaskRunsV2(ctx, &FindTaskRunMessage{UID: &uid})
+// GetTaskRunV1 gets a task run.
+func (s *Store) GetTaskRunV1(ctx context.Context, find *FindTaskRunMessage) (*TaskRunMessage, error) {
+	taskRuns, err := s.ListTaskRunsV2(ctx, find)
 	if err != nil {
 		return nil, err
 	}
 	if len(taskRuns) == 0 {
-		return nil, errors.Errorf("task run not found: %d", uid)
+		return nil, errors.Errorf("task run not found")
 	}
 	if len(taskRuns) > 1 {
-		return nil, errors.Errorf("found multiple task runs for uid: %d", uid)
+		return nil, errors.Errorf("expected to get one task run, but got %d", len(taskRuns))
 	}
 	return taskRuns[0], nil
+}
+
+// GetTaskRunByUID gets a task run by uid.
+func (s *Store) GetTaskRunByUID(ctx context.Context, uid int) (*TaskRunMessage, error) {
+	return s.GetTaskRunV1(ctx, &FindTaskRunMessage{UID: &uid})
 }
 
 // UpdateTaskRunStatus updates task run status.
@@ -461,101 +455,6 @@ func (*Store) patchTaskRunStatusImpl(ctx context.Context, txn *sql.Tx, patch *Ta
 		return nil, errors.Errorf("invalid task run status string: %s", statusString)
 	}
 	return &taskRun, nil
-}
-
-// ListTaskRun returns a list of taskRuns.
-func (s *Store) ListTaskRun(ctx context.Context, find *TaskRunFind) ([]*TaskRunMessage, error) {
-	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	list, err := s.findTaskRunImpl(ctx, tx, find)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
-	return list, nil
-}
-
-func (*Store) findTaskRunImpl(ctx context.Context, txn *sql.Tx, find *TaskRunFind) ([]*TaskRunMessage, error) {
-	q := qb.Q().Space(`
-		SELECT
-			task_run.id,
-			task_run.creator_id,
-			task_run.created_at,
-			task_run.updated_at,
-			task_run.task_id,
-			task_run.status,
-			task_run.code,
-			task_run.result,
-			task.pipeline_id,
-			task.environment
-		FROM task_run
-		JOIN task ON task.id = task_run.task_id
-		WHERE TRUE
-	`)
-
-	if v := find.TaskID; v != nil {
-		q.And("task_run.task_id = ?", *v)
-	}
-	if v := find.Environment; v != nil {
-		q.And("task.environment = ?", *v)
-	}
-	if v := find.PipelineID; v != nil {
-		q.And("task.pipeline_id = ?", *v)
-	}
-	if v := find.StatusList; v != nil {
-		var statusValues []any
-		for _, status := range *v {
-			statusValues = append(statusValues, status)
-		}
-		q.And("task_run.status = ANY(?)", statusValues)
-	}
-
-	q.Space("ORDER BY task_run.id ASC")
-
-	query, args, err := q.ToSQL()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
-	}
-
-	rows, err := txn.QueryContext(ctx, query, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var taskRuns []*TaskRunMessage
-	for rows.Next() {
-		var taskRun TaskRunMessage
-		if err := rows.Scan(
-			&taskRun.ID,
-			&taskRun.CreatorID,
-			&taskRun.CreatedAt,
-			&taskRun.UpdatedAt,
-			&taskRun.TaskUID,
-			&taskRun.Status,
-			&taskRun.Code,
-			&taskRun.Result,
-			&taskRun.PipelineUID,
-			&taskRun.Environment,
-		); err != nil {
-			return nil, err
-		}
-
-		taskRuns = append(taskRuns, &taskRun)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return taskRuns, nil
 }
 
 // BatchCancelTaskRuns updates the status of taskRuns to CANCELED.

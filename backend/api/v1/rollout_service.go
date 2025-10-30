@@ -306,7 +306,7 @@ func (s *RolloutService) ListTaskRuns(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get rollout, error: %v", err))
 	}
 	if pipeline == nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("pipeline %d not found in project %s", rolloutID, projectID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("pipeline %d not found in project %s", rolloutID, projectID))
 	}
 
 	taskRuns, err := s.store.ListTaskRunsV2(ctx, &store.FindTaskRunMessage{
@@ -343,15 +343,18 @@ func (s *RolloutService) GetTaskRun(ctx context.Context, req *connect.Request[v1
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get rollout, error: %v", err))
 	}
 	if pipeline == nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("pipeline %d not found in project %s", rolloutID, projectID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("pipeline %d not found in project %s", rolloutID, projectID))
 	}
 
-	taskRun, err := s.store.GetTaskRun(ctx, taskRunUID)
+	taskRun, err := s.store.GetTaskRunV1(ctx, &store.FindTaskRunMessage{
+		UID:         &taskRunUID,
+		PipelineUID: &pipeline.ID,
+	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get task run, error: %v", err))
 	}
 	if taskRun == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("task run %d not found", taskRunUID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("task run %d not found in pipeline %d", taskRunUID, pipeline.ID))
 	}
 
 	taskRunV1, err := convertToTaskRun(ctx, s.store, s.stateCfg, taskRun)
