@@ -201,8 +201,31 @@ func (l *Logger) processAuditEvent(payload *storepb.AuditLog) error {
 		return nil
 	}
 
-	// Both queues full - retry with backoff to allow recovery
-	return l.handleBothQueuesFailed(payloadCopy, nextSeq)
+	// Both queues full - FAIL FAST (no retry at sequencer layer)
+	//
+	// ARCHITECTURAL DECISION: Retry belongs in PR #3's consumer goroutines, not here.
+	//
+	// Why fail-fast when internal queues are full?
+	// 1. Industry best practice (GitLab, Slack, Datadog): Internal queue overflow = backpressure signal
+	// 2. Retry is for EXTERNAL failures (network, 5xx errors) in consumer goroutines
+	// 3. Internal queue full indicates system overload - retrying here creates head-of-line blocking
+	// 4. Sequencer retry can't help: If queues are full now, they'll stay full (no consumers in PR #2)
+	//
+	// Where retry SHOULD happen (PR #3):
+	// - DB batcher: Retry database writes (network issues, 5xx errors)
+	// - Stdout forwarder: Retry GitLab webhook delivery (network issues, 5xx errors)
+	// - Both: Circuit breakers after consecutive failures (aligned with GitLab's approach)
+	//
+	// This aligns with research findings (audit-log-external-delivery-research.md):
+	// - "Choose FAIL-FAST When: System Protection - Queue at capacity (backpressure)"
+	// - "Retry belongs in PR #3's consumer goroutines when: Network errors, 5xx responses"
+	//
+	// Gap-free guarantee preserved: sequence was never incremented, so no gap created.
+	slog.Warn("both queues full, failing fast",
+		slog.Int64("sequence", nextSeq),
+		slog.Int("stdout_queue_len", len(l.stdoutQueue)),
+		slog.Int("db_queue_len", len(l.dbQueue)))
+	return common.Errorf(common.Internal, "both output queues full (backpressure) - seq=%d not assigned", nextSeq)
 }
 
 // tryQueueStdout attempts non-blocking queue to stdout writer
@@ -227,50 +250,6 @@ func (l *Logger) tryQueueDB(payload *storepb.AuditLog) bool {
 	default:
 		return false // Queue full
 	}
-}
-
-// handleBothQueuesFailed retries with exponential backoff when both queues full
-// This gives the system time to recover during transient overload spikes
-func (l *Logger) handleBothQueuesFailed(payload *storepb.AuditLog, nextSeq int64) error {
-	// Check if shutting down
-	select {
-	case <-l.shutdownCtx.Done():
-		// During shutdown: No retries, fail immediately
-		slog.Warn("dropping event during shutdown (both queues full)",
-			slog.Int64("sequence", nextSeq))
-		return common.Errorf(common.Internal, "failed to queue event during shutdown (seq=%d)", nextSeq)
-	default:
-	}
-
-	// Normal operation: Retry with exponential backoff (SAME sequence)
-	// This allows stdout writer and DB batcher time to drain their queues
-	backoff := 10 * time.Millisecond
-	maxAttempts := 3
-
-	for attempt := 0; attempt < maxAttempts; attempt++ {
-		time.Sleep(backoff)
-
-		// Retry both destinations
-		stdoutQueued := l.tryQueueStdout(payload)
-		dbQueued := l.tryQueueDB(payload)
-
-		if stdoutQueued || dbQueued {
-			// Success! Commit sequence
-			l.currentSeq = nextSeq
-			slog.Info("retry succeeded",
-				slog.Int64("sequence", nextSeq),
-				slog.Int("attempt", attempt+1))
-			return nil
-		}
-
-		backoff *= 2
-	}
-
-	// All retries failed - event lost but NO GAP
-	// (sequence was never incremented)
-	slog.Error("dropping event after retries",
-		slog.Int64("sequence", nextSeq))
-	return common.Errorf(common.Internal, "failed to queue event after retries (seq=%d)", nextSeq)
 }
 
 // Shutdown gracefully stops the audit logger
