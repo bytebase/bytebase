@@ -63,6 +63,59 @@ func TestTopologicalOrderCreateObjects(t *testing.T) {
 			description: "Customers table should be created before orders table due to FK dependency",
 		},
 		{
+			name: "table1_references_table2_name_column",
+			diff: &schema.MetadataDiff{
+				TableChanges: []*schema.TableDiff{
+					// Create table1 that references table2(name) - this comes FIRST in the list
+					{
+						Action:     schema.MetadataDiffActionCreate,
+						SchemaName: "public",
+						TableName:  "table1",
+						NewTable: &storepb.TableMetadata{
+							Name: "table1",
+							Columns: []*storepb.ColumnMetadata{
+								{Name: "id", Type: "SERIAL", Nullable: false},
+								{Name: "name", Type: "VARCHAR(100)", Nullable: false},
+								{Name: "created_at", Type: "TIMESTAMP", Default: "CURRENT_TIMESTAMP", Nullable: false},
+								{Name: "description", Type: "TEXT", Nullable: true},
+							},
+							ForeignKeys: []*storepb.ForeignKeyMetadata{
+								{
+									Name:              "fk_table1_name",
+									Columns:           []string{"name"},
+									ReferencedSchema:  "public",
+									ReferencedTable:   "table2",
+									ReferencedColumns: []string{"name"},
+								},
+							},
+						},
+					},
+					// Create table2 with unique constraint on name - this comes SECOND in the list
+					{
+						Action:     schema.MetadataDiffActionCreate,
+						SchemaName: "public",
+						TableName:  "table2",
+						NewTable: &storepb.TableMetadata{
+							Name: "table2",
+							Columns: []*storepb.ColumnMetadata{
+								{Name: "id", Type: "INT", Nullable: false},
+								{Name: "name", Type: "VARCHAR(100)", Nullable: true},
+							},
+							Indexes: []*storepb.IndexMetadata{
+								{
+									Name:         "uq_table2_name",
+									Expressions:  []string{"name"},
+									Unique:       true,
+									IsConstraint: true,
+								},
+							},
+						},
+					},
+				},
+			},
+			description: "table2 should be created before table1 even though table1 appears first in the diff, because table1 has FK to table2",
+		},
+		{
 			name: "view_depends_on_tables",
 			diff: &schema.MetadataDiff{
 				TableChanges: []*schema.TableDiff{
@@ -223,6 +276,13 @@ func TestTopologicalOrderCreateObjects(t *testing.T) {
 				ordersIndex := findStatementIndex(statements, "CREATE TABLE", "orders")
 				assert.True(t, customersIndex < ordersIndex,
 					"Customers table should be created before orders table. Got statements: %v", statements)
+
+			case "table1_references_table2_name_column":
+				// table2 should be created before table1 because table1 has FK to table2
+				table1Index := findStatementIndex(statements, "CREATE TABLE", "table1")
+				table2Index := findStatementIndex(statements, "CREATE TABLE", "table2")
+				assert.True(t, table2Index < table1Index,
+					"table2 should be created before table1 because table1 has FK to table2(name). Got statements: %v", statements)
 
 			case "view_depends_on_tables":
 				// Both tables should be created before the view

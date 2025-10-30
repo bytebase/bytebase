@@ -670,8 +670,18 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 	// Add dependency edges
 	// For tables with foreign keys depending on other tables (only for CREATE operations)
 	for tableID, tableDiff := range tableMap {
-		if tableDiff.Action == schema.MetadataDiffActionCreate && tableDiff.NewTable != nil {
-			for _, fk := range tableDiff.NewTable.ForeignKeys {
+		if tableDiff.Action == schema.MetadataDiffActionCreate {
+			var foreignKeys []*storepb.ForeignKeyMetadata
+
+			if tableDiff.NewTable != nil {
+				// Metadata mode: use ForeignKeys from metadata
+				foreignKeys = tableDiff.NewTable.ForeignKeys
+			} else if tableDiff.NewASTNode != nil {
+				// AST-only mode: extract foreign keys from AST node
+				foreignKeys = extractForeignKeysFromAST(tableDiff.NewASTNode, tableDiff.SchemaName)
+			}
+
+			for _, fk := range foreignKeys {
 				depID := getMigrationObjectID(fk.ReferencedSchema, fk.ReferencedTable)
 				if depID != tableID {
 					// Edge from dependency to dependent (referenced table to table with FK)
@@ -3882,4 +3892,74 @@ func writeCreateIndexFromAST(out *strings.Builder, indexAST *pgparser.IndexstmtC
 	_, _ = out.WriteString("\n")
 
 	return nil
+}
+
+// extractForeignKeysFromAST extracts foreign key constraints from a CREATE TABLE AST node
+// and returns foreign key metadata for dependency graph construction
+func extractForeignKeysFromAST(createStmt *pgparser.CreatestmtContext, defaultSchema string) []*storepb.ForeignKeyMetadata {
+	if createStmt == nil || createStmt.Opttableelementlist() == nil {
+		return nil
+	}
+
+	tableElementList := createStmt.Opttableelementlist().Tableelementlist()
+	if tableElementList == nil {
+		return nil
+	}
+
+	var foreignKeys []*storepb.ForeignKeyMetadata
+
+	for _, element := range tableElementList.AllTableelement() {
+		if element.Tableconstraint() == nil {
+			continue
+		}
+
+		constraint := element.Tableconstraint()
+		if constraint.Constraintelem() == nil {
+			continue
+		}
+
+		elem := constraint.Constraintelem()
+		if elem.FOREIGN() == nil || elem.KEY() == nil {
+			continue
+		}
+
+		// This is a foreign key constraint
+		// Extract referenced table from qualified_name using AST and normalize functions
+		// Grammar: FOREIGN KEY (...) REFERENCES qualified_name opt_column_list? ...
+		qualifiedName := elem.Qualified_name()
+		if qualifiedName == nil {
+			continue
+		}
+
+		// Use NormalizePostgreSQLQualifiedName to get schema and table name
+		// Returns []string: [table] or [schema, table]
+		nameParts := pgpluginparser.NormalizePostgreSQLQualifiedName(qualifiedName)
+		if len(nameParts) == 0 {
+			continue
+		}
+
+		var referencedSchema, referencedTable string
+		if len(nameParts) == 1 {
+			// No schema specified, use default
+			referencedSchema = defaultSchema
+			referencedTable = nameParts[0]
+		} else if len(nameParts) == 2 {
+			// Schema and table specified
+			referencedSchema = nameParts[0]
+			referencedTable = nameParts[1]
+		} else {
+			// Unexpected format, skip
+			continue
+		}
+
+		if referencedTable != "" {
+			fk := &storepb.ForeignKeyMetadata{
+				ReferencedSchema: referencedSchema,
+				ReferencedTable:  referencedTable,
+			}
+			foreignKeys = append(foreignKeys, fk)
+		}
+	}
+
+	return foreignKeys
 }

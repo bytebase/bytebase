@@ -2481,3 +2481,101 @@ func sortExtensionsByName(extensions []*storepb.ExtensionMetadata) {
 		return strings.Compare(a.Name, b.Name)
 	})
 }
+
+// TestSDLForeignKeyDependencyOrder tests that SDL migration correctly handles FK dependencies
+// when tables are provided in alphabetical order (table1 before table2) but table1 references table2
+func TestSDLForeignKeyDependencyOrder(t *testing.T) {
+	ctx := context.Background()
+
+	// Start PostgreSQL container
+	pgContainer, err := postgres.Run(ctx,
+		"postgres:16-alpine",
+		postgres.WithDatabase("test_db"),
+		postgres.WithUsername("postgres"),
+		postgres.WithPassword("test"),
+		testcontainers.WithWaitStrategy(
+			wait.ForLog("database system is ready to accept connections").
+				WithOccurrence(2).
+				WithStartupTimeout(5*time.Minute),
+		),
+	)
+	require.NoError(t, err)
+	defer func() {
+		if err := pgContainer.Terminate(ctx); err != nil {
+			t.Logf("failed to terminate container: %s", err)
+		}
+	}()
+
+	// Get connection string
+	connectionString, err := pgContainer.ConnectionString(ctx, "sslmode=disable")
+	require.NoError(t, err)
+
+	// Connect to the database
+	connConfig, err := pgx.ParseConfig(connectionString)
+	require.NoError(t, err)
+	testDB := stdlib.OpenDB(*connConfig)
+	defer testDB.Close()
+
+	// This SDL text simulates multi-file SDL where files are merged in alphabetical order
+	// table1.sql comes before table2.sql, but table1 has FK to table2
+	currentSDL := `
+CREATE TABLE table1 (
+    id serial,
+    name varchar(100) not null,
+    created_at timestamp default current_timestamp,
+    description text,
+    constraint pk_table1_id primary key (id),
+    constraint fk_table1_name foreign key (name) references table2(name)
+);
+
+CREATE TABLE table2 (
+    id int,
+    name varchar(100),
+    constraint pk_table2_id primary key (id),
+    constraint uq_table2_name unique (name)
+);
+`
+
+	previousSDL := ``
+
+	// Get current schema (empty database)
+	currentSchema, err := getSyncMetadataForGenerateMigration(ctx, connConfig, connConfig.Database)
+	require.NoError(t, err)
+	dbSchema := model.NewDatabaseSchema(currentSchema, nil, nil, storepb.Engine_POSTGRES, false)
+
+	// Get SDL diff
+	diff, err := GetSDLDiff(currentSDL, previousSDL, dbSchema, nil)
+	require.NoError(t, err)
+
+	// Generate migration SQL with topological sorting
+	migrationSQL, err := generateMigration(diff)
+	require.NoError(t, err)
+
+	t.Logf("Generated migration SQL:\n%s", migrationSQL)
+
+	// Execute the generated migration SQL
+	// This should work because generateMigration should have sorted tables by FK dependencies
+	_, err = testDB.Exec(migrationSQL)
+	require.NoError(t, err, "Migration SQL should execute successfully with correct FK dependency order")
+
+	// Verify both tables were created
+	var table1Exists, table2Exists bool
+	err = testDB.QueryRow("SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'table1')").Scan(&table1Exists)
+	require.NoError(t, err)
+	err = testDB.QueryRow("SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'table2')").Scan(&table2Exists)
+	require.NoError(t, err)
+
+	require.True(t, table1Exists, "table1 should be created")
+	require.True(t, table2Exists, "table2 should be created")
+
+	// Verify FK constraint exists
+	var fkExists bool
+	err = testDB.QueryRow(`
+		SELECT EXISTS (
+			SELECT 1 FROM information_schema.table_constraints 
+			WHERE constraint_name = 'fk_table1_name' AND table_name = 'table1'
+		)
+	`).Scan(&fkExists)
+	require.NoError(t, err)
+	require.True(t, fkExists, "FK constraint fk_table1_name should exist")
+}

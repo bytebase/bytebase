@@ -2094,3 +2094,124 @@ $$`,
 		require.NoError(t, err, "SQL in file %s should be parseable by PostgreSQL parser", fileName)
 	}
 }
+
+func TestGetMultiFileDatabaseDefinition_ForeignKeyDependencyOrdering(t *testing.T) {
+	// This test verifies that tables with foreign key dependencies are ordered correctly
+	// table1 references table2(name), so table2 should come before table1 in the file list
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "table1",
+						Columns: []*storepb.ColumnMetadata{
+							{
+								Name:     "id",
+								Type:     "serial",
+								Nullable: false,
+							},
+							{
+								Name:     "name",
+								Type:     "varchar(100)",
+								Nullable: false,
+							},
+							{
+								Name:     "created_at",
+								Type:     "timestamp",
+								Default:  "current_timestamp",
+								Nullable: false,
+							},
+							{
+								Name:     "description",
+								Type:     "text",
+								Nullable: true,
+							},
+						},
+						Indexes: []*storepb.IndexMetadata{
+							{
+								Name:        "pk_table1_id",
+								Expressions: []string{"id"},
+								Primary:     true,
+							},
+						},
+						ForeignKeys: []*storepb.ForeignKeyMetadata{
+							{
+								Name:              "fk_table1_name",
+								Columns:           []string{"name"},
+								ReferencedSchema:  "public",
+								ReferencedTable:   "table2",
+								ReferencedColumns: []string{"name"},
+							},
+						},
+					},
+					{
+						Name: "table2",
+						Columns: []*storepb.ColumnMetadata{
+							{
+								Name:     "id",
+								Type:     "int",
+								Nullable: false,
+							},
+							{
+								Name:     "name",
+								Type:     "varchar(100)",
+								Nullable: true,
+							},
+						},
+						Indexes: []*storepb.IndexMetadata{
+							{
+								Name:        "pk_table2_id",
+								Expressions: []string{"id"},
+								Primary:     true,
+							},
+							{
+								Name:         "uq_table2_name",
+								Expressions:  []string{"name"},
+								Unique:       true,
+								IsConstraint: true,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	ctx := schema.GetDefinitionContext{
+		SDLFormat: true,
+	}
+
+	result, err := GetMultiFileDatabaseDefinition(ctx, metadata)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	// Build a map of files and their index in the array
+	fileIndexMap := make(map[string]int)
+	for i, file := range result.Files {
+		fileIndexMap[file.Name] = i
+	}
+
+	// Verify both table files exist
+	table1Index, ok := fileIndexMap["schemas/public/tables/table1.sql"]
+	require.True(t, ok, "table1.sql should exist")
+
+	table2Index, ok := fileIndexMap["schemas/public/tables/table2.sql"]
+	require.True(t, ok, "table2.sql should exist")
+
+	// CRITICAL: table2 must come BEFORE table1 because table1 has a foreign key to table2
+	// If table1 comes first, CREATE TABLE table1 will fail with "relation 'table2' does not exist"
+	require.Less(t, table2Index, table1Index,
+		"table2.sql (index %d) must come before table1.sql (index %d) because table1 has a foreign key to table2",
+		table2Index, table1Index)
+
+	// Verify table2 content
+	table2Content := result.Files[table2Index].Content
+	assert.Contains(t, table2Content, `CREATE TABLE "public"."table2"`)
+	assert.Contains(t, table2Content, `CONSTRAINT "uq_table2_name" UNIQUE (name)`)
+
+	// Verify table1 content includes the foreign key
+	table1Content := result.Files[table1Index].Content
+	assert.Contains(t, table1Content, `CREATE TABLE "public"."table1"`)
+	assert.Contains(t, table1Content, `CONSTRAINT "fk_table1_name" FOREIGN KEY ("name") REFERENCES "public"."table2"`)
+}
