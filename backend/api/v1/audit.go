@@ -19,6 +19,7 @@ import (
 	"google.golang.org/grpc/codes"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/audit"
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -32,13 +33,15 @@ var (
 
 // ACLInterceptor is the v1 ACL interceptor for gRPC server.
 type AuditInterceptor struct {
-	store *store.Store
+	store        *store.Store
+	stdoutLogger audit.Logger
 }
 
 // NewAuditInterceptor returns a new v1 API ACL interceptor.
-func NewAuditInterceptor(store *store.Store) *AuditInterceptor {
+func NewAuditInterceptor(store *store.Store, stdoutLogger audit.Logger) *AuditInterceptor {
 	return &AuditInterceptor{
-		store: store,
+		store:        store,
+		stdoutLogger: stdoutLogger,
 	}
 }
 
@@ -59,7 +62,7 @@ func (in *AuditInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc 
 			if !common.IsNil(response) {
 				respMsg = response.Any()
 			}
-			if err := createAuditLogConnect(ctx, req.Any(), respMsg, req.Spec().Procedure, in.store, serviceData, rerr, req.Header(), latency); err != nil {
+			if err := createAuditLogConnect(ctx, req.Any(), respMsg, req.Spec().Procedure, in.store, in.stdoutLogger, serviceData, rerr, req.Header(), latency); err != nil {
 				slog.Warn("audit interceptor: failed to create audit log", log.BBError(err), slog.String("method", req.Spec().Procedure))
 			}
 		}
@@ -120,14 +123,14 @@ func (c *auditConnectStreamingConn) Send(resp any) error {
 	// Create audit log for each message pair
 	if c.curRequest != nil {
 		latency := time.Since(c.startTime)
-		if auditErr := createAuditLogConnect(c.ctx, c.curRequest, resp, c.method, c.interceptor.store, nil, nil, c.RequestHeader(), latency); auditErr != nil {
+		if auditErr := createAuditLogConnect(c.ctx, c.curRequest, resp, c.method, c.interceptor.store, c.interceptor.stdoutLogger, nil, nil, c.RequestHeader(), latency); auditErr != nil {
 			return auditErr
 		}
 	}
 	return nil
 }
 
-func createAuditLogConnect(ctx context.Context, request, response any, method string, storage *store.Store, serviceData *anypb.Any, rerr error, headers http.Header, latency time.Duration) error {
+func createAuditLogConnect(ctx context.Context, request, response any, method string, storage *store.Store, stdoutLogger audit.Logger, serviceData *anypb.Any, rerr error, headers http.Header, latency time.Duration) error {
 	requestString, err := getRequestString(request)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get request string")
@@ -184,6 +187,13 @@ func createAuditLogConnect(ctx context.Context, request, response any, method st
 		}
 		if err := storage.CreateAuditLog(createAuditLogCtx, p); err != nil {
 			return err
+		}
+
+		if err := stdoutLogger.Log(ctx, p); err != nil {
+			slog.Warn("failed to write audit log to stdout, continuing since DB write succeeded",
+				slog.String("method", p.Method),
+				slog.String("user", p.User),
+				slog.String("error", err.Error()))
 		}
 	}
 

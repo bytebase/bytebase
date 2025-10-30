@@ -24,6 +24,7 @@ func getBaseProfile(dataDir string) *config.Profile {
 		GitCommit:         gitcommit,
 		PgURL:             os.Getenv("PG_URL"),
 		DeployID:          uuid.NewString()[:8],
+		AuditLogStdout:    flags.auditLogStdout,
 	}
 
 	config.LastActiveTS.Store(time.Now().Unix())

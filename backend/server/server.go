@@ -17,6 +17,7 @@ import (
 	directorysync "github.com/bytebase/bytebase/backend/api/directory-sync"
 	"github.com/bytebase/bytebase/backend/api/lsp"
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/audit"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
@@ -66,12 +67,13 @@ type Server struct {
 
 	licenseService *enterprise.LicenseService
 
-	profile    *config.Profile
-	echoServer *echo.Echo
-	lspServer  *lsp.Server
-	store      *store.Store
-	dbFactory  *dbfactory.DBFactory
-	startedTS  int64
+	profile      *config.Profile
+	echoServer   *echo.Echo
+	lspServer    *lsp.Server
+	store        *store.Store
+	dbFactory    *dbfactory.DBFactory
+	stdoutLogger audit.Logger
+	startedTS    int64
 
 	// PG server stoppers.
 	stopper []func()
@@ -212,9 +214,20 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	// LSP server.
 	s.lspServer = lsp.NewServer(s.store, profile)
 
+	// Stdout audit logger
+	if profile.AuditLogStdout {
+		s.stdoutLogger = audit.NewStdoutLogger(audit.StdoutLoggerConfig{
+			BufferSize:        1000,
+			HeartbeatInterval: 5 * time.Minute,
+		})
+		slog.Info("audit logging to stdout enabled")
+	} else {
+		s.stdoutLogger = &audit.NoopAuditLogger{}
+	}
+
 	directorySyncServer := directorysync.NewService(s.store, s.licenseService, s.iamManager)
 
-	if err := configureGrpcRouters(ctx, s.echoServer, s.store, sheetManager, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, secret, s.sampleInstanceManager); err != nil {
+	if err := configureGrpcRouters(ctx, s.echoServer, s.store, sheetManager, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, secret, s.sampleInstanceManager, s.stdoutLogger); err != nil {
 		return nil, errors.Wrapf(err, "failed to configure gRPC routers")
 	}
 	configureEchoRouters(s.echoServer, s.lspServer, directorySyncServer, profile)
@@ -247,6 +260,9 @@ func (s *Server) Run(ctx context.Context, port int) error {
 	s.runnerWG.Add(1)
 	mmm := monitor.NewMemoryMonitor(s.profile)
 	go mmm.Run(ctx, &s.runnerWG)
+
+	s.runnerWG.Add(1)
+	go s.stdoutLogger.Run(ctx, &s.runnerWG)
 
 	address := fmt.Sprintf(":%d", port)
 	listener, err := net.Listen("tcp", address)
