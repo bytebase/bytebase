@@ -99,7 +99,7 @@ func TestValidateSQLForEditor(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		gotValid, gotAllQuery, err := validateQuery(test.sql)
+		gotValid, gotAllQuery, err := validateQueryANTLR(test.sql)
 		require.NoError(t, err)
 		require.Equal(t, test.valid, gotValid, test.sql)
 		require.Equal(t, test.allQuery, gotAllQuery, test.sql)
