@@ -13,8 +13,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy"
-	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -285,18 +283,48 @@ func inRange(start, end, targetStart, targetEnd *storepb.Position) bool {
 }
 
 func getPrependStatements(statement string) (string, error) {
-	nodes, err := pgrawparser.Parse(pgrawparser.ParseContext{}, statement)
+	// Parse with ANTLR
+	parseResult, err := ParsePostgreSQL(statement)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to parse statement")
 	}
 
-	for _, node := range nodes {
-		if n, ok := node.(*ast.VariableSetStmt); ok {
-			if n.Name == "role" {
-				return n.Text(), nil
+	// Create listener to find SET role statements
+	listener := &setRoleListener{}
+	antlr.ParseTreeWalkerDefault.Walk(listener, parseResult.Tree)
+
+	return listener.setRoleText, nil
+}
+
+// setRoleListener detects SET role statements
+type setRoleListener struct {
+	*parser.BasePostgreSQLParserListener
+	setRoleText string
+}
+
+// EnterVariablesetstmt handles SET statements
+func (l *setRoleListener) EnterVariablesetstmt(ctx *parser.VariablesetstmtContext) {
+	// Only process if we haven't found a SET role statement yet
+	if l.setRoleText != "" {
+		return
+	}
+
+	// Check if this is SET role
+	// Structure: VariablesetstmtContext -> Set_rest -> Set_rest_more -> Generic_set -> Var_name
+	if ctx.Set_rest() != nil {
+		setRest := ctx.Set_rest()
+		if setRest.Set_rest_more() != nil {
+			setRestMore := setRest.Set_rest_more()
+			if setRestMore.Generic_set() != nil {
+				genericSet := setRestMore.Generic_set()
+				if genericSet.Var_name() != nil {
+					varName := genericSet.Var_name().GetText()
+					if strings.EqualFold(varName, "role") {
+						// Found SET role statement, capture the full text
+						l.setRoleText = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+					}
+				}
 			}
 		}
 	}
-
-	return "", nil
 }
