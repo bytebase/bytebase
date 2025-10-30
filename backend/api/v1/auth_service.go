@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"crypto/subtle"
 	"fmt"
 	"log/slog"
 	"slices"
@@ -479,7 +480,7 @@ func challengeMFACode(user *store.UserMessage, mfaCode string) error {
 
 func (s *AuthService) challengeRecoveryCode(ctx context.Context, user *store.UserMessage, recoveryCode string) error {
 	for i, code := range user.MFAConfig.RecoveryCodes {
-		if code == recoveryCode {
+		if subtle.ConstantTimeCompare([]byte(code), []byte(recoveryCode)) == 1 {
 			// If the recovery code is valid, delete it from the user's recovery code list.
 			user.MFAConfig.RecoveryCodes = slices.Delete(user.MFAConfig.RecoveryCodes, i, i+1)
 			_, err := s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{
