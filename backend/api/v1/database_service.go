@@ -73,7 +73,17 @@ func (s *DatabaseService) BatchGetDatabases(ctx context.Context, req *connect.Re
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 
-	// TODO(steven): Filter out the databases based on `req.Msg.parent`.
+	// Parse parent to extract project ID filter if specified.
+	var projectIDFilter *string
+	if strings.HasPrefix(req.Msg.Parent, common.ProjectNamePrefix) {
+		projectID, err := common.GetProjectID(req.Msg.Parent)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid parent %q", req.Msg.Parent))
+		}
+		projectIDFilter = &projectID
+	}
+	// For instances/{instance} or "-" (wildcard), no project filter is applied.
+
 	databases := make([]*v1pb.Database, 0, len(req.Msg.Names))
 	for _, name := range req.Msg.Names {
 		databaseMessage, err := getDatabaseMessage(ctx, s.store, name)
@@ -81,7 +91,12 @@ func (s *DatabaseService) BatchGetDatabases(ctx context.Context, req *connect.Re
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get database %q with error: %v", name, err.Error()))
 		}
 		if databaseMessage.Deleted {
-			// Ignore no deleted database.
+			// Ignore deleted database.
+			continue
+		}
+		// If parent specifies a project, validate database belongs to that project.
+		if projectIDFilter != nil && databaseMessage.ProjectID != *projectIDFilter {
+			// Ignore database not in the specified project.
 			continue
 		}
 		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionDatabasesGet, user, databaseMessage.ProjectID)

@@ -1045,7 +1045,7 @@ func (s *PlanService) BatchCancelPlanCheckRuns(ctx context.Context, request *con
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("plan check runs cannot be empty"))
 	}
 
-	projectID, _, err := common.GetProjectIDPlanID(req.Parent)
+	projectID, planID, err := common.GetProjectIDPlanID(req.Parent)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -1073,6 +1073,13 @@ func (s *PlanService) BatchCancelPlanCheckRuns(ctx context.Context, request *con
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list plan check runs, error: %v", err))
+	}
+
+	// Validate that all plan check runs belong to the plan specified in the parent.
+	for _, planCheckRun := range planCheckRuns {
+		if planCheckRun.PlanUID != planID {
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan check run %d not found in plan %d", planCheckRun.UID, planID))
+		}
 	}
 
 	// Check if any of the given plan check runs are not running.
