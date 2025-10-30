@@ -7,7 +7,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy"
+
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -65,9 +65,9 @@ func TestExtractChangedResources(t *testing.T) {
 		InsertCount:      2,
 	}
 
-	nodes, err := pgrawparser.Parse(pgrawparser.ParseContext{}, statement)
+	parseResult, err := ParsePostgreSQL(statement)
 	require.NoError(t, err)
-	got, err := extractChangedResources("db", "public", dbSchema, nodes, statement)
+	got, err := extractChangedResources("db", "public", dbSchema, parseResult, statement)
 	require.NoError(t, err)
 	require.Equal(t, want, got)
 }
