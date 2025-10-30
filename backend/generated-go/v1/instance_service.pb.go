@@ -7,6 +7,7 @@
 package v1
 
 import (
+	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -2702,7 +2703,7 @@ var File_v1_instance_service_proto protoreflect.FileDescriptor
 
 const file_v1_instance_service_proto_rawDesc = "" +
 	"\n" +
-	"\x19v1/instance_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x1ev1/instance_role_service.proto\"G\n" +
+	"\x19v1/instance_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x1ev1/instance_role_service.proto\"G\n" +
 	"\x12GetInstanceRequest\x121\n" +
 	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
 	"\x15bytebase.com/InstanceR\x04name\"\x8d\x01\n" +
@@ -2772,11 +2773,11 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\vupdate_mask\x18\x03 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
 	"updateMask\x12#\n" +
 	"\rvalidate_only\x18\x04 \x01(\bR\fvalidateOnly\x12#\n" +
-	"\rallow_missing\x18\x05 \x01(\bR\fallowMissing\"\xb1\x06\n" +
+	"\rallow_missing\x18\x05 \x01(\bR\fallowMissing\"\xbb\x06\n" +
 	"\bInstance\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12(\n" +
-	"\x05state\x18\x03 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x14\n" +
-	"\x05title\x18\x04 \x01(\tR\x05title\x12+\n" +
+	"\x05state\x18\x03 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x1e\n" +
+	"\x05title\x18\x04 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12+\n" +
 	"\x06engine\x18\x05 \x01(\x0e2\x13.bytebase.v1.EngineR\x06engine\x12*\n" +
 	"\x0eengine_version\x18\x06 \x01(\tB\x03\xe0A\x03R\rengineVersion\x12#\n" +
 	"\rexternal_link\x18\a \x01(\tR\fexternalLink\x12:\n" +

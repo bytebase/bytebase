@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package bytebase.v1;
 
+import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
@@ -145,7 +146,7 @@ message Risk {
   Source source = 3;
 
   // The title of the risk rule.
-  string title = 4;
+  string title = 4 [(buf.validate.field).string.max_len = 200];
   // The risk level assigned when this rule matches.
   RiskLevel level = 5;
   // Whether the risk rule is active.

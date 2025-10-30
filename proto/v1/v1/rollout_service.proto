@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package bytebase.v1;
 
+import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
@@ -149,7 +150,7 @@ message BatchRunTasksRequest {
   repeated string tasks = 2;
 
   // The reason for running the tasks.
-  string reason = 3;
+  string reason = 3 [(buf.validate.field).string.max_len = 1000];
 
   // The task run should run after run_time.
   optional google.protobuf.Timestamp run_time = 4;
@@ -166,7 +167,7 @@ message BatchSkipTasksRequest {
   repeated string tasks = 2;
 
   // The reason for skipping the tasks.
-  string reason = 3;
+  string reason = 3 [(buf.validate.field).string.max_len = 1000];
 }
 
 message BatchSkipTasksResponse {}
@@ -181,7 +182,7 @@ message BatchCancelTaskRunsRequest {
   repeated string task_runs = 2;
 
   // The reason for canceling the task runs.
-  string reason = 3;
+  string reason = 3 [(buf.validate.field).string.max_len = 1000];
 }
 
 message BatchCancelTaskRunsResponse {}

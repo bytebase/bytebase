@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package bytebase.v1;
 
+import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
@@ -270,7 +271,7 @@ message Release {
   string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The title of the release.
-  string title = 2;
+  string title = 2 [(buf.validate.field).string.max_len = 200];
 
   // The SQL files included in the release.
   repeated File files = 3;
