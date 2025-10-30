@@ -415,3 +415,242 @@ func findStatementIndex(statements []string, stmtType, objectName string) int {
 	}
 	return -1
 }
+
+// TestTopologicalOrderDropObjects tests that objects are dropped in the correct dependency order
+func TestTopologicalOrderDropObjects(t *testing.T) {
+	tests := []struct {
+		name        string
+		diff        *schema.MetadataDiff
+		description string
+	}{
+		{
+			name: "drop_table1_with_fk_before_table2",
+			diff: &schema.MetadataDiff{
+				TableChanges: []*schema.TableDiff{
+					// Drop table1 that has FK to table2 - comes FIRST in list
+					{
+						Action:     schema.MetadataDiffActionDrop,
+						SchemaName: "public",
+						TableName:  "table1",
+						OldTable: &storepb.TableMetadata{
+							Name: "table1",
+							Columns: []*storepb.ColumnMetadata{
+								{Name: "id", Type: "SERIAL", Nullable: false},
+								{Name: "name", Type: "VARCHAR(100)", Nullable: false},
+							},
+							ForeignKeys: []*storepb.ForeignKeyMetadata{
+								{
+									Name:              "fk_table1_name",
+									Columns:           []string{"name"},
+									ReferencedSchema:  "public",
+									ReferencedTable:   "table2",
+									ReferencedColumns: []string{"name"},
+								},
+							},
+						},
+					},
+					// Drop table2 - comes SECOND in list but should be dropped AFTER table1
+					{
+						Action:     schema.MetadataDiffActionDrop,
+						SchemaName: "public",
+						TableName:  "table2",
+						OldTable: &storepb.TableMetadata{
+							Name: "table2",
+							Columns: []*storepb.ColumnMetadata{
+								{Name: "id", Type: "INT", Nullable: false},
+								{Name: "name", Type: "VARCHAR(100)", Nullable: false},
+							},
+						},
+					},
+				},
+			},
+			description: "table1 (with FK) should be dropped before table2 (referenced)",
+		},
+		{
+			name: "drop_orders_before_customers",
+			diff: &schema.MetadataDiff{
+				TableChanges: []*schema.TableDiff{
+					// Drop customers table - comes FIRST in list
+					{
+						Action:     schema.MetadataDiffActionDrop,
+						SchemaName: "public",
+						TableName:  "customers",
+						OldTable: &storepb.TableMetadata{
+							Name: "customers",
+							Columns: []*storepb.ColumnMetadata{
+								{Name: "id", Type: "SERIAL", Nullable: false},
+								{Name: "name", Type: "VARCHAR(100)", Nullable: false},
+							},
+						},
+					},
+					// Drop orders table that has FK to customers - comes SECOND in list
+					{
+						Action:     schema.MetadataDiffActionDrop,
+						SchemaName: "public",
+						TableName:  "orders",
+						OldTable: &storepb.TableMetadata{
+							Name: "orders",
+							Columns: []*storepb.ColumnMetadata{
+								{Name: "id", Type: "SERIAL", Nullable: false},
+								{Name: "customer_id", Type: "INT", Nullable: false},
+							},
+							ForeignKeys: []*storepb.ForeignKeyMetadata{
+								{
+									Name:              "fk_orders_customer",
+									Columns:           []string{"customer_id"},
+									ReferencedSchema:  "public",
+									ReferencedTable:   "customers",
+									ReferencedColumns: []string{"id"},
+								},
+							},
+						},
+					},
+				},
+			},
+			description: "orders (with FK) should be dropped before customers (referenced)",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			migrationSQL, err := generateMigration(tc.diff)
+			require.NoError(t, err)
+
+			// Parse the SQL into statements
+			statements := parseStatements(migrationSQL)
+
+			// For DROP operations, find the DROP statements
+			switch tc.name {
+			case "drop_table1_with_fk_before_table2":
+				table1DropIdx := findStatementIndex(statements, "DROP TABLE", "table1")
+				table2DropIdx := findStatementIndex(statements, "DROP TABLE", "table2")
+
+				assert.NotEqual(t, -1, table1DropIdx, "table1 DROP statement should exist")
+				assert.NotEqual(t, -1, table2DropIdx, "table2 DROP statement should exist")
+				assert.Less(t, table1DropIdx, table2DropIdx, "table1 (with FK) should be dropped before table2 (referenced)")
+			case "drop_orders_before_customers":
+				ordersDropIdx := findStatementIndex(statements, "DROP TABLE", "orders")
+				customersDropIdx := findStatementIndex(statements, "DROP TABLE", "customers")
+
+				assert.NotEqual(t, -1, ordersDropIdx, "orders DROP statement should exist")
+				assert.NotEqual(t, -1, customersDropIdx, "customers DROP statement should exist")
+				assert.Less(t, ordersDropIdx, customersDropIdx, "orders (with FK) should be dropped before customers (referenced)")
+			}
+		})
+	}
+}
+
+// TestTopologicalOrderAlterWithForeignKey tests ALTER operations with foreign key additions
+func TestTopologicalOrderAlterWithForeignKey(t *testing.T) {
+	tests := []struct {
+		name        string
+		diff        *schema.MetadataDiff
+		description string
+	}{
+		{
+			name: "alter_table3_add_fk_to_table4",
+			diff: &schema.MetadataDiff{
+				TableChanges: []*schema.TableDiff{
+					// Alter table3 to add FK to table4 - comes FIRST in list
+					{
+						Action:     schema.MetadataDiffActionAlter,
+						SchemaName: "public",
+						TableName:  "table3",
+						ForeignKeyChanges: []*schema.ForeignKeyDiff{
+							{
+								Action: schema.MetadataDiffActionCreate,
+								NewForeignKey: &storepb.ForeignKeyMetadata{
+									Name:              "fk_table3_ref",
+									Columns:           []string{"ref_id"},
+									ReferencedSchema:  "public",
+									ReferencedTable:   "table4",
+									ReferencedColumns: []string{"id"},
+								},
+							},
+						},
+					},
+					// Create table4 - comes SECOND in list but should be created BEFORE table3 is altered
+					{
+						Action:     schema.MetadataDiffActionCreate,
+						SchemaName: "public",
+						TableName:  "table4",
+						NewTable: &storepb.TableMetadata{
+							Name: "table4",
+							Columns: []*storepb.ColumnMetadata{
+								{Name: "id", Type: "SERIAL", Nullable: false},
+								{Name: "data", Type: "VARCHAR(100)", Nullable: false},
+							},
+						},
+					},
+				},
+			},
+			description: "table4 should be created before table3 is altered to add FK",
+		},
+		{
+			name: "create_and_alter_with_fk_chain",
+			diff: &schema.MetadataDiff{
+				TableChanges: []*schema.TableDiff{
+					// Alter existing_table to add FK to new_table
+					{
+						Action:     schema.MetadataDiffActionAlter,
+						SchemaName: "public",
+						TableName:  "existing_table",
+						ForeignKeyChanges: []*schema.ForeignKeyDiff{
+							{
+								Action: schema.MetadataDiffActionCreate,
+								NewForeignKey: &storepb.ForeignKeyMetadata{
+									Name:              "fk_existing_new",
+									Columns:           []string{"new_id"},
+									ReferencedSchema:  "public",
+									ReferencedTable:   "new_table",
+									ReferencedColumns: []string{"id"},
+								},
+							},
+						},
+					},
+					// Create new_table that should be created first
+					{
+						Action:     schema.MetadataDiffActionCreate,
+						SchemaName: "public",
+						TableName:  "new_table",
+						NewTable: &storepb.TableMetadata{
+							Name: "new_table",
+							Columns: []*storepb.ColumnMetadata{
+								{Name: "id", Type: "SERIAL", Nullable: false},
+								{Name: "value", Type: "INT", Nullable: false},
+							},
+						},
+					},
+				},
+			},
+			description: "new_table should be created before existing_table is altered to add FK",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			migrationSQL, err := generateMigration(tc.diff)
+			require.NoError(t, err)
+
+			// Parse the SQL into statements
+			statements := parseStatements(migrationSQL)
+
+			switch tc.name {
+			case "alter_table3_add_fk_to_table4":
+				table4CreateIdx := findStatementIndex(statements, "CREATE TABLE", "table4")
+				table3AlterIdx := findStatementIndex(statements, "ALTER TABLE", "table3")
+
+				assert.NotEqual(t, -1, table4CreateIdx, "table4 CREATE statement should exist")
+				assert.NotEqual(t, -1, table3AlterIdx, "table3 ALTER statement should exist")
+				assert.Less(t, table4CreateIdx, table3AlterIdx, "table4 should be created before table3 is altered to add FK")
+			case "create_and_alter_with_fk_chain":
+				newTableCreateIdx := findStatementIndex(statements, "CREATE TABLE", "new_table")
+				existingTableAlterIdx := findStatementIndex(statements, "ALTER TABLE", "existing_table")
+
+				assert.NotEqual(t, -1, newTableCreateIdx, "new_table CREATE statement should exist")
+				assert.NotEqual(t, -1, existingTableAlterIdx, "existing_table ALTER statement should exist")
+				assert.Less(t, newTableCreateIdx, existingTableAlterIdx, "new_table should be created before existing_table is altered to add FK")
+			}
+		})
+	}
+}

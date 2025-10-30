@@ -194,15 +194,25 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 		}
 	}
 
-	// For tables with foreign keys depending on other tables
+	// For tables with foreign keys depending on other tables (DROP operations)
 	for tableID, tableDiff := range tableMap {
+		var foreignKeys []*storepb.ForeignKeyMetadata
+
 		if tableDiff.OldTable != nil {
-			for _, fk := range tableDiff.OldTable.ForeignKeys {
-				depID := getMigrationObjectID(fk.ReferencedSchema, fk.ReferencedTable)
-				if allObjects[depID] && depID != tableID {
-					// Edge from table with FK to referenced table
-					graph.AddEdge(tableID, depID)
-				}
+			// Metadata mode: use ForeignKeys from metadata
+			foreignKeys = tableDiff.OldTable.ForeignKeys
+		} else if tableDiff.OldASTNode != nil {
+			// AST-only mode: extract foreign keys from AST node
+			foreignKeys = extractForeignKeysFromAST(tableDiff.OldASTNode, tableDiff.SchemaName)
+		}
+
+		for _, fk := range foreignKeys {
+			depID := getMigrationObjectID(fk.ReferencedSchema, fk.ReferencedTable)
+			if allObjects[depID] && depID != tableID {
+				// Edge from table with FK to referenced table
+				// For DROP: table1 (with FK) -> table2 (referenced)
+				// This ensures table1 is dropped before table2
+				graph.AddEdge(tableID, depID)
 			}
 		}
 	}
@@ -668,9 +678,11 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 	}
 
 	// Add dependency edges
-	// For tables with foreign keys depending on other tables (only for CREATE operations)
+	// For tables with foreign keys depending on other tables (CREATE and ALTER operations)
 	for tableID, tableDiff := range tableMap {
+		//nolint:staticcheck // if-else is clearer than switch for this case with two actions
 		if tableDiff.Action == schema.MetadataDiffActionCreate {
+			// For CREATE: extract all FKs from the table
 			var foreignKeys []*storepb.ForeignKeyMetadata
 
 			if tableDiff.NewTable != nil {
@@ -686,6 +698,44 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 				if depID != tableID {
 					// Edge from dependency to dependent (referenced table to table with FK)
 					graph.AddEdge(depID, tableID)
+				}
+			}
+		} else if tableDiff.Action == schema.MetadataDiffActionAlter {
+			// For ALTER: extract FKs from new FK constraints being added
+			for _, fkDiff := range tableDiff.ForeignKeyChanges {
+				if fkDiff.Action == schema.MetadataDiffActionCreate {
+					var referencedSchema, referencedTable string
+
+					if fkDiff.NewForeignKey != nil {
+						// Metadata mode: use FK metadata
+						referencedSchema = fkDiff.NewForeignKey.ReferencedSchema
+						referencedTable = fkDiff.NewForeignKey.ReferencedTable
+					} else if fkDiff.NewASTNode != nil {
+						// AST-only mode: extract from AST node
+						if constraintAST, ok := fkDiff.NewASTNode.(pgparser.ITableconstraintContext); ok {
+							if constraintAST.Constraintelem() != nil {
+								elem := constraintAST.Constraintelem()
+								if elem.FOREIGN() != nil && elem.KEY() != nil && elem.Qualified_name() != nil {
+									nameParts := pgpluginparser.NormalizePostgreSQLQualifiedName(elem.Qualified_name())
+									if len(nameParts) == 1 {
+										referencedSchema = tableDiff.SchemaName
+										referencedTable = nameParts[0]
+									} else if len(nameParts) == 2 {
+										referencedSchema = nameParts[0]
+										referencedTable = nameParts[1]
+									}
+								}
+							}
+						}
+					}
+
+					if referencedTable != "" {
+						depID := getMigrationObjectID(referencedSchema, referencedTable)
+						if depID != tableID {
+							// Edge from dependency to dependent (referenced table to table with FK)
+							graph.AddEdge(depID, tableID)
+						}
+					}
 				}
 			}
 		}
