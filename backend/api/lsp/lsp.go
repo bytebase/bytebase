@@ -36,9 +36,8 @@ func (s *Server) Router(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, "missing access token")
 	}
 
-	// Create auth interceptor and authenticate user
-	authInterceptor := auth.New(s.store, s.secret, nil /* licenseService */, s.stateCfg, s.profile)
-	user, tokenExpiry, err := authInterceptor.AuthenticateToken(c.Request().Context(), accessTokenStr)
+	// Authenticate user using server's auth interceptor
+	user, tokenExpiry, err := s.authInterceptor.AuthenticateToken(c.Request().Context(), accessTokenStr)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}

@@ -210,7 +210,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	s.initMetricReporter()
 
 	// LSP server.
-	s.lspServer = lsp.NewServer(s.store, profile, secret, s.stateCfg, s.iamManager)
+	s.lspServer = lsp.NewServer(s.store, profile, secret, s.stateCfg, s.iamManager, s.licenseService)
 
 	directorySyncServer := directorysync.NewService(s.store, s.licenseService, s.iamManager)
 
