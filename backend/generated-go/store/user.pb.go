@@ -242,7 +242,8 @@ const file_store_user_proto_rawDesc = "" +
 	"\bEND_USER\x10\x01\x12\x13\n" +
 	"\x0fSERVICE_ACCOUNT\x10\x02\x12\x0e\n" +
 	"\n" +
-	"SYSTEM_BOT\x10\x03B\x14Z\x12generated-go/storeb\x06proto3"
+	"SYSTEM_BOT\x10\x03B\x8c\x01\n" +
+	"\x12com.bytebase.storeB\tUserProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
 	file_store_user_proto_rawDescOnce sync.Once

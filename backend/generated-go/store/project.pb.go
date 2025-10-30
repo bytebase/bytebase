@@ -327,7 +327,8 @@ const file_store_project_proto_rawDesc = "" +
 	"\x0fmaximum_retries\x18\x01 \x01(\x05R\x0emaximumRetries\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01J\x04\b\x01\x10\x02B\x14Z\x12generated-go/storeb\x06proto3"
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01J\x04\b\x01\x10\x02B\x8f\x01\n" +
+	"\x12com.bytebase.storeB\fProjectProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
 	file_store_project_proto_rawDescOnce sync.Once

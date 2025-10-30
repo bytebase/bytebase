@@ -73,7 +73,8 @@ const file_store_export_archive_proto_rawDesc = "" +
 	"\x1astore/export_archive.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"U\n" +
 	"\x14ExportArchivePayload\x12=\n" +
 	"\vfile_format\x18\x01 \x01(\x0e2\x1c.bytebase.store.ExportFormatR\n" +
-	"fileFormatB\x14Z\x12generated-go/storeb\x06proto3"
+	"fileFormatB\x95\x01\n" +
+	"\x12com.bytebase.storeB\x12ExportArchiveProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
 	file_store_export_archive_proto_rawDescOnce sync.Once

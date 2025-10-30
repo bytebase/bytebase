@@ -344,7 +344,8 @@ const file_store_task_proto_rawDesc = "" +
 	"\x0fDATABASE_EXPORT\x10\x05\x12\x10\n" +
 	"\fDATABASE_SDL\x10\x06\"'\n" +
 	"\x11TaskReleaseSource\x12\x12\n" +
-	"\x04file\x18\x01 \x01(\tR\x04fileB\x14Z\x12generated-go/storeb\x06proto3"
+	"\x04file\x18\x01 \x01(\tR\x04fileB\x8c\x01\n" +
+	"\x12com.bytebase.storeB\tTaskProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
 	file_store_task_proto_rawDescOnce sync.Once

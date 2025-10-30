@@ -82,7 +82,9 @@ const file_store_sheet_proto_rawDesc = "" +
 	"\x11store/sheet.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"q\n" +
 	"\fSheetPayload\x12.\n" +
 	"\x06engine\x18\x03 \x01(\x0e2\x16.bytebase.store.EngineR\x06engine\x121\n" +
-	"\bcommands\x18\x04 \x03(\v2\x15.bytebase.store.RangeR\bcommandsB\x14Z\x12generated-go/storeb\x06proto3"
+	"\bcommands\x18\x04 \x03(\v2\x15.bytebase.store.RangeR\bcommandsB\x8d\x01\n" +
+	"\x12com.bytebase.storeB\n" +
+	"SheetProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
 	file_store_sheet_proto_rawDescOnce sync.Once

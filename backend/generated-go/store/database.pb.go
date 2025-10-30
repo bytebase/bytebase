@@ -4887,7 +4887,8 @@ const file_store_database_proto_rawDesc = "" +
 	"\n" +
 	"\x06OBJECT\x10\x04\x12\t\n" +
 	"\x05ARRAY\x10\x05B\x06\n" +
-	"\x04kindB\x14Z\x12generated-go/storeb\x06proto3"
+	"\x04kindB\x90\x01\n" +
+	"\x12com.bytebase.storeB\rDatabaseProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
 	file_store_database_proto_rawDescOnce sync.Once

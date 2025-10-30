@@ -1850,7 +1850,8 @@ const file_store_instance_proto_rawDesc = "" +
 	"\x0eDataSourceType\x12\x1b\n" +
 	"\x17DATA_SOURCE_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05ADMIN\x10\x01\x12\r\n" +
-	"\tREAD_ONLY\x10\x02B\x14Z\x12generated-go/storeb\x06proto3"
+	"\tREAD_ONLY\x10\x02B\x90\x01\n" +
+	"\x12com.bytebase.storeB\rInstanceProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
 	file_store_instance_proto_rawDescOnce sync.Once

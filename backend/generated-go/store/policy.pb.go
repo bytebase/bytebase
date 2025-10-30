@@ -1332,7 +1332,8 @@ const file_store_policy_proto_rawDesc = "" +
 	"\x12SQLReviewRuleLevel\x12\x15\n" +
 	"\x11LEVEL_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05ERROR\x10\x01\x12\v\n" +
-	"\aWARNING\x10\x02B\x14Z\x12generated-go/storeb\x06proto3"
+	"\aWARNING\x10\x02B\x8e\x01\n" +
+	"\x12com.bytebase.storeB\vPolicyProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
 	file_store_policy_proto_rawDescOnce sync.Once

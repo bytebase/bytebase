@@ -9900,6 +9900,8 @@ components:
                     description: The schemas in the database.
             description: Catalog metadata for a database including schemas, tables, and columns.
         DatabaseGroup:
+            required:
+                - title
             type: object
             properties:
                 name:

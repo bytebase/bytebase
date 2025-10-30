@@ -163,7 +163,8 @@ const file_v1_annotation_proto_rawDesc = "" +
 	"\vauth_method\x12\x1e.google.protobuf.MethodOptions\x18\xa2\x8d\x06 \x01(\x0e2\x17.bytebase.v1.AuthMethodR\n" +
 	"authMethod:6\n" +
 	"\x05audit\x12\x1e.google.protobuf.MethodOptions\x18\xa3\x8d\x06 \x01(\bR\x05audit:V\n" +
-	"\x16allow_missing_requires\x12\x1e.google.protobuf.MethodOptions\x18\xa4\x8d\x06 \x01(\tR\x14allowMissingRequiresB6Z4github.com/bytebase/bytebase/backend/generated-go/v1b\x06proto3"
+	"\x16allow_missing_requires\x12\x1e.google.protobuf.MethodOptions\x18\xa4\x8d\x06 \x01(\tR\x14allowMissingRequiresB\xa5\x01\n" +
+	"\x0fcom.bytebase.v1B\x0fAnnotationProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (
 	file_v1_annotation_proto_rawDescOnce sync.Once

@@ -495,7 +495,8 @@ const file_store_plan_check_run_proto_rawDesc = "" +
 	"\x0fSqlReviewReport\x12?\n" +
 	"\x0estart_position\x18\b \x01(\v2\x18.bytebase.store.PositionR\rstartPosition\x12;\n" +
 	"\fend_position\x18\t \x01(\v2\x18.bytebase.store.PositionR\vendPositionJ\x04\b\x01\x10\x02J\x04\b\x02\x10\x03J\x04\b\x03\x10\x04J\x04\b\x04\x10\x05B\b\n" +
-	"\x06reportB\x14Z\x12generated-go/storeb\x06proto3"
+	"\x06reportB\x94\x01\n" +
+	"\x12com.bytebase.storeB\x11PlanCheckRunProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
 	file_store_plan_check_run_proto_rawDescOnce sync.Once

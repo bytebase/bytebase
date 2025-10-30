@@ -489,7 +489,8 @@ const file_v1_iam_policy_proto_rawDesc = "" +
 	"\x12ACTION_UNSPECIFIED\x10\x00\x12\a\n" +
 	"\x03ADD\x10\x01\x12\n" +
 	"\n" +
-	"\x06REMOVE\x10\x02B6Z4github.com/bytebase/bytebase/backend/generated-go/v1b\x06proto3"
+	"\x06REMOVE\x10\x02B\xa4\x01\n" +
+	"\x0fcom.bytebase.v1B\x0eIamPolicyProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (
 	file_v1_iam_policy_proto_rawDescOnce sync.Once
