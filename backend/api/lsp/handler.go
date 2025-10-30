@@ -15,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
+	"github.com/bytebase/bytebase/backend/component/iam"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
@@ -46,11 +47,14 @@ const (
 	LSPCustomMethodSQLStatementRanges Method = "$/textDocument/statementRanges"
 )
 
-// NewHandler creates a new Language Server Protocol handler.
-func NewHandler(s *store.Store, profile *config.Profile) jsonrpc2.Handler {
+// NewHandlerWithAuth creates a new Language Server Protocol handler with authentication.
+func NewHandlerWithAuth(s *store.Store, profile *config.Profile, iamManager *iam.Manager, user *store.UserMessage, tokenExpiry time.Time) jsonrpc2.Handler {
 	handler := &Handler{
 		store:                s,
 		profile:              profile,
+		user:                 user,
+		tokenExpiry:          tokenExpiry,
+		iamManager:           iamManager,
 		diagnosticsDebouncer: NewDiagnosticsDebouncer(500 * time.Millisecond), // 500ms debounce
 		contentCache:         NewContentCache(100),                            // Cache up to 100 documents
 		perfMonitor:          NewPerformanceMonitor(),
@@ -77,6 +81,11 @@ type Handler struct {
 	init     *lsp.InitializeParams // set by LSPMethodInitialize request
 	metadata *SetMetadataCommandArguments
 	store    *store.Store
+
+	// Auth-related fields
+	user        *store.UserMessage
+	tokenExpiry time.Time
+	iamManager  *iam.Manager
 
 	shutDown bool
 	profile  *config.Profile
@@ -189,6 +198,61 @@ func (h *Handler) checkReady() error {
 	return nil
 }
 
+func (h *Handler) checkTokenExpiry() error {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if !h.tokenExpiry.IsZero() && time.Now().After(h.tokenExpiry) {
+		return errors.New("access token expired, please reconnect")
+	}
+	return nil
+}
+
+func (h *Handler) checkMetadataPermissions(ctx context.Context, metadata SetMetadataCommandArguments) error {
+	if h.user == nil {
+		return errors.New("user not authenticated")
+	}
+
+	// If database is specified, check database schema permission
+	if metadata.DatabaseName != "" && metadata.InstanceID != "" {
+		// Need to get database to find its project
+		instanceID, err := common.GetInstanceID(metadata.InstanceID)
+		if err != nil {
+			return err
+		}
+
+		database, err := h.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+			InstanceID:   &instanceID,
+			DatabaseName: &metadata.DatabaseName,
+		})
+		if err != nil {
+			return errors.Wrap(err, "failed to get database")
+		}
+		if database == nil {
+			return errors.Errorf("database %q not found", metadata.DatabaseName)
+		}
+
+		// Check bb.databases.getSchema permission
+		ok, err := h.iamManager.CheckPermission(ctx, iam.PermissionDatabasesGetSchema, h.user, database.ProjectID)
+		if err != nil {
+			return errors.Wrap(err, "failed to check permission")
+		}
+		if !ok {
+			return errors.Errorf("no permission to access database %q", metadata.DatabaseName)
+		}
+	} else if metadata.InstanceID != "" && metadata.DatabaseName == "" {
+		// If only instance is specified, check instance get permission
+		ok, err := h.iamManager.CheckPermission(ctx, iam.PermissionInstancesGet, h.user)
+		if err != nil {
+			return errors.Wrap(err, "failed to check permission")
+		}
+		if !ok {
+			return errors.Errorf("no permission to access instance %q", metadata.InstanceID)
+		}
+	}
+
+	return nil
+}
+
 func (h *Handler) reset(params *lsp.InitializeParams) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -211,6 +275,12 @@ func (h *Handler) handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
 			slog.Error("Panic in LSP handler", log.BBError(err), slog.String("method", req.Method), log.BBStack("panic-stack"))
 		}
 	}()
+
+	// Check token expiry before processing any request
+	if err := h.checkTokenExpiry(); err != nil {
+		conn.Close()
+		return nil, err
+	}
 
 	// Handle ping request before checking if the server is initialized.
 	if Method(req.Method) == LSPMethodPing {
@@ -306,6 +376,13 @@ func (h *Handler) handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
 			}
 			if len(setMetadataParams.Arguments) != 1 {
 				return nil, &jsonrpc2.Error{Code: jsonrpc2.CodeInvalidParams, Message: "expected exactly one argument"}
+			}
+			// Check RBAC permissions before setting metadata
+			if err := h.checkMetadataPermissions(ctx, setMetadataParams.Arguments[0]); err != nil {
+				return nil, &jsonrpc2.Error{
+					Code:    jsonrpc2.CodeInvalidRequest,
+					Message: fmt.Sprintf("permission denied: %v", err),
+				}
 			}
 			h.setMetadata(setMetadataParams.Arguments[0])
 			return nil, nil
