@@ -2513,7 +2513,10 @@
           "description": "Usa una aplicación de autenticación de tu teléfono para escanear. Si no puedes escanear, {action} en su lugar.",
           "enter-the-text": "ingresa el texto"
         },
-        "verify-code": "Verifica el código de la aplicación"
+        "verify-code": "Verifica el código de la aplicación",
+        "time-remaining": "Tiempo restante: {time}",
+        "expired-notice": "Esta sesión de configuración ha expirado. Por favor, regenera para continuar.",
+        "regenerate": "Regenerar"
       },
       "download-recovery-codes": {
         "self": "Descarga tus códigos de recuperación",

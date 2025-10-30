@@ -629,6 +629,8 @@ type User struct {
 	TempOtpSecret string `protobuf:"bytes,10,opt,name=temp_otp_secret,json=tempOtpSecret,proto3" json:"temp_otp_secret,omitempty"`
 	// Temporary recovery codes used during MFA setup and regeneration.
 	TempRecoveryCodes []string `protobuf:"bytes,11,rep,name=temp_recovery_codes,json=tempRecoveryCodes,proto3" json:"temp_recovery_codes,omitempty"`
+	// Timestamp when temp_otp_secret was created. Used by frontend to show countdown timer.
+	TempOtpSecretCreatedTime *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=temp_otp_secret_created_time,json=tempOtpSecretCreatedTime,proto3" json:"temp_otp_secret_created_time,omitempty"`
 	// Should be a valid E.164 compliant phone number.
 	// Could be empty.
 	Phone string `protobuf:"bytes,12,opt,name=phone,proto3" json:"phone,omitempty"`
@@ -737,6 +739,13 @@ func (x *User) GetTempOtpSecret() string {
 func (x *User) GetTempRecoveryCodes() []string {
 	if x != nil {
 		return x.TempRecoveryCodes
+	}
+	return nil
+}
+
+func (x *User) GetTempOtpSecretCreatedTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.TempOtpSecretCreatedTime
 	}
 	return nil
 }
@@ -863,7 +872,7 @@ const file_v1_user_service_proto_rawDesc = "" +
 	"\x11bytebase.com/UserR\x04name\"D\n" +
 	"\x13UndeleteUserRequest\x12-\n" +
 	"\x04name\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
-	"\x11bytebase.com/UserR\x04name\"\xb6\x05\n" +
+	"\x11bytebase.com/UserR\x04name\"\x92\x06\n" +
 	"\x04User\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12(\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x14\n" +
@@ -877,7 +886,8 @@ const file_v1_user_service_proto_rawDesc = "" +
 	"mfaEnabled\x12&\n" +
 	"\x0ftemp_otp_secret\x18\n" +
 	" \x01(\tR\rtempOtpSecret\x12.\n" +
-	"\x13temp_recovery_codes\x18\v \x03(\tR\x11tempRecoveryCodes\x12\x14\n" +
+	"\x13temp_recovery_codes\x18\v \x03(\tR\x11tempRecoveryCodes\x12Z\n" +
+	"\x1ctemp_otp_secret_created_time\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\x18tempOtpSecretCreatedTime\x12\x14\n" +
 	"\x05phone\x18\f \x01(\tR\x05phone\x123\n" +
 	"\aprofile\x18\r \x01(\v2\x19.bytebase.v1.User.ProfileR\aprofile\x12\x1b\n" +
 	"\x06groups\x18\x0e \x03(\tB\x03\xe0A\x03R\x06groups\x1a\xbc\x01\n" +
@@ -945,30 +955,31 @@ var file_v1_user_service_proto_depIdxs = []int32{
 	12, // 4: bytebase.v1.UpdateUserRequest.update_mask:type_name -> google.protobuf.FieldMask
 	13, // 5: bytebase.v1.User.state:type_name -> bytebase.v1.State
 	0,  // 6: bytebase.v1.User.user_type:type_name -> bytebase.v1.UserType
-	11, // 7: bytebase.v1.User.profile:type_name -> bytebase.v1.User.Profile
-	14, // 8: bytebase.v1.User.Profile.last_login_time:type_name -> google.protobuf.Timestamp
-	14, // 9: bytebase.v1.User.Profile.last_change_password_time:type_name -> google.protobuf.Timestamp
-	1,  // 10: bytebase.v1.UserService.GetUser:input_type -> bytebase.v1.GetUserRequest
-	2,  // 11: bytebase.v1.UserService.BatchGetUsers:input_type -> bytebase.v1.BatchGetUsersRequest
-	15, // 12: bytebase.v1.UserService.GetCurrentUser:input_type -> google.protobuf.Empty
-	4,  // 13: bytebase.v1.UserService.ListUsers:input_type -> bytebase.v1.ListUsersRequest
-	6,  // 14: bytebase.v1.UserService.CreateUser:input_type -> bytebase.v1.CreateUserRequest
-	7,  // 15: bytebase.v1.UserService.UpdateUser:input_type -> bytebase.v1.UpdateUserRequest
-	8,  // 16: bytebase.v1.UserService.DeleteUser:input_type -> bytebase.v1.DeleteUserRequest
-	9,  // 17: bytebase.v1.UserService.UndeleteUser:input_type -> bytebase.v1.UndeleteUserRequest
-	10, // 18: bytebase.v1.UserService.GetUser:output_type -> bytebase.v1.User
-	3,  // 19: bytebase.v1.UserService.BatchGetUsers:output_type -> bytebase.v1.BatchGetUsersResponse
-	10, // 20: bytebase.v1.UserService.GetCurrentUser:output_type -> bytebase.v1.User
-	5,  // 21: bytebase.v1.UserService.ListUsers:output_type -> bytebase.v1.ListUsersResponse
-	10, // 22: bytebase.v1.UserService.CreateUser:output_type -> bytebase.v1.User
-	10, // 23: bytebase.v1.UserService.UpdateUser:output_type -> bytebase.v1.User
-	15, // 24: bytebase.v1.UserService.DeleteUser:output_type -> google.protobuf.Empty
-	10, // 25: bytebase.v1.UserService.UndeleteUser:output_type -> bytebase.v1.User
-	18, // [18:26] is the sub-list for method output_type
-	10, // [10:18] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	14, // 7: bytebase.v1.User.temp_otp_secret_created_time:type_name -> google.protobuf.Timestamp
+	11, // 8: bytebase.v1.User.profile:type_name -> bytebase.v1.User.Profile
+	14, // 9: bytebase.v1.User.Profile.last_login_time:type_name -> google.protobuf.Timestamp
+	14, // 10: bytebase.v1.User.Profile.last_change_password_time:type_name -> google.protobuf.Timestamp
+	1,  // 11: bytebase.v1.UserService.GetUser:input_type -> bytebase.v1.GetUserRequest
+	2,  // 12: bytebase.v1.UserService.BatchGetUsers:input_type -> bytebase.v1.BatchGetUsersRequest
+	15, // 13: bytebase.v1.UserService.GetCurrentUser:input_type -> google.protobuf.Empty
+	4,  // 14: bytebase.v1.UserService.ListUsers:input_type -> bytebase.v1.ListUsersRequest
+	6,  // 15: bytebase.v1.UserService.CreateUser:input_type -> bytebase.v1.CreateUserRequest
+	7,  // 16: bytebase.v1.UserService.UpdateUser:input_type -> bytebase.v1.UpdateUserRequest
+	8,  // 17: bytebase.v1.UserService.DeleteUser:input_type -> bytebase.v1.DeleteUserRequest
+	9,  // 18: bytebase.v1.UserService.UndeleteUser:input_type -> bytebase.v1.UndeleteUserRequest
+	10, // 19: bytebase.v1.UserService.GetUser:output_type -> bytebase.v1.User
+	3,  // 20: bytebase.v1.UserService.BatchGetUsers:output_type -> bytebase.v1.BatchGetUsersResponse
+	10, // 21: bytebase.v1.UserService.GetCurrentUser:output_type -> bytebase.v1.User
+	5,  // 22: bytebase.v1.UserService.ListUsers:output_type -> bytebase.v1.ListUsersResponse
+	10, // 23: bytebase.v1.UserService.CreateUser:output_type -> bytebase.v1.User
+	10, // 24: bytebase.v1.UserService.UpdateUser:output_type -> bytebase.v1.User
+	15, // 25: bytebase.v1.UserService.DeleteUser:output_type -> google.protobuf.Empty
+	10, // 26: bytebase.v1.UserService.UndeleteUser:output_type -> bytebase.v1.User
+	19, // [19:27] is the sub-list for method output_type
+	11, // [11:19] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_v1_user_service_proto_init() }

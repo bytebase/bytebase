@@ -5236,6 +5236,7 @@ MFAConfig is the MFA configuration for a user.
 | temp_otp_secret | [string](#string) |  | The temp_otp_secret is the temporary secret key used to validate the OTP code and will replace the otp_secret in two-phase commits. |
 | recovery_codes | [string](#string) | repeated | The recovery_codes are the codes that can be used to recover the account. |
 | temp_recovery_codes | [string](#string) | repeated | The temp_recovery_codes are the temporary codes that will replace the recovery_codes in two-phase commits. |
+| temp_otp_secret_created_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The temp_otp_secret_created_time is the timestamp when temp_otp_secret was created. Used to enforce expiration. |
 
 
 

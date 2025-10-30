@@ -352,6 +352,13 @@ export declare type User = Message<"bytebase.v1.User"> & {
   tempRecoveryCodes: string[];
 
   /**
+   * Timestamp when temp_otp_secret was created. Used by frontend to show countdown timer.
+   *
+   * @generated from field: google.protobuf.Timestamp temp_otp_secret_created_time = 15;
+   */
+  tempOtpSecretCreatedTime?: Timestamp;
+
+  /**
    * Should be a valid E.164 compliant phone number.
    * Could be empty.
    *

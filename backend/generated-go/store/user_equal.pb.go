@@ -32,6 +32,9 @@ func (x *MFAConfig) Equal(y *MFAConfig) bool {
 			return false
 		}
 	}
+	if p, q := x.TempOtpSecretCreatedTime, y.TempOtpSecretCreatedTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
+		return false
+	}
 	return true
 }
 

@@ -30,6 +30,9 @@ message MFAConfig {
 
   // The temp_recovery_codes are the temporary codes that will replace the recovery_codes in two-phase commits.
   repeated string temp_recovery_codes = 4;
+
+  // The temp_otp_secret_created_time is the timestamp when temp_otp_secret was created. Used to enforce expiration.
+  google.protobuf.Timestamp temp_otp_secret_created_time = 5;
 }
 
 message UserProfile {

@@ -2513,7 +2513,10 @@
           "description": "Use an authenticator app from your phone to scan. If you are unable to scan, {action} instead.",
           "enter-the-text": "enter the text"
         },
-        "verify-code": "Verify the code from the app"
+        "verify-code": "Verify the code from the app",
+        "time-remaining": "Time remaining: {time}",
+        "expired-notice": "This setup session has expired. Please regenerate to continue.",
+        "regenerate": "Regenerate"
       },
       "download-recovery-codes": {
         "self": "Download your recovery codes",
