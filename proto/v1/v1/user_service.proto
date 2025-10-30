@@ -259,6 +259,9 @@ message User {
   // Temporary recovery codes used during MFA setup and regeneration.
   repeated string temp_recovery_codes = 11;
 
+  // Timestamp when temp_otp_secret was created. Used by frontend to show countdown timer.
+  google.protobuf.Timestamp temp_otp_secret_created_time = 15;
+
   // Should be a valid E.164 compliant phone number.
   // Could be empty.
   string phone = 12;

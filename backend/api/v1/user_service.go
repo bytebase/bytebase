@@ -6,6 +6,7 @@ import (
 	"net/mail"
 	"regexp"
 	"strings"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
@@ -13,6 +14,7 @@ import (
 	"github.com/pquerna/otp/totp"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -414,9 +416,16 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 				if user.MFAConfig.TempOtpSecret == "" || len(user.MFAConfig.TempRecoveryCodes) == 0 {
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("MFA is not setup yet"))
 				}
+				if isMFATempSecretExpired(user.MFAConfig) {
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("MFA setup has expired, please regenerate the temporary secret"))
+				}
+				// Promote temp secrets to permanent and clear temp fields to prevent reuse
 				patch.MFAConfig = &storepb.MFAConfig{
-					OtpSecret:     user.MFAConfig.TempOtpSecret,
-					RecoveryCodes: user.MFAConfig.TempRecoveryCodes,
+					OtpSecret:                user.MFAConfig.TempOtpSecret,
+					RecoveryCodes:            user.MFAConfig.TempRecoveryCodes,
+					TempOtpSecret:            "",
+					TempRecoveryCodes:        nil,
+					TempOtpSecretCreatedTime: nil,
 				}
 			} else {
 				setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
@@ -461,6 +470,9 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 	// This flag is mainly used for validating OTP code when user setup MFA.
 	// We only validate OTP code but not update user.
 	if request.Msg.OtpCode != nil {
+		if isMFATempSecretExpired(user.MFAConfig) {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("MFA setup has expired, please regenerate the temporary secret"))
+		}
 		isValid := validateWithCodeAndSecret(*request.Msg.OtpCode, user.MFAConfig.TempOtpSecret)
 		if !isValid {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid OTP code"))
@@ -478,8 +490,9 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate recovery codes, error: %v", err))
 		}
 		patch.MFAConfig = &storepb.MFAConfig{
-			TempOtpSecret:     tempSecret,
-			TempRecoveryCodes: tempRecoveryCodes,
+			TempOtpSecret:            tempSecret,
+			TempRecoveryCodes:        tempRecoveryCodes,
+			TempOtpSecretCreatedTime: timestamppb.Now(),
 		}
 		if user.MFAConfig != nil {
 			patch.MFAConfig.OtpSecret = user.MFAConfig.OtpSecret
@@ -685,6 +698,7 @@ func convertToUser(ctx context.Context, user *store.UserMessage) *v1pb.User {
 		if currentUser, ok := GetUserFromContext(ctx); ok && currentUser.ID == user.ID {
 			convertedUser.TempOtpSecret = user.MFAConfig.TempOtpSecret
 			convertedUser.TempRecoveryCodes = user.MFAConfig.TempRecoveryCodes
+			convertedUser.TempOtpSecretCreatedTime = user.MFAConfig.TempOtpSecretCreatedTime
 		}
 	}
 	return convertedUser
@@ -778,7 +792,19 @@ func extractDomain(input string) string {
 const (
 	// issuerName is the name of the issuer of the OTP token.
 	issuerName = "Bytebase"
+	// mfaTempSecretExpiration is the duration after which temporary MFA secrets expire.
+	// Industry standard is 2-5 minutes for temporary MFA verification tokens.
+	mfaTempSecretExpiration = 5 * time.Minute
 )
+
+// isMFATempSecretExpired checks if the temporary MFA secret has expired.
+func isMFATempSecretExpired(mfaConfig *storepb.MFAConfig) bool {
+	if mfaConfig == nil || mfaConfig.TempOtpSecretCreatedTime == nil {
+		return true
+	}
+	createdAt := mfaConfig.TempOtpSecretCreatedTime.AsTime()
+	return time.Since(createdAt) > mfaTempSecretExpiration
+}
 
 // generateRandSecret generates a random secret for the given account name.
 func generateRandSecret(accountName string) (string, error) {

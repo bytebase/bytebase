@@ -2513,7 +2513,10 @@
           "description": "Sử dụng ứng dụng xác thực từ điện thoại của bạn để quét. Nếu bạn không thể quét, {action} thay thế.",
           "enter-the-text": "nhập văn bản"
         },
-        "verify-code": "Xác minh mã từ ứng dụng"
+        "verify-code": "Xác minh mã từ ứng dụng",
+        "time-remaining": "Thời gian còn lại: {time}",
+        "expired-notice": "Phiên thiết lập này đã hết hạn. Vui lòng tạo lại để tiếp tục.",
+        "regenerate": "Tạo lại"
       },
       "download-recovery-codes": {
         "self": "Tải xuống mã khôi phục của bạn",

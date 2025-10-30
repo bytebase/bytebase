@@ -202,12 +202,14 @@ func (*Store) createPipeline(ctx context.Context, txn *sql.Tx, create *PipelineM
 	return pipeline, nil
 }
 
-// GetPipelineV2ByID gets the pipeline by ID.
-func (s *Store) GetPipelineV2ByID(ctx context.Context, id int) (*PipelineMessage, error) {
-	if v, ok := s.pipelineCache.Get(id); ok && s.enableCache {
-		return v, nil
+// GetPipelineV2 gets the pipeline.
+func (s *Store) GetPipelineV2(ctx context.Context, find *PipelineFind) (*PipelineMessage, error) {
+	if find.ID != nil {
+		if v, ok := s.pipelineCache.Get(*find.ID); ok && s.enableCache {
+			return v, nil
+		}
 	}
-	pipelines, err := s.ListPipelineV2(ctx, &PipelineFind{ID: &id})
+	pipelines, err := s.ListPipelineV2(ctx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -219,6 +221,11 @@ func (s *Store) GetPipelineV2ByID(ctx context.Context, id int) (*PipelineMessage
 	}
 	pipeline := pipelines[0]
 	return pipeline, nil
+}
+
+// GetPipelineV2ByID gets the pipeline by ID.
+func (s *Store) GetPipelineV2ByID(ctx context.Context, id int) (*PipelineMessage, error) {
+	return s.GetPipelineV2(ctx, &PipelineFind{ID: &id})
 }
 
 // ListPipelineV2 lists pipelines.

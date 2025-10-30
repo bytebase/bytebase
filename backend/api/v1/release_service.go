@@ -69,7 +69,7 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find project"))
 	}
 	if project == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %v not found", projectID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %s not found", projectID))
 	}
 
 	sanitizedFiles, err := validateAndSanitizeReleaseFiles(ctx, s.store, req.Msg.Release.Files, true)
@@ -137,16 +137,19 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request
 }
 
 func (s *ReleaseService) GetRelease(ctx context.Context, req *connect.Request[v1pb.GetReleaseRequest]) (*connect.Response[v1pb.Release], error) {
-	_, releaseUID, err := common.GetProjectReleaseUID(req.Msg.Name)
+	projectID, releaseUID, err := common.GetProjectReleaseUID(req.Msg.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get release uid"))
 	}
-	releaseMessage, err := s.store.GetRelease(ctx, releaseUID)
+	releaseMessage, err := s.store.GetReleaseV2(ctx, &store.FindReleaseMessage{
+		ProjectID: &projectID,
+		UID:       &releaseUID,
+	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get release"))
 	}
 	if releaseMessage == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("release %v not found", releaseUID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("release %d not found in project %s", releaseUID, projectID))
 	}
 	release, err := convertToRelease(ctx, s.store, releaseMessage)
 	if err != nil {
@@ -169,7 +172,7 @@ func (s *ReleaseService) ListReleases(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find project"))
 	}
 	if project == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %v not found", projectID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %s not found", projectID))
 	}
 
 	offset, err := parseLimitAndOffset(&pageSize{
@@ -227,7 +230,7 @@ func (s *ReleaseService) SearchReleases(ctx context.Context, req *connect.Reques
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find project"))
 	}
 	if project == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %v not found", projectID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %s not found", projectID))
 	}
 
 	offset, err := parseLimitAndOffset(&pageSize{
@@ -289,7 +292,11 @@ func (s *ReleaseService) UpdateRelease(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 
-	release, err := s.store.GetRelease(ctx, releaseUID)
+	// Use GetReleaseV2 with FindReleaseMessage for database-level filtering
+	release, err := s.store.GetReleaseV2(ctx, &store.FindReleaseMessage{
+		ProjectID: &projectID,
+		UID:       &releaseUID,
+	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get release"))
 	}
@@ -300,7 +307,7 @@ func (s *ReleaseService) UpdateRelease(ctx context.Context, req *connect.Request
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find project"))
 			}
 			if project == nil {
-				return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %v not found", projectID))
+				return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %s not found", projectID))
 			}
 			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionReleasesCreate, user, project.ResourceID)
 			if err != nil {
@@ -314,8 +321,9 @@ func (s *ReleaseService) UpdateRelease(ctx context.Context, req *connect.Request
 				Release: req.Msg.Release,
 			}))
 		}
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("release %v not found", releaseUID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("release %d not found in project %s", releaseUID, projectID))
 	}
+
 	if release.Deleted {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("release %d is deleted", releaseUID))
 	}
@@ -343,10 +351,21 @@ func (s *ReleaseService) UpdateRelease(ctx context.Context, req *connect.Request
 }
 
 func (s *ReleaseService) DeleteRelease(ctx context.Context, req *connect.Request[v1pb.DeleteReleaseRequest]) (*connect.Response[emptypb.Empty], error) {
-	_, releaseUID, err := common.GetProjectReleaseUID(req.Msg.Name)
+	projectID, releaseUID, err := common.GetProjectReleaseUID(req.Msg.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get release uid"))
 	}
+	release, err := s.store.GetReleaseV2(ctx, &store.FindReleaseMessage{
+		ProjectID: &projectID,
+		UID:       &releaseUID,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get release"))
+	}
+	if release == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("release %d not found in project %s", releaseUID, projectID))
+	}
+
 	if _, err := s.store.UpdateRelease(ctx, &store.UpdateReleaseMessage{
 		UID:     releaseUID,
 		Deleted: &deletePatch,
@@ -357,10 +376,22 @@ func (s *ReleaseService) DeleteRelease(ctx context.Context, req *connect.Request
 }
 
 func (s *ReleaseService) UndeleteRelease(ctx context.Context, req *connect.Request[v1pb.UndeleteReleaseRequest]) (*connect.Response[v1pb.Release], error) {
-	_, releaseUID, err := common.GetProjectReleaseUID(req.Msg.Name)
+	projectID, releaseUID, err := common.GetProjectReleaseUID(req.Msg.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get release uid"))
 	}
+	release, err := s.store.GetReleaseV2(ctx, &store.FindReleaseMessage{
+		ProjectID:   &projectID,
+		UID:         &releaseUID,
+		ShowDeleted: true,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get release"))
+	}
+	if release == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("release %d not found in project %s", releaseUID, projectID))
+	}
+
 	releaseMessage, err := s.store.UpdateRelease(ctx, &store.UpdateReleaseMessage{
 		UID:     releaseUID,
 		Deleted: &undeletePatch,
@@ -368,11 +399,11 @@ func (s *ReleaseService) UndeleteRelease(ctx context.Context, req *connect.Reque
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to undelete release"))
 	}
-	release, err := convertToRelease(ctx, s.store, releaseMessage)
+	releaseConverted, err := convertToRelease(ctx, s.store, releaseMessage)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert release"))
 	}
-	return connect.NewResponse(release), nil
+	return connect.NewResponse(releaseConverted), nil
 }
 
 func convertToReleases(ctx context.Context, s *store.Store, releases []*store.ReleaseMessage) ([]*v1pb.Release, error) {
@@ -407,7 +438,7 @@ func convertToRelease(ctx context.Context, s *store.Store, release *store.Releas
 		return nil, errors.Wrapf(err, "failed to find project")
 	}
 	if project == nil {
-		return nil, errors.Wrapf(err, "project %s not found", release.ProjectID)
+		return nil, errors.Errorf("project %s not found", release.ProjectID)
 	}
 	r.Name = common.FormatReleaseName(project.ResourceID, release.UID)
 
@@ -426,16 +457,16 @@ func convertToReleaseFiles(ctx context.Context, s *store.Store, files []*storepb
 	}
 	var v1Files []*v1pb.Release_File
 	for _, f := range files {
-		_, sheetUID, err := common.GetProjectResourceIDSheetUID(f.Sheet)
+		projectID, sheetUID, err := common.GetProjectResourceIDSheetUID(f.Sheet)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get sheetUID from %q", f.Sheet)
 		}
-		sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID})
+		sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID, ProjectID: &projectID})
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get sheet %q", f.Sheet)
 		}
 		if sheet == nil {
-			return nil, errors.Errorf("sheet %q not found", f.Sheet)
+			return nil, errors.Errorf("sheet %d not found in project %s", sheetUID, projectID)
 		}
 		v1Files = append(v1Files, &v1pb.Release_File{
 			Id:            f.Id,
@@ -468,19 +499,20 @@ func convertReleaseFiles(ctx context.Context, s *store.Store, files []*v1pb.Rele
 	}
 	var rFiles []*storepb.ReleasePayload_File
 	for _, f := range files {
-		_, sheetUID, err := common.GetProjectResourceIDSheetUID(f.Sheet)
+		projectID, sheetUID, err := common.GetProjectResourceIDSheetUID(f.Sheet)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get sheetUID from %q", f.Sheet)
 		}
 		sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{
-			UID:      &sheetUID,
-			LoadFull: false,
+			UID:       &sheetUID,
+			ProjectID: &projectID,
+			LoadFull:  false,
 		})
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get sheet %q", f.Sheet)
 		}
 		if sheet == nil {
-			return nil, errors.Errorf("sheet %q not found", f.Sheet)
+			return nil, errors.Errorf("sheet %d not found in project %s", sheetUID, projectID)
 		}
 
 		rFiles = append(rFiles, &storepb.ReleasePayload_File{
@@ -534,19 +566,20 @@ func validateAndSanitizeReleaseFiles(ctx context.Context, s *store.Store, files 
 
 		// If sheet is provided but statement is not, populate statement from sheet
 		case f.Sheet != "":
-			_, sheetUID, err := common.GetProjectResourceIDSheetUID(f.Sheet)
+			projectID, sheetUID, err := common.GetProjectResourceIDSheetUID(f.Sheet)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to get sheet UID from %q", f.Sheet)
 			}
 			sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{
-				UID:      &sheetUID,
-				LoadFull: true,
+				UID:       &sheetUID,
+				ProjectID: &projectID,
+				LoadFull:  true,
 			})
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to get sheet %q", f.Sheet)
 			}
 			if sheet == nil {
-				return nil, errors.Errorf("sheet %q not found", f.Sheet)
+				return nil, errors.Errorf("sheet %d not found in project %s", sheetUID, projectID)
 			}
 			f.Statement = []byte(sheet.Statement)
 			f.SheetSha256 = sheet.GetSha256Hex()

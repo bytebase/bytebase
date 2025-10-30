@@ -3326,8 +3326,14 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 				}
 			}
 
+			// Determine if this is a PROCEDURE or FUNCTION to use different folder
+			folderName := "functions"
+			if isDefinitionProcedure(function.Definition) {
+				folderName = "procedures"
+			}
+
 			files = append(files, schema.File{
-				Name:    fmt.Sprintf("schemas/%s/functions/%s.sql", schemaName, function.Name),
+				Name:    fmt.Sprintf("schemas/%s/%s/%s.sql", schemaName, folderName, function.Name),
 				Content: buf.String(),
 			})
 		}

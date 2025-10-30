@@ -1996,3 +1996,101 @@ $$`,
 	_, err = pgparser.ParsePostgreSQL(result)
 	require.NoError(t, err, "Generated SQL should be parseable by PostgreSQL parser")
 }
+
+func TestGetMultiFileDatabaseDefinition_FunctionAndProcedureSeparation(t *testing.T) {
+	// This test verifies that functions and procedures are separated into different folders
+	// in multi-file mode
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Functions: []*storepb.FunctionMetadata{
+					{
+						Name: "get_user_count",
+						Definition: `CREATE FUNCTION "public"."get_user_count"() RETURNS integer
+    LANGUAGE sql
+    AS $$
+    SELECT COUNT(*)::integer FROM users;
+$$`,
+					},
+					{
+						Name: "get_user_by_id",
+						Definition: `CREATE FUNCTION "public"."get_user_by_id"(user_id integer) RETURNS TABLE(id integer, name character varying)
+    LANGUAGE sql
+    AS $$
+    SELECT u.id, u.name FROM users u WHERE u.id = user_id;
+$$`,
+					},
+					{
+						Name: "update_user_name",
+						Definition: `CREATE PROCEDURE "public"."update_user_name"(IN user_id integer, IN new_name character varying)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    UPDATE users SET name = new_name WHERE id = user_id;
+END;
+$$`,
+					},
+					{
+						Name: "delete_old_users",
+						Definition: `CREATE PROCEDURE "public"."delete_old_users"(IN days_old integer)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    DELETE FROM users WHERE created_at < NOW() - INTERVAL '1 day' * days_old;
+END;
+$$`,
+					},
+				},
+			},
+		},
+	}
+
+	ctx := schema.GetDefinitionContext{
+		SDLFormat: true,
+	}
+
+	result, err := GetMultiFileDatabaseDefinition(ctx, metadata)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	// Build a map of files for easy lookup
+	fileMap := make(map[string]string)
+	for _, file := range result.Files {
+		fileMap[file.Name] = file.Content
+	}
+
+	// Verify functions are in functions folder
+	getUserCountFile, ok := fileMap["schemas/public/functions/get_user_count.sql"]
+	require.True(t, ok, "get_user_count function should be in functions folder")
+	assert.Contains(t, getUserCountFile, `CREATE FUNCTION "public"."get_user_count"()`)
+
+	getUserByIDFile, ok := fileMap["schemas/public/functions/get_user_by_id.sql"]
+	require.True(t, ok, "get_user_by_id function should be in functions folder")
+	assert.Contains(t, getUserByIDFile, `CREATE FUNCTION "public"."get_user_by_id"`)
+
+	// Verify procedures are in procedures folder (not functions folder)
+	updateUserNameFile, ok := fileMap["schemas/public/procedures/update_user_name.sql"]
+	require.True(t, ok, "update_user_name procedure should be in procedures folder")
+	assert.Contains(t, updateUserNameFile, `CREATE PROCEDURE "public"."update_user_name"`)
+
+	deleteOldUsersFile, ok := fileMap["schemas/public/procedures/delete_old_users.sql"]
+	require.True(t, ok, "delete_old_users procedure should be in procedures folder")
+	assert.Contains(t, deleteOldUsersFile, `CREATE PROCEDURE "public"."delete_old_users"`)
+
+	// Verify procedures are NOT in functions folder
+	_, ok = fileMap["schemas/public/functions/update_user_name.sql"]
+	require.False(t, ok, "update_user_name should NOT be in functions folder")
+
+	_, ok = fileMap["schemas/public/functions/delete_old_users.sql"]
+	require.False(t, ok, "delete_old_users should NOT be in functions folder")
+
+	// Total files should be: 2 functions + 2 procedures = 4 files
+	require.Equal(t, 4, len(result.Files), "Should have exactly 4 files (2 functions + 2 procedures)")
+
+	// Validate that each file's SQL can be parsed
+	for fileName, content := range fileMap {
+		_, err := pgparser.ParsePostgreSQL(content)
+		require.NoError(t, err, "SQL in file %s should be parseable by PostgreSQL parser", fileName)
+	}
+}
