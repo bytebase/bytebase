@@ -98,6 +98,7 @@ import { NButton, NTooltip, NTabs, NTab, NScrollbar } from "naive-ui";
 import { nextTick, ref, reactive, watch, toRef, onMounted } from "vue";
 import type { Component } from "vue";
 import { useI18n } from "vue-i18n";
+import { HighlightLabelText } from "@/components/v2";
 import { useIssueV1Store } from "@/store";
 import { type ComposedIssue } from "@/types";
 import { DEBOUNCE_SEARCH_DELAY } from "@/types";
