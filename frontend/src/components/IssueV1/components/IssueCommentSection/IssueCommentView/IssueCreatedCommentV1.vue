@@ -18,9 +18,7 @@
         </div>
 
         <div class="ml-3 min-w-0 flex-1">
-          <div
-            class="rounded-lg border border-gray-200 bg-white overflow-hidden"
-          >
+          <div class="rounded-lg border border-gray-200 bg-white">
             <div class="px-3 py-2 bg-gray-50">
               <div class="flex items-center justify-between">
                 <div
@@ -60,7 +58,6 @@
                 :mode="state.isEditing ? 'editor' : 'preview'"
                 :content="state.isEditing ? state.editContent : description"
                 :project="project"
-                :issue-list="issueList"
                 @change="(val: string) => (state.editContent = val)"
                 @submit="saveEdit"
                 @cancel="cancelEdit"
@@ -93,7 +90,7 @@
 import { create } from "@bufbuild/protobuf";
 import { PlusIcon, PencilIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
-import { computed, reactive, ref } from "vue";
+import { computed, reactive } from "vue";
 import MarkdownEditor from "@/components/MarkdownEditor";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import HumanizeTs from "@/components/misc/HumanizeTs.vue";
@@ -122,8 +119,6 @@ const emit = defineEmits<{
 const currentUser = useCurrentUserV1();
 const userStore = useUserStore();
 const { project } = useCurrentProjectV1();
-
-const issueList = ref([]);
 
 const state = reactive({
   isEditing: false,

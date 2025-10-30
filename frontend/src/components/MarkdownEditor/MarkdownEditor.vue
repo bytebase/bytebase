@@ -58,29 +58,35 @@
         ref="issuePanel"
         class="border rounded absolute hidden bg-white shadow-sm z-10"
       >
-        <ul class="text-sm rounded divide-y divide-solid">
-          <li
-            v-for="issue in filterIssueList"
-            :key="issue.name"
-            class="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-x-2"
-            @click="onIssueSelect(issue)"
-          >
-            <IssueStatusIcon
-              :issue-status="issue.status"
-              :task-status="issueTaskStatus(issue)"
-            />
-            <span class="opacity-60">#{{ extractIssueUID(issue.name) }}</span>
-            <div class="whitespace-nowrap">
-              {{ issue.title }}
-            </div>
-          </li>
-        </ul>
+        <NScrollbar class="max-h-40">
+          <ul class="text-sm rounded divide-y divide-solid">
+            <li
+              v-for="issue in filterIssueList"
+              :key="issue.name"
+              class="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-x-2"
+              @click="onIssueSelect(issue)"
+            >
+              <IssueStatusIcon
+                :issue-status="issue.status"
+                :task-status="issueTaskStatus(issue)"
+              />
+              <span class="opacity-60">#{{ extractIssueUID(issue.name) }}</span>
+              <div class="whitespace-nowrap">
+                <HighlightLabelText
+                  :text="issue.title"
+                  :keyword="issueSearchText"
+                />
+              </div>
+            </li>
+          </ul>
+        </NScrollbar>
       </div>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
+import { useDebounceFn } from "@vueuse/core";
 import {
   CodeIcon,
   LinkIcon,
@@ -88,11 +94,13 @@ import {
   BoldIcon,
   HeadingIcon,
 } from "lucide-vue-next";
-import { NButton, NTooltip, NTabs, NTab } from "naive-ui";
+import { NButton, NTooltip, NTabs, NTab, NScrollbar } from "naive-ui";
 import { nextTick, ref, reactive, watch, toRef, onMounted } from "vue";
 import type { Component } from "vue";
 import { useI18n } from "vue-i18n";
+import { useIssueV1Store } from "@/store";
 import { type ComposedIssue } from "@/types";
+import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import {
@@ -121,8 +129,7 @@ type EditorMode = "editor" | "preview";
 const props = defineProps<{
   content: string;
   mode: EditorMode;
-  project?: Project;
-  issueList: ComposedIssue[];
+  project: Project;
   placeholder?: string;
   autofocus?: boolean;
 }>();
@@ -138,7 +145,10 @@ const state = reactive<LocalState>({
   content: props.content,
   activeTab: props.mode === "preview" ? "preview" : "write",
 });
+
 const { t } = useI18n();
+const issueV1Store = useIssueV1Store();
+const issueSearchText = ref<string>("");
 
 watch(
   () => props.mode,
@@ -457,7 +467,7 @@ const issueTaskStatus = (issue: ComposedIssue) => {
   return activeTaskInRollout(issue.rolloutEntity)?.status;
 };
 
-const adjustIssuePanelWithPosition = () => {
+const adjustIssuePanelWithPosition = useDebounceFn(() => {
   if (!contentTextArea.value || !issuePanel.value) {
     return;
   }
@@ -473,21 +483,37 @@ const adjustIssuePanelWithPosition = () => {
   const text = `${state.content.slice(0, start)}${
     start === state.content.length ? " " : state.content[start]
   }`;
-  const matches = text.match(/#\d{0,}\s$/);
+  const matches = text.match(/#\S{0,}\s$/);
   if (!matches) {
     return;
   }
 
-  const id = matches[0].slice(1).trimEnd();
-  filterIssueList.value = props.issueList
-    .filter((issue) => extractIssueUID(issue.name).startsWith(id))
-    .slice(0, 5);
+  const query = matches[0].slice(1).trimEnd();
+  const isQuery = Number.isNaN(parseInt(query));
+  issueSearchText.value = isQuery ? query : "";
+
+  issueV1Store
+    .listIssues({
+      find: {
+        project: props.project.name,
+        query: isQuery ? query : "",
+      },
+    })
+    .then((resp) => {
+      if (!isQuery && query) {
+        filterIssueList.value = resp.issues.filter((issue) =>
+          extractIssueUID(issue.name).startsWith(query)
+        );
+      } else {
+        filterIssueList.value = resp.issues;
+      }
+    });
 
   const position = getIssuePanelPosition(contentTextArea.value);
   issuePanel.value.style.display = "block";
   issuePanel.value.style.left = `${position.x}px`;
   issuePanel.value.style.top = `${position.y + 25}px`;
-};
+}, DEBOUNCE_SEARCH_DELAY);
 
 const getIssuePanelPosition = (textArea: HTMLTextAreaElement) => {
   const start = textArea.selectionStart;
