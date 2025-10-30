@@ -23,7 +23,6 @@
           class="pointer-events-none"
           :content="state.description"
           :project="project"
-          :issue-list="[]"
         />
       </div>
     </template>
@@ -63,7 +62,6 @@
         :autofocus="state.shouldAutoFocus"
         :project="project"
         :placeholder="$t('plan.description.placeholder')"
-        :issue-list="[]"
         @change="onUpdateValue"
       />
     </div>
