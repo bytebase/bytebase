@@ -38,7 +38,6 @@
                 : 'preview'
             "
             :content="item.comment.comment"
-            :issue-list="issueList"
             :project="project"
             @change="(val: string) => (state.editComment = val)"
             @submit="doUpdateComment"
@@ -76,7 +75,6 @@
           <MarkdownEditor
             mode="editor"
             :content="state.newComment"
-            :issue-list="issueList"
             :project="project"
             @change="(val: string) => (state.newComment = val)"
             @submit="doCreateComment(state.newComment)"
@@ -100,19 +98,17 @@
 import { create } from "@bufbuild/protobuf";
 import { PencilIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
-import { computed, onMounted, reactive, ref, watch, watchEffect } from "vue";
+import { computed, onMounted, reactive, watch, watchEffect } from "vue";
 import { useRoute } from "vue-router";
 import MarkdownEditor from "@/components/MarkdownEditor";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import {
   useCurrentUserV1,
   useIssueCommentStore,
-  useIssueV1Store,
   useCurrentProjectV1,
   extractUserId,
 } from "@/store";
 import type { ComposedIssue } from "@/types";
-import { isValidProjectName } from "@/types";
 import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import { ListIssueCommentsRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
@@ -136,7 +132,6 @@ const route = useRoute();
 
 const { project } = useCurrentProjectV1();
 const { issue } = useIssueContext();
-const issueList = ref<ComposedIssue[]>([]);
 
 const state = reactive<LocalState>({
   editCommentMode: false,
@@ -145,22 +140,7 @@ const state = reactive<LocalState>({
 });
 
 const currentUser = useCurrentUserV1();
-const issueV1Store = useIssueV1Store();
 const issueCommentStore = useIssueCommentStore();
-
-const prepareIssueListForMarkdownEditor = async () => {
-  const project = issue.value.project;
-  issueList.value = [];
-  if (!isValidProjectName(project)) return;
-
-  const list = await issueV1Store.listIssues({
-    find: {
-      project,
-      query: "",
-    },
-  });
-  issueList.value = list.issues;
-};
 
 const prepareIssueComments = async () => {
   await issueCommentStore.listIssueComments(
@@ -269,12 +249,4 @@ onMounted(() => {
     }
   );
 });
-
-watch(
-  () => issue.value.project,
-  () => {
-    prepareIssueListForMarkdownEditor();
-  },
-  { immediate: true }
-);
 </script>
