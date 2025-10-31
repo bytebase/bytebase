@@ -4,7 +4,7 @@
   >
     <BytebaseLogo
       v-if="showLogo"
-      class="px-2 shrink-0 m-auto"
+      class="p-2 shrink-0 m-auto"
       :redirect="logoRedirect"
     />
     <slot name="prefix" />

@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex-shrink-0 max-w-44 min-h-[4rem] flex items-center overflow-hidden"
+    class="flex-shrink-0 max-w-44 flex items-center overflow-hidden"
     @click="recordRedirect"
   >
     <component
