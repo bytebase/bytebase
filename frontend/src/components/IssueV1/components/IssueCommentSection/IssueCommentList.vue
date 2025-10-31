@@ -39,6 +39,7 @@
             "
             :content="item.comment.comment"
             :project="project"
+            :maxlength="65536"
             @change="(val: string) => (state.editComment = val)"
             @submit="doUpdateComment"
             @cancel="cancelEditComment"
@@ -76,6 +77,7 @@
             mode="editor"
             :content="state.newComment"
             :project="project"
+            :maxlength="65536"
             @change="(val: string) => (state.newComment = val)"
             @submit="doCreateComment(state.newComment)"
           />

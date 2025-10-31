@@ -41,6 +41,7 @@
         :autosize="{ minRows: 3, maxRows: 10 }"
         :disabled="state.isUpdating"
         :loading="state.isUpdating"
+        :maxlength="10000"
         style="
           width: 100%;
           --n-placeholder-color: rgb(var(--color-control-placeholder));

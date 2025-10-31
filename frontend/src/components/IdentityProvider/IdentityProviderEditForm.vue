@@ -39,6 +39,7 @@
               size="large"
               class="w-full text-base"
               :placeholder="$t('settings.sso.form.name-description')"
+              :maxlength="200"
             />
             <ResourceIdField
               resource-type="idp"

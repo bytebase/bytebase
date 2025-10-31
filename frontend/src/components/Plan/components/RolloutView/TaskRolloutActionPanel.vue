@@ -242,6 +242,7 @@
               minRows: 3,
               maxRows: 10,
             }"
+            :maxlength="1000"
           />
         </div>
       </div>

@@ -33,6 +33,7 @@
               v-model:value="state.user.title"
               :input-props="{ type: 'text', autocomplete: 'off' }"
               placeholder="Foo"
+              :maxlength="200"
             />
           </div>
 

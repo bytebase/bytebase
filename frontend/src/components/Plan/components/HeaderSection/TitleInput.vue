@@ -5,6 +5,7 @@
       :style="style"
       :loading="state.isUpdating"
       :disabled="!allowEdit || state.isUpdating"
+      :maxlength="200"
       size="medium"
       required
       class="bb-plan-title-input"
