@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package bytebase.v1;
 
+import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
@@ -251,9 +252,9 @@ message Plan {
   string rollout = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The title of the plan.
-  string title = 4;
+  string title = 4 [(buf.validate.field).string.max_len = 200];
   // The description of the plan.
-  string description = 5;
+  string description = 5 [(buf.validate.field).string.max_len = 10000];
 
   // The deployment specs for the plan.
   repeated Spec specs = 14;

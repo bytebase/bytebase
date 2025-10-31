@@ -7,6 +7,7 @@
 package v1
 
 import (
+	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -3670,23 +3671,23 @@ var File_v1_rollout_service_proto protoreflect.FileDescriptor
 
 const file_v1_rollout_service_proto_rawDesc = "" +
 	"\n" +
-	"\x18v1/rollout_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x15v1/plan_service.proto\"\xa5\x01\n" +
+	"\x18v1/rollout_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x15v1/plan_service.proto\"\xaf\x01\n" +
 	"\x14BatchRunTasksRequest\x12\x16\n" +
 	"\x06parent\x18\x01 \x01(\tR\x06parent\x12\x14\n" +
-	"\x05tasks\x18\x02 \x03(\tR\x05tasks\x12\x16\n" +
-	"\x06reason\x18\x03 \x01(\tR\x06reason\x12:\n" +
+	"\x05tasks\x18\x02 \x03(\tR\x05tasks\x12 \n" +
+	"\x06reason\x18\x03 \x01(\tB\b\xbaH\x05r\x03\x18\xe8\aR\x06reason\x12:\n" +
 	"\brun_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampH\x00R\arunTime\x88\x01\x01B\v\n" +
 	"\t_run_time\"\x17\n" +
-	"\x15BatchRunTasksResponse\"]\n" +
+	"\x15BatchRunTasksResponse\"g\n" +
 	"\x15BatchSkipTasksRequest\x12\x16\n" +
 	"\x06parent\x18\x01 \x01(\tR\x06parent\x12\x14\n" +
-	"\x05tasks\x18\x02 \x03(\tR\x05tasks\x12\x16\n" +
-	"\x06reason\x18\x03 \x01(\tR\x06reason\"\x18\n" +
-	"\x16BatchSkipTasksResponse\"i\n" +
+	"\x05tasks\x18\x02 \x03(\tR\x05tasks\x12 \n" +
+	"\x06reason\x18\x03 \x01(\tB\b\xbaH\x05r\x03\x18\xe8\aR\x06reason\"\x18\n" +
+	"\x16BatchSkipTasksResponse\"s\n" +
 	"\x1aBatchCancelTaskRunsRequest\x12\x16\n" +
 	"\x06parent\x18\x01 \x01(\tR\x06parent\x12\x1b\n" +
-	"\ttask_runs\x18\x02 \x03(\tR\btaskRuns\x12\x16\n" +
-	"\x06reason\x18\x03 \x01(\tR\x06reason\"\x1d\n" +
+	"\ttask_runs\x18\x02 \x03(\tR\btaskRuns\x12 \n" +
+	"\x06reason\x18\x03 \x01(\tB\b\xbaH\x05r\x03\x18\xe8\aR\x06reason\"\x1d\n" +
 	"\x1bBatchCancelTaskRunsResponse\"E\n" +
 	"\x11GetRolloutRequest\x120\n" +
 	"\x04name\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +

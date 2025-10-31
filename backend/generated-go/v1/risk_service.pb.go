@@ -7,6 +7,7 @@
 package v1
 
 import (
+	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	expr "google.golang.org/genproto/googleapis/type/expr"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -517,7 +518,7 @@ var File_v1_risk_service_proto protoreflect.FileDescriptor
 
 const file_v1_risk_service_proto_rawDesc = "" +
 	"\n" +
-	"\x15v1/risk_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x16google/type/expr.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\"\x12\n" +
+	"\x15v1/risk_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x16google/type/expr.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\"\x12\n" +
 	"\x10ListRisksRequest\"<\n" +
 	"\x11ListRisksResponse\x12'\n" +
 	"\x05risks\x18\x01 \x03(\v2\x11.bytebase.v1.RiskR\x05risks\"?\n" +
@@ -533,11 +534,11 @@ const file_v1_risk_service_proto_rawDesc = "" +
 	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"B\n" +
 	"\x11DeleteRiskRequest\x12-\n" +
 	"\x04name\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
-	"\x11bytebase.com/RiskR\x04name\"\xf1\x02\n" +
+	"\x11bytebase.com/RiskR\x04name\"\xfb\x02\n" +
 	"\x04Risk\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x120\n" +
-	"\x06source\x18\x03 \x01(\x0e2\x18.bytebase.v1.Risk.SourceR\x06source\x12\x14\n" +
-	"\x05title\x18\x04 \x01(\tR\x05title\x12,\n" +
+	"\x06source\x18\x03 \x01(\x0e2\x18.bytebase.v1.Risk.SourceR\x06source\x12\x1e\n" +
+	"\x05title\x18\x04 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12,\n" +
 	"\x05level\x18\x05 \x01(\x0e2\x16.bytebase.v1.RiskLevelR\x05level\x12\x16\n" +
 	"\x06active\x18\a \x01(\bR\x06active\x12/\n" +
 	"\tcondition\x18\b \x01(\v2\x11.google.type.ExprR\tcondition\"j\n" +

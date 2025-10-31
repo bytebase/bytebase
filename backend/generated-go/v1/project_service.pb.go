@@ -7,6 +7,7 @@
 package v1
 
 import (
+	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -1704,7 +1705,7 @@ var File_v1_project_service_proto protoreflect.FileDescriptor
 
 const file_v1_project_service_proto_rawDesc = "" +
 	"\n" +
-	"\x18v1/project_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x13v1/iam_policy.proto\"E\n" +
+	"\x18v1/project_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x13v1/iam_policy.proto\"E\n" +
 	"\x11GetProjectRequest\x120\n" +
 	"\x04name\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x04name\"\x8c\x01\n" +
@@ -1758,11 +1759,11 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x05Label\x12\x14\n" +
 	"\x05value\x18\x01 \x01(\tR\x05value\x12\x14\n" +
 	"\x05color\x18\x02 \x01(\tR\x05color\x12\x14\n" +
-	"\x05group\x18\x03 \x01(\tR\x05group\"\xfb\b\n" +
+	"\x05group\x18\x03 \x01(\tR\x05group\"\x85\t\n" +
 	"\aProject\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12(\n" +
-	"\x05state\x18\x03 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x14\n" +
-	"\x05title\x18\x04 \x01(\tR\x05title\x120\n" +
+	"\x05state\x18\x03 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x1e\n" +
+	"\x05title\x18\x04 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x120\n" +
 	"\bwebhooks\x18\v \x03(\v2\x14.bytebase.v1.WebhookR\bwebhooks\x12A\n" +
 	"\x1ddata_classification_config_id\x18\f \x01(\tR\x1adataClassificationConfigId\x125\n" +
 	"\fissue_labels\x18\r \x03(\v2\x12.bytebase.v1.LabelR\vissueLabels\x12,\n" +

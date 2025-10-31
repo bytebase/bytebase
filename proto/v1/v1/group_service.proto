@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package bytebase.v1;
 
+import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
@@ -218,10 +219,10 @@ message Group {
   string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The display title of the group.
-  string title = 2;
+  string title = 2 [(buf.validate.field).string.max_len = 200];
 
   // The description of the group.
-  string description = 3;
+  string description = 3 [(buf.validate.field).string.max_len = 1000];
 
   // The members of the group.
   repeated GroupMember members = 5;
