@@ -15,12 +15,13 @@
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
 import { NButton } from "naive-ui";
-import { parse } from "qs";
 import { onMounted, reactive } from "vue";
 import { useRoute } from "vue-router";
 import { AUTH_SIGNIN_MODULE } from "@/router/auth";
 import { useAuthStore } from "@/store";
 import { LoginRequestSchema } from "@/types/proto-es/v1/auth_service_pb";
+import { IdentityProviderType } from "@/types/proto-es/v1/idp_service_pb";
+import { retrieveOAuthState, clearOAuthState } from "@/utils/sso";
 import type { OAuthState, OAuthWindowEventPayload } from "../types";
 
 interface LocalState {
@@ -44,23 +45,54 @@ const state = reactive<LocalState>({
 });
 
 onMounted(() => {
-  const queryState = parse((route.query.state as string) || "");
+  // State parameter is now an opaque token (RFC 6749 compliant)
+  const stateToken = route.query.state as string;
 
-  if (queryState.event) {
-    state.oAuthState = {
-      event: queryState.event as string,
-      popup: queryState.popup === "true" ? true : false,
-      redirect: (queryState.redirect as string) || "",
-    };
-    state.hasError = false;
-    state.message = "Successfully authorized. Redirecting back to Bytebase...";
-    state.payload.code = (route.query.code as string) || "";
-  } else {
+  // Validate state token exists
+  if (
+    !stateToken ||
+    typeof stateToken !== "string" ||
+    stateToken.length === 0
+  ) {
     state.hasError = true;
     state.message =
-      "Failed to authorize. Invalid state passed to the oauth callback.";
+      "Authentication failed: Invalid callback state. Please try again.";
     state.oAuthState = undefined;
+    triggerAuthCallback();
+    return;
   }
+
+  // Retrieve and validate stored state from localStorage using opaque token
+  const storedState = retrieveOAuthState(stateToken);
+
+  if (!storedState) {
+    state.hasError = true;
+    state.message =
+      "Authentication failed: Session expired or invalid. Please try again.";
+    state.oAuthState = undefined;
+    triggerAuthCallback();
+    return;
+  }
+
+  // Validate token matches (constant-time comparison via retrieval)
+  if (storedState.token !== stateToken) {
+    state.hasError = true;
+    state.message =
+      "Authentication failed: Security validation failed. Please try again.";
+    state.oAuthState = undefined;
+    clearOAuthState(stateToken);
+    triggerAuthCallback();
+    return;
+  }
+
+  // State validation successful
+  state.oAuthState = storedState;
+  state.hasError = false;
+  state.message = "Successfully authorized. Redirecting back to Bytebase...";
+  state.payload.code = (route.query.code as string) || "";
+
+  // Clear state from localStorage (single-use token)
+  clearOAuthState(storedState.token);
 
   triggerAuthCallback();
 });
@@ -86,16 +118,27 @@ const triggerAuthCallback = async () => {
       );
       window.close();
     } else {
+      // Determine context type based on the stored IdP type
+      // OIDC providers use oidcContext, OAuth2 providers use oauth2Context
+      const isOidc = oAuthState.idpType === IdentityProviderType.OIDC;
+
       await authStore.login(
         create(LoginRequestSchema, {
           idpName: eventName.split(".").pop()!,
           idpContext: {
-            context: {
-              case: "oauth2Context",
-              value: {
-                code: state.payload.code,
-              },
-            },
+            context: isOidc
+              ? {
+                  case: "oidcContext",
+                  value: {
+                    code: state.payload.code,
+                  },
+                }
+              : {
+                  case: "oauth2Context",
+                  value: {
+                    code: state.payload.code,
+                  },
+                },
           },
           web: true,
         }),
