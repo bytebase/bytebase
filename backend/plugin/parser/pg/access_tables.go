@@ -3,21 +3,71 @@ package pg
 import (
 	"context"
 
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/parser/postgresql"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
+// ExtractAccessTablesOption configures access table extraction behavior.
+type ExtractAccessTablesOption struct {
+	// DefaultDatabase is the default database name to use when table reference doesn't specify one.
+	DefaultDatabase string
+	// DefaultSchema is the default schema name to use when table reference doesn't specify one.
+	DefaultSchema string
+	// SkipMetadataValidation skips metadata lookup and validation.
+	// When true, returns all table references found in SQL without checking if they exist.
+	SkipMetadataValidation bool
+	// GetDatabaseMetadata is the function to get database metadata (optional, only used when SkipMetadataValidation is false).
+	GetDatabaseMetadata base.GetDatabaseMetadataFunc
+	// Ctx is the context for metadata lookup (optional, only used when SkipMetadataValidation is false).
+	Ctx context.Context
+	// InstanceID is the instance ID for metadata lookup (optional, only used when SkipMetadataValidation is false).
+	InstanceID string
+}
+
+// ExtractAccessTables extracts all table/view references from a SQL statement.
+// This is a lightweight version that doesn't perform full query span analysis.
+func ExtractAccessTables(statement string, option ExtractAccessTablesOption) ([]base.ColumnResource, error) {
+	parseResult, err := ParsePostgreSQL(statement)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse PostgreSQL statement")
+	}
+
+	searchPath := []string{option.DefaultSchema}
+	if option.DefaultSchema == "" {
+		searchPath = []string{"public"}
+	}
+
+	extractor := &accessTableExtractor{
+		defaultDatabase:        option.DefaultDatabase,
+		searchPath:             searchPath,
+		getDatabaseMetadata:    option.GetDatabaseMetadata,
+		ctx:                    option.Ctx,
+		instanceID:             option.InstanceID,
+		skipMetadataValidation: option.SkipMetadataValidation,
+	}
+
+	antlr.ParseTreeWalkerDefault.Walk(extractor, parseResult.Tree)
+
+	if extractor.err != nil {
+		return nil, errors.Wrapf(extractor.err, "failed to extract access tables")
+	}
+
+	return extractor.accessTables, nil
+}
+
 type accessTableExtractor struct {
 	*postgresql.BasePostgreSQLParserListener
-	err                 error
-	defaultDatabase     string
-	searchPath          []string
-	accessTables        []base.ColumnResource
-	getDatabaseMetadata base.GetDatabaseMetadataFunc
-	ctx                 context.Context
-	instanceID          string
+	err                    error
+	defaultDatabase        string
+	searchPath             []string
+	accessTables           []base.ColumnResource
+	getDatabaseMetadata    base.GetDatabaseMetadataFunc
+	ctx                    context.Context
+	instanceID             string
+	skipMetadataValidation bool
 }
 
 func (a *accessTableExtractor) EnterQualified_name(qn *postgresql.Qualified_nameContext) {
@@ -57,6 +107,17 @@ func (a *accessTableExtractor) EnterQualified_name(qn *postgresql.Qualified_name
 		return
 	}
 
+	if a.skipMetadataValidation {
+		// If schema is not specified, use the first schema in search path as default
+		if resource.Schema == "" && !isSystemResource(resource) {
+			if len(a.searchPath) > 0 {
+				resource.Schema = a.searchPath[0]
+			}
+		}
+		a.accessTables = append(a.accessTables, resource)
+		return
+	}
+
 	if !isSystemResource(resource) {
 		searchPath := a.searchPath
 		if resource.Schema != "" {
@@ -66,6 +127,7 @@ func (a *accessTableExtractor) EnterQualified_name(qn *postgresql.Qualified_name
 		_, databaseMetadata, err := a.getDatabaseMetadata(a.ctx, a.instanceID, a.defaultDatabase)
 		if err != nil {
 			a.err = errors.Wrapf(err, "failed to get database metadata for database: %s", a.defaultDatabase)
+			return
 		}
 		// Access pseudo table or table/view we do not sync, return directly.
 		if databaseMetadata == nil {
