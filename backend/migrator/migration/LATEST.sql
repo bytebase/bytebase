@@ -357,6 +357,16 @@ CREATE INDEX idx_audit_log_payload_resource ON audit_log((payload->>'resource'))
 
 CREATE INDEX idx_audit_log_payload_user ON audit_log((payload->>'user'));
 
+-- UNIQUE constraint on bytebase_id + sequence_number for gap-free guarantees
+CREATE UNIQUE INDEX idx_audit_log_unique_bytebase_id_seq ON audit_log (
+    (payload->>'bytebaseId'),
+    (payload->>'sequenceNumber')
+) WHERE payload->>'bytebaseId' IS NOT NULL;
+
+-- Index on bytebase_id alone for faster lookups
+CREATE INDEX idx_audit_log_bytebase_id ON audit_log((payload->>'bytebaseId'))
+WHERE payload->>'bytebaseId' IS NOT NULL;
+
 ALTER SEQUENCE audit_log_id_seq RESTART WITH 101;
 
 CREATE TABLE issue_comment (
