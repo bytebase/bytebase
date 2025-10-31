@@ -50,6 +50,12 @@ func (x *AuditLog) Equal(y *AuditLog) bool {
 	if !x.RequestMetadata.Equal(y.RequestMetadata) {
 		return false
 	}
+	if x.BytebaseId != y.BytebaseId {
+		return false
+	}
+	if x.SequenceNumber != y.SequenceNumber {
+		return false
+	}
 	return true
 }
 

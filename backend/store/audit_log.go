@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 	"time"
@@ -233,4 +234,66 @@ func GetSearchAuditLogsFilter(ctx context.Context, s *Store, filter string) (*qb
 		return nil, err
 	}
 	return qb.Q().Space("(?)", q), nil
+}
+
+// GetMaxAuditSequence loads the maximum sequence number for the given Bytebase deployment
+// Returns 0 if no audit logs exist for this Bytebase deployment
+//
+// # Used during server startup to continue sequences after restart
+//
+// TODO(PR#2): When adding UNIQUE constraint, this will work with service layer pattern
+func (s *Store) GetMaxAuditSequence(ctx context.Context, bytebaseID string) (int64, error) {
+	var maxSeq sql.NullInt64
+
+	// Query JSONB payload (protojson produces camelCase keys)
+	q := qb.Q().Space(`
+		SELECT MAX((payload->>'sequenceNumber')::BIGINT)
+		FROM audit_log
+		WHERE payload->>'bytebaseId' = ?
+	`, bytebaseID)
+
+	sql, args, err := q.ToSQL()
+	if err != nil {
+		return 0, errors.Wrap(err, "failed to build sql")
+	}
+
+	if err := s.GetDB().QueryRowContext(ctx, sql, args...).Scan(&maxSeq); err != nil {
+		return 0, errors.Wrapf(err, "failed to query max sequence for Bytebase deployment %s", bytebaseID)
+	}
+
+	if !maxSeq.Valid {
+		// No rows for this bytebase_id yet - start at 0
+		// Note: Legacy logs (created before this feature) have NULL bytebase_id,
+		// so they won't match the WHERE clause and won't affect this result.
+		return 0, nil
+	}
+
+	return maxSeq.Int64, nil
+}
+
+// CheckBytebaseIDExists checks if any audit logs exist with the given bytebase_id
+// Used for collision detection during Bytebase ID generation
+//
+// TODO(PR#2): Return ErrDuplicateID when implementing service layer with UNIQUE constraint
+func (s *Store) CheckBytebaseIDExists(ctx context.Context, bytebaseID string) (bool, error) {
+	var exists bool
+
+	q := qb.Q().Space(`
+		SELECT EXISTS (
+			SELECT 1
+			FROM audit_log
+			WHERE payload->>'bytebaseId' = ?
+		)
+	`, bytebaseID)
+
+	sql, args, err := q.ToSQL()
+	if err != nil {
+		return false, errors.Wrap(err, "failed to build sql")
+	}
+
+	if err := s.GetDB().QueryRowContext(ctx, sql, args...).Scan(&exists); err != nil {
+		return false, errors.Wrapf(err, "failed to check bytebase_id existence")
+	}
+
+	return exists, nil
 }
