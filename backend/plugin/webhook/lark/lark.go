@@ -19,6 +19,19 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/webhook"
 )
 
+// getLarkConfig extracts the Lark configuration from the AppIMSetting.
+func getLarkConfig(setting *storepb.AppIMSetting) *storepb.AppIMSetting_Lark {
+	if setting == nil {
+		return nil
+	}
+	for _, s := range setting.Settings {
+		if s.Type == storepb.ProjectWebhook_LARK {
+			return s.GetLark()
+		}
+	}
+	return nil
+}
+
 // WebhookResponse is the API message for Lark webhook response.
 type WebhookResponse struct {
 	Code    int    `json:"code"`
@@ -113,7 +126,7 @@ func (*larkReceiver) Post(context webhook.Context) error {
 }
 
 func postDirectMessage(webhookCtx webhook.Context) bool {
-	lark := webhookCtx.IMSetting.GetLark()
+	lark := getLarkConfig(webhookCtx.IMSetting)
 	if lark == nil {
 		return false
 	}

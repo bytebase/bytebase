@@ -8443,6 +8443,46 @@ components:
         AppIMSetting:
             type: object
             properties:
+                settings:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/AppIMSetting_IMSetting'
+        AppIMSetting_DingTalk:
+            type: object
+            properties:
+                clientId:
+                    writeOnly: true
+                    type: string
+                clientSecret:
+                    writeOnly: true
+                    type: string
+                robotCode:
+                    writeOnly: true
+                    type: string
+        AppIMSetting_Feishu:
+            type: object
+            properties:
+                appId:
+                    writeOnly: true
+                    type: string
+                appSecret:
+                    writeOnly: true
+                    type: string
+        AppIMSetting_IMSetting:
+            type: object
+            properties:
+                type:
+                    enum:
+                        - TYPE_UNSPECIFIED
+                        - SLACK
+                        - DISCORD
+                        - TEAMS
+                        - DINGTALK
+                        - FEISHU
+                        - WECOM
+                        - LARK
+                    type: string
+                    format: enum
                 slack:
                     $ref: '#/components/schemas/AppIMSetting_Slack'
                 feishu:
@@ -8453,52 +8493,32 @@ components:
                     $ref: '#/components/schemas/AppIMSetting_Lark'
                 dingtalk:
                     $ref: '#/components/schemas/AppIMSetting_DingTalk'
-        AppIMSetting_DingTalk:
-            type: object
-            properties:
-                enabled:
-                    type: boolean
-                clientId:
-                    type: string
-                clientSecret:
-                    type: string
-                robotCode:
-                    type: string
-        AppIMSetting_Feishu:
-            type: object
-            properties:
-                enabled:
-                    type: boolean
-                appId:
-                    type: string
-                appSecret:
-                    type: string
         AppIMSetting_Lark:
             type: object
             properties:
-                enabled:
-                    type: boolean
                 appId:
+                    writeOnly: true
                     type: string
                 appSecret:
+                    writeOnly: true
                     type: string
         AppIMSetting_Slack:
             type: object
             properties:
-                enabled:
-                    type: boolean
                 token:
+                    writeOnly: true
                     type: string
         AppIMSetting_Wecom:
             type: object
             properties:
-                enabled:
-                    type: boolean
                 corpId:
+                    writeOnly: true
                     type: string
                 agentId:
+                    writeOnly: true
                     type: string
                 secret:
+                    writeOnly: true
                     type: string
         ApprovalFlow:
             type: object

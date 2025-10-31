@@ -19,6 +19,19 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/webhook"
 )
 
+// getFeishuConfig extracts the Feishu configuration from the AppIMSetting.
+func getFeishuConfig(setting *storepb.AppIMSetting) *storepb.AppIMSetting_Feishu {
+	if setting == nil {
+		return nil
+	}
+	for _, s := range setting.Settings {
+		if s.Type == storepb.ProjectWebhook_FEISHU {
+			return s.GetFeishu()
+		}
+	}
+	return nil
+}
+
 // WebhookResponse is the API message for Feishu webhook response.
 type WebhookResponse struct {
 	Code    int    `json:"code"`
@@ -113,7 +126,7 @@ func (*feishuReceiver) Post(context webhook.Context) error {
 }
 
 func postDirectMessage(webhookCtx webhook.Context) bool {
-	feishu := webhookCtx.IMSetting.GetFeishu()
+	feishu := getFeishuConfig(webhookCtx.IMSetting)
 	if feishu == nil {
 		return false
 	}

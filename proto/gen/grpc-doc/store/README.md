@@ -269,6 +269,7 @@
     - [AppIMSetting](#bytebase-store-AppIMSetting)
     - [AppIMSetting.DingTalk](#bytebase-store-AppIMSetting-DingTalk)
     - [AppIMSetting.Feishu](#bytebase-store-AppIMSetting-Feishu)
+    - [AppIMSetting.IMSetting](#bytebase-store-AppIMSetting-IMSetting)
     - [AppIMSetting.Lark](#bytebase-store-AppIMSetting-Lark)
     - [AppIMSetting.Slack](#bytebase-store-AppIMSetting-Slack)
     - [AppIMSetting.Wecom](#bytebase-store-AppIMSetting-Wecom)
@@ -4293,11 +4294,7 @@ ISSUE_CREATE represents creating an issue. |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| slack | [AppIMSetting.Slack](#bytebase-store-AppIMSetting-Slack) |  |  |
-| feishu | [AppIMSetting.Feishu](#bytebase-store-AppIMSetting-Feishu) |  |  |
-| wecom | [AppIMSetting.Wecom](#bytebase-store-AppIMSetting-Wecom) |  |  |
-| lark | [AppIMSetting.Lark](#bytebase-store-AppIMSetting-Lark) |  |  |
-| dingtalk | [AppIMSetting.DingTalk](#bytebase-store-AppIMSetting-DingTalk) |  |  |
+| settings | [AppIMSetting.IMSetting](#bytebase-store-AppIMSetting-IMSetting) | repeated |  |
 
 
 
@@ -4312,7 +4309,6 @@ ISSUE_CREATE represents creating an issue. |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| enabled | [bool](#bool) |  |  |
 | client_id | [string](#string) |  |  |
 | client_secret | [string](#string) |  |  |
 | robot_code | [string](#string) |  |  |
@@ -4330,9 +4326,28 @@ ISSUE_CREATE represents creating an issue. |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| enabled | [bool](#bool) |  |  |
 | app_id | [string](#string) |  |  |
 | app_secret | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-AppIMSetting-IMSetting"></a>
+
+### AppIMSetting.IMSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [ProjectWebhook.Type](#bytebase-store-ProjectWebhook-Type) |  |  |
+| slack | [AppIMSetting.Slack](#bytebase-store-AppIMSetting-Slack) |  |  |
+| feishu | [AppIMSetting.Feishu](#bytebase-store-AppIMSetting-Feishu) |  |  |
+| wecom | [AppIMSetting.Wecom](#bytebase-store-AppIMSetting-Wecom) |  |  |
+| lark | [AppIMSetting.Lark](#bytebase-store-AppIMSetting-Lark) |  |  |
+| dingtalk | [AppIMSetting.DingTalk](#bytebase-store-AppIMSetting-DingTalk) |  |  |
 
 
 
@@ -4347,7 +4362,6 @@ ISSUE_CREATE represents creating an issue. |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| enabled | [bool](#bool) |  |  |
 | app_id | [string](#string) |  |  |
 | app_secret | [string](#string) |  |  |
 
@@ -4364,7 +4378,6 @@ ISSUE_CREATE represents creating an issue. |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| enabled | [bool](#bool) |  |  |
 | token | [string](#string) |  |  |
 
 
@@ -4380,7 +4393,6 @@ ISSUE_CREATE represents creating an issue. |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| enabled | [bool](#bool) |  |  |
 | corp_id | [string](#string) |  |  |
 | agent_id | [string](#string) |  |  |
 | secret | [string](#string) |  |  |

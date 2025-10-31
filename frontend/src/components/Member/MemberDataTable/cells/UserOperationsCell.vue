@@ -5,10 +5,13 @@
         allowRevoke &&
         (scope === 'workspace' || binding.projectRoleBindings.length > 0)
       "
+      :positive-button-props="{
+        type: 'error',
+      }"
       @positive-click="$emit('revoke-binding')"
     >
       <template #trigger>
-        <NButton quaternary circle @click.stop>
+        <NButton quaternary circle @click.stop type="error">
           <template #icon>
             <Trash2Icon class="w-4 h-auto" />
           </template>

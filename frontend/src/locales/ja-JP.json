@@ -393,6 +393,10 @@
       "audit-log": "監査ログ",
       "custom-roles": "カスタムロール"
     },
+    "im": {
+      "add-im-integration": "IM統合を追加する",
+      "add-another-im": "別のIMを追加"
+    },
     "profile": {
       "email": "メールアドレス",
       "role": "役割",
@@ -1740,10 +1744,7 @@
       "type-declarative": "宣言的",
       "invalid-version-format": "バージョンはドットで区切られた数字部分でなければなりません（例：1.0.0）",
       "version-already-exists": "このバージョンは既にデータベースに存在します",
-      "delete-confirm-dialog": {
-        "title": "本当に削除しますか?",
-        "content": "これにより、適用されたリビジョンが削除され、データベース スキーマは変更されません。このアクションは元に戻せません。"
-      }
+      "delete-confirm-dialog": "これにより、適用されたリビジョンが削除され、データベース スキーマは変更されません。このアクションは元に戻せません。"
     },
     "not-found": "データベースが見つかりません",
     "drifted": {

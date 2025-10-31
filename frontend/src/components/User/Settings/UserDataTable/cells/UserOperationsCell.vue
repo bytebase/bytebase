@@ -3,10 +3,13 @@
     <template v-if="allowEdit">
       <NPopconfirm
         v-if="allowDeleteUser"
+        :positive-button-props="{
+          type: 'error',
+        }"
         @positive-click="() => changeRowStatus(State.DELETED)"
       >
         <template #trigger>
-          <NButton quaternary circle @click.stop>
+          <NButton quaternary circle @click.stop type="error">
             <template #icon>
               <Trash2Icon class="w-4 h-auto" />
             </template>

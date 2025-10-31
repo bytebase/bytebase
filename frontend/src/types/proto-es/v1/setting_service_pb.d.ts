@@ -5,6 +5,7 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { Duration, FieldMask } from "@bufbuild/protobuf/wkt";
+import type { Webhook_Type } from "./project_service_pb";
 import type { ApprovalTemplate } from "./issue_service_pb";
 import type { Expr } from "../google/type/expr_pb";
 import type { Engine } from "./common_pb";
@@ -342,29 +343,9 @@ export declare const ValueSchema: GenMessage<Value>;
  */
 export declare type AppIMSetting = Message<"bytebase.v1.AppIMSetting"> & {
   /**
-   * @generated from field: bytebase.v1.AppIMSetting.Slack slack = 1;
+   * @generated from field: repeated bytebase.v1.AppIMSetting.IMSetting settings = 1;
    */
-  slack?: AppIMSetting_Slack;
-
-  /**
-   * @generated from field: bytebase.v1.AppIMSetting.Feishu feishu = 2;
-   */
-  feishu?: AppIMSetting_Feishu;
-
-  /**
-   * @generated from field: bytebase.v1.AppIMSetting.Wecom wecom = 3;
-   */
-  wecom?: AppIMSetting_Wecom;
-
-  /**
-   * @generated from field: bytebase.v1.AppIMSetting.Lark lark = 4;
-   */
-  lark?: AppIMSetting_Lark;
-
-  /**
-   * @generated from field: bytebase.v1.AppIMSetting.DingTalk dingtalk = 5;
-   */
-  dingtalk?: AppIMSetting_DingTalk;
+  settings: AppIMSetting_IMSetting[];
 };
 
 /**
@@ -378,12 +359,7 @@ export declare const AppIMSettingSchema: GenMessage<AppIMSetting>;
  */
 export declare type AppIMSetting_Slack = Message<"bytebase.v1.AppIMSetting.Slack"> & {
   /**
-   * @generated from field: bool enabled = 1;
-   */
-  enabled: boolean;
-
-  /**
-   * @generated from field: string token = 2;
+   * @generated from field: string token = 1;
    */
   token: string;
 };
@@ -399,17 +375,12 @@ export declare const AppIMSetting_SlackSchema: GenMessage<AppIMSetting_Slack>;
  */
 export declare type AppIMSetting_Feishu = Message<"bytebase.v1.AppIMSetting.Feishu"> & {
   /**
-   * @generated from field: bool enabled = 1;
-   */
-  enabled: boolean;
-
-  /**
-   * @generated from field: string app_id = 2;
+   * @generated from field: string app_id = 1;
    */
   appId: string;
 
   /**
-   * @generated from field: string app_secret = 3;
+   * @generated from field: string app_secret = 2;
    */
   appSecret: string;
 };
@@ -425,22 +396,17 @@ export declare const AppIMSetting_FeishuSchema: GenMessage<AppIMSetting_Feishu>;
  */
 export declare type AppIMSetting_Wecom = Message<"bytebase.v1.AppIMSetting.Wecom"> & {
   /**
-   * @generated from field: bool enabled = 1;
-   */
-  enabled: boolean;
-
-  /**
-   * @generated from field: string corp_id = 2;
+   * @generated from field: string corp_id = 1;
    */
   corpId: string;
 
   /**
-   * @generated from field: string agent_id = 3;
+   * @generated from field: string agent_id = 2;
    */
   agentId: string;
 
   /**
-   * @generated from field: string secret = 4;
+   * @generated from field: string secret = 3;
    */
   secret: string;
 };
@@ -456,17 +422,12 @@ export declare const AppIMSetting_WecomSchema: GenMessage<AppIMSetting_Wecom>;
  */
 export declare type AppIMSetting_Lark = Message<"bytebase.v1.AppIMSetting.Lark"> & {
   /**
-   * @generated from field: bool enabled = 1;
-   */
-  enabled: boolean;
-
-  /**
-   * @generated from field: string app_id = 2;
+   * @generated from field: string app_id = 1;
    */
   appId: string;
 
   /**
-   * @generated from field: string app_secret = 3;
+   * @generated from field: string app_secret = 2;
    */
   appSecret: string;
 };
@@ -482,22 +443,17 @@ export declare const AppIMSetting_LarkSchema: GenMessage<AppIMSetting_Lark>;
  */
 export declare type AppIMSetting_DingTalk = Message<"bytebase.v1.AppIMSetting.DingTalk"> & {
   /**
-   * @generated from field: bool enabled = 1;
-   */
-  enabled: boolean;
-
-  /**
-   * @generated from field: string client_id = 2;
+   * @generated from field: string client_id = 1;
    */
   clientId: string;
 
   /**
-   * @generated from field: string client_secret = 3;
+   * @generated from field: string client_secret = 2;
    */
   clientSecret: string;
 
   /**
-   * @generated from field: string robot_code = 4;
+   * @generated from field: string robot_code = 3;
    */
   robotCode: string;
 };
@@ -507,6 +463,57 @@ export declare type AppIMSetting_DingTalk = Message<"bytebase.v1.AppIMSetting.Di
  * Use `create(AppIMSetting_DingTalkSchema)` to create a new message.
  */
 export declare const AppIMSetting_DingTalkSchema: GenMessage<AppIMSetting_DingTalk>;
+
+/**
+ * @generated from message bytebase.v1.AppIMSetting.IMSetting
+ */
+export declare type AppIMSetting_IMSetting = Message<"bytebase.v1.AppIMSetting.IMSetting"> & {
+  /**
+   * @generated from field: bytebase.v1.Webhook.Type type = 1;
+   */
+  type: Webhook_Type;
+
+  /**
+   * @generated from oneof bytebase.v1.AppIMSetting.IMSetting.payload
+   */
+  payload: {
+    /**
+     * @generated from field: bytebase.v1.AppIMSetting.Slack slack = 2;
+     */
+    value: AppIMSetting_Slack;
+    case: "slack";
+  } | {
+    /**
+     * @generated from field: bytebase.v1.AppIMSetting.Feishu feishu = 3;
+     */
+    value: AppIMSetting_Feishu;
+    case: "feishu";
+  } | {
+    /**
+     * @generated from field: bytebase.v1.AppIMSetting.Wecom wecom = 4;
+     */
+    value: AppIMSetting_Wecom;
+    case: "wecom";
+  } | {
+    /**
+     * @generated from field: bytebase.v1.AppIMSetting.Lark lark = 5;
+     */
+    value: AppIMSetting_Lark;
+    case: "lark";
+  } | {
+    /**
+     * @generated from field: bytebase.v1.AppIMSetting.DingTalk dingtalk = 6;
+     */
+    value: AppIMSetting_DingTalk;
+    case: "dingtalk";
+  } | { case: undefined; value?: undefined };
+};
+
+/**
+ * Describes the message bytebase.v1.AppIMSetting.IMSetting.
+ * Use `create(AppIMSetting_IMSettingSchema)` to create a new message.
+ */
+export declare const AppIMSetting_IMSettingSchema: GenMessage<AppIMSetting_IMSetting>;
 
 /**
  * @generated from message bytebase.v1.WorkspaceProfileSetting
