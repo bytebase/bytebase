@@ -174,7 +174,7 @@ func (r *ColumnNoNullRule) checkCreateTable(ctx *mysql.CreateTableContext) {
 		col := columnName{
 			tableName:  tableName,
 			columnName: column,
-			line:       r.baseLine + tableElement.GetStart().GetLine(),
+			line:       r.baseLine + tableElement.ColumnDefinition().GetStart().GetLine(),
 		}
 		if _, exists := r.columnSet[col.name()]; !exists {
 			r.columnSet[col.name()] = col
