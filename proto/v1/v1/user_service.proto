@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package bytebase.v1;
 
+import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
@@ -239,7 +240,7 @@ message User {
   string email = 3;
 
   // The display title or full name of the user.
-  string title = 4;
+  string title = 4 [(buf.validate.field).string.max_len = 200];
 
   // The type of user account.
   UserType user_type = 5;

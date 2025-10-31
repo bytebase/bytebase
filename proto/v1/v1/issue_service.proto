@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package bytebase.v1;
 
+import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
@@ -357,10 +358,10 @@ message Issue {
   string name = 1;
 
   // The title of the issue.
-  string title = 3;
+  string title = 3 [(buf.validate.field).string.max_len = 200];
 
   // The description of the issue.
-  string description = 4;
+  string description = 4 [(buf.validate.field).string.max_len = 10000];
 
   // The type of issue.
   enum Type {
@@ -585,7 +586,7 @@ message IssueComment {
   string name = 1;
 
   // The text content of the comment.
-  string comment = 2;
+  string comment = 2 [(buf.validate.field).string.max_len = 65536];
 
   // TODO: use struct message instead.
   string payload = 3;

@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package bytebase.v1;
 
+import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
@@ -414,7 +415,7 @@ message Instance {
   State state = 3;
 
   // The display title of the instance.
-  string title = 4;
+  string title = 4 [(buf.validate.field).string.max_len = 200];
 
   // The database engine type.
   Engine engine = 5;

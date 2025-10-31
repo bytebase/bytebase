@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package bytebase.v1;
 
+import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
@@ -134,7 +135,10 @@ message Sheet {
   ];
 
   // The title of the sheet.
-  string title = 3 [(google.api.field_behavior) = REQUIRED];
+  string title = 3 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.max_len = 200
+  ];
 
   // The creator of the Sheet.
   // Format: users/{email}

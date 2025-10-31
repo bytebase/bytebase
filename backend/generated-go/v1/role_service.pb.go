@@ -7,6 +7,7 @@
 package v1
 
 import (
+	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -456,7 +457,7 @@ var File_v1_role_service_proto protoreflect.FileDescriptor
 
 const file_v1_role_service_proto_rawDesc = "" +
 	"\n" +
-	"\x15v1/role_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x13v1/annotation.proto\"\x12\n" +
+	"\x15v1/role_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x13v1/annotation.proto\"\x12\n" +
 	"\x10ListRolesRequest\"<\n" +
 	"\x11ListRolesResponse\x12'\n" +
 	"\x05roles\x18\x01 \x03(\v2\x11.bytebase.v1.RoleR\x05roles\"]\n" +
@@ -473,11 +474,11 @@ const file_v1_role_service_proto_rawDesc = "" +
 	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"B\n" +
 	"\x11DeleteRoleRequest\x12-\n" +
 	"\x04name\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
-	"\x11bytebase.com/RoleR\x04name\"\xfe\x01\n" +
+	"\x11bytebase.com/RoleR\x04name\"\x92\x02\n" +
 	"\x04Role\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
-	"\x05title\x18\x02 \x01(\tR\x05title\x12 \n" +
-	"\vdescription\x18\x03 \x01(\tR\vdescription\x12 \n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1e\n" +
+	"\x05title\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12*\n" +
+	"\vdescription\x18\x03 \x01(\tB\b\xbaH\x05r\x03\x18\xe8\aR\vdescription\x12 \n" +
 	"\vpermissions\x18\x04 \x03(\tR\vpermissions\x12*\n" +
 	"\x04type\x18\x05 \x01(\x0e2\x16.bytebase.v1.Role.TypeR\x04type\"6\n" +
 	"\x04Type\x12\x14\n" +

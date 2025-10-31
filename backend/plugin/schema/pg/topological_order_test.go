@@ -63,6 +63,59 @@ func TestTopologicalOrderCreateObjects(t *testing.T) {
 			description: "Customers table should be created before orders table due to FK dependency",
 		},
 		{
+			name: "table1_references_table2_name_column",
+			diff: &schema.MetadataDiff{
+				TableChanges: []*schema.TableDiff{
+					// Create table1 that references table2(name) - this comes FIRST in the list
+					{
+						Action:     schema.MetadataDiffActionCreate,
+						SchemaName: "public",
+						TableName:  "table1",
+						NewTable: &storepb.TableMetadata{
+							Name: "table1",
+							Columns: []*storepb.ColumnMetadata{
+								{Name: "id", Type: "SERIAL", Nullable: false},
+								{Name: "name", Type: "VARCHAR(100)", Nullable: false},
+								{Name: "created_at", Type: "TIMESTAMP", Default: "CURRENT_TIMESTAMP", Nullable: false},
+								{Name: "description", Type: "TEXT", Nullable: true},
+							},
+							ForeignKeys: []*storepb.ForeignKeyMetadata{
+								{
+									Name:              "fk_table1_name",
+									Columns:           []string{"name"},
+									ReferencedSchema:  "public",
+									ReferencedTable:   "table2",
+									ReferencedColumns: []string{"name"},
+								},
+							},
+						},
+					},
+					// Create table2 with unique constraint on name - this comes SECOND in the list
+					{
+						Action:     schema.MetadataDiffActionCreate,
+						SchemaName: "public",
+						TableName:  "table2",
+						NewTable: &storepb.TableMetadata{
+							Name: "table2",
+							Columns: []*storepb.ColumnMetadata{
+								{Name: "id", Type: "INT", Nullable: false},
+								{Name: "name", Type: "VARCHAR(100)", Nullable: true},
+							},
+							Indexes: []*storepb.IndexMetadata{
+								{
+									Name:         "uq_table2_name",
+									Expressions:  []string{"name"},
+									Unique:       true,
+									IsConstraint: true,
+								},
+							},
+						},
+					},
+				},
+			},
+			description: "table2 should be created before table1 even though table1 appears first in the diff, because table1 has FK to table2",
+		},
+		{
 			name: "view_depends_on_tables",
 			diff: &schema.MetadataDiff{
 				TableChanges: []*schema.TableDiff{
@@ -224,6 +277,13 @@ func TestTopologicalOrderCreateObjects(t *testing.T) {
 				assert.True(t, customersIndex < ordersIndex,
 					"Customers table should be created before orders table. Got statements: %v", statements)
 
+			case "table1_references_table2_name_column":
+				// table2 should be created before table1 because table1 has FK to table2
+				table1Index := findStatementIndex(statements, "CREATE TABLE", "table1")
+				table2Index := findStatementIndex(statements, "CREATE TABLE", "table2")
+				assert.True(t, table2Index < table1Index,
+					"table2 should be created before table1 because table1 has FK to table2(name). Got statements: %v", statements)
+
 			case "view_depends_on_tables":
 				// Both tables should be created before the view
 				usersIndex := findStatementIndex(statements, "CREATE TABLE", "users")
@@ -354,4 +414,130 @@ func findStatementIndex(statements []string, stmtType, objectName string) int {
 		}
 	}
 	return -1
+}
+
+// TestTopologicalOrderDropObjects tests that objects are dropped in the correct dependency order
+func TestTopologicalOrderDropObjects(t *testing.T) {
+	tests := []struct {
+		name        string
+		diff        *schema.MetadataDiff
+		description string
+	}{
+		{
+			name: "drop_table1_with_fk_before_table2",
+			diff: &schema.MetadataDiff{
+				TableChanges: []*schema.TableDiff{
+					// Drop table1 that has FK to table2 - comes FIRST in list
+					{
+						Action:     schema.MetadataDiffActionDrop,
+						SchemaName: "public",
+						TableName:  "table1",
+						OldTable: &storepb.TableMetadata{
+							Name: "table1",
+							Columns: []*storepb.ColumnMetadata{
+								{Name: "id", Type: "SERIAL", Nullable: false},
+								{Name: "name", Type: "VARCHAR(100)", Nullable: false},
+							},
+							ForeignKeys: []*storepb.ForeignKeyMetadata{
+								{
+									Name:              "fk_table1_name",
+									Columns:           []string{"name"},
+									ReferencedSchema:  "public",
+									ReferencedTable:   "table2",
+									ReferencedColumns: []string{"name"},
+								},
+							},
+						},
+					},
+					// Drop table2 - comes SECOND in list but should be dropped AFTER table1
+					{
+						Action:     schema.MetadataDiffActionDrop,
+						SchemaName: "public",
+						TableName:  "table2",
+						OldTable: &storepb.TableMetadata{
+							Name: "table2",
+							Columns: []*storepb.ColumnMetadata{
+								{Name: "id", Type: "INT", Nullable: false},
+								{Name: "name", Type: "VARCHAR(100)", Nullable: false},
+							},
+						},
+					},
+				},
+			},
+			description: "table1 (with FK) should be dropped before table2 (referenced)",
+		},
+		{
+			name: "drop_orders_before_customers",
+			diff: &schema.MetadataDiff{
+				TableChanges: []*schema.TableDiff{
+					// Drop customers table - comes FIRST in list
+					{
+						Action:     schema.MetadataDiffActionDrop,
+						SchemaName: "public",
+						TableName:  "customers",
+						OldTable: &storepb.TableMetadata{
+							Name: "customers",
+							Columns: []*storepb.ColumnMetadata{
+								{Name: "id", Type: "SERIAL", Nullable: false},
+								{Name: "name", Type: "VARCHAR(100)", Nullable: false},
+							},
+						},
+					},
+					// Drop orders table that has FK to customers - comes SECOND in list
+					{
+						Action:     schema.MetadataDiffActionDrop,
+						SchemaName: "public",
+						TableName:  "orders",
+						OldTable: &storepb.TableMetadata{
+							Name: "orders",
+							Columns: []*storepb.ColumnMetadata{
+								{Name: "id", Type: "SERIAL", Nullable: false},
+								{Name: "customer_id", Type: "INT", Nullable: false},
+							},
+							ForeignKeys: []*storepb.ForeignKeyMetadata{
+								{
+									Name:              "fk_orders_customer",
+									Columns:           []string{"customer_id"},
+									ReferencedSchema:  "public",
+									ReferencedTable:   "customers",
+									ReferencedColumns: []string{"id"},
+								},
+							},
+						},
+					},
+				},
+			},
+			description: "orders (with FK) should be dropped before customers (referenced)",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			migrationSQL, err := generateMigration(tc.diff)
+			require.NoError(t, err)
+
+			// Parse the SQL into statements
+			statements := parseStatements(migrationSQL)
+
+			// For DROP operations, find the DROP statements
+			switch tc.name {
+			case "drop_table1_with_fk_before_table2":
+				table1DropIdx := findStatementIndex(statements, "DROP TABLE", "table1")
+				table2DropIdx := findStatementIndex(statements, "DROP TABLE", "table2")
+
+				assert.NotEqual(t, -1, table1DropIdx, "table1 DROP statement should exist")
+				assert.NotEqual(t, -1, table2DropIdx, "table2 DROP statement should exist")
+				assert.Less(t, table1DropIdx, table2DropIdx, "table1 (with FK) should be dropped before table2 (referenced)")
+			case "drop_orders_before_customers":
+				ordersDropIdx := findStatementIndex(statements, "DROP TABLE", "orders")
+				customersDropIdx := findStatementIndex(statements, "DROP TABLE", "customers")
+
+				assert.NotEqual(t, -1, ordersDropIdx, "orders DROP statement should exist")
+				assert.NotEqual(t, -1, customersDropIdx, "customers DROP statement should exist")
+				assert.Less(t, ordersDropIdx, customersDropIdx, "orders (with FK) should be dropped before customers (referenced)")
+			default:
+				t.Fatalf("Unknown test case: %s", tc.name)
+			}
+		})
+	}
 }

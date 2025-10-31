@@ -7,6 +7,7 @@
 package v1
 
 import (
+	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -573,7 +574,7 @@ var File_v1_sheet_service_proto protoreflect.FileDescriptor
 
 const file_v1_sheet_service_proto_rawDesc = "" +
 	"\n" +
-	"\x16v1/sheet_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\"y\n" +
+	"\x16v1/sheet_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\"y\n" +
 	"\x12CreateSheetRequest\x124\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x12-\n" +
@@ -592,10 +593,10 @@ const file_v1_sheet_service_proto_rawDesc = "" +
 	"\x05sheet\x18\x01 \x01(\v2\x12.bytebase.v1.SheetB\x03\xe0A\x02R\x05sheet\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
 	"updateMask\x12#\n" +
-	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"\x89\x03\n" +
+	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"\x91\x03\n" +
 	"\x05Sheet\x12\x1a\n" +
-	"\x04name\x18\x01 \x01(\tB\x06\xe0A\x02\xe0A\x05R\x04name\x12\x19\n" +
-	"\x05title\x18\x03 \x01(\tB\x03\xe0A\x02R\x05title\x12\x1d\n" +
+	"\x04name\x18\x01 \x01(\tB\x06\xe0A\x02\xe0A\x05R\x04name\x12!\n" +
+	"\x05title\x18\x03 \x01(\tB\v\xe0A\x02\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12\x1d\n" +
 	"\acreator\x18\x04 \x01(\tB\x03\xe0A\x03R\acreator\x12@\n" +
 	"\vcreate_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"createTime\x12\x1d\n" +
