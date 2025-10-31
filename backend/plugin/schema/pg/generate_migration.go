@@ -1,7 +1,6 @@
 package pg
 
 import (
-	"context"
 	"fmt"
 	"slices"
 	"strconv"
@@ -16,7 +15,6 @@ import (
 	pgpluginparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/plugin/schema/pg/ast"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 func init() {
@@ -718,8 +716,10 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 
 		for _, dep := range dependencies {
 			depID := getMigrationObjectID(dep.Schema, dep.Table)
-			// Edge from dependency to dependent (table/view to view)
-			graph.AddEdge(depID, viewID)
+			if allObjects[depID] {
+				// Edge from dependency to dependent (table/view to view)
+				graph.AddEdge(depID, viewID)
+			}
 		}
 	}
 
@@ -3427,18 +3427,17 @@ func (v *CreateOrReplaceVisitor) hasOrReplace(ctx *pgparser.CreatefunctionstmtCo
 	return false
 }
 
-// getViewDependenciesFromAST extracts view dependencies from AST node
-// This reuses the same logic as getViewDependencies from get_database_metadata.go
-func getViewDependenciesFromAST(astNode any, schemaName string, fullSchemaMetadata *storepb.DatabaseSchemaMetadata) []*storepb.DependencyColumn {
+// getViewDependenciesFromAST extracts view dependencies from AST node using lightweight access table extraction.
+// This avoids the complexity and potential panics of GetQuerySpan by only extracting table/view references.
+// The caller is responsible for filtering dependencies against the set of objects being migrated.
+func getViewDependenciesFromAST(astNode any, schemaName string, _ *storepb.DatabaseSchemaMetadata) []*storepb.DependencyColumn {
 	if astNode == nil {
 		return []*storepb.DependencyColumn{}
 	}
 
-	// Extract the SELECT statement from the VIEW AST node
 	var selectStatement string
 
 	if ctx, ok := astNode.(*pgparser.ViewstmtContext); ok {
-		// Extract the SELECT statement from the ViewstmtContext
 		if ctx.Selectstmt() != nil {
 			// Try to get text using token stream first
 			if tokenStream := ctx.GetParser().GetTokenStream(); tokenStream != nil {
@@ -3449,7 +3448,7 @@ func getViewDependenciesFromAST(astNode any, schemaName string, fullSchemaMetada
 				}
 			}
 
-			// Fallback to token-based approach if token stream approach failed
+			// Fallback to token-based approach if failed
 			if selectStatement == "" {
 				selectStatement = getTextFromAST(ctx.Selectstmt())
 			}
@@ -3460,60 +3459,39 @@ func getViewDependenciesFromAST(astNode any, schemaName string, fullSchemaMetada
 		return []*storepb.DependencyColumn{}
 	}
 
-	// Use the same dependency extraction logic as getViewDependencies
 	queryStatement := strings.TrimSpace(selectStatement)
 
-	// Use GetQuerySpan with the full schema metadata so it can resolve table/view references
-	// Wrap in defer/recover to handle potential panics from incomplete metadata
-	var span *base.QuerySpan
-	var err error
-	func() {
-		defer func() {
-			if r := recover(); r != nil {
-				// If GetQuerySpan panics (e.g., due to incomplete metadata), treat it as an error
-				err = errors.Errorf("GetQuerySpan panicked: %v", r)
-			}
-		}()
-		span, err = pgpluginparser.GetQuerySpan(
-			context.Background(),
-			base.GetQuerySpanContext{
-				GetDatabaseMetadataFunc: func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
-					// Return the full schema metadata so GetQuerySpan can resolve references
-					dbMetadata := model.NewDatabaseMetadata(fullSchemaMetadata, false, false)
-					return databaseName, dbMetadata, nil
-				},
-				ListDatabaseNamesFunc: func(_ context.Context, _ string) ([]string, error) {
-					// Return empty list - we don't need actual database names for dependency extraction
-					return []string{}, nil
-				},
-			},
-			queryStatement,
-			"", // database
-			schemaName,
-			false, // case sensitive
-		)
-	}()
-
-	// If error parsing query span, return empty dependencies
+	accessTables, err := pgpluginparser.ExtractAccessTables(queryStatement, pgpluginparser.ExtractAccessTablesOption{
+		DefaultDatabase:        "",
+		DefaultSchema:          schemaName,
+		SkipMetadataValidation: true,
+	})
 	if err != nil {
-		return []*storepb.DependencyColumn{} // nolint:nilerr
+		return []*storepb.DependencyColumn{}
 	}
 
-	// Collect unique dependencies
+	// The caller will filter against allObjects
 	dependencyMap := make(map[string]*storepb.DependencyColumn)
-	for sourceColumn := range span.SourceColumns {
-		// Create dependency key in format: schema.table
-		key := fmt.Sprintf("%s.%s", sourceColumn.Schema, sourceColumn.Table)
+	for _, resource := range accessTables {
+		if resource.Schema == "pg_catalog" || resource.Schema == "information_schema" {
+			continue
+		}
+
+		resourceSchema := resource.Schema
+		if resourceSchema == "" {
+			resourceSchema = schemaName
+		}
+
+		key := fmt.Sprintf("%s.%s", resourceSchema, resource.Table)
 		if _, exists := dependencyMap[key]; !exists {
 			dependencyMap[key] = &storepb.DependencyColumn{
-				Schema: sourceColumn.Schema,
-				Table:  sourceColumn.Table,
-				Column: "*", // Use wildcard since we're tracking table-level dependencies
+				Schema: resourceSchema,
+				Table:  resource.Table,
+				Column: "*", // Table-level dependencies
 			}
 		}
 	}
 
-	// Convert map to slice
 	var dependencies []*storepb.DependencyColumn
 	for _, dep := range dependencyMap {
 		dependencies = append(dependencies, dep)
