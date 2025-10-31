@@ -265,7 +265,9 @@ func (x *OAuth2IdentityProviderContext) GetCode() string {
 
 // OpenID Connect authentication context.
 type OIDCIdentityProviderContext struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Authorization code from OIDC provider.
+	Code          string `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -298,6 +300,13 @@ func (x *OIDCIdentityProviderContext) ProtoReflect() protoreflect.Message {
 // Deprecated: Use OIDCIdentityProviderContext.ProtoReflect.Descriptor instead.
 func (*OIDCIdentityProviderContext) Descriptor() ([]byte, []int) {
 	return file_v1_auth_service_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *OIDCIdentityProviderContext) GetCode() string {
+	if x != nil {
+		return x.Code
+	}
+	return ""
 }
 
 type LoginResponse struct {
@@ -432,8 +441,9 @@ const file_v1_auth_service_proto_rawDesc = "" +
 	"\foidc_context\x18\x02 \x01(\v2(.bytebase.v1.OIDCIdentityProviderContextH\x00R\voidcContextB\t\n" +
 	"\acontext\"3\n" +
 	"\x1dOAuth2IdentityProviderContext\x12\x12\n" +
-	"\x04code\x18\x01 \x01(\tR\x04code\"\x1d\n" +
-	"\x1bOIDCIdentityProviderContext\"\xc0\x01\n" +
+	"\x04code\x18\x01 \x01(\tR\x04code\"1\n" +
+	"\x1bOIDCIdentityProviderContext\x12\x12\n" +
+	"\x04code\x18\x01 \x01(\tR\x04code\"\xc0\x01\n" +
 	"\rLoginResponse\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\x12)\n" +
 	"\x0emfa_temp_token\x18\x02 \x01(\tH\x00R\fmfaTempToken\x88\x01\x01\x124\n" +

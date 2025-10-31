@@ -73,6 +73,9 @@ func (x *OIDCIdentityProviderContext) Equal(y *OIDCIdentityProviderContext) bool
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
+	if x.Code != y.Code {
+		return false
+	}
 	return true
 }
 
