@@ -13,7 +13,6 @@
       <img
         v-if="customBrandingLogo"
         :src="customBrandingLogo"
-        :preview-disabled="true"
         alt="branding logo"
         class="h-full object-contain"
       />
