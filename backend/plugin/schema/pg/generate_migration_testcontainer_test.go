@@ -2511,3 +2511,97 @@ CREATE TABLE table2 (
 	require.NoError(t, err)
 	require.True(t, fkExists, "FK constraint fk_table1_name should exist")
 }
+
+// TestSDLViewDependencyChain tests that SDL migration correctly handles view dependencies
+// when a table is depended on by view1, and view1 is depended on by view2
+func TestSDLViewDependencyChain(t *testing.T) {
+	ctx := context.Background()
+
+	// Start PostgreSQL container
+	pgContainer, err := postgres.Run(ctx,
+		"postgres:16-alpine",
+		postgres.WithDatabase("test_db"),
+		postgres.WithUsername("postgres"),
+		postgres.WithPassword("test"),
+		testcontainers.WithWaitStrategy(
+			wait.ForLog("database system is ready to accept connections").
+				WithOccurrence(2).
+				WithStartupTimeout(5*time.Minute),
+		),
+	)
+	require.NoError(t, err)
+	defer func() {
+		if err := pgContainer.Terminate(ctx); err != nil {
+			t.Logf("failed to terminate container: %s", err)
+		}
+	}()
+
+	// Get connection string
+	connectionString, err := pgContainer.ConnectionString(ctx, "sslmode=disable")
+	require.NoError(t, err)
+
+	// Connect to the database
+	connConfig, err := pgx.ParseConfig(connectionString)
+	require.NoError(t, err)
+	testDB := stdlib.OpenDB(*connConfig)
+	defer testDB.Close()
+
+	// This SDL text simulates the REAL multi-file scenario where files are merged alphabetically:
+	// Files: table_base.sql, test_view_0.sql, test_view2.sql
+	// Alphabetical order: table_base < test_view_0 < test_view2
+	// Dependency chain: table_base -> test_view2 -> test_view_0
+	// So SDL has: table_base, test_view_0 (depends on test_view2 which comes AFTER), test_view2
+	currentSDL := `
+CREATE TABLE table_base (
+    id serial,
+    info text not null,
+    created_at timestamp default current_timestamp,
+    updated_at timestamp default current_timestamp,
+    constraint pk_table_base_id primary key (id)
+);
+
+CREATE VIEW test_view_0 AS
+SELECT * FROM test_view2;
+
+CREATE VIEW test_view2 AS
+SELECT id, info, created_at, updated_at FROM table_base;
+`
+
+	previousSDL := ``
+
+	// Get current schema (empty database)
+	currentSchema, err := getSyncMetadataForGenerateMigration(ctx, connConfig, connConfig.Database)
+	require.NoError(t, err)
+	dbSchema := model.NewDatabaseSchema(currentSchema, nil, nil, storepb.Engine_POSTGRES, false)
+
+	// Get SDL diff
+	diff, err := GetSDLDiff(currentSDL, previousSDL, dbSchema, nil)
+	require.NoError(t, err)
+
+	// Generate migration SQL with topological sorting
+	migrationSQL, err := generateMigration(diff)
+	require.NoError(t, err)
+
+	// Execute the generated migration SQL
+	// This should work because generateMigration should have sorted objects by dependencies
+	_, err = testDB.Exec(migrationSQL)
+	require.NoError(t, err, "Migration SQL should execute successfully with correct view dependency order")
+
+	// Verify table was created
+	var tableExists bool
+	err = testDB.QueryRow("SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'table_base')").Scan(&tableExists)
+	require.NoError(t, err)
+	require.True(t, tableExists, "table_base should be created")
+
+	// Verify test_view2 was created (depends on table_base)
+	var view2Exists bool
+	err = testDB.QueryRow("SELECT EXISTS (SELECT 1 FROM information_schema.views WHERE table_name = 'test_view2')").Scan(&view2Exists)
+	require.NoError(t, err)
+	require.True(t, view2Exists, "test_view2 should be created")
+
+	// Verify test_view_0 was created (depends on test_view2)
+	var view0Exists bool
+	err = testDB.QueryRow("SELECT EXISTS (SELECT 1 FROM information_schema.views WHERE table_name = 'test_view_0')").Scan(&view0Exists)
+	require.NoError(t, err)
+	require.True(t, view0Exists, "test_view_0 should be created")
+}
