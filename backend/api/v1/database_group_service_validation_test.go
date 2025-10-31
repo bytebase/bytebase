@@ -21,12 +21,6 @@ func TestDatabaseGroupTitleValidation(t *testing.T) {
 		errMsg    string
 	}{
 		{
-			name:      "empty title should fail (min_len=1)",
-			title:     "",
-			wantError: true,
-			errMsg:    "title",
-		},
-		{
 			name:      "valid title",
 			title:     "Valid Group Title",
 			wantError: false,

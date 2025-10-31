@@ -43,6 +43,7 @@
         rows="4"
         class="block w-full px-4 py-3 resize-none whitespace-pre-wrap rounded-lg border border-gray-300 outline-none ring-0 text-sm"
         :placeholder="placeholder || $t('issue.leave-a-comment')"
+        :maxlength="maxlength"
         @mousedown="clearIssuePanel"
         @input="(e: any) => sizeToFit(e.target)"
         @keyup="adjustIssuePanelWithPosition"
@@ -133,6 +134,7 @@ const props = defineProps<{
   project: Project;
   placeholder?: string;
   autofocus?: boolean;
+  maxlength?: number;
 }>();
 
 const emit = defineEmits<{

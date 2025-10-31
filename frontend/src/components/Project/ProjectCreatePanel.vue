@@ -18,6 +18,7 @@
             class="mt-2 mb-1 w-full"
             :required="true"
             :placeholder="$t('project.create-modal.project-name')"
+            :maxlength="200"
           />
           <ResourceIdField
             ref="resourceIdField"

@@ -31,7 +31,11 @@
               {{ $t("settings.members.groups.form.title") }}
               <RequiredStar />
             </label>
-            <NInput v-model:value="state.group.title" :disabled="!allowEdit" />
+            <NInput
+              v-model:value="state.group.title"
+              :disabled="!allowEdit"
+              :maxlength="200"
+            />
           </div>
           <div class="flex flex-col gap-y-2">
             <label class="textlabel block">
@@ -40,6 +44,7 @@
             <NInput
               v-model:value="state.group.description"
               :disabled="!allowEdit"
+              :maxlength="1000"
             />
           </div>
           <div class="flex flex-col gap-y-2">

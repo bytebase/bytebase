@@ -592,10 +592,10 @@ const file_v1_database_group_service_proto_rawDesc = "" +
 	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"T\n" +
 	"\x1aDeleteDatabaseGroupRequest\x126\n" +
 	"\x04name\x18\x01 \x01(\tB\"\xe0A\x02\xfaA\x1c\n" +
-	"\x1abytebase.com/DatabaseGroupR\x04name\"\xcb\x02\n" +
+	"\x1abytebase.com/DatabaseGroupR\x04name\"\xc9\x02\n" +
 	"\rDatabaseGroup\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12#\n" +
-	"\x05title\x18\x02 \x01(\tB\r\xe0A\x02\xbaH\ar\x05\x10\x01\x18\xc8\x01R\x05title\x126\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12!\n" +
+	"\x05title\x18\x02 \x01(\tB\v\xe0A\x02\xbaH\x05r\x03\x18\xc8\x01R\x05title\x126\n" +
 	"\rdatabase_expr\x18\x03 \x01(\v2\x11.google.type.ExprR\fdatabaseExpr\x12U\n" +
 	"\x11matched_databases\x18\x04 \x03(\v2#.bytebase.v1.DatabaseGroup.DatabaseB\x03\xe0A\x03R\x10matchedDatabases\x1a\x1e\n" +
 	"\bDatabase\x12\x12\n" +
