@@ -552,6 +552,8 @@ func convertAppIMSetting(v1Setting *v1pb.AppIMSetting) (*storepb.AppIMSetting, e
 					RobotCode:    payload.Dingtalk.RobotCode,
 				},
 			}
+		default:
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport im type %v", setting.Type.String()))
 		}
 		storeSetting.Settings = append(storeSetting.Settings, imSetting)
 	}
@@ -590,6 +592,7 @@ func convertToAppIMSetting(storeSetting *storepb.AppIMSetting) *v1pb.AppIMSettin
 			imSetting.Payload = &v1pb.AppIMSetting_IMSetting_Dingtalk{
 				Dingtalk: &v1pb.AppIMSetting_DingTalk{},
 			}
+		default:
 		}
 		v1Setting.Settings = append(v1Setting.Settings, imSetting)
 	}
