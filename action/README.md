@@ -113,7 +113,7 @@ These flags are specific to the `rollout` subcommand (`bytebase-action rollout`)
     -   Format: `projects/{project}/plans/{plan}`
     -   If specified, this shadows the `--file-pattern` and `--targets` flags, meaning they will be ignored.
 
-## Using Declarative Mode (Experimental)
+## Using Declarative Mode
 
 Declarative mode is an experimental feature currently in development that allows you to manage database schemas as desired state definitions rather than versioned migrations.
 
@@ -128,6 +128,14 @@ bytebase-action rollout --declarative --file-pattern="schema/*.sql" [other flags
 In declarative mode, your SQL files represent the complete desired state of your database schema. The system will automatically:
 - Compare the desired state with the current database state
 - Generate the necessary changes to transform the current state into the desired state
+
+### Getting Started
+
+When using declarative mode, you must follow these steps:
+
+1. **Export Current Schema**: In the Bytebase database detail page, click `Export Schema` to download your current database schema.
+2. **Edit Schema Files**: Start from and edit the downloaded schema files with your desired modifications.
+3. **Run Declarative Rollout**: Use the `--declarative` flag to apply your changes.
 
 ### Important Limitations
 
@@ -145,27 +153,12 @@ In declarative mode, your SQL files represent the complete desired state of your
    ```sql
    -- Correct: fully qualified name
    CREATE TABLE myschema.users (
-       id SERIAL PRIMARY KEY,
        name VARCHAR(100)
    );
    
    -- Incorrect: unqualified name
    CREATE TABLE users (
-       id SERIAL PRIMARY KEY,
        name VARCHAR(100)
    );
    ```
 
-### Example File Organization
-
-With declarative mode, you can organize your schema across multiple files:
-
-```
-schema/
-├── tables.sql      # All table definitions
-├── indexes.sql     # All index definitions
-├── views.sql       # All view definitions
-└── functions.sql   # All function/procedure definitions
-```
-
-Each file should contain the complete desired state for its respective database objects.
