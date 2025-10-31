@@ -102,7 +102,7 @@ func (c *columnCommentConventionChecker) EnterCreatestmt(ctx *parser.CreatestmtC
 					schema: "public", // Default schema
 					table:  tableName,
 					column: columnName,
-					line:   ctx.GetStart().GetLine(),
+					line:   elem.ColumnDef().GetStart().GetLine(),
 				})
 			}
 		}
@@ -134,7 +134,7 @@ func (c *columnCommentConventionChecker) EnterAltertablestmt(ctx *parser.Alterta
 					schema: "public", // Default schema
 					table:  tableName,
 					column: columnName,
-					line:   ctx.GetStart().GetLine(),
+					line:   cmd.ColumnDef().GetStart().GetLine(),
 				})
 			}
 		}

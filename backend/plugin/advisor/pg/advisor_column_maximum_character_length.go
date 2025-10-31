@@ -83,7 +83,7 @@ func (c *columnMaximumCharacterLengthChecker) EnterCreatestmt(ctx *parser.Create
 					columnName := pg.NormalizePostgreSQLColid(colDef.Colid())
 					charLength := c.getCharLength(colDef.Typename())
 					if charLength > c.maximum {
-						c.addAdvice(tableName, columnName, ctx.GetStart().GetLine())
+						c.addAdvice(tableName, columnName, colDef.GetStart().GetLine())
 						return // Only report first violation
 					}
 				}
@@ -125,7 +125,7 @@ func (c *columnMaximumCharacterLengthChecker) EnterAltertablestmt(ctx *parser.Al
 					columnName := pg.NormalizePostgreSQLColid(colDef.Colid())
 					charLength := c.getCharLength(colDef.Typename())
 					if charLength > c.maximum {
-						c.addAdvice(tableName, columnName, ctx.GetStart().GetLine())
+						c.addAdvice(tableName, columnName, colDef.GetStart().GetLine())
 						return
 					}
 				}
@@ -139,7 +139,7 @@ func (c *columnMaximumCharacterLengthChecker) EnterAltertablestmt(ctx *parser.Al
 					columnName := pg.NormalizePostgreSQLColid(allColids[0])
 					charLength := c.getCharLength(cmd.Typename())
 					if charLength > c.maximum {
-						c.addAdvice(tableName, columnName, ctx.GetStart().GetLine())
+						c.addAdvice(tableName, columnName, cmd.GetStart().GetLine())
 						return
 					}
 				}

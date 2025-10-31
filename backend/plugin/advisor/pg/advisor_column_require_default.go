@@ -88,7 +88,7 @@ func (c *columnRequireDefaultChecker) EnterCreatestmt(ctx *parser.CreatestmtCont
 							Title:   c.title,
 							Content: fmt.Sprintf("Column %q.%q in schema %q doesn't have DEFAULT", tableName, columnName, "public"),
 							StartPosition: &storepb.Position{
-								Line:   int32(elem.GetStart().GetLine()),
+								Line:   int32(colDef.GetStart().GetLine()),
 								Column: 0,
 							},
 						})
@@ -130,7 +130,7 @@ func (c *columnRequireDefaultChecker) EnterAltertablestmt(ctx *parser.Altertable
 							Title:   c.title,
 							Content: fmt.Sprintf("Column %q.%q in schema %q doesn't have DEFAULT", tableName, columnName, "public"),
 							StartPosition: &storepb.Position{
-								Line:   int32(ctx.GetStart().GetLine()),
+								Line:   int32(colDef.GetStart().GetLine()),
 								Column: 0,
 							},
 						})

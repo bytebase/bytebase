@@ -93,7 +93,7 @@ func (c *columnTypeDisallowListChecker) EnterCreatestmt(ctx *parser.CreatestmtCo
 				colDef := elem.ColumnDef()
 				if colDef.Colid() != nil && colDef.Typename() != nil {
 					columnName := pg.NormalizePostgreSQLColid(colDef.Colid())
-					c.checkType(tableName, columnName, colDef.Typename(), elem.GetStart().GetLine())
+					c.checkType(tableName, columnName, colDef.Typename(), colDef.GetStart().GetLine())
 				}
 			}
 		}
@@ -123,7 +123,7 @@ func (c *columnTypeDisallowListChecker) EnterAltertablestmt(ctx *parser.Altertab
 				colDef := cmd.ColumnDef()
 				if colDef.Colid() != nil && colDef.Typename() != nil {
 					columnName := pg.NormalizePostgreSQLColid(colDef.Colid())
-					c.checkType(tableName, columnName, colDef.Typename(), ctx.GetStart().GetLine())
+					c.checkType(tableName, columnName, colDef.Typename(), colDef.GetStart().GetLine())
 				}
 			}
 
@@ -132,7 +132,7 @@ func (c *columnTypeDisallowListChecker) EnterAltertablestmt(ctx *parser.Altertab
 				allColids := cmd.AllColid()
 				if len(allColids) > 0 {
 					columnName := pg.NormalizePostgreSQLColid(allColids[0])
-					c.checkType(tableName, columnName, cmd.Typename(), ctx.GetStart().GetLine())
+					c.checkType(tableName, columnName, cmd.Typename(), cmd.GetStart().GetLine())
 				}
 			}
 		}

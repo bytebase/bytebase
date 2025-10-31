@@ -92,7 +92,7 @@ func (c *columnDefaultDisallowVolatileChecker) EnterAltertablestmt(ctx *parser.A
 
 					// Check if this column has a volatile DEFAULT
 					if c.hasVolatileDefault(colDef) {
-						c.addColumn("public", tableName, columnName, ctx.GetStart().GetLine())
+						c.addColumn("public", tableName, columnName, colDef.GetStart().GetLine())
 					}
 				}
 			}
