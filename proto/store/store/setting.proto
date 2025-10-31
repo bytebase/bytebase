@@ -7,6 +7,7 @@ import "google/type/expr.proto";
 import "store/approval.proto";
 import "store/common.proto";
 import "store/database.proto";
+import "store/project_webhook.proto";
 
 option go_package = "generated-go/store";
 
@@ -243,37 +244,39 @@ message Algorithm {
 
 message AppIMSetting {
   message Slack {
-    bool enabled = 1;
-    string token = 2;
+    string token = 1;
   }
   message Feishu {
-    bool enabled = 1;
-    string app_id = 2;
-    string app_secret = 3;
+    string app_id = 1;
+    string app_secret = 2;
   }
   message Wecom {
-    bool enabled = 1;
-    string corp_id = 2;
-    string agent_id = 3;
-    string secret = 4;
+    string corp_id = 1;
+    string agent_id = 2;
+    string secret = 3;
   }
   message Lark {
-    bool enabled = 1;
-    string app_id = 2;
-    string app_secret = 3;
+    string app_id = 1;
+    string app_secret = 2;
   }
   message DingTalk {
-    bool enabled = 1;
-    string client_id = 2;
-    string client_secret = 3;
-    string robot_code = 4;
+    string client_id = 1;
+    string client_secret = 2;
+    string robot_code = 3;
   }
 
-  Slack slack = 1;
-  Feishu feishu = 2;
-  Wecom wecom = 3;
-  Lark lark = 4;
-  DingTalk dingtalk = 5;
+  message IMSetting {
+    ProjectWebhook.Type type = 1;
+    oneof payload {
+      Slack slack = 2;
+      Feishu feishu = 3;
+      Wecom wecom = 4;
+      Lark lark = 5;
+      DingTalk dingtalk = 6;
+    }
+  }
+
+  repeated IMSetting settings = 1;
 }
 
 enum DatabaseChangeMode {

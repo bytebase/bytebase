@@ -420,21 +420,7 @@ If your bundle shows `mediaType: "application/vnd.docker.distribution.manifest.v
 ## Support and Resources
 
 - **Azure Marketplace Docs**: https://learn.microsoft.com/en-us/partner-center/marketplace-offers/marketplace-containers
+- **Prepare Azure container technical assets for a Kubernetes app**: https://learn.microsoft.com/en-us/partner-center/marketplace-offers/azure-container-technical-assets-kubernetes
 - **Mastering the Marketplace**: https://microsoft.github.io/Mastering-the-Marketplace/container/
 - **CreateUI Sandbox**: https://portal.azure.com/#blade/Microsoft_Azure_CreateUIDef/SandboxBlade
 - **Partner Center**: https://partner.microsoft.com/dashboard
-- **Microsoft Support**: Open a ticket through Partner Center
-
-## Next Steps
-
-1. ✅ Modify Helm chart statefulset.yaml (Step 1)
-2. ✅ Set up Azure Container Registry (Step 2)
-3. ✅ Build and push Docker image (Step 3)
-4. ✅ Update manifest.yaml with your ACR (Step 4)
-5. ✅ Package application with cpa tool (Step 5)
-6. ✅ Test createUiDefinition in sandbox (Step 6)
-7. ✅ Create Partner Center offer (Step 7)
-8. ✅ Submit for certification (Step 8)
-9. ✅ Publish to Azure Marketplace (Step 9)
-
-Good luck with your Azure Marketplace launch! 🚀

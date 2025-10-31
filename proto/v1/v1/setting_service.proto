@@ -14,6 +14,7 @@ import "v1/common.proto";
 import "v1/database_catalog_service.proto";
 import "v1/database_service.proto";
 import "v1/issue_service.proto";
+import "v1/project_service.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
@@ -148,37 +149,39 @@ message Value {
 
 message AppIMSetting {
   message Slack {
-    bool enabled = 1;
-    string token = 2 [(google.api.field_behavior) = INPUT_ONLY];
+    string token = 1 [(google.api.field_behavior) = INPUT_ONLY];
   }
   message Feishu {
-    bool enabled = 1;
-    string app_id = 2 [(google.api.field_behavior) = INPUT_ONLY];
-    string app_secret = 3 [(google.api.field_behavior) = INPUT_ONLY];
+    string app_id = 1 [(google.api.field_behavior) = INPUT_ONLY];
+    string app_secret = 2 [(google.api.field_behavior) = INPUT_ONLY];
   }
   message Wecom {
-    bool enabled = 1;
-    string corp_id = 2 [(google.api.field_behavior) = INPUT_ONLY];
-    string agent_id = 3 [(google.api.field_behavior) = INPUT_ONLY];
-    string secret = 4 [(google.api.field_behavior) = INPUT_ONLY];
+    string corp_id = 1 [(google.api.field_behavior) = INPUT_ONLY];
+    string agent_id = 2 [(google.api.field_behavior) = INPUT_ONLY];
+    string secret = 3 [(google.api.field_behavior) = INPUT_ONLY];
   }
   message Lark {
-    bool enabled = 1;
-    string app_id = 2 [(google.api.field_behavior) = INPUT_ONLY];
-    string app_secret = 3 [(google.api.field_behavior) = INPUT_ONLY];
+    string app_id = 1 [(google.api.field_behavior) = INPUT_ONLY];
+    string app_secret = 2 [(google.api.field_behavior) = INPUT_ONLY];
   }
   message DingTalk {
-    bool enabled = 1;
-    string client_id = 2 [(google.api.field_behavior) = INPUT_ONLY];
-    string client_secret = 3 [(google.api.field_behavior) = INPUT_ONLY];
-    string robot_code = 4 [(google.api.field_behavior) = INPUT_ONLY];
+    string client_id = 1 [(google.api.field_behavior) = INPUT_ONLY];
+    string client_secret = 2 [(google.api.field_behavior) = INPUT_ONLY];
+    string robot_code = 3 [(google.api.field_behavior) = INPUT_ONLY];
   }
 
-  Slack slack = 1;
-  Feishu feishu = 2;
-  Wecom wecom = 3;
-  Lark lark = 4;
-  DingTalk dingtalk = 5;
+  message IMSetting {
+    Webhook.Type type = 1;
+    oneof payload {
+      Slack slack = 2;
+      Feishu feishu = 3;
+      Wecom wecom = 4;
+      Lark lark = 5;
+      DingTalk dingtalk = 6;
+    }
+  }
+
+  repeated IMSetting settings = 1;
 }
 
 message WorkspaceProfileSetting {

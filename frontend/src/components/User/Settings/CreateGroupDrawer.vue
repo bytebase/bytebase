@@ -75,6 +75,7 @@
                   <NButton
                     quaternary
                     size="tiny"
+                    type="error"
                     :disabled="disallowEditMember"
                     @click="deleteMember(i)"
                   >

@@ -21,27 +21,12 @@ func convertToSettingMessage(setting *store.SettingMessage, profile *config.Prof
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), storeValue); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", setting.Name, err))
 		}
+		v1Value := convertToAppIMSetting(storeValue)
 		return &v1pb.Setting{
 			Name: settingName,
 			Value: &v1pb.Value{
 				Value: &v1pb.Value_AppImSettingValue{
-					AppImSettingValue: &v1pb.AppIMSetting{
-						Slack: &v1pb.AppIMSetting_Slack{
-							Enabled: storeValue.GetSlack().GetEnabled(),
-						},
-						Feishu: &v1pb.AppIMSetting_Feishu{
-							Enabled: storeValue.GetFeishu().GetEnabled(),
-						},
-						Wecom: &v1pb.AppIMSetting_Wecom{
-							Enabled: storeValue.GetWecom().GetEnabled(),
-						},
-						Lark: &v1pb.AppIMSetting_Lark{
-							Enabled: storeValue.GetLark().GetEnabled(),
-						},
-						Dingtalk: &v1pb.AppIMSetting_DingTalk{
-							Enabled: storeValue.GetDingtalk().GetEnabled(),
-						},
-					},
+					AppImSettingValue: v1Value,
 				},
 			},
 		}, nil
@@ -514,51 +499,102 @@ func convertApprovalFlow(v1Flow *v1pb.ApprovalFlow) *storepb.ApprovalFlow {
 	}
 }
 
-func convertAppIMSetting(v1Setting *v1pb.AppIMSetting) *storepb.AppIMSetting {
+func convertAppIMSetting(v1Setting *v1pb.AppIMSetting) (*storepb.AppIMSetting, error) {
 	if v1Setting == nil {
-		return nil
+		return nil, nil
 	}
 
 	storeSetting := &storepb.AppIMSetting{}
+	findIMType := map[v1pb.Webhook_Type]bool{}
+	for _, setting := range v1Setting.Settings {
+		if findIMType[setting.Type] {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("duplicate im type %v", setting.Type.String()))
+		}
+		findIMType[setting.Type] = true
 
-	if v1Setting.Slack != nil {
-		storeSetting.Slack = &storepb.AppIMSetting_Slack{
-			Enabled: v1Setting.Slack.Enabled,
-			Token:   v1Setting.Slack.Token,
+		imSetting := &storepb.AppIMSetting_IMSetting{
+			Type: storepb.ProjectWebhook_Type(setting.Type),
 		}
-	}
-	if v1Setting.Feishu != nil {
-		storeSetting.Feishu = &storepb.AppIMSetting_Feishu{
-			Enabled:   v1Setting.Feishu.Enabled,
-			AppId:     v1Setting.Feishu.AppId,
-			AppSecret: v1Setting.Feishu.AppSecret,
+		switch payload := setting.Payload.(type) {
+		case *v1pb.AppIMSetting_IMSetting_Slack:
+			imSetting.Payload = &storepb.AppIMSetting_IMSetting_Slack{
+				Slack: &storepb.AppIMSetting_Slack{
+					Token: payload.Slack.Token,
+				},
+			}
+		case *v1pb.AppIMSetting_IMSetting_Feishu:
+			imSetting.Payload = &storepb.AppIMSetting_IMSetting_Feishu{
+				Feishu: &storepb.AppIMSetting_Feishu{
+					AppId:     payload.Feishu.AppId,
+					AppSecret: payload.Feishu.AppSecret,
+				},
+			}
+		case *v1pb.AppIMSetting_IMSetting_Wecom:
+			imSetting.Payload = &storepb.AppIMSetting_IMSetting_Wecom{
+				Wecom: &storepb.AppIMSetting_Wecom{
+					CorpId:  payload.Wecom.CorpId,
+					AgentId: payload.Wecom.AgentId,
+					Secret:  payload.Wecom.Secret,
+				},
+			}
+		case *v1pb.AppIMSetting_IMSetting_Lark:
+			imSetting.Payload = &storepb.AppIMSetting_IMSetting_Lark{
+				Lark: &storepb.AppIMSetting_Lark{
+					AppId:     payload.Lark.AppId,
+					AppSecret: payload.Lark.AppSecret,
+				},
+			}
+		case *v1pb.AppIMSetting_IMSetting_Dingtalk:
+			imSetting.Payload = &storepb.AppIMSetting_IMSetting_Dingtalk{
+				Dingtalk: &storepb.AppIMSetting_DingTalk{
+					ClientId:     payload.Dingtalk.ClientId,
+					ClientSecret: payload.Dingtalk.ClientSecret,
+					RobotCode:    payload.Dingtalk.RobotCode,
+				},
+			}
 		}
-	}
-	if v1Setting.Wecom != nil {
-		storeSetting.Wecom = &storepb.AppIMSetting_Wecom{
-			Enabled: v1Setting.Wecom.Enabled,
-			CorpId:  v1Setting.Wecom.CorpId,
-			AgentId: v1Setting.Wecom.AgentId,
-			Secret:  v1Setting.Wecom.Secret,
-		}
-	}
-	if v1Setting.Lark != nil {
-		storeSetting.Lark = &storepb.AppIMSetting_Lark{
-			Enabled:   v1Setting.Lark.Enabled,
-			AppId:     v1Setting.Lark.AppId,
-			AppSecret: v1Setting.Lark.AppSecret,
-		}
-	}
-	if v1Setting.Dingtalk != nil {
-		storeSetting.Dingtalk = &storepb.AppIMSetting_DingTalk{
-			Enabled:      v1Setting.Dingtalk.Enabled,
-			ClientId:     v1Setting.Dingtalk.ClientId,
-			ClientSecret: v1Setting.Dingtalk.ClientSecret,
-			RobotCode:    v1Setting.Dingtalk.RobotCode,
-		}
+		storeSetting.Settings = append(storeSetting.Settings, imSetting)
 	}
 
-	return storeSetting
+	return storeSetting, nil
+}
+
+func convertToAppIMSetting(storeSetting *storepb.AppIMSetting) *v1pb.AppIMSetting {
+	if storeSetting == nil {
+		return nil
+	}
+
+	v1Setting := &v1pb.AppIMSetting{}
+	for _, setting := range storeSetting.Settings {
+		imSetting := &v1pb.AppIMSetting_IMSetting{
+			Type: v1pb.Webhook_Type(setting.Type),
+		}
+		switch setting.Type {
+		case storepb.ProjectWebhook_SLACK:
+			imSetting.Payload = &v1pb.AppIMSetting_IMSetting_Slack{
+				Slack: &v1pb.AppIMSetting_Slack{},
+			}
+		case storepb.ProjectWebhook_FEISHU:
+			imSetting.Payload = &v1pb.AppIMSetting_IMSetting_Feishu{
+				Feishu: &v1pb.AppIMSetting_Feishu{},
+			}
+		case storepb.ProjectWebhook_WECOM:
+			imSetting.Payload = &v1pb.AppIMSetting_IMSetting_Wecom{
+				Wecom: &v1pb.AppIMSetting_Wecom{},
+			}
+		case storepb.ProjectWebhook_LARK:
+			imSetting.Payload = &v1pb.AppIMSetting_IMSetting_Lark{
+				Lark: &v1pb.AppIMSetting_Lark{},
+			}
+		case storepb.ProjectWebhook_DINGTALK:
+			imSetting.Payload = &v1pb.AppIMSetting_IMSetting_Dingtalk{
+				Dingtalk: &v1pb.AppIMSetting_DingTalk{},
+			}
+		}
+		v1Setting.Settings = append(v1Setting.Settings, imSetting)
+	}
+
+	return v1Setting
 }
 
 func convertDataClassificationSetting(v1Setting *v1pb.DataClassificationSetting) *storepb.DataClassificationSetting {

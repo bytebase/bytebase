@@ -91,9 +91,9 @@
           <div class="text-md leading-6 font-medium text-main">
             {{ $t("project.webhook.direct-messages") }}
           </div>
-          <BBAttention class="my-2" :type="imApp?.enabled ? 'info' : 'warning'">
+          <BBAttention class="my-2" :type="imApp ? 'info' : 'warning'">
             <template #default>
-              <span v-if="imApp?.enabled">
+              <span v-if="imApp">
                 {{ $t("project.webhook.direct-messages-tip") }}
               </span>
               <i18n-t
@@ -269,7 +269,6 @@ import {
   projectWebhookV1TypeItemList,
 } from "@/types";
 import {
-  Webhook_Type,
   type Activity_Type,
   type Project,
   type Webhook,
@@ -358,19 +357,9 @@ const imApp = computed(() => {
   if (!selectedWebhook.value?.supportDirectMessage) {
     return undefined;
   }
-  switch (selectedWebhook.value.type) {
-    case Webhook_Type.SLACK:
-      return imSetting.value?.slack;
-    case Webhook_Type.FEISHU:
-      return imSetting.value?.feishu;
-    case Webhook_Type.LARK:
-      return imSetting.value?.lark;
-    case Webhook_Type.WECOM:
-      return imSetting.value?.wecom;
-    case Webhook_Type.DINGTALK:
-      return imSetting.value?.dingtalk;
-  }
-  return undefined;
+  return imSetting.value?.settings.find(
+    (setting) => setting.type === selectedWebhook.value?.type
+  );
 });
 
 const webhookSupportDirectMessage = computed(
