@@ -2,7 +2,7 @@
   <div class="flex items-center justify-between h-10 px-4 my-1 space-x-3">
     <BytebaseLogo
       v-if="showLogo"
-      class="shrink-0"
+      class="h-10"
       :redirect="WORKSPACE_ROUTE_LANDING"
     />
     <ProjectSwitchPopover />
