@@ -177,17 +177,15 @@
           >
             <NButton
               tertiary
-              :disabled="state.loading"
+              :disabled="!!state.pendingSaveType"
               @click="() => onDiscardIM(i, item.type)"
             >
               {{ $t("common.discard-changes") }}
             </NButton>
             <NButton
               type="primary"
-              :disabled="state.loading"
-              :loading="
-                state.pendingSaveType === item.type ? state.loading : false
-              "
+              :disabled="!!state.pendingSaveType"
+              :loading="state.pendingSaveType === item.type"
               @click="() => onSaveIM(i, item.type)"
             >
               {{ $t("common.save") }}
@@ -243,7 +241,6 @@ import {
 } from "@/types/proto-es/v1/setting_service_pb";
 
 interface LocalState {
-  loading: boolean;
   setting: AppIMSetting;
   pendingSaveType?: Webhook_Type;
 }
@@ -262,7 +259,6 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const state = reactive<LocalState>({
-  loading: false,
   setting: create(AppIMSettingSchema, {
     settings: [],
   }),
@@ -361,7 +357,6 @@ const onDiscardIM = (index: number, type: Webhook_Type) => {
 };
 
 const onSaveIM = async (index: number, type: Webhook_Type) => {
-  state.loading = true;
   state.pendingSaveType = type;
 
   const updateMask: string[] = [];
@@ -411,7 +406,6 @@ const onSaveIM = async (index: number, type: Webhook_Type) => {
       title: t("common.updated"),
     });
   } finally {
-    state.loading = false;
     state.pendingSaveType = undefined;
   }
 };
