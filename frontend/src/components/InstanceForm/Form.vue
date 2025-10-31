@@ -32,6 +32,7 @@
             required
             class="mt-1 w-full"
             :disabled="!allowEdit"
+            :maxlength="200"
           />
         </div>
 
