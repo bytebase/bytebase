@@ -46,6 +46,8 @@ type Profile struct {
 	DeployID string
 	// Whether the server is running in a docker container.
 	IsDocker bool
+	// AuditLogStdout enables audit logging to stdout in structured JSON format
+	AuditLogStdout bool
 
 	// can be set in runtime
 	RuntimeDebug atomic.Bool

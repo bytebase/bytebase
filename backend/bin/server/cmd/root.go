@@ -72,6 +72,8 @@ var (
 		debug bool
 		// memoryProfileThreshold is the threshold of memory usage in bytes to trigger a memory profile.
 		memoryProfileThreshold uint64
+		// audit log to stdout
+		auditLogStdout bool
 	}
 
 	rootCmd = &cobra.Command{
@@ -106,6 +108,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&flags.demo, "demo", false, "run in demo mode.")
 	rootCmd.PersistentFlags().BoolVar(&flags.debug, "debug", false, "whether to enable debug level logging")
 	rootCmd.PersistentFlags().Uint64Var(&flags.memoryProfileThreshold, "memory-profile-threshold", 0, "the threshold of memory usage in bytes to trigger a memory profile")
+	rootCmd.PersistentFlags().BoolVar(&flags.auditLogStdout, "audit-log-stdout", false, "enable audit logging to stdout (JSON format)")
 }
 
 // -----------------------------------Command Line Config END--------------------------------------
