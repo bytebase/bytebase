@@ -18,7 +18,7 @@ require (
 	connectrpc.com/grpcreflect v1.3.0
 	connectrpc.com/validate v0.3.0
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.19.1
-	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.12.0
+	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.13.0
 	github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos v1.4.1
 	github.com/ClickHouse/clickhouse-go/v2 v2.40.3
 	github.com/alexmullins/zip v0.0.0-20180717182244-4affb64b04d0
