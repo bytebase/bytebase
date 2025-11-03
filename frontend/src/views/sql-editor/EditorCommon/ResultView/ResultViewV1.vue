@@ -19,7 +19,7 @@
           :database="database"
           :result="resultSet.results[0]"
           :set-index="0"
-          :show-export="true"
+          :show-export="!disableExport"
           @export="handleExportBtnClick"
         />
       </template>
