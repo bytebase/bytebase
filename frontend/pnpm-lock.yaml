@@ -131,8 +131,8 @@ importers:
         specifier: ^1.0.1
         version: 1.0.1
       pev2:
-        specifier: 1.16.0
-        version: 1.16.0(@popperjs/core@2.11.8)(typescript@5.9.3)
+        specifier: 1.17.0
+        version: 1.17.0(@popperjs/core@2.11.8)(typescript@5.9.3)
       pinia:
         specifier: 3.0.3
         version: 3.0.3(typescript@5.9.3)(vue@3.5.22(typescript@5.9.3))
@@ -1812,10 +1812,10 @@ packages:
     resolution: {integrity: sha512-GsBrnOzU8uj0LECDfD5zomZJIjrPhIlWU82AHwa2s40FKH+kcxQaBvBo3Z4TxyZHIyX8XTDxsyA33/Vx9eFuQA==}
     engines: {node: '>=6'}
 
-  '@fortawesome/vue-fontawesome@3.0.8':
-    resolution: {integrity: sha512-yyHHAj4G8pQIDfaIsMvQpwKMboIZtcHTUvPqXjOHyldh1O1vZfH4W03VDPv5RvI9P6DLTzJQlmVgj9wCf7c2Fw==}
+  '@fortawesome/vue-fontawesome@3.1.2':
+    resolution: {integrity: sha512-mhYnBIuuW8OIMHf31kOjaBmyE7BMrwBorhrOHVud6vTTu+7IPQNWB+DWaHoE75v10dRF5s/dFtcrgE7vKSEWwQ==}
     peerDependencies:
-      '@fortawesome/fontawesome-svg-core': ~1 || ~6
+      '@fortawesome/fontawesome-svg-core': ~1 || ~6 || ~7
       vue: '>= 3.0.0 < 4'
 
   '@humanfs/core@0.19.1':
@@ -3473,8 +3473,8 @@ packages:
     resolution: {integrity: sha512-vK9P5/iUfdl95AI+JVyUuIcVtd4ofvtrOr3HNtM2yxC9bnMbEdp3x01OhQNnjb8IJYi38VlTE3mBXwcfvywuSw==}
     engines: {node: '>= 14'}
 
-  humanize-duration@3.32.2:
-    resolution: {integrity: sha512-jcTwWYeCJf4dN5GJnjBmHd42bNyK94lY49QTkrsAQrMTUoIYLevvDpmQtg5uv8ZrdIRIbzdasmSNZ278HHUPEg==}
+  humanize-duration@3.33.1:
+    resolution: {integrity: sha512-hwzSCymnRdFx9YdRkQQ0OYequXiVAV6ZGQA2uzocwB0F4309Ke6pO8dg0P8LHhRQJyVjGteRTAA/zNfEcpXn8A==}
 
   iconv-lite@0.6.3:
     resolution: {integrity: sha512-4fCk79wshMdzMp2rH06qWrJE4iolqLhCUH+OiuIgU++RB0+94NlDL81atO7GX55uUKueo0txHNtvEyI6D7WdMw==}
@@ -4156,8 +4156,8 @@ packages:
   perfect-debounce@1.0.0:
     resolution: {integrity: sha512-xCy9V055GLEqoFaHoC1SoLIaLmWctgCUaBaWxDZ7/Zx4CTyX7cJQLJOok/orfjZAh9kEYpjJa4d0KcJmCbctZA==}
 
-  pev2@1.16.0:
-    resolution: {integrity: sha512-U00WDBS0RK0+L7F9Ao8RQHDQcGrfr0kYHxEf7iPv22zCPTyBdph0MFYFlJYLXs0dUzwtQASyC0zqyohgcT6pPw==}
+  pev2@1.17.0:
+    resolution: {integrity: sha512-ExX3EqEbUi+nsIl4OaahNlIZQoGzh//VaBAcOnWSg16GsXRSFAWLzSTMYwtD+A52I6nj2mA2lHwep6W/PLNj0g==}
 
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
@@ -7327,7 +7327,7 @@ snapshots:
     dependencies:
       '@fortawesome/fontawesome-common-types': 6.7.2
 
-  '@fortawesome/vue-fontawesome@3.0.8(@fortawesome/fontawesome-svg-core@6.7.2)(vue@3.5.22(typescript@5.9.3))':
+  '@fortawesome/vue-fontawesome@3.1.2(@fortawesome/fontawesome-svg-core@6.7.2)(vue@3.5.22(typescript@5.9.3))':
     dependencies:
       '@fortawesome/fontawesome-svg-core': 6.7.2
       vue: 3.5.22(typescript@5.9.3)
@@ -9130,7 +9130,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  humanize-duration@3.32.2: {}
+  humanize-duration@3.33.1: {}
 
   iconv-lite@0.6.3:
     dependencies:
@@ -9981,16 +9981,16 @@ snapshots:
 
   perfect-debounce@1.0.0: {}
 
-  pev2@1.16.0(@popperjs/core@2.11.8)(typescript@5.9.3):
+  pev2@1.17.0(@popperjs/core@2.11.8)(typescript@5.9.3):
     dependencies:
       '@fortawesome/fontawesome-svg-core': 6.7.2
       '@fortawesome/free-solid-svg-icons': 6.7.2
-      '@fortawesome/vue-fontawesome': 3.0.8(@fortawesome/fontawesome-svg-core@6.7.2)(vue@3.5.22(typescript@5.9.3))
+      '@fortawesome/vue-fontawesome': 3.1.2(@fortawesome/fontawesome-svg-core@6.7.2)(vue@3.5.22(typescript@5.9.3))
       bootstrap: 5.3.8(@popperjs/core@2.11.8)
       d3: 7.9.0
       d3-flextree: 2.1.2
       highlight.js: 11.11.1
-      humanize-duration: 3.32.2
+      humanize-duration: 3.33.1
       lodash: 4.17.21
       splitpanes: 3.2.0(vue@3.5.22(typescript@5.9.3))
       vue: 3.5.22(typescript@5.9.3)
