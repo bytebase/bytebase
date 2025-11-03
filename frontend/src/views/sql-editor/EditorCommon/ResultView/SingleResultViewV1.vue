@@ -87,7 +87,7 @@
             {{ $t("plugin.ai.text2sql") }}
           </template>
         </NTooltip>
-        <template v-if="!disallowExportQueryData">
+        <template v-if="showExport">
           <DataExportButton
             v-if="result.allowExport"
             size="small"
@@ -100,7 +100,13 @@
             ]"
             :view-mode="'DRAWER'"
             :support-password="true"
-            @export="handleExportBtnClick"
+            @export="
+              ($event) =>
+                $emit('export', {
+                  ...$event,
+                  statement: result.statement,
+                })
+            "
           >
             <template #form>
               <NFormItem :label="$t('common.database')">
@@ -186,7 +192,6 @@
 </template>
 
 <script lang="ts" setup>
-import { create } from "@bufbuild/protobuf";
 import type { ColumnDef } from "@tanstack/vue-table";
 import {
   getCoreRowModel,
@@ -196,7 +201,6 @@ import {
 } from "@tanstack/vue-table";
 import { useClipboard } from "@vueuse/core";
 import { useDebounceFn, useLocalStorage } from "@vueuse/core";
-import dayjs from "dayjs";
 import { isEmpty } from "lodash-es";
 import { ExternalLinkIcon } from "lucide-vue-next";
 import {
@@ -225,10 +229,8 @@ import { DISMISS_PLACEHOLDER } from "@/plugins/ai/components/state";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useConnectionOfCurrentSQLEditorTab,
-  usePolicyByParentAndType,
   useSQLEditorStore,
   useSQLEditorTabStore,
-  useSQLStore,
   useStorageStore,
   pushNotification,
 } from "@/store";
@@ -239,9 +241,7 @@ import {
   isValidInstanceName,
 } from "@/types";
 import { Engine, ExportFormat } from "@/types/proto-es/v1/common_pb";
-import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 import {
-  ExportRequestSchema,
   type QueryResult,
   type QueryRow,
   type RowValue,
@@ -283,6 +283,19 @@ const props = defineProps<{
   database: ComposedDatabase;
   result: QueryResult;
   setIndex: number;
+  showExport: boolean;
+}>();
+
+const emit = defineEmits<{
+  (
+    event: "export",
+    option: {
+      resolve: (content: DownloadContent[]) => void;
+      reject: (reason?: any) => void;
+      options: ExportOption;
+      statement: string;
+    }
+  ): Promise<void>;
 }>();
 
 const state = reactive<LocalState>({
@@ -314,19 +327,6 @@ const tabStore = useSQLEditorTabStore();
 const editorStore = useSQLEditorStore();
 const currentTab = computed(() => tabStore.currentTab);
 const { instance: connectedInstance } = useConnectionOfCurrentSQLEditorTab();
-
-const { policy: queryDataPolicy } = usePolicyByParentAndType(
-  computed(() => ({
-    parentPath: "",
-    policyType: PolicyType.DATA_QUERY,
-  }))
-);
-
-const disallowExportQueryData = computed(() => {
-  return queryDataPolicy.value?.policy?.case === "queryDataPolicy"
-    ? queryDataPolicy.value.policy.value.disableExport
-    : false;
-});
 
 const viewMode = computed((): ViewMode => {
   const { result } = props;
@@ -485,44 +485,6 @@ const pageSizeOptions = computed(() => {
     value: n,
   }));
 });
-
-const handleExportBtnClick = async ({
-  options,
-  resolve,
-  reject,
-}: {
-  options: ExportOption;
-  reject: (reason?: any) => void;
-  resolve: (content: DownloadContent[]) => void;
-}) => {
-  const admin = tabStore.currentTab?.mode === "ADMIN";
-  const limit = options.limit ?? (admin ? 0 : editorStore.resultRowsLimit);
-
-  try {
-    const content = await useSQLStore().exportData(
-      create(ExportRequestSchema, {
-        name: props.database.name,
-        dataSourceId: props.params.connection.dataSourceId ?? "",
-        format: options.format,
-        statement: props.result.statement,
-        limit,
-        admin,
-        password: options.password,
-        schema: props.params.connection.schema,
-      })
-    );
-
-    resolve([
-      {
-        content,
-        // the download file is always zip file.
-        filename: `${props.database.databaseName}.${dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss")}.zip`,
-      },
-    ]);
-  } catch (e) {
-    reject(e);
-  }
-};
 
 const handleRequestExport = async () => {
   if (!props.database) {
