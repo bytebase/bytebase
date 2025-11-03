@@ -11,7 +11,7 @@ require (
 	buf.build/go/protovalidate v1.0.0
 	cloud.google.com/go/bigquery v1.72.0
 	cloud.google.com/go/cloudsqlconn v1.18.1
-	cloud.google.com/go/secretmanager v1.15.0
+	cloud.google.com/go/secretmanager v1.16.0
 	cloud.google.com/go/spanner v1.86.0
 	connectrpc.com/connect v1.19.0
 	connectrpc.com/cors v0.1.0
@@ -107,9 +107,9 @@ require (
 	golang.org/x/oauth2 v0.31.0
 	golang.org/x/text v0.29.0
 	google.golang.org/api v0.251.0
-	google.golang.org/genproto v0.0.0-20250929231259-57b25ae835d4
-	google.golang.org/genproto/googleapis/api v0.0.0-20250929231259-57b25ae835d4
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250929231259-57b25ae835d4
+	google.golang.org/genproto v0.0.0-20251029180050-ab9386a59fda
+	google.golang.org/genproto/googleapis/api v0.0.0-20251014184007-4626949a642f
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20251014184007-4626949a642f
 	google.golang.org/grpc v1.75.1
 	google.golang.org/protobuf v1.36.10
 	gopkg.in/inf.v0 v0.9.1
@@ -120,7 +120,7 @@ require (
 	cel.dev/expr v0.24.0 // indirect
 	cloud.google.com/go/auth v0.16.5 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
-	cloud.google.com/go/monitoring v1.24.2 // indirect
+	cloud.google.com/go/monitoring v1.24.3 // indirect
 	dario.cat/mergo v1.0.2 // indirect
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
@@ -287,8 +287,8 @@ require (
 require (
 	cloud.google.com/go v0.121.6 // indirect
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
-	cloud.google.com/go/iam v1.5.2 // indirect
-	cloud.google.com/go/longrunning v0.6.7 // indirect
+	cloud.google.com/go/iam v1.5.3 // indirect
+	cloud.google.com/go/longrunning v0.7.0 // indirect
 	github.com/ClickHouse/ch-go v0.68.0 // indirect
 	github.com/andybalholm/brotli v1.2.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.1 // indirect
