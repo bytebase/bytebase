@@ -137,6 +137,9 @@ const pendingReviewAction = ref<IssueReviewAction | undefined>(undefined);
 const pendingStatusAction = ref<IssueStatusAction | undefined>(undefined);
 const pendingRolloutAction = ref<RolloutAction | undefined>(undefined);
 
+// Loading state for issue creation to prevent race conditions
+const isCreatingIssue = ref(false);
+
 // Get the stage that contains database creation or export tasks
 const rolloutStage = computed(() => {
   if (!rollout.value) return undefined;
@@ -480,6 +483,12 @@ const handlePerformAction = async (action: UnifiedAction) => {
 const handleIssueCreate = async () => {
   if (!plan?.value) return;
 
+  // Prevent race condition: check if already creating issue
+  if (isCreatingIssue.value) {
+    return;
+  }
+  isCreatingIssue.value = true;
+
   try {
     await doCreateIssue();
   } catch (error) {
@@ -490,6 +499,8 @@ const handleIssueCreate = async () => {
       title: "Failed to create issue",
       description: String(error),
     });
+  } finally {
+    isCreatingIssue.value = false;
   }
 };
 
