@@ -275,7 +275,7 @@ CREATE TABLE plan (
 
 CREATE INDEX idx_plan_project ON plan(project);
 
-CREATE INDEX idx_plan_pipeline_id ON plan(pipeline_id);
+CREATE UNIQUE INDEX idx_plan_unique_pipeline_id ON plan(pipeline_id);
 
 ALTER SEQUENCE plan_id_seq RESTART WITH 101;
 
@@ -322,7 +322,7 @@ CREATE TABLE issue (
 
 CREATE INDEX idx_issue_project ON issue(project);
 
-CREATE INDEX idx_issue_plan_id ON issue(plan_id);
+CREATE UNIQUE INDEX idx_issue_unique_plan_id ON issue(plan_id);
 
 CREATE INDEX idx_issue_creator_id ON issue(creator_id);
 
