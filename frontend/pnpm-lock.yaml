@@ -12,10 +12,10 @@ importers:
     dependencies:
       '@buf/googleapis_googleapis.bufbuild_es':
         specifier: 2.9.0-20251009205305-72c8614f3bd0.1
-        version: 2.9.0-20251009205305-72c8614f3bd0.1(@bufbuild/protobuf@2.9.0)
+        version: 2.9.0-20251009205305-72c8614f3bd0.1(@bufbuild/protobuf@2.10.0)
       '@bufbuild/protobuf':
-        specifier: 2.9.0
-        version: 2.9.0
+        specifier: 2.10.0
+        version: 2.10.0
       '@codingame/monaco-vscode-api':
         specifier: 21.3.4
         version: 21.3.4
@@ -39,10 +39,10 @@ importers:
         version: 21.3.4
       '@connectrpc/connect':
         specifier: ^2.0.2
-        version: 2.1.0(@bufbuild/protobuf@2.9.0)
+        version: 2.1.0(@bufbuild/protobuf@2.10.0)
       '@connectrpc/connect-web':
         specifier: ^2.0.2
-        version: 2.1.0(@bufbuild/protobuf@2.9.0)(@connectrpc/connect@2.1.0(@bufbuild/protobuf@2.9.0))
+        version: 2.1.0(@bufbuild/protobuf@2.10.0)(@connectrpc/connect@2.1.0(@bufbuild/protobuf@2.10.0))
       '@markdoc/markdoc':
         specifier: 0.5.4
         version: 0.5.4
@@ -953,8 +953,8 @@ packages:
     peerDependencies:
       '@bufbuild/protobuf': ^2.9.0
 
-  '@bufbuild/protobuf@2.9.0':
-    resolution: {integrity: sha512-rnJenoStJ8nvmt9Gzye8nkYd6V22xUAnu4086ER7h1zJ508vStko4pMvDeQ446ilDTFpV5wnoc5YS7XvMwwMqA==}
+  '@bufbuild/protobuf@2.10.0':
+    resolution: {integrity: sha512-fdRs9PSrBF7QUntpZpq6BTw58fhgGJojgg39m9oFOJGZT+nip9b0so5cYY1oWl5pvemDLr0cPPsH46vwThEbpQ==}
 
   '@code-inspector/core@1.2.10':
     resolution: {integrity: sha512-xTkR4oBrTlRA/S2cXTuZLttCX6+wQgUpBpEK4Ad/e9KBIUIDRne5yoxuvrdy3xkTMkURS2V4SnCTzjFcu4OELQ==}
@@ -5918,11 +5918,11 @@ snapshots:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.27.1
 
-  '@buf/googleapis_googleapis.bufbuild_es@2.9.0-20251009205305-72c8614f3bd0.1(@bufbuild/protobuf@2.9.0)':
+  '@buf/googleapis_googleapis.bufbuild_es@2.9.0-20251009205305-72c8614f3bd0.1(@bufbuild/protobuf@2.10.0)':
     dependencies:
-      '@bufbuild/protobuf': 2.9.0
+      '@bufbuild/protobuf': 2.10.0
 
-  '@bufbuild/protobuf@2.9.0': {}
+  '@bufbuild/protobuf@2.10.0': {}
 
   '@code-inspector/core@1.2.10':
     dependencies:
@@ -7151,14 +7151,14 @@ snapshots:
       '@codingame/monaco-vscode-view-status-bar-service-override': 21.3.3
       '@codingame/monaco-vscode-view-title-bar-service-override': 21.3.3
 
-  '@connectrpc/connect-web@2.1.0(@bufbuild/protobuf@2.9.0)(@connectrpc/connect@2.1.0(@bufbuild/protobuf@2.9.0))':
+  '@connectrpc/connect-web@2.1.0(@bufbuild/protobuf@2.10.0)(@connectrpc/connect@2.1.0(@bufbuild/protobuf@2.10.0))':
     dependencies:
-      '@bufbuild/protobuf': 2.9.0
-      '@connectrpc/connect': 2.1.0(@bufbuild/protobuf@2.9.0)
+      '@bufbuild/protobuf': 2.10.0
+      '@connectrpc/connect': 2.1.0(@bufbuild/protobuf@2.10.0)
 
-  '@connectrpc/connect@2.1.0(@bufbuild/protobuf@2.9.0)':
+  '@connectrpc/connect@2.1.0(@bufbuild/protobuf@2.10.0)':
     dependencies:
-      '@bufbuild/protobuf': 2.9.0
+      '@bufbuild/protobuf': 2.10.0
 
   '@cspotcode/source-map-support@0.8.1':
     dependencies:
