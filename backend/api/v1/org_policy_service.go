@@ -48,8 +48,20 @@ func NewOrgPolicyService(store *store.Store, licenseService *enterprise.LicenseS
 
 // GetPolicy gets a policy in a specific resource.
 func (s *OrgPolicyService) GetPolicy(ctx context.Context, req *connect.Request[v1pb.GetPolicyRequest]) (*connect.Response[v1pb.Policy], error) {
-	policy, _, err := s.findPolicyMessage(ctx, req.Msg.Name)
+	policy, parent, err := s.findPolicyMessage(ctx, req.Msg.Name)
 	if err != nil {
+		connectErr := connect.CodeOf(err)
+		// For ROLLOUT_POLICY, return default policy if not found
+		if connectErr == connect.CodeNotFound {
+			policyType, extractErr := extractPolicyTypeFromName(req.Msg.Name)
+			if extractErr == nil && policyType == storepb.Policy_ROLLOUT {
+				defaultPolicy, defaultErr := s.getDefaultRolloutPolicy(ctx, parent, req.Msg.Name)
+				if defaultErr != nil {
+					return nil, defaultErr
+				}
+				return connect.NewResponse(defaultPolicy), nil
+			}
+		}
 		return nil, err
 	}
 
@@ -228,6 +240,56 @@ func (s *OrgPolicyService) DeletePolicy(ctx context.Context, req *connect.Reques
 	}
 
 	return connect.NewResponse(&emptypb.Empty{}), nil
+}
+
+// extractPolicyTypeFromName extracts the policy type from a policy name.
+func extractPolicyTypeFromName(policyName string) (storepb.Policy_Type, error) {
+	tokens := strings.Split(policyName, common.PolicyNamePrefix)
+	if len(tokens) != 2 {
+		return storepb.Policy_TYPE_UNSPECIFIED, errors.Errorf("invalid policy name %s", policyName)
+	}
+
+	v1PolicyType, ok := v1pb.PolicyType_value[strings.ToUpper(tokens[1])]
+	if !ok {
+		return storepb.Policy_TYPE_UNSPECIFIED, errors.Errorf("invalid policy type %v", tokens[1])
+	}
+
+	return convertV1PBToStorePBPolicyType(v1pb.PolicyType(v1PolicyType))
+}
+
+// getDefaultRolloutPolicy returns the default rollout policy when no custom policy exists.
+// Uses the shared store.GetDefaultRolloutPolicy to ensure consistency across API and store layers.
+func (*OrgPolicyService) getDefaultRolloutPolicy(_ context.Context, parent string, policyName string) (*v1pb.Policy, error) {
+	resourceType, _, err := getPolicyResourceTypeAndResource(parent)
+	if err != nil {
+		return nil, err
+	}
+
+	v1ResourceType := v1pb.PolicyResourceType_RESOURCE_TYPE_UNSPECIFIED
+	switch resourceType {
+	case storepb.Policy_WORKSPACE:
+		v1ResourceType = v1pb.PolicyResourceType_WORKSPACE
+	case storepb.Policy_ENVIRONMENT:
+		v1ResourceType = v1pb.PolicyResourceType_ENVIRONMENT
+	case storepb.Policy_PROJECT:
+		v1ResourceType = v1pb.PolicyResourceType_PROJECT
+	default:
+		// Keep the default RESOURCE_TYPE_UNSPECIFIED
+	}
+
+	// Get the default rollout policy from the shared store function
+	defaultStorePBPolicy := store.GetDefaultRolloutPolicy()
+
+	return &v1pb.Policy{
+		Name:              policyName,
+		ResourceType:      v1ResourceType,
+		Type:              v1pb.PolicyType_ROLLOUT_POLICY,
+		InheritFromParent: false,
+		Enforce:           true,
+		Policy: &v1pb.Policy_RolloutPolicy{
+			RolloutPolicy: convertToV1PBRolloutPolicy(defaultStorePBPolicy),
+		},
+	}, nil
 }
 
 // findPolicyMessage finds the policy and the parent name by the policy name.

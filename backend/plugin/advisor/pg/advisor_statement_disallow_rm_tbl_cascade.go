@@ -74,7 +74,7 @@ func (c *statementDisallowRemoveTblCascadeChecker) EnterDropstmt(ctx *parser.Dro
 			Content: "The use of CASCADE is not permitted when removing a table",
 			StartPosition: &storepb.Position{
 				Line:   int32(ctx.GetStart().GetLine()),
-				Column: int32(ctx.GetStart().GetColumn()),
+				Column: 0,
 			},
 		})
 	}
@@ -95,7 +95,7 @@ func (c *statementDisallowRemoveTblCascadeChecker) EnterTruncatestmt(ctx *parser
 			Content: "The use of CASCADE is not permitted when removing a table",
 			StartPosition: &storepb.Position{
 				Line:   int32(ctx.GetStart().GetLine()),
-				Column: int32(ctx.GetStart().GetColumn()),
+				Column: 0,
 			},
 		})
 	}

@@ -160,7 +160,7 @@ func (r *CollationAllowlistRule) checkCreateTable(ctx *mysql.CreateTableContext)
 			for _, attr := range columnDef.FieldDefinition().AllColumnAttribute() {
 				if attr != nil && attr.Collate() != nil && attr.Collate().CollationName() != nil {
 					collation := mysqlparser.NormalizeMySQLCollationName(attr.Collate().CollationName())
-					r.checkCollation(collation, tableElement.GetStart().GetLine())
+					r.checkCollation(collation, columnDef.GetStart().GetLine())
 				}
 			}
 		}

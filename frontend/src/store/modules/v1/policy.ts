@@ -309,8 +309,25 @@ export const usePolicyByParentAndType = (
   };
 };
 
-// Default RolloutPolicy payload is somehow strict to prevent auto rollout
-
+// getEmptyRolloutPolicy returns a default rollout policy for UI display purposes.
+//
+// IMPORTANT: These defaults MUST match the backend defaults defined in:
+// - backend/store/policy.go: GetDefaultRolloutPolicy()
+// - backend/api/v1/org_policy_service.go: getDefaultRolloutPolicy()
+//
+// This function is used for:
+// 1. Showing default policy in creation forms (so users see what they'll get)
+// 2. Allowing users to customize before creation
+// 3. Detecting if user customized from defaults (only persist if customized)
+//
+// The backend automatically returns these defaults via GetPolicy API when no
+// custom policy exists in the database, so we only persist customizations.
+//
+// Default values:
+// - automatic: false (manual rollout required)
+// - roles: [] (no role restrictions)
+// - requiredIssueApproval: true (issue must be approved before rollout)
+// - planCheckEnforcement: ERROR_ONLY (block rollout only on errors, not warnings)
 export const getEmptyRolloutPolicy = (
   parentPath: string,
   resourceType: PolicyResourceType

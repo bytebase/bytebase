@@ -30,12 +30,14 @@ export function batchConvertPositionToMonacoPosition(
 
     const line = lines[lineNumber - 1];
     let column = 1;
+    let pushed = false;
     for (let i = 0; i < line.length; i++) {
       if (position.column <= i + 1) {
         result.push({
           lineNumber: lineNumber,
           column: column,
         });
+        pushed = true;
         break;
       }
       const codePoint = line.codePointAt(i);
@@ -45,10 +47,12 @@ export function batchConvertPositionToMonacoPosition(
       const codeUnitCount = codePoint > 0xffff ? 2 : 1;
       column += codeUnitCount;
     }
-    result.push({
-      lineNumber: lineNumber,
-      column: column,
-    });
+    if (!pushed) {
+      result.push({
+        lineNumber: lineNumber,
+        column: column,
+      });
+    }
   }
 
   return result;

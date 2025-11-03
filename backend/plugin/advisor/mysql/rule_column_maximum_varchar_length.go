@@ -128,7 +128,7 @@ func (r *VarcharLengthRule) checkCreateTable(ctx *mysql.CreateTableContext) {
 				Code:          advisor.VarcharLengthExceedsLimit.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("The length of the VARCHAR column `%s.%s` is bigger than %d", tableName, columnName, r.maximum),
-				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + tableElement.GetStart().GetLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + tableElement.ColumnDefinition().GetStart().GetLine()),
 			})
 		}
 	}

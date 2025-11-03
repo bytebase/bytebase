@@ -11,6 +11,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/qb"
+	"github.com/bytebase/bytebase/backend/component/export"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -140,15 +141,15 @@ func (s *AuditLogService) ExportAuditLogs(ctx context.Context, request *connect.
 	var content []byte
 	switch request.Msg.Format {
 	case v1pb.ExportFormat_CSV:
-		if content, err = exportCSV(result); err != nil {
+		if content, err = export.CSV(result); err != nil {
 			return nil, err
 		}
 	case v1pb.ExportFormat_JSON:
-		if content, err = exportJSON(result); err != nil {
+		if content, err = export.JSON(result); err != nil {
 			return nil, err
 		}
 	case v1pb.ExportFormat_XLSX:
-		if content, err = exportXLSX(result); err != nil {
+		if content, err = export.XLSX(result); err != nil {
 			return nil, err
 		}
 	default:
