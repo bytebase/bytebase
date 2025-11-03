@@ -103,6 +103,10 @@ const planCreateErrorList = computed(() => {
 });
 
 const doCreatePlan = async () => {
+  // Prevent race condition: check if already creating
+  if (loading.value) {
+    return;
+  }
   loading.value = true;
 
   try {
@@ -117,7 +121,10 @@ const doCreatePlan = async () => {
         plan: plan.value,
       });
       const createdPlan = await planServiceClientConnect.createPlan(request);
-      if (!createdPlan) return;
+      if (!createdPlan) {
+        loading.value = false;
+        return;
+      }
 
       nextTick(() => {
         router.replace({
@@ -152,7 +159,10 @@ const doCreateDataExportIssue = async () => {
     plan: plan.value,
   });
   const createdPlan = await planServiceClientConnect.createPlan(planRequest);
-  if (!createdPlan) return;
+  if (!createdPlan) {
+    loading.value = false;
+    return;
+  }
 
   // Create the issue
   const issueRequest = create(CreateIssueRequestSchema, {
