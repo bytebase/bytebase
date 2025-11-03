@@ -259,7 +259,7 @@ func extractPolicyTypeFromName(policyName string) (storepb.Policy_Type, error) {
 
 // getDefaultRolloutPolicy returns the default rollout policy when no custom policy exists.
 // Uses the shared store.GetDefaultRolloutPolicy to ensure consistency across API and store layers.
-func (s *OrgPolicyService) getDefaultRolloutPolicy(_ context.Context, parent string, policyName string) (*v1pb.Policy, error) {
+func (*OrgPolicyService) getDefaultRolloutPolicy(_ context.Context, parent string, policyName string) (*v1pb.Policy, error) {
 	resourceType, _, err := getPolicyResourceTypeAndResource(parent)
 	if err != nil {
 		return nil, err
@@ -273,6 +273,8 @@ func (s *OrgPolicyService) getDefaultRolloutPolicy(_ context.Context, parent str
 		v1ResourceType = v1pb.PolicyResourceType_ENVIRONMENT
 	case storepb.Policy_PROJECT:
 		v1ResourceType = v1pb.PolicyResourceType_PROJECT
+	default:
+		// Keep the default RESOURCE_TYPE_UNSPECIFIED
 	}
 
 	// Get the default rollout policy from the shared store function
