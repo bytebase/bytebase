@@ -109,10 +109,7 @@ func configureGrpcRouters(
 	}
 
 	// Create validation interceptor.
-	validateInterceptor, err := validate.NewInterceptor()
-	if err != nil {
-		return errors.Wrap(err, "failed to create validation interceptor")
-	}
+	validateInterceptor := validate.NewInterceptor()
 
 	handlerOpts := connect.WithHandlerOptions(
 		connect.WithInterceptors(
