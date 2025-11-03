@@ -123,7 +123,7 @@ func (r *NamingColumnRule) checkCreateTable(ctx *mysql.CreateTableContext) {
 		}
 
 		_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
-		r.handleColumn(tableName, columnName, tableElement.GetStart().GetLine())
+		r.handleColumn(tableName, columnName, tableElement.ColumnDefinition().GetStart().GetLine())
 	}
 }
 
@@ -161,7 +161,7 @@ func (r *NamingColumnRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 						continue
 					}
 					_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
-					r.handleColumn(tableName, columnName, tableElement.GetStart().GetLine())
+					r.handleColumn(tableName, columnName, tableElement.ColumnDefinition().GetStart().GetLine())
 				}
 			default:
 			}

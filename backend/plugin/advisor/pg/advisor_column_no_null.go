@@ -96,7 +96,7 @@ func (c *columnNoNullChecker) EnterCreatestmt(ctx *parser.CreatestmtContext) {
 				if colDef.Colid() != nil {
 					columnName := pg.NormalizePostgreSQLColid(colDef.Colid())
 					// Add column as nullable by default
-					c.addColumn("public", tableName, columnName, elem.GetStart().GetLine())
+					c.addColumn("public", tableName, columnName, colDef.GetStart().GetLine())
 
 					// Check column constraints for NOT NULL or PRIMARY KEY
 					c.removeColumnByColConstraints("public", tableName, colDef)
@@ -131,7 +131,7 @@ func (c *columnNoNullChecker) EnterAltertablestmt(ctx *parser.AltertablestmtCont
 				colDef := cmd.ColumnDef()
 				if colDef.Colid() != nil {
 					columnName := pg.NormalizePostgreSQLColid(colDef.Colid())
-					c.addColumn("public", tableName, columnName, ctx.GetStart().GetLine())
+					c.addColumn("public", tableName, columnName, colDef.GetStart().GetLine())
 					c.removeColumnByColConstraints("public", tableName, colDef)
 				}
 			}
@@ -150,7 +150,7 @@ func (c *columnNoNullChecker) EnterAltertablestmt(ctx *parser.AltertablestmtCont
 				allColids := cmd.AllColid()
 				if len(allColids) > 0 {
 					columnName := pg.NormalizePostgreSQLColid(allColids[0])
-					c.addColumn("public", tableName, columnName, ctx.GetStart().GetLine())
+					c.addColumn("public", tableName, columnName, cmd.GetStart().GetLine())
 				}
 			}
 

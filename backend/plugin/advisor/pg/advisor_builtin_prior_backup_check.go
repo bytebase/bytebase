@@ -239,7 +239,7 @@ func (c *ddlChecker) EnterEveryRule(ctx antlr.ParserRuleContext) {
 			Code:    advisor.BuiltinPriorBackupCheck.Int32(),
 			StartPosition: &storepb.Position{
 				Line:   int32(ctx.GetStart().GetLine()),
-				Column: int32(ctx.GetStart().GetColumn()),
+				Column: 0,
 			},
 		})
 	}

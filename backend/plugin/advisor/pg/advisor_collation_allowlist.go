@@ -174,7 +174,7 @@ func (c *collationAllowlistChecker) addAdvice(collation string, ctx antlr.Parser
 		Content: fmt.Sprintf("Use disabled collation \"%s\", related statement \"%s\"", collation, text),
 		StartPosition: &storepb.Position{
 			Line:   int32(ctx.GetStart().GetLine()),
-			Column: int32(ctx.GetStart().GetColumn()),
+			Column: 0,
 		},
 	})
 }

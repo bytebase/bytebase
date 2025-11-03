@@ -130,7 +130,7 @@ func (r *ColumnMaximumCharacterLengthRule) checkCreateTable(ctx *mysql.CreateTab
 				Code:          advisor.CharLengthExceedsLimit.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("The length of the CHAR column `%s.%s` is bigger than %d, please use VARCHAR instead", tableName, columnName, r.maximum),
-				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + tableElement.GetStart().GetLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + tableElement.ColumnDefinition().GetStart().GetLine()),
 			})
 		}
 	}

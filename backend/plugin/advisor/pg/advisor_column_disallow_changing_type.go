@@ -81,7 +81,7 @@ func (c *columnDisallowChangingTypeChecker) EnterAltertablestmt(ctx *parser.Alte
 				Content: fmt.Sprintf("The statement \"%s\" changes column type", text),
 				StartPosition: &storepb.Position{
 					Line:   int32(ctx.GetStart().GetLine()),
-					Column: int32(ctx.GetStart().GetColumn()),
+					Column: 0,
 				},
 			})
 			break // Only report once per ALTER TABLE statement

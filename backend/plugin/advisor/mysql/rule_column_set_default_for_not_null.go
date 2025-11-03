@@ -153,7 +153,7 @@ func (r *ColumnSetDefaultForNotNullRule) checkCreateTable(ctx *mysql.CreateTable
 				Code:          advisor.NotNullColumnWithNoDefault.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("Column `%s`.`%s` is NOT NULL but doesn't have DEFAULT", tableName, columnName),
-				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + tableElement.GetStart().GetLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + tableElement.ColumnDefinition().GetStart().GetLine()),
 			})
 		}
 	}

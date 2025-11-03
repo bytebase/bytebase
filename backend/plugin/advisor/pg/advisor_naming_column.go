@@ -92,7 +92,7 @@ func (c *namingColumnConventionChecker) EnterCreatestmt(ctx *parser.CreatestmtCo
 			colDef := elem.ColumnDef()
 			if colDef.Colid() != nil {
 				columnName := pg.NormalizePostgreSQLColid(colDef.Colid())
-				c.checkColumnName(tableName, columnName, elem.GetStart().GetLine())
+				c.checkColumnName(tableName, columnName, colDef.GetStart().GetLine())
 			}
 		}
 	}
@@ -122,7 +122,7 @@ func (c *namingColumnConventionChecker) EnterAltertablestmt(ctx *parser.Altertab
 			colDef := cmd.ColumnDef()
 			if colDef.Colid() != nil {
 				columnName := pg.NormalizePostgreSQLColid(colDef.Colid())
-				c.checkColumnName(tableName, columnName, cmd.GetStart().GetLine())
+				c.checkColumnName(tableName, columnName, colDef.GetStart().GetLine())
 			}
 		}
 	}
