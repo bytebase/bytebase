@@ -6,8 +6,9 @@ import (
 	"strings"
 	"time"
 
-	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"google.golang.org/protobuf/types/known/structpb"
+
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 // ExportCSV exports query results as CSV format (legacy wrapper).

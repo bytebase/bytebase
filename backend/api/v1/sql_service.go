@@ -1117,46 +1117,6 @@ func doEncrypt(exports []*encryptContent, password string) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-func formatExport(
-	ctx context.Context,
-	stores *store.Store,
-	instance *store.InstanceMessage,
-	database *store.DatabaseMessage,
-	result *v1pb.QueryResult,
-	request *v1pb.ExportRequest,
-) ([]byte, error) {
-	switch request.Format {
-	case v1pb.ExportFormat_CSV:
-		return export.ExportCSV(result)
-	case v1pb.ExportFormat_JSON:
-		return export.ExportJSON(result)
-	case v1pb.ExportFormat_SQL:
-		resourceList, err := export.GetResources(
-			ctx,
-			stores,
-			instance.Metadata.GetEngine(),
-			database.DatabaseName,
-			request.Statement,
-			instance,
-			BuildGetDatabaseMetadataFunc(stores),
-			BuildListDatabaseNamesFunc(stores),
-			BuildGetLinkedDatabaseMetadataFunc(stores, instance.Metadata.GetEngine()),
-		)
-		if err != nil {
-			return nil, errors.Errorf("failed to extract resource list: %v", err)
-		}
-		statementPrefix, err := export.GetSQLStatementPrefix(instance.Metadata.GetEngine(), resourceList, result.ColumnNames)
-		if err != nil {
-			return nil, err
-		}
-		return export.ExportSQL(instance.Metadata.GetEngine(), statementPrefix, result)
-	case v1pb.ExportFormat_XLSX:
-		return export.ExportXLSX(result)
-	default:
-		return nil, errors.Errorf("unsupported export format: %s", request.Format.String())
-	}
-}
-
 func (s *SQLService) createQueryHistory(database *store.DatabaseMessage, queryType store.QueryHistoryType, statement string, userUID int, duration time.Duration, queryErr error) {
 	qh := &store.QueryHistoryMessage{
 		CreatorUID: userUID,
