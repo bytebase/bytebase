@@ -1,4 +1,4 @@
-package pgantlr
+package pg
 
 import (
 	"fmt"
@@ -17,6 +17,7 @@ import (
 // 2. Table constraints without explicit names
 // 3. Objects without explicit schema names (tables, indexes, views, sequences, functions)
 // 4. Foreign key references without explicit schema names
+// 5. Indexes without explicit names (unnamed indexes are not allowed)
 func CheckSDL(statement string) ([]*storepb.Advice, error) {
 	tree, err := pgparser.ParsePostgreSQL(statement)
 	if err != nil {

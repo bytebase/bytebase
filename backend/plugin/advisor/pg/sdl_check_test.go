@@ -1,4 +1,4 @@
-package pgantlr
+package pg
 
 import (
 	"testing"

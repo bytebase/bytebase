@@ -12,7 +12,7 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/pgantlr"
+	advisorpg "github.com/bytebase/bytebase/backend/plugin/advisor/pg"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
@@ -675,5 +675,5 @@ func getStatementTypesWithPositionsForEngine(engine storepb.Engine, asts any) ([
 // 2. Table constraints without explicit names
 // 3. Objects without explicit schema names
 func (s *ReleaseService) runSDLChecksForPostgreSQL(_ context.Context, statement string) ([]*storepb.Advice, error) {
-	return pgantlr.CheckSDL(statement)
+	return advisorpg.CheckSDL(statement)
 }
