@@ -141,15 +141,15 @@ func (s *AuditLogService) ExportAuditLogs(ctx context.Context, request *connect.
 	var content []byte
 	switch request.Msg.Format {
 	case v1pb.ExportFormat_CSV:
-		if content, err = export.ExportCSV(result); err != nil {
+		if content, err = export.CSV(result); err != nil {
 			return nil, err
 		}
 	case v1pb.ExportFormat_JSON:
-		if content, err = export.ExportJSON(result); err != nil {
+		if content, err = export.JSON(result); err != nil {
 			return nil, err
 		}
 	case v1pb.ExportFormat_XLSX:
-		if content, err = export.ExportXLSX(result); err != nil {
+		if content, err = export.XLSX(result); err != nil {
 			return nil, err
 		}
 	default:

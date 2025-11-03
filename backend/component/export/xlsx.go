@@ -20,9 +20,9 @@ const (
 	ExcelMaxColumn = 18278
 )
 
-// ExportXLSX exports query results as XLSX format.
+// XLSX exports query results as XLSX format.
 // Note: XLSX still materializes in memory due to excelize library limitations.
-func ExportXLSX(result *v1pb.QueryResult) ([]byte, error) {
+func XLSX(result *v1pb.QueryResult) ([]byte, error) {
 	f := excelize.NewFile()
 	defer f.Close()
 	index, err := f.NewSheet("Sheet1")
@@ -31,7 +31,7 @@ func ExportXLSX(result *v1pb.QueryResult) ([]byte, error) {
 	}
 	var columnPrefixes []string
 	for i, columnName := range result.ColumnNames {
-		columnPrefix, err := GetExcelColumnName(i)
+		columnPrefix, err := ExcelColumnName(i)
 		if err != nil {
 			return nil, err
 		}
@@ -56,10 +56,10 @@ func ExportXLSX(result *v1pb.QueryResult) ([]byte, error) {
 	return excelBytes.Bytes(), nil
 }
 
-// ExportXLSXToWriter exports XLSX format to a writer.
+// XLSXToWriter exports XLSX format to a writer.
 // Note: XLSX still materializes in memory due to excelize library limitations.
-func ExportXLSXToWriter(w io.Writer, result *v1pb.QueryResult) error {
-	content, err := ExportXLSX(result)
+func XLSXToWriter(w io.Writer, result *v1pb.QueryResult) error {
+	content, err := XLSX(result)
 	if err != nil {
 		return err
 	}
@@ -67,8 +67,8 @@ func ExportXLSXToWriter(w io.Writer, result *v1pb.QueryResult) error {
 	return err
 }
 
-// GetExcelColumnName converts a column index to Excel column name (A, B, ..., Z, AA, AB, ..., ZZZ).
-func GetExcelColumnName(index int) (string, error) {
+// ExcelColumnName converts a column index to Excel column name (A, B, ..., Z, AA, AB, ..., ZZZ).
+func ExcelColumnName(index int) (string, error) {
 	if index >= ExcelMaxColumn {
 		return "", errors.Errorf("index cannot be greater than %v (column ZZZ)", ExcelMaxColumn)
 	}

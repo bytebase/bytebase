@@ -15,15 +15,15 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-// ExportSQL exports query results as SQL INSERT statements (legacy wrapper).
-func ExportSQL(engine storepb.Engine, statementPrefix string, result *v1pb.QueryResult) ([]byte, error) {
+// SQL exports query results as SQL INSERT statements (legacy wrapper).
+func SQL(engine storepb.Engine, statementPrefix string, result *v1pb.QueryResult) ([]byte, error) {
 	return exportToBytes(result, func(w io.Writer, r *v1pb.QueryResult) error {
-		return ExportSQLToWriter(w, engine, statementPrefix, r)
+		return SQLToWriter(w, engine, statementPrefix, r)
 	})
 }
 
-// ExportSQLToWriter streams SQL INSERT statements directly to the writer.
-func ExportSQLToWriter(w io.Writer, engine storepb.Engine, statementPrefix string, result *v1pb.QueryResult) error {
+// SQLToWriter streams SQL INSERT statements directly to the writer.
+func SQLToWriter(w io.Writer, engine storepb.Engine, statementPrefix string, result *v1pb.QueryResult) error {
 	for i, row := range result.Rows {
 		if _, err := w.Write([]byte(statementPrefix)); err != nil {
 			return err
@@ -51,8 +51,8 @@ func ExportSQLToWriter(w io.Writer, engine storepb.Engine, statementPrefix strin
 	return nil
 }
 
-// GetSQLStatementPrefix generates the INSERT INTO statement prefix.
-func GetSQLStatementPrefix(engine storepb.Engine, resourceList []base.SchemaResource, columnNames []string) (string, error) {
+// SQLStatementPrefix generates the INSERT INTO statement prefix.
+func SQLStatementPrefix(engine storepb.Engine, resourceList []base.SchemaResource, columnNames []string) (string, error) {
 	var escapeQuote string
 	switch engine {
 	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_TIDB, storepb.Engine_OCEANBASE, storepb.Engine_SPANNER:

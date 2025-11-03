@@ -12,13 +12,13 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
-// ExportJSON exports query results as JSON format (legacy wrapper).
-func ExportJSON(result *v1pb.QueryResult) ([]byte, error) {
-	return exportToBytes(result, ExportJSONToWriter)
+// JSON exports query results as JSON format (legacy wrapper).
+func JSON(result *v1pb.QueryResult) ([]byte, error) {
+	return exportToBytes(result, JSONToWriter)
 }
 
-// ExportJSONToWriter streams query results as pretty-printed JSON directly to the writer.
-func ExportJSONToWriter(w io.Writer, result *v1pb.QueryResult) error {
+// JSONToWriter streams query results as pretty-printed JSON directly to the writer.
+func JSONToWriter(w io.Writer, result *v1pb.QueryResult) error {
 	records := make([]map[string]any, 0, len(result.Rows))
 	for _, row := range result.Rows {
 		record := make(map[string]any, len(result.ColumnNames))

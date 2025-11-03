@@ -11,14 +11,14 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
-// ExportCSV exports query results as CSV format (legacy wrapper).
-func ExportCSV(result *v1pb.QueryResult) ([]byte, error) {
-	return exportToBytes(result, ExportCSVToWriter)
+// CSV exports query results as CSV format (legacy wrapper).
+func CSV(result *v1pb.QueryResult) ([]byte, error) {
+	return exportToBytes(result, CSVToWriter)
 }
 
-// ExportCSVToWriter streams query results as CSV directly to the writer.
+// CSVToWriter streams query results as CSV directly to the writer.
 // This minimizes memory usage by avoiding intermediate buffering.
-func ExportCSVToWriter(w io.Writer, result *v1pb.QueryResult) error {
+func CSVToWriter(w io.Writer, result *v1pb.QueryResult) error {
 	if _, err := w.Write([]byte(strings.Join(result.ColumnNames, ","))); err != nil {
 		return err
 	}

@@ -51,7 +51,7 @@ func TestGetSQLStatementPrefix(t *testing.T) {
 	a := assert.New(t)
 
 	for _, test := range tests {
-		got, err := GetSQLStatementPrefix(test.engine, test.resourceList, test.columnNames)
+		got, err := SQLStatementPrefix(test.engine, test.resourceList, test.columnNames)
 		a.NoError(err)
 		a.Equal(test.want, got)
 	}
@@ -199,7 +199,7 @@ func TestExportSQL(t *testing.T) {
 	a := assert.New(t)
 
 	for _, test := range tests {
-		got, err := ExportSQL(test.engine, test.statementPrefix, test.result)
+		got, err := SQL(test.engine, test.statementPrefix, test.result)
 		a.NoError(err)
 		a.Equal(test.want, string(got))
 	}
@@ -239,7 +239,7 @@ func TestGetExcelColumnName(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		got, err := GetExcelColumnName(test.index)
+		got, err := ExcelColumnName(test.index)
 		a.NoError(err)
 		a.Equal(test.want, got)
 	}
@@ -304,7 +304,7 @@ func TestExportJSON(t *testing.T) {
 
 	a := assert.New(t)
 	for _, test := range tests {
-		got, err := ExportJSON(test.result)
+		got, err := JSON(test.result)
 		a.NoError(err)
 		a.Equal(test.want, string(got))
 	}

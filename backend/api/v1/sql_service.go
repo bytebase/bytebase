@@ -1049,13 +1049,13 @@ func writeFormattedResult(
 ) error {
 	switch request.Format {
 	case v1pb.ExportFormat_CSV:
-		return export.ExportCSVToWriter(w, result)
+		return export.CSVToWriter(w, result)
 	case v1pb.ExportFormat_JSON:
-		return export.ExportJSONToWriter(w, result)
+		return export.JSONToWriter(w, result)
 	case v1pb.ExportFormat_SQL:
 		return exportSQLWithContext(ctx, w, stores, instance, database, result, request)
 	case v1pb.ExportFormat_XLSX:
-		return export.ExportXLSXToWriter(w, result)
+		return export.XLSXToWriter(w, result)
 	default:
 		return errors.Errorf("unsupported export format: %s", request.Format.String())
 	}
@@ -1085,11 +1085,11 @@ func exportSQLWithContext(
 	if err != nil {
 		return errors.Wrapf(err, "failed to extract resource list")
 	}
-	statementPrefix, err := export.GetSQLStatementPrefix(instance.Metadata.GetEngine(), resourceList, result.ColumnNames)
+	statementPrefix, err := export.SQLStatementPrefix(instance.Metadata.GetEngine(), resourceList, result.ColumnNames)
 	if err != nil {
 		return err
 	}
-	return export.ExportSQLToWriter(w, instance.Metadata.GetEngine(), statementPrefix, result)
+	return export.SQLToWriter(w, instance.Metadata.GetEngine(), statementPrefix, result)
 }
 
 type encryptContent struct {

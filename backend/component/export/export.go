@@ -9,11 +9,11 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
-// ExportWriter is a function type that writes query results to a writer.
-type ExportWriter func(w io.Writer, result *v1pb.QueryResult) error
+// Writer is a function type that writes query results to a writer.
+type Writer func(w io.Writer, result *v1pb.QueryResult) error
 
 // exportToBytes is a helper function that exports to a byte slice using a writer function.
-func exportToBytes(result *v1pb.QueryResult, writerFunc ExportWriter) ([]byte, error) {
+func exportToBytes(result *v1pb.QueryResult, writerFunc Writer) ([]byte, error) {
 	var buf bytes.Buffer
 	if err := writerFunc(&buf, result); err != nil {
 		return nil, err
