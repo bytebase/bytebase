@@ -56,7 +56,7 @@
     "monaco-languageclient": "10.1.0",
     "naive-ui": "2.43.1",
     "normalize-wheel": "^1.0.1",
-    "pev2": "1.16.0",
+    "pev2": "1.17.0",
     "pinia": "3.0.3",
     "pouchdb": "^9.0.0",
     "pouchdb-find": "^9.0.0",
