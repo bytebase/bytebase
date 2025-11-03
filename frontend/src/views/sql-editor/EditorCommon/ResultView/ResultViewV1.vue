@@ -183,7 +183,6 @@ import type {
   SQLEditorQueryParams,
   SQLResultSetV1,
 } from "@/types";
-import { isValidDatabaseName } from "@/types";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import {
   PolicyType,
@@ -191,10 +190,7 @@ import {
   type QueryDataPolicy,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import { ExportRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
-import {
-  hasWorkspacePermissionV2,
-  hasPermissionToCreateDataExportIssue,
-} from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import { provideBinaryFormatContext } from "./DataTable/binary-format-store";
 import DetailPanel from "./DetailPanel";
 import EmptyView from "./EmptyView.vue";

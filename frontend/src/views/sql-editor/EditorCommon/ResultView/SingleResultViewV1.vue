@@ -286,7 +286,7 @@ const props = defineProps<{
   showExport: boolean;
 }>();
 
-const emit = defineEmits<{
+defineEmits<{
   (
     event: "export",
     option: {
