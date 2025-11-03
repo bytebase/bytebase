@@ -6204,6 +6204,11 @@ OAuth2 authentication context.
 OpenID Connect authentication context.
 
 
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| code | [string](#string) |  | Authorization code from OIDC provider. |
+
+
 
 
 

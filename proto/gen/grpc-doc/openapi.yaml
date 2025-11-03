@@ -11746,7 +11746,10 @@ components:
             description: OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
         OIDCIdentityProviderContext:
             type: object
-            properties: {}
+            properties:
+                code:
+                    type: string
+                    description: Authorization code from OIDC provider.
             description: OpenID Connect authentication context.
         ObjectSchema:
             type: object

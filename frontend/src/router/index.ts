@@ -124,7 +124,22 @@ router.beforeEach((to, from, next) => {
     authStore.isLoggedIn &&
     !authStore.unauthenticatedOccurred
   ) {
-    const redirect = (to.query["redirect"] as string) || "/";
+    // For IdP-initiated SSO, use relay_state parameter
+    // For other auth routes, use redirect parameter
+    const relayState = to.query["relay_state"] as string | undefined;
+    const redirectParam = to.query["redirect"] as string | undefined;
+
+    // Validate relay_state to prevent open redirect attacks
+    let redirect = "/";
+    if (relayState && typeof relayState === "string") {
+      // Only allow relative URLs, reject protocol-relative URLs (//)
+      if (relayState.startsWith("/") && !relayState.startsWith("//")) {
+        redirect = relayState;
+      }
+    } else if (redirectParam) {
+      redirect = redirectParam;
+    }
+
     next(redirect);
     return;
   }
