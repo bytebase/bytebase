@@ -128,6 +128,26 @@ func (s *Store) getIamPolicy(ctx context.Context, find *FindPolicyMessage) (*Iam
 	}, nil
 }
 
+// GetDefaultRolloutPolicy returns the default rollout policy when no custom policy exists.
+// This is used as a fallback for both API and store layers to ensure consistent defaults.
+// Default values:
+// - automatic: false (manual rollout required)
+// - roles: [] (no role restrictions)
+// - requiredIssueApproval: true (issue must be approved before rollout)
+// - planCheckEnforcement: ERROR_ONLY (block rollout only on errors, not warnings)
+func GetDefaultRolloutPolicy() *storepb.RolloutPolicy {
+	return &storepb.RolloutPolicy{
+		Automatic: false,
+		Roles:     []string{},
+		Checkers: &storepb.RolloutPolicy_Checkers{
+			RequiredIssueApproval: true,
+			RequiredStatusChecks: &storepb.RolloutPolicy_Checkers_RequiredStatusChecks{
+				PlanCheckEnforcement: storepb.RolloutPolicy_Checkers_ERROR_ONLY,
+			},
+		},
+	}
+}
+
 func (s *Store) GetRolloutPolicy(ctx context.Context, environment string) (*storepb.RolloutPolicy, error) {
 	resource := common.FormatEnvironment(environment)
 	resourceType := storepb.Policy_ENVIRONMENT
@@ -141,15 +161,7 @@ func (s *Store) GetRolloutPolicy(ctx context.Context, environment string) (*stor
 		return nil, errors.Wrapf(err, "failed to get policy")
 	}
 	if policy == nil {
-		// Return default rollout policy with checkers.
-		return &storepb.RolloutPolicy{
-			Checkers: &storepb.RolloutPolicy_Checkers{
-				RequiredIssueApproval: true,
-				RequiredStatusChecks: &storepb.RolloutPolicy_Checkers_RequiredStatusChecks{
-					PlanCheckEnforcement: storepb.RolloutPolicy_Checkers_ERROR_ONLY,
-				},
-			},
-		}, nil
+		return GetDefaultRolloutPolicy(), nil
 	}
 
 	p := &storepb.RolloutPolicy{}

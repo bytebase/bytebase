@@ -113,6 +113,7 @@
 
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
+import { isEqual } from "lodash-es";
 import { PlusIcon, ListOrderedIcon, GripVerticalIcon } from "lucide-vue-next";
 import { NTabs, NTabPane, NButton } from "naive-ui";
 import { onMounted, computed, reactive, watch, h, ref } from "vue";
@@ -264,13 +265,16 @@ const doCreate = async (params: {
   });
   await environmentV1Store.fetchEnvironments();
 
-  const requests = [
-    policyV1Store.upsertPolicy({
+  // Only persist rollout policy if user customized it from the defaults
+  // Otherwise, let the backend return defaults dynamically via GetPolicy API
+  const isCustomized = !isEqual(rolloutPolicy, DEFAULT_NEW_ROLLOUT_POLICY);
+  if (isCustomized) {
+    await policyV1Store.upsertPolicy({
       parentPath: `${environmentNamePrefix}${createdEnvironment.id}`,
       policy: rolloutPolicy,
-    }),
-  ];
-  await Promise.all(requests);
+    });
+  }
+
   state.showCreateModal = false;
   selectEnvironment(createdEnvironment.order);
 };
