@@ -52,7 +52,7 @@
     </NTabs>
   </div>
 
-  <Drawer :show="state.showCreateModal" @close="discardReorder">
+  <Drawer :show="state.showCreateModal" @close="state.showCreateModal = false">
     <EnvironmentForm
       :create="true"
       :environment="getEnvironmentCreate()"
