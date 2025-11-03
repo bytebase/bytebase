@@ -35,7 +35,7 @@
     "bootstrap": "5.3.8",
     "crypto-js": "^4.2.0",
     "d3-shape": "^3.2.0",
-    "dayjs": "1.11.18",
+    "dayjs": "1.11.19",
     "dompurify": "3.2.7",
     "downloadjs": "1.4.7",
     "elkjs": "^0.11.0",
