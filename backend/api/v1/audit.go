@@ -59,7 +59,7 @@ func (in *AuditInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc 
 			if !common.IsNil(response) {
 				respMsg = response.Any()
 			}
-			if err := createAuditLogConnect(ctx, req.Any(), respMsg, req.Spec().Procedure, in.store, serviceData, rerr, req.Header(), latency); err != nil {
+			if err := createAuditLogConnect(ctx, req.Any(), respMsg, req.Spec().Procedure, in.store, serviceData, rerr, req.Header(), req.Peer().Addr, latency); err != nil {
 				slog.Warn("audit interceptor: failed to create audit log", log.BBError(err), slog.String("method", req.Spec().Procedure))
 			}
 		}
@@ -120,14 +120,14 @@ func (c *auditConnectStreamingConn) Send(resp any) error {
 	// Create audit log for each message pair
 	if c.curRequest != nil {
 		latency := time.Since(c.startTime)
-		if auditErr := createAuditLogConnect(c.ctx, c.curRequest, resp, c.method, c.interceptor.store, nil, nil, c.RequestHeader(), latency); auditErr != nil {
+		if auditErr := createAuditLogConnect(c.ctx, c.curRequest, resp, c.method, c.interceptor.store, nil, nil, c.RequestHeader(), c.Peer().Addr, latency); auditErr != nil {
 			return auditErr
 		}
 	}
 	return nil
 }
 
-func createAuditLogConnect(ctx context.Context, request, response any, method string, storage *store.Store, serviceData *anypb.Any, rerr error, headers http.Header, latency time.Duration) error {
+func createAuditLogConnect(ctx context.Context, request, response any, method string, storage *store.Store, serviceData *anypb.Any, rerr error, headers http.Header, peerAddr string, latency time.Duration) error {
 	requestString, err := getRequestString(request)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get request string")
@@ -152,7 +152,7 @@ func createAuditLogConnect(ctx context.Context, request, response any, method st
 		return connect.NewError(connect.CodeInternal, errors.New("auth context not found"))
 	}
 
-	requestMetadata := getRequestMetadataFromHeaders(headers)
+	requestMetadata := getRequestMetadataFromHeaders(headers, peerAddr)
 
 	var parents []string
 	if authContext.HasWorkspaceResource() {
@@ -531,13 +531,18 @@ func needAudit(ctx context.Context) bool {
 }
 
 // getRequestMetadataFromHeaders extracts request metadata from HTTP headers for ConnectRPC.
-func getRequestMetadataFromHeaders(headers http.Header) *storepb.RequestMetadata {
+func getRequestMetadataFromHeaders(headers http.Header, peerAddr string) *storepb.RequestMetadata {
 	userAgent := headers.Get("User-Agent")
-	// For ConnectRPC, we don't have direct access to peer info like gRPC
-	// The caller IP will need to be extracted from X-Forwarded-For or similar headers
-	callerIP := headers.Get("X-Forwarded-For")
+	// Extract caller IP with fallback chain:
+	// 1. X-Real-IP (set by reverse proxy, most trustworthy single IP)
+	// 2. X-Forwarded-For (standard but can contain client-spoofed data)
+	// 3. Peer address from ConnectRPC (direct connection fallback)
+	callerIP := headers.Get("X-Real-IP")
 	if callerIP == "" {
-		callerIP = headers.Get("X-Real-IP")
+		callerIP = headers.Get("X-Forwarded-For")
+	}
+	if callerIP == "" {
+		callerIP = peerAddr
 	}
 
 	return &storepb.RequestMetadata{

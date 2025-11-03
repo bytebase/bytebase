@@ -35,7 +35,7 @@
     "bootstrap": "5.3.8",
     "crypto-js": "^4.2.0",
     "d3-shape": "^3.2.0",
-    "dayjs": "1.11.18",
+    "dayjs": "1.11.19",
     "dompurify": "3.2.7",
     "downloadjs": "1.4.7",
     "elkjs": "^0.11.0",
@@ -56,7 +56,7 @@
     "monaco-languageclient": "10.1.0",
     "naive-ui": "2.43.1",
     "normalize-wheel": "^1.0.1",
-    "pev2": "1.16.0",
+    "pev2": "1.17.0",
     "pinia": "3.0.3",
     "pouchdb": "^9.0.0",
     "pouchdb-find": "^9.0.0",
@@ -67,8 +67,8 @@
     "rxjs": "^7.8.2",
     "scroll-into-view-if-needed": "^3.1.0",
     "scrollparent": "^2.1.0",
-    "semver": "7.7.2",
-    "slug": "11.0.0",
+    "semver": "7.7.3",
+    "slug": "11.0.1",
     "splitpanes": "4.0.4",
     "sql-formatter": "15.6.10",
     "string-width": "^8.0.0",
@@ -135,7 +135,7 @@
     "prettier": "3.6.2",
     "remark-gfm": "^4.0.1",
     "remark-parse": "^11.0.0",
-    "rollup": "4.52.3",
+    "rollup": "4.52.5",
     "tailwindcss": "3.4.18",
     "ts-node": "^10.9.2",
     "typescript": "5.9.3",
@@ -161,5 +161,5 @@
   "browserslist": [
     "> 0.08%, not dead"
   ],
-  "packageManager": "pnpm@10.17.1"
+  "packageManager": "pnpm@10.20.0"
 }

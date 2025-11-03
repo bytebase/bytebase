@@ -88,8 +88,8 @@ func TestGetListProjectFilter(t *testing.T) {
 		{
 			name:     "label filter - in operator",
 			filter:   `labels.environment in ["production", "staging"]`,
-			wantSQL:  "(project.setting->'labels'->>'environment' IN ($1,$2))",
-			wantArgs: []any{"production", "staging"},
+			wantSQL:  "(project.setting->'labels'->>'environment' = ANY($1))",
+			wantArgs: []any{[]any{"production", "staging"}},
 			wantErr:  false,
 		},
 		{

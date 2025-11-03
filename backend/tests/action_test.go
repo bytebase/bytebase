@@ -298,10 +298,12 @@ func TestActionCheckCommand(t *testing.T) {
 
 		// Create test data directory and schema.sql file
 		testDataDir := t.TempDir()
-		schemaContent := `CREATE TABLE users (
-    id SERIAL PRIMARY KEY,
-    username VARCHAR(255) NOT NULL UNIQUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		schemaContent := `CREATE TABLE public.users (
+    id SERIAL NOT NULL,
+    username VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT pk_users PRIMARY KEY (id),
+    CONSTRAINT uk_users_username UNIQUE (username)
 );`
 		schemaFile := filepath.Join(testDataDir, "schema.sql")
 		err = os.WriteFile(schemaFile, []byte(schemaContent), 0644)
@@ -341,20 +343,23 @@ func TestActionCheckCommand(t *testing.T) {
 		testDataDir := t.TempDir()
 
 		// Create users.sql
-		usersContent := `CREATE TABLE users (
-    id SERIAL PRIMARY KEY,
-    username VARCHAR(255) NOT NULL UNIQUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		usersContent := `CREATE TABLE public.users (
+    id SERIAL NOT NULL,
+    username VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT pk_users PRIMARY KEY (id),
+    CONSTRAINT uk_users_username UNIQUE (username)
 );`
 		usersFile := filepath.Join(testDataDir, "users.sql")
 		err = os.WriteFile(usersFile, []byte(usersContent), 0644)
 		a.NoError(err)
 
 		// Create products.sql
-		productsContent := `CREATE TABLE products (
-    id SERIAL PRIMARY KEY,
+		productsContent := `CREATE TABLE public.products (
+    id SERIAL NOT NULL,
     name VARCHAR(255) NOT NULL,
-    price DECIMAL(10,2)
+    price DECIMAL(10,2),
+    CONSTRAINT pk_products PRIMARY KEY (id)
 );`
 		productsFile := filepath.Join(testDataDir, "products.sql")
 		err = os.WriteFile(productsFile, []byte(productsContent), 0644)
