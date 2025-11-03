@@ -64,6 +64,10 @@ const (
 	StatementNoLockOption                     Code = 237
 	StatementObjectOwnerCheck                 Code = 238
 	StatementDisallowedInSDL                  Code = 239
+	SDLDisallowColumnConstraint               Code = 240
+	SDLRequireConstraintName                  Code = 241
+	SDLRequireSchemaName                      Code = 242
+	SDLRequireIndexName                       Code = 243
 
 	// 301 ～ 399 naming error code
 	// 301 table naming advisor error code.
