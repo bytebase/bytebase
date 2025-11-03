@@ -12,6 +12,7 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/pgantlr"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
@@ -439,6 +440,23 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 							}
 						}
 					}
+
+					// Run SDL-specific checks (only for PostgreSQL)
+					if engine == storepb.Engine_POSTGRES && len(checkResult.Advices) == 0 {
+						sdlAdvices, err := s.runSDLChecksForPostgreSQL(ctx, statement)
+						if err != nil {
+							checkResult.Advices = append(checkResult.Advices, &v1pb.Advice{
+								Status:  v1pb.Advice_ERROR,
+								Code:    advisor.Internal.Int32(),
+								Title:   "Failed to run SDL checks",
+								Content: err.Error(),
+							})
+						} else {
+							for _, advice := range sdlAdvices {
+								checkResult.Advices = append(checkResult.Advices, convertToV1Advice(advice))
+							}
+						}
+					}
 				}
 			}
 
@@ -594,6 +612,7 @@ func convertRiskLevel(riskLevel storepb.RiskLevel) (v1pb.RiskLevel, error) {
 
 // allowedSDLStatementTypes defines the whitelist of statement types allowed in SDL files.
 // SDL files should only contain CREATE and COMMENT statements to declare the desired schema.
+// ALTER SEQUENCE is allowed for setting ownership (OWNED BY).
 var allowedSDLStatementTypes = map[string]bool{
 	// CREATE statements - declare new objects
 	"CREATE_TABLE":     true,
@@ -603,6 +622,9 @@ var allowedSDLStatementTypes = map[string]bool{
 	"CREATE_FUNCTION":  true,
 	"CREATE_PROCEDURE": true,
 	"CREATE_SCHEMA":    true,
+
+	// ALTER statements - limited to specific cases
+	"ALTER_SEQUENCE": true, // Allowed for OWNED BY and sequence options
 
 	// COMMENT - metadata annotations
 	"COMMENT": true,
@@ -645,4 +667,13 @@ func getStatementTypesWithPositionsForEngine(engine storepb.Engine, asts any) ([
 		// For unsupported engines, return empty list (skip check)
 		return []statementTypeWithPosition{}, nil
 	}
+}
+
+// runSDLChecksForPostgreSQL runs SDL-specific checks for PostgreSQL declarative files.
+// It checks for:
+// 1. Column-level constraints (not allowed, only table-level)
+// 2. Table constraints without explicit names
+// 3. Objects without explicit schema names
+func (s *ReleaseService) runSDLChecksForPostgreSQL(_ context.Context, statement string) ([]*storepb.Advice, error) {
+	return pgantlr.CheckSDL(statement)
 }
