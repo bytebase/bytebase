@@ -366,7 +366,7 @@ func (c *sdlChecker) checkColumnConstraints(columnDef parser.IColumnDefContext, 
 // isDisallowedColumnConstraint returns true if the constraint is not allowed at column level in SDL.
 // Allowed: NOT NULL, NULL, DEFAULT, GENERATED
 // Disallowed: PRIMARY KEY, UNIQUE, CHECK, FOREIGN KEY
-func (c *sdlChecker) isDisallowedColumnConstraint(elem parser.IColconstraintelemContext) bool {
+func (*sdlChecker) isDisallowedColumnConstraint(elem parser.IColconstraintelemContext) bool {
 	if elem == nil {
 		return false
 	}
@@ -536,7 +536,7 @@ func (c *sdlChecker) checkColumnForeignKeyReferenceSchema(elem parser.IColconstr
 
 // Helper functions
 
-func (c *sdlChecker) getConstraintTypeName(elem parser.IColconstraintelemContext) string {
+func (*sdlChecker) getConstraintTypeName(elem parser.IColconstraintelemContext) string {
 	if elem == nil {
 		return "UNKNOWN"
 	}
@@ -567,7 +567,7 @@ func (c *sdlChecker) getConstraintTypeName(elem parser.IColconstraintelemContext
 	return "CONSTRAINT"
 }
 
-func (c *sdlChecker) getTableConstraintType(constraint parser.ITableconstraintContext) string {
+func (*sdlChecker) getTableConstraintType(constraint parser.ITableconstraintContext) string {
 	if constraint.Constraintelem() == nil {
 		return "CONSTRAINT"
 	}
@@ -590,7 +590,7 @@ func (c *sdlChecker) getTableConstraintType(constraint parser.ITableconstraintCo
 	return "CONSTRAINT"
 }
 
-func (c *sdlChecker) getConstraintExample(constraint parser.ITableconstraintContext, _ bool) string {
+func (*sdlChecker) getConstraintExample(constraint parser.ITableconstraintContext, _ bool) string {
 	if constraint.Constraintelem() == nil {
 		return "..."
 	}
@@ -610,7 +610,7 @@ func (c *sdlChecker) getConstraintExample(constraint parser.ITableconstraintCont
 	return "..."
 }
 
-func (c *sdlChecker) extractSchemaAndNameFromFuncName(funcName parser.IFunc_nameContext) (string, string) {
+func (*sdlChecker) extractSchemaAndNameFromFuncName(funcName parser.IFunc_nameContext) (string, string) {
 	if funcName.Type_function_name() != nil {
 		return "", funcName.Type_function_name().GetText()
 	}

@@ -674,6 +674,6 @@ func getStatementTypesWithPositionsForEngine(engine storepb.Engine, asts any) ([
 // 1. Column-level constraints (not allowed, only table-level)
 // 2. Table constraints without explicit names
 // 3. Objects without explicit schema names
-func (s *ReleaseService) runSDLChecksForPostgreSQL(_ context.Context, statement string) ([]*storepb.Advice, error) {
+func (*ReleaseService) runSDLChecksForPostgreSQL(_ context.Context, statement string) ([]*storepb.Advice, error) {
 	return advisorpg.CheckSDL(statement)
 }
