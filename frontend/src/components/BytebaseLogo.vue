@@ -3,12 +3,16 @@
     class="flex-shrink-0 max-w-44 flex items-center overflow-hidden"
     @click="recordRedirect"
   >
+    <!-- The active-class and exact-active-class need to set as ""
+     to avoid unexpected route-link class override -->
     <component
       :is="component"
       :to="{
         name: redirect,
       }"
       class="h-full w-full select-none flex flex-row justify-center items-center"
+      active-class=""
+      exact-active-class=""
     >
       <img
         v-if="customBrandingLogo"
