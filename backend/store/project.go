@@ -613,9 +613,7 @@ func GetListProjectFilter(filter string) (*qb.Query, error) {
 				}
 				labelValueList[i] = str
 			}
-			placeholders := strings.Repeat("?,", len(labelValueList))
-			placeholders = placeholders[:len(placeholders)-1]
-			return qb.Q().Space(fmt.Sprintf("%s->'labels'->>'%s' IN (%s)", resource, key, placeholders), labelValueList...), nil
+			return qb.Q().Space(fmt.Sprintf("%s->'labels'->>'%s' = ANY(?)", resource, key), labelValueList), nil
 		default:
 			return nil, errors.Errorf("empty value %v for label filter", value)
 		}

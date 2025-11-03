@@ -723,9 +723,7 @@ func GetListInstanceFilter(filter string) (*qb.Query, error) {
 				}
 				labelValueList[i] = str
 			}
-			placeholders := strings.Repeat("?,", len(labelValueList))
-			placeholders = placeholders[:len(placeholders)-1]
-			return qb.Q().Space(fmt.Sprintf("%s->'labels'->>'%s' IN (%s)", resource, key, placeholders), labelValueList...), nil
+			return qb.Q().Space(fmt.Sprintf("%s->'labels'->>'%s' = ANY(?)", resource, key), labelValueList), nil
 		default:
 			return nil, errors.Errorf("empty value %v for label filter", value)
 		}
@@ -785,24 +783,24 @@ func GetListInstanceFilter(filter string) (*qb.Query, error) {
 		}
 	}
 
-	parseToEngineSQL := func(expr celast.Expr, relation string) (*qb.Query, error) {
+	parseToEngineSQL := func(expr celast.Expr) (*qb.Query, error) {
 		variable, value := getVariableAndValueFromExpr(expr)
 		if variable != "engine" {
 			return nil, errors.Errorf(`only "engine" support "engine in [xx]"/"!(engine in [xx])" operator`)
 		}
 		if value == nil {
-			return nil, errors.Errorf(`empty value %v for "%s" operator`, value, relation)
+			return nil, errors.Errorf(`empty value %v for "engine" operator`, value)
 		}
 		list, ok := value.([]any)
 		if !ok {
 			return nil, errors.Errorf(`expect list, got %T, hint: filter engine in ["xx"]`, value)
 		}
 		if len(list) == 0 {
-			return nil, errors.Errorf(`empty value %v for "%s" operator`, value, relation)
+			return nil, errors.Errorf(`empty value %v for "engine" operator`, value)
 		}
 
-		var engineList []string
-		for _, raw := range list {
+		engineList := make([]any, len(list))
+		for i, raw := range list {
 			engine, ok := raw.(string)
 			if !ok {
 				return nil, errors.Errorf(`expect string, got %T for engine %v`, raw, raw)
@@ -812,9 +810,9 @@ func GetListInstanceFilter(filter string) (*qb.Query, error) {
 				return nil, errors.Errorf(`invalid engine filter %q`, engine)
 			}
 			storeEngine := convertEngine(v1pb.Engine(v1Engine))
-			engineList = append(engineList, fmt.Sprintf("'%s'", storeEngine))
+			engineList[i] = storeEngine
 		}
-		return qb.Q().Space(fmt.Sprintf("instance.metadata->>'engine' %s (%s)", relation, strings.Join(engineList, ","))), nil
+		return qb.Q().Space("instance.metadata->>'engine' = ANY(?)", engineList), nil
 	}
 
 	getFilter = func(expr celast.Expr) (*qb.Query, error) {
@@ -872,7 +870,7 @@ func GetListInstanceFilter(filter string) (*qb.Query, error) {
 			case celoperators.In:
 				variable, value := getVariableAndValueFromExpr(expr)
 				if variable == "engine" {
-					return parseToEngineSQL(expr, "IN")
+					return parseToEngineSQL(expr)
 				} else if labelKey, ok := strings.CutPrefix(variable, "labels."); ok {
 					return parseToLabelFilterSQL("instance.metadata", labelKey, value)
 				}
@@ -882,7 +880,11 @@ func GetListInstanceFilter(filter string) (*qb.Query, error) {
 				if len(args) != 1 {
 					return nil, errors.Errorf(`only support !(engine in ["{engine1}", "{engine2}"]) format`)
 				}
-				return parseToEngineSQL(args[0], "NOT IN")
+				qq, err := getFilter(args[0])
+				if err != nil {
+					return nil, err
+				}
+				return qb.Q().Space("(NOT (?))", qq), nil
 			default:
 				return nil, errors.Errorf("unexpected function %v", functionName)
 			}
