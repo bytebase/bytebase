@@ -97,15 +97,15 @@ require (
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20220101234140-673ab2c3ae75
 	github.com/trinodb/trino-go-client v0.330.0
 	github.com/vjeantet/ldapserver v1.0.1
-	github.com/xuri/excelize/v2 v2.9.1
+	github.com/xuri/excelize/v2 v2.10.0
 	github.com/yterajima/go-sitemap v0.4.0
 	github.com/zeebo/xxh3 v1.0.2
 	go.mongodb.org/mongo-driver/v2 v2.4.0
 	go.uber.org/multierr v1.11.0
-	golang.org/x/crypto v0.42.0
+	golang.org/x/crypto v0.43.0
 	golang.org/x/exp v0.0.0-20250911091902-df9299821621
 	golang.org/x/oauth2 v0.31.0
-	golang.org/x/text v0.29.0
+	golang.org/x/text v0.30.0
 	google.golang.org/api v0.251.0
 	google.golang.org/genproto v0.0.0-20251029180050-ab9386a59fda
 	google.golang.org/genproto/googleapis/api v0.0.0-20251014184007-4626949a642f
@@ -249,7 +249,7 @@ require (
 	github.com/spiffe/go-spiffe/v2 v2.5.0 // indirect
 	github.com/stoewer/go-strcase v1.3.1 // indirect
 	github.com/tiancaiamao/gp v0.0.0-20221230034425-4025bc8a4d4a // indirect
-	github.com/tiendc/go-deepcopy v1.6.0 // indirect
+	github.com/tiendc/go-deepcopy v1.7.1 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/twmb/murmur3 v1.1.6 // indirect
@@ -257,7 +257,7 @@ require (
 	github.com/twpayne/go-kml v1.5.2 // indirect
 	github.com/vcaesar/cedar v0.20.2 // indirect
 	github.com/xuri/efp v0.0.1 // indirect
-	github.com/xuri/nfp v0.0.1 // indirect
+	github.com/xuri/nfp v0.0.2-0.20250530014748-2ddeb826f9a9 // indirect
 	github.com/zeebo/errs v1.4.0 // indirect
 	go.etcd.io/etcd/api/v3 v3.5.10 // indirect
 	go.etcd.io/etcd/client/pkg/v3 v3.5.10 // indirect
@@ -276,9 +276,9 @@ require (
 	go.uber.org/zap v1.27.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/mod v0.28.0 // indirect
-	golang.org/x/sys v0.36.0 // indirect
+	golang.org/x/sys v0.37.0 // indirect
 	golang.org/x/telemetry v0.0.0-20250908211612-aef8a434d053 // indirect
-	golang.org/x/term v0.35.0 // indirect
+	golang.org/x/term v0.36.0 // indirect
 	gonum.org/v1/gonum v0.16.0 // indirect
 	gopkg.in/go-jose/go-jose.v2 v2.6.3 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
@@ -387,7 +387,7 @@ require (
 	go.opentelemetry.io/otel v1.38.0 // indirect
 	go.opentelemetry.io/otel/trace v1.38.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
-	golang.org/x/net v0.44.0
+	golang.org/x/net v0.46.0
 	golang.org/x/sync v0.17.0
 	golang.org/x/time v0.13.0 // indirect
 	golang.org/x/tools v0.37.0 // indirect
