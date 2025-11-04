@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/doris-parser"
+	parser "github.com/bytebase/parser/doris"
 
 	"github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"

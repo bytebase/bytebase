@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/snowsql-parser"
+	parser "github.com/bytebase/parser/snowflake"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"

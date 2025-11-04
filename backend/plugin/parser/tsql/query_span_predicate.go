@@ -2,7 +2,7 @@ package tsql
 
 import (
 	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/tsql-parser"
+	parser "github.com/bytebase/parser/tsql"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"

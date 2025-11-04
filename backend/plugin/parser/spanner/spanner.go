@@ -5,7 +5,7 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 
-	parser "github.com/bytebase/google-sql-parser"
+	parser "github.com/bytebase/parser/googlesql"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/utils"

@@ -8,7 +8,7 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
-	snowsql "github.com/bytebase/snowsql-parser"
+	snowsql "github.com/bytebase/parser/snowflake"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"

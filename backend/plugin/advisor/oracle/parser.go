@@ -7,7 +7,7 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 
-	plsql "github.com/bytebase/plsql-parser"
+	"github.com/bytebase/parser/plsql"
 )
 
 func normalizeIdentifier(ctx antlr.ParserRuleContext, currentSchema string) string {

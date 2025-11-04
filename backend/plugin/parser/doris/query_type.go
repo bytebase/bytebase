@@ -1,7 +1,7 @@
 package doris
 
 import (
-	parser "github.com/bytebase/doris-parser"
+	parser "github.com/bytebase/parser/doris"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )

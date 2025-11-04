@@ -1,7 +1,7 @@
 package snowflake
 
 import (
-	parser "github.com/bytebase/snowsql-parser"
+	parser "github.com/bytebase/parser/snowflake"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )

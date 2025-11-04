@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"strconv"
 
-	parser "github.com/bytebase/cosmosdb-parser"
+	parser "github.com/bytebase/parser/cosmosdb"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"

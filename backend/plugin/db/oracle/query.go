@@ -13,7 +13,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	plsql "github.com/bytebase/plsql-parser"
+	"github.com/bytebase/parser/plsql"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"

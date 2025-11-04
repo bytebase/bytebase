@@ -5,7 +5,7 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 
-	parser "github.com/bytebase/partiql-parser"
+	parser "github.com/bytebase/parser/partiql"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"

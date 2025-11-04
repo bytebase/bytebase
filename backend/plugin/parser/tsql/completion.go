@@ -9,7 +9,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/antlr4-go/antlr/v4"
-	tsqlparser "github.com/bytebase/tsql-parser"
+	tsqlparser "github.com/bytebase/parser/tsql"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"

@@ -3,7 +3,7 @@ package mysql
 import (
 	"strings"
 
-	parser "github.com/bytebase/mysql-parser"
+	parser "github.com/bytebase/parser/mysql"
 )
 
 // NormalizeMySQLTableName normalizes the given table name.

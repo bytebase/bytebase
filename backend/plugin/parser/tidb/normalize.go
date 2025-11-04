@@ -1,7 +1,7 @@
 package tidb
 
 import (
-	parser "github.com/bytebase/tidb-parser"
+	parser "github.com/bytebase/parser/tidb"
 )
 
 // NormalizeTiDBIdentifier normalizes the given identifier.

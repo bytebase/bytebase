@@ -12,7 +12,7 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 
-	tidbparser "github.com/bytebase/tidb-parser"
+	tidbparser "github.com/bytebase/parser/tidb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"

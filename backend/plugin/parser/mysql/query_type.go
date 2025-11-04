@@ -1,7 +1,7 @@
 package mysql
 
 import (
-	mysql "github.com/bytebase/mysql-parser"
+	"github.com/bytebase/parser/mysql"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
