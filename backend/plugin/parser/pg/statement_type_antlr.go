@@ -3,61 +3,13 @@ package pg
 import (
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/postgresql"
-	"github.com/pkg/errors"
 )
-
-// GetStatementTypesANTLR returns statement types from ANTLR parse result.
-func GetStatementTypesANTLR(parseResult *ParseResult) ([]string, error) {
-	if parseResult == nil || parseResult.Tree == nil {
-		return nil, errors.New("invalid parse result")
-	}
-
-	collector := &statementTypeCollector{
-		types: make(map[string]bool),
-	}
-
-	antlr.ParseTreeWalkerDefault.Walk(collector, parseResult.Tree)
-
-	var sqlTypes []string
-	for sqlType := range collector.types {
-		sqlTypes = append(sqlTypes, sqlType)
-	}
-	return sqlTypes, nil
-}
-
-// GetStatementTypesWithPositionsANTLR returns statement types with position information from ANTLR parse result.
-func GetStatementTypesWithPositionsANTLR(parseResult *ParseResult) ([]StatementTypeWithPosition, error) {
-	if parseResult == nil || parseResult.Tree == nil {
-		return nil, errors.New("invalid parse result")
-	}
-
-	collector := &statementTypeCollectorWithPosition{
-		tokens: parseResult.Tokens,
-	}
-
-	antlr.ParseTreeWalkerDefault.Walk(collector, parseResult.Tree)
-
-	return collector.results, nil
-}
-
-// statementTypeCollector collects unique statement types.
-type statementTypeCollector struct {
-	*parser.BasePostgreSQLParserListener
-	types map[string]bool
-}
 
 // statementTypeCollectorWithPosition collects statement types with positions.
 type statementTypeCollectorWithPosition struct {
 	*parser.BasePostgreSQLParserListener
 	tokens  *antlr.CommonTokenStream
 	results []StatementTypeWithPosition
-}
-
-// Helper function to add statement type.
-func (c *statementTypeCollector) addType(stmtType string) {
-	if stmtType != "" && stmtType != "UNKNOWN" {
-		c.types[stmtType] = true
-	}
 }
 
 // Helper function to add statement with position.
@@ -89,13 +41,6 @@ func (c *statementTypeCollectorWithPosition) addStatement(stmtType string, ctx a
 }
 
 // CREATE TABLE statements
-func (c *statementTypeCollector) EnterCreatestmt(ctx *parser.CreatestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addType("CREATE_TABLE")
-}
-
 func (c *statementTypeCollectorWithPosition) EnterCreatestmt(ctx *parser.CreatestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
@@ -104,13 +49,6 @@ func (c *statementTypeCollectorWithPosition) EnterCreatestmt(ctx *parser.Creates
 }
 
 // CREATE VIEW statements
-func (c *statementTypeCollector) EnterViewstmt(ctx *parser.ViewstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addType("CREATE_VIEW")
-}
-
 func (c *statementTypeCollectorWithPosition) EnterViewstmt(ctx *parser.ViewstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
@@ -119,13 +57,6 @@ func (c *statementTypeCollectorWithPosition) EnterViewstmt(ctx *parser.ViewstmtC
 }
 
 // CREATE INDEX statements
-func (c *statementTypeCollector) EnterIndexstmt(ctx *parser.IndexstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addType("CREATE_INDEX")
-}
-
 func (c *statementTypeCollectorWithPosition) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
@@ -134,13 +65,6 @@ func (c *statementTypeCollectorWithPosition) EnterIndexstmt(ctx *parser.Indexstm
 }
 
 // CREATE SEQUENCE statements
-func (c *statementTypeCollector) EnterCreateseqstmt(ctx *parser.CreateseqstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addType("CREATE_SEQUENCE")
-}
-
 func (c *statementTypeCollectorWithPosition) EnterCreateseqstmt(ctx *parser.CreateseqstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
@@ -149,13 +73,6 @@ func (c *statementTypeCollectorWithPosition) EnterCreateseqstmt(ctx *parser.Crea
 }
 
 // CREATE SCHEMA statements
-func (c *statementTypeCollector) EnterCreateschemastmt(ctx *parser.CreateschemastmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addType("CREATE_SCHEMA")
-}
-
 func (c *statementTypeCollectorWithPosition) EnterCreateschemastmt(ctx *parser.CreateschemastmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
@@ -164,13 +81,6 @@ func (c *statementTypeCollectorWithPosition) EnterCreateschemastmt(ctx *parser.C
 }
 
 // CREATE FUNCTION statements
-func (c *statementTypeCollector) EnterCreatefunctionstmt(ctx *parser.CreatefunctionstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addType("CREATE_FUNCTION")
-}
-
 func (c *statementTypeCollectorWithPosition) EnterCreatefunctionstmt(ctx *parser.CreatefunctionstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
@@ -179,13 +89,6 @@ func (c *statementTypeCollectorWithPosition) EnterCreatefunctionstmt(ctx *parser
 }
 
 // CREATE TRIGGER statements
-func (c *statementTypeCollector) EnterCreatetrigstmt(ctx *parser.CreatetrigstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addType("CREATE_TRIGGER")
-}
-
 func (c *statementTypeCollectorWithPosition) EnterCreatetrigstmt(ctx *parser.CreatetrigstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
@@ -194,13 +97,6 @@ func (c *statementTypeCollectorWithPosition) EnterCreatetrigstmt(ctx *parser.Cre
 }
 
 // CREATE EXTENSION statements
-func (c *statementTypeCollector) EnterCreateextensionstmt(ctx *parser.CreateextensionstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addType("CREATE_EXTENSION")
-}
-
 func (c *statementTypeCollectorWithPosition) EnterCreateextensionstmt(ctx *parser.CreateextensionstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
@@ -209,13 +105,6 @@ func (c *statementTypeCollectorWithPosition) EnterCreateextensionstmt(ctx *parse
 }
 
 // CREATE DATABASE statements
-func (c *statementTypeCollector) EnterCreatedbstmt(ctx *parser.CreatedbstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addType("CREATE_DATABASE")
-}
-
 func (c *statementTypeCollectorWithPosition) EnterCreatedbstmt(ctx *parser.CreatedbstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
@@ -224,13 +113,6 @@ func (c *statementTypeCollectorWithPosition) EnterCreatedbstmt(ctx *parser.Creat
 }
 
 // DROP statements
-func (c *statementTypeCollector) EnterDropstmt(ctx *parser.DropstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addType(getDropStatementType(ctx))
-}
-
 func (c *statementTypeCollectorWithPosition) EnterDropstmt(ctx *parser.DropstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
@@ -239,29 +121,6 @@ func (c *statementTypeCollectorWithPosition) EnterDropstmt(ctx *parser.DropstmtC
 }
 
 // ALTER statements
-func (c *statementTypeCollector) EnterAltertablestmt(ctx *parser.AltertablestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
-	// Check if this is ALTER VIEW
-	if ctx.VIEW() != nil {
-		c.addType("ALTER_VIEW")
-		return
-	}
-
-	// Parse ALTER TABLE sub-operations if alter_table_cmds exists
-	if cmds := ctx.Alter_table_cmds(); cmds != nil {
-		for _, cmd := range cmds.AllAlter_table_cmd() {
-			stmtType := getAlterTableCmdType(cmd)
-			c.addType(stmtType)
-		}
-	} else {
-		// Fallback to generic ALTER_TABLE if no cmds
-		c.addType("ALTER_TABLE")
-	}
-}
-
 func (c *statementTypeCollectorWithPosition) EnterAltertablestmt(ctx *parser.AltertablestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
@@ -285,25 +144,11 @@ func (c *statementTypeCollectorWithPosition) EnterAltertablestmt(ctx *parser.Alt
 	}
 }
 
-func (c *statementTypeCollector) EnterAlterseqstmt(ctx *parser.AlterseqstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addType("ALTER_SEQUENCE")
-}
-
 func (c *statementTypeCollectorWithPosition) EnterAlterseqstmt(ctx *parser.AlterseqstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 	c.addStatement("ALTER_SEQUENCE", ctx)
-}
-
-func (c *statementTypeCollector) EnterAlterenumstmt(ctx *parser.AlterenumstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addType("ALTER_TYPE")
 }
 
 func (c *statementTypeCollectorWithPosition) EnterAlterenumstmt(ctx *parser.AlterenumstmtContext) {
@@ -314,13 +159,6 @@ func (c *statementTypeCollectorWithPosition) EnterAlterenumstmt(ctx *parser.Alte
 }
 
 // RENAME statements
-func (c *statementTypeCollector) EnterRenamestmt(ctx *parser.RenamestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addType(getRenameStatementType(ctx))
-}
-
 func (c *statementTypeCollectorWithPosition) EnterRenamestmt(ctx *parser.RenamestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
@@ -329,13 +167,6 @@ func (c *statementTypeCollectorWithPosition) EnterRenamestmt(ctx *parser.Renames
 }
 
 // COMMENT statements
-func (c *statementTypeCollector) EnterCommentstmt(ctx *parser.CommentstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addType("COMMENT")
-}
-
 func (c *statementTypeCollectorWithPosition) EnterCommentstmt(ctx *parser.CommentstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
@@ -344,16 +175,6 @@ func (c *statementTypeCollectorWithPosition) EnterCommentstmt(ctx *parser.Commen
 }
 
 // CREATE TYPE statements
-func (c *statementTypeCollector) EnterDefinestmt(ctx *parser.DefinestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	// Check if this is CREATE TYPE
-	if ctx.TYPE_P() != nil {
-		c.addType("CREATE_TYPE")
-	}
-}
-
 func (c *statementTypeCollectorWithPosition) EnterDefinestmt(ctx *parser.DefinestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
@@ -365,13 +186,6 @@ func (c *statementTypeCollectorWithPosition) EnterDefinestmt(ctx *parser.Defines
 }
 
 // DROP FUNCTION statements
-func (c *statementTypeCollector) EnterRemovefuncstmt(ctx *parser.RemovefuncstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addType("DROP_FUNCTION")
-}
-
 func (c *statementTypeCollectorWithPosition) EnterRemovefuncstmt(ctx *parser.RemovefuncstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
@@ -380,13 +194,6 @@ func (c *statementTypeCollectorWithPosition) EnterRemovefuncstmt(ctx *parser.Rem
 }
 
 // DROP DATABASE statements
-func (c *statementTypeCollector) EnterDropdbstmt(ctx *parser.DropdbstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addType("DROP_DATABASE")
-}
-
 func (c *statementTypeCollectorWithPosition) EnterDropdbstmt(ctx *parser.DropdbstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
@@ -395,13 +202,6 @@ func (c *statementTypeCollectorWithPosition) EnterDropdbstmt(ctx *parser.Dropdbs
 }
 
 // DML statements
-func (c *statementTypeCollector) EnterInsertstmt(ctx *parser.InsertstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addType("INSERT")
-}
-
 func (c *statementTypeCollectorWithPosition) EnterInsertstmt(ctx *parser.InsertstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
@@ -409,25 +209,11 @@ func (c *statementTypeCollectorWithPosition) EnterInsertstmt(ctx *parser.Inserts
 	c.addStatement("INSERT", ctx)
 }
 
-func (c *statementTypeCollector) EnterUpdatestmt(ctx *parser.UpdatestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addType("UPDATE")
-}
-
 func (c *statementTypeCollectorWithPosition) EnterUpdatestmt(ctx *parser.UpdatestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 	c.addStatement("UPDATE", ctx)
-}
-
-func (c *statementTypeCollector) EnterDeletestmt(ctx *parser.DeletestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addType("DELETE")
 }
 
 func (c *statementTypeCollectorWithPosition) EnterDeletestmt(ctx *parser.DeletestmtContext) {

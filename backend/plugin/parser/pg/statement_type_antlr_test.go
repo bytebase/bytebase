@@ -221,14 +221,20 @@ func TestGetStatementTypesANTLR(t *testing.T) {
 			parseResult, err := ParsePostgreSQL(tt.sql)
 			require.NoError(t, err)
 
-			types, err := GetStatementTypesANTLR(parseResult)
+			stmtsWithPos, err := GetStatementTypes(parseResult)
 			require.NoError(t, err)
+
+			// Extract types from statements with positions
+			types := make([]string, len(stmtsWithPos))
+			for i, stmt := range stmtsWithPos {
+				types[i] = stmt.Type
+			}
 			require.ElementsMatch(t, tt.expectedTypes, types)
 		})
 	}
 }
 
-func TestGetStatementTypesWithPositionsANTLR(t *testing.T) {
+func TestGetStatementTypesWithPositions(t *testing.T) {
 	tests := []struct {
 		name     string
 		sql      string
@@ -272,7 +278,7 @@ INSERT INTO t1 VALUES (1);`,
 			parseResult, err := ParsePostgreSQL(tt.sql)
 			require.NoError(t, err)
 
-			results, err := GetStatementTypesWithPositionsANTLR(parseResult)
+			results, err := GetStatementTypes(parseResult)
 			require.NoError(t, err)
 			require.Len(t, results, len(tt.expected))
 
