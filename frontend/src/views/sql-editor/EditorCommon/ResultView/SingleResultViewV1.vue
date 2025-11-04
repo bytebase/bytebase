@@ -89,7 +89,6 @@
         </NTooltip>
         <template v-if="showExport">
           <DataExportButton
-            v-if="result.allowExport"
             size="small"
             :disabled="props.result === null || isEmpty(props.result)"
             :support-formats="[
@@ -114,14 +113,6 @@
               </NFormItem>
             </template>
           </DataExportButton>
-          <NButton
-            v-else-if="allowToRequestExportData"
-            size="small"
-            @click="handleRequestExport"
-          >
-            {{ $t("quick-action.request-export-data") }}
-            <ExternalLinkIcon class="w-4 h-auto ml-1 opacity-80" />
-          </NButton>
         </template>
       </div>
       <SelectionCopyTooltips />

@@ -477,7 +477,6 @@ func redactQueryResponse(r *v1pb.QueryResponse) *v1pb.QueryResponse {
 			Latency:         result.Latency,
 			Statement:       result.Statement,
 			DetailedError:   result.DetailedError,
-			AllowExport:     result.AllowExport,
 			Masked:          redactMaskingReasons(result.Masked), // Redact icon data
 		})
 	}

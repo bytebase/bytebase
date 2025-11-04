@@ -240,9 +240,6 @@ func (x *QueryResult) Equal(y *QueryResult) bool {
 	if !x.GetPostgresError().Equal(y.GetPostgresError()) {
 		return false
 	}
-	if x.AllowExport != y.AllowExport {
-		return false
-	}
 	if len(x.Messages) != len(y.Messages) {
 		return false
 	}
