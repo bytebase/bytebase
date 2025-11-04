@@ -189,7 +189,7 @@ func mergeSymbolTables(fileCheckers []*fileSymbolTable) *mergedSymbolTable {
 type objectFirstSeen struct {
 	filePath string
 	line     int
-	obj      interface{} // *tableDef, *indexDef, *viewDef, or *constraintDef
+	obj      any // *tableDef, *indexDef, *viewDef, or *constraintDef
 }
 
 // detectCrossFileDuplicates finds objects defined in multiple files
@@ -851,7 +851,7 @@ func (c *sdlIntegrityChecker) collectTableConstraint(ctx parser.ITableconstraint
 	table.constraints = append(table.constraints, constraint)
 }
 
-func (c *sdlIntegrityChecker) extractDataType(typeCtx parser.ITypenameContext) *dataType {
+func (*sdlIntegrityChecker) extractDataType(typeCtx parser.ITypenameContext) *dataType {
 	if typeCtx == nil {
 		return &dataType{baseType: "UNKNOWN"}
 	}
@@ -1086,7 +1086,7 @@ func (c *sdlIntegrityChecker) getViewDependenciesFromAST(selectStmt parser.ISele
 }
 
 // extractCTENames extracts all CTE names from a SELECT statement's WITH clause
-func (c *sdlIntegrityChecker) extractCTENames(selectStmt parser.ISelectstmtContext) map[string]bool {
+func (*sdlIntegrityChecker) extractCTENames(selectStmt parser.ISelectstmtContext) map[string]bool {
 	cteNames := make(map[string]bool)
 
 	if selectStmt == nil {
@@ -1123,14 +1123,14 @@ func (c *sdlIntegrityChecker) extractCTENames(selectStmt parser.ISelectstmtConte
 
 // Helper functions
 
-func (c *sdlIntegrityChecker) getConstraintName(constraint *constraintDef) string {
+func (*sdlIntegrityChecker) getConstraintName(constraint *constraintDef) string {
 	if constraint.name != "" {
 		return constraint.name
 	}
 	return "<unnamed>"
 }
 
-func (c *sdlIntegrityChecker) getColumnList(table *tableDef) string {
+func (*sdlIntegrityChecker) getColumnList(table *tableDef) string {
 	cols := make([]string, 0, len(table.columns))
 	for colName := range table.columns {
 		cols = append(cols, colName)
