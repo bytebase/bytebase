@@ -674,4 +674,3 @@ func getStatementTypesWithPositionsForEngine(engine storepb.Engine, asts any) ([
 		return []statementTypeWithPosition{}, nil
 	}
 }
-
