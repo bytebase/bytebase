@@ -655,7 +655,7 @@ type statementTypeWithPosition struct {
 func getStatementTypesWithPositionsForEngine(engine storepb.Engine, asts any) ([]statementTypeWithPosition, error) {
 	switch engine {
 	case storepb.Engine_POSTGRES, storepb.Engine_COCKROACHDB, storepb.Engine_REDSHIFT:
-		pgStmts, err := pg.GetStatementTypesWithPositions(asts)
+		pgStmts, err := pg.GetStatementTypes(asts)
 		if err != nil {
 			return nil, err
 		}

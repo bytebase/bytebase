@@ -3,23 +3,7 @@ package pg
 import (
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/postgresql"
-	"github.com/pkg/errors"
 )
-
-// GetStatementTypesWithPositionsANTLR returns statement types with position information from ANTLR parse result.
-func GetStatementTypesWithPositionsANTLR(parseResult *ParseResult) ([]StatementTypeWithPosition, error) {
-	if parseResult == nil || parseResult.Tree == nil {
-		return nil, errors.New("invalid parse result")
-	}
-
-	collector := &statementTypeCollectorWithPosition{
-		tokens: parseResult.Tokens,
-	}
-
-	antlr.ParseTreeWalkerDefault.Walk(collector, parseResult.Tree)
-
-	return collector.results, nil
-}
 
 // statementTypeCollectorWithPosition collects statement types with positions.
 type statementTypeCollectorWithPosition struct {

@@ -1,6 +1,7 @@
 package pg
 
 import (
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 )
 
@@ -12,12 +13,23 @@ type StatementTypeWithPosition struct {
 	Text string
 }
 
-// GetStatementTypesWithPositions returns statement types with position information.
+// GetStatementTypes returns statement types with position information.
 // The line numbers are one-based.
-func GetStatementTypesWithPositions(asts any) ([]StatementTypeWithPosition, error) {
+func GetStatementTypes(asts any) ([]StatementTypeWithPosition, error) {
 	parseResult, ok := asts.(*ParseResult)
 	if !ok {
 		return nil, errors.Errorf("invalid ast type %T, expected *ParseResult", asts)
 	}
-	return GetStatementTypesWithPositionsANTLR(parseResult)
+
+	if parseResult == nil || parseResult.Tree == nil {
+		return nil, errors.New("invalid parse result")
+	}
+
+	collector := &statementTypeCollectorWithPosition{
+		tokens: parseResult.Tokens,
+	}
+
+	antlr.ParseTreeWalkerDefault.Walk(collector, parseResult.Tree)
+
+	return collector.results, nil
 }

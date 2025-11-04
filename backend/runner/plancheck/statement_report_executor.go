@@ -186,7 +186,7 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 		}
 		explainCalculator = pd.CountAffectedRows
 
-		stmtsWithPos, err := pg.GetStatementTypesWithPositions(asts)
+		stmtsWithPos, err := pg.GetStatementTypes(asts)
 		if err != nil {
 			return nil, err
 		}
