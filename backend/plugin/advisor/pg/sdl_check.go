@@ -12,25 +12,46 @@ import (
 )
 
 // CheckSDL performs SDL-specific checks on PostgreSQL declarative schema files.
-// It checks for:
+// It runs both style/convention checks and integrity checks:
+//
+// Style Checks (sdl_check.go):
 // 1. Disallowed column-level constraints (PRIMARY KEY, UNIQUE, CHECK, FOREIGN KEY must be table-level; NOT NULL, DEFAULT, GENERATED are allowed)
 // 2. Table constraints without explicit names
 // 3. Objects without explicit schema names (tables, indexes, views, sequences, functions)
 // 4. Foreign key references without explicit schema names
 // 5. Indexes without explicit names (unnamed indexes are not allowed)
+//
+// Integrity Checks (sdl_integrity_check.go):
+// 1. Foreign key references to non-existent tables/columns
+// 2. Foreign key type mismatches
+// 3. CHECK constraints referencing non-existent columns
+// 4. CHECK constraints referencing other tables (not allowed)
+// 5. Duplicate object names (tables, indexes, constraints, columns)
+// 6. Multiple primary keys on same table
+// 7. View dependencies on non-existent tables
 func CheckSDL(statement string) ([]*storepb.Advice, error) {
 	tree, err := pgparser.ParsePostgreSQL(statement)
 	if err != nil {
 		return nil, err
 	}
 
-	checker := &sdlChecker{
+	var allAdvices []*storepb.Advice
+
+	// Run style/convention checks
+	styleChecker := &sdlChecker{
 		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
 	}
+	antlr.ParseTreeWalkerDefault.Walk(styleChecker, tree.Tree)
+	allAdvices = append(allAdvices, styleChecker.adviceList...)
 
-	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
+	// Run integrity checks
+	integrityAdvices, err := checkSingleStatement(statement)
+	if err != nil {
+		return allAdvices, err // Return style checks even if integrity check fails
+	}
+	allAdvices = append(allAdvices, integrityAdvices...)
 
-	return checker.adviceList, nil
+	return allAdvices, nil
 }
 
 type sdlChecker struct {

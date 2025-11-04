@@ -124,7 +124,11 @@ func TestCheckSDL(t *testing.T) {
 		},
 		{
 			name: "Error - Table-level FOREIGN KEY without name",
-			statement: `CREATE TABLE public.orders (
+			statement: `CREATE TABLE public.users (
+				id INTEGER,
+				CONSTRAINT pk_users PRIMARY KEY (id)
+			);
+			CREATE TABLE public.orders (
 				id INTEGER,
 				user_id INTEGER,
 				FOREIGN KEY (user_id) REFERENCES public.users(id)
@@ -232,14 +236,16 @@ func TestCheckSDL(t *testing.T) {
 			wantCodes: []advisor.Code{advisor.SDLRequireIndexName},
 		},
 		{
-			name:      "Valid SDL - CREATE VIEW with schema name",
-			statement: `CREATE VIEW public.active_users AS SELECT * FROM public.users WHERE active = true;`,
+			name: "Valid SDL - CREATE VIEW with schema name",
+			statement: `CREATE TABLE public.users (id INTEGER, active BOOLEAN, CONSTRAINT pk_users PRIMARY KEY (id));
+CREATE VIEW public.active_users AS SELECT * FROM public.users WHERE active = true;`,
 			wantCount: 0,
 			wantCodes: nil,
 		},
 		{
-			name:      "Error - CREATE VIEW without schema name",
-			statement: `CREATE VIEW active_users AS SELECT * FROM public.users WHERE active = true;`,
+			name: "Error - CREATE VIEW without schema name",
+			statement: `CREATE TABLE public.users (id INTEGER, active BOOLEAN, CONSTRAINT pk_users PRIMARY KEY (id));
+CREATE VIEW active_users AS SELECT * FROM public.users WHERE active = true;`,
 			wantCount: 1,
 			wantCodes: []advisor.Code{advisor.SDLRequireSchemaName},
 		},
@@ -322,7 +328,15 @@ func TestCheckSDL(t *testing.T) {
 		},
 		{
 			name: "Valid SDL - Complex table with multiple named constraints",
-			statement: `CREATE TABLE public.orders (
+			statement: `CREATE TABLE public.users (
+				id INTEGER,
+				CONSTRAINT pk_users PRIMARY KEY (id)
+			);
+			CREATE TABLE public.products (
+				id INTEGER,
+				CONSTRAINT pk_products PRIMARY KEY (id)
+			);
+			CREATE TABLE public.orders (
 				id INTEGER,
 				user_id INTEGER,
 				product_id INTEGER,
@@ -340,7 +354,11 @@ func TestCheckSDL(t *testing.T) {
 		},
 		{
 			name: "Error - FK reference without schema name (table-level)",
-			statement: `CREATE TABLE public.orders (
+			statement: `CREATE TABLE public.users (
+				id INTEGER,
+				CONSTRAINT pk_users PRIMARY KEY (id)
+			);
+			CREATE TABLE public.orders (
 				id INTEGER,
 				user_id INTEGER,
 				CONSTRAINT pk_orders PRIMARY KEY (id),
@@ -363,7 +381,15 @@ func TestCheckSDL(t *testing.T) {
 		},
 		{
 			name: "Error - Multiple FK references without schema",
-			statement: `CREATE TABLE public.orders (
+			statement: `CREATE TABLE public.users (
+				id INTEGER,
+				CONSTRAINT pk_users PRIMARY KEY (id)
+			);
+			CREATE TABLE public.products (
+				id INTEGER,
+				CONSTRAINT pk_products PRIMARY KEY (id)
+			);
+			CREATE TABLE public.orders (
 				id INTEGER,
 				user_id INTEGER,
 				product_id INTEGER,
@@ -378,7 +404,15 @@ func TestCheckSDL(t *testing.T) {
 		},
 		{
 			name: "Valid SDL - Mix of FK with and without errors",
-			statement: `CREATE TABLE public.orders (
+			statement: `CREATE TABLE public.users (
+				id INTEGER,
+				CONSTRAINT pk_users PRIMARY KEY (id)
+			);
+			CREATE TABLE public.products (
+				id INTEGER,
+				CONSTRAINT pk_products PRIMARY KEY (id)
+			);
+			CREATE TABLE public.orders (
 				id INTEGER,
 				user_id INTEGER,
 				product_id INTEGER,
