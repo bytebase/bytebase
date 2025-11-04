@@ -7,7 +7,7 @@
     <DrawerContent
       :title="panelTitle"
       :closable="true"
-      class="w-[64rem] max-w-[100vw] relative"
+      class="w-5xl max-w-[100vw] relative"
     >
       <div class="w-full flex flex-col justify-start items-start gap-y-4 pb-12">
         <div class="w-full">

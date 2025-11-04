@@ -35,7 +35,7 @@
     <div class="flex lg:hidden flex-col items-start gap-y-2 w-max">
       <NButton
         type="primary"
-        class="!w-full !justify-start"
+        class="w-full! justify-start!"
         @click="changeConnection"
       >
         <template #icon>
@@ -46,7 +46,7 @@
       <NButton
         v-if="showCreateInstanceButton"
         type="default"
-        class="!w-full !justify-start"
+        class="w-full! justify-start!"
         @click="gotoInstanceCreatePage"
       >
         <template #icon>
@@ -56,7 +56,7 @@
       </NButton>
       <NButton
         type="default"
-        class="!w-full !justify-start"
+        class="w-full! justify-start!"
         @click="createNewWorksheet"
       >
         <template #icon>

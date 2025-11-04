@@ -2,7 +2,7 @@
   <Drawer v-bind="$attrs" @close="emit('close')">
     <DrawerContent :title="$t('changelist.apply-to-database')">
       <template #default>
-        <div class="w-[calc(100vw-8rem)] lg:w-[60rem] max-w-[calc(100vw-8rem)]">
+        <div class="w-[calc(100vw-8rem)] lg:w-240 max-w-[calc(100vw-8rem)]">
           <DatabaseAndGroupSelector
             :project="project"
             v-model:value="state.targetSelectState"

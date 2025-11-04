@@ -109,6 +109,6 @@ const backgroundColorRgb = computed(() => {
   @apply text-matrix-green-hover;
 }
 .tab-item.admin.current .body {
-  @apply !bg-dark-bg border-matrix-green-hover;
+  @apply bg-dark-bg! border-matrix-green-hover;
 }
 </style>

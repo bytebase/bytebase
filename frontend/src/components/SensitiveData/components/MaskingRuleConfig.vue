@@ -8,7 +8,7 @@
           <NInput
             v-if="!readonly"
             v-model:value="state.title"
-            class="!w-64"
+            class="w-64!"
             :placeholder="defaultTitle"
             type="text"
             size="small"

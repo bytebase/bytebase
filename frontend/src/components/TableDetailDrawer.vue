@@ -6,7 +6,7 @@
         bodyContentClass: 'relative',
       }"
     >
-      <div class="focus:outline-none w-[calc(100vw-256px)]" tabindex="0">
+      <div class="focus:outline-hidden w-[calc(100vw-256px)]" tabindex="0">
         <MaskSpinner v-if="isFetchingTableMetadata" />
         <main v-if="table" class="flex-1 relative pb-8 overflow-y-auto">
           <!-- Highlight Panel -->
@@ -81,7 +81,7 @@
                     <NButton
                       quaternary
                       size="tiny"
-                      class="!px-1"
+                      class="px-1!"
                       v-bind="$attrs"
                     >
                       <span class="textlabel"
@@ -91,7 +91,7 @@
                     </NButton>
                   </template>
                   <TableSchemaViewer
-                    class="!w-[32rem] !h-[20rem]"
+                    class="w-lg! h-80!"
                     :database="database"
                     :schema="schemaName"
                     :object="tableName"

@@ -2,7 +2,7 @@
   <BBModal
     :title="$t('two-factor.your-two-factor-secret.self')"
     :subtitle="$t('two-factor.your-two-factor-secret.description')"
-    class="outline outline-gray-200"
+    class="outline-solid outline-gray-200"
     @close="dismissModal"
   >
     <div class="w-auto mb-4 py-2">

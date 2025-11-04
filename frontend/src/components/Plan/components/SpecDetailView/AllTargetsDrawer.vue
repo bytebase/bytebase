@@ -3,7 +3,7 @@
     <DrawerContent
       :title="`${$t('plan.targets.title')} (${targets.length})`"
       :closable="true"
-      class="w-[50rem] max-w-[100vw] relative"
+      class="w-200 max-w-[100vw] relative"
     >
       <template #default>
         <div class="w-full h-full flex flex-col gap-y-4">
@@ -38,7 +38,7 @@
                   </template>
                   <template v-else-if="isValidDatabaseGroupName(target)">
                     <DatabaseGroupIcon
-                      class="w-4 h-4 text-control-light flex-shrink-0"
+                      class="w-4 h-4 text-control-light shrink-0"
                     />
                     <DatabaseGroupName
                       :database-group="

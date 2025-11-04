@@ -363,7 +363,7 @@ const columns = computed(() => {
       resizable: false,
       width: 44,
       hide: props.readonly || !props.allowReorderColumns,
-      className: "!px-0",
+      className: "px-0!",
       render: (column, index) => {
         return h(ReorderCell, {
           allowMoveUp: index > 0,
@@ -639,7 +639,7 @@ const columns = computed(() => {
       resizable: false,
       width: 30,
       hide: props.readonly,
-      className: "!px-0",
+      className: "px-0!",
       render: (column) => {
         return h(OperationCell, {
           dropped: isDroppedColumn(column),
@@ -812,7 +812,7 @@ useConsumePendingScrollToColumn(
 }
 .schema-editor-table-column-editor:not(.disable-diff-coloring)
   :deep(.n-data-table-tr.dropped .n-data-table-td) {
-  @apply text-red-700 cursor-not-allowed !bg-red-50 opacity-70;
+  @apply text-red-700 cursor-not-allowed bg-red-50! opacity-70;
 }
 .schema-editor-table-column-editor:not(.disable-diff-coloring)
   :deep(.n-data-table-tr.updated .n-data-table-td) {

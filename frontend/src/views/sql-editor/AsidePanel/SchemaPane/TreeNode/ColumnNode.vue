@@ -7,12 +7,12 @@
   >
     <template #icon>
       <PrimaryKeyIcon v-if="isPrimaryKey" class="w-4 h-4" />
-      <IndexIcon v-else-if="isIndex" class="!w-4 !h-4 text-accent/80" />
+      <IndexIcon v-else-if="isIndex" class="w-4! h-4! text-accent/80" />
       <ColumnIcon v-else class="w-4 h-4" />
     </template>
     <template #suffix>
       <div
-        class="flex items-center justify-end gap-1 overflow-hidden whitespace-nowrap shrink opacity-80 !font-normal"
+        class="flex items-center justify-end gap-1 overflow-hidden whitespace-nowrap shrink opacity-80 font-normal!"
       >
         <NTag
           size="small"

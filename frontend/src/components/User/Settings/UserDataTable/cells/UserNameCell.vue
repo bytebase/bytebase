@@ -7,7 +7,7 @@
         <div class="flex flex-row items-center space-x-2">
           <span
             v-if="onClickUser"
-            class="normal-link truncate max-w-[10rem]"
+            class="normal-link truncate max-w-40"
             @click="onClickUser(user, $event)"
           >
             {{ user.title }}

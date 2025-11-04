@@ -1,7 +1,7 @@
 <template>
   <Drawer
     :show="active"
-    class="!w-96 max-w-full"
+    class="w-96! max-w-full"
     :close-on-esc="true"
     @update:show="(show: boolean) => !show && onClose()"
   >

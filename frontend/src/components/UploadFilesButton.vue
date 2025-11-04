@@ -28,7 +28,7 @@
           :consistent-menu-width="false"
         />
       </div>
-      <NUpload :file-list="uploadFileList" disabled trigger-class="!hidden">
+      <NUpload :file-list="uploadFileList" disabled trigger-class="hidden!">
       </NUpload>
     </div>
     <div class="w-full flex items-center justify-end mt-4 gap-x-2">

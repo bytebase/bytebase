@@ -1,7 +1,7 @@
 <template>
   <BBModal
     :title="$t('schema-editor.actions.create-schema')"
-    class="shadow-inner outline outline-gray-200"
+    class="shadow-inner outline-solid outline-gray-200"
     @close="dismissModal"
   >
     <div class="w-72">

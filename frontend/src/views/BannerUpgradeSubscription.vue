@@ -39,7 +39,7 @@
 
   <BBModal
     v-if="state.showModal"
-    class="!w-112"
+    class="w-112!"
     :title="$t('subscription.upgrade-now') + '?'"
     @close="state.showModal = false"
   >

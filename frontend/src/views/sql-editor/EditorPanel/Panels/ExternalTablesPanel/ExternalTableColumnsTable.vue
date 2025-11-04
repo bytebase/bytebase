@@ -164,7 +164,7 @@ watch(
   @apply text-green-700 !bg-green-50;
 }
 :not(.disable-diff-coloring) :deep(.n-data-table-tr.dropped .n-data-table-td) {
-  @apply text-red-700 cursor-not-allowed !bg-red-50 opacity-70;
+  @apply text-red-700 cursor-not-allowed bg-red-50! opacity-70;
 }
 :not(.disable-diff-coloring) :deep(.n-data-table-tr.updated .n-data-table-td) {
   @apply text-yellow-700 !bg-yellow-50;

@@ -4,7 +4,7 @@
       v-if="allowSelectAll"
       v-model:value="state.allDatabases"
       :disabled="disabled"
-      class="w-full !flex flex-row justify-start items-center gap-4"
+      class="w-full flex! flex-row justify-start items-center gap-4"
     >
       <NTooltip trigger="hover">
         <template #trigger>
@@ -15,7 +15,7 @@
         </template>
         {{ $t("issue.grant-request.all-databases-tip") }}
       </NTooltip>
-      <NRadio class="!leading-6" :value="false" :disabled="!project">
+      <NRadio class="leading-6!" :value="false" :disabled="!project">
         <div class="flex items-center space-x-1">
           <FeatureBadge :feature="requiredFeature" />
           <span>{{ $t("issue.grant-request.manually-select") }}</span>

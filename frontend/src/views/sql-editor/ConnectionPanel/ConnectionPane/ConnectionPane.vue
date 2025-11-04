@@ -49,7 +49,7 @@
             @uncheck="handleUncheckDatabaseGroup"
           />
         </template>
-        <NDivider v-if="tabStore.isInBatchMode" class="!my-2" />
+        <NDivider v-if="tabStore.isInBatchMode" class="my-2!" />
         <div v-if="tabStore.isInBatchMode" class="w-full">
           <div class="textinfolabel flex items-center gap-x-1">
             {{ $t("sql-editor.batch-query.select-data-source.self") }}
@@ -71,7 +71,7 @@
         </div>
       </div>
     </div>
-    <NDivider v-if="tabStore.currentTab" class="!my-3" />
+    <NDivider v-if="tabStore.currentTab" class="my-3!" />
     <div class="flex flex-row gap-x-0.5 px-1 items-center">
       <AdvancedSearch
         v-model:params="state.params"
@@ -160,7 +160,7 @@
 
     <DatabaseHoverPanel :offset-x="4" :offset-y="4" :margin="4" />
 
-    <MaskSpinner v-if="treeStore.state !== 'READY'" class="!bg-white/75">
+    <MaskSpinner v-if="treeStore.state !== 'READY'" class="bg-white/75!">
       <span class="text-control text-sm">{{
         $t("sql-editor.loading-databases")
       }}</span>
@@ -711,7 +711,7 @@ watch(
   --n-node-content-height: 21px !important;
 }
 .sql-editor-tree :deep(.n-tree-node-content) {
-  @apply !pl-0 text-sm;
+  @apply pl-0! text-sm;
 }
 .sql-editor-tree :deep(.n-tree-node-wrapper) {
   padding: 0;

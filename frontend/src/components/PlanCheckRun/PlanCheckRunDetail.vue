@@ -15,14 +15,14 @@
       :class="[
         'py-2 px-2 space-y-2',
         row.checkResult.status === Advice_Level.ERROR &&
-          'border-error border rounded',
+          'border-error border rounded-sm',
         row.checkResult.status === Advice_Level.WARNING &&
-          'border-warning border rounded',
+          'border-warning border rounded-sm',
       ]"
     >
       <div class="flex items-center space-x-3">
         <div
-          class="relative w-5 h-5 flex flex-shrink-0 items-center justify-center rounded-full select-none"
+          class="relative w-5 h-5 flex shrink-0 items-center justify-center rounded-full select-none"
           :class="statusIconClass(row.checkResult.status)"
         >
           <template v-if="row.checkResult.status === Advice_Level.SUCCESS">
@@ -125,7 +125,7 @@
     >
       <div class="flex items-center space-x-3">
         <div
-          class="relative w-5 h-5 flex flex-shrink-0 items-center justify-center rounded-full select-none"
+          class="relative w-5 h-5 flex shrink-0 items-center justify-center rounded-full select-none"
           :class="statusIconClass(row.checkResult.status)"
         >
           <template v-if="row.checkResult.status === Advice_Level.SUCCESS">
@@ -206,7 +206,7 @@
     <div v-if="showSuccessPlaceholder" class="py-3 px-2 first:pt-2 space-y-2">
       <div class="flex items-center space-x-3">
         <div
-          class="relative w-5 h-5 flex flex-shrink-0 items-center justify-center rounded-full select-none"
+          class="relative w-5 h-5 flex shrink-0 items-center justify-center rounded-full select-none"
           :class="statusIconClass(Advice_Level.SUCCESS)"
         >
           <heroicons-solid:check class="w-4 h-4" />

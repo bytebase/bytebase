@@ -14,7 +14,7 @@
       </NButton>
       <div
         v-else
-        class="flex flex-row items-center gap-2 text-sm textlabel !leading-8"
+        class="flex flex-row items-center gap-2 text-sm textlabel leading-8!"
       >
         <CalendarXIcon class="w-5 h-auto" />
         {{ $t("issue.data-export.file-expired") }}

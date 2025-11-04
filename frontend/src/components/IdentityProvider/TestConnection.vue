@@ -12,7 +12,7 @@
   <NModal
     v-model:show="showClaimsDialog"
     preset="dialog"
-    class="!w-128"
+    class="w-128!"
     :show-icon="false"
   >
     <template #header>

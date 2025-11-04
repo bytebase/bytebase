@@ -3,7 +3,7 @@
     <NTag
       v-for="group in groups"
       :key="group.name"
-      class="!cursor-pointer hover:bg-gray-200"
+      class="cursor-pointer! hover:bg-gray-200"
       @click="$emit('select-group', group)"
     >
       {{ group.title }}

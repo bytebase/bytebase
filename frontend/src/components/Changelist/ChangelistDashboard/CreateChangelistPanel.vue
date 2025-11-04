@@ -83,7 +83,7 @@
                   <NSelect
                     v-if="uploadFileList.length > 0"
                     v-model:value="state.encoding"
-                    class="!w-24"
+                    class="w-24!"
                     filterable
                     :options="encodingOptions"
                     :consistent-menu-width="false"

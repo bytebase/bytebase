@@ -28,7 +28,7 @@
     @close="state.showSchemaTemplateDrawer = false"
   >
     <DrawerContent :title="$t('schema-template.table-template.self')">
-      <div class="w-[calc(100vw-36rem)] min-w-[64rem] max-w-[calc(100vw-8rem)]">
+      <div class="w-[calc(100vw-36rem)] min-w-5xl max-w-[calc(100vw-8rem)]">
         <TableTemplates
           :engine="engine"
           :readonly="true"
@@ -325,7 +325,7 @@ const columns = computed(() => {
       resizable: false,
       width: 30,
       hide: readonly.value,
-      className: "!px-0",
+      className: "px-0!",
       render: (table) => {
         return h(OperationCell, {
           table,
@@ -443,7 +443,7 @@ useConsumePendingScrollToTable(
 }
 .schema-editor-table-list:not(.disable-diff-coloring)
   :deep(.n-data-table-tr.dropped .n-data-table-td) {
-  @apply text-red-700 !bg-red-50 opacity-70;
+  @apply text-red-700 bg-red-50! opacity-70;
 }
 
 .schema-editor-table-list:not(.disable-diff-coloring)

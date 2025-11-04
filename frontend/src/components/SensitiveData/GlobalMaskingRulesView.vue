@@ -55,7 +55,7 @@
       />
     </div>
     <NEmpty
-      class="py-12 border rounded"
+      class="py-12 border rounded-sm"
       v-if="state.maskingRuleItemList.length === 0"
     />
     <div

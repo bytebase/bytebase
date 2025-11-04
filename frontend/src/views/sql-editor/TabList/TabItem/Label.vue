@@ -129,7 +129,7 @@ watch(isCurrentTab, (value) => {
 
 <style scoped lang="postcss">
 .label {
-  @apply relative flex items-center whitespace-nowrap min-w-[6rem] max-w-[12rem] truncate;
+  @apply relative flex items-center whitespace-nowrap min-w-24 max-w-48 truncate;
 }
 
 .label :deep(.name) {

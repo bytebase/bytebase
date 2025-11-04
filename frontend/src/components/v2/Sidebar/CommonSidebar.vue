@@ -116,7 +116,7 @@ const state = reactive<LocalState>({
 });
 
 const parentRouteClass = computed(() => {
-  return "group flex items-center px-2 py-1.5 leading-normal font-medium rounded-md text-gray-700 outline-item !text-sm";
+  return "group flex items-center px-2 py-1.5 leading-normal font-medium rounded-md text-gray-700 outline-item text-sm!";
 });
 
 const childRouteClass = computed(() => {

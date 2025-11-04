@@ -1,7 +1,7 @@
 <template>
   <DrawerContent :title="$t('quick-action.transfer-in-db-title')">
     <div
-      class="px-4 w-[calc(100vw-8rem)] lg:w-[60rem] max-w-[calc(100vw-8rem)]"
+      class="px-4 w-[calc(100vw-8rem)] lg:w-240 max-w-[calc(100vw-8rem)]"
     >
       <div class="space-y-4">
         <TransferSourceSelector
@@ -14,7 +14,7 @@
         />
         <ProjectSelect
           v-if="state.transferSource == 'OTHER'"
-          class="!w-48"
+          class="w-48!"
           :include-all="false"
           :project-name="state.fromProjectName"
           :filter="filterSourceProject"

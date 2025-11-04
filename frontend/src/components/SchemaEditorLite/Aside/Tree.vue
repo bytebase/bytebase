@@ -903,7 +903,7 @@ const handleExpandedKeysChange = (expandedKeys: string[]) => {
   @apply !p-0;
 }
 .schema-editor-tree :deep(.n-tree-node-content) {
-  @apply !pl-2 text-sm;
+  @apply pl-2! text-sm;
 }
 .schema-editor-tree :deep(.n-tree-node-indent) {
   width: 0.25rem;
@@ -926,7 +926,7 @@ const handleExpandedKeysChange = (expandedKeys: string[]) => {
   @apply truncate mr-1;
 }
 .schema-editor-tree :deep(.n-tree-node-switcher) {
-  @apply px-0 !w-4 !h-7;
+  @apply px-0 w-4! !h-7;
 }
 .schema-editor-tree:not(.disable-diff-coloring)
   :deep(.n-tree-node-content .created) {

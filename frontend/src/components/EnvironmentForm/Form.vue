@@ -283,13 +283,13 @@ const existRelatedResource = computedAsync(async () => {
 const renderColorPicker = () => {
   return (
     <NColorPicker
-      class="!w-full !h-full"
+      class="w-full! h-full!"
       modes={["hex"]}
       showAlpha={false}
       value={state.value.environment.color || "#4f46e5"}
       renderLabel={() => (
         <div
-          class="w-5 h-5 rounded cursor-pointer relative"
+          class="w-5 h-5 rounded-sm cursor-pointer relative"
           style={{
             backgroundColor: state.value.environment.color || "#4f46e5",
           }}

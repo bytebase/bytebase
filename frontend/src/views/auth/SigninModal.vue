@@ -4,7 +4,7 @@
     :trap-focus="true"
     :show-close="false"
     :mask-closable="false"
-    :header-class="'!hidden'"
+    :header-class="'hidden!'"
   >
     <div class="flex items-center w-auto md:min-w-96 max-w-full h-auto md:py-4">
       <div class="flex flex-col justify-center items-center flex-1 space-y-2">

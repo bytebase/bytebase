@@ -7,7 +7,7 @@
     <template #tooltip>
       <!-- eslint-disable vue/no-v-html -->
       <div
-        class="text-wrap whitespace-pre break-words break-all"
+        class="text-wrap whitespace-pre wrap-break-word break-all"
         style="max-width: calc(min(33vw, 320px))"
         v-html="tooltipHTML"
       />

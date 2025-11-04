@@ -20,20 +20,20 @@
       </div>
       <NInputGroup style="width: auto">
         <EnvironmentSelect
-          class="!w-40"
+          class="w-40!"
           :environment-name="
             environment ? formatEnvironmentName(environment.id) : undefined
           "
           @update:environment-name="changeEnvironmentFilter"
         />
         <InstanceSelect
-          class="!w-40"
+          class="w-40!"
           :project-name="sourceProjectName"
           :instance="instance?.name"
           @update:instance-name="changeInstanceFilter"
         />
         <SearchBox
-          class="!w-40"
+          class="w-40!"
           :value="searchText"
           :placeholder="$t('database.filter-database')"
           @update:value="$emit('update:search-text', $event)"

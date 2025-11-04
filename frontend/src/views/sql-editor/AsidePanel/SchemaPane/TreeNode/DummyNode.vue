@@ -4,7 +4,7 @@
       <span class="text-control-placeholder ml-[2px]">{{ text }}</span>
     </template>
     <template #default>
-      <div class="text-error max-w-[20rem] break-words break-all">
+      <div class="text-error max-w-[20rem] wrap-break-word break-all">
         {{ error }}
       </div>
     </template>

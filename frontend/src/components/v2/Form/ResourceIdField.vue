@@ -51,7 +51,7 @@
       <li
         v-for="validateMessage in state.validatedMessages"
         :key="validateMessage.message"
-        class="break-words w-full text-xs"
+        class="wrap-break-word w-full text-xs"
         :class="[
           validateMessage.type === 'warning' && 'text-yellow-600',
           validateMessage.type === 'error' && 'text-red-600',

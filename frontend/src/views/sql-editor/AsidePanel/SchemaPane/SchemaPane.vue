@@ -52,9 +52,9 @@
           :theme-overrides="{ nodeHeight: '21px' }"
           :render-label="renderLabel"
         />
-        <NEmpty v-else class="mt-[4rem]" />
+        <NEmpty v-else class="mt-16" />
       </template>
-      <NEmpty v-else class="mt-[4rem]" />
+      <NEmpty v-else class="mt-16" />
     </div>
 
     <NDropdown
@@ -69,7 +69,7 @@
       @select="handleDropdownSelect"
     />
 
-    <MaskSpinner v-if="isFetchingMetadata" class="!bg-white/75" />
+    <MaskSpinner v-if="isFetchingMetadata" class="bg-white/75!" />
 
     <BBModal :show="!!schemaViewer" @close="schemaViewer = undefined">
       <template v-if="schemaViewer" #title>
@@ -551,7 +551,7 @@ useEventListener(treeContainerElRef, "keydown", () => {
   --n-node-content-height: 21px !important;
 }
 .schema-tree :deep(.n-tree-node-content) {
-  @apply !px-0 text-sm;
+  @apply px-0! text-sm;
 }
 .schema-tree :deep(.n-tree-node-wrapper) {
   padding: 0;

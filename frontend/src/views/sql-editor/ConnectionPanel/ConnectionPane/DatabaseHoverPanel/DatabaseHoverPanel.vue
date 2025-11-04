@@ -3,7 +3,7 @@
     v-show="show && database"
     ref="popoverRef"
     v-zindexable="{ enabled: true }"
-    class="fixed border border-gray-100 rounded bg-white p-2 shadow transition-all text-sm"
+    class="fixed border border-gray-100 rounded-sm bg-white p-2 shadow-sm transition-all text-sm"
     :class="!show && 'pointer-events-none'"
     :style="{
       left: `${displayPosition.x}px`,
@@ -12,7 +12,7 @@
   >
     <template v-if="database">
       <div
-        class="grid min-w-[14rem] max-w-[18rem] gap-x-2 gap-y-1"
+        class="grid min-w-56 max-w-[18rem] gap-x-2 gap-y-1"
         style="grid-template-columns: auto 1fr"
       >
         <div class="contents">
@@ -51,7 +51,7 @@
             <div
               v-for="(value, key) in database.labels"
               :key="key"
-              class="text-xs py-px px-1 bg-gray-200/75 rounded-sm"
+              class="text-xs py-px px-1 bg-gray-200/75 rounded-xs"
             >
               <span>{{ key }}</span>
               <template v-if="value">

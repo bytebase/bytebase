@@ -44,7 +44,7 @@
       </NCheckbox>
 
       <!-- Project List -->
-      <div class="max-h-40 overflow-y-auto border rounded p-2 bg-gray-50">
+      <div class="max-h-40 overflow-y-auto border rounded-sm p-2 bg-gray-50">
         <div class="text-xs font-medium text-gray-600 mb-2">
           {{ $t("project.batch.projects-to-archive") }}:
         </div>

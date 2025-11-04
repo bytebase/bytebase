@@ -3,7 +3,7 @@
     <LabelsCell :labels="labels" :show-count="2" />
     <button
       v-if="!readonly"
-      class="w-5 h-5 p-0.5 hover:bg-gray-300 rounded cursor-pointer"
+      class="w-5 h-5 p-0.5 hover:bg-gray-300 rounded-sm cursor-pointer"
       @click.prevent="openLabelsDrawer()"
     >
       <heroicons-outline:pencil class="w-4 h-4" />

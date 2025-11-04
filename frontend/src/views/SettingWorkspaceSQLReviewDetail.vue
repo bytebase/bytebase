@@ -17,7 +17,7 @@
       class="flex flex-col gap-y-2 items-start md:items-center gap-x-2 justify-center md:flex-row"
     >
       <BBTextField
-        class="flex-1 !text-xl !pl-0 px-0.5 font-bold truncate sql-review-title"
+        class="flex-1 text-xl! pl-0! px-0.5 font-bold truncate sql-review-title"
         :disabled="!hasUpdateReviwConfigPermission"
         :required="true"
         :focus-on-mount="false"
@@ -86,7 +86,7 @@
     </SQLReviewTabsByEngine>
 
     <BBButtonConfirm
-      class="!my-4"
+      class="my-4!"
       :disabled="!hasDeleteReviwConfigPermission"
       :type="'DELETE'"
       :button-text="$t('sql-review.delete')"

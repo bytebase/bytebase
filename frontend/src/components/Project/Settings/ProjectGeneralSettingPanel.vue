@@ -35,7 +35,7 @@
         v-model:kv-list="labelKVList"
         :readonly="!allowEdit"
         :show-errors="true"
-        class="max-w-[30rem]"
+        class="max-w-120"
       />
     </div>
   </form>

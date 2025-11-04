@@ -6,7 +6,7 @@
     <div class="text-gray-500 font-medium whitespace-nowrap">
       <slot name="title">{{ title }}</slot>
     </div>
-    <NPerformantEllipsis class="text-right !flex items-center justify-end">
+    <NPerformantEllipsis class="text-right flex! items-center justify-end">
       <span class="whitespace-nowrap flex items-center leading-[20px] h-[20px]">
         <slot name="default"></slot>
       </span>

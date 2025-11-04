@@ -1,7 +1,7 @@
 <template>
   <Drawer :show="show" @close="$emit('dismiss')">
     <DrawerContent :title="$t('schema-template.classification.select')">
-      <div class="w-[25rem] h-full">
+      <div class="w-100 h-full">
         <ClassificationTree
           :classification-config="classificationConfig"
           @apply="onApply"

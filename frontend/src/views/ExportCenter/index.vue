@@ -30,7 +30,7 @@
       </div>
     </div>
 
-    <div class="relative w-full mt-4 min-h-[20rem]">
+    <div class="relative w-full mt-4 min-h-80">
       <PagedTable
         ref="issuePagedTable"
         :session-key="'export-center'"

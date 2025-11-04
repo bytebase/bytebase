@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex-1 overflow-auto focus:outline-none space-y-4"
+    class="flex-1 overflow-auto focus:outline-hidden space-y-4"
     tabindex="0"
     v-bind="$attrs"
   >

@@ -3,7 +3,7 @@
     <span class="shrink-0">{{ $t("common.role.self") }}</span>
     <NSelect
       v-model:value="state.selectedRole"
-      class="!w-40 grow"
+      class="w-40! grow"
       consistent-menu-width
       size="small"
       :options="options"

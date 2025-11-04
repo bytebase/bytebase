@@ -51,7 +51,7 @@
       </template>
     </IssueSearch>
 
-    <div class="relative min-h-[20rem]">
+    <div class="relative min-h-80">
       <PagedTable
         ref="issuePagedTable"
         :key="keyForTab(tab)"

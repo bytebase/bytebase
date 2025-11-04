@@ -188,7 +188,7 @@
           v-model:kv-list="state.kvList"
           :readonly="!!readonly"
           :show-errors="dirty"
-          class="max-w-[30rem]"
+          class="max-w-120"
         />
       </div>
     </div>

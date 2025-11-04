@@ -4,7 +4,7 @@
       <div
         :class="
           twMerge(
-            'relative flex flex-shrink-0 items-center justify-center rounded-full select-none overflow-hidden',
+            'relative flex shrink-0 items-center justify-center rounded-full select-none overflow-hidden',
             classes
           )
         "
@@ -31,7 +31,7 @@
               aria-hidden="true"
             />
             <span
-              class="w-full h-full rounded-full z-[1] bg-info"
+              class="w-full h-full rounded-full z-1 bg-info"
               aria-hidden="true"
             />
           </div>

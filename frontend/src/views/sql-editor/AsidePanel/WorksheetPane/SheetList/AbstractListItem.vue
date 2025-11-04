@@ -1,7 +1,7 @@
 <template>
   <div
-    class="flex flex-row items-center overflow-hidden gap-x-1 p-1 mx-1 rounded hover:bg-accent/5 cursor-pointer"
-    :class="[selected && '!bg-accent/10']"
+    class="flex flex-row items-center overflow-hidden gap-x-1 p-1 mx-1 rounded-sm hover:bg-accent/5 cursor-pointer"
+    :class="[selected && 'bg-accent/10!']"
   >
     <FileCodeIcon class="w-4 h-4" />
     <div class="flex-1 flex flex-row items-center truncate">

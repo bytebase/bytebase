@@ -28,7 +28,7 @@
             ********************************
           </p>
           <div
-            class="py-2 px-3 bg-gray-50 dark:bg-gray-700 rounded-sm relative"
+            class="py-2 px-3 bg-gray-50 dark:bg-gray-700 rounded-xs relative"
           >
             <div
               class="absolute right-2 top-2 z-50 opacity-70 hover:opacity-100"
@@ -41,7 +41,7 @@
               class="flex items-start text-gray-500 dark:text-gray-300 text-sm"
             >
               <div
-                class="min-w-[7rem] text-left flex items-start font-medium pt-1"
+                class="min-w-28 text-left flex items-start font-medium pt-1"
               >
                 {{ header.column.columnDef.header }}
                 <MaskingReasonPopover

@@ -151,7 +151,7 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
       hide: !props.highlightText,
       renderExpand: (issue) => (
         <div
-          class="max-h-[20rem] overflow-auto whitespace-pre-wrap break-words break-all"
+          class="max-h-80 overflow-auto whitespace-pre-wrap wrap-break-word break-all"
           innerHTML={highlight(issue.description)}
         ></div>
       ),
@@ -193,7 +193,7 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
             </a>
             {labels.length > 0 && (
               <IssueLabelSelector
-                class="!w-auto shrink-0"
+                class="w-auto! shrink-0"
                 size="small"
                 selected={labels}
                 maxTagCount={3}
@@ -378,7 +378,7 @@ const isIssueExpanded = (issue: ComposedIssue): boolean => {
 
 <style scoped lang="postcss">
 :deep(.n-base-selection-tags) {
-  @apply !bg-transparent !p-0;
+  @apply bg-transparent! !p-0;
 }
 :deep(.n-base-suffix),
 :deep(.n-base-selection__border),

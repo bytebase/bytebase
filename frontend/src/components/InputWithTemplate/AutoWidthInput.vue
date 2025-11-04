@@ -8,7 +8,7 @@
       v-model="state.data"
       :style="`width: ${state.width}px;`"
       :disabled="disabled"
-      class="px-0 m-0 py-1 cleared-input outline-none"
+      class="px-0 m-0 py-1 cleared-input outline-hidden"
       type="text"
       @keyup="(e) => $emit('keyup', e)"
       @keydown="(e) => $emit('keydown', e)"

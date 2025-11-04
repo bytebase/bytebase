@@ -1,7 +1,7 @@
 <template>
   <button
-    class="p-0.5 rounded hover:bg-gray-200"
-    :class="[isFocused && focusedClass, isFocused ? '!visible' : 'invisible']"
+    class="p-0.5 rounded-sm hover:bg-gray-200"
+    :class="[isFocused && focusedClass, isFocused ? 'visible!' : 'invisible']"
     @click="toggleFocus"
   >
     <!-- TODO(Jim): replace this raw SVG with heroicons-outline:viewfinder-circle when supported -->

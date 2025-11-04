@@ -150,7 +150,7 @@ const { tabKey, availableTabs, tabRender, handleTabChange } =
 
 const { overrideMainContainerClass } = useBodyLayoutContext();
 
-overrideMainContainerClass("!py-0 !px-0");
+overrideMainContainerClass("py-0! px-0!");
 
 const documentTitle = computed(() => {
   if (isCreating.value) {

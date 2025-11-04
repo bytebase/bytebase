@@ -92,7 +92,7 @@ const columns = computed(() => {
               default: () => trigger.sqlMode,
               tooltip: () => (
                 <div
-                  class="text-wrap whitespace-pre break-words break-all"
+                  class="text-wrap whitespace-pre wrap-break-word break-all"
                   style="max-width: calc(min(33vw, 320px))"
                 >
                   {trigger.sqlMode.replaceAll(",", ",\n")}

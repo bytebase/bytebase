@@ -68,7 +68,7 @@
 
     <div v-if="!state.editCommentMode && allowCreateComment" class="mt-2">
       <div class="flex gap-3">
-        <div class="flex-shrink-0 pt-1">
+        <div class="shrink-0 pt-1">
           <UserAvatar :user="currentUser" />
         </div>
         <div class="min-w-0 flex-1">

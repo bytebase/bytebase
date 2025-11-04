@@ -67,7 +67,7 @@
           </div>
           <NTransfer
             v-model:value="state.role.permissions"
-            class="!h-[32rem]"
+            class="h-[32rem]!"
             source-filterable
             source-filter-placeholder="Search"
             :options="permissionOptions"

@@ -1,5 +1,5 @@
 <template>
-  <NEmpty v-if="templateList.length === 0" class="py-12 border rounded" />
+  <NEmpty v-if="templateList.length === 0" class="py-12 border rounded-sm" />
   <div v-else class="flex">
     <div
       class="hidden lg:flex w-1/5 max-w-xs flex-col space-y-3 border-r mr-5 pr-5"

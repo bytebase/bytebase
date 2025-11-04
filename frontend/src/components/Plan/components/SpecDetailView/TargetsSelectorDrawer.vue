@@ -3,7 +3,7 @@
     v-model:show="show"
     :mask-closable="true"
     placement="right"
-    class="!w-[100vw] sm:!w-[80vw]"
+    class="w-screen! sm:w-[80vw]!"
   >
     <DrawerContent :title="$t('plan.select-targets')" closable>
       <div class="flex flex-col gap-y-4">

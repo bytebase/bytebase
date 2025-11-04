@@ -2,7 +2,7 @@
   <BBModal
     :title="props.title"
     :show="show"
-    class="shadow-inner outline outline-gray-200"
+    class="shadow-inner outline-solid outline-gray-200"
     @close="dismissModal"
   >
     <div class="w-80 mb-6">

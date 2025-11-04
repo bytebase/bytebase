@@ -33,7 +33,7 @@
         :db="db"
         :title="detail.trigger.name"
         :code="detail.trigger.body"
-        header-class="!p-0 h-[34px]"
+        header-class="p-0! h-[34px]"
       >
         <template #title-prefix>
           <NButton text @click="deselect">

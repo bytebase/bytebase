@@ -27,7 +27,7 @@
         @rule-remove="$emit('rule-remove', $event)"
         @update:selected-rule-keys="$emit('update:selectedRuleKeys', $event)"
       />
-      <NEmpty v-else class="py-12 border rounded" />
+      <NEmpty v-else class="py-12 border rounded-sm" />
     </template>
   </SQLRuleFilter>
 </template>

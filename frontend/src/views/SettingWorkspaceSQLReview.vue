@@ -31,7 +31,7 @@
       :review-list="filteredReviewConfigList"
       :filter="searchText"
     />
-    <NEmpty v-else class="py-12 border rounded">
+    <NEmpty v-else class="py-12 border rounded-sm">
       <template #extra>
         <NButton
           :size="'small'"

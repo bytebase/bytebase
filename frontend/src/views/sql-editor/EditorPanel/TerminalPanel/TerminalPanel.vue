@@ -18,7 +18,7 @@
           <Suspense>
             <CompactSQLEditor
               v-model:content="query.statement"
-              class="min-h-[2rem]"
+              class="min-h-8"
               :class="[
                 isEditableQueryItem(query)
                   ? 'active-editor'
@@ -31,7 +31,7 @@
             />
             <template #fallback>
               <div
-                class="w-full min-h-[2rem] flex flex-col items-center justify-center"
+                class="w-full min-h-8 flex flex-col items-center justify-center"
               >
                 <BBSpin />
               </div>

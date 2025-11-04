@@ -7,7 +7,7 @@
     @close="handleClose"
   >
     <div
-      class="w-[30rem] max-w-full pt-2 pb-4 text-control break-words text-sm"
+      class="w-120 max-w-full pt-2 pb-4 text-control wrap-break-word text-sm"
     >
       <div v-if="resources.length === 0">
         {{ $t("resource.delete-warning", { name: target }) }}

@@ -39,7 +39,7 @@
           </template>
           <template v-else-if="isValidDatabaseGroupName(target)">
             <DatabaseGroupIcon
-              class="w-4 h-4 text-control-light flex-shrink-0"
+              class="w-4 h-4 text-control-light shrink-0"
             />
             <DatabaseGroupName
               :database-group="

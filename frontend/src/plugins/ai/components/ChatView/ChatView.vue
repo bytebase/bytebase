@@ -25,7 +25,7 @@
     </template>
     <template v-else-if="mode === 'CHAT'">
       <div
-        class="w-full h-full flex flex-col justify-end items-center pb-[2rem]"
+        class="w-full h-full flex flex-col justify-end items-center pb-8"
       >
         <i18n-t
           keypath="plugin.ai.conversation.select-or-create"

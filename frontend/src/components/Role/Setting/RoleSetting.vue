@@ -31,7 +31,7 @@
 
     <div
       v-if="!state.ready"
-      class="relative flex flex-col h-[8rem] items-center justify-center"
+      class="relative flex flex-col h-32 items-center justify-center"
     >
       <BBSpin />
     </div>

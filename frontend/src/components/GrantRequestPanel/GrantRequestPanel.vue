@@ -8,7 +8,7 @@
     <DrawerContent
       :title="$t('issue.title.request-role')"
       :closable="true"
-      class="w-[50rem] max-w-[100vw] relative"
+      class="w-200 max-w-[100vw] relative"
     >
       <div class="w-full mx-auto space-y-4">
         <AddProjectMemberForm

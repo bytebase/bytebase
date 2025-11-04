@@ -11,9 +11,9 @@
   <BBModal
     v-if="open"
     :title="$t('schema-diagram.self')"
-    class="h-[calc(100vh-40px)] !max-h-[calc(100vh-40px)]"
-    header-class="!border-0"
-    container-class="flex-1 !pt-0"
+    class="h-[calc(100vh-40px)] max-h-[calc(100vh-40px)]!"
+    header-class="border-0!"
+    container-class="flex-1 pt-0!"
     @close="open = false"
   >
     <div class="w-[80vw] h-full">

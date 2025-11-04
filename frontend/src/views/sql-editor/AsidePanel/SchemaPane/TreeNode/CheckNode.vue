@@ -6,11 +6,11 @@
     :indent="0"
   >
     <template #icon>
-      <CheckIcon class="!w-3.5 !h-3.5 text-gray-500" />
+      <CheckIcon class="w-3.5! h-3.5! text-gray-500" />
     </template>
     <template #suffix>
       <div
-        class="flex items-center justify-end gap-1 overflow-hidden whitespace-nowrap shrink opacity-80 !font-normal"
+        class="flex items-center justify-end gap-1 overflow-hidden whitespace-nowrap shrink opacity-80 font-normal!"
       >
         <NTag
           size="small"

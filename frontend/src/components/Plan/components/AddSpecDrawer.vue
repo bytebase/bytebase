@@ -39,7 +39,7 @@
                 <NRadio :value="MigrationType.DDL" class="w-full">
                   <div class="flex items-start space-x-3 w-full">
                     <FileDiffIcon
-                      class="w-6 h-6 mt-1 flex-shrink-0"
+                      class="w-6 h-6 mt-1 shrink-0"
                       :stroke-width="1.5"
                     />
                     <div class="flex-1">
@@ -64,7 +64,7 @@
                 <NRadio :value="MigrationType.DML" class="w-full">
                   <div class="flex items-start space-x-3 w-full">
                     <EditIcon
-                      class="w-6 h-6 mt-1 flex-shrink-0"
+                      class="w-6 h-6 mt-1 shrink-0"
                       :stroke-width="1.5"
                     />
                     <div class="flex-1">
@@ -187,7 +187,7 @@
           ><XIcon :size="16"
         /></NButton>
       </template>
-      <div class="h-[60vh] min-h-[400px] border rounded">
+      <div class="h-[60vh] min-h-[400px] border rounded-sm">
         <MonacoEditor
           :readonly="true"
           :content="previewDDL"

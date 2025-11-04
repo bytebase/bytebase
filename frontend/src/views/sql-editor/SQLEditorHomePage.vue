@@ -11,11 +11,11 @@
         <teleport to="body">
           <div
             id="fff"
-            class="fixed rounded-full border border-control-border shadow-lg w-10 h-10 bottom-[4rem] flex items-center justify-center bg-white hover:bg-control-bg cursor-pointer z-[99999999] transition-all"
+            class="fixed rounded-full border border-control-border shadow-lg w-10 h-10 bottom-16 flex items-center justify-center bg-white hover:bg-control-bg cursor-pointer z-99999999 transition-all"
             :class="[
               state.sidebarExpanded
                 ? 'left-[80%] -translate-x-5'
-                : 'left-[1rem]',
+                : 'left-4',
             ]"
             style="
               transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);

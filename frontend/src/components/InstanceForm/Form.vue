@@ -11,7 +11,7 @@
         <template #suffix="{ engine }: { engine: Engine }">
           <BBBetaBadge
             v-if="isEngineBeta(engine)"
-            class="absolute -top-1.5 -right-1 rounded text-xs !bg-gray-500 px-1 !py-0 z-10"
+            class="absolute -top-1.5 -right-1 rounded-sm text-xs bg-gray-500! px-1 py-0! z-10"
           />
         </template>
       </InstanceEngineRadioGrid>
@@ -268,7 +268,7 @@
                 <label
                   v-if="index === 0"
                   for="additionalAddressesHost"
-                  class="textlabel !font-normal flex flex-row items-center"
+                  class="textlabel font-normal! flex flex-row items-center"
                 >
                   {{ $t("instance.host-or-socket") }}
                 </label>
@@ -285,7 +285,7 @@
                 <label
                   v-if="index === 0"
                   for="additionalAddressesPort"
-                  class="textlabel !font-normal flex flex-row items-center"
+                  class="textlabel font-normal! flex flex-row items-center"
                 >
                   {{ $t("instance.port") }}
                 </label>
@@ -310,7 +310,7 @@
             </template>
             <div class="mt-1 sm:col-span-12 sm:col-start-1">
               <NButton
-                class="ml-auto !w-12"
+                class="ml-auto w-12!"
                 size="small"
                 @click.prevent="addDSAdditionalAddress"
               >

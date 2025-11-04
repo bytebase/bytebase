@@ -19,7 +19,7 @@
         <NInput
           v-if="showSearchFeature"
           :value="state.search"
-          class="!max-w-[10rem]"
+          class="max-w-40!"
           size="small"
           type="text"
           :placeholder="t('sql-editor.search-results')"

@@ -60,7 +60,7 @@
           <h2 class="text-lg">{{ $t("db.functions") }}</h2>
           <SearchBox v-model:value="state.keywords.functions" />
         </div>
-        <div class="max-h-[16rem] overflow-x-auto overflow-y-hidden">
+        <div class="max-h-64 overflow-x-auto overflow-y-hidden">
           <FunctionsTable
             v-if="metadata.schema"
             :db="database"
@@ -86,7 +86,7 @@
           <h2 class="text-lg">{{ $t("db.procedures") }}</h2>
           <SearchBox v-model:value="state.keywords.procedures" />
         </div>
-        <div class="max-h-[16rem] overflow-x-auto overflow-y-hidden">
+        <div class="max-h-64 overflow-x-auto overflow-y-hidden">
           <ProceduresTable
             v-if="metadata.schema"
             :db="database"
@@ -118,7 +118,7 @@
           <h2 class="text-lg">{{ $t("db.sequences") }}</h2>
           <SearchBox v-model:value="state.keywords.sequences" />
         </div>
-        <div class="max-h-[16rem] overflow-x-auto overflow-y-hidden">
+        <div class="max-h-64 overflow-x-auto overflow-y-hidden">
           <SequencesTable
             v-if="metadata.schema"
             :db="database"
@@ -150,7 +150,7 @@
           <h2 class="text-lg">{{ $t("db.external-tables") }}</h2>
           <SearchBox v-model:value="state.keywords.externalTables" />
         </div>
-        <div class="max-h-[16rem] overflow-x-auto overflow-y-hidden">
+        <div class="max-h-64 overflow-x-auto overflow-y-hidden">
           <ExternalTablesTable
             v-if="metadata.schema"
             :db="database"
@@ -179,7 +179,7 @@
           <h2 class="text-lg">{{ $t("db.packages") }}</h2>
           <SearchBox v-model:value="state.keywords.packages" />
         </div>
-        <div class="max-h-[16rem] overflow-x-auto overflow-y-hidden">
+        <div class="max-h-64 overflow-x-auto overflow-y-hidden">
           <PackagesTable
             v-if="metadata.schema"
             :db="database"

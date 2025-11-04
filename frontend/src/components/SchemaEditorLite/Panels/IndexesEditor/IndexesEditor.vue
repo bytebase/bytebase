@@ -219,7 +219,7 @@ const columns = computed(() => {
       resizable: false,
       width: 30,
       hide: props.readonly,
-      className: "!px-0",
+      className: "px-0!",
       render: (index) => {
         return h(OperationCell, {
           index,
@@ -261,7 +261,7 @@ const columns = computed(() => {
 }
 .schema-editor-table-indexes-editor
   :deep(.n-data-table-tr.dropped .n-data-table-td) {
-  @apply text-red-700 cursor-not-allowed !bg-red-50 opacity-70;
+  @apply text-red-700 cursor-not-allowed bg-red-50! opacity-70;
 }
 .schema-editor-table-indexes-editor
   :deep(.n-data-table-tr.updated .n-data-table-td) {

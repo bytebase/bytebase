@@ -1,7 +1,7 @@
 <template>
   <NSelect
     v-model:value="selectedIsolation"
-    class="!w-60"
+    class="w-60!"
     consistent-menu-width
     size="small"
     :options="options"

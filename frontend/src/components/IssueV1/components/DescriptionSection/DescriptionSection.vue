@@ -52,7 +52,7 @@
       />
       <div
         v-else
-        class="min-h-[3rem] max-h-[16rem] whitespace-pre-wrap px-4 py-3 text-sm bg-white rounded-lg border border-gray-200 overflow-y-auto"
+        class="min-h-12 max-h-64 whitespace-pre-wrap px-4 py-3 text-sm bg-white rounded-lg border border-gray-200 overflow-y-auto"
       >
         <template v-if="issue.description">
           <iframe

@@ -5,11 +5,11 @@
         :environment="database.effectiveEnvironmentEntity"
         :link="false"
       />
-      <ChevronRightIcon class="flex-shrink-0 h-4 w-4 opacity-70" />
+      <ChevronRightIcon class="shrink-0 h-4 w-4 opacity-70" />
     </template>
     <template v-if="isValidInstanceName(instance.name)">
       <span>{{ instance.title }}</span>
-      <ChevronRightIcon class="flex-shrink-0 h-4 w-4 opacity-70" />
+      <ChevronRightIcon class="shrink-0 h-4 w-4 opacity-70" />
     </template>
     <template v-if="isValidDatabaseName(database.name)">
       <span>{{ database.databaseName }}</span>

@@ -13,7 +13,7 @@
         :options="dropdownOptions"
         @select="handleDropdownSelect"
       >
-        <NButton size="small" class="!px-1" quaternary>
+        <NButton size="small" class="px-1!" quaternary>
           <template #icon>
             <EllipsisVerticalIcon class="w-4 h-4" />
           </template>

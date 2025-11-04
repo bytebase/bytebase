@@ -178,7 +178,7 @@ const columns = computed(() => {
           <div class="px-10">
             <p class="w-full text-left text-gray-500">{comment}</p>
             {rule.componentList.length > 0 && !!comment && (
-              <NDivider class={"!my-4"} />
+              <NDivider class={"my-4!"} />
             )}
             {rule.componentList.length > 0 && (
               <RuleConfig
