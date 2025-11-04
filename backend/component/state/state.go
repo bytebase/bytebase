@@ -3,6 +3,7 @@ package state
 
 import (
 	"sync"
+	"time"
 
 	lru "github.com/hashicorp/golang-lru/v2"
 
@@ -52,6 +53,10 @@ type State struct {
 	TaskRunTickleChan chan int
 
 	ExpireCache *lru.Cache[string, bool]
+
+	// MFAAttemptCache tracks failed MFA verification attempts per user.
+	// Tracks attempts across all temp tokens for a user.
+	MFAAttemptCache sync.Map // map[userID]*MFAAttemptRecord
 }
 
 func New() (*State, error) {
@@ -96,4 +101,12 @@ func (c *resourceLimiter) Decrement(key string) {
 	c.Lock()
 	defer c.Unlock()
 	c.connections[key]--
+}
+
+// MFAAttemptRecord tracks MFA verification attempts for a user.
+// Maximum 5 attempts within a 5-minute sliding window.
+type MFAAttemptRecord struct {
+	// Attempts stores timestamps of failed MFA verification attempts
+	Attempts []time.Time
+	Mu       sync.RWMutex
 }

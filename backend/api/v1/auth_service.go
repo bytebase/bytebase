@@ -35,6 +35,12 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
+const (
+	// MFA attempt limits.
+	maxMFAAttempts = 5
+	mfaTimeWindow  = 5 * time.Minute
+)
+
 var (
 	invalidUserOrPasswordError = connect.NewError(connect.CodeUnauthenticated, errors.Errorf("the email or password is not valid"))
 )
@@ -101,17 +107,29 @@ func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.Login
 			return nil, invalidUserOrPasswordError
 		}
 
+		// Check if user is already locked out (read-only check)
+		if err := s.isUserMFALockedOut(user.ID); err != nil {
+			return nil, err
+		}
+
+		var mfaErr error
 		if request.OtpCode != nil {
-			if err := challengeMFACode(user, *request.OtpCode); err != nil {
-				return nil, err
-			}
+			mfaErr = challengeMFACode(user, *request.OtpCode)
 		} else if request.RecoveryCode != nil {
-			if err := s.challengeRecoveryCode(ctx, user, *request.RecoveryCode); err != nil {
-				return nil, err
-			}
+			mfaErr = s.challengeRecoveryCode(ctx, user, *request.RecoveryCode)
 		} else {
 			return nil, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("OTP or recovery code is required for MFA"))
 		}
+
+		// Record the verification result
+		if mfaErr != nil {
+			// Record failed attempt
+			_ = s.recordMFAAttempt(user.ID, false)
+			return nil, mfaErr
+		}
+
+		// Clear attempt counter on successful MFA verification
+		_ = s.recordMFAAttempt(user.ID, true)
 		loginUser = user
 	}
 
@@ -496,6 +514,90 @@ func (s *AuthService) challengeRecoveryCode(ctx context.Context, user *store.Use
 		}
 	}
 	return connect.NewError(connect.CodeUnauthenticated, errors.Errorf("invalid recovery code"))
+}
+
+// isUserMFALockedOut checks if a user is locked out due to too many failed MFA attempts.
+// This is a read-only check that doesn't modify the attempt counter.
+func (s *AuthService) isUserMFALockedOut(userID int) error {
+	val, exists := s.stateCfg.MFAAttemptCache.Load(userID)
+	if !exists {
+		return nil
+	}
+
+	record, ok := val.(*state.MFAAttemptRecord)
+	if !ok {
+		return nil
+	}
+	record.Mu.RLock()
+	defer record.Mu.RUnlock()
+
+	// Count recent attempts within the 5-minute window
+	now := time.Now()
+	cutoff := now.Add(-mfaTimeWindow)
+	recentCount := 0
+	for _, t := range record.Attempts {
+		if t.After(cutoff) {
+			recentCount++
+		}
+	}
+
+	if recentCount >= maxMFAAttempts {
+		return connect.NewError(
+			connect.CodeResourceExhausted,
+			errors.Errorf("too many failed MFA verification attempts. Please try again later"),
+		)
+	}
+
+	return nil
+}
+
+// recordMFAAttempt records the result of an MFA verification attempt.
+// - Maximum 5 failed attempts within a 5-minute sliding window
+// - Attempts are aggregated across all temp tokens for the user
+// - Only successful MFA verification resets the counter
+func (s *AuthService) recordMFAAttempt(userID int, success bool) error {
+	// If successful, clear all attempts
+	if success {
+		s.stateCfg.MFAAttemptCache.Delete(userID)
+		return nil
+	}
+
+	now := time.Now()
+
+	// Load or create record for this user
+	var record *state.MFAAttemptRecord
+	if val, exists := s.stateCfg.MFAAttemptCache.Load(userID); exists {
+		if r, ok := val.(*state.MFAAttemptRecord); ok {
+			record = r
+		} else {
+			record = &state.MFAAttemptRecord{
+				Attempts: []time.Time{},
+			}
+		}
+	} else {
+		record = &state.MFAAttemptRecord{
+			Attempts: []time.Time{},
+		}
+	}
+
+	record.Mu.Lock()
+	defer record.Mu.Unlock()
+
+	// Remove attempts outside the 5-minute window (sliding window)
+	cutoff := now.Add(-mfaTimeWindow)
+	recentAttempts := []time.Time{}
+	for _, t := range record.Attempts {
+		if t.After(cutoff) {
+			recentAttempts = append(recentAttempts, t)
+		}
+	}
+
+	// Record this failed attempt
+	recentAttempts = append(recentAttempts, now)
+	record.Attempts = recentAttempts
+	s.stateCfg.MFAAttemptCache.Store(userID, record)
+
+	return nil
 }
 
 // validateWithCodeAndSecret validates the given code against the given secret.
