@@ -221,8 +221,14 @@ func TestGetStatementTypesANTLR(t *testing.T) {
 			parseResult, err := ParsePostgreSQL(tt.sql)
 			require.NoError(t, err)
 
-			types, err := GetStatementTypesANTLR(parseResult)
+			stmtsWithPos, err := GetStatementTypesWithPositionsANTLR(parseResult)
 			require.NoError(t, err)
+
+			// Extract types from statements with positions
+			types := make([]string, len(stmtsWithPos))
+			for i, stmt := range stmtsWithPos {
+				types[i] = stmt.Type
+			}
 			require.ElementsMatch(t, tt.expectedTypes, types)
 		})
 	}

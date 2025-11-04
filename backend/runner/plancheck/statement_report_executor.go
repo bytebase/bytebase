@@ -186,9 +186,13 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 		}
 		explainCalculator = pd.CountAffectedRows
 
-		sqlTypes, err = pg.GetStatementTypes(asts)
+		stmtsWithPos, err := pg.GetStatementTypesWithPositions(asts)
 		if err != nil {
 			return nil, err
+		}
+		sqlTypes = make([]string, len(stmtsWithPos))
+		for i, stmt := range stmtsWithPos {
+			sqlTypes[i] = stmt.Type
 		}
 		defaultSchema = "public"
 	case storepb.Engine_REDSHIFT:
