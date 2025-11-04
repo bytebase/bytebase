@@ -77,7 +77,7 @@ const updateWidth = () => {
 watchEffect(updateWidth);
 </script>
 
-<style scoped>
+<style scoped lang="postcss">
 .cleared-input,
 .cleared-input:focus {
   @apply shadow-none ring-0 border-0 border-none;

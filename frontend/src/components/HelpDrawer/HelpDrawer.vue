@@ -176,7 +176,7 @@ const activate = () => (active.value = true);
 const deactivate = () => (active.value = false);
 </script>
 
-<style scoped>
+<style scoped lang="postcss">
 .qrcode-card {
   @apply w-20 flex flex-col items-center justify-start text-xs;
 }
