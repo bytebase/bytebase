@@ -262,9 +262,8 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 	}
 
 	for _, result := range results {
-		// AllowExport is a validate only check.
-		checkErr := s.accessCheck(ctx, instance, database, user, spans, request.Explain)
-		result.AllowExport = checkErr == nil
+		// We have merged the export permission into query so the user can always export if query is allowed.
+		result.AllowExport = true
 	}
 
 	slog.Debug("request finished",
