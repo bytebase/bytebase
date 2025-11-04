@@ -139,26 +139,88 @@ When using declarative mode, you must follow these steps:
 
 ### Important Limitations
 
-1. **Database Support**: Currently only MySQL and PostgreSQL are supported.
+1. **Database Support**: Currently only PostgreSQL is supported.
 
-2. **Supported SQL Statements**: Only the following CREATE statements are supported:
+2. **Supported SQL Statements**: The following PostgreSQL statements are supported:
    - `CREATE TABLE`
-   - `CREATE INDEX`
-   - `CREATE FUNCTION`
-   - `CREATE PROCEDURE`
+   - `CREATE INDEX` / `CREATE UNIQUE INDEX`
    - `CREATE VIEW`
    - `CREATE SEQUENCE`
+   - `CREATE FUNCTION`
+   - `ALTER SEQUENCE`
 
-3. **PostgreSQL Specific Requirements**: When using PostgreSQL, you must use fully qualified names for all database objects in your schema files:
+3. **Schema Requirements**: You must use fully qualified names (with schema prefix) for all database objects in your schema files:
    ```sql
    -- Correct: fully qualified name
-   CREATE TABLE myschema.users (
-       name VARCHAR(100)
+   CREATE TABLE public.users (
+       id INTEGER NOT NULL,
+       name VARCHAR(100) NOT NULL,
+       CONSTRAINT pk_users PRIMARY KEY (id)
    );
-   
+
    -- Incorrect: unqualified name
    CREATE TABLE users (
-       name VARCHAR(100)
+       id INTEGER NOT NULL,
+       name VARCHAR(100) NOT NULL,
+       CONSTRAINT pk_users PRIMARY KEY (id)
    );
+   ```
+
+4. **Constraint Requirements**: `PRIMARY KEY`, `UNIQUE`, `FOREIGN KEY`, and `CHECK` constraints must be defined at table level with explicit names. Only `NOT NULL`, `DEFAULT`, and `GENERATED` constraints are allowed at column level:
+   ```sql
+   -- Correct: table-level constraints with explicit names
+   CREATE TABLE public.users (
+       id INTEGER NOT NULL,              -- NOT NULL is allowed at column level
+       email TEXT NOT NULL,              -- NOT NULL is allowed at column level
+       created_at TIMESTAMP DEFAULT NOW(), -- DEFAULT is allowed at column level
+       CONSTRAINT pk_users PRIMARY KEY (id),
+       CONSTRAINT uk_users_email UNIQUE (email),
+       CONSTRAINT chk_users_email CHECK (email LIKE '%@%')
+   );
+
+   -- Incorrect: PRIMARY KEY, UNIQUE, CHECK at column level
+   CREATE TABLE public.users (
+       id INTEGER PRIMARY KEY,           -- ERROR: PRIMARY KEY must be at table level
+       email TEXT UNIQUE,                -- ERROR: UNIQUE must be at table level
+       age INTEGER CHECK (age >= 0),     -- ERROR: CHECK must be at table level
+       CONSTRAINT pk_users PRIMARY KEY (id)
+   );
+
+   -- Incorrect: unnamed constraints
+   CREATE TABLE public.users (
+       id INTEGER NOT NULL,
+       email TEXT NOT NULL,
+       PRIMARY KEY (id),                 -- ERROR: constraint must have explicit name
+       UNIQUE (email),                   -- ERROR: constraint must have explicit name
+       CHECK (email LIKE '%@%')          -- ERROR: constraint must have explicit name
+   );
+   ```
+
+5. **Foreign Key References**: Foreign key references must use fully qualified table names:
+   ```sql
+   -- Correct: fully qualified reference
+   CREATE TABLE public.orders (
+       id INTEGER NOT NULL,
+       user_id INTEGER NOT NULL,
+       CONSTRAINT pk_orders PRIMARY KEY (id),
+       CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES public.users(id)
+   );
+
+   -- Incorrect: unqualified reference
+   CREATE TABLE public.orders (
+       id INTEGER NOT NULL,
+       user_id INTEGER NOT NULL,
+       CONSTRAINT pk_orders PRIMARY KEY (id),
+       CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id)
+   );
+   ```
+
+6. **Index Naming**: All indexes must have explicit names:
+   ```sql
+   -- Correct: named index
+   CREATE INDEX idx_users_email ON public.users(email);
+
+   -- Incorrect: unnamed index
+   CREATE INDEX ON public.users(email);
    ```
 
