@@ -8,7 +8,7 @@ import (
 	"unicode"
 
 	"github.com/antlr4-go/antlr/v4"
-	plsql "github.com/bytebase/parser/plsql"
+	"github.com/bytebase/parser/plsql"
 
 	"github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"

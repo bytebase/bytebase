@@ -8,7 +8,7 @@ import (
 	"unicode"
 
 	"github.com/antlr4-go/antlr/v4"
-	mysql "github.com/bytebase/parser/mysql"
+	"github.com/bytebase/parser/mysql"
 
 	"github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"

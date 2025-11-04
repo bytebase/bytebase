@@ -1,7 +1,7 @@
 package mysql
 
 import (
-	mysql "github.com/bytebase/parser/mysql"
+	"github.com/bytebase/parser/mysql"
 )
 
 type StatementTypeChecker struct {

@@ -1,7 +1,7 @@
 package plsql
 
 import (
-	plsql "github.com/bytebase/parser/plsql"
+	"github.com/bytebase/parser/plsql"
 	"github.com/pkg/errors"
 )
 

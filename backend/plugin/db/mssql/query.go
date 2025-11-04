@@ -12,7 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	tsql "github.com/bytebase/parser/tsql"
+	"github.com/bytebase/parser/tsql"
 	mssqldb "github.com/microsoft/go-mssqldb"
 
 	"github.com/bytebase/bytebase/backend/common/log"
