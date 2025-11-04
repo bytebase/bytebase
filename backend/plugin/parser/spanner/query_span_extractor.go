@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/google-sql-parser"
+	parser "github.com/bytebase/parser/googlesql"
 
 	parsererror "github.com/bytebase/bytebase/backend/plugin/parser/errors"
 

@@ -32,15 +32,7 @@ require (
 	github.com/beltran/gohive v1.8.1
 	github.com/blang/semver/v4 v4.0.0
 	github.com/bmatcuk/doublestar/v4 v4.9.1
-	github.com/bytebase/cosmosdb-parser v0.0.0-20250317064006-c1dcb3ed4fa4
-	github.com/bytebase/doris-parser v0.0.0-20251015064614-4677a2b41c32
-	github.com/bytebase/google-sql-parser v0.0.0-20250116032737-689a327f9465
 	github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0
-	github.com/bytebase/mysql-parser v0.0.0-20241224071214-cb9fd84811dd
-	github.com/bytebase/plsql-parser v0.0.0-20250218041636-9fed633593d1
-	github.com/bytebase/snowsql-parser v0.0.0-20250124075214-562d62e69c35
-	github.com/bytebase/tidb-parser v0.0.0-20240821091609-162fffe2a839
-	github.com/bytebase/trino-parser v0.0.0-20250502000119-9977709a63e8
 	github.com/caarlos0/env/v11 v11.3.1
 	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/cockroachdb/cockroachdb-parser v0.25.2
@@ -308,8 +300,6 @@ require (
 	github.com/aws/smithy-go v1.23.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bytebase/parser v0.0.0-20251103101721-8b106e9a4f5a
-	github.com/bytebase/partiql-parser v0.0.0-20240531101102-1962ff456f2c
-	github.com/bytebase/tsql-parser v0.0.0-20250704100832-7b20f2173b45
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cncf/xds/go v0.0.0-20250501225837-2ac532fd4443 // indirect
 	github.com/cockroachdb/cockroach-go/v2 v2.4.2

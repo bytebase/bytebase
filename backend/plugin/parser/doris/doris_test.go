@@ -3,7 +3,7 @@ package doris
 import (
 	"testing"
 
-	parser "github.com/bytebase/doris-parser"
+	parser "github.com/bytebase/parser/doris"
 	"github.com/stretchr/testify/require"
 )
 

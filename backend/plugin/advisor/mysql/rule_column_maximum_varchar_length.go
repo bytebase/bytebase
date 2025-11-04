@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/antlr4-go/antlr/v4"
-	mysql "github.com/bytebase/mysql-parser"
+	mysql "github.com/bytebase/parser/mysql"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"

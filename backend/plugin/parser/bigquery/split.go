@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/google-sql-parser"
+	parser "github.com/bytebase/parser/googlesql"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"

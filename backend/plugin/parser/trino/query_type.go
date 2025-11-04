@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/trino-parser"
+	parser "github.com/bytebase/parser/trino"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )

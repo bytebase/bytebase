@@ -11,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	mysql "github.com/bytebase/mysql-parser"
+	mysql "github.com/bytebase/parser/mysql"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"

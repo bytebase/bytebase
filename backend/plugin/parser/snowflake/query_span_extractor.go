@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/snowsql-parser"
+	parser "github.com/bytebase/parser/snowflake"
 	"github.com/pkg/errors"
 
 	parsererror "github.com/bytebase/bytebase/backend/plugin/parser/errors"

@@ -7,7 +7,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 
-	parser "github.com/bytebase/snowsql-parser"
+	parser "github.com/bytebase/parser/snowflake"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )

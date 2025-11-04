@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/cosmosdb-parser"
+	parser "github.com/bytebase/parser/cosmosdb"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"

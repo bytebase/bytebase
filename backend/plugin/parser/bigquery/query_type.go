@@ -1,7 +1,7 @@
 package bigquery
 
 import (
-	parser "github.com/bytebase/google-sql-parser"
+	parser "github.com/bytebase/parser/googlesql"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"

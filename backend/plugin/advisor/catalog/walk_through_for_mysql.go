@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
-	mysql "github.com/bytebase/mysql-parser"
+	mysql "github.com/bytebase/parser/mysql"
 	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
