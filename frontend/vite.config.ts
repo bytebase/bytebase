@@ -1,6 +1,7 @@
 import importMetaUrlPlugin from "@codingame/esbuild-import-meta-url-plugin";
 import VueI18nPlugin from "@intlify/unplugin-vue-i18n/vite";
 import yaml from "@rollup/plugin-yaml";
+import tailwindcss from "@tailwindcss/vite";
 import legacy from "@vitejs/plugin-legacy";
 import vue from "@vitejs/plugin-vue";
 import vueJsx from "@vitejs/plugin-vue-jsx";
@@ -23,6 +24,7 @@ const extractHostPort = (url: string) => {
 
 export default defineConfig({
   plugins: [
+    tailwindcss(),
     legacy({
       targets: ["> 0.08%, not dead"],
       additionalLegacyPolyfills: ["regenerator-runtime/runtime"],
