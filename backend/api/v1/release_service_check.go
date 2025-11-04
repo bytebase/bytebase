@@ -381,6 +381,20 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 			}
 		}
 
+		// Perform SDL integrity checks for PostgreSQL (handles cross-file validation)
+		var sdlIntegrityAdvices map[string][]*storepb.Advice
+		if engine == storepb.Engine_POSTGRES {
+			fileContents := make(map[string]string)
+			for _, file := range files {
+				fileContents[file.Path] = string(file.Statement)
+			}
+			var err error
+			sdlIntegrityAdvices, err = advisorpg.CheckSDLIntegrity(fileContents)
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check SDL integrity"))
+			}
+		}
+
 		// Perform syntax check and statement type check for declarative files
 		for _, file := range files {
 			checkResult := &v1pb.CheckReleaseResponse_CheckResult{
@@ -441,18 +455,10 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 						}
 					}
 
-					// Run SDL-specific checks (only for PostgreSQL)
+					// Add SDL integrity check results for this file (PostgreSQL only)
 					if engine == storepb.Engine_POSTGRES && len(checkResult.Advices) == 0 {
-						sdlAdvices, err := s.runSDLChecksForPostgreSQL(ctx, statement)
-						if err != nil {
-							checkResult.Advices = append(checkResult.Advices, &v1pb.Advice{
-								Status:  v1pb.Advice_ERROR,
-								Code:    advisor.Internal.Int32(),
-								Title:   "Failed to run SDL checks",
-								Content: err.Error(),
-							})
-						} else {
-							for _, advice := range sdlAdvices {
+						if advices, exists := sdlIntegrityAdvices[file.Path]; exists {
+							for _, advice := range advices {
 								checkResult.Advices = append(checkResult.Advices, convertToV1Advice(advice))
 							}
 						}
