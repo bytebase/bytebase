@@ -46,6 +46,9 @@ SET payload = jsonb_set(
     )
 )
 WHERE payload ? 'sqlReviewRules'
+  -- Only process if sqlReviewRules is an array (not null, not scalar)
+  AND jsonb_typeof(payload->'sqlReviewRules') = 'array'
+  -- Only process if there's at least one statement.where.require rule
   AND EXISTS (
       SELECT 1
       FROM jsonb_array_elements(payload->'sqlReviewRules') AS rule
