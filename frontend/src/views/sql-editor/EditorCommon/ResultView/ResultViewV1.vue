@@ -245,10 +245,7 @@ const disableExport = computed(
 );
 
 const enableExportData = computed(() => {
-  return (
-    !disableExport.value &&
-    props.resultSet?.results.every((result) => result.allowExport)
-  );
+  return !disableExport.value;
 });
 
 const keyword = ref("");

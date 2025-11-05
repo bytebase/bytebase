@@ -12426,9 +12426,6 @@ components:
                     description: The query statement for the result.
                 postgresError:
                     $ref: '#/components/schemas/QueryResult_PostgresError'
-                allowExport:
-                    type: boolean
-                    description: The query result is allowed to be exported or not.
                 messages:
                     type: array
                     items:
