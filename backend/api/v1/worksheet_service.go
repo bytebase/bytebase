@@ -366,9 +366,9 @@ func (s *WorksheetService) UpdateWorksheetOrganizer(
 
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
-		case "payload.starred":
+		case "starred":
 			worksheetOrganizerUpsert.Payload.Starred = request.Organizer.Starred
-		case "payload.folders":
+		case "folders":
 			worksheetOrganizerUpsert.Payload.Folders = request.Organizer.Folders
 		default:
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %q", path))
