@@ -199,24 +199,17 @@
       <!-- Actions Section -->
       <div class="py-6">
         <div class="flex flex-row justify-between items-center">
-          <div class="space-x-4 flex flex-row justify-start items-center">
-            <BBButtonConfirm
-              :type="'DELETE'"
-              :button-text="$t('settings.sso.delete')"
-              :ok-text="$t('common.delete')"
-              :confirm-title="$t('settings.sso.delete')"
-              :confirm-description="t('identity-provider.delete-warning')"
-              :require-confirm="true"
-              @confirm="handleDelete"
-            />
-          </div>
-          <div class="space-x-3 flex flex-row justify-end items-center">
-            <NButton
-              v-if="hasChanges"
-              @click="handleDiscard"
-              size="large"
-              class="text-base"
-            >
+          <BBButtonConfirm
+            :type="'DELETE'"
+            :button-text="$t('settings.sso.delete')"
+            :ok-text="$t('common.delete')"
+            :confirm-title="$t('settings.sso.delete')"
+            :confirm-description="t('identity-provider.delete-warning')"
+            :require-confirm="true"
+            @confirm="handleDelete"
+          />
+          <div class="gap-x-3 flex flex-row justify-end items-center">
+            <NButton v-if="hasChanges" @click="handleDiscard" class="text-base">
               {{ $t("common.discard-changes") }}
             </NButton>
             <NButton
@@ -224,7 +217,6 @@
               :disabled="!canUpdate"
               :loading="isUpdating"
               @click="handleUpdate"
-              size="large"
               class="text-base"
             >
               {{ $t("common.update") }}

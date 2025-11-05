@@ -34,7 +34,7 @@
       </div>
     </div>
 
-    <div class="pt-4 border-t border-block-border flex justify-end space-x-3">
+    <div class="pt-4 border-t border-block-border flex justify-end gap-x-3">
       <NButton size="small" @click.prevent="handleClose">
         {{ $t("common.cancel") }}
       </NButton>
