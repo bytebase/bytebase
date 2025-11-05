@@ -24,7 +24,6 @@ const extractHostPort = (url: string) => {
 
 export default defineConfig({
   plugins: [
-    tailwindcss(),
     legacy({
       targets: ["> 0.08%, not dead"],
       additionalLegacyPolyfills: ["regenerator-runtime/runtime"],
@@ -36,6 +35,7 @@ export default defineConfig({
       include: [resolve(__dirname, "src/locales/**")],
       strictMessage: false,
     }),
+    tailwindcss(),
     Components({
       allowOverrides: true,
       // auto import icons
