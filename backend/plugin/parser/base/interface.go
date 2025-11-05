@@ -22,7 +22,6 @@ var (
 	queryValidators         = make(map[storepb.Engine]ValidateSQLForEditorFunc)
 	changedResourcesGetters = make(map[storepb.Engine]ExtractChangedResourcesFunc)
 	splitters               = make(map[storepb.Engine]SplitMultiSQLFunc)
-	schemaDiffers           = make(map[storepb.Engine]SchemaDiffFunc)
 	completers              = make(map[storepb.Engine]CompletionFunc)
 	diagnoseCollectors      = make(map[storepb.Engine]DiagnoseFunc)
 	statementRanges         = make(map[storepb.Engine]StatementRangeFunc)
@@ -35,7 +34,6 @@ var (
 type ValidateSQLForEditorFunc func(string) (bool, bool, error)
 type ExtractChangedResourcesFunc func(string, string, *model.DatabaseSchema, any, string) (*ChangeSummary, error)
 type SplitMultiSQLFunc func(string) ([]SingleSQL, error)
-type SchemaDiffFunc func(ctx DiffContext, oldStmt, newStmt string) (string, error)
 type CompletionFunc func(ctx context.Context, cCtx CompletionContext, statement string, caretLine int, caretOffset int) ([]Candidate, error)
 type DiagnoseFunc func(ctx context.Context, dCtx DiagnoseContext, statement string) ([]Diagnostic, error)
 type StatementRangeFunc func(ctx context.Context, sCtx StatementRangeContext, statement string) ([]Range, error)
@@ -110,23 +108,6 @@ func SplitMultiSQL(engine storepb.Engine, statement string) ([]SingleSQL, error)
 		return nil, errors.Errorf("engine %s is not supported", engine)
 	}
 	return f(statement)
-}
-
-func RegisterSchemaDiffFunc(engine storepb.Engine, f SchemaDiffFunc) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := schemaDiffers[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	schemaDiffers[engine] = f
-}
-
-func SchemaDiff(engine storepb.Engine, ctx DiffContext, oldStmt, newStmt string) (string, error) {
-	f, ok := schemaDiffers[engine]
-	if !ok {
-		return "", errors.Errorf("engine %s is not supported", engine)
-	}
-	return f(ctx, oldStmt, newStmt)
 }
 
 // RegisterCompleteFunc registers the completion function for the engine.
