@@ -132,16 +132,10 @@ func (c *statementTypeCollectorWithPosition) EnterAltertablestmt(ctx *parser.Alt
 		return
 	}
 
-	// Parse ALTER TABLE sub-operations if alter_table_cmds exists
-	if cmds := ctx.Alter_table_cmds(); cmds != nil {
-		for _, cmd := range cmds.AllAlter_table_cmd() {
-			stmtType := getAlterTableCmdType(cmd)
-			c.addStatement(stmtType, ctx)
-		}
-	} else {
-		// Fallback to generic ALTER_TABLE if no cmds
-		c.addStatement("ALTER_TABLE", ctx)
-	}
+	// Always return ALTER_TABLE for ALTER TABLE statements
+	// The sub-operations (ADD COLUMN, DROP COLUMN, etc.) are child nodes in the AST,
+	// not separate statements
+	c.addStatement("ALTER_TABLE", ctx)
 }
 
 func (c *statementTypeCollectorWithPosition) EnterAlterseqstmt(ctx *parser.AlterseqstmtContext) {
@@ -285,58 +279,6 @@ func getDropStatementType(ctx *parser.DropstmtContext) string {
 
 	// Default for unhandled cases
 	return "UNKNOWN"
-}
-
-// getAlterTableCmdType determines the specific ALTER TABLE sub-operation type.
-func getAlterTableCmdType(cmd parser.IAlter_table_cmdContext) string {
-	if cmd == nil {
-		return "ALTER_TABLE"
-	}
-
-	// ADD COLUMN
-	if cmd.ADD_P() != nil && cmd.ColumnDef() != nil {
-		return "ALTER_TABLE_ADD_COLUMN_LIST"
-	}
-
-	// ADD CONSTRAINT
-	if cmd.ADD_P() != nil && cmd.Tableconstraint() != nil {
-		return "ALTER_TABLE_ADD_CONSTRAINT"
-	}
-
-	// ALTER COLUMN operations (check these BEFORE DROP to avoid conflicts)
-	if cmd.ALTER() != nil && len(cmd.AllColid()) > 0 {
-		// ALTER COLUMN ... TYPE
-		if cmd.TYPE_P() != nil {
-			return "ALTER_COLUMN_TYPE"
-		}
-
-		// ALTER COLUMN ... DROP NOT NULL
-		if cmd.DROP() != nil && cmd.NOT() != nil && cmd.NULL_P() != nil {
-			return "DROP_NOT_NULL"
-		}
-
-		// ALTER COLUMN ... DROP DEFAULT
-		if cmd.Alter_column_default() != nil {
-			alterDefault := cmd.Alter_column_default()
-			// Check if it's DROP DEFAULT (not SET DEFAULT)
-			if alterDefault.DROP() != nil {
-				return "DROP_DEFAULT"
-			}
-		}
-	}
-
-	// DROP COLUMN (must be after ALTER COLUMN checks)
-	if cmd.DROP() != nil && len(cmd.AllColid()) > 0 && cmd.CONSTRAINT() == nil {
-		return "DROP_COLUMN"
-	}
-
-	// DROP CONSTRAINT
-	if cmd.DROP() != nil && cmd.CONSTRAINT() != nil {
-		return "DROP_CONSTRAINT"
-	}
-
-	// Default to ALTER_TABLE for other operations
-	return "ALTER_TABLE"
 }
 
 // getRenameStatementType determines the specific RENAME statement type.
