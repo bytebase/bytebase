@@ -248,7 +248,7 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     const request = create(UpdateWorksheetOrganizerRequestSchema, {
       organizer: fullOrganizer,
       // for now we only support change the `starred` field.
-      updateMask: { paths: ["starred"] },
+      updateMask: { paths: ["payload.starred"] },
     });
     await worksheetServiceClientConnect.updateWorksheetOrganizer(request);
 

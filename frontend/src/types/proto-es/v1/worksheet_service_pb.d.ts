@@ -142,9 +142,9 @@ export declare type WorksheetOrganizer = Message<"bytebase.v1.WorksheetOrganizer
   starred: boolean;
 
   /**
-   * @generated from field: string category = 3;
+   * @generated from field: repeated string folders = 3;
    */
-  category: string;
+  folders: string[];
 };
 
 /**
@@ -310,9 +310,9 @@ export declare type Worksheet = Message<"bytebase.v1.Worksheet"> & {
   starred: boolean;
 
   /**
-   * @generated from field: string category = 12;
+   * @generated from field: repeated string folders = 12;
    */
-  category: string;
+  folders: string[];
 };
 
 /**

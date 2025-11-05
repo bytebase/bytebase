@@ -366,10 +366,10 @@ func (s *WorksheetService) UpdateWorksheetOrganizer(
 
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
-		case "starred":
-			worksheetOrganizerUpsert.Starred = request.Organizer.Starred
-		case "category":
-			worksheetOrganizerUpsert.Category = request.Organizer.Category
+		case "payload.starred":
+			worksheetOrganizerUpsert.Payload.Starred = request.Organizer.Starred
+		case "payload.folders":
+			worksheetOrganizerUpsert.Payload.Folders = request.Organizer.Folders
 		default:
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %q", path))
 		}
@@ -382,8 +382,8 @@ func (s *WorksheetService) UpdateWorksheetOrganizer(
 
 	return connect.NewResponse(&v1pb.WorksheetOrganizer{
 		Worksheet: request.Organizer.Worksheet,
-		Starred:   organizer.Starred,
-		Category:  organizer.Category,
+		Starred:   organizer.Payload.Starred,
+		Folders:   organizer.Payload.Folders,
 	}), nil
 }
 
@@ -545,7 +545,7 @@ func (s *WorksheetService) convertToAPIWorksheetMessage(ctx context.Context, wor
 		ContentSize: worksheet.Size,
 		Visibility:  visibility,
 		Starred:     worksheet.Starred,
-		Category:    worksheet.Category,
+		Folders:     worksheet.Folders,
 	}, nil
 }
 
