@@ -81,9 +81,7 @@
             </span>
           </div>
           <div class="textinfolabel">
-            {{
-              t("policy.rollout.info", { permission: "bb.taskRuns.create" })
-            }}
+            {{ t("policy.rollout.info", { permission: "bb.taskRuns.create" }) }}
             <LearnMoreLink
               class="ml-1"
               url="https://docs.bytebase.com/change-database/environment-policy/rollout-policy/?source=console"

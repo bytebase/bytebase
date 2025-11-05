@@ -105,8 +105,6 @@ import { computed, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { hasFeature, usePolicyV1Store } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
-
-const { t } = useI18n();
 import type {
   DataSourceQueryPolicy,
   QueryDataPolicy,
@@ -121,6 +119,8 @@ import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { FeatureBadge } from "../FeatureGuard";
 import { Switch } from "../v2";
+
+const { t } = useI18n();
 
 interface LocalState {
   queryDataPolicy: QueryDataPolicy;
