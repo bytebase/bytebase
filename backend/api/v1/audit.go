@@ -18,10 +18,13 @@ import (
 	spb "google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc/codes"
 
+	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/config"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -30,15 +33,19 @@ var (
 	maskedString string
 )
 
-// ACLInterceptor is the v1 ACL interceptor for gRPC server.
+// AuditInterceptor is the v1 audit interceptor for gRPC server.
 type AuditInterceptor struct {
-	store *store.Store
+	store   *store.Store
+	secret  string
+	profile *config.Profile
 }
 
-// NewAuditInterceptor returns a new v1 API ACL interceptor.
-func NewAuditInterceptor(store *store.Store) *AuditInterceptor {
+// NewAuditInterceptor returns a new v1 API audit interceptor.
+func NewAuditInterceptor(store *store.Store, secret string, profile *config.Profile) *AuditInterceptor {
 	return &AuditInterceptor{
-		store: store,
+		store:   store,
+		secret:  secret,
+		profile: profile,
 	}
 }
 
@@ -59,7 +66,7 @@ func (in *AuditInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc 
 			if !common.IsNil(response) {
 				respMsg = response.Any()
 			}
-			if err := createAuditLogConnect(ctx, req.Any(), respMsg, req.Spec().Procedure, in.store, serviceData, rerr, req.Header(), req.Peer().Addr, latency); err != nil {
+			if err := createAuditLogConnect(ctx, req.Any(), respMsg, req.Spec().Procedure, in.store, in.secret, in.profile, serviceData, rerr, req.Header(), req.Peer().Addr, latency); err != nil {
 				slog.Warn("audit interceptor: failed to create audit log", log.BBError(err), slog.String("method", req.Spec().Procedure))
 			}
 		}
@@ -120,14 +127,14 @@ func (c *auditConnectStreamingConn) Send(resp any) error {
 	// Create audit log for each message pair
 	if c.curRequest != nil {
 		latency := time.Since(c.startTime)
-		if auditErr := createAuditLogConnect(c.ctx, c.curRequest, resp, c.method, c.interceptor.store, nil, nil, c.RequestHeader(), c.Peer().Addr, latency); auditErr != nil {
+		if auditErr := createAuditLogConnect(c.ctx, c.curRequest, resp, c.method, c.interceptor.store, c.interceptor.secret, c.interceptor.profile, nil, nil, c.RequestHeader(), c.Peer().Addr, latency); auditErr != nil {
 			return auditErr
 		}
 	}
 	return nil
 }
 
-func createAuditLogConnect(ctx context.Context, request, response any, method string, storage *store.Store, serviceData *anypb.Any, rerr error, headers http.Header, peerAddr string, latency time.Duration) error {
+func createAuditLogConnect(ctx context.Context, request, response any, method string, storage *store.Store, secret string, profile *config.Profile, serviceData *anypb.Any, rerr error, headers http.Header, peerAddr string, latency time.Duration) error {
 	requestString, err := getRequestString(request)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get request string")
@@ -141,6 +148,7 @@ func createAuditLogConnect(ctx context.Context, request, response any, method st
 	if u, ok := GetUserFromContext(ctx); ok {
 		user = common.FormatUserUID(u.ID)
 	} else {
+		// Try to get user from successful login response.
 		if loginResponse, ok := response.(*v1pb.LoginResponse); ok {
 			user = loginResponse.GetUser().GetName()
 		}
@@ -169,10 +177,26 @@ func createAuditLogConnect(ctx context.Context, request, response any, method st
 
 	createAuditLogCtx := context.WithoutCancel(ctx)
 	for _, parent := range parents {
+		resource := getRequestResource(request)
+		// For login requests, if resource is empty, try to get email from user context or MFA temp token.
+		// This handles MFA phase where request doesn't have email field.
+		if resource == "" && method == v1connect.AuthServiceLoginProcedure {
+			if u, ok := GetUserFromContext(ctx); ok {
+				resource = u.Email
+			} else if loginRequest, ok := request.(*v1pb.LoginRequest); ok && loginRequest.MfaTempToken != nil {
+				// Extract user from MFA temp token and fetch email from database.
+				if userID, err := auth.GetUserIDFromMFATempToken(*loginRequest.MfaTempToken, profile.Mode, secret); err == nil {
+					if u, err := storage.GetUserByID(createAuditLogCtx, userID); err == nil && u != nil {
+						resource = u.Email
+					}
+				}
+			}
+		}
+
 		p := &storepb.AuditLog{
 			Parent:          parent,
 			Method:          method,
-			Resource:        getRequestResource(request),
+			Resource:        resource,
 			Severity:        storepb.AuditLog_INFO,
 			User:            user,
 			Request:         requestString,

@@ -19,6 +19,7 @@ import (
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/common/qb"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/state"
@@ -35,8 +36,32 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
+const (
+	// mfaTempTokenDuration is the duration for MFA temporary tokens.
+	// Following industry standards (Okta: 5 minutes, Auth0: 10 minutes, AWS Cognito: 3 minutes).
+	// A short duration reduces the attack window for TOTP brute-force attempts.
+	mfaTempTokenDuration = 5 * time.Minute
+
+	// Login rate limiting configuration.
+	// Password phase: 10 failed attempts within 10 minutes.
+	passwordMaxFailedAttempts = 10               //nolint:unused // Will be used for password rate limiting
+	passwordLockoutWindow     = 10 * time.Minute //nolint:unused // Will be used for password rate limiting
+
+	// MFA phase: 5 failed attempts within 5 minutes.
+	mfaMaxFailedAttempts = 5
+	mfaLockoutWindow     = 5 * time.Minute
+
+	// Error messages for authentication failures.
+	// These constants are used both for error responses and for querying audit logs during rate limiting.
+	errMsgInvalidCredentials  = "invalid email or password"
+	errMsgInvalidMFACode      = "invalid MFA code"
+	errMsgInvalidRecoveryCode = "invalid recovery code"
+	errMsgTooManyPassword     = "too many failed login attempts, please try again later" //nolint:unused // Will be used for password rate limiting
+	errMsgTooManyMFA          = "too many failed MFA attempts, please try again later"
+)
+
 var (
-	invalidUserOrPasswordError = connect.NewError(connect.CodeUnauthenticated, errors.Errorf("the email or password is not valid"))
+	invalidCredentialsError = connect.NewError(connect.CodeUnauthenticated, errors.Errorf(errMsgInvalidCredentials))
 )
 
 // AuthService implements the auth service.
@@ -98,7 +123,12 @@ func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.Login
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find user, error"))
 		}
 		if user == nil {
-			return nil, invalidUserOrPasswordError
+			return nil, invalidCredentialsError
+		}
+
+		// Check if user is locked out due to too many failed MFA attempts.
+		if err := s.checkMFALockout(ctx, user.Email); err != nil {
+			return nil, err
 		}
 
 		if request.OtpCode != nil {
@@ -145,7 +175,7 @@ func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.Login
 	userMFAEnabled := loginUser.MFAConfig != nil && loginUser.MFAConfig.OtpSecret != ""
 	// We only allow MFA login (2-step) when the feature is enabled and user has enabled MFA.
 	if s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_TWO_FA) == nil && !mfaSecondLogin && userMFAEnabled {
-		mfaTempToken, err := auth.GenerateMFATempToken(loginUser.Name, loginUser.ID, s.profile.Mode, s.secret, tokenDuration)
+		mfaTempToken, err := auth.GenerateMFATempToken(loginUser.Name, loginUser.ID, s.profile.Mode, s.secret, mfaTempTokenDuration)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate MFA temp token"))
 		}
@@ -269,17 +299,22 @@ func (s *AuthService) Logout(ctx context.Context, req *connect.Request[v1pb.Logo
 }
 
 func (s *AuthService) getAndVerifyUser(ctx context.Context, request *v1pb.LoginRequest) (*store.UserMessage, error) {
+	// Check if user is locked out due to too many failed password attempts.
+	if err := s.checkPasswordLockout(ctx, request.Email); err != nil {
+		return nil, err
+	}
+
 	user, err := s.store.GetUserByEmail(ctx, request.Email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user by email %q", request.Email))
 	}
 	if user == nil {
-		return nil, invalidUserOrPasswordError
+		return nil, invalidCredentialsError
 	}
 	// Compare the stored hashed password, with the hashed version of the password that was received.
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(request.Password)); err != nil {
 		// If the two passwords don't match, return a 401 status.
-		return nil, invalidUserOrPasswordError
+		return nil, invalidCredentialsError
 	}
 	return user, nil
 }
@@ -471,9 +506,82 @@ func (s *AuthService) userCountGuard(ctx context.Context) error {
 	return nil
 }
 
+// countRecentLoginFailures counts the number of failed login attempts for a given email
+// within the specified time window, matching any of the provided error messages.
+func (s *AuthService) countRecentLoginFailures(ctx context.Context, email string, window time.Duration, errMessages ...string) (int, error) {
+	if len(errMessages) == 0 {
+		return 0, errors.New("at least one error message is required")
+	}
+
+	windowStart := time.Now().Add(-window)
+
+	// Build filter query for login failures.
+	filterQ := qb.Q().Space("TRUE")
+	filterQ.And("payload->>'method' = ?", "/bytebase.v1.AuthService/Login")
+	filterQ.And("payload->>'resource' = ?", email)
+	filterQ.And("(payload->'status'->>'code')::int != 0")
+
+	// Build OR condition for error messages.
+	if len(errMessages) == 1 {
+		filterQ.And("payload->'status'->>'message' = ?", errMessages[0])
+	} else {
+		// For multiple messages, build: (msg = ? OR msg = ? OR ...)
+		orConditions := qb.Q()
+		for i, msg := range errMessages {
+			if i == 0 {
+				orConditions.Space("payload->'status'->>'message' = ?", msg)
+			} else {
+				orConditions.Or("payload->'status'->>'message' = ?", msg)
+			}
+		}
+		filterQ.And("(?)", orConditions)
+	}
+
+	filterQ.And("created_at >= ?", windowStart)
+
+	logs, err := s.store.SearchAuditLogs(ctx, &store.AuditLogFind{
+		FilterQ: filterQ,
+	})
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to search audit logs for login failures")
+	}
+
+	return len(logs), nil
+}
+
+// checkPasswordLockout checks if the user has exceeded the password failure rate limit.
+// Returns an error if the user is locked out due to too many failed password attempts.
+func (s *AuthService) checkPasswordLockout(ctx context.Context, email string) error {
+	count, err := s.countRecentLoginFailures(ctx, email, passwordLockoutWindow, errMsgInvalidCredentials)
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to count recent password failures"))
+	}
+
+	if count >= passwordMaxFailedAttempts {
+		return connect.NewError(connect.CodeResourceExhausted, errors.Errorf(errMsgTooManyPassword))
+	}
+
+	return nil
+}
+
+// checkMFALockout checks if the user has exceeded the MFA failure rate limit.
+// Returns an error if the user is locked out due to too many failed MFA attempts.
+func (s *AuthService) checkMFALockout(ctx context.Context, email string) error {
+	count, err := s.countRecentLoginFailures(ctx, email, mfaLockoutWindow, errMsgInvalidMFACode, errMsgInvalidRecoveryCode)
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to count recent MFA failures"))
+	}
+
+	if count >= mfaMaxFailedAttempts {
+		return connect.NewError(connect.CodeResourceExhausted, errors.Errorf(errMsgTooManyMFA))
+	}
+
+	return nil
+}
+
 func challengeMFACode(user *store.UserMessage, mfaCode string) error {
 	if !validateWithCodeAndSecret(mfaCode, user.MFAConfig.OtpSecret) {
-		return connect.NewError(connect.CodeUnauthenticated, errors.Errorf("invalid MFA code"))
+		return connect.NewError(connect.CodeUnauthenticated, errors.Errorf(errMsgInvalidMFACode))
 	}
 	return nil
 }
@@ -495,7 +603,7 @@ func (s *AuthService) challengeRecoveryCode(ctx context.Context, user *store.Use
 			return nil
 		}
 	}
-	return connect.NewError(connect.CodeUnauthenticated, errors.Errorf("invalid recovery code"))
+	return connect.NewError(connect.CodeUnauthenticated, errors.Errorf(errMsgInvalidRecoveryCode))
 }
 
 // validateWithCodeAndSecret validates the given code against the given secret.
