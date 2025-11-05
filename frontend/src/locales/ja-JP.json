@@ -2818,44 +2818,6 @@
       "add-root-condition-placeholder": "「条件を追加」または「条件グループを追加」をクリックして条件を追加します。"
     }
   },
-  "changelist": {
-    "self": "変更リスト",
-    "changelists": "変更リスト",
-    "new": "新しい変更リスト",
-    "name": "リスト名の変更",
-    "name-placeholder": "私の変更リスト",
-    "error": {
-      "name-is-required": "変更リスト名を空にすることはできません",
-      "invalid-resource-id": "無効なリソース ID",
-      "nothing-changed": "変化なし",
-      "sql-cannot-be-empty": "SQL を空にすることはできません",
-      "select-at-least-one-change": "少なくとも 1 つの変更を選択してください",
-      "select-at-least-one-change-to-export": "エクスポートする変更を少なくとも 1 つ選択してください",
-      "add-at-least-one-change": "少なくとも 1 つの変更を追加する",
-      "you-are-not-allowed-to-perform-this-action": "このアクションを実行する権限がありません"
-    },
-    "apply-to-database": "データベースに適用する",
-    "add-change": {
-      "self": "変更を追加",
-      "changelog": {
-        "select-at-least-one-changelog-below": "以下から少なくとも 1 つのレコードを選択してください"
-      }
-    },
-    "change-source": {
-      "self": "ソースを変更する",
-      "raw-sql": "SQL文",
-      "source": "ソース"
-    },
-    "confirm-remove-change": "この変更を削除しますか?",
-    "delete-this-changelist": "この変更リストを削除します",
-    "confirm-delete-changelist": "変更リストを削除しますか?",
-    "import": {
-      "no-file-to-upload": "アップロードするファイルがありません",
-      "upload-sql-or-zip-file": ".sql または .zip ファイルをアップロードする",
-      "optional-upload-sql-or-zip-file": "(オプション) .sql または .zip ファイルをアップロードします"
-    },
-    "change-type": "タイプを変更"
-  },
   "release": {
     "title": "リリース",
     "releases": "リリース",

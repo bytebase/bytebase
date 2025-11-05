@@ -115,10 +115,6 @@
         "title": "Schema drift detection",
         "desc": "Detect out-of-band schema changes and report discrepancies."
       },
-      "FEATURE_CHANGELIST": {
-        "title": "Changelist",
-        "desc": "Group and manage multiple database changes together."
-      },
       "FEATURE_SCHEMA_TEMPLATE": {
         "title": "Schema template",
         "desc": "Create reusable field templates for consistent schema design."
@@ -359,7 +355,6 @@
     "project": "Project",
     "idp": "Identity Provider",
     "database-group": "Database Group",
-    "changelist": "Changelist",
     "review-config": "Review Config",
     "role": "Role"
   }

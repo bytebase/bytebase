@@ -2818,44 +2818,6 @@
       "add-root-condition-placeholder": "Haga clic en \"Agregar condición\" o \"Agregar grupo de condiciones\" para agregar una condición"
     }
   },
-  "changelist": {
-    "self": "Lista de cambios",
-    "changelists": "Listas de cambios",
-    "new": "Nueva lista de cambios",
-    "name": "Nombre de la lista de cambios",
-    "name-placeholder": "Mi lista de cambios",
-    "error": {
-      "name-is-required": "El nombre de la lista de cambios es obligatorio",
-      "invalid-resource-id": "ID de recurso no válido",
-      "nothing-changed": "nada ha cambiado",
-      "sql-cannot-be-empty": "Se requiere SQL",
-      "select-at-least-one-change": "Seleccione al menos un cambio",
-      "select-at-least-one-change-to-export": "Seleccione al menos un cambio para exportar",
-      "add-at-least-one-change": "Añade al menos un cambio",
-      "you-are-not-allowed-to-perform-this-action": "No tienes permiso para realizar esta acción."
-    },
-    "apply-to-database": "Aplicar a la base de datos",
-    "add-change": {
-      "self": "Agregar cambio",
-      "changelog": {
-        "select-at-least-one-changelog-below": "Seleccione al menos un historial a continuación"
-      }
-    },
-    "change-source": {
-      "self": "Cambiar fuente",
-      "raw-sql": "SQL sin formato",
-      "source": "Fuente"
-    },
-    "confirm-remove-change": "¿Eliminar este cambio?",
-    "delete-this-changelist": "Eliminar esta lista de cambios",
-    "confirm-delete-changelist": "¿Eliminar esta lista de cambios?",
-    "import": {
-      "no-file-to-upload": "No hay archivos para subir",
-      "upload-sql-or-zip-file": "Cargue el archivo .sql o .zip",
-      "optional-upload-sql-or-zip-file": "(Opcional) Cargue el archivo .sql o .zip"
-    },
-    "change-type": "Cambiar tipo"
-  },
   "release": {
     "title": "Liberar",
     "releases": "Lanzamientos",

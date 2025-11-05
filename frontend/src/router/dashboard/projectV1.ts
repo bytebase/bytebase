@@ -20,8 +20,6 @@ export const PROJECT_V1_ROUTE_PLANS = `${PROJECT_V1_ROUTE_DASHBOARD}.plan`;
 export const PROJECT_V1_ROUTE_PLAN_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.plan.detail`;
 export const PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS = `${PROJECT_V1_ROUTE_PLAN_DETAIL}.specs`;
 export const PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL = `${PROJECT_V1_ROUTE_PLAN_DETAIL}.spec.detail`;
-export const PROJECT_V1_ROUTE_CHANGELISTS = `${PROJECT_V1_ROUTE_DASHBOARD}.changelist`;
-export const PROJECT_V1_ROUTE_CHANGELIST_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.changelist.detail`;
 export const PROJECT_V1_ROUTE_SYNC_SCHEMA = `${PROJECT_V1_ROUTE_DASHBOARD}.sync-schema`;
 export const PROJECT_V1_ROUTE_AUDIT_LOGS = `${PROJECT_V1_ROUTE_DASHBOARD}.audit-logs`;
 export const PROJECT_V1_ROUTE_WEBHOOKS = `${PROJECT_V1_ROUTE_DASHBOARD}.webhook`;
@@ -257,35 +255,6 @@ const projectV1Routes: RouteRecordRaw[] = [
         },
         component: () => import("@/views/project/ProjectRolloutDashboard.vue"),
         props: true,
-      },
-      {
-        path: "changelists",
-        meta: {
-          title: () => t("changelist.changelists"),
-        },
-        props: true,
-        children: [
-          {
-            path: "",
-            name: PROJECT_V1_ROUTE_CHANGELISTS,
-            meta: {
-              requiredPermissionList: () => ["bb.changelists.list"],
-            },
-            component: () =>
-              import("@/views/project/ProjectChangelistDashboard.vue"),
-            props: true,
-          },
-          {
-            path: ":changelistName",
-            name: PROJECT_V1_ROUTE_CHANGELIST_DETAIL,
-            meta: {
-              requiredPermissionList: () => ["bb.changelists.get"],
-            },
-            component: () =>
-              import("@/components/Changelist/ChangelistDetail/"),
-            props: true,
-          },
-        ],
       },
       {
         path: "sync-schema",

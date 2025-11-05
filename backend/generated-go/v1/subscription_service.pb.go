@@ -98,7 +98,6 @@ const (
 	PlanFeature_FEATURE_SCHEDULED_ROLLOUT_TIME               PlanFeature = 11
 	PlanFeature_FEATURE_DATABASE_CHANGELOG                   PlanFeature = 12
 	PlanFeature_FEATURE_SCHEMA_DRIFT_DETECTION               PlanFeature = 13
-	PlanFeature_FEATURE_CHANGELIST                           PlanFeature = 14
 	PlanFeature_FEATURE_SCHEMA_TEMPLATE                      PlanFeature = 15
 	PlanFeature_FEATURE_ROLLOUT_POLICY                       PlanFeature = 16
 	// SQL Editor & Development
@@ -179,7 +178,6 @@ var (
 		11: "FEATURE_SCHEDULED_ROLLOUT_TIME",
 		12: "FEATURE_DATABASE_CHANGELOG",
 		13: "FEATURE_SCHEMA_DRIFT_DETECTION",
-		14: "FEATURE_CHANGELIST",
 		15: "FEATURE_SCHEMA_TEMPLATE",
 		16: "FEATURE_ROLLOUT_POLICY",
 		17: "FEATURE_WEB_BASED_SQL_EDITOR",
@@ -254,7 +252,6 @@ var (
 		"FEATURE_SCHEDULED_ROLLOUT_TIME":                 11,
 		"FEATURE_DATABASE_CHANGELOG":                     12,
 		"FEATURE_SCHEMA_DRIFT_DETECTION":                 13,
-		"FEATURE_CHANGELIST":                             14,
 		"FEATURE_SCHEMA_TEMPLATE":                        15,
 		"FEATURE_ROLLOUT_POLICY":                         16,
 		"FEATURE_WEB_BASED_SQL_EDITOR":                   17,
@@ -678,7 +675,7 @@ const file_v1_subscription_service_proto_rawDesc = "" +
 	"\x04FREE\x10\x01\x12\b\n" +
 	"\x04TEAM\x10\x02\x12\x0e\n" +
 	"\n" +
-	"ENTERPRISE\x10\x03*\x88\x13\n" +
+	"ENTERPRISE\x10\x03*\xf0\x12\n" +
 	"\vPlanFeature\x12\x17\n" +
 	"\x13FEATURE_UNSPECIFIED\x10\x00\x12\x1b\n" +
 	"\x17FEATURE_DATABASE_CHANGE\x10\x01\x12,\n" +
@@ -694,8 +691,7 @@ const file_v1_subscription_service_proto_rawDesc = "" +
 	"\x12\"\n" +
 	"\x1eFEATURE_SCHEDULED_ROLLOUT_TIME\x10\v\x12\x1e\n" +
 	"\x1aFEATURE_DATABASE_CHANGELOG\x10\f\x12\"\n" +
-	"\x1eFEATURE_SCHEMA_DRIFT_DETECTION\x10\r\x12\x16\n" +
-	"\x12FEATURE_CHANGELIST\x10\x0e\x12\x1b\n" +
+	"\x1eFEATURE_SCHEMA_DRIFT_DETECTION\x10\r\x12\x1b\n" +
 	"\x17FEATURE_SCHEMA_TEMPLATE\x10\x0f\x12\x1a\n" +
 	"\x16FEATURE_ROLLOUT_POLICY\x10\x10\x12 \n" +
 	"\x1cFEATURE_WEB_BASED_SQL_EDITOR\x10\x11\x12!\n" +

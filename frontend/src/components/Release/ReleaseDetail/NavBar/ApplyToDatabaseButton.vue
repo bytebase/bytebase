@@ -1,6 +1,6 @@
 <template>
   <NButton @click="state.showApplyToDatabasePanel = true">
-    {{ $t("changelist.apply-to-database") }}
+    {{ $t("common.apply-to-database") }}
   </NButton>
 
   <ApplyToDatabasePanel

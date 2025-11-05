@@ -51,38 +51,7 @@ CREATE SEQUENCE public.audit_log_id_seq
 ALTER SEQUENCE public.audit_log_id_seq OWNED BY public.audit_log.id;
 
 
---
--- Name: changelist; Type: TABLE; Schema: public; Owner: -
---
 
-CREATE TABLE public.changelist (
-    id integer NOT NULL,
-    creator_id integer NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    project text NOT NULL,
-    name text NOT NULL,
-    payload jsonb DEFAULT '{}'::jsonb NOT NULL
-);
-
-
---
--- Name: changelist_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.changelist_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: changelist_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.changelist_id_seq OWNED BY public.changelist.id;
 
 
 --
@@ -1170,11 +1139,9 @@ ALTER SEQUENCE public.worksheet_organizer_id_seq OWNED BY public.worksheet_organ
 ALTER TABLE ONLY public.audit_log ALTER COLUMN id SET DEFAULT nextval('public.audit_log_id_seq'::regclass);
 
 
---
--- Name: changelist id; Type: DEFAULT; Schema: public; Owner: -
+
 --
 
-ALTER TABLE ONLY public.changelist ALTER COLUMN id SET DEFAULT nextval('public.changelist_id_seq'::regclass);
 
 
 --
@@ -1485,8 +1452,7 @@ INSERT INTO public.audit_log (id, created_at, payload) VALUES (191, '2025-10-10 
 INSERT INTO public.audit_log (id, created_at, payload) VALUES (192, '2025-10-13 22:55:22.871747+00', '{"user": "users/101", "method": "/bytebase.v1.AuthService/Login", "parent": "workspaces/a6b014b9-d0d4-4974-9be6-53ec61ea5f48", "latency": "0.092679833s", "request": "{\"email\":\"demo@example.com\",\"web\":true}", "resource": "demo@example.com", "response": "{\"user\":{\"name\":\"users/101\",\"email\":\"demo@example.com\",\"title\":\"Demo\",\"userType\":\"USER\"}}", "severity": "INFO", "requestMetadata": {"callerSuppliedUserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"}}') ON CONFLICT DO NOTHING;
 
 
---
--- Data for Name: changelist; Type: TABLE DATA; Schema: public; Owner: -
+
 --
 
 
@@ -1568,29 +1534,6 @@ CREATE INDEX "idx_audit_log_payload_parent" ON ONLY "public"."audit_log" ((paylo
 CREATE INDEX "idx_audit_log_payload_resource" ON ONLY "public"."audit_log" ((payload ->> ''resource''::text));
 
 CREATE INDEX "idx_audit_log_payload_user" ON ONLY "public"."audit_log" ((payload ->> ''user''::text));
-
-CREATE SEQUENCE "public"."changelist_id_seq"
-    AS integer
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 2147483647
-	NO CYCLE;
-
-CREATE TABLE "public"."changelist" (
-    "id" integer DEFAULT nextval(''public.changelist_id_seq''::regclass) NOT NULL,
-    "creator_id" integer NOT NULL,
-    "updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-    "project" text NOT NULL,
-    "name" text NOT NULL,
-    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL
-);
-
-ALTER SEQUENCE "public"."changelist_id_seq" OWNED BY "public"."changelist"."id";
-
-ALTER TABLE ONLY "public"."changelist" ADD CONSTRAINT "changelist_pkey" PRIMARY KEY ("id");
-
-CREATE UNIQUE INDEX "idx_changelist_project_name" ON ONLY "public"."changelist" ("project", "name");
 
 CREATE SEQUENCE "public"."changelog_id_seq"
     AS bigint
@@ -2380,14 +2323,6 @@ ALTER TABLE ONLY "public"."worksheet_organizer" ADD CONSTRAINT "worksheet_organi
 CREATE INDEX "idx_worksheet_organizer_principal_id" ON ONLY "public"."worksheet_organizer" ("principal_id");
 
 CREATE UNIQUE INDEX "idx_worksheet_organizer_unique_sheet_id_principal_id" ON ONLY "public"."worksheet_organizer" ("worksheet_id", "principal_id");
-
-ALTER TABLE "public"."changelist"
-    ADD CONSTRAINT "changelist_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."changelist"
-    ADD CONSTRAINT "changelist_project_fkey" FOREIGN KEY ("project")
-    REFERENCES "public"."project" ("resource_id");
 
 ALTER TABLE "public"."changelog"
     ADD CONSTRAINT "changelog_instance_db_name_fkey" FOREIGN KEY ("instance", "db_name")
@@ -4763,12 +4698,6 @@ ORDER BY
 SELECT pg_catalog.setval('public.audit_log_id_seq', 192, true);
 
 
---
--- Name: changelist_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
---
-
-SELECT pg_catalog.setval('public.changelist_id_seq', 101, false);
-
 
 --
 -- Name: changelog_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
@@ -4988,8 +4917,7 @@ ALTER TABLE ONLY public.audit_log
     ADD CONSTRAINT audit_log_pkey PRIMARY KEY (id);
 
 
---
--- Name: changelist changelist_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+
 --
 
 ALTER TABLE ONLY public.changelist
@@ -5554,17 +5482,9 @@ CREATE UNIQUE INDEX idx_worksheet_organizer_unique_sheet_id_principal_id ON publ
 CREATE UNIQUE INDEX uk_task_run_task_id_attempt ON public.task_run USING btree (task_id, attempt);
 
 
---
--- Name: changelist changelist_creator_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
 ALTER TABLE ONLY public.changelist
     ADD CONSTRAINT changelist_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
 
-
---
--- Name: changelist changelist_project_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
 
 ALTER TABLE ONLY public.changelist
     ADD CONSTRAINT changelist_project_fkey FOREIGN KEY (project) REFERENCES public.project(resource_id);

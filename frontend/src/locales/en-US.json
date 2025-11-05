@@ -246,7 +246,9 @@
     },
     "collapse": "Collapse",
     "line": "Line",
-    "column": "Column"
+    "column": "Column",
+    "apply-to-database": "Apply to database",
+    "no-file-to-upload": "No file to upload"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -2817,44 +2819,6 @@
       "input-value-press-enter": "Input value, press Enter to confirm",
       "add-root-condition-placeholder": "Click \"Add condition\" or \"Add condition group\" to add condition"
     }
-  },
-  "changelist": {
-    "self": "Changelist",
-    "changelists": "Changelists",
-    "new": "New Changelist",
-    "name": "Changelist name",
-    "name-placeholder": "My changelist",
-    "error": {
-      "name-is-required": "Changelist name is required",
-      "invalid-resource-id": "Invalid resource Id",
-      "nothing-changed": "Nothing changed",
-      "sql-cannot-be-empty": "SQL is required",
-      "select-at-least-one-change": "Select at least one change",
-      "select-at-least-one-change-to-export": "Select at least one change to export",
-      "add-at-least-one-change": "Add at least one change",
-      "you-are-not-allowed-to-perform-this-action": "You are not allowed to perform this action"
-    },
-    "apply-to-database": "Apply to database",
-    "add-change": {
-      "self": "Add Change",
-      "changelog": {
-        "select-at-least-one-changelog-below": "Select at least one changelog below"
-      }
-    },
-    "change-source": {
-      "self": "Change source",
-      "raw-sql": "Raw SQL",
-      "source": "Source"
-    },
-    "confirm-remove-change": "Remove this change?",
-    "delete-this-changelist": "Delete this changelist",
-    "confirm-delete-changelist": "Delete this changelist?",
-    "import": {
-      "no-file-to-upload": "No file to upload",
-      "upload-sql-or-zip-file": "Upload .sql or .zip file",
-      "optional-upload-sql-or-zip-file": "(Optional) Upload .sql or .zip file"
-    },
-    "change-type": "Change type"
   },
   "release": {
     "title": "Release",
