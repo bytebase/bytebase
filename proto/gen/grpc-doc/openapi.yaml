@@ -3626,194 +3626,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v1/projects/{project}/changelists:
-        get:
-            tags:
-                - ChangelistService
-            description: |-
-                Lists changelists in a project.
-                 Permissions required: bb.changelists.list
-            operationId: ChangelistService_ListChangelists
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ListChangelistsResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-        post:
-            tags:
-                - ChangelistService
-            description: |-
-                Creates a new changelist in a project.
-                 Permissions required: bb.changelists.create
-            operationId: ChangelistService_CreateChangelist
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-                - name: changelistId
-                  in: query
-                  description: |-
-                    The ID to use for the changelist, which will become the final component of
-                     the changelist's resource name.
-
-                     This value should be 4-63 characters, and valid characters
-                     are /[a-z][0-9]-/.
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/Changelist'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Changelist'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v1/projects/{project}/changelists/{changelist}:
-        get:
-            tags:
-                - ChangelistService
-            description: |-
-                Gets a changelist by name.
-                 Permissions required: bb.changelists.get
-            operationId: ChangelistService_GetChangelist
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-                - name: changelist
-                  in: path
-                  description: The changelist id.
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Changelist'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-        delete:
-            tags:
-                - ChangelistService
-            description: |-
-                Deletes a changelist.
-                 Permissions required: bb.changelists.delete
-            operationId: ChangelistService_DeleteChangelist
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-                - name: changelist
-                  in: path
-                  description: The changelist id.
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content: {}
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-        patch:
-            tags:
-                - ChangelistService
-            description: |-
-                Updates a changelist.
-                 Permissions required: bb.changelists.update
-                 When allow_missing=true, also requires: bb.changelists.create
-            operationId: ChangelistService_UpdateChangelist
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-                - name: changelist
-                  in: path
-                  description: The changelist id.
-                  required: true
-                  schema:
-                    type: string
-                - name: updateMask
-                  in: query
-                  description: The list of fields to be updated.
-                  schema:
-                    type: string
-                    format: field-mask
-                - name: allowMissing
-                  in: query
-                  description: |-
-                    If set to true, and the changelist is not found, a new changelist will be created.
-                     In this situation, `update_mask` is ignored.
-                  schema:
-                    type: boolean
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/Changelist'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Changelist'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
     /v1/projects/{project}/databaseGroups:
         get:
             tags:
@@ -9123,33 +8935,6 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/ChangedResourceDatabase'
-        Changelist:
-            type: object
-            properties:
-                description:
-                    type: string
-                    description: Human-readable description of this changelist.
-                changes:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/Changelist_Change'
-                    description: The list of changes in this changelist.
-            description: Changelist represents a collection of database changes that can be applied together.
-        Changelist_Change:
-            type: object
-            properties:
-                sheet:
-                    type: string
-                    description: |-
-                        The sheet containing the SQL statement.
-                         Format: projects/{project}/sheets/{sheet}
-                source:
-                    type: string
-                    description: |-
-                        The source of this change.
-                         Format: instances/{instance}/databases/{database}/changelogs/{changelog}
-                         If empty, the change is from raw SQL.
-            description: A single change in a changelist.
         Changelog:
             type: object
             properties:
@@ -11303,15 +11088,6 @@ components:
                     type: string
                     description: The group this label belongs to.
             description: A label for categorizing and organizing issues.
-        ListChangelistsResponse:
-            type: object
-            properties:
-                changelists:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/Changelist'
-                    description: The changelists from the specified request.
-            description: Response message for listing changelists.
         ListChangelogsResponse:
             type: object
             properties:
@@ -12426,9 +12202,6 @@ components:
                     description: The query statement for the result.
                 postgresError:
                     $ref: '#/components/schemas/QueryResult_PostgresError'
-                allowExport:
-                    type: boolean
-                    description: The query result is allowed to be exported or not.
                 messages:
                     type: array
                     items:
@@ -14975,8 +14748,6 @@ tags:
       description: AuthService handles user authentication operations.
     - name: CelService
       description: CelService manages CEL (Common Expression Language) parsing and formatting operations.
-    - name: ChangelistService
-      description: ChangelistService manages changelists for grouping and organizing database changes.
     - name: DatabaseCatalogService
       description: DatabaseCatalogService manages database schema metadata and classification.
     - name: DatabaseGroupService

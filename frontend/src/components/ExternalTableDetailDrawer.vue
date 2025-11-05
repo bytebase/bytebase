@@ -3,7 +3,7 @@
     <DrawerContent :title="$t('database.foreign-table-detail')">
       <div
         v-if="externalTable"
-        class="flex-1 overflow-auto focus:outline-none w-[calc(100vw-256px)]"
+        class="flex-1 overflow-auto focus:outline-hidden w-[calc(100vw-256px)]"
         tabindex="0"
       >
         <main class="flex-1 relative pb-8 overflow-y-auto">

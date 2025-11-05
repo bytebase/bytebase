@@ -31,5 +31,5 @@ watchEffect(preparePolicies);
 
 const { overrideMainContainerClass } = useBodyLayoutContext();
 
-overrideMainContainerClass("!py-0");
+overrideMainContainerClass("py-0!");
 </script>

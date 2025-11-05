@@ -141,10 +141,6 @@ func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStrea
 			}
 		} else {
 			response.Results = result
-			for _, result := range response.Results {
-				// The AdminExecute requires bb.sql.admin permission, so we can presume the users have enough permission to export.
-				result.AllowExport = true
-			}
 		}
 
 		if err := stream.Send(response); err != nil {
@@ -212,7 +208,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 	if request.Schema != nil {
 		queryContext.Schema = *request.Schema
 	}
-	results, spans, duration, queryErr := queryRetry(
+	results, _, duration, queryErr := queryRetry(
 		ctx,
 		s.store,
 		user,
@@ -259,12 +255,6 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 			return nil, err
 		}
 		return nil, connect.NewError(code, errors.New(queryErr.Error()))
-	}
-
-	for _, result := range results {
-		// AllowExport is a validate only check.
-		checkErr := s.accessCheck(ctx, instance, database, user, spans, request.Explain)
-		result.AllowExport = checkErr == nil
 	}
 
 	slog.Debug("request finished",

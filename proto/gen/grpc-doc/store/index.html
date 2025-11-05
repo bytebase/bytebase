@@ -299,25 +299,6 @@
         
           
           <li>
-            <a href="#store%2fchangelist.proto">store/changelist.proto</a>
-            <ul>
-              
-                <li>
-                  <a href="#bytebase.store.Changelist"><span class="badge">M</span>Changelist</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.Changelist.Change"><span class="badge">M</span>Changelist.Change</a>
-                </li>
-              
-              
-              
-              
-            </ul>
-          </li>
-        
-          
-          <li>
             <a href="#store%2fchangelog.proto">store/changelog.proto</a>
             <ul>
               
@@ -2537,84 +2518,6 @@ This information is not authenticated and should be treated accordingly. </p></t
             
           </tbody>
         </table>
-      
-
-      
-
-      
-    
-      
-      <div class="file-heading">
-        <h2 id="store/changelist.proto">store/changelist.proto</h2><a href="#title">Top</a>
-      </div>
-      <p></p>
-
-      
-        <h3 id="bytebase.store.Changelist">Changelist</h3>
-        <p>Changelist represents a collection of database changes that can be applied together.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>description</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Human-readable description of this changelist. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>changes</td>
-                  <td><a href="#bytebase.store.Changelist.Change">Changelist.Change</a></td>
-                  <td>repeated</td>
-                  <td><p>The list of changes in this changelist. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.Changelist.Change">Changelist.Change</h3>
-        <p>Change represents a single database modification within the changelist.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>sheet</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Resource name of the sheet containing the SQL statements. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>source</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The source where this change originated from.
-Format: instances/{instance}/databases/{database}/changelogs/{changelog} for changes from changelog.
-Empty for raw SQL changes. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-
       
 
       

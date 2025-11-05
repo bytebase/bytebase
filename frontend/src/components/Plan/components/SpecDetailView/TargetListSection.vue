@@ -38,9 +38,7 @@
             <DatabaseDisplay :database="target" show-environment />
           </template>
           <template v-else-if="isValidDatabaseGroupName(target)">
-            <DatabaseGroupIcon
-              class="w-4 h-4 text-control-light flex-shrink-0"
-            />
+            <DatabaseGroupIcon class="w-4 h-4 text-control-light shrink-0" />
             <DatabaseGroupName
               :database-group="
                 dbGroupStore.getDBGroupByName(target) as DatabaseGroup

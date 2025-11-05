@@ -2,7 +2,7 @@
   <Drawer :show="props.show" @update:show="$emit('update:show', $event)">
     <DrawerContent
       :title="$t('settings.sso.create')"
-      class="w-[64rem] max-w-[100vw]"
+      class="w-5xl max-w-[100vw]"
       :closable="true"
     >
       <div class="w-full mx-auto space-y-6">
@@ -54,7 +54,7 @@
                     <div class="flex items-start space-x-3 w-full">
                       <component
                         :is="getProviderIcon(item.type)"
-                        class="w-6 h-6 mt-1 flex-shrink-0"
+                        class="w-6 h-6 mt-1 shrink-0"
                         :stroke-width="1.5"
                       />
                       <div class="flex-1">
@@ -124,7 +124,7 @@
                   }
                 "
                 size="large"
-                class="!grid grid-cols-1 sm:grid-cols-2 gap-4"
+                class="grid! grid-cols-1 sm:grid-cols-2 gap-4"
               >
                 <div
                   v-for="template in templateList"
@@ -143,7 +143,7 @@
                     <div class="flex items-center space-x-3">
                       <component
                         :is="getTemplateIcon(template.title)"
-                        class="w-8 h-8 flex-shrink-0"
+                        class="w-8 h-8 shrink-0"
                         :stroke-width="1"
                       />
                       <div class="flex-1">

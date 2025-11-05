@@ -28,7 +28,7 @@
     <ProductionEnvironmentV1Icon
       v-if="showIcon"
       :environment="environment"
-      :class="iconClass ?? '!text-current'"
+      :class="iconClass ?? 'text-current!'"
       :tooltip="tooltip"
     />
   </component>

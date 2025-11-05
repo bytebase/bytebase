@@ -3,7 +3,7 @@
     <FeatureAttention :feature="PlanFeature.FEATURE_APPROVAL_WORKFLOW" />
 
     <CustomApproval v-if="state.ready" />
-    <div v-else class="w-full py-[4rem] flex justify-center items-center">
+    <div v-else class="w-full py-16 flex justify-center items-center">
       <BBSpin />
     </div>
   </div>

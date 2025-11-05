@@ -10,7 +10,7 @@
           <RequiredStar />
         </label>
         <ProjectSelect
-          class="mt-1 !w-full"
+          class="mt-1 w-full!"
           required
           v-model:project-name="state.projectName"
         />

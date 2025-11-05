@@ -2,7 +2,7 @@
   <div
     ref="popoverRef"
     v-zindexable="{ enabled: true }"
-    class="fixed border border-gray-100 rounded bg-white p-2 shadow transition-[top] text-sm"
+    class="fixed border border-gray-100 rounded-sm bg-white p-2 shadow-sm transition-[top] text-sm"
     :class="[show ? 'visible' : ' invisible pointer-events-none']"
     :style="{
       left: `${displayPosition.x}px`,

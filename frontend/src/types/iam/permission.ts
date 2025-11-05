@@ -3,11 +3,6 @@ import type { PickLiteral } from "../utils";
 export type Permission =
   | "bb.auditLogs.export"
   | "bb.auditLogs.search"
-  | "bb.changelists.create"
-  | "bb.changelists.delete"
-  | "bb.changelists.get"
-  | "bb.changelists.list"
-  | "bb.changelists.update"
   | "bb.changelogs.get"
   | "bb.changelogs.list"
   | "bb.databaseCatalogs.get"

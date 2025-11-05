@@ -273,13 +273,6 @@ func TestHasAllowMissingEnabled(t *testing.T) {
 			want: false,
 		},
 		{
-			name: "UpdateChangelistRequest with AllowMissing true",
-			request: &v1pb.UpdateChangelistRequest{
-				AllowMissing: true,
-			},
-			want: true,
-		},
-		{
 			name: "UpdateRiskRequest with AllowMissing true",
 			request: &v1pb.UpdateRiskRequest{
 				AllowMissing: true,

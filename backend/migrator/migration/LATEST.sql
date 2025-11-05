@@ -454,21 +454,6 @@ CREATE UNIQUE INDEX idx_db_group_unique_project_resource_id ON db_group(project,
 
 ALTER SEQUENCE db_group_id_seq RESTART WITH 101;
 
--- changelist table stores project changelists.
-CREATE TABLE changelist (
-    id serial PRIMARY KEY,
-    creator_id integer NOT NULL REFERENCES principal (id),
-    updated_at timestamptz NOT NULL DEFAULT now(),
-    project text NOT NULL REFERENCES project(resource_id),
-    name text NOT NULL,
-    -- Stored as Changelist (proto/store/store/changelist.proto)
-    payload jsonb NOT NULL DEFAULT '{}'
-);
-
-CREATE UNIQUE INDEX idx_changelist_project_name ON changelist(project, name);
-
-ALTER SEQUENCE changelist_id_seq RESTART WITH 101;
-
 CREATE TABLE export_archive (
   id serial PRIMARY KEY,
   created_at timestamptz NOT NULL DEFAULT now(),

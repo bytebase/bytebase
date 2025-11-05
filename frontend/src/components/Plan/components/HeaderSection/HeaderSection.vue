@@ -13,7 +13,7 @@
         <!-- Mobile hamburger menu -->
         <NButton
           v-if="hasSidebar && sidebarMode === 'MOBILE'"
-          class="!px-1"
+          class="px-1!"
           quaternary
           size="medium"
           @click="handleMobileSidebarOpen"

@@ -9,11 +9,18 @@
   >
     <div
       v-bind="$attrs"
-      class="bb-modal"
+      class="bg-white shadow-lg rounded-md py-3 flex pointer-events-auto flex-col gap-3"
+      :style="{
+        maxWidth: 'calc(100vw - 80px)',
+        maxHeight: 'calc(100vh - 80px)',
+      }"
       :data-overlay-stack-id="id"
       :data-overlay-stack-upmost="upmost"
     >
-      <div class="modal-header" :class="headerClass">
+      <div
+        class="relative mx-4 pb-2 flex items-center justify-between border-b border-block-border"
+        :class="headerClass"
+      >
         <div class="text-lg text-main mr-2 flex-1 overflow-hidden">
           <slot name="title"><component :is="renderTitle" /></slot>
           <slot name="subtitle"><component :is="renderSubtitle" /></slot>
@@ -30,7 +37,10 @@
         </NButton>
       </div>
 
-      <div class="modal-container" :class="containerClass">
+      <div
+        class="px-4 max-h-screen overflow-auto w-full h-full"
+        :class="containerClass"
+      >
         <slot />
       </div>
     </div>
@@ -151,20 +161,3 @@ export default defineComponent({
   },
 });
 </script>
-
-<style scoped lang="postcss">
-.bb-modal {
-  @apply bg-white shadow-lg rounded-md py-3 flex pointer-events-auto flex-col gap-3;
-
-  max-width: calc(100vw - 80px);
-  max-height: calc(100vh - 80px);
-}
-
-.modal-header {
-  @apply relative mx-4 pb-2 flex items-center justify-between border-b border-block-border;
-}
-
-.modal-container {
-  @apply px-4 max-h-screen overflow-auto w-full h-full;
-}
-</style>

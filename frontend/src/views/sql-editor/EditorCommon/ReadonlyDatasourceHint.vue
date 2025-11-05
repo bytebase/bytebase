@@ -2,7 +2,7 @@
   <NPopover v-if="showReadonlyDatasourceHint" trigger="hover">
     <template #trigger>
       <TriangleAlertIcon
-        class="h-4 w-4 flex-shrink-0 text-warning"
+        class="h-4 w-4 shrink-0 text-warning"
         v-bind="$attrs"
       />
     </template>

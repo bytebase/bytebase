@@ -106,7 +106,7 @@
       <NCheckbox
         :checked="!!state.passwordRotation"
         :readonly="!allowEdit"
-        class="!flex !items-center"
+        class="flex! items-center!"
         @update:checked="
           (checked) => {
             if (checked) {

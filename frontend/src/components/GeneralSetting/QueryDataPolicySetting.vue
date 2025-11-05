@@ -10,7 +10,7 @@
       {{
         $t("settings.general.workspace.query-data-policy.timeout.description")
       }}
-      <span class="!font-semibold textinfolabel">
+      <span class="font-semibold! textinfolabel">
         {{ $t("settings.general.workspace.maximum-sql-result.rows.limit") }}
       </span>
     </p>

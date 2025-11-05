@@ -1,5 +1,5 @@
 <template>
-  <div class="min-w-[14rem] max-w-[18rem] gap-y-1">
+  <div class="min-w-56 max-w-[18rem] gap-y-1">
     <InfoItem :title="$t('common.name')">
       {{ externalTableMetadata.name }}
     </InfoItem>

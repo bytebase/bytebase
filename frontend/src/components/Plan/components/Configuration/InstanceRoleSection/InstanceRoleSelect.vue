@@ -1,7 +1,7 @@
 <template>
   <NSelect
     v-model:value="selectedRole"
-    class="!w-40"
+    class="w-40!"
     consistent-menu-width
     size="small"
     :options="options"

@@ -11,7 +11,6 @@ export * from "./sql";
 export * from "./sheet";
 export * from "./worksheet";
 export * from "./issue";
-export * from "./changelist";
 export * from "./changelog";
 export * from "./cel";
 export * from "./advanced-search";

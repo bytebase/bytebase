@@ -1,5 +1,5 @@
 <template>
-  <div class="focus:outline-none" tabindex="0" v-bind="$attrs">
+  <div class="focus:outline-hidden" tabindex="0" v-bind="$attrs">
     <NoPermissionPlaceholder v-if="!hasPermission" class="py-6" />
     <div
       v-if="state.loading"

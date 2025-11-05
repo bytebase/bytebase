@@ -219,7 +219,7 @@ const columns = computed(() => {
       resizable: false,
       width: 30,
       hide: props.readonly,
-      className: "!px-0",
+      className: "px-0!",
       render: (index) => {
         return h(OperationCell, {
           index,
@@ -238,33 +238,46 @@ const columns = computed(() => {
 <style lang="postcss" scoped>
 .schema-editor-table-indexes-editor
   :deep(.n-data-table-th .n-data-table-resize-button::after) {
-  @apply bg-control-bg h-2/3;
+  background-color: var(--color-control-bg);
+  height: 66.666667%;
 }
 .schema-editor-table-indexes-editor :deep(.n-data-table-td.input-cell) {
-  @apply pl-0.5 pr-1 py-0;
+  padding-left: 0.125rem;
+  padding-right: 0.25rem;
+  padding-top: 0;
+  padding-bottom: 0;
 }
 .schema-editor-table-indexes-editor
   :deep(.n-data-table-td.input-cell .n-input__placeholder),
 .schema-editor-table-indexes-editor
   :deep(.n-data-table-td.input-cell .n-base-selection-placeholder) {
-  @apply italic;
+  font-style: italic;
 }
 .schema-editor-table-indexes-editor :deep(.n-data-table-td.checkbox-cell) {
-  @apply pr-1 py-0;
+  padding-right: 0.25rem;
+  padding-top: 0;
+  padding-bottom: 0;
 }
 .schema-editor-table-indexes-editor :deep(.n-data-table-td.text-cell) {
-  @apply pr-1 py-0;
+  padding-right: 0.25rem;
+  padding-top: 0;
+  padding-bottom: 0;
 }
 .schema-editor-table-indexes-editor
   :deep(.n-data-table-tr.created .n-data-table-td) {
-  @apply text-green-700 !bg-green-50;
+  color: var(--color-green-700);
+  background-color: var(--color-green-50) !important;
 }
 .schema-editor-table-indexes-editor
   :deep(.n-data-table-tr.dropped .n-data-table-td) {
-  @apply text-red-700 cursor-not-allowed !bg-red-50 opacity-70;
+  color: var(--color-red-700);
+  cursor: not-allowed;
+  background-color: var(--color-red-50) !important;
+  opacity: 0.7;
 }
 .schema-editor-table-indexes-editor
   :deep(.n-data-table-tr.updated .n-data-table-td) {
-  @apply text-yellow-700 !bg-yellow-50;
+  color: var(--color-yellow-700);
+  background-color: var(--color-yellow-50) !important;
 }
 </style>

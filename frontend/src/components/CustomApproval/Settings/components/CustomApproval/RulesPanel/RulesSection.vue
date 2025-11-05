@@ -59,7 +59,7 @@ const columns = computed((): DataTableColumn<Row>[] => {
       render: (row) => (
         <div class="flex items-center space-x-2">
           <RuleSelect
-            class="flex-1 max-w-md min-w-[10rem]"
+            class="flex-1 max-w-md min-w-40"
             value={row.rule}
             onUpdate={(rule: string | undefined) => updateRow(row, rule)}
           />

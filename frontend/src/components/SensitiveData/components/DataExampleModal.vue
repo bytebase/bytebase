@@ -4,10 +4,10 @@
     :mask-closable="true"
     :trap-focus="false"
     :title="$t('settings.sensitive-data.json-format-example')"
-    class="w-[48rem] max-w-full"
+    class="w-3xl max-w-full"
     @close="$emit('dismiss')"
   >
-    <div class="my-4 rounded-sm p-4 bg-gray-100 relative">
+    <div class="my-4 rounded-xs p-4 bg-gray-100 relative">
       <div class="absolute top-2 right-2 p-2">
         <CopyButton
           quaternary

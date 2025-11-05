@@ -11,7 +11,7 @@
         {{
           $t("settings.general.workspace.maximum-sql-result.size.description")
         }}
-        <span class="!font-semibold textinfolabel">
+        <span class="font-semibold! textinfolabel">
           {{
             $t("settings.general.workspace.maximum-sql-result.size.default", {
               limit: defaultMaximumResultSizeInMB,
@@ -48,7 +48,7 @@
         {{
           $t("settings.general.workspace.maximum-sql-result.rows.description")
         }}
-        <span class="!font-semibold textinfolabel">
+        <span class="font-semibold! textinfolabel">
           {{ $t("settings.general.workspace.maximum-sql-result.rows.limit") }}
         </span>
       </p>

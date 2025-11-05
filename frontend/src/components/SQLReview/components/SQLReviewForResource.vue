@@ -14,7 +14,7 @@
           :text="true"
         />
         <span
-          class="textlabel normal-link !text-accent"
+          class="textlabel normal-link text-accent!"
           @click="onSQLReviewPolicyClick"
         >
           {{ pendingSelectReviewPolicy.name }}

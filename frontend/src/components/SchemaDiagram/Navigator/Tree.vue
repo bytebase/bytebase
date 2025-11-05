@@ -114,16 +114,20 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
 
 <style lang="postcss">
 .bb-schema-diagram-nav-tree.flat .n-tree-node-switcher {
-  @apply !hidden;
+  display: none !important;
 }
 .bb-schema-diagram-nav-tree .n-tree-node-content {
-  @apply !pl-0;
+  padding-left: 0 !important;
 }
 .bb-schema-diagram-nav-tree .n-tree-node-content__prefix {
-  @apply shrink-0 !mr-1;
+  flex-shrink: 0;
+  margin-right: 0.25rem !important;
 }
 .bb-schema-diagram-nav-tree .n-tree-node-content__text {
-  @apply truncate mr-1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-right: 0.25rem;
 }
 .bb-schema-diagram-nav-tree .n-tree-node--pending {
   background-color: transparent !important;

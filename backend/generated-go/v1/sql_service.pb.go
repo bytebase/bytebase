@@ -605,8 +605,6 @@ type QueryResult struct {
 	//
 	//	*QueryResult_PostgresError_
 	DetailedError isQueryResult_DetailedError `protobuf_oneof:"detailed_error"`
-	// The query result is allowed to be exported or not.
-	AllowExport bool `protobuf:"varint,11,opt,name=allow_export,json=allowExport,proto3" json:"allow_export,omitempty"`
 	// Informational or debug messages returned by the database engine during query execution.
 	// Examples include PostgreSQL's RAISE NOTICE, MSSQL's PRINT, or Oracle's DBMS_OUTPUT.PUT_LINE.
 	Messages []*QueryResult_Message `protobuf:"bytes,12,rep,name=messages,proto3" json:"messages,omitempty"`
@@ -709,13 +707,6 @@ func (x *QueryResult) GetPostgresError() *QueryResult_PostgresError {
 		}
 	}
 	return nil
-}
-
-func (x *QueryResult) GetAllowExport() bool {
-	if x != nil {
-		return x.AllowExport
-	}
-	return false
 }
 
 func (x *QueryResult) GetMessages() []*QueryResult_Message {
@@ -2448,7 +2439,7 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\x12RedisRunCommandsOn\x12%\n" +
 	"!REDIS_RUN_COMMANDS_ON_UNSPECIFIED\x10\x00\x12\x0f\n" +
 	"\vSINGLE_NODE\x10\x01\x12\r\n" +
-	"\tALL_NODES\x10\x02\"\xd1\t\n" +
+	"\tALL_NODES\x10\x02\"\xb4\t\n" +
 	"\vQueryResult\x12!\n" +
 	"\fcolumn_names\x18\x01 \x03(\tR\vcolumnNames\x12*\n" +
 	"\x11column_type_names\x18\x02 \x03(\tR\x0fcolumnTypeNames\x12)\n" +
@@ -2459,8 +2450,7 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\x05error\x18\x06 \x01(\tR\x05error\x123\n" +
 	"\alatency\x18\a \x01(\v2\x19.google.protobuf.DurationR\alatency\x12\x1c\n" +
 	"\tstatement\x18\b \x01(\tR\tstatement\x12O\n" +
-	"\x0epostgres_error\x18\t \x01(\v2&.bytebase.v1.QueryResult.PostgresErrorH\x00R\rpostgresError\x12!\n" +
-	"\fallow_export\x18\v \x01(\bR\vallowExport\x12<\n" +
+	"\x0epostgres_error\x18\t \x01(\v2&.bytebase.v1.QueryResult.PostgresErrorH\x00R\rpostgresError\x12<\n" +
 	"\bmessages\x18\f \x03(\v2 .bytebase.v1.QueryResult.MessageR\bmessages\x122\n" +
 	"\x06masked\x18\x04 \x03(\v2\x1a.bytebase.v1.MaskingReasonR\x06masked\x1a\xfd\x03\n" +
 	"\rPostgresError\x12\x1a\n" +
@@ -2497,7 +2487,7 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\n" +
 	"\x06NOTICE\x10\x05\x12\r\n" +
 	"\tEXCEPTION\x10\x06B\x10\n" +
-	"\x0edetailed_error\"\xaa\x02\n" +
+	"\x0edetailed_errorJ\x04\b\v\x10\f\"\xaa\x02\n" +
 	"\rMaskingReason\x12(\n" +
 	"\x10semantic_type_id\x18\x01 \x01(\tR\x0esemanticTypeId\x12.\n" +
 	"\x13semantic_type_title\x18\x02 \x01(\tR\x11semanticTypeTitle\x12&\n" +

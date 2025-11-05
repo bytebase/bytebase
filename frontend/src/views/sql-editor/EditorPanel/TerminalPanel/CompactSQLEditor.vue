@@ -296,6 +296,6 @@ const EDITOR_OPTIONS = computed<Editor.IStandaloneEditorConstructionOptions>(
 
 <style lang="postcss" scoped>
 .bb-compact-sql-editor :deep(.monaco-editor .line-numbers) {
-  @apply !pr-0;
+  padding-right: 0 !important;
 }
 </style>

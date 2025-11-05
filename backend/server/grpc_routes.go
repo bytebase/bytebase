@@ -75,7 +75,6 @@ func configureGrpcRouters(
 	auditLogService := apiv1.NewAuditLogService(stores, iamManager, licenseService)
 	authService := apiv1.NewAuthService(stores, secret, licenseService, metricReporter, profile, stateCfg, iamManager)
 	celService := apiv1.NewCelService()
-	changelistService := apiv1.NewChangelistService(stores, profile, iamManager)
 	databaseCatalogService := apiv1.NewDatabaseCatalogService(stores, licenseService)
 	databaseGroupService := apiv1.NewDatabaseGroupService(stores, profile, iamManager, licenseService)
 	databaseService := apiv1.NewDatabaseService(stores, schemaSyncer, licenseService, profile, iamManager)
@@ -117,7 +116,7 @@ func configureGrpcRouters(
 			apiv1.NewDebugInterceptor(metricReporter),
 			auth.New(stores, secret, licenseService, stateCfg, profile),
 			apiv1.NewACLInterceptor(stores, secret, iamManager, profile),
-			apiv1.NewAuditInterceptor(stores),
+			apiv1.NewAuditInterceptor(stores, secret, profile),
 		),
 		connect.WithRecover(onPanic),
 	)
@@ -135,9 +134,6 @@ func configureGrpcRouters(
 
 	celPath, celHandler := v1connect.NewCelServiceHandler(celService, handlerOpts)
 	connectHandlers[celPath] = celHandler
-
-	changelistPath, changelistHandler := v1connect.NewChangelistServiceHandler(changelistService, handlerOpts)
-	connectHandlers[changelistPath] = changelistHandler
 
 	databaseCatalogPath, databaseCatalogHandler := v1connect.NewDatabaseCatalogServiceHandler(databaseCatalogService, handlerOpts)
 	connectHandlers[databaseCatalogPath] = databaseCatalogHandler
@@ -217,7 +213,6 @@ func configureGrpcRouters(
 		v1connect.AuditLogServiceName,
 		v1connect.AuthServiceName,
 		v1connect.CelServiceName,
-		v1connect.ChangelistServiceName,
 		v1connect.DatabaseCatalogServiceName,
 		v1connect.DatabaseGroupServiceName,
 		v1connect.DatabaseServiceName,
@@ -272,9 +267,6 @@ func configureGrpcRouters(
 		return err
 	}
 	if err := v1pb.RegisterCelServiceHandler(ctx, mux, grpcConn); err != nil {
-		return err
-	}
-	if err := v1pb.RegisterChangelistServiceHandler(ctx, mux, grpcConn); err != nil {
 		return err
 	}
 	if err := v1pb.RegisterDatabaseCatalogServiceHandler(ctx, mux, grpcConn); err != nil {

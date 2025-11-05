@@ -11,7 +11,7 @@
     <NRadioGroup v-model:value="selectedType" class="space-y-4">
       <NRadio :value="MigrationType.DDL" class="w-full">
         <div class="flex items-start space-x-2 w-full ml-2">
-          <FileDiffIcon class="w-6 h-6 flex-shrink-0" :stroke-width="1.5" />
+          <FileDiffIcon class="w-6 h-6 shrink-0" :stroke-width="1.5" />
           <div class="flex-1">
             <div class="flex items-center space-x-2">
               <span class="text-base text-gray-900">
@@ -26,7 +26,7 @@
       </NRadio>
       <NRadio :value="MigrationType.DML" class="w-full">
         <div class="flex items-start space-x-2 w-full ml-2">
-          <EditIcon class="w-6 h-6 flex-shrink-0" :stroke-width="1.5" />
+          <EditIcon class="w-6 h-6 shrink-0" :stroke-width="1.5" />
           <div class="flex-1">
             <div class="flex items-center space-x-2">
               <span class="text-base text-gray-900">

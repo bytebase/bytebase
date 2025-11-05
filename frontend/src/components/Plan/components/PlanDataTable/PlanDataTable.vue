@@ -64,7 +64,7 @@ const columnList = computed((): DataTableColumn<Plan>[] => {
                 {{
                   default: () => <span>{plan.title}</span>,
                   tooltip: () => (
-                    <div class="whitespace-pre-wrap break-words break-all">
+                    <div class="whitespace-pre-wrap wrap-break-word break-all">
                       {plan.title}
                     </div>
                   ),

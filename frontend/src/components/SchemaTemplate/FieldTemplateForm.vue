@@ -134,7 +134,7 @@
               <DefaultValueCell
                 :column="state.column"
                 :disabled="readonly"
-                border="1px solid rgb(224, 224, 230)"
+                border="1px solid rgb(var(--color-control-border))"
                 @update="handleColumnDefaultSelect"
               />
             </div>
@@ -188,7 +188,7 @@
           v-model:kv-list="state.kvList"
           :readonly="!!readonly"
           :show-errors="dirty"
-          class="max-w-[30rem]"
+          class="max-w-120"
         />
       </div>
     </div>

@@ -13,7 +13,7 @@
             <RichEngineName
               :engine="rule.engine"
               tag="p"
-              class="text-center text-sm !text-main"
+              class="text-center text-sm text-main!"
             />
           </div>
         </div>

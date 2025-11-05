@@ -19,10 +19,10 @@
         <div
           v-for="task in exportTasks"
           :key="task.name"
-          class="inline-flex items-center gap-2 px-2 py-1.5 border rounded transition-colors min-w-0"
+          class="inline-flex items-center gap-2 px-2 py-1.5 border rounded-sm transition-colors min-w-0"
         >
           <!-- Task Status -->
-          <div class="flex-shrink-0">
+          <div class="shrink-0">
             <TaskStatus :status="task.status" size="tiny" />
           </div>
 

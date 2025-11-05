@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex-shrink-0 max-w-44 flex items-center overflow-hidden"
+    class="shrink-0 max-w-44 flex items-center overflow-hidden"
     @click="recordRedirect"
   >
     <!-- The active-class and exact-active-class need to set as ""

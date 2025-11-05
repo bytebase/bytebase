@@ -1,7 +1,7 @@
 <template>
   <div
     ref="container"
-    class="droppable-textarea"
+    class="droppable-textarea relative"
     :class="{
       reading: state.reading,
       'drop-over': isOverDropZone,
@@ -166,11 +166,8 @@ onMounted(() => {
 </script>
 
 <style lang="postcss" scoped>
-.droppable-textarea {
-  @apply relative;
-}
 .droppable-textarea.reading {
-  @apply pointer-events-none;
+  pointer-events: none;
 }
 .droppable-textarea.drop-over :deep(.n-input__state-border),
 .droppable-textarea.reading :deep(.n-input__state-border) {

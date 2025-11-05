@@ -51,7 +51,7 @@
             <button
               v-if="state.isExpired"
               type="button"
-              class="ml-3 px-3 py-1 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700"
+              class="ml-3 px-3 py-1 text-sm font-medium text-white bg-blue-600 rounded-sm hover:bg-blue-700"
               @click="handleRegenerateSecret"
             >
               {{ $t("two-factor.setup-steps.setup-auth-app.regenerate") }}

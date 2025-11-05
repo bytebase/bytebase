@@ -71,6 +71,9 @@ const allowManageInstance = computed(() => {
 
 <style scoped lang="postcss">
 .connection-panel-content :deep(.n-drawer-header__main) {
-  @apply flex-1 flex items-center justify-between;
+  flex: 1 1 0%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 </style>

@@ -35,7 +35,7 @@
           </div>
           <SearchBox
             ref="searchField"
-            class="ml-auto mt-2 md:mt-0 md:!max-w-72"
+            class="ml-auto mt-2 md:mt-0 md:max-w-72!"
             style="max-width: 100%"
             :value="params.searchText"
             :placeholder="$t('common.filter-by-name')"

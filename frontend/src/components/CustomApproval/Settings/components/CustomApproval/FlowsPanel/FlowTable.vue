@@ -109,7 +109,7 @@ const renderNodesButton = (rolesCount: number, onClick: () => void) => (
     quaternary
     size="small"
     type="info"
-    class="!rounded !w-[var(--n-height)] !p-0"
+    class="rounded-sm! w-(--n-height)! p-0!"
     onClick={onClick}
   >
     {rolesCount}

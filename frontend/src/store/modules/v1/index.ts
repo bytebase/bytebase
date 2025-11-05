@@ -1,7 +1,6 @@
 export * from "./actuator";
 export * from "./auth";
 export * from "./auditLog";
-export * from "./changelist";
 export * from "./changelog";
 export * from "./common";
 export * from "./database";

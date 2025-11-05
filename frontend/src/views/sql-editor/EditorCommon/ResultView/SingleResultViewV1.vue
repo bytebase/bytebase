@@ -19,7 +19,7 @@
         <NInput
           v-if="showSearchFeature"
           :value="state.search"
-          class="!max-w-[10rem]"
+          class="max-w-40!"
           size="small"
           type="text"
           :placeholder="t('sql-editor.search-results')"
@@ -89,7 +89,6 @@
         </NTooltip>
         <template v-if="showExport">
           <DataExportButton
-            v-if="result.allowExport"
             size="small"
             :disabled="props.result === null || isEmpty(props.result)"
             :support-formats="[
@@ -114,14 +113,6 @@
               </NFormItem>
             </template>
           </DataExportButton>
-          <NButton
-            v-else-if="allowToRequestExportData"
-            size="small"
-            @click="handleRequestExport"
-          >
-            {{ $t("quick-action.request-export-data") }}
-            <ExternalLinkIcon class="w-4 h-auto ml-1 opacity-80" />
-          </NButton>
         </template>
       </div>
       <SelectionCopyTooltips />
@@ -202,7 +193,6 @@ import {
 import { useClipboard } from "@vueuse/core";
 import { useDebounceFn, useLocalStorage } from "@vueuse/core";
 import { isEmpty } from "lodash-es";
-import { ExternalLinkIcon } from "lucide-vue-next";
 import {
   NButton,
   NFormItem,
@@ -213,10 +203,8 @@ import {
   NTooltip,
   type SelectOption,
 } from "naive-ui";
-import { v4 as uuidv4 } from "uuid";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter, type LocationQueryRaw } from "vue-router";
 import { BBAttention } from "@/bbkit";
 import type {
   DownloadContent,
@@ -226,20 +214,14 @@ import DataExportButton from "@/components/DataExportButton.vue";
 import DatabaseInfo from "@/components/DatabaseInfo.vue";
 import { RichDatabaseName } from "@/components/v2";
 import { DISMISS_PLACEHOLDER } from "@/plugins/ai/components/state";
-import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useSQLEditorStore,
   useSQLEditorTabStore,
-  useStorageStore,
   pushNotification,
 } from "@/store";
 import type { ComposedDatabase, SQLEditorQueryParams } from "@/types";
-import {
-  DEBOUNCE_SEARCH_DELAY,
-  isValidDatabaseName,
-  isValidInstanceName,
-} from "@/types";
+import { DEBOUNCE_SEARCH_DELAY, isValidInstanceName } from "@/types";
 import { Engine, ExportFormat } from "@/types/proto-es/v1/common_pb";
 import {
   type QueryResult,
@@ -249,10 +231,7 @@ import {
 import {
   compareQueryRowValues,
   createExplainToken,
-  extractProjectResourceName,
   extractSQLRowValuePlain,
-  generateIssueTitle,
-  hasPermissionToCreateDataExportIssue,
   instanceV1HasStructuredQueryResult,
   isNullOrUndefined,
 } from "@/utils";
@@ -321,7 +300,6 @@ const copyStatement = () => {
 };
 
 const { t } = useI18n();
-const router = useRouter();
 const { dark, keyword } = useSQLResultViewContext();
 const tabStore = useSQLEditorTabStore();
 const editorStore = useSQLEditorStore();
@@ -348,19 +326,6 @@ const showSearchFeature = computed(() => {
     return false;
   }
   return instanceV1HasStructuredQueryResult(connectedInstance.value);
-});
-
-const allowToRequestExportData = computed(() => {
-  const { database } = props;
-  if (!database) {
-    return false;
-  }
-
-  if (!isValidDatabaseName(database.name)) {
-    return false;
-  }
-
-  return hasPermissionToCreateDataExportIssue(database);
 });
 
 // use a debounced value to improve performance when typing rapidly
@@ -485,33 +450,6 @@ const pageSizeOptions = computed(() => {
     value: n,
   }));
 });
-
-const handleRequestExport = async () => {
-  if (!props.database) {
-    return;
-  }
-
-  const database = props.database;
-  const project = database.projectEntity;
-  const issueType = "bb.issue.database.data.export";
-  const sqlStorageKey = `bb.issues.sql.${uuidv4()}`;
-  useStorageStore().put(sqlStorageKey, props.result.statement);
-  const query: LocationQueryRaw = {
-    template: issueType,
-    name: generateIssueTitle(issueType, [database.databaseName]),
-    databaseList: database.name,
-    sqlStorageKey,
-  };
-  const route = router.resolve({
-    name: PROJECT_V1_ROUTE_PLAN_DETAIL,
-    params: {
-      projectId: extractProjectResourceName(project.name),
-      planId: "create",
-    },
-    query,
-  });
-  window.open(route.fullPath, "_blank");
-};
 
 const showVisualizeButton = computed((): boolean => {
   return (

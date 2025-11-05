@@ -41,7 +41,7 @@
         ref="contentTextArea"
         v-model="state.content"
         rows="4"
-        class="block w-full px-4 py-3 resize-none whitespace-pre-wrap rounded-lg border border-gray-300 outline-none ring-0 text-sm"
+        class="block w-full px-4 py-3 resize-none whitespace-pre-wrap rounded-lg border border-gray-300 outline-hidden ring-0 text-sm"
         :placeholder="placeholder || $t('issue.leave-a-comment')"
         :maxlength="maxlength"
         @mousedown="clearIssuePanel"
@@ -57,10 +57,10 @@
       ></textarea>
       <div
         ref="issuePanel"
-        class="border rounded absolute hidden bg-white shadow-sm z-10"
+        class="border rounded-sm absolute hidden bg-white shadow-xs z-10"
       >
         <NScrollbar class="max-h-40">
-          <ul class="text-sm rounded divide-y divide-solid">
+          <ul class="text-sm rounded-sm divide-y divide-solid">
             <li
               v-for="issue in filterIssueList"
               :key="issue.name"

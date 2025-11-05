@@ -293,7 +293,8 @@ useEmitteryEventListener(
 
 <style lang="postcss">
 .bb-sql-editor-tab-list .ghost {
-  @apply opacity-30 bg-white;
+  opacity: 0.3;
+  background-color: white;
 }
 .bb-sql-editor-tab-list .scrollbar .n-scrollbar-rail--horizontal--bottom {
   inset: auto 2px 2px 2px !important;

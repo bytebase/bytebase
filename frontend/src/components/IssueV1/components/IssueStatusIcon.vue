@@ -16,7 +16,7 @@
                 aria-hidden="true"
               ></span>
               <span
-                class="w-full h-full rounded-full z-[1] bg-info"
+                class="w-full h-full rounded-full z-1 bg-info"
                 aria-hidden="true"
               ></span>
             </div>

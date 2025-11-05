@@ -1,7 +1,7 @@
 <template>
   <Drawer :show="show" @close="$emit('close')">
     <DrawerContent
-      class="w-[50rem] max-w-[90vw] relative"
+      class="w-200 max-w-[90vw] relative"
       :title="$t('settings.members.entra-sync.self')"
     >
       <template #default>

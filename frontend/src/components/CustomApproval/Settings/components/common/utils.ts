@@ -161,7 +161,7 @@ export const getRenderOptionFunc = (resource: {
           typeof resource.title === "string"
             ? h(
                 "div",
-                { class: `textlabel ${info.selected ? "!text-accent" : ""}` },
+                { class: `textlabel ${info.selected ? "text-accent!" : ""}` },
                 resource.title
               )
             : resource.title(),

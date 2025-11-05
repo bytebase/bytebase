@@ -30,7 +30,7 @@
           size="tiny"
           quaternary
           type="default"
-          :style="`flex-shrink: 0; padding-left: 0; padding-right: 0; --n-width: 22px;`"
+          :style="`shrink: 0; padding-left: 0; padding-right: 0; --n-width: 22px;`"
           @click="emit('remove')"
         >
           <heroicons:trash class="w-3.5 h-3.5" />

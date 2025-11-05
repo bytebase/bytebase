@@ -121,7 +121,7 @@
             planCheckRunList.length > 0
           "
           class="shrink-0 flex-col gap-y-1"
-          label-class="!text-base"
+          label-class="text-base!"
           :allow-run-checks="false"
           :plan-name="issue.plan"
           :plan-check-run-list="planCheckRunList"

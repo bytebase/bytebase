@@ -18,6 +18,11 @@ import { NButton } from "naive-ui";
 
 <style scoped lang="postcss">
 :deep(.n-button__content) {
-  @apply flex flex-col h-full justify-center items-center gap-2;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
 }
 </style>

@@ -1,7 +1,7 @@
 <template>
   <BBModal
     :title="$t('schema-editor.foreign-key.edit')"
-    class="shadow-inner outline outline-gray-200"
+    class="shadow-inner outline-solid outline-gray-200"
     @close="dismissModal"
   >
     <div>

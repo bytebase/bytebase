@@ -1,6 +1,6 @@
 <template>
   <AdminSetup v-if="ready" />
-  <MaskSpinner v-else class="!bg-white" />
+  <MaskSpinner v-else class="bg-white!" />
   <AuthFooter />
 </template>
 

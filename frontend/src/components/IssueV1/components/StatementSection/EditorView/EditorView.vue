@@ -139,8 +139,8 @@
     v-model:show="state.showEditorModal"
     :title="statementTitle"
     :trap-focus="true"
-    header-class="!border-b-0"
-    container-class="!pt-0 !overflow-hidden"
+    header-class="border-b-0!"
+    container-class="pt-0! overflow-hidden!"
   >
     <div
       id="modal-editor-container"

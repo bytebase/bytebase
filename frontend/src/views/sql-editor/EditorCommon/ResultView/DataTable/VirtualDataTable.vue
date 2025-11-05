@@ -1,7 +1,7 @@
 <template>
   <div
     ref="containerRef"
-    class="relative w-full flex-1 overflow-auto flex flex-col rounded border dark:border-zinc-500"
+    class="relative w-full flex-1 overflow-auto flex flex-col rounded-sm border dark:border-zinc-500"
     :style="{
       maxHeight: maxHeight ? `${maxHeight}px` : undefined,
     }"
@@ -12,17 +12,17 @@
       v-bind="tableResize.getTableProps()"
     >
       <thead
-        class="bg-gray-50 dark:bg-gray-700 sticky top-0 z-[1] drop-shadow-sm"
+        class="bg-gray-50 dark:bg-gray-700 sticky top-0 z-1 drop-shadow-xs"
       >
         <tr>
           <th
             v-for="header of columns"
             :key="`${setIndex}-${header.id}`"
-            class="group relative px-2 py-2 min-w-[2rem] text-left text-xs font-medium text-gray-500 dark:text-gray-300 tracking-wider border-x border-block-border dark:border-zinc-500"
+            class="group relative px-2 py-2 min-w-8 text-left text-xs font-medium text-gray-500 dark:text-gray-300 tracking-wider border-x border-block-border dark:border-zinc-500"
             :class="{
               'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800':
                 !selectionDisabled,
-              '!bg-accent/10 dark:!bg-accent/40':
+              'bg-accent/10! dark:bg-accent/40!':
                 selectionState.rows.length === 0 &&
                 selectionState.columns.includes(header.index),
               'pl-6': header.index === 0 && !selectionDisabled,
@@ -37,7 +37,7 @@
                 >
                   {{ header.column.columnDef.header }}
                 </template>
-                <br v-else class="min-h-[1rem] inline-flex" />
+                <br v-else class="min-h-4 inline-flex" />
               </span>
 
               <MaskingReasonPopover
@@ -90,7 +90,7 @@
       <tbody>
         <!-- Virtual scrolling container -->
         <tr>
-          <td :colspan="columns.length" class="!p-0 !border-0">
+          <td :colspan="columns.length" class="p-0! border-0!">
             <div
               ref="scrollerRef"
               class="relative w-full"
@@ -130,7 +130,7 @@
                           virtualRow.index
                         ].getVisibleCells()"
                         :key="`${setIndex}-${virtualRow.index}-${columnIndex}`"
-                        class="relative max-w-[50vw] !p-0 text-sm dark:text-gray-100 leading-5 whitespace-nowrap break-all border-x border-b border-block-border dark:border-zinc-500 group-even:bg-gray-100/50 dark:group-even:bg-gray-700/50"
+                        class="relative max-w-[50vw] p-0! text-sm dark:text-gray-100 leading-5 whitespace-nowrap break-all border-x border-b border-block-border dark:border-zinc-500 group-even:bg-gray-100/50 dark:group-even:bg-gray-700/50"
                         :data-col-index="columnIndex"
                         :style="{
                           height: `${virtualRow.size}px`,
@@ -164,7 +164,7 @@
                           v-if="columnIndex === 0 && !selectionDisabled"
                           class="absolute inset-y-0 left-0 w-3 cursor-pointer bg-accent/5 dark:bg-white/10 hover:bg-accent/10 dark:hover:bg-accent/40"
                           :class="{
-                            '!bg-accent/10 dark:!bg-accent/40':
+                            'bg-accent/10! dark:bg-accent/40!':
                               selectionState.columns.length === 0 &&
                               selectionState.rows.includes(
                                 offset + virtualRow.index

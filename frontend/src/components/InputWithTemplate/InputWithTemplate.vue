@@ -1,11 +1,11 @@
 <template>
-  <div class="border border-gray-300 rounded">
-    <div class="flex flex-wrap gap-2 p-3 bg-gray-50 rounded">
+  <div class="border border-gray-300 rounded-sm">
+    <div class="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-sm">
       <div v-for="template in templateList" :key="template.id">
         <NTooltip :disabled="!template.description">
           <template #trigger>
             <div
-              class="px-4 py-1 rounded text-sm font-sm font-normal border border-gray-300 bg-gray-100 cursor-pointer hover:bg-gray-200"
+              class="px-4 py-1 rounded-sm text-sm font-sm font-normal border border-gray-300 bg-gray-100 cursor-pointer hover:bg-gray-200"
               @click="() => onTemplateAdd(template)"
             >
               {{ template.id }}
@@ -44,7 +44,7 @@
         <input
           ref="inputRef"
           v-model="state.inputData"
-          class="flex-1 px-0 m-0 py-1 cleared-input outline-none"
+          class="flex-1 px-0 m-0 py-1 shadow-none ring-0 border-0 border-none outline-hidden focus:shadow-none focus:ring-0 focus:border-0 focus:border-none"
           type="text"
           :disabled="disabled"
           @keydown.delete="onInputDataDeleteEnter"
@@ -332,10 +332,3 @@ onUnmounted(() => {
   window.removeEventListener("resize", onWindowResize);
 });
 </script>
-
-<style scoped>
-.cleared-input,
-.cleared-input:focus {
-  @apply shadow-none ring-0 border-0 border-none;
-}
-</style>

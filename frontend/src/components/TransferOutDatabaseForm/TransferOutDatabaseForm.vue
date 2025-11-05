@@ -1,7 +1,7 @@
 <template>
   <DrawerContent :title="$t('database.transfer-database-to')">
     <div
-      class="w-[calc(100vw-8rem)] lg:w-[60rem] max-w-[calc(100vw-8rem)] h-full flex flex-col gap-y-2"
+      class="w-[calc(100vw-8rem)] lg:w-240 max-w-[calc(100vw-8rem)] h-full flex flex-col gap-y-2"
     >
       <div
         v-if="loading"

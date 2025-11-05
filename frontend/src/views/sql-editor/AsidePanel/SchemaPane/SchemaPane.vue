@@ -52,9 +52,9 @@
           :theme-overrides="{ nodeHeight: '21px' }"
           :render-label="renderLabel"
         />
-        <NEmpty v-else class="mt-[4rem]" />
+        <NEmpty v-else class="mt-16" />
       </template>
-      <NEmpty v-else class="mt-[4rem]" />
+      <NEmpty v-else class="mt-16" />
     </div>
 
     <NDropdown
@@ -69,7 +69,7 @@
       @select="handleDropdownSelect"
     />
 
-    <MaskSpinner v-if="isFetchingMetadata" class="!bg-white/75" />
+    <MaskSpinner v-if="isFetchingMetadata" class="bg-white/75!" />
 
     <BBModal :show="!!schemaViewer" @close="schemaViewer = undefined">
       <template v-if="schemaViewer" #title>
@@ -551,7 +551,10 @@ useEventListener(treeContainerElRef, "keydown", () => {
   --n-node-content-height: 21px !important;
 }
 .schema-tree :deep(.n-tree-node-content) {
-  @apply !px-0 text-sm;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
 }
 .schema-tree :deep(.n-tree-node-wrapper) {
   padding: 0;
@@ -569,14 +572,18 @@ useEventListener(treeContainerElRef, "keydown", () => {
   width: 0 !important;
 }
 .schema-tree :deep(.n-tree-node-content__prefix) {
-  @apply shrink-0 !mr-1;
+  flex-shrink: 0;
+  margin-right: 0.25rem !important;
 }
 .schema-tree.project
   :deep(.n-tree-node[data-node-type="project"] .n-tree-node-content__prefix) {
-  @apply hidden;
+  display: none;
 }
 .schema-tree :deep(.n-tree-node-content__text) {
-  @apply truncate mr-1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-right: 0.25rem;
 }
 .schema-tree :deep(.n-tree-node--pending) {
   background-color: transparent !important;

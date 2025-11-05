@@ -12,7 +12,7 @@
     >
       <template #action>
         <kbd
-          class="w-auto h-5 flex items-center justify-center bg-black dark:bg-zinc-700 dark:text-zinc-300 bg-opacity-10 rounded px-1.5 text-control overflow-y-hidden"
+          class="w-auto h-5 flex items-center justify-center bg-black dark:bg-zinc-700 dark:text-zinc-300 bg-opacity-10 rounded-sm px-1.5 text-control overflow-y-hidden"
         >
           <span v-if="isMac" class="text-base leading-none">⌘</span>
           <span

@@ -6,7 +6,7 @@
     :default-width="1024"
     :resizable="true"
     :width="undefined"
-    class="!max-w-[90vw]"
+    class="max-w-[90vw]!"
   >
     <DrawerContent :title="$t('database.revision.import-revision')" closable>
       <div class="flex flex-col gap-y-4">
@@ -45,7 +45,7 @@
                 <NRadio value="release" class="w-full">
                   <div class="flex items-start space-x-3 w-full">
                     <PackageIcon
-                      class="w-6 h-6 mt-1 flex-shrink-0"
+                      class="w-6 h-6 mt-1 shrink-0"
                       :stroke-width="1.5"
                     />
                     <div class="flex-1">
@@ -70,7 +70,7 @@
                 <NRadio value="local" class="w-full">
                   <div class="flex items-start space-x-3 w-full">
                     <FolderOpenIcon
-                      class="w-6 h-6 mt-1 flex-shrink-0"
+                      class="w-6 h-6 mt-1 shrink-0"
                       :stroke-width="1.5"
                     />
                     <div class="flex-1">
@@ -219,7 +219,7 @@
                           {{ $t("database.revision.content-preview") }}
                         </label>
                         <div
-                          class="bg-gray-50 rounded p-2 text-xs font-mono text-gray-700 max-h-32 overflow-auto"
+                          class="bg-gray-50 rounded-sm p-2 text-xs font-mono text-gray-700 max-h-32 overflow-auto"
                         >
                           <pre
                             >{{ file.content.substring(0, 500)

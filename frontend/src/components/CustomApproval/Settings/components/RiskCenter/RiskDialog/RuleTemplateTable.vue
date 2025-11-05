@@ -10,7 +10,7 @@
   <BBModal
     v-if="viewTemplate"
     :title="$t('custom-approval.risk-rule.template.view')"
-    class="!w-auto lg:!max-w-[36rem]"
+    class="w-auto! lg:max-w-xl!"
     @close="viewTemplate = undefined"
   >
     <template #header>

@@ -32,7 +32,7 @@
         />
       </template>
     </PagedTable>
-    <NEmpty class="py-12 border rounded" v-else />
+    <NEmpty class="py-12 border rounded-sm" v-else />
   </div>
 </template>
 

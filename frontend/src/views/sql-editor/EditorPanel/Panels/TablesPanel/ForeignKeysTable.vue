@@ -154,12 +154,18 @@ watch(
 
 <style lang="postcss" scoped>
 :deep(.n-data-table-th .n-data-table-resize-button::after) {
-  @apply bg-control-bg h-2/3;
+  background-color: rgb(var(--color-control-bg));
+  height: 66.666667%;
 }
 :deep(.n-data-table-td.input-cell) {
-  @apply pl-0.5 pr-1 py-0;
+  padding-left: 0.125rem;
+  padding-right: 0.25rem;
+  padding-top: 0;
+  padding-bottom: 0;
 }
 :deep(.n-data-table-td.checkbox-cell) {
-  @apply pr-1 py-0;
+  padding-right: 0.25rem;
+  padding-top: 0;
+  padding-bottom: 0;
 }
 </style>

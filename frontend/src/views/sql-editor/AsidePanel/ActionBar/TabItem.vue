@@ -48,7 +48,7 @@ const { props: buttonProps, style: buttonStyle } = useButton({
 const iconClass = computed(() => {
   const classes = ["w-4", "h-4"];
   if (active.value) {
-    classes.push("!text-current");
+    classes.push("text-current!");
   } else {
     classes.push("text-main");
   }

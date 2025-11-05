@@ -12,7 +12,7 @@
     >
       <VCSIcon custom-class="h-4" :type="vcsSource.vcsType" />
       <EllipsisText>
-        <a :href="vcsSource.url" target="_blank" class="normal-link !text-sm">
+        <a :href="vcsSource.url" target="_blank" class="normal-link text-sm!">
           {{ beautifyUrl(vcsSource.url) }}
         </a>
       </EllipsisText>

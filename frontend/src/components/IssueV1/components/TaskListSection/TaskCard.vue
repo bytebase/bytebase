@@ -3,7 +3,7 @@
     :class="
       twMerge(
         'task',
-        'group px-1.5 py-1 cursor-pointer border rounded lg:flex-1 flex justify-between items-stretch overflow-hidden gap-x-1',
+        'group px-1.5 py-1 cursor-pointer border rounded-sm lg:flex-1 flex justify-between items-stretch overflow-hidden gap-x-1',
         taskClass
       )
     "
@@ -135,22 +135,25 @@ const onClickTask = (task: Task) => {
 
 <style scoped lang="postcss">
 .task.selected {
-  @apply border-info bg-info bg-opacity-5;
+  border-color: var(--color-info);
+  background-color: var(--color-info);
+  background-opacity: 0.05;
 }
 .task .name {
-  @apply whitespace-nowrap break-all;
+  white-space: nowrap;
+  word-break: break-all;
 }
 .task.status_done .name {
-  @apply text-control;
+  color: var(--color-control);
 }
 .task.status_pending .name,
 .task.status_not_started .name {
-  @apply text-control;
+  color: var(--color-control);
 }
 .task.status_running .name {
-  @apply text-info;
+  color: var(--color-info);
 }
 .task.status_failed .name {
-  @apply text-red-500;
+  color: var(--color-red-500);
 }
 </style>

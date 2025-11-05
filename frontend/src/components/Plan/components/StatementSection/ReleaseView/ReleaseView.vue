@@ -71,7 +71,7 @@
             <div
               v-for="file in displayedFiles"
               :key="file.id"
-              class="w-full flex items-center justify-between text-xs bg-white rounded p-2"
+              class="w-full flex items-center justify-between text-xs bg-white rounded-sm p-2"
             >
               <div class="flex-1 min-w-0 mr-2">
                 <div class="font-medium truncate">{{ file.path }}</div>
@@ -83,7 +83,7 @@
               <div
                 v-if="file.type"
                 :class="[
-                  'inline-flex items-center px-1.5 py-0.5 rounded text-xs flex-shrink-0',
+                  'inline-flex items-center px-1.5 py-0.5 rounded-sm text-xs shrink-0',
                   'bg-blue-100 text-blue-800 ',
                 ]"
               >

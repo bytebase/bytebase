@@ -22,6 +22,6 @@ defineProps<{
 
 <style lang="postcss">
 .bb-schema-diagram-nav-tree .n-tree-node:hover .focus-btn {
-  @apply !visible;
+  visibility: visible !important;
 }
 </style>
