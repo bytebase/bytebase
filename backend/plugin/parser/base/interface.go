@@ -267,7 +267,7 @@ func RegisterParseFunc(engine storepb.Engine, f ParseFunc) {
 // The return type (any) varies by database engine:
 //   - TiDB: []ast.StmtNode (github.com/pingcap/tidb/pkg/parser/ast)
 //   - MySQL, MariaDB, OceanBase: []*ParseResult (github.com/bytebase/bytebase/backend/plugin/parser/mysql)
-//   - PostgreSQL: []ast.Node (github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast)
+//   - PostgreSQL: *ParseResult (github.com/bytebase/bytebase/backend/plugin/parser/pg) - ANTLR-based
 //   - CockroachDB: statements.Statements (github.com/cockroachdb/cockroachdb-parser/pkg/sql/parser/statements)
 //   - Redshift: antlr.Tree
 //   - Oracle: antlr.Tree
