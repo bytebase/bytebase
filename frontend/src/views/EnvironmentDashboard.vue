@@ -73,10 +73,7 @@
   </Drawer>
 
   <Drawer v-model:show="state.reorder" :close-on-esc="true">
-    <DrawerContent
-      :title="t('environment.reorder')"
-      class="w-120 max-w-[90vw]"
-    >
+    <DrawerContent :title="t('environment.reorder')" class="w-120 max-w-[90vw]">
       <div>
         <Draggable
           v-model="state.reorderedEnvironmentList"
