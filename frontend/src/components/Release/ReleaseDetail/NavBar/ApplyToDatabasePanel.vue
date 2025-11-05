@@ -1,6 +1,6 @@
 <template>
   <Drawer v-bind="$attrs" @close="emit('close')">
-    <DrawerContent :title="$t('changelist.apply-to-database')">
+    <DrawerContent :title="$t('common.apply-to-database')">
       <template #default>
         <div class="w-[calc(100vw-8rem)] lg:w-240 max-w-[calc(100vw-8rem)]">
           <DatabaseAndGroupSelector

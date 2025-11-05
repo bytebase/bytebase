@@ -38,12 +38,6 @@ func TestGetAllowMissingRequiredPermission(t *testing.T) {
 			wantErr:    false,
 		},
 		{
-			name:       "ChangelistService.UpdateChangelist has annotation",
-			fullMethod: "/bytebase.v1.ChangelistService/UpdateChangelist",
-			wantPerm:   "bb.changelists.create",
-			wantErr:    false,
-		},
-		{
 			name:       "DatabaseGroupService.UpdateDatabaseGroup has annotation",
 			fullMethod: "/bytebase.v1.DatabaseGroupService/UpdateDatabaseGroup",
 			wantPerm:   "bb.projects.update",

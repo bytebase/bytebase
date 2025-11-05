@@ -113,7 +113,7 @@ const columnList = computed((): DataTableColumn<Webhook>[] => {
                 });
               },
             },
-            t("common.view")
+            { default: () => t("common.view") }
           )
         ),
     },

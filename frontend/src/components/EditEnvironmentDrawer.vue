@@ -1,7 +1,7 @@
 <template>
   <Drawer :show="show" @close="$emit('dismiss')">
     <DrawerContent
-      :title="$t('database.edit-environment')"
+      :title="t('database.edit-environment')"
       class="w-96 max-w-[100vw]"
     >
       <EnvironmentSelect
@@ -14,10 +14,10 @@
         <div class="w-full flex justify-between items-center">
           <div class="w-full flex justify-end items-center gap-x-3">
             <NButton @click.prevent="$emit('dismiss')">
-              {{ $t("common.cancel") }}
+              {{ t("common.cancel") }}
             </NButton>
             <NButton :disabled="!allowSave" type="primary" @click="onSave">
-              {{ $t("common.save") }}
+              {{ t("common.save") }}
             </NButton>
           </div>
         </div>
@@ -29,7 +29,10 @@
 <script lang="ts" setup>
 import { NButton } from "naive-ui";
 import { computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { Drawer, DrawerContent, EnvironmentSelect } from "@/components/v2";
+
+const { t } = useI18n();
 
 defineProps<{
   show: boolean;

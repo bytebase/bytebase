@@ -17,6 +17,7 @@ import (
 
 func init() {
 	schema.RegisterGetDatabaseMetadata(storepb.Engine_MYSQL, GetDatabaseMetadata)
+	schema.RegisterGetDatabaseMetadata(storepb.Engine_OCEANBASE, GetDatabaseMetadata)
 }
 
 // GetDatabaseMetadata parses the MySQL schema text and returns the database metadata.

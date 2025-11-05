@@ -18,10 +18,10 @@
         />
         <div class="flex flex-col">
           <span class="textlabel">
-            {{ $t("policy.rollout.auto") }}
+            {{ t("policy.rollout.auto") }}
           </span>
           <div class="textinfolabel">
-            {{ $t("policy.rollout.auto-info") }}
+            {{ t("policy.rollout.auto-info") }}
           </div>
         </div>
       </div>
@@ -30,7 +30,7 @@
     <!-- Requirements Section -->
     <div class="flex flex-col gap-y-2">
       <div class="textlabel font-medium">
-        {{ $t("policy.rollout.checkers.self") }}
+        {{ t("policy.rollout.checkers.self") }}
       </div>
 
       <!-- Required Issue Approval -->
@@ -43,11 +43,11 @@
         />
         <div class="flex flex-col">
           <span class="textlabel">
-            {{ $t("policy.rollout.checkers.required-issue-approval.self") }}
+            {{ t("policy.rollout.checkers.required-issue-approval.self") }}
           </span>
           <div class="textinfolabel">
             {{
-              $t("policy.rollout.checkers.required-issue-approval.description")
+              t("policy.rollout.checkers.required-issue-approval.description")
             }}
           </div>
         </div>
@@ -63,11 +63,11 @@
         />
         <div class="flex flex-col">
           <span class="textlabel">
-            {{ $t("policy.rollout.checkers.plan-check-enforcement.self") }}
+            {{ t("policy.rollout.checkers.plan-check-enforcement.self") }}
           </span>
           <div class="textinfolabel">
             {{
-              $t("policy.rollout.checkers.plan-check-enforcement.description")
+              t("policy.rollout.checkers.plan-check-enforcement.description")
             }}
           </div>
         </div>
@@ -90,14 +90,14 @@
               <div class="flex flex-col">
                 <div>
                   {{
-                    $t(
+                    t(
                       "policy.rollout.checkers.plan-check-enforcement.error-only.self"
                     )
                   }}
                 </div>
                 <div class="textinfolabel">
                   {{
-                    $t(
+                    t(
                       "policy.rollout.checkers.plan-check-enforcement.error-only.description"
                     )
                   }}
@@ -108,14 +108,14 @@
               <div class="flex flex-col">
                 <div>
                   {{
-                    $t(
+                    t(
                       "policy.rollout.checkers.plan-check-enforcement.strict.self"
                     )
                   }}
                 </div>
                 <div class="textinfolabel">
                   {{
-                    $t(
+                    t(
                       "policy.rollout.checkers.plan-check-enforcement.strict.description"
                     )
                   }}
@@ -134,6 +134,7 @@ import { create } from "@bufbuild/protobuf";
 import { cloneDeep } from "lodash-es";
 import { NRadioGroup, NRadio } from "naive-ui";
 import { ref, watch, computed } from "vue";
+import { useI18n } from "vue-i18n";
 import type {
   Policy,
   RolloutPolicy,
@@ -145,6 +146,8 @@ import {
   RolloutPolicy_Checkers_PlanCheckEnforcement,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import { RoleSelect, Switch } from "../v2";
+
+const { t } = useI18n();
 
 const props = defineProps<{
   policy: Policy;

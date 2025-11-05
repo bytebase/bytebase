@@ -266,11 +266,6 @@ export enum PlanFeature {
   FEATURE_SCHEMA_DRIFT_DETECTION = 13,
 
   /**
-   * @generated from enum value: FEATURE_CHANGELIST = 14;
-   */
-  FEATURE_CHANGELIST = 14,
-
-  /**
    * @generated from enum value: FEATURE_SCHEMA_TEMPLATE = 15;
    */
   FEATURE_SCHEMA_TEMPLATE = 15,

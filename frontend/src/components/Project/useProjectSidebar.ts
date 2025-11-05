@@ -3,7 +3,6 @@ import {
   CircleDot,
   Users,
   Settings,
-  PencilRuler,
   DownloadIcon,
   PackageIcon,
   LayoutList,
@@ -23,7 +22,6 @@ import projectV1Routes, {
   PROJECT_V1_ROUTE_MEMBERS,
   PROJECT_V1_ROUTE_SETTINGS,
   PROJECT_V1_ROUTE_WEBHOOKS,
-  PROJECT_V1_ROUTE_CHANGELISTS,
   PROJECT_V1_ROUTE_DATABASE_GROUPS,
   PROJECT_V1_ROUTE_EXPORT_CENTER,
   PROJECT_V1_ROUTE_AUDIT_LOGS,
@@ -102,13 +100,6 @@ export const useProjectSidebar = (project: MaybeRef<Project>) => {
           },
         ]
       : [
-          {
-            title: t("changelist.changelists"),
-            path: PROJECT_V1_ROUTE_CHANGELISTS,
-            icon: () => h(PencilRuler),
-            type: "div",
-            hide: isDefaultProject.value,
-          },
           {
             title: t("release.releases"),
             path: PROJECT_V1_ROUTE_RELEASES,

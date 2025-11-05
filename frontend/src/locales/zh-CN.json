@@ -1,5 +1,6 @@
 {
   "common": {
+    "apply-to-database": "应用到数据库",
     "view": "查看",
     "you": "您",
     "general": "通用",
@@ -225,7 +226,6 @@
       "n-rows": "{n} 行"
     },
     "back-to-workspace": "返回工作空间",
-    "encoding": "编码",
     "finish": "完成",
     "title": "标题",
     "text-wrap": "文本折行",
@@ -2817,44 +2817,6 @@
       "input-value-press-enter": "输入值，按回车确认",
       "add-root-condition-placeholder": "点击「添加条件」或「添加条件组」以添加条件"
     }
-  },
-  "changelist": {
-    "self": "变更列表",
-    "changelists": "变更列表",
-    "new": "新建变更列表",
-    "name": "变更列表名称",
-    "name-placeholder": "我的变更列表",
-    "error": {
-      "name-is-required": "变更列表名称不能为空",
-      "invalid-resource-id": "无效的资源 ID",
-      "nothing-changed": "无任何改变",
-      "sql-cannot-be-empty": "SQL 不能为空",
-      "select-at-least-one-change": "选择至少一条变更",
-      "select-at-least-one-change-to-export": "至少选择一项要导出的变更",
-      "add-at-least-one-change": "添加至少一项变更",
-      "you-are-not-allowed-to-perform-this-action": "你无权执行此操作"
-    },
-    "apply-to-database": "应用到数据库",
-    "add-change": {
-      "self": "添加变更",
-      "changelog": {
-        "select-at-least-one-changelog-below": "请在下方选择至少一条记录"
-      }
-    },
-    "change-source": {
-      "self": "变更来源",
-      "raw-sql": "SQL 语句",
-      "source": "来源"
-    },
-    "confirm-remove-change": "移除这项变更？",
-    "delete-this-changelist": "删除这个变更列表",
-    "confirm-delete-changelist": "删除变更列表？",
-    "import": {
-      "no-file-to-upload": "没有可以上传的文件",
-      "upload-sql-or-zip-file": "上传 .sql 或 .zip 文件",
-      "optional-upload-sql-or-zip-file": "（可选）上传 .sql 或 .zip 文件"
-    },
-    "change-type": "更改类型"
   },
   "release": {
     "title": "发布包",

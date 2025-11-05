@@ -5,14 +5,14 @@
     v-bind="$attrs"
   >
     <NButton @click.prevent="events.emit('cancel')">
-      {{ $t("common.cancel") }}
+      {{ t("common.cancel") }}
     </NButton>
     <NButton
       type="primary"
       :disabled="!allowCreate"
       @click.prevent="createEnvironment"
     >
-      {{ $t("common.create") }}
+      {{ t("common.create") }}
     </NButton>
   </div>
 
@@ -22,10 +22,10 @@
     v-bind="$attrs"
   >
     <NButton @click.prevent="revertEnvironment">
-      {{ $t("common.cancel") }}
+      {{ t("common.cancel") }}
     </NButton>
     <NButton type="primary" @click.prevent="updateEnvironment">
-      {{ $t("common.confirm-and-update") }}
+      {{ t("common.confirm-and-update") }}
     </NButton>
   </div>
 </template>

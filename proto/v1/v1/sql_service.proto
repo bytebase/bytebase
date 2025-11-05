@@ -225,8 +225,7 @@ message QueryResult {
     string routine = 17;
   }
 
-  // The query result is allowed to be exported or not.
-  bool allow_export = 11;
+  reserved 11;
 
   message Message {
     enum Level {

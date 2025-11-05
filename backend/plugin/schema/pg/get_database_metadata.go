@@ -20,6 +20,7 @@ import (
 
 func init() {
 	schema.RegisterGetDatabaseMetadata(storepb.Engine_POSTGRES, GetDatabaseMetadata)
+	schema.RegisterGetDatabaseMetadata(storepb.Engine_COCKROACHDB, GetDatabaseMetadata)
 }
 
 // GetDatabaseMetadata parses the SQL schema text and returns the database metadata.
@@ -325,22 +326,8 @@ func (e *metadataExtractor) extractSchemaAndTableName(ctx parser.IQualified_name
 		return e.currentSchema, ""
 	}
 
-	// Try direct text extraction for reliable parsing
-	rawText := ctx.GetText()
-	if rawText != "" {
-		// Handle schema.table format
-		if strings.Contains(rawText, ".") {
-			parts := strings.Split(rawText, ".")
-			if len(parts) == 2 {
-				return parts[0], parts[1]
-			}
-		} else {
-			// Just a table name, use current schema
-			return e.currentSchema, rawText
-		}
-	}
-
-	// Fallback to normalize function (though it might be problematic)
+	// Use NormalizePostgreSQLQualifiedName which properly handles quoted identifiers
+	// This function removes quotes and handles case sensitivity correctly
 	parts := pgparser.NormalizePostgreSQLQualifiedName(ctx)
 	if len(parts) == 1 {
 		return e.currentSchema, parts[0]
@@ -445,11 +432,25 @@ func (e *metadataExtractor) createSerialSequenceAndDefault(column *storepb.Colum
 	// Generate sequence name following PostgreSQL convention: tablename_columnname_seq
 	sequenceName := fmt.Sprintf("%s_%s_seq", table.Name, column.Name)
 
-	// Create the sequence metadata
+	// Determine sequence data type based on column type
+	// SERIAL (integer) → bigint sequence (PostgreSQL standard)
+	// BIGSERIAL (bigint) → bigint sequence
+	// SMALLSERIAL (smallint) → bigint sequence
+	// All sequences in PostgreSQL are bigint by default
+	dataType := "bigint"
+
+	// Create the sequence metadata with proper defaults matching PostgreSQL behavior
 	sequence := &storepb.SequenceMetadata{
-		Name:      sequenceName,
-		Start:     "1",
-		Increment: "1",
+		Name:        sequenceName,
+		DataType:    dataType,
+		Start:       "1",
+		Increment:   "1",
+		MinValue:    "1",
+		MaxValue:    "9223372036854775807", // bigint max value
+		Cycle:       false,
+		CacheSize:   "1",
+		OwnerTable:  table.Name,
+		OwnerColumn: column.Name,
 	}
 
 	// Add sequence to the global sequences map using fully qualified name
@@ -1360,7 +1361,7 @@ func (e *metadataExtractor) EnterAltertablestmt(ctx *parser.AltertablestmtContex
 		return
 	}
 
-	// Check if this is an ADD CONSTRAINT command
+	// Check if this is an ALTER TABLE command with alter_table_cmds
 	if alterTableCmdList := ctx.Alter_table_cmds(); alterTableCmdList != nil {
 		e.handleAlterTableCommands(ctx, alterTableCmdList)
 	}
@@ -1382,12 +1383,80 @@ func (e *metadataExtractor) handleAlterTableCommands(ctx *parser.AltertablestmtC
 					continue
 				}
 
+				// Debug: check what type of command this is
+				hasAlter := alterTableCmd.ALTER() != nil
+				hasAdd := alterTableCmd.ADD_P() != nil
+				hasGenerated := alterTableCmd.GENERATED() != nil
+				hasIdentity := alterTableCmd.IDENTITY_P() != nil
+
 				// Check if this is an ADD CONSTRAINT command
 				if alterTableCmd.ADD_P() != nil && alterTableCmd.Tableconstraint() != nil {
 					e.extractTableConstraint(alterTableCmd.Tableconstraint(), table, schemaName)
+					continue
+				}
+
+				// Check if this is an ALTER COLUMN ADD GENERATED AS IDENTITY command
+				// According to g4: ALTER opt_column? colid ADD_P GENERATED generated_when AS IDENTITY_P
+				// The COLUMN keyword is optional (opt_column?)
+				if hasAlter && hasAdd && hasGenerated && hasIdentity {
+					e.handleAlterColumn(alterTableCmd, table, schemaName)
 				}
 			}
 		}
+	}
+}
+
+// handleAlterColumn processes ALTER TABLE ALTER COLUMN commands
+func (e *metadataExtractor) handleAlterColumn(alterTableCmd parser.IAlter_table_cmdContext, table *storepb.TableMetadata, schemaName string) {
+	// Get the column name from colid (based on g4: ALTER opt_column? colid ADD_P GENERATED...)
+	columnName := ""
+	allColids := alterTableCmd.AllColid()
+	if len(allColids) > 0 {
+		// The column name is the first colid
+		columnName = pgparser.NormalizePostgreSQLColid(allColids[0])
+	}
+
+	// Debug log
+	_ = columnName // TODO: remove after debug
+
+	if columnName == "" {
+		return
+	}
+
+	// Find the column in the table
+	var targetColumn *storepb.ColumnMetadata
+	for _, col := range table.Columns {
+		if col.Name == columnName {
+			targetColumn = col
+			break
+		}
+	}
+
+	// If column doesn't exist, we might need to create it
+	// But for now, we'll just skip if the column doesn't exist
+	if targetColumn == nil {
+		return
+	}
+
+	// Check if this is ADD GENERATED AS IDENTITY (from g4: ALTER opt_column? colid ADD_P GENERATED generated_when AS IDENTITY_P)
+	if alterTableCmd.ADD_P() != nil && alterTableCmd.GENERATED() != nil && alterTableCmd.IDENTITY_P() != nil {
+		// Set identity generation mode
+		if generatedWhen := alterTableCmd.Generated_when(); generatedWhen != nil {
+			if generatedWhen.ALWAYS() != nil {
+				targetColumn.IdentityGeneration = storepb.ColumnMetadata_ALWAYS
+			} else if generatedWhen.BY() != nil && generatedWhen.DEFAULT() != nil {
+				targetColumn.IdentityGeneration = storepb.ColumnMetadata_BY_DEFAULT
+			}
+		}
+
+		// Get sequence options from AST
+		var seqOptList parser.ISeqoptlistContext
+		if optParenSeqList := alterTableCmd.Optparenthesizedseqoptlist(); optParenSeqList != nil {
+			seqOptList = optParenSeqList.Seqoptlist()
+		}
+
+		// Create the identity sequence with options from AST
+		e.createIdentitySequenceFromAST(table, targetColumn, schemaName, seqOptList)
 	}
 }
 
@@ -1527,6 +1596,264 @@ func (e *metadataExtractor) EnterCreateseqstmt(ctx *parser.CreateseqstmtContext)
 	schemaMetadata.Sequences = append(schemaMetadata.Sequences, sequence)
 }
 
+// EnterAlterseqstmt is called when entering an ALTER SEQUENCE statement
+func (e *metadataExtractor) EnterAlterseqstmt(ctx *parser.AlterseqstmtContext) {
+	if e.err != nil {
+		return
+	}
+
+	if ctx.Qualified_name() == nil {
+		return
+	}
+
+	schemaName, sequenceName := e.extractSchemaAndTableName(ctx.Qualified_name())
+	sequenceKey := fmt.Sprintf("%s.%s", schemaName, sequenceName)
+
+	// Find the existing sequence or create one if it doesn't exist
+	sequence, exists := e.sequences[sequenceKey]
+	if !exists {
+		// If sequence doesn't exist yet, create it with defaults
+		schemaMetadata := e.getOrCreateSchema(schemaName)
+		sequence = &storepb.SequenceMetadata{
+			Name:      sequenceName,
+			DataType:  "bigint",
+			Start:     "1",
+			Increment: "1",
+			MinValue:  "1",
+			MaxValue:  "9223372036854775807",
+			Cycle:     false,
+			CacheSize: "1",
+		}
+		e.sequences[sequenceKey] = sequence
+		if schemaMetadata.Sequences == nil {
+			schemaMetadata.Sequences = []*storepb.SequenceMetadata{}
+		}
+		schemaMetadata.Sequences = append(schemaMetadata.Sequences, sequence)
+	}
+
+	// Process sequence options from ALTER SEQUENCE
+	if seqOptList := ctx.Seqoptlist(); seqOptList != nil {
+		for _, seqOptElem := range seqOptList.AllSeqoptelem() {
+			if seqOptElem == nil {
+				continue
+			}
+			e.extractSequenceOption(seqOptElem, sequence)
+		}
+	}
+}
+
+// EnterCommentstmt is called when entering a COMMENT statement
+func (e *metadataExtractor) EnterCommentstmt(ctx *parser.CommentstmtContext) {
+	if e.err != nil {
+		return
+	}
+
+	// Extract comment text (common for all comment types)
+	var comment string
+	if commentText := ctx.Comment_text(); commentText != nil {
+		if commentText.NULL_P() != nil {
+			// COMMENT ... IS NULL means remove comment
+			comment = ""
+		} else if commentText.Sconst() != nil {
+			// Extract the string constant, removing quotes
+			commentStr := commentText.GetText()
+			if len(commentStr) >= 2 && commentStr[0] == '\'' && commentStr[len(commentStr)-1] == '\'' {
+				// Remove quotes and unescape
+				comment = commentStr[1 : len(commentStr)-1]
+				// Unescape single quotes ('' -> ')
+				comment = strings.ReplaceAll(comment, "''", "'")
+			}
+		}
+	}
+
+	// Handle COMMENT ON COLUMN
+	if ctx.COLUMN() != nil && ctx.Any_name() != nil {
+		parts := pgparser.NormalizePostgreSQLAnyName(ctx.Any_name())
+		if len(parts) < 2 {
+			return
+		}
+
+		var schemaName, tableName, columnName string
+		if len(parts) == 2 {
+			schemaName = e.currentSchema
+			tableName = parts[0]
+			columnName = parts[1]
+		} else if len(parts) == 3 {
+			schemaName = parts[0]
+			tableName = parts[1]
+			columnName = parts[2]
+		} else {
+			return
+		}
+
+		schema := e.getOrCreateSchema(schemaName)
+		for _, table := range schema.Tables {
+			if table.Name == tableName {
+				for i, col := range table.Columns {
+					if col.Name == columnName {
+						table.Columns[i].Comment = comment
+						return
+					}
+				}
+			}
+		}
+		return
+	}
+
+	// Handle COMMENT ON TABLE/SEQUENCE/VIEW etc (object_type_any_name)
+	if ctx.Object_type_any_name() != nil && ctx.Any_name() != nil {
+		parts := pgparser.NormalizePostgreSQLAnyName(ctx.Any_name())
+		if len(parts) == 0 {
+			return
+		}
+
+		var schemaName, objectName string
+		if len(parts) == 1 {
+			schemaName = e.currentSchema
+			objectName = parts[0]
+		} else if len(parts) >= 2 {
+			schemaName = parts[0]
+			objectName = parts[1]
+		}
+
+		schema := e.getOrCreateSchema(schemaName)
+		objectType := ctx.Object_type_any_name()
+
+		// COMMENT ON TABLE
+		if objectType.TABLE() != nil {
+			for _, table := range schema.Tables {
+				if table.Name == objectName {
+					table.Comment = comment
+					return
+				}
+			}
+		}
+
+		// COMMENT ON SEQUENCE
+		if objectType.SEQUENCE() != nil {
+			for _, seq := range schema.Sequences {
+				if seq.Name == objectName {
+					seq.Comment = comment
+					return
+				}
+			}
+		}
+
+		// COMMENT ON VIEW
+		if objectType.VIEW() != nil {
+			for _, view := range schema.Views {
+				if view.Name == objectName {
+					view.Comment = comment
+					return
+				}
+			}
+		}
+
+		// COMMENT ON MATERIALIZED VIEW
+		if objectType.MATERIALIZED() != nil && objectType.VIEW() != nil {
+			for _, view := range schema.MaterializedViews {
+				if view.Name == objectName {
+					view.Comment = comment
+					return
+				}
+			}
+		}
+
+		// COMMENT ON INDEX
+		if objectType.INDEX() != nil {
+			for _, table := range schema.Tables {
+				for i, index := range table.Indexes {
+					if index.Name == objectName {
+						table.Indexes[i].Comment = comment
+						return
+					}
+				}
+			}
+		}
+
+		return
+	}
+
+	// Handle COMMENT ON SCHEMA
+	if ctx.Object_type_name() != nil && ctx.Name() != nil {
+		// COMMENT ON SCHEMA name IS comment_text
+		schemaName := pgparser.NormalizePostgreSQLName(ctx.Name())
+		if schemaName != "" {
+			schema := e.getOrCreateSchema(schemaName)
+			schema.Comment = comment
+		}
+		return
+	}
+
+	// Handle COMMENT ON FUNCTION/PROCEDURE
+	if (ctx.FUNCTION() != nil || ctx.PROCEDURE() != nil) && ctx.Function_with_argtypes() != nil {
+		funcWithArgs := ctx.Function_with_argtypes()
+		if funcWithArgs.Func_name() == nil {
+			return
+		}
+
+		// Extract function name
+		parts := pgparser.NormalizePostgreSQLFuncName(funcWithArgs.Func_name())
+		if len(parts) == 0 {
+			return
+		}
+
+		var schemaName, funcName string
+		if len(parts) == 1 {
+			schemaName = e.currentSchema
+			funcName = parts[0]
+		} else if len(parts) >= 2 {
+			schemaName = parts[0]
+			funcName = parts[1]
+		}
+
+		schema := e.getOrCreateSchema(schemaName)
+		for i, function := range schema.Functions {
+			if function.Name == funcName {
+				schema.Functions[i].Comment = comment
+				return
+			}
+		}
+		return
+	}
+
+	// Handle COMMENT ON TYPE (including ENUM types)
+	if ctx.TYPE_P() != nil && ctx.AllTypename() != nil && len(ctx.AllTypename()) > 0 {
+		// Extract type name from typename
+		typename := ctx.AllTypename()[0]
+		var schemaName, typeName string
+
+		// Try to get qualified name from typename
+		if typename.Qualified_name() != nil {
+			schemaName, typeName = e.extractSchemaAndTableName(typename.Qualified_name())
+		} else if typename.Simpletypename() != nil {
+			// Simple type name - get the text representation
+			typeText := typename.GetParser().GetTokenStream().GetTextFromRuleContext(typename)
+			// typeText might be "myschema.status" or just "status"
+			// We need to split it if it contains a dot
+			parts := strings.Split(typeText, ".")
+			if len(parts) == 2 {
+				schemaName = parts[0]
+				typeName = parts[1]
+			} else {
+				typeName = typeText
+				schemaName = e.currentSchema
+			}
+		}
+
+		if typeName != "" {
+			schema := e.getOrCreateSchema(schemaName)
+			for i, enumType := range schema.EnumTypes {
+				if enumType.Name == typeName {
+					schema.EnumTypes[i].Comment = comment
+					return
+				}
+			}
+		}
+		return
+	}
+}
+
 // EnterViewstmt is called when entering a create view statement
 func (e *metadataExtractor) EnterViewstmt(ctx *parser.ViewstmtContext) {
 	if e.err != nil {
@@ -1568,18 +1895,19 @@ func (e *metadataExtractor) EnterCreatefunctionstmt(ctx *parser.Createfunctionst
 		return
 	}
 
-	// Extract function name directly from the text
-	// The normalization function seems to be failing, so we'll extract directly
-	funcName := funcNameCtx.GetText()
-	schemaName := e.currentSchema
+	// Use NormalizePostgreSQLFuncName which properly handles quoted identifiers
+	parts := pgparser.NormalizePostgreSQLFuncName(funcNameCtx)
+	if len(parts) == 0 {
+		return
+	}
 
-	// Handle schema.function syntax
-	if strings.Contains(funcName, ".") {
-		parts := strings.Split(funcName, ".")
-		if len(parts) == 2 {
-			schemaName = parts[0]
-			funcName = parts[1]
-		}
+	var schemaName, funcName string
+	if len(parts) == 1 {
+		schemaName = e.currentSchema
+		funcName = parts[0]
+	} else if len(parts) >= 2 {
+		schemaName = parts[0]
+		funcName = parts[1]
 	}
 
 	if funcName == "" {
@@ -1655,36 +1983,36 @@ func (e *metadataExtractor) EnterCreatetrigstmt(ctx *parser.CreatetrigstmtContex
 		return
 	}
 
-	// Extract trigger name
+	// Extract trigger name using normalization to properly handle quoted identifiers
 	triggerNameCtx := ctx.Name()
 	if triggerNameCtx == nil {
 		return
 	}
 
-	triggerName := triggerNameCtx.GetText()
+	triggerName := pgparser.NormalizePostgreSQLName(triggerNameCtx)
 	if triggerName == "" {
 		return
 	}
 
-	// Extract table name that the trigger is on
+	// Extract table name that the trigger is on using normalization to properly handle quoted identifiers
 	qualifiedNameCtx := ctx.Qualified_name()
 	if qualifiedNameCtx == nil {
 		return
 	}
 
-	tableName := qualifiedNameCtx.GetText()
-	if tableName == "" {
-		return
+	// Use NormalizePostgreSQLQualifiedName to handle quotes correctly
+	parts := pgparser.NormalizePostgreSQLQualifiedName(qualifiedNameCtx)
+	var schemaName, tableName string
+	if len(parts) == 1 {
+		schemaName = e.currentSchema
+		tableName = parts[0]
+	} else if len(parts) == 2 {
+		schemaName = parts[0]
+		tableName = parts[1]
 	}
 
-	// Parse schema.table if needed
-	schemaName := e.currentSchema
-	if strings.Contains(tableName, ".") {
-		parts := strings.Split(tableName, ".")
-		if len(parts) == 2 {
-			schemaName = parts[0]
-			tableName = parts[1]
-		}
+	if tableName == "" {
+		return
 	}
 
 	// Build trigger metadata
@@ -2295,6 +2623,18 @@ func (*metadataExtractor) extractSequenceOption(ctx parser.ISeqoptelemContext, s
 	case ctx.NO() != nil && ctx.CYCLE() != nil:
 		// NO CYCLE
 		sequence.Cycle = false
+	case ctx.OWNED() != nil && ctx.BY() != nil && ctx.Any_name() != nil:
+		// OWNED BY table.column
+		parts := pgparser.NormalizePostgreSQLAnyName(ctx.Any_name())
+		if len(parts) == 2 {
+			// Format: table.column
+			sequence.OwnerTable = parts[0]
+			sequence.OwnerColumn = parts[1]
+		} else if len(parts) == 3 {
+			// Format: schema.table.column (we only care about table.column)
+			sequence.OwnerTable = parts[1]
+			sequence.OwnerColumn = parts[2]
+		}
 	default:
 		// Other sequence options
 	}
@@ -2341,6 +2681,81 @@ func (e *metadataExtractor) createIdentitySequence(table *storepb.TableMetadata,
 		CacheSize:   "1",
 		OwnerTable:  table.Name,
 		OwnerColumn: column.Name,
+	}
+
+	// Add the sequence to the schema
+	schema := e.getOrCreateSchema(schemaName)
+	if schema.Sequences == nil {
+		schema.Sequences = []*storepb.SequenceMetadata{}
+	}
+	schema.Sequences = append(schema.Sequences, sequence)
+
+	// Store in the sequences map for reference
+	sequenceKey := fmt.Sprintf("%s.%s", schemaName, sequenceName)
+	e.sequences[sequenceKey] = sequence
+}
+
+// createIdentitySequenceFromAST creates an identity sequence from ALTER COLUMN ADD IDENTITY using AST
+func (e *metadataExtractor) createIdentitySequenceFromAST(table *storepb.TableMetadata, column *storepb.ColumnMetadata, schemaName string, seqOptList parser.ISeqoptlistContext) {
+	// Default sequence name
+	sequenceName := fmt.Sprintf("%s_%s_seq", table.Name, column.Name)
+
+	// Determine sequence data type and limits based on column type
+	// For identity columns, use positive ranges starting from 1
+	var dataType, minValue, maxValue string
+	switch strings.ToUpper(column.Type) {
+	case "SMALLINT", "INT2":
+		dataType = "smallint"
+		minValue = "1"
+		maxValue = "32767"
+	case "INTEGER", "INT", "INT4":
+		dataType = "integer"
+		minValue = "1"
+		maxValue = "2147483647"
+	case "BIGINT", "INT8":
+		dataType = "bigint"
+		minValue = "1"
+		maxValue = "9223372036854775807"
+	default:
+		// Default to bigint for unknown types
+		dataType = "bigint"
+		minValue = "1"
+		maxValue = "9223372036854775807"
+	}
+
+	// Create the sequence metadata with defaults
+	sequence := &storepb.SequenceMetadata{
+		Name:        sequenceName,
+		DataType:    dataType,
+		Start:       "1",
+		Increment:   "1",
+		MinValue:    minValue,
+		MaxValue:    maxValue,
+		Cycle:       false,
+		CacheSize:   "1",
+		OwnerTable:  table.Name,
+		OwnerColumn: column.Name,
+	}
+
+	// Override with specified options from ALTER COLUMN statement (from AST)
+	if seqOptList != nil {
+		for _, seqElem := range seqOptList.AllSeqoptelem() {
+			if seqElem == nil {
+				continue
+			}
+			// Check for SEQUENCE NAME option to override default name
+			if seqElem.SEQUENCE() != nil && seqElem.NAME_P() != nil {
+				if anyName := seqElem.Any_name(); anyName != nil {
+					_, seqName := e.extractSchemaAndEnumName(anyName)
+					if seqName != "" {
+						sequenceName = seqName
+						sequence.Name = sequenceName
+					}
+				}
+			}
+			// Extract other sequence options
+			e.extractSequenceOption(seqElem, sequence)
+		}
 	}
 
 	// Add the sequence to the schema
