@@ -18,8 +18,8 @@ func TestColumnExist(t *testing.T) {
 			want: "ALTER TABLE `book` ADD COLUMN `price` INT AFTER `id`;\nALTER TABLE `book` ADD COLUMN `code` VARCHAR(50) AFTER `price`;\n",
 		},
 		{
-			old: ``,
-			new: `CREATE TABLE book(id INT, price INT, code VARCHAR(50), PRIMARY KEY(id));`,
+			old:  ``,
+			new:  `CREATE TABLE book(id INT, price INT, code VARCHAR(50), PRIMARY KEY(id));`,
 			want: "CREATE TABLE IF NOT EXISTS `book` (`id` INT,`price` INT,`code` VARCHAR(50),PRIMARY KEY(`id`));\n\n",
 		},
 		{
