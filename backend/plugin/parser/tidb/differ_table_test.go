@@ -19,29 +19,15 @@ func TestTable(t *testing.T) {
 			new: `CREATE TABLE book(id INT, price INT, PRIMARY KEY(id));
 			CREATE TABLE author(id INT, name VARCHAR(255), PRIMARY KEY(id));
 			`,
-			want: "" +
-				"CREATE TABLE IF NOT EXISTS `author` (\n" +
-				"  `id` INT,\n" +
-				"  `name` VARCHAR(255),\n" +
-				"  PRIMARY KEY (`id`)\n" +
-				");\n\n" +
-				"CREATE TABLE IF NOT EXISTS `book` (\n" +
-				"  `id` INT,\n" +
-				"  `price` INT,\n" +
-				"  PRIMARY KEY (`id`)\n" +
-				");\n\n",
+			want: "CREATE TABLE IF NOT EXISTS `author` (`id` INT,`name` VARCHAR(255),PRIMARY KEY(`id`));\n\n" +
+				"CREATE TABLE IF NOT EXISTS `book` (`id` INT,`price` INT,PRIMARY KEY(`id`));\n\n",
 		},
 		{
 			old: `CREATE TABLE author(id INT, name VARCHAR(255), PRIMARY KEY(id))`,
 			new: `CREATE TABLE book(id INT, price INT, PRIMARY KEY(id));
 			CREATE TABLE author(id INT, name VARCHAR(255), PRIMARY KEY(id));
 			`,
-			want: "" +
-				"CREATE TABLE IF NOT EXISTS `book` (\n" +
-				"  `id` INT,\n" +
-				"  `price` INT,\n" +
-				"  PRIMARY KEY (`id`)\n" +
-				");\n\n",
+			want: "CREATE TABLE IF NOT EXISTS `book` (`id` INT,`price` INT,PRIMARY KEY(`id`));\n\n",
 		},
 		{
 			old: `CREATE TABLE book(id INT, price INT, PRIMARY KEY(id));
@@ -113,29 +99,29 @@ func TestTableOption(t *testing.T) {
 		{
 			old:  `CREATE TABLE book(id INT AUTO_INCREMENT, CONSTRAINT PRIMARY KEY(id)) AUTO_INCREMENT = 4;`,
 			new:  `CREATE TABLE book(id INT AUTO_INCREMENT, CONSTRAINT PRIMARY KEY(id)) AUTO_INCREMENT = 10;`,
-			want: "ALTER TABLE `book` AUTO_INCREMENT=10;\n\n",
+			want: "ALTER TABLE `book` AUTO_INCREMENT = 10;\n\n",
 		},
 		{
 			old:  `CREATE TABLE book(id INT AUTO_INCREMENT, CONSTRAINT PRIMARY KEY(id)) AUTO_INCREMENT = 4;`,
 			new:  `CREATE TABLE book(id INT AUTO_INCREMENT, CONSTRAINT PRIMARY KEY(id));`,
-			want: "ALTER TABLE `book` AUTO_INCREMENT=0;\n\n",
+			want: "ALTER TABLE `book` AUTO_INCREMENT = 0;\n\n",
 		},
 		// AVG_ROW_LENGTH
 		{
 			old:  `CREATE TABLE book(id INT) AVG_ROW_LENGTH = 1;`,
 			new:  `CREATE TABLE book(id INT) AVG_ROW_LENGTH = 2;`,
-			want: "ALTER TABLE `book` AVG_ROW_LENGTH=2;\n\n",
+			want: "ALTER TABLE `book` AVG_ROW_LENGTH = 2;\n\n",
 		},
 		{
 			old:  `CREATE TABLE book(id INT) AVG_ROW_LENGTH = 1;`,
 			new:  `CREATE TABLE book(id INT);`,
-			want: "ALTER TABLE `book` AVG_ROW_LENGTH=0;\n\n",
+			want: "ALTER TABLE `book` AVG_ROW_LENGTH = 0;\n\n",
 		},
 		// DEFAULT CHARSET
 		{
 			old:  `CREATE TABLE book(id INT) DEFAULT CHARACTER SET = utf8;`,
 			new:  `CREATE TABLE book(id INT) DEFAULT CHARACTER SET = utf8mb4;`,
-			want: "ALTER TABLE `book` DEFAULT CHARACTER SET=UTF8MB4;\n\n",
+			want: "ALTER TABLE `book` DEFAULT CHARACTER SET = UTF8MB4;\n\n",
 		},
 		{
 			old:  `CREATE TABLE book(id INT) DEFAULT CHARACTER SET = utf8;`,
@@ -146,7 +132,7 @@ func TestTableOption(t *testing.T) {
 		{
 			old:  `CREATE TABLE book(id INT) DEFAULT COLLATE = latin1_swedish_ci;`,
 			new:  `CREATE TABLE book(id INT) DEFAULT COLLATE = utf8mb4_general_ci;`,
-			want: "ALTER TABLE `book` DEFAULT COLLATE=UTF8MB4_GENERAL_CI;\n\n",
+			want: "ALTER TABLE `book` DEFAULT COLLATE = UTF8MB4_GENERAL_CI;\n\n",
 		},
 		{
 			old:  `CREATE TABLE book(id INT) DEFAULT COLLATE = latin1_swedish_ci;`,
@@ -157,74 +143,74 @@ func TestTableOption(t *testing.T) {
 		{
 			old:  `CREATE TABLE book(id INT) CHECKSUM = 1;`,
 			new:  `CREATE TABLE book(id INT) CHECKSUM = 0;`,
-			want: "ALTER TABLE `book` CHECKSUM=0;\n\n",
+			want: "ALTER TABLE `book` CHECKSUM = 0;\n\n",
 		},
 		{
 			old:  `CREATE TABLE book(id INT) CHECKSUM = 1;`,
 			new:  `CREATE TABLE book(id INT);`,
-			want: "ALTER TABLE `book` CHECKSUM=0;\n\n",
+			want: "ALTER TABLE `book` CHECKSUM = 0;\n\n",
 		},
 		// COMMENT
 		{
 			old:  `CREATE TABLE book(id INT) COMMENT = 'old';`,
 			new:  `CREATE TABLE book(id INT) COMMENT = 'new';`,
-			want: "ALTER TABLE `book` COMMENT='new';\n\n",
+			want: "ALTER TABLE `book` COMMENT = 'new';\n\n",
 		},
 		{
 			old:  `CREATE TABLE book(id INT) COMMENT = 'old';`,
 			new:  `CREATE TABLE book(id INT);`,
-			want: "ALTER TABLE `book` COMMENT='';\n\n",
+			want: "ALTER TABLE `book` COMMENT = '';\n\n",
 		},
 		// TODO(zp): handle drop COMPRESSION
 		{
 			old:  `CREATE TABLE book(id INT) COMPRESSION = 'ZLIB';`,
 			new:  `CREATE TABLE book(id INT) COMPRESSION = 'LZ4';`,
-			want: "ALTER TABLE `book` COMPRESSION='LZ4';\n\n",
+			want: "ALTER TABLE `book` COMPRESSION = 'LZ4';\n\n",
 		},
 		// CONNECTION
 		{
 			old:  `CREATE TABLE book(id INT) CONNECTION = 'old';`,
 			new:  `CREATE TABLE book(id INT) CONNECTION = 'new';`,
-			want: "ALTER TABLE `book` CONNECTION='new';\n\n",
+			want: "ALTER TABLE `book` CONNECTION = 'new';\n\n",
 		},
 		{
 			old:  `CREATE TABLE book(id INT) CONNECTION = 'old';`,
 			new:  `CREATE TABLE book(id INT);`,
-			want: "ALTER TABLE `book` CONNECTION='';\n\n",
+			want: "ALTER TABLE `book` CONNECTION = '';\n\n",
 		},
 		// TODO(zp): handle drop DATA DIRECTORY
 		{
 			old:  `CREATE TABLE book(id INT) DATA DIRECTORY = 'old';`,
 			new:  `CREATE TABLE book(id INT) DATA DIRECTORY = 'new';`,
-			want: "ALTER TABLE `book` DATA DIRECTORY='new';\n\n",
+			want: "ALTER TABLE `book` DATA DIRECTORY = 'new';\n\n",
 		},
 		// TODO(zp): handle drop INDEX DIRECTORY
 		{
 			old:  `CREATE TABLE book(id INT) INDEX DIRECTORY = 'old';`,
 			new:  `CREATE TABLE book(id INT) INDEX DIRECTORY = 'new';`,
-			want: "ALTER TABLE `book` INDEX DIRECTORY='new';\n\n",
+			want: "ALTER TABLE `book` INDEX DIRECTORY = 'new';\n\n",
 		},
 		// DELAY_KEY_WRITE
 		{
 			old:  `CREATE TABLE book(id INT) DELAY_KEY_WRITE = 1;`,
 			new:  `CREATE TABLE book(id INT) DELAY_KEY_WRITE = 0;`,
-			want: "ALTER TABLE `book` DELAY_KEY_WRITE=0;\n\n",
+			want: "ALTER TABLE `book` DELAY_KEY_WRITE = 0;\n\n",
 		},
 		{
 			old:  `CREATE TABLE book(id INT) DELAY_KEY_WRITE = 1;`,
 			new:  `CREATE TABLE book(id INT)`,
-			want: "ALTER TABLE `book` DELAY_KEY_WRITE=0;\n\n",
+			want: "ALTER TABLE `book` DELAY_KEY_WRITE = 0;\n\n",
 		},
 		// ENCRYPTION
 		{
 			old:  `CREATE TABLE book(id INT) ENCRYPTION = 'Y';`,
 			new:  `CREATE TABLE book(id INT) ENCRYPTION = 'N';`,
-			want: "ALTER TABLE `book` ENCRYPTION='N';\n\n",
+			want: "ALTER TABLE `book` ENCRYPTION = 'N';\n\n",
 		},
 		{
 			old:  `CREATE TABLE book(id INT) ENCRYPTION = 'Y';`,
 			new:  `CREATE TABLE book(id INT);`,
-			want: "ALTER TABLE `book` ENCRYPTION='N';\n\n",
+			want: "ALTER TABLE `book` ENCRYPTION = 'N';\n\n",
 		},
 		// INSERT_METHOD
 		// TODO(zp): enable this test if the upstream repo fix it.
@@ -245,70 +231,70 @@ func TestTableOption(t *testing.T) {
 		{
 			old:  `CREATE TABLE book(id INT) MAX_ROWS = 100;`,
 			new:  `CREATE TABLE book(id INT) MAX_ROWS = 200;`,
-			want: "ALTER TABLE `book` MAX_ROWS=200;\n\n",
+			want: "ALTER TABLE `book` MAX_ROWS = 200;\n\n",
 		},
 		{
 			old:  `CREATE TABLE book(id INT) MAX_ROWS = 100;`,
 			new:  `CREATE TABLE book(id INT);`,
-			want: "ALTER TABLE `book` MAX_ROWS=0;\n\n",
+			want: "ALTER TABLE `book` MAX_ROWS = 0;\n\n",
 		},
 		// MIN_ROWS
 		{
 			old:  `CREATE TABLE book(id INT) MIN_ROWS = 100;`,
 			new:  `CREATE TABLE book(id INT) MIN_ROWS = 200;`,
-			want: "ALTER TABLE `book` MIN_ROWS=200;\n\n",
+			want: "ALTER TABLE `book` MIN_ROWS = 200;\n\n",
 		},
 		{
 			old:  `CREATE TABLE book(id INT) MIN_ROWS = 100;`,
 			new:  `CREATE TABLE book(id INT);`,
-			want: "ALTER TABLE `book` MIN_ROWS=0;\n\n",
+			want: "ALTER TABLE `book` MIN_ROWS = 0;\n\n",
 		},
 		// PACK_KEYS
 		// TODO(zp): alter table pack_keys
 		{
 			old:  `CREATE TABLE book(id INT) PACK_KEYS = 1;`,
 			new:  `CREATE TABLE book(id INT);`,
-			want: "ALTER TABLE `book` PACK_KEYS=DEFAULT /* TableOptionPackKeys is not supported */ ;\n\n",
+			want: "ALTER TABLE `book` PACK_KEYS = DEFAULT /* TableOptionPackKeys is not supported */ ;\n\n",
 		},
 		// PACK_KEYS
 		// TODO(zp): alter table pack_keys
 		{
 			old:  `CREATE TABLE book(id INT) PACK_KEYS = 1;`,
 			new:  `CREATE TABLE book(id INT);`,
-			want: "ALTER TABLE `book` PACK_KEYS=DEFAULT /* TableOptionPackKeys is not supported */ ;\n\n",
+			want: "ALTER TABLE `book` PACK_KEYS = DEFAULT /* TableOptionPackKeys is not supported */ ;\n\n",
 		},
 		// PASSWORD
 		{
 			old:  `CREATE TABLE book(id INT) PASSWORD = 'old';`,
 			new:  `CREATE TABLE book(id INT) PASSWORD = 'new';`,
-			want: "ALTER TABLE `book` PASSWORD='new';\n\n",
+			want: "ALTER TABLE `book` PASSWORD = 'new';\n\n",
 		},
 		{
 			old:  `CREATE TABLE book(id INT) PASSWORD = 'old';`,
 			new:  `CREATE TABLE book(id INT);`,
-			want: "ALTER TABLE `book` PASSWORD='';\n\n",
+			want: "ALTER TABLE `book` PASSWORD = '';\n\n",
 		},
 		// ROW_FORMAT
 		{
 			old:  `CREATE TABLE book(id INT) ROW_FORMAT = DYNAMIC;`,
 			new:  `CREATE TABLE book(id INT) ROW_FORMAT = COMPRESSED;`,
-			want: "ALTER TABLE `book` ROW_FORMAT=COMPRESSED;\n\n",
+			want: "ALTER TABLE `book` ROW_FORMAT = COMPRESSED;\n\n",
 		},
 		{
 			old:  `CREATE TABLE book(id INT) ROW_FORMAT = DYNAMIC;`,
 			new:  `CREATE TABLE book(id INT);`,
-			want: "ALTER TABLE `book` ROW_FORMAT=DEFAULT;\n\n",
+			want: "ALTER TABLE `book` ROW_FORMAT = DEFAULT;\n\n",
 		},
 		// STATS_AUTO_RECALC
 		{
 			old:  `CREATE TABLE book(id INT) STATS_AUTO_RECALC = 1;`,
 			new:  `CREATE TABLE book(id INT) STATS_AUTO_RECALC = 0;`,
-			want: "ALTER TABLE `book` STATS_AUTO_RECALC=0;\n\n",
+			want: "ALTER TABLE `book` STATS_AUTO_RECALC = 0;\n\n",
 		},
 		{
 			old:  `CREATE TABLE book(id INT) STATS_AUTO_RECALC = 1;`,
 			new:  `CREATE TABLE book(id INT);`,
-			want: "ALTER TABLE `book` STATS_AUTO_RECALC=DEFAULT;\n\n",
+			want: "ALTER TABLE `book` STATS_AUTO_RECALC = DEFAULT;\n\n",
 		},
 		// TODO(zp): STATS_PERSISTENT
 
@@ -316,7 +302,7 @@ func TestTableOption(t *testing.T) {
 		{
 			old:  `CREATE TABLE book(id INT) UNION = (book2);`,
 			new:  `CREATE TABLE book(id INT) UNION = (book2, book3);`,
-			want: "ALTER TABLE `book` UNION=(`book2`,`book3`);\n\n",
+			want: "ALTER TABLE `book` UNION = (`book2`,`book3`);\n\n",
 		},
 	}
 	testDiffWithoutDisableForeignKeyCheck(t, tests)

@@ -6,7 +6,6 @@ import (
 
 	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pingcap/tidb/pkg/parser/format"
-	"github.com/pingcap/tidb/pkg/parser/model"
 	"github.com/pingcap/tidb/pkg/parser/mysql"
 	"github.com/pingcap/tidb/pkg/types"
 	"github.com/pkg/errors"
@@ -453,14 +452,14 @@ func (d *DatabaseState) createIndex(node *tidbast.CreateIndexStmt) *WalkThroughE
 	}
 
 	unique := false
-	tp := model.IndexTypeBtree.String()
+	tp := tidbast.IndexTypeBtree.String()
 	isSpatial := false
 
 	switch node.KeyType {
 	case tidbast.IndexKeyTypeNone:
 	case tidbast.IndexKeyTypeUnique:
 		unique = true
-	case tidbast.IndexKeyTypeFullText:
+	case tidbast.IndexKeyTypeFulltext:
 		tp = FullTextName
 	case tidbast.IndexKeyTypeSpatial:
 		isSpatial = true
@@ -800,7 +799,7 @@ func (t *TableState) completeTableChangeColumn(ctx *FinderContext, oldName strin
 			for _, col := range t.columnSet {
 				if *col.position == pos-1 {
 					localPosition.Tp = tidbast.ColumnPositionAfter
-					localPosition.RelativeColumn = &tidbast.ColumnName{Name: model.NewCIStr(col.name)}
+					localPosition.RelativeColumn = &tidbast.ColumnName{Name: tidbast.NewCIStr(col.name)}
 					break
 				}
 			}
@@ -1234,7 +1233,7 @@ func (t *TableState) createColumn(ctx *FinderContext, column *tidbast.ColumnDef,
 		switch option.Tp {
 		case tidbast.ColumnOptionPrimaryKey:
 			col.nullable = newFalsePointer()
-			if err := t.createPrimaryKey([]string{col.name}, model.IndexTypeBtree.String()); err != nil {
+			if err := t.createPrimaryKey([]string{col.name}, tidbast.IndexTypeBtree.String()); err != nil {
 				return err
 			}
 		case tidbast.ColumnOptionNotNull:
@@ -1255,7 +1254,7 @@ func (t *TableState) createColumn(ctx *FinderContext, column *tidbast.ColumnDef,
 				setNullDefault = true
 			}
 		case tidbast.ColumnOptionUniqKey:
-			if err := t.createIndex("", []string{col.name}, true /* unique */, model.IndexTypeBtree.String(), nil); err != nil {
+			if err := t.createIndex("", []string{col.name}, true /* unique */, tidbast.IndexTypeBtree.String(), nil); err != nil {
 				return err
 			}
 		case tidbast.ColumnOptionNull:
@@ -1397,13 +1396,13 @@ func restoreNode(node tidbast.Node, flag format.RestoreFlags) (string, *WalkThro
 func getIndexType(option *tidbast.IndexOption) string {
 	if option != nil {
 		switch option.Tp {
-		case model.IndexTypeBtree,
-			model.IndexTypeHash,
-			model.IndexTypeRtree:
+		case tidbast.IndexTypeBtree,
+			tidbast.IndexTypeHash,
+			tidbast.IndexTypeRtree:
 			return option.Tp.String()
 		default:
 			// Other index types
 		}
 	}
-	return model.IndexTypeBtree.String()
+	return tidbast.IndexTypeBtree.String()
 }

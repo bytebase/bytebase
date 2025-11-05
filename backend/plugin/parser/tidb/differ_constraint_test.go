@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/pingcap/tidb/pkg/parser/ast"
-	"github.com/pingcap/tidb/pkg/parser/model"
 	"github.com/pingcap/tidb/pkg/parser/opcode"
 	"github.com/pingcap/tidb/pkg/types"
 	driver "github.com/pingcap/tidb/pkg/types/parser_driver"
@@ -25,7 +24,7 @@ func TestIsKeyPartEqual(t *testing.T) {
 						Op: opcode.Plus,
 						L: &ast.ColumnNameExpr{
 							Name: &ast.ColumnName{
-								Name: model.NewCIStr("id"),
+								Name: ast.NewCIStr("id"),
 							},
 						},
 						R: &driver.ValueExpr{
@@ -33,7 +32,7 @@ func TestIsKeyPartEqual(t *testing.T) {
 						},
 					},
 					Column: &ast.ColumnName{
-						Name: model.NewCIStr("id"),
+						Name: ast.NewCIStr("id"),
 					},
 				},
 			},
@@ -44,7 +43,7 @@ func TestIsKeyPartEqual(t *testing.T) {
 						Op: opcode.Mul,
 						L: &ast.ColumnNameExpr{
 							Name: &ast.ColumnName{
-								Name: model.NewCIStr("id"),
+								Name: ast.NewCIStr("id"),
 							},
 						},
 						R: &driver.ValueExpr{
@@ -52,7 +51,7 @@ func TestIsKeyPartEqual(t *testing.T) {
 						},
 					},
 					Column: &ast.ColumnName{
-						Name: model.NewCIStr("id"),
+						Name: ast.NewCIStr("id"),
 					},
 				},
 			},
@@ -66,7 +65,7 @@ func TestIsKeyPartEqual(t *testing.T) {
 						Op: opcode.Plus,
 						L: &ast.ColumnNameExpr{
 							Name: &ast.ColumnName{
-								Name: model.NewCIStr("id"),
+								Name: ast.NewCIStr("id"),
 							},
 						},
 						R: &driver.ValueExpr{
@@ -74,7 +73,7 @@ func TestIsKeyPartEqual(t *testing.T) {
 						},
 					},
 					Column: &ast.ColumnName{
-						Name: model.NewCIStr("id"),
+						Name: ast.NewCIStr("id"),
 					},
 				},
 			},
@@ -85,7 +84,7 @@ func TestIsKeyPartEqual(t *testing.T) {
 						Op: opcode.Plus,
 						L: &ast.ColumnNameExpr{
 							Name: &ast.ColumnName{
-								Name: model.NewCIStr("id"),
+								Name: ast.NewCIStr("id"),
 							},
 						},
 						R: &driver.ValueExpr{
@@ -93,7 +92,7 @@ func TestIsKeyPartEqual(t *testing.T) {
 						},
 					},
 					Column: &ast.ColumnName{
-						Name: model.NewCIStr("id"),
+						Name: ast.NewCIStr("id"),
 					},
 				},
 				// `id` * 2
@@ -102,7 +101,7 @@ func TestIsKeyPartEqual(t *testing.T) {
 						Op: opcode.Mul,
 						L: &ast.ColumnNameExpr{
 							Name: &ast.ColumnName{
-								Name: model.NewCIStr("id"),
+								Name: ast.NewCIStr("id"),
 							},
 						},
 						R: &driver.ValueExpr{
@@ -110,7 +109,7 @@ func TestIsKeyPartEqual(t *testing.T) {
 						},
 					},
 					Column: &ast.ColumnName{
-						Name: model.NewCIStr("id"),
+						Name: ast.NewCIStr("id"),
 					},
 				},
 			},
@@ -124,7 +123,7 @@ func TestIsKeyPartEqual(t *testing.T) {
 						Op: opcode.Plus,
 						L: &ast.ColumnNameExpr{
 							Name: &ast.ColumnName{
-								Name: model.NewCIStr("id"),
+								Name: ast.NewCIStr("id"),
 							},
 						},
 						R: &driver.ValueExpr{
@@ -132,7 +131,7 @@ func TestIsKeyPartEqual(t *testing.T) {
 						},
 					},
 					Column: &ast.ColumnName{
-						Name: model.NewCIStr("id"),
+						Name: ast.NewCIStr("id"),
 					},
 				},
 			},
@@ -143,7 +142,7 @@ func TestIsKeyPartEqual(t *testing.T) {
 						Op: opcode.Plus,
 						L: &ast.ColumnNameExpr{
 							Name: &ast.ColumnName{
-								Name: model.NewCIStr("id"),
+								Name: ast.NewCIStr("id"),
 							},
 						},
 						R: &driver.ValueExpr{
@@ -151,7 +150,7 @@ func TestIsKeyPartEqual(t *testing.T) {
 						},
 					},
 					Column: &ast.ColumnName{
-						Name: model.NewCIStr("id"),
+						Name: ast.NewCIStr("id"),
 					},
 				},
 			},
@@ -193,15 +192,15 @@ func TestIsIndexOptionEqual(t *testing.T) {
 		{
 			old: &ast.IndexOption{
 				KeyBlockSize: 1024,
-				Tp:           model.IndexTypeBtree,
-				ParserName:   model.NewCIStr("parser"),
+				Tp:           ast.IndexTypeBtree,
+				ParserName:   ast.NewCIStr("parser"),
 				Comment:      "comment",
 				Visibility:   ast.IndexVisibilityVisible,
 			},
 			new: &ast.IndexOption{
 				KeyBlockSize: 1024,
-				Tp:           model.IndexTypeHash,
-				ParserName:   model.NewCIStr("parser"),
+				Tp:           ast.IndexTypeHash,
+				ParserName:   ast.NewCIStr("parser"),
 				Comment:      "commen_idx",
 				Visibility:   ast.IndexVisibilityInvisible,
 			},
@@ -210,15 +209,15 @@ func TestIsIndexOptionEqual(t *testing.T) {
 		{
 			old: &ast.IndexOption{
 				KeyBlockSize: 1024,
-				Tp:           model.IndexTypeBtree,
-				ParserName:   model.NewCIStr("parser"),
+				Tp:           ast.IndexTypeBtree,
+				ParserName:   ast.NewCIStr("parser"),
 				Comment:      "comment",
 				Visibility:   ast.IndexVisibilityVisible,
 			},
 			new: &ast.IndexOption{
 				KeyBlockSize: 1024,
-				Tp:           model.IndexTypeBtree,
-				ParserName:   model.NewCIStr("parser"),
+				Tp:           ast.IndexTypeBtree,
+				ParserName:   ast.NewCIStr("parser"),
 				Comment:      "comment",
 				Visibility:   ast.IndexVisibilityVisible,
 			},
@@ -269,7 +268,7 @@ func TestIndexOption(t *testing.T) {
 			old: `CREATE TABLE book(name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY (name) KEY_BLOCK_SIZE=30);`,
 			new: `CREATE TABLE book(name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY (name) KEY_BLOCK_SIZE=50);`,
 			want: "ALTER TABLE `book` DROP PRIMARY KEY;\n\n" +
-				"ALTER TABLE `book` ADD PRIMARY KEY (`name`) KEY_BLOCK_SIZE=50;\n\n",
+				"ALTER TABLE `book` ADD PRIMARY KEY(`name`) KEY_BLOCK_SIZE=50;\n\n",
 		},
 		// WITH PARSER not match.
 		// {
@@ -295,7 +294,7 @@ func TestIndexOption(t *testing.T) {
 			old: `CREATE TABLE book(name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY(name) COMMENT 'comment_a');`,
 			new: `CREATE TABLE book(name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY(name) COMMENT 'comment_b');`,
 			want: "ALTER TABLE `book` DROP PRIMARY KEY;\n\n" +
-				"ALTER TABLE `book` ADD PRIMARY KEY (`name`) COMMENT 'comment_b';\n\n",
+				"ALTER TABLE `book` ADD PRIMARY KEY(`name`) COMMENT 'comment_b';\n\n",
 		},
 		// VISIBILITY not match.
 		{
@@ -310,7 +309,7 @@ func TestIndexOption(t *testing.T) {
 			old: `CREATE TABLE book(name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY(name) VISIBLE);`,
 			new: `CREATE TABLE book(name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY(name) INVISIBLE);`,
 			want: "ALTER TABLE `book` DROP PRIMARY KEY;\n\n" +
-				"ALTER TABLE `book` ADD PRIMARY KEY (`name`) INVISIBLE;\n\n",
+				"ALTER TABLE `book` ADD PRIMARY KEY(`name`) INVISIBLE;\n\n",
 		},
 		{
 			old:  `CREATE TABLE book(name VARCHAR(50) NOT NULL, FULLTEXT INDEX book_idx(name) KEY_BLOCK_SIZE=30 COMMENT 'no difference!');`,
@@ -339,7 +338,7 @@ func TestKeyPart(t *testing.T) {
 			old: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY(id, name) COMMENT 'comment_a');`,
 			new: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY(id) COMMENT 'comment_a');`,
 			want: "ALTER TABLE `book` DROP PRIMARY KEY;\n\n" +
-				"ALTER TABLE `book` ADD PRIMARY KEY (`id`) COMMENT 'comment_a';\n\n",
+				"ALTER TABLE `book` ADD PRIMARY KEY(`id`) COMMENT 'comment_a';\n\n",
 		},
 		{
 			old: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, INDEX book_idx USING BTREE (id, name) COMMENT 'comment_a');`,
@@ -351,7 +350,7 @@ func TestKeyPart(t *testing.T) {
 			old: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY (id, name) COMMENT 'comment_a');`,
 			new: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY ((id + 1)) COMMENT 'comment_a');`,
 			want: "ALTER TABLE `book` DROP PRIMARY KEY;\n\n" +
-				"ALTER TABLE `book` ADD PRIMARY KEY ((`id`+1)) COMMENT 'comment_a';\n\n",
+				"ALTER TABLE `book` ADD PRIMARY KEY((`id`+1)) COMMENT 'comment_a';\n\n",
 		},
 		{
 			old: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, INDEX book_idx USING BTREE ((id + 1)) COMMENT 'comment_a');`,
@@ -363,7 +362,7 @@ func TestKeyPart(t *testing.T) {
 			old: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY ((id + 1)) COMMENT 'comment_a');`,
 			new: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY ((id + 2)) COMMENT 'comment_a');`,
 			want: "ALTER TABLE `book` DROP PRIMARY KEY;\n\n" +
-				"ALTER TABLE `book` ADD PRIMARY KEY ((`id`+2)) COMMENT 'comment_a';\n\n",
+				"ALTER TABLE `book` ADD PRIMARY KEY((`id`+2)) COMMENT 'comment_a';\n\n",
 		},
 		{
 			old:  `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, INDEX book_idx USING BTREE (id, name) COMMENT 'comment_a');`,
@@ -507,7 +506,7 @@ func TestConstraint(t *testing.T) {
 			new: `CREATE TABLE book(id INT, name VARCHAR(50), address VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY(id, address));`,
 			want: "ALTER TABLE `book` DROP PRIMARY KEY;\n\n" +
 				"ALTER TABLE `book` ADD COLUMN `address` VARCHAR(50) NOT NULL AFTER `name`;\n" +
-				"ALTER TABLE `book` ADD PRIMARY KEY (`id`, `address`);\n\n",
+				"ALTER TABLE `book` ADD PRIMARY KEY(`id`, `address`);\n\n",
 		},
 		// ADD COLUMN -> ADD INDEX WITH ANOTHER NAME-> DROP INDEX
 		{
