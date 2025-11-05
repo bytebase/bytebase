@@ -20,7 +20,6 @@ import (
 	"github.com/pingcap/tidb/pkg/parser"
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pingcap/tidb/pkg/parser/format"
-	"github.com/pingcap/tidb/pkg/parser/model"
 	"github.com/pingcap/tidb/pkg/parser/mysql"
 	"github.com/pingcap/tidb/pkg/types"
 	"github.com/pkg/errors"
@@ -399,7 +398,7 @@ func (diff *diffNode) diffColumn(oldTable, newTable *tableInfo) {
 			columnPosition := &ast.ColumnPosition{Tp: ast.ColumnPositionFirst}
 			if idx >= 1 {
 				columnPosition.Tp = ast.ColumnPositionAfter
-				columnPosition.RelativeColumn = &ast.ColumnName{Name: model.NewCIStr(newTable.createTable.Cols[idx-1].Name.Name.O)}
+				columnPosition.RelativeColumn = &ast.ColumnName{Name: ast.NewCIStr(newTable.createTable.Cols[idx-1].Name.Name.O)}
 			}
 			addAndModifyColumnStatement := &ast.AlterTableStmt{Table: newTable.createTable.Table}
 			addAndModifyColumnStatement.Specs = append(addAndModifyColumnStatement.Specs, &ast.AlterTableSpec{
@@ -419,7 +418,7 @@ func (diff *diffNode) diffColumn(oldTable, newTable *tableInfo) {
 				columnPosition.Tp = ast.ColumnPositionFirst
 			} else {
 				columnPosition.Tp = ast.ColumnPositionAfter
-				columnPosition.RelativeColumn = &ast.ColumnName{Name: model.NewCIStr(newTable.createTable.Cols[idx-1].Name.Name.O)}
+				columnPosition.RelativeColumn = &ast.ColumnName{Name: ast.NewCIStr(newTable.createTable.Cols[idx-1].Name.Name.O)}
 			}
 		}
 		// Compare the column definitions.
@@ -442,7 +441,7 @@ func (diff *diffNode) diffColumn(oldTable, newTable *tableInfo) {
 				{
 					Tp: ast.AlterTableDropColumn,
 					OldColumnName: &ast.ColumnName{
-						Name: model.NewCIStr(columnDef.Name.Name.O),
+						Name: ast.NewCIStr(columnDef.Name.Name.O),
 					},
 				},
 			},
@@ -958,7 +957,7 @@ func getID(node ast.Node) string {
 }
 
 func writeNodeList(w format.RestoreWriter, ns []ast.Node) error {
-	flags := format.DefaultRestoreFlags | format.RestoreStringWithoutCharset | format.RestorePrettyFormat
+	flags := format.DefaultRestoreFlags | format.RestoreStringWithoutCharset
 	for _, n := range ns {
 		if err := writeNodeStatement(w, n, flags, "\n"); err != nil {
 			return err
@@ -968,7 +967,7 @@ func writeNodeList(w format.RestoreWriter, ns []ast.Node) error {
 }
 
 func sortAndWriteNodeList(w format.RestoreWriter, ns []ast.Node) error {
-	flags := format.DefaultRestoreFlags | format.RestoreStringWithoutCharset | format.RestorePrettyFormat
+	flags := format.DefaultRestoreFlags | format.RestoreStringWithoutCharset
 	slices.SortFunc(ns, func(a, b ast.Node) int {
 		idA := getID(a)
 		idB := getID(b)
@@ -1062,7 +1061,7 @@ func transformConstraintToIndex(tableName *ast.TableName, constraint *ast.Constr
 	case ast.ConstraintUniq, ast.ConstraintUniqKey, ast.ConstraintUniqIndex:
 		indexType = ast.IndexKeyTypeUnique
 	case ast.ConstraintFulltext:
-		indexType = ast.IndexKeyTypeFullText
+		indexType = ast.IndexKeyTypeFulltext
 	default:
 		return nil
 	}
@@ -1074,7 +1073,7 @@ func transformConstraintToIndex(tableName *ast.TableName, constraint *ast.Constr
 		KeyType:                 indexType,
 	}
 	if result.IndexOption == nil {
-		result.IndexOption = &ast.IndexOption{Tp: model.IndexTypeInvalid}
+		result.IndexOption = &ast.IndexOption{Tp: ast.IndexTypeInvalid}
 	}
 	return result
 }
@@ -1417,7 +1416,7 @@ func getTempView(stmt *ast.CreateViewStmt) (*ast.CreateViewStmt, error) {
 				Expr: &driver.ValueExpr{
 					Datum: types.NewDatum(1),
 				},
-				AsName: model.NewCIStr(name),
+				AsName: ast.NewCIStr(name),
 			})
 		}
 	}
@@ -1439,7 +1438,7 @@ func getTempView(stmt *ast.CreateViewStmt) (*ast.CreateViewStmt, error) {
 		// https://sourcegraph.com/github.com/pingcap/tidb/-/blob/parser/ast/ddl.go?L1398
 		Definer:     stmt.Definer,
 		Security:    stmt.Security,
-		CheckOption: model.CheckOptionCascaded,
+		CheckOption: ast.CheckOptionCascaded,
 	}, nil
 }
 

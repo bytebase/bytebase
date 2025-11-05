@@ -1,8 +1,8 @@
 package tidb
 
 import (
+	"github.com/pingcap/tidb/pkg/parser/ast"
 	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
-	"github.com/pingcap/tidb/pkg/parser/model"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -133,7 +133,7 @@ func extractTableList(node tidbast.Node, input []*tidbast.TableName, asName bool
 			if x.AsName.L != "" && asName {
 				newTableName := *s
 				newTableName.Name = x.AsName
-				newTableName.Schema = model.NewCIStr("")
+				newTableName.Schema = ast.NewCIStr("")
 				input = append(input, &newTableName)
 			} else {
 				input = append(input, s)
@@ -147,7 +147,7 @@ func extractTableList(node tidbast.Node, input []*tidbast.TableName, asName bool
 					if x.AsName.L != "" && asName {
 						newTableName := *innerList[0]
 						newTableName.Name = x.AsName
-						newTableName.Schema = model.NewCIStr("")
+						newTableName.Schema = ast.NewCIStr("")
 						innerTableName = &newTableName
 					}
 					input = append(input, innerTableName)

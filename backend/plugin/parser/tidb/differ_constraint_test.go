@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/pingcap/tidb/pkg/parser/ast"
-	"github.com/pingcap/tidb/pkg/parser/model"
 	"github.com/pingcap/tidb/pkg/parser/opcode"
 	"github.com/pingcap/tidb/pkg/types"
 	driver "github.com/pingcap/tidb/pkg/types/parser_driver"
@@ -25,7 +24,7 @@ func TestIsKeyPartEqual(t *testing.T) {
 						Op: opcode.Plus,
 						L: &ast.ColumnNameExpr{
 							Name: &ast.ColumnName{
-								Name: model.NewCIStr("id"),
+								Name: ast.NewCIStr("id"),
 							},
 						},
 						R: &driver.ValueExpr{
@@ -33,7 +32,7 @@ func TestIsKeyPartEqual(t *testing.T) {
 						},
 					},
 					Column: &ast.ColumnName{
-						Name: model.NewCIStr("id"),
+						Name: ast.NewCIStr("id"),
 					},
 				},
 			},
@@ -44,7 +43,7 @@ func TestIsKeyPartEqual(t *testing.T) {
 						Op: opcode.Mul,
 						L: &ast.ColumnNameExpr{
 							Name: &ast.ColumnName{
-								Name: model.NewCIStr("id"),
+								Name: modeastl.NewCIStr("id"),
 							},
 						},
 						R: &driver.ValueExpr{
@@ -52,7 +51,7 @@ func TestIsKeyPartEqual(t *testing.T) {
 						},
 					},
 					Column: &ast.ColumnName{
-						Name: model.NewCIStr("id"),
+						Name: ast.NewCIStr("id"),
 					},
 				},
 			},
@@ -66,7 +65,7 @@ func TestIsKeyPartEqual(t *testing.T) {
 						Op: opcode.Plus,
 						L: &ast.ColumnNameExpr{
 							Name: &ast.ColumnName{
-								Name: model.NewCIStr("id"),
+								Name: ast.NewCIStr("id"),
 							},
 						},
 						R: &driver.ValueExpr{
@@ -74,7 +73,7 @@ func TestIsKeyPartEqual(t *testing.T) {
 						},
 					},
 					Column: &ast.ColumnName{
-						Name: model.NewCIStr("id"),
+						Name: ast.NewCIStr("id"),
 					},
 				},
 			},
@@ -85,7 +84,7 @@ func TestIsKeyPartEqual(t *testing.T) {
 						Op: opcode.Plus,
 						L: &ast.ColumnNameExpr{
 							Name: &ast.ColumnName{
-								Name: model.NewCIStr("id"),
+								Name: ast.NewCIStr("id"),
 							},
 						},
 						R: &driver.ValueExpr{
@@ -93,7 +92,7 @@ func TestIsKeyPartEqual(t *testing.T) {
 						},
 					},
 					Column: &ast.ColumnName{
-						Name: model.NewCIStr("id"),
+						Name: ast.NewCIStr("id"),
 					},
 				},
 				// `id` * 2
@@ -102,7 +101,7 @@ func TestIsKeyPartEqual(t *testing.T) {
 						Op: opcode.Mul,
 						L: &ast.ColumnNameExpr{
 							Name: &ast.ColumnName{
-								Name: model.NewCIStr("id"),
+								Name: ast.NewCIStr("id"),
 							},
 						},
 						R: &driver.ValueExpr{
@@ -110,7 +109,7 @@ func TestIsKeyPartEqual(t *testing.T) {
 						},
 					},
 					Column: &ast.ColumnName{
-						Name: model.NewCIStr("id"),
+						Name: ast.NewCIStr("id"),
 					},
 				},
 			},
@@ -124,7 +123,7 @@ func TestIsKeyPartEqual(t *testing.T) {
 						Op: opcode.Plus,
 						L: &ast.ColumnNameExpr{
 							Name: &ast.ColumnName{
-								Name: model.NewCIStr("id"),
+								Name: ast.NewCIStr("id"),
 							},
 						},
 						R: &driver.ValueExpr{
@@ -132,7 +131,7 @@ func TestIsKeyPartEqual(t *testing.T) {
 						},
 					},
 					Column: &ast.ColumnName{
-						Name: model.NewCIStr("id"),
+						Name: ast.NewCIStr("id"),
 					},
 				},
 			},
@@ -143,7 +142,7 @@ func TestIsKeyPartEqual(t *testing.T) {
 						Op: opcode.Plus,
 						L: &ast.ColumnNameExpr{
 							Name: &ast.ColumnName{
-								Name: model.NewCIStr("id"),
+								Name: ast.NewCIStr("id"),
 							},
 						},
 						R: &driver.ValueExpr{
@@ -151,7 +150,7 @@ func TestIsKeyPartEqual(t *testing.T) {
 						},
 					},
 					Column: &ast.ColumnName{
-						Name: model.NewCIStr("id"),
+						Name: ast.NewCIStr("id"),
 					},
 				},
 			},
@@ -193,15 +192,15 @@ func TestIsIndexOptionEqual(t *testing.T) {
 		{
 			old: &ast.IndexOption{
 				KeyBlockSize: 1024,
-				Tp:           model.IndexTypeBtree,
-				ParserName:   model.NewCIStr("parser"),
+				Tp:           ast.IndexTypeBtree,
+				ParserName:   ast.NewCIStr("parser"),
 				Comment:      "comment",
 				Visibility:   ast.IndexVisibilityVisible,
 			},
 			new: &ast.IndexOption{
 				KeyBlockSize: 1024,
-				Tp:           model.IndexTypeHash,
-				ParserName:   model.NewCIStr("parser"),
+				Tp:           ast.IndexTypeHash,
+				ParserName:   ast.NewCIStr("parser"),
 				Comment:      "commen_idx",
 				Visibility:   ast.IndexVisibilityInvisible,
 			},
@@ -210,15 +209,15 @@ func TestIsIndexOptionEqual(t *testing.T) {
 		{
 			old: &ast.IndexOption{
 				KeyBlockSize: 1024,
-				Tp:           model.IndexTypeBtree,
-				ParserName:   model.NewCIStr("parser"),
+				Tp:           ast.IndexTypeBtree,
+				ParserName:   ast.NewCIStr("parser"),
 				Comment:      "comment",
 				Visibility:   ast.IndexVisibilityVisible,
 			},
 			new: &ast.IndexOption{
 				KeyBlockSize: 1024,
-				Tp:           model.IndexTypeBtree,
-				ParserName:   model.NewCIStr("parser"),
+				Tp:           ast.IndexTypeBtree,
+				ParserName:   ast.NewCIStr("parser"),
 				Comment:      "comment",
 				Visibility:   ast.IndexVisibilityVisible,
 			},

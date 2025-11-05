@@ -11,7 +11,7 @@ import (
 
 func toString(node ast.Node) (string, error) {
 	var buf bytes.Buffer
-	restoreFlag := format.DefaultRestoreFlags | format.RestoreStringWithoutCharset | format.RestorePrettyFormat
+	restoreFlag := format.DefaultRestoreFlags | format.RestoreStringWithoutCharset
 	if err := node.Restore(format.NewRestoreCtx(restoreFlag, &buf)); err != nil {
 		return "", errors.Wrapf(err, "cannot restore node %v", node)
 	}
@@ -20,7 +20,7 @@ func toString(node ast.Node) (string, error) {
 
 func toLowerNameString(node ast.Node) (string, error) {
 	var buf bytes.Buffer
-	restoreFlag := format.DefaultRestoreFlags | format.RestoreStringWithoutCharset | format.RestorePrettyFormat | format.RestoreNameLowercase
+	restoreFlag := format.DefaultRestoreFlags | format.RestoreStringWithoutCharset | format.RestoreNameLowercase
 	if err := node.Restore(format.NewRestoreCtx(restoreFlag, &buf)); err != nil {
 		return "", errors.Wrapf(err, "cannot restore node %v", node)
 	}
