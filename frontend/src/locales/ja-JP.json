@@ -1,5 +1,7 @@
 {
   "common": {
+    "apply-to-database": "データベースに適用",
+    "no-file-to-upload": "アップロードするファイルがありません",
     "view": "チェック",
     "you": "あなた",
     "general": "全般",

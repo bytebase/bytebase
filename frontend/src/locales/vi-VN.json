@@ -1,5 +1,7 @@
 {
   "common": {
+    "apply-to-database": "Áp dụng cho cơ sở dữ liệu",
+    "no-file-to-upload": "Không có tệp để tải lên",
     "view": "Xem",
     "you": "bạn",
     "general": "Chung",

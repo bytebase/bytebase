@@ -1,5 +1,7 @@
 {
   "common": {
+    "apply-to-database": "Aplicar a la base de datos",
+    "no-file-to-upload": "No hay archivo para cargar",
     "view": "Ver",
     "you": "tu",
     "general": "General",
