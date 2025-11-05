@@ -2,7 +2,6 @@
 --
 -- This migration adds a "payload" column to store additional data for worksheets,
 -- including the starred status and folders. The starred column is migrated into the payload.
-ALTER TABLE worksheet_organizer DROP COLUMN IF EXISTS category;
 
 -- Add payload column with default empty object
 ALTER TABLE worksheet_organizer ADD COLUMN payload jsonb NOT NULL DEFAULT '{}';
