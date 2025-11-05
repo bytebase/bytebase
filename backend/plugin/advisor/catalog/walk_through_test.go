@@ -12,13 +12,10 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 	"gopkg.in/yaml.v3"
 
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-
-	// Register postgresql parser driver.
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/sheet"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy"
 )
 
 type testData struct {
