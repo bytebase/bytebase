@@ -163,7 +163,7 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, 
 		}
 
 		var payload storepb.WorkSheetOrganizerPayload
-		if err := protojson.Unmarshal(payloadBytes, &payload); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal(payloadBytes, &payload); err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal worksheet organizer payload")
 		}
 		sheet.Folders = payload.Folders
