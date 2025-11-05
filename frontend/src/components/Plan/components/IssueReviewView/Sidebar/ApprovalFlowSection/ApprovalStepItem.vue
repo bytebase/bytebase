@@ -57,7 +57,7 @@
             <PotentialApprovers :users="potentialApprovers" />
             <div
               v-if="showSelfApprovalTip"
-              class="px-1 py-0.5 border rounded text-xs bg-yellow-50 border-yellow-600 text-yellow-600"
+              class="px-1 py-0.5 border rounded-sm text-xs bg-yellow-50 border-yellow-600 text-yellow-600"
             >
               {{ $t("custom-approval.issue-review.self-approval-not-allowed") }}
             </div>

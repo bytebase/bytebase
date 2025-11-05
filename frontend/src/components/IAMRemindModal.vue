@@ -4,7 +4,7 @@
     :title="$t('remind.role-expire.title')"
     @close="onClose"
   >
-    <div class="w-[30rem] max-w-[calc(100vw-10rem)]">
+    <div class="w-120 max-w-[calc(100vw-10rem)]">
       <div class="space-y-2">
         <p>{{ $t("remind.role-expire.content") }}</p>
         <ul class="list-disc textinfolabel ml-4">

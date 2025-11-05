@@ -15,7 +15,7 @@
         :confirm-description="
           $t('instance.archived-instances-will-not-be-displayed')
         "
-        class="!border-none"
+        class="border-none!"
         @confirm="archiveOrRestoreInstance(true)"
       >
         <div class="mt-3">
@@ -39,7 +39,7 @@
           ])
         "
         :confirm-description="''"
-        class="!border-none"
+        class="border-none!"
         @confirm="archiveOrRestoreInstance(false)"
       />
     </template>

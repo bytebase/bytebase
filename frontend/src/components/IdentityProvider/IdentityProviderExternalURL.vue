@@ -1,7 +1,7 @@
 <template>
   <div class="p-4 rounded-lg border border-gray-200 bg-gray-50">
     <div class="flex items-start space-x-3">
-      <div class="flex-shrink-0">
+      <div class="shrink-0">
         <InfoIcon class="w-5 h-5 text-blue-500 mt-0.5" />
       </div>
       <div class="flex-1 min-w-0">

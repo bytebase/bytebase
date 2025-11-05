@@ -4,13 +4,13 @@
     class="mt-2 flex flex-row justify-start items-center bg-yellow-50 border-none rounded-lg p-2 px-3"
   >
     <heroicons-outline:exclamation
-      class="h-6 w-6 text-yellow-400 flex-shrink-0 mr-1"
+      class="h-6 w-6 text-yellow-400 shrink-0 mr-1"
     />
     <span class="text-yellow-800 text-sm">
       {{ $t("instance.no-read-only-data-source-warn-for-admin-dba") }}
     </span>
     <NButton
-      class="!ml-4 text-sm"
+      class="ml-4! text-sm"
       @click.prevent="$emit('add-readonly-datasource')"
     >
       {{ $t("common.create") }}

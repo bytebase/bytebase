@@ -62,7 +62,7 @@
     >
       <DrawerContent
         :title="$t('environment.create')"
-        class="w-[36rem] max-w-[100vw]"
+        class="w-xl max-w-[100vw]"
       >
         <EnvironmentFormBody />
         <template #footer>
@@ -75,7 +75,7 @@
   <Drawer v-model:show="state.reorder" :close-on-esc="true">
     <DrawerContent
       :title="$t('environment.reorder')"
-      class="w-[30rem] max-w-[90vw]"
+      class="w-120 max-w-[90vw]"
     >
       <div>
         <Draggable
@@ -88,7 +88,7 @@
           >
             <div
               :key="element.id"
-              class="flex items-center justify-between p-2 hover:bg-gray-100 rounded-sm cursor-grab"
+              class="flex items-center justify-between p-2 hover:bg-gray-100 rounded-xs cursor-grab"
             >
               <div class="flex items-center gap-x-2">
                 <span class="textinfo"> {{ index + 1 }}.</span>

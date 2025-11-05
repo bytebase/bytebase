@@ -83,7 +83,7 @@
                   <NSelect
                     v-if="uploadFileList.length > 0"
                     v-model:value="state.encoding"
-                    class="!w-24"
+                    class="w-24!"
                     filterable
                     :options="encodingOptions"
                     :consistent-menu-width="false"
@@ -330,7 +330,7 @@ watch(showCreatePanel, (show) => {
 
 <style scoped lang="postcss">
 .file-upload :deep(.n-upload-file-list .n-upload-file .n-upload-file-info) {
-  @apply items-center;
+  align-items: center;
 }
 .file-upload
   :deep(
@@ -339,6 +339,9 @@ watch(showCreatePanel, (show) => {
       .n-upload-file-info
       .n-upload-file-info__thumbnail
   ) {
-  @apply flex items-center justify-center mr-0.5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.125rem;
 }
 </style>

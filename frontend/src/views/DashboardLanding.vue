@@ -36,7 +36,7 @@
           :to="{
             name: access.route,
           }"
-          class="flex justify-center items-center gap-x-2 cursor-pointer border rounded px-4 py-5 bg-white hover:bg-gray-100"
+          class="flex justify-center items-center gap-x-2 cursor-pointer border rounded-sm px-4 py-5 bg-white hover:bg-gray-100"
           @click="handleClick(access)"
         >
           <component :is="access.icon" class="w-5 h-5 text-gray-500" />
@@ -85,14 +85,14 @@
   >
     <DrawerContent
       :title="$t('landing.quick-link.manage')"
-      class="!w-96 max-w-full"
+      class="w-96! max-w-full"
       style="max-width: calc(100vw - 8rem)"
     >
       <div>
         <Draggable v-model="quickLinkList" item-key="id" animation="300">
           <template #item="{ element }: { element: QuickLink }">
             <div
-              class="flex items-center justify-between p-2 hover:bg-gray-100 rounded-sm cursor-grab"
+              class="flex items-center justify-between p-2 hover:bg-gray-100 rounded-xs cursor-grab"
             >
               <div :key="element.id" class="flex items-center gap-x-2">
                 <NCheckbox
@@ -112,7 +112,7 @@
         <div
           v-for="access in unSelectedAccessList"
           :key="access.id"
-          class="flex items-center gap-x-2 p-2 hover:bg-gray-100 rounded-sm cursor-pointer"
+          class="flex items-center gap-x-2 p-2 hover:bg-gray-100 rounded-xs cursor-pointer"
           @click.prevent.stop="() => checkAccessItem(access)"
         >
           <NCheckbox

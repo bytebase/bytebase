@@ -17,7 +17,7 @@
       </span>
       <NInput
         :value="password"
-        class="!w-auto"
+        class="w-auto!"
         size="small"
         type="password"
         :input-props="{ autocomplete: 'new-password' }"

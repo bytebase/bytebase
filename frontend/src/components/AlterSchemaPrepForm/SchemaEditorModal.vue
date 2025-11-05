@@ -12,7 +12,7 @@
     container-class="h-full flex flex-col gap-y-4"
     @close="dismissModal"
   >
-    <MaskSpinner v-if="state.previewStatus" class="!bg-white/75">
+    <MaskSpinner v-if="state.previewStatus" class="bg-white/75!">
       <span class="text-sm">
         {{ state.previewStatus }}
       </span>
@@ -43,7 +43,7 @@
         :tab="$t('schema-editor.raw-sql')"
         display-directive="show:lazy"
       >
-        <div class="w-full h-full grid grid-rows-[50px,_1fr] overflow-y-auto">
+        <div class="w-full h-full grid grid-rows-[50px_1fr] overflow-y-auto">
           <div
             class="w-full h-full shrink-0 flex flex-row justify-between items-center"
           >
@@ -489,7 +489,7 @@ const renderEmptyGeneratedDDLContent = (databases: ComposedDatabase[]) => {
   return h(
     "ul",
     {
-      class: "text-sm space-y-1 max-h-[20rem] overflow-y-auto",
+      class: "text-sm space-y-1 max-h-80 overflow-y-auto",
     },
     children
   );

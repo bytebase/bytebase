@@ -40,7 +40,7 @@
           :checked="state.mode === 'CUSTOM'"
           :disabled="!allowEdit"
           value="CUSTOM"
-          class="!items-center"
+          class="items-center!"
           @click="handleModeChange('CUSTOM')"
         >
           <div class="flex items-center gap-x-1.5">

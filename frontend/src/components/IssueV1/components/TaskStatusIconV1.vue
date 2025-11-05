@@ -2,7 +2,7 @@
   <NTooltip :disabled="!showTooltip">
     <template #trigger>
       <div
-        class="relative flex flex-shrink-0 items-center justify-center select-none overflow-hidden"
+        class="relative flex shrink-0 items-center justify-center select-none overflow-hidden"
         :class="[classes, containerSize]"
       >
         <template
@@ -27,7 +27,7 @@
               aria-hidden="true"
             />
             <span
-              class="w-full h-full rounded-full z-[1] bg-info"
+              class="w-full h-full rounded-full z-1 bg-info"
               aria-hidden="true"
             />
           </div>

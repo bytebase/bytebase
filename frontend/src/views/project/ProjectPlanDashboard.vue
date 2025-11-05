@@ -22,7 +22,7 @@
       </div>
     </div>
 
-    <div class="relative w-full mt-4 min-h-[20rem]">
+    <div class="relative w-full mt-4 min-h-80">
       <PagedTable
         ref="planPagedTable"
         :session-key="`bb.${project.name}.plan-table`"

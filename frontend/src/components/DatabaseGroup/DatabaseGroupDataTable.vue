@@ -118,7 +118,7 @@ const columnList = computed((): DatabaseGroupDataTableColumn[] => {
 
         return (
           <div
-            class="flex items-center justify-end cursor-pointer w-6 h-6 p-1 opacity-60 hover:opacity-100 hover:bg-white hover:shadow rounded"
+            class="flex items-center justify-end cursor-pointer w-6 h-6 p-1 opacity-60 hover:opacity-100 hover:bg-white hover:shadow-sm rounded-sm"
             onClick={openExternalLink}
           >
             <ExternalLinkIcon class="w-4 h-auto" />

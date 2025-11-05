@@ -20,7 +20,7 @@
       v-if="link"
       quaternary
       type="info"
-      class="!rounded !w-[var(--n-height)] !p-0 !ml-1"
+      class="rounded-sm! w-(--n-height)! p-0! ml-1!"
       :disabled="!selectedRule || !allowAdmin"
       @click="toApprovalFlow"
     >

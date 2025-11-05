@@ -12,7 +12,7 @@
           database: db.name,
           scene: 'all',
         }"
-        class="border w-full h-full rounded"
+        class="border w-full h-full rounded-sm"
         @update:content="handleUpdateCode"
       />
     </div>

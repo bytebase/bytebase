@@ -11,7 +11,7 @@
           :to="{
             path: `/${changelog.issue}`,
           }"
-          class="normal-link text-sm hover:!no-underline"
+          class="normal-link text-sm hover:no-underline!"
           target="_blank"
           @click.stop
         >

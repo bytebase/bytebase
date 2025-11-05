@@ -186,7 +186,7 @@
             :size="'large'"
             :value="runTimeInMS === undefined ? 'immediate' : 'scheduled'"
             @update:value="handleExecutionModeChange"
-            class="!flex flex-row gap-x-4"
+            class="flex! flex-row gap-x-4"
           >
             <!-- Run Immediately Option -->
             <NRadio value="immediate">

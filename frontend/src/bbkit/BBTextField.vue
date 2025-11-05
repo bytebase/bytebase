@@ -4,7 +4,7 @@
     v-bind="$attrs"
     v-model:value="state.text"
     :type="type"
-    class="!border-none"
+    class="border-none!"
     :disabled="disabled"
     :clearable="clearable"
     :placeholder="placeholder"

@@ -9,7 +9,7 @@
     :positive-button-props="{
       disabled: disabled,
     }"
-    class="!border-none"
+    class="border-none!"
     @confirm="handleDelete"
   >
     <div class="mt-3">
@@ -25,7 +25,7 @@
         </div>
         <i18n-t tag="div" keypath="common.hard-delete.double-comfirm">
           <template #name>
-            <span class="bg-gray-200 rounded py-1 px-2">
+            <span class="bg-gray-200 rounded-sm py-1 px-2">
               {{ resource.name }}
             </span>
           </template>

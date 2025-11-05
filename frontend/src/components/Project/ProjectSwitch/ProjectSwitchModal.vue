@@ -5,7 +5,7 @@
     :trap-focus="false"
     :show="show"
     :title="$t('project.select')"
-    class="w-[48rem] max-w-full h-auto max-h-full"
+    class="w-3xl max-w-full h-auto max-h-full"
     @close="$emit('dismiss')"
   >
     <ProjectSwitchContent

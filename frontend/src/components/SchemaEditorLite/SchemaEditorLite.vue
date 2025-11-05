@@ -165,28 +165,33 @@ defineExpose({
 <style lang="postcss" scoped>
 /* splitpanes pane style */
 .bb-schema-editor :deep(.splitpanes.default-theme .splitpanes__pane) {
-  @apply bg-transparent !transition-none;
+  background-color: transparent;
+  transition: none !important;
 }
 
 .bb-schema-editor :deep(.splitpanes.default-theme .splitpanes__splitter) {
-  @apply bg-gray-100 border-none;
+  background-color: var(--color-gray-100);
+  border: none;
 }
 
 .bb-schema-editor :deep(.splitpanes.default-theme .splitpanes__splitter:hover) {
-  @apply bg-indigo-300;
+  background-color: var(--color-indigo-300);
 }
 
 .bb-schema-editor
   :deep(.splitpanes.default-theme .splitpanes__splitter::before),
 .bb-schema-editor
   :deep(.splitpanes.default-theme .splitpanes__splitter::after) {
-  @apply bg-gray-700 opacity-50 text-white;
+  background-color: var(--color-gray-700);
+  opacity: 0.5;
+  color: white;
 }
 
 .bb-schema-editor
   :deep(.splitpanes.default-theme .splitpanes__splitter:hover::before),
 .bb-schema-editor
   :deep(.splitpanes.default-theme .splitpanes__splitter:hover::after) {
-  @apply bg-white opacity-100;
+  background-color: white;
+  opacity: 1;
 }
 </style>

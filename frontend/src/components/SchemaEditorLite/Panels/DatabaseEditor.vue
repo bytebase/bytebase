@@ -15,7 +15,7 @@
               <NSelect
                 :value="selectedSchemaName"
                 :options="schemaSelectorOptionList"
-                class="min-w-[8rem]"
+                class="min-w-32"
                 @update:value="$emit('update:selected-schema-name', $event)"
               />
             </div>
@@ -60,7 +60,7 @@
       </div>
       <div class="flex justify-end items-center">
         <div
-          class="flex flex-row justify-end items-center bg-gray-100 p-1 rounded whitespace-nowrap"
+          class="flex flex-row justify-end items-center bg-gray-100 p-1 rounded-sm whitespace-nowrap"
         >
           <NButton
             size="small"
@@ -130,7 +130,7 @@
     @close="state.showSchemaTemplateDrawer = false"
   >
     <DrawerContent :title="$t('schema-template.table-template.self')">
-      <div class="w-[calc(100vw-36rem)] min-w-[64rem] max-w-[calc(100vw-8rem)]">
+      <div class="w-[calc(100vw-36rem)] min-w-5xl max-w-[calc(100vw-8rem)]">
         <TableTemplates
           :engine="engine"
           :readonly="true"

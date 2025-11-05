@@ -234,12 +234,30 @@ watch(
 
 <style scoped lang="postcss">
 .task-list::before {
-  @apply absolute top-0 h-4 w-full -ml-4 z-10 pointer-events-none transition-shadow;
+  position: absolute;
+  top: 0;
+  height: 1rem;
+  width: 100%;
+  margin-left: -1rem;
+  z-index: 10;
+  pointer-events: none;
+  transition-property: box-shadow;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
   content: "";
   box-shadow: none;
 }
 .task-list::after {
-  @apply absolute bottom-0 h-4 w-full -ml-4 z-10 pointer-events-none transition-shadow;
+  position: absolute;
+  bottom: 0;
+  height: 1rem;
+  width: 100%;
+  margin-left: -1rem;
+  z-index: 10;
+  pointer-events: none;
+  transition-property: box-shadow;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
   content: "";
   box-shadow: none;
 }

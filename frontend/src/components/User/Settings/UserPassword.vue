@@ -8,8 +8,8 @@
         </label>
         <span
           :class="[
-            'flex items-center gap-x-1 textinfolabel !text-sm',
-            passwordHint ? '!text-error' : '',
+            'flex items-center gap-x-1 textinfolabel text-sm!',
+            passwordHint ? 'text-error!' : '',
           ]"
         >
           {{ $t("settings.profile.password-hint") }}
@@ -22,7 +22,7 @@
           <LearnMoreLink
             v-if="showLearnMore"
             :external="false"
-            class="!text-sm"
+            class="text-sm!"
             :url="
               router.resolve({
                 name: SETTING_ROUTE_WORKSPACE_GENERAL,

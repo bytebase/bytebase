@@ -4,7 +4,7 @@
       {{ $t("issue.grant-request.details") }}
     </h3>
 
-    <div class="p-4 border rounded space-y-4">
+    <div class="p-4 border rounded-sm space-y-4">
       <!-- Requested Role -->
       <div v-if="requestRole" class="space-y-2">
         <span class="text-sm text-control-light">

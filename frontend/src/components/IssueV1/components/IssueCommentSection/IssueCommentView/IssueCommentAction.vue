@@ -24,7 +24,7 @@
             <ActionSentence
               :issue="issue"
               :issue-comment="issueComment"
-              class="text-gray-600 break-words min-w-0"
+              class="text-gray-600 wrap-break-word min-w-0"
             />
 
             <HumanizeTs
@@ -60,7 +60,7 @@
       </div>
       <div
         v-if="$slots.comment"
-        class="px-4 py-3 border-t border-gray-200 text-sm text-gray-700 whitespace-pre-wrap break-words"
+        class="px-4 py-3 border-t border-gray-200 text-sm text-gray-700 whitespace-pre-wrap wrap-break-word"
       >
         <slot name="comment" />
       </div>

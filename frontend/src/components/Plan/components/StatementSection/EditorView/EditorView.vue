@@ -95,7 +95,7 @@
 
     <div class="relative flex-1 min-h-[200px] max-h-[50vh]">
       <MonacoEditor
-        class="w-full h-full min-h-[200px] border rounded overflow-hidden"
+        class="w-full h-full min-h-[200px] border rounded-sm overflow-hidden"
         :filename="filename"
         :content="state.statement"
         :language="language"
@@ -128,8 +128,8 @@
     v-model:show="state.showEditorModal"
     :title="statementTitle"
     :trap-focus="true"
-    header-class="!border-b-0"
-    container-class="!pt-0 !overflow-hidden"
+    header-class="border-b-0!"
+    container-class="pt-0! overflow-hidden!"
   >
     <div
       id="modal-editor-container"

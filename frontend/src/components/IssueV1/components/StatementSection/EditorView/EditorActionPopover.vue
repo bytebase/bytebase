@@ -15,7 +15,7 @@
       <template
         v-if="shouldShowInstanceRoleSelect && shouldShowTransactionModeToggle"
       >
-        <NDivider class="!my-2" />
+        <NDivider class="my-2!" />
       </template>
       <template v-if="shouldShowTransactionModeToggle">
         <TransactionModeToggle />

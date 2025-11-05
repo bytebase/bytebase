@@ -5,7 +5,7 @@
         ? $t('schema-editor.actions.create-view')
         : $t('schema-editor.actions.rename')
     "
-    class="shadow-inner outline outline-gray-200"
+    class="shadow-inner outline-solid outline-gray-200"
     @close="dismissModal"
   >
     <div class="w-72">

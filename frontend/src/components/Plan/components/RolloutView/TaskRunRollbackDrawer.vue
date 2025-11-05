@@ -61,7 +61,7 @@
                   </template>
                   <div
                     v-else-if="preview.error"
-                    class="p-3 border border-red-200 bg-red-50 rounded text-sm text-red-600"
+                    class="p-3 border border-red-200 bg-red-50 rounded-sm text-sm text-red-600"
                   >
                     {{ preview.error }}
                   </div>

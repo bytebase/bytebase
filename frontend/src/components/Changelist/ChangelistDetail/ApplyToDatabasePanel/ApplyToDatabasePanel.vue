@@ -3,7 +3,7 @@
     <DrawerContent :title="$t('changelist.apply-to-database')">
       <template #default>
         <div
-          class="w-[calc(100vw-8rem)] lg:w-[60rem] max-w-[calc(100vw-8rem)] overflow-x-auto"
+          class="w-[calc(100vw-8rem)] lg:w-240 max-w-[calc(100vw-8rem)] overflow-x-auto"
         >
           <div class="flex flex-col">
             <div class="mb-4 flex flex-row justify-start items-center gap-2">

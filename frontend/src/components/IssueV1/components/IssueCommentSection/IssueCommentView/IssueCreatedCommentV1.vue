@@ -25,7 +25,7 @@
                   class="flex items-center gap-x-2 text-sm min-w-0 flex-wrap"
                 >
                   <ActionCreator :creator="issue.creator" />
-                  <span class="text-gray-600 break-words min-w-0">{{
+                  <span class="text-gray-600 wrap-break-word min-w-0">{{
                     $t("activity.sentence.created-issue")
                   }}</span>
                   <HumanizeTs

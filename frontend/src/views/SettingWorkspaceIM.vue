@@ -9,7 +9,7 @@
 
     <NEmpty
       v-if="state.setting.settings.length === 0"
-      class="py-12 border rounded"
+      class="py-12 border rounded-sm"
     >
       <template #extra>
         <NButton
@@ -25,7 +25,7 @@
       <div
         v-for="(item, i) in state.setting.settings"
         :key="item.type"
-        class="border rounded p-4"
+        class="border rounded-sm p-4"
       >
         <template v-if="isConfigured(item.type)">
           <component :is="renderOption({ value: item.type })" />

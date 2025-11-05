@@ -1,7 +1,7 @@
 <template>
   <span
     v-if="hasAnyChecks"
-    class="flex items-center justify-center select-none flex-shrink-0"
+    class="flex items-center justify-center select-none shrink-0"
     :class="iconClass()"
   >
     <template v-if="planCheckRunStatus === Advice_Level.ERROR">

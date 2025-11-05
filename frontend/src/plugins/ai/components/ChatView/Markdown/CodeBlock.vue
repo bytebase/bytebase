@@ -1,7 +1,7 @@
 <template>
   <div
     ref="containerRef"
-    class="flex flex-col overflow-x-hidden border border-gray-500 rounded bg-white"
+    class="flex flex-col overflow-x-hidden border border-gray-500 rounded-sm bg-white"
     :data-message-wrapper-width="messageWrapperWidth"
     :style="`width: ${combinedWidth}px`"
   >

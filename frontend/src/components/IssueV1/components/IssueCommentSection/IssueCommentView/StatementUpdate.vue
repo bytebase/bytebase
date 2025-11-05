@@ -6,8 +6,8 @@
   <BBModal
     v-if="showPanel"
     :title="$t('common.detail')"
-    header-class="!border-0"
-    container-class="!pt-0"
+    header-class="border-0!"
+    container-class="pt-0!"
     @close="showPanel = false"
   >
     <div

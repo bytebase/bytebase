@@ -15,7 +15,7 @@
         >
           <div
             v-if="conversation.name"
-            class="text-sm flex-1 whitespace-pre-wrap break-words break-all"
+            class="text-sm flex-1 whitespace-pre-wrap wrap-break-word break-all"
           >
             {{ conversation.name }}
           </div>
@@ -27,7 +27,7 @@
           </div>
           <div class="flex items-center gap-x-px">
             <button
-              class="flex items-center p-0.5 border border-transparent rounded text-gray-500 hover:text-accent hover:bg-indigo-50 hover:border-accent cursor-pointer"
+              class="flex items-center p-0.5 border border-transparent rounded-sm text-gray-500 hover:text-accent hover:bg-indigo-50 hover:border-accent cursor-pointer"
               @click.stop="state.rename = conversation"
             >
               <PencilIcon class="w-3 h-3" />
@@ -37,7 +37,7 @@
             >
               <template #trigger>
                 <button
-                  class="flex items-center p-0.5 border border-transparent rounded text-gray-500 hover:text-accent hover:bg-indigo-50 hover:border-accent cursor-pointer"
+                  class="flex items-center p-0.5 border border-transparent rounded-sm text-gray-500 hover:text-accent hover:bg-indigo-50 hover:border-accent cursor-pointer"
                   @click.stop=""
                 >
                   <TrashIcon class="w-3 h-3" />

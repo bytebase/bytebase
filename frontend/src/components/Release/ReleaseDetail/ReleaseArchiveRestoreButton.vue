@@ -7,7 +7,7 @@
     :confirm-title="$t('bbkit.confirm-button.sure-to-archive')"
     :confirm-description="$t('bbkit.confirm-button.can-undo')"
     :ok-text="$t('common.confirm')"
-    class="!border-none"
+    class="border-none!"
     @confirm="archiveOrRestoreRelease(true)"
   />
   <BBButtonConfirm
@@ -15,7 +15,7 @@
     :type="'RESTORE'"
     :button-text="$t('common.restore')"
     :require-confirm="false"
-    class="!border-none"
+    class="border-none!"
     @confirm="archiveOrRestoreRelease(false)"
   />
 </template>

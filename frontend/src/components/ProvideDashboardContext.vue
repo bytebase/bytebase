@@ -1,6 +1,6 @@
 <template>
   <slot v-if="!isInitializing" />
-  <MaskSpinner v-else class="!bg-white" />
+  <MaskSpinner v-else class="bg-white!" />
 </template>
 
 <script lang="ts" setup>

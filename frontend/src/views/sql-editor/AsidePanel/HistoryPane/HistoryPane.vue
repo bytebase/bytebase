@@ -31,7 +31,7 @@
           />
         </div>
         <p
-          class="max-w-full text-xs break-words font-mono line-clamp-3"
+          class="max-w-full text-xs wrap-break-word font-mono line-clamp-3"
           v-html="getFormattedStatement(history.statement)"
         ></p>
       </div>
@@ -53,7 +53,7 @@
     </div>
 
     <template v-if="queryHistoryData.queryHistories.length === 0">
-      <MaskSpinner v-if="state.loading" class="!bg-white/75" />
+      <MaskSpinner v-if="state.loading" class="bg-white/75!" />
       <div
         v-else
         class="w-full flex items-center justify-center py-8 textinfolabel"

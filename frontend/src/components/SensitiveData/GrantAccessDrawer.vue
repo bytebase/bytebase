@@ -2,7 +2,7 @@
   <Drawer :show="true" @close="() => emit('dismiss')">
     <DrawerContent
       :title="$t('settings.sensitive-data.grant-access')"
-      class="w-[64rem] max-w-[100vw] relative grant-access-drawer"
+      class="w-5xl max-w-[100vw] relative grant-access-drawer"
     >
       <GrantAccessForm
         :column-list="columnList"

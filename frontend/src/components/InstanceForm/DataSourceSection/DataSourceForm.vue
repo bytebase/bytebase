@@ -962,7 +962,7 @@ MIIEvQ...
           </template>
           <template v-else>
             <NButton
-              class="!mt-2"
+              class="mt-2!"
               :disabled="!allowEdit"
               @click.prevent="handleEditSSL"
             >

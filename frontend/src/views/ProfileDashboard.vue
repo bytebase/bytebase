@@ -1,6 +1,6 @@
 <template>
   <main
-    class="flex-1 h-full relative pb-8 focus:outline-none xl:order-last"
+    class="flex-1 h-full relative pb-8 focus:outline-hidden xl:order-last"
     tabindex="0"
   >
     <NoPermissionPlaceholder
@@ -182,7 +182,7 @@
                 placement="bottom-end"
               >
                 <heroicons-outline:ellipsis-horizontal
-                  class="w-8 p-1 h-auto cursor-pointer hover:bg-gray-100 rounded"
+                  class="w-8 p-1 h-auto cursor-pointer hover:bg-gray-100 rounded-sm"
                 />
               </NDropdown>
             </div>

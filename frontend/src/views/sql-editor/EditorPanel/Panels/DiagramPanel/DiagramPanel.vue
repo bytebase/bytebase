@@ -18,6 +18,6 @@ const { database } = useConnectionOfCurrentSQLEditorTab();
 
 <style lang="postcss" scoped>
 :deep(.bb-schema-diagram--navigator--main) {
-  @apply border-0;
+  border-width: 0;
 }
 </style>

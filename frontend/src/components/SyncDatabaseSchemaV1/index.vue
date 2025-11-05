@@ -15,7 +15,7 @@
     </div>
     <StepTab
       v-else
-      class="pt-4 flex-1 overflow-hidden flex flex-col !space-y-4"
+      class="pt-4 flex-1 overflow-hidden flex flex-col space-y-4!"
       :step-list="stepTabList"
       :current-index="state.currentStep"
       :show-cancel="false"

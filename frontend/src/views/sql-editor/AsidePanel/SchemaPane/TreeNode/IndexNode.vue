@@ -7,7 +7,7 @@
   >
     <template #icon>
       <PrimaryKeyIcon v-if="isPrimaryKey" class="w-4 h-4" />
-      <IndexIcon v-else class="!w-4 !h-4 text-accent/80" />
+      <IndexIcon v-else class="w-4! h-4! text-accent/80" />
     </template>
   </CommonNode>
 </template>

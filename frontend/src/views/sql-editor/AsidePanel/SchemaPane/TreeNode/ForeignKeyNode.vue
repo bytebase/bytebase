@@ -6,7 +6,7 @@
     :indent="0"
   >
     <template #icon>
-      <ForeignKeyIcon class="!w-3.5 !h-3.5 text-gray-500" />
+      <ForeignKeyIcon class="w-3.5! h-3.5! text-gray-500" />
     </template>
   </CommonNode>
 </template>

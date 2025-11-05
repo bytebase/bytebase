@@ -9,7 +9,7 @@
     </template>
 
     <div
-      class="space-y-4 h-full w-[calc(100vw-8rem)] lg:w-[60rem] max-w-[calc(100vw-8rem)] overflow-x-auto"
+      class="space-y-4 h-full w-[calc(100vw-8rem)] lg:w-240 max-w-[calc(100vw-8rem)] overflow-x-auto"
     >
       <DatabaseAndGroupSelector
         :project="project"

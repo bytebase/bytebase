@@ -1,6 +1,6 @@
 <template>
   <div
-    class="relative w-5 h-5 flex flex-shrink-0 items-center justify-center rounded-full select-none"
+    class="relative w-5 h-5 flex shrink-0 items-center justify-center rounded-full select-none"
     :class="classes"
   >
     <template v-if="status === TaskRun_Status.PENDING">
@@ -13,7 +13,7 @@
           aria-hidden="true"
         />
         <span
-          class="w-full h-full rounded-full z-[1] bg-info"
+          class="w-full h-full rounded-full z-1 bg-info"
           aria-hidden="true"
         />
       </div>

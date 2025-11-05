@@ -25,7 +25,7 @@
                 :key="index"
               >
                 <div
-                  class="flex justify-center px-2 py-4 rounded border border-control-border hover:bg-control-bg-hover cursor-pointer"
+                  class="flex justify-center px-2 py-4 rounded-sm border border-control-border hover:bg-control-bg-hover cursor-pointer"
                   @click.capture="state.webhook.type = item.type"
                 >
                   <div class="flex flex-col items-center">

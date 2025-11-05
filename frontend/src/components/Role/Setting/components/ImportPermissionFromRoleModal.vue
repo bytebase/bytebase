@@ -19,7 +19,7 @@
               filterDisplayPermissions.length
             }})
           </p>
-          <div class="max-h-[10em] overflow-auto border rounded p-2">
+          <div class="max-h-[10em] overflow-auto border rounded-sm p-2">
             <p
               v-for="permission in filterDisplayPermissions"
               :key="permission"
@@ -30,7 +30,7 @@
           </div>
         </div>
       </template>
-      <div class="!mt-4 w-full flex flex-row justify-end items-center gap-2">
+      <div class="mt-4! w-full flex flex-row justify-end items-center gap-2">
         <NButton @click.prevent="$emit('cancel')">
           {{ $t("common.cancel") }}
         </NButton>

@@ -99,7 +99,7 @@ providePlanCheckRunContext(
 
 const { overrideMainContainerClass } = useBodyLayoutContext();
 
-overrideMainContainerClass("!py-0 !px-0");
+overrideMainContainerClass("py-0! px-0!");
 
 onMounted(() => {
   if (!uiStateStore.getIntroStateByKey("issue.visit")) {

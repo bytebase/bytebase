@@ -14,7 +14,7 @@
           :options="schemaNameOptions"
           :disabled="state.loading"
           :placeholder="$t('database.schema.select')"
-          class="!w-auto min-w-[12rem]"
+          class="w-auto! min-w-48"
         />
       </div>
 

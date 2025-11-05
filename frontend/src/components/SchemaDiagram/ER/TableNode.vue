@@ -1,6 +1,6 @@
 <template>
   <div
-    class="absolute overflow-hidden rounded-md shadow-lg border-b border-gray-200 bg-white w-[16rem] divide-y z-[10] transition-opacity"
+    class="absolute overflow-hidden rounded-md shadow-lg border-b border-gray-200 bg-white w-[16rem] divide-y z-10 transition-opacity"
     :class="tableClasses"
     bb-node-type="table"
     :bb-node-id="dummy ? `dummy-${idOfTable(table)}` : idOfTable(table)"
@@ -11,7 +11,7 @@
     }"
   >
     <h3
-      class="group font-medium leading-6 text-white px-2 py-2 rounded-t-md gap-x-1 relative text-center whitespace-pre-wrap break-words"
+      class="group font-medium leading-6 text-white px-2 py-2 rounded-t-md gap-x-1 relative text-center whitespace-pre-wrap wrap-break-word"
       :style="{
         'background-color': tableColor,
       }"
@@ -19,8 +19,8 @@
       <FocusButton
         :table="table"
         :set-center="false"
-        class="invisible group-hover:visible !absolute top-[50%] -mt-[9px] left-1 text-main group-hover:bg-white/70 group-hover:!text-main"
-        focused-class="!text-white"
+        class="invisible group-hover:visible absolute! top-[50%] -mt-[9px] left-1 text-main group-hover:bg-white/70 group-hover:text-main!"
+        focused-class="text-white!"
       />
 
       <template v-if="schema.name !== ''">
@@ -36,7 +36,7 @@
 
       <button
         v-if="editable"
-        class="invisible group-hover:visible absolute top-[50%] -mt-[9px] right-1 text-main bg-white/70 hover:bg-gray-200 p-0.5 rounded"
+        class="invisible group-hover:visible absolute top-[50%] -mt-[9px] right-1 text-main bg-white/70 hover:bg-gray-200 p-0.5 rounded-sm"
         @click="events.emit('edit-table', { schema, table })"
       >
         <heroicons-outline:pencil class="w-4 h-4" />
@@ -63,21 +63,21 @@
         </td>
         <td class="w-auto text-xs py-1.5">
           <div
-            class="whitespace-pre-wrap break-words pr-1.5"
-            :class="editable && 'hover:!text-accent'"
+            class="whitespace-pre-wrap wrap-break-word pr-1.5"
+            :class="editable && 'hover:text-accent!'"
             @click="handleClickColumn(column, 'name')"
           >
             {{ column.name }}
             <span
               v-if="columnStatus(column) !== 'normal'"
-              class="inline-block rounded-full ml-0.5 h-1.5 w-1.5 bg-accent opacity-75 translate-y-[-1px]"
+              class="inline-block rounded-full ml-0.5 h-1.5 w-1.5 bg-accent opacity-75 -translate-y-px"
             ></span>
           </div>
         </td>
-        <td class="w-[6rem] text-xs text-gray-400 py-1.5 text-right">
+        <td class="w-24 text-xs text-gray-400 py-1.5 text-right">
           <div
             class="truncate pr-1.5"
-            :class="editable && 'hover:!text-accent'"
+            :class="editable && 'hover:text-accent!'"
             @click="handleClickColumn(column, 'type')"
           >
             {{ column.type }}

@@ -19,7 +19,7 @@
             v-model:value="state.searchText"
             :placeholder="$t('common.filter-by-name')"
             :autofocus="false"
-            class="!w-40"
+            class="w-40!"
             size="small"
           />
           <NTooltip v-if="allowToCreateProject" trigger="hover">

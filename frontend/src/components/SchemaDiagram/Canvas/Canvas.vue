@@ -11,10 +11,10 @@
       <slot name="desktop" />
     </div>
 
-    <div class="!absolute right-2 bottom-2 flex items-center gap-x-2">
+    <div class="absolute! right-2 bottom-2 flex items-center gap-x-2">
       <slot name="controls" />
 
-      <NButtonGroup size="tiny" class="bg-white rounded">
+      <NButtonGroup size="tiny" class="bg-white rounded-sm">
         <NTooltip>
           <template #trigger>
             <NButton tooltip>
@@ -25,7 +25,7 @@
         </NTooltip>
       </NButtonGroup>
 
-      <NButtonGroup size="tiny" class="bg-white rounded">
+      <NButtonGroup size="tiny" class="bg-white rounded-sm">
         <NTooltip>
           <template #trigger>
             <NButton tooltip>

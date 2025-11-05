@@ -23,7 +23,7 @@
       @select="handleDropdownSelect"
     >
       <NButton
-        class="!px-1"
+        class="px-1!"
         quaternary
         size="medium"
         :disabled="disabled"

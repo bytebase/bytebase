@@ -2,7 +2,7 @@
   <component :is="tag" class="flex items-center gap-x-0.5">
     <EngineIcon :engine="engine" />
     {{ title }}
-    <span v-if="subtitle" class="!text-xs textinfolabel">
+    <span v-if="subtitle" class="text-xs! textinfolabel">
       {{ subtitle }}
     </span>
   </component>

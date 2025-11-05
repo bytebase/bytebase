@@ -17,7 +17,7 @@
           >
             <span class="pr-2">{{ $t("sql-editor.link-access") }}:</span>
             <div
-              class="border flex flex-row justify-start items-center px-2 py-1 rounded"
+              class="border flex flex-row justify-start items-center px-2 py-1 rounded-sm"
               :class="
                 allowChangeAccess
                   ? 'hover:border-accent'
@@ -33,7 +33,7 @@
           <div
             v-for="option in accessOptions"
             :key="option.label"
-            class="p-2 rounded-sm flex justify-between"
+            class="p-2 rounded-xs flex justify-between"
             :class="[
               allowChangeAccess && 'cursor-pointer hover:bg-gray-200',
               option.value === currentAccess.value && 'bg-gray-200',

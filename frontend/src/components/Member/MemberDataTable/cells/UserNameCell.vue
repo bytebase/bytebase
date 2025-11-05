@@ -8,7 +8,7 @@
           <div :class="user.state === State.DELETED ? 'line-through' : ''">
             <span
               v-if="onClickUser"
-              class="normal-link truncate max-w-[10rem]"
+              class="normal-link truncate max-w-40"
               @click="onClickUser(user, $event)"
             >
               {{ user.title }}

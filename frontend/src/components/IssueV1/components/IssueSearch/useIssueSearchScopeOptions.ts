@@ -260,7 +260,7 @@ export const useIssueSearchScopeOptions = (
             render: () =>
               h("div", { class: "flex items-center gap-x-2" }, [
                 h("div", {
-                  class: "w-4 h-4 rounded",
+                  class: "w-4 h-4 rounded-sm",
                   style: `background-color: ${label.color};`,
                 }),
                 label.value,

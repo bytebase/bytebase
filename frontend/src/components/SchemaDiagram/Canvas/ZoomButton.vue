@@ -1,5 +1,5 @@
 <template>
-  <NButtonGroup size="tiny" class="bg-white rounded">
+  <NButtonGroup size="tiny" class="bg-white rounded-sm">
     <NButton :disabled="zoom <= min" @click="$emit('zoom-out')">
       <template #icon>
         <heroicons-outline:minus />

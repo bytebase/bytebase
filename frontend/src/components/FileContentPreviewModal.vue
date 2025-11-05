@@ -7,7 +7,7 @@
         </p>
         <NSelect
           v-model:value="state.encoding"
-          class="!w-auto"
+          class="w-auto!"
           filterable
           :options="encodingOptions"
         />

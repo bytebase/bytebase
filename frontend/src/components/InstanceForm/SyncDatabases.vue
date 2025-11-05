@@ -17,7 +17,7 @@
       </NCheckbox>
       <div v-if="!state.syncAll">
         <BBSpin v-if="state.loading" class="opacity-60" />
-        <div v-else class="border rounded-sm p-2 space-y-2">
+        <div v-else class="border rounded-xs p-2 space-y-2">
           <SearchBox
             v-model:value="state.searchText"
             style="max-width: 100%"
@@ -185,6 +185,6 @@ const handleKeyDown = (e: KeyboardEvent) => {
 
 <style lang="postcss" scoped>
 .sync-database-tree :deep(.n-tree-node-switcher--hide) {
-  @apply !hidden;
+  display: none !important;
 }
 </style>

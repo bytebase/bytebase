@@ -7,7 +7,7 @@
     <DrawerContent
       :title="$t('settings.members.grant-access')"
       :closable="true"
-      class="w-[50rem] max-w-[100vw] relative"
+      class="w-200 max-w-[100vw] relative"
     >
       <div
         v-for="(binding, index) in state.bindings"
