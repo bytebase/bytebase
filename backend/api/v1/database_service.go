@@ -23,7 +23,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
-	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
@@ -748,51 +747,13 @@ func (s *DatabaseService) GetDatabaseSDLSchema(ctx context.Context, req *connect
 
 // DiffSchema diff the database schema.
 func (s *DatabaseService) DiffSchema(ctx context.Context, req *connect.Request[v1pb.DiffSchemaRequest]) (*connect.Response[v1pb.DiffSchemaResponse], error) {
-	// Check if target is changelog - use new metadata-based approach
-	changeHistoryID := req.Msg.GetChangelog()
-	if changeHistoryID != "" {
-		sourceDBSchema, err := s.getSourceDBSchema(ctx, req.Msg)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get source schema, error: %v", err))
-		}
-
-		targetDBSchema, err := s.getTargetDBSchema(ctx, req.Msg)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get target schema, error: %v", err))
-		}
-
-		engine, err := s.getParserEngine(ctx, req.Msg)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get parser engine, error: %v", err))
-		}
-
-		schemaDiff, err := schema.GetDatabaseSchemaDiff(engine, sourceDBSchema, targetDBSchema)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to compute schema diff, error: %v", err))
-		}
-
-		// Filter out bbdataarchive schema changes for Postgres
-		if engine == storepb.Engine_POSTGRES {
-			schemaDiff = schema.FilterPostgresArchiveSchema(schemaDiff)
-		}
-
-		migrationSQL, err := schema.GenerateMigration(engine, schemaDiff)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate migration SQL, error: %v", err))
-		}
-
-		return connect.NewResponse(&v1pb.DiffSchemaResponse{
-			Diff: migrationSQL,
-		}), nil
-	}
-
-	// Fallback to old string-based approach for schema string targets
-	source, err := s.getSourceSchema(ctx, req.Msg)
+	// Use unified SDL-based approach for all scenarios
+	sourceDBSchema, err := s.getSourceDBSchema(ctx, req.Msg)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get source schema, error: %v", err))
 	}
 
-	target, err := s.getTargetSchema(ctx, req.Msg)
+	targetDBSchema, err := s.getTargetDBSchema(ctx, req.Msg)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get target schema, error: %v", err))
 	}
@@ -802,17 +763,23 @@ func (s *DatabaseService) DiffSchema(ctx context.Context, req *connect.Request[v
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get parser engine, error: %v", err))
 	}
 
-	strictMode := engine != storepb.Engine_ORACLE
-	diff, err := parserbase.SchemaDiff(engine, parserbase.DiffContext{
-		IgnoreCaseSensitive: false,
-		StrictMode:          strictMode,
-	}, source, target)
+	schemaDiff, err := schema.GetDatabaseSchemaDiff(engine, sourceDBSchema, targetDBSchema)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to compute diff between source and target schemas, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to compute schema diff, error: %v", err))
+	}
+
+	// Filter out bbdataarchive schema changes for Postgres
+	if engine == storepb.Engine_POSTGRES {
+		schemaDiff = schema.FilterPostgresArchiveSchema(schemaDiff)
+	}
+
+	migrationSQL, err := schema.GenerateMigration(engine, schemaDiff)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate migration SQL, error: %v", err))
 	}
 
 	return connect.NewResponse(&v1pb.DiffSchemaResponse{
-		Diff: diff,
+		Diff: migrationSQL,
 	}), nil
 }
 
@@ -994,56 +961,6 @@ func (s *DatabaseService) getTargetDBSchema(ctx context.Context, request *v1pb.D
 	}
 
 	return nil, errors.Errorf("must set the schema or change history id as the target")
-}
-
-func (s *DatabaseService) getSourceSchema(ctx context.Context, request *v1pb.DiffSchemaRequest) (string, error) {
-	if strings.Contains(request.Name, common.ChangelogPrefix) {
-		changeHistory, err := s.GetChangelog(ctx, &connect.Request[v1pb.GetChangelogRequest]{
-			Msg: &v1pb.GetChangelogRequest{
-				Name: request.Name,
-				View: v1pb.ChangelogView_CHANGELOG_VIEW_FULL,
-			},
-		})
-		if err != nil {
-			return "", err
-		}
-		return changeHistory.Msg.Schema, nil
-	}
-
-	databaseSchema, err := s.GetDatabaseSchema(ctx, &connect.Request[v1pb.GetDatabaseSchemaRequest]{
-		Msg: &v1pb.GetDatabaseSchemaRequest{
-			Name: fmt.Sprintf("%s/schema", request.Name),
-		},
-	})
-	if err != nil {
-		return "", err
-	}
-	return databaseSchema.Msg.Schema, nil
-}
-
-func (s *DatabaseService) getTargetSchema(ctx context.Context, request *v1pb.DiffSchemaRequest) (string, error) {
-	schema := request.GetSchema()
-	changeHistoryID := request.GetChangelog()
-	// TODO: maybe we will support an empty schema as the target.
-	if schema == "" && changeHistoryID == "" {
-		return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("must set the schema or change history id as the target"))
-	}
-
-	// If the change history id is set, use the schema of the change history as the target.
-	if changeHistoryID != "" {
-		changeHistory, err := s.GetChangelog(ctx, &connect.Request[v1pb.GetChangelogRequest]{
-			Msg: &v1pb.GetChangelogRequest{
-				Name: changeHistoryID,
-				View: v1pb.ChangelogView_CHANGELOG_VIEW_FULL,
-			},
-		})
-		if err != nil {
-			return "", err
-		}
-		schema = changeHistory.Msg.Schema
-	}
-
-	return schema, nil
 }
 
 func (s *DatabaseService) getParserEngine(ctx context.Context, request *v1pb.DiffSchemaRequest) (storepb.Engine, error) {
