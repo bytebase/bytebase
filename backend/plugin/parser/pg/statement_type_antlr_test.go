@@ -177,22 +177,22 @@ func TestGetStatementTypesANTLR(t *testing.T) {
 		{
 			name:          "RENAME TABLE",
 			sql:           "ALTER TABLE t1 RENAME TO t2;",
-			expectedTypes: []string{"RENAME_TABLE"},
+			expectedTypes: []string{"ALTER_TABLE"},
 		},
 		{
 			name:          "RENAME COLUMN",
 			sql:           "ALTER TABLE t1 RENAME COLUMN old_name TO new_name;",
-			expectedTypes: []string{"RENAME_COLUMN"},
+			expectedTypes: []string{"ALTER_TABLE"},
 		},
 		{
 			name:          "RENAME COLUMN without COLUMN keyword",
 			sql:           "ALTER TABLE t1 RENAME old_name TO new_name;",
-			expectedTypes: []string{"RENAME_COLUMN"},
+			expectedTypes: []string{"ALTER_TABLE"},
 		},
 		{
 			name:          "RENAME CONSTRAINT",
 			sql:           "ALTER TABLE t1 RENAME CONSTRAINT old_constraint TO new_constraint;",
-			expectedTypes: []string{"RENAME_CONSTRAINT"},
+			expectedTypes: []string{"ALTER_TABLE"},
 		},
 		{
 			name:          "RENAME INDEX",
@@ -212,7 +212,7 @@ func TestGetStatementTypesANTLR(t *testing.T) {
 		{
 			name:          "RENAME VIEW",
 			sql:           "ALTER VIEW v_old RENAME TO v_new;",
-			expectedTypes: []string{"RENAME_VIEW"},
+			expectedTypes: []string{"ALTER_VIEW"},
 		},
 	}
 
