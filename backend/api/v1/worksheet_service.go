@@ -359,14 +359,19 @@ func (s *WorksheetService) UpdateWorksheetOrganizer(
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
-	worksheetOrganizerUpsert := &store.WorksheetOrganizerMessage{
-		WorksheetUID: worksheetUID,
-		PrincipalUID: user.ID,
+	worksheetOrganizerUpsert, err := s.store.GetWorksheetOrganizer(ctx, worksheetUID, user.ID)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to found worksheet organizer with error: %v", err))
 	}
 
 	for _, path := range request.UpdateMask.Paths {
-		if path == "starred" {
-			worksheetOrganizerUpsert.Starred = request.Organizer.Starred
+		switch path {
+		case "starred":
+			worksheetOrganizerUpsert.Payload.Starred = request.Organizer.Starred
+		case "folders":
+			worksheetOrganizerUpsert.Payload.Folders = request.Organizer.Folders
+		default:
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %q", path))
 		}
 	}
 
@@ -377,7 +382,8 @@ func (s *WorksheetService) UpdateWorksheetOrganizer(
 
 	return connect.NewResponse(&v1pb.WorksheetOrganizer{
 		Worksheet: request.Organizer.Worksheet,
-		Starred:   organizer.Starred,
+		Starred:   organizer.Payload.Starred,
+		Folders:   organizer.Payload.Folders,
 	}), nil
 }
 
@@ -539,6 +545,7 @@ func (s *WorksheetService) convertToAPIWorksheetMessage(ctx context.Context, wor
 		ContentSize: worksheet.Size,
 		Visibility:  visibility,
 		Starred:     worksheet.Starred,
+		Folders:     worksheet.Folders,
 	}, nil
 }
 

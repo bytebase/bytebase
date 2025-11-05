@@ -51,6 +51,7 @@ type WorkSheetMessage struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	Starred   bool
+	Folders   []string
 }
 
 // FindWorkSheetMessage is the API message for finding sheets.
@@ -110,7 +111,7 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, 
 			%s,
 			worksheet.visibility,
 			OCTET_LENGTH(worksheet.statement),
-			COALESCE(worksheet_organizer.starred, FALSE)
+			COALESCE(worksheet_organizer.payload, '{}')
 		FROM worksheet
 		LEFT JOIN worksheet_organizer ON worksheet_organizer.worksheet_id = worksheet.id AND worksheet_organizer.principal_id = %d
 		WHERE TRUE`, statementField, currentPrincipalID))
@@ -143,6 +144,7 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, 
 	var sheets []*WorkSheetMessage
 	for rows.Next() {
 		var sheet WorkSheetMessage
+		var payloadBytes []byte
 		if err := rows.Scan(
 			&sheet.UID,
 			&sheet.CreatorID,
@@ -155,10 +157,17 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, 
 			&sheet.Statement,
 			&sheet.Visibility,
 			&sheet.Size,
-			&sheet.Starred,
+			&payloadBytes,
 		); err != nil {
 			return nil, err
 		}
+
+		var payload storepb.WorkSheetOrganizerPayload
+		if err := common.ProtojsonUnmarshaler.Unmarshal(payloadBytes, &payload); err != nil {
+			return nil, errors.Wrapf(err, "failed to unmarshal worksheet organizer payload")
+		}
+		sheet.Folders = payload.Folders
+		sheet.Starred = payload.Starred
 
 		sheets = append(sheets, &sheet)
 	}
@@ -305,28 +314,74 @@ type WorksheetOrganizerMessage struct {
 	// Related fields
 	WorksheetUID int
 	PrincipalUID int
-	Starred      bool
+	Payload      *storepb.WorkSheetOrganizerPayload
+}
+
+func (s *Store) GetWorksheetOrganizer(ctx context.Context, worksheetUID, principalUID int) (*WorksheetOrganizerMessage, error) {
+	q := qb.Q().Space(`
+		SELECT
+			id,
+			payload
+		FROM worksheet_organizer
+		WHERE worksheet_id = ? AND principal_id = ?
+	`, worksheetUID, principalUID)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
+	worksheetOrganizer := WorksheetOrganizerMessage{
+		WorksheetUID: worksheetUID,
+		PrincipalUID: principalUID,
+		Payload:      &storepb.WorkSheetOrganizerPayload{},
+	}
+	var payload []byte
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
+		&worksheetOrganizer.UID,
+		&payload,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return &worksheetOrganizer, nil
+		}
+		return nil, errors.Wrapf(err, "failed to scan")
+	}
+	workSheetPayload := &storepb.WorkSheetOrganizerPayload{}
+	if err := common.ProtojsonUnmarshaler.Unmarshal(payload, workSheetPayload); err != nil {
+		return nil, err
+	}
+	worksheetOrganizer.Payload = workSheetPayload
+
+	return &worksheetOrganizer, nil
 }
 
 // UpsertWorksheetOrganizer upserts a new SheetOrganizerMessage.
-func (s *Store) UpsertWorksheetOrganizer(ctx context.Context, organizer *WorksheetOrganizerMessage) (*WorksheetOrganizerMessage, error) {
+func (s *Store) UpsertWorksheetOrganizer(ctx context.Context, patch *WorksheetOrganizerMessage) (*WorksheetOrganizerMessage, error) {
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback()
 
+	payloadStr, err := protojson.Marshal(patch.Payload)
+	if err != nil {
+		return nil, err
+	}
 	q := qb.Q().Space(`
 	  INSERT INTO worksheet_organizer (
 			worksheet_id,
 			principal_id,
-			starred
+			payload
 		)
 		VALUES (?, ?, ?)
 		ON CONFLICT(worksheet_id, principal_id) DO UPDATE SET
-			starred = EXCLUDED.starred
-		RETURNING id, worksheet_id, principal_id, starred
-	`, organizer.WorksheetUID, organizer.PrincipalUID, organizer.Starred)
+			payload = EXCLUDED.payload
+		RETURNING
+			id,
+			worksheet_id,
+			principal_id,
+			payload
+	`, patch.WorksheetUID, patch.PrincipalUID, payloadStr)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -334,17 +389,23 @@ func (s *Store) UpsertWorksheetOrganizer(ctx context.Context, organizer *Workshe
 	}
 
 	var worksheetOrganizer WorksheetOrganizerMessage
+	var payload []byte
 	if err := tx.QueryRowContext(ctx, query, args...).Scan(
 		&worksheetOrganizer.UID,
 		&worksheetOrganizer.WorksheetUID,
 		&worksheetOrganizer.PrincipalUID,
-		&worksheetOrganizer.Starred,
+		&payload,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
 		return nil, err
 	}
+	workSheetPayload := &storepb.WorkSheetOrganizerPayload{}
+	if err := common.ProtojsonUnmarshaler.Unmarshal(payload, workSheetPayload); err != nil {
+		return nil, err
+	}
+	worksheetOrganizer.Payload = workSheetPayload
 
 	if err := tx.Commit(); err != nil {
 		return nil, err
@@ -394,7 +455,7 @@ func GetListSheetFilter(ctx context.Context, s *Store, callerID int, filter stri
 			return qb.Q().Space("worksheet.creator_id = ?", userID), nil
 		case "starred":
 			if starred, ok := value.(bool); ok {
-				return qb.Q().Space("worksheet.id IN (SELECT worksheet_id FROM worksheet_organizer WHERE principal_id = ? AND starred = ?)", callerID, starred), nil
+				return qb.Q().Space("worksheet.id IN (SELECT worksheet_id FROM worksheet_organizer WHERE principal_id = ? AND (payload->>'starred')::boolean = ?)", callerID, starred), nil
 			}
 			return qb.Q().Space("TRUE"), nil
 		case "visibility":

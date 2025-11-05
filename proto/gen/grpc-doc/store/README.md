@@ -331,6 +331,9 @@
   
     - [PrincipalType](#bytebase-store-PrincipalType)
   
+- [store/worksheet.proto](#store_worksheet-proto)
+    - [WorkSheetOrganizerPayload](#bytebase-store-WorkSheetOrganizerPayload)
+  
 - [Scalar Value Types](#scalar-value-types)
 
 
@@ -5234,6 +5237,38 @@ PrincipalType is the type of a principal.
 | SERVICE_ACCOUNT | 2 | SERVICE_ACCOUNT represents the external service calling Bytebase OpenAPI. |
 | SYSTEM_BOT | 3 | SYSTEM_BOT represents the internal system bot performing operations. |
 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_worksheet-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/worksheet.proto
+
+
+
+<a name="bytebase-store-WorkSheetOrganizerPayload"></a>
+
+### WorkSheetOrganizerPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| starred | [bool](#bool) |  |  |
+| folders | [string](#string) | repeated | The folder path for a worksheet. For example, if the folders is [A, B, C], means the worksheet is in the A/B/C subfolder. |
+
+
+
+
+
+ 
 
  
 

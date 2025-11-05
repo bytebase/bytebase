@@ -417,12 +417,14 @@ CREATE TABLE worksheet_organizer (
     id serial PRIMARY KEY,
     worksheet_id integer NOT NULL REFERENCES worksheet(id) ON DELETE CASCADE,
     principal_id integer NOT NULL REFERENCES principal(id),
-    starred boolean NOT NULL DEFAULT false
+    payload jsonb NOT NULL DEFAULT '{}'
 );
 
 CREATE UNIQUE INDEX idx_worksheet_organizer_unique_sheet_id_principal_id ON worksheet_organizer(worksheet_id, principal_id);
 
 CREATE INDEX idx_worksheet_organizer_principal_id ON worksheet_organizer(principal_id);
+
+CREATE INDEX idx_worksheet_organizer_payload ON worksheet_organizer USING GIN(payload);
 
 -- risk stores the definition of a risk.
 CREATE TABLE risk (

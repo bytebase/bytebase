@@ -312,7 +312,8 @@ type WorksheetOrganizer struct {
 	// Format: worksheets/{worksheet}
 	Worksheet string `protobuf:"bytes,1,opt,name=worksheet,proto3" json:"worksheet,omitempty"`
 	// starred means if the worksheet is starred.
-	Starred       bool `protobuf:"varint,2,opt,name=starred,proto3" json:"starred,omitempty"`
+	Starred       bool     `protobuf:"varint,2,opt,name=starred,proto3" json:"starred,omitempty"`
+	Folders       []string `protobuf:"bytes,3,rep,name=folders,proto3" json:"folders,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -359,6 +360,13 @@ func (x *WorksheetOrganizer) GetStarred() bool {
 		return x.Starred
 	}
 	return false
+}
+
+func (x *WorksheetOrganizer) GetFolders() []string {
+	if x != nil {
+		return x.Folders
+	}
+	return nil
 }
 
 type DeleteWorksheetRequest struct {
@@ -541,7 +549,8 @@ type Worksheet struct {
 	ContentSize int64                `protobuf:"varint,9,opt,name=content_size,json=contentSize,proto3" json:"content_size,omitempty"`
 	Visibility  Worksheet_Visibility `protobuf:"varint,10,opt,name=visibility,proto3,enum=bytebase.v1.Worksheet_Visibility" json:"visibility,omitempty"`
 	// starred indicates whether the worksheet is starred by the current authenticated user.
-	Starred       bool `protobuf:"varint,11,opt,name=starred,proto3" json:"starred,omitempty"`
+	Starred       bool     `protobuf:"varint,11,opt,name=starred,proto3" json:"starred,omitempty"`
+	Folders       []string `protobuf:"bytes,12,rep,name=folders,proto3" json:"folders,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -653,6 +662,13 @@ func (x *Worksheet) GetStarred() bool {
 	return false
 }
 
+func (x *Worksheet) GetFolders() []string {
+	if x != nil {
+		return x.Folders
+	}
+	return nil
+}
+
 var File_v1_worksheet_service_proto protoreflect.FileDescriptor
 
 const file_v1_worksheet_service_proto_rawDesc = "" +
@@ -670,10 +686,11 @@ const file_v1_worksheet_service_proto_rawDesc = "" +
 	"\torganizer\x18\x01 \x01(\v2\x1f.bytebase.v1.WorksheetOrganizerB\x03\xe0A\x02R\torganizer\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
 	"updateMask\x12#\n" +
-	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"Q\n" +
+	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"k\n" +
 	"\x12WorksheetOrganizer\x12!\n" +
 	"\tworksheet\x18\x01 \x01(\tB\x03\xe0A\x02R\tworksheet\x12\x18\n" +
-	"\astarred\x18\x02 \x01(\bR\astarred\"1\n" +
+	"\astarred\x18\x02 \x01(\bR\astarred\x12\x18\n" +
+	"\afolders\x18\x03 \x03(\tR\afolders\"1\n" +
 	"\x16DeleteWorksheetRequest\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x02R\x04name\"1\n" +
 	"\x17SearchWorksheetsRequest\x12\x16\n" +
@@ -681,7 +698,7 @@ const file_v1_worksheet_service_proto_rawDesc = "" +
 	"\x18SearchWorksheetsResponse\x126\n" +
 	"\n" +
 	"worksheets\x18\x01 \x03(\v2\x16.bytebase.v1.WorksheetR\n" +
-	"worksheets\"\xb2\x04\n" +
+	"worksheets\"\xd1\x04\n" +
 	"\tWorksheet\x12\x1a\n" +
 	"\x04name\x18\x01 \x01(\tB\x06\xe0A\x02\xe0A\x05R\x04name\x12\x1d\n" +
 	"\aproject\x18\x02 \x01(\tB\x03\xe0A\x02R\aproject\x12\x1a\n" +
@@ -698,7 +715,8 @@ const file_v1_worksheet_service_proto_rawDesc = "" +
 	"visibility\x18\n" +
 	" \x01(\x0e2!.bytebase.v1.Worksheet.VisibilityB\x03\xe0A\x02R\n" +
 	"visibility\x12\x1d\n" +
-	"\astarred\x18\v \x01(\bB\x03\xe0A\x03R\astarred\"Z\n" +
+	"\astarred\x18\v \x01(\bB\x03\xe0A\x03R\astarred\x12\x1d\n" +
+	"\afolders\x18\f \x03(\tB\x03\xe0A\x03R\afolders\"Z\n" +
 	"\n" +
 	"Visibility\x12\x1a\n" +
 	"\x16VISIBILITY_UNSPECIFIED\x10\x00\x12\x10\n" +

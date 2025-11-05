@@ -141,6 +141,8 @@ message WorksheetOrganizer {
 
   // starred means if the worksheet is starred.
   bool starred = 2;
+
+  repeated string folders = 3;
 }
 
 message DeleteWorksheetRequest {
@@ -228,4 +230,6 @@ message Worksheet {
 
   // starred indicates whether the worksheet is starred by the current authenticated user.
   bool starred = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  repeated string folders = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

@@ -90,6 +90,14 @@ func (x *WorksheetOrganizer) Equal(y *WorksheetOrganizer) bool {
 	if x.Starred != y.Starred {
 		return false
 	}
+	if len(x.Folders) != len(y.Folders) {
+		return false
+	}
+	for i := 0; i < len(x.Folders); i++ {
+		if x.Folders[i] != y.Folders[i] {
+			return false
+		}
+	}
 	return true
 }
 
@@ -176,6 +184,14 @@ func (x *Worksheet) Equal(y *Worksheet) bool {
 	}
 	if x.Starred != y.Starred {
 		return false
+	}
+	if len(x.Folders) != len(y.Folders) {
+		return false
+	}
+	for i := 0; i < len(x.Folders); i++ {
+		if x.Folders[i] != y.Folders[i] {
+			return false
+		}
 	}
 	return true
 }
