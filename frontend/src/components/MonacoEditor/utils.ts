@@ -35,6 +35,8 @@ export const extensionNameOfLanguage = (lang: Language) => {
       return "js";
     case "redis":
       return "redis";
+    case "json":
+      return "json";
   }
   // A simple fallback
   console.warn("unexpected language", lang);
