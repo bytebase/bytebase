@@ -2008,7 +2008,7 @@
     "table-empty-placeholder": "「実行」をクリックしてクエリを実行します。",
     "no-data-available": "データなし",
     "download-as-file": "{file} 形式でダウンロード",
-    "only-select-allowed": "{select} ステートメントのみが実行を許可されます",
+    "only-select-allowed": "読み取り専用ステートメントのみが実行を許可されます",
     "enable-ddl-for-environment": "環境 {environment} に対して DDL/DML ステートメントを有効にすることができます。",
     "and-submit-an-issue": "そしてイシューを提出してください",
     "to-enable-admin-mode": "管理者モードを有効にするには",
