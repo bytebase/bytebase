@@ -417,7 +417,8 @@ CREATE TABLE worksheet_organizer (
     id serial PRIMARY KEY,
     worksheet_id integer NOT NULL REFERENCES worksheet(id) ON DELETE CASCADE,
     principal_id integer NOT NULL REFERENCES principal(id),
-    starred boolean NOT NULL DEFAULT false
+    starred boolean NOT NULL DEFAULT false,
+    category text NOT NULL DEFAULT ''
 );
 
 CREATE UNIQUE INDEX idx_worksheet_organizer_unique_sheet_id_principal_id ON worksheet_organizer(worksheet_id, principal_id);

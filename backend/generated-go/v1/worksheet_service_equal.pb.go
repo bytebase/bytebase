@@ -90,6 +90,9 @@ func (x *WorksheetOrganizer) Equal(y *WorksheetOrganizer) bool {
 	if x.Starred != y.Starred {
 		return false
 	}
+	if x.Category != y.Category {
+		return false
+	}
 	return true
 }
 
@@ -175,6 +178,9 @@ func (x *Worksheet) Equal(y *Worksheet) bool {
 		return false
 	}
 	if x.Starred != y.Starred {
+		return false
+	}
+	if x.Category != y.Category {
 		return false
 	}
 	return true

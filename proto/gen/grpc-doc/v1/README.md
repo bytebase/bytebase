@@ -11214,6 +11214,7 @@ The worksheet&#39;s `name` field is used to identify the worksheet to update. Fo
 | content_size | [int64](#int64) |  | content_size is the full size of the content, may not match the size of the `content` field. |
 | visibility | [Worksheet.Visibility](#bytebase-v1-Worksheet-Visibility) |  |  |
 | starred | [bool](#bool) |  | starred indicates whether the worksheet is starred by the current authenticated user. |
+| category | [string](#string) |  |  |
 
 
 
@@ -11230,6 +11231,7 @@ The worksheet&#39;s `name` field is used to identify the worksheet to update. Fo
 | ----- | ---- | ----- | ----------- |
 | worksheet | [string](#string) |  | The name of the worksheet. Format: worksheets/{worksheet} |
 | starred | [bool](#bool) |  | starred means if the worksheet is starred. |
+| category | [string](#string) |  |  |
 
 
 

@@ -51,6 +51,7 @@ type WorkSheetMessage struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	Starred   bool
+	Category  string
 }
 
 // FindWorkSheetMessage is the API message for finding sheets.
@@ -110,7 +111,8 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, 
 			%s,
 			worksheet.visibility,
 			OCTET_LENGTH(worksheet.statement),
-			COALESCE(worksheet_organizer.starred, FALSE)
+			COALESCE(worksheet_organizer.starred, FALSE),
+			COALESCE(worksheet_organizer.category, '')
 		FROM worksheet
 		LEFT JOIN worksheet_organizer ON worksheet_organizer.worksheet_id = worksheet.id AND worksheet_organizer.principal_id = %d
 		WHERE TRUE`, statementField, currentPrincipalID))
@@ -156,6 +158,7 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, 
 			&sheet.Visibility,
 			&sheet.Size,
 			&sheet.Starred,
+			&sheet.Category,
 		); err != nil {
 			return nil, err
 		}
@@ -306,10 +309,44 @@ type WorksheetOrganizerMessage struct {
 	WorksheetUID int
 	PrincipalUID int
 	Starred      bool
+	Category     string
+}
+
+func (s *Store) GetWorksheetOrganizer(ctx context.Context, worksheetUID, principalUID int) (*WorksheetOrganizerMessage, error) {
+	q := qb.Q().Space(`
+		SELECT
+			id,
+			starred,
+			category
+		FROM worksheet_organizer
+		WHERE worksheet_id = ? AND principal_id = ?
+	`, worksheetUID, principalUID)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
+	worksheetOrganizer := WorksheetOrganizerMessage{
+		WorksheetUID: worksheetUID,
+		PrincipalUID: principalUID,
+	}
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
+		&worksheetOrganizer.UID,
+		&worksheetOrganizer.Starred,
+		&worksheetOrganizer.Category,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return &worksheetOrganizer, nil
+		}
+		return nil, errors.Wrapf(err, "failed to scan")
+	}
+
+	return &worksheetOrganizer, nil
 }
 
 // UpsertWorksheetOrganizer upserts a new SheetOrganizerMessage.
-func (s *Store) UpsertWorksheetOrganizer(ctx context.Context, organizer *WorksheetOrganizerMessage) (*WorksheetOrganizerMessage, error) {
+func (s *Store) UpsertWorksheetOrganizer(ctx context.Context, patch *WorksheetOrganizerMessage) (*WorksheetOrganizerMessage, error) {
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -320,13 +357,20 @@ func (s *Store) UpsertWorksheetOrganizer(ctx context.Context, organizer *Workshe
 	  INSERT INTO worksheet_organizer (
 			worksheet_id,
 			principal_id,
-			starred
+			starred,
+			category
 		)
-		VALUES (?, ?, ?)
+		VALUES (?, ?, ?, ?)
 		ON CONFLICT(worksheet_id, principal_id) DO UPDATE SET
-			starred = EXCLUDED.starred
-		RETURNING id, worksheet_id, principal_id, starred
-	`, organizer.WorksheetUID, organizer.PrincipalUID, organizer.Starred)
+			starred = EXCLUDED.starred,
+			category = EXCLUDED.category
+		RETURNING
+			id,
+			worksheet_id,
+			principal_id,
+			starred,
+			category
+	`, patch.WorksheetUID, patch.PrincipalUID, patch.Starred, patch.Category)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -339,6 +383,7 @@ func (s *Store) UpsertWorksheetOrganizer(ctx context.Context, organizer *Workshe
 		&worksheetOrganizer.WorksheetUID,
 		&worksheetOrganizer.PrincipalUID,
 		&worksheetOrganizer.Starred,
+		&worksheetOrganizer.Category,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)

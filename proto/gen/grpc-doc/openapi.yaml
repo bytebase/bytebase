@@ -14884,6 +14884,9 @@ components:
                     readOnly: true
                     type: boolean
                     description: starred indicates whether the worksheet is starred by the current authenticated user.
+                category:
+                    readOnly: true
+                    type: string
         WorksheetOrganizer:
             required:
                 - worksheet
@@ -14897,6 +14900,8 @@ components:
                 starred:
                     type: boolean
                     description: starred means if the worksheet is starred.
+                category:
+                    type: string
         WorkspaceApprovalSetting:
             type: object
             properties:

@@ -140,6 +140,11 @@ export declare type WorksheetOrganizer = Message<"bytebase.v1.WorksheetOrganizer
    * @generated from field: bool starred = 2;
    */
   starred: boolean;
+
+  /**
+   * @generated from field: string category = 3;
+   */
+  category: string;
 };
 
 /**
@@ -303,6 +308,11 @@ export declare type Worksheet = Message<"bytebase.v1.Worksheet"> & {
    * @generated from field: bool starred = 11;
    */
   starred: boolean;
+
+  /**
+   * @generated from field: string category = 12;
+   */
+  category: string;
 };
 
 /**
