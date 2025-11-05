@@ -1,7 +1,6 @@
 {
   "common": {
     "apply-to-database": "データベースに適用",
-    "no-file-to-upload": "アップロードするファイルがありません",
     "view": "チェック",
     "you": "あなた",
     "general": "全般",
@@ -227,7 +226,6 @@
       "n-rows": "{n} 行"
     },
     "back-to-workspace": "ワークスペースに戻る",
-    "encoding": "エンコーディング",
     "finish": "仕上げる",
     "title": "タイトル",
     "text-wrap": "テキストの折り返し",

@@ -1,7 +1,6 @@
 {
   "common": {
     "apply-to-database": "Áp dụng cho cơ sở dữ liệu",
-    "no-file-to-upload": "Không có tệp để tải lên",
     "view": "Xem",
     "you": "bạn",
     "general": "Chung",
@@ -227,7 +226,6 @@
       "n-rows": "{n} dòng"
     },
     "back-to-workspace": "Quay lại không gian làm việc",
-    "encoding": "Mã hóa",
     "finish": "Hoàn tất",
     "title": "Tiêu đề",
     "text-wrap": "Ngắt dòng văn bản",

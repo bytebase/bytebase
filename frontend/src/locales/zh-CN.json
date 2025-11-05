@@ -1,7 +1,6 @@
 {
   "common": {
     "apply-to-database": "应用到数据库",
-    "no-file-to-upload": "没有文件可上传",
     "view": "查看",
     "you": "您",
     "general": "通用",
@@ -227,7 +226,6 @@
       "n-rows": "{n} 行"
     },
     "back-to-workspace": "返回工作空间",
-    "encoding": "编码",
     "finish": "完成",
     "title": "标题",
     "text-wrap": "文本折行",

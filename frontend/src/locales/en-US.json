@@ -225,7 +225,6 @@
       "n-rows": "{n} rows"
     },
     "back-to-workspace": "Back to workspace",
-    "encoding": "Encoding",
     "finish": "Finish",
     "title": "Title",
     "text-wrap": "Text Wrap",
@@ -247,8 +246,7 @@
     "collapse": "Collapse",
     "line": "Line",
     "column": "Column",
-    "apply-to-database": "Apply to database",
-    "no-file-to-upload": "No file to upload"
+    "apply-to-database": "Apply to database"
   },
   "error-page": {
     "go-back-home": "Go back home"
