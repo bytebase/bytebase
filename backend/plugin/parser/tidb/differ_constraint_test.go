@@ -268,7 +268,7 @@ func TestIndexOption(t *testing.T) {
 			old: `CREATE TABLE book(name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY (name) KEY_BLOCK_SIZE=30);`,
 			new: `CREATE TABLE book(name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY (name) KEY_BLOCK_SIZE=50);`,
 			want: "ALTER TABLE `book` DROP PRIMARY KEY;\n\n" +
-				"ALTER TABLE `book` ADD PRIMARY KEY (`name`) KEY_BLOCK_SIZE=50;\n\n",
+				"ALTER TABLE `book` ADD PRIMARY KEY(`name`) KEY_BLOCK_SIZE=50;\n\n",
 		},
 		// WITH PARSER not match.
 		// {
@@ -294,7 +294,7 @@ func TestIndexOption(t *testing.T) {
 			old: `CREATE TABLE book(name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY(name) COMMENT 'comment_a');`,
 			new: `CREATE TABLE book(name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY(name) COMMENT 'comment_b');`,
 			want: "ALTER TABLE `book` DROP PRIMARY KEY;\n\n" +
-				"ALTER TABLE `book` ADD PRIMARY KEY (`name`) COMMENT 'comment_b';\n\n",
+				"ALTER TABLE `book` ADD PRIMARY KEY(`name`) COMMENT 'comment_b';\n\n",
 		},
 		// VISIBILITY not match.
 		{
@@ -309,7 +309,7 @@ func TestIndexOption(t *testing.T) {
 			old: `CREATE TABLE book(name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY(name) VISIBLE);`,
 			new: `CREATE TABLE book(name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY(name) INVISIBLE);`,
 			want: "ALTER TABLE `book` DROP PRIMARY KEY;\n\n" +
-				"ALTER TABLE `book` ADD PRIMARY KEY (`name`) INVISIBLE;\n\n",
+				"ALTER TABLE `book` ADD PRIMARY KEY(`name`) INVISIBLE;\n\n",
 		},
 		{
 			old:  `CREATE TABLE book(name VARCHAR(50) NOT NULL, FULLTEXT INDEX book_idx(name) KEY_BLOCK_SIZE=30 COMMENT 'no difference!');`,
@@ -338,7 +338,7 @@ func TestKeyPart(t *testing.T) {
 			old: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY(id, name) COMMENT 'comment_a');`,
 			new: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY(id) COMMENT 'comment_a');`,
 			want: "ALTER TABLE `book` DROP PRIMARY KEY;\n\n" +
-				"ALTER TABLE `book` ADD PRIMARY KEY (`id`) COMMENT 'comment_a';\n\n",
+				"ALTER TABLE `book` ADD PRIMARY KEY(`id`) COMMENT 'comment_a';\n\n",
 		},
 		{
 			old: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, INDEX book_idx USING BTREE (id, name) COMMENT 'comment_a');`,
@@ -350,7 +350,7 @@ func TestKeyPart(t *testing.T) {
 			old: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY (id, name) COMMENT 'comment_a');`,
 			new: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY ((id + 1)) COMMENT 'comment_a');`,
 			want: "ALTER TABLE `book` DROP PRIMARY KEY;\n\n" +
-				"ALTER TABLE `book` ADD PRIMARY KEY ((`id`+1)) COMMENT 'comment_a';\n\n",
+				"ALTER TABLE `book` ADD PRIMARY KEY((`id`+1)) COMMENT 'comment_a';\n\n",
 		},
 		{
 			old: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, INDEX book_idx USING BTREE ((id + 1)) COMMENT 'comment_a');`,
@@ -362,7 +362,7 @@ func TestKeyPart(t *testing.T) {
 			old: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY ((id + 1)) COMMENT 'comment_a');`,
 			new: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY ((id + 2)) COMMENT 'comment_a');`,
 			want: "ALTER TABLE `book` DROP PRIMARY KEY;\n\n" +
-				"ALTER TABLE `book` ADD PRIMARY KEY ((`id`+2)) COMMENT 'comment_a';\n\n",
+				"ALTER TABLE `book` ADD PRIMARY KEY((`id`+2)) COMMENT 'comment_a';\n\n",
 		},
 		{
 			old:  `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, INDEX book_idx USING BTREE (id, name) COMMENT 'comment_a');`,
@@ -506,7 +506,7 @@ func TestConstraint(t *testing.T) {
 			new: `CREATE TABLE book(id INT, name VARCHAR(50), address VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY(id, address));`,
 			want: "ALTER TABLE `book` DROP PRIMARY KEY;\n\n" +
 				"ALTER TABLE `book` ADD COLUMN `address` VARCHAR(50) NOT NULL AFTER `name`;\n" +
-				"ALTER TABLE `book` ADD PRIMARY KEY (`id`, `address`);\n\n",
+				"ALTER TABLE `book` ADD PRIMARY KEY(`id`, `address`);\n\n",
 		},
 		// ADD COLUMN -> ADD INDEX WITH ANOTHER NAME-> DROP INDEX
 		{

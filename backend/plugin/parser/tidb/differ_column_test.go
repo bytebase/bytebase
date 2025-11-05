@@ -20,13 +20,7 @@ func TestColumnExist(t *testing.T) {
 		{
 			old: ``,
 			new: `CREATE TABLE book(id INT, price INT, code VARCHAR(50), PRIMARY KEY(id));`,
-			want: "" +
-				"CREATE TABLE IF NOT EXISTS `book` (\n" +
-				"  `id` INT,\n" +
-				"  `price` INT,\n" +
-				"  `code` VARCHAR(50),\n" +
-				"  PRIMARY KEY (`id`)\n" +
-				");\n\n",
+			want: "CREATE TABLE IF NOT EXISTS `book` (`id` INT,`price` INT,`code` VARCHAR(50),PRIMARY KEY(`id`));\n\n",
 		},
 		{
 			old:  `CREATE TABLE book(id INT, price INT, code VARCHAR(50), PRIMARY KEY(id));`,
