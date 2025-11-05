@@ -389,36 +389,33 @@
       </div>
 
       <template #footer>
-        <div class="flex items-center justify-between">
-          <div></div>
-          <div class="flex items-center space-x-3">
-            <NButton
-              v-if="currentStep === 1"
-              @click="$emit('update:show', false)"
-            >
-              {{ $t("common.cancel") }}
-            </NButton>
-            <NButton v-if="currentStep > 1" @click="handlePrevStep">
-              {{ $t("common.back") }}
-            </NButton>
-            <NButton
-              v-if="!isLastStep"
-              type="primary"
-              :disabled="!canProceedToNextStep"
-              @click="handleNextStep"
-            >
-              {{ $t("common.next") }}
-            </NButton>
-            <NButton
-              v-else
-              type="primary"
-              :disabled="!canCreate"
-              :loading="isCreating"
-              @click="handleCreate"
-            >
-              {{ $t("common.create") }}
-            </NButton>
-          </div>
+        <div class="flex items-center justify-end gap-x-3">
+          <NButton
+            v-if="currentStep === 1"
+            @click="$emit('update:show', false)"
+          >
+            {{ $t("common.cancel") }}
+          </NButton>
+          <NButton v-if="currentStep > 1" @click="handlePrevStep">
+            {{ $t("common.back") }}
+          </NButton>
+          <NButton
+            v-if="!isLastStep"
+            type="primary"
+            :disabled="!canProceedToNextStep"
+            @click="handleNextStep"
+          >
+            {{ $t("common.next") }}
+          </NButton>
+          <NButton
+            v-else
+            type="primary"
+            :disabled="!canCreate"
+            :loading="isCreating"
+            @click="handleCreate"
+          >
+            {{ $t("common.create") }}
+          </NButton>
         </div>
       </template>
     </DrawerContent>

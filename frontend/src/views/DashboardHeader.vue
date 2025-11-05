@@ -7,7 +7,7 @@
     />
     <ProjectSwitchPopover />
 
-    <div class="flex-1 flex justify-end items-center space-x-3">
+    <div class="flex-1 flex justify-end items-center gap-x-3">
       <NButton
         v-if="currentPlan === PlanType.FREE"
         size="small"

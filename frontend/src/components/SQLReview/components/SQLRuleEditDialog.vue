@@ -63,7 +63,7 @@
         :rule="rule"
         :size="'medium'"
       />
-      <div class="mt-4 pt-2 border-t flex justify-end space-x-3">
+      <div class="mt-4 pt-2 border-t flex justify-end gap-x-3">
         <NButton @click.prevent="$emit('cancel')">
           {{ $t("common.cancel") }}
         </NButton>

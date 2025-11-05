@@ -201,7 +201,7 @@
           :require-confirm="true"
           @confirm="deleteWebhook"
         />
-        <div class="space-x-3">
+        <div class="gap-x-3">
           <NButton v-if="create" @click.prevent="cancel">
             {{ $t("common.cancel") }}
           </NButton>
