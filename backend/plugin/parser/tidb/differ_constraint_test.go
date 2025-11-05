@@ -43,7 +43,7 @@ func TestIsKeyPartEqual(t *testing.T) {
 						Op: opcode.Mul,
 						L: &ast.ColumnNameExpr{
 							Name: &ast.ColumnName{
-								Name: modeastl.NewCIStr("id"),
+								Name: ast.NewCIStr("id"),
 							},
 						},
 						R: &driver.ValueExpr{
