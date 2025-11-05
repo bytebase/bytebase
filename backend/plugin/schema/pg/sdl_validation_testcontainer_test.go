@@ -1672,12 +1672,10 @@ func validateFileContent(filename, expectedContent, fileType string) error {
 
 // getTestDataDirectory converts a test name to the corresponding test data directory path
 func getTestDataDirectory(testName string) string {
-	// Handle both TestSDLValidationFromTestData_ and TestSDLComprehensiveValidation_ prefixes
+	// Handle TestSDLValidationFromTestData_ prefix
 	var pathPart string
 	if strings.HasPrefix(testName, "TestSDLValidationFromTestData_") {
 		pathPart = strings.TrimPrefix(testName, "TestSDLValidationFromTestData_")
-	} else if strings.HasPrefix(testName, "TestSDLComprehensiveValidation_") {
-		pathPart = strings.TrimPrefix(testName, "TestSDLComprehensiveValidation_")
 	} else {
 		return ""
 	}
