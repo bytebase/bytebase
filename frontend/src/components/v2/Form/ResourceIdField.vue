@@ -100,7 +100,6 @@ type ResourceType =
   | "idp"
   | "role"
   | "database-group"
-  | "changelist"
   | "review-config";
 
 const props = withDefaults(

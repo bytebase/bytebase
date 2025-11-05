@@ -1,5 +1,6 @@
 {
   "common": {
+    "apply-to-database": "Áp dụng cho cơ sở dữ liệu",
     "view": "Xem",
     "you": "bạn",
     "general": "Chung",
@@ -225,7 +226,6 @@
       "n-rows": "{n} dòng"
     },
     "back-to-workspace": "Quay lại không gian làm việc",
-    "encoding": "Mã hóa",
     "finish": "Hoàn tất",
     "title": "Tiêu đề",
     "text-wrap": "Ngắt dòng văn bản",
@@ -2817,44 +2817,6 @@
       "input-value-press-enter": "Nhập giá trị, nhấn Enter để xác nhận",
       "add-root-condition-placeholder": "Nhấp vào \"Thêm điều kiện\" hoặc \"Thêm nhóm điều kiện\" để thêm điều kiện"
     }
-  },
-  "changelist": {
-    "self": "Danh sách thay đổi",
-    "changelists": "Danh sách thay đổi",
-    "new": "Danh sách thay đổi mới",
-    "name": "Tên danh sách thay đổi",
-    "name-placeholder": "Danh sách thay đổi của tôi",
-    "error": {
-      "name-is-required": "Tên danh sách thay đổi là bắt buộc",
-      "invalid-resource-id": "ID tài nguyên không hợp lệ",
-      "nothing-changed": "Không có gì thay đổi",
-      "sql-cannot-be-empty": "SQL là bắt buộc",
-      "select-at-least-one-change": "Chọn ít nhất một thay đổi",
-      "select-at-least-one-change-to-export": "Chọn ít nhất một thay đổi để xuất",
-      "add-at-least-one-change": "Thêm ít nhất một thay đổi",
-      "you-are-not-allowed-to-perform-this-action": "Bạn không được phép thực hiện hành động này"
-    },
-    "apply-to-database": "Áp dụng cho cơ sở dữ liệu",
-    "add-change": {
-      "self": "Thêm thay đổi",
-      "changelog": {
-        "select-at-least-one-changelog-below": "Chọn ít nhất một nhật ký thay đổi bên dưới"
-      }
-    },
-    "change-source": {
-      "self": "Nguồn thay đổi",
-      "raw-sql": "SQL thô",
-      "source": "Nguồn"
-    },
-    "confirm-remove-change": "Xóa thay đổi này?",
-    "delete-this-changelist": "Xóa danh sách thay đổi này",
-    "confirm-delete-changelist": "Xóa danh sách thay đổi này?",
-    "import": {
-      "no-file-to-upload": "Không có tệp nào để tải lên",
-      "upload-sql-or-zip-file": "Tải lên tệp .sql hoặc .zip",
-      "optional-upload-sql-or-zip-file": "(Tùy chọn) Tải lên tệp .sql hoặc .zip"
-    },
-    "change-type": "Loại thay đổi"
   },
   "release": {
     "title": "Giải phóng",

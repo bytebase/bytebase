@@ -35,10 +35,6 @@
   
     - [AuditLog.Severity](#bytebase-store-AuditLog-Severity)
   
-- [store/changelist.proto](#store_changelist-proto)
-    - [Changelist](#bytebase-store-Changelist)
-    - [Changelist.Change](#bytebase-store-Changelist-Change)
-  
 - [store/changelog.proto](#store_changelog-proto)
     - [ChangedResourceDatabase](#bytebase-store-ChangedResourceDatabase)
     - [ChangedResourceFunction](#bytebase-store-ChangedResourceFunction)
@@ -753,54 +749,6 @@ Metadata about the request.
 | ALERT | 7 |  |
 | EMERGENCY | 8 |  |
 
-
- 
-
- 
-
- 
-
-
-
-<a name="store_changelist-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## store/changelist.proto
-
-
-
-<a name="bytebase-store-Changelist"></a>
-
-### Changelist
-Changelist represents a collection of database changes that can be applied together.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| description | [string](#string) |  | Human-readable description of this changelist. |
-| changes | [Changelist.Change](#bytebase-store-Changelist-Change) | repeated | The list of changes in this changelist. |
-
-
-
-
-
-
-<a name="bytebase-store-Changelist-Change"></a>
-
-### Changelist.Change
-Change represents a single database modification within the changelist.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| sheet | [string](#string) |  | Resource name of the sheet containing the SQL statements. |
-| source | [string](#string) |  | The source where this change originated from. Format: instances/{instance}/databases/{database}/changelogs/{changelog} for changes from changelog. Empty for raw SQL changes. |
-
-
-
-
-
- 
 
  
 

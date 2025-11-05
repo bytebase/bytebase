@@ -115,10 +115,6 @@
         "title": "Schema 偏差检测",
         "desc": "检测带外 schema 更改并报告差异。"
       },
-      "FEATURE_CHANGELIST": {
-        "title": "变更列表",
-        "desc": "将多个数据库更改分组并一起管理。"
-      },
       "FEATURE_SCHEMA_TEMPLATE": {
         "title": "Schema 模板",
         "desc": "创建可重用的字段模板以实现一致的 schema 设计。"
@@ -359,7 +355,6 @@
     "project": "项目",
     "idp": "身份提供商",
     "database-group": "数据库分组",
-    "changelist": "变更列表",
     "review-config": "审查配置",
     "role": "角色"
   }
