@@ -4,3 +4,5 @@
 -- The column is NOT NULL with an empty string as the default value.
 
 ALTER TABLE worksheet_organizer ADD COLUMN category text NOT NULL DEFAULT '';
+
+CREATE INDEX idx_worksheet_organizer_principal_id_category ON worksheet_organizer(principal_id, category);

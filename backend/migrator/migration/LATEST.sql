@@ -425,6 +425,8 @@ CREATE UNIQUE INDEX idx_worksheet_organizer_unique_sheet_id_principal_id ON work
 
 CREATE INDEX idx_worksheet_organizer_principal_id ON worksheet_organizer(principal_id);
 
+CREATE INDEX idx_worksheet_organizer_principal_id_category ON worksheet_organizer(principal_id, category);
+
 -- risk stores the definition of a risk.
 CREATE TABLE risk (
     id bigserial PRIMARY KEY,
