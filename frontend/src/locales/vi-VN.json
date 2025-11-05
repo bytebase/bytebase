@@ -2008,7 +2008,7 @@
     "table-empty-placeholder": "Nhấp vào Chạy để thực hiện truy vấn.",
     "no-data-available": "Không có dữ liệu",
     "download-as-file": "Tải xuống dưới dạng {file}",
-    "only-select-allowed": "Chỉ cho phép câu lệnh {select}.",
+    "only-select-allowed": "Chỉ cho phép thực thi câu lệnh chỉ đọc.",
     "enable-ddl-for-environment": "Bạn có thể bật câu lệnh DDL/DML cho môi trường {environment}.",
     "and-submit-an-issue": "và gửi một vấn đề",
     "to-enable-admin-mode": "để bật chế độ quản trị",
