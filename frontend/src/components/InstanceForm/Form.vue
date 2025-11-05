@@ -810,6 +810,7 @@ const testConnectionForCurrentEditingDS = () => {
 
 <style lang="postcss" scoped>
 .instance-engine-button :deep(.n-button__content) {
-  @apply w-full justify-start;
+  width: 100%;
+  justify-content: flex-start;
 }
 </style>

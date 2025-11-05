@@ -185,6 +185,6 @@ const handleKeyDown = (e: KeyboardEvent) => {
 
 <style lang="postcss" scoped>
 .sync-database-tree :deep(.n-tree-node-switcher--hide) {
-  @apply !hidden;
+  display: none !important;
 }
 </style>

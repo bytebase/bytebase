@@ -40,9 +40,7 @@
               :key="`${virtualRow.index}-${header.index}`"
               class="flex items-start text-gray-500 dark:text-gray-300 text-sm"
             >
-              <div
-                class="min-w-28 text-left flex items-start font-medium pt-1"
-              >
+              <div class="min-w-28 text-left flex items-start font-medium pt-1">
                 {{ header.column.columnDef.header }}
                 <MaskingReasonPopover
                   v-if="getMaskingReason && getMaskingReason(header.index)"

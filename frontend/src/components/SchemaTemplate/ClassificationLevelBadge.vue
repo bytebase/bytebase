@@ -7,7 +7,10 @@
       {{ placeholder }}
     </span>
   </NPerformantEllipsis>
-  <span v-if="level" :class="['ml-1 px-1 py-0.5 rounded-sm text-xs', levelColor]">
+  <span
+    v-if="level"
+    :class="['ml-1 px-1 py-0.5 rounded-sm text-xs', levelColor]"
+  >
     {{ level.title }}
   </span>
 </template>

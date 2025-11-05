@@ -85,6 +85,8 @@ defineProps<{
 
 <style lang="postcss" scoped>
 :deep(.n-button__content) {
-  @apply truncate;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>

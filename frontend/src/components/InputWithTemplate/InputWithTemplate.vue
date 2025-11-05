@@ -44,7 +44,7 @@
         <input
           ref="inputRef"
           v-model="state.inputData"
-          class="flex-1 px-0 m-0 py-1 cleared-input outline-hidden"
+          class="flex-1 px-0 m-0 py-1 shadow-none ring-0 border-0 border-none outline-hidden focus:shadow-none focus:ring-0 focus:border-0 focus:border-none"
           type="text"
           :disabled="disabled"
           @keydown.delete="onInputDataDeleteEnter"
@@ -332,10 +332,3 @@ onUnmounted(() => {
   window.removeEventListener("resize", onWindowResize);
 });
 </script>
-
-<style scoped lang="postcss">
-.cleared-input,
-.cleared-input:focus {
-  @apply shadow-none ring-0 border-0 border-none;
-}
-</style>

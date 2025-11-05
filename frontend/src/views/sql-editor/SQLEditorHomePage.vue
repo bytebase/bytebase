@@ -13,9 +13,7 @@
             id="fff"
             class="fixed rounded-full border border-control-border shadow-lg w-10 h-10 bottom-16 flex items-center justify-center bg-white hover:bg-control-bg cursor-pointer z-99999999 transition-all"
             :class="[
-              state.sidebarExpanded
-                ? 'left-[80%] -translate-x-5'
-                : 'left-4',
+              state.sidebarExpanded ? 'left-[80%] -translate-x-5' : 'left-4',
             ]"
             style="
               transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
@@ -166,32 +164,39 @@ useEmitteryEventListener(editorEvents, "insert-at-caret", ({ content }) => {
 
 /* splitpanes pane style */
 .splitpanes.default-theme .splitpanes__pane {
-  @apply bg-transparent;
+  background-color: transparent;
 }
 
 .splitpanes.default-theme .splitpanes__splitter {
-  @apply bg-gray-100;
+  background-color: rgb(var(--color-gray-100));
   min-height: 8px;
   min-width: 8px;
 }
 
 .splitpanes.default-theme .splitpanes__splitter:hover {
-  @apply bg-accent;
+  background-color: rgb(var(--color-accent));
 }
 
 .splitpanes.default-theme .splitpanes__splitter::before,
 .splitpanes.default-theme .splitpanes__splitter::after {
-  @apply bg-gray-700 opacity-50 text-white;
+  background-color: rgb(var(--color-gray-700));
+  opacity: 0.5;
+  color: white;
 }
 
 .splitpanes.default-theme .splitpanes__splitter:hover::before,
 .splitpanes.default-theme .splitpanes__splitter:hover::after {
-  @apply bg-white opacity-100;
+  background-color: white;
+  opacity: 1;
 }
 </style>
 
 <style scoped lang="postcss">
 .sqleditor--wrapper {
-  @apply w-full flex-1 overflow-hidden flex flex-col;
+  width: 100%;
+  flex: 1 1 0%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 </style>

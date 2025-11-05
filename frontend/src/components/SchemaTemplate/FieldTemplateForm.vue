@@ -134,7 +134,7 @@
               <DefaultValueCell
                 :column="state.column"
                 :disabled="readonly"
-                border="1px solid rgb(224, 224, 230)"
+                border="1px solid rgb(var(--color-control-border))"
                 @update="handleColumnDefaultSelect"
               />
             </div>

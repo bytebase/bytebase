@@ -378,11 +378,12 @@ const isIssueExpanded = (issue: ComposedIssue): boolean => {
 
 <style scoped lang="postcss">
 :deep(.n-base-selection-tags) {
-  @apply bg-transparent! !p-0;
+  background-color: transparent !important;
+  padding: 0 !important;
 }
 :deep(.n-base-suffix),
 :deep(.n-base-selection__border),
 :deep(.n-base-selection__state-border) {
-  @apply !hidden;
+  display: none !important;
 }
 </style>

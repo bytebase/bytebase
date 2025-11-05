@@ -900,44 +900,54 @@ const handleExpandedKeysChange = (expandedKeys: string[]) => {
 
 <style lang="postcss" scoped>
 .schema-editor-tree :deep(.n-tree-node-wrapper) {
-  @apply !p-0;
+  padding: 0 !important;
 }
 .schema-editor-tree :deep(.n-tree-node-content) {
-  @apply pl-2! text-sm;
+  padding-left: 0.5rem !important;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
 }
 .schema-editor-tree :deep(.n-tree-node-indent) {
   width: 0.25rem;
 }
 .schema-editor-tree :deep(.n-tree-node-content__prefix) {
-  @apply shrink-0 !mr-1;
+  flex-shrink: 0;
+  margin-right: 0.25rem !important;
 }
 .schema-editor-tree
   :deep(.n-tree-node-wrapper:hover .n-tree-node-content__suffix) {
-  @apply !flex;
+  display: flex !important;
 }
 .schema-editor-tree
   :deep(
     .n-tree-node-wrapper .n-tree-node--selected .n-tree-node-content__suffix
   ) {
-  @apply !flex;
+  display: flex !important;
 }
 
 .schema-editor-tree :deep(.n-tree-node-content__text) {
-  @apply truncate mr-1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-right: 0.25rem;
 }
 .schema-editor-tree :deep(.n-tree-node-switcher) {
-  @apply px-0 w-4! !h-7;
+  padding-left: 0;
+  padding-right: 0;
+  width: 1rem !important;
+  height: 1.75rem !important;
 }
 .schema-editor-tree:not(.disable-diff-coloring)
   :deep(.n-tree-node-content .created) {
-  @apply text-green-700;
+  color: var(--color-green-700);
 }
 .schema-editor-tree:not(.disable-diff-coloring)
   :deep(.n-tree-node-content .dropped) {
-  @apply text-red-700 line-through;
+  color: var(--color-red-700);
+  text-decoration-line: line-through;
 }
 .schema-editor-tree:not(.disable-diff-coloring)
   :deep(.n-tree-node-content .updated) {
-  @apply text-yellow-700;
+  color: var(--color-yellow-700);
 }
 </style>

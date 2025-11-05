@@ -383,6 +383,9 @@ watch(
 
 <style lang="postcss" scoped>
 .credential :deep(.code) {
-  @apply bg-gray-100 p-1 rounded-xs mr-1;
+  background-color: var(--color-gray-100);
+  padding: 0.25rem;
+  border-radius: 0.125rem;
+  margin-right: 0.25rem;
 }
 </style>

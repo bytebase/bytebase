@@ -82,6 +82,6 @@ defineExpose({
   display: none !important;
 }
 .bb-monaco-editor :deep(.monaco-editor .line-numbers) {
-  @apply pr-2;
+  padding-right: 0.5rem;
 }
 </style>
