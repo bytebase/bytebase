@@ -373,7 +373,7 @@ func (s *Store) UpsertWorksheetOrganizer(ctx context.Context, patch *WorksheetOr
 			principal_id,
 			payload
 		)
-		VALUES (?, ?, ?, ?)
+		VALUES (?, ?, ?)
 		ON CONFLICT(worksheet_id, principal_id) DO UPDATE SET
 			payload = EXCLUDED.payload
 		RETURNING
