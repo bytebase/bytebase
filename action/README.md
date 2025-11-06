@@ -10,7 +10,15 @@ This action provides several subcommands to interact with Bytebase.
 
 Usage: `bytebase-action check [global flags]`
 
-Checks the SQL files matching the `--file-pattern`. This is typically used for linting or pre-deployment validation within a CI pipeline. It utilizes global flags like `--url`, `--service-account`, `--service-account-secret`, `--file-pattern`, and `--declarative`.
+Checks the SQL files matching the `--file-pattern`. This is typically used for linting or pre-deployment validation within a CI pipeline. It utilizes global flags like `--url`, `--service-account`, `--service-account-secret`, `--file-pattern`, `--declarative`, and `--output`.
+
+When `--output` is specified, the check results are written to a JSON file containing the complete check response including:
+- Check results for each file and target combination
+- Advices with status (ERROR, WARNING, SUCCESS), code, title, and content
+- Affected rows count
+- Risk level assessment
+
+The output JSON uses camelCase field names (e.g., `affectedRows`, `riskLevel`) for consistency with protobuf JSON serialization.
 
 ### `rollout`
 
@@ -30,8 +38,10 @@ This action is configured via command-line flags. Global flags apply to all comm
 
 These flags apply to the main `bytebase-action` command and its subcommands (`check`, `rollout`).
 
--   **`--output`**: The output file location. The output file is a JSON file with the created resource names.
+-   **`--output`**: The output file location. The output file is a JSON file with the created resource names and check results.
     -   Default: `""` (empty string)
+    -   For `check` command: outputs detailed check results including advices, affected rows, and risk levels
+    -   For `rollout` command: outputs created resource names (release, plan, rollout)
 
 -   **`--url`**: The Bytebase instance URL.
     -   Default: `https://demo.bytebase.com`
@@ -97,6 +107,49 @@ These flags are specific to the `check` subcommand (`bytebase-action check`).
         -   `FAIL_ON_ERROR`: Fail only if there are errors in the check results.
     -   Default: `SKIP`
     -   Note: Platform-specific outputs (GitHub comments, GitLab reports, etc.) are always generated before evaluating whether to fail.
+
+#### Example: Using `--output` with check command
+
+```bash
+bytebase-action check \
+  --url="https://bytebase.example.com" \
+  --service-account="bot@example.com" \
+  --service-account-secret="$SECRET" \
+  --project="projects/my-project" \
+  --targets="instances/prod/databases/mydb" \
+  --file-pattern="migrations/*.sql" \
+  --output="check-results.json" \
+  --check-release="FAIL_ON_ERROR"
+```
+
+The output JSON file will contain:
+
+```json
+{
+  "checkResults": {
+    "results": [
+      {
+        "file": "migrations/001_add_users_table.sql",
+        "target": "instances/prod/databases/mydb",
+        "advices": [
+          {
+            "status": "WARNING",
+            "code": 201,
+            "title": "Table schema drift detected",
+            "content": "The table schema differs from the expected state"
+          }
+        ],
+        "affectedRows": "100",
+        "riskLevel": "MODERATE"
+      }
+    ],
+    "affectedRows": "100",
+    "riskLevel": "MODERATE"
+  }
+}
+```
+
+Note: Integer fields like `affectedRows` are serialized as strings to prevent precision loss when parsed by JavaScript.
 
 ### `rollout` Command Specific Flags
 
