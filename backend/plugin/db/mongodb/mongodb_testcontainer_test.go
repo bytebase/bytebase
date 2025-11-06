@@ -75,6 +75,10 @@ func TestQueryWithBracketNotation(t *testing.T) {
 	require.NoError(t, err)
 	defer openedDriver.Close(ctx)
 
+	// Wait for MongoDB to be fully ready
+	err = openedDriver.Ping(ctx)
+	require.NoError(t, err, "Failed to ping MongoDB")
+
 	// Create a collection with a special character in the name to test the real CUJ
 	collectionName := "test.collection"
 
@@ -182,6 +186,10 @@ func TestQueryWithBracketNotationStructure(t *testing.T) {
 	openedDriver, err := driver.Open(ctx, storepb.Engine_MONGODB, connConfig)
 	require.NoError(t, err)
 	defer openedDriver.Close(ctx)
+
+	// Wait for MongoDB to be fully ready
+	err = openedDriver.Ping(ctx)
+	require.NoError(t, err, "Failed to ping MongoDB")
 
 	collectionName := "users"
 
