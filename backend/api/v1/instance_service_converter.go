@@ -228,7 +228,10 @@ func convertDataSources(dataSources []*storepb.DataSource) []*v1pb.DataSource {
 		case v1pb.DataSource_AWS_RDS_IAM:
 			if awsCredential := ds.GetAwsCredential(); awsCredential != nil {
 				dataSource.IamExtension = &v1pb.DataSource_AwsCredential{
-					AwsCredential: &v1pb.DataSource_AWSCredential{},
+					AwsCredential: &v1pb.DataSource_AWSCredential{
+						RoleArn:    awsCredential.RoleArn,
+						ExternalId: awsCredential.ExternalId,
+					},
 				}
 			}
 		case v1pb.DataSource_GOOGLE_CLOUD_SQL_IAM:
@@ -496,6 +499,8 @@ func convertV1DataSource(dataSource *v1pb.DataSource) (*storepb.DataSource, erro
 					AccessKeyId:     awsCredential.AccessKeyId,
 					SecretAccessKey: awsCredential.SecretAccessKey,
 					SessionToken:    awsCredential.SessionToken,
+					RoleArn:         awsCredential.RoleArn,
+					ExternalId:      awsCredential.ExternalId,
 				},
 			}
 		}
