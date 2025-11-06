@@ -21,6 +21,16 @@
           >
             {{ $t("issue.upload-sql") }}
           </SQLUploadButton>
+          <NButton
+            v-if="shouldShowSchemaEditorButton"
+            size="small"
+            @click="handleOpenSchemaEditor"
+          >
+            <template #icon>
+              <TableIcon />
+            </template>
+            {{ $t("schema-editor.self") }}
+          </NButton>
         </template>
 
         <template v-else>
@@ -62,6 +72,16 @@
             >
               {{ $t("issue.upload-sql") }}
             </SQLUploadButton>
+            <NButton
+              v-if="shouldShowSchemaEditorButton"
+              size="small"
+              @click="handleOpenSchemaEditor"
+            >
+              <template #icon>
+                <TableIcon />
+              </template>
+              {{ $t("schema-editor.self") }}
+            </NButton>
             <NButton
               v-if="editorState.isEditing.value"
               size="small"
@@ -160,12 +180,20 @@
       />
     </div>
   </BBModal>
+
+  <SchemaEditorDrawer
+    v-if="shouldShowSchemaEditorButton"
+    v-model:show="state.showSchemaEditorDrawer"
+    :database="database"
+    :project="project"
+    @insert="handleInsertSQL"
+  />
 </template>
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
 import { cloneDeep, includes, isEmpty } from "lodash-es";
-import { ExpandIcon } from "lucide-vue-next";
+import { ExpandIcon, TableIcon } from "lucide-vue-next";
 import { NButton, NTooltip, useDialog } from "naive-ui";
 import { v1 as uuidv1 } from "uuid";
 import { computed, reactive, watch } from "vue";
@@ -193,6 +221,7 @@ import {
 } from "@/store";
 import type { SQLDialect } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
+import { MigrationType } from "@/types/proto-es/v1/common_pb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
@@ -202,7 +231,9 @@ import {
   setSheetStatement,
   useInstanceV1EditorLanguage,
 } from "@/utils";
+import { engineSupportsSchemaEditor } from "@/utils/schemaEditor";
 import { useSelectedSpec } from "../../SpecDetailView/context";
+import SchemaEditorDrawer from "../SchemaEditorDrawer.vue";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
 import { useSpecSheet } from "../useSpecSheet";
 
@@ -210,6 +241,7 @@ type LocalState = {
   statement: string;
   showEditorModal: boolean;
   isUploadingFile: boolean;
+  showSchemaEditorDrawer: boolean;
 };
 
 const { t } = useI18n();
@@ -224,6 +256,7 @@ const state = reactive<LocalState>({
   statement: "",
   showEditorModal: false,
   isUploadingFile: false,
+  showSchemaEditorDrawer: false,
 });
 
 const database = computed(() => {
@@ -347,6 +380,31 @@ const allowSaveSQL = computed((): boolean => {
   return true;
 });
 
+const shouldShowSchemaEditorButton = computed(() => {
+  // Only for DDL (schema) changes
+  const spec = selectedSpec.value;
+  if (
+    !spec?.config.value ||
+    spec.config.value.migrationType !== MigrationType.DDL
+  ) {
+    return false;
+  }
+
+  // Only if database engine supports schema editor
+  const db = database.value;
+  if (!engineSupportsSchemaEditor(db.instanceResource.engine)) {
+    return false;
+  }
+
+  // Only for single database (not batch)
+  const targets = spec.config.value.targets || [];
+  if (targets.length !== 1) {
+    return false;
+  }
+
+  return true;
+});
+
 const beginEdit = () => {
   editorState.setEditingState(true);
 };
@@ -362,6 +420,18 @@ const saveEdit = async () => {
 const cancelEdit = () => {
   state.statement = sheetStatement.value;
   editorState.setEditingState(false);
+};
+
+const handleOpenSchemaEditor = () => {
+  state.showSchemaEditorDrawer = true;
+};
+
+const handleInsertSQL = (sql: string) => {
+  // Append generated SQL to existing content
+  const currentSQL = state.statement;
+  const newSQL = currentSQL ? `${currentSQL}\n\n${sql}` : sql;
+  handleStatementChange(newSQL);
+  state.showSchemaEditorDrawer = false;
 };
 
 const showOverwriteConfirmDialog = () => {
