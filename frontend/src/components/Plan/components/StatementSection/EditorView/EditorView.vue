@@ -184,7 +184,7 @@
   <SchemaEditorDrawer
     v-if="shouldShowSchemaEditorButton"
     v-model:show="state.showSchemaEditorDrawer"
-    :database="database"
+    :databases="targetDatabases"
     :project="project"
     @insert="handleInsertSQL"
   />
@@ -394,19 +394,35 @@ const shouldShowSchemaEditorButton = computed(() => {
     return false;
   }
 
-  // Only if database engine supports schema editor
-  const db = database.value;
-  if (!engineSupportsSchemaEditor(db.instanceResource.engine)) {
+  // Only if at least one database engine supports schema editor
+  const targets = spec.config.value.targets || [];
+  if (targets.length === 0) {
     return false;
   }
 
-  // Only for single database (not batch)
-  const targets = spec.config.value.targets || [];
-  if (targets.length !== 1) {
+  // Check if at least one target database supports schema editor
+  const hasSupported = targets.some((target) => {
+    const db = databaseForSpec(project.value, spec, target);
+    return engineSupportsSchemaEditor(db.instanceResource.engine);
+  });
+
+  if (!hasSupported) {
     return false;
   }
 
   return true;
+});
+
+const targetDatabases = computed(() => {
+  const spec = selectedSpec.value;
+  if (!spec?.config || spec.config.case !== "changeDatabaseConfig") {
+    return [];
+  }
+
+  const targets = spec.config.value.targets || [];
+  return targets
+    .map((target) => databaseForSpec(project.value, spec, target))
+    .filter((db) => engineSupportsSchemaEditor(db.instanceResource.engine));
 });
 
 const beginEdit = () => {

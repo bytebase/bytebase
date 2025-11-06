@@ -2155,6 +2155,7 @@
     "raw-sql": "Raw SQL",
     "search-database-and-table": "Search database and table",
     "insert-sql": "Insert SQL",
+    "template-database": "Template database",
     "actions": {
       "create-schema": "Create schema",
       "drop-schema": "Drop schema",

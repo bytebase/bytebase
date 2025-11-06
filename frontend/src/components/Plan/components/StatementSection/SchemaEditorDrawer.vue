@@ -8,12 +8,28 @@
     class="max-w-[90vw]!"
   >
     <DrawerContent :title="$t('schema-editor.self')">
-      <SchemaEditorLite
-        ref="schemaEditorRef"
-        :project="project"
-        :targets="editTargets"
-        :loading="state.isPreparingMetadata"
-      />
+      <div class="flex flex-col gap-y-4 h-full">
+        <!-- Database selector for multi-database scenarios -->
+        <div v-if="databases.length > 1" class="flex items-center gap-x-2">
+          <span class="text-sm text-control-light">
+            {{ $t("schema-editor.template-database") }}:
+          </span>
+          <NSelect
+            v-model:value="state.selectedDatabaseName"
+            :options="databaseOptions"
+            class="w-64"
+            @update:value="handleDatabaseChange"
+          />
+        </div>
+
+        <SchemaEditorLite
+          ref="schemaEditorRef"
+          :project="project"
+          :targets="editTargets"
+          :loading="state.isPreparingMetadata"
+          class="flex-1"
+        />
+      </div>
 
       <template #footer>
         <div class="flex items-center justify-end gap-x-2">
@@ -35,7 +51,7 @@
 
 <script lang="ts" setup>
 import { cloneDeep } from "lodash-es";
-import { NButton } from "naive-ui";
+import { NButton, NSelect } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import SchemaEditorLite, {
   generateDiffDDL,
@@ -48,7 +64,7 @@ import type { Project } from "@/types/proto-es/v1/project_service_pb";
 
 const props = defineProps<{
   show: boolean;
-  database: ComposedDatabase;
+  databases: ComposedDatabase[];
   project: Project;
 }>();
 
@@ -69,6 +85,21 @@ const dbCatalogStore = useDatabaseCatalogV1Store();
 const state = reactive({
   isPreparingMetadata: false,
   targets: [] as EditTarget[],
+  selectedDatabaseName: "",
+});
+
+const databaseOptions = computed(() => {
+  return props.databases.map((db) => ({
+    label: `${db.databaseName} (${db.instanceResource.title})`,
+    value: db.name,
+  }));
+});
+
+const selectedDatabase = computed(() => {
+  return (
+    props.databases.find((db) => db.name === state.selectedDatabaseName) ||
+    props.databases[0]
+  );
 });
 
 const editTargets = computed(() => state.targets);
@@ -77,27 +108,27 @@ const hasPendingChanges = computed(() => {
   return schemaEditorRef.value?.isDirty ?? false;
 });
 
-const prepareDatabaseMetadata = async () => {
-  if (!props.database) return;
+const prepareDatabaseMetadata = async (database: ComposedDatabase) => {
+  if (!database) return;
 
   state.isPreparingMetadata = true;
   state.targets = [];
 
   const [metadata, catalog] = await Promise.all([
     dbSchemaStore.getOrFetchDatabaseMetadata({
-      database: props.database.name,
+      database: database.name,
       skipCache: true,
       limit: 200,
     }),
     dbCatalogStore.getOrFetchDatabaseCatalog({
-      database: props.database.name,
+      database: database.name,
       skipCache: true,
     }),
   ]);
 
   state.targets = [
     {
-      database: props.database,
+      database: database,
       metadata: cloneDeep(metadata),
       baselineMetadata: metadata,
       catalog: cloneDeep(catalog),
@@ -108,11 +139,19 @@ const prepareDatabaseMetadata = async () => {
   state.isPreparingMetadata = false;
 };
 
+const handleDatabaseChange = async () => {
+  if (selectedDatabase.value) {
+    await prepareDatabaseMetadata(selectedDatabase.value);
+  }
+};
+
 watch(
   () => props.show,
   (show) => {
-    if (show) {
-      prepareDatabaseMetadata();
+    if (show && props.databases.length > 0) {
+      // Initialize with first database
+      state.selectedDatabaseName = props.databases[0].name;
+      prepareDatabaseMetadata(props.databases[0]);
     }
   },
   { immediate: true }

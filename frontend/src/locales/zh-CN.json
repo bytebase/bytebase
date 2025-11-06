@@ -2155,6 +2155,7 @@
     "raw-sql": "SQL 语句",
     "search-database-and-table": "搜索数据库和表",
     "insert-sql": "插入 SQL",
+    "template-database": "模板数据库",
     "actions": {
       "create-schema": "新建 Schema",
       "drop-schema": "删除 Schema",
