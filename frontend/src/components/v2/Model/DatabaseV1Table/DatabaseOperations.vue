@@ -337,14 +337,6 @@ const generateMultiDb = async (
       return;
     }
   }
-  if (
-    props.databases.length === 1 &&
-    type === "bb.issue.database.schema.update" &&
-    allowUsingSchemaEditor(props.databases)
-  ) {
-    state.showSchemaEditorModal = true;
-    return;
-  }
 
   const query: LocationQueryRaw = {
     template: type,
