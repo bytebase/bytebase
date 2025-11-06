@@ -25,22 +25,19 @@ jobs:
         with:
           go-version: '1.25.3'
           cache: false # Caching is slow.
-      - name: Install mongosh
+      - name: Check mongosh availability
         run: |
-          if ! command -v mongosh &> /dev/null; then
-            echo "Installing mongosh..."
-            if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-              curl -fsSL https://www.mongodb.org/static/pgp/server-8.0.asc | sudo tee /usr/share/keyrings/mongodb-server-8.0.asc > /dev/null
-              echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-8.0.asc ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/8.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-8.0.list
-              sudo apt-get update
-              sudo apt-get install -y mongodb-mongosh
-            elif [[ "$OSTYPE" == "darwin"* ]]; then
-              brew install mongosh
-            fi
+          if command -v mongosh &> /dev/null; then
+            echo "mongosh is available at $(which mongosh)"
+            mongosh --version
           else
-            echo "mongosh is already installed at $(which mongosh)"
+            echo "WARNING: mongosh is not installed. MongoDB integration tests will fail."
+            echo "Please install mongosh on the self-hosted runner:"
+            echo "  Linux: https://www.mongodb.com/docs/mongodb-shell/install/"
+            echo "  macOS: brew install mongosh"
+            echo ""
+            echo "The test suite will continue, but MongoDB tests will fail with clear error messages."
           fi
-          mongosh --version
       - name: Verify go.mod is tidy
         run: |
           go mod tidy
