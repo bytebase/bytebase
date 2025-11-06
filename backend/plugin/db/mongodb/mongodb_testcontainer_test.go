@@ -2,6 +2,7 @@ package mongodb
 
 import (
 	"context"
+	"os/exec"
 	"strings"
 	"testing"
 
@@ -15,6 +16,14 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
+// isMongoshAvailable checks if mongosh is installed and available in PATH.
+// These tests require mongosh to be installed because the MongoDB driver
+// executes queries by shelling out to mongosh (see mongodb.go:174 and mongodb.go:344).
+func isMongoshAvailable() bool {
+	_, err := exec.LookPath("mongosh")
+	return err == nil
+}
+
 // TestQueryWithBracketNotation tests the critical user journey (CUJ) of querying
 // MongoDB collections using bracket notation with different quote styles.
 // This ensures the fix for PR #17282 (which changed to single-quote bracket notation
@@ -22,6 +31,11 @@ import (
 func TestQueryWithBracketNotation(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping MongoDB testcontainer test in short mode")
+	}
+
+	// Check if mongosh is available
+	if !isMongoshAvailable() {
+		t.Skip("Skipping test: mongosh is not installed")
 	}
 
 	ctx := context.Background()
@@ -112,8 +126,8 @@ func TestQueryWithBracketNotation(t *testing.T) {
 				require.Contains(t, jsonStr, `"age"`, "Row %d should contain 'age' field", i)
 				require.True(t,
 					strings.Contains(jsonStr, "Alice") ||
-					strings.Contains(jsonStr, "Bob") ||
-					strings.Contains(jsonStr, "Charlie"),
+						strings.Contains(jsonStr, "Bob") ||
+						strings.Contains(jsonStr, "Charlie"),
 					"Row %d should contain a valid name", i)
 			}
 
@@ -128,6 +142,11 @@ func TestQueryWithBracketNotation(t *testing.T) {
 func TestQueryWithBracketNotationStructure(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping MongoDB testcontainer test in short mode")
+	}
+
+	// Check if mongosh is available
+	if !isMongoshAvailable() {
+		t.Skip("Skipping test: mongosh is not installed")
 	}
 
 	ctx := context.Background()
