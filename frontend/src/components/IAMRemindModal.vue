@@ -5,7 +5,7 @@
     @close="onClose"
   >
     <div class="w-120 max-w-[calc(100vw-10rem)]">
-      <div class="space-y-2">
+      <div class="flex flex-col gap-y-2">
         <p>{{ $t("remind.role-expire.content") }}</p>
         <ul class="list-disc textinfolabel ml-4">
           <li v-for="(data, i) in pendingExpireRoles" :key="i">

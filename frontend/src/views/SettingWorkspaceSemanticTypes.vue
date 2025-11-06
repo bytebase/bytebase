@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full space-y-4">
+  <div class="w-full flex flex-col gap-y-4">
     <FeatureAttention :feature="PlanFeature.FEATURE_DATA_MASKING" />
     <SemanticTypesView />
   </div>

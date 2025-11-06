@@ -30,7 +30,7 @@
             </template>
           </BBAttention>
 
-          <div class="space-y-2">
+          <div class="gap-y-2">
             <div class="gap-x-2">
               <div class="font-medium">
                 {{ $t(`settings.members.entra-sync.endpoint`) }}
@@ -43,7 +43,7 @@
                 />
               </div>
             </div>
-            <div class="flex space-x-2">
+            <div class="flex gap-x-2">
               <NInput
                 ref="scimUrlFieldRef"
                 class="w-full"
@@ -63,7 +63,7 @@
             </div>
           </div>
 
-          <div class="space-y-2">
+          <div class="gap-y-2">
             <div class="gap-x-2">
               <div class="font-medium">
                 {{ $t(`settings.members.entra-sync.secret-token`) }}
@@ -76,7 +76,7 @@
                 />
               </div>
             </div>
-            <div class="flex space-x-2">
+            <div class="flex gap-x-2">
               <NInput
                 ref="scimTokenFieldRef"
                 class="w-full"

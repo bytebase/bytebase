@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-center justify-between h-10 px-4 my-1 space-x-3">
+  <div class="flex items-center justify-between h-10 px-4 my-1 gap-x-3">
     <BytebaseLogo
       v-if="showLogo"
       class="h-10"

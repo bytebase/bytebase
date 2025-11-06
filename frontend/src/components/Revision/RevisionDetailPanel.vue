@@ -1,13 +1,13 @@
 <template>
   <div v-if="revision" class="w-full">
     <div class="flex flex-row items-center gap-2">
-      <p class="text-lg space-x-1">
+      <p class="text-lg flex gap-x-1">
         <span class="text-control">{{ $t("common.version") }}:</span>
         <span class="font-bold text-main">{{ revision.version }}</span>
       </p>
     </div>
     <div
-      class="mt-3 text-control text-base space-x-4 flex flex-row items-center flex-wrap"
+      class="mt-3 text-control text-base flex flex-row items-center flex-wrap gap-x-4"
     >
       <span>
         {{ $t("database.revision.applied-at") }}:

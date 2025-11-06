@@ -1,7 +1,7 @@
 <template>
   <BBModal :title="$t('sql-review.view-definition')" @close="emit('close')">
-    <div class="space-y-4 w-[calc(100vw-5rem)] sm:w-[40rem] pb-1">
-      <div class="space-y-1">
+    <div class="flex flex-col gap-y-4 w-[calc(100vw-5rem)] sm:w-[40rem] pb-1">
+      <div class="flex flex-col gap-y-1">
         <div class="flex flex-col gap-x-2 whitespace-pre-wrap">
           {{ definition }}
         </div>

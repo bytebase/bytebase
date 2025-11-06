@@ -9,7 +9,7 @@
         <SQLCheckV1Section v-if="isCreating" />
         <PlanCheckSection v-else />
       </template>
-      <div class="w-full flex-1 space-y-3 py-3 flex flex-col">
+      <div class="w-full flex-1 gap-y-3 py-3 flex flex-col">
         <StatementSection />
         <Configuration />
       </div>

@@ -60,7 +60,7 @@
             Principal
             <RequiredStar />
           </label>
-          <div class="mt-2 flex items-center space-x-2">
+          <div class="mt-2 flex items-center gap-x-2">
             <NInput
               :value="
                 dataSource.saslConfig?.mechanism?.case === 'krbConfig'
@@ -118,7 +118,7 @@
             KDC
             <RequiredStar />
           </label>
-          <div class="flex items-center space-x-2">
+          <div class="flex items-center gap-x-2">
             <div class="w-fit">
               <NRadioGroup
                 :value="
@@ -338,13 +338,13 @@
               />
             </div>
           </div>
-          <div v-else-if="dataSource.externalSecret" class="space-y-4">
+          <div v-else-if="dataSource.externalSecret" class="flex flex-col gap-y-4">
             <div
               v-if="
                 state.passwordType ===
                 DataSourceExternalSecret_SecretType.VAULT_KV_V2
               "
-              class="space-y-4"
+              class="flex flex-col gap-y-4"
             >
               <div class="sm:col-span-2 sm:col-start-1">
                 <label class="textlabel block">
@@ -359,7 +359,7 @@
                   :placeholder="$t('instance.external-secret-vault.vault-url')"
                 />
               </div>
-              <div class="sm:col-span-2 sm:col-start-1 space-y-2">
+              <div class="sm:col-span-2 sm:col-start-1 flex flex-col gap-y-2">
                 <label class="textlabel block">
                   {{
                     $t("instance.external-secret-vault.vault-auth-type.self")
@@ -403,7 +403,7 @@
                   }}
                   <RequiredStar />
                 </label>
-                <div class="flex space-x-2 text-sm">
+                <div class="flex gap-x-2 text-sm">
                   <div class="textinfolabel">
                     {{
                       $t(
@@ -443,7 +443,7 @@
                 v-else-if="
                   dataSource.externalSecret?.authOption?.case === 'appRole'
                 "
-                class="space-y-4"
+                class="flex flex-col gap-y-4"
               >
                 <div class="sm:col-span-2 sm:col-start-1">
                   <label class="textlabel block">
@@ -568,7 +568,7 @@
                   }}
                   <RequiredStar />
                 </label>
-                <div class="flex space-x-2 text-sm textinfolabel">
+                <div class="flex gap-x-2 text-sm textinfolabel">
                   {{
                     $t(
                       "instance.external-secret-vault.vault-secret-engine-tips"
@@ -598,7 +598,7 @@
                   state.passwordType ===
                   DataSourceExternalSecret_SecretType.GCP_SECRET_MANAGER
                 "
-                class="flex space-x-2 text-sm textinfolabel"
+                class="flex gap-x-2 text-sm textinfolabel"
               >
                 {{ $t("instance.external-secret-gcp.secret-name-tips") }}
               </div>
@@ -728,7 +728,7 @@
         <div class="textlabel block">
           {{ $t("data-source.ssh.private-key") }}
         </div>
-        <div class="flex space-x-2 text-sm">
+        <div class="flex gap-x-2 text-sm">
           <div class="textinfolabel">
             {{ $t("data-source.snowflake-keypair-tip") }}
           </div>
@@ -779,7 +779,7 @@ MIIEvQ...
 
     <template v-if="showAuthenticationDatabase">
       <div class="sm:col-span-3 sm:col-start-1">
-        <div class="flex flex-row items-center space-x-2">
+        <div class="flex flex-row items-center gap-x-2">
           <label for="authenticationDatabase" class="textlabel block">
             {{ $t("instance.authentication-database") }}
           </label>
@@ -802,7 +802,7 @@ MIIEvQ...
       "
     >
       <div v-if="hasReadonlyReplicaHost" class="sm:col-span-3 sm:col-start-1">
-        <div class="flex flex-row items-center space-x-2">
+        <div class="flex flex-row items-center gap-x-2">
           <label for="host" class="textlabel block">
             {{ $t("data-source.read-replica-host") }}
           </label>
@@ -817,7 +817,7 @@ MIIEvQ...
       </div>
 
       <div v-if="hasReadonlyReplicaPort" class="sm:col-span-3 sm:col-start-1">
-        <div class="flex flex-row items-center space-x-2">
+        <div class="flex flex-row items-center gap-x-2">
           <label for="port" class="textlabel block">
             {{ $t("data-source.read-replica-port") }}
           </label>
@@ -858,7 +858,7 @@ MIIEvQ...
       <!-- Add parameter form -->
       <div
         v-if="allowEdit"
-        class="flex mt-2 mb-2 space-x-2 bg-gray-50 p-3 rounded-md"
+        class="flex mt-2 mb-2 gap-x-2 bg-gray-50 p-3 rounded-md"
       >
         <NInput
           v-model:value="newParam.key"
@@ -885,7 +885,7 @@ MIIEvQ...
       <div
         v-for="(param, index) in extraConnectionParamsList"
         :key="param.key"
-        class="flex mt-2 space-x-2"
+        class="flex mt-2 gap-x-2"
       >
         <NInput
           class="w-full"

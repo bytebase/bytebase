@@ -4,7 +4,7 @@
     :disabled="disabled"
     @update:checked="$emit('update:value', $event)"
   >
-    <div class="flex items-center space-x-1">
+    <div class="flex items-center gap-x-1">
       <p class="font-medium">
         {{ title }}
       </p>

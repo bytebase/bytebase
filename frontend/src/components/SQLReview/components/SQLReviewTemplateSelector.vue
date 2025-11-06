@@ -19,11 +19,11 @@
         "
         @click="$emit('select-template', template)"
       >
-        <div class="text-left space-y-2">
+        <div class="text-left flex flex-col gap-y-2">
           <span class="text-base font-medium">
             {{ template.review.name }}
           </span>
-          <div class="space-y-2">
+          <div class="flex flex-col gap-y-2">
             <BBBadge
               v-for="resource in template.review.resources"
               :key="resource"
@@ -60,7 +60,7 @@
         "
         @click="$emit('select-template', template)"
       >
-        <div class="flex justify-center items-center space-x-1">
+        <div class="flex justify-center items-center gap-x-1">
           <div class="text-left">
             <span class="text-base font-medium">
               {{

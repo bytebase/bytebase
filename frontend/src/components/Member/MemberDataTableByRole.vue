@@ -67,7 +67,7 @@ const columns = computed(() => {
       render: (row: RoleRowData | BindingRowData) => {
         if (row.type === "role") {
           return (
-            <div class="flex items-center space-x-1">
+            <div class="flex items-center gap-x-1">
               {row.scope === "workspace" && (
                 <NTooltip
                   v-slots={{

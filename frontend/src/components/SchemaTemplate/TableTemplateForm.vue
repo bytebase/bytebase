@@ -1,7 +1,7 @@
 <template>
   <DrawerContent :title="$t('schema-template.table-template.self')">
-    <div class="space-y-6 divide-y divide-block-border w-[calc(100vw-256px)]">
-      <div class="space-y-6">
+    <div class="flex flex-col gap-y-6 divide-y divide-block-border w-[calc(100vw-256px)]">
+      <div class="flex flex-col gap-y-6">
         <!-- category -->
         <div class="sm:col-span-2 sm:col-start-1">
           <label for="category" class="textlabel">
@@ -22,7 +22,7 @@
           </div>
         </div>
 
-        <div class="w-full mb-6 space-y-1">
+        <div class="w-full mb-6 flex flex-col gap-y-1">
           <label for="engine" class="textlabel">
             {{ $t("database.engine") }}
           </label>
@@ -59,7 +59,7 @@
           </div>
         </div>
       </div>
-      <div class="space-y-6 pt-6">
+      <div class="flex flex-col gap-y-6 pt-6">
         <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-4">
           <!-- table name -->
           <div class="sm:col-span-2 sm:col-start-1">
@@ -91,7 +91,7 @@
           <div class="col-span-4">
             <div
               v-if="!readonly"
-              class="w-full py-2 flex items-center space-x-2"
+              class="w-full py-2 flex items-center gap-x-2"
             >
               <NButton size="small" :disabled="false" @click="onColumnAdd">
                 <template #icon>

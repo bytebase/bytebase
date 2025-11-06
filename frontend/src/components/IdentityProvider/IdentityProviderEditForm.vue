@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full space-y-0 pt-4">
+  <div class="w-full flex flex-col gap-y-0 pt-4">
     <div class="divide-y divide-block-border">
       <!-- Basic Information Section -->
       <div class="pb-6 lg:flex">
@@ -8,12 +8,12 @@
             {{ $t("common.general") }}
           </h1>
         </div>
-        <div class="flex-1 mt-4 lg:px-4 lg:mt-0 space-y-6">
+        <div class="flex-1 mt-4 lg:px-4 lg:mt-0 flex flex-col gap-y-6">
           <div>
             <p class="text-base font-semibold text-gray-800 mb-2">
               {{ $t("common.type") }}
             </p>
-            <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-md">
+            <div class="flex items-center gap-x-3 p-3 bg-gray-50 rounded-md">
               <component
                 :is="getProviderIcon(localIdentityProvider.type)"
                 class="w-5 h-5 text-gray-600"
@@ -108,7 +108,7 @@
             />
           </p>
         </div>
-        <div class="flex-1 mt-4 lg:px-4 lg:mt-0 space-y-6">
+        <div class="flex-1 mt-4 lg:px-4 lg:mt-0 flex flex-col gap-y-6">
           <div class="grid grid-cols-[256px_1fr] gap-4 items-center">
             <BBTextField
               v-model:value="fieldMapping.identifier"

@@ -34,7 +34,7 @@
             <NRadioGroup
               v-model:value="selectedSource"
               size="large"
-              class="space-y-4 w-full"
+              class="flex flex-col gap-y-4 w-full"
             >
               <div
                 class="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors"
@@ -43,13 +43,13 @@
                 }"
               >
                 <NRadio value="release" class="w-full">
-                  <div class="flex items-start space-x-3 w-full">
+                  <div class="flex items-start gap-x-3 w-full">
                     <PackageIcon
                       class="w-6 h-6 mt-1 shrink-0"
                       :stroke-width="1.5"
                     />
                     <div class="flex-1">
-                      <div class="flex items-center space-x-2">
+                      <div class="flex items-center gap-x-2">
                         <span class="text-lg font-medium text-gray-900">
                           {{ $t("database.revision.from-release") }}
                         </span>
@@ -68,13 +68,13 @@
                 }"
               >
                 <NRadio value="local" class="w-full">
-                  <div class="flex items-start space-x-3 w-full">
+                  <div class="flex items-start gap-x-3 w-full">
                     <FolderOpenIcon
                       class="w-6 h-6 mt-1 shrink-0"
                       :stroke-width="1.5"
                     />
                     <div class="flex-1">
-                      <div class="flex items-center space-x-2">
+                      <div class="flex items-center gap-x-2">
                         <span class="text-lg font-medium text-gray-900">
                           {{ $t("database.revision.from-local-files") }}
                         </span>
@@ -97,7 +97,7 @@
               currentStep === Step.UPLOAD_FILES && selectedSource === 'local'
             "
           >
-            <div class="space-y-4">
+            <div class="flex flex-col gap-y-4">
               <div class="text-sm text-gray-600">
                 {{ $t("database.revision.upload-files-description") }}
               </div>
@@ -139,7 +139,7 @@
               />
 
               <!-- Uploaded files list -->
-              <div v-if="localFiles.length > 0" class="space-y-3">
+              <div v-if="localFiles.length > 0" class="flex flex-col gap-y-3">
                 <div class="flex items-center justify-between">
                   <h4 class="font-medium text-control">
                     {{ $t("database.revision.uploaded-files") }}
@@ -160,10 +160,10 @@
                 <div
                   v-for="(file, index) in localFiles"
                   :key="index"
-                  class="border border-gray-200 rounded-lg p-4 space-y-3"
+                  class="border border-gray-200 rounded-lg p-4 flex flex-col gap-y-3"
                 >
                   <div class="flex items-start justify-between">
-                    <div class="flex-1 space-y-3">
+                    <div class="flex-1 flex flex-col gap-y-3">
                       <div class="flex items-center gap-2">
                         <FileIcon class="w-4 h-4 text-gray-500" />
                         <span class="text-sm font-medium">{{ file.name }}</span>
@@ -248,7 +248,7 @@
               selectedSource === 'release'
             "
           >
-            <div class="space-y-4">
+            <div class="flex flex-col gap-y-4">
               <div class="text-sm text-gray-600">
                 {{ $t("database.revision.select-release-description") }}
               </div>
@@ -275,13 +275,13 @@
 
           <!-- Step 3: Select Files -->
           <template v-else-if="currentStep === Step.SELECT_FILES">
-            <div class="space-y-4">
+            <div class="flex flex-col gap-y-4">
               <div class="text-sm text-gray-600">
                 {{ $t("database.revision.select-files-description") }}
               </div>
 
               <!-- Selectable files section -->
-              <div v-if="selectableFiles.length > 0" class="space-y-2">
+              <div v-if="selectableFiles.length > 0" class="flex flex-col gap-y-2">
                 <div>
                   <h4 class="font-medium text-control">
                     {{ $t("database.revision.available-files") }}
@@ -304,7 +304,7 @@
               <!-- Files with existing versions section -->
               <div
                 v-if="filesWithExistingVersions.length > 0"
-                class="space-y-2 mt-6"
+                class="flex flex-col gap-y-2 mt-6"
               >
                 <div>
                   <h4 class="text font-medium text-control">

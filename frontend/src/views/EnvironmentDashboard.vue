@@ -326,7 +326,7 @@ const doDelete = async (environment: Environment) => {
 };
 
 const renderTab = (env: Environment, index: number) => {
-  return h("div", { class: "flex items-center space-x-2 py-1" }, [
+  return h("div", { class: "flex items-center gap-x-2 py-1" }, [
     h("span", { class: "text-opacity-60" }, `${index + 1}.`),
     h(EnvironmentV1Name, {
       environment: env,

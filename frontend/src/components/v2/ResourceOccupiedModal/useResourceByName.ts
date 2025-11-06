@@ -139,7 +139,7 @@ export const useResourceByName = ({
         return h(
           "a",
           {
-            class: "flex items-center space-x-2 normal-link underline",
+            class: "flex items-center gap-x-2 normal-link underline",
             href: `/${user.name}`,
           },
           `${user.title} (${user.email})`

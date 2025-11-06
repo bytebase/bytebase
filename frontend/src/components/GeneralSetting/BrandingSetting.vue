@@ -1,7 +1,7 @@
 <template>
   <div id="branding" class="py-6 lg:flex">
     <div class="text-left lg:w-1/4">
-      <div class="flex items-center space-x-2">
+      <div class="flex items-center gap-x-2">
         <h1 class="text-2xl font-bold">
           {{ title }}
         </h1>
@@ -29,7 +29,7 @@
                 :style="`background-image: url(${state.logoUrl});`"
               ></div>
               <SingleFileSelector
-                class="space-y-1 text-center flex flex-col justify-center items-center absolute top-0 bottom-0 left-0 right-0"
+                class="flex flex-col gap-y-1 text-center justify-center items-center absolute top-0 bottom-0 left-0 right-0"
                 :class="[state.logoUrl ? 'opacity-0 hover:opacity-90' : '']"
                 :max-file-size-in-mi-b="maxFileSizeInMiB"
                 :support-file-extensions="supportImageExtensions"

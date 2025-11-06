@@ -10,7 +10,7 @@
       :closable="true"
       class="w-200 max-w-[100vw] relative"
     >
-      <div class="w-full mx-auto space-y-4">
+      <div class="w-full mx-auto flex flex-col gap-y-4">
         <AddProjectMemberForm
           ref="formRef"
           class="w-full"

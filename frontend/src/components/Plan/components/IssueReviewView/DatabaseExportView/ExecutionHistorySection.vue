@@ -1,7 +1,7 @@
 <template>
-  <div class="space-y-4">
+  <div class="flex flex-col gap-y-4">
     <!-- Execution History Section -->
-    <div class="space-y-3">
+    <div class="flex flex-col gap-y-3">
       <div class="flex items-center justify-between">
         <h3 class="text-base font-medium">
           {{ $t("task-run.history") }}

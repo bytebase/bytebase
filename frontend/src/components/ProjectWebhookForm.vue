@@ -1,7 +1,7 @@
 <template>
   <FormLayout :title="create ? $t('project.webhook.creation.title') : ''">
     <template v-if="!create" #title>
-      <div class="flex flex-row space-x-2 items-center">
+      <div class="flex flex-row gap-x-2 items-center">
         <WebhookTypeIcon :type="props.webhook.type" class="h-6 w-6" />
         <h3 class="text-lg leading-6 font-medium text-main">
           {{ props.webhook.title }}
@@ -146,7 +146,7 @@
             {{ $t("project.webhook.triggering-activity") }}
             <RequiredStar />
           </div>
-          <div class="flex flex-col space-y-4 mt-2">
+          <div class="flex flex-col gap-y-4 mt-2">
             <div v-for="(item, index) in webhookActivityItemList" :key="index">
               <div>
                 <div class="flex items-center">

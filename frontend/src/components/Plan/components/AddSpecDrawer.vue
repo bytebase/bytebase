@@ -28,7 +28,7 @@
             <NRadioGroup
               v-model:value="selectedMigrationType"
               size="large"
-              class="space-y-4 w-full md:w-[80vw] lg:w-[60vw]"
+              class="gap-y-4 w-full md:w-[80vw] lg:w-[60vw]"
             >
               <div
                 class="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors"
@@ -37,13 +37,13 @@
                 }"
               >
                 <NRadio :value="MigrationType.DDL" class="w-full">
-                  <div class="flex items-start space-x-3 w-full">
+                  <div class="flex items-start gap-x-3 w-full">
                     <FileDiffIcon
                       class="w-6 h-6 mt-1 shrink-0"
                       :stroke-width="1.5"
                     />
                     <div class="flex-1">
-                      <div class="flex items-center space-x-2">
+                      <div class="flex items-center gap-x-2">
                         <span class="text-lg font-medium text-gray-900">
                           <span>{{ $t("plan.schema-migration") }}</span>
                         </span>
@@ -62,13 +62,13 @@
                 }"
               >
                 <NRadio :value="MigrationType.DML" class="w-full">
-                  <div class="flex items-start space-x-3 w-full">
+                  <div class="flex items-start gap-x-3 w-full">
                     <EditIcon
                       class="w-6 h-6 mt-1 shrink-0"
                       :stroke-width="1.5"
                     />
                     <div class="flex-1">
-                      <div class="flex items-center space-x-2">
+                      <div class="flex items-center gap-x-2">
                         <span class="text-lg font-medium text-gray-900">
                           <span>{{ $t("plan.data-change") }}</span>
                         </span>

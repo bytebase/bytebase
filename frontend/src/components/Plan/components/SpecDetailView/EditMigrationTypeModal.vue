@@ -8,12 +8,12 @@
     @positive-click="handleSave"
     @negative-click="handleClose"
   >
-    <NRadioGroup v-model:value="selectedType" class="space-y-4">
+    <NRadioGroup v-model:value="selectedType" class="flex flex-col gap-y-4">
       <NRadio :value="MigrationType.DDL" class="w-full">
-        <div class="flex items-start space-x-2 w-full ml-2">
+        <div class="flex items-start gap-x-2 w-full ml-2">
           <FileDiffIcon class="w-6 h-6 shrink-0" :stroke-width="1.5" />
           <div class="flex-1">
-            <div class="flex items-center space-x-2">
+            <div class="flex items-center gap-x-2">
               <span class="text-base text-gray-900">
                 <span>{{ $t("plan.schema-migration") }}</span>
               </span>
@@ -25,10 +25,10 @@
         </div>
       </NRadio>
       <NRadio :value="MigrationType.DML" class="w-full">
-        <div class="flex items-start space-x-2 w-full ml-2">
+        <div class="flex items-start gap-x-2 w-full ml-2">
           <EditIcon class="w-6 h-6 shrink-0" :stroke-width="1.5" />
           <div class="flex-1">
-            <div class="flex items-center space-x-2">
+            <div class="flex items-center gap-x-2">
               <span class="text-base text-gray-900">
                 <span>{{ $t("plan.data-change") }}</span>
               </span>

@@ -1,5 +1,5 @@
 <template>
-  <div v-bind="$attrs" :class="[!sticky && 'space-y-8']">
+  <div v-bind="$attrs" :class="[!sticky && 'flex flex-col gap-y-8']">
     <div
       :class="[
         'px-0.5',
@@ -33,7 +33,7 @@
 
     <div
       v-if="showFooter"
-      class="pt-4 border-t border-block-border flex items-center space-x-2 justify-between"
+      class="pt-4 border-t border-block-border flex items-center gap-x-2 justify-between"
       :class="[sticky && 'pb-4 bg-white sticky bottom-0 z-10', footerClass]"
     >
       <div>
@@ -42,7 +42,7 @@
         </NButton>
       </div>
 
-      <div class="flex items-center justify-between space-x-2">
+      <div class="flex items-center justify-between gap-x-2">
         <NButton
           v-if="currentIndex != 0"
           v-bind="backButtonProps"

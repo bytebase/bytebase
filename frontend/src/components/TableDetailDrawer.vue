@@ -27,7 +27,7 @@
                 </div>
               </div>
               <dl
-                class="flex flex-col space-y-1 md:space-y-0 md:flex-row md:flex-wrap"
+                class="flex flex-col gap-y-1 md:gap-y-0 md:flex-row md:flex-wrap"
               >
                 <dt class="sr-only">{{ $t("common.environment") }}</dt>
                 <dd class="flex items-center text-sm md:mr-4">
@@ -103,7 +103,7 @@
           </div>
 
           <div class="mt-6">
-            <div class="max-w-6xl px-6 space-y-6 divide-y divide-block-border">
+            <div class="max-w-6xl px-6 flex flex-col gap-y-6 divide-y divide-block-border">
               <!-- Description list -->
               <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-3">
                 <div
@@ -204,7 +204,7 @@
 
           <div
             v-if="instanceV1SupportsColumn(instanceEngineNew)"
-            class="mt-6 px-6 space-y-4"
+            class="mt-6 px-6 flex flex-col gap-y-4"
           >
             <div class="w-full flex flex-row justify-between items-center">
               <div class="text-lg leading-6 font-medium text-main">
@@ -232,7 +232,7 @@
 
           <div
             v-if="instanceV1SupportsIndex(instanceEngineNew)"
-            class="mt-6 px-6 space-y-4"
+            class="mt-6 px-6 flex flex-col gap-y-4"
           >
             <div class="text-lg leading-6 font-medium text-main">
               {{ $t("database.indexes") }}
@@ -242,7 +242,7 @@
 
           <div
             v-if="instanceV1SupportsTrigger(instanceEngineNew)"
-            class="mt-6 px-6 space-y-4"
+            class="mt-6 px-6 flex flex-col gap-y-4"
           >
             <div class="text-lg leading-6 font-medium text-main">
               {{ $t("db.triggers") }}
@@ -257,7 +257,7 @@
 
           <div
             v-if="instanceV1MaskingForNoSQL(instanceEngineNew)"
-            class="mt-6 px-6 space-y-4"
+            class="mt-6 px-6 flex flex-col gap-y-4"
           >
             <div>
               <div class="text-lg leading-6 font-medium text-main">
@@ -285,7 +285,7 @@
             />
             <div
               v-if="state.tableCatalog !== initTableCatalog"
-              class="w-full flex items-center justify-end space-x-2 mt-2"
+              class="w-full flex items-center justify-end gap-x-2 mt-2"
             >
               <NButton
                 type="primary"

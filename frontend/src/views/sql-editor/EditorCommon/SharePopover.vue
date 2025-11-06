@@ -1,5 +1,5 @@
 <template>
-  <div class="share-popover w-96 p-2 space-y-4">
+  <div class="share-popover w-96 p-2 flex flex-col gap-y-4">
     <section class="w-full flex flex-row justify-between items-center">
       <div class="pr-4">
         <h2 class="text-lg font-semibold">{{ $t("common.share") }}</h2>
@@ -29,7 +29,7 @@
             </div>
           </div>
         </template>
-        <div class="access-content space-y-2 w-80">
+        <div class="access-content flex flex-col gap-y-2 w-80">
           <div
             v-for="option in accessOptions"
             :key="option.label"

@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-1 w-full">
+  <div class="flex flex-col gap-y-1 w-full">
     <p class="textinfolabel">
       <span>{{ $t("instance.create-gcp-credentials") }}</span>
       <a

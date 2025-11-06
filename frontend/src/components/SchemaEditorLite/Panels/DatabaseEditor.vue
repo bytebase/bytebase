@@ -4,7 +4,7 @@
       <div>
         <div
           v-if="state.selectedSubTab === 'table-list'"
-          class="w-full flex justify-between items-center space-x-2"
+          class="w-full flex justify-between items-center gap-x-2"
         >
           <div class="flex flex-row justify-start items-center gap-x-2">
             <div

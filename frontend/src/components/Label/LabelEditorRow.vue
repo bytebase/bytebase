@@ -1,5 +1,5 @@
 <template>
-  <div class="contents text-sm space-x-2">
+  <div class="contents text-sm flex gap-x-2">
     <div class="flex flex-col">
       <span class="text-xs font-medium mb-1"> Key {{ index + 1 }} </span>
       <span v-if="readonly" class="leading-[34px]">
@@ -15,7 +15,7 @@
     </div>
     <div class="flex flex-col">
       <span class="text-xs font-medium mb-1"> Value {{ index + 1 }} </span>
-      <div class="flex items-center space-x-2">
+      <div class="flex items-center gap-x-2">
         <span v-if="readonly" class="leading-[34px]">
           <template v-if="kv.value">{{ kv.value }}</template>
           <span v-else class="text-control-placeholder">

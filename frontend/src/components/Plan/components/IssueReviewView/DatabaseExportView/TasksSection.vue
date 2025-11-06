@@ -1,7 +1,7 @@
 <template>
-  <div class="space-y-2">
+  <div class="gap-y-2">
     <!-- Tasks Display -->
-    <div class="space-y-3">
+    <div class="gap-y-3">
       <!-- Task status summary with title -->
       <div
         v-if="exportTasks.length > 0"

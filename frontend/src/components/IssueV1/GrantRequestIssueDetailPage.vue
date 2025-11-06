@@ -11,7 +11,7 @@
         class="flex-1 flex flex-col hide-scrollbar divide-y overflow-x-hidden py-2"
       >
         <div
-          class="w-full mx-auto flex flex-col justify-start items-start px-4 mb-4 space-y-4"
+          class="w-full mx-auto flex flex-col justify-start items-start px-4 mb-4 gap-y-4"
         >
           <div
             v-if="requestRole"

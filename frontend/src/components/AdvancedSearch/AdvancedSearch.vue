@@ -16,7 +16,7 @@
             'max-width': `calc(${containerWidth}px - 14rem)`,
           }"
         >
-          <div class="flex items-center space-x-2">
+          <div class="flex items-center gap-x-2">
             <FilterIcon class="w-4 h-4 text-control-placeholder" />
             <span class="textinfolabel">
               {{ $t("issue.advanced-search.filter") }}

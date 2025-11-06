@@ -11,7 +11,7 @@
     </div>
 
     <div
-      class="flex flex-col lg:hidden border px-2 pb-4 divide-y space-y-4 divide-block-border"
+      class="flex flex-col lg:hidden border px-2 pb-4 divide-y gap-y-4 divide-block-border"
     >
       <div
         v-for="(review, i) in reviewList"
@@ -21,7 +21,7 @@
         <div class="text-md">
           {{ review.name }}
         </div>
-        <div class="space-y-2 space-x-2">
+        <div class="flex flex-wrap gap-y-2 gap-x-2">
           <BBBadge
             v-for="resource in review.resources"
             :key="resource"

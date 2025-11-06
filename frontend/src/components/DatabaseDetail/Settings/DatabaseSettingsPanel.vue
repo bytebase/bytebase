@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col divide-y gap-y-7">
-    <div class="space-y-4">
+    <div class="flex flex-col gap-y-4">
       <div>
         <p class="text-lg font-medium leading-7 text-main">
           {{ $t("common.environment") }}

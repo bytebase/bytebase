@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-4">
+  <div class="gap-y-4">
     <div class="textinfolabel">
       {{ $t("role.setting.description") }}
       <LearnMoreLink

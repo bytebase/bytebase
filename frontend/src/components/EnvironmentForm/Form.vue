@@ -2,7 +2,7 @@
   <div>
     <div class="flex flex-col gap-y-6">
       <div v-if="features.includes('BASE')" class="flex flex-col gap-y-2">
-        <div for="name" class="flex item-center space-x-2">
+        <div for="name" class="flex item-center gap-x-2">
           <div class="w-4 h-4 relative">
             <component :is="renderColorPicker()" />
           </div>
@@ -69,7 +69,7 @@
         class="flex flex-col gap-y-2"
       >
         <div class="gap-y-1">
-          <div class="flex items-baseline space-x-2">
+          <div class="flex items-baseline gap-x-2">
             <label class="font-medium">
               {{ t("policy.rollout.name") }}
             </label>

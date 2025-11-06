@@ -5,7 +5,7 @@
     >
       <div
         ref="tabsContainerRef"
-        class="flex flex-nowrap overflow-x-auto max-x-full hide-scrollbar overscroll-none px-1 space-x-1"
+        class="flex flex-nowrap overflow-x-auto max-x-full hide-scrollbar overscroll-none px-1 gap-x-1"
       >
         <div
           v-for="tab in tabList"

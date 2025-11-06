@@ -217,7 +217,7 @@ const columnList = computed(() => {
     width: "minmax(min-content, auto)",
     render: (item, row) => {
       return (
-        <div class="flex items-center space-x-1">
+        <div class="flex items-center gap-x-1">
           {isBuiltinSemanticType(item.item) ? (
             <h3>
               {t(

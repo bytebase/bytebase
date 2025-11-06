@@ -51,11 +51,11 @@
             <label class="textlabel block">
               {{ $t("settings.members.groups.form.members") }}
             </label>
-            <div class="flex flex-col space-y-2">
+            <div class="flex flex-col gap-y-2">
               <div
                 v-for="(member, i) in state.group.members"
                 :key="member.member"
-                class="w-full flex items-center space-x-3"
+                class="w-full flex items-center gap-x-3"
               >
                 <UserSelect
                   :user="getUserUidForMember(member)"

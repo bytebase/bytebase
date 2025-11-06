@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col space-y-2" v-bind="$attrs">
+  <div class="flex flex-col gap-y-2" v-bind="$attrs">
     <div class="flex justify-between items-center">
       <div></div>
       <NButton type="primary" @click="showCreateRevisionDrawer = true">

@@ -12,9 +12,9 @@
       <div
         class="pb-4 border-b border-block-border md:flex md:items-center md:justify-between"
       >
-        <div class="flex-1 min-w-0 space-y-3">
+        <div class="flex-1 min-w-0 flex flex-col gap-y-3">
           <!-- Summary -->
-          <div class="flex items-center space-x-2">
+          <div class="flex items-center gap-x-2">
             <ChangelogStatusIcon :status="changelog.status" />
             <NTag round>
               {{
@@ -31,7 +31,7 @@
             }}</span>
           </div>
           <dl
-            class="flex flex-col space-y-1 md:space-y-0 md:flex-row md:flex-wrap"
+            class="flex flex-col gap-y-1 md:gap-y-0 md:flex-row md:flex-wrap"
           >
             <dt class="sr-only">{{ $t("common.issue") }}</dt>
             <dd class="flex items-center text-sm md:mr-4">
@@ -88,7 +88,7 @@
             <CopyButton size="small" :content="changelogSchema" />
           </p>
           <div class="flex flex-row items-center gap-x-2">
-            <div v-if="allowShowDiff" class="flex space-x-1 items-center">
+            <div v-if="allowShowDiff" class="flex gap-x-1 items-center">
               <NSwitch
                 :value="state.showDiff"
                 size="small"

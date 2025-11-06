@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full space-y-4 pb-4">
+  <div class="w-full flex flex-col gap-y-4 pb-4">
     <div class="textinfolabel">
       {{ $t("settings.im-integration.description") }}
       <LearnMoreLink
@@ -21,7 +21,7 @@
         </NButton>
       </template>
     </NEmpty>
-    <div v-else class="space-y-4">
+    <div v-else class="flex flex-col gap-y-4">
       <div
         v-for="(item, i) in state.setting.settings"
         :key="item.type"
@@ -47,7 +47,7 @@
               v-model:value="(item.payload.value as AppIMSetting_Slack).token"
             />
           </div>
-          <div v-else-if="item.type === Webhook_Type.FEISHU" class="space-y-4">
+          <div v-else-if="item.type === Webhook_Type.FEISHU" class="flex flex-col gap-y-4">
             <div>
               <div class="textlabel">App ID</div>
               <BBTextField
@@ -67,7 +67,7 @@
               />
             </div>
           </div>
-          <div v-else-if="item.type === Webhook_Type.WECOM" class="space-y-4">
+          <div v-else-if="item.type === Webhook_Type.WECOM" class="flex flex-col gap-y-4">
             <div>
               <div class="textlabel">Corp ID</div>
               <BBTextField
@@ -96,7 +96,7 @@
               />
             </div>
           </div>
-          <div v-else-if="item.type === Webhook_Type.LARK" class="space-y-4">
+          <div v-else-if="item.type === Webhook_Type.LARK" class="flex flex-col gap-y-4">
             <div>
               <div class="textlabel">App ID</div>
               <BBTextField
@@ -118,7 +118,7 @@
           </div>
           <div
             v-else-if="item.type === Webhook_Type.DINGTALK"
-            class="space-y-4"
+            class="flex flex-col gap-y-4"
           >
             <div>
               <div class="textlabel">Client ID</div>

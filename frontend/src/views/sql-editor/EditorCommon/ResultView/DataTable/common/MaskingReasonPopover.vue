@@ -15,7 +15,7 @@
         />
       </div>
     </template>
-    <div class="space-y-2 max-w-sm">
+    <div class="flex flex-col gap-y-2 max-w-sm">
       <div class="font-medium flex items-center gap-2">
         <img
           v-if="props.reason.semanticTypeIcon"
