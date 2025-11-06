@@ -46,24 +46,30 @@ jobs:
             ARCHIVE="mongosh-${MONGOSH_VERSION}-linux-${ARCH}.tgz"
             DOWNLOAD_URL="https://downloads.mongodb.com/compass/${ARCHIVE}"
 
+            # Use runner temp directory
+            WORK_DIR="${RUNNER_TEMP:-$HOME}"
+            echo "Working directory: $WORK_DIR"
+            cd "$WORK_DIR"
+
             echo "Downloading from ${DOWNLOAD_URL}"
-            cd /tmp
             curl -fsSL "${DOWNLOAD_URL}" -o "${ARCHIVE}"
+            echo "Download complete, extracting..."
             tar -xzf "${ARCHIVE}"
 
             # Install to ~/.local/bin (no sudo required)
             mkdir -p "$HOME/.local/bin"
             EXTRACTED_DIR="mongosh-${MONGOSH_VERSION}-linux-${ARCH}"
-            install -m 755 "${EXTRACTED_DIR}/bin/mongosh" "$HOME/.local/bin/mongosh"
+            cp "${EXTRACTED_DIR}/bin/mongosh" "$HOME/.local/bin/mongosh"
+            chmod +x "$HOME/.local/bin/mongosh"
 
-            # Add to PATH for this session
-            export PATH="$HOME/.local/bin:$PATH"
+            # Add to PATH for subsequent steps
             echo "$HOME/.local/bin" >> $GITHUB_PATH
 
             # Cleanup
             rm -rf "${EXTRACTED_DIR}" "${ARCHIVE}"
 
-            mongosh --version
+            # Verify installation
+            "$HOME/.local/bin/mongosh" --version
             echo "mongosh v${MONGOSH_VERSION} installed successfully to $HOME/.local/bin"
           else
             echo "Non-Linux OS detected. Skipping mongosh installation."
