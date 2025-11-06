@@ -1,7 +1,7 @@
 <template>
   <DrawerContent :title="$t('schema-template.field-template.self')">
-    <div class="flex flex-col gap-y-6 divide-y divide-block-border">
-      <div class="flex flex-col gap-y-6">
+    <div>
+      <div class="flex flex-col gap-y-6 pb-6">
         <!-- category -->
         <div class="sm:col-span-2 sm:col-start-1">
           <label for="category" class="textlabel">
@@ -34,7 +34,7 @@
           />
         </div>
       </div>
-      <div class="flex flex-col gap-y-6 pt-6">
+      <div class="flex flex-col gap-y-6 border-t border-block-border pt-6">
         <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-4">
           <!-- column name -->
           <div class="sm:col-span-2 sm:col-start-1">
@@ -179,7 +179,7 @@
         </div>
       </div>
 
-      <div class="flex flex-col gap-y-1 pt-6">
+      <div class="flex flex-col gap-y-1 border-t border-block-border pt-6">
         <label for="category" class="textlabel">
           {{ $t("common.labels") }}
         </label>

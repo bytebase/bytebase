@@ -28,13 +28,11 @@
           "
         />
       </div>
-      <div
-        class="flex flex-col lg:hidden border px-2 pb-4 divide-y gap-y-4 divide-block-border"
-      >
+      <div class="flex flex-col lg:hidden border px-2 pb-4 divide-y divide-block-border">
         <div
           v-for="rule in category.ruleList"
           :key="rule.type"
-          class="pt-4 gap-y-3"
+          class="pt-4 flex flex-col gap-y-3"
         >
           <div class="flex justify-between items-center gap-x-2">
             <div class="flex items-center gap-x-1">

@@ -11,7 +11,7 @@
     </div>
 
     <div
-      class="flex flex-col lg:hidden border px-2 pb-4 divide-y gap-y-4 divide-block-border"
+      class="flex flex-col lg:hidden border px-2 pb-4 divide-y divide-block-border"
     >
       <div
         v-for="(review, i) in reviewList"

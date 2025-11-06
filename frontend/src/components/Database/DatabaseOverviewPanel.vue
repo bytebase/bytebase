@@ -1,9 +1,9 @@
 <template>
-  <div class="flex flex-col gap-y-6 divide-y divide-block-border">
+  <div>
     <!-- Description list -->
-    <DatabaseOverviewInfo :database="database" />
+    <DatabaseOverviewInfo :database="database" class="pb-6" />
 
-    <div v-if="allowGetSchema" class="py-6">
+    <div v-if="allowGetSchema" class="border-t border-block-border pt-6">
       <div
         v-if="hasSchemaPropertyV1"
         class="flex flex-row justify-start items-center mb-4"

@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-y-0 divide-y divide-block-border pt-2">
+  <div class="divide-y divide-block-border pt-2">
     <GeneralSetting
       ref="generalSettingRef"
       :title="$t('common.general')"
