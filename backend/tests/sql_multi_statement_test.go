@@ -288,6 +288,54 @@ func TestMultiStatementSQLWithErrors(t *testing.T) {
 				a.Equal(int64(1), results[2].RowsCount, "third statement should affect 1 row")
 			},
 		},
+		{
+			name:              "MySQL - Syntax error in middle statement",
+			databaseName:      "MultiStmtSyntaxErrorTest1",
+			dbType:            storepb.Engine_MYSQL,
+			prepareStatements: "CREATE TABLE users(id INT PRIMARY KEY, name VARCHAR(64));",
+			// Second statement has syntax error
+			multiStatement: "INSERT INTO users (id, name) VALUES(1, 'Alice'); INSER INTO users (id, name) VALUES(2, 'Bob'); INSERT INTO users (id, name) VALUES(3, 'Charlie');",
+			checkResults: func(t *testing.T, results []*v1pb.QueryResult) {
+				a := require.New(t)
+				a.Equal(3, len(results), "should return results for all 3 statements")
+
+				// First statement succeeds
+				a.Equal("", results[0].Error, "first statement should succeed")
+				a.Equal(int64(1), results[0].RowsCount, "first statement should affect 1 row")
+
+				// Second statement fails (syntax error)
+				a.NotEqual("", results[1].Error, "second statement should fail with syntax error")
+				a.Contains(results[1].Error, "syntax", "error should mention syntax")
+
+				// Third statement succeeds despite second failing
+				a.Equal("", results[2].Error, "third statement should succeed even though second failed")
+				a.Equal(int64(1), results[2].RowsCount, "third statement should affect 1 row")
+			},
+		},
+		{
+			name:              "PostgreSQL - Syntax error in middle statement",
+			databaseName:      "MultiStmtSyntaxErrorTest2",
+			dbType:            storepb.Engine_POSTGRES,
+			prepareStatements: "CREATE TABLE users(id INT PRIMARY KEY, name VARCHAR(64));",
+			// Second statement has syntax error
+			multiStatement: "INSERT INTO users (id, name) VALUES(1, 'Alice'); INSER INTO users (id, name) VALUES(2, 'Bob'); INSERT INTO users (id, name) VALUES(3, 'Charlie');",
+			checkResults: func(t *testing.T, results []*v1pb.QueryResult) {
+				a := require.New(t)
+				a.Equal(3, len(results), "should return results for all 3 statements")
+
+				// First statement succeeds
+				a.Equal("", results[0].Error, "first statement should succeed")
+				a.Equal(int64(1), results[0].RowsCount, "first statement should affect 1 row")
+
+				// Second statement fails (syntax error)
+				a.NotEqual("", results[1].Error, "second statement should fail with syntax error")
+				a.Contains(results[1].Error, "syntax", "error should mention syntax")
+
+				// Third statement succeeds despite second failing
+				a.Equal("", results[2].Error, "third statement should succeed even though second failed")
+				a.Equal(int64(1), results[2].RowsCount, "third statement should affect 1 row")
+			},
+		},
 	}
 
 	t.Parallel()
