@@ -99,6 +99,7 @@ These flags are specific to the `check` subcommand (`bytebase-action check`).
         -   `FAIL_ON_ERROR`: Fail only if there are errors in the check results.
     -   Default: `SKIP`
     -   Note: Platform-specific outputs (GitHub comments, GitLab reports, etc.) are always generated before evaluating whether to fail.
+
 ### `rollout` Command Specific Flags
 
 These flags are specific to the `rollout` subcommand (`bytebase-action rollout`).
