@@ -217,6 +217,7 @@ import { planServiceClientConnect } from "@/grpcweb";
 import {
   pushNotification,
   useCurrentProjectV1,
+  useDatabaseV1Store,
   useSheetV1Store,
 } from "@/store";
 import type { SQLDialect } from "@/types";
@@ -401,8 +402,9 @@ const shouldShowSchemaEditorButton = computed(() => {
   }
 
   // Check if at least one target database supports schema editor
-  const hasSupported = targets.some((target) => {
-    const db = databaseForSpec(project.value, spec, target);
+  const databaseStore = useDatabaseV1Store();
+  const hasSupported = targets.some((targetName) => {
+    const db = databaseStore.getDatabaseByName(targetName);
     return engineSupportsSchemaEditor(db.instanceResource.engine);
   });
 
@@ -419,9 +421,10 @@ const targetDatabases = computed(() => {
     return [];
   }
 
+  const databaseStore = useDatabaseV1Store();
   const targets = spec.config.value.targets || [];
   return targets
-    .map((target) => databaseForSpec(project.value, spec, target))
+    .map((targetName) => databaseStore.getDatabaseByName(targetName))
     .filter((db) => engineSupportsSchemaEditor(db.instanceResource.engine));
 });
 
