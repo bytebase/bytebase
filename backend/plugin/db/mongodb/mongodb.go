@@ -173,9 +173,11 @@ func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOpti
 
 	mongoshCmd := exec.CommandContext(ctx, "mongosh", mongoshArgs...)
 	var errContent bytes.Buffer
+	var outContent bytes.Buffer
 	mongoshCmd.Stderr = &errContent
+	mongoshCmd.Stdout = &outContent
 	if err := mongoshCmd.Run(); err != nil {
-		return 0, errors.Wrapf(err, "failed to execute statement in mongosh: %s", errContent.String())
+		return 0, errors.Wrapf(err, "failed to execute statement in mongosh: \n stdout: %s\n stderr: %s", outContent.String(), errContent.String())
 	}
 	return 0, nil
 }
@@ -342,11 +344,23 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		strings.Join(mongoshArgs, " "),
 	}
 	shCmd := exec.CommandContext(ctx, "sh", shellArgs...)
+	slog.Info("MongoDB query command", slog.String("command", shCmd.String()))
 	var errContent bytes.Buffer
 	var outContent bytes.Buffer
 	shCmd.Stderr = &errContent
 	shCmd.Stdout = &outContent
 	if err := shCmd.Run(); err != nil {
+		f, ferr := os.OpenFile(queryResultFileName, os.O_RDONLY, 0644)
+		if ferr == nil {
+			defer f.Close()
+			if content, ferr := io.ReadAll(f); ferr == nil {
+				return []*v1pb.QueryResult{{
+					Latency:   durationpb.New(time.Since(startTime)),
+					Statement: statement,
+					Error:     string(content),
+				}}, nil
+			}
+		}
 		return nil, errors.Wrapf(err, "failed to execute statement in mongosh: \n stdout: %s\n stderr: %s", outContent.String(), errContent.String())
 	}
 
