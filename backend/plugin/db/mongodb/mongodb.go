@@ -457,5 +457,5 @@ func isMongoStatement(statement string) bool {
 	if strings.HasPrefix(statement, "db.") {
 		return true
 	}
-	return strings.HasPrefix(statement, `db["`)
+	return strings.HasPrefix(statement, "db[")
 }
