@@ -418,6 +418,269 @@ func isBackupTable(engine storepb.Engine, column parserbase.ColumnResource) bool
 	}
 }
 
+// querySingleSQL executes a single SQL statement and handles all validation, access control, and masking.
+// It returns the query results, spans, and duration. Errors are recorded in the QueryResult.Error field.
+func querySingleSQL(
+	ctx context.Context,
+	stores *store.Store,
+	user *store.UserMessage,
+	instance *store.InstanceMessage,
+	database *store.DatabaseMessage,
+	driver db.Driver,
+	conn *sql.Conn,
+	singleSQL parserbase.SingleSQL,
+	queryContext db.QueryContext,
+	licenseService *enterprise.LicenseService,
+	optionalAccessCheck accessCheckFunc,
+	schemaSyncer *schemasync.Syncer,
+	action storepb.MaskingExceptionPolicy_MaskingException_Action,
+) ([]*v1pb.QueryResult, []*parserbase.QuerySpan, time.Duration) {
+	var spans []*parserbase.QuerySpan
+	var sensitivePredicateColumns [][]parserbase.ColumnResource
+	var err error
+
+	// Get query span for validation and masking (skip for EXPLAIN queries)
+	if !queryContext.Explain {
+		spans, err = parserbase.GetQuerySpan(
+			ctx,
+			parserbase.GetQuerySpanContext{
+				InstanceID:                    instance.ResourceID,
+				GetDatabaseMetadataFunc:       BuildGetDatabaseMetadataFunc(stores),
+				ListDatabaseNamesFunc:         BuildListDatabaseNamesFunc(stores),
+				GetLinkedDatabaseMetadataFunc: BuildGetLinkedDatabaseMetadataFunc(stores, instance.Metadata.GetEngine()),
+			},
+			instance.Metadata.GetEngine(),
+			singleSQL.Text,
+			database.DatabaseName,
+			queryContext.Schema,
+			!store.IsObjectCaseSensitive(instance),
+		)
+		if err != nil {
+			return []*v1pb.QueryResult{{Error: err.Error(), Statement: singleSQL.Text}}, nil, 0
+		}
+
+		// Replace backup table with source for proper access control
+		if err := replaceBackupTableWithSource(ctx, stores, instance, database, spans); err != nil {
+			slog.Debug("failed to replace backup table with source", log.BBError(err))
+		}
+
+		// Check query access permissions
+		if optionalAccessCheck != nil {
+			if err := optionalAccessCheck(ctx, instance, database, user, spans, queryContext.Explain); err != nil {
+				return []*v1pb.QueryResult{{Error: err.Error(), Statement: singleSQL.Text}}, nil, 0
+			}
+			slog.Debug("optional access check", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
+		}
+
+		// Extract sensitive predicate columns for masking
+		if licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil {
+			masker := NewQueryResultMasker(stores)
+			sensitivePredicateColumns, err = masker.ExtractSensitivePredicateColumns(ctx, spans, instance, user, action)
+			if err != nil {
+				return []*v1pb.QueryResult{{Error: err.Error(), Statement: singleSQL.Text}}, nil, 0
+			}
+			slog.Debug("extract sensitive predicate columns", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
+		}
+	}
+
+	// Execute the query
+	slog.Debug("start execute with timeout", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName), slog.String("statement", singleSQL.Text))
+	results, duration, queryErr := executeWithTimeout(ctx, stores, licenseService, driver, conn, singleSQL.Text, queryContext)
+	if queryErr != nil {
+		return []*v1pb.QueryResult{{Error: queryErr.Error(), Statement: singleSQL.Text}}, spans, duration
+	}
+	slog.Debug("execute success", slog.String("instance", instance.ResourceID), slog.String("statement", singleSQL.Text), slog.Duration("duration", duration))
+
+	// For EXPLAIN queries, return results immediately
+	if queryContext.Explain {
+		return results, spans, duration
+	}
+
+	// Handle metadata synchronization if needed
+	syncDatabaseMap := make(map[string]bool)
+	for i, r := range results {
+		if r.Error != "" {
+			continue
+		}
+		if i < len(spans) && spans[i].NotFoundError != nil {
+			for k := range spans[i].SourceColumns {
+				slog.Debug("database metadata need to sync", slog.String("instance", instance.ResourceID), slog.String("database", k.Database), slog.String("schema", k.Schema), slog.String("table", k.Table), slog.String("column", k.Column))
+				syncDatabaseMap[k.Database] = true
+			}
+		}
+	}
+
+	// Sync database metadata
+	for accessDatabaseName := range syncDatabaseMap {
+		slog.Debug("sync database metadata", slog.String("instance", instance.ResourceID), slog.String("database", accessDatabaseName))
+		d, err := stores.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &accessDatabaseName})
+		if err != nil {
+			for _, result := range results {
+				result.Error = fmt.Sprintf("failed to sync database metadata: %v", err)
+			}
+			return results, spans, duration
+		}
+		if err := schemaSyncer.SyncDatabaseSchema(ctx, d); err != nil {
+			for _, result := range results {
+				result.Error = fmt.Sprintf("failed to sync database schema: %v", err)
+			}
+			return results, spans, duration
+		}
+	}
+
+	// Retry getting query span after metadata sync
+	if len(syncDatabaseMap) > 0 {
+		slog.Debug("retry query after sync metadata", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
+		spans, err = parserbase.GetQuerySpan(
+			ctx,
+			parserbase.GetQuerySpanContext{
+				InstanceID:                    instance.ResourceID,
+				GetDatabaseMetadataFunc:       BuildGetDatabaseMetadataFunc(stores),
+				ListDatabaseNamesFunc:         BuildListDatabaseNamesFunc(stores),
+				GetLinkedDatabaseMetadataFunc: BuildGetLinkedDatabaseMetadataFunc(stores, instance.Metadata.GetEngine()),
+			},
+			instance.Metadata.GetEngine(),
+			singleSQL.Text,
+			database.DatabaseName,
+			queryContext.Schema,
+			!store.IsObjectCaseSensitive(instance),
+		)
+		if err != nil {
+			for _, result := range results {
+				result.Error = fmt.Sprintf("failed to get query span after sync: %v", err)
+			}
+			return results, spans, duration
+		}
+
+		if err := replaceBackupTableWithSource(ctx, stores, instance, database, spans); err != nil {
+			slog.Debug("failed to replace backup table with source", log.BBError(err))
+		}
+
+		if licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil {
+			masker := NewQueryResultMasker(stores)
+			sensitivePredicateColumns, err = masker.ExtractSensitivePredicateColumns(ctx, spans, instance, user, action)
+			if err != nil {
+				for _, result := range results {
+					result.Error = fmt.Sprintf("failed to extract sensitive predicate columns after sync: %v", err)
+				}
+				return results, spans, duration
+			}
+		}
+	}
+
+	// Check for masking errors
+	for i, result := range results {
+		if i < len(spans) && result.Error == "" {
+			if spans[i].FunctionNotSupportedError != nil {
+				result.Error = fmt.Sprintf("failed to mask data: %v", spans[i].FunctionNotSupportedError)
+			}
+			if spans[i].NotFoundError != nil {
+				result.Error = fmt.Sprintf("failed to mask data: %v", spans[i].NotFoundError)
+			}
+		}
+	}
+
+	// Apply data masking
+	if licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil {
+		slog.Debug("mask query results", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
+
+		if instance.Metadata.GetEngine() == storepb.Engine_COSMOSDB {
+			if len(spans) != 1 {
+				for _, result := range results {
+					result.Error = "expected one span for CosmosDB"
+				}
+				return results, spans, duration
+			}
+
+			objectSchema, err := getCosmosDBContainerObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, queryContext.Container)
+			if err != nil {
+				for _, result := range results {
+					result.Error = err.Error()
+				}
+				return results, spans, duration
+			}
+
+			for pathStr, predicatePath := range spans[0].PredicatePaths {
+				semanticType := getFirstSemanticTypeInPath(predicatePath, objectSchema)
+				if semanticType != "" {
+					for _, result := range results {
+						result.Error = fmt.Sprintf("using path %q tagged by semantic type %q in WHERE clause is not allowed", pathStr, semanticType)
+						result.Rows = nil
+						result.RowsCount = 0
+					}
+					return results, spans, duration
+				}
+			}
+
+			if objectSchema != nil {
+				for _, result := range results {
+					for _, row := range result.Rows {
+						if len(row.Values) != 1 {
+							continue
+						}
+						value := row.Values[0].GetStringValue()
+						if value == "" {
+							continue
+						}
+
+						semanticTypeToMaskerMap, err := buildSemanticTypeToMaskerMap(ctx, stores)
+						if err != nil {
+							result.Error = err.Error()
+							break
+						}
+
+						doc := make(map[string]any)
+						if err := json.Unmarshal([]byte(value), &doc); err != nil {
+							result.Error = fmt.Sprintf("failed to unmarshal document: %v", err)
+							break
+						}
+
+						maskedDoc, err := maskCosmosDB(spans[0], doc, objectSchema, semanticTypeToMaskerMap)
+						if err != nil {
+							result.Error = fmt.Sprintf("failed to mask document: %v", err)
+							break
+						}
+
+						maskedValue, err := json.Marshal(maskedDoc)
+						if err != nil {
+							result.Error = fmt.Sprintf("failed to marshal masked document: %v", err)
+							break
+						}
+
+						row.Values[0] = &v1pb.RowValue{
+							Kind: &v1pb.RowValue_StringValue{
+								StringValue: string(maskedValue),
+							},
+						}
+					}
+				}
+			}
+		} else {
+			masker := NewQueryResultMasker(stores)
+			if err := masker.MaskResults(ctx, spans, results, instance, user, action); err != nil {
+				for _, result := range results {
+					result.Error = err.Error()
+				}
+				return results, spans, duration
+			}
+
+			for i, result := range results {
+				if i >= len(sensitivePredicateColumns) {
+					continue
+				}
+				if len(sensitivePredicateColumns[i]) == 0 {
+					continue
+				}
+				result.Error = getSensitivePredicateColumnErrorMessages(sensitivePredicateColumns[i])
+				result.Rows = nil
+				result.RowsCount = 0
+			}
+		}
+	}
+
+	return results, spans, duration
+}
+
 func queryRetry(
 	ctx context.Context,
 	stores *store.Store,
@@ -447,279 +710,25 @@ func queryRetry(
 
 	// Execute each statement individually
 	for _, singleSQL := range singleSQLs {
-		var spans []*parserbase.QuerySpan
-		var sensitivePredicateColumns [][]parserbase.ColumnResource
-		var err error
-		if !queryContext.Explain {
-			spans, err = parserbase.GetQuerySpan(
-				ctx,
-				parserbase.GetQuerySpanContext{
-					InstanceID:                    instance.ResourceID,
-					GetDatabaseMetadataFunc:       BuildGetDatabaseMetadataFunc(stores),
-					ListDatabaseNamesFunc:         BuildListDatabaseNamesFunc(stores),
-					GetLinkedDatabaseMetadataFunc: BuildGetLinkedDatabaseMetadataFunc(stores, instance.Metadata.GetEngine()),
-				},
-				instance.Metadata.GetEngine(),
-				singleSQL.Text,
-				database.DatabaseName,
-				queryContext.Schema,
-				!store.IsObjectCaseSensitive(instance),
-			)
-			if err != nil {
-				// If GetQuerySpan fails for this statement, record the error but continue with other statements
-				allResults = append(allResults, &v1pb.QueryResult{
-					Error:     err.Error(),
-					Statement: singleSQL.Text,
-				})
-				allSpans = append(allSpans, nil)
-				continue
-			}
-			// After replacing backup table with source, we can apply the original access check and mask sensitive data for backup table.
-			// If err != nil, this function will return the original spans.
-			if err := replaceBackupTableWithSource(ctx, stores, instance, database, spans); err != nil {
-				slog.Debug("failed to replace backup table with source", log.BBError(err))
-			}
-			if optionalAccessCheck != nil {
-				// Check query access
-				if err := optionalAccessCheck(ctx, instance, database, user, spans, queryContext.Explain); err != nil {
-					// If access check fails for this statement, record the error but continue with other statements
-					allResults = append(allResults, &v1pb.QueryResult{
-						Error:     err.Error(),
-						Statement: singleSQL.Text,
-					})
-					allSpans = append(allSpans, nil)
-					continue
-				}
-				slog.Debug("optional access check", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
-			}
-			if licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil {
-				masker := NewQueryResultMasker(stores)
-				sensitivePredicateColumns, err = masker.ExtractSensitivePredicateColumns(ctx, spans, instance, user, action)
-				if err != nil {
-					// If masking fails for this statement, record the error but continue with other statements
-					allResults = append(allResults, &v1pb.QueryResult{
-						Error:     err.Error(),
-						Statement: singleSQL.Text,
-					})
-					allSpans = append(allSpans, nil)
-					continue
-				}
-				slog.Debug("extract sensitive predicate columns", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
-			}
-		}
-
-		slog.Debug("start execute with timeout", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName), slog.String("statement", singleSQL.Text))
-		results, duration, queryErr := executeWithTimeout(ctx, stores, licenseService, driver, conn, singleSQL.Text, queryContext)
-		totalDuration += duration
-		if queryErr != nil {
-			// If execution fails for this statement, record the error but continue with other statements
-			allResults = append(allResults, &v1pb.QueryResult{
-				Error:     queryErr.Error(),
-				Statement: singleSQL.Text,
-			})
-			allSpans = append(allSpans, spans...)
-			continue
-		}
-		slog.Debug("execute success", slog.String("instance", instance.ResourceID), slog.String("statement", singleSQL.Text), slog.Duration("duration", duration))
-
-		// Add spans for this statement
-		allSpans = append(allSpans, spans...)
-
-		if queryContext.Explain {
-			allResults = append(allResults, results...)
-			continue
-		}
-
-		// Handle metadata sync and masking for this statement's results
-		syncDatabaseMap := make(map[string]bool)
-		for i, r := range results {
-			if r.Error != "" {
-				continue
-			}
-			if i < len(spans) && spans[i].NotFoundError != nil {
-				for k := range spans[i].SourceColumns {
-					slog.Debug("database metadata need to sync", slog.String("instance", instance.ResourceID), slog.String("database", k.Database), slog.String("schema", k.Schema), slog.String("table", k.Table), slog.String("column", k.Column))
-					syncDatabaseMap[k.Database] = true
-				}
-			}
-		}
-
-		// Sync database metadata if needed
-		for accessDatabaseName := range syncDatabaseMap {
-			slog.Debug("sync database metadata", slog.String("instance", instance.ResourceID), slog.String("database", accessDatabaseName))
-			d, err := stores.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &accessDatabaseName})
-			if err != nil {
-				// If sync fails, record the error in results but continue with other statements
-				for _, result := range results {
-					result.Error = fmt.Sprintf("failed to sync database metadata: %v", err)
-				}
-				allResults = append(allResults, results...)
-				continue
-			}
-			if err := schemaSyncer.SyncDatabaseSchema(ctx, d); err != nil {
-				// If sync fails, record the error in results but continue with other statements
-				for _, result := range results {
-					result.Error = fmt.Sprintf("failed to sync database schema: %v", err)
-				}
-				allResults = append(allResults, results...)
-				continue
-			}
-		}
-
-		// Retry getting query span if metadata was synced
-		if len(syncDatabaseMap) > 0 {
-			slog.Debug("retry query after sync metadata", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
-			spans, err = parserbase.GetQuerySpan(
-				ctx,
-				parserbase.GetQuerySpanContext{
-					InstanceID:                    instance.ResourceID,
-					GetDatabaseMetadataFunc:       BuildGetDatabaseMetadataFunc(stores),
-					ListDatabaseNamesFunc:         BuildListDatabaseNamesFunc(stores),
-					GetLinkedDatabaseMetadataFunc: BuildGetLinkedDatabaseMetadataFunc(stores, instance.Metadata.GetEngine()),
-				},
-				instance.Metadata.GetEngine(),
-				singleSQL.Text,
-				database.DatabaseName,
-				queryContext.Schema,
-				!store.IsObjectCaseSensitive(instance),
-			)
-			if err != nil {
-				// If retry fails, record the error in results but continue with other statements
-				for _, result := range results {
-					result.Error = fmt.Sprintf("failed to get query span after sync: %v", err)
-				}
-				allResults = append(allResults, results...)
-				continue
-			}
-			// After replacing backup table with source, we can apply the original access check and mask sensitive data for backup table.
-			// If err != nil, this function will return the original spans.
-			if err := replaceBackupTableWithSource(ctx, stores, instance, database, spans); err != nil {
-				slog.Debug("failed to replace backup table with source", log.BBError(err))
-			}
-			if licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil {
-				masker := NewQueryResultMasker(stores)
-				sensitivePredicateColumns, err = masker.ExtractSensitivePredicateColumns(ctx, spans, instance, user, action)
-				if err != nil {
-					// If retry masking fails, record the error in results but continue with other statements
-					for _, result := range results {
-						result.Error = fmt.Sprintf("failed to extract sensitive predicate columns after sync: %v", err)
-					}
-					allResults = append(allResults, results...)
-					continue
-				}
-			}
-		}
-
-		// The second query span should not tolerate any error, but we should retail the original error from database if possible.
-		for i, result := range results {
-			if i < len(spans) && result.Error == "" {
-				if spans[i].FunctionNotSupportedError != nil {
-					result.Error = fmt.Sprintf("failed to mask data: %v", spans[i].FunctionNotSupportedError)
-				}
-				if spans[i].NotFoundError != nil {
-					result.Error = fmt.Sprintf("failed to mask data: %v", spans[i].NotFoundError)
-				}
-			}
-		}
-
-		if licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil && !queryContext.Explain {
-			slog.Debug("mask query results", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
-			// TODO(zp): Refactor Document Database and RDBMS to use the same masking logic.
-			if instance.Metadata.GetEngine() == storepb.Engine_COSMOSDB {
-				if len(spans) != 1 {
-					for _, result := range results {
-						result.Error = "expected one span for CosmosDB"
-					}
-					allResults = append(allResults, results...)
-					continue
-				}
-				objectSchema, err := getCosmosDBContainerObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, queryContext.Container)
-				if err != nil {
-					for _, result := range results {
-						result.Error = err.Error()
-					}
-					allResults = append(allResults, results...)
-					continue
-				}
-				for pathStr, predicatePath := range spans[0].PredicatePaths {
-					semanticType := getFirstSemanticTypeInPath(predicatePath, objectSchema)
-					if semanticType != "" {
-						for _, result := range results {
-							result.Error = fmt.Sprintf("using path %q tagged by semantic type %q in WHERE clause is not allowed", pathStr, semanticType)
-							result.Rows = nil
-							result.RowsCount = 0
-						}
-						allResults = append(allResults, results...)
-						continue
-					}
-				}
-				if objectSchema != nil {
-					// We store one query result document in one row.
-					for _, result := range results {
-						for _, row := range result.Rows {
-							if len(row.Values) != 1 {
-								continue
-							}
-							value := row.Values[0].GetStringValue()
-							if value == "" {
-								continue
-							}
-							semanticTypeToMaskerMap, err := buildSemanticTypeToMaskerMap(ctx, stores)
-							if err != nil {
-								result.Error = err.Error()
-								break
-							}
-							// Unmarshal the document.
-							doc := make(map[string]any)
-							if err := json.Unmarshal([]byte(value), &doc); err != nil {
-								result.Error = fmt.Sprintf("failed to unmarshal document: %v", err)
-								break
-							}
-							// Mask the document.
-							maskedDoc, err := maskCosmosDB(spans[0], doc, objectSchema, semanticTypeToMaskerMap)
-							if err != nil {
-								result.Error = fmt.Sprintf("failed to mask document: %v", err)
-								break
-							}
-							// Marshal the masked document.
-							maskedValue, err := json.Marshal(maskedDoc)
-							if err != nil {
-								result.Error = fmt.Sprintf("failed to marshal masked document: %v", err)
-								break
-							}
-							row.Values[0] = &v1pb.RowValue{
-								Kind: &v1pb.RowValue_StringValue{
-									StringValue: string(maskedValue),
-								},
-							}
-						}
-					}
-				}
-			} else {
-				masker := NewQueryResultMasker(stores)
-				if err := masker.MaskResults(ctx, spans, results, instance, user, action); err != nil {
-					for _, result := range results {
-						result.Error = err.Error()
-					}
-					allResults = append(allResults, results...)
-					continue
-				}
-
-				for i, result := range results {
-					if i >= len(sensitivePredicateColumns) {
-						continue
-					}
-					if len(sensitivePredicateColumns[i]) == 0 {
-						continue
-					}
-					result.Error = getSensitivePredicateColumnErrorMessages(sensitivePredicateColumns[i])
-					result.Rows = nil
-					result.RowsCount = 0
-				}
-			}
-		}
+		results, spans, duration := querySingleSQL(
+			ctx,
+			stores,
+			user,
+			instance,
+			database,
+			driver,
+			conn,
+			singleSQL,
+			queryContext,
+			licenseService,
+			optionalAccessCheck,
+			schemaSyncer,
+			action,
+		)
 
 		allResults = append(allResults, results...)
+		allSpans = append(allSpans, spans...)
+		totalDuration += duration
 	}
 
 	if queryContext.Explain {
