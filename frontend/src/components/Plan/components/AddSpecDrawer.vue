@@ -93,7 +93,7 @@
       </div>
       <template #footer>
         <div class="w-full flex items-center justify-end">
-          <div class="flex items-center gap-x-3">
+          <div class="flex items-center gap-x-2">
             <NButton
               quaternary
               v-if="currentStep === Step.SELECT_CHANGE_TYPE"
