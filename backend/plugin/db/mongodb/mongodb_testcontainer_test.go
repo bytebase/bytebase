@@ -20,18 +20,21 @@ import (
 // These tests require mongosh to be installed because the MongoDB driver
 // executes queries by shelling out to mongosh (see mongodb.go:174 and mongodb.go:344).
 //
-// To install mongosh:
+// TODO: These tests can be removed after migrating MongoDB driver to use Go driver API
+// instead of shelling out to mongosh CLI.
+//
+// To install mongosh v2.5.0 (recommended version):
 // - macOS: brew install mongosh
-// - Linux: https://www.mongodb.com/docs/mongodb-shell/install/
-// - CI: Should be installed in the workflow
+// - Linux: Download from https://github.com/mongodb-js/mongosh/releases/tag/v2.5.0
+// - CI: Automatically installed in .github/workflows/backend-tests.yml
 func requireMongosh(t *testing.T) {
 	t.Helper()
 	path, err := exec.LookPath("mongosh")
 	if err != nil {
-		t.Fatalf("mongosh is required but not found in PATH. Please install mongosh to run this test.\n"+
+		t.Fatalf("mongosh is required but not found in PATH. Please install mongosh v2.5.0 to run this test.\n"+
 			"Install instructions:\n"+
 			"  macOS: brew install mongosh\n"+
-			"  Linux: https://www.mongodb.com/docs/mongodb-shell/install/\n"+
+			"  Linux: https://github.com/mongodb-js/mongosh/releases/tag/v2.5.0\n"+
 			"Error: %v", err)
 	}
 	t.Logf("Using mongosh at: %s", path)
