@@ -12,7 +12,7 @@
         ref="schemaEditorRef"
         :project="project"
         :targets="editTargets"
-        :loading="isPreparingMetadata"
+        :loading="state.isPreparingMetadata"
       />
 
       <template #footer>
@@ -25,7 +25,7 @@
             :disabled="!hasPendingChanges"
             @click="handleInsertSQL"
           >
-            {{ $t("schema-editor.insert-sql") }}
+            Insert SQL
           </NButton>
         </div>
       </template>
@@ -42,11 +42,7 @@ import SchemaEditorLite, {
   type EditTarget,
 } from "@/components/SchemaEditorLite";
 import { Drawer, DrawerContent } from "@/components/v2";
-import {
-  useDatabaseV1Store,
-  useDBSchemaV1Store,
-  useDatabaseCatalogV1Store,
-} from "@/store";
+import { useDBSchemaV1Store, useDatabaseCatalogV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 
