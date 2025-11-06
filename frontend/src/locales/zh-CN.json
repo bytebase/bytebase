@@ -2159,6 +2159,7 @@
     "search-database-and-table": "搜索数据库和表",
     "failed-to-generate-ddl-for-database": "无法为数据库 {database} 生成 DDL",
     "continue-with-empty-sql": "使用空 SQL 创建工单",
+    "insert-sql": "插入 SQL",
     "actions": {
       "create-schema": "新建 Schema",
       "drop-schema": "删除 Schema",
