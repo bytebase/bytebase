@@ -15,7 +15,7 @@
           >
             <LayersIcon class="w-8 h-8 text-gray-400" />
           </div>
-          <div class="space-y-2">
+          <div class="flex flex-col gap-y-2">
             <h3 class="font-medium text-xl text-gray-900">
               {{ $t("rollout.stage.no-stages.self") }}
             </h3>

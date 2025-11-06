@@ -12,7 +12,7 @@
         </template>
         <template #default>
           <div class="max-w-xs">
-            <div class="space-y-1">
+            <div class="flex flex-col gap-y-1">
               <p class="font-medium">
                 {{ $t("plan.spec.role-selection.title") }}
               </p>

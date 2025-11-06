@@ -25,7 +25,7 @@
       <template #trigger>
         <div class="w-full" />
       </template>
-      <div class="p-2 space-y-2">
+      <div class="p-2 flex flex-col gap-y-2">
         <SingleFileSelector
           class="w-48 h-32"
           :max-file-size-in-mi-b="2"

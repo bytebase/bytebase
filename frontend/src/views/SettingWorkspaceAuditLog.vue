@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full space-y-4 pb-6">
+  <div class="w-full flex flex-col gap-y-4 pb-6">
     <FeatureAttention :feature="PlanFeature.FEATURE_AUDIT_LOG" />
     <AuditLogSearch v-model:params="state.params">
       <template #searchbox-suffix>

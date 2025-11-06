@@ -23,7 +23,7 @@
 
     <div class="mt-8">
       <div class="mt-6">
-        <form class="space-y-6" @submit.prevent="trySignup">
+        <form class="flex flex-col gap-y-6" @submit.prevent="trySignup">
           <div>
             <label
               for="email"

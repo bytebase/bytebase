@@ -1,6 +1,6 @@
 <template>
-  <div class="flex flex-col space-y-4">
-    <div class="flex items-center justify-between px-4 space-x-2">
+  <div class="flex flex-col gap-y-4">
+    <div class="flex items-center justify-between px-4 gap-x-2">
       <AdvancedSearch
         v-model:params="state.params"
         :scope-options="scopeOptions"

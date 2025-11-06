@@ -11,7 +11,7 @@
       </template>
     </RiskFilter>
 
-    <div class="space-y-4 pb-4">
+    <div class="flex flex-col gap-y-4 pb-4">
       <RiskSection
         v-for="{ source, riskList } in riskListGroupBySource"
         :key="source"

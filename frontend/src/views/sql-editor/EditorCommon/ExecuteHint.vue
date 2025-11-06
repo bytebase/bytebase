@@ -1,7 +1,7 @@
 <template>
   <div class="execute-hint w-112">
     <NAlert type="info">
-      <section class="space-y-2">
+      <section class="flex flex-col gap-y-2">
         <p>
           {{ $t("sql-editor.only-select-allowed") }}
         </p>

@@ -103,7 +103,7 @@
               (state.showEmptyEnvironment &&
                 environment !== UNKNOWN_ENVIRONMENT_NAME)
             "
-            class="flex flex-col space-y-2 pt-2 pb-2"
+            class="flex flex-col gap-y-2 pt-2 pb-2"
           >
             <NTree
               :block-line="true"

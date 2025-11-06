@@ -1,5 +1,5 @@
 <template>
-  <div class="divide-block-border space-y-4 h-full">
+  <div class="divide-block-border flex flex-col gap-y-4 h-full">
     <SearchBox
       v-model:value="state.searchText"
       style="max-width: 100%"

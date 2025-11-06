@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full space-y-4 my-8">
+  <div class="w-full flex flex-col gap-y-4 my-8">
     <BBAttention
       type="info"
       :title="

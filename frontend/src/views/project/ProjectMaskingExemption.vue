@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-4">
+  <div class="flex flex-col gap-y-4">
     <div
       class="flex flex-col lg:flex-row gap-y-4 justify-between items-end lg:items-center gap-x-2"
     >

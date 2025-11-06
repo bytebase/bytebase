@@ -84,7 +84,7 @@
       <div class="mb-3 text-sm text-gray-400">
         {{ $t("settings.general.workspace.id-description") }}
       </div>
-      <div class="mb-4 flex items-center space-x-2">
+      <div class="mb-4 flex items-center gap-x-2">
         <NInput
           ref="workspaceIdField"
           class="w-full"

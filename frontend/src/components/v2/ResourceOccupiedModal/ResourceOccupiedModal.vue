@@ -12,7 +12,7 @@
       <div v-if="resources.length === 0">
         {{ $t("resource.delete-warning", { name: target }) }}
       </div>
-      <div v-else class="space-y-2">
+      <div v-else class="flex flex-col gap-y-2">
         <p>
           {{
             description ||

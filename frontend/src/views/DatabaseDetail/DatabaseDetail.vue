@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex-1 overflow-auto focus:outline-hidden space-y-4"
+    class="flex-1 overflow-auto focus:outline-hidden flex flex-col gap-y-4"
     tabindex="0"
     v-bind="$attrs"
   >
@@ -39,7 +39,7 @@
                   class="w-5 h-5"
                 />
               </h1>
-              <div class="flex items-center space-x-1">
+              <div class="flex items-center gap-x-1">
                 <span class="textinfolabel">
                   {{ database.name }}
                 </span>
@@ -48,7 +48,7 @@
             </div>
           </div>
           <dl
-            class="flex flex-col space-y-1 md:flex-row md:flex-wrap"
+            class="flex flex-col gap-y-1 md:flex-row md:flex-wrap"
             data-label="bb-database-detail-info-block"
           >
             <dt class="sr-only">{{ $t("common.environment") }}</dt>

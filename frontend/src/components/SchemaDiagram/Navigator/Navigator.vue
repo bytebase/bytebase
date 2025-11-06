@@ -4,7 +4,7 @@
       class="bb-schema-diagram--navigator--main h-full bg-white overflow-hidden border-y border-gray-200 flex flex-col transition-all"
       :class="[state.expand ? 'w-72 shadow-sm border-l' : 'w-0']"
     >
-      <div class="p-1 space-y-2">
+      <div class="p-1 gap-y-2">
         <SchemaSelector
           v-if="hasSchemaProperty(database.instanceResource.engine)"
           :schemas="databaseMetadata.schemas"

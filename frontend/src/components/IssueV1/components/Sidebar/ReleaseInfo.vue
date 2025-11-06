@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="isValidReleaseName(release.name) && ready"
-    class="w-full text-sm text-control-light flex space-x-1 items-center"
+    class="w-full text-sm text-control-light flex gap-x-1 items-center"
   >
     <PackageIcon class="w-5 h-auto shrink-0" />
     <a

@@ -489,7 +489,7 @@ const renderEmptyGeneratedDDLContent = (databases: ComposedDatabase[]) => {
   return h(
     "ul",
     {
-      class: "text-sm space-y-1 max-h-80 overflow-y-auto",
+      class: "text-sm flex flex-col gap-y-1 max-h-80 overflow-y-auto",
     },
     children
   );

@@ -1,7 +1,7 @@
 <template>
-  <div class="w-full space-y-4">
+  <div class="w-full flex flex-col gap-y-4">
     <!-- Database Information Section -->
-    <div class="space-y-2">
+    <div class="flex flex-col gap-y-2">
       <h3 class="text-base font-medium">
         {{ $t("common.overview") }}
       </h3>
@@ -55,7 +55,7 @@
     </div>
 
     <!-- SQL Statement Section -->
-    <div class="space-y-3">
+    <div class="flex flex-col gap-y-3">
       <h3 class="text-base font-medium">
         {{ $t("common.statement") }}
       </h3>

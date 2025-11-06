@@ -347,7 +347,7 @@ const options = computed((): DropdownOption[] => [
     render() {
       return (
         <div class="menu-item">
-          <div class="flex flex-row items-center space-x-2 justify-between">
+          <div class="flex flex-row items-center gap-x-2 justify-between">
             <span>Debug</span>
             <NSwitch
               size="small"
@@ -365,7 +365,7 @@ const options = computed((): DropdownOption[] => [
     render() {
       return (
         <div class="menu-item">
-          <div class="flex flex-row items-center gap-2 justify-between">
+          <div class="flex flex-row items-center gap-x-2 justify-between">
             <span>{t("issue.new-layout")}</span>
             <NSwitch
               size="small"

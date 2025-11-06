@@ -2,7 +2,7 @@
   <div class="flex items-start gap-3 px-3 py-2 border rounded-lg bg-gray-50">
     <component :is="statusIcon" class="w-5 h-5 shrink-0" :class="statusColor" />
 
-    <div class="flex-1 min-w-0 space-y-1">
+    <div class="flex-1 min-w-0 flex flex-col gap-y-1">
       <div class="text-sm font-medium text-main">
         {{ displayTitle }}
       </div>

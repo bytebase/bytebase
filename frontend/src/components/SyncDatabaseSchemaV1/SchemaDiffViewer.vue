@@ -2,7 +2,7 @@
   <div class="w-full h-full flex flex-col gap-2">
     <div class="w-full flex flex-row justify-between items-center">
       <span>{{ title }}</span>
-      <div class="space-x-2 shrink-0">
+      <div class="flex gap-x-2 shrink-0">
         <NButton size="small" @click="handleNavigatorClick('previous')">
           <template #icon>
             <ArrowUpIcon class="w-5 h-auto" />

@@ -13,7 +13,7 @@
     @confirm="handleDelete"
   >
     <div class="mt-3">
-      <div class="text-sm mb-3 space-y-2">
+      <div class="text-sm mb-3 flex flex-col gap-y-2">
         <div>
           {{
             $t("common.hard-delete.description", {

@@ -37,7 +37,7 @@
     </div>
 
     <div v-if="release" class="border rounded-md px-4 py-3 bg-gray-50">
-      <div class="space-y-3">
+      <div class="flex flex-col gap-y-3">
         <div class="flex items-start justify-between">
           <div>
             <h3 class="text-sm font-medium text-gray-900">
@@ -49,7 +49,10 @@
           </div>
         </div>
 
-        <div v-if="release.files && release.files.length > 0" class="space-y-2">
+        <div
+          v-if="release.files && release.files.length > 0"
+          class="flex flex-col gap-y-2"
+        >
           <div class="flex items-center justify-between">
             <h4 class="text-sm font-medium text-gray-700">
               {{ $t("release.files") }} ({{ release.files.length }})
@@ -103,7 +106,7 @@
           </div>
         </div>
 
-        <div v-if="release.vcsSource" class="space-y-1">
+        <div v-if="release.vcsSource" class="flex flex-col gap-y-1">
           <h4 class="text-sm font-medium text-gray-700">
             {{ $t("release.vcs-source") }}
           </h4>
@@ -133,7 +136,7 @@
     </div>
 
     <div v-else-if="loading" class="border rounded-md p-4 bg-gray-50">
-      <div class="flex items-center space-x-2">
+      <div class="flex items-center gap-x-2">
         <BBSpin />
         <span class="text-sm text-gray-600">
           {{ $t("common.loading") }}

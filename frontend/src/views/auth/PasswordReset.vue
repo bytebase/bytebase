@@ -11,7 +11,7 @@
     </div>
 
     <div class="mt-8">
-      <div class="mt-6 space-y-6">
+      <div class="mt-6 flex flex-col gap-y-6">
         <UserPassword
           ref="userPasswordRef"
           v-model:password="state.password"

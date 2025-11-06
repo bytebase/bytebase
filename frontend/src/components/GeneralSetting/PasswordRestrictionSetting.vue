@@ -6,7 +6,7 @@
       {{ $t("settings.general.workspace.password-restriction.self") }}
       <FeatureBadge :feature="PlanFeature.FEATURE_PASSWORD_RESTRICTIONS" />
     </p>
-    <div class="w-full flex flex-col space-y-3">
+    <div class="w-full flex flex-col gap-y-3">
       <div class="flex items-center">
         <NInputNumber
           :value="state.minLength"
@@ -125,7 +125,7 @@
         <i18n-t
           tag="div"
           keypath="settings.general.workspace.password-restriction.password-rotation"
-          class="flex items-center space-x-2"
+          class="flex items-center gap-x-2"
         >
           <template #day>
             <NInputNumber

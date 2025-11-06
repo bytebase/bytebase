@@ -1,8 +1,10 @@
 <template>
   <div class="max-h-[calc(100vh-10rem)] flex flex-col gap-y-4 text-sm">
-    <div class="flex-1 flex flex-col px-0.5 overflow-hidden space-y-4">
-      <div class="space-y-1">
-        <label class="block font-medium text-control space-x-1">
+    <div
+      class="flex-1 flex flex-col px-0.5 overflow-hidden flex flex-col gap-y-4"
+    >
+      <div class="flex flex-col gap-y-1">
+        <label class="block font-medium text-control flex gap-x-1">
           <RequiredStar />
           {{ $t("common.name") }}
         </label>
@@ -15,8 +17,8 @@
           @update:value="$emit('update')"
         />
       </div>
-      <div class="space-y-1">
-        <label class="block font-medium text-control space-x-1">
+      <div class="flex flex-col gap-y-1">
+        <label class="block font-medium text-control flex gap-x-1">
           <RequiredStar />
           {{ $t("common.description") }}
         </label>
@@ -31,15 +33,15 @@
           @update:value="$emit('update')"
         />
       </div>
-      <div class="w-full flex-1 space-y-1 overflow-y-auto">
-        <label class="block font-medium text-control space-x-1">
+      <div class="w-full flex-1 flex flex-col gap-y-1 overflow-y-auto">
+        <label class="block font-medium text-control flex gap-x-1">
           <RequiredStar />
           {{ $t("custom-approval.approval-flow.node.nodes") }}
         </label>
         <div class="text-control-light">
           {{ $t("custom-approval.approval-flow.node.description") }}
         </div>
-        <div class="py-1 space-y-2">
+        <div class="py-1 flex flex-col gap-y-2">
           <StepsTable
             v-if="state.rule.template.flow"
             :flow="state.rule.template.flow"

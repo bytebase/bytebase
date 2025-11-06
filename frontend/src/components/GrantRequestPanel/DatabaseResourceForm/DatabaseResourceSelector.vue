@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full relative space-y-2">
+  <div class="w-full relative flex flex-col gap-y-2">
     <AdvancedSearch
       v-model:params="params"
       :autofocus="false"
@@ -443,7 +443,7 @@ const onTreeNodeLoad = async (node: TreeOption) => {
 const renderSourceList: TransferRenderSourceList = ({ onCheck, pattern }) => {
   return h(
     "div",
-    { class: "flex flex-col space-y-2 pb-4" },
+    { class: "flex flex-col gap-y-2 pb-4" },
     {
       default: () => [
         h(NTree, {

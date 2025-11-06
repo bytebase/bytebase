@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full overflow-x-hidden space-y-4 pb-4">
+  <div class="w-full overflow-x-hidden flex flex-col gap-y-4 pb-4">
     <BBAttention
       v-if="remainingUserCount <= 3"
       :type="'warning'"
@@ -9,7 +9,7 @@
     <NTabs v-model:value="state.typeTab" type="line" animated>
       <NTabPane name="USERS">
         <template #tab>
-          <div class="flex-1 flex space-x-2">
+          <div class="flex-1 flex gap-x-2">
             <p class="text-base font-medium leading-7 text-main">
               <span>{{ $t("common.users") }}</span>
               <span class="ml-1 font-normal text-control-light">

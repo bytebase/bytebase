@@ -6,7 +6,7 @@
       :name="engine"
     >
       <template #tab>
-        <div class="flex items-center space-x-2">
+        <div class="flex items-center gap-x-2">
           <RichEngineName
             :engine="engine"
             tag="p"

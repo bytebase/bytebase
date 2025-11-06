@@ -9,7 +9,7 @@
     />
     <slot name="prefix" />
     <NScrollbar>
-      <div class="flex-1 px-2.5 space-y-1">
+      <div class="flex-1 px-2.5 flex flex-col gap-y-1">
         <div v-for="(item, i) in filteredSidebarList" :key="i">
           <router-link
             v-if="item.type === 'route'"
@@ -49,7 +49,7 @@
           />
           <div
             v-if="item.children.length > 0 && state.expandedSidebar.has(`${i}`)"
-            class="space-y-1 mt-1"
+            class="flex flex-col gap-y-1 mt-1"
           >
             <template v-for="(child, j) in item.children" :key="`${i}-${j}`">
               <a

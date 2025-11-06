@@ -1,6 +1,6 @@
 <template>
   <div
-    class="w-full mx-auto flex flex-col justify-start items-start space-y-3 mb-6"
+    class="w-full mx-auto flex flex-col justify-start items-start gap-y-3 mb-6"
   >
     <div
       class="w-full flex flex-col gap-y-2 lg:flex-row justify-start items-start lg:items-center"

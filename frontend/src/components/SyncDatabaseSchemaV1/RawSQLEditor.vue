@@ -12,7 +12,7 @@
           />
         </div>
       </div>
-      <div class="flex flex-row justify-end items-center space-x-3">
+      <div class="flex flex-row justify-end items-center gap-x-3">
         <SQLUploadButton @update:sql="handleStatementChange">
           {{ $t("issue.upload-sql") }}
         </SQLUploadButton>

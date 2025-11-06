@@ -1,7 +1,7 @@
 <template>
   <div class="px-4 flex flex-col h-full items-center relative">
     <div class="flex-1" />
-    <div class="flex-[60%] space-y-6">
+    <div class="flex-[60%] flex flex-col gap-y-6">
       <div class="flex items-baseline gap-x-4">
         <div class="flex items-start gap-x-1">
           <div class="font-semibold text-2xl">
@@ -43,7 +43,7 @@
           {{ access.title }}
         </component>
       </div>
-      <div class="space-y-2">
+      <div class="flex flex-col gap-y-2">
         <a
           v-if="actuatorStore.changelogURL"
           class="underline normal-link"

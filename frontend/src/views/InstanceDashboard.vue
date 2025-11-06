@@ -1,12 +1,12 @@
 <template>
-  <div class="flex flex-col space-y-4">
+  <div class="flex flex-col gap-y-4">
     <BBAttention
       v-if="remainingInstanceCount <= 3"
       :type="'warning'"
       :title="$t('subscription.usage.instance-count.title')"
       :description="instanceCountAttention"
     />
-    <div class="px-4 flex items-center space-x-2">
+    <div class="px-4 flex items-center gap-x-2">
       <AdvancedSearch
         v-model:params="state.params"
         :autofocus="false"

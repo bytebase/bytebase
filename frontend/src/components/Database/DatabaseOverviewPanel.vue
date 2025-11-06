@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-6 divide-y divide-block-border">
+  <div class="flex flex-col gap-y-6 divide-y divide-block-border">
     <!-- Description list -->
     <DatabaseOverviewInfo :database="database" />
 
