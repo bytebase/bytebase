@@ -7,10 +7,8 @@
           : $t('settings.sensitive-data.algorithms.add')
       "
     >
-      <div
-        class="w-[40rem] max-w-[calc(100vw-5rem)] flex flex-col gap-y-6 divide-y divide-block-border"
-      >
-        <div class="flex flex-col gap-y-6">
+      <div class="w-[40rem] max-w-[calc(100vw-5rem)]">
+        <div class="flex flex-col gap-y-6 pb-6">
           <div class="w-full mb-6 flex flex-col gap-y-1">
             <label for="masking-type" class="textlabel">
               {{ $t("settings.sensitive-data.algorithms.table.masking-type") }}
@@ -29,7 +27,7 @@
             </RadioGrid>
           </div>
         </div>
-        <div class="flex flex-col gap-y-6 pt-6">
+        <div class="flex flex-col gap-y-6 border-t border-block-border pt-6">
           <template v-if="state.maskingType === 'full-mask'">
             <div class="sm:col-span-2 sm:col-start-1">
               <label for="substitution" class="textlabel">
