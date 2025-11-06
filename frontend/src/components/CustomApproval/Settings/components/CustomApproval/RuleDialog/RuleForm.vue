@@ -1,10 +1,8 @@
 <template>
   <div class="max-h-[calc(100vh-10rem)] flex flex-col gap-y-4 text-sm">
-    <div
-      class="flex-1 flex flex-col px-0.5 overflow-hidden flex flex-col gap-y-4"
-    >
+    <div class="flex-1 flex flex-col px-0.5 overflow-hidden gap-y-4">
       <div class="flex flex-col gap-y-1">
-        <label class="block font-medium text-control flex gap-x-1">
+        <label class="font-medium text-control flex gap-x-1">
           <RequiredStar />
           {{ $t("common.name") }}
         </label>
@@ -18,7 +16,7 @@
         />
       </div>
       <div class="flex flex-col gap-y-1">
-        <label class="block font-medium text-control flex gap-x-1">
+        <label class="font-medium text-control flex gap-x-1">
           <RequiredStar />
           {{ $t("common.description") }}
         </label>
@@ -34,7 +32,7 @@
         />
       </div>
       <div class="w-full flex-1 flex flex-col gap-y-1 overflow-y-auto">
-        <label class="block font-medium text-control flex gap-x-1">
+        <label class="font-medium text-control flex gap-x-1">
           <RequiredStar />
           {{ $t("custom-approval.approval-flow.node.nodes") }}
         </label>

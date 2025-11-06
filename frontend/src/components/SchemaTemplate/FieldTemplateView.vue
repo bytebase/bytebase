@@ -7,7 +7,7 @@
       <p class="text-lg">
         {{ $t("schema-template.form.category") }}
       </p>
-      <div class="gap-y-2">
+      <div class="flex flex-col gap-y-2">
         <NCheckbox
           v-for="item in categoryList"
           :key="item.id"
