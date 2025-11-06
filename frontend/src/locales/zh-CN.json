@@ -911,7 +911,6 @@
           "title": "创建人",
           "description": "根据创建人搜索"
         },
-        "subscriber": {},
         "approver": {
           "title": "审批人",
           "description": "根据工单审批人搜索"
@@ -1197,9 +1196,6 @@
         "self": "没有阶段",
         "description": "本次发布任务未定义任何阶段。"
       }
-    },
-    "message": {
-      "pervious-stages-incomplete": {}
     }
   },
   "quick-action": {
@@ -2397,7 +2393,6 @@
         "confirm-override-description": "之前的规则将会被覆盖"
       }
     },
-    "rule": {},
     "enabled-rules": "开启的规则数",
     "rule-detail": "规则详情",
     "view-definition": "查看定义",
@@ -2838,8 +2833,6 @@
     "vcs-type": {
       "unspecified": "未指定"
     },
-    "actions": {},
-    "messages": {},
     "usage-description": "发布包是版本化的应用制品。GitOps 工作流将发布包部署到环境。"
   },
   "export-data": {
@@ -2892,8 +2885,7 @@
       "algorithm": "遮盖方法",
       "context": "规则",
       "classification": "分类级别"
-    },
-    "algorithms": {}
+    }
   },
   "landing": {
     "quick-link": {

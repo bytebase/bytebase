@@ -911,7 +911,6 @@
           "title": "作成者",
           "description": "作成者で検索"
         },
-        "subscriber": {},
         "approver": {
           "title": "承認者",
           "description": "イシューの承認者で検索"
@@ -1197,9 +1196,6 @@
         "self": "ステージなし",
         "description": "このロールアウトにはステージが定義されていません。"
       }
-    },
-    "message": {
-      "pervious-stages-incomplete": {}
     }
   },
   "quick-action": {
@@ -2396,7 +2392,6 @@
         "confirm-override-description": "以前のルールは上書きされます"
       }
     },
-    "rule": {},
     "enabled-rules": "開かれたルールの数",
     "rule-detail": "ルールの詳細",
     "view-definition": "ビューの定義",
@@ -2837,8 +2832,6 @@
     "vcs-type": {
       "unspecified": "未指定"
     },
-    "actions": {},
-    "messages": {},
     "usage-description": "リリースは、GitOpsワークフローによって環境へのデプロイがトリガーされるバージョン管理されたアプリケーションアーティファクトです。"
   },
   "export-data": {
@@ -2891,8 +2884,7 @@
       "algorithm": "マスキング方法",
       "context": "ルール",
       "classification": "分類レベル"
-    },
-    "algorithms": {}
+    }
   },
   "landing": {
     "quick-link": {

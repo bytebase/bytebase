@@ -911,7 +911,6 @@
           "title": "Creador",
           "description": "Búsqueda por creador"
         },
-        "subscriber": {},
         "approver": {
           "title": "Aprobador",
           "description": "Búsqueda por aprobador del problema"
@@ -1197,9 +1196,6 @@
         "self": "Sin etapas",
         "description": "No se definen etapas para este lanzamiento."
       }
-    },
-    "message": {
-      "pervious-stages-incomplete": {}
     }
   },
   "quick-action": {
@@ -2396,7 +2392,6 @@
         "confirm-override-description": "Sus reglas serán anuladas"
       }
     },
-    "rule": {},
     "enabled-rules": "Reglas habilitadas",
     "rule-detail": "Detalle de la regla",
     "view-definition": "Ver definición",
@@ -2837,8 +2832,6 @@
     "vcs-type": {
       "unspecified": "No especificado"
     },
-    "actions": {},
-    "messages": {},
     "usage-description": "Un lanzamiento es un artefacto de aplicación versionado cuyo despliegue a un entorno es activado por un flujo de trabajo GitOps."
   },
   "export-data": {
@@ -2891,8 +2884,7 @@
       "algorithm": "Método de enmascaramiento",
       "context": "Regla",
       "classification": "Nivel de clasificación"
-    },
-    "algorithms": {}
+    }
   },
   "landing": {
     "quick-link": {
