@@ -51,14 +51,20 @@ jobs:
             curl -fsSL "${DOWNLOAD_URL}" -o "${ARCHIVE}"
             tar -xzf "${ARCHIVE}"
 
+            # Install to ~/.local/bin (no sudo required)
+            mkdir -p "$HOME/.local/bin"
             EXTRACTED_DIR="mongosh-${MONGOSH_VERSION}-linux-${ARCH}"
-            sudo install -m 755 "${EXTRACTED_DIR}/bin/mongosh" /usr/local/bin/mongosh
+            install -m 755 "${EXTRACTED_DIR}/bin/mongosh" "$HOME/.local/bin/mongosh"
+
+            # Add to PATH for this session
+            export PATH="$HOME/.local/bin:$PATH"
+            echo "$HOME/.local/bin" >> $GITHUB_PATH
 
             # Cleanup
             rm -rf "${EXTRACTED_DIR}" "${ARCHIVE}"
 
             mongosh --version
-            echo "mongosh v${MONGOSH_VERSION} installed successfully"
+            echo "mongosh v${MONGOSH_VERSION} installed successfully to $HOME/.local/bin"
           else
             echo "Non-Linux OS detected. Skipping mongosh installation."
             echo "Please ensure mongosh is installed manually on macOS runners."
