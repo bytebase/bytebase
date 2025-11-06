@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/action/github"
 	"github.com/bytebase/bytebase/action/world"
@@ -42,7 +43,31 @@ func writeOutputJSON(w *world.World) error {
 	}
 	defer f.Close()
 
-	j, err := json.Marshal(w.OutputMap)
+	// Marshal OutputMap with protojson support for CheckResults
+	outputData := make(map[string]any)
+	if w.OutputMap.Release != "" {
+		outputData["release"] = w.OutputMap.Release
+	}
+	if w.OutputMap.Plan != "" {
+		outputData["plan"] = w.OutputMap.Plan
+	}
+	if w.OutputMap.Rollout != "" {
+		outputData["rollout"] = w.OutputMap.Rollout
+	}
+	if w.OutputMap.CheckResults != nil {
+		// Use protojson to marshal CheckResults with camelCase keys
+		checkResultsJSON, err := protojson.Marshal(w.OutputMap.CheckResults)
+		if err != nil {
+			return errors.Wrapf(err, "failed to marshal check results")
+		}
+		var checkResultsMap map[string]any
+		if err := json.Unmarshal(checkResultsJSON, &checkResultsMap); err != nil {
+			return errors.Wrapf(err, "failed to unmarshal check results")
+		}
+		outputData["checkResults"] = checkResultsMap
+	}
+
+	j, err := json.MarshalIndent(outputData, "", "  ")
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal output map")
 	}
