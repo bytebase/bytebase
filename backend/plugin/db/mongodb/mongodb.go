@@ -344,7 +344,6 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		strings.Join(mongoshArgs, " "),
 	}
 	shCmd := exec.CommandContext(ctx, "sh", shellArgs...)
-	slog.Info("MongoDB query command", slog.String("command", shCmd.String()))
 	var errContent bytes.Buffer
 	var outContent bytes.Buffer
 	shCmd.Stderr = &errContent
