@@ -16,12 +16,25 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
-// isMongoshAvailable checks if mongosh is installed and available in PATH.
+// requireMongosh checks if mongosh is installed and fails the test if not.
 // These tests require mongosh to be installed because the MongoDB driver
 // executes queries by shelling out to mongosh (see mongodb.go:174 and mongodb.go:344).
-func isMongoshAvailable() bool {
-	_, err := exec.LookPath("mongosh")
-	return err == nil
+//
+// To install mongosh:
+// - macOS: brew install mongosh
+// - Linux: https://www.mongodb.com/docs/mongodb-shell/install/
+// - CI: Should be installed in the workflow
+func requireMongosh(t *testing.T) {
+	t.Helper()
+	path, err := exec.LookPath("mongosh")
+	if err != nil {
+		t.Fatalf("mongosh is required but not found in PATH. Please install mongosh to run this test.\n"+
+			"Install instructions:\n"+
+			"  macOS: brew install mongosh\n"+
+			"  Linux: https://www.mongodb.com/docs/mongodb-shell/install/\n"+
+			"Error: %v", err)
+	}
+	t.Logf("Using mongosh at: %s", path)
 }
 
 // TestQueryWithBracketNotation tests the critical user journey (CUJ) of querying
@@ -33,10 +46,7 @@ func TestQueryWithBracketNotation(t *testing.T) {
 		t.Skip("Skipping MongoDB testcontainer test in short mode")
 	}
 
-	// Check if mongosh is available
-	if !isMongoshAvailable() {
-		t.Skip("Skipping test: mongosh is not installed")
-	}
+	requireMongosh(t)
 
 	ctx := context.Background()
 
@@ -144,10 +154,7 @@ func TestQueryWithBracketNotationStructure(t *testing.T) {
 		t.Skip("Skipping MongoDB testcontainer test in short mode")
 	}
 
-	// Check if mongosh is available
-	if !isMongoshAvailable() {
-		t.Skip("Skipping test: mongosh is not installed")
-	}
+	requireMongosh(t)
 
 	ctx := context.Background()
 
