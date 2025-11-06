@@ -2215,10 +2215,6 @@
       "invalid-view-name": "無効なビュー名です",
       "duplicated-view-name": "重複したビュー名"
     },
-    "confirm-to-close": {
-      "title": "閉じることを確認しますか？",
-      "description": "変更は閉じると失われます。"
-    },
     "foreign-key": {
       "edit": "外部キーを編集",
       "name-description": "外部キーの一意の名前"

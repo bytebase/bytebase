@@ -2215,10 +2215,6 @@
       "invalid-view-name": "Nombre de vista no válido",
       "duplicated-view-name": "Nombre de vista duplicado"
     },
-    "confirm-to-close": {
-      "title": "Confirmar para cerrar",
-      "description": "¿Está seguro de que desea cerrar el panel? Se perderán los cambios realizados."
-    },
     "foreign-key": {
       "edit": "Editar clave externa",
       "name-description": "El nombre único de la clave externa"
