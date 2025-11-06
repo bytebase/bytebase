@@ -1682,7 +1682,6 @@
       "select-tip": "Please select a table to start."
     },
     "all": "All databases",
-    "show-schemaless-databases": "Show schemaless databases. (Edit Schema is not applicable for schemaless databases.)",
     "transfer": {
       "errors": {
         "select-target-project": "Select target project",
@@ -2153,12 +2152,8 @@
   },
   "schema-editor": {
     "self": "Schema Editor",
-    "preview-issue": "Preview issue",
-    "sync-sql-from-schema-editor": "Sync SQL from Schema Editor",
     "raw-sql": "Raw SQL",
     "search-database-and-table": "Search database and table",
-    "failed-to-generate-ddl-for-database": "Failed to generate the DDL for database {database}",
-    "continue-with-empty-sql": "Continue with empty SQL",
     "insert-sql": "Insert SQL",
     "actions": {
       "create-schema": "Create schema",
@@ -2221,8 +2216,6 @@
       "duplicated-view-name": "Duplicated view name"
     },
     "confirm-to-close": {
-      "title": "Confirm to close",
-      "description": "Are you sure you want to close the panel? Your changes will be lost."
     },
     "foreign-key": {
       "edit": "Edit foreign key",
