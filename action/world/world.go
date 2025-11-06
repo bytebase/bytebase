@@ -44,10 +44,10 @@ type World struct {
 
 	// Outputs
 	OutputMap struct {
-		Release      string `json:"release,omitempty"`
-		Plan         string `json:"plan,omitempty"`
-		Rollout      string `json:"rollout,omitempty"`
-		CheckResults any    `json:"checkResults,omitempty"`
+		Release      string                     `json:"release,omitempty"`
+		Plan         string                     `json:"plan,omitempty"`
+		Rollout      string                     `json:"rollout,omitempty"`
+		CheckResults *v1pb.CheckReleaseResponse `json:"checkResults,omitempty"`
 	}
 	PendingStages []string
 	Rollout       *v1pb.Rollout
