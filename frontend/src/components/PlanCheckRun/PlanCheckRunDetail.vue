@@ -53,7 +53,9 @@
           :row="row"
         />
 
-        <div class="flex items-center justify-start divide-x divide-block-border">
+        <div
+          class="flex items-center justify-start divide-x divide-block-border"
+        >
           <div
             v-if="
               row.checkResult.report.case === 'sqlReviewReport' &&

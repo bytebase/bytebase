@@ -36,12 +36,12 @@
               <NRadioGroup
                 v-model:value="selectedType"
                 size="large"
-                class="flex flex-col gap-y-4 w-full"
+                class="flex flex-col w-full"
               >
                 <div
                   v-for="item in identityProviderTypeList"
                   :key="item.type"
-                  class="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors"
+                  class="border border-gray-200 rounded-lg mb-4 p-4 hover:border-gray-300 transition-colors"
                   :class="{
                     'border-blue-500 bg-blue-50': selectedType === item.type,
                   }"

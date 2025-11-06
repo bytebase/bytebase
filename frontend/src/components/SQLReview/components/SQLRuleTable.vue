@@ -28,7 +28,9 @@
           "
         />
       </div>
-      <div class="flex flex-col lg:hidden border px-2 pb-4 divide-y divide-block-border">
+      <div
+        class="flex flex-col lg:hidden border px-2 pb-4 divide-y divide-block-border"
+      >
         <div
           v-for="rule in category.ruleList"
           :key="rule.type"

@@ -13,8 +13,6 @@
         :disabled="!allowEdit"
       />
 
-      <NDivider v-if="!isSaaSMode" />
-
       <div v-if="!isSaaSMode">
         <label class="flex items-center gap-x-2">
           <span class="font-medium">{{
@@ -74,7 +72,7 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { isEqual } from "lodash-es";
-import { NDivider, NTooltip, NButton, NInput } from "naive-ui";
+import { NTooltip, NButton, NInput } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, reactive, ref } from "vue";
 import { BBModal } from "@/bbkit";

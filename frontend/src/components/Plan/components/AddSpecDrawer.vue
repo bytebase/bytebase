@@ -28,7 +28,7 @@
             <NRadioGroup
               v-model:value="selectedMigrationType"
               size="large"
-              class="gap-y-4 w-full md:w-[80vw] lg:w-[60vw]"
+              class="gap-y-4 w-full flex! flex-col md:w-[80vw] lg:w-[60vw]"
             >
               <div
                 class="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors"
