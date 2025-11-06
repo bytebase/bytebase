@@ -47,12 +47,15 @@ jobs:
             DOWNLOAD_URL="https://downloads.mongodb.com/compass/${ARCHIVE}"
 
             echo "Downloading from ${DOWNLOAD_URL}"
-            curl -fsSL "${DOWNLOAD_URL}" -o "/tmp/${ARCHIVE}"
-            tar -xzf "/tmp/${ARCHIVE}" -C /tmp
+            cd /tmp
+            curl -fsSL "${DOWNLOAD_URL}" -o "${ARCHIVE}"
+            tar -xzf "${ARCHIVE}"
 
-            EXTRACTED_DIR="/tmp/mongosh-${MONGOSH_VERSION}-linux-${ARCH}"
-            sudo mv "${EXTRACTED_DIR}/bin/mongosh" /usr/local/bin/
-            sudo chmod +x /usr/local/bin/mongosh
+            EXTRACTED_DIR="mongosh-${MONGOSH_VERSION}-linux-${ARCH}"
+            sudo install -m 755 "${EXTRACTED_DIR}/bin/mongosh" /usr/local/bin/mongosh
+
+            # Cleanup
+            rm -rf "${EXTRACTED_DIR}" "${ARCHIVE}"
 
             mongosh --version
             echo "mongosh v${MONGOSH_VERSION} installed successfully"
