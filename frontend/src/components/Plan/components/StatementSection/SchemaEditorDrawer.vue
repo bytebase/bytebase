@@ -25,7 +25,7 @@
             :disabled="!hasPendingChanges"
             @click="handleInsertSQL"
           >
-            Insert SQL
+            {{ $t("schema-editor.insert-sql") }}
           </NButton>
         </div>
       </template>

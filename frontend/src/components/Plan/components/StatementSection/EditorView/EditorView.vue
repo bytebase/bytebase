@@ -381,12 +381,16 @@ const allowSaveSQL = computed((): boolean => {
 });
 
 const shouldShowSchemaEditorButton = computed(() => {
-  // Only for DDL (schema) changes
   const spec = selectedSpec.value;
-  if (
-    !spec?.config.value ||
-    spec.config.value.migrationType !== MigrationType.DDL
-  ) {
+
+  // Check config exists and is the right type
+  if (!spec?.config || spec.config.case !== "changeDatabaseConfig") {
+    return false;
+  }
+
+  // Now TypeScript knows config.value is Plan_ChangeDatabaseConfig
+  // Only for DDL (schema) changes
+  if (spec.config.value.migrationType !== MigrationType.DDL) {
     return false;
   }
 
