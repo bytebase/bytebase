@@ -2152,13 +2152,9 @@
   },
   "schema-editor": {
     "self": "Editor de esquema",
-    "preview-issue": "Vista previa de incidencia",
-    "sync-sql-from-schema-editor": "Sincronizar SQL desde el Editor de esquema",
     "raw-sql": "SQL sin procesar",
     "search-database-and-table": "Buscar base de datos y tabla",
     "insert-sql": "Insert SQL",
-    "failed-to-generate-ddl-for-database": "Error al generar el DDL para la base de datos {database}",
-    "continue-with-empty-sql": "Continuar con SQL vacío",
     "actions": {
       "create-schema": "Crear esquema",
       "drop-schema": "Eliminar esquema",
