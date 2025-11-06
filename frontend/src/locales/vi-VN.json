@@ -2151,6 +2151,7 @@
     "raw-sql": "SQL thô",
     "search-database-and-table": "Tìm kiếm cơ sở dữ liệu và bảng",
     "insert-sql": "Insert SQL",
+    "template-database": "Template database",
     "actions": {
       "create-schema": "Tạo lược đồ",
       "drop-schema": "Xóa lược đồ",

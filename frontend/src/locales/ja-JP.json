@@ -2151,6 +2151,7 @@
     "raw-sql": "SQL文",
     "search-database-and-table": "データベースとテーブルを検索する",
     "insert-sql": "Insert SQL",
+    "template-database": "Template database",
     "actions": {
       "create-schema": "新しいスキーマ",
       "drop-schema": "スキーマの削除",

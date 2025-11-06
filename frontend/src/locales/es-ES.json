@@ -2151,6 +2151,7 @@
     "raw-sql": "SQL sin procesar",
     "search-database-and-table": "Buscar base de datos y tabla",
     "insert-sql": "Insert SQL",
+    "template-database": "Template database",
     "actions": {
       "create-schema": "Crear esquema",
       "drop-schema": "Eliminar esquema",
