@@ -2157,6 +2157,7 @@
     "sync-sql-from-schema-editor": "Đồng bộ SQL từ Trình soạn thảo lược đồ",
     "raw-sql": "SQL thô",
     "search-database-and-table": "Tìm kiếm cơ sở dữ liệu và bảng",
+    "insert-sql": "Insert SQL",
     "failed-to-generate-ddl-for-database": "Không thể tạo DDL cho cơ sở dữ liệu {database}",
     "continue-with-empty-sql": "Tiếp tục với SQL trống",
     "actions": {
