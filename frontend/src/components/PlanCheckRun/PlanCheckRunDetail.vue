@@ -203,7 +203,10 @@
       </div>
     </div>
 
-    <div v-if="showSuccessPlaceholder" class="py-3 px-2 first:pt-2 flex flex-col gap-y-2">
+    <div
+      v-if="showSuccessPlaceholder"
+      class="py-3 px-2 first:pt-2 flex flex-col gap-y-2"
+    >
       <div class="flex items-center gap-x-3">
         <div
           class="relative w-5 h-5 flex shrink-0 items-center justify-center rounded-full select-none"

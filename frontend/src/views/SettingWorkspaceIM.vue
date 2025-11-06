@@ -47,7 +47,10 @@
               v-model:value="(item.payload.value as AppIMSetting_Slack).token"
             />
           </div>
-          <div v-else-if="item.type === Webhook_Type.FEISHU" class="flex flex-col gap-y-4">
+          <div
+            v-else-if="item.type === Webhook_Type.FEISHU"
+            class="flex flex-col gap-y-4"
+          >
             <div>
               <div class="textlabel">App ID</div>
               <BBTextField
@@ -67,7 +70,10 @@
               />
             </div>
           </div>
-          <div v-else-if="item.type === Webhook_Type.WECOM" class="flex flex-col gap-y-4">
+          <div
+            v-else-if="item.type === Webhook_Type.WECOM"
+            class="flex flex-col gap-y-4"
+          >
             <div>
               <div class="textlabel">Corp ID</div>
               <BBTextField
@@ -96,7 +102,10 @@
               />
             </div>
           </div>
-          <div v-else-if="item.type === Webhook_Type.LARK" class="flex flex-col gap-y-4">
+          <div
+            v-else-if="item.type === Webhook_Type.LARK"
+            class="flex flex-col gap-y-4"
+          >
             <div>
               <div class="textlabel">App ID</div>
               <BBTextField

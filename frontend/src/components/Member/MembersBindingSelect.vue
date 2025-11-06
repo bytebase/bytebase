@@ -27,7 +27,12 @@
         <span class="font-semibold">{{ projectName }}</span>
       </template>
     </i18n-t>
-    <div :class="['w-full flex flex-col gap-y-2', memberType !== 'USERS' ? 'hidden' : '']">
+    <div
+      :class="[
+        'w-full flex flex-col gap-y-2',
+        memberType !== 'USERS' ? 'hidden' : '',
+      ]"
+    >
       <div class="flex text-main items-center gap-x-1">
         {{ $t("settings.members.select-user", 2 /* multiply*/) }}
         <RequiredStar v-if="required" />
@@ -43,7 +48,12 @@
         @update:users="onMemberListUpdate"
       />
     </div>
-    <div :class="['w-full flex flex-col gap-y-2', memberType !== 'GROUPS' ? 'hidden' : '']">
+    <div
+      :class="[
+        'w-full flex flex-col gap-y-2',
+        memberType !== 'GROUPS' ? 'hidden' : '',
+      ]"
+    >
       <div class="flex font-medium text-main items-center gap-x-1">
         {{ $t("settings.members.select-group", 2 /* multiply*/) }}
         <RequiredStar v-if="required" />

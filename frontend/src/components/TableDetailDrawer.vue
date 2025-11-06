@@ -103,7 +103,9 @@
           </div>
 
           <div class="mt-6">
-            <div class="max-w-6xl px-6 flex flex-col gap-y-6 divide-y divide-block-border">
+            <div
+              class="max-w-6xl px-6 flex flex-col gap-y-6 divide-y divide-block-border"
+            >
               <!-- Description list -->
               <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-3">
                 <div

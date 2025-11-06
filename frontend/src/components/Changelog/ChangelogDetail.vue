@@ -30,9 +30,7 @@
               )?.toLocaleString()
             }}</span>
           </div>
-          <dl
-            class="flex flex-col gap-y-1 md:gap-y-0 md:flex-row md:flex-wrap"
-          >
+          <dl class="flex flex-col gap-y-1 md:gap-y-0 md:flex-row md:flex-wrap">
             <dt class="sr-only">{{ $t("common.issue") }}</dt>
             <dd class="flex items-center text-sm md:mr-4">
               <span class="textlabel"

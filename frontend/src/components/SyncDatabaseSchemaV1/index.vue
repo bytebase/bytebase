@@ -28,7 +28,10 @@
     >
       <template #0>
         <div class="mb-4">
-          <NRadioGroup v-model:value="state.sourceSchemaType" class="flex gap-x-4">
+          <NRadioGroup
+            v-model:value="state.sourceSchemaType"
+            class="flex gap-x-4"
+          >
             <NRadio
               :value="SourceSchemaType.SCHEMA_HISTORY_VERSION"
               :label="$t('database.sync-schema.schema-history-version')"

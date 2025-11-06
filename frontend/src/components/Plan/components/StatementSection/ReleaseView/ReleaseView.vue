@@ -49,7 +49,10 @@
           </div>
         </div>
 
-        <div v-if="release.files && release.files.length > 0" class="flex flex-col gap-y-2">
+        <div
+          v-if="release.files && release.files.length > 0"
+          class="flex flex-col gap-y-2"
+        >
           <div class="flex items-center justify-between">
             <h4 class="text-sm font-medium text-gray-700">
               {{ $t("release.files") }} ({{ release.files.length }})

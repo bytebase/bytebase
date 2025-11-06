@@ -281,7 +281,10 @@
               </div>
 
               <!-- Selectable files section -->
-              <div v-if="selectableFiles.length > 0" class="flex flex-col gap-y-2">
+              <div
+                v-if="selectableFiles.length > 0"
+                class="flex flex-col gap-y-2"
+              >
                 <div>
                   <h4 class="font-medium text-control">
                     {{ $t("database.revision.available-files") }}

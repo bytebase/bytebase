@@ -338,7 +338,10 @@
               />
             </div>
           </div>
-          <div v-else-if="dataSource.externalSecret" class="flex flex-col gap-y-4">
+          <div
+            v-else-if="dataSource.externalSecret"
+            class="flex flex-col gap-y-4"
+          >
             <div
               v-if="
                 state.passwordType ===

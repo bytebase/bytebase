@@ -1,6 +1,8 @@
 <template>
   <DrawerContent :title="$t('schema-template.table-template.self')">
-    <div class="flex flex-col gap-y-6 divide-y divide-block-border w-[calc(100vw-256px)]">
+    <div
+      class="flex flex-col gap-y-6 divide-y divide-block-border w-[calc(100vw-256px)]"
+    >
       <div class="flex flex-col gap-y-6">
         <!-- category -->
         <div class="sm:col-span-2 sm:col-start-1">
@@ -89,10 +91,7 @@
           </div>
 
           <div class="col-span-4">
-            <div
-              v-if="!readonly"
-              class="w-full py-2 flex items-center gap-x-2"
-            >
+            <div v-if="!readonly" class="w-full py-2 flex items-center gap-x-2">
               <NButton size="small" :disabled="false" @click="onColumnAdd">
                 <template #icon>
                   <PlusIcon class="w-4 h-4 text-control-placeholder" />

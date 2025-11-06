@@ -3,7 +3,9 @@
     <div
       class="flex flex-col md:flex-row items-start md:items-stretch gap-x-4 gap-y-4 overflow-hidden"
     >
-      <div class="flex-1 flex flex-col gap-y-2 overflow-x-hidden overflow-y-auto">
+      <div
+        class="flex-1 flex flex-col gap-y-2 overflow-x-hidden overflow-y-auto"
+      >
         <div class="flex items-center h-[36px]">
           <NInput
             v-if="!readonly"

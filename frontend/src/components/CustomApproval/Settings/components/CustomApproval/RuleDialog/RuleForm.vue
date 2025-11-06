@@ -1,6 +1,8 @@
 <template>
   <div class="max-h-[calc(100vh-10rem)] flex flex-col gap-y-4 text-sm">
-    <div class="flex-1 flex flex-col px-0.5 overflow-hidden flex flex-col gap-y-4">
+    <div
+      class="flex-1 flex flex-col px-0.5 overflow-hidden flex flex-col gap-y-4"
+    >
       <div class="flex flex-col gap-y-1">
         <label class="block font-medium text-control flex gap-x-1">
           <RequiredStar />
