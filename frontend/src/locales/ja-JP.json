@@ -1682,7 +1682,6 @@
       "select-tip": "開始するにはテーブルを選択してください。"
     },
     "all": "すべてのデータベース",
-    "show-schemaless-databases": "スキーマレス データベースを示します。 (スキーマの変更は、スキーマのないデータベースでは機能しません。)",
     "transfer": {
       "errors": {
         "select-target-project": "対象プロジェクトを選択",
