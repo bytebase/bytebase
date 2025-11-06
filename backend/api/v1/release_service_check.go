@@ -381,13 +381,33 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 			}
 		}
 
-		// Perform SDL integrity checks for PostgreSQL (handles cross-file validation)
+		// Perform SDL style and integrity checks for PostgreSQL
+		var sdlStyleAdvices map[string][]*storepb.Advice
 		var sdlIntegrityAdvices map[string][]*storepb.Advice
 		if engine == storepb.Engine_POSTGRES {
 			fileContents := make(map[string]string)
 			for _, file := range files {
 				fileContents[file.Path] = string(file.Statement)
 			}
+
+			// Run SDL style checks (schema name requirements, index naming, etc.)
+			sdlStyleAdvices = make(map[string][]*storepb.Advice)
+			for filePath, content := range fileContents {
+				advices, err := advisorpg.CheckSDLStyle(content)
+				if err != nil {
+					// Continue with other checks even if style check fails
+					sdlStyleAdvices[filePath] = []*storepb.Advice{{
+						Status:  storepb.Advice_ERROR,
+						Code:    advisor.Internal.Int32(),
+						Title:   "Failed to check SDL style",
+						Content: err.Error(),
+					}}
+				} else {
+					sdlStyleAdvices[filePath] = advices
+				}
+			}
+
+			// Run SDL integrity checks (handles cross-file validation)
 			var err error
 			sdlIntegrityAdvices, err = advisorpg.CheckSDLIntegrity(fileContents)
 			if err != nil {
@@ -455,8 +475,15 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 						}
 					}
 
-					// Add SDL integrity check results for this file (PostgreSQL only)
+					// Add SDL style and integrity check results for this file (PostgreSQL only)
 					if engine == storepb.Engine_POSTGRES && len(checkResult.Advices) == 0 {
+						// Add SDL style check results
+						if advices, exists := sdlStyleAdvices[file.Path]; exists {
+							for _, advice := range advices {
+								checkResult.Advices = append(checkResult.Advices, convertToV1Advice(advice))
+							}
+						}
+						// Add SDL integrity check results
 						if advices, exists := sdlIntegrityAdvices[file.Path]; exists {
 							for _, advice := range advices {
 								checkResult.Advices = append(checkResult.Advices, convertToV1Advice(advice))
