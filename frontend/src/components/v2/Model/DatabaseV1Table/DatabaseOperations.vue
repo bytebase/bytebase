@@ -37,13 +37,6 @@
     </div>
   </NScrollbar>
 
-  <SchemaEditorModal
-    v-if="state.showSchemaEditorModal"
-    :database-names="selectedDatabaseNameList"
-    :alter-type="'MULTI_DB'"
-    @close="state.showSchemaEditorModal = false"
-  />
-
   <LabelEditorDrawer
     :show="state.showLabelEditorDrawer"
     :readonly="false"
@@ -121,7 +114,6 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import type { LocationQueryRaw } from "vue-router";
 import { BBAlert } from "@/bbkit";
-import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
 import EditEnvironmentDrawer from "@/components/EditEnvironmentDrawer.vue";
 import LabelEditorDrawer from "@/components/LabelEditorDrawer.vue";
 import { TransferDatabaseForm } from "@/components/TransferDatabaseForm";
@@ -146,7 +138,6 @@ import {
   BatchUpdateDatabasesRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
 import {
-  allowUsingSchemaEditor,
   extractProjectResourceName,
   generateIssueTitle,
   hasPermissionToCreateChangeDatabaseIssue,
@@ -165,7 +156,6 @@ interface DatabaseAction {
 
 interface LocalState {
   loading: boolean;
-  showSchemaEditorModal: boolean;
   showUnassignAlert: boolean;
   showLabelEditorDrawer: boolean;
   showEditEnvironmentDrawer: boolean;
@@ -182,7 +172,6 @@ const props = withDefaults(
 
 const state = reactive<LocalState>({
   loading: false,
-  showSchemaEditorModal: false,
   showUnassignAlert: false,
   showLabelEditorDrawer: false,
   showEditEnvironmentDrawer: false,
@@ -336,14 +325,6 @@ const generateMultiDb = async (
     if (!confirmed) {
       return;
     }
-  }
-  if (
-    props.databases.length === 1 &&
-    type === "bb.issue.database.schema.update" &&
-    allowUsingSchemaEditor(props.databases)
-  ) {
-    state.showSchemaEditorModal = true;
-    return;
   }
 
   const query: LocationQueryRaw = {

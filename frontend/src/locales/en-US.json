@@ -911,7 +911,6 @@
           "title": "Creator",
           "description": "Search by the creator"
         },
-        "subscriber": {},
         "approver": {
           "title": "Approver",
           "description": "Search by the issue approver"
@@ -1197,9 +1196,6 @@
         "self": "No stages",
         "description": "No stages are defined for this rollout."
       }
-    },
-    "message": {
-      "pervious-stages-incomplete": {}
     }
   },
   "quick-action": {
@@ -1682,7 +1678,6 @@
       "select-tip": "Please select a table to start."
     },
     "all": "All databases",
-    "show-schemaless-databases": "Show schemaless databases. (Edit Schema is not applicable for schemaless databases.)",
     "transfer": {
       "errors": {
         "select-target-project": "Select target project",
@@ -2153,12 +2148,10 @@
   },
   "schema-editor": {
     "self": "Schema Editor",
-    "preview-issue": "Preview issue",
-    "sync-sql-from-schema-editor": "Sync SQL from Schema Editor",
     "raw-sql": "Raw SQL",
     "search-database-and-table": "Search database and table",
-    "failed-to-generate-ddl-for-database": "Failed to generate the DDL for database {database}",
-    "continue-with-empty-sql": "Continue with empty SQL",
+    "insert-sql": "Insert SQL",
+    "template-database": "Template database",
     "actions": {
       "create-schema": "Create schema",
       "drop-schema": "Drop schema",
@@ -2220,8 +2213,6 @@
       "duplicated-view-name": "Duplicated view name"
     },
     "confirm-to-close": {
-      "title": "Confirm to close",
-      "description": "Are you sure you want to close the panel? Your changes will be lost."
     },
     "foreign-key": {
       "edit": "Edit foreign key",
@@ -2402,7 +2393,6 @@
         "confirm-override-description": "Your rules will be overridden"
       }
     },
-    "rule": {},
     "enabled-rules": "Enabled rules",
     "rule-detail": "Rule detail",
     "view-definition": "View definition",
@@ -2843,8 +2833,6 @@
     "vcs-type": {
       "unspecified": "Unspecified"
     },
-    "actions": {},
-    "messages": {},
     "usage-description": "A release is a versioned application artifact whose deployment to an environment is triggered by a GitOps workflow."
   },
   "export-data": {
@@ -2897,8 +2885,7 @@
       "algorithm": "Masking method",
       "context": "Rule",
       "classification": "Classification level"
-    },
-    "algorithms": {}
+    }
   },
   "landing": {
     "quick-link": {

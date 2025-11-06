@@ -911,7 +911,6 @@
           "title": "Người tạo",
           "description": "Tìm kiếm theo người sáng tạo"
         },
-        "subscriber": {},
         "approver": {
           "title": "Người phê duyệt",
           "description": "Tìm kiếm theo người phê duyệt vấn đề"
@@ -1197,9 +1196,6 @@
         "self": "Không có giai đoạn",
         "description": "Không có giai đoạn nào được xác định cho lần triển khai này."
       }
-    },
-    "message": {
-      "pervious-stages-incomplete": {}
     }
   },
   "quick-action": {
@@ -1682,7 +1678,6 @@
       "select-tip": "Vui lòng chọn một bảng để bắt đầu."
     },
     "all": "Tất cả cơ sở dữ liệu",
-    "show-schemaless-databases": "Hiển thị cơ sở dữ liệu không có lược đồ. (Chỉnh sửa lược đồ không áp dụng cho cơ sở dữ liệu không có lược đồ.)",
     "transfer": {
       "errors": {
         "select-target-project": "Chọn dự án đích",
@@ -2153,12 +2148,10 @@
   },
   "schema-editor": {
     "self": "Trình soạn thảo lược đồ",
-    "preview-issue": "Xem trước vấn đề",
-    "sync-sql-from-schema-editor": "Đồng bộ SQL từ Trình soạn thảo lược đồ",
     "raw-sql": "SQL thô",
     "search-database-and-table": "Tìm kiếm cơ sở dữ liệu và bảng",
-    "failed-to-generate-ddl-for-database": "Không thể tạo DDL cho cơ sở dữ liệu {database}",
-    "continue-with-empty-sql": "Tiếp tục với SQL trống",
+    "insert-sql": "Insert SQL",
+    "template-database": "Template database",
     "actions": {
       "create-schema": "Tạo lược đồ",
       "drop-schema": "Xóa lược đồ",
@@ -2220,8 +2213,6 @@
       "duplicated-view-name": "Tên khung nhìn trùng lặp"
     },
     "confirm-to-close": {
-      "title": "Xác nhận đóng",
-      "description": "Bạn có chắc chắn muốn đóng bảng điều khiển không? Thay đổi của bạn sẽ bị mất."
     },
     "foreign-key": {
       "edit": "Chỉnh sửa khóa ngoại",
@@ -2402,7 +2393,6 @@
         "confirm-override-description": "Quy tắc của bạn sẽ bị ghi đè"
       }
     },
-    "rule": {},
     "enabled-rules": "Quy tắc được bật",
     "rule-detail": "Chi tiết quy tắc",
     "view-definition": "Xem định nghĩa",
@@ -2843,8 +2833,6 @@
     "vcs-type": {
       "unspecified": "Không xác định"
     },
-    "actions": {},
-    "messages": {},
     "usage-description": "Bản phát hành là một artifact ứng dụng có phiên bản mà việc triển khai vào môi trường được kích hoạt bởi quy trình GitOps."
   },
   "export-data": {
@@ -2897,8 +2885,7 @@
       "algorithm": "Phương pháp che dữ liệu",
       "context": "Quy tắc",
       "classification": "Mức phân loại"
-    },
-    "algorithms": {}
+    }
   },
   "landing": {
     "quick-link": {

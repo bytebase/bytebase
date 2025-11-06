@@ -911,7 +911,6 @@
           "title": "Creador",
           "description": "Búsqueda por creador"
         },
-        "subscriber": {},
         "approver": {
           "title": "Aprobador",
           "description": "Búsqueda por aprobador del problema"
@@ -1197,9 +1196,6 @@
         "self": "Sin etapas",
         "description": "No se definen etapas para este lanzamiento."
       }
-    },
-    "message": {
-      "pervious-stages-incomplete": {}
     }
   },
   "quick-action": {
@@ -1682,7 +1678,6 @@
       "select-tip": "Seleccione una mesa para comenzar."
     },
     "all": "Todas las bases de datos",
-    "show-schemaless-databases": "Mostrar bases de datos sin esquema. (Editar Schema no se aplica a las bases de datos sin esquema.)",
     "transfer": {
       "errors": {
         "select-target-project": "Seleccionar proyecto de destino",
@@ -2153,12 +2148,10 @@
   },
   "schema-editor": {
     "self": "Editor de esquema",
-    "preview-issue": "Vista previa de incidencia",
-    "sync-sql-from-schema-editor": "Sincronizar SQL desde el Editor de esquema",
     "raw-sql": "SQL sin procesar",
     "search-database-and-table": "Buscar base de datos y tabla",
-    "failed-to-generate-ddl-for-database": "Error al generar el DDL para la base de datos {database}",
-    "continue-with-empty-sql": "Continuar con SQL vacío",
+    "insert-sql": "Insert SQL",
+    "template-database": "Template database",
     "actions": {
       "create-schema": "Crear esquema",
       "drop-schema": "Eliminar esquema",
@@ -2220,8 +2213,6 @@
       "duplicated-view-name": "Nombre de vista duplicado"
     },
     "confirm-to-close": {
-      "title": "Confirmar para cerrar",
-      "description": "¿Está seguro de que desea cerrar el panel? Se perderán los cambios realizados."
     },
     "foreign-key": {
       "edit": "Editar clave externa",
@@ -2402,7 +2393,6 @@
         "confirm-override-description": "Sus reglas serán anuladas"
       }
     },
-    "rule": {},
     "enabled-rules": "Reglas habilitadas",
     "rule-detail": "Detalle de la regla",
     "view-definition": "Ver definición",
@@ -2843,8 +2833,6 @@
     "vcs-type": {
       "unspecified": "No especificado"
     },
-    "actions": {},
-    "messages": {},
     "usage-description": "Un lanzamiento es un artefacto de aplicación versionado cuyo despliegue a un entorno es activado por un flujo de trabajo GitOps."
   },
   "export-data": {
@@ -2897,8 +2885,7 @@
       "algorithm": "Método de enmascaramiento",
       "context": "Regla",
       "classification": "Nivel de clasificación"
-    },
-    "algorithms": {}
+    }
   },
   "landing": {
     "quick-link": {

@@ -181,13 +181,6 @@
       @dismiss="state.showTransferDatabaseModal = false"
     />
   </Drawer>
-
-  <SchemaEditorModal
-    v-if="state.showSchemaEditorModal"
-    :database-names="[database.name]"
-    alter-type="SINGLE_DB"
-    @close="state.showSchemaEditorModal = false"
-  />
 </template>
 
 <script lang="ts" setup>
@@ -199,7 +192,6 @@ import { computed, reactive, watch, watchEffect } from "vue";
 import { useRouter, useRoute, type LocationQueryRaw } from "vue-router";
 import { BBModal } from "@/bbkit";
 import { BBAttention } from "@/bbkit";
-import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
 import DatabaseChangelogPanel from "@/components/Database/DatabaseChangelogPanel.vue";
 import DatabaseOverviewPanel from "@/components/Database/DatabaseOverviewPanel.vue";
 import DatabaseRevisionPanel from "@/components/Database/DatabaseRevisionPanel.vue";
@@ -231,11 +223,9 @@ import {
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
 import { UNKNOWN_PROJECT_NAME } from "@/types";
-import { State } from "@/types/proto-es/v1/common_pb";
 import {
   instanceV1HasAlterSchema,
   isDatabaseV1Queryable,
-  engineSupportsSchemaEditor,
   extractProjectResourceName,
 } from "@/utils";
 
@@ -253,7 +243,6 @@ const isDatabaseHash = (x: any): x is DatabaseHash =>
 interface LocalState {
   showTransferDatabaseModal: boolean;
   showIncorrectProjectModal: boolean;
-  showSchemaEditorModal: boolean;
   currentProjectName: string;
   selectedIndex: number;
   selectedTab: DatabaseHash;
@@ -270,7 +259,6 @@ const router = useRouter();
 const state = reactive<LocalState>({
   showTransferDatabaseModal: false,
   showIncorrectProjectModal: false,
-  showSchemaEditorModal: false,
   currentProjectName: UNKNOWN_PROJECT_NAME,
   selectedIndex: 0,
   selectedTab: "overview",
@@ -351,16 +339,6 @@ const tryTransferProject = () => {
 const createMigration = async (
   type: "bb.issue.database.schema.update" | "bb.issue.database.data.update"
 ) => {
-  if (type === "bb.issue.database.schema.update") {
-    if (
-      database.value.state === State.ACTIVE &&
-      engineSupportsSchemaEditor(database.value.instanceResource.engine)
-    ) {
-      state.showSchemaEditorModal = true;
-      return;
-    }
-  }
-
   // Create a user friendly default issue name
   const issueNameParts: string[] = [];
   issueNameParts.push(`[${database.value.databaseName}]`);
