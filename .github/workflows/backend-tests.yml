@@ -27,57 +27,38 @@ jobs:
           cache: false # Caching is slow.
       # TODO: Remove this step after migrating MongoDB driver to use Go driver API instead of shelling out to mongosh
       # Currently required because MongoDB driver executes queries by calling mongosh CLI (see backend/plugin/db/mongodb/mongodb.go)
-      - name: Install mongosh
+      - name: Install mongosh (Linux only)
         run: |
           if command -v mongosh &> /dev/null; then
             echo "mongosh is already installed at $(which mongosh)"
             mongosh --version
-          else
-            echo "Installing mongosh v2.5.0..."
+          elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+            echo "Installing mongosh v2.5.0 for Linux..."
             MONGOSH_VERSION="2.5.0"
+            ARCH=$(uname -m)
 
-            # Detect OS and architecture
-            if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-              OS="linux"
-              ARCH=$(uname -m)
-              if [[ "$ARCH" == "x86_64" ]]; then
-                ARCH="x64"
-              elif [[ "$ARCH" == "aarch64" ]]; then
-                ARCH="arm64"
-              fi
-              ARCHIVE="mongosh-${MONGOSH_VERSION}-${OS}-${ARCH}.tgz"
-            elif [[ "$OSTYPE" == "darwin"* ]]; then
-              OS="darwin"
-              ARCH=$(uname -m)
-              if [[ "$ARCH" == "x86_64" ]]; then
-                ARCH="x64"
-              fi
-              ARCHIVE="mongosh-${MONGOSH_VERSION}-${OS}-${ARCH}.zip"
-            else
-              echo "Unsupported OS: $OSTYPE"
-              exit 1
+            if [[ "$ARCH" == "x86_64" ]]; then
+              ARCH="x64"
+            elif [[ "$ARCH" == "aarch64" ]]; then
+              ARCH="arm64"
             fi
 
-            # Download and extract
+            ARCHIVE="mongosh-${MONGOSH_VERSION}-linux-${ARCH}.tgz"
             DOWNLOAD_URL="https://downloads.mongodb.com/compass/${ARCHIVE}"
+
             echo "Downloading from ${DOWNLOAD_URL}"
             curl -fsSL "${DOWNLOAD_URL}" -o "/tmp/${ARCHIVE}"
+            tar -xzf "/tmp/${ARCHIVE}" -C /tmp
 
-            # Extract based on archive type
-            if [[ "$ARCHIVE" == *.tgz ]]; then
-              tar -xzf "/tmp/${ARCHIVE}" -C /tmp
-            else
-              unzip -q "/tmp/${ARCHIVE}" -d /tmp
-            fi
-
-            # Move to /usr/local/bin
-            EXTRACTED_DIR="/tmp/mongosh-${MONGOSH_VERSION}-${OS}-${ARCH}"
+            EXTRACTED_DIR="/tmp/mongosh-${MONGOSH_VERSION}-linux-${ARCH}"
             sudo mv "${EXTRACTED_DIR}/bin/mongosh" /usr/local/bin/
             sudo chmod +x /usr/local/bin/mongosh
 
-            # Verify installation
             mongosh --version
             echo "mongosh v${MONGOSH_VERSION} installed successfully"
+          else
+            echo "Non-Linux OS detected. Skipping mongosh installation."
+            echo "Please ensure mongosh is installed manually on macOS runners."
           fi
       - name: Verify go.mod is tidy
         run: |
