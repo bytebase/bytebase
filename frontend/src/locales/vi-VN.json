@@ -2215,6 +2215,8 @@
       "invalid-view-name": "Tên khung nhìn không hợp lệ",
       "duplicated-view-name": "Tên khung nhìn trùng lặp"
     },
+    "confirm-to-close": {
+    },
     "foreign-key": {
       "edit": "Chỉnh sửa khóa ngoại",
       "name-description": "Tên duy nhất của khóa ngoại"

@@ -2215,6 +2215,8 @@
       "invalid-view-name": "Nombre de vista no válido",
       "duplicated-view-name": "Nombre de vista duplicado"
     },
+    "confirm-to-close": {
+    },
     "foreign-key": {
       "edit": "Editar clave externa",
       "name-description": "El nombre único de la clave externa"
