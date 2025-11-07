@@ -1612,6 +1612,7 @@
     "unassign": "Hủy gán",
     "unassign-alert-title": "Hủy gán cơ sở dữ liệu",
     "unassign-alert-description": "Các cơ sở dữ liệu đã chọn sẽ bị xóa khỏi dự án",
+    "edit-database": "Chỉnh sửa cơ sở dữ liệu",
     "edit-schema": "Chỉnh sửa lược đồ",
     "edit-labels": "Chỉnh sửa nhãn",
     "edit-environment": "Chỉnh sửa Môi trường",

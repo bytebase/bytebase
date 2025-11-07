@@ -1612,6 +1612,7 @@
     "unassign": "Desasignar",
     "unassign-alert-title": "Desasignar bases de datos",
     "unassign-alert-description": "Las bases de datos seleccionadas serán eliminadas del proyecto",
+    "edit-database": "Editar base de datos",
     "edit-schema": "Modificar esquema",
     "edit-labels": "Editar etiquetas",
     "edit-environment": "Editar entorno",
