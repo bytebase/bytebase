@@ -208,7 +208,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 	if request.Schema != nil {
 		queryContext.Schema = *request.Schema
 	}
-	results, _, duration, queryErr := queryRetry(
+	results, _, duration, queryErr := queryRetryStopOnError(
 		ctx,
 		s.store,
 		user,
@@ -679,6 +679,54 @@ func getSensitivePredicateColumnErrorMessages(sensitiveColumns []parserbase.Colu
 	return buf.String()
 }
 
+func queryRetryStopOnError(
+	ctx context.Context,
+	stores *store.Store,
+	user *store.UserMessage,
+	instance *store.InstanceMessage,
+	database *store.DatabaseMessage,
+	driver db.Driver,
+	conn *sql.Conn,
+	statement string,
+	queryContext db.QueryContext,
+	licenseService *enterprise.LicenseService,
+	optionalAccessCheck accessCheckFunc,
+	schemaSyncer *schemasync.Syncer,
+	action storepb.MaskingExceptionPolicy_MaskingException_Action,
+) ([]*v1pb.QueryResult, []*parserbase.QuerySpan, time.Duration, error) {
+	// Split the statement into individual SQLs
+	statements, err := parserbase.SplitMultiSQL(instance.Metadata.GetEngine(), statement)
+	if err != nil {
+		// Fall back to executing as a single statement if splitting fails
+		return queryRetry(ctx, stores, user, instance, database, driver, conn, statement, queryContext, licenseService, optionalAccessCheck, schemaSyncer, action)
+	}
+
+	var allResults []*v1pb.QueryResult
+	var allSpans []*parserbase.QuerySpan
+	var totalDuration time.Duration
+	var firstError error
+
+	for _, stmt := range statements {
+		// Skip empty statements
+		if stmt.Empty {
+			continue
+		}
+
+		results, spans, duration, err := queryRetry(ctx, stores, user, instance, database, driver, conn, stmt.Text, queryContext, licenseService, optionalAccessCheck, schemaSyncer, action)
+		totalDuration += duration
+
+		if err != nil {
+			firstError = err
+			break
+		}
+
+		allResults = append(allResults, results...)
+		allSpans = append(allSpans, spans...)
+	}
+
+	return allResults, allSpans, totalDuration, firstError
+}
+
 func executeWithTimeout(ctx context.Context, stores *store.Store, licenseService *enterprise.LicenseService, driver db.Driver, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, time.Duration, error) {
 	queryCtx := ctx
 	var timeout time.Duration
@@ -910,7 +958,7 @@ func DoExport(
 	if request.Schema != nil {
 		queryContext.Schema = *request.Schema
 	}
-	results, spans, duration, queryErr := queryRetry(
+	results, spans, duration, queryErr := queryRetryStopOnError(
 		ctx,
 		stores,
 		user,
