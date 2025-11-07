@@ -283,15 +283,13 @@ func getRequestString(request any) (string, error) {
 		}
 		switch r := request.(type) {
 		case *v1pb.ExportRequest:
-			r = proto.CloneOf(r)
-			r.Password = maskedString
-			return r
+			return redactExportRequest(r)
 		case *v1pb.CreateUserRequest:
 			return redactCreateUserRequest(r)
 		case *v1pb.UpdateUserRequest:
 			return redactUpdateUserRequest(r)
 		case *v1pb.LoginRequest:
-			return redactLoginRequest(proto.CloneOf(r))
+			return redactLoginRequest(r)
 		case *v1pb.CreateInstanceRequest:
 			r.Instance = redactInstance(r.Instance)
 			return r
@@ -360,10 +358,24 @@ func getResponseString(response any) (string, error) {
 	return string(b), nil
 }
 
+func redactExportRequest(r *v1pb.ExportRequest) *v1pb.ExportRequest {
+	if r == nil {
+		return nil
+	}
+	r = proto.CloneOf(r)
+	if r.Password != "" {
+		r.Password = maskedString
+	}
+	return r
+}
+
 func redactLoginRequest(r *v1pb.LoginRequest) *v1pb.LoginRequest {
 	if r == nil {
 		return nil
 	}
+
+	// Clone to avoid mutating original
+	r = proto.CloneOf(r)
 
 	// Mask sensitive fields.
 	if r.Password != "" {

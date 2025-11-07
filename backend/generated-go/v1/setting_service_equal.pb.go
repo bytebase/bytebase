@@ -328,12 +328,6 @@ func (x *WorkspaceProfileSetting) Equal(y *WorkspaceProfileSetting) bool {
 	if x.EnableAuditLogStdout != y.EnableAuditLogStdout {
 		return false
 	}
-	if x.AuditLogBufferSize != y.AuditLogBufferSize {
-		return false
-	}
-	if x.AuditLogDrainTimeoutSec != y.AuditLogDrainTimeoutSec {
-		return false
-	}
 	return true
 }
 

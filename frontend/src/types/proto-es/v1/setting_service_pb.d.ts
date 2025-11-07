@@ -610,24 +610,6 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
    * @generated from field: bool enable_audit_log_stdout = 15;
    */
   enableAuditLogStdout: boolean;
-
-  /**
-   * Buffer size for audit log events (default: 1000).
-   * Recommended sizing: peak_QPS × acceptable_delay_seconds.
-   * Requires server restart to take effect (Go channels have fixed capacity).
-   *
-   * @generated from field: int32 audit_log_buffer_size = 16;
-   */
-  auditLogBufferSize: number;
-
-  /**
-   * Shutdown drain timeout in seconds for audit logs (default: 5).
-   * How long to wait for remaining audit events to write during graceful shutdown.
-   * Can be updated at runtime without restart.
-   *
-   * @generated from field: int32 audit_log_drain_timeout_sec = 17;
-   */
-  auditLogDrainTimeoutSec: number;
 };
 
 /**

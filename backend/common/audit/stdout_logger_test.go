@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -22,19 +21,7 @@ func TestStdoutLogger_BasicWrite(t *testing.T) {
 	var enabled atomic.Bool
 	enabled.Store(true)
 
-	logger := NewStdoutLogger(StdoutLoggerConfig{
-		Writer:            &buf,
-		BufferSize:        10,
-		HeartbeatInterval: 1 * time.Hour,
-		Enabled:           &enabled,
-	})
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go logger.Run(ctx, &wg)
+	logger := NewStdoutLogger(&buf, &enabled)
 
 	err := logger.Log(context.Background(), &storepb.AuditLog{
 		Method:   "/bytebase.v1.SQLService/Query",
@@ -44,15 +31,11 @@ func TestStdoutLogger_BasicWrite(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	time.Sleep(100 * time.Millisecond)
-	cancel()
-	wg.Wait()
-
 	output := buf.String()
 	require.NotEmpty(t, output)
 
 	var logEntry map[string]any
-	err = json.Unmarshal([]byte(output), &logEntry)
+	err = json.Unmarshal([]byte(strings.TrimSpace(output)), &logEntry)
 	require.NoError(t, err)
 
 	assert.Equal(t, "INFO", logEntry["level"])
@@ -70,19 +53,7 @@ func TestStdoutLogger_MultipleEvents(t *testing.T) {
 	var enabled atomic.Bool
 	enabled.Store(true)
 
-	logger := NewStdoutLogger(StdoutLoggerConfig{
-		Writer:            &buf,
-		BufferSize:        10,
-		HeartbeatInterval: 1 * time.Hour,
-		Enabled:           &enabled,
-	})
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go logger.Run(ctx, &wg)
+	logger := NewStdoutLogger(&buf, &enabled)
 
 	for i := 0; i < 5; i++ {
 		err := logger.Log(context.Background(), &storepb.AuditLog{
@@ -91,10 +62,6 @@ func TestStdoutLogger_MultipleEvents(t *testing.T) {
 		})
 		require.NoError(t, err)
 	}
-
-	time.Sleep(200 * time.Millisecond)
-	cancel()
-	wg.Wait()
 
 	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
 	assert.Len(t, lines, 5)
@@ -106,148 +73,12 @@ func TestStdoutLogger_MultipleEvents(t *testing.T) {
 	}
 }
 
-func TestStdoutLogger_Heartbeat(t *testing.T) {
-	var buf bytes.Buffer
-	var enabled atomic.Bool
-	enabled.Store(true)
-
-	logger := NewStdoutLogger(StdoutLoggerConfig{
-		Writer:            &buf,
-		BufferSize:        10,
-		HeartbeatInterval: 100 * time.Millisecond,
-		Enabled:           &enabled,
-	})
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go logger.Run(ctx, &wg)
-
-	time.Sleep(150 * time.Millisecond)
-	cancel()
-	wg.Wait()
-
-	output := buf.String()
-	assert.Contains(t, output, "audit.heartbeat")
-	assert.Contains(t, output, "heartbeat")
-}
-
-type blockingWriter struct {
-	mu      sync.Mutex
-	blocked bool
-}
-
-func (w *blockingWriter) Write(p []byte) (n int, err error) {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	if w.blocked {
-		time.Sleep(1 * time.Second)
-	}
-	return len(p), nil
-}
-
-func TestStdoutLogger_Backpressure_BlocksAndTimesOut(t *testing.T) {
-	blocker := &blockingWriter{blocked: true}
-	var enabled atomic.Bool
-	enabled.Store(true)
-
-	logger := NewStdoutLogger(StdoutLoggerConfig{
-		Writer:            blocker,
-		BufferSize:        1,
-		HeartbeatInterval: 1 * time.Hour,
-		Enabled:           &enabled,
-	})
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go logger.Run(ctx, &wg)
-
-	err := logger.Log(context.Background(), &storepb.AuditLog{Method: "/log1"})
-	require.NoError(t, err)
-
-	err = logger.Log(context.Background(), &storepb.AuditLog{Method: "/log2"})
-	require.NoError(t, err)
-
-	timeoutCtx, timeoutCancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
-	defer timeoutCancel()
-
-	startTime := time.Now()
-	err = logger.Log(timeoutCtx, &storepb.AuditLog{Method: "/log3"})
-	duration := time.Since(startTime)
-
-	require.Error(t, err, "should have failed due to context timeout")
-	assert.ErrorIs(t, err, context.DeadlineExceeded, "error should be context.DeadlineExceeded")
-	assert.GreaterOrEqual(t, duration, 50*time.Millisecond, "call should have blocked for at least 50ms")
-
-	_, dropped, _ := logger.Stats()
-	assert.Equal(t, int64(1), dropped, "should have 1 dropped event")
-
-	cancel()
-	wg.Wait()
-}
-
-func TestStdoutLogger_GracefulShutdown(t *testing.T) {
-	var buf bytes.Buffer
-	var enabled atomic.Bool
-	enabled.Store(true)
-
-	logger := NewStdoutLogger(StdoutLoggerConfig{
-		Writer:            &buf,
-		BufferSize:        100,
-		HeartbeatInterval: 1 * time.Hour,
-		Enabled:           &enabled,
-	})
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go logger.Run(ctx, &wg)
-
-	for i := 0; i < 10; i++ {
-		err := logger.Log(context.Background(), &storepb.AuditLog{
-			Method:   "/test",
-			Severity: storepb.AuditLog_INFO,
-		})
-		require.NoError(t, err)
-	}
-
-	cancel()
-	wg.Wait()
-
-	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
-	assert.Equal(t, 10, len(lines))
-
-	written, dropped, writeErrors := logger.Stats()
-	assert.Equal(t, int64(10), written)
-	assert.Equal(t, int64(0), dropped)
-	assert.Equal(t, int64(0), writeErrors)
-}
-
 func TestStdoutLogger_OptionalFields(t *testing.T) {
 	var buf bytes.Buffer
 	var enabled atomic.Bool
 	enabled.Store(true)
 
-	logger := NewStdoutLogger(StdoutLoggerConfig{
-		Writer:            &buf,
-		BufferSize:        10,
-		HeartbeatInterval: 1 * time.Hour,
-		Enabled:           &enabled,
-	})
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go logger.Run(ctx, &wg)
+	logger := NewStdoutLogger(&buf, &enabled)
 
 	err := logger.Log(context.Background(), &storepb.AuditLog{
 		Method:   "/test",
@@ -260,12 +91,8 @@ func TestStdoutLogger_OptionalFields(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	time.Sleep(100 * time.Millisecond)
-	cancel()
-	wg.Wait()
-
 	var logEntry map[string]any
-	err = json.Unmarshal(buf.Bytes(), &logEntry)
+	err = json.Unmarshal([]byte(strings.TrimSpace(buf.String())), &logEntry)
 	require.NoError(t, err)
 
 	audit, ok := logEntry["audit"].(map[string]any)
@@ -275,90 +102,64 @@ func TestStdoutLogger_OptionalFields(t *testing.T) {
 	assert.Equal(t, "Mozilla/5.0", audit["user_agent"])
 }
 
-func TestNoopAuditLogger_DoesNotHang(t *testing.T) {
-	logger := &NoopAuditLogger{}
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go logger.Run(ctx, &wg)
-
-	// Log should do nothing
-	err := logger.Log(context.Background(), &storepb.AuditLog{Method: "/test"})
-	require.NoError(t, err)
-
-	// Cancel and wait - should complete without hanging
-	cancel()
-
-	// Use a timeout to detect if it hangs
-	done := make(chan struct{})
-	go func() {
-		wg.Wait()
-		close(done)
-	}()
-
-	select {
-	case <-done:
-		// Success - didn't hang
-	case <-time.After(1 * time.Second):
-		t.Fatal("NoopAuditLogger.Run() did not call wg.Done() - server would hang on shutdown")
-	}
-}
-
-func TestConditionalLogger_TogglesLogging(t *testing.T) {
+func TestStdoutLogger_DisabledDoesNotLog(t *testing.T) {
 	var buf bytes.Buffer
 	var enabled atomic.Bool
+	enabled.Store(false) // disabled
 
-	logger := NewConditionalLogger(&enabled, StdoutLoggerConfig{
-		Writer:            &buf,
-		BufferSize:        10,
-		HeartbeatInterval: 1 * time.Hour,
+	logger := NewStdoutLogger(&buf, &enabled)
+
+	err := logger.Log(context.Background(), &storepb.AuditLog{
+		Method: "/test",
+		User:   "user@example.com",
 	})
+	require.NoError(t, err)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	assert.Empty(t, buf.String(), "should not log when disabled")
+}
 
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go logger.Run(ctx, &wg)
+func TestStdoutLogger_RuntimeToggle(t *testing.T) {
+	var buf bytes.Buffer
+	var enabled atomic.Bool
+	enabled.Store(false) // start disabled
+
+	logger := NewStdoutLogger(&buf, &enabled)
 
 	event := &storepb.AuditLog{
 		Method: "/test",
 		User:   "user@example.com",
 	}
 
-	// Initially disabled - should not log
+	// Log when disabled - should not write
 	err := logger.Log(context.Background(), event)
 	require.NoError(t, err)
-	time.Sleep(100 * time.Millisecond)
-	assert.Empty(t, buf.String(), "should not log when disabled")
 
-	// Enable - should log
+	// Enable and log - should write
 	enabled.Store(true)
 	err = logger.Log(context.Background(), event)
 	require.NoError(t, err)
-	time.Sleep(100 * time.Millisecond)
-	assert.NotEmpty(t, buf.String(), "should log when enabled")
 
-	// Verify the log entry
+	// Disable and log - should not write
+	enabled.Store(false)
+	err = logger.Log(context.Background(), event)
+	require.NoError(t, err)
+
+	output := buf.String()
+	lines := strings.Split(strings.TrimSpace(output), "\n")
+	// Should have exactly 1 log entry (when enabled)
+	assert.Len(t, lines, 1, "should have exactly one log entry")
+
 	var logEntry LogOutput
-	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
-	require.Len(t, lines, 1, "should have exactly one log entry")
 	err = json.Unmarshal([]byte(lines[0]), &logEntry)
 	require.NoError(t, err)
 	assert.Equal(t, "/test", logEntry.Audit.Method)
 	assert.Equal(t, "user@example.com", logEntry.Audit.User)
+}
 
-	// Disable again - should not log new events
-	buf.Reset()
-	enabled.Store(false)
-	err = logger.Log(context.Background(), event)
+func TestNoopAuditLogger_DoesNothing(t *testing.T) {
+	logger := &NoopAuditLogger{}
+
+	// Should not panic or error
+	err := logger.Log(context.Background(), &storepb.AuditLog{Method: "/test"})
 	require.NoError(t, err)
-	time.Sleep(100 * time.Millisecond)
-	assert.Empty(t, buf.String(), "should not log after disabled")
-
-	cancel()
-	wg.Wait()
 }

@@ -12,7 +12,6 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/audit"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/state"
@@ -36,7 +35,6 @@ type SettingService struct {
 	profile        *config.Profile
 	licenseService *enterprise.LicenseService
 	stateCfg       *state.State
-	stdoutLogger   *audit.ConditionalLogger
 }
 
 // NewSettingService creates a new setting service.
@@ -45,14 +43,12 @@ func NewSettingService(
 	profile *config.Profile,
 	licenseService *enterprise.LicenseService,
 	stateCfg *state.State,
-	stdoutLogger *audit.ConditionalLogger,
 ) *SettingService {
 	return &SettingService{
 		store:          store,
 		profile:        profile,
 		licenseService: licenseService,
 		stateCfg:       stateCfg,
-		stdoutLogger:   stdoutLogger,
 	}
 }
 
@@ -275,12 +271,6 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 					}
 				}
 				oldSetting.EnableAuditLogStdout = payload.EnableAuditLogStdout
-			case "value.workspace_profile_setting_value.audit_log_buffer_size":
-				// Requires server restart to take effect (Go channels have fixed capacity)
-				oldSetting.AuditLogBufferSize = payload.AuditLogBufferSize
-			case "value.workspace_profile_setting_value.audit_log_drain_timeout_sec":
-				// Can be updated at runtime
-				oldSetting.AuditLogDrainTimeoutSec = payload.AuditLogDrainTimeoutSec
 			default:
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %v", path))
 			}
@@ -580,11 +570,10 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
 	}
 
-	// Dynamically update audit logger runtime settings if changed
+	// Dynamically update audit logger runtime flag if enable_audit_log_stdout was changed
 	if apiSettingName == storepb.SettingName_WORKSPACE_PROFILE {
 		for _, path := range request.Msg.UpdateMask.Paths {
-			switch path {
-			case "value.workspace_profile_setting_value.enable_audit_log_stdout":
+			if path == "value.workspace_profile_setting_value.enable_audit_log_stdout" {
 				if workspaceValue := settingMessage.GetValue().GetWorkspaceProfileSettingValue(); workspaceValue != nil {
 					s.profile.RuntimeEnableAuditLogStdout.Store(workspaceValue.EnableAuditLogStdout)
 					if workspaceValue.EnableAuditLogStdout {
@@ -593,16 +582,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 						slog.Info("audit logging to stdout disabled")
 					}
 				}
-			case "value.workspace_profile_setting_value.audit_log_drain_timeout_sec":
-				if workspaceValue := settingMessage.GetValue().GetWorkspaceProfileSettingValue(); workspaceValue != nil {
-					if workspaceValue.AuditLogDrainTimeoutSec > 0 {
-						s.stdoutLogger.SetDrainTimeout(time.Duration(workspaceValue.AuditLogDrainTimeoutSec) * time.Second)
-						slog.Info("audit log drain timeout updated",
-							slog.Int("timeout_sec", int(workspaceValue.AuditLogDrainTimeoutSec)))
-					}
-				}
-			default:
-				// Other workspace profile settings don't require runtime updates
+				break
 			}
 		}
 	}

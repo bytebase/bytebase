@@ -215,23 +215,8 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	// LSP server.
 	s.lspServer = lsp.NewServer(s.store, profile, secret, s.stateCfg, s.iamManager, s.licenseService)
 
-	// Stdout audit logger - uses ConditionalLogger that checks RuntimeEnableAuditLogStdout on each call
-	// Read audit log configuration from workspace settings
-	auditBufferSize := 1000   // default
-	auditDrainTimeoutSec := 5 // default
-	if workspaceProfile, err := stores.GetWorkspaceGeneralSetting(ctx); err == nil {
-		if workspaceProfile.AuditLogBufferSize > 0 {
-			auditBufferSize = int(workspaceProfile.AuditLogBufferSize)
-		}
-		if workspaceProfile.AuditLogDrainTimeoutSec > 0 {
-			auditDrainTimeoutSec = int(workspaceProfile.AuditLogDrainTimeoutSec)
-		}
-	}
-	s.stdoutLogger = audit.NewConditionalLogger(&s.profile.RuntimeEnableAuditLogStdout, audit.StdoutLoggerConfig{
-		BufferSize:        auditBufferSize,
-		HeartbeatInterval: 5 * time.Minute,
-		DrainTimeout:      time.Duration(auditDrainTimeoutSec) * time.Second,
-	})
+	// Stdout audit logger - synchronous logging to stdout
+	s.stdoutLogger = audit.NewStdoutLogger(nil, &s.profile.RuntimeEnableAuditLogStdout)
 
 	directorySyncServer := directorysync.NewService(s.store, s.licenseService, s.iamManager)
 
@@ -281,10 +266,6 @@ func (s *Server) Run(ctx context.Context, port int) error {
 			slog.Info("audit logging to stdout enabled via workspace setting")
 		}
 	}
-
-	// Always start the audit logger (ConditionalLogger checks the atomic bool on each call)
-	s.runnerWG.Add(1)
-	go s.stdoutLogger.Run(ctx, &s.runnerWG)
 
 	address := fmt.Sprintf(":%d", port)
 	listener, err := net.Listen("tcp", address)

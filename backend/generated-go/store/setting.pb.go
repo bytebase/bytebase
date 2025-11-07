@@ -352,16 +352,8 @@ type WorkspaceProfileSetting struct {
 	// Whether to enable audit logging to stdout in structured JSON format.
 	// Requires TEAM or ENTERPRISE license.
 	EnableAuditLogStdout bool `protobuf:"varint,15,opt,name=enable_audit_log_stdout,json=enableAuditLogStdout,proto3" json:"enable_audit_log_stdout,omitempty"`
-	// Buffer size for audit log events (default: 1000).
-	// Recommended sizing: peak_QPS × acceptable_delay_seconds.
-	// Requires server restart to take effect (Go channels have fixed capacity).
-	AuditLogBufferSize int32 `protobuf:"varint,16,opt,name=audit_log_buffer_size,json=auditLogBufferSize,proto3" json:"audit_log_buffer_size,omitempty"`
-	// Shutdown drain timeout in seconds for audit logs (default: 5).
-	// How long to wait for remaining audit events to write during graceful shutdown.
-	// Can be updated at runtime without restart.
-	AuditLogDrainTimeoutSec int32 `protobuf:"varint,17,opt,name=audit_log_drain_timeout_sec,json=auditLogDrainTimeoutSec,proto3" json:"audit_log_drain_timeout_sec,omitempty"`
-	unknownFields           protoimpl.UnknownFields
-	sizeCache               protoimpl.SizeCache
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *WorkspaceProfileSetting) Reset() {
@@ -483,20 +475,6 @@ func (x *WorkspaceProfileSetting) GetEnableAuditLogStdout() bool {
 		return x.EnableAuditLogStdout
 	}
 	return false
-}
-
-func (x *WorkspaceProfileSetting) GetAuditLogBufferSize() int32 {
-	if x != nil {
-		return x.AuditLogBufferSize
-	}
-	return 0
-}
-
-func (x *WorkspaceProfileSetting) GetAuditLogDrainTimeoutSec() int32 {
-	if x != nil {
-		return x.AuditLogDrainTimeoutSec
-	}
-	return 0
 }
 
 type Announcement struct {
@@ -2491,7 +2469,7 @@ var File_store_setting_proto protoreflect.FileDescriptor
 
 const file_store_setting_proto_rawDesc = "" +
 	"\n" +
-	"\x13store/setting.proto\x12\x0ebytebase.store\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\x1a\x12store/common.proto\x1a\x14store/database.proto\x1a\x1bstore/project_webhook.proto\"\xf6\x06\n" +
+	"\x13store/setting.proto\x12\x0ebytebase.store\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\x1a\x12store/common.proto\x1a\x14store/database.proto\x1a\x1bstore/project_webhook.proto\"\x85\x06\n" +
 	"\x17WorkspaceProfileSetting\x12!\n" +
 	"\fexternal_url\x18\x01 \x01(\tR\vexternalUrl\x12'\n" +
 	"\x0fdisallow_signup\x18\x02 \x01(\bR\x0edisallowSignup\x12\x1f\n" +
@@ -2507,9 +2485,7 @@ const file_store_setting_proto_rawDesc = "" +
 	"\x18disallow_password_signin\x18\f \x01(\bR\x16disallowPasswordSignin\x128\n" +
 	"\x18enable_metric_collection\x18\r \x01(\bR\x16enableMetricCollection\x12S\n" +
 	"\x18inactive_session_timeout\x18\x0e \x01(\v2\x19.google.protobuf.DurationR\x16inactiveSessionTimeout\x125\n" +
-	"\x17enable_audit_log_stdout\x18\x0f \x01(\bR\x14enableAuditLogStdout\x121\n" +
-	"\x15audit_log_buffer_size\x18\x10 \x01(\x05R\x12auditLogBufferSize\x12<\n" +
-	"\x1baudit_log_drain_timeout_sec\x18\x11 \x01(\x05R\x17auditLogDrainTimeoutSec\"\xe9\x01\n" +
+	"\x17enable_audit_log_stdout\x18\x0f \x01(\bR\x14enableAuditLogStdout\"\xe9\x01\n" +
 	"\fAnnouncement\x12=\n" +
 	"\x05level\x18\x01 \x01(\x0e2'.bytebase.store.Announcement.AlertLevelR\x05level\x12\x12\n" +
 	"\x04text\x18\x02 \x01(\tR\x04text\x12\x12\n" +
