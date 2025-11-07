@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
@@ -113,13 +114,13 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 	var response *v1pb.CheckReleaseResponse
 	switch releaseFileType {
 	case v1pb.Release_File_DECLARATIVE:
-		resp, err := s.checkReleaseDeclarative(ctx, sanitizedFiles, targetDatabases)
+		resp, err := s.checkReleaseDeclarative(ctx, sanitizedFiles, targetDatabases, request.CustomRules)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check release declarative"))
 		}
 		response = resp
 	case v1pb.Release_File_VERSIONED:
-		resp, err := s.checkReleaseVersioned(ctx, sanitizedFiles, targetDatabases)
+		resp, err := s.checkReleaseVersioned(ctx, sanitizedFiles, targetDatabases, request.CustomRules)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check release versioned"))
 		}
@@ -131,7 +132,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 	return connect.NewResponse(response), nil
 }
 
-func (s *ReleaseService) checkReleaseVersioned(ctx context.Context, files []*v1pb.Release_File, databases []*store.DatabaseMessage) (*v1pb.CheckReleaseResponse, error) {
+func (s *ReleaseService) checkReleaseVersioned(ctx context.Context, files []*v1pb.Release_File, databases []*store.DatabaseMessage, customRules string) (*v1pb.CheckReleaseResponse, error) {
 	resp := &v1pb.CheckReleaseResponse{}
 	var errorAdviceCount, warningAdviceCount int
 	var maxRiskLevel storepb.RiskLevel
@@ -179,6 +180,32 @@ loop:
 		revisionMap := make(map[string]*store.RevisionMessage)
 		for _, revision := range revisions {
 			revisionMap[revision.Version] = revision
+		}
+
+		// Batch AI linting for all files in this database (if custom rules provided)
+		var aiAdvicesMap map[string][]*v1pb.Advice
+		if customRules != "" {
+			var filesToLint []fileSchema
+			for _, file := range files {
+				// Skip files that have already been applied
+				if _, ok := revisionMap[file.Version]; !ok {
+					filesToLint = append(filesToLint, fileSchema{
+						Path:    file.Path,
+						Content: string(file.Statement),
+					})
+				}
+			}
+			if len(filesToLint) > 0 {
+				slog.Info("Running batch AI-powered linting for versioned files", "database", database.DatabaseName, "filesCount", len(filesToLint))
+				var err error
+				aiAdvicesMap, err = s.runAIPoweredLintBatch(ctx, filesToLint, customRules)
+				if err != nil {
+					slog.Error("Batch AI linting failed for versioned files", "database", database.DatabaseName, "error", err)
+					// Continue processing even if AI linting fails
+				} else {
+					slog.Info("Batch AI linting completed for versioned files", "database", database.DatabaseName, "filesWithAdvices", len(aiAdvicesMap))
+				}
+			}
 		}
 
 		for _, file := range files {
@@ -275,9 +302,22 @@ loop:
 					}
 					// If the advice status is not SUCCESS, we will add the file and advices to the response.
 					if adviceStatus != storepb.Advice_SUCCESS {
-						checkResult.Advices = sqlReviewAdvices
+						// Mark parser-based advices
+						for _, advice := range sqlReviewAdvices {
+							advice.RuleType = v1pb.Advice_PARSER_BASED
+						}
+						checkResult.Advices = append(checkResult.Advices, sqlReviewAdvices...)
 					}
 				}
+
+				// Add AI-powered linting results from batch processing (if available)
+				if aiAdvicesMap != nil {
+					if aiAdvices, ok := aiAdvicesMap[file.Path]; ok && len(aiAdvices) > 0 {
+						slog.Info("Adding AI linting results for versioned file", "file", file.Path, "advicesCount", len(aiAdvices))
+						checkResult.Advices = append(checkResult.Advices, aiAdvices...)
+					}
+				}
+
 				return checkResult, nil
 			}()
 
@@ -327,7 +367,7 @@ loop:
 	return resp, nil
 }
 
-func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v1pb.Release_File, databases []*store.DatabaseMessage) (*v1pb.CheckReleaseResponse, error) {
+func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v1pb.Release_File, databases []*store.DatabaseMessage, customRules string) (*v1pb.CheckReleaseResponse, error) {
 	var results []*v1pb.CheckReleaseResponse_CheckResult
 	var errorAdviceCount, warningAdviceCount int
 	for _, database := range databases {
@@ -415,6 +455,29 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 			}
 		}
 
+		// Batch AI linting for all declarative files (if custom rules provided)
+		var aiAdvicesMap map[string][]*v1pb.Advice
+		if customRules != "" {
+			var filesToLint []fileSchema
+			for _, file := range files {
+				filesToLint = append(filesToLint, fileSchema{
+					Path:    file.Path,
+					Content: string(file.Statement),
+				})
+			}
+			if len(filesToLint) > 0 {
+				slog.Info("Running batch AI-powered linting for declarative files", "database", database.DatabaseName, "filesCount", len(filesToLint))
+				var err error
+				aiAdvicesMap, err = s.runAIPoweredLintBatch(ctx, filesToLint, customRules)
+				if err != nil {
+					slog.Error("Batch AI linting failed for declarative files", "database", database.DatabaseName, "error", err)
+					// Continue processing even if AI linting fails
+				} else {
+					slog.Info("Batch AI linting completed for declarative files", "database", database.DatabaseName, "filesWithAdvices", len(aiAdvicesMap))
+				}
+			}
+		}
+
 		// Perform syntax check and statement type check for declarative files
 		for _, file := range files {
 			checkResult := &v1pb.CheckReleaseResponse_CheckResult{
@@ -490,6 +553,21 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 							}
 						}
 					}
+				}
+			}
+
+			// Mark parser-based advices
+			for _, advice := range checkResult.Advices {
+				if advice.RuleType == v1pb.Advice_RULE_TYPE_UNSPECIFIED {
+					advice.RuleType = v1pb.Advice_PARSER_BASED
+				}
+			}
+
+			// Add AI-powered linting results from batch processing (if available)
+			if aiAdvicesMap != nil {
+				if aiAdvices, ok := aiAdvicesMap[file.Path]; ok && len(aiAdvices) > 0 {
+					slog.Info("Adding AI linting results for declarative file", "file", file.Path, "advicesCount", len(aiAdvices))
+					checkResult.Advices = append(checkResult.Advices, aiAdvices...)
 				}
 			}
 

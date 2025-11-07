@@ -770,6 +770,13 @@ export declare type Advice = Message<"bytebase.v1.Advice"> & {
    * @generated from field: bytebase.v1.Position end_position = 9;
    */
   endPosition?: Position;
+
+  /**
+   * The type of linting rule that generated this advice.
+   *
+   * @generated from field: bytebase.v1.Advice.RuleType rule_type = 10;
+   */
+  ruleType: Advice_RuleType;
 };
 
 /**
@@ -817,6 +824,41 @@ export enum Advice_Level {
  * Describes the enum bytebase.v1.Advice.Level.
  */
 export declare const Advice_LevelSchema: GenEnum<Advice_Level>;
+
+/**
+ * RuleType indicates the source of the linting rule.
+ *
+ * @generated from enum bytebase.v1.Advice.RuleType
+ */
+export enum Advice_RuleType {
+  /**
+   * Unspecified rule type.
+   *
+   * @generated from enum value: RULE_TYPE_UNSPECIFIED = 0;
+   */
+  RULE_TYPE_UNSPECIFIED = 0,
+
+  /**
+   * Parser-based rule enforced by the built-in SQL parser.
+   * These are non-configurable, mandatory checks for schema health.
+   *
+   * @generated from enum value: PARSER_BASED = 1;
+   */
+  PARSER_BASED = 1,
+
+  /**
+   * AI-powered rule defined by user in natural language.
+   * These are custom, flexible checks powered by AI models.
+   *
+   * @generated from enum value: AI_POWERED = 2;
+   */
+  AI_POWERED = 2,
+}
+
+/**
+ * Describes the enum bytebase.v1.Advice.RuleType.
+ */
+export declare const Advice_RuleTypeSchema: GenEnum<Advice_RuleType>;
 
 /**
  * @generated from message bytebase.v1.ExportRequest

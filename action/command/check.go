@@ -24,6 +24,7 @@ func NewCheckCommand(w *world.World) *cobra.Command {
 		RunE:              runCheck(w),
 	}
 	cmdCheck.Flags().StringVar(&w.CheckRelease, "check-release", "SKIP", "Whether to fail on warning/error. Valid values: SKIP, FAIL_ON_WARNING, FAIL_ON_ERROR")
+	cmdCheck.Flags().StringVar(&w.CustomRules, "custom-rules", "", "Custom linting rules in natural language for AI-powered validation")
 	return cmdCheck
 }
 
@@ -65,9 +66,10 @@ func runCheck(w *world.World) func(*cobra.Command, []string) error {
 			return err
 		}
 		checkReleaseResponse, err := client.CheckRelease(cmd.Context(), &v1pb.CheckReleaseRequest{
-			Parent:  w.Project,
-			Release: &v1pb.Release{Files: releaseFiles},
-			Targets: w.Targets,
+			Parent:      w.Project,
+			Release:     &v1pb.Release{Files: releaseFiles},
+			Targets:     w.Targets,
+			CustomRules: w.CustomRules,
 		})
 		if err != nil {
 			return err

@@ -481,6 +481,7 @@
     - [SearchQueryHistoriesResponse](#bytebase-v1-SearchQueryHistoriesResponse)
   
     - [Advice.Level](#bytebase-v1-Advice-Level)
+    - [Advice.RuleType](#bytebase-v1-Advice-RuleType)
     - [QueryHistory.Type](#bytebase-v1-QueryHistory-Type)
     - [QueryOption.RedisRunCommandsOn](#bytebase-v1-QueryOption-RedisRunCommandsOn)
     - [QueryResult.Message.Level](#bytebase-v1-QueryResult-Message-Level)
@@ -7663,6 +7664,7 @@ OrgPolicyService manages organizational policies at various resource levels.
 | content | [string](#string) |  | The advice content. |
 | start_position | [Position](#bytebase-v1-Position) |  | The start_position is inclusive and the end_position is exclusive. TODO: use range instead |
 | end_position | [Position](#bytebase-v1-Position) |  |  |
+| rule_type | [Advice.RuleType](#bytebase-v1-Advice-RuleType) |  | The type of linting rule that generated this advice. |
 
 
 
@@ -8034,6 +8036,19 @@ Level represents the severity level of the advice.
 | SUCCESS | 1 | Success status indicating the check passed without issues. |
 | WARNING | 2 | Warning status indicating potential issues that should be reviewed. |
 | ERROR | 3 | Error status indicating critical issues that must be addressed. |
+
+
+
+<a name="bytebase-v1-Advice-RuleType"></a>
+
+### Advice.RuleType
+RuleType indicates the source of the linting rule.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| RULE_TYPE_UNSPECIFIED | 0 | Unspecified rule type. |
+| PARSER_BASED | 1 | Parser-based rule enforced by the built-in SQL parser. These are non-configurable, mandatory checks for schema health. |
+| AI_POWERED | 2 | AI-powered rule defined by user in natural language. These are custom, flexible checks powered by AI models. |
 
 
 
@@ -8641,6 +8656,7 @@ PlanService manages deployment plans for database changes.
 | parent | [string](#string) |  | Format: projects/{project} |
 | release | [Release](#bytebase-v1-Release) |  | The release to check. |
 | targets | [string](#string) | repeated | The targets to dry-run the release. Can be database or databaseGroup. Format: projects/{project}/databaseGroups/{databaseGroup} instances/{instance}/databases/{database} |
+| custom_rules | [string](#string) |  | Custom linting rules in natural language for AI-powered validation. Each rule should be a clear statement describing the desired schema constraint. Example: &#34;All tables must have a primary key&#34; Example: &#34;VARCHAR columns should specify a maximum length&#34; |
 
 
 

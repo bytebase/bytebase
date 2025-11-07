@@ -362,6 +362,20 @@ message Advice {
   // TODO: use range instead
   Position start_position = 8;
   Position end_position = 9;
+
+  // RuleType indicates the source of the linting rule.
+  enum RuleType {
+    // Unspecified rule type.
+    RULE_TYPE_UNSPECIFIED = 0;
+    // Parser-based rule enforced by the built-in SQL parser.
+    // These are non-configurable, mandatory checks for schema health.
+    PARSER_BASED = 1;
+    // AI-powered rule defined by user in natural language.
+    // These are custom, flexible checks powered by AI models.
+    AI_POWERED = 2;
+  }
+  // The type of linting rule that generated this advice.
+  RuleType rule_type = 10;
 }
 
 message ExportRequest {
