@@ -15,6 +15,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      actions: write
     steps:
       - uses: actions/checkout@v5
       - name: Extract build args
@@ -44,3 +45,41 @@ jobs:
           build-args: |
             VERSION=${{ env.VERSION }}
             GIT_COMMIT=${{ env.GIT_COMMIT }}
+      - name: Check if version is latest
+        id: check_latest
+        run: |
+          # Fetch all branches to get release branches
+          git fetch --all
+
+          # Get all release branch versions
+          VERSIONS=$(git branch -r | grep -o 'release/[0-9]*\.[0-9]*\.[0-9]*' | sed 's/release\///' | sort -V)
+
+          # Get the latest version
+          LATEST_VERSION=$(echo "$VERSIONS" | tail -n 1)
+
+          echo "Current version: ${{ env.VERSION }}"
+          echo "Latest version: $LATEST_VERSION"
+
+          # Check if current version is the latest
+          if [ "${{ env.VERSION }}" = "$LATEST_VERSION" ]; then
+            echo "is_latest=true" >> $GITHUB_OUTPUT
+            echo "✅ This is the latest version"
+          else
+            echo "is_latest=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ This is not the latest version"
+          fi
+      - name: Trigger docker-tag-latest workflow
+        if: steps.check_latest.outputs.is_latest == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'docker-tag-latest.yml',
+              ref: 'main',
+              inputs: {
+                version: '${{ env.VERSION }}'
+              }
+            });
+            console.log('✅ Triggered docker-tag-latest workflow for version ${{ env.VERSION }}');
