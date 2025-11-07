@@ -18,6 +18,7 @@ import (
 // TestMultiStatementSQLExecution tests that multiple SQL statements can be executed
 // and returns results for all statements, even if some fail.
 func TestMultiStatementSQLExecution(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name              string
 		databaseName      string
@@ -130,19 +131,15 @@ func TestMultiStatementSQLExecution(t *testing.T) {
 	ctl := &controller{}
 	ctx, err := ctl.StartServerWithExternalPg(ctx)
 	a.NoError(err)
-	defer ctl.Close(ctx)
+	t.Cleanup(func() { ctl.Close(ctx) })
 
 	mysqlContainer, err := getMySQLContainer(ctx)
-	defer func() {
-		mysqlContainer.Close(ctx)
-	}()
 	a.NoError(err)
+	t.Cleanup(func() { mysqlContainer.Close(ctx) })
 
 	pgContainer, err := getPgContainer(ctx)
-	defer func() {
-		pgContainer.Close(ctx)
-	}()
 	a.NoError(err)
+	t.Cleanup(func() { pgContainer.Close(ctx) })
 
 	mysqlInstanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
@@ -172,6 +169,7 @@ func TestMultiStatementSQLExecution(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			a := require.New(t)
 
 			var instance *v1pb.Instance
@@ -344,19 +342,15 @@ func TestMultiStatementSQLWithErrors(t *testing.T) {
 	ctl := &controller{}
 	ctx, err := ctl.StartServerWithExternalPg(ctx)
 	a.NoError(err)
-	defer ctl.Close(ctx)
+	t.Cleanup(func() { ctl.Close(ctx) })
 
 	mysqlContainer, err := getMySQLContainer(ctx)
-	defer func() {
-		mysqlContainer.Close(ctx)
-	}()
 	a.NoError(err)
+	t.Cleanup(func() { mysqlContainer.Close(ctx) })
 
 	pgContainer, err := getPgContainer(ctx)
-	defer func() {
-		pgContainer.Close(ctx)
-	}()
 	a.NoError(err)
+	t.Cleanup(func() { pgContainer.Close(ctx) })
 
 	mysqlInstanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
@@ -386,6 +380,7 @@ func TestMultiStatementSQLWithErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			a := require.New(t)
 
 			var instance *v1pb.Instance

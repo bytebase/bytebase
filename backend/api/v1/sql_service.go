@@ -208,7 +208,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 	if request.Schema != nil {
 		queryContext.Schema = *request.Schema
 	}
-	results, _, duration, queryErr := queryRetry(
+	results, _, duration := queryRetry(
 		ctx,
 		s.store,
 		user,
@@ -224,38 +224,13 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		storepb.MaskingExceptionPolicy_MaskingException_QUERY,
 	)
 	slog.Debug("query finished",
-		log.BBError(queryErr),
 		slog.Duration("duration", time.Since(startTime)),
 		slog.String("instance", instance.ResourceID),
 		slog.String("database", database.DatabaseName),
 	)
 
 	// Update activity.
-	s.createQueryHistory(database, store.QueryHistoryTypeQuery, statement, user.ID, duration, queryErr)
-	if queryErr != nil {
-		code := connect.CodeInternal
-		// If queryErr is already a connect.Error, preserve its code
-		if connectErr, ok := queryErr.(*connect.Error); ok {
-			code = connectErr.Code()
-		} else if syntaxErr, ok := queryErr.(*parserbase.SyntaxError); ok {
-			err := connect.NewError(connect.CodeInvalidArgument, syntaxErr)
-			if detail, detailErr := connect.NewErrorDetail(&v1pb.PlanCheckRun_Result{
-				Code:    int32(advisor.StatementSyntaxError),
-				Content: syntaxErr.Message,
-				Title:   "Syntax error",
-				Status:  v1pb.Advice_ERROR,
-				Report: &v1pb.PlanCheckRun_Result_SqlReviewReport_{
-					SqlReviewReport: &v1pb.PlanCheckRun_Result_SqlReviewReport{
-						StartPosition: convertToPosition(syntaxErr.Position),
-					},
-				},
-			}); detailErr == nil {
-				err.AddDetail(detail)
-			}
-			return nil, err
-		}
-		return nil, connect.NewError(code, errors.New(queryErr.Error()))
-	}
+	s.createQueryHistory(database, store.QueryHistoryTypeQuery, statement, user.ID, duration, nil)
 
 	slog.Debug("request finished",
 		slog.Duration("duration", time.Since(startTime)),
@@ -695,7 +670,7 @@ func queryRetry(
 	optionalAccessCheck accessCheckFunc,
 	schemaSyncer *schemasync.Syncer,
 	action storepb.MaskingExceptionPolicy_MaskingException_Action,
-) ([]*v1pb.QueryResult, []*parserbase.QuerySpan, time.Duration, error) {
+) ([]*v1pb.QueryResult, []*parserbase.QuerySpan, time.Duration) {
 	// Split the statement into individual SQL statements
 	singleSQLs, err := parserbase.SplitMultiSQL(instance.Metadata.GetEngine(), statement)
 	if err != nil {
@@ -731,11 +706,7 @@ func queryRetry(
 		totalDuration += duration
 	}
 
-	if queryContext.Explain {
-		return allResults, allSpans, totalDuration, nil
-	}
-
-	return allResults, allSpans, totalDuration, nil
+	return allResults, allSpans, totalDuration
 }
 
 func getCosmosDBContainerObjectSchema(ctx context.Context, stores *store.Store, instanceID string, databaseName string, containerName string) (*storepb.ObjectSchema, error) {
@@ -1010,7 +981,7 @@ func DoExport(
 	if request.Schema != nil {
 		queryContext.Schema = *request.Schema
 	}
-	results, spans, duration, queryErr := queryRetry(
+	results, spans, duration := queryRetry(
 		ctx,
 		stores,
 		user,
@@ -1025,9 +996,6 @@ func DoExport(
 		schemaSyncer,
 		storepb.MaskingExceptionPolicy_MaskingException_EXPORT,
 	)
-	if queryErr != nil {
-		return nil, duration, queryErr
-	}
 
 	if licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil {
 		masker := NewQueryResultMasker(stores)
