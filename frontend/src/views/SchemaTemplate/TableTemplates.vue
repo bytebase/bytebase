@@ -1,6 +1,6 @@
 <template>
-  <div class="w-full space-y-4 text-sm">
-    <div v-if="!readonly" class="space-y-4">
+  <div class="w-full flex flex-col gap-y-4 text-sm">
+    <div v-if="!readonly" class="flex flex-col gap-y-4">
       <div class="flex items-center justify-between gap-x-6">
         <div class="flex-1 textinfolabel">
           {{ $t("schema-template.table-template.description") }}
@@ -27,7 +27,7 @@
           </NCheckbox>
         </template>
       </div>
-      <div class="flex items-center space-x-2">
+      <div class="flex items-center gap-x-2">
         <div class="hidden md:block">
           <SearchBox
             v-model:value="state.searchText"

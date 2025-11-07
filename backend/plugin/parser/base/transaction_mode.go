@@ -19,15 +19,6 @@ var (
 	txnIsolationDirectiveRegex = regexp.MustCompile(`(?i)^\s*--\s*txn-isolation\s*=\s*(READ\s+UNCOMMITTED|READ\s+COMMITTED|REPEATABLE\s+READ|SERIALIZABLE)\s*$`)
 )
 
-// ParseTransactionMode extracts the transaction mode directive from the SQL script.
-// It checks the first line of the script for the -- txn-mode = on|off directive.
-// Returns the transaction mode and the SQL script without the directive.
-// Deprecated: Use ParseTransactionConfig instead for full transaction configuration support.
-func ParseTransactionMode(script string) (common.TransactionMode, string) {
-	config, cleanScript := ParseTransactionConfig(script)
-	return config.Mode, cleanScript
-}
-
 // ParseTransactionConfig extracts both transaction mode and isolation level directives from the SQL script.
 // It scans comment lines at the top of the file for directives:
 // - -- txn-mode = on|off

@@ -2,7 +2,7 @@
   <div
     class="mx-auto w-full h-full py-6 flex flex-col justify-center items-center bg-gray-100 rounded-lg"
   >
-    <div class="w-80 bg-white p-8 py-6 rounded-lg shadow">
+    <div class="w-80 bg-white p-8 py-6 rounded-lg shadow-sm">
       <img
         class="h-12 w-auto mx-auto mb-8"
         src="@/assets/logo-full.svg"
@@ -33,7 +33,7 @@
           />
         </template>
         <div class="w-full mt-4">
-          <NButton class="!w-full" attr-type="submit" type="primary">
+          <NButton class="w-full!" attr-type="submit" type="primary">
             {{ $t("common.verify") }}
           </NButton>
         </div>

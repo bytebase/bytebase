@@ -1,5 +1,6 @@
 {
   "common": {
+    "apply-to-database": "应用到数据库",
     "view": "查看",
     "you": "您",
     "general": "通用",
@@ -225,7 +226,6 @@
       "n-rows": "{n} 行"
     },
     "back-to-workspace": "返回工作空间",
-    "encoding": "编码",
     "finish": "完成",
     "title": "标题",
     "text-wrap": "文本折行",
@@ -392,6 +392,10 @@
       "data-access": "数据访问",
       "audit-log": "审计日志",
       "custom-roles": "自定义角色"
+    },
+    "im": {
+      "add-im-integration": "添加即时通讯集成",
+      "add-another-im": "添加另一个即时通讯工具"
     },
     "profile": {
       "email": "邮箱",
@@ -907,7 +911,6 @@
           "title": "创建人",
           "description": "根据创建人搜索"
         },
-        "subscriber": {},
         "approver": {
           "title": "审批人",
           "description": "根据工单审批人搜索"
@@ -1193,9 +1196,6 @@
         "self": "没有阶段",
         "description": "本次发布任务未定义任何阶段。"
       }
-    },
-    "message": {
-      "pervious-stages-incomplete": {}
     }
   },
   "quick-action": {
@@ -1678,7 +1678,6 @@
       "select-tip": "请选择一个表来开始查询。"
     },
     "all": "所有数据库",
-    "show-schemaless-databases": "显示无模式的数据库。（变更 Schema 不适用于无 schema 的数据库. ）",
     "transfer": {
       "errors": {
         "select-target-project": "选择目标项目",
@@ -1740,10 +1739,7 @@
       "type-declarative": "声明式",
       "invalid-version-format": "版本必须是用点分隔的数字部分（例如，1.0.0）",
       "version-already-exists": "此版本已存在于数据库中",
-      "delete-confirm-dialog": {
-        "title": "确定要删除吗？",
-        "content": "这将删除这些已应用的修改，但不会影响数据库 Schema。此操作无法撤消。"
-      }
+      "delete-confirm-dialog": "这将删除这些已应用的修改，但不会影响数据库 Schema。此操作无法撤消。"
     },
     "not-found": "找不到数据库",
     "drifted": {
@@ -2007,7 +2003,7 @@
     "table-empty-placeholder": "点击 ”运行“ 执行查询",
     "no-data-available": "暂无数据",
     "download-as-file": "下载为 {file} 格式",
-    "only-select-allowed": "只允许执行 {select} 语句",
+    "only-select-allowed": "只允许执行只读语句",
     "enable-ddl-for-environment": "您可以为环境 {environment} 启用 DDL/DML 语句。",
     "and-submit-an-issue": "并提交一个工单",
     "to-enable-admin-mode": "来开启管理员模式",
@@ -2152,12 +2148,10 @@
   },
   "schema-editor": {
     "self": "Schema 编辑器",
-    "preview-issue": "预览工单",
-    "sync-sql-from-schema-editor": "从 Schema 编辑器中同步 SQL",
     "raw-sql": "SQL 语句",
     "search-database-and-table": "搜索数据库和表",
-    "failed-to-generate-ddl-for-database": "无法为数据库 {database} 生成 DDL",
-    "continue-with-empty-sql": "使用空 SQL 创建工单",
+    "insert-sql": "插入 SQL",
+    "template-database": "模板数据库",
     "actions": {
       "create-schema": "新建 Schema",
       "drop-schema": "删除 Schema",
@@ -2219,8 +2213,6 @@
       "duplicated-view-name": "重复的视图名称"
     },
     "confirm-to-close": {
-      "title": "确定关闭？",
-      "description": "关闭后更改将会丢失。"
     },
     "foreign-key": {
       "edit": "修改外键",
@@ -2401,7 +2393,6 @@
         "confirm-override-description": "之前的规则将会被覆盖"
       }
     },
-    "rule": {},
     "enabled-rules": "开启的规则数",
     "rule-detail": "规则详情",
     "view-definition": "查看定义",
@@ -2817,44 +2808,6 @@
       "add-root-condition-placeholder": "点击「添加条件」或「添加条件组」以添加条件"
     }
   },
-  "changelist": {
-    "self": "变更列表",
-    "changelists": "变更列表",
-    "new": "新建变更列表",
-    "name": "变更列表名称",
-    "name-placeholder": "我的变更列表",
-    "error": {
-      "name-is-required": "变更列表名称不能为空",
-      "invalid-resource-id": "无效的资源 ID",
-      "nothing-changed": "无任何改变",
-      "sql-cannot-be-empty": "SQL 不能为空",
-      "select-at-least-one-change": "选择至少一条变更",
-      "select-at-least-one-change-to-export": "至少选择一项要导出的变更",
-      "add-at-least-one-change": "添加至少一项变更",
-      "you-are-not-allowed-to-perform-this-action": "你无权执行此操作"
-    },
-    "apply-to-database": "应用到数据库",
-    "add-change": {
-      "self": "添加变更",
-      "changelog": {
-        "select-at-least-one-changelog-below": "请在下方选择至少一条记录"
-      }
-    },
-    "change-source": {
-      "self": "变更来源",
-      "raw-sql": "SQL 语句",
-      "source": "来源"
-    },
-    "confirm-remove-change": "移除这项变更？",
-    "delete-this-changelist": "删除这个变更列表",
-    "confirm-delete-changelist": "删除变更列表？",
-    "import": {
-      "no-file-to-upload": "没有可以上传的文件",
-      "upload-sql-or-zip-file": "上传 .sql 或 .zip 文件",
-      "optional-upload-sql-or-zip-file": "（可选）上传 .sql 或 .zip 文件"
-    },
-    "change-type": "更改类型"
-  },
   "release": {
     "title": "发布包",
     "releases": "发布包",
@@ -2880,8 +2833,6 @@
     "vcs-type": {
       "unspecified": "未指定"
     },
-    "actions": {},
-    "messages": {},
     "usage-description": "发布包是版本化的应用制品。GitOps 工作流将发布包部署到环境。"
   },
   "export-data": {
@@ -2934,8 +2885,7 @@
       "algorithm": "遮盖方法",
       "context": "规则",
       "classification": "分类级别"
-    },
-    "algorithms": {}
+    }
   },
   "landing": {
     "quick-link": {

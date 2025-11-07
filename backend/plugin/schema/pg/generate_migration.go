@@ -1,7 +1,6 @@
 package pg
 
 import (
-	"context"
 	"fmt"
 	"slices"
 	"strconv"
@@ -16,7 +15,6 @@ import (
 	pgpluginparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/plugin/schema/pg/ast"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 func init() {
@@ -194,15 +192,25 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 		}
 	}
 
-	// For tables with foreign keys depending on other tables
+	// For tables with foreign keys depending on other tables (DROP operations)
 	for tableID, tableDiff := range tableMap {
+		var foreignKeys []*storepb.ForeignKeyMetadata
+
 		if tableDiff.OldTable != nil {
-			for _, fk := range tableDiff.OldTable.ForeignKeys {
-				depID := getMigrationObjectID(fk.ReferencedSchema, fk.ReferencedTable)
-				if allObjects[depID] && depID != tableID {
-					// Edge from table with FK to referenced table
-					graph.AddEdge(tableID, depID)
-				}
+			// Metadata mode: use ForeignKeys from metadata
+			foreignKeys = tableDiff.OldTable.ForeignKeys
+		} else if tableDiff.OldASTNode != nil {
+			// AST-only mode: extract foreign keys from AST node
+			foreignKeys = extractForeignKeysFromAST(tableDiff.OldASTNode, tableDiff.SchemaName)
+		}
+
+		for _, fk := range foreignKeys {
+			depID := getMigrationObjectID(fk.ReferencedSchema, fk.ReferencedTable)
+			if allObjects[depID] && depID != tableID {
+				// Edge from table with FK to referenced table
+				// For DROP: table1 (with FK) -> table2 (referenced)
+				// This ensures table1 is dropped before table2
+				graph.AddEdge(tableID, depID)
 			}
 		}
 	}
@@ -669,9 +677,21 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 
 	// Add dependency edges
 	// For tables with foreign keys depending on other tables (only for CREATE operations)
+	// Note: ALTER FK additions are handled after all tables are created, so they don't need topological sorting
 	for tableID, tableDiff := range tableMap {
-		if tableDiff.Action == schema.MetadataDiffActionCreate && tableDiff.NewTable != nil {
-			for _, fk := range tableDiff.NewTable.ForeignKeys {
+		if tableDiff.Action == schema.MetadataDiffActionCreate {
+			// For CREATE: extract all FKs from the table
+			var foreignKeys []*storepb.ForeignKeyMetadata
+
+			if tableDiff.NewTable != nil {
+				// Metadata mode: use ForeignKeys from metadata
+				foreignKeys = tableDiff.NewTable.ForeignKeys
+			} else if tableDiff.NewASTNode != nil {
+				// AST-only mode: extract foreign keys from AST node
+				foreignKeys = extractForeignKeysFromAST(tableDiff.NewASTNode, tableDiff.SchemaName)
+			}
+
+			for _, fk := range foreignKeys {
 				depID := getMigrationObjectID(fk.ReferencedSchema, fk.ReferencedTable)
 				if depID != tableID {
 					// Edge from dependency to dependent (referenced table to table with FK)
@@ -696,8 +716,10 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 
 		for _, dep := range dependencies {
 			depID := getMigrationObjectID(dep.Schema, dep.Table)
-			// Edge from dependency to dependent (table/view to view)
-			graph.AddEdge(depID, viewID)
+			if allObjects[depID] {
+				// Edge from dependency to dependent (table/view to view)
+				graph.AddEdge(depID, viewID)
+			}
 		}
 	}
 
@@ -3405,18 +3427,17 @@ func (v *CreateOrReplaceVisitor) hasOrReplace(ctx *pgparser.CreatefunctionstmtCo
 	return false
 }
 
-// getViewDependenciesFromAST extracts view dependencies from AST node
-// This reuses the same logic as getViewDependencies from get_database_metadata.go
-func getViewDependenciesFromAST(astNode any, schemaName string, fullSchemaMetadata *storepb.DatabaseSchemaMetadata) []*storepb.DependencyColumn {
+// getViewDependenciesFromAST extracts view dependencies from AST node using lightweight access table extraction.
+// This avoids the complexity and potential panics of GetQuerySpan by only extracting table/view references.
+// The caller is responsible for filtering dependencies against the set of objects being migrated.
+func getViewDependenciesFromAST(astNode any, schemaName string, _ *storepb.DatabaseSchemaMetadata) []*storepb.DependencyColumn {
 	if astNode == nil {
 		return []*storepb.DependencyColumn{}
 	}
 
-	// Extract the SELECT statement from the VIEW AST node
 	var selectStatement string
 
 	if ctx, ok := astNode.(*pgparser.ViewstmtContext); ok {
-		// Extract the SELECT statement from the ViewstmtContext
 		if ctx.Selectstmt() != nil {
 			// Try to get text using token stream first
 			if tokenStream := ctx.GetParser().GetTokenStream(); tokenStream != nil {
@@ -3427,7 +3448,7 @@ func getViewDependenciesFromAST(astNode any, schemaName string, fullSchemaMetada
 				}
 			}
 
-			// Fallback to token-based approach if token stream approach failed
+			// Fallback to token-based approach if failed
 			if selectStatement == "" {
 				selectStatement = getTextFromAST(ctx.Selectstmt())
 			}
@@ -3438,60 +3459,39 @@ func getViewDependenciesFromAST(astNode any, schemaName string, fullSchemaMetada
 		return []*storepb.DependencyColumn{}
 	}
 
-	// Use the same dependency extraction logic as getViewDependencies
 	queryStatement := strings.TrimSpace(selectStatement)
 
-	// Use GetQuerySpan with the full schema metadata so it can resolve table/view references
-	// Wrap in defer/recover to handle potential panics from incomplete metadata
-	var span *base.QuerySpan
-	var err error
-	func() {
-		defer func() {
-			if r := recover(); r != nil {
-				// If GetQuerySpan panics (e.g., due to incomplete metadata), treat it as an error
-				err = errors.Errorf("GetQuerySpan panicked: %v", r)
-			}
-		}()
-		span, err = pgpluginparser.GetQuerySpan(
-			context.Background(),
-			base.GetQuerySpanContext{
-				GetDatabaseMetadataFunc: func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
-					// Return the full schema metadata so GetQuerySpan can resolve references
-					dbMetadata := model.NewDatabaseMetadata(fullSchemaMetadata, false, false)
-					return databaseName, dbMetadata, nil
-				},
-				ListDatabaseNamesFunc: func(_ context.Context, _ string) ([]string, error) {
-					// Return empty list - we don't need actual database names for dependency extraction
-					return []string{}, nil
-				},
-			},
-			queryStatement,
-			"", // database
-			schemaName,
-			false, // case sensitive
-		)
-	}()
-
-	// If error parsing query span, return empty dependencies
+	accessTables, err := pgpluginparser.ExtractAccessTables(queryStatement, pgpluginparser.ExtractAccessTablesOption{
+		DefaultDatabase:        "",
+		DefaultSchema:          schemaName,
+		SkipMetadataValidation: true,
+	})
 	if err != nil {
-		return []*storepb.DependencyColumn{} // nolint:nilerr
+		return []*storepb.DependencyColumn{}
 	}
 
-	// Collect unique dependencies
+	// The caller will filter against allObjects
 	dependencyMap := make(map[string]*storepb.DependencyColumn)
-	for sourceColumn := range span.SourceColumns {
-		// Create dependency key in format: schema.table
-		key := fmt.Sprintf("%s.%s", sourceColumn.Schema, sourceColumn.Table)
+	for _, resource := range accessTables {
+		if resource.Schema == "pg_catalog" || resource.Schema == "information_schema" {
+			continue
+		}
+
+		resourceSchema := resource.Schema
+		if resourceSchema == "" {
+			resourceSchema = schemaName
+		}
+
+		key := fmt.Sprintf("%s.%s", resourceSchema, resource.Table)
 		if _, exists := dependencyMap[key]; !exists {
 			dependencyMap[key] = &storepb.DependencyColumn{
-				Schema: sourceColumn.Schema,
-				Table:  sourceColumn.Table,
-				Column: "*", // Use wildcard since we're tracking table-level dependencies
+				Schema: resourceSchema,
+				Table:  resource.Table,
+				Column: "*", // Table-level dependencies
 			}
 		}
 	}
 
-	// Convert map to slice
 	var dependencies []*storepb.DependencyColumn
 	for _, dep := range dependencyMap {
 		dependencies = append(dependencies, dep)
@@ -3882,4 +3882,74 @@ func writeCreateIndexFromAST(out *strings.Builder, indexAST *pgparser.IndexstmtC
 	_, _ = out.WriteString("\n")
 
 	return nil
+}
+
+// extractForeignKeysFromAST extracts foreign key constraints from a CREATE TABLE AST node
+// and returns foreign key metadata for dependency graph construction
+func extractForeignKeysFromAST(createStmt *pgparser.CreatestmtContext, defaultSchema string) []*storepb.ForeignKeyMetadata {
+	if createStmt == nil || createStmt.Opttableelementlist() == nil {
+		return nil
+	}
+
+	tableElementList := createStmt.Opttableelementlist().Tableelementlist()
+	if tableElementList == nil {
+		return nil
+	}
+
+	var foreignKeys []*storepb.ForeignKeyMetadata
+
+	for _, element := range tableElementList.AllTableelement() {
+		if element.Tableconstraint() == nil {
+			continue
+		}
+
+		constraint := element.Tableconstraint()
+		if constraint.Constraintelem() == nil {
+			continue
+		}
+
+		elem := constraint.Constraintelem()
+		if elem.FOREIGN() == nil || elem.KEY() == nil {
+			continue
+		}
+
+		// This is a foreign key constraint
+		// Extract referenced table from qualified_name using AST and normalize functions
+		// Grammar: FOREIGN KEY (...) REFERENCES qualified_name opt_column_list? ...
+		qualifiedName := elem.Qualified_name()
+		if qualifiedName == nil {
+			continue
+		}
+
+		// Use NormalizePostgreSQLQualifiedName to get schema and table name
+		// Returns []string: [table] or [schema, table]
+		nameParts := pgpluginparser.NormalizePostgreSQLQualifiedName(qualifiedName)
+		if len(nameParts) == 0 {
+			continue
+		}
+
+		var referencedSchema, referencedTable string
+		if len(nameParts) == 1 {
+			// No schema specified, use default
+			referencedSchema = defaultSchema
+			referencedTable = nameParts[0]
+		} else if len(nameParts) == 2 {
+			// Schema and table specified
+			referencedSchema = nameParts[0]
+			referencedTable = nameParts[1]
+		} else {
+			// Unexpected format, skip
+			continue
+		}
+
+		if referencedTable != "" {
+			fk := &storepb.ForeignKeyMetadata{
+				ReferencedSchema: referencedSchema,
+				ReferencedTable:  referencedTable,
+			}
+			foreignKeys = append(foreignKeys, fk)
+		}
+	}
+
+	return foreignKeys
 }

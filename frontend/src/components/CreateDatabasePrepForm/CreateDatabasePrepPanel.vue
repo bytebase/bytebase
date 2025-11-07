@@ -3,14 +3,14 @@
     :title="$t('quick-action.create-db')"
     class="w-[40rem] max-w-[100vw]"
   >
-    <div class="mx-auto space-y-4">
+    <div class="mx-auto flex flex-col gap-y-4">
       <div v-if="!isValidProjectName(currentProject.name)" class="w-full">
         <label for="project" class="textlabel">
           {{ $t("common.project") }}
           <RequiredStar />
         </label>
         <ProjectSelect
-          class="mt-1 !w-full"
+          class="mt-1 w-full!"
           required
           v-model:project-name="state.projectName"
         />

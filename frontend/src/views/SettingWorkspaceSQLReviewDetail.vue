@@ -17,7 +17,7 @@
       class="flex flex-col gap-y-2 items-start md:items-center gap-x-2 justify-center md:flex-row"
     >
       <BBTextField
-        class="flex-1 !text-xl !pl-0 px-0.5 font-bold truncate sql-review-title"
+        class="flex-1 text-xl! pl-0! px-0.5 font-bold truncate sql-review-title"
         :disabled="!hasUpdateReviwConfigPermission"
         :required="true"
         :focus-on-mount="false"
@@ -48,7 +48,7 @@
         </NButton>
       </div>
     </div>
-    <div class="mt-4 space-y-4">
+    <div class="mt-4 flex flex-col gap-y-4">
       <BBAttention
         v-if="reviewPolicy.resources.length === 0"
         type="warning"
@@ -57,7 +57,7 @@
         :action-text="$t('sql-review.attach-resource.self')"
         @click="state.showResourcePanel = true"
       />
-      <div class="space-y-2 space-x-2">
+      <div class="flex flex-col gap-y-2 gap-x-2">
         <BBBadge
           v-for="resource in reviewPolicy.resources"
           :key="resource"
@@ -86,7 +86,7 @@
     </SQLReviewTabsByEngine>
 
     <BBButtonConfirm
-      class="!my-4"
+      class="my-4!"
       :disabled="!hasDeleteReviwConfigPermission"
       :type="'DELETE'"
       :button-text="$t('sql-review.delete')"

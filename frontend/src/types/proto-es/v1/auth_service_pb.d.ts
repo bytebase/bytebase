@@ -140,6 +140,12 @@ export declare const OAuth2IdentityProviderContextSchema: GenMessage<OAuth2Ident
  * @generated from message bytebase.v1.OIDCIdentityProviderContext
  */
 export declare type OIDCIdentityProviderContext = Message<"bytebase.v1.OIDCIdentityProviderContext"> & {
+  /**
+   * Authorization code from OIDC provider.
+   *
+   * @generated from field: string code = 1;
+   */
+  code: string;
 };
 
 /**

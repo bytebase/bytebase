@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full space-y-2">
+  <div class="w-full flex flex-col gap-y-2">
     <NDataTable
       :single-column="true"
       :columns="columns"

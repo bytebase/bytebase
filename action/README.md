@@ -10,7 +10,7 @@ This action provides several subcommands to interact with Bytebase.
 
 Usage: `bytebase-action check [global flags]`
 
-Checks the SQL files matching the `--file-pattern`. This is typically used for linting or pre-deployment validation within a CI pipeline. It utilizes global flags like `--url`, `--service-account`, `--service-account-secret`, `--file-pattern`, and `--declarative`.
+Checks the SQL files matching the `--file-pattern`. This is typically used for linting or pre-deployment validation within a CI pipeline. Use `--output` to save check results to a JSON file.
 
 ### `rollout`
 
@@ -30,8 +30,10 @@ This action is configured via command-line flags. Global flags apply to all comm
 
 These flags apply to the main `bytebase-action` command and its subcommands (`check`, `rollout`).
 
--   **`--output`**: The output file location. The output file is a JSON file with the created resource names.
+-   **`--output`**: The output file location. The output file is a JSON file with the created resource names and check results.
     -   Default: `""` (empty string)
+    -   For `check` command: outputs detailed check results including advices, affected rows, and risk levels
+    -   For `rollout` command: outputs created resource names (release, plan, rollout)
 
 -   **`--url`**: The Bytebase instance URL.
     -   Default: `https://demo.bytebase.com`
@@ -113,7 +115,7 @@ These flags are specific to the `rollout` subcommand (`bytebase-action rollout`)
     -   Format: `projects/{project}/plans/{plan}`
     -   If specified, this shadows the `--file-pattern` and `--targets` flags, meaning they will be ignored.
 
-## Using Declarative Mode (Experimental)
+## Using Declarative Mode
 
 Declarative mode is an experimental feature currently in development that allows you to manage database schemas as desired state definitions rather than versioned migrations.
 
@@ -129,43 +131,98 @@ In declarative mode, your SQL files represent the complete desired state of your
 - Compare the desired state with the current database state
 - Generate the necessary changes to transform the current state into the desired state
 
+### Getting Started
+
+When using declarative mode, you must follow these steps:
+
+1. **Export Current Schema**: In the Bytebase database detail page, click `Export Schema` to download your current database schema.
+2. **Edit Schema Files**: Start from and edit the downloaded schema files with your desired modifications.
+3. **Run Declarative Rollout**: Use the `--declarative` flag to apply your changes.
+
 ### Important Limitations
 
-1. **Database Support**: Currently only MySQL and PostgreSQL are supported.
+1. **Database Support**: Currently only PostgreSQL is supported.
 
-2. **Supported SQL Statements**: Only the following CREATE statements are supported:
+2. **Supported SQL Statements**: The following PostgreSQL statements are supported:
    - `CREATE TABLE`
-   - `CREATE INDEX`
-   - `CREATE FUNCTION`
-   - `CREATE PROCEDURE`
+   - `CREATE INDEX` / `CREATE UNIQUE INDEX`
    - `CREATE VIEW`
    - `CREATE SEQUENCE`
+   - `CREATE FUNCTION`
+   - `ALTER SEQUENCE`
 
-3. **PostgreSQL Specific Requirements**: When using PostgreSQL, you must use fully qualified names for all database objects in your schema files:
+3. **Schema Requirements**: You must use fully qualified names (with schema prefix) for all database objects in your schema files:
    ```sql
    -- Correct: fully qualified name
-   CREATE TABLE myschema.users (
-       id SERIAL PRIMARY KEY,
-       name VARCHAR(100)
+   CREATE TABLE public.users (
+       id INTEGER NOT NULL,
+       name VARCHAR(100) NOT NULL,
+       CONSTRAINT pk_users PRIMARY KEY (id)
    );
-   
+
    -- Incorrect: unqualified name
    CREATE TABLE users (
-       id SERIAL PRIMARY KEY,
-       name VARCHAR(100)
+       id INTEGER NOT NULL,
+       name VARCHAR(100) NOT NULL,
+       CONSTRAINT pk_users PRIMARY KEY (id)
    );
    ```
 
-### Example File Organization
+4. **Constraint Requirements**: `PRIMARY KEY`, `UNIQUE`, `FOREIGN KEY`, and `CHECK` constraints must be defined at table level with explicit names. Only `NOT NULL`, `DEFAULT`, and `GENERATED` constraints are allowed at column level:
+   ```sql
+   -- Correct: table-level constraints with explicit names
+   CREATE TABLE public.users (
+       id INTEGER NOT NULL,              -- NOT NULL is allowed at column level
+       email TEXT NOT NULL,              -- NOT NULL is allowed at column level
+       created_at TIMESTAMP DEFAULT NOW(), -- DEFAULT is allowed at column level
+       CONSTRAINT pk_users PRIMARY KEY (id),
+       CONSTRAINT uk_users_email UNIQUE (email),
+       CONSTRAINT chk_users_email CHECK (email LIKE '%@%')
+   );
 
-With declarative mode, you can organize your schema across multiple files:
+   -- Incorrect: PRIMARY KEY, UNIQUE, CHECK at column level
+   CREATE TABLE public.users (
+       id INTEGER PRIMARY KEY,           -- ERROR: PRIMARY KEY must be at table level
+       email TEXT UNIQUE,                -- ERROR: UNIQUE must be at table level
+       age INTEGER CHECK (age >= 0),     -- ERROR: CHECK must be at table level
+       CONSTRAINT pk_users PRIMARY KEY (id)
+   );
 
-```
-schema/
-├── tables.sql      # All table definitions
-├── indexes.sql     # All index definitions
-├── views.sql       # All view definitions
-└── functions.sql   # All function/procedure definitions
-```
+   -- Incorrect: unnamed constraints
+   CREATE TABLE public.users (
+       id INTEGER NOT NULL,
+       email TEXT NOT NULL,
+       PRIMARY KEY (id),                 -- ERROR: constraint must have explicit name
+       UNIQUE (email),                   -- ERROR: constraint must have explicit name
+       CHECK (email LIKE '%@%')          -- ERROR: constraint must have explicit name
+   );
+   ```
 
-Each file should contain the complete desired state for its respective database objects.
+5. **Foreign Key References**: Foreign key references must use fully qualified table names:
+   ```sql
+   -- Correct: fully qualified reference
+   CREATE TABLE public.orders (
+       id INTEGER NOT NULL,
+       user_id INTEGER NOT NULL,
+       CONSTRAINT pk_orders PRIMARY KEY (id),
+       CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES public.users(id)
+   );
+
+   -- Incorrect: unqualified reference
+   CREATE TABLE public.orders (
+       id INTEGER NOT NULL,
+       user_id INTEGER NOT NULL,
+       CONSTRAINT pk_orders PRIMARY KEY (id),
+       CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id)
+   );
+   ```
+
+6. **Index Naming**: All indexes must have explicit names:
+   ```sql
+   -- Correct: named index
+   CREATE INDEX idx_users_email ON public.users(email);
+
+   -- Incorrect: unnamed index
+   CREATE INDEX ON public.users(email);
+   ```
+

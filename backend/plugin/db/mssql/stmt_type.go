@@ -2,7 +2,7 @@ package mssql
 
 import (
 	"github.com/antlr4-go/antlr/v4"
-	rawparser "github.com/bytebase/tsql-parser"
+	rawparser "github.com/bytebase/parser/tsql"
 	"github.com/pkg/errors"
 
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"

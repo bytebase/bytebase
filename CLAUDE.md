@@ -23,9 +23,10 @@ This file provides guidance to AI coding assistants when working with code in th
 
 ### Frontend Code Changes
 
-1. **Lint** — Run `pnpm --dir frontend lint --fix`
-2. **Type check** — Run `pnpm --dir frontend type-check`
-3. **Test** — Run `pnpm --dir frontend test`
+1. **Format** — Run `cd frontend && pnpm prettier --write <glob>` (e.g., `pnpm prettier --write src/components/**/*.vue`)
+2. **Lint** — Run `pnpm --dir frontend lint --fix`
+3. **Type check** — Run `pnpm --dir frontend type-check`
+4. **Test** — Run `pnpm --dir frontend test`
 
 ### Proto Changes
 
@@ -119,7 +120,8 @@ psql -U bbdev bbdev
 ### Frontend
 
 - Follow TypeScript style with strict type checking
-- **i18n**: All user-facing display text in the UI must be defined and maintained in `./frontend/src/locales/en-US.json` using the i18n internationalization system. Do not hardcode any display strings directly in the source code
+- **i18n**: All user-facing display text in the UI must be defined and maintained in locale files under `./frontend/src/locales/` using the i18n internationalization system. Do not hardcode any display strings directly in the source code
+  - **No Empty Objects**: Do not add empty JSON objects (e.g., `"key": {}`) to locale files. Remove any empty objects you encounter
 - **Button Spacing**: Use `gap-x-2` for ALL button groups (modals, drawers, toolbars, inline actions). Never use `space-x` for buttons. See `./frontend/.claude/BUTTON_SPACING_STANDARDIZATION.md` for full guidelines
 
 ### Naming

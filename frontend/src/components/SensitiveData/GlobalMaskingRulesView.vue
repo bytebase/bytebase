@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full space-y-4">
+  <div class="w-full flex flex-col gap-y-4">
     <div class="flex flex-row items-center justify-end">
       <div v-if="state.reorderRules" class="flex items-center gap-x-2">
         <NButton
@@ -55,7 +55,7 @@
       />
     </div>
     <NEmpty
-      class="py-12 border rounded"
+      class="py-12 border rounded-sm"
       v-if="state.maskingRuleItemList.length === 0"
     />
     <div

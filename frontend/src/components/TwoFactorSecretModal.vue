@@ -2,13 +2,13 @@
   <BBModal
     :title="$t('two-factor.your-two-factor-secret.self')"
     :subtitle="$t('two-factor.your-two-factor-secret.description')"
-    class="outline outline-gray-200"
+    class="outline-solid outline-gray-200"
     @close="dismissModal"
   >
     <div class="w-auto mb-4 py-2">
       <code class="pr-4">{{ props.secret }}</code>
     </div>
-    <div class="w-full flex items-center justify-end space-x-3 pr-1 pb-1">
+    <div class="w-full flex items-center justify-end gap-x-3 pr-1 pb-1">
       <NButton @click="dismissModal">
         {{ $t("common.close") }}
       </NButton>

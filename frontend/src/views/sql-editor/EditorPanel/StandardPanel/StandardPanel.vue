@@ -23,7 +23,7 @@
               />
               <template #fallback>
                 <div
-                  class="w-full h-full flex-grow flex flex-col items-center justify-center"
+                  class="w-full h-full grow flex flex-col items-center justify-center"
                 >
                   <BBSpin />
                 </div>
@@ -39,7 +39,7 @@
               <AIChatToSQL key="ai-chat-to-sql" />
               <template #fallback>
                 <div
-                  class="w-full h-full flex-grow flex flex-col items-center justify-center"
+                  class="w-full h-full grow flex flex-col items-center justify-center"
                 >
                   <BBSpin />
                 </div>

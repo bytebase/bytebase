@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-2 px-6" v-bind="$attrs">
+  <div class="flex flex-col gap-y-2 px-6" v-bind="$attrs">
     <ArchiveBanner v-if="instance.state === State.DELETED" />
     <BBAttention
       v-if="!instance.environment"
@@ -11,14 +11,14 @@
 
     <div v-if="!embedded" class="flex items-center justify-between">
       <div class="flex items-center gap-x-2">
-        <EngineIcon :engine="instance.engine" custom-class="!h-6" />
+        <EngineIcon :engine="instance.engine" custom-class="h-6!" />
         <span class="text-lg font-medium">{{ instanceV1Name(instance) }}</span>
       </div>
     </div>
 
     <NTabs :value="state.selectedTab" @update:value="onTabChange">
       <template #suffix>
-        <div class="flex items-center space-x-2">
+        <div class="flex items-center gap-x-2">
           <InstanceSyncButton
             v-if="instance.state === State.ACTIVE"
             @sync-schema="syncSchema"
@@ -42,7 +42,7 @@
         </InstanceForm>
       </NTabPane>
       <NTabPane name="databases" :tab="$t('common.databases')">
-        <div class="space-y-2">
+        <div class="flex flex-col gap-y-2">
           <div
             class="w-full flex flex-col sm:flex-row items-start sm:items-end justify-between gap-2"
           >
@@ -166,7 +166,7 @@ defineOptions({
 
 if (!props.embedded) {
   const { overrideMainContainerClass } = useBodyLayoutContext();
-  overrideMainContainerClass("!pb-0");
+  overrideMainContainerClass("pb-0!");
 }
 
 const { t } = useI18n();

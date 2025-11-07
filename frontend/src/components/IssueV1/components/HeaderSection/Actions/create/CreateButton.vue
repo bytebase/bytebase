@@ -74,7 +74,11 @@ import {
   rolloutServiceClientConnect,
 } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import { useSheetV1Store, useCurrentProjectV1 } from "@/store";
+import {
+  useSheetV1Store,
+  useCurrentProjectV1,
+  pushNotification,
+} from "@/store";
 import { CreateIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { IssueSchema, Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 import { CreatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
@@ -145,6 +149,10 @@ const issueCreateErrorList = computed(() => {
 });
 
 const doCreateIssue = async () => {
+  // Prevent race condition: check if already creating
+  if (loading.value) {
+    return;
+  }
   loading.value = true;
 
   // Run SQL check for database change issues.
@@ -162,7 +170,10 @@ const doCreateIssue = async () => {
       issue.value.title,
       issue.value.description
     );
-    if (!createdPlan) return;
+    if (!createdPlan) {
+      loading.value = false;
+      return;
+    }
 
     issue.value.plan = createdPlan.name;
     issue.value.planEntity = createdPlan;
@@ -192,7 +203,14 @@ const doCreateIssue = async () => {
         issueSlug: issueV1Slug(createdIssue.name, createdIssue.title),
       },
     });
-  } catch {
+  } catch (error) {
+    console.error("Failed to create issue:", error);
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: t("common.error"),
+      description: String(error),
+    });
     loading.value = false;
   }
 };

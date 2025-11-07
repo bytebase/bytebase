@@ -1,7 +1,7 @@
 <template>
   <DrawerContent :title="$t('database.transfer-database-to')">
     <div
-      class="w-[calc(100vw-8rem)] lg:w-[60rem] max-w-[calc(100vw-8rem)] h-full flex flex-col gap-y-2"
+      class="w-[calc(100vw-8rem)] lg:w-240 max-w-[calc(100vw-8rem)] h-full flex flex-col gap-y-2"
     >
       <div
         v-if="loading"
@@ -9,8 +9,8 @@
       >
         <BBSpin />
       </div>
-      <div v-else class="space-y-4 pb-4">
-        <div class="space-y-4">
+      <div v-else class="gap-y-4 pb-4">
+        <div class="gap-y-4">
           <span class="text-main text-base">
             {{ $t("database.transfer.select-databases") }}
             <span class="text-red-500">*</span>
@@ -22,7 +22,7 @@
           />
         </div>
         <NDivider class="w-full py-2" />
-        <NRadioGroup v-model:value="transfer" class="space-x-4">
+        <NRadioGroup v-model:value="transfer" class="gap-x-4">
           <NRadio value="project">
             <span class="text-main text-base">
               {{ $t("database.transfer.select-target-project") }}

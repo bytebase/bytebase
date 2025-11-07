@@ -17,7 +17,7 @@
           type="error"
           :title="$t('rollout.task-execution-errors')"
         >
-          <ul class="list-disc list-inside space-y-1">
+          <ul class="list-disc list-inside flex flex-col gap-y-1">
             <li
               v-for="(error, index) in validationErrors"
               :key="index"
@@ -34,7 +34,7 @@
           type="warning"
           :title="$t('rollout.task-execution-notices')"
         >
-          <ul class="list-disc list-inside space-y-1">
+          <ul class="list-disc list-inside flex flex-col gap-y-1">
             <li
               v-for="(warning, index) in validationWarnings"
               :key="index"
@@ -71,7 +71,7 @@
           </label>
           <div class="flex-1 overflow-y-auto">
             <NScrollbar class="max-h-64">
-              <ul class="text-sm space-y-2">
+              <ul class="text-sm flex flex-col gap-y-2">
                 <li
                   v-for="task in filteredTasks"
                   :key="task.name"
@@ -121,7 +121,7 @@
             planCheckRunList.length > 0
           "
           class="shrink-0 flex-col gap-y-1"
-          label-class="!text-base"
+          label-class="text-base!"
           :allow-run-checks="false"
           :plan-name="issue.plan"
           :plan-check-run-list="planCheckRunList"

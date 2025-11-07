@@ -7,6 +7,7 @@
 package v1
 
 import (
+	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -456,7 +457,7 @@ var File_v1_role_service_proto protoreflect.FileDescriptor
 
 const file_v1_role_service_proto_rawDesc = "" +
 	"\n" +
-	"\x15v1/role_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x13v1/annotation.proto\"\x12\n" +
+	"\x15v1/role_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x13v1/annotation.proto\"\x12\n" +
 	"\x10ListRolesRequest\"<\n" +
 	"\x11ListRolesResponse\x12'\n" +
 	"\x05roles\x18\x01 \x03(\v2\x11.bytebase.v1.RoleR\x05roles\"]\n" +
@@ -473,11 +474,11 @@ const file_v1_role_service_proto_rawDesc = "" +
 	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"B\n" +
 	"\x11DeleteRoleRequest\x12-\n" +
 	"\x04name\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
-	"\x11bytebase.com/RoleR\x04name\"\xfe\x01\n" +
+	"\x11bytebase.com/RoleR\x04name\"\x92\x02\n" +
 	"\x04Role\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
-	"\x05title\x18\x02 \x01(\tR\x05title\x12 \n" +
-	"\vdescription\x18\x03 \x01(\tR\vdescription\x12 \n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1e\n" +
+	"\x05title\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12*\n" +
+	"\vdescription\x18\x03 \x01(\tB\b\xbaH\x05r\x03\x18\xe8\aR\vdescription\x12 \n" +
 	"\vpermissions\x18\x04 \x03(\tR\vpermissions\x12*\n" +
 	"\x04type\x18\x05 \x01(\x0e2\x16.bytebase.v1.Role.TypeR\x04type\"6\n" +
 	"\x04Type\x12\x14\n" +
@@ -494,7 +495,8 @@ const file_v1_role_service_proto_rawDesc = "" +
 	"\n" +
 	"UpdateRole\x12\x1e.bytebase.v1.UpdateRoleRequest\x1a\x11.bytebase.v1.Role\"f\xdaA\x10role,update_mask\x8a\xea0\x0fbb.roles.update\x90\xea0\x01\x98\xea0\x01\xa2\xea0\x0fbb.roles.create\x82\xd3\xe4\x93\x02\x1f:\x04role2\x17/v1/{role.name=roles/*}\x12\x82\x01\n" +
 	"\n" +
-	"DeleteRole\x12\x1e.bytebase.v1.DeleteRoleRequest\x1a\x16.google.protobuf.Empty\"<\xdaA\x04name\x8a\xea0\x0fbb.roles.delete\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x14*\x12/v1/{name=roles/*}B6Z4github.com/bytebase/bytebase/backend/generated-go/v1b\x06proto3"
+	"DeleteRole\x12\x1e.bytebase.v1.DeleteRoleRequest\x1a\x16.google.protobuf.Empty\"<\xdaA\x04name\x8a\xea0\x0fbb.roles.delete\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x14*\x12/v1/{name=roles/*}B\xa6\x01\n" +
+	"\x0fcom.bytebase.v1B\x10RoleServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (
 	file_v1_role_service_proto_rawDescOnce sync.Once

@@ -22,6 +22,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	"github.com/bytebase/bytebase/backend/component/export"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/enterprise"
@@ -140,10 +141,6 @@ func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStrea
 			}
 		} else {
 			response.Results = result
-			for _, result := range response.Results {
-				// The AdminExecute requires bb.sql.admin permission, so we can presume the users have enough permission to export.
-				result.AllowExport = true
-			}
 		}
 
 		if err := stream.Send(response); err != nil {
@@ -211,7 +208,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 	if request.Schema != nil {
 		queryContext.Schema = *request.Schema
 	}
-	results, spans, duration, queryErr := queryRetry(
+	results, _, duration, queryErr := queryRetry(
 		ctx,
 		s.store,
 		user,
@@ -258,12 +255,6 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 			return nil, err
 		}
 		return nil, connect.NewError(code, errors.New(queryErr.Error()))
-	}
-
-	for _, result := range results {
-		// AllowExport is a validate only check.
-		checkErr := s.accessCheck(ctx, instance, database, user, spans, request.Explain)
-		result.AllowExport = checkErr == nil
 	}
 
 	slog.Debug("request finished",
@@ -945,52 +936,150 @@ func DoExport(
 		}
 	}
 
-	pendingEncryptContents := []*encryptContent{}
+	var buf bytes.Buffer
+	zipw := zip.NewWriter(&buf)
+
+	exportCount := 0
 	for i, result := range results {
 		if result.GetError() != "" {
-			slog.Error("failed to query result",
-				slog.String("instance", database.InstanceID),
-				slog.String("database", database.DatabaseName),
-				slog.String("project", database.ProjectID),
-				slog.String("query_error", result.GetError()),
-			)
+			logExportError(database, "failed to query result", errors.New(result.GetError()))
 			continue
 		}
 
-		content, err := formatExport(ctx, stores, instance, database, result, request)
-		if err != nil {
-			slog.Error("failed to format export",
-				log.BBError(err),
-				slog.String("instance", database.InstanceID),
-				slog.String("database", database.DatabaseName),
-				slog.String("project", database.ProjectID),
-			)
+		if err := exportResultToZip(ctx, zipw, stores, instance, database, result, request, i+1); err != nil {
+			logExportError(database, "failed to export result to zip", err)
 			continue
 		}
-		filename := fmt.Sprintf("%s/%s/statement-%d", database.InstanceID, database.DatabaseName, i+1)
-		pendingEncryptContents = append(
-			pendingEncryptContents,
-			&encryptContent{
-				Name:    fmt.Sprintf("%s.sql", filename),
-				Content: []byte(result.Statement),
-			},
-			&encryptContent{
-				Name:    fmt.Sprintf("%s.result.%s", filename, strings.ToLower(request.Format.String())),
-				Content: content,
-			},
-		)
+
+		exportCount++
+		// Help GC by clearing the result data we've already processed
+		result.Rows = nil
 	}
 
-	if len(pendingEncryptContents) == 0 {
+	if exportCount == 0 {
 		return nil, duration, errors.Errorf("empty export data for database %s", database.DatabaseName)
 	}
 
-	// we will save both query result and statement into the result, so we always zip files.
-	encryptedBytes, err := doEncrypt(pendingEncryptContents, request.GetPassword())
-	if err != nil {
-		return nil, duration, errors.Wrap(err, "failed to encrypt data")
+	if err := zipw.Close(); err != nil {
+		return nil, duration, errors.Wrap(err, "failed to close zip writer")
 	}
-	return encryptedBytes, duration, nil
+
+	return buf.Bytes(), duration, nil
+}
+
+// logExportError logs export-related errors with consistent database context.
+func logExportError(database *store.DatabaseMessage, message string, err error) {
+	slog.Error(message,
+		log.BBError(err),
+		slog.String("instance", database.InstanceID),
+		slog.String("database", database.DatabaseName),
+		slog.String("project", database.ProjectID),
+	)
+}
+
+// exportResultToZip exports a single query result to the ZIP archive.
+// It writes both the SQL statement and the formatted result data.
+func exportResultToZip(
+	ctx context.Context,
+	zipw *zip.Writer,
+	stores *store.Store,
+	instance *store.InstanceMessage,
+	database *store.DatabaseMessage,
+	result *v1pb.QueryResult,
+	request *v1pb.ExportRequest,
+	statementNumber int,
+) error {
+	baseFilename := fmt.Sprintf("%s/%s/statement-%d", database.InstanceID, database.DatabaseName, statementNumber)
+
+	// Write statement file
+	statementFilename := fmt.Sprintf("%s.sql", baseFilename)
+	if err := export.WriteZipEntry(zipw, statementFilename, []byte(result.Statement), request.GetPassword()); err != nil {
+		return errors.Wrap(err, "failed to write statement")
+	}
+
+	// Write result file by streaming directly to ZIP
+	resultExt := strings.ToLower(request.Format.String())
+	resultFilename := fmt.Sprintf("%s.result.%s", baseFilename, resultExt)
+	if err := formatExportToZip(ctx, zipw, resultFilename, stores, instance, database, result, request); err != nil {
+		return errors.Wrap(err, "failed to write formatted result")
+	}
+
+	return nil
+}
+
+// formatExportToZip formats query results and writes them directly to a ZIP entry.
+// This function streams the formatted data to minimize memory usage.
+func formatExportToZip(
+	ctx context.Context,
+	zipw *zip.Writer,
+	filename string,
+	stores *store.Store,
+	instance *store.InstanceMessage,
+	database *store.DatabaseMessage,
+	result *v1pb.QueryResult,
+	request *v1pb.ExportRequest,
+) error {
+	writer, err := export.CreateZipWriter(zipw, filename, request.GetPassword())
+	if err != nil {
+		return err
+	}
+
+	return writeFormattedResult(ctx, writer, stores, instance, database, result, request)
+}
+
+// writeFormattedResult writes the query result in the requested format to the writer.
+func writeFormattedResult(
+	ctx context.Context,
+	w io.Writer,
+	stores *store.Store,
+	instance *store.InstanceMessage,
+	database *store.DatabaseMessage,
+	result *v1pb.QueryResult,
+	request *v1pb.ExportRequest,
+) error {
+	switch request.Format {
+	case v1pb.ExportFormat_CSV:
+		return export.CSVToWriter(w, result)
+	case v1pb.ExportFormat_JSON:
+		return export.JSONToWriter(w, result)
+	case v1pb.ExportFormat_SQL:
+		return exportSQLWithContext(ctx, w, stores, instance, database, result, request)
+	case v1pb.ExportFormat_XLSX:
+		return export.XLSXToWriter(w, result)
+	default:
+		return errors.Errorf("unsupported export format: %s", request.Format.String())
+	}
+}
+
+// exportSQLWithContext exports SQL INSERT statements with proper context.
+func exportSQLWithContext(
+	ctx context.Context,
+	w io.Writer,
+	stores *store.Store,
+	instance *store.InstanceMessage,
+	database *store.DatabaseMessage,
+	result *v1pb.QueryResult,
+	request *v1pb.ExportRequest,
+) error {
+	resourceList, err := export.GetResources(
+		ctx,
+		stores,
+		instance.Metadata.GetEngine(),
+		database.DatabaseName,
+		request.Statement,
+		instance,
+		BuildGetDatabaseMetadataFunc(stores),
+		BuildListDatabaseNamesFunc(stores),
+		BuildGetLinkedDatabaseMetadataFunc(stores, instance.Metadata.GetEngine()),
+	)
+	if err != nil {
+		return errors.Wrapf(err, "failed to extract resource list")
+	}
+	statementPrefix, err := export.SQLStatementPrefix(instance.Metadata.GetEngine(), resourceList, result.ColumnNames)
+	if err != nil {
+		return err
+	}
+	return export.SQLToWriter(w, instance.Metadata.GetEngine(), statementPrefix, result)
 }
 
 type encryptContent struct {
@@ -1005,21 +1094,9 @@ func doEncrypt(exports []*encryptContent, password string) ([]byte, error) {
 	zipw := zip.NewWriter(fzip)
 	defer zipw.Close()
 
-	for _, export := range exports {
-		fh := &zip.FileHeader{
-			Name:   export.Name,
-			Method: zip.Deflate,
-		}
-		fh.ModifiedDate, fh.ModifiedTime = timeToMsDosTime(time.Now())
-		if password != "" {
-			fh.SetPassword(password)
-		}
-		writer, err := zipw.CreateHeader(fh)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to create encrypt export file")
-		}
-		if _, err := io.Copy(writer, bytes.NewReader(export.Content)); err != nil {
-			return nil, errors.Wrapf(err, "failed to write export file")
+	for _, exportContent := range exports {
+		if err := export.WriteZipEntry(zipw, exportContent.Name, exportContent.Content, password); err != nil {
+			return nil, err
 		}
 	}
 
@@ -1028,44 +1105,6 @@ func doEncrypt(exports []*encryptContent, password string) ([]byte, error) {
 	}
 
 	return b.Bytes(), nil
-}
-
-func formatExport(
-	ctx context.Context,
-	stores *store.Store,
-	instance *store.InstanceMessage,
-	database *store.DatabaseMessage,
-	result *v1pb.QueryResult,
-	request *v1pb.ExportRequest,
-) ([]byte, error) {
-	switch request.Format {
-	case v1pb.ExportFormat_CSV:
-		return exportCSV(result)
-	case v1pb.ExportFormat_JSON:
-		return exportJSON(result)
-	case v1pb.ExportFormat_SQL:
-		resourceList, err := getResources(ctx, stores, instance.Metadata.GetEngine(), database.DatabaseName, request.Statement, instance)
-		if err != nil {
-			return nil, errors.Errorf("failed to extract resource list: %v", err)
-		}
-		statementPrefix, err := getSQLStatementPrefix(instance.Metadata.GetEngine(), resourceList, result.ColumnNames)
-		if err != nil {
-			return nil, err
-		}
-		return exportSQL(instance.Metadata.GetEngine(), statementPrefix, result)
-	case v1pb.ExportFormat_XLSX:
-		return exportXLSX(result)
-	default:
-		return nil, errors.Errorf("unsupported export format: %s", request.Format.String())
-	}
-}
-
-// timeToMsDosTime converts a time.Time to an MS-DOS date and time.
-// this is a modified copy for gihub.com/alexmullins/zip/struct.go cause the package has a bug, it will convert the time to UTC time and drop the timezone.
-func timeToMsDosTime(t time.Time) (uint16, uint16) {
-	fDate := uint16(t.Day() + int(t.Month())<<5 + (t.Year()-1980)<<9)
-	fTime := uint16(t.Second()/2 + t.Minute()<<5 + t.Hour()<<11)
-	return fDate, fTime
 }
 
 func (s *SQLService) createQueryHistory(database *store.DatabaseMessage, queryType store.QueryHistoryType, statement string, userUID int, duration time.Duration, queryErr error) {

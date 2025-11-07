@@ -4,7 +4,7 @@
       <span class="text-base">{{ $t("issue.data-export.options") }}</span>
     </div>
 
-    <div class="space-y-3">
+    <div class="flex flex-col gap-y-3">
       <!-- Export Format -->
       <div class="flex items-center gap-4">
         <span class="text-sm">{{ $t("export-data.export-format") }}</span>

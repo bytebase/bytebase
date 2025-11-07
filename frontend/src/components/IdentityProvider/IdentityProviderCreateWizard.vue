@@ -2,10 +2,10 @@
   <Drawer :show="props.show" @update:show="$emit('update:show', $event)">
     <DrawerContent
       :title="$t('settings.sso.create')"
-      class="w-[64rem] max-w-[100vw]"
+      class="w-5xl max-w-[100vw]"
       :closable="true"
     >
-      <div class="w-full mx-auto space-y-6">
+      <div class="w-full mx-auto flex flex-col gap-y-6">
         <!-- Steps Navigation -->
         <NSteps :current="currentStep" size="medium">
           <NStep :title="$t('settings.sso.form.type')" />
@@ -22,8 +22,8 @@
           class="bg-white rounded-lg border border-gray-200 px-2 sm:px-6 pt-6 pb-10"
         >
           <!-- Step 1: Select Provider Type -->
-          <div v-if="currentStep === 1" class="space-y-6">
-            <div class="text-center space-y-2">
+          <div v-if="currentStep === 1" class="flex flex-col gap-y-6">
+            <div class="text-center flex flex-col gap-y-2">
               <h2 class="text-2xl font-bold text-gray-900">
                 {{ $t("settings.sso.form.type") }}
               </h2>
@@ -36,12 +36,12 @@
               <NRadioGroup
                 v-model:value="selectedType"
                 size="large"
-                class="space-y-4 w-full"
+                class="flex flex-col w-full"
               >
                 <div
                   v-for="item in identityProviderTypeList"
                   :key="item.type"
-                  class="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors"
+                  class="border border-gray-200 rounded-lg mb-4 p-4 hover:border-gray-300 transition-colors"
                   :class="{
                     'border-blue-500 bg-blue-50': selectedType === item.type,
                   }"
@@ -51,14 +51,14 @@
                     :disabled="!subscriptionStore.hasFeature(item.feature)"
                     class="w-full"
                   >
-                    <div class="flex items-start space-x-3 w-full">
+                    <div class="flex items-start gap-x-3 w-full">
                       <component
                         :is="getProviderIcon(item.type)"
-                        class="w-6 h-6 mt-1 flex-shrink-0"
+                        class="w-6 h-6 mt-1 shrink-0"
                         :stroke-width="1.5"
                       />
                       <div class="flex-1">
-                        <div class="flex items-center space-x-2">
+                        <div class="flex items-center gap-x-2">
                           <span class="text-lg font-medium text-gray-900">
                             {{ identityProviderTypeToString(item.type) }}
                           </span>
@@ -101,9 +101,9 @@
             v-else-if="
               currentStep === 2 && selectedType === IdentityProviderType.OAUTH2
             "
-            class="space-y-6"
+            class="flex flex-col gap-y-6"
           >
-            <div class="text-center space-y-2">
+            <div class="text-center flex flex-col gap-y-2">
               <h2 class="text-2xl font-bold text-gray-900">
                 {{ $t("settings.sso.form.use-template") }}
               </h2>
@@ -124,7 +124,7 @@
                   }
                 "
                 size="large"
-                class="!grid grid-cols-1 sm:grid-cols-2 gap-4"
+                class="grid! grid-cols-1 sm:grid-cols-2 gap-4"
               >
                 <div
                   v-for="template in templateList"
@@ -140,14 +140,14 @@
                     :disabled="!subscriptionStore.hasFeature(template.feature)"
                     class="w-full"
                   >
-                    <div class="flex items-center space-x-3">
+                    <div class="flex items-center gap-x-3">
                       <component
                         :is="getTemplateIcon(template.title)"
-                        class="w-8 h-8 flex-shrink-0"
+                        class="w-8 h-8 shrink-0"
                         :stroke-width="1"
                       />
                       <div class="flex-1">
-                        <div class="flex items-center space-x-2">
+                        <div class="flex items-center gap-x-2">
                           <span class="text-base font-medium text-gray-900">
                             {{ template.title }}
                           </span>
@@ -170,9 +170,9 @@
               currentStep ===
               (selectedType === IdentityProviderType.OAUTH2 ? 3 : 2)
             "
-            class="space-y-6"
+            class="flex flex-col gap-y-6"
           >
-            <div class="text-center space-y-2">
+            <div class="text-center flex flex-col gap-y-2">
               <h2 class="text-2xl font-bold text-gray-900">
                 {{ $t("common.general") }}
               </h2>
@@ -181,7 +181,7 @@
               </p>
             </div>
 
-            <div class="max-w-2xl mx-auto space-y-6">
+            <div class="max-w-2xl mx-auto flex flex-col gap-y-6">
               <div>
                 <label class="block text-base font-semibold text-gray-800 mb-2">
                   {{ $t("settings.sso.form.name") }}
@@ -233,9 +233,9 @@
               currentStep ===
               (selectedType === IdentityProviderType.OAUTH2 ? 4 : 3)
             "
-            class="space-y-6"
+            class="flex flex-col gap-y-6"
           >
-            <div class="text-center space-y-2">
+            <div class="text-center flex flex-col gap-y-2">
               <h2 class="text-2xl font-bold text-gray-900">
                 {{ $t("settings.sso.form.configuration") }}
               </h2>
@@ -277,9 +277,9 @@
               currentStep ===
               (selectedType === IdentityProviderType.OAUTH2 ? 5 : 4)
             "
-            class="space-y-6"
+            class="flex flex-col gap-y-6"
           >
-            <div class="text-center space-y-2">
+            <div class="text-center flex flex-col gap-y-2">
               <h2 class="text-2xl font-bold text-gray-900">
                 {{ $t("settings.sso.form.user-information-mapping") }}
               </h2>
@@ -294,7 +294,7 @@
               </p>
             </div>
 
-            <div class="max-w-2xl mx-auto space-y-6">
+            <div class="max-w-2xl mx-auto flex flex-col gap-y-6">
               <div class="grid grid-cols-[256px_1fr] gap-4 items-center">
                 <BBTextField
                   v-model:value="fieldMapping.identifier"
@@ -389,36 +389,33 @@
       </div>
 
       <template #footer>
-        <div class="flex items-center justify-between">
-          <div></div>
-          <div class="flex items-center space-x-3">
-            <NButton
-              v-if="currentStep === 1"
-              @click="$emit('update:show', false)"
-            >
-              {{ $t("common.cancel") }}
-            </NButton>
-            <NButton v-if="currentStep > 1" @click="handlePrevStep">
-              {{ $t("common.back") }}
-            </NButton>
-            <NButton
-              v-if="!isLastStep"
-              type="primary"
-              :disabled="!canProceedToNextStep"
-              @click="handleNextStep"
-            >
-              {{ $t("common.next") }}
-            </NButton>
-            <NButton
-              v-else
-              type="primary"
-              :disabled="!canCreate"
-              :loading="isCreating"
-              @click="handleCreate"
-            >
-              {{ $t("common.create") }}
-            </NButton>
-          </div>
+        <div class="flex items-center justify-end gap-x-3">
+          <NButton
+            v-if="currentStep === 1"
+            @click="$emit('update:show', false)"
+          >
+            {{ $t("common.cancel") }}
+          </NButton>
+          <NButton v-if="currentStep > 1" @click="handlePrevStep">
+            {{ $t("common.back") }}
+          </NButton>
+          <NButton
+            v-if="!isLastStep"
+            type="primary"
+            :disabled="!canProceedToNextStep"
+            @click="handleNextStep"
+          >
+            {{ $t("common.next") }}
+          </NButton>
+          <NButton
+            v-else
+            type="primary"
+            :disabled="!canCreate"
+            :loading="isCreating"
+            @click="handleCreate"
+          >
+            {{ $t("common.create") }}
+          </NButton>
         </div>
       </template>
     </DrawerContent>

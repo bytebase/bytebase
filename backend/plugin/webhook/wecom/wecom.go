@@ -20,6 +20,19 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/webhook"
 )
 
+// getWecomConfig extracts the WeCom configuration from the AppIMSetting.
+func getWecomConfig(setting *storepb.AppIMSetting) *storepb.AppIMSetting_Wecom {
+	if setting == nil {
+		return nil
+	}
+	for _, s := range setting.Settings {
+		if s.Type == storepb.ProjectWebhook_WECOM {
+			return s.GetWecom()
+		}
+	}
+	return nil
+}
+
 // WebhookResponse is the API message for WeCom webhook response.
 type WebhookResponse struct {
 	ErrorCode    int    `json:"errcode"`
@@ -135,7 +148,7 @@ func (*Receiver) sendMessage(context webhook.Context) error {
 // sendDirectMessage sends direct message to users.
 // returns `true` if successfully sends messages to all users.
 func (*Receiver) sendDirectMessage(webhookCtx webhook.Context) bool {
-	wecom := webhookCtx.IMSetting.GetWecom()
+	wecom := getWecomConfig(webhookCtx.IMSetting)
 	if wecom == nil {
 		return false
 	}

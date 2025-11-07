@@ -13,16 +13,16 @@
       v-for="(row, i) in highlightTableRows"
       :key="i"
       :class="[
-        'py-2 px-2 space-y-2',
+        'py-2 px-2 flex flex-col gap-y-2',
         row.checkResult.status === Advice_Level.ERROR &&
-          'border-error border rounded',
+          'border-error border rounded-sm',
         row.checkResult.status === Advice_Level.WARNING &&
-          'border-warning border rounded',
+          'border-warning border rounded-sm',
       ]"
     >
-      <div class="flex items-center space-x-3">
+      <div class="flex items-center gap-x-3">
         <div
-          class="relative w-5 h-5 flex flex-shrink-0 items-center justify-center rounded-full select-none"
+          class="relative w-5 h-5 flex shrink-0 items-center justify-center rounded-full select-none"
           :class="statusIconClass(row.checkResult.status)"
         >
           <template v-if="row.checkResult.status === Advice_Level.SUCCESS">
@@ -54,7 +54,7 @@
         />
 
         <div
-          class="flex items-center justify-start space-x-2 divide-x divide-block-border"
+          class="flex items-center justify-start divide-x divide-block-border"
         >
           <div
             v-if="
@@ -121,11 +121,11 @@
     <div
       v-for="(row, i) in standardTableRows"
       :key="i"
-      class="py-3 px-2 first:pt-2 space-y-2"
+      class="py-3 px-2 first:pt-2 flex flex-col gap-y-2"
     >
-      <div class="flex items-center space-x-3">
+      <div class="flex items-center gap-x-3">
         <div
-          class="relative w-5 h-5 flex flex-shrink-0 items-center justify-center rounded-full select-none"
+          class="relative w-5 h-5 flex shrink-0 items-center justify-center rounded-full select-none"
           :class="statusIconClass(row.checkResult.status)"
         >
           <template v-if="row.checkResult.status === Advice_Level.SUCCESS">
@@ -203,10 +203,13 @@
       </div>
     </div>
 
-    <div v-if="showSuccessPlaceholder" class="py-3 px-2 first:pt-2 space-y-2">
-      <div class="flex items-center space-x-3">
+    <div
+      v-if="showSuccessPlaceholder"
+      class="py-3 px-2 first:pt-2 flex flex-col gap-y-2"
+    >
+      <div class="flex items-center gap-x-3">
         <div
-          class="relative w-5 h-5 flex flex-shrink-0 items-center justify-center rounded-full select-none"
+          class="relative w-5 h-5 flex shrink-0 items-center justify-center rounded-full select-none"
           :class="statusIconClass(Advice_Level.SUCCESS)"
         >
           <heroicons-solid:check class="w-4 h-4" />

@@ -7,6 +7,7 @@ import (
 	"github.com/bytebase/bytebase/action/args"
 	"github.com/bytebase/bytebase/action/azure"
 	"github.com/bytebase/bytebase/action/bitbucket"
+	"github.com/bytebase/bytebase/action/command/output"
 	"github.com/bytebase/bytebase/action/github"
 	"github.com/bytebase/bytebase/action/gitlab"
 	"github.com/bytebase/bytebase/action/world"
@@ -46,6 +47,9 @@ func validateCheckFlags(w *world.World) func(*cobra.Command, []string) error {
 
 func runCheck(w *world.World) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
+		defer func() {
+			output.WriteOutput(w)
+		}()
 		platform := w.Platform
 		w.Logger.Info("running on platform", "platform", platform.String())
 		client, err := NewClient(w.URL, w.ServiceAccount, w.ServiceAccountSecret)
@@ -68,6 +72,9 @@ func runCheck(w *world.World) func(*cobra.Command, []string) error {
 		if err != nil {
 			return err
 		}
+
+		// Store check results in OutputMap for file output
+		w.OutputMap.CheckResults = checkReleaseResponse
 
 		w.Logger.Info("check release response", "resultCount", len(checkReleaseResponse.Results))
 

@@ -1,6 +1,6 @@
 <template>
   <NTag
-    :class="[selected && 'shadow']"
+    :class="[selected && 'shadow-sm']"
     :type="tagType"
     round
     :bordered="selected"

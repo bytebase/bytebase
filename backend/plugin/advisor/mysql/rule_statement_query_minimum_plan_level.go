@@ -9,7 +9,7 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
-	mysql "github.com/bytebase/mysql-parser"
+	"github.com/bytebase/parser/mysql"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"

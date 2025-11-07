@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="showQuickstart"
-    class="py-2 px-4 w-full flex-shrink-0 border-t border-block-border hidden lg:block bg-yellow-50"
+    class="py-2 px-4 w-full shrink-0 border-t border-block-border hidden lg:block bg-yellow-50"
   >
     <p
       class="text-sm font-medium text-gray-900 flex items-center justify-between"

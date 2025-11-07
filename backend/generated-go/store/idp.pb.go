@@ -828,7 +828,8 @@ const file_store_idp_proto_rawDesc = "" +
 	"\x0fOAuth2AuthStyle\x12!\n" +
 	"\x1dOAUTH2_AUTH_STYLE_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tIN_PARAMS\x10\x01\x12\r\n" +
-	"\tIN_HEADER\x10\x02B\x14Z\x12generated-go/storeb\x06proto3"
+	"\tIN_HEADER\x10\x02B\x8b\x01\n" +
+	"\x12com.bytebase.storeB\bIdpProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
 	file_store_idp_proto_rawDescOnce sync.Once

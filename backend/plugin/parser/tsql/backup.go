@@ -10,7 +10,7 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
-	parser "github.com/bytebase/tsql-parser"
+	parser "github.com/bytebase/parser/tsql"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"

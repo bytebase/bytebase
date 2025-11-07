@@ -6,7 +6,7 @@ import (
 	"slices"
 	"strings"
 
-	mysql "github.com/bytebase/mysql-parser"
+	"github.com/bytebase/parser/mysql"
 )
 
 type columnSet map[string]bool

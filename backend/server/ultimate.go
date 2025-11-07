@@ -49,7 +49,7 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/mysql"
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/oceanbase"
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/oracle"
-	_ "github.com/bytebase/bytebase/backend/plugin/advisor/pgantlr"
+	_ "github.com/bytebase/bytebase/backend/plugin/advisor/pg"
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/snowflake"
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/tidb"
 

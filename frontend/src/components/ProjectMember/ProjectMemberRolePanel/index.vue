@@ -7,7 +7,7 @@
     <DrawerContent
       :title="panelTitle"
       :closable="true"
-      class="w-[72rem] max-w-[100vw] relative"
+      class="w-6xl max-w-[100vw] relative"
     >
       <div class="w-full flex flex-row justify-end items-center">
         <NButton type="primary" @click="state.showAddMemberPanel = true">
@@ -18,7 +18,7 @@
         <div class="text-lg px-1 pb-1 w-full border-b mb-3">
           <GroupNameCell :group="binding.group!" :show-icon="false" />
         </div>
-        <div class="border rounded divide-y">
+        <div class="border rounded-sm divide-y">
           <div v-for="data in groupMembers" :key="data.user.name" class="p-2">
             <GroupMemberNameCell :user="data.user" :role="data.role" />
           </div>
@@ -319,7 +319,7 @@ const getDataTableColumns = (
       key: "operations",
       width: 32,
       render: (singleBinding) => (
-        <div class="flex justify-end pr-2 space-x-2">
+        <div class="flex justify-end pr-2 gap-x-2">
           <NButton
             text
             onClick={() => {

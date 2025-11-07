@@ -1,7 +1,7 @@
 <template>
   <div class="p-4 rounded-lg border border-gray-200 bg-gray-50">
-    <div class="flex items-start space-x-3">
-      <div class="flex-shrink-0">
+    <div class="flex items-start gap-x-3">
+      <div class="shrink-0">
         <InfoIcon class="w-5 h-5 text-blue-500 mt-0.5" />
       </div>
       <div class="flex-1 min-w-0">
@@ -12,7 +12,7 @@
           {{ $t("settings.sso.form.redirect-url-description") }}
         </p>
 
-        <div class="flex items-center space-x-3">
+        <div class="flex items-center gap-x-3">
           <div class="flex-1">
             <label class="block text-sm font-medium text-gray-700 mb-1">
               {{ $t("settings.sso.form.redirect-url") }}

@@ -89,26 +89,42 @@ const backgroundColorRgb = computed(() => {
 
 <style scoped lang="postcss">
 .tab-item {
-  @apply cursor-pointer border-r bg-white gap-x-2 relative;
+  cursor: pointer;
+  border-right-width: 1px;
+  background-color: white;
+  column-gap: 0.5rem;
+  position: relative;
 }
 .hovering {
-  @apply bg-gray-50;
+  background-color: rgb(var(--color-gray-50));
 }
 .tab-item.admin {
-  @apply !bg-dark-bg;
+  background-color: rgb(var(--color-dark-bg)) !important;
 }
 
 .body {
-  @apply flex items-center justify-between gap-x-1 pl-2 pr-1 border-t pt-[4px] h-[36px];
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  column-gap: 0.25rem;
+  padding-left: 0.5rem;
+  padding-right: 0.25rem;
+  border-top-width: 1px;
+  padding-top: 4px;
+  height: 36px;
 }
 .current .body {
-  @apply relative bg-white border-t-[3px] pt-[2px];
+  position: relative;
+  background-color: white;
+  border-top-width: 3px;
+  padding-top: 2px;
 }
 
 .tab-item.admin .body {
-  @apply text-matrix-green-hover;
+  color: rgb(var(--color-matrix-green-hover));
 }
 .tab-item.admin.current .body {
-  @apply !bg-dark-bg border-matrix-green-hover;
+  background-color: rgb(var(--color-dark-bg)) !important;
+  border-top-color: rgb(var(--color-matrix-green-hover));
 }
 </style>

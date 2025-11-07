@@ -25,7 +25,7 @@
       </template>
     </SQLReviewTabsByEngine>
   </div>
-  <NEmpty v-else class="py-12 border rounded">
+  <NEmpty v-else class="py-12 border rounded-sm">
     <template #extra>
       <NButton type="primary" @click="showRuleSelectPanel = true">
         {{ $t("sql-review.add-rules") }}

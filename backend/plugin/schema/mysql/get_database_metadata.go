@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
-	mysql "github.com/bytebase/mysql-parser"
+	"github.com/bytebase/parser/mysql"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -17,6 +17,7 @@ import (
 
 func init() {
 	schema.RegisterGetDatabaseMetadata(storepb.Engine_MYSQL, GetDatabaseMetadata)
+	schema.RegisterGetDatabaseMetadata(storepb.Engine_OCEANBASE, GetDatabaseMetadata)
 }
 
 // GetDatabaseMetadata parses the MySQL schema text and returns the database metadata.

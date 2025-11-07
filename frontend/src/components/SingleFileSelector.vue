@@ -26,7 +26,7 @@
       </slot>
       <div class="text-sm text-gray-600 inline-flex pointer-events-none">
         <span
-          class="relative cursor-pointer rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
+          class="relative cursor-pointer rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-hidden focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
         >
           {{ $t("settings.general.workspace.select-logo") }}
         </span>

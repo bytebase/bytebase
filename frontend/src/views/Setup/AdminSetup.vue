@@ -12,7 +12,7 @@
   >
     <template #0>
       <div class="w-full flex flex-col gap-6 py-4">
-        <div class="space-y-2">
+        <div class="flex flex-col gap-y-2">
           <p>{{ $t("setup.purposes.self") }}</p>
           <NRadioGroup v-model:value="state.purpose">
             <NSpace vertical>
@@ -25,7 +25,7 @@
             </NSpace>
           </NRadioGroup>
         </div>
-        <div class="space-y-2">
+        <div class="flex flex-col gap-y-2">
           <p>{{ $t("setup.workflow.self") }}</p>
           <NRadioGroup v-model:value="state.workflow">
             <NSpace vertical>

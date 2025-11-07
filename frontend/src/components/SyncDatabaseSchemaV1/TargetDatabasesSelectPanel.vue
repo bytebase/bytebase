@@ -9,7 +9,7 @@
     <DrawerContent
       :title="$t('database.sync-schema.target-databases')"
       :closable="true"
-      class="w-[64rem] max-w-[100vw] relative"
+      class="w-5xl max-w-[100vw] relative"
     >
       <AdvancedSearch
         v-model:params="state.params"

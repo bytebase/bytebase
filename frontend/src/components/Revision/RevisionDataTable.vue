@@ -176,8 +176,8 @@ const rowProps = (revision: Revision) => {
 
 const onDelete = () => {
   dialog.warning({
-    title: t("database.revision.delete-confirm-dialog.title"),
-    content: t("database.revision.delete-confirm-dialog.content"),
+    title: t("bbkit.confirm-button.sure-to-delete"),
+    content: t("database.revision.delete-confirm-dialog"),
     negativeText: t("common.cancel"),
     positiveText: t("common.confirm"),
     onPositiveClick: async () => {

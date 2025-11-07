@@ -1056,7 +1056,8 @@ const file_store_task_run_log_proto_rawDesc = "" +
 	"\n" +
 	"RETRY_INFO\x10\v\x12\x16\n" +
 	"\x12COMPUTE_DIFF_START\x10\f\x12\x14\n" +
-	"\x10COMPUTE_DIFF_END\x10\rB\x14Z\x12generated-go/storeb\x06proto3"
+	"\x10COMPUTE_DIFF_END\x10\rB\x92\x01\n" +
+	"\x12com.bytebase.storeB\x0fTaskRunLogProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
 	file_store_task_run_log_proto_rawDescOnce sync.Once

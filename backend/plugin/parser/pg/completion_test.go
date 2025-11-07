@@ -141,6 +141,37 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 					},
 				},
 			},
+			{
+				Name: "test",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "auto",
+						Columns: []*storepb.ColumnMetadata{
+							{
+								Name: "id",
+								Type: "int",
+							},
+							{
+								Name: "name",
+								Type: "varchar",
+							},
+						},
+					},
+					{
+						Name: "users",
+						Columns: []*storepb.ColumnMetadata{
+							{
+								Name: "user_id",
+								Type: "int",
+							},
+							{
+								Name: "username",
+								Type: "varchar",
+							},
+						},
+					},
+				},
+			},
 		},
 	}, true /* isObjectCaseSensitive */, true /* isDetailCaseSensitive */), nil
 }

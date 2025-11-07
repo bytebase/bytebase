@@ -2,7 +2,7 @@
   <Drawer :show="show" @close="close">
     <DrawerContent
       :title="title"
-      class="w-[100vw] md:max-w-[calc(100vw-8rem)] md:w-[40vw]"
+      class="w-screen md:max-w-[calc(100vw-8rem)] md:w-[40vw]"
     >
       <template #default>
         <div class="flex flex-col gap-y-4">

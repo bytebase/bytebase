@@ -7,6 +7,7 @@
 package v1
 
 import (
+	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -1279,7 +1280,7 @@ var File_v1_idp_service_proto protoreflect.FileDescriptor
 
 const file_v1_idp_service_proto_rawDesc = "" +
 	"\n" +
-	"\x14v1/idp_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x13v1/annotation.proto\"J\n" +
+	"\x14v1/idp_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x13v1/annotation.proto\"J\n" +
 	"\x1aGetIdentityProviderRequest\x12,\n" +
 	"\x04name\x18\x01 \x01(\tB\x18\xe0A\x02\xfaA\x12\n" +
 	"\x10bytebase.com/IdPR\x04name\"\x1e\n" +
@@ -1312,10 +1313,10 @@ const file_v1_idp_service_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a;\n" +
 	"\rUserInfoEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xf1\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xfb\x01\n" +
 	"\x10IdentityProvider\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
-	"\x05title\x18\x04 \x01(\tR\x05title\x12\x16\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1e\n" +
+	"\x05title\x18\x04 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12\x16\n" +
 	"\x06domain\x18\x05 \x01(\tR\x06domain\x125\n" +
 	"\x04type\x18\x06 \x01(\x0e2!.bytebase.v1.IdentityProviderTypeR\x04type\x12;\n" +
 	"\x06config\x18\a \x01(\v2#.bytebase.v1.IdentityProviderConfigR\x06config:!\xeaA\x1e\n" +
@@ -1388,7 +1389,8 @@ const file_v1_idp_service_proto_rawDesc = "" +
 	"\x16CreateIdentityProvider\x12*.bytebase.v1.CreateIdentityProviderRequest\x1a\x1d.bytebase.v1.IdentityProvider\"M\xdaA\x00\x8a\xea0\x1bbb.identityProviders.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x1d:\x11identity_provider\"\b/v1/idps\x12\x8a\x02\n" +
 	"\x16UpdateIdentityProvider\x12*.bytebase.v1.UpdateIdentityProviderRequest\x1a\x1d.bytebase.v1.IdentityProvider\"\xa4\x01\xdaA\x1didentity_provider,update_mask\x8a\xea0\x1bbb.identityProviders.update\x90\xea0\x01\x98\xea0\x01\xa2\xea0\x1bbb.identityProviders.create\x82\xd3\xe4\x93\x028:\x11identity_provider2#/v1/{identity_provider.name=idps/*}\x12\xa5\x01\n" +
 	"\x16DeleteIdentityProvider\x12*.bytebase.v1.DeleteIdentityProviderRequest\x1a\x16.google.protobuf.Empty\"G\xdaA\x04name\x8a\xea0\x1bbb.identityProviders.delete\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x13*\x11/v1/{name=idps/*}\x12\xaa\x01\n" +
-	"\x14TestIdentityProvider\x12(.bytebase.v1.TestIdentityProviderRequest\x1a).bytebase.v1.TestIdentityProviderResponse\"=\x8a\xea0\x1bbb.identityProviders.update\x90\xea0\x01\x82\xd3\xe4\x93\x02\x14:\x01*\"\x0f/v1/idps/*:testB6Z4github.com/bytebase/bytebase/backend/generated-go/v1b\x06proto3"
+	"\x14TestIdentityProvider\x12(.bytebase.v1.TestIdentityProviderRequest\x1a).bytebase.v1.TestIdentityProviderResponse\"=\x8a\xea0\x1bbb.identityProviders.update\x90\xea0\x01\x82\xd3\xe4\x93\x02\x14:\x01*\"\x0f/v1/idps/*:testB\xa5\x01\n" +
+	"\x0fcom.bytebase.v1B\x0fIdpServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (
 	file_v1_idp_service_proto_rawDescOnce sync.Once

@@ -17,7 +17,7 @@
     </div>
     <button
       v-if="state.showExpandButton"
-      class="inline-block cursor-pointer px-2 py-1 rounded text-xs shadow bg-gray-50 hover:opacity-80"
+      class="inline-block cursor-pointer px-2 py-1 rounded-sm text-xs shadow-sm bg-gray-50 hover:opacity-80"
       @click="state.expanded = !state.expanded"
     >
       {{ $t("common." + (state.expanded ? "collapse" : "expand")) }}

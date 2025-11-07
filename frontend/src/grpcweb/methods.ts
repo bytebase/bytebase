@@ -4,7 +4,6 @@ import { audit } from "@/types/proto-es/v1/annotation_pb";
 import { AuditLogService } from "@/types/proto-es/v1/audit_log_service_pb";
 import { AuthService } from "@/types/proto-es/v1/auth_service_pb";
 import { CelService } from "@/types/proto-es/v1/cel_service_pb";
-import { ChangelistService } from "@/types/proto-es/v1/changelist_service_pb";
 import { DatabaseCatalogService } from "@/types/proto-es/v1/database_catalog_service_pb";
 import { DatabaseGroupService } from "@/types/proto-es/v1/database_group_service_pb";
 import { DatabaseService } from "@/types/proto-es/v1/database_service_pb";
@@ -37,7 +36,6 @@ export const ALL_METHODS_WITH_AUDIT = [
   AuditLogService,
   AuthService,
   CelService,
-  ChangelistService,
   DatabaseCatalogService,
   DatabaseGroupService,
   DatabaseService,

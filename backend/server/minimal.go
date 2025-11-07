@@ -13,7 +13,7 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/schema/pg"
 
 	// Advisors.
-	_ "github.com/bytebase/bytebase/backend/plugin/advisor/pgantlr"
+	_ "github.com/bytebase/bytebase/backend/plugin/advisor/pg"
 
 	// IM webhooks.
 	_ "github.com/bytebase/bytebase/backend/plugin/webhook/dingtalk"

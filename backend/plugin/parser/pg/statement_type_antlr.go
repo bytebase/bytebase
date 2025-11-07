@@ -3,48 +3,55 @@ package pg
 import (
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/postgresql"
-	"github.com/pkg/errors"
 )
 
-// GetStatementTypesANTLR returns statement types from ANTLR parse result.
-func GetStatementTypesANTLR(parseResult *ParseResult) ([]string, error) {
-	if parseResult == nil || parseResult.Tree == nil {
-		return nil, errors.New("invalid parse result")
-	}
+// Statement type constants.
+const (
+	// CREATE statements.
+	stmtTypeCreateTable     = "CREATE_TABLE"
+	stmtTypeCreateView      = "CREATE_VIEW"
+	stmtTypeCreateIndex     = "CREATE_INDEX"
+	stmtTypeCreateSequence  = "CREATE_SEQUENCE"
+	stmtTypeCreateSchema    = "CREATE_SCHEMA"
+	stmtTypeCreateFunction  = "CREATE_FUNCTION"
+	stmtTypeCreateTrigger   = "CREATE_TRIGGER"
+	stmtTypeCreateExtension = "CREATE_EXTENSION"
+	stmtTypeCreateDatabase  = "CREATE_DATABASE"
+	stmtTypeCreateType      = "CREATE_TYPE"
 
-	collector := &statementTypeCollector{
-		types: make(map[string]bool),
-	}
+	// DROP statements.
+	stmtTypeDropTable     = "DROP_TABLE"
+	stmtTypeDropIndex     = "DROP_INDEX"
+	stmtTypeDropSchema    = "DROP_SCHEMA"
+	stmtTypeDropSequence  = "DROP_SEQUENCE"
+	stmtTypeDropExtension = "DROP_EXTENSION"
+	stmtTypeDropDatabase  = "DROP_DATABASE"
+	stmtTypeDropType      = "DROP_TYPE"
+	stmtTypeDropTrigger   = "DROP_TRIGGER"
+	stmtTypeDropFunction  = "DROP_FUNCTION"
 
-	antlr.ParseTreeWalkerDefault.Walk(collector, parseResult.Tree)
+	// ALTER statements.
+	stmtTypeAlterTable    = "ALTER_TABLE"
+	stmtTypeAlterView     = "ALTER_VIEW"
+	stmtTypeAlterSequence = "ALTER_SEQUENCE"
+	stmtTypeAlterType     = "ALTER_TYPE"
 
-	var sqlTypes []string
-	for sqlType := range collector.types {
-		sqlTypes = append(sqlTypes, sqlType)
-	}
-	return sqlTypes, nil
-}
+	// RENAME statements.
+	stmtTypeRenameIndex    = "RENAME_INDEX"
+	stmtTypeRenameSchema   = "RENAME_SCHEMA"
+	stmtTypeRenameSequence = "RENAME_SEQUENCE"
 
-// GetStatementTypesWithPositionsANTLR returns statement types with position information from ANTLR parse result.
-func GetStatementTypesWithPositionsANTLR(parseResult *ParseResult) ([]StatementTypeWithPosition, error) {
-	if parseResult == nil || parseResult.Tree == nil {
-		return nil, errors.New("invalid parse result")
-	}
+	// DML statements.
+	stmtTypeInsert = "INSERT"
+	stmtTypeUpdate = "UPDATE"
+	stmtTypeDelete = "DELETE"
 
-	collector := &statementTypeCollectorWithPosition{
-		tokens: parseResult.Tokens,
-	}
+	// Other statements.
+	stmtTypeComment = "COMMENT"
 
-	antlr.ParseTreeWalkerDefault.Walk(collector, parseResult.Tree)
-
-	return collector.results, nil
-}
-
-// statementTypeCollector collects unique statement types.
-type statementTypeCollector struct {
-	*parser.BasePostgreSQLParserListener
-	types map[string]bool
-}
+	// Special value for filtering.
+	stmtTypeUnknown = "UNKNOWN"
+)
 
 // statementTypeCollectorWithPosition collects statement types with positions.
 type statementTypeCollectorWithPosition struct {
@@ -53,16 +60,9 @@ type statementTypeCollectorWithPosition struct {
 	results []StatementTypeWithPosition
 }
 
-// Helper function to add statement type.
-func (c *statementTypeCollector) addType(stmtType string) {
-	if stmtType != "" && stmtType != "UNKNOWN" {
-		c.types[stmtType] = true
-	}
-}
-
 // Helper function to add statement with position.
 func (c *statementTypeCollectorWithPosition) addStatement(stmtType string, ctx antlr.ParserRuleContext) {
-	if stmtType == "" || stmtType == "UNKNOWN" {
+	if stmtType == "" || stmtType == stmtTypeUnknown {
 		return
 	}
 
@@ -89,148 +89,78 @@ func (c *statementTypeCollectorWithPosition) addStatement(stmtType string, ctx a
 }
 
 // CREATE TABLE statements
-func (c *statementTypeCollector) EnterCreatestmt(ctx *parser.CreatestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addType("CREATE_TABLE")
-}
-
 func (c *statementTypeCollectorWithPosition) EnterCreatestmt(ctx *parser.CreatestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
-	c.addStatement("CREATE_TABLE", ctx)
+	c.addStatement(stmtTypeCreateTable, ctx)
 }
 
 // CREATE VIEW statements
-func (c *statementTypeCollector) EnterViewstmt(ctx *parser.ViewstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addType("CREATE_VIEW")
-}
-
 func (c *statementTypeCollectorWithPosition) EnterViewstmt(ctx *parser.ViewstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
-	c.addStatement("CREATE_VIEW", ctx)
+	c.addStatement(stmtTypeCreateView, ctx)
 }
 
 // CREATE INDEX statements
-func (c *statementTypeCollector) EnterIndexstmt(ctx *parser.IndexstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addType("CREATE_INDEX")
-}
-
 func (c *statementTypeCollectorWithPosition) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
-	c.addStatement("CREATE_INDEX", ctx)
+	c.addStatement(stmtTypeCreateIndex, ctx)
 }
 
 // CREATE SEQUENCE statements
-func (c *statementTypeCollector) EnterCreateseqstmt(ctx *parser.CreateseqstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addType("CREATE_SEQUENCE")
-}
-
 func (c *statementTypeCollectorWithPosition) EnterCreateseqstmt(ctx *parser.CreateseqstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
-	c.addStatement("CREATE_SEQUENCE", ctx)
+	c.addStatement(stmtTypeCreateSequence, ctx)
 }
 
 // CREATE SCHEMA statements
-func (c *statementTypeCollector) EnterCreateschemastmt(ctx *parser.CreateschemastmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addType("CREATE_SCHEMA")
-}
-
 func (c *statementTypeCollectorWithPosition) EnterCreateschemastmt(ctx *parser.CreateschemastmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
-	c.addStatement("CREATE_SCHEMA", ctx)
+	c.addStatement(stmtTypeCreateSchema, ctx)
 }
 
 // CREATE FUNCTION statements
-func (c *statementTypeCollector) EnterCreatefunctionstmt(ctx *parser.CreatefunctionstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addType("CREATE_FUNCTION")
-}
-
 func (c *statementTypeCollectorWithPosition) EnterCreatefunctionstmt(ctx *parser.CreatefunctionstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
-	c.addStatement("CREATE_FUNCTION", ctx)
+	c.addStatement(stmtTypeCreateFunction, ctx)
 }
 
 // CREATE TRIGGER statements
-func (c *statementTypeCollector) EnterCreatetrigstmt(ctx *parser.CreatetrigstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addType("CREATE_TRIGGER")
-}
-
 func (c *statementTypeCollectorWithPosition) EnterCreatetrigstmt(ctx *parser.CreatetrigstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
-	c.addStatement("CREATE_TRIGGER", ctx)
+	c.addStatement(stmtTypeCreateTrigger, ctx)
 }
 
 // CREATE EXTENSION statements
-func (c *statementTypeCollector) EnterCreateextensionstmt(ctx *parser.CreateextensionstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addType("CREATE_EXTENSION")
-}
-
 func (c *statementTypeCollectorWithPosition) EnterCreateextensionstmt(ctx *parser.CreateextensionstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
-	c.addStatement("CREATE_EXTENSION", ctx)
+	c.addStatement(stmtTypeCreateExtension, ctx)
 }
 
 // CREATE DATABASE statements
-func (c *statementTypeCollector) EnterCreatedbstmt(ctx *parser.CreatedbstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addType("CREATE_DATABASE")
-}
-
 func (c *statementTypeCollectorWithPosition) EnterCreatedbstmt(ctx *parser.CreatedbstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
-	c.addStatement("CREATE_DATABASE", ctx)
+	c.addStatement(stmtTypeCreateDatabase, ctx)
 }
 
 // DROP statements
-func (c *statementTypeCollector) EnterDropstmt(ctx *parser.DropstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addType(getDropStatementType(ctx))
-}
-
 func (c *statementTypeCollectorWithPosition) EnterDropstmt(ctx *parser.DropstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
@@ -239,29 +169,6 @@ func (c *statementTypeCollectorWithPosition) EnterDropstmt(ctx *parser.DropstmtC
 }
 
 // ALTER statements
-func (c *statementTypeCollector) EnterAltertablestmt(ctx *parser.AltertablestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
-	// Check if this is ALTER VIEW
-	if ctx.VIEW() != nil {
-		c.addType("ALTER_VIEW")
-		return
-	}
-
-	// Parse ALTER TABLE sub-operations if alter_table_cmds exists
-	if cmds := ctx.Alter_table_cmds(); cmds != nil {
-		for _, cmd := range cmds.AllAlter_table_cmd() {
-			stmtType := getAlterTableCmdType(cmd)
-			c.addType(stmtType)
-		}
-	} else {
-		// Fallback to generic ALTER_TABLE if no cmds
-		c.addType("ALTER_TABLE")
-	}
-}
-
 func (c *statementTypeCollectorWithPosition) EnterAltertablestmt(ctx *parser.AltertablestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
@@ -269,172 +176,122 @@ func (c *statementTypeCollectorWithPosition) EnterAltertablestmt(ctx *parser.Alt
 
 	// Check if this is ALTER VIEW
 	if ctx.VIEW() != nil {
-		c.addStatement("ALTER_VIEW", ctx)
+		c.addStatement(stmtTypeAlterView, ctx)
 		return
 	}
 
-	// Parse ALTER TABLE sub-operations if alter_table_cmds exists
-	if cmds := ctx.Alter_table_cmds(); cmds != nil {
-		for _, cmd := range cmds.AllAlter_table_cmd() {
-			stmtType := getAlterTableCmdType(cmd)
-			c.addStatement(stmtType, ctx)
-		}
-	} else {
-		// Fallback to generic ALTER_TABLE if no cmds
-		c.addStatement("ALTER_TABLE", ctx)
-	}
-}
-
-func (c *statementTypeCollector) EnterAlterseqstmt(ctx *parser.AlterseqstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addType("ALTER_SEQUENCE")
+	// Always return ALTER_TABLE for ALTER TABLE statements
+	// The sub-operations (ADD COLUMN, DROP COLUMN, etc.) are child nodes in the AST,
+	// not separate statements
+	c.addStatement(stmtTypeAlterTable, ctx)
 }
 
 func (c *statementTypeCollectorWithPosition) EnterAlterseqstmt(ctx *parser.AlterseqstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
-	c.addStatement("ALTER_SEQUENCE", ctx)
-}
-
-func (c *statementTypeCollector) EnterAlterenumstmt(ctx *parser.AlterenumstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addType("ALTER_TYPE")
+	c.addStatement(stmtTypeAlterSequence, ctx)
 }
 
 func (c *statementTypeCollectorWithPosition) EnterAlterenumstmt(ctx *parser.AlterenumstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
-	c.addStatement("ALTER_TYPE", ctx)
+	c.addStatement(stmtTypeAlterType, ctx)
 }
 
 // RENAME statements
-func (c *statementTypeCollector) EnterRenamestmt(ctx *parser.RenamestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addType(getRenameStatementType(ctx))
-}
-
 func (c *statementTypeCollectorWithPosition) EnterRenamestmt(ctx *parser.RenamestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
-	c.addStatement(getRenameStatementType(ctx), ctx)
+
+	// In legacy implementation:
+	// - RENAME INDEX, RENAME SCHEMA, RENAME SEQUENCE are standalone top-level nodes
+	// - RENAME TABLE, RENAME COLUMN, RENAME CONSTRAINT, RENAME VIEW are wrapped in AlterTableStmt
+	//   - When wrapped, AlterTableStmt.Table.Type determines the statement type:
+	//     - TableTypeView → "ALTER_VIEW"
+	//     - TableTypeBaseTable → "ALTER_TABLE"
+
+	// Check for top-level RENAME operations that are NOT wrapped in AlterTableStmt
+	if ctx.INDEX() != nil {
+		c.addStatement(stmtTypeRenameIndex, ctx)
+		return
+	}
+	if ctx.SCHEMA() != nil {
+		c.addStatement(stmtTypeRenameSchema, ctx)
+		return
+	}
+	if ctx.SEQUENCE() != nil {
+		c.addStatement(stmtTypeRenameSequence, ctx)
+		return
+	}
+
+	// All other RENAME operations (TABLE, COLUMN, CONSTRAINT, VIEW) are wrapped in AlterTableStmt
+	// Check if it's a VIEW to return ALTER_VIEW, otherwise return ALTER_TABLE
+	if ctx.VIEW() != nil {
+		c.addStatement(stmtTypeAlterView, ctx)
+	} else if ctx.TABLE() != nil {
+		// RENAME TABLE, RENAME COLUMN, RENAME CONSTRAINT all use TABLE keyword
+		c.addStatement(stmtTypeAlterTable, ctx)
+	}
 }
 
 // COMMENT statements
-func (c *statementTypeCollector) EnterCommentstmt(ctx *parser.CommentstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addType("COMMENT")
-}
-
 func (c *statementTypeCollectorWithPosition) EnterCommentstmt(ctx *parser.CommentstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
-	c.addStatement("COMMENT", ctx)
+	c.addStatement(stmtTypeComment, ctx)
 }
 
 // CREATE TYPE statements
-func (c *statementTypeCollector) EnterDefinestmt(ctx *parser.DefinestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	// Check if this is CREATE TYPE
-	if ctx.TYPE_P() != nil {
-		c.addType("CREATE_TYPE")
-	}
-}
-
 func (c *statementTypeCollectorWithPosition) EnterDefinestmt(ctx *parser.DefinestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 	// Check if this is CREATE TYPE
 	if ctx.TYPE_P() != nil {
-		c.addStatement("CREATE_TYPE", ctx)
+		c.addStatement(stmtTypeCreateType, ctx)
 	}
 }
 
 // DROP FUNCTION statements
-func (c *statementTypeCollector) EnterRemovefuncstmt(ctx *parser.RemovefuncstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addType("DROP_FUNCTION")
-}
-
 func (c *statementTypeCollectorWithPosition) EnterRemovefuncstmt(ctx *parser.RemovefuncstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
-	c.addStatement("DROP_FUNCTION", ctx)
+	c.addStatement(stmtTypeDropFunction, ctx)
 }
 
 // DROP DATABASE statements
-func (c *statementTypeCollector) EnterDropdbstmt(ctx *parser.DropdbstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addType("DROP_DATABASE")
-}
-
 func (c *statementTypeCollectorWithPosition) EnterDropdbstmt(ctx *parser.DropdbstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
-	c.addStatement("DROP_DATABASE", ctx)
+	c.addStatement(stmtTypeDropDatabase, ctx)
 }
 
 // DML statements
-func (c *statementTypeCollector) EnterInsertstmt(ctx *parser.InsertstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addType("INSERT")
-}
-
 func (c *statementTypeCollectorWithPosition) EnterInsertstmt(ctx *parser.InsertstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
-	c.addStatement("INSERT", ctx)
-}
-
-func (c *statementTypeCollector) EnterUpdatestmt(ctx *parser.UpdatestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addType("UPDATE")
+	c.addStatement(stmtTypeInsert, ctx)
 }
 
 func (c *statementTypeCollectorWithPosition) EnterUpdatestmt(ctx *parser.UpdatestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
-	c.addStatement("UPDATE", ctx)
-}
-
-func (c *statementTypeCollector) EnterDeletestmt(ctx *parser.DeletestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addType("DELETE")
+	c.addStatement(stmtTypeUpdate, ctx)
 }
 
 func (c *statementTypeCollectorWithPosition) EnterDeletestmt(ctx *parser.DeletestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
-	c.addStatement("DELETE", ctx)
+	c.addStatement(stmtTypeDelete, ctx)
 }
 
 // getDropStatementType determines the specific DROP statement type.
@@ -445,158 +302,58 @@ func getDropStatementType(ctx *parser.DropstmtContext) string {
 
 	// Check TYPE_P for DROP TYPE
 	if ctx.TYPE_P() != nil {
-		return "DROP_TYPE"
+		return stmtTypeDropType
 	}
 
 	// Check DOMAIN_P for DROP DOMAIN (not in legacy, return UNKNOWN)
 	if ctx.DOMAIN_P() != nil {
-		return "UNKNOWN"
+		return stmtTypeUnknown
 	}
 
 	// Check object_type_any_name (TABLE, SEQUENCE, VIEW, INDEX, etc.)
 	if ctx.Object_type_any_name() != nil {
 		objType := ctx.Object_type_any_name()
 		if objType.TABLE() != nil {
-			return "DROP_TABLE"
+			return stmtTypeDropTable
 		}
 		if objType.VIEW() != nil {
 			// Check if MATERIALIZED VIEW or regular VIEW
 			// Both treated as DROP_TABLE in legacy
-			return "DROP_TABLE"
+			return stmtTypeDropTable
 		}
 		if objType.INDEX() != nil {
-			return "DROP_INDEX"
+			return stmtTypeDropIndex
 		}
 		if objType.SEQUENCE() != nil {
-			return "DROP_SEQUENCE"
+			return stmtTypeDropSequence
 		}
 		// Other types like COLLATION, CONVERSION, STATISTICS not in legacy
-		return "UNKNOWN"
+		return stmtTypeUnknown
 	}
 
 	// Check drop_type_name (SCHEMA, EXTENSION, etc.)
 	if ctx.Drop_type_name() != nil {
 		dropType := ctx.Drop_type_name()
 		if dropType.SCHEMA() != nil {
-			return "DROP_SCHEMA"
+			return stmtTypeDropSchema
 		}
 		if dropType.EXTENSION() != nil {
-			return "DROP_EXTENSION"
+			return stmtTypeDropExtension
 		}
 		// Other types like ACCESS METHOD, EVENT TRIGGER, PUBLICATION not in legacy
-		return "UNKNOWN"
+		return stmtTypeUnknown
 	}
 
 	// Check object_type_name_on_any_name (TRIGGER, RULE, POLICY with "ON table" syntax)
 	if ctx.Object_type_name_on_any_name() != nil {
 		objTypeOn := ctx.Object_type_name_on_any_name()
 		if objTypeOn.TRIGGER() != nil {
-			return "DROP_TRIGGER"
+			return stmtTypeDropTrigger
 		}
 		// RULE and POLICY not in legacy
-		return "UNKNOWN"
+		return stmtTypeUnknown
 	}
 
 	// Default for unhandled cases
-	return "UNKNOWN"
-}
-
-// getAlterTableCmdType determines the specific ALTER TABLE sub-operation type.
-func getAlterTableCmdType(cmd parser.IAlter_table_cmdContext) string {
-	if cmd == nil {
-		return "ALTER_TABLE"
-	}
-
-	// ADD COLUMN
-	if cmd.ADD_P() != nil && cmd.ColumnDef() != nil {
-		return "ALTER_TABLE_ADD_COLUMN_LIST"
-	}
-
-	// ADD CONSTRAINT
-	if cmd.ADD_P() != nil && cmd.Tableconstraint() != nil {
-		return "ALTER_TABLE_ADD_CONSTRAINT"
-	}
-
-	// ALTER COLUMN operations (check these BEFORE DROP to avoid conflicts)
-	if cmd.ALTER() != nil && len(cmd.AllColid()) > 0 {
-		// ALTER COLUMN ... TYPE
-		if cmd.TYPE_P() != nil {
-			return "ALTER_COLUMN_TYPE"
-		}
-
-		// ALTER COLUMN ... DROP NOT NULL
-		if cmd.DROP() != nil && cmd.NOT() != nil && cmd.NULL_P() != nil {
-			return "DROP_NOT_NULL"
-		}
-
-		// ALTER COLUMN ... DROP DEFAULT
-		if cmd.Alter_column_default() != nil {
-			alterDefault := cmd.Alter_column_default()
-			// Check if it's DROP DEFAULT (not SET DEFAULT)
-			if alterDefault.DROP() != nil {
-				return "DROP_DEFAULT"
-			}
-		}
-	}
-
-	// DROP COLUMN (must be after ALTER COLUMN checks)
-	if cmd.DROP() != nil && len(cmd.AllColid()) > 0 && cmd.CONSTRAINT() == nil {
-		return "DROP_COLUMN"
-	}
-
-	// DROP CONSTRAINT
-	if cmd.DROP() != nil && cmd.CONSTRAINT() != nil {
-		return "DROP_CONSTRAINT"
-	}
-
-	// Default to ALTER_TABLE for other operations
-	return "ALTER_TABLE"
-}
-
-// getRenameStatementType determines the specific RENAME statement type.
-func getRenameStatementType(ctx *parser.RenamestmtContext) string {
-	if ctx == nil {
-		return ""
-	}
-
-	// Check for ALTER TABLE variants
-	if ctx.TABLE() != nil {
-		// ALTER TABLE ... RENAME CONSTRAINT ... TO ...
-		if ctx.CONSTRAINT() != nil {
-			return "RENAME_CONSTRAINT"
-		}
-		// ALTER TABLE ... RENAME [COLUMN] ... TO ...
-		// RENAME_COLUMN has 2 name elements (old_name, new_name)
-		// RENAME_TABLE has 1 name element (new_table_name)
-		// The table name is in relation_expr, not counted in AllName()
-		if ctx.Opt_column() != nil || len(ctx.AllName()) >= 2 {
-			return "RENAME_COLUMN"
-		}
-		// ALTER TABLE ... RENAME TO ...
-		return "RENAME_TABLE"
-	}
-
-	// Check for ALTER INDEX
-	if ctx.INDEX() != nil {
-		return "RENAME_INDEX"
-	}
-
-	// Check for ALTER SCHEMA
-	if ctx.SCHEMA() != nil {
-		return "RENAME_SCHEMA"
-	}
-
-	// Check for ALTER SEQUENCE
-	if ctx.SEQUENCE() != nil {
-		return "RENAME_SEQUENCE"
-	}
-
-	// Check for ALTER VIEW (includes MATERIALIZED VIEW)
-	if ctx.VIEW() != nil {
-		return "RENAME_VIEW"
-	}
-
-	// Default for other RENAME types (AGGREGATE, COLLATION, DOMAIN, FUNCTION, etc.)
-	// Return UNKNOWN to maintain backward compatibility
-	return "UNKNOWN"
+	return stmtTypeUnknown
 }

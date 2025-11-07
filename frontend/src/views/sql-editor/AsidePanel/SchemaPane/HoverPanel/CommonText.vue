@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-[18rem] whitespace-pre-wrap break-all break-words">
+  <div class="max-w-[18rem] whitespace-pre-wrap break-all wrap-break-word">
     {{ content }}
   </div>
 </template>

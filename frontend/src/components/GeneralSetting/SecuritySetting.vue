@@ -1,7 +1,7 @@
 <template>
-  <div id="security" class="py-6 lg:flex space-y-4 lg:space-y-0">
+  <div id="security" class="py-6 lg:flex gap-y-4 lg:gap-y-0">
     <div class="text-left lg:w-1/4">
-      <div class="flex items-center space-x-2">
+      <div class="flex items-center gap-x-2">
         <h1 class="text-2xl font-bold">
           {{ title }}
         </h1>
@@ -11,7 +11,7 @@
       </span>
     </div>
 
-    <div class="flex-1 lg:px-4 space-y-7">
+    <div class="flex-1 lg:px-4 flex flex-col gap-y-7">
       <div>
         <div class="flex items-center gap-x-2">
           <Switch

@@ -616,7 +616,8 @@ const file_store_task_run_proto_rawDesc = "" +
 	"\x10connection_limit\x18\x01 \x01(\bH\x00R\x0fconnectionLimit\x12\x1b\n" +
 	"\btask_uid\x18\x02 \x01(\x05H\x00R\ataskUid\x122\n" +
 	"\x14parallel_tasks_limit\x18\x03 \x01(\bH\x00R\x12parallelTasksLimitB\a\n" +
-	"\x05causeB\x14Z\x12generated-go/storeb\x06proto3"
+	"\x05causeB\x8f\x01\n" +
+	"\x12com.bytebase.storeB\fTaskRunProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
 	file_store_task_run_proto_rawDescOnce sync.Once

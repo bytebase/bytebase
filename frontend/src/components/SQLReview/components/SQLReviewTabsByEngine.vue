@@ -6,11 +6,11 @@
       :name="engine"
     >
       <template #tab>
-        <div class="flex items-center space-x-2">
+        <div class="flex items-center gap-x-2">
           <RichEngineName
             :engine="engine"
             tag="p"
-            class="text-center text-sm !text-main"
+            class="text-center text-sm text-main!"
           />
           <span
             class="items-center text-xs px-1 py-0.5 rounded-full bg-gray-200 text-gray-800"

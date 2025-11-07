@@ -18,7 +18,7 @@
     >
       <NButton
         text
-        class="!text-white hover:opacity-80"
+        class="text-white! hover:opacity-80"
         :icon-placement="'right'"
         @click="handleGoToRollout"
       >

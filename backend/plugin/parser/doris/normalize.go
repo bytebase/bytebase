@@ -1,6 +1,6 @@
 package doris
 
-import parser "github.com/bytebase/doris-parser"
+import parser "github.com/bytebase/parser/doris"
 
 func NormalizeQualifiedName(ctx parser.IQualifiedNameContext) []string {
 	if ctx == nil {

@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-2">
+  <div class="flex flex-col gap-y-2">
     <TabFilter
       v-if="selectedPlanCheckRunName && tabItemList.length > 1"
       v-model:value="selectedPlanCheckRunName"

@@ -1,5 +1,5 @@
 <template>
-  <div class="mx-auto space-y-4">
+  <div class="mx-auto flex flex-col gap-y-4">
     <div class="textinfolabel">
       {{ $t("sql-review.description") }}
       <LearnMoreLink
@@ -31,7 +31,7 @@
       :review-list="filteredReviewConfigList"
       :filter="searchText"
     />
-    <NEmpty v-else class="py-12 border rounded">
+    <NEmpty v-else class="py-12 border rounded-sm">
       <template #extra>
         <NButton
           :size="'small'"

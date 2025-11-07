@@ -15,7 +15,7 @@
     </div>
     <StepTab
       v-else
-      class="pt-4 flex-1 overflow-hidden flex flex-col !space-y-4"
+      class="pt-4 flex-1 overflow-hidden flex flex-col gap-y-4!"
       :step-list="stepTabList"
       :current-index="state.currentStep"
       :show-cancel="false"
@@ -28,7 +28,10 @@
     >
       <template #0>
         <div class="mb-4">
-          <NRadioGroup v-model:value="state.sourceSchemaType" class="space-x-4">
+          <NRadioGroup
+            v-model:value="state.sourceSchemaType"
+            class="flex gap-x-4"
+          >
             <NRadio
               :value="SourceSchemaType.SCHEMA_HISTORY_VERSION"
               :label="$t('database.sync-schema.schema-history-version')"

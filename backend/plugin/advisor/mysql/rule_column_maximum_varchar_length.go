@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/antlr4-go/antlr/v4"
-	mysql "github.com/bytebase/mysql-parser"
+	"github.com/bytebase/parser/mysql"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -128,7 +128,7 @@ func (r *VarcharLengthRule) checkCreateTable(ctx *mysql.CreateTableContext) {
 				Code:          advisor.VarcharLengthExceedsLimit.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("The length of the VARCHAR column `%s.%s` is bigger than %d", tableName, columnName, r.maximum),
-				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + tableElement.GetStart().GetLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + tableElement.ColumnDefinition().GetStart().GetLine()),
 			})
 		}
 	}

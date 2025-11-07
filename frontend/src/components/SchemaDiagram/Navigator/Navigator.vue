@@ -2,9 +2,9 @@
   <div class="relative h-full">
     <div
       class="bb-schema-diagram--navigator--main h-full bg-white overflow-hidden border-y border-gray-200 flex flex-col transition-all"
-      :class="[state.expand ? 'w-72 shadow border-l' : 'w-0']"
+      :class="[state.expand ? 'w-72 shadow-sm border-l' : 'w-0']"
     >
-      <div class="p-1 space-y-2">
+      <div class="p-1 flex flex-col gap-y-2">
         <SchemaSelector
           v-if="hasSchemaProperty(database.instanceResource.engine)"
           :schemas="databaseMetadata.schemas"
@@ -26,8 +26,8 @@
     </div>
 
     <div
-      class="absolute rounded-full shadow-lg w-6 h-6 top-[4rem] flex items-center justify-center bg-white hover:bg-control-bg cursor-pointer z-[1] transition-all"
-      :class="[state.expand ? 'left-[100%] -translate-x-3' : '-left-3']"
+      class="absolute rounded-full shadow-lg w-6 h-6 top-16 flex items-center justify-center bg-white hover:bg-control-bg cursor-pointer z-1 transition-all"
+      :class="[state.expand ? 'left-full -translate-x-3' : '-left-3']"
       @click="state.expand = !state.expand"
     >
       <heroicons-outline:chevron-left

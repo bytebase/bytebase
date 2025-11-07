@@ -1,5 +1,5 @@
 <template>
-  <div v-if="shouldShowSection" class="w-full space-y-2 pt-3">
+  <div v-if="shouldShowSection" class="w-full flex flex-col gap-y-2 py-3">
     <div class="text-sm text-control">
       {{ $t("task-run.failed-runs") }}
     </div>

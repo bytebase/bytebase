@@ -305,11 +305,14 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		where.And("issue.type = ANY(?)", typeStrings)
 	}
 	if v := find.Query; v != nil && *v != "" {
+		searchCondition := qb.Q()
 		if tsQuery := getTSQuery(*v); tsQuery != "" {
 			from.Space("LEFT JOIN CAST(? AS tsquery) AS query ON TRUE", tsQuery)
-			where.And("issue.ts_vector @@ query")
+			searchCondition.Or("issue.ts_vector @@ query")
 			orderByClause = "ORDER BY ts_rank(issue.ts_vector, query) DESC, issue.id DESC"
 		}
+		searchCondition.Or("plan.name ILIKE ?", "%"+*v+"%")
+		where.And("(?)", searchCondition)
 	}
 	if len(find.StatusList) != 0 {
 		statusStrings := make([]string, 0, len(find.StatusList))

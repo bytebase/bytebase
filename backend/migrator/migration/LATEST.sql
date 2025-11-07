@@ -275,7 +275,7 @@ CREATE TABLE plan (
 
 CREATE INDEX idx_plan_project ON plan(project);
 
-CREATE INDEX idx_plan_pipeline_id ON plan(pipeline_id);
+CREATE UNIQUE INDEX idx_plan_unique_pipeline_id ON plan(pipeline_id);
 
 ALTER SEQUENCE plan_id_seq RESTART WITH 101;
 
@@ -322,7 +322,7 @@ CREATE TABLE issue (
 
 CREATE INDEX idx_issue_project ON issue(project);
 
-CREATE INDEX idx_issue_plan_id ON issue(plan_id);
+CREATE UNIQUE INDEX idx_issue_unique_plan_id ON issue(plan_id);
 
 CREATE INDEX idx_issue_creator_id ON issue(creator_id);
 
@@ -417,12 +417,14 @@ CREATE TABLE worksheet_organizer (
     id serial PRIMARY KEY,
     worksheet_id integer NOT NULL REFERENCES worksheet(id) ON DELETE CASCADE,
     principal_id integer NOT NULL REFERENCES principal(id),
-    starred boolean NOT NULL DEFAULT false
+    payload jsonb NOT NULL DEFAULT '{}'
 );
 
 CREATE UNIQUE INDEX idx_worksheet_organizer_unique_sheet_id_principal_id ON worksheet_organizer(worksheet_id, principal_id);
 
 CREATE INDEX idx_worksheet_organizer_principal_id ON worksheet_organizer(principal_id);
+
+CREATE INDEX idx_worksheet_organizer_payload ON worksheet_organizer USING GIN(payload);
 
 -- risk stores the definition of a risk.
 CREATE TABLE risk (
@@ -452,21 +454,6 @@ CREATE TABLE db_group (
 CREATE UNIQUE INDEX idx_db_group_unique_project_resource_id ON db_group(project, resource_id);
 
 ALTER SEQUENCE db_group_id_seq RESTART WITH 101;
-
--- changelist table stores project changelists.
-CREATE TABLE changelist (
-    id serial PRIMARY KEY,
-    creator_id integer NOT NULL REFERENCES principal (id),
-    updated_at timestamptz NOT NULL DEFAULT now(),
-    project text NOT NULL REFERENCES project(resource_id),
-    name text NOT NULL,
-    -- Stored as Changelist (proto/store/store/changelist.proto)
-    payload jsonb NOT NULL DEFAULT '{}'
-);
-
-CREATE UNIQUE INDEX idx_changelist_project_name ON changelist(project, name);
-
-ALTER SEQUENCE changelist_id_seq RESTART WITH 101;
 
 CREATE TABLE export_archive (
   id serial PRIMARY KEY,

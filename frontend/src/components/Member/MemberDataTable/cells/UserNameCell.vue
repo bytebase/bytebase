@@ -1,14 +1,14 @@
 <template>
-  <div class="flex flex-row items-center space-x-2">
+  <div class="flex flex-row items-center gap-x-2">
     <UserAvatar :user="user" />
 
     <div class="flex flex-row items-center">
       <div class="flex flex-col">
-        <div class="flex flex-row items-center space-x-2">
+        <div class="flex flex-row items-center gap-x-2">
           <div :class="user.state === State.DELETED ? 'line-through' : ''">
             <span
               v-if="onClickUser"
-              class="normal-link truncate max-w-[10rem]"
+              class="normal-link truncate max-w-40"
               @click="onClickUser(user, $event)"
             >
               {{ user.title }}

@@ -35,7 +35,7 @@
             <template #icon>
               <ListOrderedIcon class="h-4 w-4" />
             </template>
-            {{ $t("common.reorder") }}
+            {{ t("common.reorder") }}
           </NButton>
           <NButton
             v-if="hasWorkspacePermissionV2('bb.settings.set')"
@@ -45,14 +45,14 @@
             <template #icon>
               <PlusIcon class="h-4 w-4" />
             </template>
-            {{ $t("environment.create") }}
+            {{ t("environment.create") }}
           </NButton>
         </div>
       </template>
     </NTabs>
   </div>
 
-  <Drawer :show="state.showCreateModal" @close="discardReorder">
+  <Drawer :show="state.showCreateModal" @close="state.showCreateModal = false">
     <EnvironmentForm
       :create="true"
       :environment="getEnvironmentCreate()"
@@ -61,8 +61,8 @@
       @cancel="state.showCreateModal = false"
     >
       <DrawerContent
-        :title="$t('environment.create')"
-        class="w-[36rem] max-w-[100vw]"
+        :title="t('environment.create')"
+        class="w-xl max-w-[100vw]"
       >
         <EnvironmentFormBody />
         <template #footer>
@@ -73,10 +73,7 @@
   </Drawer>
 
   <Drawer v-model:show="state.reorder" :close-on-esc="true">
-    <DrawerContent
-      :title="$t('environment.reorder')"
-      class="w-[30rem] max-w-[90vw]"
-    >
+    <DrawerContent :title="t('environment.reorder')" class="w-120 max-w-[90vw]">
       <div>
         <Draggable
           v-model="state.reorderedEnvironmentList"
@@ -88,7 +85,7 @@
           >
             <div
               :key="element.id"
-              class="flex items-center justify-between p-2 hover:bg-gray-100 rounded-sm cursor-grab"
+              class="flex items-center justify-between p-2 hover:bg-gray-100 rounded-xs cursor-grab"
             >
               <div class="flex items-center gap-x-2">
                 <span class="textinfo"> {{ index + 1 }}.</span>
@@ -101,9 +98,9 @@
       </div>
       <template #footer>
         <div class="flex items-center justify-end gap-x-2">
-          <NButton @click="discardReorder">{{ $t("common.cancel") }}</NButton>
+          <NButton @click="discardReorder">{{ t("common.cancel") }}</NButton>
           <NButton type="primary" :disabled="!orderChanged" @click="doReorder">
-            {{ $t("common.confirm") }}
+            {{ t("common.confirm") }}
           </NButton>
         </div>
       </template>
@@ -113,6 +110,7 @@
 
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
+import { isEqual } from "lodash-es";
 import { PlusIcon, ListOrderedIcon, GripVerticalIcon } from "lucide-vue-next";
 import { NTabs, NTabPane, NButton } from "naive-ui";
 import { onMounted, computed, reactive, watch, h, ref } from "vue";
@@ -264,13 +262,16 @@ const doCreate = async (params: {
   });
   await environmentV1Store.fetchEnvironments();
 
-  const requests = [
-    policyV1Store.upsertPolicy({
+  // Only persist rollout policy if user customized it from the defaults
+  // Otherwise, let the backend return defaults dynamically via GetPolicy API
+  const isCustomized = !isEqual(rolloutPolicy, DEFAULT_NEW_ROLLOUT_POLICY);
+  if (isCustomized) {
+    await policyV1Store.upsertPolicy({
       parentPath: `${environmentNamePrefix}${createdEnvironment.id}`,
       policy: rolloutPolicy,
-    }),
-  ];
-  await Promise.all(requests);
+    });
+  }
+
   state.showCreateModal = false;
   selectEnvironment(createdEnvironment.order);
 };
@@ -325,7 +326,7 @@ const doDelete = async (environment: Environment) => {
 };
 
 const renderTab = (env: Environment, index: number) => {
-  return h("div", { class: "flex items-center space-x-2 py-1" }, [
+  return h("div", { class: "flex items-center gap-x-2 py-1" }, [
     h("span", { class: "text-opacity-60" }, `${index + 1}.`),
     h(EnvironmentV1Name, {
       environment: env,

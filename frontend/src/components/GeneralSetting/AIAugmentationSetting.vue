@@ -1,7 +1,7 @@
 <template>
   <div id="ai" ref="containerRef" class="py-6 lg:flex">
     <div class="text-left lg:w-1/4">
-      <div class="flex items-center space-x-2">
+      <div class="flex items-center gap-x-2">
         <h1 class="text-2xl font-bold">
           {{ title }}
         </h1>
@@ -19,7 +19,7 @@
           "
         />
       </div>
-      <div v-else class="mt-4 lg:mt-0 space-y-4">
+      <div v-else class="mt-4 lg:mt-0 flex flex-col gap-y-4">
         <div>
           <div class="flex items-center gap-x-2">
             <Switch

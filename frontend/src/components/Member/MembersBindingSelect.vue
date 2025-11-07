@@ -1,12 +1,12 @@
 <template>
-  <div class="w-full space-y-2">
+  <div class="w-full flex flex-col gap-y-2">
     <div
       v-if="allowChangeType"
       class="w-full flex items-center justify-between"
     >
       <NRadioGroup
         :value="memberType"
-        class="space-x-2"
+        class="flex gap-x-2"
         :disabled="disabled"
         @update:value="onTypeChange"
       >
@@ -27,7 +27,12 @@
         <span class="font-semibold">{{ projectName }}</span>
       </template>
     </i18n-t>
-    <div :class="['w-full space-y-2', memberType !== 'USERS' ? 'hidden' : '']">
+    <div
+      :class="[
+        'w-full flex flex-col gap-y-2',
+        memberType !== 'USERS' ? 'hidden' : '',
+      ]"
+    >
       <div class="flex text-main items-center gap-x-1">
         {{ $t("settings.members.select-user", 2 /* multiply*/) }}
         <RequiredStar v-if="required" />
@@ -43,7 +48,12 @@
         @update:users="onMemberListUpdate"
       />
     </div>
-    <div :class="['w-full space-y-2', memberType !== 'GROUPS' ? 'hidden' : '']">
+    <div
+      :class="[
+        'w-full flex flex-col gap-y-2',
+        memberType !== 'GROUPS' ? 'hidden' : '',
+      ]"
+    >
       <div class="flex font-medium text-main items-center gap-x-1">
         {{ $t("settings.members.select-group", 2 /* multiply*/) }}
         <RequiredStar v-if="required" />

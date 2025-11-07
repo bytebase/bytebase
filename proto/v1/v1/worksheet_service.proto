@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package bytebase.v1;
 
+import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
@@ -140,6 +141,8 @@ message WorksheetOrganizer {
 
   // starred means if the worksheet is starred.
   bool starred = 2;
+
+  repeated string folders = 3;
 }
 
 message DeleteWorksheetRequest {
@@ -191,7 +194,10 @@ message Worksheet {
   string database = 3;
 
   // The title of the worksheet.
-  string title = 4 [(google.api.field_behavior) = REQUIRED];
+  string title = 4 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.max_len = 200
+  ];
 
   // The creator of the Worksheet.
   // Format: users/{email}
@@ -224,4 +230,6 @@ message Worksheet {
 
   // starred indicates whether the worksheet is starred by the current authenticated user.
   bool starred = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  repeated string folders = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

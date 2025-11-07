@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="allowArchiveOrRestore"
-    class="t-6 border-t border-block-border flex justify-between items-center pt-4 pb-2 space-x-2"
+    class="t-6 border-t border-block-border flex justify-between items-center pt-4 pb-2 gap-x-2"
   >
     <template v-if="instance.state === State.ACTIVE">
       <BBButtonConfirm
@@ -15,7 +15,7 @@
         :confirm-description="
           $t('instance.archived-instances-will-not-be-displayed')
         "
-        class="!border-none"
+        class="border-none!"
         @confirm="archiveOrRestoreInstance(true)"
       >
         <div class="mt-3">
@@ -39,7 +39,7 @@
           ])
         "
         :confirm-description="''"
-        class="!border-none"
+        class="border-none!"
         @confirm="archiveOrRestoreInstance(false)"
       />
     </template>

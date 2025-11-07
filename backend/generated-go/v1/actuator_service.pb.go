@@ -636,7 +636,8 @@ const file_v1_actuator_service_proto_rawDesc = "" +
 	"\x12UpdateActuatorInfo\x12&.bytebase.v1.UpdateActuatorInfoRequest\x1a\x19.bytebase.v1.ActuatorInfo\"Q\xdaA\x14actuator,update_mask\x8a\xea0\x0fbb.settings.set\x90\xea0\x01\x82\xd3\xe4\x93\x02\x1d:\bactuator2\x11/v1/actuator/info\x12\x82\x01\n" +
 	"\vSetupSample\x12\x1f.bytebase.v1.SetupSampleRequest\x1a\x16.google.protobuf.Empty\":\x8a\xea0\x12bb.projects.create\x90\xea0\x01\x82\xd3\xe4\x93\x02\x1a\"\x18/v1/actuator:setupSample\x12f\n" +
 	"\vDeleteCache\x12\x1f.bytebase.v1.DeleteCacheRequest\x1a\x16.google.protobuf.Empty\"\x1e\x80\xea0\x01\x82\xd3\xe4\x93\x02\x14*\x12/v1/actuator/cache\x12\x81\x01\n" +
-	"\x12GetResourcePackage\x12&.bytebase.v1.GetResourcePackageRequest\x1a\x1c.bytebase.v1.ResourcePackage\"%\xdaA\x00\x80\xea0\x01\x82\xd3\xe4\x93\x02\x18\x12\x16/v1/actuator/resourcesB6Z4github.com/bytebase/bytebase/backend/generated-go/v1b\x06proto3"
+	"\x12GetResourcePackage\x12&.bytebase.v1.GetResourcePackageRequest\x1a\x1c.bytebase.v1.ResourcePackage\"%\xdaA\x00\x80\xea0\x01\x82\xd3\xe4\x93\x02\x18\x12\x16/v1/actuator/resourcesB\xaa\x01\n" +
+	"\x0fcom.bytebase.v1B\x14ActuatorServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (
 	file_v1_actuator_service_proto_rawDescOnce sync.Once

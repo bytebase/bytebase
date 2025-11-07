@@ -31,8 +31,8 @@
   <BBModal
     v-if="state.showSchemaDiffModal"
     :title="$t('database.drifted.view-diff')"
-    header-class="!border-0"
-    container-class="!pt-0"
+    header-class="border-0!"
+    container-class="pt-0!"
     @close="state.showSchemaDiffModal = false"
   >
     <div

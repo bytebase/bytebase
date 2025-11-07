@@ -1,6 +1,6 @@
 <template>
   <div
-    class="w-full overflow-hidden space-y-2 py-0.5"
+    class="w-full overflow-hidden flex flex-col gap-y-2 py-0.5"
     :class="[root ? '' : 'border rounded-[3px] bg-gray-50']"
   >
     <div v-if="!root" class="pl-2.5 pr-1 text-gray-500 flex items-center">
@@ -30,7 +30,7 @@
           size="tiny"
           quaternary
           type="default"
-          :style="`flex-shrink: 0; padding-left: 0; padding-right: 0; --n-width: 22px;`"
+          :style="`shrink: 0; padding-left: 0; padding-right: 0; --n-width: 22px;`"
           @click="emit('remove')"
         >
           <heroicons:trash class="w-3.5 h-3.5" />
@@ -61,7 +61,7 @@
           {{ operatorLabel(operator) }}
         </div>
       </div>
-      <div class="flex-1 space-y-1 overflow-x-hidden">
+      <div class="flex-1 flex flex-col gap-y-1 overflow-x-hidden">
         <ConditionGroup
           v-if="isConditionGroupExpr(operand)"
           :key="i"
@@ -101,7 +101,7 @@
       </NButton>
     </div>
 
-    <div v-if="root && allowAdmin" class="space-x-1">
+    <div v-if="root && allowAdmin" class="flex gap-x-1">
       <NButton size="small" quaternary @click="addCondition">
         <template #icon><heroicons:plus class="w-4 h-4" /></template>
         <span>{{ $t("cel.condition.add") }}</span>

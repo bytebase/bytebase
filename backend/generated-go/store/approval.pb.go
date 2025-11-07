@@ -362,7 +362,8 @@ const file_store_approval_proto_rawDesc = "" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12 \n" +
 	"\vdescription\x18\x03 \x01(\tR\vdescription\"$\n" +
 	"\fApprovalFlow\x12\x14\n" +
-	"\x05roles\x18\x01 \x03(\tR\x05rolesB\x14Z\x12generated-go/storeb\x06proto3"
+	"\x05roles\x18\x01 \x03(\tR\x05rolesB\x90\x01\n" +
+	"\x12com.bytebase.storeB\rApprovalProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
 	file_store_approval_proto_rawDescOnce sync.Once

@@ -1,6 +1,6 @@
 <template>
   <main
-    class="flex-1 h-full relative pb-8 focus:outline-none xl:order-last"
+    class="flex-1 h-full relative pb-8 focus:outline-hidden xl:order-last"
     tabindex="0"
   >
     <NoPermissionPlaceholder
@@ -12,12 +12,12 @@
       <div>
         <div class="-m-6 h-32 bg-accent lg:h-48"></div>
         <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="-mt-20 sm:flex sm:items-end sm:space-x-5">
+          <div class="-mt-20 sm:flex sm:items-end sm:gap-x-5">
             <UserAvatar :user="user" size="HUGE" />
             <div
-              class="mt-6 sm:flex-1 sm:min-w-0 sm:flex sm:items-center sm:justify-end sm:space-x-6 sm:pb-1"
+              class="mt-6 sm:flex-1 sm:min-w-0 sm:flex sm:items-center sm:justify-end sm:gap-x-6 sm:pb-1"
             >
-              <div class="mt-6 flex flex-row justify-stretch space-x-2">
+              <div class="mt-6 flex flex-row justify-stretch gap-x-2">
                 <template v-if="allowEdit">
                   <template v-if="state.editing">
                     <NButton @click.prevent="cancelEdit">
@@ -154,7 +154,7 @@
             {{ $t("two-factor.self") }}
             <FeatureBadge :feature="PlanFeature.FEATURE_TWO_FA" class="ml-2" />
           </span>
-          <div class="space-x-2">
+          <div class="flex gap-x-2">
             <NButton v-if="user.email === currentUser.email" @click="enable2FA">
               {{ isMFAEnabled ? $t("common.edit") : $t("common.enable") }}
             </NButton>
@@ -182,7 +182,7 @@
                 placement="bottom-end"
               >
                 <heroicons-outline:ellipsis-horizontal
-                  class="w-8 p-1 h-auto cursor-pointer hover:bg-gray-100 rounded"
+                  class="w-8 p-1 h-auto cursor-pointer hover:bg-gray-100 rounded-sm"
                 />
               </NDropdown>
             </div>

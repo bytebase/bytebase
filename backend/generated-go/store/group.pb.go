@@ -193,7 +193,9 @@ const file_store_group_proto_rawDesc = "" +
 	"\x06MEMBER\x10\x02\"]\n" +
 	"\fGroupPayload\x125\n" +
 	"\amembers\x18\x01 \x03(\v2\x1b.bytebase.store.GroupMemberR\amembers\x12\x16\n" +
-	"\x06source\x18\x02 \x01(\tR\x06sourceB\x14Z\x12generated-go/storeb\x06proto3"
+	"\x06source\x18\x02 \x01(\tR\x06sourceB\x8d\x01\n" +
+	"\x12com.bytebase.storeB\n" +
+	"GroupProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
 	file_store_group_proto_rawDescOnce sync.Once

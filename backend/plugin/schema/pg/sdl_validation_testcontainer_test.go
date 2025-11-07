@@ -1156,6 +1156,17 @@ func validateSchemaConsistency(schemaD, schemaC *storepb.DatabaseSchemaMetadata)
 		}
 		if len(diff.ViewChanges) > 0 {
 			diffDetails = append(diffDetails, fmt.Sprintf("ViewChanges: %d", len(diff.ViewChanges)))
+			for _, viewDiff := range diff.ViewChanges {
+				diffDetails = append(diffDetails, fmt.Sprintf("  View: %s.%s, Action: %v", viewDiff.SchemaName, viewDiff.ViewName, viewDiff.Action))
+				if viewDiff.OldView != nil && viewDiff.NewView != nil {
+					diffDetails = append(diffDetails, fmt.Sprintf("    Old definition: %s", viewDiff.OldView.Definition))
+					diffDetails = append(diffDetails, fmt.Sprintf("    New definition: %s", viewDiff.NewView.Definition))
+				} else if viewDiff.OldView != nil {
+					diffDetails = append(diffDetails, fmt.Sprintf("    Old definition: %s", viewDiff.OldView.Definition))
+				} else if viewDiff.NewView != nil {
+					diffDetails = append(diffDetails, fmt.Sprintf("    New definition: %s", viewDiff.NewView.Definition))
+				}
+			}
 		}
 		if len(diff.MaterializedViewChanges) > 0 {
 			diffDetails = append(diffDetails, fmt.Sprintf("MaterializedViewChanges: %d", len(diff.MaterializedViewChanges)))
@@ -1661,12 +1672,10 @@ func validateFileContent(filename, expectedContent, fileType string) error {
 
 // getTestDataDirectory converts a test name to the corresponding test data directory path
 func getTestDataDirectory(testName string) string {
-	// Handle both TestSDLValidationFromTestData_ and TestSDLComprehensiveValidation_ prefixes
+	// Handle TestSDLValidationFromTestData_ prefix
 	var pathPart string
 	if strings.HasPrefix(testName, "TestSDLValidationFromTestData_") {
 		pathPart = strings.TrimPrefix(testName, "TestSDLValidationFromTestData_")
-	} else if strings.HasPrefix(testName, "TestSDLComprehensiveValidation_") {
-		pathPart = strings.TrimPrefix(testName, "TestSDLComprehensiveValidation_")
 	} else {
 		return ""
 	}

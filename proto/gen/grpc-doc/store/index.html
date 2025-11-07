@@ -299,25 +299,6 @@
         
           
           <li>
-            <a href="#store%2fchangelist.proto">store/changelist.proto</a>
-            <ul>
-              
-                <li>
-                  <a href="#bytebase.store.Changelist"><span class="badge">M</span>Changelist</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.Changelist.Change"><span class="badge">M</span>Changelist.Change</a>
-                </li>
-              
-              
-              
-              
-            </ul>
-          </li>
-        
-          
-          <li>
             <a href="#store%2fchangelog.proto">store/changelog.proto</a>
             <ul>
               
@@ -1254,6 +1235,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.AppIMSetting.IMSetting"><span class="badge">M</span>AppIMSetting.IMSetting</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.AppIMSetting.Lark"><span class="badge">M</span>AppIMSetting.Lark</a>
                 </li>
               
@@ -1505,6 +1490,21 @@
                 <li>
                   <a href="#bytebase.store.PrincipalType"><span class="badge">E</span>PrincipalType</a>
                 </li>
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#store%2fworksheet.proto">store/worksheet.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.store.WorkSheetOrganizerPayload"><span class="badge">M</span>WorkSheetOrganizerPayload</a>
+                </li>
+              
               
               
               
@@ -2533,84 +2533,6 @@ This information is not authenticated and should be treated accordingly. </p></t
             
           </tbody>
         </table>
-      
-
-      
-
-      
-    
-      
-      <div class="file-heading">
-        <h2 id="store/changelist.proto">store/changelist.proto</h2><a href="#title">Top</a>
-      </div>
-      <p></p>
-
-      
-        <h3 id="bytebase.store.Changelist">Changelist</h3>
-        <p>Changelist represents a collection of database changes that can be applied together.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>description</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Human-readable description of this changelist. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>changes</td>
-                  <td><a href="#bytebase.store.Changelist.Change">Changelist.Change</a></td>
-                  <td>repeated</td>
-                  <td><p>The list of changes in this changelist. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.Changelist.Change">Changelist.Change</h3>
-        <p>Change represents a single database modification within the changelist.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>sheet</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Resource name of the sheet containing the SQL statements. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>source</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The source where this change originated from.
-Format: instances/{instance}/databases/{database}/changelogs/{changelog} for changes from changelog.
-Empty for raw SQL changes. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-
       
 
       
@@ -11371,6 +11293,106 @@ But frontend can be started with a single rule easily. </p></td>
             <tbody>
               
                 <tr>
+                  <td>settings</td>
+                  <td><a href="#bytebase.store.AppIMSetting.IMSetting">AppIMSetting.IMSetting</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.AppIMSetting.DingTalk">AppIMSetting.DingTalk</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>client_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>client_secret</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>robot_code</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.AppIMSetting.Feishu">AppIMSetting.Feishu</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>app_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>app_secret</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.AppIMSetting.IMSetting">AppIMSetting.IMSetting</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.store.ProjectWebhook.Type">ProjectWebhook.Type</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>slack</td>
                   <td><a href="#bytebase.store.AppIMSetting.Slack">AppIMSetting.Slack</a></td>
                   <td></td>
@@ -11412,89 +11434,6 @@ But frontend can be started with a single rule easily. </p></td>
 
         
       
-        <h3 id="bytebase.store.AppIMSetting.DingTalk">AppIMSetting.DingTalk</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>enabled</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>client_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>client_secret</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>robot_code</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.AppIMSetting.Feishu">AppIMSetting.Feishu</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>enabled</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>app_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>app_secret</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.store.AppIMSetting.Lark">AppIMSetting.Lark</h3>
         <p></p>
 
@@ -11504,13 +11443,6 @@ But frontend can be started with a single rule easily. </p></td>
               <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
             </thead>
             <tbody>
-              
-                <tr>
-                  <td>enabled</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
               
                 <tr>
                   <td>app_id</td>
@@ -11544,13 +11476,6 @@ But frontend can be started with a single rule easily. </p></td>
             <tbody>
               
                 <tr>
-                  <td>enabled</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>token</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -11573,13 +11498,6 @@ But frontend can be started with a single rule easily. </p></td>
               <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
             </thead>
             <tbody>
-              
-                <tr>
-                  <td>enabled</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
               
                 <tr>
                   <td>corp_id</td>
@@ -13707,6 +13625,52 @@ The indexes of the executed commands. </p></td>
             
           </tbody>
         </table>
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="store/worksheet.proto">store/worksheet.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.store.WorkSheetOrganizerPayload">WorkSheetOrganizerPayload</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>starred</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>folders</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The folder path for a worksheet.
+For example, if the folders is [A, B, C], means the worksheet is in the A/B/C subfolder. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
       
 
       

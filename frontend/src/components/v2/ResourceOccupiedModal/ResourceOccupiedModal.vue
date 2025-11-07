@@ -7,12 +7,12 @@
     @close="handleClose"
   >
     <div
-      class="w-[30rem] max-w-full pt-2 pb-4 text-control break-words text-sm"
+      class="w-120 max-w-full pt-2 pb-4 text-control wrap-break-word text-sm"
     >
       <div v-if="resources.length === 0">
         {{ $t("resource.delete-warning", { name: target }) }}
       </div>
-      <div v-else class="space-y-2">
+      <div v-else class="flex flex-col gap-y-2">
         <p>
           {{
             description ||
@@ -34,7 +34,7 @@
       </div>
     </div>
 
-    <div class="pt-4 border-t border-block-border flex justify-end space-x-3">
+    <div class="pt-4 border-t border-block-border flex justify-end gap-x-3">
       <NButton size="small" @click.prevent="handleClose">
         {{ $t("common.cancel") }}
       </NButton>

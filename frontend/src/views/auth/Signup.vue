@@ -23,7 +23,7 @@
 
     <div class="mt-8">
       <div class="mt-6">
-        <form class="space-y-6" @submit.prevent="trySignup">
+        <form class="flex flex-col gap-y-6" @submit.prevent="trySignup">
           <div>
             <label
               for="email"
@@ -32,7 +32,7 @@
               {{ $t("common.email") }}
               <RequiredStar />
             </label>
-            <div class="mt-1 rounded-md shadow-sm">
+            <div class="mt-1 rounded-md shadow-xs">
               <BBTextField
                 v-model:value="state.email"
                 required
@@ -59,7 +59,7 @@
               {{ $t("common.username") }}
               <RequiredStar />
             </label>
-            <div class="mt-1 rounded-md shadow-sm">
+            <div class="mt-1 rounded-md shadow-xs">
               <BBTextField
                 id="name"
                 v-model:value="state.name"

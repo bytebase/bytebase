@@ -62,7 +62,7 @@ const columnList = computed(
         ellipsis: true,
         render: (rollout) => {
           return (
-            <div class={`flex items-center overflow-hidden space-x-2`}>
+            <div class={`flex items-center overflow-hidden gap-x-2`}>
               <div class="whitespace-nowrap text-control opacity-60">
                 {extractRolloutUID(rollout.name)}
               </div>
@@ -71,7 +71,7 @@ const columnList = computed(
                   {{
                     default: () => <span>{rollout.title}</span>,
                     tooltip: () => (
-                      <div class="whitespace-pre-wrap break-words break-all">
+                      <div class="whitespace-pre-wrap wrap-break-word break-all">
                         {rollout.title}
                       </div>
                     ),

@@ -480,9 +480,6 @@ func (x *AppIMSetting_Slack) Equal(y *AppIMSetting_Slack) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.Enabled != y.Enabled {
-		return false
-	}
 	if x.Token != y.Token {
 		return false
 	}
@@ -495,9 +492,6 @@ func (x *AppIMSetting_Feishu) Equal(y *AppIMSetting_Feishu) bool {
 	}
 	if x == nil || y == nil {
 		return x == nil && y == nil
-	}
-	if x.Enabled != y.Enabled {
-		return false
 	}
 	if x.AppId != y.AppId {
 		return false
@@ -514,9 +508,6 @@ func (x *AppIMSetting_Wecom) Equal(y *AppIMSetting_Wecom) bool {
 	}
 	if x == nil || y == nil {
 		return x == nil && y == nil
-	}
-	if x.Enabled != y.Enabled {
-		return false
 	}
 	if x.CorpId != y.CorpId {
 		return false
@@ -537,9 +528,6 @@ func (x *AppIMSetting_Lark) Equal(y *AppIMSetting_Lark) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.Enabled != y.Enabled {
-		return false
-	}
 	if x.AppId != y.AppId {
 		return false
 	}
@@ -556,9 +544,6 @@ func (x *AppIMSetting_DingTalk) Equal(y *AppIMSetting_DingTalk) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.Enabled != y.Enabled {
-		return false
-	}
 	if x.ClientId != y.ClientId {
 		return false
 	}
@@ -571,6 +556,34 @@ func (x *AppIMSetting_DingTalk) Equal(y *AppIMSetting_DingTalk) bool {
 	return true
 }
 
+func (x *AppIMSetting_IMSetting) Equal(y *AppIMSetting_IMSetting) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Type != y.Type {
+		return false
+	}
+	if !x.GetSlack().Equal(y.GetSlack()) {
+		return false
+	}
+	if !x.GetFeishu().Equal(y.GetFeishu()) {
+		return false
+	}
+	if !x.GetWecom().Equal(y.GetWecom()) {
+		return false
+	}
+	if !x.GetLark().Equal(y.GetLark()) {
+		return false
+	}
+	if !x.GetDingtalk().Equal(y.GetDingtalk()) {
+		return false
+	}
+	return true
+}
+
 func (x *AppIMSetting) Equal(y *AppIMSetting) bool {
 	if x == y {
 		return true
@@ -578,20 +591,13 @@ func (x *AppIMSetting) Equal(y *AppIMSetting) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if !x.Slack.Equal(y.Slack) {
+	if len(x.Settings) != len(y.Settings) {
 		return false
 	}
-	if !x.Feishu.Equal(y.Feishu) {
-		return false
-	}
-	if !x.Wecom.Equal(y.Wecom) {
-		return false
-	}
-	if !x.Lark.Equal(y.Lark) {
-		return false
-	}
-	if !x.Dingtalk.Equal(y.Dingtalk) {
-		return false
+	for i := 0; i < len(x.Settings); i++ {
+		if !x.Settings[i].Equal(y.Settings[i]) {
+			return false
+		}
 	}
 	return true
 }

@@ -1,12 +1,12 @@
 <template>
-  <div class="space-y-4">
+  <div class="flex flex-col gap-y-4">
     <h3 class="text-base font-medium">
       {{ $t("issue.grant-request.details") }}
     </h3>
 
-    <div class="p-4 border rounded space-y-4">
+    <div class="p-4 border rounded-sm flex flex-col gap-y-4">
       <!-- Requested Role -->
-      <div v-if="requestRole" class="space-y-2">
+      <div v-if="requestRole" class="flex flex-col gap-y-2">
         <span class="text-sm text-control-light">
           {{ $t("role.self") }}
         </span>
@@ -16,7 +16,7 @@
       </div>
 
       <!-- Database Resources -->
-      <div v-if="condition?.databaseResources" class="space-y-2">
+      <div v-if="condition?.databaseResources" class="flex flex-col gap-y-2">
         <span class="text-sm text-control-light">
           {{ $t("common.database") }}
         </span>
@@ -33,7 +33,7 @@
       </div>
 
       <!-- Expiration Time -->
-      <div class="space-y-2">
+      <div class="flex flex-col gap-y-2">
         <span class="text-sm text-control-light">
           {{ $t("issue.grant-request.expired-at") }}
         </span>

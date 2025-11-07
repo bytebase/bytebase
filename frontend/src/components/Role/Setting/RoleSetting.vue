@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-4">
+  <div class="flex flex-col gap-y-4">
     <div class="textinfolabel">
       {{ $t("role.setting.description") }}
       <LearnMoreLink
@@ -31,7 +31,7 @@
 
     <div
       v-if="!state.ready"
-      class="relative flex flex-col h-[8rem] items-center justify-center"
+      class="relative flex flex-col h-32 items-center justify-center"
     >
       <BBSpin />
     </div>

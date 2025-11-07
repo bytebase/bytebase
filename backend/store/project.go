@@ -511,16 +511,6 @@ func (s *Store) DeleteProject(ctx context.Context, resourceID string) error {
 		return errors.Wrapf(err, "failed to delete releases for project %s", resourceID)
 	}
 
-	// Delete changelists associated with this project
-	q = qb.Q().Space("DELETE FROM changelist WHERE project = ?", resourceID)
-	sql, args, err = q.ToSQL()
-	if err != nil {
-		return errors.Wrap(err, "failed to build changelist delete query")
-	}
-	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
-		return errors.Wrapf(err, "failed to delete changelists for project %s", resourceID)
-	}
-
 	// Delete db_groups associated with this project
 	q = qb.Q().Space("DELETE FROM db_group WHERE project = ?", resourceID)
 	sql, args, err = q.ToSQL()
@@ -613,9 +603,7 @@ func GetListProjectFilter(filter string) (*qb.Query, error) {
 				}
 				labelValueList[i] = str
 			}
-			placeholders := strings.Repeat("?,", len(labelValueList))
-			placeholders = placeholders[:len(placeholders)-1]
-			return qb.Q().Space(fmt.Sprintf("%s->'labels'->>'%s' IN (%s)", resource, key, placeholders), labelValueList...), nil
+			return qb.Q().Space(fmt.Sprintf("%s->'labels'->>'%s' = ANY(?)", resource, key), labelValueList), nil
 		default:
 			return nil, errors.Errorf("empty value %v for label filter", value)
 		}

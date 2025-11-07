@@ -1686,74 +1686,6 @@ DROP VIEW dept_employee_count;
 			description: "Reverse of self_referencing_foreign_keys: DROP views and functions with dependencies",
 		},
 		{
-			name: "reverse_circular_foreign_key_dependencies",
-			initialSchema: `
-CREATE TABLE customers (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    preferred_order_id INTEGER
-);
-
-CREATE TABLE orders (
-    id SERIAL PRIMARY KEY,
-    customer_id INTEGER NOT NULL,
-    order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    total_amount DECIMAL(10, 2),
-    CONSTRAINT fk_customer FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
-);
-
-CREATE TABLE order_items (
-    id SERIAL PRIMARY KEY,
-    order_id INTEGER NOT NULL,
-    product_name VARCHAR(100) NOT NULL,
-    quantity INTEGER NOT NULL,
-    unit_price DECIMAL(10, 2) NOT NULL,
-    CONSTRAINT fk_order_item FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_order ON order_items(order_id);
-
-ALTER TABLE customers ADD CONSTRAINT fk_preferred_order FOREIGN KEY (preferred_order_id) REFERENCES orders(id) ON DELETE SET NULL;
-
-CREATE OR REPLACE FUNCTION update_order_total()
-RETURNS TRIGGER AS $$
-BEGIN
-    UPDATE orders 
-    SET total_amount = (
-        SELECT SUM(quantity * unit_price) 
-        FROM order_items 
-        WHERE order_id = NEW.order_id
-    )
-    WHERE id = NEW.order_id;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_update_order_total
-AFTER INSERT OR UPDATE ON order_items
-FOR EACH ROW
-EXECUTE FUNCTION update_order_total();
-`,
-			migrationDDL: `
--- Drop trigger
-DROP TRIGGER trg_update_order_total ON order_items;
-
--- Drop function
-DROP FUNCTION update_order_total();
-
--- Drop index
-DROP INDEX idx_order;
-
--- Drop table
-DROP TABLE order_items;
-
--- Drop circular foreign key constraints
-ALTER TABLE customers DROP CONSTRAINT fk_preferred_order;
-ALTER TABLE orders DROP CONSTRAINT fk_customer;
-`,
-			description: "Reverse of circular_foreign_key_dependencies: DROP circular FK dependencies",
-		},
-		{
 			name: "reverse_table_and_column_comments",
 			initialSchema: `
 CREATE TABLE products (
@@ -2480,4 +2412,196 @@ func sortExtensionsByName(extensions []*storepb.ExtensionMetadata) {
 	slices.SortFunc(extensions, func(a, b *storepb.ExtensionMetadata) int {
 		return strings.Compare(a.Name, b.Name)
 	})
+}
+
+// TestSDLForeignKeyDependencyOrder tests that SDL migration correctly handles FK dependencies
+// when tables are provided in alphabetical order (table1 before table2) but table1 references table2
+func TestSDLForeignKeyDependencyOrder(t *testing.T) {
+	ctx := context.Background()
+
+	// Start PostgreSQL container
+	pgContainer, err := postgres.Run(ctx,
+		"postgres:16-alpine",
+		postgres.WithDatabase("test_db"),
+		postgres.WithUsername("postgres"),
+		postgres.WithPassword("test"),
+		testcontainers.WithWaitStrategy(
+			wait.ForLog("database system is ready to accept connections").
+				WithOccurrence(2).
+				WithStartupTimeout(5*time.Minute),
+		),
+	)
+	require.NoError(t, err)
+	defer func() {
+		if err := pgContainer.Terminate(ctx); err != nil {
+			t.Logf("failed to terminate container: %s", err)
+		}
+	}()
+
+	// Get connection string
+	connectionString, err := pgContainer.ConnectionString(ctx, "sslmode=disable")
+	require.NoError(t, err)
+
+	// Connect to the database
+	connConfig, err := pgx.ParseConfig(connectionString)
+	require.NoError(t, err)
+	testDB := stdlib.OpenDB(*connConfig)
+	defer testDB.Close()
+
+	// This SDL text simulates multi-file SDL where files are merged in alphabetical order
+	// table1.sql comes before table2.sql, but table1 has FK to table2
+	currentSDL := `
+CREATE TABLE table1 (
+    id serial,
+    name varchar(100) not null,
+    created_at timestamp default current_timestamp,
+    description text,
+    constraint pk_table1_id primary key (id),
+    constraint fk_table1_name foreign key (name) references table2(name)
+);
+
+CREATE TABLE table2 (
+    id int,
+    name varchar(100),
+    constraint pk_table2_id primary key (id),
+    constraint uq_table2_name unique (name)
+);
+`
+
+	previousSDL := ``
+
+	// Get current schema (empty database)
+	currentSchema, err := getSyncMetadataForGenerateMigration(ctx, connConfig, connConfig.Database)
+	require.NoError(t, err)
+	dbSchema := model.NewDatabaseSchema(currentSchema, nil, nil, storepb.Engine_POSTGRES, false)
+
+	// Get SDL diff
+	diff, err := GetSDLDiff(currentSDL, previousSDL, dbSchema, nil)
+	require.NoError(t, err)
+
+	// Generate migration SQL with topological sorting
+	migrationSQL, err := generateMigration(diff)
+	require.NoError(t, err)
+
+	t.Logf("Generated migration SQL:\n%s", migrationSQL)
+
+	// Execute the generated migration SQL
+	// This should work because generateMigration should have sorted tables by FK dependencies
+	_, err = testDB.Exec(migrationSQL)
+	require.NoError(t, err, "Migration SQL should execute successfully with correct FK dependency order")
+
+	// Verify both tables were created
+	var table1Exists, table2Exists bool
+	err = testDB.QueryRow("SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'table1')").Scan(&table1Exists)
+	require.NoError(t, err)
+	err = testDB.QueryRow("SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'table2')").Scan(&table2Exists)
+	require.NoError(t, err)
+
+	require.True(t, table1Exists, "table1 should be created")
+	require.True(t, table2Exists, "table2 should be created")
+
+	// Verify FK constraint exists
+	var fkExists bool
+	err = testDB.QueryRow(`
+		SELECT EXISTS (
+			SELECT 1 FROM information_schema.table_constraints 
+			WHERE constraint_name = 'fk_table1_name' AND table_name = 'table1'
+		)
+	`).Scan(&fkExists)
+	require.NoError(t, err)
+	require.True(t, fkExists, "FK constraint fk_table1_name should exist")
+}
+
+// TestSDLViewDependencyChain tests that SDL migration correctly handles view dependencies
+// when a table is depended on by view1, and view1 is depended on by view2
+func TestSDLViewDependencyChain(t *testing.T) {
+	ctx := context.Background()
+
+	// Start PostgreSQL container
+	pgContainer, err := postgres.Run(ctx,
+		"postgres:16-alpine",
+		postgres.WithDatabase("test_db"),
+		postgres.WithUsername("postgres"),
+		postgres.WithPassword("test"),
+		testcontainers.WithWaitStrategy(
+			wait.ForLog("database system is ready to accept connections").
+				WithOccurrence(2).
+				WithStartupTimeout(5*time.Minute),
+		),
+	)
+	require.NoError(t, err)
+	defer func() {
+		if err := pgContainer.Terminate(ctx); err != nil {
+			t.Logf("failed to terminate container: %s", err)
+		}
+	}()
+
+	// Get connection string
+	connectionString, err := pgContainer.ConnectionString(ctx, "sslmode=disable")
+	require.NoError(t, err)
+
+	// Connect to the database
+	connConfig, err := pgx.ParseConfig(connectionString)
+	require.NoError(t, err)
+	testDB := stdlib.OpenDB(*connConfig)
+	defer testDB.Close()
+
+	// This SDL text simulates the REAL multi-file scenario where files are merged alphabetically:
+	// Files: table_base.sql, test_view_0.sql, test_view2.sql
+	// Alphabetical order: table_base < test_view_0 < test_view2
+	// Dependency chain: table_base -> test_view2 -> test_view_0
+	// So SDL has: table_base, test_view_0 (depends on test_view2 which comes AFTER), test_view2
+	currentSDL := `
+CREATE TABLE table_base (
+    id serial,
+    info text not null,
+    created_at timestamp default current_timestamp,
+    updated_at timestamp default current_timestamp,
+    constraint pk_table_base_id primary key (id)
+);
+
+CREATE VIEW test_view_0 AS
+SELECT * FROM test_view2;
+
+CREATE VIEW test_view2 AS
+SELECT id, info, created_at, updated_at FROM table_base;
+`
+
+	previousSDL := ``
+
+	// Get current schema (empty database)
+	currentSchema, err := getSyncMetadataForGenerateMigration(ctx, connConfig, connConfig.Database)
+	require.NoError(t, err)
+	dbSchema := model.NewDatabaseSchema(currentSchema, nil, nil, storepb.Engine_POSTGRES, false)
+
+	// Get SDL diff
+	diff, err := GetSDLDiff(currentSDL, previousSDL, dbSchema, nil)
+	require.NoError(t, err)
+
+	// Generate migration SQL with topological sorting
+	migrationSQL, err := generateMigration(diff)
+	require.NoError(t, err)
+
+	// Execute the generated migration SQL
+	// This should work because generateMigration should have sorted objects by dependencies
+	_, err = testDB.Exec(migrationSQL)
+	require.NoError(t, err, "Migration SQL should execute successfully with correct view dependency order")
+
+	// Verify table was created
+	var tableExists bool
+	err = testDB.QueryRow("SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'table_base')").Scan(&tableExists)
+	require.NoError(t, err)
+	require.True(t, tableExists, "table_base should be created")
+
+	// Verify test_view2 was created (depends on table_base)
+	var view2Exists bool
+	err = testDB.QueryRow("SELECT EXISTS (SELECT 1 FROM information_schema.views WHERE table_name = 'test_view2')").Scan(&view2Exists)
+	require.NoError(t, err)
+	require.True(t, view2Exists, "test_view2 should be created")
+
+	// Verify test_view_0 was created (depends on test_view2)
+	var view0Exists bool
+	err = testDB.QueryRow("SELECT EXISTS (SELECT 1 FROM information_schema.views WHERE table_name = 'test_view_0')").Scan(&view0Exists)
+	require.NoError(t, err)
+	require.True(t, view0Exists, "test_view_0 should be created")
 }

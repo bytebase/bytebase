@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
-	mysql "github.com/bytebase/mysql-parser"
+	"github.com/bytebase/parser/mysql"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -160,7 +160,7 @@ func (r *CollationAllowlistRule) checkCreateTable(ctx *mysql.CreateTableContext)
 			for _, attr := range columnDef.FieldDefinition().AllColumnAttribute() {
 				if attr != nil && attr.Collate() != nil && attr.Collate().CollationName() != nil {
 					collation := mysqlparser.NormalizeMySQLCollationName(attr.Collate().CollationName())
-					r.checkCollation(collation, tableElement.GetStart().GetLine())
+					r.checkCollation(collation, columnDef.GetStart().GetLine())
 				}
 			}
 		}

@@ -1,6 +1,6 @@
 <template>
-  <div class="w-full flex flex-col justify-start items-start space-y-4">
-    <div class="space-y-2">
+  <div class="w-full flex flex-col justify-start items-start gap-y-4">
+    <div class="flex flex-col gap-y-2">
       <div class="font-medium">
         {{ $t("project.settings.issue-related.labels.self") }}
         <div class="textinfolabel">
@@ -398,13 +398,13 @@ const renderLabel = (value: string, index: number) => {
       <div class="flex flex-row items-start justify-center gap-x-2">
         <div class="w-4 h-4 relative">
           <NColorPicker
-            class="!w-full !h-full"
+            class="w-full! h-full!"
             modes={["hex"]}
             showAlpha={false}
             value={label.color}
             renderLabel={() => (
               <div
-                class="w-4 h-4 rounded cursor-pointer relative"
+                class="w-4 h-4 rounded-sm cursor-pointer relative"
                 style={{ backgroundColor: label.color }}
               ></div>
             )}

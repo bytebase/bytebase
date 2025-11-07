@@ -2,7 +2,7 @@
   <div class="relative w-full flex items-center gap-4">
     <!-- Stage card -->
     <div
-      class="flex-1 bg-white rounded-lg border p-4 shadow-sm"
+      class="flex-1 bg-white rounded-lg border p-4 shadow-xs"
       :class="
         twMerge(
           isCreated
@@ -87,7 +87,7 @@
               quaternary
               round
               size="small"
-              class="!px-2"
+              class="px-2!"
               @click.stop="showTasks = !showTasks"
             >
               <template #icon>
@@ -130,7 +130,7 @@
                         }}</span>
                       </div>
                     </template>
-                    <div class="space-y-1">
+                    <div class="flex flex-col gap-y-1">
                       <div class="text-sm opacity-80">
                         {{ $t("task.scheduled-time") }}
                       </div>

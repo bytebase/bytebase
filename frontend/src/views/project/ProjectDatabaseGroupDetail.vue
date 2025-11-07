@@ -2,7 +2,7 @@
   <div
     v-if="databaseGroup"
     v-bind="$attrs"
-    class="h-full flex-1 relative space-y-4"
+    class="h-full flex-1 relative flex flex-col gap-y-4"
   >
     <FeatureAttention
       :feature="PlanFeature.FEATURE_DATABASE_GROUPS"

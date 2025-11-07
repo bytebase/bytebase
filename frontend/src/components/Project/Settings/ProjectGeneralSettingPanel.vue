@@ -1,5 +1,5 @@
 <template>
-  <form class="w-full space-y-4">
+  <form class="w-full flex flex-col gap-y-4">
     <div>
       <div class="font-medium">
         {{ $t("common.name") }}
@@ -35,7 +35,7 @@
         v-model:kv-list="labelKVList"
         :readonly="!allowEdit"
         :show-errors="true"
-        class="max-w-[30rem]"
+        class="max-w-120"
       />
     </div>
   </form>

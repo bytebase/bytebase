@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-2">
+  <div class="gap-y-2">
     <div class="flex items-center justify-between">
       <h3 class="text-base">
         {{ $t("issue.data-export.options") }}
@@ -24,7 +24,7 @@
       </div>
     </div>
 
-    <div class="p-3 border rounded space-y-3">
+    <div class="p-3 border rounded-sm gap-y-3">
       <!-- Format Display/Edit -->
       <div class="flex items-center gap-4">
         <span class="text-sm">

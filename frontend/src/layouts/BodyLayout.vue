@@ -16,12 +16,12 @@
           </div>
           <div
             tabindex="0"
-            class="relative flex-1 flex flex-col max-w-xs w-full bg-white focus:outline-none"
+            class="relative flex-1 flex flex-col max-w-xs w-full bg-white focus:outline-hidden"
           >
             <div class="absolute top-0 right-0 -mr-12 pt-2">
               <button
                 type="button"
-                class="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+                class="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-hidden focus:ring-2 focus:ring-inset focus:ring-white"
                 @click.prevent="state.showMobileOverlay = false"
               >
                 <span class="sr-only">Close sidebar</span>
@@ -34,14 +34,14 @@
               <!-- Empty as teleport placeholder -->
             </div>
           </div>
-          <div class="flex-shrink-0 w-14" aria-hidden="true">
+          <div class="shrink-0 w-14" aria-hidden="true">
             <!-- Force sidebar to shrink to fit close icon -->
           </div>
         </div>
 
         <!-- Static sidebar for desktop -->
         <aside
-          class="flex-shrink-0"
+          class="shrink-0"
           data-label="bb-dashboard-static-sidebar"
           :class="[sidebarView === 'DESKTOP' ? 'flex' : 'hidden']"
         >

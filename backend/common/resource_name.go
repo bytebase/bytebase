@@ -42,7 +42,6 @@ const (
 	LogNamePrefix              = "logs/"
 	BranchPrefix               = "branches/"
 	DeploymentConfigPrefix     = "deploymentConfigs/"
-	ChangelistsPrefix          = "changelists/"
 	AuditLogPrefix             = "auditLogs/"
 	GroupPrefix                = "groups/"
 	ReviewConfigPrefix         = "reviewConfigs/"
@@ -92,14 +91,6 @@ func GetSchemaTableName(name string) (string, string, error) {
 // GetProjectIDWebhookID returns the project ID and webhook ID from a resource name.
 func GetProjectIDWebhookID(name string) (string, string, error) {
 	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, WebhookIDPrefix)
-	if err != nil {
-		return "", "", err
-	}
-	return tokens[0], tokens[1], nil
-}
-
-func GetProjectIDChangelistID(name string) (string, string, error) {
-	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, ChangelistsPrefix)
 	if err != nil {
 		return "", "", err
 	}

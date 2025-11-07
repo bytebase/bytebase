@@ -19,6 +19,8 @@
           :database="database"
           :result="resultSet.results[0]"
           :set-index="0"
+          :show-export="!disableExport"
+          @export="handleExportBtnClick"
         />
       </template>
       <template v-else-if="viewMode === 'MULTI-RESULT'">
@@ -37,7 +39,7 @@
             <template #tab>
               <NTooltip>
                 <template #trigger>
-                  <div class="flex items-center gap-x-2">
+                  <div class="flex items-center gap-x-2 mb-1">
                     <span>{{ tabName(i) }}</span>
                     <Info
                       v-if="result.error"
@@ -61,8 +63,39 @@
               :database="database"
               :result="result"
               :set-index="i"
+              :show-export="!enableExportData"
+              @export="handleExportBtnClick"
             />
           </NTabPane>
+          <template v-if="enableExportData" #suffix>
+            <div class="mb-1">
+              <DataExportButton
+                size="small"
+                :disabled="false"
+                :support-formats="[
+                  ExportFormat.CSV,
+                  ExportFormat.JSON,
+                  ExportFormat.SQL,
+                  ExportFormat.XLSX,
+                ]"
+                :view-mode="'DRAWER'"
+                :support-password="true"
+                @export="
+                  ($event) =>
+                    handleExportBtnClick({
+                      ...$event,
+                      statement: executeParams.statement,
+                    })
+                "
+              >
+                <template #form>
+                  <NFormItem :label="$t('common.database')">
+                    <DatabaseInfo :database="database" />
+                  </NFormItem>
+                </template>
+              </DataExportButton>
+            </div>
+          </template>
         </NTabs>
       </template>
       <template v-else-if="viewMode === 'EMPTY'">
@@ -112,7 +145,9 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { Code } from "@connectrpc/connect";
+import dayjs from "dayjs";
 import { Info } from "lucide-vue-next";
 import {
   darkTheme,
@@ -120,22 +155,41 @@ import {
   NTabPane,
   NTabs,
   NTooltip,
+  NFormItem,
 } from "naive-ui";
 import { computed, ref, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 import { darkThemeOverrides } from "@/../naive-ui.config";
 import { BBSpin } from "@/bbkit";
+import DataExportButton from "@/components/DataExportButton.vue";
+import type {
+  DownloadContent,
+  ExportOption,
+} from "@/components/DataExportButton.vue";
 import SyncDatabaseButton from "@/components/DatabaseDetail/SyncDatabaseButton.vue";
+import DatabaseInfo from "@/components/DatabaseInfo.vue";
 import { parseStringToResource } from "@/components/GrantRequestPanel/DatabaseResourceForm/common";
 import { Drawer } from "@/components/v2";
-import { useConnectionOfCurrentSQLEditorTab, usePolicyV1Store } from "@/store";
+import {
+  useConnectionOfCurrentSQLEditorTab,
+  usePolicyV1Store,
+  useSQLEditorTabStore,
+  useSQLStore,
+  useSQLEditorStore,
+} from "@/store";
 import type {
   ComposedDatabase,
   DatabaseResource,
   SQLEditorQueryParams,
   SQLResultSetV1,
 } from "@/types";
-import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
+import { ExportFormat } from "@/types/proto-es/v1/common_pb";
+import {
+  PolicyType,
+  QueryDataPolicySchema,
+  type QueryDataPolicy,
+} from "@/types/proto-es/v1/org_policy_service_pb";
+import { ExportRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { provideBinaryFormatContext } from "./DataTable/binary-format-store";
 import DetailPanel from "./DetailPanel";
@@ -173,6 +227,26 @@ const { t } = useI18n();
 const policyStore = usePolicyV1Store();
 const { instance, database: connectedDatabase } =
   useConnectionOfCurrentSQLEditorTab();
+const tabStore = useSQLEditorTabStore();
+const editorStore = useSQLEditorStore();
+
+const getQueryDataPolicyByParent = (parent: string): QueryDataPolicy => {
+  const policy = policyStore.getPolicyByParentAndType({
+    parentPath: parent,
+    policyType: PolicyType.DATA_QUERY,
+  });
+  return policy?.policy?.case === "queryDataPolicy"
+    ? policy.policy.value
+    : create(QueryDataPolicySchema, {});
+};
+
+const disableExport = computed(
+  () => getQueryDataPolicyByParent("").disableExport
+);
+
+const enableExportData = computed(() => {
+  return !disableExport.value;
+});
 
 const keyword = ref("");
 const detail: SQLResultViewContext["detail"] = ref(undefined);
@@ -242,14 +316,7 @@ const disallowCopyingData = computed(() => {
 
   let environment = instance.value.environment;
   if (props.database) {
-    const projectLevelPolicy = policyStore.getPolicyByParentAndType({
-      parentPath: props.database?.project,
-      policyType: PolicyType.DATA_QUERY,
-    });
-    if (
-      projectLevelPolicy?.policy?.case === "queryDataPolicy" &&
-      projectLevelPolicy.policy.value.disableCopyData
-    ) {
+    if (getQueryDataPolicyByParent(props.database?.project).disableCopyData) {
       return true;
     }
     // If the database is provided, use its effective environment.
@@ -258,14 +325,7 @@ const disallowCopyingData = computed(() => {
 
   // Check if the environment has a policy that disables copying data.
   if (environment) {
-    const policy = policyStore.getPolicyByParentAndType({
-      parentPath: environment,
-      policyType: PolicyType.DATA_QUERY,
-    });
-    if (
-      policy?.policy?.case === "queryDataPolicy" &&
-      policy.policy.value.disableCopyData
-    ) {
+    if (getQueryDataPolicyByParent(environment).disableCopyData) {
       return true;
     }
   }
@@ -289,4 +349,44 @@ provideSQLResultViewContext({
   keyword,
   detail,
 });
+
+const handleExportBtnClick = async ({
+  options,
+  resolve,
+  reject,
+  statement,
+}: {
+  statement: string;
+  options: ExportOption;
+  reject: (reason?: any) => void;
+  resolve: (content: DownloadContent[]) => void;
+}) => {
+  const admin = tabStore.currentTab?.mode === "ADMIN";
+  const limit = options.limit ?? (admin ? 0 : editorStore.resultRowsLimit);
+
+  try {
+    const content = await useSQLStore().exportData(
+      create(ExportRequestSchema, {
+        name: props.database.name,
+        dataSourceId: props.executeParams.connection.dataSourceId ?? "",
+        format: options.format,
+        statement,
+        limit,
+        admin,
+        password: options.password,
+        schema: props.executeParams.connection.schema,
+      })
+    );
+
+    resolve([
+      {
+        content,
+        // the download file is always zip file.
+        filename: `${props.database.databaseName}.${dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss")}.zip`,
+      },
+    ]);
+  } catch (e) {
+    reject(e);
+  }
+};
 </script>

@@ -4,6 +4,7 @@
       ref="sheetTitleInputRef"
       v-model:value="sheetTitle"
       :placeholder="$t('sql-editor.save-sheet-input-placeholder')"
+      :maxlength="200"
       @keyup.enter="handleSaveSheet"
     />
   </div>

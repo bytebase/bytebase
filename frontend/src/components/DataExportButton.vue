@@ -31,7 +31,7 @@
   <Drawer v-if="viewMode === 'DRAWER'" v-model:show="state.showDrawer">
     <DrawerContent
       :title="$t('custom-approval.risk-rule.risk.namespace.data_export')"
-      class="w-[50rem] max-w-[100vw] relative"
+      class="w-200 max-w-[100vw] relative"
     >
       <template #default>
         <NForm
@@ -95,7 +95,7 @@
   <BBModal
     :show="state.showModal"
     :title="$t('export-data.password-optional')"
-    class="shadow-inner outline outline-gray-200"
+    class="shadow-inner outline-solid outline-gray-200"
     @close="state.showModal = false"
   >
     <div class="w-80">
@@ -106,7 +106,7 @@
         :focus-on-mount="true"
       />
     </div>
-    <div class="w-full flex items-center justify-end mt-2 space-x-3">
+    <div class="w-full flex items-center justify-end mt-2 gap-x-3">
       <NButton @click="state.showModal = false">
         {{ $t("common.cancel") }}
       </NButton>
@@ -218,7 +218,7 @@ const rules: FormRules = {
         }
         return true;
       },
-      trigger: ["input", "blur"],
+      trigger: ["input", "blur-sm"],
     },
   ],
   format: [

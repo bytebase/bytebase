@@ -1,4 +1,5 @@
 import {
+  AUTH_IDP_INIT_MODULE,
   AUTH_MFA_MODULE,
   AUTH_OAUTH_CALLBACK_MODULE,
   AUTH_OIDC_CALLBACK_MODULE,
@@ -19,5 +20,6 @@ export const isAuthRelatedRoute = (routeName: string) => {
     AUTH_PASSWORD_FORGOT_MODULE,
     AUTH_OAUTH_CALLBACK_MODULE,
     AUTH_OIDC_CALLBACK_MODULE,
+    AUTH_IDP_INIT_MODULE,
   ].includes(routeName);
 };

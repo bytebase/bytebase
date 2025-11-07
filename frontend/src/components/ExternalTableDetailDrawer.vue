@@ -3,7 +3,7 @@
     <DrawerContent :title="$t('database.foreign-table-detail')">
       <div
         v-if="externalTable"
-        class="flex-1 overflow-auto focus:outline-none w-[calc(100vw-256px)]"
+        class="flex-1 overflow-auto focus:outline-hidden w-[calc(100vw-256px)]"
         tabindex="0"
       >
         <main class="flex-1 relative pb-8 overflow-y-auto">
@@ -25,7 +25,7 @@
                 </div>
               </div>
               <dl
-                class="flex flex-col space-y-1 md:space-y-0 md:flex-row md:flex-wrap"
+                class="flex flex-col gap-y-1 md:gap-y-0 md:flex-row md:flex-wrap"
               >
                 <dt class="sr-only">{{ $t("common.environment") }}</dt>
                 <dd class="flex items-center text-sm md:mr-4">
@@ -72,7 +72,7 @@
           </div>
 
           <div class="mt-6">
-            <div class="max-w-6xl px-6 space-y-6 divide-y divide-block-border">
+            <div class="max-w-6xl px-6 flex flex-col gap-y-6">
               <!-- Description list -->
               <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-3">
                 <div class="col-span-1">

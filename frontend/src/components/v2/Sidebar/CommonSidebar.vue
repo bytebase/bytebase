@@ -4,12 +4,12 @@
   >
     <BytebaseLogo
       v-if="showLogo"
-      class="w-full px-4 shrink-0"
+      class="p-2 shrink-0 m-auto"
       :redirect="logoRedirect"
     />
     <slot name="prefix" />
     <NScrollbar>
-      <div class="flex-1 px-2.5 space-y-1">
+      <div class="flex-1 px-2.5 flex flex-col gap-y-1">
         <div v-for="(item, i) in filteredSidebarList" :key="i">
           <router-link
             v-if="item.type === 'route'"
@@ -49,7 +49,7 @@
           />
           <div
             v-if="item.children.length > 0 && state.expandedSidebar.has(`${i}`)"
-            class="space-y-1 mt-1"
+            class="flex flex-col gap-y-1 mt-1"
           >
             <template v-for="(child, j) in item.children" :key="`${i}-${j}`">
               <a
@@ -116,7 +116,7 @@ const state = reactive<LocalState>({
 });
 
 const parentRouteClass = computed(() => {
-  return "group flex items-center px-2 py-1.5 leading-normal font-medium rounded-md text-gray-700 outline-item !text-sm";
+  return "group flex items-center px-2 py-1.5 leading-normal font-medium rounded-md text-gray-700 outline-item text-sm!";
 });
 
 const childRouteClass = computed(() => {

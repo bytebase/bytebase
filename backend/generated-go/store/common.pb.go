@@ -734,7 +734,8 @@ const file_store_common_proto_rawDesc = "" +
 	"\x10SchemaChangeType\x12\"\n" +
 	"\x1eSCHEMA_CHANGE_TYPE_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tVERSIONED\x10\x01\x12\x0f\n" +
-	"\vDECLARATIVE\x10\x02B\x14Z\x12generated-go/storeb\x06proto3"
+	"\vDECLARATIVE\x10\x02B\x8e\x01\n" +
+	"\x12com.bytebase.storeB\vCommonProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
 	file_store_common_proto_rawDescOnce sync.Once

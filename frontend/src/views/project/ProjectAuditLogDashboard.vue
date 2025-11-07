@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full space-y-4">
+  <div class="w-full flex flex-col gap-y-4">
     <FeatureAttention :feature="PlanFeature.FEATURE_AUDIT_LOG" />
     <AuditLogSearch v-model:params="state.params">
       <template #searchbox-suffix>
@@ -33,7 +33,7 @@
         />
       </template>
     </PagedTable>
-    <NEmpty class="py-12 border rounded" v-else />
+    <NEmpty class="py-12 border rounded-sm" v-else />
   </div>
 </template>
 

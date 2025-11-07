@@ -6,7 +6,7 @@
         <NButton
           size="tiny"
           circle
-          class="ml-1 dark:!bg-dark-bg"
+          class="ml-1 dark:bg-dark-bg!"
           @click.stop
           :type="hasColumnOverride ? 'primary' : 'default'"
           :secondary="hasColumnOverride"

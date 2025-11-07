@@ -71,7 +71,8 @@ const file_store_review_config_proto_rawDesc = "" +
 	"\n" +
 	"\x19store/review_config.proto\x12\x0ebytebase.store\x1a\x12store/policy.proto\"^\n" +
 	"\x13ReviewConfigPayload\x12G\n" +
-	"\x10sql_review_rules\x18\x01 \x03(\v2\x1d.bytebase.store.SQLReviewRuleR\x0esqlReviewRulesB\x14Z\x12generated-go/storeb\x06proto3"
+	"\x10sql_review_rules\x18\x01 \x03(\v2\x1d.bytebase.store.SQLReviewRuleR\x0esqlReviewRulesB\x94\x01\n" +
+	"\x12com.bytebase.storeB\x11ReviewConfigProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
 	file_store_review_config_proto_rawDescOnce sync.Once

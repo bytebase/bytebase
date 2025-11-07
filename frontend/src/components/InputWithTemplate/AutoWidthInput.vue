@@ -8,7 +8,7 @@
       v-model="state.data"
       :style="`width: ${state.width}px;`"
       :disabled="disabled"
-      class="px-0 m-0 py-1 cleared-input outline-none"
+      class="px-0 m-0 py-1 shadow-none ring-0 border-0 border-none outline-hidden focus:shadow-none focus:ring-0 focus:border-0 focus:border-none"
       type="text"
       @keyup="(e) => $emit('keyup', e)"
       @keydown="(e) => $emit('keydown', e)"
@@ -76,10 +76,3 @@ const updateWidth = () => {
 
 watchEffect(updateWidth);
 </script>
-
-<style scoped>
-.cleared-input,
-.cleared-input:focus {
-  @apply shadow-none ring-0 border-0 border-none;
-}
-</style>

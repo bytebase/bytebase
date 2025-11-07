@@ -4,7 +4,7 @@
       :title="$t('settings.sensitive-data.semantic-types.add-from-template')"
       class="max-w-[100vw]"
     >
-      <div class="w-[42rem] space-y-4">
+      <div class="w-2xl flex flex-col gap-y-4">
         <p class="textinfolabel">
           {{
             $t("settings.sensitive-data.semantic-types.template.description")

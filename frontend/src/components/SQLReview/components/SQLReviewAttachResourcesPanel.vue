@@ -5,7 +5,7 @@
       class="w-[40rem] max-w-[100vw] relative"
     >
       <template #default>
-        <div class="space-y-6">
+        <div class="flex flex-col gap-y-6">
           <p class="textinfolabel">
             {{ $t("sql-review.attach-resource.label") }}
           </p>
@@ -27,7 +27,7 @@
               "
             />
           </div>
-          <div class="flex items-center space-x-2">
+          <div class="flex items-center gap-x-2">
             <div class="textlabel w-10 capitalize">{{ $t("common.or") }}</div>
             <NDivider />
           </div>

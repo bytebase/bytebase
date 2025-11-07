@@ -1,5 +1,6 @@
 {
   "common": {
+    "apply-to-database": "Aplicar a la base de datos",
     "view": "Ver",
     "you": "tu",
     "general": "General",
@@ -225,7 +226,6 @@
       "n-rows": "{n} filas"
     },
     "back-to-workspace": "Volver al espacio de trabajo",
-    "encoding": "Codificación",
     "finish": "Finalizar",
     "title": "Título",
     "text-wrap": "Ajuste de texto",
@@ -392,6 +392,10 @@
       "data-access": "Acceso a datos",
       "audit-log": "Registros de auditoría",
       "custom-roles": "Roles personalizados"
+    },
+    "im": {
+      "add-im-integration": "Agregar integración de mensajería instantánea",
+      "add-another-im": "Añadir otro IM"
     },
     "profile": {
       "email": "Correo electrónico",
@@ -907,7 +911,6 @@
           "title": "Creador",
           "description": "Búsqueda por creador"
         },
-        "subscriber": {},
         "approver": {
           "title": "Aprobador",
           "description": "Búsqueda por aprobador del problema"
@@ -1193,9 +1196,6 @@
         "self": "Sin etapas",
         "description": "No se definen etapas para este lanzamiento."
       }
-    },
-    "message": {
-      "pervious-stages-incomplete": {}
     }
   },
   "quick-action": {
@@ -1678,7 +1678,6 @@
       "select-tip": "Seleccione una mesa para comenzar."
     },
     "all": "Todas las bases de datos",
-    "show-schemaless-databases": "Mostrar bases de datos sin esquema. (Editar Schema no se aplica a las bases de datos sin esquema.)",
     "transfer": {
       "errors": {
         "select-target-project": "Seleccionar proyecto de destino",
@@ -1740,10 +1739,7 @@
       "type-declarative": "Declarativo",
       "invalid-version-format": "La versión debe tener partes numéricas separadas por puntos (por ejemplo, 1.0.0)",
       "version-already-exists": "Esta versión ya existe en la base de datos",
-      "delete-confirm-dialog": {
-        "title": "¿Estas seguro de eliminarlo?",
-        "content": "Esto eliminará las revisiones aplicadas y el esquema de la base de datos no se modificará. Esta acción no se puede deshacer."
-      }
+      "delete-confirm-dialog": "Esto eliminará las revisiones aplicadas y el esquema de la base de datos no se modificará. Esta acción no se puede deshacer."
     },
     "not-found": "No se puede encontrar la base de datos",
     "drifted": {
@@ -2007,7 +2003,7 @@
     "table-empty-placeholder": "Haga clic en Ejecutar para ejecutar la consulta.",
     "no-data-available": "No hay datos disponibles",
     "download-as-file": "Descargar como {file}",
-    "only-select-allowed": "Solo se permiten declaraciones {select} para ejecutar.",
+    "only-select-allowed": "Solo se permiten ejecutar declaraciones de solo lectura.",
     "enable-ddl-for-environment": "Puede habilitar la declaración DDL/DML para el entorno {environment}.",
     "and-submit-an-issue": "y enviar un problema",
     "to-enable-admin-mode": "para habilitar el modo administrador",
@@ -2152,12 +2148,10 @@
   },
   "schema-editor": {
     "self": "Editor de esquema",
-    "preview-issue": "Vista previa de incidencia",
-    "sync-sql-from-schema-editor": "Sincronizar SQL desde el Editor de esquema",
     "raw-sql": "SQL sin procesar",
     "search-database-and-table": "Buscar base de datos y tabla",
-    "failed-to-generate-ddl-for-database": "Error al generar el DDL para la base de datos {database}",
-    "continue-with-empty-sql": "Continuar con SQL vacío",
+    "insert-sql": "Insert SQL",
+    "template-database": "Template database",
     "actions": {
       "create-schema": "Crear esquema",
       "drop-schema": "Eliminar esquema",
@@ -2219,8 +2213,6 @@
       "duplicated-view-name": "Nombre de vista duplicado"
     },
     "confirm-to-close": {
-      "title": "Confirmar para cerrar",
-      "description": "¿Está seguro de que desea cerrar el panel? Se perderán los cambios realizados."
     },
     "foreign-key": {
       "edit": "Editar clave externa",
@@ -2401,7 +2393,6 @@
         "confirm-override-description": "Sus reglas serán anuladas"
       }
     },
-    "rule": {},
     "enabled-rules": "Reglas habilitadas",
     "rule-detail": "Detalle de la regla",
     "view-definition": "Ver definición",
@@ -2817,44 +2808,6 @@
       "add-root-condition-placeholder": "Haga clic en \"Agregar condición\" o \"Agregar grupo de condiciones\" para agregar una condición"
     }
   },
-  "changelist": {
-    "self": "Lista de cambios",
-    "changelists": "Listas de cambios",
-    "new": "Nueva lista de cambios",
-    "name": "Nombre de la lista de cambios",
-    "name-placeholder": "Mi lista de cambios",
-    "error": {
-      "name-is-required": "El nombre de la lista de cambios es obligatorio",
-      "invalid-resource-id": "ID de recurso no válido",
-      "nothing-changed": "nada ha cambiado",
-      "sql-cannot-be-empty": "Se requiere SQL",
-      "select-at-least-one-change": "Seleccione al menos un cambio",
-      "select-at-least-one-change-to-export": "Seleccione al menos un cambio para exportar",
-      "add-at-least-one-change": "Añade al menos un cambio",
-      "you-are-not-allowed-to-perform-this-action": "No tienes permiso para realizar esta acción."
-    },
-    "apply-to-database": "Aplicar a la base de datos",
-    "add-change": {
-      "self": "Agregar cambio",
-      "changelog": {
-        "select-at-least-one-changelog-below": "Seleccione al menos un historial a continuación"
-      }
-    },
-    "change-source": {
-      "self": "Cambiar fuente",
-      "raw-sql": "SQL sin formato",
-      "source": "Fuente"
-    },
-    "confirm-remove-change": "¿Eliminar este cambio?",
-    "delete-this-changelist": "Eliminar esta lista de cambios",
-    "confirm-delete-changelist": "¿Eliminar esta lista de cambios?",
-    "import": {
-      "no-file-to-upload": "No hay archivos para subir",
-      "upload-sql-or-zip-file": "Cargue el archivo .sql o .zip",
-      "optional-upload-sql-or-zip-file": "(Opcional) Cargue el archivo .sql o .zip"
-    },
-    "change-type": "Cambiar tipo"
-  },
   "release": {
     "title": "Liberar",
     "releases": "Lanzamientos",
@@ -2880,8 +2833,6 @@
     "vcs-type": {
       "unspecified": "No especificado"
     },
-    "actions": {},
-    "messages": {},
     "usage-description": "Un lanzamiento es un artefacto de aplicación versionado cuyo despliegue a un entorno es activado por un flujo de trabajo GitOps."
   },
   "export-data": {
@@ -2934,8 +2885,7 @@
       "algorithm": "Método de enmascaramiento",
       "context": "Regla",
       "classification": "Nivel de clasificación"
-    },
-    "algorithms": {}
+    }
   },
   "landing": {
     "quick-link": {

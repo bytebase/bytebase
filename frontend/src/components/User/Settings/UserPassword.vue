@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-6" v-bind="$attrs">
+  <div class="flex flex-col gap-y-6" v-bind="$attrs">
     <div :label="$t('settings.profile.password')">
       <div>
         <label class="block text-sm font-medium leading-5 text-control">
@@ -8,8 +8,8 @@
         </label>
         <span
           :class="[
-            'flex items-center gap-x-1 textinfolabel !text-sm',
-            passwordHint ? '!text-error' : '',
+            'flex items-center gap-x-1 textinfolabel text-sm!',
+            passwordHint ? 'text-error!' : '',
           ]"
         >
           {{ $t("settings.profile.password-hint") }}
@@ -22,7 +22,7 @@
           <LearnMoreLink
             v-if="showLearnMore"
             :external="false"
-            class="!text-sm"
+            class="text-sm!"
             :url="
               router.resolve({
                 name: SETTING_ROUTE_WORKSPACE_GENERAL,
@@ -32,7 +32,7 @@
           />
         </span>
       </div>
-      <div class="w-full space-y-1">
+      <div class="w-full flex flex-col gap-y-1">
         <div class="mt-1 relative flex flex-row items-center">
           <NInput
             :value="password"

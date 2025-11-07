@@ -7,6 +7,7 @@
 package v1
 
 import (
+	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -311,7 +312,8 @@ type WorksheetOrganizer struct {
 	// Format: worksheets/{worksheet}
 	Worksheet string `protobuf:"bytes,1,opt,name=worksheet,proto3" json:"worksheet,omitempty"`
 	// starred means if the worksheet is starred.
-	Starred       bool `protobuf:"varint,2,opt,name=starred,proto3" json:"starred,omitempty"`
+	Starred       bool     `protobuf:"varint,2,opt,name=starred,proto3" json:"starred,omitempty"`
+	Folders       []string `protobuf:"bytes,3,rep,name=folders,proto3" json:"folders,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -358,6 +360,13 @@ func (x *WorksheetOrganizer) GetStarred() bool {
 		return x.Starred
 	}
 	return false
+}
+
+func (x *WorksheetOrganizer) GetFolders() []string {
+	if x != nil {
+		return x.Folders
+	}
+	return nil
 }
 
 type DeleteWorksheetRequest struct {
@@ -540,7 +549,8 @@ type Worksheet struct {
 	ContentSize int64                `protobuf:"varint,9,opt,name=content_size,json=contentSize,proto3" json:"content_size,omitempty"`
 	Visibility  Worksheet_Visibility `protobuf:"varint,10,opt,name=visibility,proto3,enum=bytebase.v1.Worksheet_Visibility" json:"visibility,omitempty"`
 	// starred indicates whether the worksheet is starred by the current authenticated user.
-	Starred       bool `protobuf:"varint,11,opt,name=starred,proto3" json:"starred,omitempty"`
+	Starred       bool     `protobuf:"varint,11,opt,name=starred,proto3" json:"starred,omitempty"`
+	Folders       []string `protobuf:"bytes,12,rep,name=folders,proto3" json:"folders,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -652,11 +662,18 @@ func (x *Worksheet) GetStarred() bool {
 	return false
 }
 
+func (x *Worksheet) GetFolders() []string {
+	if x != nil {
+		return x.Folders
+	}
+	return nil
+}
+
 var File_v1_worksheet_service_proto protoreflect.FileDescriptor
 
 const file_v1_worksheet_service_proto_rawDesc = "" +
 	"\n" +
-	"\x1av1/worksheet_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"S\n" +
+	"\x1av1/worksheet_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"S\n" +
 	"\x16CreateWorksheetRequest\x129\n" +
 	"\tworksheet\x18\x01 \x01(\v2\x16.bytebase.v1.WorksheetB\x03\xe0A\x02R\tworksheet\".\n" +
 	"\x13GetWorksheetRequest\x12\x17\n" +
@@ -669,10 +686,11 @@ const file_v1_worksheet_service_proto_rawDesc = "" +
 	"\torganizer\x18\x01 \x01(\v2\x1f.bytebase.v1.WorksheetOrganizerB\x03\xe0A\x02R\torganizer\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
 	"updateMask\x12#\n" +
-	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"Q\n" +
+	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"k\n" +
 	"\x12WorksheetOrganizer\x12!\n" +
 	"\tworksheet\x18\x01 \x01(\tB\x03\xe0A\x02R\tworksheet\x12\x18\n" +
-	"\astarred\x18\x02 \x01(\bR\astarred\"1\n" +
+	"\astarred\x18\x02 \x01(\bR\astarred\x12\x18\n" +
+	"\afolders\x18\x03 \x03(\tR\afolders\"1\n" +
 	"\x16DeleteWorksheetRequest\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x02R\x04name\"1\n" +
 	"\x17SearchWorksheetsRequest\x12\x16\n" +
@@ -680,12 +698,12 @@ const file_v1_worksheet_service_proto_rawDesc = "" +
 	"\x18SearchWorksheetsResponse\x126\n" +
 	"\n" +
 	"worksheets\x18\x01 \x03(\v2\x16.bytebase.v1.WorksheetR\n" +
-	"worksheets\"\xaa\x04\n" +
+	"worksheets\"\xd1\x04\n" +
 	"\tWorksheet\x12\x1a\n" +
 	"\x04name\x18\x01 \x01(\tB\x06\xe0A\x02\xe0A\x05R\x04name\x12\x1d\n" +
 	"\aproject\x18\x02 \x01(\tB\x03\xe0A\x02R\aproject\x12\x1a\n" +
-	"\bdatabase\x18\x03 \x01(\tR\bdatabase\x12\x19\n" +
-	"\x05title\x18\x04 \x01(\tB\x03\xe0A\x02R\x05title\x12\x1d\n" +
+	"\bdatabase\x18\x03 \x01(\tR\bdatabase\x12!\n" +
+	"\x05title\x18\x04 \x01(\tB\v\xe0A\x02\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12\x1d\n" +
 	"\acreator\x18\x05 \x01(\tB\x03\xe0A\x03R\acreator\x12@\n" +
 	"\vcreate_time\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"createTime\x12@\n" +
@@ -697,7 +715,8 @@ const file_v1_worksheet_service_proto_rawDesc = "" +
 	"visibility\x18\n" +
 	" \x01(\x0e2!.bytebase.v1.Worksheet.VisibilityB\x03\xe0A\x02R\n" +
 	"visibility\x12\x1d\n" +
-	"\astarred\x18\v \x01(\bB\x03\xe0A\x03R\astarred\"Z\n" +
+	"\astarred\x18\v \x01(\bB\x03\xe0A\x03R\astarred\x12\x1d\n" +
+	"\afolders\x18\f \x03(\tB\x03\xe0A\x03R\afolders\"Z\n" +
 	"\n" +
 	"Visibility\x12\x1a\n" +
 	"\x16VISIBILITY_UNSPECIFIED\x10\x00\x12\x10\n" +
@@ -710,7 +729,8 @@ const file_v1_worksheet_service_proto_rawDesc = "" +
 	"\x10SearchWorksheets\x12$.bytebase.v1.SearchWorksheetsRequest\x1a%.bytebase.v1.SearchWorksheetsResponse\"$\x90\xea0\x02\x82\xd3\xe4\x93\x02\x1a:\x01*\"\x15/v1/worksheets:search\x12\xa0\x01\n" +
 	"\x0fUpdateWorksheet\x12#.bytebase.v1.UpdateWorksheetRequest\x1a\x16.bytebase.v1.Worksheet\"P\xdaA\x15worksheet,update_mask\x90\xea0\x02\x82\xd3\xe4\x93\x02.:\tworksheet2!/v1/{worksheet.name=worksheets/*}\x12\xca\x01\n" +
 	"\x18UpdateWorksheetOrganizer\x12,.bytebase.v1.UpdateWorksheetOrganizerRequest\x1a\x1f.bytebase.v1.WorksheetOrganizer\"_\xdaA\x15organizer,update_mask\x90\xea0\x02\x82\xd3\xe4\x93\x02=:\torganizer20/v1/{organizer.worksheet=worksheets/*}/organizer\x12z\n" +
-	"\x0fDeleteWorksheet\x12#.bytebase.v1.DeleteWorksheetRequest\x1a\x16.google.protobuf.Empty\"*\xdaA\x04name\x90\xea0\x02\x82\xd3\xe4\x93\x02\x19*\x17/v1/{name=worksheets/*}B6Z4github.com/bytebase/bytebase/backend/generated-go/v1b\x06proto3"
+	"\x0fDeleteWorksheet\x12#.bytebase.v1.DeleteWorksheetRequest\x1a\x16.google.protobuf.Empty\"*\xdaA\x04name\x90\xea0\x02\x82\xd3\xe4\x93\x02\x19*\x17/v1/{name=worksheets/*}B\xab\x01\n" +
+	"\x0fcom.bytebase.v1B\x15WorksheetServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (
 	file_v1_worksheet_service_proto_rawDescOnce sync.Once

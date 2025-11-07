@@ -78,7 +78,10 @@ message OAuth2IdentityProviderContext {
 }
 
 // OpenID Connect authentication context.
-message OIDCIdentityProviderContext {}
+message OIDCIdentityProviderContext {
+  // Authorization code from OIDC provider.
+  string code = 1;
+}
 
 message LoginResponse {
   // Access token for authenticated requests.

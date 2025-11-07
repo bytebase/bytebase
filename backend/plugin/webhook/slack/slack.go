@@ -18,6 +18,21 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/webhook"
 )
 
+// getSlackToken extracts the Slack token from the AppIMSetting.
+func getSlackToken(setting *storepb.AppIMSetting) string {
+	if setting == nil {
+		return ""
+	}
+	for _, s := range setting.Settings {
+		if s.Type == storepb.ProjectWebhook_SLACK {
+			if slack := s.GetSlack(); slack != nil {
+				return slack.Token
+			}
+		}
+	}
+	return ""
+}
+
 // BlockMarkdown is the API message for Slack webhook block markdown.
 type BlockMarkdown struct {
 	Type string `json:"type"`
@@ -179,7 +194,7 @@ func postMessage(context webhook.Context) error {
 
 func postDirectMessage(webhookCtx webhook.Context) bool {
 	ctx := context.Background()
-	t := webhookCtx.IMSetting.GetSlack().GetToken()
+	t := getSlackToken(webhookCtx.IMSetting)
 	if t == "" {
 		return false
 	}

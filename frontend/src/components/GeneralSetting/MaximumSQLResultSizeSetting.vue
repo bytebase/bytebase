@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col space-y-7">
+  <div class="flex flex-col gap-y-7">
     <div>
       <p class="font-medium flex flex-row justify-start items-center">
         <span class="mr-2">
@@ -11,7 +11,7 @@
         {{
           $t("settings.general.workspace.maximum-sql-result.size.description")
         }}
-        <span class="!font-semibold textinfolabel">
+        <span class="font-semibold! textinfolabel">
           {{
             $t("settings.general.workspace.maximum-sql-result.size.default", {
               limit: defaultMaximumResultSizeInMB,
@@ -48,7 +48,7 @@
         {{
           $t("settings.general.workspace.maximum-sql-result.rows.description")
         }}
-        <span class="!font-semibold textinfolabel">
+        <span class="font-semibold! textinfolabel">
           {{ $t("settings.general.workspace.maximum-sql-result.rows.limit") }}
         </span>
       </p>

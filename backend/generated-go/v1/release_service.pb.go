@@ -7,6 +7,7 @@
 package v1
 
 import (
+	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -1162,7 +1163,7 @@ var File_v1_release_service_proto protoreflect.FileDescriptor
 
 const file_v1_release_service_proto_rawDesc = "" +
 	"\n" +
-	"\x18v1/release_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x14v1/sql_service.proto\"E\n" +
+	"\x18v1/release_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x14v1/sql_service.proto\"E\n" +
 	"\x11GetReleaseRequest\x120\n" +
 	"\x04name\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ReleaseR\x04name\"\xaa\x01\n" +
@@ -1218,10 +1219,10 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\aadvices\x18\x03 \x03(\v2\x13.bytebase.v1.AdviceR\aadvices\x12#\n" +
 	"\raffected_rows\x18\x04 \x01(\x03R\faffectedRows\x125\n" +
 	"\n" +
-	"risk_level\x18\x05 \x01(\x0e2\x16.bytebase.v1.RiskLevelR\triskLevel\"\xde\a\n" +
+	"risk_level\x18\x05 \x01(\x0e2\x16.bytebase.v1.RiskLevelR\triskLevel\"\xe8\a\n" +
 	"\aRelease\x12\x17\n" +
-	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12\x14\n" +
-	"\x05title\x18\x02 \x01(\tR\x05title\x12/\n" +
+	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12\x1e\n" +
+	"\x05title\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12/\n" +
 	"\x05files\x18\x03 \x03(\v2\x19.bytebase.v1.Release.FileR\x05files\x12=\n" +
 	"\n" +
 	"vcs_source\x18\x04 \x01(\v2\x1e.bytebase.v1.Release.VCSSourceR\tvcsSource\x12\x1d\n" +
@@ -1264,7 +1265,8 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\rUpdateRelease\x12!.bytebase.v1.UpdateReleaseRequest\x1a\x14.bytebase.v1.Release\"\x7f\xdaA\x13release,update_mask\x8a\xea0\x12bb.releases.update\x90\xea0\x01\xa2\xea0\x12bb.releases.create\x82\xd3\xe4\x93\x023:\arelease2(/v1/{release.name=projects/*/releases/*}\x12\x95\x01\n" +
 	"\rDeleteRelease\x12!.bytebase.v1.DeleteReleaseRequest\x1a\x16.google.protobuf.Empty\"I\xdaA\x04name\x8a\xea0\x12bb.releases.delete\x90\xea0\x01\x82\xd3\xe4\x93\x02\"* /v1/{name=projects/*/releases/*}\x12\x9b\x01\n" +
 	"\x0fUndeleteRelease\x12#.bytebase.v1.UndeleteReleaseRequest\x1a\x14.bytebase.v1.Release\"M\x8a\xea0\x14bb.releases.undelete\x90\xea0\x01\x82\xd3\xe4\x93\x02+\")/v1/{name=projects/*/releases/*}:undelete\x12\x9f\x01\n" +
-	"\fCheckRelease\x12 .bytebase.v1.CheckReleaseRequest\x1a!.bytebase.v1.CheckReleaseResponse\"J\x8a\xea0\x11bb.releases.check\x90\xea0\x01\x82\xd3\xe4\x93\x02+:\x01*\"&/v1/{parent=projects/*}/releases:checkB6Z4github.com/bytebase/bytebase/backend/generated-go/v1b\x06proto3"
+	"\fCheckRelease\x12 .bytebase.v1.CheckReleaseRequest\x1a!.bytebase.v1.CheckReleaseResponse\"J\x8a\xea0\x11bb.releases.check\x90\xea0\x01\x82\xd3\xe4\x93\x02+:\x01*\"&/v1/{parent=projects/*}/releases:checkB\xa9\x01\n" +
+	"\x0fcom.bytebase.v1B\x13ReleaseServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (
 	file_v1_release_service_proto_rawDescOnce sync.Once

@@ -3,7 +3,7 @@
     v-if="!hideAdvancedFeatures"
     class="sm:col-span-4 sm:col-start-1 flex flex-col gap-y-2"
   >
-    <div v-if="showLabel" class="flex items-center space-x-2">
+    <div v-if="showLabel" class="flex items-center gap-x-2">
       <label class="textlabel">
         {{ $t("instance.sync-databases.self") }}
       </label>
@@ -11,13 +11,13 @@
     <div class="textinfolabel">
       {{ $t("instance.sync-databases.description") }}
     </div>
-    <div class="space-y-2">
+    <div class="flex flex-col gap-y-2">
       <NCheckbox v-model:checked="state.syncAll" :disabled="!allowEdit">
         {{ $t("instance.sync-databases.sync-all") }}
       </NCheckbox>
       <div v-if="!state.syncAll">
         <BBSpin v-if="state.loading" class="opacity-60" />
-        <div v-else class="border rounded-sm p-2 space-y-2">
+        <div v-else class="border rounded-xs p-2 flex flex-col gap-y-2">
           <SearchBox
             v-model:value="state.searchText"
             style="max-width: 100%"
@@ -185,6 +185,6 @@ const handleKeyDown = (e: KeyboardEvent) => {
 
 <style lang="postcss" scoped>
 .sync-database-tree :deep(.n-tree-node-switcher--hide) {
-  @apply !hidden;
+  display: none !important;
 }
 </style>

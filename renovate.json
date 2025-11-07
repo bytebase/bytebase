@@ -3,5 +3,11 @@
   "extends": ["config:recommended"],
   "schedule": ["* * 31 2 *"],
   "postUpdateOptions": ["gomodTidy", "pnpmDedupe"],
+  "allowedPostUpgradeCommands": ["^pnpm install --no-frozen-lockfile$"],
+  "postUpgradeTasks": {
+    "commands": ["pnpm install --no-frozen-lockfile"],
+    "fileFilters": ["frontend/pnpm-lock.yaml"],
+    "executionMode": "update"
+  },
   "ignoreDeps": ["github.com/pingcap/tidb/pkg/parser", "github.com/elastic/go-elasticsearch/v7"]
 }

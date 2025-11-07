@@ -1,7 +1,7 @@
 <template>
-  <div class="space-y-6">
+  <div class="flex flex-col gap-y-6">
     <!-- Built-in Flows Section -->
-    <div class="space-y-2">
+    <div class="flex flex-col gap-y-2">
       <div>
         <h3 class="text-base font-medium">
           {{ $t("custom-approval.approval-flow.built-in") }}
@@ -21,7 +21,7 @@
     </div>
 
     <!-- Custom Flows Section -->
-    <div class="space-y-2">
+    <div class="flex flex-col gap-y-2">
       <h3 class="text-base font-medium">
         {{ $t("custom-approval.approval-flow.custom") }}
       </h3>
@@ -109,7 +109,7 @@ const renderNodesButton = (rolesCount: number, onClick: () => void) => (
     quaternary
     size="small"
     type="info"
-    class="!rounded !w-[var(--n-height)] !p-0"
+    class="rounded-sm! w-(--n-height)! p-0!"
     onClick={onClick}
   >
     {rolesCount}

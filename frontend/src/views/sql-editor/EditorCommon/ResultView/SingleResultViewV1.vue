@@ -19,7 +19,7 @@
         <NInput
           v-if="showSearchFeature"
           :value="state.search"
-          class="!max-w-[10rem]"
+          class="max-w-40!"
           size="small"
           type="text"
           :placeholder="t('sql-editor.search-results')"
@@ -87,9 +87,8 @@
             {{ $t("plugin.ai.text2sql") }}
           </template>
         </NTooltip>
-        <template v-if="!disallowExportQueryData">
+        <template v-if="showExport">
           <DataExportButton
-            v-if="result.allowExport"
             size="small"
             :disabled="props.result === null || isEmpty(props.result)"
             :support-formats="[
@@ -100,7 +99,13 @@
             ]"
             :view-mode="'DRAWER'"
             :support-password="true"
-            @export="handleExportBtnClick"
+            @export="
+              ($event) =>
+                $emit('export', {
+                  ...$event,
+                  statement: result.statement,
+                })
+            "
           >
             <template #form>
               <NFormItem :label="$t('common.database')">
@@ -108,14 +113,6 @@
               </NFormItem>
             </template>
           </DataExportButton>
-          <NButton
-            v-else-if="allowToRequestExportData"
-            size="small"
-            @click="handleRequestExport"
-          >
-            {{ $t("quick-action.request-export-data") }}
-            <ExternalLinkIcon class="w-4 h-auto ml-1 opacity-80" />
-          </NButton>
         </template>
       </div>
       <SelectionCopyTooltips />
@@ -186,7 +183,6 @@
 </template>
 
 <script lang="ts" setup>
-import { create } from "@bufbuild/protobuf";
 import type { ColumnDef } from "@tanstack/vue-table";
 import {
   getCoreRowModel,
@@ -196,9 +192,7 @@ import {
 } from "@tanstack/vue-table";
 import { useClipboard } from "@vueuse/core";
 import { useDebounceFn, useLocalStorage } from "@vueuse/core";
-import dayjs from "dayjs";
 import { isEmpty } from "lodash-es";
-import { ExternalLinkIcon } from "lucide-vue-next";
 import {
   NButton,
   NFormItem,
@@ -209,10 +203,8 @@ import {
   NTooltip,
   type SelectOption,
 } from "naive-ui";
-import { v4 as uuidv4 } from "uuid";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter, type LocationQueryRaw } from "vue-router";
 import { BBAttention } from "@/bbkit";
 import type {
   DownloadContent,
@@ -222,26 +214,16 @@ import DataExportButton from "@/components/DataExportButton.vue";
 import DatabaseInfo from "@/components/DatabaseInfo.vue";
 import { RichDatabaseName } from "@/components/v2";
 import { DISMISS_PLACEHOLDER } from "@/plugins/ai/components/state";
-import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useConnectionOfCurrentSQLEditorTab,
-  usePolicyByParentAndType,
   useSQLEditorStore,
   useSQLEditorTabStore,
-  useSQLStore,
-  useStorageStore,
   pushNotification,
 } from "@/store";
 import type { ComposedDatabase, SQLEditorQueryParams } from "@/types";
-import {
-  DEBOUNCE_SEARCH_DELAY,
-  isValidDatabaseName,
-  isValidInstanceName,
-} from "@/types";
+import { DEBOUNCE_SEARCH_DELAY, isValidInstanceName } from "@/types";
 import { Engine, ExportFormat } from "@/types/proto-es/v1/common_pb";
-import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 import {
-  ExportRequestSchema,
   type QueryResult,
   type QueryRow,
   type RowValue,
@@ -249,10 +231,7 @@ import {
 import {
   compareQueryRowValues,
   createExplainToken,
-  extractProjectResourceName,
   extractSQLRowValuePlain,
-  generateIssueTitle,
-  hasPermissionToCreateDataExportIssue,
   instanceV1HasStructuredQueryResult,
   isNullOrUndefined,
 } from "@/utils";
@@ -283,6 +262,19 @@ const props = defineProps<{
   database: ComposedDatabase;
   result: QueryResult;
   setIndex: number;
+  showExport: boolean;
+}>();
+
+defineEmits<{
+  (
+    event: "export",
+    option: {
+      resolve: (content: DownloadContent[]) => void;
+      reject: (reason?: any) => void;
+      options: ExportOption;
+      statement: string;
+    }
+  ): Promise<void>;
 }>();
 
 const state = reactive<LocalState>({
@@ -308,25 +300,11 @@ const copyStatement = () => {
 };
 
 const { t } = useI18n();
-const router = useRouter();
 const { dark, keyword } = useSQLResultViewContext();
 const tabStore = useSQLEditorTabStore();
 const editorStore = useSQLEditorStore();
 const currentTab = computed(() => tabStore.currentTab);
 const { instance: connectedInstance } = useConnectionOfCurrentSQLEditorTab();
-
-const { policy: queryDataPolicy } = usePolicyByParentAndType(
-  computed(() => ({
-    parentPath: "",
-    policyType: PolicyType.DATA_QUERY,
-  }))
-);
-
-const disallowExportQueryData = computed(() => {
-  return queryDataPolicy.value?.policy?.case === "queryDataPolicy"
-    ? queryDataPolicy.value.policy.value.disableExport
-    : false;
-});
 
 const viewMode = computed((): ViewMode => {
   const { result } = props;
@@ -348,19 +326,6 @@ const showSearchFeature = computed(() => {
     return false;
   }
   return instanceV1HasStructuredQueryResult(connectedInstance.value);
-});
-
-const allowToRequestExportData = computed(() => {
-  const { database } = props;
-  if (!database) {
-    return false;
-  }
-
-  if (!isValidDatabaseName(database.name)) {
-    return false;
-  }
-
-  return hasPermissionToCreateDataExportIssue(database);
 });
 
 // use a debounced value to improve performance when typing rapidly
@@ -485,71 +450,6 @@ const pageSizeOptions = computed(() => {
     value: n,
   }));
 });
-
-const handleExportBtnClick = async ({
-  options,
-  resolve,
-  reject,
-}: {
-  options: ExportOption;
-  reject: (reason?: any) => void;
-  resolve: (content: DownloadContent[]) => void;
-}) => {
-  const admin = tabStore.currentTab?.mode === "ADMIN";
-  const limit = options.limit ?? (admin ? 0 : editorStore.resultRowsLimit);
-
-  try {
-    const content = await useSQLStore().exportData(
-      create(ExportRequestSchema, {
-        name: props.database.name,
-        dataSourceId: props.params.connection.dataSourceId ?? "",
-        format: options.format,
-        statement: props.result.statement,
-        limit,
-        admin,
-        password: options.password,
-        schema: props.params.connection.schema,
-      })
-    );
-
-    resolve([
-      {
-        content,
-        // the download file is always zip file.
-        filename: `${props.database.databaseName}.${dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss")}.zip`,
-      },
-    ]);
-  } catch (e) {
-    reject(e);
-  }
-};
-
-const handleRequestExport = async () => {
-  if (!props.database) {
-    return;
-  }
-
-  const database = props.database;
-  const project = database.projectEntity;
-  const issueType = "bb.issue.database.data.export";
-  const sqlStorageKey = `bb.issues.sql.${uuidv4()}`;
-  useStorageStore().put(sqlStorageKey, props.result.statement);
-  const query: LocationQueryRaw = {
-    template: issueType,
-    name: generateIssueTitle(issueType, [database.databaseName]),
-    databaseList: database.name,
-    sqlStorageKey,
-  };
-  const route = router.resolve({
-    name: PROJECT_V1_ROUTE_PLAN_DETAIL,
-    params: {
-      projectId: extractProjectResourceName(project.name),
-      planId: "create",
-    },
-    query,
-  });
-  window.open(route.fullPath, "_blank");
-};
 
 const showVisualizeButton = computed((): boolean => {
   return (

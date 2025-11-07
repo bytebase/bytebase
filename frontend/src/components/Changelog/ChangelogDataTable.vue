@@ -131,7 +131,7 @@ const columnList = computed(() => {
         const tables = getAffectedTablesOfChangelog(changelog);
         if (tables.length === 0) return "-";
         return (
-          <p class="space-x-2 truncate">
+          <p class="flex gap-x-2 truncate">
             {tables.map((table) => (
               <span class={table.dropped ? "text-gray-400 italic" : ""}>
                 {getAffectedTableDisplayName(table)}

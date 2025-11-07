@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-4">
+  <div class="flex flex-col gap-y-4">
     <div class="flex items-center">
       <div class="flex-1">
         <div class="flex items-center">
@@ -15,7 +15,7 @@
         v-model:kv-list="state.kvList"
         :readonly="!allowEdit"
         :show-errors="dirty"
-        class="max-w-[30rem]"
+        class="max-w-120"
       />
     </div>
     <div v-if="dirty" class="flex flex-row justify-end items-center gap-x-3">

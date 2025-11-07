@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-2">
+  <div class="flex flex-col gap-y-2">
     <div
       class="w-full flex flex-col sm:flex-row items-start sm:items-end justify-between gap-2"
     >

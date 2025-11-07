@@ -1,5 +1,6 @@
 {
   "common": {
+    "apply-to-database": "Áp dụng cho cơ sở dữ liệu",
     "view": "Xem",
     "you": "bạn",
     "general": "Chung",
@@ -225,7 +226,6 @@
       "n-rows": "{n} dòng"
     },
     "back-to-workspace": "Quay lại không gian làm việc",
-    "encoding": "Mã hóa",
     "finish": "Hoàn tất",
     "title": "Tiêu đề",
     "text-wrap": "Ngắt dòng văn bản",
@@ -392,6 +392,10 @@
       "data-access": "Truy cập dữ liệu",
       "audit-log": "Nhật ký kiểm tra",
       "custom-roles": "Vai trò tùy chỉnh"
+    },
+    "im": {
+      "add-im-integration": "Thêm tích hợp IM",
+      "add-another-im": "Thêm tin nhắn tức thời khác"
     },
     "profile": {
       "email": "Email",
@@ -907,7 +911,6 @@
           "title": "Người tạo",
           "description": "Tìm kiếm theo người sáng tạo"
         },
-        "subscriber": {},
         "approver": {
           "title": "Người phê duyệt",
           "description": "Tìm kiếm theo người phê duyệt vấn đề"
@@ -1193,9 +1196,6 @@
         "self": "Không có giai đoạn",
         "description": "Không có giai đoạn nào được xác định cho lần triển khai này."
       }
-    },
-    "message": {
-      "pervious-stages-incomplete": {}
     }
   },
   "quick-action": {
@@ -1678,7 +1678,6 @@
       "select-tip": "Vui lòng chọn một bảng để bắt đầu."
     },
     "all": "Tất cả cơ sở dữ liệu",
-    "show-schemaless-databases": "Hiển thị cơ sở dữ liệu không có lược đồ. (Chỉnh sửa lược đồ không áp dụng cho cơ sở dữ liệu không có lược đồ.)",
     "transfer": {
       "errors": {
         "select-target-project": "Chọn dự án đích",
@@ -1740,10 +1739,7 @@
       "type-declarative": "Tuyên bố",
       "invalid-version-format": "Phiên bản phải là các phần số được phân tách bằng dấu chấm (ví dụ: 1.0.0)",
       "version-already-exists": "Phiên bản này đã tồn tại trong cơ sở dữ liệu",
-      "delete-confirm-dialog": {
-        "title": "Bạn có chắc chắn muốn xóa?",
-        "content": "Thao tác này sẽ xóa các bản sửa đổi đã áp dụng này và lược đồ cơ sở dữ liệu sẽ không bị thay đổi. Hành động này không thể hoàn tác."
-      }
+      "delete-confirm-dialog": "Thao tác này sẽ xóa các bản sửa đổi đã áp dụng này và lược đồ cơ sở dữ liệu sẽ không bị thay đổi. Hành động này không thể hoàn tác."
     },
     "not-found": "Không tìm thấy cơ sở dữ liệu",
     "drifted": {
@@ -2007,7 +2003,7 @@
     "table-empty-placeholder": "Nhấp vào Chạy để thực hiện truy vấn.",
     "no-data-available": "Không có dữ liệu",
     "download-as-file": "Tải xuống dưới dạng {file}",
-    "only-select-allowed": "Chỉ cho phép câu lệnh {select}.",
+    "only-select-allowed": "Chỉ cho phép thực thi câu lệnh chỉ đọc.",
     "enable-ddl-for-environment": "Bạn có thể bật câu lệnh DDL/DML cho môi trường {environment}.",
     "and-submit-an-issue": "và gửi một vấn đề",
     "to-enable-admin-mode": "để bật chế độ quản trị",
@@ -2152,12 +2148,10 @@
   },
   "schema-editor": {
     "self": "Trình soạn thảo lược đồ",
-    "preview-issue": "Xem trước vấn đề",
-    "sync-sql-from-schema-editor": "Đồng bộ SQL từ Trình soạn thảo lược đồ",
     "raw-sql": "SQL thô",
     "search-database-and-table": "Tìm kiếm cơ sở dữ liệu và bảng",
-    "failed-to-generate-ddl-for-database": "Không thể tạo DDL cho cơ sở dữ liệu {database}",
-    "continue-with-empty-sql": "Tiếp tục với SQL trống",
+    "insert-sql": "Insert SQL",
+    "template-database": "Template database",
     "actions": {
       "create-schema": "Tạo lược đồ",
       "drop-schema": "Xóa lược đồ",
@@ -2219,8 +2213,6 @@
       "duplicated-view-name": "Tên khung nhìn trùng lặp"
     },
     "confirm-to-close": {
-      "title": "Xác nhận đóng",
-      "description": "Bạn có chắc chắn muốn đóng bảng điều khiển không? Thay đổi của bạn sẽ bị mất."
     },
     "foreign-key": {
       "edit": "Chỉnh sửa khóa ngoại",
@@ -2401,7 +2393,6 @@
         "confirm-override-description": "Quy tắc của bạn sẽ bị ghi đè"
       }
     },
-    "rule": {},
     "enabled-rules": "Quy tắc được bật",
     "rule-detail": "Chi tiết quy tắc",
     "view-definition": "Xem định nghĩa",
@@ -2817,44 +2808,6 @@
       "add-root-condition-placeholder": "Nhấp vào \"Thêm điều kiện\" hoặc \"Thêm nhóm điều kiện\" để thêm điều kiện"
     }
   },
-  "changelist": {
-    "self": "Danh sách thay đổi",
-    "changelists": "Danh sách thay đổi",
-    "new": "Danh sách thay đổi mới",
-    "name": "Tên danh sách thay đổi",
-    "name-placeholder": "Danh sách thay đổi của tôi",
-    "error": {
-      "name-is-required": "Tên danh sách thay đổi là bắt buộc",
-      "invalid-resource-id": "ID tài nguyên không hợp lệ",
-      "nothing-changed": "Không có gì thay đổi",
-      "sql-cannot-be-empty": "SQL là bắt buộc",
-      "select-at-least-one-change": "Chọn ít nhất một thay đổi",
-      "select-at-least-one-change-to-export": "Chọn ít nhất một thay đổi để xuất",
-      "add-at-least-one-change": "Thêm ít nhất một thay đổi",
-      "you-are-not-allowed-to-perform-this-action": "Bạn không được phép thực hiện hành động này"
-    },
-    "apply-to-database": "Áp dụng cho cơ sở dữ liệu",
-    "add-change": {
-      "self": "Thêm thay đổi",
-      "changelog": {
-        "select-at-least-one-changelog-below": "Chọn ít nhất một nhật ký thay đổi bên dưới"
-      }
-    },
-    "change-source": {
-      "self": "Nguồn thay đổi",
-      "raw-sql": "SQL thô",
-      "source": "Nguồn"
-    },
-    "confirm-remove-change": "Xóa thay đổi này?",
-    "delete-this-changelist": "Xóa danh sách thay đổi này",
-    "confirm-delete-changelist": "Xóa danh sách thay đổi này?",
-    "import": {
-      "no-file-to-upload": "Không có tệp nào để tải lên",
-      "upload-sql-or-zip-file": "Tải lên tệp .sql hoặc .zip",
-      "optional-upload-sql-or-zip-file": "(Tùy chọn) Tải lên tệp .sql hoặc .zip"
-    },
-    "change-type": "Loại thay đổi"
-  },
   "release": {
     "title": "Giải phóng",
     "releases": "Bản phát hành",
@@ -2880,8 +2833,6 @@
     "vcs-type": {
       "unspecified": "Không xác định"
     },
-    "actions": {},
-    "messages": {},
     "usage-description": "Bản phát hành là một artifact ứng dụng có phiên bản mà việc triển khai vào môi trường được kích hoạt bởi quy trình GitOps."
   },
   "export-data": {
@@ -2934,8 +2885,7 @@
       "algorithm": "Phương pháp che dữ liệu",
       "context": "Quy tắc",
       "classification": "Mức phân loại"
-    },
-    "algorithms": {}
+    }
   },
   "landing": {
     "quick-link": {

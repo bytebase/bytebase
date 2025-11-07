@@ -1,20 +1,20 @@
 <template>
   <div class="flex justify-between items-center">
     <div
-      class="relative flex flex-1 flex-nowrap overflow-hidden overflow bg-gray-100 select-none shrink-0 rounded"
+      class="relative flex flex-1 flex-nowrap overflow-hidden overflow bg-gray-100 select-none shrink-0 rounded-sm"
     >
       <div
         ref="tabsContainerRef"
-        class="flex flex-nowrap overflow-x-auto max-x-full hide-scrollbar overscroll-none px-1 space-x-1"
+        class="flex flex-nowrap overflow-x-auto max-x-full hide-scrollbar overscroll-none px-1 gap-x-1"
       >
         <div
           v-for="tab in tabList"
           ref="tabsContainerRef"
           :key="tab.id"
           :class="[
-            `relative px-1 py-1 my-1 rounded w-40 flex flex-row justify-between items-center shrink-0 border border-transparent cursor-pointer`,
+            `relative px-1 py-1 my-1 rounded-sm w-40 flex flex-row justify-between items-center shrink-0 border border-transparent cursor-pointer`,
             `tab-${tab.id}`,
-            tab.id === currentTab?.id && 'bg-white border-gray-200 shadow',
+            tab.id === currentTab?.id && 'bg-white border-gray-200 shadow-sm',
           ]"
           @click="handleSelectTab(tab)"
         >
@@ -49,7 +49,7 @@
           </div>
           <span class="tab-close-button shrink-0 flex">
             <XIcon
-              class="rounded w-4 h-auto text-gray-400 hover:text-gray-600"
+              class="rounded-sm w-4 h-auto text-gray-400 hover:text-gray-600"
               @click.stop.prevent="handleCloseTab(tab)"
             />
           </span>

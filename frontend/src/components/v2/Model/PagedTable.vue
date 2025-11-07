@@ -1,9 +1,9 @@
 <template>
-  <div class="space-y-4">
+  <div class="flex flex-col gap-y-4">
     <slot name="table" :list="dataList" :loading="state.loading" />
 
-    <div :class="['flex items-center justify-end space-x-2', footerClass]">
-      <div class="flex items-center space-x-2">
+    <div :class="['flex items-center justify-end gap-x-2', footerClass]">
+      <div class="flex items-center gap-x-2">
         <div class="textinfolabel">
           {{ $t("common.rows-per-page") }}
         </div>

@@ -29,11 +29,11 @@
                 {{ $t("task-run.rollback.preview-statement.description") }}
               </NAlert>
 
-              <div class="space-y-4">
+              <div class="flex flex-col gap-y-4">
                 <div
                   v-for="preview in rollbackPreviews"
                   :key="preview.taskRunName"
-                  class="space-y-2"
+                  class="flex flex-col gap-y-2"
                 >
                   <DatabaseDisplay :database="preview.task.target" />
                   <template v-if="!isUndefined(preview.statement)">
@@ -49,7 +49,7 @@
                       v-else
                       class="flex items-center justify-center p-8 border rounded-[3px] bg-gray-50"
                     >
-                      <div class="text-center space-y-2">
+                      <div class="text-center flex flex-col gap-y-2">
                         <DatabaseBackupIcon
                           class="w-6 h-6 mx-auto text-gray-400"
                         />
@@ -61,7 +61,7 @@
                   </template>
                   <div
                     v-else-if="preview.error"
-                    class="p-3 border border-red-200 bg-red-50 rounded text-sm text-red-600"
+                    class="p-3 border border-red-200 bg-red-50 rounded-sm text-sm text-red-600"
                   >
                     {{ preview.error }}
                   </div>

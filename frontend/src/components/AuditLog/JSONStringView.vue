@@ -16,7 +16,7 @@
 
   <BBModal
     :show="showModal"
-    :title="$t('common.view-details')"
+    :title="t('common.view-details')"
     @close="showModal = false"
   >
     <div style="width: calc(100vw - 12rem); height: calc(100vh - 12rem)">
@@ -34,8 +34,11 @@
 import { Maximize2Icon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { BBModal } from "@/bbkit";
 import { MonacoEditor } from "@/components/MonacoEditor";
+
+const { t } = useI18n();
 
 const props = defineProps<{
   jsonString: string;

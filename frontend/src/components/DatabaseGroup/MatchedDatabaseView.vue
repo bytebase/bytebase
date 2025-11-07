@@ -23,7 +23,7 @@
       :name="item.name"
     >
       <template #header-extra>{{ item.databaseList.length }}</template>
-      <div class="space-y-2 w-full max-h-[12rem] overflow-y-auto">
+      <div class="flex flex-col gap-y-2 w-full max-h-48 overflow-y-auto">
         <div class="">
           <div
             v-for="database in item.databaseList"

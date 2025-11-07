@@ -1,7 +1,7 @@
 <template>
   <FormLayout :title="create ? $t('project.webhook.creation.title') : ''">
     <template v-if="!create" #title>
-      <div class="flex flex-row space-x-2 items-center">
+      <div class="flex flex-row gap-x-2 items-center">
         <WebhookTypeIcon :type="props.webhook.type" class="h-6 w-6" />
         <h3 class="text-lg leading-6 font-medium text-main">
           {{ props.webhook.title }}
@@ -25,7 +25,7 @@
                 :key="index"
               >
                 <div
-                  class="flex justify-center px-2 py-4 rounded border border-control-border hover:bg-control-bg-hover cursor-pointer"
+                  class="flex justify-center px-2 py-4 rounded-sm border border-control-border hover:bg-control-bg-hover cursor-pointer"
                   @click.capture="state.webhook.type = item.type"
                 >
                   <div class="flex flex-col items-center">
@@ -91,9 +91,9 @@
           <div class="text-md leading-6 font-medium text-main">
             {{ $t("project.webhook.direct-messages") }}
           </div>
-          <BBAttention class="my-2" :type="imApp?.enabled ? 'info' : 'warning'">
+          <BBAttention class="my-2" :type="imApp ? 'info' : 'warning'">
             <template #default>
-              <span v-if="imApp?.enabled">
+              <span v-if="imApp">
                 {{ $t("project.webhook.direct-messages-tip") }}
               </span>
               <i18n-t
@@ -146,7 +146,7 @@
             {{ $t("project.webhook.triggering-activity") }}
             <RequiredStar />
           </div>
-          <div class="flex flex-col space-y-4 mt-2">
+          <div class="flex flex-col gap-y-4 mt-2">
             <div v-for="(item, index) in webhookActivityItemList" :key="index">
               <div>
                 <div class="flex items-center">
@@ -201,7 +201,7 @@
           :require-confirm="true"
           @confirm="deleteWebhook"
         />
-        <div class="space-x-3">
+        <div class="gap-x-3">
           <NButton v-if="create" @click.prevent="cancel">
             {{ $t("common.cancel") }}
           </NButton>
@@ -269,7 +269,6 @@ import {
   projectWebhookV1TypeItemList,
 } from "@/types";
 import {
-  Webhook_Type,
   type Activity_Type,
   type Project,
   type Webhook,
@@ -358,19 +357,9 @@ const imApp = computed(() => {
   if (!selectedWebhook.value?.supportDirectMessage) {
     return undefined;
   }
-  switch (selectedWebhook.value.type) {
-    case Webhook_Type.SLACK:
-      return imSetting.value?.slack;
-    case Webhook_Type.FEISHU:
-      return imSetting.value?.feishu;
-    case Webhook_Type.LARK:
-      return imSetting.value?.lark;
-    case Webhook_Type.WECOM:
-      return imSetting.value?.wecom;
-    case Webhook_Type.DINGTALK:
-      return imSetting.value?.dingtalk;
-  }
-  return undefined;
+  return imSetting.value?.settings.find(
+    (setting) => setting.type === selectedWebhook.value?.type
+  );
 });
 
 const webhookSupportDirectMessage = computed(

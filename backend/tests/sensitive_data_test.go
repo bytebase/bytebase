@@ -47,9 +47,8 @@ var (
 				},
 			},
 		},
-		Statement:   "SELECT * FROM tech_book",
-		RowsCount:   3,
-		AllowExport: true,
+		Statement: "SELECT * FROM tech_book",
+		RowsCount: 3,
 	}
 	originData = &v1pb.QueryResult{
 		ColumnNames:     []string{"id", "name", "author"},
@@ -77,9 +76,8 @@ var (
 				},
 			},
 		},
-		Statement:   "SELECT * FROM tech_book",
-		RowsCount:   3,
-		AllowExport: true,
+		Statement: "SELECT * FROM tech_book",
+		RowsCount: 3,
 	}
 )
 
@@ -283,10 +281,9 @@ func TestSensitiveData(t *testing.T) {
 				SemanticTypeTitle: "Default",
 			},
 		},
-		Rows:        maskedData.Rows,
-		Statement:   "SELECT * FROM tech_book",
-		RowsCount:   3,
-		AllowExport: true,
+		Rows:      maskedData.Rows,
+		Statement: "SELECT * FROM tech_book",
+		RowsCount: 3,
 	}
 
 	diff := cmp.Diff(expectedMaskedData, queryResp.Msg.Results[0], protocmp.Transform(), protocmp.IgnoreMessages(&durationpb.Duration{}))

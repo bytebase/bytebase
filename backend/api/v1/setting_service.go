@@ -322,44 +322,67 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		storeSettingValue = request.Msg.Setting.Value.GetStringValue()
 
 	case storepb.SettingName_APP_IM:
-		payload := convertAppIMSetting(request.Msg.Setting.Value.GetAppImSettingValue())
-		setting, err := s.store.GetAppIMSetting(ctx)
+		payload, err := convertAppIMSetting(request.Msg.Setting.Value.GetAppImSettingValue())
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get old app im setting"))
+			return nil, err
 		}
-		if request.Msg.UpdateMask == nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask is required"))
+
+		// Helper function to find or create an IM setting entry by type
+		findIMSetting := func(imType storepb.ProjectWebhook_Type) *storepb.AppIMSetting_IMSetting {
+			for _, s := range payload.Settings {
+				if s.Type == imType {
+					return s
+				}
+			}
+			return nil
 		}
-		for _, path := range request.Msg.UpdateMask.Paths {
+
+		for _, path := range request.Msg.GetUpdateMask().GetPaths() {
 			switch path {
 			case "value.app_im_setting_value.slack":
-				if err := slack.ValidateToken(ctx, payload.Slack.GetToken()); err != nil {
+				slackSetting := findIMSetting(storepb.ProjectWebhook_SLACK)
+				if slackSetting == nil || slackSetting.GetSlack() == nil {
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found slack setting"))
+				}
+				if err := slack.ValidateToken(ctx, slackSetting.GetSlack().GetToken()); err != nil {
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("validation failed, error: %v", err))
 				}
-				setting.Slack = payload.Slack
 
 			case "value.app_im_setting_value.feishu":
-				if err := feishu.Validate(ctx, payload.GetFeishu().GetAppId(), payload.GetFeishu().GetAppSecret(), user.Email); err != nil {
+				feishuSetting := findIMSetting(storepb.ProjectWebhook_FEISHU)
+				if feishuSetting == nil || feishuSetting.GetFeishu() == nil {
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found feishu setting"))
+				}
+				if err := feishu.Validate(ctx, feishuSetting.GetFeishu().GetAppId(), feishuSetting.GetFeishu().GetAppSecret(), user.Email); err != nil {
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("validation failed, error: %v", err))
 				}
-				setting.Feishu = payload.Feishu
 
 			case "value.app_im_setting_value.wecom":
-				if err := wecom.Validate(ctx, payload.GetWecom().GetCorpId(), payload.GetWecom().GetAgentId(), payload.GetWecom().GetSecret()); err != nil {
+				wecomSetting := findIMSetting(storepb.ProjectWebhook_WECOM)
+				if wecomSetting == nil || wecomSetting.GetWecom() == nil {
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found wecom setting"))
+				}
+				if err := wecom.Validate(ctx, wecomSetting.GetWecom().GetCorpId(), wecomSetting.GetWecom().GetAgentId(), wecomSetting.GetWecom().GetSecret()); err != nil {
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("validation failed, error: %v", err))
 				}
-				setting.Wecom = payload.Wecom
 
 			case "value.app_im_setting_value.lark":
-				if err := lark.Validate(ctx, payload.GetLark().GetAppId(), payload.GetLark().GetAppSecret(), user.Email); err != nil {
+				larkSetting := findIMSetting(storepb.ProjectWebhook_LARK)
+				if larkSetting == nil || larkSetting.GetLark() == nil {
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found lark setting"))
+				}
+				if err := lark.Validate(ctx, larkSetting.GetLark().GetAppId(), larkSetting.GetLark().GetAppSecret(), user.Email); err != nil {
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("validation failed, error: %v", err))
 				}
-				setting.Lark = payload.Lark
+
 			case "value.app_im_setting_value.dingtalk":
-				if err := dingtalk.Validate(ctx, payload.GetDingtalk().GetClientId(), payload.GetDingtalk().GetClientSecret(), payload.GetDingtalk().RobotCode, user.Phone); err != nil {
+				dingtalkSetting := findIMSetting(storepb.ProjectWebhook_DINGTALK)
+				if dingtalkSetting == nil || dingtalkSetting.GetDingtalk() == nil {
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found dingtalk setting"))
+				}
+				if err := dingtalk.Validate(ctx, dingtalkSetting.GetDingtalk().GetClientId(), dingtalkSetting.GetDingtalk().GetClientSecret(), dingtalkSetting.GetDingtalk().GetRobotCode(), user.Phone); err != nil {
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("validation failed, error: %v", err))
 				}
-				setting.Dingtalk = payload.Dingtalk
 
 			default:
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %v", path))
@@ -376,7 +399,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 			}), nil
 		}
 
-		bytes, err := protojson.Marshal(setting)
+		bytes, err := protojson.Marshal(payload)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal setting for %s, error: %v", apiSettingName, err))
 		}

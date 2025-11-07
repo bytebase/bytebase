@@ -64,6 +64,21 @@ const (
 	StatementNoLockOption                     Code = 237
 	StatementObjectOwnerCheck                 Code = 238
 	StatementDisallowedInSDL                  Code = 239
+	SDLDisallowColumnConstraint               Code = 240
+	SDLRequireConstraintName                  Code = 241
+	SDLRequireSchemaName                      Code = 242
+	SDLRequireIndexName                       Code = 243
+	SDLForeignKeyTableNotFound                Code = 244
+	SDLForeignKeyColumnNotFound               Code = 245
+	SDLForeignKeyTypeMismatch                 Code = 246
+	SDLCheckConstraintInvalidColumn           Code = 247
+	SDLCheckConstraintCrossTableReference     Code = 248
+	SDLDuplicateTableName                     Code = 249
+	SDLDuplicateIndexName                     Code = 250
+	SDLDuplicateConstraintName                Code = 251
+	SDLDuplicateColumnName                    Code = 252
+	SDLMultiplePrimaryKey                     Code = 253
+	SDLViewDependencyNotFound                 Code = 254
 
 	// 301 ～ 399 naming error code
 	// 301 table naming advisor error code.

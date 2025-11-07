@@ -225,7 +225,6 @@
       "n-rows": "{n} rows"
     },
     "back-to-workspace": "Back to workspace",
-    "encoding": "Encoding",
     "finish": "Finish",
     "title": "Title",
     "text-wrap": "Text Wrap",
@@ -246,7 +245,8 @@
     },
     "collapse": "Collapse",
     "line": "Line",
-    "column": "Column"
+    "column": "Column",
+    "apply-to-database": "Apply to database"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -392,6 +392,10 @@
       "data-access": "Data Access",
       "audit-log": "Audit Logs",
       "custom-roles": "Custom Roles"
+    },
+    "im": {
+      "add-im-integration": "Add IM Integration",
+      "add-another-im": "Add Anothr IM"
     },
     "profile": {
       "email": "Email",
@@ -907,7 +911,6 @@
           "title": "Creator",
           "description": "Search by the creator"
         },
-        "subscriber": {},
         "approver": {
           "title": "Approver",
           "description": "Search by the issue approver"
@@ -1193,9 +1196,6 @@
         "self": "No stages",
         "description": "No stages are defined for this rollout."
       }
-    },
-    "message": {
-      "pervious-stages-incomplete": {}
     }
   },
   "quick-action": {
@@ -1678,7 +1678,6 @@
       "select-tip": "Please select a table to start."
     },
     "all": "All databases",
-    "show-schemaless-databases": "Show schemaless databases. (Edit Schema is not applicable for schemaless databases.)",
     "transfer": {
       "errors": {
         "select-target-project": "Select target project",
@@ -1740,10 +1739,7 @@
       "type-declarative": "Declarative",
       "invalid-version-format": "Version must be numeric parts separated by dots (e.g., 1.0.0)",
       "version-already-exists": "This version already exists in the database",
-      "delete-confirm-dialog": {
-        "title": "Are you sure to delete?",
-        "content": "This will delete these applied revisions and the database schema will not be changed. This action cannot be undone."
-      }
+      "delete-confirm-dialog": "This will delete these applied revisions and the database schema will not be changed. This action cannot be undone."
     },
     "not-found": "Cannot found the database",
     "drifted": {
@@ -2007,7 +2003,7 @@
     "table-empty-placeholder": "Click Run to execute the query.",
     "no-data-available": "No data available",
     "download-as-file": "Download as {file}",
-    "only-select-allowed": "Only {select} statements are allowed to execute.",
+    "only-select-allowed": "Only read-only statements are allowed to execute.",
     "enable-ddl-for-environment": "You can enable the DDL/DML statement for the environment {environment}.",
     "and-submit-an-issue": "and submit an issue",
     "to-enable-admin-mode": "to enable the admin mode",
@@ -2152,12 +2148,10 @@
   },
   "schema-editor": {
     "self": "Schema Editor",
-    "preview-issue": "Preview issue",
-    "sync-sql-from-schema-editor": "Sync SQL from Schema Editor",
     "raw-sql": "Raw SQL",
     "search-database-and-table": "Search database and table",
-    "failed-to-generate-ddl-for-database": "Failed to generate the DDL for database {database}",
-    "continue-with-empty-sql": "Continue with empty SQL",
+    "insert-sql": "Insert SQL",
+    "template-database": "Template database",
     "actions": {
       "create-schema": "Create schema",
       "drop-schema": "Drop schema",
@@ -2219,8 +2213,6 @@
       "duplicated-view-name": "Duplicated view name"
     },
     "confirm-to-close": {
-      "title": "Confirm to close",
-      "description": "Are you sure you want to close the panel? Your changes will be lost."
     },
     "foreign-key": {
       "edit": "Edit foreign key",
@@ -2401,7 +2393,6 @@
         "confirm-override-description": "Your rules will be overridden"
       }
     },
-    "rule": {},
     "enabled-rules": "Enabled rules",
     "rule-detail": "Rule detail",
     "view-definition": "View definition",
@@ -2817,44 +2808,6 @@
       "add-root-condition-placeholder": "Click \"Add condition\" or \"Add condition group\" to add condition"
     }
   },
-  "changelist": {
-    "self": "Changelist",
-    "changelists": "Changelists",
-    "new": "New Changelist",
-    "name": "Changelist name",
-    "name-placeholder": "My changelist",
-    "error": {
-      "name-is-required": "Changelist name is required",
-      "invalid-resource-id": "Invalid resource Id",
-      "nothing-changed": "Nothing changed",
-      "sql-cannot-be-empty": "SQL is required",
-      "select-at-least-one-change": "Select at least one change",
-      "select-at-least-one-change-to-export": "Select at least one change to export",
-      "add-at-least-one-change": "Add at least one change",
-      "you-are-not-allowed-to-perform-this-action": "You are not allowed to perform this action"
-    },
-    "apply-to-database": "Apply to database",
-    "add-change": {
-      "self": "Add Change",
-      "changelog": {
-        "select-at-least-one-changelog-below": "Select at least one changelog below"
-      }
-    },
-    "change-source": {
-      "self": "Change source",
-      "raw-sql": "Raw SQL",
-      "source": "Source"
-    },
-    "confirm-remove-change": "Remove this change?",
-    "delete-this-changelist": "Delete this changelist",
-    "confirm-delete-changelist": "Delete this changelist?",
-    "import": {
-      "no-file-to-upload": "No file to upload",
-      "upload-sql-or-zip-file": "Upload .sql or .zip file",
-      "optional-upload-sql-or-zip-file": "(Optional) Upload .sql or .zip file"
-    },
-    "change-type": "Change type"
-  },
   "release": {
     "title": "Release",
     "releases": "Releases",
@@ -2880,8 +2833,6 @@
     "vcs-type": {
       "unspecified": "Unspecified"
     },
-    "actions": {},
-    "messages": {},
     "usage-description": "A release is a versioned application artifact whose deployment to an environment is triggered by a GitOps workflow."
   },
   "export-data": {
@@ -2934,8 +2885,7 @@
       "algorithm": "Masking method",
       "context": "Rule",
       "classification": "Classification level"
-    },
-    "algorithms": {}
+    }
   },
   "landing": {
     "quick-link": {

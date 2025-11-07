@@ -3,7 +3,7 @@
     :title="$t('quick-action.create-project')"
     class="w-[40rem] max-w-[100vw]"
   >
-    <div class="w-full space-y-6 divide-y divide-block-border">
+    <div class="w-full">
       <div class="grid gap-y-6 gap-x-4 grid-cols-1">
         <div class="col-span-1">
           <label
@@ -18,6 +18,7 @@
             class="mt-2 mb-1 w-full"
             :required="true"
             :placeholder="$t('project.create-modal.project-name')"
+            :maxlength="200"
           />
           <ResourceIdField
             ref="resourceIdField"

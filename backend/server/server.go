@@ -213,7 +213,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	s.initMetricReporter()
 
 	// LSP server.
-	s.lspServer = lsp.NewServer(s.store, profile)
+	s.lspServer = lsp.NewServer(s.store, profile, secret, s.stateCfg, s.iamManager, s.licenseService)
 
 	// Stdout audit logger - uses ConditionalLogger that checks RuntimeEnableAuditLogStdout on each call
 	s.stdoutLogger = audit.NewConditionalLogger(&s.profile.RuntimeEnableAuditLogStdout, audit.StdoutLoggerConfig{

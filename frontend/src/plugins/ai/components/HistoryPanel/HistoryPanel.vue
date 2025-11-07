@@ -2,7 +2,7 @@
   <Drawer v-model:show="showHistoryDialog">
     <DrawerContent
       :title="$t('plugin.ai.conversation.history-conversations')"
-      class="w-[calc(100vw-8rem)] max-w-[72rem]"
+      class="w-[calc(100vw-8rem)] max-w-6xl"
       body-content-style="padding: 0"
     >
       <div class="flex h-full">

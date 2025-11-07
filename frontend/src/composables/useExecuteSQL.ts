@@ -365,6 +365,12 @@ const isOnlySelectError = (resultSet: SQLResultSetV1) => {
   ) {
     return true;
   }
+  if (
+    resultSet.error.match(/Support read-only command statements only/) &&
+    resultSet.status === Code.InvalidArgument
+  ) {
+    return true;
+  }
   return false;
 };
 

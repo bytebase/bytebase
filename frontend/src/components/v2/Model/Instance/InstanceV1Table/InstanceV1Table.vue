@@ -27,6 +27,7 @@ import { NButton, NDataTable, type DataTableColumn } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import EllipsisText from "@/components/EllipsisText.vue";
 import { InstanceV1Name } from "@/components/v2";
 import { LabelsCell } from "@/components/v2/Model/cells";
 import { useEnvironmentV1Store } from "@/store";
@@ -119,6 +120,10 @@ const columnList = computed((): InstanceDataTableColumn[] => {
     title: t("common.environment"),
     className: "whitespace-nowrap",
     resizable: true,
+    ellipsis: {
+      tooltip: true,
+    },
+    minWidth: 300,
     render: (instance) => (
       <EnvironmentV1Name
         environment={environmentStore.getEnvironmentByName(
@@ -138,13 +143,13 @@ const columnList = computed((): InstanceDataTableColumn[] => {
     render: (instance) => {
       return (
         <div class={"flex items-start gap-x-2"}>
-          <div>
+          <EllipsisText>
             {state.dataSourceToggle.has(instance.name)
               ? instance.dataSources.map((ds) => (
                   <div>{hostPortOfDataSource(ds)}</div>
                 ))
               : hostPortOfInstanceV1(instance)}
-          </div>
+          </EllipsisText>
           {instance.dataSources.length > 1 ? (
             <NButton
               quaternary

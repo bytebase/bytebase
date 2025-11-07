@@ -115,10 +115,6 @@
         "title": "Phát hiện độ lệch schema",
         "desc": "Phát hiện các thay đổi schema ngoài luồng và báo cáo sự khác biệt."
       },
-      "FEATURE_CHANGELIST": {
-        "title": "Danh sách thay đổi",
-        "desc": "Nhóm và quản lý nhiều thay đổi cơ sở dữ liệu cùng nhau."
-      },
       "FEATURE_SCHEMA_TEMPLATE": {
         "title": "Mẫu schema",
         "desc": "Tạo mẫu trường có thể tái sử dụng cho thiết kế schema nhất quán."
@@ -359,7 +355,6 @@
     "project": "Dự án",
     "idp": "Nhà cung cấp danh tính",
     "database-group": "Nhóm cơ sở dữ liệu",
-    "changelist": "Danh sách thay đổi",
     "review-config": "Cấu hình đánh giá",
     "role": "Vai trò"
   }

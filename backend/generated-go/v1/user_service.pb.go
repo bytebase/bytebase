@@ -7,6 +7,7 @@
 package v1
 
 import (
+	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -838,7 +839,7 @@ var File_v1_user_service_proto protoreflect.FileDescriptor
 
 const file_v1_user_service_proto_rawDesc = "" +
 	"\n" +
-	"\x15v1/user_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\"?\n" +
+	"\x15v1/user_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\"?\n" +
 	"\x0eGetUserRequest\x12-\n" +
 	"\x04name\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
 	"\x11bytebase.com/UserR\x04name\"G\n" +
@@ -872,12 +873,12 @@ const file_v1_user_service_proto_rawDesc = "" +
 	"\x11bytebase.com/UserR\x04name\"D\n" +
 	"\x13UndeleteUserRequest\x12-\n" +
 	"\x04name\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
-	"\x11bytebase.com/UserR\x04name\"\x92\x06\n" +
+	"\x11bytebase.com/UserR\x04name\"\x9c\x06\n" +
 	"\x04User\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12(\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x14\n" +
-	"\x05email\x18\x03 \x01(\tR\x05email\x12\x14\n" +
-	"\x05title\x18\x04 \x01(\tR\x05title\x122\n" +
+	"\x05email\x18\x03 \x01(\tR\x05email\x12\x1e\n" +
+	"\x05title\x18\x04 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x122\n" +
 	"\tuser_type\x18\x05 \x01(\x0e2\x15.bytebase.v1.UserTypeR\buserType\x12\x1f\n" +
 	"\bpassword\x18\a \x01(\tB\x03\xe0A\x04R\bpassword\x12$\n" +
 	"\vservice_key\x18\b \x01(\tB\x03\xe0A\x04R\n" +
@@ -913,7 +914,8 @@ const file_v1_user_service_proto_rawDesc = "" +
 	"UpdateUser\x12\x1e.bytebase.v1.UpdateUserRequest\x1a\x11.bytebase.v1.User\"@\xdaA\x10user,update_mask\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02\x1f:\x04user2\x17/v1/{user.name=users/*}\x12o\n" +
 	"\n" +
 	"DeleteUser\x12\x1e.bytebase.v1.DeleteUserRequest\x1a\x16.google.protobuf.Empty\")\xdaA\x04name\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02\x14*\x12/v1/{name=users/*}\x12s\n" +
-	"\fUndeleteUser\x12 .bytebase.v1.UndeleteUserRequest\x1a\x11.bytebase.v1.User\".\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02 :\x01*\"\x1b/v1/{name=users/*}:undeleteB6Z4github.com/bytebase/bytebase/backend/generated-go/v1b\x06proto3"
+	"\fUndeleteUser\x12 .bytebase.v1.UndeleteUserRequest\x1a\x11.bytebase.v1.User\".\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02 :\x01*\"\x1b/v1/{name=users/*}:undeleteB\xa6\x01\n" +
+	"\x0fcom.bytebase.v1B\x10UserServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (
 	file_v1_user_service_proto_rawDescOnce sync.Once

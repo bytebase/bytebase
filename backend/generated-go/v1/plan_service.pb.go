@@ -7,6 +7,7 @@
 package v1
 
 import (
+	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -1891,7 +1892,7 @@ var File_v1_plan_service_proto protoreflect.FileDescriptor
 
 const file_v1_plan_service_proto_rawDesc = "" +
 	"\n" +
-	"\x15v1/plan_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x19v1/database_service.proto\x1a\x14v1/sql_service.proto\"?\n" +
+	"\x15v1/plan_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x19v1/database_service.proto\x1a\x14v1/sql_service.proto\"?\n" +
 	"\x0eGetPlanRequest\x12-\n" +
 	"\x04name\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
 	"\x11bytebase.com/PlanR\x04name\"\x84\x01\n" +
@@ -1921,14 +1922,14 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\x04plan\x18\x01 \x01(\v2\x11.bytebase.v1.PlanB\x03\xe0A\x02R\x04plan\x12@\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskB\x03\xe0A\x02R\n" +
 	"updateMask\x12#\n" +
-	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"\xff\x10\n" +
+	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"\x93\x11\n" +
 	"\x04Plan\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12(\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x19\n" +
 	"\x05issue\x18\x03 \x01(\tB\x03\xe0A\x03R\x05issue\x12\x1d\n" +
-	"\arollout\x18\x0f \x01(\tB\x03\xe0A\x03R\arollout\x12\x14\n" +
-	"\x05title\x18\x04 \x01(\tR\x05title\x12 \n" +
-	"\vdescription\x18\x05 \x01(\tR\vdescription\x12,\n" +
+	"\arollout\x18\x0f \x01(\tB\x03\xe0A\x03R\arollout\x12\x1e\n" +
+	"\x05title\x18\x04 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12*\n" +
+	"\vdescription\x18\x05 \x01(\tB\b\xbaH\x05r\x03\x18\x90NR\vdescription\x12,\n" +
 	"\x05specs\x18\x0e \x03(\v2\x16.bytebase.v1.Plan.SpecR\x05specs\x12\x1d\n" +
 	"\acreator\x18\b \x01(\tB\x03\xe0A\x03R\acreator\x12@\n" +
 	"\vcreate_time\x18\t \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
@@ -2057,7 +2058,8 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"UpdatePlan\x12\x1e.bytebase.v1.UpdatePlanRequest\x1a\x11.bytebase.v1.Plan\"^\xdaA\x10plan,update_mask\x8a\xea0\x0fbb.plans.update\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02*:\x04plan2\"/v1/{plan.name=projects/*/plans/*}\x12\xbf\x01\n" +
 	"\x11ListPlanCheckRuns\x12%.bytebase.v1.ListPlanCheckRunsRequest\x1a&.bytebase.v1.ListPlanCheckRunsResponse\"[\xdaA\x06parent\x8a\xea0\x15bb.planCheckRuns.list\x90\xea0\x01\x82\xd3\xe4\x93\x02/\x12-/v1/{parent=projects/*/plans/*}/planCheckRuns\x12\xb1\x01\n" +
 	"\rRunPlanChecks\x12!.bytebase.v1.RunPlanChecksRequest\x1a\".bytebase.v1.RunPlanChecksResponse\"Y\xdaA\x04name\x8a\xea0\x14bb.planCheckRuns.run\x90\xea0\x01\x82\xd3\xe4\x93\x020:\x01*\"+/v1/{name=projects/*/plans/*}:runPlanChecks\x12\xe2\x01\n" +
-	"\x18BatchCancelPlanCheckRuns\x12,.bytebase.v1.BatchCancelPlanCheckRunsRequest\x1a-.bytebase.v1.BatchCancelPlanCheckRunsResponse\"i\xdaA\x06parent\x8a\xea0\x14bb.planCheckRuns.run\x90\xea0\x01\x82\xd3\xe4\x93\x02>:\x01*\"9/v1/{parent=projects/*/plans/*}/planCheckRuns:batchCancelB6Z4github.com/bytebase/bytebase/backend/generated-go/v1b\x06proto3"
+	"\x18BatchCancelPlanCheckRuns\x12,.bytebase.v1.BatchCancelPlanCheckRunsRequest\x1a-.bytebase.v1.BatchCancelPlanCheckRunsResponse\"i\xdaA\x06parent\x8a\xea0\x14bb.planCheckRuns.run\x90\xea0\x01\x82\xd3\xe4\x93\x02>:\x01*\"9/v1/{parent=projects/*/plans/*}/planCheckRuns:batchCancelB\xa6\x01\n" +
+	"\x0fcom.bytebase.v1B\x10PlanServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (
 	file_v1_plan_service_proto_rawDescOnce sync.Once

@@ -57,24 +57,36 @@ const icon = computed((): IconType | undefined => {
 
 <style scoped lang="postcss">
 .suffix {
-  @apply flex items-center min-w-[1.25rem];
+  display: flex;
+  align-items: center;
+  min-width: 1.25rem;
 }
 .icon {
-  @apply block w-5 h-5 p-0.5 text-gray-500 rounded;
+  display: block;
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0.125rem;
+  color: rgb(var(--color-gray-500));
+  border-radius: 0.25rem;
 }
 .suffix.closable {
   cursor: pointer;
 }
 .suffix.closable.dirty .icon {
-  @apply text-accent;
+  color: rgb(var(--color-accent));
 }
-.suffix.closable .icon {
-  @apply hover:text-gray-700 hover:bg-gray-200;
+.suffix.closable .icon:hover {
+  color: rgb(var(--color-gray-700));
+  background-color: rgb(var(--color-gray-200));
 }
 .suffix.admin .icon {
-  @apply text-gray-400 hover:text-gray-300 hover:bg-gray-400/30;
+  color: rgb(var(--color-gray-400));
+}
+.suffix.admin .icon:hover {
+  color: rgb(var(--color-gray-300));
+  background-color: rgb(var(--color-gray-400) / 0.3);
 }
 .dummy {
-  @apply invisible;
+  visibility: hidden;
 }
 </style>

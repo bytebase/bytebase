@@ -16,7 +16,7 @@ import (
 	// The packege parser_driver has to be imported.
 	_ "github.com/pingcap/tidb/pkg/types/parser_driver"
 
-	parser "github.com/bytebase/tidb-parser"
+	parser "github.com/bytebase/parser/tidb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"

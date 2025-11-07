@@ -29,12 +29,12 @@
         />
       </div>
       <div
-        class="flex flex-col lg:hidden border px-2 pb-4 divide-y space-y-4 divide-block-border"
+        class="flex flex-col lg:hidden border px-2 pb-4 divide-y divide-block-border"
       >
         <div
           v-for="rule in category.ruleList"
           :key="rule.type"
-          class="pt-4 space-y-3"
+          class="pt-4 flex flex-col gap-y-3"
         >
           <div class="flex justify-between items-center gap-x-2">
             <div class="flex items-center gap-x-1">
@@ -178,7 +178,7 @@ const columns = computed(() => {
           <div class="px-10">
             <p class="w-full text-left text-gray-500">{comment}</p>
             {rule.componentList.length > 0 && !!comment && (
-              <NDivider class={"!my-4"} />
+              <NDivider class={"my-4!"} />
             )}
             {rule.componentList.length > 0 && (
               <RuleConfig
@@ -205,12 +205,12 @@ const columns = computed(() => {
       key: "name",
       render: (rule: RuleTemplateV2) => {
         return (
-          <div class="flex items-center space-x-2">
+          <div class="flex items-center gap-x-2">
             <span>{getRuleLocalization(rule.type, rule.engine).title}</span>
             <a
               href={`https://docs.bytebase.com/sql-review/review-rules#${rule.type}`}
               target="_blank"
-              class="flex flex-row space-x-2 items-center text-base text-gray-500 hover:text-gray-900"
+              class="flex flex-row gap-x-2 items-center text-base text-gray-500 hover:text-gray-900"
             >
               <ExternalLinkIcon class="w-4 h-4" />
             </a>

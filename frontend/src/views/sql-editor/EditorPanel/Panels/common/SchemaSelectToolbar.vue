@@ -5,7 +5,7 @@
       v-model:value="selectedSchemaName"
       :options="schemaSelectOptions"
       size="small"
-      class="min-w-[8rem]"
+      class="min-w-32"
       v-bind="$attrs"
       :consistent-menu-width="false"
     />
@@ -20,7 +20,7 @@
           v-model:value="selectedSchemaName"
           :options="schemaSelectOptions"
           size="small"
-          class="min-w-[8rem]"
+          class="min-w-32"
           v-bind="$attrs"
         />
       </div>

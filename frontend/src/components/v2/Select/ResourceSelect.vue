@@ -105,7 +105,7 @@ const renderLabel = (option: SelectOption, selected: boolean) => {
   );
   if (props.multiple) {
     return (
-      <div class="flex items-start space-x-2 py-2">
+      <div class="flex items-start gap-x-2 py-2">
         <NCheckbox checked={selected} size="small" class="mt-2" />
         {node}
       </div>

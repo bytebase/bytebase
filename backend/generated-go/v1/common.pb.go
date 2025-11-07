@@ -712,7 +712,8 @@ const file_v1_common_proto_rawDesc = "" +
 	"\x16RISK_LEVEL_UNSPECIFIED\x10\x00\x12\a\n" +
 	"\x03LOW\x10\x01\x12\f\n" +
 	"\bMODERATE\x10\x02\x12\b\n" +
-	"\x04HIGH\x10\x03B6Z4github.com/bytebase/bytebase/backend/generated-go/v1b\x06proto3"
+	"\x04HIGH\x10\x03B\xa1\x01\n" +
+	"\x0fcom.bytebase.v1B\vCommonProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (
 	file_v1_common_proto_rawDescOnce sync.Once

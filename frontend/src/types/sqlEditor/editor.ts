@@ -5,7 +5,7 @@ export type EditorModel = monaco.editor.ITextModel;
 export type EditorPosition = monaco.Position;
 export type CompletionItems = monaco.languages.CompletionItem[];
 
-export type Language = "sql" | "javascript" | "redis";
+export type Language = "sql" | "javascript" | "redis" | "json";
 
 export const EngineTypesUsingSQL = [
   "MYSQL",

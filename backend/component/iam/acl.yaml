@@ -4,11 +4,6 @@ roles:
     permissions:
       - bb.auditLogs.export
       - bb.auditLogs.search
-      - bb.changelists.create
-      - bb.changelists.delete
-      - bb.changelists.get
-      - bb.changelists.list
-      - bb.changelists.update
       - bb.changelogs.get
       - bb.changelogs.list
       - bb.databaseCatalogs.get
@@ -121,11 +116,6 @@ roles:
     permissions:
       - bb.auditLogs.export
       - bb.auditLogs.search
-      - bb.changelists.create
-      - bb.changelists.delete
-      - bb.changelists.get
-      - bb.changelists.list
-      - bb.changelists.update
       - bb.changelogs.get
       - bb.changelogs.list
       - bb.databaseCatalogs.get
@@ -136,10 +126,6 @@ roles:
       - bb.databases.list
       - bb.databases.sync
       - bb.databases.update
-      - bb.identityProviders.create
-      - bb.identityProviders.delete
-      - bb.identityProviders.get
-      - bb.identityProviders.update
       - bb.instances.create
       - bb.instances.delete
       - bb.instances.get
@@ -250,11 +236,6 @@ roles:
     permissions:
       - bb.auditLogs.export
       - bb.auditLogs.search
-      - bb.changelists.create
-      - bb.changelists.delete
-      - bb.changelists.get
-      - bb.changelists.list
-      - bb.changelists.update
       - bb.changelogs.get
       - bb.changelogs.list
       - bb.databaseCatalogs.get
@@ -316,10 +297,6 @@ roles:
     title: Project developer
     permissions:
       - bb.auditLogs.search
-      - bb.changelists.create
-      - bb.changelists.get
-      - bb.changelists.list
-      - bb.changelists.update
       - bb.changelogs.get
       - bb.changelogs.list
       - bb.databaseCatalogs.get

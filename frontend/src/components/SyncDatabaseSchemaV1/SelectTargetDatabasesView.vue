@@ -16,16 +16,16 @@
           class="w-full h-full relative flex flex-col justify-start items-start overflow-y-auto pb-2"
         >
           <div
-            class="w-full h-auto flex flex-col justify-start items-start sticky top-0 z-[1]"
+            class="w-full h-auto flex flex-col justify-start items-start sticky top-0 z-1"
           >
             <div
-              class="w-full bg-white border-b p-2 px-3 flex flex-row justify-between items-center sticky top-0 z-[1]"
+              class="w-full bg-white border-b p-2 px-3 flex flex-row justify-between items-center sticky top-0 z-1"
             >
               <span class="text-sm">{{
                 $t("database.sync-schema.target-databases")
               }}</span>
               <button
-                class="p-0.5 rounded bg-gray-100 hover:shadow hover:opacity-80"
+                class="p-0.5 rounded-sm bg-gray-100 hover:shadow-sm hover:opacity-80"
                 @click="state.showSelectDatabasePanel = true"
               >
                 <heroicons-outline:plus class="w-4 h-auto" />
@@ -63,10 +63,10 @@
             <div
               v-for="database of shownDatabaseList"
               :key="database.name"
-              class="w-full group flex flex-row justify-start items-center px-2 py-1 leading-8 cursor-pointer text-sm text-ellipsis whitespace-nowrap rounded hover:bg-gray-50"
+              class="w-full group flex flex-row justify-start items-center px-2 py-1 leading-8 cursor-pointer text-sm text-ellipsis whitespace-nowrap rounded-sm hover:bg-gray-50"
               :class="
                 database.name === state.selectedDatabaseName
-                  ? '!bg-gray-100'
+                  ? 'bg-gray-100!'
                   : ''
               "
               @click="() => (state.selectedDatabaseName = database.name)"
@@ -86,7 +86,7 @@
               </NEllipsis>
               <div class="grow"></div>
               <button
-                class="hidden shrink-0 group-hover:block ml-1 p-0.5 rounded bg-white hover:shadow"
+                class="hidden shrink-0 group-hover:block ml-1 p-0.5 rounded-sm bg-white hover:shadow-sm"
                 @click.stop="handleUnselectDatabase(database)"
               >
                 <heroicons-outline:minus class="w-4 h-auto text-gray-500" />
@@ -136,7 +136,7 @@
         </div>
         <div
           v-show="state.isLoading"
-          class="absolute inset-0 z-10 bg-white bg-opacity-40 backdrop-blur-sm w-full h-full flex flex-col justify-center items-center"
+          class="absolute inset-0 z-10 bg-white bg-opacity-40 backdrop-blur-xs w-full h-full flex flex-col justify-center items-center"
         >
           <BBSpin />
           <span class="mt-1">{{ $t("common.loading") }}</span>

@@ -16,7 +16,7 @@
       </template>
     </MembersBindingSelect>
 
-    <div class="w-full space-y-2">
+    <div class="w-full flex flex-col gap-y-2">
       <div class="flex items-center gap-x-1">
         <span>{{ $t("settings.members.assign-role") }}</span>
         <RequiredStar />
@@ -28,7 +28,7 @@
         :support-roles="supportRoles"
       />
     </div>
-    <div class="w-full space-y-2">
+    <div class="w-full flex flex-col gap-y-2">
       <div class="flex items-center gap-x-1">
         <span>{{ $t("common.reason") }}</span>
         <RequiredStar v-if="requireReason" />
@@ -45,7 +45,7 @@
         state.role !== PresetRoleType.PROJECT_OWNER &&
         checkRoleContainsAnyPermission(state.role, 'bb.sql.select')
       "
-      class="w-full space-y-2"
+      class="w-full flex flex-col gap-y-2"
     >
       <div class="flex items-center gap-x-1">
         <span>{{ $t("common.databases") }}</span>

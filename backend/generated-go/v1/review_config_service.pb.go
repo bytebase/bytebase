@@ -7,6 +7,7 @@
 package v1
 
 import (
+	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -395,7 +396,7 @@ var File_v1_review_config_service_proto protoreflect.FileDescriptor
 
 const file_v1_review_config_service_proto_rawDesc = "" +
 	"\n" +
-	"\x1ev1/review_config_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x13v1/annotation.proto\x1a\x1bv1/org_policy_service.proto\"\x1a\n" +
+	"\x1ev1/review_config_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x13v1/annotation.proto\x1a\x1bv1/org_policy_service.proto\"\x1a\n" +
 	"\x18ListReviewConfigsRequest\"]\n" +
 	"\x19ListReviewConfigsResponse\x12@\n" +
 	"\x0ereview_configs\x18\x01 \x03(\v2\x19.bytebase.v1.ReviewConfigR\rreviewConfigs\"`\n" +
@@ -411,10 +412,10 @@ const file_v1_review_config_service_proto_rawDesc = "" +
 	"\x19bytebase.com/ReviewConfigR\x04name\"R\n" +
 	"\x19DeleteReviewConfigRequest\x125\n" +
 	"\x04name\x18\x01 \x01(\tB!\xe0A\x02\xfaA\x1b\n" +
-	"\x19bytebase.com/ReviewConfigR\x04name\"\xe5\x01\n" +
+	"\x19bytebase.com/ReviewConfigR\x04name\"\xef\x01\n" +
 	"\fReviewConfig\x12\x17\n" +
-	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12\x14\n" +
-	"\x05title\x18\x02 \x01(\tR\x05title\x12\x18\n" +
+	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12\x1e\n" +
+	"\x05title\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12\x18\n" +
 	"\aenabled\x18\x03 \x01(\bR\aenabled\x120\n" +
 	"\x05rules\x18\a \x03(\v2\x1a.bytebase.v1.SQLReviewRuleR\x05rules\x12\x1c\n" +
 	"\tresources\x18\b \x03(\tR\tresources:<\xeaA9\n" +
@@ -424,7 +425,8 @@ const file_v1_review_config_service_proto_rawDesc = "" +
 	"\x11ListReviewConfigs\x12%.bytebase.v1.ListReviewConfigsRequest\x1a&.bytebase.v1.ListReviewConfigsResponse\"9\xdaA\x00\x8a\xea0\x15bb.reviewConfigs.list\x90\xea0\x01\x82\xd3\xe4\x93\x02\x13\x12\x11/v1/reviewConfigs\x12\x98\x01\n" +
 	"\x0fGetReviewConfig\x12#.bytebase.v1.GetReviewConfigRequest\x1a\x19.bytebase.v1.ReviewConfig\"E\xdaA\x04name\x8a\xea0\x14bb.reviewConfigs.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x1c\x12\x1a/v1/{name=reviewConfigs/*}\x12\xef\x01\n" +
 	"\x12UpdateReviewConfig\x12&.bytebase.v1.UpdateReviewConfigRequest\x1a\x19.bytebase.v1.ReviewConfig\"\x95\x01\xdaA\x19review_config,update_mask\x8a\xea0\x17bb.reviewConfigs.update\x90\xea0\x01\xa2\xea0\x17bb.reviewConfigs.create\x82\xd3\xe4\x93\x029:\rreview_config2(/v1/{review_config.name=reviewConfigs/*}\x12\x9e\x01\n" +
-	"\x12DeleteReviewConfig\x12&.bytebase.v1.DeleteReviewConfigRequest\x1a\x16.google.protobuf.Empty\"H\xdaA\x04name\x8a\xea0\x17bb.reviewConfigs.delete\x90\xea0\x01\x82\xd3\xe4\x93\x02\x1c*\x1a/v1/{name=reviewConfigs/*}B6Z4github.com/bytebase/bytebase/backend/generated-go/v1b\x06proto3"
+	"\x12DeleteReviewConfig\x12&.bytebase.v1.DeleteReviewConfigRequest\x1a\x16.google.protobuf.Empty\"H\xdaA\x04name\x8a\xea0\x17bb.reviewConfigs.delete\x90\xea0\x01\x82\xd3\xe4\x93\x02\x1c*\x1a/v1/{name=reviewConfigs/*}B\xae\x01\n" +
+	"\x0fcom.bytebase.v1B\x18ReviewConfigServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (
 	file_v1_review_config_service_proto_rawDescOnce sync.Once

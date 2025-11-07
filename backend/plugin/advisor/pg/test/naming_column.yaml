@@ -1,0 +1,66 @@
+- statement: CREATE TABLE book(id int, "creatorId" int)
+  changeType: 1
+  want:
+    - status: 2
+      code: 302
+      title: naming.column
+      content: '"book"."creatorId" mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE book(id int, qavszgslczmsacubtvyymzhojfytkcmon int)
+  changeType: 1
+- statement: CREATE TABLE book(id int, creator_Id int)
+  changeType: 1
+- statement: CREATE TABLE book(id int, creator_id int)
+  changeType: 1
+- statement: |-
+    CREATE TABLE book(
+      id int,
+      "creatorId" int
+    )
+  changeType: 1
+  want:
+    - status: 2
+      code: 302
+      title: naming.column
+      content: '"book"."creatorId" mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE book(id int, creator_id int);
+                ALTER TABLE book ADD COLUMN "creatorId" int
+  changeType: 1
+  want:
+    - status: 2
+      code: 302
+      title: naming.column
+      content: '"book"."creatorId" mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE book(id int, creator_id int);
+                ALTER TABLE book ADD COLUMN "creator" int
+  changeType: 1
+- statement: |-
+    CREATE TABLE book(id int, creator_id int);
+                ALTER TABLE book RENAME COLUMN creator_id TO "creatorId"
+  changeType: 1
+  want:
+    - status: 2
+      code: 302
+      title: naming.column
+      content: '"book"."creatorId" mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE book(id int, creator_id int);
+                ALTER TABLE book RENAME COLUMN creator_id TO "creator"
+  changeType: 1

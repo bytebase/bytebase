@@ -9,7 +9,7 @@
   >
     <div
       ref="wrapperRef"
-      class="font-mono text-start break-words line-clamp-3"
+      class="font-mono text-start wrap-break-word line-clamp-3"
       v-html="html"
     ></div>
     <div
@@ -36,7 +36,7 @@
         v-if="clickable"
         size="tiny"
         circle
-        class="dark:!bg-dark-bg"
+        class="dark:bg-dark-bg!"
         @click.stop="showDetail"
       >
         <template #icon>
@@ -175,13 +175,13 @@ const classes = computed(() => {
         selectionState.value.columns[0] === props.colIndex &&
         selectionState.value.rows[0] === props.rowIndex
       ) {
-        classes.push("!bg-accent/10 dark:!bg-accent/40");
+        classes.push("bg-accent/10! dark:bg-accent/40!");
       }
     } else if (
       selectionState.value.columns.includes(props.colIndex) ||
       selectionState.value.rows.includes(props.rowIndex)
     ) {
-      classes.push("!bg-accent/10 dark:!bg-accent/40");
+      classes.push("bg-accent/10! dark:bg-accent/40!");
     } else {
     }
   } else {

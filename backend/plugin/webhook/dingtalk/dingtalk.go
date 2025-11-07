@@ -20,6 +20,19 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/webhook"
 )
 
+// getDingTalkConfig extracts the DingTalk configuration from the AppIMSetting.
+func getDingTalkConfig(setting *storepb.AppIMSetting) *storepb.AppIMSetting_DingTalk {
+	if setting == nil {
+		return nil
+	}
+	for _, s := range setting.Settings {
+		if s.Type == storepb.ProjectWebhook_DINGTALK {
+			return s.GetDingtalk()
+		}
+	}
+	return nil
+}
+
 // Response is the API message for DingTalk webhook response.
 type Response struct {
 	ErrorCode    int    `json:"errcode"`
@@ -64,7 +77,7 @@ func (*Receiver) Post(context webhook.Context) error {
 
 // returns true if the message is sent successfully.
 func sendDirectMessage(webhookCtx webhook.Context) bool {
-	dingtalk := webhookCtx.IMSetting.GetDingtalk()
+	dingtalk := getDingTalkConfig(webhookCtx.IMSetting)
 	if dingtalk == nil {
 		return false
 	}

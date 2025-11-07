@@ -5,9 +5,9 @@
       :title="$t('settings.members.add-user')"
     >
       <template #default>
-        <div class="space-y-6">
-          <div class="w-full mb-4 space-y-2">
-            <div class="flex items-center space-x-1">
+        <div class="flex flex-col gap-y-6">
+          <div class="w-full mb-4 flex flex-col gap-y-2">
+            <div class="flex items-center gap-x-1">
               <div class="text-sm font-medium">{{ $t("common.type") }}</div>
               <a
                 href="https://docs.bytebase.com/get-started/terraform?source=console"
@@ -25,7 +25,7 @@
             </NRadioGroup>
           </div>
 
-          <div class="space-y-2">
+          <div class="flex flex-col gap-y-2">
             <label class="block text-sm font-medium leading-5 text-control">
               {{ $t("common.name") }}
             </label>
@@ -33,10 +33,11 @@
               v-model:value="state.user.title"
               :input-props="{ type: 'text', autocomplete: 'off' }"
               placeholder="Foo"
+              :maxlength="200"
             />
           </div>
 
-          <div class="space-y-2">
+          <div class="flex flex-col gap-y-2">
             <label class="block text-sm font-medium leading-5 text-control">
               {{ $t("common.email") }}
               <RequiredStar class="ml-0.5" />
@@ -57,7 +58,7 @@
             />
           </div>
 
-          <div class="space-y-2">
+          <div class="flex flex-col gap-y-2">
             <div>
               <label class="block text-sm font-medium leading-5 text-control">
                 {{ $t("settings.members.table.roles") }}
@@ -67,7 +68,7 @@
           </div>
 
           <template v-if="state.user.userType === UserType.USER">
-            <div class="space-y-2">
+            <div class="flex flex-col gap-y-2">
               <div>
                 <label class="block text-sm font-medium leading-5 text-control">
                   {{ $t("settings.profile.phone") }}

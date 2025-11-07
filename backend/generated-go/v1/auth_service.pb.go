@@ -265,7 +265,9 @@ func (x *OAuth2IdentityProviderContext) GetCode() string {
 
 // OpenID Connect authentication context.
 type OIDCIdentityProviderContext struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Authorization code from OIDC provider.
+	Code          string `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -298,6 +300,13 @@ func (x *OIDCIdentityProviderContext) ProtoReflect() protoreflect.Message {
 // Deprecated: Use OIDCIdentityProviderContext.ProtoReflect.Descriptor instead.
 func (*OIDCIdentityProviderContext) Descriptor() ([]byte, []int) {
 	return file_v1_auth_service_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *OIDCIdentityProviderContext) GetCode() string {
+	if x != nil {
+		return x.Code
+	}
+	return ""
 }
 
 type LoginResponse struct {
@@ -432,8 +441,9 @@ const file_v1_auth_service_proto_rawDesc = "" +
 	"\foidc_context\x18\x02 \x01(\v2(.bytebase.v1.OIDCIdentityProviderContextH\x00R\voidcContextB\t\n" +
 	"\acontext\"3\n" +
 	"\x1dOAuth2IdentityProviderContext\x12\x12\n" +
-	"\x04code\x18\x01 \x01(\tR\x04code\"\x1d\n" +
-	"\x1bOIDCIdentityProviderContext\"\xc0\x01\n" +
+	"\x04code\x18\x01 \x01(\tR\x04code\"1\n" +
+	"\x1bOIDCIdentityProviderContext\x12\x12\n" +
+	"\x04code\x18\x01 \x01(\tR\x04code\"\xc0\x01\n" +
 	"\rLoginResponse\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\x12)\n" +
 	"\x0emfa_temp_token\x18\x02 \x01(\tH\x00R\fmfaTempToken\x88\x01\x01\x124\n" +
@@ -443,7 +453,8 @@ const file_v1_auth_service_proto_rawDesc = "" +
 	"\rLogoutRequest2\xd2\x01\n" +
 	"\vAuthService\x12a\n" +
 	"\x05Login\x12\x19.bytebase.v1.LoginRequest\x1a\x1a.bytebase.v1.LoginResponse\"!\x80\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x13:\x01*\"\x0e/v1/auth/login\x12`\n" +
-	"\x06Logout\x12\x1a.bytebase.v1.LogoutRequest\x1a\x16.google.protobuf.Empty\"\"\x80\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x14:\x01*\"\x0f/v1/auth/logoutB6Z4github.com/bytebase/bytebase/backend/generated-go/v1b\x06proto3"
+	"\x06Logout\x12\x1a.bytebase.v1.LogoutRequest\x1a\x16.google.protobuf.Empty\"\"\x80\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x14:\x01*\"\x0f/v1/auth/logoutB\xa6\x01\n" +
+	"\x0fcom.bytebase.v1B\x10AuthServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (
 	file_v1_auth_service_proto_rawDescOnce sync.Once

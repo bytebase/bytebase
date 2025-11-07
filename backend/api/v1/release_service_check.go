@@ -12,6 +12,7 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
+	advisorpg "github.com/bytebase/bytebase/backend/plugin/advisor/pg"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
@@ -380,6 +381,40 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 			}
 		}
 
+		// Perform SDL style and integrity checks for PostgreSQL
+		var sdlStyleAdvices map[string][]*storepb.Advice
+		var sdlIntegrityAdvices map[string][]*storepb.Advice
+		if engine == storepb.Engine_POSTGRES {
+			fileContents := make(map[string]string)
+			for _, file := range files {
+				fileContents[file.Path] = string(file.Statement)
+			}
+
+			// Run SDL style checks (schema name requirements, index naming, etc.)
+			sdlStyleAdvices = make(map[string][]*storepb.Advice)
+			for filePath, content := range fileContents {
+				advices, err := advisorpg.CheckSDLStyle(content)
+				if err != nil {
+					// Continue with other checks even if style check fails
+					sdlStyleAdvices[filePath] = []*storepb.Advice{{
+						Status:  storepb.Advice_ERROR,
+						Code:    advisor.Internal.Int32(),
+						Title:   "Failed to check SDL style",
+						Content: err.Error(),
+					}}
+				} else {
+					sdlStyleAdvices[filePath] = advices
+				}
+			}
+
+			// Run SDL integrity checks (handles cross-file validation)
+			var err error
+			sdlIntegrityAdvices, err = advisorpg.CheckSDLIntegrity(fileContents)
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check SDL integrity"))
+			}
+		}
+
 		// Perform syntax check and statement type check for declarative files
 		for _, file := range files {
 			checkResult := &v1pb.CheckReleaseResponse_CheckResult{
@@ -436,6 +471,22 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 									}
 								}
 								checkResult.Advices = append(checkResult.Advices, advice)
+							}
+						}
+					}
+
+					// Add SDL style and integrity check results for this file (PostgreSQL only)
+					if engine == storepb.Engine_POSTGRES && len(checkResult.Advices) == 0 {
+						// Add SDL style check results
+						if advices, exists := sdlStyleAdvices[file.Path]; exists {
+							for _, advice := range advices {
+								checkResult.Advices = append(checkResult.Advices, convertToV1Advice(advice))
+							}
+						}
+						// Add SDL integrity check results
+						if advices, exists := sdlIntegrityAdvices[file.Path]; exists {
+							for _, advice := range advices {
+								checkResult.Advices = append(checkResult.Advices, convertToV1Advice(advice))
 							}
 						}
 					}
@@ -594,6 +645,7 @@ func convertRiskLevel(riskLevel storepb.RiskLevel) (v1pb.RiskLevel, error) {
 
 // allowedSDLStatementTypes defines the whitelist of statement types allowed in SDL files.
 // SDL files should only contain CREATE and COMMENT statements to declare the desired schema.
+// ALTER SEQUENCE is allowed for setting ownership (OWNED BY).
 var allowedSDLStatementTypes = map[string]bool{
 	// CREATE statements - declare new objects
 	"CREATE_TABLE":     true,
@@ -603,6 +655,9 @@ var allowedSDLStatementTypes = map[string]bool{
 	"CREATE_FUNCTION":  true,
 	"CREATE_PROCEDURE": true,
 	"CREATE_SCHEMA":    true,
+
+	// ALTER statements - limited to specific cases
+	"ALTER_SEQUENCE": true, // Allowed for OWNED BY and sequence options
 
 	// COMMENT - metadata annotations
 	"COMMENT": true,
@@ -627,7 +682,7 @@ type statementTypeWithPosition struct {
 func getStatementTypesWithPositionsForEngine(engine storepb.Engine, asts any) ([]statementTypeWithPosition, error) {
 	switch engine {
 	case storepb.Engine_POSTGRES, storepb.Engine_COCKROACHDB, storepb.Engine_REDSHIFT:
-		pgStmts, err := pg.GetStatementTypesWithPositions(asts)
+		pgStmts, err := pg.GetStatementTypes(asts)
 		if err != nil {
 			return nil, err
 		}

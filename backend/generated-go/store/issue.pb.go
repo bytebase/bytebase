@@ -299,7 +299,9 @@ const file_store_issue_proto_rawDesc = "" +
 	"\tcondition\x18\x03 \x01(\v2\x11.google.type.ExprR\tcondition\x129\n" +
 	"\n" +
 	"expiration\x18\x04 \x01(\v2\x19.google.protobuf.DurationR\n" +
-	"expirationB\x14Z\x12generated-go/storeb\x06proto3"
+	"expirationB\x8d\x01\n" +
+	"\x12com.bytebase.storeB\n" +
+	"IssueProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
 	file_store_issue_proto_rawDescOnce sync.Once

@@ -1,5 +1,6 @@
 {
   "common": {
+    "apply-to-database": "データベースに適用",
     "view": "チェック",
     "you": "あなた",
     "general": "全般",
@@ -225,7 +226,6 @@
       "n-rows": "{n} 行"
     },
     "back-to-workspace": "ワークスペースに戻る",
-    "encoding": "エンコーディング",
     "finish": "仕上げる",
     "title": "タイトル",
     "text-wrap": "テキストの折り返し",
@@ -392,6 +392,10 @@
       "data-access": "データアクセス",
       "audit-log": "監査ログ",
       "custom-roles": "カスタムロール"
+    },
+    "im": {
+      "add-im-integration": "IM統合を追加する",
+      "add-another-im": "別のIMを追加"
     },
     "profile": {
       "email": "メールアドレス",
@@ -907,7 +911,6 @@
           "title": "作成者",
           "description": "作成者で検索"
         },
-        "subscriber": {},
         "approver": {
           "title": "承認者",
           "description": "イシューの承認者で検索"
@@ -1193,9 +1196,6 @@
         "self": "ステージなし",
         "description": "このロールアウトにはステージが定義されていません。"
       }
-    },
-    "message": {
-      "pervious-stages-incomplete": {}
     }
   },
   "quick-action": {
@@ -1678,7 +1678,6 @@
       "select-tip": "開始するにはテーブルを選択してください。"
     },
     "all": "すべてのデータベース",
-    "show-schemaless-databases": "スキーマレス データベースを示します。 (スキーマの変更は、スキーマのないデータベースでは機能しません。)",
     "transfer": {
       "errors": {
         "select-target-project": "対象プロジェクトを選択",
@@ -1740,10 +1739,7 @@
       "type-declarative": "宣言的",
       "invalid-version-format": "バージョンはドットで区切られた数字部分でなければなりません（例：1.0.0）",
       "version-already-exists": "このバージョンは既にデータベースに存在します",
-      "delete-confirm-dialog": {
-        "title": "本当に削除しますか?",
-        "content": "これにより、適用されたリビジョンが削除され、データベース スキーマは変更されません。このアクションは元に戻せません。"
-      }
+      "delete-confirm-dialog": "これにより、適用されたリビジョンが削除され、データベース スキーマは変更されません。このアクションは元に戻せません。"
     },
     "not-found": "データベースが見つかりません",
     "drifted": {
@@ -2007,7 +2003,7 @@
     "table-empty-placeholder": "「実行」をクリックしてクエリを実行します。",
     "no-data-available": "データなし",
     "download-as-file": "{file} 形式でダウンロード",
-    "only-select-allowed": "{select} ステートメントのみが実行を許可されます",
+    "only-select-allowed": "読み取り専用ステートメントのみが実行を許可されます",
     "enable-ddl-for-environment": "環境 {environment} に対して DDL/DML ステートメントを有効にすることができます。",
     "and-submit-an-issue": "そしてイシューを提出してください",
     "to-enable-admin-mode": "管理者モードを有効にするには",
@@ -2152,12 +2148,10 @@
   },
   "schema-editor": {
     "self": "スキーマエディタ",
-    "preview-issue": "イシューのプレビュー",
-    "sync-sql-from-schema-editor": "スキーマエディタからSQLを同期する",
     "raw-sql": "SQL文",
     "search-database-and-table": "データベースとテーブルを検索する",
-    "failed-to-generate-ddl-for-database": "データベース {database} の DDL 生成に失敗しました",
-    "continue-with-empty-sql": "空のSQLで続行",
+    "insert-sql": "Insert SQL",
+    "template-database": "Template database",
     "actions": {
       "create-schema": "新しいスキーマ",
       "drop-schema": "スキーマの削除",
@@ -2219,8 +2213,6 @@
       "duplicated-view-name": "重複したビュー名"
     },
     "confirm-to-close": {
-      "title": "閉じることを確認しますか？",
-      "description": "変更は閉じると失われます。"
     },
     "foreign-key": {
       "edit": "外部キーを編集",
@@ -2401,7 +2393,6 @@
         "confirm-override-description": "以前のルールは上書きされます"
       }
     },
-    "rule": {},
     "enabled-rules": "開かれたルールの数",
     "rule-detail": "ルールの詳細",
     "view-definition": "ビューの定義",
@@ -2817,44 +2808,6 @@
       "add-root-condition-placeholder": "「条件を追加」または「条件グループを追加」をクリックして条件を追加します。"
     }
   },
-  "changelist": {
-    "self": "変更リスト",
-    "changelists": "変更リスト",
-    "new": "新しい変更リスト",
-    "name": "リスト名の変更",
-    "name-placeholder": "私の変更リスト",
-    "error": {
-      "name-is-required": "変更リスト名を空にすることはできません",
-      "invalid-resource-id": "無効なリソース ID",
-      "nothing-changed": "変化なし",
-      "sql-cannot-be-empty": "SQL を空にすることはできません",
-      "select-at-least-one-change": "少なくとも 1 つの変更を選択してください",
-      "select-at-least-one-change-to-export": "エクスポートする変更を少なくとも 1 つ選択してください",
-      "add-at-least-one-change": "少なくとも 1 つの変更を追加する",
-      "you-are-not-allowed-to-perform-this-action": "このアクションを実行する権限がありません"
-    },
-    "apply-to-database": "データベースに適用する",
-    "add-change": {
-      "self": "変更を追加",
-      "changelog": {
-        "select-at-least-one-changelog-below": "以下から少なくとも 1 つのレコードを選択してください"
-      }
-    },
-    "change-source": {
-      "self": "ソースを変更する",
-      "raw-sql": "SQL文",
-      "source": "ソース"
-    },
-    "confirm-remove-change": "この変更を削除しますか?",
-    "delete-this-changelist": "この変更リストを削除します",
-    "confirm-delete-changelist": "変更リストを削除しますか?",
-    "import": {
-      "no-file-to-upload": "アップロードするファイルがありません",
-      "upload-sql-or-zip-file": ".sql または .zip ファイルをアップロードする",
-      "optional-upload-sql-or-zip-file": "(オプション) .sql または .zip ファイルをアップロードします"
-    },
-    "change-type": "タイプを変更"
-  },
   "release": {
     "title": "リリース",
     "releases": "リリース",
@@ -2880,8 +2833,6 @@
     "vcs-type": {
       "unspecified": "未指定"
     },
-    "actions": {},
-    "messages": {},
     "usage-description": "リリースは、GitOpsワークフローによって環境へのデプロイがトリガーされるバージョン管理されたアプリケーションアーティファクトです。"
   },
   "export-data": {
@@ -2934,8 +2885,7 @@
       "algorithm": "マスキング方法",
       "context": "ルール",
       "classification": "分類レベル"
-    },
-    "algorithms": {}
+    }
   },
   "landing": {
     "quick-link": {

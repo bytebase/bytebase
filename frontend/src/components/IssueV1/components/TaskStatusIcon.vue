@@ -1,6 +1,6 @@
 <template>
   <div
-    class="relative flex flex-shrink-0 items-center justify-center select-none w-6 h-6 overflow-hidden"
+    class="relative flex shrink-0 items-center justify-center select-none w-6 h-6 overflow-hidden"
     :class="classes"
   >
     <template v-if="checkStatus === Advice_Level.ERROR">
@@ -28,7 +28,7 @@
           aria-hidden="true"
         />
         <span
-          class="w-full h-full rounded-full z-[1] bg-info"
+          class="w-full h-full rounded-full z-1 bg-info"
           aria-hidden="true"
         />
       </div>

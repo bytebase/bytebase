@@ -1,13 +1,13 @@
 <template>
-  <div class="flex items-center justify-between h-10 px-4 my-1 space-x-3">
+  <div class="flex items-center justify-between h-10 px-4 my-1 gap-x-3">
     <BytebaseLogo
       v-if="showLogo"
-      class="shrink-0"
+      class="h-10"
       :redirect="WORKSPACE_ROUTE_LANDING"
     />
     <ProjectSwitchPopover />
 
-    <div class="flex-1 flex justify-end items-center space-x-3">
+    <div class="flex-1 flex justify-end items-center gap-x-3">
       <NButton
         v-if="currentPlan === PlanType.FREE"
         size="small"

@@ -2,7 +2,11 @@
   <div>
     <div class="w-full">
       <p class="font-medium text-main mb-2">{{ $t("common.name") }}</p>
-      <NInput v-model:value="state.placeholder" :disabled="readonly" />
+      <NInput
+        v-model:value="state.placeholder"
+        :disabled="readonly"
+        :maxlength="200"
+      />
       <div class="mt-2">
         <ResourceIdField
           ref="resourceIdField"

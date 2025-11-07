@@ -27,7 +27,7 @@ type DatabaseGroupService struct {
 	licenseService *enterprise.LicenseService
 }
 
-// NewDatabaseGroupService creates a new ChangelistService.
+// NewDatabaseGroupService creates a new DatabaseGroupService.
 func NewDatabaseGroupService(store *store.Store, profile *config.Profile, iamManager *iam.Manager, licenseService *enterprise.LicenseService) *DatabaseGroupService {
 	return &DatabaseGroupService{
 		store:          store,

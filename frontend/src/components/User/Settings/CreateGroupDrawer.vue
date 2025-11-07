@@ -1,7 +1,7 @@
 <template>
   <Drawer @close="$emit('close')">
     <DrawerContent
-      class="w-[50rem] max-w-[90vw] relative"
+      class="w-200 max-w-[90vw] relative"
       :title="
         isCreating
           ? $t('settings.members.groups.add-group')
@@ -31,7 +31,11 @@
               {{ $t("settings.members.groups.form.title") }}
               <RequiredStar />
             </label>
-            <NInput v-model:value="state.group.title" :disabled="!allowEdit" />
+            <NInput
+              v-model:value="state.group.title"
+              :disabled="!allowEdit"
+              :maxlength="200"
+            />
           </div>
           <div class="flex flex-col gap-y-2">
             <label class="textlabel block">
@@ -40,17 +44,18 @@
             <NInput
               v-model:value="state.group.description"
               :disabled="!allowEdit"
+              :maxlength="1000"
             />
           </div>
           <div class="flex flex-col gap-y-2">
             <label class="textlabel block">
               {{ $t("settings.members.groups.form.members") }}
             </label>
-            <div class="flex flex-col space-y-2">
+            <div class="flex flex-col gap-y-2">
               <div
                 v-for="(member, i) in state.group.members"
                 :key="member.member"
-                class="w-full flex items-center space-x-3"
+                class="w-full flex items-center gap-x-3"
               >
                 <UserSelect
                   :user="getUserUidForMember(member)"
@@ -75,6 +80,7 @@
                   <NButton
                     quaternary
                     size="tiny"
+                    type="error"
                     :disabled="disallowEditMember"
                     @click="deleteMember(i)"
                   >

@@ -114,7 +114,7 @@
             "
             size="tiny"
             quaternary
-            class="!w-full"
+            class="w-full!"
             @click="() => pageIndex++"
           >
             {{ $t("common.load-more") }}

@@ -1,7 +1,7 @@
 <template>
   <FormLayout :title="title">
     <template #body>
-      <div class="space-y-8">
+      <div class="flex flex-col gap-y-8">
         <div class="w-full">
           <div class="flex items-center gap-x-1 mb-2">
             <span class="text-main">
@@ -24,7 +24,7 @@
             </span>
             <RequiredStar />
           </div>
-          <div class="flex space-x-4">
+          <div class="flex gap-x-4">
             <NCheckbox
               v-for="action in ACTIONS"
               :key="action"

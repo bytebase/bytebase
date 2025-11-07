@@ -1,5 +1,5 @@
 <template>
-  <div class="share-popover w-96 p-2 space-y-4">
+  <div class="share-popover w-96 p-2 flex flex-col gap-y-4">
     <section class="w-full flex flex-row justify-between items-center">
       <div class="pr-4">
         <h2 class="text-lg font-semibold">{{ $t("common.share") }}</h2>
@@ -17,7 +17,7 @@
           >
             <span class="pr-2">{{ $t("sql-editor.link-access") }}:</span>
             <div
-              class="border flex flex-row justify-start items-center px-2 py-1 rounded"
+              class="border flex flex-row justify-start items-center px-2 py-1 rounded-sm"
               :class="
                 allowChangeAccess
                   ? 'hover:border-accent'
@@ -29,11 +29,11 @@
             </div>
           </div>
         </template>
-        <div class="access-content space-y-2 w-80">
+        <div class="access-content flex flex-col gap-y-2 w-80">
           <div
             v-for="option in accessOptions"
             :key="option.label"
-            class="p-2 rounded-sm flex justify-between"
+            class="p-2 rounded-xs flex justify-between"
             :class="[
               allowChangeAccess && 'cursor-pointer hover:bg-gray-200',
               option.value === currentAccess.value && 'bg-gray-200',

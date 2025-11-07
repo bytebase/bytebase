@@ -9,7 +9,7 @@
         <RichEngineName
           :engine="option.value"
           tag="p"
-          class="text-center text-sm !text-main"
+          class="text-center text-sm text-main!"
         />
         <slot name="suffix" :engine="option.value" />
       </div>

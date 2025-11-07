@@ -10,4 +10,3 @@ import (
 func getLicenseProvider(providerConfig *plugin.ProviderConfig) (plugin.LicenseProvider, error) {
 	return aws.NewProvider(providerConfig)
 }
-

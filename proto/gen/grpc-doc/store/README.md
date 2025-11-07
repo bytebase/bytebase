@@ -35,10 +35,6 @@
   
     - [AuditLog.Severity](#bytebase-store-AuditLog-Severity)
   
-- [store/changelist.proto](#store_changelist-proto)
-    - [Changelist](#bytebase-store-Changelist)
-    - [Changelist.Change](#bytebase-store-Changelist-Change)
-  
 - [store/changelog.proto](#store_changelog-proto)
     - [ChangedResourceDatabase](#bytebase-store-ChangedResourceDatabase)
     - [ChangedResourceFunction](#bytebase-store-ChangedResourceFunction)
@@ -269,6 +265,7 @@
     - [AppIMSetting](#bytebase-store-AppIMSetting)
     - [AppIMSetting.DingTalk](#bytebase-store-AppIMSetting-DingTalk)
     - [AppIMSetting.Feishu](#bytebase-store-AppIMSetting-Feishu)
+    - [AppIMSetting.IMSetting](#bytebase-store-AppIMSetting-IMSetting)
     - [AppIMSetting.Lark](#bytebase-store-AppIMSetting-Lark)
     - [AppIMSetting.Slack](#bytebase-store-AppIMSetting-Slack)
     - [AppIMSetting.Wecom](#bytebase-store-AppIMSetting-Wecom)
@@ -333,6 +330,9 @@
     - [UserProfile](#bytebase-store-UserProfile)
   
     - [PrincipalType](#bytebase-store-PrincipalType)
+  
+- [store/worksheet.proto](#store_worksheet-proto)
+    - [WorkSheetOrganizerPayload](#bytebase-store-WorkSheetOrganizerPayload)
   
 - [Scalar Value Types](#scalar-value-types)
 
@@ -752,54 +752,6 @@ Metadata about the request.
 | ALERT | 7 |  |
 | EMERGENCY | 8 |  |
 
-
- 
-
- 
-
- 
-
-
-
-<a name="store_changelist-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## store/changelist.proto
-
-
-
-<a name="bytebase-store-Changelist"></a>
-
-### Changelist
-Changelist represents a collection of database changes that can be applied together.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| description | [string](#string) |  | Human-readable description of this changelist. |
-| changes | [Changelist.Change](#bytebase-store-Changelist-Change) | repeated | The list of changes in this changelist. |
-
-
-
-
-
-
-<a name="bytebase-store-Changelist-Change"></a>
-
-### Changelist.Change
-Change represents a single database modification within the changelist.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| sheet | [string](#string) |  | Resource name of the sheet containing the SQL statements. |
-| source | [string](#string) |  | The source where this change originated from. Format: instances/{instance}/databases/{database}/changelogs/{changelog} for changes from changelog. Empty for raw SQL changes. |
-
-
-
-
-
- 
 
  
 
@@ -4293,11 +4245,7 @@ ISSUE_CREATE represents creating an issue. |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| slack | [AppIMSetting.Slack](#bytebase-store-AppIMSetting-Slack) |  |  |
-| feishu | [AppIMSetting.Feishu](#bytebase-store-AppIMSetting-Feishu) |  |  |
-| wecom | [AppIMSetting.Wecom](#bytebase-store-AppIMSetting-Wecom) |  |  |
-| lark | [AppIMSetting.Lark](#bytebase-store-AppIMSetting-Lark) |  |  |
-| dingtalk | [AppIMSetting.DingTalk](#bytebase-store-AppIMSetting-DingTalk) |  |  |
+| settings | [AppIMSetting.IMSetting](#bytebase-store-AppIMSetting-IMSetting) | repeated |  |
 
 
 
@@ -4312,7 +4260,6 @@ ISSUE_CREATE represents creating an issue. |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| enabled | [bool](#bool) |  |  |
 | client_id | [string](#string) |  |  |
 | client_secret | [string](#string) |  |  |
 | robot_code | [string](#string) |  |  |
@@ -4330,9 +4277,28 @@ ISSUE_CREATE represents creating an issue. |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| enabled | [bool](#bool) |  |  |
 | app_id | [string](#string) |  |  |
 | app_secret | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-AppIMSetting-IMSetting"></a>
+
+### AppIMSetting.IMSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [ProjectWebhook.Type](#bytebase-store-ProjectWebhook-Type) |  |  |
+| slack | [AppIMSetting.Slack](#bytebase-store-AppIMSetting-Slack) |  |  |
+| feishu | [AppIMSetting.Feishu](#bytebase-store-AppIMSetting-Feishu) |  |  |
+| wecom | [AppIMSetting.Wecom](#bytebase-store-AppIMSetting-Wecom) |  |  |
+| lark | [AppIMSetting.Lark](#bytebase-store-AppIMSetting-Lark) |  |  |
+| dingtalk | [AppIMSetting.DingTalk](#bytebase-store-AppIMSetting-DingTalk) |  |  |
 
 
 
@@ -4347,7 +4313,6 @@ ISSUE_CREATE represents creating an issue. |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| enabled | [bool](#bool) |  |  |
 | app_id | [string](#string) |  |  |
 | app_secret | [string](#string) |  |  |
 
@@ -4364,7 +4329,6 @@ ISSUE_CREATE represents creating an issue. |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| enabled | [bool](#bool) |  |  |
 | token | [string](#string) |  |  |
 
 
@@ -4380,7 +4344,6 @@ ISSUE_CREATE represents creating an issue. |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| enabled | [bool](#bool) |  |  |
 | corp_id | [string](#string) |  |  |
 | agent_id | [string](#string) |  |  |
 | secret | [string](#string) |  |  |
@@ -5275,6 +5238,38 @@ PrincipalType is the type of a principal.
 | SERVICE_ACCOUNT | 2 | SERVICE_ACCOUNT represents the external service calling Bytebase OpenAPI. |
 | SYSTEM_BOT | 3 | SYSTEM_BOT represents the internal system bot performing operations. |
 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_worksheet-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/worksheet.proto
+
+
+
+<a name="bytebase-store-WorkSheetOrganizerPayload"></a>
+
+### WorkSheetOrganizerPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| starred | [bool](#bool) |  |  |
+| folders | [string](#string) | repeated | The folder path for a worksheet. For example, if the folders is [A, B, C], means the worksheet is in the A/B/C subfolder. |
+
+
+
+
+
+ 
 
  
 

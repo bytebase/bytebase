@@ -26,6 +26,12 @@ bytebase-build
 # IntelliJ (Goland, IDEA) folder
 .idea
 
+# Claude Code configuration
+.claude
+
+# Git worktrees
+.worktrees/
+
 .DS_Store
 
 # Azure Marketplace build artifacts

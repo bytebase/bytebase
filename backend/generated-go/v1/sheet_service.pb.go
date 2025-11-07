@@ -7,6 +7,7 @@
 package v1
 
 import (
+	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -573,7 +574,7 @@ var File_v1_sheet_service_proto protoreflect.FileDescriptor
 
 const file_v1_sheet_service_proto_rawDesc = "" +
 	"\n" +
-	"\x16v1/sheet_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\"y\n" +
+	"\x16v1/sheet_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\"y\n" +
 	"\x12CreateSheetRequest\x124\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x12-\n" +
@@ -592,10 +593,10 @@ const file_v1_sheet_service_proto_rawDesc = "" +
 	"\x05sheet\x18\x01 \x01(\v2\x12.bytebase.v1.SheetB\x03\xe0A\x02R\x05sheet\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
 	"updateMask\x12#\n" +
-	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"\x89\x03\n" +
+	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"\x91\x03\n" +
 	"\x05Sheet\x12\x1a\n" +
-	"\x04name\x18\x01 \x01(\tB\x06\xe0A\x02\xe0A\x05R\x04name\x12\x19\n" +
-	"\x05title\x18\x03 \x01(\tB\x03\xe0A\x02R\x05title\x12\x1d\n" +
+	"\x04name\x18\x01 \x01(\tB\x06\xe0A\x02\xe0A\x05R\x04name\x12!\n" +
+	"\x05title\x18\x03 \x01(\tB\v\xe0A\x02\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12\x1d\n" +
 	"\acreator\x18\x04 \x01(\tB\x03\xe0A\x03R\acreator\x12@\n" +
 	"\vcreate_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"createTime\x12\x1d\n" +
@@ -617,7 +618,8 @@ const file_v1_sheet_service_proto_rawDesc = "" +
 	"\vCreateSheet\x12\x1f.bytebase.v1.CreateSheetRequest\x1a\x12.bytebase.v1.Sheet\"T\xdaA\fparent,sheet\x8a\xea0\x10bb.sheets.create\x90\xea0\x01\x82\xd3\xe4\x93\x02':\x05sheet\"\x1e/v1/{parent=projects/*}/sheets\x12\xb1\x01\n" +
 	"\x11BatchCreateSheets\x12%.bytebase.v1.BatchCreateSheetsRequest\x1a&.bytebase.v1.BatchCreateSheetsResponse\"M\x8a\xea0\x10bb.sheets.create\x90\xea0\x01\x82\xd3\xe4\x93\x02/:\x01*\"*/v1/{parent=projects/*}/sheets:batchCreate\x12\x80\x01\n" +
 	"\bGetSheet\x12\x1c.bytebase.v1.GetSheetRequest\x1a\x12.bytebase.v1.Sheet\"B\xdaA\x04name\x8a\xea0\rbb.sheets.get\x90\xea0\x01\x82\xd3\xe4\x93\x02 \x12\x1e/v1/{name=projects/*/sheets/*}\x12\xa3\x01\n" +
-	"\vUpdateSheet\x12\x1f.bytebase.v1.UpdateSheetRequest\x1a\x12.bytebase.v1.Sheet\"_\xdaA\x11sheet,update_mask\x8a\xea0\x10bb.sheets.update\x90\xea0\x01\x82\xd3\xe4\x93\x02-:\x05sheet2$/v1/{sheet.name=projects/*/sheets/*}B6Z4github.com/bytebase/bytebase/backend/generated-go/v1b\x06proto3"
+	"\vUpdateSheet\x12\x1f.bytebase.v1.UpdateSheetRequest\x1a\x12.bytebase.v1.Sheet\"_\xdaA\x11sheet,update_mask\x8a\xea0\x10bb.sheets.update\x90\xea0\x01\x82\xd3\xe4\x93\x02-:\x05sheet2$/v1/{sheet.name=projects/*/sheets/*}B\xa7\x01\n" +
+	"\x0fcom.bytebase.v1B\x11SheetServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (
 	file_v1_sheet_service_proto_rawDescOnce sync.Once

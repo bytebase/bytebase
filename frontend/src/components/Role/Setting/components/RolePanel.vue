@@ -20,6 +20,7 @@
               v-model:value="state.role.title"
               :placeholder="$t('role.setting.title-placeholder')"
               :status="state.role.title?.length === 0 ? 'error' : undefined"
+              :maxlength="200"
             />
           </div>
           <div class="-mt-2">
@@ -45,6 +46,7 @@
               type="textarea"
               :autosize="{ minRows: 2, maxRows: 4 }"
               :placeholder="$t('role.setting.description-placeholder')"
+              :maxlength="1000"
             />
           </div>
         </div>
@@ -65,7 +67,7 @@
           </div>
           <NTransfer
             v-model:value="state.role.permissions"
-            class="!h-[32rem]"
+            class="h-[32rem]!"
             source-filterable
             source-filter-placeholder="Search"
             :options="permissionOptions"

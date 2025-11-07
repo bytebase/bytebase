@@ -36,7 +36,7 @@
     @cancel="state.showArchiveConfirm = false"
   >
     <!-- Force Archive Option -->
-    <div class="space-y-3">
+    <div class="flex flex-col gap-y-3">
       <NCheckbox v-model:checked="state.force">
         <div class="text-sm font-normal text-control-light">
           {{ $t("project.batch.force-archive-description") }}
@@ -44,15 +44,15 @@
       </NCheckbox>
 
       <!-- Project List -->
-      <div class="max-h-40 overflow-y-auto border rounded p-2 bg-gray-50">
+      <div class="max-h-40 overflow-y-auto border rounded-sm p-2 bg-gray-50">
         <div class="text-xs font-medium text-gray-600 mb-2">
           {{ $t("project.batch.projects-to-archive") }}:
         </div>
-        <div class="space-y-1">
+        <div class="flex flex-col gap-y-1">
           <div
             v-for="project in projectList"
             :key="project.name"
-            class="text-sm flex items-center space-x-2"
+            class="text-sm flex items-center gap-x-2"
           >
             <CheckIcon class="w-3 h-3 text-green-600" />
             <span>{{ project.title }}</span>

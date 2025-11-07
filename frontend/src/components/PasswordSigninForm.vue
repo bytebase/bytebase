@@ -1,5 +1,5 @@
 <template>
-  <form class="space-y-6 px-1" @submit.prevent="trySignin()">
+  <form class="flex flex-col gap-y-6 px-1" @submit.prevent="trySignin()">
     <div>
       <label
         for="email"
@@ -8,7 +8,7 @@
         {{ $t("common.email") }}
         <RequiredStar />
       </label>
-      <div class="mt-1 rounded-md shadow-sm">
+      <div class="mt-1 rounded-md shadow-xs">
         <BBTextField
           v-model:value="state.email"
           required
@@ -39,14 +39,14 @@
               hint: route.query.hint,
             },
           }"
-          class="text-sm font-normal text-control-light hover:underline focus:outline-none"
+          class="text-sm font-normal text-control-light hover:underline focus:outline-hidden"
           tabindex="-1"
         >
           {{ $t("auth.sign-in.forget-password") }}
         </router-link>
       </label>
       <div
-        class="relative flex flex-row items-center mt-1 rounded-md shadow-sm"
+        class="relative flex flex-row items-center mt-1 rounded-md shadow-xs"
       >
         <BBTextField
           v-model:value="state.password"

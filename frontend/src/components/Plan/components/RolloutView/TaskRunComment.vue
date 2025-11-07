@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col xl:flex-row xl:items-center xl:space-x-1">
+  <div class="flex flex-col xl:flex-row xl:items-center xl:gap-x-1">
     <NEllipsis
       :expand-trigger="expandTrigger || undefined"
       :line-clamp="lineClamp"

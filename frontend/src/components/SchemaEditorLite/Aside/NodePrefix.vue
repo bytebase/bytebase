@@ -36,7 +36,7 @@
       class="w-4 h-4 inline-flex items-center justify-center"
     >
       <PrimaryKeyIcon v-if="isPrimaryKeyColumn" class="w-4 h-4" />
-      <IndexIcon v-if="isIndexColumn" class="!w-4 !h-4 text-gray-500" />
+      <IndexIcon v-if="isIndexColumn" class="w-4! h-4! text-gray-500" />
     </div>
 
     <SchemaIcon

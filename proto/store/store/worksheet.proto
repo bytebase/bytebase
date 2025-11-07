@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package bytebase.store;
+
+option go_package = "generated-go/store";
+
+message WorkSheetOrganizerPayload {
+  bool starred = 1;
+  // The folder path for a worksheet.
+  // For example, if the folders is [A, B, C], means the worksheet is in the A/B/C subfolder.
+  repeated string folders = 2;
+}

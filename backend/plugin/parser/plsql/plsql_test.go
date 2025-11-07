@@ -3,7 +3,7 @@ package plsql
 import (
 	"testing"
 
-	parser "github.com/bytebase/plsql-parser"
+	parser "github.com/bytebase/parser/plsql"
 	"github.com/stretchr/testify/require"
 )
 

@@ -6,7 +6,7 @@ import (
 	"slices"
 
 	"github.com/antlr4-go/antlr/v4"
-	mysql "github.com/bytebase/mysql-parser"
+	"github.com/bytebase/parser/mysql"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -174,7 +174,7 @@ func (r *ColumnNoNullRule) checkCreateTable(ctx *mysql.CreateTableContext) {
 		col := columnName{
 			tableName:  tableName,
 			columnName: column,
-			line:       r.baseLine + tableElement.GetStart().GetLine(),
+			line:       r.baseLine + tableElement.ColumnDefinition().GetStart().GetLine(),
 		}
 		if _, exists := r.columnSet[col.name()]; !exists {
 			r.columnSet[col.name()] = col

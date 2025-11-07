@@ -3,7 +3,7 @@
     <template #trigger>
       <div
         v-if="Object.entries(labels).length > 0"
-        class="flex items-center space-x-1"
+        class="flex items-center gap-x-1"
       >
         <div
           v-for="[key, label] in displayLabels"
@@ -16,7 +16,7 @@
       </div>
       <div v-else>{{ placeholder }}</div>
     </template>
-    <div class="text-sm flex flex-col space-y-1">
+    <div class="text-sm flex flex-col gap-y-1">
       <div v-for="[key, label] in Object.entries(labels)" :key="key">
         {{ `${key}:${label}` }}
       </div>

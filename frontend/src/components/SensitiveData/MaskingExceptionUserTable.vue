@@ -124,7 +124,7 @@ const getDatabaseAccessResource = (access: AccessUser): VNodeChild => {
   const validDatabase = isValidDatabaseResource(access);
 
   return (
-    <div class="space-y-1">
+    <div class="flex flex-col gap-y-1">
       {validDatabase && (
         <div class="flex flex-col xl:flex-row xl:items-center gap-x-1 text-sm textinfo">
           <span class="font-medium">{`${t("common.instance")}:`}</span>
@@ -491,8 +491,8 @@ const revokeAccessAlert = (
     title: t("common.warning"),
     content: () => {
       return (
-        <div class="space-y-3">
-          <div class="textlabel !text-base">
+        <div class="flex flex-col gap-y-3">
+          <div class="textlabel text-base!">
             {t("project.masking-exemption.revoke-exemption-title", {
               member: getMemberBinding(item),
             })}

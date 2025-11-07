@@ -3626,194 +3626,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v1/projects/{project}/changelists:
-        get:
-            tags:
-                - ChangelistService
-            description: |-
-                Lists changelists in a project.
-                 Permissions required: bb.changelists.list
-            operationId: ChangelistService_ListChangelists
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ListChangelistsResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-        post:
-            tags:
-                - ChangelistService
-            description: |-
-                Creates a new changelist in a project.
-                 Permissions required: bb.changelists.create
-            operationId: ChangelistService_CreateChangelist
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-                - name: changelistId
-                  in: query
-                  description: |-
-                    The ID to use for the changelist, which will become the final component of
-                     the changelist's resource name.
-
-                     This value should be 4-63 characters, and valid characters
-                     are /[a-z][0-9]-/.
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/Changelist'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Changelist'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v1/projects/{project}/changelists/{changelist}:
-        get:
-            tags:
-                - ChangelistService
-            description: |-
-                Gets a changelist by name.
-                 Permissions required: bb.changelists.get
-            operationId: ChangelistService_GetChangelist
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-                - name: changelist
-                  in: path
-                  description: The changelist id.
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Changelist'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-        delete:
-            tags:
-                - ChangelistService
-            description: |-
-                Deletes a changelist.
-                 Permissions required: bb.changelists.delete
-            operationId: ChangelistService_DeleteChangelist
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-                - name: changelist
-                  in: path
-                  description: The changelist id.
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content: {}
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-        patch:
-            tags:
-                - ChangelistService
-            description: |-
-                Updates a changelist.
-                 Permissions required: bb.changelists.update
-                 When allow_missing=true, also requires: bb.changelists.create
-            operationId: ChangelistService_UpdateChangelist
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-                - name: changelist
-                  in: path
-                  description: The changelist id.
-                  required: true
-                  schema:
-                    type: string
-                - name: updateMask
-                  in: query
-                  description: The list of fields to be updated.
-                  schema:
-                    type: string
-                    format: field-mask
-                - name: allowMissing
-                  in: query
-                  description: |-
-                    If set to true, and the changelist is not found, a new changelist will be created.
-                     In this situation, `update_mask` is ignored.
-                  schema:
-                    type: boolean
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/Changelist'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Changelist'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
     /v1/projects/{project}/databaseGroups:
         get:
             tags:
@@ -8443,6 +8255,46 @@ components:
         AppIMSetting:
             type: object
             properties:
+                settings:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/AppIMSetting_IMSetting'
+        AppIMSetting_DingTalk:
+            type: object
+            properties:
+                clientId:
+                    writeOnly: true
+                    type: string
+                clientSecret:
+                    writeOnly: true
+                    type: string
+                robotCode:
+                    writeOnly: true
+                    type: string
+        AppIMSetting_Feishu:
+            type: object
+            properties:
+                appId:
+                    writeOnly: true
+                    type: string
+                appSecret:
+                    writeOnly: true
+                    type: string
+        AppIMSetting_IMSetting:
+            type: object
+            properties:
+                type:
+                    enum:
+                        - TYPE_UNSPECIFIED
+                        - SLACK
+                        - DISCORD
+                        - TEAMS
+                        - DINGTALK
+                        - FEISHU
+                        - WECOM
+                        - LARK
+                    type: string
+                    format: enum
                 slack:
                     $ref: '#/components/schemas/AppIMSetting_Slack'
                 feishu:
@@ -8453,52 +8305,32 @@ components:
                     $ref: '#/components/schemas/AppIMSetting_Lark'
                 dingtalk:
                     $ref: '#/components/schemas/AppIMSetting_DingTalk'
-        AppIMSetting_DingTalk:
-            type: object
-            properties:
-                enabled:
-                    type: boolean
-                clientId:
-                    type: string
-                clientSecret:
-                    type: string
-                robotCode:
-                    type: string
-        AppIMSetting_Feishu:
-            type: object
-            properties:
-                enabled:
-                    type: boolean
-                appId:
-                    type: string
-                appSecret:
-                    type: string
         AppIMSetting_Lark:
             type: object
             properties:
-                enabled:
-                    type: boolean
                 appId:
+                    writeOnly: true
                     type: string
                 appSecret:
+                    writeOnly: true
                     type: string
         AppIMSetting_Slack:
             type: object
             properties:
-                enabled:
-                    type: boolean
                 token:
+                    writeOnly: true
                     type: string
         AppIMSetting_Wecom:
             type: object
             properties:
-                enabled:
-                    type: boolean
                 corpId:
+                    writeOnly: true
                     type: string
                 agentId:
+                    writeOnly: true
                     type: string
                 secret:
+                    writeOnly: true
                     type: string
         ApprovalFlow:
             type: object
@@ -9103,33 +8935,6 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/ChangedResourceDatabase'
-        Changelist:
-            type: object
-            properties:
-                description:
-                    type: string
-                    description: Human-readable description of this changelist.
-                changes:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/Changelist_Change'
-                    description: The list of changes in this changelist.
-            description: Changelist represents a collection of database changes that can be applied together.
-        Changelist_Change:
-            type: object
-            properties:
-                sheet:
-                    type: string
-                    description: |-
-                        The sheet containing the SQL statement.
-                         Format: projects/{project}/sheets/{sheet}
-                source:
-                    type: string
-                    description: |-
-                        The source of this change.
-                         Format: instances/{instance}/databases/{database}/changelogs/{changelog}
-                         If empty, the change is from raw SQL.
-            description: A single change in a changelist.
         Changelog:
             type: object
             properties:
@@ -9900,6 +9705,8 @@ components:
                     description: The schemas in the database.
             description: Catalog metadata for a database including schemas, tables, and columns.
         DatabaseGroup:
+            required:
+                - title
             type: object
             properties:
                 name:
@@ -11281,15 +11088,6 @@ components:
                     type: string
                     description: The group this label belongs to.
             description: A label for categorizing and organizing issues.
-        ListChangelistsResponse:
-            type: object
-            properties:
-                changelists:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/Changelist'
-                    description: The changelists from the specified request.
-            description: Response message for listing changelists.
         ListChangelogsResponse:
             type: object
             properties:
@@ -11724,7 +11522,10 @@ components:
             description: OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
         OIDCIdentityProviderContext:
             type: object
-            properties: {}
+            properties:
+                code:
+                    type: string
+                    description: Authorization code from OIDC provider.
             description: OpenID Connect authentication context.
         ObjectSchema:
             type: object
@@ -12401,9 +12202,6 @@ components:
                     description: The query statement for the result.
                 postgresError:
                     $ref: '#/components/schemas/QueryResult_PostgresError'
-                allowExport:
-                    type: boolean
-                    description: The query result is allowed to be exported or not.
                 messages:
                     type: array
                     items:
@@ -14859,6 +14657,11 @@ components:
                     readOnly: true
                     type: boolean
                     description: starred indicates whether the worksheet is starred by the current authenticated user.
+                folders:
+                    readOnly: true
+                    type: array
+                    items:
+                        type: string
         WorksheetOrganizer:
             required:
                 - worksheet
@@ -14872,6 +14675,10 @@ components:
                 starred:
                     type: boolean
                     description: starred means if the worksheet is starred.
+                folders:
+                    type: array
+                    items:
+                        type: string
         WorkspaceApprovalSetting:
             type: object
             properties:
@@ -14950,8 +14757,6 @@ tags:
       description: AuthService handles user authentication operations.
     - name: CelService
       description: CelService manages CEL (Common Expression Language) parsing and formatting operations.
-    - name: ChangelistService
-      description: ChangelistService manages changelists for grouping and organizing database changes.
     - name: DatabaseCatalogService
       description: DatabaseCatalogService manages database schema metadata and classification.
     - name: DatabaseGroupService

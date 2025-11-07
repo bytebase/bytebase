@@ -67,7 +67,7 @@ const columns = computed(() => {
       render: (row: RoleRowData | BindingRowData) => {
         if (row.type === "role") {
           return (
-            <div class="flex items-center space-x-1">
+            <div class="flex items-center gap-x-1">
               {row.scope === "workspace" && (
                 <NTooltip
                   v-slots={{
@@ -112,12 +112,15 @@ const columns = computed(() => {
             row.scope === "project" &&
             props.allowEdit && (
               <NPopconfirm
+                positiveButtonProps={{
+                  type: "error",
+                }}
                 onPositiveClick={() =>
                   emit("revoke-role", row.name, row.id.endsWith(".expired"))
                 }
                 v-slots={{
                   trigger: () => (
-                    <Trash2Icon class="w-4 h-auto ml-auto mr-3 cursor-pointer" />
+                    <Trash2Icon class=" text-red-600 w-4 h-auto ml-auto mr-3 cursor-pointer" />
                   ),
                   default: () => t("settings.members.revoke-access-alert"),
                 }}

@@ -14,7 +14,7 @@
           type="error"
           :title="$t('rollout.task-execution-errors')"
         >
-          <ul class="list-disc list-inside space-y-1">
+          <ul class="list-disc list-inside flex flex-col gap-y-1">
             <li
               v-for="(error, index) in validationErrors"
               :key="index"
@@ -31,7 +31,7 @@
           type="warning"
           :title="$t('rollout.task-execution-notices')"
         >
-          <ul class="list-disc list-inside space-y-1">
+          <ul class="list-disc list-inside flex flex-col gap-y-1">
             <li
               v-for="(warning, index) in validationWarnings"
               :key="index"
@@ -135,7 +135,7 @@
             </template>
             <template v-else>
               <NScrollbar class="max-h-64">
-                <ul class="text-sm space-y-2">
+                <ul class="text-sm flex flex-col gap-y-2">
                   <li
                     v-for="task in eligibleTasks"
                     :key="task.name"
@@ -186,7 +186,7 @@
             :size="'large'"
             :value="runTimeInMS === undefined ? 'immediate' : 'scheduled'"
             @update:value="handleExecutionModeChange"
-            class="!flex flex-row gap-x-4"
+            class="flex! flex-row gap-x-4"
           >
             <!-- Run Immediately Option -->
             <NRadio value="immediate">
@@ -242,6 +242,7 @@
               minRows: 3,
               maxRows: 10,
             }"
+            :maxlength="1000"
           />
         </div>
       </div>

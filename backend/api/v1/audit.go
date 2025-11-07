@@ -18,11 +18,14 @@ import (
 	spb "google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc/codes"
 
+	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/audit"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/config"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -31,17 +34,21 @@ var (
 	maskedString string
 )
 
-// ACLInterceptor is the v1 ACL interceptor for gRPC server.
+// AuditInterceptor is the v1 audit interceptor for gRPC server.
 type AuditInterceptor struct {
 	store        *store.Store
 	stdoutLogger audit.Logger
+	secret       string
+	profile      *config.Profile
 }
 
-// NewAuditInterceptor returns a new v1 API ACL interceptor.
-func NewAuditInterceptor(store *store.Store, stdoutLogger audit.Logger) *AuditInterceptor {
+// NewAuditInterceptor returns a new v1 API audit interceptor.
+func NewAuditInterceptor(store *store.Store, stdoutLogger audit.Logger, secret string, profile *config.Profile) *AuditInterceptor {
 	return &AuditInterceptor{
 		store:        store,
 		stdoutLogger: stdoutLogger,
+		secret:       secret,
+		profile:      profile,
 	}
 }
 
@@ -62,7 +69,7 @@ func (in *AuditInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc 
 			if !common.IsNil(response) {
 				respMsg = response.Any()
 			}
-			if err := createAuditLogConnect(ctx, req.Any(), respMsg, req.Spec().Procedure, in.store, in.stdoutLogger, serviceData, rerr, req.Header(), latency); err != nil {
+			if err := createAuditLogConnect(ctx, req.Any(), respMsg, req.Spec().Procedure, in.store, in.stdoutLogger, in.secret, in.profile, serviceData, rerr, req.Header(), req.Peer().Addr, latency); err != nil {
 				slog.Warn("audit interceptor: failed to create audit log", log.BBError(err), slog.String("method", req.Spec().Procedure))
 			}
 		}
@@ -123,14 +130,14 @@ func (c *auditConnectStreamingConn) Send(resp any) error {
 	// Create audit log for each message pair
 	if c.curRequest != nil {
 		latency := time.Since(c.startTime)
-		if auditErr := createAuditLogConnect(c.ctx, c.curRequest, resp, c.method, c.interceptor.store, c.interceptor.stdoutLogger, nil, nil, c.RequestHeader(), latency); auditErr != nil {
+		if auditErr := createAuditLogConnect(c.ctx, c.curRequest, resp, c.method, c.interceptor.store, c.interceptor.stdoutLogger, c.interceptor.secret, c.interceptor.profile, nil, nil, c.RequestHeader(), c.Peer().Addr, latency); auditErr != nil {
 			return auditErr
 		}
 	}
 	return nil
 }
 
-func createAuditLogConnect(ctx context.Context, request, response any, method string, storage *store.Store, stdoutLogger audit.Logger, serviceData *anypb.Any, rerr error, headers http.Header, latency time.Duration) error {
+func createAuditLogConnect(ctx context.Context, request, response any, method string, storage *store.Store, stdoutLogger audit.Logger, secret string, profile *config.Profile, serviceData *anypb.Any, rerr error, headers http.Header, peerAddr string, latency time.Duration) error {
 	requestString, err := getRequestString(request)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get request string")
@@ -144,6 +151,7 @@ func createAuditLogConnect(ctx context.Context, request, response any, method st
 	if u, ok := GetUserFromContext(ctx); ok {
 		user = common.FormatUserUID(u.ID)
 	} else {
+		// Try to get user from successful login response.
 		if loginResponse, ok := response.(*v1pb.LoginResponse); ok {
 			user = loginResponse.GetUser().GetName()
 		}
@@ -155,7 +163,7 @@ func createAuditLogConnect(ctx context.Context, request, response any, method st
 		return connect.NewError(connect.CodeInternal, errors.New("auth context not found"))
 	}
 
-	requestMetadata := getRequestMetadataFromHeaders(headers)
+	requestMetadata := getRequestMetadataFromHeaders(headers, peerAddr)
 
 	var parents []string
 	if authContext.HasWorkspaceResource() {
@@ -172,10 +180,26 @@ func createAuditLogConnect(ctx context.Context, request, response any, method st
 
 	createAuditLogCtx := context.WithoutCancel(ctx)
 	for _, parent := range parents {
+		resource := getRequestResource(request)
+		// For login requests, if resource is empty, try to get email from user context or MFA temp token.
+		// This handles MFA phase where request doesn't have email field.
+		if resource == "" && method == v1connect.AuthServiceLoginProcedure {
+			if u, ok := GetUserFromContext(ctx); ok {
+				resource = u.Email
+			} else if loginRequest, ok := request.(*v1pb.LoginRequest); ok && loginRequest.MfaTempToken != nil {
+				// Extract user from MFA temp token and fetch email from database.
+				if userID, err := auth.GetUserIDFromMFATempToken(*loginRequest.MfaTempToken, profile.Mode, secret); err == nil {
+					if u, err := storage.GetUserByID(createAuditLogCtx, userID); err == nil && u != nil {
+						resource = u.Email
+					}
+				}
+			}
+		}
+
 		p := &storepb.AuditLog{
 			Parent:          parent,
 			Method:          method,
-			Resource:        getRequestResource(request),
+			Resource:        resource,
 			Severity:        storepb.AuditLog_INFO,
 			User:            user,
 			Request:         requestString,
@@ -487,7 +511,6 @@ func redactQueryResponse(r *v1pb.QueryResponse) *v1pb.QueryResponse {
 			Latency:         result.Latency,
 			Statement:       result.Statement,
 			DetailedError:   result.DetailedError,
-			AllowExport:     result.AllowExport,
 			Masked:          redactMaskingReasons(result.Masked), // Redact icon data
 		})
 	}
@@ -541,13 +564,18 @@ func needAudit(ctx context.Context) bool {
 }
 
 // getRequestMetadataFromHeaders extracts request metadata from HTTP headers for ConnectRPC.
-func getRequestMetadataFromHeaders(headers http.Header) *storepb.RequestMetadata {
+func getRequestMetadataFromHeaders(headers http.Header, peerAddr string) *storepb.RequestMetadata {
 	userAgent := headers.Get("User-Agent")
-	// For ConnectRPC, we don't have direct access to peer info like gRPC
-	// The caller IP will need to be extracted from X-Forwarded-For or similar headers
-	callerIP := headers.Get("X-Forwarded-For")
+	// Extract caller IP with fallback chain:
+	// 1. X-Real-IP (set by reverse proxy, most trustworthy single IP)
+	// 2. X-Forwarded-For (standard but can contain client-spoofed data)
+	// 3. Peer address from ConnectRPC (direct connection fallback)
+	callerIP := headers.Get("X-Real-IP")
 	if callerIP == "" {
-		callerIP = headers.Get("X-Real-IP")
+		callerIP = headers.Get("X-Forwarded-For")
+	}
+	if callerIP == "" {
+		callerIP = peerAddr
 	}
 
 	return &storepb.RequestMetadata{

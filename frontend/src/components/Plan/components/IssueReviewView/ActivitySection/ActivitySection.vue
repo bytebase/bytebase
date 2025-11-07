@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-4">
+  <div class="flex flex-col gap-y-4">
     <h3 class="text-base font-medium">
       {{ $t("common.activity") }}
     </h3>

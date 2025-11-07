@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-2">
+  <div class="flex flex-col gap-y-2">
     <div class="flex items-center justify-start">
       <div class="font-medium text-base">
         {{ sourceText(source) }}
@@ -57,9 +57,9 @@ const columns = computed((): DataTableColumn<Row>[] => {
       title: t("custom-approval.approval-flow.self"),
       key: "rule",
       render: (row) => (
-        <div class="flex items-center space-x-2">
+        <div class="flex items-center gap-x-2">
           <RuleSelect
-            class="flex-1 max-w-md min-w-[10rem]"
+            class="flex-1 max-w-md min-w-40"
             value={row.rule}
             onUpdate={(rule: string | undefined) => updateRow(row, rule)}
           />

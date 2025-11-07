@@ -281,13 +281,6 @@ export declare type QueryResult = Message<"bytebase.v1.QueryResult"> & {
   } | { case: undefined; value?: undefined };
 
   /**
-   * The query result is allowed to be exported or not.
-   *
-   * @generated from field: bool allow_export = 11;
-   */
-  allowExport: boolean;
-
-  /**
    * Informational or debug messages returned by the database engine during query execution.
    * Examples include PostgreSQL's RAISE NOTICE, MSSQL's PRINT, or Oracle's DBMS_OUTPUT.PUT_LINE.
    *

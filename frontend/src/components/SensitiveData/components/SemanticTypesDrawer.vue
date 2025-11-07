@@ -1,7 +1,7 @@
 <template>
   <Drawer :show="show" @close="$emit('dismiss')">
     <DrawerContent :title="$t('settings.sensitive-data.semantic-types.self')">
-      <div class="divide-block-border space-y-8 w-[50rem] h-full">
+      <div class="flex flex-col gap-y-8 w-200 h-full">
         <SemanticTypesTable
           :readonly="true"
           :row-clickable="true"

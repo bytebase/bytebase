@@ -15,12 +15,12 @@
           </p>
         </div>
         <div
-          class="flex flex-row space-x-4 order-3 my-2 flex-shrink-0 w-full sm:order-2 sm:py-1 sm:my-0 sm:w-auto"
+          class="flex flex-row gap-x-4 order-3 my-2 shrink-0 w-full sm:order-2 sm:py-1 sm:my-0 sm:w-auto"
         >
           <a
             href="https://docs.bytebase.com/get-started/self-host-vs-cloud/?source=demo"
             target="_blank"
-            class="flex items-center justify-center pl-4 pr-2 py-1 border border-transparent rounded-sm text-base font-medium text-accent bg-white hover:bg-indigo-50"
+            class="flex items-center justify-center pl-4 pr-2 py-1 border border-transparent rounded-xs text-base font-medium text-accent bg-white hover:bg-indigo-50"
           >
             {{ $t("banner.deploy") }}
             <heroicons-outline:arrow-down-tray class="ml-1 w-6 h-6" />
@@ -28,14 +28,14 @@
           <a
             href="https://hub.bytebase.com/workspace?source=demo"
             target="_blank"
-            class="flex items-center justify-center pl-4 pr-2 py-1 border border-transparent rounded-sm text-base font-medium text-accent bg-white hover:bg-indigo-50"
+            class="flex items-center justify-center pl-4 pr-2 py-1 border border-transparent rounded-xs text-base font-medium text-accent bg-white hover:bg-indigo-50"
           >
             {{ $t("banner.cloud") }}
             <heroicons-outline:cloud class="ml-1 w-6 h-6" />
           </a>
         </div>
 
-        <div class="order-2 flex-shrink-0 sm:order-3 sm:ml-3 -mr-1">
+        <div class="order-2 shrink-0 sm:order-3 sm:ml-3 -mr-1">
           <NButton quaternary size="small" @click.prevent="show = false">
             <span class="sr-only">{{ $t("common.dismiss") }}</span>
             <template #icon>

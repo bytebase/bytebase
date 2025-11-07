@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-y-2 pt-2">
+  <div class="flex flex-col gap-y-2 py-3">
     <div class="flex items-center justify-between gap-2">
       <div class="flex items-center gap-1">
         <h3 class="text-base">{{ $t("plan.targets.title") }}</h3>
@@ -38,9 +38,7 @@
             <DatabaseDisplay :database="target" show-environment />
           </template>
           <template v-else-if="isValidDatabaseGroupName(target)">
-            <DatabaseGroupIcon
-              class="w-4 h-4 text-control-light flex-shrink-0"
-            />
+            <DatabaseGroupIcon class="w-4 h-4 text-control-light shrink-0" />
             <DatabaseGroupName
               :database-group="
                 dbGroupStore.getDBGroupByName(target) as DatabaseGroup

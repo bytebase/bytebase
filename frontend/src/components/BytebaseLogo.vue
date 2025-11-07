@@ -1,26 +1,29 @@
 <template>
   <div
-    class="flex-shrink-0 w-44 min-h-[4rem] flex items-center overflow-y-hidden"
+    class="shrink-0 max-w-44 flex items-center overflow-hidden"
     @click="recordRedirect"
   >
+    <!-- The active-class and exact-active-class need to set as ""
+     to avoid unexpected route-link class override -->
     <component
       :is="component"
       :to="{
         name: redirect,
       }"
-      class="w-full select-none flex flex-row justify-center items-center"
+      class="h-full w-full select-none flex flex-row justify-center items-center"
       active-class=""
       exact-active-class=""
     >
       <img
         v-if="customBrandingLogo"
         :src="customBrandingLogo"
-        class="w-auto max-w-full my-3"
+        alt="branding logo"
+        class="h-full object-contain"
       />
 
       <img
         v-else
-        class="h-8 md:h-10 w-auto"
+        class="h-8 md:h-10 w-auto object-contain"
         src="@/assets/logo-full.svg"
         alt="Bytebase"
       />

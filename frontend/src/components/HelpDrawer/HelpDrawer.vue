@@ -1,7 +1,7 @@
 <template>
   <Drawer
     :show="active"
-    class="!w-96 max-w-full"
+    class="w-96! max-w-full"
     :close-on-esc="true"
     @update:show="(show: boolean) => !show && onClose()"
   >
@@ -20,14 +20,18 @@
           >
             <p class="text-sm mb-2">微信扫码加入官方社群</p>
             <div class="flex flex-row justify-center">
-              <div class="qrcode-card">
+              <div
+                class="w-20 flex flex-col items-center justify-start text-xs"
+              >
                 <img
                   src="@/assets/wechat-official-qrcode.webp"
                   alt="微信公众号"
                 />
                 <span>公众号</span>
               </div>
-              <div class="qrcode-card ml-4">
+              <div
+                class="w-20 flex flex-col items-center justify-start text-xs ml-4"
+              >
                 <img
                   src="@/assets/bb-helper-wechat-qrcode.webp"
                   alt="BB_小助手"
@@ -175,9 +179,3 @@ const activate = () => (active.value = true);
 
 const deactivate = () => (active.value = false);
 </script>
-
-<style scoped>
-.qrcode-card {
-  @apply w-20 flex flex-col items-center justify-start text-xs;
-}
-</style>

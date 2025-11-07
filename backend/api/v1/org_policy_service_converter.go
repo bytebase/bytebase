@@ -102,6 +102,29 @@ func convertToStorePBRolloutPolicy(policy *v1pb.RolloutPolicy) *storepb.RolloutP
 	}
 }
 
+func convertToV1PBRolloutPolicy(policy *storepb.RolloutPolicy) *v1pb.RolloutPolicy {
+	return &v1pb.RolloutPolicy{
+		Automatic: policy.Automatic,
+		Roles:     policy.Roles,
+		Checkers:  convertToV1PBCheckers(policy.Checkers),
+	}
+}
+
+func convertToV1PBCheckers(checkers *storepb.RolloutPolicy_Checkers) *v1pb.RolloutPolicy_Checkers {
+	if checkers == nil {
+		return nil
+	}
+	result := &v1pb.RolloutPolicy_Checkers{
+		RequiredIssueApproval: checkers.RequiredIssueApproval,
+	}
+	if checkers.RequiredStatusChecks != nil {
+		result.RequiredStatusChecks = &v1pb.RolloutPolicy_Checkers_RequiredStatusChecks{
+			PlanCheckEnforcement: v1pb.RolloutPolicy_Checkers_PlanCheckEnforcement(checkers.RequiredStatusChecks.PlanCheckEnforcement),
+		}
+	}
+	return result
+}
+
 func convertToStorePBCheckers(checkers *v1pb.RolloutPolicy_Checkers) *storepb.RolloutPolicy_Checkers {
 	if checkers == nil {
 		return nil

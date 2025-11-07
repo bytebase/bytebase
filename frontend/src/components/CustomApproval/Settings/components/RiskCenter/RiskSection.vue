@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-2">
+  <div class="flex flex-col gap-y-2">
     <div class="flex items-center justify-start">
       <div class="font-medium text-base">
         {{ sourceText(source) }}

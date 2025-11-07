@@ -7,7 +7,7 @@
 
     <div class="text" @click="handleClickStage">
       <div
-        class="text-sm min-w-32 flex items-center space-x-1 lg:min-w-fit with-underline whitespace-nowrap"
+        class="text-sm min-w-32 flex items-center gap-x-1 lg:min-w-fit with-underline whitespace-nowrap"
       >
         <heroicons:arrow-small-right
           v-if="isActiveStage"
@@ -192,34 +192,50 @@ const handleClickStage = () => {
 
 <style scoped lang="postcss">
 .stage {
-  @apply cursor-default flex items-center justify-start w-full text-sm relative;
-  @apply lg:flex-1;
+  cursor: default;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  position: relative;
+}
+@media (min-width: 1024px) {
+  .stage {
+    flex: 1 1 0%;
+  }
 }
 .stage.selected .text .with-underline {
-  @apply underline;
+  text-decoration-line: underline;
 }
 
 .stage .text {
-  @apply cursor-pointer flex-1 ml-4 flex flex-col gap-y-0.5;
+  cursor: pointer;
+  flex: 1 1 0%;
+  margin-left: 1rem;
+  display: flex;
+  flex-direction: column;
+  row-gap: 0.125rem;
 }
 .stage.active .text {
-  @apply font-bold;
+  font-weight: 700;
 }
 .stage.status_done .text {
-  @apply text-control;
+  color: var(--color-control);
 }
 .stage.status_pending .text,
 .stage.status_pending_approval .text {
-  @apply text-control;
+  color: var(--color-control);
 }
 .stage.active.status_pending .text,
 .stage.active.status_pending_approval .text {
-  @apply text-info;
+  color: var(--color-info);
 }
 .stage.status_running .text {
-  @apply text-info;
+  color: var(--color-info);
 }
 .stage.status_failed .text {
-  @apply text-red-500;
+  color: var(--color-red-500);
 }
 </style>

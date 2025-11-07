@@ -155,13 +155,13 @@ export const getRenderOptionFunc = (resource: {
   return (info: { node: VNode; selected: boolean }) => {
     return h(
       info.node,
-      { class: "flex items-center justify-between space-x-4" },
+      { class: "flex items-center justify-between gap-x-4" },
       [
         h("div", { class: "flex flex-col px-1 py-1 z-10" }, [
           typeof resource.title === "string"
             ? h(
                 "div",
-                { class: `textlabel ${info.selected ? "!text-accent" : ""}` },
+                { class: `textlabel ${info.selected ? "text-accent!" : ""}` },
                 resource.title
               )
             : resource.title(),

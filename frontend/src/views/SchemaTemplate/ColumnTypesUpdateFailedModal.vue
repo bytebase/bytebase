@@ -3,7 +3,7 @@
     :title="
       $t('schema-template.column-type-restriction.messages.unable-to-update')
     "
-    class="!w-[32rem] !max-w-full"
+    class="w-lg! max-w-full!"
     @close="emits('close')"
   >
     <div class="w-full">

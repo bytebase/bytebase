@@ -2,7 +2,7 @@
   <Drawer :show="show" @close="$emit('close')">
     <DrawerContent
       :title="$t('sql-review.select-review-rules')"
-      class="w-[70rem] max-w-[100vw] relative"
+      class="w-280 max-w-[100vw] relative"
     >
       <template #default>
         <SQLReviewTabsByEngine :rule-map-by-engine="ruleTemplateMapV2">

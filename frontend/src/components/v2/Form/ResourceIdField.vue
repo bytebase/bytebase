@@ -46,12 +46,12 @@
     </div>
     <ul
       v-if="state.validatedMessages.length > 0"
-      class="w-full my-2 space-y-2 list-disc list-outside pl-4"
+      class="w-full my-2 flex flex-col gap-y-2 list-disc list-outside pl-4"
     >
       <li
         v-for="validateMessage in state.validatedMessages"
         :key="validateMessage.message"
-        class="break-words w-full text-xs"
+        class="wrap-break-word w-full text-xs"
         :class="[
           validateMessage.type === 'warning' && 'text-yellow-600',
           validateMessage.type === 'error' && 'text-red-600',
@@ -100,7 +100,6 @@ type ResourceType =
   | "idp"
   | "role"
   | "database-group"
-  | "changelist"
   | "review-config";
 
 const props = withDefaults(

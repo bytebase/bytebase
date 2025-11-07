@@ -222,7 +222,7 @@
     </template>
     <div
       v-else-if="credentialSource === 'default'"
-      class="mt-1 sm:col-span-3 sm:col-start-1 textinfolabel !leading-6 credential"
+      class="mt-1 sm:col-span-3 sm:col-start-1 textinfolabel leading-6! credential"
     >
       <span
         v-if="
@@ -383,6 +383,9 @@ watch(
 
 <style lang="postcss" scoped>
 .credential :deep(.code) {
-  @apply bg-gray-100 p-1 rounded-sm mr-1;
+  background-color: var(--color-gray-100);
+  padding: 0.25rem;
+  border-radius: 0.125rem;
+  margin-right: 0.25rem;
 }
 </style>

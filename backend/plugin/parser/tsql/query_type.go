@@ -1,7 +1,7 @@
 package tsql
 
 import (
-	parser "github.com/bytebase/tsql-parser"
+	parser "github.com/bytebase/parser/tsql"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )

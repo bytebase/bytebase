@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-6 pb-2">
+  <div class="flex flex-col gap-y-6 pb-2">
     <div class="divide-y divide-block-border max-w-[850px]">
       <InstanceEngineRadioGrid
         v-if="isCreating"
@@ -11,7 +11,7 @@
         <template #suffix="{ engine }: { engine: Engine }">
           <BBBetaBadge
             v-if="isEngineBeta(engine)"
-            class="absolute -top-1.5 -right-1 rounded text-xs !bg-gray-500 px-1 !py-0 z-10"
+            class="absolute -top-1.5 -right-1 rounded-sm text-xs bg-gray-500! px-1 py-0! z-10"
           />
         </template>
       </InstanceEngineRadioGrid>
@@ -32,6 +32,7 @@
             required
             class="mt-1 w-full"
             :disabled="!allowEdit"
+            :maxlength="200"
           />
         </div>
 
@@ -226,7 +227,7 @@
 
         <div
           v-if="basicInfo.engine === Engine.REDIS"
-          class="sm:col-span-4 sm:col-start-1 space-y-2"
+          class="sm:col-span-4 sm:col-start-1 flex flex-col gap-y-2"
         >
           <label
             for="connectionStringSchema"
@@ -267,7 +268,7 @@
                 <label
                   v-if="index === 0"
                   for="additionalAddressesHost"
-                  class="textlabel !font-normal flex flex-row items-center"
+                  class="textlabel font-normal! flex flex-row items-center"
                 >
                   {{ $t("instance.host-or-socket") }}
                 </label>
@@ -284,7 +285,7 @@
                 <label
                   v-if="index === 0"
                   for="additionalAddressesPort"
-                  class="textlabel !font-normal flex flex-row items-center"
+                  class="textlabel font-normal! flex flex-row items-center"
                 >
                   {{ $t("instance.port") }}
                 </label>
@@ -309,7 +310,7 @@
             </template>
             <div class="mt-1 sm:col-span-12 sm:col-start-1">
               <NButton
-                class="ml-auto !w-12"
+                class="ml-auto w-12!"
                 size="small"
                 @click.prevent="addDSAdditionalAddress"
               >
@@ -463,7 +464,7 @@
       </BBAttention>
 
       <div class="mt-6 pt-0 border-none">
-        <div class="flex flex-row space-x-2">
+        <div class="flex flex-row gap-x-2">
           <NButton
             tertiary
             type="primary"
@@ -479,7 +480,7 @@
 
       <div
         v-if="basicInfo.engine !== Engine.DYNAMODB && isCreating"
-        class="mt-6 pt-4 space-y-1"
+        class="mt-6 pt-4 flex flex-col gap-y-1"
       >
         <p class="w-full text-lg leading-6 font-medium text-gray-900">
           {{ $t("instance.sync-databases.self") }}
@@ -809,6 +810,7 @@ const testConnectionForCurrentEditingDS = () => {
 
 <style lang="postcss" scoped>
 .instance-engine-button :deep(.n-button__content) {
-  @apply w-full justify-start;
+  width: 100%;
+  justify-content: flex-start;
 }
 </style>

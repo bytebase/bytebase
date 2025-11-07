@@ -100,37 +100,37 @@ func TestGetStatementTypesANTLR(t *testing.T) {
 		{
 			name:          "ALTER TABLE ADD COLUMN",
 			sql:           "ALTER TABLE t1 ADD COLUMN name VARCHAR(100);",
-			expectedTypes: []string{"ALTER_TABLE_ADD_COLUMN_LIST"},
+			expectedTypes: []string{"ALTER_TABLE"},
 		},
 		{
 			name:          "ALTER TABLE ADD CONSTRAINT",
 			sql:           "ALTER TABLE t1 ADD CONSTRAINT pk_id PRIMARY KEY (id);",
-			expectedTypes: []string{"ALTER_TABLE_ADD_CONSTRAINT"},
+			expectedTypes: []string{"ALTER_TABLE"},
 		},
 		{
 			name:          "ALTER TABLE DROP COLUMN",
 			sql:           "ALTER TABLE t1 DROP COLUMN name;",
-			expectedTypes: []string{"DROP_COLUMN"},
+			expectedTypes: []string{"ALTER_TABLE"},
 		},
 		{
 			name:          "ALTER TABLE DROP CONSTRAINT",
 			sql:           "ALTER TABLE t1 DROP CONSTRAINT pk_id;",
-			expectedTypes: []string{"DROP_CONSTRAINT"},
+			expectedTypes: []string{"ALTER_TABLE"},
 		},
 		{
 			name:          "ALTER TABLE ALTER COLUMN TYPE",
 			sql:           "ALTER TABLE t1 ALTER COLUMN name TYPE TEXT;",
-			expectedTypes: []string{"ALTER_COLUMN_TYPE"},
+			expectedTypes: []string{"ALTER_TABLE"},
 		},
 		{
 			name:          "ALTER TABLE ALTER COLUMN DROP DEFAULT",
 			sql:           "ALTER TABLE t1 ALTER COLUMN name DROP DEFAULT;",
-			expectedTypes: []string{"DROP_DEFAULT"},
+			expectedTypes: []string{"ALTER_TABLE"},
 		},
 		{
 			name:          "ALTER TABLE ALTER COLUMN DROP NOT NULL",
 			sql:           "ALTER TABLE t1 ALTER COLUMN name DROP NOT NULL;",
-			expectedTypes: []string{"DROP_NOT_NULL"},
+			expectedTypes: []string{"ALTER_TABLE"},
 		},
 		{
 			name:          "ALTER VIEW",
@@ -177,22 +177,22 @@ func TestGetStatementTypesANTLR(t *testing.T) {
 		{
 			name:          "RENAME TABLE",
 			sql:           "ALTER TABLE t1 RENAME TO t2;",
-			expectedTypes: []string{"RENAME_TABLE"},
+			expectedTypes: []string{"ALTER_TABLE"},
 		},
 		{
 			name:          "RENAME COLUMN",
 			sql:           "ALTER TABLE t1 RENAME COLUMN old_name TO new_name;",
-			expectedTypes: []string{"RENAME_COLUMN"},
+			expectedTypes: []string{"ALTER_TABLE"},
 		},
 		{
 			name:          "RENAME COLUMN without COLUMN keyword",
 			sql:           "ALTER TABLE t1 RENAME old_name TO new_name;",
-			expectedTypes: []string{"RENAME_COLUMN"},
+			expectedTypes: []string{"ALTER_TABLE"},
 		},
 		{
 			name:          "RENAME CONSTRAINT",
 			sql:           "ALTER TABLE t1 RENAME CONSTRAINT old_constraint TO new_constraint;",
-			expectedTypes: []string{"RENAME_CONSTRAINT"},
+			expectedTypes: []string{"ALTER_TABLE"},
 		},
 		{
 			name:          "RENAME INDEX",
@@ -212,7 +212,7 @@ func TestGetStatementTypesANTLR(t *testing.T) {
 		{
 			name:          "RENAME VIEW",
 			sql:           "ALTER VIEW v_old RENAME TO v_new;",
-			expectedTypes: []string{"RENAME_VIEW"},
+			expectedTypes: []string{"ALTER_VIEW"},
 		},
 	}
 
@@ -221,14 +221,20 @@ func TestGetStatementTypesANTLR(t *testing.T) {
 			parseResult, err := ParsePostgreSQL(tt.sql)
 			require.NoError(t, err)
 
-			types, err := GetStatementTypesANTLR(parseResult)
+			stmtsWithPos, err := GetStatementTypes(parseResult)
 			require.NoError(t, err)
+
+			// Extract types from statements with positions
+			types := make([]string, len(stmtsWithPos))
+			for i, stmt := range stmtsWithPos {
+				types[i] = stmt.Type
+			}
 			require.ElementsMatch(t, tt.expectedTypes, types)
 		})
 	}
 }
 
-func TestGetStatementTypesWithPositionsANTLR(t *testing.T) {
+func TestGetStatementTypesWithPositions(t *testing.T) {
 	tests := []struct {
 		name     string
 		sql      string
@@ -272,7 +278,7 @@ INSERT INTO t1 VALUES (1);`,
 			parseResult, err := ParsePostgreSQL(tt.sql)
 			require.NoError(t, err)
 
-			results, err := GetStatementTypesWithPositionsANTLR(parseResult)
+			results, err := GetStatementTypes(parseResult)
 			require.NoError(t, err)
 			require.Len(t, results, len(tt.expected))
 

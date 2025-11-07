@@ -252,7 +252,8 @@ const file_store_release_proto_rawDesc = "" +
 	"\x0emigration_type\x18\a \x01(\x0e2\x1d.bytebase.store.MigrationTypeR\rmigrationType\x1aQ\n" +
 	"\tVCSSource\x122\n" +
 	"\bvcs_type\x18\x01 \x01(\x0e2\x17.bytebase.store.VCSTypeR\avcsType\x12\x10\n" +
-	"\x03url\x18\x02 \x01(\tR\x03urlB\x14Z\x12generated-go/storeb\x06proto3"
+	"\x03url\x18\x02 \x01(\tR\x03urlB\x8f\x01\n" +
+	"\x12com.bytebase.storeB\fReleaseProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
 	file_store_release_proto_rawDescOnce sync.Once
