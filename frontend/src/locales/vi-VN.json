@@ -1619,7 +1619,6 @@
     "mixed-label-values-warning": "Một số tài nguyên đã chọn có các giá trị hỗn hợp cho cùng một khóa",
     "change-data": "Thay đổi dữ liệu",
     "table-detail": "Chi tiết bảng",
-    "batch-action-not-support-alter-schema": "Một số cơ sở dữ liệu không hỗ trợ thay đổi lược đồ",
     "batch-action-permission-denied": "Không có quyền {action} đối với cơ sở dữ liệu",
     "batch-action-disabled": "Không thể {action} đối với các cơ sở dữ liệu từ các dự án khác nhau",
     "batch-action-disabled-for-unassigned": "Không thể {action} đối với cơ sở dữ liệu chưa được gán",

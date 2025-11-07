@@ -11,8 +11,8 @@
       class="max-w-[100vw]"
     >
       <div class="flex flex-col gap-y-4">
-        <!-- Steps indicator -->
-        <NSteps :current="currentStep">
+        <!-- Steps indicator (hide when databases are pre-selected) -->
+        <NSteps v-if="!hasPreSelectedDatabases" :current="currentStep">
           <NStep :title="changeTypeTitle" />
           <NStep :title="$t('plan.select-targets')" />
         </NSteps>
@@ -135,20 +135,32 @@
 <script setup lang="ts">
 import { create as createProto } from "@bufbuild/protobuf";
 import { FileDiffIcon, EditIcon } from "lucide-vue-next";
-import { NButton, NRadio, NRadioGroup, NSteps, NStep } from "naive-ui";
+import {
+  NButton,
+  NRadio,
+  NRadioGroup,
+  NSteps,
+  NStep,
+  useDialog,
+} from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import type { Ref } from "vue";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
+import type { LocationQueryRaw } from "vue-router";
 import DatabaseAndGroupSelector from "@/components/DatabaseAndGroupSelector";
 import type { DatabaseSelectState } from "@/components/DatabaseAndGroupSelector";
 import { getLocalSheetByName, getNextLocalSheetUID } from "@/components/Plan";
 import { Drawer, DrawerContent } from "@/components/v2";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useCurrentProjectV1,
   batchGetOrFetchDatabases,
   pushNotification,
+  useDatabaseV1Store,
 } from "@/store";
+import type { ComposedDatabase } from "@/types";
 import {
   DatabaseChangeType,
   MigrationType,
@@ -158,9 +170,13 @@ import {
   Plan_SpecSchema,
   type Plan_Spec,
 } from "@/types/proto-es/v1/plan_service_pb";
+import { extractProjectResourceName, generateIssueTitle } from "@/utils";
 
-defineProps<{
+const props = defineProps<{
   title?: string;
+  preSelectedDatabases?: ComposedDatabase[];
+  projectName?: string;
+  useLegacyIssueFlow?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -174,6 +190,9 @@ enum Step {
 
 const { project } = useCurrentProjectV1();
 const { t } = useI18n();
+const router = useRouter();
+const dialog = useDialog();
+const databaseStore = useDatabaseV1Store();
 const show = defineModel<boolean>("show", { default: false });
 
 const selectedMigrationType: Ref<MigrationType> = ref(MigrationType.DDL);
@@ -185,7 +204,14 @@ const databaseSelectState = reactive<DatabaseSelectState>({
   selectedDatabaseNameList: [],
 });
 
+const hasPreSelectedDatabases = computed(() => {
+  return (props.preSelectedDatabases?.length ?? 0) > 0;
+});
+
 const hasSelection = computed(() => {
+  if (hasPreSelectedDatabases.value) {
+    return true;
+  }
   if (databaseSelectState.changeSource === "DATABASE") {
     return databaseSelectState.selectedDatabaseNameList.length > 0;
   } else {
@@ -208,6 +234,9 @@ const canProceedToNextStep = computed(() => {
 });
 
 const isLastStep = computed(() => {
+  if (hasPreSelectedDatabases.value) {
+    return currentStep.value === Step.SELECT_CHANGE_TYPE;
+  }
   return currentStep.value === Step.SELECT_TARGETS;
 });
 
@@ -241,6 +270,25 @@ watch(show, (newVal) => {
     isCreating.value = false;
   }
 });
+
+const showDatabaseDriftedWarningDialog = () => {
+  return new Promise((resolve) => {
+    dialog.create({
+      type: "warning",
+      positiveText: t("common.confirm"),
+      negativeText: t("common.cancel"),
+      title: t("issue.schema-drift-detected.self"),
+      content: t("issue.schema-drift-detected.description"),
+      autoFocus: false,
+      onNegativeClick: () => {
+        resolve(false);
+      },
+      onPositiveClick: () => {
+        resolve(true);
+      },
+    });
+  });
+};
 
 const handleUpdateSelection = async (newState: DatabaseSelectState) => {
   Object.assign(databaseSelectState, newState);
@@ -280,12 +328,64 @@ const handleConfirm = async () => {
   try {
     // Get targets
     const targets: string[] = [];
-    if (databaseSelectState.changeSource === "DATABASE") {
+    if (hasPreSelectedDatabases.value) {
+      targets.push(...(props.preSelectedDatabases?.map((db) => db.name) ?? []));
+    } else if (databaseSelectState.changeSource === "DATABASE") {
       targets.push(...databaseSelectState.selectedDatabaseNameList);
     } else if (databaseSelectState.selectedDatabaseGroup) {
       targets.push(databaseSelectState.selectedDatabaseGroup);
     }
 
+    // Check for database drift if using legacy issue flow
+    if (props.useLegacyIssueFlow && hasPreSelectedDatabases.value) {
+      if (props.preSelectedDatabases?.some((d) => d.drifted)) {
+        const confirmed = await showDatabaseDriftedWarningDialog();
+        if (!confirmed) {
+          isCreating.value = false;
+          return;
+        }
+      }
+    }
+
+    // If using legacy issue flow (from database dashboard), navigate to issue creation
+    if (props.useLegacyIssueFlow) {
+      const type =
+        selectedMigrationType.value === MigrationType.DDL
+          ? "bb.issue.database.schema.update"
+          : "bb.issue.database.data.update";
+
+      const databaseNames = hasPreSelectedDatabases.value
+        ? (props.preSelectedDatabases?.map((db) => db.databaseName) ?? [])
+        : await Promise.all(
+            targets.map(async (target) => {
+              const db = await databaseStore.getOrFetchDatabaseByName(target);
+              return db.databaseName;
+            })
+          );
+
+      const query: LocationQueryRaw = {
+        template: type,
+        name: generateIssueTitle(type, databaseNames),
+        databaseList: targets.join(","),
+      };
+
+      router.push({
+        name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+        params: {
+          projectId: extractProjectResourceName(
+            props.projectName ?? project.value.name
+          ),
+          issueSlug: "create",
+        },
+        query,
+      });
+
+      show.value = false;
+      isCreating.value = false;
+      return;
+    }
+
+    // Otherwise, create spec for plan flow
     const sheetUID = getNextLocalSheetUID();
     const localSheet = getLocalSheetByName(
       `${project.value.name}/sheets/${sheetUID}`

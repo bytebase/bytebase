@@ -1619,7 +1619,6 @@
     "mixed-label-values-warning": "部分标签拥有不同的值，编辑标签将会批量应用",
     "change-data": "变更数据",
     "table-detail": "表详情",
-    "batch-action-not-support-alter-schema": "一些数据库不支持修改表结构",
     "batch-action-permission-denied": "没有权限对数据库{action}",
     "batch-action-disabled": "无法对来自不同项目的数据库{action}",
     "batch-action-disabled-for-unassigned": "无法对未分配的数据库{action}",
