@@ -34,6 +34,8 @@ type World struct {
 	// - FAIL_ON_WARNING
 	// - FAIL_ON_ERROR
 	CheckRelease string
+	// Custom linting rules in natural language for AI-powered validation.
+	CustomRules string
 
 	// bytebase-action rollout flags
 	ReleaseTitle string // The title of the release

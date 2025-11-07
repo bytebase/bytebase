@@ -193,6 +193,9 @@ func (x *CheckReleaseRequest) Equal(y *CheckReleaseRequest) bool {
 			return false
 		}
 	}
+	if x.CustomRules != y.CustomRules {
+		return false
+	}
 	return true
 }
 

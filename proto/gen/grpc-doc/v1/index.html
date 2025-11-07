@@ -2017,6 +2017,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.Advice.RuleType"><span class="badge">E</span>Advice.RuleType</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.QueryHistory.Type"><span class="badge">E</span>QueryHistory.Type</a>
                 </li>
               
@@ -21567,6 +21571,13 @@ TODO: use range instead </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>rule_type</td>
+                  <td><a href="#bytebase.v1.Advice.RuleType">Advice.RuleType</a></td>
+                  <td></td>
+                  <td><p>The type of linting rule that generated this advice. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -22629,6 +22640,37 @@ Pass this value in the page_token field in the subsequent call to
                 <td>ERROR</td>
                 <td>3</td>
                 <td><p>Error status indicating critical issues that must be addressed.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.Advice.RuleType">Advice.RuleType</h3>
+        <p>RuleType indicates the source of the linting rule.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>RULE_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p>Unspecified rule type.</p></td>
+              </tr>
+            
+              <tr>
+                <td>PARSER_BASED</td>
+                <td>1</td>
+                <td><p>Parser-based rule enforced by the built-in SQL parser.
+These are non-configurable, mandatory checks for schema health.</p></td>
+              </tr>
+            
+              <tr>
+                <td>AI_POWERED</td>
+                <td>2</td>
+                <td><p>AI-powered rule defined by user in natural language.
+These are custom, flexible checks powered by AI models.</p></td>
               </tr>
             
           </tbody>
@@ -24335,6 +24377,16 @@ Can be database or databaseGroup.
 Format:
 projects/{project}/databaseGroups/{databaseGroup}
 instances/{instance}/databases/{database} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>custom_rules</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Custom linting rules in natural language for AI-powered validation.
+Each rule should be a clear statement describing the desired schema constraint.
+Example: &#34;All tables must have a primary key&#34;
+Example: &#34;VARCHAR columns should specify a maximum length&#34; </p></td>
                 </tr>
               
             </tbody>

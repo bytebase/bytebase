@@ -668,7 +668,12 @@ type CheckReleaseRequest struct {
 	// Format:
 	// projects/{project}/databaseGroups/{databaseGroup}
 	// instances/{instance}/databases/{database}
-	Targets       []string `protobuf:"bytes,3,rep,name=targets,proto3" json:"targets,omitempty"`
+	Targets []string `protobuf:"bytes,3,rep,name=targets,proto3" json:"targets,omitempty"`
+	// Custom linting rules in natural language for AI-powered validation.
+	// Each rule should be a clear statement describing the desired schema constraint.
+	// Example: "All tables must have a primary key"
+	// Example: "VARCHAR columns should specify a maximum length"
+	CustomRules   string `protobuf:"bytes,4,opt,name=custom_rules,json=customRules,proto3" json:"custom_rules,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -722,6 +727,13 @@ func (x *CheckReleaseRequest) GetTargets() []string {
 		return x.Targets
 	}
 	return nil
+}
+
+func (x *CheckReleaseRequest) GetCustomRules() string {
+	if x != nil {
+		return x.CustomRules
+	}
+	return ""
 }
 
 type CheckReleaseResponse struct {
@@ -1202,12 +1214,13 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\x14bytebase.com/ReleaseR\x04name\"J\n" +
 	"\x16UndeleteReleaseRequest\x120\n" +
 	"\x04name\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
-	"\x14bytebase.com/ReleaseR\x04name\"\x9a\x01\n" +
+	"\x14bytebase.com/ReleaseR\x04name\"\xbd\x01\n" +
 	"\x13CheckReleaseRequest\x124\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x123\n" +
 	"\arelease\x18\x02 \x01(\v2\x14.bytebase.v1.ReleaseB\x03\xe0A\x02R\arelease\x12\x18\n" +
-	"\atargets\x18\x03 \x03(\tR\atargets\"\x82\x03\n" +
+	"\atargets\x18\x03 \x03(\tR\atargets\x12!\n" +
+	"\fcustom_rules\x18\x04 \x01(\tR\vcustomRules\"\x82\x03\n" +
 	"\x14CheckReleaseResponse\x12G\n" +
 	"\aresults\x18\x01 \x03(\v2-.bytebase.v1.CheckReleaseResponse.CheckResultR\aresults\x12#\n" +
 	"\raffected_rows\x18\x02 \x01(\x03R\faffectedRows\x125\n" +
