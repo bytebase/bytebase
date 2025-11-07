@@ -217,6 +217,10 @@ message WorkspaceProfileSetting {
 
   // The session expiration time if not activity detected for the user. Value <= 0 means no limit.
   google.protobuf.Duration inactive_session_timeout = 14;
+
+  // Whether to enable audit logging to stdout in structured JSON format.
+  // Requires TEAM or ENTERPRISE license.
+  bool enable_audit_log_stdout = 15;
 }
 
 message Announcement {

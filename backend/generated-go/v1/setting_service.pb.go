@@ -960,8 +960,11 @@ type WorkspaceProfileSetting struct {
 	EnableMetricCollection bool `protobuf:"varint,13,opt,name=enable_metric_collection,json=enableMetricCollection,proto3" json:"enable_metric_collection,omitempty"`
 	// The session expiration time if not activity detected for the user. Value <= 0 means no limit.
 	InactiveSessionTimeout *durationpb.Duration `protobuf:"bytes,14,opt,name=inactive_session_timeout,json=inactiveSessionTimeout,proto3" json:"inactive_session_timeout,omitempty"`
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	// Whether to enable audit logging to stdout in structured JSON format.
+	// Requires TEAM or ENTERPRISE license.
+	EnableAuditLogStdout bool `protobuf:"varint,15,opt,name=enable_audit_log_stdout,json=enableAuditLogStdout,proto3" json:"enable_audit_log_stdout,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *WorkspaceProfileSetting) Reset() {
@@ -1076,6 +1079,13 @@ func (x *WorkspaceProfileSetting) GetInactiveSessionTimeout() *durationpb.Durati
 		return x.InactiveSessionTimeout
 	}
 	return nil
+}
+
+func (x *WorkspaceProfileSetting) GetEnableAuditLogStdout() bool {
+	if x != nil {
+		return x.EnableAuditLogStdout
+	}
+	return false
 }
 
 type Announcement struct {
@@ -3030,7 +3040,7 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\tclient_id\x18\x02 \x01(\tB\x03\xe0A\x04R\bclientId\x12(\n" +
 	"\rclient_secret\x18\x03 \x01(\tB\x03\xe0A\x04R\fclientSecret\x12\"\n" +
 	"\n" +
-	"robot_code\x18\x04 \x01(\tB\x03\xe0A\x04R\trobotCode\"\xc8\x05\n" +
+	"robot_code\x18\x04 \x01(\tB\x03\xe0A\x04R\trobotCode\"\xff\x05\n" +
 	"\x17WorkspaceProfileSetting\x12!\n" +
 	"\fexternal_url\x18\x01 \x01(\tR\vexternalUrl\x12'\n" +
 	"\x0fdisallow_signup\x18\x02 \x01(\bR\x0edisallowSignup\x12\x1f\n" +
@@ -3045,7 +3055,8 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x14database_change_mode\x18\v \x01(\x0e2\x1f.bytebase.v1.DatabaseChangeModeR\x12databaseChangeMode\x128\n" +
 	"\x18disallow_password_signin\x18\f \x01(\bR\x16disallowPasswordSignin\x128\n" +
 	"\x18enable_metric_collection\x18\r \x01(\bR\x16enableMetricCollection\x12S\n" +
-	"\x18inactive_session_timeout\x18\x0e \x01(\v2\x19.google.protobuf.DurationR\x16inactiveSessionTimeout\"\xc2\x01\n" +
+	"\x18inactive_session_timeout\x18\x0e \x01(\v2\x19.google.protobuf.DurationR\x16inactiveSessionTimeout\x125\n" +
+	"\x17enable_audit_log_stdout\x18\x0f \x01(\bR\x14enableAuditLogStdout\"\xc2\x01\n" +
 	"\fAnnouncement\x12:\n" +
 	"\x05level\x18\x01 \x01(\x0e2$.bytebase.v1.Announcement.AlertLevelR\x05level\x12\x12\n" +
 	"\x04text\x18\x02 \x01(\tR\x04text\x12\x12\n" +

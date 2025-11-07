@@ -283,3 +283,32 @@ func severityToLevel(severity storepb.AuditLog_Severity) string {
 		return "UNKNOWN"
 	}
 }
+
+// ConditionalLogger is a logger that checks a runtime configuration flag before logging.
+// The underlying logger is always running, but Log() becomes a no-op when disabled.
+// This pattern allows runtime configuration changes without swapping logger instances.
+type ConditionalLogger struct {
+	enabled      *atomic.Bool
+	stdoutLogger *StdoutLogger
+}
+
+// NewConditionalLogger creates a conditional logger that checks enabled state on each call.
+func NewConditionalLogger(enabled *atomic.Bool, config StdoutLoggerConfig) *ConditionalLogger {
+	return &ConditionalLogger{
+		enabled:      enabled,
+		stdoutLogger: NewStdoutLogger(config),
+	}
+}
+
+// Log logs the event only if enabled is true, otherwise returns immediately.
+func (l *ConditionalLogger) Log(ctx context.Context, log *storepb.AuditLog) error {
+	if !l.enabled.Load() {
+		return nil
+	}
+	return l.stdoutLogger.Log(ctx, log)
+}
+
+// Run starts the underlying stdout logger. The logger always runs regardless of enabled state.
+func (l *ConditionalLogger) Run(ctx context.Context, wg *sync.WaitGroup) {
+	l.stdoutLogger.Run(ctx, wg)
+}

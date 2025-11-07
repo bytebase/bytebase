@@ -263,6 +263,14 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 				oldSetting.DisallowPasswordSignin = payload.DisallowPasswordSignin
 			case "value.workspace_profile_setting_value.enable_metric_collection":
 				oldSetting.EnableMetricCollection = payload.EnableMetricCollection
+			case "value.workspace_profile_setting_value.enable_audit_log_stdout":
+				if payload.EnableAuditLogStdout {
+					// Require TEAM or ENTERPRISE license
+					if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_AUDIT_LOG); err != nil {
+						return nil, connect.NewError(connect.CodePermissionDenied, err)
+					}
+				}
+				oldSetting.EnableAuditLogStdout = payload.EnableAuditLogStdout
 			default:
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %v", path))
 			}
@@ -537,6 +545,23 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 	settingMessage, err := convertToSettingMessage(setting, s.profile)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
+	}
+
+	// Dynamically update audit logger runtime flag if enable_audit_log_stdout was changed
+	if apiSettingName == storepb.SettingName_WORKSPACE_PROFILE {
+		for _, path := range request.Msg.UpdateMask.Paths {
+			if path == "value.workspace_profile_setting_value.enable_audit_log_stdout" {
+				if workspaceValue := settingMessage.GetValue().GetWorkspaceProfileSettingValue(); workspaceValue != nil {
+					s.profile.RuntimeEnableAuditLogStdout.Store(workspaceValue.EnableAuditLogStdout)
+					if workspaceValue.EnableAuditLogStdout {
+						slog.Info("audit logging to stdout enabled")
+					} else {
+						slog.Info("audit logging to stdout disabled")
+					}
+				}
+				break
+			}
+		}
 	}
 
 	// it's a temporary solution to map the classification to all projects before we support it in the UX.

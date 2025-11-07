@@ -595,6 +595,14 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
    * @generated from field: google.protobuf.Duration inactive_session_timeout = 14;
    */
   inactiveSessionTimeout?: Duration;
+
+  /**
+   * Whether to enable audit logging to stdout in structured JSON format.
+   * Requires TEAM or ENTERPRISE license.
+   *
+   * @generated from field: bool enable_audit_log_stdout = 15;
+   */
+  enableAuditLogStdout: boolean;
 };
 
 /**

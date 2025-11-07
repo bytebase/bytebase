@@ -46,8 +46,6 @@ type Profile struct {
 	DeployID string
 	// Whether the server is running in a docker container.
 	IsDocker bool
-	// AuditLogStdout enables audit logging to stdout in structured JSON format
-	AuditLogStdout bool
 
 	// can be set in runtime
 	RuntimeDebug atomic.Bool
@@ -55,6 +53,9 @@ type Profile struct {
 	// can be set in runtime
 	// 0 means no threshold.
 	RuntimeMemoryProfileThreshold atomic.Uint64
+	// RuntimeEnableAuditLogStdout enables audit logging to stdout in structured JSON format.
+	// can be set in runtime via workspace setting
+	RuntimeEnableAuditLogStdout atomic.Bool
 }
 
 // UseEmbedDB returns whether to use embedDB.

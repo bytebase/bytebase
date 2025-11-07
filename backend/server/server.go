@@ -29,6 +29,7 @@ import (
 	"github.com/bytebase/bytebase/backend/demo"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/runner/approval"
@@ -214,16 +215,11 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	// LSP server.
 	s.lspServer = lsp.NewServer(s.store, profile)
 
-	// Stdout audit logger
-	if profile.AuditLogStdout {
-		s.stdoutLogger = audit.NewStdoutLogger(audit.StdoutLoggerConfig{
-			BufferSize:        1000,
-			HeartbeatInterval: 5 * time.Minute,
-		})
-		slog.Info("audit logging to stdout enabled")
-	} else {
-		s.stdoutLogger = &audit.NoopAuditLogger{}
-	}
+	// Stdout audit logger - uses ConditionalLogger that checks RuntimeEnableAuditLogStdout on each call
+	s.stdoutLogger = audit.NewConditionalLogger(&s.profile.RuntimeEnableAuditLogStdout, audit.StdoutLoggerConfig{
+		BufferSize:        1000,
+		HeartbeatInterval: 5 * time.Minute,
+	})
 
 	directorySyncServer := directorysync.NewService(s.store, s.licenseService, s.iamManager)
 
@@ -261,6 +257,20 @@ func (s *Server) Run(ctx context.Context, port int) error {
 	mmm := monitor.NewMemoryMonitor(s.profile)
 	go mmm.Run(ctx, &s.runnerWG)
 
+	// Check workspace setting and set audit logger runtime flag
+	workspaceProfile, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	if err == nil && workspaceProfile.GetEnableAuditLogStdout() {
+		// Validate license before enabling (prevents usage after license downgrade/expiry)
+		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_AUDIT_LOG); err != nil {
+			slog.Warn("audit logging enabled in workspace settings but license insufficient, keeping disabled",
+				log.BBError(err))
+		} else {
+			s.profile.RuntimeEnableAuditLogStdout.Store(true)
+			slog.Info("audit logging to stdout enabled via workspace setting")
+		}
+	}
+
+	// Always start the audit logger (ConditionalLogger checks the atomic bool on each call)
 	s.runnerWG.Add(1)
 	go s.stdoutLogger.Run(ctx, &s.runnerWG)
 

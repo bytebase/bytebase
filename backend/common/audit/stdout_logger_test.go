@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -285,4 +286,60 @@ func TestNoopAuditLogger_DoesNotHang(t *testing.T) {
 	case <-time.After(1 * time.Second):
 		t.Fatal("NoopAuditLogger.Run() did not call wg.Done() - server would hang on shutdown")
 	}
+}
+
+func TestConditionalLogger_TogglesLogging(t *testing.T) {
+	var buf bytes.Buffer
+	var enabled atomic.Bool
+
+	logger := NewConditionalLogger(&enabled, StdoutLoggerConfig{
+		Writer:            &buf,
+		BufferSize:        10,
+		HeartbeatInterval: 1 * time.Hour,
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go logger.Run(ctx, &wg)
+
+	event := &storepb.AuditLog{
+		Method: "/test",
+		User:   "user@example.com",
+	}
+
+	// Initially disabled - should not log
+	err := logger.Log(context.Background(), event)
+	require.NoError(t, err)
+	time.Sleep(100 * time.Millisecond)
+	assert.Empty(t, buf.String(), "should not log when disabled")
+
+	// Enable - should log
+	enabled.Store(true)
+	err = logger.Log(context.Background(), event)
+	require.NoError(t, err)
+	time.Sleep(100 * time.Millisecond)
+	assert.NotEmpty(t, buf.String(), "should log when enabled")
+
+	// Verify the log entry
+	var logEntry LogOutput
+	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
+	require.Len(t, lines, 1, "should have exactly one log entry")
+	err = json.Unmarshal([]byte(lines[0]), &logEntry)
+	require.NoError(t, err)
+	assert.Equal(t, "/test", logEntry.Audit.Method)
+	assert.Equal(t, "user@example.com", logEntry.Audit.User)
+
+	// Disable again - should not log new events
+	buf.Reset()
+	enabled.Store(false)
+	err = logger.Log(context.Background(), event)
+	require.NoError(t, err)
+	time.Sleep(100 * time.Millisecond)
+	assert.Empty(t, buf.String(), "should not log after disabled")
+
+	cancel()
+	wg.Wait()
 }
