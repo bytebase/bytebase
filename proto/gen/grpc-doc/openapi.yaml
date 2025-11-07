@@ -14748,6 +14748,20 @@ components:
                     description: |-
                         Whether to enable audit logging to stdout in structured JSON format.
                          Requires TEAM or ENTERPRISE license.
+                auditLogBufferSize:
+                    type: integer
+                    description: |-
+                        Buffer size for audit log events (default: 1000).
+                         Recommended sizing: peak_QPS × acceptable_delay_seconds.
+                         Requires server restart to take effect (Go channels have fixed capacity).
+                    format: int32
+                auditLogDrainTimeoutSec:
+                    type: integer
+                    description: |-
+                        Shutdown drain timeout in seconds for audit logs (default: 5).
+                         How long to wait for remaining audit events to write during graceful shutdown.
+                         Can be updated at runtime without restart.
+                    format: int32
 tags:
     - name: ActuatorService
       description: ActuatorService manages system health and operational information.

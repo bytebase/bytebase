@@ -4681,6 +4681,8 @@ ISSUE_CREATE represents creating an issue. |
 | enable_metric_collection | [bool](#bool) |  | Whether to enable metric collection for the workspace. |
 | inactive_session_timeout | [google.protobuf.Duration](#google-protobuf-Duration) |  | The session expiration time if not activity detected for the user. Value &lt;= 0 means no limit. |
 | enable_audit_log_stdout | [bool](#bool) |  | Whether to enable audit logging to stdout in structured JSON format. Requires TEAM or ENTERPRISE license. |
+| audit_log_buffer_size | [int32](#int32) |  | Buffer size for audit log events (default: 1000). Recommended sizing: peak_QPS × acceptable_delay_seconds. Requires server restart to take effect (Go channels have fixed capacity). |
+| audit_log_drain_timeout_sec | [int32](#int32) |  | Shutdown drain timeout in seconds for audit logs (default: 5). How long to wait for remaining audit events to write during graceful shutdown. Can be updated at runtime without restart. |
 
 
 

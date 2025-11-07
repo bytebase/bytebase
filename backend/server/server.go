@@ -216,9 +216,21 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	s.lspServer = lsp.NewServer(s.store, profile, secret, s.stateCfg, s.iamManager, s.licenseService)
 
 	// Stdout audit logger - uses ConditionalLogger that checks RuntimeEnableAuditLogStdout on each call
+	// Read audit log configuration from workspace settings
+	auditBufferSize := 1000   // default
+	auditDrainTimeoutSec := 5 // default
+	if workspaceProfile, err := stores.GetWorkspaceGeneralSetting(ctx); err == nil {
+		if workspaceProfile.AuditLogBufferSize > 0 {
+			auditBufferSize = int(workspaceProfile.AuditLogBufferSize)
+		}
+		if workspaceProfile.AuditLogDrainTimeoutSec > 0 {
+			auditDrainTimeoutSec = int(workspaceProfile.AuditLogDrainTimeoutSec)
+		}
+	}
 	s.stdoutLogger = audit.NewConditionalLogger(&s.profile.RuntimeEnableAuditLogStdout, audit.StdoutLoggerConfig{
-		BufferSize:        1000,
+		BufferSize:        auditBufferSize,
 		HeartbeatInterval: 5 * time.Minute,
+		DrainTimeout:      time.Duration(auditDrainTimeoutSec) * time.Second,
 	})
 
 	directorySyncServer := directorysync.NewService(s.store, s.licenseService, s.iamManager)

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"log/slog"
 	"os"
@@ -45,8 +46,9 @@ type FieldsOutput struct {
 
 // StatsOutput contains logger statistics
 type StatsOutput struct {
-	Written int64 `json:"written"`
-	Dropped int64 `json:"dropped"`
+	Written     int64 `json:"written"`
+	Dropped     int64 `json:"dropped"`      // backpressure (channel full)
+	WriteErrors int64 `json:"write_errors"` // I/O failures (encode/write errors)
 }
 
 // StdoutLogger writes audit logs to stdout as structured JSON
@@ -57,9 +59,12 @@ type StdoutLogger struct {
 	eventChan chan *storepb.AuditLog
 
 	heartbeatInterval time.Duration
+	drainTimeoutNanos atomic.Int64 // stored as nanoseconds for atomic updates
 
-	written atomic.Int64
-	dropped atomic.Int64
+	enabled     *atomic.Bool
+	written     atomic.Int64
+	dropped     atomic.Int64
+	writeErrors atomic.Int64
 }
 
 // StdoutLoggerConfig defines configuration
@@ -67,6 +72,8 @@ type StdoutLoggerConfig struct {
 	Writer            io.Writer
 	BufferSize        int
 	HeartbeatInterval time.Duration
+	DrainTimeout      time.Duration
+	Enabled           *atomic.Bool // Required: controls when heartbeats are emitted
 }
 
 // NewStdoutLogger creates a stdout logger (does not start it)
@@ -80,17 +87,23 @@ func NewStdoutLogger(config StdoutLoggerConfig) *StdoutLogger {
 	if config.HeartbeatInterval <= 0 {
 		config.HeartbeatInterval = 5 * time.Minute
 	}
+	if config.DrainTimeout <= 0 {
+		config.DrainTimeout = 5 * time.Second
+	}
 
-	return &StdoutLogger{
+	l := &StdoutLogger{
 		writer:            config.Writer,
 		eventChan:         make(chan *storepb.AuditLog, config.BufferSize),
 		heartbeatInterval: config.HeartbeatInterval,
+		enabled:           config.Enabled,
 	}
+	l.drainTimeoutNanos.Store(config.DrainTimeout.Nanoseconds())
+	return l
 }
 
-// Log queues an audit event. It blocks if the queue is full,
-// applying backpressure to the API handler.
-// It returns an error only if the request's context times out or is cancelled.
+// Log queues an audit event. If the queue is full, it waits up to 100ms
+// for space to become available before dropping the event.
+// It returns an error if the event is dropped or if the request's context is cancelled.
 func (l *StdoutLogger) Log(ctx context.Context, log *storepb.AuditLog) error {
 	select {
 	case l.eventChan <- log:
@@ -98,10 +111,14 @@ func (l *StdoutLogger) Log(ctx context.Context, log *storepb.AuditLog) error {
 
 	case <-ctx.Done():
 		l.dropped.Add(1)
-		slog.Warn("stdout audit channel full, request timed out, dropping event",
+		return ctx.Err()
+
+	case <-time.After(100 * time.Millisecond):
+		l.dropped.Add(1)
+		slog.Warn("stdout audit channel full after timeout, dropping event",
 			slog.String("method", log.Method),
 			slog.String("user", log.User))
-		return ctx.Err()
+		return errors.New("audit log channel full after timeout, dropping event")
 	}
 }
 
@@ -123,7 +140,10 @@ func (l *StdoutLogger) Run(ctx context.Context, wg *sync.WaitGroup) {
 			l.writeEvent(event)
 
 		case <-heartbeatTicker.C:
-			l.writeHeartbeat()
+			// Only emit heartbeat if enabled
+			if l.enabled != nil && l.enabled.Load() {
+				l.writeHeartbeat()
+			}
 
 		case <-ctx.Done():
 			slog.Info("stdout audit logger shutdown initiated",
@@ -167,6 +187,7 @@ func (l *StdoutLogger) writeEvent(event *storepb.AuditLog) {
 	var buf bytes.Buffer
 	encoder := json.NewEncoder(&buf)
 	if err := encoder.Encode(logEntry); err != nil {
+		l.writeErrors.Add(1)
 		slog.Error("failed to encode audit log to JSON",
 			slog.String("method", event.Method),
 			slog.String("error", err.Error()))
@@ -178,6 +199,7 @@ func (l *StdoutLogger) writeEvent(event *storepb.AuditLog) {
 	defer l.mu.Unlock()
 
 	if _, err := l.writer.Write(buf.Bytes()); err != nil {
+		l.writeErrors.Add(1)
 		slog.Error("failed to write audit log to stdout",
 			slog.String("method", event.Method),
 			slog.String("error", err.Error()))
@@ -198,8 +220,9 @@ func (l *StdoutLogger) writeHeartbeat() {
 			Type:   "heartbeat",
 		},
 		Stats: &StatsOutput{
-			Written: l.written.Load(),
-			Dropped: l.dropped.Load(),
+			Written:     l.written.Load(),
+			Dropped:     l.dropped.Load(),
+			WriteErrors: l.writeErrors.Load(),
 		},
 	}
 
@@ -224,7 +247,8 @@ func (l *StdoutLogger) writeHeartbeat() {
 
 // drainEvents attempts to write remaining events during shutdown
 func (l *StdoutLogger) drainEvents() {
-	timeout := time.After(1 * time.Second)
+	drainTimeout := time.Duration(l.drainTimeoutNanos.Load())
+	timeout := time.After(drainTimeout)
 
 	for {
 		select {
@@ -236,11 +260,13 @@ func (l *StdoutLogger) drainEvents() {
 				slog.Warn("stdout audit logger shutdown with events remaining",
 					slog.Int("remaining", remaining),
 					slog.Int64("total_written", l.written.Load()),
-					slog.Int64("total_dropped", l.dropped.Load()))
+					slog.Int64("total_dropped", l.dropped.Load()),
+					slog.Int64("total_write_errors", l.writeErrors.Load()))
 			} else {
 				slog.Info("stdout audit logger shutdown completed",
 					slog.Int64("total_written", l.written.Load()),
-					slog.Int64("total_dropped", l.dropped.Load()))
+					slog.Int64("total_dropped", l.dropped.Load()),
+					slog.Int64("total_write_errors", l.writeErrors.Load()))
 			}
 			return
 		}
@@ -248,8 +274,13 @@ func (l *StdoutLogger) drainEvents() {
 }
 
 // Stats returns current statistics
-func (l *StdoutLogger) Stats() (written, dropped int64) {
-	return l.written.Load(), l.dropped.Load()
+func (l *StdoutLogger) Stats() (written, dropped, writeErrors int64) {
+	return l.written.Load(), l.dropped.Load(), l.writeErrors.Load()
+}
+
+// SetDrainTimeout updates the drain timeout at runtime
+func (l *StdoutLogger) SetDrainTimeout(timeout time.Duration) {
+	l.drainTimeoutNanos.Store(timeout.Nanoseconds())
 }
 
 // NoopAuditLogger is a no-op implementation of audit logging
@@ -294,6 +325,8 @@ type ConditionalLogger struct {
 
 // NewConditionalLogger creates a conditional logger that checks enabled state on each call.
 func NewConditionalLogger(enabled *atomic.Bool, config StdoutLoggerConfig) *ConditionalLogger {
+	// Pass enabled to StdoutLogger so it can skip heartbeats when disabled
+	config.Enabled = enabled
 	return &ConditionalLogger{
 		enabled:      enabled,
 		stdoutLogger: NewStdoutLogger(config),
@@ -311,4 +344,9 @@ func (l *ConditionalLogger) Log(ctx context.Context, log *storepb.AuditLog) erro
 // Run starts the underlying stdout logger. The logger always runs regardless of enabled state.
 func (l *ConditionalLogger) Run(ctx context.Context, wg *sync.WaitGroup) {
 	l.stdoutLogger.Run(ctx, wg)
+}
+
+// SetDrainTimeout updates the drain timeout at runtime
+func (l *ConditionalLogger) SetDrainTimeout(timeout time.Duration) {
+	l.stdoutLogger.SetDrainTimeout(timeout)
 }

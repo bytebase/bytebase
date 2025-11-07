@@ -19,11 +19,14 @@ import (
 
 func TestStdoutLogger_BasicWrite(t *testing.T) {
 	var buf bytes.Buffer
+	var enabled atomic.Bool
+	enabled.Store(true)
 
 	logger := NewStdoutLogger(StdoutLoggerConfig{
 		Writer:            &buf,
 		BufferSize:        10,
 		HeartbeatInterval: 1 * time.Hour,
+		Enabled:           &enabled,
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -64,11 +67,14 @@ func TestStdoutLogger_BasicWrite(t *testing.T) {
 
 func TestStdoutLogger_MultipleEvents(t *testing.T) {
 	var buf bytes.Buffer
+	var enabled atomic.Bool
+	enabled.Store(true)
 
 	logger := NewStdoutLogger(StdoutLoggerConfig{
 		Writer:            &buf,
 		BufferSize:        10,
 		HeartbeatInterval: 1 * time.Hour,
+		Enabled:           &enabled,
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -102,11 +108,14 @@ func TestStdoutLogger_MultipleEvents(t *testing.T) {
 
 func TestStdoutLogger_Heartbeat(t *testing.T) {
 	var buf bytes.Buffer
+	var enabled atomic.Bool
+	enabled.Store(true)
 
 	logger := NewStdoutLogger(StdoutLoggerConfig{
 		Writer:            &buf,
 		BufferSize:        10,
 		HeartbeatInterval: 100 * time.Millisecond,
+		Enabled:           &enabled,
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -141,11 +150,14 @@ func (w *blockingWriter) Write(p []byte) (n int, err error) {
 
 func TestStdoutLogger_Backpressure_BlocksAndTimesOut(t *testing.T) {
 	blocker := &blockingWriter{blocked: true}
+	var enabled atomic.Bool
+	enabled.Store(true)
 
 	logger := NewStdoutLogger(StdoutLoggerConfig{
 		Writer:            blocker,
 		BufferSize:        1,
 		HeartbeatInterval: 1 * time.Hour,
+		Enabled:           &enabled,
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -172,7 +184,7 @@ func TestStdoutLogger_Backpressure_BlocksAndTimesOut(t *testing.T) {
 	assert.ErrorIs(t, err, context.DeadlineExceeded, "error should be context.DeadlineExceeded")
 	assert.GreaterOrEqual(t, duration, 50*time.Millisecond, "call should have blocked for at least 50ms")
 
-	_, dropped := logger.Stats()
+	_, dropped, _ := logger.Stats()
 	assert.Equal(t, int64(1), dropped, "should have 1 dropped event")
 
 	cancel()
@@ -181,11 +193,14 @@ func TestStdoutLogger_Backpressure_BlocksAndTimesOut(t *testing.T) {
 
 func TestStdoutLogger_GracefulShutdown(t *testing.T) {
 	var buf bytes.Buffer
+	var enabled atomic.Bool
+	enabled.Store(true)
 
 	logger := NewStdoutLogger(StdoutLoggerConfig{
 		Writer:            &buf,
 		BufferSize:        100,
 		HeartbeatInterval: 1 * time.Hour,
+		Enabled:           &enabled,
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -209,18 +224,22 @@ func TestStdoutLogger_GracefulShutdown(t *testing.T) {
 	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
 	assert.Equal(t, 10, len(lines))
 
-	written, dropped := logger.Stats()
+	written, dropped, writeErrors := logger.Stats()
 	assert.Equal(t, int64(10), written)
 	assert.Equal(t, int64(0), dropped)
+	assert.Equal(t, int64(0), writeErrors)
 }
 
 func TestStdoutLogger_OptionalFields(t *testing.T) {
 	var buf bytes.Buffer
+	var enabled atomic.Bool
+	enabled.Store(true)
 
 	logger := NewStdoutLogger(StdoutLoggerConfig{
 		Writer:            &buf,
 		BufferSize:        10,
 		HeartbeatInterval: 1 * time.Hour,
+		Enabled:           &enabled,
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())

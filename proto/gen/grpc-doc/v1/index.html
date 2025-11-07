@@ -15649,6 +15649,24 @@ For examples:
 Requires TEAM or ENTERPRISE license. </p></td>
                 </tr>
               
+                <tr>
+                  <td>audit_log_buffer_size</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>Buffer size for audit log events (default: 1000).
+Recommended sizing: peak_QPS × acceptable_delay_seconds.
+Requires server restart to take effect (Go channels have fixed capacity). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>audit_log_drain_timeout_sec</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>Shutdown drain timeout in seconds for audit logs (default: 5).
+How long to wait for remaining audit events to write during graceful shutdown.
+Can be updated at runtime without restart. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
