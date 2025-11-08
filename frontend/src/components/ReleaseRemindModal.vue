@@ -1,6 +1,6 @@
 <template>
   <BBModal :title="$t('remind.release.new-version-available')" @close="onClose">
-    <div class="min-w-0 md:min-w-400">
+    <div class="w-xl max-w-[calc(100vw-4rem)]">
       <div>
         <p class="whitespace-pre-wrap">
           <i18n-t keypath="remind.release.new-version-content">
