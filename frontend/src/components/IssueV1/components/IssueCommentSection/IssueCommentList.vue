@@ -49,7 +49,7 @@
               state.editCommentMode &&
               state.activeComment?.name === item.comment.name
             "
-            class="flex space-x-2 mt-2 items-center justify-end"
+            class="flex gap-x-2 mt-2 items-center justify-end"
           >
             <NButton quaternary size="small" @click.prevent="cancelEditComment">
               {{ $t("common.cancel") }}

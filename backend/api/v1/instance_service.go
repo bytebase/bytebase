@@ -792,6 +792,8 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 							AccessKeyId:     awsCredential.AccessKeyId,
 							SecretAccessKey: awsCredential.SecretAccessKey,
 							SessionToken:    awsCredential.SessionToken,
+							RoleArn:         awsCredential.RoleArn,
+							ExternalId:      awsCredential.ExternalId,
 						},
 					}
 				} else {

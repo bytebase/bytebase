@@ -11,9 +11,9 @@
     <div
       class="flex flex-col justify-start items-start w-72 max-h-128 overflow-auto"
     >
-      <div class="w-full flex flex-col mt-1 gap-y-2 divide-y">
+      <div class="w-full flex flex-col mt-1 divide-y">
         <div
-          class="w-full group hover:opacity-90 cursor-pointer"
+          class="w-full group hover:opacity-90 cursor-pointer py-2 first:pt-0"
           v-for="task in failedTasks"
           :key="task.name"
           @click="onClickTask(task)"

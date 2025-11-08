@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-6">
+  <div class="flex flex-col gap-y-6">
     <div v-if="attachedResources.length > 0">
       <label class="textlabel">
         {{ $t("sql-review.attach-resource.self") }}
@@ -11,7 +11,7 @@
       <NRadioGroup
         v-model:value="resourceType"
         :disabled="!allowChangeAttachedResource"
-        class="space-x-2 mt-2"
+        class="flex gap-x-2 mt-2"
       >
         <NRadio value="environment">{{ $t("common.environment") }}</NRadio>
         <NRadio value="project">{{ $t("common.project") }}</NRadio>

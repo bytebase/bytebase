@@ -64,7 +64,7 @@
               />
               <div
                 v-if="state.isEditing"
-                class="flex space-x-2 mt-2 items-center justify-end"
+                class="flex gap-x-2 mt-2 items-center justify-end"
               >
                 <NButton quaternary size="small" @click.prevent="cancelEdit">
                   {{ $t("common.cancel") }}

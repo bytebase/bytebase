@@ -12,7 +12,7 @@
         </span>
       </template>
       <div class="max-w-xs">
-        <div class="space-y-1 max-h-64 overflow-y-auto">
+        <div class="flex flex-col gap-y-1 max-h-64 overflow-y-auto">
           <ApprovalCandidate
             v-for="user in users"
             :key="user.email"

@@ -1,6 +1,6 @@
 <template>
-  <div class="flex flex-col divide-y gap-y-7">
-    <div class="space-y-4">
+  <div class="divide-y">
+    <div class="flex flex-col gap-y-4 pb-7">
       <div>
         <p class="text-lg font-medium leading-7 text-main">
           {{ $t("common.environment") }}
@@ -22,7 +22,7 @@
     <Labels
       :database="database"
       :allow-edit="allowUpdateDatabase"
-      class="pt-5"
+      class="pt-7"
     />
   </div>
 </template>

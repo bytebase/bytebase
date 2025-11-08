@@ -360,9 +360,9 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user info"))
 		}
 	case storepb.IdentityProviderType_OIDC:
-		oauth2Context := request.IdpContext.GetOauth2Context()
-		if oauth2Context == nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("missing OAuth2 context"))
+		oidcContext := request.IdpContext.GetOidcContext()
+		if oidcContext == nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("missing OIDC context"))
 		}
 
 		oidcIDP, err := oidc.NewIdentityProvider(ctx, idp.Config.GetOidcConfig())
@@ -371,7 +371,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		}
 
 		redirectURL := fmt.Sprintf("%s/oidc/callback", setting.ExternalUrl)
-		token, err := oidcIDP.ExchangeToken(ctx, redirectURL, oauth2Context.Code)
+		token, err := oidcIDP.ExchangeToken(ctx, redirectURL, oidcContext.Code)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to exchange token"))
 		}

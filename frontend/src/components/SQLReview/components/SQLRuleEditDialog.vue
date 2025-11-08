@@ -3,13 +3,13 @@
     :title="getRuleLocalization(rule.type, rule.engine).title"
     @close="$emit('cancel')"
   >
-    <div class="space-y-4 w-[calc(100vw-5rem)] sm:w-[40rem] pb-1">
-      <div class="space-y-1">
-        <div class="flex items-center space-x-2">
+    <div class="flex flex-col gap-y-4 w-[calc(100vw-5rem)] sm:w-[40rem] pb-1">
+      <div class="flex flex-col gap-y-1">
+        <div class="flex items-center gap-x-2">
           <h3 class="text-lg text-control font-medium">
             {{ $t("common.name") }}
           </h3>
-          <div class="flex items-center space-x-2">
+          <div class="flex items-center gap-x-2">
             <RichEngineName
               :engine="rule.engine"
               tag="p"
@@ -22,13 +22,13 @@
           <a
             :href="`https://docs.bytebase.com/sql-review/review-rules#${rule.type}`"
             target="__blank"
-            class="flex flex-row space-x-2 items-center text-base text-gray-500 hover:text-gray-900"
+            class="flex flex-row gap-x-2 items-center text-base text-gray-500 hover:text-gray-900"
           >
             <heroicons-outline:external-link class="w-4 h-4" />
           </a>
         </div>
       </div>
-      <div class="space-y-1">
+      <div class="flex flex-col gap-y-1">
         <h3 class="text-lg text-control font-medium">
           {{ $t("sql-review.level.name") }}
         </h3>
@@ -40,7 +40,7 @@
           />
         </div>
       </div>
-      <div class="space-y-1">
+      <div class="flex flex-col gap-y-1">
         <h3 class="text-lg text-control font-medium">
           {{ $t("common.description") }}
         </h3>

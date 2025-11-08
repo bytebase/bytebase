@@ -46,7 +46,7 @@
     </div>
     <ul
       v-if="state.validatedMessages.length > 0"
-      class="w-full my-2 space-y-2 list-disc list-outside pl-4"
+      class="w-full my-2 flex flex-col gap-y-2 list-disc list-outside pl-4"
     >
       <li
         v-for="validateMessage in state.validatedMessages"

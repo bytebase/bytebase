@@ -58,7 +58,7 @@
                 :tab="identityProvider.title"
               >
                 <form
-                  class="space-y-6"
+                  class="flex flex-col gap-y-6"
                   @submit.prevent="trySignin(identityProvider.name)"
                 >
                   <div>

@@ -96,7 +96,7 @@
           </div>
 
           <!-- Results for this check run -->
-          <div class="space-y-2 pl-8">
+          <div class="flex flex-col gap-y-2 pl-8">
             <CheckResultItem
               v-for="(result, idx) in getFilteredResults(checkRun)"
               :key="idx"

@@ -297,6 +297,16 @@ export declare type CheckReleaseRequest = Message<"bytebase.v1.CheckReleaseReque
    * @generated from field: repeated string targets = 3;
    */
   targets: string[];
+
+  /**
+   * Custom linting rules in natural language for AI-powered validation.
+   * Each rule should be a clear statement describing the desired schema constraint.
+   * Example: "All tables must have a primary key"
+   * Example: "VARCHAR columns should specify a maximum length"
+   *
+   * @generated from field: string custom_rules = 4;
+   */
+  customRules: string;
 };
 
 /**

@@ -422,6 +422,9 @@ func (x *Advice) Equal(y *Advice) bool {
 	if !x.EndPosition.Equal(y.EndPosition) {
 		return false
 	}
+	if x.RuleType != y.RuleType {
+		return false
+	}
 	return true
 }
 

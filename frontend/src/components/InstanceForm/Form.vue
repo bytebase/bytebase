@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-6 pb-2">
+  <div class="flex flex-col gap-y-6 pb-2">
     <div class="divide-y divide-block-border max-w-[850px]">
       <InstanceEngineRadioGrid
         v-if="isCreating"
@@ -227,7 +227,7 @@
 
         <div
           v-if="basicInfo.engine === Engine.REDIS"
-          class="sm:col-span-4 sm:col-start-1 space-y-2"
+          class="sm:col-span-4 sm:col-start-1 flex flex-col gap-y-2"
         >
           <label
             for="connectionStringSchema"
@@ -464,7 +464,7 @@
       </BBAttention>
 
       <div class="mt-6 pt-0 border-none">
-        <div class="flex flex-row space-x-2">
+        <div class="flex flex-row gap-x-2">
           <NButton
             tertiary
             type="primary"
@@ -480,7 +480,7 @@
 
       <div
         v-if="basicInfo.engine !== Engine.DYNAMODB && isCreating"
-        class="mt-6 pt-4 space-y-1"
+        class="mt-6 pt-4 flex flex-col gap-y-1"
       >
         <p class="w-full text-lg leading-6 font-medium text-gray-900">
           {{ $t("instance.sync-databases.self") }}

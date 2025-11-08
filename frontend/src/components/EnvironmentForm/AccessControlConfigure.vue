@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col gap-y-2">
-    <div class="font-medium flex items-center space-x-2">
+    <div class="font-medium flex items-center gap-x-2">
       <label>
         {{ t("environment.access-control.title") }}
       </label>
@@ -66,7 +66,7 @@
     v-if="resource.startsWith(environmentNamePrefix)"
     class="flex flex-col gap-y-2"
   >
-    <div class="font-medium flex items-center space-x-2">
+    <div class="font-medium flex items-center gap-x-2">
       <label>
         {{ t("environment.statement-execution.title") }}
       </label>

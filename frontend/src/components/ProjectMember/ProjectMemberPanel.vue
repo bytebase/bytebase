@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full mx-auto space-y-4">
+  <div class="w-full mx-auto flex flex-col gap-y-4">
     <div class="textinfolabel">
       {{ $t("project.members.description") }}
       <LearnMoreLink

@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-4">
+  <div class="flex flex-col gap-y-4">
     <div v-if="allowEdit" class="flex items-center justify-end">
       <NButton type="primary" @click.prevent="addProjectWebhook">
         <template #icon>

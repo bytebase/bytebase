@@ -377,3 +377,92 @@ func GetTestTiDBContainer(ctx context.Context, t testing.TB) *Container {
 	}
 	return container
 }
+
+// MongoDBContainer represents a MongoDB container with its connection details
+type MongoDBContainer struct {
+	container testcontainers.Container
+	host      string
+	port      string
+	username  string
+	password  string
+}
+
+func (c *MongoDBContainer) GetHost() string {
+	return c.host
+}
+
+func (c *MongoDBContainer) GetPort() string {
+	return c.port
+}
+
+func (c *MongoDBContainer) GetUsername() string {
+	return c.username
+}
+
+func (c *MongoDBContainer) GetPassword() string {
+	return c.password
+}
+
+func (c *MongoDBContainer) GetConnectionURI() string {
+	return fmt.Sprintf("mongodb://%s:%s@%s:%s/?authSource=admin", c.username, c.password, c.host, c.port)
+}
+
+func (c *MongoDBContainer) Close(ctx context.Context) {
+	if c == nil {
+		return
+	}
+	if c.container != nil {
+		if err := c.container.Terminate(ctx, testcontainers.StopTimeout(1*time.Millisecond)); err != nil {
+			slog.Error("close MongoDB container error")
+		}
+	}
+}
+
+// GetMongoDBContainer creates a MongoDB container for testing
+func GetMongoDBContainer(ctx context.Context) (*MongoDBContainer, error) {
+	req := testcontainers.ContainerRequest{
+		Image: "mongo:5",
+		Env: map[string]string{
+			"MONGO_INITDB_ROOT_USERNAME": "testuser",
+			"MONGO_INITDB_ROOT_PASSWORD": "testpass",
+		},
+		ExposedPorts: []string{"27017/tcp"},
+		WaitingFor:   wait.ForLog("Waiting for connections").WithStartupTimeout(3 * time.Minute),
+	}
+
+	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	host, err := c.Host(ctx)
+	if err != nil {
+		return nil, err
+	}
+	port, err := c.MappedPort(ctx, "27017/tcp")
+	if err != nil {
+		return nil, err
+	}
+
+	return &MongoDBContainer{
+		container: c,
+		host:      host,
+		port:      port.Port(),
+		username:  "testuser",
+		password:  "testpass",
+	}, nil
+}
+
+// GetTestMongoDBContainer is a helper function for tests that creates a MongoDB container
+// and handles the error by failing the test if container creation fails
+func GetTestMongoDBContainer(ctx context.Context, t testing.TB) *MongoDBContainer {
+	t.Helper()
+	container, err := GetMongoDBContainer(ctx)
+	if err != nil {
+		t.Fatalf("failed to create MongoDB container: %v", err)
+	}
+	return container
+}

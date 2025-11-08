@@ -1,6 +1,6 @@
 <template>
   <BBModal :title="$t('role.import-from-role')" @close="$emit('cancel')">
-    <div class="w-96 mb-2 space-y-2">
+    <div class="w-96 mb-2 flex flex-col gap-y-2">
       <div>
         <p class="textlabel mb-1">{{ $t("role.select-role") }}</p>
         <NSelect

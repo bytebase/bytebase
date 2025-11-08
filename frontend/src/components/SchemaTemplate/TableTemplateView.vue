@@ -2,12 +2,12 @@
   <NEmpty v-if="templateList.length === 0" class="py-12 border rounded-sm" />
   <div v-else class="flex">
     <div
-      class="hidden lg:flex w-1/5 max-w-xs flex-col space-y-3 border-r mr-5 pr-5"
+      class="hidden lg:flex w-1/5 max-w-xs flex-col gap-y-3 border-r mr-5 pr-5"
     >
       <p class="text-lg">
         {{ $t("schema-template.form.category") }}
       </p>
-      <div class="space-y-2">
+      <div class="flex flex-col gap-y-2">
         <NCheckbox
           v-for="item in categoryList"
           :key="item.id"

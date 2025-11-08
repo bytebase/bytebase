@@ -1,8 +1,8 @@
 <template>
-  <div class="flex items-center space-x-2">
+  <div class="flex items-center gap-x-2">
     <UsersIcon v-if="showIcon" class="w-8" />
     <div>
-      <div class="flex items-center space-x-2">
+      <div class="flex items-center gap-x-2">
         <div :class="deleted ? 'line-through' : ''">
           <router-link
             v-if="allowGetGroup && link"

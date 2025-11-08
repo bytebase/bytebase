@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log/slog"
 	"strings"
 	"time"
 
@@ -16,7 +15,6 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -115,14 +113,6 @@ func (s *Store) GetPlan(ctx context.Context, find *FindPlanMessage) (*PlanMessag
 		return nil, nil
 	}
 	if len(plans) > 1 {
-		slog.Error("expect to find one plan, found multiple",
-			slog.Int("count", len(plans)),
-			slog.Any("uid", find.UID),
-			slog.Any("project_id", find.ProjectID),
-			slog.Any("project_ids", find.ProjectIDs),
-			slog.Any("pipeline_id", find.PipelineID),
-			log.BBStack("stack"),
-		)
 		return nil, errors.Errorf("expect to find one plan, found %d", len(plans))
 	}
 	return plans[0], nil

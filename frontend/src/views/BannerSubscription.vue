@@ -1,7 +1,7 @@
 <template>
   <div class="bg-info">
     <div class="mx-auto py-1 px-3">
-      <div class="flex items-center justify-center flex-wrap space-x-2">
+      <div class="flex items-center justify-center flex-wrap gap-x-2">
         <p class="ml-3 text-base font-medium text-white truncate">
           {{ content }}
         </p>

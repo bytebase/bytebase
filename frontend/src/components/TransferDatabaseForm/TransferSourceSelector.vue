@@ -6,7 +6,7 @@
       <div class="radio-set-row">
         <NRadioGroup
           :value="transferSource"
-          class="space-x-4"
+          class="gap-x-4"
           size="large"
           @update:value="$emit('update:transferSource', $event)"
         >

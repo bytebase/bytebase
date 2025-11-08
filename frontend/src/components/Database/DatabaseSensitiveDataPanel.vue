@@ -1,11 +1,11 @@
 <template>
-  <div class="w-full space-y-4">
+  <div class="w-full flex flex-col gap-y-4">
     <FeatureAttention
       :feature="PlanFeature.FEATURE_DATA_MASKING"
       :instance="database.instanceResource"
     />
     <div
-      class="flex flex-col space-x-2 lg:flex-row gap-y-4 justify-between items-end lg:items-center"
+      class="flex flex-col gap-x-2 lg:flex-row gap-y-4 justify-between items-end lg:items-center"
     >
       <SearchBox v-model:value="state.searchText" style="max-width: 100%" />
       <NButton

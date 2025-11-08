@@ -11,14 +11,10 @@
       class="max-w-[100vw]"
     >
       <div class="flex flex-col gap-y-4">
-        <!-- Steps indicator -->
-        <NSteps :current="currentStep">
+        <!-- Steps indicator (hide when databases are pre-selected) -->
+        <NSteps v-if="!hasPreSelectedDatabases" :current="currentStep">
           <NStep :title="changeTypeTitle" />
           <NStep :title="$t('plan.select-targets')" />
-          <NStep
-            v-if="shouldShowSchemaEditor"
-            :title="$t('schema-editor.self')"
-          />
         </NSteps>
 
         <!-- Step content -->
@@ -28,7 +24,7 @@
             <NRadioGroup
               v-model:value="selectedMigrationType"
               size="large"
-              class="space-y-4 w-full md:w-[80vw] lg:w-[60vw]"
+              class="gap-y-4 w-full flex! flex-col md:w-[80vw] lg:w-[60vw]"
             >
               <div
                 class="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors"
@@ -37,13 +33,13 @@
                 }"
               >
                 <NRadio :value="MigrationType.DDL" class="w-full">
-                  <div class="flex items-start space-x-3 w-full">
+                  <div class="flex items-start gap-x-3 w-full">
                     <FileDiffIcon
                       class="w-6 h-6 mt-1 shrink-0"
                       :stroke-width="1.5"
                     />
                     <div class="flex-1">
-                      <div class="flex items-center space-x-2">
+                      <div class="flex items-center gap-x-2">
                         <span class="text-lg font-medium text-gray-900">
                           <span>{{ $t("plan.schema-migration") }}</span>
                         </span>
@@ -62,13 +58,13 @@
                 }"
               >
                 <NRadio :value="MigrationType.DML" class="w-full">
-                  <div class="flex items-start space-x-3 w-full">
+                  <div class="flex items-start gap-x-3 w-full">
                     <EditIcon
                       class="w-6 h-6 mt-1 shrink-0"
                       :stroke-width="1.5"
                     />
                     <div class="flex-1">
-                      <div class="flex items-center space-x-2">
+                      <div class="flex items-center gap-x-2">
                         <span class="text-lg font-medium text-gray-900">
                           <span>{{ $t("plan.data-change") }}</span>
                         </span>
@@ -93,43 +89,11 @@
               />
             </div>
           </template>
-
-          <!-- Step 3: Schema Editor (only for MIGRATE with single database) -->
-          <template
-            v-else-if="
-              currentStep === Step.SCHEMA_EDITOR && shouldShowSchemaEditor
-            "
-          >
-            <div
-              class="relative h-[600px] w-full md:w-[90vw] lg:w-[calc(100vw-20rem)] lg:min-w-[80vw]"
-            >
-              <MaskSpinner v-if="isPreparingMetadata" />
-              <SchemaEditorLite
-                v-if="schemaEditTargets.length > 0"
-                ref="schemaEditorRef"
-                :project="project"
-                :targets="schemaEditTargets"
-                :loading="isPreparingMetadata"
-                :hide-preview="false"
-              />
-            </div>
-          </template>
         </div>
       </div>
       <template #footer>
-        <div class="w-full flex items-center justify-between">
-          <div>
-            <NButton
-              v-if="
-                currentStep === Step.SCHEMA_EDITOR && shouldShowSchemaEditor
-              "
-              :loading="isGeneratingPreview"
-              @click="handlePreviewDDL"
-            >
-              {{ $t("schema-editor.preview-schema-text") }}
-            </NButton>
-          </div>
-          <div class="flex items-center gap-x-3">
+        <div class="w-full flex items-center justify-end">
+          <div class="flex items-center gap-x-2">
             <NButton
               quaternary
               v-if="currentStep === Step.SELECT_CHANGE_TYPE"
@@ -166,75 +130,37 @@
       </template>
     </DrawerContent>
   </Drawer>
-
-  <!-- Preview DDL Modal -->
-  <NModal
-    v-model:show="showPreviewModal"
-    :mask-closable="true"
-    :closable="true"
-    style="width: 80vw; max-width: 1200px"
-  >
-    <NCard
-      :title="$t('schema-editor.preview-schema-text')"
-      :bordered="false"
-      size="small"
-      role="dialog"
-      aria-modal="true"
-      class="max-h-[80vh] overflow-hidden"
-    >
-      <template #header-extra>
-        <NButton @click="showPreviewModal = false" :size="'small'"
-          ><XIcon :size="16"
-        /></NButton>
-      </template>
-      <div class="h-[60vh] min-h-[400px] border rounded-sm">
-        <MonacoEditor
-          :readonly="true"
-          :content="previewDDL"
-          :auto-focus="false"
-          class="w-full h-full"
-          language="sql"
-        />
-      </div>
-    </NCard>
-  </NModal>
 </template>
 
 <script setup lang="ts">
 import { create as createProto } from "@bufbuild/protobuf";
-import { cloneDeep } from "lodash-es";
-import { FileDiffIcon, EditIcon, XIcon } from "lucide-vue-next";
+import { FileDiffIcon, EditIcon } from "lucide-vue-next";
 import {
   NButton,
   NRadio,
   NRadioGroup,
   NSteps,
   NStep,
-  NModal,
-  NCard,
+  useDialog,
 } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import type { Ref } from "vue";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
+import type { LocationQueryRaw } from "vue-router";
 import DatabaseAndGroupSelector from "@/components/DatabaseAndGroupSelector";
 import type { DatabaseSelectState } from "@/components/DatabaseAndGroupSelector";
-import { MonacoEditor } from "@/components/MonacoEditor";
 import { getLocalSheetByName, getNextLocalSheetUID } from "@/components/Plan";
-import SchemaEditorLite, {
-  generateDiffDDL,
-  type EditTarget,
-} from "@/components/SchemaEditorLite";
-import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useCurrentProjectV1,
-  useDatabaseV1Store,
-  useDBSchemaV1Store,
-  useDatabaseCatalogV1Store,
   batchGetOrFetchDatabases,
   pushNotification,
+  useDatabaseV1Store,
 } from "@/store";
+import type { ComposedDatabase } from "@/types";
 import {
   DatabaseChangeType,
   MigrationType,
@@ -244,11 +170,13 @@ import {
   Plan_SpecSchema,
   type Plan_Spec,
 } from "@/types/proto-es/v1/plan_service_pb";
-import { setSheetStatement } from "@/utils";
-import { engineSupportsSchemaEditor } from "@/utils/schemaEditor";
+import { extractProjectResourceName, generateIssueTitle } from "@/utils";
 
-defineProps<{
+const props = defineProps<{
   title?: string;
+  preSelectedDatabases?: ComposedDatabase[];
+  projectName?: string;
+  useLegacyIssueFlow?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -258,32 +186,32 @@ const emit = defineEmits<{
 enum Step {
   SELECT_CHANGE_TYPE = 1,
   SELECT_TARGETS = 2,
-  SCHEMA_EDITOR = 3,
 }
 
 const { project } = useCurrentProjectV1();
 const { t } = useI18n();
+const router = useRouter();
+const dialog = useDialog();
+const databaseStore = useDatabaseV1Store();
 const show = defineModel<boolean>("show", { default: false });
-const databaseV1Store = useDatabaseV1Store();
-const dbSchemaStore = useDBSchemaV1Store();
-const dbCatalogStore = useDatabaseCatalogV1Store();
 
 const selectedMigrationType: Ref<MigrationType> = ref(MigrationType.DDL);
 const isCreating = ref(false);
 const currentStep = ref(Step.SELECT_CHANGE_TYPE);
-const isPreparingMetadata = ref(false);
-const schemaEditTargets = ref<EditTarget[]>([]);
-const schemaEditorRef = ref<InstanceType<typeof SchemaEditorLite>>();
-const showPreviewModal = ref(false);
-const previewDDL = ref("");
-const isGeneratingPreview = ref(false);
 
 const databaseSelectState = reactive<DatabaseSelectState>({
   changeSource: "DATABASE",
   selectedDatabaseNameList: [],
 });
 
+const hasPreSelectedDatabases = computed(() => {
+  return (props.preSelectedDatabases?.length ?? 0) > 0;
+});
+
 const hasSelection = computed(() => {
+  if (hasPreSelectedDatabases.value) {
+    return true;
+  }
   if (databaseSelectState.changeSource === "DATABASE") {
     return databaseSelectState.selectedDatabaseNameList.length > 0;
   } else {
@@ -305,27 +233,11 @@ const canProceedToNextStep = computed(() => {
   return false;
 });
 
-const shouldShowSchemaEditor = computed(() => {
-  if (!isMigrateSelected.value) return false;
-  if (databaseSelectState.changeSource !== "DATABASE") return false;
-  if (databaseSelectState.selectedDatabaseNameList.length !== 1) return false;
-
-  // Check if the selected database engine supports schema editor
-  const databaseName = databaseSelectState.selectedDatabaseNameList[0];
-  if (!databaseName) return false;
-
-  const database = databaseV1Store.getDatabaseByName(databaseName);
-  if (!database || !database.instanceResource) return false;
-
-  return engineSupportsSchemaEditor(database.instanceResource.engine);
-});
-
-const totalSteps = computed(() => {
-  return shouldShowSchemaEditor.value ? 3 : 2;
-});
-
 const isLastStep = computed(() => {
-  return currentStep.value === totalSteps.value;
+  if (hasPreSelectedDatabases.value) {
+    return currentStep.value === Step.SELECT_CHANGE_TYPE;
+  }
+  return currentStep.value === Step.SELECT_TARGETS;
 });
 
 const changeTypeTitle = computed(() => {
@@ -356,13 +268,27 @@ watch(show, (newVal) => {
     databaseSelectState.selectedDatabaseNameList = [];
     databaseSelectState.selectedDatabaseGroup = undefined;
     isCreating.value = false;
-    isPreparingMetadata.value = false;
-    schemaEditTargets.value = [];
-    showPreviewModal.value = false;
-    previewDDL.value = "";
-    isGeneratingPreview.value = false;
   }
 });
+
+const showDatabaseDriftedWarningDialog = () => {
+  return new Promise((resolve) => {
+    dialog.create({
+      type: "warning",
+      positiveText: t("common.confirm"),
+      negativeText: t("common.cancel"),
+      title: t("issue.schema-drift-detected.self"),
+      content: t("issue.schema-drift-detected.description"),
+      autoFocus: false,
+      onNegativeClick: () => {
+        resolve(false);
+      },
+      onPositiveClick: () => {
+        resolve(true);
+      },
+    });
+  });
+};
 
 const handleUpdateSelection = async (newState: DatabaseSelectState) => {
   Object.assign(databaseSelectState, newState);
@@ -380,115 +306,18 @@ const handleCancel = () => {
   show.value = false;
 };
 
-const prepareDatabaseMetadata = async () => {
-  if (!shouldShowSchemaEditor.value) return;
-
-  isPreparingMetadata.value = true;
-  schemaEditTargets.value = [];
-
-  try {
-    const databaseName = databaseSelectState.selectedDatabaseNameList[0];
-    await batchGetOrFetchDatabases([databaseName]);
-
-    const database = databaseV1Store.getDatabaseByName(databaseName);
-
-    const [metadata, catalog] = await Promise.all([
-      dbSchemaStore.getOrFetchDatabaseMetadata({
-        database: database.name,
-        skipCache: true,
-        limit: 500,
-      }),
-      dbCatalogStore.getOrFetchDatabaseCatalog({
-        database: database.name,
-        skipCache: true,
-      }),
-    ]);
-
-    schemaEditTargets.value = [
-      {
-        database,
-        metadata: cloneDeep(metadata),
-        baselineMetadata: metadata,
-        catalog: cloneDeep(catalog),
-        baselineCatalog: catalog,
-      },
-    ];
-  } finally {
-    isPreparingMetadata.value = false;
-  }
-};
-
 const handleNextStep = async () => {
   if (
     currentStep.value === Step.SELECT_CHANGE_TYPE &&
     selectedMigrationType.value
   ) {
     currentStep.value = Step.SELECT_TARGETS;
-  } else if (currentStep.value === Step.SELECT_TARGETS && hasSelection.value) {
-    if (shouldShowSchemaEditor.value) {
-      currentStep.value = Step.SCHEMA_EDITOR;
-      await prepareDatabaseMetadata();
-    } else {
-      await handleConfirm();
-    }
   }
 };
 
 const handlePrevStep = () => {
   if (currentStep.value === Step.SELECT_TARGETS) {
     currentStep.value = Step.SELECT_CHANGE_TYPE;
-  } else if (currentStep.value === Step.SCHEMA_EDITOR) {
-    currentStep.value = Step.SELECT_TARGETS;
-  }
-};
-
-const handlePreviewDDL = async () => {
-  if (!shouldShowSchemaEditor.value || schemaEditTargets.value.length === 0)
-    return;
-
-  isGeneratingPreview.value = true;
-  try {
-    const target = schemaEditTargets.value[0];
-    const applyMetadataEdit = schemaEditorRef.value?.applyMetadataEdit;
-    const refreshPreview = schemaEditorRef.value?.refreshPreview;
-
-    if (typeof applyMetadataEdit === "function") {
-      const { database, baselineMetadata, baselineCatalog } = target;
-      const { metadata, catalog } = applyMetadataEdit(
-        database,
-        target.metadata,
-        target.catalog
-      );
-
-      // Trigger preview refresh in the schema editor
-      if (typeof refreshPreview === "function") {
-        refreshPreview();
-      }
-
-      const result = await generateDiffDDL({
-        database,
-        sourceMetadata: baselineMetadata,
-        targetMetadata: metadata,
-        sourceCatalog: baselineCatalog,
-        targetCatalog: catalog,
-        allowEmptyDiffDDLWithConfigChange: false,
-      });
-
-      if (result.errors.length > 0) {
-        pushNotification({
-          module: "bytebase",
-          style: "CRITICAL",
-          title: t("common.error"),
-          description: result.errors.join("\n"),
-        });
-        return;
-      }
-
-      previewDDL.value = result.statement || "-- No changes detected";
-      showPreviewModal.value = true;
-    }
-  } finally {
-    isGeneratingPreview.value = false;
   }
 };
 
@@ -499,59 +328,64 @@ const handleConfirm = async () => {
   try {
     // Get targets
     const targets: string[] = [];
-    if (databaseSelectState.changeSource === "DATABASE") {
+    if (hasPreSelectedDatabases.value) {
+      targets.push(...(props.preSelectedDatabases?.map((db) => db.name) ?? []));
+    } else if (databaseSelectState.changeSource === "DATABASE") {
       targets.push(...databaseSelectState.selectedDatabaseNameList);
     } else if (databaseSelectState.selectedDatabaseGroup) {
       targets.push(databaseSelectState.selectedDatabaseGroup);
     }
 
-    let statement = "";
-
-    // Generate diff DDL if we're on step 3 (schema editor)
-    if (
-      currentStep.value === Step.SCHEMA_EDITOR &&
-      shouldShowSchemaEditor.value &&
-      schemaEditTargets.value.length > 0
-    ) {
-      const target = schemaEditTargets.value[0];
-      const applyMetadataEdit = schemaEditorRef.value?.applyMetadataEdit;
-      const refreshPreview = schemaEditorRef.value?.refreshPreview;
-
-      if (typeof applyMetadataEdit === "function") {
-        const { database, baselineMetadata, baselineCatalog } = target;
-        const { metadata, catalog } = applyMetadataEdit(
-          database,
-          target.metadata,
-          target.catalog
-        );
-        // Trigger preview refresh before generating final DDL
-        if (typeof refreshPreview === "function") {
-          refreshPreview();
-        }
-
-        const result = await generateDiffDDL({
-          database,
-          sourceMetadata: baselineMetadata,
-          targetMetadata: metadata,
-          sourceCatalog: baselineCatalog,
-          targetCatalog: catalog,
-          allowEmptyDiffDDLWithConfigChange: false,
-        });
-
-        if (result.errors.length > 0) {
-          pushNotification({
-            module: "bytebase",
-            style: "CRITICAL",
-            title: t("common.error"),
-            description: result.errors.join("\n"),
-          });
+    // Check for database drift if using legacy issue flow
+    if (props.useLegacyIssueFlow && hasPreSelectedDatabases.value) {
+      if (props.preSelectedDatabases?.some((d) => d.drifted)) {
+        const confirmed = await showDatabaseDriftedWarningDialog();
+        if (!confirmed) {
+          isCreating.value = false;
           return;
         }
-
-        statement = result.statement;
       }
     }
 
+    // If using legacy issue flow (from database dashboard), navigate to issue creation
+    if (props.useLegacyIssueFlow) {
+      const type =
+        selectedMigrationType.value === MigrationType.DDL
+          ? "bb.issue.database.schema.update"
+          : "bb.issue.database.data.update";
+
+      const databaseNames = hasPreSelectedDatabases.value
+        ? (props.preSelectedDatabases?.map((db) => db.databaseName) ?? [])
+        : await Promise.all(
+            targets.map(async (target) => {
+              const db = await databaseStore.getOrFetchDatabaseByName(target);
+              return db.databaseName;
+            })
+          );
+
+      const query: LocationQueryRaw = {
+        template: type,
+        name: generateIssueTitle(type, databaseNames),
+        databaseList: targets.join(","),
+      };
+
+      router.push({
+        name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+        params: {
+          projectId: extractProjectResourceName(
+            props.projectName ?? project.value.name
+          ),
+          issueSlug: "create",
+        },
+        query,
+      });
+
+      show.value = false;
+      isCreating.value = false;
+      return;
+    }
+
+    // Otherwise, create spec for plan flow
     const sheetUID = getNextLocalSheetUID();
     const localSheet = getLocalSheetByName(
       `${project.value.name}/sheets/${sheetUID}`
@@ -560,9 +394,6 @@ const handleConfirm = async () => {
       selectedMigrationType.value === MigrationType.DDL
         ? "Schema Migration"
         : "Data Change";
-    if (statement) {
-      setSheetStatement(localSheet, statement);
-    }
 
     // Create spec
     const spec = createProto(Plan_SpecSchema, {

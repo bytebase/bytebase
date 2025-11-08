@@ -1,6 +1,6 @@
 <template>
   <div class="absolute left-0 bottom-0 mb-8 text-center w-full">
-    <p class="block text-sm text-gray-400 space-x-2">
+    <p class="block text-sm text-gray-400 flex justify-center gap-x-2">
       <a
         v-for="item in languageList"
         :key="item.label"

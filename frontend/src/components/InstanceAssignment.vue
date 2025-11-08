@@ -4,9 +4,9 @@
       :title="$t('subscription.instance-assignment.manage-license')"
       class="max-w-[100vw]"
     >
-      <div class="divide-block-border space-y-5 w-[40rem] h-full">
+      <div class="flex flex-col gap-y-5 w-[40rem] h-full">
         <div>
-          <div class="flex space-x-2">
+          <div class="flex gap-x-2">
             <div class="text-gray-400">
               {{
                 $t("subscription.instance-assignment.used-and-total-license")

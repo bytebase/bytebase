@@ -1,5 +1,5 @@
 <template>
-  <form class="space-y-6 px-1" @submit.prevent="trySignin()">
+  <form class="flex flex-col gap-y-6 px-1" @submit.prevent="trySignin()">
     <div>
       <label
         for="email"

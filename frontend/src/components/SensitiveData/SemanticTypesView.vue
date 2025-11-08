@@ -1,6 +1,6 @@
 <template>
-  <div class="w-full space-y-4">
-    <div class="flex items-center justify-end space-x-2">
+  <div class="w-full flex flex-col gap-y-4">
+    <div class="flex items-center justify-end gap-x-2">
       <NButton
         :disabled="!hasPermission || !hasSensitiveDataFeature"
         @click="state.showTemplateDrawer = true"

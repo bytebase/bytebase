@@ -5,7 +5,7 @@
     role="menuitem"
     v-bind="bindings"
   >
-    <p class="text-sm flex justify-between space-x-2">
+    <p class="text-sm flex justify-between gap-x-2">
       <span class="text-main font-medium truncate text-ellipsis">
         {{ currentUserV1.title }}
       </span>

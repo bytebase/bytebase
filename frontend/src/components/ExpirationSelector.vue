@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full space-y-3">
+  <div class="w-full flex flex-col gap-y-3">
     <NSelect
       v-bind="$attrs"
       :value="state.selected"
@@ -8,7 +8,7 @@
     />
 
     <template v-if="state.selected === -1">
-      <div class="space-y-2">
+      <div class="flex flex-col gap-y-2">
         <NDatePicker
           size="medium"
           class="w-full"
