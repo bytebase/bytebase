@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col items-end space-y-4">
+  <div class="flex flex-col items-end gap-y-4">
     <FlowsToolbar />
     <FlowTable />
   </div>

@@ -2,11 +2,11 @@ package catalog
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pingcap/tidb/pkg/parser/format"
-	"github.com/pingcap/tidb/pkg/parser/model"
 	"github.com/pingcap/tidb/pkg/parser/mysql"
 	"github.com/pingcap/tidb/pkg/types"
 	"github.com/pkg/errors"
@@ -25,6 +25,8 @@ const (
 	FullTextName string = "FULLTEXT"
 	// SpatialName is the string for SPATIAL.
 	SpatialName string = "SPATIAL"
+
+	publicSchemaName = "public"
 
 	// ErrorTypeUnsupported is the error for unsupported cases.
 	ErrorTypeUnsupported WalkThroughErrorType = 1
@@ -210,25 +212,18 @@ func (d *DatabaseState) WalkThrough(ast any) error {
 		err := d.mysqlWalkThrough(ast)
 		return err
 	case storepb.Engine_POSTGRES:
-		// Check if this is ANTLR ParseResult or legacy AST
-		if parseResult, ok := ast.(*pgparser.ParseResult); ok {
-			// ANTLR-based walkthrough
-			if err := d.pgAntlrWalkThrough(parseResult.Tree); err != nil {
-				if d.ctx.CheckIntegrity {
-					return err
-				}
-				d.usable = false
+		// ANTLR-based walkthrough
+		parseResult, ok := ast.(*pgparser.ParseResult)
+		if !ok {
+			return &WalkThroughError{
+				Type:    ErrorTypeUnsupported,
+				Content: fmt.Sprintf("PostgreSQL walk-through expects *pgparser.ParseResult, got %T", ast),
 			}
-			return nil
 		}
-		// Legacy AST walkthrough
-		if err := d.pgWalkThrough(ast); err != nil {
+		if err := d.pgAntlrWalkThrough(parseResult.Tree); err != nil {
 			if d.ctx.CheckIntegrity {
 				return err
 			}
-			// For PostgreSQL, we only support to walk-through with CheckIntegrity == true.
-			// If CheckIntegrity == false, we'll try to walk-through with empty public schema.
-			// We use `usable` to check if walk-through successfully.
 			d.usable = false
 		}
 		return nil
@@ -453,14 +448,14 @@ func (d *DatabaseState) createIndex(node *tidbast.CreateIndexStmt) *WalkThroughE
 	}
 
 	unique := false
-	tp := model.IndexTypeBtree.String()
+	tp := tidbast.IndexTypeBtree.String()
 	isSpatial := false
 
 	switch node.KeyType {
 	case tidbast.IndexKeyTypeNone:
 	case tidbast.IndexKeyTypeUnique:
 		unique = true
-	case tidbast.IndexKeyTypeFullText:
+	case tidbast.IndexKeyTypeFulltext:
 		tp = FullTextName
 	case tidbast.IndexKeyTypeSpatial:
 		isSpatial = true
@@ -800,7 +795,7 @@ func (t *TableState) completeTableChangeColumn(ctx *FinderContext, oldName strin
 			for _, col := range t.columnSet {
 				if *col.position == pos-1 {
 					localPosition.Tp = tidbast.ColumnPositionAfter
-					localPosition.RelativeColumn = &tidbast.ColumnName{Name: model.NewCIStr(col.name)}
+					localPosition.RelativeColumn = &tidbast.ColumnName{Name: tidbast.NewCIStr(col.name)}
 					break
 				}
 			}
@@ -1234,7 +1229,7 @@ func (t *TableState) createColumn(ctx *FinderContext, column *tidbast.ColumnDef,
 		switch option.Tp {
 		case tidbast.ColumnOptionPrimaryKey:
 			col.nullable = newFalsePointer()
-			if err := t.createPrimaryKey([]string{col.name}, model.IndexTypeBtree.String()); err != nil {
+			if err := t.createPrimaryKey([]string{col.name}, tidbast.IndexTypeBtree.String()); err != nil {
 				return err
 			}
 		case tidbast.ColumnOptionNotNull:
@@ -1255,7 +1250,7 @@ func (t *TableState) createColumn(ctx *FinderContext, column *tidbast.ColumnDef,
 				setNullDefault = true
 			}
 		case tidbast.ColumnOptionUniqKey:
-			if err := t.createIndex("", []string{col.name}, true /* unique */, model.IndexTypeBtree.String(), nil); err != nil {
+			if err := t.createIndex("", []string{col.name}, true /* unique */, tidbast.IndexTypeBtree.String(), nil); err != nil {
 				return err
 			}
 		case tidbast.ColumnOptionNull:
@@ -1397,13 +1392,125 @@ func restoreNode(node tidbast.Node, flag format.RestoreFlags) (string, *WalkThro
 func getIndexType(option *tidbast.IndexOption) string {
 	if option != nil {
 		switch option.Tp {
-		case model.IndexTypeBtree,
-			model.IndexTypeHash,
-			model.IndexTypeRtree:
+		case tidbast.IndexTypeBtree,
+			tidbast.IndexTypeHash,
+			tidbast.IndexTypeRtree:
 			return option.Tp.String()
 		default:
 			// Other index types
 		}
 	}
-	return model.IndexTypeBtree.String()
+	return tidbast.IndexTypeBtree.String()
+}
+
+// PostgreSQL-specific helper methods.
+
+func parseViewName(viewName string) (string, string, error) {
+	pattern := `^"(.+?)"\."(.+?)"$`
+
+	re := regexp.MustCompile(pattern)
+
+	match := re.FindStringSubmatch(viewName)
+
+	if len(match) != 3 {
+		return "", "", errors.Errorf("invalid view name: %s", viewName)
+	}
+
+	return match[1], match[2], nil
+}
+
+func (d *DatabaseState) existedViewList(viewMap map[string]bool) ([]string, *WalkThroughError) {
+	var result []string
+	for viewName := range viewMap {
+		schemaName, viewName, err := parseViewName(viewName)
+		if err != nil {
+			return nil, &WalkThroughError{
+				Type:    ErrorTypeInternal,
+				Content: fmt.Sprintf("failed to check view dependency: %s", err.Error()),
+			}
+		}
+		schemaMeta, exists := d.schemaSet[schemaName]
+		if !exists {
+			continue
+		}
+		if _, exists := schemaMeta.viewSet[viewName]; !exists {
+			continue
+		}
+
+		result = append(result, fmt.Sprintf("%q.%q", schemaName, viewName))
+	}
+	return result, nil
+}
+
+func (s *SchemaState) pgGeneratePrimaryKeyName(tableName string) string {
+	pkName := fmt.Sprintf("%s_pkey", tableName)
+	if _, exists := s.identifierMap[pkName]; !exists {
+		return pkName
+	}
+	suffix := 1
+	for {
+		if _, exists := s.identifierMap[fmt.Sprintf("%s%d", pkName, suffix)]; !exists {
+			return fmt.Sprintf("%s%d", pkName, suffix)
+		}
+		suffix++
+	}
+}
+
+func (d *DatabaseState) getSchema(schemaName string) (*SchemaState, *WalkThroughError) {
+	if schemaName == "" {
+		schemaName = publicSchemaName
+	}
+	schema, exists := d.schemaSet[schemaName]
+	if !exists {
+		if schemaName != publicSchemaName {
+			return nil, &WalkThroughError{
+				Type:    ErrorTypeSchemaNotExists,
+				Content: fmt.Sprintf("The schema %q doesn't exist", schemaName),
+			}
+		}
+		schema = &SchemaState{
+			ctx:           d.ctx.Copy(),
+			name:          publicSchemaName,
+			tableSet:      make(tableStateMap),
+			viewSet:       make(viewStateMap),
+			identifierMap: make(identifierMap),
+		}
+		d.schemaSet[publicSchemaName] = schema
+	}
+	return schema, nil
+}
+
+func (t *TableState) getColumn(columnName string) (*ColumnState, *WalkThroughError) {
+	column, exists := t.columnSet[columnName]
+	if !exists {
+		return nil, &WalkThroughError{
+			Type:    ErrorTypeColumnNotExists,
+			Content: fmt.Sprintf("The column %q does not exist in the table %q", columnName, t.name),
+		}
+	}
+	return column, nil
+}
+
+func (s *SchemaState) pgGetTable(tableName string) (*TableState, *WalkThroughError) {
+	table, exists := s.tableSet[tableName]
+	if !exists {
+		return nil, &WalkThroughError{
+			Type:    ErrorTypeTableNotExists,
+			Content: fmt.Sprintf("The table %q does not exist in schema %q", tableName, s.name),
+		}
+	}
+	return table, nil
+}
+
+func (s *SchemaState) getIndex(indexName string) (*TableState, *IndexState, *WalkThroughError) {
+	for _, table := range s.tableSet {
+		if index, exists := table.indexSet[indexName]; exists {
+			return table, index, nil
+		}
+	}
+
+	return nil, nil, &WalkThroughError{
+		Type:    ErrorTypeIndexNotExists,
+		Content: fmt.Sprintf("Index %q does not exists in schema %q", indexName, s.name),
+	}
 }

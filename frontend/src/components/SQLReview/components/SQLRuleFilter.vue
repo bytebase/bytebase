@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-3">
+  <div class="gap-y-3">
     <SQLReviewCategoryTabFilter
       :value="params.selectedCategory"
       :rule-list="ruleList"
@@ -21,7 +21,7 @@
             :is-checked-level="(level) => params.checkedLevel.has(level)"
             @toggle-checked-level="$emit('toggle-checked-level', $event)"
           />
-          <div v-if="supportSelect" class="flex items-center space-x-2">
+          <div v-if="supportSelect" class="flex items-center gap-x-2">
             <NCheckbox
               :checked="selectedRuleCount === ruleList.length"
               :indeterminate="

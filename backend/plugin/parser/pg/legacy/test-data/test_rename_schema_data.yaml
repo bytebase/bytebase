@@ -1,2 +1,0 @@
-- stmt: alter schema s1 rename to s2
-  want: ALTER SCHEMA "s1" RENAME TO "s2";

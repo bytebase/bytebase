@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-4 h-full flex flex-col">
+  <div class="gap-y-4 h-full flex flex-col">
     <SQLReviewCreation
       class="flex-1"
       :selected-rule-list="[]"

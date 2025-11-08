@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full space-y-4">
+  <div class="w-full flex flex-col gap-y-4">
     <div class="text-sm text-control-light">
       {{ $t("database.classification.description") }}
       <LearnMoreLink
@@ -8,7 +8,7 @@
       />
     </div>
     <div>
-      <div class="flex items-center space-x-2">
+      <div class="flex items-center gap-x-2">
         <NSwitch
           :value="!state.classification.classificationFromConfig"
           :disabled="
@@ -71,7 +71,7 @@
       class="flex justify-center border-2 border-gray-300 border-dashed rounded-md relative h-72"
     >
       <SingleFileSelector
-        class="space-y-1 text-center flex flex-col justify-center items-center absolute top-0 bottom-0 left-0 right-0"
+        class="flex flex-col gap-y-1 text-center justify-center items-center absolute top-0 bottom-0 left-0 right-0"
         :support-file-extensions="['.json']"
         :max-file-size-in-mi-b="maxFileSizeInMiB"
         :disabled="!allowEdit || !hasClassificationFeature"

@@ -353,19 +353,17 @@ const useExecuteSQL = () => {
 };
 
 const isOnlySelectError = (resultSet: SQLResultSetV1) => {
-  if (
-    resultSet.error.match(/Support SELECT sql statement only/) &&
-    resultSet.status === Code.InvalidArgument
-  ) {
-    return true;
-  }
-  if (
-    resultSet.error.match(/disallow execute (DML|DDL) statement/) &&
-    resultSet.status === Code.PermissionDenied
-  ) {
-    return true;
-  }
-  return false;
+  const patterns = [
+    /Support SELECT sql statement only/,
+    /disallow execute (DML|DDL) statement/,
+    /Support read-only command statements only/,
+  ];
+  return (
+    patterns.some((pattern) => resultSet.error.match(pattern)) ||
+    resultSet.results.some((result) => {
+      return patterns.some((pattern) => result.error.match(pattern));
+    })
+  );
 };
 
 export { useExecuteSQL };

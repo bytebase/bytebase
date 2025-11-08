@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full flex flex-col justify-start items-start space-y-4">
+  <div class="w-full flex flex-col justify-start items-start gap-y-4">
     <SQLReviewForResource
       ref="sqlReviewForResourceRef"
       :resource="project.name"

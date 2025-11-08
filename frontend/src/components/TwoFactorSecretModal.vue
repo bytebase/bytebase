@@ -8,7 +8,7 @@
     <div class="w-auto mb-4 py-2">
       <code class="pr-4">{{ props.secret }}</code>
     </div>
-    <div class="w-full flex items-center justify-end space-x-3 pr-1 pb-1">
+    <div class="w-full flex items-center justify-end gap-x-3 pr-1 pb-1">
       <NButton @click="dismissModal">
         {{ $t("common.close") }}
       </NButton>

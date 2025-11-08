@@ -9,7 +9,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 )
 
-func TestCheckSDL(t *testing.T) {
+func TestCheckSDLStyle(t *testing.T) {
 	tests := []struct {
 		name      string
 		statement string
@@ -205,6 +205,12 @@ func TestCheckSDL(t *testing.T) {
 		{
 			name:      "Error - CREATE INDEX without schema name",
 			statement: `CREATE INDEX idx_users_email ON users (email);`,
+			wantCount: 1,
+			wantCodes: []advisor.Code{advisor.SDLRequireSchemaName},
+		},
+		{
+			name:      "Error - CREATE INDEX without schema name (quoted table)",
+			statement: `CREATE INDEX "idx_departments_budget" ON ONLY "departments" (budget);`,
 			wantCount: 1,
 			wantCodes: []advisor.Code{advisor.SDLRequireSchemaName},
 		},
@@ -427,8 +433,8 @@ CREATE VIEW active_users AS SELECT * FROM public.users WHERE active = true;`,
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			advices, err := CheckSDL(tc.statement)
-			require.NoError(t, err, "CheckSDL should not return error for valid SQL")
+			advices, err := CheckSDLStyle(tc.statement)
+			require.NoError(t, err, "CheckSDLStyle should not return error for valid SQL")
 			require.Equal(t, tc.wantCount, len(advices), "Unexpected number of advices")
 
 			if tc.wantCount > 0 {
@@ -449,7 +455,7 @@ CREATE VIEW active_users AS SELECT * FROM public.users WHERE active = true;`,
 	}
 }
 
-func TestCheckSDL_InvalidSQL(t *testing.T) {
+func TestCheckSDLStyle_InvalidSQL(t *testing.T) {
 	tests := []struct {
 		name      string
 		statement string
@@ -466,20 +472,20 @@ func TestCheckSDL_InvalidSQL(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := CheckSDL(tc.statement)
-			require.Error(t, err, "CheckSDL should return error for invalid SQL")
+			_, err := CheckSDLStyle(tc.statement)
+			require.Error(t, err, "CheckSDLStyle should return error for invalid SQL")
 		})
 	}
 }
 
-func TestCheckSDL_EmptyStatement(t *testing.T) {
-	advices, err := CheckSDL("")
+func TestCheckSDLStyle_EmptyStatement(t *testing.T) {
+	advices, err := CheckSDLStyle("")
 	require.NoError(t, err)
 	require.Empty(t, advices, "Empty statement should return no advices")
 }
 
-func TestCheckSDL_CommentOnly(t *testing.T) {
-	advices, err := CheckSDL("-- This is just a comment")
+func TestCheckSDLStyle_CommentOnly(t *testing.T) {
+	advices, err := CheckSDLStyle("-- This is just a comment")
 	require.NoError(t, err)
 	require.Empty(t, advices, "Comment-only statement should return no advices")
 }

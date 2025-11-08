@@ -37,13 +37,6 @@
     </div>
   </NScrollbar>
 
-  <SchemaEditorModal
-    v-if="state.showSchemaEditorModal"
-    :database-names="selectedDatabaseNameList"
-    :alter-type="'MULTI_DB'"
-    @close="state.showSchemaEditorModal = false"
-  />
-
   <LabelEditorDrawer
     :show="state.showLabelEditorDrawer"
     :readonly="false"
@@ -97,6 +90,14 @@
     "
     @cancel="state.showUnassignAlert = false"
   />
+
+  <AddSpecDrawer
+    v-model:show="state.showChangeDatabaseDrawer"
+    :title="$t('database.edit-database')"
+    :pre-selected-databases="databases"
+    :project-name="selectedProjectName"
+    :use-legacy-issue-flow="true"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -108,7 +109,6 @@ import {
   ChevronsDownIcon,
   DownloadIcon,
   PencilIcon,
-  PenSquareIcon,
   RefreshCcwIcon,
   SquareStackIcon,
   TagIcon,
@@ -121,9 +121,9 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import type { LocationQueryRaw } from "vue-router";
 import { BBAlert } from "@/bbkit";
-import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
 import EditEnvironmentDrawer from "@/components/EditEnvironmentDrawer.vue";
 import LabelEditorDrawer from "@/components/LabelEditorDrawer.vue";
+import { AddSpecDrawer } from "@/components/Plan";
 import { TransferDatabaseForm } from "@/components/TransferDatabaseForm";
 import TransferOutDatabaseForm from "@/components/TransferOutDatabaseForm";
 import { Drawer } from "@/components/v2";
@@ -146,13 +146,11 @@ import {
   BatchUpdateDatabasesRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
 import {
-  allowUsingSchemaEditor,
   extractProjectResourceName,
   generateIssueTitle,
   hasPermissionToCreateChangeDatabaseIssue,
   hasPermissionToCreateDataExportIssue,
   hasProjectPermissionV2,
-  instanceV1HasAlterSchema,
 } from "@/utils";
 
 interface DatabaseAction {
@@ -165,10 +163,10 @@ interface DatabaseAction {
 
 interface LocalState {
   loading: boolean;
-  showSchemaEditorModal: boolean;
   showUnassignAlert: boolean;
   showLabelEditorDrawer: boolean;
   showEditEnvironmentDrawer: boolean;
+  showChangeDatabaseDrawer: boolean;
   transferOutDatabaseType?: "TRANSFER-IN" | "TRANSFER-OUT";
 }
 
@@ -182,10 +180,10 @@ const props = withDefaults(
 
 const state = reactive<LocalState>({
   loading: false,
-  showSchemaEditorModal: false,
   showUnassignAlert: false,
   showLabelEditorDrawer: false,
   showEditEnvironmentDrawer: false,
+  showChangeDatabaseDrawer: false,
   transferOutDatabaseType: undefined,
 });
 
@@ -233,24 +231,6 @@ const selectedProjectName = computed(() => {
   return [...selectedProjectNames.value][0];
 });
 
-const databaseSupportAlterSchema = computed(() => {
-  return props.databases.every((db) => {
-    return instanceV1HasAlterSchema(db.instanceResource);
-  });
-});
-
-const allowEditSchema = computed(() => {
-  return props.databases.every((db) => {
-    return hasPermissionToCreateChangeDatabaseIssue(db);
-  });
-});
-
-const allowChangeData = computed(() => {
-  return props.databases.every((db) =>
-    hasPermissionToCreateChangeDatabaseIssue(db)
-  );
-});
-
 const allowTransferOutProject = computed(() => {
   return props.databases.every((db) =>
     hasProjectPermissionV2(db.projectEntity, "bb.projects.update")
@@ -288,8 +268,7 @@ const selectedDatabaseNameList = computed(() => {
 
 const operations = computed(() => {
   return [
-    "EDIT-SCHEMA",
-    "CHANGE-DATA",
+    "CHANGE-DATABASE",
     "EXPORT-DATA",
     "SYNC-SCHEMA",
     "EDIT-LABELS",
@@ -336,14 +315,6 @@ const generateMultiDb = async (
     if (!confirmed) {
       return;
     }
-  }
-  if (
-    props.databases.length === 1 &&
-    type === "bb.issue.database.schema.update" &&
-    allowUsingSchemaEditor(props.databases)
-  ) {
-    state.showSchemaEditorModal = true;
-    return;
   }
 
   const query: LocationQueryRaw = {
@@ -446,10 +417,36 @@ const isInDefaultProject = computed(
   () => props.projectName === DEFAULT_PROJECT_NAME
 );
 
+const allowChangeDatabase = computed(() => {
+  return props.databases.every((db) =>
+    hasPermissionToCreateChangeDatabaseIssue(db)
+  );
+});
+
 const actions = computed((): DatabaseAction[] => {
   const resp: DatabaseAction[] = [];
   for (const operation of operations.value) {
     switch (operation) {
+      case "CHANGE-DATABASE":
+        resp.push({
+          icon: h(PencilIcon),
+          text: t("database.edit-database"),
+          disabled:
+            !allowChangeDatabase.value ||
+            !selectedProjectName.value ||
+            props.databases.length < 1 ||
+            selectedProjectNames.value.has(DEFAULT_PROJECT_NAME),
+          click: () => (state.showChangeDatabaseDrawer = true),
+          tooltip: (action) => {
+            if (!allowChangeDatabase.value) {
+              return t("database.batch-action-permission-denied", {
+                action,
+              });
+            }
+            return getDisabledTooltip(action);
+          },
+        });
+        break;
       case "EXPORT-DATA":
         resp.push({
           icon: h(DownloadIcon),
@@ -564,50 +561,6 @@ const actions = computed((): DatabaseAction[] => {
             },
           });
         }
-        break;
-      case "CHANGE-DATA":
-        resp.push({
-          icon: h(PencilIcon),
-          text: t("database.change-data"),
-          disabled:
-            !allowChangeData.value ||
-            !selectedProjectName.value ||
-            props.databases.length < 1 ||
-            selectedProjectNames.value.has(DEFAULT_PROJECT_NAME),
-          click: () => generateMultiDb("bb.issue.database.data.update"),
-          tooltip: (action) => {
-            if (!allowChangeData.value) {
-              return t("database.batch-action-permission-denied", {
-                action,
-              });
-            }
-            return getDisabledTooltip(action);
-          },
-        });
-        break;
-      case "EDIT-SCHEMA":
-        resp.push({
-          icon: h(PenSquareIcon),
-          text: t("database.edit-schema"),
-          disabled:
-            !databaseSupportAlterSchema.value ||
-            !allowEditSchema.value ||
-            !selectedProjectName.value ||
-            props.databases.length < 1 ||
-            selectedProjectNames.value.has(DEFAULT_PROJECT_NAME),
-          click: () => generateMultiDb("bb.issue.database.schema.update"),
-          tooltip: (action) => {
-            if (!databaseSupportAlterSchema.value) {
-              return t("database.batch-action-not-support-alter-schema");
-            }
-            if (!allowEditSchema.value) {
-              return t("database.batch-action-permission-denied", {
-                action,
-              });
-            }
-            return getDisabledTooltip(action);
-          },
-        });
         break;
     }
   }

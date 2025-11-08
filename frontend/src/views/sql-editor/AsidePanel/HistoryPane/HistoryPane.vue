@@ -14,7 +14,7 @@
       <div
         v-for="history in queryHistoryData.queryHistories"
         :key="history.name"
-        class="w-full p-2 space-y-1 border-b flex flex-col justify-start items-start cursor-pointer hover:bg-gray-50"
+        class="w-full p-2 gap-y-1 border-b flex flex-col justify-start items-start cursor-pointer hover:bg-gray-50"
         @click="handleQueryHistoryClick(history)"
       >
         <div class="w-full flex flex-row justify-between items-center">

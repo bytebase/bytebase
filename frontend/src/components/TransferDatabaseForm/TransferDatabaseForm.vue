@@ -1,7 +1,7 @@
 <template>
   <DrawerContent :title="$t('quick-action.transfer-in-db-title')">
     <div class="px-4 w-[calc(100vw-8rem)] lg:w-240 max-w-[calc(100vw-8rem)]">
-      <div class="space-y-4">
+      <div class="flex flex-col gap-y-4">
         <TransferSourceSelector
           v-model:transfer-source="state.transferSource"
           v-model:search-text="state.searchText"

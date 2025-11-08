@@ -1,13 +1,13 @@
 <template>
-  <div class="space-y-4">
+  <div class="flex flex-col gap-y-4">
     <div
       v-for="(config, index) in rule.componentList"
       :key="index"
-      class="space-y-1"
+      class="flex flex-col gap-y-1"
     >
       <div
         v-if="config.payload.type !== 'BOOLEAN'"
-        class="flex items-center space-x-1"
+        class="flex items-center gap-x-1"
       >
         <p
           :class="[

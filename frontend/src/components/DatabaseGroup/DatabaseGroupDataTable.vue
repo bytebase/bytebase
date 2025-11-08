@@ -79,7 +79,7 @@ const columnList = computed((): DatabaseGroupDataTableColumn[] => {
       resizable: true,
       render: (data) => {
         return (
-          <div class="space-x-2">
+          <div class="flex gap-x-2">
             <span>{data.title}</span>
           </div>
         );

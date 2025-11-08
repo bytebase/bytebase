@@ -35,7 +35,7 @@
             <template #icon>
               <ListOrderedIcon class="h-4 w-4" />
             </template>
-            {{ $t("common.reorder") }}
+            {{ t("common.reorder") }}
           </NButton>
           <NButton
             v-if="hasWorkspacePermissionV2('bb.settings.set')"
@@ -45,7 +45,7 @@
             <template #icon>
               <PlusIcon class="h-4 w-4" />
             </template>
-            {{ $t("environment.create") }}
+            {{ t("environment.create") }}
           </NButton>
         </div>
       </template>
@@ -61,7 +61,7 @@
       @cancel="state.showCreateModal = false"
     >
       <DrawerContent
-        :title="$t('environment.create')"
+        :title="t('environment.create')"
         class="w-xl max-w-[100vw]"
       >
         <EnvironmentFormBody />
@@ -73,10 +73,7 @@
   </Drawer>
 
   <Drawer v-model:show="state.reorder" :close-on-esc="true">
-    <DrawerContent
-      :title="$t('environment.reorder')"
-      class="w-120 max-w-[90vw]"
-    >
+    <DrawerContent :title="t('environment.reorder')" class="w-120 max-w-[90vw]">
       <div>
         <Draggable
           v-model="state.reorderedEnvironmentList"
@@ -101,9 +98,9 @@
       </div>
       <template #footer>
         <div class="flex items-center justify-end gap-x-2">
-          <NButton @click="discardReorder">{{ $t("common.cancel") }}</NButton>
+          <NButton @click="discardReorder">{{ t("common.cancel") }}</NButton>
           <NButton type="primary" :disabled="!orderChanged" @click="doReorder">
-            {{ $t("common.confirm") }}
+            {{ t("common.confirm") }}
           </NButton>
         </div>
       </template>
@@ -329,7 +326,7 @@ const doDelete = async (environment: Environment) => {
 };
 
 const renderTab = (env: Environment, index: number) => {
-  return h("div", { class: "flex items-center space-x-2 py-1" }, [
+  return h("div", { class: "flex items-center gap-x-2 py-1" }, [
     h("span", { class: "text-opacity-60" }, `${index + 1}.`),
     h(EnvironmentV1Name, {
       environment: env,

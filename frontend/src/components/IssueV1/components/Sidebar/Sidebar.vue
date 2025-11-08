@@ -36,7 +36,7 @@
       v-show="
         selectedSpec && (shouldShowPreBackupSection || shouldShowGhostSection)
       "
-      class="space-y-2"
+      class="flex flex-col gap-y-2"
     >
       <div class="border-t border-gray-200 -mx-4" />
       <NTooltip v-if="selectedSpec" :showArrow="false">

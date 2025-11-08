@@ -2,9 +2,9 @@
   <div
     class="w-[calc(100vw-8rem)] lg:max-w-[75vw] 2xl:max-w-[55vw] max-h-[calc(100vh-10rem)] flex flex-col"
   >
-    <div class="flex-1 flex flex-col divide-y overflow-hidden">
+    <div class="flex-1 flex flex-col overflow-hidden">
       <div class="flex items-start gap-x-4 mb-4">
-        <div class="space-y-2 flex-1">
+        <div class="flex flex-col gap-y-2 flex-1">
           <label class="block font-medium text-sm text-control">
             {{ $t("common.name") }}
           </label>
@@ -15,7 +15,7 @@
             @input="$emit('update')"
           />
         </div>
-        <div class="space-y-2">
+        <div class="flex flex-col gap-y-2">
           <label class="block font-medium text-sm text-control">
             {{ $t("custom-approval.risk-rule.risk.self") }}
           </label>
@@ -25,7 +25,7 @@
             @update:value="$emit('update')"
           />
         </div>
-        <div class="space-y-2">
+        <div class="flex flex-col gap-y-2">
           <label class="block font-medium text-sm text-control">
             {{ $t("custom-approval.risk-rule.source.self") }}
           </label>
@@ -39,7 +39,9 @@
       </div>
 
       <div class="flex-1 flex items-stretch gap-x-4 overflow-hidden">
-        <div class="flex-1 space-y-2 py-4 overflow-x-hidden overflow-y-auto">
+        <div
+          class="flex-1 flex flex-col gap-y-2 py-4 overflow-x-hidden overflow-y-auto"
+        >
           <h3 class="font-medium text-sm text-control">
             {{ $t("cel.condition.self") }}
           </h3>

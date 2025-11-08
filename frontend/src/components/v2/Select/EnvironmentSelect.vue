@@ -1,7 +1,7 @@
 <template>
   <ResourceSelect
     v-bind="$attrs"
-    :placeholder="$t('environment.select')"
+    :placeholder="t('environment.select')"
     :multiple="multiple"
     :value="environmentName"
     :values="environmentNames"
@@ -15,11 +15,14 @@
 
 <script lang="tsx" setup>
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import { useEnvironmentV1Store } from "@/store";
 import { formatEnvironmentName } from "@/types";
 import type { Environment } from "@/types/v1/environment";
 import { EnvironmentV1Name } from "../Model";
 import ResourceSelect from "./ResourceSelect.vue";
+
+const { t } = useI18n();
 
 const props = withDefaults(
   defineProps<{

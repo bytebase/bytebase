@@ -1,7 +1,7 @@
 <template>
-  <div class="flex flex-col space-y-4" v-bind="$attrs">
-    <div class="w-full flex flex-row justify-between items-center space-x-2">
-      <div class="flex flex-row justify-start items-center space-x-4">
+  <div class="flex flex-col gap-y-4" v-bind="$attrs">
+    <div class="w-full flex flex-row justify-between items-center gap-x-2">
+      <div class="flex flex-row justify-start items-center gap-x-4">
         <div class="w-52">
           <AffectedTablesSelect
             v-model:tables="state.selectedAffectedTables"

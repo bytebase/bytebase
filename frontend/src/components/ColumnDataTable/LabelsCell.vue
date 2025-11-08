@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-center space-x-1">
+  <div class="flex items-center gap-x-1">
     <LabelsCell :labels="labels" :show-count="2" />
     <button
       v-if="!readonly"

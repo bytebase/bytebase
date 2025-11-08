@@ -911,7 +911,6 @@
           "title": "创建人",
           "description": "根据创建人搜索"
         },
-        "subscriber": {},
         "approver": {
           "title": "审批人",
           "description": "根据工单审批人搜索"
@@ -1197,9 +1196,6 @@
         "self": "没有阶段",
         "description": "本次发布任务未定义任何阶段。"
       }
-    },
-    "message": {
-      "pervious-stages-incomplete": {}
     }
   },
   "quick-action": {
@@ -1616,6 +1612,7 @@
     "unassign": "取消分配",
     "unassign-alert-title": "取消分配数据库",
     "unassign-alert-description": "选定的数据库将从项目中移除",
+    "edit-database": "编辑数据库",
     "edit-schema": "变更 Schema",
     "edit-labels": "编辑标签",
     "edit-environment": "编辑环境",
@@ -1623,7 +1620,6 @@
     "mixed-label-values-warning": "部分标签拥有不同的值，编辑标签将会批量应用",
     "change-data": "变更数据",
     "table-detail": "表详情",
-    "batch-action-not-support-alter-schema": "一些数据库不支持修改表结构",
     "batch-action-permission-denied": "没有权限对数据库{action}",
     "batch-action-disabled": "无法对来自不同项目的数据库{action}",
     "batch-action-disabled-for-unassigned": "无法对未分配的数据库{action}",
@@ -1682,7 +1678,6 @@
       "select-tip": "请选择一个表来开始查询。"
     },
     "all": "所有数据库",
-    "show-schemaless-databases": "显示无模式的数据库。（变更 Schema 不适用于无 schema 的数据库. ）",
     "transfer": {
       "errors": {
         "select-target-project": "选择目标项目",
@@ -2008,7 +2003,7 @@
     "table-empty-placeholder": "点击 ”运行“ 执行查询",
     "no-data-available": "暂无数据",
     "download-as-file": "下载为 {file} 格式",
-    "only-select-allowed": "只允许执行 {select} 语句",
+    "only-select-allowed": "只允许执行只读语句",
     "enable-ddl-for-environment": "您可以为环境 {environment} 启用 DDL/DML 语句。",
     "and-submit-an-issue": "并提交一个工单",
     "to-enable-admin-mode": "来开启管理员模式",
@@ -2153,12 +2148,10 @@
   },
   "schema-editor": {
     "self": "Schema 编辑器",
-    "preview-issue": "预览工单",
-    "sync-sql-from-schema-editor": "从 Schema 编辑器中同步 SQL",
     "raw-sql": "SQL 语句",
     "search-database-and-table": "搜索数据库和表",
-    "failed-to-generate-ddl-for-database": "无法为数据库 {database} 生成 DDL",
-    "continue-with-empty-sql": "使用空 SQL 创建工单",
+    "insert-sql": "插入 SQL",
+    "template-database": "模板数据库",
     "actions": {
       "create-schema": "新建 Schema",
       "drop-schema": "删除 Schema",
@@ -2220,8 +2213,6 @@
       "duplicated-view-name": "重复的视图名称"
     },
     "confirm-to-close": {
-      "title": "确定关闭？",
-      "description": "关闭后更改将会丢失。"
     },
     "foreign-key": {
       "edit": "修改外键",
@@ -2402,7 +2393,6 @@
         "confirm-override-description": "之前的规则将会被覆盖"
       }
     },
-    "rule": {},
     "enabled-rules": "开启的规则数",
     "rule-detail": "规则详情",
     "view-definition": "查看定义",
@@ -2843,8 +2833,6 @@
     "vcs-type": {
       "unspecified": "未指定"
     },
-    "actions": {},
-    "messages": {},
     "usage-description": "发布包是版本化的应用制品。GitOps 工作流将发布包部署到环境。"
   },
   "export-data": {
@@ -2897,8 +2885,7 @@
       "algorithm": "遮盖方法",
       "context": "规则",
       "classification": "分类级别"
-    },
-    "algorithms": {}
+    }
   },
   "landing": {
     "quick-link": {

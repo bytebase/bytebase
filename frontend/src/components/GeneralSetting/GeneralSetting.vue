@@ -1,19 +1,17 @@
 <template>
   <div class="pb-6 lg:flex">
     <div class="text-left lg:w-1/4">
-      <div class="flex items-center space-x-2">
+      <div class="flex items-center gap-x-2">
         <h1 class="text-2xl font-bold">
           {{ title }}
         </h1>
       </div>
     </div>
-    <div class="flex-1 mt-4 lg:px-4 lg:mt-0 space-y-7">
+    <div class="flex-1 mt-4 lg:px-4 lg:mt-0 flex flex-col gap-y-7">
       <WorkspaceMode
         v-model:mode="state.databaseChangeMode"
         :disabled="!allowEdit"
       />
-
-      <NDivider v-if="!isSaaSMode" />
 
       <div v-if="!isSaaSMode">
         <label class="flex items-center gap-x-2">
@@ -74,7 +72,7 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { isEqual } from "lodash-es";
-import { NDivider, NTooltip, NButton, NInput } from "naive-ui";
+import { NTooltip, NButton, NInput } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, reactive, ref } from "vue";
 import { BBModal } from "@/bbkit";

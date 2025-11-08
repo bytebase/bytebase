@@ -154,6 +154,22 @@ func TestIsMongoStatement(t *testing.T) {
 			statement: `db.cpl_station_info.find().limit(100)`,
 			want:      true,
 		},
+		{
+			statement: `db["collection"].find().limit(50)`,
+			want:      true,
+		},
+		{
+			statement: `db['collection'].find().limit(50)`,
+			want:      true,
+		},
+		{
+			statement: `db[variableName].find()`,
+			want:      true,
+		},
+		{
+			statement: `DB["COLLECTION"].FIND()`,
+			want:      true,
+		},
 	}
 
 	a := require.New(t)

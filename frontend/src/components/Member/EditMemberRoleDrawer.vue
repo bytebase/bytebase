@@ -6,7 +6,7 @@
       :title="$t('settings.members.grant-access')"
     >
       <template #default>
-        <div class="space-y-4">
+        <div class="flex flex-col gap-y-4">
           <MembersBindingSelect
             v-if="isCreating"
             v-model:value="state.memberList"
@@ -14,7 +14,7 @@
             :include-all-users="true"
             :include-service-account="true"
           />
-          <div v-else class="w-full space-y-2">
+          <div v-else class="w-full flex flex-col gap-y-2">
             <div class="flex items-center gap-x-1">
               {{ $t("common.email") }}
               <RequiredStar />
@@ -22,7 +22,7 @@
             <EmailInput :readonly="true" :value="email" />
           </div>
 
-          <div class="w-full space-y-2">
+          <div class="w-full flex flex-col gap-y-2">
             <div class="flex items-center gap-x-1 text-main">
               {{ $t("settings.members.assign-role", 2 /* multiply*/) }}
               <RequiredStar />

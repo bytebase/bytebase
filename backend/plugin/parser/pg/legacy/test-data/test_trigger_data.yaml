@@ -1,2 +1,0 @@
-- stmt: drop trigger if exists trigger1 on public.t1
-  want: DROP TRIGGER IF EXISTS "trigger1" ON "public"."t1";

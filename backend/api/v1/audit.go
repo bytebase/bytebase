@@ -135,6 +135,11 @@ func (c *auditConnectStreamingConn) Send(resp any) error {
 }
 
 func createAuditLogConnect(ctx context.Context, request, response any, method string, storage *store.Store, secret string, profile *config.Profile, serviceData *anypb.Any, rerr error, headers http.Header, peerAddr string, latency time.Duration) error {
+	// Skip audit logging for validate-only requests.
+	if isValidateOnlyRequest(request) {
+		return nil
+	}
+
 	requestString, err := getRequestString(request)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get request string")
@@ -572,6 +577,36 @@ func getRequestMetadataFromHeaders(headers http.Header, peerAddr string) *storep
 		CallerIp:                callerIP,
 		CallerSuppliedUserAgent: userAgent,
 	}
+}
+
+// isValidateOnlyRequest checks if a request has validate_only field set to true
+// using protoreflect to generically detect the field.
+func isValidateOnlyRequest(request any) bool {
+	if request == nil {
+		return false
+	}
+
+	// Check if the value is nil (for pointer types).
+	val := reflect.ValueOf(request)
+	if val.Kind() == reflect.Ptr && val.IsNil() {
+		return false
+	}
+
+	protoMsg, ok := request.(proto.Message)
+	if !ok {
+		return false
+	}
+
+	// Use protoreflect to check for validate_only field.
+	msg := protoMsg.ProtoReflect()
+	fields := msg.Descriptor().Fields()
+	validateOnlyField := fields.ByName("validate_only")
+	if validateOnlyField == nil {
+		return false
+	}
+
+	// Check if the field is set and is true.
+	return msg.Get(validateOnlyField).Bool()
 }
 
 // expect

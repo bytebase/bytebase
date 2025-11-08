@@ -911,7 +911,6 @@
           "title": "作成者",
           "description": "作成者で検索"
         },
-        "subscriber": {},
         "approver": {
           "title": "承認者",
           "description": "イシューの承認者で検索"
@@ -1197,9 +1196,6 @@
         "self": "ステージなし",
         "description": "このロールアウトにはステージが定義されていません。"
       }
-    },
-    "message": {
-      "pervious-stages-incomplete": {}
     }
   },
   "quick-action": {
@@ -1616,6 +1612,7 @@
     "unassign": "割り当てを解除する",
     "unassign-alert-title": "データベースの割り当てを解除する",
     "unassign-alert-description": "選択したデータベースがプロジェクトから削除されます",
+    "edit-database": "データベースの編集",
     "edit-schema": "スキーマの変更",
     "edit-labels": "タグを編集する",
     "edit-environment": "環境の編集",
@@ -1623,7 +1620,6 @@
     "mixed-label-values-warning": "一部のタグには異なる値があり、タグの編集はバッチで適用されます",
     "change-data": "データ変更",
     "table-detail": "テーブルの詳細",
-    "batch-action-not-support-alter-schema": "一部のデータベースはテーブル構造の変更をサポートしていません",
     "batch-action-permission-denied": "データベース {action} に対する権限がありません",
     "batch-action-disabled": "異なるプロジェクトのデータベース {action} を比較できません",
     "batch-action-disabled-for-unassigned": "未割り当てのデータベース {action} にアクセスできません",
@@ -1682,7 +1678,6 @@
       "select-tip": "開始するにはテーブルを選択してください。"
     },
     "all": "すべてのデータベース",
-    "show-schemaless-databases": "スキーマレス データベースを示します。 (スキーマの変更は、スキーマのないデータベースでは機能しません。)",
     "transfer": {
       "errors": {
         "select-target-project": "対象プロジェクトを選択",
@@ -2008,7 +2003,7 @@
     "table-empty-placeholder": "「実行」をクリックしてクエリを実行します。",
     "no-data-available": "データなし",
     "download-as-file": "{file} 形式でダウンロード",
-    "only-select-allowed": "{select} ステートメントのみが実行を許可されます",
+    "only-select-allowed": "読み取り専用ステートメントのみが実行を許可されます",
     "enable-ddl-for-environment": "環境 {environment} に対して DDL/DML ステートメントを有効にすることができます。",
     "and-submit-an-issue": "そしてイシューを提出してください",
     "to-enable-admin-mode": "管理者モードを有効にするには",
@@ -2153,12 +2148,10 @@
   },
   "schema-editor": {
     "self": "スキーマエディタ",
-    "preview-issue": "イシューのプレビュー",
-    "sync-sql-from-schema-editor": "スキーマエディタからSQLを同期する",
     "raw-sql": "SQL文",
     "search-database-and-table": "データベースとテーブルを検索する",
-    "failed-to-generate-ddl-for-database": "データベース {database} の DDL 生成に失敗しました",
-    "continue-with-empty-sql": "空のSQLで続行",
+    "insert-sql": "Insert SQL",
+    "template-database": "Template database",
     "actions": {
       "create-schema": "新しいスキーマ",
       "drop-schema": "スキーマの削除",
@@ -2220,8 +2213,6 @@
       "duplicated-view-name": "重複したビュー名"
     },
     "confirm-to-close": {
-      "title": "閉じることを確認しますか？",
-      "description": "変更は閉じると失われます。"
     },
     "foreign-key": {
       "edit": "外部キーを編集",
@@ -2402,7 +2393,6 @@
         "confirm-override-description": "以前のルールは上書きされます"
       }
     },
-    "rule": {},
     "enabled-rules": "開かれたルールの数",
     "rule-detail": "ルールの詳細",
     "view-definition": "ビューの定義",
@@ -2843,8 +2833,6 @@
     "vcs-type": {
       "unspecified": "未指定"
     },
-    "actions": {},
-    "messages": {},
     "usage-description": "リリースは、GitOpsワークフローによって環境へのデプロイがトリガーされるバージョン管理されたアプリケーションアーティファクトです。"
   },
   "export-data": {
@@ -2897,8 +2885,7 @@
       "algorithm": "マスキング方法",
       "context": "ルール",
       "classification": "分類レベル"
-    },
-    "algorithms": {}
+    }
   },
   "landing": {
     "quick-link": {

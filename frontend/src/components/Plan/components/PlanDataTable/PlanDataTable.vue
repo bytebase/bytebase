@@ -54,7 +54,7 @@ const columnList = computed((): DataTableColumn<Plan>[] => {
         const isDeleted = plan.state === State.DELETED;
         return (
           <div
-            class={`flex items-center overflow-hidden space-x-2 ${isDeleted ? "opacity-60" : ""}`}
+            class={`flex items-center overflow-hidden gap-x-2 ${isDeleted ? "opacity-60" : ""}`}
           >
             <div class="whitespace-nowrap text-control opacity-60">
               {extractPlanUID(plan.name)}

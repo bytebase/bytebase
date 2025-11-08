@@ -1,4 +1,4 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
 /*
   Colors for dark theme
@@ -50,7 +50,7 @@
   }
 
   /* Remove the ticker in the number field for Firefox */
-  &input[type='number'] {
+  &input[type="number"] {
     -moz-appearance: textfield;
   }
 }
@@ -223,7 +223,7 @@
   }
 
   .radio-set-col {
-    @apply flex flex-col space-y-2;
+    @apply flex flex-col gap-y-2;
   }
 
   .radio {

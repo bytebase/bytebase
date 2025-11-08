@@ -15,7 +15,7 @@
           </p>
         </div>
         <div
-          class="flex flex-row space-x-4 order-3 my-2 shrink-0 w-full sm:order-2 sm:py-1 sm:my-0 sm:w-auto"
+          class="flex flex-row gap-x-4 order-3 my-2 shrink-0 w-full sm:order-2 sm:py-1 sm:my-0 sm:w-auto"
         >
           <a
             href="https://docs.bytebase.com/get-started/self-host-vs-cloud/?source=demo"

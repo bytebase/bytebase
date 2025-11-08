@@ -1,16 +1,9 @@
 <template>
   <div class="execute-hint w-112">
     <NAlert type="info">
-      <section class="space-y-2">
+      <section class="flex flex-col gap-y-2">
         <p>
-          <i18n-t keypath="sql-editor.only-select-allowed">
-            <template #select>
-              <strong
-                ><code>SELECT</code>, <code>SHOW</code> and
-                <code>SET</code></strong
-              >
-            </template>
-          </i18n-t>
+          {{ $t("sql-editor.only-select-allowed") }}
         </p>
         <p v-if="database">
           <i18n-t keypath="sql-editor.enable-ddl-for-environment">

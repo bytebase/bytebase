@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-4">
+  <div class="flex flex-col gap-y-4">
     <div class="flex items-center">
       <div class="flex-1">
         <div class="flex items-center">

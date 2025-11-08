@@ -5,7 +5,7 @@
       class="w-240 max-w-[100vw] relative"
     >
       <template #default>
-        <div class="space-y-4">
+        <div class="gap-y-4">
           <i18n-t
             keypath="sql-review.select-review-label"
             tag="p"

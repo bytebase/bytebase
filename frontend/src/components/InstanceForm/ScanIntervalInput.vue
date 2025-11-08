@@ -3,7 +3,7 @@
     v-if="!hideAdvancedFeatures"
     class="sm:col-span-4 sm:col-start-1 flex flex-col gap-y-2"
   >
-    <div class="flex items-center space-x-2">
+    <div class="flex items-center gap-x-2">
       <label class="textlabel">
         {{ $t("instance.scan-interval.self") }}
       </label>

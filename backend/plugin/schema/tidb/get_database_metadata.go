@@ -8,7 +8,6 @@ import (
 
 	"github.com/pingcap/tidb/pkg/parser"
 	"github.com/pingcap/tidb/pkg/parser/ast"
-	"github.com/pingcap/tidb/pkg/parser/model"
 	"github.com/pingcap/tidb/pkg/parser/mysql"
 	"github.com/pingcap/tidb/pkg/types"
 	"github.com/pkg/errors"
@@ -594,17 +593,17 @@ func (*metadataExtractor) getIndexColumnsInfo(keys []*ast.IndexPartSpecification
 	return expressions, keyLengths, descending
 }
 
-func (*metadataExtractor) getReferenceAction(action model.ReferOptionType) string {
+func (*metadataExtractor) getReferenceAction(action ast.ReferOptionType) string {
 	switch action {
-	case model.ReferOptionCascade:
+	case ast.ReferOptionCascade:
 		return "CASCADE"
-	case model.ReferOptionSetNull:
+	case ast.ReferOptionSetNull:
 		return "SET NULL"
-	case model.ReferOptionRestrict:
+	case ast.ReferOptionRestrict:
 		return "RESTRICT"
-	case model.ReferOptionNoAction:
+	case ast.ReferOptionNoAction:
 		return "NO ACTION"
-	case model.ReferOptionSetDefault:
+	case ast.ReferOptionSetDefault:
 		return "SET DEFAULT"
 	default:
 		return ""
@@ -688,7 +687,7 @@ func (*metadataExtractor) getIndexType(constraint *ast.Constraint) string {
 
 	// Check for specific index types in TiDB
 	if constraint.Option != nil {
-		if constraint.Option.Tp == model.IndexTypeHash {
+		if constraint.Option.Tp == ast.IndexTypeHash {
 			indexType = "HASH"
 		} else if constraint.Option.Comment != "" {
 			// Check for FULLTEXT or SPATIAL in comments

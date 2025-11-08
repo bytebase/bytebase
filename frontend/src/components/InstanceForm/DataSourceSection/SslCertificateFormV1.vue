@@ -1,5 +1,5 @@
 <template>
-  <div class="mt-2 space-y-3">
+  <div class="mt-2 flex flex-col gap-y-3">
     <div class="flex flex-row items-center gap-2">
       <NSwitch
         v-model:value="state.value.verifyTlsCertificate"

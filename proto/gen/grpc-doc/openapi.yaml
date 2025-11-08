@@ -9035,6 +9035,13 @@ components:
                          Format:
                          projects/{project}/databaseGroups/{databaseGroup}
                          instances/{instance}/databases/{database}
+                customRules:
+                    type: string
+                    description: |-
+                        Custom linting rules in natural language for AI-powered validation.
+                         Each rule should be a clear statement describing the desired schema constraint.
+                         Example: "All tables must have a primary key"
+                         Example: "VARCHAR columns should specify a maximum length"
         CheckReleaseResponse:
             type: object
             properties:

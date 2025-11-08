@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 func TestIsValidResourceID(t *testing.T) {
@@ -189,5 +191,82 @@ func TestParseOrderBy(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, test.want, got)
 		}
+	}
+}
+
+func TestIsValidateOnlyRequest(t *testing.T) {
+	tests := []struct {
+		name    string
+		request any
+		want    bool
+	}{
+		{
+			name:    "nil request",
+			request: nil,
+			want:    false,
+		},
+		{
+			name:    "non-proto request",
+			request: "not a proto",
+			want:    false,
+		},
+		{
+			name: "request without validate_only field",
+			request: &v1pb.GetInstanceRequest{
+				Name: "instances/test",
+			},
+			want: false,
+		},
+		{
+			name: "CreateInstanceRequest with validate_only=false",
+			request: &v1pb.CreateInstanceRequest{
+				InstanceId:   "test",
+				Instance:     &v1pb.Instance{},
+				ValidateOnly: false,
+			},
+			want: false,
+		},
+		{
+			name: "CreateInstanceRequest with validate_only=true",
+			request: &v1pb.CreateInstanceRequest{
+				InstanceId:   "test",
+				Instance:     &v1pb.Instance{},
+				ValidateOnly: true,
+			},
+			want: true,
+		},
+		{
+			name: "UpdateSettingRequest with validate_only=true",
+			request: &v1pb.UpdateSettingRequest{
+				Setting:      &v1pb.Setting{},
+				ValidateOnly: true,
+			},
+			want: true,
+		},
+		{
+			name: "AddDataSourceRequest with validate_only=true",
+			request: &v1pb.AddDataSourceRequest{
+				Name:         "instances/test",
+				DataSource:   &v1pb.DataSource{},
+				ValidateOnly: true,
+			},
+			want: true,
+		},
+		{
+			name: "CreateRolloutRequest with validate_only=false",
+			request: &v1pb.CreateRolloutRequest{
+				Parent:       "projects/test",
+				Rollout:      &v1pb.Rollout{},
+				ValidateOnly: false,
+			},
+			want: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := isValidateOnlyRequest(test.request)
+			require.Equal(t, test.want, got)
+		})
 	}
 }

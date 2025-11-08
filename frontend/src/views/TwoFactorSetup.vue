@@ -17,7 +17,7 @@
   >
     <template #0>
       <div
-        class="w-full max-w-2xl mx-auto flex flex-col justify-start items-start space-y-4 my-8"
+        class="w-full max-w-2xl mx-auto flex flex-col justify-start items-start gap-y-4 my-8"
       >
         <p>
           {{ $t("two-factor.setup-steps.setup-auth-app.description") }}

@@ -11,7 +11,7 @@
       </template>
     </RiskFilter>
 
-    <div class="space-y-4 pb-4">
+    <div class="flex flex-col gap-y-4 pb-4">
       <RiskSection
         v-for="{ source, riskList } in riskListGroupBySource"
         :key="source"
@@ -27,10 +27,10 @@ import { create } from "@bufbuild/protobuf";
 import { groupBy } from "lodash-es";
 import { PlusIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
-import { computed, watch } from "vue";
+import { computed } from "vue";
 import { useRiskStore } from "@/store";
 import { PresetRiskLevelList, useSupportedSourceList } from "@/types";
-import { Risk_Source, RiskSchema } from "@/types/proto-es/v1/risk_service_pb";
+import { RiskSchema } from "@/types/proto-es/v1/risk_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { RiskFilter, orderByLevelDesc, useRiskFilter } from "../common";
 import RiskSection from "./RiskSection.vue";
@@ -48,16 +48,7 @@ const allowCreateRisk = computed(() => {
 
 const filteredRiskList = computed(() => {
   let list = [...riskStore.riskList];
-  const { source, levels } = filter;
   const search = filter.search.value.trim();
-  // Risk_Source.SOURCE_UNSPECIFIED to "ALL"
-  if (source.value !== Risk_Source.SOURCE_UNSPECIFIED) {
-    list = list.filter((risk) => risk.source === source.value);
-  }
-  // empty to "ALL"
-  if (levels.value.size > 0) {
-    list = list.filter((risk) => levels.value.has(risk.level));
-  }
   if (search) {
     list = list.filter((risk) => risk.title.includes(search));
   }
@@ -71,21 +62,11 @@ const riskListGroupBySource = computed(() => {
     riskList.sort(orderByLevelDesc);
     return { source, riskList };
   });
-  if (filter.source.value === Risk_Source.SOURCE_UNSPECIFIED) {
-    // Show "ALL" sources
-    return groups;
-  }
-
-  return groups.filter((group) => {
-    return group.riskList.length > 0 || group.source === filter.source.value;
-  });
+  return groups;
 });
 
 const addRisk = () => {
-  let source = filter.source.value;
-  if (source === Risk_Source.SOURCE_UNSPECIFIED) {
-    source = supportedSourceList.value[0];
-  }
+  const source = supportedSourceList.value[0];
   const risk = create(RiskSchema, {
     level: PresetRiskLevelList[0].level,
     source: source,
@@ -100,16 +81,4 @@ const addRisk = () => {
     risk,
   };
 };
-
-watch(
-  context.dialog,
-  (dialog) => {
-    const source = dialog?.risk?.source;
-    if (!source) return;
-    if (filter.source.value !== Risk_Source.SOURCE_UNSPECIFIED) {
-      filter.source.value = source;
-    }
-  },
-  { immediate: true }
-);
 </script>

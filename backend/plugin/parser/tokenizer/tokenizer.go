@@ -12,7 +12,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast"
 )
 
 const (
@@ -202,139 +201,6 @@ func matchMySQLTableConstraint(text string, cons *tidbast.Constraint) bool {
 	}
 }
 
-// SetLineForPGCreateTableStmt sets the line for columns and table constraints in CREATE TABLE statements.
-func (t *Tokenizer) SetLineForPGCreateTableStmt(node *ast.CreateTableStmt, firstLine int) error {
-	// Some statement are recognized as create table statement, but without columns and constraints like:
-	// CREATE TABLE t AS SELECT * FROM old_t;
-	if len(node.ColumnList) == 0 && len(node.ConstraintList) == 0 {
-		return nil
-	}
-	// We assume that the parser will parse the columns and table constraints according to the order of the raw SQL statements
-	// and the identifiers don't equal any keywords in CREATE TABLE statements.
-	// If it breaks our assumption, we set the line for columns and table constraints to the first line of the CREATE TABLE statement.
-	for _, col := range node.ColumnList {
-		col.SetLastLine(node.LastLine())
-		for _, inlineCons := range col.ConstraintList {
-			inlineCons.SetLastLine(node.LastLine())
-		}
-	}
-	for _, cons := range node.ConstraintList {
-		cons.SetLastLine(node.LastLine())
-	}
-
-	columnPos := 0
-	constraintPos := 0
-	// find the '(' for CREATE TABLE ... ( ... )
-	if err := t.scanTo([]rune{'('}); err != nil {
-		return err
-	}
-
-	// parentheses is the flag for matching parentheses.
-	parentheses := 1
-	t.skipBlank()
-	startPos := t.pos()
-	for {
-		switch {
-		case t.char(0) == '\n':
-			t.line++
-			t.skip(1)
-		case t.char(0) == '/' && t.char(1) == '*':
-			if err := t.scanComment(); err != nil {
-				return err
-			}
-		case t.char(0) == '-' && t.char(1) == '-':
-			if err := t.scanComment(); err != nil {
-				return err
-			}
-		case t.char(0) == '\'':
-			if err := t.scanString('\''); err != nil {
-				return err
-			}
-		case t.char(0) == '$':
-			if err := t.scanDoubleDollarQuotedString(); err != nil {
-				return err
-			}
-		case t.char(0) == '"':
-			if err := t.scanIdentifier('"'); err != nil {
-				return err
-			}
-		case t.char(0) == '(':
-			parentheses++
-			t.skip(1)
-		case t.char(0) == ')':
-			parentheses--
-			if parentheses == 0 {
-				// This means we find the corresponding ')' for the first '(' in CREATE TABLE statements.
-				// We need to check the definition and return.
-				def := strings.ToLower(t.getString(startPos, t.pos()-startPos))
-				if columnPos < len(node.ColumnList) &&
-					strings.Contains(def, strings.ToLower(node.ColumnList[columnPos].ColumnName)) {
-					// Consider this text:
-					// CREATE TABLE t(
-					//   a int
-					// )
-					//
-					// Our current location is ')'.
-					// The line (t.line + firstLine - 1) is the line of ')',
-					// but we want to get the line of 'a int'.
-					// So we need minus the aboveNonBlankLineDistance.
-					node.ColumnList[columnPos].SetLastLine(t.line + firstLine - 1 - t.aboveNonBlankLineDistance())
-					for _, inlineConstraint := range node.ColumnList[columnPos].ConstraintList {
-						inlineConstraint.SetLastLine(node.ColumnList[columnPos].LastLine())
-					}
-				} else if constraintPos < len(node.ConstraintList) &&
-					matchTableConstraint(def, node.ConstraintList[constraintPos]) {
-					// Consider this text:
-					// CREATE TABLE t(
-					//   a int,
-					//   UNIQUE (a)
-					// )
-					//
-					// Our current location is ')'.
-					// The line (t.line + firstLine - 1) is the line of ')',
-					// but we want to get the line of 'UNIQUE (a)'.
-					// So we need minus the aboveNonBlankLineDistance.
-					node.ConstraintList[constraintPos].SetLastLine(t.line + firstLine - 1 - t.aboveNonBlankLineDistance())
-				}
-				return nil
-			}
-			t.skip(1)
-		case t.char(0) == ',':
-			// e.g. CREATE TABLE t(
-			//   a int,
-			//   b int,
-			//   UNIQUE(a, b),
-			//   UNIQUE(b)
-			// )
-			// We don't need to consider the ',' in UNIQUE(a, b)
-			if parentheses > 1 {
-				t.skip(1)
-				continue
-			}
-			def := strings.ToLower(t.getString(startPos, t.pos()-startPos))
-			if columnPos < len(node.ColumnList) &&
-				strings.Contains(def, strings.ToLower(node.ColumnList[columnPos].ColumnName)) {
-				node.ColumnList[columnPos].SetLastLine(t.line + firstLine - 1)
-				for _, inlineConstraint := range node.ColumnList[columnPos].ConstraintList {
-					inlineConstraint.SetLastLine(node.ColumnList[columnPos].LastLine())
-				}
-				columnPos++
-			} else if constraintPos < len(node.ConstraintList) &&
-				matchTableConstraint(def, node.ConstraintList[constraintPos]) {
-				node.ConstraintList[constraintPos].SetLastLine(t.line + firstLine - 1)
-				constraintPos++
-			}
-			t.skip(1)
-			t.skipBlank()
-			startPos = t.pos()
-		case t.char(0) == eofRune:
-			return nil
-		default:
-			t.skip(1)
-		}
-	}
-}
-
 func (t *Tokenizer) aboveNonBlankLineDistance() int {
 	pos := uint(1)
 	dis := 0
@@ -346,27 +212,6 @@ func (t *Tokenizer) aboveNonBlankLineDistance() int {
 			return dis
 		}
 		pos++
-	}
-}
-
-// matchTableConstraint matches text as lowercase.
-func matchTableConstraint(text string, cons *ast.ConstraintDef) bool {
-	text = strings.ToLower(text)
-	if cons.Name != "" {
-		return strings.Contains(text, strings.ToLower(cons.Name))
-	}
-	switch cons.Type {
-	case ast.ConstraintTypeCheck:
-		return strings.Contains(text, "check")
-	case ast.ConstraintTypeUnique:
-		return strings.Contains(text, "unique")
-	case ast.ConstraintTypePrimary:
-		return strings.Contains(text, "primary key")
-	case ast.ConstraintTypeForeign:
-		return strings.Contains(text, "foreign key")
-	default:
-		// Unknown constraint type
-		return false
 	}
 }
 

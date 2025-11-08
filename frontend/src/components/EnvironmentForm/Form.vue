@@ -2,12 +2,12 @@
   <div>
     <div class="flex flex-col gap-y-6">
       <div v-if="features.includes('BASE')" class="flex flex-col gap-y-2">
-        <div for="name" class="flex item-center space-x-2">
+        <div for="name" class="flex item-center gap-x-2">
           <div class="w-4 h-4 relative">
             <component :is="renderColorPicker()" />
           </div>
           <span for="name" class="font-medium">
-            {{ $t("common.environment-name") }}
+            {{ t("common.environment-name") }}
             <RequiredStar />
           </span>
         </div>
@@ -36,7 +36,7 @@
       <div v-if="features.includes('TIER')" class="flex flex-col gap-y-2">
         <div class="gap-y-1">
           <label class="font-medium flex items-center">
-            {{ $t("policy.environment-tier.name") }}
+            {{ t("policy.environment-tier.name") }}
             <FeatureBadge :feature="PlanFeature.FEATURE_ENVIRONMENT_TIERS" />
           </label>
           <p class="text-sm text-gray-600">
@@ -60,7 +60,7 @@
             }
           "
         >
-          {{ $t("policy.environment-tier.mark-env-as-production") }}
+          {{ t("policy.environment-tier.mark-env-as-production") }}
         </NCheckbox>
       </div>
 
@@ -69,21 +69,19 @@
         class="flex flex-col gap-y-2"
       >
         <div class="gap-y-1">
-          <div class="flex items-baseline space-x-2">
+          <div class="flex items-baseline gap-x-2">
             <label class="font-medium">
-              {{ $t("policy.rollout.name") }}
+              {{ t("policy.rollout.name") }}
             </label>
             <span
               v-show="!create && valueChanged('rolloutPolicy')"
               class="textlabeltip"
             >
-              {{ $t("policy.rollout.tip") }}
+              {{ t("policy.rollout.tip") }}
             </span>
           </div>
           <div class="textinfolabel">
-            {{
-              $t("policy.rollout.info", { permission: "bb.taskRuns.create" })
-            }}
+            {{ t("policy.rollout.info", { permission: "bb.taskRuns.create" }) }}
             <LearnMoreLink
               class="ml-1"
               url="https://docs.bytebase.com/change-database/environment-policy/rollout-policy/?source=console"
@@ -118,10 +116,10 @@
       <BBButtonConfirm
         v-if="allowArchive"
         :type="'DELETE'"
-        :button-text="$t('environment.delete')"
-        :ok-text="$t('common.delete')"
+        :button-text="t('environment.delete')"
+        :ok-text="t('common.delete')"
         :confirm-title="
-          $t('environment.delete') + ` '${state.environment.title}'?`
+          t('environment.delete') + ` '${state.environment.title}'?`
         "
         :positive-button-props="{
           disabled: existRelatedResource ? !confirmDelete : false,
@@ -138,8 +136,8 @@
           <span>
             {{
               existRelatedResource
-                ? $t("environment.delete-description")
-                : $t("common.cannot-undo-this-action")
+                ? t("environment.delete-description")
+                : t("common.cannot-undo-this-action")
             }}
           </span>
         </div>

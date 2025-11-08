@@ -10,7 +10,7 @@ This action provides several subcommands to interact with Bytebase.
 
 Usage: `bytebase-action check [global flags]`
 
-Checks the SQL files matching the `--file-pattern`. This is typically used for linting or pre-deployment validation within a CI pipeline. It utilizes global flags like `--url`, `--service-account`, `--service-account-secret`, `--file-pattern`, and `--declarative`.
+Checks the SQL files matching the `--file-pattern`. This is typically used for linting or pre-deployment validation within a CI pipeline. Use `--output` to save check results to a JSON file.
 
 ### `rollout`
 
@@ -30,8 +30,10 @@ This action is configured via command-line flags. Global flags apply to all comm
 
 These flags apply to the main `bytebase-action` command and its subcommands (`check`, `rollout`).
 
--   **`--output`**: The output file location. The output file is a JSON file with the created resource names.
+-   **`--output`**: The output file location. The output file is a JSON file with the created resource names and check results.
     -   Default: `""` (empty string)
+    -   For `check` command: outputs detailed check results including advices, affected rows, and risk levels
+    -   For `rollout` command: outputs created resource names (release, plan, rollout)
 
 -   **`--url`**: The Bytebase instance URL.
     -   Default: `https://demo.bytebase.com`

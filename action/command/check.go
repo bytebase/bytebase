@@ -7,6 +7,7 @@ import (
 	"github.com/bytebase/bytebase/action/args"
 	"github.com/bytebase/bytebase/action/azure"
 	"github.com/bytebase/bytebase/action/bitbucket"
+	"github.com/bytebase/bytebase/action/command/output"
 	"github.com/bytebase/bytebase/action/github"
 	"github.com/bytebase/bytebase/action/gitlab"
 	"github.com/bytebase/bytebase/action/world"
@@ -23,6 +24,7 @@ func NewCheckCommand(w *world.World) *cobra.Command {
 		RunE:              runCheck(w),
 	}
 	cmdCheck.Flags().StringVar(&w.CheckRelease, "check-release", "SKIP", "Whether to fail on warning/error. Valid values: SKIP, FAIL_ON_WARNING, FAIL_ON_ERROR")
+	cmdCheck.Flags().StringVar(&w.CustomRules, "custom-rules", "", "Custom linting rules in natural language for AI-powered validation")
 	return cmdCheck
 }
 
@@ -46,6 +48,9 @@ func validateCheckFlags(w *world.World) func(*cobra.Command, []string) error {
 
 func runCheck(w *world.World) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
+		defer func() {
+			output.WriteOutput(w)
+		}()
 		platform := w.Platform
 		w.Logger.Info("running on platform", "platform", platform.String())
 		client, err := NewClient(w.URL, w.ServiceAccount, w.ServiceAccountSecret)
@@ -61,13 +66,17 @@ func runCheck(w *world.World) func(*cobra.Command, []string) error {
 			return err
 		}
 		checkReleaseResponse, err := client.CheckRelease(cmd.Context(), &v1pb.CheckReleaseRequest{
-			Parent:  w.Project,
-			Release: &v1pb.Release{Files: releaseFiles},
-			Targets: w.Targets,
+			Parent:      w.Project,
+			Release:     &v1pb.Release{Files: releaseFiles},
+			Targets:     w.Targets,
+			CustomRules: w.CustomRules,
 		})
 		if err != nil {
 			return err
 		}
+
+		// Store check results in OutputMap for file output
+		w.OutputMap.CheckResults = checkReleaseResponse
 
 		w.Logger.Info("check release response", "resultCount", len(checkReleaseResponse.Results))
 

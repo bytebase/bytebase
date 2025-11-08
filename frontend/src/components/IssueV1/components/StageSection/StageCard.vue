@@ -7,7 +7,7 @@
 
     <div class="text" @click="handleClickStage">
       <div
-        class="text-sm min-w-32 flex items-center space-x-1 lg:min-w-fit with-underline whitespace-nowrap"
+        class="text-sm min-w-32 flex items-center gap-x-1 lg:min-w-fit with-underline whitespace-nowrap"
       >
         <heroicons:arrow-small-right
           v-if="isActiveStage"

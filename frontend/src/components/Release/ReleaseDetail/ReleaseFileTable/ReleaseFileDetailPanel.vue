@@ -1,12 +1,12 @@
 <template>
   <div class="w-full">
     <div class="flex flex-row items-center gap-2">
-      <p class="text-lg space-x-1">
+      <p class="text-lg flex gap-x-1">
         <span class="text-control">{{ $t("common.version") }}:</span>
         <span class="font-bold text-main">{{ releaseFile.version }}</span>
       </p>
     </div>
-    <p class="mt-3 text-control text-sm space-x-4">
+    <p class="mt-3 text-control text-sm flex gap-x-4">
       <span v-if="releaseFile.path"
         >{{ $t("database.revision.filename") }}: {{ releaseFile.path }}</span
       >

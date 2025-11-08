@@ -1,5 +1,5 @@
 <template>
-  <form class="w-full space-y-4">
+  <form class="w-full flex flex-col gap-y-4">
     <div>
       <div class="font-medium">
         {{ $t("common.name") }}

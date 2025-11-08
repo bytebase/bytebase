@@ -34,6 +34,8 @@ type World struct {
 	// - FAIL_ON_WARNING
 	// - FAIL_ON_ERROR
 	CheckRelease string
+	// Custom linting rules in natural language for AI-powered validation.
+	CustomRules string
 
 	// bytebase-action rollout flags
 	ReleaseTitle string // The title of the release
@@ -44,9 +46,10 @@ type World struct {
 
 	// Outputs
 	OutputMap struct {
-		Release string `json:"release,omitempty"`
-		Plan    string `json:"plan,omitempty"`
-		Rollout string `json:"rollout,omitempty"`
+		Release      string                     `json:"release,omitempty"`
+		Plan         string                     `json:"plan,omitempty"`
+		Rollout      string                     `json:"rollout,omitempty"`
+		CheckResults *v1pb.CheckReleaseResponse `json:"checkResults,omitempty"`
 	}
 	PendingStages []string
 	Rollout       *v1pb.Rollout

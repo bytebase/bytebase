@@ -11,7 +11,7 @@
           />
         </template>
         <template #default>
-          <div class="max-w-xs space-y-1">
+          <div class="max-w-xs flex flex-col gap-y-1">
             <div v-if="transactionMode === 'on'">
               {{ $t("issue.transaction-mode.on-tooltip") }}
             </div>

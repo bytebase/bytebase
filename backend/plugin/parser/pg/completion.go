@@ -153,6 +153,7 @@ type Completer struct {
 	instanceID          string
 	defaultDatabase     string
 	defaultSchema       string
+	schemaNotSelected   bool // true if user didn't explicitly select a schema
 	getMetadata         base.GetDatabaseMetadataFunc
 	listDatabaseNames   base.ListDatabaseNamesFunc
 	metadataCache       map[string]*model.DatabaseMetadata
@@ -184,6 +185,7 @@ func NewTrickyCompleter(ctx context.Context, cCtx base.CompletionContext, statem
 		pg.PostgreSQLParserRULE_with_clause,
 	)
 	defaultSchema := cCtx.DefaultSchema
+	schemaNotSelected := defaultSchema == ""
 	if defaultSchema == "" {
 		defaultSchema = "public"
 	}
@@ -197,6 +199,7 @@ func NewTrickyCompleter(ctx context.Context, cCtx base.CompletionContext, statem
 		instanceID:          cCtx.InstanceID,
 		defaultDatabase:     cCtx.DefaultDatabase,
 		defaultSchema:       defaultSchema,
+		schemaNotSelected:   schemaNotSelected,
 		getMetadata:         cCtx.Metadata,
 		metadataCache:       make(map[string]*model.DatabaseMetadata),
 		noSeparatorRequired: newNoSeparatorRequired(),
@@ -220,6 +223,7 @@ func NewStandardCompleter(ctx context.Context, cCtx base.CompletionContext, stat
 		pg.PostgreSQLParserRULE_with_clause,
 	)
 	defaultSchema := cCtx.DefaultSchema
+	schemaNotSelected := defaultSchema == ""
 	if defaultSchema == "" {
 		defaultSchema = "public"
 	}
@@ -233,6 +237,7 @@ func NewStandardCompleter(ctx context.Context, cCtx base.CompletionContext, stat
 		instanceID:          cCtx.InstanceID,
 		defaultDatabase:     cCtx.DefaultDatabase,
 		defaultSchema:       defaultSchema,
+		schemaNotSelected:   schemaNotSelected,
 		getMetadata:         cCtx.Metadata,
 		metadataCache:       make(map[string]*model.DatabaseMetadata),
 		noSeparatorRequired: newNoSeparatorRequired(),
@@ -304,7 +309,7 @@ func (m CompletionMap) insertSchemas(c *Completer) {
 	}
 }
 
-func (m CompletionMap) insertTables(c *Completer, schemas map[string]bool) {
+func (m CompletionMap) insertTablesWithPrefix(c *Completer, schemas map[string]bool, includeSchemaPrefix bool) {
 	for schema := range schemas {
 		if len(schema) == 0 {
 			// User didn't specify the schema, we need to append cte tables.
@@ -317,32 +322,55 @@ func (m CompletionMap) insertTables(c *Completer, schemas map[string]bool) {
 			continue
 		}
 		for _, table := range c.listTables(schema) {
+			text := c.quotedIdentifierIfNeeded(table)
+			// Only add schema prefix if user didn't select a schema and the table is not in the default schema
+			if includeSchemaPrefix && schema != c.defaultSchema {
+				text = c.quotedIdentifierIfNeeded(schema) + "." + text
+			}
 			m.Insert(base.Candidate{
 				Type: base.CandidateTypeTable,
-				Text: c.quotedIdentifierIfNeeded(table),
+				Text: text,
 			})
 		}
 		for _, fTable := range c.listForeignTables(schema) {
+			text := c.quotedIdentifierIfNeeded(fTable)
+			// Only add schema prefix if user didn't select a schema and the table is not in the default schema
+			if includeSchemaPrefix && schema != c.defaultSchema {
+				text = c.quotedIdentifierIfNeeded(schema) + "." + text
+			}
 			m.Insert(base.Candidate{
 				Type: base.CandidateTypeForeignTable,
-				Text: c.quotedIdentifierIfNeeded(fTable),
+				Text: text,
 			})
 		}
 	}
 }
 
-func (m CompletionMap) insertViews(c *Completer, schemas map[string]bool) {
+func (m CompletionMap) insertViewsWithPrefix(c *Completer, schemas map[string]bool, includeSchemaPrefix bool) {
 	for schema := range schemas {
+		if len(schema) == 0 {
+			continue
+		}
 		for _, view := range c.listViews(schema) {
+			text := c.quotedIdentifierIfNeeded(view)
+			// Only add schema prefix if user didn't select a schema and the view is not in the default schema
+			if includeSchemaPrefix && schema != c.defaultSchema {
+				text = c.quotedIdentifierIfNeeded(schema) + "." + text
+			}
 			m.Insert(base.Candidate{
 				Type: base.CandidateTypeView,
-				Text: c.quotedIdentifierIfNeeded(view),
+				Text: text,
 			})
 		}
 		for _, matView := range c.listMaterializedViews(schema) {
+			text := c.quotedIdentifierIfNeeded(matView)
+			// Only add schema prefix if user didn't select a schema and the view is not in the default schema
+			if includeSchemaPrefix && schema != c.defaultSchema {
+				text = c.quotedIdentifierIfNeeded(schema) + "." + text
+			}
 			m.Insert(base.Candidate{
 				Type: base.CandidateTypeMaterializedView,
-				Text: c.quotedIdentifierIfNeeded(matView),
+				Text: text,
 			})
 		}
 	}
@@ -528,15 +556,25 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 			if flags&ObjectFlagsShowSecond != 0 {
 				schemas := make(map[string]bool)
 				if len(qualifier) == 0 {
-					schemas[c.defaultSchema] = true
-					// User didn't specify the schema, we need to append cte tables.
+					// User didn't specify the schema
+					// If no default schema is selected by user, search all schemas
+					if c.schemaNotSelected {
+						for _, schema := range c.listAllSchemas() {
+							schemas[schema] = true
+						}
+					} else {
+						schemas[c.defaultSchema] = true
+					}
+					// Also include CTE tables
 					schemas[""] = true
 				} else {
 					schemas[qualifier] = true
 				}
 
-				tableEntries.insertTables(c, schemas)
-				viewEntries.insertViews(c, schemas)
+				// Pass true for includeSchemaPrefix when no schema is selected by user
+				includeSchemaPrefix := len(qualifier) == 0 && c.schemaNotSelected
+				tableEntries.insertTablesWithPrefix(c, schemas, includeSchemaPrefix)
+				viewEntries.insertViewsWithPrefix(c, schemas, includeSchemaPrefix)
 			}
 		case pg.PostgreSQLParserRULE_columnref:
 			schema, table, flags := c.determineColumnRef()
@@ -558,14 +596,23 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 			}
 
 			if len(schema) == 0 {
-				schemas[c.defaultSchema] = true
+				// If no default schema is selected by user, search all schemas
+				if c.schemaNotSelected && len(c.references) == 0 {
+					for _, s := range c.listAllSchemas() {
+						schemas[s] = true
+					}
+				} else {
+					schemas[c.defaultSchema] = true
+				}
 				// User didn't specify the schema, we need to append cte tables.
 				schemas[""] = true
 			}
 
 			if flags&ObjectFlagsShowTables != 0 {
-				tableEntries.insertTables(c, schemas)
-				viewEntries.insertViews(c, schemas)
+				// Pass true for includeSchemaPrefix when no schema is selected by user and no references
+				includeSchemaPrefix := len(schema) == 0 && c.schemaNotSelected && len(c.references) == 0
+				tableEntries.insertTablesWithPrefix(c, schemas, includeSchemaPrefix)
+				viewEntries.insertViewsWithPrefix(c, schemas, includeSchemaPrefix)
 
 				for _, reference := range c.references {
 					switch reference := reference.(type) {

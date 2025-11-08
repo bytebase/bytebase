@@ -39,7 +39,7 @@
       @export="handleExportBtnClick"
     >
       <template #form>
-        <div class="w-full mb-6 space-y-2">
+        <div class="w-full mb-6 flex flex-col gap-y-2">
           <div>
             <p class="textlabel">
               {{ $t("database.select") }}
