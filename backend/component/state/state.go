@@ -40,9 +40,6 @@ type State struct {
 	// RolloutOutstandingTasks is the maximum number of tasks per rollout.
 	RolloutOutstandingTasks *resourceLimiter
 
-	// IssueExternalApprovalRelayCancelChan cancels the external approval from relay for issue issueUID.
-	IssueExternalApprovalRelayCancelChan chan int
-
 	// TaskSkippedOrDoneChan is the channel for notifying the task is skipped or done.
 	TaskSkippedOrDoneChan chan int
 
@@ -60,13 +57,12 @@ func New() (*State, error) {
 		return nil, errors.Wrapf(err, "failed to create auth expire cache")
 	}
 	return &State{
-		InstanceOutstandingConnections:       &resourceLimiter{connections: map[string]int{}},
-		RolloutOutstandingTasks:              &resourceLimiter{connections: map[string]int{}},
-		IssueExternalApprovalRelayCancelChan: make(chan int, 1),
-		TaskSkippedOrDoneChan:                make(chan int, 1000),
-		PlanCheckTickleChan:                  make(chan int, 1000),
-		TaskRunTickleChan:                    make(chan int, 1000),
-		ExpireCache:                          expireCache,
+		InstanceOutstandingConnections: &resourceLimiter{connections: map[string]int{}},
+		RolloutOutstandingTasks:        &resourceLimiter{connections: map[string]int{}},
+		TaskSkippedOrDoneChan:          make(chan int, 1000),
+		PlanCheckTickleChan:            make(chan int, 1000),
+		TaskRunTickleChan:              make(chan int, 1000),
+		ExpireCache:                    expireCache,
 	}, nil
 }
 
