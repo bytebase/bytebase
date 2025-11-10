@@ -35,30 +35,56 @@ func (*IndexConcurrentlyAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 		return nil, err
 	}
 
-	checker := &indexCreateConcurrentlyChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
-		newlyCreatedTables:           make(map[string]bool),
+	rule := &indexCreateConcurrentlyRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: string(checkCtx.Rule.Type),
+		},
+		newlyCreatedTables: make(map[string]bool),
 	}
 
-	// First pass: collect all newly created tables
+	checker := NewGenericChecker([]Rule{rule})
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type indexCreateConcurrentlyChecker struct {
-	*parser.BasePostgreSQLParserListener
+type indexCreateConcurrentlyRule struct {
+	BaseRule
 
-	adviceList         []*storepb.Advice
-	level              storepb.Advice_Status
-	title              string
 	newlyCreatedTables map[string]bool
 }
 
-// EnterCreatestmt collects newly created tables
-func (c *indexCreateConcurrentlyChecker) EnterCreatestmt(ctx *parser.CreatestmtContext) {
+func (*indexCreateConcurrentlyRule) Name() string {
+	return "index_create_concurrently"
+}
+
+func (r *indexCreateConcurrentlyRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Createstmt":
+		if c, ok := ctx.(*parser.CreatestmtContext); ok {
+			r.handleCreatestmt(c)
+		}
+	case "Indexstmt":
+		if c, ok := ctx.(*parser.IndexstmtContext); ok {
+			r.handleIndexstmt(c)
+		}
+	case "Dropstmt":
+		if c, ok := ctx.(*parser.DropstmtContext); ok {
+			r.handleDropstmt(c)
+		}
+	default:
+		// Do nothing for other node types
+	}
+	return nil
+}
+
+func (*indexCreateConcurrentlyRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+// handleCreatestmt collects newly created tables
+func (r *indexCreateConcurrentlyRule) handleCreatestmt(ctx *parser.CreatestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -68,13 +94,13 @@ func (c *indexCreateConcurrentlyChecker) EnterCreatestmt(ctx *parser.CreatestmtC
 	if len(qualifiedNames) > 0 {
 		tableName := extractTableName(qualifiedNames[0])
 		if tableName != "" {
-			c.newlyCreatedTables[tableName] = true
+			r.newlyCreatedTables[tableName] = true
 		}
 	}
 }
 
-// EnterIndexstmt checks CREATE INDEX statements
-func (c *indexCreateConcurrentlyChecker) EnterIndexstmt(ctx *parser.IndexstmtContext) {
+// handleIndexstmt checks CREATE INDEX statements
+func (r *indexCreateConcurrentlyRule) handleIndexstmt(ctx *parser.IndexstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -87,15 +113,15 @@ func (c *indexCreateConcurrentlyChecker) EnterIndexstmt(ctx *parser.IndexstmtCon
 		if ctx.Relation_expr() != nil && ctx.Relation_expr().Qualified_name() != nil {
 			tableName := extractTableName(ctx.Relation_expr().Qualified_name())
 			// Skip the check if the table is newly created
-			if c.newlyCreatedTables[tableName] {
+			if r.newlyCreatedTables[tableName] {
 				return
 			}
 		}
 
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:  c.level,
+		r.AddAdvice(&storepb.Advice{
+			Status:  r.level,
 			Code:    advisor.CreateIndexUnconcurrently.Int32(),
-			Title:   c.title,
+			Title:   r.title,
 			Content: "Creating indexes will block writes on the table, unless use CONCURRENTLY",
 			StartPosition: &storepb.Position{
 				Line:   int32(ctx.GetStart().GetLine()),
@@ -105,8 +131,8 @@ func (c *indexCreateConcurrentlyChecker) EnterIndexstmt(ctx *parser.IndexstmtCon
 	}
 }
 
-// EnterDropstmt checks DROP INDEX statements
-func (c *indexCreateConcurrentlyChecker) EnterDropstmt(ctx *parser.DropstmtContext) {
+// handleDropstmt checks DROP INDEX statements
+func (r *indexCreateConcurrentlyRule) handleDropstmt(ctx *parser.DropstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -115,10 +141,10 @@ func (c *indexCreateConcurrentlyChecker) EnterDropstmt(ctx *parser.DropstmtConte
 	if ctx.INDEX() != nil {
 		// Check if CONCURRENTLY is used
 		if ctx.CONCURRENTLY() == nil {
-			c.adviceList = append(c.adviceList, &storepb.Advice{
-				Status:  c.level,
+			r.AddAdvice(&storepb.Advice{
+				Status:  r.level,
 				Code:    advisor.DropIndexUnconcurrently.Int32(),
-				Title:   c.title,
+				Title:   r.title,
 				Content: "Droping indexes will block writes on the table, unless use CONCURRENTLY",
 				StartPosition: &storepb.Position{
 					Line:   int32(ctx.GetStart().GetLine()),

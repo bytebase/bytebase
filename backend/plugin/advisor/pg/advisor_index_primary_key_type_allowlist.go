@@ -42,29 +42,43 @@ func (*IndexPrimaryKeyTypeAllowlistAdvisor) Check(_ context.Context, checkCtx ad
 		return nil, err
 	}
 
-	checker := &indexPrimaryKeyTypeAllowlistChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
-		allowlist:                    payload.List,
+	rule := &indexPrimaryKeyTypeAllowlistRule{
+		BaseRule:  BaseRule{level: level, title: string(checkCtx.Rule.Type)},
+		allowlist: payload.List,
 	}
 
+	checker := NewGenericChecker([]Rule{rule})
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type indexPrimaryKeyTypeAllowlistChecker struct {
-	*parser.BasePostgreSQLParserListener
+type indexPrimaryKeyTypeAllowlistRule struct {
+	BaseRule
 
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-	allowlist  []string
+	allowlist []string
 }
 
-// EnterCreatestmt checks CREATE TABLE with inline PRIMARY KEY constraints
-func (c *indexPrimaryKeyTypeAllowlistChecker) EnterCreatestmt(ctx *parser.CreatestmtContext) {
+func (*indexPrimaryKeyTypeAllowlistRule) Name() string {
+	return "index_primary_key_type_allowlist"
+}
+
+func (r *indexPrimaryKeyTypeAllowlistRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Createstmt":
+		r.handleCreatestmt(ctx.(*parser.CreatestmtContext))
+	default:
+		// Do nothing for other node types
+	}
+	return nil
+}
+
+func (*indexPrimaryKeyTypeAllowlistRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+// handleCreatestmt checks CREATE TABLE with inline PRIMARY KEY constraints
+func (r *indexPrimaryKeyTypeAllowlistRule) handleCreatestmt(ctx *parser.CreatestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -80,14 +94,14 @@ func (c *indexPrimaryKeyTypeAllowlistChecker) EnterCreatestmt(ctx *parser.Create
 				colDef := elem.ColumnDef()
 				if colDef.Colid() != nil && colDef.Typename() != nil {
 					columnName := pg.NormalizePostgreSQLColid(colDef.Colid())
-					columnType := c.getTypeName(colDef.Typename())
+					columnType := r.getTypeName(colDef.Typename())
 					columnTypes[columnName] = columnType
 					columnLines[columnName] = colDef.GetStart().GetLine()
 
 					// Check if this column has PRIMARY KEY constraint
-					if c.hasColumnPrimaryKeyConstraint(colDef) {
-						if !c.isTypeAllowed(columnType) {
-							c.addAdvice(columnName, columnType, colDef.GetStart().GetLine())
+					if r.hasColumnPrimaryKeyConstraint(colDef) {
+						if !r.isTypeAllowed(columnType) {
+							r.addAdvice(columnName, columnType, colDef.GetStart().GetLine())
 						}
 					}
 				}
@@ -97,13 +111,13 @@ func (c *indexPrimaryKeyTypeAllowlistChecker) EnterCreatestmt(ctx *parser.Create
 		// Check table-level PRIMARY KEY constraints
 		for _, elem := range allElements {
 			if elem.Tableconstraint() != nil {
-				c.checkTablePrimaryKey(elem.Tableconstraint(), columnTypes, columnLines)
+				r.checkTablePrimaryKey(elem.Tableconstraint(), columnTypes, columnLines)
 			}
 		}
 	}
 }
 
-func (*indexPrimaryKeyTypeAllowlistChecker) hasColumnPrimaryKeyConstraint(colDef parser.IColumnDefContext) bool {
+func (*indexPrimaryKeyTypeAllowlistRule) hasColumnPrimaryKeyConstraint(colDef parser.IColumnDefContext) bool {
 	if colDef.Colquallist() == nil {
 		return false
 	}
@@ -121,7 +135,7 @@ func (*indexPrimaryKeyTypeAllowlistChecker) hasColumnPrimaryKeyConstraint(colDef
 	return false
 }
 
-func (c *indexPrimaryKeyTypeAllowlistChecker) checkTablePrimaryKey(constraint parser.ITableconstraintContext, columnTypes map[string]string, columnLines map[string]int) {
+func (r *indexPrimaryKeyTypeAllowlistRule) checkTablePrimaryKey(constraint parser.ITableconstraintContext, columnTypes map[string]string, columnLines map[string]int) {
 	if constraint == nil || constraint.Constraintelem() == nil {
 		return
 	}
@@ -137,10 +151,10 @@ func (c *indexPrimaryKeyTypeAllowlistChecker) checkTablePrimaryKey(constraint pa
 				if col.Colid() != nil {
 					columnName := pg.NormalizePostgreSQLColid(col.Colid())
 					if columnType, exists := columnTypes[columnName]; exists {
-						if !c.isTypeAllowed(columnType) {
+						if !r.isTypeAllowed(columnType) {
 							// Use the column definition's line, not the constraint's line
 							line := columnLines[columnName]
-							c.addAdvice(columnName, columnType, line)
+							r.addAdvice(columnName, columnType, line)
 						}
 					}
 				}
@@ -149,7 +163,7 @@ func (c *indexPrimaryKeyTypeAllowlistChecker) checkTablePrimaryKey(constraint pa
 	}
 }
 
-func (*indexPrimaryKeyTypeAllowlistChecker) getTypeName(typename parser.ITypenameContext) string {
+func (*indexPrimaryKeyTypeAllowlistRule) getTypeName(typename parser.ITypenameContext) string {
 	if typename == nil {
 		return ""
 	}
@@ -158,16 +172,16 @@ func (*indexPrimaryKeyTypeAllowlistChecker) getTypeName(typename parser.ITypenam
 	return normalizePostgreSQLType(typename.GetText())
 }
 
-func (c *indexPrimaryKeyTypeAllowlistChecker) isTypeAllowed(columnType string) bool {
+func (r *indexPrimaryKeyTypeAllowlistRule) isTypeAllowed(columnType string) bool {
 	// Check if the column type is equivalent to any type in the allowlist
-	return isTypeInList(columnType, c.allowlist)
+	return isTypeInList(columnType, r.allowlist)
 }
 
-func (c *indexPrimaryKeyTypeAllowlistChecker) addAdvice(columnName, columnType string, line int) {
-	c.adviceList = append(c.adviceList, &storepb.Advice{
-		Status:  c.level,
+func (r *indexPrimaryKeyTypeAllowlistRule) addAdvice(columnName, columnType string, line int) {
+	r.AddAdvice(&storepb.Advice{
+		Status:  r.level,
 		Code:    advisor.IndexPKType.Int32(),
-		Title:   c.title,
+		Title:   r.title,
 		Content: fmt.Sprintf("The column %q is one of the primary key, but its type %q is not in allowlist", columnName, columnType),
 		StartPosition: &storepb.Position{
 			Line:   int32(line),

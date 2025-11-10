@@ -45,30 +45,30 @@ func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Contex
 		return nil, err
 	}
 
-	checker := &insertRowLimitChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
-		maxRow:                       payload.Number,
-		driver:                       checkCtx.Driver,
-		ctx:                          ctx,
-		statementsText:               checkCtx.Statements,
-		UsePostgresDatabaseOwner:     checkCtx.UsePostgresDatabaseOwner,
+	rule := &insertRowLimitRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: string(checkCtx.Rule.Type),
+		},
+		maxRow:                   payload.Number,
+		driver:                   checkCtx.Driver,
+		ctx:                      ctx,
+		statementsText:           checkCtx.Statements,
+		UsePostgresDatabaseOwner: checkCtx.UsePostgresDatabaseOwner,
 	}
 
 	if payload.Number > 0 {
+		checker := NewGenericChecker([]Rule{rule})
 		antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
+		return checker.GetAdviceList(), nil
 	}
 
-	return checker.adviceList, nil
+	return nil, nil
 }
 
-type insertRowLimitChecker struct {
-	*parser.BasePostgreSQLParserListener
+type insertRowLimitRule struct {
+	BaseRule
 
-	adviceList               []*storepb.Advice
-	level                    storepb.Advice_Status
-	title                    string
 	maxRow                   int
 	driver                   *sql.DB
 	ctx                      context.Context
@@ -78,7 +78,31 @@ type insertRowLimitChecker struct {
 	UsePostgresDatabaseOwner bool
 }
 
-func (c *insertRowLimitChecker) EnterVariablesetstmt(ctx *parser.VariablesetstmtContext) {
+func (*insertRowLimitRule) Name() string {
+	return "insert_row_limit"
+}
+
+func (r *insertRowLimitRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Variablesetstmt":
+		if c, ok := ctx.(*parser.VariablesetstmtContext); ok {
+			r.handleVariablesetstmt(c)
+		}
+	case "Insertstmt":
+		if c, ok := ctx.(*parser.InsertstmtContext); ok {
+			r.handleInsertstmt(c)
+		}
+	default:
+		// Do nothing for other node types
+	}
+	return nil
+}
+
+func (*insertRowLimitRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+func (r *insertRowLimitRule) handleVariablesetstmt(ctx *parser.VariablesetstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -88,12 +112,12 @@ func (c *insertRowLimitChecker) EnterVariablesetstmt(ctx *parser.Variablesetstmt
 		setRestMore := ctx.Set_rest().Set_rest_more()
 		// Check if this is SET ROLE
 		if setRestMore.ROLE() != nil {
-			c.setRoles = append(c.setRoles, ctx.GetText())
+			r.setRoles = append(r.setRoles, ctx.GetText())
 		}
 	}
 }
 
-func (c *insertRowLimitChecker) EnterInsertstmt(ctx *parser.InsertstmtContext) {
+func (r *insertRowLimitRule) handleInsertstmt(ctx *parser.InsertstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -107,28 +131,28 @@ func (c *insertRowLimitChecker) EnterInsertstmt(ctx *parser.InsertstmtContext) {
 		rowCount := countValueLists(ctx.Insert_rest().Selectstmt())
 		if rowCount > 0 {
 			// This is INSERT ... VALUES
-			if rowCount > c.maxRow {
+			if rowCount > r.maxRow {
 				code = advisor.InsertTooManyRows
 				rows = int64(rowCount)
 			}
-		} else if c.driver != nil {
+		} else if r.driver != nil {
 			// For INSERT ... SELECT, use EXPLAIN
-			if c.explainCount >= common.MaximumLintExplainSize {
+			if r.explainCount >= common.MaximumLintExplainSize {
 				return
 			}
-			c.explainCount++
+			r.explainCount++
 
-			stmtText := extractStatementText(c.statementsText, ctx.GetStart().GetLine(), ctx.GetStop().GetLine())
-			res, err := advisor.Query(c.ctx, advisor.QueryContext{
-				UsePostgresDatabaseOwner: c.UsePostgresDatabaseOwner,
-				PreExecutions:            c.setRoles,
-			}, c.driver, storepb.Engine_POSTGRES, fmt.Sprintf("EXPLAIN %s", stmtText))
+			stmtText := extractStatementText(r.statementsText, ctx.GetStart().GetLine(), ctx.GetStop().GetLine())
+			res, err := advisor.Query(r.ctx, advisor.QueryContext{
+				UsePostgresDatabaseOwner: r.UsePostgresDatabaseOwner,
+				PreExecutions:            r.setRoles,
+			}, r.driver, storepb.Engine_POSTGRES, fmt.Sprintf("EXPLAIN %s", stmtText))
 
 			if err != nil {
-				c.adviceList = append(c.adviceList, &storepb.Advice{
-					Status:  c.level,
+				r.AddAdvice(&storepb.Advice{
+					Status:  r.level,
 					Code:    advisor.InsertTooManyRows.Int32(),
-					Title:   c.title,
+					Title:   r.title,
 					Content: fmt.Sprintf("\"%s\" dry runs failed: %s", stmtText, err.Error()),
 					StartPosition: &storepb.Position{
 						Line:   int32(ctx.GetStart().GetLine()),
@@ -140,10 +164,10 @@ func (c *insertRowLimitChecker) EnterInsertstmt(ctx *parser.InsertstmtContext) {
 
 			rowCount, err := getAffectedRows(res)
 			if err != nil {
-				c.adviceList = append(c.adviceList, &storepb.Advice{
-					Status:  c.level,
+				r.AddAdvice(&storepb.Advice{
+					Status:  r.level,
 					Code:    advisor.Internal.Int32(),
-					Title:   c.title,
+					Title:   r.title,
 					Content: fmt.Sprintf("failed to get row count for \"%s\": %s", stmtText, err.Error()),
 					StartPosition: &storepb.Position{
 						Line:   int32(ctx.GetStart().GetLine()),
@@ -153,7 +177,7 @@ func (c *insertRowLimitChecker) EnterInsertstmt(ctx *parser.InsertstmtContext) {
 				return
 			}
 
-			if rowCount > int64(c.maxRow) {
+			if rowCount > int64(r.maxRow) {
 				code = advisor.InsertTooManyRows
 				rows = rowCount
 			}
@@ -161,12 +185,12 @@ func (c *insertRowLimitChecker) EnterInsertstmt(ctx *parser.InsertstmtContext) {
 	}
 
 	if code != advisor.Ok {
-		stmtText := extractStatementText(c.statementsText, ctx.GetStart().GetLine(), ctx.GetStop().GetLine())
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:  c.level,
+		stmtText := extractStatementText(r.statementsText, ctx.GetStart().GetLine(), ctx.GetStop().GetLine())
+		r.AddAdvice(&storepb.Advice{
+			Status:  r.level,
 			Code:    code.Int32(),
-			Title:   c.title,
-			Content: fmt.Sprintf("The statement \"%s\" inserts %d rows. The count exceeds %d.", stmtText, rows, c.maxRow),
+			Title:   r.title,
+			Content: fmt.Sprintf("The statement \"%s\" inserts %d rows. The count exceeds %d.", stmtText, rows, r.maxRow),
 			StartPosition: &storepb.Position{
 				Line:   int32(ctx.GetStart().GetLine()),
 				Column: 0,

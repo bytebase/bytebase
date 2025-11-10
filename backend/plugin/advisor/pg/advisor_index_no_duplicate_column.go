@@ -37,59 +37,86 @@ func (*IndexNoDuplicateColumnAdvisor) Check(_ context.Context, checkCtx advisor.
 		return nil, err
 	}
 
-	checker := &indexNoDuplicateColumnChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
+	rule := &indexNoDuplicateColumnRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: string(checkCtx.Rule.Type),
+		},
 	}
+
+	checker := NewGenericChecker([]Rule{rule})
 
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type indexNoDuplicateColumnChecker struct {
-	*parser.BasePostgreSQLParserListener
-
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
+type indexNoDuplicateColumnRule struct {
+	BaseRule
 }
 
-// EnterIndexstmt checks CREATE INDEX statements
-func (c *indexNoDuplicateColumnChecker) EnterIndexstmt(ctx *parser.IndexstmtContext) {
+func (*indexNoDuplicateColumnRule) Name() string {
+	return "index_no_duplicate_column"
+}
+
+func (r *indexNoDuplicateColumnRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Indexstmt":
+		r.handleIndexstmt(ctx)
+	case "Createstmt":
+		r.handleCreatestmt(ctx)
+	case "Altertablestmt":
+		r.handleAltertablestmt(ctx)
+	default:
+		// Do nothing for other node types
+	}
+	return nil
+}
+
+func (*indexNoDuplicateColumnRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+func (r *indexNoDuplicateColumnRule) handleIndexstmt(ctx antlr.ParserRuleContext) {
+	indexCtx, ok := ctx.(*parser.IndexstmtContext)
+	if !ok {
+		return
+	}
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
 	// Get index name
 	indexName := ""
-	if ctx.Name() != nil {
-		indexName = pg.NormalizePostgreSQLName(ctx.Name())
+	if indexCtx.Name() != nil {
+		indexName = pg.NormalizePostgreSQLName(indexCtx.Name())
 	}
 
 	// Get table name
 	tableName := ""
-	if ctx.Relation_expr() != nil && ctx.Relation_expr().Qualified_name() != nil {
-		tableName = extractTableName(ctx.Relation_expr().Qualified_name())
+	if indexCtx.Relation_expr() != nil && indexCtx.Relation_expr().Qualified_name() != nil {
+		tableName = extractTableName(indexCtx.Relation_expr().Qualified_name())
 	}
 
 	// Check for duplicate columns in index parameters
-	if ctx.Index_params() != nil {
-		columns := c.extractIndexColumns(ctx.Index_params())
+	if indexCtx.Index_params() != nil {
+		columns := r.extractIndexColumns(indexCtx.Index_params())
 		if dupCol := findDuplicate(columns); dupCol != "" {
-			c.addAdvice("INDEX", indexName, tableName, dupCol, ctx.GetStart().GetLine())
+			r.addAdvice("INDEX", indexName, tableName, dupCol, indexCtx.GetStart().GetLine())
 		}
 	}
 }
 
-// EnterCreatestmt checks CREATE TABLE with inline constraints
-func (c *indexNoDuplicateColumnChecker) EnterCreatestmt(ctx *parser.CreatestmtContext) {
+func (r *indexNoDuplicateColumnRule) handleCreatestmt(ctx antlr.ParserRuleContext) {
+	createCtx, ok := ctx.(*parser.CreatestmtContext)
+	if !ok {
+		return
+	}
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
-	qualifiedNames := ctx.AllQualified_name()
+	qualifiedNames := createCtx.AllQualified_name()
 	if len(qualifiedNames) == 0 {
 		return
 	}
@@ -100,44 +127,47 @@ func (c *indexNoDuplicateColumnChecker) EnterCreatestmt(ctx *parser.CreatestmtCo
 	}
 
 	// Check table-level constraints
-	if ctx.Opttableelementlist() != nil && ctx.Opttableelementlist().Tableelementlist() != nil {
-		allElements := ctx.Opttableelementlist().Tableelementlist().AllTableelement()
+	if createCtx.Opttableelementlist() != nil && createCtx.Opttableelementlist().Tableelementlist() != nil {
+		allElements := createCtx.Opttableelementlist().Tableelementlist().AllTableelement()
 		for _, elem := range allElements {
 			if elem.Tableconstraint() != nil {
-				c.checkTableConstraint(elem.Tableconstraint(), tableName, elem.GetStart().GetLine())
+				r.checkTableConstraint(elem.Tableconstraint(), tableName, elem.GetStart().GetLine())
 			}
 		}
 	}
 }
 
-// EnterAltertablestmt checks ALTER TABLE ADD CONSTRAINT
-func (c *indexNoDuplicateColumnChecker) EnterAltertablestmt(ctx *parser.AltertablestmtContext) {
+func (r *indexNoDuplicateColumnRule) handleAltertablestmt(ctx antlr.ParserRuleContext) {
+	alterCtx, ok := ctx.(*parser.AltertablestmtContext)
+	if !ok {
+		return
+	}
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
-	if ctx.Relation_expr() == nil || ctx.Relation_expr().Qualified_name() == nil {
+	if alterCtx.Relation_expr() == nil || alterCtx.Relation_expr().Qualified_name() == nil {
 		return
 	}
 
-	tableName := extractTableName(ctx.Relation_expr().Qualified_name())
+	tableName := extractTableName(alterCtx.Relation_expr().Qualified_name())
 	if tableName == "" {
 		return
 	}
 
 	// Check ALTER TABLE ADD CONSTRAINT
-	if ctx.Alter_table_cmds() != nil {
-		allCmds := ctx.Alter_table_cmds().AllAlter_table_cmd()
+	if alterCtx.Alter_table_cmds() != nil {
+		allCmds := alterCtx.Alter_table_cmds().AllAlter_table_cmd()
 		for _, cmd := range allCmds {
 			// ADD CONSTRAINT
 			if cmd.ADD_P() != nil && cmd.Tableconstraint() != nil {
-				c.checkTableConstraint(cmd.Tableconstraint(), tableName, ctx.GetStart().GetLine())
+				r.checkTableConstraint(cmd.Tableconstraint(), tableName, alterCtx.GetStart().GetLine())
 			}
 		}
 	}
 }
 
-func (c *indexNoDuplicateColumnChecker) checkTableConstraint(constraint parser.ITableconstraintContext, tableName string, line int) {
+func (r *indexNoDuplicateColumnRule) checkTableConstraint(constraint parser.ITableconstraintContext, tableName string, line int) {
 	if constraint == nil {
 		return
 	}
@@ -155,9 +185,9 @@ func (c *indexNoDuplicateColumnChecker) checkTableConstraint(constraint parser.I
 		// PRIMARY KEY
 		if elem.PRIMARY() != nil && elem.KEY() != nil {
 			if elem.Columnlist() != nil {
-				columns := c.extractColumnList(elem.Columnlist())
+				columns := r.extractColumnList(elem.Columnlist())
 				if dupCol := findDuplicate(columns); dupCol != "" {
-					c.addAdvice("PRIMARY KEY", constraintName, tableName, dupCol, line)
+					r.addAdvice("PRIMARY KEY", constraintName, tableName, dupCol, line)
 				}
 			}
 		}
@@ -165,9 +195,9 @@ func (c *indexNoDuplicateColumnChecker) checkTableConstraint(constraint parser.I
 		// UNIQUE
 		if elem.UNIQUE() != nil {
 			if elem.Columnlist() != nil {
-				columns := c.extractColumnList(elem.Columnlist())
+				columns := r.extractColumnList(elem.Columnlist())
 				if dupCol := findDuplicate(columns); dupCol != "" {
-					c.addAdvice("UNIQUE KEY", constraintName, tableName, dupCol, line)
+					r.addAdvice("UNIQUE KEY", constraintName, tableName, dupCol, line)
 				}
 			}
 		}
@@ -175,16 +205,16 @@ func (c *indexNoDuplicateColumnChecker) checkTableConstraint(constraint parser.I
 		// FOREIGN KEY
 		if elem.FOREIGN() != nil && elem.KEY() != nil {
 			if elem.Columnlist() != nil {
-				columns := c.extractColumnList(elem.Columnlist())
+				columns := r.extractColumnList(elem.Columnlist())
 				if dupCol := findDuplicate(columns); dupCol != "" {
-					c.addAdvice("FOREIGN KEY", constraintName, tableName, dupCol, line)
+					r.addAdvice("FOREIGN KEY", constraintName, tableName, dupCol, line)
 				}
 			}
 		}
 	}
 }
 
-func (*indexNoDuplicateColumnChecker) extractIndexColumns(params parser.IIndex_paramsContext) []string {
+func (*indexNoDuplicateColumnRule) extractIndexColumns(params parser.IIndex_paramsContext) []string {
 	if params == nil {
 		return nil
 	}
@@ -201,7 +231,7 @@ func (*indexNoDuplicateColumnChecker) extractIndexColumns(params parser.IIndex_p
 	return columns
 }
 
-func (*indexNoDuplicateColumnChecker) extractColumnList(columnList parser.IColumnlistContext) []string {
+func (*indexNoDuplicateColumnRule) extractColumnList(columnList parser.IColumnlistContext) []string {
 	if columnList == nil {
 		return nil
 	}
@@ -229,11 +259,11 @@ func findDuplicate(columns []string) string {
 	return ""
 }
 
-func (c *indexNoDuplicateColumnChecker) addAdvice(constraintType, constraintName, tableName, duplicateColumn string, line int) {
-	c.adviceList = append(c.adviceList, &storepb.Advice{
-		Status:  c.level,
+func (r *indexNoDuplicateColumnRule) addAdvice(constraintType, constraintName, tableName, duplicateColumn string, line int) {
+	r.AddAdvice(&storepb.Advice{
+		Status:  r.level,
 		Code:    advisor.DuplicateColumnInIndex.Int32(),
-		Title:   c.title,
+		Title:   r.title,
 		Content: fmt.Sprintf("%s %q has duplicate column %q.%q", constraintType, constraintName, tableName, duplicateColumn),
 		StartPosition: &storepb.Position{
 			Line:   int32(line),
