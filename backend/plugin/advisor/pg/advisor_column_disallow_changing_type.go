@@ -36,28 +36,45 @@ func (*ColumnDisallowChangingTypeAdvisor) Check(_ context.Context, checkCtx advi
 		return nil, err
 	}
 
-	checker := &columnDisallowChangingTypeChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
-		tokens:                       tree.Tokens,
+	rule := &columnDisallowChangingTypeRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: string(checkCtx.Rule.Type),
+		},
+		tokens: tree.Tokens,
 	}
 
+	checker := NewGenericChecker([]Rule{rule})
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type columnDisallowChangingTypeChecker struct {
-	*parser.BasePostgreSQLParserListener
+type columnDisallowChangingTypeRule struct {
+	BaseRule
 
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-	tokens     *antlr.CommonTokenStream
+	tokens *antlr.CommonTokenStream
 }
 
-func (c *columnDisallowChangingTypeChecker) EnterAltertablestmt(ctx *parser.AltertablestmtContext) {
+func (*columnDisallowChangingTypeRule) Name() string {
+	return "column-disallow-changing-type"
+}
+
+func (r *columnDisallowChangingTypeRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Altertablestmt":
+		r.handleAltertablestmt(ctx.(*parser.AltertablestmtContext))
+	default:
+		// Do nothing for other node types
+	}
+	return nil
+}
+
+func (*columnDisallowChangingTypeRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+func (r *columnDisallowChangingTypeRule) handleAltertablestmt(ctx *parser.AltertablestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -72,12 +89,12 @@ func (c *columnDisallowChangingTypeChecker) EnterAltertablestmt(ctx *parser.Alte
 		// ALTER opt_column? colid opt_set_data? TYPE_P typename ...
 		if cmd.ALTER() != nil && cmd.TYPE_P() != nil {
 			// This is an ALTER COLUMN TYPE statement
-			text := c.tokens.GetTextFromRuleContext(ctx)
+			text := r.tokens.GetTextFromRuleContext(ctx)
 
-			c.adviceList = append(c.adviceList, &storepb.Advice{
-				Status:  c.level,
+			r.AddAdvice(&storepb.Advice{
+				Status:  r.level,
 				Code:    advisor.ChangeColumnType.Int32(),
-				Title:   c.title,
+				Title:   r.title,
 				Content: fmt.Sprintf("The statement \"%s\" changes column type", text),
 				StartPosition: &storepb.Position{
 					Line:   int32(ctx.GetStart().GetLine()),

@@ -39,17 +39,20 @@ func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) (
 		return nil, err
 	}
 
-	checker := &columnNoNullChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
-		catalog:                      checkCtx.Catalog,
-		nullableColumns:              make(columnMap),
+	rule := &columnNoNullRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: string(checkCtx.Rule.Type),
+		},
+		catalog:         checkCtx.Catalog,
+		nullableColumns: make(columnMap),
 	}
+
+	checker := NewGenericChecker([]Rule{rule})
 
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
-	return checker.generateAdviceList(), nil
+	return checker.GetAdviceList(), nil
 }
 
 type columnName struct {
@@ -67,21 +70,88 @@ func (c columnName) normalizeTableName() string {
 
 type columnMap map[columnName]int
 
-type columnNoNullChecker struct {
-	*parser.BasePostgreSQLParserListener
+type columnNoNullRule struct {
+	BaseRule
 
-	level           storepb.Advice_Status
-	title           string
 	catalog         *catalog.Finder
 	nullableColumns columnMap
 }
 
-func (c *columnNoNullChecker) EnterCreatestmt(ctx *parser.CreatestmtContext) {
+func (*columnNoNullRule) Name() string {
+	return "CreatestmtAltertablestmt"
+}
+
+func (r *columnNoNullRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Createstmt":
+		if createStmt, ok := ctx.(*parser.CreatestmtContext); ok {
+			r.handleCreatestmt(createStmt)
+		}
+	case "Altertablestmt":
+		if alterStmt, ok := ctx.(*parser.AltertablestmtContext); ok {
+			r.handleAltertablestmt(alterStmt)
+		}
+	default:
+		// Do nothing for other node types
+	}
+	return nil
+}
+
+func (r *columnNoNullRule) OnExit(ctx antlr.ParserRuleContext, _ string) error {
+	// Generate advice when we exit the root node
+	if _, ok := ctx.(*parser.RootContext); ok {
+		var columnList []columnName
+		for column := range r.nullableColumns {
+			columnList = append(columnList, column)
+		}
+
+		if len(columnList) > 0 {
+			// Order it cause the random iteration order in Go
+			slices.SortFunc(columnList, func(i, j columnName) int {
+				if i.schema != j.schema {
+					if i.schema < j.schema {
+						return -1
+					}
+					return 1
+				}
+				if i.table != j.table {
+					if i.table < j.table {
+						return -1
+					}
+					return 1
+				}
+				if i.column < j.column {
+					return -1
+				}
+				if i.column > j.column {
+					return 1
+				}
+				return 0
+			})
+		}
+
+		for _, column := range columnList {
+			r.AddAdvice(&storepb.Advice{
+				Status:  r.level,
+				Code:    advisor.ColumnCannotNull.Int32(),
+				Title:   r.title,
+				Content: fmt.Sprintf("Column %q in %s cannot have NULL value", column.column, column.normalizeTableName()),
+				StartPosition: &storepb.Position{
+					Line:   int32(r.nullableColumns[column]),
+					Column: 0,
+				},
+			})
+		}
+	}
+	return nil
+}
+
+func (r *columnNoNullRule) handleCreatestmt(ctx *parser.CreatestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
-	tableName := c.extractTableName(ctx.AllQualified_name())
+	tableName := r.extractTableName(ctx.AllQualified_name())
 	if tableName == "" {
 		return
 	}
@@ -96,22 +166,22 @@ func (c *columnNoNullChecker) EnterCreatestmt(ctx *parser.CreatestmtContext) {
 				if colDef.Colid() != nil {
 					columnName := pg.NormalizePostgreSQLColid(colDef.Colid())
 					// Add column as nullable by default
-					c.addColumn("public", tableName, columnName, colDef.GetStart().GetLine())
+					r.addColumn("public", tableName, columnName, colDef.GetStart().GetLine())
 
 					// Check column constraints for NOT NULL or PRIMARY KEY
-					c.removeColumnByColConstraints("public", tableName, colDef)
+					r.removeColumnByColConstraints("public", tableName, colDef)
 				}
 			}
 
 			// Table constraint (like PRIMARY KEY (id))
 			if elem.Tableconstraint() != nil {
-				c.removeColumnByTableConstraint("public", tableName, elem.Tableconstraint())
+				r.removeColumnByTableConstraint("public", tableName, elem.Tableconstraint())
 			}
 		}
 	}
 }
 
-func (c *columnNoNullChecker) EnterAltertablestmt(ctx *parser.AltertablestmtContext) {
+func (r *columnNoNullRule) handleAltertablestmt(ctx *parser.AltertablestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -131,8 +201,8 @@ func (c *columnNoNullChecker) EnterAltertablestmt(ctx *parser.AltertablestmtCont
 				colDef := cmd.ColumnDef()
 				if colDef.Colid() != nil {
 					columnName := pg.NormalizePostgreSQLColid(colDef.Colid())
-					c.addColumn("public", tableName, columnName, colDef.GetStart().GetLine())
-					c.removeColumnByColConstraints("public", tableName, colDef)
+					r.addColumn("public", tableName, columnName, colDef.GetStart().GetLine())
+					r.removeColumnByColConstraints("public", tableName, colDef)
 				}
 			}
 
@@ -141,7 +211,7 @@ func (c *columnNoNullChecker) EnterAltertablestmt(ctx *parser.AltertablestmtCont
 				allColids := cmd.AllColid()
 				if len(allColids) > 0 {
 					columnName := pg.NormalizePostgreSQLColid(allColids[0])
-					c.removeColumn("public", tableName, columnName)
+					r.removeColumn("public", tableName, columnName)
 				}
 			}
 
@@ -150,19 +220,19 @@ func (c *columnNoNullChecker) EnterAltertablestmt(ctx *parser.AltertablestmtCont
 				allColids := cmd.AllColid()
 				if len(allColids) > 0 {
 					columnName := pg.NormalizePostgreSQLColid(allColids[0])
-					c.addColumn("public", tableName, columnName, cmd.GetStart().GetLine())
+					r.addColumn("public", tableName, columnName, cmd.GetStart().GetLine())
 				}
 			}
 
 			// ADD table constraint
 			if cmd.ADD_P() != nil && cmd.Tableconstraint() != nil {
-				c.removeColumnByTableConstraint("public", tableName, cmd.Tableconstraint())
+				r.removeColumnByTableConstraint("public", tableName, cmd.Tableconstraint())
 			}
 		}
 	}
 }
 
-func (*columnNoNullChecker) extractTableName(qualifiedNames []parser.IQualified_nameContext) string {
+func (*columnNoNullRule) extractTableName(qualifiedNames []parser.IQualified_nameContext) string {
 	if len(qualifiedNames) == 0 {
 		return ""
 	}
@@ -170,21 +240,21 @@ func (*columnNoNullChecker) extractTableName(qualifiedNames []parser.IQualified_
 	return extractTableName(qualifiedNames[0])
 }
 
-func (c *columnNoNullChecker) addColumn(schema, table, column string, line int) {
+func (r *columnNoNullRule) addColumn(schema, table, column string, line int) {
 	if schema == "" {
 		schema = "public"
 	}
-	c.nullableColumns[columnName{schema: schema, table: table, column: column}] = line
+	r.nullableColumns[columnName{schema: schema, table: table, column: column}] = line
 }
 
-func (c *columnNoNullChecker) removeColumn(schema, table, column string) {
+func (r *columnNoNullRule) removeColumn(schema, table, column string) {
 	if schema == "" {
 		schema = "public"
 	}
-	delete(c.nullableColumns, columnName{schema: schema, table: table, column: column})
+	delete(r.nullableColumns, columnName{schema: schema, table: table, column: column})
 }
 
-func (c *columnNoNullChecker) removeColumnByColConstraints(schema, table string, colDef parser.IColumnDefContext) {
+func (r *columnNoNullRule) removeColumnByColConstraints(schema, table string, colDef parser.IColumnDefContext) {
 	if colDef.Colquallist() == nil {
 		return
 	}
@@ -200,19 +270,19 @@ func (c *columnNoNullChecker) removeColumnByColConstraints(schema, table string,
 
 		// NOT NULL constraint
 		if elem.NOT() != nil && elem.NULL_P() != nil {
-			c.removeColumn(schema, table, columnName)
+			r.removeColumn(schema, table, columnName)
 			return
 		}
 
 		// PRIMARY KEY constraint
 		if elem.PRIMARY() != nil && elem.KEY() != nil {
-			c.removeColumn(schema, table, columnName)
+			r.removeColumn(schema, table, columnName)
 			return
 		}
 	}
 }
 
-func (c *columnNoNullChecker) removeColumnByTableConstraint(schema, table string, constraint parser.ITableconstraintContext) {
+func (r *columnNoNullRule) removeColumnByTableConstraint(schema, table string, constraint parser.ITableconstraintContext) {
 	if constraint.Constraintelem() == nil {
 		return
 	}
@@ -224,7 +294,7 @@ func (c *columnNoNullChecker) removeColumnByTableConstraint(schema, table string
 		allColumnElems := elem.Columnlist().AllColumnElem()
 		for _, columnElem := range allColumnElems {
 			if columnElem.Colid() != nil {
-				c.removeColumn(schema, table, pg.NormalizePostgreSQLColid(columnElem.Colid()))
+				r.removeColumn(schema, table, pg.NormalizePostgreSQLColid(columnElem.Colid()))
 			}
 		}
 		return
@@ -236,67 +306,18 @@ func (c *columnNoNullChecker) removeColumnByTableConstraint(schema, table string
 		if existingIndex.Name() != nil {
 			indexName := pg.NormalizePostgreSQLName(existingIndex.Name())
 			// Try to find index in catalog
-			if c.catalog != nil {
-				_, index := c.catalog.Origin.FindIndex(&catalog.IndexFind{
+			if r.catalog != nil {
+				_, index := r.catalog.Origin.FindIndex(&catalog.IndexFind{
 					SchemaName: schema,
 					TableName:  table,
 					IndexName:  indexName,
 				})
 				if index != nil {
 					for _, expression := range index.ExpressionList() {
-						c.removeColumn(schema, table, expression)
+						r.removeColumn(schema, table, expression)
 					}
 				}
 			}
 		}
 	}
-}
-
-func (c *columnNoNullChecker) generateAdviceList() []*storepb.Advice {
-	var adviceList []*storepb.Advice
-	var columnList []columnName
-
-	for column := range c.nullableColumns {
-		columnList = append(columnList, column)
-	}
-
-	if len(columnList) > 0 {
-		// Order it cause the random iteration order in Go
-		slices.SortFunc(columnList, func(i, j columnName) int {
-			if i.schema != j.schema {
-				if i.schema < j.schema {
-					return -1
-				}
-				return 1
-			}
-			if i.table != j.table {
-				if i.table < j.table {
-					return -1
-				}
-				return 1
-			}
-			if i.column < j.column {
-				return -1
-			}
-			if i.column > j.column {
-				return 1
-			}
-			return 0
-		})
-	}
-
-	for _, column := range columnList {
-		adviceList = append(adviceList, &storepb.Advice{
-			Status:  c.level,
-			Code:    advisor.ColumnCannotNull.Int32(),
-			Title:   c.title,
-			Content: fmt.Sprintf("Column %q in %s cannot have NULL value", column.column, column.normalizeTableName()),
-			StartPosition: &storepb.Position{
-				Line:   int32(c.nullableColumns[column]),
-				Column: 0,
-			},
-		})
-	}
-
-	return adviceList
 }
