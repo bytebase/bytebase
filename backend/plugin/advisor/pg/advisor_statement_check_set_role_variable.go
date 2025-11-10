@@ -33,44 +33,65 @@ func (*StatementCheckSetRoleVariable) Check(_ context.Context, checkCtx advisor.
 		return nil, err
 	}
 
-	checker := &statementCheckSetRoleVariableChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
+	rule := &StatementCheckSetRoleVariableRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: string(checkCtx.Rule.Type),
+		},
 	}
 
+	checker := NewGenericChecker([]Rule{rule})
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
-	if !checker.hasSetRole {
-		return []*storepb.Advice{{
+	if !rule.hasSetRole {
+		rule.AddAdvice(&storepb.Advice{
 			Status:        level,
 			Code:          advisor.StatementCheckSetRoleVariable.Int32(),
-			Title:         checker.title,
+			Title:         rule.title,
 			Content:       "No SET ROLE statement found.",
 			StartPosition: nil,
-		}}, nil
+		})
 	}
 
-	return nil, nil
+	return checker.GetAdviceList(), nil
 }
 
-type statementCheckSetRoleVariableChecker struct {
-	*parser.BasePostgreSQLParserListener
+type StatementCheckSetRoleVariableRule struct {
+	BaseRule
 
-	level           storepb.Advice_Status
-	title           string
 	hasSetRole      bool
 	foundNonSetStmt bool
 }
 
-// EnterVariablesetstmt handles SET statements
-func (c *statementCheckSetRoleVariableChecker) EnterVariablesetstmt(ctx *parser.VariablesetstmtContext) {
+// Name returns the rule name.
+func (*StatementCheckSetRoleVariableRule) Name() string {
+	return "statement.check-set-role-variable"
+}
+
+// OnEnter is called when entering a parse tree node.
+func (r *StatementCheckSetRoleVariableRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Variablesetstmt":
+		r.handleVariablesetstmt(ctx.(*parser.VariablesetstmtContext))
+	default:
+		r.handleEveryRule(ctx)
+	}
+	return nil
+}
+
+// OnExit is called when exiting a parse tree node.
+func (*StatementCheckSetRoleVariableRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+// handleVariablesetstmt handles SET statements
+func (r *StatementCheckSetRoleVariableRule) handleVariablesetstmt(ctx *parser.VariablesetstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
 	// If we already found a non-SET statement, skip this
-	if c.foundNonSetStmt {
+	if r.foundNonSetStmt {
 		return
 	}
 
@@ -79,19 +100,19 @@ func (c *statementCheckSetRoleVariableChecker) EnterVariablesetstmt(ctx *parser.
 	if setRest != nil {
 		setRestMore := setRest.Set_rest_more()
 		if setRestMore != nil && setRestMore.ROLE() != nil {
-			c.hasSetRole = true
+			r.hasSetRole = true
 		}
 	}
 }
 
-// EnterEveryRule is called for every rule entry to detect non-SET statements
-func (c *statementCheckSetRoleVariableChecker) EnterEveryRule(ctx antlr.ParserRuleContext) {
+// handleEveryRule is called for every rule entry to detect non-SET statements
+func (r *StatementCheckSetRoleVariableRule) handleEveryRule(ctx antlr.ParserRuleContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
 	// If we already found a non-SET statement, no need to continue checking
-	if c.foundNonSetStmt {
+	if r.foundNonSetStmt {
 		return
 	}
 
@@ -105,7 +126,7 @@ func (c *statementCheckSetRoleVariableChecker) EnterEveryRule(ctx antlr.ParserRu
 			return
 		default:
 			// This is a non-SET statement
-			c.foundNonSetStmt = true
+			r.foundNonSetStmt = true
 		}
 	}
 }

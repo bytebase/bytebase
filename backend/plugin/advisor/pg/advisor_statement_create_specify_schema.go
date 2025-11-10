@@ -33,42 +33,63 @@ func (*StatementCreateSpecifySchema) Check(_ context.Context, checkCtx advisor.C
 		return nil, err
 	}
 
-	checker := &statementCreateSpecifySchemaChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
+	rule := &statementCreateSpecifySchemaRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: string(checkCtx.Rule.Type),
+		},
 	}
 
+	checker := NewGenericChecker([]Rule{rule})
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type statementCreateSpecifySchemaChecker struct {
-	*parser.BasePostgreSQLParserListener
-
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
+type statementCreateSpecifySchemaRule struct {
+	BaseRule
 }
 
-// EnterCreatestmt handles CREATE TABLE
-func (c *statementCreateSpecifySchemaChecker) EnterCreatestmt(ctx *parser.CreatestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
+func (*statementCreateSpecifySchemaRule) Name() string {
+	return "statement_create_specify_schema"
+}
+
+func (r *statementCreateSpecifySchemaRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Createstmt":
+		r.handleCreatestmt(ctx)
+	default:
+		// Do nothing for other node types
+	}
+	return nil
+}
+
+func (*statementCreateSpecifySchemaRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+// handleCreatestmt handles CREATE TABLE
+func (r *statementCreateSpecifySchemaRule) handleCreatestmt(ctx antlr.ParserRuleContext) {
+	createstmtCtx, ok := ctx.(*parser.CreatestmtContext)
+	if !ok {
 		return
 	}
 
-	allQualifiedNames := ctx.AllQualified_name()
+	if !isTopLevel(createstmtCtx.GetParent()) {
+		return
+	}
+
+	allQualifiedNames := createstmtCtx.AllQualified_name()
 	if len(allQualifiedNames) > 0 {
 		schemaName := extractSchemaName(allQualifiedNames[0])
 		if schemaName == "" {
-			c.adviceList = append(c.adviceList, &storepb.Advice{
-				Status:  c.level,
+			r.AddAdvice(&storepb.Advice{
+				Status:  r.level,
 				Code:    advisor.StatementCreateWithoutSchemaName.Int32(),
-				Title:   c.title,
+				Title:   r.title,
 				Content: "Table schema should be specified.",
 				StartPosition: &storepb.Position{
-					Line:   int32(ctx.GetStart().GetLine()),
+					Line:   int32(createstmtCtx.GetStart().GetLine()),
 					Column: 0,
 				},
 			})

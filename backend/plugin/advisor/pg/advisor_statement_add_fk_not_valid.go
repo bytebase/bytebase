@@ -35,36 +35,56 @@ func (*StatementAddFKNotValidAdvisor) Check(_ context.Context, checkCtx advisor.
 		return nil, err
 	}
 
-	checker := &statementAddFKNotValidChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
+	rule := &statementAddFKNotValidRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: string(checkCtx.Rule.Type),
+		},
 	}
 
+	checker := NewGenericChecker([]Rule{rule})
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type statementAddFKNotValidChecker struct {
-	*parser.BasePostgreSQLParserListener
-
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
+type statementAddFKNotValidRule struct {
+	BaseRule
 }
 
-// EnterAltertablestmt handles ALTER TABLE ADD CONSTRAINT FOREIGN KEY
-func (c *statementAddFKNotValidChecker) EnterAltertablestmt(ctx *parser.AltertablestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
+func (*statementAddFKNotValidRule) Name() string {
+	return "statement_add_fk_not_valid"
+}
+
+func (r *statementAddFKNotValidRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Altertablestmt":
+		r.handleAltertablestmt(ctx)
+	default:
+		// Do nothing for other node types
+	}
+	return nil
+}
+
+func (*statementAddFKNotValidRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+func (r *statementAddFKNotValidRule) handleAltertablestmt(ctx antlr.ParserRuleContext) {
+	altertablestmtCtx, ok := ctx.(*parser.AltertablestmtContext)
+	if !ok {
 		return
 	}
 
-	if ctx.Alter_table_cmds() == nil {
+	if !isTopLevel(altertablestmtCtx.GetParent()) {
 		return
 	}
 
-	allCmds := ctx.Alter_table_cmds().AllAlter_table_cmd()
+	if altertablestmtCtx.Alter_table_cmds() == nil {
+		return
+	}
+
+	allCmds := altertablestmtCtx.Alter_table_cmds().AllAlter_table_cmd()
 	for _, cmd := range allCmds {
 		// Check for ADD + something
 		if cmd.ADD_P() == nil {
@@ -102,13 +122,13 @@ func (c *statementAddFKNotValidChecker) EnterAltertablestmt(ctx *parser.Altertab
 
 		// If NOT VALID is not present, this is a problem
 		if !hasNotValid {
-			c.adviceList = append(c.adviceList, &storepb.Advice{
-				Status:  c.level,
+			r.AddAdvice(&storepb.Advice{
+				Status:  r.level,
 				Code:    advisor.StatementAddFKWithValidation.Int32(),
-				Title:   c.title,
+				Title:   r.title,
 				Content: "Adding foreign keys with validation will block reads and writes. You can add check foreign keys not valid and then validate separately",
 				StartPosition: &storepb.Position{
-					Line:   int32(ctx.GetStart().GetLine()),
+					Line:   int32(altertablestmtCtx.GetStart().GetLine()),
 					Column: 0,
 				},
 			})

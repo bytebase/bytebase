@@ -44,27 +44,26 @@ func (*NamingUKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 		return nil, err
 	}
 
-	checker := &namingUKConventionChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
-		format:                       format,
-		maxLength:                    maxLength,
-		templateList:                 templateList,
-		catalog:                      checkCtx.Catalog,
+	rule := &namingUKConventionRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: string(checkCtx.Rule.Type),
+		},
+		format:       format,
+		maxLength:    maxLength,
+		templateList: templateList,
+		catalog:      checkCtx.Catalog,
 	}
 
+	checker := NewGenericChecker([]Rule{rule})
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type namingUKConventionChecker struct {
-	*parser.BasePostgreSQLParserListener
+type namingUKConventionRule struct {
+	BaseRule
 
-	adviceList   []*storepb.Advice
-	level        storepb.Advice_Status
-	title        string
 	format       string
 	maxLength    int
 	templateList []string
@@ -79,8 +78,32 @@ type indexMetaData struct {
 	metaData  map[string]string
 }
 
-// EnterIndexstmt handles CREATE UNIQUE INDEX statements
-func (c *namingUKConventionChecker) EnterIndexstmt(ctx *parser.IndexstmtContext) {
+func (*namingUKConventionRule) Name() string {
+	return "naming-unique-key-convention"
+}
+
+func (r *namingUKConventionRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Indexstmt":
+		r.handleIndexstmt(ctx.(*parser.IndexstmtContext))
+	case "Createstmt":
+		r.handleCreatestmt(ctx.(*parser.CreatestmtContext))
+	case "Altertablestmt":
+		r.handleAltertablestmt(ctx.(*parser.AltertablestmtContext))
+	case "Renamestmt":
+		r.handleRenamestmt(ctx.(*parser.RenamestmtContext))
+	default:
+		// Do nothing for other node types
+	}
+	return nil
+}
+
+func (*namingUKConventionRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+// handleIndexstmt handles CREATE UNIQUE INDEX statements
+func (r *namingUKConventionRule) handleIndexstmt(ctx *parser.IndexstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -117,11 +140,11 @@ func (c *namingUKConventionChecker) EnterIndexstmt(ctx *parser.IndexstmtContext)
 		advisor.TableNameTemplateToken:  tableName,
 	}
 
-	c.checkUniqueKeyName(indexName, tableName, metaData, ctx.GetStart().GetLine())
+	r.checkUniqueKeyName(indexName, tableName, metaData, ctx.GetStart().GetLine())
 }
 
-// EnterCreatestmt handles CREATE TABLE with UNIQUE constraints
-func (c *namingUKConventionChecker) EnterCreatestmt(ctx *parser.CreatestmtContext) {
+// handleCreatestmt handles CREATE TABLE with UNIQUE constraints
+func (r *namingUKConventionRule) handleCreatestmt(ctx *parser.CreatestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -141,18 +164,18 @@ func (c *namingUKConventionChecker) EnterCreatestmt(ctx *parser.CreatestmtContex
 		allElements := ctx.Opttableelementlist().Tableelementlist().AllTableelement()
 		for _, elem := range allElements {
 			if elem.Tableconstraint() != nil {
-				c.checkTableConstraint(elem.Tableconstraint(), tableName, elem.GetStart().GetLine())
+				r.checkTableConstraint(elem.Tableconstraint(), tableName, elem.GetStart().GetLine())
 			}
 			// Check column-level constraints
 			if elem.ColumnDef() != nil {
-				c.checkColumnDef(elem.ColumnDef(), tableName)
+				r.checkColumnDef(elem.ColumnDef(), tableName)
 			}
 		}
 	}
 }
 
-// EnterAltertablestmt handles ALTER TABLE statements
-func (c *namingUKConventionChecker) EnterAltertablestmt(ctx *parser.AltertablestmtContext) {
+// handleAltertablestmt handles ALTER TABLE statements
+func (r *namingUKConventionRule) handleAltertablestmt(ctx *parser.AltertablestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -171,22 +194,22 @@ func (c *namingUKConventionChecker) EnterAltertablestmt(ctx *parser.Altertablest
 		for _, cmd := range allCmds {
 			// ADD CONSTRAINT
 			if cmd.ADD_P() != nil && cmd.Tableconstraint() != nil {
-				c.checkTableConstraint(cmd.Tableconstraint(), tableName, ctx.GetStart().GetLine())
+				r.checkTableConstraint(cmd.Tableconstraint(), tableName, ctx.GetStart().GetLine())
 			}
 			// ADD COLUMN with constraints
 			if cmd.ADD_P() != nil && cmd.ColumnDef() != nil {
-				c.checkColumnDef(cmd.ColumnDef(), tableName)
+				r.checkColumnDef(cmd.ColumnDef(), tableName)
 			}
 		}
 	}
 
-	// Note: ALTER TABLE ... RENAME CONSTRAINT is handled in EnterRenamestmt
+	// Note: ALTER TABLE ... RENAME CONSTRAINT is handled in handleRenamestmt
 	// because PostgreSQL parser treats "ALTER TABLE t RENAME CONSTRAINT old TO new"
 	// as a rename statement, not as an alter_table_cmd
 }
 
-// EnterRenamestmt handles ALTER INDEX ... RENAME TO and ALTER TABLE ... RENAME CONSTRAINT statements
-func (c *namingUKConventionChecker) EnterRenamestmt(ctx *parser.RenamestmtContext) {
+// handleRenamestmt handles ALTER INDEX ... RENAME TO and ALTER TABLE ... RENAME CONSTRAINT statements
+func (r *namingUKConventionRule) handleRenamestmt(ctx *parser.RenamestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -211,10 +234,10 @@ func (c *namingUKConventionChecker) EnterRenamestmt(ctx *parser.RenamestmtContex
 		newIndexName := pgparser.NormalizePostgreSQLName(allNames[0])
 
 		// Look up the index in catalog to determine if it's a unique key
-		if c.catalog != nil && oldIndexName != "" {
-			tableName, index := c.findIndex("", "", oldIndexName)
+		if r.catalog != nil && oldIndexName != "" {
+			tableName, index := r.findIndex("", "", oldIndexName)
 			if index != nil && index.Unique() && !index.Primary() {
-				c.checkUniqueKeyName(newIndexName, tableName, map[string]string{
+				r.checkUniqueKeyName(newIndexName, tableName, map[string]string{
 					advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList(), "_"),
 					advisor.TableNameTemplateToken:  tableName,
 				}, ctx.GetStart().GetLine())
@@ -223,7 +246,7 @@ func (c *namingUKConventionChecker) EnterRenamestmt(ctx *parser.RenamestmtContex
 	}
 
 	// Check for ALTER TABLE ... RENAME CONSTRAINT
-	if ctx.CONSTRAINT() != nil && ctx.TO() != nil && c.catalog != nil {
+	if ctx.CONSTRAINT() != nil && ctx.TO() != nil && r.catalog != nil {
 		allNames := ctx.AllName()
 		if len(allNames) >= 2 {
 			oldConstraintName := pgparser.NormalizePostgreSQLName(allNames[0])
@@ -237,19 +260,19 @@ func (c *namingUKConventionChecker) EnterRenamestmt(ctx *parser.RenamestmtContex
 			}
 
 			// Check if this is a unique key constraint in catalog
-			foundTableName, index := c.findIndex(schemaName, tableName, oldConstraintName)
+			foundTableName, index := r.findIndex(schemaName, tableName, oldConstraintName)
 			if index != nil && index.Unique() && !index.Primary() {
 				metaData := map[string]string{
 					advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList(), "_"),
 					advisor.TableNameTemplateToken:  foundTableName,
 				}
-				c.checkUniqueKeyName(newConstraintName, foundTableName, metaData, ctx.GetStart().GetLine())
+				r.checkUniqueKeyName(newConstraintName, foundTableName, metaData, ctx.GetStart().GetLine())
 			}
 		}
 	}
 }
 
-func (c *namingUKConventionChecker) checkTableConstraint(constraint parser.ITableconstraintContext, tableName string, line int) {
+func (r *namingUKConventionRule) checkTableConstraint(constraint parser.ITableconstraintContext, tableName string, line int) {
 	if constraint == nil {
 		return
 	}
@@ -276,7 +299,7 @@ func (c *namingUKConventionChecker) checkTableConstraint(constraint parser.ITabl
 			} else if elem.Existingindex() != nil && elem.Existingindex().Name() != nil {
 				// Handle UNIQUE USING INDEX - the column list is in the existing index
 				indexName := pgparser.NormalizePostgreSQLName(elem.Existingindex().Name())
-				foundTableName, index := c.findIndex("", tableName, indexName)
+				foundTableName, index := r.findIndex("", tableName, indexName)
 				if index != nil {
 					columnList = index.ExpressionList()
 					tableName = foundTableName
@@ -289,13 +312,13 @@ func (c *namingUKConventionChecker) checkTableConstraint(constraint parser.ITabl
 					advisor.ColumnListTemplateToken: strings.Join(columnList, "_"),
 					advisor.TableNameTemplateToken:  tableName,
 				}
-				c.checkUniqueKeyName(constraintName, tableName, metaData, line)
+				r.checkUniqueKeyName(constraintName, tableName, metaData, line)
 			}
 		}
 	}
 }
 
-func (c *namingUKConventionChecker) checkColumnDef(columndef parser.IColumnDefContext, tableName string) {
+func (r *namingUKConventionRule) checkColumnDef(columndef parser.IColumnDefContext, tableName string) {
 	if columndef == nil {
 		return
 	}
@@ -325,7 +348,7 @@ func (c *namingUKConventionChecker) checkColumnDef(columndef parser.IColumnDefCo
 							advisor.ColumnListTemplateToken: colName,
 							advisor.TableNameTemplateToken:  tableName,
 						}
-						c.checkUniqueKeyName(constraintName, tableName, metaData, qual.GetStart().GetLine())
+						r.checkUniqueKeyName(constraintName, tableName, metaData, qual.GetStart().GetLine())
 					}
 				}
 			}
@@ -333,11 +356,11 @@ func (c *namingUKConventionChecker) checkColumnDef(columndef parser.IColumnDefCo
 	}
 }
 
-func (c *namingUKConventionChecker) checkUniqueKeyName(indexName, tableName string, metaData map[string]string, line int) {
-	regex, err := c.getTemplateRegexp(metaData)
+func (r *namingUKConventionRule) checkUniqueKeyName(indexName, tableName string, metaData map[string]string, line int) {
+	regex, err := r.getTemplateRegexp(metaData)
 	if err != nil {
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:  c.level,
+		r.AddAdvice(&storepb.Advice{
+			Status:  r.level,
 			Code:    advisor.Internal.Int32(),
 			Title:   "Internal error for unique key naming convention rule",
 			Content: fmt.Sprintf("Failed to compile regex for unique key naming convention: %v", err),
@@ -346,10 +369,10 @@ func (c *namingUKConventionChecker) checkUniqueKeyName(indexName, tableName stri
 	}
 
 	if !regex.MatchString(indexName) {
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:  c.level,
+		r.AddAdvice(&storepb.Advice{
+			Status:  r.level,
 			Code:    advisor.NamingUKConventionMismatch.Int32(),
-			Title:   c.title,
+			Title:   r.title,
 			Content: fmt.Sprintf(`Unique key in table "%s" mismatches the naming convention, expect %q but found "%s"`, tableName, regex, indexName),
 			StartPosition: &storepb.Position{
 				Line:   int32(line),
@@ -358,12 +381,12 @@ func (c *namingUKConventionChecker) checkUniqueKeyName(indexName, tableName stri
 		})
 	}
 
-	if c.maxLength > 0 && len(indexName) > c.maxLength {
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:  c.level,
+	if r.maxLength > 0 && len(indexName) > r.maxLength {
+		r.AddAdvice(&storepb.Advice{
+			Status:  r.level,
 			Code:    advisor.NamingUKConventionMismatch.Int32(),
-			Title:   c.title,
-			Content: fmt.Sprintf(`Unique key "%s" in table "%s" mismatches the naming convention, its length should be within %d characters`, indexName, tableName, c.maxLength),
+			Title:   r.title,
+			Content: fmt.Sprintf(`Unique key "%s" in table "%s" mismatches the naming convention, its length should be within %d characters`, indexName, tableName, r.maxLength),
 			StartPosition: &storepb.Position{
 				Line:   int32(line),
 				Column: 0,
@@ -372,9 +395,9 @@ func (c *namingUKConventionChecker) checkUniqueKeyName(indexName, tableName stri
 	}
 }
 
-func (c *namingUKConventionChecker) getTemplateRegexp(tokens map[string]string) (*regexp.Regexp, error) {
-	template := c.format
-	for _, key := range c.templateList {
+func (r *namingUKConventionRule) getTemplateRegexp(tokens map[string]string) (*regexp.Regexp, error) {
+	template := r.format
+	for _, key := range r.templateList {
 		if token, ok := tokens[key]; ok {
 			template = strings.ReplaceAll(template, key, token)
 		}
@@ -383,11 +406,11 @@ func (c *namingUKConventionChecker) getTemplateRegexp(tokens map[string]string) 
 }
 
 // findIndex returns index found in catalogs, nil if not found.
-func (c *namingUKConventionChecker) findIndex(schemaName string, tableName string, indexName string) (string, *catalog.IndexState) {
-	if c.catalog == nil {
+func (r *namingUKConventionRule) findIndex(schemaName string, tableName string, indexName string) (string, *catalog.IndexState) {
+	if r.catalog == nil {
 		return "", nil
 	}
-	return c.catalog.Origin.FindIndex(&catalog.IndexFind{
+	return r.catalog.Origin.FindIndex(&catalog.IndexFind{
 		SchemaName: normalizeSchemaName(schemaName),
 		TableName:  tableName,
 		IndexName:  indexName,
