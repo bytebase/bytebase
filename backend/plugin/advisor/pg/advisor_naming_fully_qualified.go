@@ -39,78 +39,137 @@ func (*FullyQualifiedObjectNameAdvisor) Check(_ context.Context, checkCtx adviso
 		return nil, err
 	}
 
-	checker := &fullyQualifiedObjectNameChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
-		dbSchema:                     checkCtx.DBSchema,
-		statementsText:               checkCtx.Statements,
+	rule := &fullyQualifiedObjectNameRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: string(checkCtx.Rule.Type),
+		},
+		dbSchema:       checkCtx.DBSchema,
+		statementsText: checkCtx.Statements,
 	}
 
+	checker := NewGenericChecker([]Rule{rule})
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type fullyQualifiedObjectNameChecker struct {
-	*parser.BasePostgreSQLParserListener
+type fullyQualifiedObjectNameRule struct {
+	BaseRule
 
-	adviceList     []*storepb.Advice
-	level          storepb.Advice_Status
-	title          string
 	dbSchema       *storepb.DatabaseSchemaMetadata
 	statementsText string
 }
 
-// EnterCreatestmt handles CREATE TABLE
-func (c *fullyQualifiedObjectNameChecker) EnterCreatestmt(ctx *parser.CreatestmtContext) {
+func (*fullyQualifiedObjectNameRule) Name() string {
+	return "naming_fully_qualified"
+}
+
+func (r *fullyQualifiedObjectNameRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Createstmt":
+		if c, ok := ctx.(*parser.CreatestmtContext); ok {
+			r.handleCreatestmt(c)
+		}
+	case "Createseqstmt":
+		if c, ok := ctx.(*parser.CreateseqstmtContext); ok {
+			r.handleCreateseqstmt(c)
+		}
+	case "Createtrigstmt":
+		if c, ok := ctx.(*parser.CreatetrigstmtContext); ok {
+			r.handleCreatetrigstmt(c)
+		}
+	case "Indexstmt":
+		if c, ok := ctx.(*parser.IndexstmtContext); ok {
+			r.handleIndexstmt(c)
+		}
+	case "Dropstmt":
+		if c, ok := ctx.(*parser.DropstmtContext); ok {
+			r.handleDropstmt(c)
+		}
+	case "Altertablestmt":
+		if c, ok := ctx.(*parser.AltertablestmtContext); ok {
+			r.handleAltertablestmt(c)
+		}
+	case "Alterseqstmt":
+		if c, ok := ctx.(*parser.AlterseqstmtContext); ok {
+			r.handleAlterseqstmt(c)
+		}
+	case "Renamestmt":
+		if c, ok := ctx.(*parser.RenamestmtContext); ok {
+			r.handleRenamestmt(c)
+		}
+	case "Insertstmt":
+		if c, ok := ctx.(*parser.InsertstmtContext); ok {
+			r.handleInsertstmt(c)
+		}
+	case "Updatestmt":
+		if c, ok := ctx.(*parser.UpdatestmtContext); ok {
+			r.handleUpdatestmt(c)
+		}
+	case "Selectstmt":
+		if c, ok := ctx.(*parser.SelectstmtContext); ok {
+			r.handleSelectstmt(c)
+		}
+	default:
+		// Do nothing for other node types
+	}
+	return nil
+}
+
+func (*fullyQualifiedObjectNameRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+// handleCreatestmt handles CREATE TABLE
+func (r *fullyQualifiedObjectNameRule) handleCreatestmt(ctx *parser.CreatestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
 	allQualifiedNames := ctx.AllQualified_name()
 	if len(allQualifiedNames) > 0 {
-		c.checkQualifiedName(allQualifiedNames[0], ctx.GetStop().GetLine())
+		r.checkQualifiedName(allQualifiedNames[0], ctx.GetStop().GetLine())
 	}
 }
 
-// EnterCreateseqstmt handles CREATE SEQUENCE
-func (c *fullyQualifiedObjectNameChecker) EnterCreateseqstmt(ctx *parser.CreateseqstmtContext) {
+// handleCreateseqstmt handles CREATE SEQUENCE
+func (r *fullyQualifiedObjectNameRule) handleCreateseqstmt(ctx *parser.CreateseqstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
 	if ctx.Qualified_name() != nil {
-		c.checkQualifiedName(ctx.Qualified_name(), ctx.GetStop().GetLine())
+		r.checkQualifiedName(ctx.Qualified_name(), ctx.GetStop().GetLine())
 	}
 }
 
-// EnterCreatetrigstmt handles CREATE TRIGGER
-func (c *fullyQualifiedObjectNameChecker) EnterCreatetrigstmt(ctx *parser.CreatetrigstmtContext) {
+// handleCreatetrigstmt handles CREATE TRIGGER
+func (r *fullyQualifiedObjectNameRule) handleCreatetrigstmt(ctx *parser.CreatetrigstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
 	// Check the table name in the ON clause
 	if ctx.Qualified_name() != nil {
-		c.checkQualifiedName(ctx.Qualified_name(), ctx.GetStop().GetLine())
+		r.checkQualifiedName(ctx.Qualified_name(), ctx.GetStop().GetLine())
 	}
 }
 
-// EnterIndexstmt handles CREATE INDEX
-func (c *fullyQualifiedObjectNameChecker) EnterIndexstmt(ctx *parser.IndexstmtContext) {
+// handleIndexstmt handles CREATE INDEX
+func (r *fullyQualifiedObjectNameRule) handleIndexstmt(ctx *parser.IndexstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
 	// Check the table name in the ON clause
 	if ctx.Relation_expr() != nil && ctx.Relation_expr().Qualified_name() != nil {
-		c.checkQualifiedName(ctx.Relation_expr().Qualified_name(), ctx.GetStop().GetLine())
+		r.checkQualifiedName(ctx.Relation_expr().Qualified_name(), ctx.GetStop().GetLine())
 	}
 }
 
-// EnterDropstmt handles DROP TABLE, DROP SEQUENCE, DROP INDEX
-func (c *fullyQualifiedObjectNameChecker) EnterDropstmt(ctx *parser.DropstmtContext) {
+// handleDropstmt handles DROP TABLE, DROP SEQUENCE, DROP INDEX
+func (r *fullyQualifiedObjectNameRule) handleDropstmt(ctx *parser.DropstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -118,97 +177,97 @@ func (c *fullyQualifiedObjectNameChecker) EnterDropstmt(ctx *parser.DropstmtCont
 	// Check all qualified names in the drop statement
 	if ctx.Any_name_list() != nil {
 		for _, anyName := range ctx.Any_name_list().AllAny_name() {
-			c.checkAnyName(anyName, ctx.GetStop().GetLine())
+			r.checkAnyName(anyName, ctx.GetStop().GetLine())
 		}
 	}
 }
 
-// EnterAltertablestmt handles ALTER TABLE
-func (c *fullyQualifiedObjectNameChecker) EnterAltertablestmt(ctx *parser.AltertablestmtContext) {
+// handleAltertablestmt handles ALTER TABLE
+func (r *fullyQualifiedObjectNameRule) handleAltertablestmt(ctx *parser.AltertablestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
 	if ctx.Relation_expr() != nil && ctx.Relation_expr().Qualified_name() != nil {
-		c.checkQualifiedName(ctx.Relation_expr().Qualified_name(), ctx.GetStop().GetLine())
+		r.checkQualifiedName(ctx.Relation_expr().Qualified_name(), ctx.GetStop().GetLine())
 	}
 }
 
-// EnterAlterseqstmt handles ALTER SEQUENCE
-func (c *fullyQualifiedObjectNameChecker) EnterAlterseqstmt(ctx *parser.AlterseqstmtContext) {
+// handleAlterseqstmt handles ALTER SEQUENCE
+func (r *fullyQualifiedObjectNameRule) handleAlterseqstmt(ctx *parser.AlterseqstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
 	if ctx.Qualified_name() != nil {
-		c.checkQualifiedName(ctx.Qualified_name(), ctx.GetStop().GetLine())
+		r.checkQualifiedName(ctx.Qualified_name(), ctx.GetStop().GetLine())
 	}
 }
 
-// EnterRenamestmt handles ALTER TABLE RENAME
-func (c *fullyQualifiedObjectNameChecker) EnterRenamestmt(ctx *parser.RenamestmtContext) {
+// handleRenamestmt handles ALTER TABLE RENAME
+func (r *fullyQualifiedObjectNameRule) handleRenamestmt(ctx *parser.RenamestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
 	if ctx.Relation_expr() != nil && ctx.Relation_expr().Qualified_name() != nil {
-		c.checkQualifiedName(ctx.Relation_expr().Qualified_name(), ctx.GetStop().GetLine())
+		r.checkQualifiedName(ctx.Relation_expr().Qualified_name(), ctx.GetStop().GetLine())
 	}
 }
 
-// EnterInsertstmt handles INSERT
-func (c *fullyQualifiedObjectNameChecker) EnterInsertstmt(ctx *parser.InsertstmtContext) {
+// handleInsertstmt handles INSERT
+func (r *fullyQualifiedObjectNameRule) handleInsertstmt(ctx *parser.InsertstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
 	if ctx.Insert_target() != nil && ctx.Insert_target().Qualified_name() != nil {
-		c.checkQualifiedName(ctx.Insert_target().Qualified_name(), ctx.GetStop().GetLine())
+		r.checkQualifiedName(ctx.Insert_target().Qualified_name(), ctx.GetStop().GetLine())
 	}
 }
 
-// EnterUpdatestmt handles UPDATE
-func (c *fullyQualifiedObjectNameChecker) EnterUpdatestmt(ctx *parser.UpdatestmtContext) {
+// handleUpdatestmt handles UPDATE
+func (r *fullyQualifiedObjectNameRule) handleUpdatestmt(ctx *parser.UpdatestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
 	if ctx.Relation_expr_opt_alias() != nil && ctx.Relation_expr_opt_alias().Relation_expr() != nil {
 		if ctx.Relation_expr_opt_alias().Relation_expr().Qualified_name() != nil {
-			c.checkQualifiedName(ctx.Relation_expr_opt_alias().Relation_expr().Qualified_name(), ctx.GetStop().GetLine())
+			r.checkQualifiedName(ctx.Relation_expr_opt_alias().Relation_expr().Qualified_name(), ctx.GetStop().GetLine())
 		}
 	}
 }
 
-// EnterSelectstmt handles SELECT
-func (c *fullyQualifiedObjectNameChecker) EnterSelectstmt(ctx *parser.SelectstmtContext) {
+// handleSelectstmt handles SELECT
+func (r *fullyQualifiedObjectNameRule) handleSelectstmt(ctx *parser.SelectstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
 	// For SELECT statements, we need to extract tables from the query
 	// and check them against the database schema
-	if c.dbSchema == nil {
+	if r.dbSchema == nil {
 		return
 	}
 
 	// Extract the statement text for this SELECT
 	startLine := ctx.GetStop().GetLine()
 	endLine := ctx.GetStop().GetLine()
-	statementText := extractStatementText(c.statementsText, startLine, endLine)
+	statementText := extractStatementText(r.statementsText, startLine, endLine)
 
 	if statementText == "" {
 		return
 	}
 
 	// Find all table references in the SELECT statement
-	for _, tableName := range c.findAllTablesInSelect(statementText) {
+	for _, tableName := range r.findAllTablesInSelect(statementText) {
 		objName := tableName.String()
-		if !c.isFullyQualified(objName) {
-			c.adviceList = append(c.adviceList, &storepb.Advice{
-				Status:  c.level,
+		if !r.isFullyQualified(objName) {
+			r.AddAdvice(&storepb.Advice{
+				Status:  r.level,
 				Code:    int32(advisor.NamingNotFullyQualifiedName),
-				Title:   c.title,
+				Title:   r.title,
 				Content: fmt.Sprintf("unqualified object name: '%s'", objName),
 				StartPosition: &storepb.Position{
 					Line:   int32(startLine),
@@ -220,7 +279,7 @@ func (c *fullyQualifiedObjectNameChecker) EnterSelectstmt(ctx *parser.Selectstmt
 }
 
 // checkQualifiedName checks if a qualified name is fully qualified
-func (c *fullyQualifiedObjectNameChecker) checkQualifiedName(ctx parser.IQualified_nameContext, line int) {
+func (r *fullyQualifiedObjectNameRule) checkQualifiedName(ctx parser.IQualified_nameContext, line int) {
 	if ctx == nil {
 		return
 	}
@@ -228,11 +287,11 @@ func (c *fullyQualifiedObjectNameChecker) checkQualifiedName(ctx parser.IQualifi
 	parts := pgparser.NormalizePostgreSQLQualifiedName(ctx)
 	objName := strings.Join(parts, ".")
 
-	if !c.isFullyQualified(objName) {
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:  c.level,
+	if !r.isFullyQualified(objName) {
+		r.AddAdvice(&storepb.Advice{
+			Status:  r.level,
 			Code:    int32(advisor.NamingNotFullyQualifiedName),
-			Title:   c.title,
+			Title:   r.title,
 			Content: fmt.Sprintf("unqualified object name: '%s'", objName),
 			StartPosition: &storepb.Position{
 				Line:   int32(line),
@@ -243,7 +302,7 @@ func (c *fullyQualifiedObjectNameChecker) checkQualifiedName(ctx parser.IQualifi
 }
 
 // checkAnyName checks if an any_name is fully qualified
-func (c *fullyQualifiedObjectNameChecker) checkAnyName(ctx parser.IAny_nameContext, line int) {
+func (r *fullyQualifiedObjectNameRule) checkAnyName(ctx parser.IAny_nameContext, line int) {
 	if ctx == nil {
 		return
 	}
@@ -252,11 +311,11 @@ func (c *fullyQualifiedObjectNameChecker) checkAnyName(ctx parser.IAny_nameConte
 	parts := pgparser.NormalizePostgreSQLAnyName(ctx)
 	objName := strings.Join(parts, ".")
 
-	if !c.isFullyQualified(objName) {
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:  c.level,
+	if !r.isFullyQualified(objName) {
+		r.AddAdvice(&storepb.Advice{
+			Status:  r.level,
 			Code:    int32(advisor.NamingNotFullyQualifiedName),
-			Title:   c.title,
+			Title:   r.title,
 			Content: fmt.Sprintf("unqualified object name: '%s'", objName),
 			StartPosition: &storepb.Position{
 				Line:   int32(line),
@@ -267,7 +326,7 @@ func (c *fullyQualifiedObjectNameChecker) checkAnyName(ctx parser.IAny_nameConte
 }
 
 // isFullyQualified checks if an object name is fully qualified (contains a dot)
-func (*fullyQualifiedObjectNameChecker) isFullyQualified(objName string) bool {
+func (*fullyQualifiedObjectNameRule) isFullyQualified(objName string) bool {
 	if objName == "" {
 		return true
 	}
@@ -276,7 +335,7 @@ func (*fullyQualifiedObjectNameChecker) isFullyQualified(objName string) bool {
 }
 
 // findAllTablesInSelect finds all table references in a SELECT statement
-func (c *fullyQualifiedObjectNameChecker) findAllTablesInSelect(statement string) []base.ColumnResource {
+func (r *fullyQualifiedObjectNameRule) findAllTablesInSelect(statement string) []base.ColumnResource {
 	// Parse the statement to extract table references
 	result, err := pgparser.ParsePostgreSQL(statement)
 	if err != nil {
@@ -285,7 +344,7 @@ func (c *fullyQualifiedObjectNameChecker) findAllTablesInSelect(statement string
 
 	// Use a visitor to find all table references
 	collector := &tableReferenceCollector{
-		schemaNameMap: c.getSchemaNameMapFromPublic(),
+		schemaNameMap: r.getSchemaNameMapFromPublic(),
 	}
 
 	if result.Tree != nil {
@@ -296,13 +355,13 @@ func (c *fullyQualifiedObjectNameChecker) findAllTablesInSelect(statement string
 }
 
 // getSchemaNameMapFromPublic creates a map of table names from the database schema
-func (c *fullyQualifiedObjectNameChecker) getSchemaNameMapFromPublic() map[string]bool {
-	if c.dbSchema == nil || c.dbSchema.Schemas == nil {
+func (r *fullyQualifiedObjectNameRule) getSchemaNameMapFromPublic() map[string]bool {
+	if r.dbSchema == nil || r.dbSchema.Schemas == nil {
 		return nil
 	}
 
 	filterMap := map[string]bool{}
-	for _, schema := range c.dbSchema.Schemas {
+	for _, schema := range r.dbSchema.Schemas {
 		// Tables
 		for _, tbl := range schema.Tables {
 			filterMap[tbl.Name] = true

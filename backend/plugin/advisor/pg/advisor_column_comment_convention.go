@@ -41,18 +41,19 @@ func (*ColumnCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor
 		return nil, err
 	}
 
-	checker := &columnCommentConventionChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
-		payload:                      payload,
-		classificationConfig:         checkCtx.ClassificationConfig,
+	rule := &columnCommentConventionRule{
+		level:                level,
+		title:                string(checkCtx.Rule.Type),
+		payload:              payload,
+		classificationConfig: checkCtx.ClassificationConfig,
 	}
+
+	checker := NewGenericChecker([]Rule{rule})
 
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
 	// Now validate all collected columns against comments
-	return checker.generateAdvice(), nil
+	return rule.generateAdvice(), nil
 }
 
 type columnInfo struct {
@@ -70,8 +71,8 @@ type commentInfo struct {
 	line    int
 }
 
-type columnCommentConventionChecker struct {
-	*parser.BasePostgreSQLParserListener
+type columnCommentConventionRule struct {
+	BaseRule
 
 	level                storepb.Advice_Status
 	title                string
@@ -82,12 +83,34 @@ type columnCommentConventionChecker struct {
 	comments []commentInfo
 }
 
-func (c *columnCommentConventionChecker) EnterCreatestmt(ctx *parser.CreatestmtContext) {
+func (*columnCommentConventionRule) Name() string {
+	return "column_comment_convention"
+}
+
+func (r *columnCommentConventionRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Createstmt":
+		r.handleCreatestmt(ctx.(*parser.CreatestmtContext))
+	case "Altertablestmt":
+		r.handleAltertablestmt(ctx.(*parser.AltertablestmtContext))
+	case "Commentstmt":
+		r.handleCommentstmt(ctx.(*parser.CommentstmtContext))
+	default:
+		// Do nothing for other node types
+	}
+	return nil
+}
+
+func (*columnCommentConventionRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+func (r *columnCommentConventionRule) handleCreatestmt(ctx *parser.CreatestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
-	tableName := c.extractTableName(ctx.AllQualified_name())
+	tableName := r.extractTableName(ctx.AllQualified_name())
 	if tableName == "" {
 		return
 	}
@@ -98,7 +121,7 @@ func (c *columnCommentConventionChecker) EnterCreatestmt(ctx *parser.CreatestmtC
 		for _, elem := range allElements {
 			if elem.ColumnDef() != nil && elem.ColumnDef().Colid() != nil {
 				columnName := pg.NormalizePostgreSQLColid(elem.ColumnDef().Colid())
-				c.columns = append(c.columns, columnInfo{
+				r.columns = append(r.columns, columnInfo{
 					schema: "public", // Default schema
 					table:  tableName,
 					column: columnName,
@@ -109,7 +132,7 @@ func (c *columnCommentConventionChecker) EnterCreatestmt(ctx *parser.CreatestmtC
 	}
 }
 
-func (c *columnCommentConventionChecker) EnterAltertablestmt(ctx *parser.AltertablestmtContext) {
+func (r *columnCommentConventionRule) handleAltertablestmt(ctx *parser.AltertablestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -130,7 +153,7 @@ func (c *columnCommentConventionChecker) EnterAltertablestmt(ctx *parser.Alterta
 			// ADD COLUMN
 			if cmd.ADD_P() != nil && cmd.ColumnDef() != nil && cmd.ColumnDef().Colid() != nil {
 				columnName := pg.NormalizePostgreSQLColid(cmd.ColumnDef().Colid())
-				c.columns = append(c.columns, columnInfo{
+				r.columns = append(r.columns, columnInfo{
 					schema: "public", // Default schema
 					table:  tableName,
 					column: columnName,
@@ -141,7 +164,7 @@ func (c *columnCommentConventionChecker) EnterAltertablestmt(ctx *parser.Alterta
 	}
 }
 
-func (c *columnCommentConventionChecker) EnterCommentstmt(ctx *parser.CommentstmtContext) {
+func (r *columnCommentConventionRule) handleCommentstmt(ctx *parser.CommentstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -168,7 +191,7 @@ func (c *columnCommentConventionChecker) EnterCommentstmt(ctx *parser.Commentstm
 		comment = extractStringConstant(ctx.Comment_text().Sconst())
 	}
 
-	c.comments = append(c.comments, commentInfo{
+	r.comments = append(r.comments, commentInfo{
 		schema:  "public",
 		table:   tableName,
 		column:  columnName,
@@ -177,7 +200,7 @@ func (c *columnCommentConventionChecker) EnterCommentstmt(ctx *parser.Commentstm
 	})
 }
 
-func (*columnCommentConventionChecker) extractTableName(qualifiedNames []parser.IQualified_nameContext) string {
+func (*columnCommentConventionRule) extractTableName(qualifiedNames []parser.IQualified_nameContext) string {
 	if len(qualifiedNames) == 0 {
 		return ""
 	}
@@ -186,15 +209,15 @@ func (*columnCommentConventionChecker) extractTableName(qualifiedNames []parser.
 	return extractTableName(qualifiedNames[0])
 }
 
-func (c *columnCommentConventionChecker) generateAdvice() []*storepb.Advice {
+func (r *columnCommentConventionRule) generateAdvice() []*storepb.Advice {
 	var adviceList []*storepb.Advice
 
 	// For each column, find its comment and validate
-	for _, col := range c.columns {
+	for _, col := range r.columns {
 		// Find the last matching comment for this column
 		var matchedComment *commentInfo
-		for i := range c.comments {
-			comment := &c.comments[i]
+		for i := range r.comments {
+			comment := &r.comments[i]
 			if comment.schema == col.schema && comment.table == col.table && comment.column == col.column {
 				matchedComment = comment
 				// Continue to find the last one
@@ -202,11 +225,11 @@ func (c *columnCommentConventionChecker) generateAdvice() []*storepb.Advice {
 		}
 
 		if matchedComment == nil || matchedComment.comment == "" {
-			if c.payload.Required {
+			if r.payload.Required {
 				adviceList = append(adviceList, &storepb.Advice{
-					Status:  c.level,
+					Status:  r.level,
 					Code:    advisor.CommentEmpty.Int32(),
-					Title:   c.title,
+					Title:   r.title,
 					Content: fmt.Sprintf("Comment is required for column `%s.%s`", col.table, col.column),
 					StartPosition: &storepb.Position{
 						Line:   int32(col.line),
@@ -218,12 +241,12 @@ func (c *columnCommentConventionChecker) generateAdvice() []*storepb.Advice {
 			comment := matchedComment.comment
 
 			// Check max length
-			if c.payload.MaxLength > 0 && len(comment) > c.payload.MaxLength {
+			if r.payload.MaxLength > 0 && len(comment) > r.payload.MaxLength {
 				adviceList = append(adviceList, &storepb.Advice{
-					Status:  c.level,
+					Status:  r.level,
 					Code:    advisor.CommentTooLong.Int32(),
-					Title:   c.title,
-					Content: fmt.Sprintf("Column `%s.%s` comment is too long. The length of comment should be within %d characters", col.table, col.column, c.payload.MaxLength),
+					Title:   r.title,
+					Content: fmt.Sprintf("Column `%s.%s` comment is too long. The length of comment should be within %d characters", col.table, col.column, r.payload.MaxLength),
 					StartPosition: &storepb.Position{
 						Line:   int32(matchedComment.line),
 						Column: 0,
@@ -232,12 +255,12 @@ func (c *columnCommentConventionChecker) generateAdvice() []*storepb.Advice {
 			}
 
 			// Check classification
-			if c.payload.RequiredClassification {
-				if classification, _ := common.GetClassificationAndUserComment(comment, c.classificationConfig); classification == "" {
+			if r.payload.RequiredClassification {
+				if classification, _ := common.GetClassificationAndUserComment(comment, r.classificationConfig); classification == "" {
 					adviceList = append(adviceList, &storepb.Advice{
-						Status:  c.level,
+						Status:  r.level,
 						Code:    advisor.CommentMissingClassification.Int32(),
-						Title:   c.title,
+						Title:   r.title,
 						Content: fmt.Sprintf("Column `%s.%s` comment requires classification", col.table, col.column),
 						StartPosition: &storepb.Position{
 							Line:   int32(matchedComment.line),

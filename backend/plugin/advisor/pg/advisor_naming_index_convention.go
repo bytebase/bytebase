@@ -44,48 +44,74 @@ func (*NamingIndexConventionAdvisor) Check(_ context.Context, checkCtx advisor.C
 		return nil, err
 	}
 
-	checker := &namingIndexConventionChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
-		format:                       format,
-		maxLength:                    maxLength,
-		templateList:                 templateList,
-		catalog:                      checkCtx.Catalog,
+	rule := &namingIndexConventionRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: string(checkCtx.Rule.Type),
+		},
+		format:       format,
+		maxLength:    maxLength,
+		templateList: templateList,
+		catalog:      checkCtx.Catalog,
 	}
 
+	checker := NewGenericChecker([]Rule{rule})
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type namingIndexConventionChecker struct {
-	*parser.BasePostgreSQLParserListener
+type namingIndexConventionRule struct {
+	BaseRule
 
-	adviceList   []*storepb.Advice
-	level        storepb.Advice_Status
-	title        string
 	format       string
 	maxLength    int
 	templateList []string
 	catalog      *catalog.Finder
 }
 
-// EnterIndexstmt checks CREATE INDEX statements
-func (c *namingIndexConventionChecker) EnterIndexstmt(ctx *parser.IndexstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
+// Name returns the rule name.
+func (*namingIndexConventionRule) Name() string {
+	return "naming-index-convention"
+}
+
+// OnEnter handles entering a parse tree node.
+func (r *namingIndexConventionRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Indexstmt":
+		r.handleIndexstmt(ctx)
+	case "Renamestmt":
+		r.handleRenamestmt(ctx)
+	default:
+		// Ignore other node types
+	}
+	return nil
+}
+
+// OnExit handles exiting a parse tree node.
+func (*namingIndexConventionRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+// handleIndexstmt checks CREATE INDEX statements
+func (r *namingIndexConventionRule) handleIndexstmt(ctx antlr.ParserRuleContext) {
+	indexstmtCtx, ok := ctx.(*parser.IndexstmtContext)
+	if !ok {
+		return
+	}
+	if !isTopLevel(indexstmtCtx.GetParent()) {
 		return
 	}
 
 	// Check if this is a UNIQUE index - if so, skip it
-	if ctx.Opt_unique() != nil && ctx.Opt_unique().UNIQUE() != nil {
+	if indexstmtCtx.Opt_unique() != nil && indexstmtCtx.Opt_unique().UNIQUE() != nil {
 		return
 	}
 
 	// Get index name
 	indexName := ""
-	if ctx.Name() != nil {
-		indexName = pgparser.NormalizePostgreSQLName(ctx.Name())
+	if indexstmtCtx.Name() != nil {
+		indexName = pgparser.NormalizePostgreSQLName(indexstmtCtx.Name())
 	}
 	if indexName == "" {
 		return
@@ -93,8 +119,8 @@ func (c *namingIndexConventionChecker) EnterIndexstmt(ctx *parser.IndexstmtConte
 
 	// Get table name
 	tableName := ""
-	if ctx.Relation_expr() != nil && ctx.Relation_expr().Qualified_name() != nil {
-		tableName = extractTableName(ctx.Relation_expr().Qualified_name())
+	if indexstmtCtx.Relation_expr() != nil && indexstmtCtx.Relation_expr().Qualified_name() != nil {
+		tableName = extractTableName(indexstmtCtx.Relation_expr().Qualified_name())
 	}
 	if tableName == "" {
 		return
@@ -102,8 +128,8 @@ func (c *namingIndexConventionChecker) EnterIndexstmt(ctx *parser.IndexstmtConte
 
 	// Get column list
 	var columnList []string
-	if ctx.Index_params() != nil {
-		allParams := ctx.Index_params().AllIndex_elem()
+	if indexstmtCtx.Index_params() != nil {
+		allParams := indexstmtCtx.Index_params().AllIndex_elem()
 		for _, param := range allParams {
 			if param.Colid() != nil {
 				colName := pgparser.NormalizePostgreSQLColid(param.Colid())
@@ -112,26 +138,30 @@ func (c *namingIndexConventionChecker) EnterIndexstmt(ctx *parser.IndexstmtConte
 		}
 	}
 
-	c.checkIndexName(indexName, tableName, columnList, ctx.GetStart().GetLine())
+	r.checkIndexName(indexName, tableName, columnList, indexstmtCtx.GetStart().GetLine())
 }
 
-// EnterRenamestmt checks ALTER INDEX ... RENAME TO statements
-func (c *namingIndexConventionChecker) EnterRenamestmt(ctx *parser.RenamestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
+// handleRenamestmt checks ALTER INDEX ... RENAME TO statements
+func (r *namingIndexConventionRule) handleRenamestmt(ctx antlr.ParserRuleContext) {
+	renamestmtCtx, ok := ctx.(*parser.RenamestmtContext)
+	if !ok {
+		return
+	}
+	if !isTopLevel(renamestmtCtx.GetParent()) {
 		return
 	}
 
 	// Check for ALTER INDEX ... RENAME TO
-	if ctx.INDEX() != nil && ctx.TO() != nil {
-		allNames := ctx.AllName()
+	if renamestmtCtx.INDEX() != nil && renamestmtCtx.TO() != nil {
+		allNames := renamestmtCtx.AllName()
 		if len(allNames) < 1 {
 			return
 		}
 
 		// Get old index name from qualified_name
 		var oldIndexName string
-		if ctx.Qualified_name() != nil {
-			parts := pgparser.NormalizePostgreSQLQualifiedName(ctx.Qualified_name())
+		if renamestmtCtx.Qualified_name() != nil {
+			parts := pgparser.NormalizePostgreSQLQualifiedName(renamestmtCtx.Qualified_name())
 			if len(parts) > 0 {
 				oldIndexName = parts[len(parts)-1]
 			}
@@ -141,28 +171,28 @@ func (c *namingIndexConventionChecker) EnterRenamestmt(ctx *parser.RenamestmtCon
 		newIndexName := pgparser.NormalizePostgreSQLName(allNames[0])
 
 		// Look up the index in catalog to determine if it's a regular index (not unique, not PK)
-		if c.catalog != nil && oldIndexName != "" {
-			tableName, index := c.findIndex("", "", oldIndexName)
+		if r.catalog != nil && oldIndexName != "" {
+			tableName, index := r.findIndex("", "", oldIndexName)
 			if index != nil {
 				// Only check if it's a regular index (not unique, not primary)
 				if !index.Unique() && !index.Primary() {
-					c.checkIndexName(newIndexName, tableName, index.ExpressionList(), ctx.GetStart().GetLine())
+					r.checkIndexName(newIndexName, tableName, index.ExpressionList(), renamestmtCtx.GetStart().GetLine())
 				}
 			}
 		}
 	}
 }
 
-func (c *namingIndexConventionChecker) checkIndexName(indexName, tableName string, columnList []string, line int) {
+func (r *namingIndexConventionRule) checkIndexName(indexName, tableName string, columnList []string, line int) {
 	metaData := map[string]string{
 		advisor.ColumnListTemplateToken: strings.Join(columnList, "_"),
 		advisor.TableNameTemplateToken:  tableName,
 	}
 
-	regex, err := getTemplateRegexp(c.format, c.templateList, metaData)
+	regex, err := getTemplateRegexp(r.format, r.templateList, metaData)
 	if err != nil {
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:  c.level,
+		r.AddAdvice(&storepb.Advice{
+			Status:  r.level,
 			Code:    advisor.Internal.Int32(),
 			Title:   "Internal error for index naming convention rule",
 			Content: fmt.Sprintf("Failed to compile regex: %v", err),
@@ -175,10 +205,10 @@ func (c *namingIndexConventionChecker) checkIndexName(indexName, tableName strin
 	}
 
 	if !regex.MatchString(indexName) {
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:  c.level,
+		r.AddAdvice(&storepb.Advice{
+			Status:  r.level,
 			Code:    advisor.NamingIndexConventionMismatch.Int32(),
-			Title:   c.title,
+			Title:   r.title,
 			Content: fmt.Sprintf("Index in table %q mismatches the naming convention, expect %q but found %q", tableName, regex, indexName),
 			StartPosition: &storepb.Position{
 				Line:   int32(line),
@@ -187,12 +217,12 @@ func (c *namingIndexConventionChecker) checkIndexName(indexName, tableName strin
 		})
 	}
 
-	if c.maxLength > 0 && len(indexName) > c.maxLength {
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:  c.level,
+	if r.maxLength > 0 && len(indexName) > r.maxLength {
+		r.AddAdvice(&storepb.Advice{
+			Status:  r.level,
 			Code:    advisor.NamingIndexConventionMismatch.Int32(),
-			Title:   c.title,
-			Content: fmt.Sprintf("Index %q in table %q mismatches the naming convention, its length should be within %d characters", indexName, tableName, c.maxLength),
+			Title:   r.title,
+			Content: fmt.Sprintf("Index %q in table %q mismatches the naming convention, its length should be within %d characters", indexName, tableName, r.maxLength),
 			StartPosition: &storepb.Position{
 				Line:   int32(line),
 				Column: 0,
@@ -202,11 +232,11 @@ func (c *namingIndexConventionChecker) checkIndexName(indexName, tableName strin
 }
 
 // findIndex returns index found in catalogs, nil if not found.
-func (c *namingIndexConventionChecker) findIndex(schemaName string, tableName string, indexName string) (string, *catalog.IndexState) {
-	if c.catalog == nil {
+func (r *namingIndexConventionRule) findIndex(schemaName string, tableName string, indexName string) (string, *catalog.IndexState) {
+	if r.catalog == nil {
 		return "", nil
 	}
-	return c.catalog.Origin.FindIndex(&catalog.IndexFind{
+	return r.catalog.Origin.FindIndex(&catalog.IndexFind{
 		SchemaName: normalizeSchemaName(schemaName),
 		TableName:  tableName,
 		IndexName:  indexName,

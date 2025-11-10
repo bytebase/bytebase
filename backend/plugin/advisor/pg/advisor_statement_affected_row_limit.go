@@ -43,31 +43,30 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 		return nil, err
 	}
 
-	checker := &statementAffectedRowLimitChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
-		maxRow:                       payload.Number,
-		ctx:                          ctx,
-		driver:                       checkCtx.Driver,
-		usePostgresDatabaseOwner:     checkCtx.UsePostgresDatabaseOwner,
-		statementsText:               checkCtx.Statements,
+	rule := &statementAffectedRowLimitRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: string(checkCtx.Rule.Type),
+		},
+		maxRow:                   payload.Number,
+		ctx:                      ctx,
+		driver:                   checkCtx.Driver,
+		usePostgresDatabaseOwner: checkCtx.UsePostgresDatabaseOwner,
+		statementsText:           checkCtx.Statements,
 	}
 
-	// Only run EXPLAIN queries if we have a limit and database connection
-	if payload.Number > 0 && checker.driver != nil {
+	if payload.Number > 0 && checkCtx.Driver != nil {
+		checker := NewGenericChecker([]Rule{rule})
 		antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
+		return checker.GetAdviceList(), nil
 	}
 
-	return checker.adviceList, nil
+	return nil, nil
 }
 
-type statementAffectedRowLimitChecker struct {
-	*parser.BasePostgreSQLParserListener
+type statementAffectedRowLimitRule struct {
+	BaseRule
 
-	adviceList               []*storepb.Advice
-	level                    storepb.Advice_Status
-	title                    string
 	maxRow                   int
 	driver                   *sql.DB
 	ctx                      context.Context
@@ -77,8 +76,35 @@ type statementAffectedRowLimitChecker struct {
 	statementsText           string
 }
 
-// EnterVariablesetstmt handles SET ROLE statements
-func (c *statementAffectedRowLimitChecker) EnterVariablesetstmt(ctx *parser.VariablesetstmtContext) {
+func (*statementAffectedRowLimitRule) Name() string {
+	return "statement_affected_row_limit"
+}
+
+func (r *statementAffectedRowLimitRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Variablesetstmt":
+		if c, ok := ctx.(*parser.VariablesetstmtContext); ok {
+			r.handleVariablesetstmt(c)
+		}
+	case "Updatestmt":
+		if c, ok := ctx.(*parser.UpdatestmtContext); ok {
+			r.handleUpdatestmt(c)
+		}
+	case "Deletestmt":
+		if c, ok := ctx.(*parser.DeletestmtContext); ok {
+			r.handleDeletestmt(c)
+		}
+	default:
+		// Do nothing for other node types
+	}
+	return nil
+}
+
+func (*statementAffectedRowLimitRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+func (r *statementAffectedRowLimitRule) handleVariablesetstmt(ctx *parser.VariablesetstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -88,53 +114,51 @@ func (c *statementAffectedRowLimitChecker) EnterVariablesetstmt(ctx *parser.Vari
 		setRestMore := ctx.Set_rest().Set_rest_more()
 		if setRestMore.ROLE() != nil {
 			// Store the SET ROLE statement text
-			stmtText := extractStatementText(c.statementsText, ctx.GetStart().GetLine(), ctx.GetStop().GetLine())
-			c.setRoles = append(c.setRoles, stmtText)
+			stmtText := extractStatementText(r.statementsText, ctx.GetStart().GetLine(), ctx.GetStop().GetLine())
+			r.setRoles = append(r.setRoles, stmtText)
 		}
 	}
 }
 
-// EnterUpdatestmt handles UPDATE statements
-func (c *statementAffectedRowLimitChecker) EnterUpdatestmt(ctx *parser.UpdatestmtContext) {
+func (r *statementAffectedRowLimitRule) handleUpdatestmt(ctx *parser.UpdatestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
-	c.checkAffectedRows(ctx)
+	r.checkAffectedRows(ctx)
 }
 
-// EnterDeletestmt handles DELETE statements
-func (c *statementAffectedRowLimitChecker) EnterDeletestmt(ctx *parser.DeletestmtContext) {
+func (r *statementAffectedRowLimitRule) handleDeletestmt(ctx *parser.DeletestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
-	c.checkAffectedRows(ctx)
+	r.checkAffectedRows(ctx)
 }
 
-func (c *statementAffectedRowLimitChecker) checkAffectedRows(ctx antlr.ParserRuleContext) {
+func (r *statementAffectedRowLimitRule) checkAffectedRows(ctx antlr.ParserRuleContext) {
 	// Check if we've hit the maximum number of EXPLAIN queries
-	if c.explainCount >= common.MaximumLintExplainSize {
+	if r.explainCount >= common.MaximumLintExplainSize {
 		return
 	}
 
-	c.explainCount++
+	r.explainCount++
 
 	// Get the statement text
-	stmtText := extractStatementText(c.statementsText, ctx.GetStart().GetLine(), ctx.GetStop().GetLine())
+	stmtText := extractStatementText(r.statementsText, ctx.GetStart().GetLine(), ctx.GetStop().GetLine())
 	normalizedStmt := advisor.NormalizeStatement(stmtText)
 
 	// Run EXPLAIN to get estimated row count
-	res, err := advisor.Query(c.ctx, advisor.QueryContext{
-		UsePostgresDatabaseOwner: c.usePostgresDatabaseOwner,
-		PreExecutions:            c.setRoles,
-	}, c.driver, storepb.Engine_POSTGRES, fmt.Sprintf("EXPLAIN %s", stmtText))
+	res, err := advisor.Query(r.ctx, advisor.QueryContext{
+		UsePostgresDatabaseOwner: r.usePostgresDatabaseOwner,
+		PreExecutions:            r.setRoles,
+	}, r.driver, storepb.Engine_POSTGRES, fmt.Sprintf("EXPLAIN %s", stmtText))
 
 	if err != nil {
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:  c.level,
+		r.AddAdvice(&storepb.Advice{
+			Status:  r.level,
 			Code:    advisor.InsertTooManyRows.Int32(),
-			Title:   c.title,
+			Title:   r.title,
 			Content: fmt.Sprintf("\"%s\" dry runs failed: %s", normalizedStmt, err.Error()),
 			StartPosition: &storepb.Position{
 				Line:   int32(ctx.GetStart().GetLine()),
@@ -146,10 +170,10 @@ func (c *statementAffectedRowLimitChecker) checkAffectedRows(ctx antlr.ParserRul
 
 	rowCount, err := getAffectedRows(res)
 	if err != nil {
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:  c.level,
+		r.AddAdvice(&storepb.Advice{
+			Status:  r.level,
 			Code:    advisor.Internal.Int32(),
-			Title:   c.title,
+			Title:   r.title,
 			Content: fmt.Sprintf("failed to get row count for \"%s\": %s", normalizedStmt, err.Error()),
 			StartPosition: &storepb.Position{
 				Line:   int32(ctx.GetStart().GetLine()),
@@ -159,12 +183,12 @@ func (c *statementAffectedRowLimitChecker) checkAffectedRows(ctx antlr.ParserRul
 		return
 	}
 
-	if rowCount > int64(c.maxRow) {
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:  c.level,
+	if rowCount > int64(r.maxRow) {
+		r.AddAdvice(&storepb.Advice{
+			Status:  r.level,
 			Code:    advisor.StatementAffectedRowExceedsLimit.Int32(),
-			Title:   c.title,
-			Content: fmt.Sprintf("The statement \"%s\" affected %d rows (estimated). The count exceeds %d.", normalizedStmt, rowCount, c.maxRow),
+			Title:   r.title,
+			Content: fmt.Sprintf("The statement \"%s\" affected %d rows (estimated). The count exceeds %d.", normalizedStmt, rowCount, r.maxRow),
 			StartPosition: &storepb.Position{
 				Line:   int32(ctx.GetStart().GetLine()),
 				Column: 0,

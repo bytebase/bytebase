@@ -48,28 +48,45 @@ func (*EncodingAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 		allowlist[strings.ToLower(encoding)] = true
 	}
 
-	checker := &encodingAllowlistChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
-		allowlist:                    allowlist,
+	rule := &encodingAllowlistRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: string(checkCtx.Rule.Type),
+		},
+		allowlist: allowlist,
 	}
 
+	checker := NewGenericChecker([]Rule{rule})
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type encodingAllowlistChecker struct {
-	*parser.BasePostgreSQLParserListener
+type encodingAllowlistRule struct {
+	BaseRule
 
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-	allowlist  map[string]bool
+	allowlist map[string]bool
 }
 
-func (c *encodingAllowlistChecker) EnterCreatedbstmt(ctx *parser.CreatedbstmtContext) {
+func (*encodingAllowlistRule) Name() string {
+	return "encoding-allowlist"
+}
+
+func (r *encodingAllowlistRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Createdbstmt":
+		r.handleCreatedbstmt(ctx.(*parser.CreatedbstmtContext))
+	default:
+		// Do nothing for other node types
+	}
+	return nil
+}
+
+func (*encodingAllowlistRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+func (r *encodingAllowlistRule) handleCreatedbstmt(ctx *parser.CreatedbstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -78,16 +95,16 @@ func (c *encodingAllowlistChecker) EnterCreatedbstmt(ctx *parser.CreatedbstmtCon
 	// Check both with and without WITH keyword
 	var encoding string
 	if ctx.Createdb_opt_list() != nil {
-		encoding = c.extractEncoding(ctx.Createdb_opt_list())
+		encoding = r.extractEncoding(ctx.Createdb_opt_list())
 	}
 
 	if encoding != "" {
 		// Check if encoding is in allowlist
-		if !c.allowlist[strings.ToLower(encoding)] {
-			c.adviceList = append(c.adviceList, &storepb.Advice{
-				Status:  c.level,
+		if !r.allowlist[strings.ToLower(encoding)] {
+			r.AddAdvice(&storepb.Advice{
+				Status:  r.level,
 				Code:    advisor.DisabledCharset.Int32(),
-				Title:   c.title,
+				Title:   r.title,
 				Content: fmt.Sprintf("\"\" used disabled encoding '%s'", strings.ToLower(encoding)),
 				StartPosition: &storepb.Position{
 					Line:   0,
@@ -98,7 +115,7 @@ func (c *encodingAllowlistChecker) EnterCreatedbstmt(ctx *parser.CreatedbstmtCon
 	}
 }
 
-func (*encodingAllowlistChecker) extractEncoding(optList parser.ICreatedb_opt_listContext) string {
+func (*encodingAllowlistRule) extractEncoding(optList parser.ICreatedb_opt_listContext) string {
 	if optList == nil {
 		return ""
 	}

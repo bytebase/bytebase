@@ -36,29 +36,47 @@ func (*NoSelectAllAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 		return nil, err
 	}
 
-	checker := &noSelectAllChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
-		statementsText:               checkCtx.Statements,
+	rule := &noSelectAllRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: string(checkCtx.Rule.Type),
+		},
+		statementsText: checkCtx.Statements,
 	}
 
+	checker := NewGenericChecker([]Rule{rule})
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type noSelectAllChecker struct {
-	*parser.BasePostgreSQLParserListener
-
-	adviceList     []*storepb.Advice
-	level          storepb.Advice_Status
-	title          string
+type noSelectAllRule struct {
+	BaseRule
 	statementsText string
 }
 
-// EnterSimple_select_pramary checks for SELECT * in simple select statements
-func (c *noSelectAllChecker) EnterSimple_select_pramary(ctx *parser.Simple_select_pramaryContext) {
+// Name returns the rule name.
+func (*noSelectAllRule) Name() string {
+	return "statement.no-select-all"
+}
+
+// OnEnter is called when the parser enters a rule context.
+func (r *noSelectAllRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Simple_select_pramary":
+		r.handleSimpleSelectPramary(ctx.(*parser.Simple_select_pramaryContext))
+	default:
+		// Do nothing for other node types
+	}
+	return nil
+}
+
+// OnExit is called when the parser exits a rule context.
+func (*noSelectAllRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+func (r *noSelectAllRule) handleSimpleSelectPramary(ctx *parser.Simple_select_pramaryContext) {
 	// Check if this is a SELECT statement with target list
 	if ctx.SELECT() == nil {
 		return
@@ -97,18 +115,18 @@ func (c *noSelectAllChecker) EnterSimple_select_pramary(ctx *parser.Simple_selec
 				var stmtText string
 				var line int
 				if stmtCtx != nil {
-					stmtText = extractStatementText(c.statementsText, stmtCtx.GetStart().GetLine(), stmtCtx.GetStop().GetLine())
+					stmtText = extractStatementText(r.statementsText, stmtCtx.GetStart().GetLine(), stmtCtx.GetStop().GetLine())
 					line = stmtCtx.GetStart().GetLine()
 				} else {
 					// Fallback to the simple_select context
-					stmtText = extractStatementText(c.statementsText, ctx.GetStart().GetLine(), ctx.GetStop().GetLine())
+					stmtText = extractStatementText(r.statementsText, ctx.GetStart().GetLine(), ctx.GetStop().GetLine())
 					line = ctx.GetStart().GetLine()
 				}
 
-				c.adviceList = append(c.adviceList, &storepb.Advice{
-					Status:  c.level,
+				r.AddAdvice(&storepb.Advice{
+					Status:  r.level,
 					Code:    advisor.StatementSelectAll.Int32(),
-					Title:   c.title,
+					Title:   r.title,
 					Content: fmt.Sprintf("\"%s\" uses SELECT all", stmtText),
 					StartPosition: &storepb.Position{
 						Line:   int32(line),

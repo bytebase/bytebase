@@ -41,45 +41,67 @@ func (*CommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 		return nil, err
 	}
 
-	checker := &commentConventionChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
-		maxLength:                    payload.Number,
+	rule := &commentConventionRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: string(checkCtx.Rule.Type),
+		},
+		maxLength: payload.Number,
 	}
 
+	checker := NewGenericChecker([]Rule{rule})
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type commentConventionChecker struct {
-	*parser.BasePostgreSQLParserListener
+type commentConventionRule struct {
+	BaseRule
 
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-	maxLength  int
+	maxLength int
 }
 
-func (c *commentConventionChecker) EnterCommentstmt(ctx *parser.CommentstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
+func (*commentConventionRule) Name() string {
+	return "comment_convention"
+}
+
+func (r *commentConventionRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Commentstmt":
+		r.handleCommentstmt(ctx)
+	default:
+		// Do nothing for other node types
+	}
+	return nil
+}
+
+func (*commentConventionRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+func (r *commentConventionRule) handleCommentstmt(ctx antlr.ParserRuleContext) {
+	commentstmtCtx, ok := ctx.(*parser.CommentstmtContext)
+	if !ok {
+		return
+	}
+
+	if !isTopLevel(commentstmtCtx.GetParent()) {
 		return
 	}
 
 	// Extract comment text
-	if ctx.Comment_text() != nil && ctx.Comment_text().Sconst() != nil {
-		comment := extractStringConstant(ctx.Comment_text().Sconst())
+	if commentstmtCtx.Comment_text() != nil && commentstmtCtx.Comment_text().Sconst() != nil {
+		comment := extractStringConstant(commentstmtCtx.Comment_text().Sconst())
 
 		// Check length
-		if c.maxLength > 0 && len(comment) > c.maxLength {
-			c.adviceList = append(c.adviceList, &storepb.Advice{
-				Status:  c.level,
+		if r.maxLength > 0 && len(comment) > r.maxLength {
+			r.AddAdvice(&storepb.Advice{
+				Status:  r.level,
 				Code:    advisor.CommentTooLong.Int32(),
-				Title:   c.title,
-				Content: fmt.Sprintf("The length of comment should be within %d characters", c.maxLength),
+				Title:   r.title,
+				Content: fmt.Sprintf("The length of comment should be within %d characters", r.maxLength),
 				StartPosition: &storepb.Position{
-					Line:   int32(ctx.GetStart().GetLine()),
+					Line:   int32(commentstmtCtx.GetStart().GetLine()),
 					Column: 0,
 				},
 			})

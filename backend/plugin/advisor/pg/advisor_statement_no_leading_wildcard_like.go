@@ -36,31 +36,49 @@ func (*StatementNoLeadingWildcardLikeAdvisor) Check(_ context.Context, checkCtx 
 		return nil, err
 	}
 
-	checker := &statementNoLeadingWildcardLikeChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
-		statementsText:               checkCtx.Statements,
-		reportedStatements:           make(map[antlr.ParserRuleContext]bool),
+	rule := &statementNoLeadingWildcardLikeRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: string(checkCtx.Rule.Type),
+		},
+		statementsText:     checkCtx.Statements,
+		reportedStatements: make(map[antlr.ParserRuleContext]bool),
 	}
 
+	checker := NewGenericChecker([]Rule{rule})
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type statementNoLeadingWildcardLikeChecker struct {
-	*parser.BasePostgreSQLParserListener
-
-	adviceList         []*storepb.Advice
-	level              storepb.Advice_Status
-	title              string
+type statementNoLeadingWildcardLikeRule struct {
+	BaseRule
 	statementsText     string
 	reportedStatements map[antlr.ParserRuleContext]bool
 }
 
-// EnterA_expr_like handles LIKE/ILIKE expressions
-func (c *statementNoLeadingWildcardLikeChecker) EnterA_expr_like(ctx *parser.A_expr_likeContext) {
+// Name returns the rule name.
+func (*statementNoLeadingWildcardLikeRule) Name() string {
+	return "statement.no-leading-wildcard-like"
+}
+
+// OnEnter is called when the parser enters a rule context.
+func (r *statementNoLeadingWildcardLikeRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "A_expr_like":
+		r.handleAExprLike(ctx.(*parser.A_expr_likeContext))
+	default:
+		// Do nothing for other node types
+	}
+	return nil
+}
+
+// OnExit is called when the parser exits a rule context.
+func (*statementNoLeadingWildcardLikeRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+func (r *statementNoLeadingWildcardLikeRule) handleAExprLike(ctx *parser.A_expr_likeContext) {
 	// Check if this is a LIKE or ILIKE expression (not SIMILAR TO)
 	if ctx.LIKE() == nil && ctx.ILIKE() == nil {
 		return
@@ -84,16 +102,16 @@ func (c *statementNoLeadingWildcardLikeChecker) EnterA_expr_like(ctx *parser.A_e
 		}
 
 		// Only report once per statement
-		if c.reportedStatements[stmtCtx] {
+		if r.reportedStatements[stmtCtx] {
 			return
 		}
-		c.reportedStatements[stmtCtx] = true
+		r.reportedStatements[stmtCtx] = true
 
-		stmtText := extractStatementText(c.statementsText, stmtCtx.GetStart().GetLine(), stmtCtx.GetStop().GetLine())
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:  c.level,
+		stmtText := extractStatementText(r.statementsText, stmtCtx.GetStart().GetLine(), stmtCtx.GetStop().GetLine())
+		r.AddAdvice(&storepb.Advice{
+			Status:  r.level,
 			Code:    advisor.StatementLeadingWildcardLike.Int32(),
-			Title:   c.title,
+			Title:   r.title,
 			Content: fmt.Sprintf("\"%s\" uses leading wildcard LIKE", stmtText),
 			StartPosition: &storepb.Position{
 				Line:   int32(stmtCtx.GetStart().GetLine()),

@@ -38,16 +38,19 @@ func (*ColumnDefaultDisallowVolatileAdvisor) Check(_ context.Context, checkCtx a
 		return nil, err
 	}
 
-	checker := &columnDefaultDisallowVolatileChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
-		columnSet:                    make(map[string]columnData),
+	rule := &columnDefaultDisallowVolatileRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: string(checkCtx.Rule.Type),
+		},
+		columnSet: make(map[string]columnData),
 	}
+
+	checker := NewGenericChecker([]Rule{rule})
 
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
-	return checker.generateAdvice(), nil
+	return checker.GetAdviceList(), nil
 }
 
 type columnData struct {
@@ -57,16 +60,35 @@ type columnData struct {
 	line   int
 }
 
-type columnDefaultDisallowVolatileChecker struct {
-	*parser.BasePostgreSQLParserListener
+type columnDefaultDisallowVolatileRule struct {
+	BaseRule
 
-	level      storepb.Advice_Status
-	title      string
-	columnSet  map[string]columnData
-	adviceList []*storepb.Advice
+	columnSet map[string]columnData
 }
 
-func (c *columnDefaultDisallowVolatileChecker) EnterAltertablestmt(ctx *parser.AltertablestmtContext) {
+func (*columnDefaultDisallowVolatileRule) Name() string {
+	return string(advisor.SchemaRuleColumnDefaultDisallowVolatile)
+}
+
+func (r *columnDefaultDisallowVolatileRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Altertablestmt":
+		r.handleAltertablestmt(ctx.(*parser.AltertablestmtContext))
+		// Do nothing for other node types
+	default:
+	}
+	return nil
+}
+
+func (r *columnDefaultDisallowVolatileRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
+	// Generate advice when we exit the root node
+	if nodeType == "Root" {
+		r.generateAdvice()
+	}
+	return nil
+}
+
+func (r *columnDefaultDisallowVolatileRule) handleAltertablestmt(ctx *parser.AltertablestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -91,8 +113,8 @@ func (c *columnDefaultDisallowVolatileChecker) EnterAltertablestmt(ctx *parser.A
 					columnName := pg.NormalizePostgreSQLColid(colDef.Colid())
 
 					// Check if this column has a volatile DEFAULT
-					if c.hasVolatileDefault(colDef) {
-						c.addColumn("public", tableName, columnName, colDef.GetStart().GetLine())
+					if r.hasVolatileDefault(colDef) {
+						r.addColumn("public", tableName, columnName, colDef.GetStart().GetLine())
 					}
 				}
 			}
@@ -100,7 +122,7 @@ func (c *columnDefaultDisallowVolatileChecker) EnterAltertablestmt(ctx *parser.A
 	}
 }
 
-func (c *columnDefaultDisallowVolatileChecker) hasVolatileDefault(colDef parser.IColumnDefContext) bool {
+func (r *columnDefaultDisallowVolatileRule) hasVolatileDefault(colDef parser.IColumnDefContext) bool {
 	if colDef == nil || colDef.Colquallist() == nil {
 		return false
 	}
@@ -114,7 +136,7 @@ func (c *columnDefaultDisallowVolatileChecker) hasVolatileDefault(colDef parser.
 			if elem.DEFAULT() != nil && elem.B_expr() != nil {
 				// If the default expression contains a function call, it's potentially volatile
 				// We check if the expression contains a function call by looking for FuncExpr patterns
-				if c.containsFunctionCall(elem.B_expr()) {
+				if r.containsFunctionCall(elem.B_expr()) {
 					return true
 				}
 			}
@@ -124,17 +146,17 @@ func (c *columnDefaultDisallowVolatileChecker) hasVolatileDefault(colDef parser.
 	return false
 }
 
-func (c *columnDefaultDisallowVolatileChecker) containsFunctionCall(expr antlr.Tree) bool {
+func (r *columnDefaultDisallowVolatileRule) containsFunctionCall(expr antlr.Tree) bool {
 	if expr == nil {
 		return false
 	}
 
 	// Check if this expression is or contains a function call
 	// In PostgreSQL, function calls are represented as func_expr
-	return c.hasFuncExpr(expr)
+	return r.hasFuncExpr(expr)
 }
 
-func (c *columnDefaultDisallowVolatileChecker) hasFuncExpr(node antlr.Tree) bool {
+func (r *columnDefaultDisallowVolatileRule) hasFuncExpr(node antlr.Tree) bool {
 	if node == nil {
 		return false
 	}
@@ -151,7 +173,7 @@ func (c *columnDefaultDisallowVolatileChecker) hasFuncExpr(node antlr.Tree) bool
 	if parserRule, ok := node.(antlr.ParserRuleContext); ok {
 		for i := 0; i < parserRule.GetChildCount(); i++ {
 			child := parserRule.GetChild(i)
-			if c.hasFuncExpr(child) {
+			if r.hasFuncExpr(child) {
 				return true
 			}
 		}
@@ -160,12 +182,12 @@ func (c *columnDefaultDisallowVolatileChecker) hasFuncExpr(node antlr.Tree) bool
 	return false
 }
 
-func (c *columnDefaultDisallowVolatileChecker) addColumn(schema string, table string, column string, line int) {
+func (r *columnDefaultDisallowVolatileRule) addColumn(schema string, table string, column string, line int) {
 	if schema == "" {
 		schema = "public"
 	}
 
-	c.columnSet[fmt.Sprintf("%s.%s.%s", schema, table, column)] = columnData{
+	r.columnSet[fmt.Sprintf("%s.%s.%s", schema, table, column)] = columnData{
 		schema: schema,
 		table:  table,
 		name:   column,
@@ -173,9 +195,9 @@ func (c *columnDefaultDisallowVolatileChecker) addColumn(schema string, table st
 	}
 }
 
-func (c *columnDefaultDisallowVolatileChecker) generateAdvice() []*storepb.Advice {
+func (r *columnDefaultDisallowVolatileRule) generateAdvice() {
 	var columnList []columnData
-	for _, column := range c.columnSet {
+	for _, column := range r.columnSet {
 		columnList = append(columnList, column)
 	}
 	slices.SortFunc(columnList, func(i, j columnData) int {
@@ -189,10 +211,10 @@ func (c *columnDefaultDisallowVolatileChecker) generateAdvice() []*storepb.Advic
 	})
 
 	for _, column := range columnList {
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:  c.level,
+		r.AddAdvice(&storepb.Advice{
+			Status:  r.level,
 			Code:    advisor.NoDefault.Int32(),
-			Title:   c.title,
+			Title:   r.title,
 			Content: fmt.Sprintf("Column %q.%q in schema %q has volatile DEFAULT", column.table, column.name, column.schema),
 			StartPosition: &storepb.Position{
 				Line:   int32(column.line),
@@ -200,6 +222,4 @@ func (c *columnDefaultDisallowVolatileChecker) generateAdvice() []*storepb.Advic
 			},
 		})
 	}
-
-	return c.adviceList
 }

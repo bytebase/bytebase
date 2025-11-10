@@ -52,31 +52,80 @@ func (*StatementObjectOwnerCheckAdvisor) Check(ctx context.Context, checkCtx adv
 		}
 	}
 
-	checker := &statementObjectOwnerCheckChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
-		dbMetadata:                   dbMetadata,
-		currentRole:                  currentRole,
+	rule := &statementObjectOwnerCheckRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: string(checkCtx.Rule.Type),
+		},
+		dbMetadata:  dbMetadata,
+		currentRole: currentRole,
 	}
 
+	checker := NewGenericChecker([]Rule{rule})
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type statementObjectOwnerCheckChecker struct {
-	*parser.BasePostgreSQLParserListener
-
-	adviceList  []*storepb.Advice
-	level       storepb.Advice_Status
-	title       string
+type statementObjectOwnerCheckRule struct {
+	BaseRule
 	dbMetadata  *model.DatabaseMetadata
 	currentRole string
 }
 
-// EnterVariablesetstmt handles SET ROLE statements
-func (*statementObjectOwnerCheckChecker) EnterVariablesetstmt(ctx *parser.VariablesetstmtContext) {
+// Name returns the rule name.
+func (*statementObjectOwnerCheckRule) Name() string {
+	return "statement.object-owner-check"
+}
+
+// OnEnter is called when the parser enters a rule context.
+func (r *statementObjectOwnerCheckRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Variablesetstmt":
+		r.handleVariablesetstmt(ctx.(*parser.VariablesetstmtContext))
+	case "Alterseqstmt":
+		r.handleAlterseqstmt(ctx.(*parser.AlterseqstmtContext))
+	case "Altertablestmt":
+		r.handleAltertablestmt(ctx.(*parser.AltertablestmtContext))
+	case "Altertypestmt":
+		r.handleAltertypestmt(ctx.(*parser.AltertypestmtContext))
+	case "Createextensionstmt":
+		r.handleCreateextensionstmt(ctx.(*parser.CreateextensionstmtContext))
+	case "Createfunctionstmt":
+		r.handleCreatefunctionstmt(ctx.(*parser.CreatefunctionstmtContext))
+	case "Indexstmt":
+		r.handleIndexstmt(ctx.(*parser.IndexstmtContext))
+	case "Createschemastmt":
+		r.handleCreateschemastmt(ctx.(*parser.CreateschemastmtContext))
+	case "Createseqstmt":
+		r.handleCreateseqstmt(ctx.(*parser.CreateseqstmtContext))
+	case "Createstmt":
+		r.handleCreatestmt(ctx.(*parser.CreatestmtContext))
+	case "Createtrigstmt":
+		r.handleCreatetrigstmt(ctx.(*parser.CreatetrigstmtContext))
+	case "Definestmt":
+		r.handleDefinestmt(ctx.(*parser.DefinestmtContext))
+	case "Creatematviewstmt":
+		r.handleCreatematviewstmt(ctx.(*parser.CreatematviewstmtContext))
+	case "Removefuncstmt":
+		r.handleRemovefuncstmt(ctx.(*parser.RemovefuncstmtContext))
+	case "Dropstmt":
+		r.handleDropstmt(ctx.(*parser.DropstmtContext))
+	case "Renamestmt":
+		r.handleRenamestmt(ctx.(*parser.RenamestmtContext))
+	default:
+		// Do nothing for other node types
+	}
+	return nil
+}
+
+// OnExit is called when the parser exits a rule context.
+func (*statementObjectOwnerCheckRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+// handleVariablesetstmt handles SET ROLE statements
+func (*statementObjectOwnerCheckRule) handleVariablesetstmt(ctx *parser.VariablesetstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -87,25 +136,25 @@ func (*statementObjectOwnerCheckChecker) EnterVariablesetstmt(ctx *parser.Variab
 	// For now, we skip updating currentRole from SET ROLE to keep it simple
 }
 
-func (c *statementObjectOwnerCheckChecker) checkSchemaOwnership(schemaName string, line int) {
+func (r *statementObjectOwnerCheckRule) checkSchemaOwnership(schemaName string, line int) {
 	if schemaName == "" {
 		schemaName = defaultSchema
 	}
 
-	schemaMeta := c.dbMetadata.GetSchema(schemaName)
+	schemaMeta := r.dbMetadata.GetSchema(schemaName)
 	if schemaMeta == nil {
 		return
 	}
 
 	owner := schemaMeta.GetOwner()
 	if owner == pgDatabaseOwner {
-		owner = c.dbMetadata.GetOwner()
+		owner = r.dbMetadata.GetOwner()
 	}
-	if owner != c.currentRole {
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:  c.level,
-			Title:   c.title,
-			Content: fmt.Sprintf("Schema \"%s\" is owned by \"%s\", but the current role is \"%s\".", schemaName, owner, c.currentRole),
+	if owner != r.currentRole {
+		r.AddAdvice(&storepb.Advice{
+			Status:  r.level,
+			Title:   r.title,
+			Content: fmt.Sprintf("Schema \"%s\" is owned by \"%s\", but the current role is \"%s\".", schemaName, owner, r.currentRole),
 			Code:    advisor.StatementObjectOwnerCheck.Int32(),
 			StartPosition: &storepb.Position{
 				Line:   int32(line),
@@ -115,12 +164,12 @@ func (c *statementObjectOwnerCheckChecker) checkSchemaOwnership(schemaName strin
 	}
 }
 
-func (c *statementObjectOwnerCheckChecker) checkTableOwnership(schemaName, tableName string, line int) {
+func (r *statementObjectOwnerCheckRule) checkTableOwnership(schemaName, tableName string, line int) {
 	if schemaName == "" {
 		schemaName = defaultSchema
 	}
 
-	schemaMeta := c.dbMetadata.GetSchema(schemaName)
+	schemaMeta := r.dbMetadata.GetSchema(schemaName)
 	if schemaMeta == nil {
 		return
 	}
@@ -132,13 +181,13 @@ func (c *statementObjectOwnerCheckChecker) checkTableOwnership(schemaName, table
 
 	owner := tableMeta.GetOwner()
 	if owner == pgDatabaseOwner {
-		owner = c.dbMetadata.GetOwner()
+		owner = r.dbMetadata.GetOwner()
 	}
-	if owner != c.currentRole {
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:  c.level,
-			Title:   c.title,
-			Content: fmt.Sprintf("Table \"%s\" is owned by \"%s\", but the current role is \"%s\".", tableName, owner, c.currentRole),
+	if owner != r.currentRole {
+		r.AddAdvice(&storepb.Advice{
+			Status:  r.level,
+			Title:   r.title,
+			Content: fmt.Sprintf("Table \"%s\" is owned by \"%s\", but the current role is \"%s\".", tableName, owner, r.currentRole),
 			Code:    advisor.StatementObjectOwnerCheck.Int32(),
 			StartPosition: &storepb.Position{
 				Line:   int32(line),
@@ -148,8 +197,8 @@ func (c *statementObjectOwnerCheckChecker) checkTableOwnership(schemaName, table
 	}
 }
 
-// EnterAlterseqstmt handles ALTER SEQUENCE statements
-func (c *statementObjectOwnerCheckChecker) EnterAlterseqstmt(ctx *parser.AlterseqstmtContext) {
+// handleAlterseqstmt handles ALTER SEQUENCE statements
+func (r *statementObjectOwnerCheckRule) handleAlterseqstmt(ctx *parser.AlterseqstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -160,11 +209,11 @@ func (c *statementObjectOwnerCheckChecker) EnterAlterseqstmt(ctx *parser.Alterse
 	}
 
 	schemaName := extractSchemaName(qualName)
-	c.checkSchemaOwnership(schemaName, ctx.GetStart().GetLine())
+	r.checkSchemaOwnership(schemaName, ctx.GetStart().GetLine())
 }
 
-// EnterAltertablestmt handles ALTER TABLE statements
-func (c *statementObjectOwnerCheckChecker) EnterAltertablestmt(ctx *parser.AltertablestmtContext) {
+// handleAltertablestmt handles ALTER TABLE statements
+func (r *statementObjectOwnerCheckRule) handleAltertablestmt(ctx *parser.AltertablestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -177,11 +226,11 @@ func (c *statementObjectOwnerCheckChecker) EnterAltertablestmt(ctx *parser.Alter
 	schemaName := extractSchemaName(qualName)
 	tableName := extractTableName(qualName)
 
-	c.checkTableOwnership(schemaName, tableName, ctx.GetStart().GetLine())
+	r.checkTableOwnership(schemaName, tableName, ctx.GetStart().GetLine())
 }
 
-// EnterAltertypestmt handles ALTER TYPE statements
-func (c *statementObjectOwnerCheckChecker) EnterAltertypestmt(ctx *parser.AltertypestmtContext) {
+// handleAltertypestmt handles ALTER TYPE statements
+func (r *statementObjectOwnerCheckRule) handleAltertypestmt(ctx *parser.AltertypestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -198,11 +247,11 @@ func (c *statementObjectOwnerCheckChecker) EnterAltertypestmt(ctx *parser.Altert
 		schemaName = parts[0]
 	}
 
-	c.checkSchemaOwnership(schemaName, ctx.GetStart().GetLine())
+	r.checkSchemaOwnership(schemaName, ctx.GetStart().GetLine())
 }
 
-// EnterCreateextensionstmt handles CREATE EXTENSION statements
-func (c *statementObjectOwnerCheckChecker) EnterCreateextensionstmt(ctx *parser.CreateextensionstmtContext) {
+// handleCreateextensionstmt handles CREATE EXTENSION statements
+func (r *statementObjectOwnerCheckRule) handleCreateextensionstmt(ctx *parser.CreateextensionstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -218,11 +267,11 @@ func (c *statementObjectOwnerCheckChecker) EnterCreateextensionstmt(ctx *parser.
 		}
 	}
 
-	c.checkSchemaOwnership(schemaName, ctx.GetStart().GetLine())
+	r.checkSchemaOwnership(schemaName, ctx.GetStart().GetLine())
 }
 
-// EnterCreatefunctionstmt handles CREATE FUNCTION statements
-func (c *statementObjectOwnerCheckChecker) EnterCreatefunctionstmt(ctx *parser.CreatefunctionstmtContext) {
+// handleCreatefunctionstmt handles CREATE FUNCTION statements
+func (r *statementObjectOwnerCheckRule) handleCreatefunctionstmt(ctx *parser.CreatefunctionstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -231,12 +280,12 @@ func (c *statementObjectOwnerCheckChecker) EnterCreatefunctionstmt(ctx *parser.C
 		return
 	}
 
-	schemaName := c.extractSchemaFromFuncName(ctx.Func_name())
-	c.checkSchemaOwnership(schemaName, ctx.GetStart().GetLine())
+	schemaName := r.extractSchemaFromFuncName(ctx.Func_name())
+	r.checkSchemaOwnership(schemaName, ctx.GetStart().GetLine())
 }
 
-// EnterIndexstmt handles CREATE INDEX statements
-func (c *statementObjectOwnerCheckChecker) EnterIndexstmt(ctx *parser.IndexstmtContext) {
+// handleIndexstmt handles CREATE INDEX statements
+func (r *statementObjectOwnerCheckRule) handleIndexstmt(ctx *parser.IndexstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -248,21 +297,21 @@ func (c *statementObjectOwnerCheckChecker) EnterIndexstmt(ctx *parser.IndexstmtC
 	qualName := ctx.Relation_expr().Qualified_name()
 	schemaName := extractSchemaName(qualName)
 
-	c.checkSchemaOwnership(schemaName, ctx.GetStart().GetLine())
+	r.checkSchemaOwnership(schemaName, ctx.GetStart().GetLine())
 }
 
-// EnterCreateschemastmt handles CREATE SCHEMA statements
-func (c *statementObjectOwnerCheckChecker) EnterCreateschemastmt(ctx *parser.CreateschemastmtContext) {
+// handleCreateschemastmt handles CREATE SCHEMA statements
+func (r *statementObjectOwnerCheckRule) handleCreateschemastmt(ctx *parser.CreateschemastmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
-	owner := c.dbMetadata.GetOwner()
-	if owner != c.currentRole {
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:  c.level,
-			Title:   c.title,
-			Content: fmt.Sprintf("Database \"%s\" is owned by \"%s\", but the current role is \"%s\".", c.dbMetadata.GetName(), owner, c.currentRole),
+	owner := r.dbMetadata.GetOwner()
+	if owner != r.currentRole {
+		r.AddAdvice(&storepb.Advice{
+			Status:  r.level,
+			Title:   r.title,
+			Content: fmt.Sprintf("Database \"%s\" is owned by \"%s\", but the current role is \"%s\".", r.dbMetadata.GetName(), owner, r.currentRole),
 			Code:    advisor.StatementObjectOwnerCheck.Int32(),
 			StartPosition: &storepb.Position{
 				Line:   int32(ctx.GetStart().GetLine()),
@@ -272,8 +321,8 @@ func (c *statementObjectOwnerCheckChecker) EnterCreateschemastmt(ctx *parser.Cre
 	}
 }
 
-// EnterCreateseqstmt handles CREATE SEQUENCE statements
-func (c *statementObjectOwnerCheckChecker) EnterCreateseqstmt(ctx *parser.CreateseqstmtContext) {
+// handleCreateseqstmt handles CREATE SEQUENCE statements
+func (r *statementObjectOwnerCheckRule) handleCreateseqstmt(ctx *parser.CreateseqstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -285,11 +334,11 @@ func (c *statementObjectOwnerCheckChecker) EnterCreateseqstmt(ctx *parser.Create
 	qualName := ctx.Qualified_name()
 	schemaName := extractSchemaName(qualName)
 
-	c.checkSchemaOwnership(schemaName, ctx.GetStart().GetLine())
+	r.checkSchemaOwnership(schemaName, ctx.GetStart().GetLine())
 }
 
-// EnterCreatestmt handles CREATE TABLE statements
-func (c *statementObjectOwnerCheckChecker) EnterCreatestmt(ctx *parser.CreatestmtContext) {
+// handleCreatestmt handles CREATE TABLE statements
+func (r *statementObjectOwnerCheckRule) handleCreatestmt(ctx *parser.CreatestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -302,11 +351,11 @@ func (c *statementObjectOwnerCheckChecker) EnterCreatestmt(ctx *parser.Createstm
 	qualName := allQualNames[0]
 	schemaName := extractSchemaName(qualName)
 
-	c.checkSchemaOwnership(schemaName, ctx.GetStart().GetLine())
+	r.checkSchemaOwnership(schemaName, ctx.GetStart().GetLine())
 }
 
-// EnterCreatetrigstmt handles CREATE TRIGGER statements
-func (c *statementObjectOwnerCheckChecker) EnterCreatetrigstmt(ctx *parser.CreatetrigstmtContext) {
+// handleCreatetrigstmt handles CREATE TRIGGER statements
+func (r *statementObjectOwnerCheckRule) handleCreatetrigstmt(ctx *parser.CreatetrigstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -318,11 +367,11 @@ func (c *statementObjectOwnerCheckChecker) EnterCreatetrigstmt(ctx *parser.Creat
 	qualName := ctx.Qualified_name()
 	schemaName := extractSchemaName(qualName)
 
-	c.checkSchemaOwnership(schemaName, ctx.GetStart().GetLine())
+	r.checkSchemaOwnership(schemaName, ctx.GetStart().GetLine())
 }
 
-// EnterDefinestmt handles CREATE TYPE statements (via DEFINE)
-func (c *statementObjectOwnerCheckChecker) EnterDefinestmt(ctx *parser.DefinestmtContext) {
+// handleDefinestmt handles CREATE TYPE statements (via DEFINE)
+func (r *statementObjectOwnerCheckRule) handleDefinestmt(ctx *parser.DefinestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -345,11 +394,11 @@ func (c *statementObjectOwnerCheckChecker) EnterDefinestmt(ctx *parser.Definestm
 		schemaName = parts[0]
 	}
 
-	c.checkSchemaOwnership(schemaName, ctx.GetStart().GetLine())
+	r.checkSchemaOwnership(schemaName, ctx.GetStart().GetLine())
 }
 
-// EnterCreatematviewstmt handles CREATE VIEW / MATERIALIZED VIEW statements
-func (c *statementObjectOwnerCheckChecker) EnterCreatematviewstmt(ctx *parser.CreatematviewstmtContext) {
+// handleCreatematviewstmt handles CREATE VIEW / MATERIALIZED VIEW statements
+func (r *statementObjectOwnerCheckRule) handleCreatematviewstmt(ctx *parser.CreatematviewstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -361,11 +410,11 @@ func (c *statementObjectOwnerCheckChecker) EnterCreatematviewstmt(ctx *parser.Cr
 	qualName := ctx.Create_mv_target().Qualified_name()
 	schemaName := extractSchemaName(qualName)
 
-	c.checkSchemaOwnership(schemaName, ctx.GetStart().GetLine())
+	r.checkSchemaOwnership(schemaName, ctx.GetStart().GetLine())
 }
 
-// EnterRemovefuncstmt handles DROP FUNCTION statements
-func (c *statementObjectOwnerCheckChecker) EnterRemovefuncstmt(ctx *parser.RemovefuncstmtContext) {
+// handleRemovefuncstmt handles DROP FUNCTION statements
+func (r *statementObjectOwnerCheckRule) handleRemovefuncstmt(ctx *parser.RemovefuncstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -379,32 +428,32 @@ func (c *statementObjectOwnerCheckChecker) EnterRemovefuncstmt(ctx *parser.Remov
 			continue
 		}
 
-		schemaName := c.extractSchemaFromFuncName(funcWithArgs.Func_name())
-		c.checkSchemaOwnership(schemaName, ctx.GetStart().GetLine())
+		schemaName := r.extractSchemaFromFuncName(funcWithArgs.Func_name())
+		r.checkSchemaOwnership(schemaName, ctx.GetStart().GetLine())
 	}
 }
 
-// EnterDropstmt handles various DROP statements
+// handleDropstmt handles various DROP statements
 // Note: PostgreSQL DROP statements don't easily expose the object type in ANTLR,
 // so we do a best-effort check by examining the any_name_list
-func (c *statementObjectOwnerCheckChecker) EnterDropstmt(ctx *parser.DropstmtContext) {
+func (r *statementObjectOwnerCheckRule) handleDropstmt(ctx *parser.DropstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
 	// For DROP INDEX, check schema ownership
 	if ctx.INDEX() != nil {
-		c.handleDropWithAnyNameList(ctx, false)
+		r.handleDropWithAnyNameList(ctx, false)
 		return
 	}
 
 	// For other DROP statements, check schema ownership
 	if ctx.Any_name_list() != nil {
-		c.handleDropWithAnyNameList(ctx, false)
+		r.handleDropWithAnyNameList(ctx, false)
 	}
 }
 
-func (c *statementObjectOwnerCheckChecker) handleDropWithAnyNameList(ctx *parser.DropstmtContext, checkTable bool) {
+func (r *statementObjectOwnerCheckRule) handleDropWithAnyNameList(ctx *parser.DropstmtContext, checkTable bool) {
 	if ctx.Any_name_list() == nil {
 		return
 	}
@@ -425,15 +474,15 @@ func (c *statementObjectOwnerCheckChecker) handleDropWithAnyNameList(ctx *parser
 		}
 
 		if checkTable && objectName != "" {
-			c.checkTableOwnership(schemaName, objectName, ctx.GetStart().GetLine())
+			r.checkTableOwnership(schemaName, objectName, ctx.GetStart().GetLine())
 		} else {
-			c.checkSchemaOwnership(schemaName, ctx.GetStart().GetLine())
+			r.checkSchemaOwnership(schemaName, ctx.GetStart().GetLine())
 		}
 	}
 }
 
-// EnterRenamestmt handles RENAME statements (including ALTER INDEX RENAME)
-func (c *statementObjectOwnerCheckChecker) EnterRenamestmt(ctx *parser.RenamestmtContext) {
+// handleRenamestmt handles RENAME statements (including ALTER INDEX RENAME)
+func (r *statementObjectOwnerCheckRule) handleRenamestmt(ctx *parser.RenamestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -441,17 +490,17 @@ func (c *statementObjectOwnerCheckChecker) EnterRenamestmt(ctx *parser.Renamestm
 	// Check if this is an ALTER SCHEMA RENAME
 	if ctx.SCHEMA() != nil && ctx.Name(0) != nil {
 		schemaName := ctx.Name(0).GetText()
-		c.checkSchemaOwnership(schemaName, ctx.GetStart().GetLine())
+		r.checkSchemaOwnership(schemaName, ctx.GetStart().GetLine())
 	} else if ctx.INDEX() != nil && ctx.Qualified_name() != nil {
 		// ALTER INDEX RENAME
 		qualName := ctx.Qualified_name()
 		schemaName := extractSchemaName(qualName)
-		c.checkSchemaOwnership(schemaName, ctx.GetStart().GetLine())
+		r.checkSchemaOwnership(schemaName, ctx.GetStart().GetLine())
 	}
 }
 
 // Helper method to extract schema name from function name
-func (*statementObjectOwnerCheckChecker) extractSchemaFromFuncName(funcName parser.IFunc_nameContext) string {
+func (*statementObjectOwnerCheckRule) extractSchemaFromFuncName(funcName parser.IFunc_nameContext) string {
 	if funcName.Type_function_name() != nil {
 		// Simple function name without schema
 		return ""
