@@ -52,40 +52,64 @@ func (*ColumnRequirementAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 		requiredColumnsMap[col] = true
 	}
 
-	checker := &columnRequirementChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
-		requiredColumnsMap:           requiredColumnsMap,
+	rule := &columnRequirementRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: string(checkCtx.Rule.Type),
+		},
+		requiredColumnsMap: requiredColumnsMap,
 	}
+
+	checker := NewGenericChecker([]Rule{rule})
 
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type columnRequirementChecker struct {
-	*parser.BasePostgreSQLParserListener
+type columnRequirementRule struct {
+	BaseRule
 
-	adviceList         []*storepb.Advice
-	level              storepb.Advice_Status
-	title              string
 	requiredColumnsMap columnSet // Map of all required columns (from config)
 	requiredColumns    columnSet // Temp map for checking CREATE TABLE
 }
 
-func (c *columnRequirementChecker) EnterCreatestmt(ctx *parser.CreatestmtContext) {
+func (*columnRequirementRule) Name() string {
+	return "column_requirement"
+}
+
+func (r *columnRequirementRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Createstmt":
+		r.handleCreatestmt(ctx)
+	case "Altertablestmt":
+		r.handleAltertablestmt(ctx)
+	case "Renamestmt":
+		r.handleRenamestmt(ctx)
+	}
+	return nil
+}
+
+func (*columnRequirementRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+func (r *columnRequirementRule) handleCreatestmt(ctx antlr.ParserRuleContext) {
+	createCtx, ok := ctx.(*parser.CreatestmtContext)
+	if !ok {
+		return
+	}
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
 	// Initialize required columns for this statement (copy from config map)
-	c.requiredColumns = make(columnSet)
-	for column := range c.requiredColumnsMap {
-		c.requiredColumns[column] = true
+	r.requiredColumns = make(columnSet)
+	for column := range r.requiredColumnsMap {
+		r.requiredColumns[column] = true
 	}
 
-	qualifiedNames := ctx.AllQualified_name()
+	qualifiedNames := createCtx.AllQualified_name()
 	if len(qualifiedNames) == 0 {
 		return
 	}
@@ -96,54 +120,58 @@ func (c *columnRequirementChecker) EnterCreatestmt(ctx *parser.CreatestmtContext
 	}
 
 	// Mark columns as present
-	if ctx.Opttableelementlist() != nil && ctx.Opttableelementlist().Tableelementlist() != nil {
-		allElements := ctx.Opttableelementlist().Tableelementlist().AllTableelement()
+	if createCtx.Opttableelementlist() != nil && createCtx.Opttableelementlist().Tableelementlist() != nil {
+		allElements := createCtx.Opttableelementlist().Tableelementlist().AllTableelement()
 		for _, elem := range allElements {
 			if elem.ColumnDef() != nil && elem.ColumnDef().Colid() != nil {
 				columnName := pg.NormalizePostgreSQLColid(elem.ColumnDef().Colid())
-				delete(c.requiredColumns, columnName)
+				delete(r.requiredColumns, columnName)
 			}
 		}
 	}
 
 	// Check if any required columns are missing
-	if len(c.requiredColumns) > 0 {
+	if len(r.requiredColumns) > 0 {
 		var missingColumns []string
-		for column := range c.requiredColumns {
+		for column := range r.requiredColumns {
 			missingColumns = append(missingColumns, column)
 		}
 		slices.Sort(missingColumns)
 
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:  c.level,
+		r.AddAdvice(&storepb.Advice{
+			Status:  r.level,
 			Code:    advisor.NoRequiredColumn.Int32(),
-			Title:   c.title,
+			Title:   r.title,
 			Content: fmt.Sprintf("Table %q requires columns: %s", tableName, strings.Join(missingColumns, ", ")),
 			StartPosition: &storepb.Position{
-				Line:   int32(ctx.GetStart().GetLine()),
+				Line:   int32(createCtx.GetStart().GetLine()),
 				Column: 0,
 			},
 		})
 	}
 }
 
-func (c *columnRequirementChecker) EnterAltertablestmt(ctx *parser.AltertablestmtContext) {
+func (r *columnRequirementRule) handleAltertablestmt(ctx antlr.ParserRuleContext) {
+	alterCtx, ok := ctx.(*parser.AltertablestmtContext)
+	if !ok {
+		return
+	}
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
-	if ctx.Relation_expr() == nil || ctx.Relation_expr().Qualified_name() == nil {
+	if alterCtx.Relation_expr() == nil || alterCtx.Relation_expr().Qualified_name() == nil {
 		return
 	}
 
-	tableName := extractTableName(ctx.Relation_expr().Qualified_name())
+	tableName := extractTableName(alterCtx.Relation_expr().Qualified_name())
 	if tableName == "" {
 		return
 	}
 
 	// Check ALTER TABLE commands
-	if ctx.Alter_table_cmds() != nil {
-		allCmds := ctx.Alter_table_cmds().AllAlter_table_cmd()
+	if alterCtx.Alter_table_cmds() != nil {
+		allCmds := alterCtx.Alter_table_cmds().AllAlter_table_cmd()
 		for _, cmd := range allCmds {
 			// DROP COLUMN (note: COLUMN keyword is optional in PostgreSQL)
 			if cmd.DROP() != nil {
@@ -151,14 +179,14 @@ func (c *columnRequirementChecker) EnterAltertablestmt(ctx *parser.Altertablestm
 				if len(allColids) > 0 {
 					columnName := pg.NormalizePostgreSQLColid(allColids[0])
 					// Check if this is a required column (O(1) lookup)
-					if c.requiredColumnsMap[columnName] {
-						c.adviceList = append(c.adviceList, &storepb.Advice{
-							Status:  c.level,
+					if r.requiredColumnsMap[columnName] {
+						r.AddAdvice(&storepb.Advice{
+							Status:  r.level,
 							Code:    advisor.NoRequiredColumn.Int32(),
-							Title:   c.title,
+							Title:   r.title,
 							Content: fmt.Sprintf("Table %q requires columns: %s", tableName, columnName),
 							StartPosition: &storepb.Position{
-								Line:   int32(ctx.GetStart().GetLine()),
+								Line:   int32(alterCtx.GetStart().GetLine()),
 								Column: 0,
 							},
 						})
@@ -169,27 +197,31 @@ func (c *columnRequirementChecker) EnterAltertablestmt(ctx *parser.Altertablestm
 	}
 }
 
-func (c *columnRequirementChecker) EnterRenamestmt(ctx *parser.RenamestmtContext) {
+func (r *columnRequirementRule) handleRenamestmt(ctx antlr.ParserRuleContext) {
+	renameCtx, ok := ctx.(*parser.RenamestmtContext)
+	if !ok {
+		return
+	}
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
 	// Check if this is RENAME COLUMN
-	if ctx.Opt_column() == nil || ctx.Opt_column().COLUMN() == nil {
+	if renameCtx.Opt_column() == nil || renameCtx.Opt_column().COLUMN() == nil {
 		return
 	}
 
 	// Get table name
 	var tableName string
-	if ctx.Relation_expr() != nil && ctx.Relation_expr().Qualified_name() != nil {
-		tableName = extractTableName(ctx.Relation_expr().Qualified_name())
+	if renameCtx.Relation_expr() != nil && renameCtx.Relation_expr().Qualified_name() != nil {
+		tableName = extractTableName(renameCtx.Relation_expr().Qualified_name())
 	}
 	if tableName == "" {
 		return
 	}
 
 	// Get old and new column names
-	allNames := ctx.AllName()
+	allNames := renameCtx.AllName()
 	if len(allNames) < 2 {
 		return
 	}
@@ -198,14 +230,14 @@ func (c *columnRequirementChecker) EnterRenamestmt(ctx *parser.RenamestmtContext
 	newName := pg.NormalizePostgreSQLName(allNames[1])
 
 	// Check if renaming away from a required column name (O(1) lookup)
-	if c.requiredColumnsMap[oldName] && oldName != newName {
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:  c.level,
+	if r.requiredColumnsMap[oldName] && oldName != newName {
+		r.AddAdvice(&storepb.Advice{
+			Status:  r.level,
 			Code:    advisor.NoRequiredColumn.Int32(),
-			Title:   c.title,
+			Title:   r.title,
 			Content: fmt.Sprintf("Table %q requires columns: %s", tableName, oldName),
 			StartPosition: &storepb.Position{
-				Line:   int32(ctx.GetStart().GetLine()),
+				Line:   int32(renameCtx.GetStart().GetLine()),
 				Column: 0,
 			},
 		})
