@@ -132,6 +132,7 @@ psql -U bbdev bbdev
 ### Git
 
 - Follow conventional commit format
+- **Worktrees** — Place git worktrees in `../bytebase-worktrees/` (sibling directory to the main repo) to keep them organized and separate from the main working directory
 
 ### Imports
 
