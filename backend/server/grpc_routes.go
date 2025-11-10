@@ -20,7 +20,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
-	"github.com/bytebase/bytebase/backend/common/audit"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/common/stacktrace"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -53,7 +52,6 @@ func configureGrpcRouters(
 	iamManager *iam.Manager,
 	secret string,
 	sampleInstanceManager *sampleinstance.Manager,
-	stdoutLogger audit.Logger,
 ) error {
 	// Note: the gateway response modifier takes the token duration on server startup. If the value is changed,
 	// the user has to restart the server to take the latest value.
@@ -118,7 +116,7 @@ func configureGrpcRouters(
 			apiv1.NewDebugInterceptor(metricReporter),
 			auth.New(stores, secret, licenseService, stateCfg, profile),
 			apiv1.NewACLInterceptor(stores, secret, iamManager, profile),
-			apiv1.NewAuditInterceptor(stores, stdoutLogger, secret, profile),
+			apiv1.NewAuditInterceptor(stores, secret, profile),
 		),
 		connect.WithRecover(onPanic),
 	)

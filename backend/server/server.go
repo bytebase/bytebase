@@ -17,7 +17,6 @@ import (
 	directorysync "github.com/bytebase/bytebase/backend/api/directory-sync"
 	"github.com/bytebase/bytebase/backend/api/lsp"
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/audit"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
@@ -68,13 +67,12 @@ type Server struct {
 
 	licenseService *enterprise.LicenseService
 
-	profile      *config.Profile
-	echoServer   *echo.Echo
-	lspServer    *lsp.Server
-	store        *store.Store
-	dbFactory    *dbfactory.DBFactory
-	stdoutLogger audit.Logger
-	startedTS    int64
+	profile    *config.Profile
+	echoServer *echo.Echo
+	lspServer  *lsp.Server
+	store      *store.Store
+	dbFactory  *dbfactory.DBFactory
+	startedTS  int64
 
 	// PG server stoppers.
 	stopper []func()
@@ -215,12 +213,9 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	// LSP server.
 	s.lspServer = lsp.NewServer(s.store, profile, secret, s.stateCfg, s.iamManager, s.licenseService)
 
-	// Stdout audit logger - synchronous logging to stdout
-	s.stdoutLogger = audit.NewStdoutLogger(nil, &s.profile.RuntimeEnableAuditLogStdout)
-
 	directorySyncServer := directorysync.NewService(s.store, s.licenseService, s.iamManager)
 
-	if err := configureGrpcRouters(ctx, s.echoServer, s.store, sheetManager, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, secret, s.sampleInstanceManager, s.stdoutLogger); err != nil {
+	if err := configureGrpcRouters(ctx, s.echoServer, s.store, sheetManager, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, secret, s.sampleInstanceManager); err != nil {
 		return nil, errors.Wrapf(err, "failed to configure gRPC routers")
 	}
 	configureEchoRouters(s.echoServer, s.lspServer, directorySyncServer, profile)

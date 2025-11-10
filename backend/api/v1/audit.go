@@ -20,7 +20,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/audit"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -36,19 +35,17 @@ var (
 
 // AuditInterceptor is the v1 audit interceptor for gRPC server.
 type AuditInterceptor struct {
-	store        *store.Store
-	stdoutLogger audit.Logger
-	secret       string
-	profile      *config.Profile
+	store   *store.Store
+	secret  string
+	profile *config.Profile
 }
 
 // NewAuditInterceptor returns a new v1 API audit interceptor.
-func NewAuditInterceptor(store *store.Store, stdoutLogger audit.Logger, secret string, profile *config.Profile) *AuditInterceptor {
+func NewAuditInterceptor(store *store.Store, secret string, profile *config.Profile) *AuditInterceptor {
 	return &AuditInterceptor{
-		store:        store,
-		stdoutLogger: stdoutLogger,
-		secret:       secret,
-		profile:      profile,
+		store:   store,
+		secret:  secret,
+		profile: profile,
 	}
 }
 
@@ -69,7 +66,7 @@ func (in *AuditInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc 
 			if !common.IsNil(response) {
 				respMsg = response.Any()
 			}
-			if err := createAuditLogConnect(ctx, req.Any(), respMsg, req.Spec().Procedure, in.store, in.stdoutLogger, in.secret, in.profile, serviceData, rerr, req.Header(), req.Peer().Addr, latency); err != nil {
+			if err := createAuditLogConnect(ctx, req.Any(), respMsg, req.Spec().Procedure, in.store, in.secret, in.profile, serviceData, rerr, req.Header(), req.Peer().Addr, latency); err != nil {
 				slog.Warn("audit interceptor: failed to create audit log", log.BBError(err), slog.String("method", req.Spec().Procedure))
 			}
 		}
@@ -130,14 +127,14 @@ func (c *auditConnectStreamingConn) Send(resp any) error {
 	// Create audit log for each message pair
 	if c.curRequest != nil {
 		latency := time.Since(c.startTime)
-		if auditErr := createAuditLogConnect(c.ctx, c.curRequest, resp, c.method, c.interceptor.store, c.interceptor.stdoutLogger, c.interceptor.secret, c.interceptor.profile, nil, nil, c.RequestHeader(), c.Peer().Addr, latency); auditErr != nil {
+		if auditErr := createAuditLogConnect(c.ctx, c.curRequest, resp, c.method, c.interceptor.store, c.interceptor.secret, c.interceptor.profile, nil, nil, c.RequestHeader(), c.Peer().Addr, latency); auditErr != nil {
 			return auditErr
 		}
 	}
 	return nil
 }
 
-func createAuditLogConnect(ctx context.Context, request, response any, method string, storage *store.Store, stdoutLogger audit.Logger, secret string, profile *config.Profile, serviceData *anypb.Any, rerr error, headers http.Header, peerAddr string, latency time.Duration) error {
+func createAuditLogConnect(ctx context.Context, request, response any, method string, storage *store.Store, secret string, profile *config.Profile, serviceData *anypb.Any, rerr error, headers http.Header, peerAddr string, latency time.Duration) error {
 	requestString, err := getRequestString(request)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get request string")
@@ -213,15 +210,72 @@ func createAuditLogConnect(ctx context.Context, request, response any, method st
 			return err
 		}
 
-		if err := stdoutLogger.Log(ctx, p); err != nil {
-			slog.Warn("failed to write audit log to stdout, continuing since DB write succeeded",
-				slog.String("method", p.Method),
-				slog.String("user", p.User),
-				slog.String("error", err.Error()))
+		// Log audit event to stdout using slog (if enabled)
+		if profile.RuntimeEnableAuditLogStdout.Load() {
+			logAuditToStdout(ctx, p)
 		}
 	}
 
 	return nil
+}
+
+// logAuditToStdout writes audit log events to stdout using Go's standard slog library.
+// Output format is controlled by the global slog handler (JSON in production, text in dev).
+// Logs include a "log_type": "audit" field to distinguish from application logs.
+// This is a best-effort operation - errors are not returned to avoid failing the audit flow.
+func logAuditToStdout(ctx context.Context, p *storepb.AuditLog) {
+	attrs := []slog.Attr{
+		slog.String("log_type", "audit"),
+		slog.String("parent", p.Parent),
+		slog.String("method", p.Method),
+	}
+
+	if p.Resource != "" {
+		attrs = append(attrs, slog.String("resource", p.Resource))
+	}
+	if p.User != "" {
+		attrs = append(attrs, slog.String("user", p.User))
+	}
+
+	if p.Status != nil {
+		attrs = append(attrs, slog.Int("status_code", int(p.Status.Code)))
+		if p.Status.Message != "" {
+			attrs = append(attrs, slog.String("status_message", p.Status.Message))
+		}
+	}
+
+	if p.Latency != nil {
+		attrs = append(attrs,
+			slog.Int64("latency_ms", p.Latency.AsDuration().Milliseconds()),
+		)
+	}
+
+	if p.RequestMetadata != nil {
+		if p.RequestMetadata.CallerIp != "" {
+			attrs = append(attrs, slog.String("client_ip", p.RequestMetadata.CallerIp))
+		}
+		if p.RequestMetadata.CallerSuppliedUserAgent != "" {
+			attrs = append(attrs, slog.String("user_agent", p.RequestMetadata.CallerSuppliedUserAgent))
+		}
+	}
+
+	// Map severity to slog level
+	// Proto defines: DEBUG, INFO, NOTICE, WARNING, ERROR, CRITICAL, ALERT, EMERGENCY
+	// Currently only INFO is used, but handle all cases for future-proofing
+	var level slog.Level
+	switch p.Severity {
+	case storepb.AuditLog_DEBUG:
+		level = slog.LevelDebug
+	case storepb.AuditLog_WARNING:
+		level = slog.LevelWarn
+	case storepb.AuditLog_ERROR, storepb.AuditLog_CRITICAL, storepb.AuditLog_ALERT, storepb.AuditLog_EMERGENCY:
+		level = slog.LevelError
+	default:
+		// INFO, NOTICE, SEVERITY_UNSPECIFIED
+		level = slog.LevelInfo
+	}
+
+	slog.LogAttrs(ctx, level, p.Method, attrs...)
 }
 
 func getRequestResource(request any) string {
