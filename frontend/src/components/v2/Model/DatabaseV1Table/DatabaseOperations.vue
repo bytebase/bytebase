@@ -93,7 +93,7 @@
 
   <AddSpecDrawer
     v-model:show="state.showChangeDatabaseDrawer"
-    :title="$t('database.edit-database')"
+    :title="$t('database.change-database')"
     :pre-selected-databases="databases"
     :project-name="selectedProjectName"
     :use-legacy-issue-flow="true"
@@ -430,7 +430,7 @@ const actions = computed((): DatabaseAction[] => {
       case "CHANGE-DATABASE":
         resp.push({
           icon: h(PencilIcon),
-          text: t("database.edit-database"),
+          text: t("database.change-database"),
           disabled:
             !allowChangeDatabase.value ||
             !selectedProjectName.value ||
@@ -470,7 +470,7 @@ const actions = computed((): DatabaseAction[] => {
       case "SYNC-SCHEMA":
         resp.push({
           icon: h(RefreshCcwIcon),
-          text: t("common.sync"),
+          text: t("database.sync-schema-button"),
           disabled: !allowSyncDatabases.value || props.databases.length < 1,
           click: syncSchema,
           tooltip: (action) => getDisabledTooltip(action),
