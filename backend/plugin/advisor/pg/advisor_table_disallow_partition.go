@@ -67,6 +67,8 @@ func (r *tableDisallowPartitionRule) OnEnter(ctx antlr.ParserRuleContext, nodeTy
 		r.handleCreatestmt(ctx.(*parser.CreatestmtContext))
 	case "Partition_cmd":
 		r.handlePartitionCmd(ctx.(*parser.Partition_cmdContext))
+	default:
+		// Do nothing for other node types
 	}
 	return nil
 }

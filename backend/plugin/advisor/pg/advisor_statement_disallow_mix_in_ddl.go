@@ -73,6 +73,8 @@ func (r *statementDisallowMixInDDLRule) OnEnter(ctx antlr.ParserRuleContext, nod
 		r.handleUpdatestmt(ctx)
 	case "Deletestmt":
 		r.handleDeletestmt(ctx)
+	default:
+		// Do nothing for other node types
 	}
 	return nil
 }

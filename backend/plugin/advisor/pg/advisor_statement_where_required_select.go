@@ -66,6 +66,8 @@ func (r *statementWhereRequiredSelectRule) OnEnter(ctx antlr.ParserRuleContext, 
 		r.handleSelectstmt(ctx.(*parser.SelectstmtContext))
 	case "Select_with_parens":
 		r.handleSelectWithParens(ctx.(*parser.Select_with_parensContext))
+	default:
+		// Do nothing for other node types
 	}
 	return nil
 }

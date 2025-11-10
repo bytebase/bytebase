@@ -71,6 +71,8 @@ func (r *nonTransactionalRule) OnEnter(ctx antlr.ParserRuleContext, nodeType str
 		r.handleDropstmt(ctx.(*parser.DropstmtContext))
 	case "Vacuumstmt":
 		r.handleVacuumstmt(ctx.(*parser.VacuumstmtContext))
+	default:
+		// Do nothing for other node types
 	}
 	return nil
 }

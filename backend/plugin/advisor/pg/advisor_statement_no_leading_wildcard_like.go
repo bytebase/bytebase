@@ -67,6 +67,8 @@ func (r *statementNoLeadingWildcardLikeRule) OnEnter(ctx antlr.ParserRuleContext
 	switch nodeType {
 	case "A_expr_like":
 		r.handleAExprLike(ctx.(*parser.A_expr_likeContext))
+	default:
+		// Do nothing for other node types
 	}
 	return nil
 }

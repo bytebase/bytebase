@@ -113,6 +113,8 @@ func (r *statementObjectOwnerCheckRule) OnEnter(ctx antlr.ParserRuleContext, nod
 		r.handleDropstmt(ctx.(*parser.DropstmtContext))
 	case "Renamestmt":
 		r.handleRenamestmt(ctx.(*parser.RenamestmtContext))
+	default:
+		// Do nothing for other node types
 	}
 	return nil
 }

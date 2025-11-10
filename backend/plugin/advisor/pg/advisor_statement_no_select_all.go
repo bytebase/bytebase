@@ -65,6 +65,8 @@ func (r *noSelectAllRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) 
 	switch nodeType {
 	case "Simple_select_pramary":
 		r.handleSimpleSelectPramary(ctx.(*parser.Simple_select_pramaryContext))
+	default:
+		// Do nothing for other node types
 	}
 	return nil
 }

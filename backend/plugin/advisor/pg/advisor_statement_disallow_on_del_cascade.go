@@ -65,6 +65,8 @@ func (r *statementDisallowOnDelCascadeRule) OnEnter(ctx antlr.ParserRuleContext,
 	switch nodeType {
 	case "Key_delete":
 		r.handleKeyDelete(ctx.(*parser.Key_deleteContext))
+	default:
+		// Do nothing for other node types
 	}
 	return nil
 }

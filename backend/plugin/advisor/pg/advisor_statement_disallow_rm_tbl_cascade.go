@@ -64,6 +64,8 @@ func (r *statementDisallowRemoveTblCascadeRule) OnEnter(ctx antlr.ParserRuleCont
 		r.handleDropstmt(ctx.(*parser.DropstmtContext))
 	case "Truncatestmt":
 		r.handleTruncatestmt(ctx.(*parser.TruncatestmtContext))
+	default:
+		// Do nothing for other node types
 	}
 	return nil
 }

@@ -72,6 +72,8 @@ func (r *tableDropNamingConventionRule) OnEnter(ctx antlr.ParserRuleContext, nod
 	switch nodeType {
 	case "Dropstmt":
 		r.handleDropstmt(ctx.(*parser.DropstmtContext))
+	default:
+		// Do nothing for other node types
 	}
 	return nil
 }

@@ -84,6 +84,8 @@ func (r *statementDMLDryRunRule) OnEnter(ctx antlr.ParserRuleContext, nodeType s
 		r.handleUpdatestmt(ctx.(*parser.UpdatestmtContext))
 	case "Deletestmt":
 		r.handleDeletestmt(ctx.(*parser.DeletestmtContext))
+	default:
+		// Do nothing for other node types
 	}
 	return nil
 }

@@ -62,6 +62,8 @@ func (r *statementDisallowAddColumnWithDefaultRule) OnEnter(ctx antlr.ParserRule
 	switch nodeType {
 	case "Altertablestmt":
 		r.handleAltertablestmt(ctx.(*parser.AltertablestmtContext))
+	default:
+		// Do nothing for other node types
 	}
 	return nil
 }

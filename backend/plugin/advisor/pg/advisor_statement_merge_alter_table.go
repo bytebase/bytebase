@@ -98,6 +98,8 @@ func (r *statementMergeAlterTableRule) OnEnter(ctx antlr.ParserRuleContext, node
 		r.handleCreatestmt(ctx.(*parser.CreatestmtContext))
 	case "Altertablestmt":
 		r.handleAltertablestmt(ctx.(*parser.AltertablestmtContext))
+	default:
+		// Do nothing for other node types
 	}
 	return nil
 }

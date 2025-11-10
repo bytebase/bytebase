@@ -104,6 +104,8 @@ func (r *statementDisallowMixInDMLRule) OnEnter(ctx antlr.ParserRuleContext, nod
 		r.handleCreatedbstmt(ctx)
 	case "Creatematviewstmt":
 		r.handleCreatematviewstmt(ctx)
+	default:
+		// Do nothing for other node types
 	}
 	return nil
 }

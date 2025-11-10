@@ -85,6 +85,8 @@ func (r *tableRequirePKRule) OnEnter(ctx antlr.ParserRuleContext, nodeType strin
 		r.handleAltertablestmt(ctx.(*parser.AltertablestmtContext))
 	case "Dropstmt":
 		r.handleDropstmt(ctx.(*parser.DropstmtContext))
+	default:
+		// Do nothing for other node types
 	}
 	return nil
 }
