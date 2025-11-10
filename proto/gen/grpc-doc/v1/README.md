@@ -678,6 +678,8 @@
     - [SubscriptionService](#bytebase-v1-SubscriptionService)
   
 - [v1/worksheet_service.proto](#v1_worksheet_service-proto)
+    - [BatchUpdateWorksheetOrganizerRequest](#bytebase-v1-BatchUpdateWorksheetOrganizerRequest)
+    - [BatchUpdateWorksheetOrganizerResponse](#bytebase-v1-BatchUpdateWorksheetOrganizerResponse)
     - [CreateWorksheetRequest](#bytebase-v1-CreateWorksheetRequest)
     - [DeleteWorksheetRequest](#bytebase-v1-DeleteWorksheetRequest)
     - [GetWorksheetRequest](#bytebase-v1-GetWorksheetRequest)
@@ -10918,6 +10920,36 @@ SubscriptionService manages enterprise subscriptions and licensing.
 
 
 
+<a name="bytebase-v1-BatchUpdateWorksheetOrganizerRequest"></a>
+
+### BatchUpdateWorksheetOrganizerRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| requests | [UpdateWorksheetOrganizerRequest](#bytebase-v1-UpdateWorksheetOrganizerRequest) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchUpdateWorksheetOrganizerResponse"></a>
+
+### BatchUpdateWorksheetOrganizerResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| worksheet_organizers | [WorksheetOrganizer](#bytebase-v1-WorksheetOrganizer) | repeated |  |
+
+
+
+
+
+
 <a name="bytebase-v1-CreateWorksheetRequest"></a>
 
 ### CreateWorksheetRequest
@@ -10973,9 +11005,9 @@ SubscriptionService manages enterprise subscriptions and licensing.
 | ----- | ---- | ----- | ----------- |
 | filter | [string](#string) |  | To filter the search result. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
-Supported filter: - creator: the worksheet creator in &#34;users/{email}&#34; format, support &#34;==&#34; and &#34;!=&#34; operator. - starred: should be &#34;true&#34; or &#34;false&#34;, filter starred/unstarred sheets, support &#34;==&#34; operator. - visibility: check Visibility enum in the Worksheet message for values, support &#34;==&#34; and &#34;in [xx]&#34; operator.
+Supported filter: - creator: the worksheet creator in &#34;users/{email}&#34; format, support &#34;==&#34; and &#34;!=&#34; operator. - starred: should be &#34;true&#34; or &#34;false&#34;, filter starred/unstarred sheets, support &#34;==&#34; operator. - visibility: check Visibility enum in the Worksheet message for values, support &#34;==&#34; and &#34;in [xx]&#34; operator. - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator.
 
-For example: creator == &#34;users/{email}&#34; creator != &#34;users/{email}&#34; starred == true starred == false visibility in [&#34;PRIVATE&#34;, &#34;PROJECT_READ&#34;, &#34;PROJECT_WRITE&#34;] visibility == &#34;PRIVATE&#34; |
+For example: creator == &#34;users/{email}&#34; creator != &#34;users/{email}&#34; starred == true starred == false visibility in [&#34;PRIVATE&#34;, &#34;PROJECT_READ&#34;, &#34;PROJECT_WRITE&#34;] visibility == &#34;PRIVATE&#34; project == &#34;projects/{project resource id}&#34; |
 
 
 
@@ -11109,6 +11141,7 @@ WorksheetService manages SQL worksheets for query development.
 | SearchWorksheets | [SearchWorksheetsRequest](#bytebase-v1-SearchWorksheetsRequest) | [SearchWorksheetsResponse](#bytebase-v1-SearchWorksheetsResponse) | Search for worksheets. This is used for finding my worksheets or worksheets shared by other people. The sheet accessibility is the same as GetWorksheet(). Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets) |
 | UpdateWorksheet | [UpdateWorksheetRequest](#bytebase-v1-UpdateWorksheetRequest) | [Worksheet](#bytebase-v1-Worksheet) | Update a worksheet. The users can access this method if, - they are the creator of the worksheet; - they have bb.worksheets.manage permission on the workspace; - the sheet is shared with them with PROJECT_WRITE visibility, and they have bb.projects.get permission on the project. Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE worksheets) |
 | UpdateWorksheetOrganizer | [UpdateWorksheetOrganizerRequest](#bytebase-v1-UpdateWorksheetOrganizerRequest) | [WorksheetOrganizer](#bytebase-v1-WorksheetOrganizer) | Update the organizer of a worksheet. The access is the same as UpdateWorksheet method. Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets) |
+| BatchUpdateWorksheetOrganizer | [BatchUpdateWorksheetOrganizerRequest](#bytebase-v1-BatchUpdateWorksheetOrganizerRequest) | [BatchUpdateWorksheetOrganizerResponse](#bytebase-v1-BatchUpdateWorksheetOrganizerResponse) | Batch update the organizers of worksheets. The access is the same as UpdateWorksheet method. Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets) |
 | DeleteWorksheet | [DeleteWorksheetRequest](#bytebase-v1-DeleteWorksheetRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete a worksheet. The access is the same as UpdateWorksheet method. Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE worksheets) |
 
  

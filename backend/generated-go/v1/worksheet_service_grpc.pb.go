@@ -20,12 +20,13 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	WorksheetService_CreateWorksheet_FullMethodName          = "/bytebase.v1.WorksheetService/CreateWorksheet"
-	WorksheetService_GetWorksheet_FullMethodName             = "/bytebase.v1.WorksheetService/GetWorksheet"
-	WorksheetService_SearchWorksheets_FullMethodName         = "/bytebase.v1.WorksheetService/SearchWorksheets"
-	WorksheetService_UpdateWorksheet_FullMethodName          = "/bytebase.v1.WorksheetService/UpdateWorksheet"
-	WorksheetService_UpdateWorksheetOrganizer_FullMethodName = "/bytebase.v1.WorksheetService/UpdateWorksheetOrganizer"
-	WorksheetService_DeleteWorksheet_FullMethodName          = "/bytebase.v1.WorksheetService/DeleteWorksheet"
+	WorksheetService_CreateWorksheet_FullMethodName               = "/bytebase.v1.WorksheetService/CreateWorksheet"
+	WorksheetService_GetWorksheet_FullMethodName                  = "/bytebase.v1.WorksheetService/GetWorksheet"
+	WorksheetService_SearchWorksheets_FullMethodName              = "/bytebase.v1.WorksheetService/SearchWorksheets"
+	WorksheetService_UpdateWorksheet_FullMethodName               = "/bytebase.v1.WorksheetService/UpdateWorksheet"
+	WorksheetService_UpdateWorksheetOrganizer_FullMethodName      = "/bytebase.v1.WorksheetService/UpdateWorksheetOrganizer"
+	WorksheetService_BatchUpdateWorksheetOrganizer_FullMethodName = "/bytebase.v1.WorksheetService/BatchUpdateWorksheetOrganizer"
+	WorksheetService_DeleteWorksheet_FullMethodName               = "/bytebase.v1.WorksheetService/DeleteWorksheet"
 )
 
 // WorksheetServiceClient is the client API for WorksheetService service.
@@ -60,6 +61,10 @@ type WorksheetServiceClient interface {
 	// The access is the same as UpdateWorksheet method.
 	// Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
 	UpdateWorksheetOrganizer(ctx context.Context, in *UpdateWorksheetOrganizerRequest, opts ...grpc.CallOption) (*WorksheetOrganizer, error)
+	// Batch update the organizers of worksheets.
+	// The access is the same as UpdateWorksheet method.
+	// Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
+	BatchUpdateWorksheetOrganizer(ctx context.Context, in *BatchUpdateWorksheetOrganizerRequest, opts ...grpc.CallOption) (*BatchUpdateWorksheetOrganizerResponse, error)
 	// Delete a worksheet.
 	// The access is the same as UpdateWorksheet method.
 	// Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE worksheets)
@@ -124,6 +129,16 @@ func (c *worksheetServiceClient) UpdateWorksheetOrganizer(ctx context.Context, i
 	return out, nil
 }
 
+func (c *worksheetServiceClient) BatchUpdateWorksheetOrganizer(ctx context.Context, in *BatchUpdateWorksheetOrganizerRequest, opts ...grpc.CallOption) (*BatchUpdateWorksheetOrganizerResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BatchUpdateWorksheetOrganizerResponse)
+	err := c.cc.Invoke(ctx, WorksheetService_BatchUpdateWorksheetOrganizer_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *worksheetServiceClient) DeleteWorksheet(ctx context.Context, in *DeleteWorksheetRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(emptypb.Empty)
@@ -166,6 +181,10 @@ type WorksheetServiceServer interface {
 	// The access is the same as UpdateWorksheet method.
 	// Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
 	UpdateWorksheetOrganizer(context.Context, *UpdateWorksheetOrganizerRequest) (*WorksheetOrganizer, error)
+	// Batch update the organizers of worksheets.
+	// The access is the same as UpdateWorksheet method.
+	// Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
+	BatchUpdateWorksheetOrganizer(context.Context, *BatchUpdateWorksheetOrganizerRequest) (*BatchUpdateWorksheetOrganizerResponse, error)
 	// Delete a worksheet.
 	// The access is the same as UpdateWorksheet method.
 	// Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE worksheets)
@@ -194,6 +213,9 @@ func (UnimplementedWorksheetServiceServer) UpdateWorksheet(context.Context, *Upd
 }
 func (UnimplementedWorksheetServiceServer) UpdateWorksheetOrganizer(context.Context, *UpdateWorksheetOrganizerRequest) (*WorksheetOrganizer, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateWorksheetOrganizer not implemented")
+}
+func (UnimplementedWorksheetServiceServer) BatchUpdateWorksheetOrganizer(context.Context, *BatchUpdateWorksheetOrganizerRequest) (*BatchUpdateWorksheetOrganizerResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BatchUpdateWorksheetOrganizer not implemented")
 }
 func (UnimplementedWorksheetServiceServer) DeleteWorksheet(context.Context, *DeleteWorksheetRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteWorksheet not implemented")
@@ -309,6 +331,24 @@ func _WorksheetService_UpdateWorksheetOrganizer_Handler(srv interface{}, ctx con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _WorksheetService_BatchUpdateWorksheetOrganizer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BatchUpdateWorksheetOrganizerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WorksheetServiceServer).BatchUpdateWorksheetOrganizer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: WorksheetService_BatchUpdateWorksheetOrganizer_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WorksheetServiceServer).BatchUpdateWorksheetOrganizer(ctx, req.(*BatchUpdateWorksheetOrganizerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _WorksheetService_DeleteWorksheet_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteWorksheetRequest)
 	if err := dec(in); err != nil {
@@ -353,6 +393,10 @@ var WorksheetService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateWorksheetOrganizer",
 			Handler:    _WorksheetService_UpdateWorksheetOrganizer_Handler,
+		},
+		{
+			MethodName: "BatchUpdateWorksheetOrganizer",
+			Handler:    _WorksheetService_BatchUpdateWorksheetOrganizer_Handler,
 		},
 		{
 			MethodName: "DeleteWorksheet",

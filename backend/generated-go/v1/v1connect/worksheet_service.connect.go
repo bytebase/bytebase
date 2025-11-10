@@ -49,6 +49,9 @@ const (
 	// WorksheetServiceUpdateWorksheetOrganizerProcedure is the fully-qualified name of the
 	// WorksheetService's UpdateWorksheetOrganizer RPC.
 	WorksheetServiceUpdateWorksheetOrganizerProcedure = "/bytebase.v1.WorksheetService/UpdateWorksheetOrganizer"
+	// WorksheetServiceBatchUpdateWorksheetOrganizerProcedure is the fully-qualified name of the
+	// WorksheetService's BatchUpdateWorksheetOrganizer RPC.
+	WorksheetServiceBatchUpdateWorksheetOrganizerProcedure = "/bytebase.v1.WorksheetService/BatchUpdateWorksheetOrganizer"
 	// WorksheetServiceDeleteWorksheetProcedure is the fully-qualified name of the WorksheetService's
 	// DeleteWorksheet RPC.
 	WorksheetServiceDeleteWorksheetProcedure = "/bytebase.v1.WorksheetService/DeleteWorksheet"
@@ -82,6 +85,10 @@ type WorksheetServiceClient interface {
 	// The access is the same as UpdateWorksheet method.
 	// Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
 	UpdateWorksheetOrganizer(context.Context, *connect.Request[v1.UpdateWorksheetOrganizerRequest]) (*connect.Response[v1.WorksheetOrganizer], error)
+	// Batch update the organizers of worksheets.
+	// The access is the same as UpdateWorksheet method.
+	// Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
+	BatchUpdateWorksheetOrganizer(context.Context, *connect.Request[v1.BatchUpdateWorksheetOrganizerRequest]) (*connect.Response[v1.BatchUpdateWorksheetOrganizerResponse], error)
 	// Delete a worksheet.
 	// The access is the same as UpdateWorksheet method.
 	// Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE worksheets)
@@ -129,6 +136,12 @@ func NewWorksheetServiceClient(httpClient connect.HTTPClient, baseURL string, op
 			connect.WithSchema(worksheetServiceMethods.ByName("UpdateWorksheetOrganizer")),
 			connect.WithClientOptions(opts...),
 		),
+		batchUpdateWorksheetOrganizer: connect.NewClient[v1.BatchUpdateWorksheetOrganizerRequest, v1.BatchUpdateWorksheetOrganizerResponse](
+			httpClient,
+			baseURL+WorksheetServiceBatchUpdateWorksheetOrganizerProcedure,
+			connect.WithSchema(worksheetServiceMethods.ByName("BatchUpdateWorksheetOrganizer")),
+			connect.WithClientOptions(opts...),
+		),
 		deleteWorksheet: connect.NewClient[v1.DeleteWorksheetRequest, emptypb.Empty](
 			httpClient,
 			baseURL+WorksheetServiceDeleteWorksheetProcedure,
@@ -140,12 +153,13 @@ func NewWorksheetServiceClient(httpClient connect.HTTPClient, baseURL string, op
 
 // worksheetServiceClient implements WorksheetServiceClient.
 type worksheetServiceClient struct {
-	createWorksheet          *connect.Client[v1.CreateWorksheetRequest, v1.Worksheet]
-	getWorksheet             *connect.Client[v1.GetWorksheetRequest, v1.Worksheet]
-	searchWorksheets         *connect.Client[v1.SearchWorksheetsRequest, v1.SearchWorksheetsResponse]
-	updateWorksheet          *connect.Client[v1.UpdateWorksheetRequest, v1.Worksheet]
-	updateWorksheetOrganizer *connect.Client[v1.UpdateWorksheetOrganizerRequest, v1.WorksheetOrganizer]
-	deleteWorksheet          *connect.Client[v1.DeleteWorksheetRequest, emptypb.Empty]
+	createWorksheet               *connect.Client[v1.CreateWorksheetRequest, v1.Worksheet]
+	getWorksheet                  *connect.Client[v1.GetWorksheetRequest, v1.Worksheet]
+	searchWorksheets              *connect.Client[v1.SearchWorksheetsRequest, v1.SearchWorksheetsResponse]
+	updateWorksheet               *connect.Client[v1.UpdateWorksheetRequest, v1.Worksheet]
+	updateWorksheetOrganizer      *connect.Client[v1.UpdateWorksheetOrganizerRequest, v1.WorksheetOrganizer]
+	batchUpdateWorksheetOrganizer *connect.Client[v1.BatchUpdateWorksheetOrganizerRequest, v1.BatchUpdateWorksheetOrganizerResponse]
+	deleteWorksheet               *connect.Client[v1.DeleteWorksheetRequest, emptypb.Empty]
 }
 
 // CreateWorksheet calls bytebase.v1.WorksheetService.CreateWorksheet.
@@ -171,6 +185,11 @@ func (c *worksheetServiceClient) UpdateWorksheet(ctx context.Context, req *conne
 // UpdateWorksheetOrganizer calls bytebase.v1.WorksheetService.UpdateWorksheetOrganizer.
 func (c *worksheetServiceClient) UpdateWorksheetOrganizer(ctx context.Context, req *connect.Request[v1.UpdateWorksheetOrganizerRequest]) (*connect.Response[v1.WorksheetOrganizer], error) {
 	return c.updateWorksheetOrganizer.CallUnary(ctx, req)
+}
+
+// BatchUpdateWorksheetOrganizer calls bytebase.v1.WorksheetService.BatchUpdateWorksheetOrganizer.
+func (c *worksheetServiceClient) BatchUpdateWorksheetOrganizer(ctx context.Context, req *connect.Request[v1.BatchUpdateWorksheetOrganizerRequest]) (*connect.Response[v1.BatchUpdateWorksheetOrganizerResponse], error) {
+	return c.batchUpdateWorksheetOrganizer.CallUnary(ctx, req)
 }
 
 // DeleteWorksheet calls bytebase.v1.WorksheetService.DeleteWorksheet.
@@ -206,6 +225,10 @@ type WorksheetServiceHandler interface {
 	// The access is the same as UpdateWorksheet method.
 	// Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
 	UpdateWorksheetOrganizer(context.Context, *connect.Request[v1.UpdateWorksheetOrganizerRequest]) (*connect.Response[v1.WorksheetOrganizer], error)
+	// Batch update the organizers of worksheets.
+	// The access is the same as UpdateWorksheet method.
+	// Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
+	BatchUpdateWorksheetOrganizer(context.Context, *connect.Request[v1.BatchUpdateWorksheetOrganizerRequest]) (*connect.Response[v1.BatchUpdateWorksheetOrganizerResponse], error)
 	// Delete a worksheet.
 	// The access is the same as UpdateWorksheet method.
 	// Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE worksheets)
@@ -249,6 +272,12 @@ func NewWorksheetServiceHandler(svc WorksheetServiceHandler, opts ...connect.Han
 		connect.WithSchema(worksheetServiceMethods.ByName("UpdateWorksheetOrganizer")),
 		connect.WithHandlerOptions(opts...),
 	)
+	worksheetServiceBatchUpdateWorksheetOrganizerHandler := connect.NewUnaryHandler(
+		WorksheetServiceBatchUpdateWorksheetOrganizerProcedure,
+		svc.BatchUpdateWorksheetOrganizer,
+		connect.WithSchema(worksheetServiceMethods.ByName("BatchUpdateWorksheetOrganizer")),
+		connect.WithHandlerOptions(opts...),
+	)
 	worksheetServiceDeleteWorksheetHandler := connect.NewUnaryHandler(
 		WorksheetServiceDeleteWorksheetProcedure,
 		svc.DeleteWorksheet,
@@ -267,6 +296,8 @@ func NewWorksheetServiceHandler(svc WorksheetServiceHandler, opts ...connect.Han
 			worksheetServiceUpdateWorksheetHandler.ServeHTTP(w, r)
 		case WorksheetServiceUpdateWorksheetOrganizerProcedure:
 			worksheetServiceUpdateWorksheetOrganizerHandler.ServeHTTP(w, r)
+		case WorksheetServiceBatchUpdateWorksheetOrganizerProcedure:
+			worksheetServiceBatchUpdateWorksheetOrganizerHandler.ServeHTTP(w, r)
 		case WorksheetServiceDeleteWorksheetProcedure:
 			worksheetServiceDeleteWorksheetHandler.ServeHTTP(w, r)
 		default:
@@ -296,6 +327,10 @@ func (UnimplementedWorksheetServiceHandler) UpdateWorksheet(context.Context, *co
 
 func (UnimplementedWorksheetServiceHandler) UpdateWorksheetOrganizer(context.Context, *connect.Request[v1.UpdateWorksheetOrganizerRequest]) (*connect.Response[v1.WorksheetOrganizer], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.WorksheetService.UpdateWorksheetOrganizer is not implemented"))
+}
+
+func (UnimplementedWorksheetServiceHandler) BatchUpdateWorksheetOrganizer(context.Context, *connect.Request[v1.BatchUpdateWorksheetOrganizerRequest]) (*connect.Response[v1.BatchUpdateWorksheetOrganizerResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.WorksheetService.BatchUpdateWorksheetOrganizer is not implemented"))
 }
 
 func (UnimplementedWorksheetServiceHandler) DeleteWorksheet(context.Context, *connect.Request[v1.DeleteWorksheetRequest]) (*connect.Response[emptypb.Empty], error) {
