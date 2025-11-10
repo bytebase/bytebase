@@ -6,8 +6,6 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 
-	parser "github.com/bytebase/parser/postgresql"
-
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 )
@@ -43,89 +41,109 @@ func (*StatementDisallowMixInDDLAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, err
 	}
 
-	checker := &statementDisallowMixInDDLChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
-		statementsText:               checkCtx.Statements,
+	rule := &statementDisallowMixInDDLRule{
+		BaseRule:       BaseRule{level: level, title: string(checkCtx.Rule.Type)},
+		statementsText: checkCtx.Statements,
 	}
 
+	checker := NewGenericChecker([]Rule{rule})
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type statementDisallowMixInDDLChecker struct {
-	*parser.BasePostgreSQLParserListener
-
-	adviceList     []*storepb.Advice
-	level          storepb.Advice_Status
-	title          string
+type statementDisallowMixInDDLRule struct {
+	BaseRule
 	statementsText string
 }
 
-// EnterSelectstmt handles SELECT statements (DML)
-func (c *statementDisallowMixInDDLChecker) EnterSelectstmt(ctx *parser.SelectstmtContext) {
+// Name returns the rule name for logging/debugging
+func (*statementDisallowMixInDDLRule) Name() string {
+	return "statement_disallow_mix_in_ddl"
+}
+
+// OnEnter is called when entering a parse tree node
+func (r *statementDisallowMixInDDLRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Selectstmt":
+		r.handleSelectstmt(ctx)
+	case "Insertstmt":
+		r.handleInsertstmt(ctx)
+	case "Updatestmt":
+		r.handleUpdatestmt(ctx)
+	case "Deletestmt":
+		r.handleDeletestmt(ctx)
+	}
+	return nil
+}
+
+// OnExit is called when exiting a parse tree node
+func (*statementDisallowMixInDDLRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+// handleSelectstmt handles SELECT statements (DML)
+func (r *statementDisallowMixInDDLRule) handleSelectstmt(ctx antlr.ParserRuleContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
-	c.addDMLAdvice(ctx, "SELECT")
+	r.addDMLAdvice(ctx)
 }
 
-// EnterInsertstmt handles INSERT statements (DML)
-func (c *statementDisallowMixInDDLChecker) EnterInsertstmt(ctx *parser.InsertstmtContext) {
+// handleInsertstmt handles INSERT statements (DML)
+func (r *statementDisallowMixInDDLRule) handleInsertstmt(ctx antlr.ParserRuleContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
-	c.addDMLAdvice(ctx, "INSERT")
+	r.addDMLAdvice(ctx)
 }
 
-// EnterUpdatestmt handles UPDATE statements (DML)
-func (c *statementDisallowMixInDDLChecker) EnterUpdatestmt(ctx *parser.UpdatestmtContext) {
+// handleUpdatestmt handles UPDATE statements (DML)
+func (r *statementDisallowMixInDDLRule) handleUpdatestmt(ctx antlr.ParserRuleContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
-	c.addDMLAdvice(ctx, "UPDATE")
+	r.addDMLAdvice(ctx)
 }
 
-// EnterDeletestmt handles DELETE statements (DML)
-func (c *statementDisallowMixInDDLChecker) EnterDeletestmt(ctx *parser.DeletestmtContext) {
+// handleDeletestmt handles DELETE statements (DML)
+func (r *statementDisallowMixInDDLRule) handleDeletestmt(ctx antlr.ParserRuleContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
-	c.addDMLAdvice(ctx, "DELETE")
+	r.addDMLAdvice(ctx)
 }
 
-func (c *statementDisallowMixInDDLChecker) addDMLAdvice(ctx antlr.ParserRuleContext, _ string) {
+func (r *statementDisallowMixInDDLRule) addDMLAdvice(ctx antlr.ParserRuleContext) {
 	// Extract the statement text including semicolon using character positions
 	startPos := ctx.GetStart().GetStart()
 	stopPos := ctx.GetStop().GetStop()
 
 	// Find the semicolon after this statement
 	stmtText := ""
-	if stopPos+1 < len(c.statementsText) {
+	if stopPos+1 < len(r.statementsText) {
 		// Look for semicolon
 		endPos := stopPos + 1
-		for endPos < len(c.statementsText) && c.statementsText[endPos] != ';' {
+		for endPos < len(r.statementsText) && r.statementsText[endPos] != ';' {
 			endPos++
 		}
-		if endPos < len(c.statementsText) {
-			stmtText = c.statementsText[startPos : endPos+1]
+		if endPos < len(r.statementsText) {
+			stmtText = r.statementsText[startPos : endPos+1]
 		} else {
-			stmtText = c.statementsText[startPos:stopPos+1] + ";"
+			stmtText = r.statementsText[startPos:stopPos+1] + ";"
 		}
 	} else {
-		stmtText = c.statementsText[startPos:stopPos+1] + ";"
+		stmtText = r.statementsText[startPos:stopPos+1] + ";"
 	}
 
-	c.adviceList = append(c.adviceList, &storepb.Advice{
-		Status:  c.level,
+	r.AddAdvice(&storepb.Advice{
+		Status:  r.level,
 		Code:    advisor.StatementDisallowMixDDLDML.Int32(),
-		Title:   c.title,
+		Title:   r.title,
 		Content: fmt.Sprintf("Alter schema can only run DDL, %q is not DDL", stmtText),
 		StartPosition: &storepb.Position{
 			Line:   int32(ctx.GetStart().GetLine()),

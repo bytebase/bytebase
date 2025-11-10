@@ -35,27 +35,43 @@ func (*StatementDisallowAddColumnWithDefaultAdvisor) Check(_ context.Context, ch
 		return nil, err
 	}
 
-	checker := &statementDisallowAddColumnWithDefaultChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
+	rule := &statementDisallowAddColumnWithDefaultRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: string(checkCtx.Rule.Type),
+		},
 	}
 
+	checker := NewGenericChecker([]Rule{rule})
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type statementDisallowAddColumnWithDefaultChecker struct {
-	*parser.BasePostgreSQLParserListener
-
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
+type statementDisallowAddColumnWithDefaultRule struct {
+	BaseRule
 }
 
-// EnterAltertablestmt handles ALTER TABLE ADD COLUMN
-func (c *statementDisallowAddColumnWithDefaultChecker) EnterAltertablestmt(ctx *parser.AltertablestmtContext) {
+// Name returns the rule name.
+func (*statementDisallowAddColumnWithDefaultRule) Name() string {
+	return "statement.disallow-add-column-with-default"
+}
+
+// OnEnter is called when the parser enters a rule context.
+func (r *statementDisallowAddColumnWithDefaultRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Altertablestmt":
+		r.handleAltertablestmt(ctx.(*parser.AltertablestmtContext))
+	}
+	return nil
+}
+
+// OnExit is called when the parser exits a rule context.
+func (*statementDisallowAddColumnWithDefaultRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+func (r *statementDisallowAddColumnWithDefaultRule) handleAltertablestmt(ctx *parser.AltertablestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -75,10 +91,10 @@ func (c *statementDisallowAddColumnWithDefaultChecker) EnterAltertablestmt(ctx *
 							constraintElem := constraint.Colconstraintelem()
 							// Check for DEFAULT constraint
 							if constraintElem.DEFAULT() != nil {
-								c.adviceList = append(c.adviceList, &storepb.Advice{
-									Status:  c.level,
+								r.AddAdvice(&storepb.Advice{
+									Status:  r.level,
 									Code:    advisor.StatementAddColumnWithDefault.Int32(),
-									Title:   c.title,
+									Title:   r.title,
 									Content: "Adding column with DEFAULT will locked the whole table and rewriting each rows",
 									StartPosition: &storepb.Position{
 										Line:   int32(ctx.GetStart().GetLine()),

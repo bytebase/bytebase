@@ -37,34 +37,55 @@ func (*StatementDisallowAddNotNullAdvisor) Check(_ context.Context, checkCtx adv
 		return nil, err
 	}
 
-	checker := &statementDisallowAddNotNullChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
+	rule := &statementDisallowAddNotNullRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: string(checkCtx.Rule.Type),
+		},
 	}
 
+	checker := NewGenericChecker([]Rule{rule})
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type statementDisallowAddNotNullChecker struct {
-	*parser.BasePostgreSQLParserListener
-
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
+type statementDisallowAddNotNullRule struct {
+	BaseRule
 }
 
-// EnterAltertablestmt handles ALTER TABLE ALTER COLUMN SET NOT NULL
-func (c *statementDisallowAddNotNullChecker) EnterAltertablestmt(ctx *parser.AltertablestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
+func (*statementDisallowAddNotNullRule) Name() string {
+	return "statement_disallow_add_not_null"
+}
+
+func (r *statementDisallowAddNotNullRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Altertablestmt":
+		r.handleAltertablestmt(ctx)
+	default:
+		// Do nothing for other node types
+	}
+	return nil
+}
+
+func (*statementDisallowAddNotNullRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+// handleAltertablestmt handles ALTER TABLE ALTER COLUMN SET NOT NULL
+func (r *statementDisallowAddNotNullRule) handleAltertablestmt(ctx antlr.ParserRuleContext) {
+	altertablestmtCtx, ok := ctx.(*parser.AltertablestmtContext)
+	if !ok {
+		return
+	}
+
+	if !isTopLevel(altertablestmtCtx.GetParent()) {
 		return
 	}
 
 	// Check all alter table commands
-	if ctx.Alter_table_cmds() != nil {
-		allCmds := ctx.Alter_table_cmds().AllAlter_table_cmd()
+	if altertablestmtCtx.Alter_table_cmds() != nil {
+		allCmds := altertablestmtCtx.Alter_table_cmds().AllAlter_table_cmd()
 		for _, cmd := range allCmds {
 			// Check for ALTER COLUMN ... SET NOT NULL
 			if cmd.ALTER() != nil && cmd.SET() != nil && cmd.NOT() != nil && cmd.NULL_P() != nil {
@@ -72,13 +93,13 @@ func (c *statementDisallowAddNotNullChecker) EnterAltertablestmt(ctx *parser.Alt
 				allColIDs := cmd.AllColid()
 				if len(allColIDs) > 0 {
 					columnName := pgparser.NormalizePostgreSQLColid(allColIDs[0])
-					c.adviceList = append(c.adviceList, &storepb.Advice{
-						Status:  c.level,
+					r.AddAdvice(&storepb.Advice{
+						Status:  r.level,
 						Code:    advisor.StatementAddNotNull.Int32(),
-						Title:   c.title,
+						Title:   r.title,
 						Content: fmt.Sprintf("Setting NOT NULL will block reads and writes. You can use CHECK (%q IS NOT NULL) instead", columnName),
 						StartPosition: &storepb.Position{
-							Line:   int32(ctx.GetStart().GetLine()),
+							Line:   int32(altertablestmtCtx.GetStart().GetLine()),
 							Column: 0,
 						},
 					})
