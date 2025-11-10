@@ -43,206 +43,305 @@ func (*StatementDisallowMixInDMLAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, err
 	}
 
-	checker := &statementDisallowMixInDMLChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
-		statementsText:               checkCtx.Statements,
+	rule := &statementDisallowMixInDMLRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: string(checkCtx.Rule.Type),
+		},
+		statementsText: checkCtx.Statements,
 	}
+
+	checker := NewGenericChecker([]Rule{rule})
 
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type statementDisallowMixInDMLChecker struct {
-	*parser.BasePostgreSQLParserListener
+type statementDisallowMixInDMLRule struct {
+	BaseRule
 
-	adviceList     []*storepb.Advice
-	level          storepb.Advice_Status
-	title          string
 	statementsText string
 }
 
-// EnterCreatestmt handles CREATE TABLE statements (DDL)
-func (c *statementDisallowMixInDMLChecker) EnterCreatestmt(ctx *parser.CreatestmtContext) {
+func (*statementDisallowMixInDMLRule) Name() string {
+	return "statement_disallow_mix_in_dml"
+}
+
+func (r *statementDisallowMixInDMLRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Createstmt":
+		r.handleCreatestmt(ctx)
+	case "Indexstmt":
+		r.handleIndexstmt(ctx)
+	case "Altertablestmt":
+		r.handleAltertablestmt(ctx)
+	case "Dropstmt":
+		r.handleDropstmt(ctx)
+	case "Createschemastmt":
+		r.handleCreateschemastmt(ctx)
+	case "Createseqstmt":
+		r.handleCreateseqstmt(ctx)
+	case "Alterseqstmt":
+		r.handleAlterseqstmt(ctx)
+	case "Viewstmt":
+		r.handleViewstmt(ctx)
+	case "Createfunctionstmt":
+		r.handleCreatefunctionstmt(ctx)
+	case "Createtrigstmt":
+		r.handleCreatetrigstmt(ctx)
+	case "Renamestmt":
+		r.handleRenamestmt(ctx)
+	case "Alterobjectschemastmt":
+		r.handleAlterobjectschemastmt(ctx)
+	case "Alterenumstmt":
+		r.handleAlterenumstmt(ctx)
+	case "Altercompositetypestmt":
+		r.handleAltercompositetypestmt(ctx)
+	case "Createextensionstmt":
+		r.handleCreateextensionstmt(ctx)
+	case "Createdbstmt":
+		r.handleCreatedbstmt(ctx)
+	case "Creatematviewstmt":
+		r.handleCreatematviewstmt(ctx)
+	}
+	return nil
+}
+
+func (*statementDisallowMixInDMLRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+func (r *statementDisallowMixInDMLRule) handleCreatestmt(ctx antlr.ParserRuleContext) {
+	createCtx, ok := ctx.(*parser.CreatestmtContext)
+	if !ok {
+		return
+	}
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
-	c.addDDLAdvice(ctx, "CREATE TABLE")
+	r.addDDLAdvice(createCtx, "CREATE TABLE")
 }
 
-// EnterIndexstmt handles CREATE INDEX statements (DDL)
-func (c *statementDisallowMixInDMLChecker) EnterIndexstmt(ctx *parser.IndexstmtContext) {
+func (r *statementDisallowMixInDMLRule) handleIndexstmt(ctx antlr.ParserRuleContext) {
+	indexCtx, ok := ctx.(*parser.IndexstmtContext)
+	if !ok {
+		return
+	}
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
-	c.addDDLAdvice(ctx, "CREATE INDEX")
+	r.addDDLAdvice(indexCtx, "CREATE INDEX")
 }
 
-// EnterAltertablestmt handles ALTER TABLE statements (DDL)
-func (c *statementDisallowMixInDMLChecker) EnterAltertablestmt(ctx *parser.AltertablestmtContext) {
+func (r *statementDisallowMixInDMLRule) handleAltertablestmt(ctx antlr.ParserRuleContext) {
+	alterCtx, ok := ctx.(*parser.AltertablestmtContext)
+	if !ok {
+		return
+	}
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
-	c.addDDLAdvice(ctx, "ALTER TABLE")
+	r.addDDLAdvice(alterCtx, "ALTER TABLE")
 }
 
-// EnterDropstmt handles DROP statements (DDL)
-func (c *statementDisallowMixInDMLChecker) EnterDropstmt(ctx *parser.DropstmtContext) {
+func (r *statementDisallowMixInDMLRule) handleDropstmt(ctx antlr.ParserRuleContext) {
+	dropCtx, ok := ctx.(*parser.DropstmtContext)
+	if !ok {
+		return
+	}
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
-	c.addDDLAdvice(ctx, "DROP")
+	r.addDDLAdvice(dropCtx, "DROP")
 }
 
-// EnterCreateschemastmt handles CREATE SCHEMA statements (DDL)
-func (c *statementDisallowMixInDMLChecker) EnterCreateschemastmt(ctx *parser.CreateschemastmtContext) {
+func (r *statementDisallowMixInDMLRule) handleCreateschemastmt(ctx antlr.ParserRuleContext) {
+	createCtx, ok := ctx.(*parser.CreateschemastmtContext)
+	if !ok {
+		return
+	}
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
-	c.addDDLAdvice(ctx, "CREATE SCHEMA")
+	r.addDDLAdvice(createCtx, "CREATE SCHEMA")
 }
 
-// EnterCreateseqstmt handles CREATE SEQUENCE statements (DDL)
-func (c *statementDisallowMixInDMLChecker) EnterCreateseqstmt(ctx *parser.CreateseqstmtContext) {
+func (r *statementDisallowMixInDMLRule) handleCreateseqstmt(ctx antlr.ParserRuleContext) {
+	createCtx, ok := ctx.(*parser.CreateseqstmtContext)
+	if !ok {
+		return
+	}
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
-	c.addDDLAdvice(ctx, "CREATE SEQUENCE")
+	r.addDDLAdvice(createCtx, "CREATE SEQUENCE")
 }
 
-// EnterAlterseqstmt handles ALTER SEQUENCE statements (DDL)
-func (c *statementDisallowMixInDMLChecker) EnterAlterseqstmt(ctx *parser.AlterseqstmtContext) {
+func (r *statementDisallowMixInDMLRule) handleAlterseqstmt(ctx antlr.ParserRuleContext) {
+	alterCtx, ok := ctx.(*parser.AlterseqstmtContext)
+	if !ok {
+		return
+	}
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
-	c.addDDLAdvice(ctx, "ALTER SEQUENCE")
+	r.addDDLAdvice(alterCtx, "ALTER SEQUENCE")
 }
 
-// EnterViewstmt handles CREATE VIEW statements (DDL)
-func (c *statementDisallowMixInDMLChecker) EnterViewstmt(ctx *parser.ViewstmtContext) {
+func (r *statementDisallowMixInDMLRule) handleViewstmt(ctx antlr.ParserRuleContext) {
+	viewCtx, ok := ctx.(*parser.ViewstmtContext)
+	if !ok {
+		return
+	}
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
-	c.addDDLAdvice(ctx, "CREATE VIEW")
+	r.addDDLAdvice(viewCtx, "CREATE VIEW")
 }
 
-// EnterCreatefunctionstmt handles CREATE FUNCTION statements (DDL)
-func (c *statementDisallowMixInDMLChecker) EnterCreatefunctionstmt(ctx *parser.CreatefunctionstmtContext) {
+func (r *statementDisallowMixInDMLRule) handleCreatefunctionstmt(ctx antlr.ParserRuleContext) {
+	createCtx, ok := ctx.(*parser.CreatefunctionstmtContext)
+	if !ok {
+		return
+	}
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
-	c.addDDLAdvice(ctx, "CREATE FUNCTION")
+	r.addDDLAdvice(createCtx, "CREATE FUNCTION")
 }
 
-// EnterCreatetrigstmt handles CREATE TRIGGER statements (DDL)
-func (c *statementDisallowMixInDMLChecker) EnterCreatetrigstmt(ctx *parser.CreatetrigstmtContext) {
+func (r *statementDisallowMixInDMLRule) handleCreatetrigstmt(ctx antlr.ParserRuleContext) {
+	createCtx, ok := ctx.(*parser.CreatetrigstmtContext)
+	if !ok {
+		return
+	}
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
-	c.addDDLAdvice(ctx, "CREATE TRIGGER")
+	r.addDDLAdvice(createCtx, "CREATE TRIGGER")
 }
 
-// EnterRenamestmt handles RENAME statements (DDL)
-func (c *statementDisallowMixInDMLChecker) EnterRenamestmt(ctx *parser.RenamestmtContext) {
+func (r *statementDisallowMixInDMLRule) handleRenamestmt(ctx antlr.ParserRuleContext) {
+	renameCtx, ok := ctx.(*parser.RenamestmtContext)
+	if !ok {
+		return
+	}
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
-	c.addDDLAdvice(ctx, "RENAME")
+	r.addDDLAdvice(renameCtx, "RENAME")
 }
 
-// EnterAlterobjectschemastmt handles ALTER ... SET SCHEMA statements (DDL)
-func (c *statementDisallowMixInDMLChecker) EnterAlterobjectschemastmt(ctx *parser.AlterobjectschemastmtContext) {
+func (r *statementDisallowMixInDMLRule) handleAlterobjectschemastmt(ctx antlr.ParserRuleContext) {
+	alterCtx, ok := ctx.(*parser.AlterobjectschemastmtContext)
+	if !ok {
+		return
+	}
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
-	c.addDDLAdvice(ctx, "ALTER SET SCHEMA")
+	r.addDDLAdvice(alterCtx, "ALTER SET SCHEMA")
 }
 
-// EnterAlterenumstmt handles ALTER TYPE ... ADD VALUE statements (DDL)
-func (c *statementDisallowMixInDMLChecker) EnterAlterenumstmt(ctx *parser.AlterenumstmtContext) {
+func (r *statementDisallowMixInDMLRule) handleAlterenumstmt(ctx antlr.ParserRuleContext) {
+	alterCtx, ok := ctx.(*parser.AlterenumstmtContext)
+	if !ok {
+		return
+	}
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
-	c.addDDLAdvice(ctx, "ALTER TYPE")
+	r.addDDLAdvice(alterCtx, "ALTER TYPE")
 }
 
-// EnterAltercompositetypestmt handles ALTER TYPE (composite) statements (DDL)
-func (c *statementDisallowMixInDMLChecker) EnterAltercompositetypestmt(ctx *parser.AltercompositetypestmtContext) {
+func (r *statementDisallowMixInDMLRule) handleAltercompositetypestmt(ctx antlr.ParserRuleContext) {
+	alterCtx, ok := ctx.(*parser.AltercompositetypestmtContext)
+	if !ok {
+		return
+	}
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
-	c.addDDLAdvice(ctx, "ALTER TYPE")
+	r.addDDLAdvice(alterCtx, "ALTER TYPE")
 }
 
-// EnterCreateextensionstmt handles CREATE EXTENSION statements (DDL)
-func (c *statementDisallowMixInDMLChecker) EnterCreateextensionstmt(ctx *parser.CreateextensionstmtContext) {
+func (r *statementDisallowMixInDMLRule) handleCreateextensionstmt(ctx antlr.ParserRuleContext) {
+	createCtx, ok := ctx.(*parser.CreateextensionstmtContext)
+	if !ok {
+		return
+	}
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
-	c.addDDLAdvice(ctx, "CREATE EXTENSION")
+	r.addDDLAdvice(createCtx, "CREATE EXTENSION")
 }
 
-// EnterCreatedbstmt handles CREATE DATABASE statements (DDL)
-func (c *statementDisallowMixInDMLChecker) EnterCreatedbstmt(ctx *parser.CreatedbstmtContext) {
+func (r *statementDisallowMixInDMLRule) handleCreatedbstmt(ctx antlr.ParserRuleContext) {
+	createCtx, ok := ctx.(*parser.CreatedbstmtContext)
+	if !ok {
+		return
+	}
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
-	c.addDDLAdvice(ctx, "CREATE DATABASE")
+	r.addDDLAdvice(createCtx, "CREATE DATABASE")
 }
 
-// EnterCreatematviewstmt handles CREATE MATERIALIZED VIEW statements (DDL)
-func (c *statementDisallowMixInDMLChecker) EnterCreatematviewstmt(ctx *parser.CreatematviewstmtContext) {
+func (r *statementDisallowMixInDMLRule) handleCreatematviewstmt(ctx antlr.ParserRuleContext) {
+	createCtx, ok := ctx.(*parser.CreatematviewstmtContext)
+	if !ok {
+		return
+	}
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
-	c.addDDLAdvice(ctx, "CREATE MATERIALIZED VIEW")
+	r.addDDLAdvice(createCtx, "CREATE MATERIALIZED VIEW")
 }
 
-func (c *statementDisallowMixInDMLChecker) addDDLAdvice(ctx antlr.ParserRuleContext, _ string) {
+func (r *statementDisallowMixInDMLRule) addDDLAdvice(ctx antlr.ParserRuleContext, _ string) {
 	// Extract the statement text including semicolon using character positions
 	startPos := ctx.GetStart().GetStart()
 	stopPos := ctx.GetStop().GetStop()
 
 	// Find the semicolon after this statement
 	stmtText := ""
-	if stopPos+1 < len(c.statementsText) {
+	if stopPos+1 < len(r.statementsText) {
 		// Look for semicolon
 		endPos := stopPos + 1
-		for endPos < len(c.statementsText) && c.statementsText[endPos] != ';' {
+		for endPos < len(r.statementsText) && r.statementsText[endPos] != ';' {
 			endPos++
 		}
-		if endPos < len(c.statementsText) {
-			stmtText = c.statementsText[startPos : endPos+1]
+		if endPos < len(r.statementsText) {
+			stmtText = r.statementsText[startPos : endPos+1]
 		} else {
-			stmtText = c.statementsText[startPos:stopPos+1] + ";"
+			stmtText = r.statementsText[startPos:stopPos+1] + ";"
 		}
 	} else {
-		stmtText = c.statementsText[startPos:stopPos+1] + ";"
+		stmtText = r.statementsText[startPos:stopPos+1] + ";"
 	}
 
-	c.adviceList = append(c.adviceList, &storepb.Advice{
-		Status:  c.level,
+	r.AddAdvice(&storepb.Advice{
+		Status:  r.level,
 		Code:    advisor.StatementDisallowMixDDLDML.Int32(),
-		Title:   c.title,
+		Title:   r.title,
 		Content: fmt.Sprintf("Data change can only run DML, %q is not DML", stmtText),
 		StartPosition: &storepb.Position{
 			Line:   int32(ctx.GetStart().GetLine()),

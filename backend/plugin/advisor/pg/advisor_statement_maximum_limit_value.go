@@ -41,71 +41,90 @@ func (*StatementMaximumLimitValueAdvisor) Check(_ context.Context, checkCtx advi
 		return nil, err
 	}
 
-	checker := &statementMaximumLimitValueChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
-		limitMaxValue:                payload.Number,
+	rule := &statementMaximumLimitValueRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: string(checkCtx.Rule.Type),
+		},
+		limitMaxValue: payload.Number,
 	}
 
+	checker := NewGenericChecker([]Rule{rule})
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type statementMaximumLimitValueChecker struct {
-	*parser.BasePostgreSQLParserListener
-
-	adviceList    []*storepb.Advice
-	level         storepb.Advice_Status
-	title         string
+type statementMaximumLimitValueRule struct {
+	BaseRule
 	limitMaxValue int
 }
 
-// EnterSelectstmt handles SELECT statements with LIMIT clauses.
-func (c *statementMaximumLimitValueChecker) EnterSelectstmt(ctx *parser.SelectstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
+// Name returns the rule name.
+func (*statementMaximumLimitValueRule) Name() string {
+	return "statement_maximum_limit_value"
+}
+
+// OnEnter handles node entry events.
+func (r *statementMaximumLimitValueRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	if nodeType != "Selectstmt" {
+		return nil
+	}
+
+	selectstmtCtx, ok := ctx.(*parser.SelectstmtContext)
+	if !ok {
+		return nil
+	}
+
+	if !isTopLevel(selectstmtCtx.GetParent()) {
+		return nil
 	}
 
 	// Check for LIMIT clause in the SELECT statement
-	limitValue := c.extractLimitValue(ctx)
-	if limitValue > 0 && limitValue > c.limitMaxValue {
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:  c.level,
+	limitValue := r.extractLimitValue(selectstmtCtx)
+	if limitValue > 0 && limitValue > r.limitMaxValue {
+		r.AddAdvice(&storepb.Advice{
+			Status:  r.level,
 			Code:    advisor.StatementExceedMaximumLimitValue.Int32(),
-			Title:   c.title,
-			Content: fmt.Sprintf("The limit value %d exceeds the maximum allowed value %d", limitValue, c.limitMaxValue),
+			Title:   r.title,
+			Content: fmt.Sprintf("The limit value %d exceeds the maximum allowed value %d", limitValue, r.limitMaxValue),
 			StartPosition: &storepb.Position{
-				Line:   int32(ctx.GetStart().GetLine()),
+				Line:   int32(selectstmtCtx.GetStart().GetLine()),
 				Column: 0,
 			},
 		})
 	}
+
+	return nil
+}
+
+// OnExit handles node exit events.
+func (*statementMaximumLimitValueRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
 }
 
 // extractLimitValue extracts the LIMIT value from a SELECT statement.
 // Returns 0 if no LIMIT clause is found or if LIMIT is not a simple integer.
-func (c *statementMaximumLimitValueChecker) extractLimitValue(ctx *parser.SelectstmtContext) int {
+func (r *statementMaximumLimitValueRule) extractLimitValue(ctx *parser.SelectstmtContext) int {
 	if ctx == nil {
 		return 0
 	}
 
 	// Try select_no_parens
 	if ctx.Select_no_parens() != nil {
-		return c.extractLimitFromSelectNoParens(ctx.Select_no_parens())
+		return r.extractLimitFromSelectNoParens(ctx.Select_no_parens())
 	}
 
 	// Try select_with_parens
 	if ctx.Select_with_parens() != nil {
-		return c.extractLimitFromSelectWithParens(ctx.Select_with_parens())
+		return r.extractLimitFromSelectWithParens(ctx.Select_with_parens())
 	}
 
 	return 0
 }
 
 // extractLimitFromSelectNoParens extracts LIMIT value from select_no_parens.
-func (c *statementMaximumLimitValueChecker) extractLimitFromSelectNoParens(ctx parser.ISelect_no_parensContext) int {
+func (r *statementMaximumLimitValueRule) extractLimitFromSelectNoParens(ctx parser.ISelect_no_parensContext) int {
 	if ctx == nil {
 		return 0
 	}
@@ -120,32 +139,32 @@ func (c *statementMaximumLimitValueChecker) extractLimitFromSelectNoParens(ctx p
 
 	// Check for select_limit directly in select_no_parens
 	if selectLimit != nil {
-		return c.extractLimitFromSelectLimit(selectLimit)
+		return r.extractLimitFromSelectLimit(selectLimit)
 	}
 
 	return 0
 }
 
 // extractLimitFromSelectWithParens extracts LIMIT value from select_with_parens.
-func (c *statementMaximumLimitValueChecker) extractLimitFromSelectWithParens(ctx parser.ISelect_with_parensContext) int {
+func (r *statementMaximumLimitValueRule) extractLimitFromSelectWithParens(ctx parser.ISelect_with_parensContext) int {
 	if ctx == nil {
 		return 0
 	}
 
 	// Recursively check inner select statements
 	if ctx.Select_no_parens() != nil {
-		return c.extractLimitFromSelectNoParens(ctx.Select_no_parens())
+		return r.extractLimitFromSelectNoParens(ctx.Select_no_parens())
 	}
 
 	if ctx.Select_with_parens() != nil {
-		return c.extractLimitFromSelectWithParens(ctx.Select_with_parens())
+		return r.extractLimitFromSelectWithParens(ctx.Select_with_parens())
 	}
 
 	return 0
 }
 
 // extractLimitFromSelectLimit extracts LIMIT value from select_limit clause.
-func (c *statementMaximumLimitValueChecker) extractLimitFromSelectLimit(ctx parser.ISelect_limitContext) int {
+func (r *statementMaximumLimitValueRule) extractLimitFromSelectLimit(ctx parser.ISelect_limitContext) int {
 	if ctx == nil {
 		return 0
 	}
@@ -161,7 +180,7 @@ func (c *statementMaximumLimitValueChecker) extractLimitFromSelectLimit(ctx pars
 		limitClause := ctx.Limit_clause()
 		// Get the select_limit_value
 		if limitClause.Select_limit_value() != nil {
-			return c.extractLimitValueFromLimitValue(limitClause.Select_limit_value())
+			return r.extractLimitValueFromLimitValue(limitClause.Select_limit_value())
 		}
 	}
 
@@ -170,7 +189,7 @@ func (c *statementMaximumLimitValueChecker) extractLimitFromSelectLimit(ctx pars
 		offsetClause := ctx.Offset_clause()
 		// Check for FETCH FIRST/NEXT syntax
 		if offsetClause.Select_fetch_first_value() != nil {
-			return c.extractLimitValueFromFetchFirst(offsetClause.Select_fetch_first_value())
+			return r.extractLimitValueFromFetchFirst(offsetClause.Select_fetch_first_value())
 		}
 	}
 
@@ -178,7 +197,7 @@ func (c *statementMaximumLimitValueChecker) extractLimitFromSelectLimit(ctx pars
 }
 
 // extractLimitValueFromLimitValue extracts integer value from select_limit_value.
-func (c *statementMaximumLimitValueChecker) extractLimitValueFromLimitValue(ctx parser.ISelect_limit_valueContext) int {
+func (r *statementMaximumLimitValueRule) extractLimitValueFromLimitValue(ctx parser.ISelect_limit_valueContext) int {
 	if ctx == nil {
 		return 0
 	}
@@ -190,37 +209,37 @@ func (c *statementMaximumLimitValueChecker) extractLimitValueFromLimitValue(ctx 
 
 	// Check for a_expr which contains the actual value
 	if ctx.A_expr() != nil {
-		return c.extractIntFromAExpr(ctx.A_expr())
+		return r.extractIntFromAExpr(ctx.A_expr())
 	}
 
 	return 0
 }
 
 // extractLimitValueFromFetchFirst extracts integer value from FETCH FIRST/NEXT clause.
-func (c *statementMaximumLimitValueChecker) extractLimitValueFromFetchFirst(ctx parser.ISelect_fetch_first_valueContext) int {
+func (r *statementMaximumLimitValueRule) extractLimitValueFromFetchFirst(ctx parser.ISelect_fetch_first_valueContext) int {
 	if ctx == nil {
 		return 0
 	}
 
 	// Try to extract the numeric value from the text
 	text := ctx.GetText()
-	return c.parseIntFromText(text)
+	return r.parseIntFromText(text)
 }
 
 // extractIntFromAExpr attempts to extract an integer constant from an a_expr.
-func (c *statementMaximumLimitValueChecker) extractIntFromAExpr(ctx parser.IA_exprContext) int {
+func (r *statementMaximumLimitValueRule) extractIntFromAExpr(ctx parser.IA_exprContext) int {
 	if ctx == nil {
 		return 0
 	}
 
 	// Try to parse the text directly - this handles simple numeric literals
 	text := ctx.GetText()
-	return c.parseIntFromText(text)
+	return r.parseIntFromText(text)
 }
 
 // parseIntFromText attempts to parse an integer from text.
 // This handles simple numeric literals and returns 0 if parsing fails.
-func (*statementMaximumLimitValueChecker) parseIntFromText(text string) int {
+func (*statementMaximumLimitValueRule) parseIntFromText(text string) int {
 	// Clean up the text (remove whitespace)
 	text = strings.TrimSpace(text)
 
