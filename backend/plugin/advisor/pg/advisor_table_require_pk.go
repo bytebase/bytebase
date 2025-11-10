@@ -38,21 +38,23 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 		return nil, err
 	}
 
-	checker := &tableRequirePKChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
-		statementsText:               checkCtx.Statements,
-		catalog:                      checkCtx.Catalog,
-		tableMentions:                make(map[string]*tableMention),
+	rule := &tableRequirePKRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: string(checkCtx.Rule.Type),
+		},
+		statementsText: checkCtx.Statements,
+		catalog:        checkCtx.Catalog,
+		tableMentions:  make(map[string]*tableMention),
 	}
 
+	checker := NewGenericChecker([]Rule{rule})
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
 	// Simple Solution: Validate final state after walking all statements
-	checker.validateFinalState()
+	rule.validateFinalState()
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
 type tableMention struct {
@@ -60,12 +62,8 @@ type tableMention struct {
 	endLine   int
 }
 
-type tableRequirePKChecker struct {
-	*parser.BasePostgreSQLParserListener
-
-	adviceList     []*storepb.Advice
-	level          storepb.Advice_Status
-	title          string
+type tableRequirePKRule struct {
+	BaseRule
 	statementsText string
 	catalog        *catalog.Finder
 
@@ -73,8 +71,31 @@ type tableRequirePKChecker struct {
 	tableMentions map[string]*tableMention // key: "schema.table", value: last mention info
 }
 
-// EnterCreatestmt records CREATE TABLE statements (Simple Solution)
-func (c *tableRequirePKChecker) EnterCreatestmt(ctx *parser.CreatestmtContext) {
+// Name returns the rule name.
+func (*tableRequirePKRule) Name() string {
+	return "table.require-pk"
+}
+
+// OnEnter is called when the parser enters a rule context.
+func (r *tableRequirePKRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Createstmt":
+		r.handleCreatestmt(ctx.(*parser.CreatestmtContext))
+	case "Altertablestmt":
+		r.handleAltertablestmt(ctx.(*parser.AltertablestmtContext))
+	case "Dropstmt":
+		r.handleDropstmt(ctx.(*parser.DropstmtContext))
+	}
+	return nil
+}
+
+// OnExit is called when the parser exits a rule context.
+func (*tableRequirePKRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+// handleCreatestmt records CREATE TABLE statements (Simple Solution)
+func (r *tableRequirePKRule) handleCreatestmt(ctx *parser.CreatestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -91,14 +112,14 @@ func (c *tableRequirePKChecker) EnterCreatestmt(ctx *parser.CreatestmtContext) {
 
 	// Simple Solution: Just record the table mention (ALWAYS update for last occurrence)
 	key := fmt.Sprintf("%s.%s", schemaName, tableName)
-	c.tableMentions[key] = &tableMention{
+	r.tableMentions[key] = &tableMention{
 		startLine: ctx.GetStart().GetLine(),
 		endLine:   ctx.GetStop().GetLine(),
 	}
 }
 
-// EnterAltertablestmt records ALTER TABLE statements (Simple Solution)
-func (c *tableRequirePKChecker) EnterAltertablestmt(ctx *parser.AltertablestmtContext) {
+// handleAltertablestmt records ALTER TABLE statements (Simple Solution)
+func (r *tableRequirePKRule) handleAltertablestmt(ctx *parser.AltertablestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -114,14 +135,14 @@ func (c *tableRequirePKChecker) EnterAltertablestmt(ctx *parser.AltertablestmtCo
 
 	// Simple Solution: Just record the table mention (ALWAYS update for last occurrence)
 	key := fmt.Sprintf("%s.%s", schemaName, tableName)
-	c.tableMentions[key] = &tableMention{
+	r.tableMentions[key] = &tableMention{
 		startLine: ctx.GetStart().GetLine(),
 		endLine:   ctx.GetStop().GetLine(),
 	}
 }
 
-// EnterDropstmt handles DROP TABLE - remove from tracking
-func (c *tableRequirePKChecker) EnterDropstmt(ctx *parser.DropstmtContext) {
+// handleDropstmt handles DROP TABLE - remove from tracking
+func (r *tableRequirePKRule) handleDropstmt(ctx *parser.DropstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -141,7 +162,7 @@ func (c *tableRequirePKChecker) EnterDropstmt(ctx *parser.DropstmtContext) {
 				// Simple table name (most common case)
 				name := pgparser.NormalizePostgreSQLColid(anyName.Colid())
 				key := fmt.Sprintf("public.%s", name)
-				delete(c.tableMentions, key)
+				delete(r.tableMentions, key)
 			}
 			// For qualified names, we skip for simplicity - they won't cause false positives
 			// because catalog.Final won't have dropped tables
@@ -150,13 +171,13 @@ func (c *tableRequirePKChecker) EnterDropstmt(ctx *parser.DropstmtContext) {
 }
 
 // validateFinalState checks all mentioned tables against catalog.Final (Simple Solution)
-func (c *tableRequirePKChecker) validateFinalState() {
-	for tableKey, mention := range c.tableMentions {
+func (r *tableRequirePKRule) validateFinalState() {
+	for tableKey, mention := range r.tableMentions {
 		// Parse table key: "schema.table"
 		schemaName, tableName := parseTableKey(tableKey)
 
 		// Check catalog.Final for PRIMARY KEY
-		hasPK := c.catalog.Final.HasPrimaryKey(&catalog.PrimaryKeyFind{
+		hasPK := r.catalog.Final.HasPrimaryKey(&catalog.PrimaryKeyFind{
 			SchemaName: schemaName,
 			TableName:  tableName,
 		})
@@ -165,15 +186,15 @@ func (c *tableRequirePKChecker) validateFinalState() {
 			content := fmt.Sprintf("Table %q.%q requires PRIMARY KEY", schemaName, tableName)
 
 			// Extract and include the related statement
-			statement := extractStatementText(c.statementsText, mention.startLine, mention.endLine)
+			statement := extractStatementText(r.statementsText, mention.startLine, mention.endLine)
 			if statement != "" {
 				content = fmt.Sprintf("%s, related statement: %q", content, statement)
 			}
 
-			c.adviceList = append(c.adviceList, &storepb.Advice{
-				Status:  c.level,
+			r.AddAdvice(&storepb.Advice{
+				Status:  r.level,
 				Code:    advisor.TableNoPK.Int32(),
-				Title:   c.title,
+				Title:   r.title,
 				Content: content,
 				StartPosition: &storepb.Position{
 					Line:   int32(mention.startLine),

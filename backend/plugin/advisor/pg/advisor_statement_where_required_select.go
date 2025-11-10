@@ -35,48 +35,65 @@ func (*StatementWhereRequiredSelectAdvisor) Check(_ context.Context, checkCtx ad
 		return nil, err
 	}
 
-	checker := &statementWhereRequiredSelectChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
-		statementsText:               checkCtx.Statements,
+	rule := &statementWhereRequiredSelectRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: string(checkCtx.Rule.Type),
+		},
+		statementsText: checkCtx.Statements,
 	}
 
+	checker := NewGenericChecker([]Rule{rule})
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type statementWhereRequiredSelectChecker struct {
-	*parser.BasePostgreSQLParserListener
-
-	adviceList     []*storepb.Advice
-	level          storepb.Advice_Status
-	title          string
+type statementWhereRequiredSelectRule struct {
+	BaseRule
 	statementsText string
 }
 
-// EnterSelectstmt handles SELECT statements (including subqueries)
-func (c *statementWhereRequiredSelectChecker) EnterSelectstmt(ctx *parser.SelectstmtContext) {
-	c.checkSelect(ctx, ctx.GetStart(), ctx.GetStop(), func() (bool, bool) {
-		return c.checkSelectClauses(ctx)
+// Name returns the rule name.
+func (*statementWhereRequiredSelectRule) Name() string {
+	return "statement.where-required-select"
+}
+
+// OnEnter is called when the parser enters a rule context.
+func (r *statementWhereRequiredSelectRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Selectstmt":
+		r.handleSelectstmt(ctx.(*parser.SelectstmtContext))
+	case "Select_with_parens":
+		r.handleSelectWithParens(ctx.(*parser.Select_with_parensContext))
+	}
+	return nil
+}
+
+// OnExit is called when the parser exits a rule context.
+func (*statementWhereRequiredSelectRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+func (r *statementWhereRequiredSelectRule) handleSelectstmt(ctx *parser.SelectstmtContext) {
+	r.checkSelect(ctx, ctx.GetStart(), ctx.GetStop(), func() (bool, bool) {
+		return r.checkSelectClauses(ctx)
 	})
 }
 
-// EnterSelect_with_parens handles SELECT statements in parentheses (subqueries)
-func (c *statementWhereRequiredSelectChecker) EnterSelect_with_parens(ctx *parser.Select_with_parensContext) {
-	// Skip if this is the top-level statement (already handled by EnterSelectstmt)
+func (r *statementWhereRequiredSelectRule) handleSelectWithParens(ctx *parser.Select_with_parensContext) {
+	// Skip if this is the top-level statement (already handled by handleSelectstmt)
 	if isTopLevel(ctx.GetParent()) {
 		return
 	}
 
-	c.checkSelect(ctx, ctx.GetStart(), ctx.GetStop(), func() (bool, bool) {
-		return c.checkSelectWithParensForWhere(ctx)
+	r.checkSelect(ctx, ctx.GetStart(), ctx.GetStop(), func() (bool, bool) {
+		return r.checkSelectWithParensForWhere(ctx)
 	})
 }
 
 // checkSelect is a common function to check for WHERE clause requirement
-func (c *statementWhereRequiredSelectChecker) checkSelect(
+func (r *statementWhereRequiredSelectRule) checkSelect(
 	ctx antlr.ParserRuleContext,
 	_ antlr.Token,
 	_ antlr.Token,
@@ -98,13 +115,13 @@ func (c *statementWhereRequiredSelectChecker) checkSelect(
 	// Always use the full top-level statement text for the error message
 	// This matches the legacy behavior where violations in subqueries
 	// are reported with the full statement text
-	stmtLine := c.findTopLevelLine(ctx)
-	stmtText := extractStatementText(c.statementsText, stmtLine, stmtLine)
+	stmtLine := r.findTopLevelLine(ctx)
+	stmtText := extractStatementText(r.statementsText, stmtLine, stmtLine)
 
-	c.adviceList = append(c.adviceList, &storepb.Advice{
-		Status:  c.level,
+	r.AddAdvice(&storepb.Advice{
+		Status:  r.level,
 		Code:    advisor.StatementNoWhere.Int32(),
-		Title:   c.title,
+		Title:   r.title,
 		Content: fmt.Sprintf("\"%s\" requires WHERE clause", stmtText),
 		StartPosition: &storepb.Position{
 			Line:   int32(stmtLine),
@@ -114,7 +131,7 @@ func (c *statementWhereRequiredSelectChecker) checkSelect(
 }
 
 // findTopLevelLine finds the line number of the top-level statement
-func (*statementWhereRequiredSelectChecker) findTopLevelLine(ctx antlr.ParserRuleContext) int {
+func (*statementWhereRequiredSelectRule) findTopLevelLine(ctx antlr.ParserRuleContext) int {
 	for ctx != nil {
 		if isTopLevel(ctx.GetParent()) {
 			return ctx.GetStart().GetLine()
@@ -130,7 +147,7 @@ func (*statementWhereRequiredSelectChecker) findTopLevelLine(ctx antlr.ParserRul
 }
 
 // checkSelectWithParensForWhere checks a select_with_parens for WHERE and FROM
-func (c *statementWhereRequiredSelectChecker) checkSelectWithParensForWhere(ctx parser.ISelect_with_parensContext) (hasWhere bool, hasFrom bool) {
+func (r *statementWhereRequiredSelectRule) checkSelectWithParensForWhere(ctx parser.ISelect_with_parensContext) (hasWhere bool, hasFrom bool) {
 	if ctx == nil {
 		return false, false
 	}
@@ -139,24 +156,24 @@ func (c *statementWhereRequiredSelectChecker) checkSelectWithParensForWhere(ctx 
 	if ctx.Select_no_parens() != nil {
 		selectNoParens := ctx.Select_no_parens()
 		if selectNoParens.Select_clause() != nil {
-			return c.checkSelectClause(selectNoParens.Select_clause())
+			return r.checkSelectClause(selectNoParens.Select_clause())
 		}
 	}
 
 	if ctx.Select_with_parens() != nil {
-		return c.checkSelectWithParensForWhere(ctx.Select_with_parens())
+		return r.checkSelectWithParensForWhere(ctx.Select_with_parens())
 	}
 
 	return false, false
 }
 
 // checkSelectClauses checks if a SELECT statement has WHERE and FROM clauses
-func (c *statementWhereRequiredSelectChecker) checkSelectClauses(ctx *parser.SelectstmtContext) (hasWhere bool, hasFrom bool) {
+func (r *statementWhereRequiredSelectRule) checkSelectClauses(ctx *parser.SelectstmtContext) (hasWhere bool, hasFrom bool) {
 	// Try Select_no_parens first
 	if ctx.Select_no_parens() != nil {
 		selectNoParens := ctx.Select_no_parens()
 		if selectNoParens.Select_clause() != nil {
-			return c.checkSelectClause(selectNoParens.Select_clause())
+			return r.checkSelectClause(selectNoParens.Select_clause())
 		}
 	}
 
@@ -164,14 +181,14 @@ func (c *statementWhereRequiredSelectChecker) checkSelectClauses(ctx *parser.Sel
 	if ctx.Select_with_parens() != nil {
 		// For a selectstmt that directly contains select_with_parens,
 		// delegate to the recursive handler
-		return c.checkSelectWithParensForWhere(ctx.Select_with_parens())
+		return r.checkSelectWithParensForWhere(ctx.Select_with_parens())
 	}
 
 	return false, false
 }
 
 // checkSelectClause checks a select_clause for WHERE and FROM
-func (*statementWhereRequiredSelectChecker) checkSelectClause(selectClause parser.ISelect_clauseContext) (hasWhere bool, hasFrom bool) {
+func (*statementWhereRequiredSelectRule) checkSelectClause(selectClause parser.ISelect_clauseContext) (hasWhere bool, hasFrom bool) {
 	if selectClause == nil {
 		return false, false
 	}

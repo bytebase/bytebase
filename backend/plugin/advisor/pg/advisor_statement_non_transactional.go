@@ -36,39 +36,78 @@ func (*NonTransactionalAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 		return nil, err
 	}
 
-	checker := &nonTransactionalChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
-		statementsText:               checkCtx.Statements,
+	rule := &nonTransactionalRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: string(checkCtx.Rule.Type),
+		},
+		statementsText: checkCtx.Statements,
 	}
 
+	checker := NewGenericChecker([]Rule{rule})
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type nonTransactionalChecker struct {
-	*parser.BasePostgreSQLParserListener
-
-	adviceList     []*storepb.Advice
-	level          storepb.Advice_Status
-	title          string
+type nonTransactionalRule struct {
+	BaseRule
 	statementsText string
 }
 
+// Name returns the rule name.
+func (*nonTransactionalRule) Name() string {
+	return "statement.non-transactional"
+}
+
+// OnEnter is called when the parser enters a rule context.
+func (r *nonTransactionalRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Dropdbstmt":
+		r.handleDropdbstmt(ctx.(*parser.DropdbstmtContext))
+	case "Indexstmt":
+		r.handleIndexstmt(ctx.(*parser.IndexstmtContext))
+	case "Dropstmt":
+		r.handleDropstmt(ctx.(*parser.DropstmtContext))
+	case "Vacuumstmt":
+		r.handleVacuumstmt(ctx.(*parser.VacuumstmtContext))
+	}
+	return nil
+}
+
+// OnExit is called when the parser exits a rule context.
+func (*nonTransactionalRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+func (r *nonTransactionalRule) handleDropdbstmt(ctx *parser.DropdbstmtContext) {
+	r.checkStatement(ctx)
+}
+
+func (r *nonTransactionalRule) handleIndexstmt(ctx *parser.IndexstmtContext) {
+	r.checkStatement(ctx)
+}
+
+func (r *nonTransactionalRule) handleDropstmt(ctx *parser.DropstmtContext) {
+	r.checkStatement(ctx)
+}
+
+func (r *nonTransactionalRule) handleVacuumstmt(ctx *parser.VacuumstmtContext) {
+	r.checkStatement(ctx)
+}
+
 // checkStatement checks if a statement is non-transactional
-func (c *nonTransactionalChecker) checkStatement(ctx antlr.ParserRuleContext) {
+func (r *nonTransactionalRule) checkStatement(ctx antlr.ParserRuleContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
-	stmtText := extractStatementText(c.statementsText, ctx.GetStart().GetLine(), ctx.GetStop().GetLine())
+	stmtText := extractStatementText(r.statementsText, ctx.GetStart().GetLine(), ctx.GetStop().GetLine())
 	if pg.IsNonTransactionStatement(stmtText) {
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:  c.level,
+		r.AddAdvice(&storepb.Advice{
+			Status:  r.level,
 			Code:    advisor.StatementNonTransactional.Int32(),
-			Title:   c.title,
+			Title:   r.title,
 			Content: "This statement is non-transactional",
 			StartPosition: &storepb.Position{
 				Line:   int32(ctx.GetStart().GetLine()),
@@ -76,24 +115,4 @@ func (c *nonTransactionalChecker) checkStatement(ctx antlr.ParserRuleContext) {
 			},
 		})
 	}
-}
-
-// EnterDropdbstmt handles DROP DATABASE
-func (c *nonTransactionalChecker) EnterDropdbstmt(ctx *parser.DropdbstmtContext) {
-	c.checkStatement(ctx)
-}
-
-// EnterIndexstmt handles CREATE INDEX
-func (c *nonTransactionalChecker) EnterIndexstmt(ctx *parser.IndexstmtContext) {
-	c.checkStatement(ctx)
-}
-
-// EnterDropstmt handles DROP INDEX (and other DROP statements)
-func (c *nonTransactionalChecker) EnterDropstmt(ctx *parser.DropstmtContext) {
-	c.checkStatement(ctx)
-}
-
-// EnterVacuumstmt handles VACUUM
-func (c *nonTransactionalChecker) EnterVacuumstmt(ctx *parser.VacuumstmtContext) {
-	c.checkStatement(ctx)
 }

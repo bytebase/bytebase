@@ -36,29 +36,45 @@ func (*StatementDisallowOnDelCascadeAdvisor) Check(_ context.Context, checkCtx a
 		return nil, err
 	}
 
-	checker := &statementDisallowOnDelCascadeChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
-		statementsText:               checkCtx.Statements,
+	rule := &statementDisallowOnDelCascadeRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: string(checkCtx.Rule.Type),
+		},
+		statementsText: checkCtx.Statements,
 	}
 
+	checker := NewGenericChecker([]Rule{rule})
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type statementDisallowOnDelCascadeChecker struct {
-	*parser.BasePostgreSQLParserListener
-
-	adviceList     []*storepb.Advice
-	level          storepb.Advice_Status
-	title          string
+type statementDisallowOnDelCascadeRule struct {
+	BaseRule
 	statementsText string
 }
 
-// EnterKey_delete checks for ON DELETE CASCADE
-func (c *statementDisallowOnDelCascadeChecker) EnterKey_delete(ctx *parser.Key_deleteContext) {
+// Name returns the rule name.
+func (*statementDisallowOnDelCascadeRule) Name() string {
+	return "statement.disallow-on-delete-cascade"
+}
+
+// OnEnter is called when the parser enters a rule context.
+func (r *statementDisallowOnDelCascadeRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Key_delete":
+		r.handleKeyDelete(ctx.(*parser.Key_deleteContext))
+	}
+	return nil
+}
+
+// OnExit is called when the parser exits a rule context.
+func (*statementDisallowOnDelCascadeRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+func (r *statementDisallowOnDelCascadeRule) handleKeyDelete(ctx *parser.Key_deleteContext) {
 	// Check if this has CASCADE as the key_action
 	if ctx.Key_action() != nil {
 		keyAction := ctx.Key_action()
@@ -87,15 +103,15 @@ func (c *statementDisallowOnDelCascadeChecker) EnterKey_delete(ctx *parser.Key_d
 				if line < 1 {
 					line = 1
 				}
-				c.adviceList = append(c.adviceList, &storepb.Advice{
-					Status:  c.level,
+				r.AddAdvice(&storepb.Advice{
+					Status:  r.level,
 					Code:    advisor.StatementDisallowCascade.Int32(),
-					Title:   c.title,
+					Title:   r.title,
 					Content: "The CASCADE option is not permitted for ON DELETE clauses",
 					StartPosition: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
 						Line:   int32(line),
 						Column: 0,
-					}, c.statementsText),
+					}, r.statementsText),
 				})
 			}
 		}

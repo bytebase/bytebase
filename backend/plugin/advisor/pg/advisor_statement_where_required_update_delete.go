@@ -36,40 +36,58 @@ func (*StatementWhereRequiredUpdateDeleteAdvisor) Check(_ context.Context, check
 		return nil, err
 	}
 
-	checker := &statementWhereRequiredChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
-		statementsText:               checkCtx.Statements,
+	rule := &statementWhereRequiredRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: string(checkCtx.Rule.Type),
+		},
+		statementsText: checkCtx.Statements,
 	}
 
+	checker := NewGenericChecker([]Rule{rule})
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type statementWhereRequiredChecker struct {
-	*parser.BasePostgreSQLParserListener
-
-	adviceList     []*storepb.Advice
-	level          storepb.Advice_Status
-	title          string
+type statementWhereRequiredRule struct {
+	BaseRule
 	statementsText string
 }
 
-// EnterUpdatestmt handles UPDATE statements
-func (c *statementWhereRequiredChecker) EnterUpdatestmt(ctx *parser.UpdatestmtContext) {
+// Name returns the rule name.
+func (*statementWhereRequiredRule) Name() string {
+	return "statement.where-required-update-delete"
+}
+
+// OnEnter is called when the parser enters a rule context.
+func (r *statementWhereRequiredRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Updatestmt":
+		r.handleUpdatestmt(ctx.(*parser.UpdatestmtContext))
+	case "Deletestmt":
+		r.handleDeletestmt(ctx.(*parser.DeletestmtContext))
+	}
+	return nil
+}
+
+// OnExit is called when the parser exits a rule context.
+func (*statementWhereRequiredRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+func (r *statementWhereRequiredRule) handleUpdatestmt(ctx *parser.UpdatestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
 	// Check if WHERE clause exists
 	if ctx.Where_or_current_clause() == nil || ctx.Where_or_current_clause().WHERE() == nil {
-		stmtText := extractStatementText(c.statementsText, ctx.GetStart().GetLine(), ctx.GetStop().GetLine())
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:  c.level,
+		stmtText := extractStatementText(r.statementsText, ctx.GetStart().GetLine(), ctx.GetStop().GetLine())
+		r.AddAdvice(&storepb.Advice{
+			Status:  r.level,
 			Code:    advisor.StatementNoWhere.Int32(),
-			Title:   c.title,
+			Title:   r.title,
 			Content: fmt.Sprintf("\"%s\" requires WHERE clause", stmtText),
 			StartPosition: &storepb.Position{
 				Line:   int32(ctx.GetStart().GetLine()),
@@ -79,19 +97,18 @@ func (c *statementWhereRequiredChecker) EnterUpdatestmt(ctx *parser.UpdatestmtCo
 	}
 }
 
-// EnterDeletestmt handles DELETE statements
-func (c *statementWhereRequiredChecker) EnterDeletestmt(ctx *parser.DeletestmtContext) {
+func (r *statementWhereRequiredRule) handleDeletestmt(ctx *parser.DeletestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
 	// Check if WHERE clause exists
 	if ctx.Where_or_current_clause() == nil || ctx.Where_or_current_clause().WHERE() == nil {
-		stmtText := extractStatementText(c.statementsText, ctx.GetStart().GetLine(), ctx.GetStop().GetLine())
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:  c.level,
+		stmtText := extractStatementText(r.statementsText, ctx.GetStart().GetLine(), ctx.GetStop().GetLine())
+		r.AddAdvice(&storepb.Advice{
+			Status:  r.level,
 			Code:    advisor.StatementNoWhere.Int32(),
-			Title:   c.title,
+			Title:   r.title,
 			Content: fmt.Sprintf("\"%s\" requires WHERE clause", stmtText),
 			StartPosition: &storepb.Position{
 				Line:   int32(ctx.GetStart().GetLine()),
