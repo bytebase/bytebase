@@ -56,7 +56,7 @@ type tableNoFKRule struct {
 	statementsText string
 }
 
-func (r *tableNoFKRule) Name() string {
+func (*tableNoFKRule) Name() string {
 	return "table_no_fk"
 }
 
@@ -72,7 +72,7 @@ func (r *tableNoFKRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) er
 	return nil
 }
 
-func (r *tableNoFKRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+func (*tableNoFKRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
 	return nil
 }
 

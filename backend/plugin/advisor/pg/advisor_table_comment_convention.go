@@ -42,29 +42,31 @@ func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 		return nil, err
 	}
 
-	checker := &tableCommentConventionChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
-		payload:                      payload,
-		classificationConfig:         checkCtx.ClassificationConfig,
-		statementsText:               checkCtx.Statements,
-		createdTables:                make(map[string]*tableInfo),
-		tableComments:                make(map[string]*tableCommentInfo),
+	rule := &tableCommentConventionRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: string(checkCtx.Rule.Type),
+		},
+		payload:              payload,
+		classificationConfig: checkCtx.ClassificationConfig,
+		statementsText:       checkCtx.Statements,
+		createdTables:        make(map[string]*tableInfo),
+		tableComments:        make(map[string]*tableCommentInfo),
 	}
 
+	checker := NewGenericChecker([]Rule{rule})
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
 	// Check each created table for comment requirements
-	for tableKey, tableInfo := range checker.createdTables {
-		tableCommentInfo, hasComment := checker.tableComments[tableKey]
+	for tableKey, tableInfo := range rule.createdTables {
+		tableCommentInfo, hasComment := rule.tableComments[tableKey]
 
 		if !hasComment || tableCommentInfo.comment == "" {
-			if checker.payload.Required {
-				checker.adviceList = append(checker.adviceList, &storepb.Advice{
-					Status:  checker.level,
+			if rule.payload.Required {
+				rule.AddAdvice(&storepb.Advice{
+					Status:  rule.level,
 					Code:    advisor.CommentEmpty.Int32(),
-					Title:   checker.title,
+					Title:   rule.title,
 					Content: fmt.Sprintf("Comment is required for table `%s`", tableInfo.displayName),
 					StartPosition: &storepb.Position{
 						Line:   int32(tableInfo.line),
@@ -74,24 +76,24 @@ func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 			}
 		} else {
 			comment := tableCommentInfo.comment
-			if checker.payload.MaxLength > 0 && len(comment) > checker.payload.MaxLength {
-				checker.adviceList = append(checker.adviceList, &storepb.Advice{
-					Status:  checker.level,
+			if rule.payload.MaxLength > 0 && len(comment) > rule.payload.MaxLength {
+				rule.AddAdvice(&storepb.Advice{
+					Status:  rule.level,
 					Code:    advisor.CommentTooLong.Int32(),
-					Title:   checker.title,
-					Content: fmt.Sprintf("Table `%s` comment is too long. The length of comment should be within %d characters", tableInfo.displayName, checker.payload.MaxLength),
+					Title:   rule.title,
+					Content: fmt.Sprintf("Table `%s` comment is too long. The length of comment should be within %d characters", tableInfo.displayName, rule.payload.MaxLength),
 					StartPosition: &storepb.Position{
 						Line:   int32(tableCommentInfo.line),
 						Column: 0,
 					},
 				})
 			}
-			if checker.payload.RequiredClassification {
-				if classification, _ := common.GetClassificationAndUserComment(comment, checker.classificationConfig); classification == "" {
-					checker.adviceList = append(checker.adviceList, &storepb.Advice{
-						Status:  checker.level,
+			if rule.payload.RequiredClassification {
+				if classification, _ := common.GetClassificationAndUserComment(comment, rule.classificationConfig); classification == "" {
+					rule.AddAdvice(&storepb.Advice{
+						Status:  rule.level,
 						Code:    advisor.CommentMissingClassification.Int32(),
-						Title:   checker.title,
+						Title:   rule.title,
 						Content: fmt.Sprintf("Table `%s` comment requires classification", tableInfo.displayName),
 						StartPosition: &storepb.Position{
 							Line:   int32(tableCommentInfo.line),
@@ -103,7 +105,7 @@ func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 		}
 	}
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
 type tableInfo struct {
@@ -118,12 +120,9 @@ type tableCommentInfo struct {
 	line    int
 }
 
-type tableCommentConventionChecker struct {
-	*parser.BasePostgreSQLParserListener
+type tableCommentConventionRule struct {
+	BaseRule
 
-	adviceList           []*storepb.Advice
-	level                storepb.Advice_Status
-	title                string
 	payload              *advisor.CommentConventionRulePayload
 	classificationConfig *storepb.DataClassificationSetting_DataClassificationConfig
 	statementsText       string
@@ -132,14 +131,42 @@ type tableCommentConventionChecker struct {
 	tableComments map[string]*tableCommentInfo
 }
 
-// EnterCreatestmt collects CREATE TABLE statements
-func (c *tableCommentConventionChecker) EnterCreatestmt(ctx *parser.CreatestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
+// Name returns the rule name.
+func (*tableCommentConventionRule) Name() string {
+	return "table-comment-convention"
+}
+
+// OnEnter handles entering a parse tree node.
+func (r *tableCommentConventionRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Createstmt":
+		r.handleCreatestmt(ctx)
+	case "Commentstmt":
+		r.handleCommentstmt(ctx)
+	default:
+		// Ignore other node types
+	}
+	return nil
+}
+
+// OnExit handles exiting a parse tree node.
+func (*tableCommentConventionRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+// handleCreatestmt collects CREATE TABLE statements
+func (r *tableCommentConventionRule) handleCreatestmt(ctx antlr.ParserRuleContext) {
+	createstmtCtx, ok := ctx.(*parser.CreatestmtContext)
+	if !ok {
+		return
+	}
+
+	if !isTopLevel(createstmtCtx.GetParent()) {
 		return
 	}
 
 	var tableName, schemaName string
-	allQualifiedNames := ctx.AllQualified_name()
+	allQualifiedNames := createstmtCtx.AllQualified_name()
 	if len(allQualifiedNames) > 0 {
 		tableName = extractTableName(allQualifiedNames[0])
 		schemaName = extractSchemaName(allQualifiedNames[0])
@@ -155,31 +182,36 @@ func (c *tableCommentConventionChecker) EnterCreatestmt(ctx *parser.CreatestmtCo
 		displayName = fmt.Sprintf("%s.%s", schemaName, tableName)
 	}
 
-	c.createdTables[tableKey] = &tableInfo{
+	r.createdTables[tableKey] = &tableInfo{
 		schema:      schemaName,
 		tableName:   tableName,
 		displayName: displayName,
-		line:        ctx.GetStart().GetLine(),
+		line:        createstmtCtx.GetStart().GetLine(),
 	}
 }
 
-// EnterCommentstmt collects COMMENT ON TABLE statements
-func (c *tableCommentConventionChecker) EnterCommentstmt(ctx *parser.CommentstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
+// handleCommentstmt collects COMMENT ON TABLE statements
+func (r *tableCommentConventionRule) handleCommentstmt(ctx antlr.ParserRuleContext) {
+	commentstmtCtx, ok := ctx.(*parser.CommentstmtContext)
+	if !ok {
+		return
+	}
+
+	if !isTopLevel(commentstmtCtx.GetParent()) {
 		return
 	}
 
 	// Check if this is COMMENT ON TABLE
-	if ctx.Object_type_any_name() == nil || ctx.Object_type_any_name().TABLE() == nil {
+	if commentstmtCtx.Object_type_any_name() == nil || commentstmtCtx.Object_type_any_name().TABLE() == nil {
 		return
 	}
 
 	// Extract table name from Any_name
-	if ctx.Any_name() == nil {
+	if commentstmtCtx.Any_name() == nil {
 		return
 	}
 
-	parts := pgparser.NormalizePostgreSQLAnyName(ctx.Any_name())
+	parts := pgparser.NormalizePostgreSQLAnyName(commentstmtCtx.Any_name())
 	if len(parts) == 0 {
 		return
 	}
@@ -197,16 +229,16 @@ func (c *tableCommentConventionChecker) EnterCommentstmt(ctx *parser.Commentstmt
 
 	// Extract comment text
 	comment := ""
-	if ctx.Comment_text() != nil && ctx.Comment_text().Sconst() != nil {
-		commentText := ctx.Comment_text().Sconst().GetText()
+	if commentstmtCtx.Comment_text() != nil && commentstmtCtx.Comment_text().Sconst() != nil {
+		commentText := commentstmtCtx.Comment_text().Sconst().GetText()
 		// Remove surrounding quotes
 		if len(commentText) >= 2 {
 			comment = commentText[1 : len(commentText)-1]
 		}
 	}
 
-	c.tableComments[tableKey] = &tableCommentInfo{
+	r.tableComments[tableKey] = &tableCommentInfo{
 		comment: comment,
-		line:    ctx.GetStart().GetLine(),
+		line:    commentstmtCtx.GetStart().GetLine(),
 	}
 }

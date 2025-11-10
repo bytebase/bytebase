@@ -86,6 +86,8 @@ func (r *columnRequirementRule) OnEnter(ctx antlr.ParserRuleContext, nodeType st
 		r.handleAltertablestmt(ctx)
 	case "Renamestmt":
 		r.handleRenamestmt(ctx)
+	default:
+		// Do nothing for other node types
 	}
 	return nil
 }
