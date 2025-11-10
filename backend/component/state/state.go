@@ -14,11 +14,6 @@ type State struct {
 	// ApprovalFinding is the set of issues for finding the approval template.
 	ApprovalFinding sync.Map // map[issue.ID]*store.IssueMessage
 
-	// TaskProgress is the map from task ID to task progress.
-	TaskProgress sync.Map // map[taskID]api.Progress
-	// GhostTaskState is the map from task ID to gh-ost state.
-	GhostTaskState sync.Map // map[taskID]sharedGhostState
-
 	TaskRunSchedulerInfo sync.Map // map[taskRunID]*storepb.SchedulerInfo
 
 	// TaskRunConnectionID is the map from task run ID to the connection id of the connection to the database.
