@@ -278,6 +278,18 @@ export declare type QueryResult = Message<"bytebase.v1.QueryResult"> & {
      */
     value: QueryResult_PostgresError;
     case: "postgresError";
+  } | {
+    /**
+     * @generated from field: bytebase.v1.QueryResult.SyntaxError syntax_error = 13;
+     */
+    value: QueryResult_SyntaxError;
+    case: "syntaxError";
+  } | {
+    /**
+     * @generated from field: bytebase.v1.QueryResult.PermissionDenied permission_denied = 14;
+     */
+    value: QueryResult_PermissionDenied;
+    case: "permissionDenied";
   } | { case: undefined; value?: undefined };
 
   /**
@@ -400,6 +412,89 @@ export declare type QueryResult_PostgresError = Message<"bytebase.v1.QueryResult
  * Use `create(QueryResult_PostgresErrorSchema)` to create a new message.
  */
 export declare const QueryResult_PostgresErrorSchema: GenMessage<QueryResult_PostgresError>;
+
+/**
+ * Syntax error with position information for editor highlighting
+ *
+ * @generated from message bytebase.v1.QueryResult.SyntaxError
+ */
+export declare type QueryResult_SyntaxError = Message<"bytebase.v1.QueryResult.SyntaxError"> & {
+  /**
+   * Position information for highlighting in editor
+   *
+   * @generated from field: bytebase.v1.Position start_position = 1;
+   */
+  startPosition?: Position;
+};
+
+/**
+ * Describes the message bytebase.v1.QueryResult.SyntaxError.
+ * Use `create(QueryResult_SyntaxErrorSchema)` to create a new message.
+ */
+export declare const QueryResult_SyntaxErrorSchema: GenMessage<QueryResult_SyntaxError>;
+
+/**
+ * Permission denied with resource information or disallowed command_type.
+ * Either resource or command_type is available.
+ *
+ * @generated from message bytebase.v1.QueryResult.PermissionDenied
+ */
+export declare type QueryResult_PermissionDenied = Message<"bytebase.v1.QueryResult.PermissionDenied"> & {
+  /**
+   * Denied to access the resource.
+   * Format:
+   * instances/{instance}/databases/{database}
+   * instances/{instance}/databases/{database}/schemas/{schema}
+   * instances/{instance}/databases/{database}/tables/{table}
+   * instances/{instance}/databases/{database}/schemas/{schema}/tables/{table}
+   *
+   * @generated from field: string resource = 1;
+   */
+  resource: string;
+
+  /**
+   * Disallowed command_type.
+   *
+   * @generated from field: bytebase.v1.QueryResult.PermissionDenied.CommandType command_type = 2;
+   */
+  commandType: QueryResult_PermissionDenied_CommandType;
+};
+
+/**
+ * Describes the message bytebase.v1.QueryResult.PermissionDenied.
+ * Use `create(QueryResult_PermissionDeniedSchema)` to create a new message.
+ */
+export declare const QueryResult_PermissionDeniedSchema: GenMessage<QueryResult_PermissionDenied>;
+
+/**
+ * @generated from enum bytebase.v1.QueryResult.PermissionDenied.CommandType
+ */
+export enum QueryResult_PermissionDenied_CommandType {
+  /**
+   * @generated from enum value: COMMAND_TYPE_UNSPECIFIED = 0;
+   */
+  COMMAND_TYPE_UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: DDL = 1;
+   */
+  DDL = 1,
+
+  /**
+   * @generated from enum value: DML = 2;
+   */
+  DML = 2,
+
+  /**
+   * @generated from enum value: NON_READ_ONLY = 3;
+   */
+  NON_READ_ONLY = 3,
+}
+
+/**
+ * Describes the enum bytebase.v1.QueryResult.PermissionDenied.CommandType.
+ */
+export declare const QueryResult_PermissionDenied_CommandTypeSchema: GenEnum<QueryResult_PermissionDenied_CommandType>;
 
 /**
  * @generated from message bytebase.v1.QueryResult.Message

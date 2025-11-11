@@ -472,7 +472,9 @@
     - [QueryResponse](#bytebase-v1-QueryResponse)
     - [QueryResult](#bytebase-v1-QueryResult)
     - [QueryResult.Message](#bytebase-v1-QueryResult-Message)
+    - [QueryResult.PermissionDenied](#bytebase-v1-QueryResult-PermissionDenied)
     - [QueryResult.PostgresError](#bytebase-v1-QueryResult-PostgresError)
+    - [QueryResult.SyntaxError](#bytebase-v1-QueryResult-SyntaxError)
     - [QueryRow](#bytebase-v1-QueryRow)
     - [RowValue](#bytebase-v1-RowValue)
     - [RowValue.Timestamp](#bytebase-v1-RowValue-Timestamp)
@@ -485,6 +487,7 @@
     - [QueryHistory.Type](#bytebase-v1-QueryHistory-Type)
     - [QueryOption.RedisRunCommandsOn](#bytebase-v1-QueryOption-RedisRunCommandsOn)
     - [QueryResult.Message.Level](#bytebase-v1-QueryResult-Message-Level)
+    - [QueryResult.PermissionDenied.CommandType](#bytebase-v1-QueryResult-PermissionDenied-CommandType)
   
     - [SQLService](#bytebase-v1-SQLService)
   
@@ -7855,6 +7858,8 @@ OrgPolicyService manages organizational policies at various resource levels.
 | latency | [google.protobuf.Duration](#google-protobuf-Duration) |  | The time it takes to execute the query. |
 | statement | [string](#string) |  | The query statement for the result. |
 | postgres_error | [QueryResult.PostgresError](#bytebase-v1-QueryResult-PostgresError) |  |  |
+| syntax_error | [QueryResult.SyntaxError](#bytebase-v1-QueryResult-SyntaxError) |  |  |
+| permission_denied | [QueryResult.PermissionDenied](#bytebase-v1-QueryResult-PermissionDenied) |  |  |
 | messages | [QueryResult.Message](#bytebase-v1-QueryResult-Message) | repeated | Informational or debug messages returned by the database engine during query execution. Examples include PostgreSQL&#39;s RAISE NOTICE, MSSQL&#39;s PRINT, or Oracle&#39;s DBMS_OUTPUT.PUT_LINE. |
 | masked | [MaskingReason](#bytebase-v1-MaskingReason) | repeated | Masking reasons for each column (empty for non-masked columns). |
 
@@ -7873,6 +7878,23 @@ OrgPolicyService manages organizational policies at various resource levels.
 | ----- | ---- | ----- | ----------- |
 | level | [QueryResult.Message.Level](#bytebase-v1-QueryResult-Message-Level) |  |  |
 | content | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-QueryResult-PermissionDenied"></a>
+
+### QueryResult.PermissionDenied
+Permission denied with resource information or disallowed command_type.
+Either resource or command_type is available.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| resource | [string](#string) |  | Denied to access the resource. Format: instances/{instance}/databases/{database} instances/{instance}/databases/{database}/schemas/{schema} instances/{instance}/databases/{database}/tables/{table} instances/{instance}/databases/{database}/schemas/{schema}/tables/{table} |
+| command_type | [QueryResult.PermissionDenied.CommandType](#bytebase-v1-QueryResult-PermissionDenied-CommandType) |  | Disallowed command_type. |
 
 
 
@@ -7905,6 +7927,21 @@ for field description.
 | file | [string](#string) |  |  |
 | line | [int32](#int32) |  |  |
 | routine | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-QueryResult-SyntaxError"></a>
+
+### QueryResult.SyntaxError
+Syntax error with position information for editor highlighting
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| start_position | [Position](#bytebase-v1-Position) |  | Position information for highlighting in editor |
 
 
 
@@ -8093,6 +8130,20 @@ RuleType indicates the source of the linting rule.
 | LOG | 4 | General log message. |
 | NOTICE | 5 | Notice message for important information. |
 | EXCEPTION | 6 | Exception message indicating error conditions. |
+
+
+
+<a name="bytebase-v1-QueryResult-PermissionDenied-CommandType"></a>
+
+### QueryResult.PermissionDenied.CommandType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| COMMAND_TYPE_UNSPECIFIED | 0 |  |
+| DDL | 1 |  |
+| DML | 2 |  |
+| NON_READ_ONLY | 3 |  |
 
 
  
