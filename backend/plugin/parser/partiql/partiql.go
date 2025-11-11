@@ -17,25 +17,45 @@ func init() {
 }
 
 // parsePartiQLForRegistry is the ParseFunc for PartiQL.
-// Returns antlr.Tree on success.
+// Returns []*ParseResult on success.
 func parsePartiQLForRegistry(statement string) (any, error) {
 	result, err := ParsePartiQL(statement)
 	if err != nil {
 		return nil, err
 	}
-	if result == nil {
-		return nil, nil
-	}
-	return result.Tree, nil
+	return result, nil
 }
 
 type ParseResult struct {
-	Tree   antlr.Tree
-	Tokens *antlr.CommonTokenStream
+	Tree     antlr.Tree
+	Tokens   *antlr.CommonTokenStream
+	BaseLine int
 }
 
-// ParsePartiQL parses the given PartiQL statement by using antlr4. Returns the AST and token stream if no error.
-func ParsePartiQL(statement string) (*ParseResult, error) {
+// ParsePartiQL parses the given PartiQL statement by using antlr4. Returns a list of AST and token stream if no error.
+func ParsePartiQL(statement string) ([]*ParseResult, error) {
+	stmts, err := SplitSQL(statement)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []*ParseResult
+	for _, stmt := range stmts {
+		if stmt.Empty {
+			continue
+		}
+
+		parseResult, err := parseSinglePartiQL(stmt.Text, stmt.BaseLine)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, parseResult)
+	}
+
+	return result, nil
+}
+
+func parseSinglePartiQL(statement string, baseLine int) (*ParseResult, error) {
 	statement = strings.TrimRightFunc(statement, utils.IsSpaceOrSemicolon) + "\n;"
 	inputStream := antlr.NewInputStream(statement)
 	lexer := parser.NewPartiQLLexer(inputStream)
@@ -46,12 +66,14 @@ func ParsePartiQL(statement string) (*ParseResult, error) {
 	lexer.RemoveErrorListeners()
 	lexerErrorListener := &base.ParseErrorListener{
 		Statement: statement,
+		BaseLine:  baseLine,
 	}
 	lexer.AddErrorListener(lexerErrorListener)
 
 	p.RemoveErrorListeners()
 	parserErrorListener := &base.ParseErrorListener{
 		Statement: statement,
+		BaseLine:  baseLine,
 	}
 	p.AddErrorListener(parserErrorListener)
 
@@ -68,8 +90,9 @@ func ParsePartiQL(statement string) (*ParseResult, error) {
 	}
 
 	result := &ParseResult{
-		Tree:   tree,
-		Tokens: stream,
+		Tree:     tree,
+		Tokens:   stream,
+		BaseLine: baseLine,
 	}
 
 	return result, nil
