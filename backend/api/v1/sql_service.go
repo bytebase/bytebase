@@ -679,6 +679,8 @@ func getSensitivePredicateColumnErrorMessages(sensitiveColumns []parserbase.Colu
 	return buf.String()
 }
 
+// queryRetryStopOnError runs the query and stops on encountering errors.
+// The error is both present in the returned QueryResult and error, the caller decides what to do.
 func queryRetryStopOnError(
 	ctx context.Context,
 	stores *store.Store,
@@ -704,7 +706,6 @@ func queryRetryStopOnError(
 	var allResults []*v1pb.QueryResult
 	var allSpans []*parserbase.QuerySpan
 	var totalDuration time.Duration
-	var firstError error
 
 	for _, stmt := range statements {
 		// Skip empty statements
@@ -716,15 +717,19 @@ func queryRetryStopOnError(
 		totalDuration += duration
 
 		if err != nil {
-			firstError = err
-			break
+			allResults = append(allResults, &v1pb.QueryResult{
+				Error:     err.Error(),
+				Statement: stmt.Text,
+			})
+			allSpans = append(allSpans, nil)
+			return allResults, allSpans, totalDuration, err
 		}
 
 		allResults = append(allResults, results...)
 		allSpans = append(allSpans, spans...)
 	}
 
-	return allResults, allSpans, totalDuration, firstError
+	return allResults, allSpans, totalDuration, nil
 }
 
 func executeWithTimeout(ctx context.Context, stores *store.Store, licenseService *enterprise.LicenseService, driver db.Driver, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, time.Duration, error) {
@@ -958,7 +963,7 @@ func DoExport(
 	if request.Schema != nil {
 		queryContext.Schema = *request.Schema
 	}
-	results, spans, duration, queryErr := queryRetryStopOnError(
+	results, spans, duration, queryErr := queryRetry(
 		ctx,
 		stores,
 		user,
