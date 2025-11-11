@@ -141,7 +141,8 @@ func isCallStatement(item antlr.Tree) bool {
 	if !ok {
 		return false
 	}
-	return unitStmt.Call_statement() != nil
+	// BYT-8268: Changed from Call_statement to Sql_call_statement
+	return unitStmt.Sql_call_statement() != nil
 }
 
 // needSemicolon returns true if the given statement needs a semicolon.
