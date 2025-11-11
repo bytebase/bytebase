@@ -1,6 +1,6 @@
 import { useDebounceFn } from "@vueuse/core";
 import Emittery from "emittery";
-import { orderBy } from "lodash-es";
+import { orderBy, isEqual } from "lodash-es";
 import type { TreeOption } from "naive-ui";
 import type { InjectionKey, Ref, ComputedRef } from "vue";
 import { inject, provide, ref, computed, watch } from "vue";
@@ -64,14 +64,6 @@ const useSheetTreeByView = (
   const isInitialized = ref(false);
   const isLoading = ref(false);
 
-  const expandedKeys = useDynamicLocalStorage<Set<string>>(
-    computed(
-      () =>
-        `bb.sql-editor.worksheet-tree-expand-keys.${viewMode}.${me.value.name}`
-    ),
-    new Set(["/"])
-  );
-
   const rootNodeLabel = computed(() => {
     switch (viewMode) {
       case "my":
@@ -86,7 +78,7 @@ const useSheetTreeByView = (
   const getRootTreeNode = (): WorsheetFolderNode => ({
     isLeaf: false,
     children: [],
-    key: "/",
+    key: folderContext.rootPath.value,
     label: rootNodeLabel.value,
     editable: false,
   });
@@ -110,13 +102,40 @@ const useSheetTreeByView = (
     return list;
   });
 
-  const getKeyForWorksheet = (worksheet: Worksheet): string => {
+  const getPathesForWorksheet = (worksheet: Worksheet): string[] => {
+    const pathes = [folderContext.rootPath.value];
+    for (let i = 0; i < worksheet.folders.length; i++) {
+      pathes.push(
+        folderContext.ensureFolderPath(
+          [
+            folderContext.rootPath.value,
+            ...worksheet.folders.slice(0, i + 1),
+          ].join("/")
+        )
+      );
+    }
+    return pathes;
+  };
+
+  const getPathForWorksheet = (worksheet: Worksheet): string => {
     return folderContext.ensureFolderPath(
-      [
-        ...worksheet.folders,
-        `worksheets-${extractWorksheetUID(worksheet.name)}`,
-      ].join("/")
+      [folderContext.rootPath.value, ...worksheet.folders].join("/")
     );
+  };
+
+  const getKeyForWorksheet = (worksheet: Worksheet): string => {
+    return [
+      getPathForWorksheet(worksheet),
+      `bytebase-worksheets-${extractWorksheetUID(worksheet.name)}`,
+    ].join("/");
+  };
+
+  const getFoldersForWorksheet = (path: string): string[] => {
+    return path
+      .replace(folderContext.rootPath.value, "")
+      .split("/")
+      .slice(0, -1)
+      .filter((p) => p);
   };
 
   const buildTree = (parent: WorsheetFolderNode, worksheets: Worksheet[]) => {
@@ -136,9 +155,7 @@ const useSheetTreeByView = (
 
     const sheets = orderBy(
       worksheets.filter(
-        (worksheet) =>
-          folderContext.ensureFolderPath(worksheet.folders.join("/")) ===
-          parent.key
+        (worksheet) => getPathForWorksheet(worksheet) === parent.key
       ),
       (item) => item.title
     ).map((worksheet) => {
@@ -195,12 +212,8 @@ const useSheetTreeByView = (
 
       const folderPathes = new Set<string>([]);
       for (const worksheet of sheetList.value) {
-        for (let i = 0; i < worksheet.folders.length; i++) {
-          folderPathes.add(
-            folderContext.ensureFolderPath(
-              worksheet.folders.slice(0, i + 1).join("/")
-            )
-          );
+        for (const path of getPathesForWorksheet(worksheet)) {
+          folderPathes.add(path);
         }
       }
       folderContext.mergeFolders([...folderPathes]);
@@ -218,19 +231,24 @@ const useSheetTreeByView = (
     isLoading,
     sheetTree,
     sheetList,
-    expandedKeys,
     fetchSheetList,
     folderContext,
     getKeyForWorksheet,
+    getFoldersForWorksheet,
+    getPathesForWorksheet,
   };
 };
 
 export type SheetContext = {
-  isFetching: Ref<boolean>;
   view: Ref<SheetViewMode>;
   views: Record<SheetViewMode, ReturnType<typeof useSheetTreeByView>>;
   filter: Ref<WorksheetFilter>;
-  initialFilter: ComputedRef<WorksheetFilter>;
+  filterChanged: ComputedRef<boolean>;
+  expandedKeys: Ref<Set<string>>;
+  selectedKeys: Ref<string[]>;
+  editingNode: Ref<{ node: WorsheetFolderNode; rawLabel: string } | undefined>;
+  isWorksheetCreator: (worksheet: Worksheet) => boolean;
+  batchUpdateWorksheetFolders: (worksheets: Worksheet[]) => Promise<void>;
 };
 
 export const KEY = Symbol("bb.sql-editor.sheet") as InjectionKey<SheetContext>;
@@ -244,8 +262,26 @@ export const useSheetContextByView = (view: SheetViewMode) => {
   return context.views[view];
 };
 
+export const revealWorksheets = (
+  node: WorsheetFolderNode,
+  callback: (node: WorsheetFolderNode) => Worksheet | undefined
+): Worksheet[] => {
+  if (node.worksheet) {
+    const worksheet = callback(node);
+    return worksheet ? [worksheet] : [];
+  }
+
+  const worksheets: Worksheet[] = [];
+  for (const child of node.children) {
+    worksheets.push(...revealWorksheets(child, callback));
+  }
+  return worksheets;
+};
+
 export const provideSheetContext = () => {
   const me = useCurrentUserV1();
+  const tabStore = useSQLEditorTabStore();
+  const worksheetV1Store = useWorkSheetStore();
 
   const initialFilter = computed(
     (): WorksheetFilter => ({
@@ -262,22 +298,90 @@ export const provideSheetContext = () => {
       ...initialFilter.value,
     }
   );
+  const filterChanged = computed(
+    () => !isEqual(filter.value, initialFilter.value)
+  );
+
+  const views = {
+    my: useSheetTreeByView(
+      "my",
+      computed(() => filter.value)
+    ),
+    shared: useSheetTreeByView(
+      "shared",
+      computed(() => filter.value)
+    ),
+  };
+
+  const expandedKeys = useDynamicLocalStorage<Set<string>>(
+    computed(() => `bb.sql-editor.worksheet-tree-expand-keys.${me.value.name}`),
+    new Set([
+      ...Object.values(views).map((item) => item.folderContext.rootPath.value),
+    ])
+  );
+  const selectedKeys = ref<string[]>([]);
+
+  const isWorksheetCreator = (worksheet: Worksheet) => {
+    return worksheet.creator === `users/${me.value.email}`;
+  };
+
+  watch(
+    () => tabStore.currentTab,
+    (tab) => {
+      selectedKeys.value = [];
+
+      if (!tab || !tab.worksheet) {
+        return;
+      }
+      const worksheet = worksheetV1Store.getWorksheetByName(tab.worksheet);
+      if (!worksheet) {
+        return;
+      }
+      const isCreator = isWorksheetCreator(worksheet);
+      let view: SheetViewMode = "my";
+      if (!isCreator) {
+        view = "shared";
+      }
+
+      const viewContext = views[view];
+      if (!viewContext) {
+        return;
+      }
+      selectedKeys.value = [viewContext.getKeyForWorksheet(worksheet)];
+
+      for (const path of viewContext.getPathesForWorksheet(worksheet)) {
+        expandedKeys.value.add(path);
+      }
+    },
+    { immediate: true }
+  );
+
+  const batchUpdateWorksheetFolders = async (worksheets: Worksheet[]) => {
+    console.log("batchUpdateWorksheetFolders", worksheets);
+    await worksheetV1Store.batchUpsertWorksheetOrganizers(
+      worksheets.map((worksheet) => ({
+        organizer: {
+          worksheet: worksheet.name,
+          starred: worksheet.starred,
+          folders: worksheet.folders,
+        },
+        updateMask: ["folders"],
+      }))
+    );
+  };
 
   const context: SheetContext = {
-    isFetching: ref(false),
+    expandedKeys,
+    selectedKeys,
     view: ref("my"),
-    views: {
-      my: useSheetTreeByView(
-        "my",
-        computed(() => filter.value)
-      ),
-      shared: useSheetTreeByView(
-        "shared",
-        computed(() => filter.value)
-      ),
-    },
+    views,
     filter,
-    initialFilter,
+    filterChanged,
+    isWorksheetCreator,
+    editingNode: ref<
+      { node: WorsheetFolderNode; rawLabel: string } | undefined
+    >(),
+    batchUpdateWorksheetFolders,
   };
 
   provide(KEY, context);
@@ -305,17 +409,10 @@ export const extractWorksheetConnection = async (worksheet: Worksheet) => {
 export const openWorksheetByName = async (
   name: string,
   editorContext: SQLEditorContext,
-  worksheetContext: SheetContext,
   forceNewTab = false
 ) => {
-  const cleanup = () => {
-    worksheetContext.isFetching.value = false;
-  };
-
-  worksheetContext.isFetching.value = true;
   const worksheet = await useWorkSheetStore().getOrFetchWorksheetByName(name);
   if (!worksheet) {
-    cleanup();
     return false;
   }
 
@@ -325,11 +422,8 @@ export const openWorksheetByName = async (
       style: "CRITICAL",
       title: t("common.access-denied"),
     });
-    cleanup();
     return false;
   }
-
-  cleanup();
 
   await editorContext.maybeSwitchProject(worksheet.project);
   const tabStore = useSQLEditorTabStore();

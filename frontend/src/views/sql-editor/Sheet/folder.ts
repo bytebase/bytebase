@@ -6,6 +6,7 @@ import type { SheetViewMode } from "./types";
 
 export const useFolderByView = (viewMode: SheetViewMode) => {
   const me = useCurrentUserV1();
+  const rootPath = computed(() => `/${viewMode}`);
   const localCacheKey = computed(
     () => `bb.sql-editor.worksheet-folder.${viewMode}.${me.value.name}`
   );
@@ -16,7 +17,6 @@ export const useFolderByView = (viewMode: SheetViewMode) => {
 
   const folders = computed(() => sortBy(uniq([...localCache.value])));
 
-  // Use "/" for root
   // Must not end with "/" for non-root, for example, "xxx/" is not valid
   // Must starts with "/", like "/xxx"
   const ensureFolderPath = (path: string) => {
@@ -26,6 +26,9 @@ export const useFolderByView = (viewMode: SheetViewMode) => {
     }
     while (p.endsWith("/")) {
       p = p.slice(0, -1);
+    }
+    if (!p) {
+      return rootPath.value;
     }
     if (!p.startsWith("/")) {
       p = `/${p}`;
@@ -48,17 +51,16 @@ export const useFolderByView = (viewMode: SheetViewMode) => {
     path: string;
     dig: boolean;
   }) => {
-    let parentPrefix = `${parent}/`;
-    if (parent === "/") {
-      parentPrefix = parent;
-    }
+    const parentPrefix = `${parent}/`;
+    // if (parent === "/") {
+    //   parentPrefix = parent;
+    // }
 
     return (
       // ensure not self (specially for "/")
-      path !== parentPrefix &&
-        // ensure is subfolder
-        path.startsWith(parentPrefix) &&
-        dig
+      // path !== parentPrefix &&
+      // ensure is subfolder
+      path.startsWith(parentPrefix) && dig
         ? true
         : !path.replace(parentPrefix, "").includes("/")
     );
@@ -113,7 +115,8 @@ export const useFolderByView = (viewMode: SheetViewMode) => {
   };
 
   return {
-    folders: folders,
+    rootPath,
+    folders,
     listSubFolders,
     ensureFolderPath,
     addFolder,

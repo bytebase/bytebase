@@ -12,7 +12,7 @@
       :multiple="false"
       :show-irrelevant-nodes="false"
       :filter="filterNode"
-      :pattern="worksheetContext.filter.value.keyword"
+      :pattern="worksheetFilter.keyword"
       :render-suffix="renderSuffix"
       :render-prefix="renderPrefix"
       :render-label="renderLabel"
@@ -79,7 +79,7 @@ import {
   type DialogReactive,
 } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { nextTick, watch, ref } from "vue";
+import { nextTick, watch } from "vue";
 import { BBSpin } from "@/bbkit";
 import { HighlightLabelText } from "@/components/v2";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
@@ -90,7 +90,6 @@ import {
   useWorkSheetStore,
   pushNotification,
   useTabViewStateStore,
-  useCurrentUserV1,
   useUserStore,
 } from "@/store";
 import { DEBOUNCE_SEARCH_DELAY } from "@/types";
@@ -107,6 +106,7 @@ import {
   type WorsheetFolderNode,
   openWorksheetByName,
   useSheetContext,
+  revealWorksheets,
 } from "@/views/sql-editor/Sheet";
 import { useSQLEditorContext } from "@/views/sql-editor/context";
 import { useDropdown, type DropdownOptionType } from "./dropdown";
@@ -115,15 +115,17 @@ const props = defineProps<{
   view: SheetViewMode;
 }>();
 
-const editingNode = ref<
-  { node: WorsheetFolderNode; rawLabel: string } | undefined
->();
-const selectedKeys = ref<string[]>([]);
-
 const worksheetV1Store = useWorkSheetStore();
 const { project } = storeToRefs(useSQLEditorStore());
 const editorContext = useSQLEditorContext();
-const worksheetContext = useSheetContext();
+const {
+  filter: worksheetFilter,
+  selectedKeys,
+  expandedKeys,
+  editingNode,
+  isWorksheetCreator,
+  batchUpdateWorksheetFolders,
+} = useSheetContext();
 const {
   events,
   isInitialized,
@@ -131,13 +133,11 @@ const {
   sheetTree,
   fetchSheetList,
   folderContext,
-  expandedKeys,
-  getKeyForWorksheet,
+  getFoldersForWorksheet,
 } = useSheetContextByView(props.view);
 const $dialog = useDialog();
 const { removeViewState } = useTabViewStateStore();
 const tabStore = useSQLEditorTabStore();
-const me = useCurrentUserV1();
 const userStore = useUserStore();
 
 const {
@@ -180,23 +180,15 @@ const handleWorksheetToggleStar = useDebounceFn(
   DEBOUNCE_SEARCH_DELAY
 );
 
-const batchUpdateWorksheetFolders = async (worksheets: Worksheet[]) => {
-  await worksheetV1Store.batchUpsertWorksheetOrganizers(
-    worksheets.map((worksheet) => ({
-      organizer: {
-        worksheet: worksheet.name,
-        starred: worksheet.starred,
-        folders: worksheet.folders,
-      },
-      updateMask: ["folders"],
-    }))
-  );
-};
-
+// TODO(ed):
+// Find a better UX for filter.
+// 1. We do need to expand all nodes for filter results?
+// 2. We do still need a tree for filter results? How about just plain list?
+// 3. If we don't show empty folder in filter results, how to support "create/rename folder", "move/rename worksheet" actions?
 const filterNode = (pattern: string, option: TreeOption) => {
   const node = option as WorsheetFolderNode;
   const keyword = pattern.trim().toLowerCase();
-  if (node.key === "/" || !keyword) {
+  if (node.key === folderContext.rootPath.value || !keyword) {
     return true;
   }
   return node.label.toLowerCase().includes(keyword);
@@ -211,7 +203,7 @@ const renderPrefix = ({ option }: { option: TreeOption }) => {
   if (expandedKeys.value.has(node.key)) {
     return <FolderOpenIcon class="w-4 h-auto text-gray-600" />;
   }
-  if (node.key === "/" && props.view === "shared") {
+  if (node.key === folderContext.rootPath.value && props.view === "shared") {
     return <FolderSyncIcon class="w-4 h-auto text-gray-600" />;
   }
   if (node.empty) {
@@ -403,7 +395,7 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
   return (
     <HighlightLabelText
       text={node.label}
-      keyword={worksheetContext.filter.value.keyword}
+      keyword={worksheetFilter.value.keyword}
     />
   );
 };
@@ -427,7 +419,6 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
         openWorksheetByName(
           node.worksheet.name,
           editorContext,
-          worksheetContext,
           e.metaKey || e.ctrlKey
         );
       } else {
@@ -528,10 +519,6 @@ const handleDeleteSheet = (worksheet: Worksheet) => {
     positiveText: t("common.delete"),
     showIcon: false,
   });
-};
-
-const isWorksheetCreator = (worksheet: Worksheet) => {
-  return worksheet.creator === `users/${me.value.email}`;
 };
 
 const handleDuplicateSheet = async (worksheet: Worksheet) => {
@@ -686,22 +673,6 @@ const findParentNode = (
   return;
 };
 
-const revealWorksheets = (
-  node: WorsheetFolderNode,
-  callback: (node: WorsheetFolderNode) => Worksheet | undefined
-): Worksheet[] => {
-  if (node.worksheet) {
-    const worksheet = callback(node);
-    return worksheet ? [worksheet] : [];
-  }
-
-  const worksheets: Worksheet[] = [];
-  for (const child of node.children) {
-    worksheets.push(...revealWorksheets(child, callback));
-  }
-  return worksheets;
-};
-
 const updateWorksheetFolders = async (
   node: WorsheetFolderNode,
   oldParentKey: string,
@@ -709,11 +680,8 @@ const updateWorksheetFolders = async (
 ) => {
   const worksheets = revealWorksheets(node, (node: WorsheetFolderNode) => {
     if (node.worksheet) {
-      node.worksheet.folders = node.key
-        .replace(oldParentKey, newParentKey)
-        .split("/")
-        .slice(0, -1)
-        .filter((p) => p);
+      const newFullPath = node.key.replace(oldParentKey, newParentKey);
+      node.worksheet.folders = getFoldersForWorksheet(newFullPath);
       return node.worksheet;
     }
   });
@@ -815,40 +783,6 @@ const handleDrop = async ({ node, dragNode }: TreeDropInfo) => {
     }
   });
 };
-
-watch(
-  () => tabStore.currentTab,
-  (tab) => {
-    if (!tab || !tab.worksheet) {
-      selectedKeys.value = [];
-      return;
-    }
-    const worksheet = worksheetV1Store.getWorksheetByName(tab.worksheet);
-    if (!worksheet) {
-      selectedKeys.value = [];
-      return;
-    }
-    const isCreator = isWorksheetCreator(worksheet);
-    if (isCreator && props.view === "shared") {
-      selectedKeys.value = [];
-      return;
-    } else if (!isCreator && props.view === "my") {
-      selectedKeys.value = [];
-      return;
-    }
-
-    selectedKeys.value = [getKeyForWorksheet(worksheet)];
-    expandedKeys.value.add("/");
-    for (let i = 0; i < worksheet.folders.length; i++) {
-      expandedKeys.value.add(
-        folderContext.ensureFolderPath(
-          worksheet.folders.slice(0, i + 1).join("/")
-        )
-      );
-    }
-  },
-  { immediate: true }
-);
 </script>
 
 <style lang="postcss" scoped>

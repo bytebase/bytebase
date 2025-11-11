@@ -20,12 +20,7 @@
           @click="showDropdown = true"
         >
           <template #icon>
-            <FunnelIcon
-              :class="[
-                'w-4',
-                isEqual(filter, initialFilter) ? '' : 'text-accent',
-              ]"
-            />
+            <FunnelIcon :class="['w-4', filterChanged ? 'text-accent' : '']" />
           </template>
         </NButton>
       </NDropdown>
@@ -39,7 +34,6 @@
 </template>
 
 <script setup lang="tsx">
-import { isEqual } from "lodash-es";
 import { FunnelIcon } from "lucide-vue-next";
 import { NButton, NDropdown, NSwitch, type DropdownOption } from "naive-ui";
 import { ref, computed } from "vue";
@@ -48,7 +42,7 @@ import { t } from "@/plugins/i18n";
 import { useSheetContext } from "../../Sheet";
 import { SheetTree, DraftTree } from "./SheetList";
 
-const { filter, initialFilter } = useSheetContext();
+const { filter, filterChanged } = useSheetContext();
 const showDropdown = ref<boolean>(false);
 
 const options = computed((): DropdownOption[] => {

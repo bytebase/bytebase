@@ -64,10 +64,7 @@ import {
   extractInstanceResourceName,
   getDefaultPagination,
 } from "@/utils";
-import {
-  useSheetContext,
-  extractWorksheetConnection,
-} from "@/views/sql-editor/Sheet";
+import { extractWorksheetConnection } from "@/views/sql-editor/Sheet";
 import {
   useSQLEditorContext,
   type AsidePanelTab,
@@ -82,7 +79,6 @@ const editorStore = useSQLEditorStore();
 const worksheetStore = useWorkSheetStore();
 const tabStore = useSQLEditorTabStore();
 const policyStore = usePolicyV1Store();
-const { isFetching: isFetchingWorksheet } = useSheetContext();
 const {
   asidePanelTab,
   events: editorEvents,
@@ -194,9 +190,7 @@ const prepareSheetLegacy = async () => {
     (tab) => tab.worksheet == sheetName
   );
 
-  isFetchingWorksheet.value = true;
   const sheet = await worksheetStore.getOrFetchWorksheetByName(sheetName);
-  isFetchingWorksheet.value = false;
 
   if (!sheet) {
     if (openingSheetTab) {
@@ -260,9 +254,7 @@ const prepareSheet = async () => {
     (tab) => tab.worksheet == sheetName
   );
 
-  isFetchingWorksheet.value = true;
   const sheet = await worksheetStore.getOrFetchWorksheetByName(sheetName);
-  isFetchingWorksheet.value = false;
 
   if (!sheet) {
     if (openingSheetTab) {
