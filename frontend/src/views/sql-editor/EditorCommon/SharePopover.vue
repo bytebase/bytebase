@@ -96,19 +96,34 @@ import {
   useSQLEditorTabStore,
   useWorkSheetStore,
   useSettingV1Store,
-  useWorkSheetAndTabStore,
+  useCurrentUserV1,
 } from "@/store";
 import type { AccessOption } from "@/types";
-import { Worksheet_Visibility } from "@/types/proto-es/v1/worksheet_service_pb";
-import { extractProjectResourceName, extractWorksheetUID } from "@/utils";
+import {
+  Worksheet_Visibility,
+  type Worksheet,
+} from "@/types/proto-es/v1/worksheet_service_pb";
+import {
+  extractProjectResourceName,
+  extractWorksheetUID,
+  toClipboard,
+} from "@/utils";
+
+const props = defineProps<{
+  worksheet?: Worksheet;
+}>();
+
+const emit = defineEmits<{
+  (event: "on-updated"): void;
+}>();
 
 const { t } = useI18n();
 
 const router = useRouter();
 const tabStore = useSQLEditorTabStore();
 const worksheetV1Store = useWorkSheetStore();
-const sheetAndTabStore = useWorkSheetAndTabStore();
 const settingStore = useSettingV1Store();
+const me = useCurrentUserV1();
 
 const workspaceExternalURL = computed(
   () => settingStore.workspaceProfileSetting?.externalUrl
@@ -137,11 +152,8 @@ const accessOptions = computed<AccessOption[]>(() => {
   ];
 });
 
-const sheet = computed(() => {
-  return sheetAndTabStore.currentSheet;
-});
 const allowChangeAccess = computed(() => {
-  return sheetAndTabStore.isCreator;
+  return props.worksheet?.creator === `users/${me.value.email}`;
 });
 
 const currentAccess = ref<AccessOption>(accessOptions.value[0]);
@@ -149,34 +161,46 @@ const isShowAccessPopover = ref(false);
 
 const handleChangeAccess = async (option: AccessOption) => {
   // only creator can change access
-  if (allowChangeAccess.value && sheet.value) {
+  if (allowChangeAccess.value && props.worksheet) {
     currentAccess.value = option;
     await worksheetV1Store.patchWorksheet(
       {
-        ...sheet.value,
+        ...props.worksheet,
         visibility: currentAccess.value.value,
       },
       ["visibility"]
     );
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("common.updated"),
-    });
+
+    if (sharedTabLink.value) {
+      await toClipboard(sharedTabLink.value);
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("sql-editor.url-copied-to-clipboard"),
+      });
+    } else {
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.updated"),
+      });
+    }
+
+    emit("on-updated");
   }
   isShowAccessPopover.value = false;
 };
 
 const sharedTabLink = computed(() => {
-  if (!sheet.value) {
+  if (!props.worksheet) {
     return "";
   }
 
   const route = router.resolve({
     name: SQL_EDITOR_WORKSHEET_MODULE,
     params: {
-      project: extractProjectResourceName(sheet.value.project),
-      sheet: extractWorksheetUID(sheet.value.name),
+      project: extractProjectResourceName(props.worksheet.project),
+      sheet: extractWorksheetUID(props.worksheet.name),
     },
   });
   return new URL(
@@ -186,8 +210,8 @@ const sharedTabLink = computed(() => {
 });
 
 onMounted(() => {
-  if (sheet.value) {
-    const { visibility } = sheet.value;
+  if (props.worksheet) {
+    const { visibility } = props.worksheet;
     const idx = accessOptions.value.findIndex(
       (item) => item.value === visibility
     );

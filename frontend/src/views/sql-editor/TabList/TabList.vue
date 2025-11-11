@@ -76,7 +76,6 @@ import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener
 import { useSQLEditorTabStore, useTabViewStateStore } from "@/store";
 import type { SQLEditorTab } from "@/types";
 import { defer, usePreventBackAndForward } from "@/utils";
-import { useSheetContext } from "../Sheet";
 import { useSQLEditorContext } from "../context";
 import BrandingLogoWrapper from "./BrandingLogoWrapper.vue";
 import ContextMenu from "./ContextMenu.vue";
@@ -98,7 +97,6 @@ const state = reactive<LocalState>({
   dragging: false,
   hoverTabId: "",
 });
-const { events: sheetEvents } = useSheetContext();
 const scrollbarRef = ref<InstanceType<typeof NScrollbar>>();
 const tabListRef = ref<InstanceType<typeof Draggable>>();
 const { removeViewState } = useTabViewStateStore();
@@ -133,7 +131,6 @@ const handleAddTab = () => {
       });
     });
   });
-  sheetEvents.emit("add-sheet");
 };
 
 const handleRemoveTab = async (

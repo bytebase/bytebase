@@ -1,6 +1,5 @@
 {
   "common": {
-    "apply-to-database": "Aplicar a la base de datos",
     "view": "Ver",
     "you": "tu",
     "general": "General",
@@ -148,6 +147,7 @@
     "no-data": "Sin datos",
     "visibility": "Visibilidad",
     "duplicate": "Duplicar",
+    "fork": "Bifurcación",
     "enable": "Habilitar",
     "disable": "Inhabilitar",
     "view-doc": "Ver doc",
@@ -246,7 +246,8 @@
     },
     "collapse": "Colapsar",
     "line": "Línea",
-    "column": "Columna"
+    "column": "Columna",
+    "apply-to-database": "Aplicar a la base de datos"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -2027,6 +2028,7 @@
       }
     },
     "copy-url": "Copiar URL",
+    "url-copied-to-clipboard": "La URL se copia al portapapeles.",
     "connect-to-a-database": "Conectarse a una base de datos",
     "link-access": "Acceso al enlace",
     "private": "Privado",
@@ -2053,11 +2055,8 @@
     "query-time": "Tiempo de consulta",
     "connection-lost": "Conexión perdida. \nIntentará volver a conectarse al ejecutar la siguiente consulta.",
     "sheet": {
-      "self": "Hoja",
-      "connection": "Conexión"
     },
     "tab": {
-      "unsaved": "No guardado",
       "context-menu": {
         "actions": {
           "close": "Cerca",
@@ -2065,7 +2064,8 @@
           "close-to-the-right": "Cerca de la derecha",
           "close-saved": "Cerrar guardado",
           "close-all": "Cierra todo",
-          "rename": "Rebautizar"
+          "rename": "Rebautizar",
+          "add-folder": "Agregar carpeta"
         }
       }
     },
@@ -2212,8 +2212,6 @@
       "invalid-view-name": "Nombre de vista no válido",
       "duplicated-view-name": "Nombre de vista duplicado"
     },
-    "confirm-to-close": {
-    },
     "foreign-key": {
       "edit": "Editar clave externa",
       "name-description": "El nombre único de la clave externa"
@@ -2332,19 +2330,27 @@
   },
   "sheet": {
     "mine": "Mío",
-    "star": "Marcar Favorito",
-    "unstar": "Quitar Favorito",
-    "starred": "Favorito",
     "shared": "Compartido",
     "notifications": {
       "duplicate-success": "Duplicado con éxito en \"Mis hojas\""
     },
+    "filter": {
+      "show-mine": "Muéstrame el mío",
+      "show-shared": "Mostrar compartido",
+      "show-draft": "Mostrar borrador",
+      "only-show-starred": "Solo programa protagonizado"
+    },
     "hint-tips": {
-      "confirm-to-delete-this-sheet": "¿Confirmar para eliminar esta hoja?",
+      "non-empty-folder-title": "carpeta no vacía",
+      "non-empty-folder-content": "¿Desea mover todas las hojas de cálculo a la carpeta raíz o simplemente eliminarlas?",
+      "move-to-root-folder": "Mover a la carpeta raíz",
+      "delete-all-sheets": "Eliminar todos los archivos",
+      "duplicate-folder-name-title": "Nombre de carpeta duplicado",
+      "duplicate-folder-name-content": "¿Desea fusionar todas las subcarpetas y archivos en la carpeta existente \"{folder}\"?",
+      "confirm-to-delete-sheet-title": "¿Confirmar la eliminación de esta hoja de cálculo?",
       "confirm-to-duplicate-sheet": "¿Confirmar para duplicar esta hoja?"
     },
-    "search-sheets": "Hojas de búsqueda",
-    "draft": "Borrador"
+    "search-sheets": "Hojas de búsqueda"
   },
   "sql-review": {
     "title": "Revisión de SQL",

@@ -44,12 +44,6 @@
 
     <Quickstart v-if="actuatorStore.info?.enableSample" />
 
-    <Drawer v-model:show="showSheetPanel">
-      <DrawerContent :title="$t('sql-editor.sheet.self')">
-        <SheetPanel @close="showSheetPanel = false" />
-      </DrawerContent>
-    </Drawer>
-
     <teleport to="#sql-editor-debug">
       <li>[Page]isDisconnected: {{ isDisconnected }}</li>
       <li>[Page]currentTab.id: {{ currentTab?.id }}</li>
@@ -70,7 +64,7 @@ import { reactive } from "vue";
 import { useRouter } from "vue-router";
 import IAMRemindModal from "@/components/IAMRemindModal.vue";
 import Quickstart from "@/components/Quickstart.vue";
-import { Drawer, DrawerContent } from "@/components/v2";
+import { Drawer } from "@/components/v2";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
@@ -84,8 +78,6 @@ import AsidePanel from "./AsidePanel";
 import ConnectionPanel from "./ConnectionPanel";
 import EditorPanel from "./EditorPanel";
 import { provideCurrentTabViewStateContext } from "./EditorPanel/context/viewState";
-import { useSheetContext } from "./Sheet";
-import SheetPanel from "./SheetPanel";
 import TabList from "./TabList";
 import { useSQLEditorContext } from "./context";
 
@@ -109,7 +101,6 @@ const {
   pendingInsertAtCaret,
 } = useSQLEditorContext();
 const { project: projectName, projectContextReady } = storeToRefs(editorStore);
-const { showPanel: showSheetPanel } = useSheetContext();
 
 const { currentTab, isDisconnected } = storeToRefs(tabStore);
 

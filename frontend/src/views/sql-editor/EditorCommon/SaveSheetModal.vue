@@ -31,7 +31,6 @@ import {
   Worksheet_Visibility,
 } from "@/types/proto-es/v1/worksheet_service_pb";
 import { extractWorksheetUID } from "@/utils";
-import { useSheetContext } from "../Sheet";
 import { useSQLEditorContext } from "../context";
 import SaveSheetForm from "./SaveSheetForm.vue";
 
@@ -45,7 +44,6 @@ type LocalState = {
 const tabStore = useSQLEditorTabStore();
 const databaseStore = useDatabaseV1Store();
 const worksheetV1Store = useWorkSheetStore();
-const { events: sheetEvents } = useSheetContext();
 const { events: editorEvents } = useSQLEditorContext();
 
 const state = reactive<LocalState>({});
@@ -112,8 +110,6 @@ const doSaveSheet = async (
     }
   }
 
-  // Refresh "my" sheet list.
-  sheetEvents.emit("refresh", { views: ["my"] });
   state.pendingEdit = undefined;
 };
 

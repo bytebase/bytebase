@@ -1,6 +1,6 @@
 <template>
   <SheetConnectionIcon :tab="tab" class="w-4 h-4" />
-  <heroicons-outline:user-group
+  <UsersIcon
     v-if="
       sheet?.visibility === Worksheet_Visibility.PROJECT_READ ||
       sheet?.visibility === Worksheet_Visibility.PROJECT_WRITE
@@ -13,7 +13,7 @@
 </template>
 
 <script lang="ts" setup>
-import { WrenchIcon } from "lucide-vue-next";
+import { WrenchIcon, UsersIcon } from "lucide-vue-next";
 import { computed } from "vue";
 import { useWorkSheetStore } from "@/store";
 import type { SQLEditorTab } from "@/types";

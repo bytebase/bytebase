@@ -147,6 +147,7 @@
     "no-data": "No data",
     "visibility": "Visibility",
     "duplicate": "Duplicate",
+    "fork": "Fork",
     "enable": "Enable",
     "disable": "Disable",
     "view-doc": "View doc",
@@ -2027,6 +2028,7 @@
       }
     },
     "copy-url": "Copy URL",
+    "url-copied-to-clipboard": "The URL is copied to your clipboard",
     "connect-to-a-database": "Connect to a database",
     "link-access": "Link access",
     "private": "Private",
@@ -2053,11 +2055,8 @@
     "query-time": "Query time",
     "connection-lost": "Connection lost. Will try to reconnect when executing next query.",
     "sheet": {
-      "self": "Sheet",
-      "connection": "Connection"
     },
     "tab": {
-      "unsaved": "Unsaved",
       "context-menu": {
         "actions": {
           "close": "Close",
@@ -2065,7 +2064,8 @@
           "close-to-the-right": "Close to the right",
           "close-saved": "Close saved",
           "close-all": "Close all",
-          "rename": "Rename"
+          "rename": "Rename",
+          "add-folder": "Add folder"
         }
       }
     },
@@ -2212,8 +2212,6 @@
       "invalid-view-name": "Invalid view name",
       "duplicated-view-name": "Duplicated view name"
     },
-    "confirm-to-close": {
-    },
     "foreign-key": {
       "edit": "Edit foreign key",
       "name-description": "The unique name of foreign key"
@@ -2332,19 +2330,27 @@
   },
   "sheet": {
     "mine": "Mine",
-    "star": "Star",
-    "unstar": "Unstar",
-    "starred": "Starred",
     "shared": "Shared",
     "notifications": {
-      "duplicate-success": "Successfully duplicate to \"My sheets\""
+      "duplicate-success": "Successfully duplicate the worksheet"
+    },
+    "filter": {
+      "show-mine": "Show mine",
+      "show-shared": "Show shared",
+      "show-draft": "Show draft",
+      "only-show-starred": "Only show starred"
     },
     "hint-tips": {
-      "confirm-to-delete-this-sheet": "Confirm to delete this sheet?",
-      "confirm-to-duplicate-sheet": "Confirm to duplicate this sheet?"
+      "non-empty-folder-title": "Non-empty folder",
+      "non-empty-folder-content": "Do you want to move all worksheets into the root folder or just delete them?",
+      "move-to-root-folder": "Move to root folder",
+      "delete-all-sheets": "Delete all files",
+      "duplicate-folder-name-title": "Duplicate folder name",
+      "duplicate-folder-name-content": "Do you want to merge all subfolders and files into the existing folder \"{folder}\"?",
+      "confirm-to-delete-sheet-title": "Confirm to delete this worksheet?",
+      "confirm-to-duplicate-sheet": "Confirm to duplicate this worksheet?"
     },
-    "search-sheets": "Search Sheets",
-    "draft": "Draft"
+    "search-sheets": "Search Sheets"
   },
   "sql-review": {
     "title": "SQL Review",

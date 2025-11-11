@@ -14,7 +14,7 @@ import {
   DeleteWorksheetRequestSchema,
   SearchWorksheetsRequestSchema,
   UpdateWorksheetOrganizerRequestSchema,
-  Worksheet_Visibility,
+  BatchUpdateWorksheetOrganizerRequestSchema,
 } from "@/types/proto-es/v1/worksheet_service_pb";
 import type { WorksheetOrganizer } from "@/types/proto-es/v1/worksheet_service_pb";
 import type { Worksheet } from "@/types/proto-es/v1/worksheet_service_pb";
@@ -59,11 +59,6 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     const me = useCurrentUserV1();
     return worksheetList.value.filter((worksheet) => {
       return worksheet.creator !== `users/${me.value.email}`;
-    });
-  });
-  const starredWorksheetList = computed(() => {
-    return worksheetList.value.filter((worksheet) => {
-      return worksheet.starred;
     });
   });
 
@@ -190,30 +185,9 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     return promise;
   };
 
-  const fetchMyWorksheetList = async () => {
-    const me = useCurrentUserV1();
+  const fetchWorksheetList = async (filter: string) => {
     const request = create(SearchWorksheetsRequestSchema, {
-      filter: `creator == "users/${me.value.email}"`,
-    });
-    const response =
-      await worksheetServiceClientConnect.searchWorksheets(request);
-    await setListCache(response.worksheets);
-    return response.worksheets;
-  };
-  const fetchSharedWorksheetList = async () => {
-    const me = useCurrentUserV1();
-    const request = create(SearchWorksheetsRequestSchema, {
-      filter: `creator != "users/${me.value.email}" && visibility in ["${Worksheet_Visibility[Worksheet_Visibility.PROJECT_READ]}","${Worksheet_Visibility[Worksheet_Visibility.PROJECT_WRITE]}"]`,
-    });
-    const response =
-      await worksheetServiceClientConnect.searchWorksheets(request);
-    await setListCache(response.worksheets);
-    return response.worksheets;
-  };
-
-  const fetchStarredWorksheetList = async () => {
-    const request = create(SearchWorksheetsRequestSchema, {
-      filter: `starred == true`,
+      filter,
     });
     const response =
       await worksheetServiceClientConnect.searchWorksheets(request);
@@ -241,43 +215,73 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     cacheByUID.invalidateEntity([uid, "BASIC"]);
   };
 
-  const upsertWorksheetOrganizer = async (
-    organizer: Pick<WorksheetOrganizer, "worksheet" | "starred">
+  const updateWorksheetCacheWithOrganizer = async (
+    organizer: WorksheetOrganizer
   ) => {
-    const fullOrganizer = { ...organizer } as WorksheetOrganizer;
-    const request = create(UpdateWorksheetOrganizerRequestSchema, {
-      organizer: fullOrganizer,
-      // for now we only support change the `starred` field.
-      updateMask: { paths: ["starred"] },
-    });
-    await worksheetServiceClientConnect.updateWorksheetOrganizer(request);
-
     // Update local sheet values
     const fullViewWorksheet = getWorksheetByName(organizer.worksheet, "FULL");
     if (fullViewWorksheet) {
       fullViewWorksheet.starred = organizer.starred;
+      fullViewWorksheet.folders = organizer.folders;
       await setCache(fullViewWorksheet, "FULL");
     }
     const basicViewWorksheet = getWorksheetByName(organizer.worksheet, "BASIC");
     if (basicViewWorksheet) {
       basicViewWorksheet.starred = organizer.starred;
+      basicViewWorksheet.folders = organizer.folders;
       await setCache(basicViewWorksheet, "BASIC");
     }
+  };
+
+  const batchUpsertWorksheetOrganizers = async (
+    requests: {
+      organizer: Pick<WorksheetOrganizer, "worksheet" | "starred" | "folders">;
+      updateMask: string[];
+    }[]
+  ) => {
+    const request = create(BatchUpdateWorksheetOrganizerRequestSchema, {
+      requests: requests.map((request) =>
+        create(UpdateWorksheetOrganizerRequestSchema, {
+          organizer: { ...request.organizer } as WorksheetOrganizer,
+          updateMask: { paths: request.updateMask },
+        })
+      ),
+    });
+    const response =
+      await worksheetServiceClientConnect.batchUpdateWorksheetOrganizer(
+        request
+      );
+
+    await Promise.all(
+      response.worksheetOrganizers.map(updateWorksheetCacheWithOrganizer)
+    );
+  };
+
+  const upsertWorksheetOrganizer = async (
+    organizer: Pick<WorksheetOrganizer, "worksheet" | "starred" | "folders">,
+    updateMask: string[]
+  ) => {
+    const fullOrganizer = { ...organizer } as WorksheetOrganizer;
+    const request = create(UpdateWorksheetOrganizerRequestSchema, {
+      organizer: fullOrganizer,
+      updateMask: { paths: updateMask },
+    });
+    const response =
+      await worksheetServiceClientConnect.updateWorksheetOrganizer(request);
+    await updateWorksheetCacheWithOrganizer(response);
   };
 
   return {
     myWorksheetList,
     sharedWorksheetList,
-    starredWorksheetList,
     createWorksheet,
     getWorksheetByName,
     getOrFetchWorksheetByName,
-    fetchMyWorksheetList,
-    fetchSharedWorksheetList,
-    fetchStarredWorksheetList,
+    fetchWorksheetList,
     patchWorksheet,
     deleteWorksheetByName,
     upsertWorksheetOrganizer,
+    batchUpsertWorksheetOrganizers,
   };
 });
 

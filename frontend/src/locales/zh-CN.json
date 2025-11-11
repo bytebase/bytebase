@@ -1,6 +1,5 @@
 {
   "common": {
-    "apply-to-database": "应用到数据库",
     "view": "查看",
     "you": "您",
     "general": "通用",
@@ -148,6 +147,7 @@
     "no-data": "无数据",
     "visibility": "可见性",
     "duplicate": "拷贝",
+    "fork": "复刻",
     "enable": "开启",
     "disable": "禁用",
     "view-doc": "查看文档",
@@ -246,7 +246,8 @@
     },
     "collapse": "收起",
     "line": "行",
-    "column": "列"
+    "column": "列",
+    "apply-to-database": "应用到数据库"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -2027,6 +2028,7 @@
       }
     },
     "copy-url": "复制 URL",
+    "url-copied-to-clipboard": "URL 已复制到剪贴板",
     "connect-to-a-database": "连接到数据库",
     "link-access": "链接访问权限",
     "private": "私有",
@@ -2053,11 +2055,8 @@
     "query-time": "查询时间",
     "connection-lost": "连接丢失。下一次执行查询时将尝试重新连接。",
     "sheet": {
-      "self": "工作表",
-      "connection": "连接"
     },
     "tab": {
-      "unsaved": "未保存",
       "context-menu": {
         "actions": {
           "close": "关闭",
@@ -2065,7 +2064,8 @@
           "close-to-the-right": "关闭右侧所有的",
           "close-saved": "关闭已保存的",
           "close-all": "关闭所有",
-          "rename": "重命名"
+          "rename": "重命名",
+          "add-folder": "添加文件夹"
         }
       }
     },
@@ -2212,8 +2212,6 @@
       "invalid-view-name": "无效的视图名称",
       "duplicated-view-name": "重复的视图名称"
     },
-    "confirm-to-close": {
-    },
     "foreign-key": {
       "edit": "修改外键",
       "name-description": "外键的名称应该是唯一的"
@@ -2332,19 +2330,27 @@
   },
   "sheet": {
     "mine": "我的",
-    "star": "添加收藏",
-    "unstar": "取消收藏",
-    "starred": "收藏的",
     "shared": "共享的",
     "notifications": {
       "duplicate-success": "已成功拷贝至“我的工作表”"
     },
+    "filter": {
+      "show-mine": "显示我的",
+      "show-shared": "显示共享",
+      "show-draft": "显示草稿",
+      "only-show-starred": "仅显示收藏"
+    },
     "hint-tips": {
-      "confirm-to-delete-this-sheet": "确定删除这条工作表?",
+      "non-empty-folder-title": "非空文件夹",
+      "non-empty-folder-content": "您是想将所有工作表移动到根文件夹，还是直接删除它们？",
+      "move-to-root-folder": "移动到根文件夹",
+      "delete-all-sheets": "删除所有文件",
+      "duplicate-folder-name-title": "重复的文件夹名称",
+      "duplicate-folder-name-content": "是否要将所有子文件夹和文件合并到现有文件夹“{folder}”中？",
+      "confirm-to-delete-sheet-title": "确认删除此工作表？",
       "confirm-to-duplicate-sheet": "确定要复制这条工作表?"
     },
-    "search-sheets": "搜索工作表",
-    "draft": "草稿"
+    "search-sheets": "搜索工作表"
   },
   "sql-review": {
     "title": "SQL 审核策略",
