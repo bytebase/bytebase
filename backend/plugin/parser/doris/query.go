@@ -15,16 +15,18 @@ func init() {
 
 func validateQuery(statement string) (bool, bool, error) {
 	// TODO: support other readonly statements like SHOW TABLES, SHOW CREATE TABLE, etc.
-	result, err := ParseDorisSQL(statement)
+	results, err := ParseDorisSQL(statement)
 	if err != nil {
 		return false, false, err
 	}
-	l := &queryValidateListener{
-		valid: true,
-	}
-	antlr.ParseTreeWalkerDefault.Walk(l, result.Tree)
-	if !l.valid {
-		return false, false, nil
+	for _, result := range results {
+		l := &queryValidateListener{
+			valid: true,
+		}
+		antlr.ParseTreeWalkerDefault.Walk(l, result.Tree)
+		if !l.valid {
+			return false, false, nil
+		}
 	}
 	return true, true, nil
 }
