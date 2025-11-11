@@ -25,7 +25,7 @@
         </NButton>
       </NDropdown>
     </div>
-    <div class="flex-1 flex flex-col gap-y-2 overflow-y-auto">
+    <div class="flex-1 flex flex-col gap-y-2 overflow-y-auto worksheet-scroll">
       <SheetTree v-if="filter.showMine" view="my" />
       <SheetTree v-if="filter.showShared" view="shared" />
       <DraftTree v-if="filter.showDraft" :keyword="filter.keyword" />
@@ -97,3 +97,27 @@ const options = computed((): DropdownOption[] => {
   ];
 });
 </script>
+
+<style lang="postcss" scoped>
+.worksheet-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+.worksheet-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.worksheet-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.worksheet-scroll::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.worksheet-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.3);
+}
+</style>

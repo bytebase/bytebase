@@ -21,14 +21,14 @@
 <script lang="tsx" setup>
 import {
   XIcon,
-  FolderCodeIcon,
-  FolderMinusIcon,
-  FileCodeIcon,
+  FolderPenIcon,
+  FilePenIcon,
   FolderOpenIcon,
 } from "lucide-vue-next";
 import { NTree, type TreeOption } from "naive-ui";
 import { ref, computed, watch } from "vue";
 import { HighlightLabelText } from "@/components/v2";
+import { t } from "@/plugins/i18n";
 import {
   useSQLEditorTabStore,
   useCurrentUserV1,
@@ -47,6 +47,7 @@ const props = defineProps<{
   keyword: string;
 }>();
 
+const rootPath = computed(() => "/draft");
 const tabStore = useSQLEditorTabStore();
 const me = useCurrentUserV1();
 const { removeViewState } = useTabViewStateStore();
@@ -55,7 +56,7 @@ const expandedKeys = useDynamicLocalStorage<Set<string>>(
   computed(
     () => `bb.sql-editor.worksheet-tree-expand-keys.draft.${me.value.name}`
   ),
-  new Set(["/"])
+  new Set([rootPath.value])
 );
 
 // Convert Set to Array once per render cycle instead of spreading in template
@@ -80,8 +81,8 @@ const draftTreeData = computed(() => {
 const treeNode = computed((): DraftWorsheetNode => {
   return {
     isLeaf: false,
-    key: "/",
-    label: "Draft",
+    key: rootPath.value,
+    label: t("common.draft"),
     children: draftTreeData.value.map((draftData) => {
       return {
         isLeaf: true,
@@ -96,7 +97,7 @@ const treeNode = computed((): DraftWorsheetNode => {
 const filterNode = (pattern: string, option: TreeOption) => {
   const node = option as DraftWorsheetNode;
   const keyword = pattern.trim().toLowerCase();
-  if (node.key === "/" || !keyword) {
+  if (node.key === rootPath.value || !keyword) {
     return true;
   }
   return node.label.toLowerCase().includes(keyword);
@@ -105,16 +106,14 @@ const filterNode = (pattern: string, option: TreeOption) => {
 const renderPrefix = ({ option }: { option: TreeOption }) => {
   const node = option as DraftWorsheetNode;
   if (node.draftId) {
-    return <FileCodeIcon class="w-4 h-auto text-gray-600" />;
+    // the node is file
+    return <FilePenIcon class="w-4 h-auto text-gray-600" />;
   }
-
   if (expandedKeys.value.has(node.key)) {
+    // is opened folder
     return <FolderOpenIcon class="w-4 h-auto text-gray-600" />;
   }
-  if (node.empty) {
-    return <FolderMinusIcon class="w-4 h-auto text-gray-600" />;
-  }
-  return <FolderCodeIcon class="w-4 h-auto text-gray-600" />;
+  return <FolderPenIcon class="w-4 h-auto text-gray-600" />;
 };
 
 const renderSuffix = ({ option }: { option: TreeOption }) => {
@@ -183,7 +182,7 @@ watch(
     }
     const key = keyForDraft({ id });
     selectedKeys.value = [key];
-    expandedKeys.value.add("/");
+    expandedKeys.value.add(rootPath.value);
   },
   { immediate: true }
 );

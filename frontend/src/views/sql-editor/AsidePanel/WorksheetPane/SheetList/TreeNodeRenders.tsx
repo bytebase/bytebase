@@ -42,18 +42,25 @@ export const TreeNodePrefix = defineComponent({
   setup(props) {
     return () => {
       if (props.node.worksheet) {
+        // the node is file
         return <FileCodeIcon class="w-4 h-auto text-gray-600" />;
       }
-
       if (props.expandedKeys.has(props.node.key)) {
+        // is opened folder
         return <FolderOpenIcon class="w-4 h-auto text-gray-600" />;
       }
-      if (props.node.key === props.rootPath && props.view === "shared") {
-        return <FolderSyncIcon class="w-4 h-auto text-gray-600" />;
+      if (props.node.key === props.rootPath) {
+        // root folder icon
+        if (props.view === "shared") {
+          return <FolderSyncIcon class="w-4 h-auto text-gray-600" />;
+        }
+        return <FolderCodeIcon class="w-4 h-auto text-gray-600" />;
       }
       if (props.node.empty) {
+        // empty folder icon
         return <FolderMinusIcon class="w-4 h-auto text-gray-600" />;
       }
+      // fallback to normal folder icon
       return <FolderCodeIcon class="w-4 h-auto text-gray-600" />;
     };
   },
