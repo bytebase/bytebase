@@ -131,11 +131,11 @@ const tabStore = useSQLEditorTabStore();
 const {
   context: contextMenuContext,
   options: contextMenuOptions,
-  handleShow: handleContextMenuShow,
+  handleSharePanelShow,
+  handleMenuShow,
   handleClickOutside: handleContextMenuClickOutside,
 } = useDropdown();
 
-// Convert Set to Array once per render cycle instead of spreading in template
 const expandedKeysArray = computed(() => Array.from(expandedKeys.value));
 
 watch(
@@ -203,7 +203,8 @@ const renderSuffix = ({ option }: { option: TreeOption }) => {
     <TreeNodeSuffix
       node={node}
       isWorksheetCreator={isWorksheetCreator}
-      onContextMenuShow={handleContextMenuShow}
+      onSharePanelShow={handleSharePanelShow}
+      onContextMenuShow={handleMenuShow}
       onToggleStar={handleWorksheetToggleStar}
     />
   );
@@ -550,7 +551,6 @@ const handleContextMenuSelect = async (key: DropdownOptionType) => {
 
   switch (key) {
     case "share":
-      contextMenuContext.showDropdown = false;
       contextMenuContext.showSharePanel = true;
       return;
     case "rename":

@@ -39,9 +39,26 @@ export const useDropdown = () => {
   watch(
     () => context.node,
     (node) => {
-      // DO NOT change the showDropdown manually.
-      context.showDropdown = !!node;
       if (!node) {
+        context.showDropdown = false;
+        context.showSharePanel = false;
+      }
+    }
+  );
+
+  watch(
+    () => context.showSharePanel,
+    (show) => {
+      if (show) {
+        context.showDropdown = false;
+      }
+    }
+  );
+
+  watch(
+    () => context.showDropdown,
+    (show) => {
+      if (show) {
         context.showSharePanel = false;
       }
     }
@@ -103,7 +120,7 @@ export const useDropdown = () => {
     return items;
   });
 
-  const handleShow = (e: MouseEvent, node: WorsheetFolderNode) => {
+  const resetData = (e: MouseEvent, node: WorsheetFolderNode) => {
     e.preventDefault();
     e.stopPropagation();
     context.node = node;
@@ -113,6 +130,16 @@ export const useDropdown = () => {
     };
   };
 
+  const handleMenuShow = (e: MouseEvent, node: WorsheetFolderNode) => {
+    resetData(e, node);
+    context.showDropdown = true;
+  };
+
+  const handleSharePanelShow = (e: MouseEvent, node: WorsheetFolderNode) => {
+    resetData(e, node);
+    context.showSharePanel = true;
+  };
+
   const handleClickOutside = () => {
     context.node = undefined;
   };
@@ -120,7 +147,8 @@ export const useDropdown = () => {
   return {
     context,
     options,
-    handleShow,
+    handleMenuShow,
+    handleSharePanelShow,
     handleClickOutside,
   };
 };

@@ -79,7 +79,7 @@ export const TreeNodeSuffix = defineComponent({
       required: true,
     },
   },
-  emits: ["contextMenuShow", "toggleStar"],
+  emits: ["contextMenuShow", "sharePanelShow", "toggleStar"],
   setup(props, { emit }) {
     const userStore = useUserStore();
 
@@ -113,7 +113,7 @@ export const TreeNodeSuffix = defineComponent({
       return (
         <NTooltip>
           {{
-            trigger: () => <UsersIcon class="w-4 text-gray-400" />,
+            trigger: () => <UsersIcon class="w-4 text-gray-400" onClick={(e) => emit("sharePanelShow", e, props.node)} />,
             default: () => {
               return (
                 <div>
