@@ -44,26 +44,26 @@ func (*NamingFKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 		return nil, err
 	}
 
-	checker := &namingFKConventionChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
-		format:                       format,
-		maxLength:                    maxLength,
-		templateList:                 templateList,
+	rule := &namingFKConventionRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: string(checkCtx.Rule.Type),
+		},
+		format:       format,
+		maxLength:    maxLength,
+		templateList: templateList,
 	}
+
+	checker := NewGenericChecker([]Rule{rule})
 
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type namingFKConventionChecker struct {
-	*parser.BasePostgreSQLParserListener
+type namingFKConventionRule struct {
+	BaseRule
 
-	adviceList   []*storepb.Advice
-	level        storepb.Advice_Status
-	title        string
 	format       string
 	maxLength    int
 	templateList []string
@@ -76,8 +76,27 @@ type fkMetaData struct {
 	metaData  map[string]string
 }
 
-// EnterCreatestmt handles CREATE TABLE with FOREIGN KEY constraints
-func (c *namingFKConventionChecker) EnterCreatestmt(ctx *parser.CreatestmtContext) {
+func (*namingFKConventionRule) Name() string {
+	return "naming.table.fk"
+}
+
+func (r *namingFKConventionRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Createstmt":
+		r.handleCreatestmt(ctx.(*parser.CreatestmtContext))
+	case "Altertablestmt":
+		r.handleAltertablestmt(ctx.(*parser.AltertablestmtContext))
+	default:
+		// Do nothing for other node types
+	}
+	return nil
+}
+
+func (*namingFKConventionRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+func (r *namingFKConventionRule) handleCreatestmt(ctx *parser.CreatestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -98,9 +117,9 @@ func (c *namingFKConventionChecker) EnterCreatestmt(ctx *parser.CreatestmtContex
 		for _, element := range ctx.Opttableelementlist().Tableelementlist().AllTableelement() {
 			// Check table-level constraints
 			if element.Tableconstraint() != nil {
-				metadata := c.extractFKMetadata(element.Tableconstraint(), tableName, ctx.GetStart().GetLine())
+				metadata := r.extractFKMetadata(element.Tableconstraint(), tableName, ctx.GetStart().GetLine())
 				if metadata != nil {
-					c.checkFKMetadata(metadata)
+					r.checkFKMetadata(metadata)
 				}
 			}
 
@@ -110,9 +129,9 @@ func (c *namingFKConventionChecker) EnterCreatestmt(ctx *parser.CreatestmtContex
 				if columnDef.Colquallist() != nil {
 					allQuals := columnDef.Colquallist().AllColconstraint()
 					for _, qual := range allQuals {
-						metadata := c.extractColumnFKMetadata(qual, tableName, columnDef, columnDef.GetStart().GetLine())
+						metadata := r.extractColumnFKMetadata(qual, tableName, columnDef, columnDef.GetStart().GetLine())
 						if metadata != nil {
-							c.checkFKMetadata(metadata)
+							r.checkFKMetadata(metadata)
 						}
 					}
 				}
@@ -121,8 +140,7 @@ func (c *namingFKConventionChecker) EnterCreatestmt(ctx *parser.CreatestmtContex
 	}
 }
 
-// EnterAltertablestmt handles ALTER TABLE ADD CONSTRAINT FOREIGN KEY
-func (c *namingFKConventionChecker) EnterAltertablestmt(ctx *parser.AltertablestmtContext) {
+func (r *namingFKConventionRule) handleAltertablestmt(ctx *parser.AltertablestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -141,9 +159,9 @@ func (c *namingFKConventionChecker) EnterAltertablestmt(ctx *parser.Altertablest
 	for _, cmd := range allCmds {
 		// Check for ADD + Tableconstraint
 		if cmd.ADD_P() != nil && cmd.Tableconstraint() != nil {
-			metadata := c.extractFKMetadata(cmd.Tableconstraint(), tableName, cmd.GetStart().GetLine())
+			metadata := r.extractFKMetadata(cmd.Tableconstraint(), tableName, cmd.GetStart().GetLine())
 			if metadata != nil {
-				c.checkFKMetadata(metadata)
+				r.checkFKMetadata(metadata)
 			}
 		}
 
@@ -153,9 +171,9 @@ func (c *namingFKConventionChecker) EnterAltertablestmt(ctx *parser.Altertablest
 			if columnDef.Colquallist() != nil {
 				allQuals := columnDef.Colquallist().AllColconstraint()
 				for _, qual := range allQuals {
-					metadata := c.extractColumnFKMetadata(qual, tableName, columnDef, columnDef.GetStart().GetLine())
+					metadata := r.extractColumnFKMetadata(qual, tableName, columnDef, columnDef.GetStart().GetLine())
 					if metadata != nil {
-						c.checkFKMetadata(metadata)
+						r.checkFKMetadata(metadata)
 					}
 				}
 			}
@@ -163,7 +181,7 @@ func (c *namingFKConventionChecker) EnterAltertablestmt(ctx *parser.Altertablest
 	}
 }
 
-func (*namingFKConventionChecker) extractFKMetadata(constraint parser.ITableconstraintContext, tableName string, line int) *fkMetaData {
+func (*namingFKConventionRule) extractFKMetadata(constraint parser.ITableconstraintContext, tableName string, line int) *fkMetaData {
 	if constraint.Constraintelem() == nil {
 		return nil
 	}
@@ -221,7 +239,7 @@ func (*namingFKConventionChecker) extractFKMetadata(constraint parser.ITablecons
 	}
 }
 
-func (*namingFKConventionChecker) extractColumnFKMetadata(qual parser.IColconstraintContext, tableName string, columnDef parser.IColumnDefContext, line int) *fkMetaData {
+func (*namingFKConventionRule) extractColumnFKMetadata(qual parser.IColconstraintContext, tableName string, columnDef parser.IColumnDefContext, line int) *fkMetaData {
 	if qual.Colconstraintelem() == nil {
 		return nil
 	}
@@ -275,11 +293,11 @@ func (*namingFKConventionChecker) extractColumnFKMetadata(qual parser.IColconstr
 	}
 }
 
-func (c *namingFKConventionChecker) checkFKMetadata(fkData *fkMetaData) {
-	regex, err := c.getTemplateRegexp(fkData.metaData)
+func (r *namingFKConventionRule) checkFKMetadata(fkData *fkMetaData) {
+	regex, err := r.getTemplateRegexp(fkData.metaData)
 	if err != nil {
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:  c.level,
+		r.AddAdvice(&storepb.Advice{
+			Status:  r.level,
 			Code:    advisor.Internal.Int32(),
 			Title:   "Internal error for foreign key naming convention rule",
 			Content: fmt.Sprintf("Failed to compile regex: %s", err.Error()),
@@ -292,10 +310,10 @@ func (c *namingFKConventionChecker) checkFKMetadata(fkData *fkMetaData) {
 	}
 
 	if !regex.MatchString(fkData.indexName) {
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:  c.level,
+		r.AddAdvice(&storepb.Advice{
+			Status:  r.level,
 			Code:    advisor.NamingFKConventionMismatch.Int32(),
-			Title:   c.title,
+			Title:   r.title,
 			Content: fmt.Sprintf(`Foreign key in table "%s" mismatches the naming convention, expect %q but found "%s"`, fkData.tableName, regex, fkData.indexName),
 			StartPosition: &storepb.Position{
 				Line:   int32(fkData.line),
@@ -304,12 +322,12 @@ func (c *namingFKConventionChecker) checkFKMetadata(fkData *fkMetaData) {
 		})
 	}
 
-	if c.maxLength > 0 && len(fkData.indexName) > c.maxLength {
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:  c.level,
+	if r.maxLength > 0 && len(fkData.indexName) > r.maxLength {
+		r.AddAdvice(&storepb.Advice{
+			Status:  r.level,
 			Code:    advisor.NamingFKConventionMismatch.Int32(),
-			Title:   c.title,
-			Content: fmt.Sprintf(`Foreign key "%s" in table "%s" mismatches the naming convention, its length should be within %d characters`, fkData.indexName, fkData.tableName, c.maxLength),
+			Title:   r.title,
+			Content: fmt.Sprintf(`Foreign key "%s" in table "%s" mismatches the naming convention, its length should be within %d characters`, fkData.indexName, fkData.tableName, r.maxLength),
 			StartPosition: &storepb.Position{
 				Line:   int32(fkData.line),
 				Column: 0,
@@ -318,9 +336,9 @@ func (c *namingFKConventionChecker) checkFKMetadata(fkData *fkMetaData) {
 	}
 }
 
-func (c *namingFKConventionChecker) getTemplateRegexp(tokens map[string]string) (*regexp.Regexp, error) {
-	template := c.format
-	for _, key := range c.templateList {
+func (r *namingFKConventionRule) getTemplateRegexp(tokens map[string]string) (*regexp.Regexp, error) {
+	template := r.format
+	for _, key := range r.templateList {
 		if token, ok := tokens[key]; ok {
 			template = strings.ReplaceAll(template, key, token)
 		}

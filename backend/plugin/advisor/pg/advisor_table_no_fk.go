@@ -36,35 +36,59 @@ func (*TableNoFKAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*
 		return nil, err
 	}
 
-	checker := &tableNoFKChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
-		statementsText:               checkCtx.Statements,
+	rule := &tableNoFKRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: string(checkCtx.Rule.Type),
+		},
+		statementsText: checkCtx.Statements,
 	}
 
+	checker := NewGenericChecker([]Rule{rule})
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type tableNoFKChecker struct {
-	*parser.BasePostgreSQLParserListener
+type tableNoFKRule struct {
+	BaseRule
 
-	adviceList     []*storepb.Advice
-	level          storepb.Advice_Status
-	title          string
 	statementsText string
 }
 
-// EnterCreatestmt handles CREATE TABLE with FK constraints
-func (c *tableNoFKChecker) EnterCreatestmt(ctx *parser.CreatestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
+func (*tableNoFKRule) Name() string {
+	return "table_no_fk"
+}
+
+func (r *tableNoFKRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Createstmt":
+		r.handleCreatestmt(ctx)
+	case "Altertablestmt":
+		r.handleAltertablestmt(ctx)
+	default:
+		// Do nothing for other node types
+	}
+	return nil
+}
+
+func (*tableNoFKRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+// handleCreatestmt handles CREATE TABLE with FK constraints
+func (r *tableNoFKRule) handleCreatestmt(ctx antlr.ParserRuleContext) {
+	createstmtCtx, ok := ctx.(*parser.CreatestmtContext)
+	if !ok {
+		return
+	}
+
+	if !isTopLevel(createstmtCtx.GetParent()) {
 		return
 	}
 
 	var tableName, schemaName string
-	allQualifiedNames := ctx.AllQualified_name()
+	allQualifiedNames := createstmtCtx.AllQualified_name()
 	if len(allQualifiedNames) > 0 {
 		tableName = extractTableName(allQualifiedNames[0])
 		schemaName = extractSchemaName(allQualifiedNames[0])
@@ -74,8 +98,8 @@ func (c *tableNoFKChecker) EnterCreatestmt(ctx *parser.CreatestmtContext) {
 	}
 
 	// Check table-level constraints
-	if ctx.Opttableelementlist() != nil && ctx.Opttableelementlist().Tableelementlist() != nil {
-		allElements := ctx.Opttableelementlist().Tableelementlist().AllTableelement()
+	if createstmtCtx.Opttableelementlist() != nil && createstmtCtx.Opttableelementlist().Tableelementlist() != nil {
+		allElements := createstmtCtx.Opttableelementlist().Tableelementlist().AllTableelement()
 		for _, elem := range allElements {
 			// Check if this is a table constraint
 			if elem.Tableconstraint() != nil {
@@ -84,7 +108,7 @@ func (c *tableNoFKChecker) EnterCreatestmt(ctx *parser.CreatestmtContext) {
 					constraintElem := constraint.Constraintelem()
 					// Check for FOREIGN KEY
 					if constraintElem.FOREIGN() != nil && constraintElem.KEY() != nil {
-						c.addFKAdvice(schemaName, tableName, ctx)
+						r.addFKAdvice(schemaName, tableName, createstmtCtx)
 						return
 					}
 				}
@@ -100,7 +124,7 @@ func (c *tableNoFKChecker) EnterCreatestmt(ctx *parser.CreatestmtContext) {
 							constraintElem := qual.Colconstraintelem()
 							// Check for REFERENCES (column-level FK)
 							if constraintElem.REFERENCES() != nil {
-								c.addFKAdvice(schemaName, tableName, ctx)
+								r.addFKAdvice(schemaName, tableName, createstmtCtx)
 								return
 							}
 						}
@@ -111,24 +135,29 @@ func (c *tableNoFKChecker) EnterCreatestmt(ctx *parser.CreatestmtContext) {
 	}
 }
 
-// EnterAltertablestmt handles ALTER TABLE ADD CONSTRAINT with FK
-func (c *tableNoFKChecker) EnterAltertablestmt(ctx *parser.AltertablestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
+// handleAltertablestmt handles ALTER TABLE ADD CONSTRAINT with FK
+func (r *tableNoFKRule) handleAltertablestmt(ctx antlr.ParserRuleContext) {
+	altertablestmtCtx, ok := ctx.(*parser.AltertablestmtContext)
+	if !ok {
+		return
+	}
+
+	if !isTopLevel(altertablestmtCtx.GetParent()) {
 		return
 	}
 
 	var tableName, schemaName string
-	if ctx.Relation_expr() != nil && ctx.Relation_expr().Qualified_name() != nil {
-		tableName = extractTableName(ctx.Relation_expr().Qualified_name())
-		schemaName = extractSchemaName(ctx.Relation_expr().Qualified_name())
+	if altertablestmtCtx.Relation_expr() != nil && altertablestmtCtx.Relation_expr().Qualified_name() != nil {
+		tableName = extractTableName(altertablestmtCtx.Relation_expr().Qualified_name())
+		schemaName = extractSchemaName(altertablestmtCtx.Relation_expr().Qualified_name())
 		if schemaName == "" {
 			schemaName = "public"
 		}
 	}
 
 	// Check all alter table commands for ADD CONSTRAINT with FOREIGN KEY
-	if ctx.Alter_table_cmds() != nil {
-		allCmds := ctx.Alter_table_cmds().AllAlter_table_cmd()
+	if altertablestmtCtx.Alter_table_cmds() != nil {
+		allCmds := altertablestmtCtx.Alter_table_cmds().AllAlter_table_cmd()
 		for _, cmd := range allCmds {
 			if cmd.ADD_P() != nil && cmd.Tableconstraint() != nil {
 				constraint := cmd.Tableconstraint()
@@ -136,7 +165,7 @@ func (c *tableNoFKChecker) EnterAltertablestmt(ctx *parser.AltertablestmtContext
 					constraintElem := constraint.Constraintelem()
 					// Check for FOREIGN KEY
 					if constraintElem.FOREIGN() != nil && constraintElem.KEY() != nil {
-						c.addFKAdvice(schemaName, tableName, ctx)
+						r.addFKAdvice(schemaName, tableName, altertablestmtCtx)
 						return
 					}
 				}
@@ -145,12 +174,12 @@ func (c *tableNoFKChecker) EnterAltertablestmt(ctx *parser.AltertablestmtContext
 	}
 }
 
-func (c *tableNoFKChecker) addFKAdvice(schemaName, tableName string, ctx antlr.ParserRuleContext) {
-	stmtText := extractStatementText(c.statementsText, ctx.GetStart().GetLine(), ctx.GetStop().GetLine())
-	c.adviceList = append(c.adviceList, &storepb.Advice{
-		Status:  c.level,
+func (r *tableNoFKRule) addFKAdvice(schemaName, tableName string, ctx antlr.ParserRuleContext) {
+	stmtText := extractStatementText(r.statementsText, ctx.GetStart().GetLine(), ctx.GetStop().GetLine())
+	r.AddAdvice(&storepb.Advice{
+		Status:  r.level,
 		Code:    advisor.TableHasFK.Int32(),
-		Title:   c.title,
+		Title:   r.title,
 		Content: fmt.Sprintf("Foreign key is not allowed in the table %q.%q, related statement: \"%s\"", schemaName, tableName, stmtText),
 		StartPosition: &storepb.Position{
 			Line:   int32(ctx.GetStart().GetLine()),

@@ -69,6 +69,154 @@ ONLINE;`,
 				},
 			},
 		},
+		// BYT-8268: Test cases for CALL keyword requirement
+		// This prevents misidentifying keywords like CASCADE as procedure calls
+		{
+			statement: "DROP TABLESPACE xxx CASCADE",
+			want: resData{
+				err: "Syntax error at line 1:28 \nrelated text: DROP TABLESPACE xxx CASCADE;",
+			},
+		},
+		{
+			statement: "DROP TABLESPACE xxx; CASCADE",
+			want: resData{
+				err: "Syntax error at line 1:29 \nrelated text: DROP TABLESPACE xxx; CASCADE;",
+			},
+		},
+		{
+			statement: "DROP TABLESPACE xxx INCLUDING CONTENTS CASCADE CONSTRAINTS",
+			want: resData{
+				res: []base.SingleSQL{
+					{
+						Text:          "DROP TABLESPACE xxx INCLUDING CONTENTS CASCADE CONSTRAINTS",
+						Start:         &storepb.Position{Line: 1, Column: 1},
+						End:           &storepb.Position{Line: 1, Column: 48},
+						ByteOffsetEnd: 58,
+					},
+				},
+			},
+		},
+		{
+			statement: "CALL my_procedure()",
+			want: resData{
+				res: []base.SingleSQL{
+					{
+						Text:          "CALL my_procedure()",
+						Start:         &storepb.Position{Line: 1, Column: 1},
+						End:           &storepb.Position{Line: 1, Column: 19},
+						ByteOffsetEnd: 19,
+					},
+				},
+			},
+		},
+		{
+			statement: "SELECT * FROM t1; SELECT * FROM t2",
+			want: resData{
+				res: []base.SingleSQL{
+					{
+						Text:            "SELECT * FROM t1",
+						Start:           &storepb.Position{Line: 1, Column: 1},
+						End:             &storepb.Position{Line: 1, Column: 15},
+						ByteOffsetStart: 0,
+						ByteOffsetEnd:   16,
+					},
+					{
+						Text:            "SELECT * FROM t2",
+						Start:           &storepb.Position{Line: 1, Column: 19},
+						End:             &storepb.Position{Line: 1, Column: 33},
+						ByteOffsetStart: 18,
+						ByteOffsetEnd:   34,
+					},
+				},
+			},
+		},
+		// Test forward slash (/) as statement separator in PL/SQL
+		{
+			statement: `CREATE OR REPLACE PROCEDURE test_proc IS
+BEGIN
+    CALL DBMS_OUTPUT.PUT_LINE('Hello');
+END;
+/`,
+			want: resData{
+				res: []base.SingleSQL{
+					{
+						Text:          "CREATE OR REPLACE PROCEDURE test_proc IS\nBEGIN\n    CALL DBMS_OUTPUT.PUT_LINE('Hello');\nEND;",
+						Start:         &storepb.Position{Line: 1, Column: 1},
+						End:           &storepb.Position{Line: 4, Column: 4},
+						ByteOffsetEnd: 91,
+					},
+				},
+			},
+		},
+		{
+			statement: `CREATE OR REPLACE PROCEDURE proc1 IS
+BEGIN
+    NULL;
+END;
+/
+CREATE OR REPLACE PROCEDURE proc2 IS
+BEGIN
+    NULL;
+END;
+/`,
+			want: resData{
+				res: []base.SingleSQL{
+					{
+						Text:            "CREATE OR REPLACE PROCEDURE proc1 IS\nBEGIN\n    NULL;\nEND;",
+						Start:           &storepb.Position{Line: 1, Column: 1},
+						End:             &storepb.Position{Line: 4, Column: 4},
+						ByteOffsetStart: 0,
+						ByteOffsetEnd:   57,
+					},
+					{
+						Text:            "CREATE OR REPLACE PROCEDURE proc2 IS\nBEGIN\n    NULL;\nEND;",
+						Start:           &storepb.Position{Line: 6, Column: 1},
+						End:             &storepb.Position{Line: 9, Column: 4},
+						ByteOffsetStart: 60,
+						ByteOffsetEnd:   117,
+					},
+				},
+			},
+		},
+		{
+			statement: `SELECT * FROM t1;
+/
+SELECT * FROM t2;`,
+			want: resData{
+				res: []base.SingleSQL{
+					{
+						Text:            "SELECT * FROM t1",
+						Start:           &storepb.Position{Line: 1, Column: 1},
+						End:             &storepb.Position{Line: 1, Column: 15},
+						ByteOffsetStart: 0,
+						ByteOffsetEnd:   16,
+					},
+					{
+						Text:            "SELECT * FROM t2",
+						Start:           &storepb.Position{Line: 3, Column: 1},
+						End:             &storepb.Position{Line: 3, Column: 15},
+						ByteOffsetStart: 20,
+						ByteOffsetEnd:   36,
+					},
+				},
+			},
+		},
+		{
+			statement: `BEGIN
+    CALL DBMS_OUTPUT.PUT_LINE('Test');
+END;
+/`,
+			want: resData{
+				res: []base.SingleSQL{
+					{
+						Text:          "BEGIN\n    CALL DBMS_OUTPUT.PUT_LINE('Test');\nEND;",
+						Start:         &storepb.Position{Line: 1, Column: 1},
+						End:           &storepb.Position{Line: 3, Column: 4},
+						ByteOffsetEnd: 49,
+					},
+				},
+			},
+		},
 	}
 
 	for _, test := range tests {

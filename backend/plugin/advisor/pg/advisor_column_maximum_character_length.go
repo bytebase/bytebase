@@ -45,33 +45,52 @@ func (*ColumnMaximumCharacterLengthAdvisor) Check(_ context.Context, checkCtx ad
 		return nil, nil
 	}
 
-	checker := &columnMaximumCharacterLengthChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
-		maximum:                      payload.Number,
+	rule := &columnMaximumCharacterLengthRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: string(checkCtx.Rule.Type),
+		},
+		maximum: payload.Number,
 	}
 
+	checker := NewGenericChecker([]Rule{rule})
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type columnMaximumCharacterLengthChecker struct {
-	*parser.BasePostgreSQLParserListener
+type columnMaximumCharacterLengthRule struct {
+	BaseRule
 
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-	maximum    int
+	maximum int
 }
 
-func (c *columnMaximumCharacterLengthChecker) EnterCreatestmt(ctx *parser.CreatestmtContext) {
+func (*columnMaximumCharacterLengthRule) Name() string {
+	return "column-maximum-character-length"
+}
+
+func (r *columnMaximumCharacterLengthRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Createstmt":
+		r.handleCreatestmt(ctx.(*parser.CreatestmtContext))
+	case "Altertablestmt":
+		r.handleAltertablestmt(ctx.(*parser.AltertablestmtContext))
+	default:
+		// Do nothing for other node types
+	}
+	return nil
+}
+
+func (*columnMaximumCharacterLengthRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+func (r *columnMaximumCharacterLengthRule) handleCreatestmt(ctx *parser.CreatestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
-	tableName := c.extractTableName(ctx.AllQualified_name())
+	tableName := r.extractTableName(ctx.AllQualified_name())
 
 	// Check all columns
 	if ctx.Opttableelementlist() != nil && ctx.Opttableelementlist().Tableelementlist() != nil {
@@ -81,9 +100,9 @@ func (c *columnMaximumCharacterLengthChecker) EnterCreatestmt(ctx *parser.Create
 				colDef := elem.ColumnDef()
 				if colDef.Colid() != nil && colDef.Typename() != nil {
 					columnName := pg.NormalizePostgreSQLColid(colDef.Colid())
-					charLength := c.getCharLength(colDef.Typename())
-					if charLength > c.maximum {
-						c.addAdvice(tableName, columnName, colDef.GetStart().GetLine())
+					charLength := r.getCharLength(colDef.Typename())
+					if charLength > r.maximum {
+						r.addAdvice(tableName, columnName, colDef.GetStart().GetLine())
 						return // Only report first violation
 					}
 				}
@@ -92,7 +111,7 @@ func (c *columnMaximumCharacterLengthChecker) EnterCreatestmt(ctx *parser.Create
 	}
 }
 
-func (c *columnMaximumCharacterLengthChecker) EnterAltertablestmt(ctx *parser.AltertablestmtContext) {
+func (r *columnMaximumCharacterLengthRule) handleAltertablestmt(ctx *parser.AltertablestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -123,9 +142,9 @@ func (c *columnMaximumCharacterLengthChecker) EnterAltertablestmt(ctx *parser.Al
 				colDef := cmd.ColumnDef()
 				if colDef.Colid() != nil && colDef.Typename() != nil {
 					columnName := pg.NormalizePostgreSQLColid(colDef.Colid())
-					charLength := c.getCharLength(colDef.Typename())
-					if charLength > c.maximum {
-						c.addAdvice(tableName, columnName, colDef.GetStart().GetLine())
+					charLength := r.getCharLength(colDef.Typename())
+					if charLength > r.maximum {
+						r.addAdvice(tableName, columnName, colDef.GetStart().GetLine())
 						return
 					}
 				}
@@ -137,9 +156,9 @@ func (c *columnMaximumCharacterLengthChecker) EnterAltertablestmt(ctx *parser.Al
 				allColids := cmd.AllColid()
 				if len(allColids) > 0 {
 					columnName := pg.NormalizePostgreSQLColid(allColids[0])
-					charLength := c.getCharLength(cmd.Typename())
-					if charLength > c.maximum {
-						c.addAdvice(tableName, columnName, cmd.GetStart().GetLine())
+					charLength := r.getCharLength(cmd.Typename())
+					if charLength > r.maximum {
+						r.addAdvice(tableName, columnName, cmd.GetStart().GetLine())
 						return
 					}
 				}
@@ -148,7 +167,7 @@ func (c *columnMaximumCharacterLengthChecker) EnterAltertablestmt(ctx *parser.Al
 	}
 }
 
-func (*columnMaximumCharacterLengthChecker) extractTableName(qualifiedNames []parser.IQualified_nameContext) string {
+func (*columnMaximumCharacterLengthRule) extractTableName(qualifiedNames []parser.IQualified_nameContext) string {
 	if len(qualifiedNames) == 0 {
 		return ""
 	}
@@ -165,7 +184,7 @@ func (*columnMaximumCharacterLengthChecker) extractTableName(qualifiedNames []pa
 	return fmt.Sprintf("%q.%q", parts[0], parts[1])
 }
 
-func (*columnMaximumCharacterLengthChecker) getCharLength(typename parser.ITypenameContext) int {
+func (*columnMaximumCharacterLengthRule) getCharLength(typename parser.ITypenameContext) int {
 	if typename == nil {
 		return 0
 	}
@@ -213,12 +232,12 @@ func (*columnMaximumCharacterLengthChecker) getCharLength(typename parser.ITypen
 	return 0
 }
 
-func (c *columnMaximumCharacterLengthChecker) addAdvice(tableName, columnName string, line int) {
-	c.adviceList = append(c.adviceList, &storepb.Advice{
-		Status:  c.level,
+func (r *columnMaximumCharacterLengthRule) addAdvice(tableName, columnName string, line int) {
+	r.AddAdvice(&storepb.Advice{
+		Status:  r.level,
 		Code:    advisor.CharLengthExceedsLimit.Int32(),
-		Title:   c.title,
-		Content: fmt.Sprintf("The length of the CHAR column %q in table %s is bigger than %d, please use VARCHAR instead", columnName, tableName, c.maximum),
+		Title:   r.title,
+		Content: fmt.Sprintf("The length of the CHAR column %q in table %s is bigger than %d, please use VARCHAR instead", columnName, tableName, r.maximum),
 		StartPosition: &storepb.Position{
 			Line:   int32(line),
 			Column: 0,

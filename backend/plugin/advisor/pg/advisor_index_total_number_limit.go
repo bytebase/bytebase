@@ -42,20 +42,21 @@ func (*IndexTotalNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.C
 		return nil, err
 	}
 
-	checker := &indexTotalNumberLimitChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
-		max:                          payload.Number,
-		catalog:                      checkCtx.Catalog,
-		tableLine:                    make(tableLineMap),
+	rule := &indexTotalNumberLimitRule{
+		BaseRule:  BaseRule{level: level, title: string(checkCtx.Rule.Type)},
+		max:       payload.Number,
+		catalog:   checkCtx.Catalog,
+		tableLine: make(tableLineMap),
 	}
 
-	if checker.catalog.Final.Usable() {
+	if rule.catalog.Final.Usable() {
+		checker := NewGenericChecker([]Rule{rule})
 		antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
+		rule.generateAdvice()
+		return checker.GetAdviceList(), nil
 	}
 
-	return checker.generateAdvice(), nil
+	return nil, nil
 }
 
 type tableLine struct {
@@ -77,20 +78,39 @@ func (m tableLineMap) set(schema string, table string, line int) {
 	}
 }
 
-type indexTotalNumberLimitChecker struct {
-	*parser.BasePostgreSQLParserListener
+type indexTotalNumberLimitRule struct {
+	BaseRule
 
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-	max        int
-	catalog    *catalog.Finder
-	tableLine  tableLineMap
+	max       int
+	catalog   *catalog.Finder
+	tableLine tableLineMap
 }
 
-func (c *indexTotalNumberLimitChecker) generateAdvice() []*storepb.Advice {
+func (*indexTotalNumberLimitRule) Name() string {
+	return "index_total_number_limit"
+}
+
+func (r *indexTotalNumberLimitRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Createstmt":
+		r.handleCreatestmt(ctx.(*parser.CreatestmtContext))
+	case "Altertablestmt":
+		r.handleAltertablestmt(ctx.(*parser.AltertablestmtContext))
+	case "Indexstmt":
+		r.handleIndexstmt(ctx.(*parser.IndexstmtContext))
+	default:
+		// Do nothing for other node types
+	}
+	return nil
+}
+
+func (*indexTotalNumberLimitRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+func (r *indexTotalNumberLimitRule) generateAdvice() {
 	var tableList []tableLine
-	for _, table := range c.tableLine {
+	for _, table := range r.tableLine {
 		tableList = append(tableList, table)
 	}
 	slices.SortFunc(tableList, func(i, j tableLine) int {
@@ -104,16 +124,16 @@ func (c *indexTotalNumberLimitChecker) generateAdvice() []*storepb.Advice {
 	})
 
 	for _, table := range tableList {
-		tableInfo := c.catalog.Final.FindTable(&catalog.TableFind{
+		tableInfo := r.catalog.Final.FindTable(&catalog.TableFind{
 			SchemaName: table.schema,
 			TableName:  table.table,
 		})
-		if tableInfo != nil && tableInfo.CountIndex() > c.max {
-			c.adviceList = append(c.adviceList, &storepb.Advice{
-				Status:  c.level,
+		if tableInfo != nil && tableInfo.CountIndex() > r.max {
+			r.AddAdvice(&storepb.Advice{
+				Status:  r.level,
 				Code:    advisor.IndexCountExceedsLimit.Int32(),
-				Title:   c.title,
-				Content: fmt.Sprintf("The count of index in table %q.%q should be no more than %d, but found %d", table.schema, table.table, c.max, tableInfo.CountIndex()),
+				Title:   r.title,
+				Content: fmt.Sprintf("The count of index in table %q.%q should be no more than %d, but found %d", table.schema, table.table, r.max, tableInfo.CountIndex()),
 				StartPosition: &storepb.Position{
 					Line:   int32(table.line),
 					Column: 0,
@@ -121,11 +141,9 @@ func (c *indexTotalNumberLimitChecker) generateAdvice() []*storepb.Advice {
 			})
 		}
 	}
-
-	return c.adviceList
 }
 
-func (c *indexTotalNumberLimitChecker) EnterCreatestmt(ctx *parser.CreatestmtContext) {
+func (r *indexTotalNumberLimitRule) handleCreatestmt(ctx *parser.CreatestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -150,21 +168,21 @@ func (c *indexTotalNumberLimitChecker) EnterCreatestmt(ctx *parser.CreatestmtCon
 			// Check column-level constraints
 			if elem.ColumnDef() != nil {
 				if hasIndexConstraint(elem.ColumnDef()) {
-					c.tableLine.set(schemaName, tableName, ctx.GetStop().GetLine())
+					r.tableLine.set(schemaName, tableName, ctx.GetStop().GetLine())
 					return
 				}
 			}
 
 			// Check table-level constraints
 			if elem.Tableconstraint() != nil && hasTableIndexConstraint(elem.Tableconstraint()) {
-				c.tableLine.set(schemaName, tableName, ctx.GetStop().GetLine())
+				r.tableLine.set(schemaName, tableName, ctx.GetStop().GetLine())
 				return
 			}
 		}
 	}
 }
 
-func (c *indexTotalNumberLimitChecker) EnterAltertablestmt(ctx *parser.AltertablestmtContext) {
+func (r *indexTotalNumberLimitRule) handleAltertablestmt(ctx *parser.AltertablestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -187,7 +205,7 @@ func (c *indexTotalNumberLimitChecker) EnterAltertablestmt(ctx *parser.Altertabl
 			// ADD COLUMN with PRIMARY KEY or UNIQUE
 			if cmd.ADD_P() != nil && cmd.ColumnDef() != nil {
 				if hasIndexConstraint(cmd.ColumnDef()) {
-					c.tableLine.set(schemaName, tableName, ctx.GetStop().GetLine())
+					r.tableLine.set(schemaName, tableName, ctx.GetStop().GetLine())
 					return
 				}
 			}
@@ -195,7 +213,7 @@ func (c *indexTotalNumberLimitChecker) EnterAltertablestmt(ctx *parser.Altertabl
 			// ADD CONSTRAINT (PRIMARY KEY or UNIQUE)
 			if cmd.ADD_P() != nil && cmd.Tableconstraint() != nil {
 				if hasTableIndexConstraint(cmd.Tableconstraint()) {
-					c.tableLine.set(schemaName, tableName, ctx.GetStop().GetLine())
+					r.tableLine.set(schemaName, tableName, ctx.GetStop().GetLine())
 					return
 				}
 			}
@@ -203,7 +221,7 @@ func (c *indexTotalNumberLimitChecker) EnterAltertablestmt(ctx *parser.Altertabl
 	}
 }
 
-func (c *indexTotalNumberLimitChecker) EnterIndexstmt(ctx *parser.IndexstmtContext) {
+func (r *indexTotalNumberLimitRule) handleIndexstmt(ctx *parser.IndexstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -218,7 +236,7 @@ func (c *indexTotalNumberLimitChecker) EnterIndexstmt(ctx *parser.IndexstmtConte
 	}
 
 	schemaName := extractSchemaName(ctx.Relation_expr().Qualified_name())
-	c.tableLine.set(schemaName, tableName, ctx.GetStop().GetLine())
+	r.tableLine.set(schemaName, tableName, ctx.GetStop().GetLine())
 }
 
 // hasIndexConstraint checks if a column definition has PRIMARY KEY or UNIQUE constraint

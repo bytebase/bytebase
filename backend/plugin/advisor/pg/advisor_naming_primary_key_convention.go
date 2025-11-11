@@ -44,28 +44,28 @@ func (*NamingPKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 		return nil, err
 	}
 
-	checker := &namingPKConventionChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
-		format:                       format,
-		maxLength:                    maxLength,
-		templateList:                 templateList,
-		catalog:                      checkCtx.Catalog,
-		statementsText:               checkCtx.Statements,
+	rule := &namingPKConventionRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: string(checkCtx.Rule.Type),
+		},
+		format:         format,
+		maxLength:      maxLength,
+		templateList:   templateList,
+		catalog:        checkCtx.Catalog,
+		statementsText: checkCtx.Statements,
 	}
+
+	checker := NewGenericChecker([]Rule{rule})
 
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type namingPKConventionChecker struct {
-	*parser.BasePostgreSQLParserListener
+type namingPKConventionRule struct {
+	BaseRule
 
-	adviceList     []*storepb.Advice
-	level          storepb.Advice_Status
-	title          string
 	format         string
 	maxLength      int
 	templateList   []string
@@ -81,8 +81,30 @@ type pkMetaData struct {
 	metaData   map[string]string
 }
 
-// EnterCreatestmt handles CREATE TABLE with PRIMARY KEY constraints
-func (c *namingPKConventionChecker) EnterCreatestmt(ctx *parser.CreatestmtContext) {
+func (*namingPKConventionRule) Name() string {
+	return "naming_primary_key_convention"
+}
+
+func (r *namingPKConventionRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Createstmt":
+		r.handleCreatestmt(ctx.(*parser.CreatestmtContext))
+	case "Altertablestmt":
+		r.handleAltertablestmt(ctx.(*parser.AltertablestmtContext))
+	case "Renamestmt":
+		r.handleRenamestmt(ctx.(*parser.RenamestmtContext))
+	default:
+		// Do nothing for other node types
+	}
+	return nil
+}
+
+func (*namingPKConventionRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+// handleCreatestmt handles CREATE TABLE with PRIMARY KEY constraints
+func (r *namingPKConventionRule) handleCreatestmt(ctx *parser.CreatestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -104,8 +126,8 @@ func (c *namingPKConventionChecker) EnterCreatestmt(ctx *parser.CreatestmtContex
 			// Check table-level PRIMARY KEY constraint
 			if elem.Tableconstraint() != nil {
 				constraint := elem.Tableconstraint()
-				if pkData := c.getPKMetaDataFromTableConstraint(constraint, tableName, schemaName, constraint.GetStart().GetLine()); pkData != nil {
-					c.checkPKName(pkData)
+				if pkData := r.getPKMetaDataFromTableConstraint(constraint, tableName, schemaName, constraint.GetStart().GetLine()); pkData != nil {
+					r.checkPKName(pkData)
 				}
 			}
 
@@ -115,8 +137,8 @@ func (c *namingPKConventionChecker) EnterCreatestmt(ctx *parser.CreatestmtContex
 	}
 }
 
-// EnterAltertablestmt handles ALTER TABLE ADD CONSTRAINT PRIMARY KEY
-func (c *namingPKConventionChecker) EnterAltertablestmt(ctx *parser.AltertablestmtContext) {
+// handleAltertablestmt handles ALTER TABLE ADD CONSTRAINT PRIMARY KEY
+func (r *namingPKConventionRule) handleAltertablestmt(ctx *parser.AltertablestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -137,16 +159,16 @@ func (c *namingPKConventionChecker) EnterAltertablestmt(ctx *parser.Altertablest
 			// ADD CONSTRAINT
 			if cmd.ADD_P() != nil && cmd.Tableconstraint() != nil {
 				constraint := cmd.Tableconstraint()
-				if pkData := c.getPKMetaDataFromTableConstraint(constraint, tableName, schemaName, constraint.GetStart().GetLine()); pkData != nil {
-					c.checkPKName(pkData)
+				if pkData := r.getPKMetaDataFromTableConstraint(constraint, tableName, schemaName, constraint.GetStart().GetLine()); pkData != nil {
+					r.checkPKName(pkData)
 				}
 			}
 		}
 	}
 }
 
-// EnterRenamestmt handles ALTER TABLE RENAME CONSTRAINT and ALTER INDEX RENAME TO
-func (c *namingPKConventionChecker) EnterRenamestmt(ctx *parser.RenamestmtContext) {
+// handleRenamestmt handles ALTER TABLE RENAME CONSTRAINT and ALTER INDEX RENAME TO
+func (r *namingPKConventionRule) handleRenamestmt(ctx *parser.RenamestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -168,12 +190,12 @@ func (c *namingPKConventionChecker) EnterRenamestmt(ctx *parser.RenamestmtContex
 			newName := pgparser.NormalizePostgreSQLName(allNames[len(allNames)-1])
 
 			// Check if old constraint is a primary key using catalog
-			if c.catalog != nil {
+			if r.catalog != nil {
 				normalizedSchema := schemaName
 				if normalizedSchema == "" {
 					normalizedSchema = "public"
 				}
-				_, index := c.catalog.Origin.FindIndex(&catalog.IndexFind{
+				_, index := r.catalog.Origin.FindIndex(&catalog.IndexFind{
 					SchemaName: normalizedSchema,
 					TableName:  tableName,
 					IndexName:  oldName,
@@ -190,7 +212,7 @@ func (c *namingPKConventionChecker) EnterRenamestmt(ctx *parser.RenamestmtContex
 						line:       ctx.GetStart().GetLine(),
 						metaData:   metaData,
 					}
-					c.checkPKName(pkData)
+					r.checkPKName(pkData)
 				}
 			}
 		}
@@ -215,13 +237,13 @@ func (c *namingPKConventionChecker) EnterRenamestmt(ctx *parser.RenamestmtContex
 			newIndexName := pgparser.NormalizePostgreSQLName(allNames[len(allNames)-1])
 
 			// Check if this index is a primary key using catalog
-			if c.catalog != nil {
+			if r.catalog != nil {
 				normalizedSchema := schemaName
 				if normalizedSchema == "" {
 					normalizedSchema = "public"
 				}
 				// "ALTER INDEX name RENAME TO new_name" doesn't specify table name
-				tableName, index := c.catalog.Origin.FindIndex(&catalog.IndexFind{
+				tableName, index := r.catalog.Origin.FindIndex(&catalog.IndexFind{
 					SchemaName: normalizedSchema,
 					TableName:  "", // Empty table name for ALTER INDEX
 					IndexName:  oldIndexName,
@@ -238,14 +260,14 @@ func (c *namingPKConventionChecker) EnterRenamestmt(ctx *parser.RenamestmtContex
 						line:       ctx.GetStart().GetLine(),
 						metaData:   metaData,
 					}
-					c.checkPKName(pkData)
+					r.checkPKName(pkData)
 				}
 			}
 		}
 	}
 }
 
-func (c *namingPKConventionChecker) getPKMetaDataFromTableConstraint(constraint parser.ITableconstraintContext, tableName, schemaName string, line int) *pkMetaData {
+func (r *namingPKConventionRule) getPKMetaDataFromTableConstraint(constraint parser.ITableconstraintContext, tableName, schemaName string, line int) *pkMetaData {
 	if constraint == nil || constraint.Constraintelem() == nil {
 		return nil
 	}
@@ -291,12 +313,12 @@ func (c *namingPKConventionChecker) getPKMetaDataFromTableConstraint(constraint 
 			// Extract index name properly
 			indexName := pgparser.NormalizePostgreSQLName(elem.Existingindex().Name())
 			// Find the index in catalog to get column list
-			if c.catalog != nil && indexName != "" {
+			if r.catalog != nil && indexName != "" {
 				normalizedSchema := schemaName
 				if normalizedSchema == "" {
 					normalizedSchema = "public"
 				}
-				_, index := c.catalog.Origin.FindIndex(&catalog.IndexFind{
+				_, index := r.catalog.Origin.FindIndex(&catalog.IndexFind{
 					SchemaName: normalizedSchema,
 					TableName:  tableName,
 					IndexName:  indexName,
@@ -325,11 +347,11 @@ func (c *namingPKConventionChecker) getPKMetaDataFromTableConstraint(constraint 
 	return nil
 }
 
-func (c *namingPKConventionChecker) checkPKName(pkData *pkMetaData) {
-	regex, err := getTemplateRegexp(c.format, c.templateList, pkData.metaData)
+func (r *namingPKConventionRule) checkPKName(pkData *pkMetaData) {
+	regex, err := getTemplateRegexp(r.format, r.templateList, pkData.metaData)
 	if err != nil {
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:  c.level,
+		r.AddAdvice(&storepb.Advice{
+			Status:  r.level,
 			Code:    advisor.Internal.Int32(),
 			Title:   "Internal error for primary key naming convention rule",
 			Content: fmt.Sprintf("Failed to compile regex: %v", err),
@@ -342,10 +364,10 @@ func (c *namingPKConventionChecker) checkPKName(pkData *pkMetaData) {
 	}
 
 	if !regex.MatchString(pkData.pkName) {
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:  c.level,
+		r.AddAdvice(&storepb.Advice{
+			Status:  r.level,
 			Code:    advisor.NamingPKConventionMismatch.Int32(),
-			Title:   c.title,
+			Title:   r.title,
 			Content: fmt.Sprintf(`Primary key in table "%s" mismatches the naming convention, expect %q but found "%s"`, pkData.tableName, regex, pkData.pkName),
 			StartPosition: &storepb.Position{
 				Line:   int32(pkData.line),
@@ -354,12 +376,12 @@ func (c *namingPKConventionChecker) checkPKName(pkData *pkMetaData) {
 		})
 	}
 
-	if c.maxLength > 0 && len(pkData.pkName) > c.maxLength {
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:  c.level,
+	if r.maxLength > 0 && len(pkData.pkName) > r.maxLength {
+		r.AddAdvice(&storepb.Advice{
+			Status:  r.level,
 			Code:    advisor.NamingPKConventionMismatch.Int32(),
-			Title:   c.title,
-			Content: fmt.Sprintf(`Primary key "%s" in table "%s" mismatches the naming convention, its length should be within %d characters`, pkData.pkName, pkData.tableName, c.maxLength),
+			Title:   r.title,
+			Content: fmt.Sprintf(`Primary key "%s" in table "%s" mismatches the naming convention, its length should be within %d characters`, pkData.pkName, pkData.tableName, r.maxLength),
 			StartPosition: &storepb.Position{
 				Line:   int32(pkData.line),
 				Column: 0,

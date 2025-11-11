@@ -104,16 +104,10 @@
             </template>
           </NButton>
           <NButton
-            v-if="allowChangeData"
-            @click="createMigration('bb.issue.database.data.update')"
+            v-if="allowChangeDatabase"
+            @click="state.showChangeDatabaseDrawer = true"
           >
-            <span>{{ $t("database.change-data") }}</span>
-          </NButton>
-          <NButton
-            v-if="allowAlterSchema"
-            @click="createMigration('bb.issue.database.schema.update')"
-          >
-            <span>{{ $t("database.edit-schema") }}</span>
+            <span>{{ $t("database.change-database") }}</span>
           </NButton>
         </div>
       </div>
@@ -181,15 +175,22 @@
       @dismiss="state.showTransferDatabaseModal = false"
     />
   </Drawer>
+
+  <AddSpecDrawer
+    v-model:show="state.showChangeDatabaseDrawer"
+    :title="$t('database.change-database')"
+    :pre-selected-databases="[database]"
+    :project-name="database.project"
+    :use-legacy-issue-flow="true"
+  />
 </template>
 
 <script lang="ts" setup>
 import { useTitle } from "@vueuse/core";
-import dayjs from "dayjs";
 import { ArrowRightLeftIcon } from "lucide-vue-next";
 import { NButton, NTabPane, NTabs } from "naive-ui";
 import { computed, reactive, watch, watchEffect } from "vue";
-import { useRouter, useRoute, type LocationQueryRaw } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import { BBModal } from "@/bbkit";
 import { BBAttention } from "@/bbkit";
 import DatabaseChangelogPanel from "@/components/Database/DatabaseChangelogPanel.vue";
@@ -205,6 +206,7 @@ import {
 import DriftedDatabaseAlert from "@/components/DatabaseDetail/DriftedDatabaseAlert.vue";
 import ExportSchemaButton from "@/components/DatabaseDetail/ExportSchemaButton.vue";
 import SyncDatabaseButton from "@/components/DatabaseDetail/SyncDatabaseButton.vue";
+import { AddSpecDrawer } from "@/components/Plan";
 import TransferOutDatabaseForm from "@/components/TransferOutDatabaseForm";
 import { Drawer } from "@/components/v2";
 import {
@@ -213,10 +215,7 @@ import {
   ProductionEnvironmentV1Icon,
 } from "@/components/v2";
 import { CopyButton } from "@/components/v2";
-import {
-  PROJECT_V1_ROUTE_ISSUE_DETAIL,
-  PROJECT_V1_ROUTE_DATABASE_DETAIL,
-} from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_DATABASE_DETAIL } from "@/router/dashboard/projectV1";
 import { useEnvironmentV1Store, useDatabaseV1ByName } from "@/store";
 import {
   databaseNamePrefix,
@@ -243,6 +242,7 @@ const isDatabaseHash = (x: any): x is DatabaseHash =>
 interface LocalState {
   showTransferDatabaseModal: boolean;
   showIncorrectProjectModal: boolean;
+  showChangeDatabaseDrawer: boolean;
   currentProjectName: string;
   selectedIndex: number;
   selectedTab: DatabaseHash;
@@ -259,6 +259,7 @@ const router = useRouter();
 const state = reactive<LocalState>({
   showTransferDatabaseModal: false,
   showIncorrectProjectModal: false,
+  showChangeDatabaseDrawer: false,
   currentProjectName: UNKNOWN_PROJECT_NAME,
   selectedIndex: 0,
   selectedTab: "overview",
@@ -272,6 +273,10 @@ const {
   allowAlterSchema,
   allowListChangelogs,
 } = useDatabaseDetailContext();
+
+const allowChangeDatabase = computed(() => {
+  return allowChangeData.value || allowAlterSchema.value;
+});
 
 watch(
   () => route.hash,
@@ -334,35 +339,6 @@ const allowQuery = computed(() => {
 const tryTransferProject = () => {
   state.currentProjectName = project.value.name;
   state.showTransferDatabaseModal = true;
-};
-
-const createMigration = async (
-  type: "bb.issue.database.schema.update" | "bb.issue.database.data.update"
-) => {
-  // Create a user friendly default issue name
-  const issueNameParts: string[] = [];
-  issueNameParts.push(`[${database.value.databaseName}]`);
-  issueNameParts.push(
-    type === "bb.issue.database.schema.update" ? `Edit schema` : `Change data`
-  );
-  const datetime = dayjs().format("@MM-DD HH:mm");
-  const tz = "UTC" + dayjs().format("ZZ");
-  issueNameParts.push(`${datetime} ${tz}`);
-
-  const query: LocationQueryRaw = {
-    template: type,
-    name: issueNameParts.join(" "),
-    databaseList: database.value.name,
-  };
-
-  router.push({
-    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-    params: {
-      projectId: extractProjectResourceName(project.value.name),
-      issueSlug: "create",
-    },
-    query,
-  });
 };
 
 const handleGotoSQLEditorFailed = () => {

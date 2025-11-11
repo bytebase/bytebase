@@ -43,29 +43,47 @@ func (*TableDropNamingConventionAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, err
 	}
 
-	checker := &tableDropNamingConventionChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
-		format:                       format,
+	rule := &tableDropNamingConventionRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: string(checkCtx.Rule.Type),
+		},
+		format: format,
 	}
 
+	checker := NewGenericChecker([]Rule{rule})
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type tableDropNamingConventionChecker struct {
-	*parser.BasePostgreSQLParserListener
-
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-	format     *regexp.Regexp
+type tableDropNamingConventionRule struct {
+	BaseRule
+	format *regexp.Regexp
 }
 
-// EnterDropstmt handles DROP TABLE statements
-func (c *tableDropNamingConventionChecker) EnterDropstmt(ctx *parser.DropstmtContext) {
+// Name returns the rule name.
+func (*tableDropNamingConventionRule) Name() string {
+	return "table.drop-naming-convention"
+}
+
+// OnEnter is called when the parser enters a rule context.
+func (r *tableDropNamingConventionRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Dropstmt":
+		r.handleDropstmt(ctx.(*parser.DropstmtContext))
+	default:
+		// Do nothing for other node types
+	}
+	return nil
+}
+
+// OnExit is called when the parser exits a rule context.
+func (*tableDropNamingConventionRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+func (r *tableDropNamingConventionRule) handleDropstmt(ctx *parser.DropstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -79,13 +97,13 @@ func (c *tableDropNamingConventionChecker) EnterDropstmt(ctx *parser.DropstmtCon
 	if ctx.Any_name_list() != nil {
 		allNames := ctx.Any_name_list().AllAny_name()
 		for _, nameCtx := range allNames {
-			tableName := c.extractTableNameFromAnyName(nameCtx)
-			if tableName != "" && !c.format.MatchString(tableName) {
-				c.adviceList = append(c.adviceList, &storepb.Advice{
-					Status:  c.level,
+			tableName := r.extractTableNameFromAnyName(nameCtx)
+			if tableName != "" && !r.format.MatchString(tableName) {
+				r.AddAdvice(&storepb.Advice{
+					Status:  r.level,
 					Code:    advisor.TableDropNamingConventionMismatch.Int32(),
-					Title:   c.title,
-					Content: fmt.Sprintf("`%s` mismatches drop table naming convention, naming format should be %q", tableName, c.format),
+					Title:   r.title,
+					Content: fmt.Sprintf("`%s` mismatches drop table naming convention, naming format should be %q", tableName, r.format),
 					StartPosition: &storepb.Position{
 						Line:   int32(ctx.GetStart().GetLine()),
 						Column: 0,
@@ -98,7 +116,7 @@ func (c *tableDropNamingConventionChecker) EnterDropstmt(ctx *parser.DropstmtCon
 
 // extractTableNameFromAnyName extracts the table name from Any_name context.
 // For schema.table, returns "table". For just "table", returns "table".
-func (*tableDropNamingConventionChecker) extractTableNameFromAnyName(ctx parser.IAny_nameContext) string {
+func (*tableDropNamingConventionRule) extractTableNameFromAnyName(ctx parser.IAny_nameContext) string {
 	parts := pg.NormalizePostgreSQLAnyName(ctx)
 	if len(parts) == 0 {
 		return ""

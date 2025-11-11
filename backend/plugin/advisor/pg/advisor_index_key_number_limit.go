@@ -42,54 +42,80 @@ func (*IndexKeyNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.Con
 		return nil, err
 	}
 
-	checker := &indexKeyNumberLimitChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
-		max:                          payload.Number,
+	rule := &indexKeyNumberLimitRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: string(checkCtx.Rule.Type),
+		},
+		max: payload.Number,
 	}
 
+	checker := NewGenericChecker([]Rule{rule})
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type indexKeyNumberLimitChecker struct {
-	*parser.BasePostgreSQLParserListener
+type indexKeyNumberLimitRule struct {
+	BaseRule
 
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-	max        int
+	max int
 }
 
-// EnterIndexstmt checks CREATE INDEX statements
-func (c *indexKeyNumberLimitChecker) EnterIndexstmt(ctx *parser.IndexstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
+func (*indexKeyNumberLimitRule) Name() string {
+	return "index_key_number_limit"
+}
+
+func (r *indexKeyNumberLimitRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Indexstmt":
+		r.handleIndexstmt(ctx)
+	case "Createstmt":
+		r.handleCreatestmt(ctx)
+	case "Altertablestmt":
+		r.handleAltertablestmt(ctx)
+	default:
+		// Do nothing for other node types
+	}
+	return nil
+}
+
+func (*indexKeyNumberLimitRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+// handleIndexstmt checks CREATE INDEX statements
+func (r *indexKeyNumberLimitRule) handleIndexstmt(ctx antlr.ParserRuleContext) {
+	indexstmtCtx, ok := ctx.(*parser.IndexstmtContext)
+	if !ok {
+		return
+	}
+
+	if !isTopLevel(indexstmtCtx.GetParent()) {
 		return
 	}
 
 	// Count the number of index parameters
-	if ctx.Index_params() != nil {
-		keyCount := c.countIndexKeys(ctx.Index_params())
-		if c.max > 0 && keyCount > c.max {
+	if indexstmtCtx.Index_params() != nil {
+		keyCount := r.countIndexKeys(indexstmtCtx.Index_params())
+		if r.max > 0 && keyCount > r.max {
 			indexName := ""
-			if ctx.Name() != nil {
-				indexName = pg.NormalizePostgreSQLName(ctx.Name())
+			if indexstmtCtx.Name() != nil {
+				indexName = pg.NormalizePostgreSQLName(indexstmtCtx.Name())
 			}
 
 			tableName := ""
-			if ctx.Relation_expr() != nil && ctx.Relation_expr().Qualified_name() != nil {
-				tableName = extractTableName(ctx.Relation_expr().Qualified_name())
+			if indexstmtCtx.Relation_expr() != nil && indexstmtCtx.Relation_expr().Qualified_name() != nil {
+				tableName = extractTableName(indexstmtCtx.Relation_expr().Qualified_name())
 			}
 
-			c.adviceList = append(c.adviceList, &storepb.Advice{
-				Status:  c.level,
+			r.AddAdvice(&storepb.Advice{
+				Status:  r.level,
 				Code:    advisor.IndexKeyNumberExceedsLimit.Int32(),
-				Title:   c.title,
-				Content: fmt.Sprintf("The number of keys of index %q in table %q should be not greater than %d", indexName, tableName, c.max),
+				Title:   r.title,
+				Content: fmt.Sprintf("The number of keys of index %q in table %q should be not greater than %d", indexName, tableName, r.max),
 				StartPosition: &storepb.Position{
-					Line:   int32(ctx.GetStart().GetLine()),
+					Line:   int32(indexstmtCtx.GetStart().GetLine()),
 					Column: 0,
 				},
 			})
@@ -97,13 +123,18 @@ func (c *indexKeyNumberLimitChecker) EnterIndexstmt(ctx *parser.IndexstmtContext
 	}
 }
 
-// EnterCreatestmt checks CREATE TABLE with inline constraints
-func (c *indexKeyNumberLimitChecker) EnterCreatestmt(ctx *parser.CreatestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
+// handleCreatestmt checks CREATE TABLE with inline constraints
+func (r *indexKeyNumberLimitRule) handleCreatestmt(ctx antlr.ParserRuleContext) {
+	createstmtCtx, ok := ctx.(*parser.CreatestmtContext)
+	if !ok {
 		return
 	}
 
-	qualifiedNames := ctx.AllQualified_name()
+	if !isTopLevel(createstmtCtx.GetParent()) {
+		return
+	}
+
+	qualifiedNames := createstmtCtx.AllQualified_name()
 	if len(qualifiedNames) == 0 {
 		return
 	}
@@ -114,47 +145,52 @@ func (c *indexKeyNumberLimitChecker) EnterCreatestmt(ctx *parser.CreatestmtConte
 	}
 
 	// Check table-level constraints
-	if ctx.Opttableelementlist() != nil && ctx.Opttableelementlist().Tableelementlist() != nil {
-		allElements := ctx.Opttableelementlist().Tableelementlist().AllTableelement()
+	if createstmtCtx.Opttableelementlist() != nil && createstmtCtx.Opttableelementlist().Tableelementlist() != nil {
+		allElements := createstmtCtx.Opttableelementlist().Tableelementlist().AllTableelement()
 		for _, elem := range allElements {
 			if elem.Tablelikeclause() != nil {
 				continue
 			}
 			if elem.Tableconstraint() != nil {
-				c.checkTableConstraint(elem.Tableconstraint(), tableName, ctx.GetStart().GetLine())
+				r.checkTableConstraint(elem.Tableconstraint(), tableName, createstmtCtx.GetStart().GetLine())
 			}
 		}
 	}
 }
 
-// EnterAltertablestmt checks ALTER TABLE ADD CONSTRAINT
-func (c *indexKeyNumberLimitChecker) EnterAltertablestmt(ctx *parser.AltertablestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
+// handleAltertablestmt checks ALTER TABLE ADD CONSTRAINT
+func (r *indexKeyNumberLimitRule) handleAltertablestmt(ctx antlr.ParserRuleContext) {
+	altertablestmtCtx, ok := ctx.(*parser.AltertablestmtContext)
+	if !ok {
 		return
 	}
 
-	if ctx.Relation_expr() == nil || ctx.Relation_expr().Qualified_name() == nil {
+	if !isTopLevel(altertablestmtCtx.GetParent()) {
 		return
 	}
 
-	tableName := extractTableName(ctx.Relation_expr().Qualified_name())
+	if altertablestmtCtx.Relation_expr() == nil || altertablestmtCtx.Relation_expr().Qualified_name() == nil {
+		return
+	}
+
+	tableName := extractTableName(altertablestmtCtx.Relation_expr().Qualified_name())
 	if tableName == "" {
 		return
 	}
 
 	// Check ALTER TABLE ADD CONSTRAINT
-	if ctx.Alter_table_cmds() != nil {
-		allCmds := ctx.Alter_table_cmds().AllAlter_table_cmd()
+	if altertablestmtCtx.Alter_table_cmds() != nil {
+		allCmds := altertablestmtCtx.Alter_table_cmds().AllAlter_table_cmd()
 		for _, cmd := range allCmds {
 			// ADD CONSTRAINT
 			if cmd.ADD_P() != nil && cmd.Tableconstraint() != nil {
-				c.checkTableConstraint(cmd.Tableconstraint(), tableName, ctx.GetStart().GetLine())
+				r.checkTableConstraint(cmd.Tableconstraint(), tableName, altertablestmtCtx.GetStart().GetLine())
 			}
 		}
 	}
 }
 
-func (c *indexKeyNumberLimitChecker) checkTableConstraint(constraint parser.ITableconstraintContext, tableName string, line int) {
+func (r *indexKeyNumberLimitRule) checkTableConstraint(constraint parser.ITableconstraintContext, tableName string, line int) {
 	if constraint == nil {
 		return
 	}
@@ -174,24 +210,24 @@ func (c *indexKeyNumberLimitChecker) checkTableConstraint(constraint parser.ITab
 		// PRIMARY KEY or UNIQUE
 		if (elem.PRIMARY() != nil && elem.KEY() != nil) || (elem.UNIQUE() != nil) {
 			if elem.Columnlist() != nil {
-				keyCount = c.countColumnList(elem.Columnlist())
+				keyCount = r.countColumnList(elem.Columnlist())
 			}
 		}
 
 		// FOREIGN KEY
 		if elem.FOREIGN() != nil && elem.KEY() != nil {
 			if elem.Columnlist() != nil {
-				keyCount = c.countColumnList(elem.Columnlist())
+				keyCount = r.countColumnList(elem.Columnlist())
 			}
 		}
 	}
 
-	if c.max > 0 && keyCount > c.max {
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:  c.level,
+	if r.max > 0 && keyCount > r.max {
+		r.AddAdvice(&storepb.Advice{
+			Status:  r.level,
 			Code:    advisor.IndexKeyNumberExceedsLimit.Int32(),
-			Title:   c.title,
-			Content: fmt.Sprintf("The number of keys of index %q in table %q should be not greater than %d", constraintName, tableName, c.max),
+			Title:   r.title,
+			Content: fmt.Sprintf("The number of keys of index %q in table %q should be not greater than %d", constraintName, tableName, r.max),
 			StartPosition: &storepb.Position{
 				Line:   int32(line),
 				Column: 0,
@@ -200,7 +236,7 @@ func (c *indexKeyNumberLimitChecker) checkTableConstraint(constraint parser.ITab
 	}
 }
 
-func (*indexKeyNumberLimitChecker) countIndexKeys(params parser.IIndex_paramsContext) int {
+func (*indexKeyNumberLimitRule) countIndexKeys(params parser.IIndex_paramsContext) int {
 	if params == nil {
 		return 0
 	}
@@ -209,7 +245,7 @@ func (*indexKeyNumberLimitChecker) countIndexKeys(params parser.IIndex_paramsCon
 	return len(allParams)
 }
 
-func (*indexKeyNumberLimitChecker) countColumnList(columnList parser.IColumnlistContext) int {
+func (*indexKeyNumberLimitRule) countColumnList(columnList parser.IColumnlistContext) int {
 	if columnList == nil {
 		return 0
 	}

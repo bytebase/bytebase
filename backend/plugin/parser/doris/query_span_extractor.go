@@ -6,6 +6,7 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/doris"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
@@ -30,18 +31,22 @@ func newQuerySpanExtractor(database string, gCtx base.GetQuerySpanContext, ignor
 
 func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string) (*base.QuerySpan, error) {
 	q.ctx = ctx
-	parseResult, err := ParseDorisSQL(statement)
+	parseResults, err := ParseDorisSQL(statement)
 	if err != nil {
 		return nil, err
 	}
 
-	if parseResult == nil {
+	if len(parseResults) == 0 {
 		return &base.QuerySpan{
 			SourceColumns: base.SourceColumnSet{},
 			Results:       []base.QuerySpanResult{},
 		}, nil
 	}
+	if len(parseResults) != 1 {
+		return nil, errors.Errorf("expecting only one statement to get query span, but got %d", len(parseResults))
+	}
 
+	parseResult := parseResults[0]
 	accessTables := getAccessTables(q.defaultDatabase, parseResult, q.ctes, q.gCtx, q.ignoreCaseSensitive)
 
 	// We do not support simultaneous access to the system table and the user table

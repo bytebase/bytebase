@@ -40,57 +40,80 @@ func (*CollationAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 		return nil, err
 	}
 
-	checker := &collationAllowlistChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
-		allowlist:                    make(map[string]bool),
-		tokens:                       tree.Tokens,
-	}
+	allowlist := make(map[string]bool)
 	for _, collation := range payload.List {
-		checker.allowlist[collation] = true
+		allowlist[collation] = true
 	}
 
+	rule := &collationAllowlistRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: string(checkCtx.Rule.Type),
+		},
+		allowlist: allowlist,
+		tokens:    tree.Tokens,
+	}
+
+	checker := NewGenericChecker([]Rule{rule})
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type collationAllowlistChecker struct {
-	*parser.BasePostgreSQLParserListener
+type collationAllowlistRule struct {
+	BaseRule
 
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-	allowlist  map[string]bool
-	tokens     *antlr.CommonTokenStream
+	allowlist map[string]bool
+	tokens    *antlr.CommonTokenStream
 }
 
-// EnterCreatestmt handles CREATE TABLE statements
-func (c *collationAllowlistChecker) EnterCreatestmt(ctx *parser.CreatestmtContext) {
+func (*collationAllowlistRule) Name() string {
+	return "collation-allowlist"
+}
+
+func (r *collationAllowlistRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Createstmt":
+		return r.handleCreatestmt(ctx.(*parser.CreatestmtContext))
+	case "Altertablestmt":
+		return r.handleAltertablestmt(ctx.(*parser.AltertablestmtContext))
+	default:
+		// Do nothing for other node types
+	}
+	return nil
+}
+
+func (*collationAllowlistRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+// handleCreatestmt handles CREATE TABLE statements
+func (r *collationAllowlistRule) handleCreatestmt(ctx *parser.CreatestmtContext) error {
 	if !isTopLevel(ctx.GetParent()) {
-		return
+		return nil
 	}
 
 	// Extract collations from column definitions
 	if ctx.Opttableelementlist() != nil {
-		c.checkTableElementList(ctx.Opttableelementlist(), ctx)
+		r.checkTableElementList(ctx.Opttableelementlist(), ctx)
 	}
+	return nil
 }
 
-// EnterAltertablestmt handles ALTER TABLE statements
-func (c *collationAllowlistChecker) EnterAltertablestmt(ctx *parser.AltertablestmtContext) {
+// handleAltertablestmt handles ALTER TABLE statements
+func (r *collationAllowlistRule) handleAltertablestmt(ctx *parser.AltertablestmtContext) error {
 	if !isTopLevel(ctx.GetParent()) {
-		return
+		return nil
 	}
 
 	// Check ALTER TABLE ADD COLUMN
 	if ctx.Alter_table_cmds() != nil {
-		c.checkAlterTableCmds(ctx.Alter_table_cmds(), ctx)
+		r.checkAlterTableCmds(ctx.Alter_table_cmds(), ctx)
 	}
+	return nil
 }
 
-func (c *collationAllowlistChecker) checkTableElementList(listCtx parser.IOpttableelementlistContext, stmtCtx antlr.ParserRuleContext) {
+func (r *collationAllowlistRule) checkTableElementList(listCtx parser.IOpttableelementlistContext, stmtCtx antlr.ParserRuleContext) {
 	if listCtx == nil || listCtx.Tableelementlist() == nil {
 		return
 	}
@@ -98,12 +121,12 @@ func (c *collationAllowlistChecker) checkTableElementList(listCtx parser.IOpttab
 	allElements := listCtx.Tableelementlist().AllTableelement()
 	for _, elem := range allElements {
 		if elem.ColumnDef() != nil {
-			c.checkColumnDef(elem.ColumnDef(), stmtCtx)
+			r.checkColumnDef(elem.ColumnDef(), stmtCtx)
 		}
 	}
 }
 
-func (c *collationAllowlistChecker) checkColumnDef(colDef parser.IColumnDefContext, stmtCtx antlr.ParserRuleContext) {
+func (r *collationAllowlistRule) checkColumnDef(colDef parser.IColumnDefContext, stmtCtx antlr.ParserRuleContext) {
 	if colDef == nil || colDef.Colquallist() == nil {
 		return
 	}
@@ -114,15 +137,15 @@ func (c *collationAllowlistChecker) checkColumnDef(colDef parser.IColumnDefConte
 	for _, constraint := range allConstraints {
 		// Check if this constraint is a COLLATE constraint
 		if constraint.COLLATE() != nil && constraint.Any_name() != nil {
-			collName := c.extractCollationNameFromAnyName(constraint.Any_name())
-			if collName != "" && !c.allowlist[collName] {
-				c.addAdvice(collName, stmtCtx)
+			collName := r.extractCollationNameFromAnyName(constraint.Any_name())
+			if collName != "" && !r.allowlist[collName] {
+				r.addAdvice(collName, stmtCtx)
 			}
 		}
 	}
 }
 
-func (c *collationAllowlistChecker) checkAlterTableCmds(cmds parser.IAlter_table_cmdsContext, stmtCtx antlr.ParserRuleContext) {
+func (r *collationAllowlistRule) checkAlterTableCmds(cmds parser.IAlter_table_cmdsContext, stmtCtx antlr.ParserRuleContext) {
 	if cmds == nil {
 		return
 	}
@@ -131,22 +154,22 @@ func (c *collationAllowlistChecker) checkAlterTableCmds(cmds parser.IAlter_table
 	for _, cmd := range allCmds {
 		// ADD COLUMN
 		if cmd.ADD_P() != nil && cmd.ColumnDef() != nil {
-			c.checkColumnDef(cmd.ColumnDef(), stmtCtx)
+			r.checkColumnDef(cmd.ColumnDef(), stmtCtx)
 		}
 
 		// ALTER COLUMN TYPE with COLLATE
 		// Check if this is ALTER COLUMN ... TYPE ...
 		// Grammar: ALTER opt_column? colid opt_set_data? TYPE_P typename opt_collate_clause? alter_using?
 		if cmd.ALTER() != nil && cmd.TYPE_P() != nil && cmd.Opt_collate_clause() != nil && cmd.Opt_collate_clause().Any_name() != nil {
-			collName := c.extractCollationNameFromAnyName(cmd.Opt_collate_clause().Any_name())
-			if collName != "" && !c.allowlist[collName] {
-				c.addAdvice(collName, stmtCtx)
+			collName := r.extractCollationNameFromAnyName(cmd.Opt_collate_clause().Any_name())
+			if collName != "" && !r.allowlist[collName] {
+				r.addAdvice(collName, stmtCtx)
 			}
 		}
 	}
 }
 
-func (*collationAllowlistChecker) extractCollationNameFromAnyName(anyName parser.IAny_nameContext) string {
+func (*collationAllowlistRule) extractCollationNameFromAnyName(anyName parser.IAny_nameContext) string {
 	if anyName == nil {
 		return ""
 	}
@@ -164,13 +187,13 @@ func (*collationAllowlistChecker) extractCollationNameFromAnyName(anyName parser
 	return text
 }
 
-func (c *collationAllowlistChecker) addAdvice(collation string, ctx antlr.ParserRuleContext) {
-	text := c.tokens.GetTextFromRuleContext(ctx)
+func (r *collationAllowlistRule) addAdvice(collation string, ctx antlr.ParserRuleContext) {
+	text := r.tokens.GetTextFromRuleContext(ctx)
 
-	c.adviceList = append(c.adviceList, &storepb.Advice{
-		Status:  c.level,
+	r.AddAdvice(&storepb.Advice{
+		Status:  r.level,
 		Code:    advisor.DisabledCollation.Int32(),
-		Title:   c.title,
+		Title:   r.title,
 		Content: fmt.Sprintf("Use disabled collation \"%s\", related statement \"%s\"", collation, text),
 		StartPosition: &storepb.Position{
 			Line:   int32(ctx.GetStart().GetLine()),

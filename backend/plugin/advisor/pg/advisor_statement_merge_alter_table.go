@@ -36,23 +36,22 @@ func (*StatementMergeAlterTableAdvisor) Check(_ context.Context, checkCtx adviso
 		return nil, err
 	}
 
-	checker := &statementMergeAlterTableChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
-		tableMap:                     make(tableMap),
+	rule := &statementMergeAlterTableRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: string(checkCtx.Rule.Type),
+		},
+		tableMap: make(tableMap),
 	}
 
+	checker := NewGenericChecker([]Rule{rule})
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
-	return checker.generateAdvice(), nil
+	return rule.generateAdvice(), nil
 }
 
-type statementMergeAlterTableChecker struct {
-	*parser.BasePostgreSQLParserListener
-
-	level    storepb.Advice_Status
-	title    string
+type statementMergeAlterTableRule struct {
+	BaseRule
 	tableMap tableMap
 }
 
@@ -87,41 +86,30 @@ func (t tableStatement) key() string {
 	return fmt.Sprintf("%s.%s", t.schema, t.name)
 }
 
-func (checker *statementMergeAlterTableChecker) generateAdvice() []*storepb.Advice {
-	var adviceList []*storepb.Advice
-	var tableList []tableStatement
-	for _, table := range checker.tableMap {
-		tableList = append(tableList, table)
-	}
-	slices.SortFunc(tableList, func(i, j tableStatement) int {
-		if i.line < j.line {
-			return -1
-		}
-		if i.line > j.line {
-			return 1
-		}
-		return 0
-	})
-	for _, table := range tableList {
-		if table.count > 1 {
-			adviceList = append(adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.StatementRedundantAlterTable.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("There are %d statements to modify table `%s`", table.count, table.name),
-				StartPosition: &storepb.Position{
-					Line:   int32(table.line),
-					Column: 0,
-				},
-			})
-		}
-	}
-
-	return adviceList
+// Name returns the rule name.
+func (*statementMergeAlterTableRule) Name() string {
+	return "statement.merge-alter-table"
 }
 
-// EnterCreatestmt is called when production createstmt is entered.
-func (checker *statementMergeAlterTableChecker) EnterCreatestmt(ctx *parser.CreatestmtContext) {
+// OnEnter is called when the parser enters a rule context.
+func (r *statementMergeAlterTableRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Createstmt":
+		r.handleCreatestmt(ctx.(*parser.CreatestmtContext))
+	case "Altertablestmt":
+		r.handleAltertablestmt(ctx.(*parser.AltertablestmtContext))
+	default:
+		// Do nothing for other node types
+	}
+	return nil
+}
+
+// OnExit is called when the parser exits a rule context.
+func (*statementMergeAlterTableRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+func (r *statementMergeAlterTableRule) handleCreatestmt(ctx *parser.CreatestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -142,11 +130,10 @@ func (checker *statementMergeAlterTableChecker) EnterCreatestmt(ctx *parser.Crea
 		return
 	}
 
-	checker.tableMap.set(schema, tableName, ctx.GetStop().GetLine())
+	r.tableMap.set(schema, tableName, ctx.GetStop().GetLine())
 }
 
-// EnterAltertablestmt is called when production altertablestmt is entered.
-func (checker *statementMergeAlterTableChecker) EnterAltertablestmt(ctx *parser.AltertablestmtContext) {
+func (r *statementMergeAlterTableRule) handleAltertablestmt(ctx *parser.AltertablestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -171,5 +158,38 @@ func (checker *statementMergeAlterTableChecker) EnterAltertablestmt(ctx *parser.
 		return
 	}
 
-	checker.tableMap.add(schema, tableName, ctx.GetStop().GetLine())
+	r.tableMap.add(schema, tableName, ctx.GetStop().GetLine())
+}
+
+func (r *statementMergeAlterTableRule) generateAdvice() []*storepb.Advice {
+	var adviceList []*storepb.Advice
+	var tableList []tableStatement
+	for _, table := range r.tableMap {
+		tableList = append(tableList, table)
+	}
+	slices.SortFunc(tableList, func(i, j tableStatement) int {
+		if i.line < j.line {
+			return -1
+		}
+		if i.line > j.line {
+			return 1
+		}
+		return 0
+	})
+	for _, table := range tableList {
+		if table.count > 1 {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:  r.level,
+				Code:    advisor.StatementRedundantAlterTable.Int32(),
+				Title:   r.title,
+				Content: fmt.Sprintf("There are %d statements to modify table `%s`", table.count, table.name),
+				StartPosition: &storepb.Position{
+					Line:   int32(table.line),
+					Column: 0,
+				},
+			})
+		}
+	}
+
+	return adviceList
 }

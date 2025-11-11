@@ -53,14 +53,16 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor
 		return nil, err
 	}
 
-	ddlChecker := &ddlChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        title,
-		tokens:                       tree.Tokens,
+	ddlRule := &ddlRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: title,
+		},
+		tokens: tree.Tokens,
 	}
-	antlr.ParseTreeWalkerDefault.Walk(ddlChecker, tree.Tree)
-	adviceList = append(adviceList, ddlChecker.adviceList...)
+	checker := NewGenericChecker([]Rule{ddlRule})
+	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
+	adviceList = append(adviceList, checker.GetAdviceList()...)
 
 	// Check if backup schema exists
 	schemaName := common.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES)
@@ -211,31 +213,40 @@ func isDDLStatement(ctx antlr.Tree) bool {
 	}
 }
 
-// ddlChecker checks for DDL statements in DML context
-type ddlChecker struct {
-	*parser.BasePostgreSQLParserListener
+// ddlRule checks for DDL statements in DML context
+type ddlRule struct {
+	BaseRule
 
-	level      storepb.Advice_Status
-	title      string
-	tokens     *antlr.CommonTokenStream
-	adviceList []*storepb.Advice
+	tokens *antlr.CommonTokenStream
 }
 
-func (c *ddlChecker) getStatementText(ctx antlr.ParserRuleContext) string {
-	return c.tokens.GetTextFromRuleContext(ctx)
+func (*ddlRule) Name() string {
+	return "ddl-in-dml-check"
 }
 
-func (c *ddlChecker) EnterEveryRule(ctx antlr.ParserRuleContext) {
+func (r *ddlRule) OnEnter(ctx antlr.ParserRuleContext, _ string) error {
+	return r.handleEveryRule(ctx)
+}
+
+func (*ddlRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+func (r *ddlRule) getStatementText(ctx antlr.ParserRuleContext) string {
+	return r.tokens.GetTextFromRuleContext(ctx)
+}
+
+func (r *ddlRule) handleEveryRule(ctx antlr.ParserRuleContext) error {
 	// Check if this is a top-level DDL statement
 	if !isTopLevel(ctx.GetParent()) {
-		return
+		return nil
 	}
 
 	if isDDLStatement(ctx) {
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:  c.level,
-			Title:   c.title,
-			Content: fmt.Sprintf("Data change can only run DML, \"%s\" is not DML", c.getStatementText(ctx)),
+		r.AddAdvice(&storepb.Advice{
+			Status:  r.level,
+			Title:   r.title,
+			Content: fmt.Sprintf("Data change can only run DML, \"%s\" is not DML", r.getStatementText(ctx)),
 			Code:    advisor.BuiltinPriorBackupCheck.Int32(),
 			StartPosition: &storepb.Position{
 				Line:   int32(ctx.GetStart().GetLine()),
@@ -243,6 +254,7 @@ func (c *ddlChecker) EnterEveryRule(ctx antlr.ParserRuleContext) {
 			},
 		})
 	}
+	return nil
 }
 
 // StatementType represents the type of DML statement

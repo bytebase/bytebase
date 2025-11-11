@@ -1,13 +1,9 @@
 <template>
-  <Drawer
-    v-model:show="show"
-    placement="right"
-    :resizable="true"
-    :default-width="'50%'"
-    :width="undefined"
-    class="max-w-[90vw]!"
-  >
-    <DrawerContent :title="$t('schema-editor.self')">
+  <Drawer v-model:show="show" placement="right" :resizable="true">
+    <DrawerContent
+      :title="$t('schema-editor.self')"
+      class="w-[70vw] min-w-4xl max-w-[100vw]"
+    >
       <div class="flex flex-col gap-y-4 h-full">
         <!-- Database selector for multi-database scenarios -->
         <div v-if="databases.length > 1" class="flex items-center gap-x-2">

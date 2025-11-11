@@ -35,27 +35,47 @@ func (*StatementDisallowRemoveTblCascadeAdvisor) Check(_ context.Context, checkC
 		return nil, err
 	}
 
-	checker := &statementDisallowRemoveTblCascadeChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
+	rule := &statementDisallowRemoveTblCascadeRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: string(checkCtx.Rule.Type),
+		},
 	}
 
+	checker := NewGenericChecker([]Rule{rule})
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type statementDisallowRemoveTblCascadeChecker struct {
-	*parser.BasePostgreSQLParserListener
-
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
+type statementDisallowRemoveTblCascadeRule struct {
+	BaseRule
 }
 
-// EnterDropstmt handles DROP TABLE statements with CASCADE
-func (c *statementDisallowRemoveTblCascadeChecker) EnterDropstmt(ctx *parser.DropstmtContext) {
+// Name returns the rule name.
+func (*statementDisallowRemoveTblCascadeRule) Name() string {
+	return "statement.disallow-remove-table-cascade"
+}
+
+// OnEnter is called when the parser enters a rule context.
+func (r *statementDisallowRemoveTblCascadeRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Dropstmt":
+		r.handleDropstmt(ctx.(*parser.DropstmtContext))
+	case "Truncatestmt":
+		r.handleTruncatestmt(ctx.(*parser.TruncatestmtContext))
+	default:
+		// Do nothing for other node types
+	}
+	return nil
+}
+
+// OnExit is called when the parser exits a rule context.
+func (*statementDisallowRemoveTblCascadeRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+func (r *statementDisallowRemoveTblCascadeRule) handleDropstmt(ctx *parser.DropstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -66,11 +86,11 @@ func (c *statementDisallowRemoveTblCascadeChecker) EnterDropstmt(ctx *parser.Dro
 	}
 
 	// Check for CASCADE option
-	if c.hasCascadeOption(ctx.Opt_drop_behavior()) {
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:  c.level,
+	if r.hasCascadeOption(ctx.Opt_drop_behavior()) {
+		r.AddAdvice(&storepb.Advice{
+			Status:  r.level,
 			Code:    advisor.StatementDisallowCascade.Int32(),
-			Title:   c.title,
+			Title:   r.title,
 			Content: "The use of CASCADE is not permitted when removing a table",
 			StartPosition: &storepb.Position{
 				Line:   int32(ctx.GetStart().GetLine()),
@@ -80,18 +100,17 @@ func (c *statementDisallowRemoveTblCascadeChecker) EnterDropstmt(ctx *parser.Dro
 	}
 }
 
-// EnterTruncatestmt handles TRUNCATE TABLE statements with CASCADE
-func (c *statementDisallowRemoveTblCascadeChecker) EnterTruncatestmt(ctx *parser.TruncatestmtContext) {
+func (r *statementDisallowRemoveTblCascadeRule) handleTruncatestmt(ctx *parser.TruncatestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
 	// Check for CASCADE option
-	if c.hasCascadeOption(ctx.Opt_drop_behavior()) {
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:  c.level,
+	if r.hasCascadeOption(ctx.Opt_drop_behavior()) {
+		r.AddAdvice(&storepb.Advice{
+			Status:  r.level,
 			Code:    advisor.StatementDisallowCascade.Int32(),
-			Title:   c.title,
+			Title:   r.title,
 			Content: "The use of CASCADE is not permitted when removing a table",
 			StartPosition: &storepb.Position{
 				Line:   int32(ctx.GetStart().GetLine()),
@@ -102,7 +121,7 @@ func (c *statementDisallowRemoveTblCascadeChecker) EnterTruncatestmt(ctx *parser
 }
 
 // hasCascadeOption checks if the drop behavior is CASCADE
-func (*statementDisallowRemoveTblCascadeChecker) hasCascadeOption(ctx parser.IOpt_drop_behaviorContext) bool {
+func (*statementDisallowRemoveTblCascadeRule) hasCascadeOption(ctx parser.IOpt_drop_behaviorContext) bool {
 	if ctx == nil {
 		return false
 	}

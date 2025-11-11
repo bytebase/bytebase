@@ -293,7 +293,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.39.0
 	github.com/aws/smithy-go v1.23.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/bytebase/parser v0.0.0-20251103101721-8b106e9a4f5a
+	github.com/bytebase/parser v0.0.0-20251110095732-1f0027a46f16
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cncf/xds/go v0.0.0-20250501225837-2ac532fd4443 // indirect
 	github.com/cockroachdb/cockroach-go/v2 v2.4.2
@@ -384,6 +384,7 @@ replace (
 	// Hive fix.
 	github.com/beltran/gohive => github.com/bytebase/gohive v0.0.0-20240422092929-d76993a958a4
 	github.com/beltran/gosasl => github.com/bytebase/gosasl v0.0.0-20240422091407-6b7481e86f08
+
 	// copied from pingcap/tidb
 	// fix potential security issue(CVE-2020-26160) introduced by indirect dependency.
 	github.com/dgrijalva/jwt-go => github.com/form3tech-oss/jwt-go v3.2.6-0.20210809144907-32ab6a8243d7+incompatible

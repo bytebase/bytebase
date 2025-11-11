@@ -38,26 +38,48 @@ func (*ColumnRequireDefaultAdvisor) Check(_ context.Context, checkCtx advisor.Co
 		return nil, err
 	}
 
-	checker := &columnRequireDefaultChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
+	rule := &columnRequireDefaultRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: string(checkCtx.Rule.Type),
+		},
 	}
 
+	checker := NewGenericChecker([]Rule{rule})
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type columnRequireDefaultChecker struct {
-	*parser.BasePostgreSQLParserListener
-
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
+type columnRequireDefaultRule struct {
+	BaseRule
 }
 
-func (c *columnRequireDefaultChecker) EnterCreatestmt(ctx *parser.CreatestmtContext) {
+func (*columnRequireDefaultRule) Name() string {
+	return "column_require_default"
+}
+
+func (r *columnRequireDefaultRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Createstmt":
+		if c, ok := ctx.(*parser.CreatestmtContext); ok {
+			r.handleCreatestmt(c)
+		}
+	case "Altertablestmt":
+		if c, ok := ctx.(*parser.AltertablestmtContext); ok {
+			r.handleAltertablestmt(c)
+		}
+	default:
+		// Do nothing for other node types
+	}
+	return nil
+}
+
+func (*columnRequireDefaultRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+func (r *columnRequireDefaultRule) handleCreatestmt(ctx *parser.CreatestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -81,11 +103,11 @@ func (c *columnRequireDefaultChecker) EnterCreatestmt(ctx *parser.CreatestmtCont
 				if colDef.Colid() != nil {
 					columnName := pg.NormalizePostgreSQLColid(colDef.Colid())
 					// Check if column has DEFAULT
-					if !c.hasDefault(colDef) {
-						c.adviceList = append(c.adviceList, &storepb.Advice{
-							Status:  c.level,
+					if !r.hasDefault(colDef) {
+						r.AddAdvice(&storepb.Advice{
+							Status:  r.level,
 							Code:    advisor.NoDefault.Int32(),
-							Title:   c.title,
+							Title:   r.title,
 							Content: fmt.Sprintf("Column %q.%q in schema %q doesn't have DEFAULT", tableName, columnName, "public"),
 							StartPosition: &storepb.Position{
 								Line:   int32(colDef.GetStart().GetLine()),
@@ -99,7 +121,7 @@ func (c *columnRequireDefaultChecker) EnterCreatestmt(ctx *parser.CreatestmtCont
 	}
 }
 
-func (c *columnRequireDefaultChecker) EnterAltertablestmt(ctx *parser.AltertablestmtContext) {
+func (r *columnRequireDefaultRule) handleAltertablestmt(ctx *parser.AltertablestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
@@ -123,11 +145,11 @@ func (c *columnRequireDefaultChecker) EnterAltertablestmt(ctx *parser.Altertable
 				if colDef.Colid() != nil {
 					columnName := pg.NormalizePostgreSQLColid(colDef.Colid())
 					// Check if column has DEFAULT
-					if !c.hasDefault(colDef) {
-						c.adviceList = append(c.adviceList, &storepb.Advice{
-							Status:  c.level,
+					if !r.hasDefault(colDef) {
+						r.AddAdvice(&storepb.Advice{
+							Status:  r.level,
 							Code:    advisor.NoDefault.Int32(),
-							Title:   c.title,
+							Title:   r.title,
 							Content: fmt.Sprintf("Column %q.%q in schema %q doesn't have DEFAULT", tableName, columnName, "public"),
 							StartPosition: &storepb.Position{
 								Line:   int32(colDef.GetStart().GetLine()),
@@ -143,7 +165,7 @@ func (c *columnRequireDefaultChecker) EnterAltertablestmt(ctx *parser.Altertable
 
 // hasDefault checks if a column definition has a DEFAULT clause
 // or uses a type that implicitly includes a default (like serial, bigserial, smallserial)
-func (*columnRequireDefaultChecker) hasDefault(colDef parser.IColumnDefContext) bool {
+func (*columnRequireDefaultRule) hasDefault(colDef parser.IColumnDefContext) bool {
 	// Check if the type is serial/bigserial/smallserial (which have implicit defaults)
 	if colDef.Typename() != nil && colDef.Typename().Simpletypename() != nil {
 		simpleType := colDef.Typename().Simpletypename()

@@ -37,49 +37,71 @@ func (*InsertDisallowOrderByRandAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, err
 	}
 
-	checker := &insertDisallowOrderByRandChecker{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		level:                        level,
-		title:                        string(checkCtx.Rule.Type),
-		statementsText:               checkCtx.Statements,
+	rule := &insertDisallowOrderByRandRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: string(checkCtx.Rule.Type),
+		},
+		statementsText: checkCtx.Statements,
 	}
 
+	checker := NewGenericChecker([]Rule{rule})
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type insertDisallowOrderByRandChecker struct {
-	*parser.BasePostgreSQLParserListener
+type insertDisallowOrderByRandRule struct {
+	BaseRule
 
-	adviceList     []*storepb.Advice
-	level          storepb.Advice_Status
-	title          string
 	statementsText string
 }
 
-func (c *insertDisallowOrderByRandChecker) EnterInsertstmt(ctx *parser.InsertstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
+func (*insertDisallowOrderByRandRule) Name() string {
+	return "insert_disallow_order_by_rand"
+}
+
+func (r *insertDisallowOrderByRandRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "Insertstmt":
+		r.handleInsertstmt(ctx)
+	default:
+		// Do nothing for other node types
+	}
+	return nil
+}
+
+func (*insertDisallowOrderByRandRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+func (r *insertDisallowOrderByRandRule) handleInsertstmt(ctx antlr.ParserRuleContext) {
+	insertstmtCtx, ok := ctx.(*parser.InsertstmtContext)
+	if !ok {
+		return
+	}
+
+	if !isTopLevel(insertstmtCtx.GetParent()) {
 		return
 	}
 
 	// Check if this is INSERT...SELECT
-	if ctx.Insert_rest() == nil || ctx.Insert_rest().Selectstmt() == nil {
+	if insertstmtCtx.Insert_rest() == nil || insertstmtCtx.Insert_rest().Selectstmt() == nil {
 		return
 	}
 
 	// Check for ORDER BY random() in the SELECT statement
-	if c.hasOrderByRandom(ctx.Insert_rest().Selectstmt()) {
+	if r.hasOrderByRandom(insertstmtCtx.Insert_rest().Selectstmt()) {
 		// Extract the statement text from the original statements
-		stmtText := extractStatementText(c.statementsText, ctx.GetStart().GetLine(), ctx.GetStop().GetLine())
+		stmtText := extractStatementText(r.statementsText, insertstmtCtx.GetStart().GetLine(), insertstmtCtx.GetStop().GetLine())
 
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:  c.level,
+		r.AddAdvice(&storepb.Advice{
+			Status:  r.level,
 			Code:    advisor.InsertUseOrderByRand.Int32(),
-			Title:   c.title,
+			Title:   r.title,
 			Content: fmt.Sprintf("The INSERT statement uses ORDER BY random() or random_between(), related statement \"%s\"", stmtText),
 			StartPosition: &storepb.Position{
-				Line:   int32(ctx.GetStart().GetLine()),
+				Line:   int32(insertstmtCtx.GetStart().GetLine()),
 				Column: 0,
 			},
 		})
@@ -87,7 +109,7 @@ func (c *insertDisallowOrderByRandChecker) EnterInsertstmt(ctx *parser.Insertstm
 }
 
 // hasOrderByRandom checks if a SELECT statement has ORDER BY random() or random_between()
-func (*insertDisallowOrderByRandChecker) hasOrderByRandom(selectCtx parser.ISelectstmtContext) bool {
+func (*insertDisallowOrderByRandRule) hasOrderByRandom(selectCtx parser.ISelectstmtContext) bool {
 	if selectCtx == nil {
 		return false
 	}

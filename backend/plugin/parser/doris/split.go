@@ -1,8 +1,10 @@
 package doris
 
 import (
+	"strings"
+
+	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/doris"
-	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -14,43 +16,46 @@ func init() {
 	base.RegisterSplitterFunc(storepb.Engine_DORIS, SplitSQL)
 }
 
+// SplitSQL splits the input into multiple SQL statements using semicolon as delimiter.
 func SplitSQL(statement string) ([]base.SingleSQL, error) {
-	parseResult, err := ParseDorisSQL(statement)
-	if err != nil {
-		return nil, err
-	}
+	lexer := parser.NewDorisSQLLexer(antlr.NewInputStream(statement))
+	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	stream.Fill()
 
-	var result []base.SingleSQL
-	tree, ok := parseResult.Tree.(*parser.SqlStatementsContext)
-	if !ok {
-		return nil, errors.Errorf("failed to cast tree to SqlStatementsContext")
-	}
-	tokens := parseResult.Tokens.GetAllTokens()
-	stream := parseResult.Tokens
+	tokens := stream.GetAllTokens()
+	var buf []antlr.Token
+	var sqls []base.SingleSQL
 
-	start := 0
-	for _, singleStatement := range tree.AllSingleStatement() {
-		var pos int
-		if singleStatement.SEMICOLON() != nil {
-			pos = singleStatement.SEMICOLON().GetSymbol().GetTokenIndex()
-		} else {
-			pos = singleStatement.GetStop().GetTokenIndex()
+	for i, token := range tokens {
+		if i < len(tokens)-1 {
+			buf = append(buf, token)
 		}
+		if (token.GetTokenType() == parser.DorisSQLLexerSEMICOLON || i == len(tokens)-1) && len(buf) > 0 {
+			bufStr := new(strings.Builder)
+			empty := true
 
-		antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
-		// From antlr4, the line is ONE based, and the column is ZERO based.
-		// So we should minus 1 for the line.
-		result = append(result, base.SingleSQL{
-			Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
-			BaseLine: tokens[start].GetLine() - 1,
-			End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
-				Line:   int32(tokens[pos].GetLine()),
-				Column: int32(tokens[pos].GetColumn()),
-			}, statement),
-			Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
-			Empty: singleStatement.Statement() == nil,
-		})
-		start = pos + 1
+			for _, b := range buf {
+				if _, err := bufStr.WriteString(b.GetText()); err != nil {
+					return nil, err
+				}
+				if b.GetChannel() != antlr.TokenHiddenChannel {
+					empty = false
+				}
+			}
+			antlrPosition := base.FirstDefaultChannelTokenPosition(buf)
+			sqls = append(sqls, base.SingleSQL{
+				Text:     bufStr.String(),
+				BaseLine: buf[0].GetLine() - 1,
+				End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
+					Line:   int32(buf[len(buf)-1].GetLine()),
+					Column: int32(buf[len(buf)-1].GetColumn()),
+				}, statement),
+				Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
+				Empty: empty,
+			})
+			buf = nil
+			continue
+		}
 	}
-	return result, nil
+	return sqls, nil
 }

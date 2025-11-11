@@ -13,19 +13,21 @@ func init() {
 }
 
 func validateQuery(statement string) (bool, bool, error) {
-	parseResult, err := ParsePartiQL(statement)
+	parseResults, err := ParsePartiQL(statement)
 	if err != nil {
 		return false, false, err
 	}
-	if parseResult == nil {
-		return false, false, nil
-	}
 
-	l := &queryValidateListener{
-		valid: true,
+	for _, parseResult := range parseResults {
+		l := &queryValidateListener{
+			valid: true,
+		}
+		antlr.ParseTreeWalkerDefault.Walk(l, parseResult.Tree)
+		if !l.valid {
+			return false, false, nil
+		}
 	}
-	antlr.ParseTreeWalkerDefault.Walk(l, parseResult.Tree)
-	return l.valid, l.valid, nil
+	return true, true, nil
 }
 
 type queryValidateListener struct {

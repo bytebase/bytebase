@@ -20,25 +20,9 @@
         <template #trigger>
           <NButton
             :disabled="!hasMatchedDatabases"
-            @click="
-              previewDatabaseGroupIssue('bb.issue.database.schema.update')
-            "
+            @click="state.showChangeDatabaseDrawer = true"
           >
-            {{ $t("database.edit-schema") }}
-          </NButton>
-        </template>
-        {{ $t("database-group.no-matched-databases") }}
-      </NTooltip>
-      <NTooltip
-        v-if="hasPermissionToCreateIssue"
-        :disabled="hasMatchedDatabases"
-      >
-        <template #trigger>
-          <NButton
-            :disabled="!hasMatchedDatabases"
-            @click="previewDatabaseGroupIssue('bb.issue.database.data.update')"
-          >
-            {{ $t("database.change-data") }}
+            {{ $t("database.change-database") }}
           </NButton>
         </template>
         {{ $t("database-group.no-matched-databases") }}
@@ -57,6 +41,14 @@
       :database-group="databaseGroup"
       @dismiss="state.editing = false"
     />
+
+    <AddSpecDrawer
+      v-if="databaseGroup"
+      v-model:show="state.showChangeDatabaseDrawer"
+      :title="$t('database.change-database')"
+      :project-name="project.name"
+      :use-legacy-issue-flow="true"
+    />
   </div>
 </template>
 
@@ -64,9 +56,9 @@
 import { EditIcon } from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
 import { computed, reactive, watchEffect } from "vue";
-import { useRouter } from "vue-router";
 import DatabaseGroupForm from "@/components/DatabaseGroup/DatabaseGroupForm.vue";
 import FeatureAttention from "@/components/FeatureGuard/FeatureAttention.vue";
+import { AddSpecDrawer } from "@/components/Plan";
 import { useDBGroupStore, useProjectByName, featureToRef } from "@/store";
 import {
   databaseGroupNamePrefix,
@@ -75,10 +67,10 @@ import {
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasPermissionToCreateChangeDatabaseIssueInProject } from "@/utils";
-import { generateDatabaseGroupIssueRoute } from "@/utils/databaseGroup/issue";
 
 interface LocalState {
   editing: boolean;
+  showChangeDatabaseDrawer: boolean;
 }
 
 const props = defineProps<{
@@ -87,13 +79,13 @@ const props = defineProps<{
   allowEdit: boolean;
 }>();
 
-const router = useRouter();
 const dbGroupStore = useDBGroupStore();
 const { project } = useProjectByName(
   computed(() => `${projectNamePrefix}${props.projectId}`)
 );
 const state = reactive<LocalState>({
   editing: false,
+  showChangeDatabaseDrawer: false,
 });
 
 const databaseGroupResourceName = computed(() => {
@@ -122,14 +114,4 @@ watchEffect(async () => {
     view: DatabaseGroupView.FULL,
   });
 });
-
-const previewDatabaseGroupIssue = (
-  type: "bb.issue.database.schema.update" | "bb.issue.database.data.update"
-) => {
-  if (!databaseGroup.value) {
-    return;
-  }
-  const issueRoute = generateDatabaseGroupIssueRoute(type, databaseGroup.value);
-  router.push(issueRoute);
-};
 </script>
