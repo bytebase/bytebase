@@ -233,7 +233,6 @@ const handleRenameNode = useDebounceFn(async () => {
   }
 
   if (editingNode.value.node.worksheet) {
-    editingNode.value.node.label = newTitle;
     editingNode.value.node.worksheet.title = newTitle;
     await worksheetV1Store.patchWorksheet(editingNode.value.node.worksheet, [
       "title",
@@ -248,7 +247,6 @@ const handleRenameNode = useDebounceFn(async () => {
         title: newTitle,
       });
     }
-    // TODO(ed): when update title from the tab, also need to update the node label.
 
     cleanup();
   } else {
@@ -518,6 +516,9 @@ const generateNewFolderName = (children: WorsheetFolderNode[]): string => {
   // Find highest numbered folder
   let maxNumber = 0;
   for (const child of children) {
+    if (child.worksheet) {
+      continue;
+    }
     if (child.label === baseName) {
       maxNumber = Math.max(maxNumber, 1);
     } else {

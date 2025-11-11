@@ -143,7 +143,7 @@ const useSheetTreeByView = (
   const treeRelevantSheetData = computed(() => {
     return sheetList.value.map((worksheet) => ({
       name: worksheet.name,
-      // title: worksheet.title,
+      title: worksheet.title,
       folders: worksheet.folders,
     }));
   });
@@ -192,8 +192,8 @@ const useSheetTreeByView = (
     events.emit("on-built", { viewMode });
   }, DEBOUNCE_SEARCH_DELAY);
 
-  // Watch only relevant properties: folder structure and worksheet name/title/folders
-  // No deep watch needed - computed will track changes to name, title, folders automatically
+  // Watch only relevant properties: folder structure and worksheet name/folders
+  // No deep watch needed - computed will track changes to name, folders automatically
   watch([() => folderContext.folders.value, treeRelevantSheetData], () => {
     rebuildTree();
   });
@@ -357,6 +357,7 @@ export const provideSheetContext = () => {
         return;
       }
 
+      // TODO(ed): scroll the the select node.
       selectedKeys.value = [viewContext.getKeyForWorksheet(worksheet)];
 
       for (const path of viewContext.getPathesForWorksheet(worksheet)) {

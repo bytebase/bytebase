@@ -2,7 +2,7 @@
   <div class="menu-item">
     <div class="flex flex-row items-center gap-x-4 justify-between">
       <span>{{ label }}</span>
-      <NSwitch size="small" :value="modelValue" @update:value="handleUpdate" />
+      <NSwitch size="small" :value="value" @update:value="handleUpdate" />
     </div>
   </div>
 </template>
@@ -12,14 +12,14 @@ import { NSwitch } from "naive-ui";
 
 defineProps<{
   label: string;
-  modelValue: boolean;
+  value: boolean;
 }>();
 
 const emit = defineEmits<{
-  "update:modelValue": [value: boolean];
+  "update:value": [value: boolean];
 }>();
 
 const handleUpdate = (val: boolean) => {
-  emit("update:modelValue", val);
+  emit("update:value", val);
 };
 </script>

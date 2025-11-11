@@ -36,7 +36,7 @@
 <script setup lang="tsx">
 import { FunnelIcon } from "lucide-vue-next";
 import { NButton, NDropdown, type DropdownOption } from "naive-ui";
-import { ref, computed, h } from "vue";
+import { ref, computed } from "vue";
 import { SearchBox } from "@/components/v2";
 import { t } from "@/plugins/i18n";
 import { useSheetContext } from "../../Sheet";
@@ -46,52 +46,53 @@ import { SheetTree, DraftTree } from "./SheetList";
 const { filter, filterChanged } = useSheetContext();
 const showDropdown = ref<boolean>(false);
 
-// TODO(ed): use tsx
 const options = computed((): DropdownOption[] => {
   return [
     {
       key: "show-mine",
       type: "render",
-      render: () =>
-        h(FilterMenuItem, {
-          label: t("sheet.filter.show-mine"),
-          modelValue: filter.value.showMine,
-          "onUpdate:modelValue": (val: boolean) =>
-            (filter.value.showMine = val),
-        }),
+      render: () => (
+        <FilterMenuItem
+          label={t("sheet.filter.show-mine")}
+          value={filter.value.showMine}
+          onUpdate:value={(val: boolean) => (filter.value.showMine = val)}
+        />
+      ),
     },
     {
       key: "show-shared",
       type: "render",
-      render: () =>
-        h(FilterMenuItem, {
-          label: t("sheet.filter.show-shared"),
-          modelValue: filter.value.showShared,
-          "onUpdate:modelValue": (val: boolean) =>
-            (filter.value.showShared = val),
-        }),
+      render: () => (
+        <FilterMenuItem
+          label={t("sheet.filter.show-shared")}
+          value={filter.value.showShared}
+          onUpdate:value={(val: boolean) => (filter.value.showShared = val)}
+        />
+      ),
     },
     {
       key: "show-draft",
       type: "render",
-      render: () =>
-        h(FilterMenuItem, {
-          label: t("sheet.filter.show-draft"),
-          modelValue: filter.value.showDraft,
-          "onUpdate:modelValue": (val: boolean) =>
-            (filter.value.showDraft = val),
-        }),
+      render: () => (
+        <FilterMenuItem
+          label={t("sheet.filter.show-draft")}
+          value={filter.value.showDraft}
+          onUpdate:value={(val: boolean) => (filter.value.showDraft = val)}
+        />
+      ),
     },
     {
       key: "only-show-starred",
       type: "render",
-      render: () =>
-        h(FilterMenuItem, {
-          label: t("sheet.filter.only-show-starred"),
-          modelValue: filter.value.onlyShowStarred,
-          "onUpdate:modelValue": (val: boolean) =>
-            (filter.value.onlyShowStarred = val),
-        }),
+      render: () => (
+        <FilterMenuItem
+          label={t("sheet.filter.only-show-starred")}
+          value={filter.value.onlyShowStarred}
+          onUpdate:value={(val: boolean) =>
+            (filter.value.onlyShowStarred = val)
+          }
+        />
+      ),
     },
   ];
 });
