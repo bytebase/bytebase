@@ -11,7 +11,8 @@
 
 <script lang="tsx" setup>
 import { file_google_rpc_error_details } from "@buf/googleapis_googleapis.bufbuild_es/google/rpc/error_details_pb";
-import { createRegistry, fromBinary, toJsonString } from "@bufbuild/protobuf";
+import { createRegistry, toJsonString } from "@bufbuild/protobuf";
+import { AnySchema } from "@bufbuild/protobuf/wkt";
 import dayjs from "dayjs";
 import { ExternalLinkIcon } from "lucide-vue-next";
 import { NButton, NDataTable, type DataTableColumn } from "naive-ui";
@@ -54,7 +55,9 @@ type AuditDataTableColumn = DataTableColumn<AuditLog> & {
 // The registry is used to decode anypb protobuf messages to JSON.
 const registry = createRegistry(
   file_google_rpc_error_details,
-  file_v1_plan_service
+  file_v1_plan_service,
+  AuditDataSchema,
+  SettingSchema
 );
 
 const props = withDefaults(
@@ -188,23 +191,11 @@ const columnList = computed((): AuditDataTableColumn[] => {
         width: 256,
         title: t("audit-log.table.service-data"),
         render: (auditLog) => {
-          return auditLog.serviceData && auditLog.serviceData.typeUrl ? (
+          return auditLog.serviceData ? (
             <JSONStringView
-              jsonString={JSON.stringify(
-                {
-                  "@type": auditLog.serviceData.typeUrl,
-                  ...getServiceDataValue(
-                    auditLog.serviceData.typeUrl,
-                    auditLog.serviceData.value
-                  ),
-                },
-                (_, value) => {
-                  if (typeof value === "bigint") {
-                    return value.toString(); // Convert to string
-                  }
-                  return value;
-                }
-              )}
+              jsonString={toJsonString(AnySchema, auditLog.serviceData, {
+                registry: registry,
+              })}
             />
           ) : (
             "-"
@@ -235,17 +226,6 @@ const columnList = computed((): AuditDataTableColumn[] => {
     ] as AuditDataTableColumn[]
   ).filter((column) => !column.hide);
 });
-
-const getServiceDataValue = (typeUrl: string, value: Uint8Array): any => {
-  switch (typeUrl) {
-    case "type.googleapis.com/bytebase.v1.AuditData":
-      return fromBinary(AuditDataSchema, value);
-    case "type.googleapis.com/bytebase.v1.Setting":
-      return fromBinary(SettingSchema, value);
-    default:
-      return null;
-  }
-};
 
 const getViewLink = (auditLog: AuditLog): string | null => {
   let parsedRequest: any;
