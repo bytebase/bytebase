@@ -2,8 +2,9 @@ import { useDebounceFn } from "@vueuse/core";
 import Emittery from "emittery";
 import { orderBy, isEqual } from "lodash-es";
 import type { TreeOption } from "naive-ui";
+import scrollIntoView from "scroll-into-view-if-needed";
 import type { InjectionKey, Ref, ComputedRef } from "vue";
-import { inject, provide, ref, computed, watch } from "vue";
+import { inject, provide, ref, computed, watch, nextTick } from "vue";
 import { t } from "@/plugins/i18n";
 import {
   pushNotification,
@@ -337,7 +338,7 @@ export const provideSheetContext = () => {
   // This prevents unnecessary re-runs when tab statement/status/etc changes
   watch(
     () => tabStore.currentTab?.worksheet,
-    (worksheetName) => {
+    async (worksheetName) => {
       selectedKeys.value = [];
 
       if (!worksheetName) {
@@ -357,11 +358,22 @@ export const provideSheetContext = () => {
         return;
       }
 
-      // TODO(ed): scroll the the select node.
-      selectedKeys.value = [viewContext.getKeyForWorksheet(worksheet)];
+      const key = viewContext.getKeyForWorksheet(worksheet);
+      selectedKeys.value = [key];
 
+      // Expand all parent folders to make the selected node visible
       for (const path of viewContext.getPathesForWorksheet(worksheet)) {
         expandedKeys.value.add(path);
+      }
+
+      // Scroll the selected node into view
+      await nextTick();
+      const dom = document.querySelector(`[data-item-key="${key}"]`);
+      if (dom) {
+        scrollIntoView(dom, {
+          scrollMode: "if-needed",
+          block: "nearest",
+        });
       }
     },
     { immediate: true }

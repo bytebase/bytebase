@@ -320,6 +320,7 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
   const node = option as WorsheetFolderNode;
 
   return {
+    "data-item-key": node.key,
     onClick(e: MouseEvent) {
       if (
         !isDescendantOf(e.target as Element, ".n-tree-node-content__text") &&
@@ -508,24 +509,33 @@ useEmitteryEventListener(events, "on-built", ({ viewMode }) => {
 
 // Generate unique folder name based on existing children
 // Returns "new folder", "new folder2", "new folder3", etc.
-// TODO(ed): optimize this.
+// Optimized: children are already sorted, so iterate in reverse to find max quickly
 const generateNewFolderName = (children: WorsheetFolderNode[]): string => {
   const baseName = "new folder";
   const regex = /^new folder(\d+)$/;
 
-  // Find highest numbered folder
+  // Since children are sorted alphabetically, iterate in reverse
+  // to find the highest numbered "new folder" variant quickly
   let maxNumber = 0;
-  for (const child of children) {
+  for (let i = children.length - 1; i >= 0; i--) {
+    const child = children[i];
+
+    // Skip worksheets, only check folders
     if (child.worksheet) {
       continue;
     }
-    if (child.label === baseName) {
-      maxNumber = Math.max(maxNumber, 1);
-    } else {
-      const match = child.label.match(regex);
-      if (match) {
-        maxNumber = Math.max(maxNumber, parseInt(match[1], 10));
-      }
+
+    const match = child.label.match(regex);
+    if (match) {
+      // Found highest numbered folder, can exit early
+      maxNumber = parseInt(match[1], 10);
+      break;
+    } else if (child.label === baseName) {
+      maxNumber = 1;
+      break;
+    } else if (child.label < baseName) {
+      // Since sorted, if we're past "new folder" alphabetically, we can stop
+      break;
     }
   }
 
@@ -618,15 +628,24 @@ const updateWorksheetFolders = async (
 };
 
 const replaceExpandedKeys = (oldKey: string, newKey: string) => {
-  for (const path of [...expandedKeys.value.values()]) {
+  const updates: Array<{ oldPath: string; newPath: string }> = [];
+
+  for (const path of expandedKeys.value) {
     if (
       path === oldKey ||
       folderContext.isSubFolder({ parent: oldKey, path, dig: true })
     ) {
-      expandedKeys.value.delete(path);
-      if (newKey) {
-        expandedKeys.value.add(path.replace(oldKey, newKey));
-      }
+      updates.push({
+        oldPath: path,
+        newPath: newKey ? path.replace(oldKey, newKey) : "",
+      });
+    }
+  }
+
+  for (const { oldPath, newPath } of updates) {
+    expandedKeys.value.delete(oldPath);
+    if (newPath) {
+      expandedKeys.value.add(newPath);
     }
   }
 };
@@ -695,19 +714,22 @@ const handleDrop = async ({ node, dragNode }: TreeDropInfo) => {
     return;
   }
 
+  // Check if old parent will be empty BEFORE moving (to avoid stale reference)
+  const shouldCloseOldParent =
+    !draggedNode.worksheet && oldParentNode.children.length === 1;
+
   await updateWorksheetFolders(draggedNode, oldParentKey, parentNode.key);
   if (!draggedNode.worksheet) {
     folderContext.moveFolder(draggedNode.key, newKey);
   }
 
   nextTick(() => {
-    // TODO(ed): how to update keys?
-    // If I call the replaceExpandedKeys, the tree will NOT show the new moved folder,
-    // looks like a bug for the tree node.
+    // Update expanded keys for the moved folder and all its subfolders
     replaceExpandedKeys(draggedNode.key, newKey);
+    // Ensure new parent folder is expanded to show the moved item
     expandedKeys.value.add(parentNode.key);
-    if (oldParentNode.children.length === 1) {
-      // close the folder if it's empty
+    // Close old parent folder if it's now empty
+    if (shouldCloseOldParent) {
       replaceExpandedKeys(oldParentNode.key, "");
     }
   });

@@ -35,7 +35,13 @@ import {
   useTabViewStateStore,
 } from "@/store";
 import { isDescendantOf, useDynamicLocalStorage } from "@/utils";
-import { keyForDraft } from "../common";
+
+interface DraftWorsheetNode extends TreeOption {
+  key: string;
+  label: string;
+  draftId?: string;
+  children?: DraftWorsheetNode[];
+}
 
 const props = defineProps<{
   keyword: string;
@@ -55,12 +61,9 @@ const expandedKeys = useDynamicLocalStorage<Set<string>>(
 // Convert Set to Array once per render cycle instead of spreading in template
 const expandedKeysArray = computed(() => Array.from(expandedKeys.value));
 
-interface DraftWorsheetNode extends TreeOption {
-  key: string;
-  label: string;
-  draftId?: string;
-  children?: DraftWorsheetNode[];
-}
+const keyForDraft = (tab: { id: string }) => {
+  return `bb-worksheet-list-draft-${tab.id}`;
+};
 
 // Extract only tree-relevant properties to avoid rebuilding on unrelated changes
 // (e.g., statement, status, connection changes should NOT trigger rebuild)
@@ -144,6 +147,7 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
 const nodeProps = ({ option }: { option: TreeOption }) => {
   const node = option as DraftWorsheetNode;
   return {
+    "data-item-key": node.key,
     onClick(e: MouseEvent) {
       if (
         !isDescendantOf(e.target as Element, ".n-tree-node-content__text") &&
