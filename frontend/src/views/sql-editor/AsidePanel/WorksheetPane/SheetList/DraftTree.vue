@@ -2,6 +2,7 @@
   <div class="flex flex-col items-stretch gap-y-1 relative worksheet-tree">
     <NTree
       block-line
+      :keyboard="false"
       :data="[treeNode]"
       :multiple="false"
       :show-irrelevant-nodes="false"

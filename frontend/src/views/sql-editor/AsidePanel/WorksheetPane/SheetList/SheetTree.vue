@@ -7,6 +7,7 @@
     <NTree
       v-else
       block-line
+      :keyboard="false"
       :draggable="!editingNode"
       :data="[sheetTree]"
       :multiple="false"
