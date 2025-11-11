@@ -138,6 +138,16 @@ const useSheetTreeByView = (
       .filter((p) => p);
   };
 
+  // Extract only tree-relevant properties to avoid rebuilding on unrelated changes
+  // (e.g., starred, content, visibility changes should NOT trigger rebuild)
+  const treeRelevantSheetData = computed(() => {
+    return sheetList.value.map((worksheet) => ({
+      name: worksheet.name,
+      // title: worksheet.title,
+      folders: worksheet.folders,
+    }));
+  });
+
   const buildTree = (parent: WorsheetFolderNode, worksheets: Worksheet[]) => {
     parent.children = folderContext
       .listSubFolders(parent.key)
@@ -182,13 +192,11 @@ const useSheetTreeByView = (
     events.emit("on-built", { viewMode });
   }, DEBOUNCE_SEARCH_DELAY);
 
-  watch(
-    [() => folderContext.folders.value, () => sheetList.value],
-    () => {
-      rebuildTree();
-    },
-    { deep: true }
-  );
+  // Watch only relevant properties: folder structure and worksheet name/title/folders
+  // No deep watch needed - computed will track changes to name, title, folders automatically
+  watch([() => folderContext.folders.value, treeRelevantSheetData], () => {
+    rebuildTree();
+  });
 
   const fetchSheetList = async (project: string) => {
     isLoading.value = true;
@@ -325,28 +333,30 @@ export const provideSheetContext = () => {
     return worksheet.creator === `users/${me.value.email}`;
   };
 
+  // Only watch the worksheet name, not the entire tab object
+  // This prevents unnecessary re-runs when tab statement/status/etc changes
   watch(
-    () => tabStore.currentTab,
-    (tab) => {
+    () => tabStore.currentTab?.worksheet,
+    (worksheetName) => {
       selectedKeys.value = [];
 
-      if (!tab || !tab.worksheet) {
+      if (!worksheetName) {
         return;
       }
-      const worksheet = worksheetV1Store.getWorksheetByName(tab.worksheet);
+
+      const worksheet = worksheetV1Store.getWorksheetByName(worksheetName);
       if (!worksheet) {
         return;
       }
-      const isCreator = isWorksheetCreator(worksheet);
-      let view: SheetViewMode = "my";
-      if (!isCreator) {
-        view = "shared";
-      }
 
+      const isCreator = isWorksheetCreator(worksheet);
+      const view: SheetViewMode = isCreator ? "my" : "shared";
       const viewContext = views[view];
+
       if (!viewContext) {
         return;
       }
+
       selectedKeys.value = [viewContext.getKeyForWorksheet(worksheet)];
 
       for (const path of viewContext.getPathesForWorksheet(worksheet)) {
@@ -357,7 +367,6 @@ export const provideSheetContext = () => {
   );
 
   const batchUpdateWorksheetFolders = async (worksheets: Worksheet[]) => {
-    console.log("batchUpdateWorksheetFolders", worksheets);
     await worksheetV1Store.batchUpsertWorksheetOrganizers(
       worksheets.map((worksheet) => ({
         organizer: {

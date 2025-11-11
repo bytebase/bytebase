@@ -12,7 +12,7 @@
       :render-label="renderLabel"
       :node-props="nodeProps"
       :selected-keys="selectedKeys"
-      :expanded-keys="[...expandedKeys]"
+      :expanded-keys="expandedKeysArray"
       @update:expanded-keys="(keys: string[]) => expandedKeys = new Set(keys)"
     />
   </div>
@@ -34,7 +34,6 @@ import {
   useCurrentUserV1,
   useTabViewStateStore,
 } from "@/store";
-import { type SQLEditorTab } from "@/types";
 import { isDescendantOf, useDynamicLocalStorage } from "@/utils";
 import { keyForDraft } from "../common";
 
@@ -53,15 +52,26 @@ const expandedKeys = useDynamicLocalStorage<Set<string>>(
   new Set(["/"])
 );
 
+// Convert Set to Array once per render cycle instead of spreading in template
+const expandedKeysArray = computed(() => Array.from(expandedKeys.value));
+
 interface DraftWorsheetNode extends TreeOption {
   key: string;
   label: string;
-  draft?: SQLEditorTab;
+  draftId?: string;
   children?: DraftWorsheetNode[];
 }
 
-const draftList = computed(() => {
-  return tabStore.tabList.filter((tab) => !tab.worksheet);
+// Extract only tree-relevant properties to avoid rebuilding on unrelated changes
+// (e.g., statement, status, connection changes should NOT trigger rebuild)
+const draftTreeData = computed(() => {
+  return tabStore.tabList
+    .filter((tab) => !tab.worksheet)
+    .map((tab) => ({
+      id: tab.id,
+      title: tab.title,
+      worksheet: tab.worksheet, // Track to detect when draft becomes saved
+    }));
 });
 
 const treeNode = computed((): DraftWorsheetNode => {
@@ -69,12 +79,14 @@ const treeNode = computed((): DraftWorsheetNode => {
     isLeaf: false,
     key: "/",
     label: "Draft",
-    children: draftList.value.map((draft) => ({
-      isLeaf: true,
-      key: keyForDraft(draft),
-      label: draft.title,
-      draft,
-    })),
+    children: draftTreeData.value.map((draftData) => {
+      return {
+        isLeaf: true,
+        key: keyForDraft({ id: draftData.id }),
+        label: draftData.title,
+        draftId: draftData.id,
+      };
+    }),
   };
 });
 
@@ -89,7 +101,7 @@ const filterNode = (pattern: string, option: TreeOption) => {
 
 const renderPrefix = ({ option }: { option: TreeOption }) => {
   const node = option as DraftWorsheetNode;
-  if (node.draft) {
+  if (node.draftId) {
     return <FileCodeIcon class="w-4 h-auto text-gray-600" />;
   }
 
@@ -104,7 +116,7 @@ const renderPrefix = ({ option }: { option: TreeOption }) => {
 
 const renderSuffix = ({ option }: { option: TreeOption }) => {
   const node = option as DraftWorsheetNode;
-  if (!node.draft) {
+  if (!node.draftId) {
     return null;
   }
 
@@ -112,9 +124,12 @@ const renderSuffix = ({ option }: { option: TreeOption }) => {
     <XIcon
       class="w-4 h-auto text-gray-600"
       onClick={() => {
-        if (node.draft) {
-          tabStore.removeTab(node.draft);
-          removeViewState(node.draft.id);
+        if (node.draftId) {
+          const draft = tabStore.tabList.find((t) => t.id === node.draftId);
+          if (draft) {
+            tabStore.removeTab(draft);
+          }
+          removeViewState(node.draftId);
         }
       }}
     />
@@ -136,8 +151,8 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
       ) {
         return;
       }
-      if (node.draft) {
-        tabStore.setCurrentTabId(node.draft.id);
+      if (node.draftId) {
+        tabStore.setCurrentTabId(node.draftId);
       } else {
         if (expandedKeys.value.has(node.key)) {
           expandedKeys.value.delete(node.key);
@@ -150,17 +165,19 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
 };
 
 watch(
-  () => tabStore.currentTab,
-  (tab) => {
-    if (!tab) {
-      selectedKeys.value = [];
+  () => ({
+    id: tabStore.currentTab?.id,
+    worksheet: tabStore.currentTab?.worksheet,
+  }),
+  ({ id, worksheet }) => {
+    selectedKeys.value = [];
+    if (!id) {
       return;
     }
-    if (tab.worksheet) {
-      selectedKeys.value = [];
+    if (worksheet) {
       return;
     }
-    const key = keyForDraft(tab);
+    const key = keyForDraft({ id });
     selectedKeys.value = [key];
     expandedKeys.value.add("/");
   },

@@ -17,7 +17,7 @@
       :render-prefix="renderPrefix"
       :render-label="renderLabel"
       :node-props="nodeProps"
-      :expanded-keys="[...expandedKeys]"
+      :expanded-keys="expandedKeysArray"
       :selected-keys="selectedKeys"
       @drop="handleDrop"
       @update:expanded-keys="(keys: string[]) => expandedKeys = new Set(keys)"
@@ -56,30 +56,18 @@
 <script setup lang="tsx">
 import { create } from "@bufbuild/protobuf";
 import { useDebounceFn } from "@vueuse/core";
-import { orderBy } from "lodash-es";
-import {
-  StarIcon,
-  MoreHorizontalIcon,
-  FolderSyncIcon,
-  FolderCodeIcon,
-  FolderMinusIcon,
-  FileCodeIcon,
-  FolderOpenIcon,
-  UsersIcon,
-} from "lucide-vue-next";
 import {
   NTree,
   NInput,
   NDropdown,
   NPopover,
-  NTooltip,
   useDialog,
   type TreeOption,
   type TreeDropInfo,
   type DialogReactive,
 } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { nextTick, watch } from "vue";
+import { nextTick, watch, computed } from "vue";
 import { BBSpin } from "@/bbkit";
 import { HighlightLabelText } from "@/components/v2";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
@@ -90,7 +78,6 @@ import {
   useWorkSheetStore,
   pushNotification,
   useTabViewStateStore,
-  useUserStore,
 } from "@/store";
 import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import {
@@ -109,6 +96,7 @@ import {
   revealWorksheets,
 } from "@/views/sql-editor/Sheet";
 import { useSQLEditorContext } from "@/views/sql-editor/context";
+import { TreeNodePrefix, TreeNodeSuffix } from "./TreeNodeRenders";
 import { useDropdown, type DropdownOptionType } from "./dropdown";
 
 const props = defineProps<{
@@ -138,7 +126,6 @@ const {
 const $dialog = useDialog();
 const { removeViewState } = useTabViewStateStore();
 const tabStore = useSQLEditorTabStore();
-const userStore = useUserStore();
 
 const {
   context: contextMenuContext,
@@ -146,6 +133,9 @@ const {
   handleShow: handleContextMenuShow,
   handleClickOutside: handleContextMenuClickOutside,
 } = useDropdown();
+
+// Convert Set to Array once per render cycle instead of spreading in template
+const expandedKeysArray = computed(() => Array.from(expandedKeys.value));
 
 watch(
   isInitialized,
@@ -196,99 +186,25 @@ const filterNode = (pattern: string, option: TreeOption) => {
 
 const renderPrefix = ({ option }: { option: TreeOption }) => {
   const node = option as WorsheetFolderNode;
-  if (node.worksheet) {
-    return <FileCodeIcon class="w-4 h-auto text-gray-600" />;
-  }
-
-  if (expandedKeys.value.has(node.key)) {
-    return <FolderOpenIcon class="w-4 h-auto text-gray-600" />;
-  }
-  if (node.key === folderContext.rootPath.value && props.view === "shared") {
-    return <FolderSyncIcon class="w-4 h-auto text-gray-600" />;
-  }
-  if (node.empty) {
-    return <FolderMinusIcon class="w-4 h-auto text-gray-600" />;
-  }
-  return <FolderCodeIcon class="w-4 h-auto text-gray-600" />;
-};
-
-const visibilityDisplayName = (visibility: Worksheet_Visibility) => {
-  switch (visibility) {
-    case Worksheet_Visibility.PRIVATE:
-      return t("sql-editor.private");
-    case Worksheet_Visibility.PROJECT_READ:
-      return t("sql-editor.project-read");
-    case Worksheet_Visibility.PROJECT_WRITE:
-      return t("sql-editor.project-write");
-    default:
-      return "";
-  }
-};
-
-const creatorForSheet = (sheet: Worksheet) => {
-  return userStore.getUserByIdentifier(sheet.creator)?.title ?? sheet.creator;
-};
-
-const renderShareIcon = (worksheet: Worksheet) => {
-  if (
-    worksheet.visibility !== Worksheet_Visibility.PROJECT_READ &&
-    worksheet.visibility !== Worksheet_Visibility.PROJECT_WRITE
-  ) {
-    return null;
-  }
-
   return (
-    <NTooltip>
-      {{
-        trigger: () => <UsersIcon class="w-4 text-gray-400" />,
-        default: () => {
-          return (
-            <div>
-              <div>
-                {t("common.visibility")}
-                {": "}
-                {visibilityDisplayName(worksheet.visibility)}
-              </div>
-              {isWorksheetCreator(worksheet) ? null : (
-                <div>
-                  {t("common.creator")}
-                  {": "}
-                  {creatorForSheet(worksheet)}
-                </div>
-              )}
-            </div>
-          );
-        },
-      }}
-    </NTooltip>
+    <TreeNodePrefix
+      node={node}
+      expandedKeys={expandedKeys.value}
+      rootPath={folderContext.rootPath.value}
+      view={props.view}
+    />
   );
 };
 
 const renderSuffix = ({ option }: { option: TreeOption }) => {
   const node = option as WorsheetFolderNode;
-  if (!node.worksheet) {
-    return (
-      <MoreHorizontalIcon
-        class="w-4 h-auto text-gray-600"
-        onClick={(e) => handleContextMenuShow(e, node)}
-      />
-    );
-  }
-
   return (
-    <div class="inline-flex gap-1">
-      {renderShareIcon(node.worksheet)}
-      <StarIcon
-        class={`w-4 h-auto text-gray-400 ${node.worksheet.starred ? "text-yellow-400" : ""}`}
-        onClick={() =>
-          node.worksheet && handleWorksheetToggleStar(node.worksheet)
-        }
-      />
-      <MoreHorizontalIcon
-        class="w-4 h-auto text-gray-600"
-        onClick={(e) => handleContextMenuShow(e, node)}
-      />
-    </div>
+    <TreeNodeSuffix
+      node={node}
+      isWorksheetCreator={isWorksheetCreator}
+      onContextMenuShow={handleContextMenuShow}
+      onToggleStar={handleWorksheetToggleStar}
+    />
   );
 };
 
@@ -317,6 +233,7 @@ const handleRenameNode = useDebounceFn(async () => {
   }
 
   if (editingNode.value.node.worksheet) {
+    editingNode.value.node.label = newTitle;
     editingNode.value.node.worksheet.title = newTitle;
     await worksheetV1Store.patchWorksheet(editingNode.value.node.worksheet, [
       "title",
@@ -331,6 +248,7 @@ const handleRenameNode = useDebounceFn(async () => {
         title: newTitle,
       });
     }
+    // TODO(ed): when update title from the tab, also need to update the node label.
 
     cleanup();
   } else {
@@ -590,6 +508,29 @@ useEmitteryEventListener(events, "on-built", ({ viewMode }) => {
   handleFocusInput();
 });
 
+// Generate unique folder name based on existing children
+// Returns "new folder", "new folder2", "new folder3", etc.
+// TODO(ed): optimize this.
+const generateNewFolderName = (children: WorsheetFolderNode[]): string => {
+  const baseName = "new folder";
+  const regex = /^new folder(\d+)$/;
+
+  // Find highest numbered folder
+  let maxNumber = 0;
+  for (const child of children) {
+    if (child.label === baseName) {
+      maxNumber = Math.max(maxNumber, 1);
+    } else {
+      const match = child.label.match(regex);
+      if (match) {
+        maxNumber = Math.max(maxNumber, parseInt(match[1], 10));
+      }
+    }
+  }
+
+  return maxNumber === 0 ? baseName : `${baseName}${maxNumber + 1}`;
+};
+
 const handleContextMenuSelect = async (key: DropdownOptionType) => {
   if (!contextMenuContext.node) {
     return;
@@ -621,20 +562,7 @@ const handleContextMenuSelect = async (key: DropdownOptionType) => {
       break;
     case "addfolder":
       expandedKeys.value.add(contextMenuContext.node.key);
-      let label = "new folder";
-      const list = orderBy(
-        contextMenuContext.node.children.map((child) => {
-          if (child.label === label) {
-            return 1;
-          }
-          const match = child.label.match(/new folder(\d+)/);
-          return match ? parseInt(match[1], 10) : 0;
-        })
-      );
-      const count = list.slice(-1)[0] ?? 0;
-      if (count) {
-        label = `${label}${count + 1}`;
-      }
+      const label = generateNewFolderName(contextMenuContext.node.children);
       const newPath = folderContext.addFolder(
         `${contextMenuContext.node.key}/${label}`
       );
@@ -642,7 +570,7 @@ const handleContextMenuSelect = async (key: DropdownOptionType) => {
         node: {
           key: newPath,
           editable: true,
-          label: label,
+          label,
           children: [],
         },
         rawLabel: label,

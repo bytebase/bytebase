@@ -1,4 +1,4 @@
-import { sortBy, uniq } from "lodash-es";
+import { sortBy } from "lodash-es";
 import { computed } from "vue";
 import { useCurrentUserV1 } from "@/store";
 import { useDynamicLocalStorage } from "@/utils";
@@ -15,7 +15,7 @@ export const useFolderByView = (viewMode: SheetViewMode) => {
     new Set()
   );
 
-  const folders = computed(() => sortBy(uniq([...localCache.value])));
+  const folders = computed(() => sortBy([...localCache.value]));
 
   // Must not end with "/" for non-root, for example, "xxx/" is not valid
   // Must starts with "/", like "/xxx"
@@ -52,15 +52,12 @@ export const useFolderByView = (viewMode: SheetViewMode) => {
     dig: boolean;
   }) => {
     const parentPrefix = `${parent}/`;
-    // if (parent === "/") {
-    //   parentPrefix = parent;
-    // }
-
     return (
-      // ensure not self (specially for "/")
-      // path !== parentPrefix &&
-      // ensure is subfolder
-      path.startsWith(parentPrefix) && dig
+      // ensure not self
+      path !== parentPrefix &&
+        // ensure is subfolder
+        path.startsWith(parentPrefix) &&
+        dig
         ? true
         : !path.replace(parentPrefix, "").includes("/")
     );
