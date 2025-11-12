@@ -29,9 +29,9 @@ type NamingTableNoKeywordAdvisor struct {
 
 // Check checks for table naming convention without keyword.
 func (*NamingTableNoKeywordAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	tree, ok := checkCtx.AST.(antlr.Tree)
+	stmtList, ok := checkCtx.AST.([]*plsqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to Tree")
+		return nil, errors.Errorf("failed to convert to ParseResult")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
@@ -42,7 +42,11 @@ func (*NamingTableNoKeywordAdvisor) Check(_ context.Context, checkCtx advisor.Co
 	rule := NewNamingTableNoKeywordRule(level, string(checkCtx.Rule.Type), checkCtx.CurrentDatabase)
 	checker := NewGenericChecker([]Rule{rule})
 
-	antlr.ParseTreeWalkerDefault.Walk(checker, tree)
+	for _, stmtNode := range stmtList {
+		rule.SetBaseLine(stmtNode.BaseLine)
+		checker.SetBaseLine(stmtNode.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtNode.Tree)
+	}
 
 	return checker.GetAdviceList()
 }
@@ -91,7 +95,7 @@ func (r *NamingTableNoKeywordRule) handleCreateTable(ctx *parser.Create_tableCon
 			r.level,
 			advisor.NameIsKeywordIdentifier.Int32(),
 			fmt.Sprintf("Table name %q is a keyword identifier and should be avoided.", tableName),
-			common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+			common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
 		)
 	}
 }
@@ -106,7 +110,7 @@ func (r *NamingTableNoKeywordRule) handleAlterTableProperties(ctx *parser.Alter_
 			r.level,
 			advisor.NameIsKeywordIdentifier.Int32(),
 			fmt.Sprintf("Table name %q is a keyword identifier and should be avoided.", tableName),
-			common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+			common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
 		)
 	}
 }

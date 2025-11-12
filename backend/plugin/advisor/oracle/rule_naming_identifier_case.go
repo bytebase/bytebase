@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 var (
@@ -29,9 +30,9 @@ type NamingIdentifierCaseAdvisor struct {
 
 // Check checks for identifier case.
 func (*NamingIdentifierCaseAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	tree, ok := checkCtx.AST.(antlr.Tree)
+	stmtList, ok := checkCtx.AST.([]*plsqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to Tree")
+		return nil, errors.Errorf("failed to convert to ParseResult")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
@@ -46,7 +47,11 @@ func (*NamingIdentifierCaseAdvisor) Check(_ context.Context, checkCtx advisor.Co
 	rule := NewNamingIdentifierCaseRule(level, string(checkCtx.Rule.Type), checkCtx.CurrentDatabase, payload.Upper)
 	checker := NewGenericChecker([]Rule{rule})
 
-	antlr.ParseTreeWalkerDefault.Walk(checker, tree)
+	for _, stmtNode := range stmtList {
+		rule.SetBaseLine(stmtNode.BaseLine)
+		checker.SetBaseLine(stmtNode.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtNode.Tree)
+	}
 
 	return checker.GetAdviceList()
 }
@@ -94,7 +99,7 @@ func (r *NamingIdentifierCaseRule) handleIDExpression(ctx *parser.Id_expressionC
 				r.level,
 				advisor.NamingCaseMismatch.Int32(),
 				fmt.Sprintf("Identifier %q should be upper case", identifier),
-				common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+				common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
 			)
 		}
 	} else {
@@ -103,7 +108,7 @@ func (r *NamingIdentifierCaseRule) handleIDExpression(ctx *parser.Id_expressionC
 				r.level,
 				advisor.NamingCaseMismatch.Int32(),
 				fmt.Sprintf("Identifier %q should be lower case", identifier),
-				common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+				common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
 			)
 		}
 	}

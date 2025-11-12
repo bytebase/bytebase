@@ -17,10 +17,18 @@ func init() {
 }
 
 // SplitSQL splits the given SQL statement into multiple SQL statements.
+// TODO(zp): Consolidate with split logic in ParsePLSQL?
 func SplitSQL(statement string) ([]base.SingleSQL, error) {
-	tree, tokens, err := ParsePLSQL(statement)
+	tree, stream, err := ParsePLSQLForStringsManipulation(statement)
 	if err != nil {
 		return nil, err
+	}
+	if tree == nil {
+		return nil, nil
+	}
+	tokens, ok := stream.(*antlr.CommonTokenStream)
+	if !ok {
+		return nil, nil
 	}
 
 	byteOffsetStart := 0
@@ -87,9 +95,16 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 }
 
 func SplitSQLForCompletion(statement string) ([]base.SingleSQL, error) {
-	tree, tokens, err := ParsePLSQL(statement)
+	tree, stream, err := ParsePLSQLForStringsManipulation(statement)
 	if err != nil {
 		return nil, err
+	}
+	if tree == nil {
+		return nil, nil
+	}
+	tokens, ok := stream.(*antlr.CommonTokenStream)
+	if !ok {
+		return nil, nil
 	}
 
 	var result []base.SingleSQL

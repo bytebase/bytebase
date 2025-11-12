@@ -17,9 +17,9 @@ func init() {
 
 func extractChangedResources(currentDatabase string, _ string, dbSchema *model.DatabaseSchema, asts any, statement string) (*base.ChangeSummary, error) {
 	// currentDatabase is the same as currentSchema for Oracle.
-	tree, ok := asts.(antlr.Tree)
+	results, ok := asts.([]*ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert ast to antlr.Tree")
+		return nil, errors.Errorf("failed to convert ast to []*ParseResult, got %T", asts)
 	}
 
 	changedResources := model.NewChangedResources(dbSchema)
@@ -30,7 +30,9 @@ func extractChangedResources(currentDatabase string, _ string, dbSchema *model.D
 		statement:        statement,
 	}
 
-	antlr.ParseTreeWalkerDefault.Walk(l, tree)
+	for _, result := range results {
+		antlr.ParseTreeWalkerDefault.Walk(l, result.Tree)
+	}
 
 	return &base.ChangeSummary{
 		ChangedResources: changedResources,

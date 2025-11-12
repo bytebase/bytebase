@@ -223,10 +223,18 @@ func addLimitFor12cAndLater(statement string, limit int) string {
 // addFetchNextClause adds a FETCH NEXT clause to a SELECT statement using AST parsing.
 // This provides more precise placement of the limit clause compared to simple string wrapping.
 func addFetchNextClause(statement string, limitCount int) (string, error) {
-	tree, stream, err := plsqlparser.ParsePLSQL(statement)
+	results, err := plsqlparser.ParsePLSQL(statement)
 	if err != nil {
 		return "", err
 	}
+	if len(results) == 0 {
+		return "", errors.New("no parse results")
+	}
+	if len(results) > 1 {
+		return "", errors.Errorf("expected single statement, got %d statements", len(results))
+	}
+	tree := results[0].Tree
+	stream := results[0].Tokens
 
 	listener := &plsqlRewriter{
 		limitCount:        limitCount,
@@ -313,10 +321,18 @@ func (r *plsqlRewriter) overrideFetchClause(fetchClause plsql.IFetch_clauseConte
 // For Oracle, we think the statement like "SELECT xxx FROM DUAL" does not need a limit clause.
 // More details, xxx can not be a subquery.
 func skipAddLimit(stmt string) (bool, error) {
-	tree, _, err := plsqlparser.ParsePLSQL(stmt)
+	results, err := plsqlparser.ParsePLSQL(stmt)
 	if err != nil {
 		return false, err
 	}
+	if len(results) == 0 {
+		return false, nil
+	}
+	// Multiple statements should not skip limit
+	if len(results) > 1 {
+		return false, nil
+	}
+	tree := results[0].Tree
 
 	selectStatement := extractSimpleSelectStatement(tree)
 	if selectStatement == nil {

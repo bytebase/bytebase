@@ -57,10 +57,17 @@ func (q *querySpanExtractor) getDatabaseMetadata(schema string) (*model.Database
 func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string) (*base.QuerySpan, error) {
 	q.ctx = ctx
 
-	tree, _, err := ParsePLSQL(statement)
+	parseResults, err := ParsePLSQL(statement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse statement: %s", statement)
 	}
+	if len(parseResults) == 0 {
+		return nil, nil
+	}
+	if len(parseResults) > 1 {
+		return nil, errors.Errorf("query span extraction only supports single statement, got %d statements", len(parseResults))
+	}
+	tree := parseResults[0].Tree
 	if tree == nil {
 		return nil, nil
 	}

@@ -28,9 +28,9 @@ type ColumnCommentConventionAdvisor struct {
 }
 
 func (*ColumnCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	tree, ok := checkCtx.AST.(antlr.Tree)
+	stmtList, ok := checkCtx.AST.([]*plsqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to Tree")
+		return nil, errors.Errorf("failed to convert to ParseResult")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
@@ -45,7 +45,11 @@ func (*ColumnCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor
 	rule := NewColumnCommentConventionRule(level, string(checkCtx.Rule.Type), checkCtx.CurrentDatabase, payload, checkCtx.ClassificationConfig)
 	checker := NewGenericChecker([]Rule{rule})
 
-	antlr.ParseTreeWalkerDefault.Walk(checker, tree)
+	for _, stmtNode := range stmtList {
+		rule.SetBaseLine(stmtNode.BaseLine)
+		checker.SetBaseLine(stmtNode.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtNode.Tree)
+	}
 
 	return checker.GetAdviceList()
 }
@@ -105,8 +109,6 @@ func (r *ColumnCommentConventionRule) OnExit(_ antlr.ParserRuleContext, nodeType
 		r.handleCreateTableExit()
 	case "Add_column_clause":
 		r.handleAddColumnClauseExit()
-	case "Sql_script":
-		r.handleSQLScriptExit()
 	default:
 	}
 	return nil
@@ -130,7 +132,7 @@ func (r *ColumnCommentConventionRule) handleColumnDefinition(ctx *parser.Column_
 	}
 	columnName := fmt.Sprintf(`%s.%s`, r.tableName, normalizeIdentifier(ctx.Column_name(), r.currentDatabase))
 	r.columnNames = append(r.columnNames, columnName)
-	r.columnLine[columnName] = ctx.GetStart().GetLine()
+	r.columnLine[columnName] = r.baseLine + ctx.GetStart().GetLine()
 }
 
 func (r *ColumnCommentConventionRule) handleAlterTable(ctx *parser.Alter_tableContext) {
@@ -150,7 +152,9 @@ func (r *ColumnCommentConventionRule) handleCommentOnColumn(ctx *parser.Comment_
 	r.columnComment[columnName] = plsqlparser.NormalizeQuotedString(ctx.Quoted_string())
 }
 
-func (r *ColumnCommentConventionRule) handleSQLScriptExit() {
+// GetAdviceList returns the advice list.
+// We override this to perform final checks after all statements have been processed.
+func (r *ColumnCommentConventionRule) GetAdviceList() ([]*storepb.Advice, error) {
 	for _, columnName := range r.columnNames {
 		comment, ok := r.columnComment[columnName]
 		if !ok || comment == "" {
@@ -183,4 +187,5 @@ func (r *ColumnCommentConventionRule) handleSQLScriptExit() {
 			}
 		}
 	}
+	return r.BaseRule.GetAdviceList()
 }

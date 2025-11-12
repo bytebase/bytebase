@@ -43,13 +43,51 @@ func TestPLSQLParser(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		tree, _, err := ParsePLSQL(test.statement)
-		_, ok := tree.(*parser.Sql_scriptContext)
+		results, err := ParsePLSQL(test.statement)
 		if test.errorMessage == "" {
-			require.True(t, ok)
 			require.NoError(t, err)
+			require.NotEmpty(t, results)
+			_, ok := results[0].Tree.(*parser.Sql_scriptContext)
+			require.True(t, ok)
 		} else {
 			require.EqualError(t, err, test.errorMessage)
+		}
+	}
+}
+
+func TestPLSQLParser_MultipleStatements(t *testing.T) {
+	tests := []struct {
+		statement     string
+		expectedCount int   // Number of individual statements
+		expectedLines []int // BaseLine for each result
+	}{
+		{
+			statement:     "SELECT * FROM t1;",
+			expectedCount: 1,
+			expectedLines: []int{0},
+		},
+		{
+			statement: `SELECT * FROM t1;
+SELECT * FROM t2;`,
+			expectedCount: 2,
+			expectedLines: []int{0, 1},
+		},
+		{
+			statement: `SELECT * FROM t1;
+SELECT * FROM t2;
+INSERT INTO t3 VALUES (1, 2);`,
+			expectedCount: 3,
+			expectedLines: []int{0, 1, 2},
+		},
+	}
+
+	for _, test := range tests {
+		results, err := ParsePLSQL(test.statement)
+		require.NoError(t, err)
+		require.Equal(t, test.expectedCount, len(results), "Statement: %s", test.statement)
+
+		for i, result := range results {
+			require.Equal(t, test.expectedLines[i], result.BaseLine, "Statement %d", i+1)
 		}
 	}
 }

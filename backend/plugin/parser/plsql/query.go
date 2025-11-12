@@ -14,17 +14,25 @@ func init() {
 
 // validateQuery validates the SQL statement for SQL editor.
 func validateQuery(statement string) (bool, bool, error) {
-	tree, _, err := ParsePLSQL(statement)
+	results, err := ParsePLSQL(statement)
 	if err != nil {
 		return false, false, err
 	}
+	if len(results) == 0 {
+		return false, false, nil
+	}
+
+	// Validate all statements, not just the first one
 	l := &queryValidateListener{
 		validate: true,
 	}
-	antlr.ParseTreeWalkerDefault.Walk(l, tree)
-	if !l.validate {
-		return false, false, nil
+	for _, result := range results {
+		antlr.ParseTreeWalkerDefault.Walk(l, result.Tree)
+		if !l.validate {
+			return false, false, nil
+		}
 	}
+
 	return true, true, nil
 }
 
