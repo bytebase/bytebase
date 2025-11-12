@@ -17,8 +17,9 @@ export const useFolderByView = (viewMode: SheetViewMode) => {
 
   const folders = computed(() => sortBy([...localCache.value]));
 
-  // Must not end with "/" for non-root, for example, "xxx/" is not valid
-  // Must starts with "/", like "/xxx"
+  // A valid folder path should be like "/xxx"
+  // It must not end with "/", for example, "xxx/" is not valid
+  // It must starts with "/", like "/xxx"
   const ensureFolderPath = (path: string) => {
     let p = path;
     while (p.startsWith("/")) {
@@ -98,8 +99,8 @@ export const useFolderByView = (viewMode: SheetViewMode) => {
     }
   };
 
-  const mergeFolders = (pathes: string[]) => {
-    for (const folder of pathes) {
+  const mergeFolders = (pathes: Set<string>) => {
+    for (const folder of pathes.values()) {
       const validPath = ensureFolderPath(folder);
       localCache.value.add(validPath);
     }

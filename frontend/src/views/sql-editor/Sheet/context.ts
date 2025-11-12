@@ -105,16 +105,13 @@ const useSheetTreeByView = (
 
   const getPathesForWorksheet = (worksheet: Worksheet): string[] => {
     const pathes = [folderContext.rootPath.value];
-    for (let i = 0; i < worksheet.folders.length; i++) {
-      pathes.push(
-        folderContext.ensureFolderPath(
-          [
-            folderContext.rootPath.value,
-            ...worksheet.folders.slice(0, i + 1),
-          ].join("/")
-        )
-      );
+    let currentPath = folderContext.rootPath.value;
+
+    for (const folder of worksheet.folders) {
+      currentPath = folderContext.ensureFolderPath(`${currentPath}/${folder}`);
+      pathes.push(currentPath);
     }
+
     return pathes;
   };
 
@@ -149,7 +146,10 @@ const useSheetTreeByView = (
     }));
   });
 
-  const buildTree = (parent: WorsheetFolderNode, worksheets: Worksheet[]) => {
+  const buildTree = (
+    parent: WorsheetFolderNode,
+    worksheetsByFolder: Map<string, Worksheet[]>
+  ) => {
     parent.children = folderContext
       .listSubFolders(parent.key)
       .map((folder) => ({
@@ -160,14 +160,16 @@ const useSheetTreeByView = (
         editable: true,
       }));
 
+    let empty = true;
     for (const childNode of parent.children) {
-      buildTree(childNode, worksheets);
+      const subtree = buildTree(childNode, worksheetsByFolder);
+      if (!subtree.empty) {
+        empty = false;
+      }
     }
 
     const sheets = orderBy(
-      worksheets.filter(
-        (worksheet) => getPwdForWorksheet(worksheet) === parent.key
-      ),
+      worksheetsByFolder.get(parent.key) || [],
       (item) => item.title
     ).map((worksheet) => {
       return {
@@ -181,18 +183,23 @@ const useSheetTreeByView = (
     });
 
     parent.children.push(...sheets);
-
-    if (sheets.length === 0) {
-      parent.empty = parent.children.every((child) => child.empty);
-    }
+    parent.empty = sheets.length === 0 && empty;
 
     return parent;
   };
 
-  const folderTree = computed(() => buildTree(getRootTreeNode(), []));
+  const folderTree = computed(() => buildTree(getRootTreeNode(), new Map()));
 
   const rebuildTree = useDebounceFn(() => {
-    sheetTree.value = buildTree(getRootTreeNode(), sheetList.value);
+    const worksheetsByFolder = new Map<string, Worksheet[]>();
+    for (const worksheet of sheetList.value) {
+      const pwd = getPwdForWorksheet(worksheet);
+      const existing = worksheetsByFolder.get(pwd) || [];
+      existing.push(worksheet);
+      worksheetsByFolder.set(pwd, existing);
+    }
+
+    sheetTree.value = buildTree(getRootTreeNode(), worksheetsByFolder);
     events.emit("on-built", { viewMode });
   }, DEBOUNCE_SEARCH_DELAY);
 
@@ -228,7 +235,7 @@ const useSheetTreeByView = (
           folderPathes.add(path);
         }
       }
-      folderContext.mergeFolders([...folderPathes]);
+      folderContext.mergeFolders(folderPathes);
       rebuildTree();
 
       isInitialized.value = true;
