@@ -296,6 +296,8 @@ func TestConvertDatabaseSchemaToSDL(t *testing.T) {
 					require.Contains(t, result, "product_summary_mv")
 					require.Contains(t, result, "COMMENT ON MATERIALIZED VIEW")
 					require.Contains(t, result, "Summary of products")
+				default:
+					require.Equal(t, tt.expectedSDL, result)
 				}
 			}
 		})
