@@ -56,6 +56,9 @@ func (x *WorkspaceProfileSetting) Equal(y *WorkspaceProfileSetting) bool {
 	if p, q := x.InactiveSessionTimeout, y.InactiveSessionTimeout; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
 		return false
 	}
+	if x.EnableAuditLogStdout != y.EnableAuditLogStdout {
+		return false
+	}
 	return true
 }
 

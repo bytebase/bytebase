@@ -214,9 +214,64 @@ func createAuditLogConnect(ctx context.Context, request, response any, method st
 		if err := storage.CreateAuditLog(createAuditLogCtx, p); err != nil {
 			return err
 		}
+
+		// Log audit event to stdout using slog (if enabled)
+		if profile.RuntimeEnableAuditLogStdout.Load() {
+			logAuditToStdout(ctx, p)
+		}
 	}
 
 	return nil
+}
+
+// logAuditToStdout writes audit log events to stdout using Go's standard slog library.
+// Output format is controlled by the global slog handler (JSON in production, text in dev).
+// Logs include a "log_type": "audit" field to distinguish from application logs.
+// This is a best-effort operation - errors are not returned to avoid failing the audit flow.
+func logAuditToStdout(ctx context.Context, p *storepb.AuditLog) {
+	attrs := []slog.Attr{
+		slog.String("log_type", "audit"),
+		slog.String("parent", p.Parent),
+		slog.String("method", p.Method),
+	}
+
+	if p.Resource != "" {
+		attrs = append(attrs, slog.String("resource", p.Resource))
+	}
+	if p.User != "" {
+		attrs = append(attrs, slog.String("user", p.User))
+	}
+
+	if p.Status != nil {
+		attrs = append(attrs, slog.Int("status_code", int(p.Status.Code)))
+		if p.Status.Message != "" {
+			attrs = append(attrs, slog.String("status_message", p.Status.Message))
+		}
+	}
+
+	if p.Latency != nil {
+		attrs = append(attrs,
+			slog.Int64("latency_ms", p.Latency.AsDuration().Milliseconds()),
+		)
+	}
+
+	if p.RequestMetadata != nil {
+		if p.RequestMetadata.CallerIp != "" {
+			attrs = append(attrs, slog.String("client_ip", p.RequestMetadata.CallerIp))
+		}
+		if p.RequestMetadata.CallerSuppliedUserAgent != "" {
+			attrs = append(attrs, slog.String("user_agent", p.RequestMetadata.CallerSuppliedUserAgent))
+		}
+	}
+
+	// Include audit severity as an attribute (not as slog level)
+	// Audit logs are always logged at INFO level - they represent business events, not system health
+	// The severity field helps categorize the audit event itself
+	if p.Severity != storepb.AuditLog_SEVERITY_UNSPECIFIED {
+		attrs = append(attrs, slog.String("severity", p.Severity.String()))
+	}
+
+	slog.LogAttrs(ctx, slog.LevelInfo, p.Method, attrs...)
 }
 
 func getRequestResource(request any) string {
@@ -278,15 +333,13 @@ func getRequestString(request any) (string, error) {
 		}
 		switch r := request.(type) {
 		case *v1pb.ExportRequest:
-			r = proto.CloneOf(r)
-			r.Password = maskedString
-			return r
+			return redactExportRequest(r)
 		case *v1pb.CreateUserRequest:
 			return redactCreateUserRequest(r)
 		case *v1pb.UpdateUserRequest:
 			return redactUpdateUserRequest(r)
 		case *v1pb.LoginRequest:
-			return redactLoginRequest(proto.CloneOf(r))
+			return redactLoginRequest(r)
 		case *v1pb.CreateInstanceRequest:
 			r.Instance = redactInstance(r.Instance)
 			return r
@@ -355,10 +408,24 @@ func getResponseString(response any) (string, error) {
 	return string(b), nil
 }
 
+func redactExportRequest(r *v1pb.ExportRequest) *v1pb.ExportRequest {
+	if r == nil {
+		return nil
+	}
+	r = proto.CloneOf(r)
+	if r.Password != "" {
+		r.Password = maskedString
+	}
+	return r
+}
+
 func redactLoginRequest(r *v1pb.LoginRequest) *v1pb.LoginRequest {
 	if r == nil {
 		return nil
 	}
+
+	// Clone to avoid mutating original
+	r = proto.CloneOf(r)
 
 	// Mask sensitive fields.
 	if r.Password != "" {

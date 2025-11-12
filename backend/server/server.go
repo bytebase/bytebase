@@ -28,6 +28,7 @@ import (
 	"github.com/bytebase/bytebase/backend/demo"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/runner/approval"
@@ -247,6 +248,19 @@ func (s *Server) Run(ctx context.Context, port int) error {
 	s.runnerWG.Add(1)
 	mmm := monitor.NewMemoryMonitor(s.profile)
 	go mmm.Run(ctx, &s.runnerWG)
+
+	// Check workspace setting and set audit logger runtime flag
+	workspaceProfile, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	if err == nil && workspaceProfile.GetEnableAuditLogStdout() {
+		// Validate license before enabling (prevents usage after license downgrade/expiry)
+		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_AUDIT_LOG); err != nil {
+			slog.Warn("audit logging enabled in workspace settings but license insufficient, keeping disabled",
+				log.BBError(err))
+		} else {
+			s.profile.RuntimeEnableAuditLogStdout.Store(true)
+			slog.Info("audit logging to stdout enabled via workspace setting")
+		}
+	}
 
 	address := fmt.Sprintf(":%d", port)
 	listener, err := net.Listen("tcp", address)
