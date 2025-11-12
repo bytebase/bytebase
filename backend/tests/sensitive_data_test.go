@@ -186,7 +186,7 @@ func TestSensitiveData(t *testing.T) {
 	a.NotNil(syntaxErr)
 	a.NotNil(syntaxErr.StartPosition)
 	a.Equal(int32(1), syntaxErr.StartPosition.Line)
-	a.Greater(syntaxErr.StartPosition.Column, int32(0))
+	a.Equal(int32(14), syntaxErr.StartPosition.Column)
 
 	sheetResp, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
 		Parent: ctl.project.Name,
