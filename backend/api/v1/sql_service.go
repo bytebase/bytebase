@@ -255,7 +255,6 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 						CommandType: qe.commandType,
 					},
 				}
-
 			}
 		} else if syntaxErr, ok := queryErr.(*parserbase.SyntaxError); ok {
 			results[len(results)-1].DetailedError = &v1pb.QueryResult_SyntaxError_{
@@ -264,7 +263,6 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 				},
 			}
 		}
-
 	}
 
 	slog.Debug("request finished",

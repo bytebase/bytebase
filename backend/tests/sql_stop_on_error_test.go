@@ -75,18 +75,20 @@ func TestSQLQueryStopOnError(t *testing.T) {
 	ctl := &controller{}
 	ctx, err := ctl.StartServerWithExternalPg(ctx)
 	a.NoError(err)
-	defer ctl.Close(ctx)
+	t.Cleanup(func() {
+		ctl.Close(ctx)
+	})
 
 	mysqlContainer, err := getMySQLContainer(ctx)
-	defer func() {
+	t.Cleanup(func() {
 		mysqlContainer.Close(ctx)
-	}()
+	})
 	a.NoError(err)
 
 	pgContainer, err := getPgContainer(ctx)
-	defer func() {
+	t.Cleanup(func() {
 		pgContainer.Close(ctx)
-	}()
+	})
 	a.NoError(err)
 
 	mysqlInstanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
@@ -117,6 +119,7 @@ func TestSQLQueryStopOnError(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			a := require.New(t)
 
 			var instance *v1pb.Instance
@@ -217,18 +220,20 @@ func TestSQLAdminExecuteStopOnError(t *testing.T) {
 	ctl := &controller{}
 	ctx, err := ctl.StartServerWithExternalPg(ctx)
 	a.NoError(err)
-	defer ctl.Close(ctx)
+	t.Cleanup(func() {
+		ctl.Close(ctx)
+	})
 
 	mysqlContainer, err := getMySQLContainer(ctx)
-	defer func() {
+	t.Cleanup(func() {
 		mysqlContainer.Close(ctx)
-	}()
+	})
 	a.NoError(err)
 
 	pgContainer, err := getPgContainer(ctx)
-	defer func() {
+	t.Cleanup(func() {
 		pgContainer.Close(ctx)
-	}()
+	})
 	a.NoError(err)
 
 	mysqlInstanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
@@ -259,6 +264,7 @@ func TestSQLAdminExecuteStopOnError(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			a := require.New(t)
 
 			var instance *v1pb.Instance
