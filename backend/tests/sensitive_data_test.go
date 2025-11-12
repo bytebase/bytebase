@@ -181,10 +181,12 @@ func TestSensitiveData(t *testing.T) {
 	a.Equal(1, len(syntaxErrorResp.Msg.Results))
 	a.NotEmpty(syntaxErrorResp.Msg.Results[0].Error)
 	a.Contains(syntaxErrorResp.Msg.Results[0].Error, "Syntax error")
-	// Check the detailed_error field for syntax_error
+	// Check the detailed_error field for syntax_error with position
 	syntaxErr := syntaxErrorResp.Msg.Results[0].GetSyntaxError()
 	a.NotNil(syntaxErr)
 	a.NotNil(syntaxErr.StartPosition)
+	a.Equal(int32(1), syntaxErr.StartPosition.Line)
+	a.Greater(syntaxErr.StartPosition.Column, int32(0))
 
 	sheetResp, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
 		Parent: ctl.project.Name,
