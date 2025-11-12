@@ -14,13 +14,15 @@ import (
 
 func TestSQLQueryStopOnError(t *testing.T) {
 	tests := []struct {
-		name              string
-		databaseName      string
-		dbType            storepb.Engine
-		prepareStatements string
-		query             string
-		wantResults       int // Number of successful results before error
-		wantError         bool
+		name                 string
+		databaseName         string
+		dbType               storepb.Engine
+		prepareStatements    string
+		query                string
+		wantResults          int // Number of successful results before error
+		wantError            bool
+		wantSyntaxError      bool // Whether to expect syntax_error in detailed_error
+		wantPermissionDenied bool // Whether to expect permission_denied in detailed_error
 	}{
 		{
 			name:              "MySQL - All statements succeed",
@@ -37,7 +39,7 @@ func TestSQLQueryStopOnError(t *testing.T) {
 			dbType:            storepb.Engine_MYSQL,
 			prepareStatements: "CREATE TABLE tbl2(id INT PRIMARY KEY, name VARCHAR(64));",
 			query:             "INSERT INTO tbl2 VALUES(1, 'Alice'); INSERT INTO nonexistent VALUES(2, 'Bob'); INSERT INTO tbl2 VALUES(3, 'Charlie');",
-			wantResults:       1, // Only first insert succeeds
+			wantResults:       2, // First insert succeeds + error result
 			wantError:         true,
 		},
 		{
@@ -46,7 +48,7 @@ func TestSQLQueryStopOnError(t *testing.T) {
 			dbType:            storepb.Engine_MYSQL,
 			prepareStatements: "CREATE TABLE tbl3(id INT PRIMARY KEY, name VARCHAR(64));",
 			query:             "INSERT INTO nonexistent VALUES(1, 'Alice'); INSERT INTO tbl3 VALUES(2, 'Bob');",
-			wantResults:       0, // First statement fails
+			wantResults:       1, // Error result only
 			wantError:         true,
 		},
 		{
@@ -64,8 +66,46 @@ func TestSQLQueryStopOnError(t *testing.T) {
 			dbType:            storepb.Engine_POSTGRES,
 			prepareStatements: "CREATE TABLE tbl5(id INT PRIMARY KEY, name VARCHAR(64));",
 			query:             "INSERT INTO tbl5 VALUES(1, 'Alice'); INSERT INTO nonexistent VALUES(2, 'Bob'); INSERT INTO tbl5 VALUES(3, 'Charlie');",
-			wantResults:       1,
+			wantResults:       2, // First insert succeeds + error result
 			wantError:         true,
+		},
+		{
+			name:            "MySQL - Syntax error",
+			databaseName:    "TestStopOnError6",
+			dbType:          storepb.Engine_MYSQL,
+			query:           "SELECT * FORM invalid_table;",
+			wantResults:     1, // Error result
+			wantError:       true,
+			wantSyntaxError: true,
+		},
+		{
+			name:            "PostgreSQL - Syntax error",
+			databaseName:    "TestStopOnError7",
+			dbType:          storepb.Engine_POSTGRES,
+			query:           "SELECT * FORM invalid_table;",
+			wantResults:     1, // Error result
+			wantError:       true,
+			wantSyntaxError: true,
+		},
+		{
+			name:                 "MySQL - Non-read-only command in Query API",
+			databaseName:         "TestStopOnError8",
+			dbType:               storepb.Engine_MYSQL,
+			prepareStatements:    "CREATE TABLE tbl8(id INT PRIMARY KEY);",
+			query:                "INSERT INTO tbl8 VALUES(1);",
+			wantResults:          1, // Error result
+			wantError:            true,
+			wantPermissionDenied: true,
+		},
+		{
+			name:                 "PostgreSQL - Non-read-only command in Query API",
+			databaseName:         "TestStopOnError9",
+			dbType:               storepb.Engine_POSTGRES,
+			prepareStatements:    "CREATE TABLE tbl9(id INT PRIMARY KEY);",
+			query:                "INSERT INTO tbl9 VALUES(1);",
+			wantResults:          1, // Error result
+			wantError:            true,
+			wantPermissionDenied: true,
 		},
 	}
 
@@ -167,9 +207,24 @@ func TestSQLQueryStopOnError(t *testing.T) {
 			}))
 
 			if tt.wantError {
-				// We expect an error, but we should still get partial results
-				a.Error(err)
-				// The error response might be in the connect error, not in the response
+				// With stop-on-error behavior, the service always returns SUCCESS
+				// with results array containing error result(s)
+				a.NoError(err)
+				a.NotNil(queryResp)
+				a.NotNil(queryResp.Msg)
+				a.Equal(tt.wantResults, len(queryResp.Msg.Results))
+
+				// The last result should contain the error and detailed_error
+				lastResult := queryResp.Msg.Results[len(queryResp.Msg.Results)-1]
+				a.NotEmpty(lastResult.Error, "last result should have error message")
+
+				if tt.wantSyntaxError {
+					a.NotNil(lastResult.GetSyntaxError(), "expected syntax_error in detailed_error")
+					a.NotNil(lastResult.GetSyntaxError().StartPosition, "syntax error should have start position")
+				}
+				if tt.wantPermissionDenied {
+					a.NotNil(lastResult.GetPermissionDenied(), "expected permission_denied in detailed_error")
+				}
 			} else {
 				a.NoError(err)
 				a.NotNil(queryResp)
@@ -178,6 +233,7 @@ func TestSQLQueryStopOnError(t *testing.T) {
 				// Verify all results are successful (no errors)
 				for i, result := range queryResp.Msg.Results {
 					a.Empty(result.Error, "result %d should not have error", i)
+					a.Nil(result.DetailedError, "result %d should not have detailed_error", i)
 				}
 			}
 		})
