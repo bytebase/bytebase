@@ -48,7 +48,11 @@
 
 <script lang="tsx" setup>
 import { create } from "@bufbuild/protobuf";
-import { FolderCodeIcon, FolderOpenIcon } from "lucide-vue-next";
+import {
+  FolderCodeIcon,
+  FolderOpenIcon,
+  FolderMinusIcon,
+} from "lucide-vue-next";
 import { NInput, NButton, NTreeSelect, type TreeOption } from "naive-ui";
 import { ref } from "vue";
 import { BBModal } from "@/bbkit";
@@ -195,6 +199,10 @@ const renderPrefix = ({ option }: { option: TreeOption }) => {
   if (node.key === folderContext.rootPath.value) {
     // root folder icon
     return <FolderCodeIcon class="w-4 h-auto text-gray-600" />;
+  }
+  if (node.empty) {
+    // empty folder icon
+    return <FolderMinusIcon class="w-4 h-auto text-gray-600" />;
   }
   // fallback to normal folder icon
   return <FolderCodeIcon class="w-4 h-auto text-gray-600" />;
