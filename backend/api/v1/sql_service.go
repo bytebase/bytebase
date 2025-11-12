@@ -232,29 +232,39 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 
 	// Update activity.
 	s.createQueryHistory(database, store.QueryHistoryTypeQuery, statement, user.ID, duration, queryErr)
+
 	if queryErr != nil {
-		code := connect.CodeInternal
-		// If queryErr is already a connect.Error, preserve its code
-		if connectErr, ok := queryErr.(*connect.Error); ok {
-			code = connectErr.Code()
-		} else if syntaxErr, ok := queryErr.(*parserbase.SyntaxError); ok {
-			err := connect.NewError(connect.CodeInvalidArgument, syntaxErr)
-			if detail, detailErr := connect.NewErrorDetail(&v1pb.PlanCheckRun_Result{
-				Code:    int32(advisor.StatementSyntaxError),
-				Content: syntaxErr.Message,
-				Title:   "Syntax error",
-				Status:  v1pb.Advice_ERROR,
-				Report: &v1pb.PlanCheckRun_Result_SqlReviewReport_{
-					SqlReviewReport: &v1pb.PlanCheckRun_Result_SqlReviewReport{
-						StartPosition: convertToPosition(syntaxErr.Position),
-					},
-				},
-			}); detailErr == nil {
-				err.AddDetail(detail)
+		if len(results) == 0 {
+			if _, ok := queryErr.(*connect.Error); ok {
+				return nil, queryErr
 			}
-			return nil, err
+			return nil, connect.NewError(connect.CodeInternal, errors.New(queryErr.Error()))
 		}
-		return nil, connect.NewError(code, errors.New(queryErr.Error()))
+		// populate the detailed_error field of the last query result
+		var qe *queryError
+		if errors.As(queryErr, &qe) {
+			if qe.resource != "" {
+				results[len(results)-1].DetailedError = &v1pb.QueryResult_PermissionDenied_{
+					PermissionDenied: &v1pb.QueryResult_PermissionDenied{
+						Resource: qe.resource,
+					},
+				}
+			} else if qe.commandType != v1pb.QueryResult_PermissionDenied_COMMAND_TYPE_UNSPECIFIED {
+				results[len(results)-1].DetailedError = &v1pb.QueryResult_PermissionDenied_{
+					PermissionDenied: &v1pb.QueryResult_PermissionDenied{
+						CommandType: qe.commandType,
+					},
+				}
+
+			}
+		} else if syntaxErr, ok := queryErr.(*parserbase.SyntaxError); ok {
+			results[len(results)-1].DetailedError = &v1pb.QueryResult_SyntaxError_{
+				SyntaxError: &v1pb.QueryResult_SyntaxError{
+					StartPosition: convertToPosition(syntaxErr.Position),
+				},
+			}
+		}
+
 	}
 
 	slog.Debug("request finished",
@@ -1470,17 +1480,23 @@ func (s *SQLService) accessCheck(
 					return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check access control for database: %q, error %v", column.Database, err))
 				}
 				if !ok {
-					resource := attributes[common.CELAttributeResourceDatabase]
+					resource, ok := attributes[common.CELAttributeResourceDatabase].(string)
+					if !ok {
+						resource = ""
+					}
 					if schema, ok := attributes[common.CELAttributeResourceSchemaName]; ok && schema != "" {
 						resource = fmt.Sprintf("%s/schemas/%s", resource, schema)
 					}
 					if table, ok := attributes[common.CELAttributeResourceTableName]; ok && table != "" {
 						resource = fmt.Sprintf("%s/tables/%s", resource, table)
 					}
-					return connect.NewError(
-						connect.CodePermissionDenied,
-						errors.Errorf("permission denied to access resource: %s", resource),
-					)
+					return &queryError{
+						err: connect.NewError(
+							connect.CodePermissionDenied,
+							errors.Errorf("permission denied to access resource: %s", resource),
+						),
+						resource: resource,
+					}
 				}
 			}
 		}
@@ -1551,11 +1567,9 @@ func validateQueryRequest(instance *store.InstanceMessage, statement string) err
 		return err
 	}
 	if !ok {
-		switch instance.Metadata.GetEngine() {
-		case storepb.Engine_REDIS, storepb.Engine_MONGODB:
-			return nonReadOnlyCommandError
-		default:
-			return nonSelectSQLError
+		return &queryError{
+			err:         connect.NewError(connect.CodeInvalidArgument, errors.New("Support read-only command statements only")),
+			commandType: v1pb.QueryResult_PermissionDenied_NON_READ_ONLY,
 		}
 	}
 	return nil
@@ -1869,11 +1883,17 @@ func checkDataSourceQueryPolicy(ctx context.Context, storeInstance *store.Store,
 		switch statementTp {
 		case parserbase.DDL:
 			if policy.DisallowDdl {
-				return connect.NewError(connect.CodePermissionDenied, errors.Errorf("disallow execute DDL statement in environment %q", environment.Title))
+				return &queryError{
+					err:         connect.NewError(connect.CodePermissionDenied, errors.Errorf("disallow execute DDL statement in environment %q", environment.Title)),
+					commandType: v1pb.QueryResult_PermissionDenied_DDL,
+				}
 			}
 		case parserbase.DML:
 			if policy.DisallowDml {
-				return connect.NewError(connect.CodePermissionDenied, errors.Errorf("disallow execute DML statement in environment %q", environment.Title))
+				return &queryError{
+					err:         connect.NewError(connect.CodePermissionDenied, errors.Errorf("disallow execute DML statement in environment %q", environment.Title)),
+					commandType: v1pb.QueryResult_PermissionDenied_DML,
+				}
 			}
 		default:
 		}
