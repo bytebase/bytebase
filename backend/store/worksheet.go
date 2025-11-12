@@ -461,6 +461,12 @@ func GetListSheetFilter(ctx context.Context, s *Store, callerID int, filter stri
 		case "visibility":
 			visibility := WorkSheetVisibility(value.(string))
 			return qb.Q().Space("worksheet.visibility = ?", visibility), nil
+		case "project":
+			projectID, err := common.GetProjectID(value.(string))
+			if err != nil {
+				return nil, errors.Errorf("invalid project filter %q", value)
+			}
+			return qb.Q().Space("worksheet.project = ?", projectID), nil
 		default:
 			return nil, errors.Errorf("unsupport variable %q", variable)
 		}

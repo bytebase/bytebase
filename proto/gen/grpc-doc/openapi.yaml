@@ -7533,6 +7533,34 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /v1/worksheets/organizer:batchUpdate:
+        patch:
+            tags:
+                - WorksheetService
+            description: |-
+                Batch update the organizers of worksheets.
+                 The access is the same as UpdateWorksheet method.
+                 Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
+            operationId: WorksheetService_BatchUpdateWorksheetOrganizer
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/BatchUpdateWorksheetOrganizerRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BatchUpdateWorksheetOrganizerResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/worksheets/{worksheet}:
         get:
             tags:
@@ -8790,6 +8818,22 @@ components:
         BatchUpdateIssuesStatusResponse:
             type: object
             properties: {}
+        BatchUpdateWorksheetOrganizerRequest:
+            required:
+                - requests
+            type: object
+            properties:
+                requests:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/UpdateWorksheetOrganizerRequest'
+        BatchUpdateWorksheetOrganizerResponse:
+            type: object
+            properties:
+                worksheetOrganizers:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/WorksheetOrganizer'
         Binding:
             type: object
             properties:
@@ -13388,6 +13432,7 @@ components:
                          - creator: the worksheet creator in "users/{email}" format, support "==" and "!=" operator.
                          - starred: should be "true" or "false", filter starred/unstarred sheets, support "==" operator.
                          - visibility: check Visibility enum in the Worksheet message for values, support "==" and "in [xx]" operator.
+                         - project: the project full name in "projects/{id}" format, support "==" operator.
 
                          For example:
                          creator == "users/{email}"
@@ -13396,6 +13441,7 @@ components:
                          starred == false
                          visibility in ["PRIVATE", "PROJECT_READ", "PROJECT_WRITE"]
                          visibility == "PRIVATE"
+                         project == "projects/{project resource id}"
         SearchWorksheetsResponse:
             type: object
             properties:
@@ -14414,6 +14460,32 @@ components:
                     type: boolean
                     description: |-
                         If set to true, and the instance is not found, a new instance will be created.
+                         In this situation, `update_mask` is ignored.
+        UpdateWorksheetOrganizerRequest:
+            required:
+                - organizer
+            type: object
+            properties:
+                organizer:
+                    allOf:
+                        - $ref: '#/components/schemas/WorksheetOrganizer'
+                    description: |-
+                        The organizer to update.
+
+                         The organizer's `worksheet` field is used to identify the worksheet.
+                         Format: worksheets/{worksheet}
+                updateMask:
+                    type: string
+                    description: |-
+                        The list of fields to be updated.
+                         Fields are specified relative to the worksheet organizer.
+                         Only support update the following fields for now:
+                         - `starred`
+                    format: field-mask
+                allowMissing:
+                    type: boolean
+                    description: |-
+                        If set to true, and the worksheet organizer is not found, a new worksheet organizer will be created.
                          In this situation, `update_mask` is ignored.
         User:
             type: object

@@ -114,7 +114,7 @@
             </NPopover>
           </template>
           <template #default>
-            <SharePopover />
+            <SharePopover :worksheet="sheetAndTabStore.currentSheet" />
           </template>
         </NPopover>
       </template>
@@ -160,6 +160,7 @@ import {
   useSQLEditorTabStore,
   useUIStateStore,
   useWorkSheetStore,
+  useWorkSheetAndTabStore,
 } from "@/store";
 import {
   DEFAULT_SQL_EDITOR_TAB_MODE,
@@ -194,6 +195,7 @@ const tabStore = useSQLEditorTabStore();
 const uiStateStore = useUIStateStore();
 const { events } = useSQLEditorContext();
 const { resultRowsLimit } = storeToRefs(useSQLEditorStore());
+const sheetAndTabStore = useWorkSheetAndTabStore();
 
 const { currentTab, isDisconnected } = storeToRefs(tabStore);
 

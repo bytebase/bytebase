@@ -1,6 +1,5 @@
 {
   "common": {
-    "apply-to-database": "Áp dụng cho cơ sở dữ liệu",
     "view": "Xem",
     "you": "bạn",
     "general": "Chung",
@@ -148,6 +147,7 @@
     "no-data": "Không có dữ liệu",
     "visibility": "Hiển thị",
     "duplicate": "Nhân bản",
+    "fork": "Bản sao",
     "enable": "Bật",
     "disable": "Tắt",
     "view-doc": "Xem tài liệu",
@@ -245,7 +245,8 @@
     },
     "collapse": "Sụp đổ",
     "line": "Dòng",
-    "column": "Cột"
+    "column": "Cột",
+    "apply-to-database": "Áp dụng cho cơ sở dữ liệu"
   },
   "error-page": {
     "go-back-home": "Về trang chủ"
@@ -2027,6 +2028,7 @@
       }
     },
     "copy-url": "Sao chép URL",
+    "url-copied-to-clipboard": "URL đã được sao chép vào bảng nhớ tạm của bạn",
     "connect-to-a-database": "Kết nối với cơ sở dữ liệu",
     "link-access": "Truy cập liên kết",
     "private": "Riêng tư",
@@ -2037,6 +2039,7 @@
     "project-write-desc": "Cả chủ sở hữu trang tính và người dùng dự án có quyền \"bb.worksheets.get\" đều có thể đọc/ghi",
     "create-read-only-data-source": "Đi tới tạo",
     "save-sheet": "Lưu trang tính",
+    "choose-folder": "Chọn thư mục",
     "save-sheet-input-placeholder": "Vui lòng nhập tên trang tính",
     "format": "Định dạng",
     "visualize-explain": "Trực quan hóa Giải thích",
@@ -2052,12 +2055,8 @@
     "allow-admin-mode-only": "Phiên bản {instance} chỉ có thể truy cập ở chế độ quản trị.",
     "query-time": "Thời gian truy vấn",
     "connection-lost": "Mất kết nối. Sẽ thử kết nối lại khi thực hiện truy vấn tiếp theo.",
-    "sheet": {
-      "self": "Trang tính",
-      "connection": "Kết nối"
-    },
+    "sheet": {},
     "tab": {
-      "unsaved": "Chưa lưu",
       "context-menu": {
         "actions": {
           "close": "Đóng",
@@ -2065,7 +2064,9 @@
           "close-to-the-right": "Đóng các trang tính bên phải",
           "close-saved": "Đóng các trang tính đã lưu",
           "close-all": "Đóng tất cả",
-          "rename": "Đổi tên"
+          "rename": "Đổi tên",
+          "add-folder": "Thêm thư mục",
+          "add-worksheet": "Thêm bảng tính"
         }
       }
     },
@@ -2212,8 +2213,6 @@
       "invalid-view-name": "Tên khung nhìn không hợp lệ",
       "duplicated-view-name": "Tên khung nhìn trùng lặp"
     },
-    "confirm-to-close": {
-    },
     "foreign-key": {
       "edit": "Chỉnh sửa khóa ngoại",
       "name-description": "Tên duy nhất của khóa ngoại"
@@ -2332,19 +2331,27 @@
   },
   "sheet": {
     "mine": "Của tôi",
-    "star": "Đánh dấu sao",
-    "unstar": "Bỏ đánh dấu sao",
-    "starred": "Đã đánh dấu sao",
     "shared": "Được chia sẻ",
     "notifications": {
       "duplicate-success": "Đã nhân bản thành công vào \"Trang tính của tôi\""
     },
+    "filter": {
+      "show-mine": "Hiển thị của tôi",
+      "show-shared": "Hiển thị chia sẻ",
+      "show-draft": "Hiển thị bản nháp",
+      "only-show-starred": "Chỉ hiển thị có dấu sao"
+    },
     "hint-tips": {
-      "confirm-to-delete-this-sheet": "Xác nhận xóa trang tính này?",
+      "non-empty-folder-title": "Thư mục không trống",
+      "non-empty-folder-content": "Bạn muốn di chuyển tất cả các trang tính vào thư mục gốc hay chỉ xóa chúng?",
+      "move-to-root-folder": "Di chuyển đến thư mục gốc",
+      "delete-all-sheets": "Xóa tất cả các tập tin",
+      "duplicate-folder-name-title": "Tên thư mục trùng lặp",
+      "duplicate-folder-name-content": "Bạn có muốn hợp nhất tất cả các thư mục con và tệp vào thư mục hiện có \"{folder}\" không?",
+      "confirm-to-delete-sheet-title": "Xác nhận xóa bảng tính này?",
       "confirm-to-duplicate-sheet": "Xác nhận nhân bản trang tính này?"
     },
-    "search-sheets": "Tìm kiếm Trang tính",
-    "draft": "Bản nháp"
+    "search-sheets": "Tìm kiếm Trang tính"
   },
   "sql-review": {
     "title": "Đánh giá SQL",

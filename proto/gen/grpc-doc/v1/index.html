@@ -2762,6 +2762,14 @@
             <ul>
               
                 <li>
+                  <a href="#bytebase.v1.BatchUpdateWorksheetOrganizerRequest"><span class="badge">M</span>BatchUpdateWorksheetOrganizerRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.BatchUpdateWorksheetOrganizerResponse"><span class="badge">M</span>BatchUpdateWorksheetOrganizerResponse</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.CreateWorksheetRequest"><span class="badge">M</span>CreateWorksheetRequest</a>
                 </li>
               
@@ -30551,6 +30559,54 @@ Permissions required: bb.settings.set</p></td>
       <p></p>
 
       
+        <h3 id="bytebase.v1.BatchUpdateWorksheetOrganizerRequest">BatchUpdateWorksheetOrganizerRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>requests</td>
+                  <td><a href="#bytebase.v1.UpdateWorksheetOrganizerRequest">UpdateWorksheetOrganizerRequest</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.BatchUpdateWorksheetOrganizerResponse">BatchUpdateWorksheetOrganizerResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>worksheet_organizers</td>
+                  <td><a href="#bytebase.v1.WorksheetOrganizer">WorksheetOrganizer</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.CreateWorksheetRequest">CreateWorksheetRequest</h3>
         <p></p>
 
@@ -30646,6 +30702,7 @@ Supported filter:
 - creator: the worksheet creator in &#34;users/{email}&#34; format, support &#34;==&#34; and &#34;!=&#34; operator.
 - starred: should be &#34;true&#34; or &#34;false&#34;, filter starred/unstarred sheets, support &#34;==&#34; operator.
 - visibility: check Visibility enum in the Worksheet message for values, support &#34;==&#34; and &#34;in [xx]&#34; operator.
+- project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator.
 
 For example:
 creator == &#34;users/{email}&#34;
@@ -30653,7 +30710,8 @@ creator != &#34;users/{email}&#34;
 starred == true
 starred == false
 visibility in [&#34;PRIVATE&#34;, &#34;PROJECT_READ&#34;, &#34;PROJECT_WRITE&#34;]
-visibility == &#34;PRIVATE&#34; </p></td>
+visibility == &#34;PRIVATE&#34;
+project == &#34;projects/{project resource id}&#34; </p></td>
                 </tr>
               
             </tbody>
@@ -31022,6 +31080,15 @@ Permissions required: bb.worksheets.get (or creator, or project member for share
               </tr>
             
               <tr>
+                <td>BatchUpdateWorksheetOrganizer</td>
+                <td><a href="#bytebase.v1.BatchUpdateWorksheetOrganizerRequest">BatchUpdateWorksheetOrganizerRequest</a></td>
+                <td><a href="#bytebase.v1.BatchUpdateWorksheetOrganizerResponse">BatchUpdateWorksheetOrganizerResponse</a></td>
+                <td><p>Batch update the organizers of worksheets.
+The access is the same as UpdateWorksheet method.
+Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)</p></td>
+              </tr>
+            
+              <tr>
                 <td>DeleteWorksheet</td>
                 <td><a href="#bytebase.v1.DeleteWorksheetRequest">DeleteWorksheetRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
@@ -31095,6 +31162,16 @@ Permissions required: bb.worksheets.manage (or creator, or project member for PR
                 <td>PATCH</td>
                 <td>/v1/{organizer.worksheet=worksheets/*}/organizer</td>
                 <td>organizer</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>BatchUpdateWorksheetOrganizer</td>
+                <td>PATCH</td>
+                <td>/v1/worksheets/organizer:batchUpdate</td>
+                <td>*</td>
               </tr>
               
             

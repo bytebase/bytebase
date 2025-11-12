@@ -77,6 +77,17 @@ service WorksheetService {
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
+  // Batch update the organizers of worksheets.
+  // The access is the same as UpdateWorksheet method.
+  // Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
+  rpc BatchUpdateWorksheetOrganizer(BatchUpdateWorksheetOrganizerRequest) returns (BatchUpdateWorksheetOrganizerResponse) {
+    option (google.api.http) = {
+      patch: "/v1/worksheets/organizer:batchUpdate"
+      body: "*"
+    };
+    option (bytebase.v1.auth_method) = CUSTOM;
+  }
+
   // Delete a worksheet.
   // The access is the same as UpdateWorksheet method.
   // Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE worksheets)
@@ -114,6 +125,14 @@ message UpdateWorksheetRequest {
   // - `starred`
   // - `visibility`
   google.protobuf.FieldMask update_mask = 2;
+}
+
+message BatchUpdateWorksheetOrganizerRequest {
+  repeated UpdateWorksheetOrganizerRequest requests = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message BatchUpdateWorksheetOrganizerResponse {
+  repeated WorksheetOrganizer worksheet_organizers = 1;
 }
 
 message UpdateWorksheetOrganizerRequest {
@@ -159,6 +178,7 @@ message SearchWorksheetsRequest {
   // - creator: the worksheet creator in "users/{email}" format, support "==" and "!=" operator.
   // - starred: should be "true" or "false", filter starred/unstarred sheets, support "==" operator.
   // - visibility: check Visibility enum in the Worksheet message for values, support "==" and "in [xx]" operator.
+  // - project: the project full name in "projects/{id}" format, support "==" operator.
   //
   // For example:
   // creator == "users/{email}"
@@ -167,6 +187,7 @@ message SearchWorksheetsRequest {
   // starred == false
   // visibility in ["PRIVATE", "PROJECT_READ", "PROJECT_WRITE"]
   // visibility == "PRIVATE"
+  // project == "projects/{project resource id}"
   string filter = 1;
 }
 

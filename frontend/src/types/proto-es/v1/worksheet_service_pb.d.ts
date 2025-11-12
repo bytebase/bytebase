@@ -84,6 +84,38 @@ export declare type UpdateWorksheetRequest = Message<"bytebase.v1.UpdateWorkshee
 export declare const UpdateWorksheetRequestSchema: GenMessage<UpdateWorksheetRequest>;
 
 /**
+ * @generated from message bytebase.v1.BatchUpdateWorksheetOrganizerRequest
+ */
+export declare type BatchUpdateWorksheetOrganizerRequest = Message<"bytebase.v1.BatchUpdateWorksheetOrganizerRequest"> & {
+  /**
+   * @generated from field: repeated bytebase.v1.UpdateWorksheetOrganizerRequest requests = 1;
+   */
+  requests: UpdateWorksheetOrganizerRequest[];
+};
+
+/**
+ * Describes the message bytebase.v1.BatchUpdateWorksheetOrganizerRequest.
+ * Use `create(BatchUpdateWorksheetOrganizerRequestSchema)` to create a new message.
+ */
+export declare const BatchUpdateWorksheetOrganizerRequestSchema: GenMessage<BatchUpdateWorksheetOrganizerRequest>;
+
+/**
+ * @generated from message bytebase.v1.BatchUpdateWorksheetOrganizerResponse
+ */
+export declare type BatchUpdateWorksheetOrganizerResponse = Message<"bytebase.v1.BatchUpdateWorksheetOrganizerResponse"> & {
+  /**
+   * @generated from field: repeated bytebase.v1.WorksheetOrganizer worksheet_organizers = 1;
+   */
+  worksheetOrganizers: WorksheetOrganizer[];
+};
+
+/**
+ * Describes the message bytebase.v1.BatchUpdateWorksheetOrganizerResponse.
+ * Use `create(BatchUpdateWorksheetOrganizerResponseSchema)` to create a new message.
+ */
+export declare const BatchUpdateWorksheetOrganizerResponseSchema: GenMessage<BatchUpdateWorksheetOrganizerResponse>;
+
+/**
  * @generated from message bytebase.v1.UpdateWorksheetOrganizerRequest
  */
 export declare type UpdateWorksheetOrganizerRequest = Message<"bytebase.v1.UpdateWorksheetOrganizerRequest"> & {
@@ -184,6 +216,7 @@ export declare type SearchWorksheetsRequest = Message<"bytebase.v1.SearchWorkshe
    * - creator: the worksheet creator in "users/{email}" format, support "==" and "!=" operator.
    * - starred: should be "true" or "false", filter starred/unstarred sheets, support "==" operator.
    * - visibility: check Visibility enum in the Worksheet message for values, support "==" and "in [xx]" operator.
+   * - project: the project full name in "projects/{id}" format, support "==" operator.
    *
    * For example:
    * creator == "users/{email}"
@@ -192,6 +225,7 @@ export declare type SearchWorksheetsRequest = Message<"bytebase.v1.SearchWorkshe
    * starred == false
    * visibility in ["PRIVATE", "PROJECT_READ", "PROJECT_WRITE"]
    * visibility == "PRIVATE"
+   * project == "projects/{project resource id}"
    *
    * @generated from field: string filter = 1;
    */
@@ -428,6 +462,18 @@ export declare const WorksheetService: GenService<{
     methodKind: "unary";
     input: typeof UpdateWorksheetOrganizerRequestSchema;
     output: typeof WorksheetOrganizerSchema;
+  },
+  /**
+   * Batch update the organizers of worksheets.
+   * The access is the same as UpdateWorksheet method.
+   * Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
+   *
+   * @generated from rpc bytebase.v1.WorksheetService.BatchUpdateWorksheetOrganizer
+   */
+  batchUpdateWorksheetOrganizer: {
+    methodKind: "unary";
+    input: typeof BatchUpdateWorksheetOrganizerRequestSchema;
+    output: typeof BatchUpdateWorksheetOrganizerResponseSchema;
   },
   /**
    * Delete a worksheet.

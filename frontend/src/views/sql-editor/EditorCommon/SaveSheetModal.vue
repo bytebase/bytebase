@@ -1,159 +1,210 @@
 <template>
-  <BBModal
-    v-if="state.pendingEdit"
-    :title="$t('sql-editor.save-sheet')"
-    @close="close"
-  >
-    <SaveSheetForm
-      :tab="state.pendingEdit.tab"
-      :mask="state.pendingEdit.mask"
-      @close="close"
-      @confirm="doSaveSheet"
-    />
+  <BBModal v-if="showModal" :title="$t('sql-editor.save-sheet')" @close="close">
+    <div
+      class="save-sheet-modal flex flex-col gap-y-3 w-lg max-w-[calc(100vw-8rem)]"
+    >
+      <div class="flex flex-col gap-y-1">
+        <p>
+          {{ $t("common.title") }}
+          <RequiredStar />
+        </p>
+        <NInput
+          ref="sheetTitleInputRef"
+          v-model:value="pendingEdit.title"
+          :placeholder="$t('sql-editor.save-sheet-input-placeholder')"
+          :maxlength="200"
+        />
+      </div>
+      <div class="flex flex-col gap-y-1">
+        <p>{{ $t("sql-editor.choose-folder") }}</p>
+        <!-- TODO(ed): support creating new folders when saving the worksheet -->
+        <NTreeSelect
+          filterable
+          clearable
+          checkable
+          show-path
+          virtual-scroll
+          :multiple="false"
+          :options="[folderTree]"
+          :check-strategy="'parent'"
+          :render-prefix="renderPrefix"
+          v-model:expanded-keys="expandedKeys"
+          v-model:value="pendingEdit.folder"
+        />
+      </div>
+      <div class="flex justify-end gap-x-2 mt-4">
+        <NButton @click="close">{{ $t("common.close") }}</NButton>
+        <NButton
+          :disabled="!pendingEdit.title"
+          type="primary"
+          @click="() => doSaveSheet(pendingEdit)"
+        >
+          {{ $t("common.save") }}
+        </NButton>
+      </div>
+    </div>
   </BBModal>
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
 import { create } from "@bufbuild/protobuf";
-import { reactive } from "vue";
-import { BBModal } from "@/bbkit";
-import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
-  useDatabaseV1Store,
-  useWorkSheetStore,
-  useSQLEditorTabStore,
-} from "@/store";
+  FolderCodeIcon,
+  FolderOpenIcon,
+  FolderMinusIcon,
+} from "lucide-vue-next";
+import { NInput, NButton, NTreeSelect, type TreeOption } from "naive-ui";
+import { ref } from "vue";
+import { BBModal } from "@/bbkit";
+import RequiredStar from "@/components/RequiredStar.vue";
+import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
+import { useWorkSheetStore, useSQLEditorTabStore } from "@/store";
 import type { SQLEditorTab } from "@/types";
 import { UNKNOWN_ID } from "@/types";
-import type { Worksheet } from "@/types/proto-es/v1/worksheet_service_pb";
 import {
   WorksheetSchema,
   Worksheet_Visibility,
+  type Worksheet,
 } from "@/types/proto-es/v1/worksheet_service_pb";
 import { extractWorksheetUID } from "@/utils";
-import { useSheetContext } from "../Sheet";
+import { useSheetContextByView } from "@/views/sql-editor/Sheet";
+import type { WorsheetFolderNode } from "@/views/sql-editor/Sheet";
 import { useSQLEditorContext } from "../context";
-import SaveSheetForm from "./SaveSheetForm.vue";
-
-type LocalState = {
-  pendingEdit?: {
-    tab: SQLEditorTab;
-    mask?: Array<keyof Worksheet>;
-  };
-};
 
 const tabStore = useSQLEditorTabStore();
-const databaseStore = useDatabaseV1Store();
 const worksheetV1Store = useWorkSheetStore();
-const { events: sheetEvents } = useSheetContext();
 const { events: editorEvents } = useSQLEditorContext();
+const { folderTree, folderContext, getPwdForWorksheet } =
+  useSheetContextByView("my");
 
-const state = reactive<LocalState>({});
+const pendingEdit = ref<{
+  title: string;
+  folder: string;
+  rawTab?: SQLEditorTab;
+}>({
+  title: "",
+  folder: "",
+});
+const expandedKeys = ref<string[]>([folderContext.rootPath.value]);
+const showModal = ref(false);
 
-const doSaveSheet = async (
-  tab: SQLEditorTab,
-  mask?: Array<keyof Worksheet>
-) => {
-  const { title, statement, worksheet } = tab;
+const doSaveSheet = async ({
+  title,
+  folder,
+  rawTab,
+}: {
+  title: string;
+  folder: string;
+  rawTab?: SQLEditorTab;
+}) => {
+  if (!rawTab) {
+    return close();
+  }
+  const { statement, worksheet } = rawTab;
 
   if (title === "") {
     return;
   }
 
   const sheetId = Number(extractWorksheetUID(worksheet ?? ""));
+  let worksheetEntity: Worksheet | undefined;
 
   if (sheetId !== UNKNOWN_ID) {
     const currentSheet = worksheetV1Store.getWorksheetByName(worksheet);
     if (!currentSheet) return;
 
-    const updatedSheet = await worksheetV1Store.patchWorksheet(
+    worksheetEntity = await worksheetV1Store.patchWorksheet(
       {
         ...currentSheet,
         title: title,
-        database: tab.connection.database,
+        database: rawTab.connection.database,
         content: new TextEncoder().encode(statement),
       },
-      mask ?? ["title", "content", "database"]
+      ["title", "content", "database"]
     );
-    if (updatedSheet) {
-      const tab = tabStore.tabList.find(
-        (t) => t.worksheet === updatedSheet.name
-      );
-      if (tab) {
-        tabStore.updateTab(tab.id, {
-          title,
-          status: "CLEAN",
-        });
-      }
-    }
   } else {
-    if (!tab.connection.database) {
-      return false;
-    }
-    const database = await databaseStore.getOrFetchDatabaseByName(
-      tab.connection.database,
-      true /* silent */
-    );
-    const createdSheet = await worksheetV1Store.createWorksheet(
+    worksheetEntity = await worksheetV1Store.createWorksheet(
       create(WorksheetSchema, {
         title,
-        project: database.project,
+        project: tabStore.project,
         content: new TextEncoder().encode(statement),
-        database: database.name,
+        database: rawTab.connection.database,
         visibility: Worksheet_Visibility.PRIVATE,
       })
     );
-    if (tabStore.currentTabId === tab.id) {
-      tabStore.updateCurrentTab({
-        worksheet: createdSheet.name,
-        title,
-        status: "CLEAN",
-      });
+  }
+
+  if (worksheetEntity) {
+    if (folder && folder !== folderContext.rootPath.value) {
+      const folders = folder
+        .replace(folderContext.rootPath.value, "")
+        .split("/")
+        .filter((p) => p);
+      await worksheetV1Store.upsertWorksheetOrganizer(
+        {
+          worksheet: worksheetEntity.name,
+          starred: false,
+          folders,
+        },
+        ["folders"]
+      );
     }
+
+    tabStore.updateTab(rawTab.id, {
+      title,
+      status: "CLEAN",
+      worksheet: worksheetEntity.name,
+    });
   }
 
-  // Refresh "my" sheet list.
-  sheetEvents.emit("refresh", { views: ["my"] });
-  state.pendingEdit = undefined;
+  showModal.value = false;
 };
 
-const needSheetTitle = (tab: SQLEditorTab) => {
-  if (tab.worksheet) {
-    // If the sheet is saved, we don't need to show the name popup.
-    return false;
-  }
-  return true;
-};
-
-const trySaveSheet = (
-  tab: SQLEditorTab,
-  editTitle?: boolean,
-  mask?: Array<keyof Worksheet>
-) => {
-  if (!tab.connection.database) {
-    return;
-  }
-  if (needSheetTitle(tab) || editTitle) {
-    state.pendingEdit = {
-      tab,
-      mask,
-    };
-    return;
-  }
-  state.pendingEdit = undefined;
-
-  doSaveSheet(tab, mask);
+const needShowModal = (tab: SQLEditorTab) => {
+  // If the sheet is saved, we don't need to show the name popup.
+  return !tab.worksheet;
 };
 
 const close = () => {
-  state.pendingEdit = undefined;
+  showModal.value = false;
 };
 
-useEmitteryEventListener(
-  editorEvents,
-  "save-sheet",
-  ({ tab, editTitle, mask }) => {
-    trySaveSheet(tab, editTitle, mask);
+useEmitteryEventListener(editorEvents, "save-sheet", ({ tab, editTitle }) => {
+  pendingEdit.value = {
+    title: tab.title,
+    folder: folderContext.rootPath.value,
+    rawTab: tab,
+  };
+
+  if (needShowModal(tab) || editTitle) {
+    const worksheet = worksheetV1Store.getWorksheetByName(tab.worksheet);
+    if (worksheet) {
+      pendingEdit.value.folder = getPwdForWorksheet(worksheet);
+    }
+    showModal.value = true;
+    return;
   }
-);
+  doSaveSheet(pendingEdit.value);
+});
+
+const renderPrefix = ({ option }: { option: TreeOption }) => {
+  const node = option as WorsheetFolderNode;
+  if (node.worksheet) {
+    return null;
+  }
+  if (expandedKeys.value.includes(node.key)) {
+    // is opened folder
+    return <FolderOpenIcon class="w-4 h-auto text-gray-600" />;
+  }
+  if (node.key === folderContext.rootPath.value) {
+    // root folder icon
+    return <FolderCodeIcon class="w-4 h-auto text-gray-600" />;
+  }
+  if (node.empty) {
+    // empty folder icon
+    return <FolderMinusIcon class="w-4 h-auto text-gray-600" />;
+  }
+  // fallback to normal folder icon
+  return <FolderCodeIcon class="w-4 h-auto text-gray-600" />;
+};
 </script>

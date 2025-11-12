@@ -1,41 +1,92 @@
+import { useDebounceFn } from "@vueuse/core";
 import Emittery from "emittery";
-import { storeToRefs } from "pinia";
-import type { InjectionKey, Ref } from "vue";
-import { inject, provide, ref, computed } from "vue";
+import { orderBy, isEqual } from "lodash-es";
+import type { TreeOption } from "naive-ui";
+import scrollIntoView from "scroll-into-view-if-needed";
+import type { InjectionKey, Ref, ComputedRef } from "vue";
+import { inject, provide, ref, computed, watch, nextTick } from "vue";
 import { t } from "@/plugins/i18n";
 import {
   pushNotification,
   useDatabaseV1Store,
-  useSQLEditorStore,
   useSQLEditorTabStore,
   useWorkSheetStore,
+  useCurrentUserV1,
 } from "@/store";
+import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import type { SQLEditorTab } from "@/types";
-import type { Worksheet } from "@/types/proto-es/v1/worksheet_service_pb";
+import {
+  Worksheet_Visibility,
+  type Worksheet,
+} from "@/types/proto-es/v1/worksheet_service_pb";
 import {
   emptySQLEditorConnection,
   getSheetStatement,
   isWorksheetReadableV1,
+  extractWorksheetUID,
   suggestedTabTitleForSQLEditorConnection,
 } from "@/utils";
+import { useDynamicLocalStorage } from "@/utils";
 import { setDefaultDataSourceForConn } from "../EditorCommon";
 import type { SQLEditorContext } from "../context";
+import { useFolderByView } from "./folder";
 import type { SheetViewMode } from "./types";
 
-type SheetEvents = Emittery<{
-  refresh: { views: SheetViewMode[] };
-  "add-sheet": undefined;
+type SheetTreeEvents = Emittery<{
+  "on-built": { viewMode: SheetViewMode };
 }>;
 
-const useSheetListByView = (viewMode: SheetViewMode) => {
-  const sheetStore = useWorkSheetStore();
+export interface WorsheetFolderNode extends TreeOption {
+  key: string;
+  label: string;
+  editable: boolean;
+  empty?: boolean;
+  worksheet?: Worksheet;
+  children: WorsheetFolderNode[];
+}
 
-  const { project } = storeToRefs(useSQLEditorStore());
+interface WorksheetFilter {
+  keyword: string;
+  onlyShowStarred: boolean;
+  showMine: boolean;
+  showShared: boolean;
+  showDraft: boolean;
+}
+
+const useSheetTreeByView = (
+  viewMode: SheetViewMode,
+  filter: ComputedRef<WorksheetFilter>
+) => {
+  const sheetStore = useWorkSheetStore();
+  const folderContext = useFolderByView(viewMode);
+  const me = useCurrentUserV1();
+  const events: SheetTreeEvents = new Emittery();
 
   const isInitialized = ref(false);
   const isLoading = ref(false);
+
+  const rootNodeLabel = computed(() => {
+    switch (viewMode) {
+      case "my":
+        return t("sheet.mine");
+      case "shared":
+        return t("sheet.shared");
+      default:
+        return "";
+    }
+  });
+
+  const getRootTreeNode = (): WorsheetFolderNode => ({
+    isLeaf: false,
+    children: [],
+    key: folderContext.rootPath.value,
+    label: rootNodeLabel.value,
+    editable: false,
+  });
+  const sheetTree = ref<WorsheetFolderNode>(getRootTreeNode());
+
   const sheetList = computed(() => {
-    let list = [];
+    let list: Worksheet[] = [];
     switch (viewMode) {
       case "my":
         list = sheetStore.myWorksheetList;
@@ -43,29 +94,150 @@ const useSheetListByView = (viewMode: SheetViewMode) => {
       case "shared":
         list = sheetStore.sharedWorksheetList;
         break;
-      case "starred":
-        list = sheetStore.starredWorksheetList;
-        break;
+      default:
+        return [];
     }
-    return list.filter((worksheet) => {
-      return !project.value || worksheet.project === project.value;
-    });
+    if (filter.value.onlyShowStarred) {
+      return list.filter((sheet) => sheet.starred);
+    }
+    return list;
   });
 
-  const fetchSheetList = async () => {
+  const getPathesForWorksheet = (worksheet: Worksheet): string[] => {
+    const pathes = [folderContext.rootPath.value];
+    let currentPath = folderContext.rootPath.value;
+
+    for (const folder of worksheet.folders) {
+      currentPath = folderContext.ensureFolderPath(`${currentPath}/${folder}`);
+      pathes.push(currentPath);
+    }
+
+    return pathes;
+  };
+
+  const getPwdForWorksheet = (worksheet: Worksheet): string => {
+    return folderContext.ensureFolderPath(
+      [folderContext.rootPath.value, ...worksheet.folders].join("/")
+    );
+  };
+
+  const getKeyForWorksheet = (worksheet: Worksheet): string => {
+    return [
+      getPwdForWorksheet(worksheet),
+      `bytebase-worksheets-${extractWorksheetUID(worksheet.name)}`,
+    ].join("/");
+  };
+
+  const getFoldersForWorksheet = (path: string): string[] => {
+    return path
+      .replace(folderContext.rootPath.value, "")
+      .split("/")
+      .slice(0, -1) // the last element should be the getKeyForWorksheet(worksheet)
+      .filter((p) => p);
+  };
+
+  // Extract only tree-relevant properties to avoid rebuilding on unrelated changes
+  // (e.g., starred, content, visibility changes should NOT trigger rebuild)
+  const treeRelevantSheetData = computed(() => {
+    return sheetList.value.map((worksheet) => ({
+      name: worksheet.name,
+      title: worksheet.title,
+      folders: worksheet.folders,
+    }));
+  });
+
+  const buildTree = (
+    parent: WorsheetFolderNode,
+    worksheetsByFolder: Map<string, Worksheet[]>
+  ) => {
+    parent.children = folderContext
+      .listSubFolders(parent.key)
+      .map((folder) => ({
+        isLeaf: false,
+        children: [],
+        key: folder,
+        label: folder.split("/").slice(-1)[0],
+        editable: true,
+      }));
+
+    let empty = true;
+    for (const childNode of parent.children) {
+      const subtree = buildTree(childNode, worksheetsByFolder);
+      if (!subtree.empty) {
+        empty = false;
+      }
+    }
+
+    const sheets = orderBy(
+      worksheetsByFolder.get(parent.key) || [],
+      (item) => item.title
+    ).map((worksheet) => {
+      return {
+        isLeaf: true,
+        key: getKeyForWorksheet(worksheet),
+        label: worksheet.title,
+        worksheet,
+        editable: true,
+        children: [],
+      };
+    });
+
+    parent.children.push(...sheets);
+    parent.empty = sheets.length === 0 && empty;
+
+    return parent;
+  };
+
+  const folderTree = computed(() => buildTree(getRootTreeNode(), new Map()));
+
+  const rebuildTree = useDebounceFn(() => {
+    const worksheetsByFolder = new Map<string, Worksheet[]>();
+    for (const worksheet of sheetList.value) {
+      const pwd = getPwdForWorksheet(worksheet);
+      if (!worksheetsByFolder.has(pwd)) {
+        worksheetsByFolder.set(pwd, []);
+      }
+      worksheetsByFolder.get(pwd)!.push(worksheet);
+    }
+
+    sheetTree.value = buildTree(getRootTreeNode(), worksheetsByFolder);
+    events.emit("on-built", { viewMode });
+  }, DEBOUNCE_SEARCH_DELAY);
+
+  // Watch only relevant properties: folder structure and worksheet name/folders
+  // No deep watch needed - computed will track changes to name, folders automatically
+  watch([() => folderContext.folders.value, treeRelevantSheetData], () => {
+    rebuildTree();
+  });
+
+  const fetchSheetList = async (project: string) => {
     isLoading.value = true;
+    const filter = [];
+    if (project) {
+      filter.push(`project == "${project}"`);
+    }
     try {
       switch (viewMode) {
         case "my":
-          await sheetStore.fetchMyWorksheetList();
+          filter.push(`creator == "users/${me.value.email}"`);
           break;
         case "shared":
-          await sheetStore.fetchSharedWorksheetList();
-          break;
-        case "starred":
-          await sheetStore.fetchStarredWorksheetList();
+          filter.push(
+            `creator != "users/${me.value.email}"`,
+            `visibility in ["${Worksheet_Visibility[Worksheet_Visibility.PROJECT_READ]}","${Worksheet_Visibility[Worksheet_Visibility.PROJECT_WRITE]}"]`
+          );
           break;
       }
+      await sheetStore.fetchWorksheetList(filter.join(" && "));
+
+      const folderPathes = new Set<string>([]);
+      for (const worksheet of sheetList.value) {
+        for (const path of getPathesForWorksheet(worksheet)) {
+          folderPathes.add(path);
+        }
+      }
+      folderContext.mergeFolders(folderPathes);
+      rebuildTree();
 
       isInitialized.value = true;
     } finally {
@@ -74,19 +246,31 @@ const useSheetListByView = (viewMode: SheetViewMode) => {
   };
 
   return {
+    events,
     isInitialized,
     isLoading,
+    sheetTree,
+    folderTree,
     sheetList,
     fetchSheetList,
+    folderContext,
+    getKeyForWorksheet,
+    getFoldersForWorksheet,
+    getPathesForWorksheet,
+    getPwdForWorksheet,
   };
 };
 
 export type SheetContext = {
-  showPanel: Ref<boolean>;
-  isFetching: Ref<boolean>;
   view: Ref<SheetViewMode>;
-  views: Record<SheetViewMode, ReturnType<typeof useSheetListByView>>;
-  events: SheetEvents;
+  views: Record<SheetViewMode, ReturnType<typeof useSheetTreeByView>>;
+  filter: Ref<WorksheetFilter>;
+  filterChanged: ComputedRef<boolean>;
+  expandedKeys: Ref<Set<string>>;
+  selectedKeys: Ref<string[]>;
+  editingNode: Ref<{ node: WorsheetFolderNode; rawLabel: string } | undefined>;
+  isWorksheetCreator: (worksheet: Worksheet) => boolean;
+  batchUpdateWorksheetFolders: (worksheets: Worksheet[]) => Promise<void>;
 };
 
 export const KEY = Symbol("bb.sql-editor.sheet") as InjectionKey<SheetContext>;
@@ -100,22 +284,140 @@ export const useSheetContextByView = (view: SheetViewMode) => {
   return context.views[view];
 };
 
+export const revealWorksheets = (
+  node: WorsheetFolderNode,
+  callback: (node: WorsheetFolderNode) => Worksheet | undefined
+): Worksheet[] => {
+  if (node.worksheet) {
+    const worksheet = callback(node);
+    return worksheet ? [worksheet] : [];
+  }
+
+  const worksheets: Worksheet[] = [];
+  for (const child of node.children) {
+    worksheets.push(...revealWorksheets(child, callback));
+  }
+  return worksheets;
+};
+
 export const provideSheetContext = () => {
-  const context: SheetContext = {
-    showPanel: ref(false),
-    isFetching: ref(false),
-    view: ref("my"),
-    views: {
-      my: useSheetListByView("my"),
-      shared: useSheetListByView("shared"),
-      starred: useSheetListByView("starred"),
-    },
-    events: new Emittery(),
+  const me = useCurrentUserV1();
+  const tabStore = useSQLEditorTabStore();
+  const worksheetV1Store = useWorkSheetStore();
+
+  const initialFilter = computed(
+    (): WorksheetFilter => ({
+      keyword: "",
+      showShared: true,
+      showMine: true,
+      showDraft: true,
+      onlyShowStarred: false,
+    })
+  );
+  const filter = useDynamicLocalStorage<WorksheetFilter>(
+    computed(() => `bb.sql-editor.worksheet-filter.${me.value.name}`),
+    {
+      ...initialFilter.value,
+    }
+  );
+  const filterChanged = computed(
+    () => !isEqual(filter.value, initialFilter.value)
+  );
+
+  const views = {
+    my: useSheetTreeByView(
+      "my",
+      computed(() => filter.value)
+    ),
+    shared: useSheetTreeByView(
+      "shared",
+      computed(() => filter.value)
+    ),
   };
 
-  context.events.on("refresh", () => {
-    // Nothing todo
-  });
+  const expandedKeys = useDynamicLocalStorage<Set<string>>(
+    computed(() => `bb.sql-editor.worksheet-tree-expand-keys.${me.value.name}`),
+    new Set([
+      ...Object.values(views).map((item) => item.folderContext.rootPath.value),
+    ])
+  );
+  const selectedKeys = ref<string[]>([]);
+
+  const isWorksheetCreator = (worksheet: Worksheet) => {
+    return worksheet.creator === `users/${me.value.email}`;
+  };
+
+  // Only watch the worksheet name, not the entire tab object
+  // This prevents unnecessary re-runs when tab statement/status/etc changes
+  watch(
+    () => tabStore.currentTab?.worksheet,
+    async (worksheetName) => {
+      selectedKeys.value = [];
+
+      if (!worksheetName) {
+        return;
+      }
+
+      const worksheet = worksheetV1Store.getWorksheetByName(worksheetName);
+      if (!worksheet) {
+        return;
+      }
+
+      const isCreator = isWorksheetCreator(worksheet);
+      const view: SheetViewMode = isCreator ? "my" : "shared";
+      const viewContext = views[view];
+
+      if (!viewContext) {
+        return;
+      }
+
+      const key = viewContext.getKeyForWorksheet(worksheet);
+      selectedKeys.value = [key];
+
+      // Expand all parent folders to make the selected node visible
+      for (const path of viewContext.getPathesForWorksheet(worksheet)) {
+        expandedKeys.value.add(path);
+      }
+
+      // Scroll the selected node into view
+      await nextTick();
+      const dom = document.querySelector(`[data-item-key="${key}"]`);
+      if (dom) {
+        scrollIntoView(dom, {
+          scrollMode: "if-needed",
+          block: "nearest",
+        });
+      }
+    },
+    { immediate: true }
+  );
+
+  const batchUpdateWorksheetFolders = async (worksheets: Worksheet[]) => {
+    await worksheetV1Store.batchUpsertWorksheetOrganizers(
+      worksheets.map((worksheet) => ({
+        organizer: {
+          worksheet: worksheet.name,
+          starred: worksheet.starred,
+          folders: worksheet.folders,
+        },
+        updateMask: ["folders"],
+      }))
+    );
+  };
+
+  const context: SheetContext = {
+    expandedKeys,
+    selectedKeys,
+    view: ref("my"),
+    views,
+    filter,
+    filterChanged,
+    isWorksheetCreator,
+    editingNode: ref<
+      { node: WorsheetFolderNode; rawLabel: string } | undefined
+    >(),
+    batchUpdateWorksheetFolders,
+  };
 
   provide(KEY, context);
 
@@ -142,17 +444,10 @@ export const extractWorksheetConnection = async (worksheet: Worksheet) => {
 export const openWorksheetByName = async (
   name: string,
   editorContext: SQLEditorContext,
-  worksheetContext: SheetContext,
   forceNewTab = false
 ) => {
-  const cleanup = () => {
-    worksheetContext.isFetching.value = false;
-  };
-
-  worksheetContext.isFetching.value = true;
   const worksheet = await useWorkSheetStore().getOrFetchWorksheetByName(name);
   if (!worksheet) {
-    cleanup();
     return false;
   }
 
@@ -162,11 +457,8 @@ export const openWorksheetByName = async (
       style: "CRITICAL",
       title: t("common.access-denied"),
     });
-    cleanup();
     return false;
   }
-
-  cleanup();
 
   await editorContext.maybeSwitchProject(worksheet.project);
   const tabStore = useSQLEditorTabStore();

@@ -387,6 +387,21 @@ func (s *WorksheetService) UpdateWorksheetOrganizer(
 	}), nil
 }
 
+func (s *WorksheetService) BatchUpdateWorksheetOrganizer(
+	ctx context.Context,
+	req *connect.Request[v1pb.BatchUpdateWorksheetOrganizerRequest],
+) (*connect.Response[v1pb.BatchUpdateWorksheetOrganizerResponse], error) {
+	response := &v1pb.BatchUpdateWorksheetOrganizerResponse{}
+	for _, updateReq := range req.Msg.GetRequests() {
+		updated, err := s.UpdateWorksheetOrganizer(ctx, connect.NewRequest(updateReq))
+		if err != nil {
+			return nil, err
+		}
+		response.WorksheetOrganizers = append(response.WorksheetOrganizers, updated.Msg)
+	}
+	return connect.NewResponse(response), nil
+}
+
 func (s *WorksheetService) findWorksheet(ctx context.Context, find *store.FindWorkSheetMessage) (*store.WorkSheetMessage, error) {
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
@@ -556,13 +571,15 @@ func convertToStoreWorksheetMessage(project *store.ProjectMessage, database *sto
 	}
 
 	worksheetMessage := &store.WorkSheetMessage{
-		ProjectID:    project.ResourceID,
-		InstanceID:   &database.InstanceID,
-		DatabaseName: &database.DatabaseName,
-		CreatorID:    creatorID,
-		Title:        worksheet.Title,
-		Statement:    string(worksheet.Content),
-		Visibility:   visibility,
+		ProjectID:  project.ResourceID,
+		CreatorID:  creatorID,
+		Title:      worksheet.Title,
+		Statement:  string(worksheet.Content),
+		Visibility: visibility,
+	}
+	if database != nil {
+		worksheetMessage.InstanceID = &database.InstanceID
+		worksheetMessage.DatabaseName = &database.DatabaseName
 	}
 
 	return worksheetMessage, nil

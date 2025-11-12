@@ -6,7 +6,6 @@ import { inject, provide, ref } from "vue";
 import { useSQLEditorStore } from "@/store";
 import type { SQLEditorTab } from "@/types";
 import type { GetSchemaStringRequest_ObjectType } from "@/types/proto-es/v1/database_service_pb";
-import type { Worksheet } from "@/types/proto-es/v1/worksheet_service_pb";
 
 export type AsidePanelTab = "SCHEMA" | "WORKSHEET" | "HISTORY";
 
@@ -17,7 +16,6 @@ export type SQLEditorEvents = Emittery<{
   "save-sheet": {
     tab: SQLEditorTab;
     editTitle?: boolean;
-    mask?: Array<keyof Worksheet>;
   };
   "alter-schema": {
     // Format: instances/{instance}/databases/{database}

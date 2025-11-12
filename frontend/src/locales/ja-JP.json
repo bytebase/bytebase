@@ -1,6 +1,5 @@
 {
   "common": {
-    "apply-to-database": "データベースに適用",
     "view": "チェック",
     "you": "あなた",
     "general": "全般",
@@ -148,6 +147,7 @@
     "no-data": "データなし",
     "visibility": "可視性",
     "duplicate": "コピー",
+    "fork": "フォーク",
     "enable": "オンにする",
     "disable": "無効にする",
     "view-doc": "ドキュメントを見る",
@@ -245,7 +245,8 @@
     },
     "collapse": "閉じる",
     "line": "行",
-    "column": "列"
+    "column": "列",
+    "apply-to-database": "データベースに適用"
   },
   "error-page": {
     "go-back-home": "ホームページに戻る"
@@ -2027,6 +2028,7 @@
       }
     },
     "copy-url": "URLをコピー",
+    "url-copied-to-clipboard": "URLがクリップボードにコピーされました",
     "connect-to-a-database": "データベースに接続する",
     "link-access": "リンクアクセス",
     "private": "プライベート",
@@ -2037,6 +2039,7 @@
     "project-write-desc": "シート所有者と「bb.worksheets.get」権限を持つプロジェクトユーザーの両方が読み取り/書き込みできます。",
     "create-read-only-data-source": "作成に行く",
     "save-sheet": "ワークシートの保存",
+    "choose-folder": "フォルダを選択",
     "save-sheet-input-placeholder": "ワークシート名を入力してください",
     "format": "フォーマット",
     "visualize-explain": "視覚化の説明",
@@ -2052,12 +2055,8 @@
     "allow-admin-mode-only": "インスタンス {instance} には管理者モードでのみアクセスできます。",
     "query-time": "クエリ時間",
     "connection-lost": "接続切断。次回クエリが実行されるときに再接続が試行されます。",
-    "sheet": {
-      "self": "ワークシート",
-      "connection": "接続する"
-    },
+    "sheet": {},
     "tab": {
-      "unsaved": "保存されていません",
       "context-menu": {
         "actions": {
           "close": "閉じる",
@@ -2065,7 +2064,9 @@
           "close-to-the-right": "右側をすべて閉じます",
           "close-saved": "保存済みを閉じる",
           "close-all": "すべて閉じる",
-          "rename": "名前の変更"
+          "rename": "名前の変更",
+          "add-folder": "フォルダを追加",
+          "add-worksheet": "ワークシートを追加"
         }
       }
     },
@@ -2212,8 +2213,6 @@
       "invalid-view-name": "無効なビュー名です",
       "duplicated-view-name": "重複したビュー名"
     },
-    "confirm-to-close": {
-    },
     "foreign-key": {
       "edit": "外部キーを編集",
       "name-description": "外部キーの一意の名前"
@@ -2332,19 +2331,27 @@
   },
   "sheet": {
     "mine": "マイワークシート",
-    "star": "お気に入りに追加",
-    "unstar": "お気に入りをキャンセルする",
-    "starred": "お気に入り",
     "shared": "共有",
     "notifications": {
       "duplicate-success": "「マイワークシート」にコピーされました"
     },
+    "filter": {
+      "show-mine": "私のものを表示",
+      "show-shared": "共有を表示",
+      "show-draft": "下書きを表示",
+      "only-show-starred": "スター付きのみ表示"
+    },
     "hint-tips": {
-      "confirm-to-delete-this-sheet": "このワークシートを削除してもよろしいですか?",
+      "non-empty-folder-title": "空でないフォルダ",
+      "non-empty-folder-content": "すべてのワークシートをルート フォルダーに移動しますか、それとも削除するだけですか?",
+      "move-to-root-folder": "ルートフォルダに移動する",
+      "delete-all-sheets": "すべてのファイルを削除する",
+      "duplicate-folder-name-title": "重複したフォルダ名",
+      "duplicate-folder-name-content": "すべてのサブフォルダーとファイルを既存のフォルダー \"{folder}\" にマージしますか?",
+      "confirm-to-delete-sheet-title": "このワークシートを削除しますか?",
       "confirm-to-duplicate-sheet": "このワークシートをコピーしてもよろしいですか?"
     },
-    "search-sheets": "ワークシートの検索",
-    "draft": "下書き"
+    "search-sheets": "ワークシートの検索"
   },
   "sql-review": {
     "title": "SQL監査ポリシー",

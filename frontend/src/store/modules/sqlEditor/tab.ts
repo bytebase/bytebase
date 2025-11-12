@@ -493,6 +493,7 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
   );
 
   return {
+    project,
     tabIdList,
     tabList,
     currentTabId,
