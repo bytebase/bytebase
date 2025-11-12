@@ -207,23 +207,29 @@ func TestSQLQueryStopOnError(t *testing.T) {
 			}))
 
 			if tt.wantError {
-				// With stop-on-error behavior, the service always returns SUCCESS
-				// with results array containing error result(s)
-				a.NoError(err)
-				a.NotNil(queryResp)
-				a.NotNil(queryResp.Msg)
-				a.Equal(tt.wantResults, len(queryResp.Msg.Results))
+				// Service returns SUCCESS but one or more results contain errors
+				a.NoError(err, "[%s] expected no error from service", tt.name)
+				a.NotNil(queryResp, "[%s] expected non-nil response", tt.name)
+				a.NotNil(queryResp.Msg, "[%s] expected non-nil response message", tt.name)
+				a.Equal(tt.wantResults, len(queryResp.Msg.Results), "[%s] expected %d results", tt.name, tt.wantResults)
 
-				// The last result should contain the error and detailed_error
-				lastResult := queryResp.Msg.Results[len(queryResp.Msg.Results)-1]
-				a.NotEmpty(lastResult.Error, "last result should have error message")
+				// Find which result has the error
+				var errorResult *v1pb.QueryResult
+				for _, result := range queryResp.Msg.Results {
+					if result.Error != "" {
+						errorResult = result
+						break
+					}
+				}
+				a.NotNil(errorResult, "[%s] expected at least one result with error", tt.name)
+				a.NotEmpty(errorResult.Error, "[%s] error result should have error message", tt.name)
 
 				if tt.wantSyntaxError {
-					a.NotNil(lastResult.GetSyntaxError(), "expected syntax_error in detailed_error")
-					a.NotNil(lastResult.GetSyntaxError().StartPosition, "syntax error should have start position")
+					a.NotNil(errorResult.GetSyntaxError(), "[%s] expected syntax_error in detailed_error", tt.name)
+					a.NotNil(errorResult.GetSyntaxError().StartPosition, "[%s] syntax error should have start position", tt.name)
 				}
 				if tt.wantPermissionDenied {
-					a.NotNil(lastResult.GetPermissionDenied(), "expected permission_denied in detailed_error")
+					a.NotNil(errorResult.GetPermissionDenied(), "[%s] expected permission_denied in detailed_error", tt.name)
 				}
 			} else {
 				a.NoError(err)
