@@ -194,9 +194,10 @@ const useSheetTreeByView = (
     const worksheetsByFolder = new Map<string, Worksheet[]>();
     for (const worksheet of sheetList.value) {
       const pwd = getPwdForWorksheet(worksheet);
-      const existing = worksheetsByFolder.get(pwd) || [];
-      existing.push(worksheet);
-      worksheetsByFolder.set(pwd, existing);
+      if (!worksheetsByFolder.has(pwd)) {
+        worksheetsByFolder.set(pwd, []);
+      }
+      worksheetsByFolder.get(pwd)!.push(worksheet);
     }
 
     sheetTree.value = buildTree(getRootTreeNode(), worksheetsByFolder);
