@@ -171,23 +171,16 @@ func TestSensitiveData(t *testing.T) {
 	a.NoError(err)
 	database := databaseResp.Msg
 
-	// Validate query syntax error.
-	_, err = ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
+	// Validate query syntax error - with new ACL system, syntax errors are returned in query results
+	syntaxErrorResp, err := ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
 		Name:         database.Name,
 		Statement:    "SELECT hello TO world;",
 		DataSourceId: "admin",
 	}))
-	a.Error(err)
-	// TODO(d): deprecate the details with diagonose check. And the error is not reached anyway.
-	/*
-		st := status.Convert(err)
-		a.Len(st.Details(), 1)
-		report, ok := st.Details()[0].(*v1pb.PlanCheckRun_Result_SqlReviewReport)
-		a.True(ok)
-		a.Equal(int32(1), report.Line)
-		a.Equal(int32(13), report.Column)
-		a.Equal("Syntax error at line 1:13 \nrelated text: SELECT hello TO", report.Detail)
-	*/
+	a.NoError(err)
+	a.Equal(1, len(syntaxErrorResp.Msg.Results))
+	a.NotEmpty(syntaxErrorResp.Msg.Results[0].Error)
+	a.Contains(syntaxErrorResp.Msg.Results[0].Error, "Syntax error")
 
 	sheetResp, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
 		Parent: ctl.project.Name,
