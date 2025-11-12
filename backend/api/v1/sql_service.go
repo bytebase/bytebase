@@ -242,6 +242,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		}
 		// populate the detailed_error field of the last query result
 		var qe *queryError
+		var pe *parserbase.SyntaxError
 		if errors.As(queryErr, &qe) {
 			if qe.resource != "" {
 				results[len(results)-1].DetailedError = &v1pb.QueryResult_PermissionDenied_{
@@ -256,10 +257,10 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 					},
 				}
 			}
-		} else if syntaxErr, ok := queryErr.(*parserbase.SyntaxError); ok {
+		} else if errors.As(queryErr, &pe) {
 			results[len(results)-1].DetailedError = &v1pb.QueryResult_SyntaxError_{
 				SyntaxError: &v1pb.QueryResult_SyntaxError{
-					StartPosition: convertToPosition(syntaxErr.Position),
+					StartPosition: convertToPosition(pe.Position),
 				},
 			}
 		}
