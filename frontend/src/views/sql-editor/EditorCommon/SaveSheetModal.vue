@@ -17,6 +17,7 @@
       </div>
       <div class="flex flex-col gap-y-1">
         <p>{{ $t("sql-editor.choose-folder") }}</p>
+        <!-- TODO(ed): support creating new folders when saving the worksheet -->
         <NTreeSelect
           filterable
           clearable
