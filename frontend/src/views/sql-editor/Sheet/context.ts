@@ -135,7 +135,7 @@ const useSheetTreeByView = (
     return path
       .replace(folderContext.rootPath.value, "")
       .split("/")
-      .slice(0, -1)
+      .slice(0, -1) // the last element should be the getKeyForWorksheet(worksheet)
       .filter((p) => p);
   };
 

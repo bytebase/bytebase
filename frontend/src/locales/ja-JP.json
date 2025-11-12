@@ -2054,8 +2054,7 @@
     "allow-admin-mode-only": "インスタンス {instance} には管理者モードでのみアクセスできます。",
     "query-time": "クエリ時間",
     "connection-lost": "接続切断。次回クエリが実行されるときに再接続が試行されます。",
-    "sheet": {
-    },
+    "sheet": {},
     "tab": {
       "context-menu": {
         "actions": {
@@ -2065,7 +2064,8 @@
           "close-saved": "保存済みを閉じる",
           "close-all": "すべて閉じる",
           "rename": "名前の変更",
-          "add-folder": "フォルダを追加"
+          "add-folder": "フォルダを追加",
+          "add-worksheet": "ワークシートを追加"
         }
       }
     },

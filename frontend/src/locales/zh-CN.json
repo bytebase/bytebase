@@ -2054,8 +2054,7 @@
     "allow-admin-mode-only": "实例{instance}只能通过管理员模式访问。",
     "query-time": "查询时间",
     "connection-lost": "连接丢失。下一次执行查询时将尝试重新连接。",
-    "sheet": {
-    },
+    "sheet": {},
     "tab": {
       "context-menu": {
         "actions": {
@@ -2065,7 +2064,8 @@
           "close-saved": "关闭已保存的",
           "close-all": "关闭所有",
           "rename": "重命名",
-          "add-folder": "添加文件夹"
+          "add-folder": "添加文件夹",
+          "add-worksheet": "添加工作表"
         }
       }
     },

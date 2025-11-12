@@ -6,7 +6,7 @@
       :data="[treeNode]"
       :multiple="false"
       :show-irrelevant-nodes="false"
-      :filter="filterNode"
+      :filter="filterNode(rootPath)"
       :pattern="keyword"
       :render-prefix="renderPrefix"
       :render-suffix="renderSuffix"
@@ -14,6 +14,7 @@
       :node-props="nodeProps"
       :selected-keys="selectedKeys"
       :expanded-keys="expandedKeysArray"
+      :override-default-node-click-behavior="overrideNodeClickBehavior"
       @update:expanded-keys="(keys: string[]) => expandedKeys = new Set(keys)"
     />
   </div>
@@ -26,7 +27,11 @@ import {
   FilePenIcon,
   FolderOpenIcon,
 } from "lucide-vue-next";
-import { NTree, type TreeOption } from "naive-ui";
+import {
+  NTree,
+  type TreeOption,
+  type TreeOverrideNodeClickBehavior,
+} from "naive-ui";
 import { ref, computed, watch } from "vue";
 import { HighlightLabelText } from "@/components/v2";
 import { t } from "@/plugins/i18n";
@@ -36,6 +41,7 @@ import {
   useTabViewStateStore,
 } from "@/store";
 import { isDescendantOf, useDynamicLocalStorage } from "@/utils";
+import { filterNode } from "./common";
 
 interface DraftWorsheetNode extends TreeOption {
   key: string;
@@ -62,6 +68,15 @@ const expandedKeys = useDynamicLocalStorage<Set<string>>(
 
 // Convert Set to Array once per render cycle instead of spreading in template
 const expandedKeysArray = computed(() => Array.from(expandedKeys.value));
+
+const overrideNodeClickBehavior: TreeOverrideNodeClickBehavior = ({
+  option,
+}) => {
+  if (option.children) {
+    return "toggleExpand";
+  }
+  return "default";
+};
 
 const keyForDraft = (tab: { id: string }) => {
   return `bb-worksheet-list-draft-${tab.id}`;
@@ -94,15 +109,6 @@ const treeNode = computed((): DraftWorsheetNode => {
     }),
   };
 });
-
-const filterNode = (pattern: string, option: TreeOption) => {
-  const node = option as DraftWorsheetNode;
-  const keyword = pattern.trim().toLowerCase();
-  if (node.key === rootPath.value || !keyword) {
-    return true;
-  }
-  return node.label.toLowerCase().includes(keyword);
-};
 
 const renderPrefix = ({ option }: { option: TreeOption }) => {
   const node = option as DraftWorsheetNode;
@@ -157,12 +163,6 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
       }
       if (node.draftId) {
         tabStore.setCurrentTabId(node.draftId);
-      } else {
-        if (expandedKeys.value.has(node.key)) {
-          expandedKeys.value.delete(node.key);
-        } else {
-          expandedKeys.value.add(node.key);
-        }
       }
     },
   };

@@ -2054,8 +2054,7 @@
     "allow-admin-mode-only": "La instancia {instance} solo es accesible en modo administrador.",
     "query-time": "Tiempo de consulta",
     "connection-lost": "Conexión perdida. \nIntentará volver a conectarse al ejecutar la siguiente consulta.",
-    "sheet": {
-    },
+    "sheet": {},
     "tab": {
       "context-menu": {
         "actions": {
@@ -2065,7 +2064,8 @@
           "close-saved": "Cerrar guardado",
           "close-all": "Cierra todo",
           "rename": "Rebautizar",
-          "add-folder": "Agregar carpeta"
+          "add-folder": "Agregar carpeta",
+          "add-worksheet": "Agregar hoja de trabajo"
         }
       }
     },

@@ -4,6 +4,8 @@
       <BBSpin :size="16" />
     </div>
 
+    <!-- TODO(ed): do we need to support batch operations? -->
+    <!-- For example, batch select worksheets then move the folder or delete -->
     <NTree
       v-else
       block-line
@@ -12,7 +14,7 @@
       :data="[sheetTree]"
       :multiple="false"
       :show-irrelevant-nodes="false"
-      :filter="filterNode"
+      :filter="filterNode(folderContext.rootPath.value)"
       :pattern="worksheetFilter.keyword"
       :render-suffix="renderSuffix"
       :render-prefix="renderPrefix"
@@ -98,6 +100,7 @@ import {
 } from "@/views/sql-editor/Sheet";
 import { useSQLEditorContext } from "@/views/sql-editor/context";
 import { TreeNodePrefix, TreeNodeSuffix } from "./TreeNodeRenders";
+import { filterNode } from "./common";
 import { useDropdown, type DropdownOptionType } from "./dropdown";
 
 const props = defineProps<{
@@ -170,20 +173,6 @@ const handleWorksheetToggleStar = useDebounceFn(
   },
   DEBOUNCE_SEARCH_DELAY
 );
-
-// TODO(ed):
-// Find a better UX for filter.
-// 1. We do need to expand all nodes for filter results?
-// 2. We do still need a tree for filter results? How about just plain list?
-// 3. If we don't show empty folder in filter results, how to support "create/rename folder", "move/rename worksheet" actions?
-const filterNode = (pattern: string, option: TreeOption) => {
-  const node = option as WorsheetFolderNode;
-  const keyword = pattern.trim().toLowerCase();
-  if (node.key === folderContext.rootPath.value || !keyword) {
-    return true;
-  }
-  return node.label.toLowerCase().includes(keyword);
-};
 
 const renderPrefix = ({ option }: { option: TreeOption }) => {
   const node = option as WorsheetFolderNode;
@@ -572,7 +561,7 @@ const handleContextMenuSelect = async (key: DropdownOptionType) => {
         handleDuplicateSheet(contextMenuContext.node.worksheet);
       }
       break;
-    case "addfolder":
+    case "add-folder":
       expandedKeys.value.add(contextMenuContext.node.key);
       const label = generateNewFolderName(contextMenuContext.node.children);
       const newPath = folderContext.addFolder(
@@ -587,6 +576,35 @@ const handleContextMenuSelect = async (key: DropdownOptionType) => {
         },
         rawLabel: label,
       };
+      break;
+    case "add-worksheet":
+      const newWorksheet = await worksheetV1Store.createWorksheet(
+        create(WorksheetSchema, {
+          title: "new worksheet",
+          project: project.value,
+          visibility:
+            props.view === "shared"
+              ? Worksheet_Visibility.PROJECT_READ
+              : Worksheet_Visibility.PRIVATE,
+        })
+      );
+      const folders = contextMenuContext.node.key
+        .replace(folderContext.rootPath.value, "")
+        .split("/")
+        .filter((p) => p);
+      await worksheetV1Store.upsertWorksheetOrganizer(
+        {
+          worksheet: newWorksheet.name,
+          starred: false,
+          folders,
+        },
+        ["folders"]
+      );
+
+      nextTick(() => {
+        openWorksheetByName(newWorksheet.name, editorContext, true);
+        editorContext.showConnectionPanel.value = true;
+      });
       break;
     default:
       break;
@@ -715,7 +733,6 @@ const handleDrop = async ({ node, dragNode }: TreeDropInfo) => {
     return;
   }
 
-  // Check if old parent will be empty BEFORE moving (to avoid stale reference)
   const shouldCloseOldParent =
     !draggedNode.worksheet && oldParentNode.children.length === 1;
 

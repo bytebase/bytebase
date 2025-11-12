@@ -2054,8 +2054,7 @@
     "allow-admin-mode-only": "Phiên bản {instance} chỉ có thể truy cập ở chế độ quản trị.",
     "query-time": "Thời gian truy vấn",
     "connection-lost": "Mất kết nối. Sẽ thử kết nối lại khi thực hiện truy vấn tiếp theo.",
-    "sheet": {
-    },
+    "sheet": {},
     "tab": {
       "context-menu": {
         "actions": {
@@ -2065,7 +2064,8 @@
           "close-saved": "Đóng các trang tính đã lưu",
           "close-all": "Đóng tất cả",
           "rename": "Đổi tên",
-          "add-folder": "Thêm thư mục"
+          "add-folder": "Thêm thư mục",
+          "add-worksheet": "Thêm bảng tính"
         }
       }
     },

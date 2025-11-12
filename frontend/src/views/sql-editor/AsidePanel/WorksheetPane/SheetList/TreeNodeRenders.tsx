@@ -113,7 +113,12 @@ export const TreeNodeSuffix = defineComponent({
       return (
         <NTooltip>
           {{
-            trigger: () => <UsersIcon class="w-4 text-gray-400" onClick={(e) => emit("sharePanelShow", e, props.node)} />,
+            trigger: () => (
+              <UsersIcon
+                class="w-4 text-gray-400"
+                onClick={(e) => emit("sharePanelShow", e, props.node)}
+              />
+            ),
             default: () => {
               return (
                 <div>

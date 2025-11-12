@@ -2054,8 +2054,7 @@
     "allow-admin-mode-only": "Instance {instance} is accessible in admin mode only.",
     "query-time": "Query time",
     "connection-lost": "Connection lost. Will try to reconnect when executing next query.",
-    "sheet": {
-    },
+    "sheet": {},
     "tab": {
       "context-menu": {
         "actions": {
@@ -2065,7 +2064,8 @@
           "close-saved": "Close saved",
           "close-all": "Close all",
           "rename": "Rename",
-          "add-folder": "Add folder"
+          "add-folder": "Add folder",
+          "add-worksheet": "Add worksheet"
         }
       }
     },

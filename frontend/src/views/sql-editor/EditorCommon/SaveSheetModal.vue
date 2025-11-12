@@ -41,6 +41,7 @@ type LocalState = {
   };
 };
 
+// TODO(ed): when saving a new sheet, I hope we can also select it's folder (default root folder).
 const tabStore = useSQLEditorTabStore();
 const databaseStore = useDatabaseV1Store();
 const worksheetV1Store = useWorkSheetStore();

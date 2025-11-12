@@ -1,5 +1,13 @@
+import {
+  FilesIcon,
+  FileCodeIcon,
+  FolderIcon,
+  Share2Icon,
+  TrashIcon,
+  PencilLineIcon,
+} from "lucide-vue-next";
 import { type DropdownOption } from "naive-ui";
-import { computed, reactive, watch } from "vue";
+import { computed, reactive, watch, h } from "vue";
 import { t } from "@/plugins/i18n";
 import { useCurrentUserV1 } from "@/store";
 import { type Position } from "@/types";
@@ -10,7 +18,8 @@ export type DropdownOptionType =
   | "share"
   | "rename"
   | "delete"
-  | "addfolder"
+  | "add-folder"
+  | "add-worksheet"
   | "duplicate";
 
 type WorksheetDropdown = DropdownOption & {
@@ -76,11 +85,13 @@ export const useDropdown = () => {
     const items: WorksheetDropdown[] = [];
     if (context.node.worksheet) {
       items.push({
+        icon: () => h(FilesIcon, { class: "w-4 text-gray-600" }),
         key: "duplicate",
         label: isCreator.value ? t("common.duplicate") : t("common.fork"),
       });
       if (isCreator.value) {
         items.push({
+          icon: () => h(Share2Icon, { class: "w-4 text-gray-600" }),
           key: "share",
           label: t("common.share"),
         });
@@ -89,27 +100,39 @@ export const useDropdown = () => {
       if (canWriteSheet) {
         items.push(
           {
+            icon: () => h(PencilLineIcon, { class: "w-4 text-gray-600" }),
             key: "rename",
             label: t("sql-editor.tab.context-menu.actions.rename"),
           },
           {
+            icon: () => h(TrashIcon, { class: "w-4 text-gray-600" }),
             key: "delete",
             label: t("common.delete"),
           }
         );
       }
     } else {
-      items.push({
-        key: "addfolder",
-        label: t("sql-editor.tab.context-menu.actions.add-folder"),
-      });
+      items.push(
+        {
+          icon: () => h(FolderIcon, { class: "w-4 text-gray-600" }),
+          key: "add-folder",
+          label: t("sql-editor.tab.context-menu.actions.add-folder"),
+        },
+        {
+          icon: () => h(FileCodeIcon, { class: "w-4 text-gray-600" }),
+          key: "add-worksheet",
+          label: t("sql-editor.tab.context-menu.actions.add-worksheet"),
+        }
+      );
       if (context.node.editable) {
         items.push(
           {
+            icon: () => h(PencilLineIcon, { class: "w-4 text-gray-600" }),
             key: "rename",
             label: t("sql-editor.tab.context-menu.actions.rename"),
           },
           {
+            icon: () => h(TrashIcon, { class: "w-4 text-gray-600" }),
             key: "delete",
             label: t("common.delete"),
           }

@@ -571,13 +571,15 @@ func convertToStoreWorksheetMessage(project *store.ProjectMessage, database *sto
 	}
 
 	worksheetMessage := &store.WorkSheetMessage{
-		ProjectID:    project.ResourceID,
-		InstanceID:   &database.InstanceID,
-		DatabaseName: &database.DatabaseName,
-		CreatorID:    creatorID,
-		Title:        worksheet.Title,
-		Statement:    string(worksheet.Content),
-		Visibility:   visibility,
+		ProjectID:  project.ResourceID,
+		CreatorID:  creatorID,
+		Title:      worksheet.Title,
+		Statement:  string(worksheet.Content),
+		Visibility: visibility,
+	}
+	if database != nil {
+		worksheetMessage.InstanceID = &database.InstanceID
+		worksheetMessage.DatabaseName = &database.DatabaseName
 	}
 
 	return worksheetMessage, nil
