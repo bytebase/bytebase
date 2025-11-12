@@ -68,6 +68,18 @@
               >
               <InstanceV1Name :instance="database.instanceResource" />
             </dd>
+            <dt v-if="database.schemaVersion" class="sr-only">
+              {{ $t("common.version") }}
+            </dt>
+            <dd
+              v-if="database.schemaVersion"
+              class="flex items-center text-sm md:mr-4"
+            >
+              <span class="ml-1 textlabel"
+                >{{ $t("common.version") }}&nbsp;-&nbsp;</span
+              >
+              <span>{{ database.schemaVersion }}</span>
+            </dd>
             <SQLEditorButtonV1
               v-if="allowQuery"
               class="text-sm md:mr-4"
