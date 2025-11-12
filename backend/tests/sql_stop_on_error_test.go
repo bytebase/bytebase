@@ -160,6 +160,47 @@ func TestSQLQueryStopOnError(t *testing.T) {
 	a.NoError(err)
 	pgInstance := pgInstanceResp.Msg
 
+	// Create instances for test environment (with DML policy)
+	mysqlTestInstanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
+		InstanceId: generateRandomString("instance"),
+		Instance: &v1pb.Instance{
+			Title:       "mysqlTestInstance",
+			Engine:      v1pb.Engine_MYSQL,
+			Environment: stringPtr("environments/test"),
+			Activation:  true,
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: mysqlContainer.host, Port: mysqlContainer.port, Username: "root", Password: "root-password", Id: "admin"}},
+		},
+	}))
+	a.NoError(err)
+	mysqlTestInstance := mysqlTestInstanceResp.Msg
+
+	pgTestInstanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
+		InstanceId: generateRandomString("instance"),
+		Instance: &v1pb.Instance{
+			Title:       "pgTestInstance",
+			Engine:      v1pb.Engine_POSTGRES,
+			Environment: stringPtr("environments/test"),
+			Activation:  true,
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.host, Port: pgContainer.port, Username: "postgres", Password: "root-password", Id: "admin"}},
+		},
+	}))
+	a.NoError(err)
+	pgTestInstance := pgTestInstanceResp.Msg
+
+	// Set up test environment policy to disallow DML
+	_, err = ctl.orgPolicyServiceClient.CreatePolicy(ctx, connect.NewRequest(&v1pb.CreatePolicyRequest{
+		Parent: "environments/test",
+		Policy: &v1pb.Policy{
+			Type: v1pb.PolicyType_DATA_SOURCE_QUERY,
+			Policy: &v1pb.Policy_DataSourceQueryPolicy{
+				DataSourceQueryPolicy: &v1pb.DataSourceQueryPolicy{
+					DisallowDml: true,
+				},
+			},
+		},
+	}))
+	a.NoError(err)
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
@@ -167,14 +208,26 @@ func TestSQLQueryStopOnError(t *testing.T) {
 
 			var instance *v1pb.Instance
 			databaseOwner := ""
-			switch tt.dbType {
-			case storepb.Engine_MYSQL:
-				instance = mysqlInstance
-			case storepb.Engine_POSTGRES:
-				instance = pgInstance
-				databaseOwner = "postgres"
-			default:
-				a.FailNow("unsupported db type")
+			if tt.environment == "test" {
+				switch tt.dbType {
+				case storepb.Engine_MYSQL:
+					instance = mysqlTestInstance
+				case storepb.Engine_POSTGRES:
+					instance = pgTestInstance
+					databaseOwner = "postgres"
+				default:
+					a.FailNow("unsupported db type")
+				}
+			} else {
+				switch tt.dbType {
+				case storepb.Engine_MYSQL:
+					instance = mysqlInstance
+				case storepb.Engine_POSTGRES:
+					instance = pgInstance
+					databaseOwner = "postgres"
+				default:
+					a.FailNow("unsupported db type")
+				}
 			}
 
 			err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, tt.databaseName, databaseOwner)
@@ -201,7 +254,6 @@ func TestSQLQueryStopOnError(t *testing.T) {
 
 			err = ctl.changeDatabase(ctx, ctl.project, database, sheet, v1pb.MigrationType_DDL)
 			a.NoError(err)
-
 
 			// Execute the query using the Query API (not AdminExecute)
 			queryResp, err := ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
