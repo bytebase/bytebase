@@ -2039,6 +2039,7 @@
     "project-write-desc": "工作表所有者和具有“bb.worksheets.get”权限的项目用户都可以读/写",
     "create-read-only-data-source": "前去创建",
     "save-sheet": "保存工作表",
+    "choose-folder": "选择文件夹",
     "save-sheet-input-placeholder": "请输入工作表名称",
     "format": "格式化",
     "visualize-explain": "可视化 Explain",

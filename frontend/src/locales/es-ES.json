@@ -2039,6 +2039,7 @@
     "project-write-desc": "Tanto el propietario de la hoja como los usuarios del proyecto con permiso \"bb.worksheets.get\" pueden leer/escribir",
     "create-read-only-data-source": "Ir a crear",
     "save-sheet": "Guardar hoja",
+    "choose-folder": "Seleccionar carpeta",
     "save-sheet-input-placeholder": "Por favor, ingresa un nombre para la hoja",
     "format": "Formato",
     "visualize-explain": "Visualizar explicación",

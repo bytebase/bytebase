@@ -2039,6 +2039,7 @@
     "project-write-desc": "シート所有者と「bb.worksheets.get」権限を持つプロジェクトユーザーの両方が読み取り/書き込みできます。",
     "create-read-only-data-source": "作成に行く",
     "save-sheet": "ワークシートの保存",
+    "choose-folder": "フォルダを選択",
     "save-sheet-input-placeholder": "ワークシート名を入力してください",
     "format": "フォーマット",
     "visualize-explain": "視覚化の説明",

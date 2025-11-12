@@ -43,6 +43,7 @@ import {
 import { isDescendantOf, useDynamicLocalStorage } from "@/utils";
 import { filterNode } from "./common";
 
+// TODO(ed): can we deprecate the DraftTree and use the SheetTree & useSheetTreeByView instead?
 interface DraftWorsheetNode extends TreeOption {
   key: string;
   label: string;

@@ -2039,6 +2039,7 @@
     "project-write-desc": "Both sheet owner and project users with \"bb.worksheets.get\" permission can read/write",
     "create-read-only-data-source": "Go to create",
     "save-sheet": "Save Sheet",
+    "choose-folder": "Choose folder",
     "save-sheet-input-placeholder": "Please input a sheet name",
     "format": "Format",
     "visualize-explain": "Visualize Explain",

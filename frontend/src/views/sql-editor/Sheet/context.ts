@@ -118,7 +118,7 @@ const useSheetTreeByView = (
     return pathes;
   };
 
-  const getPathForWorksheet = (worksheet: Worksheet): string => {
+  const getPwdForWorksheet = (worksheet: Worksheet): string => {
     return folderContext.ensureFolderPath(
       [folderContext.rootPath.value, ...worksheet.folders].join("/")
     );
@@ -126,7 +126,7 @@ const useSheetTreeByView = (
 
   const getKeyForWorksheet = (worksheet: Worksheet): string => {
     return [
-      getPathForWorksheet(worksheet),
+      getPwdForWorksheet(worksheet),
       `bytebase-worksheets-${extractWorksheetUID(worksheet.name)}`,
     ].join("/");
   };
@@ -166,7 +166,7 @@ const useSheetTreeByView = (
 
     const sheets = orderBy(
       worksheets.filter(
-        (worksheet) => getPathForWorksheet(worksheet) === parent.key
+        (worksheet) => getPwdForWorksheet(worksheet) === parent.key
       ),
       (item) => item.title
     ).map((worksheet) => {
@@ -185,11 +185,14 @@ const useSheetTreeByView = (
     if (sheets.length === 0) {
       parent.empty = parent.children.every((child) => child.empty);
     }
+
+    return parent;
   };
 
+  const folderTree = computed(() => buildTree(getRootTreeNode(), []));
+
   const rebuildTree = useDebounceFn(() => {
-    sheetTree.value = getRootTreeNode();
-    buildTree(sheetTree.value, sheetList.value);
+    sheetTree.value = buildTree(getRootTreeNode(), sheetList.value);
     events.emit("on-built", { viewMode });
   }, DEBOUNCE_SEARCH_DELAY);
 
@@ -239,12 +242,14 @@ const useSheetTreeByView = (
     isInitialized,
     isLoading,
     sheetTree,
+    folderTree,
     sheetList,
     fetchSheetList,
     folderContext,
     getKeyForWorksheet,
     getFoldersForWorksheet,
     getPathesForWorksheet,
+    getPwdForWorksheet,
   };
 };
 
