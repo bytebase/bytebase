@@ -17,6 +17,7 @@ func TestSQLQueryStopOnError(t *testing.T) {
 		name                 string
 		databaseName         string
 		dbType               storepb.Engine
+		environment          string // Environment to create database in (defaults to prod if empty)
 		prepareStatements    string
 		query                string
 		wantResults          int // Number of successful results before error
@@ -82,7 +83,7 @@ func TestSQLQueryStopOnError(t *testing.T) {
 			name:            "PostgreSQL - Syntax error",
 			databaseName:    "TestStopOnError7",
 			dbType:          storepb.Engine_POSTGRES,
-			query:           "SELECT * FORM invalid_table;",
+			query:           "SELCT * FROM tbl5;",
 			wantResults:     1, // Error result
 			wantError:       true,
 			wantSyntaxError: true,
@@ -91,6 +92,7 @@ func TestSQLQueryStopOnError(t *testing.T) {
 			name:                 "MySQL - Non-read-only command in Query API",
 			databaseName:         "TestStopOnError8",
 			dbType:               storepb.Engine_MYSQL,
+			environment:          "test",
 			prepareStatements:    "CREATE TABLE tbl8(id INT PRIMARY KEY);",
 			query:                "INSERT INTO tbl8 VALUES(1);",
 			wantResults:          1, // Error result
@@ -101,6 +103,7 @@ func TestSQLQueryStopOnError(t *testing.T) {
 			name:                 "PostgreSQL - Non-read-only command in Query API",
 			databaseName:         "TestStopOnError9",
 			dbType:               storepb.Engine_POSTGRES,
+			environment:          "test",
 			prepareStatements:    "CREATE TABLE tbl9(id INT PRIMARY KEY);",
 			query:                "INSERT INTO tbl9 VALUES(1);",
 			wantResults:          1, // Error result
@@ -198,6 +201,7 @@ func TestSQLQueryStopOnError(t *testing.T) {
 
 			err = ctl.changeDatabase(ctx, ctl.project, database, sheet, v1pb.MigrationType_DDL)
 			a.NoError(err)
+
 
 			// Execute the query using the Query API (not AdminExecute)
 			queryResp, err := ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
