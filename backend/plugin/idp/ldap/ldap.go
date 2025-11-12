@@ -148,8 +148,11 @@ func (p *IdentityProvider) Authenticate(username, password string) (*storepb.Ide
 	)
 	if err != nil {
 		return nil, errors.Errorf("search user DN: %v", err)
-	} else if len(sr.Entries) != 1 {
-		return nil, errors.Errorf("expect 1 user DN but got %d", len(sr.Entries))
+	}
+	if len(sr.Entries) == 0 {
+		return nil, errors.Errorf("user filter matched no users; the filter may be too restrictive or the user does not exist in the directory (filter: %q, baseDN: %q)", p.config.UserFilter, p.config.BaseDN)
+	} else if len(sr.Entries) > 1 {
+		return nil, errors.Errorf("user filter matched %d users but must match exactly one; the filter is too broad and needs to be more specific (filter: %q, baseDN: %q)", len(sr.Entries), p.config.UserFilter, p.config.BaseDN)
 	}
 	entry := sr.Entries[0]
 
