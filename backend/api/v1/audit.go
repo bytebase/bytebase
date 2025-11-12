@@ -259,23 +259,14 @@ func logAuditToStdout(ctx context.Context, p *storepb.AuditLog) {
 		}
 	}
 
-	// Map severity to slog level
-	// Proto defines: DEBUG, INFO, NOTICE, WARNING, ERROR, CRITICAL, ALERT, EMERGENCY
-	// Currently only INFO is used, but handle all cases for future-proofing
-	var level slog.Level
-	switch p.Severity {
-	case storepb.AuditLog_DEBUG:
-		level = slog.LevelDebug
-	case storepb.AuditLog_WARNING:
-		level = slog.LevelWarn
-	case storepb.AuditLog_ERROR, storepb.AuditLog_CRITICAL, storepb.AuditLog_ALERT, storepb.AuditLog_EMERGENCY:
-		level = slog.LevelError
-	default:
-		// INFO, NOTICE, SEVERITY_UNSPECIFIED
-		level = slog.LevelInfo
+	// Include audit severity as an attribute (not as slog level)
+	// Audit logs are always logged at INFO level - they represent business events, not system health
+	// The severity field helps categorize the audit event itself
+	if p.Severity != storepb.AuditLog_SEVERITY_UNSPECIFIED {
+		attrs = append(attrs, slog.String("severity", p.Severity.String()))
 	}
 
-	slog.LogAttrs(ctx, level, p.Method, attrs...)
+	slog.LogAttrs(ctx, slog.LevelInfo, p.Method, attrs...)
 }
 
 func getRequestResource(request any) string {
