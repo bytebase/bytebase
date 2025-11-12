@@ -4,6 +4,7 @@ package ldap
 import (
 	"crypto/tls"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/go-ldap/ldap/v3"
@@ -150,9 +151,26 @@ func (p *IdentityProvider) Authenticate(username, password string) (*storepb.Ide
 		return nil, errors.Errorf("search user DN: %v", err)
 	}
 	if len(sr.Entries) == 0 {
-		return nil, errors.Errorf("user filter matched no users; the filter may be too restrictive or the user does not exist in the directory (filter: %q, baseDN: %q)", p.config.UserFilter, p.config.BaseDN)
+		// Log detailed information for admin troubleshooting
+		slog.Error("LDAP authentication failed: user filter matched no users",
+			slog.String("username", username),
+			slog.String("filter", p.config.UserFilter),
+			slog.String("base_dn", p.config.BaseDN),
+			slog.String("hint", "filter may be too restrictive or user does not exist in the directory"),
+		)
+		// Return generic error to prevent information disclosure
+		return nil, errors.New("invalid credentials")
 	} else if len(sr.Entries) > 1 {
-		return nil, errors.Errorf("user filter matched %d users but must match exactly one; the filter is too broad and needs to be more specific (filter: %q, baseDN: %q)", len(sr.Entries), p.config.UserFilter, p.config.BaseDN)
+		// Log detailed information for admin troubleshooting
+		slog.Error("LDAP authentication failed: user filter matched multiple users",
+			slog.String("username", username),
+			slog.Int("matched_count", len(sr.Entries)),
+			slog.String("filter", p.config.UserFilter),
+			slog.String("base_dn", p.config.BaseDN),
+			slog.String("hint", "filter is too broad and needs to be more specific"),
+		)
+		// Return generic error to prevent information disclosure
+		return nil, errors.New("authentication configuration error, please contact your administrator")
 	}
 	entry := sr.Entries[0]
 
