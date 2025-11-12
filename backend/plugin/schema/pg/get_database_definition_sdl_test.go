@@ -1564,6 +1564,13 @@ func TestGetMultiFileDatabaseDefinition_WithComments(t *testing.T) {
 						Comment:    "View of active products",
 					},
 				},
+				MaterializedViews: []*storepb.MaterializedViewMetadata{
+					{
+						Name:       "product_summary_mv",
+						Definition: "SELECT id, name FROM app_schema.products",
+						Comment:    "Materialized view of product summary",
+					},
+				},
 				Functions: []*storepb.FunctionMetadata{
 					{
 						Name:       "count_products",
@@ -1623,6 +1630,12 @@ func TestGetMultiFileDatabaseDefinition_WithComments(t *testing.T) {
 	require.True(t, ok, "view file should exist")
 	assert.Contains(t, viewFile, `CREATE VIEW "app_schema"."active_products"`)
 	assert.Contains(t, viewFile, `COMMENT ON VIEW "app_schema"."active_products" IS 'View of active products';`)
+
+	// Verify materialized view file with comment
+	materializedViewFile, ok := fileMap["schemas/app_schema/materialized_views/product_summary_mv.sql"]
+	require.True(t, ok, "materialized view file should exist")
+	assert.Contains(t, materializedViewFile, `CREATE MATERIALIZED VIEW "app_schema"."product_summary_mv"`)
+	assert.Contains(t, materializedViewFile, `COMMENT ON MATERIALIZED VIEW "app_schema"."product_summary_mv" IS 'Materialized view of product summary';`)
 
 	// Verify function file with comment
 	functionFile, ok := fileMap["schemas/app_schema/functions/count_products.sql"]
