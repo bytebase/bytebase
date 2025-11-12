@@ -735,6 +735,13 @@ func queryRetryStopOnError(
 
 		allResults = append(allResults, results...)
 		allSpans = append(allSpans, spans...)
+
+		// results may have swollen error.
+		for _, result := range results {
+			if result.Error != "" {
+				return allResults, allSpans, totalDuration, nil
+			}
+		}
 	}
 
 	return allResults, allSpans, totalDuration, nil
