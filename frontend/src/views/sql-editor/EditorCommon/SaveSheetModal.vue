@@ -81,7 +81,7 @@ const pendingEdit = ref<{
   title: "",
   folder: "",
 });
-const expandedKeys = ref<string[]>([]);
+const expandedKeys = ref<string[]>([folderContext.rootPath.value]);
 const showModal = ref(false);
 
 const doSaveSheet = async ({
