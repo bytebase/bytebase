@@ -2409,7 +2409,29 @@ func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 			}
 		}
 
-		// Write functions and procedures after views
+		// Write materialized views after views
+		for _, materializedView := range schema.MaterializedViews {
+			if materializedView.SkipDump {
+				continue
+			}
+
+			if err := writeMaterializedViewSDL(&buf, schema.Name, materializedView); err != nil {
+				return "", err
+			}
+
+			if _, err := buf.WriteString(";\n\n"); err != nil {
+				return "", err
+			}
+
+			// Write materialized view comment if present
+			if len(materializedView.Comment) > 0 {
+				if err := writeMaterializedViewCommentSDL(&buf, schema.Name, materializedView); err != nil {
+					return "", err
+				}
+			}
+		}
+
+		// Write functions and procedures after materialized views
 		for _, function := range schema.Functions {
 			if function.SkipDump {
 				continue
@@ -2942,6 +2964,36 @@ func writeViewSDL(out io.Writer, schemaName string, view *storepb.ViewMetadata) 
 	return err
 }
 
+func writeMaterializedViewSDL(out io.Writer, schemaName string, view *storepb.MaterializedViewMetadata) error {
+	if _, err := io.WriteString(out, `CREATE MATERIALIZED VIEW "`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, schemaName); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, view.Name); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `" AS `); err != nil {
+		return err
+	}
+
+	// The materialized view definition should already include the SELECT statement
+	definition := strings.TrimSpace(view.Definition)
+	// Remove trailing semicolon if present
+	definition = strings.TrimSuffix(definition, ";")
+
+	_, err := io.WriteString(out, definition)
+	return err
+}
+
 func writeFunctionSDL(out io.Writer, _ string, function *storepb.FunctionMetadata) error {
 	// The function definition should already include the complete CREATE FUNCTION statement
 	definition := strings.TrimSpace(function.Definition)
@@ -3306,6 +3358,32 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 			})
 		}
 
+		// Generate materialized view files
+		for _, materializedView := range schemaMetadata.MaterializedViews {
+			if materializedView.SkipDump {
+				continue
+			}
+
+			var buf strings.Builder
+			if err := writeMaterializedViewSDL(&buf, schemaName, materializedView); err != nil {
+				return nil, errors.Wrapf(err, "failed to generate materialized view SDL for %s.%s", schemaName, materializedView.Name)
+			}
+			buf.WriteString(";\n")
+
+			// Write materialized view comment if present
+			if len(materializedView.Comment) > 0 {
+				buf.WriteString("\n")
+				if err := writeMaterializedViewCommentSDL(&buf, schemaName, materializedView); err != nil {
+					return nil, errors.Wrapf(err, "failed to generate materialized view comment for %s.%s", schemaName, materializedView.Name)
+				}
+			}
+
+			files = append(files, schema.File{
+				Name:    fmt.Sprintf("schemas/%s/materialized_views/%s.sql", schemaName, materializedView.Name),
+				Content: buf.String(),
+			})
+		}
+
 		// Generate function files
 		for _, function := range schemaMetadata.Functions {
 			if function.SkipDump {
@@ -3518,6 +3596,33 @@ func writeColumnCommentSDL(out io.Writer, schemaName, tableName string, column *
 
 func writeViewCommentSDL(out io.Writer, schemaName string, view *storepb.ViewMetadata) error {
 	if _, err := io.WriteString(out, `COMMENT ON VIEW "`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, schemaName); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, view.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `" IS '`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, escapeSingleQuote(view.Comment)); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `';`); err != nil {
+		return err
+	}
+	_, err := io.WriteString(out, "\n\n")
+	return err
+}
+
+// nolint:unused
+func writeMaterializedViewCommentSDL(out io.Writer, schemaName string, view *storepb.MaterializedViewMetadata) error {
+	if _, err := io.WriteString(out, `COMMENT ON MATERIALIZED VIEW "`); err != nil {
 		return err
 	}
 	if _, err := io.WriteString(out, schemaName); err != nil {

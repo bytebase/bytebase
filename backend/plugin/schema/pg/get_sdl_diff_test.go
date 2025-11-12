@@ -227,6 +227,54 @@ func TestConvertDatabaseSchemaToSDL(t *testing.T) {
 			expectedSDL:   "CREATE TABLE users (\n    id integer NOT NULL,\n    name text NOT NULL\n);",
 			expectedError: false,
 		},
+		{
+			name: "schema_with_materialized_view",
+			dbSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "products",
+									Columns: []*storepb.ColumnMetadata{
+										{
+											Name:     "id",
+											Type:     "integer",
+											Nullable: false,
+										},
+										{
+											Name:     "name",
+											Type:     "text",
+											Nullable: false,
+										},
+										{
+											Name:     "price",
+											Type:     "numeric",
+											Nullable: false,
+										},
+									},
+								},
+							},
+							MaterializedViews: []*storepb.MaterializedViewMetadata{
+								{
+									Name:       "product_summary_mv",
+									Definition: "SELECT id, name, price FROM products",
+									Comment:    "Summary of products",
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			expectedSDL:   "CREATE MATERIALIZED VIEW",
+			expectedError: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -237,12 +285,17 @@ func TestConvertDatabaseSchemaToSDL(t *testing.T) {
 				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
-				if tt.expectedSDL != "" {
-					// For non-empty expected SDL, check that result contains expected structure
+				switch tt.expectedSDL {
+				case "":
+					require.Equal(t, tt.expectedSDL, result)
+				case "CREATE TABLE users (\n    id integer NOT NULL,\n    name text NOT NULL\n);":
 					require.Contains(t, result, "CREATE TABLE")
 					require.Contains(t, result, "users")
-				} else {
-					require.Equal(t, tt.expectedSDL, result)
+				case "CREATE MATERIALIZED VIEW":
+					require.Contains(t, result, "CREATE MATERIALIZED VIEW")
+					require.Contains(t, result, "product_summary_mv")
+					require.Contains(t, result, "COMMENT ON MATERIALIZED VIEW")
+					require.Contains(t, result, "Summary of products")
 				}
 			}
 		})
@@ -4350,6 +4403,295 @@ COMMENT ON VIEW public.active_users IS 'Old comment';`,
 				// Should NOT contain COMMENT ON VIEW
 				assert.NotContains(t, fullText, "COMMENT ON VIEW",
 					"Full text should NOT contain COMMENT ON VIEW when comment is removed")
+			}
+		})
+	}
+}
+
+func TestApplyMaterializedViewChangesToChunks_CommentDrift(t *testing.T) {
+	tests := []struct {
+		name                      string
+		previousUserSDLText       string
+		currentSchema             *model.DatabaseSchema
+		previousSchema            *model.DatabaseSchema
+		expectedCommentStatements int
+		expectedCommentText       string
+	}{
+		{
+			name: "materialized_view_comment_changed_but_definition_unchanged",
+			previousUserSDLText: `CREATE TABLE public.users (
+    id INTEGER PRIMARY KEY,
+    email TEXT NOT NULL
+);
+
+CREATE MATERIALIZED VIEW public.user_emails_mv AS
+SELECT id, email FROM users;
+
+COMMENT ON MATERIALIZED VIEW public.user_emails_mv IS 'Old comment';`,
+			currentSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "users",
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "id", Type: "integer"},
+										{Name: "email", Type: "text", Nullable: false},
+									},
+								},
+							},
+							MaterializedViews: []*storepb.MaterializedViewMetadata{
+								{
+									Name:       "user_emails_mv",
+									Definition: "SELECT id, email FROM users",
+									Comment:    "New comment", // Changed from "Old comment"
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			previousSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "users",
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "id", Type: "integer"},
+										{Name: "email", Type: "text", Nullable: false},
+									},
+								},
+							},
+							MaterializedViews: []*storepb.MaterializedViewMetadata{
+								{
+									Name:       "user_emails_mv",
+									Definition: "SELECT id, email FROM users",
+									Comment:    "Old comment",
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			expectedCommentStatements: 1,
+			expectedCommentText:       "New comment",
+		},
+		{
+			name: "materialized_view_comment_added_when_previously_none",
+			previousUserSDLText: `CREATE TABLE public.users (
+    id INTEGER PRIMARY KEY,
+    role TEXT
+);
+
+CREATE MATERIALIZED VIEW public.admin_users_mv AS
+SELECT * FROM users WHERE role = 'admin';`,
+			currentSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "users",
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "id", Type: "integer"},
+										{Name: "role", Type: "text"},
+									},
+								},
+							},
+							MaterializedViews: []*storepb.MaterializedViewMetadata{
+								{
+									Name:       "admin_users_mv",
+									Definition: "SELECT * FROM users WHERE role = 'admin'",
+									Comment:    "Materialized view of admin users", // Added
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			previousSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "users",
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "id", Type: "integer"},
+										{Name: "role", Type: "text"},
+									},
+								},
+							},
+							MaterializedViews: []*storepb.MaterializedViewMetadata{
+								{
+									Name:       "admin_users_mv",
+									Definition: "SELECT * FROM users WHERE role = 'admin'",
+									Comment:    "", // No comment before
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			expectedCommentStatements: 1,
+			expectedCommentText:       "Materialized view of admin users",
+		},
+		{
+			name: "materialized_view_comment_removed",
+			previousUserSDLText: `CREATE TABLE public.users (
+    id INTEGER PRIMARY KEY,
+    active BOOLEAN
+);
+
+CREATE MATERIALIZED VIEW public.active_users_mv AS
+SELECT * FROM users WHERE active = true;
+
+COMMENT ON MATERIALIZED VIEW public.active_users_mv IS 'Old comment';`,
+			currentSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "users",
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "id", Type: "integer"},
+										{Name: "active", Type: "boolean"},
+									},
+								},
+							},
+							MaterializedViews: []*storepb.MaterializedViewMetadata{
+								{
+									Name:       "active_users_mv",
+									Definition: "SELECT * FROM users WHERE active = true",
+									Comment:    "", // Comment removed
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			previousSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "users",
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "id", Type: "integer"},
+										{Name: "active", Type: "boolean"},
+									},
+								},
+							},
+							MaterializedViews: []*storepb.MaterializedViewMetadata{
+								{
+									Name:       "active_users_mv",
+									Definition: "SELECT * FROM users WHERE active = true",
+									Comment:    "Old comment",
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			expectedCommentStatements: 0,
+			expectedCommentText:       "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Parse previous SDL
+			previousChunks, err := ChunkSDLText(tt.previousUserSDLText)
+			require.NoError(t, err)
+			require.NotNil(t, previousChunks)
+
+			// Log original chunks
+			t.Log("=== Previous SDL Chunks (Before Drift Handling) ===")
+			for identifier, chunk := range previousChunks.MaterializedViews {
+				t.Logf("Materialized View %s:", identifier)
+				t.Logf("  Text: %s", chunk.GetText())
+				t.Logf("  CommentStatements count: %d", len(chunk.CommentStatements))
+			}
+
+			// Apply drift handling
+			err = applyMaterializedViewChangesToChunks(previousChunks, tt.currentSchema, tt.previousSchema)
+			require.NoError(t, err)
+
+			// Log chunks after drift handling
+			t.Log("=== Previous SDL Chunks (After Drift Handling) ===")
+			for identifier, chunk := range previousChunks.MaterializedViews {
+				t.Logf("Materialized View %s:", identifier)
+				t.Logf("  Text: %s", chunk.GetText())
+				t.Logf("  CommentStatements count: %d", len(chunk.CommentStatements))
+			}
+
+			// Get the materialized view chunk
+			var mvChunk *schema.SDLChunk
+			for _, chunk := range previousChunks.MaterializedViews {
+				mvChunk = chunk
+				break
+			}
+			require.NotNil(t, mvChunk, "Materialized view chunk should exist after drift handling")
+
+			// Get full text
+			fullText := mvChunk.GetText()
+			t.Logf("Full materialized view text:\n%s", fullText)
+
+			// Verify COMMENT statements count
+			assert.Equal(t, tt.expectedCommentStatements, len(mvChunk.CommentStatements),
+				"COMMENT statements count should match expected")
+
+			// Verify COMMENT content
+			if tt.expectedCommentStatements > 0 {
+				assert.Contains(t, fullText, "COMMENT ON MATERIALIZED VIEW",
+					"Full text should contain COMMENT ON MATERIALIZED VIEW statement")
+				assert.Contains(t, fullText, tt.expectedCommentText,
+					"COMMENT should contain the expected text: %s", tt.expectedCommentText)
+			} else {
+				// Should NOT contain COMMENT ON MATERIALIZED VIEW
+				assert.NotContains(t, fullText, "COMMENT ON MATERIALIZED VIEW",
+					"Full text should NOT contain COMMENT ON MATERIALIZED VIEW when comment is removed")
 			}
 		})
 	}
