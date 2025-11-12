@@ -1355,9 +1355,6 @@
   engine: TIDB
 - type: column.set-default-for-not-null
   category: COLUMN
-  engine: ORACLE
-- type: column.set-default-for-not-null
-  category: COLUMN
   engine: OCEANBASE
 - type: column.set-default-for-not-null
   category: COLUMN

@@ -923,9 +923,6 @@ ruleList:
     engine: TIDB
   - type: column.set-default-for-not-null
     level: ERROR
-    engine: ORACLE
-  - type: column.set-default-for-not-null
-    level: ERROR
     engine: OCEANBASE
   - type: column.set-default-for-not-null
     level: ERROR
