@@ -1,6 +1,9 @@
 <template>
   <div class="flex items-center gap-x-2">
-    <StatusDropdown :params="params" @update:params="$emit('update:params', $event)" />
+    <StatusDropdown
+      :params="params"
+      @update:params="$emit('update:params', $event)"
+    />
     <span class="text-control-border">|</span>
     <FilterDropdown
       v-for="filter in filters"
