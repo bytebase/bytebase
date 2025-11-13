@@ -1646,7 +1646,7 @@ func getIndexText(constraintAST parser.ITableconstraintContext) string {
 }
 
 // processStandaloneIndexChanges analyzes standalone CREATE INDEX statement changes
-// and adds them to the appropriate table's IndexChanges
+// and adds them to the appropriate table's or materialized view's IndexChanges
 func processStandaloneIndexChanges(currentChunks, previousChunks *schema.SDLChunks, currentDBSDLChunks *currentDatabaseSDLChunks, diff *schema.MetadataDiff) {
 	if currentChunks == nil || previousChunks == nil {
 		return
@@ -1660,12 +1660,22 @@ func processStandaloneIndexChanges(currentChunks, previousChunks *schema.SDLChun
 		affectedTables[qualifiedTableName] = tableDiff
 	}
 
+	// Initialize map with all existing materialized view diffs
+	affectedMaterializedViews := make(map[string]*schema.MaterializedViewDiff, len(diff.MaterializedViewChanges))
+	for _, mvDiff := range diff.MaterializedViewChanges {
+		qualifiedMVName := mvDiff.SchemaName + "." + mvDiff.MaterializedViewName
+		affectedMaterializedViews[qualifiedMVName] = mvDiff
+	}
+
 	// Step 1: Process current indexes to find created and modified indexes
 	for _, currentChunk := range currentChunks.Indexes {
-		tableName := extractTableNameFromIndex(currentChunk.ASTNode)
-		if tableName == "" {
-			continue // Skip if we can't determine the table name
+		targetObjectName := extractTableNameFromIndex(currentChunk.ASTNode)
+		if targetObjectName == "" {
+			continue // Skip if we can't determine the target object name
 		}
+
+		// Determine if this index is on a table or materialized view
+		isOnMaterializedView := isIndexOnMaterializedView(targetObjectName, currentChunks, previousChunks)
 
 		if previousChunk, exists := previousChunks.Indexes[currentChunk.Identifier]; exists {
 			// Index exists in both - check if modified by comparing text first
@@ -1677,15 +1687,29 @@ func processStandaloneIndexChanges(currentChunks, previousChunks *schema.SDLChun
 					continue
 				}
 				// Index was modified - use drop and recreate pattern (PostgreSQL standard)
-				tableDiff := getOrCreateTableDiff(diff, tableName, affectedTables)
-				tableDiff.IndexChanges = append(tableDiff.IndexChanges, &schema.IndexDiff{
-					Action:     schema.MetadataDiffActionDrop,
-					OldASTNode: previousChunk.ASTNode,
-				})
-				tableDiff.IndexChanges = append(tableDiff.IndexChanges, &schema.IndexDiff{
-					Action:     schema.MetadataDiffActionCreate,
-					NewASTNode: currentChunk.ASTNode,
-				})
+				if isOnMaterializedView {
+					// Index is on materialized view
+					mvDiff := getOrCreateMaterializedViewDiff(diff, targetObjectName, affectedMaterializedViews)
+					mvDiff.IndexChanges = append(mvDiff.IndexChanges, &schema.IndexDiff{
+						Action:     schema.MetadataDiffActionDrop,
+						OldASTNode: previousChunk.ASTNode,
+					})
+					mvDiff.IndexChanges = append(mvDiff.IndexChanges, &schema.IndexDiff{
+						Action:     schema.MetadataDiffActionCreate,
+						NewASTNode: currentChunk.ASTNode,
+					})
+				} else {
+					// Index is on table
+					tableDiff := getOrCreateTableDiff(diff, targetObjectName, affectedTables)
+					tableDiff.IndexChanges = append(tableDiff.IndexChanges, &schema.IndexDiff{
+						Action:     schema.MetadataDiffActionDrop,
+						OldASTNode: previousChunk.ASTNode,
+					})
+					tableDiff.IndexChanges = append(tableDiff.IndexChanges, &schema.IndexDiff{
+						Action:     schema.MetadataDiffActionCreate,
+						NewASTNode: currentChunk.ASTNode,
+					})
+				}
 				// Add COMMENT ON INDEX diffs if they exist in the new version
 				if len(currentChunk.CommentStatements) > 0 {
 					schemaName, indexName := parseIdentifier(currentChunk.Identifier)
@@ -1707,11 +1731,19 @@ func processStandaloneIndexChanges(currentChunks, previousChunks *schema.SDLChun
 			// If text is identical, skip - no changes detected
 		} else {
 			// New index - store AST node only
-			tableDiff := getOrCreateTableDiff(diff, tableName, affectedTables)
-			tableDiff.IndexChanges = append(tableDiff.IndexChanges, &schema.IndexDiff{
-				Action:     schema.MetadataDiffActionCreate,
-				NewASTNode: currentChunk.ASTNode,
-			})
+			if isOnMaterializedView {
+				mvDiff := getOrCreateMaterializedViewDiff(diff, targetObjectName, affectedMaterializedViews)
+				mvDiff.IndexChanges = append(mvDiff.IndexChanges, &schema.IndexDiff{
+					Action:     schema.MetadataDiffActionCreate,
+					NewASTNode: currentChunk.ASTNode,
+				})
+			} else {
+				tableDiff := getOrCreateTableDiff(diff, targetObjectName, affectedTables)
+				tableDiff.IndexChanges = append(tableDiff.IndexChanges, &schema.IndexDiff{
+					Action:     schema.MetadataDiffActionCreate,
+					NewASTNode: currentChunk.ASTNode,
+				})
+			}
 			// Add COMMENT ON INDEX diffs if they exist
 			if len(currentChunk.CommentStatements) > 0 {
 				schemaName, indexName := parseIdentifier(currentChunk.Identifier)
@@ -1736,16 +1768,27 @@ func processStandaloneIndexChanges(currentChunks, previousChunks *schema.SDLChun
 	for indexName, previousChunk := range previousChunks.Indexes {
 		if _, exists := currentChunks.Indexes[indexName]; !exists {
 			// Index was dropped - store AST node only
-			tableName := extractTableNameFromIndex(previousChunk.ASTNode)
-			if tableName == "" {
-				continue // Skip if we can't determine the table name
+			targetObjectName := extractTableNameFromIndex(previousChunk.ASTNode)
+			if targetObjectName == "" {
+				continue // Skip if we can't determine the target object name
 			}
 
-			tableDiff := getOrCreateTableDiff(diff, tableName, affectedTables)
-			tableDiff.IndexChanges = append(tableDiff.IndexChanges, &schema.IndexDiff{
-				Action:     schema.MetadataDiffActionDrop,
-				OldASTNode: previousChunk.ASTNode,
-			})
+			// Determine if this index was on a table or materialized view
+			isOnMaterializedView := isIndexOnMaterializedView(targetObjectName, currentChunks, previousChunks)
+
+			if isOnMaterializedView {
+				mvDiff := getOrCreateMaterializedViewDiff(diff, targetObjectName, affectedMaterializedViews)
+				mvDiff.IndexChanges = append(mvDiff.IndexChanges, &schema.IndexDiff{
+					Action:     schema.MetadataDiffActionDrop,
+					OldASTNode: previousChunk.ASTNode,
+				})
+			} else {
+				tableDiff := getOrCreateTableDiff(diff, targetObjectName, affectedTables)
+				tableDiff.IndexChanges = append(tableDiff.IndexChanges, &schema.IndexDiff{
+					Action:     schema.MetadataDiffActionDrop,
+					OldASTNode: previousChunk.ASTNode,
+				})
+			}
 		}
 	}
 }
@@ -1834,6 +1877,52 @@ func getOrCreateTableDiff(diff *schema.MetadataDiff, tableName string, affectedT
 	diff.TableChanges = append(diff.TableChanges, newTableDiff)
 	affectedTables[tableName] = newTableDiff
 	return newTableDiff
+}
+
+// getOrCreateMaterializedViewDiff finds an existing materialized view diff or creates a new one
+// mvName should be in schema.mv_name format
+func getOrCreateMaterializedViewDiff(diff *schema.MetadataDiff, mvName string, affectedMaterializedViews map[string]*schema.MaterializedViewDiff) *schema.MaterializedViewDiff {
+	// Check if we already have this materialized view in our map
+	if mvDiff, exists := affectedMaterializedViews[mvName]; exists {
+		return mvDiff
+	}
+
+	// Parse schema and MV name from mvName (format: schema.mv_name)
+	schemaName, mvNameOnly := parseIdentifier(mvName)
+
+	// Create a new materialized view diff for standalone index changes
+	// We set Action to ALTER since we're modifying an existing MV by adding/removing indexes
+	newMVDiff := &schema.MaterializedViewDiff{
+		Action:               schema.MetadataDiffActionAlter,
+		SchemaName:           schemaName,
+		MaterializedViewName: mvNameOnly,
+		OldMaterializedView:  nil,
+		NewMaterializedView:  nil,
+		OldASTNode:           nil,
+		NewASTNode:           nil,
+		IndexChanges:         []*schema.IndexDiff{},
+	}
+
+	diff.MaterializedViewChanges = append(diff.MaterializedViewChanges, newMVDiff)
+	affectedMaterializedViews[mvName] = newMVDiff
+	return newMVDiff
+}
+
+// isIndexOnMaterializedView checks if the given object name refers to a materialized view
+// rather than a table, by checking if it exists in the materialized view chunks
+func isIndexOnMaterializedView(objectName string, currentChunks, previousChunks *schema.SDLChunks) bool {
+	// Check if the object exists as a materialized view in current or previous chunks
+	if currentChunks != nil && currentChunks.MaterializedViews != nil {
+		if _, exists := currentChunks.MaterializedViews[objectName]; exists {
+			return true
+		}
+	}
+	if previousChunks != nil && previousChunks.MaterializedViews != nil {
+		if _, exists := previousChunks.MaterializedViews[objectName]; exists {
+			return true
+		}
+	}
+	return false
 }
 
 // processViewChanges analyzes view changes between current and previous chunks
@@ -3828,7 +3917,8 @@ func generateUniqueKeyConstraintSDL(constraint *storepb.IndexMetadata) string {
 type extendedIndexMetadata struct {
 	*storepb.IndexMetadata
 	SchemaName string
-	TableName  string
+	TableName  string // Table name or MaterializedView name
+	TargetType string // "table" or "materialized_view"
 }
 
 // applyStandaloneIndexChangesToChunks applies minimal changes to standalone CREATE INDEX chunks
@@ -3851,6 +3941,7 @@ func applyStandaloneIndexChangesToChunks(previousChunks *schema.SDLChunks, curre
 
 	// Collect all standalone indexes from current schema (only non-constraint indexes)
 	for _, schema := range currentMetadata.Schemas {
+		// Collect indexes from tables
 		for _, table := range schema.Tables {
 			for _, index := range table.Indexes {
 				// Only include standalone indexes (not constraints like PRIMARY KEY, UNIQUE CONSTRAINT)
@@ -3861,6 +3952,25 @@ func applyStandaloneIndexChangesToChunks(previousChunks *schema.SDLChunks, curre
 						IndexMetadata: index,
 						SchemaName:    schema.Name,
 						TableName:     table.Name,
+						TargetType:    "table",
+					}
+					currentIndexes[indexKey] = extendedIndex
+				}
+			}
+		}
+
+		// Collect indexes from materialized views
+		for _, mv := range schema.MaterializedViews {
+			for _, index := range mv.Indexes {
+				// Only include standalone indexes (not constraints)
+				if !index.IsConstraint && !index.Primary {
+					indexKey := formatIndexKey(schema.Name, index.Name)
+					// Store extended index metadata with materialized view/schema context
+					extendedIndex := &extendedIndexMetadata{
+						IndexMetadata: index,
+						SchemaName:    schema.Name,
+						TableName:     mv.Name,
+						TargetType:    "materialized_view",
 					}
 					currentIndexes[indexKey] = extendedIndex
 				}
@@ -3870,6 +3980,7 @@ func applyStandaloneIndexChangesToChunks(previousChunks *schema.SDLChunks, curre
 
 	// Collect all standalone indexes from previous schema
 	for _, schema := range previousMetadata.Schemas {
+		// Collect indexes from tables
 		for _, table := range schema.Tables {
 			for _, index := range table.Indexes {
 				// Only include standalone indexes (not constraints)
@@ -3879,6 +3990,24 @@ func applyStandaloneIndexChangesToChunks(previousChunks *schema.SDLChunks, curre
 						IndexMetadata: index,
 						SchemaName:    schema.Name,
 						TableName:     table.Name,
+						TargetType:    "table",
+					}
+					previousIndexes[indexKey] = extendedIndex
+				}
+			}
+		}
+
+		// Collect indexes from materialized views
+		for _, mv := range schema.MaterializedViews {
+			for _, index := range mv.Indexes {
+				// Only include standalone indexes (not constraints)
+				if !index.IsConstraint && !index.Primary {
+					indexKey := formatIndexKey(schema.Name, index.Name)
+					extendedIndex := &extendedIndexMetadata{
+						IndexMetadata: index,
+						SchemaName:    schema.Name,
+						TableName:     mv.Name,
+						TargetType:    "materialized_view",
 					}
 					previousIndexes[indexKey] = extendedIndex
 				}

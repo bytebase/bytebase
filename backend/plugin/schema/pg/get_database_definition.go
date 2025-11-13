@@ -2429,6 +2429,28 @@ func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 					return "", err
 				}
 			}
+
+			// Write indexes on materialized view
+			for _, index := range materializedView.Indexes {
+				// Skip constraint-based indexes as they are part of table definition
+				if index.Primary || index.IsConstraint {
+					continue
+				}
+
+				if err := writeIndexSDL(&buf, schema.Name, materializedView.Name, index); err != nil {
+					return "", err
+				}
+				if _, err := buf.WriteString(";\n\n"); err != nil {
+					return "", err
+				}
+
+				// Write index comment if present
+				if len(index.Comment) > 0 {
+					if err := writeIndexCommentSDL(&buf, schema.Name, index); err != nil {
+						return "", err
+					}
+				}
+			}
 		}
 
 		// Write functions and procedures after materialized views
@@ -3375,6 +3397,28 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 				buf.WriteString("\n")
 				if err := writeMaterializedViewCommentSDL(&buf, schemaName, materializedView); err != nil {
 					return nil, errors.Wrapf(err, "failed to generate materialized view comment for %s.%s", schemaName, materializedView.Name)
+				}
+			}
+
+			// Write indexes on materialized view
+			for _, index := range materializedView.Indexes {
+				// Skip constraint-based indexes
+				if index.Primary || index.IsConstraint {
+					continue
+				}
+
+				buf.WriteString("\n")
+				if err := writeIndexSDL(&buf, schemaName, materializedView.Name, index); err != nil {
+					return nil, errors.Wrapf(err, "failed to generate index SDL for %s.%s", schemaName, index.Name)
+				}
+				buf.WriteString(";\n")
+
+				// Write index comment if present
+				if len(index.Comment) > 0 {
+					buf.WriteString("\n")
+					if err := writeIndexCommentSDL(&buf, schemaName, index); err != nil {
+						return nil, errors.Wrapf(err, "failed to generate index comment for %s.%s", schemaName, index.Name)
+					}
 				}
 			}
 
