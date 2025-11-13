@@ -243,6 +243,8 @@ type EnumTypeDiff struct {
 	EnumTypeName string
 	OldEnumType  *storepb.EnumTypeMetadata
 	NewEnumType  *storepb.EnumTypeMetadata
+	OldASTNode   any // For SDL/AST-only mode
+	NewASTNode   any // For SDL/AST-only mode
 }
 
 // EventDiff represents changes to an event.
@@ -265,6 +267,7 @@ const (
 	CommentObjectTypeFunction         CommentObjectType = "FUNCTION"
 	CommentObjectTypeSequence         CommentObjectType = "SEQUENCE"
 	CommentObjectTypeIndex            CommentObjectType = "INDEX"
+	CommentObjectTypeType             CommentObjectType = "TYPE"
 )
 
 // CommentDiff represents changes to database object comments.
