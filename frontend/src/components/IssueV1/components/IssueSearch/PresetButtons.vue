@@ -20,7 +20,11 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useCurrentUserV1 } from "@/store";
 import type { SearchParams } from "@/utils";
-import { getValueFromSearchParams, getSemanticIssueStatusFromSearchParams, upsertScope } from "@/utils";
+import {
+  getValueFromSearchParams,
+  getSemanticIssueStatusFromSearchParams,
+  upsertScope,
+} from "@/utils";
 
 type PresetValue = "WAITING_APPROVAL" | "CREATED" | "ALL";
 

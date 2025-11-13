@@ -50,7 +50,11 @@ import FilterToggles from "./FilterToggles.vue";
 import PresetButtons from "./PresetButtons.vue";
 import { useIssueSearchScopeOptions } from "./useIssueSearchScopeOptions";
 
-export type SearchComponent = "searchbox" | "presets" | "filters" | "time-range";
+export type SearchComponent =
+  | "searchbox"
+  | "presets"
+  | "filters"
+  | "time-range";
 
 const props = withDefaults(
   defineProps<{

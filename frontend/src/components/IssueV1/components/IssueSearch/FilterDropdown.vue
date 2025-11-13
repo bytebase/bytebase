@@ -65,7 +65,8 @@ const dropdownOptions = computed((): DropdownOption[] => {
       h(
         "div",
         {
-          class: "px-3 py-2 text-sm hover:bg-gray-100 cursor-pointer flex items-center gap-x-2",
+          class:
+            "px-3 py-2 text-sm hover:bg-gray-100 cursor-pointer flex items-center gap-x-2",
         },
         [
           h("input", {
