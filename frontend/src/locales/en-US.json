@@ -2775,6 +2775,10 @@
       "self": "SQL Editor User",
       "description": "Permissions for querying database data."
     },
+    "gitops-service-agent": {
+      "self": "GitOps Service Agent",
+      "description": "Permissions for automated CI/CD workflows to create and execute database changes via GitOps."
+    },
     "project-viewer": {
       "self": "Project Viewer",
       "description": "Read-only permissions for viewing basic project information, accessing databases, and initiating privilege requests."
