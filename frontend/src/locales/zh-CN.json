@@ -589,6 +589,11 @@
           "participate": "参与改进计划",
           "description": "通过分享匿名使用数据帮助改进 Bytebase"
         },
+        "audit-log-stdout": {
+          "self": "审计日志导出",
+          "enable": "启用审计日志输出到标准输出",
+          "description": "将结构化的 JSON 审计日志输出到标准输出，以便日志聚合器（Splunk、ELK、Datadog、Loki）摄取。需要 TEAM 或 ENTERPRISE 许可证。"
+        },
         "disallow-signup": {
           "enable": "禁用自助注册",
           "description": "禁用之后，新用户将无法自助注册，只能通过管理员邀请来创建账户。"

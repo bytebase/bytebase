@@ -589,6 +589,11 @@
           "participate": "改善プログラムに参加",
           "description": "匿名の使用データを共有してBytebaseの改善に協力する"
         },
+        "audit-log-stdout": {
+          "self": "監査ログエクスポート",
+          "enable": "監査ログの標準出力への出力を有効にする",
+          "description": "構造化されたJSON監査ログを標準出力に出力し、ログアグリゲーター（Splunk、ELK、Datadog、Loki）で取り込めるようにします。TEAMまたはENTERPRISEライセンスが必要です。"
+        },
         "disallow-signup": {
           "enable": "セルフサービス登録を無効にする",
           "description": "無効化されると、新しいユーザーは自己登録できなくなり、管理者の招待を通じてのみアカウントを作成できます。"

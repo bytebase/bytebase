@@ -589,6 +589,11 @@
           "participate": "Participate in improvement program",
           "description": "Help improve Bytebase by sharing anonymous usage data"
         },
+        "audit-log-stdout": {
+          "self": "Audit Log Export",
+          "enable": "Enable audit logging to stdout",
+          "description": "Output structured JSON audit logs to stdout for ingestion by log aggregators (Splunk, ELK, Datadog, Loki). Requires TEAM or ENTERPRISE license."
+        },
         "disallow-signup": {
           "enable": "Disallow self-service signup",
           "description": "Users cannot self-service signup and can only be invited by the workspace admin."
