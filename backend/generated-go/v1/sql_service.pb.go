@@ -2231,16 +2231,16 @@ func (x *QueryResult_SyntaxError) GetStartPosition() *Position {
 }
 
 // Permission denied with resource information or disallowed command_type.
-// Either resource or command_type is available.
+// Either resources or command_type is available.
 type QueryResult_PermissionDenied struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Denied to access the resource.
+	// Denied to access the resources.
 	// Format:
 	// instances/{instance}/databases/{database}
 	// instances/{instance}/databases/{database}/schemas/{schema}
 	// instances/{instance}/databases/{database}/tables/{table}
 	// instances/{instance}/databases/{database}/schemas/{schema}/tables/{table}
-	Resource string `protobuf:"bytes,1,opt,name=resource,proto3" json:"resource,omitempty"`
+	Resources []string `protobuf:"bytes,1,rep,name=resources,proto3" json:"resources,omitempty"`
 	// Disallowed command_type.
 	CommandType   QueryResult_PermissionDenied_CommandType `protobuf:"varint,2,opt,name=command_type,json=commandType,proto3,enum=bytebase.v1.QueryResult_PermissionDenied_CommandType" json:"command_type,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -2277,11 +2277,11 @@ func (*QueryResult_PermissionDenied) Descriptor() ([]byte, []int) {
 	return file_v1_sql_service_proto_rawDescGZIP(), []int{5, 2}
 }
 
-func (x *QueryResult_PermissionDenied) GetResource() string {
+func (x *QueryResult_PermissionDenied) GetResources() []string {
 	if x != nil {
-		return x.Resource
+		return x.Resources
 	}
-	return ""
+	return nil
 }
 
 func (x *QueryResult_PermissionDenied) GetCommandType() QueryResult_PermissionDenied_CommandType {
@@ -2694,7 +2694,7 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\x12RedisRunCommandsOn\x12%\n" +
 	"!REDIS_RUN_COMMANDS_ON_UNSPECIFIED\x10\x00\x12\x0f\n" +
 	"\vSINGLE_NODE\x10\x01\x12\r\n" +
-	"\tALL_NODES\x10\x02\"\x83\r\n" +
+	"\tALL_NODES\x10\x02\"\x85\r\n" +
 	"\vQueryResult\x12!\n" +
 	"\fcolumn_names\x18\x01 \x03(\tR\vcolumnNames\x12*\n" +
 	"\x11column_type_names\x18\x02 \x03(\tR\x0fcolumnTypeNames\x12)\n" +
@@ -2733,9 +2733,9 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\x04line\x18\x10 \x01(\x05R\x04line\x12\x18\n" +
 	"\aroutine\x18\x11 \x01(\tR\aroutine\x1aK\n" +
 	"\vSyntaxError\x12<\n" +
-	"\x0estart_position\x18\x01 \x01(\v2\x15.bytebase.v1.PositionR\rstartPosition\x1a\xda\x01\n" +
-	"\x10PermissionDenied\x12\x1a\n" +
-	"\bresource\x18\x01 \x01(\tR\bresource\x12X\n" +
+	"\x0estart_position\x18\x01 \x01(\v2\x15.bytebase.v1.PositionR\rstartPosition\x1a\xdc\x01\n" +
+	"\x10PermissionDenied\x12\x1c\n" +
+	"\tresources\x18\x01 \x03(\tR\tresources\x12X\n" +
 	"\fcommand_type\x18\x02 \x01(\x0e25.bytebase.v1.QueryResult.PermissionDenied.CommandTypeR\vcommandType\"P\n" +
 	"\vCommandType\x12\x1c\n" +
 	"\x18COMMAND_TYPE_UNSPECIFIED\x10\x00\x12\a\n" +
