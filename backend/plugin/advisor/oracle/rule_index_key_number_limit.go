@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 var (
@@ -28,9 +29,9 @@ type IndexKeyNumberLimitAdvisor struct {
 
 // Check checks for index key number limit.
 func (*IndexKeyNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	tree, ok := checkCtx.AST.(antlr.Tree)
+	stmtList, ok := checkCtx.AST.([]*plsqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to Tree")
+		return nil, errors.Errorf("failed to convert to ParseResult")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
@@ -49,7 +50,11 @@ func (*IndexKeyNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.Con
 	rule := NewIndexKeyNumberLimitRule(level, string(checkCtx.Rule.Type), checkCtx.CurrentDatabase, payload.Number)
 	checker := NewGenericChecker([]Rule{rule})
 
-	antlr.ParseTreeWalkerDefault.Walk(checker, tree)
+	for _, stmtNode := range stmtList {
+		rule.SetBaseLine(stmtNode.BaseLine)
+		checker.SetBaseLine(stmtNode.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtNode.Tree)
+	}
 
 	return checker.GetAdviceList()
 }
@@ -100,7 +105,7 @@ func (r *IndexKeyNumberLimitRule) handleTableIndexClause(ctx *parser.Table_index
 			r.level,
 			advisor.IndexKeyNumberExceedsLimit.Int32(),
 			fmt.Sprintf("Index key number should be less than or equal to %d", r.max),
-			common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+			common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
 		)
 	}
 }
@@ -112,7 +117,7 @@ func (r *IndexKeyNumberLimitRule) handleOutOfLineConstraint(ctx *parser.Out_of_l
 			r.level,
 			advisor.IndexKeyNumberExceedsLimit.Int32(),
 			fmt.Sprintf("Index key number should be less than or equal to %d", r.max),
-			common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+			common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
 		)
 	}
 }

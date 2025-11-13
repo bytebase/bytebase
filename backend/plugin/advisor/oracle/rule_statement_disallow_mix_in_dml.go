@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 var (
@@ -31,9 +32,9 @@ func (*StatementDisallowMixInDMLAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, nil
 	}
 
-	tree, ok := checkCtx.AST.(antlr.Tree)
+	stmtList, ok := checkCtx.AST.([]*plsqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to Tree")
+		return nil, errors.Errorf("failed to convert to ParseResult")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
@@ -44,7 +45,11 @@ func (*StatementDisallowMixInDMLAdvisor) Check(_ context.Context, checkCtx advis
 	rule := NewStatementDisallowMixInDMLRule(level, string(checkCtx.Rule.Type))
 	checker := NewGenericChecker([]Rule{rule})
 
-	antlr.ParseTreeWalkerDefault.Walk(checker, tree)
+	for _, stmtNode := range stmtList {
+		rule.SetBaseLine(stmtNode.BaseLine)
+		checker.SetBaseLine(stmtNode.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtNode.Tree)
+	}
 
 	return checker.GetAdviceList()
 }
@@ -85,7 +90,7 @@ func (r *StatementDisallowMixInDMLRule) handleUnitStatement(ctx *parser.Unit_sta
 			r.level,
 			advisor.StatementDisallowMixDDLDML.Int32(),
 			"Data change can only run DML",
-			common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+			common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
 		)
 	}
 }

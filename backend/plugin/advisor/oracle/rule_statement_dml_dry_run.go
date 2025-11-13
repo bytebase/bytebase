@@ -28,9 +28,9 @@ type StatementDmlDryRunAdvisor struct {
 }
 
 func (*StatementDmlDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	tree, ok := checkCtx.AST.(antlr.Tree)
+	stmtList, ok := checkCtx.AST.([]*plsql.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to Tree")
+		return nil, errors.Errorf("failed to convert to ParseResult")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
@@ -42,7 +42,11 @@ func (*StatementDmlDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 	checker := NewGenericChecker([]Rule{rule})
 
 	if checkCtx.Driver != nil {
-		antlr.ParseTreeWalkerDefault.Walk(checker, tree)
+		for _, stmtNode := range stmtList {
+			rule.SetBaseLine(stmtNode.BaseLine)
+			checker.SetBaseLine(stmtNode.BaseLine)
+			antlr.ParseTreeWalkerDefault.Walk(checker, stmtNode.Tree)
+		}
 	}
 
 	return checker.GetAdviceList()
@@ -94,25 +98,25 @@ func (*StatementDmlDryRunRule) OnExit(_ antlr.ParserRuleContext, _ string) error
 
 func (r *StatementDmlDryRunRule) handleInsertStatement(ctx *parser.Insert_statementContext) {
 	if plsql.IsTopLevelStatement(ctx.GetParent()) {
-		r.handleStmt(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx), ctx.GetStart().GetLine())
+		r.handleStmt(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx), r.baseLine+ctx.GetStart().GetLine())
 	}
 }
 
 func (r *StatementDmlDryRunRule) handleUpdateStatement(ctx *parser.Update_statementContext) {
 	if plsql.IsTopLevelStatement(ctx.GetParent()) {
-		r.handleStmt(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx), ctx.GetStart().GetLine())
+		r.handleStmt(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx), r.baseLine+ctx.GetStart().GetLine())
 	}
 }
 
 func (r *StatementDmlDryRunRule) handleDeleteStatement(ctx *parser.Delete_statementContext) {
 	if plsql.IsTopLevelStatement(ctx.GetParent()) {
-		r.handleStmt(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx), ctx.GetStart().GetLine())
+		r.handleStmt(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx), r.baseLine+ctx.GetStart().GetLine())
 	}
 }
 
 func (r *StatementDmlDryRunRule) handleMergeStatement(ctx *parser.Merge_statementContext) {
 	if plsql.IsTopLevelStatement(ctx.GetParent()) {
-		r.handleStmt(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx), ctx.GetStart().GetLine())
+		r.handleStmt(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx), r.baseLine+ctx.GetStart().GetLine())
 	}
 }
 

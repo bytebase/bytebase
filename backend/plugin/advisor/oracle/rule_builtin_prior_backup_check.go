@@ -31,9 +31,9 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 		return nil, nil
 	}
 
-	tree, ok := checkCtx.AST.(antlr.Tree)
+	stmtList, ok := checkCtx.AST.([]*plsqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to Tree")
+		return nil, errors.Errorf("failed to convert to ParseResult")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
@@ -44,7 +44,11 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 	rule := NewStatementPriorBackupCheckRule(ctx, level, string(checkCtx.Rule.Type), checkCtx)
 	checker := NewGenericChecker([]Rule{rule})
 
-	antlr.ParseTreeWalkerDefault.Walk(checker, tree)
+	for _, stmtNode := range stmtList {
+		rule.SetBaseLine(stmtNode.BaseLine)
+		checker.SetBaseLine(stmtNode.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtNode.Tree)
+	}
 
 	return checker.GetAdviceList()
 }
@@ -75,15 +79,23 @@ type statementInfo struct {
 }
 
 func prepareTransformation(databaseName, statement string) ([]statementInfo, error) {
-	tree, _, err := plsqlparser.ParsePLSQL(statement)
+	results, err := plsqlparser.ParsePLSQL(statement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse PLSQL")
+	}
+	if len(results) == 0 {
+		return nil, errors.New("no parse results")
 	}
 
 	extractor := &dmlExtractor{
 		databaseName: databaseName,
 	}
-	antlr.ParseTreeWalkerDefault.Walk(extractor, tree)
+
+	// Walk each parse result tree to extract DML statements
+	for _, result := range results {
+		antlr.ParseTreeWalkerDefault.Walk(extractor, result.Tree)
+	}
+
 	return extractor.dmls, nil
 }
 

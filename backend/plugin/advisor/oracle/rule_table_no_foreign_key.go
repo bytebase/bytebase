@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 var (
@@ -28,9 +29,9 @@ type TableNoForeignKeyAdvisor struct {
 
 // Check checks for table disallow foreign key.
 func (*TableNoForeignKeyAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	tree, ok := checkCtx.AST.(antlr.Tree)
+	stmtList, ok := checkCtx.AST.([]*plsqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to Tree")
+		return nil, errors.Errorf("failed to convert to ParseResult")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
@@ -41,7 +42,11 @@ func (*TableNoForeignKeyAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 	rule := NewTableNoForeignKeyRule(level, string(checkCtx.Rule.Type), checkCtx.CurrentDatabase)
 	checker := NewGenericChecker([]Rule{rule})
 
-	antlr.ParseTreeWalkerDefault.Walk(checker, tree)
+	for _, stmtNode := range stmtList {
+		rule.SetBaseLine(stmtNode.BaseLine)
+		checker.SetBaseLine(stmtNode.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtNode.Tree)
+	}
 
 	return checker.GetAdviceList()
 }
@@ -123,7 +128,7 @@ func (r *TableNoForeignKeyRule) handleCreateTable(ctx *parser.Create_tableContex
 
 func (r *TableNoForeignKeyRule) handleReferencesClause(ctx *parser.References_clauseContext) {
 	r.tableWithFK[r.tableName] = true
-	r.tableLine[r.tableName] = ctx.GetStop().GetLine()
+	r.tableLine[r.tableName] = r.baseLine + ctx.GetStop().GetLine()
 }
 
 func (r *TableNoForeignKeyRule) handleAlterTable(ctx *parser.Alter_tableContext) {

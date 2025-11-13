@@ -14,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 var (
@@ -30,9 +31,9 @@ type ColumnRequireAdvisor struct {
 
 // Check checks for column requirement.
 func (*ColumnRequireAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	tree, ok := checkCtx.AST.(antlr.Tree)
+	stmtList, ok := checkCtx.AST.([]*plsqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to Tree")
+		return nil, errors.Errorf("failed to convert to ParseResult")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
@@ -47,7 +48,11 @@ func (*ColumnRequireAdvisor) Check(_ context.Context, checkCtx advisor.Context) 
 	rule := NewColumnRequireRule(level, string(checkCtx.Rule.Type), checkCtx.CurrentDatabase, columnList)
 	checker := NewGenericChecker([]Rule{rule})
 
-	antlr.ParseTreeWalkerDefault.Walk(checker, tree)
+	for _, stmtNode := range stmtList {
+		rule.SetBaseLine(stmtNode.BaseLine)
+		checker.SetBaseLine(stmtNode.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtNode.Tree)
+	}
 
 	return checker.GetAdviceList()
 }
@@ -137,7 +142,7 @@ func (r *ColumnRequireRule) handleCreateTableExit(ctx *parser.Create_tableContex
 		r.level,
 		advisor.NoRequiredColumn.Int32(),
 		fmt.Sprintf("Table %q requires columns: %s", tableName, strings.Join(missingColumns, ", ")),
-		common.ConvertANTLRLineToPosition(ctx.GetStop().GetLine()),
+		common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStop().GetLine()),
 	)
 }
 
@@ -170,7 +175,7 @@ func (r *ColumnRequireRule) handleAlterTableExit(ctx *parser.Alter_tableContext)
 		r.level,
 		advisor.NoRequiredColumn.Int32(),
 		fmt.Sprintf("Table %q requires columns: %s", tableName, strings.Join(missingColumns, ", ")),
-		common.ConvertANTLRLineToPosition(ctx.GetStop().GetLine()),
+		common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStop().GetLine()),
 	)
 }
 

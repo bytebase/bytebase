@@ -46,9 +46,10 @@ func TestStringsManipulate(t *testing.T) {
 	a.NoError(yaml.Unmarshal(byteValue, &tests))
 
 	for i, t := range tests {
-		tree, tokens, err := ParsePLSQL(t.Input)
+		tree, stream, err := ParsePLSQLForStringsManipulation(t.Input)
 		a.NoError(err)
-		manipulator := NewStringsManipulator(tree, tokens)
+		a.NotNil(tree)
+		manipulator := NewStringsManipulator(tree, stream)
 		actions := convertActionsForTest(t.Actions)
 		result, err := manipulator.Manipulate(actions...)
 		a.NoError(err)

@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 var (
@@ -29,9 +30,9 @@ type ColumnRequireDefaultAdvisor struct {
 
 // Check checks for column default requirement.
 func (*ColumnRequireDefaultAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	tree, ok := checkCtx.AST.(antlr.Tree)
+	stmtList, ok := checkCtx.AST.([]*plsqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to Tree")
+		return nil, errors.Errorf("failed to convert to ParseResult")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
@@ -42,7 +43,11 @@ func (*ColumnRequireDefaultAdvisor) Check(_ context.Context, checkCtx advisor.Co
 	rule := NewColumnRequireDefaultRule(level, string(checkCtx.Rule.Type), checkCtx.CurrentDatabase)
 	checker := NewGenericChecker([]Rule{rule})
 
-	antlr.ParseTreeWalkerDefault.Walk(checker, tree)
+	for _, stmtNode := range stmtList {
+		rule.SetBaseLine(stmtNode.BaseLine)
+		checker.SetBaseLine(stmtNode.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtNode.Tree)
+	}
 
 	return checker.GetAdviceList()
 }
@@ -134,7 +139,7 @@ func (r *ColumnRequireDefaultRule) handleColumnDefinition(ctx *parser.Column_def
 	columnName := normalizeIdentifier(ctx.Column_name(), r.currentDatabase)
 	columnID := fmt.Sprintf(`%s.%s`, r.tableName, columnName)
 	if ctx.DEFAULT() == nil {
-		r.noDefaultColumns[columnID] = ctx.GetStart().GetLine()
+		r.noDefaultColumns[columnID] = r.baseLine + ctx.GetStart().GetLine()
 	} else {
 		delete(r.noDefaultColumns, columnID)
 	}

@@ -28,9 +28,9 @@ type TableCommentConventionAdvisor struct {
 }
 
 func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	tree, ok := checkCtx.AST.(antlr.Tree)
+	stmtList, ok := checkCtx.AST.([]*plsqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to Tree")
+		return nil, errors.Errorf("failed to convert to ParseResult")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
@@ -45,7 +45,11 @@ func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 	rule := NewTableCommentConventionRule(level, string(checkCtx.Rule.Type), checkCtx.CurrentDatabase, payload, checkCtx.ClassificationConfig)
 	checker := NewGenericChecker([]Rule{rule})
 
-	antlr.ParseTreeWalkerDefault.Walk(checker, tree)
+	for _, stmtNode := range stmtList {
+		rule.SetBaseLine(stmtNode.BaseLine)
+		checker.SetBaseLine(stmtNode.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtNode.Tree)
+	}
 
 	return checker.GetAdviceList()
 }
@@ -106,7 +110,7 @@ func (r *TableCommentConventionRule) handleCreateTable(ctx *parser.Create_tableC
 
 	tableName := fmt.Sprintf("%s.%s", schemaName, normalizeIdentifier(ctx.Table_name(), r.currentDatabase))
 	r.tableNames = append(r.tableNames, tableName)
-	r.tableLine[tableName] = ctx.GetStart().GetLine()
+	r.tableLine[tableName] = r.baseLine + ctx.GetStart().GetLine()
 }
 
 func (r *TableCommentConventionRule) handleCommentOnTable(ctx *parser.Comment_on_tableContext) {
