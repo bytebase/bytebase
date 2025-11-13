@@ -7284,14 +7284,14 @@ See: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_e
                 </tr>
               
                 <tr>
-                  <td>verify_vault_tls_certificate</td>
+                  <td>skip_vault_tls_verification</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>TLS configuration for connecting to Vault server.
 These fields are separate from the database TLS configuration in DataSource.
-verify_vault_tls_certificate enables TLS certificate verification for Vault connections.
-Default is false (no verification) for backward compatibility.
-Set to true for secure connections (recommended for production). </p></td>
+skip_vault_tls_verification disables TLS certificate verification for Vault connections.
+Default is false (verification enabled) for security.
+Only set to true for development or when certificates cannot be properly validated. </p></td>
                 </tr>
               
                 <tr>

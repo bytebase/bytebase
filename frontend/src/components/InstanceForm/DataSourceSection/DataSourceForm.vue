@@ -595,9 +595,7 @@
                   {{ $t("instance.external-secret-vault.vault-tls-config") }}
                 </label>
                 <SslCertificateFormV1
-                  v-model:verify="
-                    dataSource.externalSecret.verifyVaultTlsCertificate
-                  "
+                  v-model:verify="verifyVaultTls"
                   v-model:ca="dataSource.externalSecret.vaultSslCa"
                   v-model:cert="dataSource.externalSecret.vaultSslCert"
                   v-model:private-key="dataSource.externalSecret.vaultSslKey"
@@ -1271,6 +1269,18 @@ const secretKeyLabel = computed(() => {
     return t("instance.external-secret-vault.vault-secret-key");
   }
   return t("instance.external-secret.key-name");
+});
+
+const verifyVaultTls = computed({
+  get: () => {
+    return !props.dataSource.externalSecret?.skipVaultTlsVerification;
+  },
+  set: (value: boolean) => {
+    if (props.dataSource.externalSecret) {
+      // eslint-disable-next-line vue/no-mutating-props
+      props.dataSource.externalSecret.skipVaultTlsVerification = !value;
+    }
+  },
 });
 
 const changeSecretType = (secretType: DataSourceExternalSecret_SecretType) => {

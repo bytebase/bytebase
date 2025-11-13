@@ -719,13 +719,13 @@ export declare type DataSourceExternalSecret = Message<"bytebase.v1.DataSourceEx
   /**
    * TLS configuration for connecting to Vault server.
    * These fields are separate from the database TLS configuration in DataSource.
-   * verify_vault_tls_certificate enables TLS certificate verification for Vault connections.
-   * Default is false (no verification) for backward compatibility.
-   * Set to true for secure connections (recommended for production).
+   * skip_vault_tls_verification disables TLS certificate verification for Vault connections.
+   * Default is false (verification enabled) for security.
+   * Only set to true for development or when certificates cannot be properly validated.
    *
-   * @generated from field: bool verify_vault_tls_certificate = 9;
+   * @generated from field: bool skip_vault_tls_verification = 9;
    */
-  verifyVaultTlsCertificate: boolean;
+  skipVaultTlsVerification: boolean;
 
   /**
    * CA certificate for Vault server verification.

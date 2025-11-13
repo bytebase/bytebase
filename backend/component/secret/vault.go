@@ -17,9 +17,9 @@ func getVaultClient(ctx context.Context, externalSecret *storepb.DataSourceExter
 
 	// Configure TLS based on Vault-specific TLS settings
 	tlsConfig := &vault.TLSConfig{
-		// Use verify_vault_tls_certificate from ExternalSecret
-		// Default is false for backward compatibility
-		Insecure: !externalSecret.VerifyVaultTlsCertificate,
+		// Use skip_vault_tls_verification from ExternalSecret
+		// Default is false (verification enabled) for security
+		Insecure: externalSecret.SkipVaultTlsVerification,
 	}
 
 	// If custom CA certificate is provided for Vault, use it

@@ -1580,10 +1580,10 @@ type DataSourceExternalSecret struct {
 	PasswordKeyName string `protobuf:"bytes,8,opt,name=password_key_name,json=passwordKeyName,proto3" json:"password_key_name,omitempty"`
 	// TLS configuration for connecting to Vault server.
 	// These fields are separate from the database TLS configuration in DataSource.
-	// verify_vault_tls_certificate enables TLS certificate verification for Vault connections.
-	// Default is false (no verification) for backward compatibility.
-	// Set to true for secure connections (recommended for production).
-	VerifyVaultTlsCertificate bool `protobuf:"varint,9,opt,name=verify_vault_tls_certificate,json=verifyVaultTlsCertificate,proto3" json:"verify_vault_tls_certificate,omitempty"`
+	// skip_vault_tls_verification disables TLS certificate verification for Vault connections.
+	// Default is false (verification enabled) for security.
+	// Only set to true for development or when certificates cannot be properly validated.
+	SkipVaultTlsVerification bool `protobuf:"varint,9,opt,name=skip_vault_tls_verification,json=skipVaultTlsVerification,proto3" json:"skip_vault_tls_verification,omitempty"`
 	// CA certificate for Vault server verification.
 	VaultSslCa string `protobuf:"bytes,10,opt,name=vault_ssl_ca,json=vaultSslCa,proto3" json:"vault_ssl_ca,omitempty"`
 	// Client certificate for mutual TLS authentication with Vault.
@@ -1691,9 +1691,9 @@ func (x *DataSourceExternalSecret) GetPasswordKeyName() string {
 	return ""
 }
 
-func (x *DataSourceExternalSecret) GetVerifyVaultTlsCertificate() bool {
+func (x *DataSourceExternalSecret) GetSkipVaultTlsVerification() bool {
 	if x != nil {
-		return x.VerifyVaultTlsCertificate
+		return x.SkipVaultTlsVerification
 	}
 	return false
 }
@@ -2837,7 +2837,7 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:0\xeaA-\n" +
 	"\x15bytebase.com/Instance\x12\x14instances/{instance}B\x0e\n" +
-	"\f_environment\"\xbf\b\n" +
+	"\f_environment\"\xbd\b\n" +
 	"\x18DataSourceExternalSecret\x12Q\n" +
 	"\vsecret_type\x18\x01 \x01(\x0e20.bytebase.v1.DataSourceExternalSecret.SecretTypeR\n" +
 	"secretType\x12\x10\n" +
@@ -2849,8 +2849,8 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"engineName\x12\x1f\n" +
 	"\vsecret_name\x18\a \x01(\tR\n" +
 	"secretName\x12*\n" +
-	"\x11password_key_name\x18\b \x01(\tR\x0fpasswordKeyName\x12?\n" +
-	"\x1cverify_vault_tls_certificate\x18\t \x01(\bR\x19verifyVaultTlsCertificate\x12%\n" +
+	"\x11password_key_name\x18\b \x01(\tR\x0fpasswordKeyName\x12=\n" +
+	"\x1bskip_vault_tls_verification\x18\t \x01(\bR\x18skipVaultTlsVerification\x12%\n" +
 	"\fvault_ssl_ca\x18\n" +
 	" \x01(\tB\x03\xe0A\x04R\n" +
 	"vaultSslCa\x12)\n" +
