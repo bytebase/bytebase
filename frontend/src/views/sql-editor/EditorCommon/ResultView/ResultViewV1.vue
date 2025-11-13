@@ -12,7 +12,14 @@
           :execute-params="executeParams"
           :result-set="resultSet"
           @execute="$emit('execute', $event)"
-        />
+        >
+          <template #suffix>
+            <RequestQueryButton
+              v-if="showRequestQueryButton"
+              :database-resources="missingResources"
+            />
+          </template>
+        </ErrorView>
         <SingleResultViewV1
           v-else
           :params="executeParams"
@@ -56,7 +63,14 @@
               :execute-params="executeParams"
               :result-set="resultSet"
               @execute="$emit('execute', $event)"
-            />
+            >
+              <template #suffix>
+                <RequestQueryButton
+                  v-if="showRequestQueryButton"
+                  :database-resources="missingResources"
+                />
+              </template>
+            </ErrorView>
             <SingleResultViewV1
               v-else
               :params="executeParams"
