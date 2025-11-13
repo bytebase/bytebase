@@ -2,7 +2,7 @@ import BannerSection from "./BannerSection.vue";
 import DescriptionSection from "./DescriptionSection";
 import HeaderSection from "./HeaderSection";
 import IssueCommentSection from "./IssueCommentSection";
-import IssueSearch from "./IssueSearch";
+import { IssueSearch } from "./IssueSearch";
 import PlanCheckSection from "./PlanCheckSection";
 import Sidebar from "./Sidebar";
 import StageSection from "./StageSection";
