@@ -124,6 +124,7 @@ type SDLChunks struct {
 	Indexes           map[string]*SDLChunk // key: index name/identifier
 	Sequences         map[string]*SDLChunk // key: sequence name/identifier
 	Schemas           map[string]*SDLChunk // key: schema name/identifier
+	EnumTypes         map[string]*SDLChunk // key: enum type name/identifier
 
 	// Column comments: map[schemaName.tableName][columnName] -> COMMENT ON COLUMN AST node
 	ColumnComments map[string]map[string]antlr.ParserRuleContext

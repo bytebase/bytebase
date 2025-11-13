@@ -462,11 +462,16 @@ The comment processing system needs to know which objects are being created or d
 
 ---
 
-### 2.5 Implement Drift Handling (Optional)
+### 2.5 Implement Drift Handling (REQUIRED)
 
-Drift handling synchronizes SDL chunks with actual database state when they differ. This is needed when:
+Drift handling synchronizes SDL chunks with actual database state when they differ. **This is mandatory for all object types.**
+
+This is needed when:
 - User's SDL file doesn't match database state
 - Auto-sync is enabled
+- Database schema differs from SDL (drift detection)
+
+**Without this implementation, the object type will not work correctly in drift scenarios.**
 
 **File**: `backend/plugin/schema/pg/get_sdl_diff.go`
 
@@ -1930,7 +1935,8 @@ Use this checklist to ensure complete implementation:
 - [ ] Registered in `processCommentChanges`
 - [ ] Registered in `buildCreatedObjectsSet`
 - [ ] Registered in `buildDroppedObjectsSet`
-- [ ] Drift handling implemented (optional)
+- [ ] **Drift handling implemented (`applyXXXChangesToChunks`) - REQUIRED**
+- [ ] **Drift handler called in `applyMinimalChangesToChunks` - REQUIRED**
 
 #### Migration Generation - CREATE
 - [ ] Comment type registered in `differ.go`
@@ -1976,12 +1982,14 @@ Use this checklist to ensure complete implementation:
 Adding a new database object to SDL mode requires changes in **5 major phases**:
 
 1. **Parser**: Extract AST nodes and associate COMMENT statements
-2. **SDL Diff**: Detect CREATE/DROP/MODIFY and comment-only changes
+2. **SDL Diff**: Detect CREATE/DROP/MODIFY and comment-only changes + **Drift handling (REQUIRED)**
 3. **Migration Generation**: Add to topological sort with **AST-only dependency extraction** (both CREATE and DROP!)
 4. **SDL Output**: Generate single-file and multi-file SDL formats
 5. **Testing**: Comprehensive tests including dependency ordering
 
-The **most critical** and **most often forgotten** part is:
+The **most critical** and **most often forgotten** parts are:
+
+### 1. AST-only mode dependency extraction (CRITICAL!)
 > **AST-only mode dependency extraction for both CREATE and DROP operations**
 
 Without this, migrations will have wrong ordering in `bb rollout` (SDL mode), leading to:
@@ -1989,3 +1997,13 @@ Without this, migrations will have wrong ordering in `bb rollout` (SDL mode), le
 - ❌ "Cannot drop because other objects depend on it" errors on DROP
 
 Always implement and test dependency ordering with the `TestXXXDependencyOrder` test!
+
+### 2. Drift handling implementation (REQUIRED!)
+> **`applyXXXChangesToChunks` function and call in `applyMinimalChangesToChunks`**
+
+Without this, the object type will not work correctly when:
+- User's SDL file doesn't match database state
+- Auto-sync is enabled
+- Database schema differs from SDL (drift detection)
+
+All other object types (tables, views, functions, sequences, materialized views) implement drift handling. Your new object type must too.

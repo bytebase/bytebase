@@ -100,6 +100,9 @@ func GetSDLDiff(currentSDLText, previousUserSDLText string, currentSchema, previ
 	// Process sequence changes
 	processSequenceChanges(currentChunks, previousChunks, currentDBSDLChunks, diff)
 
+	// Process enum type changes
+	processEnumTypeChanges(currentChunks, previousChunks, currentDBSDLChunks, diff)
+
 	// Process explicit schema changes (CREATE SCHEMA statements)
 	processSchemaChanges(currentChunks, previousChunks, currentSchema, diff)
 
@@ -123,6 +126,7 @@ func ChunkSDLText(sdlText string) (*schema.SDLChunks, error) {
 			Indexes:           make(map[string]*schema.SDLChunk),
 			Sequences:         make(map[string]*schema.SDLChunk),
 			Schemas:           make(map[string]*schema.SDLChunk),
+			EnumTypes:         make(map[string]*schema.SDLChunk),
 			ColumnComments:    make(map[string]map[string]antlr.ParserRuleContext),
 			IndexComments:     make(map[string]map[string]antlr.ParserRuleContext),
 		}, nil
@@ -143,6 +147,7 @@ func ChunkSDLText(sdlText string) (*schema.SDLChunks, error) {
 			Indexes:           make(map[string]*schema.SDLChunk),
 			Sequences:         make(map[string]*schema.SDLChunk),
 			Schemas:           make(map[string]*schema.SDLChunk),
+			EnumTypes:         make(map[string]*schema.SDLChunk),
 			ColumnComments:    make(map[string]map[string]antlr.ParserRuleContext),
 			IndexComments:     make(map[string]map[string]antlr.ParserRuleContext),
 		},
@@ -241,6 +246,40 @@ func (l *sdlChunkExtractor) EnterAlterseqstmt(ctx *parser.AlterseqstmtContext) {
 		}
 		l.chunks.Sequences[schemaQualifiedName] = chunk
 	}
+}
+
+// EnterDefinestmt handles CREATE TYPE AS ENUM statements
+func (l *sdlChunkExtractor) EnterDefinestmt(ctx *parser.DefinestmtContext) {
+	// Check if this is CREATE TYPE AS ENUM
+	if ctx.CREATE() == nil || ctx.TYPE_P() == nil || ctx.AS() == nil || ctx.ENUM_P() == nil {
+		return
+	}
+
+	// Extract type name
+	typeNames := ctx.AllAny_name()
+	if len(typeNames) == 0 {
+		return
+	}
+
+	// Get the enum type name (first Any_name)
+	typeName := typeNames[0]
+	identifier := pgparser.NormalizePostgreSQLAnyName(typeName)
+	identifierStr := strings.Join(identifier, ".")
+
+	// Ensure schema.enumName format (default to "public" if no schema specified)
+	var schemaQualifiedName string
+	if strings.Contains(identifierStr, ".") {
+		schemaQualifiedName = identifierStr
+	} else {
+		schemaQualifiedName = "public." + identifierStr
+	}
+
+	chunk := &schema.SDLChunk{
+		Identifier: schemaQualifiedName,
+		ASTNode:    ctx,
+	}
+
+	l.chunks.EnumTypes[schemaQualifiedName] = chunk
 }
 
 func (l *sdlChunkExtractor) EnterCreatefunctionstmt(ctx *parser.CreatefunctionstmtContext) {
@@ -483,6 +522,32 @@ func (l *sdlChunkExtractor) EnterCommentstmt(ctx *parser.CommentstmtContext) {
 		return
 	}
 
+	// Check for TYPE comment: COMMENT ON TYPE typename IS comment_text
+	if ctx.TYPE_P() != nil {
+		// Extract typename from the third child (TYPE_P is second, typename is third)
+		if ctx.GetChildCount() >= 4 {
+			child := ctx.GetChild(3)
+			if typenameCtx, ok := child.(*parser.TypenameContext); ok {
+				// Extract schema.type from typename
+				identifier := extractSchemaAndTypeFromTypename(typenameCtx)
+				if identifier != "" {
+					if chunk, exists := l.chunks.EnumTypes[identifier]; exists {
+						chunk.CommentStatements = append(chunk.CommentStatements, ctx)
+					} else {
+						// Create a new chunk for the comment (type may not have CREATE TYPE statement)
+						chunk := &schema.SDLChunk{
+							Identifier:        identifier,
+							ASTNode:           nil,
+							CommentStatements: []antlr.ParserRuleContext{ctx},
+						}
+						l.chunks.EnumTypes[identifier] = chunk
+					}
+				}
+			}
+		}
+		return
+	}
+
 	// Check for object_type_any_name: TABLE, SEQUENCE, VIEW, INDEX, etc.
 	if ctx.Object_type_any_name() != nil && ctx.Any_name() != nil {
 		objectType := ctx.Object_type_any_name().GetText()
@@ -564,8 +629,20 @@ func (l *sdlChunkExtractor) EnterCommentstmt(ctx *parser.CommentstmtContext) {
 				}
 				l.chunks.Indexes[identifier] = chunk
 			}
+		case "TYPE":
+			// Handle COMMENT ON TYPE (for enum types)
+			if chunk, exists := l.chunks.EnumTypes[identifier]; exists {
+				chunk.CommentStatements = append(chunk.CommentStatements, ctx)
+			} else {
+				chunk := &schema.SDLChunk{
+					Identifier:        identifier,
+					ASTNode:           nil,
+					CommentStatements: []antlr.ParserRuleContext{ctx},
+				}
+				l.chunks.EnumTypes[identifier] = chunk
+			}
 		default:
-			// Unsupported object type for comment tracking (e.g., MATERIALIZED VIEW, FOREIGN TABLE)
+			// Unsupported object type for comment tracking (e.g., FOREIGN TABLE)
 			// We skip these for now
 		}
 		return
@@ -912,6 +989,64 @@ func parseIdentifier(identifier string) (schemaName, objectName string) {
 		return parts[0], parts[1]
 	}
 	return "public", identifier
+}
+
+// extractSchemaAndTypeFromTypename extracts schema.type identifier from a Typename context
+// Used for parsing COMMENT ON TYPE statements
+func extractSchemaAndTypeFromTypename(typenameCtx *parser.TypenameContext) string {
+	if typenameCtx == nil {
+		return ""
+	}
+
+	// Helper function to normalize a PostgreSQL identifier string
+	normalizeIdentifier := func(text string) string {
+		if len(text) >= 2 && text[0] == '"' && text[len(text)-1] == '"' {
+			// Quoted identifier - preserve case but remove quotes
+			return text[1 : len(text)-1]
+		}
+		// Unquoted identifier - convert to lowercase
+		return strings.ToLower(text)
+	}
+
+	// Navigate to Simpletypename -> Generictype
+	if typenameCtx.GetChildCount() >= 1 {
+		if simpleTypeCtx, ok := typenameCtx.GetChild(0).(*parser.SimpletypenameContext); ok {
+			if simpleTypeCtx.GetChildCount() >= 1 {
+				if genericTypeCtx, ok := simpleTypeCtx.GetChild(0).(*parser.GenerictypeContext); ok {
+					// Generictype contains Type_function_name (schema) and Attrs (.typename)
+					var schemaName string
+					var typeName string
+
+					if genericTypeCtx.GetChildCount() >= 1 {
+						if tfnCtx, ok := genericTypeCtx.GetChild(0).(*parser.Type_function_nameContext); ok {
+							schemaName = normalizeIdentifier(tfnCtx.GetText())
+						}
+					}
+
+					if genericTypeCtx.GetChildCount() >= 2 {
+						if attrsCtx, ok := genericTypeCtx.GetChild(1).(*parser.AttrsContext); ok {
+							// Attrs contains ".typename", need to extract the typename
+							attrsText := attrsCtx.GetText()
+							// Remove leading dot and normalize
+							if len(attrsText) > 1 && attrsText[0] == '.' {
+								typeName = normalizeIdentifier(attrsText[1:])
+							}
+						}
+					}
+
+					if schemaName != "" && typeName != "" {
+						return schemaName + "." + typeName
+					}
+					// If only Type_function_name is present (no attrs), treat it as the type name with public schema
+					if schemaName != "" && typeName == "" {
+						return "public." + schemaName
+					}
+				}
+			}
+		}
+	}
+
+	return ""
 }
 
 // extractAlterTexts extracts and concatenates text from a list of ALTER statement nodes
@@ -2595,6 +2730,12 @@ func applyMinimalChangesToChunks(previousChunks *schema.SDLChunks, currentSchema
 		return errors.Wrap(err, "failed to apply materialized view changes")
 	}
 
+	// Process enum type changes: apply minimal changes to enum type chunks
+	err = applyEnumTypeChangesToChunks(previousChunks, currentSchema, previousSchema)
+	if err != nil {
+		return errors.Wrap(err, "failed to apply enum type changes")
+	}
+
 	// Process column comment changes: sync column comments based on metadata
 	err = applyColumnCommentChanges(previousChunks, currentSchema, previousSchema)
 	if err != nil {
@@ -3249,6 +3390,14 @@ func buildCurrentDatabaseSDLChunks(currentSchema *model.DatabaseSchema) (*curren
 		}
 	}
 	for identifier, chunk := range currentSDLChunks.Indexes {
+		sdlChunks.chunks[identifier] = strings.TrimSpace(chunk.GetTextWithoutComments())
+		// Store comment text for usability check
+		commentText := extractCommentTextFromChunk(chunk)
+		if commentText != "" {
+			sdlChunks.comments[identifier] = []string{commentText}
+		}
+	}
+	for identifier, chunk := range currentSDLChunks.EnumTypes {
 		sdlChunks.chunks[identifier] = strings.TrimSpace(chunk.GetTextWithoutComments())
 		// Store comment text for usability check
 		commentText := extractCommentTextFromChunk(chunk)
@@ -5126,6 +5275,7 @@ func processCommentChanges(currentChunks, previousChunks *schema.SDLChunks, curr
 	processObjectComments(currentChunks.MaterializedViews, previousChunks.MaterializedViews, schema.CommentObjectTypeMaterializedView, createdObjects, droppedObjects, currentDBSDLChunks, diff)
 	processObjectComments(currentChunks.Functions, previousChunks.Functions, schema.CommentObjectTypeFunction, createdObjects, droppedObjects, currentDBSDLChunks, diff)
 	processObjectComments(currentChunks.Sequences, previousChunks.Sequences, schema.CommentObjectTypeSequence, createdObjects, droppedObjects, currentDBSDLChunks, diff)
+	processObjectComments(currentChunks.EnumTypes, previousChunks.EnumTypes, schema.CommentObjectTypeType, createdObjects, droppedObjects, currentDBSDLChunks, diff)
 	processObjectComments(currentChunks.Indexes, previousChunks.Indexes, schema.CommentObjectTypeIndex, createdObjects, droppedObjects, currentDBSDLChunks, diff)
 	processObjectComments(currentChunks.Schemas, previousChunks.Schemas, schema.CommentObjectTypeSchema, createdObjects, droppedObjects, currentDBSDLChunks, diff)
 
@@ -5172,6 +5322,13 @@ func buildCreatedObjectsSet(diff *schema.MetadataDiff) map[string]bool {
 		}
 	}
 
+	for _, enumDiff := range diff.EnumTypeChanges {
+		if enumDiff.Action == schema.MetadataDiffActionCreate {
+			identifier := enumDiff.SchemaName + "." + enumDiff.EnumTypeName
+			created[identifier] = true
+		}
+	}
+
 	return created
 }
 
@@ -5210,6 +5367,13 @@ func buildDroppedObjectsSet(diff *schema.MetadataDiff) map[string]bool {
 	for _, seqDiff := range diff.SequenceChanges {
 		if seqDiff.Action == schema.MetadataDiffActionDrop {
 			identifier := seqDiff.SchemaName + "." + seqDiff.SequenceName
+			dropped[identifier] = true
+		}
+	}
+
+	for _, enumDiff := range diff.EnumTypeChanges {
+		if enumDiff.Action == schema.MetadataDiffActionDrop {
+			identifier := enumDiff.SchemaName + "." + enumDiff.EnumTypeName
 			dropped[identifier] = true
 		}
 	}
@@ -5872,6 +6036,255 @@ func generateCommentOnMaterializedViewSQL(schemaName, mvName, comment string) st
 	return fmt.Sprintf("COMMENT ON MATERIALIZED VIEW \"%s\".\"%s\" IS '%s';", schemaName, mvName, escapedComment)
 }
 
+// applyEnumTypeChangesToChunks applies minimal changes to enum type chunks based on schema metadata
+func applyEnumTypeChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseSchema) error {
+	if currentSchema == nil || previousSchema == nil || previousChunks == nil {
+		return nil
+	}
+
+	// Get enum type differences by comparing schema metadata
+	currentMetadata := currentSchema.GetMetadata()
+	previousMetadata := previousSchema.GetMetadata()
+	if currentMetadata == nil || previousMetadata == nil {
+		return nil
+	}
+
+	// Build enum type maps for current and previous schemas
+	currentEnumTypes := make(map[string]*storepb.EnumTypeMetadata)
+	previousEnumTypes := make(map[string]*storepb.EnumTypeMetadata)
+
+	// Collect all enum types from current schema
+	for _, schema := range currentMetadata.Schemas {
+		for _, enumType := range schema.EnumTypes {
+			enumKey := schema.Name + "." + enumType.Name
+			currentEnumTypes[enumKey] = enumType
+		}
+	}
+
+	// Collect all enum types from previous schema
+	for _, schema := range previousMetadata.Schemas {
+		for _, enumType := range schema.EnumTypes {
+			enumKey := schema.Name + "." + enumType.Name
+			previousEnumTypes[enumKey] = enumType
+		}
+	}
+
+	// Process enum type additions: create new enum type chunks
+	for enumKey, currentEnum := range currentEnumTypes {
+		if _, exists := previousEnumTypes[enumKey]; !exists {
+			// New enum type - create a chunk for it
+			err := createEnumTypeChunk(previousChunks, currentEnum, enumKey)
+			if err != nil {
+				return errors.Wrapf(err, "failed to create enum type chunk for %s", enumKey)
+			}
+		}
+	}
+
+	// Process enum type modifications: update existing chunks
+	for enumKey, currentEnum := range currentEnumTypes {
+		if previousEnum, exists := previousEnumTypes[enumKey]; exists {
+			// Enum type exists in both metadata
+			// Only update if chunk exists in SDL (user explicitly defined it)
+			if _, chunkExists := previousChunks.EnumTypes[enumKey]; chunkExists {
+				// Chunk exists - update if needed
+				err := updateEnumTypeChunkIfNeeded(previousChunks, currentEnum, previousEnum, enumKey)
+				if err != nil {
+					return errors.Wrapf(err, "failed to update enum type chunk for %s", enumKey)
+				}
+			}
+			// If chunk doesn't exist, skip - user didn't define this enum type in SDL
+		}
+	}
+
+	// Process enum type deletions: remove dropped enum type chunks
+	for enumKey := range previousEnumTypes {
+		if _, exists := currentEnumTypes[enumKey]; !exists {
+			// Enum type was dropped - remove it from chunks
+			deleteEnumTypeChunk(previousChunks, enumKey)
+		}
+	}
+
+	return nil
+}
+
+// createEnumTypeChunk creates a new CREATE TYPE AS ENUM chunk and adds it to the chunks
+func createEnumTypeChunk(chunks *schema.SDLChunks, enumType *storepb.EnumTypeMetadata, enumKey string) error {
+	if enumType == nil || chunks == nil {
+		return nil
+	}
+
+	// Generate SDL text for the enum type
+	schemaName, _ := parseIdentifier(enumKey)
+	enumSDL := generateCreateEnumTypeSDL(schemaName, enumType)
+	if enumSDL == "" {
+		return errors.New("failed to generate SDL for enum type")
+	}
+
+	// Parse the SDL to get AST node
+	parseResult, err := pgparser.ParsePostgreSQL(enumSDL)
+	if err != nil {
+		return errors.Wrapf(err, "failed to parse generated enum type SDL: %s", enumSDL)
+	}
+
+	// Extract the CREATE TYPE AS ENUM AST node
+	var enumASTNode *parser.DefinestmtContext
+	antlr.ParseTreeWalkerDefault.Walk(&enumTypeExtractor{
+		result: &enumASTNode,
+	}, parseResult.Tree)
+
+	if enumASTNode == nil {
+		return errors.New("failed to extract CREATE TYPE AS ENUM AST node")
+	}
+
+	// Create and add the chunk
+	chunk := &schema.SDLChunk{
+		Identifier: enumKey,
+		ASTNode:    enumASTNode,
+	}
+
+	// Handle comment if present
+	if len(enumType.Comment) > 0 {
+		commentSQL := generateCommentOnTypeSQL(schemaName, enumType.Name, enumType.Comment)
+		commentParseResult, err := pgparser.ParsePostgreSQL(commentSQL)
+		if err == nil {
+			var commentNode *parser.CommentstmtContext
+			antlr.ParseTreeWalkerDefault.Walk(&commentExtractor{
+				result: &commentNode,
+			}, commentParseResult.Tree)
+			if commentNode != nil {
+				chunk.CommentStatements = []antlr.ParserRuleContext{commentNode}
+			}
+		}
+	}
+
+	chunks.EnumTypes[enumKey] = chunk
+	return nil
+}
+
+// updateEnumTypeChunkIfNeeded updates an enum type chunk if the definition or comment changed
+func updateEnumTypeChunkIfNeeded(chunks *schema.SDLChunks, currentEnum, previousEnum *storepb.EnumTypeMetadata, enumKey string) error {
+	if currentEnum == nil || previousEnum == nil {
+		return nil
+	}
+
+	chunk, exists := chunks.EnumTypes[enumKey]
+	if !exists {
+		return errors.Errorf("enum type chunk not found for key %s", enumKey)
+	}
+
+	// Check if the enum definition has changed (values changed)
+	definitionChanged := !enumTypesEqual(currentEnum, previousEnum)
+
+	if definitionChanged {
+		// Enum definition has changed - regenerate the CREATE TYPE chunk
+		schemaName, _ := parseIdentifier(enumKey)
+		enumSDL := generateCreateEnumTypeSDL(schemaName, currentEnum)
+		if enumSDL == "" {
+			return errors.New("failed to generate SDL for enum type")
+		}
+
+		// Parse the SDL to get AST node
+		parseResult, err := pgparser.ParsePostgreSQL(enumSDL)
+		if err != nil {
+			return errors.Wrapf(err, "failed to parse generated enum type SDL: %s", enumSDL)
+		}
+
+		// Extract the CREATE TYPE AS ENUM AST node
+		var enumASTNode *parser.DefinestmtContext
+		antlr.ParseTreeWalkerDefault.Walk(&enumTypeExtractor{
+			result: &enumASTNode,
+		}, parseResult.Tree)
+
+		if enumASTNode == nil {
+			return errors.New("failed to extract CREATE TYPE AS ENUM AST node")
+		}
+
+		// Update the CREATE TYPE AST node
+		chunk.ASTNode = enumASTNode
+	}
+
+	// Synchronize COMMENT ON TYPE statements only if comment has changed
+	if currentEnum.Comment != previousEnum.Comment {
+		schemaName, _ := parseIdentifier(enumKey)
+		if err := syncObjectCommentStatements(chunk, currentEnum.Comment, "TYPE", schemaName, currentEnum.Name); err != nil {
+			return errors.Wrapf(err, "failed to sync COMMENT statements for enum type %s", enumKey)
+		}
+	}
+
+	return nil
+}
+
+// deleteEnumTypeChunk removes an enum type chunk from the chunks
+func deleteEnumTypeChunk(chunks *schema.SDLChunks, enumKey string) {
+	if chunks != nil && chunks.EnumTypes != nil {
+		delete(chunks.EnumTypes, enumKey)
+	}
+}
+
+// enumTypesEqual compares two enum type definitions excluding comments
+func enumTypesEqual(enum1, enum2 *storepb.EnumTypeMetadata) bool {
+	if enum1 == nil || enum2 == nil {
+		return false
+	}
+
+	// Compare name
+	if enum1.Name != enum2.Name {
+		return false
+	}
+
+	// Compare values
+	if len(enum1.Values) != len(enum2.Values) {
+		return false
+	}
+	for i, v1 := range enum1.Values {
+		if v1 != enum2.Values[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
+// generateCreateEnumTypeSDL generates the SDL text for a CREATE TYPE AS ENUM statement
+func generateCreateEnumTypeSDL(schemaName string, enumType *storepb.EnumTypeMetadata) string {
+	if enumType == nil {
+		return ""
+	}
+
+	var buf strings.Builder
+	if err := writeEnum(&buf, schemaName, enumType); err != nil {
+		return ""
+	}
+	buf.WriteString(";")
+
+	return buf.String()
+}
+
+// generateCommentOnTypeSQL generates a COMMENT ON TYPE statement
+func generateCommentOnTypeSQL(schemaName, typeName, comment string) string {
+	if schemaName == "" {
+		schemaName = "public"
+	}
+	// Escape single quotes in comment
+	escapedComment := strings.ReplaceAll(comment, "'", "''")
+	return fmt.Sprintf("COMMENT ON TYPE \"%s\".\"%s\" IS '%s';", schemaName, typeName, escapedComment)
+}
+
+// enumTypeExtractor is a walker to extract CREATE TYPE AS ENUM AST nodes
+type enumTypeExtractor struct {
+	parser.BasePostgreSQLParserListener
+	result **parser.DefinestmtContext
+}
+
+func (e *enumTypeExtractor) EnterDefinestmt(ctx *parser.DefinestmtContext) {
+	// Only extract CREATE TYPE AS ENUM statements
+	if ctx.CREATE() != nil && ctx.TYPE_P() != nil && ctx.AS() != nil && ctx.ENUM_P() != nil {
+		if e.result != nil && *e.result == nil {
+			*e.result = ctx
+		}
+	}
+}
+
 // materializedViewExtractor is a walker to extract CREATE MATERIALIZED VIEW AST nodes
 type materializedViewExtractor struct {
 	parser.BasePostgreSQLParserListener
@@ -6027,6 +6440,109 @@ func syncColumnComment(chunks *schema.SDLChunks, tableKey, columnName, comment s
 	chunks.ColumnComments[tableKey][columnName] = commentNode
 
 	return nil
+}
+
+// processEnumTypeChanges analyzes enum type changes between current and previous chunks
+// Enum types use DROP + CREATE pattern for modifications (PostgreSQL doesn't support ALTER TYPE ... RENAME VALUE)
+func processEnumTypeChanges(currentChunks, previousChunks *schema.SDLChunks, currentDBSDLChunks *currentDatabaseSDLChunks, diff *schema.MetadataDiff) {
+	// Process current enum types to find created and modified ones
+	for _, currentChunk := range currentChunks.EnumTypes {
+		if previousChunk, exists := previousChunks.EnumTypes[currentChunk.Identifier]; exists {
+			// Enum type exists in both - check if modified by comparing text (excluding comments)
+			currentText := currentChunk.GetTextWithoutComments()
+			previousText := previousChunk.GetTextWithoutComments()
+			if currentText != previousText {
+				// Apply usability check
+				if currentDBSDLChunks.shouldSkipChunkDiffForUsability(currentText, currentChunk.Identifier) {
+					continue
+				}
+				// Enum type was modified - use DROP + CREATE pattern
+				schemaName, enumName := parseIdentifier(currentChunk.Identifier)
+				// Add DROP diff
+				diff.EnumTypeChanges = append(diff.EnumTypeChanges, &schema.EnumTypeDiff{
+					Action:       schema.MetadataDiffActionDrop,
+					SchemaName:   schemaName,
+					EnumTypeName: enumName,
+					OldEnumType:  nil,
+					NewEnumType:  nil,
+					OldASTNode:   previousChunk.ASTNode,
+					NewASTNode:   nil,
+				})
+				// Add CREATE diff
+				diff.EnumTypeChanges = append(diff.EnumTypeChanges, &schema.EnumTypeDiff{
+					Action:       schema.MetadataDiffActionCreate,
+					SchemaName:   schemaName,
+					EnumTypeName: enumName,
+					OldEnumType:  nil,
+					NewEnumType:  nil,
+					OldASTNode:   nil,
+					NewASTNode:   currentChunk.ASTNode,
+				})
+				// Add COMMENT ON TYPE diffs if they exist in the new version
+				if len(currentChunk.CommentStatements) > 0 {
+					for _, commentNode := range currentChunk.CommentStatements {
+						commentText := extractCommentTextFromNode(commentNode)
+						diff.CommentChanges = append(diff.CommentChanges, &schema.CommentDiff{
+							Action:     schema.MetadataDiffActionCreate,
+							ObjectType: schema.CommentObjectTypeType,
+							SchemaName: schemaName,
+							ObjectName: enumName,
+							OldComment: "",
+							NewComment: commentText,
+							OldASTNode: nil,
+							NewASTNode: commentNode,
+						})
+					}
+				}
+			}
+			// If text is identical, skip - no changes detected
+		} else {
+			// New enum type
+			schemaName, enumName := parseIdentifier(currentChunk.Identifier)
+			diff.EnumTypeChanges = append(diff.EnumTypeChanges, &schema.EnumTypeDiff{
+				Action:       schema.MetadataDiffActionCreate,
+				SchemaName:   schemaName,
+				EnumTypeName: enumName,
+				OldEnumType:  nil,
+				NewEnumType:  nil,
+				OldASTNode:   nil,
+				NewASTNode:   currentChunk.ASTNode,
+			})
+			// Add COMMENT ON TYPE diffs if they exist
+			if len(currentChunk.CommentStatements) > 0 {
+				for _, commentNode := range currentChunk.CommentStatements {
+					commentText := extractCommentTextFromNode(commentNode)
+					diff.CommentChanges = append(diff.CommentChanges, &schema.CommentDiff{
+						Action:     schema.MetadataDiffActionCreate,
+						ObjectType: schema.CommentObjectTypeType,
+						SchemaName: schemaName,
+						ObjectName: enumName,
+						OldComment: "",
+						NewComment: commentText,
+						OldASTNode: nil,
+						NewASTNode: commentNode,
+					})
+				}
+			}
+		}
+	}
+
+	// Process previous enum types to find dropped ones
+	for identifier, previousChunk := range previousChunks.EnumTypes {
+		if _, exists := currentChunks.EnumTypes[identifier]; !exists {
+			// Enum type was dropped
+			schemaName, enumName := parseIdentifier(identifier)
+			diff.EnumTypeChanges = append(diff.EnumTypeChanges, &schema.EnumTypeDiff{
+				Action:       schema.MetadataDiffActionDrop,
+				SchemaName:   schemaName,
+				EnumTypeName: enumName,
+				OldEnumType:  nil,
+				NewEnumType:  nil,
+				OldASTNode:   previousChunk.ASTNode,
+				NewASTNode:   nil,
+			})
+		}
+	}
 }
 
 // processSchemaChanges processes explicit CREATE SCHEMA statements in the SDL
