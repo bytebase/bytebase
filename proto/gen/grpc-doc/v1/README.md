@@ -1515,6 +1515,10 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | engine_name | [string](#string) |  | engine name is the name for secret engine. |
 | secret_name | [string](#string) |  | the secret name in the engine to store the password. |
 | password_key_name | [string](#string) |  | the key name for the password. |
+| verify_vault_tls_certificate | [bool](#bool) |  | TLS configuration for connecting to Vault server. These fields are separate from the database TLS configuration in DataSource. verify_vault_tls_certificate enables TLS certificate verification for Vault connections. Default is false (no verification) for backward compatibility. Set to true for secure connections (recommended for production). |
+| vault_ssl_ca | [string](#string) |  | CA certificate for Vault server verification. |
+| vault_ssl_cert | [string](#string) |  | Client certificate for mutual TLS authentication with Vault. |
+| vault_ssl_key | [string](#string) |  | Client private key for mutual TLS authentication with Vault. |
 
 
 

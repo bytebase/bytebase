@@ -7283,6 +7283,38 @@ See: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_e
                   <td><p>the key name for the password. </p></td>
                 </tr>
               
+                <tr>
+                  <td>verify_vault_tls_certificate</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>TLS configuration for connecting to Vault server.
+These fields are separate from the database TLS configuration in DataSource.
+verify_vault_tls_certificate enables TLS certificate verification for Vault connections.
+Default is false (no verification) for backward compatibility.
+Set to true for secure connections (recommended for production). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>vault_ssl_ca</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>CA certificate for Vault server verification. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>vault_ssl_cert</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Client certificate for mutual TLS authentication with Vault. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>vault_ssl_key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Client private key for mutual TLS authentication with Vault. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 

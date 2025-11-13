@@ -448,5 +448,17 @@ func (x *DataSourceExternalSecret) Equal(y *DataSourceExternalSecret) bool {
 	if x.PasswordKeyName != y.PasswordKeyName {
 		return false
 	}
+	if x.VerifyVaultTlsCertificate != y.VerifyVaultTlsCertificate {
+		return false
+	}
+	if x.VaultSslCa != y.VaultSslCa {
+		return false
+	}
+	if x.VaultSslCert != y.VaultSslCert {
+		return false
+	}
+	if x.VaultSslKey != y.VaultSslKey {
+		return false
+	}
 	return true
 }

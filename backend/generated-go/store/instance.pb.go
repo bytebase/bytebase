@@ -1211,8 +1211,20 @@ type DataSourceExternalSecret struct {
 	SecretName string `protobuf:"bytes,7,opt,name=secret_name,json=secretName,proto3" json:"secret_name,omitempty"`
 	// the key name for the password.
 	PasswordKeyName string `protobuf:"bytes,8,opt,name=password_key_name,json=passwordKeyName,proto3" json:"password_key_name,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// TLS configuration for connecting to Vault server.
+	// These fields are separate from the database TLS configuration in DataSource.
+	// verify_vault_tls_certificate enables TLS certificate verification for Vault connections.
+	// Default is false (no verification) for backward compatibility.
+	// Set to true for secure connections (recommended for production).
+	VerifyVaultTlsCertificate bool `protobuf:"varint,9,opt,name=verify_vault_tls_certificate,json=verifyVaultTlsCertificate,proto3" json:"verify_vault_tls_certificate,omitempty"`
+	// CA certificate for Vault server verification.
+	VaultSslCa string `protobuf:"bytes,10,opt,name=vault_ssl_ca,json=vaultSslCa,proto3" json:"vault_ssl_ca,omitempty"`
+	// Client certificate for mutual TLS authentication with Vault.
+	VaultSslCert string `protobuf:"bytes,11,opt,name=vault_ssl_cert,json=vaultSslCert,proto3" json:"vault_ssl_cert,omitempty"`
+	// Client private key for mutual TLS authentication with Vault.
+	VaultSslKey   string `protobuf:"bytes,12,opt,name=vault_ssl_key,json=vaultSslKey,proto3" json:"vault_ssl_key,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *DataSourceExternalSecret) Reset() {
@@ -1308,6 +1320,34 @@ func (x *DataSourceExternalSecret) GetSecretName() string {
 func (x *DataSourceExternalSecret) GetPasswordKeyName() string {
 	if x != nil {
 		return x.PasswordKeyName
+	}
+	return ""
+}
+
+func (x *DataSourceExternalSecret) GetVerifyVaultTlsCertificate() bool {
+	if x != nil {
+		return x.VerifyVaultTlsCertificate
+	}
+	return false
+}
+
+func (x *DataSourceExternalSecret) GetVaultSslCa() string {
+	if x != nil {
+		return x.VaultSslCa
+	}
+	return ""
+}
+
+func (x *DataSourceExternalSecret) GetVaultSslCert() string {
+	if x != nil {
+		return x.VaultSslCert
+	}
+	return ""
+}
+
+func (x *DataSourceExternalSecret) GetVaultSslKey() string {
+	if x != nil {
+		return x.VaultSslKey
 	}
 	return ""
 }
@@ -1812,7 +1852,7 @@ const file_store_instance_proto_rawDesc = "" +
 	"\x06keytab\x18\x04 \x01(\fR\x06keytab\x12\x19\n" +
 	"\bkdc_host\x18\x05 \x01(\tR\akdcHost\x12\x19\n" +
 	"\bkdc_port\x18\x06 \x01(\tR\akdcPort\x124\n" +
-	"\x16kdc_transport_protocol\x18\a \x01(\tR\x14kdcTransportProtocol\"\x80\a\n" +
+	"\x16kdc_transport_protocol\x18\a \x01(\tR\x14kdcTransportProtocol\"\xad\b\n" +
 	"\x18DataSourceExternalSecret\x12T\n" +
 	"\vsecret_type\x18\x01 \x01(\x0e23.bytebase.store.DataSourceExternalSecret.SecretTypeR\n" +
 	"secretType\x12\x10\n" +
@@ -1824,7 +1864,13 @@ const file_store_instance_proto_rawDesc = "" +
 	"engineName\x12\x1f\n" +
 	"\vsecret_name\x18\a \x01(\tR\n" +
 	"secretName\x12*\n" +
-	"\x11password_key_name\x18\b \x01(\tR\x0fpasswordKeyName\x1a\x8a\x02\n" +
+	"\x11password_key_name\x18\b \x01(\tR\x0fpasswordKeyName\x12?\n" +
+	"\x1cverify_vault_tls_certificate\x18\t \x01(\bR\x19verifyVaultTlsCertificate\x12 \n" +
+	"\fvault_ssl_ca\x18\n" +
+	" \x01(\tR\n" +
+	"vaultSslCa\x12$\n" +
+	"\x0evault_ssl_cert\x18\v \x01(\tR\fvaultSslCert\x12\"\n" +
+	"\rvault_ssl_key\x18\f \x01(\tR\vvaultSslKey\x1a\x8a\x02\n" +
 	"\x11AppRoleAuthOption\x12\x17\n" +
 	"\arole_id\x18\x01 \x01(\tR\x06roleId\x12\x1b\n" +
 	"\tsecret_id\x18\x02 \x01(\tR\bsecretId\x12Y\n" +

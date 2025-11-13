@@ -1412,7 +1412,12 @@
       "vault-secret-engine-name": "Tên công cụ bí mật",
       "vault-secret-path": "Đường dẫn bí mật",
       "vault-secret-key": "Khóa bí mật",
-      "vault-secret-engine-tips": "Chỉ hỗ trợ công cụ KV v2."
+      "vault-secret-engine-tips": "Chỉ hỗ trợ công cụ KV v2.",
+      "vault-tls-config": "Cấu hình Vault TLS (Tùy chọn)",
+      "verify-vault-certificate": "Xác minh chứng chỉ TLS của Vault",
+      "vault-ca-cert": "Chứng chỉ Vault CA",
+      "vault-client-cert": "Chứng chỉ máy khách Vault",
+      "vault-client-key": "Khóa máy khách Vault"
     },
     "external-secret": {
       "secret-name": "Tên bí mật",
