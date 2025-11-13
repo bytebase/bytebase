@@ -75,7 +75,7 @@ CREATE TABLE "public"."users" (
 
 	// Should only have 1 enum type
 	require.Equal(t, 1, len(chunks.EnumTypes), "Should only parse uncommented enum type")
-	
+
 	// Should only have 1 table
 	require.Equal(t, 1, len(chunks.Tables), "Should only parse uncommented table")
 
@@ -118,7 +118,7 @@ COMMENT ON TYPE "public"."user_role_enum" IS 'User role types';
 	chunks, err := ChunkSDLText(fileContent)
 	require.NoError(t, err, "Failed to chunk SDL: %v", err)
 	require.NotNil(t, chunks)
-	
+
 	t.Logf("Number of enum types parsed: %d", len(chunks.EnumTypes))
 	for k := range chunks.EnumTypes {
 		t.Logf("  - %s", k)
@@ -130,11 +130,11 @@ COMMENT ON TYPE "public"."user_role_enum" IS 'User role types';
 	// Test GetSDLDiff
 	previousSDL := ""
 	currentSDL := fileContent
-	
+
 	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
 	require.NoError(t, err, "GetSDLDiff should not fail with commented SQL: %v", err)
 	require.NotNil(t, diff)
-	
+
 	// Should have 1 enum type creation
 	require.Equal(t, 1, len(diff.EnumTypeChanges), "Should have 1 enum type change")
 	require.Equal(t, "user_role_enum", diff.EnumTypeChanges[0].EnumTypeName)
@@ -158,14 +158,14 @@ CREATE TYPE "public"."current_status" AS ENUM ('active', 'inactive');
 
 	// Concatenate files (simulating what might happen in multi-file mode)
 	combinedSDL := typesFile + "\n" + tablesFile
-	
+
 	chunks, err := ChunkSDLText(combinedSDL)
 	require.NoError(t, err, "Should parse combined SDL from multiple files")
 	require.NotNil(t, chunks)
-	
+
 	// Should only have 1 enum type
 	require.Equal(t, 1, len(chunks.EnumTypes))
-	
+
 	// Should have 1 table
 	require.Equal(t, 1, len(chunks.Tables))
 }
@@ -199,10 +199,10 @@ CREATE TYPE "public"."user_role_enum" AS ENUM (
 		t.Fatalf("Failed to parse SDL with commented enum: %v\nSDL content:\n%s", err, sdl)
 	}
 	require.NotNil(t, chunks)
-	
+
 	// Verify only the uncommented enum was parsed
 	require.Equal(t, 1, len(chunks.EnumTypes), "Should parse only user_role_enum")
-	
+
 	_, exists := chunks.EnumTypes["public.user_role_enum"]
 	require.True(t, exists, "Should have user_role_enum")
 }

@@ -20,9 +20,9 @@ func TestEnumTypeWithSingleQuotes(t *testing.T) {
 						Name: "status_with_quotes",
 						Values: []string{
 							"active",
-							"don't use",     // Contains single quote
-							"can't access",  // Contains single quote
-							"won't work",    // Contains single quote
+							"don't use",    // Contains single quote
+							"can't access", // Contains single quote
+							"won't work",   // Contains single quote
 						},
 					},
 				},
