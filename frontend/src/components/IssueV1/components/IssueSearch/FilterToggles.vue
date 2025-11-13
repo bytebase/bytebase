@@ -42,17 +42,13 @@ const filters = computed(() => [
   {
     scopeId: "creator" as SearchScopeId,
     label: t("common.creator"),
-    options: [
-      { value: me.value.email, label: t("common.me") },
-    ],
+    options: [{ value: me.value.email, label: t("common.me") }],
     multiple: false,
   },
   {
     scopeId: "assignee" as SearchScopeId,
     label: t("common.assignee"),
-    options: [
-      { value: me.value.email, label: t("common.me") },
-    ],
+    options: [{ value: me.value.email, label: t("common.me") }],
     multiple: false,
   },
 ]);

@@ -3,9 +3,11 @@
     <IssueSearch
       v-model:params="state.params"
       :components="
-        state.advanced ? ['searchbox', 'time-range', 'status'] : ['status']
+        state.advanced
+          ? ['searchbox', 'time-range', 'presets', 'filters']
+          : ['presets', 'filters']
       "
-      :component-props="{ status: { hidden: statusTabHidden } }"
+      :component-props="{ presets: { hidden: statusTabHidden } }"
       class="px-4 pb-2"
     >
       <template v-if="!state.advanced" #default>
