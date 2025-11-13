@@ -1018,10 +1018,9 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 					// Check if this is an index-only change (no MV definition change)
 					hasIndexOnlyChanges := len(mvDiff.IndexChanges) > 0 && mvDiff.NewMaterializedView == nil && mvDiff.NewASTNode == nil
 
-					if hasIndexOnlyChanges {
-						// Index-only changes - don't alter the MV itself, just handle indexes
-						// Index changes are processed separately later (see lines ~1107-1127)
-					} else {
+					// For index-only changes, don't alter the MV itself
+					// Index changes are processed separately later (see lines ~1107-1127)
+					if !hasIndexOnlyChanges {
 						// For PostgreSQL materialized views, we need to drop and recreate
 						// since ALTER MATERIALIZED VIEW doesn't support changing the definition
 						writeDropMaterializedView(buf, mvDiff.SchemaName, mvDiff.MaterializedViewName)
