@@ -23,8 +23,8 @@ export const PRESET_WORKSPACE_ROLES: string[] = [
 export const PRESET_PROJECT_ROLES: string[] = [
   PresetRoleType.PROJECT_OWNER,
   PresetRoleType.PROJECT_DEVELOPER,
-  PresetRoleType.SQL_EDITOR_USER,
   PresetRoleType.PROJECT_RELEASER,
-  PresetRoleType.GITOPS_SERVICE_AGENT,
+  PresetRoleType.SQL_EDITOR_USER,
   PresetRoleType.PROJECT_VIEWER,
+  PresetRoleType.GITOPS_SERVICE_AGENT,
 ];
