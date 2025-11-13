@@ -193,6 +193,7 @@ type MaterializedViewDiff struct {
 	NewMaterializedView  *storepb.MaterializedViewMetadata
 	OldASTNode           any // AST node for old materialized view
 	NewASTNode           any // AST node for new materialized view
+	IndexChanges         []*IndexDiff // Index changes on materialized view
 }
 
 // FunctionDiff represents changes to a function.

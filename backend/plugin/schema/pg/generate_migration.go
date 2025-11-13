@@ -268,12 +268,16 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 
 		// Drop views
 		for _, viewDiff := range viewMap {
-			writeDropView(buf, viewDiff.SchemaName, viewDiff.ViewName)
+			if viewDiff.Action == schema.MetadataDiffActionDrop {
+				writeDropView(buf, viewDiff.SchemaName, viewDiff.ViewName)
+			}
 		}
 
 		// Drop materialized views
 		for _, mvDiff := range materializedViewMap {
-			writeDropMaterializedView(buf, mvDiff.SchemaName, mvDiff.MaterializedViewName)
+			if mvDiff.Action == schema.MetadataDiffActionDrop {
+				writeDropMaterializedView(buf, mvDiff.SchemaName, mvDiff.MaterializedViewName)
+			}
 		}
 
 		// Drop functions
@@ -384,9 +388,13 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 
 			// Drop the object itself
 			if viewDiff, ok := viewMap[objID]; ok {
-				writeDropView(buf, viewDiff.SchemaName, viewDiff.ViewName)
+				if viewDiff.Action == schema.MetadataDiffActionDrop {
+					writeDropView(buf, viewDiff.SchemaName, viewDiff.ViewName)
+				}
 			} else if mvDiff, ok := materializedViewMap[objID]; ok {
-				writeDropMaterializedView(buf, mvDiff.SchemaName, mvDiff.MaterializedViewName)
+				if mvDiff.Action == schema.MetadataDiffActionDrop {
+					writeDropMaterializedView(buf, mvDiff.SchemaName, mvDiff.MaterializedViewName)
+				}
 			} else if funcDiff, ok := functionMap[objID]; ok {
 				definition := getFunctionDefinitionForDrop(funcDiff)
 				writeDropFunction(buf, funcDiff.SchemaName, funcDiff.FunctionName, funcDiff.OldASTNode, definition)
@@ -461,6 +469,30 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 						} else if colDiff.OldASTNode != nil {
 							// AST-only mode - use AST functions
 							_ = writeDropColumnFromAST(buf, tableDiff.SchemaName, tableDiff.TableName, colDiff.OldASTNode)
+						}
+					}
+				}
+			}
+		}
+
+		// Handle remaining ALTER materialized view drops (indexes)
+		for _, mvDiff := range diff.MaterializedViewChanges {
+			if mvDiff.Action == schema.MetadataDiffActionAlter {
+				// Drop indexes
+				for _, indexDiff := range mvDiff.IndexChanges {
+					if indexDiff.Action == schema.MetadataDiffActionDrop {
+						if indexDiff.OldIndex != nil {
+							// Metadata mode: use index metadata
+							if indexDiff.OldIndex.IsConstraint {
+								writeDropConstraint(buf, mvDiff.SchemaName, mvDiff.MaterializedViewName, indexDiff.OldIndex.Name)
+							} else {
+								writeDropIndex(buf, mvDiff.SchemaName, indexDiff.OldIndex.Name)
+							}
+						} else if indexDiff.OldASTNode != nil {
+							// AST-only mode: extract from AST node
+							if indexAST, ok := indexDiff.OldASTNode.(*pgparser.IndexstmtContext); ok {
+								writeDropIndexFromAST(buf, mvDiff.SchemaName, indexAST)
+							}
 						}
 					}
 				}
@@ -983,20 +1015,28 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 						return errors.Errorf("materialized view diff for %s.%s has neither metadata nor AST node", mvDiff.SchemaName, mvDiff.MaterializedViewName)
 					}
 				case schema.MetadataDiffActionAlter:
-					// For PostgreSQL materialized views, we need to drop and recreate
-					// since ALTER MATERIALIZED VIEW doesn't support changing the definition
-					writeDropMaterializedView(buf, mvDiff.SchemaName, mvDiff.MaterializedViewName)
-					// Support AST-only mode
-					if mvDiff.NewMaterializedView != nil {
-						if err := writeMigrationMaterializedView(buf, mvDiff.SchemaName, mvDiff.NewMaterializedView); err != nil {
-							return err
-						}
-					} else if mvDiff.NewASTNode != nil {
-						if err := writeMigrationMaterializedViewFromAST(buf, mvDiff.NewASTNode); err != nil {
-							return err
-						}
+					// Check if this is an index-only change (no MV definition change)
+					hasIndexOnlyChanges := len(mvDiff.IndexChanges) > 0 && mvDiff.NewMaterializedView == nil && mvDiff.NewASTNode == nil
+
+					if hasIndexOnlyChanges {
+						// Index-only changes - don't alter the MV itself, just handle indexes
+						// Index changes are processed separately later (see lines ~1107-1127)
 					} else {
-						return errors.Errorf("materialized view ALTER for %s.%s has neither metadata nor AST node", mvDiff.SchemaName, mvDiff.MaterializedViewName)
+						// For PostgreSQL materialized views, we need to drop and recreate
+						// since ALTER MATERIALIZED VIEW doesn't support changing the definition
+						writeDropMaterializedView(buf, mvDiff.SchemaName, mvDiff.MaterializedViewName)
+						// Support AST-only mode
+						if mvDiff.NewMaterializedView != nil {
+							if err := writeMigrationMaterializedView(buf, mvDiff.SchemaName, mvDiff.NewMaterializedView); err != nil {
+								return err
+							}
+						} else if mvDiff.NewASTNode != nil {
+							if err := writeMigrationMaterializedViewFromAST(buf, mvDiff.NewASTNode); err != nil {
+								return err
+							}
+						} else {
+							return errors.Errorf("materialized view ALTER for %s.%s has neither metadata nor AST node", mvDiff.SchemaName, mvDiff.MaterializedViewName)
+						}
 					}
 				default:
 					// No action needed for other operations
@@ -1079,6 +1119,28 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 				}
 			}
 		}
+
+		// Add indexes for materialized view ALTER operations
+		for _, mvDiff := range diff.MaterializedViewChanges {
+			if mvDiff.Action == schema.MetadataDiffActionAlter {
+				for _, indexDiff := range mvDiff.IndexChanges {
+					if indexDiff.Action == schema.MetadataDiffActionCreate {
+						if indexDiff.NewIndex != nil {
+							// Metadata mode: use index metadata
+							writeMigrationMaterializedViewIndex(buf, mvDiff.SchemaName, mvDiff.MaterializedViewName, indexDiff.NewIndex)
+						} else if indexDiff.NewASTNode != nil {
+							// AST-only mode: extract from AST node
+							if indexAST, ok := indexDiff.NewASTNode.(*pgparser.IndexstmtContext); ok {
+								if err := writeCreateIndexFromAST(buf, indexAST); err != nil {
+									// If AST extraction fails, log error but continue (non-fatal)
+									_, _ = fmt.Fprintf(buf, "-- Error creating index: %v\n", err)
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 
 	// ALTER table operations are now handled earlier in the topological order
@@ -1114,6 +1176,15 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 	// Handle materialized view comment changes
 	if err := generateMaterializedViewCommentChanges(buf, diff); err != nil {
 		return err
+	}
+
+	// Handle materialized view index comment changes
+	for _, mvDiff := range diff.MaterializedViewChanges {
+		if mvDiff.Action == schema.MetadataDiffActionAlter {
+			if err := generateMaterializedViewIndexCommentChanges(buf, mvDiff); err != nil {
+				return err
+			}
+		}
 	}
 
 	// Handle function comment changes
@@ -2600,14 +2671,55 @@ func writeMigrationTrigger(out *strings.Builder, trigger *storepb.TriggerMetadat
 }
 
 // writeMigrationMaterializedViewIndex writes an index creation statement for a materialized view
-func writeMigrationMaterializedViewIndex(out *strings.Builder, _ string, _ string, index *storepb.IndexMetadata) {
-	if index == nil || index.Definition == "" {
+func writeMigrationMaterializedViewIndex(out *strings.Builder, schema, mvName string, index *storepb.IndexMetadata) {
+	if index == nil {
 		return
 	}
-	_, _ = out.WriteString(index.Definition)
-	if !strings.HasSuffix(strings.TrimSpace(index.Definition), ";") {
-		_, _ = out.WriteString(";")
+
+	// If index has a full definition, use it directly
+	if index.Definition != "" {
+		_, _ = out.WriteString(index.Definition)
+		if !strings.HasSuffix(strings.TrimSpace(index.Definition), ";") {
+			_, _ = out.WriteString(";")
+		}
+		_, _ = out.WriteString("\n")
+		return
 	}
+
+	// Otherwise, construct the CREATE INDEX statement
+	_, _ = out.WriteString(`CREATE `)
+	if index.Unique {
+		_, _ = out.WriteString(`UNIQUE `)
+	}
+	_, _ = out.WriteString(`INDEX "`)
+	_, _ = out.WriteString(index.Name)
+	_, _ = out.WriteString(`" ON "`)
+	_, _ = out.WriteString(schema)
+	_, _ = out.WriteString(`"."`)
+	_, _ = out.WriteString(mvName)
+	_, _ = out.WriteString(`" `)
+
+	if index.Type != "" && index.Type != "BTREE" && index.Type != "btree" {
+		_, _ = out.WriteString(`USING `)
+		_, _ = out.WriteString(strings.ToUpper(index.Type))
+		_, _ = out.WriteString(` `)
+	}
+
+	_, _ = out.WriteString(`(`)
+	for i, expr := range index.Expressions {
+		if i > 0 {
+			_, _ = out.WriteString(`, `)
+		}
+		_, _ = out.WriteString(expr)
+
+		// Handle descending order if specified
+		if i < len(index.Descending) && index.Descending[i] {
+			_, _ = out.WriteString(` DESC`)
+		}
+	}
+	_, _ = out.WriteString(`)`)
+
+	_, _ = out.WriteString(`;`)
 	_, _ = out.WriteString("\n")
 }
 
@@ -3040,6 +3152,26 @@ func generateIndexCommentChanges(buf *strings.Builder, tableDiff *schema.TableDi
 			// If comments are different, generate COMMENT ON INDEX statement
 			if oldComment != newComment {
 				writeCommentOnIndex(buf, tableDiff.SchemaName, indexDiff.NewIndex.Name, newComment)
+			}
+		}
+	}
+	return nil
+}
+
+// generateMaterializedViewIndexCommentChanges generates COMMENT ON INDEX statements for index comment changes within materialized view diffs
+func generateMaterializedViewIndexCommentChanges(buf *strings.Builder, mvDiff *schema.MaterializedViewDiff) error {
+	for _, indexDiff := range mvDiff.IndexChanges {
+		if indexDiff.Action == schema.MetadataDiffActionAlter {
+			if indexDiff.OldIndex == nil || indexDiff.NewIndex == nil {
+				continue
+			}
+
+			oldComment := indexDiff.OldIndex.Comment
+			newComment := indexDiff.NewIndex.Comment
+
+			// If comments are different, generate COMMENT ON INDEX statement
+			if oldComment != newComment {
+				writeCommentOnIndex(buf, mvDiff.SchemaName, indexDiff.NewIndex.Name, newComment)
 			}
 		}
 	}
