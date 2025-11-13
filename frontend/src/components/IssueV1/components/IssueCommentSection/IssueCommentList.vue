@@ -42,7 +42,6 @@
             :maxlength="65536"
             @change="(val: string) => (state.editComment = val)"
             @submit="doUpdateComment"
-            @cancel="cancelEditComment"
           />
           <div
             v-if="
