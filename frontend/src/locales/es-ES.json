@@ -1412,7 +1412,12 @@
       "vault-secret-engine-name": "Secret engine name",
       "vault-secret-path": "Secret path",
       "vault-secret-key": "Secret key",
-      "vault-secret-engine-tips": "Solo admite motor KV v2."
+      "vault-secret-engine-tips": "Solo admite motor KV v2.",
+      "vault-tls-config": "Configuración TLS de Vault (opcional)",
+      "verify-vault-certificate": "Verificar certificado TLS de Vault",
+      "vault-ca-cert": "Certificado de CA de Vault",
+      "vault-client-cert": "Certificado de cliente de Vault",
+      "vault-client-key": "Clave de cliente de Vault"
     },
     "external-secret": {
       "secret-name": "Nombre secreto",

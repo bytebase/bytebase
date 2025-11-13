@@ -1412,7 +1412,12 @@
       "vault-secret-engine-name": "Secret engine name",
       "vault-secret-path": "Secret path",
       "vault-secret-key": "Secret key",
-      "vault-secret-engine-tips": "仅支持 KV v2 储存"
+      "vault-secret-engine-tips": "仅支持 KV v2 储存",
+      "vault-tls-config": "Vault TLS 配置（可选）",
+      "verify-vault-certificate": "验证 Vault TLS 证书",
+      "vault-ca-cert": "Vault CA 证书",
+      "vault-client-cert": "Vault 客户端证书",
+      "vault-client-key": "Vault 客户端密钥"
     },
     "external-secret": {
       "secret-name": "Secret name",

@@ -1412,7 +1412,12 @@
       "vault-secret-engine-name": "シークレットエンジン名",
       "vault-secret-path": "秘密の道",
       "vault-secret-key": "秘密鍵",
-      "vault-secret-engine-tips": "KV v2 ストレージのみをサポートします"
+      "vault-secret-engine-tips": "KV v2 ストレージのみをサポートします",
+      "vault-tls-config": "Vault TLS 構成 (オプション)",
+      "verify-vault-certificate": "Vault TLS証明書を確認する",
+      "vault-ca-cert": "Vault CA 証明書",
+      "vault-client-cert": "Vaultクライアント証明書",
+      "vault-client-key": "Vaultクライアントキー"
     },
     "external-secret": {
       "secret-name": "秘密の名前",

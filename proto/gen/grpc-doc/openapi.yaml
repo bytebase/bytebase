@@ -9610,6 +9610,23 @@ components:
                 passwordKeyName:
                     type: string
                     description: the key name for the password.
+                skipVaultTlsVerification:
+                    type: boolean
+                    description: |-
+                        TLS configuration for connecting to Vault server.
+                         These fields are separate from the database TLS configuration in DataSource.
+                         skip_vault_tls_verification disables TLS certificate verification for Vault connections.
+                         Default is false (verification enabled) for security.
+                         Only set to true for development or when certificates cannot be properly validated.
+                vaultSslCa:
+                    type: string
+                    description: CA certificate for Vault server verification.
+                vaultSslCert:
+                    type: string
+                    description: Client certificate for mutual TLS authentication with Vault.
+                vaultSslKey:
+                    type: string
+                    description: Client private key for mutual TLS authentication with Vault.
         DataSourceExternalSecret_AppRoleAuthOption:
             type: object
             properties:
