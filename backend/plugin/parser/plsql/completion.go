@@ -98,7 +98,6 @@ func newPreferredRules() map[int]bool {
 		plsql.PlSqlParserRULE_attribute_name:           true,
 		plsql.PlSqlParserRULE_savepoint_name:           true,
 		plsql.PlSqlParserRULE_rollback_segment_name:    true,
-		plsql.PlSqlParserRULE_table_var_name:           true,
 		plsql.PlSqlParserRULE_schema_name:              true,
 		plsql.PlSqlParserRULE_package_name:             true,
 		plsql.PlSqlParserRULE_implementation_type_name: true,
