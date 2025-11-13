@@ -98,13 +98,13 @@ const props = withDefaults(
     requireReason?: boolean;
     disableMemberChange?: boolean;
     supportRoles?: string[];
-    databaseResource?: DatabaseResource;
+    databaseResources?: DatabaseResource[];
   }>(),
   {
     disableMemberChange: false,
     requireReason: false,
     supportRoles: () => [],
-    databaseResource: undefined,
+    databaseResources: () => [],
   }
 );
 
@@ -127,9 +127,10 @@ const getInitialState = (): LocalState => {
     role: props.binding.role,
     memberList: props.binding.members,
     reason: "",
-    databaseResources: props.databaseResource
-      ? [{ ...props.databaseResource }]
-      : undefined,
+    databaseResources:
+      props.databaseResources && props.databaseResources.length > 0
+        ? props.databaseResources.map((r) => ({ ...r }))
+        : undefined,
   };
 
   return defaultState;
@@ -140,13 +141,14 @@ const expirationSelectorRef = ref<InstanceType<typeof ExpirationSelector>>();
 
 watch(
   () => state.role,
-  () => {
-    state.databaseResources = props.databaseResource
-      ? [{ ...props.databaseResource }]
-      : undefined;
-  },
-  {
-    immediate: true,
+  (newRole, oldRole) => {
+    // Only reset databaseResources when role actually changes, not on initial mount
+    if (oldRole !== undefined) {
+      state.databaseResources =
+        props.databaseResources && props.databaseResources.length > 0
+          ? props.databaseResources.map((r) => ({ ...r }))
+          : undefined;
+    }
   }
 );
 

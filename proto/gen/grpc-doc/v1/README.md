@@ -7890,12 +7890,12 @@ OrgPolicyService manages organizational policies at various resource levels.
 
 ### QueryResult.PermissionDenied
 Permission denied with resource information or disallowed command_type.
-Either resource or command_type is available.
+Either resources or command_type is available.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| resource | [string](#string) |  | Denied to access the resource. Format: instances/{instance}/databases/{database} instances/{instance}/databases/{database}/schemas/{schema} instances/{instance}/databases/{database}/tables/{table} instances/{instance}/databases/{database}/schemas/{schema}/tables/{table} |
+| resources | [string](#string) | repeated | Denied to access the resources. Format: instances/{instance}/databases/{database} instances/{instance}/databases/{database}/schemas/{schema} instances/{instance}/databases/{database}/tables/{table} instances/{instance}/databases/{database}/schemas/{schema}/tables/{table} |
 | command_type | [QueryResult.PermissionDenied.CommandType](#bytebase-v1-QueryResult-PermissionDenied-CommandType) |  | Disallowed command_type. |
 
 

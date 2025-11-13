@@ -435,22 +435,22 @@ export declare const QueryResult_SyntaxErrorSchema: GenMessage<QueryResult_Synta
 
 /**
  * Permission denied with resource information or disallowed command_type.
- * Either resource or command_type is available.
+ * Either resources or command_type is available.
  *
  * @generated from message bytebase.v1.QueryResult.PermissionDenied
  */
 export declare type QueryResult_PermissionDenied = Message<"bytebase.v1.QueryResult.PermissionDenied"> & {
   /**
-   * Denied to access the resource.
+   * Denied to access the resources.
    * Format:
    * instances/{instance}/databases/{database}
    * instances/{instance}/databases/{database}/schemas/{schema}
    * instances/{instance}/databases/{database}/tables/{table}
    * instances/{instance}/databases/{database}/schemas/{schema}/tables/{table}
    *
-   * @generated from field: string resource = 1;
+   * @generated from field: repeated string resources = 1;
    */
-  resource: string;
+  resources: string[];
 
   /**
    * Disallowed command_type.
