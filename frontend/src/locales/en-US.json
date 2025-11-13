@@ -858,7 +858,6 @@
     "labels": "Issue Labels",
     "my-issues": "My Issues",
     "waiting-approval": "Waiting for Approval",
-    "waiting-rollout": "Waiting for Rollout",
     "status-transition": {
       "modal": {
         "resolve": "Resolve issue?",

@@ -858,7 +858,6 @@
     "labels": "Etiquetas de problema",
     "my-issues": "Mis Incidencias",
     "waiting-approval": "A la espera de la aprobación",
-    "waiting-rollout": "Esperando el lanzamiento",
     "status-transition": {
       "modal": {
         "resolve": "¿Resolver incidencia?",

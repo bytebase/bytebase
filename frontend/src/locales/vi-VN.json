@@ -858,7 +858,6 @@
     "labels": "Nhãn vấn đề",
     "my-issues": "Vấn đề của tôi",
     "waiting-approval": "Đang chờ phê duyệt",
-    "waiting-rollout": "Đang chờ triển khai",
     "status-transition": {
       "modal": {
         "resolve": "Giải quyết vấn đề?",
