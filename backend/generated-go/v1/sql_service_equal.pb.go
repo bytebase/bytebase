@@ -178,6 +178,35 @@ func (x *QueryResult_PostgresError) Equal(y *QueryResult_PostgresError) bool {
 	return true
 }
 
+func (x *QueryResult_SyntaxError) Equal(y *QueryResult_SyntaxError) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if !x.StartPosition.Equal(y.StartPosition) {
+		return false
+	}
+	return true
+}
+
+func (x *QueryResult_PermissionDenied) Equal(y *QueryResult_PermissionDenied) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Resource != y.Resource {
+		return false
+	}
+	if x.CommandType != y.CommandType {
+		return false
+	}
+	return true
+}
+
 func (x *QueryResult_Message) Equal(y *QueryResult_Message) bool {
 	if x == y {
 		return true
@@ -238,6 +267,12 @@ func (x *QueryResult) Equal(y *QueryResult) bool {
 		return false
 	}
 	if !x.GetPostgresError().Equal(y.GetPostgresError()) {
+		return false
+	}
+	if !x.GetSyntaxError().Equal(y.GetSyntaxError()) {
+		return false
+	}
+	if !x.GetPermissionDenied().Equal(y.GetPermissionDenied()) {
 		return false
 	}
 	if len(x.Messages) != len(y.Messages) {

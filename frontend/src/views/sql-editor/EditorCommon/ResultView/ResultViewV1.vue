@@ -146,7 +146,6 @@
 
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
-import { Code } from "@connectrpc/connect";
 import dayjs from "dayjs";
 import { Info } from "lucide-vue-next";
 import {
@@ -254,18 +253,15 @@ const detail: SQLResultViewContext["detail"] = ref(undefined);
 provideBinaryFormatContext(computed(() => props.contextId));
 
 const missingResource = computed((): DatabaseResource | undefined => {
-  if (props.resultSet?.status !== Code.PermissionDenied) {
-    return;
+  for (const result of props.resultSet?.results ?? []) {
+    if (
+      result.detailedError.case === "permissionDenied" &&
+      result.detailedError.value?.resource !== ""
+    ) {
+      return parseStringToResource(result.detailedError.value?.resource);
+    }
   }
-  const prefix = "permission denied to access resource: ";
-  if (!props.resultSet.error.includes(prefix)) {
-    return;
-  }
-  const resource = props.resultSet.error.split(prefix).pop();
-  if (!resource) {
-    return;
-  }
-  return parseStringToResource(resource);
+  return undefined;
 });
 
 const showRequestQueryButton = computed(() => {

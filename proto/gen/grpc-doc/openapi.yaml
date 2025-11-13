@@ -12253,6 +12253,10 @@ components:
                     description: The query statement for the result.
                 postgresError:
                     $ref: '#/components/schemas/QueryResult_PostgresError'
+                syntaxError:
+                    $ref: '#/components/schemas/QueryResult_SyntaxError'
+                permissionDenied:
+                    $ref: '#/components/schemas/QueryResult_PermissionDenied'
                 messages:
                     type: array
                     items:
@@ -12281,6 +12285,30 @@ components:
                     format: enum
                 content:
                     type: string
+        QueryResult_PermissionDenied:
+            type: object
+            properties:
+                resource:
+                    type: string
+                    description: |-
+                        Denied to access the resource.
+                         Format:
+                         instances/{instance}/databases/{database}
+                         instances/{instance}/databases/{database}/schemas/{schema}
+                         instances/{instance}/databases/{database}/tables/{table}
+                         instances/{instance}/databases/{database}/schemas/{schema}/tables/{table}
+                commandType:
+                    enum:
+                        - COMMAND_TYPE_UNSPECIFIED
+                        - DDL
+                        - DML
+                        - NON_READ_ONLY
+                    type: string
+                    description: Disallowed command_type.
+                    format: enum
+            description: |-
+                Permission denied with resource information or disallowed command_type.
+                 Either resource or command_type is available.
         QueryResult_PostgresError:
             type: object
             properties:
@@ -12324,6 +12352,14 @@ components:
             description: |-
                 refer https://www.postgresql.org/docs/11/protocol-error-fields.html
                  for field description.
+        QueryResult_SyntaxError:
+            type: object
+            properties:
+                startPosition:
+                    allOf:
+                        - $ref: '#/components/schemas/Position'
+                    description: Position information for highlighting in editor
+            description: Syntax error with position information for editor highlighting
         QueryRow:
             type: object
             properties:
