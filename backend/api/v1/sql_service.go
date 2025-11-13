@@ -244,10 +244,10 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		var qe *queryError
 		var pe *parserbase.SyntaxError
 		if errors.As(queryErr, &qe) {
-			if qe.resource != "" {
+			if len(qe.resources) > 0 {
 				results[len(results)-1].DetailedError = &v1pb.QueryResult_PermissionDenied_{
 					PermissionDenied: &v1pb.QueryResult_PermissionDenied{
-						Resource: qe.resource,
+						Resources: qe.resources,
 					},
 				}
 			} else if qe.commandType != v1pb.QueryResult_PermissionDenied_COMMAND_TYPE_UNSPECIFIED {
@@ -1444,6 +1444,7 @@ func (s *SQLService) accessCheck(
 			}
 		}
 		if span.Type == parserbase.Select {
+			var deniedResources []string
 			for column := range span.SourceColumns {
 				attributes := map[string]any{
 					common.CELAttributeRequestTime:        time.Now(),
@@ -1496,13 +1497,16 @@ func (s *SQLService) accessCheck(
 					if table, ok := attributes[common.CELAttributeResourceTableName]; ok && table != "" {
 						resource = fmt.Sprintf("%s/tables/%s", resource, table)
 					}
-					return &queryError{
-						err: connect.NewError(
-							connect.CodePermissionDenied,
-							errors.Errorf("permission denied to access resource: %s", resource),
-						),
-						resource: resource,
-					}
+					deniedResources = append(deniedResources, resource)
+				}
+			}
+			if len(deniedResources) > 0 {
+				return &queryError{
+					err: connect.NewError(
+						connect.CodePermissionDenied,
+						errors.Errorf("permission denied to access resources: %v", deniedResources),
+					),
+					resources: deniedResources,
 				}
 			}
 		}

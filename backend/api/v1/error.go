@@ -6,7 +6,7 @@ import (
 
 type queryError struct {
 	err         error
-	resource    string
+	resources   []string
 	commandType v1pb.QueryResult_PermissionDenied_CommandType
 }
 
