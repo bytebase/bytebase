@@ -20,7 +20,7 @@
           :disable-member-change="true"
           :require-reason="project.enforceIssueTitle"
           :support-roles="supportRoles"
-          :database-resource="databaseResource"
+          :database-resources="databaseResources"
         />
       </div>
       <template #footer>
@@ -80,12 +80,12 @@ const props = withDefaults(
   defineProps<{
     projectName: string;
     role?: string;
-    databaseResource?: DatabaseResource;
+    databaseResources?: DatabaseResource[];
     placement?: "left" | "right";
     supportRoles?: string[];
   }>(),
   {
-    databaseResource: undefined,
+    databaseResources: () => [],
     role: undefined,
     placement: "right",
     supportRoles: () => [],

@@ -31,9 +31,9 @@
     </span>
     <RequestQueryButton
       v-if="showRequestQueryButton"
-      :database-resource="{
+      :database-resources="[{
         databaseFullName: database.name,
-      }"
+      }]"
       :size="'tiny'"
     />
   </div>

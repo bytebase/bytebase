@@ -111,7 +111,7 @@
           <template #suffix>
             <RequestQueryButton
               v-if="showRequestQueryButton"
-              :database-resource="missingResource!"
+              :database-resources="missingResources"
             />
             <SyncDatabaseButton
               v-else-if="resultSet.error.includes('resource not found')"
@@ -252,20 +252,26 @@ const detail: SQLResultViewContext["detail"] = ref(undefined);
 
 provideBinaryFormatContext(computed(() => props.contextId));
 
-const missingResource = computed((): DatabaseResource | undefined => {
+const missingResources = computed((): DatabaseResource[] => {
+  const resources: DatabaseResource[] = [];
   for (const result of props.resultSet?.results ?? []) {
     if (
       result.detailedError.case === "permissionDenied" &&
-      result.detailedError.value?.resource !== ""
+      result.detailedError.value?.resources.length > 0
     ) {
-      return parseStringToResource(result.detailedError.value?.resource);
+      for (const resourceString of result.detailedError.value.resources) {
+        const resource = parseStringToResource(resourceString);
+        if (resource) {
+          resources.push(resource);
+        }
+      }
     }
   }
-  return undefined;
+  return resources;
 });
 
 const showRequestQueryButton = computed(() => {
-  return missingResource.value;
+  return missingResources.value.length > 0;
 });
 
 const viewMode = computed((): ViewMode => {
