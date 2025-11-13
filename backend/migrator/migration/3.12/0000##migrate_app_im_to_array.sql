@@ -15,6 +15,11 @@ BEGIN
         RETURN;
     END IF;
 
+    -- Return early if already migrated to new format (has 'settings' key)
+    IF old_val ? 'settings' THEN
+        RETURN;
+    END IF;
+
     -- Process Slack
     IF old_val->'slack'->>'enabled' = 'true' THEN
         settings_array := settings_array || jsonb_build_array(
