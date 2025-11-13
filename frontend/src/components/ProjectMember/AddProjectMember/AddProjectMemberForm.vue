@@ -141,14 +141,14 @@ const expirationSelectorRef = ref<InstanceType<typeof ExpirationSelector>>();
 
 watch(
   () => state.role,
-  () => {
-    state.databaseResources =
-      props.databaseResources && props.databaseResources.length > 0
-        ? props.databaseResources.map((r) => ({ ...r }))
-        : undefined;
-  },
-  {
-    immediate: true,
+  (newRole, oldRole) => {
+    // Only reset databaseResources when role actually changes, not on initial mount
+    if (oldRole !== undefined) {
+      state.databaseResources =
+        props.databaseResources && props.databaseResources.length > 0
+          ? props.databaseResources.map((r) => ({ ...r }))
+          : undefined;
+    }
   }
 );
 
