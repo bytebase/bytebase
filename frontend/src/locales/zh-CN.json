@@ -2775,6 +2775,10 @@
       "self": "SQL 编辑器用户",
       "description": "可查询指定范围的数据。"
     },
+    "gitops-agent": {
+      "self": "GitOps 代理",
+      "description": "通过 GitOps 自动化 CI/CD 工作流创建和执行数据库变更的权限。"
+    },
     "project-viewer": {
       "self": "项目查看者",
       "description": "可查看项目基本信息，并可自助发起数据查询、数据导出请求。"

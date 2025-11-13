@@ -378,6 +378,19 @@ roles:
       - bb.sheets.get
       - bb.taskRuns.create
       - bb.taskRuns.list
+  - name: roles/gitopsAgent
+    title: GitOps Agent
+    permissions:
+      - bb.plans.create
+      - bb.plans.get
+      - bb.releases.check
+      - bb.releases.create
+      - bb.releases.get
+      - bb.rollouts.create
+      - bb.rollouts.get
+      - bb.rollouts.list
+      - bb.taskRuns.create
+      - bb.taskRuns.list
   - name: roles/projectViewer
     title: Project viewer
     permissions:

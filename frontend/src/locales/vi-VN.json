@@ -2775,6 +2775,10 @@
       "self": "Người dùng Trình soạn thảo SQL",
       "description": "Quyền truy vấn dữ liệu cơ sở dữ liệu."
     },
+    "gitops-agent": {
+      "self": "Tác nhân GitOps",
+      "description": "Quyền cho quy trình CI/CD tự động để tạo và thực thi các thay đổi cơ sở dữ liệu qua GitOps."
+    },
     "project-viewer": {
       "self": "Người xem dự án",
       "description": "Quyền chỉ đọc để xem thông tin cơ bản của dự án, truy cập cơ sở dữ liệu và bắt đầu các yêu cầu đặc quyền."
