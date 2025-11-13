@@ -142,24 +142,23 @@ const readonlyScopes = computed((): SearchScope[] => {
 });
 const tabItemList = computed((): TabFilterItem<TabValue>[] => {
   const items: TabFilterItem<TabValue>[] = [
-    { value: "ALL", label: t("common.all") },
-    { value: "CREATED", label: t("common.created") },
     {
       value: "WAITING_APPROVAL",
       label: t("issue.waiting-approval"),
     },
-    { value: "WAITING_ROLLOUT", label: t("issue.waiting-rollout") },
+    { value: "CREATED", label: t("common.created") },
+    { value: "ALL", label: t("common.all") },
   ];
   return items;
 });
 const storedTab = useDynamicLocalStorage<TabValue>(
   computed(() => `bb.project.issue-list-tab.${me.value.name}`),
-  tabItemList.value[0].value,
+  "WAITING_APPROVAL",
   window.localStorage,
   {
     serializer: {
       read(raw: TabValue) {
-        if (!TABS.includes(raw)) return tabItemList.value[0].value;
+        if (!TABS.includes(raw)) return "WAITING_APPROVAL";
         return raw;
       },
       write(value) {

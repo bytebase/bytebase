@@ -858,7 +858,6 @@
     "labels": "イシューラベル",
     "my-issues": "マイイシュー",
     "waiting-approval": "承認待ち",
-    "waiting-rollout": "リリース待ち",
     "status-transition": {
       "modal": {
         "resolve": "イシューは完了しましたか?",

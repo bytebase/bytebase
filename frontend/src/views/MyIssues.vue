@@ -105,13 +105,7 @@ import {
 } from "@/utils";
 import { getComponentIdLocalStorageKey } from "@/utils/localStorage";
 
-const TABS = [
-  "CREATED",
-  "WAITING_APPROVAL",
-  "WAITING_ROLLOUT",
-  "ALL",
-  "",
-] as const;
+const TABS = ["WAITING_APPROVAL", "CREATED", "ALL", ""] as const;
 
 type TabValue = (typeof TABS)[number];
 
@@ -166,28 +160,24 @@ const defaultScopeIds = computed(() => {
   return new Set(defaultSearchParams().scopes.map((s) => s.id));
 });
 const tabItemList = computed((): TabFilterItem<TabValue>[] => {
-  const items: (TabFilterItem<TabValue> & { hide?: boolean })[] = [
-    { value: "ALL", label: t("common.all") },
-    { value: "CREATED", label: t("common.created") },
+  const items: TabFilterItem<TabValue>[] = [
     {
       value: "WAITING_APPROVAL",
       label: t("issue.waiting-approval"),
     },
-    {
-      value: "WAITING_ROLLOUT",
-      label: t("issue.waiting-rollout"),
-    },
+    { value: "CREATED", label: t("common.created") },
+    { value: "ALL", label: t("common.all") },
   ];
-  return items.filter((item) => !item.hide);
+  return items;
 });
 const storedTab = useDynamicLocalStorage<TabValue>(
   computed(() => `bb.home.issue-list-tab.${me.value.name}`),
-  tabItemList.value[0].value,
+  "WAITING_APPROVAL",
   window.localStorage,
   {
     serializer: {
       read(raw: TabValue) {
-        if (!TABS.includes(raw)) return tabItemList.value[0].value;
+        if (!TABS.includes(raw)) return "WAITING_APPROVAL";
         return raw;
       },
       write(value) {
@@ -197,9 +187,8 @@ const storedTab = useDynamicLocalStorage<TabValue>(
   } as UseStorageOptions<TabValue>
 );
 const keyForTab = (tab: TabValue) => {
-  if (tab === "CREATED") return "my-issues-created";
   if (tab === "WAITING_APPROVAL") return "my-issues-waiting-approval";
-  if (tab === "WAITING_ROLLOUT") return "my-issues-waiting-rollout";
+  if (tab === "CREATED") return "my-issues-created";
   if (tab === "ALL") return "my-issues-all";
 
   return "my-issues-unknown";
@@ -239,25 +228,6 @@ const mergeSearchParamsByTab = (params: SearchParams, tab: TabValue) => {
       ],
     });
   }
-  if (tab === "WAITING_ROLLOUT") {
-    return upsertScope({
-      params: common,
-      scopes: [
-        {
-          id: "status",
-          value: "OPEN",
-        },
-        {
-          id: "approval",
-          value: "approved",
-        },
-        {
-          id: "releaser",
-          value: myEmail,
-        },
-      ],
-    });
-  }
   console.error("[mergeSearchParamsByTab] should never reach this line", tab);
   return common;
 };
@@ -284,14 +254,6 @@ const guessTabValueFromSearchParams = (params: SearchParams): TabValue => {
     getValueFromSearchParams(params, "approver") === myEmail
   ) {
     return "WAITING_APPROVAL";
-  }
-  if (
-    verifyScopes(["approval", "releaser"]) &&
-    getSemanticIssueStatusFromSearchParams(params) === "OPEN" &&
-    getValueFromSearchParams(params, "approval") === "approved" &&
-    getValueFromSearchParams(params, "releaser") === myEmail
-  ) {
-    return "WAITING_ROLLOUT";
   }
 
   if (params.scopes.every((s) => defaultScopeIds.value.has(s.id))) {
@@ -324,7 +286,7 @@ const tab = computed<TabValue>({
 
 const statusTabHidden = computed(() => {
   if (state.advanced) return true;
-  return ["WAITING_APPROVAL", "WAITING_ROLLOUT"].includes(tab.value);
+  return tab.value === "WAITING_APPROVAL";
 });
 
 const mergedIssueFilter = computed(() => {
@@ -379,7 +341,7 @@ const toggleAdvancedSearch = (on: boolean) => {
 watch(
   [tab],
   () => {
-    if (tab.value === "WAITING_APPROVAL" || tab.value === "WAITING_ROLLOUT") {
+    if (tab.value === "WAITING_APPROVAL") {
       if (getSemanticIssueStatusFromSearchParams(state.params) === "CLOSED") {
         upsertScope({
           params: state.params,
