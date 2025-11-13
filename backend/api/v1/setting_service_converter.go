@@ -424,6 +424,7 @@ func convertWorkspaceProfileSetting(v1Setting *v1pb.WorkspaceProfileSetting) *st
 		DatabaseChangeMode:     storepb.DatabaseChangeMode(v1Setting.DatabaseChangeMode),
 		DisallowPasswordSignin: v1Setting.DisallowPasswordSignin,
 		EnableMetricCollection: v1Setting.EnableMetricCollection,
+		EnableAuditLogStdout:   v1Setting.EnableAuditLogStdout,
 	}
 
 	// Convert announcement if present
@@ -466,6 +467,7 @@ func convertToWorkspaceProfileSetting(storeSetting *storepb.WorkspaceProfileSett
 		DatabaseChangeMode:     v1pb.DatabaseChangeMode(storeSetting.DatabaseChangeMode),
 		DisallowPasswordSignin: storeSetting.DisallowPasswordSignin,
 		EnableMetricCollection: storeSetting.EnableMetricCollection,
+		EnableAuditLogStdout:   storeSetting.EnableAuditLogStdout,
 	}
 
 	if storeSetting.Announcement != nil {

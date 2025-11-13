@@ -589,6 +589,11 @@
           "participate": "Participar en el programa de mejora",
           "description": "Ayuda a mejorar Bytebase compartiendo datos de uso anónimos"
         },
+        "audit-log-stdout": {
+          "self": "Exportación de Registros de Auditoría",
+          "enable": "Habilitar el registro de auditoría en la salida estándar",
+          "description": "Generar registros de auditoría JSON estructurados en la salida estándar para su ingesta por agregadores de registros (Splunk, ELK, Datadog, Loki). Requiere licencia TEAM o ENTERPRISE."
+        },
         "disallow-signup": {
           "enable": "Deshabilitar el registro de autoservicio",
           "description": "Una vez deshabilitado, los usuarios no pueden registrarse por sí mismos y solo pueden ser invitados por el administrador del espacio de trabajo."

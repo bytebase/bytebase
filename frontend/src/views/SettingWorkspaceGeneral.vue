@@ -34,6 +34,10 @@
       ref="productImprovementSettingRef"
       :allow-edit="allowEdit"
     />
+    <AuditLogStdoutSetting
+      ref="auditLogStdoutSettingRef"
+      :allow-edit="allowEdit"
+    />
 
     <div v-if="allowEdit && isDirty" class="sticky -bottom-4 z-10">
       <div
@@ -61,6 +65,7 @@ import {
   AccountSetting,
   AIAugmentationSetting,
   AnnouncementSetting,
+  AuditLogStdoutSetting,
   GeneralSetting,
   ProductImprovementSetting,
 } from "@/components/GeneralSetting";
@@ -84,6 +89,8 @@ const aiAugmentationSettingRef =
 const announcementSettingRef = ref<InstanceType<typeof AnnouncementSetting>>();
 const productImprovementSettingRef =
   ref<InstanceType<typeof ProductImprovementSetting>>();
+const auditLogStdoutSettingRef =
+  ref<InstanceType<typeof AuditLogStdoutSetting>>();
 
 const settingRefList = computed(() => {
   return [
@@ -94,6 +101,7 @@ const settingRefList = computed(() => {
     aiAugmentationSettingRef,
     announcementSettingRef,
     productImprovementSettingRef,
+    auditLogStdoutSettingRef,
   ];
 });
 
