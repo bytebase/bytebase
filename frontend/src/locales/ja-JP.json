@@ -2775,8 +2775,8 @@
       "self": "SQLエディタのユーザー",
       "description": "指定した範囲内のデータをクエリできます。"
     },
-    "gitops-agent": {
-      "self": "GitOps エージェント",
+    "gitops-service-agent": {
+      "self": "GitOps サービスエージェント",
       "description": "GitOps を介して自動化された CI/CD ワークフローでデータベース変更を作成および実行するための権限。"
     },
     "project-viewer": {

@@ -378,8 +378,8 @@ roles:
       - bb.sheets.get
       - bb.taskRuns.create
       - bb.taskRuns.list
-  - name: roles/gitopsAgent
-    title: GitOps Agent
+  - name: roles/gitopsServiceAgent
+    title: GitOps Service Agent
     permissions:
       - bb.plans.create
       - bb.plans.get
