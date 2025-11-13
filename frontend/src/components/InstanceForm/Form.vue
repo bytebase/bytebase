@@ -1,11 +1,11 @@
 <template>
   <div class="flex flex-col gap-y-6 pb-2">
-    <div class="divide-y divide-block-border max-w-[850px]">
+    <div class="max-w-[850px]">
       <InstanceEngineRadioGrid
         v-if="isCreating"
         :engine="basicInfo.engine"
         :engine-list="supportedEngineV1List()"
-        class="w-full mb-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2"
+        class="w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2"
         @update:engine="(newEngine: Engine) => changeInstanceEngine(newEngine)"
       >
         <template #suffix="{ engine }: { engine: Engine }">
@@ -16,8 +16,10 @@
         </template>
       </InstanceEngineRadioGrid>
 
+      <NDivider />
+
       <!-- Instance Name -->
-      <div class="pt-4 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-4">
+      <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-4">
         <div class="sm:col-span-2 sm:col-start-1">
           <label for="name" class="textlabel flex flex-row items-center">
             {{ $t("instance.instance-name") }}
@@ -439,9 +441,11 @@
         </div>
       </div>
 
+      <NDivider />
+
       <!-- Connection Info -->
       <template v-if="basicInfo.engine !== Engine.DYNAMODB">
-        <p class="mt-6 pt-4 w-full text-lg leading-6 font-medium text-gray-900">
+        <p class="w-full text-lg leading-6 font-medium text-gray-900">
           {{ $t("instance.connection-info") }}
         </p>
 
@@ -478,9 +482,11 @@
         </div>
       </div>
 
+      <NDivider />
+
       <div
         v-if="basicInfo.engine !== Engine.DYNAMODB && isCreating"
-        class="mt-6 pt-4 flex flex-col gap-y-1"
+        class="flex flex-col gap-y-1"
       >
         <p class="w-full text-lg leading-6 font-medium text-gray-900">
           {{ $t("instance.sync-databases.self") }}
@@ -514,6 +520,7 @@ import {
   NRadioGroup,
   NRadio,
   NCheckbox,
+  NDivider,
 } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";

@@ -22,29 +22,29 @@
     <main class="flex-1 relative">
       <!-- Highlight Panel -->
       <div
-        class="gap-y-2 flex flex-col items-start xl:flex-row xl:items-center xl:justify-between"
+        class="gap-y-2 flex flex-col items-start xl:flex-row xl:items-center xl:justify-between xl:gap-x-2"
       >
-        <div class="flex-1 min-w-0 shrink-0">
+        <div class="flex-1 flex flex-col min-w-0 shrink-0 gap-y-2">
           <!-- Summary -->
-          <div class="w-full flex items-center">
-            <div class="w-full flex items-baseline gap-x-2">
-              <h1
-                class="text-xl font-bold text-main truncate flex items-center gap-x-2"
-              >
-                {{ database.databaseName }}
+          <div class="w-full flex flex-col">
+            <div
+              class="text-xl box-content font-bold text-main truncate flex items-center gap-x-2"
+            >
+              {{ database.databaseName }}
 
-                <ProductionEnvironmentV1Icon
-                  :environment="environment"
-                  :tooltip="true"
-                  class="w-5 h-5"
-                />
-              </h1>
-              <div class="flex items-center gap-x-1">
-                <span class="textinfolabel">
-                  {{ database.name }}
-                </span>
-                <CopyButton :content="database.name" />
-              </div>
+              <ProductionEnvironmentV1Icon
+                :environment="environment"
+                :tooltip="true"
+                class="w-5 h-5"
+              />
+            </div>
+            <div
+              class="w-full flex flex-row items-center justify-start gap-x-1"
+            >
+              <EllipsisText class="textinfolabel">
+                {{ database.name }}
+              </EllipsisText>
+              <CopyButton :content="database.name" />
             </div>
           </div>
           <dl
@@ -218,6 +218,7 @@ import {
 import DriftedDatabaseAlert from "@/components/DatabaseDetail/DriftedDatabaseAlert.vue";
 import ExportSchemaButton from "@/components/DatabaseDetail/ExportSchemaButton.vue";
 import SyncDatabaseButton from "@/components/DatabaseDetail/SyncDatabaseButton.vue";
+import EllipsisText from "@/components/EllipsisText.vue";
 import { AddSpecDrawer } from "@/components/Plan";
 import TransferOutDatabaseForm from "@/components/TransferOutDatabaseForm";
 import { Drawer } from "@/components/v2";
