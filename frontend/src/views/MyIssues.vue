@@ -149,9 +149,15 @@ const isDefaultPreset = (params: SearchParams): boolean => {
   return paramsQuery === defaultQuery;
 };
 
+// Track the initial URL query string to distinguish between user-provided URLs
+// and programmatic navigation to default state
+const initialQueryString = ref<string | null>(null);
+
 // Initialize params from URL query on mount
 onMounted(() => {
   const queryString = route.query.q as string;
+  initialQueryString.value = queryString || null;
+
   if (queryString) {
     const urlParams = buildSearchParamsBySearchText(queryString);
     // Merge URL params with default status scope
@@ -169,41 +175,41 @@ watch(
       return;
     }
 
-    // Don't set URL for default preset
-    if (isDefaultPreset(params)) {
-      // Remove q parameter if it exists
-      if (route.query.q) {
+    const queryString = buildSearchTextBySearchParams(params);
+    const currentQuery = route.query.q as string;
+
+    // Only update URL if query string has actually changed
+    if (queryString !== currentQuery) {
+      // Special case: if at default preset and we didn't start with a URL, keep URL clean
+      if (isDefaultPreset(params) && !initialQueryString.value) {
+        // Remove URL query
+        if (route.query.q) {
+          isUpdatingFromUrl = true;
+          router
+            .replace({
+              query: {
+                ...route.query,
+                q: undefined,
+              },
+            })
+            .finally(() => {
+              isUpdatingFromUrl = false;
+            });
+        }
+      } else {
+        // Update URL normally
         isUpdatingFromUrl = true;
         router
           .replace({
             query: {
               ...route.query,
-              q: undefined,
+              q: queryString || undefined,
             },
           })
           .finally(() => {
             isUpdatingFromUrl = false;
           });
       }
-      return;
-    }
-
-    const queryString = buildSearchTextBySearchParams(params);
-    const currentQuery = route.query.q as string;
-
-    // Only update URL if query string has actually changed
-    if (queryString !== currentQuery) {
-      isUpdatingFromUrl = true;
-      router
-        .replace({
-          query: {
-            ...route.query,
-            q: queryString || undefined,
-          },
-        })
-        .finally(() => {
-          isUpdatingFromUrl = false;
-        });
     }
   },
   { deep: true }
