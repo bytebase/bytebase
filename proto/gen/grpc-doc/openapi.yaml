@@ -12311,10 +12311,12 @@ components:
         QueryResult_PermissionDenied:
             type: object
             properties:
-                resource:
-                    type: string
+                resources:
+                    type: array
+                    items:
+                        type: string
                     description: |-
-                        Denied to access the resource.
+                        Denied to access the resources.
                          Format:
                          instances/{instance}/databases/{database}
                          instances/{instance}/databases/{database}/schemas/{schema}
@@ -12331,7 +12333,7 @@ components:
                     format: enum
             description: |-
                 Permission denied with resource information or disallowed command_type.
-                 Either resource or command_type is available.
+                 Either resources or command_type is available.
         QueryResult_PostgresError:
             type: object
             properties:
