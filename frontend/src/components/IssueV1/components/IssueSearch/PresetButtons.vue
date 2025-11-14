@@ -77,8 +77,9 @@ const isActive = (preset: PresetValue): boolean => {
 
   if (preset === "CREATED") {
     return (
+      getSemanticIssueStatusFromSearchParams(props.params) === "OPEN" &&
       getValueFromSearchParams(props.params, "creator") === myEmail &&
-      props.params.scopes.filter((s) => !s.readonly).length === 1
+      props.params.scopes.filter((s) => !s.readonly).length === 2
     );
   }
 
@@ -112,7 +113,10 @@ const selectPreset = (preset: PresetValue | string) => {
   } else if (preset === "CREATED") {
     newParams = upsertScope({
       params: newParams,
-      scopes: { id: "creator", value: myEmail },
+      scopes: [
+        { id: "status", value: "OPEN" },
+        { id: "creator", value: myEmail },
+      ],
     });
   }
   // "ALL" preset keeps only readonly scopes (already done above)
