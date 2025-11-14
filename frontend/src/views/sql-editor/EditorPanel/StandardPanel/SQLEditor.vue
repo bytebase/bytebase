@@ -217,7 +217,7 @@ const handleEditorReady = (
     label: "Run Query",
     keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter],
     contextMenuGroupId: "operation",
-    contextMenuOrder: 0,
+    contextMenuOrder: 1,
     run: () => runQueryAction({ explain: false, newTab: false }),
   });
   editor.addAction({
@@ -227,7 +227,7 @@ const handleEditorReady = (
       monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.Enter,
     ],
     contextMenuGroupId: "operation",
-    contextMenuOrder: 0,
+    contextMenuOrder: 1,
     run: () => runQueryAction({ explain: false, newTab: true }),
   });
   editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
@@ -307,7 +307,7 @@ const handleEditorReady = (
               monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyE,
             ],
             contextMenuGroupId: "operation",
-            contextMenuOrder: 1,
+            contextMenuOrder: 0,
             run: () =>
               runQueryAction({ explain: false, newTab: false, dryRun: true }),
           });
