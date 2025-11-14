@@ -50,7 +50,6 @@ import {
   applyUIIssueFilter,
   buildSearchTextBySearchParams,
   buildSearchParamsBySearchText,
-  mergeSearchParams,
 } from "@/utils";
 import { getComponentIdLocalStorageKey } from "@/utils/localStorage";
 
@@ -160,8 +159,8 @@ onMounted(() => {
 
   if (queryString) {
     const urlParams = buildSearchParamsBySearchText(queryString);
-    // Merge URL params with default status scope
-    state.params = mergeSearchParams(defaultSearchParams(), urlParams);
+    // Use URL params directly, don't merge with defaults
+    state.params = urlParams;
   }
   // No else - keep URL clean for default preset
 });

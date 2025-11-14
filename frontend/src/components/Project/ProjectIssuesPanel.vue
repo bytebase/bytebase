@@ -172,8 +172,12 @@ onMounted(() => {
 
   if (queryString) {
     const urlParams = buildSearchParamsBySearchText(queryString);
-    // Merge URL params with readonly scopes (project) and default status
-    state.params = mergeSearchParams(defaultSearchParams(), urlParams);
+    // Only add readonly scopes (project), don't merge with default preset
+    const readonlyParams: SearchParams = {
+      query: "",
+      scopes: [...readonlyScopes.value],
+    };
+    state.params = mergeSearchParams(readonlyParams, urlParams);
   }
   // No else - keep URL clean for default preset
 });
