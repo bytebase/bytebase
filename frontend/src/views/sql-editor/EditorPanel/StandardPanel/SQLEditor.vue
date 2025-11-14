@@ -60,6 +60,7 @@ import {
 } from "@/store";
 import type { SQLDialect, SQLEditorQueryParams } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
   nextAnimationFrame,
   useInstanceV1EditorLanguage,
@@ -213,7 +214,7 @@ const handleEditorReady = (
     label: "Run Query",
     keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter],
     contextMenuGroupId: "operation",
-    contextMenuOrder: 0,
+    contextMenuOrder: 1,
     run: () => runQueryAction({ explain: false, newTab: false }),
   });
   editor.addAction({
@@ -223,7 +224,7 @@ const handleEditorReady = (
       monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.Enter,
     ],
     contextMenuGroupId: "operation",
-    contextMenuOrder: 0,
+    contextMenuOrder: 1,
     run: () => runQueryAction({ explain: false, newTab: true }),
   });
   editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
@@ -272,11 +273,24 @@ const handleEditorReady = (
   watch(
     () => instance.value.engine,
     () => {
-      if (instanceV1AllowsExplain(instance.value)) {
+      const shouldShowAction =
+        instanceV1AllowsExplain(instance.value) ||
+        instance.value.engine === Engine.BIGQUERY;
+
+      if (shouldShowAction) {
+        const isBigQuery = instance.value.engine === Engine.BIGQUERY;
+        const label = isBigQuery ? "Dry Run Query" : "Explain Query";
+
+        // Remove existing action if label changed
+        if (explainQueryAction) {
+          explainQueryAction.dispose();
+          explainQueryAction = undefined;
+        }
+
         if (!editor.getAction("ExplainQuery")) {
           explainQueryAction = editor.addAction({
             id: "ExplainQuery",
-            label: "Explain Query",
+            label: label,
             keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyE],
             contextMenuGroupId: "operation",
             contextMenuOrder: 0,
@@ -285,6 +299,7 @@ const handleEditorReady = (
         }
       } else {
         explainQueryAction?.dispose();
+        explainQueryAction = undefined;
       }
     },
     { immediate: true }
