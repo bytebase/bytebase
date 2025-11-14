@@ -57,20 +57,20 @@ import {
   UsersIcon,
   XIcon,
 } from "lucide-vue-next";
-import { computed } from "vue";
 import { NTooltip } from "naive-ui";
+import { computed } from "vue";
 import { t } from "@/plugins/i18n";
 import {
-  useUserStore,
-  useWorkSheetStore,
   useCurrentUserV1,
   useSQLEditorTabStore,
   useTabViewStateStore,
+  useUserStore,
+  useWorkSheetStore,
 } from "@/store";
 import { Worksheet_Visibility } from "@/types/proto-es/v1/worksheet_service_pb";
 import type {
-  WorsheetFolderNode,
   SheetViewMode,
+  WorsheetFolderNode,
 } from "@/views/sql-editor/Sheet";
 
 const props = defineProps<{

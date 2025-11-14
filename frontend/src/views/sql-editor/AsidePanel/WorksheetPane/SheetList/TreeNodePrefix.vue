@@ -37,12 +37,12 @@ import {
   FolderCodeIcon,
   FolderMinusIcon,
   FolderOpenIcon,
-  FolderSyncIcon,
   FolderPenIcon,
+  FolderSyncIcon,
 } from "lucide-vue-next";
 import type {
-  WorsheetFolderNode,
   SheetViewMode,
+  WorsheetFolderNode,
 } from "@/views/sql-editor/Sheet";
 
 defineProps<{

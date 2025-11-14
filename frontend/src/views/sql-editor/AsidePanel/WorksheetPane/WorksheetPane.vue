@@ -37,10 +37,10 @@ import { type DropdownOption, NButton, NDropdown } from "naive-ui";
 import { computed, ref } from "vue";
 import { SearchBox } from "@/components/v2";
 import { t } from "@/plugins/i18n";
+import { type SheetViewMode } from "@/views/sql-editor/Sheet";
 import { useSheetContext } from "../../Sheet";
 import FilterMenuItem from "./FilterMenuItem.vue";
 import { SheetTree } from "./SheetList";
-import { type SheetViewMode } from "@/views/sql-editor/Sheet";
 
 const { filter, filterChanged } = useSheetContext();
 const showDropdown = ref<boolean>(false);

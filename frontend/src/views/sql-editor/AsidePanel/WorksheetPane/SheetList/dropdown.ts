@@ -13,8 +13,8 @@ import { useCurrentUserV1, useWorkSheetStore } from "@/store";
 import { type Position } from "@/types";
 import { isWorksheetWritableV1 } from "@/utils";
 import type {
-  WorsheetFolderNode,
   SheetViewMode,
+  WorsheetFolderNode,
 } from "@/views/sql-editor/Sheet";
 
 export type DropdownOptionType =

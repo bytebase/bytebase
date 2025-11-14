@@ -2,6 +2,7 @@ import { useDebounceFn } from "@vueuse/core";
 import Emittery from "emittery";
 import { isEqual, orderBy } from "lodash-es";
 import type { TreeOption } from "naive-ui";
+import { storeToRefs } from "pinia";
 import scrollIntoView from "scroll-into-view-if-needed";
 import type { ComputedRef, InjectionKey, Ref } from "vue";
 import { computed, inject, nextTick, provide, ref, watch } from "vue";
@@ -10,9 +11,9 @@ import {
   pushNotification,
   useCurrentUserV1,
   useDatabaseV1Store,
+  useSQLEditorStore,
   useSQLEditorTabStore,
   useWorkSheetStore,
-  useSQLEditorStore,
 } from "@/store";
 import type { SQLEditorTab } from "@/types";
 import { DEBOUNCE_SEARCH_DELAY } from "@/types";
@@ -31,7 +32,6 @@ import type { SQLEditorContext } from "../context";
 import { setDefaultDataSourceForConn } from "../EditorCommon";
 import { useFolderByView } from "./folder";
 import type { SheetViewMode } from "./types";
-import { storeToRefs } from "pinia";
 
 type SheetTreeEvents = Emittery<{
   "on-built": { viewMode: SheetViewMode };
