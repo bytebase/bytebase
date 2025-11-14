@@ -273,11 +273,24 @@ const handleEditorReady = (
   watch(
     () => instance.value.engine,
     () => {
-      if (instanceV1AllowsExplain(instance.value)) {
+      const shouldShowAction =
+        instanceV1AllowsExplain(instance.value) ||
+        instance.value.engine === Engine.BIGQUERY;
+
+      if (shouldShowAction) {
+        const isBigQuery = instance.value.engine === Engine.BIGQUERY;
+        const label = isBigQuery ? "Dry Run Query" : "Explain Query";
+
+        // Remove existing action if label changed
+        if (explainQueryAction) {
+          explainQueryAction.dispose();
+          explainQueryAction = undefined;
+        }
+
         if (!editor.getAction("ExplainQuery")) {
           explainQueryAction = editor.addAction({
             id: "ExplainQuery",
-            label: "Explain Query",
+            label: label,
             keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyE],
             contextMenuGroupId: "operation",
             contextMenuOrder: 0,
@@ -286,30 +299,7 @@ const handleEditorReady = (
         }
       } else {
         explainQueryAction?.dispose();
-      }
-    },
-    { immediate: true }
-  );
-
-  let dryRunQueryAction: IDisposable | undefined;
-  watch(
-    () => instance.value.engine,
-    () => {
-      if (instance.value.engine === Engine.BIGQUERY) {
-        if (!editor.getAction("DryRunQuery")) {
-          dryRunQueryAction = editor.addAction({
-            id: "DryRunQuery",
-            label: "Dry Run Query",
-            keybindings: [
-              monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyE,
-            ],
-            contextMenuGroupId: "operation",
-            contextMenuOrder: 0,
-            run: () => runQueryAction({ explain: true, newTab: false }),
-          });
-        }
-      } else {
-        dryRunQueryAction?.dispose();
+        explainQueryAction = undefined;
       }
     },
     { immediate: true }
