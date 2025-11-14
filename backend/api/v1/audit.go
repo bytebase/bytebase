@@ -485,10 +485,7 @@ func redactInstance(i *v1pb.Instance) *v1pb.Instance {
 		return nil
 	}
 	// Clone the instance to avoid modifying the original response
-	cloned, ok := proto.Clone(i).(*v1pb.Instance)
-	if !ok {
-		return i
-	}
+	cloned := proto.CloneOf(i)
 	var dataSources []*v1pb.DataSource
 	for _, d := range cloned.DataSources {
 		dataSources = append(dataSources, redactDataSource(d))
