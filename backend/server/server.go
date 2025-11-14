@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"net/http"
 	"path"
 	"sync"
 	"time"
@@ -272,7 +273,9 @@ func (s *Server) Run(ctx context.Context, port int) error {
 
 	go func() {
 		if err := s.echoServer.StartH2CServer(address, &http2.Server{}); err != nil {
-			slog.Error("http server listen error", log.BBError(err))
+			if !errors.Is(err, http.ErrServerClosed) {
+				slog.Error("http server listen error", log.BBError(err))
+			}
 		}
 	}()
 

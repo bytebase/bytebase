@@ -22238,7 +22238,7 @@ Examples include PostgreSQL&#39;s RAISE NOTICE, MSSQL&#39;s PRINT, or Oracle&#39
         
       
         <h3 id="bytebase.v1.QueryResult.PermissionDenied">QueryResult.PermissionDenied</h3>
-        <p>Permission denied with resource information or disallowed command_type.</p><p>Either resource or command_type is available.</p>
+        <p>Permission denied with resource information or disallowed command_type.</p><p>Either resources or command_type is available.</p>
 
         
           <table class="field-table">
@@ -22248,10 +22248,10 @@ Examples include PostgreSQL&#39;s RAISE NOTICE, MSSQL&#39;s PRINT, or Oracle&#39
             <tbody>
               
                 <tr>
-                  <td>resource</td>
+                  <td>resources</td>
                   <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Denied to access the resource.
+                  <td>repeated</td>
+                  <td><p>Denied to access the resources.
 Format:
 instances/{instance}/databases/{database}
 instances/{instance}/databases/{database}/schemas/{schema}

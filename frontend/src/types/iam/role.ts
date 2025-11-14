@@ -8,6 +8,7 @@ export enum PresetRoleType {
   PROJECT_DEVELOPER = `${roleNamePrefix}projectDeveloper`,
   SQL_EDITOR_USER = `${roleNamePrefix}sqlEditorUser`,
   PROJECT_RELEASER = `${roleNamePrefix}projectReleaser`,
+  GITOPS_SERVICE_AGENT = `${roleNamePrefix}gitopsServiceAgent`,
   PROJECT_VIEWER = `${roleNamePrefix}projectViewer`,
 }
 
@@ -22,7 +23,8 @@ export const PRESET_WORKSPACE_ROLES: string[] = [
 export const PRESET_PROJECT_ROLES: string[] = [
   PresetRoleType.PROJECT_OWNER,
   PresetRoleType.PROJECT_DEVELOPER,
-  PresetRoleType.SQL_EDITOR_USER,
   PresetRoleType.PROJECT_RELEASER,
+  PresetRoleType.SQL_EDITOR_USER,
   PresetRoleType.PROJECT_VIEWER,
+  PresetRoleType.GITOPS_SERVICE_AGENT,
 ];

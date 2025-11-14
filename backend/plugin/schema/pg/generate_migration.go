@@ -634,8 +634,17 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 	// Create enum types (before tables as they might be used in column definitions)
 	for _, enumDiff := range diff.EnumTypeChanges {
 		if enumDiff.Action == schema.MetadataDiffActionCreate {
-			if err := writeCreateEnumType(buf, enumDiff.SchemaName, enumDiff.NewEnumType); err != nil {
-				return err
+			// Support both metadata and AST-only modes
+			if enumDiff.NewEnumType != nil {
+				// Metadata mode: use enum type metadata
+				if err := writeCreateEnumType(buf, enumDiff.SchemaName, enumDiff.NewEnumType); err != nil {
+					return err
+				}
+			} else if enumDiff.NewASTNode != nil {
+				// AST-only mode: extract SQL from AST node
+				if err := writeMigrationEnumTypeFromAST(buf, enumDiff.NewASTNode); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -1669,6 +1678,49 @@ func writeMigrationSequenceFromAST(out *strings.Builder, astNode any) error {
 	_, _ = out.WriteString(sequenceSQL)
 	// Ensure statement ends with semicolon
 	if !strings.HasSuffix(strings.TrimSpace(sequenceSQL), ";") {
+		_, _ = out.WriteString(";")
+	}
+	_, _ = out.WriteString("\n\n")
+
+	return nil
+}
+
+// writeMigrationEnumTypeFromAST writes CREATE TYPE AS ENUM statement from AST node
+func writeMigrationEnumTypeFromAST(out *strings.Builder, astNode any) error {
+	if astNode == nil {
+		return errors.New("AST node is nil")
+	}
+
+	// Extract the original SQL text from the AST node
+	var enumSQL string
+
+	// Try to cast to PostgreSQL DefinestmtContext (CREATE TYPE AS ENUM)
+	if ctx, ok := astNode.(*pgparser.DefinestmtContext); ok {
+		// First try to get text using token stream
+		if tokenStream := ctx.GetParser().GetTokenStream(); tokenStream != nil {
+			start := ctx.GetStart()
+			stop := ctx.GetStop()
+			if start != nil && stop != nil {
+				enumSQL = tokenStream.GetTextFromTokens(start, stop)
+			}
+		}
+
+		// Fallback to GetText() if token stream approach failed
+		if enumSQL == "" {
+			enumSQL = ctx.GetText()
+		}
+	} else {
+		return errors.Errorf("unsupported AST node type for enum type: %T", astNode)
+	}
+
+	if enumSQL == "" {
+		return errors.New("failed to extract enum type SQL from AST node")
+	}
+
+	// Write the enum type SQL
+	_, _ = out.WriteString(enumSQL)
+	// Ensure statement ends with semicolon
+	if !strings.HasSuffix(strings.TrimSpace(enumSQL), ";") {
 		_, _ = out.WriteString(";")
 	}
 	_, _ = out.WriteString("\n\n")
@@ -3465,6 +3517,10 @@ func generateCommentChangesFromSDL(buf *strings.Builder, diff *schema.MetadataDi
 				indexName = commentDiff.ObjectName
 			}
 			writeCommentOnIndex(buf, commentDiff.SchemaName, indexName, newComment)
+
+		case schema.CommentObjectTypeType:
+			// COMMENT ON TYPE (for enum types)
+			writeCommentOnType(buf, commentDiff.SchemaName, commentDiff.ObjectName, newComment)
 
 		default:
 			// Unknown object type, skip

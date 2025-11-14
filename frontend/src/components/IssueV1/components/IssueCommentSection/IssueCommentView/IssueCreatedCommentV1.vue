@@ -60,7 +60,6 @@
                 :project="project"
                 @change="(val: string) => (state.editContent = val)"
                 @submit="saveEdit"
-                @cancel="cancelEdit"
               />
               <div
                 v-if="state.isEditing"

@@ -92,6 +92,15 @@ func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.Da
 			if err := writeEnum(&buf, schema.Name, enum); err != nil {
 				return "", err
 			}
+			if _, err := buf.WriteString(";\n\n"); err != nil {
+				return "", err
+			}
+			// Write enum comment if present
+			if len(enum.Comment) > 0 {
+				if err := writeEnumComment(&buf, schema.Name, enum); err != nil {
+					return "", err
+				}
+			}
 		}
 	}
 
@@ -361,6 +370,15 @@ func GetSchemaDefinition(schema *storepb.SchemaMetadata) (string, error) {
 		}
 		if err := writeEnum(&buf, schema.Name, enum); err != nil {
 			return "", err
+		}
+		if _, err := buf.WriteString(";\n\n"); err != nil {
+			return "", err
+		}
+		// Write enum comment if present
+		if len(enum.Comment) > 0 {
+			if err := writeEnumComment(&buf, schema.Name, enum); err != nil {
+				return "", err
+			}
 		}
 	}
 
@@ -786,7 +804,7 @@ func writeEnum(out io.Writer, schema string, enum *storepb.EnumTypeMetadata) err
 		if _, err := io.WriteString(out, `    '`); err != nil {
 			return err
 		}
-		if _, err := io.WriteString(out, value); err != nil {
+		if _, err := io.WriteString(out, escapeSingleQuote(value)); err != nil {
 			return err
 		}
 		if _, err := io.WriteString(out, `'`); err != nil {
@@ -794,14 +812,8 @@ func writeEnum(out io.Writer, schema string, enum *storepb.EnumTypeMetadata) err
 		}
 	}
 
-	if _, err := io.WriteString(out, "\n);\n\n"); err != nil {
+	if _, err := io.WriteString(out, "\n)"); err != nil {
 		return err
-	}
-
-	if len(enum.Comment) > 0 {
-		if err := writeEnumComment(out, schema, enum); err != nil {
-			return err
-		}
 	}
 
 	return nil
@@ -2253,6 +2265,31 @@ func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 		}
 	}
 
+	// Write all enum types before sequences and tables
+	for _, schema := range metadata.Schemas {
+		if schema.SkipDump {
+			continue
+		}
+		for _, enumType := range schema.EnumTypes {
+			if enumType.SkipDump {
+				continue
+			}
+			if err := writeEnum(&buf, schema.Name, enumType); err != nil {
+				return "", err
+			}
+			if _, err := buf.WriteString(";\n\n"); err != nil {
+				return "", err
+			}
+
+			// Write enum type comment if present
+			if len(enumType.Comment) > 0 {
+				if err := writeEnumComment(&buf, schema.Name, enumType); err != nil {
+					return "", err
+				}
+			}
+		}
+	}
+
 	// Write all sequences before tables to ensure they exist before any table references them.
 	// Skip sequences that belong to serial or identity columns as they will be implicitly created.
 	sequenceOwnershipMap := make(map[string][]*storepb.SequenceMetadata)
@@ -3458,6 +3495,46 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 				Name:    fmt.Sprintf("schemas/%s/%s/%s.sql", schemaName, folderName, function.Name),
 				Content: buf.String(),
 			})
+		}
+
+		// Generate a single file for all enum types in this schema
+		if len(schemaMetadata.EnumTypes) > 0 {
+			var buf strings.Builder
+			hasEnumTypes := false
+			for i, enumType := range schemaMetadata.EnumTypes {
+				if enumType.SkipDump {
+					continue
+				}
+
+				if hasEnumTypes {
+					buf.WriteString("\n")
+				}
+				hasEnumTypes = true
+
+				if i > 0 {
+					buf.WriteString("\n")
+				}
+
+				if err := writeEnum(&buf, schemaName, enumType); err != nil {
+					return nil, errors.Wrapf(err, "failed to generate enum type SDL for %s.%s", schemaName, enumType.Name)
+				}
+				buf.WriteString(";\n")
+
+				// Add enum type comment if present
+				if len(enumType.Comment) > 0 {
+					buf.WriteString("\n")
+					if err := writeEnumComment(&buf, schemaName, enumType); err != nil {
+						return nil, errors.Wrapf(err, "failed to generate enum type comment for %s.%s", schemaName, enumType.Name)
+					}
+				}
+			}
+
+			if hasEnumTypes {
+				files = append(files, schema.File{
+					Name:    fmt.Sprintf("schemas/%s/types.sql", schemaName),
+					Content: buf.String(),
+				})
+			}
 		}
 
 		// Generate a single file for all independent sequences (no owner) in this schema

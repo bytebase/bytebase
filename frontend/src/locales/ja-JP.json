@@ -858,7 +858,6 @@
     "labels": "イシューラベル",
     "my-issues": "マイイシュー",
     "waiting-approval": "承認待ち",
-    "waiting-rollout": "リリース待ち",
     "status-transition": {
       "modal": {
         "resolve": "イシューは完了しましたか?",
@@ -2779,6 +2778,10 @@
     "sql-editor-user": {
       "self": "SQLエディタのユーザー",
       "description": "指定した範囲内のデータをクエリできます。"
+    },
+    "gitops-service-agent": {
+      "self": "GitOps サービスエージェント",
+      "description": "GitOps を介して自動化された CI/CD ワークフローでデータベース変更を作成および実行するための権限。"
     },
     "project-viewer": {
       "self": "プロジェクトビューア",

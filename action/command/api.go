@@ -208,29 +208,6 @@ func (c *Client) CreatePlan(ctx context.Context, project string, r *v1pb.Plan) (
 	return resp.Msg, nil
 }
 
-func (c *Client) RunPlanChecks(ctx context.Context, r *v1pb.RunPlanChecksRequest) (*v1pb.RunPlanChecksResponse, error) {
-	resp, err := c.planClient.RunPlanChecks(ctx, connect.NewRequest(r))
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to run plan checks")
-	}
-	return resp.Msg, nil
-}
-
-func (c *Client) ListPlanCheckRuns(ctx context.Context, r *v1pb.ListPlanCheckRunsRequest) (*v1pb.ListPlanCheckRunsResponse, error) {
-	resp, err := c.planClient.ListPlanCheckRuns(ctx, connect.NewRequest(r))
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list plan check runs")
-	}
-	return resp.Msg, nil
-}
-
-func (c *Client) ListAllPlanCheckRuns(ctx context.Context, planName string) (*v1pb.ListPlanCheckRunsResponse, error) {
-	request := &v1pb.ListPlanCheckRunsRequest{
-		Parent: planName,
-	}
-	return c.ListPlanCheckRuns(ctx, request)
-}
-
 func (c *Client) GetRollout(ctx context.Context, rolloutName string) (*v1pb.Rollout, error) {
 	resp, err := c.rolloutClient.GetRollout(ctx,
 		connect.NewRequest(&v1pb.GetRolloutRequest{

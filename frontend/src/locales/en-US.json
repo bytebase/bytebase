@@ -858,7 +858,6 @@
     "labels": "Issue Labels",
     "my-issues": "My Issues",
     "waiting-approval": "Waiting for Approval",
-    "waiting-rollout": "Waiting for Rollout",
     "status-transition": {
       "modal": {
         "resolve": "Resolve issue?",
@@ -2779,6 +2778,10 @@
     "sql-editor-user": {
       "self": "SQL Editor User",
       "description": "Permissions for querying database data."
+    },
+    "gitops-service-agent": {
+      "self": "GitOps Service Agent",
+      "description": "Permissions for automated CI/CD workflows to create and execute database changes via GitOps."
     },
     "project-viewer": {
       "self": "Project Viewer",

@@ -858,7 +858,6 @@
     "labels": "Nhãn vấn đề",
     "my-issues": "Vấn đề của tôi",
     "waiting-approval": "Đang chờ phê duyệt",
-    "waiting-rollout": "Đang chờ triển khai",
     "status-transition": {
       "modal": {
         "resolve": "Giải quyết vấn đề?",
@@ -2779,6 +2778,10 @@
     "sql-editor-user": {
       "self": "Người dùng Trình soạn thảo SQL",
       "description": "Quyền truy vấn dữ liệu cơ sở dữ liệu."
+    },
+    "gitops-service-agent": {
+      "self": "Tác nhân Dịch vụ GitOps",
+      "description": "Quyền cho quy trình CI/CD tự động để tạo và thực thi các thay đổi cơ sở dữ liệu qua GitOps."
     },
     "project-viewer": {
       "self": "Người xem dự án",

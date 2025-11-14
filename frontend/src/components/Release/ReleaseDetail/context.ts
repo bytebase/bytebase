@@ -40,7 +40,7 @@ export const provideReleaseDetailContext = () => {
   }, unknownProject());
 
   const name = computed(() => {
-    return `${project.value.name}/releases/${route.params.releaseId}`;
+    return `${projectNamePrefix}${route.params.projectId}/releases/${route.params.releaseId}`;
   });
 
   watchEffect(async () => {

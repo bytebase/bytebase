@@ -198,8 +198,13 @@ func (x *QueryResult_PermissionDenied) Equal(y *QueryResult_PermissionDenied) bo
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.Resource != y.Resource {
+	if len(x.Resources) != len(y.Resources) {
 		return false
+	}
+	for i := 0; i < len(x.Resources); i++ {
+		if x.Resources[i] != y.Resources[i] {
+			return false
+		}
 	}
 	if x.CommandType != y.CommandType {
 		return false

@@ -387,8 +387,10 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 				GROUP BY t.status
 			) AS t
 		) AS task_run_status_count ON TRUE
-		WHERE ?
-	`, from, where)
+	`, from)
+	if where.Len() > 0 {
+		q.Space("WHERE ?", where)
+	}
 	q.Space(orderByClause)
 
 	if v := find.Limit; v != nil {

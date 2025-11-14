@@ -38,10 +38,6 @@ const tabItemList = computed(() => {
       value: "CLOSED",
       label: t("issue.table.closed"),
     },
-    {
-      value: "",
-      label: t("common.all"),
-    },
   ] as {
     value: SemanticIssueStatus;
     label: string;
