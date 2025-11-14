@@ -24,7 +24,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: NAME
           sourcecolumns:
@@ -80,7 +80,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: ID
           sourcecolumns:
@@ -174,7 +174,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: ID
           sourcecolumns:
@@ -263,7 +263,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: ID
           sourcecolumns:
@@ -349,7 +349,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: ID
           sourcecolumns:
@@ -428,7 +428,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: C1
           sourcecolumns:
@@ -523,7 +523,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: ID
           sourcecolumns:
@@ -600,7 +600,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: CITY
           sourcecolumns:
@@ -655,7 +655,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: ""
           sourcecolumns: []
@@ -705,7 +705,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: ID
           sourcecolumns:
@@ -775,7 +775,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: ID
           sourcecolumns:
@@ -830,7 +830,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: ID
           sourcecolumns:
@@ -885,7 +885,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: ID
           sourcecolumns:
@@ -960,7 +960,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: ID
           sourcecolumns:
