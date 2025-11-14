@@ -3,7 +3,6 @@ package mysql
 import (
 	"context"
 	"fmt"
-	"slices"
 
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/parser/mysql"
@@ -58,27 +57,33 @@ func (*IndexTotalNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.C
 		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
-	return rule.generateAdvice(), nil
+	// Check all tables after processing all statements
+	rule.checkAllTables()
+
+	return checker.GetAdviceList(), nil
 }
 
 // IndexTotalNumberLimitRule checks for index total number limit.
 type IndexTotalNumberLimitRule struct {
 	BaseRule
-	max          int
-	lineForTable map[string]int
+	max int
+	// tableIndexes tracks indexes for each table across all statements
+	tableIndexes map[string]map[string]bool // tableName -> indexName -> exists
+	tableLines   map[string]int             // tableName -> last line number
 	catalog      *catalog.Finder
 }
 
 // NewIndexTotalNumberLimitRule creates a new IndexTotalNumberLimitRule.
-func NewIndexTotalNumberLimitRule(level storepb.Advice_Status, title string, maxIndexes int, catalog *catalog.Finder) *IndexTotalNumberLimitRule {
+func NewIndexTotalNumberLimitRule(level storepb.Advice_Status, title string, maxIndexes int, catalogFinder *catalog.Finder) *IndexTotalNumberLimitRule {
 	return &IndexTotalNumberLimitRule{
 		BaseRule: BaseRule{
 			level: level,
 			title: title,
 		},
 		max:          maxIndexes,
-		lineForTable: make(map[string]int),
-		catalog:      catalog,
+		tableIndexes: make(map[string]map[string]bool),
+		tableLines:   make(map[string]int),
+		catalog:      catalogFinder,
 	}
 }
 
@@ -106,45 +111,6 @@ func (*IndexTotalNumberLimitRule) OnExit(_ antlr.ParserRuleContext, _ string) er
 	return nil
 }
 
-func (r *IndexTotalNumberLimitRule) generateAdvice() []*storepb.Advice {
-	type tableName struct {
-		name string
-		line int
-	}
-	var tableList []tableName
-
-	for k, v := range r.lineForTable {
-		tableList = append(tableList, tableName{
-			name: k,
-			line: v,
-		})
-	}
-	slices.SortFunc(tableList, func(i, j tableName) int {
-		if i.line < j.line {
-			return -1
-		}
-		if i.line > j.line {
-			return 1
-		}
-		return 0
-	})
-
-	for _, table := range tableList {
-		tableInfo := r.catalog.Final.FindTable(&catalog.TableFind{TableName: table.name})
-		if tableInfo != nil && tableInfo.CountIndex() > r.max {
-			r.AddAdvice(&storepb.Advice{
-				Status:        r.level,
-				Code:          advisor.IndexCountExceedsLimit.Int32(),
-				Title:         r.title,
-				Content:       fmt.Sprintf("The count of index in table `%s` should be no more than %d, but found %d", table.name, r.max, tableInfo.CountIndex()),
-				StartPosition: common.ConvertANTLRLineToPosition(table.line),
-			})
-		}
-	}
-
-	return r.adviceList
-}
-
 func (r *IndexTotalNumberLimitRule) checkCreateTable(ctx *mysql.CreateTableContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
@@ -154,7 +120,31 @@ func (r *IndexTotalNumberLimitRule) checkCreateTable(ctx *mysql.CreateTableConte
 	}
 
 	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
-	r.lineForTable[tableName] = r.baseLine + ctx.GetStart().GetLine()
+
+	// Initialize table indexes map
+	if r.tableIndexes[tableName] == nil {
+		r.tableIndexes[tableName] = make(map[string]bool)
+	}
+
+	// Extract indexes from table elements
+	if ctx.TableElementList() != nil {
+		for _, tableElement := range ctx.TableElementList().AllTableElement() {
+			if tableElement == nil {
+				continue
+			}
+			// Check column definitions for inline indexes
+			if tableElement.ColumnDefinition() != nil && tableElement.ColumnDefinition().FieldDefinition() != nil {
+				r.checkFieldDefinitionForIndexes(tableName, tableElement.ColumnDefinition().FieldDefinition())
+			}
+			// Check table constraints for indexes
+			if tableElement.TableConstraintDef() != nil {
+				r.checkTableConstraintForIndexes(tableName, tableElement.TableConstraintDef())
+			}
+		}
+	}
+
+	// Track last line for this table
+	r.tableLines[tableName] = ctx.GetStart().GetLine()
 }
 
 func (r *IndexTotalNumberLimitRule) checkCreateIndex(ctx *mysql.CreateIndexContext) {
@@ -165,7 +155,18 @@ func (r *IndexTotalNumberLimitRule) checkCreateIndex(ctx *mysql.CreateIndexConte
 		return
 	}
 	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.CreateIndexTarget().TableRef())
-	r.lineForTable[tableName] = r.baseLine + ctx.GetStart().GetLine()
+
+	// Initialize table indexes map
+	if r.tableIndexes[tableName] == nil {
+		r.tableIndexes[tableName] = make(map[string]bool)
+	}
+
+	// Add the index (use a generic name since we just need to count)
+	indexName := fmt.Sprintf("__index_%d__", len(r.tableIndexes[tableName]))
+	r.tableIndexes[tableName][indexName] = true
+
+	// Track last line for this table
+	r.tableLines[tableName] = ctx.GetStart().GetLine()
 }
 
 func (r *IndexTotalNumberLimitRule) checkAlterTable(ctx *mysql.AlterTableContext) {
@@ -183,6 +184,12 @@ func (r *IndexTotalNumberLimitRule) checkAlterTable(ctx *mysql.AlterTableContext
 	}
 
 	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
+
+	// Initialize table indexes map
+	if r.tableIndexes[tableName] == nil {
+		r.tableIndexes[tableName] = make(map[string]bool)
+	}
+
 	for _, item := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
 		if item == nil {
 			continue
@@ -194,52 +201,89 @@ func (r *IndexTotalNumberLimitRule) checkAlterTable(ctx *mysql.AlterTableContext
 			switch {
 			// add single columns.
 			case item.Identifier() != nil && item.FieldDefinition() != nil:
-				r.checkFieldDefinitionContext(tableName, item.FieldDefinition())
+				r.checkFieldDefinitionForIndexes(tableName, item.FieldDefinition())
 			// add multi columns.
 			case item.OPEN_PAR_SYMBOL() != nil && item.TableElementList() != nil:
 				for _, tableElement := range item.TableElementList().AllTableElement() {
-					if tableElement.ColumnDefinition() == nil || tableElement.ColumnDefinition().FieldDefinition() == nil {
-						continue
+					if tableElement.ColumnDefinition() != nil && tableElement.ColumnDefinition().FieldDefinition() != nil {
+						r.checkFieldDefinitionForIndexes(tableName, tableElement.ColumnDefinition().FieldDefinition())
 					}
-					r.checkFieldDefinitionContext(tableName, tableElement.ColumnDefinition().FieldDefinition())
+					if tableElement.TableConstraintDef() != nil {
+						r.checkTableConstraintForIndexes(tableName, tableElement.TableConstraintDef())
+					}
 				}
 				// add constraint.
 			case item.TableConstraintDef() != nil:
-				r.checkTableConstraintDef(tableName, item.TableConstraintDef())
+				r.checkTableConstraintForIndexes(tableName, item.TableConstraintDef())
 			default:
 			}
 		// change column.
 		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil:
-			r.checkFieldDefinitionContext(tableName, item.FieldDefinition())
+			r.checkFieldDefinitionForIndexes(tableName, item.FieldDefinition())
 		// modify column.
 		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.FieldDefinition() != nil:
-			r.checkFieldDefinitionContext(tableName, item.FieldDefinition())
+			r.checkFieldDefinitionForIndexes(tableName, item.FieldDefinition())
 		default:
 			continue
 		}
 	}
+
+	// Track last line for this table
+	r.tableLines[tableName] = ctx.GetStart().GetLine()
 }
 
-func (r *IndexTotalNumberLimitRule) checkFieldDefinitionContext(tableName string, ctx mysql.IFieldDefinitionContext) {
+// checkFieldDefinitionForIndexes checks if a field definition contains inline index definitions.
+func (r *IndexTotalNumberLimitRule) checkFieldDefinitionForIndexes(tableName string, ctx mysql.IFieldDefinitionContext) {
 	for _, attr := range ctx.AllColumnAttribute() {
 		if attr == nil || attr.GetValue() == nil {
 			continue
 		}
 		switch attr.GetValue().GetTokenType() {
-		case mysql.MySQLParserPRIMARY_SYMBOL, mysql.MySQLParserUNIQUE_SYMBOL:
-			r.lineForTable[tableName] = r.baseLine + ctx.GetStart().GetLine()
+		case mysql.MySQLParserPRIMARY_SYMBOL, mysql.MySQLParserUNIQUE_SYMBOL, mysql.MySQLParserKEY_SYMBOL:
+			// Generate a unique index name for inline index
+			indexName := fmt.Sprintf("__inline_index_%d__", len(r.tableIndexes[tableName]))
+			r.tableIndexes[tableName][indexName] = true
 		default:
 		}
 	}
 }
 
-func (r *IndexTotalNumberLimitRule) checkTableConstraintDef(tableName string, ctx mysql.ITableConstraintDefContext) {
+// checkTableConstraintForIndexes checks table constraints for index definitions.
+func (r *IndexTotalNumberLimitRule) checkTableConstraintForIndexes(tableName string, ctx mysql.ITableConstraintDefContext) {
 	if ctx.GetType_() == nil {
 		return
 	}
 	switch ctx.GetType_().GetTokenType() {
 	case mysql.MySQLParserPRIMARY_SYMBOL, mysql.MySQLParserUNIQUE_SYMBOL, mysql.MySQLParserKEY_SYMBOL, mysql.MySQLParserINDEX_SYMBOL, mysql.MySQLParserFULLTEXT_SYMBOL:
-		r.lineForTable[tableName] = r.baseLine + ctx.GetStart().GetLine()
+		// Add the index (use a generic name since we just need to count)
+		indexName := fmt.Sprintf("__index_%d__", len(r.tableIndexes[tableName]))
+		r.tableIndexes[tableName][indexName] = true
 	default:
+	}
+}
+
+// checkAllTables checks all tables' index counts after processing all statements.
+func (r *IndexTotalNumberLimitRule) checkAllTables() {
+	for tableName, indexes := range r.tableIndexes {
+		// Get the number of indexes created in these statements
+		newIndexes := len(indexes)
+
+		// Get the number of indexes that already exist in catalog.Origin
+		existingIndexes := 0
+		if table := r.catalog.Origin.FindTable(&catalog.TableFind{TableName: tableName}); table != nil {
+			existingIndexes = table.CountIndex()
+		}
+
+		totalCount := existingIndexes + newIndexes
+		if totalCount > r.max {
+			line := r.tableLines[tableName]
+			r.AddAdvice(&storepb.Advice{
+				Status:        r.level,
+				Code:          advisor.IndexCountExceedsLimit.Int32(),
+				Title:         r.title,
+				Content:       fmt.Sprintf("The count of index in table `%s` should be no more than %d, but found %d", tableName, r.max, totalCount),
+				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + line),
+			})
+		}
 	}
 }

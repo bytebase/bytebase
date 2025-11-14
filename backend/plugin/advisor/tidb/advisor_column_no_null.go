@@ -3,7 +3,6 @@ package tidb
 import (
 	"context"
 	"fmt"
-	"slices"
 
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
@@ -11,7 +10,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 )
 
 var (
@@ -39,75 +37,21 @@ func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) (
 		return nil, err
 	}
 	checker := &columnNoNullChecker{
-		level:     level,
-		title:     string(checkCtx.Rule.Type),
-		columnSet: make(map[string]columnName),
-		catalog:   checkCtx.Catalog,
+		level: level,
+		title: string(checkCtx.Rule.Type),
 	}
 
 	for _, stmtNode := range root {
 		(stmtNode).Accept(checker)
 	}
 
-	return checker.generateAdvice(), nil
+	return checker.adviceList, nil
 }
 
 type columnNoNullChecker struct {
 	adviceList []*storepb.Advice
 	level      storepb.Advice_Status
 	title      string
-	columnSet  map[string]columnName
-	catalog    *catalog.Finder
-}
-
-func (checker *columnNoNullChecker) generateAdvice() []*storepb.Advice {
-	var columnList []columnName
-	for _, column := range checker.columnSet {
-		columnList = append(columnList, column)
-	}
-	slices.SortFunc(columnList, func(i, j columnName) int {
-		if i.line != j.line {
-			if i.line < j.line {
-				return -1
-			}
-			return 1
-		}
-		if i.columnName < j.columnName {
-			return -1
-		}
-		if i.columnName > j.columnName {
-			return 1
-		}
-		return 0
-	})
-
-	for _, column := range columnList {
-		col := checker.catalog.Final.FindColumn(&catalog.ColumnFind{
-			TableName:  column.tableName,
-			ColumnName: column.columnName,
-		})
-		if col != nil && col.Nullable() {
-			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:        checker.level,
-				Code:          advisor.ColumnCannotNull.Int32(),
-				Title:         checker.title,
-				Content:       fmt.Sprintf("`%s`.`%s` cannot have NULL value", column.tableName, column.columnName),
-				StartPosition: common.ConvertANTLRLineToPosition(column.line),
-			})
-		}
-	}
-
-	return checker.adviceList
-}
-
-type columnName struct {
-	tableName  string
-	columnName string
-	line       int
-}
-
-func (c columnName) name() string {
-	return fmt.Sprintf("%s.%s", c.tableName, c.columnName)
 }
 
 // Enter implements the ast.Visitor interface.
@@ -116,13 +60,14 @@ func (checker *columnNoNullChecker) Enter(in ast.Node) (ast.Node, bool) {
 	// CREATE TABLE
 	case *ast.CreateTableStmt:
 		for _, column := range node.Cols {
-			col := columnName{
-				tableName:  node.Table.Name.O,
-				columnName: column.Name.Name.O,
-				line:       column.OriginTextPosition(),
-			}
-			if _, exists := checker.columnSet[col.name()]; !exists {
-				checker.columnSet[col.name()] = col
+			if canNull(column) {
+				checker.adviceList = append(checker.adviceList, &storepb.Advice{
+					Status:        checker.level,
+					Code:          advisor.ColumnCannotNull.Int32(),
+					Title:         checker.title,
+					Content:       fmt.Sprintf("`%s`.`%s` cannot have NULL value", node.Table.Name.O, column.Name.Name.O),
+					StartPosition: common.ConvertANTLRLineToPosition(column.OriginTextPosition()),
+				})
 			}
 		}
 	// ALTER TABLE
@@ -132,24 +77,26 @@ func (checker *columnNoNullChecker) Enter(in ast.Node) (ast.Node, bool) {
 			// ADD COLUMNS
 			case ast.AlterTableAddColumns:
 				for _, column := range spec.NewColumns {
-					col := columnName{
-						tableName:  node.Table.Name.O,
-						columnName: column.Name.Name.O,
-						line:       node.OriginTextPosition(),
-					}
-					if _, exists := checker.columnSet[col.name()]; !exists {
-						checker.columnSet[col.name()] = col
+					if canNull(column) {
+						checker.adviceList = append(checker.adviceList, &storepb.Advice{
+							Status:        checker.level,
+							Code:          advisor.ColumnCannotNull.Int32(),
+							Title:         checker.title,
+							Content:       fmt.Sprintf("`%s`.`%s` cannot have NULL value", node.Table.Name.O, column.Name.Name.O),
+							StartPosition: common.ConvertANTLRLineToPosition(node.OriginTextPosition()),
+						})
 					}
 				}
 			// CHANGE COLUMN
 			case ast.AlterTableChangeColumn:
-				col := columnName{
-					tableName:  node.Table.Name.O,
-					columnName: spec.NewColumns[0].Name.Name.O,
-					line:       node.OriginTextPosition(),
-				}
-				if _, exists := checker.columnSet[col.name()]; !exists {
-					checker.columnSet[col.name()] = col
+				if len(spec.NewColumns) > 0 && canNull(spec.NewColumns[0]) {
+					checker.adviceList = append(checker.adviceList, &storepb.Advice{
+						Status:        checker.level,
+						Code:          advisor.ColumnCannotNull.Int32(),
+						Title:         checker.title,
+						Content:       fmt.Sprintf("`%s`.`%s` cannot have NULL value", node.Table.Name.O, spec.NewColumns[0].Name.Name.O),
+						StartPosition: common.ConvertANTLRLineToPosition(node.OriginTextPosition()),
+					})
 				}
 			default:
 				// Skip other alter table specification types
