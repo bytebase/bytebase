@@ -102,7 +102,8 @@ import {
 } from "@/views/sql-editor/Sheet";
 import { filterNode } from "./common";
 import { type DropdownOptionType, useDropdown } from "./dropdown";
-import { TreeNodePrefix, TreeNodeSuffix } from "./TreeNodeRenders";
+import TreeNodePrefix from "./TreeNodePrefix.vue";
+import TreeNodeSuffix from "./TreeNodeSuffix.vue";
 
 const props = defineProps<{
   view: SheetViewMode;
@@ -229,7 +230,10 @@ const handleRenameNode = useDebounceFn(async () => {
     if (!worksheet) {
       return cleanup()
     }
-    await worksheetV1Store.patchWorksheet(worksheet, [
+    await worksheetV1Store.patchWorksheet({
+      ...worksheet,
+      title: newTitle,
+    }, [
       "title",
     ]);
 
@@ -326,10 +330,7 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
         return;
       }
       if (node.worksheet) {
-        // selectedKeys.value = [node.key];
         if (node.worksheet.type === "worksheet") {
-          // TODO(ed): the new tab title is not correct.
-          console.log("openWorksheetByName", node.worksheet.name)
           openWorksheetByName(
             node.worksheet.name,
             editorContext,
