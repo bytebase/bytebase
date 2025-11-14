@@ -88,13 +88,13 @@ const storedStatus = useDynamicLocalStorage<SemanticIssueStatus>(
 );
 
 const defaultSearchParams = (): SearchParams => {
+  const myEmail = me.value.email;
   return {
     query: "",
     scopes: [
-      {
-        id: "status",
-        value: storedStatus.value,
-      },
+      { id: "status", value: "OPEN" },
+      { id: "approval", value: "pending" },
+      { id: "approver", value: myEmail },
     ],
   };
 };
