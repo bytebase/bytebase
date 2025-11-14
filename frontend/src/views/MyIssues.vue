@@ -148,6 +148,20 @@ onMounted(() => {
     const urlParams = buildSearchParamsBySearchText(queryString);
     // Merge URL params with default status scope
     state.params = mergeSearchParams(defaultSearchParams(), urlParams);
+  } else {
+    // No URL query - set URL to reflect default preset
+    isUpdatingFromUrl = true;
+    const defaultQuery = buildSearchTextBySearchParams(state.params);
+    router
+      .replace({
+        query: {
+          ...route.query,
+          q: defaultQuery,
+        },
+      })
+      .finally(() => {
+        isUpdatingFromUrl = false;
+      });
   }
 });
 

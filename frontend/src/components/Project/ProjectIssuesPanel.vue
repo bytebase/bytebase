@@ -160,6 +160,20 @@ onMounted(() => {
     const urlParams = buildSearchParamsBySearchText(queryString);
     // Merge URL params with readonly scopes (project) and default status
     state.params = mergeSearchParams(defaultSearchParams(), urlParams);
+  } else {
+    // No URL query - set URL to reflect default preset
+    isUpdatingFromUrl = true;
+    const defaultQuery = buildSearchTextBySearchParams(state.params);
+    router
+      .replace({
+        query: {
+          ...route.query,
+          q: defaultQuery,
+        },
+      })
+      .finally(() => {
+        isUpdatingFromUrl = false;
+      });
   }
 });
 
