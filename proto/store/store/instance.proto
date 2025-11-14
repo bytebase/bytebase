@@ -275,8 +275,11 @@ message DataSourceExternalSecret {
   bool skip_vault_tls_verification = 9;
   // CA certificate for Vault server verification.
   string vault_ssl_ca = 10;
+  string obfuscated_vault_ssl_ca = 11;
   // Client certificate for mutual TLS authentication with Vault.
-  string vault_ssl_cert = 11;
+  string vault_ssl_cert = 12;
+  string obfuscated_vault_ssl_cert = 13;
   // Client private key for mutual TLS authentication with Vault.
-  string vault_ssl_key = 12;
+  string vault_ssl_key = 14;
+  string obfuscated_vault_ssl_key = 15;
 }

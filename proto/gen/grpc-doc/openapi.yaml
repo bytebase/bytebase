@@ -9621,12 +9621,18 @@ components:
                 vaultSslCa:
                     type: string
                     description: CA certificate for Vault server verification.
+                obfuscatedVaultSslCa:
+                    type: string
                 vaultSslCert:
                     type: string
                     description: Client certificate for mutual TLS authentication with Vault.
+                obfuscatedVaultSslCert:
+                    type: string
                 vaultSslKey:
                     type: string
                     description: Client private key for mutual TLS authentication with Vault.
+                obfuscatedVaultSslKey:
+                    type: string
         DataSourceExternalSecret_AppRoleAuthOption:
             type: object
             properties:

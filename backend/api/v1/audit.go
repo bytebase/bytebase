@@ -484,49 +484,59 @@ func redactInstance(i *v1pb.Instance) *v1pb.Instance {
 	if i == nil {
 		return nil
 	}
+	// Clone the instance to avoid modifying the original response
+	cloned, ok := proto.Clone(i).(*v1pb.Instance)
+	if !ok {
+		return i
+	}
 	var dataSources []*v1pb.DataSource
-	for _, d := range i.DataSources {
+	for _, d := range cloned.DataSources {
 		dataSources = append(dataSources, redactDataSource(d))
 	}
-	i.DataSources = dataSources
-	return i
+	cloned.DataSources = dataSources
+	return cloned
 }
 
 func redactDataSource(d *v1pb.DataSource) *v1pb.DataSource {
-	if d.Password != "" {
-		d.Password = maskedString
+	// Clone the datasource to avoid modifying the original
+	cloned, ok := proto.Clone(d).(*v1pb.DataSource)
+	if !ok {
+		return d
 	}
-	if d.SslCa != "" {
-		d.SslCa = maskedString
+	if cloned.Password != "" {
+		cloned.Password = maskedString
 	}
-	if d.SslCert != "" {
-		d.SslCert = maskedString
+	if cloned.SslCa != "" {
+		cloned.SslCa = maskedString
 	}
-	if d.SslKey != "" {
-		d.SslKey = maskedString
+	if cloned.SslCert != "" {
+		cloned.SslCert = maskedString
 	}
-	if d.SshPassword != "" {
-		d.SshPassword = maskedString
+	if cloned.SslKey != "" {
+		cloned.SslKey = maskedString
 	}
-	if d.SshPrivateKey != "" {
-		d.SshPrivateKey = maskedString
+	if cloned.SshPassword != "" {
+		cloned.SshPassword = maskedString
 	}
-	if d.AuthenticationPrivateKey != "" {
-		d.AuthenticationPrivateKey = maskedString
+	if cloned.SshPrivateKey != "" {
+		cloned.SshPrivateKey = maskedString
 	}
-	if d.ExternalSecret != nil {
-		d.ExternalSecret = new(v1pb.DataSourceExternalSecret)
+	if cloned.AuthenticationPrivateKey != "" {
+		cloned.AuthenticationPrivateKey = maskedString
 	}
-	if d.SaslConfig != nil {
-		if krbConf := d.SaslConfig.GetKrbConfig(); krbConf != nil {
+	if cloned.ExternalSecret != nil {
+		cloned.ExternalSecret = new(v1pb.DataSourceExternalSecret)
+	}
+	if cloned.SaslConfig != nil {
+		if krbConf := cloned.SaslConfig.GetKrbConfig(); krbConf != nil {
 			krbConf.Keytab = []byte(maskedString)
-			d.SaslConfig.Mechanism = &v1pb.SASLConfig_KrbConfig{KrbConfig: krbConf}
+			cloned.SaslConfig.Mechanism = &v1pb.SASLConfig_KrbConfig{KrbConfig: krbConf}
 		}
 	}
-	if d.MasterPassword != "" {
-		d.MasterPassword = maskedString
+	if cloned.MasterPassword != "" {
+		cloned.MasterPassword = maskedString
 	}
-	return d
+	return cloned
 }
 
 func redactAdminExecuteResponse(r *v1pb.AdminExecuteResponse) *v1pb.AdminExecuteResponse {

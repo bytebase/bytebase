@@ -6,9 +6,7 @@
  */
 import {
   Engine as NewEngine,
-  State as NewState,
   ExportFormat as NewExportFormat,
-  VCSType as NewVCSType,
 } from "@/types/proto-es/v1/common_pb";
 
 /**
@@ -19,24 +17,10 @@ export const engineToString = (engine: NewEngine): string => {
 };
 
 /**
- * Convert proto-es State to string for display/logging
- */
-export const stateToString = (state: NewState): string => {
-  return NewState[state] || "STATE_UNSPECIFIED";
-};
-
-/**
  * Convert proto-es ExportFormat to string for display/logging
  */
 export const exportFormatToString = (format: NewExportFormat): string => {
   return NewExportFormat[format] || "FORMAT_UNSPECIFIED";
-};
-
-/**
- * Convert proto-es VCSType to string for display/logging
- */
-export const vcsTypeToString = (vcsType: NewVCSType): string => {
-  return NewVCSType[vcsType] || "VCS_TYPE_UNSPECIFIED";
 };
 
 /**

@@ -212,7 +212,7 @@ const handleResourceIdChange = async (newValue: string) => {
     }
   }
 
-  if (props.fetchResource && state.resourceId) {
+  if (props.fetchResource && state.resourceId && !props.readonly) {
     try {
       const resource = await props.fetchResource(state.resourceId);
       if (resource) {

@@ -369,7 +369,7 @@
                   }}
                 </label>
                 <NRadioGroup
-                  class="textlabel mb-2"
+                  class="textlabel"
                   :value="dataSource.externalSecret.authType"
                   @update:value="changeExternalSecretAuthType"
                 >
@@ -564,6 +564,33 @@
               </div>
               <div class="sm:col-span-2 sm:col-start-1">
                 <label class="textlabel block">
+                  {{ $t("instance.external-secret-vault.vault-tls-config") }}
+                </label>
+                <SslCertificateFormV1
+                  v-model:verify="verifyVaultTls"
+                  v-model:ca="dataSource.externalSecret.vaultSslCa"
+                  v-model:cert="dataSource.externalSecret.vaultSslCert"
+                  v-model:private-key="dataSource.externalSecret.vaultSslKey"
+                  :disabled="!allowEdit"
+                  :show-tooltip="false"
+                  :show-key-field="true"
+                  :show-cert-field="true"
+                  :verify-label="
+                    $t(
+                      'instance.external-secret-vault.verify-vault-certificate'
+                    )
+                  "
+                  :ca-label="$t('instance.external-secret-vault.vault-ca-cert')"
+                  :cert-label="
+                    $t('instance.external-secret-vault.vault-client-cert')
+                  "
+                  :key-label="
+                    $t('instance.external-secret-vault.vault-client-key')
+                  "
+                />
+              </div>
+              <div class="sm:col-span-2 sm:col-start-1">
+                <label class="textlabel block">
                   {{
                     $t(
                       "instance.external-secret-vault.vault-secret-engine-name"
@@ -587,33 +614,6 @@
                     $t(
                       'instance.external-secret-vault.vault-secret-engine-name'
                     )
-                  "
-                />
-              </div>
-              <div class="sm:col-span-2 sm:col-start-1">
-                <label class="textlabel block">
-                  {{ $t("instance.external-secret-vault.vault-tls-config") }}
-                </label>
-                <SslCertificateFormV1
-                  v-model:verify="verifyVaultTls"
-                  v-model:ca="dataSource.externalSecret.vaultSslCa"
-                  v-model:cert="dataSource.externalSecret.vaultSslCert"
-                  v-model:private-key="dataSource.externalSecret.vaultSslKey"
-                  :disabled="!allowEdit"
-                  :show-tooltip="false"
-                  :show-key-field="true"
-                  :show-cert-field="true"
-                  :verify-label="
-                    $t(
-                      'instance.external-secret-vault.verify-vault-certificate'
-                    )
-                  "
-                  :ca-label="$t('instance.external-secret-vault.vault-ca-cert')"
-                  :cert-label="
-                    $t('instance.external-secret-vault.vault-client-cert')
-                  "
-                  :key-label="
-                    $t('instance.external-secret-vault.vault-client-key')
                   "
                 />
               </div>

@@ -1218,13 +1218,16 @@ type DataSourceExternalSecret struct {
 	// Only set to true for development or when certificates cannot be properly validated.
 	SkipVaultTlsVerification bool `protobuf:"varint,9,opt,name=skip_vault_tls_verification,json=skipVaultTlsVerification,proto3" json:"skip_vault_tls_verification,omitempty"`
 	// CA certificate for Vault server verification.
-	VaultSslCa string `protobuf:"bytes,10,opt,name=vault_ssl_ca,json=vaultSslCa,proto3" json:"vault_ssl_ca,omitempty"`
+	VaultSslCa           string `protobuf:"bytes,10,opt,name=vault_ssl_ca,json=vaultSslCa,proto3" json:"vault_ssl_ca,omitempty"`
+	ObfuscatedVaultSslCa string `protobuf:"bytes,11,opt,name=obfuscated_vault_ssl_ca,json=obfuscatedVaultSslCa,proto3" json:"obfuscated_vault_ssl_ca,omitempty"`
 	// Client certificate for mutual TLS authentication with Vault.
-	VaultSslCert string `protobuf:"bytes,11,opt,name=vault_ssl_cert,json=vaultSslCert,proto3" json:"vault_ssl_cert,omitempty"`
+	VaultSslCert           string `protobuf:"bytes,12,opt,name=vault_ssl_cert,json=vaultSslCert,proto3" json:"vault_ssl_cert,omitempty"`
+	ObfuscatedVaultSslCert string `protobuf:"bytes,13,opt,name=obfuscated_vault_ssl_cert,json=obfuscatedVaultSslCert,proto3" json:"obfuscated_vault_ssl_cert,omitempty"`
 	// Client private key for mutual TLS authentication with Vault.
-	VaultSslKey   string `protobuf:"bytes,12,opt,name=vault_ssl_key,json=vaultSslKey,proto3" json:"vault_ssl_key,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	VaultSslKey           string `protobuf:"bytes,14,opt,name=vault_ssl_key,json=vaultSslKey,proto3" json:"vault_ssl_key,omitempty"`
+	ObfuscatedVaultSslKey string `protobuf:"bytes,15,opt,name=obfuscated_vault_ssl_key,json=obfuscatedVaultSslKey,proto3" json:"obfuscated_vault_ssl_key,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
 }
 
 func (x *DataSourceExternalSecret) Reset() {
@@ -1338,6 +1341,13 @@ func (x *DataSourceExternalSecret) GetVaultSslCa() string {
 	return ""
 }
 
+func (x *DataSourceExternalSecret) GetObfuscatedVaultSslCa() string {
+	if x != nil {
+		return x.ObfuscatedVaultSslCa
+	}
+	return ""
+}
+
 func (x *DataSourceExternalSecret) GetVaultSslCert() string {
 	if x != nil {
 		return x.VaultSslCert
@@ -1345,9 +1355,23 @@ func (x *DataSourceExternalSecret) GetVaultSslCert() string {
 	return ""
 }
 
+func (x *DataSourceExternalSecret) GetObfuscatedVaultSslCert() string {
+	if x != nil {
+		return x.ObfuscatedVaultSslCert
+	}
+	return ""
+}
+
 func (x *DataSourceExternalSecret) GetVaultSslKey() string {
 	if x != nil {
 		return x.VaultSslKey
+	}
+	return ""
+}
+
+func (x *DataSourceExternalSecret) GetObfuscatedVaultSslKey() string {
+	if x != nil {
+		return x.ObfuscatedVaultSslKey
 	}
 	return ""
 }
@@ -1852,7 +1876,7 @@ const file_store_instance_proto_rawDesc = "" +
 	"\x06keytab\x18\x04 \x01(\fR\x06keytab\x12\x19\n" +
 	"\bkdc_host\x18\x05 \x01(\tR\akdcHost\x12\x19\n" +
 	"\bkdc_port\x18\x06 \x01(\tR\akdcPort\x124\n" +
-	"\x16kdc_transport_protocol\x18\a \x01(\tR\x14kdcTransportProtocol\"\xab\b\n" +
+	"\x16kdc_transport_protocol\x18\a \x01(\tR\x14kdcTransportProtocol\"\xd6\t\n" +
 	"\x18DataSourceExternalSecret\x12T\n" +
 	"\vsecret_type\x18\x01 \x01(\x0e23.bytebase.store.DataSourceExternalSecret.SecretTypeR\n" +
 	"secretType\x12\x10\n" +
@@ -1868,9 +1892,12 @@ const file_store_instance_proto_rawDesc = "" +
 	"\x1bskip_vault_tls_verification\x18\t \x01(\bR\x18skipVaultTlsVerification\x12 \n" +
 	"\fvault_ssl_ca\x18\n" +
 	" \x01(\tR\n" +
-	"vaultSslCa\x12$\n" +
-	"\x0evault_ssl_cert\x18\v \x01(\tR\fvaultSslCert\x12\"\n" +
-	"\rvault_ssl_key\x18\f \x01(\tR\vvaultSslKey\x1a\x8a\x02\n" +
+	"vaultSslCa\x125\n" +
+	"\x17obfuscated_vault_ssl_ca\x18\v \x01(\tR\x14obfuscatedVaultSslCa\x12$\n" +
+	"\x0evault_ssl_cert\x18\f \x01(\tR\fvaultSslCert\x129\n" +
+	"\x19obfuscated_vault_ssl_cert\x18\r \x01(\tR\x16obfuscatedVaultSslCert\x12\"\n" +
+	"\rvault_ssl_key\x18\x0e \x01(\tR\vvaultSslKey\x127\n" +
+	"\x18obfuscated_vault_ssl_key\x18\x0f \x01(\tR\x15obfuscatedVaultSslKey\x1a\x8a\x02\n" +
 	"\x11AppRoleAuthOption\x12\x17\n" +
 	"\arole_id\x18\x01 \x01(\tR\x06roleId\x12\x1b\n" +
 	"\tsecret_id\x18\x02 \x01(\tR\bsecretId\x12Y\n" +

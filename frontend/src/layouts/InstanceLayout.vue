@@ -1,19 +1,17 @@
 <template>
   <Suspense>
     <template #default>
-      <ProvideInstanceContext :instance-id="instanceId">
-        <template v-if="hasPermission">
-          <div
-            v-if="!isValidInstanceName(instance.name)"
-            class="flex items-center gap-x-2 m-4"
-          >
-            <BBSpin :size="20" />
-            Loading instance...
-          </div>
-          <router-view v-else :instance-id="instanceId" />
-        </template>
-        <NoPermissionPlaceholder v-else class="py-6" />
-      </ProvideInstanceContext>
+      <template v-if="hasPermission">
+        <div
+          v-if="!isValidInstanceName(instance.name)"
+          class="flex items-center gap-x-2 m-4"
+        >
+          <BBSpin :size="20" />
+          Loading instance...
+        </div>
+        <router-view v-else :instance-id="instanceId" />
+      </template>
+      <NoPermissionPlaceholder v-else class="py-6" />
     </template>
     <template #fallback>
       <span>Loading instance...</span>
@@ -22,10 +20,9 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted } from "vue";
+import { computed, watchEffect } from "vue";
 import { useRouter } from "vue-router";
 import { BBSpin } from "@/bbkit";
-import ProvideInstanceContext from "@/components/ProvideInstanceContext.vue";
 import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
 import { useInstanceV1Store } from "@/store";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
@@ -51,12 +48,12 @@ const hasPermission = computed(() => {
   );
 });
 
-onMounted(() => {
+watchEffect(async () => {
   if (!hasPermission.value) {
     return;
   }
 
-  instanceStore.getOrFetchInstanceByName(
+  await instanceStore.getOrFetchInstanceByName(
     `${instanceNamePrefix}${props.instanceId}`
   );
 });
