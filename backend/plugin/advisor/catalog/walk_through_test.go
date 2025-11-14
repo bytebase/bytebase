@@ -198,7 +198,7 @@ func runWalkThroughTest(t *testing.T, file string, engineType storepb.Engine, or
 		if originDatabase != nil {
 			state = newDatabaseState(originDatabase, &FinderContext{CheckIntegrity: true, EngineType: engineType, IgnoreCaseSensitive: test.IgnoreCaseSensitive})
 		} else {
-			finder := NewEmptyFinder(&FinderContext{CheckIntegrity: false, EngineType: engineType, IgnoreCaseSensitive: test.IgnoreCaseSensitive})
+			finder := NewFinder(&storepb.DatabaseSchemaMetadata{}, &FinderContext{CheckIntegrity: false, EngineType: engineType, IgnoreCaseSensitive: test.IgnoreCaseSensitive})
 			state = finder.Origin
 		}
 
@@ -248,7 +248,7 @@ func runANTLRWalkThroughTest(t *testing.T, file string, engineType storepb.Engin
 		if originDatabase != nil {
 			state = newDatabaseState(originDatabase, &FinderContext{CheckIntegrity: true, EngineType: engineType, IgnoreCaseSensitive: test.IgnoreCaseSensitive})
 		} else {
-			finder := NewEmptyFinder(&FinderContext{CheckIntegrity: false, EngineType: engineType, IgnoreCaseSensitive: test.IgnoreCaseSensitive})
+			finder := NewFinder(&storepb.DatabaseSchemaMetadata{}, &FinderContext{CheckIntegrity: false, EngineType: engineType, IgnoreCaseSensitive: test.IgnoreCaseSensitive})
 			state = finder.Origin
 		}
 
