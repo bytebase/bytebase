@@ -175,11 +175,9 @@ watch(
 const runQueryAction = ({
   explain = false,
   newTab = false,
-  dryRun = false,
 }: {
   explain: boolean;
   newTab: boolean;
-  dryRun?: boolean;
 }) => {
   const tab = tabStore.currentTab;
   if (!tab) {
@@ -191,7 +189,6 @@ const runQueryAction = ({
     statement,
     engine: instance.value.engine,
     explain,
-    dryRun,
     selection: null,
   };
   if (!newTab) {
@@ -308,8 +305,7 @@ const handleEditorReady = (
             ],
             contextMenuGroupId: "operation",
             contextMenuOrder: 0,
-            run: () =>
-              runQueryAction({ explain: false, newTab: false, dryRun: true }),
+            run: () => runQueryAction({ explain: true, newTab: false }),
           });
         }
       } else {

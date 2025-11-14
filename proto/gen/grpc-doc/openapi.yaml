@@ -12216,9 +12216,6 @@ components:
                 explain:
                     type: boolean
                     description: Explain the statement.
-                dryRun:
-                    type: boolean
-                    description: Perform dry run (validation + cost estimation, BigQuery only).
                 schema:
                     type: string
                     description: |-

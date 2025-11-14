@@ -297,7 +297,6 @@ const useExecuteSQL = () => {
         statement: context.params.statement,
         limit: sqlEditorStore.resultRowsLimit,
         explain: context.params.explain,
-        dryRun: context.params.dryRun ?? false,
         schema: context.params.connection.schema,
         container: context.params.connection.table,
         queryOption: queryOption,

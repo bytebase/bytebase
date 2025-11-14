@@ -199,7 +199,6 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 	queryRestriction := getMaximumSQLResultLimit(ctx, s.store, s.licenseService, request.Limit)
 	queryContext := db.QueryContext{
 		Explain:              request.Explain,
-		DryRun:               request.DryRun,
 		Limit:                int(queryRestriction.MaximumResultRows),
 		OperatorEmail:        user.Email,
 		Option:               request.QueryOption,
@@ -446,7 +445,7 @@ func queryRetry(
 	var spans []*parserbase.QuerySpan
 	var sensitivePredicateColumns [][]parserbase.ColumnResource
 	var err error
-	if !queryContext.Explain && !queryContext.DryRun {
+	if !queryContext.Explain {
 		spans, err = parserbase.GetQuerySpan(
 			ctx,
 			parserbase.GetQuerySpanContext{
@@ -492,7 +491,7 @@ func queryRetry(
 		return nil, nil, duration, queryErr
 	}
 	slog.Debug("execute success", slog.String("instance", instance.ResourceID), slog.String("statement", statement), slog.Duration("duration", duration))
-	if queryContext.Explain || queryContext.DryRun {
+	if queryContext.Explain {
 		return results, nil, duration, nil
 	}
 

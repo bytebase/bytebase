@@ -147,9 +147,6 @@ message QueryRequest {
   // Explain the statement.
   bool explain = 7;
 
-  // Perform dry run (validation + cost estimation, BigQuery only).
-  bool dry_run = 11;
-
   // The default schema to search objects. Equals to the current schema in
   // Oracle and search path in Postgres.
   optional string schema = 8;
