@@ -20,12 +20,21 @@
 
     <slot name="default" />
 
-    <!-- Preset Buttons Row -->
-    <PresetButtons
+    <!-- Preset Buttons + Status Row -->
+    <div
       v-if="components.includes('presets') && !componentProps?.presets?.hidden"
-      :params="params"
-      @update:params="$emit('update:params', $event)"
-    />
+      class="flex items-center justify-between"
+    >
+      <PresetButtons
+        :params="params"
+        @update:params="$emit('update:params', $event)"
+      />
+      <Status
+        v-if="components.includes('status')"
+        :params="params"
+        @update:params="$emit('update:params', $event)"
+      />
+    </div>
 
     <slot name="primary" />
   </div>
@@ -38,9 +47,10 @@ import TimeRange from "@/components/AdvancedSearch/TimeRange.vue";
 import type { SearchParams, SearchScopeId } from "@/utils";
 import { UIIssueFilterScopeIdList } from "@/utils";
 import PresetButtons from "./PresetButtons.vue";
+import Status from "./Status.vue";
 import { useIssueSearchScopeOptions } from "./useIssueSearchScopeOptions";
 
-export type SearchComponent = "searchbox" | "presets" | "time-range";
+export type SearchComponent = "searchbox" | "presets" | "status" | "time-range";
 
 const props = withDefaults(
   defineProps<{
@@ -52,7 +62,7 @@ const props = withDefaults(
   }>(),
   {
     overrideScopeIdList: () => [],
-    components: () => ["searchbox", "time-range", "presets"],
+    components: () => ["searchbox", "time-range", "presets", "status"],
     componentProps: undefined,
   }
 );

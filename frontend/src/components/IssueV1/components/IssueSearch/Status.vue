@@ -45,7 +45,7 @@ const tabItemList = computed(() => {
 });
 
 const tab = computed(() => {
-  return getSemanticIssueStatusFromSearchParams(props.params);
+  return getSemanticIssueStatusFromSearchParams(props.params) ?? "";
 });
 
 const updateStatus = (value: SemanticIssueStatus) => {

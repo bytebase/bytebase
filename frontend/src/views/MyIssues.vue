@@ -2,7 +2,7 @@
   <div :key="viewId" class="flex flex-col">
     <IssueSearch
       v-model:params="state.params"
-      :components="['searchbox', 'time-range', 'presets']"
+      :components="['searchbox', 'time-range', 'presets', 'status']"
       class="px-4 pb-2"
     />
 
