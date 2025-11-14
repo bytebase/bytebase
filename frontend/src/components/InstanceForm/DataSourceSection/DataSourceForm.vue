@@ -1129,10 +1129,10 @@ watch(
 // Watch SSL fields and set updateSsl flag when they change
 watch(
   () => [
-    props.dataSource.verifyTlsCertificate,
-    props.dataSource.sslCa,
-    props.dataSource.sslCert,
-    props.dataSource.sslKey,
+    () => props.dataSource.verifyTlsCertificate,
+    () => props.dataSource.sslCa,
+    () => props.dataSource.sslCert,
+    () => props.dataSource.sslKey,
   ],
   () => {
     if (!props.dataSource.pendingCreate) {
