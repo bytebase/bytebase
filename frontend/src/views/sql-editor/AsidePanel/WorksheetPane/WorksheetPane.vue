@@ -99,17 +99,17 @@ const options = computed((): DropdownOption[] => {
 });
 
 const views = computed((): SheetViewMode[] => {
-  const results: SheetViewMode[] = []
+  const results: SheetViewMode[] = [];
   if (filter.value.showMine) {
-    results.push("my")
+    results.push("my");
   }
   if (filter.value.showShared) {
-    results.push("shared")
+    results.push("shared");
   }
   if (filter.value.showDraft) {
-    results.push("draft")
+    results.push("draft");
   }
-  return results
+  return results;
 })
 </script>
 

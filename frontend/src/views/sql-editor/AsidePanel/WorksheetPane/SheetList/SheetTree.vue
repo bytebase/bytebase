@@ -161,7 +161,7 @@ watch(
 );
 
 const handleWorksheetToggleStar = useDebounceFn(
-  async ({worksheet, starred}: {worksheet:string; starred: boolean}) => {
+  async ({ worksheet, starred }: { worksheet: string; starred: boolean }) => {
     await worksheetV1Store.upsertWorksheetOrganizer(
       {
         worksheet: worksheet,
@@ -219,13 +219,13 @@ const handleRenameNode = useDebounceFn(async () => {
     newTitle,
   ].join("/");
   if (newKey === editingNode.value.node.key) {
-    return cleanup()
+    return cleanup();
   }
 
   if (editingNode.value.node.worksheet) {
-    const worksheet = worksheetV1Store.getWorksheetByName(editingNode.value.node.worksheet.name)
+    const worksheet = worksheetV1Store.getWorksheetByName(editingNode.value.node.worksheet.name);
     if (!worksheet) {
-      return cleanup()
+      return cleanup();
     }
     await worksheetV1Store.patchWorksheet({
       ...worksheet,
@@ -437,9 +437,9 @@ const handleDeleteSheet = (worksheetName: string) => {
 };
 
 const handleDuplicateSheet = async (worksheetName: string) => {
-  const worksheet = worksheetV1Store.getWorksheetByName(worksheetName)
+  const worksheet = worksheetV1Store.getWorksheetByName(worksheetName);
   if (!worksheet) {
-    return
+    return;
   }
   const dialogInstance = $dialog.create({
     title: t("sheet.hint-tips.confirm-to-duplicate-sheet"),

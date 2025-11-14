@@ -91,7 +91,7 @@ const useSheetTreeByView = (
       case "shared":
         return t("sheet.shared");
       case "draft":
-        return t("common.draft")
+        return t("common.draft");
       default:
         return "";
     }
@@ -111,12 +111,12 @@ const useSheetTreeByView = (
     switch (viewMode) {
       case "my":
         list = sheetStore.myWorksheetList;
-        break
+        break;
       case "shared":
         list = sheetStore.sharedWorksheetList;
-        break
+        break;
       default:
-        break
+        break;
     }
 
     list = list.filter(sheet => sheet.project === project.value);
@@ -130,13 +130,13 @@ const useSheetTreeByView = (
     switch (viewMode) {
       case "my":
       case "shared":
-        return worksheetList.value.map(convertToWorksheetLikeItem)
+        return worksheetList.value.map(convertToWorksheetLikeItem);
       case "draft":
         return tabStore.tabList.filter((tab) => !tab.worksheet).map((tab) => ({
           name: tab.id,
           title: tab.title,
           folders: [],
-          type: "draft"
+          type: "draft",
         }));
       default:
         return [];
@@ -254,6 +254,8 @@ const useSheetTreeByView = (
           await sheetStore.fetchWorksheetList([
             `project == "${project.value}"`,
             `creator != "users/${me.value.email}"`,
+            // TODO(ed): do we need the visibility filter?
+            // If not provide it, the call will fetch all worksheet will read access.
             `visibility in ["${Worksheet_Visibility[Worksheet_Visibility.PROJECT_READ]}","${Worksheet_Visibility[Worksheet_Visibility.PROJECT_WRITE]}"]`,
           ].join(" && "));
           break;
@@ -398,15 +400,15 @@ export const provideSheetContext = () => {
         return;
       }
 
-      let viewMode: SheetViewMode = "draft"
-      let worksheetLikeItem: WorksheetLikeItem | undefined
+      let viewMode: SheetViewMode = "draft";
+      let worksheetLikeItem: WorksheetLikeItem | undefined;
 
       if (worksheetName) {
         const worksheet = worksheetV1Store.getWorksheetByName(worksheetName);
         if (!worksheet) {
           return;
         }
-        worksheetLikeItem = convertToWorksheetLikeItem(worksheet)
+        worksheetLikeItem = convertToWorksheetLikeItem(worksheet);
         const isCreator = isWorksheetCreator(worksheet);
         viewMode = isCreator ? "my" : "shared";
       } else {
@@ -415,7 +417,7 @@ export const provideSheetContext = () => {
           folders: [],
           title: "", // don't care about the name.
           type: "draft",
-        }
+        };
       }
 
       const viewContext = viewContexts[viewMode];

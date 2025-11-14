@@ -74,7 +74,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: "contextMenuShow", event: MouseEvent, node: WorsheetFolderNode): void;
   (e: "sharePanelShow", event: MouseEvent, node: WorsheetFolderNode): void;
-  (e: "toggleStar", item: {worksheet:string; starred: boolean}): void;
+  (e: "toggleStar", item: { worksheet: string; starred: boolean }): void;
 }>();
 
 const userStore = useUserStore();
