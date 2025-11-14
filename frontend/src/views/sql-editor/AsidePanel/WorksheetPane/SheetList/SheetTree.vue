@@ -50,7 +50,7 @@
       @clickoutside="handleContextMenuClickOutside"
     >
       <SharePopover
-        :worksheet="contextMenuContext.node?.worksheet"
+        :worksheet="worksheetEntity"
         @on-updated="handleContextMenuClickOutside"
       />
     </NPopover>
@@ -135,10 +135,11 @@ const tabStore = useSQLEditorTabStore();
 const {
   context: contextMenuContext,
   options: contextMenuOptions,
+  worksheetEntity,
   handleSharePanelShow,
   handleMenuShow,
   handleClickOutside: handleContextMenuClickOutside,
-} = useDropdown();
+} = useDropdown(props.view);
 
 const expandedKeysArray = computed(() => Array.from(expandedKeys.value));
 
@@ -192,7 +193,7 @@ const renderSuffix = ({ option }: { option: TreeOption }) => {
   return (
     <TreeNodeSuffix
       node={node}
-      isWorksheetCreator={isWorksheetCreator}
+      view={props.view}
       onSharePanelShow={handleSharePanelShow}
       onContextMenuShow={handleMenuShow}
       onToggleStar={handleWorksheetToggleStar}
@@ -220,13 +221,15 @@ const handleRenameNode = useDebounceFn(async () => {
     newTitle,
   ].join("/");
   if (newKey === editingNode.value.node.key) {
-    editingNode.value = undefined;
-    return;
+    return cleanup()
   }
 
   if (editingNode.value.node.worksheet) {
-    editingNode.value.node.worksheet.title = newTitle;
-    await worksheetV1Store.patchWorksheet(editingNode.value.node.worksheet, [
+    const worksheet = worksheetV1Store.getWorksheetByName(editingNode.value.node.worksheet.name)
+    if (!worksheet) {
+      return cleanup()
+    }
+    await worksheetV1Store.patchWorksheet(worksheet, [
       "title",
     ]);
 
@@ -323,12 +326,18 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
         return;
       }
       if (node.worksheet) {
-        selectedKeys.value = [node.key];
-        openWorksheetByName(
-          node.worksheet.name,
-          editorContext,
-          e.metaKey || e.ctrlKey
-        );
+        // selectedKeys.value = [node.key];
+        if (node.worksheet.type === "worksheet") {
+          // TODO(ed): the new tab title is not correct.
+          console.log("openWorksheetByName", node.worksheet.name)
+          openWorksheetByName(
+            node.worksheet.name,
+            editorContext,
+            e.metaKey || e.ctrlKey
+          );
+        } else {
+          tabStore.setCurrentTabId(node.worksheet.name);
+        }
       } else {
         if (expandedKeys.value.has(node.key)) {
           expandedKeys.value.delete(node.key);
@@ -340,15 +349,15 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
   };
 };
 
-const deleteWorksheets = async (worksheets: Worksheet[]) => {
+const deleteWorksheets = async (worksheets: string[]) => {
   await Promise.all(
     worksheets.map((worksheet) =>
-      worksheetV1Store.deleteWorksheetByName(worksheet.name)
+      worksheetV1Store.deleteWorksheetByName(worksheet)
     )
   );
   for (const worksheet of worksheets) {
     const tab = tabStore.tabList.find(
-      (tab) => tab.worksheet === worksheet.name
+      (tab) => tab.worksheet === worksheet
     );
     if (tab) {
       tabStore.removeTab(tab);
@@ -358,7 +367,7 @@ const deleteWorksheets = async (worksheets: Worksheet[]) => {
 };
 
 const handleDeleteFolder = (node: WorsheetFolderNode) => {
-  const worksheets = revealWorksheets(node, (node) => node.worksheet);
+  const worksheets = revealWorksheets(node, (node) => node.worksheet?.name);
   if (worksheets.length === 0) {
     folderContext.removeFolder(node.key);
   } else {
@@ -385,7 +394,7 @@ const handleDeleteFolder = (node: WorsheetFolderNode) => {
         dialogInstance.loading = true;
         await batchUpdateWorksheetFolders(
           worksheets.map((worksheet) => ({
-            ...worksheet,
+            name: worksheet,
             folders: [],
           }))
         );
@@ -400,7 +409,7 @@ const handleDeleteFolder = (node: WorsheetFolderNode) => {
   }
 };
 
-const handleDeleteSheet = (worksheet: Worksheet) => {
+const handleDeleteSheet = (worksheetName: string) => {
   const cleanup = (dialogInstance: DialogReactive | undefined) => {
     dialogInstance?.destroy();
   };
@@ -414,7 +423,7 @@ const handleDeleteSheet = (worksheet: Worksheet) => {
     closeOnEsc: true,
     async onPositiveClick() {
       dialogInstance.loading = true;
-      await deleteWorksheets([worksheet]);
+      await deleteWorksheets([worksheetName]);
       cleanup(dialogInstance);
     },
     onNegativeClick() {
@@ -429,7 +438,11 @@ const handleDeleteSheet = (worksheet: Worksheet) => {
   });
 };
 
-const handleDuplicateSheet = async (worksheet: Worksheet) => {
+const handleDuplicateSheet = async (worksheetName: string) => {
+  const worksheet = worksheetV1Store.getWorksheetByName(worksheetName)
+  if (!worksheet) {
+    return
+  }
   const dialogInstance = $dialog.create({
     title: t("sheet.hint-tips.confirm-to-duplicate-sheet"),
     type: "info",
@@ -551,14 +564,14 @@ const handleContextMenuSelect = async (key: DropdownOptionType) => {
       break;
     case "delete":
       if (contextMenuContext.node.worksheet) {
-        handleDeleteSheet(contextMenuContext.node.worksheet);
+        handleDeleteSheet(contextMenuContext.node.worksheet.name);
       } else {
         handleDeleteFolder(contextMenuContext.node);
       }
       break;
     case "duplicate":
       if (contextMenuContext.node.worksheet) {
-        handleDuplicateSheet(contextMenuContext.node.worksheet);
+        handleDuplicateSheet(contextMenuContext.node.worksheet.name);
       }
       break;
     case "add-folder":
@@ -643,7 +656,10 @@ const updateWorksheetFolders = async (
       return node.worksheet;
     }
   });
-  await batchUpdateWorksheetFolders(worksheets);
+  await batchUpdateWorksheetFolders(worksheets.map(worksheet => ({
+    name: worksheet.name,
+    folders: worksheet.folders,
+  })));
 };
 
 const replaceExpandedKeys = (oldKey: string, newKey: string) => {

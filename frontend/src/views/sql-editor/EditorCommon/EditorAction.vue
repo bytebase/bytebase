@@ -161,7 +161,6 @@ import {
   useUIStateStore,
   useWorkSheetAndTabStore,
   useWorkSheetStore,
-  useWorkSheetAndTabStore,
 } from "@/store";
 import {
   DEFAULT_SQL_EDITOR_TAB_MODE,

@@ -4,19 +4,21 @@ import {
   FolderMinusIcon,
   FolderOpenIcon,
   FolderSyncIcon,
+  FolderPenIcon,
   MoreHorizontalIcon,
   StarIcon,
   UsersIcon,
+  XIcon,
 } from "lucide-vue-next";
 import { NTooltip } from "naive-ui";
 import { defineComponent, type PropType } from "vue";
 import { t } from "@/plugins/i18n";
-import { useUserStore } from "@/store";
+import { useUserStore, useWorkSheetStore, useCurrentUserV1, useSQLEditorTabStore, useTabViewStateStore } from "@/store";
 import {
   type Worksheet,
   Worksheet_Visibility,
 } from "@/types/proto-es/v1/worksheet_service_pb";
-import type { WorsheetFolderNode } from "@/views/sql-editor/Sheet";
+import type { WorsheetFolderNode, SheetViewMode } from "@/views/sql-editor/Sheet";
 
 // Prefix icon component
 export const TreeNodePrefix = defineComponent({
@@ -35,7 +37,7 @@ export const TreeNodePrefix = defineComponent({
       required: true,
     },
     view: {
-      type: String as PropType<"my" | "shared">,
+      type: String as PropType<SheetViewMode>,
       required: true,
     },
   },
@@ -51,10 +53,14 @@ export const TreeNodePrefix = defineComponent({
       }
       if (props.node.key === props.rootPath) {
         // root folder icon
-        if (props.view === "shared") {
-          return <FolderSyncIcon class="w-4 h-auto text-gray-600" />;
+        switch (props.view) {
+          case "draft":
+            return <FolderPenIcon class="w-4 h-auto text-gray-600" />;
+          case "shared":
+            return <FolderSyncIcon class="w-4 h-auto text-gray-600" />;
+          default:
+            return <FolderCodeIcon class="w-4 h-auto text-gray-600" />;
         }
-        return <FolderCodeIcon class="w-4 h-auto text-gray-600" />;
       }
       if (props.node.empty) {
         // empty folder icon
@@ -74,14 +80,18 @@ export const TreeNodeSuffix = defineComponent({
       type: Object as PropType<WorsheetFolderNode>,
       required: true,
     },
-    isWorksheetCreator: {
-      type: Function as PropType<(worksheet: Worksheet) => boolean>,
+    view: {
+      type: String as PropType<SheetViewMode>,
       required: true,
     },
   },
-  emits: ["contextMenuShow", "sharePanelShow", "toggleStar"],
+  emits: ["contextMenuShow", "sharePanelShow", "toggleStar", "delete"],
   setup(props, { emit }) {
     const userStore = useUserStore();
+    const worksheetStore = useWorkSheetStore();
+    const me = useCurrentUserV1();
+    const { removeViewState } = useTabViewStateStore();
+    const tabStore = useSQLEditorTabStore();
 
     const visibilityDisplayName = (visibility: Worksheet_Visibility) => {
       switch (visibility) {
@@ -100,6 +110,10 @@ export const TreeNodeSuffix = defineComponent({
       return (
         userStore.getUserByIdentifier(sheet.creator)?.title ?? sheet.creator
       );
+    };
+
+    const isWorksheetCreator = (worksheet: Worksheet) => {
+      return worksheet.creator === `users/${me.value.email}`;
     };
 
     const renderShareIcon = (worksheet: Worksheet) => {
@@ -127,7 +141,7 @@ export const TreeNodeSuffix = defineComponent({
                     {": "}
                     {visibilityDisplayName(worksheet.visibility)}
                   </div>
-                  {props.isWorksheetCreator(worksheet) ? null : (
+                  {isWorksheetCreator(worksheet) ? null : (
                     <div>
                       {t("common.creator")}
                       {": "}
@@ -143,6 +157,21 @@ export const TreeNodeSuffix = defineComponent({
     };
 
     return () => {
+      if (props.view === "draft") {
+        if (!props.node.worksheet) {
+          return null
+        }
+        return <XIcon class="w-4 h-auto text-gray-600" onClick={() => {
+          if (props.node.worksheet && props.node.worksheet.name) {
+            const draft = tabStore.tabList.find((t) => t.id === props.node.worksheet!.name);
+            if (draft) {
+              tabStore.removeTab(draft);
+            }
+            removeViewState(props.node.worksheet.name);
+          }
+        }} />
+      }
+
       if (!props.node.worksheet) {
         return (
           <MoreHorizontalIcon
@@ -152,11 +181,16 @@ export const TreeNodeSuffix = defineComponent({
         );
       }
 
+      const worksheet = worksheetStore.getWorksheetByName(props.node.worksheet.name)
+      if (!worksheet) {
+        return null
+      }
+
       return (
         <div class="inline-flex gap-1">
-          {renderShareIcon(props.node.worksheet)}
+          {renderShareIcon(worksheet)}
           <StarIcon
-            class={`w-4 h-auto text-gray-400 ${props.node.worksheet.starred ? "text-yellow-400" : ""}`}
+            class={`w-4 h-auto text-gray-400 ${worksheet.starred ? "text-yellow-400" : ""}`}
             onClick={() =>
               props.node.worksheet && emit("toggleStar", props.node.worksheet)
             }
