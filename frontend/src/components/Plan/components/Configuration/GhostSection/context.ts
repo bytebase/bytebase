@@ -2,13 +2,13 @@ import Emittery from "emittery";
 import type { InjectionKey, Ref } from "vue";
 import { computed, inject, provide, unref } from "vue";
 import { targetsForSpec } from "@/components/Plan/logic";
-import { useCurrentUserV1, extractUserId, useDatabaseV1Store } from "@/store";
+import { extractUserId, useCurrentUserV1, useDatabaseV1Store } from "@/store";
 import { isValidDatabaseName } from "@/types";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan, Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import type { Task, Rollout } from "@/types/proto-es/v1/rollout_service_pb";
+import type { Rollout, Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   flattenTaskV1List,
@@ -17,8 +17,8 @@ import {
 } from "@/utils";
 import {
   allowGhostForSpec,
-  getGhostEnabledForSpec,
   GHOST_AVAILABLE_ENGINES,
+  getGhostEnabledForSpec,
 } from "./common";
 
 export const KEY = Symbol(

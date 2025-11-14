@@ -37,8 +37,8 @@ import { NEmpty } from "naive-ui";
 import { watch } from "vue";
 import {
   SQLRuleFilter,
-  useSQLRuleFilter,
   SQLRuleTable,
+  useSQLRuleFilter,
 } from "@/components/SQLReview/components";
 import type { RuleTemplateV2 } from "@/types";
 import type { Engine } from "@/types/proto-es/v1/common_pb";

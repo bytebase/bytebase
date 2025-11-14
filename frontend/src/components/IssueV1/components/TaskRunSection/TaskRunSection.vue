@@ -10,8 +10,8 @@
 <script lang="ts" setup>
 import { computed, watchEffect } from "vue";
 import {
-  useIssueContext,
   taskRunListForTask,
+  useIssueContext,
 } from "@/components/IssueV1/logic";
 import { useTaskRunLogStore } from "@/store/modules/v1/taskRunLog";
 import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";

@@ -82,7 +82,7 @@
 
 <script setup lang="ts">
 import { computedAsync } from "@vueuse/core";
-import { XIcon, CheckCircleIcon } from "lucide-vue-next";
+import { CheckCircleIcon, XIcon } from "lucide-vue-next";
 import type { Ref } from "vue";
 import { computed, unref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -90,28 +90,28 @@ import type { RouteLocationRaw } from "vue-router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   DATABASE_ROUTE_DASHBOARD,
+  ENVIRONMENT_V1_ROUTE_DASHBOARD,
   INSTANCE_ROUTE_DASHBOARD,
   PROJECT_V1_ROUTE_DASHBOARD,
-  ENVIRONMENT_V1_ROUTE_DASHBOARD,
   WORKSPACE_ROUTE_USERS,
 } from "@/router/dashboard/workspaceRoutes";
 import { SQL_EDITOR_WORKSHEET_MODULE } from "@/router/sqlEditor";
 import {
-  useAppFeature,
   pushNotification,
-  useUIStateStore,
-  useProjectV1Store,
   useActuatorV1Store,
+  useAppFeature,
   useIssueV1Store,
+  useProjectV1Store,
+  useUIStateStore,
   useWorkSheetStore,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { Permission } from "@/types";
-import { UNKNOWN_PROJECT_NAME, isValidProjectName } from "@/types";
+import { isValidProjectName, UNKNOWN_PROJECT_NAME } from "@/types";
 import {
-  hasWorkspacePermissionV2,
-  hasProjectPermissionV2,
   extractProjectResourceName,
+  hasProjectPermissionV2,
+  hasWorkspacePermissionV2,
 } from "@/utils";
 
 // The name of the sample project.

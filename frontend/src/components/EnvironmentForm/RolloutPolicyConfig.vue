@@ -132,18 +132,18 @@
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
 import { cloneDeep } from "lodash-es";
-import { NRadioGroup, NRadio } from "naive-ui";
-import { ref, watch, computed } from "vue";
+import { NRadio, NRadioGroup } from "naive-ui";
+import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import type {
   Policy,
   RolloutPolicy,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import {
-  RolloutPolicySchema,
-  RolloutPolicy_CheckersSchema,
-  RolloutPolicy_Checkers_RequiredStatusChecksSchema,
   RolloutPolicy_Checkers_PlanCheckEnforcement,
+  RolloutPolicy_Checkers_RequiredStatusChecksSchema,
+  RolloutPolicy_CheckersSchema,
+  RolloutPolicySchema,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import { RoleSelect, Switch } from "../v2";
 

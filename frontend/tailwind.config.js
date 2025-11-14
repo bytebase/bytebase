@@ -80,7 +80,7 @@ module.exports = {
           "rgb(var(--color-matrix-green-hover) / <alpha-value>)",
       },
       fontFamily: {
-        sans: ["Inter var", ...defaultTheme.fontFamily.sans],
+        sans: [...defaultTheme.fontFamily.sans],
       },
       spacing: {
         112: "28rem",

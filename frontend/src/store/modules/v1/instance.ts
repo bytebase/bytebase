@@ -6,33 +6,32 @@ import { instanceServiceClientConnect } from "@/grpcweb";
 // Removed conversion imports - using proto-es types directly
 import { silentContextKey } from "@/grpcweb/context-key";
 import {
-  unknownInstance,
-  isValidProjectName,
-  isValidInstanceName,
   isValidEnvironmentName,
+  isValidInstanceName,
+  isValidProjectName,
+  unknownInstance,
 } from "@/types";
-import { Engine } from "@/types/proto-es/v1/common_pb";
-import { State } from "@/types/proto-es/v1/common_pb";
-import {
-  CreateInstanceRequestSchema,
-  UpdateInstanceRequestSchema,
-  DeleteInstanceRequestSchema,
-  UndeleteInstanceRequestSchema,
-  SyncInstanceRequestSchema,
-  ListInstanceDatabaseRequestSchema,
-  BatchSyncInstancesRequestSchema,
-  BatchUpdateInstancesRequestSchema,
-  GetInstanceRequestSchema,
-  AddDataSourceRequestSchema,
-  UpdateDataSourceRequestSchema,
-  RemoveDataSourceRequestSchema,
-  ListInstancesRequestSchema,
-} from "@/types/proto-es/v1/instance_service_pb";
+import { Engine, State } from "@/types/proto-es/v1/common_pb";
 // Using proto-es types directly, no conversions needed for internal operations
 import type {
   DataSource,
   Instance,
   UpdateInstanceRequest,
+} from "@/types/proto-es/v1/instance_service_pb";
+import {
+  AddDataSourceRequestSchema,
+  BatchSyncInstancesRequestSchema,
+  BatchUpdateInstancesRequestSchema,
+  CreateInstanceRequestSchema,
+  DeleteInstanceRequestSchema,
+  GetInstanceRequestSchema,
+  ListInstanceDatabaseRequestSchema,
+  ListInstancesRequestSchema,
+  RemoveDataSourceRequestSchema,
+  SyncInstanceRequestSchema,
+  UndeleteInstanceRequestSchema,
+  UpdateDataSourceRequestSchema,
+  UpdateInstanceRequestSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
 import { extractInstanceResourceName, hasWorkspacePermissionV2 } from "@/utils";
 

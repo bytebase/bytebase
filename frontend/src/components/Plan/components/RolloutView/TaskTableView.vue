@@ -25,9 +25,9 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import {
+  type Stage,
   type Task,
   Task_Status,
-  type Stage,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import { usePlanContextWithRollout } from "../../logic";
 import TaskOperations from "./TaskOperations.vue";

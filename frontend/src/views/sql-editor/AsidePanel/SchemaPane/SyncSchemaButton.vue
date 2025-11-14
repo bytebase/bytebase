@@ -38,8 +38,8 @@ import { computed, ref } from "vue";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import {
   useConnectionOfCurrentSQLEditorTab,
-  useDBSchemaV1Store,
   useDatabaseV1Store,
+  useDBSchemaV1Store,
 } from "@/store";
 import { getDateForPbTimestampProtoEs, isValidDatabaseName } from "@/types";
 

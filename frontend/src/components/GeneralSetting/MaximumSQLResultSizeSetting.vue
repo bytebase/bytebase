@@ -79,16 +79,16 @@
 import { create } from "@bufbuild/protobuf";
 import { isEqual } from "lodash-es";
 import { NInputNumber } from "naive-ui";
-import { ref, computed } from "vue";
+import { computed, ref } from "vue";
 import {
+  featureToRef,
   usePolicyByParentAndType,
   usePolicyV1Store,
-  featureToRef,
 } from "@/store";
 import {
-  QueryDataPolicySchema,
   PolicyResourceType,
   PolicyType,
+  QueryDataPolicySchema,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { FeatureBadge } from "../FeatureGuard";

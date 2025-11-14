@@ -41,13 +41,12 @@
 </template>
 
 <script setup lang="ts">
-import { NTag, NPopover } from "naive-ui";
+import { NPopover, NTag } from "naive-ui";
 import { computed } from "vue";
-import { useIssueContext, projectOfIssue } from "@/components/IssueV1/logic";
+import { projectOfIssue, useIssueContext } from "@/components/IssueV1/logic";
 import { type PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
-import { databaseForTask } from "@/utils";
-import { flattenTaskV1List } from "@/utils";
+import { databaseForTask, flattenTaskV1List } from "@/utils";
 
 const props = defineProps<{
   taskSummaryReportMap: Map<string, PlanCheckRun>;

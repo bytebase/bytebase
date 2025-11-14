@@ -3,7 +3,7 @@
 </template>
 
 <script lang="ts" setup>
-import { type SwitchProps, NSwitch } from "naive-ui";
+import { NSwitch, type SwitchProps } from "naive-ui";
 import { ref } from "vue";
 
 export interface SpinnerSwitchProps extends /* @vue-ignore */ SwitchProps {

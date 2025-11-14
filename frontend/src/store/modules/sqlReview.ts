@@ -7,24 +7,24 @@ import { reviewConfigServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
 import { policyNamePrefix } from "@/store/modules/v1/common";
 import type {
+  ComposedDatabase,
+  MaybeRef,
   SchemaPolicyRule,
   SQLReviewPolicy,
-  MaybeRef,
-  ComposedDatabase,
 } from "@/types";
 import {
   PolicyType,
-  TagPolicySchema,
   SQLReviewRuleSchema,
+  TagPolicySchema,
 } from "@/types/proto-es/v1/org_policy_service_pb";
+import type { ReviewConfig } from "@/types/proto-es/v1/review_config_service_pb";
 import {
   DeleteReviewConfigRequestSchema,
-  UpdateReviewConfigRequestSchema,
-  ListReviewConfigsRequestSchema,
   GetReviewConfigRequestSchema,
+  ListReviewConfigsRequestSchema,
+  ReviewConfigSchema,
+  UpdateReviewConfigRequestSchema,
 } from "@/types/proto-es/v1/review_config_service_pb";
-import type { ReviewConfig } from "@/types/proto-es/v1/review_config_service_pb";
-import { ReviewConfigSchema } from "@/types/proto-es/v1/review_config_service_pb";
 import { usePolicyV1Store } from "./v1/policy";
 
 const reviewConfigTagName = "bb.tag.review_config";

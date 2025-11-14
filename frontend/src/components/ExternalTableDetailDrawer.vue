@@ -128,13 +128,13 @@
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
 import { computedAsync } from "@vueuse/core";
-import { computed, ref, reactive } from "vue";
+import { computed, reactive, ref } from "vue";
 import {
   DatabaseV1Name,
-  InstanceV1Name,
   Drawer,
   DrawerContent,
   EnvironmentV1Name,
+  InstanceV1Name,
   ProjectV1Name,
   SearchBox,
 } from "@/components/v2";

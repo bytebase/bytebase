@@ -20,11 +20,11 @@ import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { databaseServiceClientConnect } from "@/grpcweb";
 import { pushNotification } from "@/store";
-import { isValidDatabaseName } from "@/types";
 import type { ComposedDatabase } from "@/types";
+import { isValidDatabaseName } from "@/types";
 import {
-  GetDatabaseSDLSchemaRequestSchema,
   GetDatabaseSDLSchemaRequest_SDLFormat,
+  GetDatabaseSDLSchemaRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 

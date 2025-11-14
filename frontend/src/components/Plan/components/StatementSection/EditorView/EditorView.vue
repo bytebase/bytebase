@@ -201,18 +201,18 @@ import { useI18n } from "vue-i18n";
 import { BBAttention, BBModal } from "@/bbkit";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { extensionNameOfLanguage } from "@/components/MonacoEditor/utils";
+import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
 import { ErrorList } from "@/components/Plan/components/common";
 import {
   createEmptyLocalSheet,
   databaseEngineForSpec,
   databaseForSpec,
-  usePlanContext,
   planCheckRunListForSpec,
+  usePlanContext,
 } from "@/components/Plan/logic";
 import { useEditorState } from "@/components/Plan/logic/useEditorState";
 import RequiredStar from "@/components/RequiredStar.vue";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
-import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
 import { planServiceClientConnect } from "@/grpcweb";
 import {
   pushNotification,
@@ -235,8 +235,8 @@ import {
 import { engineSupportsSchemaEditor } from "@/utils/schemaEditor";
 import { useSelectedSpec } from "../../SpecDetailView/context";
 import SchemaEditorDrawer from "../SchemaEditorDrawer.vue";
-import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
 import { useSpecSheet } from "../useSpecSheet";
+import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
 
 type LocalState = {
   statement: string;

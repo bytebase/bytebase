@@ -20,7 +20,7 @@
 
 <script lang="tsx" setup>
 import { ExternalLinkIcon } from "lucide-vue-next";
-import { NDataTable, NEllipsis, type DataTableColumn } from "naive-ui";
+import { type DataTableColumn, NDataTable, NEllipsis } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";

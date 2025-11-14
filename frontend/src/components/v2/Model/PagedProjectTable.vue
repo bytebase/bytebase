@@ -23,7 +23,7 @@
 import { ref, watch } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
-import { useProjectV1Store, type ProjectFilter } from "@/store";
+import { type ProjectFilter, useProjectV1Store } from "@/store";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import ProjectV1Table from "./ProjectV1Table.vue";
 

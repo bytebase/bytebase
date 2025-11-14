@@ -5,9 +5,9 @@ import { revisionServiceClientConnect } from "@/grpcweb";
 import type { Pagination } from "@/types";
 import type { Revision } from "@/types/proto-es/v1/revision_service_pb";
 import {
-  ListRevisionsRequestSchema,
-  GetRevisionRequestSchema,
   DeleteRevisionRequestSchema,
+  GetRevisionRequestSchema,
+  ListRevisionsRequestSchema,
 } from "@/types/proto-es/v1/revision_service_pb";
 import { DEFAULT_PAGE_SIZE } from "./common";
 import { revisionNamePrefix } from "./v1/common";

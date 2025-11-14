@@ -1,9 +1,9 @@
+import type Emittery from "emittery";
 import type {
   DatalessEventNames,
   EventName,
   OmnipresentEventData,
 } from "emittery";
-import type Emittery from "emittery";
 import { onUnmounted } from "vue";
 
 export const useEmitteryEventListener = <

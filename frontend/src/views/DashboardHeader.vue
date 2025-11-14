@@ -62,8 +62,8 @@
 import { computedAsync, useLocalStorage, useWindowSize } from "@vueuse/core";
 import {
   CircleDotIcon,
-  SquareTerminalIcon,
   MessagesSquareIcon,
+  SquareTerminalIcon,
 } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { storeToRefs } from "pinia";
@@ -73,8 +73,8 @@ import { useRoute, useRouter } from "vue-router";
 import ProjectSwitchPopover from "@/components/Project/ProjectSwitch/ProjectSwitchPopover.vue";
 import WeChatQRModal from "@/components/WeChatQRModal.vue";
 import {
-  WORKSPACE_ROUTE_MY_ISSUES,
   WORKSPACE_ROUTE_LANDING,
+  WORKSPACE_ROUTE_MY_ISSUES,
 } from "@/router/dashboard/workspaceRoutes";
 import {
   SQL_EDITOR_DATABASE_MODULE,

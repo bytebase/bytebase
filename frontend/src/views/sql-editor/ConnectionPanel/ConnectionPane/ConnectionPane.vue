@@ -179,18 +179,18 @@ import { useElementSize } from "@vueuse/core";
 import { isEqual } from "lodash-es";
 import { InfoIcon } from "lucide-vue-next";
 import {
-  NTag,
   NButton,
-  NTree,
-  NDropdown,
-  NDivider,
-  NRadioGroup,
-  NRadio,
-  NTooltip,
   NCheckbox,
+  NDivider,
+  NDropdown,
+  NRadio,
+  NRadioGroup,
+  NTag,
+  NTooltip,
+  NTree,
   type TreeOption,
 } from "naive-ui";
-import { ref, shallowRef, nextTick, watch, h, computed, reactive } from "vue";
+import { computed, h, nextTick, reactive, ref, shallowRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
@@ -199,32 +199,32 @@ import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { RichDatabaseName } from "@/components/v2";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
-  featureToRef,
   batchGetOrFetchDatabases,
-  useProjectV1Store,
+  type DatabaseFilter,
+  featureToRef,
+  idForSQLEditorTreeNodeTarget,
+  resolveOpeningDatabaseListFromSQLEditorTabList,
+  useCurrentUserV1,
   useDatabaseV1Store,
   useDBGroupStore,
-  useSQLEditorTabStore,
-  useCurrentUserV1,
-  resolveOpeningDatabaseListFromSQLEditorTabList,
-  useSQLEditorTreeStore,
-  useSQLEditorStore,
-  idForSQLEditorTreeNodeTarget,
-  useInstanceResourceByName,
   useEnvironmentV1List,
-  type DatabaseFilter,
+  useInstanceResourceByName,
+  useProjectV1Store,
+  useSQLEditorStore,
+  useSQLEditorTabStore,
+  useSQLEditorTreeStore,
 } from "@/store";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
 import type {
   ComposedDatabase,
-  SQLEditorTreeNode,
   CoreSQLEditorTab,
   QueryDataSourceType,
+  SQLEditorTreeNode,
 } from "@/types";
 import {
   DEFAULT_SQL_EDITOR_TAB_MODE,
-  isValidDatabaseName,
   getDataSourceTypeI18n,
+  isValidDatabaseName,
   isValidProjectName,
   UNKNOWN_ENVIRONMENT_NAME,
   unknownEnvironment,
@@ -232,18 +232,19 @@ import {
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import type { SearchParams } from "@/utils";
 import {
-  findAncestor,
-  isDescendantOf,
-  isDatabaseV1Queryable,
   CommonFilterScopeIdList,
-  extractProjectResourceName,
   emptySQLEditorConnection,
+  extractProjectResourceName,
+  findAncestor,
+  isDatabaseV1Queryable,
+  isDescendantOf,
   tryConnectToCoreSQLEditorTab,
   useDynamicLocalStorage,
 } from "@/utils";
-import type { SearchParams } from "@/utils";
 import { useSQLEditorContext } from "../../context";
+import { setConnection, useDropdown } from "./actions";
 import BatchQueryDatabaseGroupSelector from "./BatchQueryDatabaseGroupSelector.vue";
 import DatabaseGroupTag from "./DatabaseGroupTag.vue";
 import {
@@ -251,8 +252,7 @@ import {
   provideHoverStateContext,
 } from "./DatabaseHoverPanel";
 import { Label } from "./TreeNode";
-import { setConnection, useDropdown } from "./actions";
-import { useSQLEditorTreeByEnvironment, type TreeByEnvironment } from "./tree";
+import { type TreeByEnvironment, useSQLEditorTreeByEnvironment } from "./tree";
 
 interface LocalState {
   selectedDatabases: Set<string>;

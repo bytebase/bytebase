@@ -22,10 +22,10 @@ import { type Label } from "@/types/proto-es/v1/project_service_pb";
 import { UserType } from "@/types/proto-es/v1/user_service_pb";
 import type { SearchParams, SearchScopeId } from "@/utils";
 import {
-  getDefaultPagination,
   extractEnvironmentResourceName,
   extractInstanceResourceName,
   extractProjectResourceName,
+  getDefaultPagination,
 } from "@/utils";
 
 export const useIssueSearchScopeOptions = (

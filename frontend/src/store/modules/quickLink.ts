@@ -1,21 +1,21 @@
 import { flatten } from "lodash-es";
 import {
+  CircleDotIcon,
   GalleryHorizontalEndIcon,
   SettingsIcon,
-  CircleDotIcon,
 } from "lucide-vue-next";
 import { computed, h, type VNode } from "vue";
 import { t } from "@/plugins/i18n";
 import {
   WORKSPACE_ROUTE_LANDING,
-  WORKSPACE_ROUTE_USERS,
   WORKSPACE_ROUTE_SQL_REVIEW,
+  WORKSPACE_ROUTE_USERS,
 } from "@/router/dashboard/workspaceRoutes";
 import { useCurrentUserV1 } from "@/store";
 import {
-  useDynamicLocalStorage,
-  useDashboardSidebar,
   type DashboardSidebarItem,
+  useDashboardSidebar,
+  useDynamicLocalStorage,
 } from "@/utils";
 
 export interface QuickLink {

@@ -59,7 +59,7 @@ import { computed, reactive, watchEffect } from "vue";
 import DatabaseGroupForm from "@/components/DatabaseGroup/DatabaseGroupForm.vue";
 import FeatureAttention from "@/components/FeatureGuard/FeatureAttention.vue";
 import { AddSpecDrawer } from "@/components/Plan";
-import { useDBGroupStore, useProjectByName, featureToRef } from "@/store";
+import { featureToRef, useDBGroupStore, useProjectByName } from "@/store";
 import {
   databaseGroupNamePrefix,
   projectNamePrefix,

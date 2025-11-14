@@ -2,8 +2,8 @@ import { create as createProto } from "@bufbuild/protobuf";
 import { EMPTY_ID, UNKNOWN_ID } from "@/types/const";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import {
-  PlanSchema,
   Plan_SpecSchema,
+  PlanSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 
 export const EMPTY_PLAN_NAME = `projects/${EMPTY_ID}/plans/${EMPTY_ID}`;

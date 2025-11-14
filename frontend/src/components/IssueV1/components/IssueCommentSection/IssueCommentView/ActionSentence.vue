@@ -6,8 +6,12 @@
 import type { h } from "vue";
 import { defineComponent } from "vue";
 import { Translation, useI18n } from "vue-i18n";
-import { useUserStore, IssueCommentType, getIssueCommentType } from "@/store";
-import { extractUserId } from "@/store";
+import {
+  extractUserId,
+  getIssueCommentType,
+  IssueCommentType,
+  useUserStore,
+} from "@/store";
 import { type ComposedIssue } from "@/types";
 import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import {

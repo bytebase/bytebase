@@ -29,8 +29,8 @@
 
 <script lang="tsx" setup>
 import { create } from "@bufbuild/protobuf";
-import { NButton, NDataTable, useDialog } from "naive-ui";
 import type { DataTableColumn } from "naive-ui";
+import { NButton, NDataTable, useDialog } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBModal } from "@/bbkit";
@@ -41,12 +41,12 @@ import type { Risk } from "@/types/proto-es/v1/risk_service_pb";
 import { Risk_Source } from "@/types/proto-es/v1/risk_service_pb";
 import { batchConvertParsedExprToCELString, defer } from "@/utils";
 import { useRiskCenterContext } from "../context";
-import ViewTemplate from "./ViewTemplate.vue";
 import {
   type RuleTemplate,
-  useRuleTemplates,
   titleOfTemplate,
+  useRuleTemplates,
 } from "./template";
+import ViewTemplate from "./ViewTemplate.vue";
 
 const props = defineProps<{
   dirty?: boolean;

@@ -1,24 +1,24 @@
 import { CheckIcon } from "lucide-vue-next";
 import type { SelectOption } from "naive-ui";
-import { h } from "vue";
 import type { VNode } from "vue";
+import { h } from "vue";
 import { type OptionConfig } from "@/components/ExprEditor/context";
 import { getInstanceIdOptions } from "@/components/SensitiveData/components/utils";
 import { EnvironmentV1Name, RichDatabaseName } from "@/components/v2";
-import { SQLTypeList, type Factor } from "@/plugins/cel";
+import { type Factor, SQLTypeList } from "@/plugins/cel";
 import { t } from "@/plugins/i18n";
 import {
   useEnvironmentV1Store,
-  useProjectV1Store,
   useInstanceV1Store,
+  useProjectV1Store,
   useRoleStore,
 } from "@/store";
 import {
+  type ComposedDatabase,
   DEFAULT_PROJECT_NAME,
   PRESET_WORKSPACE_ROLES,
   PresetRiskLevelList,
   useSupportedSourceList,
-  type ComposedDatabase,
 } from "@/types";
 import { Engine, RiskLevel } from "@/types/proto-es/v1/common_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
@@ -31,21 +31,21 @@ import {
   supportedEngineV1List,
 } from "@/utils";
 import {
+  CEL_ATTRIBUTE_LEVEL,
   CEL_ATTRIBUTE_REQUEST_EXPIRATION_DAYS,
   CEL_ATTRIBUTE_REQUEST_ROLE,
-  CEL_ATTRIBUTE_STATEMENT_AFFECTED_ROWS,
-  CEL_ATTRIBUTE_STATEMENT_TABLE_ROWS,
-  CEL_ATTRIBUTE_STATEMENT_SQL_TYPE,
-  CEL_ATTRIBUTE_STATEMENT_TEXT,
-  CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID,
-  CEL_ATTRIBUTE_RESOURCE_PROJECT_ID,
-  CEL_ATTRIBUTE_RESOURCE_INSTANCE_ID,
   CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME,
-  CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
-  CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
   CEL_ATTRIBUTE_RESOURCE_DB_ENGINE,
-  CEL_ATTRIBUTE_LEVEL,
+  CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID,
+  CEL_ATTRIBUTE_RESOURCE_INSTANCE_ID,
+  CEL_ATTRIBUTE_RESOURCE_PROJECT_ID,
+  CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
+  CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
   CEL_ATTRIBUTE_SOURCE,
+  CEL_ATTRIBUTE_STATEMENT_AFFECTED_ROWS,
+  CEL_ATTRIBUTE_STATEMENT_SQL_TYPE,
+  CEL_ATTRIBUTE_STATEMENT_TABLE_ROWS,
+  CEL_ATTRIBUTE_STATEMENT_TEXT,
 } from "@/utils/cel-attributes";
 
 export const sourceText = (source: Risk_Source) => {

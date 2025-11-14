@@ -54,9 +54,9 @@ import { NButton, NPopover } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
+import ErrorList from "@/components/misc/ErrorList.vue";
 import { SQLCheckPanel } from "@/components/SQLCheck";
 import { STATEMENT_SKIP_CHECK_THRESHOLD } from "@/components/SQLCheck/common";
-import ErrorList from "@/components/misc/ErrorList.vue";
 import { releaseServiceClientConnect } from "@/grpcweb";
 import type { CheckReleaseResponse } from "@/types/proto-es/v1/release_service_pb";
 import {
@@ -65,10 +65,10 @@ import {
   Release_File_Type,
 } from "@/types/proto-es/v1/release_service_pb";
 import {
+  Advice_Level,
   AdviceSchema,
   Advice_Level as ProtoESAdvice_Level,
 } from "@/types/proto-es/v1/sql_service_pb";
-import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import type { Defer, VueStyle } from "@/utils";
 import { defer } from "@/utils";
 import { useSpecSheet } from "../StatementSection/useSpecSheet";

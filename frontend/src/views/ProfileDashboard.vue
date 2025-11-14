@@ -233,12 +233,12 @@ import EmailInput from "@/components/EmailInput.vue";
 import { FeatureModal } from "@/components/FeatureGuard";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
+import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
+import ServiceAccountTag from "@/components/misc/ServiceAccountTag.vue";
 import RegenerateRecoveryCodesView from "@/components/RegenerateRecoveryCodesView.vue";
 import { ActionConfirmModal } from "@/components/SchemaEditorLite";
 import UserPassword from "@/components/User/Settings/UserPassword.vue";
 import UserAvatar from "@/components/User/UserAvatar.vue";
-import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
-import ServiceAccountTag from "@/components/misc/ServiceAccountTag.vue";
 import { useRouteChangeGuard } from "@/composables/useRouteChangeGuard";
 import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes";
 import {

@@ -19,8 +19,8 @@
 import { orderBy } from "lodash-es";
 import type {
   DataTableColumn,
-  DataTableRowKey,
   DataTableRowData,
+  DataTableRowKey,
 } from "naive-ui";
 import { NDataTable } from "naive-ui";
 import { computed, h, ref } from "vue";

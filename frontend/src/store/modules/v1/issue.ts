@@ -7,18 +7,16 @@ import type { WatchCallback } from "vue";
 import { ref, watch } from "vue";
 import { issueServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
-import { SYSTEM_BOT_EMAIL, type IssueFilter } from "@/types";
-import {
-  GetIssueRequestSchema,
-  Issue_Type,
-  IssueSchema,
-  SearchIssuesRequestSchema,
-  UpdateIssueRequestSchema,
-} from "@/types/proto-es/v1/issue_service_pb";
+import { type IssueFilter, SYSTEM_BOT_EMAIL } from "@/types";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import {
-  IssueStatus,
+  GetIssueRequestSchema,
   Issue_ApprovalStatus,
+  Issue_Type,
+  IssueSchema,
+  IssueStatus,
+  SearchIssuesRequestSchema,
+  UpdateIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
   extractProjectResourceName,
@@ -27,8 +25,8 @@ import {
 import { useUserStore } from "../user";
 import { projectNamePrefix, userNamePrefix } from "./common";
 import {
-  shallowComposeIssue,
   type ComposeIssueConfig,
+  shallowComposeIssue,
 } from "./experimental-issue";
 import { useProjectV1Store } from "./project";
 import { useProjectIamPolicyStore } from "./projectIamPolicy";

@@ -9,13 +9,13 @@ import type { Stage, Task } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   activeStageInRollout,
   activeTaskInStageV1,
+  extractStageUID,
+  extractTaskUID,
   flattenTaskV1List,
-  uidFromSlug,
   indexOrUIDFromSlug,
   stageV1Slug,
   taskV1Slug,
-  extractTaskUID,
-  extractStageUID,
+  uidFromSlug,
 } from "@/utils";
 import type { IssueContext, IssueEvents } from "./context";
 import { planCheckRunListForTask } from "./plan-check";

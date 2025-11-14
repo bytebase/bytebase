@@ -5,13 +5,13 @@ import { h } from "vue";
 import { getRenderOptionFunc } from "@/components/CustomApproval/Settings/components/common";
 import { InstanceV1Name } from "@/components/v2";
 import type { Factor, Operator } from "@/plugins/cel";
-import { EqualityOperatorList, CollectionOperatorList } from "@/plugins/cel";
+import { CollectionOperatorList, EqualityOperatorList } from "@/plugins/cel";
 import { useSettingV1Store } from "@/store";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 import type { Algorithm } from "@/types/proto-es/v1/setting_service_pb";
 import {
-  Setting_SettingName,
   AlgorithmSchema,
+  Setting_SettingName,
 } from "@/types/proto-es/v1/setting_service_pb";
 import { extractInstanceResourceName } from "@/utils";
 import { CEL_ATTRIBUTE_RESOURCE_PROJECT_ID } from "@/utils/cel-attributes";

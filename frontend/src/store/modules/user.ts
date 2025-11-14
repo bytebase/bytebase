@@ -7,10 +7,10 @@ import { computed, ref } from "vue";
 import { userServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
 import {
-  isValidProjectName,
   allUsersUser,
-  SYSTEM_BOT_USER_NAME,
+  isValidProjectName,
   isValidUserName,
+  SYSTEM_BOT_USER_NAME,
   unknownUser,
   userBindingPrefix,
 } from "@/types";
@@ -19,19 +19,19 @@ import type {
   UpdateUserRequest,
   User,
 } from "@/types/proto-es/v1/user_service_pb";
-import { UserType } from "@/types/proto-es/v1/user_service_pb";
 import {
+  BatchGetUsersRequestSchema,
+  CreateUserRequestSchema,
+  DeleteUserRequestSchema,
   GetUserRequestSchema,
   ListUsersRequestSchema,
-  CreateUserRequestSchema,
-  UpdateUserRequestSchema,
-  DeleteUserRequestSchema,
   UndeleteUserRequestSchema,
-  BatchGetUsersRequestSchema,
+  UpdateUserRequestSchema,
+  UserType,
 } from "@/types/proto-es/v1/user_service_pb";
 import { ensureUserFullName } from "@/utils";
 import { useActuatorV1Store } from "./v1/actuator";
-import { userNamePrefix, extractUserId } from "./v1/common";
+import { extractUserId, userNamePrefix } from "./v1/common";
 import { usePermissionStore } from "./v1/permission";
 
 export interface UserFilter {

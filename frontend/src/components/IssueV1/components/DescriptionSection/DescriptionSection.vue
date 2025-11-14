@@ -72,7 +72,7 @@
 
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
-import { NInput, NButton } from "naive-ui";
+import { NButton, NInput } from "naive-ui";
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRenderMarkdown } from "@/components/MarkdownEditor";

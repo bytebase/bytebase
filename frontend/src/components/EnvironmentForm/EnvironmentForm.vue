@@ -9,7 +9,7 @@
 </template>
 
 <script lang="ts" setup>
-import { toRef, computed } from "vue";
+import { computed, toRef } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { hasFeature } from "@/store";
 import type { Policy } from "@/types/proto-es/v1/org_policy_service_pb";

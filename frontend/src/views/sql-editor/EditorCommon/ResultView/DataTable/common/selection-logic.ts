@@ -3,13 +3,13 @@ import { useEventListener } from "@vueuse/core";
 import { sortBy } from "lodash-es";
 import {
   computed,
+  type InjectionKey,
   inject,
   nextTick,
   provide,
+  type Ref,
   ref,
   watch,
-  type InjectionKey,
-  type Ref,
 } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification } from "@/store";
@@ -17,8 +17,8 @@ import type { QueryRow, RowValue } from "@/types/proto-es/v1/sql_service_pb";
 import { extractSQLRowValuePlain, isDescendantOf, toClipboard } from "@/utils";
 import { useSQLResultViewContext } from "../../context";
 import {
-  formatBinaryValue,
   detectBinaryFormat,
+  formatBinaryValue,
   useBinaryFormatContext,
 } from "../binary-format-store";
 import { getColumnType } from "./utils";

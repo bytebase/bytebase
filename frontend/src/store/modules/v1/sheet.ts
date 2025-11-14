@@ -7,10 +7,10 @@ import type { MaybeRef } from "@/types";
 import { UNKNOWN_ID } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
-import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
 import {
   CreateSheetRequestSchema,
   GetSheetRequestSchema,
+  SheetSchema,
   UpdateSheetRequestSchema,
 } from "@/types/proto-es/v1/sheet_service_pb";
 import { extractSheetUID, getSheetStatement } from "@/utils";

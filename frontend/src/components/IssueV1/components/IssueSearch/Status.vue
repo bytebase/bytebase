@@ -14,7 +14,7 @@
 </template>
 
 <script lang="ts" setup>
-import { NTabs, NTab } from "naive-ui";
+import { NTab, NTabs } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type { SearchParams, SemanticIssueStatus } from "@/utils";

@@ -58,13 +58,13 @@ import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
 import { rolloutServiceClientConnect } from "@/grpcweb";
 import { pushNotification, useCurrentProjectV1 } from "@/store";
-import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Stage, Task } from "@/types/proto-es/v1/rollout_service_pb";
+import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import { usePlanContextWithRollout } from "../../logic";
+import { useRolloutViewContext } from "./context";
 import StagesView from "./StagesView.vue";
 import TaskRolloutActionPanel from "./TaskRolloutActionPanel.vue";
 import TaskRunRollbackSection from "./TaskRunRollbackSection.vue";
-import { useRolloutViewContext } from "./context";
 
 const { t } = useI18n();
 const { project } = useCurrentProjectV1();

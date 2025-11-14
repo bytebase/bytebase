@@ -70,15 +70,17 @@
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
-import { PlusIcon, ChevronUpIcon } from "lucide-vue-next";
+import { ChevronUpIcon, PlusIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import MarkdownEditor from "@/components/MarkdownEditor";
 import { useResourcePoller } from "@/components/Plan/logic/poller";
 import { planServiceClientConnect } from "@/grpcweb";
-import { useCurrentUserV1, extractUserId, useCurrentProjectV1 } from "@/store";
-import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
-import { PlanSchema } from "@/types/proto-es/v1/plan_service_pb";
+import { extractUserId, useCurrentProjectV1, useCurrentUserV1 } from "@/store";
+import {
+  PlanSchema,
+  UpdatePlanRequestSchema,
+} from "@/types/proto-es/v1/plan_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 import { usePlanContext } from "../../logic";
 

@@ -4,36 +4,36 @@ import { head, omit, pick } from "lodash-es";
 import { defineStore, storeToRefs } from "pinia";
 import { computed, nextTick, reactive, ref, unref, watch } from "vue";
 import type {
-  SQLEditorConnection,
-  CoreSQLEditorTab,
-  SQLEditorTab,
-  SQLEditorDatabaseQueryContext,
   BatchQueryContext,
+  CoreSQLEditorTab,
+  SQLEditorConnection,
+  SQLEditorDatabaseQueryContext,
+  SQLEditorTab,
 } from "@/types";
 import { DEFAULT_SQL_EDITOR_TAB_MODE, isValidDatabaseName } from "@/types";
 import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
-  WebStorageHelper,
   defaultSQLEditorTab,
   emptySQLEditorConnection,
   isDisconnectedSQLEditorTab,
   isSimilarSQLEditorTab,
   useDynamicLocalStorage,
+  WebStorageHelper,
 } from "@/utils";
 import {
-  useDatabaseV1Store,
-  useDatabaseV1ByName,
-  useEnvironmentV1Store,
   extractUserId,
   hasFeature,
+  useDatabaseV1ByName,
+  useDatabaseV1Store,
+  useEnvironmentV1Store,
 } from "../v1";
 import { useCurrentUserV1 } from "../v1/auth";
 import { useSQLEditorStore } from "./editor";
 import {
   EXTENDED_TAB_FIELDS,
-  useExtendedTabStore,
   type ExtendedTab,
+  useExtendedTabStore,
 } from "./extendedTab";
 import { useTabViewStateStore } from "./tabViewState";
 import { useWebTerminalStore } from "./webTerminal";

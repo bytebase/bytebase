@@ -1,9 +1,9 @@
 import { create } from "@bufbuild/protobuf";
 import { cloneDeep } from "lodash-es";
 import type {
-  TableCatalog,
-  SchemaCatalog,
   DatabaseCatalog,
+  SchemaCatalog,
+  TableCatalog,
 } from "@/types/proto-es/v1/database_catalog_service_pb";
 import { TableCatalog_ColumnsSchema } from "@/types/proto-es/v1/database_catalog_service_pb";
 import type {

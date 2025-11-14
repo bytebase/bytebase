@@ -93,22 +93,22 @@
 
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
-import { head, isEqual, isEmpty } from "lodash-es";
+import { head, isEmpty, isEqual } from "lodash-es";
 import { UploadIcon } from "lucide-vue-next";
-import { NSwitch, useDialog, NDivider, NButton } from "naive-ui";
+import { NButton, NDivider, NSwitch, useDialog } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import { featureToRef, useSettingV1Store, pushNotification } from "@/store";
+import { featureToRef, pushNotification, useSettingV1Store } from "@/store";
 import type {
   DataClassificationSetting_DataClassificationConfig_Level as ClassificationLevel,
   DataClassificationSetting_DataClassificationConfig_DataClassification as DataClassification,
   DataClassificationSetting_DataClassificationConfig,
 } from "@/types/proto-es/v1/setting_service_pb";
 import {
-  DataClassificationSetting_DataClassificationConfigSchema,
-  DataClassificationSetting_DataClassificationConfig_LevelSchema,
   DataClassificationSetting_DataClassificationConfig_DataClassificationSchema,
+  DataClassificationSetting_DataClassificationConfig_LevelSchema,
+  DataClassificationSetting_DataClassificationConfigSchema,
   DataClassificationSettingSchema,
   Setting_SettingName,
   ValueSchema as SettingValueSchema,

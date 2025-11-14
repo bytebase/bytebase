@@ -48,7 +48,7 @@
 </template>
 
 <script lang="ts" setup>
-import { NButton, NInput, NPopover, type InputInst } from "naive-ui";
+import { type InputInst, NButton, NInput, NPopover } from "naive-ui";
 import { onMounted, reactive, ref, watch } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { keyboardShortcutStr, nextAnimationFrame } from "@/utils";

@@ -1033,20 +1033,20 @@ import { useI18n } from "vue-i18n";
 import { BBTextField } from "@/bbkit";
 import { FeatureBadge } from "@/components/FeatureGuard";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
-import RequiredStar from "@/components/RequiredStar.vue";
 import DroppableTextarea from "@/components/misc/DroppableTextarea.vue";
+import RequiredStar from "@/components/RequiredStar.vue";
 import { Switch } from "@/components/v2";
 import type { DataSourceOptions } from "@/types/dataSource";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
-  DataSourceExternalSecret_AppRoleAuthOption_SecretType,
-  DataSourceExternalSecret_AuthType,
-  DataSourceExternalSecret_SecretType,
-  DataSourceType,
   DataSource_AuthenticationType,
   DataSource_RedisType,
-  DataSourceExternalSecretSchema,
+  DataSourceExternalSecret_AppRoleAuthOption_SecretType,
   DataSourceExternalSecret_AppRoleAuthOptionSchema,
+  DataSourceExternalSecret_AuthType,
+  DataSourceExternalSecret_SecretType,
+  DataSourceExternalSecretSchema,
+  DataSourceType,
   KerberosConfigSchema,
   SASLConfigSchema,
 } from "@/types/proto-es/v1/instance_service_pb";

@@ -83,8 +83,8 @@ import {
   wrapAsGroup,
 } from "@/plugins/cel";
 import {
-  PROJECT_V1_ROUTE_DATABASE_GROUPS,
   PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
+  PROJECT_V1_ROUTE_DATABASE_GROUPS,
 } from "@/router/dashboard/projectV1";
 import { pushNotification, useDBGroupStore } from "@/store";
 import {
@@ -94,9 +94,9 @@ import {
 import type { Expr as CELExpr } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import {
+  type DatabaseGroup,
   DatabaseGroupSchema,
   DatabaseGroupView,
-  type DatabaseGroup,
 } from "@/types/proto-es/v1/database_group_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {

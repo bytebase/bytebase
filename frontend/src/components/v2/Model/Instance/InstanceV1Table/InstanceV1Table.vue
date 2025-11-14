@@ -19,11 +19,11 @@
 
 <script setup lang="tsx">
 import {
-  ExternalLinkIcon,
   ChevronDownIcon,
   ChevronUpIcon,
+  ExternalLinkIcon,
 } from "lucide-vue-next";
-import { NButton, NDataTable, type DataTableColumn } from "naive-ui";
+import { type DataTableColumn, NButton, NDataTable } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -33,7 +33,7 @@ import { LabelsCell } from "@/components/v2/Model/cells";
 import { useEnvironmentV1Store } from "@/store";
 import { NULL_ENVIRONMENT_NAME } from "@/types";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
-import { urlfy, hostPortOfInstanceV1, hostPortOfDataSource } from "@/utils";
+import { hostPortOfDataSource, hostPortOfInstanceV1, urlfy } from "@/utils";
 import EnvironmentV1Name from "../../EnvironmentV1Name.vue";
 
 type InstanceDataTableColumn = DataTableColumn<Instance> & {

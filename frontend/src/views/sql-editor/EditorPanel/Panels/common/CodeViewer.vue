@@ -71,8 +71,8 @@ import { Pane, Splitpanes } from "splitpanes";
 import { computed, ref } from "vue";
 import { BBSpin } from "@/bbkit";
 import {
-  MonacoEditor,
   type IStandaloneCodeEditor,
+  MonacoEditor,
   type MonacoModule,
 } from "@/components/MonacoEditor";
 import formatSQL from "@/components/MonacoEditor/sqlFormatter";
@@ -82,8 +82,8 @@ import * as promptUtils from "@/plugins/ai/logic/prompt";
 import type { ComposedDatabase } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
 import { nextAnimationFrame, type VueClass } from "@/utils";
-import { OpenAIButton } from "@/views/sql-editor/EditorCommon";
 import { useSQLEditorContext } from "@/views/sql-editor/context";
+import { OpenAIButton } from "@/views/sql-editor/EditorCommon";
 
 const props = defineProps<{
   db: ComposedDatabase;

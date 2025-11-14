@@ -17,17 +17,19 @@ import { NDataTable, NPerformantEllipsis, NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import Timestamp from "@/components/misc/Timestamp.vue";
 import { TASK_STATUS_FILTERS } from "@/components/Plan/constants/task";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
-import Timestamp from "@/components/misc/Timestamp.vue";
 import { EnvironmentV1Name } from "@/components/v2";
 import { useEnvironmentV1Store } from "@/store";
-import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
-import type { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import type {
+  Rollout,
+  Task_Status,
+} from "@/types/proto-es/v1/rollout_service_pb";
 import {
-  stringifyTaskStatus,
-  getStageStatus,
   extractRolloutUID,
+  getStageStatus,
+  stringifyTaskStatus,
 } from "@/utils";
 
 withDefaults(

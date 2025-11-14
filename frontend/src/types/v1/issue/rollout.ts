@@ -2,8 +2,8 @@ import { create } from "@bufbuild/protobuf";
 import { EMPTY_ID, UNKNOWN_ID } from "@/types/const";
 import {
   StageSchema,
-  TaskSchema,
   Task_Type,
+  TaskSchema,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import { EMPTY_ROLLOUT_NAME, UNKNOWN_ROLLOUT_NAME } from "@/types/rollout";
 import {

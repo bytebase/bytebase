@@ -35,7 +35,7 @@ import type { ErrorItem } from "@/components/misc/ErrorList.vue";
 import ErrorList from "@/components/misc/ErrorList.vue";
 import { ContextMenuButton } from "@/components/v2";
 import { useUserStore } from "@/store";
-import { userNamePrefix, roleNamePrefix } from "@/store/modules/v1/common";
+import { roleNamePrefix, userNamePrefix } from "@/store/modules/v1/common";
 import { displayRoleTitle } from "@/utils";
 import type { RolloutAction, RolloutButtonAction } from "./common";
 

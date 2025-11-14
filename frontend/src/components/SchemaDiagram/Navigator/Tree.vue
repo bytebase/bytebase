@@ -19,7 +19,7 @@
 <script lang="ts" setup>
 import { NTree, type TreeOption } from "naive-ui";
 import { computed, h } from "vue";
-import { isDescendantOf, hasSchemaProperty } from "@/utils";
+import { hasSchemaProperty, isDescendantOf } from "@/utils";
 import { useSchemaDiagramContext } from "../common";
 import { DEFAULT_PADDINGS } from "../common/const";
 import { Label, Prefix, Suffix } from "./TreeNode";

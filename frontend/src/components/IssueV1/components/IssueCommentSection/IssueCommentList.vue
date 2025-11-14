@@ -104,10 +104,10 @@ import { useRoute } from "vue-router";
 import MarkdownEditor from "@/components/MarkdownEditor";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import {
+  extractUserId,
+  useCurrentProjectV1,
   useCurrentUserV1,
   useIssueCommentStore,
-  useCurrentProjectV1,
-  extractUserId,
 } from "@/store";
 import type { ComposedIssue } from "@/types";
 import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
@@ -115,10 +115,10 @@ import { ListIssueCommentsRequestSchema } from "@/types/proto-es/v1/issue_servic
 import { hasProjectPermissionV2 } from "@/utils";
 import { useIssueContext } from "../../logic";
 import {
+  type DistinctIssueComment,
   IssueCommentView,
   isSimilarIssueComment,
   isUserEditableComment,
-  type DistinctIssueComment,
 } from "./IssueCommentView";
 import IssueCreatedCommentV1 from "./IssueCommentView/IssueCreatedCommentV1.vue";
 

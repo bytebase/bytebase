@@ -134,30 +134,30 @@
 
 <script setup lang="ts">
 import { create as createProto } from "@bufbuild/protobuf";
-import { FileDiffIcon, EditIcon } from "lucide-vue-next";
+import { EditIcon, FileDiffIcon } from "lucide-vue-next";
 import {
   NButton,
   NRadio,
   NRadioGroup,
-  NSteps,
   NStep,
+  NSteps,
   useDialog,
 } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import type { Ref } from "vue";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
 import type { LocationQueryRaw } from "vue-router";
-import DatabaseAndGroupSelector from "@/components/DatabaseAndGroupSelector";
+import { useRouter } from "vue-router";
 import type { DatabaseSelectState } from "@/components/DatabaseAndGroupSelector";
+import DatabaseAndGroupSelector from "@/components/DatabaseAndGroupSelector";
 import { getLocalSheetByName, getNextLocalSheetUID } from "@/components/Plan";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
-  useCurrentProjectV1,
   batchGetOrFetchDatabases,
   pushNotification,
+  useCurrentProjectV1,
   useDatabaseV1Store,
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
@@ -167,8 +167,8 @@ import {
 } from "@/types/proto-es/v1/common_pb";
 import {
   Plan_ChangeDatabaseConfigSchema,
-  Plan_SpecSchema,
   type Plan_Spec,
+  Plan_SpecSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import { extractProjectResourceName, generateIssueTitle } from "@/utils";
 

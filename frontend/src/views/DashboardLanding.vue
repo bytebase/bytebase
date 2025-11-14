@@ -129,7 +129,7 @@
 
 <script lang="tsx" setup>
 import { computedAsync } from "@vueuse/core";
-import { Volume2Icon, SettingsIcon, GripVerticalIcon } from "lucide-vue-next";
+import { GripVerticalIcon, SettingsIcon, Volume2Icon } from "lucide-vue-next";
 import { NButton, NCheckbox, NDivider } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
@@ -139,10 +139,10 @@ import { Drawer, DrawerContent } from "@/components/v2";
 import { WORKSPACE_ROUTE_MY_ISSUES } from "@/router/dashboard/workspaceRoutes";
 import { useRecentVisit } from "@/router/useRecentVisit";
 import {
-  useProjectV1Store,
-  useActuatorV1Store,
-  useQuickLink,
   type QuickLink,
+  useActuatorV1Store,
+  useProjectV1Store,
+  useQuickLink,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { UNKNOWN_PROJECT_NAME } from "@/types";

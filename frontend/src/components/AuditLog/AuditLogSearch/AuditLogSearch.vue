@@ -33,8 +33,8 @@ import { SYSTEM_BOT_USER_NAME } from "@/types";
 import { AuditLog_Severity } from "@/types/proto-es/v1/audit_log_service_pb";
 import { UserType } from "@/types/proto-es/v1/user_service_pb";
 import {
-  getDefaultPagination,
   extractProjectResourceName,
+  getDefaultPagination,
   type SearchParams,
 } from "@/utils";
 

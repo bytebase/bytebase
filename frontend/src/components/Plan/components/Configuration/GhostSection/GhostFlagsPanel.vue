@@ -47,8 +47,8 @@ import { Drawer, DrawerContent } from "@/components/v2";
 import { planServiceClientConnect } from "@/grpcweb";
 import { pushNotification } from "@/store";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
-import FlagsForm from "./FlagsForm";
 import { useGhostSettingContext } from "./context";
+import FlagsForm from "./FlagsForm";
 
 defineProps<{
   show: boolean;

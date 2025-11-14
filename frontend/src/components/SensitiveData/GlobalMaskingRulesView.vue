@@ -114,15 +114,15 @@
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
 import {
-  PlusIcon,
-  PencilIcon,
-  ChevronUpIcon,
   ChevronDownIcon,
+  ChevronUpIcon,
   ListOrderedIcon,
+  PencilIcon,
+  PlusIcon,
 } from "lucide-vue-next";
 import { NButton, NEmpty, type SelectOption } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
-import { computed, reactive, nextTick, onMounted, ref } from "vue";
+import { computed, nextTick, onMounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   getEnvironmentIdOptions,
@@ -135,35 +135,35 @@ import type { Factor } from "@/plugins/cel";
 import {
   featureToRef,
   pushNotification,
+  useDatabaseV1Store,
+  useInstanceV1Store,
   usePolicyV1Store,
   useProjectV1Store,
-  useInstanceV1Store,
-  useDatabaseV1Store,
 } from "@/store";
-import type { Policy } from "@/types/proto-es/v1/org_policy_service_pb";
-import type { MaskingRulePolicy_MaskingRule } from "@/types/proto-es/v1/org_policy_service_pb";
-import {
-  MaskingRulePolicySchema,
-  MaskingRulePolicy_MaskingRuleSchema,
+import type {
+  MaskingRulePolicy_MaskingRule,
+  Policy,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import {
-  PolicyType,
+  MaskingRulePolicy_MaskingRuleSchema,
+  MaskingRulePolicySchema,
   PolicyResourceType,
+  PolicyType,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   arraySwap,
-  hasWorkspacePermissionV2,
   getDefaultPagination,
+  hasWorkspacePermissionV2,
 } from "@/utils";
 import {
-  CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID,
-  CEL_ATTRIBUTE_RESOURCE_PROJECT_ID,
-  CEL_ATTRIBUTE_RESOURCE_INSTANCE_ID,
-  CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME,
-  CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
-  CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME,
   CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL,
+  CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME,
+  CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME,
+  CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID,
+  CEL_ATTRIBUTE_RESOURCE_INSTANCE_ID,
+  CEL_ATTRIBUTE_RESOURCE_PROJECT_ID,
+  CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
 } from "@/utils/cel-attributes";
 import LearnMoreLink from "../LearnMoreLink.vue";
 import { MiniActionButton } from "../v2";

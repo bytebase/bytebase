@@ -1,5 +1,5 @@
 import { useLocalStorage } from "@vueuse/core";
-import { createI18n, type Composer } from "vue-i18n";
+import { type Composer, createI18n } from "vue-i18n";
 import { mergedLocalMessage } from "./i18n-messages";
 
 export interface LanguageStorage {

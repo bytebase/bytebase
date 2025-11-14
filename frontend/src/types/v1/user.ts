@@ -4,7 +4,7 @@ import { SYSTEM_BOT_ID } from "../common";
 import { EMPTY_ID, UNKNOWN_ID } from "../const";
 import { State } from "../proto-es/v1/common_pb";
 import type { User } from "../proto-es/v1/user_service_pb";
-import { UserType, UserSchema } from "../proto-es/v1/user_service_pb";
+import { UserSchema, UserType } from "../proto-es/v1/user_service_pb";
 
 export const UNKNOWN_USER_NAME = `users/${UNKNOWN_ID}`;
 export const SYSTEM_BOT_USER_NAME = `users/${SYSTEM_BOT_ID}`;

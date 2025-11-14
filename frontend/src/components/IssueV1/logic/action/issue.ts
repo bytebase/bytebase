@@ -1,6 +1,6 @@
 import type { ButtonProps } from "naive-ui";
 import { t } from "@/plugins/i18n";
-import { useCurrentUserV1, extractUserId } from "@/store";
+import { extractUserId, useCurrentUserV1 } from "@/store";
 import type { ComposedIssue } from "@/types";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";

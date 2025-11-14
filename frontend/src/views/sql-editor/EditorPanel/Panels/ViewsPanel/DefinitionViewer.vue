@@ -37,8 +37,8 @@ import { Pane, Splitpanes } from "splitpanes";
 import { computed, ref } from "vue";
 import { BBSpin } from "@/bbkit";
 import {
-  MonacoEditor,
   type IStandaloneCodeEditor,
+  MonacoEditor,
   type MonacoModule,
 } from "@/components/MonacoEditor";
 import formatSQL from "@/components/MonacoEditor/sqlFormatter";

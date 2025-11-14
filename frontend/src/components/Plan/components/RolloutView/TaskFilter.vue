@@ -41,8 +41,8 @@ import { TASK_STATUS_FILTERS } from "@/components/Plan/constants/task";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import type {
   Rollout,
-  Task_Status,
   Stage,
+  Task_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import { stringifyTaskStatus } from "@/utils";
 import { useRolloutViewContext } from "./context";

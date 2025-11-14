@@ -32,7 +32,7 @@
 </template>
 
 <script setup lang="ts">
-import { CheckIcon, TriangleAlertIcon, CircleAlertIcon } from "lucide-vue-next";
+import { CheckIcon, CircleAlertIcon, TriangleAlertIcon } from "lucide-vue-next";
 import { NTag } from "naive-ui";
 import { computed, ref } from "vue";
 import { TaskSpinner } from "@/components/IssueV1/components/common";

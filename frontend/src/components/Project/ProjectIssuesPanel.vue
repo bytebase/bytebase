@@ -26,26 +26,29 @@
 
 <script lang="ts" setup>
 import { type UseStorageOptions } from "@vueuse/core";
-import { reactive, computed, watch, ref, onMounted } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
 import { useRoute, useRouter } from "vue-router";
 import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
-import { useCurrentUserV1 } from "@/store";
-import { useIssueV1Store, useRefreshIssueList } from "@/store";
+import {
+  useCurrentUserV1,
+  useIssueV1Store,
+  useRefreshIssueList,
+} from "@/store";
 import type { ComposedIssue } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { SearchParams, SearchScope, SemanticIssueStatus } from "@/utils";
 import {
+  applyUIIssueFilter,
   buildIssueFilterBySearchParams,
+  buildSearchParamsBySearchText,
+  buildSearchTextBySearchParams,
   buildUIIssueFilterBySearchParams,
   extractProjectResourceName,
   getSemanticIssueStatusFromSearchParams,
-  useDynamicLocalStorage,
-  applyUIIssueFilter,
-  buildSearchTextBySearchParams,
-  buildSearchParamsBySearchText,
   mergeSearchParams,
+  useDynamicLocalStorage,
 } from "@/utils";
 import { IssueSearch } from "../IssueV1/components";
 

@@ -72,9 +72,9 @@ import {
   useSettingV1Store,
 } from "@/store";
 import {
-  QueryDataPolicySchema,
   PolicyResourceType,
   PolicyType,
+  QueryDataPolicySchema,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import {
   Setting_SettingName,

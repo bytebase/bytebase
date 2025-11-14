@@ -28,7 +28,7 @@
 <script lang="ts" setup>
 import type { TreeOption } from "naive-ui";
 import { NTree } from "naive-ui";
-import { computed, reactive, h } from "vue";
+import { computed, h, reactive } from "vue";
 import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto-es/v1/setting_service_pb";
 import { getHighlightHTMLByKeyWords } from "@/utils";
 import { SearchBox } from "../v2";

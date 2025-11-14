@@ -70,7 +70,7 @@ import { create as createProto } from "@bufbuild/protobuf";
 import { PlusIcon } from "lucide-vue-next";
 import { NButton, NCheckbox } from "naive-ui";
 import { v1 as uuidv1 } from "uuid";
-import { reactive, computed, onMounted } from "vue";
+import { computed, onMounted, reactive } from "vue";
 import { EngineIcon } from "@/components/Icon";
 import TableTemplateForm from "@/components/SchemaTemplate/TableTemplateForm.vue";
 import TableTemplateView from "@/components/SchemaTemplate/TableTemplateView.vue";
@@ -80,8 +80,8 @@ import { useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto-es/v1/setting_service_pb";
 import {
-  Setting_SettingName,
   SchemaTemplateSetting_TableTemplateSchema,
+  Setting_SettingName,
 } from "@/types/proto-es/v1/setting_service_pb";
 
 interface LocalState {

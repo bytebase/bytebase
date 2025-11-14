@@ -21,9 +21,9 @@
 <script setup lang="ts">
 import {
   CheckIcon,
+  CircleAlertIcon,
   PlayIcon,
   TriangleAlertIcon,
-  CircleAlertIcon,
 } from "lucide-vue-next";
 import { NTooltip } from "naive-ui";
 import { computed } from "vue";

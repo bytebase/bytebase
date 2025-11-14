@@ -14,7 +14,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { computed, ref } from "vue";
 import AccessControlConfigure from "@/components/EnvironmentForm/AccessControlConfigure.vue";
 import { SQLReviewForResource } from "@/components/SQLReview";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";

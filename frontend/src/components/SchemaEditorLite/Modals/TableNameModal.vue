@@ -41,8 +41,8 @@ import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
   DatabaseMetadata,
   SchemaMetadata,
+  TableMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
-import type { TableMetadata } from "@/types/proto-es/v1/database_service_pb";
 import {
   ColumnMetadataSchema,
   TableMetadataSchema,

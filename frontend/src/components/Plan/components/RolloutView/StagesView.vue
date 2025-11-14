@@ -24,10 +24,10 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type {
+  Rollout,
   Stage,
   Task,
   Task_Status,
-  Rollout,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status as TaskStatus } from "@/types/proto-es/v1/rollout_service_pb";
 import StageCard from "./StageCard.vue";

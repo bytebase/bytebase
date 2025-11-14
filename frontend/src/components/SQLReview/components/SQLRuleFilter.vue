@@ -55,8 +55,8 @@ import { SearchBox } from "@/components/v2";
 import type { RuleTemplateV2 } from "@/types";
 import { getRuleLocalization } from "@/types";
 import type { SQLReviewRuleLevel } from "@/types/proto-es/v1/org_policy_service_pb";
-import SQLReviewCategoryTabFilter from "./SQLReviewCategoryTabFilter.vue";
 import type { RuleListWithCategory } from "./SQLReviewCategoryTabFilter.vue";
+import SQLReviewCategoryTabFilter from "./SQLReviewCategoryTabFilter.vue";
 import SQLReviewLevelFilter from "./SQLReviewLevelFilter.vue";
 import type { SQLRuleFilterParams } from "./useSQLRuleFilter";
 

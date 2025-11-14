@@ -13,12 +13,12 @@
 import { NTag } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import {
-  IssueStatus,
-  Issue_Approver_Status,
-  Issue_ApprovalStatus,
-} from "@/types/proto-es/v1/issue_service_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  Issue_ApprovalStatus,
+  Issue_Approver_Status,
+  IssueStatus,
+} from "@/types/proto-es/v1/issue_service_pb";
 
 const props = defineProps<{
   issue: Issue;

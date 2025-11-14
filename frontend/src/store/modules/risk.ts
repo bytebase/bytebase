@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { defineStore } from "pinia";
-import { ref, computed } from "vue";
+import { computed, ref } from "vue";
 import { riskServiceClientConnect } from "@/grpcweb";
 import type { Risk } from "@/types/proto-es/v1/risk_service_pb";
 import {

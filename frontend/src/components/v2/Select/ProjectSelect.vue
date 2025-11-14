@@ -24,20 +24,20 @@
 <script lang="tsx" setup>
 import { useDebounceFn } from "@vueuse/core";
 import { intersection } from "lodash-es";
-import { computed, watchEffect, reactive, onMounted } from "vue";
+import { computed, onMounted, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { ProjectNameCell } from "@/components/v2/Model/cells";
-import { useProjectV1Store, usePermissionStore } from "@/store";
+import { usePermissionStore, useProjectV1Store } from "@/store";
 import {
-  unknownProject,
-  defaultProject,
-  DEFAULT_PROJECT_NAME,
-  UNKNOWN_PROJECT_NAME,
-  isValidProjectName,
   DEBOUNCE_SEARCH_DELAY,
+  DEFAULT_PROJECT_NAME,
+  defaultProject,
+  isValidProjectName,
+  UNKNOWN_PROJECT_NAME,
+  unknownProject,
 } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import { hasWorkspacePermissionV2, getDefaultPagination } from "@/utils";
+import { getDefaultPagination, hasWorkspacePermissionV2 } from "@/utils";
 import ResourceSelect from "./ResourceSelect.vue";
 
 const props = withDefaults(

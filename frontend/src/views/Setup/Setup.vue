@@ -5,10 +5,10 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted, watch } from "vue";
+import { onMounted, ref, watch } from "vue";
 import {
-  useRouter,
   type RouteLocationNormalizedLoadedGeneric,
+  useRouter,
 } from "vue-router";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { useRoleStore, useWorkspaceV1Store } from "@/store";

@@ -104,21 +104,25 @@
 <script lang="ts" setup>
 import { computedAsync } from "@vueuse/core";
 import {
-  ThumbsUpIcon,
-  PlayIcon,
   CheckCircle2Icon,
-  PlusIcon,
+  CircleAlertIcon,
+  CodeIcon,
+  MinusIcon,
   PencilIcon,
   PlayCircleIcon,
-  MinusIcon,
-  CodeIcon,
-  CircleAlertIcon,
+  PlayIcon,
+  PlusIcon,
+  ThumbsUpIcon,
 } from "lucide-vue-next";
 import { computed } from "vue";
 import { SkipIcon } from "@/components/Icon";
 import PrincipalAvatar from "@/components/PrincipalAvatar.vue";
-import { IssueCommentType, useUserStore, getIssueCommentType } from "@/store";
-import { extractUserId } from "@/store";
+import {
+  extractUserId,
+  getIssueCommentType,
+  IssueCommentType,
+  useUserStore,
+} from "@/store";
 import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import {
   IssueComment_Approval_Status,

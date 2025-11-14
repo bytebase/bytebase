@@ -36,10 +36,10 @@
 import { NWatermark } from "naive-ui";
 import { computed } from "vue";
 import {
-  featureToRef,
-  useCurrentUserV1,
   extractUserId,
+  featureToRef,
   useActuatorV1Store,
+  useCurrentUserV1,
 } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { UNKNOWN_USER_NAME } from "@/types";

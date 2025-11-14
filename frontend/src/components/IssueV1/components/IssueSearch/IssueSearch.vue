@@ -41,7 +41,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed } from "vue";
+import { computed, ref } from "vue";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import TimeRange from "@/components/AdvancedSearch/TimeRange.vue";
 import type { SearchParams, SearchScopeId } from "@/utils";

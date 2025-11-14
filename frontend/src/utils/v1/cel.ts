@@ -5,8 +5,8 @@ import { silentContextKey } from "@/grpcweb/context-key";
 import type { Expr } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
 import { ExprSchema } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
 import {
-  BatchParseRequestSchema,
   BatchDeparseRequestSchema,
+  BatchParseRequestSchema,
 } from "@/types/proto-es/v1/cel_service_pb";
 
 export const batchConvertCELStringToParsedExpr = async (

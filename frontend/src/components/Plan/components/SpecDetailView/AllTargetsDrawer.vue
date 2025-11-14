@@ -74,15 +74,15 @@
 
 <script setup lang="ts">
 import { NTag } from "naive-ui";
-import { reactive, computed, watch } from "vue";
+import { computed, reactive, watch } from "vue";
 import { BBSpin } from "@/bbkit";
 import DatabaseGroupIcon from "@/components/DatabaseGroupIcon.vue";
 import { Drawer, DrawerContent, SearchBox } from "@/components/v2";
 import DatabaseGroupName from "@/components/v2/Model/DatabaseGroupName.vue";
 import {
-  useDBGroupStore,
   batchGetOrFetchDatabases,
   useDatabaseV1Store,
+  useDBGroupStore,
 } from "@/store";
 import { isValidDatabaseGroupName, isValidDatabaseName } from "@/types";
 import type { DatabaseGroup } from "@/types/proto-es/v1/database_group_service_pb";

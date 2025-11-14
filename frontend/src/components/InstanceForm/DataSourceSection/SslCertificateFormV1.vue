@@ -61,7 +61,7 @@
 
 <script lang="ts" setup>
 import { Info } from "lucide-vue-next";
-import { NTabs, NTabPane, NSwitch, NTooltip } from "naive-ui";
+import { NSwitch, NTabPane, NTabs, NTooltip } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import DroppableTextarea from "@/components/misc/DroppableTextarea.vue";
 import { t } from "@/plugins/i18n";

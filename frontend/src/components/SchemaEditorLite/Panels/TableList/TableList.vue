@@ -51,8 +51,8 @@ import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.
 import { Drawer, DrawerContent, InlineInput } from "@/components/v2";
 import type { ComposedDatabase } from "@/types";
 import {
-  TableCatalogSchema,
   TableCatalog_ColumnsSchema,
+  TableCatalogSchema,
 } from "@/types/proto-es/v1/database_catalog_service_pb";
 import type {
   DatabaseMetadata,

@@ -58,7 +58,7 @@ import { computed, ref, watchEffect } from "vue";
 import { useRouter } from "vue-router";
 import { Switch } from "@/components/v2";
 import { WORKSPACE_ROUTE_SQL_REVIEW_DETAIL } from "@/router/dashboard/workspaceRoutes";
-import { useSQLReviewStore, useReviewPolicyByResource } from "@/store";
+import { useReviewPolicyByResource, useSQLReviewStore } from "@/store";
 import type { SQLReviewPolicy } from "@/types";
 import { hasWorkspacePermissionV2, sqlReviewPolicySlug } from "@/utils";
 import SQLReviewPolicySelectPanel from "./SQLReviewPolicySelectPanel.vue";

@@ -72,11 +72,11 @@
 <script lang="ts" setup>
 import { ChevronLeftIcon, PlusIcon } from "lucide-vue-next";
 import { NButton, NTabPane, NTabs, NTooltip } from "naive-ui";
-import { computed, reactive, onMounted, watch } from "vue";
+import { computed, onMounted, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useRecentProjects } from "@/components/Project/useRecentProjects";
-import { SearchBox, ProjectV1Table, PagedProjectTable } from "@/components/v2";
+import { PagedProjectTable, ProjectV1Table, SearchBox } from "@/components/v2";
 import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
 import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
 import { useRecentVisit } from "@/router/useRecentVisit";

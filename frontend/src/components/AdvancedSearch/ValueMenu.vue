@@ -89,7 +89,7 @@ import {
   useElementSize,
   useWindowSize,
 } from "@vueuse/core";
-import { NEmpty, NButton, NVirtualList } from "naive-ui";
+import { NButton, NEmpty, NVirtualList } from "naive-ui";
 import { computed, nextTick, ref, watch } from "vue";
 import type { ScopeOption, ValueOption } from "./types";
 

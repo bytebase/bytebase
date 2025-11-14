@@ -1,15 +1,15 @@
 import { create } from "@bufbuild/protobuf";
 import { cloneDeep } from "lodash-es";
 import { defineStore } from "pinia";
-import { ref, computed } from "vue";
+import { computed, ref } from "vue";
 import { workspaceServiceClientConnect } from "@/grpcweb";
 import { userNamePrefix } from "@/store/modules/v1/common";
-import { groupBindingPrefix, ALL_USERS_USER_EMAIL } from "@/types";
+import { ALL_USERS_USER_EMAIL, groupBindingPrefix } from "@/types";
 import type { IamPolicy } from "@/types/proto-es/v1/iam_policy_pb";
 import {
-  IamPolicySchema,
   BindingSchema,
   GetIamPolicyRequestSchema,
+  IamPolicySchema,
   SetIamPolicyRequestSchema,
 } from "@/types/proto-es/v1/iam_policy_pb";
 import { bindingListInIAM, getUserEmailListInBinding } from "@/utils";

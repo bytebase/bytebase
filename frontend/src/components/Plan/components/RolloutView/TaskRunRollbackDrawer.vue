@@ -121,9 +121,9 @@ import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
 import { isUndefined } from "lodash-es";
 import { DatabaseBackupIcon } from "lucide-vue-next";
-import { NSteps, NStep, NButton, NAlert, NSkeleton } from "naive-ui";
+import { NAlert, NButton, NSkeleton, NStep, NSteps } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
-import { computed, reactive, ref, watch, nextTick } from "vue";
+import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay.vue";
@@ -151,9 +151,9 @@ import {
   PlanSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import type {
+  Rollout,
   Task,
   TaskRun,
-  Rollout,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import { PreviewTaskRunRollbackRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";

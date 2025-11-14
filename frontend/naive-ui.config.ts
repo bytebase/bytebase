@@ -1,8 +1,8 @@
 import {
-  type GlobalThemeOverrides,
-  type NLocale,
-  type NDateLocale,
   dateZhCN,
+  type GlobalThemeOverrides,
+  type NDateLocale,
+  type NLocale,
   zhCN,
 } from "naive-ui";
 import { computed } from "vue";

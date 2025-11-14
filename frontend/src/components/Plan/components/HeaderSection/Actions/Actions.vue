@@ -48,7 +48,7 @@ import { computed, nextTick, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useSpecsValidation } from "@/components/Plan/components/common";
-import { usePlanContext, usePlanCheckStatus } from "@/components/Plan/logic";
+import { usePlanCheckStatus, usePlanContext } from "@/components/Plan/logic";
 import { useResourcePoller } from "@/components/Plan/logic/poller";
 import { useEditorState } from "@/components/Plan/logic/useEditorState";
 import {
@@ -57,45 +57,48 @@ import {
 } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL_V1 } from "@/router/dashboard/projectV1";
 import {
-  useCurrentUserV1,
   candidatesOfApprovalStepV1,
   extractUserId,
-  useCurrentProjectV1,
   pushNotification,
+  useCurrentProjectV1,
+  useCurrentUserV1,
 } from "@/store";
 import { usePlanStore } from "@/store/modules/v1/plan";
 import { State } from "@/types/proto-es/v1/common_pb";
 import {
   CreateIssueRequestSchema,
+  Issue_ApprovalStatus,
+  Issue_Approver_Status,
+  Issue_Type,
   IssueSchema,
   IssueStatus,
-  Issue_Approver_Status,
-  Issue_ApprovalStatus,
-  Issue_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan, Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
-import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
-import { Task_Type, Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import {
+  CreateRolloutRequestSchema,
+  Task_Status,
+  Task_Type,
+} from "@/types/proto-es/v1/rollout_service_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import {
-  isUserIncludedInList,
-  hasProjectPermissionV2,
-  extractProjectResourceName,
   extractIssueUID,
-  isValidPlanName,
+  extractProjectResourceName,
+  hasProjectPermissionV2,
+  isUserIncludedInList,
   isValidIssueName,
+  isValidPlanName,
 } from "@/utils";
 import TaskRolloutActionPanel from "../../RolloutView/TaskRolloutActionPanel.vue";
 import { CreateButton } from "./create";
 import { IssueReviewActionPanel, IssueStatusActionPanel } from "./panels";
 import {
-  UnifiedActionGroup,
   type ActionConfig,
   type IssueReviewAction,
   type IssueStatusAction,
   type PlanAction,
   type RolloutAction,
   type UnifiedAction,
+  UnifiedActionGroup,
 } from "./unified";
 
 const { t } = useI18n();

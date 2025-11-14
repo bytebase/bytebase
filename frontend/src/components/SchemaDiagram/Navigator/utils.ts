@@ -1,4 +1,4 @@
-import type { TreeNode, NodeType } from "./types";
+import type { NodeType, TreeNode } from "./types";
 
 export const isTypedNode = <T extends NodeType>(
   node: TreeNode,

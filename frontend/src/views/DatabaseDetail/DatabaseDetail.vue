@@ -202,18 +202,17 @@ import { useTitle } from "@vueuse/core";
 import { ArrowRightLeftIcon } from "lucide-vue-next";
 import { NButton, NTabPane, NTabs } from "naive-ui";
 import { computed, reactive, watch, watchEffect } from "vue";
-import { useRouter, useRoute } from "vue-router";
-import { BBModal } from "@/bbkit";
-import { BBAttention } from "@/bbkit";
+import { useRoute, useRouter } from "vue-router";
+import { BBAttention, BBModal } from "@/bbkit";
+import { useDatabaseDetailContext } from "@/components/Database/context";
 import DatabaseChangelogPanel from "@/components/Database/DatabaseChangelogPanel.vue";
 import DatabaseOverviewPanel from "@/components/Database/DatabaseOverviewPanel.vue";
 import DatabaseRevisionPanel from "@/components/Database/DatabaseRevisionPanel.vue";
 import DatabaseSensitiveDataPanel from "@/components/Database/DatabaseSensitiveDataPanel.vue";
-import { useDatabaseDetailContext } from "@/components/Database/context";
 import {
   DatabaseSettingsPanel,
-  SQLEditorButtonV1,
   SchemaDiagramButton,
+  SQLEditorButtonV1,
 } from "@/components/DatabaseDetail";
 import DriftedDatabaseAlert from "@/components/DatabaseDetail/DriftedDatabaseAlert.vue";
 import ExportSchemaButton from "@/components/DatabaseDetail/ExportSchemaButton.vue";
@@ -221,24 +220,24 @@ import SyncDatabaseButton from "@/components/DatabaseDetail/SyncDatabaseButton.v
 import EllipsisText from "@/components/EllipsisText.vue";
 import { AddSpecDrawer } from "@/components/Plan";
 import TransferOutDatabaseForm from "@/components/TransferOutDatabaseForm";
-import { Drawer } from "@/components/v2";
 import {
+  CopyButton,
+  Drawer,
   EnvironmentV1Name,
   InstanceV1Name,
   ProductionEnvironmentV1Icon,
 } from "@/components/v2";
-import { CopyButton } from "@/components/v2";
 import { PROJECT_V1_ROUTE_DATABASE_DETAIL } from "@/router/dashboard/projectV1";
-import { useEnvironmentV1Store, useDatabaseV1ByName } from "@/store";
+import { useDatabaseV1ByName, useEnvironmentV1Store } from "@/store";
 import {
   databaseNamePrefix,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
 import { UNKNOWN_PROJECT_NAME } from "@/types";
 import {
+  extractProjectResourceName,
   instanceV1HasAlterSchema,
   isDatabaseV1Queryable,
-  extractProjectResourceName,
 } from "@/utils";
 
 const databaseHashList = [

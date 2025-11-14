@@ -4,9 +4,9 @@ import { ref } from "vue";
 import { roleServiceClientConnect } from "@/grpcweb";
 import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import {
+  DeleteRoleRequestSchema,
   ListRolesRequestSchema,
   UpdateRoleRequestSchema,
-  DeleteRoleRequestSchema,
 } from "@/types/proto-es/v1/role_service_pb";
 import { useGracefulRequest } from "./utils";
 

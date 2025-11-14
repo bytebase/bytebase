@@ -6,7 +6,7 @@ import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { databaseForTask } from "@/utils";
-import { specForTask, useIssueContext, projectOfIssue } from ".";
+import { projectOfIssue, specForTask, useIssueContext } from ".";
 
 export const planSpecHasPlanChecks = (spec: Plan_Spec) => {
   if (spec.config?.case === "createDatabaseConfig") {

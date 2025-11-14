@@ -11,8 +11,7 @@
 
 <script setup lang="ts">
 import { useParentElement } from "@vueuse/core";
-import { defineAsyncComponent, ref } from "vue";
-import { computed } from "vue";
+import { computed, defineAsyncComponent, ref } from "vue";
 import { BBSpin } from "@/bbkit";
 
 const MonacoEditor = defineAsyncComponent(() => import("./MonacoEditor.vue"));

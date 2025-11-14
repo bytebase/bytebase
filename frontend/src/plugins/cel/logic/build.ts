@@ -14,14 +14,14 @@ import {
 import { BatchParseRequestSchema } from "@/types/proto-es/v1/cel_service_pb";
 import type { ConditionExpr, ConditionGroupExpr, SimpleExpr } from "../types";
 import {
-  isEqualityExpr,
+  ExprType,
   isCollectionExpr,
+  isCompareExpr,
   isConditionExpr,
   isConditionGroupExpr,
-  isCompareExpr,
-  isStringExpr,
-  ExprType,
+  isEqualityExpr,
   isRawStringExpr,
+  isStringExpr,
 } from "../types";
 
 const seq = {

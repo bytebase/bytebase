@@ -6,17 +6,15 @@ import type {
   SimpleExpr,
 } from "../types";
 import {
+  isCollectionExpr,
+  isCompareExpr,
+  isConditionExpr,
+  isConditionGroupExpr,
   isEqualityExpr,
   isNumberFactor,
   isRawStringExpr,
-  isStringFactor,
-} from "../types";
-import {
-  isCollectionExpr,
-  isConditionExpr,
-  isConditionGroupExpr,
-  isCompareExpr,
   isStringExpr,
+  isStringFactor,
 } from "../types";
 
 const validateString = (str: unknown): boolean => {

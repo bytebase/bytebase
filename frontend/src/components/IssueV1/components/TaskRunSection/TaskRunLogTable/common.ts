@@ -1,15 +1,15 @@
 import { t } from "@/plugins/i18n";
 import { getDateForPbTimestampProtoEs } from "@/types";
 import {
-  TaskRunLogEntry_Type,
+  type TaskRunLogEntry,
+  type TaskRunLogEntry_ComputeDiff,
+  type TaskRunLogEntry_DatabaseSync,
+  type TaskRunLogEntry_PriorBackup,
+  type TaskRunLogEntry_RetryInfo,
   type TaskRunLogEntry_SchemaDump,
   type TaskRunLogEntry_TaskRunStatusUpdate,
   type TaskRunLogEntry_TransactionControl,
-  type TaskRunLogEntry_DatabaseSync,
-  type TaskRunLogEntry,
-  type TaskRunLogEntry_PriorBackup,
-  type TaskRunLogEntry_RetryInfo,
-  type TaskRunLogEntry_ComputeDiff,
+  TaskRunLogEntry_Type,
 } from "@/types/proto-es/v1/rollout_service_pb";
 
 export type FlattenLogEntry = {

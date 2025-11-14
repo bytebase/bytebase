@@ -1,5 +1,5 @@
 import { v1 as uuidv1 } from "uuid";
-import { computed, ref, type Ref } from "vue";
+import { computed, type Ref, ref } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import type { CoreTabContext, TabContext } from "../types";
 import type { SchemaEditorEvents } from "./index";

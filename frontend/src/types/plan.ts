@@ -1,7 +1,7 @@
 import {
   PlanFeature,
-  PlanType,
   type PlanLimitConfig,
+  PlanType,
 } from "@/types/proto-es/v1/subscription_service_pb";
 import planData from "./plan.yaml";
 

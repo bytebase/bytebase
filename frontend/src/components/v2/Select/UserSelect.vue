@@ -21,21 +21,21 @@
 
 <script lang="tsx" setup>
 import { useDebounceFn } from "@vueuse/core";
-import { computed, watch, reactive, onMounted } from "vue";
+import { computed, onMounted, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import UserIcon from "~icons/heroicons-outline/user";
-import UserAvatar from "@/components/User/UserAvatar.vue";
 import ServiceAccountTag from "@/components/misc/ServiceAccountTag.vue";
-import { extractUserId, useUserStore, type UserFilter } from "@/store";
+import UserAvatar from "@/components/User/UserAvatar.vue";
+import { extractUserId, type UserFilter, useUserStore } from "@/store";
 import {
+  allUsersUser,
   DEBOUNCE_SEARCH_DELAY,
+  isValidUserName,
   SYSTEM_BOT_USER_NAME,
   UNKNOWN_USER_NAME,
-  allUsersUser,
-  isValidUserName,
 } from "@/types";
-import { UserType, type User } from "@/types/proto-es/v1/user_service_pb";
-import { getDefaultPagination, ensureUserFullName } from "@/utils";
+import { type User, UserType } from "@/types/proto-es/v1/user_service_pb";
+import { ensureUserFullName, getDefaultPagination } from "@/utils";
+import UserIcon from "~icons/heroicons-outline/user";
 import ResourceSelect from "./ResourceSelect.vue";
 
 const props = withDefaults(

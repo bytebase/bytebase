@@ -103,9 +103,9 @@ import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import type { IssueReviewAction } from "@/components/IssueV1/logic";
 import {
-  useIssueContext,
   issueReviewActionDisplayName,
   planCheckRunSummaryForIssue,
+  useIssueContext,
 } from "@/components/IssueV1/logic";
 import PlanCheckRunBar from "@/components/PlanCheckRun/PlanCheckRunBar.vue";
 import RequiredStar from "@/components/RequiredStar.vue";

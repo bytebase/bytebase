@@ -51,7 +51,7 @@
 
 <script lang="tsx" setup>
 import { ExternalLinkIcon } from "lucide-vue-next";
-import { NButton, type DataTableColumn, NDataTable } from "naive-ui";
+import { type DataTableColumn, NButton, NDataTable } from "naive-ui";
 import { computed, reactive, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -64,18 +64,18 @@ import { useCurrentProjectV1, useDatabaseV1Store } from "@/store";
 import { useTaskRunLogStore } from "@/store/modules/v1/taskRunLog";
 import { getDateForPbTimestampProtoEs } from "@/types";
 import {
-  TaskRun_Status,
   Task_Status,
   type TaskRun,
+  TaskRun_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import {
+  extractProjectResourceName,
   extractTaskUID,
   flattenTaskV1List,
-  extractProjectResourceName,
 } from "@/utils";
 import { usePlanContextWithRollout } from "../../logic";
-import TaskRunComment from "../RolloutView/TaskRunComment.vue";
 import DatabaseDisplay from "../common/DatabaseDisplay.vue";
+import TaskRunComment from "../RolloutView/TaskRunComment.vue";
 import { useSelectedSpec } from "./context";
 
 const DEFAULT_TASK_RUNS_PER_PAGE = 5;

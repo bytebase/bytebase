@@ -7,16 +7,16 @@ import {
   useProjectV1Store,
 } from "@/store";
 import {
+  type ComposedDatabase,
+  type ComposedIssue,
   isValidDatabaseName,
   isValidInstanceName,
   unknownDatabase,
   unknownInstance,
-  type ComposedDatabase,
-  type ComposedIssue,
 } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { InstanceResourceSchema } from "@/types/proto-es/v1/instance_service_pb";
-import { IssueStatus, type Issue } from "@/types/proto-es/v1/issue_service_pb";
+import { type Issue, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";

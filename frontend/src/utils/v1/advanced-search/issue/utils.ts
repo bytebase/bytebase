@@ -1,18 +1,18 @@
-import { useDatabaseV1Store } from "@/store";
 import {
   environmentNamePrefix,
   instanceNamePrefix,
-  userNamePrefix,
   projectNamePrefix,
+  useDatabaseV1Store,
+  userNamePrefix,
 } from "@/store";
 import type { IssueFilter } from "@/types";
 import { unknownDatabase } from "@/types";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import type { SearchParams, SemanticIssueStatus } from "../common";
 import {
-  type SearchScopeId,
   getTsRangeFromSearchParams,
   getValueFromSearchParams,
+  type SearchScopeId,
 } from "../common";
 
 const getValuesFromSearchParams = (

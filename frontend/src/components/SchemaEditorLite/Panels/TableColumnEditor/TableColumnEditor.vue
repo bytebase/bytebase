@@ -58,14 +58,14 @@ import { useI18n } from "vue-i18n";
 import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.vue";
 import LabelEditorDrawer from "@/components/LabelEditorDrawer.vue";
 import {
-  removeColumnPrimaryKey,
-  upsertColumnPrimaryKey,
   changeColumnNameInPrimaryKey,
   removeColumnFromAllForeignKeys,
+  removeColumnPrimaryKey,
+  upsertColumnPrimaryKey,
 } from "@/components/SchemaEditorLite";
 import SemanticTypesDrawer from "@/components/SensitiveData/components/SemanticTypesDrawer.vue";
 import { InlineInput } from "@/components/v2";
-import { useSettingV1Store, hasFeature, pushNotification } from "@/store";
+import { hasFeature, pushNotification, useSettingV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { ColumnCatalog } from "@/types/proto-es/v1/database_catalog_service_pb";
@@ -86,13 +86,13 @@ import type { DefaultValue } from "../../utils";
 import { markUUID } from "../common";
 import {
   DataTypeCell,
+  DefaultValueCell,
   ForeignKeyCell,
+  LabelsCell,
   OperationCell,
   ReorderCell,
   SelectionCell,
-  DefaultValueCell,
   SemanticTypeCell,
-  LabelsCell,
 } from "./components";
 
 interface LocalState {

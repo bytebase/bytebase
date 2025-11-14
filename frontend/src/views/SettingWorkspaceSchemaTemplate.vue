@@ -31,7 +31,7 @@
 </template>
 
 <script lang="ts" setup>
-import { NTabs, NTabPane } from "naive-ui";
+import { NTabPane, NTabs } from "naive-ui";
 import { reactive, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { FeatureAttention } from "@/components/FeatureGuard";

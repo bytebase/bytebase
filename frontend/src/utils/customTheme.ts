@@ -1,4 +1,4 @@
-import { watch, type Ref } from "vue";
+import { type Ref, watch } from "vue";
 import { hexToRgb } from "./css";
 
 export const useCustomTheme = (

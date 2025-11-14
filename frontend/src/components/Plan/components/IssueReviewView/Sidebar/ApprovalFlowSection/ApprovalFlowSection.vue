@@ -54,7 +54,7 @@
 </template>
 
 <script setup lang="ts">
-import { NTimeline, NButton } from "naive-ui";
+import { NButton, NTimeline } from "naive-ui";
 import { computed, ref } from "vue";
 import { BBSpin } from "@/bbkit";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";

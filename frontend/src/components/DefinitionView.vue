@@ -32,7 +32,7 @@
 
 <script lang="ts" setup>
 import { NEllipsis } from "naive-ui";
-import { computed, ref, reactive, onMounted } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 
 const MAX_HEIGHT = 60;
 

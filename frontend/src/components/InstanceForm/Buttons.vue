@@ -72,15 +72,15 @@ import {
   InstanceSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { defer, isValidSpannerHost, convertKVListToLabels } from "@/utils";
-import ScanIntervalInput from "./ScanIntervalInput.vue";
+import { convertKVListToLabels, defer, isValidSpannerHost } from "@/utils";
 import {
   calcDataSourceUpdateMask,
+  type EditDataSource,
   extractBasicInfo,
   extractDataSourceEditState,
-  type EditDataSource,
 } from "./common";
 import { useInstanceFormContext } from "./context";
+import ScanIntervalInput from "./ScanIntervalInput.vue";
 
 const props = withDefaults(
   defineProps<{

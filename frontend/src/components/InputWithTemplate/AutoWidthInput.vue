@@ -18,7 +18,7 @@
 </template>
 
 <script lang="ts" setup>
-import { watch, reactive, ref, watchEffect, nextTick } from "vue";
+import { nextTick, reactive, ref, watch, watchEffect } from "vue";
 
 const props = defineProps({
   value: {

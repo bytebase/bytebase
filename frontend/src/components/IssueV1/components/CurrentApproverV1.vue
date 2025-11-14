@@ -57,9 +57,9 @@ import {
 } from "@/store";
 import { type ComposedIssue } from "@/types";
 import {
-  IssueStatus,
   Issue_ApprovalStatus,
   Issue_Approver_Status,
+  IssueStatus,
 } from "@/types/proto-es/v1/issue_service_pb";
 
 const props = defineProps<{

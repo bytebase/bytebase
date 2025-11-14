@@ -62,9 +62,9 @@ import CommonDrawer from "@/components/IssueV1/components/Panel/CommonDrawer.vue
 import { usePlanContextWithIssue } from "@/components/Plan/logic";
 import { issueServiceClientConnect } from "@/grpcweb";
 import { useCurrentProjectV1 } from "@/store";
-import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import {
   BatchUpdateIssuesStatusRequestSchema,
+  IssueStatus,
   IssueStatus as NewIssueStatus,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { IssueStatusAction } from "../unified";

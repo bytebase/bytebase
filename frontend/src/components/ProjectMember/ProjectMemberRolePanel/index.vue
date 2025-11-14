@@ -138,8 +138,8 @@ import { create } from "@bufbuild/protobuf";
 import { computedAsync } from "@vueuse/core";
 import { cloneDeep, isEqual } from "lodash-es";
 import { Building2Icon, PencilIcon, TrashIcon } from "lucide-vue-next";
-import { NButton, NTag, NTooltip, NDataTable, useDialog } from "naive-ui";
 import type { DataTableColumn } from "naive-ui";
+import { NButton, NDataTable, NTag, NTooltip, useDialog } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBButtonConfirm } from "@/bbkit";
@@ -148,25 +148,25 @@ import GroupMemberNameCell from "@/components/User/Settings/UserDataTableByGroup
 import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
 import { Drawer, DrawerContent, InstanceV1Name } from "@/components/v2";
 import {
+  batchGetOrFetchDatabases,
   extractGroupEmail,
   extractUserId,
+  pushNotification,
   useDatabaseV1Store,
   useProjectIamPolicy,
   useProjectIamPolicyStore,
   useUserStore,
-  pushNotification,
-  batchGetOrFetchDatabases,
 } from "@/store";
-import { PresetRoleType, PRESET_ROLES, type DatabaseResource } from "@/types";
+import { type DatabaseResource, PRESET_ROLES, PresetRoleType } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
 import { BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
+  checkRoleContainsAnyPermission,
   displayRoleTitle,
   hasProjectPermissionV2,
   memberMapToRolesInProjectIAM,
-  checkRoleContainsAnyPermission,
 } from "@/utils";
 import { buildConditionExpr, convertFromExpr } from "@/utils/issue/cel";
 import AddProjectMembersPanel from "../AddProjectMember/AddProjectMembersPanel.vue";

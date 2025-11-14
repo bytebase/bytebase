@@ -3,12 +3,12 @@ import dayjs from "dayjs";
 import { uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { planServiceClientConnect } from "@/grpcweb";
+import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import {
-  SearchPlansRequestSchema,
   GetPlanRequestSchema,
+  SearchPlansRequestSchema,
   UpdatePlanRequestSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
-import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import {
   getTsRangeFromSearchParams,
   getValueFromSearchParams,

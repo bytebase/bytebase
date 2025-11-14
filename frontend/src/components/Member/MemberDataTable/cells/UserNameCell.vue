@@ -55,13 +55,12 @@
 <script lang="ts" setup>
 import { NTag } from "naive-ui";
 import { computed } from "vue";
-import UserAvatar from "@/components/User/UserAvatar.vue";
 import ServiceAccountTag from "@/components/misc/ServiceAccountTag.vue";
 import SystemBotTag from "@/components/misc/SystemBotTag.vue";
 import YouTag from "@/components/misc/YouTag.vue";
+import UserAvatar from "@/components/User/UserAvatar.vue";
 import { useCurrentUserV1, usePermissionStore } from "@/store";
-import { SYSTEM_BOT_USER_NAME } from "@/types";
-import { unknownUser } from "@/types";
+import { SYSTEM_BOT_USER_NAME, unknownUser } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { UserType } from "@/types/proto-es/v1/user_service_pb";

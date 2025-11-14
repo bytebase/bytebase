@@ -8,10 +8,10 @@ import type {
   TableCatalog,
 } from "@/types/proto-es/v1/database_catalog_service_pb";
 import {
-  SchemaCatalogSchema,
   ColumnCatalogSchema,
-  TableCatalogSchema,
+  SchemaCatalogSchema,
   TableCatalog_ColumnsSchema,
+  TableCatalogSchema,
 } from "@/types/proto-es/v1/database_catalog_service_pb";
 
 export const supportClassificationFromCommentFeature = (engine: Engine) => {

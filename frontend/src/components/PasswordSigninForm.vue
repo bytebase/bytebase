@@ -88,11 +88,11 @@ import { create } from "@bufbuild/protobuf";
 import { EyeIcon, EyeOffIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { computed, reactive, onMounted } from "vue";
+import { computed, onMounted, reactive } from "vue";
 import { useRoute } from "vue-router";
 import { BBTextField } from "@/bbkit";
 import RequiredStar from "@/components/RequiredStar.vue";
-import { useAuthStore, useActuatorV1Store } from "@/store";
+import { useActuatorV1Store, useAuthStore } from "@/store";
 import { LoginRequestSchema } from "@/types/proto-es/v1/auth_service_pb";
 
 interface LocalState {

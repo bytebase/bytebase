@@ -15,7 +15,7 @@
 
 <script lang="tsx" setup>
 import type { DropdownOption } from "naive-ui";
-import { NSwitch, NDropdown } from "naive-ui";
+import { NDropdown, NSwitch } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { twMerge } from "tailwind-merge";
 import { computed, ref } from "vue";
@@ -35,9 +35,9 @@ import {
 } from "@/store";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2, isDev, isSQLEditorRoute } from "@/utils";
+import Version from "./misc/Version.vue";
 import ProfilePreview from "./ProfilePreview.vue";
 import UserAvatar from "./User/UserAvatar.vue";
-import Version from "./misc/Version.vue";
 
 const { t } = useI18n();
 

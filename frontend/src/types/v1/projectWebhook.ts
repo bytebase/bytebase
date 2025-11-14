@@ -2,8 +2,8 @@ import { create as createProto } from "@bufbuild/protobuf";
 import { t } from "@/plugins/i18n";
 import {
   Activity_Type,
-  WebhookSchema,
   Webhook_Type,
+  WebhookSchema,
 } from "../proto-es/v1/project_service_pb";
 
 export const emptyProjectWebhook = () => {

@@ -71,7 +71,7 @@
 
 <script lang="ts" setup>
 import { NButton } from "naive-ui";
-import { ref, computed } from "vue";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouteChangeGuard } from "@/composables/useRouteChangeGuard";
 import { pushNotification } from "@/store";
@@ -79,8 +79,8 @@ import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import ProjectArchiveRestoreButton from "./Project/ProjectArchiveRestoreButton.vue";
 import {
   ProjectGeneralSettingPanel,
-  ProjectSecuritySettingPanel,
   ProjectIssueRelatedSettingPanel,
+  ProjectSecuritySettingPanel,
 } from "./Project/Settings/";
 
 defineProps<{

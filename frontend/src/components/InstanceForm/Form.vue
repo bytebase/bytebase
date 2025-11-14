@@ -515,12 +515,12 @@ import type { Duration } from "@bufbuild/protobuf/wkt";
 import { TrashIcon } from "lucide-vue-next";
 import {
   NButton,
-  NInput,
-  NSwitch,
-  NRadioGroup,
-  NRadio,
   NCheckbox,
   NDivider,
+  NInput,
+  NRadio,
+  NRadioGroup,
+  NSwitch,
 } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -536,45 +536,45 @@ import {
 } from "@/components/v2";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import {
-  useActuatorV1Store,
-  useInstanceV1Store,
-  useDatabaseV1Store,
-  useSubscriptionV1Store,
   pushNotification,
+  useActuatorV1Store,
+  useDatabaseV1Store,
+  useInstanceV1Store,
+  useSubscriptionV1Store,
 } from "@/store";
 import {
   environmentNamePrefix,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
-import { UNKNOWN_ID, isValidEnvironmentName } from "@/types";
+import { isValidEnvironmentName, UNKNOWN_ID } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
-  DataSource_AuthenticationType,
   DataSource_AddressSchema,
+  DataSource_AuthenticationType,
+  DataSource_RedisType,
 } from "@/types/proto-es/v1/instance_service_pb";
-import { DataSource_RedisType } from "@/types/proto-es/v1/instance_service_pb";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import {
-  isDev,
-  extractInstanceResourceName,
-  onlyAllowNumber,
   autoSubscriptionRoute,
-  urlfy,
+  extractInstanceResourceName,
+  isDev,
+  onlyAllowNumber,
   supportedEngineV1List,
+  urlfy,
 } from "@/utils";
 import LearnMoreLink from "../LearnMoreLink.vue";
 import BigQueryHostInput from "./BigQueryHostInput.vue";
+import {
+  MongoDBConnectionStringSchemaList,
+  RedisConnectionType,
+  SnowflakeExtraLinkPlaceHolder,
+} from "./constants";
+import { useInstanceFormContext } from "./context";
 import DataSourceSection from "./DataSourceSection/DataSourceSection.vue";
 import MaximumConnectionsInput from "./MaximumConnectionsInput.vue";
 import ScanIntervalInput from "./ScanIntervalInput.vue";
 import SpannerHostInput from "./SpannerHostInput.vue";
 import SyncDatabases from "./SyncDatabases.vue";
-import {
-  MongoDBConnectionStringSchemaList,
-  SnowflakeExtraLinkPlaceHolder,
-  RedisConnectionType,
-} from "./constants";
-import { useInstanceFormContext } from "./context";
 
 defineProps<{
   hideArchiveRestore?: boolean;

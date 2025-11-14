@@ -154,16 +154,18 @@
 
 <script setup lang="ts">
 import dayjs from "dayjs";
-import { PackageIcon, ExternalLinkIcon } from "lucide-vue-next";
+import { ExternalLinkIcon, PackageIcon } from "lucide-vue-next";
 import { NAlert, NButton } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
 import { useReleaseByName } from "@/store";
-import { isValidReleaseName, getDateForPbTimestampProtoEs } from "@/types";
+import { getDateForPbTimestampProtoEs, isValidReleaseName } from "@/types";
 import { VCSType } from "@/types/proto-es/v1/common_pb";
-import { Release_File_Type } from "@/types/proto-es/v1/release_service_pb";
-import { Release_File_MigrationType } from "@/types/proto-es/v1/release_service_pb";
+import {
+  Release_File_MigrationType,
+  Release_File_Type,
+} from "@/types/proto-es/v1/release_service_pb";
 import { useSelectedSpec } from "../../SpecDetailView/context";
 
 const { t } = useI18n();

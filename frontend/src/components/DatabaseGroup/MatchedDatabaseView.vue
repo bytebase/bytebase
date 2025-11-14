@@ -62,18 +62,21 @@
 import type { ConnectError } from "@connectrpc/connect";
 import { useDebounceFn } from "@vueuse/core";
 import { NButton, NCollapse, NCollapseItem } from "naive-ui";
-import { watch, reactive, ref } from "vue";
+import { reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
-import { DatabaseV1Name, InstanceV1Name } from "@/components/v2";
-import { EnvironmentV1Name } from "@/components/v2";
+import {
+  DatabaseV1Name,
+  EnvironmentV1Name,
+  InstanceV1Name,
+} from "@/components/v2";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import { validateSimpleExpr } from "@/plugins/cel";
 import { useDatabaseV1Store, useDBGroupStore } from "@/store";
 import {
+  type ComposedDatabase,
   DEBOUNCE_SEARCH_DELAY,
   isValidDatabaseName,
-  type ComposedDatabase,
 } from "@/types";
 import { getDefaultPagination } from "@/utils";
 
@@ -172,7 +175,7 @@ const state = reactive<LocalState>({
 const dbGroupStore = useDBGroupStore();
 const databaseStore = useDatabaseV1Store();
 
-const loadMoreDatabase = async <T,>(state: DatabaseMatchList<T>) => {
+const loadMoreDatabase = async <T>(state: DatabaseMatchList<T>) => {
   state.loading = true;
   try {
     const { databases, token } = await state.loadMore(state.token);

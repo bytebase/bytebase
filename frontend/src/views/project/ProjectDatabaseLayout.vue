@@ -7,9 +7,9 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted, computed } from "vue";
+import { computed, onMounted } from "vue";
 import { provideDatabaseDetailContext } from "@/components/Database/context";
-import { useDBSchemaV1Store, useDatabaseV1Store } from "@/store";
+import { useDatabaseV1Store, useDBSchemaV1Store } from "@/store";
 import {
   databaseNamePrefix,
   instanceNamePrefix,

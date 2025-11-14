@@ -246,7 +246,7 @@
     "collapse": "Colapsar",
     "line": "Línea",
     "column": "Columna",
-    "apply-to-database": "Aplicar a la base de datos",
+    "apply-to-database": "Aplicar a la base de datos"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"

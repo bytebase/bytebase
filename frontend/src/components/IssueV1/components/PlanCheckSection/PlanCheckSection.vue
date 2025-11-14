@@ -17,9 +17,12 @@ import {
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import PlanCheckRunBar from "@/components/PlanCheckRun/PlanCheckRunBar.vue";
-import { useCurrentUserV1, extractUserId, useCurrentProjectV1 } from "@/store";
-import { databaseForTask } from "@/utils";
-import { hasProjectPermissionV2, isValidTaskName } from "@/utils";
+import { extractUserId, useCurrentProjectV1, useCurrentUserV1 } from "@/store";
+import {
+  databaseForTask,
+  hasProjectPermissionV2,
+  isValidTaskName,
+} from "@/utils";
 
 const currentUser = useCurrentUserV1();
 const { issue, selectedTask, getPlanCheckRunsForTask } = useIssueContext();

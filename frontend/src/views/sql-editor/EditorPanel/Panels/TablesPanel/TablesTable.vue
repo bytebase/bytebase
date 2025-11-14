@@ -19,7 +19,7 @@
 </template>
 
 <script setup lang="tsx">
-import { NDataTable, type DataTableColumn } from "naive-ui";
+import { type DataTableColumn, NDataTable } from "naive-ui";
 import { computed, h, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ComposedDatabase } from "@/types";
@@ -31,9 +31,9 @@ import type {
 import {
   bytesToString,
   getHighlightHTMLByRegExp,
-  instanceV1HasCollationAndCharacterSet,
   hasIndexSizeProperty,
   hasTableEngineProperty,
+  instanceV1HasCollationAndCharacterSet,
   useAutoHeightDataTable,
 } from "@/utils";
 import { EllipsisCell } from "../../common";

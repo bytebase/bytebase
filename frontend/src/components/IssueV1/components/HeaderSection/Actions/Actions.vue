@@ -15,10 +15,10 @@ import { asyncComputed } from "@vueuse/core";
 import { computed } from "vue";
 import { extractUserId, useCurrentUserV1 } from "@/store";
 import {
-  IssueStatus,
   Issue_ApprovalStatus,
+  IssueStatus,
 } from "@/types/proto-es/v1/issue_service_pb";
-import { isGrantRequestIssue, checkRoleContainsAnyPermission } from "@/utils";
+import { checkRoleContainsAnyPermission, isGrantRequestIssue } from "@/utils";
 import { useIssueContext } from "../../../logic";
 import { CreateButton } from "./create";
 import { TinySQLEditorButton } from "./request";

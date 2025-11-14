@@ -2,7 +2,7 @@ import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
 import { isEqual, isUndefined } from "lodash-es";
 import { defineStore } from "pinia";
-import { ref, computed } from "vue";
+import { computed, ref } from "vue";
 import { identityProviderServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
 import type { IdentityProvider } from "@/types/proto-es/v1/idp_service_pb";

@@ -5,7 +5,7 @@ import {
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
   PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
 } from "@/router/dashboard/projectV1";
-import { EMPTY_ID, UNKNOWN_ID, type ComposedIssue } from "@/types";
+import { type ComposedIssue, EMPTY_ID, UNKNOWN_ID } from "@/types";
 import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";

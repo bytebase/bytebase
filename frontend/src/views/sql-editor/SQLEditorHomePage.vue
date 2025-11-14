@@ -59,7 +59,7 @@
 <script lang="ts" setup>
 import { useWindowSize } from "@vueuse/core";
 import { storeToRefs } from "pinia";
-import { Splitpanes, Pane } from "splitpanes";
+import { Pane, Splitpanes } from "splitpanes";
 import { reactive } from "vue";
 import { useRouter } from "vue-router";
 import IAMRemindModal from "@/components/IAMRemindModal.vue";
@@ -68,18 +68,18 @@ import { Drawer } from "@/components/v2";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
-  useDatabaseV1Store,
-  useSQLEditorTabStore,
-  useSQLEditorStore,
   useActuatorV1Store,
+  useDatabaseV1Store,
+  useSQLEditorStore,
+  useSQLEditorTabStore,
 } from "@/store";
 import { extractProjectResourceName } from "@/utils";
 import AsidePanel from "./AsidePanel";
 import ConnectionPanel from "./ConnectionPanel";
+import { useSQLEditorContext } from "./context";
 import EditorPanel from "./EditorPanel";
 import { provideCurrentTabViewStateContext } from "./EditorPanel/context/viewState";
 import TabList from "./TabList";
-import { useSQLEditorContext } from "./context";
 
 type LocalState = {
   sidebarExpanded: boolean;

@@ -18,7 +18,7 @@
 <script lang="ts" setup>
 import type { SelectOption } from "naive-ui";
 import type { CSSProperties } from "vue";
-import { computed, ref, onMounted } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { DropdownInput } from "@/components/v2";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
 import type { ColumnMetadata } from "@/types/proto-es/v1/database_service_pb";

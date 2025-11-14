@@ -68,7 +68,7 @@ import { useResizeObserver } from "@vueuse/core";
 import { PlusIcon } from "lucide-vue-next";
 import { NScrollbar, useDialog } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
-import { ref, reactive, nextTick, computed, onMounted, watch } from "vue";
+import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import Draggable from "vuedraggable";
 import ProfileDropdown from "@/components/ProfileDropdown.vue";
@@ -79,8 +79,8 @@ import { defer, usePreventBackAndForward } from "@/utils";
 import { useSQLEditorContext } from "../context";
 import BrandingLogoWrapper from "./BrandingLogoWrapper.vue";
 import ContextMenu from "./ContextMenu.vue";
-import TabItem from "./TabItem";
 import { provideTabListContext } from "./context";
+import TabItem from "./TabItem";
 
 type LocalState = {
   dragging: boolean;

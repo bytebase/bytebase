@@ -26,9 +26,9 @@ import { NButton } from "naive-ui";
 import { computed, ref } from "vue";
 import { useCurrentProjectV1 } from "@/store";
 import type {
+  Rollout,
   Task,
   TaskRun,
-  Rollout,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import { databaseForTask } from "@/utils";
 import TaskRunRollbackDrawer from "./TaskRunRollbackDrawer.vue";

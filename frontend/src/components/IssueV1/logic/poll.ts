@@ -15,8 +15,7 @@ import {
 } from "@/types/proto-es/v1/common_pb";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
-import { databaseForTask } from "@/utils";
-import { extractIssueUID, flattenTaskV1List } from "@/utils";
+import { databaseForTask, extractIssueUID, flattenTaskV1List } from "@/utils";
 import { useIssueContext } from "./context";
 import { projectOfIssue } from "./utils";
 

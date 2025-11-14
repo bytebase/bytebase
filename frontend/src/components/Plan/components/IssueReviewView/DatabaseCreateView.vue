@@ -79,11 +79,11 @@ import {
   InstanceV1Name,
 } from "@/components/v2";
 import {
+  useCurrentProjectV1,
   useEnvironmentV1Store,
   useInstanceV1Store,
   useSheetV1Store,
 } from "@/store";
-import { useCurrentProjectV1 } from "@/store";
 import type { Plan_CreateDatabaseConfig } from "@/types/proto-es/v1/plan_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { isValidInstanceName } from "@/types/v1/instance";

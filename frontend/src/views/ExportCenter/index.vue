@@ -70,8 +70,8 @@ import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
 import { Drawer } from "@/components/v2";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import {
-  useProjectByName,
   useIssueV1Store,
+  useProjectByName,
   useRefreshIssueList,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";

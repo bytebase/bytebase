@@ -45,7 +45,7 @@
 
 <script lang="tsx" setup>
 import { ArchiveIcon, Trash2Icon, Undo2Icon } from "lucide-vue-next";
-import { NButton, type ButtonProps } from "naive-ui";
+import { type ButtonProps, NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import BBAlert from "./BBAlert.vue";

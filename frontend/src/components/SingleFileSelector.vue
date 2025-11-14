@@ -49,7 +49,7 @@
 <script lang="ts" setup>
 import { NEmpty } from "naive-ui";
 import type { PropType } from "vue";
-import { ref, reactive } from "vue";
+import { reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification } from "@/store";
 

@@ -37,7 +37,7 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useRouter } from "vue-router";
-import { UNKNOWN_ENVIRONMENT_NAME, NULL_ENVIRONMENT_NAME } from "@/types";
+import { NULL_ENVIRONMENT_NAME, UNKNOWN_ENVIRONMENT_NAME } from "@/types";
 import type { Environment } from "@/types/v1/environment";
 import type { VueClass } from "@/utils";
 import { autoEnvironmentRoute, hexToRgb } from "@/utils";

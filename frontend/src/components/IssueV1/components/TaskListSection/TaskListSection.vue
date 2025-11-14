@@ -62,7 +62,7 @@
 <script lang="ts" setup>
 import { useDebounceFn } from "@vueuse/core";
 import { NButton } from "naive-ui";
-import { computed, ref, reactive, watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { BBSpin } from "@/bbkit";
 import { usePlanSQLCheckContext } from "@/components/Plan/components/SQLCheckSection/context";
 import { useVerticalScrollState } from "@/composables/useScrollState";
@@ -70,13 +70,12 @@ import { batchGetOrFetchDatabases, useCurrentProjectV1 } from "@/store";
 import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import type { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
-import { databaseForTask } from "@/utils";
-import { isDev } from "@/utils";
+import { databaseForTask, isDev } from "@/utils";
 import { useIssueContext } from "../../logic";
 import CurrentTaskSection from "./CurrentTaskSection.vue";
+import { filterTask } from "./filter";
 import TaskCard from "./TaskCard.vue";
 import TaskFilter from "./TaskFilter.vue";
-import { filterTask } from "./filter";
 
 interface StageState {
   // Index is the current number of tasks to show.

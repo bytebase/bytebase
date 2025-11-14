@@ -26,8 +26,7 @@ import { computed } from "vue";
 import TaskRunTable from "@/components/Plan/components/RolloutView/TaskRunTable.vue";
 import type { TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { extractTaskUID } from "@/utils";
-import { usePlanContext } from "../../../logic";
-import { usePlanContextWithRollout } from "../../../logic";
+import { usePlanContext, usePlanContextWithRollout } from "../../../logic";
 
 const { plan, rollout } = usePlanContext();
 const { taskRuns } = usePlanContextWithRollout();

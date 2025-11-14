@@ -49,16 +49,16 @@
 <script lang="ts" setup>
 import { PlusIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
-import { reactive, computed, ref, watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { CreateDatabasePrepPanel } from "@/components/CreateDatabasePrepForm";
 import { Drawer } from "@/components/v2";
 import { PagedDatabaseTable } from "@/components/v2/Model/DatabaseV1Table";
 import { useDatabaseV1Store } from "@/store";
 import {
-  instanceNamePrefix,
   environmentNamePrefix,
+  instanceNamePrefix,
 } from "@/store/modules/v1/common";
-import { isValidDatabaseName, type ComposedDatabase } from "@/types";
+import { type ComposedDatabase, isValidDatabaseName } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { SearchParams, SearchScope } from "@/utils";

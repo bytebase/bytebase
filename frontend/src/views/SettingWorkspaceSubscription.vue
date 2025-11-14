@@ -155,8 +155,8 @@ import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import RequireEnterpriseButton from "@/components/RequireEnterpriseButton.vue";
-import WorkspaceInstanceLicenseStats from "@/components/WorkspaceInstanceLicenseStats.vue";
 import { CopyButton } from "@/components/v2";
+import WorkspaceInstanceLicenseStats from "@/components/WorkspaceInstanceLicenseStats.vue";
 import {
   pushNotification,
   useActuatorV1Store,

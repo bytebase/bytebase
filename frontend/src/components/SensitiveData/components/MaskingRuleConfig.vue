@@ -89,18 +89,18 @@ import { create } from "@bufbuild/protobuf";
 import { head } from "lodash-es";
 import { TrashIcon } from "lucide-vue-next";
 import type { SelectOption } from "naive-ui";
-import { NSelect, NPopconfirm, NInput, NButton } from "naive-ui";
-import { computed, reactive, onMounted, nextTick } from "vue";
+import { NButton, NInput, NPopconfirm, NSelect } from "naive-ui";
+import { computed, nextTick, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import ExprEditor from "@/components/ExprEditor";
 import { type OptionConfig } from "@/components/ExprEditor/context";
 import type { ConditionGroupExpr, Factor, SimpleExpr } from "@/plugins/cel";
 import {
-  resolveCELExpr,
-  wrapAsGroup,
   buildCELExpr,
-  validateSimpleExpr,
   emptySimpleExpr,
+  resolveCELExpr,
+  validateSimpleExpr,
+  wrapAsGroup,
 } from "@/plugins/cel";
 import { useSettingV1Store } from "@/store";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";

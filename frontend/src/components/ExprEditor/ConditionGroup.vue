@@ -138,22 +138,22 @@ import { computed } from "vue";
 import {
   type ConditionExpr,
   type ConditionGroupExpr,
-  type LogicalOperator,
-  LogicalOperatorList,
-  isConditionGroupExpr,
-  isConditionExpr,
-  isRawStringExpr,
   ExprType,
-  type RawStringExpr,
-  isNumberFactor,
   type Factor,
+  isConditionExpr,
+  isConditionGroupExpr,
+  isNumberFactor,
+  isRawStringExpr,
   isStringFactor,
   isTimestampFactor,
+  type LogicalOperator,
+  LogicalOperatorList,
+  type RawStringExpr,
 } from "@/plugins/cel";
 import Condition from "./Condition.vue";
-import RawString from "./RawString.vue";
 import { getOperatorListByFactor } from "./components/common";
 import { useExprEditorContext } from "./context";
+import RawString from "./RawString.vue";
 
 const props = defineProps<{
   expr: ConditionGroupExpr;

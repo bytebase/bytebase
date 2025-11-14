@@ -95,10 +95,10 @@ import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import type { IssueStatusAction } from "@/components/IssueV1/logic";
 import {
-  useIssueContext,
+  IssueStatusActionToIssueStatusMap,
   issueStatusActionButtonProps,
   issueStatusActionDisplayName,
-  IssueStatusActionToIssueStatusMap,
+  useIssueContext,
 } from "@/components/IssueV1/logic";
 import ErrorList from "@/components/misc/ErrorList.vue";
 import { issueServiceClientConnect } from "@/grpcweb";

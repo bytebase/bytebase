@@ -50,7 +50,7 @@
 </template>
 
 <script setup lang="ts">
-import { NPopselect, NPopover, type SelectOption, NButton } from "naive-ui";
+import { NButton, NPopover, NPopselect, type SelectOption } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";

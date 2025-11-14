@@ -60,11 +60,11 @@ import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { DiffEditor } from "@/components/MonacoEditor";
 import {
   pushNotification,
-  useDatabaseV1Store,
   useChangelogStore,
+  useDatabaseV1Store,
 } from "@/store";
-import { DEFAULT_PROJECT_NAME } from "@/types";
 import type { ComposedDatabase } from "@/types";
+import { DEFAULT_PROJECT_NAME } from "@/types";
 import {
   ChangelogView,
   DatabaseSchema$,

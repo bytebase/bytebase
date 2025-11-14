@@ -8,25 +8,25 @@ import { projectServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
 import type { MaybeRef, ResourceId } from "@/types";
 import {
-  emptyProject,
-  EMPTY_PROJECT_NAME,
-  unknownProject,
-  defaultProject,
-  UNKNOWN_PROJECT_NAME,
   DEFAULT_PROJECT_NAME,
+  defaultProject,
+  EMPTY_PROJECT_NAME,
+  emptyProject,
   isValidProjectName,
+  UNKNOWN_PROJECT_NAME,
+  unknownProject,
 } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import {
+  BatchDeleteProjectsRequestSchema,
+  CreateProjectRequestSchema,
+  DeleteProjectRequestSchema,
   GetProjectRequestSchema,
   ListProjectsRequestSchema,
-  SearchProjectsRequestSchema,
-  CreateProjectRequestSchema,
-  UpdateProjectRequestSchema,
-  DeleteProjectRequestSchema,
-  BatchDeleteProjectsRequestSchema,
-  UndeleteProjectRequestSchema,
   type Project,
+  SearchProjectsRequestSchema,
+  UndeleteProjectRequestSchema,
+  UpdateProjectRequestSchema,
 } from "@/types/proto-es/v1/project_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { projectNamePrefix } from "./common";

@@ -75,23 +75,25 @@ import { ShieldCheckIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import {
-  FeatureModal,
-  FeatureBadge,
   FeatureAttention,
+  FeatureBadge,
+  FeatureModal,
 } from "@/components/FeatureGuard";
-import GrantAccessDrawer from "@/components/SensitiveData/GrantAccessDrawer.vue";
 import SensitiveColumnTable from "@/components/SensitiveData/components/SensitiveColumnTable.vue";
+import GrantAccessDrawer from "@/components/SensitiveData/GrantAccessDrawer.vue";
 import type { MaskData } from "@/components/SensitiveData/types";
 import { isCurrentColumnException } from "@/components/SensitiveData/utils";
 import { SearchBox } from "@/components/v2";
-import { featureToRef, usePolicyV1Store, useDatabaseCatalog } from "@/store";
+import { featureToRef, useDatabaseCatalog, usePolicyV1Store } from "@/store";
 import { type ComposedDatabase } from "@/types";
 import {
-  ObjectSchema_Type,
   type ObjectSchema,
+  ObjectSchema_Type,
 } from "@/types/proto-es/v1/database_catalog_service_pb";
-import { MaskingExceptionPolicySchema } from "@/types/proto-es/v1/org_policy_service_pb";
-import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
+import {
+  MaskingExceptionPolicySchema,
+  PolicyType,
+} from "@/types/proto-es/v1/org_policy_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasProjectPermissionV2, instanceV1MaskingForNoSQL } from "@/utils";
 

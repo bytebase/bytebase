@@ -148,7 +148,7 @@
 
 <script lang="tsx" setup>
 import { computedAsync } from "@vueuse/core";
-import { NCheckbox, NInput, NColorPicker } from "naive-ui";
+import { NCheckbox, NColorPicker, NInput } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBButtonConfirm } from "@/bbkit";
@@ -156,12 +156,12 @@ import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
+  hasFeature,
+  pushNotification,
+  useDatabaseV1Store,
   useEnvironmentV1List,
   useEnvironmentV1Store,
   useInstanceV1Store,
-  useDatabaseV1Store,
-  hasFeature,
-  pushNotification,
 } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
@@ -169,8 +169,8 @@ import { FeatureBadge } from "../FeatureGuard";
 import SQLReviewForResource from "../SQLReview/components/SQLReviewForResource.vue";
 import { ResourceIdField } from "../v2";
 import AccessControlConfigure from "./AccessControlConfigure.vue";
-import RolloutPolicyConfig from "./RolloutPolicyConfig.vue";
 import { useEnvironmentFormContext } from "./context";
+import RolloutPolicyConfig from "./RolloutPolicyConfig.vue";
 
 withDefaults(
   defineProps<{

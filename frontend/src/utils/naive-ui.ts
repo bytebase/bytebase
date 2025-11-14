@@ -1,6 +1,6 @@
 import { pausableWatch, useElementSize } from "@vueuse/core";
 import type { DataTableInst, VirtualListInst } from "naive-ui";
-import { computed, ref, unref, type MaybeRef } from "vue";
+import { computed, type MaybeRef, ref, unref } from "vue";
 import { nextAnimationFrame } from "./dom";
 
 export type AutoHeightDataTableOptions = {

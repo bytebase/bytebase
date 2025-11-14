@@ -5,12 +5,12 @@ import type { Ref } from "vue";
 import { computed } from "vue";
 import { subscriptionServiceClientConnect } from "@/grpcweb";
 import {
-  PLANS,
   hasFeature as checkFeature,
   hasInstanceFeature as checkInstanceFeature,
   getDateForPbTimestampProtoEs,
   getMinimumRequiredPlan,
   instanceLimitFeature,
+  PLANS,
 } from "@/types";
 import type {
   Instance,
@@ -19,9 +19,9 @@ import type {
 import type { Subscription } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   GetSubscriptionRequestSchema,
-  UpdateSubscriptionRequestSchema,
   PlanFeature,
   PlanType,
+  UpdateSubscriptionRequestSchema,
 } from "@/types/proto-es/v1/subscription_service_pb";
 
 // The threshold of days before the license expiration date to show the warning.

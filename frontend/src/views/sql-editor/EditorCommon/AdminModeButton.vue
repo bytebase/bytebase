@@ -16,10 +16,10 @@
 
 <script lang="ts" setup>
 import { WrenchIcon } from "lucide-vue-next";
-import { NButton, type ButtonProps } from "naive-ui";
+import { type ButtonProps, NButton } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { computed } from "vue";
 import type { PropType } from "vue";
+import { computed } from "vue";
 import { useSQLEditorTabStore } from "@/store";
 import { hasWorkspacePermissionV2 } from "@/utils";
 

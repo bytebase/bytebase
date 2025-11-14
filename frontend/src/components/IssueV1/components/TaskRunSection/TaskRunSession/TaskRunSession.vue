@@ -22,10 +22,10 @@ import { computed, ref } from "vue";
 import { BBSpin } from "@/bbkit";
 import { rolloutServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
-import { GetTaskRunSessionRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import {
-  TaskRun_Status,
+  GetTaskRunSessionRequestSchema,
   type TaskRun,
+  TaskRun_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import PostgresSessionTable from "./PostgresSessionTable.vue";
 

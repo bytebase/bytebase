@@ -27,8 +27,8 @@
 </template>
 
 <script lang="ts" setup>
-import { useLocalStorage, type UseStorageOptions } from "@vueuse/core";
-import { reactive, computed, watch, ref, onMounted } from "vue";
+import { type UseStorageOptions, useLocalStorage } from "@vueuse/core";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
 import { useRoute, useRouter } from "vue-router";
 import { IssueSearch } from "@/components/IssueV1/components";
@@ -43,13 +43,13 @@ import {
 import { type ComposedIssue } from "@/types";
 import type { SearchParams, SemanticIssueStatus } from "@/utils";
 import {
+  applyUIIssueFilter,
   buildIssueFilterBySearchParams,
+  buildSearchParamsBySearchText,
+  buildSearchTextBySearchParams,
   buildUIIssueFilterBySearchParams,
   getSemanticIssueStatusFromSearchParams,
   useDynamicLocalStorage,
-  applyUIIssueFilter,
-  buildSearchTextBySearchParams,
-  buildSearchParamsBySearchText,
 } from "@/utils";
 import { getComponentIdLocalStorageKey } from "@/utils/localStorage";
 

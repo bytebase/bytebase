@@ -26,20 +26,20 @@ import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { ProvideAIContext } from "@/plugins/ai";
 import {
+  SQL_EDITOR_DATABASE_MODULE,
   SQL_EDITOR_HOME_MODULE,
   SQL_EDITOR_INSTANCE_MODULE,
-  SQL_EDITOR_DATABASE_MODULE,
-  SQL_EDITOR_WORKSHEET_MODULE,
   SQL_EDITOR_PROJECT_MODULE,
+  SQL_EDITOR_WORKSHEET_MODULE,
 } from "@/router/sqlEditor";
 import {
+  pushNotification,
+  useDatabaseV1Store,
   usePolicyV1Store,
   useProjectV1Store,
-  useDatabaseV1Store,
   useSQLEditorStore,
   useSQLEditorTabStore,
   useWorkSheetStore,
-  pushNotification,
 } from "@/store";
 import type { SQLEditorConnection } from "@/types";
 import {
@@ -52,7 +52,10 @@ import {
 import { PolicyResourceType } from "@/types/proto-es/v1/org_policy_service_pb";
 import {
   emptySQLEditorConnection,
+  extractInstanceResourceName,
   extractProjectResourceName,
+  extractWorksheetUID,
+  getDefaultPagination,
   getSheetStatement,
   hasProjectPermissionV2,
   isDatabaseV1Queryable,
@@ -60,15 +63,12 @@ import {
   projectNameFromSheetSlug,
   suggestedTabTitleForSQLEditorConnection,
   worksheetNameFromSlug,
-  extractWorksheetUID,
-  extractInstanceResourceName,
-  getDefaultPagination,
 } from "@/utils";
-import { extractWorksheetConnection } from "@/views/sql-editor/Sheet";
 import {
-  useSQLEditorContext,
   type AsidePanelTab,
+  useSQLEditorContext,
 } from "@/views/sql-editor/context";
+import { extractWorksheetConnection } from "@/views/sql-editor/Sheet";
 
 const { t } = useI18n();
 const route = useRoute();

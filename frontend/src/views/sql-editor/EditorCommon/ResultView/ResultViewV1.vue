@@ -165,30 +165,30 @@ import { Info } from "lucide-vue-next";
 import {
   darkTheme,
   NConfigProvider,
+  NFormItem,
   NTabPane,
   NTabs,
   NTooltip,
-  NFormItem,
 } from "naive-ui";
 import { computed, ref, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 import { darkThemeOverrides } from "@/../naive-ui.config";
 import { BBSpin } from "@/bbkit";
-import DataExportButton from "@/components/DataExportButton.vue";
+import SyncDatabaseButton from "@/components/DatabaseDetail/SyncDatabaseButton.vue";
+import DatabaseInfo from "@/components/DatabaseInfo.vue";
 import type {
   DownloadContent,
   ExportOption,
 } from "@/components/DataExportButton.vue";
-import SyncDatabaseButton from "@/components/DatabaseDetail/SyncDatabaseButton.vue";
-import DatabaseInfo from "@/components/DatabaseInfo.vue";
+import DataExportButton from "@/components/DataExportButton.vue";
 import { parseStringToResource } from "@/components/GrantRequestPanel/DatabaseResourceForm/common";
 import { Drawer } from "@/components/v2";
 import {
   useConnectionOfCurrentSQLEditorTab,
   usePolicyV1Store,
+  useSQLEditorStore,
   useSQLEditorTabStore,
   useSQLStore,
-  useSQLEditorStore,
 } from "@/store";
 import type {
   ComposedDatabase,
@@ -199,19 +199,19 @@ import type {
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import {
   PolicyType,
-  QueryDataPolicySchema,
   type QueryDataPolicy,
+  QueryDataPolicySchema,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import { ExportRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
+import type { SQLResultViewContext } from "./context";
+import { provideSQLResultViewContext } from "./context";
 import { provideBinaryFormatContext } from "./DataTable/binary-format-store";
 import DetailPanel from "./DetailPanel";
 import EmptyView from "./EmptyView.vue";
 import ErrorView from "./ErrorView";
 import RequestQueryButton from "./RequestQueryButton.vue";
 import SingleResultViewV1 from "./SingleResultViewV1.vue";
-import type { SQLResultViewContext } from "./context";
-import { provideSQLResultViewContext } from "./context";
 
 type ViewMode = "SINGLE-RESULT" | "MULTI-RESULT" | "EMPTY" | "ERROR";
 

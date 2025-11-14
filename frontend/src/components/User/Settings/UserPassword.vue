@@ -96,11 +96,11 @@
 
 <script lang="tsx" setup>
 import {
+  CircleAlertIcon,
+  CircleCheckIcon,
   CircleHelpIcon,
   EyeIcon,
   EyeOffIcon,
-  CircleCheckIcon,
-  CircleAlertIcon,
 } from "lucide-vue-next";
 import { NInput, NTooltip } from "naive-ui";
 import { computed, ref } from "vue";
@@ -167,7 +167,7 @@ const passwordCheck = computed(() => {
         "settings.general.workspace.password-restriction.require-special-character"
       ),
       // eslint-disable-next-line no-useless-escape
-      matched: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/.test(props.password),
+      matched: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]+/.test(props.password),
     });
   }
 

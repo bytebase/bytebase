@@ -51,7 +51,7 @@
 
 <script setup lang="tsx">
 import { ChevronDownIcon } from "lucide-vue-next";
-import { NButton, NDataTable, type DataTableColumn } from "naive-ui";
+import { type DataTableColumn, NButton, NDataTable } from "naive-ui";
 import { Pane, Splitpanes } from "splitpanes";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -59,9 +59,9 @@ import { TriggerIcon } from "@/components/Icon";
 import type { ComposedDatabase } from "@/types";
 import type {
   DatabaseMetadata,
-  TriggerMetadata,
   SchemaMetadata,
   TableMetadata,
+  TriggerMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
 import { useAutoHeightDataTable } from "@/utils";
 import {
