@@ -485,7 +485,10 @@ func redactInstance(i *v1pb.Instance) *v1pb.Instance {
 		return nil
 	}
 	// Clone the instance to avoid modifying the original response
-	cloned := proto.Clone(i).(*v1pb.Instance)
+	cloned, ok := proto.Clone(i).(*v1pb.Instance)
+	if !ok {
+		return i
+	}
 	var dataSources []*v1pb.DataSource
 	for _, d := range cloned.DataSources {
 		dataSources = append(dataSources, redactDataSource(d))
@@ -496,7 +499,10 @@ func redactInstance(i *v1pb.Instance) *v1pb.Instance {
 
 func redactDataSource(d *v1pb.DataSource) *v1pb.DataSource {
 	// Clone the datasource to avoid modifying the original
-	cloned := proto.Clone(d).(*v1pb.DataSource)
+	cloned, ok := proto.Clone(d).(*v1pb.DataSource)
+	if !ok {
+		return d
+	}
 	if cloned.Password != "" {
 		cloned.Password = maskedString
 	}
