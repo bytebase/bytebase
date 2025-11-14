@@ -121,13 +121,12 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 
 	var results []*v1pb.QueryResult
 	for _, statement := range statements {
-		if queryContext.Limit > 0 {
-			statement = getStatementWithResultLimit(statement, queryContext.Limit)
-		}
-
 		startTime := time.Now()
 		queryResult, err := func() (*v1pb.QueryResult, error) {
 			if util.IsSelect(statement) {
+				if queryContext.Limit > 0 {
+					statement = getStatementWithResultLimit(statement, queryContext.Limit)
+				}
 				q := d.client.Query(statement)
 				if queryContext.OperatorEmail != "" {
 					q.Labels = map[string]string{"operator_email": encodeOperatorEmail(queryContext.OperatorEmail)}
@@ -245,11 +244,12 @@ func (d *Driver) dryRunQuery(ctx context.Context, statement string, queryContext
 			continue
 		}
 
-		status, err := job.Wait(ctx)
-		if err != nil {
+		// For dry run, the job completes immediately - use Status() instead of Wait()
+		status := job.LastStatus()
+		if status == nil {
 			results = append(results, &v1pb.QueryResult{
 				Statement: stmt,
-				Error:     err.Error(),
+				Error:     "failed to get job status",
 				Latency:   durationpb.New(time.Since(startTime)),
 			})
 			continue

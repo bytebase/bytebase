@@ -194,7 +194,7 @@ const state = reactive<LocalState>({});
 const tabStore = useSQLEditorTabStore();
 const uiStateStore = useUIStateStore();
 const { events } = useSQLEditorContext();
-const { resultRowsLimit, queryMode } = storeToRefs(useSQLEditorStore());
+const { resultRowsLimit } = storeToRefs(useSQLEditorStore());
 const sheetAndTabStore = useWorkSheetAndTabStore();
 
 const { currentTab, isDisconnected } = storeToRefs(tabStore);
@@ -311,7 +311,6 @@ const handleRunQuery = () => {
     connection: { ...tab.connection },
     engine: instance.value.engine,
     explain: false,
-    dryRun: queryMode.value === "dry-run",
     selection: tab.editorState.selection,
   });
   uiStateStore.saveIntroStateByKey({

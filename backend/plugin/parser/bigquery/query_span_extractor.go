@@ -86,6 +86,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	}
 
 	return &base.QuerySpan{
+		Type:          base.Select,
 		Results:       querySpanResult,
 		SourceColumns: accessTables,
 	}, nil

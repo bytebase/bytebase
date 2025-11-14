@@ -33,10 +33,6 @@ export const useSQLEditorStore = defineStore("sqlEditor", () => {
       },
     }
   );
-  const queryMode = useLocalStorage<"normal" | "dry-run">(
-    "bb.sql-editor.query-mode",
-    "normal"
-  );
 
   // empty to "ALL" projects for high-privileged users
   const project = ref<string>("");
@@ -70,6 +66,5 @@ export const useSQLEditorStore = defineStore("sqlEditor", () => {
     isShowExecutingHint,
     executingHintDatabase,
     redisCommandOption,
-    queryMode,
   };
 });

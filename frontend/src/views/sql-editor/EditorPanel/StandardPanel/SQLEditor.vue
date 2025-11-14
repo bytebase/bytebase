@@ -60,6 +60,7 @@ import {
 } from "@/store";
 import type { SQLDialect, SQLEditorQueryParams } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
   nextAnimationFrame,
   useInstanceV1EditorLanguage,
@@ -174,9 +175,11 @@ watch(
 const runQueryAction = ({
   explain = false,
   newTab = false,
+  dryRun = false,
 }: {
   explain: boolean;
   newTab: boolean;
+  dryRun?: boolean;
 }) => {
   const tab = tabStore.currentTab;
   if (!tab) {
@@ -188,6 +191,7 @@ const runQueryAction = ({
     statement,
     engine: instance.value.engine,
     explain,
+    dryRun,
     selection: null,
   };
   if (!newTab) {
@@ -285,6 +289,31 @@ const handleEditorReady = (
         }
       } else {
         explainQueryAction?.dispose();
+      }
+    },
+    { immediate: true }
+  );
+
+  let dryRunQueryAction: IDisposable | undefined;
+  watch(
+    () => instance.value.engine,
+    () => {
+      if (instance.value.engine === Engine.BIGQUERY) {
+        if (!editor.getAction("DryRunQuery")) {
+          dryRunQueryAction = editor.addAction({
+            id: "DryRunQuery",
+            label: "Dry Run Query",
+            keybindings: [
+              monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyE,
+            ],
+            contextMenuGroupId: "operation",
+            contextMenuOrder: 1,
+            run: () =>
+              runQueryAction({ explain: false, newTab: false, dryRun: true }),
+          });
+        }
+      } else {
+        dryRunQueryAction?.dispose();
       }
     },
     { immediate: true }
