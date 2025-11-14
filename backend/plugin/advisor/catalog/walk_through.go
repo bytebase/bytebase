@@ -27,17 +27,11 @@ const (
 	ErrorTypeUnsupported WalkThroughErrorType = 1
 	// ErrorTypeInternal is the error for internal errors.
 	ErrorTypeInternal WalkThroughErrorType = 2
-	// ErrorTypeInvalidStatement is the error type for invalid statement errors.
-	ErrorTypeInvalidStatement WalkThroughErrorType = 3
 
 	// 101 parse error type.
 
-	// ErrorTypeParseError is the error in parsing.
-	ErrorTypeParseError WalkThroughErrorType = 101
 	// ErrorTypeDeparseError is the error in deparsing.
 	ErrorTypeDeparseError WalkThroughErrorType = 102
-	// ErrorTypeSetLineError is the error in setting line for statement.
-	ErrorTypeSetLineError WalkThroughErrorType = 103
 
 	// 201 ~ 299 database error type.
 
@@ -58,10 +52,6 @@ const (
 	ErrorTypeUseCreateTableAs = 303
 	// ErrorTypeTableIsReferencedByView is the error that table is referenced by view.
 	ErrorTypeTableIsReferencedByView = 304
-	// ErrorTypeViewNotExists is the error that view not exists.
-	ErrorTypeViewNotExists = 305
-	// ErrorTypeViewExists is the error that view exists.
-	ErrorTypeViewExists = 306
 
 	// 401 ~ 499 column error type.
 
@@ -99,21 +89,10 @@ const (
 	// ErrorTypeSpatialIndexKeyNullable is the error that keys in spatial index are nullable.
 	ErrorTypeSpatialIndexKeyNullable = 507
 
-	// 601 ~ 699 insert statement error type.
-
-	// ErrorTypeInsertColumnCountNotMatchValueCount is the error that column count doesn't match value count.
-	ErrorTypeInsertColumnCountNotMatchValueCount = 601
-	// ErrorTypeInsertSpecifiedColumnTwice is the error that column specified twice in INSERT.
-	ErrorTypeInsertSpecifiedColumnTwice = 602
-	// ErrorTypeInsertNullIntoNotNullColumn is the error that insert NULL into NOT NULL columns.
-	ErrorTypeInsertNullIntoNotNullColumn = 603
-
 	// 701 ~ 799 schema error type.
 
 	// ErrorTypeSchemaNotExists is the error that schema does not exist.
 	ErrorTypeSchemaNotExists = 701
-	// ErrorTypeSchemaExists is the error that schema already exists.
-	ErrorTypeSchemaExists = 702
 
 	// 801 ~ 899 relation error type.
 
@@ -221,7 +200,6 @@ func (d *DatabaseState) WalkThrough(ast any) error {
 }
 
 // compareIdentifier returns true if the engine will regard the two identifiers as the same one.
-// TODO(zp): It's used for MySQL, we should refactor the package to make it more clear.
 func compareIdentifier(a, b string, ignoreCaseSensitive bool) bool {
 	if ignoreCaseSensitive {
 		return strings.EqualFold(a, b)
@@ -234,7 +212,7 @@ func (d *DatabaseState) isCurrentDatabase(database string) bool {
 	return compareIdentifier(d.name, database, d.ctx.IgnoreCaseSensitive)
 }
 
-// isTableExists returns true if the given table exists in the database.
+// getTable returns the table with the given name if it exists in the schema.
 // TODO(zp): It's used for MySQL, we should refactor the package to make it more clear.
 func (s *SchemaState) getTable(table string) (*TableState, bool) {
 	for k, v := range s.tableSet {
