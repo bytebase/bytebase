@@ -166,7 +166,6 @@ const passwordCheck = computed(() => {
       text: t(
         "settings.general.workspace.password-restriction.require-special-character"
       ),
-      // eslint-disable-next-line no-useless-escape
       matched: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]+/.test(props.password),
     });
   }

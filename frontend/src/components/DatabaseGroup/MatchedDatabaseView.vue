@@ -144,27 +144,30 @@ const loadMoreUnmatched = async (token: string) => {
   };
 };
 
-const getMatched = (): DatabaseMatchList<number> => ({
+const getMatched = (title: string): DatabaseMatchList<number> => ({
   token: 0,
   loading: false,
   databaseList: [],
-  title: t("database-group.matched-database"),
+  title,
   name: "matched",
   hasNext: (token: number) => token < matchedDatabaseNameList.value.length,
   loadMore: loadMoreMatched,
 });
 
-const getUnMatched = (): DatabaseMatchList<string> => ({
+const getUnMatched = (title: string): DatabaseMatchList<string> => ({
   token: "",
   loading: false,
   databaseList: [],
-  title: t("database-group.unmatched-database"),
+  title,
   name: "unmatched",
   hasNext: (token: string) => !!token,
   loadMore: loadMoreUnmatched,
 });
 
-const getInitialState = () => [getMatched(), getUnMatched()];
+const getInitialState = () => [
+  getMatched(t("database-group.matched-database")),
+  getUnMatched(t("database-group.unmatched-database")),
+];
 
 const state = reactive<LocalState>({
   loading: false,
@@ -175,7 +178,8 @@ const state = reactive<LocalState>({
 const dbGroupStore = useDBGroupStore();
 const databaseStore = useDatabaseV1Store();
 
-const loadMoreDatabase = async <T>(state: DatabaseMatchList<T>) => {
+// biome-ignore format: ESLint requires trailing comma for generic type parameter
+const loadMoreDatabase = async <T,>(state: DatabaseMatchList<T>) => {
   state.loading = true;
   try {
     const { databases, token } = await state.loadMore(state.token);
