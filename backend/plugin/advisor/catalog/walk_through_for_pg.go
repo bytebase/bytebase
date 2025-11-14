@@ -12,15 +12,24 @@ import (
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
-// pgAntlrWalkThrough walks through the ANTLR parse tree and builds catalog state.
-func (d *DatabaseState) pgAntlrWalkThrough(tree any) error {
-	root, ok := tree.(parser.IRootContext)
+// pgWalkThrough walks through the ANTLR parse tree and builds catalog state.
+func (d *DatabaseState) pgWalkThrough(ast any) error {
+	// ANTLR-based walkthrough
+	parseResult, ok := ast.(*pgparser.ParseResult)
 	if !ok {
-		return errors.Errorf("invalid ANTLR tree type %T", tree)
+		return &WalkThroughError{
+			Type:    ErrorTypeUnsupported,
+			Content: fmt.Sprintf("PostgreSQL walk-through expects *pgparser.ParseResult, got %T", ast),
+		}
+	}
+
+	root, ok := parseResult.Tree.(parser.IRootContext)
+	if !ok {
+		return errors.Errorf("invalid ANTLR tree type %T", parseResult.Tree)
 	}
 
 	// Build listener with database state
-	listener := &pgAntlrCatalogListener{
+	listener := &pgCatalogListener{
 		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
 		databaseState:                d,
 	}
@@ -36,8 +45,8 @@ func (d *DatabaseState) pgAntlrWalkThrough(tree any) error {
 	return nil
 }
 
-// pgAntlrCatalogListener builds catalog state by listening to ANTLR parse tree events.
-type pgAntlrCatalogListener struct {
+// pgCatalogListener builds catalog state by listening to ANTLR parse tree events.
+type pgCatalogListener struct {
 	*parser.BasePostgreSQLParserListener
 
 	databaseState *DatabaseState
@@ -46,7 +55,7 @@ type pgAntlrCatalogListener struct {
 }
 
 // Helper method to set error with line number
-func (l *pgAntlrCatalogListener) setError(err *WalkThroughError) {
+func (l *pgCatalogListener) setError(err *WalkThroughError) {
 	if l.err != nil {
 		return // Keep first error
 	}
@@ -57,7 +66,7 @@ func (l *pgAntlrCatalogListener) setError(err *WalkThroughError) {
 }
 
 // Helper method to check if database is deleted
-func (l *pgAntlrCatalogListener) checkDatabaseNotDeleted() bool {
+func (l *pgCatalogListener) checkDatabaseNotDeleted() bool {
 	if l.databaseState.deleted {
 		l.setError(&WalkThroughError{
 			Type:    ErrorTypeDatabaseIsDeleted,
@@ -73,7 +82,7 @@ func (l *pgAntlrCatalogListener) checkDatabaseNotDeleted() bool {
 // ========================================
 
 // EnterCreatestmt handles CREATE TABLE statements.
-func (l *pgAntlrCatalogListener) EnterCreatestmt(ctx *parser.CreatestmtContext) {
+func (l *pgCatalogListener) EnterCreatestmt(ctx *parser.CreatestmtContext) {
 	if !isTopLevel(ctx.GetParent()) || l.err != nil {
 		return
 	}
@@ -392,7 +401,7 @@ func createTableConstraint(schema *SchemaState, table *TableState, constraint pa
 // ========================================
 
 // EnterIndexstmt handles CREATE INDEX statements.
-func (l *pgAntlrCatalogListener) EnterIndexstmt(ctx *parser.IndexstmtContext) {
+func (l *pgCatalogListener) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 	if !isTopLevel(ctx.GetParent()) || l.err != nil {
 		return
 	}
@@ -512,7 +521,7 @@ func (l *pgAntlrCatalogListener) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 // ========================================
 
 // TODO: EnterCreateschemastatement - Need to find correct ANTLR context name
-// func (l *pgAntlrCatalogListener) EnterCreateschemastatement(ctx *parser.CreateschemaContext) {
+// func (l *pgCatalogListener) EnterCreateschemastatement(ctx *parser.CreateschemaContext) {
 // 	if !isTopLevel(ctx.GetParent()) || l.err != nil {
 // 		return
 // 	}
@@ -532,7 +541,7 @@ func (l *pgAntlrCatalogListener) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 // ========================================
 
 // EnterAltertablestmt handles ALTER TABLE statements.
-func (l *pgAntlrCatalogListener) EnterAltertablestmt(ctx *parser.AltertablestmtContext) {
+func (l *pgCatalogListener) EnterAltertablestmt(ctx *parser.AltertablestmtContext) {
 	if !isTopLevel(ctx.GetParent()) || l.err != nil {
 		return
 	}
@@ -589,7 +598,7 @@ func (l *pgAntlrCatalogListener) EnterAltertablestmt(ctx *parser.AltertablestmtC
 }
 
 // processAlterTableCmd handles individual ALTER TABLE commands.
-func (l *pgAntlrCatalogListener) processAlterTableCmd(schema *SchemaState, table *TableState, cmd parser.IAlter_table_cmdContext) {
+func (l *pgCatalogListener) processAlterTableCmd(schema *SchemaState, table *TableState, cmd parser.IAlter_table_cmdContext) {
 	// RENAME operations are handled by EnterRenamestmt, not here
 
 	// Handle ADD COLUMN
@@ -667,7 +676,7 @@ func (l *pgAntlrCatalogListener) processAlterTableCmd(schema *SchemaState, table
 }
 
 // alterTableDropColumn handles DROP COLUMN command.
-func (l *pgAntlrCatalogListener) alterTableDropColumn(schema *SchemaState, table *TableState, columnName string, ifExists bool) {
+func (l *pgCatalogListener) alterTableDropColumn(schema *SchemaState, table *TableState, columnName string, ifExists bool) {
 	column, exists := table.columnSet[columnName]
 	if !exists {
 		if ifExists {
@@ -717,7 +726,7 @@ func (l *pgAntlrCatalogListener) alterTableDropColumn(schema *SchemaState, table
 }
 
 // alterTableAlterColumnType handles ALTER COLUMN TYPE command.
-func (l *pgAntlrCatalogListener) alterTableAlterColumnType(schema *SchemaState, table *TableState, columnName string, typeString string) {
+func (l *pgCatalogListener) alterTableAlterColumnType(schema *SchemaState, table *TableState, columnName string, typeString string) {
 	column, err := table.getColumn(columnName)
 	if err != nil {
 		l.setError(err)
@@ -744,7 +753,7 @@ func (l *pgAntlrCatalogListener) alterTableAlterColumnType(schema *SchemaState, 
 }
 
 // alterTableAddColumn handles ADD COLUMN command.
-func (l *pgAntlrCatalogListener) alterTableAddColumn(schema *SchemaState, table *TableState, columndef parser.IColumnDefContext, ifNotExists bool) {
+func (l *pgCatalogListener) alterTableAddColumn(schema *SchemaState, table *TableState, columndef parser.IColumnDefContext, ifNotExists bool) {
 	if columndef == nil {
 		return
 	}
@@ -862,7 +871,7 @@ func (l *pgAntlrCatalogListener) alterTableAddColumn(schema *SchemaState, table 
 }
 
 // alterTableAddConstraint handles ADD CONSTRAINT command.
-func (l *pgAntlrCatalogListener) alterTableAddConstraint(schema *SchemaState, table *TableState, constraint parser.ITableconstraintContext) {
+func (l *pgCatalogListener) alterTableAddConstraint(schema *SchemaState, table *TableState, constraint parser.ITableconstraintContext) {
 	if constraint == nil {
 		return
 	}
@@ -875,7 +884,7 @@ func (l *pgAntlrCatalogListener) alterTableAddConstraint(schema *SchemaState, ta
 }
 
 // alterTableDropConstraint handles DROP CONSTRAINT command.
-func (l *pgAntlrCatalogListener) alterTableDropConstraint(schema *SchemaState, table *TableState, constraintName string, ifExists bool) {
+func (l *pgCatalogListener) alterTableDropConstraint(schema *SchemaState, table *TableState, constraintName string, ifExists bool) {
 	// Check if constraint exists as an index
 	if index, exists := table.indexSet[constraintName]; exists {
 		delete(schema.identifierMap, index.name)
@@ -892,7 +901,7 @@ func (l *pgAntlrCatalogListener) alterTableDropConstraint(schema *SchemaState, t
 }
 
 // alterTableSetDefault handles ALTER COLUMN SET DEFAULT command.
-func (l *pgAntlrCatalogListener) alterTableSetDefault(table *TableState, columnName string, defaultValue string) {
+func (l *pgCatalogListener) alterTableSetDefault(table *TableState, columnName string, defaultValue string) {
 	column, err := table.getColumn(columnName)
 	if err != nil {
 		l.setError(err)
@@ -903,7 +912,7 @@ func (l *pgAntlrCatalogListener) alterTableSetDefault(table *TableState, columnN
 }
 
 // alterTableDropDefault handles ALTER COLUMN DROP DEFAULT command.
-func (l *pgAntlrCatalogListener) alterTableDropDefault(table *TableState, columnName string) {
+func (l *pgCatalogListener) alterTableDropDefault(table *TableState, columnName string) {
 	column, err := table.getColumn(columnName)
 	if err != nil {
 		l.setError(err)
@@ -914,7 +923,7 @@ func (l *pgAntlrCatalogListener) alterTableDropDefault(table *TableState, column
 }
 
 // alterTableSetNotNull handles ALTER COLUMN SET NOT NULL command.
-func (l *pgAntlrCatalogListener) alterTableSetNotNull(table *TableState, columnName string) {
+func (l *pgCatalogListener) alterTableSetNotNull(table *TableState, columnName string) {
 	column, err := table.getColumn(columnName)
 	if err != nil {
 		l.setError(err)
@@ -925,7 +934,7 @@ func (l *pgAntlrCatalogListener) alterTableSetNotNull(table *TableState, columnN
 }
 
 // renameTable handles RENAME TO for tables.
-func (*pgAntlrCatalogListener) renameTable(schema *SchemaState, table *TableState, newName string) *WalkThroughError {
+func (*pgCatalogListener) renameTable(schema *SchemaState, table *TableState, newName string) *WalkThroughError {
 	// Check if new name already exists
 	if _, exists := schema.identifierMap[newName]; exists {
 		return NewRelationExistsError(newName, schema.name)
@@ -946,7 +955,7 @@ func (*pgAntlrCatalogListener) renameTable(schema *SchemaState, table *TableStat
 }
 
 // renameColumn handles RENAME COLUMN.
-func (*pgAntlrCatalogListener) renameColumn(table *TableState, oldName string, newName string) *WalkThroughError {
+func (*pgCatalogListener) renameColumn(table *TableState, oldName string, newName string) *WalkThroughError {
 	column, err := table.getColumn(oldName)
 	if err != nil {
 		return err
@@ -982,7 +991,7 @@ func (*pgAntlrCatalogListener) renameColumn(table *TableState, oldName string, n
 }
 
 // renameConstraint handles RENAME CONSTRAINT.
-func (*pgAntlrCatalogListener) renameConstraint(schema *SchemaState, table *TableState, oldName string, newName string) *WalkThroughError {
+func (*pgCatalogListener) renameConstraint(schema *SchemaState, table *TableState, oldName string, newName string) *WalkThroughError {
 	index, exists := table.indexSet[oldName]
 	if !exists {
 		// We haven't dealt with foreign and check constraints, so skip if not exists
@@ -1013,7 +1022,7 @@ func (*pgAntlrCatalogListener) renameConstraint(schema *SchemaState, table *Tabl
 // ========================================
 
 // EnterDropstmt handles DROP TABLE/VIEW/INDEX statements.
-func (l *pgAntlrCatalogListener) EnterDropstmt(ctx *parser.DropstmtContext) {
+func (l *pgCatalogListener) EnterDropstmt(ctx *parser.DropstmtContext) {
 	if !isTopLevel(ctx.GetParent()) || l.err != nil {
 		return
 	}
@@ -1075,7 +1084,7 @@ func (l *pgAntlrCatalogListener) EnterDropstmt(ctx *parser.DropstmtContext) {
 	}
 }
 
-func (l *pgAntlrCatalogListener) dropTable(anyName parser.IAny_nameContext, ifExists bool) *WalkThroughError {
+func (l *pgCatalogListener) dropTable(anyName parser.IAny_nameContext, ifExists bool) *WalkThroughError {
 	parts := pgparser.NormalizePostgreSQLAnyName(anyName)
 	if len(parts) == 0 {
 		return nil
@@ -1129,7 +1138,7 @@ func (l *pgAntlrCatalogListener) dropTable(anyName parser.IAny_nameContext, ifEx
 	return nil
 }
 
-func (l *pgAntlrCatalogListener) dropView(anyName parser.IAny_nameContext, ifExists bool) *WalkThroughError {
+func (l *pgCatalogListener) dropView(anyName parser.IAny_nameContext, ifExists bool) *WalkThroughError {
 	parts := pgparser.NormalizePostgreSQLAnyName(anyName)
 	if len(parts) == 0 {
 		return nil
@@ -1157,7 +1166,7 @@ func (l *pgAntlrCatalogListener) dropView(anyName parser.IAny_nameContext, ifExi
 	return nil
 }
 
-func (l *pgAntlrCatalogListener) dropIndex(anyName parser.IAny_nameContext, ifExists bool) *WalkThroughError {
+func (l *pgCatalogListener) dropIndex(anyName parser.IAny_nameContext, ifExists bool) *WalkThroughError {
 	parts := pgparser.NormalizePostgreSQLAnyName(anyName)
 	if len(parts) == 0 {
 		return nil
@@ -1193,7 +1202,7 @@ func (l *pgAntlrCatalogListener) dropIndex(anyName parser.IAny_nameContext, ifEx
 	return nil
 }
 
-func (l *pgAntlrCatalogListener) dropSchema(schemaNameCtx parser.INameContext, ifExists bool) *WalkThroughError {
+func (l *pgCatalogListener) dropSchema(schemaNameCtx parser.INameContext, ifExists bool) *WalkThroughError {
 	schemaName := pgparser.NormalizePostgreSQLName(schemaNameCtx)
 
 	schema, exists := l.databaseState.schemaSet[schemaName]
@@ -1221,7 +1230,7 @@ func (l *pgAntlrCatalogListener) dropSchema(schemaNameCtx parser.INameContext, i
 }
 
 // TODO: EnterDropindexstmt - Need to find correct ANTLR context name
-// func (l *pgAntlrCatalogListener) EnterDropindexstmt(ctx *parser.DropIndexContext) {
+// func (l *pgCatalogListener) EnterDropindexstmt(ctx *parser.DropIndexContext) {
 // 	if !isTopLevel(ctx.GetParent()) || l.err != nil {
 // 		return
 // 	}
@@ -1237,7 +1246,7 @@ func (l *pgAntlrCatalogListener) dropSchema(schemaNameCtx parser.INameContext, i
 // }
 
 // TODO: EnterDropschemastatement - Need to find correct ANTLR context name
-// func (l *pgAntlrCatalogListener) EnterDropschemastatement(ctx *parser.DropschemaContext) {
+// func (l *pgCatalogListener) EnterDropschemastatement(ctx *parser.DropschemaContext) {
 // 	if !isTopLevel(ctx.GetParent()) || l.err != nil {
 // 		return
 // 	}
@@ -1257,7 +1266,7 @@ func (l *pgAntlrCatalogListener) dropSchema(schemaNameCtx parser.INameContext, i
 // ========================================
 
 // EnterRenamestmt handles RENAME INDEX/CONSTRAINT/TABLE/COLUMN statements.
-func (l *pgAntlrCatalogListener) EnterRenamestmt(ctx *parser.RenamestmtContext) {
+func (l *pgCatalogListener) EnterRenamestmt(ctx *parser.RenamestmtContext) {
 	if !isTopLevel(ctx.GetParent()) || l.err != nil {
 		return
 	}
@@ -1383,7 +1392,7 @@ func (l *pgAntlrCatalogListener) EnterRenamestmt(ctx *parser.RenamestmtContext) 
 // ========================================
 
 // EnterViewstmt handles CREATE VIEW statements.
-func (l *pgAntlrCatalogListener) EnterViewstmt(ctx *parser.ViewstmtContext) {
+func (l *pgCatalogListener) EnterViewstmt(ctx *parser.ViewstmtContext) {
 	if !isTopLevel(ctx.GetParent()) || l.err != nil {
 		return
 	}
