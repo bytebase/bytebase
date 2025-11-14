@@ -161,7 +161,9 @@ const useSheetTreeByView = (
     return pathes;
   };
 
-  const getPwdForWorksheet = (worksheet: WorksheetLikeItem): string => {
+  const getPwdForWorksheet = (worksheet: {
+    folders: string[];
+  }): string => {
     return folderContext.ensureFolderPath(
       [folderContext.rootPath.value, ...worksheet.folders].join("/")
     );
