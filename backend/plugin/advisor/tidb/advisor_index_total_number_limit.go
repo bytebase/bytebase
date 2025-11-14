@@ -72,7 +72,7 @@ type indexTotalNumberLimitChecker struct {
 	line         int
 	max          int
 	tableIndexes map[string]map[string]bool // tableName -> indexName -> exists
-	tableLines   map[string]int            // tableName -> last line number
+	tableLines   map[string]int             // tableName -> last line number
 	catalog      *catalog.Finder
 }
 

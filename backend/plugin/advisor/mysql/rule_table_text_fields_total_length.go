@@ -206,6 +206,8 @@ func (r *TableTextFieldsTotalLengthRule) checkAlterTable(ctx *mysql.AlterTableCo
 						columnType: columnType,
 					}
 				}
+			default:
+				// Other ADD variations not relevant for column tracking
 			}
 		// CHANGE COLUMN or MODIFY COLUMN
 		case item.CHANGE_SYMBOL() != nil && item.Identifier() != nil && item.FieldDefinition() != nil && item.FieldDefinition().DataType() != nil:
@@ -226,6 +228,8 @@ func (r *TableTextFieldsTotalLengthRule) checkAlterTable(ctx *mysql.AlterTableCo
 		case item.DROP_SYMBOL() != nil && item.ColumnInternalRef() != nil:
 			columnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
 			delete(r.tableColumns[tableName], strings.ToLower(columnName))
+		default:
+			// Other ALTER TABLE commands not relevant for column tracking
 		}
 	}
 

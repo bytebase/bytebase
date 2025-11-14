@@ -93,7 +93,6 @@ func (*ColumnNoNullRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
 	return nil
 }
 
-
 func (r *ColumnNoNullRule) checkCreateTable(ctx *mysql.CreateTableContext) {
 	if ctx.TableName() == nil {
 		return
