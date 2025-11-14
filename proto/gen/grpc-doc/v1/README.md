@@ -7824,6 +7824,7 @@ OrgPolicyService manages organizational policies at various resource levels.
 | limit | [int32](#int32) |  | The maximum number of rows to return. |
 | data_source_id | [string](#string) |  | The id of data source. It is used for querying admin data source even if the instance has read-only data sources. Or it can be used to query a specific read-only data source. |
 | explain | [bool](#bool) |  | Explain the statement. |
+| dry_run | [bool](#bool) |  | Perform dry run (validation &#43; cost estimation, BigQuery only). |
 | schema | [string](#string) | optional | The default schema to search objects. Equals to the current schema in Oracle and search path in Postgres. |
 | query_option | [QueryOption](#bytebase-v1-QueryOption) |  |  |
 | container | [string](#string) | optional | Container is the container name to execute the query against, used for CosmosDB only. |

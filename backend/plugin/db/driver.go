@@ -120,6 +120,7 @@ type QueryContext struct {
 	// Limit is the maximum row count returned. No limit enforced if limit <= 0
 	Limit         int
 	Explain       bool
+	DryRun        bool
 	OperatorEmail string
 	Option        *v1pb.QueryOption
 	// The maximum number of bytes for sql results in response body.

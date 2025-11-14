@@ -55,6 +55,24 @@
             </NTooltip>
           </NRadioGroup>
         </div>
+        <div v-if="showExecutionMode" class="border-t pt-1">
+          <p class="mb-1 textinfolabel">
+            {{ $t("sql-editor.execution-mode.self") }}
+          </p>
+          <NRadioGroup v-model:value="queryMode" class="max-w-44">
+            <NRadio value="normal">
+              {{ $t("sql-editor.execution-mode.normal") }}
+            </NRadio>
+            <NTooltip>
+              <template #trigger>
+                <NRadio value="dry-run">
+                  {{ $t("sql-editor.execution-mode.dry-run") }}
+                </NRadio>
+              </template>
+              <span>{{ $t("sql-editor.execution-mode.dry-run-tooltip") }}</span>
+            </NTooltip>
+          </NRadioGroup>
+        </div>
         <NTooltip
           v-if="showRedisConfig"
           :disabled="
@@ -152,7 +170,7 @@ const tabStore = useSQLEditorTabStore();
 const { connection, database } = useConnectionOfCurrentSQLEditorTab();
 const policyStore = usePolicyV1Store();
 
-const { redisCommandOption, resultRowsLimit } =
+const { redisCommandOption, resultRowsLimit, queryMode } =
   storeToRefs(useSQLEditorStore());
 
 const show = computed(() => {
@@ -165,6 +183,14 @@ const showRedisConfig = computed(() => {
   }
   const instance = database.value.instanceResource;
   return instance.engine === Engine.REDIS;
+});
+
+const showExecutionMode = computed(() => {
+  if (!database.value) {
+    return false;
+  }
+  const instance = database.value.instanceResource;
+  return instance.engine === Engine.BIGQUERY;
 });
 
 const adminDataSourceRestriction = computed(() => {

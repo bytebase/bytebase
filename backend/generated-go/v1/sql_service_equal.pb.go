@@ -74,6 +74,9 @@ func (x *QueryRequest) Equal(y *QueryRequest) bool {
 	if x.Explain != y.Explain {
 		return false
 	}
+	if x.DryRun != y.DryRun {
+		return false
+	}
 	if p, q := x.Schema, y.Schema; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
 		return false
 	}

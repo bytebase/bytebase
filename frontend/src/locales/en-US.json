@@ -2122,6 +2122,12 @@
       "single-node": "Single node",
       "only-for-cluster": "Only available for cluster connection"
     },
+    "execution-mode": {
+      "self": "Execution Mode",
+      "normal": "Execute",
+      "dry-run": "Dry Run",
+      "dry-run-tooltip": "Validate query and estimate cost without executing"
+    },
     "result-limit": {
       "self": "Result limit",
       "n-rows": "{n} rows",

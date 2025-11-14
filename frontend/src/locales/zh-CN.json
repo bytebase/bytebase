@@ -2122,6 +2122,12 @@
       "single-node": "单节点",
       "only-for-cluster": "仅适用于集群连接"
     },
+    "execution-mode": {
+      "self": "执行模式",
+      "normal": "执行",
+      "dry-run": "模拟运行",
+      "dry-run-tooltip": "验证查询并估算成本，而不实际执行"
+    },
     "result-limit": {
       "self": "结果限制",
       "n-rows": "{n} 行",

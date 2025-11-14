@@ -506,6 +506,8 @@ type QueryRequest struct {
 	DataSourceId string `protobuf:"bytes,6,opt,name=data_source_id,json=dataSourceId,proto3" json:"data_source_id,omitempty"`
 	// Explain the statement.
 	Explain bool `protobuf:"varint,7,opt,name=explain,proto3" json:"explain,omitempty"`
+	// Perform dry run (validation + cost estimation, BigQuery only).
+	DryRun bool `protobuf:"varint,11,opt,name=dry_run,json=dryRun,proto3" json:"dry_run,omitempty"`
 	// The default schema to search objects. Equals to the current schema in
 	// Oracle and search path in Postgres.
 	Schema      *string      `protobuf:"bytes,8,opt,name=schema,proto3,oneof" json:"schema,omitempty"`
@@ -578,6 +580,13 @@ func (x *QueryRequest) GetDataSourceId() string {
 func (x *QueryRequest) GetExplain() bool {
 	if x != nil {
 		return x.Explain
+	}
+	return false
+}
+
+func (x *QueryRequest) GetDryRun() bool {
+	if x != nil {
+		return x.DryRun
 	}
 	return false
 }
@@ -2672,14 +2681,15 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\n" +
 	"_containerJ\x04\b\x02\x10\x03\"J\n" +
 	"\x14AdminExecuteResponse\x122\n" +
-	"\aresults\x18\x01 \x03(\v2\x18.bytebase.v1.QueryResultR\aresults\"\xd6\x02\n" +
+	"\aresults\x18\x01 \x03(\v2\x18.bytebase.v1.QueryResultR\aresults\"\xef\x02\n" +
 	"\fQueryRequest\x121\n" +
 	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x04name\x12\x1c\n" +
 	"\tstatement\x18\x03 \x01(\tR\tstatement\x12\x14\n" +
 	"\x05limit\x18\x04 \x01(\x05R\x05limit\x12)\n" +
 	"\x0edata_source_id\x18\x06 \x01(\tB\x03\xe0A\x02R\fdataSourceId\x12\x18\n" +
-	"\aexplain\x18\a \x01(\bR\aexplain\x12\x1b\n" +
+	"\aexplain\x18\a \x01(\bR\aexplain\x12\x17\n" +
+	"\adry_run\x18\v \x01(\bR\x06dryRun\x12\x1b\n" +
 	"\x06schema\x18\b \x01(\tH\x00R\x06schema\x88\x01\x01\x12;\n" +
 	"\fquery_option\x18\t \x01(\v2\x18.bytebase.v1.QueryOptionR\vqueryOption\x12!\n" +
 	"\tcontainer\x18\n" +

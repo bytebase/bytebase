@@ -110,6 +110,10 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		return nil, errors.New("BigQuery does not support EXPLAIN")
 	}
 
+	if queryContext.DryRun {
+		return d.dryRunQuery(ctx, statement, queryContext)
+	}
+
 	statements, err := util.SanitizeSQL(statement)
 	if err != nil {
 		return nil, err
@@ -206,6 +210,90 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		if stop {
 			break
 		}
+	}
+
+	return results, nil
+}
+
+// dryRunQuery performs a dry run validation of the query without executing it.
+// Returns validation status and estimated bytes to be processed.
+func (d *Driver) dryRunQuery(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+	statements, err := util.SanitizeSQL(statement)
+	if err != nil {
+		return nil, err
+	}
+
+	var results []*v1pb.QueryResult
+	for _, stmt := range statements {
+		startTime := time.Now()
+
+		q := d.client.Query(stmt)
+		q.DefaultDatasetID = d.databaseName
+		q.DryRun = true
+
+		if queryContext.OperatorEmail != "" {
+			q.Labels = map[string]string{"operator_email": encodeOperatorEmail(queryContext.OperatorEmail)}
+		}
+
+		job, err := q.Run(ctx)
+		if err != nil {
+			results = append(results, &v1pb.QueryResult{
+				Statement: stmt,
+				Error:     err.Error(),
+				Latency:   durationpb.New(time.Since(startTime)),
+			})
+			continue
+		}
+
+		status, err := job.Wait(ctx)
+		if err != nil {
+			results = append(results, &v1pb.QueryResult{
+				Statement: stmt,
+				Error:     err.Error(),
+				Latency:   durationpb.New(time.Since(startTime)),
+			})
+			continue
+		}
+
+		if err := status.Err(); err != nil {
+			results = append(results, &v1pb.QueryResult{
+				Statement: stmt,
+				Error:     err.Error(),
+				Latency:   durationpb.New(time.Since(startTime)),
+			})
+			continue
+		}
+
+		// Extract dry run results
+		result := &v1pb.QueryResult{
+			Statement: stmt,
+			Latency:   durationpb.New(time.Since(startTime)),
+		}
+
+		if stats, ok := status.Statistics.Details.(*bigquery.QueryStatistics); ok {
+			bytesProcessed := stats.TotalBytesProcessed
+
+			// Format output similar to bq CLI
+			message := fmt.Sprintf(
+				"Query successfully validated. Assuming the tables are not modified, "+
+					"running this query will process %d bytes (%.2f MB).",
+				bytesProcessed,
+				float64(bytesProcessed)/(1024*1024),
+			)
+
+			result.ColumnNames = []string{"Validation Result"}
+			result.ColumnTypeNames = []string{"STRING"}
+			result.Rows = []*v1pb.QueryRow{
+				{
+					Values: []*v1pb.RowValue{
+						{Kind: &v1pb.RowValue_StringValue{StringValue: message}},
+					},
+				},
+			}
+			result.RowsCount = 1
+		}
+
+		results = append(results, result)
 	}
 
 	return results, nil

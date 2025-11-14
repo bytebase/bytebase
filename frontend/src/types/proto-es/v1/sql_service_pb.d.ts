@@ -125,6 +125,13 @@ export declare type QueryRequest = Message<"bytebase.v1.QueryRequest"> & {
   explain: boolean;
 
   /**
+   * Perform dry run (validation + cost estimation, BigQuery only).
+   *
+   * @generated from field: bool dry_run = 11;
+   */
+  dryRun: boolean;
+
+  /**
    * The default schema to search objects. Equals to the current schema in
    * Oracle and search path in Postgres.
    *
