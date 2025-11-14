@@ -255,7 +255,7 @@ const useSheetTreeByView = (
             `project == "${project.value}"`,
             `creator != "users/${me.value.email}"`,
             // TODO(ed): do we need the visibility filter?
-            // If not provide it, the call will fetch all worksheet will read access.
+            // If not provide it, the call will fetch all worksheet with read access.
             `visibility in ["${Worksheet_Visibility[Worksheet_Visibility.PROJECT_READ]}","${Worksheet_Visibility[Worksheet_Visibility.PROJECT_WRITE]}"]`,
           ].join(" && "));
           break;
