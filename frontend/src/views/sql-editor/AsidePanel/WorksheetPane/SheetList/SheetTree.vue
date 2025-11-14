@@ -9,6 +9,7 @@
     <NTree
       v-else
       block-line
+      block-node
       :keyboard="false"
       :draggable="!editingNode"
       :data="[sheetTree]"
@@ -271,7 +272,6 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
       <NInput
         value={editingNode.value.node.label}
         size="small"
-        class="flex-1"
         inputProps={{
           // the autofocus not always work,
           // so we need to set the id for input and use the document.getElementById API
@@ -779,7 +779,6 @@ const handleDrop = async ({ node, dragNode }: TreeDropInfo) => {
 }
 .worksheet-tree :deep(.n-tree-node-content__text) {
   overflow: hidden;
-  flex: 1;
   text-overflow: ellipsis;
   white-space: nowrap;
 }

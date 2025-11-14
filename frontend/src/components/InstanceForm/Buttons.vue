@@ -248,7 +248,7 @@ const checkRODataSourceFeature = (instance: Instance) => {
       // Disallowed to create any new RO data sources
       return false;
     } else {
-      const editing = extractDataSourceFromEdit(instance, ds);
+      const editing = extractDataSourceFromEdit(instance.engine, ds);
       const original = instance.dataSources.find((d) => d.id === ds.id);
       if (original) {
         const updateMask = calcDataSourceUpdateMask(editing, original, ds);
@@ -430,7 +430,10 @@ const doUpdate = async () => {
     const original = inst.dataSources.find(
       (ds) => ds.type === DataSourceType.ADMIN
     );
-    const editing = extractDataSourceFromEdit(inst, adminDataSource.value);
+    const editing = extractDataSourceFromEdit(
+      inst.engine,
+      adminDataSource.value
+    );
     return await maybeQueueUpdateDataSource(
       editing,
       original,
@@ -448,7 +451,7 @@ const doUpdate = async () => {
     // Upsert readonly data sources one by one
     for (let i = 0; i < readonlyDataSourceList.value.length; i++) {
       const editing = readonlyDataSourceList.value[i];
-      const patch = extractDataSourceFromEdit(inst, editing);
+      const patch = extractDataSourceFromEdit(inst.engine, editing);
       if (editing.pendingCreate) {
         const testResult = await testConnection(editing, /* silent */ true);
         if (!testResult.success) {

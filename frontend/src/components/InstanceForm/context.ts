@@ -271,7 +271,7 @@ export const provideInstanceFormContext = (baseContext: {
   const specs = useInstanceSpecs(basicInfo, adminDataSource, editingDataSource);
 
   const extractDataSourceFromEdit = (
-    instance: Instance,
+    engine: Engine,
     edit: EditDataSource
   ): DataSource => {
     const { showDatabase, showSSH, showSSL } = specs;
@@ -305,11 +305,11 @@ export const provideInstanceFormContext = (baseContext: {
     if (!showDatabase.value) {
       ds.database = "";
     }
-    if (instance.engine !== Engine.ORACLE) {
+    if (engine !== Engine.ORACLE) {
       ds.sid = "";
       ds.serviceName = "";
     }
-    if (instance.engine !== Engine.MONGODB) {
+    if (engine !== Engine.MONGODB) {
       ds.srv = false;
       ds.authenticationDatabase = "";
     }
@@ -339,7 +339,7 @@ export const provideInstanceFormContext = (baseContext: {
     });
     if (editingDataSource.value) {
       const dataSourceCreate = extractDataSourceFromEdit(
-        instance,
+        instance.engine,
         adminDataSource.value
       );
       instance.dataSources = [dataSourceCreate];
@@ -394,7 +394,10 @@ export const provideInstanceFormContext = (baseContext: {
         engineVersion: "",
         dataSources: [],
       });
-      const dataSourceCreate = extractDataSourceFromEdit(instance, editingDS);
+      const dataSourceCreate = extractDataSourceFromEdit(
+        instance.engine,
+        editingDS
+      );
       instance.dataSources = [dataSourceCreate];
       try {
         const request = create(CreateInstanceRequestSchema, {
@@ -411,7 +414,7 @@ export const provideInstanceFormContext = (baseContext: {
       }
     } else {
       // Editing existed instance.
-      const ds = extractDataSourceFromEdit(instance.value!, editingDS);
+      const ds = extractDataSourceFromEdit(instance.value!.engine, editingDS);
       if (editingDS.pendingCreate) {
         // When read-only data source is about to be created, use
         // editingDataSource + AddDataSourceRequest.validateOnly = true

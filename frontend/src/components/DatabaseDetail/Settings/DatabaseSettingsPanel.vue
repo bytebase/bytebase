@@ -9,6 +9,7 @@
           class="mt-1 max-w-md"
           :environment-name="`${environmentNamePrefix}${environment.id}`"
           :disabled="!allowUpdateDatabase"
+          :clearable="!database.instanceResource.environment"
           :render-suffix="
             (env: string) =>
               database.instanceResource.environment === env
