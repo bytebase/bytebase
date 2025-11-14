@@ -2182,15 +2182,80 @@ func writeExtension(out io.Writer, extension *storepb.ExtensionMetadata) error {
 		return err
 	}
 
-	if _, err := io.WriteString(out, `" WITH SCHEMA "`); err != nil {
+	if _, err := io.WriteString(out, `"`); err != nil {
 		return err
 	}
 
-	if _, err := io.WriteString(out, extension.Schema); err != nil {
+	// Add WITH SCHEMA clause if schema is specified and not empty
+	if extension.Schema != "" {
+		if _, err := io.WriteString(out, ` WITH SCHEMA "`); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, extension.Schema); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, `"`); err != nil {
+			return err
+		}
+	}
+
+	// Add VERSION clause if version is specified
+	if extension.Version != "" {
+		if _, err := io.WriteString(out, ` VERSION '`); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, extension.Version); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, `'`); err != nil {
+			return err
+		}
+	}
+
+	if _, err := io.WriteString(out, `;`); err != nil {
 		return err
 	}
 
-	if _, err := io.WriteString(out, `";`); err != nil {
+	if _, err := io.WriteString(out, "\n"); err != nil {
+		return err
+	}
+
+	// Write extension description (comment) if present
+	if extension.Description != "" {
+		if _, err := io.WriteString(out, "\n"); err != nil {
+			return err
+		}
+		if err := writeExtensionComment(out, extension); err != nil {
+			return err
+		}
+	} else {
+		// Add blank line even if no description
+		if _, err := io.WriteString(out, "\n"); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func writeExtensionComment(out io.Writer, extension *storepb.ExtensionMetadata) error {
+	if _, err := io.WriteString(out, `COMMENT ON EXTENSION "`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, extension.Name); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `" IS '`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, escapeSingleQuote(extension.Description)); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `';`); err != nil {
 		return err
 	}
 
@@ -2215,6 +2280,13 @@ func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 			if err := writeSchemaCommentSDL(&buf, schema); err != nil {
 				return "", err
 			}
+		}
+	}
+
+	// Write extensions (before enum types and tables as they might provide types used in definitions)
+	for _, extension := range metadata.Extensions {
+		if err := writeExtension(&buf, extension); err != nil {
+			return "", err
 		}
 	}
 
@@ -3564,6 +3636,25 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 				Content: buf.String(),
 			})
 		}
+	}
+
+	// Generate extensions.sql file if there are any extensions
+	if len(metadata.Extensions) > 0 {
+		var buf strings.Builder
+		for i, extension := range metadata.Extensions {
+			if i > 0 {
+				buf.WriteString("\n")
+			}
+
+			if err := writeExtension(&buf, extension); err != nil {
+				return nil, errors.Wrapf(err, "failed to generate extension SDL for %s", extension.Name)
+			}
+		}
+
+		files = append(files, schema.File{
+			Name:    "extensions.sql",
+			Content: buf.String(),
+		})
 	}
 
 	return &schema.MultiFileSchemaResult{Files: files}, nil
