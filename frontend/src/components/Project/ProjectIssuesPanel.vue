@@ -2,7 +2,7 @@
   <div class="flex flex-col gap-y-2">
     <IssueSearch
       v-model:params="state.params"
-      :components="['searchbox', 'time-range', 'presets', 'filters']"
+      :components="['searchbox', 'time-range', 'presets']"
     />
 
     <div class="relative min-h-80">

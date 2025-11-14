@@ -246,7 +246,9 @@
     "collapse": "Collapse",
     "line": "Line",
     "column": "Column",
-    "apply-to-database": "Apply to database"
+    "apply-to-database": "Apply to database",
+    "assignee": "Assignee",
+    "me": "Me"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -942,8 +944,7 @@
           "title": "Engine",
           "description": "Filter by engines"
         }
-      },
-      "hide": "Hide advanced search"
+      }
     },
     "table": {
       "open": "Open",

@@ -21,20 +21,11 @@
     <slot name="default" />
 
     <!-- Preset Buttons Row -->
-    <div v-if="!componentProps?.presets?.hidden" class="flex flex-col gap-y-2">
-      <PresetButtons
-        v-if="components.includes('presets')"
-        :params="params"
-        @update:params="$emit('update:params', $event)"
-      />
-
-      <!-- Filter Toggles Row -->
-      <FilterToggles
-        v-if="components.includes('filters')"
-        :params="params"
-        @update:params="$emit('update:params', $event)"
-      />
-    </div>
+    <PresetButtons
+      v-if="components.includes('presets') && !componentProps?.presets?.hidden"
+      :params="params"
+      @update:params="$emit('update:params', $event)"
+    />
 
     <slot name="primary" />
   </div>
@@ -46,15 +37,10 @@ import AdvancedSearch from "@/components/AdvancedSearch";
 import TimeRange from "@/components/AdvancedSearch/TimeRange.vue";
 import type { SearchParams, SearchScopeId } from "@/utils";
 import { UIIssueFilterScopeIdList } from "@/utils";
-import FilterToggles from "./FilterToggles.vue";
 import PresetButtons from "./PresetButtons.vue";
 import { useIssueSearchScopeOptions } from "./useIssueSearchScopeOptions";
 
-export type SearchComponent =
-  | "searchbox"
-  | "presets"
-  | "filters"
-  | "time-range";
+export type SearchComponent = "searchbox" | "presets" | "time-range";
 
 const props = withDefaults(
   defineProps<{
@@ -66,7 +52,7 @@ const props = withDefaults(
   }>(),
   {
     overrideScopeIdList: () => [],
-    components: () => ["searchbox", "time-range", "presets", "filters"],
+    components: () => ["searchbox", "time-range", "presets"],
     componentProps: undefined,
   }
 );
