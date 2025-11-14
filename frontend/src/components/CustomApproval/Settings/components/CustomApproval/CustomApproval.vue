@@ -22,9 +22,9 @@
 <script lang="ts" setup>
 import { NTabPane, NTabs } from "naive-ui";
 import { provideRiskFilter } from "../common/RiskFilter";
+import { useCustomApprovalContext } from "./context";
 import FlowsPanel from "./FlowsPanel";
 import RulesPanel from "./RulesPanel";
-import { useCustomApprovalContext } from "./context";
 
 const { tab } = useCustomApprovalContext();
 provideRiskFilter();

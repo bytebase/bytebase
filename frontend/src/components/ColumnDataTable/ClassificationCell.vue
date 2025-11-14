@@ -35,7 +35,7 @@
 <script lang="ts" setup>
 import { PencilIcon, XIcon } from "lucide-vue-next";
 import { NPopconfirm } from "naive-ui";
-import { ref, computed } from "vue";
+import { computed, ref } from "vue";
 import ClassificationLevelBadge from "@/components/SchemaTemplate/ClassificationLevelBadge.vue";
 import { MiniActionButton } from "@/components/v2";
 import type { Engine } from "@/types/proto-es/v1/common_pb";

@@ -38,14 +38,14 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import {
-  IssueStatus,
   Issue_ApprovalStatus,
+  IssueStatus,
 } from "@/types/proto-es/v1/issue_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { activeTaskInRollout, isDatabaseChangeRelatedIssue } from "@/utils";
 import {
-  useIssueContext,
   isUnfinishedResolvedTask as checkUnfinishedResolvedTask,
+  useIssueContext,
 } from "../logic";
 
 const { issue } = useIssueContext();

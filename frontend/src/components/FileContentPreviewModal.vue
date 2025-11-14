@@ -38,12 +38,12 @@
 </template>
 
 <script lang="ts" setup>
-import { NSelect, NButton, NSpin } from "naive-ui";
+import { NButton, NSelect, NSpin } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { BBModal } from "@/bbkit";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { pushNotification } from "@/store";
-import { ENCODINGS, readFileAsArrayBuffer, type Encoding } from "@/utils";
+import { ENCODINGS, type Encoding, readFileAsArrayBuffer } from "@/utils";
 
 interface LocalState {
   encoding: Encoding;

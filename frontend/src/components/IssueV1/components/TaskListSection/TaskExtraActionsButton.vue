@@ -22,7 +22,7 @@
 
 <script setup lang="ts">
 import type { DropdownOption } from "naive-ui";
-import { NDropdown, NButton } from "naive-ui";
+import { NButton, NDropdown } from "naive-ui";
 import type { VNode } from "vue";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";

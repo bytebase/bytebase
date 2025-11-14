@@ -1,19 +1,19 @@
-import { orderBy, uniq, flatten } from "lodash-es";
+import { flatten, orderBy, uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, reactive, ref } from "vue";
 import type {
   ComposedDatabase,
   SQLEditorTreeFactor as Factor,
-  SQLEditorTreeNode as TreeNode,
   SQLEditorTreeNodeTarget as NodeTarget,
   SQLEditorTreeNodeType as NodeType,
+  SQLEditorTreeNode as TreeNode,
   SQLEditorTreeState as TreeState,
 } from "@/types";
 import {
   extractSQLEditorLabelFactor as extractLabelFactor,
-  unknownEnvironment,
-  LeafTreeNodeTypes,
   formatEnvironmentName,
+  LeafTreeNodeTypes,
+  unknownEnvironment,
 } from "@/types";
 import type { InstanceResource } from "@/types/proto-es/v1/instance_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";

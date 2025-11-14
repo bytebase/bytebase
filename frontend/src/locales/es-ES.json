@@ -589,6 +589,11 @@
           "participate": "Participar en el programa de mejora",
           "description": "Ayuda a mejorar Bytebase compartiendo datos de uso anónimos"
         },
+        "audit-log-stdout": {
+          "self": "Exportación de Registros de Auditoría",
+          "enable": "Habilitar el registro de auditoría en la salida estándar",
+          "description": "Generar registros de auditoría JSON estructurados en la salida estándar para su ingesta por agregadores de registros (Splunk, ELK, Datadog, Loki). Requiere licencia TEAM o ENTERPRISE."
+        },
         "disallow-signup": {
           "enable": "Deshabilitar el registro de autoservicio",
           "description": "Una vez deshabilitado, los usuarios no pueden registrarse por sí mismos y solo pueden ser invitados por el administrador del espacio de trabajo."
@@ -853,7 +858,6 @@
     "labels": "Etiquetas de problema",
     "my-issues": "Mis Incidencias",
     "waiting-approval": "A la espera de la aprobación",
-    "waiting-rollout": "Esperando el lanzamiento",
     "status-transition": {
       "modal": {
         "resolve": "¿Resolver incidencia?",
@@ -938,8 +942,7 @@
           "title": "Motor",
           "description": "Filtrar por motores"
         }
-      },
-      "hide": "Ocultar búsqueda avanzada"
+      }
     },
     "table": {
       "open": "Abierto",
@@ -1407,7 +1410,12 @@
       "vault-secret-engine-name": "Secret engine name",
       "vault-secret-path": "Secret path",
       "vault-secret-key": "Secret key",
-      "vault-secret-engine-tips": "Solo admite motor KV v2."
+      "vault-secret-engine-tips": "Solo admite motor KV v2.",
+      "vault-tls-config": "Configuración TLS de Vault (opcional)",
+      "verify-vault-certificate": "Verificar certificado TLS de Vault",
+      "vault-ca-cert": "Certificado de CA de Vault",
+      "vault-client-cert": "Certificado de cliente de Vault",
+      "vault-client-key": "Clave de cliente de Vault"
     },
     "external-secret": {
       "secret-name": "Nombre secreto",
@@ -2769,6 +2777,10 @@
     "sql-editor-user": {
       "self": "Usuario del editor SQL",
       "description": "El consultor del proyecto tiene todos los permisos dentro del proyecto, excepto la gestión de miembros del proyecto."
+    },
+    "gitops-service-agent": {
+      "self": "Agente de Servicio GitOps",
+      "description": "Permisos para flujos de trabajo automatizados de CI/CD para crear y ejecutar cambios de base de datos a través de GitOps."
     },
     "project-viewer": {
       "self": "Espectador del proyecto",

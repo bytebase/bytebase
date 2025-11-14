@@ -190,8 +190,7 @@ import {
   getSortedRowModel,
   useVueTable,
 } from "@tanstack/vue-table";
-import { useClipboard } from "@vueuse/core";
-import { useDebounceFn, useLocalStorage } from "@vueuse/core";
+import { useClipboard, useDebounceFn, useLocalStorage } from "@vueuse/core";
 import { isEmpty } from "lodash-es";
 import {
   NButton,
@@ -206,19 +205,19 @@ import {
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBAttention } from "@/bbkit";
+import DatabaseInfo from "@/components/DatabaseInfo.vue";
 import type {
   DownloadContent,
   ExportOption,
 } from "@/components/DataExportButton.vue";
 import DataExportButton from "@/components/DataExportButton.vue";
-import DatabaseInfo from "@/components/DatabaseInfo.vue";
 import { RichDatabaseName } from "@/components/v2";
 import { DISMISS_PLACEHOLDER } from "@/plugins/ai/components/state";
 import {
+  pushNotification,
   useConnectionOfCurrentSQLEditorTab,
   useSQLEditorStore,
   useSQLEditorTabStore,
-  pushNotification,
 } from "@/store";
 import type { ComposedDatabase, SQLEditorQueryParams } from "@/types";
 import { DEBOUNCE_SEARCH_DELAY, isValidInstanceName } from "@/types";
@@ -235,13 +234,13 @@ import {
   instanceV1HasStructuredQueryResult,
   isNullOrUndefined,
 } from "@/utils";
-import VirtualDataTable from "./DataTable/VirtualDataTable.vue";
+import { useSQLResultViewContext } from "./context";
 import { provideSelectionContext } from "./DataTable/common/selection-logic";
+import VirtualDataTable from "./DataTable/VirtualDataTable.vue";
 import EmptyView from "./EmptyView.vue";
 import ErrorView from "./ErrorView";
 import SelectionCopyTooltips from "./SelectionCopyTooltips.vue";
 import VirtualDataBlock from "./VirtualDataBlock.vue";
-import { useSQLResultViewContext } from "./context";
 
 // Using conversion function from common-conversions.ts
 

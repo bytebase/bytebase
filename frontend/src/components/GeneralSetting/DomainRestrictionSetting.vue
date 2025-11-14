@@ -57,7 +57,7 @@
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
-import { isEqual, cloneDeep } from "lodash-es";
+import { cloneDeep, isEqual } from "lodash-es";
 import { NCheckbox, NDynamicTags } from "naive-ui";
 import { computed, reactive } from "vue";
 import { featureToRef } from "@/store";

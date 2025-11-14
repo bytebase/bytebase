@@ -248,14 +248,14 @@ import {
   taskRunListForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
-import PlanCheckRunBar from "@/components/PlanCheckRun/PlanCheckRunBar.vue";
 import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
+import PlanCheckRunBar from "@/components/PlanCheckRun/PlanCheckRunBar.vue";
 import { EnvironmentV1Name } from "@/components/v2";
 import { rolloutServiceClientConnect } from "@/grpcweb";
 import {
   pushNotification,
-  useEnvironmentV1Store,
   useCurrentProjectV1,
+  useEnvironmentV1Store,
   usePolicyByParentAndType,
 } from "@/store";
 import { Issue_Approver_Status } from "@/types/proto-es/v1/issue_service_pb";
@@ -263,13 +263,11 @@ import {
   PolicyType,
   RolloutPolicy_Checkers_PlanCheckEnforcement,
 } from "@/types/proto-es/v1/org_policy_service_pb";
-import {
-  BatchRunTasksRequestSchema,
-  BatchSkipTasksRequestSchema,
-  BatchCancelTaskRunsRequestSchema,
-} from "@/types/proto-es/v1/rollout_service_pb";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import {
+  BatchCancelTaskRunsRequestSchema,
+  BatchRunTasksRequestSchema,
+  BatchSkipTasksRequestSchema,
   Task_Status,
   TaskRun_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";

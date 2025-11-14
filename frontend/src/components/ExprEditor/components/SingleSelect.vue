@@ -17,9 +17,9 @@
 
 <script lang="ts" setup>
 import { useDebounceFn } from "@vueuse/core";
-import { NSelect } from "naive-ui";
 import type { SelectOption } from "naive-ui";
-import { toRef, watch, reactive } from "vue";
+import { NSelect } from "naive-ui";
+import { reactive, toRef, watch } from "vue";
 import { type ConditionExpr } from "@/plugins/cel";
 import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import { useExprEditorContext } from "../context";

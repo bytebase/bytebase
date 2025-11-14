@@ -168,13 +168,23 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 
 	// For materialized views depending on tables/views
 	for mvID, mvDiff := range materializedViewMap {
+		var dependencies []*storepb.DependencyColumn
+
 		if mvDiff.OldMaterializedView != nil {
-			for _, dep := range mvDiff.OldMaterializedView.DependencyColumns {
-				depID := getMigrationObjectID(dep.Schema, dep.Table)
-				if allObjects[depID] {
-					// Edge from dependent to dependency
-					graph.AddEdge(mvID, depID)
-				}
+			// Use metadata if available
+			dependencies = mvDiff.OldMaterializedView.DependencyColumns
+		} else if mvDiff.OldASTNode != nil {
+			// Extract dependencies from AST node for AST-only mode
+			// Use the temporary metadata containing objects being dropped
+			dependencies = getMaterializedViewDependenciesFromAST(mvDiff.OldASTNode, mvDiff.SchemaName, tempMetadata)
+		}
+
+		for _, dep := range dependencies {
+			depID := getMigrationObjectID(dep.Schema, dep.Table)
+			if allObjects[depID] {
+				// Edge from dependent to dependency (materialized view depends on table/view)
+				// For DROP: mv -> view/table means mv should be dropped before view/table
+				graph.AddEdge(mvID, depID)
 			}
 		}
 	}
@@ -258,12 +268,16 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 
 		// Drop views
 		for _, viewDiff := range viewMap {
-			writeDropView(buf, viewDiff.SchemaName, viewDiff.ViewName)
+			if viewDiff.Action == schema.MetadataDiffActionDrop {
+				writeDropView(buf, viewDiff.SchemaName, viewDiff.ViewName)
+			}
 		}
 
 		// Drop materialized views
 		for _, mvDiff := range materializedViewMap {
-			writeDropMaterializedView(buf, mvDiff.SchemaName, mvDiff.MaterializedViewName)
+			if mvDiff.Action == schema.MetadataDiffActionDrop {
+				writeDropMaterializedView(buf, mvDiff.SchemaName, mvDiff.MaterializedViewName)
+			}
 		}
 
 		// Drop functions
@@ -374,9 +388,13 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 
 			// Drop the object itself
 			if viewDiff, ok := viewMap[objID]; ok {
-				writeDropView(buf, viewDiff.SchemaName, viewDiff.ViewName)
+				if viewDiff.Action == schema.MetadataDiffActionDrop {
+					writeDropView(buf, viewDiff.SchemaName, viewDiff.ViewName)
+				}
 			} else if mvDiff, ok := materializedViewMap[objID]; ok {
-				writeDropMaterializedView(buf, mvDiff.SchemaName, mvDiff.MaterializedViewName)
+				if mvDiff.Action == schema.MetadataDiffActionDrop {
+					writeDropMaterializedView(buf, mvDiff.SchemaName, mvDiff.MaterializedViewName)
+				}
 			} else if funcDiff, ok := functionMap[objID]; ok {
 				definition := getFunctionDefinitionForDrop(funcDiff)
 				writeDropFunction(buf, funcDiff.SchemaName, funcDiff.FunctionName, funcDiff.OldASTNode, definition)
@@ -451,6 +469,30 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 						} else if colDiff.OldASTNode != nil {
 							// AST-only mode - use AST functions
 							_ = writeDropColumnFromAST(buf, tableDiff.SchemaName, tableDiff.TableName, colDiff.OldASTNode)
+						}
+					}
+				}
+			}
+		}
+
+		// Handle remaining ALTER materialized view drops (indexes)
+		for _, mvDiff := range diff.MaterializedViewChanges {
+			if mvDiff.Action == schema.MetadataDiffActionAlter {
+				// Drop indexes
+				for _, indexDiff := range mvDiff.IndexChanges {
+					if indexDiff.Action == schema.MetadataDiffActionDrop {
+						if indexDiff.OldIndex != nil {
+							// Metadata mode: use index metadata
+							if indexDiff.OldIndex.IsConstraint {
+								writeDropConstraint(buf, mvDiff.SchemaName, mvDiff.MaterializedViewName, indexDiff.OldIndex.Name)
+							} else {
+								writeDropIndex(buf, mvDiff.SchemaName, indexDiff.OldIndex.Name)
+							}
+						} else if indexDiff.OldASTNode != nil {
+							// AST-only mode: extract from AST node
+							if indexAST, ok := indexDiff.OldASTNode.(*pgparser.IndexstmtContext); ok {
+								writeDropIndexFromAST(buf, mvDiff.SchemaName, indexAST)
+							}
 						}
 					}
 				}
@@ -592,8 +634,17 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 	// Create enum types (before tables as they might be used in column definitions)
 	for _, enumDiff := range diff.EnumTypeChanges {
 		if enumDiff.Action == schema.MetadataDiffActionCreate {
-			if err := writeCreateEnumType(buf, enumDiff.SchemaName, enumDiff.NewEnumType); err != nil {
-				return err
+			// Support both metadata and AST-only modes
+			if enumDiff.NewEnumType != nil {
+				// Metadata mode: use enum type metadata
+				if err := writeCreateEnumType(buf, enumDiff.SchemaName, enumDiff.NewEnumType); err != nil {
+					return err
+				}
+			} else if enumDiff.NewASTNode != nil {
+				// AST-only mode: extract SQL from AST node
+				if err := writeMigrationEnumTypeFromAST(buf, enumDiff.NewASTNode); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -725,10 +776,21 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 
 	// For materialized views depending on tables/views
 	for mvID, mvDiff := range materializedViewMap {
+		var dependencies []*storepb.DependencyColumn
+
 		if mvDiff.NewMaterializedView != nil {
-			for _, dep := range mvDiff.NewMaterializedView.DependencyColumns {
-				depID := getMigrationObjectID(dep.Schema, dep.Table)
-				// Edge from dependency to dependent
+			// Use metadata if available
+			dependencies = mvDiff.NewMaterializedView.DependencyColumns
+		} else if mvDiff.NewASTNode != nil {
+			// Extract dependencies from AST node for AST-only mode
+			// Use the temporary metadata containing objects being created
+			dependencies = getMaterializedViewDependenciesFromAST(mvDiff.NewASTNode, mvDiff.SchemaName, tempMetadata)
+		}
+
+		for _, dep := range dependencies {
+			depID := getMigrationObjectID(dep.Schema, dep.Table)
+			if allObjects[depID] {
+				// Edge from dependency to dependent (table/view to materialized view)
 				graph.AddEdge(depID, mvID)
 			}
 		}
@@ -824,8 +886,17 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 		for _, mvDiff := range materializedViewMap {
 			switch mvDiff.Action {
 			case schema.MetadataDiffActionCreate, schema.MetadataDiffActionAlter:
-				if err := writeMigrationMaterializedView(buf, mvDiff.SchemaName, mvDiff.NewMaterializedView); err != nil {
-					return err
+				// Support AST-only mode: if metadata is nil but AST node exists, use AST
+				if mvDiff.NewMaterializedView != nil {
+					if err := writeMigrationMaterializedView(buf, mvDiff.SchemaName, mvDiff.NewMaterializedView); err != nil {
+						return err
+					}
+				} else if mvDiff.NewASTNode != nil {
+					if err := writeMigrationMaterializedViewFromAST(buf, mvDiff.NewASTNode); err != nil {
+						return err
+					}
+				} else {
+					return errors.Errorf("materialized view diff for %s.%s has neither metadata nor AST node", mvDiff.SchemaName, mvDiff.MaterializedViewName)
 				}
 			default:
 				// No action needed
@@ -940,15 +1011,40 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 			} else if mvDiff, ok := materializedViewMap[objID]; ok {
 				switch mvDiff.Action {
 				case schema.MetadataDiffActionCreate:
-					if err := writeMigrationMaterializedView(buf, mvDiff.SchemaName, mvDiff.NewMaterializedView); err != nil {
-						return err
+					// Support AST-only mode: if metadata is nil but AST node exists, use AST
+					if mvDiff.NewMaterializedView != nil {
+						if err := writeMigrationMaterializedView(buf, mvDiff.SchemaName, mvDiff.NewMaterializedView); err != nil {
+							return err
+						}
+					} else if mvDiff.NewASTNode != nil {
+						if err := writeMigrationMaterializedViewFromAST(buf, mvDiff.NewASTNode); err != nil {
+							return err
+						}
+					} else {
+						return errors.Errorf("materialized view diff for %s.%s has neither metadata nor AST node", mvDiff.SchemaName, mvDiff.MaterializedViewName)
 					}
 				case schema.MetadataDiffActionAlter:
-					// For PostgreSQL materialized views, we need to drop and recreate
-					// since ALTER MATERIALIZED VIEW doesn't support changing the definition
-					writeDropMaterializedView(buf, mvDiff.SchemaName, mvDiff.MaterializedViewName)
-					if err := writeMigrationMaterializedView(buf, mvDiff.SchemaName, mvDiff.NewMaterializedView); err != nil {
-						return err
+					// Check if this is an index-only change (no MV definition change)
+					hasIndexOnlyChanges := len(mvDiff.IndexChanges) > 0 && mvDiff.NewMaterializedView == nil && mvDiff.NewASTNode == nil
+
+					// For index-only changes, don't alter the MV itself
+					// Index changes are processed separately later (see lines ~1107-1127)
+					if !hasIndexOnlyChanges {
+						// For PostgreSQL materialized views, we need to drop and recreate
+						// since ALTER MATERIALIZED VIEW doesn't support changing the definition
+						writeDropMaterializedView(buf, mvDiff.SchemaName, mvDiff.MaterializedViewName)
+						// Support AST-only mode
+						if mvDiff.NewMaterializedView != nil {
+							if err := writeMigrationMaterializedView(buf, mvDiff.SchemaName, mvDiff.NewMaterializedView); err != nil {
+								return err
+							}
+						} else if mvDiff.NewASTNode != nil {
+							if err := writeMigrationMaterializedViewFromAST(buf, mvDiff.NewASTNode); err != nil {
+								return err
+							}
+						} else {
+							return errors.Errorf("materialized view ALTER for %s.%s has neither metadata nor AST node", mvDiff.SchemaName, mvDiff.MaterializedViewName)
+						}
 					}
 				default:
 					// No action needed for other operations
@@ -1031,6 +1127,28 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 				}
 			}
 		}
+
+		// Add indexes for materialized view ALTER operations
+		for _, mvDiff := range diff.MaterializedViewChanges {
+			if mvDiff.Action == schema.MetadataDiffActionAlter {
+				for _, indexDiff := range mvDiff.IndexChanges {
+					if indexDiff.Action == schema.MetadataDiffActionCreate {
+						if indexDiff.NewIndex != nil {
+							// Metadata mode: use index metadata
+							writeMigrationMaterializedViewIndex(buf, mvDiff.SchemaName, mvDiff.MaterializedViewName, indexDiff.NewIndex)
+						} else if indexDiff.NewASTNode != nil {
+							// AST-only mode: extract from AST node
+							if indexAST, ok := indexDiff.NewASTNode.(*pgparser.IndexstmtContext); ok {
+								if err := writeCreateIndexFromAST(buf, indexAST); err != nil {
+									// If AST extraction fails, log error but continue (non-fatal)
+									_, _ = fmt.Fprintf(buf, "-- Error creating index: %v\n", err)
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 
 	// ALTER table operations are now handled earlier in the topological order
@@ -1066,6 +1184,15 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 	// Handle materialized view comment changes
 	if err := generateMaterializedViewCommentChanges(buf, diff); err != nil {
 		return err
+	}
+
+	// Handle materialized view index comment changes
+	for _, mvDiff := range diff.MaterializedViewChanges {
+		if mvDiff.Action == schema.MetadataDiffActionAlter {
+			if err := generateMaterializedViewIndexCommentChanges(buf, mvDiff); err != nil {
+				return err
+			}
+		}
 	}
 
 	// Handle function comment changes
@@ -1551,6 +1678,49 @@ func writeMigrationSequenceFromAST(out *strings.Builder, astNode any) error {
 	_, _ = out.WriteString(sequenceSQL)
 	// Ensure statement ends with semicolon
 	if !strings.HasSuffix(strings.TrimSpace(sequenceSQL), ";") {
+		_, _ = out.WriteString(";")
+	}
+	_, _ = out.WriteString("\n\n")
+
+	return nil
+}
+
+// writeMigrationEnumTypeFromAST writes CREATE TYPE AS ENUM statement from AST node
+func writeMigrationEnumTypeFromAST(out *strings.Builder, astNode any) error {
+	if astNode == nil {
+		return errors.New("AST node is nil")
+	}
+
+	// Extract the original SQL text from the AST node
+	var enumSQL string
+
+	// Try to cast to PostgreSQL DefinestmtContext (CREATE TYPE AS ENUM)
+	if ctx, ok := astNode.(*pgparser.DefinestmtContext); ok {
+		// First try to get text using token stream
+		if tokenStream := ctx.GetParser().GetTokenStream(); tokenStream != nil {
+			start := ctx.GetStart()
+			stop := ctx.GetStop()
+			if start != nil && stop != nil {
+				enumSQL = tokenStream.GetTextFromTokens(start, stop)
+			}
+		}
+
+		// Fallback to GetText() if token stream approach failed
+		if enumSQL == "" {
+			enumSQL = ctx.GetText()
+		}
+	} else {
+		return errors.Errorf("unsupported AST node type for enum type: %T", astNode)
+	}
+
+	if enumSQL == "" {
+		return errors.New("failed to extract enum type SQL from AST node")
+	}
+
+	// Write the enum type SQL
+	_, _ = out.WriteString(enumSQL)
+	// Ensure statement ends with semicolon
+	if !strings.HasSuffix(strings.TrimSpace(enumSQL), ";") {
 		_, _ = out.WriteString(";")
 	}
 	_, _ = out.WriteString("\n\n")
@@ -2431,6 +2601,49 @@ func writeMigrationFunctionFromASTWithReplace(out *strings.Builder, astNode any)
 	return nil
 }
 
+// writeMigrationMaterializedViewFromAST writes a CREATE MATERIALIZED VIEW statement from AST node
+func writeMigrationMaterializedViewFromAST(out *strings.Builder, astNode any) error {
+	if astNode == nil {
+		return errors.New("AST node is nil")
+	}
+
+	// Extract the original SQL text from the AST node
+	var mvSQL string
+
+	// Try to cast to PostgreSQL CreatematviewstmtContext first
+	if ctx, ok := astNode.(*pgparser.CreatematviewstmtContext); ok {
+		// First try to get text using token stream
+		if tokenStream := ctx.GetParser().GetTokenStream(); tokenStream != nil {
+			start := ctx.GetStart()
+			stop := ctx.GetStop()
+			if start != nil && stop != nil {
+				mvSQL = tokenStream.GetTextFromTokens(start, stop)
+			}
+		}
+
+		// Fallback to GetText() if token stream approach failed
+		if mvSQL == "" {
+			mvSQL = ctx.GetText()
+		}
+	} else {
+		// Generic fallback - try to get text using token approach first
+		if tree, ok := astNode.(antlr.ParseTree); ok {
+			mvSQL = getTextFromAST(tree)
+		}
+	}
+
+	if mvSQL != "" {
+		_, _ = out.WriteString(mvSQL)
+		if !strings.HasSuffix(strings.TrimSpace(mvSQL), ";") {
+			_, _ = out.WriteString(`;`)
+		}
+		_, _ = out.WriteString("\n\n")
+		return nil
+	}
+
+	return errors.New("failed to extract SQL from materialized view AST node")
+}
+
 // writeMaterializedView writes a CREATE MATERIALIZED VIEW statement
 func writeMigrationMaterializedView(out *strings.Builder, schema string, view *storepb.MaterializedViewMetadata) error {
 	_, _ = out.WriteString(`CREATE MATERIALIZED VIEW "`)
@@ -2509,14 +2722,55 @@ func writeMigrationTrigger(out *strings.Builder, trigger *storepb.TriggerMetadat
 }
 
 // writeMigrationMaterializedViewIndex writes an index creation statement for a materialized view
-func writeMigrationMaterializedViewIndex(out *strings.Builder, _ string, _ string, index *storepb.IndexMetadata) {
-	if index == nil || index.Definition == "" {
+func writeMigrationMaterializedViewIndex(out *strings.Builder, schema, mvName string, index *storepb.IndexMetadata) {
+	if index == nil {
 		return
 	}
-	_, _ = out.WriteString(index.Definition)
-	if !strings.HasSuffix(strings.TrimSpace(index.Definition), ";") {
-		_, _ = out.WriteString(";")
+
+	// If index has a full definition, use it directly
+	if index.Definition != "" {
+		_, _ = out.WriteString(index.Definition)
+		if !strings.HasSuffix(strings.TrimSpace(index.Definition), ";") {
+			_, _ = out.WriteString(";")
+		}
+		_, _ = out.WriteString("\n")
+		return
 	}
+
+	// Otherwise, construct the CREATE INDEX statement
+	_, _ = out.WriteString(`CREATE `)
+	if index.Unique {
+		_, _ = out.WriteString(`UNIQUE `)
+	}
+	_, _ = out.WriteString(`INDEX "`)
+	_, _ = out.WriteString(index.Name)
+	_, _ = out.WriteString(`" ON "`)
+	_, _ = out.WriteString(schema)
+	_, _ = out.WriteString(`"."`)
+	_, _ = out.WriteString(mvName)
+	_, _ = out.WriteString(`" `)
+
+	if index.Type != "" && index.Type != "BTREE" && index.Type != "btree" {
+		_, _ = out.WriteString(`USING `)
+		_, _ = out.WriteString(strings.ToUpper(index.Type))
+		_, _ = out.WriteString(` `)
+	}
+
+	_, _ = out.WriteString(`(`)
+	for i, expr := range index.Expressions {
+		if i > 0 {
+			_, _ = out.WriteString(`, `)
+		}
+		_, _ = out.WriteString(expr)
+
+		// Handle descending order if specified
+		if i < len(index.Descending) && index.Descending[i] {
+			_, _ = out.WriteString(` DESC`)
+		}
+	}
+	_, _ = out.WriteString(`)`)
+
+	_, _ = out.WriteString(`;`)
 	_, _ = out.WriteString("\n")
 }
 
@@ -2955,6 +3209,26 @@ func generateIndexCommentChanges(buf *strings.Builder, tableDiff *schema.TableDi
 	return nil
 }
 
+// generateMaterializedViewIndexCommentChanges generates COMMENT ON INDEX statements for index comment changes within materialized view diffs
+func generateMaterializedViewIndexCommentChanges(buf *strings.Builder, mvDiff *schema.MaterializedViewDiff) error {
+	for _, indexDiff := range mvDiff.IndexChanges {
+		if indexDiff.Action == schema.MetadataDiffActionAlter {
+			if indexDiff.OldIndex == nil || indexDiff.NewIndex == nil {
+				continue
+			}
+
+			oldComment := indexDiff.OldIndex.Comment
+			newComment := indexDiff.NewIndex.Comment
+
+			// If comments are different, generate COMMENT ON INDEX statement
+			if oldComment != newComment {
+				writeCommentOnIndex(buf, mvDiff.SchemaName, indexDiff.NewIndex.Name, newComment)
+			}
+		}
+	}
+	return nil
+}
+
 // Helper functions to write comment statements for different object types
 
 // writeCommentOnSchema writes a COMMENT ON SCHEMA statement
@@ -3189,6 +3463,9 @@ func generateCommentChangesFromSDL(buf *strings.Builder, diff *schema.MetadataDi
 		case schema.CommentObjectTypeView:
 			writeCommentOnView(buf, commentDiff.SchemaName, commentDiff.ObjectName, newComment)
 
+		case schema.CommentObjectTypeMaterializedView:
+			writeCommentOnMaterializedView(buf, commentDiff.SchemaName, commentDiff.ObjectName, newComment)
+
 		case schema.CommentObjectTypeFunction:
 			// For functions, ObjectName contains the function signature
 			// Try to find the function definition and AST node to determine if it's a FUNCTION or PROCEDURE
@@ -3240,6 +3517,10 @@ func generateCommentChangesFromSDL(buf *strings.Builder, diff *schema.MetadataDi
 				indexName = commentDiff.ObjectName
 			}
 			writeCommentOnIndex(buf, commentDiff.SchemaName, indexName, newComment)
+
+		case schema.CommentObjectTypeType:
+			// COMMENT ON TYPE (for enum types)
+			writeCommentOnType(buf, commentDiff.SchemaName, commentDiff.ObjectName, newComment)
 
 		default:
 			// Unknown object type, skip
@@ -3438,6 +3719,77 @@ func getViewDependenciesFromAST(astNode any, schemaName string, _ *storepb.Datab
 	var selectStatement string
 
 	if ctx, ok := astNode.(*pgparser.ViewstmtContext); ok {
+		if ctx.Selectstmt() != nil {
+			// Try to get text using token stream first
+			if tokenStream := ctx.GetParser().GetTokenStream(); tokenStream != nil {
+				start := ctx.Selectstmt().GetStart()
+				stop := ctx.Selectstmt().GetStop()
+				if start != nil && stop != nil {
+					selectStatement = tokenStream.GetTextFromTokens(start, stop)
+				}
+			}
+
+			// Fallback to token-based approach if failed
+			if selectStatement == "" {
+				selectStatement = getTextFromAST(ctx.Selectstmt())
+			}
+		}
+	}
+
+	if selectStatement == "" {
+		return []*storepb.DependencyColumn{}
+	}
+
+	queryStatement := strings.TrimSpace(selectStatement)
+
+	accessTables, err := pgpluginparser.ExtractAccessTables(queryStatement, pgpluginparser.ExtractAccessTablesOption{
+		DefaultDatabase:        "",
+		DefaultSchema:          schemaName,
+		SkipMetadataValidation: true,
+	})
+	if err != nil {
+		return []*storepb.DependencyColumn{}
+	}
+
+	// The caller will filter against allObjects
+	dependencyMap := make(map[string]*storepb.DependencyColumn)
+	for _, resource := range accessTables {
+		if resource.Schema == "pg_catalog" || resource.Schema == "information_schema" {
+			continue
+		}
+
+		resourceSchema := resource.Schema
+		if resourceSchema == "" {
+			resourceSchema = schemaName
+		}
+
+		key := fmt.Sprintf("%s.%s", resourceSchema, resource.Table)
+		if _, exists := dependencyMap[key]; !exists {
+			dependencyMap[key] = &storepb.DependencyColumn{
+				Schema: resourceSchema,
+				Table:  resource.Table,
+				Column: "*", // Table-level dependencies
+			}
+		}
+	}
+
+	var dependencies []*storepb.DependencyColumn
+	for _, dep := range dependencyMap {
+		dependencies = append(dependencies, dep)
+	}
+
+	return dependencies
+}
+
+// getMaterializedViewDependenciesFromAST extracts table/view dependencies from a materialized view's AST node
+func getMaterializedViewDependenciesFromAST(astNode any, schemaName string, _ *storepb.DatabaseSchemaMetadata) []*storepb.DependencyColumn {
+	if astNode == nil {
+		return []*storepb.DependencyColumn{}
+	}
+
+	var selectStatement string
+
+	if ctx, ok := astNode.(*pgparser.CreatematviewstmtContext); ok {
 		if ctx.Selectstmt() != nil {
 			// Try to get text using token stream first
 			if tokenStream := ctx.GetParser().GetTokenStream(); tokenStream != nil {

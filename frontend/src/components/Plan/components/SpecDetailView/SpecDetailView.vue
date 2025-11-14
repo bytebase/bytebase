@@ -28,11 +28,11 @@ import PlanCheckSection from "../PlanCheckSection";
 import { providePlanSQLCheckContext } from "../SQLCheckSection";
 import SQLCheckV1Section from "../SQLCheckV1Section";
 import StatementSection from "../StatementSection";
+import { useSelectedSpec } from "./context";
 import DataExportOptionsSection from "./DataExportOptionsSection.vue";
 import FailedTaskRunsSection from "./FailedTaskRunsSection.vue";
 import SpecListSection from "./SpecListSection.vue";
 import TargetListSection from "./TargetListSection.vue";
-import { useSelectedSpec } from "./context";
 
 const { project } = useCurrentProjectV1();
 const { isCreating, plan, rollout } = usePlanContext();

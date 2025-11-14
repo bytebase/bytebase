@@ -589,6 +589,11 @@
           "participate": "Participate in improvement program",
           "description": "Help improve Bytebase by sharing anonymous usage data"
         },
+        "audit-log-stdout": {
+          "self": "Audit Log Export",
+          "enable": "Enable audit logging to stdout",
+          "description": "Output structured JSON audit logs to stdout for ingestion by log aggregators (Splunk, ELK, Datadog, Loki). Requires TEAM or ENTERPRISE license."
+        },
         "disallow-signup": {
           "enable": "Disallow self-service signup",
           "description": "Users cannot self-service signup and can only be invited by the workspace admin."
@@ -853,7 +858,6 @@
     "labels": "Issue Labels",
     "my-issues": "My Issues",
     "waiting-approval": "Waiting for Approval",
-    "waiting-rollout": "Waiting for Rollout",
     "status-transition": {
       "modal": {
         "resolve": "Resolve issue?",
@@ -938,8 +942,7 @@
           "title": "Engine",
           "description": "Filter by engines"
         }
-      },
-      "hide": "Hide advanced search"
+      }
     },
     "table": {
       "open": "Open",
@@ -1407,7 +1410,12 @@
       "vault-secret-engine-name": "Secret engine name",
       "vault-secret-path": "Secret path",
       "vault-secret-key": "Secret key",
-      "vault-secret-engine-tips": "Only support KV v2 engine."
+      "vault-secret-engine-tips": "Only support KV v2 engine.",
+      "vault-tls-config": "Vault TLS Configuration (Optional)",
+      "verify-vault-certificate": "Verify Vault TLS certificate",
+      "vault-ca-cert": "Vault CA Certificate",
+      "vault-client-cert": "Vault Client Certificate",
+      "vault-client-key": "Vault Client Key"
     },
     "external-secret": {
       "secret-name": "Secret name",
@@ -2769,6 +2777,10 @@
     "sql-editor-user": {
       "self": "SQL Editor User",
       "description": "Permissions for querying database data."
+    },
+    "gitops-service-agent": {
+      "self": "GitOps Service Agent",
+      "description": "Permissions for automated CI/CD workflows to create and execute database changes via GitOps."
     },
     "project-viewer": {
       "self": "Project Viewer",

@@ -78,24 +78,23 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { NButton, NTooltip } from "naive-ui";
-import { computed, reactive, watchEffect } from "vue";
-import { toRef } from "vue";
+import { computed, reactive, toRef, watchEffect } from "vue";
 import {
   pushNotification,
   useDatabaseV1Store,
   useProjectByName,
 } from "@/store";
 import {
+  type ComposedDatabase,
   DEFAULT_PROJECT_NAME,
   defaultProject,
   formatEnvironmentName,
   isValidProjectName,
-  type ComposedDatabase,
 } from "@/types";
 import {
+  BatchUpdateDatabasesRequestSchema,
   DatabaseSchema$,
   UpdateDatabaseRequestSchema,
-  BatchUpdateDatabasesRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
 import type { InstanceResource } from "@/types/proto-es/v1/instance_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";

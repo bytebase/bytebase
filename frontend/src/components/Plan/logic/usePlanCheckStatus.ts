@@ -1,7 +1,7 @@
-import { computed, type ComputedRef, type Ref } from "vue";
+import { type ComputedRef, computed, type Ref } from "vue";
 import {
-  PlanCheckRun_Status,
   type Plan,
+  PlanCheckRun_Status,
 } from "@/types/proto-es/v1/plan_service_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 

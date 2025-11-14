@@ -21,7 +21,7 @@ import { NButton, NTooltip } from "naive-ui";
 import { computed, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 import DatabaseIcon from "@/components/Icon/DatabaseIcon.vue";
-import { useSQLEditorContext, type AsidePanelTab } from "../../context";
+import { type AsidePanelTab, useSQLEditorContext } from "../../context";
 import { type Size, useButton } from "./common";
 
 const props = defineProps<{

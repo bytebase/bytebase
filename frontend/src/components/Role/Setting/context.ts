@@ -1,4 +1,4 @@
-import { type InjectionKey, type Ref, provide, inject } from "vue";
+import { type InjectionKey, inject, provide, type Ref } from "vue";
 
 export type CustomRoleSettingContext = {
   hasCustomRoleFeature: Ref<boolean>;

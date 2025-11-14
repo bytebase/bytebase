@@ -40,8 +40,8 @@ import type { ComposedDatabase } from "@/types";
 import type {
   DatabaseMetadata,
   SchemaMetadata,
+  ViewMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
-import type { ViewMetadata } from "@/types/proto-es/v1/database_service_pb";
 import { ViewMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
 import { useSchemaEditorContext } from "../context";
 

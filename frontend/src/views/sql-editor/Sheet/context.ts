@@ -1,34 +1,34 @@
 import { useDebounceFn } from "@vueuse/core";
 import Emittery from "emittery";
-import { orderBy, isEqual } from "lodash-es";
+import { isEqual, orderBy } from "lodash-es";
 import type { TreeOption } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
-import type { InjectionKey, Ref, ComputedRef } from "vue";
-import { inject, provide, ref, computed, watch, nextTick } from "vue";
+import type { ComputedRef, InjectionKey, Ref } from "vue";
+import { computed, inject, nextTick, provide, ref, watch } from "vue";
 import { t } from "@/plugins/i18n";
 import {
   pushNotification,
+  useCurrentUserV1,
   useDatabaseV1Store,
   useSQLEditorTabStore,
   useWorkSheetStore,
-  useCurrentUserV1,
 } from "@/store";
-import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import type { SQLEditorTab } from "@/types";
+import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import {
-  Worksheet_Visibility,
   type Worksheet,
+  Worksheet_Visibility,
 } from "@/types/proto-es/v1/worksheet_service_pb";
 import {
   emptySQLEditorConnection,
+  extractWorksheetUID,
   getSheetStatement,
   isWorksheetReadableV1,
-  extractWorksheetUID,
   suggestedTabTitleForSQLEditorConnection,
+  useDynamicLocalStorage,
 } from "@/utils";
-import { useDynamicLocalStorage } from "@/utils";
-import { setDefaultDataSourceForConn } from "../EditorCommon";
 import type { SQLEditorContext } from "../context";
+import { setDefaultDataSourceForConn } from "../EditorCommon";
 import { useFolderByView } from "./folder";
 import type { SheetViewMode } from "./types";
 

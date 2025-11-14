@@ -116,7 +116,7 @@
 </template>
 
 <script lang="ts" setup>
-import { NButton, NInput, NRadioGroup, NRadio } from "naive-ui";
+import { NButton, NInput, NRadio, NRadioGroup } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import EmailInput from "@/components/EmailInput.vue";

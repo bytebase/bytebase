@@ -4,7 +4,7 @@
 
 <script setup lang="ts">
 import type { Root } from "mdast";
-import { mdastToVNode, type CustomRender, type State } from "./utils";
+import { type CustomRender, mdastToVNode, type State } from "./utils";
 
 const props = defineProps<{
   ast: Root;

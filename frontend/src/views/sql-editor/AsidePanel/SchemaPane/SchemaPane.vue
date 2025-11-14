@@ -104,11 +104,10 @@ import {
   type TreeOption,
 } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { computed, h, nextTick, ref, watch } from "vue";
-import { watchEffect } from "vue";
+import { computed, h, nextTick, ref, watch, watchEffect } from "vue";
 import { BBModal } from "@/bbkit";
-import TableSchemaViewer from "@/components/TableSchemaViewer.vue";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
+import TableSchemaViewer from "@/components/TableSchemaViewer.vue";
 import { RichDatabaseName, SearchBox } from "@/components/v2";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
@@ -124,19 +123,19 @@ import {
   findAncestor,
   isDescendantOf,
 } from "@/utils";
-import { useCurrentTabViewStateContext } from "../../EditorPanel";
 import { useSQLEditorContext } from "../../context";
+import { useCurrentTabViewStateContext } from "../../EditorPanel";
+import { useActions, useDropdown } from "./actions";
+import { useClickEvents } from "./click";
 import FlatTableList from "./FlatTableList.vue";
 import HoverPanel, { provideHoverStateContext } from "./HoverPanel";
 import SyncSchemaButton from "./SyncSchemaButton.vue";
 import { Label } from "./TreeNode";
-import { useDropdown, useActions } from "./actions";
-import { useClickEvents } from "./click";
 import {
-  type NodeTarget,
-  type TreeNode,
   buildDatabaseSchemaTree,
   ExpandableNodeTypes,
+  type NodeTarget,
+  type TreeNode,
 } from "./tree";
 
 const mounted = useMounted();

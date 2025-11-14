@@ -34,6 +34,10 @@
       ref="productImprovementSettingRef"
       :allow-edit="allowEdit"
     />
+    <AuditLogStdoutSetting
+      ref="auditLogStdoutSettingRef"
+      :allow-edit="allowEdit"
+    />
 
     <div v-if="allowEdit && isDirty" class="sticky -bottom-4 z-10">
       <div
@@ -52,17 +56,18 @@
 
 <script lang="ts" setup>
 import { NButton } from "naive-ui";
-import { onMounted, ref, computed } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import {
-  BrandingSetting,
-  SecuritySetting,
   AccountSetting,
   AIAugmentationSetting,
   AnnouncementSetting,
+  AuditLogStdoutSetting,
+  BrandingSetting,
   GeneralSetting,
   ProductImprovementSetting,
+  SecuritySetting,
 } from "@/components/GeneralSetting";
 import { useRouteChangeGuard } from "@/composables/useRouteChangeGuard";
 import { pushNotification } from "@/store";
@@ -84,6 +89,8 @@ const aiAugmentationSettingRef =
 const announcementSettingRef = ref<InstanceType<typeof AnnouncementSetting>>();
 const productImprovementSettingRef =
   ref<InstanceType<typeof ProductImprovementSetting>>();
+const auditLogStdoutSettingRef =
+  ref<InstanceType<typeof AuditLogStdoutSetting>>();
 
 const settingRefList = computed(() => {
   return [
@@ -94,6 +101,7 @@ const settingRefList = computed(() => {
     aiAugmentationSettingRef,
     announcementSettingRef,
     productImprovementSettingRef,
+    auditLogStdoutSettingRef,
   ];
 });
 

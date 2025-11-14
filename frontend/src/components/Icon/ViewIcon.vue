@@ -10,6 +10,5 @@
   </div>
 </template>
 <script setup lang="ts">
-import { GlassesIcon } from "lucide-vue-next";
-import { TableIcon } from "lucide-vue-next";
+import { GlassesIcon, TableIcon } from "lucide-vue-next";
 </script>

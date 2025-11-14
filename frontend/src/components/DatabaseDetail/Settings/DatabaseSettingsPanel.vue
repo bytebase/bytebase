@@ -9,6 +9,7 @@
           class="mt-1 max-w-md"
           :environment-name="`${environmentNamePrefix}${environment.id}`"
           :disabled="!allowUpdateDatabase"
+          :clearable="!database.instanceResource.environment"
           :render-suffix="
             (env: string) =>
               database.instanceResource.environment === env
@@ -36,10 +37,10 @@ import { useI18n } from "vue-i18n";
 import { useDatabaseDetailContext } from "@/components/Database/context";
 import { EnvironmentSelect } from "@/components/v2";
 import {
+  environmentNamePrefix,
+  pushNotification,
   useDatabaseV1Store,
   useEnvironmentV1Store,
-  pushNotification,
-  environmentNamePrefix,
 } from "@/store";
 import { type ComposedDatabase } from "@/types";
 import { UpdateDatabaseRequestSchema } from "@/types/proto-es/v1/database_service_pb";

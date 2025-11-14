@@ -589,6 +589,11 @@
           "participate": "改善プログラムに参加",
           "description": "匿名の使用データを共有してBytebaseの改善に協力する"
         },
+        "audit-log-stdout": {
+          "self": "監査ログエクスポート",
+          "enable": "監査ログの標準出力への出力を有効にする",
+          "description": "構造化されたJSON監査ログを標準出力に出力し、ログアグリゲーター（Splunk、ELK、Datadog、Loki）で取り込めるようにします。TEAMまたはENTERPRISEライセンスが必要です。"
+        },
         "disallow-signup": {
           "enable": "セルフサービス登録を無効にする",
           "description": "無効化されると、新しいユーザーは自己登録できなくなり、管理者の招待を通じてのみアカウントを作成できます。"
@@ -853,7 +858,6 @@
     "labels": "イシューラベル",
     "my-issues": "マイイシュー",
     "waiting-approval": "承認待ち",
-    "waiting-rollout": "リリース待ち",
     "status-transition": {
       "modal": {
         "resolve": "イシューは完了しましたか?",
@@ -938,8 +942,7 @@
           "title": "エンジン",
           "description": "エンジンでフィルタリング"
         }
-      },
-      "hide": "詳細検索を非表示にする"
+      }
     },
     "table": {
       "open": "オープン",
@@ -1407,7 +1410,12 @@
       "vault-secret-engine-name": "シークレットエンジン名",
       "vault-secret-path": "秘密の道",
       "vault-secret-key": "秘密鍵",
-      "vault-secret-engine-tips": "KV v2 ストレージのみをサポートします"
+      "vault-secret-engine-tips": "KV v2 ストレージのみをサポートします",
+      "vault-tls-config": "Vault TLS 構成 (オプション)",
+      "verify-vault-certificate": "Vault TLS証明書を確認する",
+      "vault-ca-cert": "Vault CA 証明書",
+      "vault-client-cert": "Vaultクライアント証明書",
+      "vault-client-key": "Vaultクライアントキー"
     },
     "external-secret": {
       "secret-name": "秘密の名前",
@@ -2769,6 +2777,10 @@
     "sql-editor-user": {
       "self": "SQLエディタのユーザー",
       "description": "指定した範囲内のデータをクエリできます。"
+    },
+    "gitops-service-agent": {
+      "self": "GitOps サービスエージェント",
+      "description": "GitOps を介して自動化された CI/CD ワークフローでデータベース変更を作成および実行するための権限。"
     },
     "project-viewer": {
       "self": "プロジェクトビューア",

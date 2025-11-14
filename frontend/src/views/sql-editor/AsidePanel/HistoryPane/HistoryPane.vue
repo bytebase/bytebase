@@ -71,13 +71,12 @@ import { escape } from "lodash-es";
 import { NButton } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
-import { SearchBox } from "@/components/v2";
-import { CopyButton } from "@/components/v2";
+import { CopyButton, SearchBox } from "@/components/v2";
 import {
-  useSQLEditorQueryHistoryStore,
-  useSQLEditorTabStore,
-  useSQLEditorStore,
   type QueryHistoryFilter,
+  useSQLEditorQueryHistoryStore,
+  useSQLEditorStore,
+  useSQLEditorTabStore,
 } from "@/store";
 import { DEBOUNCE_SEARCH_DELAY, getDateForPbTimestampProtoEs } from "@/types";
 import type { QueryHistory } from "@/types/proto-es/v1/sql_service_pb";

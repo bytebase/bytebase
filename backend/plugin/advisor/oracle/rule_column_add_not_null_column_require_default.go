@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 var (
@@ -28,9 +29,9 @@ type ColumnAddNotNullColumnRequireDefaultAdvisor struct {
 
 // Check checks for adding not null column requires default.
 func (*ColumnAddNotNullColumnRequireDefaultAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	tree, ok := checkCtx.AST.(antlr.Tree)
+	stmtList, ok := checkCtx.AST.([]*plsqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to Tree")
+		return nil, errors.Errorf("failed to convert to ParseResult")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
@@ -41,7 +42,11 @@ func (*ColumnAddNotNullColumnRequireDefaultAdvisor) Check(_ context.Context, che
 	rule := NewColumnAddNotNullColumnRequireDefaultRule(level, string(checkCtx.Rule.Type), checkCtx.CurrentDatabase)
 	checker := NewGenericChecker([]Rule{rule})
 
-	antlr.ParseTreeWalkerDefault.Walk(checker, tree)
+	for _, stmtNode := range stmtList {
+		rule.SetBaseLine(stmtNode.BaseLine)
+		checker.SetBaseLine(stmtNode.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtNode.Tree)
+	}
 
 	return checker.GetAdviceList()
 }
@@ -122,7 +127,7 @@ func (r *ColumnAddNotNullColumnRequireDefaultRule) handleColumnDefinitionExit(ct
 			r.level,
 			advisor.NotNullColumnWithNoDefault.Int32(),
 			fmt.Sprintf("Adding not null column %q requires default.", normalizeIdentifier(ctx.Column_name(), r.currentDatabase)),
-			common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+			common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
 		)
 	}
 }

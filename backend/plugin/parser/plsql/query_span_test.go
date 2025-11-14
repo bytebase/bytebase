@@ -228,9 +228,10 @@ func TestGetAccessTables(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		r, _, err := ParsePLSQL(test.statement)
+		results, err := ParsePLSQL(test.statement)
 		require.NoError(t, err)
-		resources := getAccessTables("DB", r)
+		require.NotEmpty(t, results)
+		resources := getAccessTables("DB", results[0].Tree)
 		require.Equal(t, test.expected, resources, test.statement)
 	}
 }

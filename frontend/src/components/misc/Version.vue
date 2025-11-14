@@ -58,7 +58,7 @@
 </template>
 
 <script lang="ts" setup>
-import { Volume2Icon, SparklesIcon } from "lucide-vue-next";
+import { SparklesIcon, Volume2Icon } from "lucide-vue-next";
 import { NTooltip, type TooltipProps } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, reactive } from "vue";

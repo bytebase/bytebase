@@ -71,12 +71,12 @@
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
-import { NButton, NTooltip, NDivider, NRadioGroup, NRadio } from "naive-ui";
+import { NButton, NDivider, NRadio, NRadioGroup, NTooltip } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBSpin } from "@/bbkit";
-import { ProjectSelect, DrawerContent } from "@/components/v2";
+import { DrawerContent, ProjectSelect } from "@/components/v2";
 import {
   pushNotification,
   useDatabaseV1Store,
@@ -84,14 +84,14 @@ import {
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import {
-  PresetRoleType,
   DEFAULT_PROJECT_NAME,
   isValidProjectName,
+  PresetRoleType,
 } from "@/types";
 import {
+  BatchUpdateDatabasesRequestSchema,
   DatabaseSchema$,
   UpdateDatabaseRequestSchema,
-  BatchUpdateDatabasesRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
 import { autoProjectRoute } from "@/utils";
 import DatabaseV1Table from "../v2/Model/DatabaseV1Table/DatabaseV1Table.vue";

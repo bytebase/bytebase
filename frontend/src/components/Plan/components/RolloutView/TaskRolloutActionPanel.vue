@@ -293,54 +293,55 @@ import { flatten } from "lodash-es";
 import {
   NAlert,
   NButton,
+  NCheckbox,
   NDatePicker,
   NInput,
+  NRadio,
+  NRadioGroup,
   NScrollbar,
   NTag,
   NTooltip,
   NVirtualList,
-  NCheckbox,
-  NRadio,
-  NRadioGroup,
 } from "naive-ui";
 import { computed, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { semanticTaskType } from "@/components/IssueV1";
-import CommonDrawer from "@/components/IssueV1/components/Panel/CommonDrawer.vue";
 import { ErrorList } from "@/components/IssueV1/components/common";
+import CommonDrawer from "@/components/IssueV1/components/Panel/CommonDrawer.vue";
 import { EnvironmentV1Name } from "@/components/v2";
 import { rolloutServiceClientConnect } from "@/grpcweb";
 import {
   pushNotification,
+  useCurrentUserV1,
   useEnvironmentV1Store,
   usePolicyByParentAndType,
-  useCurrentUserV1,
 } from "@/store";
 import { userNamePrefix } from "@/store/modules/v1/common";
 import {
-  Issue_Approver_Status,
   Issue_ApprovalStatus,
+  Issue_Approver_Status,
   Issue_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
   PolicyType,
   RolloutPolicy_Checkers_PlanCheckEnforcement,
 } from "@/types/proto-es/v1/org_policy_service_pb";
-import {
-  BatchRunTasksRequestSchema,
-  BatchSkipTasksRequestSchema,
-  BatchCancelTaskRunsRequestSchema,
-  ListTaskRunsRequestSchema,
-  TaskRun_Status,
-} from "@/types/proto-es/v1/rollout_service_pb";
 import type {
   BatchRunTasksRequest,
   Stage,
   Task,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import { Task_Status, Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
+import {
+  BatchCancelTaskRunsRequestSchema,
+  BatchRunTasksRequestSchema,
+  BatchSkipTasksRequestSchema,
+  ListTaskRunsRequestSchema,
+  Task_Status,
+  Task_Type,
+  TaskRun_Status,
+} from "@/types/proto-es/v1/rollout_service_pb";
 import { extractStageUID, isNullOrUndefined } from "@/utils";
-import { usePlanContextWithRollout, usePlanCheckStatus } from "../../logic";
+import { usePlanCheckStatus, usePlanContextWithRollout } from "../../logic";
 import PlanCheckStatusCount from "../PlanCheckStatusCount.vue";
 import TaskDatabaseName from "./TaskDatabaseName.vue";
 import { canRolloutTasks } from "./taskPermissions";

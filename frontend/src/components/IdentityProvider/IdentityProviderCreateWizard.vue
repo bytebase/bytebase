@@ -426,22 +426,22 @@
 import { create as createProto } from "@bufbuild/protobuf";
 import { head } from "lodash-es";
 import {
-  KeyIcon,
-  ShieldCheckIcon,
+  ArrowRightIcon,
+  BuildingIcon,
+  ChromeIcon,
   DatabaseIcon,
   GithubIcon,
-  ChromeIcon,
   GitlabIcon,
-  BuildingIcon,
-  ArrowRightIcon,
   InfoIcon,
+  KeyIcon,
+  ShieldCheckIcon,
 } from "lucide-vue-next";
 import {
-  NSteps,
-  NStep,
-  NRadioGroup,
-  NRadio,
   NButton,
+  NRadio,
+  NRadioGroup,
+  NStep,
+  NSteps,
   NTooltip,
 } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
@@ -464,19 +464,19 @@ import { idpNamePrefix } from "@/store/modules/v1/common";
 import type {
   FieldMapping,
   IdentityProvider,
+  LDAPIdentityProviderConfig,
   OAuth2IdentityProviderConfig,
   OIDCIdentityProviderConfig,
-  LDAPIdentityProviderConfig,
 } from "@/types/proto-es/v1/idp_service_pb";
 import {
   FieldMappingSchema,
-  IdentityProviderSchema,
   IdentityProviderConfigSchema,
+  IdentityProviderSchema,
   IdentityProviderType,
+  LDAPIdentityProviderConfigSchema,
   OAuth2AuthStyle,
   OAuth2IdentityProviderConfigSchema,
   OIDCIdentityProviderConfigSchema,
-  LDAPIdentityProviderConfigSchema,
 } from "@/types/proto-es/v1/idp_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { OAuth2IdentityProviderTemplate } from "@/utils";

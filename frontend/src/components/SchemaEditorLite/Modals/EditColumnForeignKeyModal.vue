@@ -80,17 +80,17 @@
 import { create } from "@bufbuild/protobuf";
 import { TrashIcon } from "lucide-vue-next";
 import type { SelectOption } from "naive-ui";
-import { NButton, NSelect, NInputGroup, NInput } from "naive-ui";
+import { NButton, NInput, NInputGroup, NSelect } from "naive-ui";
 import { computed, onMounted, reactive } from "vue";
 import { BBModal } from "@/bbkit";
 import type { ComposedDatabase } from "@/types";
 import type {
   ColumnMetadata,
   DatabaseMetadata,
+  ForeignKeyMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
-import type { ForeignKeyMetadata } from "@/types/proto-es/v1/database_service_pb";
 import { ForeignKeyMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
 import { hasSchemaProperty } from "@/utils";
 import { useSchemaEditorContext } from "../context";

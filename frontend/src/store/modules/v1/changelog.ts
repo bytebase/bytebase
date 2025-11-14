@@ -5,14 +5,12 @@ import { databaseServiceClientConnect } from "@/grpcweb";
 import { useCache } from "@/store/cache";
 import { UNKNOWN_ID } from "@/types";
 import {
-  ListChangelogsRequestSchema,
-  GetChangelogRequestSchema,
-} from "@/types/proto-es/v1/database_service_pb";
-import {
+  type Changelog,
   ChangelogView,
   type GetChangelogRequest,
+  GetChangelogRequestSchema,
   type ListChangelogsRequest,
-  type Changelog,
+  ListChangelogsRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
 import { extractChangelogUID } from "@/utils/v1/changelog";
 import { DEFAULT_PAGE_SIZE } from "../common";

@@ -50,7 +50,7 @@
 
 <script setup lang="ts">
 import { CodeIcon } from "lucide-vue-next";
-import { NButton, NPopover, NRadioGroup, NRadio } from "naive-ui";
+import { NButton, NPopover, NRadio, NRadioGroup } from "naive-ui";
 import { computed } from "vue";
 import { type BinaryFormat } from "../binary-format-store";
 

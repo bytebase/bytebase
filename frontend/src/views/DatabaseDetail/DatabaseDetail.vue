@@ -22,29 +22,29 @@
     <main class="flex-1 relative">
       <!-- Highlight Panel -->
       <div
-        class="gap-y-2 flex flex-col items-start xl:flex-row xl:items-center xl:justify-between"
+        class="gap-y-2 flex flex-col items-start xl:flex-row xl:items-center xl:justify-between xl:gap-x-2"
       >
-        <div class="flex-1 min-w-0 shrink-0">
+        <div class="flex-1 flex flex-col min-w-0 shrink-0 gap-y-2">
           <!-- Summary -->
-          <div class="w-full flex items-center">
-            <div class="w-full flex items-baseline gap-x-2">
-              <h1
-                class="text-xl font-bold text-main truncate flex items-center gap-x-2"
-              >
-                {{ database.databaseName }}
+          <div class="w-full flex flex-col">
+            <div
+              class="text-xl box-content font-bold text-main truncate flex items-center gap-x-2"
+            >
+              {{ database.databaseName }}
 
-                <ProductionEnvironmentV1Icon
-                  :environment="environment"
-                  :tooltip="true"
-                  class="w-5 h-5"
-                />
-              </h1>
-              <div class="flex items-center gap-x-1">
-                <span class="textinfolabel">
-                  {{ database.name }}
-                </span>
-                <CopyButton :content="database.name" />
-              </div>
+              <ProductionEnvironmentV1Icon
+                :environment="environment"
+                :tooltip="true"
+                class="w-5 h-5"
+              />
+            </div>
+            <div
+              class="w-full flex flex-row items-center justify-start gap-x-1"
+            >
+              <EllipsisText class="textinfolabel">
+                {{ database.name }}
+              </EllipsisText>
+              <CopyButton :content="database.name" />
             </div>
           </div>
           <dl
@@ -67,6 +67,18 @@
                 >{{ $t("common.instance") }}&nbsp;-&nbsp;</span
               >
               <InstanceV1Name :instance="database.instanceResource" />
+            </dd>
+            <dt v-if="database.schemaVersion" class="sr-only">
+              {{ $t("common.version") }}
+            </dt>
+            <dd
+              v-if="database.schemaVersion"
+              class="flex items-center text-sm md:mr-4"
+            >
+              <span class="ml-1 textlabel"
+                >{{ $t("common.version") }}&nbsp;-&nbsp;</span
+              >
+              <span>{{ database.schemaVersion }}</span>
             </dd>
             <SQLEditorButtonV1
               v-if="allowQuery"
@@ -190,42 +202,42 @@ import { useTitle } from "@vueuse/core";
 import { ArrowRightLeftIcon } from "lucide-vue-next";
 import { NButton, NTabPane, NTabs } from "naive-ui";
 import { computed, reactive, watch, watchEffect } from "vue";
-import { useRouter, useRoute } from "vue-router";
-import { BBModal } from "@/bbkit";
-import { BBAttention } from "@/bbkit";
+import { useRoute, useRouter } from "vue-router";
+import { BBAttention, BBModal } from "@/bbkit";
+import { useDatabaseDetailContext } from "@/components/Database/context";
 import DatabaseChangelogPanel from "@/components/Database/DatabaseChangelogPanel.vue";
 import DatabaseOverviewPanel from "@/components/Database/DatabaseOverviewPanel.vue";
 import DatabaseRevisionPanel from "@/components/Database/DatabaseRevisionPanel.vue";
 import DatabaseSensitiveDataPanel from "@/components/Database/DatabaseSensitiveDataPanel.vue";
-import { useDatabaseDetailContext } from "@/components/Database/context";
 import {
   DatabaseSettingsPanel,
-  SQLEditorButtonV1,
   SchemaDiagramButton,
+  SQLEditorButtonV1,
 } from "@/components/DatabaseDetail";
 import DriftedDatabaseAlert from "@/components/DatabaseDetail/DriftedDatabaseAlert.vue";
 import ExportSchemaButton from "@/components/DatabaseDetail/ExportSchemaButton.vue";
 import SyncDatabaseButton from "@/components/DatabaseDetail/SyncDatabaseButton.vue";
+import EllipsisText from "@/components/EllipsisText.vue";
 import { AddSpecDrawer } from "@/components/Plan";
 import TransferOutDatabaseForm from "@/components/TransferOutDatabaseForm";
-import { Drawer } from "@/components/v2";
 import {
+  CopyButton,
+  Drawer,
   EnvironmentV1Name,
   InstanceV1Name,
   ProductionEnvironmentV1Icon,
 } from "@/components/v2";
-import { CopyButton } from "@/components/v2";
 import { PROJECT_V1_ROUTE_DATABASE_DETAIL } from "@/router/dashboard/projectV1";
-import { useEnvironmentV1Store, useDatabaseV1ByName } from "@/store";
+import { useDatabaseV1ByName, useEnvironmentV1Store } from "@/store";
 import {
   databaseNamePrefix,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
 import { UNKNOWN_PROJECT_NAME } from "@/types";
 import {
+  extractProjectResourceName,
   instanceV1HasAlterSchema,
   isDatabaseV1Queryable,
-  extractProjectResourceName,
 } from "@/utils";
 
 const databaseHashList = [

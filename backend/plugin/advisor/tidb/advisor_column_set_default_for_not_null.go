@@ -58,6 +58,12 @@ type columnSetDefaultForNotNullChecker struct {
 	text       string
 }
 
+type columnName struct {
+	tableName  string
+	columnName string
+	line       int
+}
+
 // Enter implements the ast.Visitor interface.
 func (checker *columnSetDefaultForNotNullChecker) Enter(in ast.Node) (ast.Node, bool) {
 	var notNullColumnWithNoDefault []columnName

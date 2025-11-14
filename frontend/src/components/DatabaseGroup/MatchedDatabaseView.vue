@@ -62,18 +62,21 @@
 import type { ConnectError } from "@connectrpc/connect";
 import { useDebounceFn } from "@vueuse/core";
 import { NButton, NCollapse, NCollapseItem } from "naive-ui";
-import { watch, reactive, ref } from "vue";
+import { reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
-import { DatabaseV1Name, InstanceV1Name } from "@/components/v2";
-import { EnvironmentV1Name } from "@/components/v2";
+import {
+  DatabaseV1Name,
+  EnvironmentV1Name,
+  InstanceV1Name,
+} from "@/components/v2";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import { validateSimpleExpr } from "@/plugins/cel";
 import { useDatabaseV1Store, useDBGroupStore } from "@/store";
 import {
+  type ComposedDatabase,
   DEBOUNCE_SEARCH_DELAY,
   isValidDatabaseName,
-  type ComposedDatabase,
 } from "@/types";
 import { getDefaultPagination } from "@/utils";
 
@@ -141,27 +144,30 @@ const loadMoreUnmatched = async (token: string) => {
   };
 };
 
-const getMatched = (): DatabaseMatchList<number> => ({
+const getMatched = (title: string): DatabaseMatchList<number> => ({
   token: 0,
   loading: false,
   databaseList: [],
-  title: t("database-group.matched-database"),
+  title,
   name: "matched",
   hasNext: (token: number) => token < matchedDatabaseNameList.value.length,
   loadMore: loadMoreMatched,
 });
 
-const getUnMatched = (): DatabaseMatchList<string> => ({
+const getUnMatched = (title: string): DatabaseMatchList<string> => ({
   token: "",
   loading: false,
   databaseList: [],
-  title: t("database-group.unmatched-database"),
+  title,
   name: "unmatched",
   hasNext: (token: string) => !!token,
   loadMore: loadMoreUnmatched,
 });
 
-const getInitialState = () => [getMatched(), getUnMatched()];
+const getInitialState = () => [
+  getMatched(t("database-group.matched-database")),
+  getUnMatched(t("database-group.unmatched-database")),
+];
 
 const state = reactive<LocalState>({
   loading: false,
@@ -172,6 +178,7 @@ const state = reactive<LocalState>({
 const dbGroupStore = useDBGroupStore();
 const databaseStore = useDatabaseV1Store();
 
+// biome-ignore format: ESLint requires trailing comma for generic type parameter
 const loadMoreDatabase = async <T,>(state: DatabaseMatchList<T>) => {
   state.loading = true;
   try {

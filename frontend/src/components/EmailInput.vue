@@ -23,7 +23,7 @@
 
 <script lang="ts" setup>
 import { NInput, NInputGroup, NInputGroupLabel, NSelect } from "naive-ui";
-import { reactive, watch, computed, watchEffect } from "vue";
+import { computed, reactive, watch, watchEffect } from "vue";
 import { useSettingV1Store } from "@/store";
 
 interface LocalState {

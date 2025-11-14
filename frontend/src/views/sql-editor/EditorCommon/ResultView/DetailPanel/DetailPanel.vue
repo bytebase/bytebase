@@ -146,24 +146,23 @@
 <script setup lang="ts">
 import { onKeyStroke, useLocalStorage } from "@vueuse/core";
 import {
+  BracesIcon,
   ChevronDownIcon,
   ChevronUpIcon,
-  BracesIcon,
   WrapTextIcon,
 } from "lucide-vue-next";
 import { NButton, NPopover, NScrollbar, NTooltip } from "naive-ui";
 import { computed } from "vue";
-import { DrawerContent } from "@/components/v2";
-import { CopyButton } from "@/components/v2";
+import { CopyButton, DrawerContent } from "@/components/v2";
 import type { RowValue } from "@/types/proto-es/v1/sql_service_pb";
 import { extractSQLRowValuePlain } from "@/utils";
+import { useSQLResultViewContext } from "../context";
 import {
-  useBinaryFormatContext,
-  formatBinaryValue,
   type BinaryFormat,
+  formatBinaryValue,
+  useBinaryFormatContext,
 } from "../DataTable/binary-format-store";
 import BinaryFormatButton from "../DataTable/common/BinaryFormatButton.vue";
-import { useSQLResultViewContext } from "../context";
 import PrettyJSON from "./PrettyJSON.vue";
 
 const { dark, detail, disallowCopyingData } = useSQLResultViewContext();

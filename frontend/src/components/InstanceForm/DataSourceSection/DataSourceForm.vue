@@ -369,7 +369,7 @@
                   }}
                 </label>
                 <NRadioGroup
-                  class="textlabel mb-2"
+                  class="textlabel"
                   :value="dataSource.externalSecret.authType"
                   @update:value="changeExternalSecretAuthType"
                 >
@@ -561,6 +561,33 @@
                     "
                   />
                 </div>
+              </div>
+              <div class="sm:col-span-2 sm:col-start-1">
+                <label class="textlabel block">
+                  {{ $t("instance.external-secret-vault.vault-tls-config") }}
+                </label>
+                <SslCertificateFormV1
+                  v-model:verify="verifyVaultTls"
+                  v-model:ca="dataSource.externalSecret.vaultSslCa"
+                  v-model:cert="dataSource.externalSecret.vaultSslCert"
+                  v-model:private-key="dataSource.externalSecret.vaultSslKey"
+                  :disabled="!allowEdit"
+                  :show-tooltip="false"
+                  :show-key-field="true"
+                  :show-cert-field="true"
+                  :verify-label="
+                    $t(
+                      'instance.external-secret-vault.verify-vault-certificate'
+                    )
+                  "
+                  :ca-label="$t('instance.external-secret-vault.vault-ca-cert')"
+                  :cert-label="
+                    $t('instance.external-secret-vault.vault-client-cert')
+                  "
+                  :key-label="
+                    $t('instance.external-secret-vault.vault-client-key')
+                  "
+                />
               </div>
               <div class="sm:col-span-2 sm:col-start-1">
                 <label class="textlabel block">
@@ -936,43 +963,33 @@ MIIEvQ...
       "
       class="sm:col-span-3 sm:col-start-1"
     >
-      <label for="ssl" class="textlabel block">
+      <div for="ssl" class="flex items-center justify-start gap-x-2 textlabel">
         {{ $t("data-source.ssl-connection") }}
-      </label>
-      <Switch
-        class="mt-2"
-        :text="true"
-        :value="dataSource.useSsl"
-        @update:value="handleUseSslChanged"
-      />
+        <Switch
+          :text="true"
+          :value="dataSource.useSsl"
+          @update:value="handleUseSslChanged"
+        />
+      </div>
       <template v-if="dataSource.useSsl">
-        <template v-if="dataSource.pendingCreate">
-          <SslCertificateFormV1
-            :value="dataSource"
-            :engine-type="basicInfo.engine"
-            :disabled="!allowEdit"
-            @change="handleSSLChange"
-          />
-        </template>
-        <template v-else>
-          <template v-if="dataSource.updateSsl">
-            <SslCertificateFormV1
-              :value="dataSource"
-              :engine-type="basicInfo.engine"
-              :disabled="!allowEdit"
-              @change="handleSSLChange"
-            />
-          </template>
-          <template v-else>
-            <NButton
-              class="mt-2!"
-              :disabled="!allowEdit"
-              @click.prevent="handleEditSSL"
-            >
-              {{ $t("common.edit") }} - {{ $t("common.write-only") }}
-            </NButton>
-          </template>
-        </template>
+        <SslCertificateFormV1
+          v-if="dataSource.pendingCreate || dataSource.updateSsl"
+          class="pt-1!"
+          v-model:verify="dataSource.verifyTlsCertificate"
+          v-model:ca="dataSource.sslCa"
+          v-model:cert="dataSource.sslCert"
+          v-model:private-key="dataSource.sslKey"
+          :engine-type="basicInfo.engine"
+          :disabled="!allowEdit"
+        />
+        <NButton
+          v-else
+          class="mt-2!"
+          :disabled="!allowEdit"
+          @click.prevent="handleEditSSL"
+        >
+          {{ $t("common.edit") }} - {{ $t("common.write-only") }}
+        </NButton>
       </template>
     </div>
 
@@ -1016,21 +1033,20 @@ import { useI18n } from "vue-i18n";
 import { BBTextField } from "@/bbkit";
 import { FeatureBadge } from "@/components/FeatureGuard";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
-import RequiredStar from "@/components/RequiredStar.vue";
 import DroppableTextarea from "@/components/misc/DroppableTextarea.vue";
+import RequiredStar from "@/components/RequiredStar.vue";
 import { Switch } from "@/components/v2";
 import type { DataSourceOptions } from "@/types/dataSource";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import type { DataSource } from "@/types/proto-es/v1/instance_service_pb";
 import {
-  DataSourceExternalSecret_AppRoleAuthOption_SecretType,
-  DataSourceExternalSecret_AuthType,
-  DataSourceExternalSecret_SecretType,
-  DataSourceType,
   DataSource_AuthenticationType,
   DataSource_RedisType,
-  DataSourceExternalSecretSchema,
+  DataSourceExternalSecret_AppRoleAuthOption_SecretType,
   DataSourceExternalSecret_AppRoleAuthOptionSchema,
+  DataSourceExternalSecret_AuthType,
+  DataSourceExternalSecret_SecretType,
+  DataSourceExternalSecretSchema,
+  DataSourceType,
   KerberosConfigSchema,
   SASLConfigSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
@@ -1108,6 +1124,22 @@ watch(
     }
   },
   { immediate: true, deep: true }
+);
+
+// Watch SSL fields and set updateSsl flag when they change
+watch(
+  () => [
+    () => props.dataSource.verifyTlsCertificate,
+    () => props.dataSource.sslCa,
+    () => props.dataSource.sslCert,
+    () => props.dataSource.sslKey,
+  ],
+  () => {
+    if (!props.dataSource.pendingCreate) {
+      // eslint-disable-next-line vue/no-mutating-props
+      props.dataSource.updateSsl = true;
+    }
+  }
 );
 
 const hiveAuthentication = computed(() => {
@@ -1239,6 +1271,18 @@ const secretKeyLabel = computed(() => {
   return t("instance.external-secret.key-name");
 });
 
+const verifyVaultTls = computed({
+  get: () => {
+    return !props.dataSource.externalSecret?.skipVaultTlsVerification;
+  },
+  set: (value: boolean) => {
+    if (props.dataSource.externalSecret) {
+      // eslint-disable-next-line vue/no-mutating-props
+      props.dataSource.externalSecret.skipVaultTlsVerification = !value;
+    }
+  },
+});
+
 const changeSecretType = (secretType: DataSourceExternalSecret_SecretType) => {
   const ds = props.dataSource;
   switch (secretType) {
@@ -1359,14 +1403,6 @@ const handleEditSSL = () => {
   ds.sslCa = "";
   ds.sslCert = "";
   ds.sslKey = "";
-  ds.updateSsl = true;
-};
-
-const handleSSLChange = (
-  value: Partial<Pick<DataSource, "sslCa" | "sslCert" | "sslKey">>
-) => {
-  const ds = props.dataSource;
-  Object.assign(ds, value);
   ds.updateSsl = true;
 };
 

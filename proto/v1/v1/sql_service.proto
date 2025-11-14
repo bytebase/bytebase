@@ -201,6 +201,8 @@ message QueryResult {
 
   oneof detailed_error {
     PostgresError postgres_error = 9;
+    SyntaxError syntax_error = 13;
+    PermissionDenied permission_denied = 14;
   }
 
   // refer https://www.postgresql.org/docs/11/protocol-error-fields.html
@@ -223,6 +225,34 @@ message QueryResult {
     string file = 15;
     int32 line = 16;
     string routine = 17;
+  }
+
+  // Syntax error with position information for editor highlighting
+  message SyntaxError {
+    // Position information for highlighting in editor
+    Position start_position = 1;
+  }
+
+  // Permission denied with resource information or disallowed command_type.
+  // Either resources or command_type is available.
+  message PermissionDenied {
+    // Denied to access the resources.
+    // Format:
+    // instances/{instance}/databases/{database}
+    // instances/{instance}/databases/{database}/schemas/{schema}
+    // instances/{instance}/databases/{database}/tables/{table}
+    // instances/{instance}/databases/{database}/schemas/{schema}/tables/{table}
+    repeated string resources = 1;
+
+    // Disallowed command_type.
+    CommandType command_type = 2;
+
+    enum CommandType {
+      COMMAND_TYPE_UNSPECIFIED = 0;
+      DDL = 1;
+      DML = 2;
+      NON_READ_ONLY = 3;
+    }
   }
 
   reserved 11;

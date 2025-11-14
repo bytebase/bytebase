@@ -67,8 +67,8 @@ import {
 } from "@/store";
 import type {
   DatabaseMetadata,
-  SchemaMetadata,
   ExternalTableMetadata,
+  SchemaMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
 import { useCurrentTabViewStateContext } from "../../context/viewState";
 import ExternalTableColumnsTable from "./ExternalTableColumnsTable.vue";

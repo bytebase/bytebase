@@ -203,11 +203,10 @@ import {
   type RowValue,
 } from "@/types/proto-es/v1/sql_service_pb";
 import { useSQLResultViewContext } from "../context";
-import TableCell from "./TableCell.vue";
 import {
-  useBinaryFormatContext,
-  getBinaryFormatByColumnType,
   type BinaryFormat,
+  getBinaryFormatByColumnType,
+  useBinaryFormatContext,
 } from "./binary-format-store";
 import BinaryFormatButton from "./common/BinaryFormatButton.vue";
 import ColumnSortedIcon from "./common/ColumnSortedIcon.vue";
@@ -215,6 +214,7 @@ import MaskingReasonPopover from "./common/MaskingReasonPopover.vue";
 import SensitiveDataIcon from "./common/SensitiveDataIcon.vue";
 import { useSelectionContext } from "./common/selection-logic";
 import { getColumnType } from "./common/utils";
+import TableCell from "./TableCell.vue";
 import useTableColumnWidthLogic from "./useTableResize";
 
 const props = defineProps<{

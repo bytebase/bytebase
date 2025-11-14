@@ -49,8 +49,8 @@ import { computed, onMounted, reactive } from "vue";
 import { useRouter } from "vue-router";
 import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
 import {
-  IdentityProviderTable,
   IdentityProviderCreateWizard,
+  IdentityProviderTable,
 } from "@/components/IdentityProvider";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { WORKSPACE_ROUTE_IDENTITY_PROVIDER_DETAIL } from "@/router/dashboard/workspaceRoutes";

@@ -1,6 +1,6 @@
 import { uniq } from "lodash-es";
 import { useProjectIamPolicyStore } from "@/store";
-import { userNamePrefix, roleNamePrefix } from "@/store/modules/v1/common";
+import { roleNamePrefix, userNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedIssue } from "@/types";
 import { memberMapToRolesInProjectIAM } from "@/utils";
 import { projectOfIssue } from "./utils";

@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 var (
@@ -28,9 +29,9 @@ type TableRequirePKAdvisor struct {
 
 // Check checks table requires PK.
 func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	tree, ok := checkCtx.AST.(antlr.Tree)
+	stmtList, ok := checkCtx.AST.([]*plsqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to Tree")
+		return nil, errors.Errorf("failed to convert to ParseResult")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
@@ -41,7 +42,11 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 	rule := NewTableRequirePKRule(level, string(checkCtx.Rule.Type), checkCtx.CurrentDatabase)
 	checker := NewGenericChecker([]Rule{rule})
 
-	antlr.ParseTreeWalkerDefault.Walk(checker, tree)
+	for _, stmtNode := range stmtList {
+		rule.SetBaseLine(stmtNode.BaseLine)
+		checker.SetBaseLine(stmtNode.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtNode.Tree)
+	}
 
 	return checker.GetAdviceList()
 }
@@ -128,7 +133,7 @@ func (r *TableRequirePKRule) handleCreateTable(ctx *parser.Create_tableContext) 
 
 	r.tableName = fmt.Sprintf("%s.%s", schemaName, normalizeIdentifier(ctx.Table_name(), r.currentDatabase))
 	r.tableWitPK[r.tableName] = false
-	r.tableLine[r.tableName] = ctx.GetStop().GetLine()
+	r.tableLine[r.tableName] = r.baseLine + ctx.GetStop().GetLine()
 }
 
 func (r *TableRequirePKRule) handleInlineConstraint(ctx *parser.Inline_constraintContext) {
@@ -170,6 +175,6 @@ func (r *TableRequirePKRule) handleDropTable(ctx *parser.Drop_tableContext) {
 func (r *TableRequirePKRule) handleDropPrimaryKey(ctx *parser.Drop_primary_key_or_unique_or_generic_clauseContext) {
 	if _, exists := r.tableWitPK[r.tableName]; exists && ctx.PRIMARY() != nil {
 		r.tableWitPK[r.tableName] = false
-		r.tableLine[r.tableName] = ctx.GetStop().GetLine()
+		r.tableLine[r.tableName] = r.baseLine + ctx.GetStop().GetLine()
 	}
 }

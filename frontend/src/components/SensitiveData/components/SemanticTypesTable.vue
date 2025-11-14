@@ -29,13 +29,13 @@
 <script lang="tsx" setup>
 import {
   CheckIcon,
+  InfoIcon,
   PencilIcon,
   TrashIcon,
   Undo2Icon,
-  InfoIcon,
 } from "lucide-vue-next";
-import { NPopconfirm, NInput, NDataTable, NTooltip } from "naive-ui";
 import type { DataTableColumn } from "naive-ui";
+import { NDataTable, NInput, NPopconfirm, NTooltip } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { MiniActionButton } from "@/components/v2";

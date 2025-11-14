@@ -47,10 +47,10 @@ import { head } from "lodash-es";
 import { PlusIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
-import { computed, reactive, watch, ref, h } from "vue";
+import { computed, h, reactive, ref, watch } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
 import { useI18n } from "vue-i18n";
-import { useRouter, type LocationQuery } from "vue-router";
+import { type LocationQuery, useRouter } from "vue-router";
 import BBAvatar from "@/bbkit/BBAvatar.vue";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import type {
@@ -58,11 +58,11 @@ import type {
   ValueOption,
 } from "@/components/AdvancedSearch/types";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
-import { targetsForSpec, getLocalSheetByName } from "@/components/Plan";
-import AddSpecDrawer from "@/components/Plan/components/AddSpecDrawer.vue";
-import PlanDataTable from "@/components/Plan/components/PlanDataTable";
 import SystemBotTag from "@/components/misc/SystemBotTag.vue";
 import YouTag from "@/components/misc/YouTag.vue";
+import { getLocalSheetByName, targetsForSpec } from "@/components/Plan";
+import AddSpecDrawer from "@/components/Plan/components/AddSpecDrawer.vue";
+import PlanDataTable from "@/components/Plan/components/PlanDataTable";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
@@ -72,8 +72,10 @@ import {
   useStorageStore,
   useUserStore,
 } from "@/store";
-import { usePlanStore } from "@/store/modules/v1/plan";
-import { buildPlanFindBySearchParams } from "@/store/modules/v1/plan";
+import {
+  buildPlanFindBySearchParams,
+  usePlanStore,
+} from "@/store/modules/v1/plan";
 import { isValidDatabaseGroupName, SYSTEM_BOT_USER_NAME } from "@/types";
 import {
   DatabaseChangeType,

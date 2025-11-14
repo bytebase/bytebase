@@ -69,16 +69,15 @@ import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { NButton } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { reactive, computed, ref, watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { PagedInstanceTable } from "@/components/v2";
-import { Drawer, DrawerContent } from "@/components/v2";
+import { Drawer, DrawerContent, PagedInstanceTable } from "@/components/v2";
 import {
   pushNotification,
+  useActuatorV1Store,
+  useDatabaseV1Store,
   useInstanceV1Store,
   useSubscriptionV1Store,
-  useDatabaseV1Store,
-  useActuatorV1Store,
 } from "@/store";
 import type {
   Instance,

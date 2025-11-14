@@ -8,12 +8,12 @@ import { silentContextKey } from "@/grpcweb/context-key";
 import { isValidProjectName } from "@/types";
 import type { Group } from "@/types/proto-es/v1/group_service_pb";
 import {
+  BatchGetGroupsRequestSchema,
   CreateGroupRequestSchema,
   DeleteGroupRequestSchema,
   GetGroupRequestSchema,
   ListGroupsRequestSchema,
   UpdateGroupRequestSchema,
-  BatchGetGroupsRequestSchema,
 } from "@/types/proto-es/v1/group_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { groupNamePrefix } from "./common";

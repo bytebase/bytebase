@@ -9,6 +9,7 @@
     <NTree
       v-else
       block-line
+      block-node
       :keyboard="false"
       :draggable="!editingNode"
       :data="[sheetTree]"
@@ -60,48 +61,48 @@
 import { create } from "@bufbuild/protobuf";
 import { useDebounceFn } from "@vueuse/core";
 import {
-  NTree,
-  NInput,
-  NDropdown,
-  NPopover,
-  useDialog,
-  type TreeOption,
-  type TreeDropInfo,
   type DialogReactive,
+  NDropdown,
+  NInput,
+  NPopover,
+  NTree,
+  type TreeDropInfo,
+  type TreeOption,
+  useDialog,
 } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { nextTick, watch, computed } from "vue";
+import { computed, nextTick, watch } from "vue";
 import { BBSpin } from "@/bbkit";
 import { HighlightLabelText } from "@/components/v2";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { t } from "@/plugins/i18n";
 import {
-  useSQLEditorTabStore,
-  useSQLEditorStore,
-  useWorkSheetStore,
   pushNotification,
+  useSQLEditorStore,
+  useSQLEditorTabStore,
   useTabViewStateStore,
+  useWorkSheetStore,
 } from "@/store";
 import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import {
-  WorksheetSchema,
-  Worksheet_Visibility,
   type Worksheet,
+  Worksheet_Visibility,
+  WorksheetSchema,
 } from "@/types/proto-es/v1/worksheet_service_pb";
-import { isDescendantOf, defer } from "@/utils";
+import { defer, isDescendantOf } from "@/utils";
+import { useSQLEditorContext } from "@/views/sql-editor/context";
 import SharePopover from "@/views/sql-editor/EditorCommon/SharePopover.vue";
 import {
-  useSheetContextByView,
-  type SheetViewMode,
-  type WorsheetFolderNode,
   openWorksheetByName,
-  useSheetContext,
   revealWorksheets,
+  type SheetViewMode,
+  useSheetContext,
+  useSheetContextByView,
+  type WorsheetFolderNode,
 } from "@/views/sql-editor/Sheet";
-import { useSQLEditorContext } from "@/views/sql-editor/context";
-import { TreeNodePrefix, TreeNodeSuffix } from "./TreeNodeRenders";
 import { filterNode } from "./common";
-import { useDropdown, type DropdownOptionType } from "./dropdown";
+import { type DropdownOptionType, useDropdown } from "./dropdown";
+import { TreeNodePrefix, TreeNodeSuffix } from "./TreeNodeRenders";
 
 const props = defineProps<{
   view: SheetViewMode;
@@ -271,7 +272,6 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
       <NInput
         value={editingNode.value.node.label}
         size="small"
-        class="flex-1"
         inputProps={{
           // the autofocus not always work,
           // so we need to set the id for input and use the document.getElementById API
@@ -779,7 +779,6 @@ const handleDrop = async ({ node, dragNode }: TreeDropInfo) => {
 }
 .worksheet-tree :deep(.n-tree-node-content__text) {
   overflow: hidden;
-  flex: 1;
   text-overflow: ellipsis;
   white-space: nowrap;
 }

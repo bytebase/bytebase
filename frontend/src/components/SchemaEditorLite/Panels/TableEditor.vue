@@ -197,22 +197,22 @@ import type {
   ColumnMetadata,
   DatabaseMetadata,
   ForeignKeyMetadata,
+  ColumnMetadata as NewColumnMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
 import {
-  TablePartitionMetadata_Type,
   ColumnMetadataSchema,
-  IndexMetadataSchema,
-  TablePartitionMetadataSchema,
   DatabaseMetadataSchema,
+  IndexMetadataSchema,
+  TablePartitionMetadata_Type,
+  TablePartitionMetadataSchema,
 } from "@/types/proto-es/v1/database_service_pb";
-import type { ColumnMetadata as NewColumnMetadata } from "@/types/proto-es/v1/database_service_pb";
 import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto-es/v1/setting_service_pb";
 import { instanceV1AllowsReorderColumns, randomString } from "@/utils";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
-import EditColumnForeignKeyModal from "../Modals/EditColumnForeignKeyModal.vue";
 import { useSchemaEditorContext } from "../context";
+import EditColumnForeignKeyModal from "../Modals/EditColumnForeignKeyModal.vue";
 import {
   engineSupportsEditIndexes,
   engineSupportsEditTablePartitions,

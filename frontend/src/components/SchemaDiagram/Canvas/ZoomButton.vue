@@ -17,7 +17,7 @@
 </template>
 
 <script lang="ts" setup>
-import { NButtonGroup, NButton } from "naive-ui";
+import { NButton, NButtonGroup } from "naive-ui";
 import { computed } from "vue";
 import { useSchemaDiagramContext } from "../common";
 

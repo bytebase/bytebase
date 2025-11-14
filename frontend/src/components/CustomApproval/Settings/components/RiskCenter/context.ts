@@ -1,4 +1,4 @@
-import { inject, provide, type InjectionKey, type Ref } from "vue";
+import { type InjectionKey, inject, provide, type Ref } from "vue";
 import type { Risk } from "@/types/proto-es/v1/risk_service_pb";
 
 export type DialogContext = {

@@ -1,36 +1,37 @@
 import { create } from "@bufbuild/protobuf";
 import { Code } from "@connectrpc/connect";
-import { isEmpty, cloneDeep } from "lodash-es";
+import { cloneDeep, isEmpty } from "lodash-es";
 import { v4 as uuidv4 } from "uuid";
 import { markRaw, reactive } from "vue";
 import { t } from "@/plugins/i18n";
 import {
+  batchGetOrFetchDatabases,
+  hasFeature,
   pushNotification,
+  useDatabaseV1Store,
   useDBGroupStore,
+  useSQLEditorQueryHistoryStore,
   useSQLEditorStore,
   useSQLEditorTabStore,
   useSQLStore,
-  useSQLEditorQueryHistoryStore,
-  hasFeature,
-  batchGetOrFetchDatabases,
-  useDatabaseV1Store,
 } from "@/store";
 import type {
-  ComposedDatabase,
-  SQLResultSetV1,
   BBNotificationStyle,
-  SQLEditorQueryParams,
-  SQLEditorConnection,
+  ComposedDatabase,
   QueryContextStatus,
-  SQLEditorDatabaseQueryContext,
   QueryDataSourceType,
+  SQLEditorConnection,
+  SQLEditorDatabaseQueryContext,
+  SQLEditorQueryParams,
+  SQLResultSetV1,
 } from "@/types";
 import { isValidDatabaseName } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
 import {
-  QueryRequestSchema,
   QueryOptionSchema,
+  QueryRequestSchema,
+  QueryResult_PermissionDenied_CommandType,
 } from "@/types/proto-es/v1/sql_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
@@ -353,17 +354,16 @@ const useExecuteSQL = () => {
 };
 
 const isOnlySelectError = (resultSet: SQLResultSetV1) => {
-  const patterns = [
-    /Support SELECT sql statement only/,
-    /disallow execute (DML|DDL) statement/,
-    /Support read-only command statements only/,
-  ];
-  return (
-    patterns.some((pattern) => resultSet.error.match(pattern)) ||
-    resultSet.results.some((result) => {
-      return patterns.some((pattern) => result.error.match(pattern));
-    })
-  );
+  return resultSet.results.some((result) => {
+    return (
+      result.detailedError.case === "permissionDenied" &&
+      [
+        QueryResult_PermissionDenied_CommandType.DDL,
+        QueryResult_PermissionDenied_CommandType.DML,
+        QueryResult_PermissionDenied_CommandType.NON_READ_ONLY,
+      ].includes(result.detailedError.value.commandType)
+    );
+  });
 };
 
 export { useExecuteSQL };

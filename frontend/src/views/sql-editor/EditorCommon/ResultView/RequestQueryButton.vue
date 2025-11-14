@@ -7,7 +7,7 @@
     <GrantRequestPanel
       v-if="showPanel"
       :project-name="database.project"
-      :database-resource="databaseResource"
+      :database-resources="databaseResources"
       :placement="'right'"
       :role="PresetRoleType.SQL_EDITOR_USER"
       @close="showPanel = false"
@@ -21,15 +21,15 @@ import { computed, ref } from "vue";
 import GrantRequestPanel from "@/components/GrantRequestPanel";
 import { useDatabaseV1ByName } from "@/store";
 import {
+  type DatabaseResource,
   isValidDatabaseName,
   PresetRoleType,
-  type DatabaseResource,
 } from "@/types";
 import { hasPermissionToCreateRequestGrantIssue } from "@/utils";
 
 const props = withDefaults(
   defineProps<{
-    databaseResource: DatabaseResource;
+    databaseResources: DatabaseResource[];
     size?: "tiny" | "medium";
   }>(),
   {
@@ -39,11 +39,19 @@ const props = withDefaults(
 
 const showPanel = ref(false);
 
+const primaryDatabase = computed(() => {
+  return props.databaseResources[0];
+});
+
 const { database } = useDatabaseV1ByName(
-  computed(() => props.databaseResource.databaseFullName)
+  computed(() => primaryDatabase.value?.databaseFullName ?? "")
 );
 
 const available = computed(() => {
+  if (props.databaseResources.length === 0) {
+    return false;
+  }
+
   if (!isValidDatabaseName(database.value.name)) {
     return false;
   }

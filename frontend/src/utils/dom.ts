@@ -1,4 +1,4 @@
-import { onBeforeUnmount, unref, watch, type Ref } from "vue";
+import { onBeforeUnmount, type Ref, unref, watch } from "vue";
 
 export const isDescendantOf = (
   node: Element | null | undefined,

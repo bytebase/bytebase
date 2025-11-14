@@ -29,35 +29,34 @@
 import { useDebounceFn } from "@vueuse/core";
 import { orderBy, uniqBy } from "lodash-es";
 import type { TransferRenderSourceList, TreeOption } from "naive-ui";
-import { NTransfer, NTree, NButton } from "naive-ui";
+import { NButton, NTransfer, NTree } from "naive-ui";
 import { computed, h, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
 import {
+  batchGetOrFetchDatabases,
   type DatabaseFilter,
   useDatabaseV1Store,
   useDBSchemaV1Store,
-  batchGetOrFetchDatabases,
 } from "@/store";
 import {
-  instanceNamePrefix,
   environmentNamePrefix,
+  instanceNamePrefix,
 } from "@/store/modules/v1/common";
 import {
-  DEBOUNCE_SEARCH_DELAY,
   type ComposedDatabase,
   type DatabaseResource,
+  DEBOUNCE_SEARCH_DELAY,
 } from "@/types";
 import {
-  getDefaultPagination,
-  type SearchParams,
   CommonFilterScopeIdList,
   extractProjectResourceName,
+  getDefaultPagination,
+  type SearchParams,
 } from "@/utils";
 import { convertScopeValueToEngine } from "@/utils/v1/common-conversions";
-import Label from "./Label.vue";
 import type { DatabaseTreeOption } from "./common";
 import {
   flattenTreeOptions,
@@ -65,6 +64,7 @@ import {
   mapTreeOptions,
   parseStringToResource,
 } from "./common";
+import Label from "./Label.vue";
 
 const props = defineProps<{
   disabled?: boolean;

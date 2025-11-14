@@ -43,10 +43,10 @@
 </template>
 
 <script lang="ts" setup>
-import { NRadioGroup, NRadio, NTooltip } from "naive-ui";
+import { NRadio, NRadioGroup, NTooltip } from "naive-ui";
 import { computed, onMounted, reactive, watch } from "vue";
 import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
-import { useProjectByName, hasFeature } from "@/store";
+import { hasFeature, useProjectByName } from "@/store";
 import type { DatabaseResource } from "@/types";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import DatabaseResourceSelector from "./DatabaseResourceSelector.vue";

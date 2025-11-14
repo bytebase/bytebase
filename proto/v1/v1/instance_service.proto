@@ -520,6 +520,19 @@ message DataSourceExternalSecret {
   string secret_name = 7;
   // the key name for the password.
   string password_key_name = 8;
+
+  // TLS configuration for connecting to Vault server.
+  // These fields are separate from the database TLS configuration in DataSource.
+  // skip_vault_tls_verification disables TLS certificate verification for Vault connections.
+  // Default is false (verification enabled) for security.
+  // Only set to true for development or when certificates cannot be properly validated.
+  bool skip_vault_tls_verification = 9;
+  // CA certificate for Vault server verification.
+  string vault_ssl_ca = 10 [(google.api.field_behavior) = INPUT_ONLY];
+  // Client certificate for mutual TLS authentication with Vault.
+  string vault_ssl_cert = 11 [(google.api.field_behavior) = INPUT_ONLY];
+  // Client private key for mutual TLS authentication with Vault.
+  string vault_ssl_key = 12 [(google.api.field_behavior) = INPUT_ONLY];
 }
 
 message DataSource {

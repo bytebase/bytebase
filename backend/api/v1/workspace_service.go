@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"log/slog"
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
@@ -90,6 +91,15 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 	policy, err := s.store.GetWorkspaceIamPolicy(ctx)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find iam policy"))
+	}
+
+	if setServiceData, ok := common.GetSetServiceDataFromContext(ctx); ok {
+		deltas := findIamPolicyDeltas(policyMessage.Policy, policy.Policy)
+		p, err := convertToProtoAny(deltas)
+		if err != nil {
+			slog.Warn("audit: failed to convert to anypb.Any")
+		}
+		setServiceData(p)
 	}
 
 	v1Policy, err := convertToV1IamPolicy(ctx, s.store, policy)

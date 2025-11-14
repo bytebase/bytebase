@@ -42,7 +42,7 @@
 import { PencilIcon, Trash2Icon } from "lucide-vue-next";
 import { NButton, NPopconfirm } from "naive-ui";
 import { computed } from "vue";
-import { unknownUser, SYSTEM_BOT_USER_NAME } from "@/types";
+import { SYSTEM_BOT_USER_NAME, unknownUser } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { MemberBinding } from "../../types";
 

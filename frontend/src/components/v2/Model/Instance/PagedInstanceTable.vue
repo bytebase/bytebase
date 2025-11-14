@@ -15,10 +15,10 @@
 </template>
 
 <script lang="tsx" setup>
-import { ref, watch, computed } from "vue";
+import { computed, ref, watch } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
-import { useInstanceV1Store, type InstanceFilter } from "@/store";
+import { type InstanceFilter, useInstanceV1Store } from "@/store";
 import { type Instance } from "@/types/proto-es/v1/instance_service_pb";
 import InstanceV1Table from "./InstanceV1Table";
 

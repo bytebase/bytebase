@@ -6,33 +6,32 @@ import { instanceServiceClientConnect } from "@/grpcweb";
 // Removed conversion imports - using proto-es types directly
 import { silentContextKey } from "@/grpcweb/context-key";
 import {
-  unknownInstance,
-  isValidProjectName,
-  isValidInstanceName,
   isValidEnvironmentName,
+  isValidInstanceName,
+  isValidProjectName,
+  unknownInstance,
 } from "@/types";
-import { Engine } from "@/types/proto-es/v1/common_pb";
-import { State } from "@/types/proto-es/v1/common_pb";
-import {
-  CreateInstanceRequestSchema,
-  UpdateInstanceRequestSchema,
-  DeleteInstanceRequestSchema,
-  UndeleteInstanceRequestSchema,
-  SyncInstanceRequestSchema,
-  ListInstanceDatabaseRequestSchema,
-  BatchSyncInstancesRequestSchema,
-  BatchUpdateInstancesRequestSchema,
-  GetInstanceRequestSchema,
-  AddDataSourceRequestSchema,
-  UpdateDataSourceRequestSchema,
-  RemoveDataSourceRequestSchema,
-  ListInstancesRequestSchema,
-} from "@/types/proto-es/v1/instance_service_pb";
+import { Engine, State } from "@/types/proto-es/v1/common_pb";
 // Using proto-es types directly, no conversions needed for internal operations
 import type {
   DataSource,
   Instance,
   UpdateInstanceRequest,
+} from "@/types/proto-es/v1/instance_service_pb";
+import {
+  AddDataSourceRequestSchema,
+  BatchSyncInstancesRequestSchema,
+  BatchUpdateInstancesRequestSchema,
+  CreateInstanceRequestSchema,
+  DeleteInstanceRequestSchema,
+  GetInstanceRequestSchema,
+  ListInstanceDatabaseRequestSchema,
+  ListInstancesRequestSchema,
+  RemoveDataSourceRequestSchema,
+  SyncInstanceRequestSchema,
+  UndeleteInstanceRequestSchema,
+  UpdateDataSourceRequestSchema,
+  UpdateInstanceRequestSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
 import { extractInstanceResourceName, hasWorkspacePermissionV2 } from "@/utils";
 
@@ -97,7 +96,7 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
   };
 
   // Actions
-  const upsertInstances = async (list: Instance[]): Promise<Instance[]> => {
+  const upsertInstances = (list: Instance[]): Instance[] => {
     list.forEach((instance) => {
       instanceMapByName.set(instance.name, instance);
     });
@@ -109,7 +108,7 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
       instanceId: extractInstanceResourceName(instance.name),
     });
     const response = await instanceServiceClientConnect.createInstance(request);
-    const instances = await upsertInstances([response]);
+    const instances = upsertInstances([response]);
 
     return instances[0];
   };
@@ -119,7 +118,7 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
       updateMask: { paths: updateMask },
     });
     const response = await instanceServiceClientConnect.updateInstance(request);
-    const instances = await upsertInstances([response]);
+    const instances = upsertInstances([response]);
     return instances[0];
   };
   const archiveInstance = async (instance: Instance, force = false) => {
@@ -129,7 +128,7 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     });
     await instanceServiceClientConnect.deleteInstance(request);
     instance.state = State.DELETED;
-    const instances = await upsertInstances([instance]);
+    const instances = upsertInstances([instance]);
     return instances[0];
   };
   const deleteInstance = async (instance: string) => {
@@ -146,7 +145,7 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     });
     await instanceServiceClientConnect.undeleteInstance(request);
     instance.state = State.ACTIVE;
-    const instances = await upsertInstances([instance]);
+    const instances = upsertInstances([instance]);
     return instances[0];
   };
   const syncInstance = async (instance: string, enableFullSync: boolean) => {
@@ -179,7 +178,7 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     });
     const response =
       await instanceServiceClientConnect.batchUpdateInstances(request);
-    const instances = await upsertInstances(response.instances);
+    const instances = upsertInstances(response.instances);
     return instances;
   };
 
@@ -193,7 +192,7 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     const response = await instanceServiceClientConnect.getInstance(request, {
       contextValues: createContextValues().set(silentContextKey, silent),
     });
-    const instances = await upsertInstances([response]);
+    const instances = upsertInstances([response]);
     return instances[0];
   };
   const getInstanceByName = (name: string): Instance => {
@@ -229,7 +228,7 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
       dataSource: dataSource,
     });
     const response = await instanceServiceClientConnect.addDataSource(request);
-    const [updatedInstance] = await upsertInstances([response]);
+    const [updatedInstance] = upsertInstances([response]);
     return updatedInstance;
   };
   const updateDataSource = async (
@@ -244,7 +243,7 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     });
     const response =
       await instanceServiceClientConnect.updateDataSource(request);
-    const [updatedInstance] = await upsertInstances([response]);
+    const [updatedInstance] = upsertInstances([response]);
     return updatedInstance;
   };
   const deleteDataSource = async (
@@ -257,7 +256,7 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     });
     const response =
       await instanceServiceClientConnect.removeDataSource(request);
-    const [updatedInstance] = await upsertInstances([response]);
+    const [updatedInstance] = upsertInstances([response]);
     return updatedInstance;
   };
 
@@ -281,7 +280,7 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     const response = await instanceServiceClientConnect.listInstances(request);
     const nextPageToken = response.nextPageToken;
 
-    const instances = await upsertInstances(response.instances);
+    const instances = upsertInstances(response.instances);
     return {
       instances: instances,
       nextPageToken,
@@ -290,7 +289,6 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
 
   return {
     reset,
-    upsertInstances,
     createInstance,
     updateInstance,
     archiveInstance,

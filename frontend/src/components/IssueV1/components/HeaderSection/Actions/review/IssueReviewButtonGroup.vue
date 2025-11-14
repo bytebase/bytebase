@@ -28,15 +28,15 @@ import {
   taskRolloutActionDisplayName,
   useIssueContext,
 } from "@/components/IssueV1";
-import { useCurrentUserV1, extractUserId, useCurrentProjectV1 } from "@/store";
+import { extractUserId, useCurrentProjectV1, useCurrentUserV1 } from "@/store";
 import {
-  IssueStatus,
   Issue_ApprovalStatus,
+  IssueStatus,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
-  isDatabaseChangeRelatedIssue,
-  hasWorkspacePermissionV2,
   hasProjectPermissionV2,
+  hasWorkspacePermissionV2,
+  isDatabaseChangeRelatedIssue,
 } from "@/utils";
 import type { ExtraActionOption } from "../common";
 import { IssueStatusActionButtonGroup } from "../common";

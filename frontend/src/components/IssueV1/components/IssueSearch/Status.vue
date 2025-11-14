@@ -1,18 +1,20 @@
 <template>
-  <NTabs
-    :value="tab"
-    :type="'line'"
-    :size="'small'"
-    @update:value="updateStatus"
-  >
-    <NTab v-for="item in tabItemList" :key="item.value" :name="item.value">
-      {{ item.label }}
-    </NTab>
-  </NTabs>
+  <div class="shrink-0">
+    <NTabs
+      :value="tab"
+      :type="'line'"
+      :size="'small'"
+      @update:value="updateStatus"
+    >
+      <NTab v-for="item in tabItemList" :key="item.value" :name="item.value">
+        {{ item.label }}
+      </NTab>
+    </NTabs>
+  </div>
 </template>
 
 <script lang="ts" setup>
-import { NTabs, NTab } from "naive-ui";
+import { NTab, NTabs } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type { SearchParams, SemanticIssueStatus } from "@/utils";
@@ -38,10 +40,6 @@ const tabItemList = computed(() => {
       value: "CLOSED",
       label: t("issue.table.closed"),
     },
-    {
-      value: "",
-      label: t("common.all"),
-    },
   ] as {
     value: SemanticIssueStatus;
     label: string;
@@ -49,7 +47,7 @@ const tabItemList = computed(() => {
 });
 
 const tab = computed(() => {
-  return getSemanticIssueStatusFromSearchParams(props.params);
+  return getSemanticIssueStatusFromSearchParams(props.params) ?? "";
 });
 
 const updateStatus = (value: SemanticIssueStatus) => {

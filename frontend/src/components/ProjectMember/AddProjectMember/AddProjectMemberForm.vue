@@ -78,13 +78,13 @@
 /* eslint-disable vue/no-mutating-props */
 import { isUndefined } from "lodash-es";
 import { NButton, NInput } from "naive-ui";
-import { computed, reactive, watch, ref } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
 import QuerierDatabaseResourceForm from "@/components/GrantRequestPanel/DatabaseResourceForm/index.vue";
 import MembersBindingSelect from "@/components/Member/MembersBindingSelect.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { RoleSelect } from "@/components/v2/Select";
-import { PresetRoleType, type DatabaseResource } from "@/types";
+import { type DatabaseResource, PresetRoleType } from "@/types";
 import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { checkRoleContainsAnyPermission } from "@/utils";
@@ -98,13 +98,13 @@ const props = withDefaults(
     requireReason?: boolean;
     disableMemberChange?: boolean;
     supportRoles?: string[];
-    databaseResource?: DatabaseResource;
+    databaseResources?: DatabaseResource[];
   }>(),
   {
     disableMemberChange: false,
     requireReason: false,
     supportRoles: () => [],
-    databaseResource: undefined,
+    databaseResources: () => [],
   }
 );
 
@@ -127,9 +127,10 @@ const getInitialState = (): LocalState => {
     role: props.binding.role,
     memberList: props.binding.members,
     reason: "",
-    databaseResources: props.databaseResource
-      ? [{ ...props.databaseResource }]
-      : undefined,
+    databaseResources:
+      props.databaseResources && props.databaseResources.length > 0
+        ? props.databaseResources.map((r) => ({ ...r }))
+        : undefined,
   };
 
   return defaultState;
@@ -140,13 +141,14 @@ const expirationSelectorRef = ref<InstanceType<typeof ExpirationSelector>>();
 
 watch(
   () => state.role,
-  () => {
-    state.databaseResources = props.databaseResource
-      ? [{ ...props.databaseResource }]
-      : undefined;
-  },
-  {
-    immediate: true,
+  (newRole, oldRole) => {
+    // Only reset databaseResources when role actually changes, not on initial mount
+    if (oldRole !== undefined) {
+      state.databaseResources =
+        props.databaseResources && props.databaseResources.length > 0
+          ? props.databaseResources.map((r) => ({ ...r }))
+          : undefined;
+    }
   }
 );
 

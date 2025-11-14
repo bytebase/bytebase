@@ -19,13 +19,9 @@ func init() {
 }
 
 // parsePLSQLForRegistry is the ParseFunc for PL/SQL.
-// Returns antlr.Tree on success.
+// Returns []*ParseResult on success.
 func parsePLSQLForRegistry(statement string) (any, error) {
-	tree, _, err := ParsePLSQL(statement + ";")
-	if err != nil {
-		return nil, err
-	}
-	return tree, nil
+	return ParsePLSQL(statement + ";")
 }
 
 type Version struct {
@@ -61,9 +57,72 @@ func ParseVersion(banner string) (*Version, error) {
 	return nil, errors.Errorf("failed to parse version from banner: %s", banner)
 }
 
-// ParsePLSQL parses the given PLSQL.
-func ParsePLSQL(sql string) (antlr.Tree, *antlr.CommonTokenStream, error) {
+// ParseResult is the result of parsing a PL/SQL statement.
+type ParseResult struct {
+	Tree     antlr.Tree
+	Tokens   *antlr.CommonTokenStream
+	BaseLine int
+}
+
+// ParsePLSQL parses the given PLSQL and returns a list of parse results.
+// It first parses the whole statement to get the AST, then splits by unit_statement
+// and sql_plus_command nodes, and re-parses each individual statement.
+func ParsePLSQL(sql string) ([]*ParseResult, error) {
 	sql = addSemicolonIfNeeded(sql)
+
+	// First pass: parse the whole statement to get the AST for splitting
+	tree, tokens, err := parsePLSQLInternal(sql, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	// Type assert to ensure we have a sql_script context
+	sqlScript, ok := tree.(*parser.Sql_scriptContext)
+	if !ok {
+		return nil, errors.Errorf("expected sql_script context, got %T", tree)
+	}
+
+	// Iterate through children in order to preserve statement ordering and re-parse each one
+	var result []*ParseResult
+	for _, child := range sqlScript.GetChildren() {
+		var stmtText string
+		var stmtBaseLine int
+
+		// Type assert to get the specific statement type
+		if stmt, ok := child.(parser.IUnit_statementContext); ok {
+			stmtText = tokens.GetTextFromTokens(stmt.GetStart(), stmt.GetStop())
+			stmtBaseLine = stmt.GetStart().GetLine() - 1 // Convert to 0-based
+		} else if sqlPlusCmd, ok := child.(parser.ISql_plus_commandContext); ok {
+			stmtText = tokens.GetTextFromTokens(sqlPlusCmd.GetStart(), sqlPlusCmd.GetStop())
+			stmtBaseLine = sqlPlusCmd.GetStart().GetLine() - 1 // Convert to 0-based
+		} else {
+			// Skip other node types (e.g., EOF)
+			continue
+		}
+
+		// Skip empty statements
+		if strings.TrimSpace(stmtText) == "" || stmtText == ";" {
+			continue
+		}
+
+		// Re-parse the individual statement with correct base line
+		stmtTree, stmtTokens, err := parsePLSQLInternal(stmtText, stmtBaseLine)
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, &ParseResult{
+			Tree:     stmtTree,
+			Tokens:   stmtTokens,
+			BaseLine: stmtBaseLine,
+		})
+	}
+
+	return result, nil
+}
+
+// parsePLSQLInternal is the internal parsing function that parses a single SQL statement.
+func parsePLSQLInternal(sql string, baseLine int) (antlr.Tree, *antlr.CommonTokenStream, error) {
 	lexer := parser.NewPlSqlLexer(antlr.NewInputStream(sql))
 	stream := antlr.NewCommonTokenStream(lexer, 0)
 	p := parser.NewPlSqlParser(stream)
@@ -71,12 +130,14 @@ func ParsePLSQL(sql string) (antlr.Tree, *antlr.CommonTokenStream, error) {
 
 	lexerErrorListener := &base.ParseErrorListener{
 		Statement: sql,
+		BaseLine:  baseLine,
 	}
 	lexer.RemoveErrorListeners()
 	lexer.AddErrorListener(lexerErrorListener)
 
 	parserErrorListener := &base.ParseErrorListener{
 		Statement: sql,
+		BaseLine:  baseLine,
 	}
 	p.RemoveErrorListeners()
 	p.AddErrorListener(parserErrorListener)
@@ -93,6 +154,13 @@ func ParsePLSQL(sql string) (antlr.Tree, *antlr.CommonTokenStream, error) {
 	}
 
 	return tree, stream, nil
+}
+
+// ParsePLSQLForStringsManipulation parses the whole SQL without splitting.
+// This is used for strings manipulation which needs to see all statements together.
+func ParsePLSQLForStringsManipulation(sql string) (antlr.Tree, antlr.TokenStream, error) {
+	sql = addSemicolonIfNeeded(sql)
+	return parsePLSQLInternal(sql, 0)
 }
 
 func addSemicolonIfNeeded(sql string) string {
@@ -246,13 +314,16 @@ func NormalizeTableName(tableName parser.ITable_nameContext) string {
 
 // EquivalentType returns true if the given type is equivalent to the given text.
 func EquivalentType(tp parser.IDatatypeContext, text string) (bool, error) {
-	tree, _, err := ParsePLSQL(fmt.Sprintf(`CREATE TABLE t(a %s);`, text))
+	results, err := ParsePLSQL(fmt.Sprintf(`CREATE TABLE t(a %s);`, text))
 	if err != nil {
 		return false, err
 	}
+	if len(results) == 0 {
+		return false, errors.New("no parse results")
+	}
 
 	listener := &typeEquivalentListener{tp: tp, equivalent: false}
-	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
+	antlr.ParseTreeWalkerDefault.Walk(listener, results[0].Tree)
 	return listener.equivalent, nil
 }
 

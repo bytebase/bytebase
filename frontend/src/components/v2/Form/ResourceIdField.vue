@@ -65,7 +65,7 @@
 
 <script lang="ts" setup>
 import { Code } from "@connectrpc/connect";
-import { NInput, type InputProps } from "naive-ui";
+import { type InputProps, NInput } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { CopyButton } from "@/components/v2";
@@ -212,7 +212,7 @@ const handleResourceIdChange = async (newValue: string) => {
     }
   }
 
-  if (props.fetchResource && state.resourceId) {
+  if (props.fetchResource && state.resourceId && !props.readonly) {
     try {
       const resource = await props.fetchResource(state.resourceId);
       if (resource) {

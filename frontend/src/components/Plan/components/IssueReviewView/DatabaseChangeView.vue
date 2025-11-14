@@ -76,7 +76,7 @@ import { useCurrentProjectV1, useEnvironmentV1Store } from "@/store";
 import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { extractProjectResourceName, getStageStatus } from "@/utils";
-import { usePlanContext, usePlanCheckStatus } from "../../logic";
+import { usePlanCheckStatus, usePlanContext } from "../../logic";
 import ChecksDrawer from "../ChecksView/ChecksDrawer.vue";
 import PlanCheckStatusCount from "../PlanCheckStatusCount.vue";
 

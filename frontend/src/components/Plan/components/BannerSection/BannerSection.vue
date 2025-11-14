@@ -41,9 +41,9 @@ import { usePlanContext } from "@/components/Plan";
 import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL } from "@/router/dashboard/projectV1";
 import { State } from "@/types/proto-es/v1/common_pb";
 import {
-  IssueStatus,
   Issue_ApprovalStatus,
   Issue_Type,
+  IssueStatus,
 } from "@/types/proto-es/v1/issue_service_pb";
 import { Task_Status, Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
 import {

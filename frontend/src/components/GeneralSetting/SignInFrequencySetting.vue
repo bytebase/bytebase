@@ -83,10 +83,9 @@
 
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
-import { DurationSchema } from "@bufbuild/protobuf/wkt";
-import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
+import { DurationSchema, FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { isEqual } from "lodash-es";
-import { NInputNumber, NRadioGroup, NRadio, NTooltip } from "naive-ui";
+import { NInputNumber, NRadio, NRadioGroup, NTooltip } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
 import { featureToRef } from "@/store";

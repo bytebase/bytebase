@@ -135,10 +135,10 @@ import ReleaseRemindModal from "@/components/ReleaseRemindModal.vue";
 import { t } from "@/plugins/i18n";
 import { WORKSPACE_ROOT_MODULE } from "@/router/dashboard/workspaceRoutes";
 import {
-  useActuatorV1Store,
-  useSubscriptionV1Store,
-  usePermissionStore,
   pushNotification,
+  useActuatorV1Store,
+  usePermissionStore,
+  useSubscriptionV1Store,
 } from "@/store";
 import { PresetRoleType } from "@/types";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";

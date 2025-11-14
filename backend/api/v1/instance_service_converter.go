@@ -127,12 +127,17 @@ func convertDataSourceExternalSecret(externalSecret *storepb.DataSourceExternalS
 	}
 
 	resp := &v1pb.DataSourceExternalSecret{
-		SecretType:      v1pb.DataSourceExternalSecret_SecretType(externalSecret.SecretType),
-		Url:             externalSecret.Url,
-		AuthType:        v1pb.DataSourceExternalSecret_AuthType(externalSecret.AuthType),
-		EngineName:      externalSecret.EngineName,
-		SecretName:      externalSecret.SecretName,
-		PasswordKeyName: externalSecret.PasswordKeyName,
+		SecretType:               v1pb.DataSourceExternalSecret_SecretType(externalSecret.SecretType),
+		Url:                      externalSecret.Url,
+		AuthType:                 v1pb.DataSourceExternalSecret_AuthType(externalSecret.AuthType),
+		EngineName:               externalSecret.EngineName,
+		SecretName:               externalSecret.SecretName,
+		PasswordKeyName:          externalSecret.PasswordKeyName,
+		SkipVaultTlsVerification: externalSecret.SkipVaultTlsVerification,
+		// Clear sensitive Vault SSL data (INPUT_ONLY fields, should not be returned)
+		VaultSslCa:   "",
+		VaultSslCert: "",
+		VaultSslKey:  "",
 	}
 
 	// clear sensitive data.
@@ -255,12 +260,16 @@ func convertV1DataSourceExternalSecret(externalSecret *v1pb.DataSourceExternalSe
 	}
 
 	secret := &storepb.DataSourceExternalSecret{
-		SecretType:      storepb.DataSourceExternalSecret_SecretType(externalSecret.SecretType),
-		Url:             externalSecret.Url,
-		AuthType:        storepb.DataSourceExternalSecret_AuthType(externalSecret.AuthType),
-		EngineName:      externalSecret.EngineName,
-		SecretName:      externalSecret.SecretName,
-		PasswordKeyName: externalSecret.PasswordKeyName,
+		SecretType:               storepb.DataSourceExternalSecret_SecretType(externalSecret.SecretType),
+		Url:                      externalSecret.Url,
+		AuthType:                 storepb.DataSourceExternalSecret_AuthType(externalSecret.AuthType),
+		EngineName:               externalSecret.EngineName,
+		SecretName:               externalSecret.SecretName,
+		PasswordKeyName:          externalSecret.PasswordKeyName,
+		SkipVaultTlsVerification: externalSecret.SkipVaultTlsVerification,
+		VaultSslCa:               externalSecret.VaultSslCa,
+		VaultSslCert:             externalSecret.VaultSslCert,
+		VaultSslKey:              externalSecret.VaultSslKey,
 	}
 
 	// Convert auth options

@@ -15,9 +15,8 @@
 </template>
 
 <script setup lang="ts">
-import { NRadioGroup, NRadio } from "naive-ui";
-import { computed } from "vue";
-import { onMounted } from "vue";
+import { NRadio, NRadioGroup } from "naive-ui";
+import { computed, onMounted } from "vue";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import { exportFormatToString } from "@/utils/v1/common-conversions";
 

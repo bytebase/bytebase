@@ -4,7 +4,7 @@
 
 <script setup lang="ts">
 import { useNotification } from "naive-ui";
-import { watchEffect, h } from "vue";
+import { h, watchEffect } from "vue";
 import { useNotificationStore } from "@/store";
 import type { BBNotificationStyle } from "@/types";
 

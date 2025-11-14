@@ -29,9 +29,10 @@ import {
 } from "@/router/dashboard/projectV1";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
-import { databaseForTask, extractRolloutUID } from "@/utils";
 import {
+  databaseForTask,
   extractProjectResourceName,
+  extractRolloutUID,
   extractSchemaVersionFromTask,
   extractStageUID,
   extractTaskUID,

@@ -76,22 +76,22 @@ import { NTimelineItem } from "naive-ui";
 import { computed, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import {
-  useCurrentUserV1,
-  useUserStore,
   useCurrentProjectV1,
+  useCurrentUserV1,
   useGroupStore,
   useProjectIamPolicyStore,
+  useUserStore,
 } from "@/store";
 import { userNamePrefix } from "@/store/modules/v1/common";
-import { SYSTEM_BOT_EMAIL, groupBindingPrefix, PresetRoleType } from "@/types";
+import { groupBindingPrefix, PresetRoleType, SYSTEM_BOT_EMAIL } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { Issue_Approver_Status } from "@/types/proto-es/v1/issue_service_pb";
 import type {
   Issue,
   Issue_Approver,
 } from "@/types/proto-es/v1/issue_service_pb";
+import { Issue_Approver_Status } from "@/types/proto-es/v1/issue_service_pb";
 import type { User as UserType } from "@/types/proto-es/v1/user_service_pb";
-import { memberMapToRolesInProjectIAM, isBindingPolicyExpired } from "@/utils";
+import { isBindingPolicyExpired, memberMapToRolesInProjectIAM } from "@/utils";
 import ApprovalUserView from "./ApprovalUserView.vue";
 import PotentialApprovers from "./PotentialApprovers.vue";
 

@@ -51,7 +51,7 @@
 </template>
 
 <script lang="ts" setup>
-import { NScrollbar, NEmpty } from "naive-ui";
+import { NEmpty, NScrollbar } from "naive-ui";
 import { computed } from "vue";
 import { useIssueContext } from "@/components/IssueV1/logic";
 import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";

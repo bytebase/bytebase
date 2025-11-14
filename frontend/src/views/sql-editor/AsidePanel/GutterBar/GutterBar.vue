@@ -32,9 +32,9 @@ import { computed } from "vue";
 import { useRoute } from "vue-router";
 import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
 import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
-import { useSQLEditorContext, type AsidePanelTab } from "../../context";
-import TabItem from "./TabItem.vue";
+import { type AsidePanelTab, useSQLEditorContext } from "../../context";
 import { type Size } from "./common";
+import TabItem from "./TabItem.vue";
 
 withDefaults(
   defineProps<{

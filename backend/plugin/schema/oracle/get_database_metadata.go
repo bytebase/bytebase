@@ -21,9 +21,12 @@ func init() {
 
 // GetDatabaseMetadata parses the Oracle schema text and returns the database metadata.
 func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, error) {
-	tree, _, err := oracleparser.ParsePLSQL(schemaText)
+	results, err := oracleparser.ParsePLSQL(schemaText)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse Oracle schema")
+	}
+	if len(results) == 0 {
+		return nil, errors.New("no parse results")
 	}
 
 	extractor := &metadataExtractor{
@@ -41,9 +44,11 @@ func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, er
 		inlineUniqueKeys:  make(map[string][]string),
 	}
 
-	// Walk the parse tree
-	if tree != nil {
-		antlr.ParseTreeWalkerDefault.Walk(extractor, tree)
+	// Walk all parse result trees to extract metadata from all statements
+	for _, result := range results {
+		if result.Tree != nil {
+			antlr.ParseTreeWalkerDefault.Walk(extractor, result.Tree)
+		}
 	}
 
 	if extractor.err != nil {

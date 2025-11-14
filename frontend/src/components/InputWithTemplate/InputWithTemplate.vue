@@ -61,12 +61,12 @@
 <script lang="ts" setup>
 import { NTooltip } from "naive-ui";
 import type { PropType } from "vue";
-import { reactive, watch, watchEffect, ref, onUnmounted, onMounted } from "vue";
+import { onMounted, onUnmounted, reactive, ref, watch, watchEffect } from "vue";
 import { BBBadge } from "@/bbkit";
 import AutoWidthInput from "./AutoWidthInput.vue";
 import type { Template, TemplateInput } from "./types";
 import { InputType } from "./types";
-import { getTemplateInputs, templateInputsToString, KEY_EVENT } from "./utils";
+import { getTemplateInputs, KEY_EVENT, templateInputsToString } from "./utils";
 
 interface LocalState {
   inputData: string;

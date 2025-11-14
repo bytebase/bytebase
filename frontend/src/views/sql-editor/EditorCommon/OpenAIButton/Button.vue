@@ -26,7 +26,7 @@
 </template>
 
 <script setup lang="ts">
-import { NButton, type ButtonProps } from "naive-ui";
+import { type ButtonProps, NButton } from "naive-ui";
 import { computed } from "vue";
 import { useSQLEditorContext } from "../../context";
 

@@ -57,11 +57,11 @@ import { NButton } from "naive-ui";
 import { computed, onMounted, reactive, ref } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
 import { useRouter } from "vue-router";
-import AdvancedSearch from "@/components/AdvancedSearch";
-import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch";
+import AdvancedSearch, {
+  useCommonSearchScopeOptions,
+} from "@/components/AdvancedSearch";
 import ProjectCreatePanel from "@/components/Project/ProjectCreatePanel.vue";
-import { PagedProjectTable } from "@/components/v2";
-import { Drawer } from "@/components/v2";
+import { Drawer, PagedProjectTable } from "@/components/v2";
 import ProjectOperations from "@/components/v2/Model/Project/ProjectOperations.vue";
 import { useProjectV1Store, useUIStateStore } from "@/store";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";

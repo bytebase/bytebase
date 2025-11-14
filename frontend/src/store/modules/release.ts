@@ -8,13 +8,13 @@ import type { MaybeRef, Pagination } from "@/types";
 import { isValidReleaseName, unknownRelease } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Release } from "@/types/proto-es/v1/release_service_pb";
-import { ReleaseSchema } from "@/types/proto-es/v1/release_service_pb";
 import {
+  DeleteReleaseRequestSchema,
   GetReleaseRequestSchema,
   ListReleasesRequestSchema,
-  UpdateReleaseRequestSchema,
-  DeleteReleaseRequestSchema,
+  ReleaseSchema,
   UndeleteReleaseRequestSchema,
+  UpdateReleaseRequestSchema,
 } from "@/types/proto-es/v1/release_service_pb";
 import { DEFAULT_PAGE_SIZE } from "./common";
 

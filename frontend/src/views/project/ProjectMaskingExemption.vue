@@ -69,16 +69,16 @@
 
 <script lang="tsx" setup>
 import { ShieldCheckIcon } from "lucide-vue-next";
-import { NInputGroup, NButton } from "naive-ui";
+import { NButton, NInputGroup } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
-import { FeatureModal, FeatureBadge } from "@/components/FeatureGuard";
-import MaskingExceptionUserTable from "@/components/SensitiveData/MaskingExceptionUserTable.vue";
+import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
 import MaskingActionDropdown from "@/components/SensitiveData/components/MaskingActionDropdown.vue";
+import MaskingExceptionUserTable from "@/components/SensitiveData/MaskingExceptionUserTable.vue";
 import { type AccessUser } from "@/components/SensitiveData/types";
-import { SearchBox, DatabaseSelect } from "@/components/v2";
+import { DatabaseSelect, SearchBox } from "@/components/v2";
 import { PROJECT_V1_ROUTE_MASKING_EXEMPTION_CREATE } from "@/router/dashboard/projectV1";
-import { useProjectByName, hasFeature } from "@/store";
+import { hasFeature, useProjectByName } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { MaskingExceptionPolicy_MaskingException_Action as Action } from "@/types/proto-es/v1/org_policy_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";

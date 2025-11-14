@@ -10,8 +10,8 @@
 </template>
 
 <script lang="tsx" setup>
-import { NDataTable } from "naive-ui";
 import type { DataTableColumn } from "naive-ui";
+import { NDataTable } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type { InstanceRole } from "@/types/proto-es/v1/instance_role_service_pb";

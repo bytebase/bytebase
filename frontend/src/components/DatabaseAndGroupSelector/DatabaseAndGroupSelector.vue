@@ -46,15 +46,15 @@
 
 <script lang="ts" setup>
 import { head } from "lodash-es";
-import { NTabs, NTabPane } from "naive-ui";
+import { NTabPane, NTabs } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import DatabaseGroupDataTable from "@/components/DatabaseGroup/DatabaseGroupDataTable.vue";
 import { PagedDatabaseTable } from "@/components/v2/Model/DatabaseV1Table";
 import { useDBGroupListByProject } from "@/store";
 import {
-  instanceNamePrefix,
   environmentNamePrefix,
+  instanceNamePrefix,
 } from "@/store/modules/v1/common";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {

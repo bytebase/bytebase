@@ -5,20 +5,20 @@ import { computed, ref, unref, watch } from "vue";
 import { projectServiceClientConnect } from "@/grpcweb";
 import {
   ALL_USERS_USER_EMAIL,
-  QueryPermissionQueryAny,
   type ComposedDatabase,
   type MaybeRef,
   type QueryPermission,
+  QueryPermissionQueryAny,
 } from "@/types";
 import type { Expr } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
+import type { IamPolicy } from "@/types/proto-es/v1/iam_policy_pb";
 import {
   GetIamPolicyRequestSchema,
-  SetIamPolicyRequestSchema,
   IamPolicySchema,
+  SetIamPolicyRequestSchema,
 } from "@/types/proto-es/v1/iam_policy_pb";
-import type { IamPolicy } from "@/types/proto-es/v1/iam_policy_pb";
-import { BatchGetIamPolicyRequestSchema } from "@/types/proto-es/v1/project_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import { BatchGetIamPolicyRequestSchema } from "@/types/proto-es/v1/project_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { getUserEmailListInBinding } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";

@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 var (
@@ -27,9 +28,9 @@ type InsertMustSpecifyColumnAdvisor struct {
 
 // Check checks for to enforce column specified.
 func (*InsertMustSpecifyColumnAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	tree, ok := checkCtx.AST.(antlr.Tree)
+	stmtList, ok := checkCtx.AST.([]*plsqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to Tree")
+		return nil, errors.Errorf("failed to convert to ParseResult")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
@@ -40,7 +41,11 @@ func (*InsertMustSpecifyColumnAdvisor) Check(_ context.Context, checkCtx advisor
 	rule := NewInsertMustSpecifyColumnRule(level, string(checkCtx.Rule.Type), checkCtx.CurrentDatabase)
 	checker := NewGenericChecker([]Rule{rule})
 
-	antlr.ParseTreeWalkerDefault.Walk(checker, tree)
+	for _, stmtNode := range stmtList {
+		rule.SetBaseLine(stmtNode.BaseLine)
+		checker.SetBaseLine(stmtNode.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtNode.Tree)
+	}
 
 	return checker.GetAdviceList()
 }
@@ -84,7 +89,7 @@ func (r *InsertMustSpecifyColumnRule) handleInsertIntoClause(ctx *parser.Insert_
 			r.level,
 			advisor.InsertNotSpecifyColumn.Int32(),
 			"INSERT statement should specify column name.",
-			common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+			common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
 		)
 	}
 }

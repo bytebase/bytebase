@@ -70,7 +70,7 @@ import { create } from "@bufbuild/protobuf";
 import { PlusIcon } from "lucide-vue-next";
 import { NButton, NCheckbox } from "naive-ui";
 import { v1 as uuidv1 } from "uuid";
-import { reactive, computed, onMounted } from "vue";
+import { computed, onMounted, reactive } from "vue";
 import { EngineIcon } from "@/components/Icon";
 import FieldTemplateForm from "@/components/SchemaTemplate/FieldTemplateForm.vue";
 import FieldTemplateView from "@/components/SchemaTemplate/FieldTemplateView.vue";
@@ -82,8 +82,8 @@ import { ColumnCatalogSchema } from "@/types/proto-es/v1/database_catalog_servic
 import { ColumnMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
 import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto-es/v1/setting_service_pb";
 import {
-  Setting_SettingName,
   SchemaTemplateSetting_FieldTemplateSchema,
+  Setting_SettingName,
 } from "@/types/proto-es/v1/setting_service_pb";
 
 interface LocalState {

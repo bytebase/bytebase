@@ -38,7 +38,7 @@
 
 <script setup lang="ts">
 import { maxBy } from "lodash-es";
-import { CheckIcon, TriangleAlertIcon, CircleAlertIcon } from "lucide-vue-next";
+import { CheckIcon, CircleAlertIcon, TriangleAlertIcon } from "lucide-vue-next";
 import { NTag } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";

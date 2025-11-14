@@ -10,11 +10,11 @@ import { useRouter } from "vue-router";
 import { t } from "@/plugins/i18n";
 import { PROJECT_V1_ROUTE_DATABASE_DETAIL } from "@/router/dashboard/projectV1";
 import {
+  type ComposedDatabase,
+  type CoreSQLEditorTab,
   DEFAULT_SQL_EDITOR_TAB_MODE,
   instanceOfSQLEditorTreeNode,
   isConnectableSQLEditorTreeNode,
-  type ComposedDatabase,
-  type CoreSQLEditorTab,
   type Position,
   type SQLEditorTabMode as TabMode,
   type SQLEditorTreeNode as TreeNode,
@@ -28,8 +28,8 @@ import {
   instanceV1HasReadonlyMode,
   tryConnectToCoreSQLEditorTab,
 } from "@/utils";
+import { type SQLEditorContext, useSQLEditorContext } from "../../context";
 import { setDefaultDataSourceForConn } from "../../EditorCommon";
-import { useSQLEditorContext, type SQLEditorContext } from "../../context";
 
 type DropdownOptionWithTreeNode = DropdownOption & {
   onSelect: () => void;

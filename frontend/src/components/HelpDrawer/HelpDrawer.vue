@@ -57,11 +57,11 @@
 <script lang="ts" setup>
 import type { Node, Tag } from "@markdoc/markdoc";
 import { storeToRefs } from "pinia";
-import { ref, reactive, watch, computed } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { useLanguage } from "@/composables/useLanguage";
-import { useUIStateStore, useHelpStore } from "@/store";
+import { useHelpStore, useUIStateStore } from "@/store";
 import type { RouteMapList } from "@/types";
 
 const [

@@ -1984,7 +1984,15 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.QueryResult.PermissionDenied"><span class="badge">M</span>QueryResult.PermissionDenied</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.QueryResult.PostgresError"><span class="badge">M</span>QueryResult.PostgresError</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.QueryResult.SyntaxError"><span class="badge">M</span>QueryResult.SyntaxError</a>
                 </li>
               
                 <li>
@@ -2030,6 +2038,10 @@
               
                 <li>
                   <a href="#bytebase.v1.QueryResult.Message.Level"><span class="badge">E</span>QueryResult.Message.Level</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.QueryResult.PermissionDenied.CommandType"><span class="badge">E</span>QueryResult.PermissionDenied.CommandType</a>
                 </li>
               
               
@@ -4892,6 +4904,38 @@ See: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_e
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>the key name for the password. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>skip_vault_tls_verification</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>TLS configuration for connecting to Vault server.
+These fields are separate from the database TLS configuration in DataSource.
+skip_vault_tls_verification disables TLS certificate verification for Vault connections.
+Default is false (verification enabled) for security.
+Only set to true for development or when certificates cannot be properly validated. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>vault_ssl_ca</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>CA certificate for Vault server verification. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>vault_ssl_cert</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Client certificate for mutual TLS authentication with Vault. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>vault_ssl_key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Client private key for mutual TLS authentication with Vault. </p></td>
                 </tr>
               
             </tbody>
@@ -15653,6 +15697,14 @@ For examples:
                   <td><p>The session expiration time if not activity detected for the user. Value &lt;= 0 means no limit. </p></td>
                 </tr>
               
+                <tr>
+                  <td>enable_audit_log_stdout</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether to enable audit logging to stdout in structured JSON format.
+Requires TEAM or ENTERPRISE license. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -22119,6 +22171,20 @@ The types come from the Golang SQL driver. </p></td>
                 </tr>
               
                 <tr>
+                  <td>syntax_error</td>
+                  <td><a href="#bytebase.v1.QueryResult.SyntaxError">QueryResult.SyntaxError</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>permission_denied</td>
+                  <td><a href="#bytebase.v1.QueryResult.PermissionDenied">QueryResult.PermissionDenied</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>messages</td>
                   <td><a href="#bytebase.v1.QueryResult.Message">QueryResult.Message</a></td>
                   <td>repeated</td>
@@ -22162,6 +22228,42 @@ Examples include PostgreSQL&#39;s RAISE NOTICE, MSSQL&#39;s PRINT, or Oracle&#39
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.QueryResult.PermissionDenied">QueryResult.PermissionDenied</h3>
+        <p>Permission denied with resource information or disallowed command_type.</p><p>Either resources or command_type is available.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>resources</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>Denied to access the resources.
+Format:
+instances/{instance}/databases/{database}
+instances/{instance}/databases/{database}/schemas/{schema}
+instances/{instance}/databases/{database}/tables/{table}
+instances/{instance}/databases/{database}/schemas/{schema}/tables/{table} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>command_type</td>
+                  <td><a href="#bytebase.v1.QueryResult.PermissionDenied.CommandType">QueryResult.PermissionDenied.CommandType</a></td>
+                  <td></td>
+                  <td><p>Disallowed command_type. </p></td>
                 </tr>
               
             </tbody>
@@ -22298,6 +22400,30 @@ Examples include PostgreSQL&#39;s RAISE NOTICE, MSSQL&#39;s PRINT, or Oracle&#39
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.QueryResult.SyntaxError">QueryResult.SyntaxError</h3>
+        <p>Syntax error with position information for editor highlighting</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>start_position</td>
+                  <td><a href="#bytebase.v1.Position">Position</a></td>
+                  <td></td>
+                  <td><p>Position information for highlighting in editor </p></td>
                 </tr>
               
             </tbody>
@@ -22790,6 +22916,41 @@ These are custom, flexible checks powered by AI models.</p></td>
                 <td>EXCEPTION</td>
                 <td>6</td>
                 <td><p>Exception message indicating error conditions.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.QueryResult.PermissionDenied.CommandType">QueryResult.PermissionDenied.CommandType</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>COMMAND_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DDL</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DML</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>NON_READ_ONLY</td>
+                <td>3</td>
+                <td><p></p></td>
               </tr>
             
           </tbody>

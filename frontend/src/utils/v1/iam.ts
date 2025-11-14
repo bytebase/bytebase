@@ -1,8 +1,8 @@
 import { uniq } from "lodash-es";
 import { extractUserId, useGroupStore, useWorkspaceV1Store } from "@/store";
 import { userNamePrefix } from "@/store/modules/v1/common";
-import { groupBindingPrefix, ALL_USERS_USER_EMAIL } from "@/types";
-import type { IamPolicy, Binding } from "@/types/proto-es/v1/iam_policy_pb";
+import { ALL_USERS_USER_EMAIL, groupBindingPrefix } from "@/types";
+import type { Binding, IamPolicy } from "@/types/proto-es/v1/iam_policy_pb";
 import { convertFromExpr } from "@/utils/issue/cel";
 
 export const isBindingPolicyExpired = (binding: Binding): boolean => {

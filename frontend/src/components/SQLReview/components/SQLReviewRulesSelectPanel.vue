@@ -46,8 +46,8 @@
 import { NButton } from "naive-ui";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { type Engine } from "@/types/proto-es/v1/common_pb";
-import { ruleTemplateMapV2 } from "@/types/sqlReview";
 import type { RuleTemplateV2 } from "@/types/sqlReview";
+import { ruleTemplateMapV2 } from "@/types/sqlReview";
 import SQLReviewTabsByEngine from "./SQLReviewTabsByEngine.vue";
 import SQLRuleTableWithFilter from "./SQLRuleTableWithFilter.vue";
 import { getRuleKey } from "./utils";

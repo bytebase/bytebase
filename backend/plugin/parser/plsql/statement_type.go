@@ -7,18 +7,13 @@ import (
 )
 
 func GetStatementTypes(asts any) ([]string, error) {
-	node, ok := asts.(antlr.Tree)
+	nodes, ok := asts.([]*ParseResult)
 	if !ok {
 		return nil, errors.Errorf("invalid ast type %T", asts)
 	}
 	sqlTypeSet := make(map[string]bool)
-	for _, child := range node.GetChildren() {
-		_, ok := child.(*antlr.TerminalNodeImpl)
-		if ok {
-			continue
-		}
-
-		t := getStatementType(child)
+	for _, node := range nodes {
+		t := getStatementType(node.Tree)
 		sqlTypeSet[t] = true
 	}
 	var sqlTypes []string

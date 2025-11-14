@@ -45,13 +45,13 @@
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
 import {
+  useDebounceFn,
   useElementSize,
   useLocalStorage,
   useParentElement,
-  useDebounceFn,
 } from "@vueuse/core";
 import { ChevronDownIcon } from "lucide-vue-next";
-import { computed, toRef, ref, watch } from "vue";
+import { computed, ref, toRef, watch } from "vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";

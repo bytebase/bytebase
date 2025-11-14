@@ -57,9 +57,9 @@ import { WrenchIcon } from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
 import { ref } from "vue";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
+import { useGhostSettingContext } from "./context";
 import GhostFlagsPanel from "./GhostFlagsPanel.vue";
 import GhostSwitch from "./GhostSwitch.vue";
-import { useGhostSettingContext } from "./context";
 
 const showFlagsPanel = ref(false);
 

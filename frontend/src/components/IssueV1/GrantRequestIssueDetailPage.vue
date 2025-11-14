@@ -112,12 +112,12 @@ import { provideSidebarContext } from "../Plan/logic";
 import { Drawer } from "../v2";
 import {
   BannerSection,
-  HeaderSection,
+  DatabaseResourceTable,
   DescriptionSection,
+  HeaderSection,
   IssueCommentSection,
   IssueReviewActionPanel,
   IssueStatusActionPanel,
-  DatabaseResourceTable,
   Sidebar,
 } from "./components";
 import type { IssueReviewAction, IssueStatusAction } from "./logic";

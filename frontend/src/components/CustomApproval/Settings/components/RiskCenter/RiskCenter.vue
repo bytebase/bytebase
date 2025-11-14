@@ -32,9 +32,9 @@ import { useRiskStore } from "@/store";
 import { PresetRiskLevelList, useSupportedSourceList } from "@/types";
 import { RiskSchema } from "@/types/proto-es/v1/risk_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import { RiskFilter, orderByLevelDesc, useRiskFilter } from "../common";
-import RiskSection from "./RiskSection.vue";
+import { orderByLevelDesc, RiskFilter, useRiskFilter } from "../common";
 import { useRiskCenterContext } from "./context";
+import RiskSection from "./RiskSection.vue";
 
 const context = useRiskCenterContext();
 const riskStore = useRiskStore();

@@ -27,10 +27,10 @@ import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import type { TabFilterItem } from "@/components/v2";
 import { TabFilter } from "@/components/v2";
-import { getDateForPbTimestampProtoEs, type ComposedDatabase } from "@/types";
+import { type ComposedDatabase, getDateForPbTimestampProtoEs } from "@/types";
 import {
-  PlanCheckRun_Type,
   type PlanCheckRun,
+  PlanCheckRun_Type,
 } from "@/types/proto-es/v1/plan_service_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { extractPlanCheckRunUID, humanizeDate } from "@/utils";

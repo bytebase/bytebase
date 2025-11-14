@@ -2,8 +2,8 @@ import { Code, ConnectError, createContextValues } from "@connectrpc/connect";
 import { defineStore } from "pinia";
 import { sqlServiceClientConnect } from "@/grpcweb";
 import {
-  silentContextKey,
   ignoredCodesContextKey,
+  silentContextKey,
 } from "@/grpcweb/context-key";
 import type { SQLResultSetV1 } from "@/types";
 import type {

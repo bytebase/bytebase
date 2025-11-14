@@ -589,6 +589,11 @@
           "participate": "Tham gia chương trình cải thiện",
           "description": "Giúp cải thiện Bytebase bằng cách chia sẻ dữ liệu sử dụng ẩn danh"
         },
+        "audit-log-stdout": {
+          "self": "Xuất Nhật ký Kiểm toán",
+          "enable": "Bật ghi nhật ký kiểm toán vào đầu ra chuẩn",
+          "description": "Xuất nhật ký kiểm toán JSON có cấu trúc vào đầu ra chuẩn để thu thập bởi các bộ tổng hợp nhật ký (Splunk, ELK, Datadog, Loki). Yêu cầu giấy phép TEAM hoặc ENTERPRISE."
+        },
         "disallow-signup": {
           "enable": "Không cho phép đăng ký tự phục vụ",
           "description": "Người dùng không thể tự đăng ký và chỉ có thể được mời bởi quản trị viên không gian làm việc."
@@ -853,7 +858,6 @@
     "labels": "Nhãn vấn đề",
     "my-issues": "Vấn đề của tôi",
     "waiting-approval": "Đang chờ phê duyệt",
-    "waiting-rollout": "Đang chờ triển khai",
     "status-transition": {
       "modal": {
         "resolve": "Giải quyết vấn đề?",
@@ -938,8 +942,7 @@
           "title": "Động cơ",
           "description": "Lọc theo động cơ"
         }
-      },
-      "hide": "Ẩn tìm kiếm nâng cao"
+      }
     },
     "table": {
       "open": "Mở",
@@ -1407,7 +1410,12 @@
       "vault-secret-engine-name": "Tên công cụ bí mật",
       "vault-secret-path": "Đường dẫn bí mật",
       "vault-secret-key": "Khóa bí mật",
-      "vault-secret-engine-tips": "Chỉ hỗ trợ công cụ KV v2."
+      "vault-secret-engine-tips": "Chỉ hỗ trợ công cụ KV v2.",
+      "vault-tls-config": "Cấu hình Vault TLS (Tùy chọn)",
+      "verify-vault-certificate": "Xác minh chứng chỉ TLS của Vault",
+      "vault-ca-cert": "Chứng chỉ Vault CA",
+      "vault-client-cert": "Chứng chỉ máy khách Vault",
+      "vault-client-key": "Khóa máy khách Vault"
     },
     "external-secret": {
       "secret-name": "Tên bí mật",
@@ -2769,6 +2777,10 @@
     "sql-editor-user": {
       "self": "Người dùng Trình soạn thảo SQL",
       "description": "Quyền truy vấn dữ liệu cơ sở dữ liệu."
+    },
+    "gitops-service-agent": {
+      "self": "Tác nhân Dịch vụ GitOps",
+      "description": "Quyền cho quy trình CI/CD tự động để tạo và thực thi các thay đổi cơ sở dữ liệu qua GitOps."
     },
     "project-viewer": {
       "self": "Người xem dự án",

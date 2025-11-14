@@ -33,8 +33,8 @@ import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import TaskRunDetail from "@/components/IssueV1/components/TaskRunSection/TaskRunDetail.vue";
 import TaskRunStatusIcon from "@/components/IssueV1/components/TaskRunSection/TaskRunStatusIcon.vue";
-import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay.vue";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
+import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { useCurrentProjectV1 } from "@/store";
 import {
@@ -43,8 +43,7 @@ import {
 } from "@/types";
 import type { Task, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
-import { databaseForTask } from "@/utils";
-import { humanizeDurationV1, extractTaskUID } from "@/utils";
+import { databaseForTask, extractTaskUID, humanizeDurationV1 } from "@/utils";
 import { usePlanContextWithRollout } from "../../logic";
 import TaskRunComment from "./TaskRunComment.vue";
 

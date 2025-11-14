@@ -198,12 +198,12 @@ import {
 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { InstanceRole } from "@/types/proto-es/v1/instance_role_service_pb";
-import { IssueSchema, Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
+import { Issue_Type, IssueSchema } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan_CreateDatabaseConfig } from "@/types/proto-es/v1/plan_service_pb";
 import {
-  PlanSchema,
-  Plan_SpecSchema,
   Plan_CreateDatabaseConfigSchema,
+  Plan_SpecSchema,
+  PlanSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import {
   enginesSupportCreateDatabase,

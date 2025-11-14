@@ -1,7 +1,7 @@
 import { create, fromJson, toJson } from "@bufbuild/protobuf";
 import { Code, ConnectError } from "@connectrpc/connect";
 import Emittery from "emittery";
-import { uniqueId, cloneDeep } from "lodash-es";
+import { cloneDeep, uniqueId } from "lodash-es";
 import { defineStore } from "pinia";
 import type { Subscription } from "rxjs";
 import { fromEventPattern, map, Observable } from "rxjs";
@@ -9,23 +9,23 @@ import { markRaw, ref, shallowRef } from "vue";
 import { useCancelableTimeout } from "@/composables/useCancelableTimeout";
 import { pushNotification, useDatabaseV1Store } from "@/store";
 import type {
+  SQLEditorQueryParams,
+  SQLEditorTab,
   SQLResultSetV1,
   StreamingQueryController,
-  SQLEditorTab,
   WebTerminalQueryItemV1,
   WebTerminalQueryState,
-  SQLEditorQueryParams,
 } from "@/types";
+import type {
+  AdminExecuteRequest,
+  AdminExecuteResponse,
+  QueryResult,
+} from "@/types/proto-es/v1/sql_service_pb";
 import {
   AdminExecuteRequestSchema,
   AdminExecuteResponseSchema,
   QueryResult_Message_Level,
   QueryResultSchema,
-} from "@/types/proto-es/v1/sql_service_pb";
-import type {
-  AdminExecuteRequest,
-  AdminExecuteResponse,
-  QueryResult,
 } from "@/types/proto-es/v1/sql_service_pb";
 import {
   extractGrpcErrorMessage,

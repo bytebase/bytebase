@@ -30,13 +30,13 @@ import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import ResourceOccupiedModal from "@/components/v2/ResourceOccupiedModal/ResourceOccupiedModal.vue";
 import {
+  extractGroupEmail,
+  pushNotification,
   useCurrentUserV1,
   useGroupStore,
-  useProjectV1Store,
-  useProjectIamPolicyStore,
-  pushNotification,
-  extractGroupEmail,
   usePolicyV1Store,
+  useProjectIamPolicyStore,
+  useProjectV1Store,
 } from "@/store";
 import { extractUserId } from "@/store/modules/v1/common";
 import { getGroupEmailInBinding } from "@/types";

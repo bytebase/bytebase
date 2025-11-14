@@ -2,15 +2,15 @@ import { create } from "@bufbuild/protobuf";
 import { defineStore } from "pinia";
 import { reactive } from "vue";
 import { issueServiceClientConnect } from "@/grpcweb";
+import type {
+  IssueComment,
+  ListIssueCommentsRequest,
+} from "@/types/proto-es/v1/issue_service_pb";
 import {
   CreateIssueCommentRequestSchema,
   IssueCommentSchema,
   ListIssueCommentsRequestSchema,
   UpdateIssueCommentRequestSchema,
-} from "@/types/proto-es/v1/issue_service_pb";
-import type {
-  IssueComment,
-  ListIssueCommentsRequest,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
   getProjectIdIssueIdIssueCommentId,

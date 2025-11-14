@@ -90,11 +90,11 @@ import { useVirtualizer } from "@tanstack/vue-virtual";
 import { computed, ref, watch } from "vue";
 import { CopyButton } from "@/components/v2";
 import type { QueryRow, RowValue } from "@/types/proto-es/v1/sql_service_pb";
-import TableCell from "./DataTable/TableCell.vue";
+import { useSQLResultViewContext } from "./context";
 import MaskingReasonPopover from "./DataTable/common/MaskingReasonPopover.vue";
 import SensitiveDataIcon from "./DataTable/common/SensitiveDataIcon.vue";
 import { getColumnType } from "./DataTable/common/utils";
-import { useSQLResultViewContext } from "./context";
+import TableCell from "./DataTable/TableCell.vue";
 
 const props = defineProps<{
   table: Table<QueryRow>;

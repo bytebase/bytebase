@@ -55,6 +55,7 @@
 </template>
 
 <script lang="ts" setup>
+import { useSchemaEditorContext } from "./context";
 import EmptyTips from "./EmptyTips.vue";
 import DatabaseEditor from "./Panels/DatabaseEditor.vue";
 import FunctionEditor from "./Panels/FunctionEditor.vue";
@@ -62,7 +63,6 @@ import ProcedureEditor from "./Panels/ProcedureEditor.vue";
 import TableEditor from "./Panels/TableEditor.vue";
 import ViewEditor from "./Panels/ViewEditor.vue";
 import TabsContainer from "./TabsContainer.vue";
-import { useSchemaEditorContext } from "./context";
 
 const { currentTab } = useSchemaEditorContext();
 </script>

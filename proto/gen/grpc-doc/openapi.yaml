@@ -9610,6 +9610,29 @@ components:
                 passwordKeyName:
                     type: string
                     description: the key name for the password.
+                skipVaultTlsVerification:
+                    type: boolean
+                    description: |-
+                        TLS configuration for connecting to Vault server.
+                         These fields are separate from the database TLS configuration in DataSource.
+                         skip_vault_tls_verification disables TLS certificate verification for Vault connections.
+                         Default is false (verification enabled) for security.
+                         Only set to true for development or when certificates cannot be properly validated.
+                vaultSslCa:
+                    type: string
+                    description: CA certificate for Vault server verification.
+                obfuscatedVaultSslCa:
+                    type: string
+                vaultSslCert:
+                    type: string
+                    description: Client certificate for mutual TLS authentication with Vault.
+                obfuscatedVaultSslCert:
+                    type: string
+                vaultSslKey:
+                    type: string
+                    description: Client private key for mutual TLS authentication with Vault.
+                obfuscatedVaultSslKey:
+                    type: string
         DataSourceExternalSecret_AppRoleAuthOption:
             type: object
             properties:
@@ -12253,6 +12276,10 @@ components:
                     description: The query statement for the result.
                 postgresError:
                     $ref: '#/components/schemas/QueryResult_PostgresError'
+                syntaxError:
+                    $ref: '#/components/schemas/QueryResult_SyntaxError'
+                permissionDenied:
+                    $ref: '#/components/schemas/QueryResult_PermissionDenied'
                 messages:
                     type: array
                     items:
@@ -12281,6 +12308,32 @@ components:
                     format: enum
                 content:
                     type: string
+        QueryResult_PermissionDenied:
+            type: object
+            properties:
+                resources:
+                    type: array
+                    items:
+                        type: string
+                    description: |-
+                        Denied to access the resources.
+                         Format:
+                         instances/{instance}/databases/{database}
+                         instances/{instance}/databases/{database}/schemas/{schema}
+                         instances/{instance}/databases/{database}/tables/{table}
+                         instances/{instance}/databases/{database}/schemas/{schema}/tables/{table}
+                commandType:
+                    enum:
+                        - COMMAND_TYPE_UNSPECIFIED
+                        - DDL
+                        - DML
+                        - NON_READ_ONLY
+                    type: string
+                    description: Disallowed command_type.
+                    format: enum
+            description: |-
+                Permission denied with resource information or disallowed command_type.
+                 Either resources or command_type is available.
         QueryResult_PostgresError:
             type: object
             properties:
@@ -12324,6 +12377,14 @@ components:
             description: |-
                 refer https://www.postgresql.org/docs/11/protocol-error-fields.html
                  for field description.
+        QueryResult_SyntaxError:
+            type: object
+            properties:
+                startPosition:
+                    allOf:
+                        - $ref: '#/components/schemas/Position'
+                    description: Position information for highlighting in editor
+            description: Syntax error with position information for editor highlighting
         QueryRow:
             type: object
             properties:
@@ -14822,6 +14883,11 @@ components:
                     pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
                     type: string
                     description: The session expiration time if not activity detected for the user. Value <= 0 means no limit.
+                enableAuditLogStdout:
+                    type: boolean
+                    description: |-
+                        Whether to enable audit logging to stdout in structured JSON format.
+                         Requires TEAM or ENTERPRISE license.
 tags:
     - name: ActuatorService
       description: ActuatorService manages system health and operational information.

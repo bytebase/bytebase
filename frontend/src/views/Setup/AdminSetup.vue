@@ -98,16 +98,16 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { NRadio, NRadioGroup, NSpace } from "naive-ui";
-import { ref, computed, reactive, onMounted } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter, type RouteLocationRaw } from "vue-router";
+import { type RouteLocationRaw, useRouter } from "vue-router";
 import { BBTextField } from "@/bbkit";
 import { StepTab } from "@/components/v2";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
 import {
-  useProjectV1Store,
   useActuatorV1Store,
+  useProjectV1Store,
   useSettingV1Store,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";

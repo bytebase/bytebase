@@ -36,20 +36,20 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, ref, watch, h } from "vue";
+import { computed, h, reactive, ref, watch } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
 import { useI18n } from "vue-i18n";
 import BBAvatar from "@/bbkit/BBAvatar.vue";
 import AdvancedSearch from "@/components/AdvancedSearch";
-import UpdatedTimeRange from "@/components/AdvancedSearch/UpdatedTimeRange.vue";
 import type {
   ScopeOption,
   ValueOption,
 } from "@/components/AdvancedSearch/types";
+import UpdatedTimeRange from "@/components/AdvancedSearch/UpdatedTimeRange.vue";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
-import RolloutDataTable from "@/components/Rollout/RolloutDataTable.vue";
 import SystemBotTag from "@/components/misc/SystemBotTag.vue";
 import YouTag from "@/components/misc/YouTag.vue";
+import RolloutDataTable from "@/components/Rollout/RolloutDataTable.vue";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import {
   useCurrentUserV1,
@@ -64,8 +64,8 @@ import {
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { SYSTEM_BOT_USER_NAME } from "@/types";
 import {
-  Task_Type,
   type Rollout,
+  Task_Type,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import { UserType } from "@/types/proto-es/v1/user_service_pb";
 import {

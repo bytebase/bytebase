@@ -88,12 +88,12 @@ import {
   instanceV1HasReadonlyMode,
   suggestedTabTitleForSQLEditorConnection,
 } from "@/utils";
+import { useSQLEditorContext } from "../../context";
 import {
   EditorAction,
   ExecutingHintModal,
   SaveSheetModal,
 } from "../../EditorCommon";
-import { useSQLEditorContext } from "../../context";
 import ReadonlyModeNotSupported from "../ReadonlyModeNotSupported.vue";
 import ResultPanel from "../ResultPanel";
 import Welcome from "../Welcome";

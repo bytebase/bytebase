@@ -12,7 +12,14 @@
           :execute-params="executeParams"
           :result-set="resultSet"
           @execute="$emit('execute', $event)"
-        />
+        >
+          <template #suffix>
+            <RequestQueryButton
+              v-if="showRequestQueryButton"
+              :database-resources="missingResources"
+            />
+          </template>
+        </ErrorView>
         <SingleResultViewV1
           v-else
           :params="executeParams"
@@ -56,7 +63,14 @@
               :execute-params="executeParams"
               :result-set="resultSet"
               @execute="$emit('execute', $event)"
-            />
+            >
+              <template #suffix>
+                <RequestQueryButton
+                  v-if="showRequestQueryButton"
+                  :database-resources="missingResources"
+                />
+              </template>
+            </ErrorView>
             <SingleResultViewV1
               v-else
               :params="executeParams"
@@ -111,7 +125,7 @@
           <template #suffix>
             <RequestQueryButton
               v-if="showRequestQueryButton"
-              :database-resource="missingResource!"
+              :database-resources="missingResources"
             />
             <SyncDatabaseButton
               v-else-if="resultSet.error.includes('resource not found')"
@@ -146,36 +160,35 @@
 
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
-import { Code } from "@connectrpc/connect";
 import dayjs from "dayjs";
 import { Info } from "lucide-vue-next";
 import {
   darkTheme,
   NConfigProvider,
+  NFormItem,
   NTabPane,
   NTabs,
   NTooltip,
-  NFormItem,
 } from "naive-ui";
 import { computed, ref, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 import { darkThemeOverrides } from "@/../naive-ui.config";
 import { BBSpin } from "@/bbkit";
-import DataExportButton from "@/components/DataExportButton.vue";
+import SyncDatabaseButton from "@/components/DatabaseDetail/SyncDatabaseButton.vue";
+import DatabaseInfo from "@/components/DatabaseInfo.vue";
 import type {
   DownloadContent,
   ExportOption,
 } from "@/components/DataExportButton.vue";
-import SyncDatabaseButton from "@/components/DatabaseDetail/SyncDatabaseButton.vue";
-import DatabaseInfo from "@/components/DatabaseInfo.vue";
+import DataExportButton from "@/components/DataExportButton.vue";
 import { parseStringToResource } from "@/components/GrantRequestPanel/DatabaseResourceForm/common";
 import { Drawer } from "@/components/v2";
 import {
   useConnectionOfCurrentSQLEditorTab,
   usePolicyV1Store,
+  useSQLEditorStore,
   useSQLEditorTabStore,
   useSQLStore,
-  useSQLEditorStore,
 } from "@/store";
 import type {
   ComposedDatabase,
@@ -186,19 +199,19 @@ import type {
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import {
   PolicyType,
-  QueryDataPolicySchema,
   type QueryDataPolicy,
+  QueryDataPolicySchema,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import { ExportRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
+import type { SQLResultViewContext } from "./context";
+import { provideSQLResultViewContext } from "./context";
 import { provideBinaryFormatContext } from "./DataTable/binary-format-store";
 import DetailPanel from "./DetailPanel";
 import EmptyView from "./EmptyView.vue";
 import ErrorView from "./ErrorView";
 import RequestQueryButton from "./RequestQueryButton.vue";
 import SingleResultViewV1 from "./SingleResultViewV1.vue";
-import type { SQLResultViewContext } from "./context";
-import { provideSQLResultViewContext } from "./context";
 
 type ViewMode = "SINGLE-RESULT" | "MULTI-RESULT" | "EMPTY" | "ERROR";
 
@@ -253,23 +266,26 @@ const detail: SQLResultViewContext["detail"] = ref(undefined);
 
 provideBinaryFormatContext(computed(() => props.contextId));
 
-const missingResource = computed((): DatabaseResource | undefined => {
-  if (props.resultSet?.status !== Code.PermissionDenied) {
-    return;
+const missingResources = computed((): DatabaseResource[] => {
+  const resources: DatabaseResource[] = [];
+  for (const result of props.resultSet?.results ?? []) {
+    if (
+      result.detailedError.case === "permissionDenied" &&
+      result.detailedError.value?.resources.length > 0
+    ) {
+      for (const resourceString of result.detailedError.value.resources) {
+        const resource = parseStringToResource(resourceString);
+        if (resource) {
+          resources.push(resource);
+        }
+      }
+    }
   }
-  const prefix = "permission denied to access resource: ";
-  if (!props.resultSet.error.includes(prefix)) {
-    return;
-  }
-  const resource = props.resultSet.error.split(prefix).pop();
-  if (!resource) {
-    return;
-  }
-  return parseStringToResource(resource);
+  return resources;
 });
 
 const showRequestQueryButton = computed(() => {
-  return missingResource.value;
+  return missingResources.value.length > 0;
 });
 
 const viewMode = computed((): ViewMode => {

@@ -18,14 +18,14 @@
 </template>
 
 <script setup lang="tsx">
-import { NDataTable, type DataTableColumn } from "naive-ui";
+import { type DataTableColumn, NDataTable } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { EnvironmentV1Name, InstanceV1Name } from "@/components/v2";
 import {
   DatabaseNameCell,
-  ProjectNameCell,
   LabelsCell,
+  ProjectNameCell,
 } from "@/components/v2/Model/cells";
 import type { ComposedDatabase } from "@/types";
 import { hostPortOfInstanceV1 } from "@/utils";

@@ -472,7 +472,9 @@
     - [QueryResponse](#bytebase-v1-QueryResponse)
     - [QueryResult](#bytebase-v1-QueryResult)
     - [QueryResult.Message](#bytebase-v1-QueryResult-Message)
+    - [QueryResult.PermissionDenied](#bytebase-v1-QueryResult-PermissionDenied)
     - [QueryResult.PostgresError](#bytebase-v1-QueryResult-PostgresError)
+    - [QueryResult.SyntaxError](#bytebase-v1-QueryResult-SyntaxError)
     - [QueryRow](#bytebase-v1-QueryRow)
     - [RowValue](#bytebase-v1-RowValue)
     - [RowValue.Timestamp](#bytebase-v1-RowValue-Timestamp)
@@ -485,6 +487,7 @@
     - [QueryHistory.Type](#bytebase-v1-QueryHistory-Type)
     - [QueryOption.RedisRunCommandsOn](#bytebase-v1-QueryOption-RedisRunCommandsOn)
     - [QueryResult.Message.Level](#bytebase-v1-QueryResult-Message-Level)
+    - [QueryResult.PermissionDenied.CommandType](#bytebase-v1-QueryResult-PermissionDenied-CommandType)
   
     - [SQLService](#bytebase-v1-SQLService)
   
@@ -1512,6 +1515,10 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | engine_name | [string](#string) |  | engine name is the name for secret engine. |
 | secret_name | [string](#string) |  | the secret name in the engine to store the password. |
 | password_key_name | [string](#string) |  | the key name for the password. |
+| skip_vault_tls_verification | [bool](#bool) |  | TLS configuration for connecting to Vault server. These fields are separate from the database TLS configuration in DataSource. skip_vault_tls_verification disables TLS certificate verification for Vault connections. Default is false (verification enabled) for security. Only set to true for development or when certificates cannot be properly validated. |
+| vault_ssl_ca | [string](#string) |  | CA certificate for Vault server verification. |
+| vault_ssl_cert | [string](#string) |  | Client certificate for mutual TLS authentication with Vault. |
+| vault_ssl_key | [string](#string) |  | Client private key for mutual TLS authentication with Vault. |
 
 
 
@@ -5414,6 +5421,7 @@ For examples: (source == &#34;DML&#34; &amp;&amp; level == 200) || (source == &#
 | disallow_password_signin | [bool](#bool) |  | Whether to disallow password signin. (Except workspace admins) |
 | enable_metric_collection | [bool](#bool) |  | Whether to enable metric collection for the workspace. |
 | inactive_session_timeout | [google.protobuf.Duration](#google-protobuf-Duration) |  | The session expiration time if not activity detected for the user. Value &lt;= 0 means no limit. |
+| enable_audit_log_stdout | [bool](#bool) |  | Whether to enable audit logging to stdout in structured JSON format. Requires TEAM or ENTERPRISE license. |
 
 
 
@@ -7856,6 +7864,8 @@ OrgPolicyService manages organizational policies at various resource levels.
 | latency | [google.protobuf.Duration](#google-protobuf-Duration) |  | The time it takes to execute the query. |
 | statement | [string](#string) |  | The query statement for the result. |
 | postgres_error | [QueryResult.PostgresError](#bytebase-v1-QueryResult-PostgresError) |  |  |
+| syntax_error | [QueryResult.SyntaxError](#bytebase-v1-QueryResult-SyntaxError) |  |  |
+| permission_denied | [QueryResult.PermissionDenied](#bytebase-v1-QueryResult-PermissionDenied) |  |  |
 | messages | [QueryResult.Message](#bytebase-v1-QueryResult-Message) | repeated | Informational or debug messages returned by the database engine during query execution. Examples include PostgreSQL&#39;s RAISE NOTICE, MSSQL&#39;s PRINT, or Oracle&#39;s DBMS_OUTPUT.PUT_LINE. |
 | masked | [MaskingReason](#bytebase-v1-MaskingReason) | repeated | Masking reasons for each column (empty for non-masked columns). |
 
@@ -7874,6 +7884,23 @@ OrgPolicyService manages organizational policies at various resource levels.
 | ----- | ---- | ----- | ----------- |
 | level | [QueryResult.Message.Level](#bytebase-v1-QueryResult-Message-Level) |  |  |
 | content | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-QueryResult-PermissionDenied"></a>
+
+### QueryResult.PermissionDenied
+Permission denied with resource information or disallowed command_type.
+Either resources or command_type is available.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| resources | [string](#string) | repeated | Denied to access the resources. Format: instances/{instance}/databases/{database} instances/{instance}/databases/{database}/schemas/{schema} instances/{instance}/databases/{database}/tables/{table} instances/{instance}/databases/{database}/schemas/{schema}/tables/{table} |
+| command_type | [QueryResult.PermissionDenied.CommandType](#bytebase-v1-QueryResult-PermissionDenied-CommandType) |  | Disallowed command_type. |
 
 
 
@@ -7906,6 +7933,21 @@ for field description.
 | file | [string](#string) |  |  |
 | line | [int32](#int32) |  |  |
 | routine | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-QueryResult-SyntaxError"></a>
+
+### QueryResult.SyntaxError
+Syntax error with position information for editor highlighting
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| start_position | [Position](#bytebase-v1-Position) |  | Position information for highlighting in editor |
 
 
 
@@ -8094,6 +8136,20 @@ RuleType indicates the source of the linting rule.
 | LOG | 4 | General log message. |
 | NOTICE | 5 | Notice message for important information. |
 | EXCEPTION | 6 | Exception message indicating error conditions. |
+
+
+
+<a name="bytebase-v1-QueryResult-PermissionDenied-CommandType"></a>
+
+### QueryResult.PermissionDenied.CommandType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| COMMAND_TYPE_UNSPECIFIED | 0 |  |
+| DDL | 1 |  |
+| DML | 2 |  |
+| NON_READ_ONLY | 3 |  |
 
 
  

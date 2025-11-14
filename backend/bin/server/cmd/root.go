@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
-	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -234,11 +233,9 @@ func start() {
 
 	// Execute program.
 	if err := s.Run(ctx, flags.port); err != nil {
-		if err != http.ErrServerClosed {
-			slog.Error(err.Error())
-			_ = s.Shutdown(ctx)
-			cancel()
-		}
+		slog.Error(err.Error())
+		_ = s.Shutdown(ctx)
+		cancel()
 	}
 
 	// Wait for CTRL-C.

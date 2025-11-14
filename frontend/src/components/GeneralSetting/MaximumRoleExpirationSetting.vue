@@ -33,7 +33,7 @@
 import { create } from "@bufbuild/protobuf";
 import { DurationSchema, FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { isEqual } from "lodash-es";
-import { NInputNumber, NCheckbox } from "naive-ui";
+import { NCheckbox, NInputNumber } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 

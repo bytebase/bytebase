@@ -19,7 +19,7 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { useSettingV1Store, hasFeature } from "@/store";
+import { hasFeature, useSettingV1Store } from "@/store";
 import { Announcement_AlertLevel } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { urlfy } from "@/utils";

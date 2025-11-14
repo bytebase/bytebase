@@ -39,17 +39,18 @@ import type {
 } from "@/components/MonacoEditor";
 import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
 import {
-  useEditorContextKey,
   formatEditorContent,
+  useEditorContextKey,
 } from "@/components/MonacoEditor/utils";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
-  useSQLEditorTabStore,
   useConnectionOfCurrentSQLEditorTab,
+  useSQLEditorTabStore,
 } from "@/store";
 import type { SQLDialect, SQLEditorQueryParams } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
-import { useInstanceV1EditorLanguage, instanceV1AllowsExplain } from "@/utils";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import { instanceV1AllowsExplain, useInstanceV1EditorLanguage } from "@/utils";
 import { useSQLEditorContext } from "../../context";
 import {
   checkCursorAtFirstLine,
@@ -148,11 +149,24 @@ const handleEditorReady = (_: MonacoModule, editor: IStandaloneCodeEditor) => {
   watch(
     () => instance.value.engine,
     () => {
-      if (instanceV1AllowsExplain(instance.value)) {
+      const shouldShowAction =
+        instanceV1AllowsExplain(instance.value) ||
+        instance.value.engine === Engine.BIGQUERY;
+
+      if (shouldShowAction) {
+        const isBigQuery = instance.value.engine === Engine.BIGQUERY;
+        const label = isBigQuery ? "Dry Run Query" : "Explain Query";
+
+        // Remove existing action if label changed
+        if (explainQueryAction) {
+          explainQueryAction.dispose();
+          explainQueryAction = undefined;
+        }
+
         if (!editor.getAction("ExplainQuery")) {
           explainQueryAction = editor.addAction({
             id: "ExplainQuery",
-            label: "Explain Query",
+            label: label,
             keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyE],
             contextMenuGroupId: "operation",
             contextMenuOrder: 1,
@@ -162,6 +176,7 @@ const handleEditorReady = (_: MonacoModule, editor: IStandaloneCodeEditor) => {
         }
       } else {
         explainQueryAction?.dispose();
+        explainQueryAction = undefined;
       }
     },
     { immediate: true }

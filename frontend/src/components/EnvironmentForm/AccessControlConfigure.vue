@@ -110,10 +110,10 @@ import type {
   QueryDataPolicy,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import {
-  DataSourceQueryPolicySchema,
   DataSourceQueryPolicy_Restriction,
-  QueryDataPolicySchema,
+  DataSourceQueryPolicySchema,
   PolicyType,
+  QueryDataPolicySchema,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";

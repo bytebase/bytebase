@@ -54,11 +54,17 @@ func (r *BaseRule) GetAdviceList() ([]*storepb.Advice, error) {
 	return r.adviceList, nil
 }
 
+// SetBaseLine sets the base line for the rule.
+func (r *BaseRule) SetBaseLine(baseLine int) {
+	r.baseLine = baseLine
+}
+
 // GenericChecker is the only type that embeds BasePlSqlParserListener.
 // It dispatches parse tree events to registered rules.
 type GenericChecker struct {
 	*parser.BasePlSqlParserListener
-	rules []Rule
+	rules    []Rule
+	baseLine int
 }
 
 // NewGenericChecker creates a new GenericChecker with the given rules.
@@ -67,6 +73,16 @@ func NewGenericChecker(rules []Rule) *GenericChecker {
 		BasePlSqlParserListener: &parser.BasePlSqlParserListener{},
 		rules:                   rules,
 	}
+}
+
+// SetBaseLine sets the base line number for error reporting.
+func (g *GenericChecker) SetBaseLine(baseLine int) {
+	g.baseLine = baseLine
+}
+
+// GetBaseLine returns the current base line number.
+func (g *GenericChecker) GetBaseLine() int {
+	return g.baseLine
 }
 
 // EnterEveryRule is called when the parser enters any rule context.

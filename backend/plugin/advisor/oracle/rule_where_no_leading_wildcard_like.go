@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 var (
@@ -28,9 +29,9 @@ type WhereNoLeadingWildcardLikeAdvisor struct {
 
 // Check checks for no leading wildcard LIKE.
 func (*WhereNoLeadingWildcardLikeAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	tree, ok := checkCtx.AST.(antlr.Tree)
+	stmtList, ok := checkCtx.AST.([]*plsqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to Tree")
+		return nil, errors.Errorf("failed to convert to ParseResult")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
@@ -41,7 +42,11 @@ func (*WhereNoLeadingWildcardLikeAdvisor) Check(_ context.Context, checkCtx advi
 	rule := NewWhereNoLeadingWildcardLikeRule(level, string(checkCtx.Rule.Type), checkCtx.CurrentDatabase)
 	checker := NewGenericChecker([]Rule{rule})
 
-	antlr.ParseTreeWalkerDefault.Walk(checker, tree)
+	for _, stmtNode := range stmtList {
+		rule.SetBaseLine(stmtNode.BaseLine)
+		checker.SetBaseLine(stmtNode.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtNode.Tree)
+	}
 
 	return checker.GetAdviceList()
 }
@@ -94,7 +99,7 @@ func (r *WhereNoLeadingWildcardLikeRule) handleCompoundExpression(ctx *parser.Co
 			r.level,
 			advisor.StatementLeadingWildcardLike.Int32(),
 			"Avoid using leading wildcard LIKE.",
-			common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+			common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
 		)
 	}
 }

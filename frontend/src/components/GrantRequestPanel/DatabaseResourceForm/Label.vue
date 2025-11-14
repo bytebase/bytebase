@@ -20,12 +20,12 @@
 import { computedAsync } from "@vueuse/core";
 import { escape } from "lodash-es";
 import { computed, h } from "vue";
-import DatabaseIcon from "~icons/heroicons-outline/circle-stack";
-import TableIcon from "~icons/heroicons-outline/table-cells";
-import SchemaIcon from "~icons/heroicons-outline/view-columns";
 import { EnvironmentV1Name, InstanceV1Name } from "@/components/v2";
 import { useDatabaseV1Store } from "@/store";
 import { getHighlightHTMLByRegExp } from "@/utils";
+import DatabaseIcon from "~icons/heroicons-outline/circle-stack";
+import TableIcon from "~icons/heroicons-outline/table-cells";
+import SchemaIcon from "~icons/heroicons-outline/view-columns";
 import type { DatabaseTreeOption } from "./common";
 
 const props = defineProps<{

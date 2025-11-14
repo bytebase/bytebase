@@ -16,8 +16,8 @@ import { useCurrentProjectV1 } from "@/store";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { databaseForTask } from "@/utils";
-import TaskRollbackSection from "./TaskRollbackSection.vue";
 import { ROLLBACK_AVAILABLE_ENGINES } from "./common";
+import TaskRollbackSection from "./TaskRollbackSection.vue";
 
 const { isCreating, issue, selectedTask, events } = useIssueContext();
 const { project } = useCurrentProjectV1();

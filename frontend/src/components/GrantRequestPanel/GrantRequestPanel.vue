@@ -20,7 +20,7 @@
           :disable-member-change="true"
           :require-reason="project.enforceIssueTitle"
           :support-roles="supportRoles"
-          :database-resource="databaseResource"
+          :database-resources="databaseResources"
         />
       </div>
       <template #footer>
@@ -61,15 +61,15 @@ import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
 import { BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
 import {
   CreateIssueRequestSchema,
+  GrantRequestSchema,
   IssueSchema,
   Issue_Type as NewIssue_Type,
-  GrantRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
-  generateIssueTitle,
   displayRoleTitle,
-  extractProjectResourceName,
   extractIssueUID,
+  extractProjectResourceName,
+  generateIssueTitle,
 } from "@/utils";
 
 interface LocalState {
@@ -80,12 +80,12 @@ const props = withDefaults(
   defineProps<{
     projectName: string;
     role?: string;
-    databaseResource?: DatabaseResource;
+    databaseResources?: DatabaseResource[];
     placement?: "left" | "right";
     supportRoles?: string[];
   }>(),
   {
-    databaseResource: undefined,
+    databaseResources: () => [],
     role: undefined,
     placement: "right",
     supportRoles: () => [],

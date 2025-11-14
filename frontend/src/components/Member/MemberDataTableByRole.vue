@@ -14,7 +14,7 @@
 import { orderBy } from "lodash-es";
 import { Building2Icon, Trash2Icon } from "lucide-vue-next";
 import type { DataTableColumn } from "naive-ui";
-import { NDataTable, NTooltip, NPopconfirm } from "naive-ui";
+import { NDataTable, NPopconfirm, NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";

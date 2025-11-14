@@ -12,8 +12,7 @@
 </template>
 
 <script setup lang="tsx">
-import { computed } from "vue";
-import { isVNode } from "vue";
+import { computed, isVNode } from "vue";
 import type { JSX } from "vue/jsx-runtime";
 
 export type NestedError = {

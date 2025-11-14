@@ -589,6 +589,11 @@
           "participate": "参与改进计划",
           "description": "通过分享匿名使用数据帮助改进 Bytebase"
         },
+        "audit-log-stdout": {
+          "self": "审计日志导出",
+          "enable": "启用审计日志输出到标准输出",
+          "description": "将结构化的 JSON 审计日志输出到标准输出，以便日志聚合器（Splunk、ELK、Datadog、Loki）摄取。需要 TEAM 或 ENTERPRISE 许可证。"
+        },
         "disallow-signup": {
           "enable": "禁用自助注册",
           "description": "禁用之后，新用户将无法自助注册，只能通过管理员邀请来创建账户。"
@@ -853,7 +858,6 @@
     "labels": "工单标签",
     "my-issues": "我的工单",
     "waiting-approval": "等待审批",
-    "waiting-rollout": "等待发布",
     "status-transition": {
       "modal": {
         "resolve": "完成工单?",
@@ -938,8 +942,7 @@
           "title": "引擎",
           "description": "按引擎过滤"
         }
-      },
-      "hide": "隐藏高级搜索"
+      }
     },
     "table": {
       "open": "开启中",
@@ -1407,7 +1410,12 @@
       "vault-secret-engine-name": "Secret engine name",
       "vault-secret-path": "Secret path",
       "vault-secret-key": "Secret key",
-      "vault-secret-engine-tips": "仅支持 KV v2 储存"
+      "vault-secret-engine-tips": "仅支持 KV v2 储存",
+      "vault-tls-config": "Vault TLS 配置（可选）",
+      "verify-vault-certificate": "验证 Vault TLS 证书",
+      "vault-ca-cert": "Vault CA 证书",
+      "vault-client-cert": "Vault 客户端证书",
+      "vault-client-key": "Vault 客户端密钥"
     },
     "external-secret": {
       "secret-name": "Secret name",
@@ -2769,6 +2777,10 @@
     "sql-editor-user": {
       "self": "SQL 编辑器用户",
       "description": "可查询指定范围的数据。"
+    },
+    "gitops-service-agent": {
+      "self": "GitOps 服务代理",
+      "description": "通过 GitOps 自动化 CI/CD 工作流创建和执行数据库变更的权限。"
     },
     "project-viewer": {
       "self": "项目查看者",

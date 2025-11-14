@@ -97,8 +97,8 @@
 
 <script lang="tsx" setup>
 import { ExternalLinkIcon, PencilIcon } from "lucide-vue-next";
-import { NCheckbox, NDataTable, NButton, NDivider } from "naive-ui";
 import type { DataTableColumn } from "naive-ui";
+import { NButton, NCheckbox, NDataTable, NDivider } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import type { RuleTemplateV2 } from "@/types";

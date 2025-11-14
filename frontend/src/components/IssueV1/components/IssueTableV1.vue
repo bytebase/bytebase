@@ -41,8 +41,8 @@
 import { useElementSize } from "@vueuse/core";
 import { orderBy } from "lodash-es";
 import type { DataTableColumn } from "naive-ui";
-import { NPerformantEllipsis, NDataTable } from "naive-ui";
-import { reactive, computed, watch, ref, h } from "vue";
+import { NDataTable, NPerformantEllipsis } from "naive-ui";
+import { computed, h, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBAvatar } from "@/bbkit";
@@ -52,15 +52,15 @@ import { useElementVisibilityInScrollParent } from "@/composables/useElementVisi
 import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
 import { useUserStore } from "@/store";
 import {
+  type ComposedIssue,
   getTimeForPbTimestampProtoEs,
   unknownUser,
-  type ComposedIssue,
 } from "@/types";
 import {
-  getHighlightHTMLByRegExp,
-  humanizeTs,
   extractIssueUID,
+  getHighlightHTMLByRegExp,
   getIssueRoute,
+  humanizeTs,
 } from "@/utils";
 import { projectOfIssue } from "../logic";
 import IssueLabelSelector, {

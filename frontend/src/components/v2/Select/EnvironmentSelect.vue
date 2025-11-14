@@ -14,7 +14,7 @@
 </template>
 
 <script lang="tsx" setup>
-import { computed } from "vue";
+import { computed, type VNodeChild } from "vue";
 import { useI18n } from "vue-i18n";
 import { useEnvironmentV1Store } from "@/store";
 import { formatEnvironmentName } from "@/types";
@@ -32,7 +32,7 @@ const props = withDefaults(
     showProductionIcon?: boolean;
     multiple?: boolean;
     filter?: (environment: Environment, index: number) => boolean;
-    renderSuffix?: (environment: string) => string;
+    renderSuffix?: (environment: string) => VNodeChild;
   }>(),
   {
     environmentName: undefined,
@@ -41,7 +41,7 @@ const props = withDefaults(
     showProductionIcon: true,
     multiple: false,
     filter: () => true,
-    renderSuffix: () => "",
+    renderSuffix: () => null,
   }
 );
 
@@ -80,11 +80,14 @@ const options = computed(() => {
 
 const renderLabel = (environment: Environment) => {
   return (
-    <EnvironmentV1Name
-      environment={environment}
-      showIcon={props.showProductionIcon}
-      link={false}
-    />
+    <div class="flex items-center gap-x-2">
+      <EnvironmentV1Name
+        environment={environment}
+        showIcon={props.showProductionIcon}
+        link={false}
+      />
+      {props.renderSuffix(environment.name)}
+    </div>
   );
 };
 </script>

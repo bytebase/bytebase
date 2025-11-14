@@ -307,57 +307,57 @@ import { create } from "@bufbuild/protobuf";
 import { computedAsync } from "@vueuse/core";
 import { cloneDeep } from "lodash-es";
 import { CodeIcon } from "lucide-vue-next";
-import { NButton, NPopover, NInput } from "naive-ui";
+import { NButton, NInput, NPopover } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.vue";
 import TableSchemaViewer from "@/components/TableSchemaViewer.vue";
 import {
   DatabaseV1Name,
-  InstanceV1Name,
   Drawer,
   DrawerContent,
   EnvironmentV1Name,
+  InstanceV1Name,
   ProjectV1Name,
   SearchBox,
 } from "@/components/v2";
 import {
-  useDatabaseV1Store,
-  useDatabaseCatalog,
-  useDBSchemaV1Store,
   getTableCatalog,
   pushNotification,
+  useDatabaseCatalog,
   useDatabaseCatalogV1Store,
+  useDatabaseV1Store,
+  useDBSchemaV1Store,
 } from "@/store";
 import { DEFAULT_PROJECT_NAME, defaultProject } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { TableCatalog } from "@/types/proto-es/v1/database_catalog_service_pb";
 import {
-  TableCatalogSchema,
   SchemaCatalogSchema,
+  TableCatalogSchema,
 } from "@/types/proto-es/v1/database_catalog_service_pb";
 import { GetSchemaStringRequest_ObjectType } from "@/types/proto-es/v1/database_service_pb";
 import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto-es/v1/setting_service_pb";
 import {
   bytesToString,
-  instanceV1HasCollationAndCharacterSet,
   hasIndexSizeProperty,
   hasProjectPermissionV2,
   hasSchemaProperty,
   hasTableEngineProperty,
-  instanceV1SupportsTrigger,
+  instanceV1HasCollationAndCharacterSet,
+  instanceV1MaskingForNoSQL,
   instanceV1SupportsColumn,
   instanceV1SupportsIndex,
-  instanceV1MaskingForNoSQL,
+  instanceV1SupportsTrigger,
   isDatabaseV1Queryable,
   supportGetStringSchema,
 } from "@/utils";
 import ColumnDataTable from "./ColumnDataTable/index.vue";
 import { SQLEditorButtonV1 } from "./DatabaseDetail";
 import IndexTable from "./IndexTable.vue";
+import MaskSpinner from "./misc/MaskSpinner.vue";
 import PartitionTablesDataTable from "./PartitionTablesDataTable.vue";
 import TriggerDataTable from "./TriggerDataTable.vue";
-import MaskSpinner from "./misc/MaskSpinner.vue";
 
 interface LocalState {
   columnNameSearchKeyword: string;

@@ -117,12 +117,14 @@ func extractTextFromNode(node antlr.ParserRuleContext) string {
 }
 
 type SDLChunks struct {
-	Tables    map[string]*SDLChunk // key: table name/identifier
-	Views     map[string]*SDLChunk // key: view name/identifier
-	Functions map[string]*SDLChunk // key: function name/identifier
-	Indexes   map[string]*SDLChunk // key: index name/identifier
-	Sequences map[string]*SDLChunk // key: sequence name/identifier
-	Schemas   map[string]*SDLChunk // key: schema name/identifier
+	Tables            map[string]*SDLChunk // key: table name/identifier
+	Views             map[string]*SDLChunk // key: view name/identifier
+	MaterializedViews map[string]*SDLChunk // key: materialized view name/identifier
+	Functions         map[string]*SDLChunk // key: function name/identifier
+	Indexes           map[string]*SDLChunk // key: index name/identifier
+	Sequences         map[string]*SDLChunk // key: sequence name/identifier
+	Schemas           map[string]*SDLChunk // key: schema name/identifier
+	EnumTypes         map[string]*SDLChunk // key: enum type name/identifier
 
 	// Column comments: map[schemaName.tableName][columnName] -> COMMENT ON COLUMN AST node
 	ColumnComments map[string]map[string]antlr.ParserRuleContext

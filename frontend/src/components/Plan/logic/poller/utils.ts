@@ -5,19 +5,19 @@ import {
   planServiceClientConnect,
   rolloutServiceClientConnect,
 } from "@/grpcweb";
-import { GetIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
+import { GetIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
+import type { Plan, PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
 import {
   GetPlanRequestSchema,
   ListPlanCheckRunsRequestSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
-import type { Plan, PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import type { Rollout, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   GetRolloutRequestSchema,
   ListTaskRunsRequestSchema,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import type { Rollout, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 
 export const refreshPlan = async (plan: Ref<Plan>): Promise<void> => {

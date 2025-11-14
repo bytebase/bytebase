@@ -191,6 +191,9 @@ type MaterializedViewDiff struct {
 	MaterializedViewName string
 	OldMaterializedView  *storepb.MaterializedViewMetadata
 	NewMaterializedView  *storepb.MaterializedViewMetadata
+	OldASTNode           any          // AST node for old materialized view
+	NewASTNode           any          // AST node for new materialized view
+	IndexChanges         []*IndexDiff // Index changes on materialized view
 }
 
 // FunctionDiff represents changes to a function.
@@ -240,6 +243,8 @@ type EnumTypeDiff struct {
 	EnumTypeName string
 	OldEnumType  *storepb.EnumTypeMetadata
 	NewEnumType  *storepb.EnumTypeMetadata
+	OldASTNode   any // For SDL/AST-only mode
+	NewASTNode   any // For SDL/AST-only mode
 }
 
 // EventDiff represents changes to an event.
@@ -254,13 +259,15 @@ type EventDiff struct {
 type CommentObjectType string
 
 const (
-	CommentObjectTypeSchema   CommentObjectType = "SCHEMA"
-	CommentObjectTypeTable    CommentObjectType = "TABLE"
-	CommentObjectTypeColumn   CommentObjectType = "COLUMN"
-	CommentObjectTypeView     CommentObjectType = "VIEW"
-	CommentObjectTypeFunction CommentObjectType = "FUNCTION"
-	CommentObjectTypeSequence CommentObjectType = "SEQUENCE"
-	CommentObjectTypeIndex    CommentObjectType = "INDEX"
+	CommentObjectTypeSchema           CommentObjectType = "SCHEMA"
+	CommentObjectTypeTable            CommentObjectType = "TABLE"
+	CommentObjectTypeColumn           CommentObjectType = "COLUMN"
+	CommentObjectTypeView             CommentObjectType = "VIEW"
+	CommentObjectTypeMaterializedView CommentObjectType = "MATERIALIZED VIEW"
+	CommentObjectTypeFunction         CommentObjectType = "FUNCTION"
+	CommentObjectTypeSequence         CommentObjectType = "SEQUENCE"
+	CommentObjectTypeIndex            CommentObjectType = "INDEX"
+	CommentObjectTypeType             CommentObjectType = "TYPE"
 )
 
 // CommentDiff represents changes to database object comments.

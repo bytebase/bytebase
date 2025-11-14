@@ -70,9 +70,13 @@
 
 <script lang="ts" setup>
 import HumanizeTs from "@/components/misc/HumanizeTs.vue";
-import { IssueCommentType, getIssueCommentType } from "@/store";
-import { useUserStore, extractUserId } from "@/store";
-import { getTimeForPbTimestampProtoEs, type ComposedIssue } from "@/types";
+import {
+  extractUserId,
+  getIssueCommentType,
+  IssueCommentType,
+  useUserStore,
+} from "@/store";
+import { type ComposedIssue, getTimeForPbTimestampProtoEs } from "@/types";
 import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
 import ActionCreator from "./ActionCreator.vue";

@@ -154,21 +154,19 @@ import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
   ColumnMetadata,
   DatabaseMetadata,
+  ColumnMetadata as NewColumnMetadata,
+  TableMetadata as NewTableMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
-import type {
-  TableMetadata as NewTableMetadata,
-  ColumnMetadata as NewColumnMetadata,
-} from "@/types/proto-es/v1/database_service_pb";
 import {
-  TableMetadataSchema,
   ColumnMetadataSchema,
+  TableMetadataSchema,
 } from "@/types/proto-es/v1/database_service_pb";
 import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto-es/v1/setting_service_pb";
 import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
-import TableNameModal from "../Modals/TableNameModal.vue";
 import { useSchemaEditorContext } from "../context";
+import TableNameModal from "../Modals/TableNameModal.vue";
 import TableList from "./TableList";
 import TableSelectionSummary from "./TableSelectionSummary.vue";
 

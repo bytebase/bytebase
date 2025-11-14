@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 var (
@@ -31,9 +32,9 @@ type ColumnNoNullAdvisor struct {
 
 // Check checks for column no NULL value.
 func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	tree, ok := checkCtx.AST.(antlr.Tree)
+	stmtList, ok := checkCtx.AST.([]*plsqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to Tree")
+		return nil, errors.Errorf("failed to convert to ParseResult")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
@@ -44,7 +45,11 @@ func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) (
 	rule := NewColumnNoNullRule(level, string(checkCtx.Rule.Type), checkCtx.CurrentDatabase)
 	checker := NewGenericChecker([]Rule{rule})
 
-	antlr.ParseTreeWalkerDefault.Walk(checker, tree)
+	for _, stmtNode := range stmtList {
+		rule.SetBaseLine(stmtNode.BaseLine)
+		checker.SetBaseLine(stmtNode.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtNode.Tree)
+	}
 
 	return checker.GetAdviceList()
 }
@@ -142,7 +147,7 @@ func (r *ColumnNoNullRule) handleColumnDefinition(ctx *parser.Column_definitionC
 	}
 	columnName := normalizeIdentifier(ctx.Column_name(), r.currentDatabase)
 	r.columnID = fmt.Sprintf(`%s.%s`, r.tableName, columnName)
-	r.nullableColumns[r.columnID] = ctx.GetStart().GetLine()
+	r.nullableColumns[r.columnID] = r.baseLine + ctx.GetStart().GetLine()
 }
 
 func (r *ColumnNoNullRule) handleInlineConstraint(ctx *parser.Inline_constraintContext) {
@@ -150,7 +155,7 @@ func (r *ColumnNoNullRule) handleInlineConstraint(ctx *parser.Inline_constraintC
 		return
 	}
 	if ctx.NULL_() != nil {
-		r.nullableColumns[r.columnID] = ctx.GetStart().GetLine()
+		r.nullableColumns[r.columnID] = r.baseLine + ctx.GetStart().GetLine()
 	}
 	if ctx.NOT() != nil || ctx.PRIMARY() != nil {
 		delete(r.nullableColumns, r.columnID)

@@ -2,8 +2,7 @@ import { create } from "@bufbuild/protobuf";
 import { cloneDeep } from "lodash-es";
 import { planServiceClientConnect } from "@/grpcweb";
 import { t } from "@/plugins/i18n";
-import { projectNamePrefix, useSheetV1Store } from "@/store";
-import { useProjectV1Store } from "@/store";
+import { projectNamePrefix, useProjectV1Store, useSheetV1Store } from "@/store";
 import {
   DatabaseChangeType,
   MigrationType,

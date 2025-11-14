@@ -159,6 +159,7 @@ import {
   useSQLEditorStore,
   useSQLEditorTabStore,
   useUIStateStore,
+  useWorkSheetAndTabStore,
   useWorkSheetStore,
   useWorkSheetAndTabStore,
 } from "@/store";

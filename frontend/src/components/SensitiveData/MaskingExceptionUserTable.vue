@@ -15,49 +15,53 @@
 <script lang="tsx" setup>
 import { create } from "@bufbuild/protobuf";
 import { orderBy } from "lodash-es";
-import { TrashIcon, InfoIcon } from "lucide-vue-next";
+import { InfoIcon, TrashIcon } from "lucide-vue-next";
 import type { DataTableColumn } from "naive-ui";
 import {
   NCheckbox,
-  NDatePicker,
   NDataTable,
-  useDialog,
+  NDatePicker,
   NTooltip,
+  useDialog,
 } from "naive-ui";
-import { computed, reactive, h, watchEffect } from "vue";
 import type { VNodeChild } from "vue";
+import { computed, h, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import { RouterLink } from "vue-router";
-import { useRouter } from "vue-router";
+import { RouterLink, useRouter } from "vue-router";
 import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
-import { MiniActionButton } from "@/components/v2";
-import { DatabaseV1Name, InstanceV1Name } from "@/components/v2";
+import {
+  DatabaseV1Name,
+  InstanceV1Name,
+  MiniActionButton,
+} from "@/components/v2";
 import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes";
 import {
-  usePolicyV1Store,
-  usePolicyByParentAndType,
-  useUserStore,
-  useGroupStore,
-  useDatabaseV1Store,
-  pushNotification,
   extractGroupEmail,
+  pushNotification,
+  useDatabaseV1Store,
+  useGroupStore,
+  usePolicyByParentAndType,
+  usePolicyV1Store,
+  useUserStore,
 } from "@/store";
 import {
-  getUserEmailInBinding,
   getGroupEmailInBinding,
+  getUserEmailInBinding,
   groupBindingPrefix,
   isValidDatabaseName,
 } from "@/types";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
-import { MaskingExceptionPolicy_MaskingException_Action } from "@/types/proto-es/v1/org_policy_service_pb";
 import type { MaskingExceptionPolicy_MaskingException } from "@/types/proto-es/v1/org_policy_service_pb";
-import { MaskingExceptionPolicySchema } from "@/types/proto-es/v1/org_policy_service_pb";
-import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
+import {
+  MaskingExceptionPolicy_MaskingException_Action,
+  MaskingExceptionPolicySchema,
+  PolicyType,
+} from "@/types/proto-es/v1/org_policy_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { autoDatabaseRoute, hasProjectPermissionV2 } from "@/utils";
 import {
-  type ConditionExpression,
   batchConvertFromCELString,
+  type ConditionExpression,
 } from "@/utils/issue/cel";
 import UserAvatar from "../User/UserAvatar.vue";
 import { type AccessUser } from "./types";

@@ -11,7 +11,7 @@
 
 <script lang="ts" setup>
 import type { SortDirection } from "@tanstack/vue-table";
-import { ArrowUpWideNarrow, ArrowDownWideNarrow } from "lucide-vue-next";
+import { ArrowDownWideNarrow, ArrowUpWideNarrow } from "lucide-vue-next";
 
 defineProps<{
   isSorted: false | SortDirection;

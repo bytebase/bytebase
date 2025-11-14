@@ -1,4 +1,4 @@
-import { IssueCommentType, getIssueCommentType } from "@/store";
+import { getIssueCommentType, IssueCommentType } from "@/store";
 import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import { isNullOrUndefined } from "@/utils";
 

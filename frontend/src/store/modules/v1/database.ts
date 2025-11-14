@@ -2,35 +2,35 @@ import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
 import { uniq } from "lodash-es";
 import { defineStore } from "pinia";
-import { computed, reactive, ref, unref, watch, markRaw } from "vue";
+import { computed, markRaw, reactive, ref, unref, watch } from "vue";
 import { databaseServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
 import type { ComposedDatabase, MaybeRef } from "@/types";
 import {
-  isValidProjectName,
-  isValidInstanceName,
   isValidDatabaseName,
   isValidEnvironmentName,
+  isValidInstanceName,
+  isValidProjectName,
   unknownDatabase,
   unknownInstanceResource,
 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import {
-  GetDatabaseRequestSchema,
-  ListDatabasesRequestSchema,
-  BatchGetDatabasesRequestSchema,
-  BatchUpdateDatabasesRequestSchema,
-  UpdateDatabaseRequestSchema,
-  BatchSyncDatabasesRequestSchema,
-  SyncDatabaseRequestSchema,
-  GetDatabaseSchemaRequestSchema,
-  DiffSchemaRequestSchema,
-} from "@/types/proto-es/v1/database_service_pb";
 import type {
-  Database,
-  UpdateDatabaseRequest,
-  DiffSchemaRequest,
   BatchUpdateDatabasesRequest,
+  Database,
+  DiffSchemaRequest,
+  UpdateDatabaseRequest,
+} from "@/types/proto-es/v1/database_service_pb";
+import {
+  BatchGetDatabasesRequestSchema,
+  BatchSyncDatabasesRequestSchema,
+  BatchUpdateDatabasesRequestSchema,
+  DiffSchemaRequestSchema,
+  GetDatabaseRequestSchema,
+  GetDatabaseSchemaRequestSchema,
+  ListDatabasesRequestSchema,
+  SyncDatabaseRequestSchema,
+  UpdateDatabaseRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 import { extractDatabaseResourceName, isNullOrUndefined } from "@/utils";

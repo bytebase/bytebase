@@ -41,13 +41,13 @@
 <script lang="ts" setup>
 import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
-import { useRouter, type LocationQueryRaw } from "vue-router";
+import { type LocationQueryRaw, useRouter } from "vue-router";
 import DatabaseAndGroupSelector, {
   type DatabaseSelectState,
 } from "@/components/DatabaseAndGroupSelector/";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
 import { useProjectByName } from "@/store";
-import { generateIssueTitle, extractProjectResourceName } from "@/utils";
+import { extractProjectResourceName, generateIssueTitle } from "@/utils";
 import { DrawerContent } from "../v2";
 
 type LocalState = {

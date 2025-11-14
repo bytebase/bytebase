@@ -91,7 +91,7 @@
 import { create } from "@bufbuild/protobuf";
 import type { ConnectError } from "@connectrpc/connect";
 import { NButton, NModal } from "naive-ui";
-import { ref, onUnmounted, watch } from "vue";
+import { onUnmounted, ref, watch } from "vue";
 import { identityProviderServiceClientConnect } from "@/grpcweb";
 import { pushNotification } from "@/store";
 import type { OAuthWindowEventPayload } from "@/types";
@@ -99,10 +99,10 @@ import type {
   IdentityProvider,
   TestIdentityProviderResponse,
 } from "@/types/proto-es/v1/idp_service_pb";
-import { IdentityProviderType } from "@/types/proto-es/v1/idp_service_pb";
 import {
-  TestIdentityProviderRequestSchema,
   CreateIdentityProviderRequestSchema,
+  IdentityProviderType,
+  TestIdentityProviderRequestSchema,
 } from "@/types/proto-es/v1/idp_service_pb";
 import { openWindowForSSO } from "@/utils";
 

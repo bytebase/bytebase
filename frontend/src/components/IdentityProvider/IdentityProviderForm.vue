@@ -488,18 +488,18 @@
 </template>
 
 <script setup lang="ts">
-import { NRadioGroup, NRadio, NCheckbox, NInputNumber } from "naive-ui";
+import { NCheckbox, NInputNumber, NRadio, NRadioGroup } from "naive-ui";
 import { computed, watch } from "vue";
 import { BBTextField } from "@/bbkit";
 import RequiredStar from "@/components/RequiredStar.vue";
 import {
-  IdentityProviderType,
-  OAuth2AuthStyle,
   type IdentityProvider,
-  type OAuth2IdentityProviderConfig,
-  type OIDCIdentityProviderConfig,
+  IdentityProviderType,
   type LDAPIdentityProviderConfig,
   LDAPIdentityProviderConfig_SecurityProtocol,
+  OAuth2AuthStyle,
+  type OAuth2IdentityProviderConfig,
+  type OIDCIdentityProviderConfig,
 } from "@/types/proto-es/v1/idp_service_pb";
 
 interface Props {

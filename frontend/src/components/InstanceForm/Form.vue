@@ -1,11 +1,11 @@
 <template>
   <div class="flex flex-col gap-y-6 pb-2">
-    <div class="divide-y divide-block-border max-w-[850px]">
+    <div class="max-w-[850px]">
       <InstanceEngineRadioGrid
         v-if="isCreating"
         :engine="basicInfo.engine"
         :engine-list="supportedEngineV1List()"
-        class="w-full mb-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2"
+        class="w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2"
         @update:engine="(newEngine: Engine) => changeInstanceEngine(newEngine)"
       >
         <template #suffix="{ engine }: { engine: Engine }">
@@ -16,8 +16,10 @@
         </template>
       </InstanceEngineRadioGrid>
 
+      <NDivider />
+
       <!-- Instance Name -->
-      <div class="pt-4 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-4">
+      <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-4">
         <div class="sm:col-span-2 sm:col-start-1">
           <label for="name" class="textlabel flex flex-row items-center">
             {{ $t("instance.instance-name") }}
@@ -439,9 +441,11 @@
         </div>
       </div>
 
+      <NDivider />
+
       <!-- Connection Info -->
       <template v-if="basicInfo.engine !== Engine.DYNAMODB">
-        <p class="mt-6 pt-4 w-full text-lg leading-6 font-medium text-gray-900">
+        <p class="w-full text-lg leading-6 font-medium text-gray-900">
           {{ $t("instance.connection-info") }}
         </p>
 
@@ -478,9 +482,11 @@
         </div>
       </div>
 
+      <NDivider />
+
       <div
         v-if="basicInfo.engine !== Engine.DYNAMODB && isCreating"
-        class="mt-6 pt-4 flex flex-col gap-y-1"
+        class="flex flex-col gap-y-1"
       >
         <p class="w-full text-lg leading-6 font-medium text-gray-900">
           {{ $t("instance.sync-databases.self") }}
@@ -509,11 +515,12 @@ import type { Duration } from "@bufbuild/protobuf/wkt";
 import { TrashIcon } from "lucide-vue-next";
 import {
   NButton,
-  NInput,
-  NSwitch,
-  NRadioGroup,
-  NRadio,
   NCheckbox,
+  NDivider,
+  NInput,
+  NRadio,
+  NRadioGroup,
+  NSwitch,
 } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -529,45 +536,45 @@ import {
 } from "@/components/v2";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import {
-  useActuatorV1Store,
-  useInstanceV1Store,
-  useDatabaseV1Store,
-  useSubscriptionV1Store,
   pushNotification,
+  useActuatorV1Store,
+  useDatabaseV1Store,
+  useInstanceV1Store,
+  useSubscriptionV1Store,
 } from "@/store";
 import {
   environmentNamePrefix,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
-import { UNKNOWN_ID, isValidEnvironmentName } from "@/types";
+import { isValidEnvironmentName, UNKNOWN_ID } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
-  DataSource_AuthenticationType,
   DataSource_AddressSchema,
+  DataSource_AuthenticationType,
+  DataSource_RedisType,
 } from "@/types/proto-es/v1/instance_service_pb";
-import { DataSource_RedisType } from "@/types/proto-es/v1/instance_service_pb";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import {
-  isDev,
-  extractInstanceResourceName,
-  onlyAllowNumber,
   autoSubscriptionRoute,
-  urlfy,
+  extractInstanceResourceName,
+  isDev,
+  onlyAllowNumber,
   supportedEngineV1List,
+  urlfy,
 } from "@/utils";
 import LearnMoreLink from "../LearnMoreLink.vue";
 import BigQueryHostInput from "./BigQueryHostInput.vue";
+import {
+  MongoDBConnectionStringSchemaList,
+  RedisConnectionType,
+  SnowflakeExtraLinkPlaceHolder,
+} from "./constants";
+import { useInstanceFormContext } from "./context";
 import DataSourceSection from "./DataSourceSection/DataSourceSection.vue";
 import MaximumConnectionsInput from "./MaximumConnectionsInput.vue";
 import ScanIntervalInput from "./ScanIntervalInput.vue";
 import SpannerHostInput from "./SpannerHostInput.vue";
 import SyncDatabases from "./SyncDatabases.vue";
-import {
-  MongoDBConnectionStringSchemaList,
-  SnowflakeExtraLinkPlaceHolder,
-  RedisConnectionType,
-} from "./constants";
-import { useInstanceFormContext } from "./context";
 
 defineProps<{
   hideArchiveRestore?: boolean;

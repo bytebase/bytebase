@@ -117,15 +117,15 @@ import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import dayjs from "dayjs";
 import saveAs from "file-saver";
 import JSZip from "jszip";
-import { computed, reactive, watch, ref } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBAlert, BBSpin } from "@/bbkit";
 import {
   AffectedTablesSelect,
-  ChangeTypeSelect,
   ChangelogDataTable,
+  ChangeTypeSelect,
 } from "@/components/Changelog";
 import { useDatabaseDetailContext } from "@/components/Database/context";
 import { TooltipButton } from "@/components/v2";
@@ -136,8 +136,9 @@ import {
   useChangelogStore,
   useDatabaseV1Store,
 } from "@/store";
-import type { ComposedDatabase, Table, SearchChangeLogParams } from "@/types";
+import type { ComposedDatabase, SearchChangeLogParams, Table } from "@/types";
 import { DEFAULT_PROJECT_NAME } from "@/types";
+import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
 import {
   Changelog_MigrationType,
   Changelog_Status,
@@ -146,7 +147,6 @@ import {
   DatabaseSchema$,
   UpdateDatabaseRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
-import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
 import { extractProjectResourceName } from "@/utils";
 import { getChangelogChangeType } from "@/utils/v1/changelog";
 

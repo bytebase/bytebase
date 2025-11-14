@@ -12,7 +12,7 @@
 </template>
 
 <script lang="ts" setup>
-import { NDataTable, type DataTableColumn } from "naive-ui";
+import { type DataTableColumn, NDataTable } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";

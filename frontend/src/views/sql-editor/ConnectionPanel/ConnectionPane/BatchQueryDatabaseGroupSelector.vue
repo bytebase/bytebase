@@ -54,7 +54,7 @@
 
 <script lang="ts" setup>
 import { BoxesIcon } from "lucide-vue-next";
-import { NPopover, NButton } from "naive-ui";
+import { NButton, NPopover } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import DatabaseGroupDataTable from "@/components/DatabaseGroup/DatabaseGroupDataTable.vue";
 import { FeatureModal } from "@/components/FeatureGuard";
@@ -62,9 +62,9 @@ import { SearchBox } from "@/components/v2";
 import {
   featureToRef,
   useConnectionOfCurrentSQLEditorTab,
+  useDBGroupListByProject,
   useSQLEditorStore,
   useSQLEditorTabStore,
-  useDBGroupListByProject,
 } from "@/store/modules";
 import { isValidDatabaseName } from "@/types";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";

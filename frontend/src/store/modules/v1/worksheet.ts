@@ -7,29 +7,31 @@ import { worksheetServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
 import { useCache } from "@/store/cache";
 import { UNKNOWN_ID } from "@/types";
+import type {
+  Worksheet,
+  WorksheetOrganizer,
+} from "@/types/proto-es/v1/worksheet_service_pb";
 import {
+  BatchUpdateWorksheetOrganizerRequestSchema,
   CreateWorksheetRequestSchema,
-  GetWorksheetRequestSchema,
-  UpdateWorksheetRequestSchema,
   DeleteWorksheetRequestSchema,
+  GetWorksheetRequestSchema,
   SearchWorksheetsRequestSchema,
   UpdateWorksheetOrganizerRequestSchema,
-  BatchUpdateWorksheetOrganizerRequestSchema,
+  UpdateWorksheetRequestSchema,
 } from "@/types/proto-es/v1/worksheet_service_pb";
-import type { WorksheetOrganizer } from "@/types/proto-es/v1/worksheet_service_pb";
-import type { Worksheet } from "@/types/proto-es/v1/worksheet_service_pb";
 import {
   extractWorksheetUID,
   getSheetStatement,
-  isWorksheetWritableV1,
   getStatementSize,
+  isWorksheetWritableV1,
 } from "@/utils";
 import { useSQLEditorTabStore } from "../sqlEditor";
 import { useUserStore } from "../user";
 import { useCurrentUserV1 } from "./auth";
 import { extractUserId } from "./common";
-import { useDatabaseV1Store, batchGetOrFetchDatabases } from "./database";
-import { useProjectV1Store, batchGetOrFetchProjects } from "./project";
+import { batchGetOrFetchDatabases, useDatabaseV1Store } from "./database";
+import { batchGetOrFetchProjects, useProjectV1Store } from "./project";
 
 type WorksheetView = "FULL" | "BASIC";
 type WorksheetCacheKey = [string /* uid */, WorksheetView];

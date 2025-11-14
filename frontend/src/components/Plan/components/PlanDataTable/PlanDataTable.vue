@@ -14,7 +14,7 @@
 
 <script lang="tsx" setup>
 import type { DataTableColumn } from "naive-ui";
-import { NPerformantEllipsis, NDataTable, NTag } from "naive-ui";
+import { NDataTable, NPerformantEllipsis, NTag } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";

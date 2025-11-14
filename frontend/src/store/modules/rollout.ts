@@ -8,12 +8,10 @@ import { silentContextKey } from "@/grpcweb/context-key";
 import type { MaybeRef } from "@/types";
 import { isValidRolloutName, unknownRollout } from "@/types";
 import {
-  Task_Type,
-  type Rollout,
-} from "@/types/proto-es/v1/rollout_service_pb";
-import {
   GetRolloutRequestSchema,
   ListRolloutsRequestSchema,
+  type Rollout,
+  Task_Type,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   getTsRangeFromSearchParams,

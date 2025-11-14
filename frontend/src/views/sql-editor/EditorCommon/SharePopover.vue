@@ -86,22 +86,22 @@
 <script lang="ts" setup>
 import { LockKeyholeIcon, UsersIcon } from "lucide-vue-next";
 import { NInput, NInputGroup, NInputGroupLabel, NPopover } from "naive-ui";
-import { ref, computed, onMounted, h } from "vue";
+import { computed, h, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { CopyButton } from "@/components/v2";
 import { SQL_EDITOR_WORKSHEET_MODULE } from "@/router/sqlEditor";
 import {
   pushNotification,
+  useCurrentUserV1,
+  useSettingV1Store,
   useSQLEditorTabStore,
   useWorkSheetStore,
-  useSettingV1Store,
-  useCurrentUserV1,
 } from "@/store";
 import type { AccessOption } from "@/types";
 import {
-  Worksheet_Visibility,
   type Worksheet,
+  Worksheet_Visibility,
 } from "@/types/proto-es/v1/worksheet_service_pb";
 import {
   extractProjectResourceName,

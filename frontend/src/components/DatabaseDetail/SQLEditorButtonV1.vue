@@ -27,9 +27,9 @@ import type { ComposedDatabase } from "@/types";
 import { DEFAULT_PROJECT_NAME, defaultProject } from "@/types";
 import type { VueClass } from "@/utils";
 import {
-  hasProjectPermissionV2,
-  extractProjectResourceName,
   extractInstanceResourceName,
+  extractProjectResourceName,
+  hasProjectPermissionV2,
   isSQLEditorRoute,
 } from "@/utils";
 

@@ -240,28 +240,28 @@ import { InfoIcon } from "lucide-vue-next";
 import {
   NButton,
   NCheckbox,
+  NDivider,
   NInput,
   NRadio,
   NRadioGroup,
   NTooltip,
-  NDivider,
 } from "naive-ui";
-import { reactive, computed, watch } from "vue";
+import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBAttention, BBButtonConfirm } from "@/bbkit";
 import RequiredStar from "@/components/RequiredStar.vue";
 import FormLayout from "@/components/v2/Form/FormLayout.vue";
 import {
-  PROJECT_V1_ROUTE_WEBHOOKS,
   PROJECT_V1_ROUTE_WEBHOOK_DETAIL,
+  PROJECT_V1_ROUTE_WEBHOOKS,
 } from "@/router/dashboard/projectV1";
 import { WORKSPACE_ROUTE_IM } from "@/router/dashboard/workspaceRoutes";
 import {
   pushNotification,
+  useGracefulRequest,
   useProjectV1Store,
   useProjectWebhookV1Store,
-  useGracefulRequest,
   useSettingV1Store,
 } from "@/store";
 import {

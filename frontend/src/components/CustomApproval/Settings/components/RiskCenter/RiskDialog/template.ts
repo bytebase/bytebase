@@ -7,8 +7,8 @@ import { useEnvironmentV1List } from "@/store";
 import { PresetRiskLevel, PresetRoleType } from "@/types";
 import { Risk_Source } from "@/types/proto-es/v1/risk_service_pb";
 import {
-  CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID,
   CEL_ATTRIBUTE_REQUEST_ROLE,
+  CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID,
   CEL_ATTRIBUTE_STATEMENT_AFFECTED_ROWS,
   CEL_ATTRIBUTE_STATEMENT_SQL_TYPE,
 } from "@/utils/cel-attributes";

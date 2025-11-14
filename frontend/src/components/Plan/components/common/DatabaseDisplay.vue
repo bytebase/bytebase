@@ -34,8 +34,7 @@
 <script setup lang="ts">
 import { ChevronRightIcon, ExternalLinkIcon } from "lucide-vue-next";
 import { computed } from "vue";
-import { InstanceV1EngineIcon } from "@/components/v2";
-import { EnvironmentV1Name } from "@/components/v2";
+import { EnvironmentV1Name, InstanceV1EngineIcon } from "@/components/v2";
 import {
   useDatabaseV1Store,
   useEnvironmentV1Store,

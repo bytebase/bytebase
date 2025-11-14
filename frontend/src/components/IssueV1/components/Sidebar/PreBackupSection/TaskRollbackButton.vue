@@ -13,8 +13,8 @@ import { Undo2Icon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, ref } from "vue";
-import { useRouter } from "vue-router";
 import type { LocationQueryRaw } from "vue-router";
+import { useRouter } from "vue-router";
 import {
   latestTaskRunForTask,
   useIssueContext,
@@ -23,9 +23,9 @@ import { rolloutServiceClientConnect } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
+  useCurrentProjectV1,
   useSheetV1Store,
   useStorageStore,
-  useCurrentProjectV1,
 } from "@/store";
 import { PreviewTaskRunRollbackRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import {

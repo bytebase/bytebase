@@ -14,30 +14,28 @@ import {
   useSubscriptionV1Store,
 } from "@/store";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
-import {
-  CreateInstanceRequestSchema,
-  AddDataSourceRequestSchema,
-  UpdateDataSourceRequestSchema,
-} from "@/types/proto-es/v1/instance_service_pb";
 import type {
-  Instance,
   DataSource,
+  Instance,
 } from "@/types/proto-es/v1/instance_service_pb";
-import { InstanceSchema } from "@/types/proto-es/v1/instance_service_pb";
 import {
+  AddDataSourceRequestSchema,
+  CreateInstanceRequestSchema,
+  DataSource_AuthenticationType,
+  DataSource_RedisType,
   DataSourceExternalSecret_AuthType,
   DataSourceExternalSecret_SecretType,
   DataSourceType,
-  DataSource_AuthenticationType,
-  DataSource_RedisType,
+  InstanceSchema,
+  UpdateDataSourceRequestSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
+  convertKVListToLabels,
+  convertLabelsToKVList,
   extractInstanceResourceName,
   hasWorkspacePermissionV2,
   isValidSpannerHost,
-  convertLabelsToKVList,
-  convertKVListToLabels,
 } from "@/utils";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
 import type { LabelListEditor } from "../Label";
@@ -271,7 +269,7 @@ export const provideInstanceFormContext = (baseContext: {
   const specs = useInstanceSpecs(basicInfo, adminDataSource, editingDataSource);
 
   const extractDataSourceFromEdit = (
-    instance: Instance,
+    engine: Engine,
     edit: EditDataSource
   ): DataSource => {
     const { showDatabase, showSSH, showSSL } = specs;
@@ -305,11 +303,11 @@ export const provideInstanceFormContext = (baseContext: {
     if (!showDatabase.value) {
       ds.database = "";
     }
-    if (instance.engine !== Engine.ORACLE) {
+    if (engine !== Engine.ORACLE) {
       ds.sid = "";
       ds.serviceName = "";
     }
-    if (instance.engine !== Engine.MONGODB) {
+    if (engine !== Engine.MONGODB) {
       ds.srv = false;
       ds.authenticationDatabase = "";
     }
@@ -339,7 +337,7 @@ export const provideInstanceFormContext = (baseContext: {
     });
     if (editingDataSource.value) {
       const dataSourceCreate = extractDataSourceFromEdit(
-        instance,
+        instance.engine,
         adminDataSource.value
       );
       instance.dataSources = [dataSourceCreate];
@@ -394,7 +392,10 @@ export const provideInstanceFormContext = (baseContext: {
         engineVersion: "",
         dataSources: [],
       });
-      const dataSourceCreate = extractDataSourceFromEdit(instance, editingDS);
+      const dataSourceCreate = extractDataSourceFromEdit(
+        instance.engine,
+        editingDS
+      );
       instance.dataSources = [dataSourceCreate];
       try {
         const request = create(CreateInstanceRequestSchema, {
@@ -411,7 +412,7 @@ export const provideInstanceFormContext = (baseContext: {
       }
     } else {
       // Editing existed instance.
-      const ds = extractDataSourceFromEdit(instance.value!, editingDS);
+      const ds = extractDataSourceFromEdit(instance.value!.engine, editingDS);
       if (editingDS.pendingCreate) {
         // When read-only data source is about to be created, use
         // editingDataSource + AddDataSourceRequest.validateOnly = true

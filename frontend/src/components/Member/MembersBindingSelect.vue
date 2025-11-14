@@ -79,14 +79,14 @@ import RequiredStar from "@/components/RequiredStar.vue";
 import { GroupSelect, UserSelect } from "@/components/v2";
 import {
   extractGroupEmail,
-  useUserStore,
-  useGroupStore,
   extractUserId,
+  useGroupStore,
+  useUserStore,
 } from "@/store";
 import { groupNamePrefix } from "@/store/modules/v1/common";
 import {
-  getUserEmailInBinding,
   getGroupEmailInBinding,
+  getUserEmailInBinding,
   groupBindingPrefix,
 } from "@/types";
 

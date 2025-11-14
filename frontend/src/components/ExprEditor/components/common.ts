@@ -1,13 +1,13 @@
-import type { Ref, ComputedRef } from "vue";
+import type { ComputedRef, Ref } from "vue";
 import { computed } from "vue";
 import type { ConditionExpr } from "@/plugins/cel";
 import {
-  getOperatorListByFactor as getRawOperatorListByFactor,
   type Factor,
+  getOperatorListByFactor as getRawOperatorListByFactor,
   type Operator,
 } from "@/plugins/cel";
 import { t, te } from "@/plugins/i18n";
-import { useExprEditorContext, type OptionConfig } from "../context";
+import { type OptionConfig, useExprEditorContext } from "../context";
 
 export const useSelectOptionConfig = (
   expr: Ref<ConditionExpr>

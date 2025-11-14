@@ -11,8 +11,8 @@ import type {
   TableMetadata,
   ViewMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
-import type { SchemaEditorEvents } from ".";
 import type { RolloutObject } from "../types";
+import type { SchemaEditorEvents } from ".";
 import { keyForResource } from "./common";
 
 export const useSelection = (

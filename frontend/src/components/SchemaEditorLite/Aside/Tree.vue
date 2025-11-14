@@ -94,21 +94,21 @@
 </template>
 
 <script lang="ts" setup>
-import { useElementSize, refDebounced } from "@vueuse/core";
+import { refDebounced, useElementSize } from "@vueuse/core";
 import { MD5 } from "crypto-js";
 import { cloneDeep, debounce, escape, head } from "lodash-es";
-import { MoreHorizontalIcon, CopyIcon } from "lucide-vue-next";
+import { CopyIcon, MoreHorizontalIcon } from "lucide-vue-next";
 import type { TreeOption } from "naive-ui";
-import { NDropdown, NTree, NPerformantEllipsis } from "naive-ui";
+import { NDropdown, NPerformantEllipsis, NTree } from "naive-ui";
 import {
   computed,
-  onMounted,
-  watch,
-  ref,
   h,
-  reactive,
   nextTick,
+  onMounted,
+  reactive,
+  ref,
   type VNode,
+  watch,
 } from "vue";
 import { useI18n } from "vue-i18n";
 import { SearchBox } from "@/components/v2";
@@ -128,24 +128,24 @@ import {
   getHighlightHTMLByKeyWords,
   isDescendantOf,
 } from "@/utils";
+import { useSchemaEditorContext } from "../context";
+import { keyForResource, keyForResourceName } from "../context/common";
 import FunctionNameModal from "../Modals/FunctionNameModal.vue";
 import ProcedureNameModal from "../Modals/ProcedureNameModal.vue";
 import SchemaNameModal from "../Modals/SchemaNameModal.vue";
 import TableNameModal from "../Modals/TableNameModal.vue";
 import ViewNameModal from "../Modals/ViewNameModal.vue";
-import { useSchemaEditorContext } from "../context";
-import { keyForResource, keyForResourceName } from "../context/common";
 import { engineSupportsMultiSchema } from "../spec";
-import NodePrefix from "./NodePrefix.vue";
 import type {
   TreeNode,
+  TreeNodeForGroup,
   TreeNodeForInstance,
   TreeNodeForSchema,
   TreeNodeForTable,
-  TreeNodeForGroup,
 } from "./common";
 import { useBuildTree } from "./common";
 import { useContextMenu } from "./context-menu";
+import NodePrefix from "./NodePrefix.vue";
 
 interface LocalState {
   shouldRelocateTreeNode: boolean;

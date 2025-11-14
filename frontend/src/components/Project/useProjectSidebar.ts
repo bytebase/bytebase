@@ -1,34 +1,34 @@
 import {
-  Database,
   CircleDot,
-  Users,
-  Settings,
+  Database,
   DownloadIcon,
-  PackageIcon,
   LayoutList,
+  PackageIcon,
   PlayCircle,
+  Settings,
+  Users,
   Workflow,
 } from "lucide-vue-next";
-import { computed, h, unref, type MaybeRef } from "vue";
+import { computed, h, type MaybeRef, unref } from "vue";
 import { useRoute } from "vue-router";
 import type { SidebarItem } from "@/components/v2/Sidebar/type";
 import { getFlattenRoutes } from "@/components/v2/Sidebar/utils.ts";
 import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
 import { t } from "@/plugins/i18n";
 import projectV1Routes, {
-  PROJECT_V1_ROUTE_DATABASES,
-  PROJECT_V1_ROUTE_ISSUES,
-  PROJECT_V1_ROUTE_SYNC_SCHEMA,
-  PROJECT_V1_ROUTE_MEMBERS,
-  PROJECT_V1_ROUTE_SETTINGS,
-  PROJECT_V1_ROUTE_WEBHOOKS,
-  PROJECT_V1_ROUTE_DATABASE_GROUPS,
-  PROJECT_V1_ROUTE_EXPORT_CENTER,
   PROJECT_V1_ROUTE_AUDIT_LOGS,
-  PROJECT_V1_ROUTE_RELEASES,
+  PROJECT_V1_ROUTE_DATABASE_GROUPS,
+  PROJECT_V1_ROUTE_DATABASES,
+  PROJECT_V1_ROUTE_EXPORT_CENTER,
+  PROJECT_V1_ROUTE_ISSUES,
   PROJECT_V1_ROUTE_MASKING_EXEMPTION,
+  PROJECT_V1_ROUTE_MEMBERS,
   PROJECT_V1_ROUTE_PLANS,
+  PROJECT_V1_ROUTE_RELEASES,
   PROJECT_V1_ROUTE_ROLLOUTS,
+  PROJECT_V1_ROUTE_SETTINGS,
+  PROJECT_V1_ROUTE_SYNC_SCHEMA,
+  PROJECT_V1_ROUTE_WEBHOOKS,
 } from "@/router/dashboard/projectV1";
 import { DEFAULT_PROJECT_NAME } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";

@@ -78,14 +78,14 @@
 import { ReplyIcon } from "lucide-vue-next";
 import { NButton, NTag } from "naive-ui";
 import { computed } from "vue";
-import UserAvatar from "@/components/User/UserAvatar.vue";
 import ServiceAccountTag from "@/components/misc/ServiceAccountTag.vue";
 import SystemBotTag from "@/components/misc/SystemBotTag.vue";
 import YouTag from "@/components/misc/YouTag.vue";
+import UserAvatar from "@/components/User/UserAvatar.vue";
 import { CopyButton } from "@/components/v2";
 import { useCurrentUserV1, usePermissionStore } from "@/store";
 import { SYSTEM_BOT_USER_NAME } from "@/types";
-import { UserType, type User } from "@/types/proto-es/v1/user_service_pb";
+import { type User, UserType } from "@/types/proto-es/v1/user_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 defineProps<{

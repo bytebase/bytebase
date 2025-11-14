@@ -10,9 +10,9 @@ import {
 import type {
   ComposedDatabase,
   CoreSQLEditorTab,
+  QueryDataSourceType,
   SQLEditorConnection,
   SQLEditorTab,
-  QueryDataSourceType,
 } from "@/types";
 import {
   DEFAULT_SQL_EDITOR_TAB_MODE,
@@ -24,11 +24,11 @@ import {
   DataSourceType,
   type InstanceResource,
 } from "@/types/proto-es/v1/instance_service_pb";
+import type { Policy } from "@/types/proto-es/v1/org_policy_service_pb";
 import {
   DataSourceQueryPolicy_Restriction,
   PolicyType,
 } from "@/types/proto-es/v1/org_policy_service_pb";
-import type { Policy } from "@/types/proto-es/v1/org_policy_service_pb";
 import { instanceV1AllowsCrossDatabaseQuery } from "./v1/instance";
 
 export const defaultSQLEditorTab = (): SQLEditorTab => {

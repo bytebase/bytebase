@@ -61,7 +61,7 @@ import { PencilIcon, Trash2Icon, Undo2Icon } from "lucide-vue-next";
 import { NButton, NPopconfirm } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { useUserStore, pushNotification, useCurrentUserV1 } from "@/store";
+import { pushNotification, useCurrentUserV1, useUserStore } from "@/store";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { type User, UserType } from "@/types/proto-es/v1/user_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";

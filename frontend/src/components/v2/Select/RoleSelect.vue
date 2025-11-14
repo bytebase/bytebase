@@ -22,11 +22,11 @@
 <script setup lang="tsx">
 import type { SelectGroupOption, SelectOption } from "naive-ui";
 import { NSelect } from "naive-ui";
-import { computed, ref, h } from "vue";
+import { computed, h, ref } from "vue";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
 import FeatureModal from "@/components/FeatureGuard/FeatureModal.vue";
 import { t } from "@/plugins/i18n";
-import { useRoleStore, featureToRef } from "@/store";
+import { featureToRef, useRoleStore } from "@/store";
 import {
   PRESET_PROJECT_ROLES,
   PRESET_ROLES,

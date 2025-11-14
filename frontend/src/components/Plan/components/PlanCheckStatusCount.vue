@@ -51,10 +51,10 @@
 
 <script setup lang="ts">
 import {
-  CheckCircleIcon,
   AlertCircleIcon,
-  XCircleIcon,
+  CheckCircleIcon,
   LoaderIcon,
+  XCircleIcon,
 } from "lucide-vue-next";
 import { computed, type PropType } from "vue";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";

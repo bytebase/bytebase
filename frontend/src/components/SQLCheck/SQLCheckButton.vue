@@ -70,8 +70,7 @@ import { create } from "@bufbuild/protobuf";
 import { asyncComputed } from "@vueuse/core";
 import type { ButtonProps } from "naive-ui";
 import { NButton, NPopover } from "naive-ui";
-import { computed, onUnmounted, ref, watch } from "vue";
-import { onMounted } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
 import { releaseServiceClientConnect } from "@/grpcweb";
@@ -81,18 +80,18 @@ import type { CheckReleaseResponse } from "@/types/proto-es/v1/release_service_p
 import {
   CheckReleaseRequestSchema,
   CheckReleaseResponseSchema,
-  Release_File_Type,
   Release_File_MigrationType,
+  Release_File_Type,
 } from "@/types/proto-es/v1/release_service_pb";
 import type { Advice } from "@/types/proto-es/v1/sql_service_pb";
-import { AdviceSchema, Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
+import { Advice_Level, AdviceSchema } from "@/types/proto-es/v1/sql_service_pb";
 import type { Defer, VueStyle } from "@/utils";
 import { defer } from "@/utils";
 import ErrorList from "../misc/ErrorList.vue";
-import SQLCheckPanel from "./SQLCheckPanel.vue";
-import SQLCheckSummary from "./SQLCheckSummary.vue";
 import { STATEMENT_SKIP_CHECK_THRESHOLD } from "./common";
 import { useSQLCheckContext } from "./context";
+import SQLCheckPanel from "./SQLCheckPanel.vue";
+import SQLCheckSummary from "./SQLCheckSummary.vue";
 
 const props = withDefaults(
   defineProps<{

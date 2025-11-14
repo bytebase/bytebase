@@ -36,8 +36,8 @@
 <script setup lang="ts">
 import { NButton } from "naive-ui";
 import { computed, reactive, watch } from "vue";
-import DatabaseAndGroupSelector from "@/components/DatabaseAndGroupSelector";
 import type { DatabaseSelectState } from "@/components/DatabaseAndGroupSelector";
+import DatabaseAndGroupSelector from "@/components/DatabaseAndGroupSelector";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { useCurrentProjectV1 } from "@/store";
 

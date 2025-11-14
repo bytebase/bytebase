@@ -23,19 +23,19 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type { TaskRolloutAction } from "@/components/IssueV1/logic";
 import {
-  PrimaryTaskRolloutActionList,
   allowUserToApplyTaskRolloutAction,
   getApplicableIssueStatusActionList,
   getApplicableStageRolloutActionList,
   getApplicableTaskRolloutActionList,
+  PrimaryTaskRolloutActionList,
   releaserCandidatesForIssue,
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import type { ExtraActionOption } from "../common";
 import { IssueStatusActionButtonGroup } from "../common";
-import RolloutActionButtonGroup from "./RolloutActionButtonGroup.vue";
 import type { RolloutAction } from "./common";
+import RolloutActionButtonGroup from "./RolloutActionButtonGroup.vue";
 
 const { t } = useI18n();
 const { issue, selectedStage, selectedTask, events } = useIssueContext();

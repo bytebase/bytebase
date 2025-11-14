@@ -25,18 +25,20 @@ import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { issueServiceClientConnect, planServiceClientConnect } from "@/grpcweb";
 import {
-  pushNotification,
-  useCurrentUserV1,
   extractUserId,
+  pushNotification,
   useCurrentProjectV1,
+  useCurrentUserV1,
 } from "@/store";
 import {
-  IssueSchema,
   Issue_Type,
+  IssueSchema,
   UpdateIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
-import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
-import { PlanSchema } from "@/types/proto-es/v1/plan_service_pb";
+import {
+  PlanSchema,
+  UpdatePlanRequestSchema,
+} from "@/types/proto-es/v1/plan_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 import { usePlanContext } from "../../logic";
 

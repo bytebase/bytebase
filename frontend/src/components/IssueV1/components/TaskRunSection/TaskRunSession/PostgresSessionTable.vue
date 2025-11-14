@@ -49,7 +49,7 @@
 
 <script setup lang="tsx">
 import { AlignHorizontalJustifyStartIcon } from "lucide-vue-next";
-import { NDataTable, type DataTableColumn } from "naive-ui";
+import { type DataTableColumn, NDataTable } from "naive-ui";
 import { computed } from "vue";
 import { getDateForPbTimestampProtoEs } from "@/types";
 import type {

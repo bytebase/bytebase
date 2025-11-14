@@ -17,8 +17,7 @@
 import { type DataTableColumn, NDataTable } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
-import { RouterLink } from "vue-router";
+import { RouterLink, useRouter } from "vue-router";
 import { getDateForPbTimestampProtoEs } from "@/types";
 import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
 import {

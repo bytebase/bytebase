@@ -22,10 +22,9 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
-import { reactive } from "vue";
+import { computed, reactive } from "vue";
 import { LabelsCell } from "@/components/v2/Model/cells";
-import { useDatabaseCatalog, getColumnCatalog } from "@/store";
+import { getColumnCatalog, useDatabaseCatalog } from "@/store";
 import LabelEditorDrawer from "../LabelEditorDrawer.vue";
 import { updateColumnCatalog } from "./utils";
 

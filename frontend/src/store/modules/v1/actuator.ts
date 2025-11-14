@@ -7,9 +7,9 @@ import { computed } from "vue";
 import { actuatorServiceClientConnect } from "@/grpcweb";
 import { useSilentRequest } from "@/plugins/silent-request";
 import {
-  defaultAppProfile,
   type AppFeatures,
   type AppProfile,
+  defaultAppProfile,
   type Release,
   type ReleaseInfo,
 } from "@/types";

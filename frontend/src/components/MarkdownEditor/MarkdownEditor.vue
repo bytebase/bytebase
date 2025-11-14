@@ -46,14 +46,10 @@
         :maxlength="maxlength"
         @mousedown="clearIssuePanel"
         @input="(e: any) => sizeToFit(e.target)"
-        @keyup="adjustIssuePanelWithPosition"
+        @keyup="(e: KeyboardEvent) => adjustIssuePanelWithPosition(e)"
         @keydown.enter="keyboardHandler"
-        @keydown.esc="
-          () => {
-            $emit('cancel');
-            state.content = props.content;
-          }
-        "
+        @keydown.down="handleArrowDown"
+        @keydown.up="handleArrowUp"
       ></textarea>
       <div
         ref="issuePanel"
@@ -62,10 +58,14 @@
         <NScrollbar class="max-h-40">
           <ul class="text-sm rounded-sm divide-y divide-solid">
             <li
-              v-for="issue in filterIssueList"
+              v-for="(issue, index) in filterIssueList"
               :key="issue.name"
-              class="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-x-2"
+              :class="[
+                'px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-x-2',
+                { 'bg-gray-100': state.activeIssueIndex === index },
+              ]"
               @click="onIssueSelect(issue)"
+              @mouseenter="() => (state.activeIssueIndex = index)"
             >
               <IssueStatusIcon
                 :issue-status="issue.status"
@@ -89,20 +89,19 @@
 <script lang="ts" setup>
 import { useDebounceFn } from "@vueuse/core";
 import {
-  CodeIcon,
-  LinkIcon,
-  HashIcon,
   BoldIcon,
+  CodeIcon,
+  HashIcon,
   HeadingIcon,
+  LinkIcon,
 } from "lucide-vue-next";
-import { NButton, NTooltip, NTabs, NTab, NScrollbar } from "naive-ui";
-import { nextTick, ref, reactive, watch, toRef, onMounted } from "vue";
+import { NButton, NScrollbar, NTab, NTabs, NTooltip } from "naive-ui";
 import type { Component } from "vue";
+import { nextTick, onMounted, reactive, ref, toRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { HighlightLabelText } from "@/components/v2";
 import { useIssueV1Store } from "@/store";
-import { type ComposedIssue } from "@/types";
-import { DEBOUNCE_SEARCH_DELAY } from "@/types";
+import { type ComposedIssue, DEBOUNCE_SEARCH_DELAY } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import {
@@ -118,6 +117,7 @@ interface LocalState {
   showPreview: boolean;
   content: string;
   activeTab: "write" | "preview";
+  activeIssueIndex?: number;
 }
 
 interface Toolbar {
@@ -140,7 +140,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   (event: "change", value: string): void;
   (event: "submit"): void;
-  (event: "cancel"): void;
 }>();
 
 const state = reactive<LocalState>({
@@ -165,6 +164,24 @@ const contentTextArea = ref<HTMLTextAreaElement>();
 const contentPreviewArea = ref<HTMLIFrameElement>();
 const issuePanel = ref<HTMLDivElement>();
 const filterIssueList = ref<ComposedIssue[]>([]);
+
+watch(
+  () => filterIssueList.value.length,
+  (length) => {
+    if (length === 0) {
+      if (issuePanel.value) {
+        issuePanel.value.style.display = "none";
+      }
+      state.activeIssueIndex = undefined;
+    } else if (contentTextArea.value && issuePanel.value) {
+      const position = getIssuePanelPosition(contentTextArea.value);
+      issuePanel.value.style.display = "block";
+      issuePanel.value.style.left = `${position.x}px`;
+      issuePanel.value.style.top = `${position.y + 25}px`;
+      state.activeIssueIndex = 0;
+    }
+  }
+);
 
 const { renderedContent } = useRenderMarkdown(
   toRef(state, "content"),
@@ -231,10 +248,53 @@ const keyboardHandler = (e: KeyboardEvent) => {
   if (e.metaKey) {
     emit("submit");
   } else {
+    if (
+      filterIssueList.value.length > 0 &&
+      state.activeIssueIndex !== undefined
+    ) {
+      const selectedIssue = filterIssueList.value[state.activeIssueIndex];
+      if (selectedIssue) {
+        onIssueSelect(selectedIssue);
+        e.stopPropagation();
+        e.preventDefault();
+        return;
+      }
+    }
+
     if (autoComplete(state.content)) {
       e.stopPropagation();
       e.preventDefault();
     }
+  }
+};
+
+const handleArrowDown = (e: KeyboardEvent) => {
+  if (filterIssueList.value.length === 0) {
+    return;
+  }
+
+  e.preventDefault();
+  e.stopPropagation();
+
+  if (state.activeIssueIndex === undefined) {
+    state.activeIssueIndex = 0;
+  } else if (state.activeIssueIndex < filterIssueList.value.length - 1) {
+    state.activeIssueIndex++;
+  }
+};
+
+const handleArrowUp = (e: KeyboardEvent) => {
+  if (filterIssueList.value.length === 0) {
+    return;
+  }
+
+  e.preventDefault();
+  e.stopPropagation();
+
+  if (state.activeIssueIndex === undefined) {
+    state.activeIssueIndex = 0;
+  } else if (state.activeIssueIndex > 0) {
+    state.activeIssueIndex--;
   }
 };
 
@@ -411,9 +471,6 @@ const insertWithCursorPosition = (template: string, position: number) => {
 };
 
 const clearIssuePanel = () => {
-  if (issuePanel.value) {
-    issuePanel.value.style.display = "none";
-  }
   filterIssueList.value = [];
 };
 
@@ -470,7 +527,15 @@ const issueTaskStatus = (issue: ComposedIssue) => {
   return activeTaskInRollout(issue.rolloutEntity)?.status;
 };
 
-const adjustIssuePanelWithPosition = useDebounceFn(() => {
+const adjustIssuePanelWithPosition = useDebounceFn((e?: KeyboardEvent) => {
+  if (
+    e &&
+    (e.key === "ArrowDown" || e.key === "ArrowUp") &&
+    filterIssueList.value.length > 0
+  ) {
+    return;
+  }
+
   if (!contentTextArea.value || !issuePanel.value) {
     return;
   }
@@ -511,11 +576,6 @@ const adjustIssuePanelWithPosition = useDebounceFn(() => {
         filterIssueList.value = resp.issues;
       }
     });
-
-  const position = getIssuePanelPosition(contentTextArea.value);
-  issuePanel.value.style.display = "block";
-  issuePanel.value.style.left = `${position.x}px`;
-  issuePanel.value.style.top = `${position.y + 25}px`;
 }, DEBOUNCE_SEARCH_DELAY);
 
 const getIssuePanelPosition = (textArea: HTMLTextAreaElement) => {

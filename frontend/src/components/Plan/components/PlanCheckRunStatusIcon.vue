@@ -25,10 +25,10 @@
 <script lang="ts" setup>
 import type { PropType } from "vue";
 import { computed } from "vue";
-import CheckIcon from "~icons/heroicons-solid/check";
-import XIcon from "~icons/heroicons-solid/x";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
+import CheckIcon from "~icons/heroicons-solid/check";
+import XIcon from "~icons/heroicons-solid/x";
 import { usePlanCheckStatus } from "../logic";
 
 export type SizeType = "small" | "normal";

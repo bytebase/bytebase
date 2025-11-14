@@ -21,7 +21,7 @@
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
-import { NTooltip, NButton } from "naive-ui";
+import { NButton, NTooltip } from "naive-ui";
 import { computed, nextTick, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -32,41 +32,41 @@ import {
 import {
   databaseEngineForSpec,
   getLocalSheetByName,
+  usePlanContext,
 } from "@/components/Plan/logic";
-import { usePlanContext } from "@/components/Plan/logic";
 import {
-  planServiceClientConnect,
   issueServiceClientConnect,
+  planServiceClientConnect,
   rolloutServiceClientConnect,
 } from "@/grpcweb";
 import {
-  PROJECT_V1_ROUTE_PLAN_DETAIL,
   PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
+  PROJECT_V1_ROUTE_PLAN_DETAIL,
 } from "@/router/dashboard/projectV1";
 import {
-  useCurrentProjectV1,
-  useSheetV1Store,
-  useCurrentUserV1,
   pushNotification,
+  useCurrentProjectV1,
+  useCurrentUserV1,
+  useSheetV1Store,
 } from "@/store";
 import {
   CreateIssueRequestSchema,
+  Issue_Type,
   IssueSchema,
   IssueStatus,
-  Issue_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
-import { CreatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import {
+  CreatePlanRequestSchema,
   type Plan_ChangeDatabaseConfig,
   type Plan_ExportDataConfig,
 } from "@/types/proto-es/v1/plan_service_pb";
 import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import {
+  extractIssueUID,
   extractPlanUID,
   extractProjectResourceName,
   extractSheetUID,
-  extractIssueUID,
   hasProjectPermissionV2,
 } from "@/utils";
 

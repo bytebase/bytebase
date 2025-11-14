@@ -15,6 +15,28 @@ func getVaultClient(ctx context.Context, externalSecret *storepb.DataSourceExter
 	config := vault.DefaultConfig()
 	config.Address = externalSecret.Url
 
+	// Configure TLS based on Vault-specific TLS settings
+	tlsConfig := &vault.TLSConfig{
+		// Use skip_vault_tls_verification from ExternalSecret
+		// Default is false (verification enabled) for security
+		Insecure: externalSecret.SkipVaultTlsVerification,
+	}
+
+	// If custom CA certificate is provided for Vault, use it
+	if externalSecret.VaultSslCa != "" {
+		tlsConfig.CACertBytes = []byte(externalSecret.VaultSslCa)
+	}
+
+	// Configure client certificate for Vault if provided
+	if externalSecret.VaultSslCert != "" && externalSecret.VaultSslKey != "" {
+		tlsConfig.ClientCert = externalSecret.VaultSslCert
+		tlsConfig.ClientKey = externalSecret.VaultSslKey
+	}
+
+	if err := config.ConfigureTLS(tlsConfig); err != nil {
+		return nil, errors.Wrapf(err, "failed to configure TLS")
+	}
+
 	client, err := vault.NewClient(config)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to init vault client: %v", err.Error())

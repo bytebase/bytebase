@@ -2,14 +2,14 @@ import { create } from "@bufbuild/protobuf";
 import { cloneDeep } from "lodash-es";
 import { computed, reactive } from "vue";
 import { useSettingV1Store } from "@/store";
-import { unknownDatabase, type ComposedDatabase } from "@/types";
+import { type ComposedDatabase, unknownDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
   DatabaseCatalogSchema,
   SchemaCatalogSchema,
   type TableCatalog,
-  TableCatalogSchema,
   TableCatalog_ColumnsSchema,
+  TableCatalogSchema,
 } from "@/types/proto-es/v1/database_catalog_service_pb";
 import {
   DatabaseMetadataSchema,
@@ -18,8 +18,8 @@ import {
   TableMetadataSchema,
 } from "@/types/proto-es/v1/database_service_pb";
 import type {
-  SchemaTemplateSetting_TableTemplate,
   DataClassificationSetting_DataClassificationConfig,
+  SchemaTemplateSetting_TableTemplate,
 } from "@/types/proto-es/v1/setting_service_pb";
 import {
   SchemaTemplateSetting_TableTemplateSchema,

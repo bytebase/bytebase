@@ -23,7 +23,7 @@ type testData struct {
 	// Use custom yaml tag to avoid generate field name `ignorecasesensitive`.
 	IgnoreCaseSensitive bool `yaml:"ignore_case_sensitive"`
 	Want                string
-	Err                 *WalkThroughError
+	Err                 string
 }
 
 func TestTiDBWalkThrough(t *testing.T) {
@@ -172,14 +172,6 @@ func TestPostgreSQLANTLRWalkThrough(t *testing.T) {
 	}
 }
 
-func convertInterfaceSliceToStringSlice(slice []any) []string {
-	var res []string
-	for _, item := range slice {
-		res = append(res, item.(string))
-	}
-	return res
-}
-
 func runWalkThroughTest(t *testing.T, file string, engineType storepb.Engine, originDatabase *storepb.DatabaseSchemaMetadata) {
 	tests := []testData{}
 	filepath := filepath.Join("test", file+".yaml")
@@ -198,26 +190,15 @@ func runWalkThroughTest(t *testing.T, file string, engineType storepb.Engine, or
 		if originDatabase != nil {
 			state = newDatabaseState(originDatabase, &FinderContext{CheckIntegrity: true, EngineType: engineType, IgnoreCaseSensitive: test.IgnoreCaseSensitive})
 		} else {
-			finder := NewEmptyFinder(&FinderContext{CheckIntegrity: false, EngineType: engineType, IgnoreCaseSensitive: test.IgnoreCaseSensitive})
+			finder := NewFinder(&storepb.DatabaseSchemaMetadata{}, &FinderContext{CheckIntegrity: false, EngineType: engineType, IgnoreCaseSensitive: test.IgnoreCaseSensitive})
 			state = finder.Origin
 		}
 
 		asts, _ := sm.GetASTsForChecks(engineType, test.Statement)
 		err := state.WalkThrough(asts)
-		if err != nil {
-			err, yes := err.(*WalkThroughError)
-			require.True(t, yes)
-			if err.Payload != nil {
-				actualPayloadText, yes := err.Payload.([]string)
-				require.True(t, yes)
-				expectedPayloadText := convertInterfaceSliceToStringSlice(test.Err.Payload.([]any))
-				err.Payload = nil
-				test.Err.Payload = nil
-				require.Equal(t, test.Err, err)
-				require.Equal(t, expectedPayloadText, actualPayloadText)
-			} else {
-				require.Equal(t, test.Err, err)
-			}
+		if test.Err != "" {
+			require.Error(t, err, test.Statement)
+			require.Equal(t, test.Err, err.Error(), test.Statement)
 			continue
 		}
 		require.NoError(t, err, test.Statement)
@@ -248,7 +229,7 @@ func runANTLRWalkThroughTest(t *testing.T, file string, engineType storepb.Engin
 		if originDatabase != nil {
 			state = newDatabaseState(originDatabase, &FinderContext{CheckIntegrity: true, EngineType: engineType, IgnoreCaseSensitive: test.IgnoreCaseSensitive})
 		} else {
-			finder := NewEmptyFinder(&FinderContext{CheckIntegrity: false, EngineType: engineType, IgnoreCaseSensitive: test.IgnoreCaseSensitive})
+			finder := NewFinder(&storepb.DatabaseSchemaMetadata{}, &FinderContext{CheckIntegrity: false, EngineType: engineType, IgnoreCaseSensitive: test.IgnoreCaseSensitive})
 			state = finder.Origin
 		}
 
@@ -260,20 +241,9 @@ func runANTLRWalkThroughTest(t *testing.T, file string, engineType storepb.Engin
 
 		// Call WalkThrough with ANTLR tree
 		err := state.WalkThrough(parseResult)
-		if err != nil {
-			err, yes := err.(*WalkThroughError)
-			require.True(t, yes)
-			if err.Payload != nil {
-				actualPayloadText, yes := err.Payload.([]string)
-				require.True(t, yes)
-				expectedPayloadText := convertInterfaceSliceToStringSlice(test.Err.Payload.([]any))
-				err.Payload = nil
-				test.Err.Payload = nil
-				require.Equal(t, test.Err, err)
-				require.Equal(t, expectedPayloadText, actualPayloadText)
-			} else {
-				require.Equal(t, test.Err, err)
-			}
+		if test.Err != "" {
+			require.Error(t, err, test.Statement)
+			require.Equal(t, test.Err, err.Error(), test.Statement)
 			continue
 		}
 		require.NoError(t, err, test.Statement)

@@ -13,8 +13,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from "vue";
-import { onMounted } from "vue";
+import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import BannersWrapper from "@/components/BannersWrapper.vue";
 import ProvideSQLEditorContext from "@/components/ProvideSQLEditorContext.vue";
@@ -24,8 +23,8 @@ import {
   useSettingV1Store,
 } from "@/store";
 import { PolicyResourceType } from "@/types/proto-es/v1/org_policy_service_pb";
-import { provideSheetContext } from "@/views/sql-editor/Sheet";
 import { provideSQLEditorContext } from "@/views/sql-editor/context";
+import { provideSheetContext } from "@/views/sql-editor/Sheet";
 
 const router = useRouter();
 

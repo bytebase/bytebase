@@ -208,7 +208,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 	if request.Schema != nil {
 		queryContext.Schema = *request.Schema
 	}
-	results, _, duration, queryErr := queryRetry(
+	results, _, duration, queryErr := queryRetryStopOnError(
 		ctx,
 		s.store,
 		user,
@@ -232,29 +232,38 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 
 	// Update activity.
 	s.createQueryHistory(database, store.QueryHistoryTypeQuery, statement, user.ID, duration, queryErr)
+
 	if queryErr != nil {
-		code := connect.CodeInternal
-		// If queryErr is already a connect.Error, preserve its code
-		if connectErr, ok := queryErr.(*connect.Error); ok {
-			code = connectErr.Code()
-		} else if syntaxErr, ok := queryErr.(*parserbase.SyntaxError); ok {
-			err := connect.NewError(connect.CodeInvalidArgument, syntaxErr)
-			if detail, detailErr := connect.NewErrorDetail(&v1pb.PlanCheckRun_Result{
-				Code:    int32(advisor.StatementSyntaxError),
-				Content: syntaxErr.Message,
-				Title:   "Syntax error",
-				Status:  v1pb.Advice_ERROR,
-				Report: &v1pb.PlanCheckRun_Result_SqlReviewReport_{
-					SqlReviewReport: &v1pb.PlanCheckRun_Result_SqlReviewReport{
-						StartPosition: convertToPosition(syntaxErr.Position),
-					},
-				},
-			}); detailErr == nil {
-				err.AddDetail(detail)
+		if len(results) == 0 {
+			if _, ok := queryErr.(*connect.Error); ok {
+				return nil, queryErr
 			}
-			return nil, err
+			return nil, connect.NewError(connect.CodeInternal, errors.New(queryErr.Error()))
 		}
-		return nil, connect.NewError(code, errors.New(queryErr.Error()))
+		// populate the detailed_error field of the last query result
+		var qe *queryError
+		var pe *parserbase.SyntaxError
+		if errors.As(queryErr, &qe) {
+			if len(qe.resources) > 0 {
+				results[len(results)-1].DetailedError = &v1pb.QueryResult_PermissionDenied_{
+					PermissionDenied: &v1pb.QueryResult_PermissionDenied{
+						Resources: qe.resources,
+					},
+				}
+			} else if qe.commandType != v1pb.QueryResult_PermissionDenied_COMMAND_TYPE_UNSPECIFIED {
+				results[len(results)-1].DetailedError = &v1pb.QueryResult_PermissionDenied_{
+					PermissionDenied: &v1pb.QueryResult_PermissionDenied{
+						CommandType: qe.commandType,
+					},
+				}
+			}
+		} else if errors.As(queryErr, &pe) {
+			results[len(results)-1].DetailedError = &v1pb.QueryResult_SyntaxError_{
+				SyntaxError: &v1pb.QueryResult_SyntaxError{
+					StartPosition: convertToPosition(pe.Position),
+				},
+			}
+		}
 	}
 
 	slog.Debug("request finished",
@@ -677,6 +686,66 @@ func getSensitivePredicateColumnErrorMessages(sensitiveColumns []parserbase.Colu
 		_, _ = buf.WriteString(column.String())
 	}
 	return buf.String()
+}
+
+// queryRetryStopOnError runs the query and stops on encountering errors.
+// The error is both present in the returned QueryResult and error, the caller decides what to do.
+func queryRetryStopOnError(
+	ctx context.Context,
+	stores *store.Store,
+	user *store.UserMessage,
+	instance *store.InstanceMessage,
+	database *store.DatabaseMessage,
+	driver db.Driver,
+	conn *sql.Conn,
+	statement string,
+	queryContext db.QueryContext,
+	licenseService *enterprise.LicenseService,
+	optionalAccessCheck accessCheckFunc,
+	schemaSyncer *schemasync.Syncer,
+	action storepb.MaskingExceptionPolicy_MaskingException_Action,
+) ([]*v1pb.QueryResult, []*parserbase.QuerySpan, time.Duration, error) {
+	// Split the statement into individual SQLs
+	statements, err := parserbase.SplitMultiSQL(instance.Metadata.GetEngine(), statement)
+	if err != nil {
+		// Fall back to executing as a single statement if splitting fails
+		return queryRetry(ctx, stores, user, instance, database, driver, conn, statement, queryContext, licenseService, optionalAccessCheck, schemaSyncer, action)
+	}
+
+	var allResults []*v1pb.QueryResult
+	var allSpans []*parserbase.QuerySpan
+	var totalDuration time.Duration
+
+	for _, stmt := range statements {
+		// Skip empty statements
+		if stmt.Empty {
+			continue
+		}
+
+		results, spans, duration, err := queryRetry(ctx, stores, user, instance, database, driver, conn, stmt.Text, queryContext, licenseService, optionalAccessCheck, schemaSyncer, action)
+		totalDuration += duration
+
+		if err != nil {
+			allResults = append(allResults, &v1pb.QueryResult{
+				Error:     err.Error(),
+				Statement: stmt.Text,
+			})
+			allSpans = append(allSpans, nil)
+			return allResults, allSpans, totalDuration, err
+		}
+
+		allResults = append(allResults, results...)
+		allSpans = append(allSpans, spans...)
+
+		// results may have swollen error.
+		for _, result := range results {
+			if result.Error != "" {
+				return allResults, allSpans, totalDuration, nil
+			}
+		}
+	}
+
+	return allResults, allSpans, totalDuration, nil
 }
 
 func executeWithTimeout(ctx context.Context, stores *store.Store, licenseService *enterprise.LicenseService, driver db.Driver, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, time.Duration, error) {
@@ -1375,6 +1444,7 @@ func (s *SQLService) accessCheck(
 			}
 		}
 		if span.Type == parserbase.Select {
+			var deniedResources []string
 			for column := range span.SourceColumns {
 				attributes := map[string]any{
 					common.CELAttributeRequestTime:        time.Now(),
@@ -1417,17 +1487,26 @@ func (s *SQLService) accessCheck(
 					return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check access control for database: %q, error %v", column.Database, err))
 				}
 				if !ok {
-					resource := attributes[common.CELAttributeResourceDatabase]
+					resource, ok := attributes[common.CELAttributeResourceDatabase].(string)
+					if !ok {
+						resource = ""
+					}
 					if schema, ok := attributes[common.CELAttributeResourceSchemaName]; ok && schema != "" {
 						resource = fmt.Sprintf("%s/schemas/%s", resource, schema)
 					}
 					if table, ok := attributes[common.CELAttributeResourceTableName]; ok && table != "" {
 						resource = fmt.Sprintf("%s/tables/%s", resource, table)
 					}
-					return connect.NewError(
+					deniedResources = append(deniedResources, resource)
+				}
+			}
+			if len(deniedResources) > 0 {
+				return &queryError{
+					err: connect.NewError(
 						connect.CodePermissionDenied,
-						errors.Errorf("permission denied to access resource: %s", resource),
-					)
+						errors.Errorf("permission denied to access resources: %v", deniedResources),
+					),
+					resources: deniedResources,
 				}
 			}
 		}
@@ -1498,11 +1577,9 @@ func validateQueryRequest(instance *store.InstanceMessage, statement string) err
 		return err
 	}
 	if !ok {
-		switch instance.Metadata.GetEngine() {
-		case storepb.Engine_REDIS, storepb.Engine_MONGODB:
-			return nonReadOnlyCommandError
-		default:
-			return nonSelectSQLError
+		return &queryError{
+			err:         connect.NewError(connect.CodeInvalidArgument, errors.New("Support read-only command statements only")),
+			commandType: v1pb.QueryResult_PermissionDenied_NON_READ_ONLY,
 		}
 	}
 	return nil
@@ -1816,11 +1893,17 @@ func checkDataSourceQueryPolicy(ctx context.Context, storeInstance *store.Store,
 		switch statementTp {
 		case parserbase.DDL:
 			if policy.DisallowDdl {
-				return connect.NewError(connect.CodePermissionDenied, errors.Errorf("disallow execute DDL statement in environment %q", environment.Title))
+				return &queryError{
+					err:         connect.NewError(connect.CodePermissionDenied, errors.Errorf("disallow execute DDL statement in environment %q", environment.Title)),
+					commandType: v1pb.QueryResult_PermissionDenied_DDL,
+				}
 			}
 		case parserbase.DML:
 			if policy.DisallowDml {
-				return connect.NewError(connect.CodePermissionDenied, errors.Errorf("disallow execute DML statement in environment %q", environment.Title))
+				return &queryError{
+					err:         connect.NewError(connect.CodePermissionDenied, errors.Errorf("disallow execute DML statement in environment %q", environment.Title)),
+					commandType: v1pb.QueryResult_PermissionDenied_DML,
+				}
 			}
 		default:
 		}

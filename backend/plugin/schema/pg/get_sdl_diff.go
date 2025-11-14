@@ -91,11 +91,17 @@ func GetSDLDiff(currentSDLText, previousUserSDLText string, currentSchema, previ
 	// Process view changes
 	processViewChanges(currentChunks, previousChunks, currentDBSDLChunks, diff)
 
+	// Process materialized view changes
+	processMaterializedViewChanges(currentChunks, previousChunks, currentDBSDLChunks, diff)
+
 	// Process function changes
 	processFunctionChanges(currentChunks, previousChunks, currentDBSDLChunks, diff)
 
 	// Process sequence changes
 	processSequenceChanges(currentChunks, previousChunks, currentDBSDLChunks, diff)
+
+	// Process enum type changes
+	processEnumTypeChanges(currentChunks, previousChunks, currentDBSDLChunks, diff)
 
 	// Process explicit schema changes (CREATE SCHEMA statements)
 	processSchemaChanges(currentChunks, previousChunks, currentSchema, diff)
@@ -113,14 +119,16 @@ func GetSDLDiff(currentSDLText, previousUserSDLText string, currentSchema, previ
 func ChunkSDLText(sdlText string) (*schema.SDLChunks, error) {
 	if strings.TrimSpace(sdlText) == "" {
 		return &schema.SDLChunks{
-			Tables:         make(map[string]*schema.SDLChunk),
-			Views:          make(map[string]*schema.SDLChunk),
-			Functions:      make(map[string]*schema.SDLChunk),
-			Indexes:        make(map[string]*schema.SDLChunk),
-			Sequences:      make(map[string]*schema.SDLChunk),
-			Schemas:        make(map[string]*schema.SDLChunk),
-			ColumnComments: make(map[string]map[string]antlr.ParserRuleContext),
-			IndexComments:  make(map[string]map[string]antlr.ParserRuleContext),
+			Tables:            make(map[string]*schema.SDLChunk),
+			Views:             make(map[string]*schema.SDLChunk),
+			MaterializedViews: make(map[string]*schema.SDLChunk),
+			Functions:         make(map[string]*schema.SDLChunk),
+			Indexes:           make(map[string]*schema.SDLChunk),
+			Sequences:         make(map[string]*schema.SDLChunk),
+			Schemas:           make(map[string]*schema.SDLChunk),
+			EnumTypes:         make(map[string]*schema.SDLChunk),
+			ColumnComments:    make(map[string]map[string]antlr.ParserRuleContext),
+			IndexComments:     make(map[string]map[string]antlr.ParserRuleContext),
 		}, nil
 	}
 
@@ -132,14 +140,16 @@ func ChunkSDLText(sdlText string) (*schema.SDLChunks, error) {
 	extractor := &sdlChunkExtractor{
 		sdlText: sdlText,
 		chunks: &schema.SDLChunks{
-			Tables:         make(map[string]*schema.SDLChunk),
-			Views:          make(map[string]*schema.SDLChunk),
-			Functions:      make(map[string]*schema.SDLChunk),
-			Indexes:        make(map[string]*schema.SDLChunk),
-			Sequences:      make(map[string]*schema.SDLChunk),
-			Schemas:        make(map[string]*schema.SDLChunk),
-			ColumnComments: make(map[string]map[string]antlr.ParserRuleContext),
-			IndexComments:  make(map[string]map[string]antlr.ParserRuleContext),
+			Tables:            make(map[string]*schema.SDLChunk),
+			Views:             make(map[string]*schema.SDLChunk),
+			MaterializedViews: make(map[string]*schema.SDLChunk),
+			Functions:         make(map[string]*schema.SDLChunk),
+			Indexes:           make(map[string]*schema.SDLChunk),
+			Sequences:         make(map[string]*schema.SDLChunk),
+			Schemas:           make(map[string]*schema.SDLChunk),
+			EnumTypes:         make(map[string]*schema.SDLChunk),
+			ColumnComments:    make(map[string]map[string]antlr.ParserRuleContext),
+			IndexComments:     make(map[string]map[string]antlr.ParserRuleContext),
 		},
 		tokens: parseResult.Tokens,
 	}
@@ -238,6 +248,40 @@ func (l *sdlChunkExtractor) EnterAlterseqstmt(ctx *parser.AlterseqstmtContext) {
 	}
 }
 
+// EnterDefinestmt handles CREATE TYPE AS ENUM statements
+func (l *sdlChunkExtractor) EnterDefinestmt(ctx *parser.DefinestmtContext) {
+	// Check if this is CREATE TYPE AS ENUM
+	if ctx.CREATE() == nil || ctx.TYPE_P() == nil || ctx.AS() == nil || ctx.ENUM_P() == nil {
+		return
+	}
+
+	// Extract type name
+	typeNames := ctx.AllAny_name()
+	if len(typeNames) == 0 {
+		return
+	}
+
+	// Get the enum type name (first Any_name)
+	typeName := typeNames[0]
+	identifier := pgparser.NormalizePostgreSQLAnyName(typeName)
+	identifierStr := strings.Join(identifier, ".")
+
+	// Ensure schema.enumName format (default to "public" if no schema specified)
+	var schemaQualifiedName string
+	if strings.Contains(identifierStr, ".") {
+		schemaQualifiedName = identifierStr
+	} else {
+		schemaQualifiedName = "public." + identifierStr
+	}
+
+	chunk := &schema.SDLChunk{
+		Identifier: schemaQualifiedName,
+		ASTNode:    ctx,
+	}
+
+	l.chunks.EnumTypes[schemaQualifiedName] = chunk
+}
+
 func (l *sdlChunkExtractor) EnterCreatefunctionstmt(ctx *parser.CreatefunctionstmtContext) {
 	funcNameCtx := ctx.Func_name()
 	if funcNameCtx == nil {
@@ -334,6 +378,32 @@ func (l *sdlChunkExtractor) EnterViewstmt(ctx *parser.ViewstmtContext) {
 	}
 
 	l.chunks.Views[schemaQualifiedName] = chunk
+}
+
+// EnterCreatematviewstmt handles CREATE MATERIALIZED VIEW statements
+func (l *sdlChunkExtractor) EnterCreatematviewstmt(ctx *parser.CreatematviewstmtContext) {
+	// Extract materialized view name from create_mv_target
+	if ctx.Create_mv_target() == nil || ctx.Create_mv_target().Qualified_name() == nil {
+		return
+	}
+
+	identifier := pgparser.NormalizePostgreSQLQualifiedName(ctx.Create_mv_target().Qualified_name())
+	identifierStr := strings.Join(identifier, ".")
+
+	// Ensure schema.materializedViewName format
+	var schemaQualifiedName string
+	if strings.Contains(identifierStr, ".") {
+		schemaQualifiedName = identifierStr
+	} else {
+		schemaQualifiedName = "public." + identifierStr
+	}
+
+	chunk := &schema.SDLChunk{
+		Identifier: schemaQualifiedName,
+		ASTNode:    ctx,
+	}
+
+	l.chunks.MaterializedViews[schemaQualifiedName] = chunk
 }
 
 func (l *sdlChunkExtractor) EnterCreateschemastmt(ctx *parser.CreateschemastmtContext) {
@@ -452,10 +522,40 @@ func (l *sdlChunkExtractor) EnterCommentstmt(ctx *parser.CommentstmtContext) {
 		return
 	}
 
+	// Check for TYPE comment: COMMENT ON TYPE typename IS comment_text
+	if ctx.TYPE_P() != nil {
+		// Extract typename from the third child (TYPE_P is second, typename is third)
+		if ctx.GetChildCount() >= 4 {
+			child := ctx.GetChild(3)
+			if typenameCtx, ok := child.(*parser.TypenameContext); ok {
+				// Extract schema.type from typename
+				identifier := extractSchemaAndTypeFromTypename(typenameCtx)
+				if identifier != "" {
+					if chunk, exists := l.chunks.EnumTypes[identifier]; exists {
+						chunk.CommentStatements = append(chunk.CommentStatements, ctx)
+					} else {
+						// Create a new chunk for the comment (type may not have CREATE TYPE statement)
+						chunk := &schema.SDLChunk{
+							Identifier:        identifier,
+							ASTNode:           nil,
+							CommentStatements: []antlr.ParserRuleContext{ctx},
+						}
+						l.chunks.EnumTypes[identifier] = chunk
+					}
+				}
+			}
+		}
+		return
+	}
+
 	// Check for object_type_any_name: TABLE, SEQUENCE, VIEW, INDEX, etc.
 	if ctx.Object_type_any_name() != nil && ctx.Any_name() != nil {
 		objectType := ctx.Object_type_any_name().GetText()
 		anyName := pgparser.NormalizePostgreSQLAnyName(ctx.Any_name())
+
+		// Debug: log the object type to understand what we're getting
+		// This will help us identify the issue with MATERIALIZED VIEW comments
+		_ = objectType // Prevent unused variable error in production
 
 		var identifier string
 		if len(anyName) >= 2 {
@@ -469,7 +569,9 @@ func (l *sdlChunkExtractor) EnterCommentstmt(ctx *parser.CommentstmtContext) {
 		}
 
 		// Route to appropriate chunk map based on object type
-		switch strings.ToUpper(objectType) {
+		// Note: For "MATERIALIZED VIEW", the parser may return "MATERIALIZEDVIEW" (no space)
+		objectTypeUpper := strings.ToUpper(objectType)
+		switch objectTypeUpper {
 		case "TABLE":
 			if chunk, exists := l.chunks.Tables[identifier]; exists {
 				chunk.CommentStatements = append(chunk.CommentStatements, ctx)
@@ -491,6 +593,19 @@ func (l *sdlChunkExtractor) EnterCommentstmt(ctx *parser.CommentstmtContext) {
 					CommentStatements: []antlr.ParserRuleContext{ctx},
 				}
 				l.chunks.Views[identifier] = chunk
+			}
+		case "MATERIALIZED VIEW", "MATERIALIZEDVIEW":
+			// Handle both "MATERIALIZED VIEW" (with space) and "MATERIALIZEDVIEW" (no space)
+			// The parser may return either depending on the grammar definition
+			if chunk, exists := l.chunks.MaterializedViews[identifier]; exists {
+				chunk.CommentStatements = append(chunk.CommentStatements, ctx)
+			} else {
+				chunk := &schema.SDLChunk{
+					Identifier:        identifier,
+					ASTNode:           nil,
+					CommentStatements: []antlr.ParserRuleContext{ctx},
+				}
+				l.chunks.MaterializedViews[identifier] = chunk
 			}
 		case "SEQUENCE":
 			if chunk, exists := l.chunks.Sequences[identifier]; exists {
@@ -514,8 +629,20 @@ func (l *sdlChunkExtractor) EnterCommentstmt(ctx *parser.CommentstmtContext) {
 				}
 				l.chunks.Indexes[identifier] = chunk
 			}
+		case "TYPE":
+			// Handle COMMENT ON TYPE (for enum types)
+			if chunk, exists := l.chunks.EnumTypes[identifier]; exists {
+				chunk.CommentStatements = append(chunk.CommentStatements, ctx)
+			} else {
+				chunk := &schema.SDLChunk{
+					Identifier:        identifier,
+					ASTNode:           nil,
+					CommentStatements: []antlr.ParserRuleContext{ctx},
+				}
+				l.chunks.EnumTypes[identifier] = chunk
+			}
 		default:
-			// Unsupported object type for comment tracking (e.g., MATERIALIZED VIEW, FOREIGN TABLE)
+			// Unsupported object type for comment tracking (e.g., FOREIGN TABLE)
 			// We skip these for now
 		}
 		return
@@ -862,6 +989,64 @@ func parseIdentifier(identifier string) (schemaName, objectName string) {
 		return parts[0], parts[1]
 	}
 	return "public", identifier
+}
+
+// extractSchemaAndTypeFromTypename extracts schema.type identifier from a Typename context
+// Used for parsing COMMENT ON TYPE statements
+func extractSchemaAndTypeFromTypename(typenameCtx *parser.TypenameContext) string {
+	if typenameCtx == nil {
+		return ""
+	}
+
+	// Helper function to normalize a PostgreSQL identifier string
+	normalizeIdentifier := func(text string) string {
+		if len(text) >= 2 && text[0] == '"' && text[len(text)-1] == '"' {
+			// Quoted identifier - preserve case but remove quotes
+			return text[1 : len(text)-1]
+		}
+		// Unquoted identifier - convert to lowercase
+		return strings.ToLower(text)
+	}
+
+	// Navigate to Simpletypename -> Generictype
+	if typenameCtx.GetChildCount() >= 1 {
+		if simpleTypeCtx, ok := typenameCtx.GetChild(0).(*parser.SimpletypenameContext); ok {
+			if simpleTypeCtx.GetChildCount() >= 1 {
+				if genericTypeCtx, ok := simpleTypeCtx.GetChild(0).(*parser.GenerictypeContext); ok {
+					// Generictype contains Type_function_name (schema) and Attrs (.typename)
+					var schemaName string
+					var typeName string
+
+					if genericTypeCtx.GetChildCount() >= 1 {
+						if tfnCtx, ok := genericTypeCtx.GetChild(0).(*parser.Type_function_nameContext); ok {
+							schemaName = normalizeIdentifier(tfnCtx.GetText())
+						}
+					}
+
+					if genericTypeCtx.GetChildCount() >= 2 {
+						if attrsCtx, ok := genericTypeCtx.GetChild(1).(*parser.AttrsContext); ok {
+							// Attrs contains ".typename", need to extract the typename
+							attrsText := attrsCtx.GetText()
+							// Remove leading dot and normalize
+							if len(attrsText) > 1 && attrsText[0] == '.' {
+								typeName = normalizeIdentifier(attrsText[1:])
+							}
+						}
+					}
+
+					if schemaName != "" && typeName != "" {
+						return schemaName + "." + typeName
+					}
+					// If only Type_function_name is present (no attrs), treat it as the type name with public schema
+					if schemaName != "" && typeName == "" {
+						return "public." + schemaName
+					}
+				}
+			}
+		}
+	}
+
+	return ""
 }
 
 // extractAlterTexts extracts and concatenates text from a list of ALTER statement nodes
@@ -1596,7 +1781,7 @@ func getIndexText(constraintAST parser.ITableconstraintContext) string {
 }
 
 // processStandaloneIndexChanges analyzes standalone CREATE INDEX statement changes
-// and adds them to the appropriate table's IndexChanges
+// and adds them to the appropriate table's or materialized view's IndexChanges
 func processStandaloneIndexChanges(currentChunks, previousChunks *schema.SDLChunks, currentDBSDLChunks *currentDatabaseSDLChunks, diff *schema.MetadataDiff) {
 	if currentChunks == nil || previousChunks == nil {
 		return
@@ -1610,12 +1795,22 @@ func processStandaloneIndexChanges(currentChunks, previousChunks *schema.SDLChun
 		affectedTables[qualifiedTableName] = tableDiff
 	}
 
+	// Initialize map with all existing materialized view diffs
+	affectedMaterializedViews := make(map[string]*schema.MaterializedViewDiff, len(diff.MaterializedViewChanges))
+	for _, mvDiff := range diff.MaterializedViewChanges {
+		qualifiedMVName := mvDiff.SchemaName + "." + mvDiff.MaterializedViewName
+		affectedMaterializedViews[qualifiedMVName] = mvDiff
+	}
+
 	// Step 1: Process current indexes to find created and modified indexes
 	for _, currentChunk := range currentChunks.Indexes {
-		tableName := extractTableNameFromIndex(currentChunk.ASTNode)
-		if tableName == "" {
-			continue // Skip if we can't determine the table name
+		targetObjectName := extractTableNameFromIndex(currentChunk.ASTNode)
+		if targetObjectName == "" {
+			continue // Skip if we can't determine the target object name
 		}
+
+		// Determine if this index is on a table or materialized view
+		isOnMaterializedView := isIndexOnMaterializedView(targetObjectName, currentChunks, previousChunks)
 
 		if previousChunk, exists := previousChunks.Indexes[currentChunk.Identifier]; exists {
 			// Index exists in both - check if modified by comparing text first
@@ -1627,15 +1822,29 @@ func processStandaloneIndexChanges(currentChunks, previousChunks *schema.SDLChun
 					continue
 				}
 				// Index was modified - use drop and recreate pattern (PostgreSQL standard)
-				tableDiff := getOrCreateTableDiff(diff, tableName, affectedTables)
-				tableDiff.IndexChanges = append(tableDiff.IndexChanges, &schema.IndexDiff{
-					Action:     schema.MetadataDiffActionDrop,
-					OldASTNode: previousChunk.ASTNode,
-				})
-				tableDiff.IndexChanges = append(tableDiff.IndexChanges, &schema.IndexDiff{
-					Action:     schema.MetadataDiffActionCreate,
-					NewASTNode: currentChunk.ASTNode,
-				})
+				if isOnMaterializedView {
+					// Index is on materialized view
+					mvDiff := getOrCreateMaterializedViewDiff(diff, targetObjectName, affectedMaterializedViews)
+					mvDiff.IndexChanges = append(mvDiff.IndexChanges, &schema.IndexDiff{
+						Action:     schema.MetadataDiffActionDrop,
+						OldASTNode: previousChunk.ASTNode,
+					})
+					mvDiff.IndexChanges = append(mvDiff.IndexChanges, &schema.IndexDiff{
+						Action:     schema.MetadataDiffActionCreate,
+						NewASTNode: currentChunk.ASTNode,
+					})
+				} else {
+					// Index is on table
+					tableDiff := getOrCreateTableDiff(diff, targetObjectName, affectedTables)
+					tableDiff.IndexChanges = append(tableDiff.IndexChanges, &schema.IndexDiff{
+						Action:     schema.MetadataDiffActionDrop,
+						OldASTNode: previousChunk.ASTNode,
+					})
+					tableDiff.IndexChanges = append(tableDiff.IndexChanges, &schema.IndexDiff{
+						Action:     schema.MetadataDiffActionCreate,
+						NewASTNode: currentChunk.ASTNode,
+					})
+				}
 				// Add COMMENT ON INDEX diffs if they exist in the new version
 				if len(currentChunk.CommentStatements) > 0 {
 					schemaName, indexName := parseIdentifier(currentChunk.Identifier)
@@ -1657,11 +1866,19 @@ func processStandaloneIndexChanges(currentChunks, previousChunks *schema.SDLChun
 			// If text is identical, skip - no changes detected
 		} else {
 			// New index - store AST node only
-			tableDiff := getOrCreateTableDiff(diff, tableName, affectedTables)
-			tableDiff.IndexChanges = append(tableDiff.IndexChanges, &schema.IndexDiff{
-				Action:     schema.MetadataDiffActionCreate,
-				NewASTNode: currentChunk.ASTNode,
-			})
+			if isOnMaterializedView {
+				mvDiff := getOrCreateMaterializedViewDiff(diff, targetObjectName, affectedMaterializedViews)
+				mvDiff.IndexChanges = append(mvDiff.IndexChanges, &schema.IndexDiff{
+					Action:     schema.MetadataDiffActionCreate,
+					NewASTNode: currentChunk.ASTNode,
+				})
+			} else {
+				tableDiff := getOrCreateTableDiff(diff, targetObjectName, affectedTables)
+				tableDiff.IndexChanges = append(tableDiff.IndexChanges, &schema.IndexDiff{
+					Action:     schema.MetadataDiffActionCreate,
+					NewASTNode: currentChunk.ASTNode,
+				})
+			}
 			// Add COMMENT ON INDEX diffs if they exist
 			if len(currentChunk.CommentStatements) > 0 {
 				schemaName, indexName := parseIdentifier(currentChunk.Identifier)
@@ -1686,16 +1903,27 @@ func processStandaloneIndexChanges(currentChunks, previousChunks *schema.SDLChun
 	for indexName, previousChunk := range previousChunks.Indexes {
 		if _, exists := currentChunks.Indexes[indexName]; !exists {
 			// Index was dropped - store AST node only
-			tableName := extractTableNameFromIndex(previousChunk.ASTNode)
-			if tableName == "" {
-				continue // Skip if we can't determine the table name
+			targetObjectName := extractTableNameFromIndex(previousChunk.ASTNode)
+			if targetObjectName == "" {
+				continue // Skip if we can't determine the target object name
 			}
 
-			tableDiff := getOrCreateTableDiff(diff, tableName, affectedTables)
-			tableDiff.IndexChanges = append(tableDiff.IndexChanges, &schema.IndexDiff{
-				Action:     schema.MetadataDiffActionDrop,
-				OldASTNode: previousChunk.ASTNode,
-			})
+			// Determine if this index was on a table or materialized view
+			isOnMaterializedView := isIndexOnMaterializedView(targetObjectName, currentChunks, previousChunks)
+
+			if isOnMaterializedView {
+				mvDiff := getOrCreateMaterializedViewDiff(diff, targetObjectName, affectedMaterializedViews)
+				mvDiff.IndexChanges = append(mvDiff.IndexChanges, &schema.IndexDiff{
+					Action:     schema.MetadataDiffActionDrop,
+					OldASTNode: previousChunk.ASTNode,
+				})
+			} else {
+				tableDiff := getOrCreateTableDiff(diff, targetObjectName, affectedTables)
+				tableDiff.IndexChanges = append(tableDiff.IndexChanges, &schema.IndexDiff{
+					Action:     schema.MetadataDiffActionDrop,
+					OldASTNode: previousChunk.ASTNode,
+				})
+			}
 		}
 	}
 }
@@ -1784,6 +2012,52 @@ func getOrCreateTableDiff(diff *schema.MetadataDiff, tableName string, affectedT
 	diff.TableChanges = append(diff.TableChanges, newTableDiff)
 	affectedTables[tableName] = newTableDiff
 	return newTableDiff
+}
+
+// getOrCreateMaterializedViewDiff finds an existing materialized view diff or creates a new one
+// mvName should be in schema.mv_name format
+func getOrCreateMaterializedViewDiff(diff *schema.MetadataDiff, mvName string, affectedMaterializedViews map[string]*schema.MaterializedViewDiff) *schema.MaterializedViewDiff {
+	// Check if we already have this materialized view in our map
+	if mvDiff, exists := affectedMaterializedViews[mvName]; exists {
+		return mvDiff
+	}
+
+	// Parse schema and MV name from mvName (format: schema.mv_name)
+	schemaName, mvNameOnly := parseIdentifier(mvName)
+
+	// Create a new materialized view diff for standalone index changes
+	// We set Action to ALTER since we're modifying an existing MV by adding/removing indexes
+	newMVDiff := &schema.MaterializedViewDiff{
+		Action:               schema.MetadataDiffActionAlter,
+		SchemaName:           schemaName,
+		MaterializedViewName: mvNameOnly,
+		OldMaterializedView:  nil,
+		NewMaterializedView:  nil,
+		OldASTNode:           nil,
+		NewASTNode:           nil,
+		IndexChanges:         []*schema.IndexDiff{},
+	}
+
+	diff.MaterializedViewChanges = append(diff.MaterializedViewChanges, newMVDiff)
+	affectedMaterializedViews[mvName] = newMVDiff
+	return newMVDiff
+}
+
+// isIndexOnMaterializedView checks if the given object name refers to a materialized view
+// rather than a table, by checking if it exists in the materialized view chunks
+func isIndexOnMaterializedView(objectName string, currentChunks, previousChunks *schema.SDLChunks) bool {
+	// Check if the object exists as a materialized view in current or previous chunks
+	if currentChunks != nil && currentChunks.MaterializedViews != nil {
+		if _, exists := currentChunks.MaterializedViews[objectName]; exists {
+			return true
+		}
+	}
+	if previousChunks != nil && previousChunks.MaterializedViews != nil {
+		if _, exists := previousChunks.MaterializedViews[objectName]; exists {
+			return true
+		}
+	}
+	return false
 }
 
 // processViewChanges analyzes view changes between current and previous chunks
@@ -1882,6 +2156,108 @@ func processViewChanges(currentChunks, previousChunks *schema.SDLChunks, current
 				NewView:    nil,
 				OldASTNode: previousChunk.ASTNode,
 				NewASTNode: nil,
+			})
+		}
+	}
+}
+
+// processMaterializedViewChanges analyzes materialized view changes between current and previous chunks
+// Following the same pattern as processViewChanges
+// Note: Materialized views use DROP + CREATE pattern (no ALTER support in PostgreSQL)
+func processMaterializedViewChanges(currentChunks, previousChunks *schema.SDLChunks, currentDBSDLChunks *currentDatabaseSDLChunks, diff *schema.MetadataDiff) {
+	// Process current materialized views to find created and modified materialized views
+	for _, currentChunk := range currentChunks.MaterializedViews {
+		if previousChunk, exists := previousChunks.MaterializedViews[currentChunk.Identifier]; exists {
+			// Materialized view exists in both - check if modified by comparing text first (excluding comments)
+			currentText := currentChunk.GetTextWithoutComments()
+			previousText := previousChunk.GetTextWithoutComments()
+			if currentText != previousText {
+				// Apply usability check: skip diff if current chunk matches database metadata SDL
+				if currentDBSDLChunks.shouldSkipChunkDiffForUsability(currentText, currentChunk.Identifier) {
+					continue
+				}
+				// Materialized view was modified - use drop and recreate pattern (PostgreSQL doesn't support ALTER MATERIALIZED VIEW definition)
+				schemaName, mvName := parseIdentifier(currentChunk.Identifier)
+				diff.MaterializedViewChanges = append(diff.MaterializedViewChanges, &schema.MaterializedViewDiff{
+					Action:               schema.MetadataDiffActionDrop,
+					SchemaName:           schemaName,
+					MaterializedViewName: mvName,
+					OldMaterializedView:  nil, // Will be populated when SDL drift detection is implemented
+					NewMaterializedView:  nil,
+					OldASTNode:           previousChunk.ASTNode,
+					NewASTNode:           nil,
+				})
+				diff.MaterializedViewChanges = append(diff.MaterializedViewChanges, &schema.MaterializedViewDiff{
+					Action:               schema.MetadataDiffActionCreate,
+					SchemaName:           schemaName,
+					MaterializedViewName: mvName,
+					OldMaterializedView:  nil, // Will be populated when SDL drift detection is implemented
+					NewMaterializedView:  nil, // Will be populated when SDL drift detection is implemented
+					OldASTNode:           nil,
+					NewASTNode:           currentChunk.ASTNode,
+				})
+				// Add COMMENT ON MATERIALIZED VIEW diffs if they exist
+				if len(currentChunk.CommentStatements) > 0 {
+					for _, commentNode := range currentChunk.CommentStatements {
+						commentText := extractCommentTextFromNode(commentNode)
+						diff.CommentChanges = append(diff.CommentChanges, &schema.CommentDiff{
+							Action:     schema.MetadataDiffActionCreate,
+							ObjectType: schema.CommentObjectTypeMaterializedView,
+							SchemaName: schemaName,
+							ObjectName: mvName,
+							OldComment: "",
+							NewComment: commentText,
+							OldASTNode: nil,
+							NewASTNode: commentNode,
+						})
+					}
+				}
+			}
+			// If text is identical, skip - no changes detected
+		} else {
+			// New materialized view
+			schemaName, mvName := parseIdentifier(currentChunk.Identifier)
+			diff.MaterializedViewChanges = append(diff.MaterializedViewChanges, &schema.MaterializedViewDiff{
+				Action:               schema.MetadataDiffActionCreate,
+				SchemaName:           schemaName,
+				MaterializedViewName: mvName,
+				OldMaterializedView:  nil,
+				NewMaterializedView:  nil, // Will be populated when SDL drift detection is implemented
+				OldASTNode:           nil,
+				NewASTNode:           currentChunk.ASTNode,
+			})
+			// Add COMMENT ON MATERIALIZED VIEW diffs if they exist
+			if len(currentChunk.CommentStatements) > 0 {
+				for _, commentNode := range currentChunk.CommentStatements {
+					commentText := extractCommentTextFromNode(commentNode)
+					diff.CommentChanges = append(diff.CommentChanges, &schema.CommentDiff{
+						Action:     schema.MetadataDiffActionCreate,
+						ObjectType: schema.CommentObjectTypeMaterializedView,
+						SchemaName: schemaName,
+						ObjectName: mvName,
+						OldComment: "",
+						NewComment: commentText,
+						OldASTNode: nil,
+						NewASTNode: commentNode,
+					})
+				}
+			}
+		}
+	}
+
+	// Process previous materialized views to find dropped ones
+	for identifier, previousChunk := range previousChunks.MaterializedViews {
+		if _, exists := currentChunks.MaterializedViews[identifier]; !exists {
+			// Materialized view was dropped
+			schemaName, mvName := parseIdentifier(identifier)
+			diff.MaterializedViewChanges = append(diff.MaterializedViewChanges, &schema.MaterializedViewDiff{
+				Action:               schema.MetadataDiffActionDrop,
+				SchemaName:           schemaName,
+				MaterializedViewName: mvName,
+				OldMaterializedView:  nil, // Will be populated when SDL drift detection is implemented
+				NewMaterializedView:  nil,
+				OldASTNode:           previousChunk.ASTNode,
+				NewASTNode:           nil,
 			})
 		}
 	}
@@ -2346,6 +2722,18 @@ func applyMinimalChangesToChunks(previousChunks *schema.SDLChunks, currentSchema
 	err = applyViewChangesToChunks(previousChunks, currentSchema, previousSchema)
 	if err != nil {
 		return errors.Wrap(err, "failed to apply view changes")
+	}
+
+	// Process materialized view changes: apply minimal changes to materialized view chunks
+	err = applyMaterializedViewChangesToChunks(previousChunks, currentSchema, previousSchema)
+	if err != nil {
+		return errors.Wrap(err, "failed to apply materialized view changes")
+	}
+
+	// Process enum type changes: apply minimal changes to enum type chunks
+	err = applyEnumTypeChangesToChunks(previousChunks, currentSchema, previousSchema)
+	if err != nil {
+		return errors.Wrap(err, "failed to apply enum type changes")
 	}
 
 	// Process column comment changes: sync column comments based on metadata
@@ -2977,6 +3365,14 @@ func buildCurrentDatabaseSDLChunks(currentSchema *model.DatabaseSchema) (*curren
 			sdlChunks.comments[identifier] = []string{commentText}
 		}
 	}
+	for identifier, chunk := range currentSDLChunks.MaterializedViews {
+		sdlChunks.chunks[identifier] = strings.TrimSpace(chunk.GetTextWithoutComments())
+		// Store comment text for usability check
+		commentText := extractCommentTextFromChunk(chunk)
+		if commentText != "" {
+			sdlChunks.comments[identifier] = []string{commentText}
+		}
+	}
 	for identifier, chunk := range currentSDLChunks.Functions {
 		sdlChunks.chunks[identifier] = strings.TrimSpace(chunk.GetTextWithoutComments())
 		// Store comment text for usability check
@@ -2994,6 +3390,14 @@ func buildCurrentDatabaseSDLChunks(currentSchema *model.DatabaseSchema) (*curren
 		}
 	}
 	for identifier, chunk := range currentSDLChunks.Indexes {
+		sdlChunks.chunks[identifier] = strings.TrimSpace(chunk.GetTextWithoutComments())
+		// Store comment text for usability check
+		commentText := extractCommentTextFromChunk(chunk)
+		if commentText != "" {
+			sdlChunks.comments[identifier] = []string{commentText}
+		}
+	}
+	for identifier, chunk := range currentSDLChunks.EnumTypes {
 		sdlChunks.chunks[identifier] = strings.TrimSpace(chunk.GetTextWithoutComments())
 		// Store comment text for usability check
 		commentText := extractCommentTextFromChunk(chunk)
@@ -3662,7 +4066,8 @@ func generateUniqueKeyConstraintSDL(constraint *storepb.IndexMetadata) string {
 type extendedIndexMetadata struct {
 	*storepb.IndexMetadata
 	SchemaName string
-	TableName  string
+	TableName  string // Table name or MaterializedView name
+	TargetType string // "table" or "materialized_view"
 }
 
 // applyStandaloneIndexChangesToChunks applies minimal changes to standalone CREATE INDEX chunks
@@ -3685,6 +4090,7 @@ func applyStandaloneIndexChangesToChunks(previousChunks *schema.SDLChunks, curre
 
 	// Collect all standalone indexes from current schema (only non-constraint indexes)
 	for _, schema := range currentMetadata.Schemas {
+		// Collect indexes from tables
 		for _, table := range schema.Tables {
 			for _, index := range table.Indexes {
 				// Only include standalone indexes (not constraints like PRIMARY KEY, UNIQUE CONSTRAINT)
@@ -3695,6 +4101,25 @@ func applyStandaloneIndexChangesToChunks(previousChunks *schema.SDLChunks, curre
 						IndexMetadata: index,
 						SchemaName:    schema.Name,
 						TableName:     table.Name,
+						TargetType:    "table",
+					}
+					currentIndexes[indexKey] = extendedIndex
+				}
+			}
+		}
+
+		// Collect indexes from materialized views
+		for _, mv := range schema.MaterializedViews {
+			for _, index := range mv.Indexes {
+				// Only include standalone indexes (not constraints)
+				if !index.IsConstraint && !index.Primary {
+					indexKey := formatIndexKey(schema.Name, index.Name)
+					// Store extended index metadata with materialized view/schema context
+					extendedIndex := &extendedIndexMetadata{
+						IndexMetadata: index,
+						SchemaName:    schema.Name,
+						TableName:     mv.Name,
+						TargetType:    "materialized_view",
 					}
 					currentIndexes[indexKey] = extendedIndex
 				}
@@ -3704,6 +4129,7 @@ func applyStandaloneIndexChangesToChunks(previousChunks *schema.SDLChunks, curre
 
 	// Collect all standalone indexes from previous schema
 	for _, schema := range previousMetadata.Schemas {
+		// Collect indexes from tables
 		for _, table := range schema.Tables {
 			for _, index := range table.Indexes {
 				// Only include standalone indexes (not constraints)
@@ -3713,6 +4139,24 @@ func applyStandaloneIndexChangesToChunks(previousChunks *schema.SDLChunks, curre
 						IndexMetadata: index,
 						SchemaName:    schema.Name,
 						TableName:     table.Name,
+						TargetType:    "table",
+					}
+					previousIndexes[indexKey] = extendedIndex
+				}
+			}
+		}
+
+		// Collect indexes from materialized views
+		for _, mv := range schema.MaterializedViews {
+			for _, index := range mv.Indexes {
+				// Only include standalone indexes (not constraints)
+				if !index.IsConstraint && !index.Primary {
+					indexKey := formatIndexKey(schema.Name, index.Name)
+					extendedIndex := &extendedIndexMetadata{
+						IndexMetadata: index,
+						SchemaName:    schema.Name,
+						TableName:     mv.Name,
+						TargetType:    "materialized_view",
 					}
 					previousIndexes[indexKey] = extendedIndex
 				}
@@ -4828,8 +5272,10 @@ func processCommentChanges(currentChunks, previousChunks *schema.SDLChunks, curr
 	// Process object-level comments
 	processObjectComments(currentChunks.Tables, previousChunks.Tables, schema.CommentObjectTypeTable, createdObjects, droppedObjects, currentDBSDLChunks, diff)
 	processObjectComments(currentChunks.Views, previousChunks.Views, schema.CommentObjectTypeView, createdObjects, droppedObjects, currentDBSDLChunks, diff)
+	processObjectComments(currentChunks.MaterializedViews, previousChunks.MaterializedViews, schema.CommentObjectTypeMaterializedView, createdObjects, droppedObjects, currentDBSDLChunks, diff)
 	processObjectComments(currentChunks.Functions, previousChunks.Functions, schema.CommentObjectTypeFunction, createdObjects, droppedObjects, currentDBSDLChunks, diff)
 	processObjectComments(currentChunks.Sequences, previousChunks.Sequences, schema.CommentObjectTypeSequence, createdObjects, droppedObjects, currentDBSDLChunks, diff)
+	processObjectComments(currentChunks.EnumTypes, previousChunks.EnumTypes, schema.CommentObjectTypeType, createdObjects, droppedObjects, currentDBSDLChunks, diff)
 	processObjectComments(currentChunks.Indexes, previousChunks.Indexes, schema.CommentObjectTypeIndex, createdObjects, droppedObjects, currentDBSDLChunks, diff)
 	processObjectComments(currentChunks.Schemas, previousChunks.Schemas, schema.CommentObjectTypeSchema, createdObjects, droppedObjects, currentDBSDLChunks, diff)
 
@@ -4855,6 +5301,13 @@ func buildCreatedObjectsSet(diff *schema.MetadataDiff) map[string]bool {
 		}
 	}
 
+	for _, mvDiff := range diff.MaterializedViewChanges {
+		if mvDiff.Action == schema.MetadataDiffActionCreate {
+			identifier := mvDiff.SchemaName + "." + mvDiff.MaterializedViewName
+			created[identifier] = true
+		}
+	}
+
 	for _, funcDiff := range diff.FunctionChanges {
 		if funcDiff.Action == schema.MetadataDiffActionCreate {
 			identifier := funcDiff.SchemaName + "." + funcDiff.FunctionName
@@ -4865,6 +5318,13 @@ func buildCreatedObjectsSet(diff *schema.MetadataDiff) map[string]bool {
 	for _, seqDiff := range diff.SequenceChanges {
 		if seqDiff.Action == schema.MetadataDiffActionCreate {
 			identifier := seqDiff.SchemaName + "." + seqDiff.SequenceName
+			created[identifier] = true
+		}
+	}
+
+	for _, enumDiff := range diff.EnumTypeChanges {
+		if enumDiff.Action == schema.MetadataDiffActionCreate {
+			identifier := enumDiff.SchemaName + "." + enumDiff.EnumTypeName
 			created[identifier] = true
 		}
 	}
@@ -4890,6 +5350,13 @@ func buildDroppedObjectsSet(diff *schema.MetadataDiff) map[string]bool {
 		}
 	}
 
+	for _, mvDiff := range diff.MaterializedViewChanges {
+		if mvDiff.Action == schema.MetadataDiffActionDrop {
+			identifier := mvDiff.SchemaName + "." + mvDiff.MaterializedViewName
+			dropped[identifier] = true
+		}
+	}
+
 	for _, funcDiff := range diff.FunctionChanges {
 		if funcDiff.Action == schema.MetadataDiffActionDrop {
 			identifier := funcDiff.SchemaName + "." + funcDiff.FunctionName
@@ -4900,6 +5367,13 @@ func buildDroppedObjectsSet(diff *schema.MetadataDiff) map[string]bool {
 	for _, seqDiff := range diff.SequenceChanges {
 		if seqDiff.Action == schema.MetadataDiffActionDrop {
 			identifier := seqDiff.SchemaName + "." + seqDiff.SequenceName
+			dropped[identifier] = true
+		}
+	}
+
+	for _, enumDiff := range diff.EnumTypeChanges {
+		if enumDiff.Action == schema.MetadataDiffActionDrop {
+			identifier := enumDiff.SchemaName + "." + enumDiff.EnumTypeName
 			dropped[identifier] = true
 		}
 	}
@@ -5332,6 +5806,497 @@ func (e *viewExtractor) EnterViewstmt(ctx *parser.ViewstmtContext) {
 	}
 }
 
+// applyMaterializedViewChangesToChunks applies minimal changes to materialized view chunks based on schema metadata
+func applyMaterializedViewChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseSchema) error {
+	if currentSchema == nil || previousSchema == nil || previousChunks == nil {
+		return nil
+	}
+
+	// Get materialized view differences by comparing schema metadata
+	currentMetadata := currentSchema.GetMetadata()
+	previousMetadata := previousSchema.GetMetadata()
+	if currentMetadata == nil || previousMetadata == nil {
+		return nil
+	}
+
+	// Build materialized view maps for current and previous schemas
+	currentMaterializedViews := make(map[string]*storepb.MaterializedViewMetadata)
+	previousMaterializedViews := make(map[string]*storepb.MaterializedViewMetadata)
+
+	// Collect all materialized views from current schema
+	for _, schema := range currentMetadata.Schemas {
+		for _, mv := range schema.MaterializedViews {
+			mvKey := formatViewKey(schema.Name, mv.Name)
+			currentMaterializedViews[mvKey] = mv
+		}
+	}
+
+	// Collect all materialized views from previous schema
+	for _, schema := range previousMetadata.Schemas {
+		for _, mv := range schema.MaterializedViews {
+			mvKey := formatViewKey(schema.Name, mv.Name)
+			previousMaterializedViews[mvKey] = mv
+		}
+	}
+
+	// Process materialized view additions: create new materialized view chunks
+	for mvKey, currentMV := range currentMaterializedViews {
+		if _, exists := previousMaterializedViews[mvKey]; !exists {
+			// New materialized view - create a chunk for it
+			err := createMaterializedViewChunk(previousChunks, currentMV, mvKey)
+			if err != nil {
+				return errors.Wrapf(err, "failed to create materialized view chunk for %s", mvKey)
+			}
+		}
+	}
+
+	// Process materialized view modifications: update existing chunks
+	for mvKey, currentMV := range currentMaterializedViews {
+		if previousMV, exists := previousMaterializedViews[mvKey]; exists {
+			// Materialized view exists in both metadata
+			// Only update if chunk exists in SDL (user explicitly defined it)
+			if _, chunkExists := previousChunks.MaterializedViews[mvKey]; chunkExists {
+				// Chunk exists - update if needed
+				err := updateMaterializedViewChunkIfNeeded(previousChunks, currentMV, previousMV, mvKey)
+				if err != nil {
+					return errors.Wrapf(err, "failed to update materialized view chunk for %s", mvKey)
+				}
+			}
+			// If chunk doesn't exist, skip - user didn't define this materialized view in SDL
+		}
+	}
+
+	// Process materialized view deletions: remove dropped materialized view chunks
+	for mvKey := range previousMaterializedViews {
+		if _, exists := currentMaterializedViews[mvKey]; !exists {
+			// Materialized view was dropped - remove it from chunks
+			deleteMaterializedViewChunk(previousChunks, mvKey)
+		}
+	}
+
+	return nil
+}
+
+// createMaterializedViewChunk creates a new CREATE MATERIALIZED VIEW chunk and adds it to the chunks
+func createMaterializedViewChunk(chunks *schema.SDLChunks, mv *storepb.MaterializedViewMetadata, mvKey string) error {
+	if mv == nil || chunks == nil {
+		return nil
+	}
+
+	// Generate SDL text for the materialized view
+	schemaName, _ := parseIdentifier(mvKey)
+	mvSDL := generateCreateMaterializedViewSDL(schemaName, mv)
+	if mvSDL == "" {
+		return errors.New("failed to generate SDL for materialized view")
+	}
+
+	// Parse the SDL to get AST node
+	parseResult, err := pgparser.ParsePostgreSQL(mvSDL)
+	if err != nil {
+		return errors.Wrapf(err, "failed to parse generated materialized view SDL: %s", mvSDL)
+	}
+
+	// Extract the CREATE MATERIALIZED VIEW AST node
+	var mvASTNode *parser.CreatematviewstmtContext
+	antlr.ParseTreeWalkerDefault.Walk(&materializedViewExtractor{
+		result: &mvASTNode,
+	}, parseResult.Tree)
+
+	if mvASTNode == nil {
+		return errors.New("failed to extract CREATE MATERIALIZED VIEW AST node")
+	}
+
+	// Create and add the chunk
+	chunk := &schema.SDLChunk{
+		Identifier: mvKey,
+		ASTNode:    mvASTNode,
+	}
+
+	// Add comment if the materialized view has one
+	if mv.Comment != "" {
+		commentSQL := generateCommentOnMaterializedViewSQL(schemaName, mv.Name, mv.Comment)
+		commentParseResult, err := pgparser.ParsePostgreSQL(commentSQL)
+		if err == nil && commentParseResult.Tree != nil {
+			// Extract COMMENT ON MATERIALIZED VIEW AST node
+			var commentASTNode *parser.CommentstmtContext
+			antlr.ParseTreeWalkerDefault.Walk(&commentExtractor{
+				result: &commentASTNode,
+			}, commentParseResult.Tree)
+
+			if commentASTNode != nil {
+				chunk.CommentStatements = []antlr.ParserRuleContext{commentASTNode}
+			}
+		}
+	}
+
+	if chunks.MaterializedViews == nil {
+		chunks.MaterializedViews = make(map[string]*schema.SDLChunk)
+	}
+	chunks.MaterializedViews[mvKey] = chunk
+
+	return nil
+}
+
+// updateMaterializedViewChunkIfNeeded updates an existing materialized view chunk if the definition has changed
+func updateMaterializedViewChunkIfNeeded(chunks *schema.SDLChunks, currentMV, previousMV *storepb.MaterializedViewMetadata, mvKey string) error {
+	if currentMV == nil || previousMV == nil || chunks == nil {
+		return nil
+	}
+
+	// Get the existing chunk
+	chunk, exists := chunks.MaterializedViews[mvKey]
+	if !exists {
+		return errors.Errorf("materialized view chunk not found for key %s", mvKey)
+	}
+
+	// Check if the materialized view definition has changed
+	if currentMV.Definition != previousMV.Definition {
+		// Materialized view definition changed - regenerate the chunk
+		schemaName, _ := parseIdentifier(mvKey)
+		mvSDL := generateCreateMaterializedViewSDL(schemaName, currentMV)
+		if mvSDL == "" {
+			return errors.New("failed to generate SDL for materialized view")
+		}
+
+		// Parse the new SDL to get a fresh AST node
+		parseResult, err := pgparser.ParsePostgreSQL(mvSDL)
+		if err != nil {
+			return errors.Wrapf(err, "failed to parse generated materialized view SDL: %s", mvSDL)
+		}
+
+		// Extract the CREATE MATERIALIZED VIEW AST node
+		var mvASTNode *parser.CreatematviewstmtContext
+		antlr.ParseTreeWalkerDefault.Walk(&materializedViewExtractor{
+			result: &mvASTNode,
+		}, parseResult.Tree)
+
+		if mvASTNode == nil {
+			return errors.New("failed to extract CREATE MATERIALIZED VIEW AST node")
+		}
+
+		// Update the chunk's AST node
+		chunk.ASTNode = mvASTNode
+	}
+
+	// Handle comment changes independently of definition changes
+	if currentMV.Comment != previousMV.Comment {
+		schemaName, _ := parseIdentifier(mvKey)
+		if currentMV.Comment != "" {
+			// New or updated comment
+			commentSQL := generateCommentOnMaterializedViewSQL(schemaName, currentMV.Name, currentMV.Comment)
+			commentParseResult, err := pgparser.ParsePostgreSQL(commentSQL)
+			if err == nil && commentParseResult.Tree != nil {
+				// Extract COMMENT ON MATERIALIZED VIEW AST node
+				var commentASTNode *parser.CommentstmtContext
+				antlr.ParseTreeWalkerDefault.Walk(&commentExtractor{
+					result: &commentASTNode,
+				}, commentParseResult.Tree)
+
+				if commentASTNode != nil {
+					chunk.CommentStatements = []antlr.ParserRuleContext{commentASTNode}
+				}
+			}
+		} else {
+			// Comment was removed
+			chunk.CommentStatements = nil
+		}
+	}
+
+	return nil
+}
+
+// deleteMaterializedViewChunk removes a materialized view chunk from the chunks
+func deleteMaterializedViewChunk(chunks *schema.SDLChunks, mvKey string) {
+	if chunks != nil && chunks.MaterializedViews != nil {
+		delete(chunks.MaterializedViews, mvKey)
+	}
+}
+
+// generateCreateMaterializedViewSDL generates the SDL text for a CREATE MATERIALIZED VIEW statement
+func generateCreateMaterializedViewSDL(schemaName string, mv *storepb.MaterializedViewMetadata) string {
+	if mv == nil {
+		return ""
+	}
+
+	var buf strings.Builder
+	if err := writeMaterializedViewSDL(&buf, schemaName, mv); err != nil {
+		return ""
+	}
+
+	return buf.String()
+}
+
+// generateCommentOnMaterializedViewSQL generates a COMMENT ON MATERIALIZED VIEW statement
+func generateCommentOnMaterializedViewSQL(schemaName, mvName, comment string) string {
+	if schemaName == "" {
+		schemaName = "public"
+	}
+	// Escape single quotes in comment
+	escapedComment := strings.ReplaceAll(comment, "'", "''")
+	return fmt.Sprintf("COMMENT ON MATERIALIZED VIEW \"%s\".\"%s\" IS '%s';", schemaName, mvName, escapedComment)
+}
+
+// applyEnumTypeChangesToChunks applies minimal changes to enum type chunks based on schema metadata
+func applyEnumTypeChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseSchema) error {
+	if currentSchema == nil || previousSchema == nil || previousChunks == nil {
+		return nil
+	}
+
+	// Get enum type differences by comparing schema metadata
+	currentMetadata := currentSchema.GetMetadata()
+	previousMetadata := previousSchema.GetMetadata()
+	if currentMetadata == nil || previousMetadata == nil {
+		return nil
+	}
+
+	// Build enum type maps for current and previous schemas
+	currentEnumTypes := make(map[string]*storepb.EnumTypeMetadata)
+	previousEnumTypes := make(map[string]*storepb.EnumTypeMetadata)
+
+	// Collect all enum types from current schema
+	for _, schema := range currentMetadata.Schemas {
+		for _, enumType := range schema.EnumTypes {
+			enumKey := schema.Name + "." + enumType.Name
+			currentEnumTypes[enumKey] = enumType
+		}
+	}
+
+	// Collect all enum types from previous schema
+	for _, schema := range previousMetadata.Schemas {
+		for _, enumType := range schema.EnumTypes {
+			enumKey := schema.Name + "." + enumType.Name
+			previousEnumTypes[enumKey] = enumType
+		}
+	}
+
+	// Process enum type additions: create new enum type chunks
+	for enumKey, currentEnum := range currentEnumTypes {
+		if _, exists := previousEnumTypes[enumKey]; !exists {
+			// New enum type - create a chunk for it
+			err := createEnumTypeChunk(previousChunks, currentEnum, enumKey)
+			if err != nil {
+				return errors.Wrapf(err, "failed to create enum type chunk for %s", enumKey)
+			}
+		}
+	}
+
+	// Process enum type modifications: update existing chunks
+	for enumKey, currentEnum := range currentEnumTypes {
+		if previousEnum, exists := previousEnumTypes[enumKey]; exists {
+			// Enum type exists in both metadata
+			// Only update if chunk exists in SDL (user explicitly defined it)
+			if _, chunkExists := previousChunks.EnumTypes[enumKey]; chunkExists {
+				// Chunk exists - update if needed
+				err := updateEnumTypeChunkIfNeeded(previousChunks, currentEnum, previousEnum, enumKey)
+				if err != nil {
+					return errors.Wrapf(err, "failed to update enum type chunk for %s", enumKey)
+				}
+			}
+			// If chunk doesn't exist, skip - user didn't define this enum type in SDL
+		}
+	}
+
+	// Process enum type deletions: remove dropped enum type chunks
+	for enumKey := range previousEnumTypes {
+		if _, exists := currentEnumTypes[enumKey]; !exists {
+			// Enum type was dropped - remove it from chunks
+			deleteEnumTypeChunk(previousChunks, enumKey)
+		}
+	}
+
+	return nil
+}
+
+// createEnumTypeChunk creates a new CREATE TYPE AS ENUM chunk and adds it to the chunks
+func createEnumTypeChunk(chunks *schema.SDLChunks, enumType *storepb.EnumTypeMetadata, enumKey string) error {
+	if enumType == nil || chunks == nil {
+		return nil
+	}
+
+	// Generate SDL text for the enum type
+	schemaName, _ := parseIdentifier(enumKey)
+	enumSDL := generateCreateEnumTypeSDL(schemaName, enumType)
+	if enumSDL == "" {
+		return errors.New("failed to generate SDL for enum type")
+	}
+
+	// Parse the SDL to get AST node
+	parseResult, err := pgparser.ParsePostgreSQL(enumSDL)
+	if err != nil {
+		return errors.Wrapf(err, "failed to parse generated enum type SDL: %s", enumSDL)
+	}
+
+	// Extract the CREATE TYPE AS ENUM AST node
+	var enumASTNode *parser.DefinestmtContext
+	antlr.ParseTreeWalkerDefault.Walk(&enumTypeExtractor{
+		result: &enumASTNode,
+	}, parseResult.Tree)
+
+	if enumASTNode == nil {
+		return errors.New("failed to extract CREATE TYPE AS ENUM AST node")
+	}
+
+	// Create and add the chunk
+	chunk := &schema.SDLChunk{
+		Identifier: enumKey,
+		ASTNode:    enumASTNode,
+	}
+
+	// Handle comment if present
+	if len(enumType.Comment) > 0 {
+		commentSQL := generateCommentOnTypeSQL(schemaName, enumType.Name, enumType.Comment)
+		commentParseResult, err := pgparser.ParsePostgreSQL(commentSQL)
+		if err == nil {
+			var commentNode *parser.CommentstmtContext
+			antlr.ParseTreeWalkerDefault.Walk(&commentExtractor{
+				result: &commentNode,
+			}, commentParseResult.Tree)
+			if commentNode != nil {
+				chunk.CommentStatements = []antlr.ParserRuleContext{commentNode}
+			}
+		}
+	}
+
+	chunks.EnumTypes[enumKey] = chunk
+	return nil
+}
+
+// updateEnumTypeChunkIfNeeded updates an enum type chunk if the definition or comment changed
+func updateEnumTypeChunkIfNeeded(chunks *schema.SDLChunks, currentEnum, previousEnum *storepb.EnumTypeMetadata, enumKey string) error {
+	if currentEnum == nil || previousEnum == nil {
+		return nil
+	}
+
+	chunk, exists := chunks.EnumTypes[enumKey]
+	if !exists {
+		return errors.Errorf("enum type chunk not found for key %s", enumKey)
+	}
+
+	// Check if the enum definition has changed (values changed)
+	definitionChanged := !enumTypesEqual(currentEnum, previousEnum)
+
+	if definitionChanged {
+		// Enum definition has changed - regenerate the CREATE TYPE chunk
+		schemaName, _ := parseIdentifier(enumKey)
+		enumSDL := generateCreateEnumTypeSDL(schemaName, currentEnum)
+		if enumSDL == "" {
+			return errors.New("failed to generate SDL for enum type")
+		}
+
+		// Parse the SDL to get AST node
+		parseResult, err := pgparser.ParsePostgreSQL(enumSDL)
+		if err != nil {
+			return errors.Wrapf(err, "failed to parse generated enum type SDL: %s", enumSDL)
+		}
+
+		// Extract the CREATE TYPE AS ENUM AST node
+		var enumASTNode *parser.DefinestmtContext
+		antlr.ParseTreeWalkerDefault.Walk(&enumTypeExtractor{
+			result: &enumASTNode,
+		}, parseResult.Tree)
+
+		if enumASTNode == nil {
+			return errors.New("failed to extract CREATE TYPE AS ENUM AST node")
+		}
+
+		// Update the CREATE TYPE AST node
+		chunk.ASTNode = enumASTNode
+	}
+
+	// Synchronize COMMENT ON TYPE statements only if comment has changed
+	if currentEnum.Comment != previousEnum.Comment {
+		schemaName, _ := parseIdentifier(enumKey)
+		if err := syncObjectCommentStatements(chunk, currentEnum.Comment, "TYPE", schemaName, currentEnum.Name); err != nil {
+			return errors.Wrapf(err, "failed to sync COMMENT statements for enum type %s", enumKey)
+		}
+	}
+
+	return nil
+}
+
+// deleteEnumTypeChunk removes an enum type chunk from the chunks
+func deleteEnumTypeChunk(chunks *schema.SDLChunks, enumKey string) {
+	if chunks != nil && chunks.EnumTypes != nil {
+		delete(chunks.EnumTypes, enumKey)
+	}
+}
+
+// enumTypesEqual compares two enum type definitions excluding comments
+func enumTypesEqual(enum1, enum2 *storepb.EnumTypeMetadata) bool {
+	if enum1 == nil || enum2 == nil {
+		return false
+	}
+
+	// Compare name
+	if enum1.Name != enum2.Name {
+		return false
+	}
+
+	// Compare values
+	if len(enum1.Values) != len(enum2.Values) {
+		return false
+	}
+	for i, v1 := range enum1.Values {
+		if v1 != enum2.Values[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
+// generateCreateEnumTypeSDL generates the SDL text for a CREATE TYPE AS ENUM statement
+func generateCreateEnumTypeSDL(schemaName string, enumType *storepb.EnumTypeMetadata) string {
+	if enumType == nil {
+		return ""
+	}
+
+	var buf strings.Builder
+	if err := writeEnum(&buf, schemaName, enumType); err != nil {
+		return ""
+	}
+	buf.WriteString(";")
+
+	return buf.String()
+}
+
+// generateCommentOnTypeSQL generates a COMMENT ON TYPE statement
+func generateCommentOnTypeSQL(schemaName, typeName, comment string) string {
+	if schemaName == "" {
+		schemaName = "public"
+	}
+	// Escape single quotes in comment
+	escapedComment := strings.ReplaceAll(comment, "'", "''")
+	return fmt.Sprintf("COMMENT ON TYPE \"%s\".\"%s\" IS '%s';", schemaName, typeName, escapedComment)
+}
+
+// enumTypeExtractor is a walker to extract CREATE TYPE AS ENUM AST nodes
+type enumTypeExtractor struct {
+	parser.BasePostgreSQLParserListener
+	result **parser.DefinestmtContext
+}
+
+func (e *enumTypeExtractor) EnterDefinestmt(ctx *parser.DefinestmtContext) {
+	// Only extract CREATE TYPE AS ENUM statements
+	if ctx.CREATE() != nil && ctx.TYPE_P() != nil && ctx.AS() != nil && ctx.ENUM_P() != nil {
+		if e.result != nil && *e.result == nil {
+			*e.result = ctx
+		}
+	}
+}
+
+// materializedViewExtractor is a walker to extract CREATE MATERIALIZED VIEW AST nodes
+type materializedViewExtractor struct {
+	parser.BasePostgreSQLParserListener
+	result **parser.CreatematviewstmtContext
+}
+
+func (e *materializedViewExtractor) EnterCreatematviewstmt(ctx *parser.CreatematviewstmtContext) {
+	if e.result != nil && *e.result == nil {
+		*e.result = ctx
+	}
+}
+
 // applyColumnCommentChanges applies minimal changes to column comments based on schema metadata
 // This function only updates COMMENT ON COLUMN statements without modifying CREATE TABLE statements
 func applyColumnCommentChanges(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseSchema) error {
@@ -5475,6 +6440,109 @@ func syncColumnComment(chunks *schema.SDLChunks, tableKey, columnName, comment s
 	chunks.ColumnComments[tableKey][columnName] = commentNode
 
 	return nil
+}
+
+// processEnumTypeChanges analyzes enum type changes between current and previous chunks
+// Enum types use DROP + CREATE pattern for modifications (PostgreSQL doesn't support ALTER TYPE ... RENAME VALUE)
+func processEnumTypeChanges(currentChunks, previousChunks *schema.SDLChunks, currentDBSDLChunks *currentDatabaseSDLChunks, diff *schema.MetadataDiff) {
+	// Process current enum types to find created and modified ones
+	for _, currentChunk := range currentChunks.EnumTypes {
+		if previousChunk, exists := previousChunks.EnumTypes[currentChunk.Identifier]; exists {
+			// Enum type exists in both - check if modified by comparing text (excluding comments)
+			currentText := currentChunk.GetTextWithoutComments()
+			previousText := previousChunk.GetTextWithoutComments()
+			if currentText != previousText {
+				// Apply usability check
+				if currentDBSDLChunks.shouldSkipChunkDiffForUsability(currentText, currentChunk.Identifier) {
+					continue
+				}
+				// Enum type was modified - use DROP + CREATE pattern
+				schemaName, enumName := parseIdentifier(currentChunk.Identifier)
+				// Add DROP diff
+				diff.EnumTypeChanges = append(diff.EnumTypeChanges, &schema.EnumTypeDiff{
+					Action:       schema.MetadataDiffActionDrop,
+					SchemaName:   schemaName,
+					EnumTypeName: enumName,
+					OldEnumType:  nil,
+					NewEnumType:  nil,
+					OldASTNode:   previousChunk.ASTNode,
+					NewASTNode:   nil,
+				})
+				// Add CREATE diff
+				diff.EnumTypeChanges = append(diff.EnumTypeChanges, &schema.EnumTypeDiff{
+					Action:       schema.MetadataDiffActionCreate,
+					SchemaName:   schemaName,
+					EnumTypeName: enumName,
+					OldEnumType:  nil,
+					NewEnumType:  nil,
+					OldASTNode:   nil,
+					NewASTNode:   currentChunk.ASTNode,
+				})
+				// Add COMMENT ON TYPE diffs if they exist in the new version
+				if len(currentChunk.CommentStatements) > 0 {
+					for _, commentNode := range currentChunk.CommentStatements {
+						commentText := extractCommentTextFromNode(commentNode)
+						diff.CommentChanges = append(diff.CommentChanges, &schema.CommentDiff{
+							Action:     schema.MetadataDiffActionCreate,
+							ObjectType: schema.CommentObjectTypeType,
+							SchemaName: schemaName,
+							ObjectName: enumName,
+							OldComment: "",
+							NewComment: commentText,
+							OldASTNode: nil,
+							NewASTNode: commentNode,
+						})
+					}
+				}
+			}
+			// If text is identical, skip - no changes detected
+		} else {
+			// New enum type
+			schemaName, enumName := parseIdentifier(currentChunk.Identifier)
+			diff.EnumTypeChanges = append(diff.EnumTypeChanges, &schema.EnumTypeDiff{
+				Action:       schema.MetadataDiffActionCreate,
+				SchemaName:   schemaName,
+				EnumTypeName: enumName,
+				OldEnumType:  nil,
+				NewEnumType:  nil,
+				OldASTNode:   nil,
+				NewASTNode:   currentChunk.ASTNode,
+			})
+			// Add COMMENT ON TYPE diffs if they exist
+			if len(currentChunk.CommentStatements) > 0 {
+				for _, commentNode := range currentChunk.CommentStatements {
+					commentText := extractCommentTextFromNode(commentNode)
+					diff.CommentChanges = append(diff.CommentChanges, &schema.CommentDiff{
+						Action:     schema.MetadataDiffActionCreate,
+						ObjectType: schema.CommentObjectTypeType,
+						SchemaName: schemaName,
+						ObjectName: enumName,
+						OldComment: "",
+						NewComment: commentText,
+						OldASTNode: nil,
+						NewASTNode: commentNode,
+					})
+				}
+			}
+		}
+	}
+
+	// Process previous enum types to find dropped ones
+	for identifier, previousChunk := range previousChunks.EnumTypes {
+		if _, exists := currentChunks.EnumTypes[identifier]; !exists {
+			// Enum type was dropped
+			schemaName, enumName := parseIdentifier(identifier)
+			diff.EnumTypeChanges = append(diff.EnumTypeChanges, &schema.EnumTypeDiff{
+				Action:       schema.MetadataDiffActionDrop,
+				SchemaName:   schemaName,
+				EnumTypeName: enumName,
+				OldEnumType:  nil,
+				NewEnumType:  nil,
+				OldASTNode:   previousChunk.ASTNode,
+				NewASTNode:   nil,
+			})
+		}
+	}
 }
 
 // processSchemaChanges processes explicit CREATE SCHEMA statements in the SDL

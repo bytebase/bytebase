@@ -2,15 +2,15 @@
 /// Convenient for local editing.
 import type { NumberFactor, StringFactor, TimestampFactor } from "./factor";
 import {
-  type LogicalOperator,
-  type EqualityOperator,
-  type CompareOperator,
-  type StringOperator,
   type CollectionOperator,
-  isStringOperator,
+  type CompareOperator,
+  type EqualityOperator,
   isCollectionOperator,
   isCompareOperator,
   isEqualityOperator,
+  isStringOperator,
+  type LogicalOperator,
+  type StringOperator,
 } from "./operator";
 
 export enum ExprType {

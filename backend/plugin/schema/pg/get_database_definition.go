@@ -92,6 +92,15 @@ func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.Da
 			if err := writeEnum(&buf, schema.Name, enum); err != nil {
 				return "", err
 			}
+			if _, err := buf.WriteString(";\n\n"); err != nil {
+				return "", err
+			}
+			// Write enum comment if present
+			if len(enum.Comment) > 0 {
+				if err := writeEnumComment(&buf, schema.Name, enum); err != nil {
+					return "", err
+				}
+			}
 		}
 	}
 
@@ -361,6 +370,15 @@ func GetSchemaDefinition(schema *storepb.SchemaMetadata) (string, error) {
 		}
 		if err := writeEnum(&buf, schema.Name, enum); err != nil {
 			return "", err
+		}
+		if _, err := buf.WriteString(";\n\n"); err != nil {
+			return "", err
+		}
+		// Write enum comment if present
+		if len(enum.Comment) > 0 {
+			if err := writeEnumComment(&buf, schema.Name, enum); err != nil {
+				return "", err
+			}
 		}
 	}
 
@@ -786,7 +804,7 @@ func writeEnum(out io.Writer, schema string, enum *storepb.EnumTypeMetadata) err
 		if _, err := io.WriteString(out, `    '`); err != nil {
 			return err
 		}
-		if _, err := io.WriteString(out, value); err != nil {
+		if _, err := io.WriteString(out, escapeSingleQuote(value)); err != nil {
 			return err
 		}
 		if _, err := io.WriteString(out, `'`); err != nil {
@@ -794,14 +812,8 @@ func writeEnum(out io.Writer, schema string, enum *storepb.EnumTypeMetadata) err
 		}
 	}
 
-	if _, err := io.WriteString(out, "\n);\n\n"); err != nil {
+	if _, err := io.WriteString(out, "\n)"); err != nil {
 		return err
-	}
-
-	if len(enum.Comment) > 0 {
-		if err := writeEnumComment(out, schema, enum); err != nil {
-			return err
-		}
 	}
 
 	return nil
@@ -2253,6 +2265,31 @@ func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 		}
 	}
 
+	// Write all enum types before sequences and tables
+	for _, schema := range metadata.Schemas {
+		if schema.SkipDump {
+			continue
+		}
+		for _, enumType := range schema.EnumTypes {
+			if enumType.SkipDump {
+				continue
+			}
+			if err := writeEnum(&buf, schema.Name, enumType); err != nil {
+				return "", err
+			}
+			if _, err := buf.WriteString(";\n\n"); err != nil {
+				return "", err
+			}
+
+			// Write enum type comment if present
+			if len(enumType.Comment) > 0 {
+				if err := writeEnumComment(&buf, schema.Name, enumType); err != nil {
+					return "", err
+				}
+			}
+		}
+	}
+
 	// Write all sequences before tables to ensure they exist before any table references them.
 	// Skip sequences that belong to serial or identity columns as they will be implicitly created.
 	sequenceOwnershipMap := make(map[string][]*storepb.SequenceMetadata)
@@ -2409,7 +2446,51 @@ func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 			}
 		}
 
-		// Write functions and procedures after views
+		// Write materialized views after views
+		for _, materializedView := range schema.MaterializedViews {
+			if materializedView.SkipDump {
+				continue
+			}
+
+			if err := writeMaterializedViewSDL(&buf, schema.Name, materializedView); err != nil {
+				return "", err
+			}
+
+			if _, err := buf.WriteString(";\n\n"); err != nil {
+				return "", err
+			}
+
+			// Write materialized view comment if present
+			if len(materializedView.Comment) > 0 {
+				if err := writeMaterializedViewCommentSDL(&buf, schema.Name, materializedView); err != nil {
+					return "", err
+				}
+			}
+
+			// Write indexes on materialized view
+			for _, index := range materializedView.Indexes {
+				// Skip constraint-based indexes as they are part of table definition
+				if index.Primary || index.IsConstraint {
+					continue
+				}
+
+				if err := writeIndexSDL(&buf, schema.Name, materializedView.Name, index); err != nil {
+					return "", err
+				}
+				if _, err := buf.WriteString(";\n\n"); err != nil {
+					return "", err
+				}
+
+				// Write index comment if present
+				if len(index.Comment) > 0 {
+					if err := writeIndexCommentSDL(&buf, schema.Name, index); err != nil {
+						return "", err
+					}
+				}
+			}
+		}
+
+		// Write functions and procedures after materialized views
 		for _, function := range schema.Functions {
 			if function.SkipDump {
 				continue
@@ -2942,6 +3023,36 @@ func writeViewSDL(out io.Writer, schemaName string, view *storepb.ViewMetadata) 
 	return err
 }
 
+func writeMaterializedViewSDL(out io.Writer, schemaName string, view *storepb.MaterializedViewMetadata) error {
+	if _, err := io.WriteString(out, `CREATE MATERIALIZED VIEW "`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, schemaName); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, view.Name); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `" AS `); err != nil {
+		return err
+	}
+
+	// The materialized view definition should already include the SELECT statement
+	definition := strings.TrimSpace(view.Definition)
+	// Remove trailing semicolon if present
+	definition = strings.TrimSuffix(definition, ";")
+
+	_, err := io.WriteString(out, definition)
+	return err
+}
+
 func writeFunctionSDL(out io.Writer, _ string, function *storepb.FunctionMetadata) error {
 	// The function definition should already include the complete CREATE FUNCTION statement
 	definition := strings.TrimSpace(function.Definition)
@@ -3306,6 +3417,54 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 			})
 		}
 
+		// Generate materialized view files
+		for _, materializedView := range schemaMetadata.MaterializedViews {
+			if materializedView.SkipDump {
+				continue
+			}
+
+			var buf strings.Builder
+			if err := writeMaterializedViewSDL(&buf, schemaName, materializedView); err != nil {
+				return nil, errors.Wrapf(err, "failed to generate materialized view SDL for %s.%s", schemaName, materializedView.Name)
+			}
+			buf.WriteString(";\n")
+
+			// Write materialized view comment if present
+			if len(materializedView.Comment) > 0 {
+				buf.WriteString("\n")
+				if err := writeMaterializedViewCommentSDL(&buf, schemaName, materializedView); err != nil {
+					return nil, errors.Wrapf(err, "failed to generate materialized view comment for %s.%s", schemaName, materializedView.Name)
+				}
+			}
+
+			// Write indexes on materialized view
+			for _, index := range materializedView.Indexes {
+				// Skip constraint-based indexes
+				if index.Primary || index.IsConstraint {
+					continue
+				}
+
+				buf.WriteString("\n")
+				if err := writeIndexSDL(&buf, schemaName, materializedView.Name, index); err != nil {
+					return nil, errors.Wrapf(err, "failed to generate index SDL for %s.%s", schemaName, index.Name)
+				}
+				buf.WriteString(";\n")
+
+				// Write index comment if present
+				if len(index.Comment) > 0 {
+					buf.WriteString("\n")
+					if err := writeIndexCommentSDL(&buf, schemaName, index); err != nil {
+						return nil, errors.Wrapf(err, "failed to generate index comment for %s.%s", schemaName, index.Name)
+					}
+				}
+			}
+
+			files = append(files, schema.File{
+				Name:    fmt.Sprintf("schemas/%s/materialized_views/%s.sql", schemaName, materializedView.Name),
+				Content: buf.String(),
+			})
+		}
+
 		// Generate function files
 		for _, function := range schemaMetadata.Functions {
 			if function.SkipDump {
@@ -3336,6 +3495,46 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 				Name:    fmt.Sprintf("schemas/%s/%s/%s.sql", schemaName, folderName, function.Name),
 				Content: buf.String(),
 			})
+		}
+
+		// Generate a single file for all enum types in this schema
+		if len(schemaMetadata.EnumTypes) > 0 {
+			var buf strings.Builder
+			hasEnumTypes := false
+			for i, enumType := range schemaMetadata.EnumTypes {
+				if enumType.SkipDump {
+					continue
+				}
+
+				if hasEnumTypes {
+					buf.WriteString("\n")
+				}
+				hasEnumTypes = true
+
+				if i > 0 {
+					buf.WriteString("\n")
+				}
+
+				if err := writeEnum(&buf, schemaName, enumType); err != nil {
+					return nil, errors.Wrapf(err, "failed to generate enum type SDL for %s.%s", schemaName, enumType.Name)
+				}
+				buf.WriteString(";\n")
+
+				// Add enum type comment if present
+				if len(enumType.Comment) > 0 {
+					buf.WriteString("\n")
+					if err := writeEnumComment(&buf, schemaName, enumType); err != nil {
+						return nil, errors.Wrapf(err, "failed to generate enum type comment for %s.%s", schemaName, enumType.Name)
+					}
+				}
+			}
+
+			if hasEnumTypes {
+				files = append(files, schema.File{
+					Name:    fmt.Sprintf("schemas/%s/types.sql", schemaName),
+					Content: buf.String(),
+				})
+			}
 		}
 
 		// Generate a single file for all independent sequences (no owner) in this schema
@@ -3518,6 +3717,33 @@ func writeColumnCommentSDL(out io.Writer, schemaName, tableName string, column *
 
 func writeViewCommentSDL(out io.Writer, schemaName string, view *storepb.ViewMetadata) error {
 	if _, err := io.WriteString(out, `COMMENT ON VIEW "`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, schemaName); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, view.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `" IS '`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, escapeSingleQuote(view.Comment)); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `';`); err != nil {
+		return err
+	}
+	_, err := io.WriteString(out, "\n\n")
+	return err
+}
+
+// nolint:unused
+func writeMaterializedViewCommentSDL(out io.Writer, schemaName string, view *storepb.MaterializedViewMetadata) error {
+	if _, err := io.WriteString(out, `COMMENT ON MATERIALIZED VIEW "`); err != nil {
 		return err
 	}
 	if _, err := io.WriteString(out, schemaName); err != nil {

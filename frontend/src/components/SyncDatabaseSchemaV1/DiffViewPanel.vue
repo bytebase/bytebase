@@ -51,7 +51,7 @@
 </template>
 
 <script lang="ts" setup>
-import { NTabs, NTab } from "naive-ui";
+import { NTab, NTabs } from "naive-ui";
 import { ref } from "vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { CopyButton } from "@/components/v2";

@@ -7,7 +7,7 @@ import utc from "dayjs/plugin/utc";
 import DOMPurify from "dompurify";
 import { escape as escapeHtml, escapeRegExp, round } from "lodash-es";
 import semver from "semver";
-import { watchEffect, type Ref } from "vue";
+import { type Ref, watchEffect } from "vue";
 
 dayjs.extend(dayOfYear);
 dayjs.extend(duration);

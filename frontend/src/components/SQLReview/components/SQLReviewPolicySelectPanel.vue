@@ -45,7 +45,7 @@
 
 <script setup lang="ts">
 import { NButton } from "naive-ui";
-import { watchEffect, computed } from "vue";
+import { computed, watchEffect } from "vue";
 import { useRouter } from "vue-router";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { WORKSPACE_ROUTE_SQL_REVIEW_CREATE } from "@/router/dashboard/workspaceRoutes";

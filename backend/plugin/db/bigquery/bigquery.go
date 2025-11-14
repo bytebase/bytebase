@@ -106,8 +106,9 @@ func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOpti
 
 // QueryConn queries a SQL statement in a given connection.
 func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+	// For BigQuery, interpret Explain as dry run (BigQuery doesn't support EXPLAIN)
 	if queryContext.Explain {
-		return nil, errors.New("BigQuery does not support EXPLAIN")
+		return d.dryRunQuery(ctx, statement, queryContext)
 	}
 
 	statements, err := util.SanitizeSQL(statement)
@@ -117,13 +118,12 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 
 	var results []*v1pb.QueryResult
 	for _, statement := range statements {
-		if queryContext.Limit > 0 {
-			statement = getStatementWithResultLimit(statement, queryContext.Limit)
-		}
-
 		startTime := time.Now()
 		queryResult, err := func() (*v1pb.QueryResult, error) {
 			if util.IsSelect(statement) {
+				if queryContext.Limit > 0 {
+					statement = getStatementWithResultLimit(statement, queryContext.Limit)
+				}
 				q := d.client.Query(statement)
 				if queryContext.OperatorEmail != "" {
 					q.Labels = map[string]string{"operator_email": encodeOperatorEmail(queryContext.OperatorEmail)}
@@ -206,6 +206,91 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		if stop {
 			break
 		}
+	}
+
+	return results, nil
+}
+
+// dryRunQuery performs a dry run validation of the query without executing it.
+// Returns validation status and estimated bytes to be processed.
+func (d *Driver) dryRunQuery(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+	statements, err := util.SanitizeSQL(statement)
+	if err != nil {
+		return nil, err
+	}
+
+	var results []*v1pb.QueryResult
+	for _, stmt := range statements {
+		startTime := time.Now()
+
+		q := d.client.Query(stmt)
+		q.DefaultDatasetID = d.databaseName
+		q.DryRun = true
+
+		if queryContext.OperatorEmail != "" {
+			q.Labels = map[string]string{"operator_email": encodeOperatorEmail(queryContext.OperatorEmail)}
+		}
+
+		job, err := q.Run(ctx)
+		if err != nil {
+			results = append(results, &v1pb.QueryResult{
+				Statement: stmt,
+				Error:     err.Error(),
+				Latency:   durationpb.New(time.Since(startTime)),
+			})
+			continue
+		}
+
+		// For dry run, the job completes immediately - use Status() instead of Wait()
+		status := job.LastStatus()
+		if status == nil {
+			results = append(results, &v1pb.QueryResult{
+				Statement: stmt,
+				Error:     "failed to get job status",
+				Latency:   durationpb.New(time.Since(startTime)),
+			})
+			continue
+		}
+
+		if err := status.Err(); err != nil {
+			results = append(results, &v1pb.QueryResult{
+				Statement: stmt,
+				Error:     err.Error(),
+				Latency:   durationpb.New(time.Since(startTime)),
+			})
+			continue
+		}
+
+		// Extract dry run results
+		result := &v1pb.QueryResult{
+			Statement: stmt,
+			Latency:   durationpb.New(time.Since(startTime)),
+		}
+
+		if stats, ok := status.Statistics.Details.(*bigquery.QueryStatistics); ok {
+			bytesProcessed := stats.TotalBytesProcessed
+
+			// Format output similar to bq CLI
+			message := fmt.Sprintf(
+				"Query successfully validated. Assuming the tables are not modified, "+
+					"running this query will process %d bytes (%.2f MB).",
+				bytesProcessed,
+				float64(bytesProcessed)/(1024*1024),
+			)
+
+			result.ColumnNames = []string{"Validation Result"}
+			result.ColumnTypeNames = []string{"STRING"}
+			result.Rows = []*v1pb.QueryRow{
+				{
+					Values: []*v1pb.RowValue{
+						{Kind: &v1pb.RowValue_StringValue{StringValue: message}},
+					},
+				},
+			}
+			result.RowsCount = 1
+		}
+
+		results = append(results, result)
 	}
 
 	return results, nil

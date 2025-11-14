@@ -175,8 +175,8 @@ import type { RuleTemplateV2 } from "@/types";
 import {
   convertRuleMapToPolicyRuleList,
   getRuleMapByEngine,
-  unknown,
   UNKNOWN_ID,
+  unknown,
 } from "@/types";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
 import { hasWorkspacePermissionV2, sqlReviewNameFromSlug } from "@/utils";

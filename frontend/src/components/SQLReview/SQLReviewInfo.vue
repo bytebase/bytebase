@@ -116,7 +116,7 @@
 
 <script lang="ts" setup>
 import { NRadio, NRadioGroup } from "naive-ui";
-import { ref, watch, computed } from "vue";
+import { computed, ref, watch } from "vue";
 import { BBAttention, BBTextField } from "@/bbkit";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { useResourceByName } from "@/components/v2/ResourceOccupiedModal/useResourceByName";
@@ -125,8 +125,8 @@ import { reviewConfigNamePrefix } from "@/store/modules/v1/common";
 import type { SQLReviewPolicyTemplateV2 } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
-  formatEnvironmentName,
   type Environment,
+  formatEnvironmentName,
 } from "@/types/v1/environment";
 import { DatabaseSelect, EnvironmentSelect, ProjectSelect } from "../v2";
 import { SQLReviewTemplateSelector } from "./components";

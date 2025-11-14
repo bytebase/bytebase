@@ -128,24 +128,24 @@
 import { create } from "@bufbuild/protobuf";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import {
-  CheckCircleIcon,
-  FileCodeIcon,
-  DatabaseIcon,
-  ShieldIcon,
-  SearchCodeIcon,
-  CircleQuestionMarkIcon,
-  XCircleIcon,
   AlertCircleIcon,
+  CheckCircleIcon,
+  CircleQuestionMarkIcon,
+  DatabaseIcon,
+  FileCodeIcon,
+  SearchCodeIcon,
+  ShieldIcon,
+  XCircleIcon,
 } from "lucide-vue-next";
 import { NTooltip } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
 import {
-  PlanCheckRun_Status,
-  PlanCheckRun_Type,
   type PlanCheckRun,
   PlanCheckRun_ResultSchema,
+  PlanCheckRun_Status,
+  PlanCheckRun_Type,
 } from "@/types/proto-es/v1/plan_service_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { humanizeTs } from "@/utils";

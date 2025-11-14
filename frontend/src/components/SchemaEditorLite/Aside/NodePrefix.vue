@@ -71,8 +71,8 @@ import {
 import { InstanceV1EngineIcon } from "@/components/v2";
 import { useEnvironmentV1Store } from "@/store";
 import { useSchemaEditorContext } from "../context";
-import NodeCheckbox from "./NodeCheckbox";
 import type { TreeNode, TreeNodeForInstance } from "./common";
+import NodeCheckbox from "./NodeCheckbox";
 
 const props = defineProps<{
   node: TreeNode;

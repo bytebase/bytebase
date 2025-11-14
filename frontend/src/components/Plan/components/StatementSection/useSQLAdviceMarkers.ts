@@ -1,9 +1,9 @@
 import { maxBy } from "lodash-es";
 import { computed, type Ref } from "vue";
 import type { AdviceOption } from "@/components/MonacoEditor";
-import { PlanCheckRun_Type } from "@/types/proto-es/v1/plan_service_pb";
 import type { PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
-import { Advice_Level, type Advice } from "@/types/proto-es/v1/sql_service_pb";
+import { PlanCheckRun_Type } from "@/types/proto-es/v1/plan_service_pb";
+import { type Advice, Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { extractPlanCheckRunUID } from "@/utils";
 
 export const useSQLAdviceMarkers = (

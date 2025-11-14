@@ -20,7 +20,7 @@
 </template>
 
 <script setup lang="ts">
-import { ShieldCheckIcon, ShieldAlertIcon } from "lucide-vue-next";
+import { ShieldAlertIcon, ShieldCheckIcon } from "lucide-vue-next";
 import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";

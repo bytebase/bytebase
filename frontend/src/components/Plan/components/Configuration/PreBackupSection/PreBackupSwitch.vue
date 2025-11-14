@@ -30,9 +30,9 @@ import { NSwitch, NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
-import { targetsForSpec } from "@/components/Plan/logic";
 import type { ErrorItem } from "@/components/misc/ErrorList.vue";
 import ErrorList from "@/components/misc/ErrorList.vue";
+import { targetsForSpec } from "@/components/Plan/logic";
 import { pushNotification } from "@/store";
 import {
   PRE_BACKUP_AVAILABLE_ENGINES,

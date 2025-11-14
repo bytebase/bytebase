@@ -155,23 +155,23 @@ import RequiredStar from "@/components/RequiredStar.vue";
 import { Drawer, DrawerContent, UserSelect } from "@/components/v2";
 import {
   extractGroupEmail,
-  useGroupStore,
-  useCurrentUserV1,
   pushNotification,
+  useCurrentUserV1,
+  useGroupStore,
   useUserStore,
 } from "@/store";
 import {
-  userNamePrefix,
-  groupNamePrefix,
   extractUserId,
+  groupNamePrefix,
+  userNamePrefix,
 } from "@/store/modules/v1/common";
 import type { Group, GroupMember } from "@/types/proto-es/v1/group_service_pb";
 import {
-  GroupSchema,
-  GroupMemberSchema,
   GroupMember_Role,
+  GroupMemberSchema,
+  GroupSchema,
 } from "@/types/proto-es/v1/group_service_pb";
-import { isValidEmail, hasWorkspacePermissionV2 } from "@/utils";
+import { hasWorkspacePermissionV2, isValidEmail } from "@/utils";
 import RemoveGroupButton from "./RemoveGroupButton.vue";
 import GroupMemberRoleSelect from "./UserDataTableByGroup/cells/GroupMemberRoleSelect.vue";
 

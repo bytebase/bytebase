@@ -48,8 +48,8 @@ import AuditLogDataTable from "@/components/AuditLog/AuditLogDataTable.vue";
 import AuditLogSearch from "@/components/AuditLog/AuditLogSearch";
 import { buildSearchAuditLogParams } from "@/components/AuditLog/AuditLogSearch/utils";
 import type {
-  ExportOption,
   DownloadContent,
+  ExportOption,
 } from "@/components/DataExportButton.vue";
 import DataExportButton from "@/components/DataExportButton.vue";
 import { FeatureAttention } from "@/components/FeatureGuard";

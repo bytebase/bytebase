@@ -44,8 +44,8 @@
 </template>
 
 <script setup lang="ts">
-import { FileDiffIcon, EditIcon } from "lucide-vue-next";
-import { NModal, NRadioGroup, NRadio } from "naive-ui";
+import { EditIcon, FileDiffIcon } from "lucide-vue-next";
+import { NModal, NRadio, NRadioGroup } from "naive-ui";
 import { ref, watch } from "vue";
 import { MigrationType } from "@/types/proto-es/v1/common_pb";
 

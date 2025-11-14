@@ -19,15 +19,15 @@
 
 <script setup lang="tsx">
 import { ChevronDownIcon } from "lucide-vue-next";
-import { NDataTable, type DataTableColumn } from "naive-ui";
+import { type DataTableColumn, NDataTable } from "naive-ui";
 import { computed, h, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ComposedDatabase } from "@/types";
 import type {
-  TablePartitionMetadata,
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
+  TablePartitionMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
 import { getHighlightHTMLByRegExp, useAutoHeightDataTable } from "@/utils";
 import { useCurrentTabViewStateContext } from "../../context/viewState";

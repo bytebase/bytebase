@@ -82,7 +82,7 @@
 <script setup lang="tsx">
 import { cloneDeep } from "lodash-es";
 import { NButton, NDivider } from "naive-ui";
-import { watch, ref, computed } from "vue";
+import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   Drawer,
@@ -91,7 +91,7 @@ import {
   ProjectSelect,
 } from "@/components/v2";
 import ResourceOccupiedModal from "@/components/v2/ResourceOccupiedModal/ResourceOccupiedModal.vue";
-import { useSQLReviewStore, pushNotification } from "@/store";
+import { pushNotification, useSQLReviewStore } from "@/store";
 import {
   environmentNamePrefix,
   projectNamePrefix,

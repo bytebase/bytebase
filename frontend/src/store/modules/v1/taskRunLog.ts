@@ -2,11 +2,11 @@ import { create } from "@bufbuild/protobuf";
 import { defineStore } from "pinia";
 import { reactive } from "vue";
 import { rolloutServiceClientConnect } from "@/grpcweb";
+import type { TaskRunLog } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   GetTaskRunLogRequestSchema,
   TaskRunLogSchema,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import type { TaskRunLog } from "@/types/proto-es/v1/rollout_service_pb";
 
 export const useTaskRunLogStore = defineStore("taskRunLog", () => {
   // Map from taskRun name to TaskRunLog

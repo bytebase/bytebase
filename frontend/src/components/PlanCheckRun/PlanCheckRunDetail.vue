@@ -248,23 +248,23 @@ import {
   planNamePrefix,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
-import type { RuleTemplateV2, ComposedDatabase } from "@/types";
+import type { ComposedDatabase, RuleTemplateV2 } from "@/types";
 import {
+  convertPolicyRuleToRuleTemplate,
   GeneralErrorCode,
-  SQLReviewPolicyErrorCode,
   getRuleLocalization,
   ruleTemplateMapV2,
-  convertPolicyRuleToRuleTemplate,
+  SQLReviewPolicyErrorCode,
 } from "@/types";
 import { SQLReviewRuleLevel } from "@/types/proto-es/v1/org_policy_service_pb";
-import { BatchCancelPlanCheckRunsRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import type {
   PlanCheckRun,
   PlanCheckRun_Result,
 } from "@/types/proto-es/v1/plan_service_pb";
 import {
-  PlanCheckRun_Status,
+  BatchCancelPlanCheckRunsRequestSchema,
   PlanCheckRun_ResultSchema,
+  PlanCheckRun_Status,
 } from "@/types/proto-es/v1/plan_service_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { convertPositionLineToMonacoLine } from "@/utils/v1/position";

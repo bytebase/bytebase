@@ -9,32 +9,40 @@ import {
   isConditionGroupExpr,
   resolveCELExpr,
 } from "@/plugins/cel";
-import type { ParsedApprovalRule, UnrecognizedApprovalRule } from "@/types";
-import { DEFAULT_RISK_LEVEL } from "@/types";
-import type { LocalApprovalConfig, LocalApprovalRule } from "@/types";
-import { PresetRiskLevelList, useSupportedSourceList } from "@/types";
-import { getBuiltinFlow, isBuiltinFlowId } from "@/types";
+import type {
+  LocalApprovalConfig,
+  LocalApprovalRule,
+  ParsedApprovalRule,
+  UnrecognizedApprovalRule,
+} from "@/types";
+import {
+  DEFAULT_RISK_LEVEL,
+  getBuiltinFlow,
+  isBuiltinFlowId,
+  PresetRiskLevelList,
+  useSupportedSourceList,
+} from "@/types";
 import type { Expr as CELExpr } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
 import { ExprSchema as CELExprSchema } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
 import type { Expr as _Expr } from "@/types/proto-es/google/type/expr_pb";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import { RiskLevel } from "@/types/proto-es/v1/common_pb";
 import type {
-  ApprovalTemplate as _ProtoEsApprovalTemplate,
   ApprovalFlow as _ProtoEsApprovalFlow,
+  ApprovalTemplate as _ProtoEsApprovalTemplate,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
-  ApprovalTemplateSchema as _ProtoEsApprovalTemplateSchema,
   ApprovalFlowSchema as _ProtoEsApprovalFlowSchema,
+  ApprovalTemplateSchema as _ProtoEsApprovalTemplateSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import { Risk_Source } from "@/types/proto-es/v1/risk_service_pb";
 import type {
-  WorkspaceApprovalSetting,
   WorkspaceApprovalSetting_Rule as ApprovalRule,
+  WorkspaceApprovalSetting,
 } from "@/types/proto-es/v1/setting_service_pb";
 import {
-  WorkspaceApprovalSettingSchema,
   WorkspaceApprovalSetting_RuleSchema as ApprovalRuleSchema,
+  WorkspaceApprovalSettingSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
 import {
   batchConvertCELStringToParsedExpr,

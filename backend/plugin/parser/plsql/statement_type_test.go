@@ -30,9 +30,10 @@ func TestGetStatementType(t *testing.T) {
 	a.NoError(yaml.Unmarshal(byteValue, &tests))
 
 	for _, test := range tests {
-		result, _, err := ParsePLSQL(test.Statement)
+		results, err := ParsePLSQL(test.Statement)
 		a.NoError(err)
-		sqlType, err := GetStatementTypes(result)
+		a.NotEmpty(results)
+		sqlType, err := GetStatementTypes(results)
 		a.NoError(err)
 		a.Equal(test.Want, sqlType)
 	}
