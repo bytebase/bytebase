@@ -50,7 +50,7 @@
       @clickoutside="handleContextMenuClickOutside"
     >
       <SharePopover
-        :worksheet="contextMenuContext.node?.worksheet"
+        :worksheet="worksheetEntity"
         @on-updated="handleContextMenuClickOutside"
       />
     </NPopover>
@@ -85,7 +85,6 @@ import {
 } from "@/store";
 import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import {
-  type Worksheet,
   Worksheet_Visibility,
   WorksheetSchema,
 } from "@/types/proto-es/v1/worksheet_service_pb";
@@ -102,7 +101,8 @@ import {
 } from "@/views/sql-editor/Sheet";
 import { filterNode } from "./common";
 import { type DropdownOptionType, useDropdown } from "./dropdown";
-import { TreeNodePrefix, TreeNodeSuffix } from "./TreeNodeRenders";
+import TreeNodePrefix from "./TreeNodePrefix.vue";
+import TreeNodeSuffix from "./TreeNodeSuffix.vue";
 
 const props = defineProps<{
   view: SheetViewMode;
@@ -135,18 +135,19 @@ const tabStore = useSQLEditorTabStore();
 const {
   context: contextMenuContext,
   options: contextMenuOptions,
+  worksheetEntity,
   handleSharePanelShow,
   handleMenuShow,
   handleClickOutside: handleContextMenuClickOutside,
-} = useDropdown();
+} = useDropdown(props.view);
 
 const expandedKeysArray = computed(() => Array.from(expandedKeys.value));
 
 watch(
   isInitialized,
   async () => {
-    if (!isInitialized.value) {
-      await fetchSheetList(project.value);
+    if (!isInitialized.value && project.value) {
+      await fetchSheetList();
     }
   },
   { immediate: true }
@@ -160,17 +161,15 @@ watch(
 );
 
 const handleWorksheetToggleStar = useDebounceFn(
-  async (worksheet: Worksheet) => {
-    const starred = !worksheet.starred;
+  async ({ worksheet, starred }: { worksheet: string; starred: boolean }) => {
     await worksheetV1Store.upsertWorksheetOrganizer(
       {
-        worksheet: worksheet.name,
+        worksheet: worksheet,
         starred,
-        folders: worksheet.folders,
+        folders: [], // don't care about folders
       },
       ["starred"]
     );
-    worksheet.starred = starred;
   },
   DEBOUNCE_SEARCH_DELAY
 );
@@ -192,7 +191,7 @@ const renderSuffix = ({ option }: { option: TreeOption }) => {
   return (
     <TreeNodeSuffix
       node={node}
-      isWorksheetCreator={isWorksheetCreator}
+      view={props.view}
       onSharePanelShow={handleSharePanelShow}
       onContextMenuShow={handleMenuShow}
       onToggleStar={handleWorksheetToggleStar}
@@ -220,15 +219,23 @@ const handleRenameNode = useDebounceFn(async () => {
     newTitle,
   ].join("/");
   if (newKey === editingNode.value.node.key) {
-    editingNode.value = undefined;
-    return;
+    return cleanup();
   }
 
   if (editingNode.value.node.worksheet) {
-    editingNode.value.node.worksheet.title = newTitle;
-    await worksheetV1Store.patchWorksheet(editingNode.value.node.worksheet, [
-      "title",
-    ]);
+    const worksheet = worksheetV1Store.getWorksheetByName(
+      editingNode.value.node.worksheet.name
+    );
+    if (!worksheet) {
+      return cleanup();
+    }
+    await worksheetV1Store.patchWorksheet(
+      {
+        ...worksheet,
+        title: newTitle,
+      },
+      ["title"]
+    );
 
     // update tab title
     const tab = tabStore.tabList.find(
@@ -323,12 +330,15 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
         return;
       }
       if (node.worksheet) {
-        selectedKeys.value = [node.key];
-        openWorksheetByName(
-          node.worksheet.name,
-          editorContext,
-          e.metaKey || e.ctrlKey
-        );
+        if (node.worksheet.type === "worksheet") {
+          openWorksheetByName(
+            node.worksheet.name,
+            editorContext,
+            e.metaKey || e.ctrlKey
+          );
+        } else {
+          tabStore.setCurrentTabId(node.worksheet.name);
+        }
       } else {
         if (expandedKeys.value.has(node.key)) {
           expandedKeys.value.delete(node.key);
@@ -340,16 +350,14 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
   };
 };
 
-const deleteWorksheets = async (worksheets: Worksheet[]) => {
+const deleteWorksheets = async (worksheets: string[]) => {
   await Promise.all(
     worksheets.map((worksheet) =>
-      worksheetV1Store.deleteWorksheetByName(worksheet.name)
+      worksheetV1Store.deleteWorksheetByName(worksheet)
     )
   );
   for (const worksheet of worksheets) {
-    const tab = tabStore.tabList.find(
-      (tab) => tab.worksheet === worksheet.name
-    );
+    const tab = tabStore.tabList.find((tab) => tab.worksheet === worksheet);
     if (tab) {
       tabStore.removeTab(tab);
       removeViewState(tab.id);
@@ -358,7 +366,7 @@ const deleteWorksheets = async (worksheets: Worksheet[]) => {
 };
 
 const handleDeleteFolder = (node: WorsheetFolderNode) => {
-  const worksheets = revealWorksheets(node, (node) => node.worksheet);
+  const worksheets = revealWorksheets(node, (node) => node.worksheet?.name);
   if (worksheets.length === 0) {
     folderContext.removeFolder(node.key);
   } else {
@@ -385,7 +393,7 @@ const handleDeleteFolder = (node: WorsheetFolderNode) => {
         dialogInstance.loading = true;
         await batchUpdateWorksheetFolders(
           worksheets.map((worksheet) => ({
-            ...worksheet,
+            name: worksheet,
             folders: [],
           }))
         );
@@ -400,7 +408,7 @@ const handleDeleteFolder = (node: WorsheetFolderNode) => {
   }
 };
 
-const handleDeleteSheet = (worksheet: Worksheet) => {
+const handleDeleteSheet = (worksheetName: string) => {
   const cleanup = (dialogInstance: DialogReactive | undefined) => {
     dialogInstance?.destroy();
   };
@@ -414,7 +422,7 @@ const handleDeleteSheet = (worksheet: Worksheet) => {
     closeOnEsc: true,
     async onPositiveClick() {
       dialogInstance.loading = true;
-      await deleteWorksheets([worksheet]);
+      await deleteWorksheets([worksheetName]);
       cleanup(dialogInstance);
     },
     onNegativeClick() {
@@ -429,7 +437,11 @@ const handleDeleteSheet = (worksheet: Worksheet) => {
   });
 };
 
-const handleDuplicateSheet = async (worksheet: Worksheet) => {
+const handleDuplicateSheet = async (worksheetName: string) => {
+  const worksheet = worksheetV1Store.getWorksheetByName(worksheetName);
+  if (!worksheet) {
+    return;
+  }
   const dialogInstance = $dialog.create({
     title: t("sheet.hint-tips.confirm-to-duplicate-sheet"),
     type: "info",
@@ -551,14 +563,14 @@ const handleContextMenuSelect = async (key: DropdownOptionType) => {
       break;
     case "delete":
       if (contextMenuContext.node.worksheet) {
-        handleDeleteSheet(contextMenuContext.node.worksheet);
+        handleDeleteSheet(contextMenuContext.node.worksheet.name);
       } else {
         handleDeleteFolder(contextMenuContext.node);
       }
       break;
     case "duplicate":
       if (contextMenuContext.node.worksheet) {
-        handleDuplicateSheet(contextMenuContext.node.worksheet);
+        handleDuplicateSheet(contextMenuContext.node.worksheet.name);
       }
       break;
     case "add-folder":
@@ -582,10 +594,7 @@ const handleContextMenuSelect = async (key: DropdownOptionType) => {
         create(WorksheetSchema, {
           title: "new worksheet",
           project: project.value,
-          visibility:
-            props.view === "shared"
-              ? Worksheet_Visibility.PROJECT_READ
-              : Worksheet_Visibility.PRIVATE,
+          visibility: Worksheet_Visibility.PRIVATE,
         })
       );
       const folders = contextMenuContext.node.key
@@ -643,7 +652,12 @@ const updateWorksheetFolders = async (
       return node.worksheet;
     }
   });
-  await batchUpdateWorksheetFolders(worksheets);
+  await batchUpdateWorksheetFolders(
+    worksheets.map((worksheet) => ({
+      name: worksheet.name,
+      folders: worksheet.folders,
+    }))
+  );
 };
 
 const replaceExpandedKeys = (oldKey: string, newKey: string) => {

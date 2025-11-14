@@ -21,6 +21,7 @@
           :menu-props="{ class: 'project-select-menu' }"
           :project-name="project"
           :include-all="false"
+          :clearable="false"
           :include-default-project="allowAccessDefaultProject"
           :loading="!projectContextReady"
           @update:project-name="handleSwitchProject"

@@ -9,10 +9,13 @@ import {
 import { type DropdownOption } from "naive-ui";
 import { computed, h, reactive, watch } from "vue";
 import { t } from "@/plugins/i18n";
-import { useCurrentUserV1 } from "@/store";
+import { useCurrentUserV1, useWorkSheetStore } from "@/store";
 import { type Position } from "@/types";
 import { isWorksheetWritableV1 } from "@/utils";
-import { type WorsheetFolderNode } from "@/views/sql-editor/Sheet";
+import type {
+  SheetViewMode,
+  WorsheetFolderNode,
+} from "@/views/sql-editor/Sheet";
 
 export type DropdownOptionType =
   | "share"
@@ -33,8 +36,9 @@ interface DropdownContext {
   node?: WorsheetFolderNode;
 }
 
-export const useDropdown = () => {
+export const useDropdown = (viewMode: SheetViewMode) => {
   const me = useCurrentUserV1();
+  const sheetStore = useWorkSheetStore();
 
   const context = reactive<DropdownContext>({
     position: {
@@ -73,30 +77,38 @@ export const useDropdown = () => {
     }
   );
 
-  const isCreator = computed(() => {
-    return context.node?.worksheet?.creator === `users/${me.value.email}`;
+  const worksheetEntity = computed(() => {
+    if (viewMode === "draft" || !context.node?.worksheet) {
+      return undefined;
+    }
+    return sheetStore.getWorksheetByName(context.node.worksheet.name);
   });
 
   const options = computed((): WorksheetDropdown[] => {
-    if (!context.node) {
+    if (viewMode === "draft" || !context.node) {
       return [];
     }
 
     const items: WorksheetDropdown[] = [];
     if (context.node.worksheet) {
+      if (!worksheetEntity.value) {
+        return [];
+      }
+      const isCreator =
+        worksheetEntity.value.creator === `users/${me.value.email}`;
       items.push({
         icon: () => h(FilesIcon, { class: "w-4 text-gray-600" }),
         key: "duplicate",
-        label: isCreator.value ? t("common.duplicate") : t("common.fork"),
+        label: isCreator ? t("common.duplicate") : t("common.fork"),
       });
-      if (isCreator.value) {
+      if (isCreator) {
         items.push({
           icon: () => h(Share2Icon, { class: "w-4 text-gray-600" }),
           key: "share",
           label: t("common.share"),
         });
       }
-      const canWriteSheet = isWorksheetWritableV1(context.node.worksheet);
+      const canWriteSheet = isWorksheetWritableV1(worksheetEntity.value);
       if (canWriteSheet) {
         items.push(
           {
@@ -112,18 +124,18 @@ export const useDropdown = () => {
         );
       }
     } else {
-      items.push(
-        {
-          icon: () => h(FolderIcon, { class: "w-4 text-gray-600" }),
-          key: "add-folder",
-          label: t("sql-editor.tab.context-menu.actions.add-folder"),
-        },
-        {
+      items.push({
+        icon: () => h(FolderIcon, { class: "w-4 text-gray-600" }),
+        key: "add-folder",
+        label: t("sql-editor.tab.context-menu.actions.add-folder"),
+      });
+      if (viewMode === "my") {
+        items.push({
           icon: () => h(FileCodeIcon, { class: "w-4 text-gray-600" }),
           key: "add-worksheet",
           label: t("sql-editor.tab.context-menu.actions.add-worksheet"),
-        }
-      );
+        });
+      }
       if (context.node.editable) {
         items.push(
           {
@@ -170,6 +182,7 @@ export const useDropdown = () => {
   return {
     context,
     options,
+    worksheetEntity,
     handleMenuShow,
     handleSharePanelShow,
     handleClickOutside,

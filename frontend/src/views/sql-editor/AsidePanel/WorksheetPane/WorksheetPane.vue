@@ -26,9 +26,7 @@
       </NDropdown>
     </div>
     <div class="flex-1 flex flex-col gap-y-2 overflow-y-auto worksheet-scroll">
-      <SheetTree v-if="filter.showMine" view="my" />
-      <SheetTree v-if="filter.showShared" view="shared" />
-      <DraftTree v-if="filter.showDraft" :keyword="filter.keyword" />
+      <SheetTree v-for="view in views" :key="view" :view="view" />
     </div>
   </div>
 </template>
@@ -39,9 +37,10 @@ import { type DropdownOption, NButton, NDropdown } from "naive-ui";
 import { computed, ref } from "vue";
 import { SearchBox } from "@/components/v2";
 import { t } from "@/plugins/i18n";
+import { type SheetViewMode } from "@/views/sql-editor/Sheet";
 import { useSheetContext } from "../../Sheet";
 import FilterMenuItem from "./FilterMenuItem.vue";
-import { DraftTree, SheetTree } from "./SheetList";
+import { SheetTree } from "./SheetList";
 
 const { filter, filterChanged } = useSheetContext();
 const showDropdown = ref<boolean>(false);
@@ -95,6 +94,20 @@ const options = computed((): DropdownOption[] => {
       ),
     },
   ];
+});
+
+const views = computed((): SheetViewMode[] => {
+  const results: SheetViewMode[] = [];
+  if (filter.value.showMine) {
+    results.push("my");
+  }
+  if (filter.value.showShared) {
+    results.push("shared");
+  }
+  if (filter.value.showDraft) {
+    results.push("draft");
+  }
+  return results;
 });
 </script>
 
