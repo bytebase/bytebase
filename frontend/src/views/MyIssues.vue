@@ -141,6 +141,14 @@ watch(
   }
 );
 
+// Helper to check if params match the default preset
+const isDefaultPreset = (params: SearchParams): boolean => {
+  const defaultParams = defaultSearchParams();
+  const paramsQuery = buildSearchTextBySearchParams(params);
+  const defaultQuery = buildSearchTextBySearchParams(defaultParams);
+  return paramsQuery === defaultQuery;
+};
+
 // Initialize params from URL query on mount
 onMounted(() => {
   const queryString = route.query.q as string;
@@ -148,21 +156,8 @@ onMounted(() => {
     const urlParams = buildSearchParamsBySearchText(queryString);
     // Merge URL params with default status scope
     state.params = mergeSearchParams(defaultSearchParams(), urlParams);
-  } else {
-    // No URL query - set URL to reflect default preset
-    isUpdatingFromUrl = true;
-    const defaultQuery = buildSearchTextBySearchParams(state.params);
-    router
-      .replace({
-        query: {
-          ...route.query,
-          q: defaultQuery,
-        },
-      })
-      .finally(() => {
-        isUpdatingFromUrl = false;
-      });
   }
+  // No else - keep URL clean for default preset
 });
 
 // Sync params to URL query when params change
@@ -173,6 +168,26 @@ watch(
     if (isUpdatingFromUrl) {
       return;
     }
+
+    // Don't set URL for default preset
+    if (isDefaultPreset(params)) {
+      // Remove q parameter if it exists
+      if (route.query.q) {
+        isUpdatingFromUrl = true;
+        router
+          .replace({
+            query: {
+              ...route.query,
+              q: undefined,
+            },
+          })
+          .finally(() => {
+            isUpdatingFromUrl = false;
+          });
+      }
+      return;
+    }
+
     const queryString = buildSearchTextBySearchParams(params);
     const currentQuery = route.query.q as string;
 
