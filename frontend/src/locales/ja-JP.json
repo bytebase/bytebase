@@ -247,8 +247,6 @@
     "line": "行",
     "column": "列",
     "apply-to-database": "データベースに適用",
-    "assignee": "担当者",
-    "me": "自分"
   },
   "error-page": {
     "go-back-home": "ホームページに戻る"

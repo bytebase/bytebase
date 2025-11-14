@@ -247,8 +247,6 @@
     "line": "行",
     "column": "列",
     "apply-to-database": "应用到数据库",
-    "assignee": "执行人",
-    "me": "我"
   },
   "error-page": {
     "go-back-home": "回到主页"

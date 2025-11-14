@@ -247,8 +247,6 @@
     "line": "Dòng",
     "column": "Cột",
     "apply-to-database": "Áp dụng cho cơ sở dữ liệu",
-    "assignee": "Người được giao",
-    "me": "Tôi"
   },
   "error-page": {
     "go-back-home": "Về trang chủ"

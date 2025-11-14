@@ -247,8 +247,6 @@
     "line": "Línea",
     "column": "Columna",
     "apply-to-database": "Aplicar a la base de datos",
-    "assignee": "Asignado",
-    "me": "Yo"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
