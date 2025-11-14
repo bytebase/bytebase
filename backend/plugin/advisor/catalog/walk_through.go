@@ -46,8 +46,6 @@ func (d *DatabaseState) WalkThrough(ast any) error {
 	switch d.dbType {
 	case storepb.Engine_TIDB:
 		return d.tidbWalkThrough(ast)
-	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-		return d.mysqlWalkThrough(ast)
 	case storepb.Engine_POSTGRES:
 		if err := d.pgWalkThrough(ast); err != nil {
 			if d.ctx.CheckIntegrity {

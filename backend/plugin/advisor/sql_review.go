@@ -211,6 +211,8 @@ const (
 
 	// SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
 	SchemaRuleSchemaBackwardCompatibility SQLReviewRuleType = "schema.backward-compatibility"
+	// SchemaRuleSchemaIntegrity enforce schema integrity checks for MySQL.
+	SchemaRuleSchemaIntegrity SQLReviewRuleType = "schema.integrity"
 
 	// SchemaRuleDropEmptyDatabase enforce the MySQL and TiDB support check if the database is empty before users drop it.
 	SchemaRuleDropEmptyDatabase SQLReviewRuleType = "database.drop-empty-database"

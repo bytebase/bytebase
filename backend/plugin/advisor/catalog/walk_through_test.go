@@ -40,30 +40,6 @@ func TestTiDBWalkThrough(t *testing.T) {
 	}
 }
 
-func TestMySQLWalkThrough(t *testing.T) {
-	originDatabase := &storepb.DatabaseSchemaMetadata{
-		Name: "test",
-	}
-
-	tests := []string{
-		"mysql_walk_through",
-	}
-
-	for _, test := range tests {
-		runWalkThroughTest(t, test, storepb.Engine_MYSQL, originDatabase)
-	}
-}
-
-func TestMySQLWalkThroughForIncomplete(t *testing.T) {
-	tests := []string{
-		"mysql_walk_through_for_incomplete",
-	}
-
-	for _, test := range tests {
-		runWalkThroughTest(t, test, storepb.Engine_MYSQL, nil)
-	}
-}
-
 func TestPostgreSQLWalkThrough(t *testing.T) {
 	originDatabase := &storepb.DatabaseSchemaMetadata{
 		Name: "postgres",
