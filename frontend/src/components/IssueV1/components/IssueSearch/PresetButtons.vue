@@ -1,21 +1,20 @@
 <template>
-  <div class="flex items-center gap-x-2">
-    <NButtonGroup>
-      <NButton
-        v-for="preset in presets"
-        :key="preset.value"
-        :type="isActive(preset.value) ? 'primary' : 'default'"
-        size="medium"
-        @click="selectPreset(preset.value)"
-      >
+  <div class="shrink-0">
+    <NTabs
+      :value="activePreset"
+      :type="'line'"
+      :size="'small'"
+      @update:value="selectPreset"
+    >
+      <NTab v-for="preset in presets" :key="preset.value" :name="preset.value">
         {{ preset.label }}
-      </NButton>
-    </NButtonGroup>
+      </NTab>
+    </NTabs>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { NButton, NButtonGroup } from "naive-ui";
+import { NTabs, NTab } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useCurrentUserV1 } from "@/store";
@@ -59,6 +58,11 @@ const presets = computed((): Preset[] => [
   },
 ]);
 
+const activePreset = computed((): PresetValue | "" => {
+  const preset = presets.value.find((p) => isActive(p.value));
+  return preset ? preset.value : "";
+});
+
 const isActive = (preset: PresetValue): boolean => {
   const myEmail = me.value.email;
 
@@ -85,7 +89,9 @@ const isActive = (preset: PresetValue): boolean => {
   return false;
 };
 
-const selectPreset = (preset: PresetValue) => {
+const selectPreset = (preset: PresetValue | string) => {
+  if (!["WAITING_APPROVAL", "CREATED", "ALL"].includes(preset)) return;
+
   const myEmail = me.value.email;
   const readonlyScopes = props.params.scopes.filter((s) => s.readonly);
 
