@@ -85,7 +85,6 @@ import {
 } from "@/store";
 import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import {
-  type Worksheet,
   Worksheet_Visibility,
   WorksheetSchema,
 } from "@/types/proto-es/v1/worksheet_service_pb";
@@ -147,8 +146,8 @@ const expandedKeysArray = computed(() => Array.from(expandedKeys.value));
 watch(
   isInitialized,
   async () => {
-    if (!isInitialized.value) {
-      await fetchSheetList(project.value);
+    if (!isInitialized.value && project.value) {
+      await fetchSheetList();
     }
   },
   { immediate: true }
@@ -162,17 +161,15 @@ watch(
 );
 
 const handleWorksheetToggleStar = useDebounceFn(
-  async (worksheet: Worksheet) => {
-    const starred = !worksheet.starred;
+  async ({worksheet, starred}: {worksheet:string; starred: boolean}) => {
     await worksheetV1Store.upsertWorksheetOrganizer(
       {
-        worksheet: worksheet.name,
+        worksheet: worksheet,
         starred,
-        folders: worksheet.folders,
+        folders: [], // don't care about folders
       },
       ["starred"]
     );
-    worksheet.starred = starred;
   },
   DEBOUNCE_SEARCH_DELAY
 );
@@ -596,10 +593,7 @@ const handleContextMenuSelect = async (key: DropdownOptionType) => {
         create(WorksheetSchema, {
           title: "new worksheet",
           project: project.value,
-          visibility:
-            props.view === "shared"
-              ? Worksheet_Visibility.PROJECT_READ
-              : Worksheet_Visibility.PRIVATE,
+          visibility: Worksheet_Visibility.PRIVATE,
         })
       );
       const folders = contextMenuContext.node.key

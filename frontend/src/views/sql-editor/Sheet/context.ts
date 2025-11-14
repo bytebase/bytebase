@@ -12,6 +12,7 @@ import {
   useDatabaseV1Store,
   useSQLEditorTabStore,
   useWorkSheetStore,
+  useSQLEditorStore,
 } from "@/store";
 import type { SQLEditorTab } from "@/types";
 import { DEBOUNCE_SEARCH_DELAY } from "@/types";
@@ -21,7 +22,6 @@ import {
 } from "@/types/proto-es/v1/worksheet_service_pb";
 import {
   emptySQLEditorConnection,
-  extractWorksheetUID,
   getSheetStatement,
   isWorksheetReadableV1,
   suggestedTabTitleForSQLEditorConnection,
@@ -31,6 +31,7 @@ import type { SQLEditorContext } from "../context";
 import { setDefaultDataSourceForConn } from "../EditorCommon";
 import { useFolderByView } from "./folder";
 import type { SheetViewMode } from "./types";
+import { storeToRefs } from "pinia";
 
 type SheetTreeEvents = Emittery<{
   "on-built": { viewMode: SheetViewMode };
@@ -71,10 +72,11 @@ const convertToWorksheetLikeItem = (worksheet: Worksheet): WorksheetLikeItem => 
 
 const useSheetTreeByView = (
   viewMode: SheetViewMode,
-  filter: ComputedRef<WorksheetFilter>
+  filter: ComputedRef<WorksheetFilter>,
+  project: ComputedRef<string>,
 ) => {
   const sheetStore = useWorkSheetStore();
-  const folderContext = useFolderByView(viewMode);
+  const folderContext = useFolderByView(viewMode, project);
   const me = useCurrentUserV1();
   const events: SheetTreeEvents = new Emittery();
   const tabStore = useSQLEditorTabStore();
@@ -108,15 +110,16 @@ const useSheetTreeByView = (
     let list: Worksheet[] = [];
     switch (viewMode) {
       case "my":
-        list =  sheetStore.myWorksheetList
+        list = sheetStore.myWorksheetList;
         break
       case "shared":
-        list =  sheetStore.sharedWorksheetList
+        list = sheetStore.sharedWorksheetList;
         break
       default:
         break
     }
 
+    list = list.filter(sheet => sheet.project === project.value);
     if (filter.value.onlyShowStarred) {
       return list.filter((sheet) => sheet.starred);
     }
@@ -233,29 +236,30 @@ const useSheetTreeByView = (
 
   // Watch only relevant properties: folder structure and worksheet name/folders
   // No deep watch needed - computed will track changes to name, folders automatically
-  watch([() => folderContext.folders.value, sheetLikeItemList.value], () => {
+  watch([() => folderContext.folders.value, () => sheetLikeItemList.value], () => {
     rebuildTree();
   });
 
-  const fetchSheetList = async (project: string) => {
+  const fetchSheetList = async () => {
     isLoading.value = true;
-    const filter = [];
-    if (project) {
-      filter.push(`project == "${project}"`);
-    }
     try {
       switch (viewMode) {
         case "my":
-          filter.push(`creator == "users/${me.value.email}"`);
+          await sheetStore.fetchWorksheetList([
+            `project == "${project.value}"`,
+            `creator == "users/${me.value.email}"`,
+          ].join(" && "));
           break;
         case "shared":
-          filter.push(
+          await sheetStore.fetchWorksheetList([
+            `project == "${project.value}"`,
             `creator != "users/${me.value.email}"`,
-            `visibility in ["${Worksheet_Visibility[Worksheet_Visibility.PROJECT_READ]}","${Worksheet_Visibility[Worksheet_Visibility.PROJECT_WRITE]}"]`
-          );
+            `visibility in ["${Worksheet_Visibility[Worksheet_Visibility.PROJECT_READ]}","${Worksheet_Visibility[Worksheet_Visibility.PROJECT_WRITE]}"]`,
+          ].join(" && "));
           break;
+        default:
+          return;
       }
-      await sheetStore.fetchWorksheetList(filter.join(" && "));
 
       const folderPathes = new Set<string>([]);
       for (const worksheet of sheetLikeItemList.value) {
@@ -330,6 +334,7 @@ export const provideSheetContext = () => {
   const me = useCurrentUserV1();
   const tabStore = useSQLEditorTabStore();
   const worksheetV1Store = useWorkSheetStore();
+  const { project } = storeToRefs(useSQLEditorStore());
 
   const initialFilter = computed(
     (): WorksheetFilter => ({
@@ -341,7 +346,7 @@ export const provideSheetContext = () => {
     })
   );
   const filter = useDynamicLocalStorage<WorksheetFilter>(
-    computed(() => `bb.sql-editor.worksheet-filter.${me.value.name}`),
+    computed(() => `bb.sql-editor.${project.value}.worksheet-filter.${me.value.name}`),
     {
       ...initialFilter.value,
     }
@@ -353,20 +358,23 @@ export const provideSheetContext = () => {
   const viewContexts = {
     my: useSheetTreeByView(
       "my",
-      computed(() => filter.value)
+      computed(() => filter.value),
+      computed(() => project.value),
     ),
     shared: useSheetTreeByView(
       "shared",
-      computed(() => filter.value)
+      computed(() => filter.value),
+      computed(() => project.value),
     ),
     draft: useSheetTreeByView(
       "draft",
-      computed(() => filter.value)
+      computed(() => filter.value),
+      computed(() => project.value),
     ),
   };
 
   const expandedKeys = useDynamicLocalStorage<Set<string>>(
-    computed(() => `bb.sql-editor.worksheet-tree-expand-keys.${me.value.name}`),
+    computed(() => `bb.sql-editor.${project.value}.worksheet-tree-expand-keys.${me.value.name}`),
     new Set([
       ...Object.values(viewContexts).map((item) => item.folderContext.rootPath.value),
     ])

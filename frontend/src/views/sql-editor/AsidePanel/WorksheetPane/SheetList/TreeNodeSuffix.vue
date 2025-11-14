@@ -13,13 +13,13 @@
     @click="handleContextMenuShow"
   />
   <div
-    v-else-if="worksheet"
+    v-else-if="worksheetLite"
     class="inline-flex gap-1"
   >
     <NTooltip
       v-if="
-        worksheet.visibility === Worksheet_Visibility.PROJECT_READ ||
-        worksheet.visibility === Worksheet_Visibility.PROJECT_WRITE
+        worksheetLite.visibility === Worksheet_Visibility.PROJECT_READ ||
+        worksheetLite.visibility === Worksheet_Visibility.PROJECT_WRITE
       "
     >
       <template #trigger>
@@ -30,17 +30,17 @@
       </template>
       <div>
         <div>
-          {{ t("common.visibility") }}{{ ": " }}{{ visibilityDisplayName(worksheet.visibility) }}
+          {{ t("common.visibility") }}{{ ": " }}{{ visibilityDisplayName(worksheetLite.visibility) }}
         </div>
         <div
-          v-if="!isWorksheetCreator(worksheet)"
+          v-if="!isWorksheetCreator(worksheetLite.creator)"
         >
-          {{ t("common.creator") }}{{ ": " }}{{ creatorForSheet(worksheet) }}
+          {{ t("common.creator") }}{{ ": " }}{{ creatorForSheet(worksheetLite.creator) }}
         </div>
       </div>
     </NTooltip>
     <StarIcon
-      :class="`w-4 h-auto text-gray-400 ${worksheet.starred ? 'text-yellow-400' : ''}`"
+      :class="`w-4 h-auto text-gray-400 ${worksheetLite.starred ? 'text-yellow-400' : ''}`"
       @click="handleToggleStar"
     />
     <MoreHorizontalIcon
@@ -62,7 +62,6 @@ import { NTooltip } from "naive-ui";
 import { t } from "@/plugins/i18n";
 import { useUserStore, useWorkSheetStore, useCurrentUserV1, useSQLEditorTabStore, useTabViewStateStore } from "@/store";
 import {
-  type Worksheet,
   Worksheet_Visibility,
 } from "@/types/proto-es/v1/worksheet_service_pb";
 import type { WorsheetFolderNode, SheetViewMode } from "@/views/sql-editor/Sheet";
@@ -75,7 +74,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: "contextMenuShow", event: MouseEvent, node: WorsheetFolderNode): void;
   (e: "sharePanelShow", event: MouseEvent, node: WorsheetFolderNode): void;
-  (e: "toggleStar", worksheet: Worksheet): void;
+  (e: "toggleStar", item: {worksheet:string; starred: boolean}): void;
 }>();
 
 const userStore = useUserStore();
@@ -84,11 +83,20 @@ const me = useCurrentUserV1();
 const { removeViewState } = useTabViewStateStore();
 const tabStore = useSQLEditorTabStore();
 
-const worksheet = computed(() => {
+const worksheetLite = computed(() => {
   if (!props.node.worksheet) {
     return undefined;
   }
-  return worksheetStore.getWorksheetByName(props.node.worksheet.name);
+  const sheet = worksheetStore.getWorksheetByName(props.node.worksheet.name);
+  if (!sheet) {
+    return undefined;
+  }
+  return {
+    name: sheet.name,
+    starred: sheet.starred,
+    visibility: sheet.visibility,
+    creator: sheet.creator,
+  };
 });
 
 const visibilityDisplayName = (visibility: Worksheet_Visibility) => {
@@ -104,14 +112,14 @@ const visibilityDisplayName = (visibility: Worksheet_Visibility) => {
   }
 };
 
-const creatorForSheet = (sheet: Worksheet) => {
+const creatorForSheet = (creator: string) => {
   return (
-    userStore.getUserByIdentifier(sheet.creator)?.title ?? sheet.creator
+    userStore.getUserByIdentifier(creator)?.title ?? creator
   );
 };
 
-const isWorksheetCreator = (worksheet: Worksheet) => {
-  return worksheet.creator === `users/${me.value.email}`;
+const isWorksheetCreator = (creator: string) => {
+  return creator === `users/${me.value.email}`;
 };
 
 const handleDeleteDraft = () => {
@@ -133,8 +141,8 @@ const handleSharePanelShow = (e: MouseEvent) => {
 };
 
 const handleToggleStar = () => {
-  if (worksheet.value) {
-    emit("toggleStar", worksheet.value);
+  if (worksheetLite.value) {
+    emit("toggleStar", { worksheet: worksheetLite.value.name, starred: !worksheetLite.value.starred });
   }
 };
 </script>

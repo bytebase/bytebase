@@ -120,18 +120,18 @@ export const useDropdown = (viewMode: SheetViewMode) => {
         );
       }
     } else {
-      items.push(
-        {
-          icon: () => h(FolderIcon, { class: "w-4 text-gray-600" }),
-          key: "add-folder",
-          label: t("sql-editor.tab.context-menu.actions.add-folder"),
-        },
-        {
+      items.push({
+        icon: () => h(FolderIcon, { class: "w-4 text-gray-600" }),
+        key: "add-folder",
+        label: t("sql-editor.tab.context-menu.actions.add-folder"),
+      });
+      if (viewMode === "my") {
+        items.push({
           icon: () => h(FileCodeIcon, { class: "w-4 text-gray-600" }),
           key: "add-worksheet",
           label: t("sql-editor.tab.context-menu.actions.add-worksheet"),
-        }
-      );
+        });
+      }
       if (context.node.editable) {
         items.push(
           {
