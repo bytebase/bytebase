@@ -59,7 +59,6 @@ import { useRouter } from "vue-router";
 import {
   pushNotification,
   useDatabaseV1Store,
-  useGracefulRequest,
   useInstanceV1Store,
   useSubscriptionV1Store,
 } from "@/store";
@@ -281,25 +280,22 @@ const doCreate = async () => {
 
   state.value.isRequesting = true;
   try {
-    await useGracefulRequest(async () => {
-      const createdInstance = await instanceV1Store.createInstance(
-        pendingCreateInstance.value
-      );
-      if (props.onCreated) {
-        props.onCreated(createdInstance);
-      } else {
-        router.push(`/${createdInstance.name}`);
-        events.emit("dismiss");
-      }
+    const createdInstance = await instanceV1Store.createInstance(
+      pendingCreateInstance.value
+    );
+    if (props.onCreated) {
+      props.onCreated(createdInstance);
+    } else {
+      router.push(`/${createdInstance.name}`);
+      events.emit("dismiss");
+    }
 
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t(
-          "instance.successfully-created-instance-createdinstance-name",
-          [createdInstance.title]
-        ),
-      });
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("instance.successfully-created-instance-createdinstance-name", [
+        createdInstance.title,
+      ]),
     });
   } finally {
     state.value.isRequesting = false;

@@ -404,6 +404,14 @@ func (s *Store) obfuscateInstance(ctx context.Context, instance *storepb.Instanc
 			gcpCredential.ObfuscatedContent = common.Obfuscate(gcpCredential.Content, secret)
 			gcpCredential.Content = ""
 		}
+		if externalSecret := ds.GetExternalSecret(); externalSecret != nil {
+			externalSecret.ObfuscatedVaultSslCa = common.Obfuscate(externalSecret.GetVaultSslCa(), secret)
+			externalSecret.VaultSslCa = ""
+			externalSecret.ObfuscatedVaultSslCert = common.Obfuscate(externalSecret.GetVaultSslCert(), secret)
+			externalSecret.VaultSslCert = ""
+			externalSecret.ObfuscatedVaultSslKey = common.Obfuscate(externalSecret.GetVaultSslKey(), secret)
+			externalSecret.VaultSslKey = ""
+		}
 	}
 	return redacted, nil
 }
@@ -497,6 +505,26 @@ func (s *Store) unObfuscateInstance(ctx context.Context, instance *storepb.Insta
 				return err
 			}
 			gcpCredential.Content = content
+		}
+
+		if externalSecret := ds.GetExternalSecret(); externalSecret != nil {
+			sslCa, err := common.Unobfuscate(externalSecret.GetObfuscatedVaultSslCa(), secret)
+			if err != nil {
+				return err
+			}
+			externalSecret.VaultSslCa = sslCa
+
+			sslCert, err := common.Unobfuscate(externalSecret.GetObfuscatedVaultSslCert(), secret)
+			if err != nil {
+				return err
+			}
+			externalSecret.VaultSslCert = sslCert
+
+			sslKey, err := common.Unobfuscate(externalSecret.GetObfuscatedVaultSslKey(), secret)
+			if err != nil {
+				return err
+			}
+			externalSecret.VaultSslKey = sslKey
 		}
 	}
 	return nil
