@@ -26,8 +26,9 @@
 
 <script lang="ts" setup>
 import { type UseStorageOptions } from "@vueuse/core";
-import { reactive, computed, watch, ref } from "vue";
+import { reactive, computed, watch, ref, onMounted } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
+import { useRoute, useRouter } from "vue-router";
 import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import { useCurrentUserV1 } from "@/store";
@@ -42,6 +43,9 @@ import {
   getSemanticIssueStatusFromSearchParams,
   useDynamicLocalStorage,
   applyUIIssueFilter,
+  buildSearchTextBySearchParams,
+  buildSearchParamsBySearchText,
+  mergeSearchParams,
 } from "@/utils";
 import { IssueSearch } from "../IssueV1/components";
 
@@ -53,6 +57,8 @@ const props = defineProps<{
   project: Project;
 }>();
 
+const route = useRoute();
+const router = useRouter();
 const me = useCurrentUserV1();
 const issueStore = useIssueV1Store();
 const issuePagedTable =
@@ -142,5 +148,44 @@ watch(
   (status) => {
     storedStatus.value = status;
   }
+);
+
+// Initialize params from URL query on mount
+onMounted(() => {
+  const queryString = route.query.q as string;
+  if (queryString) {
+    const urlParams = buildSearchParamsBySearchText(queryString);
+    // Merge URL params with readonly scopes (project) and default status
+    state.params = mergeSearchParams(defaultSearchParams(), urlParams);
+  }
+});
+
+// Sync params to URL query when params change
+let isUpdatingFromUrl = false;
+watch(
+  () => state.params,
+  (params) => {
+    if (isUpdatingFromUrl) {
+      return;
+    }
+    const queryString = buildSearchTextBySearchParams(params);
+    const currentQuery = route.query.q as string;
+
+    // Only update URL if query string has actually changed
+    if (queryString !== currentQuery) {
+      isUpdatingFromUrl = true;
+      router
+        .replace({
+          query: {
+            ...route.query,
+            q: queryString || undefined,
+          },
+        })
+        .finally(() => {
+          isUpdatingFromUrl = false;
+        });
+    }
+  },
+  { deep: true }
 );
 </script>
