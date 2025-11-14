@@ -1,14 +1,16 @@
 <template>
-  <NTabs
-    :value="tab"
-    :type="'line'"
-    :size="'small'"
-    @update:value="updateStatus"
-  >
-    <NTab v-for="item in tabItemList" :key="item.value" :name="item.value">
-      {{ item.label }}
-    </NTab>
-  </NTabs>
+  <div class="shrink-0">
+    <NTabs
+      :value="tab"
+      :type="'line'"
+      :size="'small'"
+      @update:value="updateStatus"
+    >
+      <NTab v-for="item in tabItemList" :key="item.value" :name="item.value">
+        {{ item.label }}
+      </NTab>
+    </NTabs>
+  </div>
 </template>
 
 <script lang="ts" setup>
@@ -45,7 +47,7 @@ const tabItemList = computed(() => {
 });
 
 const tab = computed(() => {
-  return getSemanticIssueStatusFromSearchParams(props.params);
+  return getSemanticIssueStatusFromSearchParams(props.params) ?? "";
 });
 
 const updateStatus = (value: SemanticIssueStatus) => {

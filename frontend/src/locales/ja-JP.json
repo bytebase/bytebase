@@ -246,7 +246,7 @@
     "collapse": "閉じる",
     "line": "行",
     "column": "列",
-    "apply-to-database": "データベースに適用"
+    "apply-to-database": "データベースに適用",
   },
   "error-page": {
     "go-back-home": "ホームページに戻る"
@@ -942,8 +942,7 @@
           "title": "エンジン",
           "description": "エンジンでフィルタリング"
         }
-      },
-      "hide": "詳細検索を非表示にする"
+      }
     },
     "table": {
       "open": "オープン",

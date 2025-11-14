@@ -942,8 +942,7 @@
           "title": "Engine",
           "description": "Filter by engines"
         }
-      },
-      "hide": "Hide advanced search"
+      }
     },
     "table": {
       "open": "Open",

@@ -246,7 +246,7 @@
     "collapse": "Sụp đổ",
     "line": "Dòng",
     "column": "Cột",
-    "apply-to-database": "Áp dụng cho cơ sở dữ liệu"
+    "apply-to-database": "Áp dụng cho cơ sở dữ liệu",
   },
   "error-page": {
     "go-back-home": "Về trang chủ"
@@ -942,8 +942,7 @@
           "title": "Động cơ",
           "description": "Lọc theo động cơ"
         }
-      },
-      "hide": "Ẩn tìm kiếm nâng cao"
+      }
     },
     "table": {
       "open": "Mở",
