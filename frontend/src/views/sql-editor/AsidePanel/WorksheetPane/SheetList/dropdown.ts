@@ -12,7 +12,10 @@ import { t } from "@/plugins/i18n";
 import { useCurrentUserV1, useWorkSheetStore } from "@/store";
 import { type Position } from "@/types";
 import { isWorksheetWritableV1 } from "@/utils";
-import type { WorsheetFolderNode, SheetViewMode } from "@/views/sql-editor/Sheet";
+import type {
+  WorsheetFolderNode,
+  SheetViewMode,
+} from "@/views/sql-editor/Sheet";
 
 export type DropdownOptionType =
   | "share"
@@ -76,14 +79,14 @@ export const useDropdown = (viewMode: SheetViewMode) => {
 
   const worksheetEntity = computed(() => {
     if (viewMode === "draft" || !context.node?.worksheet) {
-      return undefined
+      return undefined;
     }
-    return sheetStore.getWorksheetByName(context.node.worksheet.name)
-  })
+    return sheetStore.getWorksheetByName(context.node.worksheet.name);
+  });
 
   const options = computed((): WorksheetDropdown[] => {
     if (viewMode === "draft" || !context.node) {
-      return []
+      return [];
     }
 
     const items: WorksheetDropdown[] = [];
@@ -91,7 +94,8 @@ export const useDropdown = (viewMode: SheetViewMode) => {
       if (!worksheetEntity.value) {
         return [];
       }
-      const isCreator = worksheetEntity.value.creator === `users/${me.value.email}`;
+      const isCreator =
+        worksheetEntity.value.creator === `users/${me.value.email}`;
       items.push({
         icon: () => h(FilesIcon, { class: "w-4 text-gray-600" }),
         key: "duplicate",

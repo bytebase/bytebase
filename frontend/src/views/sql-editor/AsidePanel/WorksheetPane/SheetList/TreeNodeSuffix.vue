@@ -60,11 +60,18 @@ import {
 import { computed } from "vue";
 import { NTooltip } from "naive-ui";
 import { t } from "@/plugins/i18n";
-import { useUserStore, useWorkSheetStore, useCurrentUserV1, useSQLEditorTabStore, useTabViewStateStore } from "@/store";
 import {
-  Worksheet_Visibility,
-} from "@/types/proto-es/v1/worksheet_service_pb";
-import type { WorsheetFolderNode, SheetViewMode } from "@/views/sql-editor/Sheet";
+  useUserStore,
+  useWorkSheetStore,
+  useCurrentUserV1,
+  useSQLEditorTabStore,
+  useTabViewStateStore,
+} from "@/store";
+import { Worksheet_Visibility } from "@/types/proto-es/v1/worksheet_service_pb";
+import type {
+  WorsheetFolderNode,
+  SheetViewMode,
+} from "@/views/sql-editor/Sheet";
 
 const props = defineProps<{
   node: WorsheetFolderNode;
@@ -113,9 +120,7 @@ const visibilityDisplayName = (visibility: Worksheet_Visibility) => {
 };
 
 const creatorForSheet = (creator: string) => {
-  return (
-    userStore.getUserByIdentifier(creator)?.title ?? creator
-  );
+  return userStore.getUserByIdentifier(creator)?.title ?? creator;
 };
 
 const isWorksheetCreator = (creator: string) => {
@@ -124,7 +129,9 @@ const isWorksheetCreator = (creator: string) => {
 
 const handleDeleteDraft = () => {
   if (props.node.worksheet && props.node.worksheet.name) {
-    const draft = tabStore.tabList.find((t) => t.id === props.node.worksheet!.name);
+    const draft = tabStore.tabList.find(
+      (t) => t.id === props.node.worksheet!.name
+    );
     if (draft) {
       tabStore.removeTab(draft);
     }
@@ -142,7 +149,10 @@ const handleSharePanelShow = (e: MouseEvent) => {
 
 const handleToggleStar = () => {
   if (worksheetLite.value) {
-    emit("toggleStar", { worksheet: worksheetLite.value.name, starred: !worksheetLite.value.starred });
+    emit("toggleStar", {
+      worksheet: worksheetLite.value.name,
+      starred: !worksheetLite.value.starred,
+    });
   }
 };
 </script>

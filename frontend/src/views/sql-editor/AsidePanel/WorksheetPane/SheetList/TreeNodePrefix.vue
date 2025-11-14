@@ -40,7 +40,10 @@ import {
   FolderSyncIcon,
   FolderPenIcon,
 } from "lucide-vue-next";
-import type { WorsheetFolderNode, SheetViewMode } from "@/views/sql-editor/Sheet";
+import type {
+  WorsheetFolderNode,
+  SheetViewMode,
+} from "@/views/sql-editor/Sheet";
 
 defineProps<{
   node: WorsheetFolderNode;

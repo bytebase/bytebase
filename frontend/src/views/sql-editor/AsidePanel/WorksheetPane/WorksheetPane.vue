@@ -40,9 +40,7 @@ import { t } from "@/plugins/i18n";
 import { useSheetContext } from "../../Sheet";
 import FilterMenuItem from "./FilterMenuItem.vue";
 import { SheetTree } from "./SheetList";
-import {
-  type SheetViewMode,
-} from "@/views/sql-editor/Sheet";
+import { type SheetViewMode } from "@/views/sql-editor/Sheet";
 
 const { filter, filterChanged } = useSheetContext();
 const showDropdown = ref<boolean>(false);
@@ -110,7 +108,7 @@ const views = computed((): SheetViewMode[] => {
     results.push("draft");
   }
   return results;
-})
+});
 </script>
 
 <style lang="postcss" scoped>

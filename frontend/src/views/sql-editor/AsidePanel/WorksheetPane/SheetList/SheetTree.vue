@@ -223,16 +223,19 @@ const handleRenameNode = useDebounceFn(async () => {
   }
 
   if (editingNode.value.node.worksheet) {
-    const worksheet = worksheetV1Store.getWorksheetByName(editingNode.value.node.worksheet.name);
+    const worksheet = worksheetV1Store.getWorksheetByName(
+      editingNode.value.node.worksheet.name
+    );
     if (!worksheet) {
       return cleanup();
     }
-    await worksheetV1Store.patchWorksheet({
-      ...worksheet,
-      title: newTitle,
-    }, [
-      "title",
-    ]);
+    await worksheetV1Store.patchWorksheet(
+      {
+        ...worksheet,
+        title: newTitle,
+      },
+      ["title"]
+    );
 
     // update tab title
     const tab = tabStore.tabList.find(
@@ -354,9 +357,7 @@ const deleteWorksheets = async (worksheets: string[]) => {
     )
   );
   for (const worksheet of worksheets) {
-    const tab = tabStore.tabList.find(
-      (tab) => tab.worksheet === worksheet
-    );
+    const tab = tabStore.tabList.find((tab) => tab.worksheet === worksheet);
     if (tab) {
       tabStore.removeTab(tab);
       removeViewState(tab.id);
@@ -651,10 +652,12 @@ const updateWorksheetFolders = async (
       return node.worksheet;
     }
   });
-  await batchUpdateWorksheetFolders(worksheets.map(worksheet => ({
-    name: worksheet.name,
-    folders: worksheet.folders,
-  })));
+  await batchUpdateWorksheetFolders(
+    worksheets.map((worksheet) => ({
+      name: worksheet.name,
+      folders: worksheet.folders,
+    }))
+  );
 };
 
 const replaceExpandedKeys = (oldKey: string, newKey: string) => {

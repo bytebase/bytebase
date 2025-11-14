@@ -61,19 +61,21 @@ interface WorksheetFilter {
   showDraft: boolean;
 }
 
-const convertToWorksheetLikeItem = (worksheet: Worksheet): WorksheetLikeItem => {
+const convertToWorksheetLikeItem = (
+  worksheet: Worksheet
+): WorksheetLikeItem => {
   return {
     name: worksheet.name,
     title: worksheet.title,
     folders: worksheet.folders,
     type: "worksheet",
   };
-}
+};
 
 const useSheetTreeByView = (
   viewMode: SheetViewMode,
   filter: ComputedRef<WorksheetFilter>,
-  project: ComputedRef<string>,
+  project: ComputedRef<string>
 ) => {
   const sheetStore = useWorkSheetStore();
   const folderContext = useFolderByView(viewMode, project);
@@ -119,12 +121,12 @@ const useSheetTreeByView = (
         break;
     }
 
-    list = list.filter(sheet => sheet.project === project.value);
+    list = list.filter((sheet) => sheet.project === project.value);
     if (filter.value.onlyShowStarred) {
       return list.filter((sheet) => sheet.starred);
     }
     return list;
-  })
+  });
 
   const sheetLikeItemList = computed((): WorksheetLikeItem[] => {
     switch (viewMode) {
@@ -132,18 +134,22 @@ const useSheetTreeByView = (
       case "shared":
         return worksheetList.value.map(convertToWorksheetLikeItem);
       case "draft":
-        return tabStore.tabList.filter((tab) => !tab.worksheet).map((tab) => ({
-          name: tab.id,
-          title: tab.title,
-          folders: [],
-          type: "draft",
-        }));
+        return tabStore.tabList
+          .filter((tab) => !tab.worksheet)
+          .map((tab) => ({
+            name: tab.id,
+            title: tab.title,
+            folders: [],
+            type: "draft",
+          }));
       default:
         return [];
     }
   });
 
-  const getPathesForWorksheet = (worksheet: { folders: string[] }): string[] => {
+  const getPathesForWorksheet = (worksheet: {
+    folders: string[];
+  }): string[] => {
     const pathes = [folderContext.rootPath.value];
     let currentPath = folderContext.rootPath.value;
 
@@ -236,28 +242,35 @@ const useSheetTreeByView = (
 
   // Watch only relevant properties: folder structure and worksheet name/folders
   // No deep watch needed - computed will track changes to name, folders automatically
-  watch([() => folderContext.folders.value, () => sheetLikeItemList.value], () => {
-    rebuildTree();
-  });
+  watch(
+    [() => folderContext.folders.value, () => sheetLikeItemList.value],
+    () => {
+      rebuildTree();
+    }
+  );
 
   const fetchSheetList = async () => {
     isLoading.value = true;
     try {
       switch (viewMode) {
         case "my":
-          await sheetStore.fetchWorksheetList([
-            `project == "${project.value}"`,
-            `creator == "users/${me.value.email}"`,
-          ].join(" && "));
+          await sheetStore.fetchWorksheetList(
+            [
+              `project == "${project.value}"`,
+              `creator == "users/${me.value.email}"`,
+            ].join(" && ")
+          );
           break;
         case "shared":
-          await sheetStore.fetchWorksheetList([
-            `project == "${project.value}"`,
-            `creator != "users/${me.value.email}"`,
-            // TODO(ed): do we need the visibility filter?
-            // If not provide it, the call will fetch all worksheet with read access.
-            `visibility in ["${Worksheet_Visibility[Worksheet_Visibility.PROJECT_READ]}","${Worksheet_Visibility[Worksheet_Visibility.PROJECT_WRITE]}"]`,
-          ].join(" && "));
+          await sheetStore.fetchWorksheetList(
+            [
+              `project == "${project.value}"`,
+              `creator != "users/${me.value.email}"`,
+              // TODO(ed): do we need the visibility filter?
+              // If not provide it, the call will fetch all worksheet with read access.
+              `visibility in ["${Worksheet_Visibility[Worksheet_Visibility.PROJECT_READ]}","${Worksheet_Visibility[Worksheet_Visibility.PROJECT_WRITE]}"]`,
+            ].join(" && ")
+          );
           break;
         default:
           return;
@@ -302,7 +315,9 @@ export type SheetContext = {
   selectedKeys: Ref<string[]>;
   editingNode: Ref<{ node: WorsheetFolderNode; rawLabel: string } | undefined>;
   isWorksheetCreator: (worksheet: Worksheet) => boolean;
-  batchUpdateWorksheetFolders: (worksheets: { name: string; folders: string[] }[]) => Promise<void>;
+  batchUpdateWorksheetFolders: (
+    worksheets: { name: string; folders: string[] }[]
+  ) => Promise<void>;
 };
 
 export const KEY = Symbol("bb.sql-editor.sheet") as InjectionKey<SheetContext>;
@@ -348,7 +363,9 @@ export const provideSheetContext = () => {
     })
   );
   const filter = useDynamicLocalStorage<WorksheetFilter>(
-    computed(() => `bb.sql-editor.${project.value}.worksheet-filter.${me.value.name}`),
+    computed(
+      () => `bb.sql-editor.${project.value}.worksheet-filter.${me.value.name}`
+    ),
     {
       ...initialFilter.value,
     }
@@ -361,24 +378,29 @@ export const provideSheetContext = () => {
     my: useSheetTreeByView(
       "my",
       computed(() => filter.value),
-      computed(() => project.value),
+      computed(() => project.value)
     ),
     shared: useSheetTreeByView(
       "shared",
       computed(() => filter.value),
-      computed(() => project.value),
+      computed(() => project.value)
     ),
     draft: useSheetTreeByView(
       "draft",
       computed(() => filter.value),
-      computed(() => project.value),
+      computed(() => project.value)
     ),
   };
 
   const expandedKeys = useDynamicLocalStorage<Set<string>>(
-    computed(() => `bb.sql-editor.${project.value}.worksheet-tree-expand-keys.${me.value.name}`),
+    computed(
+      () =>
+        `bb.sql-editor.${project.value}.worksheet-tree-expand-keys.${me.value.name}`
+    ),
     new Set([
-      ...Object.values(viewContexts).map((item) => item.folderContext.rootPath.value),
+      ...Object.values(viewContexts).map(
+        (item) => item.folderContext.rootPath.value
+      ),
     ])
   );
   const selectedKeys = ref<string[]>([]);
@@ -446,7 +468,9 @@ export const provideSheetContext = () => {
     { immediate: true }
   );
 
-  const batchUpdateWorksheetFolders = async (worksheets: { name: string; folders: string[] }[]) => {
+  const batchUpdateWorksheetFolders = async (
+    worksheets: { name: string; folders: string[] }[]
+  ) => {
     await worksheetV1Store.batchUpsertWorksheetOrganizers(
       worksheets.map((worksheet) => ({
         organizer: {
