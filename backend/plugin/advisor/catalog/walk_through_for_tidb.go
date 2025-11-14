@@ -33,20 +33,9 @@ func (d *DatabaseState) tidbWalkThrough(ast any) error {
 	return nil
 }
 
-func (d *DatabaseState) changeState(in tidbast.StmtNode) (err *WalkThroughError) {
-	defer func() {
-		if err == nil {
-			return
-		}
-		if err.Line == 0 {
-			err.Line = in.OriginTextPosition()
-		}
-	}()
+func (d *DatabaseState) changeState(in tidbast.StmtNode) error {
 	if d.deleted {
-		return &WalkThroughError{
-			Type:    ErrorTypeDatabaseIsDeleted,
-			Content: fmt.Sprintf("Database `%s` is deleted", d.name),
-		}
+		return NewSchemaViolationError(703, fmt.Sprintf("Database `%s` is deleted", d.name))
 	}
 	switch node := in.(type) {
 	case *tidbast.CreateTableStmt:
@@ -64,7 +53,7 @@ func (d *DatabaseState) changeState(in tidbast.StmtNode) (err *WalkThroughError)
 	case *tidbast.DropDatabaseStmt:
 		return d.dropDatabase(node)
 	case *tidbast.CreateDatabaseStmt:
-		return NewAccessOtherDatabaseError(d.name, node.Name.O)
+		return NewSchemaViolationError(702, fmt.Sprintf("Database `%s` is not the current database `%s`", node.Name.O, d.name))
 	case *tidbast.RenameTableStmt:
 		return d.renameTable(node)
 	default:
@@ -72,7 +61,7 @@ func (d *DatabaseState) changeState(in tidbast.StmtNode) (err *WalkThroughError)
 	}
 }
 
-func (d *DatabaseState) renameTable(node *tidbast.RenameTableStmt) *WalkThroughError {
+func (d *DatabaseState) renameTable(node *tidbast.RenameTableStmt) error {
 	for _, tableToTable := range node.TableToTables {
 		schema, exists := d.schemaSet[""]
 		if !exists {
@@ -87,12 +76,12 @@ func (d *DatabaseState) renameTable(node *tidbast.RenameTableStmt) *WalkThroughE
 			table, exists := schema.getTable(oldTableName)
 			if !exists {
 				if schema.ctx.CheckIntegrity {
-					return NewTableNotExistsError(oldTableName)
+					return NewSchemaViolationError(604, fmt.Sprintf("Table `%s` does not exist", oldTableName))
 				}
 				table = schema.createIncompleteTable(oldTableName)
 			}
 			if _, exists := schema.getTable(newTableName); exists {
-				return NewTableExistsError(newTableName)
+				return NewSchemaViolationError(607, fmt.Sprintf("Table `%s` already exists", newTableName))
 			}
 			delete(schema.tableSet, table.name)
 			table.name = newTableName
@@ -100,11 +89,11 @@ func (d *DatabaseState) renameTable(node *tidbast.RenameTableStmt) *WalkThroughE
 		} else if d.moveToOtherDatabase(tableToTable) {
 			_, exists := schema.getTable(tableToTable.OldTable.Name.O)
 			if !exists && schema.ctx.CheckIntegrity {
-				return NewTableNotExistsError(tableToTable.OldTable.Name.O)
+				return NewSchemaViolationError(604, fmt.Sprintf("Table `%s` does not exist", tableToTable.OldTable.Name.O))
 			}
 			delete(schema.tableSet, tableToTable.OldTable.Name.O)
 		} else {
-			return NewAccessOtherDatabaseError(d.name, d.targetDatabase(tableToTable))
+			return NewSchemaViolationError(702, fmt.Sprintf("Database `%s` is not the current database `%s`", d.targetDatabase(tableToTable), d.name))
 		}
 	}
 	return nil
@@ -134,18 +123,18 @@ func (d *DatabaseState) theCurrentDatabase(node *tidbast.TableToTable) bool {
 	return true
 }
 
-func (d *DatabaseState) dropDatabase(node *tidbast.DropDatabaseStmt) *WalkThroughError {
+func (d *DatabaseState) dropDatabase(node *tidbast.DropDatabaseStmt) error {
 	if !d.isCurrentDatabase(node.Name.O) {
-		return NewAccessOtherDatabaseError(d.name, node.Name.O)
+		return NewSchemaViolationError(702, fmt.Sprintf("Database `%s` is not the current database `%s`", node.Name.O, d.name))
 	}
 
 	d.deleted = true
 	return nil
 }
 
-func (d *DatabaseState) alterDatabase(node *tidbast.AlterDatabaseStmt) *WalkThroughError {
+func (d *DatabaseState) alterDatabase(node *tidbast.AlterDatabaseStmt) error {
 	if !node.AlterDefaultDatabase && !d.isCurrentDatabase(node.Name.O) {
-		return NewAccessOtherDatabaseError(d.name, node.Name.O)
+		return NewSchemaViolationError(702, fmt.Sprintf("Database `%s` is not the current database `%s`", node.Name.O, d.name))
 	}
 
 	for _, option := range node.Options {
@@ -161,9 +150,9 @@ func (d *DatabaseState) alterDatabase(node *tidbast.AlterDatabaseStmt) *WalkThro
 	return nil
 }
 
-func (d *DatabaseState) findTableState(tableName *tidbast.TableName) (*TableState, *WalkThroughError) {
+func (d *DatabaseState) findTableState(tableName *tidbast.TableName) (*TableState, error) {
 	if tableName.Schema.O != "" && !d.isCurrentDatabase(tableName.Schema.O) {
-		return nil, NewAccessOtherDatabaseError(d.name, tableName.Schema.O)
+		return nil, NewSchemaViolationError(702, fmt.Sprintf("Database `%s` is not the current database `%s`", tableName.Schema.O, d.name))
 	}
 
 	schema, exists := d.schemaSet[""]
@@ -174,7 +163,7 @@ func (d *DatabaseState) findTableState(tableName *tidbast.TableName) (*TableStat
 	table, exists := schema.getTable(tableName.Name.O)
 	if !exists {
 		if schema.ctx.CheckIntegrity {
-			return nil, NewTableNotExistsError(tableName.Name.O)
+			return nil, NewSchemaViolationError(604, fmt.Sprintf("Table `%s` does not exist", tableName.Name.O))
 		}
 		table = schema.createIncompleteTable(tableName.Name.O)
 	}
@@ -182,7 +171,7 @@ func (d *DatabaseState) findTableState(tableName *tidbast.TableName) (*TableStat
 	return table, nil
 }
 
-func (d *DatabaseState) dropIndex(node *tidbast.DropIndexStmt) *WalkThroughError {
+func (d *DatabaseState) dropIndex(node *tidbast.DropIndexStmt) error {
 	table, err := d.findTableState(node.Table)
 	if err != nil {
 		return err
@@ -191,7 +180,7 @@ func (d *DatabaseState) dropIndex(node *tidbast.DropIndexStmt) *WalkThroughError
 	return table.dropIndex(d.ctx, node.IndexName)
 }
 
-func (d *DatabaseState) createIndex(node *tidbast.CreateIndexStmt) *WalkThroughError {
+func (d *DatabaseState) createIndex(node *tidbast.CreateIndexStmt) error {
 	table, err := d.findTableState(node.Table)
 	if err != nil {
 		return err
@@ -222,7 +211,7 @@ func (d *DatabaseState) createIndex(node *tidbast.CreateIndexStmt) *WalkThroughE
 	return table.createIndex(node.IndexName, keyList, unique, tp, node.IndexOption)
 }
 
-func (d *DatabaseState) alterTable(node *tidbast.AlterTableStmt) *WalkThroughError {
+func (d *DatabaseState) alterTable(node *tidbast.AlterTableStmt) error {
 	table, err := d.findTableState(node.Table)
 	if err != nil {
 		return err
@@ -314,11 +303,11 @@ func (d *DatabaseState) alterTable(node *tidbast.AlterTableStmt) *WalkThroughErr
 	return nil
 }
 
-func (t *TableState) changeIndexVisibility(ctx *FinderContext, indexName string, visibility tidbast.IndexVisibility) *WalkThroughError {
+func (t *TableState) changeIndexVisibility(ctx *FinderContext, indexName string, visibility tidbast.IndexVisibility) error {
 	index, exists := t.indexSet[strings.ToLower(indexName)]
 	if !exists {
 		if ctx.CheckIntegrity {
-			return NewIndexNotExistsError(t.name, indexName)
+			return NewSchemaViolationError(809, fmt.Sprintf("Index `%s` does not exist in table `%s`", indexName, t.name))
 		}
 		index = t.createIncompleteIndex(indexName)
 	}
@@ -333,7 +322,7 @@ func (t *TableState) changeIndexVisibility(ctx *FinderContext, indexName string,
 	return nil
 }
 
-func (t *TableState) renameIndex(ctx *FinderContext, oldName string, newName string) *WalkThroughError {
+func (t *TableState) renameIndex(ctx *FinderContext, oldName string, newName string) error {
 	// For MySQL, the primary key has a special name 'PRIMARY'.
 	// And the other indexes cannot use the name which case-insensitive equals 'PRIMARY'.
 	if strings.ToUpper(oldName) == PrimaryKeyName || strings.ToUpper(newName) == PrimaryKeyName {
@@ -341,22 +330,19 @@ func (t *TableState) renameIndex(ctx *FinderContext, oldName string, newName str
 		if strings.ToUpper(oldName) != PrimaryKeyName {
 			incorrectName = newName
 		}
-		return &WalkThroughError{
-			Type:    ErrorTypeIncorrectIndexName,
-			Content: fmt.Sprintf("Incorrect index name `%s`", incorrectName),
-		}
+		return errors.Errorf("Incorrect index name `%s`", incorrectName)
 	}
 
 	index, exists := t.indexSet[strings.ToLower(oldName)]
 	if !exists {
 		if ctx.CheckIntegrity {
-			return NewIndexNotExistsError(t.name, oldName)
+			return NewSchemaViolationError(809, fmt.Sprintf("Index `%s` does not exist in table `%s`", oldName, t.name))
 		}
 		index = t.createIncompleteIndex(oldName)
 	}
 
 	if _, exists := t.indexSet[strings.ToLower(newName)]; exists {
-		return NewIndexExistsError(t.name, newName)
+		return NewSchemaViolationError(805, fmt.Sprintf("Index `%s` already exists in table `%s`", newName, t.name))
 	}
 
 	index.name = newName
@@ -365,12 +351,12 @@ func (t *TableState) renameIndex(ctx *FinderContext, oldName string, newName str
 	return nil
 }
 
-func (t *TableState) changeColumnDefault(ctx *FinderContext, column *tidbast.ColumnDef) *WalkThroughError {
+func (t *TableState) changeColumnDefault(ctx *FinderContext, column *tidbast.ColumnDef) error {
 	columnName := column.Name.Name.L
 	colState, exists := t.columnSet[columnName]
 	if !exists {
 		if ctx.CheckIntegrity {
-			return NewColumnNotExistsError(t.name, columnName)
+			return NewSchemaViolationError(405, fmt.Sprintf("Column `%s` does not exist in table `%s`", columnName, t.name))
 		}
 		colState = t.createIncompleteColumn(columnName)
 	}
@@ -384,11 +370,7 @@ func (t *TableState) changeColumnDefault(ctx *FinderContext, column *tidbast.Col
 					"text", "tinytext", "mediumtext", "longtext",
 					"json",
 					"geometry":
-					return &WalkThroughError{
-						Type: ErrorTypeInvalidColumnTypeForDefaultValue,
-						// Content comes from MySQL Error content.
-						Content: fmt.Sprintf("BLOB, TEXT, GEOMETRY or JSON column `%s` can't have a default value", columnName),
-					}
+					return NewSchemaViolationError(423, fmt.Sprintf("BLOB, TEXT, GEOMETRY or JSON column `%s` can't have a default value", columnName))
 				default:
 					// Other column types allow default values
 				}
@@ -401,11 +383,7 @@ func (t *TableState) changeColumnDefault(ctx *FinderContext, column *tidbast.Col
 			colState.defaultValue = &defaultValue
 		} else {
 			if colState.nullable != nil && !*colState.nullable {
-				return &WalkThroughError{
-					Type: ErrorTypeSetNullDefaultForNotNullColumn,
-					// Content comes from MySQL Error content.
-					Content: fmt.Sprintf("Invalid default value for column `%s`", columnName),
-				}
+				return errors.Errorf("Invalid default value for column `%s`", columnName)
 			}
 			colState.defaultValue = nil
 		}
@@ -416,7 +394,7 @@ func (t *TableState) changeColumnDefault(ctx *FinderContext, column *tidbast.Col
 	return nil
 }
 
-func (t *TableState) renameColumn(ctx *FinderContext, oldName string, newName string) *WalkThroughError {
+func (t *TableState) renameColumn(ctx *FinderContext, oldName string, newName string) error {
 	if strings.EqualFold(oldName, newName) {
 		return nil
 	}
@@ -424,16 +402,13 @@ func (t *TableState) renameColumn(ctx *FinderContext, oldName string, newName st
 	column, exists := t.columnSet[strings.ToLower(oldName)]
 	if !exists {
 		if ctx.CheckIntegrity {
-			return NewColumnNotExistsError(t.name, oldName)
+			return NewSchemaViolationError(405, fmt.Sprintf("Column `%s` does not exist in table `%s`", oldName, t.name))
 		}
 		column = t.createIncompleteColumn(oldName)
 	}
 
 	if _, exists := t.columnSet[strings.ToLower(newName)]; exists {
-		return &WalkThroughError{
-			Type:    ErrorTypeColumnExists,
-			Content: fmt.Sprintf("Column `%s` already exists in table `%s", newName, t.name),
-		}
+		return NewSchemaViolationError(412, fmt.Sprintf("Column `%s` already exists in table `%s", newName, t.name))
 	}
 
 	column.name = newName
@@ -462,10 +437,10 @@ func (t *TableState) renameColumnInIndexKey(oldName string, newName string) {
 // 1. drop column from tableState.columnSet, but do not drop column from indexSet.
 // 2. rename column from indexSet.
 // 3. create a new column in columnSet.
-func (t *TableState) completeTableChangeColumn(ctx *FinderContext, oldName string, newColumn *tidbast.ColumnDef, position *tidbast.ColumnPosition) *WalkThroughError {
+func (t *TableState) completeTableChangeColumn(ctx *FinderContext, oldName string, newColumn *tidbast.ColumnDef, position *tidbast.ColumnPosition) error {
 	column, exists := t.columnSet[strings.ToLower(oldName)]
 	if !exists {
-		return NewColumnNotExistsError(t.name, oldName)
+		return NewSchemaViolationError(405, fmt.Sprintf("Column `%s` does not exist in table `%s`", oldName, t.name))
 	}
 
 	pos := *column.position
@@ -515,7 +490,7 @@ func (t *TableState) completeTableChangeColumn(ctx *FinderContext, oldName strin
 
 // incompleteTableChangeColumn changes column definition.
 // It does not maintain the position of the column.
-func (t *TableState) incompleteTableChangeColumn(ctx *FinderContext, oldName string, newColumn *tidbast.ColumnDef, position *tidbast.ColumnPosition) *WalkThroughError {
+func (t *TableState) incompleteTableChangeColumn(ctx *FinderContext, oldName string, newColumn *tidbast.ColumnDef, position *tidbast.ColumnPosition) error {
 	delete(t.columnSet, strings.ToLower(oldName))
 
 	// rename column from indexSet
@@ -525,23 +500,20 @@ func (t *TableState) incompleteTableChangeColumn(ctx *FinderContext, oldName str
 	return t.createColumn(ctx, newColumn, position)
 }
 
-func (t *TableState) changeColumn(ctx *FinderContext, oldName string, newColumn *tidbast.ColumnDef, position *tidbast.ColumnPosition) *WalkThroughError {
+func (t *TableState) changeColumn(ctx *FinderContext, oldName string, newColumn *tidbast.ColumnDef, position *tidbast.ColumnPosition) error {
 	if ctx.CheckIntegrity {
 		return t.completeTableChangeColumn(ctx, oldName, newColumn, position)
 	}
 	return t.incompleteTableChangeColumn(ctx, oldName, newColumn, position)
 }
 
-func (t *TableState) dropIndex(ctx *FinderContext, indexName string) *WalkThroughError {
+func (t *TableState) dropIndex(ctx *FinderContext, indexName string) error {
 	if ctx.CheckIntegrity {
 		if _, exists := t.indexSet[strings.ToLower(indexName)]; !exists {
 			if strings.EqualFold(indexName, PrimaryKeyName) {
-				return &WalkThroughError{
-					Type:    ErrorTypePrimaryKeyNotExists,
-					Content: fmt.Sprintf("Primary key does not exist in table `%s`", t.name),
-				}
+				return NewSchemaViolationError(808, fmt.Sprintf("Primary key does not exist in table `%s`", t.name))
 			}
-			return NewIndexNotExistsError(t.name, indexName)
+			return NewSchemaViolationError(809, fmt.Sprintf("Index `%s` does not exist in table `%s`", indexName, t.name))
 		}
 	}
 
@@ -549,19 +521,15 @@ func (t *TableState) dropIndex(ctx *FinderContext, indexName string) *WalkThroug
 	return nil
 }
 
-func (t *TableState) completeTableDropColumn(columnName string) *WalkThroughError {
+func (t *TableState) completeTableDropColumn(columnName string) error {
 	column, exists := t.columnSet[strings.ToLower(columnName)]
 	if !exists {
-		return NewColumnNotExistsError(t.name, columnName)
+		return NewSchemaViolationError(405, fmt.Sprintf("Column `%s` does not exist in table `%s`", columnName, t.name))
 	}
 
 	// Cannot drop all columns in a table using ALTER TABLE DROP COLUMN.
 	if len(t.columnSet) == 1 {
-		return &WalkThroughError{
-			Type: ErrorTypeDropAllColumns,
-			// Error content comes from MySQL error content.
-			Content: fmt.Sprintf("Can't delete all columns with ALTER TABLE; use DROP TABLE %s instead", t.name),
-		}
+		return errors.Errorf("Can't delete all columns with ALTER TABLE; use DROP TABLE %s instead", t.name)
 	}
 
 	// If columns are dropped from a table, the columns are also removed from any index of which they are a part.
@@ -584,7 +552,7 @@ func (t *TableState) completeTableDropColumn(columnName string) *WalkThroughErro
 	return nil
 }
 
-func (t *TableState) incompleteTableDropColumn(columnName string) *WalkThroughError {
+func (t *TableState) incompleteTableDropColumn(columnName string) error {
 	// If columns are dropped from a table, the columns are also removed from any index of which they are a part.
 	for _, index := range t.indexSet {
 		if len(index.expressionList) == 0 {
@@ -601,7 +569,7 @@ func (t *TableState) incompleteTableDropColumn(columnName string) *WalkThroughEr
 	return nil
 }
 
-func (t *TableState) dropColumn(ctx *FinderContext, columnName string) *WalkThroughError {
+func (t *TableState) dropColumn(ctx *FinderContext, columnName string) error {
 	if ctx.CheckIntegrity {
 		return t.completeTableDropColumn(columnName)
 	}
@@ -623,7 +591,7 @@ func (idx *IndexState) dropColumn(columnName string) {
 }
 
 // reorderColumn reorders the columns for new column and returns the new column position.
-func (t *TableState) reorderColumn(position *tidbast.ColumnPosition) (int, *WalkThroughError) {
+func (t *TableState) reorderColumn(position *tidbast.ColumnPosition) (int, error) {
 	switch position.Tp {
 	case tidbast.ColumnPositionNone:
 		return len(t.columnSet) + 1, nil
@@ -636,7 +604,7 @@ func (t *TableState) reorderColumn(position *tidbast.ColumnPosition) (int, *Walk
 		columnName := position.RelativeColumn.Name.L
 		column, exist := t.columnSet[columnName]
 		if !exist {
-			return 0, NewColumnNotExistsError(t.name, columnName)
+			return 0, NewSchemaViolationError(405, fmt.Sprintf("Column `%s` does not exist in table `%s`", columnName, t.name))
 		}
 		for _, col := range t.columnSet {
 			if *col.position > *column.position {
@@ -645,22 +613,16 @@ func (t *TableState) reorderColumn(position *tidbast.ColumnPosition) (int, *Walk
 		}
 		return *column.position + 1, nil
 	default:
-		return 0, &WalkThroughError{
-			Type:    ErrorTypeUnsupported,
-			Content: fmt.Sprintf("Unsupported column position type: %d", position.Tp),
-		}
+		return 0, errors.Errorf("Unsupported column position type: %d", position.Tp)
 	}
 }
 
-func (d *DatabaseState) dropTable(node *tidbast.DropTableStmt) *WalkThroughError {
+func (d *DatabaseState) dropTable(node *tidbast.DropTableStmt) error {
 	// TODO(rebelice): deal with DROP VIEW statement.
 	if !node.IsView {
 		for _, name := range node.Tables {
 			if name.Schema.O != "" && !d.isCurrentDatabase(name.Schema.O) {
-				return &WalkThroughError{
-					Type:    ErrorTypeAccessOtherDatabase,
-					Content: fmt.Sprintf("Database `%s` is not the current database `%s`", name.Schema.O, d.name),
-				}
+				return NewSchemaViolationError(702, fmt.Sprintf("Database `%s` is not the current database `%s`", name.Schema.O, d.name))
 			}
 
 			schema, exists := d.schemaSet[""]
@@ -673,10 +635,7 @@ func (d *DatabaseState) dropTable(node *tidbast.DropTableStmt) *WalkThroughError
 				if node.IfExists || !d.ctx.CheckIntegrity {
 					return nil
 				}
-				return &WalkThroughError{
-					Type:    ErrorTypeTableNotExists,
-					Content: fmt.Sprintf("Table `%s` does not exist", name.Name.O),
-				}
+				return NewSchemaViolationError(604, fmt.Sprintf("Table `%s` does not exist", name.Name.O))
 			}
 
 			delete(schema.tableSet, table.name)
@@ -685,14 +644,11 @@ func (d *DatabaseState) dropTable(node *tidbast.DropTableStmt) *WalkThroughError
 	return nil
 }
 
-func (d *DatabaseState) copyTable(node *tidbast.CreateTableStmt) *WalkThroughError {
+func (d *DatabaseState) copyTable(node *tidbast.CreateTableStmt) error {
 	targetTable, err := d.findTableState(node.ReferTable)
 	if err != nil {
-		if err.Type == ErrorTypeAccessOtherDatabase {
-			return &WalkThroughError{
-				Type:    ErrorTypeReferenceOtherDatabase,
-				Content: fmt.Sprintf("Reference table `%s` in other database `%s`, skip walkthrough", node.ReferTable.Name.O, node.ReferTable.Schema.O),
-			}
+		if strings.Contains(err.Error(), "is not the current database") {
+			return errors.Errorf("Reference table `%s` in other database `%s`, skip walkthrough", node.ReferTable.Name.O, node.ReferTable.Schema.O)
 		}
 	}
 
@@ -703,12 +659,9 @@ func (d *DatabaseState) copyTable(node *tidbast.CreateTableStmt) *WalkThroughErr
 	return nil
 }
 
-func (d *DatabaseState) createTable(node *tidbast.CreateTableStmt) *WalkThroughError {
+func (d *DatabaseState) createTable(node *tidbast.CreateTableStmt) error {
 	if node.Table.Schema.O != "" && !d.isCurrentDatabase(node.Table.Schema.O) {
-		return &WalkThroughError{
-			Type:    ErrorTypeAccessOtherDatabase,
-			Content: fmt.Sprintf("Database `%s` is not the current database `%s`", node.Table.Schema.O, d.name),
-		}
+		return NewSchemaViolationError(702, fmt.Sprintf("Database `%s` is not the current database `%s`", node.Table.Schema.O, d.name))
 	}
 
 	schema, exists := d.schemaSet[""]
@@ -720,17 +673,11 @@ func (d *DatabaseState) createTable(node *tidbast.CreateTableStmt) *WalkThroughE
 		if node.IfNotExists {
 			return nil
 		}
-		return &WalkThroughError{
-			Type:    ErrorTypeTableExists,
-			Content: fmt.Sprintf("Table `%s` already exists", node.Table.Name.O),
-		}
+		return NewSchemaViolationError(607, fmt.Sprintf("Table `%s` already exists", node.Table.Name.O))
 	}
 
 	if node.Select != nil {
-		return &WalkThroughError{
-			Type:    ErrorTypeUseCreateTableAs,
-			Content: fmt.Sprintf("Disallow the CREATE TABLE AS statement but \"%s\" uses", node.Text()),
-		}
+		return NewSchemaViolationError(205, fmt.Sprintf("Disallow the CREATE TABLE AS statement but \"%s\" uses", node.Text()))
 	}
 
 	if node.ReferTable != nil {
@@ -751,23 +698,17 @@ func (d *DatabaseState) createTable(node *tidbast.CreateTableStmt) *WalkThroughE
 	for _, column := range node.Cols {
 		if isAutoIncrement(column) {
 			if hasAutoIncrement {
-				return &WalkThroughError{
-					Type: ErrorTypeAutoIncrementExists,
-					// The content comes from MySQL error content.
-					Content: fmt.Sprintf("There can be only one auto column for table `%s`", table.name),
-				}
+				return NewSchemaViolationError(1, fmt.Sprintf("There can be only one auto column for table `%s`", table.name))
 			}
 			hasAutoIncrement = true
 		}
 		if err := table.createColumn(d.ctx, column, nil /* position */); err != nil {
-			err.Line = column.OriginTextPosition()
 			return err
 		}
 	}
 
 	for _, constraint := range node.Constraints {
 		if err := table.createConstraint(d.ctx, constraint); err != nil {
-			err.Line = constraint.OriginTextPosition()
 			return err
 		}
 	}
@@ -775,7 +716,7 @@ func (d *DatabaseState) createTable(node *tidbast.CreateTableStmt) *WalkThroughE
 	return nil
 }
 
-func (t *TableState) createConstraint(ctx *FinderContext, constraint *tidbast.Constraint) *WalkThroughError {
+func (t *TableState) createConstraint(ctx *FinderContext, constraint *tidbast.Constraint) error {
 	switch constraint.Tp {
 	case tidbast.ConstraintPrimaryKey:
 		keyList, err := t.validateAndGetKeyStringList(ctx, constraint.Keys, true /* primary */, false /* isSpatial */)
@@ -820,7 +761,7 @@ func (t *TableState) createConstraint(ctx *FinderContext, constraint *tidbast.Co
 	return nil
 }
 
-func (t *TableState) validateAndGetKeyStringList(ctx *FinderContext, keyList []*tidbast.IndexPartSpecification, primary bool, isSpatial bool) ([]string, *WalkThroughError) {
+func (t *TableState) validateAndGetKeyStringList(ctx *FinderContext, keyList []*tidbast.IndexPartSpecification, primary bool, isSpatial bool) ([]string, error) {
 	var res []string
 	for _, key := range keyList {
 		if key.Expr != nil {
@@ -834,18 +775,14 @@ func (t *TableState) validateAndGetKeyStringList(ctx *FinderContext, keyList []*
 			column, exists := t.columnSet[columnName]
 			if !exists {
 				if ctx.CheckIntegrity {
-					return nil, NewColumnNotExistsError(t.name, columnName)
+					return nil, NewSchemaViolationError(405, fmt.Sprintf("Column `%s` does not exist in table `%s`", columnName, t.name))
 				}
 			} else {
 				if primary {
 					column.nullable = newFalsePointer()
 				}
 				if isSpatial && column.nullable != nil && *column.nullable {
-					return nil, &WalkThroughError{
-						Type: ErrorTypeSpatialIndexKeyNullable,
-						// The error content comes from MySQL.
-						Content: fmt.Sprintf("All parts of a SPATIAL index must be NOT NULL, but `%s` is nullable", column.name),
-					}
+					return nil, errors.Errorf("All parts of a SPATIAL index must be NOT NULL, but `%s` is nullable", column.name)
 				}
 			}
 
@@ -864,15 +801,11 @@ func isAutoIncrement(column *tidbast.ColumnDef) bool {
 	return false
 }
 
-func checkDefault(columnName string, columnType *types.FieldType, value tidbast.ExprNode) *WalkThroughError {
+func checkDefault(columnName string, columnType *types.FieldType, value tidbast.ExprNode) error {
 	if value.GetType().GetType() != mysql.TypeNull {
 		switch columnType.GetType() {
 		case mysql.TypeBlob, mysql.TypeTinyBlob, mysql.TypeMediumBlob, mysql.TypeLongBlob, mysql.TypeJSON, mysql.TypeGeometry:
-			return &WalkThroughError{
-				Type: ErrorTypeInvalidColumnTypeForDefaultValue,
-				// Content comes from MySQL Error content.
-				Content: fmt.Sprintf("BLOB, TEXT, GEOMETRY or JSON column `%s` can't have a default value", columnName),
-			}
+			return NewSchemaViolationError(423, fmt.Sprintf("BLOB, TEXT, GEOMETRY or JSON column `%s` can't have a default value", columnName))
 		default:
 			// Other column types allow default values
 		}
@@ -881,26 +814,20 @@ func checkDefault(columnName string, columnType *types.FieldType, value tidbast.
 	if valueExpr, yes := value.(tidbast.ValueExpr); yes {
 		datum := types.NewDatum(valueExpr.GetValue())
 		if _, err := datum.ConvertTo(types.Context{}, columnType); err != nil {
-			return &WalkThroughError{
-				Type:    ErrorTypeInvalidColumnTypeForDefaultValue,
-				Content: err.Error(),
-			}
+			return errors.Errorf("%s", err.Error())
 		}
 	}
 	return nil
 }
 
-func (t *TableState) createColumn(ctx *FinderContext, column *tidbast.ColumnDef, position *tidbast.ColumnPosition) *WalkThroughError {
+func (t *TableState) createColumn(ctx *FinderContext, column *tidbast.ColumnDef, position *tidbast.ColumnPosition) error {
 	if _, exists := t.columnSet[column.Name.Name.L]; exists {
-		return &WalkThroughError{
-			Type:    ErrorTypeColumnExists,
-			Content: fmt.Sprintf("Column `%s` already exists in table `%s`", column.Name.Name.O, t.name),
-		}
+		return NewSchemaViolationError(412, fmt.Sprintf("Column `%s` already exists in table `%s`", column.Name.Name.O, t.name))
 	}
 
 	pos := len(t.columnSet) + 1
 	if position != nil && ctx.CheckIntegrity {
-		var err *WalkThroughError
+		var err error
 		pos, err = t.reorderColumn(position)
 		if err != nil {
 			return err
@@ -953,10 +880,7 @@ func (t *TableState) createColumn(ctx *FinderContext, column *tidbast.ColumnDef,
 		case tidbast.ColumnOptionOnUpdate:
 			// we do not deal with ON UPDATE
 			if column.Tp.GetType() != mysql.TypeDatetime && column.Tp.GetType() != mysql.TypeTimestamp {
-				return &WalkThroughError{
-					Type:    ErrorTypeOnUpdateColumnNotDatetimeOrTimestamp,
-					Content: fmt.Sprintf("Column `%s` use ON UPDATE but is not DATETIME or TIMESTAMP", col.name),
-				}
+				return errors.Errorf("Column `%s` use ON UPDATE but is not DATETIME or TIMESTAMP", col.name)
 			}
 		case tidbast.ColumnOptionComment:
 			comment, err := restoreNode(option.Expr, format.RestoreStringWithoutCharset)
@@ -985,27 +909,20 @@ func (t *TableState) createColumn(ctx *FinderContext, column *tidbast.ColumnDef,
 	}
 
 	if col.nullable != nil && !*col.nullable && setNullDefault {
-		return &WalkThroughError{
-			Type: ErrorTypeSetNullDefaultForNotNullColumn,
-			// Content comes from MySQL Error content.
-			Content: fmt.Sprintf("Invalid default value for column `%s`", col.name),
-		}
+		return errors.Errorf("Invalid default value for column `%s`", col.name)
 	}
 
 	t.columnSet[strings.ToLower(col.name)] = col
 	return nil
 }
 
-func (t *TableState) createIndex(name string, keyList []string, unique bool, tp string, option *tidbast.IndexOption) *WalkThroughError {
+func (t *TableState) createIndex(name string, keyList []string, unique bool, tp string, option *tidbast.IndexOption) error {
 	if len(keyList) == 0 {
-		return &WalkThroughError{
-			Type:    ErrorTypeIndexEmptyKeys,
-			Content: fmt.Sprintf("Index `%s` in table `%s` has empty key", name, t.name),
-		}
+		return errors.Errorf("Index `%s` in table `%s` has empty key", name, t.name)
 	}
 	if name != "" {
 		if _, exists := t.indexSet[strings.ToLower(name)]; exists {
-			return NewIndexExistsError(t.name, name)
+			return NewSchemaViolationError(805, fmt.Sprintf("Index `%s` already exists in table `%s`", name, t.name))
 		}
 	} else {
 		suffix := 1
@@ -1039,12 +956,9 @@ func (t *TableState) createIndex(name string, keyList []string, unique bool, tp 
 	return nil
 }
 
-func (t *TableState) createPrimaryKey(keys []string, tp string) *WalkThroughError {
+func (t *TableState) createPrimaryKey(keys []string, tp string) error {
 	if _, exists := t.indexSet[strings.ToLower(PrimaryKeyName)]; exists {
-		return &WalkThroughError{
-			Type:    ErrorTypePrimaryKeyExists,
-			Content: fmt.Sprintf("Primary key exists in table `%s`", t.name),
-		}
+		return errors.Errorf("Primary key exists in table `%s`", t.name)
 	}
 
 	pk := &IndexState{
@@ -1060,14 +974,11 @@ func (t *TableState) createPrimaryKey(keys []string, tp string) *WalkThroughErro
 	return nil
 }
 
-func restoreNode(node tidbast.Node, flag format.RestoreFlags) (string, *WalkThroughError) {
+func restoreNode(node tidbast.Node, flag format.RestoreFlags) (string, error) {
 	var buffer strings.Builder
 	ctx := format.NewRestoreCtx(flag, &buffer)
 	if err := node.Restore(ctx); err != nil {
-		return "", &WalkThroughError{
-			Type:    ErrorTypeDeparseError,
-			Content: err.Error(),
-		}
+		return "", errors.Errorf("%s", err.Error())
 	}
 	return buffer.String(), nil
 }
