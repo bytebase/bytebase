@@ -91,14 +91,13 @@
 import dayjs from "dayjs";
 import { CircleAlertIcon, XIcon } from "lucide-vue-next";
 import type { DropdownOption } from "naive-ui";
-import { NTabs, NTabPane, NTooltip, NDropdown } from "naive-ui";
-import { computed, ref, watch, nextTick } from "vue";
+import { NDropdown, NTabPane, NTabs, NTooltip } from "naive-ui";
+import { computed, nextTick, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBSpin } from "@/bbkit";
-import { BBAttention } from "@/bbkit";
+import { BBAttention, BBSpin } from "@/bbkit";
 import { useSQLEditorTabStore } from "@/store";
-import { getDataSourceTypeI18n } from "@/types";
 import type { ComposedDatabase, SQLEditorDatabaseQueryContext } from "@/types";
+import { getDataSourceTypeI18n } from "@/types";
 import BatchQuerySelect from "./BatchQuerySelect.vue";
 import DatabaseQueryContext from "./DatabaseQueryContext.vue";
 

@@ -41,12 +41,12 @@
 <script lang="ts" setup>
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter, useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import {
+  PagedInstanceTable,
+  PagedProjectTable,
   SearchBox,
   TabFilter,
-  PagedProjectTable,
-  PagedInstanceTable,
 } from "@/components/v2";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";

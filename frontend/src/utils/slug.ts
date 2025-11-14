@@ -1,8 +1,8 @@
 import {
-  worksheetNamePrefix,
-  projectNamePrefix,
   getReviewConfigId,
+  projectNamePrefix,
   reviewConfigNamePrefix,
+  worksheetNamePrefix,
 } from "@/store/modules/v1/common";
 import type { SQLReviewPolicy } from "../types";
 import type { IdType } from "../types/id";

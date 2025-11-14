@@ -18,7 +18,7 @@
 
 <script setup lang="ts">
 import { v4 as uuidv4 } from "uuid";
-import { computed, toRef, ref } from "vue";
+import { computed, ref, toRef } from "vue";
 import type { Language } from "@/types";
 import MonacoTextModelEditor from "./MonacoTextModelEditor.vue";
 import { useMonacoTextModel } from "./text-model";

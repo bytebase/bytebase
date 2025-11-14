@@ -9,7 +9,7 @@
 import { UnlinkIcon } from "lucide-vue-next";
 import { computed } from "vue";
 import { EngineIcon } from "@/components/Icon";
-import { type SQLEditorTab, isValidInstanceName } from "@/types";
+import { isValidInstanceName, type SQLEditorTab } from "@/types";
 import { connectionForSQLEditorTab } from "@/utils";
 
 const props = defineProps<{

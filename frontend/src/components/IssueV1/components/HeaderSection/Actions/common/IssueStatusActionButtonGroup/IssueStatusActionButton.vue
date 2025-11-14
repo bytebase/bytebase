@@ -19,7 +19,7 @@
 </template>
 
 <script setup lang="ts">
-import { NTooltip, NButton } from "naive-ui";
+import { NButton, NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { ErrorList } from "@/components/IssueV1/components/common";
 import type { IssueStatusAction } from "@/components/IssueV1/logic";

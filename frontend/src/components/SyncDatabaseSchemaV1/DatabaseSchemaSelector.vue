@@ -58,13 +58,13 @@ import { useI18n } from "vue-i18n";
 import { DatabaseSelect, EnvironmentSelect } from "@/components/v2";
 import {
   useChangelogStore,
-  useDBSchemaV1Store,
   useDatabaseV1Store,
+  useDBSchemaV1Store,
 } from "@/store";
 import {
-  UNKNOWN_ID,
   getDateForPbTimestampProtoEs,
   isValidDatabaseName,
+  UNKNOWN_ID,
 } from "@/types";
 import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
 import {

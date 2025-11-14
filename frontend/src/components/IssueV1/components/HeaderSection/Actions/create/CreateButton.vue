@@ -46,13 +46,13 @@
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
-import { NTooltip, NButton } from "naive-ui";
+import { NButton, NTooltip } from "naive-ui";
 import { zindexable as vZindexable } from "vdirs";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { getValidIssueLabels } from "@/components/IssueV1/components/IssueLabelSelector.vue";
 import { ErrorList } from "@/components/IssueV1/components/common";
+import { getValidIssueLabels } from "@/components/IssueV1/components/IssueLabelSelector.vue";
 import {
   isValidStage,
   specForTask,
@@ -75,15 +75,20 @@ import {
 } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
-  useSheetV1Store,
-  useCurrentProjectV1,
   pushNotification,
+  useCurrentProjectV1,
+  useSheetV1Store,
 } from "@/store";
-import { CreateIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
-import { IssueSchema, Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
-import { CreatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
+import {
+  CreateIssueRequestSchema,
+  Issue_Type,
+  IssueSchema,
+} from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan_ExportDataConfig } from "@/types/proto-es/v1/plan_service_pb";
-import { type Plan_ChangeDatabaseConfig } from "@/types/proto-es/v1/plan_service_pb";
+import {
+  CreatePlanRequestSchema,
+  type Plan_ChangeDatabaseConfig,
+} from "@/types/proto-es/v1/plan_service_pb";
 import {
   CheckReleaseRequestSchema,
   Release_File_Type,
@@ -91,8 +96,9 @@ import {
 import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
-import { databaseForTask } from "@/utils";
 import {
+  type Defer,
+  databaseForTask,
   defer,
   extractProjectResourceName,
   extractSheetUID,
@@ -101,7 +107,6 @@ import {
   hasPermissionToCreateChangeDatabaseIssueInProject,
   issueV1Slug,
   sheetNameOfTaskV1,
-  type Defer,
 } from "@/utils";
 
 const { t } = useI18n();

@@ -37,10 +37,10 @@ import { useI18n } from "vue-i18n";
 import { useDatabaseDetailContext } from "@/components/Database/context";
 import { EnvironmentSelect } from "@/components/v2";
 import {
+  environmentNamePrefix,
+  pushNotification,
   useDatabaseV1Store,
   useEnvironmentV1Store,
-  pushNotification,
-  environmentNamePrefix,
 } from "@/store";
 import { type ComposedDatabase } from "@/types";
 import { UpdateDatabaseRequestSchema } from "@/types/proto-es/v1/database_service_pb";

@@ -63,14 +63,14 @@ import PlanCheckRunDetail from "@/components/PlanCheckRun/PlanCheckRunDetail.vue
 import { useProjectV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { RiskLevel } from "@/types/proto-es/v1/common_pb";
-import {
-  PlanCheckRunSchema,
-  PlanCheckRun_ResultSchema,
-  PlanCheckRun_Result_SqlReviewReportSchema,
-  PlanCheckRun_Status,
-} from "@/types/proto-es/v1/plan_service_pb";
 import type { PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
-import { Advice_Level, type Advice } from "@/types/proto-es/v1/sql_service_pb";
+import {
+  PlanCheckRun_Result_SqlReviewReportSchema,
+  PlanCheckRun_ResultSchema,
+  PlanCheckRun_Status,
+  PlanCheckRunSchema,
+} from "@/types/proto-es/v1/plan_service_pb";
+import { type Advice, Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import type { Defer } from "@/utils";
 
 const props = withDefaults(

@@ -25,19 +25,19 @@ import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import type { DataTableColumn } from "naive-ui";
 import { NDataTable } from "naive-ui";
-import { computed, reactive, h, watchEffect } from "vue";
+import { computed, h, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBAlert } from "@/bbkit";
 import {
+  pushNotification,
+  useGroupStore,
   useUserStore,
   useWorkspaceV1Store,
-  useGroupStore,
-  pushNotification,
 } from "@/store";
 import type { Group } from "@/types/proto-es/v1/group_service_pb";
 import {
-  type User,
   UpdateUserRequestSchema,
+  type User,
 } from "@/types/proto-es/v1/user_service_pb";
 import { toClipboard } from "@/utils";
 import GroupsCell from "./cells/GroupsCell.vue";

@@ -27,7 +27,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { RichEngineName } from "@/components/v2";
-import { useDBSchemaV1Store, useDatabaseV1Store } from "@/store";
+import { useDatabaseV1Store, useDBSchemaV1Store } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { bytesToString } from "@/utils";
 import InfoItem from "./InfoItem.vue";

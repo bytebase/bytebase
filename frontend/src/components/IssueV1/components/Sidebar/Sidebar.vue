@@ -75,8 +75,10 @@ import { provideGhostSettingContext } from "@/components/Plan/components/Configu
 import { ApprovalFlowSection } from "@/components/Plan/components/IssueReviewView/Sidebar/ApprovalFlowSection";
 import { issueServiceClientConnect } from "@/grpcweb";
 import { pushNotification, useCurrentProjectV1 } from "@/store";
-import { UpdateIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
-import { IssueSchema } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  IssueSchema,
+  UpdateIssueRequestSchema,
+} from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { specForTask, useIssueContext } from "../../logic";

@@ -131,23 +131,23 @@
 
 <script lang="ts" setup>
 import { NSwitch, NTag } from "naive-ui";
-import { computed, reactive, watch, unref } from "vue";
+import { computed, reactive, unref, watch } from "vue";
 import { BBSpin } from "@/bbkit";
 import { DiffEditor, MonacoEditor } from "@/components/MonacoEditor";
 import { CopyButton } from "@/components/v2";
 import {
   useChangelogStore,
-  useDBSchemaV1Store,
   useDatabaseV1ByName,
+  useDBSchemaV1Store,
 } from "@/store";
 import { getDateForPbTimestampProtoEs } from "@/types";
 import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
 import { ChangelogView } from "@/types/proto-es/v1/database_service_pb";
 import {
   extractIssueUID,
+  getAffectedTableDisplayName,
   getStatementSize,
   hasProjectPermissionV2,
-  getAffectedTableDisplayName,
   wrapRefAsPromise,
 } from "@/utils";
 import {

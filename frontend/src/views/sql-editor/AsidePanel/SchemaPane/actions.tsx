@@ -1,4 +1,4 @@
-import { head, cloneDeep } from "lodash-es";
+import { cloneDeep, head } from "lodash-es";
 import {
   CodeIcon,
   CopyIcon,
@@ -21,20 +21,20 @@ import { t } from "@/plugins/i18n";
 import { SQL_EDITOR_DATABASE_MODULE } from "@/router/sqlEditor";
 import {
   pushNotification,
+  useDatabaseV1Store,
+  useDBSchemaV1Store,
   useSQLEditorTabStore,
   useTabViewStateStore,
-  useDBSchemaV1Store,
-  useDatabaseV1Store,
 } from "@/store";
 import {
+  type ComposedDatabase,
   DEFAULT_SQL_EDITOR_TAB_MODE,
   dialectOfEngineV1,
-  languageOfEngineV1,
-  type ComposedDatabase,
-  type Position,
-  type SQLEditorConnection,
   type EditorPanelView,
   type EditorPanelViewState,
+  languageOfEngineV1,
+  type Position,
+  type SQLEditorConnection,
   typeToView,
 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
@@ -42,6 +42,7 @@ import { GetSchemaStringRequest_ObjectType } from "@/types/proto-es/v1/database_
 import type { DataSource } from "@/types/proto-es/v1/instance_service_pb";
 import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
 import {
+  defaultSQLEditorTab,
   extractInstanceResourceName,
   extractProjectResourceName,
   generateSimpleDeleteStatement,
@@ -49,15 +50,14 @@ import {
   generateSimpleSelectAllStatement,
   generateSimpleUpdateStatement,
   instanceV1HasAlterSchema,
+  isSimilarSQLEditorTab,
   sortByDictionary,
   supportGetStringSchema,
   toClipboard,
-  defaultSQLEditorTab,
-  isSimilarSQLEditorTab,
 } from "@/utils";
+import { type SQLEditorEvents, useSQLEditorContext } from "../../context";
 import { keyWithPosition } from "../../EditorCommon";
 import { useCurrentTabViewStateContext } from "../../EditorPanel";
-import { useSQLEditorContext, type SQLEditorEvents } from "../../context";
 import type { NodeTarget, NodeType, TreeNode } from "./tree";
 import { readableTextForNodeTarget } from "./tree";
 

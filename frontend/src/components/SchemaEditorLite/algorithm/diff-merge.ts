@@ -2,16 +2,16 @@ import { create } from "@bufbuild/protobuf";
 import { cloneDeep, isEqual, pick } from "lodash-es";
 import type { ComposedDatabase } from "@/types";
 import type {
-  DatabaseCatalog,
   ColumnCatalog,
+  DatabaseCatalog,
   SchemaCatalog,
   TableCatalog,
 } from "@/types/proto-es/v1/database_catalog_service_pb";
 import {
-  SchemaCatalogSchema,
-  TableCatalogSchema,
-  TableCatalog_ColumnsSchema,
   ColumnCatalogSchema,
+  SchemaCatalogSchema,
+  TableCatalog_ColumnsSchema,
+  TableCatalogSchema,
 } from "@/types/proto-es/v1/database_catalog_service_pb";
 import type {
   FunctionMetadata,
@@ -27,12 +27,14 @@ import {
   type SchemaMetadata,
   type TableMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
-import { ComparableTablePartitionFields, TinyTimer, keyBy } from "@/utils";
 import {
   ComparableColumnFields,
   ComparableForeignKeyFields,
   ComparableIndexFields,
   ComparableTableFields,
+  ComparableTablePartitionFields,
+  keyBy,
+  TinyTimer,
 } from "@/utils";
 import type { SchemaEditorContext } from "../context";
 import { keyForResourceName } from "../context/common";

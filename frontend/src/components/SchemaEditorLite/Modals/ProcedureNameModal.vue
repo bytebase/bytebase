@@ -39,9 +39,9 @@ import { useNotificationStore } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import type {
   DatabaseMetadata,
+  ProcedureMetadata,
   SchemaMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
-import type { ProcedureMetadata } from "@/types/proto-es/v1/database_service_pb";
 import { ProcedureMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
 import { useSchemaEditorContext } from "../context";
 

@@ -18,11 +18,11 @@
 
 <script lang="tsx" setup>
 import { CheckIcon } from "lucide-vue-next";
-import { NDataTable, type DataTableColumn } from "naive-ui";
+import { type DataTableColumn, NDataTable } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { ProjectNameCell, LabelsCell } from "@/components/v2/Model/cells";
+import { LabelsCell, ProjectNameCell } from "@/components/v2/Model/cells";
 import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
 import { PROJECT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import { getProjectName } from "@/store/modules/v1/common";

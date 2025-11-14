@@ -1,10 +1,10 @@
 import { uniq } from "lodash-es";
 import { defineStore } from "pinia";
-import { shallowReactive, computed } from "vue";
+import { computed, shallowReactive } from "vue";
 import {
-  PresetRoleType,
-  PRESET_WORKSPACE_ROLES,
   type Permission,
+  PRESET_WORKSPACE_ROLES,
+  PresetRoleType,
 } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { type User } from "@/types/proto-es/v1/user_service_pb";

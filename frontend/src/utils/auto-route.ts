@@ -16,8 +16,8 @@ import type {
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import {
-  formatEnvironmentName,
   type Environment,
+  formatEnvironmentName,
 } from "@/types/v1/environment";
 import {
   extractDatabaseResourceName,

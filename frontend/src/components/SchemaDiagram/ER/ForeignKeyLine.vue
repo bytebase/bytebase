@@ -23,7 +23,7 @@ import {
   useGeometry,
   useSchemaDiagramContext,
 } from "../common";
-import type { Point, Rect, Path, ForeignKey } from "../types";
+import type { ForeignKey, Path, Point, Rect } from "../types";
 import SVGLine from "./libs/SVGLine.vue";
 
 type Direction = "LEFT" | "RIGHT";

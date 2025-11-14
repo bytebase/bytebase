@@ -50,10 +50,10 @@ import { ref, toRef, watch } from "vue";
 import { useAIContext } from "../../logic";
 import type { Conversation } from "../../types";
 import AIMessageView from "./AIMessageView.vue";
-import EmptyView from "./EmptyView.vue";
-import UserMessageView from "./UserMessageView.vue";
 import { provideChatViewContext } from "./context";
+import EmptyView from "./EmptyView.vue";
 import type { Mode } from "./types";
+import UserMessageView from "./UserMessageView.vue";
 
 const props = withDefaults(
   defineProps<{

@@ -84,10 +84,10 @@
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
 import {
-  CheckCircleIcon,
   AlertCircleIcon,
-  XCircleIcon,
+  CheckCircleIcon,
   PlayIcon,
+  XCircleIcon,
 } from "lucide-vue-next";
 import { NButton, NTag, NTooltip } from "naive-ui";
 import { computed, ref, watch } from "vue";
@@ -101,22 +101,20 @@ import {
   MigrationType,
 } from "@/types/proto-es/v1/common_pb";
 import {
-  PlanCheckRun_Type,
-  PlanCheckRun_Status,
   type PlanCheckRun,
   type PlanCheckRun_Result,
-  PlanCheckRunSchema,
   PlanCheckRun_ResultSchema,
+  PlanCheckRun_Status,
+  PlanCheckRun_Type,
+  PlanCheckRunSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import {
   CheckReleaseRequestSchema,
+  type CheckReleaseResponse_CheckResult,
+  Release_File_MigrationType,
   Release_File_Type,
 } from "@/types/proto-es/v1/release_service_pb";
-import {
-  Release_File_MigrationType,
-  type CheckReleaseResponse_CheckResult,
-} from "@/types/proto-es/v1/release_service_pb";
-import { Advice_Level, type Advice } from "@/types/proto-es/v1/sql_service_pb";
+import { type Advice, Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import {
   extractProjectResourceName,
   getSheetStatement,

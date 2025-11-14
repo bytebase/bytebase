@@ -106,25 +106,25 @@ import DatabaseResourceForm from "@/components/GrantRequestPanel/DatabaseResourc
 import MembersBindingSelect from "@/components/Member/MembersBindingSelect.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import FormLayout from "@/components/v2/Form/FormLayout.vue";
-import { usePolicyV1Store, pushNotification } from "@/store";
+import { pushNotification, usePolicyV1Store } from "@/store";
 import type { DatabaseResource } from "@/types";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import type {
-  Policy,
   MaskingExceptionPolicy_MaskingException,
+  Policy,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import {
-  PolicyType,
-  PolicyResourceType,
   MaskingExceptionPolicy_MaskingException_Action,
-  MaskingExceptionPolicySchema,
   MaskingExceptionPolicy_MaskingExceptionSchema,
+  MaskingExceptionPolicySchema,
+  PolicyResourceType,
+  PolicyType,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { SensitiveColumn } from "./types";
 import {
-  getExpressionsForDatabaseResource,
   convertSensitiveColumnToDatabaseResource,
+  getExpressionsForDatabaseResource,
 } from "./utils";
 
 const props = defineProps<{

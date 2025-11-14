@@ -15,8 +15,7 @@ import { usePlanSQLCheckContext } from "@/components/Plan/components/SQLCheckSec
 import { useRouteChangeGuard } from "@/composables/useRouteChangeGuard";
 import { useCurrentProjectV1 } from "@/store";
 import { TaskTypeListWithStatement } from "@/types";
-import { databaseForTask } from "@/utils";
-import { isValidTaskName } from "@/utils";
+import { databaseForTask, isValidTaskName } from "@/utils";
 import { useIssueContext } from "../../logic";
 import EditorView from "./EditorView";
 

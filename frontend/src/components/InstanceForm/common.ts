@@ -8,8 +8,8 @@ import type {
   Instance,
 } from "@/types/proto-es/v1/instance_service_pb";
 import {
-  DataSourceType,
   DataSource_AuthenticationType,
+  DataSourceType,
 } from "@/types/proto-es/v1/instance_service_pb";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { calcUpdateMask } from "@/utils";

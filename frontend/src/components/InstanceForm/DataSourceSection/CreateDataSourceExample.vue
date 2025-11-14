@@ -201,18 +201,18 @@
 <script lang="ts" setup>
 import hljs from "highlight.js/lib/core";
 import { NCode, NConfigProvider } from "naive-ui";
-import { reactive, computed } from "vue";
+import { computed, reactive } from "vue";
 import { BBAttention } from "@/bbkit";
 import { CopyButton } from "@/components/v2";
 import {
-  languageOfEngineV1,
   DATASOURCE_ADMIN_USER_NAME,
   DATASOURCE_READONLY_USER_NAME,
+  languageOfEngineV1,
 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
-  DataSourceType,
   DataSource_AuthenticationType,
+  DataSourceType,
 } from "@/types/proto-es/v1/instance_service_pb";
 
 interface LocalState {

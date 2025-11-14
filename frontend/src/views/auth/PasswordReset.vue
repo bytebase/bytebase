@@ -37,16 +37,16 @@
 import { create as createProto } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { NButton } from "naive-ui";
-import { computed, reactive, ref, onMounted } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import UserPassword from "@/components/User/Settings/UserPassword.vue";
 import {
   pushNotification,
-  useSettingV1Store,
-  useUserStore,
   useAuthStore,
   useCurrentUserV1,
+  useSettingV1Store,
+  useUserStore,
 } from "@/store";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";

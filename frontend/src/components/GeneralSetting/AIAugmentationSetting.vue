@@ -165,14 +165,13 @@ import { NSelect, NTooltip } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, onMounted, reactive, ref, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBTextField } from "@/bbkit";
-import { BBAttention } from "@/bbkit";
+import { BBAttention, BBTextField } from "@/bbkit";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { Switch } from "@/components/v2";
-import { useSettingV1Store, useActuatorV1Store } from "@/store/modules";
+import { useActuatorV1Store, useSettingV1Store } from "@/store/modules";
 import {
-  AISettingSchema,
   AISetting_Provider,
+  AISettingSchema,
   Setting_SettingName,
   ValueSchema as SettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";

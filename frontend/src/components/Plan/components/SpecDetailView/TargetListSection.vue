@@ -105,25 +105,25 @@ import DatabaseGroupName from "@/components/v2/Model/DatabaseGroupName.vue";
 import { planServiceClientConnect } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/router/dashboard/projectV1";
 import {
-  useDBGroupStore,
-  useProjectV1Store,
-  pushNotification,
   batchGetOrFetchDatabases,
   getProjectNameAndDatabaseGroupName,
   projectNamePrefix,
+  pushNotification,
+  useDBGroupStore,
+  useProjectV1Store,
 } from "@/store";
 import { isValidDatabaseGroupName, isValidDatabaseName } from "@/types";
 import {
-  DatabaseGroupView,
   type DatabaseGroup,
+  DatabaseGroupView,
 } from "@/types/proto-es/v1/database_group_service_pb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { extractProjectResourceName } from "@/utils";
 import { usePlanContext } from "../../logic/context";
 import DatabaseDisplay from "../common/DatabaseDisplay.vue";
 import AllTargetsDrawer from "./AllTargetsDrawer.vue";
-import TargetsSelectorDrawer from "./TargetsSelectorDrawer.vue";
 import { useSelectedSpec } from "./context";
+import TargetsSelectorDrawer from "./TargetsSelectorDrawer.vue";
 
 const DEFAULT_VISIBLE_TARGETS = 20;
 

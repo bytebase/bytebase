@@ -53,18 +53,18 @@
 
 <script lang="tsx" setup>
 import { create as createProto } from "@bufbuild/protobuf";
-import { NButton, NDataTable } from "naive-ui";
 import type { DataTableColumn } from "naive-ui";
+import { NButton, NDataTable } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBModal } from "@/bbkit";
 import { SpinnerButton } from "@/components/v2/Form";
 import { pushNotification, useWorkspaceApprovalSettingStore } from "@/store";
 import {
-  type LocalApprovalRule,
   BUILTIN_APPROVAL_FLOWS,
   type BuiltinApprovalFlow,
   isBuiltinFlowId,
+  type LocalApprovalRule,
 } from "@/types";
 import type { ApprovalFlow } from "@/types/proto-es/v1/issue_service_pb";
 import { ApprovalFlowSchema } from "@/types/proto-es/v1/issue_service_pb";

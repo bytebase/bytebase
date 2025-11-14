@@ -25,15 +25,16 @@ jobs:
           node-version: '24.11.0'
           cache: pnpm
           cache-dependency-path: "frontend/pnpm-lock.yaml"
-      - run: pnpm install --frozen-lockfile
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
         working-directory: frontend
-      - name: Run format check
-        run: pnpm prettier --check .
+      - name: Biome check (format, lint, imports)
+        run: pnpm biome:ci
         working-directory: frontend
-      - name: Run pnpm lint
+      - name: ESLint check (Vue-specific + i18n)
         run: pnpm lint
         working-directory: frontend
-      - name: Run pnpm type-check
+      - name: TypeScript type check
         run: pnpm type-check
         working-directory: frontend
 
@@ -49,16 +50,17 @@ jobs:
           node-version: '24.11.0'
           cache: pnpm
           cache-dependency-path: "frontend/pnpm-lock.yaml"
-      - run: pnpm install --frozen-lockfile
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
         working-directory: frontend
       - name: Copy config files
         run: |
           cp ../backend/enterprise/plan.yaml ./src/types
           cp ../backend/component/iam/permission.yaml ./src/types/iam
         working-directory: frontend
-      - name: Run pnpm test
+      - name: Run unit tests
         run: pnpm test
         working-directory: frontend
-      - name: Run pnpm release build
+      - name: Build for production
         run: pnpm release-docker
         working-directory: frontend

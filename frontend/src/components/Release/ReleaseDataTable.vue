@@ -16,7 +16,7 @@
 <script lang="tsx" setup>
 import type { DataTableColumn } from "naive-ui";
 import { NDataTable, NTag } from "naive-ui";
-import { reactive, computed, watch } from "vue";
+import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { getTimeForPbTimestampProtoEs } from "@/types";

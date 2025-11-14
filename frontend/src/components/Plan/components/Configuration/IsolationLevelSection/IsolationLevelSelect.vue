@@ -15,15 +15,15 @@
 import { NSelect, type SelectOption } from "naive-ui";
 import { computed, nextTick, ref, watch } from "vue";
 import {
-  usePlanContext,
   updateSpecSheetWithStatement,
+  usePlanContext,
 } from "@/components/Plan/logic";
 import { setSheetStatement } from "@/utils";
 import { useSelectedSpec } from "../../SpecDetailView/context";
 import {
+  type IsolationLevel,
   parseStatement,
   updateIsolationLevel,
-  type IsolationLevel,
 } from "../../StatementSection/directiveUtils";
 import { useSpecSheet } from "../../StatementSection/useSpecSheet";
 import { useIsolationLevelSettingContext } from "./context";

@@ -14,13 +14,13 @@
 </template>
 
 <script lang="tsx" setup>
-import { NDataTable, type DataTableColumn } from "naive-ui";
+import { type DataTableColumn, NDataTable } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import {
-  formatEnvironmentName,
   type Environment,
+  formatEnvironmentName,
 } from "@/types/v1/environment";
 import { EnvironmentV1Name } from ".";
 

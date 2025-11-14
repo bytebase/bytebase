@@ -38,25 +38,25 @@
 <script setup lang="ts">
 import { first, orderBy } from "lodash-es";
 import { EllipsisVerticalIcon } from "lucide-vue-next";
-import { NButton, NDropdown, type DropdownOption } from "naive-ui";
-import { computed, h } from "vue";
+import { type DropdownOption, NButton, NDropdown } from "naive-ui";
 import type { VNode } from "vue";
+import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { DropdownItemWithErrorList } from "@/components/IssueV1/components/common";
-import { useCurrentUserV1, extractUserId } from "@/store";
+import { extractUserId, useCurrentUserV1 } from "@/store";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import {
   Task_Status,
   Task_Type,
+  type TaskRun,
   TaskRun_ExportArchiveStatus,
   TaskRun_Status,
-  type TaskRun,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import { extractTaskRunUID, extractTaskUID } from "@/utils";
 import { usePlanContext } from "../../../../logic";
 import { ExportArchiveDownloadAction } from "../export";
-import UnifiedActionButton from "./UnifiedActionButton.vue";
 import type { ActionConfig, UnifiedAction } from "./types";
+import UnifiedActionButton from "./UnifiedActionButton.vue";
 
 const props = defineProps<{
   primaryAction?: ActionConfig;

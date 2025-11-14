@@ -72,6 +72,7 @@ import {
 } from "@/utils";
 import DatabaseChooser from "@/views/sql-editor/EditorCommon/DatabaseChooser.vue";
 import { useCurrentTabViewStateContext } from "../context/viewState.tsx";
+import { SchemaSelectToolbar } from "./common";
 import DiagramPanel from "./DiagramPanel";
 import ExternalTablesPanel from "./ExternalTablesPanel";
 import FunctionsPanel from "./FunctionsPanel";
@@ -82,7 +83,6 @@ import SequencesPanel from "./SequencesPanel";
 import TablesPanel from "./TablesPanel";
 import TriggersPanel from "./TriggersPanel/TriggersPanel.vue";
 import ViewsPanel from "./ViewsPanel";
-import { SchemaSelectToolbar } from "./common";
 
 defineProps<{
   contentClass?: VueClass;

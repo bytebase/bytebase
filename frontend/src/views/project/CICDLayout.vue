@@ -52,22 +52,22 @@ import { NSpin, NTab, NTabs } from "naive-ui";
 import { computed, ref, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 import {
-  useRoute,
-  useRouter,
   onBeforeRouteLeave,
   onBeforeRouteUpdate,
+  useRoute,
+  useRouter,
 } from "vue-router";
 import {
   providePlanContext,
   useBasePlanContext,
   useInitializePlan,
 } from "@/components/Plan";
-import PollerProvider from "@/components/Plan/PollerProvider.vue";
 import { BannerSection, HeaderSection } from "@/components/Plan/components";
 import RefreshIndicator from "@/components/Plan/components/RefreshIndicator.vue";
 import { provideSidebarContext } from "@/components/Plan/logic/sidebar";
 import { useCICDTabNavigation } from "@/components/Plan/logic/useCICDTabNavigation.tsx";
 import { useNavigationGuard } from "@/components/Plan/logic/useNavigationGuard";
+import PollerProvider from "@/components/Plan/PollerProvider.vue";
 import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
 import { useBodyLayoutContext } from "@/layouts/common";
 

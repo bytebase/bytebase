@@ -118,14 +118,14 @@
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
 import { cloneDeep, isEqual, uniq, uniqBy } from "lodash-es";
-import { NButton, NDivider, NInput, NRadioGroup, NRadio } from "naive-ui";
+import { NButton, NDivider, NInput, NRadio, NRadioGroup } from "naive-ui";
 import { computed, onMounted, ref } from "vue";
 import EngineIcon from "@/components/Icon/EngineIcon.vue";
 import { pushNotification, useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
-  SchemaTemplateSetting_FieldTemplate,
   SchemaTemplateSetting_ColumnType,
+  SchemaTemplateSetting_FieldTemplate,
 } from "@/types/proto-es/v1/setting_service_pb";
 import {
   SchemaTemplateSetting_ColumnTypeSchema,

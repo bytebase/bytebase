@@ -68,10 +68,10 @@ import {
   MigrationType,
 } from "@/types/proto-es/v1/common_pb";
 import { DatabaseGroupSchema } from "@/types/proto-es/v1/database_group_service_pb";
-import { CreatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import {
-  PlanSchema,
+  CreatePlanRequestSchema,
   Plan_ChangeDatabaseConfigSchema,
+  PlanSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import { Release_File_MigrationType } from "@/types/proto-es/v1/release_service_pb";
 import { generateIssueTitle, issueV1Slug } from "@/utils";

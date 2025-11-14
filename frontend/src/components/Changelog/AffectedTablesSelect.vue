@@ -12,8 +12,8 @@
 </template>
 
 <script setup lang="tsx">
-import { NSelect } from "naive-ui";
 import type { SelectOption } from "naive-ui";
+import { NSelect } from "naive-ui";
 import { computed } from "vue";
 import { useDBSchemaV1Store } from "@/store";
 import { type ComposedDatabase, type Table } from "@/types";

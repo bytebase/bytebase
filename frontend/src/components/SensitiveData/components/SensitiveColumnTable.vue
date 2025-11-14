@@ -13,19 +13,19 @@
 <script lang="tsx" setup>
 import { create } from "@bufbuild/protobuf";
 import { TrashIcon } from "lucide-vue-next";
-import { NDataTable, NPopconfirm, type DataTableColumn } from "naive-ui";
+import { type DataTableColumn, NDataTable, NPopconfirm } from "naive-ui";
 import { computed, h, ref, watch, withModifiers } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter, RouterLink } from "vue-router";
+import { RouterLink, useRouter } from "vue-router";
 import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.vue";
 import SemanticTypeCell from "@/components/ColumnDataTable/SemanticTypeCell.vue";
 import type { MaskData } from "@/components/SensitiveData/types";
 import { MiniActionButton } from "@/components/v2";
 import {
   pushNotification,
+  useDatabaseCatalog,
   useDatabaseCatalogV1Store,
   useSettingV1Store,
-  useDatabaseCatalog,
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { DataClassificationSetting_DataClassificationConfigSchema } from "@/types/proto-es/v1/setting_service_pb";

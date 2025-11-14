@@ -1,4 +1,4 @@
-import { type InjectionKey, type Ref, inject, provide, ref } from "vue";
+import { type InjectionKey, inject, provide, type Ref, ref } from "vue";
 import { Risk_Source } from "@/types/proto-es/v1/risk_service_pb";
 
 export type RiskFilterContext = {

@@ -14,8 +14,8 @@ import { computed } from "vue";
 import type { TableMetadata } from "@/types/proto-es/v1/database_service_pb";
 import type { VueClass } from "@/utils";
 import { expectedZoomRange, useSchemaDiagramContext } from ".";
-import FocusIcon from "./FocusIcon.vue";
 import { DEFAULT_PADDINGS } from "./const";
+import FocusIcon from "./FocusIcon.vue";
 
 const props = withDefaults(
   defineProps<{

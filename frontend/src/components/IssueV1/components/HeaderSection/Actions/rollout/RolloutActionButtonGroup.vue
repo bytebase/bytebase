@@ -15,8 +15,8 @@ import type {
   StageRolloutAction,
   TaskRolloutAction,
 } from "@/components/IssueV1/logic";
-import RolloutActionButton from "./RolloutActionButton.vue";
 import type { RolloutAction } from "./common";
+import RolloutActionButton from "./RolloutActionButton.vue";
 
 defineProps<{
   taskRolloutActionList: TaskRolloutAction[];

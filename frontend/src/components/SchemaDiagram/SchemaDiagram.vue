@@ -42,18 +42,18 @@ import type {
   TableMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
 import Canvas from "./Canvas";
-import type { GraphNodeItem, GraphEdgeItem } from "./ER";
-import { ForeignKeyLine, TableNode, autoLayout } from "./ER";
-import Navigator from "./Navigator";
 import { provideSchemaDiagramContext } from "./common";
+import type { GraphEdgeItem, GraphNodeItem } from "./ER";
+import { autoLayout, ForeignKeyLine, TableNode } from "./ER";
+import Navigator from "./Navigator";
 import type {
+  EditStatus,
+  ForeignKey,
+  Geometry,
   Point,
   Rect,
-  Size,
   SchemaDiagramContext,
-  ForeignKey,
-  EditStatus,
-  Geometry,
+  Size,
 } from "./types";
 
 const props = withDefaults(

@@ -21,14 +21,14 @@
 </template>
 
 <script setup lang="tsx">
-import { NCheckbox, NDataTable, type DataTableColumn } from "naive-ui";
+import { type DataTableColumn, NCheckbox, NDataTable } from "naive-ui";
 import { computed, h, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ComposedDatabase } from "@/types";
 import type {
   DatabaseMetadata,
-  SequenceMetadata,
   SchemaMetadata,
+  SequenceMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
 import { useAutoHeightDataTable } from "@/utils";
 import { keyWithPosition } from "@/views/sql-editor/EditorCommon";

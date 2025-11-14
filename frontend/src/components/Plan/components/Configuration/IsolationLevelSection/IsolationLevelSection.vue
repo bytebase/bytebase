@@ -28,8 +28,8 @@
 import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useTransactionModeSettingContext } from "../TransactionModeSection/context";
-import IsolationLevelSelect from "./IsolationLevelSelect.vue";
 import { useIsolationLevelSettingContext } from "./context";
+import IsolationLevelSelect from "./IsolationLevelSelect.vue";
 
 // Check if isolation level section should be shown based on context
 const { shouldShow } = useIsolationLevelSettingContext();

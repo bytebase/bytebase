@@ -39,18 +39,18 @@ import type {
 } from "@/components/MonacoEditor";
 import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
 import {
-  useEditorContextKey,
   formatEditorContent,
+  useEditorContextKey,
 } from "@/components/MonacoEditor/utils";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
-  useSQLEditorTabStore,
   useConnectionOfCurrentSQLEditorTab,
+  useSQLEditorTabStore,
 } from "@/store";
 import type { SQLDialect, SQLEditorQueryParams } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { useInstanceV1EditorLanguage, instanceV1AllowsExplain } from "@/utils";
+import { instanceV1AllowsExplain, useInstanceV1EditorLanguage } from "@/utils";
 import { useSQLEditorContext } from "../../context";
 import {
   checkCursorAtFirstLine,

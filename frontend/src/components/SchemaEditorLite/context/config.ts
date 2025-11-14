@@ -2,17 +2,17 @@ import { create } from "@bufbuild/protobuf";
 import type { Ref } from "vue";
 import { reactive, watch } from "vue";
 import type {
-  TableCatalog,
   ColumnCatalog,
+  DatabaseCatalog,
+  TableCatalog,
 } from "@/types/proto-es/v1/database_catalog_service_pb";
 import {
+  ColumnCatalogSchema,
   DatabaseCatalogSchema,
   SchemaCatalogSchema,
-  TableCatalogSchema,
   TableCatalog_ColumnsSchema,
-  ColumnCatalogSchema,
+  TableCatalogSchema,
 } from "@/types/proto-es/v1/database_catalog_service_pb";
-import type { DatabaseCatalog } from "@/types/proto-es/v1/database_catalog_service_pb";
 import { keyForResourceName } from "./common";
 
 export const useEditCatalogs = (

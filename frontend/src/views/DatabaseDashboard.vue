@@ -59,14 +59,14 @@ import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useComm
 import { CreateDatabasePrepPanel } from "@/components/CreateDatabasePrepForm";
 import { Drawer } from "@/components/v2";
 import {
-  PagedDatabaseTable,
   DatabaseOperations,
+  PagedDatabaseTable,
 } from "@/components/v2/Model/DatabaseV1Table";
 import { useDatabaseV1Store, useUIStateStore } from "@/store";
 import {
+  environmentNamePrefix,
   instanceNamePrefix,
   projectNamePrefix,
-  environmentNamePrefix,
 } from "@/store/modules/v1/common";
 import type { ComposedDatabase } from "@/types";
 import { DEFAULT_PROJECT_NAME, isValidDatabaseName } from "@/types";

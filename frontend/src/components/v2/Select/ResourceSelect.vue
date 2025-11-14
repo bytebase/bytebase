@@ -28,7 +28,7 @@
 
 <script lang="tsx" setup generic="T extends { name: string }">
 import type { SelectOption, SelectProps } from "naive-ui";
-import { NTag, NSelect, NCheckbox } from "naive-ui";
+import { NCheckbox, NSelect, NTag } from "naive-ui";
 import type { SelectBaseOption } from "naive-ui/lib/select/src/interface";
 import { computed, type VNodeChild } from "vue";
 import EllipsisText from "@/components/EllipsisText.vue";

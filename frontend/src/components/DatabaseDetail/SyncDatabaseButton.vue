@@ -21,8 +21,8 @@ import {
   useDatabaseV1Store,
   useDBSchemaV1Store,
 } from "@/store";
-import { isValidDatabaseName } from "@/types";
 import type { ComposedDatabase } from "@/types";
+import { isValidDatabaseName } from "@/types";
 import { hasProjectPermissionV2 } from "@/utils";
 
 const props = defineProps<{

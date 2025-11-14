@@ -4,7 +4,6 @@ import "regenerator-runtime/runtime";
 import { createApp } from "vue";
 import App from "./App.vue";
 import "./assets/css/github-markdown-style.css";
-import "./assets/css/inter.css";
 import "./assets/css/tailwind.css";
 import dayjs from "./plugins/dayjs";
 import highlight from "./plugins/highlight";

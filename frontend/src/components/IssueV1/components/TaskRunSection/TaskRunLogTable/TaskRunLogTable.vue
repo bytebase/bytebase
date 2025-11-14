@@ -13,25 +13,25 @@ import { create } from "@bufbuild/protobuf";
 import { computedAsync } from "@vueuse/core";
 import { last } from "lodash-es";
 import { CircleAlertIcon } from "lucide-vue-next";
-import { NTooltip, NDataTable, type DataTableColumn } from "naive-ui";
+import { type DataTableColumn, NDataTable, NTooltip } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { rolloutServiceClientConnect } from "@/grpcweb";
-import { GetTaskRunLogRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import {
+  GetTaskRunLogRequestSchema,
   type TaskRun,
   TaskRunLogEntry_Type,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
+import {
+  convertTaskRunLogEntryToFlattenLogEntries,
+  displayTaskRunLogEntryType,
+  type FlattenLogEntry,
+} from "./common";
 import DetailCell, { detailCellRowSpan } from "./DetailCell";
 import DurationCell from "./DurationCell.vue";
 import LogTimeCell from "./LogTimeCell.vue";
 import StatementCell from "./StatementCell.vue";
-import {
-  type FlattenLogEntry,
-  convertTaskRunLogEntryToFlattenLogEntries,
-  displayTaskRunLogEntryType,
-} from "./common";
 
 const props = defineProps<{
   taskRun: TaskRun;

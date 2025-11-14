@@ -14,30 +14,28 @@ import {
   useSubscriptionV1Store,
 } from "@/store";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
-import {
-  CreateInstanceRequestSchema,
-  AddDataSourceRequestSchema,
-  UpdateDataSourceRequestSchema,
-} from "@/types/proto-es/v1/instance_service_pb";
 import type {
-  Instance,
   DataSource,
+  Instance,
 } from "@/types/proto-es/v1/instance_service_pb";
-import { InstanceSchema } from "@/types/proto-es/v1/instance_service_pb";
 import {
+  AddDataSourceRequestSchema,
+  CreateInstanceRequestSchema,
+  DataSource_AuthenticationType,
+  DataSource_RedisType,
   DataSourceExternalSecret_AuthType,
   DataSourceExternalSecret_SecretType,
   DataSourceType,
-  DataSource_AuthenticationType,
-  DataSource_RedisType,
+  InstanceSchema,
+  UpdateDataSourceRequestSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
+  convertKVListToLabels,
+  convertLabelsToKVList,
   extractInstanceResourceName,
   hasWorkspacePermissionV2,
   isValidSpannerHost,
-  convertLabelsToKVList,
-  convertKVListToLabels,
 } from "@/utils";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
 import type { LabelListEditor } from "../Label";

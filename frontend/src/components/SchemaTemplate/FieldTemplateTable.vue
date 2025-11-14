@@ -13,8 +13,8 @@
 import { create as createProto } from "@bufbuild/protobuf";
 import { pullAt } from "lodash-es";
 import { PencilIcon, TrashIcon } from "lucide-vue-next";
-import { NPopconfirm, NDataTable } from "naive-ui";
 import type { DataTableColumn } from "naive-ui";
+import { NDataTable, NPopconfirm } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { getColumnDefaultValuePlaceholder } from "@/components/SchemaEditorLite";

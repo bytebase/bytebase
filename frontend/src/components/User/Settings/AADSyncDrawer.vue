@@ -129,13 +129,12 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBAttention } from "@/bbkit";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
-import { Drawer, DrawerContent } from "@/components/v2";
-import { CopyButton } from "@/components/v2";
+import { CopyButton, Drawer, DrawerContent } from "@/components/v2";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import { pushNotification, useSettingV1Store } from "@/store";
 import {
-  Setting_SettingName,
   SCIMSettingSchema,
+  Setting_SettingName,
   ValueSchema as SettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";

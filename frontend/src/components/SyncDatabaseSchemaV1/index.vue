@@ -78,11 +78,11 @@
 <script lang="ts" setup>
 import { asyncComputed } from "@vueuse/core";
 import { isUndefined } from "lodash-es";
-import { NRadioGroup, NRadio, useDialog } from "naive-ui";
+import { NRadio, NRadioGroup, useDialog } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
-import { computed, onMounted, reactive, ref, nextTick } from "vue";
+import { computed, nextTick, onMounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRoute, useRouter, type LocationQueryRaw } from "vue-router";
+import { type LocationQueryRaw, useRoute, useRouter } from "vue-router";
 import { BBSpin } from "@/bbkit";
 import { StepTab } from "@/components/v2";
 import { useRouteChangeGuard } from "@/composables/useRouteChangeGuard";

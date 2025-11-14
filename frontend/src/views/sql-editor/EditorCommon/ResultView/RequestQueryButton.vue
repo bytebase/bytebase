@@ -21,9 +21,9 @@ import { computed, ref } from "vue";
 import GrantRequestPanel from "@/components/GrantRequestPanel";
 import { useDatabaseV1ByName } from "@/store";
 import {
+  type DatabaseResource,
   isValidDatabaseName,
   PresetRoleType,
-  type DatabaseResource,
 } from "@/types";
 import { hasPermissionToCreateRequestGrantIssue } from "@/utils";
 

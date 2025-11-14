@@ -111,9 +111,9 @@
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
 import { isEqual } from "lodash-es";
-import { PlusIcon, ListOrderedIcon, GripVerticalIcon } from "lucide-vue-next";
-import { NTabs, NTabPane, NButton } from "naive-ui";
-import { onMounted, computed, reactive, watch, h, ref } from "vue";
+import { GripVerticalIcon, ListOrderedIcon, PlusIcon } from "lucide-vue-next";
+import { NButton, NTabPane, NTabs } from "naive-ui";
+import { computed, h, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import Draggable from "vuedraggable";
@@ -123,27 +123,25 @@ import {
   Form as EnvironmentFormBody,
   Buttons as EnvironmentFormButtons,
 } from "@/components/EnvironmentForm";
-import { Drawer, DrawerContent } from "@/components/v2";
-import { EnvironmentV1Name } from "@/components/v2";
+import { Drawer, DrawerContent, EnvironmentV1Name } from "@/components/v2";
 import { useRouteChangeGuard } from "@/composables/useRouteChangeGuard";
 import {
-  useUIStateStore,
-  useEnvironmentV1Store,
-  useEnvironmentV1List,
   environmentNamePrefix,
   pushNotification,
+  useEnvironmentV1List,
+  useEnvironmentV1Store,
+  useUIStateStore,
 } from "@/store";
 import {
-  usePolicyV1Store,
   getEmptyRolloutPolicy,
+  usePolicyV1Store,
 } from "@/store/modules/v1/policy";
 import { formatEnvironmentName } from "@/types";
 import type { Policy } from "@/types/proto-es/v1/org_policy_service_pb";
 import { PolicyResourceType } from "@/types/proto-es/v1/org_policy_service_pb";
 import { EnvironmentSetting_EnvironmentSchema } from "@/types/proto-es/v1/setting_service_pb";
 import type { Environment } from "@/types/v1/environment";
-import { hasWorkspacePermissionV2 } from "@/utils";
-import { type VueClass } from "@/utils";
+import { hasWorkspacePermissionV2, type VueClass } from "@/utils";
 import EnvironmentDetail from "@/views/EnvironmentDetail.vue";
 
 const DEFAULT_NEW_ROLLOUT_POLICY: Policy = getEmptyRolloutPolicy(

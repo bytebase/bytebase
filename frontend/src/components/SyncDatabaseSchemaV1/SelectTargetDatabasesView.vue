@@ -158,14 +158,14 @@
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
 import { head } from "lodash-es";
-import { NEllipsis, NTabs, NTabPane } from "naive-ui";
+import { NEllipsis, NTabPane, NTabs } from "naive-ui";
 import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import { BBSpin } from "@/bbkit";
 import { InstanceV1EngineIcon } from "@/components/v2";
 import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
-import { isValidDatabaseName, type ComposedDatabase } from "@/types";
+import { type ComposedDatabase, isValidDatabaseName } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { DiffSchemaRequestSchema } from "@/types/proto-es/v1/database_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";

@@ -37,7 +37,7 @@
 
 <script lang="ts" setup>
 import { NButton } from "naive-ui";
-import { ref, computed } from "vue";
+import { computed, ref } from "vue";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import { hasWorkspacePermissionV2 } from "@/utils";
 

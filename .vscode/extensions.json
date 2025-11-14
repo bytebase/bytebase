@@ -4,7 +4,7 @@
     "dbaeumer.vscode-eslint",
     "lokalise.i18n-ally",
     "antfu.iconify",
-    "esbenp.prettier-vscode",
+    "biomejs.biome",
     "bradlc.vscode-tailwindcss",
     "eamodio.gitlens"
   ]

@@ -101,7 +101,7 @@
 <script lang="ts" setup>
 import { cloneDeep, isEqual } from "lodash-es";
 import { NButton, NInput } from "naive-ui";
-import { computed, reactive, onMounted, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBButtonConfirm } from "@/bbkit";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
@@ -110,17 +110,17 @@ import MembersBindingSelect from "@/components/Member/MembersBindingSelect.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import {
+  pushNotification,
   useProjectIamPolicy,
   useProjectIamPolicyStore,
-  pushNotification,
 } from "@/store";
-import { PresetRoleType, type DatabaseResource } from "@/types";
+import { type DatabaseResource, PresetRoleType } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { displayRoleTitle, checkRoleContainsAnyPermission } from "@/utils";
-import { convertFromExpr, buildConditionExpr } from "@/utils/issue/cel";
+import { checkRoleContainsAnyPermission, displayRoleTitle } from "@/utils";
+import { buildConditionExpr, convertFromExpr } from "@/utils/issue/cel";
 import { getBindingIdentifier } from "../utils";
 
 const props = defineProps<{

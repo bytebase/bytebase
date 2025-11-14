@@ -166,14 +166,14 @@
 import { create } from "@bufbuild/protobuf";
 import { DurationSchema } from "@bufbuild/protobuf/wkt";
 import { cloneDeep, isEqual } from "lodash-es";
-import { NInputNumber, NCheckbox } from "naive-ui";
-import { computed, ref, reactive } from "vue";
+import { NCheckbox, NInputNumber } from "naive-ui";
+import { computed, reactive, ref } from "vue";
 import { featureToRef } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import type { PasswordRestrictionSetting } from "@/types/proto-es/v1/setting_service_pb";
 import {
-  Setting_SettingName,
   PasswordRestrictionSettingSchema,
+  Setting_SettingName,
   ValueSchema as SettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";

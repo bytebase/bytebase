@@ -177,40 +177,40 @@
 import type { Timestamp as TimestampPb } from "@bufbuild/protobuf/wkt";
 import dayjs from "dayjs";
 import {
+  CalendarClockIcon,
   ChevronDownIcon,
   ChevronUpIcon,
-  CalendarClockIcon,
 } from "lucide-vue-next";
-import { NTooltip, NButton, NTag } from "naive-ui";
+import { NButton, NTag, NTooltip } from "naive-ui";
 import { twMerge } from "tailwind-merge";
 import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router";
+import Timestamp from "@/components/misc/Timestamp.vue";
 import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay.vue";
 import { TASK_STATUS_FILTERS } from "@/components/Plan/constants/task";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
-import Timestamp from "@/components/misc/Timestamp.vue";
 import { EnvironmentV1Name } from "@/components/v2";
 import {
   PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
   PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
 } from "@/router/dashboard/projectV1";
 import {
+  batchGetOrFetchDatabases,
   useCurrentProjectV1,
   useEnvironmentV1Store,
-  batchGetOrFetchDatabases,
 } from "@/store";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import type {
+  Rollout,
   Stage,
   Task,
-  Rollout,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   extractProjectResourceName,
-  stringifyTaskStatus,
   getStageStatus,
   humanizeTs,
+  stringifyTaskStatus,
 } from "@/utils";
 import { usePlanContextWithRollout } from "../../logic";
 import StageActions from "./StageActions.vue";

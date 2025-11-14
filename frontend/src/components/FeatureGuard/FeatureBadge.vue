@@ -59,7 +59,7 @@
 <script lang="ts" setup>
 import { SparklesIcon } from "lucide-vue-next";
 import { NTooltip } from "naive-ui";
-import { reactive, computed } from "vue";
+import { computed, reactive } from "vue";
 import { useSubscriptionV1Store } from "@/store";
 import type {
   Instance,

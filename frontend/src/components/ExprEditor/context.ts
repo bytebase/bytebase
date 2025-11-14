@@ -1,5 +1,5 @@
 import type { SelectOption } from "naive-ui";
-import { inject, provide, type InjectionKey, type Ref } from "vue";
+import { type InjectionKey, inject, provide, type Ref } from "vue";
 import type { Factor, Operator } from "@/plugins/cel";
 
 export type OptionConfig = {

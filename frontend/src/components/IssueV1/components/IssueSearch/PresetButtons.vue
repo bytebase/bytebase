@@ -14,14 +14,14 @@
 </template>
 
 <script lang="ts" setup>
-import { NTabs, NTab } from "naive-ui";
+import { NTab, NTabs } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useCurrentUserV1 } from "@/store";
 import type { SearchParams } from "@/utils";
 import {
-  getValueFromSearchParams,
   getSemanticIssueStatusFromSearchParams,
+  getValueFromSearchParams,
   upsertScope,
 } from "@/utils";
 

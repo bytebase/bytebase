@@ -1,4 +1,4 @@
-import { userNamePrefix, extractUserId } from "@/store/modules/v1/common";
+import { extractUserId, userNamePrefix } from "@/store/modules/v1/common";
 import { ALL_USERS_USER_EMAIL } from "@/types";
 
 export const ensureUserFullName = (identifier: string) => {

@@ -87,20 +87,19 @@
 
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
-import { PlusIcon, PencilIcon } from "lucide-vue-next";
+import { PencilIcon, PlusIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import MarkdownEditor from "@/components/MarkdownEditor";
-import UserAvatar from "@/components/User/UserAvatar.vue";
 import HumanizeTs from "@/components/misc/HumanizeTs.vue";
-import { planServiceClientConnect, issueServiceClientConnect } from "@/grpcweb";
-import { useCurrentUserV1, useUserStore } from "@/store";
-import { useCurrentProjectV1 } from "@/store";
-import { getTimeForPbTimestampProtoEs, type ComposedIssue } from "@/types";
+import UserAvatar from "@/components/User/UserAvatar.vue";
+import { issueServiceClientConnect, planServiceClientConnect } from "@/grpcweb";
+import { useCurrentProjectV1, useCurrentUserV1, useUserStore } from "@/store";
+import { type ComposedIssue, getTimeForPbTimestampProtoEs } from "@/types";
 import { UpdateIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import {
-  UpdatePlanRequestSchema,
   PlanSchema,
+  UpdatePlanRequestSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 import ActionCreator from "./ActionCreator.vue";

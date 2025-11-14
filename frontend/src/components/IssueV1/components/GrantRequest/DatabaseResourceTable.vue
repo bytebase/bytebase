@@ -10,13 +10,12 @@
 
 <script lang="tsx" setup>
 import { uniq } from "lodash-es";
-import { NDataTable } from "naive-ui";
 import type { DataTableColumn } from "naive-ui";
-import { computed } from "vue";
-import { watch } from "vue";
+import { NDataTable } from "naive-ui";
+import { computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { EnvironmentV1Name, InstanceV1Name } from "@/components/v2";
-import { useDatabaseV1Store, batchGetOrFetchDatabases } from "@/store";
+import { batchGetOrFetchDatabases, useDatabaseV1Store } from "@/store";
 import type { DatabaseResource } from "@/types";
 import type { DatabaseGroup } from "@/types/proto-es/v1/database_group_service_pb";
 

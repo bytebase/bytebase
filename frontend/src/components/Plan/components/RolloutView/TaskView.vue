@@ -156,14 +156,15 @@ import {
 } from "@/store";
 import { getTimeForPbTimestampProtoEs, unknownTask } from "@/types";
 import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
-import { databaseForTask, extractPlanUID } from "@/utils";
 import {
+  databaseForTask,
+  extractPlanUID,
+  extractProjectResourceName,
   extractSchemaVersionFromTask,
   getSheetStatement,
   sheetNameOfTaskV1,
-  extractProjectResourceName,
 } from "@/utils";
-import { usePlanContextWithRollout, getSpecTitle } from "../../logic";
+import { getSpecTitle, usePlanContextWithRollout } from "../../logic";
 import DatabaseDisplay from "../common/DatabaseDisplay.vue";
 import TaskRollbackButton from "./TaskRollbackButton.vue";
 import TaskRunTable from "./TaskRunTable.vue";

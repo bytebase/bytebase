@@ -4,11 +4,11 @@ import {
   rolloutServiceClientConnect,
 } from "@/grpcweb";
 import { useCurrentUserV1 } from "@/store";
-import { emptyIssue, type ComposedIssue } from "@/types";
-import { CreateIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
+import { type ComposedIssue, emptyIssue } from "@/types";
 import {
-  IssueSchema,
+  CreateIssueRequestSchema,
   Issue_Type,
+  IssueSchema,
   IssueStatus,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";

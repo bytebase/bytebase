@@ -222,29 +222,29 @@ import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { cloneDeep, isEqual } from "lodash-es";
 import { Trash2Icon } from "lucide-vue-next";
-import { NButton, NEmpty, NSelect, NPopconfirm } from "naive-ui";
-import { computed, watch, reactive } from "vue";
+import { NButton, NEmpty, NPopconfirm, NSelect } from "naive-ui";
+import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import BBTextField from "@/bbkit/BBTextField.vue";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import WebhookTypeIcon from "@/components/Project/WebhookTypeIcon.vue";
-import { useSettingV1Store, pushNotification } from "@/store";
+import { pushNotification, useSettingV1Store } from "@/store";
 import { Webhook_Type } from "@/types/proto-es/v1/project_service_pb";
 import {
   type AppIMSetting,
-  type AppIMSetting_Slack,
-  type AppIMSetting_Feishu,
-  type AppIMSetting_Wecom,
-  type AppIMSetting_Lark,
   type AppIMSetting_DingTalk,
+  AppIMSetting_DingTalkSchema,
+  type AppIMSetting_Feishu,
+  AppIMSetting_FeishuSchema,
   type AppIMSetting_IMSetting,
   AppIMSetting_IMSettingSchema,
-  AppIMSettingSchema,
-  AppIMSetting_FeishuSchema,
-  AppIMSetting_SlackSchema,
+  type AppIMSetting_Lark,
   AppIMSetting_LarkSchema,
+  type AppIMSetting_Slack,
+  AppIMSetting_SlackSchema,
+  type AppIMSetting_Wecom,
   AppIMSetting_WecomSchema,
-  AppIMSetting_DingTalkSchema,
+  AppIMSettingSchema,
   Setting_SettingName,
   ValueSchema as SettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";

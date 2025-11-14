@@ -1,4 +1,4 @@
-import { snakeCase, isEqual } from "lodash-es";
+import { isEqual, snakeCase } from "lodash-es";
 import { humanizeTs } from "../util";
 
 export const calcUpdateMask = (a: any, b: any, toSnakeCase = false) => {

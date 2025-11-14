@@ -1,6 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import { createContextValues } from "@connectrpc/connect";
-import { Code } from "@connectrpc/connect";
+import { Code, createContextValues } from "@connectrpc/connect";
 import { useLocalStorage } from "@vueuse/core";
 import { uniqueId } from "lodash-es";
 import { defineStore } from "pinia";
@@ -9,33 +8,33 @@ import { authServiceClientConnect, userServiceClientConnect } from "@/grpcweb";
 import { ignoredCodesContextKey } from "@/grpcweb/context-key";
 import { router } from "@/router";
 import {
-  AUTH_SIGNIN_MODULE,
-  AUTH_PASSWORD_RESET_MODULE,
   AUTH_MFA_MODULE,
+  AUTH_PASSWORD_RESET_MODULE,
+  AUTH_SIGNIN_MODULE,
 } from "@/router/auth";
 import { SETUP_MODULE } from "@/router/setup";
 import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
 import {
-  useAppFeature,
   useActuatorV1Store,
+  useAppFeature,
   useSettingV1Store,
   useUserStore,
 } from "@/store";
 import { UNKNOWN_USER_NAME, unknownUser } from "@/types";
 import {
-  LoginRequestSchema,
   type LoginRequest,
+  LoginRequestSchema,
 } from "@/types/proto-es/v1/auth_service_pb";
 import {
   DatabaseChangeMode,
   Setting_SettingName,
 } from "@/types/proto-es/v1/setting_service_pb";
+import type { User } from "@/types/proto-es/v1/user_service_pb";
 import {
   CreateUserRequestSchema,
   UserSchema,
+  UserType,
 } from "@/types/proto-es/v1/user_service_pb";
-import type { User } from "@/types/proto-es/v1/user_service_pb";
-import { UserType } from "@/types/proto-es/v1/user_service_pb";
 
 export const useAuthStore = defineStore("auth_v1", () => {
   const userStore = useUserStore();

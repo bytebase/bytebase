@@ -31,8 +31,8 @@
 
 <script lang="ts" setup>
 import { NTooltip } from "naive-ui";
-import TransactionModeSwitch from "./TransactionModeSwitch.vue";
 import { useTransactionModeSettingContext } from "./context";
+import TransactionModeSwitch from "./TransactionModeSwitch.vue";
 
 const { transactionMode } = useTransactionModeSettingContext();
 </script>

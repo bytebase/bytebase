@@ -98,11 +98,11 @@ import type {
 } from "@/types/proto-es/v1/database_service_pb";
 import type { VueClass } from "@/utils";
 import {
-  useSchemaDiagramContext,
-  isPrimaryKey,
-  isIndex,
-  useGeometry,
   FocusButton,
+  isIndex,
+  isPrimaryKey,
+  useGeometry,
+  useSchemaDiagramContext,
 } from "../common";
 import { isFocusedForeignTable } from "./libs/isFocusedFKTable";
 

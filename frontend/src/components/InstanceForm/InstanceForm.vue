@@ -11,7 +11,7 @@
 </template>
 
 <script lang="ts" setup>
-import { watch, onMounted, toRef, computed } from "vue";
+import { computed, onMounted, toRef, watch } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { useActuatorV1Store, useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";

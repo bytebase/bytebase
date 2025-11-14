@@ -27,8 +27,8 @@ import {
   useCurrentUserV1,
 } from "@/store";
 import {
-  UpdateIssueRequestSchema,
   IssueStatus,
+  UpdateIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 import { usePlanContextWithIssue } from "../../../logic/context";

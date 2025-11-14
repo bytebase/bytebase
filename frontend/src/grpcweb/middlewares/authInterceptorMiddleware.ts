@@ -1,8 +1,8 @@
 import { Code, ConnectError, type Interceptor } from "@connectrpc/connect";
 import { t } from "@/plugins/i18n";
 import { router } from "@/router";
-import { useAuthStore, pushNotification } from "@/store";
-import { silentContextKey, ignoredCodesContextKey } from "../context-key";
+import { pushNotification, useAuthStore } from "@/store";
+import { ignoredCodesContextKey, silentContextKey } from "../context-key";
 
 export type IgnoreErrorsOptions = {
   /**

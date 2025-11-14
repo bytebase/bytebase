@@ -25,8 +25,8 @@ import { computed } from "vue";
 import type { ComposedDatabase } from "@/types";
 import type {
   DatabaseMetadata,
-  ViewMetadata,
   SchemaMetadata,
+  ViewMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
 import { DatabaseMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
 import { useSchemaEditorContext } from "../context";

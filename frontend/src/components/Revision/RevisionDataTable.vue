@@ -28,15 +28,15 @@
 
 <script lang="tsx" setup>
 import { TrashIcon } from "lucide-vue-next";
-import { type DataTableColumn, NDataTable, NButton, useDialog } from "naive-ui";
+import { type DataTableColumn, NButton, NDataTable, useDialog } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useRevisionStore } from "@/store";
 import { getDateForPbTimestampProtoEs } from "@/types";
 import {
-  Revision_Type,
   type Revision,
+  Revision_Type,
 } from "@/types/proto-es/v1/revision_service_pb";
 import { useDatabaseDetailContext } from "../Database/context";
 import HumanizeDate from "../misc/HumanizeDate.vue";

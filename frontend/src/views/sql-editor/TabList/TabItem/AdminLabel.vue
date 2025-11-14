@@ -22,8 +22,12 @@ import { ChevronRightIcon } from "lucide-vue-next";
 import { computed } from "vue";
 import { EnvironmentV1Name } from "@/components/v2";
 import { useDatabaseV1ByName } from "@/store";
-import { type SQLEditorTab, UNKNOWN_ID } from "@/types";
-import { isValidInstanceName, isValidDatabaseName } from "@/types";
+import {
+  isValidDatabaseName,
+  isValidInstanceName,
+  type SQLEditorTab,
+  UNKNOWN_ID,
+} from "@/types";
 
 const props = defineProps<{
   tab: SQLEditorTab;

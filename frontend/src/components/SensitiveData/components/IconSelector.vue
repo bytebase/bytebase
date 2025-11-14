@@ -67,8 +67,8 @@
 
 <script setup lang="ts">
 import { PencilIcon } from "lucide-vue-next";
-import { NPopover, NButton } from "naive-ui";
-import { ref, computed } from "vue";
+import { NButton, NPopover } from "naive-ui";
+import { computed, ref } from "vue";
 import SingleFileSelector from "@/components/SingleFileSelector.vue";
 import { MiniActionButton } from "@/components/v2";
 

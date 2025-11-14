@@ -69,16 +69,16 @@
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
 import type { ConnectError } from "@connectrpc/connect";
-import { PlayIcon, CircleQuestionMarkIcon } from "lucide-vue-next";
-import { NButton, NTooltip, NTag } from "naive-ui";
+import { CircleQuestionMarkIcon, PlayIcon } from "lucide-vue-next";
+import { NButton, NTag, NTooltip } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { STATEMENT_SKIP_CHECK_THRESHOLD } from "@/components/SQLCheck/common";
 import { planServiceClientConnect } from "@/grpcweb";
 import {
-  useCurrentUserV1,
-  useCurrentProjectV1,
-  pushNotification,
   extractUserId,
+  pushNotification,
+  useCurrentProjectV1,
+  useCurrentUserV1,
 } from "@/store";
 import { RunPlanChecksRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
@@ -86,8 +86,8 @@ import { hasProjectPermissionV2 } from "@/utils";
 import {
   planCheckRunListForSpec,
   planSpecHasPlanChecks,
-  usePlanContext,
   usePlanCheckStatus,
+  usePlanContext,
 } from "../../logic";
 import { useResourcePoller } from "../../logic/poller";
 import ChecksDrawer from "../ChecksView/ChecksDrawer.vue";

@@ -230,8 +230,8 @@
 
 <script lang="ts" setup>
 import { create as createProto } from "@bufbuild/protobuf";
-import { isEqual, cloneDeep } from "lodash-es";
-import { XIcon, PencilIcon } from "lucide-vue-next";
+import { cloneDeep, isEqual } from "lodash-es";
+import { PencilIcon, XIcon } from "lucide-vue-next";
 import type { SelectOption } from "naive-ui";
 import { NButton, NInput, NSwitch } from "naive-ui";
 import { computed, reactive, watch } from "vue";
@@ -247,11 +247,11 @@ import {
   InstanceEngineRadioGrid,
   MiniActionButton,
 } from "@/components/v2";
-import { useSettingV1Store, useNotificationStore } from "@/store";
+import { useNotificationStore, useSettingV1Store } from "@/store";
 import { ColumnCatalogSchema } from "@/types/proto-es/v1/database_catalog_service_pb";
 import {
-  ColumnMetadataSchema,
   type ColumnMetadata,
+  ColumnMetadataSchema,
 } from "@/types/proto-es/v1/database_service_pb";
 import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto-es/v1/setting_service_pb";
 import {
@@ -261,13 +261,13 @@ import {
   ValueSchema as SettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
 import {
-  getDataTypeSuggestionList,
   convertKVListToLabels,
   convertLabelsToKVList,
+  getDataTypeSuggestionList,
 } from "@/utils";
 import ClassificationLevelBadge from "./ClassificationLevelBadge.vue";
 import SelectClassificationDrawer from "./SelectClassificationDrawer.vue";
-import { engineList, categoryList, classificationConfig } from "./utils";
+import { categoryList, classificationConfig, engineList } from "./utils";
 
 const props = defineProps<{
   create: boolean;

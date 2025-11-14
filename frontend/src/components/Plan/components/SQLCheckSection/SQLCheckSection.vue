@@ -38,9 +38,9 @@
 import { NTag, NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { isValidDatabaseName } from "@/types";
+import { usePlanSQLCheckContext } from "./context";
 import SQLCheckBadge from "./SQLCheckBadge.vue";
 import SQLCheckButton from "./SQLCheckButton.vue";
-import { usePlanSQLCheckContext } from "./context";
 
 const { database, resultMap } = usePlanSQLCheckContext();
 

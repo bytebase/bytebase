@@ -123,9 +123,9 @@ import {
   useWorkspaceV1Store,
 } from "@/store";
 import {
+  groupBindingPrefix,
   PRESET_WORKSPACE_ROLES,
   PresetRoleType,
-  groupBindingPrefix,
 } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";

@@ -61,15 +61,15 @@ import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
 import { BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
 import {
   CreateIssueRequestSchema,
+  GrantRequestSchema,
   IssueSchema,
   Issue_Type as NewIssue_Type,
-  GrantRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
-  generateIssueTitle,
   displayRoleTitle,
-  extractProjectResourceName,
   extractIssueUID,
+  extractProjectResourceName,
+  generateIssueTitle,
 } from "@/utils";
 
 interface LocalState {

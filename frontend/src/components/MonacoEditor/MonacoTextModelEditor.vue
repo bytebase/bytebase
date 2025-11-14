@@ -56,36 +56,36 @@ import { throttle } from "lodash-es";
 import * as monaco from "monaco-editor";
 import { NPopover } from "naive-ui";
 import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
   onMounted,
   ref,
-  toRef,
-  nextTick,
   shallowRef,
-  onBeforeUnmount,
+  toRef,
   watch,
-  computed,
 } from "vue";
 import { BBSpin } from "@/bbkit";
 import type { SQLDialect } from "@/types";
 import {
   type AutoCompleteContext,
   type AutoHeightOptions,
+  type FormatContentOptions,
+  useActiveRangeByCursor,
   useAdvices,
   useAutoComplete,
   useAutoHeight,
   useContent,
+  useDecoration,
   useFormatContent,
+  useLineHighlights,
+  useLSPConnectionState,
   useModel,
   useOptionByKey,
   useOptions,
+  useOverrideSuggestIcons,
   useSelectedContent,
   useSelection,
-  useLineHighlights,
-  useLSPConnectionState,
-  useOverrideSuggestIcons,
-  type FormatContentOptions,
-  useActiveRangeByCursor,
-  useDecoration,
 } from "./composables";
 import { createMonacoEditor } from "./editor";
 import type {

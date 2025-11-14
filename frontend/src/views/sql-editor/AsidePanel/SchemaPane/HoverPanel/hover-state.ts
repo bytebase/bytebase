@@ -1,6 +1,6 @@
 import {
-  useHoverStateContext as _useHoverStateContext,
   provideHoverStateContext as _provideHoverStateContext,
+  useHoverStateContext as _useHoverStateContext,
 } from "../../../EditorCommon";
 
 export const KEY = "schema-pane";

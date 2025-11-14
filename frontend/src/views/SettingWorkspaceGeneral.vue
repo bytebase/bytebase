@@ -56,18 +56,18 @@
 
 <script lang="ts" setup>
 import { NButton } from "naive-ui";
-import { onMounted, ref, computed } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import {
-  BrandingSetting,
-  SecuritySetting,
   AccountSetting,
   AIAugmentationSetting,
   AnnouncementSetting,
   AuditLogStdoutSetting,
+  BrandingSetting,
   GeneralSetting,
   ProductImprovementSetting,
+  SecuritySetting,
 } from "@/components/GeneralSetting";
 import { useRouteChangeGuard } from "@/composables/useRouteChangeGuard";
 import { pushNotification } from "@/store";

@@ -1,6 +1,6 @@
 import { computedAsync } from "@vueuse/core";
 import { computed } from "vue";
-import { useProjectV1Store, useCurrentUserV1 } from "@/store";
+import { useCurrentUserV1, useProjectV1Store } from "@/store";
 import { isValidProjectName } from "@/types";
 import { hasProjectPermissionV2, useDynamicLocalStorage } from "@/utils";
 

@@ -52,9 +52,9 @@ import { useProjectV1Store } from "@/store";
 import { DEFAULT_PROJECT_NAME } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
-  extractProjectResourceName,
-  convertLabelsToKVList,
   convertKVListToLabels,
+  convertLabelsToKVList,
+  extractProjectResourceName,
 } from "@/utils";
 
 interface LocalState {

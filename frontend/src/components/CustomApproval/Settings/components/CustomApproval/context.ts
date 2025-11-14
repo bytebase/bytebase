@@ -1,4 +1,4 @@
-import { inject, provide, type InjectionKey, type Ref } from "vue";
+import { type InjectionKey, inject, provide, type Ref } from "vue";
 import type { LocalApprovalRule } from "@/types";
 
 export const TabValueList = ["rules", "flows", "external-approval"] as const;

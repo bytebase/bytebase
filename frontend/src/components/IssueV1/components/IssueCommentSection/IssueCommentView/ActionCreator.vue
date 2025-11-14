@@ -19,7 +19,7 @@
 import { computedAsync } from "@vueuse/core";
 import { computed } from "vue";
 import SystemBotTag from "@/components/misc/SystemBotTag.vue";
-import { useUserStore, extractUserId } from "@/store";
+import { extractUserId, useUserStore } from "@/store";
 
 const props = defineProps<{
   // Format: users/{email}

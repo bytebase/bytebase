@@ -38,21 +38,21 @@
 import dayjs from "dayjs";
 import { orderBy } from "lodash-es";
 import { NButton, NCheckbox } from "naive-ui";
-import { computed, watch, reactive } from "vue";
-import { useRouter, useRoute } from "vue-router";
+import { computed, reactive, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { BBModal } from "@/bbkit";
 import {
   useCurrentUserV1,
+  useProjectIamPolicyStore,
   useProjectV1Store,
   useRoleStore,
-  useProjectIamPolicyStore,
 } from "@/store";
 import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import {
-  useDynamicLocalStorage,
+  autoProjectRoute,
   bindingListInIAM,
   displayRoleTitle,
-  autoProjectRoute,
+  useDynamicLocalStorage,
 } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
 

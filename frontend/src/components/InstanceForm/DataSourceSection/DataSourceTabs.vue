@@ -49,8 +49,8 @@
 <script setup lang="ts">
 import { pullAt } from "lodash-es";
 import type { TabsInst } from "naive-ui";
-import { NTabs, NTab, NButton } from "naive-ui";
-import { nextTick, ref, watch, computed } from "vue";
+import { NButton, NTab, NTabs } from "naive-ui";
+import { computed, nextTick, ref, watch } from "vue";
 import { BBButtonConfirm } from "@/bbkit";
 import { useInstanceV1Store } from "@/store";
 import { hasWorkspacePermissionV2 } from "@/utils";

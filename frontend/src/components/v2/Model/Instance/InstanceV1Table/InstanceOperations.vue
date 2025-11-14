@@ -54,9 +54,9 @@ import EditEnvironmentDrawer from "@/components/EditEnvironmentDrawer.vue";
 import InstanceSyncButton from "@/components/Instance/InstanceSyncButton.vue";
 import InstanceAssignment from "@/components/InstanceAssignment.vue";
 import {
+  pushNotification,
   useInstanceV1Store,
   useSubscriptionV1Store,
-  pushNotification,
 } from "@/store";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 import { UpdateInstanceRequestSchema } from "@/types/proto-es/v1/instance_service_pb";

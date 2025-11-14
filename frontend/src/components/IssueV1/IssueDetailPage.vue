@@ -95,18 +95,18 @@ import { provideSidebarContext } from "../Plan/logic";
 import { Drawer } from "../v2";
 import {
   BannerSection,
-  HeaderSection,
-  StageSection,
-  TaskListSection,
-  TaskRunSection,
-  PlanCheckSection,
-  StatementSection,
   DescriptionSection,
-  Sidebar,
+  HeaderSection,
+  IssueCommentSection,
   IssueReviewActionPanel,
   IssueStatusActionPanel,
+  PlanCheckSection,
+  Sidebar,
+  StageSection,
+  StatementSection,
+  TaskListSection,
   TaskRolloutActionPanel,
-  IssueCommentSection,
+  TaskRunSection,
 } from "./components";
 import type {
   IssueReviewAction,

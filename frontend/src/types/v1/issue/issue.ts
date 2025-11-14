@@ -7,13 +7,12 @@ import {
 } from "@/types";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import {
+  Issue_Type,
   IssueSchema,
   IssueStatus,
-  Issue_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan, PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
-import type { TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
-import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
+import type { Rollout, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { EMPTY_ID, UNKNOWN_ID } from "../../const";
 
 // For grant request issue, it has no plan and rollout.

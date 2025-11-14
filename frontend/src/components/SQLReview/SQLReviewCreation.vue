@@ -44,7 +44,7 @@
 <script lang="ts" setup>
 import { isEqual } from "lodash-es";
 import { useDialog } from "naive-ui";
-import { reactive, computed } from "vue";
+import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { StepTab } from "@/components/v2";
@@ -54,24 +54,24 @@ import {
 } from "@/router/dashboard/workspaceRoutes";
 import { pushNotification, useSQLReviewStore } from "@/store";
 import {
-  reviewConfigNamePrefix,
   getReviewConfigId,
+  reviewConfigNamePrefix,
 } from "@/store/modules/v1/common";
 import type {
   RuleTemplateV2,
-  SQLReviewPolicyTemplateV2,
   SQLReviewPolicy,
+  SQLReviewPolicyTemplateV2,
 } from "@/types";
 import {
-  getRuleMapByEngine,
-  convertRuleMapToPolicyRuleList,
   TEMPLATE_LIST_V2 as builtInTemplateList,
+  convertRuleMapToPolicyRuleList,
+  getRuleMapByEngine,
 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { hasWorkspacePermissionV2, sqlReviewPolicySlug } from "@/utils";
+import { getTemplateId } from "./components";
 import SQLReviewConfig from "./SQLReviewConfig.vue";
 import SQLReviewInfo from "./SQLReviewInfo.vue";
-import { getTemplateId } from "./components";
 
 interface LocalState {
   currentStep: number;

@@ -40,8 +40,8 @@ import {
 } from "@/store";
 import type {
   DatabaseMetadata,
-  ViewMetadata,
   SchemaMetadata,
+  ViewMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
 import { useCurrentTabViewStateContext } from "../../context/viewState";
 import ViewDetail from "./ViewDetail.vue";

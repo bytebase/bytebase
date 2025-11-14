@@ -48,9 +48,8 @@
 
 <script lang="ts" setup>
 import { PlusIcon } from "lucide-vue-next";
-import { NButton } from "naive-ui";
-import { NEmpty } from "naive-ui";
-import { watchEffect, ref, computed } from "vue";
+import { NButton, NEmpty } from "naive-ui";
+import { computed, ref, watchEffect } from "vue";
 import { useRouter } from "vue-router";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import SQLReviewPolicyTable from "@/components/SQLReview/components/SQLReviewPolicyTable.vue";

@@ -89,14 +89,14 @@
 
 <script setup lang="tsx">
 import { ArchiveIcon, CheckIcon } from "lucide-vue-next";
-import { NButton, NCheckbox, NAlert } from "naive-ui";
+import { NAlert, NButton, NCheckbox } from "naive-ui";
 import type { VNode } from "vue";
 import { computed, h, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBAlert } from "@/bbkit";
 import { pushNotification, useProjectV1Store } from "@/store";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import { hasWorkspacePermissionV2, extractProjectResourceName } from "@/utils";
+import { extractProjectResourceName, hasWorkspacePermissionV2 } from "@/utils";
 
 interface Action {
   icon?: VNode;

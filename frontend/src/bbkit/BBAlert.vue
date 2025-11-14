@@ -18,7 +18,7 @@
 </template>
 
 <script lang="ts" setup>
-import { NModal, type ButtonProps } from "naive-ui";
+import { type ButtonProps, NModal } from "naive-ui";
 import { t } from "@/plugins/i18n";
 
 withDefaults(

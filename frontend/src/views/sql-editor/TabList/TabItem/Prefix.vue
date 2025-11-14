@@ -13,7 +13,7 @@
 </template>
 
 <script lang="ts" setup>
-import { WrenchIcon, UsersIcon } from "lucide-vue-next";
+import { UsersIcon, WrenchIcon } from "lucide-vue-next";
 import { computed } from "vue";
 import { useWorkSheetStore } from "@/store";
 import type { SQLEditorTab } from "@/types";

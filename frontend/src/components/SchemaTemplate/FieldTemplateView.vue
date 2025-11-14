@@ -46,7 +46,7 @@
 
 <script lang="ts" setup>
 import { NCheckbox, NEmpty } from "naive-ui";
-import { reactive, computed } from "vue";
+import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
 import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto-es/v1/setting_service_pb";

@@ -1,9 +1,0 @@
-**/*.html
-**/*.yaml
-**/*.yml
-**/*.json
-**/*.md
-
-src/assets
-src/shims-3rd-party.d.ts
-src/types/proto-es

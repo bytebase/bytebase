@@ -64,10 +64,13 @@ import {
   MigrationType,
 } from "@/types/proto-es/v1/common_pb";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
-import { Task_Type, Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
-import { databaseForTask } from "@/utils";
-import { databaseV1Url, extractSchemaVersionFromTask } from "@/utils";
-import { useInstanceForTask, specForTask, useIssueContext } from "../../logic";
+import { Task_Status, Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
+import {
+  databaseForTask,
+  databaseV1Url,
+  extractSchemaVersionFromTask,
+} from "@/utils";
+import { specForTask, useInstanceForTask, useIssueContext } from "../../logic";
 import TaskStatusIcon from "../TaskStatusIcon.vue";
 import TaskExtraActionsButton from "./TaskExtraActionsButton.vue";
 

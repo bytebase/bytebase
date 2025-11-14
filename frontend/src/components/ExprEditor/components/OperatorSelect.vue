@@ -15,9 +15,9 @@
 import { NSelect, type SelectOption } from "naive-ui";
 import { computed, watch } from "vue";
 import {
-  type Operator,
-  type ConditionOperator,
   type ConditionExpr,
+  type ConditionOperator,
+  type Operator,
 } from "@/plugins/cel";
 import { useExprEditorContext } from "../context";
 import { getOperatorListByFactor } from "./common";

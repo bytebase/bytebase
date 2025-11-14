@@ -39,23 +39,23 @@
 <script lang="ts" setup>
 import dayjs from "dayjs";
 import { NEmpty } from "naive-ui";
-import { reactive, computed, watch, ref } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
 import { useI18n } from "vue-i18n";
 import AuditLogDataTable from "@/components/AuditLog/AuditLogDataTable.vue";
 import AuditLogSearch from "@/components/AuditLog/AuditLogSearch";
 import { buildSearchAuditLogParams } from "@/components/AuditLog/AuditLogSearch/utils";
 import type {
-  ExportOption,
   DownloadContent,
+  ExportOption,
 } from "@/components/DataExportButton.vue";
 import DataExportButton from "@/components/DataExportButton.vue";
 import { FeatureAttention } from "@/components/FeatureGuard";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import {
+  batchGetOrFetchProjects,
   featureToRef,
   useAuditLogStore,
-  batchGetOrFetchProjects,
   useUserStore,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
@@ -63,7 +63,7 @@ import { type SearchAuditLogsParams } from "@/types";
 import type { AuditLog } from "@/types/proto-es/v1/audit_log_service_pb";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { type SearchParams, extractProjectResourceName } from "@/utils";
+import { extractProjectResourceName, type SearchParams } from "@/utils";
 
 interface LocalState {
   params: SearchParams;

@@ -75,7 +75,7 @@ import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL } from "@/router/dashboard
 import { useCurrentProjectV1, useEnvironmentV1Store } from "@/store";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { extractProjectResourceName, getStageStatus } from "@/utils";
-import { usePlanContext, usePlanCheckStatus } from "../../logic";
+import { usePlanCheckStatus, usePlanContext } from "../../logic";
 import ChecksDrawer from "../ChecksView/ChecksDrawer.vue";
 import PlanCheckStatusCount from "../PlanCheckStatusCount.vue";
 

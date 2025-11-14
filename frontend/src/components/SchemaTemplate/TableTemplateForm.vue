@@ -180,10 +180,10 @@ import { computed, onMounted, reactive, ref, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 import RequiredStar from "@/components/RequiredStar.vue";
 import {
-  TableColumnEditor,
-  provideSchemaEditorContext,
   type EditStatus,
   type EditTarget,
+  provideSchemaEditorContext,
+  TableColumnEditor,
 } from "@/components/SchemaEditorLite";
 import {
   Drawer,
@@ -196,14 +196,14 @@ import { pushNotification, useSettingV1Store } from "@/store";
 import { unknownProject } from "@/types";
 import { TableCatalogSchema } from "@/types/proto-es/v1/database_catalog_service_pb";
 import {
-  ColumnMetadataSchema,
   type ColumnMetadata,
+  ColumnMetadataSchema,
 } from "@/types/proto-es/v1/database_service_pb";
 import {
-  SchemaTemplateSettingSchema,
-  Setting_SettingName,
   type SchemaTemplateSetting_FieldTemplate,
   type SchemaTemplateSetting_TableTemplate,
+  SchemaTemplateSettingSchema,
+  Setting_SettingName,
   ValueSchema as SettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
 import { instanceV1AllowsReorderColumns } from "@/utils";

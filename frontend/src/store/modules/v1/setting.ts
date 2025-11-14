@@ -7,19 +7,19 @@ import { settingServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
 import { settingNamePrefix } from "@/store/modules/v1/common";
 import {
-  GetSettingRequestSchema,
-  UpdateSettingRequestSchema,
-  ListSettingsRequestSchema,
-  type Setting,
-  SettingSchema,
-  Setting_SettingName,
-  type WorkspaceProfileSetting,
-  WorkspaceProfileSettingSchema,
   type DataClassificationSetting_DataClassificationConfig,
+  GetSettingRequestSchema,
+  ListSettingsRequestSchema,
   type PasswordRestrictionSetting,
   PasswordRestrictionSettingSchema,
+  type Setting,
+  Setting_SettingName,
+  SettingSchema,
   type Value as SettingValue,
   ValueSchema as SettingValueSchema,
+  UpdateSettingRequestSchema,
+  type WorkspaceProfileSetting,
+  WorkspaceProfileSettingSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
 import { useActuatorV1Store } from "./actuator";
 

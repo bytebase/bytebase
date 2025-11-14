@@ -37,16 +37,16 @@ import { create } from "@bufbuild/protobuf";
 import { ref } from "vue";
 import { planServiceClientConnect } from "@/grpcweb";
 import type { ComposedDatabase } from "@/types";
-import { RunPlanChecksRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import type {
   PlanCheckRun,
   PlanCheckRun_Type,
 } from "@/types/proto-es/v1/plan_service_pb";
+import { RunPlanChecksRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import type { VueClass } from "@/utils";
+import { usePlanCheckRunContext } from "./context";
 import PlanCheckRunBadgeBar from "./PlanCheckRunBadgeBar.vue";
 import PlanCheckRunButton from "./PlanCheckRunButton.vue";
 import PlanCheckRunModal from "./PlanCheckRunModal.vue";
-import { usePlanCheckRunContext } from "./context";
 
 const props = withDefaults(
   defineProps<{

@@ -2,9 +2,9 @@ import { create } from "@bufbuild/protobuf";
 import { v4 as uuidv4 } from "uuid";
 // DataSource type used in function signatures, imported in value imports
 import {
+  DataSource_AuthenticationType,
   DataSourceSchema,
   DataSourceType,
-  DataSource_AuthenticationType,
 } from "../proto-es/v1/instance_service_pb";
 
 export const DATASOURCE_ADMIN_USER_NAME = "bytebase";

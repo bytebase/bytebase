@@ -4,25 +4,25 @@ import { extractCoreDatabaseInfoFromDatabaseCreateTask } from "@/components/Issu
 import { mockDatabase } from "@/components/IssueV1/logic/utils";
 import { useDatabaseV1Store } from "@/store";
 import {
+  EMPTY_ID,
   EMPTY_TASK_NAME,
   emptyStage,
   emptyTask,
-  unknownTask,
-  unknownStage,
-  EMPTY_ID,
-  UNKNOWN_ID,
   isValidDatabaseName,
+  UNKNOWN_ID,
   unknownDatabase,
+  unknownStage,
+  unknownTask,
 } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
-  Task_Type,
-  TaskRun_Status,
   type Rollout,
   type Stage,
   type Task,
+  Task_Status,
+  Task_Type,
+  TaskRun_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { flattenTaskV1List } from "./issue";
 
 export const extractRolloutUID = (name: string) => {

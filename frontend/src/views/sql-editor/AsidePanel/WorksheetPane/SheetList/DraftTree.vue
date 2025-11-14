@@ -22,22 +22,22 @@
 
 <script lang="tsx" setup>
 import {
-  XIcon,
-  FolderPenIcon,
   FilePenIcon,
   FolderOpenIcon,
+  FolderPenIcon,
+  XIcon,
 } from "lucide-vue-next";
 import {
   NTree,
   type TreeOption,
   type TreeOverrideNodeClickBehavior,
 } from "naive-ui";
-import { ref, computed, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { HighlightLabelText } from "@/components/v2";
 import { t } from "@/plugins/i18n";
 import {
-  useSQLEditorTabStore,
   useCurrentUserV1,
+  useSQLEditorTabStore,
   useTabViewStateStore,
 } from "@/store";
 import { isDescendantOf, useDynamicLocalStorage } from "@/utils";

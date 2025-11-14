@@ -7,29 +7,29 @@ import {
 } from "@/grpcweb";
 import { useProjectV1Store } from "@/store";
 import {
+  type ComposedIssue,
+  EMPTY_ID,
   emptyIssue,
   emptyRollout,
-  EMPTY_ID,
-  unknownIssue,
   UNKNOWN_ID,
-  type ComposedIssue,
+  unknownIssue,
 } from "@/types";
+import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import {
   CreateIssueRequestSchema,
   GetIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
-import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
+import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import {
+  CreatePlanRequestSchema,
   GetPlanRequestSchema,
   ListPlanCheckRunsRequestSchema,
-  CreatePlanRequestSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
-import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
+  CreateRolloutRequestSchema,
   GetRolloutRequestSchema,
   ListTaskRunsRequestSchema,
-  CreateRolloutRequestSchema,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import { extractProjectResourceName, hasProjectPermissionV2 } from "@/utils";
 

@@ -29,10 +29,10 @@ import { NButton } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import ResourceOccupiedModal from "@/components/v2/ResourceOccupiedModal/ResourceOccupiedModal.vue";
-import { useRoleStore, useWorkspaceV1Store, pushNotification } from "@/store";
+import { pushNotification, useRoleStore, useWorkspaceV1Store } from "@/store";
 import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import { hasWorkspacePermissionV2, isCustomRole } from "@/utils";
-import { getErrorCode, extractGrpcErrorMessage } from "@/utils/grpcweb";
+import { extractGrpcErrorMessage, getErrorCode } from "@/utils/grpcweb";
 import { useCustomRoleSettingContext } from "../../../context";
 
 const props = defineProps<{

@@ -26,7 +26,7 @@ import { create } from "@bufbuild/protobuf";
 import { type Duration, DurationSchema } from "@bufbuild/protobuf/wkt";
 import { computedAsync } from "@vueuse/core";
 import { last } from "lodash-es";
-import { NButton, type DataTableColumn, NDataTable } from "naive-ui";
+import { type DataTableColumn, NButton, NDataTable } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
@@ -38,16 +38,19 @@ import {
   getTimeForPbTimestampProtoEs,
 } from "@/types";
 import {
-  TaskRun_Status,
   type TaskRun,
+  TaskRun_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import { databaseForTask } from "@/utils";
-import { humanizeDurationV1, sheetNameOfTaskV1 } from "@/utils";
+import {
+  databaseForTask,
+  humanizeDurationV1,
+  sheetNameOfTaskV1,
+} from "@/utils";
 import { useIssueContext } from "../../logic";
 import TaskRunComment from "./TaskRunComment.vue";
 import TaskRunDetail from "./TaskRunDetail.vue";
-import DetailCell from "./TaskRunLogTable/DetailCell";
 import { convertTaskRunLogEntryToFlattenLogEntries } from "./TaskRunLogTable/common";
+import DetailCell from "./TaskRunLogTable/DetailCell";
 import TaskRunStatusIcon from "./TaskRunStatusIcon.vue";
 
 defineOptions({

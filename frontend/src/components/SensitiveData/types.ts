@@ -1,8 +1,8 @@
 import type { ComposedDatabase, DatabaseResource } from "@/types";
 import type {
-  TableCatalog,
   ColumnCatalog,
   ObjectSchema,
+  TableCatalog,
 } from "@/types/proto-es/v1/database_catalog_service_pb";
 import type { Group } from "@/types/proto-es/v1/group_service_pb";
 import type { MaskingExceptionPolicy_MaskingException_Action } from "@/types/proto-es/v1/org_policy_service_pb";

@@ -27,8 +27,8 @@
 </template>
 
 <script setup lang="ts">
-import { NTabs, NTabPane } from "naive-ui";
-import { ref, watch, computed } from "vue";
+import { NTabPane, NTabs } from "naive-ui";
+import { computed, ref, watch } from "vue";
 import { RichEngineName } from "@/components/v2";
 import type { RuleTemplateV2 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";

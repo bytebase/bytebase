@@ -118,8 +118,8 @@ import { NButton, NScrollbar, NTooltip, useDialog } from "naive-ui";
 import type { VNode } from "vue";
 import { computed, h, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
 import type { LocationQueryRaw } from "vue-router";
+import { useRouter } from "vue-router";
 import { BBAlert } from "@/bbkit";
 import EditEnvironmentDrawer from "@/components/EditEnvironmentDrawer.vue";
 import LabelEditorDrawer from "@/components/LabelEditorDrawer.vue";
@@ -141,9 +141,9 @@ import {
 import type { ComposedDatabase } from "@/types";
 import { DEFAULT_PROJECT_NAME } from "@/types";
 import {
+  BatchUpdateDatabasesRequestSchema,
   DatabaseSchema$,
   UpdateDatabaseRequestSchema,
-  BatchUpdateDatabasesRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
 import {
   extractProjectResourceName,

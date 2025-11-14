@@ -41,7 +41,7 @@ import { create } from "@bufbuild/protobuf";
 import { PlusIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
-import { computed, reactive, onMounted } from "vue";
+import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { featureToRef, pushNotification, useSettingV1Store } from "@/store";
 import type { SemanticTypeSetting_SemanticType } from "@/types/proto-es/v1/setting_service_pb";

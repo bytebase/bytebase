@@ -1,8 +1,8 @@
 import { maxBy } from "lodash-es";
 import {
+  type PlanCheckRun,
   PlanCheckRun_Status,
   PlanCheckRun_Type,
-  type PlanCheckRun,
 } from "@/types/proto-es/v1/plan_service_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { extractPlanCheckRunUID } from "@/utils";

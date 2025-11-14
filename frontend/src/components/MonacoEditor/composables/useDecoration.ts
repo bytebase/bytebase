@@ -1,5 +1,5 @@
 import * as monaco from "monaco-editor";
-import { computed, ref, watch, type Ref, type ShallowRef } from "vue";
+import { computed, type Ref, ref, type ShallowRef, watch } from "vue";
 import type { MonacoModule } from "../types";
 
 export const useDecoration = (

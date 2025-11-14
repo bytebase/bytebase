@@ -117,30 +117,33 @@
 <script lang="ts" setup>
 import { orderBy } from "lodash-es";
 import { ChevronDown, ChevronRight } from "lucide-vue-next";
-import { NButton, NPopover, NRadioGroup, NRadio, NTooltip } from "naive-ui";
+import { NButton, NPopover, NRadio, NRadioGroup, NTooltip } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   useConnectionOfCurrentSQLEditorTab,
   usePolicyV1Store,
-  useSQLEditorTabStore,
   useSQLEditorStore,
+  useSQLEditorTabStore,
 } from "@/store";
 import { isValidDatabaseName } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { DataSource } from "@/types/proto-es/v1/instance_service_pb";
 import {
-  DataSourceType,
   DataSource_RedisType,
+  DataSourceType,
 } from "@/types/proto-es/v1/instance_service_pb";
 import {
   DataSourceQueryPolicy_Restriction,
   PolicyType,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import { QueryOption_RedisRunCommandsOn } from "@/types/proto-es/v1/sql_service_pb";
-import { getValidDataSourceByPolicy, readableDataSourceType } from "@/utils";
-import { getAdminDataSourceRestrictionOfDatabase } from "@/utils";
+import {
+  getAdminDataSourceRestrictionOfDatabase,
+  getValidDataSourceByPolicy,
+  readableDataSourceType,
+} from "@/utils";
 import ResultLimitSelect from "./ResultLimitSelect.vue";
 
 defineProps<{
@@ -152,8 +155,9 @@ const tabStore = useSQLEditorTabStore();
 const { connection, database } = useConnectionOfCurrentSQLEditorTab();
 const policyStore = usePolicyV1Store();
 
-const { redisCommandOption, resultRowsLimit } =
-  storeToRefs(useSQLEditorStore());
+const { redisCommandOption, resultRowsLimit } = storeToRefs(
+  useSQLEditorStore()
+);
 
 const show = computed(() => {
   return tabStore.currentTab?.mode !== "ADMIN";

@@ -29,8 +29,8 @@
 </template>
 
 <script setup lang="ts">
-import { NSwitch, NInput } from "naive-ui";
-import { watch, ref } from "vue";
+import { NInput, NSwitch } from "naive-ui";
+import { ref, watch } from "vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 
 const props = defineProps<{

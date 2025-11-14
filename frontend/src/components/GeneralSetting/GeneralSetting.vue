@@ -72,14 +72,14 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { isEqual } from "lodash-es";
-import { NTooltip, NButton, NInput } from "naive-ui";
+import { NButton, NInput, NTooltip } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, reactive, ref } from "vue";
 import { BBModal } from "@/bbkit";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { router } from "@/router";
 import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
-import { useSettingV1Store, useActuatorV1Store } from "@/store";
+import { useActuatorV1Store, useSettingV1Store } from "@/store";
 import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import WorkspaceMode from "@/views/Setup/WorkspaceMode.vue";
 

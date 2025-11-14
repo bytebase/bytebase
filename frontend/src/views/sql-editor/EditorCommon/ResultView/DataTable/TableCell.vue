@@ -60,10 +60,10 @@ import type { QueryRow, RowValue } from "@/types/proto-es/v1/sql_service_pb";
 import { extractSQLRowValuePlain, getHighlightHTMLByRegExp } from "@/utils";
 import { useSQLResultViewContext } from "../context";
 import {
-  useBinaryFormatContext,
-  formatBinaryValue,
-  detectBinaryFormat,
   type BinaryFormat,
+  detectBinaryFormat,
+  formatBinaryValue,
+  useBinaryFormatContext,
 } from "./binary-format-store";
 import BinaryFormatButton from "./common/BinaryFormatButton.vue";
 import { useSelectionContext } from "./common/selection-logic";

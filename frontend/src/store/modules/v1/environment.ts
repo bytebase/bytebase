@@ -7,9 +7,9 @@ import { settingServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
 import type { ResourceId } from "@/types";
 import {
-  unknownEnvironment,
-  nullEnvironment,
   NULL_ENVIRONMENT_NAME,
+  nullEnvironment,
+  unknownEnvironment,
 } from "@/types";
 import type {
   EnvironmentSetting,
@@ -19,9 +19,9 @@ import {
   EnvironmentSetting_EnvironmentSchema,
   EnvironmentSettingSchema,
   GetSettingRequestSchema,
-  UpdateSettingRequestSchema,
-  SettingSchema,
   Setting_SettingName,
+  SettingSchema,
+  UpdateSettingRequestSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
 import type { Environment } from "@/types/v1/environment";
 import { environmentNamePrefix } from "./common";

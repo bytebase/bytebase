@@ -89,20 +89,19 @@
 <script lang="ts" setup>
 import { useDebounceFn } from "@vueuse/core";
 import {
-  CodeIcon,
-  LinkIcon,
-  HashIcon,
   BoldIcon,
+  CodeIcon,
+  HashIcon,
   HeadingIcon,
+  LinkIcon,
 } from "lucide-vue-next";
-import { NButton, NTooltip, NTabs, NTab, NScrollbar } from "naive-ui";
-import { nextTick, ref, reactive, watch, toRef, onMounted } from "vue";
+import { NButton, NScrollbar, NTab, NTabs, NTooltip } from "naive-ui";
 import type { Component } from "vue";
+import { nextTick, onMounted, reactive, ref, toRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { HighlightLabelText } from "@/components/v2";
 import { useIssueV1Store } from "@/store";
-import { type ComposedIssue } from "@/types";
-import { DEBOUNCE_SEARCH_DELAY } from "@/types";
+import { type ComposedIssue, DEBOUNCE_SEARCH_DELAY } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import {

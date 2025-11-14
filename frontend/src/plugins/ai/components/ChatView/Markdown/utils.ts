@@ -1,10 +1,10 @@
 import type {
+  AlignType,
+  Definition,
   Root,
   RootContent,
   RootContentMap,
   Text,
-  Definition,
-  AlignType,
 } from "mdast";
 import { normalizeUri } from "micromark-util-sanitize-uri";
 import { h, type VNode } from "vue";

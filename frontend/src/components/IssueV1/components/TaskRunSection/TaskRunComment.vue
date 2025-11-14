@@ -33,18 +33,22 @@ import { useCurrentProjectV1 } from "@/store";
 import { getProjectIdRolloutUidStageUidTaskUid } from "@/store/modules/v1/common";
 import { useTaskRunLogStore } from "@/store/modules/v1/taskRunLog";
 import {
-  unknownTask,
-  getTimeForPbTimestampProtoEs,
   getDateForPbTimestampProtoEs,
+  getTimeForPbTimestampProtoEs,
+  unknownTask,
 } from "@/types";
-import {
-  TaskRun_Status,
-  Task_Type,
-} from "@/types/proto-es/v1/rollout_service_pb";
 import type { TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
+import {
+  Task_Type,
+  TaskRun_Status,
+} from "@/types/proto-es/v1/rollout_service_pb";
 import { isPostgresFamily } from "@/types/v1/instance";
-import { databaseForTask } from "@/utils";
-import { databaseV1Url, extractTaskUID, flattenTaskV1List } from "@/utils";
+import {
+  databaseForTask,
+  databaseV1Url,
+  extractTaskUID,
+  flattenTaskV1List,
+} from "@/utils";
 import { extractChangelogUID } from "@/utils/v1/changelog";
 import { useIssueContext } from "../../logic";
 import { displayTaskRunLogEntryType } from "./TaskRunLogTable/common";

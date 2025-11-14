@@ -83,33 +83,31 @@
 </template>
 
 <script lang="ts" setup>
-import { useDebounceFn, onClickOutside } from "@vueuse/core";
-import { useElementSize } from "@vueuse/core";
+import { onClickOutside, useDebounceFn, useElementSize } from "@vueuse/core";
 import { cloneDeep, last } from "lodash-es";
-import { FilterIcon } from "lucide-vue-next";
-import { XIcon } from "lucide-vue-next";
-import { NButton, NInput, type InputInst } from "naive-ui";
+import { FilterIcon, XIcon } from "lucide-vue-next";
+import { type InputInst, NButton, NInput } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { zindexable as vZindexable } from "vdirs";
-import { reactive, watch, onMounted, ref, computed, nextTick } from "vue";
+import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useCurrentUserV1 } from "@/store";
 import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import type { SearchParams, SearchScopeId } from "@/utils";
 import {
+  buildSearchParamsBySearchText,
+  buildSearchTextBySearchParams,
   emptySearchParams,
   getValueFromSearchParams,
+  mergeSearchParams,
   minmax,
   upsertScope,
-  buildSearchTextBySearchParams,
-  buildSearchParamsBySearchText,
-  mergeSearchParams,
   useDynamicLocalStorage,
 } from "@/utils";
 import ScopeMenu from "./ScopeMenu.vue";
 import ScopeTags from "./ScopeTags.vue";
-import ValueMenu from "./ValueMenu.vue";
 import type { ScopeOption } from "./types";
+import ValueMenu from "./ValueMenu.vue";
 
 const props = withDefaults(
   defineProps<{

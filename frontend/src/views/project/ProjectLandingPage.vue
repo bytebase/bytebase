@@ -3,11 +3,11 @@
 </template>
 
 <script lang="ts" setup>
-import { watchEffect, computed } from "vue";
+import { computed, watchEffect } from "vue";
 import { useRouter } from "vue-router";
 import {
-  PROJECT_V1_ROUTE_ISSUES,
   PROJECT_V1_ROUTE_DATABASES,
+  PROJECT_V1_ROUTE_ISSUES,
 } from "@/router/dashboard/projectV1";
 import { useProjectV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";

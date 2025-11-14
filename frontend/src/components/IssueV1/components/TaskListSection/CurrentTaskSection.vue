@@ -86,14 +86,13 @@ import {
   InstanceV1Name,
 } from "@/components/v2";
 import {
+  useCurrentProjectV1,
   useDatabaseV1Store,
   useEnvironmentV1Store,
-  useCurrentProjectV1,
 } from "@/store";
 import { formatEnvironmentName, isValidDatabaseName } from "@/types";
 import { Task_Status, Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
-import { databaseForTask } from "@/utils";
-import { extractInstanceResourceName } from "@/utils";
+import { databaseForTask, extractInstanceResourceName } from "@/utils";
 
 type DatabaseCreationStatus = "EXISTED" | "PENDING_CREATE" | "CREATED";
 

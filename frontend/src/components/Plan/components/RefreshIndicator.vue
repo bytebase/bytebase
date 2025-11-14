@@ -24,7 +24,7 @@
 import dayjs from "dayjs";
 import { RefreshCcwIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
-import { computed, ref, onUnmounted } from "vue";
+import { computed, onUnmounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useResourcePoller } from "../logic/poller";
 

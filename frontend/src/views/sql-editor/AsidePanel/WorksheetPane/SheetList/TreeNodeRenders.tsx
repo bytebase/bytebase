@@ -1,11 +1,11 @@
 import {
-  StarIcon,
-  MoreHorizontalIcon,
-  FolderSyncIcon,
+  FileCodeIcon,
   FolderCodeIcon,
   FolderMinusIcon,
-  FileCodeIcon,
   FolderOpenIcon,
+  FolderSyncIcon,
+  MoreHorizontalIcon,
+  StarIcon,
   UsersIcon,
 } from "lucide-vue-next";
 import { NTooltip } from "naive-ui";
@@ -13,8 +13,8 @@ import { defineComponent, type PropType } from "vue";
 import { t } from "@/plugins/i18n";
 import { useUserStore } from "@/store";
 import {
-  Worksheet_Visibility,
   type Worksheet,
+  Worksheet_Visibility,
 } from "@/types/proto-es/v1/worksheet_service_pb";
 import type { WorsheetFolderNode } from "@/views/sql-editor/Sheet";
 

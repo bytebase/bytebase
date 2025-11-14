@@ -268,13 +268,13 @@
 <script lang="tsx" setup>
 /* eslint-disable vue/no-mutating-props */
 import { create } from "@bufbuild/protobuf";
-import { NRadioGroup, NRadio, NInput } from "naive-ui";
-import { computed, watch, ref } from "vue";
+import { NInput, NRadio, NRadioGroup } from "naive-ui";
+import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   DataSource_AuthenticationType,
-  DataSource_AzureCredentialSchema,
   DataSource_AWSCredentialSchema,
+  DataSource_AzureCredentialSchema,
   DataSource_GCPCredentialSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
 import type { EditDataSource } from "../common";

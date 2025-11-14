@@ -1,24 +1,24 @@
-import { type Ref, watchEffect, computed, h } from "vue";
+import { computed, h, type Ref, watchEffect } from "vue";
 import { EnvironmentV1Name, RichDatabaseName } from "@/components/v2";
 import { ProjectNameCell } from "@/components/v2/Model/cells";
 import { t } from "@/plugins/i18n";
 import {
-  useEnvironmentV1Store,
   useDatabaseV1Store,
+  useEnvironmentV1Store,
   useProjectV1Store,
   useUserStore,
 } from "@/store";
 import {
   environmentNamePrefix,
+  isDatabaseName,
   projectNamePrefix,
   userNamePrefix,
-  isDatabaseName,
 } from "@/store/modules/v1/common";
 import {
-  isValidEnvironmentName,
-  isValidDatabaseName,
-  isValidProjectName,
   formatEnvironmentName,
+  isValidDatabaseName,
+  isValidEnvironmentName,
+  isValidProjectName,
 } from "@/types";
 import { hasWorkspacePermissionV2 } from "@/utils";
 

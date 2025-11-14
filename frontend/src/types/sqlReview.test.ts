@@ -1,9 +1,9 @@
 import { describe, expect, test } from "vitest";
 import { SQLReviewRuleLevel } from "@/types/proto-es/v1/org_policy_service_pb";
-import sqlReviewSchema from "./sql-review-schema.yaml";
 import sqlReviewDevTemplate from "./sql-review.dev.yaml";
 import sqlReviewProdTemplate from "./sql-review.prod.yaml";
 import sqlReviewSampleTemplate from "./sql-review.sample.yaml";
+import sqlReviewSchema from "./sql-review-schema.yaml";
 
 describe("SQL Review YAML Templates Validation", () => {
   const templates = [

@@ -94,19 +94,19 @@
 
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
-import { cloneDeep, head, uniq, flatten } from "lodash-es";
+import { cloneDeep, flatten, head, uniq } from "lodash-es";
 import { NButton, NInput } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import ExprEditor from "@/components/ExprEditor";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import type { ConditionGroupExpr, Factor, SimpleExpr } from "@/plugins/cel";
-import { ExprType } from "@/plugins/cel";
 import {
-  resolveCELExpr,
   buildCELExpr,
-  wrapAsGroup,
-  validateSimpleExpr,
+  ExprType,
   emptySimpleExpr,
+  resolveCELExpr,
+  validateSimpleExpr,
+  wrapAsGroup,
 } from "@/plugins/cel";
 import { useSupportedSourceList } from "@/types";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";

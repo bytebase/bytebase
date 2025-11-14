@@ -38,7 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import { NButton, NDropdown, type DropdownOption } from "naive-ui";
+import { type DropdownOption, NButton, NDropdown } from "naive-ui";
 import type { VNode } from "vue";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";

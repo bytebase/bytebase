@@ -1,6 +1,6 @@
 import Emittery from "emittery";
 import type { DropdownOption } from "naive-ui";
-import { computed, reactive, type Ref } from "vue";
+import { computed, type Ref, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
@@ -10,9 +10,9 @@ import { engineSupportsMultiSchema } from "../spec";
 import type {
   TreeNode,
   TreeNodeForDatabase,
+  TreeNodeForFunction,
   TreeNodeForGroup,
   TreeNodeForProcedure,
-  TreeNodeForFunction,
   TreeNodeForSchema,
   TreeNodeForTable,
   TreeNodeForView,

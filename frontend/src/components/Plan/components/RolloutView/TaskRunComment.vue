@@ -33,8 +33,8 @@ import { NEllipsis } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import {
-  getTimeForPbTimestampProtoEs,
   getDateForPbTimestampProtoEs,
+  getTimeForPbTimestampProtoEs,
 } from "@/types";
 import type { TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";

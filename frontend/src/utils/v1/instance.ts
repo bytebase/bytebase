@@ -1,5 +1,5 @@
 import { computed, unref } from "vue";
-import { t, locale } from "@/plugins/i18n";
+import { locale, t } from "@/plugins/i18n";
 import { useSubscriptionV1Store } from "@/store";
 import type { MaybeRef } from "@/types";
 import {
@@ -7,16 +7,15 @@ import {
   languageOfEngineV1,
   unknownInstance,
 } from "@/types";
-import { Engine } from "@/types/proto-es/v1/common_pb";
-import { State } from "@/types/proto-es/v1/common_pb";
+import { Engine, State } from "@/types/proto-es/v1/common_pb";
 // Using proto-es types directly, no conversions needed
 import type {
   Instance,
   InstanceResource,
 } from "@/types/proto-es/v1/instance_service_pb";
 import {
-  DataSourceType,
   type DataSource,
+  DataSourceType,
 } from "@/types/proto-es/v1/instance_service_pb";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 

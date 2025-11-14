@@ -4,10 +4,10 @@ import { projectServiceClientConnect } from "@/grpcweb";
 import type { IdType } from "@/types";
 import {
   AddWebhookRequestSchema,
-  UpdateWebhookRequestSchema,
+  type Project,
   RemoveWebhookRequestSchema,
   TestWebhookRequestSchema,
-  type Project,
+  UpdateWebhookRequestSchema,
   type Webhook,
 } from "@/types/proto-es/v1/project_service_pb";
 import { extractProjectWebhookID } from "@/utils";

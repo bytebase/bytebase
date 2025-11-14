@@ -48,7 +48,7 @@
 <script lang="ts" setup>
 import { useLocalStorage } from "@vueuse/core";
 import dayjs from "dayjs";
-import { NSelect, NDatePicker } from "naive-ui";
+import { NDatePicker, NSelect } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useSettingV1Store } from "@/store";

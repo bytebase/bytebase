@@ -27,7 +27,7 @@ import { Building2Icon } from "lucide-vue-next";
 import { NTag, NTooltip } from "naive-ui";
 import { computed } from "vue";
 import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
-import { displayRoleTitle, sortRoles, isBindingPolicyExpired } from "@/utils";
+import { displayRoleTitle, isBindingPolicyExpired, sortRoles } from "@/utils";
 import type { MemberRole } from "../../types";
 
 const props = defineProps<{

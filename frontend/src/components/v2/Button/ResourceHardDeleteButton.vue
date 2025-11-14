@@ -42,7 +42,7 @@
   generic="T extends { name: string; title: string; state: State }"
 >
 import { NInput } from "naive-ui";
-import { ref, computed } from "vue";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBButtonConfirm } from "@/bbkit";
 import { pushNotification } from "@/store";

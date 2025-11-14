@@ -82,10 +82,10 @@
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
-import { PencilIcon, MoreVerticalIcon, TrashIcon } from "lucide-vue-next";
-import { NTabs, NTab, NButton, useDialog, NTooltip, NDropdown } from "naive-ui";
+import { MoreVerticalIcon, PencilIcon, TrashIcon } from "lucide-vue-next";
 import type { DropdownOption } from "naive-ui";
-import { ref, computed, nextTick, h } from "vue";
+import { NButton, NDropdown, NTab, NTabs, NTooltip, useDialog } from "naive-ui";
+import { computed, h, nextTick, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { planServiceClientConnect } from "@/grpcweb";
@@ -105,8 +105,8 @@ import { useEditorState } from "../../logic/useEditorState";
 import { getSpecTitle } from "../../logic/utils";
 import AddSpecDrawer from "../AddSpecDrawer.vue";
 import { useSpecsValidation } from "../common";
-import EditMigrationTypeModal from "./EditMigrationTypeModal.vue";
 import { useSelectedSpec } from "./context";
+import EditMigrationTypeModal from "./EditMigrationTypeModal.vue";
 
 const router = useRouter();
 const dialog = useDialog();

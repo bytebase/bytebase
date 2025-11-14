@@ -132,10 +132,10 @@
 </template>
 
 <script setup lang="ts">
-import { ChevronRightIcon, ChevronDownIcon } from "lucide-vue-next";
-import { NVirtualList, NIcon, NButton, NEmpty } from "naive-ui";
+import { ChevronDownIcon, ChevronRightIcon } from "lucide-vue-next";
+import { NButton, NEmpty, NIcon, NVirtualList } from "naive-ui";
 import { computed, nextTick, ref, watch } from "vue";
-import { TableIcon, ColumnIcon, IndexIcon } from "@/components/Icon";
+import { ColumnIcon, IndexIcon, TableIcon } from "@/components/Icon";
 import type {
   DatabaseMetadata,
   TableMetadata,

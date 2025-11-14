@@ -3,12 +3,12 @@ import { includes, uniq } from "lodash-es";
 import { v4 as uuidv4 } from "uuid";
 import {
   computed,
+  type InjectionKey,
   inject,
   provide,
   ref,
   watch,
   watchEffect,
-  type InjectionKey,
 } from "vue";
 import { useRoute } from "vue-router";
 import { useProgressivePoll } from "@/composables/useProgressivePoll";
@@ -28,10 +28,10 @@ import { RolloutSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import { isValidIssueName, isValidPlanName } from "@/utils";
 import { usePlanContext } from "../context";
 import {
+  refreshIssue,
   refreshPlan,
   refreshPlanCheckRuns,
   refreshRollout,
-  refreshIssue,
   refreshTaskRuns,
 } from "./utils";
 

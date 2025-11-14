@@ -50,25 +50,25 @@
 import { create } from "@bufbuild/protobuf";
 import {
   FolderCodeIcon,
-  FolderOpenIcon,
   FolderMinusIcon,
+  FolderOpenIcon,
 } from "lucide-vue-next";
-import { NInput, NButton, NTreeSelect, type TreeOption } from "naive-ui";
+import { NButton, NInput, NTreeSelect, type TreeOption } from "naive-ui";
 import { ref } from "vue";
 import { BBModal } from "@/bbkit";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import { useWorkSheetStore, useSQLEditorTabStore } from "@/store";
+import { useSQLEditorTabStore, useWorkSheetStore } from "@/store";
 import type { SQLEditorTab } from "@/types";
 import { UNKNOWN_ID } from "@/types";
 import {
-  WorksheetSchema,
-  Worksheet_Visibility,
   type Worksheet,
+  Worksheet_Visibility,
+  WorksheetSchema,
 } from "@/types/proto-es/v1/worksheet_service_pb";
 import { extractWorksheetUID } from "@/utils";
-import { useSheetContextByView } from "@/views/sql-editor/Sheet";
 import type { WorsheetFolderNode } from "@/views/sql-editor/Sheet";
+import { useSheetContextByView } from "@/views/sql-editor/Sheet";
 import { useSQLEditorContext } from "../context";
 
 const tabStore = useSQLEditorTabStore();

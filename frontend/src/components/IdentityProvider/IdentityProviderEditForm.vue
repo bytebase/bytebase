@@ -233,16 +233,16 @@ import { create as createProto } from "@bufbuild/protobuf";
 import { cloneDeep, isEqual } from "lodash-es";
 import {
   ArrowRightIcon,
+  DatabaseIcon,
   InfoIcon,
   KeyIcon,
   ShieldCheckIcon,
-  DatabaseIcon,
 } from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { BBTextField, BBButtonConfirm } from "@/bbkit";
+import { BBButtonConfirm, BBTextField } from "@/bbkit";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { ResourceIdField } from "@/components/v2";
@@ -253,18 +253,18 @@ import { getIdentityProviderResourceId } from "@/store/modules/v1/common";
 import type {
   FieldMapping,
   IdentityProvider,
+  LDAPIdentityProviderConfig,
   OAuth2IdentityProviderConfig,
   OIDCIdentityProviderConfig,
-  LDAPIdentityProviderConfig,
 } from "@/types/proto-es/v1/idp_service_pb";
 import {
   FieldMappingSchema,
+  IdentityProviderConfigSchema,
   IdentityProviderSchema,
   IdentityProviderType,
+  LDAPIdentityProviderConfigSchema,
   OAuth2IdentityProviderConfigSchema,
   OIDCIdentityProviderConfigSchema,
-  LDAPIdentityProviderConfigSchema,
-  IdentityProviderConfigSchema,
 } from "@/types/proto-es/v1/idp_service_pb";
 import {
   hasWorkspacePermissionV2,

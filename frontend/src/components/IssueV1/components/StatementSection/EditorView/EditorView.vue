@@ -191,13 +191,13 @@ import {
 } from "@/components/IssueV1/logic";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { extensionNameOfLanguage } from "@/components/MonacoEditor/utils";
+import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
 import {
   createEmptyLocalSheet,
   databaseEngineForSpec,
 } from "@/components/Plan";
 import RequiredStar from "@/components/RequiredStar.vue";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
-import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
 import { planServiceClientConnect } from "@/grpcweb";
 import {
   pushNotification,
@@ -210,8 +210,8 @@ import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
 import type { Advice } from "@/types/proto-es/v1/sql_service_pb";
-import { databaseForTask } from "@/utils";
 import {
+  databaseForTask,
   flattenTaskV1List,
   getSheetStatement,
   getStatementSize,
@@ -219,8 +219,8 @@ import {
   useInstanceV1EditorLanguage,
 } from "@/utils";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
-import EditorActionPopover from "./EditorActionPopover.vue";
 import { provideEditorContext } from "./context";
+import EditorActionPopover from "./EditorActionPopover.vue";
 import type { EditState } from "./useTempEditState";
 import { useTempEditState } from "./useTempEditState";
 

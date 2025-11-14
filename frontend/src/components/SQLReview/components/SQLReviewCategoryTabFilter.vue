@@ -20,7 +20,7 @@
 
 <script lang="ts" setup>
 import { useWindowSize } from "@vueuse/core";
-import { NTabs, NTabPane } from "naive-ui";
+import { NTabPane, NTabs } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type { RuleTemplateV2 } from "@/types";

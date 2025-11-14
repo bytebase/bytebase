@@ -390,20 +390,20 @@
 <script setup lang="ts">
 import { create as createProto } from "@bufbuild/protobuf";
 import {
-  PackageIcon,
-  FolderOpenIcon,
   FileIcon,
-  XIcon,
+  FolderOpenIcon,
+  PackageIcon,
   PlusIcon,
+  XIcon,
 } from "lucide-vue-next";
 import {
   NButton,
+  NInput,
   NRadio,
   NRadioGroup,
-  NSteps,
-  NStep,
-  NInput,
   NSelect,
+  NStep,
+  NSteps,
 } from "naive-ui";
 import type { Ref } from "vue";
 import { computed, ref, watch } from "vue";
@@ -413,23 +413,23 @@ import ReleaseFileTable from "@/components/Release/ReleaseDetail/ReleaseFileTabl
 import { Drawer, DrawerContent } from "@/components/v2";
 import { revisionServiceClientConnect } from "@/grpcweb";
 import {
+  pushNotification,
   useCurrentProjectV1,
   useReleaseStore,
   useRevisionStore,
   useSheetV1Store,
-  pushNotification,
 } from "@/store";
 import {
-  Release_File_Type,
   type Release,
   type Release_File,
+  Release_File_Type,
 } from "@/types/proto-es/v1/release_service_pb";
 import {
   BatchCreateRevisionsRequestSchema,
-  CreateRevisionRequestSchema,
-  Revision_Type,
   type CreateRevisionRequest,
+  CreateRevisionRequestSchema,
   type Revision,
+  Revision_Type,
 } from "@/types/proto-es/v1/revision_service_pb";
 
 const props = defineProps<{

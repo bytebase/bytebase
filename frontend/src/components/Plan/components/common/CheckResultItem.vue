@@ -38,7 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import { CheckCircleIcon, AlertCircleIcon, XCircleIcon } from "lucide-vue-next";
+import { AlertCircleIcon, CheckCircleIcon, XCircleIcon } from "lucide-vue-next";
 import { NTag } from "naive-ui";
 import { computed } from "vue";
 import { getRuleLocalization, ruleTemplateMapV2 } from "@/types";

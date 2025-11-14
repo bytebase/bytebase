@@ -5,10 +5,10 @@ import { v4 as uuidv4 } from "uuid";
 import { ref } from "vue";
 import { settingServiceClientConnect } from "@/grpcweb";
 import {
-  type LocalApprovalConfig,
-  type LocalApprovalRule,
   getBuiltinFlow,
   isBuiltinFlowId,
+  type LocalApprovalConfig,
+  type LocalApprovalRule,
 } from "@/types";
 import type { ApprovalTemplate } from "@/types/proto-es/v1/issue_service_pb";
 import {
@@ -19,14 +19,14 @@ import type { Risk_Source } from "@/types/proto-es/v1/risk_service_pb";
 import type { Setting } from "@/types/proto-es/v1/setting_service_pb";
 import {
   GetSettingRequestSchema,
-  UpdateSettingRequestSchema,
-  SettingSchema,
   Setting_SettingName,
+  SettingSchema,
   ValueSchema as SettingValueSchema,
+  UpdateSettingRequestSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
 import {
-  resolveLocalApprovalConfig,
   buildWorkspaceApprovalSetting,
+  resolveLocalApprovalConfig,
 } from "@/utils";
 import { useGracefulRequest } from "./utils";
 

@@ -1,6 +1,5 @@
 import { Range } from "monaco-editor";
-import { isRef, unref, watch } from "vue";
-import { h } from "vue";
+import { h, isRef, unref, watch } from "vue";
 import { t } from "@/plugins/i18n";
 import { pushNotification } from "@/store";
 import type { Language, MaybeRef, SQLDialect } from "@/types";

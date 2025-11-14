@@ -50,11 +50,11 @@ import { cloneDeep } from "lodash-es";
 import { NButton, NSelect } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import SchemaEditorLite, {
-  generateDiffDDL,
   type EditTarget,
+  generateDiffDDL,
 } from "@/components/SchemaEditorLite";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { useDBSchemaV1Store, useDatabaseCatalogV1Store } from "@/store";
+import { useDatabaseCatalogV1Store, useDBSchemaV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 

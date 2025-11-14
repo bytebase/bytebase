@@ -6,12 +6,12 @@ import {
 import { type OptionConfig } from "@/components/ExprEditor/context";
 import { getInstanceIdOptions } from "@/components/SensitiveData/components/utils";
 import type { Factor } from "@/plugins/cel";
-import { useInstanceV1Store, useDatabaseV1Store } from "@/store";
+import { useDatabaseV1Store, useInstanceV1Store } from "@/store";
 import { getDefaultPagination } from "@/utils";
 import {
+  CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME,
   CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID,
   CEL_ATTRIBUTE_RESOURCE_INSTANCE_ID,
-  CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME,
 } from "@/utils/cel-attributes";
 
 export const FactorList: Factor[] = [

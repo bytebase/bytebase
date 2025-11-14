@@ -12,16 +12,15 @@
 
 <script setup lang="tsx">
 import { CheckIcon, XIcon } from "lucide-vue-next";
-import { NCheckbox, NDataTable, NButton } from "naive-ui";
 import type { DataTableColumn } from "naive-ui";
+import { NButton, NCheckbox, NDataTable } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBButtonConfirm } from "@/bbkit";
 import Resource from "@/components/v2/ResourceOccupiedModal/Resource.vue";
 import { pushNotification, useSQLReviewStore } from "@/store";
 import type { SQLReviewPolicy } from "@/types";
-import { hasWorkspacePermissionV2 } from "@/utils";
-import { getHighlightHTMLByRegExp } from "@/utils";
+import { getHighlightHTMLByRegExp, hasWorkspacePermissionV2 } from "@/utils";
 
 const props = withDefaults(
   defineProps<{

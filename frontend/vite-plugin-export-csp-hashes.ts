@@ -1,6 +1,6 @@
 import { createHash } from "crypto";
-import { writeFileSync, readFileSync, readdirSync, statSync } from "fs";
-import { resolve, dirname, join } from "path";
+import { readdirSync, readFileSync, statSync, writeFileSync } from "fs";
+import { dirname, join, resolve } from "path";
 import { fileURLToPath } from "url";
 import type { Plugin } from "vite";
 

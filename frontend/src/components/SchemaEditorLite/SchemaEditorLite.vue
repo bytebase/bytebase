@@ -22,7 +22,7 @@
 
 <script lang="ts" setup>
 import { cloneDeep } from "lodash-es";
-import { Splitpanes, Pane } from "splitpanes";
+import { Pane, Splitpanes } from "splitpanes";
 import "splitpanes/dist/splitpanes.css";
 import { computed, onMounted, toRef } from "vue";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
@@ -32,9 +32,9 @@ import type { DatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import Aside from "./Aside";
-import Editor from "./Editor.vue";
 import { useAlgorithm } from "./algorithm";
 import { provideSchemaEditorContext } from "./context";
+import Editor from "./Editor.vue";
 import type { EditTarget, RolloutObject } from "./types";
 
 const props = defineProps<{

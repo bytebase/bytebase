@@ -47,12 +47,12 @@ import { isNumber } from "lodash-es";
 import { computed, watch } from "vue";
 import {
   type ConditionExpr,
-  isEqualityOperator,
   isCollectionOperator,
-  isStringOperator,
   isCompareOperator,
+  isEqualityOperator,
   isNumberFactor,
   isStringFactor,
+  isStringOperator,
 } from "@/plugins/cel";
 import { useExprEditorContext } from "../context";
 import MultiSelect from "./MultiSelect.vue";

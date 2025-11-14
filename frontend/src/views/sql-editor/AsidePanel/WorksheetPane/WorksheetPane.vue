@@ -35,13 +35,13 @@
 
 <script setup lang="tsx">
 import { FunnelIcon } from "lucide-vue-next";
-import { NButton, NDropdown, type DropdownOption } from "naive-ui";
-import { ref, computed } from "vue";
+import { type DropdownOption, NButton, NDropdown } from "naive-ui";
+import { computed, ref } from "vue";
 import { SearchBox } from "@/components/v2";
 import { t } from "@/plugins/i18n";
 import { useSheetContext } from "../../Sheet";
 import FilterMenuItem from "./FilterMenuItem.vue";
-import { SheetTree, DraftTree } from "./SheetList";
+import { DraftTree, SheetTree } from "./SheetList";
 
 const { filter, filterChanged } = useSheetContext();
 const showDropdown = ref<boolean>(false);

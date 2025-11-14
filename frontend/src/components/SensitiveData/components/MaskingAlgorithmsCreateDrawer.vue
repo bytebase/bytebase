@@ -305,31 +305,31 @@ import {
   NRadioGroup,
   NTooltip,
 } from "naive-ui";
-import { computed, watch, reactive } from "vue";
+import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import RequiredStar from "@/components/RequiredStar.vue";
-import type { RadioGridOption, RadioGridItem } from "@/components/v2";
+import type { RadioGridItem, RadioGridOption } from "@/components/v2";
 import {
   Drawer,
   DrawerContent,
-  RadioGrid,
   MiniActionButton,
+  RadioGrid,
 } from "@/components/v2";
 import type {
   Algorithm,
-  Algorithm_FullMask as FullMask,
-  Algorithm_RangeMask as RangeMask,
-  Algorithm_MD5Mask as MD5Mask,
   Algorithm_InnerOuterMask,
+  Algorithm_FullMask as FullMask,
+  Algorithm_MD5Mask as MD5Mask,
+  Algorithm_RangeMask as RangeMask,
 } from "@/types/proto-es/v1/setting_service_pb";
 import {
-  AlgorithmSchema,
-  Algorithm_FullMaskSchema as FullMaskSchema,
-  Algorithm_RangeMaskSchema as RangeMaskSchema,
-  Algorithm_MD5MaskSchema as MD5MaskSchema,
+  Algorithm_InnerOuterMask_MaskType,
   Algorithm_InnerOuterMaskSchema,
   Algorithm_RangeMask_SliceSchema,
-  Algorithm_InnerOuterMask_MaskType,
+  AlgorithmSchema,
+  Algorithm_FullMaskSchema as FullMaskSchema,
+  Algorithm_MD5MaskSchema as MD5MaskSchema,
+  Algorithm_RangeMaskSchema as RangeMaskSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
 import type { MaskingType } from "./utils";
 import { getMaskingType } from "./utils";

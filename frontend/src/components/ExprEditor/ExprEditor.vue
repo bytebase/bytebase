@@ -8,7 +8,7 @@
 import { toRef } from "vue";
 import type { ConditionGroupExpr, Factor, Operator } from "@/plugins/cel";
 import ConditionGroup from "./ConditionGroup.vue";
-import { provideExprEditorContext, type OptionConfig } from "./context";
+import { type OptionConfig, provideExprEditorContext } from "./context";
 
 const props = withDefaults(
   defineProps<{

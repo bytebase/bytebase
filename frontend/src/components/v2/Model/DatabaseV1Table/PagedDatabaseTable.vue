@@ -24,7 +24,7 @@ import { ref, watch } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
 import { useRouter } from "vue-router";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
-import { useDatabaseV1Store, type DatabaseFilter } from "@/store";
+import { type DatabaseFilter, useDatabaseV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { autoDatabaseRoute } from "@/utils";
 import DatabaseV1Table from "./DatabaseV1Table.vue";

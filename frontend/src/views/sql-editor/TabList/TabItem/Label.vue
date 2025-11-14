@@ -31,8 +31,8 @@ import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
   useSQLEditorTabStore,
-  useWorkSheetStore,
   useTabViewStateStore,
+  useWorkSheetStore,
 } from "@/store";
 import type { SQLEditorTab } from "@/types";
 import { WorksheetSchema } from "@/types/proto-es/v1/worksheet_service_pb";

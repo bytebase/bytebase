@@ -2,9 +2,9 @@ import { create } from "@bufbuild/protobuf";
 import { defineStore } from "pinia";
 import { reactive } from "vue";
 import { sqlServiceClientConnect } from "@/grpcweb";
-import { isValidProjectName, isValidDatabaseName } from "@/types";
-import { SearchQueryHistoriesRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
+import { isValidDatabaseName, isValidProjectName } from "@/types";
 import type { QueryHistory } from "@/types/proto-es/v1/sql_service_pb";
+import { SearchQueryHistoriesRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
 
 export interface QueryHistoryFilter {
   statement?: string;

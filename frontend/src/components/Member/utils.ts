@@ -3,21 +3,20 @@ import { orderBy } from "lodash-es";
 import { extractGroupEmail, useGroupStore, useUserStore } from "@/store";
 import {
   extractUserId,
-  userNamePrefix,
   groupNamePrefix,
+  userNamePrefix,
 } from "@/store/modules/v1/common";
 import {
-  getUserEmailInBinding,
   getGroupEmailInBinding,
+  getUserEmailInBinding,
   groupBindingPrefix,
 } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { GroupSchema } from "@/types/proto-es/v1/group_service_pb";
 import type { IamPolicy } from "@/types/proto-es/v1/iam_policy_pb";
-import { UserSchema } from "@/types/proto-es/v1/user_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
-import { UserType } from "@/types/proto-es/v1/user_service_pb";
-import type { MemberBinding, GroupBinding } from "./types";
+import { UserSchema, UserType } from "@/types/proto-es/v1/user_service_pb";
+import type { GroupBinding, MemberBinding } from "./types";
 
 const getMemberBinding = async (
   member: string,

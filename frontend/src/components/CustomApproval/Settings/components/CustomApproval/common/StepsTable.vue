@@ -23,13 +23,13 @@
 <script lang="tsx" setup>
 /* eslint-disable vue/no-mutating-props */
 import {
-  ArrowUpIcon,
   ArrowDownIcon,
-  TrashIcon,
+  ArrowUpIcon,
   PlusIcon,
+  TrashIcon,
 } from "lucide-vue-next";
-import { NButton, NDataTable } from "naive-ui";
 import type { DataTableColumn } from "naive-ui";
+import { NButton, NDataTable } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { RoleSelect } from "@/components/v2";

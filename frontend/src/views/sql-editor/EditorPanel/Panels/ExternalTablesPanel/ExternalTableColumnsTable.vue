@@ -27,8 +27,8 @@ import type { ComposedDatabase } from "@/types";
 import type {
   ColumnMetadata,
   DatabaseMetadata,
-  SchemaMetadata,
   ExternalTableMetadata,
+  SchemaMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
 import { getHighlightHTMLByRegExp, useAutoHeightDataTable } from "@/utils";
 import { EllipsisCell } from "../../common";

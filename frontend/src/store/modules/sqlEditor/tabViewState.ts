@@ -1,7 +1,7 @@
 import { cloneDeep } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed } from "vue";
-import { useCurrentUserV1, extractUserId } from "@/store";
+import { extractUserId, useCurrentUserV1 } from "@/store";
 import {
   defaultViewState,
   type EditorPanelViewState as ViewState,

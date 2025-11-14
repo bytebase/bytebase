@@ -4,7 +4,7 @@ import { t } from "@/plugins/i18n";
 import { useCurrentUserV1 } from "@/store";
 import { userNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedIssue } from "@/types";
-import { IssueStatus, Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
+import { Issue_Type, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status, Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
 import {

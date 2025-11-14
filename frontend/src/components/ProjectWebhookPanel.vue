@@ -20,8 +20,8 @@
 
 <script lang="tsx" setup>
 import { PlusIcon } from "lucide-vue-next";
-import { NButton, NDataTable, NTag } from "naive-ui";
 import type { DataTableColumn } from "naive-ui";
+import { NButton, NDataTable, NTag } from "naive-ui";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";

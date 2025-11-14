@@ -22,9 +22,9 @@ import { usePlanContextWithRollout } from "../../logic";
 import { useSelectedSpec } from "../SpecDetailView/context";
 import StatementSection from "../StatementSection";
 import {
-  TasksSection,
-  OptionsSection,
   ExecutionHistorySection,
+  OptionsSection,
+  TasksSection,
 } from "./DatabaseExportView";
 
 const databaseStore = useDatabaseV1Store();

@@ -19,8 +19,8 @@
 
 <script setup lang="ts">
 import { NButton, NTooltip } from "naive-ui";
-import { computed, toRef } from "vue";
 import type { VNodeChild } from "vue";
+import { computed, toRef } from "vue";
 import { useConnectionOfCurrentSQLEditorTab } from "@/store";
 import type { EditorPanelView } from "@/types";
 import { useActions } from "../../AsidePanel/SchemaPane/actions";

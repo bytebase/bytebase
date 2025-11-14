@@ -9,8 +9,8 @@
 </template>
 
 <script lang="tsx" setup>
-import { NButton, NDataTable } from "naive-ui";
 import type { DataTableColumn } from "naive-ui";
+import { NButton, NDataTable } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { SpinnerButton, SpinnerSwitch } from "@/components/v2/Form";
