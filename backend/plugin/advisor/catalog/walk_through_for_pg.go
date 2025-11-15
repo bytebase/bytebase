@@ -12,8 +12,8 @@ import (
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
-// pgWalkThrough walks through the ANTLR parse tree and builds catalog state.
-func (d *DatabaseState) pgWalkThrough(ast any) error {
+// PgWalkThrough walks through the PostgreSQL ANTLR parse tree and builds catalog state.
+func PgWalkThrough(d *DatabaseState, ast any) error {
 	// ANTLR-based walkthrough
 	parseResult, ok := ast.(*pgparser.ParseResult)
 	if !ok {

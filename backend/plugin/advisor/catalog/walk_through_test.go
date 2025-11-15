@@ -202,7 +202,7 @@ func runWalkThroughTest(t *testing.T, file string, engineType storepb.Engine, or
 		}
 
 		asts, _ := sm.GetASTsForChecks(engineType, test.Statement)
-		err := state.WalkThrough(asts)
+		err := WalkThrough(state, asts)
 		if err != nil {
 			err, yes := err.(*WalkThroughError)
 			require.True(t, yes)
@@ -257,7 +257,7 @@ func runANTLRWalkThroughTest(t *testing.T, file string, engineType storepb.Engin
 		}
 
 		// Call WalkThrough with ANTLR tree
-		err := state.WalkThrough(parseResult)
+		err := WalkThrough(state, parseResult)
 		if err != nil {
 			err, yes := err.(*WalkThroughError)
 			require.True(t, yes)

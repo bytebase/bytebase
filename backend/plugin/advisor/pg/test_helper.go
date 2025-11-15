@@ -27,7 +27,7 @@ type TestCase struct {
 
 // RunANTLRAdvisorRuleTest helps to test ANTLR-based SQL review rules.
 // This is similar to advisor.RunSQLReviewRuleTest but for ANTLR advisors.
-func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbType storepb.Engine, needMetaData bool, record bool) {
+func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbType storepb.Engine, record bool) {
 	var tests []TestCase
 
 	fileName := strings.Map(func(r rune) rune {
@@ -51,13 +51,11 @@ func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbTyp
 	for i, tc := range tests {
 		// Add engine types here for mocked database metadata.
 		var schemaMetadata *storepb.DatabaseSchemaMetadata
-		if needMetaData {
-			switch dbType {
-			case storepb.Engine_POSTGRES:
-				schemaMetadata = advisor.MockPostgreSQLDatabase
-			default:
-				t.Fatalf("%s doesn't have mocked metadata support", storepb.Engine_name[int32(dbType)])
-			}
+		switch dbType {
+		case storepb.Engine_POSTGRES:
+			schemaMetadata = advisor.MockPostgreSQLDatabase
+		default:
+			t.Fatalf("%s doesn't have mocked metadata support", storepb.Engine_name[int32(dbType)])
 		}
 
 		database := advisor.MockPostgreSQLDatabase
@@ -76,11 +74,9 @@ func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbTyp
 		tree, err := pg.ParsePostgreSQL(tc.Statement)
 		require.NoError(t, err, "Failed to parse SQL: %s", tc.Statement)
 
-		// Use ANTLR tree for catalog WalkThrough
-		if needMetaData {
-			err = finalCatalog.WalkThrough(tree)
-			require.NoError(t, err, "Failed to walk through final catalog: %s", tc.Statement)
-		}
+		// Always walk through the catalog to build metadata.
+		err = catalog.WalkThrough(finalCatalog, tree)
+		require.NoError(t, err, "Failed to walk through final catalog: %s", tc.Statement)
 
 		ruleList := []*storepb.SQLReviewRule{
 			{

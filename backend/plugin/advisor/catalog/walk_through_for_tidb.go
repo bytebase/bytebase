@@ -11,7 +11,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (d *DatabaseState) tidbWalkThrough(ast any) error {
+// TiDBWalkThrough walks through TiDB AST and updates the database state.
+func TiDBWalkThrough(d *DatabaseState, ast any) error {
 	// We define the Catalog as Database -> Schema -> Table. The Schema is only for PostgreSQL.
 	// So we use a Schema whose name is empty for other engines, such as MySQL.
 	// If there is no empty-string-name schema, create it to avoid corner cases.
