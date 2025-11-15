@@ -30,6 +30,8 @@ const (
 
 	// 101 parse error type.
 
+	// ErrorTypeParseError is the error in parsing.
+	ErrorTypeParseError WalkThroughErrorType = 101
 	// ErrorTypeDeparseError is the error in deparsing.
 	ErrorTypeDeparseError WalkThroughErrorType = 102
 
