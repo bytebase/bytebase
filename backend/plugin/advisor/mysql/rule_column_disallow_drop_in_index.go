@@ -156,11 +156,7 @@ func (r *ColumnDisallowDropInIndexRule) checkAlterTable(ctx *mysql.AlterTableCon
 			continue
 		}
 
-		index := r.catalog.Origin.Index(&catalog.TableIndexFind{
-			// In MySQL, the SchemaName is "".
-			SchemaName: "",
-			TableName:  tableName,
-		})
+		index := r.catalog.Origin.Index("", tableName)
 
 		if index != nil {
 			if r.tables[tableName] == nil {

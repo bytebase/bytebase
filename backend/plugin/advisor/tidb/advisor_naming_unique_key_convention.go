@@ -141,10 +141,7 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 		for _, spec := range node.Specs {
 			switch spec.Tp {
 			case ast.AlterTableRenameIndex:
-				_, index := checker.catalog.Origin.FindIndex(&catalog.IndexFind{
-					TableName: node.Table.Name.String(),
-					IndexName: spec.FromKey.String(),
-				})
+				_, index := checker.catalog.Origin.GetIndex("", node.Table.Name.String(), spec.FromKey.String())
 				if index == nil {
 					continue
 				}

@@ -186,10 +186,7 @@ func (r *NamingIndexConventionRule) checkAlterTable(ctx *mysql.AlterTableContext
 		case alterListItem.RENAME_SYMBOL() != nil && alterListItem.KeyOrIndex() != nil && alterListItem.IndexRef() != nil && alterListItem.IndexName() != nil:
 			_, _, oldIndexName := mysqlparser.NormalizeIndexRef(alterListItem.IndexRef())
 			newIndexName := mysqlparser.NormalizeIndexName(alterListItem.IndexName())
-			_, indexState := r.catalog.Origin.FindIndex(&catalog.IndexFind{
-				TableName: tableName,
-				IndexName: oldIndexName,
-			})
+			_, indexState := r.catalog.Origin.GetIndex("", tableName, oldIndexName)
 			if indexState == nil {
 				continue
 			}

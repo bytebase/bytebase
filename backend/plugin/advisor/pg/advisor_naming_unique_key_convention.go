@@ -410,9 +410,5 @@ func (r *namingUKConventionRule) findIndex(schemaName string, tableName string, 
 	if r.catalog == nil {
 		return "", nil
 	}
-	return r.catalog.Origin.FindIndex(&catalog.IndexFind{
-		SchemaName: normalizeSchemaName(schemaName),
-		TableName:  tableName,
-		IndexName:  indexName,
-	})
+	return r.catalog.Origin.GetIndex(normalizeSchemaName(schemaName), tableName, indexName)
 }

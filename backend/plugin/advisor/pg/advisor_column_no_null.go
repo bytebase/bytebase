@@ -307,11 +307,7 @@ func (r *columnNoNullRule) removeColumnByTableConstraint(schema, table string, c
 			indexName := pg.NormalizePostgreSQLName(existingIndex.Name())
 			// Try to find index in catalog
 			if r.catalog != nil {
-				_, index := r.catalog.Origin.FindIndex(&catalog.IndexFind{
-					SchemaName: schema,
-					TableName:  table,
-					IndexName:  indexName,
-				})
+				_, index := r.catalog.Origin.GetIndex(schema, table, indexName)
 				if index != nil {
 					for _, expression := range index.ExpressionList() {
 						r.removeColumn(schema, table, expression)

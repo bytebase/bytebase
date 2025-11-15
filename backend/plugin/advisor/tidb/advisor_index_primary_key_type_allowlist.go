@@ -199,10 +199,7 @@ func (v *indexPrimaryKeyTypeAllowlistChecker) getPKColumnType(tableName string, 
 	if colDef, ok := v.tablesNewColumns.get(tableName, columnName); ok {
 		return tidbparser.TypeString(colDef.Tp.GetType()), nil
 	}
-	column := v.catalog.Origin.FindColumn(&catalog.ColumnFind{
-		TableName:  tableName,
-		ColumnName: columnName,
-	})
+	column := v.catalog.Origin.GetColumn("", tableName, columnName)
 	if column != nil {
 		return column.Type(), nil
 	}

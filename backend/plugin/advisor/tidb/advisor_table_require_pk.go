@@ -179,11 +179,9 @@ func (v *tableRequirePKChecker) createTableLike(node *ast.CreateTableStmt) {
 		}
 		v.tables[table] = newColumnSet(columns)
 	} else {
-		referTableState := v.catalog.Origin.FindTable(&catalog.TableFind{
-			TableName: referTableName,
-		})
+		referTableState := v.catalog.Origin.GetTable("", referTableName)
 		if referTableState != nil {
-			indexSet := referTableState.Index(&catalog.TableIndexFind{})
+			indexSet := referTableState.Index()
 			for _, index := range *indexSet {
 				if index.Primary() {
 					v.tables[table] = newColumnSet(index.ExpressionList())
@@ -195,10 +193,7 @@ func (v *tableRequirePKChecker) createTableLike(node *ast.CreateTableStmt) {
 
 func (v *tableRequirePKChecker) dropColumn(table string, column string) bool {
 	if _, ok := v.tables[table]; !ok {
-		_, pk := v.catalog.Origin.FindIndex(&catalog.IndexFind{
-			TableName: table,
-			IndexName: primaryKeyName,
-		})
+		_, pk := v.catalog.Origin.GetIndex("", table, primaryKeyName)
 		if pk == nil {
 			return false
 		}
