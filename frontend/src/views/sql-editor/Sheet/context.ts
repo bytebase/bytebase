@@ -220,6 +220,7 @@ const useSheetTreeByView = (
 
     parent.children.push(...sheets);
     parent.empty = sheets.length === 0 && empty;
+    parent.isLeaf = parent.children.length === 0;
 
     return parent;
   };
