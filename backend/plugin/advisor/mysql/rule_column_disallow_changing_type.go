@@ -168,10 +168,7 @@ func normalizeColumnType(tp string) string {
 
 func (r *ColumnDisallowChangingTypeRule) changeColumnType(tableName, columnName string, dataType mysql.IDataTypeContext) {
 	tp := dataType.GetParser().GetTokenStream().GetTextFromRuleContext(dataType)
-	column := r.catalog.Origin.FindColumn(&catalog.ColumnFind{
-		TableName:  tableName,
-		ColumnName: columnName,
-	})
+	column := r.catalog.Origin.GetColumn("", tableName, columnName)
 
 	if column == nil {
 		return

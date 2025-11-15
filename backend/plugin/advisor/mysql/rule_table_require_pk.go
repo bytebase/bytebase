@@ -250,10 +250,7 @@ func (r *TableRequirePKRule) changeColumn(tableName string, oldColumn string, ne
 
 func (r *TableRequirePKRule) dropColumn(tableName string, columnName string) bool {
 	if _, ok := r.tables[tableName]; !ok {
-		_, pk := r.catalog.Origin.FindIndex(&catalog.IndexFind{
-			TableName: tableName,
-			IndexName: primaryKeyName,
-		})
+		_, pk := r.catalog.Origin.GetIndex("", tableName, primaryKeyName)
 		if pk == nil {
 			return false
 		}

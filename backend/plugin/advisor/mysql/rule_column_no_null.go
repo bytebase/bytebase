@@ -134,10 +134,7 @@ func (r *ColumnNoNullRule) generateAdvice() {
 	})
 
 	for _, column := range columnList {
-		col := r.catalog.Final.FindColumn(&catalog.ColumnFind{
-			TableName:  column.tableName,
-			ColumnName: column.columnName,
-		})
+		col := r.catalog.Final.GetColumn("", column.tableName, column.columnName)
 		if col != nil && col.Nullable() {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,

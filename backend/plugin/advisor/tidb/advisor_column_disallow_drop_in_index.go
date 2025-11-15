@@ -86,11 +86,7 @@ func (checker *columnDisallowDropInIndexChecker) dropColumn(in ast.Node) (ast.No
 			if spec.Tp == ast.AlterTableDropColumn {
 				table := node.Table.Name.O
 
-				index := checker.catalog.Origin.Index(&catalog.TableIndexFind{
-					// In MySQL, the SchemaName is "".
-					SchemaName: "",
-					TableName:  table,
-				})
+				index := checker.catalog.Origin.Index("", table)
 
 				if index != nil {
 					if checker.tables[table] == nil {

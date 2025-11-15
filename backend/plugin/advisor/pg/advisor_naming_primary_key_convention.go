@@ -195,11 +195,7 @@ func (r *namingPKConventionRule) handleRenamestmt(ctx *parser.RenamestmtContext)
 				if normalizedSchema == "" {
 					normalizedSchema = "public"
 				}
-				_, index := r.catalog.Origin.FindIndex(&catalog.IndexFind{
-					SchemaName: normalizedSchema,
-					TableName:  tableName,
-					IndexName:  oldName,
-				})
+				_, index := r.catalog.Origin.GetIndex(normalizedSchema, tableName, oldName)
 				if index != nil && index.Primary() {
 					metaData := map[string]string{
 						advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList(), "_"),
@@ -243,11 +239,8 @@ func (r *namingPKConventionRule) handleRenamestmt(ctx *parser.RenamestmtContext)
 					normalizedSchema = "public"
 				}
 				// "ALTER INDEX name RENAME TO new_name" doesn't specify table name
-				tableName, index := r.catalog.Origin.FindIndex(&catalog.IndexFind{
-					SchemaName: normalizedSchema,
-					TableName:  "", // Empty table name for ALTER INDEX
-					IndexName:  oldIndexName,
-				})
+				// Empty table name for ALTER INDEX
+				tableName, index := r.catalog.Origin.GetIndex(normalizedSchema, "", oldIndexName)
 				if index != nil && index.Primary() {
 					metaData := map[string]string{
 						advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList(), "_"),
@@ -318,11 +311,7 @@ func (r *namingPKConventionRule) getPKMetaDataFromTableConstraint(constraint par
 				if normalizedSchema == "" {
 					normalizedSchema = "public"
 				}
-				_, index := r.catalog.Origin.FindIndex(&catalog.IndexFind{
-					SchemaName: normalizedSchema,
-					TableName:  tableName,
-					IndexName:  indexName,
-				})
+				_, index := r.catalog.Origin.GetIndex(normalizedSchema, tableName, indexName)
 				if index != nil {
 					columnList = index.ExpressionList()
 				}

@@ -162,18 +162,13 @@ type DatabaseState struct {
 	usable       bool
 }
 
-type TableIndexFind struct {
-	SchemaName string
-	TableName  string
-}
-
 // Index returns the index map of the table.
-func (d *DatabaseState) Index(tableIndexFind *TableIndexFind) *IndexStateMap {
-	schema, exists := d.schemaSet[tableIndexFind.SchemaName]
+func (d *DatabaseState) Index(schemaName string, tableName string) *IndexStateMap {
+	schema, exists := d.schemaSet[schemaName]
 	if !exists {
 		return nil
 	}
-	return schema.Index(tableIndexFind)
+	return schema.Index(tableName)
 }
 
 // Usable returns the usable of the database state.
@@ -202,18 +197,11 @@ func (d *DatabaseState) DatabaseName() string {
 	return d.name
 }
 
-// IndexFind is for find index.
-type IndexFind struct {
-	SchemaName string
-	TableName  string
-	IndexName  string
-}
-
-// FindIndex finds the index.
-func (d *DatabaseState) FindIndex(find *IndexFind) (string, *IndexState) {
+// GetIndex gets the index.
+func (d *DatabaseState) GetIndex(schemaName string, tableName string, indexName string) (string, *IndexState) {
 	switch d.dbType {
 	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-		find.IndexName = strings.ToLower(find.IndexName)
+		indexName = strings.ToLower(indexName)
 	default:
 		// For other engine types, keep the original index name without normalization
 	}
@@ -223,29 +211,29 @@ func (d *DatabaseState) FindIndex(find *IndexFind) (string, *IndexState) {
 	// In PostgreSQL, the index name is unique in a schema, not a table.
 	// In MySQL and TiDB, the index name is unique in a table.
 	// So for case one, we need match table name, but for case two, we don't need.
-	needMatchTable := (d.dbType != storepb.Engine_POSTGRES || find.SchemaName == "" || find.TableName != "")
+	needMatchTable := (d.dbType != storepb.Engine_POSTGRES || schemaName == "" || tableName != "")
 	if needMatchTable {
-		schema, exists := d.schemaSet[find.SchemaName]
+		schema, exists := d.schemaSet[schemaName]
 		if !exists {
 			return "", nil
 		}
-		table, exists := schema.getTable(find.TableName)
+		table, exists := schema.getTable(tableName)
 		if !exists {
 			return "", nil
 		}
-		index, exists := table.indexSet[find.IndexName]
+		index, exists := table.indexSet[indexName]
 		if !exists {
 			return "", nil
 		}
 		return table.name, index
 	}
 	for _, schema := range d.schemaSet {
-		if schema.name != find.SchemaName {
+		if schema.name != schemaName {
 			continue
 		}
 		for _, table := range schema.tableSet {
 			// no need to further match table name because index is already unique in the schema
-			index, exists := table.indexSet[find.IndexName]
+			index, exists := table.indexSet[indexName]
 			if !exists {
 				return "", nil
 			}
@@ -255,20 +243,14 @@ func (d *DatabaseState) FindIndex(find *IndexFind) (string, *IndexState) {
 	return "", nil
 }
 
-// PrimaryKeyFind is for finding primary key.
-type PrimaryKeyFind struct {
-	SchemaName string
-	TableName  string
-}
-
-// FindPrimaryKey finds the primary key.
-func (d *DatabaseState) FindPrimaryKey(find *PrimaryKeyFind) *IndexState {
+// GetPrimaryKey gets the primary key.
+func (d *DatabaseState) GetPrimaryKey(schemaName string, tableName string) *IndexState {
 	for _, schema := range d.schemaSet {
-		if schema.name != find.SchemaName {
+		if schema.name != schemaName {
 			continue
 		}
 		for _, table := range schema.tableSet {
-			if !compareIdentifier(table.name, find.TableName, schema.ctx.IgnoreCaseSensitive) {
+			if !compareIdentifier(table.name, tableName, schema.ctx.IgnoreCaseSensitive) {
 				continue
 			}
 			for _, index := range table.indexSet {
@@ -282,79 +264,59 @@ func (d *DatabaseState) FindPrimaryKey(find *PrimaryKeyFind) *IndexState {
 }
 
 // HasPrimaryKey checks if a table has a primary key.
-func (d *DatabaseState) HasPrimaryKey(find *PrimaryKeyFind) bool {
-	return d.FindPrimaryKey(find) != nil
-}
-
-// ColumnCount is for counting columns.
-type ColumnCount struct {
-	SchemaName string
-	TableName  string
-	ColumnType string
+func (d *DatabaseState) HasPrimaryKey(schemaName string, tableName string) bool {
+	return d.GetPrimaryKey(schemaName, tableName) != nil
 }
 
 // CountColumn counts columns.
-func (d *DatabaseState) CountColumn(count *ColumnCount) int {
-	schema, exists := d.schemaSet[count.SchemaName]
+func (d *DatabaseState) CountColumn(schemaName string, tableName string, columnType string) int {
+	schema, exists := d.schemaSet[schemaName]
 	if !exists {
 		return 0
 	}
-	table, exists := schema.getTable(count.TableName)
+	table, exists := schema.getTable(tableName)
 	if !exists {
 		return 0
 	}
 	res := 0
 	for _, column := range table.columnSet {
-		if column.columnType != nil && strings.EqualFold(*column.columnType, count.ColumnType) {
+		if column.columnType != nil && strings.EqualFold(*column.columnType, columnType) {
 			res++
 		}
 	}
 	return res
 }
 
-// ColumnFind is for finding column.
-type ColumnFind struct {
-	SchemaName string
-	TableName  string
-	ColumnName string
-}
-
-// FindColumn finds the column.
-func (d *DatabaseState) FindColumn(find *ColumnFind) *ColumnState {
+// GetColumn gets the column.
+func (d *DatabaseState) GetColumn(schemaName string, tableName string, columnName string) *ColumnState {
 	switch d.dbType {
 	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-		find.ColumnName = strings.ToLower(find.ColumnName)
+		columnName = strings.ToLower(columnName)
 	default:
 		// For other engine types, keep the original column name without normalization
 	}
-	schema, exists := d.schemaSet[find.SchemaName]
+	schema, exists := d.schemaSet[schemaName]
 	if !exists {
 		return nil
 	}
-	table, exists := schema.getTable(find.TableName)
+	table, exists := schema.getTable(tableName)
 	if !exists {
 		return nil
 	}
-	column, exists := table.columnSet[find.ColumnName]
+	column, exists := table.columnSet[columnName]
 	if !exists {
 		return nil
 	}
 	return column
 }
 
-// TableFind is for find table.
-type TableFind struct {
-	SchemaName string
-	TableName  string
-}
-
-// FindTable finds the table.
-func (d *DatabaseState) FindTable(find *TableFind) *TableState {
-	schema, exists := d.schemaSet[find.SchemaName]
+// GetTable gets the table.
+func (d *DatabaseState) GetTable(schemaName string, tableName string) *TableState {
+	schema, exists := d.schemaSet[schemaName]
 	if !exists {
 		return nil
 	}
-	table, exists := schema.getTable(find.TableName)
+	table, exists := schema.getTable(tableName)
 	if !exists {
 		return nil
 	}
@@ -375,12 +337,12 @@ type SchemaState struct {
 	identifierMap identifierMap
 }
 
-func (s *SchemaState) Index(tableIndexFind *TableIndexFind) *IndexStateMap {
-	table, exists := s.getTable(tableIndexFind.TableName)
+func (s *SchemaState) Index(tableName string) *IndexStateMap {
+	table, exists := s.getTable(tableName)
 	if !exists {
 		return nil
 	}
-	return table.Index(tableIndexFind)
+	return table.Index()
 }
 
 type schemaStateMap map[string]*SchemaState
@@ -418,7 +380,7 @@ func (t *TableState) CountIndex() int {
 }
 
 // Index return the index map of table.
-func (t *TableState) Index(_ *TableIndexFind) *IndexStateMap {
+func (t *TableState) Index() *IndexStateMap {
 	return &t.indexSet
 }
 

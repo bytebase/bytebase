@@ -179,10 +179,7 @@ func (r *tableRequirePKRule) validateFinalState() {
 		schemaName, tableName := parseTableKey(tableKey)
 
 		// Check catalog.Final for PRIMARY KEY
-		hasPK := r.catalog.Final.HasPrimaryKey(&catalog.PrimaryKeyFind{
-			SchemaName: schemaName,
-			TableName:  tableName,
-		})
+		hasPK := r.catalog.Final.HasPrimaryKey(schemaName, tableName)
 
 		if !hasPK {
 			content := fmt.Sprintf("Table %q.%q requires PRIMARY KEY", schemaName, tableName)
