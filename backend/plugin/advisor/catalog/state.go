@@ -575,27 +575,27 @@ type ViewState struct {
 type viewStateMap map[string]*ViewState
 
 func copyStringPointer(p *string) *string {
-	if p != nil {
-		v := *p
-		return &v
+	if p == nil {
+		return nil
 	}
-	return nil
+	v := *p
+	return &v
 }
 
 func copyBoolPointer(p *bool) *bool {
-	if p != nil {
-		v := *p
-		return &v
+	if p == nil {
+		return nil
 	}
-	return nil
+	v := *p
+	return &v
 }
 
 func copyIntPointer(p *int) *int {
-	if p != nil {
-		v := *p
-		return &v
+	if p == nil {
+		return nil
 	}
-	return nil
+	v := *p
+	return &v
 }
 
 func copyStringSlice(in []string) []string {
@@ -633,20 +633,25 @@ func newBoolPointer(v bool) *bool {
 
 // Schema-level operations.
 
+// createSchemaState creates a new schema state with the given name.
+func (d *DatabaseState) createSchemaState(schemaName string) *SchemaState {
+	schema := &SchemaState{
+		ctx:           d.ctx.Copy(),
+		name:          schemaName,
+		tableSet:      make(tableStateMap),
+		viewSet:       make(viewStateMap),
+		identifierMap: make(identifierMap),
+	}
+	d.schemaSet[schemaName] = schema
+	return schema
+}
+
 // GetOrCreateSchema gets an existing schema or creates a new one if it doesn't exist.
 func (d *DatabaseState) GetOrCreateSchema(schemaName string) *SchemaState {
-	schema, exists := d.schemaSet[schemaName]
-	if !exists {
-		schema = &SchemaState{
-			ctx:           d.ctx.Copy(),
-			name:          schemaName,
-			tableSet:      make(tableStateMap),
-			viewSet:       make(viewStateMap),
-			identifierMap: make(identifierMap),
-		}
-		d.schemaSet[schemaName] = schema
+	if schema, exists := d.schemaSet[schemaName]; exists {
+		return schema
 	}
-	return schema
+	return d.createSchemaState(schemaName)
 }
 
 // GetSchema gets an existing schema.
@@ -654,24 +659,16 @@ func (d *DatabaseState) GetSchema(schemaName string) (*SchemaState, *WalkThrough
 	if schemaName == "" {
 		schemaName = publicSchemaName
 	}
-	schema, exists := d.schemaSet[schemaName]
-	if !exists {
-		if schemaName != publicSchemaName {
-			return nil, &WalkThroughError{
-				Type:    ErrorTypeSchemaNotExists,
-				Content: fmt.Sprintf("The schema %q doesn't exist", schemaName),
-			}
-		}
-		schema = &SchemaState{
-			ctx:           d.ctx.Copy(),
-			name:          publicSchemaName,
-			tableSet:      make(tableStateMap),
-			viewSet:       make(viewStateMap),
-			identifierMap: make(identifierMap),
-		}
-		d.schemaSet[publicSchemaName] = schema
+	if schema, exists := d.schemaSet[schemaName]; exists {
+		return schema, nil
 	}
-	return schema, nil
+	if schemaName != publicSchemaName {
+		return nil, &WalkThroughError{
+			Type:    ErrorTypeSchemaNotExists,
+			Content: fmt.Sprintf("The schema %q doesn't exist", schemaName),
+		}
+	}
+	return d.createSchemaState(publicSchemaName), nil
 }
 
 // DropSchema drops a schema.
@@ -982,6 +979,9 @@ func (t *TableState) CreateIndex(indexName string, expressionList []string, uniq
 	if visible == nil {
 		visible = newTruePointer()
 	}
+	if comment == nil {
+		comment = newEmptyStringPointer()
+	}
 
 	index := &IndexState{
 		name:           indexName,
@@ -1006,11 +1006,6 @@ func (t *TableState) CreateIndex(indexName string, expressionList []string, uniq
 // CreatePrimaryKey creates a primary key index in the table.
 func (t *TableState) CreatePrimaryKey(keyList []string, indexType string, identifierMap identifierMap) *WalkThroughError {
 	pkName := PrimaryKeyName
-
-	// For PostgreSQL, generate a different name
-	if identifierMap != nil {
-		// This will be set by the caller
-	}
 
 	if _, exists := t.indexSet[strings.ToLower(pkName)]; exists {
 		return &WalkThroughError{
