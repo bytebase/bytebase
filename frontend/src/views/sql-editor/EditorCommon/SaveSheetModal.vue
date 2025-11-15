@@ -210,18 +210,15 @@ const onSelect = (keys: string[]) => {
 };
 
 const onInput = (val: string) => {
-  const rawPath = val
+  let changedVal = val
+  if (val.endsWith(" /")) {
+    changedVal = val.slice(0, -2)
+  }
+  const rawPath = changedVal
     .split("/")
     .map((p) => p.trim())
     .join("/");
-  let path = rawPath.slice();
-  while (path.endsWith("/")) {
-    path = path.slice(0, -1);
-  }
-  if (rawPath.endsWith("/")) {
-    path = `${path}/`;
-  }
-  pendingEdit.value.folder = path;
+  pendingEdit.value.folder = rawPath;
 };
 
 const needShowModal = (tab: SQLEditorTab) => {
