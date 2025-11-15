@@ -317,11 +317,6 @@ func NormalizePostgreSQLFuncName(ctx parser.IFunc_nameContext) []string {
 		}
 	}
 
-	// Handle builtin function names
-	if ctx.Builtin_function_name() != nil {
-		result = append(result, ctx.Builtin_function_name().GetText())
-	}
-
 	// Handle special keywords LEFT/RIGHT
 	if len(result) == 0 && ctx.GetText() != "" {
 		// Fallback for special cases like LEFT, RIGHT keywords
