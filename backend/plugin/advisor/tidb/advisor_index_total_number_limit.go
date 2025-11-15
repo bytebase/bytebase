@@ -49,7 +49,7 @@ func (*IndexTotalNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.C
 		title:        string(checkCtx.Rule.Type),
 		max:          payload.Number,
 		lineForTable: make(map[string]int),
-		catalog:      checkCtx.Catalog,
+		finalCatalog: checkCtx.FinalCatalog,
 	}
 
 	for _, stmt := range stmtList {
@@ -69,7 +69,7 @@ type indexTotalNumberLimitChecker struct {
 	line         int
 	max          int
 	lineForTable map[string]int
-	catalog      *catalog.Finder
+	finalCatalog *catalog.DatabaseState
 }
 
 func (checker *indexTotalNumberLimitChecker) generateAdvice() []*storepb.Advice {
@@ -96,7 +96,7 @@ func (checker *indexTotalNumberLimitChecker) generateAdvice() []*storepb.Advice 
 	})
 
 	for _, table := range tableList {
-		tableInfo := checker.catalog.Final.GetTable("", table.name)
+		tableInfo := checker.finalCatalog.GetTable("", table.name)
 		if tableInfo != nil && tableInfo.CountIndex() > checker.max {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:        checker.level,

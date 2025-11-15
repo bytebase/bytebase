@@ -286,7 +286,7 @@ func (t *TableState) createIncompleteColumn(name string) *ColumnState {
 
 func (d *DatabaseState) createSchema() *SchemaState {
 	schema := &SchemaState{
-		ctx:      d.ctx.Copy(),
+		ctx:      d.ctx,
 		name:     "",
 		tableSet: make(tableStateMap),
 		viewSet:  make(viewStateMap),
@@ -363,7 +363,7 @@ func (d *DatabaseState) getSchema(schemaName string) (*SchemaState, *WalkThrough
 			}
 		}
 		schema = &SchemaState{
-			ctx:           d.ctx.Copy(),
+			ctx:           d.ctx,
 			name:          publicSchemaName,
 			tableSet:      make(tableStateMap),
 			viewSet:       make(viewStateMap),

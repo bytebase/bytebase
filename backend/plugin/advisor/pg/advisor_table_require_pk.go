@@ -44,7 +44,7 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 			title: string(checkCtx.Rule.Type),
 		},
 		statementsText: checkCtx.Statements,
-		catalog:        checkCtx.Catalog,
+		finalCatalog:   checkCtx.FinalCatalog,
 		tableMentions:  make(map[string]*tableMention),
 	}
 
@@ -65,7 +65,7 @@ type tableMention struct {
 type tableRequirePKRule struct {
 	BaseRule
 	statementsText string
-	catalog        *catalog.Finder
+	finalCatalog   *catalog.DatabaseState
 
 	// Simple Solution: Track last mention of each table
 	tableMentions map[string]*tableMention // key: "schema.table", value: last mention info
@@ -179,7 +179,7 @@ func (r *tableRequirePKRule) validateFinalState() {
 		schemaName, tableName := parseTableKey(tableKey)
 
 		// Check catalog.Final for PRIMARY KEY
-		hasPK := r.catalog.Final.HasPrimaryKey(schemaName, tableName)
+		hasPK := r.finalCatalog.HasPrimaryKey(schemaName, tableName)
 
 		if !hasPK {
 			content := fmt.Sprintf("Table %q.%q requires PRIMARY KEY", schemaName, tableName)

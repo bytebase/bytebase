@@ -196,10 +196,9 @@ func runWalkThroughTest(t *testing.T, file string, engineType storepb.Engine, or
 	for _, test := range tests {
 		var state *DatabaseState
 		if originDatabase != nil {
-			state = newDatabaseState(originDatabase, &FinderContext{CheckIntegrity: true, EngineType: engineType, IgnoreCaseSensitive: test.IgnoreCaseSensitive})
+			state = NewDatabaseState(originDatabase, &FinderContext{CheckIntegrity: true, EngineType: engineType, IgnoreCaseSensitive: test.IgnoreCaseSensitive})
 		} else {
-			finder := NewEmptyFinder(&FinderContext{CheckIntegrity: false, EngineType: engineType, IgnoreCaseSensitive: test.IgnoreCaseSensitive})
-			state = finder.Origin
+			state = NewDatabaseState(&storepb.DatabaseSchemaMetadata{}, &FinderContext{CheckIntegrity: false, EngineType: engineType, IgnoreCaseSensitive: test.IgnoreCaseSensitive})
 		}
 
 		asts, _ := sm.GetASTsForChecks(engineType, test.Statement)
@@ -246,10 +245,9 @@ func runANTLRWalkThroughTest(t *testing.T, file string, engineType storepb.Engin
 	for _, test := range tests {
 		var state *DatabaseState
 		if originDatabase != nil {
-			state = newDatabaseState(originDatabase, &FinderContext{CheckIntegrity: true, EngineType: engineType, IgnoreCaseSensitive: test.IgnoreCaseSensitive})
+			state = NewDatabaseState(originDatabase, &FinderContext{CheckIntegrity: true, EngineType: engineType, IgnoreCaseSensitive: test.IgnoreCaseSensitive})
 		} else {
-			finder := NewEmptyFinder(&FinderContext{CheckIntegrity: false, EngineType: engineType, IgnoreCaseSensitive: test.IgnoreCaseSensitive})
-			state = finder.Origin
+			state = NewDatabaseState(&storepb.DatabaseSchemaMetadata{}, &FinderContext{CheckIntegrity: false, EngineType: engineType, IgnoreCaseSensitive: test.IgnoreCaseSensitive})
 		}
 
 		// Parse using ANTLR parser instead of legacy parser

@@ -11,9 +11,10 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
-func newDatabaseState(d *storepb.DatabaseSchemaMetadata, context *FinderContext) *DatabaseState {
+// NewDatabaseState creates a new database state from schema metadata and context.
+func NewDatabaseState(d *storepb.DatabaseSchemaMetadata, context *FinderContext) *DatabaseState {
 	database := &DatabaseState{
-		ctx:          context.Copy(),
+		ctx:          context,
 		name:         d.Name,
 		characterSet: d.CharacterSet,
 		collation:    d.Collation,
@@ -46,7 +47,7 @@ func newDatabaseState(d *storepb.DatabaseSchemaMetadata, context *FinderContext)
 
 func newSchemaState(s *storepb.SchemaMetadata, context *FinderContext) *SchemaState {
 	schema := &SchemaState{
-		ctx:           context.Copy(),
+		ctx:           context,
 		name:          s.Name,
 		tableSet:      make(tableStateMap),
 		viewSet:       make(viewStateMap),
@@ -598,7 +599,7 @@ func newBoolPointer(v bool) *bool {
 // createSchemaState creates a new schema state with the given name.
 func (d *DatabaseState) createSchemaState(schemaName string) *SchemaState {
 	schema := &SchemaState{
-		ctx:           d.ctx.Copy(),
+		ctx:           d.ctx,
 		name:          schemaName,
 		tableSet:      make(tableStateMap),
 		viewSet:       make(viewStateMap),

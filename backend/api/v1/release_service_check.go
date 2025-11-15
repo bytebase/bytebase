@@ -160,7 +160,7 @@ loop:
 		}
 
 		engine := instance.Metadata.GetEngine()
-		catalog, err := catalog.NewCatalog(ctx, s.store, database.InstanceID, database.DatabaseName, engine, store.IsObjectCaseSensitive(instance), nil)
+		originCatalog, finalCatalog, err := catalog.NewCatalog(ctx, s.store, database.InstanceID, database.DatabaseName, engine, store.IsObjectCaseSensitive(instance), nil)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create catalog"))
 		}
@@ -296,7 +296,7 @@ loop:
 					checkResult.RiskLevel = riskLevelEnum
 				}
 				if common.EngineSupportSQLReview(engine) {
-					adviceStatus, sqlReviewAdvices, err := s.runSQLReviewCheckForFile(ctx, catalog, instance, database, changeType, statement)
+					adviceStatus, sqlReviewAdvices, err := s.runSQLReviewCheckForFile(ctx, originCatalog, finalCatalog, instance, database, changeType, statement)
 					if err != nil {
 						return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check SQL review"))
 					}
@@ -602,7 +602,8 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 
 func (s *ReleaseService) runSQLReviewCheckForFile(
 	ctx context.Context,
-	catalog *catalog.Catalog,
+	originCatalog *catalog.DatabaseState,
+	finalCatalog *catalog.DatabaseState,
 	instance *store.InstanceMessage,
 	database *store.DatabaseMessage,
 	changeType storepb.PlanCheckRunConfig_ChangeDatabaseType,
@@ -650,7 +651,8 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 		ChangeType:               changeType,
 		DBSchema:                 dbMetadata,
 		DBType:                   instance.Metadata.GetEngine(),
-		Catalog:                  catalog,
+		OriginCatalog:            originCatalog,
+		FinalCatalog:             finalCatalog,
 		Driver:                   connection,
 		CurrentDatabase:          database.DatabaseName,
 		ClassificationConfig:     classificationConfig,

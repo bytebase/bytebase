@@ -61,7 +61,9 @@ func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbTyp
 		}
 
 		database := advisor.MockPostgreSQLDatabase
-		finder := catalog.NewFinder(database, &catalog.FinderContext{CheckIntegrity: true, EngineType: dbType})
+		ctx := &catalog.FinderContext{CheckIntegrity: true, EngineType: dbType}
+		originCatalog := catalog.NewDatabaseState(database, ctx)
+		finalCatalog := catalog.NewDatabaseState(database, ctx)
 
 		// Get default payload, or use empty string for test-only rules
 		payload, err := advisor.SetDefaultSQLReviewRulePayload(rule, dbType)
@@ -76,8 +78,8 @@ func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbTyp
 
 		// Use ANTLR tree for catalog WalkThrough
 		if needMetaData {
-			err = finder.WalkThrough(tree)
-			require.NoError(t, err, "Failed to walk through catalog: %s", tc.Statement)
+			err = finalCatalog.WalkThrough(tree)
+			require.NoError(t, err, "Failed to walk through final catalog: %s", tc.Statement)
 		}
 
 		ruleList := []*storepb.SQLReviewRule{
@@ -100,7 +102,8 @@ func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbTyp
 				AST:                      tree, // Pass ANTLR parse result
 				Statements:               tc.Statement,
 				Rule:                     ruleList[0],
-				Catalog:                  finder,
+				OriginCatalog:            originCatalog,
+				FinalCatalog:             finalCatalog,
 				Driver:                   nil,
 				CurrentDatabase:          "TEST_DB",
 				UsePostgresDatabaseOwner: true,
