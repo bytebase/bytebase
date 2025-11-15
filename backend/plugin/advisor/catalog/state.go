@@ -744,10 +744,7 @@ func (s *SchemaState) RenameTable(oldName string, newName string) *WalkThroughEr
 
 	table, exists := s.getTable(oldName)
 	if !exists {
-		if s.ctx.CheckIntegrity {
-			return NewTableNotExistsError(oldName)
-		}
-		table = s.createIncompleteTable(oldName)
+		return NewTableNotExistsError(oldName)
 	}
 
 	if _, exists := s.getTable(newName); exists {
@@ -816,45 +813,39 @@ func (t *TableState) GetColumn(columnName string) (*ColumnState, *WalkThroughErr
 // DropColumn drops a column from the table.
 //
 //nolint:revive
-func (t *TableState) DropColumn(columnName string, checkIntegrity bool, checkViewDependency func(*ColumnState) ([]string, *WalkThroughError)) *WalkThroughError {
+func (t *TableState) DropColumn(columnName string, checkViewDependency func(*ColumnState) ([]string, *WalkThroughError)) *WalkThroughError {
 	column, exists := t.columnSet[strings.ToLower(columnName)]
 	if !exists {
-		if checkIntegrity {
-			return NewColumnNotExistsError(t.name, columnName)
-		}
-		return nil
+		return NewColumnNotExistsError(t.name, columnName)
 	}
 
-	// Check integrity mode requirements
-	if checkIntegrity {
-		// Cannot drop all columns in a table using ALTER TABLE DROP COLUMN.
-		if len(t.columnSet) == 1 {
+	// Cannot drop all columns in a table using ALTER TABLE DROP COLUMN.
+	if len(t.columnSet) == 1 {
+		return &WalkThroughError{
+			Type:    ErrorTypeDropAllColumns,
+			Content: fmt.Sprintf("Can't delete all columns with ALTER TABLE; use DROP TABLE %s instead", t.name),
+		}
+	}
+
+	// Check for view dependencies if checker is provided
+	if checkViewDependency != nil {
+		viewList, err := checkViewDependency(column)
+		if err != nil {
+			return err
+		}
+		if len(viewList) > 0 {
 			return &WalkThroughError{
-				Type:    ErrorTypeDropAllColumns,
-				Content: fmt.Sprintf("Can't delete all columns with ALTER TABLE; use DROP TABLE %s instead", t.name),
+				Type:    ErrorTypeColumnIsReferencedByView,
+				Content: fmt.Sprintf("Cannot drop column %q in table %q, it's referenced by view: %s", column.name, t.name, strings.Join(viewList, ", ")),
+				Payload: viewList,
 			}
 		}
+	}
 
-		// Check for view dependencies if checker is provided
-		if checkViewDependency != nil {
-			viewList, err := checkViewDependency(column)
-			if err != nil {
-				return err
-			}
-			if len(viewList) > 0 {
-				return &WalkThroughError{
-					Type:    ErrorTypeColumnIsReferencedByView,
-					Content: fmt.Sprintf("Cannot drop column %q in table %q, it's referenced by view: %s", column.name, t.name, strings.Join(viewList, ", ")),
-					Payload: viewList,
-				}
-			}
-		}
-
-		// Modify the column position
-		for _, col := range t.columnSet {
-			if *col.position > *column.position {
-				*col.position--
-			}
+	// Modify the column position
+	for _, col := range t.columnSet {
+		if *col.position > *column.position {
+			*col.position--
 		}
 	}
 
@@ -882,17 +873,14 @@ func (t *TableState) DropColumn(columnName string, checkIntegrity bool, checkVie
 // RenameColumn renames a column in the table.
 //
 //nolint:revive
-func (t *TableState) RenameColumn(oldName string, newName string, checkIntegrity bool) *WalkThroughError {
+func (t *TableState) RenameColumn(oldName string, newName string) *WalkThroughError {
 	if strings.EqualFold(oldName, newName) {
 		return nil
 	}
 
 	column, exists := t.columnSet[strings.ToLower(oldName)]
 	if !exists {
-		if checkIntegrity {
-			return NewColumnNotExistsError(t.name, oldName)
-		}
-		column = t.createIncompleteColumn(oldName)
+		return NewColumnNotExistsError(t.name, oldName)
 	}
 
 	if _, exists := t.columnSet[strings.ToLower(newName)]; exists {
@@ -1037,17 +1025,15 @@ func (t *TableState) GetIndex(indexName string) (*IndexState, *WalkThroughError)
 // DropIndex drops an index from the table.
 //
 //nolint:revive
-func (t *TableState) DropIndex(indexName string, checkIntegrity bool, identifierMap identifierMap) *WalkThroughError {
-	if checkIntegrity {
-		if _, exists := t.indexSet[strings.ToLower(indexName)]; !exists {
-			if strings.EqualFold(indexName, PrimaryKeyName) {
-				return &WalkThroughError{
-					Type:    ErrorTypePrimaryKeyNotExists,
-					Content: fmt.Sprintf("Primary key does not exist in table `%s`", t.name),
-				}
+func (t *TableState) DropIndex(indexName string, identifierMap identifierMap) *WalkThroughError {
+	if _, exists := t.indexSet[strings.ToLower(indexName)]; !exists {
+		if strings.EqualFold(indexName, PrimaryKeyName) {
+			return &WalkThroughError{
+				Type:    ErrorTypePrimaryKeyNotExists,
+				Content: fmt.Sprintf("Primary key does not exist in table `%s`", t.name),
 			}
-			return NewIndexNotExistsError(t.name, indexName)
 		}
+		return NewIndexNotExistsError(t.name, indexName)
 	}
 
 	// For PostgreSQL, remove from identifier map
@@ -1062,7 +1048,7 @@ func (t *TableState) DropIndex(indexName string, checkIntegrity bool, identifier
 // RenameIndex renames an index in the table.
 //
 //nolint:revive
-func (t *TableState) RenameIndex(oldName string, newName string, checkIntegrity bool, identifierMap identifierMap) *WalkThroughError {
+func (t *TableState) RenameIndex(oldName string, newName string, identifierMap identifierMap) *WalkThroughError {
 	// For MySQL, the primary key has a special name 'PRIMARY'.
 	if strings.ToUpper(oldName) == PrimaryKeyName || strings.ToUpper(newName) == PrimaryKeyName {
 		incorrectName := oldName
@@ -1077,10 +1063,7 @@ func (t *TableState) RenameIndex(oldName string, newName string, checkIntegrity 
 
 	index, exists := t.indexSet[strings.ToLower(oldName)]
 	if !exists {
-		if checkIntegrity {
-			return NewIndexNotExistsError(t.name, oldName)
-		}
-		index = t.createIncompleteIndex(oldName)
+		return NewIndexNotExistsError(t.name, oldName)
 	}
 
 	if _, exists := t.indexSet[strings.ToLower(newName)]; exists {

@@ -85,10 +85,7 @@ func (d *DatabaseState) renameTable(node *tidbast.RenameTableStmt) *WalkThroughE
 			}
 			table, exists := schema.getTable(oldTableName)
 			if !exists {
-				if schema.ctx.CheckIntegrity {
-					return NewTableNotExistsError(oldTableName)
-				}
-				table = schema.createIncompleteTable(oldTableName)
+				return NewTableNotExistsError(oldTableName)
 			}
 			if _, exists := schema.getTable(newTableName); exists {
 				return NewTableExistsError(newTableName)
@@ -98,7 +95,7 @@ func (d *DatabaseState) renameTable(node *tidbast.RenameTableStmt) *WalkThroughE
 			schema.tableSet[table.name] = table
 		} else if d.moveToOtherDatabase(tableToTable) {
 			_, exists := schema.getTable(tableToTable.OldTable.Name.O)
-			if !exists && schema.ctx.CheckIntegrity {
+			if !exists {
 				return NewTableNotExistsError(tableToTable.OldTable.Name.O)
 			}
 			delete(schema.tableSet, tableToTable.OldTable.Name.O)
@@ -172,10 +169,7 @@ func (d *DatabaseState) findTableState(tableName *tidbast.TableName) (*TableStat
 
 	table, exists := schema.getTable(tableName.Name.O)
 	if !exists {
-		if schema.ctx.CheckIntegrity {
-			return nil, NewTableNotExistsError(tableName.Name.O)
-		}
-		table = schema.createIncompleteTable(tableName.Name.O)
+		return nil, NewTableNotExistsError(tableName.Name.O)
 	}
 
 	return table, nil
@@ -187,7 +181,7 @@ func (d *DatabaseState) dropIndex(node *tidbast.DropIndexStmt) *WalkThroughError
 		return err
 	}
 
-	return table.DropIndex(node.IndexName, d.ctx.CheckIntegrity, nil)
+	return table.DropIndex(node.IndexName, nil)
 }
 
 func (d *DatabaseState) createIndex(node *tidbast.CreateIndexStmt) *WalkThroughError {
@@ -263,15 +257,15 @@ func (d *DatabaseState) alterTable(node *tidbast.AlterTableStmt) *WalkThroughErr
 				return err
 			}
 		case tidbast.AlterTableDropColumn:
-			if err := table.DropColumn(spec.OldColumnName.Name.O, d.ctx.CheckIntegrity, nil); err != nil {
+			if err := table.DropColumn(spec.OldColumnName.Name.O, nil); err != nil {
 				return err
 			}
 		case tidbast.AlterTableDropPrimaryKey:
-			if err := table.DropIndex(PrimaryKeyName, d.ctx.CheckIntegrity, nil); err != nil {
+			if err := table.DropIndex(PrimaryKeyName, nil); err != nil {
 				return err
 			}
 		case tidbast.AlterTableDropIndex:
-			if err := table.DropIndex(spec.Name, d.ctx.CheckIntegrity, nil); err != nil {
+			if err := table.DropIndex(spec.Name, nil); err != nil {
 				return err
 			}
 		case tidbast.AlterTableDropForeignKey:
@@ -285,7 +279,7 @@ func (d *DatabaseState) alterTable(node *tidbast.AlterTableStmt) *WalkThroughErr
 				return err
 			}
 		case tidbast.AlterTableRenameColumn:
-			if err := table.RenameColumn(spec.OldColumnName.Name.O, spec.NewColumnName.Name.O, d.ctx.CheckIntegrity); err != nil {
+			if err := table.RenameColumn(spec.OldColumnName.Name.O, spec.NewColumnName.Name.O); err != nil {
 				return err
 			}
 		case tidbast.AlterTableRenameTable:
@@ -298,7 +292,7 @@ func (d *DatabaseState) alterTable(node *tidbast.AlterTableStmt) *WalkThroughErr
 				return err
 			}
 		case tidbast.AlterTableRenameIndex:
-			if err := table.RenameIndex(spec.FromKey.O, spec.ToKey.O, d.ctx.CheckIntegrity, nil); err != nil {
+			if err := table.RenameIndex(spec.FromKey.O, spec.ToKey.O, nil); err != nil {
 				return err
 			}
 		case tidbast.AlterTableIndexInvisible:
@@ -313,13 +307,10 @@ func (d *DatabaseState) alterTable(node *tidbast.AlterTableStmt) *WalkThroughErr
 	return nil
 }
 
-func (t *TableState) changeIndexVisibility(ctx *FinderContext, indexName string, visibility tidbast.IndexVisibility) *WalkThroughError {
+func (t *TableState) changeIndexVisibility(_ *FinderContext, indexName string, visibility tidbast.IndexVisibility) *WalkThroughError {
 	index, exists := t.indexSet[strings.ToLower(indexName)]
 	if !exists {
-		if ctx.CheckIntegrity {
-			return NewIndexNotExistsError(t.name, indexName)
-		}
-		index = t.createIncompleteIndex(indexName)
+		return NewIndexNotExistsError(t.name, indexName)
 	}
 	switch visibility {
 	case tidbast.IndexVisibilityVisible:
@@ -332,14 +323,11 @@ func (t *TableState) changeIndexVisibility(ctx *FinderContext, indexName string,
 	return nil
 }
 
-func (t *TableState) changeColumnDefault(ctx *FinderContext, column *tidbast.ColumnDef) *WalkThroughError {
+func (t *TableState) changeColumnDefault(_ *FinderContext, column *tidbast.ColumnDef) *WalkThroughError {
 	columnName := column.Name.Name.L
 	colState, exists := t.columnSet[columnName]
 	if !exists {
-		if ctx.CheckIntegrity {
-			return NewColumnNotExistsError(t.name, columnName)
-		}
-		colState = t.createIncompleteColumn(columnName)
+		return NewColumnNotExistsError(t.name, columnName)
 	}
 
 	if len(column.Options) == 1 {
@@ -452,23 +440,8 @@ func (t *TableState) completeTableChangeColumn(ctx *FinderContext, oldName strin
 	return t.createColumn(ctx, newColumn, position)
 }
 
-// incompleteTableChangeColumn changes column definition.
-// It does not maintain the position of the column.
-func (t *TableState) incompleteTableChangeColumn(ctx *FinderContext, oldName string, newColumn *tidbast.ColumnDef, position *tidbast.ColumnPosition) *WalkThroughError {
-	delete(t.columnSet, strings.ToLower(oldName))
-
-	// rename column from indexSet
-	t.renameColumnInIndexKey(oldName, newColumn.Name.Name.O)
-
-	// create a new column in columnSet
-	return t.createColumn(ctx, newColumn, position)
-}
-
 func (t *TableState) changeColumn(ctx *FinderContext, oldName string, newColumn *tidbast.ColumnDef, position *tidbast.ColumnPosition) *WalkThroughError {
-	if ctx.CheckIntegrity {
-		return t.completeTableChangeColumn(ctx, oldName, newColumn, position)
-	}
-	return t.incompleteTableChangeColumn(ctx, oldName, newColumn, position)
+	return t.completeTableChangeColumn(ctx, oldName, newColumn, position)
 }
 
 // reorderColumn reorders the columns for new column and returns the new column position.
@@ -519,7 +492,7 @@ func (d *DatabaseState) dropTable(node *tidbast.DropTableStmt) *WalkThroughError
 
 			table, exists := schema.getTable(name.Name.O)
 			if !exists {
-				if node.IfExists || !d.ctx.CheckIntegrity {
+				if node.IfExists {
 					return nil
 				}
 				return &WalkThroughError{
@@ -669,7 +642,7 @@ func (t *TableState) createConstraint(ctx *FinderContext, constraint *tidbast.Co
 	return nil
 }
 
-func (t *TableState) validateAndGetKeyStringList(ctx *FinderContext, keyList []*tidbast.IndexPartSpecification, primary bool, isSpatial bool) ([]string, *WalkThroughError) {
+func (t *TableState) validateAndGetKeyStringList(_ *FinderContext, keyList []*tidbast.IndexPartSpecification, primary bool, isSpatial bool) ([]string, *WalkThroughError) {
 	var res []string
 	for _, key := range keyList {
 		if key.Expr != nil {
@@ -682,19 +655,16 @@ func (t *TableState) validateAndGetKeyStringList(ctx *FinderContext, keyList []*
 			columnName := key.Column.Name.L
 			column, exists := t.columnSet[columnName]
 			if !exists {
-				if ctx.CheckIntegrity {
-					return nil, NewColumnNotExistsError(t.name, columnName)
-				}
-			} else {
-				if primary {
-					column.nullable = newFalsePointer()
-				}
-				if isSpatial && column.nullable != nil && *column.nullable {
-					return nil, &WalkThroughError{
-						Type: ErrorTypeSpatialIndexKeyNullable,
-						// The error content comes from MySQL.
-						Content: fmt.Sprintf("All parts of a SPATIAL index must be NOT NULL, but `%s` is nullable", column.name),
-					}
+				return nil, NewColumnNotExistsError(t.name, columnName)
+			}
+			if primary {
+				column.nullable = newFalsePointer()
+			}
+			if isSpatial && column.nullable != nil && *column.nullable {
+				return nil, &WalkThroughError{
+					Type: ErrorTypeSpatialIndexKeyNullable,
+					// The error content comes from MySQL.
+					Content: fmt.Sprintf("All parts of a SPATIAL index must be NOT NULL, but `%s` is nullable", column.name),
 				}
 			}
 
@@ -740,7 +710,7 @@ func checkDefault(columnName string, columnType *types.FieldType, value tidbast.
 }
 
 //nolint:revive
-func (t *TableState) createColumn(ctx *FinderContext, column *tidbast.ColumnDef, position *tidbast.ColumnPosition) *WalkThroughError {
+func (t *TableState) createColumn(_ *FinderContext, column *tidbast.ColumnDef, position *tidbast.ColumnPosition) *WalkThroughError {
 	if _, exists := t.columnSet[column.Name.Name.L]; exists {
 		return &WalkThroughError{
 			Type:    ErrorTypeColumnExists,
@@ -749,7 +719,7 @@ func (t *TableState) createColumn(ctx *FinderContext, column *tidbast.ColumnDef,
 	}
 
 	pos := len(t.columnSet) + 1
-	if position != nil && ctx.CheckIntegrity {
+	if position != nil {
 		var err *WalkThroughError
 		pos, err = t.reorderColumn(position)
 		if err != nil {

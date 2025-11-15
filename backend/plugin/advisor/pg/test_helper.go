@@ -59,7 +59,7 @@ func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbTyp
 		}
 
 		database := advisor.MockPostgreSQLDatabase
-		ctx := &catalog.FinderContext{CheckIntegrity: true, EngineType: dbType}
+		ctx := &catalog.FinderContext{EngineType: dbType}
 		originCatalog := catalog.NewDatabaseState(database, ctx)
 		finalCatalog := catalog.NewDatabaseState(database, ctx)
 

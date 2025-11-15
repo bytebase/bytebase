@@ -190,7 +190,7 @@ func (l *mysqlListener) EnterDropTable(ctx *mysql.DropTableContext) {
 
 		table, exists := schema.getTable(tableName)
 		if !exists {
-			if ctx.IfExists() != nil || !l.databaseState.ctx.CheckIntegrity {
+			if ctx.IfExists() != nil {
 				return
 			}
 			l.err = &WalkThroughError{
@@ -304,20 +304,20 @@ func (l *mysqlListener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 			// drop column.
 			case item.ColumnInternalRef() != nil:
 				columnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
-				if err := table.DropColumn(columnName, l.databaseState.ctx.CheckIntegrity, nil); err != nil {
+				if err := table.DropColumn(columnName, nil); err != nil {
 					l.err = err
 					return
 				}
 				// drop primary key.
 			case item.PRIMARY_SYMBOL() != nil && item.KEY_SYMBOL() != nil:
-				if err := table.DropIndex(PrimaryKeyName, l.databaseState.ctx.CheckIntegrity, nil); err != nil {
+				if err := table.DropIndex(PrimaryKeyName, nil); err != nil {
 					l.err = err
 					return
 				}
 				// drop key/index.
 			case item.KeyOrIndex() != nil && item.IndexRef() != nil:
 				_, _, indexName := mysqlparser.NormalizeIndexRef(item.IndexRef())
-				if err := table.DropIndex(indexName, l.databaseState.ctx.CheckIntegrity, nil); err != nil {
+				if err := table.DropIndex(indexName, nil); err != nil {
 					l.err = err
 					return
 				}
@@ -343,7 +343,7 @@ func (l *mysqlListener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 		case item.RENAME_SYMBOL() != nil && item.COLUMN_SYMBOL() != nil:
 			oldColumnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
 			newColumnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
-			if err := table.RenameColumn(oldColumnName, newColumnName, l.databaseState.ctx.CheckIntegrity); err != nil {
+			if err := table.RenameColumn(oldColumnName, newColumnName); err != nil {
 				l.err = err
 				return
 			}
@@ -376,7 +376,7 @@ func (l *mysqlListener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 		case item.RENAME_SYMBOL() != nil && item.KeyOrIndex() != nil && item.IndexRef() != nil && item.IndexName() != nil:
 			_, _, oldIndexName := mysqlparser.NormalizeIndexRef(item.IndexRef())
 			newIndexName := mysqlparser.NormalizeIndexName(item.IndexName())
-			if err := table.RenameIndex(oldIndexName, newIndexName, l.databaseState.ctx.CheckIntegrity, nil); err != nil {
+			if err := table.RenameIndex(oldIndexName, newIndexName, nil); err != nil {
 				l.err = err
 				return
 			}
@@ -406,7 +406,7 @@ func (l *mysqlListener) EnterDropIndex(ctx *mysql.DropIndexContext) {
 	}
 
 	_, _, indexName := mysqlparser.NormalizeIndexRef(ctx.IndexRef())
-	if err := table.DropIndex(indexName, l.databaseState.ctx.CheckIntegrity, nil); err != nil {
+	if err := table.DropIndex(indexName, nil); err != nil {
 		l.err = err
 	}
 }
@@ -547,11 +547,8 @@ func (l *mysqlListener) EnterRenameTableStatement(ctx *mysql.RenameTableStatemen
 			}
 			table, exists := schema.getTable(oldTableName)
 			if !exists {
-				if schema.ctx.CheckIntegrity {
-					l.err = NewTableNotExistsError(oldTableName)
-					return
-				}
-				table = schema.createIncompleteTable(oldTableName)
+				l.err = NewTableNotExistsError(oldTableName)
+				return
 			}
 			if _, exists := schema.getTable(newTableName); exists {
 				l.err = NewTableExistsError(newTableName)
@@ -562,7 +559,7 @@ func (l *mysqlListener) EnterRenameTableStatement(ctx *mysql.RenameTableStatemen
 			schema.tableSet[table.name] = table
 		} else if l.databaseState.mysqlMoveToOtherDatabase(pair) {
 			_, exists := schema.getTable(oldTableName)
-			if !exists && schema.ctx.CheckIntegrity {
+			if !exists {
 				l.err = NewTableNotExistsError(oldTableName)
 				return
 			}
@@ -644,13 +641,10 @@ func (d *DatabaseState) mysqlTheCurrentDatabase(renamePair mysql.IRenamePairCont
 	return true
 }
 
-func (t *TableState) mysqlChangeIndexVisibility(ctx *FinderContext, indexName string, visibility mysql.IVisibilityContext) *WalkThroughError {
+func (t *TableState) mysqlChangeIndexVisibility(_ *FinderContext, indexName string, visibility mysql.IVisibilityContext) *WalkThroughError {
 	index, exists := t.indexSet[strings.ToLower(indexName)]
 	if !exists {
-		if ctx.CheckIntegrity {
-			return NewIndexNotExistsError(t.name, indexName)
-		}
-		index = t.createIncompleteIndex(indexName)
+		return NewIndexNotExistsError(t.name, indexName)
 	}
 	switch {
 	case visibility.VISIBLE_SYMBOL() != nil:
@@ -663,7 +657,7 @@ func (t *TableState) mysqlChangeIndexVisibility(ctx *FinderContext, indexName st
 	return nil
 }
 
-func (t *TableState) mysqlAlterColumn(ctx *FinderContext, itemDef mysql.IAlterListItemContext) *WalkThroughError {
+func (t *TableState) mysqlAlterColumn(_ *FinderContext, itemDef mysql.IAlterListItemContext) *WalkThroughError {
 	if itemDef.ColumnInternalRef() == nil {
 		// should not reach here.
 		return nil
@@ -671,10 +665,7 @@ func (t *TableState) mysqlAlterColumn(ctx *FinderContext, itemDef mysql.IAlterLi
 	columnName := mysqlparser.NormalizeMySQLColumnInternalRef(itemDef.ColumnInternalRef())
 	colState, exists := t.columnSet[strings.ToLower(columnName)]
 	if !exists {
-		if ctx.CheckIntegrity {
-			return NewColumnNotExistsError(t.name, columnName)
-		}
-		colState = t.createIncompleteColumn(columnName)
+		return NewColumnNotExistsError(t.name, columnName)
 	}
 
 	switch {
@@ -734,22 +725,7 @@ func (t *TableState) mysqlAlterColumn(ctx *FinderContext, itemDef mysql.IAlterLi
 }
 
 func (t *TableState) mysqlChangeColumn(ctx *FinderContext, oldColumnName string, newColumnName string, fieldDef mysql.IFieldDefinitionContext, position *mysqlColumnPosition) *WalkThroughError {
-	if ctx.CheckIntegrity {
-		return t.mysqlCompleteTableChangeColumn(ctx, oldColumnName, newColumnName, fieldDef, position)
-	}
-	return t.mysqlIncompleteTableChangeColumn(ctx, oldColumnName, newColumnName, fieldDef, position)
-}
-
-// mysqlIncompleteTableChangeColumn changes column definition.
-// It does not maintain the position of the column.
-func (t *TableState) mysqlIncompleteTableChangeColumn(ctx *FinderContext, oldColumnName string, newColumnName string, fieldDef mysql.IFieldDefinitionContext, position *mysqlColumnPosition) *WalkThroughError {
-	delete(t.columnSet, strings.ToLower(oldColumnName))
-
-	// rename column from indexSet
-	t.renameColumnInIndexKey(oldColumnName, newColumnName)
-
-	// create a new column in columnSet
-	return t.mysqlCreateColumn(ctx, newColumnName, fieldDef, position)
+	return t.mysqlCompleteTableChangeColumn(ctx, oldColumnName, newColumnName, fieldDef, position)
 }
 
 // mysqlCompleteTableChangeColumn changes column definition.
@@ -855,10 +831,7 @@ func (d *DatabaseState) mysqlFindTableState(databaseName, tableName string) (*Ta
 
 	table, exists := schema.getTable(tableName)
 	if !exists {
-		if schema.ctx.CheckIntegrity {
-			return nil, NewTableNotExistsError(tableName)
-		}
-		table = schema.createIncompleteTable(tableName)
+		return nil, NewTableNotExistsError(tableName)
 	}
 
 	return table, nil
@@ -965,23 +938,20 @@ func (t *TableState) mysqlValidateKeyListVariants(ctx *FinderContext, keyList my
 	return nil
 }
 
-func (t *TableState) mysqlValidateColumnList(ctx *FinderContext, columnList []string, primary bool, isSpatial bool) *WalkThroughError {
+func (t *TableState) mysqlValidateColumnList(_ *FinderContext, columnList []string, primary bool, isSpatial bool) *WalkThroughError {
 	for _, columnName := range columnList {
 		column, exists := t.columnSet[strings.ToLower(columnName)]
 		if !exists {
-			if ctx.CheckIntegrity {
-				return NewColumnNotExistsError(t.name, columnName)
-			}
-		} else {
-			if primary {
-				column.nullable = newFalsePointer()
-			}
-			if isSpatial && column.nullable != nil && *column.nullable {
-				return &WalkThroughError{
-					Type: ErrorTypeSpatialIndexKeyNullable,
-					// The error content comes from MySQL.
-					Content: fmt.Sprintf("All parts of a SPATIAL index must be NOT NULL, but `%s` is nullable", column.name),
-				}
+			return NewColumnNotExistsError(t.name, columnName)
+		}
+		if primary {
+			column.nullable = newFalsePointer()
+		}
+		if isSpatial && column.nullable != nil && *column.nullable {
+			return &WalkThroughError{
+				Type: ErrorTypeSpatialIndexKeyNullable,
+				// The error content comes from MySQL.
+				Content: fmt.Sprintf("All parts of a SPATIAL index must be NOT NULL, but `%s` is nullable", column.name),
 			}
 		}
 	}
@@ -1050,7 +1020,7 @@ func mysqlGetIndexType(tableConstraint mysql.ITableConstraintDefContext) string 
 	return "BTREE"
 }
 
-func (t *TableState) mysqlCreateColumn(ctx *FinderContext, columnName string, fieldDef mysql.IFieldDefinitionContext, position *mysqlColumnPosition) *WalkThroughError {
+func (t *TableState) mysqlCreateColumn(_ *FinderContext, columnName string, fieldDef mysql.IFieldDefinitionContext, position *mysqlColumnPosition) *WalkThroughError {
 	if _, exists := t.columnSet[strings.ToLower(columnName)]; exists {
 		return &WalkThroughError{
 			Type:    ErrorTypeColumnExists,
@@ -1060,7 +1030,7 @@ func (t *TableState) mysqlCreateColumn(ctx *FinderContext, columnName string, fi
 
 	// todo: handle position.
 	pos := len(t.columnSet) + 1
-	if position != nil && ctx.CheckIntegrity {
+	if position != nil {
 		var err *WalkThroughError
 		pos, err = t.mysqlReorderColumn(position)
 		if err != nil {

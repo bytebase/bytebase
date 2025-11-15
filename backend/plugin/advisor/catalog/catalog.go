@@ -24,7 +24,7 @@ func NewCatalog(ctx context.Context, s *store.Store, instanceID, databaseName st
 		}
 		dbMetadata = databaseMeta.GetMetadata()
 	}
-	finderCtx := &FinderContext{CheckIntegrity: true, EngineType: engineType, IgnoreCaseSensitive: !isCaseSensitive}
+	finderCtx := &FinderContext{EngineType: engineType, IgnoreCaseSensitive: !isCaseSensitive}
 	origin = NewDatabaseState(dbMetadata, finderCtx)
 	final = NewDatabaseState(dbMetadata, finderCtx)
 	return origin, final, nil

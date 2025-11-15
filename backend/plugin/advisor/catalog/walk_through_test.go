@@ -54,16 +54,6 @@ func TestMySQLWalkThrough(t *testing.T) {
 	}
 }
 
-func TestMySQLWalkThroughForIncomplete(t *testing.T) {
-	tests := []string{
-		"mysql_walk_through_for_incomplete",
-	}
-
-	for _, test := range tests {
-		runWalkThroughTest(t, test, storepb.Engine_MYSQL, nil)
-	}
-}
-
 func TestPostgreSQLWalkThrough(t *testing.T) {
 	originDatabase := &storepb.DatabaseSchemaMetadata{
 		Name: "postgres",
@@ -196,9 +186,9 @@ func runWalkThroughTest(t *testing.T, file string, engineType storepb.Engine, or
 	for _, test := range tests {
 		var state *DatabaseState
 		if originDatabase != nil {
-			state = NewDatabaseState(originDatabase, &FinderContext{CheckIntegrity: true, EngineType: engineType, IgnoreCaseSensitive: test.IgnoreCaseSensitive})
+			state = NewDatabaseState(originDatabase, &FinderContext{EngineType: engineType, IgnoreCaseSensitive: test.IgnoreCaseSensitive})
 		} else {
-			state = NewDatabaseState(&storepb.DatabaseSchemaMetadata{}, &FinderContext{CheckIntegrity: false, EngineType: engineType, IgnoreCaseSensitive: test.IgnoreCaseSensitive})
+			state = NewDatabaseState(&storepb.DatabaseSchemaMetadata{}, &FinderContext{EngineType: engineType, IgnoreCaseSensitive: test.IgnoreCaseSensitive})
 		}
 
 		asts, _ := sm.GetASTsForChecks(engineType, test.Statement)
@@ -245,9 +235,9 @@ func runANTLRWalkThroughTest(t *testing.T, file string, engineType storepb.Engin
 	for _, test := range tests {
 		var state *DatabaseState
 		if originDatabase != nil {
-			state = NewDatabaseState(originDatabase, &FinderContext{CheckIntegrity: true, EngineType: engineType, IgnoreCaseSensitive: test.IgnoreCaseSensitive})
+			state = NewDatabaseState(originDatabase, &FinderContext{EngineType: engineType, IgnoreCaseSensitive: test.IgnoreCaseSensitive})
 		} else {
-			state = NewDatabaseState(&storepb.DatabaseSchemaMetadata{}, &FinderContext{CheckIntegrity: false, EngineType: engineType, IgnoreCaseSensitive: test.IgnoreCaseSensitive})
+			state = NewDatabaseState(&storepb.DatabaseSchemaMetadata{}, &FinderContext{EngineType: engineType, IgnoreCaseSensitive: test.IgnoreCaseSensitive})
 		}
 
 		// Parse using ANTLR parser instead of legacy parser
