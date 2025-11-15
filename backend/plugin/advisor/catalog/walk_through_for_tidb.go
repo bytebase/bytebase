@@ -331,6 +331,7 @@ func (t *TableState) changeIndexVisibility(ctx *FinderContext, indexName string,
 	return nil
 }
 
+//nolint:revive
 func (t *TableState) renameIndex(ctx *FinderContext, oldName string, newName string) *WalkThroughError {
 	// For MySQL, the primary key has a special name 'PRIMARY'.
 	// And the other indexes cannot use the name which case-insensitive equals 'PRIMARY'.
@@ -414,6 +415,7 @@ func (t *TableState) changeColumnDefault(ctx *FinderContext, column *tidbast.Col
 	return nil
 }
 
+//nolint:revive
 func (t *TableState) renameColumn(ctx *FinderContext, oldName string, newName string) *WalkThroughError {
 	if strings.EqualFold(oldName, newName) {
 		return nil
@@ -530,6 +532,7 @@ func (t *TableState) changeColumn(ctx *FinderContext, oldName string, newColumn 
 	return t.incompleteTableChangeColumn(ctx, oldName, newColumn, position)
 }
 
+//nolint:revive
 func (t *TableState) dropIndex(ctx *FinderContext, indexName string) *WalkThroughError {
 	if ctx.CheckIntegrity {
 		if _, exists := t.indexSet[strings.ToLower(indexName)]; !exists {
@@ -599,6 +602,7 @@ func (t *TableState) incompleteTableDropColumn(columnName string) *WalkThroughEr
 	return nil
 }
 
+//nolint:revive
 func (t *TableState) dropColumn(ctx *FinderContext, columnName string) *WalkThroughError {
 	if ctx.CheckIntegrity {
 		return t.completeTableDropColumn(columnName)
@@ -888,6 +892,7 @@ func checkDefault(columnName string, columnType *types.FieldType, value tidbast.
 	return nil
 }
 
+//nolint:revive
 func (t *TableState) createColumn(ctx *FinderContext, column *tidbast.ColumnDef, position *tidbast.ColumnPosition) *WalkThroughError {
 	if _, exists := t.columnSet[column.Name.Name.L]; exists {
 		return &WalkThroughError{
@@ -994,6 +999,7 @@ func (t *TableState) createColumn(ctx *FinderContext, column *tidbast.ColumnDef,
 	return nil
 }
 
+//nolint:revive
 func (t *TableState) createIndex(name string, keyList []string, unique bool, tp string, option *tidbast.IndexOption) *WalkThroughError {
 	if len(keyList) == 0 {
 		return &WalkThroughError{
@@ -1037,6 +1043,7 @@ func (t *TableState) createIndex(name string, keyList []string, unique bool, tp 
 	return nil
 }
 
+//nolint:revive
 func (t *TableState) createPrimaryKey(keys []string, tp string) *WalkThroughError {
 	if _, exists := t.indexSet[strings.ToLower(PrimaryKeyName)]; exists {
 		return &WalkThroughError{

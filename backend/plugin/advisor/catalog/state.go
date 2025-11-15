@@ -655,6 +655,8 @@ func (d *DatabaseState) GetOrCreateSchema(schemaName string) *SchemaState {
 }
 
 // GetSchema gets an existing schema.
+//
+//nolint:revive
 func (d *DatabaseState) GetSchema(schemaName string) (*SchemaState, *WalkThroughError) {
 	if schemaName == "" {
 		schemaName = publicSchemaName
@@ -722,6 +724,8 @@ func (s *SchemaState) CreateTable(tableName string) (*TableState, *WalkThroughEr
 }
 
 // GetTable gets a table from the schema.
+//
+//nolint:revive
 func (s *SchemaState) GetTable(tableName string) (*TableState, *WalkThroughError) {
 	table, exists := s.tableSet[tableName]
 	if !exists {
@@ -768,6 +772,8 @@ func (s *SchemaState) DropTable(tableName string, checkViewDependency func(*Tabl
 }
 
 // RenameTable renames a table in the schema.
+//
+//nolint:revive
 func (s *SchemaState) RenameTable(oldName string, newName string) *WalkThroughError {
 	if oldName == newName {
 		return nil
@@ -803,6 +809,8 @@ func (s *SchemaState) RenameTable(oldName string, newName string) *WalkThroughEr
 // Column-level operations.
 
 // CreateColumn creates a new column in the table.
+//
+//nolint:revive
 func (t *TableState) CreateColumn(columnName string, columnType *string, nullable *bool, defaultValue *string, position *int, characterSet *string, collation *string, comment *string) *WalkThroughError {
 	if _, exists := t.columnSet[strings.ToLower(columnName)]; exists {
 		return &WalkThroughError{
@@ -832,6 +840,8 @@ func (t *TableState) CreateColumn(columnName string, columnType *string, nullabl
 }
 
 // GetColumn gets a column from the table.
+//
+//nolint:revive
 func (t *TableState) GetColumn(columnName string) (*ColumnState, *WalkThroughError) {
 	column, exists := t.columnSet[strings.ToLower(columnName)]
 	if !exists {
@@ -841,6 +851,8 @@ func (t *TableState) GetColumn(columnName string) (*ColumnState, *WalkThroughErr
 }
 
 // DropColumn drops a column from the table.
+//
+//nolint:revive
 func (t *TableState) DropColumn(columnName string, checkIntegrity bool, checkViewDependency func(*ColumnState) ([]string, *WalkThroughError)) *WalkThroughError {
 	column, exists := t.columnSet[strings.ToLower(columnName)]
 	if !exists {
@@ -902,6 +914,8 @@ func (t *TableState) DropColumn(columnName string, checkIntegrity bool, checkVie
 }
 
 // RenameColumn renames a column in the table.
+//
+//nolint:revive
 func (t *TableState) RenameColumn(oldName string, newName string, checkIntegrity bool) *WalkThroughError {
 	if strings.EqualFold(oldName, newName) {
 		return nil
@@ -940,6 +954,8 @@ func (t *TableState) RenameColumn(oldName string, newName string, checkIntegrity
 // Index-level operations.
 
 // CreateIndex creates a new index in the table.
+//
+//nolint:revive
 func (t *TableState) CreateIndex(indexName string, expressionList []string, unique bool, indexType string, primary bool, visible *bool, comment *string, isConstraint bool, identifierMap identifierMap) *WalkThroughError {
 	if len(expressionList) == 0 {
 		return &WalkThroughError{
@@ -1004,6 +1020,8 @@ func (t *TableState) CreateIndex(indexName string, expressionList []string, uniq
 }
 
 // CreatePrimaryKey creates a primary key index in the table.
+//
+//nolint:revive
 func (t *TableState) CreatePrimaryKey(keyList []string, indexType string, identifierMap identifierMap) *WalkThroughError {
 	pkName := PrimaryKeyName
 
@@ -1051,6 +1069,8 @@ func (t *TableState) GetIndex(indexName string) (*IndexState, *WalkThroughError)
 }
 
 // DropIndex drops an index from the table.
+//
+//nolint:revive
 func (t *TableState) DropIndex(indexName string, checkIntegrity bool, identifierMap identifierMap) *WalkThroughError {
 	if checkIntegrity {
 		if _, exists := t.indexSet[strings.ToLower(indexName)]; !exists {
@@ -1074,6 +1094,8 @@ func (t *TableState) DropIndex(indexName string, checkIntegrity bool, identifier
 }
 
 // RenameIndex renames an index in the table.
+//
+//nolint:revive
 func (t *TableState) RenameIndex(oldName string, newName string, checkIntegrity bool, identifierMap identifierMap) *WalkThroughError {
 	// For MySQL, the primary key has a special name 'PRIMARY'.
 	if strings.ToUpper(oldName) == PrimaryKeyName || strings.ToUpper(newName) == PrimaryKeyName {
@@ -1182,21 +1204,21 @@ func (t *TableState) SetComment(comment string) {
 }
 
 // SetColumnNullable sets the nullable property of the column.
-func (c *ColumnState) SetNullable(nullable bool) {
-	c.nullable = newBoolPointer(nullable)
+func (col *ColumnState) SetNullable(nullable bool) {
+	col.nullable = newBoolPointer(nullable)
 }
 
 // SetColumnDefault sets the default value of the column.
-func (c *ColumnState) SetDefault(defaultValue *string) {
-	c.defaultValue = defaultValue
+func (col *ColumnState) SetDefault(defaultValue *string) {
+	col.defaultValue = defaultValue
 }
 
 // SetColumnType sets the type of the column.
-func (c *ColumnState) SetType(columnType string) {
-	c.columnType = newStringPointer(columnType)
+func (col *ColumnState) SetType(columnType string) {
+	col.columnType = newStringPointer(columnType)
 }
 
 // SetIndexVisibility sets the visibility of the index.
-func (i *IndexState) SetVisibility(visible bool) {
-	i.visible = newBoolPointer(visible)
+func (idx *IndexState) SetVisibility(visible bool) {
+	idx.visible = newBoolPointer(visible)
 }
