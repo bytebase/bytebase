@@ -186,9 +186,9 @@ func runWalkThroughTest(t *testing.T, file string, engineType storepb.Engine, or
 	for _, test := range tests {
 		var state *DatabaseState
 		if originDatabase != nil {
-			state = NewDatabaseState(originDatabase, &FinderContext{EngineType: engineType, IgnoreCaseSensitive: test.IgnoreCaseSensitive})
+			state = NewDatabaseState(originDatabase, test.IgnoreCaseSensitive, engineType)
 		} else {
-			state = NewDatabaseState(&storepb.DatabaseSchemaMetadata{}, &FinderContext{EngineType: engineType, IgnoreCaseSensitive: test.IgnoreCaseSensitive})
+			state = NewDatabaseState(&storepb.DatabaseSchemaMetadata{}, test.IgnoreCaseSensitive, engineType)
 		}
 
 		asts, _ := sm.GetASTsForChecks(engineType, test.Statement)
@@ -235,9 +235,9 @@ func runANTLRWalkThroughTest(t *testing.T, file string, engineType storepb.Engin
 	for _, test := range tests {
 		var state *DatabaseState
 		if originDatabase != nil {
-			state = NewDatabaseState(originDatabase, &FinderContext{EngineType: engineType, IgnoreCaseSensitive: test.IgnoreCaseSensitive})
+			state = NewDatabaseState(originDatabase, test.IgnoreCaseSensitive, engineType)
 		} else {
-			state = NewDatabaseState(&storepb.DatabaseSchemaMetadata{}, &FinderContext{EngineType: engineType, IgnoreCaseSensitive: test.IgnoreCaseSensitive})
+			state = NewDatabaseState(&storepb.DatabaseSchemaMetadata{}, test.IgnoreCaseSensitive, engineType)
 		}
 
 		// Parse using ANTLR parser instead of legacy parser

@@ -49,14 +49,10 @@ func (*IndexTotalNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.C
 		tableLine:    make(tableLineMap),
 	}
 
-	if rule.finalCatalog.Usable() {
-		checker := NewGenericChecker([]Rule{rule})
-		antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
-		rule.generateAdvice()
-		return checker.GetAdviceList(), nil
-	}
-
-	return nil, nil
+	checker := NewGenericChecker([]Rule{rule})
+	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
+	rule.generateAdvice()
+	return checker.GetAdviceList(), nil
 }
 
 type tableLine struct {
