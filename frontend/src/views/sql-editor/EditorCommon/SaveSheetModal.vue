@@ -210,9 +210,9 @@ const onSelect = (keys: string[]) => {
 };
 
 const onInput = (val: string) => {
-  let changedVal = val
+  let changedVal = val;
   if (val.endsWith(" /")) {
-    changedVal = val.slice(0, -2)
+    changedVal = val.slice(0, -2);
   }
   const rawPath = changedVal
     .split("/")
