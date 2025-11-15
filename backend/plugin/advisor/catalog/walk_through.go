@@ -186,13 +186,7 @@ func WalkThrough(d *DatabaseState, ast any) error {
 	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 		return MySQLWalkThrough(d, ast)
 	case storepb.Engine_POSTGRES:
-		if err := PgWalkThrough(d, ast); err != nil {
-			if d.ctx.CheckIntegrity {
-				return err
-			}
-			d.usable = false
-		}
-		return nil
+		return PgWalkThrough(d, ast)
 	default:
 		return &WalkThroughError{
 			Type:    ErrorTypeUnsupported,
@@ -228,29 +222,18 @@ func (s *SchemaState) getTable(table string) (*TableState, bool) {
 	return nil, false
 }
 
-func (t *TableState) createIncompleteIndex(name string) *IndexState {
-	index := &IndexState{
-		name: name,
-	}
-	t.indexSet[strings.ToLower(name)] = index
-	return index
-}
-
 //nolint:revive
-func (s *SchemaState) renameTable(ctx *FinderContext, oldName string, newName string) *WalkThroughError {
+func (s *SchemaState) renameTable(_ *FinderContext, oldName string, newName string) *WalkThroughError {
 	if oldName == newName {
 		return nil
 	}
 
 	table, exists := s.getTable(oldName)
 	if !exists {
-		if ctx.CheckIntegrity {
-			return &WalkThroughError{
-				Type:    ErrorTypeTableNotExists,
-				Content: fmt.Sprintf("Table `%s` does not exist", oldName),
-			}
+		return &WalkThroughError{
+			Type:    ErrorTypeTableNotExists,
+			Content: fmt.Sprintf("Table `%s` does not exist", oldName),
 		}
-		table = s.createIncompleteTable(oldName)
 	}
 
 	if _, exists := s.getTable(newName); exists {
@@ -264,24 +247,6 @@ func (s *SchemaState) renameTable(ctx *FinderContext, oldName string, newName st
 	delete(s.tableSet, oldName)
 	s.tableSet[newName] = table
 	return nil
-}
-
-func (s *SchemaState) createIncompleteTable(name string) *TableState {
-	table := &TableState{
-		name:      name,
-		columnSet: make(columnStateMap),
-		indexSet:  make(IndexStateMap),
-	}
-	s.tableSet[name] = table
-	return table
-}
-
-func (t *TableState) createIncompleteColumn(name string) *ColumnState {
-	column := &ColumnState{
-		name: name,
-	}
-	t.columnSet[strings.ToLower(name)] = column
-	return column
 }
 
 func (d *DatabaseState) createSchema() *SchemaState {
