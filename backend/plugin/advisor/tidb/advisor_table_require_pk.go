@@ -43,11 +43,12 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 		return nil, err
 	}
 	checker := &tableRequirePKChecker{
-		level:   level,
-		title:   string(checkCtx.Rule.Type),
-		tables:  make(tablePK),
-		line:    make(map[string]int),
-		catalog: checkCtx.Catalog,
+		level:         level,
+		title:         string(checkCtx.Rule.Type),
+		tables:        make(tablePK),
+		line:          make(map[string]int),
+		originCatalog: checkCtx.OriginCatalog,
+		finalCatalog:  checkCtx.FinalCatalog,
 	}
 
 	for _, stmtNode := range root {
@@ -58,12 +59,13 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 }
 
 type tableRequirePKChecker struct {
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-	tables     tablePK
-	line       map[string]int
-	catalog    *catalog.Finder
+	adviceList    []*storepb.Advice
+	level         storepb.Advice_Status
+	title         string
+	tables        tablePK
+	line          map[string]int
+	originCatalog *catalog.DatabaseState
+	finalCatalog  *catalog.DatabaseState
 }
 
 // Enter implements the ast.Visitor interface.
@@ -179,7 +181,7 @@ func (v *tableRequirePKChecker) createTableLike(node *ast.CreateTableStmt) {
 		}
 		v.tables[table] = newColumnSet(columns)
 	} else {
-		referTableState := v.catalog.Origin.GetTable("", referTableName)
+		referTableState := v.originCatalog.GetTable("", referTableName)
 		if referTableState != nil {
 			indexSet := referTableState.Index()
 			for _, index := range *indexSet {
@@ -193,7 +195,7 @@ func (v *tableRequirePKChecker) createTableLike(node *ast.CreateTableStmt) {
 
 func (v *tableRequirePKChecker) dropColumn(table string, column string) bool {
 	if _, ok := v.tables[table]; !ok {
-		_, pk := v.catalog.Origin.GetIndex("", table, primaryKeyName)
+		_, pk := v.originCatalog.GetIndex("", table, primaryKeyName)
 		if pk == nil {
 			return false
 		}

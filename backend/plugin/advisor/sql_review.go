@@ -484,11 +484,6 @@ func UnmarshalNamingCaseRulePayload(payload string) (*NamingCaseRulePayload, err
 	return &ncr, nil
 }
 
-// Catalog is the service for catalog.
-type catalogInterface interface {
-	GetFinder() *catalog.Finder
-}
-
 // SQLReviewCheckContext is the context for SQL review check.
 type SQLReviewCheckContext struct {
 	Charset               string
@@ -496,7 +491,8 @@ type SQLReviewCheckContext struct {
 	ChangeType            storepb.PlanCheckRunConfig_ChangeDatabaseType
 	DBSchema              *storepb.DatabaseSchemaMetadata
 	DBType                storepb.Engine
-	Catalog               catalogInterface
+	OriginCatalog         *catalog.DatabaseState
+	FinalCatalog          *catalog.DatabaseState
 	Driver                *sql.DB
 	EnablePriorBackup     bool
 	ClassificationConfig  *storepb.DataClassificationSetting_DataClassificationConfig
@@ -535,11 +531,10 @@ func SQLReviewCheck(
 		return parseResult, nil
 	}
 
-	finder := checkContext.Catalog.GetFinder()
-	if !builtinOnly {
+	if !builtinOnly && checkContext.FinalCatalog != nil {
 		switch checkContext.DBType {
 		case storepb.Engine_TIDB, storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_POSTGRES, storepb.Engine_OCEANBASE:
-			if err := finder.WalkThrough(asts); err != nil {
+			if err := checkContext.FinalCatalog.WalkThrough(asts); err != nil {
 				return convertWalkThroughErrorToAdvice(err)
 			}
 		default:
@@ -566,7 +561,8 @@ func SQLReviewCheck(
 				AST:                      asts,
 				Statements:               statements,
 				Rule:                     rule,
-				Catalog:                  finder,
+				OriginCatalog:            checkContext.OriginCatalog,
+				FinalCatalog:             checkContext.FinalCatalog,
 				Driver:                   checkContext.Driver,
 				CurrentDatabase:          checkContext.CurrentDatabase,
 				ClassificationConfig:     checkContext.ClassificationConfig,

@@ -39,10 +39,10 @@ func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) (
 		return nil, err
 	}
 	checker := &columnNoNullChecker{
-		level:     level,
-		title:     string(checkCtx.Rule.Type),
-		columnSet: make(map[string]columnName),
-		catalog:   checkCtx.Catalog,
+		level:        level,
+		title:        string(checkCtx.Rule.Type),
+		columnSet:    make(map[string]columnName),
+		finalCatalog: checkCtx.FinalCatalog,
 	}
 
 	for _, stmtNode := range root {
@@ -53,11 +53,11 @@ func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) (
 }
 
 type columnNoNullChecker struct {
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-	columnSet  map[string]columnName
-	catalog    *catalog.Finder
+	adviceList   []*storepb.Advice
+	level        storepb.Advice_Status
+	title        string
+	columnSet    map[string]columnName
+	finalCatalog *catalog.DatabaseState
 }
 
 func (checker *columnNoNullChecker) generateAdvice() []*storepb.Advice {
@@ -82,7 +82,7 @@ func (checker *columnNoNullChecker) generateAdvice() []*storepb.Advice {
 	})
 
 	for _, column := range columnList {
-		col := checker.catalog.Final.GetColumn("", column.tableName, column.columnName)
+		col := checker.finalCatalog.GetColumn("", column.tableName, column.columnName)
 		if col != nil && col.Nullable() {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:        checker.level,

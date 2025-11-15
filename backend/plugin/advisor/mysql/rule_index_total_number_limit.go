@@ -47,7 +47,7 @@ func (*IndexTotalNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.C
 	}
 
 	// Create the rule
-	rule := NewIndexTotalNumberLimitRule(level, string(checkCtx.Rule.Type), payload.Number, checkCtx.Catalog)
+	rule := NewIndexTotalNumberLimitRule(level, string(checkCtx.Rule.Type), payload.Number, checkCtx.FinalCatalog)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
@@ -66,11 +66,11 @@ type IndexTotalNumberLimitRule struct {
 	BaseRule
 	max          int
 	lineForTable map[string]int
-	catalog      *catalog.Finder
+	finalCatalog *catalog.DatabaseState
 }
 
 // NewIndexTotalNumberLimitRule creates a new IndexTotalNumberLimitRule.
-func NewIndexTotalNumberLimitRule(level storepb.Advice_Status, title string, maxIndexes int, catalog *catalog.Finder) *IndexTotalNumberLimitRule {
+func NewIndexTotalNumberLimitRule(level storepb.Advice_Status, title string, maxIndexes int, finalCatalog *catalog.DatabaseState) *IndexTotalNumberLimitRule {
 	return &IndexTotalNumberLimitRule{
 		BaseRule: BaseRule{
 			level: level,
@@ -78,7 +78,7 @@ func NewIndexTotalNumberLimitRule(level storepb.Advice_Status, title string, max
 		},
 		max:          maxIndexes,
 		lineForTable: make(map[string]int),
-		catalog:      catalog,
+		finalCatalog: finalCatalog,
 	}
 }
 
@@ -130,7 +130,7 @@ func (r *IndexTotalNumberLimitRule) generateAdvice() []*storepb.Advice {
 	})
 
 	for _, table := range tableList {
-		tableInfo := r.catalog.Final.GetTable("", table.name)
+		tableInfo := r.finalCatalog.GetTable("", table.name)
 		if tableInfo != nil && tableInfo.CountIndex() > r.max {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,

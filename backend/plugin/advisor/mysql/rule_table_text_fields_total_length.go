@@ -46,7 +46,7 @@ func (*TableMaximumVarcharLengthAdvisor) Check(_ context.Context, checkCtx advis
 	}
 
 	// Create the rule
-	rule := NewTableTextFieldsTotalLengthRule(level, string(checkCtx.Rule.Type), checkCtx.Catalog, payload.Number)
+	rule := NewTableTextFieldsTotalLengthRule(level, string(checkCtx.Rule.Type), checkCtx.FinalCatalog, payload.Number)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
@@ -63,19 +63,19 @@ func (*TableMaximumVarcharLengthAdvisor) Check(_ context.Context, checkCtx advis
 // TableTextFieldsTotalLengthRule checks for table text fields total length.
 type TableTextFieldsTotalLengthRule struct {
 	BaseRule
-	catalog *catalog.Finder
-	maximum int
+	finalCatalog *catalog.DatabaseState
+	maximum      int
 }
 
 // NewTableTextFieldsTotalLengthRule creates a new TableTextFieldsTotalLengthRule.
-func NewTableTextFieldsTotalLengthRule(level storepb.Advice_Status, title string, catalog *catalog.Finder, maximum int) *TableTextFieldsTotalLengthRule {
+func NewTableTextFieldsTotalLengthRule(level storepb.Advice_Status, title string, finalCatalog *catalog.DatabaseState, maximum int) *TableTextFieldsTotalLengthRule {
 	return &TableTextFieldsTotalLengthRule{
 		BaseRule: BaseRule{
 			level: level,
 			title: title,
 		},
-		catalog: catalog,
-		maximum: maximum,
+		finalCatalog: finalCatalog,
+		maximum:      maximum,
 	}
 }
 
@@ -114,7 +114,7 @@ func (r *TableTextFieldsTotalLengthRule) checkCreateTable(ctx *mysql.CreateTable
 	if tableName == "" {
 		return
 	}
-	tableInfo := r.catalog.Final.GetTable("", tableName)
+	tableInfo := r.finalCatalog.GetTable("", tableName)
 	if tableInfo == nil {
 		return
 	}
@@ -148,7 +148,7 @@ func (r *TableTextFieldsTotalLengthRule) checkAlterTable(ctx *mysql.AlterTableCo
 	if tableName == "" {
 		return
 	}
-	tableInfo := r.catalog.Final.GetTable("", tableName)
+	tableInfo := r.finalCatalog.GetTable("", tableName)
 	if tableInfo == nil {
 		return
 	}

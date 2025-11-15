@@ -155,14 +155,6 @@ type TestCase struct {
 	Want       []*storepb.Advice                             `yaml:"want,omitempty"`
 }
 
-type testCatalog struct {
-	finder *catalog.Finder
-}
-
-func (c *testCatalog) GetFinder() *catalog.Finder {
-	return c.finder
-}
-
 // RunSQLReviewRuleTest helps to test the SQL review rule.
 func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.Engine, needMetaData bool, record bool) {
 	var tests []TestCase
@@ -208,7 +200,9 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 		if dbType == storepb.Engine_POSTGRES {
 			database = MockPostgreSQLDatabase
 		}
-		finder := catalog.NewFinder(database, &catalog.FinderContext{CheckIntegrity: true, EngineType: dbType})
+		ctx := &catalog.FinderContext{CheckIntegrity: true, EngineType: dbType}
+		originCatalog := catalog.NewDatabaseState(database, ctx)
+		finalCatalog := catalog.NewDatabaseState(database, ctx)
 
 		payload, err := SetDefaultSQLReviewRulePayload(rule, dbType)
 		require.NoError(t, err)
@@ -225,7 +219,8 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 			Charset:                  "",
 			Collation:                "",
 			DBType:                   dbType,
-			Catalog:                  &testCatalog{finder: finder},
+			OriginCatalog:            originCatalog,
+			FinalCatalog:             finalCatalog,
 			Driver:                   nil,
 			CurrentDatabase:          curDB,
 			DBSchema:                 schemaMetadata,

@@ -43,13 +43,13 @@ func (*IndexTotalNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.C
 	}
 
 	rule := &indexTotalNumberLimitRule{
-		BaseRule:  BaseRule{level: level, title: string(checkCtx.Rule.Type)},
-		max:       payload.Number,
-		catalog:   checkCtx.Catalog,
-		tableLine: make(tableLineMap),
+		BaseRule:     BaseRule{level: level, title: string(checkCtx.Rule.Type)},
+		max:          payload.Number,
+		finalCatalog: checkCtx.FinalCatalog,
+		tableLine:    make(tableLineMap),
 	}
 
-	if rule.catalog.Final.Usable() {
+	if rule.finalCatalog.Usable() {
 		checker := NewGenericChecker([]Rule{rule})
 		antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
 		rule.generateAdvice()
@@ -81,9 +81,9 @@ func (m tableLineMap) set(schema string, table string, line int) {
 type indexTotalNumberLimitRule struct {
 	BaseRule
 
-	max       int
-	catalog   *catalog.Finder
-	tableLine tableLineMap
+	max          int
+	finalCatalog *catalog.DatabaseState
+	tableLine    tableLineMap
 }
 
 func (*indexTotalNumberLimitRule) Name() string {
@@ -124,7 +124,7 @@ func (r *indexTotalNumberLimitRule) generateAdvice() {
 	})
 
 	for _, table := range tableList {
-		tableInfo := r.catalog.Final.GetTable(table.schema, table.table)
+		tableInfo := r.finalCatalog.GetTable(table.schema, table.table)
 		if tableInfo != nil && tableInfo.CountIndex() > r.max {
 			r.AddAdvice(&storepb.Advice{
 				Status:  r.level,

@@ -43,7 +43,7 @@ func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) (
 	}
 
 	// Create the rule
-	rule := NewColumnNoNullRule(level, string(checkCtx.Rule.Type), checkCtx.Catalog)
+	rule := NewColumnNoNullRule(level, string(checkCtx.Rule.Type), checkCtx.FinalCatalog)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
@@ -73,19 +73,19 @@ func (c columnName) name() string {
 // ColumnNoNullRule checks for column no NULL value.
 type ColumnNoNullRule struct {
 	BaseRule
-	columnSet map[string]columnName
-	catalog   *catalog.Finder
+	columnSet    map[string]columnName
+	finalCatalog *catalog.DatabaseState
 }
 
 // NewColumnNoNullRule creates a new ColumnNoNullRule.
-func NewColumnNoNullRule(level storepb.Advice_Status, title string, catalog *catalog.Finder) *ColumnNoNullRule {
+func NewColumnNoNullRule(level storepb.Advice_Status, title string, finalCatalog *catalog.DatabaseState) *ColumnNoNullRule {
 	return &ColumnNoNullRule{
 		BaseRule: BaseRule{
 			level: level,
 			title: title,
 		},
-		columnSet: make(map[string]columnName),
-		catalog:   catalog,
+		columnSet:    make(map[string]columnName),
+		finalCatalog: finalCatalog,
 	}
 }
 
@@ -134,7 +134,7 @@ func (r *ColumnNoNullRule) generateAdvice() {
 	})
 
 	for _, column := range columnList {
-		col := r.catalog.Final.GetColumn("", column.tableName, column.columnName)
+		col := r.finalCatalog.GetColumn("", column.tableName, column.columnName)
 		if col != nil && col.Nullable() {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,

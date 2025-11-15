@@ -8,15 +8,8 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-// Catalog is the database catalog.
-type Catalog struct {
-	Finder *Finder
-}
-
-// NewCatalog creates a new database catalog.
-func NewCatalog(ctx context.Context, s *store.Store, instanceID, databaseName string, engineType storepb.Engine, isCaseSensitive bool, overrideDatabaseMetadata *storepb.DatabaseSchemaMetadata) (*Catalog, error) {
-	c := &Catalog{}
-
+// NewCatalog creates origin and final database catalog states.
+func NewCatalog(ctx context.Context, s *store.Store, instanceID, databaseName string, engineType storepb.Engine, isCaseSensitive bool, overrideDatabaseMetadata *storepb.DatabaseSchemaMetadata) (origin *DatabaseState, final *DatabaseState, err error) {
 	dbMetadata := overrideDatabaseMetadata
 	if dbMetadata == nil {
 		databaseMeta, err := s.GetDBSchema(ctx, &store.FindDBSchemaMessage{
@@ -24,18 +17,15 @@ func NewCatalog(ctx context.Context, s *store.Store, instanceID, databaseName st
 			DatabaseName: databaseName,
 		})
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		if databaseMeta == nil {
-			return nil, nil
+			return nil, nil, nil
 		}
 		dbMetadata = databaseMeta.GetMetadata()
 	}
-	c.Finder = NewFinder(dbMetadata, &FinderContext{CheckIntegrity: true, EngineType: engineType, IgnoreCaseSensitive: !isCaseSensitive})
-	return c, nil
-}
-
-// GetFinder implements the catalog.Catalog interface.
-func (c *Catalog) GetFinder() *Finder {
-	return c.Finder
+	finderCtx := &FinderContext{CheckIntegrity: true, EngineType: engineType, IgnoreCaseSensitive: !isCaseSensitive}
+	origin = NewDatabaseState(dbMetadata, finderCtx)
+	final = NewDatabaseState(dbMetadata, finderCtx)
+	return origin, final, nil
 }
