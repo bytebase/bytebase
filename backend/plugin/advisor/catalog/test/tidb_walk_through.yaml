@@ -1,67 +1,127 @@
 - statement: CREATE TABLE t(a date default '');
   ignore_case_sensitive: false
   want: ""
-  err: '[types:1292]Incorrect datetime value: '''''
+  err:
+    type: 407
+    content: '[types:1292]Incorrect datetime value: '''''
+    line: 1
+    payload: null
 - statement: |-
     CREATE TABLE t(a TEXT);
     ALTER TABLE T ALTER COLUMN a SET DEFAULT '1';
   ignore_case_sensitive: true
   want: ""
-  err: BLOB, TEXT, GEOMETRY or JSON column `a` can't have a default value
+  err:
+    type: 407
+    content: BLOB, TEXT, GEOMETRY or JSON column `a` can't have a default value
+    line: 2
+    payload: null
 - statement: '      CREATE TABLE t(a TEXT DEFAULT ''1'')'
   ignore_case_sensitive: false
   want: ""
-  err: BLOB, TEXT, GEOMETRY or JSON column `a` can't have a default value
+  err:
+    type: 407
+    content: BLOB, TEXT, GEOMETRY or JSON column `a` can't have a default value
+    line: 1
+    payload: null
 - statement: |-
     CREATE TABLE t(a INT NOT NULL);
     ALTER TABLE t ALTER COLUMN a SET DEFAULT NULL;
   ignore_case_sensitive: false
   want: ""
-  err: Invalid default value for column `a`
+  err:
+    type: 406
+    content: Invalid default value for column `a`
+    line: 2
+    payload: null
 - statement: '      CREATE TABLE t(a INT NOT NULL DEFAULT NULL)'
   ignore_case_sensitive: false
   want: ""
-  err: Invalid default value for column `a`
+  err:
+    type: 406
+    content: Invalid default value for column `a`
+    line: 1
+    payload: null
 - statement: '      CREATE TABLE t(a int ON UPDATE NOW())'
   ignore_case_sensitive: false
   want: ""
-  err: Column `a` use ON UPDATE but is not DATETIME or TIMESTAMP
+  err:
+    type: 405
+    content: Column `a` use ON UPDATE but is not DATETIME or TIMESTAMP
+    line: 1
+    payload: null
 - statement: '      CREATE TABLE t(a int auto_increment, b int auto_increment);'
   ignore_case_sensitive: false
   want: ""
-  err: There can be only one auto column for table `t`
+  err:
+    type: 404
+    content: There can be only one auto column for table `t`
+    line: 1
+    payload: null
 - statement: '      CREATE TABLE t as select * from t1;'
   ignore_case_sensitive: false
   want: ""
-  err: Disallow the CREATE TABLE AS statement but "CREATE TABLE t as select * from t1;" uses
+  err:
+    type: 303
+    content: Disallow the CREATE TABLE AS statement but "CREATE TABLE t as select * from t1;" uses
+    line: 1
+    payload: null
 - statement: "\n\t\t\t\tCREATE TABLE t(a int, b int); \n\t\t\t\tCREATE INDEX idx_c on t(c);\n\t\t\t"
   ignore_case_sensitive: false
   want: ""
-  err: Column `c` does not exist in table `t`
+  err:
+    type: 402
+    content: Column `c` does not exist in table `t`
+    line: 3
+    payload: null
 - statement: "\n\t\t\t\tCREATE TABLE t(a int, b int); \n\t\t\t\tALTER TABLE t MODIFY COLUMN c int;\n\t\t\t"
   ignore_case_sensitive: false
   want: ""
-  err: Column `c` does not exist in table `t`
+  err:
+    type: 402
+    content: Column `c` does not exist in table `t`
+    line: 3
+    payload: null
 - statement: "\n\t\t\t\tCREATE TABLE t(a int, b int); \n\t\t\t\tALTER TABLE t CHANGE COLUMN c aa int;\n\t\t\t"
   ignore_case_sensitive: false
   want: ""
-  err: Column `c` does not exist in table `t`
+  err:
+    type: 402
+    content: Column `c` does not exist in table `t`
+    line: 3
+    payload: null
 - statement: "\n\t\t\t\tCREATE TABLE t(a int, b int); \n\t\t\t\tALTER TABLE t DROP COLUMN c;\n\t\t\t"
   ignore_case_sensitive: false
   want: ""
-  err: Column `c` does not exist in table `t`
+  err:
+    type: 402
+    content: Column `c` does not exist in table `t`
+    line: 3
+    payload: null
 - statement: "\n\t\t\t\tCREATE TABLE t(a int, b int); \n\t\t\t\tALTER TABLE t RENAME COLUMN c TO cc;\n\t\t\t"
   ignore_case_sensitive: false
   want: ""
-  err: Column `c` does not exist in table `t`
+  err:
+    type: 402
+    content: Column `c` does not exist in table `t`
+    line: 3
+    payload: null
 - statement: "\n\t\t\t\tCREATE TABLE t(a int, b int); \n\t\t\t\tALTER TABLE t RENAME COLUMN c TO cc;\n\t\t\t"
   ignore_case_sensitive: false
   want: ""
-  err: Column `c` does not exist in table `t`
+  err:
+    type: 402
+    content: Column `c` does not exist in table `t`
+    line: 3
+    payload: null
 - statement: "\n\t\t\t\tCREATE TABLE t(a int, b int); \n\t\t\t\tALTER TABLE t ALTER COLUMN c DROP DEFAULT;\n\t\t\t"
   ignore_case_sensitive: false
   want: ""
-  err: Column `c` does not exist in table `t`
+  err:
+    type: 402
+    content: Column `c` does not exist in table `t`
+    line: 3
+    payload: null
 - statement: |-
     ALTER DATABASE CHARACTER SET = utf8mb4;
     ALTER DATABASE test COLLATE utf8mb4_polish_ci;
@@ -449,7 +509,11 @@
 - statement: '      DROP TABLE t1, t2'
   ignore_case_sensitive: false
   want: ""
-  err: Table `t1` does not exist
+  err:
+    type: 302
+    content: Table `t1` does not exist
+    line: 1
+    payload: null
 - statement: |-
     CREATE TABLE t(a int);
     RENAME TABLE t to other_db.t1
@@ -494,7 +558,11 @@
             CREATE TABLE t(a int);
   ignore_case_sensitive: false
   want: ""
-  err: Database `test` is deleted
+  err:
+    type: 202
+    content: Database `test` is deleted
+    line: 3
+    payload: null
 - statement: |-
     CREATE TABLE t(
       a int PRIMARY KEY DEFAULT 1,

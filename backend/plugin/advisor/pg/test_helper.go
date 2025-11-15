@@ -74,6 +74,12 @@ func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbTyp
 		tree, err := pg.ParsePostgreSQL(tc.Statement)
 		require.NoError(t, err, "Failed to parse SQL: %s", tc.Statement)
 
+		// Use ANTLR tree for catalog WalkThrough
+		if needMetaData {
+			err = finder.WalkThrough(tree)
+			require.NoError(t, err, "Failed to walk through catalog: %s", tc.Statement)
+		}
+
 		ruleList := []*storepb.SQLReviewRule{
 			{
 				Type:    string(rule),
