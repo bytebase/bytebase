@@ -65,18 +65,6 @@ func (l *pgCatalogListener) setError(err *WalkThroughError) {
 	l.err = err
 }
 
-// Helper method to check if database is deleted
-func (l *pgCatalogListener) checkDatabaseNotDeleted() bool {
-	if l.databaseState.IsDeleted() {
-		l.setError(&WalkThroughError{
-			Type:    ErrorTypeDatabaseIsDeleted,
-			Content: fmt.Sprintf(`Database %q is deleted`, l.databaseState.name),
-		})
-		return false
-	}
-	return true
-}
-
 // ========================================
 // CREATE TABLE handling
 // ========================================
@@ -84,10 +72,6 @@ func (l *pgCatalogListener) checkDatabaseNotDeleted() bool {
 // EnterCreatestmt handles CREATE TABLE statements.
 func (l *pgCatalogListener) EnterCreatestmt(ctx *parser.CreatestmtContext) {
 	if !isTopLevel(ctx.GetParent()) || l.err != nil {
-		return
-	}
-
-	if !l.checkDatabaseNotDeleted() {
 		return
 	}
 
@@ -406,10 +390,6 @@ func (l *pgCatalogListener) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 		return
 	}
 
-	if !l.checkDatabaseNotDeleted() {
-		return
-	}
-
 	l.currentLine = ctx.GetStart().GetLine()
 
 	// Extract relation (table) name
@@ -543,10 +523,6 @@ func (l *pgCatalogListener) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 // EnterAltertablestmt handles ALTER TABLE statements.
 func (l *pgCatalogListener) EnterAltertablestmt(ctx *parser.AltertablestmtContext) {
 	if !isTopLevel(ctx.GetParent()) || l.err != nil {
-		return
-	}
-
-	if !l.checkDatabaseNotDeleted() {
 		return
 	}
 
@@ -1027,10 +1003,6 @@ func (l *pgCatalogListener) EnterDropstmt(ctx *parser.DropstmtContext) {
 		return
 	}
 
-	if !l.checkDatabaseNotDeleted() {
-		return
-	}
-
 	l.currentLine = ctx.GetStart().GetLine()
 
 	// Check IF EXISTS
@@ -1082,6 +1054,41 @@ func (l *pgCatalogListener) EnterDropstmt(ctx *parser.DropstmtContext) {
 			}
 		}
 	}
+}
+
+// ========================================
+// DROP DATABASE handling
+// ========================================
+
+// EnterDropdbstmt handles DROP DATABASE statements.
+// PostgreSQL does not allow dropping the currently connected database.
+// Walk-through also disallows DROP DATABASE for other databases as it's out of scope.
+func (l *pgCatalogListener) EnterDropdbstmt(ctx *parser.DropdbstmtContext) {
+	if !isTopLevel(ctx.GetParent()) || l.err != nil {
+		return
+	}
+
+	l.currentLine = ctx.GetStart().GetLine()
+
+	// Extract database name
+	if ctx.Name() == nil {
+		return
+	}
+
+	databaseName := pgparser.NormalizePostgreSQLName(ctx.Name())
+
+	// PostgreSQL does not allow dropping the currently open database.
+	// This matches the real PostgreSQL behavior: "ERROR: cannot drop the currently open database"
+	if l.databaseState.isCurrentDatabase(databaseName) {
+		l.setError(&WalkThroughError{
+			Type:    ErrorTypeAccessOtherDatabase,
+			Content: fmt.Sprintf("Cannot drop the currently open database %q", databaseName),
+		})
+		return
+	}
+
+	// DROP DATABASE for other databases is out of scope for single-database walk-through
+	l.setError(NewAccessOtherDatabaseError(l.databaseState.name, databaseName))
 }
 
 func (l *pgCatalogListener) dropTable(anyName parser.IAny_nameContext, ifExists bool) *WalkThroughError {
@@ -1271,10 +1278,6 @@ func (l *pgCatalogListener) EnterRenamestmt(ctx *parser.RenamestmtContext) {
 		return
 	}
 
-	if !l.checkDatabaseNotDeleted() {
-		return
-	}
-
 	l.currentLine = ctx.GetStart().GetLine()
 
 	// Check if this is INDEX rename (ALTER INDEX ... RENAME TO ...)
@@ -1394,10 +1397,6 @@ func (l *pgCatalogListener) EnterRenamestmt(ctx *parser.RenamestmtContext) {
 // EnterViewstmt handles CREATE VIEW statements.
 func (l *pgCatalogListener) EnterViewstmt(ctx *parser.ViewstmtContext) {
 	if !isTopLevel(ctx.GetParent()) || l.err != nil {
-		return
-	}
-
-	if !l.checkDatabaseNotDeleted() {
 		return
 	}
 

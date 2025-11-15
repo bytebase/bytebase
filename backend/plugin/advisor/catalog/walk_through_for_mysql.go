@@ -58,7 +58,7 @@ func (d *DatabaseState) mysqlChangeState(in *mysqlparser.ParseResult) (err *Walk
 		}
 	}()
 
-	if d.deleted {
+	if d.IsDeleted() {
 		return &WalkThroughError{
 			Type:    ErrorTypeDatabaseIsDeleted,
 			Content: fmt.Sprintf("Database `%s` is deleted", d.name),
