@@ -49,10 +49,10 @@ func (*NamingIndexConventionAdvisor) Check(_ context.Context, checkCtx advisor.C
 			level: level,
 			title: string(checkCtx.Rule.Type),
 		},
-		format:       format,
-		maxLength:    maxLength,
-		templateList: templateList,
-		catalog:      checkCtx.Catalog,
+		format:        format,
+		maxLength:     maxLength,
+		templateList:  templateList,
+		originCatalog: checkCtx.OriginCatalog,
 	}
 
 	checker := NewGenericChecker([]Rule{rule})
@@ -64,10 +64,10 @@ func (*NamingIndexConventionAdvisor) Check(_ context.Context, checkCtx advisor.C
 type namingIndexConventionRule struct {
 	BaseRule
 
-	format       string
-	maxLength    int
-	templateList []string
-	catalog      *catalog.Finder
+	format        string
+	maxLength     int
+	templateList  []string
+	originCatalog *catalog.DatabaseState
 }
 
 // Name returns the rule name.
@@ -171,7 +171,7 @@ func (r *namingIndexConventionRule) handleRenamestmt(ctx antlr.ParserRuleContext
 		newIndexName := pgparser.NormalizePostgreSQLName(allNames[0])
 
 		// Look up the index in catalog to determine if it's a regular index (not unique, not PK)
-		if r.catalog != nil && oldIndexName != "" {
+		if r.originCatalog != nil && oldIndexName != "" {
 			tableName, index := r.findIndex("", "", oldIndexName)
 			if index != nil {
 				// Only check if it's a regular index (not unique, not primary)
@@ -233,12 +233,8 @@ func (r *namingIndexConventionRule) checkIndexName(indexName, tableName string, 
 
 // findIndex returns index found in catalogs, nil if not found.
 func (r *namingIndexConventionRule) findIndex(schemaName string, tableName string, indexName string) (string, *catalog.IndexState) {
-	if r.catalog == nil {
+	if r.originCatalog == nil {
 		return "", nil
 	}
-	return r.catalog.Origin.FindIndex(&catalog.IndexFind{
-		SchemaName: normalizeSchemaName(schemaName),
-		TableName:  tableName,
-		IndexName:  indexName,
-	})
+	return r.originCatalog.GetIndex(normalizeSchemaName(schemaName), tableName, indexName)
 }

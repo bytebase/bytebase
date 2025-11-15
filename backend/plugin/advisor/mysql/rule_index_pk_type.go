@@ -43,7 +43,7 @@ func (*IndexPkTypeAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 	}
 
 	// Create the rule
-	rule := NewIndexPkTypeRule(level, string(checkCtx.Rule.Type), checkCtx.Catalog)
+	rule := NewIndexPkTypeRule(level, string(checkCtx.Rule.Type), checkCtx.OriginCatalog)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
@@ -61,19 +61,19 @@ func (*IndexPkTypeAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 type IndexPkTypeRule struct {
 	BaseRule
 	line             map[string]int
-	catalog          *catalog.Finder
+	originCatalog    *catalog.DatabaseState
 	tablesNewColumns tableColumnTypes
 }
 
 // NewIndexPkTypeRule creates a new IndexPkTypeRule.
-func NewIndexPkTypeRule(level storepb.Advice_Status, title string, catalog *catalog.Finder) *IndexPkTypeRule {
+func NewIndexPkTypeRule(level storepb.Advice_Status, title string, originCatalog *catalog.DatabaseState) *IndexPkTypeRule {
 	return &IndexPkTypeRule{
 		BaseRule: BaseRule{
 			level: level,
 			title: title,
 		},
 		line:             make(map[string]int),
-		catalog:          catalog,
+		originCatalog:    originCatalog,
 		tablesNewColumns: make(tableColumnTypes),
 	}
 }
@@ -236,10 +236,7 @@ func (r *IndexPkTypeRule) getPKColumnType(tableName string, columnName string) (
 	if columnType, ok := r.tablesNewColumns.get(tableName, columnName); ok {
 		return columnType, nil
 	}
-	column := r.catalog.Origin.FindColumn(&catalog.ColumnFind{
-		TableName:  tableName,
-		ColumnName: columnName,
-	})
+	column := r.originCatalog.GetColumn("", tableName, columnName)
 	if column != nil {
 		return column.Type(), nil
 	}

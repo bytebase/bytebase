@@ -67,20 +67,6 @@ func TestPostgreSQLANTLRRules(t *testing.T) {
 	}
 
 	for _, rule := range antlrRules {
-		needMetaData := advisorNeedMockData[rule]
-		RunANTLRAdvisorRuleTest(t, rule, storepb.Engine_POSTGRES, needMetaData, false /* record */)
+		RunANTLRAdvisorRuleTest(t, rule, storepb.Engine_POSTGRES, false /* record */)
 	}
-}
-
-// Add SQL review type here if you need metadata for test.
-var advisorNeedMockData = map[advisor.SQLReviewRuleType]bool{
-	advisor.BuiltinRulePriorBackupCheck:         true,
-	advisor.SchemaRuleColumnNotNull:             true, // Needs metadata for PRIMARY KEY USING INDEX case
-	advisor.SchemaRuleFullyQualifiedObjectName:  true, // Needs metadata for SELECT statement checks
-	advisor.SchemaRuleIDXNaming:                 true, // Needs catalog for ALTER INDEX RENAME
-	advisor.SchemaRuleIndexTotalNumberLimit:     true, // Needs catalog to count indexes
-	advisor.SchemaRulePKNaming:                  true, // Needs catalog for PRIMARY KEY USING INDEX
-	advisor.SchemaRuleStatementObjectOwnerCheck: true, // Needs catalog for ownership checks
-	advisor.SchemaRuleTableRequirePK:            true, // Needs catalog for DROP CONSTRAINT/COLUMN checks
-	advisor.SchemaRuleUKNaming:                  true, // Needs catalog for UNIQUE USING INDEX
 }

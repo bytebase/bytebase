@@ -11,9 +11,10 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
-func newDatabaseState(d *storepb.DatabaseSchemaMetadata, context *FinderContext) *DatabaseState {
+// NewDatabaseState creates a new database state from schema metadata and context.
+func NewDatabaseState(d *storepb.DatabaseSchemaMetadata, context *FinderContext) *DatabaseState {
 	database := &DatabaseState{
-		ctx:          context.Copy(),
+		ctx:          context,
 		name:         d.Name,
 		characterSet: d.CharacterSet,
 		collation:    d.Collation,
@@ -46,7 +47,7 @@ func newDatabaseState(d *storepb.DatabaseSchemaMetadata, context *FinderContext)
 
 func newSchemaState(s *storepb.SchemaMetadata, context *FinderContext) *SchemaState {
 	schema := &SchemaState{
-		ctx:           context.Copy(),
+		ctx:           context,
 		name:          s.Name,
 		tableSet:      make(tableStateMap),
 		viewSet:       make(viewStateMap),
@@ -162,18 +163,13 @@ type DatabaseState struct {
 	usable       bool
 }
 
-type TableIndexFind struct {
-	SchemaName string
-	TableName  string
-}
-
 // Index returns the index map of the table.
-func (d *DatabaseState) Index(tableIndexFind *TableIndexFind) *IndexStateMap {
-	schema, exists := d.schemaSet[tableIndexFind.SchemaName]
+func (d *DatabaseState) Index(schemaName string, tableName string) *IndexStateMap {
+	schema, exists := d.schemaSet[schemaName]
 	if !exists {
 		return nil
 	}
-	return schema.Index(tableIndexFind)
+	return schema.Index(tableName)
 }
 
 // Usable returns the usable of the database state.
@@ -202,18 +198,11 @@ func (d *DatabaseState) DatabaseName() string {
 	return d.name
 }
 
-// IndexFind is for find index.
-type IndexFind struct {
-	SchemaName string
-	TableName  string
-	IndexName  string
-}
-
-// FindIndex finds the index.
-func (d *DatabaseState) FindIndex(find *IndexFind) (string, *IndexState) {
+// GetIndex gets the index.
+func (d *DatabaseState) GetIndex(schemaName string, tableName string, indexName string) (string, *IndexState) {
 	switch d.dbType {
 	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-		find.IndexName = strings.ToLower(find.IndexName)
+		indexName = strings.ToLower(indexName)
 	default:
 		// For other engine types, keep the original index name without normalization
 	}
@@ -223,29 +212,29 @@ func (d *DatabaseState) FindIndex(find *IndexFind) (string, *IndexState) {
 	// In PostgreSQL, the index name is unique in a schema, not a table.
 	// In MySQL and TiDB, the index name is unique in a table.
 	// So for case one, we need match table name, but for case two, we don't need.
-	needMatchTable := (d.dbType != storepb.Engine_POSTGRES || find.SchemaName == "" || find.TableName != "")
+	needMatchTable := (d.dbType != storepb.Engine_POSTGRES || schemaName == "" || tableName != "")
 	if needMatchTable {
-		schema, exists := d.schemaSet[find.SchemaName]
+		schema, exists := d.schemaSet[schemaName]
 		if !exists {
 			return "", nil
 		}
-		table, exists := schema.getTable(find.TableName)
+		table, exists := schema.getTable(tableName)
 		if !exists {
 			return "", nil
 		}
-		index, exists := table.indexSet[find.IndexName]
+		index, exists := table.indexSet[indexName]
 		if !exists {
 			return "", nil
 		}
 		return table.name, index
 	}
 	for _, schema := range d.schemaSet {
-		if schema.name != find.SchemaName {
+		if schema.name != schemaName {
 			continue
 		}
 		for _, table := range schema.tableSet {
 			// no need to further match table name because index is already unique in the schema
-			index, exists := table.indexSet[find.IndexName]
+			index, exists := table.indexSet[indexName]
 			if !exists {
 				return "", nil
 			}
@@ -255,20 +244,14 @@ func (d *DatabaseState) FindIndex(find *IndexFind) (string, *IndexState) {
 	return "", nil
 }
 
-// PrimaryKeyFind is for finding primary key.
-type PrimaryKeyFind struct {
-	SchemaName string
-	TableName  string
-}
-
-// FindPrimaryKey finds the primary key.
-func (d *DatabaseState) FindPrimaryKey(find *PrimaryKeyFind) *IndexState {
+// GetPrimaryKey gets the primary key.
+func (d *DatabaseState) GetPrimaryKey(schemaName string, tableName string) *IndexState {
 	for _, schema := range d.schemaSet {
-		if schema.name != find.SchemaName {
+		if schema.name != schemaName {
 			continue
 		}
 		for _, table := range schema.tableSet {
-			if !compareIdentifier(table.name, find.TableName, schema.ctx.IgnoreCaseSensitive) {
+			if !compareIdentifier(table.name, tableName, schema.ctx.IgnoreCaseSensitive) {
 				continue
 			}
 			for _, index := range table.indexSet {
@@ -282,79 +265,59 @@ func (d *DatabaseState) FindPrimaryKey(find *PrimaryKeyFind) *IndexState {
 }
 
 // HasPrimaryKey checks if a table has a primary key.
-func (d *DatabaseState) HasPrimaryKey(find *PrimaryKeyFind) bool {
-	return d.FindPrimaryKey(find) != nil
-}
-
-// ColumnCount is for counting columns.
-type ColumnCount struct {
-	SchemaName string
-	TableName  string
-	ColumnType string
+func (d *DatabaseState) HasPrimaryKey(schemaName string, tableName string) bool {
+	return d.GetPrimaryKey(schemaName, tableName) != nil
 }
 
 // CountColumn counts columns.
-func (d *DatabaseState) CountColumn(count *ColumnCount) int {
-	schema, exists := d.schemaSet[count.SchemaName]
+func (d *DatabaseState) CountColumn(schemaName string, tableName string, columnType string) int {
+	schema, exists := d.schemaSet[schemaName]
 	if !exists {
 		return 0
 	}
-	table, exists := schema.getTable(count.TableName)
+	table, exists := schema.getTable(tableName)
 	if !exists {
 		return 0
 	}
 	res := 0
 	for _, column := range table.columnSet {
-		if column.columnType != nil && strings.EqualFold(*column.columnType, count.ColumnType) {
+		if column.columnType != nil && strings.EqualFold(*column.columnType, columnType) {
 			res++
 		}
 	}
 	return res
 }
 
-// ColumnFind is for finding column.
-type ColumnFind struct {
-	SchemaName string
-	TableName  string
-	ColumnName string
-}
-
-// FindColumn finds the column.
-func (d *DatabaseState) FindColumn(find *ColumnFind) *ColumnState {
+// GetColumn gets the column.
+func (d *DatabaseState) GetColumn(schemaName string, tableName string, columnName string) *ColumnState {
 	switch d.dbType {
 	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-		find.ColumnName = strings.ToLower(find.ColumnName)
+		columnName = strings.ToLower(columnName)
 	default:
 		// For other engine types, keep the original column name without normalization
 	}
-	schema, exists := d.schemaSet[find.SchemaName]
+	schema, exists := d.schemaSet[schemaName]
 	if !exists {
 		return nil
 	}
-	table, exists := schema.getTable(find.TableName)
+	table, exists := schema.getTable(tableName)
 	if !exists {
 		return nil
 	}
-	column, exists := table.columnSet[find.ColumnName]
+	column, exists := table.columnSet[columnName]
 	if !exists {
 		return nil
 	}
 	return column
 }
 
-// TableFind is for find table.
-type TableFind struct {
-	SchemaName string
-	TableName  string
-}
-
-// FindTable finds the table.
-func (d *DatabaseState) FindTable(find *TableFind) *TableState {
-	schema, exists := d.schemaSet[find.SchemaName]
+// GetTable gets the table.
+func (d *DatabaseState) GetTable(schemaName string, tableName string) *TableState {
+	schema, exists := d.schemaSet[schemaName]
 	if !exists {
 		return nil
 	}
-	table, exists := schema.getTable(find.TableName)
+	table, exists := schema.getTable(tableName)
 	if !exists {
 		return nil
 	}
@@ -375,12 +338,12 @@ type SchemaState struct {
 	identifierMap identifierMap
 }
 
-func (s *SchemaState) Index(tableIndexFind *TableIndexFind) *IndexStateMap {
-	table, exists := s.getTable(tableIndexFind.TableName)
+func (s *SchemaState) Index(tableName string) *IndexStateMap {
+	table, exists := s.getTable(tableName)
 	if !exists {
 		return nil
 	}
-	return table.Index(tableIndexFind)
+	return table.Index()
 }
 
 type schemaStateMap map[string]*SchemaState
@@ -418,7 +381,7 @@ func (t *TableState) CountIndex() int {
 }
 
 // Index return the index map of table.
-func (t *TableState) Index(_ *TableIndexFind) *IndexStateMap {
+func (t *TableState) Index() *IndexStateMap {
 	return &t.indexSet
 }
 
@@ -575,27 +538,27 @@ type ViewState struct {
 type viewStateMap map[string]*ViewState
 
 func copyStringPointer(p *string) *string {
-	if p != nil {
-		v := *p
-		return &v
+	if p == nil {
+		return nil
 	}
-	return nil
+	v := *p
+	return &v
 }
 
 func copyBoolPointer(p *bool) *bool {
-	if p != nil {
-		v := *p
-		return &v
+	if p == nil {
+		return nil
 	}
-	return nil
+	v := *p
+	return &v
 }
 
 func copyIntPointer(p *int) *int {
-	if p != nil {
-		v := *p
-		return &v
+	if p == nil {
+		return nil
 	}
-	return nil
+	v := *p
+	return &v
 }
 
 func copyStringSlice(in []string) []string {
@@ -629,4 +592,582 @@ func newFalsePointer() *bool {
 
 func newBoolPointer(v bool) *bool {
 	return &v
+}
+
+// Schema-level operations.
+
+// createSchemaState creates a new schema state with the given name.
+func (d *DatabaseState) createSchemaState(schemaName string) *SchemaState {
+	schema := &SchemaState{
+		ctx:           d.ctx,
+		name:          schemaName,
+		tableSet:      make(tableStateMap),
+		viewSet:       make(viewStateMap),
+		identifierMap: make(identifierMap),
+	}
+	d.schemaSet[schemaName] = schema
+	return schema
+}
+
+// GetOrCreateSchema gets an existing schema or creates a new one if it doesn't exist.
+func (d *DatabaseState) GetOrCreateSchema(schemaName string) *SchemaState {
+	if schema, exists := d.schemaSet[schemaName]; exists {
+		return schema
+	}
+	return d.createSchemaState(schemaName)
+}
+
+// GetSchema gets an existing schema.
+//
+//nolint:revive
+func (d *DatabaseState) GetSchema(schemaName string) (*SchemaState, *WalkThroughError) {
+	if schemaName == "" {
+		schemaName = publicSchemaName
+	}
+	if schema, exists := d.schemaSet[schemaName]; exists {
+		return schema, nil
+	}
+	if schemaName != publicSchemaName {
+		return nil, &WalkThroughError{
+			Type:    ErrorTypeSchemaNotExists,
+			Content: fmt.Sprintf("The schema %q doesn't exist", schemaName),
+		}
+	}
+	return d.createSchemaState(publicSchemaName), nil
+}
+
+// DropSchema drops a schema.
+func (d *DatabaseState) DropSchema(schemaName string) *WalkThroughError {
+	schema, exists := d.schemaSet[schemaName]
+	if !exists {
+		return &WalkThroughError{
+			Type:    ErrorTypeSchemaNotExists,
+			Content: fmt.Sprintf("Schema %q does not exist", schemaName),
+		}
+	}
+
+	// Delete all identifiers in this schema
+	for tableName := range schema.tableSet {
+		delete(schema.identifierMap, tableName)
+	}
+	for viewName := range schema.viewSet {
+		delete(schema.identifierMap, viewName)
+	}
+
+	// Delete the schema
+	delete(d.schemaSet, schemaName)
+	return nil
+}
+
+// Table-level operations.
+
+// CreateTable creates a new table in the schema.
+func (s *SchemaState) CreateTable(tableName string) (*TableState, *WalkThroughError) {
+	if _, exists := s.getTable(tableName); exists {
+		return nil, NewTableExistsError(tableName)
+	}
+
+	table := &TableState{
+		name:           tableName,
+		engine:         newEmptyStringPointer(),
+		collation:      newEmptyStringPointer(),
+		comment:        newEmptyStringPointer(),
+		columnSet:      make(columnStateMap),
+		indexSet:       make(IndexStateMap),
+		dependencyView: make(map[string]bool),
+	}
+	s.tableSet[tableName] = table
+
+	// For PostgreSQL, track in identifier map
+	if s.identifierMap != nil {
+		s.identifierMap[tableName] = true
+	}
+
+	return table, nil
+}
+
+// GetTable gets a table from the schema.
+//
+//nolint:revive
+func (s *SchemaState) GetTable(tableName string) (*TableState, *WalkThroughError) {
+	table, exists := s.tableSet[tableName]
+	if !exists {
+		return nil, &WalkThroughError{
+			Type:    ErrorTypeTableNotExists,
+			Content: fmt.Sprintf("The table %q does not exist in schema %q", tableName, s.name),
+		}
+	}
+	return table, nil
+}
+
+// DropTable drops a table from the schema.
+func (s *SchemaState) DropTable(tableName string, checkViewDependency func(*TableState) ([]string, *WalkThroughError)) *WalkThroughError {
+	table, err := s.GetTable(tableName)
+	if err != nil {
+		return err
+	}
+
+	// Check for view dependencies if checker is provided
+	if checkViewDependency != nil {
+		viewList, err := checkViewDependency(table)
+		if err != nil {
+			return err
+		}
+		if len(viewList) > 0 {
+			return &WalkThroughError{
+				Type:    ErrorTypeTableIsReferencedByView,
+				Content: fmt.Sprintf("Cannot drop table %q.%q, it's referenced by view: %s", s.name, table.name, strings.Join(viewList, ", ")),
+				Payload: viewList,
+			}
+		}
+	}
+
+	// Delete all indexes associated with the table (for PostgreSQL identifier map)
+	if s.identifierMap != nil {
+		for indexName := range table.indexSet {
+			delete(s.identifierMap, indexName)
+		}
+		delete(s.identifierMap, table.name)
+	}
+
+	delete(s.tableSet, tableName)
+	return nil
+}
+
+// RenameTable renames a table in the schema.
+//
+//nolint:revive
+func (s *SchemaState) RenameTable(oldName string, newName string) *WalkThroughError {
+	if oldName == newName {
+		return nil
+	}
+
+	table, exists := s.getTable(oldName)
+	if !exists {
+		return NewTableNotExistsError(oldName)
+	}
+
+	if _, exists := s.getTable(newName); exists {
+		return NewTableExistsError(newName)
+	}
+
+	// For PostgreSQL, update identifier map
+	if s.identifierMap != nil {
+		if _, exists := s.identifierMap[newName]; exists {
+			return NewRelationExistsError(newName, s.name)
+		}
+		delete(s.identifierMap, table.name)
+		s.identifierMap[newName] = true
+	}
+
+	table.name = newName
+	delete(s.tableSet, oldName)
+	s.tableSet[newName] = table
+	return nil
+}
+
+// Column-level operations.
+
+// CreateColumn creates a new column in the table.
+//
+//nolint:revive
+func (t *TableState) CreateColumn(columnName string, columnType *string, nullable *bool, defaultValue *string, position *int, characterSet *string, collation *string, comment *string) *WalkThroughError {
+	if _, exists := t.columnSet[strings.ToLower(columnName)]; exists {
+		return &WalkThroughError{
+			Type:    ErrorTypeColumnExists,
+			Content: fmt.Sprintf("Column `%s` already exists in table `%s`", columnName, t.name),
+		}
+	}
+
+	pos := len(t.columnSet) + 1
+	if position != nil {
+		pos = *position
+	}
+
+	col := &ColumnState{
+		name:           columnName,
+		position:       &pos,
+		defaultValue:   defaultValue,
+		nullable:       nullable,
+		columnType:     columnType,
+		characterSet:   characterSet,
+		collation:      collation,
+		comment:        comment,
+		dependencyView: make(map[string]bool),
+	}
+	t.columnSet[strings.ToLower(columnName)] = col
+	return nil
+}
+
+// GetColumn gets a column from the table.
+//
+//nolint:revive
+func (t *TableState) GetColumn(columnName string) (*ColumnState, *WalkThroughError) {
+	column, exists := t.columnSet[strings.ToLower(columnName)]
+	if !exists {
+		return nil, NewColumnNotExistsError(t.name, columnName)
+	}
+	return column, nil
+}
+
+// DropColumn drops a column from the table.
+//
+//nolint:revive
+func (t *TableState) DropColumn(columnName string, checkViewDependency func(*ColumnState) ([]string, *WalkThroughError)) *WalkThroughError {
+	column, exists := t.columnSet[strings.ToLower(columnName)]
+	if !exists {
+		return NewColumnNotExistsError(t.name, columnName)
+	}
+
+	// Cannot drop all columns in a table using ALTER TABLE DROP COLUMN.
+	if len(t.columnSet) == 1 {
+		return &WalkThroughError{
+			Type:    ErrorTypeDropAllColumns,
+			Content: fmt.Sprintf("Can't delete all columns with ALTER TABLE; use DROP TABLE %s instead", t.name),
+		}
+	}
+
+	// Check for view dependencies if checker is provided
+	if checkViewDependency != nil {
+		viewList, err := checkViewDependency(column)
+		if err != nil {
+			return err
+		}
+		if len(viewList) > 0 {
+			return &WalkThroughError{
+				Type:    ErrorTypeColumnIsReferencedByView,
+				Content: fmt.Sprintf("Cannot drop column %q in table %q, it's referenced by view: %s", column.name, t.name, strings.Join(viewList, ", ")),
+				Payload: viewList,
+			}
+		}
+	}
+
+	// Modify the column position
+	for _, col := range t.columnSet {
+		if *col.position > *column.position {
+			*col.position--
+		}
+	}
+
+	// Remove column from indexes, and drop indexes that become empty
+	for _, index := range t.indexSet {
+		// Remove the column from the index key list
+		var newKeyList []string
+		for _, key := range index.expressionList {
+			if !strings.EqualFold(key, columnName) {
+				newKeyList = append(newKeyList, key)
+			}
+		}
+		index.expressionList = newKeyList
+
+		// If all columns that make up an index are dropped, the index is dropped as well
+		if len(index.expressionList) == 0 {
+			delete(t.indexSet, strings.ToLower(index.name))
+		}
+	}
+
+	delete(t.columnSet, strings.ToLower(columnName))
+	return nil
+}
+
+// RenameColumn renames a column in the table.
+//
+//nolint:revive
+func (t *TableState) RenameColumn(oldName string, newName string) *WalkThroughError {
+	if strings.EqualFold(oldName, newName) {
+		return nil
+	}
+
+	column, exists := t.columnSet[strings.ToLower(oldName)]
+	if !exists {
+		return NewColumnNotExistsError(t.name, oldName)
+	}
+
+	if _, exists := t.columnSet[strings.ToLower(newName)]; exists {
+		return &WalkThroughError{
+			Type:    ErrorTypeColumnExists,
+			Content: fmt.Sprintf("Column `%s` already exists in table `%s`", newName, t.name),
+		}
+	}
+
+	// Rename column in all indexes that reference it
+	for _, index := range t.indexSet {
+		for i, key := range index.expressionList {
+			if strings.EqualFold(key, oldName) {
+				index.expressionList[i] = newName
+			}
+		}
+	}
+
+	column.name = newName
+	delete(t.columnSet, strings.ToLower(oldName))
+	t.columnSet[strings.ToLower(newName)] = column
+	return nil
+}
+
+// Index-level operations.
+
+// CreateIndex creates a new index in the table.
+//
+//nolint:revive
+func (t *TableState) CreateIndex(indexName string, expressionList []string, unique bool, indexType string, primary bool, visible *bool, comment *string, isConstraint bool, identifierMap identifierMap) *WalkThroughError {
+	if len(expressionList) == 0 {
+		return &WalkThroughError{
+			Type:    ErrorTypeIndexEmptyKeys,
+			Content: fmt.Sprintf("Index `%s` in table `%s` has empty key", indexName, t.name),
+		}
+	}
+
+	// Auto-generate name if empty
+	if indexName == "" {
+		suffix := 1
+		baseName := expressionList[0]
+		for {
+			indexName = baseName
+			if suffix > 1 {
+				indexName = fmt.Sprintf("%s_%d", baseName, suffix)
+			}
+			if _, exists := t.indexSet[strings.ToLower(indexName)]; !exists {
+				break
+			}
+			suffix++
+		}
+	} else {
+		// Check if index already exists
+		if _, exists := t.indexSet[strings.ToLower(indexName)]; exists {
+			return NewIndexExistsError(t.name, indexName)
+		}
+	}
+
+	// For PostgreSQL, check identifier map
+	if identifierMap != nil {
+		if _, exists := identifierMap[indexName]; exists {
+			return NewRelationExistsError(indexName, "")
+		}
+	}
+
+	if visible == nil {
+		visible = newTruePointer()
+	}
+	if comment == nil {
+		comment = newEmptyStringPointer()
+	}
+
+	index := &IndexState{
+		name:           indexName,
+		expressionList: expressionList,
+		indexType:      &indexType,
+		unique:         &unique,
+		primary:        &primary,
+		visible:        visible,
+		comment:        comment,
+		isConstraint:   isConstraint,
+	}
+	t.indexSet[strings.ToLower(indexName)] = index
+
+	// For PostgreSQL, track in identifier map
+	if identifierMap != nil {
+		identifierMap[indexName] = true
+	}
+
+	return nil
+}
+
+// CreatePrimaryKey creates a primary key index in the table.
+//
+//nolint:revive
+func (t *TableState) CreatePrimaryKey(keyList []string, indexType string, identifierMap identifierMap) *WalkThroughError {
+	pkName := PrimaryKeyName
+
+	if _, exists := t.indexSet[strings.ToLower(pkName)]; exists {
+		return &WalkThroughError{
+			Type:    ErrorTypePrimaryKeyExists,
+			Content: fmt.Sprintf("Primary key exists in table `%s`", t.name),
+		}
+	}
+
+	// For PostgreSQL, check identifier map
+	if identifierMap != nil {
+		if _, exists := identifierMap[pkName]; exists {
+			return NewRelationExistsError(pkName, "")
+		}
+	}
+
+	pk := &IndexState{
+		name:           pkName,
+		expressionList: keyList,
+		indexType:      &indexType,
+		unique:         newTruePointer(),
+		primary:        newTruePointer(),
+		visible:        newTruePointer(),
+		comment:        newEmptyStringPointer(),
+		isConstraint:   true,
+	}
+	t.indexSet[strings.ToLower(pkName)] = pk
+
+	// For PostgreSQL, track in identifier map
+	if identifierMap != nil {
+		identifierMap[pkName] = true
+	}
+
+	return nil
+}
+
+// GetIndex gets an index from the table.
+func (t *TableState) GetIndex(indexName string) (*IndexState, *WalkThroughError) {
+	index, exists := t.indexSet[strings.ToLower(indexName)]
+	if !exists {
+		return nil, NewIndexNotExistsError(t.name, indexName)
+	}
+	return index, nil
+}
+
+// DropIndex drops an index from the table.
+//
+//nolint:revive
+func (t *TableState) DropIndex(indexName string, identifierMap identifierMap) *WalkThroughError {
+	if _, exists := t.indexSet[strings.ToLower(indexName)]; !exists {
+		if strings.EqualFold(indexName, PrimaryKeyName) {
+			return &WalkThroughError{
+				Type:    ErrorTypePrimaryKeyNotExists,
+				Content: fmt.Sprintf("Primary key does not exist in table `%s`", t.name),
+			}
+		}
+		return NewIndexNotExistsError(t.name, indexName)
+	}
+
+	// For PostgreSQL, remove from identifier map
+	if identifierMap != nil {
+		delete(identifierMap, indexName)
+	}
+
+	delete(t.indexSet, strings.ToLower(indexName))
+	return nil
+}
+
+// RenameIndex renames an index in the table.
+//
+//nolint:revive
+func (t *TableState) RenameIndex(oldName string, newName string, identifierMap identifierMap) *WalkThroughError {
+	// For MySQL, the primary key has a special name 'PRIMARY'.
+	if strings.ToUpper(oldName) == PrimaryKeyName || strings.ToUpper(newName) == PrimaryKeyName {
+		incorrectName := oldName
+		if strings.ToUpper(oldName) != PrimaryKeyName {
+			incorrectName = newName
+		}
+		return &WalkThroughError{
+			Type:    ErrorTypeIncorrectIndexName,
+			Content: fmt.Sprintf("Incorrect index name `%s`", incorrectName),
+		}
+	}
+
+	index, exists := t.indexSet[strings.ToLower(oldName)]
+	if !exists {
+		return NewIndexNotExistsError(t.name, oldName)
+	}
+
+	if _, exists := t.indexSet[strings.ToLower(newName)]; exists {
+		return NewIndexExistsError(t.name, newName)
+	}
+
+	// For PostgreSQL, update identifier map
+	if identifierMap != nil {
+		if _, exists := identifierMap[newName]; exists {
+			return NewRelationExistsError(newName, "")
+		}
+		delete(identifierMap, oldName)
+		identifierMap[newName] = true
+	}
+
+	index.name = newName
+	delete(t.indexSet, strings.ToLower(oldName))
+	t.indexSet[strings.ToLower(newName)] = index
+	return nil
+}
+
+// View-level operations.
+
+// CreateView creates a new view in the schema.
+func (s *SchemaState) CreateView(viewName string, definition *string, comment *string) (*ViewState, *WalkThroughError) {
+	view := &ViewState{
+		name:       viewName,
+		definition: definition,
+		comment:    comment,
+	}
+	s.viewSet[viewName] = view
+
+	// For PostgreSQL, track in identifier map
+	if s.identifierMap != nil {
+		s.identifierMap[viewName] = true
+	}
+
+	return view, nil
+}
+
+// DropView drops a view from the schema.
+func (s *SchemaState) DropView(viewName string, identifierMap identifierMap) *WalkThroughError {
+	// For PostgreSQL, remove from identifier map
+	if identifierMap != nil {
+		delete(identifierMap, viewName)
+	}
+
+	delete(s.viewSet, viewName)
+	return nil
+}
+
+// Database-level operations.
+
+// MarkDeleted marks the database as deleted.
+func (d *DatabaseState) MarkDeleted() {
+	d.deleted = true
+}
+
+// IsDeleted returns true if the database is marked as deleted.
+func (d *DatabaseState) IsDeleted() bool {
+	return d.deleted
+}
+
+// SetCharacterSet sets the character set of the database.
+func (d *DatabaseState) SetCharacterSet(characterSet string) {
+	d.characterSet = characterSet
+}
+
+// SetCollation sets the collation of the database.
+func (d *DatabaseState) SetCollation(collation string) {
+	d.collation = collation
+}
+
+// SetTableEngine sets the engine of the table.
+func (t *TableState) SetEngine(engine string) {
+	t.engine = newStringPointer(engine)
+}
+
+// SetTableCollation sets the collation of the table.
+func (t *TableState) SetCollation(collation string) {
+	t.collation = newStringPointer(collation)
+}
+
+// SetTableComment sets the comment of the table.
+func (t *TableState) SetComment(comment string) {
+	t.comment = newStringPointer(comment)
+}
+
+// SetColumnNullable sets the nullable property of the column.
+func (col *ColumnState) SetNullable(nullable bool) {
+	col.nullable = newBoolPointer(nullable)
+}
+
+// SetColumnDefault sets the default value of the column.
+func (col *ColumnState) SetDefault(defaultValue *string) {
+	col.defaultValue = defaultValue
+}
+
+// SetColumnType sets the type of the column.
+func (col *ColumnState) SetType(columnType string) {
+	col.columnType = newStringPointer(columnType)
+}
+
+// SetIndexVisibility sets the visibility of the index.
+func (idx *IndexState) SetVisibility(visible bool) {
+	idx.visible = newBoolPointer(visible)
 }

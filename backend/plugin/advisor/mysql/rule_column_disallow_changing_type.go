@@ -44,7 +44,7 @@ func (*ColumnDisallowChangingTypeAdvisor) Check(_ context.Context, checkCtx advi
 	}
 
 	// Create the rule
-	rule := NewColumnDisallowChangingTypeRule(level, string(checkCtx.Rule.Type), checkCtx.Catalog)
+	rule := NewColumnDisallowChangingTypeRule(level, string(checkCtx.Rule.Type), checkCtx.OriginCatalog)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
@@ -61,18 +61,18 @@ func (*ColumnDisallowChangingTypeAdvisor) Check(_ context.Context, checkCtx advi
 // ColumnDisallowChangingTypeRule checks for disallow changing column type.
 type ColumnDisallowChangingTypeRule struct {
 	BaseRule
-	text    string
-	catalog *catalog.Finder
+	text          string
+	originCatalog *catalog.DatabaseState
 }
 
 // NewColumnDisallowChangingTypeRule creates a new ColumnDisallowChangingTypeRule.
-func NewColumnDisallowChangingTypeRule(level storepb.Advice_Status, title string, catalog *catalog.Finder) *ColumnDisallowChangingTypeRule {
+func NewColumnDisallowChangingTypeRule(level storepb.Advice_Status, title string, originCatalog *catalog.DatabaseState) *ColumnDisallowChangingTypeRule {
 	return &ColumnDisallowChangingTypeRule{
 		BaseRule: BaseRule{
 			level: level,
 			title: title,
 		},
-		catalog: catalog,
+		originCatalog: originCatalog,
 	}
 }
 
@@ -168,10 +168,7 @@ func normalizeColumnType(tp string) string {
 
 func (r *ColumnDisallowChangingTypeRule) changeColumnType(tableName, columnName string, dataType mysql.IDataTypeContext) {
 	tp := dataType.GetParser().GetTokenStream().GetTextFromRuleContext(dataType)
-	column := r.catalog.Origin.FindColumn(&catalog.ColumnFind{
-		TableName:  tableName,
-		ColumnName: columnName,
-	})
+	column := r.originCatalog.GetColumn("", tableName, columnName)
 
 	if column == nil {
 		return

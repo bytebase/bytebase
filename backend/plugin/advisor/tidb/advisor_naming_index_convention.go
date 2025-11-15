@@ -45,12 +45,12 @@ func (*NamingIndexConventionAdvisor) Check(_ context.Context, checkCtx advisor.C
 		return nil, err
 	}
 	checker := &namingIndexConventionChecker{
-		level:        level,
-		title:        string(checkCtx.Rule.Type),
-		format:       format,
-		maxLength:    maxLength,
-		templateList: templateList,
-		catalog:      checkCtx.Catalog,
+		level:         level,
+		title:         string(checkCtx.Rule.Type),
+		format:        format,
+		maxLength:     maxLength,
+		templateList:  templateList,
+		originCatalog: checkCtx.OriginCatalog,
 	}
 	for _, stmtNode := range root {
 		(stmtNode).Accept(checker)
@@ -60,13 +60,13 @@ func (*NamingIndexConventionAdvisor) Check(_ context.Context, checkCtx advisor.C
 }
 
 type namingIndexConventionChecker struct {
-	adviceList   []*storepb.Advice
-	level        storepb.Advice_Status
-	title        string
-	format       string
-	maxLength    int
-	templateList []string
-	catalog      *catalog.Finder
+	adviceList    []*storepb.Advice
+	level         storepb.Advice_Status
+	title         string
+	format        string
+	maxLength     int
+	templateList  []string
+	originCatalog *catalog.DatabaseState
 }
 
 // Enter implements the ast.Visitor interface.
@@ -150,10 +150,7 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 		for _, spec := range node.Specs {
 			switch spec.Tp {
 			case ast.AlterTableRenameIndex:
-				_, index := checker.catalog.Origin.FindIndex(&catalog.IndexFind{
-					TableName: node.Table.Name.String(),
-					IndexName: spec.FromKey.String(),
-				})
+				_, index := checker.originCatalog.GetIndex("", node.Table.Name.String(), spec.FromKey.String())
 				if index == nil {
 					continue
 				}

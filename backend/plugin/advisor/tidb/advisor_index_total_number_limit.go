@@ -5,6 +5,7 @@ package tidb
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
@@ -47,9 +48,8 @@ func (*IndexTotalNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.C
 		level:        level,
 		title:        string(checkCtx.Rule.Type),
 		max:          payload.Number,
-		tableIndexes: make(map[string]map[string]bool),
-		tableLines:   make(map[string]int),
-		catalog:      checkCtx.Catalog,
+		lineForTable: make(map[string]int),
+		finalCatalog: checkCtx.FinalCatalog,
 	}
 
 	for _, stmt := range stmtList {
@@ -58,10 +58,7 @@ func (*IndexTotalNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.C
 		(stmt).Accept(checker)
 	}
 
-	// Check all tables after processing all statements
-	checker.checkAllTables()
-
-	return checker.adviceList, nil
+	return checker.generateAdvice(), nil
 }
 
 type indexTotalNumberLimitChecker struct {
@@ -71,118 +68,80 @@ type indexTotalNumberLimitChecker struct {
 	text         string
 	line         int
 	max          int
-	tableIndexes map[string]map[string]bool // tableName -> indexName -> exists
-	tableLines   map[string]int             // tableName -> last line number
-	catalog      *catalog.Finder
+	lineForTable map[string]int
+	finalCatalog *catalog.DatabaseState
+}
+
+func (checker *indexTotalNumberLimitChecker) generateAdvice() []*storepb.Advice {
+	type tableName struct {
+		name string
+		line int
+	}
+	var tableList []tableName
+
+	for k, v := range checker.lineForTable {
+		tableList = append(tableList, tableName{
+			name: k,
+			line: v,
+		})
+	}
+	slices.SortFunc(tableList, func(i, j tableName) int {
+		if i.line < j.line {
+			return -1
+		}
+		if i.line > j.line {
+			return 1
+		}
+		return 0
+	})
+
+	for _, table := range tableList {
+		tableInfo := checker.finalCatalog.GetTable("", table.name)
+		if tableInfo != nil && tableInfo.CountIndex() > checker.max {
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
+				Status:        checker.level,
+				Code:          advisor.IndexCountExceedsLimit.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("The count of index in table `%s` should be no more than %d, but found %d", table.name, checker.max, tableInfo.CountIndex()),
+				StartPosition: common.ConvertANTLRLineToPosition(table.line),
+			})
+		}
+	}
+
+	return checker.adviceList
 }
 
 // Enter implements the ast.Visitor interface.
 func (checker *indexTotalNumberLimitChecker) Enter(in ast.Node) (ast.Node, bool) {
 	switch node := in.(type) {
 	case *ast.CreateTableStmt:
-		tableName := node.Table.Name.O
-
-		// Initialize table indexes map
-		if checker.tableIndexes[tableName] == nil {
-			checker.tableIndexes[tableName] = make(map[string]bool)
-		}
-
-		// Check inline indexes in column definitions
-		for _, column := range node.Cols {
-			if createIndex(column) {
-				indexName := fmt.Sprintf("__inline_index_%d__", len(checker.tableIndexes[tableName]))
-				checker.tableIndexes[tableName][indexName] = true
-			}
-		}
-
-		// Check constraint indexes
-		for _, constraint := range node.Constraints {
-			if createIndex(constraint) {
-				indexName := fmt.Sprintf("__index_%d__", len(checker.tableIndexes[tableName]))
-				checker.tableIndexes[tableName][indexName] = true
-			}
-		}
-
-		// Track last line for this table
-		checker.tableLines[tableName] = node.OriginTextPosition()
-
+		checker.lineForTable[node.Table.Name.O] = node.OriginTextPosition()
 	case *ast.AlterTableStmt:
-		tableName := node.Table.Name.O
-
-		// Initialize table indexes map
-		if checker.tableIndexes[tableName] == nil {
-			checker.tableIndexes[tableName] = make(map[string]bool)
-		}
-
 		for _, spec := range node.Specs {
 			switch spec.Tp {
 			case ast.AlterTableAddColumns:
 				for _, column := range spec.NewColumns {
 					if createIndex(column) {
-						indexName := fmt.Sprintf("__inline_index_%d__", len(checker.tableIndexes[tableName]))
-						checker.tableIndexes[tableName][indexName] = true
+						checker.lineForTable[node.Table.Name.O] = node.OriginTextPosition()
+						break
 					}
 				}
 			case ast.AlterTableAddConstraint:
 				if createIndex(spec.Constraint) {
-					indexName := fmt.Sprintf("__index_%d__", len(checker.tableIndexes[tableName]))
-					checker.tableIndexes[tableName][indexName] = true
+					checker.lineForTable[node.Table.Name.O] = node.OriginTextPosition()
 				}
 			case ast.AlterTableChangeColumn, ast.AlterTableModifyColumn:
-				if len(spec.NewColumns) > 0 && createIndex(spec.NewColumns[0]) {
-					indexName := fmt.Sprintf("__inline_index_%d__", len(checker.tableIndexes[tableName]))
-					checker.tableIndexes[tableName][indexName] = true
+				if createIndex(spec.NewColumns[0]) {
+					checker.lineForTable[node.Table.Name.O] = node.OriginTextPosition()
 				}
 			default:
 			}
 		}
-
-		// Track last line for this table
-		checker.tableLines[tableName] = node.OriginTextPosition()
-
 	case *ast.CreateIndexStmt:
-		tableName := node.Table.Name.O
-
-		// Initialize table indexes map
-		if checker.tableIndexes[tableName] == nil {
-			checker.tableIndexes[tableName] = make(map[string]bool)
-		}
-
-		// Add the index
-		indexName := fmt.Sprintf("__index_%d__", len(checker.tableIndexes[tableName]))
-		checker.tableIndexes[tableName][indexName] = true
-
-		// Track last line for this table
-		checker.tableLines[tableName] = node.OriginTextPosition()
+		checker.lineForTable[node.Table.Name.O] = node.OriginTextPosition()
 	}
 
 	return in, false
-}
-
-// checkAllTables checks all tables' index counts after processing all statements.
-func (checker *indexTotalNumberLimitChecker) checkAllTables() {
-	for tableName, indexes := range checker.tableIndexes {
-		// Get the number of indexes created in these statements
-		newIndexes := len(indexes)
-
-		// Get the number of indexes that already exist in catalog.Origin
-		existingIndexes := 0
-		if table := checker.catalog.Origin.FindTable(&catalog.TableFind{TableName: tableName}); table != nil {
-			existingIndexes = table.CountIndex()
-		}
-
-		totalCount := existingIndexes + newIndexes
-		if totalCount > checker.max {
-			line := checker.tableLines[tableName]
-			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:        checker.level,
-				Code:          advisor.IndexCountExceedsLimit.Int32(),
-				Title:         checker.title,
-				Content:       fmt.Sprintf("The count of index in table `%s` should be no more than %d, but found %d", tableName, checker.max, totalCount),
-				StartPosition: common.ConvertANTLRLineToPosition(line),
-			})
-		}
-	}
 }
 
 // Leave implements the ast.Visitor interface.

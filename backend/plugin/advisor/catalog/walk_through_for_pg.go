@@ -12,12 +12,15 @@ import (
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
-// pgWalkThrough walks through the ANTLR parse tree and builds catalog state.
-func (d *DatabaseState) pgWalkThrough(ast any) error {
+// PgWalkThrough walks through the PostgreSQL ANTLR parse tree and builds catalog state.
+func PgWalkThrough(d *DatabaseState, ast any) error {
 	// ANTLR-based walkthrough
 	parseResult, ok := ast.(*pgparser.ParseResult)
 	if !ok {
-		return errors.Errorf("PostgreSQL walk-through expects *pgparser.ParseResult, got %T", ast)
+		return &WalkThroughError{
+			Type:    ErrorTypeUnsupported,
+			Content: fmt.Sprintf("PostgreSQL walk-through expects *pgparser.ParseResult, got %T", ast),
+		}
 	}
 
 	root, ok := parseResult.Tree.(parser.IRootContext)
@@ -47,22 +50,28 @@ type pgCatalogListener struct {
 	*parser.BasePostgreSQLParserListener
 
 	databaseState *DatabaseState
-	err           error
+	err           *WalkThroughError
 	currentLine   int
 }
 
 // Helper method to set error with line number
-func (l *pgCatalogListener) setError(err error) {
+func (l *pgCatalogListener) setError(err *WalkThroughError) {
 	if l.err != nil {
 		return // Keep first error
+	}
+	if err != nil && err.Line == 0 {
+		err.Line = l.currentLine
 	}
 	l.err = err
 }
 
 // Helper method to check if database is deleted
 func (l *pgCatalogListener) checkDatabaseNotDeleted() bool {
-	if l.databaseState.deleted {
-		l.setError(errors.Errorf(`Database %q is deleted`, l.databaseState.name))
+	if l.databaseState.IsDeleted() {
+		l.setError(&WalkThroughError{
+			Type:    ErrorTypeDatabaseIsDeleted,
+			Content: fmt.Sprintf(`Database %q is deleted`, l.databaseState.name),
+		})
 		return false
 	}
 	return true
@@ -100,7 +109,10 @@ func (l *pgCatalogListener) EnterCreatestmt(ctx *parser.CreatestmtContext) {
 	// Check database name if specified
 	databaseName := extractDatabaseName(qualifiedNames[0])
 	if databaseName != "" && l.databaseState.name != databaseName {
-		l.setError(errors.Errorf("Database %q is not the current database %q", databaseName, l.databaseState.name))
+		l.setError(&WalkThroughError{
+			Type:    ErrorTypeAccessOtherDatabase,
+			Content: fmt.Sprintf("Database %q is not the current database %q", databaseName, l.databaseState.name),
+		})
 		return
 	}
 
@@ -118,7 +130,10 @@ func (l *pgCatalogListener) EnterCreatestmt(ctx *parser.CreatestmtContext) {
 		if ifNotExists {
 			return
 		}
-		l.setError(errors.Errorf(`The table %q already exists in the schema %q`, tableName, schema.name))
+		l.setError(&WalkThroughError{
+			Type:    ErrorTypeTableExists,
+			Content: fmt.Sprintf(`The table %q already exists in the schema %q`, tableName, schema.name),
+		})
 		return
 	}
 
@@ -153,7 +168,7 @@ func (l *pgCatalogListener) EnterCreatestmt(ctx *parser.CreatestmtContext) {
 }
 
 // createColumn creates a column in the table.
-func createColumn(schema *SchemaState, table *TableState, columnDef parser.IColumnDefContext) error {
+func createColumn(schema *SchemaState, table *TableState, columnDef parser.IColumnDefContext) *WalkThroughError {
 	if columnDef == nil {
 		return nil
 	}
@@ -169,7 +184,10 @@ func createColumn(schema *SchemaState, table *TableState, columnDef parser.IColu
 
 	// Check if column already exists
 	if _, exists := table.columnSet[columnName]; exists {
-		return errors.Errorf("The column %q already exists in table %q", columnName, table.name)
+		return &WalkThroughError{
+			Type:    ErrorTypeColumnExists,
+			Content: fmt.Sprintf("The column %q already exists in table %q", columnName, table.name),
+		}
 	}
 
 	// Get column type
@@ -269,7 +287,7 @@ func createColumn(schema *SchemaState, table *TableState, columnDef parser.IColu
 }
 
 // createTableConstraint creates a table-level constraint.
-func createTableConstraint(schema *SchemaState, table *TableState, constraint parser.ITableconstraintContext) error {
+func createTableConstraint(schema *SchemaState, table *TableState, constraint parser.ITableconstraintContext) *WalkThroughError {
 	if constraint == nil || constraint.Constraintelem() == nil {
 		return nil
 	}
@@ -300,7 +318,7 @@ func createTableConstraint(schema *SchemaState, table *TableState, constraint pa
 			if column, exists := table.columnSet[colName]; exists {
 				column.nullable = newFalsePointer()
 			} else {
-				return NewSchemaViolationError(405, fmt.Sprintf("Column `%s` does not exist in table `%s`", colName, table.name))
+				return NewColumnNotExistsError(table.name, colName)
 			}
 		}
 
@@ -312,7 +330,7 @@ func createTableConstraint(schema *SchemaState, table *TableState, constraint pa
 
 		// Check if identifier already exists
 		if _, exists := schema.identifierMap[pkName]; exists {
-			return NewSchemaViolationError(1, fmt.Sprintf("Relation %q already exists in schema %q", pkName, schema.name))
+			return NewRelationExistsError(pkName, schema.name)
 		}
 
 		// Create primary key index
@@ -349,13 +367,13 @@ func createTableConstraint(schema *SchemaState, table *TableState, constraint pa
 
 		// Check if identifier already exists
 		if _, exists := schema.identifierMap[indexName]; exists {
-			return NewSchemaViolationError(1, fmt.Sprintf("Relation %q already exists in schema %q", indexName, schema.name))
+			return NewRelationExistsError(indexName, schema.name)
 		}
 
 		// Validate columns exist
 		for _, colName := range columnList {
 			if _, exists := table.columnSet[colName]; !exists {
-				return NewSchemaViolationError(405, fmt.Sprintf("Column `%s` does not exist in table `%s`", colName, table.name))
+				return NewColumnNotExistsError(table.name, colName)
 			}
 		}
 
@@ -410,7 +428,7 @@ func (l *pgCatalogListener) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 
 	table, exists := schema.tableSet[tableName]
 	if !exists {
-		l.setError(NewSchemaViolationError(604, fmt.Sprintf("Table `%s` does not exist", tableName)))
+		l.setError(NewTableNotExistsError(tableName))
 		return
 	}
 
@@ -439,7 +457,10 @@ func (l *pgCatalogListener) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 	}
 
 	if len(columnList) == 0 {
-		l.setError(errors.Errorf("Index %q in table %q has empty key", indexName, tableName))
+		l.setError(&WalkThroughError{
+			Type:    ErrorTypeIndexEmptyKeys,
+			Content: fmt.Sprintf("Index %q in table %q has empty key", indexName, tableName),
+		})
 		return
 	}
 
@@ -459,7 +480,7 @@ func (l *pgCatalogListener) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 		if wasAutoGenerated {
 			indexName = generateUniqueIndexName(schema, tableName, columnList, isUnique)
 		} else {
-			l.setError(NewSchemaViolationError(1, fmt.Sprintf("Relation %q already exists in schema %q", indexName, schema.name)))
+			l.setError(NewRelationExistsError(indexName, schema.name))
 			return
 		}
 	}
@@ -468,7 +489,7 @@ func (l *pgCatalogListener) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 	for _, colName := range columnList {
 		if colName != "expr" {
 			if _, exists := table.columnSet[colName]; !exists {
-				l.setError(NewSchemaViolationError(405, fmt.Sprintf("Column `%s` does not exist in table `%s`", colName, tableName)))
+				l.setError(NewColumnNotExistsError(tableName, colName))
 				return
 			}
 		}
@@ -542,7 +563,10 @@ func (l *pgCatalogListener) EnterAltertablestmt(ctx *parser.AltertablestmtContex
 
 	// Check database access
 	if databaseName != "" && l.databaseState.name != databaseName {
-		l.setError(errors.Errorf("Database %q is not the current database %q", databaseName, l.databaseState.name))
+		l.setError(&WalkThroughError{
+			Type:    ErrorTypeAccessOtherDatabase,
+			Content: fmt.Sprintf("Database %q is not the current database %q", databaseName, l.databaseState.name),
+		})
 		return
 	}
 
@@ -658,7 +682,7 @@ func (l *pgCatalogListener) alterTableDropColumn(schema *SchemaState, table *Tab
 		if ifExists {
 			return
 		}
-		l.setError(NewSchemaViolationError(405, fmt.Sprintf("Column `%s` does not exist in table `%s`", columnName, table.name)))
+		l.setError(NewColumnNotExistsError(table.name, columnName))
 		return
 	}
 
@@ -669,7 +693,11 @@ func (l *pgCatalogListener) alterTableDropColumn(schema *SchemaState, table *Tab
 		return
 	}
 	if len(viewList) > 0 {
-		l.setError(errors.Errorf("Cannot drop column %q in table %q.%q, it's referenced by view: %s", column.name, schema.name, table.name, strings.Join(viewList, ", ")))
+		l.setError(&WalkThroughError{
+			Type:    ErrorTypeColumnIsReferencedByView,
+			Content: fmt.Sprintf("Cannot drop column %q in table %q.%q, it's referenced by view: %s", column.name, schema.name, table.name, strings.Join(viewList, ", ")),
+			Payload: viewList,
+		})
 		return
 	}
 
@@ -712,7 +740,11 @@ func (l *pgCatalogListener) alterTableAlterColumnType(schema *SchemaState, table
 		return
 	}
 	if len(viewList) > 0 {
-		l.setError(errors.Errorf("Cannot alter type of column %q in table %q.%q, it's referenced by view: %s", column.name, schema.name, table.name, strings.Join(viewList, ", ")))
+		l.setError(&WalkThroughError{
+			Type:    ErrorTypeColumnIsReferencedByView,
+			Content: fmt.Sprintf("Cannot alter type of column %q in table %q.%q, it's referenced by view: %s", column.name, schema.name, table.name, strings.Join(viewList, ", ")),
+			Payload: viewList,
+		})
 		return
 	}
 
@@ -733,7 +765,10 @@ func (l *pgCatalogListener) alterTableAddColumn(schema *SchemaState, table *Tabl
 		if ifNotExists {
 			return
 		}
-		l.setError(errors.Errorf("The column %q already exists in table %q", columnName, table.name))
+		l.setError(&WalkThroughError{
+			Type:    ErrorTypeColumnExists,
+			Content: fmt.Sprintf("The column %q already exists in table %q", columnName, table.name),
+		})
 		return
 	}
 
@@ -815,7 +850,7 @@ func (l *pgCatalogListener) alterTableAddColumn(schema *SchemaState, table *Tabl
 				}
 				// Check for collision
 				if _, exists := schema.identifierMap[constraintName]; exists {
-					l.setError(NewSchemaViolationError(1, fmt.Sprintf("Relation %q already exists in schema %q", constraintName, schema.name)))
+					l.setError(NewRelationExistsError(constraintName, schema.name))
 					return
 				}
 				columnState.nullable = newFalsePointer()
@@ -858,7 +893,10 @@ func (l *pgCatalogListener) alterTableDropConstraint(schema *SchemaState, table 
 	}
 
 	if !ifExists {
-		l.setError(errors.Errorf("Constraint %q for table %q does not exist", constraintName, table.name))
+		l.setError(&WalkThroughError{
+			Type:    ErrorTypeConstraintNotExists,
+			Content: fmt.Sprintf("Constraint %q for table %q does not exist", constraintName, table.name),
+		})
 	}
 }
 
@@ -896,10 +934,10 @@ func (l *pgCatalogListener) alterTableSetNotNull(table *TableState, columnName s
 }
 
 // renameTable handles RENAME TO for tables.
-func (*pgCatalogListener) renameTable(schema *SchemaState, table *TableState, newName string) error {
+func (*pgCatalogListener) renameTable(schema *SchemaState, table *TableState, newName string) *WalkThroughError {
 	// Check if new name already exists
 	if _, exists := schema.identifierMap[newName]; exists {
-		return NewSchemaViolationError(1, fmt.Sprintf("Relation %q already exists in schema %q", newName, schema.name))
+		return NewRelationExistsError(newName, schema.name)
 	}
 
 	// Remove old name from maps
@@ -917,7 +955,7 @@ func (*pgCatalogListener) renameTable(schema *SchemaState, table *TableState, ne
 }
 
 // renameColumn handles RENAME COLUMN.
-func (*pgCatalogListener) renameColumn(table *TableState, oldName string, newName string) error {
+func (*pgCatalogListener) renameColumn(table *TableState, oldName string, newName string) *WalkThroughError {
 	column, err := table.getColumn(oldName)
 	if err != nil {
 		return err
@@ -929,7 +967,10 @@ func (*pgCatalogListener) renameColumn(table *TableState, oldName string, newNam
 
 	// Check if new name already exists
 	if _, exists := table.columnSet[newName]; exists {
-		return errors.Errorf("The column %q already exists in table %q", newName, table.name)
+		return &WalkThroughError{
+			Type:    ErrorTypeColumnExists,
+			Content: fmt.Sprintf("The column %q already exists in table %q", newName, table.name),
+		}
 	}
 
 	// Rename column in all indexes that reference it
@@ -950,7 +991,7 @@ func (*pgCatalogListener) renameColumn(table *TableState, oldName string, newNam
 }
 
 // renameConstraint handles RENAME CONSTRAINT.
-func (*pgCatalogListener) renameConstraint(schema *SchemaState, table *TableState, oldName string, newName string) error {
+func (*pgCatalogListener) renameConstraint(schema *SchemaState, table *TableState, oldName string, newName string) *WalkThroughError {
 	index, exists := table.indexSet[oldName]
 	if !exists {
 		// We haven't dealt with foreign and check constraints, so skip if not exists
@@ -959,7 +1000,7 @@ func (*pgCatalogListener) renameConstraint(schema *SchemaState, table *TableStat
 
 	// Check if new name already exists
 	if _, exists := schema.identifierMap[newName]; exists {
-		return NewSchemaViolationError(1, fmt.Sprintf("Relation %q already exists in schema %q", newName, schema.name))
+		return NewRelationExistsError(newName, schema.name)
 	}
 
 	// Remove old name from maps
@@ -1043,7 +1084,7 @@ func (l *pgCatalogListener) EnterDropstmt(ctx *parser.DropstmtContext) {
 	}
 }
 
-func (l *pgCatalogListener) dropTable(anyName parser.IAny_nameContext, ifExists bool) error {
+func (l *pgCatalogListener) dropTable(anyName parser.IAny_nameContext, ifExists bool) *WalkThroughError {
 	parts := pgparser.NormalizePostgreSQLAnyName(anyName)
 	if len(parts) == 0 {
 		return nil
@@ -1080,7 +1121,11 @@ func (l *pgCatalogListener) dropTable(anyName parser.IAny_nameContext, ifExists 
 		return err
 	}
 	if len(viewList) > 0 {
-		return errors.Errorf("Cannot drop table %q.%q, it's referenced by view: %s", schema.name, table.name, strings.Join(viewList, ", "))
+		return &WalkThroughError{
+			Type:    ErrorTypeTableIsReferencedByView,
+			Content: fmt.Sprintf("Cannot drop table %q.%q, it's referenced by view: %s", schema.name, table.name, strings.Join(viewList, ", ")),
+			Payload: viewList,
+		}
 	}
 
 	// Delete all indexes associated with the table
@@ -1093,7 +1138,7 @@ func (l *pgCatalogListener) dropTable(anyName parser.IAny_nameContext, ifExists 
 	return nil
 }
 
-func (l *pgCatalogListener) dropView(anyName parser.IAny_nameContext, ifExists bool) error {
+func (l *pgCatalogListener) dropView(anyName parser.IAny_nameContext, ifExists bool) *WalkThroughError {
 	parts := pgparser.NormalizePostgreSQLAnyName(anyName)
 	if len(parts) == 0 {
 		return nil
@@ -1121,7 +1166,7 @@ func (l *pgCatalogListener) dropView(anyName parser.IAny_nameContext, ifExists b
 	return nil
 }
 
-func (l *pgCatalogListener) dropIndex(anyName parser.IAny_nameContext, ifExists bool) error {
+func (l *pgCatalogListener) dropIndex(anyName parser.IAny_nameContext, ifExists bool) *WalkThroughError {
 	parts := pgparser.NormalizePostgreSQLAnyName(anyName)
 	if len(parts) == 0 {
 		return nil
@@ -1157,7 +1202,7 @@ func (l *pgCatalogListener) dropIndex(anyName parser.IAny_nameContext, ifExists 
 	return nil
 }
 
-func (l *pgCatalogListener) dropSchema(schemaNameCtx parser.INameContext, ifExists bool) error {
+func (l *pgCatalogListener) dropSchema(schemaNameCtx parser.INameContext, ifExists bool) *WalkThroughError {
 	schemaName := pgparser.NormalizePostgreSQLName(schemaNameCtx)
 
 	schema, exists := l.databaseState.schemaSet[schemaName]
@@ -1165,7 +1210,10 @@ func (l *pgCatalogListener) dropSchema(schemaNameCtx parser.INameContext, ifExis
 		if ifExists {
 			return nil
 		}
-		return errors.Errorf("Schema %q does not exist", schemaName)
+		return &WalkThroughError{
+			Type:    ErrorTypeSchemaNotExists,
+			Content: fmt.Sprintf("Schema %q does not exist", schemaName),
+		}
 	}
 
 	// Delete all identifiers in this schema
@@ -1366,7 +1414,10 @@ func (l *pgCatalogListener) EnterViewstmt(ctx *parser.ViewstmtContext) {
 
 	// Check if accessing other database
 	if databaseName != "" && l.databaseState.name != databaseName {
-		l.setError(errors.Errorf("Database %q is not the current database %q", databaseName, l.databaseState.name))
+		l.setError(&WalkThroughError{
+			Type:    ErrorTypeAccessOtherDatabase,
+			Content: fmt.Sprintf("Database %q is not the current database %q", databaseName, l.databaseState.name),
+		})
 		return
 	}
 

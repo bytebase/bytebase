@@ -41,10 +41,10 @@ func (*ColumnDisallowDropInIndexAdvisor) Check(_ context.Context, checkCtx advis
 	}
 
 	checker := &columnDisallowDropInIndexChecker{
-		level:   level,
-		title:   string(checkCtx.Rule.Type),
-		tables:  make(tableState),
-		catalog: checkCtx.Catalog,
+		level:         level,
+		title:         string(checkCtx.Rule.Type),
+		tables:        make(tableState),
+		originCatalog: checkCtx.OriginCatalog,
 	}
 
 	for _, stmt := range stmtList {
@@ -57,13 +57,13 @@ func (*ColumnDisallowDropInIndexAdvisor) Check(_ context.Context, checkCtx advis
 }
 
 type columnDisallowDropInIndexChecker struct {
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-	text       string
-	tables     tableState // the variable mean whether the column in index.
-	catalog    *catalog.Finder
-	line       int
+	adviceList    []*storepb.Advice
+	level         storepb.Advice_Status
+	title         string
+	text          string
+	tables        tableState // the variable mean whether the column in index.
+	originCatalog *catalog.DatabaseState
+	line          int
 }
 
 func (checker *columnDisallowDropInIndexChecker) Enter(in ast.Node) (ast.Node, bool) {
@@ -86,11 +86,7 @@ func (checker *columnDisallowDropInIndexChecker) dropColumn(in ast.Node) (ast.No
 			if spec.Tp == ast.AlterTableDropColumn {
 				table := node.Table.Name.O
 
-				index := checker.catalog.Origin.Index(&catalog.TableIndexFind{
-					// In MySQL, the SchemaName is "".
-					SchemaName: "",
-					TableName:  table,
-				})
+				index := checker.originCatalog.Index("", table)
 
 				if index != nil {
 					if checker.tables[table] == nil {

@@ -3,6 +3,7 @@ package pg
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/antlr4-go/antlr/v4"
 
@@ -44,27 +45,45 @@ func (*IndexTotalNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.C
 	rule := &indexTotalNumberLimitRule{
 		BaseRule:     BaseRule{level: level, title: string(checkCtx.Rule.Type)},
 		max:          payload.Number,
-		tableIndexes: make(map[string]map[string]bool),
-		tableLines:   make(map[string]int),
-		catalog:      checkCtx.Catalog,
+		finalCatalog: checkCtx.FinalCatalog,
+		tableLine:    make(tableLineMap),
 	}
 
-	checker := NewGenericChecker([]Rule{rule})
-	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
+	if rule.finalCatalog.Usable() {
+		checker := NewGenericChecker([]Rule{rule})
+		antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
+		rule.generateAdvice()
+		return checker.GetAdviceList(), nil
+	}
 
-	// Check all tables after processing all statements
-	rule.checkAllTables()
+	return nil, nil
+}
 
-	return checker.GetAdviceList(), nil
+type tableLine struct {
+	schema string
+	table  string
+	line   int
+}
+
+type tableLineMap map[string]tableLine
+
+func (m tableLineMap) set(schema string, table string, line int) {
+	if schema == "" {
+		schema = "public"
+	}
+	m[fmt.Sprintf("%q.%q", schema, table)] = tableLine{
+		schema: schema,
+		table:  table,
+		line:   line,
+	}
 }
 
 type indexTotalNumberLimitRule struct {
 	BaseRule
 
 	max          int
-	tableIndexes map[string]map[string]bool // tableKey -> indexName -> exists
-	tableLines   map[string]int             // tableKey -> last line number
-	catalog      *catalog.Finder
+	finalCatalog *catalog.DatabaseState
+	tableLine    tableLineMap
 }
 
 func (*indexTotalNumberLimitRule) Name() string {
@@ -89,33 +108,31 @@ func (*indexTotalNumberLimitRule) OnExit(_ antlr.ParserRuleContext, _ string) er
 	return nil
 }
 
-func (r *indexTotalNumberLimitRule) checkAllTables() {
-	for tableKey, indexes := range r.tableIndexes {
-		// Parse table key to get schema and table name
-		schema, table := parseTableKey(tableKey)
-
-		// Get the number of indexes created in these statements
-		newIndexes := len(indexes)
-
-		// Get the number of indexes that already exist in catalog.Origin
-		existingIndexes := 0
-		if tableInfo := r.catalog.Origin.FindTable(&catalog.TableFind{
-			SchemaName: schema,
-			TableName:  table,
-		}); tableInfo != nil {
-			existingIndexes = tableInfo.CountIndex()
+func (r *indexTotalNumberLimitRule) generateAdvice() {
+	var tableList []tableLine
+	for _, table := range r.tableLine {
+		tableList = append(tableList, table)
+	}
+	slices.SortFunc(tableList, func(i, j tableLine) int {
+		if i.line < j.line {
+			return -1
 		}
+		if i.line > j.line {
+			return 1
+		}
+		return 0
+	})
 
-		totalCount := existingIndexes + newIndexes
-		if totalCount > r.max {
-			line := r.tableLines[tableKey]
+	for _, table := range tableList {
+		tableInfo := r.finalCatalog.GetTable(table.schema, table.table)
+		if tableInfo != nil && tableInfo.CountIndex() > r.max {
 			r.AddAdvice(&storepb.Advice{
 				Status:  r.level,
 				Code:    advisor.IndexCountExceedsLimit.Int32(),
 				Title:   r.title,
-				Content: fmt.Sprintf("The count of index in table %q.%q should be no more than %d, but found %d", schema, table, r.max, totalCount),
+				Content: fmt.Sprintf("The count of index in table %q.%q should be no more than %d, but found %d", table.schema, table.table, r.max, tableInfo.CountIndex()),
 				StartPosition: &storepb.Position{
-					Line:   int32(line),
+					Line:   int32(table.line),
 					Column: 0,
 				},
 			})
@@ -139,12 +156,6 @@ func (r *indexTotalNumberLimitRule) handleCreatestmt(ctx *parser.CreatestmtConte
 	}
 
 	schemaName := extractSchemaName(qualifiedNames[0])
-	tableKey := makeTableKey(schemaName, tableName)
-
-	// Initialize table indexes map
-	if r.tableIndexes[tableKey] == nil {
-		r.tableIndexes[tableKey] = make(map[string]bool)
-	}
 
 	// Check if this CREATE TABLE statement creates any indexes
 	// (PRIMARY KEY or UNIQUE constraints)
@@ -154,21 +165,18 @@ func (r *indexTotalNumberLimitRule) handleCreatestmt(ctx *parser.CreatestmtConte
 			// Check column-level constraints
 			if elem.ColumnDef() != nil {
 				if hasIndexConstraint(elem.ColumnDef()) {
-					indexName := fmt.Sprintf("__inline_index_%d__", len(r.tableIndexes[tableKey]))
-					r.tableIndexes[tableKey][indexName] = true
+					r.tableLine.set(schemaName, tableName, ctx.GetStop().GetLine())
+					return
 				}
 			}
 
 			// Check table-level constraints
 			if elem.Tableconstraint() != nil && hasTableIndexConstraint(elem.Tableconstraint()) {
-				indexName := fmt.Sprintf("__index_%d__", len(r.tableIndexes[tableKey]))
-				r.tableIndexes[tableKey][indexName] = true
+				r.tableLine.set(schemaName, tableName, ctx.GetStop().GetLine())
+				return
 			}
 		}
 	}
-
-	// Track last line for this table
-	r.tableLines[makeTableKey(schemaName, tableName)] = ctx.GetStop().GetLine()
 }
 
 func (r *indexTotalNumberLimitRule) handleAltertablestmt(ctx *parser.AltertablestmtContext) {
@@ -186,12 +194,6 @@ func (r *indexTotalNumberLimitRule) handleAltertablestmt(ctx *parser.Altertables
 	}
 
 	schemaName := extractSchemaName(ctx.Relation_expr().Qualified_name())
-	tableKey := makeTableKey(schemaName, tableName)
-
-	// Initialize table indexes map
-	if r.tableIndexes[tableKey] == nil {
-		r.tableIndexes[tableKey] = make(map[string]bool)
-	}
 
 	// Check ALTER TABLE commands that create indexes
 	if ctx.Alter_table_cmds() != nil {
@@ -200,23 +202,20 @@ func (r *indexTotalNumberLimitRule) handleAltertablestmt(ctx *parser.Altertables
 			// ADD COLUMN with PRIMARY KEY or UNIQUE
 			if cmd.ADD_P() != nil && cmd.ColumnDef() != nil {
 				if hasIndexConstraint(cmd.ColumnDef()) {
-					indexName := fmt.Sprintf("__inline_index_%d__", len(r.tableIndexes[tableKey]))
-					r.tableIndexes[tableKey][indexName] = true
+					r.tableLine.set(schemaName, tableName, ctx.GetStop().GetLine())
+					return
 				}
 			}
 
 			// ADD CONSTRAINT (PRIMARY KEY or UNIQUE)
 			if cmd.ADD_P() != nil && cmd.Tableconstraint() != nil {
 				if hasTableIndexConstraint(cmd.Tableconstraint()) {
-					indexName := fmt.Sprintf("__index_%d__", len(r.tableIndexes[tableKey]))
-					r.tableIndexes[tableKey][indexName] = true
+					r.tableLine.set(schemaName, tableName, ctx.GetStop().GetLine())
+					return
 				}
 			}
 		}
 	}
-
-	// Track last line for this table
-	r.tableLines[makeTableKey(schemaName, tableName)] = ctx.GetStop().GetLine()
 }
 
 func (r *indexTotalNumberLimitRule) handleIndexstmt(ctx *parser.IndexstmtContext) {
@@ -234,19 +233,7 @@ func (r *indexTotalNumberLimitRule) handleIndexstmt(ctx *parser.IndexstmtContext
 	}
 
 	schemaName := extractSchemaName(ctx.Relation_expr().Qualified_name())
-	tableKey := makeTableKey(schemaName, tableName)
-
-	// Initialize table indexes map
-	if r.tableIndexes[tableKey] == nil {
-		r.tableIndexes[tableKey] = make(map[string]bool)
-	}
-
-	// Add the index
-	indexName := fmt.Sprintf("__index_%d__", len(r.tableIndexes[tableKey]))
-	r.tableIndexes[tableKey][indexName] = true
-
-	// Track last line for this table
-	r.tableLines[makeTableKey(schemaName, tableName)] = ctx.GetStop().GetLine()
+	r.tableLine.set(schemaName, tableName, ctx.GetStop().GetLine())
 }
 
 // hasIndexConstraint checks if a column definition has PRIMARY KEY or UNIQUE constraint

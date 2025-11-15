@@ -13,13 +13,12 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 )
 
-func (d *DatabaseState) mysqlWalkThrough(ast any) error {
+// MySQLWalkThrough walks through MySQL AST and updates the database state.
+func MySQLWalkThrough(d *DatabaseState, ast any) error {
 	// We define the Catalog as Database -> Schema -> Table. The Schema is only for PostgreSQL.
 	// So we use a Schema whose name is empty for other engines, such as MySQL.
 	// If there is no empty-string-name schema, create it to avoid corner cases.
-	if _, exists := d.schemaSet[""]; !exists {
-		d.createSchema()
-	}
+	d.GetOrCreateSchema("")
 
 	nodeList, ok := ast.([]*mysqlparser.ParseResult)
 	if !ok {
@@ -41,7 +40,7 @@ type mysqlListener struct {
 	lineNumber    int
 	text          string
 	databaseState *DatabaseState
-	err           error
+	err           *WalkThroughError
 }
 
 func (l *mysqlListener) EnterQuery(ctx *mysql.QueryContext) {
@@ -49,9 +48,21 @@ func (l *mysqlListener) EnterQuery(ctx *mysql.QueryContext) {
 	l.lineNumber = l.baseLine + ctx.GetStart().GetLine()
 }
 
-func (d *DatabaseState) mysqlChangeState(in *mysqlparser.ParseResult) error {
+func (d *DatabaseState) mysqlChangeState(in *mysqlparser.ParseResult) (err *WalkThroughError) {
+	defer func() {
+		if err == nil {
+			return
+		}
+		if err.Line == 0 {
+			err.Line = in.BaseLine
+		}
+	}()
+
 	if d.deleted {
-		return NewSchemaViolationError(703, fmt.Sprintf("Database `%s` is deleted", d.name))
+		return &WalkThroughError{
+			Type:    ErrorTypeDatabaseIsDeleted,
+			Content: fmt.Sprintf("Database `%s` is deleted", d.name),
+		}
 	}
 
 	listener := &mysqlListener{
@@ -59,7 +70,13 @@ func (d *DatabaseState) mysqlChangeState(in *mysqlparser.ParseResult) error {
 		databaseState: d,
 	}
 	antlr.ParseTreeWalkerDefault.Walk(listener, in.Tree)
-	return listener.err
+	if listener.err != nil {
+		if listener.err.Line == 0 {
+			listener.err.Line = listener.lineNumber
+		}
+		return listener.err
+	}
+	return nil
 }
 
 // EnterCreateTable is called when production createTable is entered.
@@ -72,24 +89,30 @@ func (l *mysqlListener) EnterCreateTable(ctx *mysql.CreateTableContext) {
 	}
 	databaseName, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
 	if databaseName != "" && !l.databaseState.isCurrentDatabase(databaseName) {
-		l.err = NewSchemaViolationError(702, fmt.Sprintf("Database `%s` is not the current database `%s`", databaseName, l.databaseState.name))
+		l.err = &WalkThroughError{
+			Type:    ErrorTypeAccessOtherDatabase,
+			Content: fmt.Sprintf("Database `%s` is not the current database `%s`", databaseName, l.databaseState.name),
+		}
 		return
 	}
 
-	schema, exists := l.databaseState.schemaSet[""]
-	if !exists {
-		schema = l.databaseState.createSchema()
-	}
-	if _, exists = schema.getTable(tableName); exists {
+	schema := l.databaseState.GetOrCreateSchema("")
+	if _, exists := schema.getTable(tableName); exists {
 		if ctx.IfNotExists() != nil {
 			return
 		}
-		l.err = NewSchemaViolationError(607, fmt.Sprintf("Table `%s` already exists", tableName))
+		l.err = &WalkThroughError{
+			Type:    ErrorTypeTableExists,
+			Content: fmt.Sprintf("Table `%s` already exists", tableName),
+		}
 		return
 	}
 
 	if ctx.DuplicateAsQueryExpression() != nil {
-		l.err = NewSchemaViolationError(205, fmt.Sprintf("Disallow the CREATE TABLE AS statement but \"%s\" uses", l.text))
+		l.err = &WalkThroughError{
+			Type:    ErrorTypeUseCreateTableAs,
+			Content: fmt.Sprintf("Disallow the CREATE TABLE AS statement but \"%s\" uses", l.text),
+		}
 		return
 	}
 
@@ -99,15 +122,11 @@ func (l *mysqlListener) EnterCreateTable(ctx *mysql.CreateTableContext) {
 		return
 	}
 
-	table := &TableState{
-		name:      tableName,
-		engine:    newEmptyStringPointer(),
-		collation: newEmptyStringPointer(),
-		comment:   newEmptyStringPointer(),
-		columnSet: make(columnStateMap),
-		indexSet:  make(IndexStateMap),
+	table, err := schema.CreateTable(tableName)
+	if err != nil {
+		l.err = err
+		return
 	}
-	schema.tableSet[table.name] = table
 
 	if ctx.TableElementList() == nil {
 		return
@@ -123,17 +142,23 @@ func (l *mysqlListener) EnterCreateTable(ctx *mysql.CreateTableContext) {
 			}
 			if mysqlparser.IsAutoIncrement(tableElement.ColumnDefinition().FieldDefinition()) {
 				if hasAutoIncrement {
-					l.err = NewSchemaViolationError(1, fmt.Sprintf("There can be only one auto column for table `%s`", table.name))
+					l.err = &WalkThroughError{
+						Type: ErrorTypeAutoIncrementExists,
+						// The content comes from MySQL error content.
+						Content: fmt.Sprintf("There can be only one auto column for table `%s`", table.name),
+					}
 				}
 				hasAutoIncrement = true
 			}
 			_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
 			if err := table.mysqlCreateColumn(l.databaseState.ctx, columnName, tableElement.ColumnDefinition().FieldDefinition(), nil /* position */); err != nil {
+				err.Line = l.baseLine + tableElement.GetStart().GetLine()
 				l.err = err
 				return
 			}
 		case tableElement.TableConstraintDef() != nil:
 			if err := table.mysqlCreateConstraint(l.databaseState.ctx, tableElement.TableConstraintDef()); err != nil {
+				err.Line = tableElement.GetStart().GetLine()
 				l.err = err
 				return
 			}
@@ -155,24 +180,31 @@ func (l *mysqlListener) EnterDropTable(ctx *mysql.DropTableContext) {
 	for _, tableRef := range ctx.TableRefList().AllTableRef() {
 		databaseName, tableName := mysqlparser.NormalizeMySQLTableRef(tableRef)
 		if databaseName != "" && !l.databaseState.isCurrentDatabase(databaseName) {
-			l.err = NewSchemaViolationError(702, fmt.Sprintf("Database `%s` is not the current database `%s`", databaseName, tableName))
+			l.err = &WalkThroughError{
+				Type:    ErrorTypeAccessOtherDatabase,
+				Content: fmt.Sprintf("Database `%s` is not the current database `%s`", databaseName, tableName),
+			}
 		}
 
-		schema, exists := l.databaseState.schemaSet[""]
-		if !exists {
-			schema = l.databaseState.createSchema()
-		}
+		schema := l.databaseState.GetOrCreateSchema("")
 
 		table, exists := schema.getTable(tableName)
 		if !exists {
-			if ctx.IfExists() != nil || !l.databaseState.ctx.CheckIntegrity {
+			if ctx.IfExists() != nil {
 				return
 			}
-			l.err = NewSchemaViolationError(604, fmt.Sprintf("Table `%s` does not exist", tableName))
+			l.err = &WalkThroughError{
+				Type:    ErrorTypeTableNotExists,
+				Content: fmt.Sprintf("Table `%s` does not exist", tableName),
+			}
 			return
 		}
 
-		delete(schema.tableSet, table.name)
+		// MySQL doesn't check view dependencies for DROP TABLE, so pass nil
+		if err := schema.DropTable(table.name, nil); err != nil {
+			l.err = err
+			return
+		}
 	}
 }
 
@@ -212,15 +244,15 @@ func (l *mysqlListener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 					continue
 				}
 				engine := op.EngineRef().GetText()
-				table.engine = newStringPointer(engine)
+				table.SetEngine(engine)
 			// table comment.
 			case op.COMMENT_SYMBOL() != nil && op.TextStringLiteral() != nil:
 				comment := mysqlparser.NormalizeMySQLTextStringLiteral(op.TextStringLiteral())
-				table.comment = newStringPointer(comment)
+				table.SetComment(comment)
 			// table collation.
 			case op.DefaultCollation() != nil && op.DefaultCollation().CollationName() != nil:
 				collation := mysqlparser.NormalizeMySQLCollationName(op.DefaultCollation().CollationName())
-				table.collation = newStringPointer(collation)
+				table.SetCollation(collation)
 			default:
 			}
 		}
@@ -272,20 +304,20 @@ func (l *mysqlListener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 			// drop column.
 			case item.ColumnInternalRef() != nil:
 				columnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
-				if err := table.dropColumn(l.databaseState.ctx, columnName); err != nil {
+				if err := table.DropColumn(columnName, nil); err != nil {
 					l.err = err
 					return
 				}
 				// drop primary key.
 			case item.PRIMARY_SYMBOL() != nil && item.KEY_SYMBOL() != nil:
-				if err := table.dropIndex(l.databaseState.ctx, PrimaryKeyName); err != nil {
+				if err := table.DropIndex(PrimaryKeyName, nil); err != nil {
 					l.err = err
 					return
 				}
 				// drop key/index.
 			case item.KeyOrIndex() != nil && item.IndexRef() != nil:
 				_, _, indexName := mysqlparser.NormalizeIndexRef(item.IndexRef())
-				if err := table.dropIndex(l.databaseState.ctx, indexName); err != nil {
+				if err := table.DropIndex(indexName, nil); err != nil {
 					l.err = err
 					return
 				}
@@ -311,7 +343,7 @@ func (l *mysqlListener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 		case item.RENAME_SYMBOL() != nil && item.COLUMN_SYMBOL() != nil:
 			oldColumnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
 			newColumnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
-			if err := table.renameColumn(l.databaseState.ctx, oldColumnName, newColumnName); err != nil {
+			if err := table.RenameColumn(oldColumnName, newColumnName); err != nil {
 				l.err = err
 				return
 			}
@@ -335,8 +367,8 @@ func (l *mysqlListener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 		// rename table.
 		case item.RENAME_SYMBOL() != nil && item.TableName() != nil:
 			_, newTableName := mysqlparser.NormalizeMySQLTableName(item.TableName())
-			schema := l.databaseState.schemaSet[""]
-			if err := schema.renameTable(l.databaseState.ctx, table.name, newTableName); err != nil {
+			schema := l.databaseState.GetOrCreateSchema("")
+			if err := schema.RenameTable(table.name, newTableName); err != nil {
 				l.err = err
 				return
 			}
@@ -344,7 +376,7 @@ func (l *mysqlListener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 		case item.RENAME_SYMBOL() != nil && item.KeyOrIndex() != nil && item.IndexRef() != nil && item.IndexName() != nil:
 			_, _, oldIndexName := mysqlparser.NormalizeIndexRef(item.IndexRef())
 			newIndexName := mysqlparser.NormalizeIndexName(item.IndexName())
-			if err := table.renameIndex(l.databaseState.ctx, oldIndexName, newIndexName); err != nil {
+			if err := table.RenameIndex(oldIndexName, newIndexName, nil); err != nil {
 				l.err = err
 				return
 			}
@@ -374,7 +406,7 @@ func (l *mysqlListener) EnterDropIndex(ctx *mysql.DropIndexContext) {
 	}
 
 	_, _, indexName := mysqlparser.NormalizeIndexRef(ctx.IndexRef())
-	if err := table.dropIndex(l.databaseState.ctx, indexName); err != nil {
+	if err := table.DropIndex(indexName, nil); err != nil {
 		l.err = err
 	}
 }
@@ -445,7 +477,7 @@ func (l *mysqlListener) EnterAlterDatabase(ctx *mysql.AlterDatabaseContext) {
 	if ctx.SchemaRef() != nil {
 		databaseName := mysqlparser.NormalizeMySQLSchemaRef(ctx.SchemaRef())
 		if !l.databaseState.isCurrentDatabase(databaseName) {
-			l.err = NewSchemaViolationError(702, fmt.Sprintf("Database `%s` is not the current database `%s`", databaseName, l.databaseState.name))
+			l.err = NewAccessOtherDatabaseError(l.databaseState.name, databaseName)
 			return
 		}
 	}
@@ -458,10 +490,10 @@ func (l *mysqlListener) EnterAlterDatabase(ctx *mysql.AlterDatabaseContext) {
 		switch {
 		case option.CreateDatabaseOption().DefaultCharset() != nil && option.CreateDatabaseOption().DefaultCharset().CharsetName() != nil:
 			charset := mysqlparser.NormalizeMySQLCharsetName(option.CreateDatabaseOption().DefaultCharset().CharsetName())
-			l.databaseState.characterSet = charset
+			l.databaseState.SetCharacterSet(charset)
 		case option.CreateDatabaseOption().DefaultCollation() != nil && option.CreateDatabaseOption().DefaultCollation().CollationName() != nil:
 			collation := mysqlparser.NormalizeMySQLCollationName(option.CreateDatabaseOption().DefaultCollation().CollationName())
-			l.databaseState.collation = collation
+			l.databaseState.SetCollation(collation)
 		default:
 			// Other options
 		}
@@ -479,11 +511,11 @@ func (l *mysqlListener) EnterDropDatabase(ctx *mysql.DropDatabaseContext) {
 
 	databaseName := mysqlparser.NormalizeMySQLSchemaRef(ctx.SchemaRef())
 	if !l.databaseState.isCurrentDatabase(databaseName) {
-		l.err = NewSchemaViolationError(702, fmt.Sprintf("Database `%s` is not the current database `%s`", databaseName, l.databaseState.name))
+		l.err = NewAccessOtherDatabaseError(l.databaseState.name, databaseName)
 		return
 	}
 
-	l.databaseState.deleted = true
+	l.databaseState.MarkDeleted()
 }
 
 // EnterCreateDatabase is called when production createDatabase is entered.
@@ -495,7 +527,7 @@ func (l *mysqlListener) EnterCreateDatabase(ctx *mysql.CreateDatabaseContext) {
 		return
 	}
 	databaseName := mysqlparser.NormalizeMySQLSchemaName(ctx.SchemaName())
-	l.err = NewSchemaViolationError(702, fmt.Sprintf("Database `%s` is not the current database `%s`", databaseName, l.databaseState.name))
+	l.err = NewAccessOtherDatabaseError(l.databaseState.name, databaseName)
 }
 
 // EnterRenameTableStatement is called when production renameTableStatement is entered.
@@ -504,10 +536,7 @@ func (l *mysqlListener) EnterRenameTableStatement(ctx *mysql.RenameTableStatemen
 		return
 	}
 	for _, pair := range ctx.AllRenamePair() {
-		schema, exists := l.databaseState.schemaSet[""]
-		if !exists {
-			schema = l.databaseState.createSchema()
-		}
+		schema := l.databaseState.GetOrCreateSchema("")
 
 		_, oldTableName := mysqlparser.NormalizeMySQLTableRef(pair.TableRef())
 		_, newTableName := mysqlparser.NormalizeMySQLTableName(pair.TableName())
@@ -518,14 +547,11 @@ func (l *mysqlListener) EnterRenameTableStatement(ctx *mysql.RenameTableStatemen
 			}
 			table, exists := schema.getTable(oldTableName)
 			if !exists {
-				if schema.ctx.CheckIntegrity {
-					l.err = NewSchemaViolationError(604, fmt.Sprintf("Table `%s` does not exist", oldTableName))
-					return
-				}
-				table = schema.createIncompleteTable(oldTableName)
+				l.err = NewTableNotExistsError(oldTableName)
+				return
 			}
 			if _, exists := schema.getTable(newTableName); exists {
-				l.err = NewSchemaViolationError(607, fmt.Sprintf("Table `%s` already exists", newTableName))
+				l.err = NewTableExistsError(newTableName)
 				return
 			}
 			delete(schema.tableSet, table.name)
@@ -533,13 +559,13 @@ func (l *mysqlListener) EnterRenameTableStatement(ctx *mysql.RenameTableStatemen
 			schema.tableSet[table.name] = table
 		} else if l.databaseState.mysqlMoveToOtherDatabase(pair) {
 			_, exists := schema.getTable(oldTableName)
-			if !exists && schema.ctx.CheckIntegrity {
-				l.err = NewSchemaViolationError(604, fmt.Sprintf("Table `%s` does not exist", oldTableName))
+			if !exists {
+				l.err = NewTableNotExistsError(oldTableName)
 				return
 			}
 			delete(schema.tableSet, oldTableName)
 		} else {
-			l.err = NewSchemaViolationError(702, fmt.Sprintf("Database `%s` is not the current database `%s`", l.databaseState.mysqlTargetDatabase(pair), l.databaseState.name))
+			l.err = NewAccessOtherDatabaseError(l.databaseState.name, l.databaseState.mysqlTargetDatabase(pair))
 			return
 		}
 	}
@@ -615,13 +641,10 @@ func (d *DatabaseState) mysqlTheCurrentDatabase(renamePair mysql.IRenamePairCont
 	return true
 }
 
-func (t *TableState) mysqlChangeIndexVisibility(ctx *FinderContext, indexName string, visibility mysql.IVisibilityContext) error {
+func (t *TableState) mysqlChangeIndexVisibility(_ *FinderContext, indexName string, visibility mysql.IVisibilityContext) *WalkThroughError {
 	index, exists := t.indexSet[strings.ToLower(indexName)]
 	if !exists {
-		if ctx.CheckIntegrity {
-			return NewSchemaViolationError(809, fmt.Sprintf("Index `%s` does not exist in table `%s`", indexName, t.name))
-		}
-		index = t.createIncompleteIndex(indexName)
+		return NewIndexNotExistsError(t.name, indexName)
 	}
 	switch {
 	case visibility.VISIBLE_SYMBOL() != nil:
@@ -634,7 +657,7 @@ func (t *TableState) mysqlChangeIndexVisibility(ctx *FinderContext, indexName st
 	return nil
 }
 
-func (t *TableState) mysqlAlterColumn(ctx *FinderContext, itemDef mysql.IAlterListItemContext) error {
+func (t *TableState) mysqlAlterColumn(_ *FinderContext, itemDef mysql.IAlterListItemContext) *WalkThroughError {
 	if itemDef.ColumnInternalRef() == nil {
 		// should not reach here.
 		return nil
@@ -642,10 +665,7 @@ func (t *TableState) mysqlAlterColumn(ctx *FinderContext, itemDef mysql.IAlterLi
 	columnName := mysqlparser.NormalizeMySQLColumnInternalRef(itemDef.ColumnInternalRef())
 	colState, exists := t.columnSet[strings.ToLower(columnName)]
 	if !exists {
-		if ctx.CheckIntegrity {
-			return NewSchemaViolationError(405, fmt.Sprintf("Column `%s` does not exist in table `%s`", columnName, t.name))
-		}
-		colState = t.createIncompleteColumn(columnName)
+		return NewColumnNotExistsError(t.name, columnName)
 	}
 
 	switch {
@@ -660,7 +680,11 @@ func (t *TableState) mysqlAlterColumn(ctx *FinderContext, itemDef mysql.IAlterLi
 						"text", "tinytext", "mediumtext", "longtext",
 						"json",
 						"geometry":
-						return NewSchemaViolationError(423, fmt.Sprintf("BLOB, TEXT, GEOMETRY or JSON column `%s` can't have a default value", columnName))
+						return &WalkThroughError{
+							Type: ErrorTypeInvalidColumnTypeForDefaultValue,
+							// Content comes from MySQL Error content.
+							Content: fmt.Sprintf("BLOB, TEXT, GEOMETRY or JSON column `%s` can't have a default value", columnName),
+						}
 					default:
 						// Other column types allow default values
 					}
@@ -679,7 +703,11 @@ func (t *TableState) mysqlAlterColumn(ctx *FinderContext, itemDef mysql.IAlterLi
 				colState.defaultValue = &defaultValue
 			} else {
 				if colState.nullable != nil && !*colState.nullable {
-					return errors.Errorf("Invalid default value for column `%s`", columnName)
+					return &WalkThroughError{
+						Type: ErrorTypeSetNullDefaultForNotNullColumn,
+						// Content comes from MySQL Error content.
+						Content: fmt.Sprintf("Invalid default value for column `%s`", columnName),
+					}
 				}
 
 				colState.defaultValue = nil
@@ -696,23 +724,8 @@ func (t *TableState) mysqlAlterColumn(ctx *FinderContext, itemDef mysql.IAlterLi
 	return nil
 }
 
-func (t *TableState) mysqlChangeColumn(ctx *FinderContext, oldColumnName string, newColumnName string, fieldDef mysql.IFieldDefinitionContext, position *mysqlColumnPosition) error {
-	if ctx.CheckIntegrity {
-		return t.mysqlCompleteTableChangeColumn(ctx, oldColumnName, newColumnName, fieldDef, position)
-	}
-	return t.mysqlIncompleteTableChangeColumn(ctx, oldColumnName, newColumnName, fieldDef, position)
-}
-
-// mysqlIncompleteTableChangeColumn changes column definition.
-// It does not maintain the position of the column.
-func (t *TableState) mysqlIncompleteTableChangeColumn(ctx *FinderContext, oldColumnName string, newColumnName string, fieldDef mysql.IFieldDefinitionContext, position *mysqlColumnPosition) error {
-	delete(t.columnSet, strings.ToLower(oldColumnName))
-
-	// rename column from indexSet
-	t.renameColumnInIndexKey(oldColumnName, newColumnName)
-
-	// create a new column in columnSet
-	return t.mysqlCreateColumn(ctx, newColumnName, fieldDef, position)
+func (t *TableState) mysqlChangeColumn(ctx *FinderContext, oldColumnName string, newColumnName string, fieldDef mysql.IFieldDefinitionContext, position *mysqlColumnPosition) *WalkThroughError {
+	return t.mysqlCompleteTableChangeColumn(ctx, oldColumnName, newColumnName, fieldDef, position)
 }
 
 // mysqlCompleteTableChangeColumn changes column definition.
@@ -720,10 +733,10 @@ func (t *TableState) mysqlIncompleteTableChangeColumn(ctx *FinderContext, oldCol
 // 1. drop column from tableState.columnSet, but do not drop column from indexSet.
 // 2. rename column from indexSet.
 // 3. create a new column in columnSet.
-func (t *TableState) mysqlCompleteTableChangeColumn(ctx *FinderContext, oldColumnName string, newColumnName string, fieldDef mysql.IFieldDefinitionContext, position *mysqlColumnPosition) error {
+func (t *TableState) mysqlCompleteTableChangeColumn(ctx *FinderContext, oldColumnName string, newColumnName string, fieldDef mysql.IFieldDefinitionContext, position *mysqlColumnPosition) *WalkThroughError {
 	column, exists := t.columnSet[strings.ToLower(oldColumnName)]
 	if !exists {
-		return NewSchemaViolationError(405, fmt.Sprintf("Column `%s` does not exist in table `%s`", oldColumnName, t.name))
+		return NewColumnNotExistsError(t.name, oldColumnName)
 	}
 
 	pos := *column.position
@@ -796,41 +809,35 @@ func positionFromPlaceContext(place mysql.IPlaceContext) *mysqlColumnPosition {
 	return columnPosition
 }
 
-func (d *DatabaseState) mysqlCopyTable(databaseName, tableName, referTable string) error {
+func (d *DatabaseState) mysqlCopyTable(databaseName, tableName, referTable string) *WalkThroughError {
 	targetTable, err := d.mysqlFindTableState(databaseName, referTable)
 	if err != nil {
 		return err
 	}
 
-	schema := d.schemaSet[""]
+	schema := d.GetOrCreateSchema("")
 	table := targetTable.copy()
 	table.name = tableName
 	schema.tableSet[table.name] = table
 	return nil
 }
 
-func (d *DatabaseState) mysqlFindTableState(databaseName, tableName string) (*TableState, error) {
+func (d *DatabaseState) mysqlFindTableState(databaseName, tableName string) (*TableState, *WalkThroughError) {
 	if databaseName != "" && !d.isCurrentDatabase(databaseName) {
-		return nil, NewSchemaViolationError(702, fmt.Sprintf("Database `%s` is not the current database `%s`", databaseName, d.name))
+		return nil, NewAccessOtherDatabaseError(d.name, databaseName)
 	}
 
-	schema, exists := d.schemaSet[""]
-	if !exists {
-		schema = d.createSchema()
-	}
+	schema := d.GetOrCreateSchema("")
 
 	table, exists := schema.getTable(tableName)
 	if !exists {
-		if schema.ctx.CheckIntegrity {
-			return nil, NewSchemaViolationError(604, fmt.Sprintf("Table `%s` does not exist", tableName))
-		}
-		table = schema.createIncompleteTable(tableName)
+		return nil, NewTableNotExistsError(tableName)
 	}
 
 	return table, nil
 }
 
-func (t *TableState) mysqlCreateConstraint(ctx *FinderContext, constraintDef mysql.ITableConstraintDefContext) error {
+func (t *TableState) mysqlCreateConstraint(ctx *FinderContext, constraintDef mysql.ITableConstraintDefContext) *WalkThroughError {
 	if constraintDef.GetType_() != nil {
 		switch constraintDef.GetType_().GetTokenType() {
 		// PRIMARY KEY.
@@ -915,7 +922,7 @@ func (t *TableState) mysqlCreateConstraint(ctx *FinderContext, constraintDef mys
 }
 
 // mysqlValidateKeyListVariants validates the key list variants.
-func (t *TableState) mysqlValidateKeyListVariants(ctx *FinderContext, keyList mysql.IKeyListVariantsContext, primary bool, isSpatial bool) error {
+func (t *TableState) mysqlValidateKeyListVariants(ctx *FinderContext, keyList mysql.IKeyListVariantsContext, primary bool, isSpatial bool) *WalkThroughError {
 	if keyList.KeyList() != nil {
 		columns := mysqlparser.NormalizeKeyList(keyList.KeyList())
 		if err := t.mysqlValidateColumnList(ctx, columns, primary, isSpatial); err != nil {
@@ -931,19 +938,20 @@ func (t *TableState) mysqlValidateKeyListVariants(ctx *FinderContext, keyList my
 	return nil
 }
 
-func (t *TableState) mysqlValidateColumnList(ctx *FinderContext, columnList []string, primary bool, isSpatial bool) error {
+func (t *TableState) mysqlValidateColumnList(_ *FinderContext, columnList []string, primary bool, isSpatial bool) *WalkThroughError {
 	for _, columnName := range columnList {
 		column, exists := t.columnSet[strings.ToLower(columnName)]
 		if !exists {
-			if ctx.CheckIntegrity {
-				return NewSchemaViolationError(405, fmt.Sprintf("Column `%s` does not exist in table `%s`", columnName, t.name))
-			}
-		} else {
-			if primary {
-				column.nullable = newFalsePointer()
-			}
-			if isSpatial && column.nullable != nil && *column.nullable {
-				return errors.Errorf("All parts of a SPATIAL index must be NOT NULL, but `%s` is nullable", column.name)
+			return NewColumnNotExistsError(t.name, columnName)
+		}
+		if primary {
+			column.nullable = newFalsePointer()
+		}
+		if isSpatial && column.nullable != nil && *column.nullable {
+			return &WalkThroughError{
+				Type: ErrorTypeSpatialIndexKeyNullable,
+				// The error content comes from MySQL.
+				Content: fmt.Sprintf("All parts of a SPATIAL index must be NOT NULL, but `%s` is nullable", column.name),
 			}
 		}
 	}
@@ -952,7 +960,7 @@ func (t *TableState) mysqlValidateColumnList(ctx *FinderContext, columnList []st
 
 // mysqlValidateExpressionList validates the expression list.
 // TODO: update expression validation.
-func (t *TableState) mysqlValidateExpressionList(_ *FinderContext, expressionList []string, primary bool, isSpatial bool) error {
+func (t *TableState) mysqlValidateExpressionList(_ *FinderContext, expressionList []string, primary bool, isSpatial bool) *WalkThroughError {
 	for _, expression := range expressionList {
 		column, exists := t.columnSet[strings.ToLower(expression)]
 		// If expression is not a column, we do not need to validate it.
@@ -964,7 +972,11 @@ func (t *TableState) mysqlValidateExpressionList(_ *FinderContext, expressionLis
 			column.nullable = newFalsePointer()
 		}
 		if isSpatial && column.nullable != nil && *column.nullable {
-			return errors.Errorf("All parts of a SPATIAL index must be NOT NULL, but `%s` is nullable", column.name)
+			return &WalkThroughError{
+				Type: ErrorTypeSpatialIndexKeyNullable,
+				// The error content comes from MySQL.
+				Content: fmt.Sprintf("All parts of a SPATIAL index must be NOT NULL, but `%s` is nullable", column.name),
+			}
 		}
 	}
 	return nil
@@ -1008,15 +1020,18 @@ func mysqlGetIndexType(tableConstraint mysql.ITableConstraintDefContext) string 
 	return "BTREE"
 }
 
-func (t *TableState) mysqlCreateColumn(ctx *FinderContext, columnName string, fieldDef mysql.IFieldDefinitionContext, position *mysqlColumnPosition) error {
+func (t *TableState) mysqlCreateColumn(_ *FinderContext, columnName string, fieldDef mysql.IFieldDefinitionContext, position *mysqlColumnPosition) *WalkThroughError {
 	if _, exists := t.columnSet[strings.ToLower(columnName)]; exists {
-		return NewSchemaViolationError(412, fmt.Sprintf("Column `%s` already exists in table `%s`", columnName, t.name))
+		return &WalkThroughError{
+			Type:    ErrorTypeColumnExists,
+			Content: fmt.Sprintf("Column `%s` already exists in table `%s`", columnName, t.name),
+		}
 	}
 
 	// todo: handle position.
 	pos := len(t.columnSet) + 1
-	if position != nil && ctx.CheckIntegrity {
-		var err error
+	if position != nil {
+		var err *WalkThroughError
 		pos, err = t.mysqlReorderColumn(position)
 		if err != nil {
 			return err
@@ -1088,7 +1103,10 @@ func (t *TableState) mysqlCreateColumn(ctx *FinderContext, columnName string, fi
 					continue
 				}
 				if !mysqlparser.IsTimeType(fieldDef.DataType()) {
-					return errors.Errorf("Column `%s` use ON UPDATE but is not DATETIME or TIMESTAMP", col.name)
+					return &WalkThroughError{
+						Type:    ErrorTypeOnUpdateColumnNotDatetimeOrTimestamp,
+						Content: fmt.Sprintf("Column `%s` use ON UPDATE but is not DATETIME or TIMESTAMP", col.name),
+					}
 				}
 			// primary key.
 			case mysql.MySQLParserKEY_SYMBOL:
@@ -1120,7 +1138,11 @@ func (t *TableState) mysqlCreateColumn(ctx *FinderContext, columnName string, fi
 	}
 
 	if col.nullable != nil && !*col.nullable && setNullDefault {
-		return errors.Errorf("Invalid default value for column `%s`", col.name)
+		return &WalkThroughError{
+			Type: ErrorTypeSetNullDefaultForNotNullColumn,
+			// Content comes from MySQL Error content.
+			Content: fmt.Sprintf("Invalid default value for column `%s`", col.name),
+		}
 	}
 
 	t.columnSet[strings.ToLower(col.name)] = col
@@ -1128,7 +1150,7 @@ func (t *TableState) mysqlCreateColumn(ctx *FinderContext, columnName string, fi
 }
 
 // reorderColumn reorders the columns for new column and returns the new column position.
-func (t *TableState) mysqlReorderColumn(position *mysqlColumnPosition) (int, error) {
+func (t *TableState) mysqlReorderColumn(position *mysqlColumnPosition) (int, *WalkThroughError) {
 	switch position.tp {
 	case ColumnPositionNone:
 		return len(t.columnSet) + 1, nil
@@ -1141,7 +1163,7 @@ func (t *TableState) mysqlReorderColumn(position *mysqlColumnPosition) (int, err
 		columnName := strings.ToLower(position.relativeColumn)
 		column, exist := t.columnSet[columnName]
 		if !exist {
-			return 0, NewSchemaViolationError(405, fmt.Sprintf("Column `%s` does not exist in table `%s`", columnName, t.name))
+			return 0, NewColumnNotExistsError(t.name, columnName)
 		}
 		for _, col := range t.columnSet {
 			if *col.position > *column.position {
@@ -1150,18 +1172,24 @@ func (t *TableState) mysqlReorderColumn(position *mysqlColumnPosition) (int, err
 		}
 		return *column.position + 1, nil
 	default:
-		return 0, errors.Errorf("Unsupported column position type: %d", position.tp)
+		return 0, &WalkThroughError{
+			Type:    ErrorTypeUnsupported,
+			Content: fmt.Sprintf("Unsupported column position type: %d", position.tp),
+		}
 	}
 }
 
-func (t *TableState) mysqlCreateIndex(name string, keyList []string, unique bool, tp string, tableConstraint mysql.ITableConstraintDefContext, createIndexDef mysql.ICreateIndexContext) error {
+func (t *TableState) mysqlCreateIndex(name string, keyList []string, unique bool, tp string, tableConstraint mysql.ITableConstraintDefContext, createIndexDef mysql.ICreateIndexContext) *WalkThroughError {
 	if len(keyList) == 0 {
-		return errors.Errorf("Index `%s` in table `%s` has empty key", name, t.name)
+		return &WalkThroughError{
+			Type:    ErrorTypeIndexEmptyKeys,
+			Content: fmt.Sprintf("Index `%s` in table `%s` has empty key", name, t.name),
+		}
 	}
 	// construct a index name if name is empty.
 	if name != "" {
 		if _, exists := t.indexSet[strings.ToLower(name)]; exists {
-			return NewSchemaViolationError(805, fmt.Sprintf("Index `%s` already exists in table `%s`", name, t.name))
+			return NewIndexExistsError(t.name, name)
 		}
 	} else {
 		suffix := 1
@@ -1260,9 +1288,12 @@ func (t *TableState) mysqlCreateIndex(name string, keyList []string, unique bool
 	return nil
 }
 
-func (t *TableState) mysqlCreatePrimaryKey(keys []string, tp string) error {
+func (t *TableState) mysqlCreatePrimaryKey(keys []string, tp string) *WalkThroughError {
 	if _, exists := t.indexSet[strings.ToLower(PrimaryKeyName)]; exists {
-		return errors.Errorf("Primary key exists in table `%s`", t.name)
+		return &WalkThroughError{
+			Type:    ErrorTypePrimaryKeyExists,
+			Content: fmt.Sprintf("Primary key exists in table `%s`", t.name),
+		}
 	}
 
 	pk := &IndexState{
@@ -1278,7 +1309,7 @@ func (t *TableState) mysqlCreatePrimaryKey(keys []string, tp string) error {
 	return nil
 }
 
-func mysqlCheckDefault(columnName string, fieldDefinition mysql.IFieldDefinitionContext) error {
+func mysqlCheckDefault(columnName string, fieldDefinition mysql.IFieldDefinitionContext) *WalkThroughError {
 	if fieldDefinition.DataType() == nil || fieldDefinition.DataType().GetType_() == nil {
 		return nil
 	}
@@ -1303,7 +1334,11 @@ func mysqlCheckDefault(columnName string, fieldDefinition mysql.IFieldDefinition
 		mysql.MySQLParserMULTILINESTRING_SYMBOL,
 		mysql.MySQLParserPOLYGON_SYMBOL,
 		mysql.MySQLParserMULTIPOLYGON_SYMBOL:
-		return NewSchemaViolationError(423, fmt.Sprintf("BLOB, TEXT, GEOMETRY or JSON column `%s` can't have a default value", columnName))
+		return &WalkThroughError{
+			Type: ErrorTypeInvalidColumnTypeForDefaultValue,
+			// Content comes from MySQL Error content.
+			Content: fmt.Sprintf("BLOB, TEXT, GEOMETRY or JSON column `%s` can't have a default value", columnName),
+		}
 	default:
 		// Other data types are allowed to have default values
 	}
@@ -1311,7 +1346,7 @@ func mysqlCheckDefault(columnName string, fieldDefinition mysql.IFieldDefinition
 	return checkDefaultConvert(columnName, fieldDefinition)
 }
 
-func checkDefaultConvert(columnName string, fieldDefinition mysql.IFieldDefinitionContext) error {
+func checkDefaultConvert(columnName string, fieldDefinition mysql.IFieldDefinitionContext) *WalkThroughError {
 	if fieldDefinition == nil {
 		return nil
 	}

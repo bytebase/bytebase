@@ -48,7 +48,7 @@ func (*NamingUKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 	}
 
 	// Create the rule
-	rule := NewNamingUKConventionRule(level, string(checkCtx.Rule.Type), format, maxLength, templateList, checkCtx.Catalog)
+	rule := NewNamingUKConventionRule(level, string(checkCtx.Rule.Type), format, maxLength, templateList, checkCtx.OriginCatalog)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
@@ -73,24 +73,24 @@ type ukIndexMetaData struct {
 // NamingUKConventionRule checks for unique key naming convention.
 type NamingUKConventionRule struct {
 	BaseRule
-	text         string
-	format       string
-	maxLength    int
-	templateList []string
-	catalog      *catalog.Finder
+	text          string
+	format        string
+	maxLength     int
+	templateList  []string
+	originCatalog *catalog.DatabaseState
 }
 
 // NewNamingUKConventionRule creates a new NamingUKConventionRule.
-func NewNamingUKConventionRule(level storepb.Advice_Status, title string, format string, maxLength int, templateList []string, catalog *catalog.Finder) *NamingUKConventionRule {
+func NewNamingUKConventionRule(level storepb.Advice_Status, title string, format string, maxLength int, templateList []string, originCatalog *catalog.DatabaseState) *NamingUKConventionRule {
 	return &NamingUKConventionRule{
 		BaseRule: BaseRule{
 			level: level,
 			title: title,
 		},
-		format:       format,
-		maxLength:    maxLength,
-		templateList: templateList,
-		catalog:      catalog,
+		format:        format,
+		maxLength:     maxLength,
+		templateList:  templateList,
+		originCatalog: originCatalog,
 	}
 }
 
@@ -187,10 +187,7 @@ func (r *NamingUKConventionRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 		case alterListItem.RENAME_SYMBOL() != nil && alterListItem.KeyOrIndex() != nil && alterListItem.IndexRef() != nil && alterListItem.IndexName() != nil:
 			_, _, oldIndexName := mysqlparser.NormalizeIndexRef(alterListItem.IndexRef())
 			newIndexName := mysqlparser.NormalizeIndexName(alterListItem.IndexName())
-			indexStateMap := r.catalog.Origin.Index(&catalog.TableIndexFind{
-				SchemaName: "",
-				TableName:  tableName,
-			})
+			indexStateMap := r.originCatalog.Index("", tableName)
 			if indexStateMap == nil {
 				continue
 			}

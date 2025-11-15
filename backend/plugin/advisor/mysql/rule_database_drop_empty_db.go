@@ -42,7 +42,7 @@ func (*DatabaseAllowDropIfEmptyAdvisor) Check(_ context.Context, checkCtx adviso
 	}
 
 	// Create the rule
-	rule := NewDatabaseDropEmptyDBRule(level, string(checkCtx.Rule.Type), checkCtx.Catalog)
+	rule := NewDatabaseDropEmptyDBRule(level, string(checkCtx.Rule.Type), checkCtx.OriginCatalog)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
@@ -59,17 +59,17 @@ func (*DatabaseAllowDropIfEmptyAdvisor) Check(_ context.Context, checkCtx adviso
 // DatabaseDropEmptyDBRule checks for drop database only if empty.
 type DatabaseDropEmptyDBRule struct {
 	BaseRule
-	catalog *catalog.Finder
+	originCatalog *catalog.DatabaseState
 }
 
 // NewDatabaseDropEmptyDBRule creates a new DatabaseDropEmptyDBRule.
-func NewDatabaseDropEmptyDBRule(level storepb.Advice_Status, title string, catalog *catalog.Finder) *DatabaseDropEmptyDBRule {
+func NewDatabaseDropEmptyDBRule(level storepb.Advice_Status, title string, originCatalog *catalog.DatabaseState) *DatabaseDropEmptyDBRule {
 	return &DatabaseDropEmptyDBRule{
 		BaseRule: BaseRule{
 			level: level,
 			title: title,
 		},
-		catalog: catalog,
+		originCatalog: originCatalog,
 	}
 }
 
@@ -100,15 +100,15 @@ func (r *DatabaseDropEmptyDBRule) checkDropDatabase(ctx *mysql.DropDatabaseConte
 	}
 
 	dbName := mysqlparser.NormalizeMySQLSchemaRef(ctx.SchemaRef())
-	if r.catalog.Origin.DatabaseName() != dbName {
+	if r.originCatalog.DatabaseName() != dbName {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
 			Code:          advisor.NotCurrentDatabase.Int32(),
 			Title:         r.title,
-			Content:       fmt.Sprintf("Database `%s` that is trying to be deleted is not the current database `%s`", dbName, r.catalog.Origin.DatabaseName()),
+			Content:       fmt.Sprintf("Database `%s` that is trying to be deleted is not the current database `%s`", dbName, r.originCatalog.DatabaseName()),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
 		})
-	} else if !r.catalog.Origin.HasNoTable() {
+	} else if !r.originCatalog.HasNoTable() {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
 			Code:          advisor.DatabaseNotEmpty.Int32(),

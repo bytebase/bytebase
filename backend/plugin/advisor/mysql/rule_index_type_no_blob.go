@@ -43,7 +43,7 @@ func (*IndexTypeNoBlobAdvisor) Check(_ context.Context, checkCtx advisor.Context
 	}
 
 	// Create the rule
-	rule := NewIndexTypeNoBlobRule(level, string(checkCtx.Rule.Type), checkCtx.Catalog)
+	rule := NewIndexTypeNoBlobRule(level, string(checkCtx.Rule.Type), checkCtx.OriginCatalog)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
@@ -60,18 +60,18 @@ func (*IndexTypeNoBlobAdvisor) Check(_ context.Context, checkCtx advisor.Context
 // IndexTypeNoBlobRule checks for index type no blob.
 type IndexTypeNoBlobRule struct {
 	BaseRule
-	catalog          *catalog.Finder
+	originCatalog    *catalog.DatabaseState
 	tablesNewColumns tableColumnTypes
 }
 
 // NewIndexTypeNoBlobRule creates a new IndexTypeNoBlobRule.
-func NewIndexTypeNoBlobRule(level storepb.Advice_Status, title string, catalog *catalog.Finder) *IndexTypeNoBlobRule {
+func NewIndexTypeNoBlobRule(level storepb.Advice_Status, title string, originCatalog *catalog.DatabaseState) *IndexTypeNoBlobRule {
 	return &IndexTypeNoBlobRule{
 		BaseRule: BaseRule{
 			level: level,
 			title: title,
 		},
-		catalog:          catalog,
+		originCatalog:    originCatalog,
 		tablesNewColumns: make(tableColumnTypes),
 	}
 }
@@ -293,10 +293,7 @@ func (r *IndexTypeNoBlobRule) getColumnType(tableName string, columnName string)
 	if columnType, ok := r.tablesNewColumns.get(tableName, columnName); ok {
 		return columnType, nil
 	}
-	column := r.catalog.Origin.FindColumn(&catalog.ColumnFind{
-		TableName:  tableName,
-		ColumnName: columnName,
-	})
+	column := r.originCatalog.GetColumn("", tableName, columnName)
 	if column != nil {
 		return column.Type(), nil
 	}

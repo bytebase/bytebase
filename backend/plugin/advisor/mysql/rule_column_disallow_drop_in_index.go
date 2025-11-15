@@ -42,7 +42,7 @@ func (*ColumnDisallowDropInIndexAdvisor) Check(_ context.Context, checkCtx advis
 	}
 
 	// Create the rule
-	rule := NewColumnDisallowDropInIndexRule(level, string(checkCtx.Rule.Type), checkCtx.Catalog)
+	rule := NewColumnDisallowDropInIndexRule(level, string(checkCtx.Rule.Type), checkCtx.OriginCatalog)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
@@ -59,19 +59,19 @@ func (*ColumnDisallowDropInIndexAdvisor) Check(_ context.Context, checkCtx advis
 // ColumnDisallowDropInIndexRule checks for disallow DROP COLUMN in index.
 type ColumnDisallowDropInIndexRule struct {
 	BaseRule
-	tables  tableState
-	catalog *catalog.Finder
+	tables        tableState
+	originCatalog *catalog.DatabaseState
 }
 
 // NewColumnDisallowDropInIndexRule creates a new ColumnDisallowDropInIndexRule.
-func NewColumnDisallowDropInIndexRule(level storepb.Advice_Status, title string, catalog *catalog.Finder) *ColumnDisallowDropInIndexRule {
+func NewColumnDisallowDropInIndexRule(level storepb.Advice_Status, title string, originCatalog *catalog.DatabaseState) *ColumnDisallowDropInIndexRule {
 	return &ColumnDisallowDropInIndexRule{
 		BaseRule: BaseRule{
 			level: level,
 			title: title,
 		},
-		tables:  make(tableState),
-		catalog: catalog,
+		tables:        make(tableState),
+		originCatalog: originCatalog,
 	}
 }
 
@@ -156,11 +156,7 @@ func (r *ColumnDisallowDropInIndexRule) checkAlterTable(ctx *mysql.AlterTableCon
 			continue
 		}
 
-		index := r.catalog.Origin.Index(&catalog.TableIndexFind{
-			// In MySQL, the SchemaName is "".
-			SchemaName: "",
-			TableName:  tableName,
-		})
+		index := r.originCatalog.Index("", tableName)
 
 		if index != nil {
 			if r.tables[tableName] == nil {

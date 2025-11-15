@@ -48,7 +48,7 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 	}
 
 	// Create the rule
-	rule := NewTableRequirePKRule(level, string(checkCtx.Rule.Type), checkCtx.Catalog)
+	rule := NewTableRequirePKRule(level, string(checkCtx.Rule.Type), checkCtx.OriginCatalog)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
@@ -68,21 +68,21 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 // TableRequirePKRule checks table requires PK.
 type TableRequirePKRule struct {
 	BaseRule
-	tables  map[string]columnSet
-	line    map[string]int
-	catalog *catalog.Finder
+	tables        map[string]columnSet
+	line          map[string]int
+	originCatalog *catalog.DatabaseState
 }
 
 // NewTableRequirePKRule creates a new TableRequirePKRule.
-func NewTableRequirePKRule(level storepb.Advice_Status, title string, catalog *catalog.Finder) *TableRequirePKRule {
+func NewTableRequirePKRule(level storepb.Advice_Status, title string, originCatalog *catalog.DatabaseState) *TableRequirePKRule {
 	return &TableRequirePKRule{
 		BaseRule: BaseRule{
 			level: level,
 			title: title,
 		},
-		tables:  make(map[string]columnSet),
-		line:    make(map[string]int),
-		catalog: catalog,
+		tables:        make(map[string]columnSet),
+		line:          make(map[string]int),
+		originCatalog: originCatalog,
 	}
 }
 
@@ -250,10 +250,7 @@ func (r *TableRequirePKRule) changeColumn(tableName string, oldColumn string, ne
 
 func (r *TableRequirePKRule) dropColumn(tableName string, columnName string) bool {
 	if _, ok := r.tables[tableName]; !ok {
-		_, pk := r.catalog.Origin.FindIndex(&catalog.IndexFind{
-			TableName: tableName,
-			IndexName: primaryKeyName,
-		})
+		_, pk := r.originCatalog.GetIndex("", tableName, primaryKeyName)
 		if pk == nil {
 			return false
 		}

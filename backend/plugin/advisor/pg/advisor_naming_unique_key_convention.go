@@ -49,10 +49,10 @@ func (*NamingUKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 			level: level,
 			title: string(checkCtx.Rule.Type),
 		},
-		format:       format,
-		maxLength:    maxLength,
-		templateList: templateList,
-		catalog:      checkCtx.Catalog,
+		format:        format,
+		maxLength:     maxLength,
+		templateList:  templateList,
+		originCatalog: checkCtx.OriginCatalog,
 	}
 
 	checker := NewGenericChecker([]Rule{rule})
@@ -64,10 +64,10 @@ func (*NamingUKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 type namingUKConventionRule struct {
 	BaseRule
 
-	format       string
-	maxLength    int
-	templateList []string
-	catalog      *catalog.Finder
+	format        string
+	maxLength     int
+	templateList  []string
+	originCatalog *catalog.DatabaseState
 }
 
 //nolint:unused
@@ -234,7 +234,7 @@ func (r *namingUKConventionRule) handleRenamestmt(ctx *parser.RenamestmtContext)
 		newIndexName := pgparser.NormalizePostgreSQLName(allNames[0])
 
 		// Look up the index in catalog to determine if it's a unique key
-		if r.catalog != nil && oldIndexName != "" {
+		if r.originCatalog != nil && oldIndexName != "" {
 			tableName, index := r.findIndex("", "", oldIndexName)
 			if index != nil && index.Unique() && !index.Primary() {
 				r.checkUniqueKeyName(newIndexName, tableName, map[string]string{
@@ -246,7 +246,7 @@ func (r *namingUKConventionRule) handleRenamestmt(ctx *parser.RenamestmtContext)
 	}
 
 	// Check for ALTER TABLE ... RENAME CONSTRAINT
-	if ctx.CONSTRAINT() != nil && ctx.TO() != nil && r.catalog != nil {
+	if ctx.CONSTRAINT() != nil && ctx.TO() != nil && r.originCatalog != nil {
 		allNames := ctx.AllName()
 		if len(allNames) >= 2 {
 			oldConstraintName := pgparser.NormalizePostgreSQLName(allNames[0])
@@ -407,12 +407,8 @@ func (r *namingUKConventionRule) getTemplateRegexp(tokens map[string]string) (*r
 
 // findIndex returns index found in catalogs, nil if not found.
 func (r *namingUKConventionRule) findIndex(schemaName string, tableName string, indexName string) (string, *catalog.IndexState) {
-	if r.catalog == nil {
+	if r.originCatalog == nil {
 		return "", nil
 	}
-	return r.catalog.Origin.FindIndex(&catalog.IndexFind{
-		SchemaName: normalizeSchemaName(schemaName),
-		TableName:  tableName,
-		IndexName:  indexName,
-	})
+	return r.originCatalog.GetIndex(normalizeSchemaName(schemaName), tableName, indexName)
 }

@@ -53,7 +53,7 @@ func (*IndexPrimaryKeyTypeAllowlistAdvisor) Check(_ context.Context, checkCtx ad
 		level:            level,
 		title:            string(checkCtx.Rule.Type),
 		allowlist:        allowlist,
-		catalog:          checkCtx.Catalog,
+		originCatalog:    checkCtx.OriginCatalog,
 		tablesNewColumns: make(map[string]columnNameToColumnDef),
 	}
 
@@ -73,7 +73,7 @@ type indexPrimaryKeyTypeAllowlistChecker struct {
 	text             string
 	line             int
 	allowlist        map[string]bool
-	catalog          *catalog.Finder
+	originCatalog    *catalog.DatabaseState
 	tablesNewColumns tableNewColumn
 }
 
@@ -199,10 +199,7 @@ func (v *indexPrimaryKeyTypeAllowlistChecker) getPKColumnType(tableName string, 
 	if colDef, ok := v.tablesNewColumns.get(tableName, columnName); ok {
 		return tidbparser.TypeString(colDef.Tp.GetType()), nil
 	}
-	column := v.catalog.Origin.FindColumn(&catalog.ColumnFind{
-		TableName:  tableName,
-		ColumnName: columnName,
-	})
+	column := v.originCatalog.GetColumn("", tableName, columnName)
 	if column != nil {
 		return column.Type(), nil
 	}

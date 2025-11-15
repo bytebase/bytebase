@@ -41,9 +41,9 @@ func (*ColumnDisallowChangingTypeAdvisor) Check(_ context.Context, checkCtx advi
 		return nil, err
 	}
 	checker := &columnDisallowChangingTypeChecker{
-		level:   level,
-		title:   string(checkCtx.Rule.Type),
-		catalog: checkCtx.Catalog,
+		level:         level,
+		title:         string(checkCtx.Rule.Type),
+		originCatalog: checkCtx.OriginCatalog,
 	}
 
 	for _, stmt := range stmtList {
@@ -56,12 +56,12 @@ func (*ColumnDisallowChangingTypeAdvisor) Check(_ context.Context, checkCtx advi
 }
 
 type columnDisallowChangingTypeChecker struct {
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-	text       string
-	line       int
-	catalog    *catalog.Finder
+	adviceList    []*storepb.Advice
+	level         storepb.Advice_Status
+	title         string
+	text          string
+	line          int
+	originCatalog *catalog.DatabaseState
 }
 
 // Enter implements the ast.Visitor interface.
@@ -129,10 +129,7 @@ func normalizeColumnType(tp string) string {
 }
 
 func (checker *columnDisallowChangingTypeChecker) changeColumnType(tableName string, columName string, newType string) bool {
-	column := checker.catalog.Origin.FindColumn(&catalog.ColumnFind{
-		TableName:  tableName,
-		ColumnName: columName,
-	})
+	column := checker.originCatalog.GetColumn("", tableName, columName)
 
 	if column == nil {
 		return false

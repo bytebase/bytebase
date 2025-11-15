@@ -50,7 +50,7 @@ func (*IndexPrimaryKeyTypeAllowlistAdvisor) Check(_ context.Context, checkCtx ad
 	}
 
 	// Create the rule
-	rule := NewIndexPrimaryKeyTypeAllowlistRule(level, string(checkCtx.Rule.Type), allowlist, checkCtx.Catalog)
+	rule := NewIndexPrimaryKeyTypeAllowlistRule(level, string(checkCtx.Rule.Type), allowlist, checkCtx.OriginCatalog)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
@@ -68,19 +68,19 @@ func (*IndexPrimaryKeyTypeAllowlistAdvisor) Check(_ context.Context, checkCtx ad
 type IndexPrimaryKeyTypeAllowlistRule struct {
 	BaseRule
 	allowlist        map[string]bool
-	catalog          *catalog.Finder
+	originCatalog    *catalog.DatabaseState
 	tablesNewColumns tableColumnTypes
 }
 
 // NewIndexPrimaryKeyTypeAllowlistRule creates a new IndexPrimaryKeyTypeAllowlistRule.
-func NewIndexPrimaryKeyTypeAllowlistRule(level storepb.Advice_Status, title string, allowlist map[string]bool, catalog *catalog.Finder) *IndexPrimaryKeyTypeAllowlistRule {
+func NewIndexPrimaryKeyTypeAllowlistRule(level storepb.Advice_Status, title string, allowlist map[string]bool, originCatalog *catalog.DatabaseState) *IndexPrimaryKeyTypeAllowlistRule {
 	return &IndexPrimaryKeyTypeAllowlistRule{
 		BaseRule: BaseRule{
 			level: level,
 			title: title,
 		},
 		allowlist:        allowlist,
-		catalog:          catalog,
+		originCatalog:    originCatalog,
 		tablesNewColumns: make(tableColumnTypes),
 	}
 }
@@ -250,10 +250,7 @@ func (r *IndexPrimaryKeyTypeAllowlistRule) getPKColumnType(tableName string, col
 	if columnType, ok := r.tablesNewColumns.get(tableName, columnName); ok {
 		return columnType, nil
 	}
-	column := r.catalog.Origin.FindColumn(&catalog.ColumnFind{
-		TableName:  tableName,
-		ColumnName: columnName,
-	})
+	column := r.originCatalog.GetColumn("", tableName, columnName)
 	if column != nil {
 		return column.Type(), nil
 	}

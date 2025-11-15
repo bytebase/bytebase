@@ -15,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -45,7 +46,7 @@ func (*TableMaximumVarcharLengthAdvisor) Check(_ context.Context, checkCtx advis
 	}
 
 	// Create the rule
-	rule := NewTableTextFieldsTotalLengthRule(level, string(checkCtx.Rule.Type), payload.Number)
+	rule := NewTableTextFieldsTotalLengthRule(level, string(checkCtx.Rule.Type), checkCtx.FinalCatalog, payload.Number)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
@@ -59,29 +60,22 @@ func (*TableMaximumVarcharLengthAdvisor) Check(_ context.Context, checkCtx advis
 	return checker.GetAdviceList(), nil
 }
 
-// tableColumn tracks column information for text length calculation.
-type tableColumn struct {
-	name       string
-	columnType string
-}
-
 // TableTextFieldsTotalLengthRule checks for table text fields total length.
 type TableTextFieldsTotalLengthRule struct {
 	BaseRule
-	maximum int
-	// tableColumns tracks columns for each table across all statements
-	tableColumns map[string]map[string]*tableColumn // tableName -> columnName -> column
+	finalCatalog *catalog.DatabaseState
+	maximum      int
 }
 
 // NewTableTextFieldsTotalLengthRule creates a new TableTextFieldsTotalLengthRule.
-func NewTableTextFieldsTotalLengthRule(level storepb.Advice_Status, title string, maximum int) *TableTextFieldsTotalLengthRule {
+func NewTableTextFieldsTotalLengthRule(level storepb.Advice_Status, title string, finalCatalog *catalog.DatabaseState, maximum int) *TableTextFieldsTotalLengthRule {
 	return &TableTextFieldsTotalLengthRule{
 		BaseRule: BaseRule{
 			level: level,
 			title: title,
 		},
+		finalCatalog: finalCatalog,
 		maximum:      maximum,
-		tableColumns: make(map[string]map[string]*tableColumn),
 	}
 }
 
@@ -120,33 +114,20 @@ func (r *TableTextFieldsTotalLengthRule) checkCreateTable(ctx *mysql.CreateTable
 	if tableName == "" {
 		return
 	}
-
-	// Initialize table columns map
-	if r.tableColumns[tableName] == nil {
-		r.tableColumns[tableName] = make(map[string]*tableColumn)
+	tableInfo := r.finalCatalog.GetTable("", tableName)
+	if tableInfo == nil {
+		return
 	}
-
-	// Extract columns from CREATE TABLE statement
-	for _, tableElement := range ctx.TableElementList().AllTableElement() {
-		if tableElement.ColumnDefinition() == nil {
-			continue
-		}
-		columnDef := tableElement.ColumnDefinition()
-		if columnDef.ColumnName() == nil || columnDef.FieldDefinition() == nil || columnDef.FieldDefinition().DataType() == nil {
-			continue
-		}
-
-		_, _, columnName := mysqlparser.NormalizeMySQLColumnName(columnDef.ColumnName())
-		columnType := mysqlparser.NormalizeMySQLDataType(columnDef.FieldDefinition().DataType(), true /* compact */)
-
-		r.tableColumns[tableName][strings.ToLower(columnName)] = &tableColumn{
-			name:       columnName,
-			columnType: columnType,
-		}
+	total := getTotalTextLength(tableInfo)
+	if total > int64(r.maximum) {
+		r.AddAdvice(&storepb.Advice{
+			Status:        r.level,
+			Code:          advisor.IndexCountExceedsLimit.Int32(),
+			Title:         r.title,
+			Content:       fmt.Sprintf("Table %q total text column length (%d) exceeds the limit (%d).", tableName, total, r.maximum),
+			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
+		})
 	}
-
-	// Check total text length
-	r.checkTableTextLength(tableName, ctx.GetStart().GetLine())
 }
 
 func (r *TableTextFieldsTotalLengthRule) checkAlterTable(ctx *mysql.AlterTableContext) {
@@ -167,97 +148,29 @@ func (r *TableTextFieldsTotalLengthRule) checkAlterTable(ctx *mysql.AlterTableCo
 	if tableName == "" {
 		return
 	}
-
-	// Initialize table columns map if not exists
-	if r.tableColumns[tableName] == nil {
-		r.tableColumns[tableName] = make(map[string]*tableColumn)
-	}
-
-	// Process ALTER TABLE actions
-	for _, item := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
-		if item == nil {
-			continue
-		}
-
-		switch {
-		// ADD COLUMN
-		case item.ADD_SYMBOL() != nil:
-			switch {
-			case item.Identifier() != nil && item.FieldDefinition() != nil && item.FieldDefinition().DataType() != nil:
-				columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
-				columnType := mysqlparser.NormalizeMySQLDataType(item.FieldDefinition().DataType(), true /* compact */)
-				r.tableColumns[tableName][strings.ToLower(columnName)] = &tableColumn{
-					name:       columnName,
-					columnType: columnType,
-				}
-			case item.OPEN_PAR_SYMBOL() != nil && item.TableElementList() != nil:
-				for _, tableElement := range item.TableElementList().AllTableElement() {
-					if tableElement.ColumnDefinition() == nil {
-						continue
-					}
-					columnDef := tableElement.ColumnDefinition()
-					if columnDef.ColumnName() == nil || columnDef.FieldDefinition() == nil || columnDef.FieldDefinition().DataType() == nil {
-						continue
-					}
-					_, _, columnName := mysqlparser.NormalizeMySQLColumnName(columnDef.ColumnName())
-					columnType := mysqlparser.NormalizeMySQLDataType(columnDef.FieldDefinition().DataType(), true /* compact */)
-					r.tableColumns[tableName][strings.ToLower(columnName)] = &tableColumn{
-						name:       columnName,
-						columnType: columnType,
-					}
-				}
-			default:
-				// Other ADD variations not relevant for column tracking
-			}
-		// CHANGE COLUMN or MODIFY COLUMN
-		case item.CHANGE_SYMBOL() != nil && item.Identifier() != nil && item.FieldDefinition() != nil && item.FieldDefinition().DataType() != nil:
-			columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
-			columnType := mysqlparser.NormalizeMySQLDataType(item.FieldDefinition().DataType(), true /* compact */)
-			r.tableColumns[tableName][strings.ToLower(columnName)] = &tableColumn{
-				name:       columnName,
-				columnType: columnType,
-			}
-		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.FieldDefinition() != nil && item.FieldDefinition().DataType() != nil:
-			columnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
-			columnType := mysqlparser.NormalizeMySQLDataType(item.FieldDefinition().DataType(), true /* compact */)
-			r.tableColumns[tableName][strings.ToLower(columnName)] = &tableColumn{
-				name:       columnName,
-				columnType: columnType,
-			}
-		// DROP COLUMN
-		case item.DROP_SYMBOL() != nil && item.ColumnInternalRef() != nil:
-			columnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
-			delete(r.tableColumns[tableName], strings.ToLower(columnName))
-		default:
-			// Other ALTER TABLE commands not relevant for column tracking
-		}
-	}
-
-	// Check total text length after alterations
-	r.checkTableTextLength(tableName, ctx.GetStart().GetLine())
-}
-
-// checkTableTextLength calculates and checks the total text field length for a table.
-func (r *TableTextFieldsTotalLengthRule) checkTableTextLength(tableName string, line int) {
-	columns, exists := r.tableColumns[tableName]
-	if !exists {
+	tableInfo := r.finalCatalog.GetTable("", tableName)
+	if tableInfo == nil {
 		return
 	}
-
-	var total int64
-	for _, column := range columns {
-		total += getTextLength(column.columnType)
-	}
-
+	total := getTotalTextLength(tableInfo)
 	if total > int64(r.maximum) {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
 			Code:          advisor.TotalTextLengthExceedsLimit.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("Table %q total text column length (%d) exceeds the limit (%d).", tableName, total, r.maximum),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + line),
+			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
 		})
 	}
+}
+
+func getTotalTextLength(tableInfo *catalog.TableState) int64 {
+	var total int64
+	columns := tableInfo.ListColumns()
+	for _, column := range columns {
+		total += getTextLength(column.Type())
+	}
+	return total
 }
 
 func getTextLength(s string) int64 {

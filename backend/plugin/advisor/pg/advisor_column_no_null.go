@@ -44,7 +44,7 @@ func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) (
 			level: level,
 			title: string(checkCtx.Rule.Type),
 		},
-		catalog:         checkCtx.Catalog,
+		originCatalog:   checkCtx.OriginCatalog,
 		nullableColumns: make(columnMap),
 	}
 
@@ -73,7 +73,7 @@ type columnMap map[columnName]int
 type columnNoNullRule struct {
 	BaseRule
 
-	catalog         *catalog.Finder
+	originCatalog   *catalog.DatabaseState
 	nullableColumns columnMap
 }
 
@@ -306,12 +306,8 @@ func (r *columnNoNullRule) removeColumnByTableConstraint(schema, table string, c
 		if existingIndex.Name() != nil {
 			indexName := pg.NormalizePostgreSQLName(existingIndex.Name())
 			// Try to find index in catalog
-			if r.catalog != nil {
-				_, index := r.catalog.Origin.FindIndex(&catalog.IndexFind{
-					SchemaName: schema,
-					TableName:  table,
-					IndexName:  indexName,
-				})
+			if r.originCatalog != nil {
+				_, index := r.originCatalog.GetIndex(schema, table, indexName)
 				if index != nil {
 					for _, expression := range index.ExpressionList() {
 						r.removeColumn(schema, table, expression)

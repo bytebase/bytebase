@@ -3,6 +3,7 @@ package mysql
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/parser/mysql"
@@ -11,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -41,7 +43,7 @@ func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) (
 	}
 
 	// Create the rule
-	rule := NewColumnNoNullRule(level, string(checkCtx.Rule.Type))
+	rule := NewColumnNoNullRule(level, string(checkCtx.Rule.Type), checkCtx.FinalCatalog)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
@@ -52,21 +54,38 @@ func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) (
 		antlr.ParseTreeWalkerDefault.Walk(checker, stmtNode.Tree)
 	}
 
+	// Generate advice after walking
+	rule.generateAdvice()
+
 	return checker.GetAdviceList(), nil
+}
+
+type columnName struct {
+	tableName  string
+	columnName string
+	line       int
+}
+
+func (c columnName) name() string {
+	return fmt.Sprintf("%s.%s", c.tableName, c.columnName)
 }
 
 // ColumnNoNullRule checks for column no NULL value.
 type ColumnNoNullRule struct {
 	BaseRule
+	columnSet    map[string]columnName
+	finalCatalog *catalog.DatabaseState
 }
 
 // NewColumnNoNullRule creates a new ColumnNoNullRule.
-func NewColumnNoNullRule(level storepb.Advice_Status, title string) *ColumnNoNullRule {
+func NewColumnNoNullRule(level storepb.Advice_Status, title string, finalCatalog *catalog.DatabaseState) *ColumnNoNullRule {
 	return &ColumnNoNullRule{
 		BaseRule: BaseRule{
 			level: level,
 			title: title,
 		},
+		columnSet:    make(map[string]columnName),
+		finalCatalog: finalCatalog,
 	}
 }
 
@@ -93,6 +112,41 @@ func (*ColumnNoNullRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
 	return nil
 }
 
+func (r *ColumnNoNullRule) generateAdvice() {
+	var columnList []columnName
+	for _, column := range r.columnSet {
+		columnList = append(columnList, column)
+	}
+	slices.SortFunc(columnList, func(a, b columnName) int {
+		if a.line != b.line {
+			if a.line < b.line {
+				return -1
+			}
+			return 1
+		}
+		if a.columnName < b.columnName {
+			return -1
+		}
+		if a.columnName > b.columnName {
+			return 1
+		}
+		return 0
+	})
+
+	for _, column := range columnList {
+		col := r.finalCatalog.GetColumn("", column.tableName, column.columnName)
+		if col != nil && col.Nullable() {
+			r.AddAdvice(&storepb.Advice{
+				Status:        r.level,
+				Code:          advisor.ColumnCannotNull.Int32(),
+				Title:         r.title,
+				Content:       fmt.Sprintf("`%s`.`%s` cannot have NULL value", column.tableName, column.columnName),
+				StartPosition: common.ConvertANTLRLineToPosition(column.line),
+			})
+		}
+	}
+}
+
 func (r *ColumnNoNullRule) checkCreateTable(ctx *mysql.CreateTableContext) {
 	if ctx.TableName() == nil {
 		return
@@ -110,42 +164,19 @@ func (r *ColumnNoNullRule) checkCreateTable(ctx *mysql.CreateTableContext) {
 			continue
 		}
 
-		_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
-		fieldDef := tableElement.ColumnDefinition().FieldDefinition()
-		if fieldDef == nil {
+		_, _, column := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
+		if tableElement.ColumnDefinition().FieldDefinition() == nil {
 			continue
 		}
-
-		// Check nullability directly from AST
-		if isNullable(fieldDef) {
-			r.AddAdvice(&storepb.Advice{
-				Status:        r.level,
-				Code:          advisor.ColumnCannotNull.Int32(),
-				Title:         r.title,
-				Content:       fmt.Sprintf("`%s`.`%s` cannot have NULL value", tableName, columnName),
-				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + tableElement.ColumnDefinition().GetStart().GetLine()),
-			})
+		col := columnName{
+			tableName:  tableName,
+			columnName: column,
+			line:       r.baseLine + tableElement.ColumnDefinition().GetStart().GetLine(),
+		}
+		if _, exists := r.columnSet[col.name()]; !exists {
+			r.columnSet[col.name()] = col
 		}
 	}
-}
-
-// isNullable checks if a column is nullable based on its field definition.
-// Default is nullable unless explicitly marked as NOT NULL or PRIMARY KEY.
-func isNullable(fieldDef mysql.IFieldDefinitionContext) bool {
-	for _, attribute := range fieldDef.AllColumnAttribute() {
-		if attribute == nil {
-			continue
-		}
-		// NOT NULL
-		if attribute.NullLiteral() != nil && attribute.NOT_SYMBOL() != nil {
-			return false
-		}
-		// PRIMARY KEY implies NOT NULL
-		if attribute.GetValue() != nil && attribute.GetValue().GetTokenType() == mysql.MySQLParserKEY_SYMBOL {
-			return false
-		}
-	}
-	return true
 }
 
 func (r *ColumnNoNullRule) checkAlterTable(ctx *mysql.AlterTableContext) {
@@ -166,63 +197,41 @@ func (r *ColumnNoNullRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 			continue
 		}
 
+		var columns []string
 		switch {
 		// add column
 		case item.ADD_SYMBOL() != nil:
 			switch {
 			case item.Identifier() != nil && item.FieldDefinition() != nil:
-				columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
-				if isNullable(item.FieldDefinition()) {
-					r.AddAdvice(&storepb.Advice{
-						Status:        r.level,
-						Code:          advisor.ColumnCannotNull.Int32(),
-						Title:         r.title,
-						Content:       fmt.Sprintf("`%s`.`%s` cannot have NULL value", tableName, columnName),
-						StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + item.GetStart().GetLine()),
-					})
-				}
+				column := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
+				columns = append(columns, column)
 			case item.OPEN_PAR_SYMBOL() != nil && item.TableElementList() != nil:
 				for _, tableElement := range item.TableElementList().AllTableElement() {
-					if tableElement.ColumnDefinition() == nil || tableElement.ColumnDefinition().FieldDefinition() == nil {
+					if tableElement.ColumnDefinition() == nil {
 						continue
 					}
-					_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
-					if isNullable(tableElement.ColumnDefinition().FieldDefinition()) {
-						r.AddAdvice(&storepb.Advice{
-							Status:        r.level,
-							Code:          advisor.ColumnCannotNull.Int32(),
-							Title:         r.title,
-							Content:       fmt.Sprintf("`%s`.`%s` cannot have NULL value", tableName, columnName),
-							StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + tableElement.GetStart().GetLine()),
-						})
-					}
+					_, _, column := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
+					columns = append(columns, column)
 				}
 			default:
 			}
-		// change column or modify column
-		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil && item.FieldDefinition() != nil:
-			columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
-			if isNullable(item.FieldDefinition()) {
-				r.AddAdvice(&storepb.Advice{
-					Status:        r.level,
-					Code:          advisor.ColumnCannotNull.Int32(),
-					Title:         r.title,
-					Content:       fmt.Sprintf("`%s`.`%s` cannot have NULL value", tableName, columnName),
-					StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + item.GetStart().GetLine()),
-				})
-			}
-		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.FieldDefinition() != nil:
-			columnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
-			if isNullable(item.FieldDefinition()) {
-				r.AddAdvice(&storepb.Advice{
-					Status:        r.level,
-					Code:          advisor.ColumnCannotNull.Int32(),
-					Title:         r.title,
-					Content:       fmt.Sprintf("`%s`.`%s` cannot have NULL value", tableName, columnName),
-					StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + item.GetStart().GetLine()),
-				})
-			}
+		// change column
+		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil:
+			// only care new column name.
+			column := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
+			columns = append(columns, column)
 		default:
+		}
+
+		for _, column := range columns {
+			col := columnName{
+				tableName:  tableName,
+				columnName: column,
+				line:       r.baseLine + item.GetStart().GetLine(),
+			}
+			if _, exists := r.columnSet[col.name()]; !exists {
+				r.columnSet[col.name()] = col
+			}
 		}
 	}
 }
