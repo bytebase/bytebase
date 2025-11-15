@@ -2048,6 +2048,7 @@
     "create-read-only-data-source": "前去创建",
     "save-sheet": "保存工作表",
     "choose-folder": "选择文件夹",
+    "choose-folder-tips": "您可以通过输入不存在的路径来创建新文件夹。文件夹之间应以“/”连接。",
     "save-sheet-input-placeholder": "请输入工作表名称",
     "format": "格式化",
     "visualize-explain": "可视化 Explain",

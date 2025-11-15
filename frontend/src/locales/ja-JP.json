@@ -2048,6 +2048,7 @@
     "create-read-only-data-source": "作成に行く",
     "save-sheet": "ワークシートの保存",
     "choose-folder": "フォルダを選択",
+    "choose-folder-tips": "存在しないパスを入力することで新しいフォルダを作成できます。フォルダは「/」で結合する必要があります。",
     "save-sheet-input-placeholder": "ワークシート名を入力してください",
     "format": "フォーマット",
     "visualize-explain": "視覚化の説明",

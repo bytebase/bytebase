@@ -2048,6 +2048,7 @@
     "create-read-only-data-source": "Ir a crear",
     "save-sheet": "Guardar hoja",
     "choose-folder": "Seleccionar carpeta",
+    "choose-folder-tips": "Puedes crear una nueva carpeta introduciendo una ruta que no exista. Las carpetas deben unirse con una barra diagonal (\"/\").",
     "save-sheet-input-placeholder": "Por favor, ingresa un nombre para la hoja",
     "format": "Formato",
     "visualize-explain": "Visualizar explicación",
