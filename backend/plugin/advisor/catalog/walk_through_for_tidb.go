@@ -41,7 +41,7 @@ func (d *DatabaseState) changeState(in tidbast.StmtNode) (err *WalkThroughError)
 			err.Line = in.OriginTextPosition()
 		}
 	}()
-	if d.deleted {
+	if d.IsDeleted() {
 		return &WalkThroughError{
 			Type:    ErrorTypeDatabaseIsDeleted,
 			Content: fmt.Sprintf("Database `%s` is deleted", d.name),
@@ -135,7 +135,7 @@ func (d *DatabaseState) dropDatabase(node *tidbast.DropDatabaseStmt) *WalkThroug
 		return NewAccessOtherDatabaseError(d.name, node.Name.O)
 	}
 
-	d.deleted = true
+	d.MarkDeleted()
 	return nil
 }
 
