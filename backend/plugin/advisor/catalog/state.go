@@ -895,18 +895,21 @@ func (t *TableState) DropColumn(columnName string, checkIntegrity bool, checkVie
 		}
 	}
 
-	// Drop the column from indexes
-	var dropIndexList []string
+	// Remove column from indexes, and drop indexes that become empty
 	for _, index := range t.indexSet {
+		// Remove the column from the index key list
+		var newKeyList []string
 		for _, key := range index.expressionList {
-			if strings.EqualFold(key, columnName) {
-				dropIndexList = append(dropIndexList, index.name)
-				break
+			if !strings.EqualFold(key, columnName) {
+				newKeyList = append(newKeyList, key)
 			}
 		}
-	}
-	for _, indexName := range dropIndexList {
-		delete(t.indexSet, strings.ToLower(indexName))
+		index.expressionList = newKeyList
+
+		// If all columns that make up an index are dropped, the index is dropped as well
+		if len(index.expressionList) == 0 {
+			delete(t.indexSet, strings.ToLower(index.name))
+		}
 	}
 
 	delete(t.columnSet, strings.ToLower(columnName))

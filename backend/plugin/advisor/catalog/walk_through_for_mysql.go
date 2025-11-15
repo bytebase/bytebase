@@ -342,7 +342,7 @@ func (l *mysqlListener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 		case item.RENAME_SYMBOL() != nil && item.COLUMN_SYMBOL() != nil:
 			oldColumnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
 			newColumnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
-			if err := table.renameColumn(l.databaseState.ctx, oldColumnName, newColumnName); err != nil {
+			if err := table.RenameColumn(oldColumnName, newColumnName, l.databaseState.ctx.CheckIntegrity); err != nil {
 				l.err = err
 				return
 			}
