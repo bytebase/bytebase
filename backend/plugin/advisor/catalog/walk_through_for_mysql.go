@@ -17,9 +17,7 @@ func (d *DatabaseState) mysqlWalkThrough(ast any) error {
 	// We define the Catalog as Database -> Schema -> Table. The Schema is only for PostgreSQL.
 	// So we use a Schema whose name is empty for other engines, such as MySQL.
 	// If there is no empty-string-name schema, create it to avoid corner cases.
-	if _, exists := d.schemaSet[""]; !exists {
-		d.createSchema()
-	}
+	d.GetOrCreateSchema("")
 
 	nodeList, ok := ast.([]*mysqlparser.ParseResult)
 	if !ok {
@@ -97,11 +95,8 @@ func (l *mysqlListener) EnterCreateTable(ctx *mysql.CreateTableContext) {
 		return
 	}
 
-	schema, exists := l.databaseState.schemaSet[""]
-	if !exists {
-		schema = l.databaseState.createSchema()
-	}
-	if _, exists = schema.getTable(tableName); exists {
+	schema := l.databaseState.GetOrCreateSchema("")
+	if _, exists := schema.getTable(tableName); exists {
 		if ctx.IfNotExists() != nil {
 			return
 		}
@@ -126,15 +121,11 @@ func (l *mysqlListener) EnterCreateTable(ctx *mysql.CreateTableContext) {
 		return
 	}
 
-	table := &TableState{
-		name:      tableName,
-		engine:    newEmptyStringPointer(),
-		collation: newEmptyStringPointer(),
-		comment:   newEmptyStringPointer(),
-		columnSet: make(columnStateMap),
-		indexSet:  make(IndexStateMap),
+	table, err := schema.CreateTable(tableName)
+	if err != nil {
+		l.err = err
+		return
 	}
-	schema.tableSet[table.name] = table
 
 	if ctx.TableElementList() == nil {
 		return
@@ -194,10 +185,7 @@ func (l *mysqlListener) EnterDropTable(ctx *mysql.DropTableContext) {
 			}
 		}
 
-		schema, exists := l.databaseState.schemaSet[""]
-		if !exists {
-			schema = l.databaseState.createSchema()
-		}
+		schema := l.databaseState.GetOrCreateSchema("")
 
 		table, exists := schema.getTable(tableName)
 		if !exists {
@@ -211,7 +199,11 @@ func (l *mysqlListener) EnterDropTable(ctx *mysql.DropTableContext) {
 			return
 		}
 
-		delete(schema.tableSet, table.name)
+		// MySQL doesn't check view dependencies for DROP TABLE, so pass nil
+		if err := schema.DropTable(table.name, nil); err != nil {
+			l.err = err
+			return
+		}
 	}
 }
 
@@ -251,15 +243,15 @@ func (l *mysqlListener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 					continue
 				}
 				engine := op.EngineRef().GetText()
-				table.engine = newStringPointer(engine)
+				table.SetEngine(engine)
 			// table comment.
 			case op.COMMENT_SYMBOL() != nil && op.TextStringLiteral() != nil:
 				comment := mysqlparser.NormalizeMySQLTextStringLiteral(op.TextStringLiteral())
-				table.comment = newStringPointer(comment)
+				table.SetComment(comment)
 			// table collation.
 			case op.DefaultCollation() != nil && op.DefaultCollation().CollationName() != nil:
 				collation := mysqlparser.NormalizeMySQLCollationName(op.DefaultCollation().CollationName())
-				table.collation = newStringPointer(collation)
+				table.SetCollation(collation)
 			default:
 			}
 		}
@@ -311,20 +303,20 @@ func (l *mysqlListener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 			// drop column.
 			case item.ColumnInternalRef() != nil:
 				columnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
-				if err := table.dropColumn(l.databaseState.ctx, columnName); err != nil {
+				if err := table.DropColumn(columnName, l.databaseState.ctx.CheckIntegrity, nil); err != nil {
 					l.err = err
 					return
 				}
 				// drop primary key.
 			case item.PRIMARY_SYMBOL() != nil && item.KEY_SYMBOL() != nil:
-				if err := table.dropIndex(l.databaseState.ctx, PrimaryKeyName); err != nil {
+				if err := table.DropIndex(PrimaryKeyName, l.databaseState.ctx.CheckIntegrity, nil); err != nil {
 					l.err = err
 					return
 				}
 				// drop key/index.
 			case item.KeyOrIndex() != nil && item.IndexRef() != nil:
 				_, _, indexName := mysqlparser.NormalizeIndexRef(item.IndexRef())
-				if err := table.dropIndex(l.databaseState.ctx, indexName); err != nil {
+				if err := table.DropIndex(indexName, l.databaseState.ctx.CheckIntegrity, nil); err != nil {
 					l.err = err
 					return
 				}
@@ -374,8 +366,8 @@ func (l *mysqlListener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 		// rename table.
 		case item.RENAME_SYMBOL() != nil && item.TableName() != nil:
 			_, newTableName := mysqlparser.NormalizeMySQLTableName(item.TableName())
-			schema := l.databaseState.schemaSet[""]
-			if err := schema.renameTable(l.databaseState.ctx, table.name, newTableName); err != nil {
+			schema := l.databaseState.GetOrCreateSchema("")
+			if err := schema.RenameTable(table.name, newTableName); err != nil {
 				l.err = err
 				return
 			}
@@ -383,7 +375,7 @@ func (l *mysqlListener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 		case item.RENAME_SYMBOL() != nil && item.KeyOrIndex() != nil && item.IndexRef() != nil && item.IndexName() != nil:
 			_, _, oldIndexName := mysqlparser.NormalizeIndexRef(item.IndexRef())
 			newIndexName := mysqlparser.NormalizeIndexName(item.IndexName())
-			if err := table.renameIndex(l.databaseState.ctx, oldIndexName, newIndexName); err != nil {
+			if err := table.RenameIndex(oldIndexName, newIndexName, l.databaseState.ctx.CheckIntegrity, nil); err != nil {
 				l.err = err
 				return
 			}
@@ -413,7 +405,7 @@ func (l *mysqlListener) EnterDropIndex(ctx *mysql.DropIndexContext) {
 	}
 
 	_, _, indexName := mysqlparser.NormalizeIndexRef(ctx.IndexRef())
-	if err := table.dropIndex(l.databaseState.ctx, indexName); err != nil {
+	if err := table.DropIndex(indexName, l.databaseState.ctx.CheckIntegrity, nil); err != nil {
 		l.err = err
 	}
 }
@@ -497,10 +489,10 @@ func (l *mysqlListener) EnterAlterDatabase(ctx *mysql.AlterDatabaseContext) {
 		switch {
 		case option.CreateDatabaseOption().DefaultCharset() != nil && option.CreateDatabaseOption().DefaultCharset().CharsetName() != nil:
 			charset := mysqlparser.NormalizeMySQLCharsetName(option.CreateDatabaseOption().DefaultCharset().CharsetName())
-			l.databaseState.characterSet = charset
+			l.databaseState.SetCharacterSet(charset)
 		case option.CreateDatabaseOption().DefaultCollation() != nil && option.CreateDatabaseOption().DefaultCollation().CollationName() != nil:
 			collation := mysqlparser.NormalizeMySQLCollationName(option.CreateDatabaseOption().DefaultCollation().CollationName())
-			l.databaseState.collation = collation
+			l.databaseState.SetCollation(collation)
 		default:
 			// Other options
 		}
@@ -522,7 +514,7 @@ func (l *mysqlListener) EnterDropDatabase(ctx *mysql.DropDatabaseContext) {
 		return
 	}
 
-	l.databaseState.deleted = true
+	l.databaseState.MarkDeleted()
 }
 
 // EnterCreateDatabase is called when production createDatabase is entered.
@@ -543,10 +535,7 @@ func (l *mysqlListener) EnterRenameTableStatement(ctx *mysql.RenameTableStatemen
 		return
 	}
 	for _, pair := range ctx.AllRenamePair() {
-		schema, exists := l.databaseState.schemaSet[""]
-		if !exists {
-			schema = l.databaseState.createSchema()
-		}
+		schema := l.databaseState.GetOrCreateSchema("")
 
 		_, oldTableName := mysqlparser.NormalizeMySQLTableRef(pair.TableRef())
 		_, newTableName := mysqlparser.NormalizeMySQLTableName(pair.TableName())
@@ -849,7 +838,7 @@ func (d *DatabaseState) mysqlCopyTable(databaseName, tableName, referTable strin
 		return err
 	}
 
-	schema := d.schemaSet[""]
+	schema := d.GetOrCreateSchema("")
 	table := targetTable.copy()
 	table.name = tableName
 	schema.tableSet[table.name] = table
@@ -861,10 +850,7 @@ func (d *DatabaseState) mysqlFindTableState(databaseName, tableName string) (*Ta
 		return nil, NewAccessOtherDatabaseError(d.name, databaseName)
 	}
 
-	schema, exists := d.schemaSet[""]
-	if !exists {
-		schema = d.createSchema()
-	}
+	schema := d.GetOrCreateSchema("")
 
 	table, exists := schema.getTable(tableName)
 	if !exists {
