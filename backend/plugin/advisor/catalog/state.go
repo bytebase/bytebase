@@ -12,19 +12,18 @@ import (
 )
 
 // NewDatabaseState creates a new database state from schema metadata and context.
-func NewDatabaseState(d *storepb.DatabaseSchemaMetadata, context *FinderContext) *DatabaseState {
+func NewDatabaseState(d *storepb.DatabaseSchemaMetadata, ignoreCaseSensitive bool, engineType storepb.Engine) *DatabaseState {
 	database := &DatabaseState{
-		ctx:          context,
-		name:         d.Name,
-		characterSet: d.CharacterSet,
-		collation:    d.Collation,
-		dbType:       context.EngineType,
-		schemaSet:    make(schemaStateMap),
-		usable:       true,
+		ignoreCaseSensitive: ignoreCaseSensitive,
+		name:                d.Name,
+		characterSet:        d.CharacterSet,
+		collation:           d.Collation,
+		dbType:              engineType,
+		schemaSet:           make(schemaStateMap),
 	}
 
 	for _, schema := range d.Schemas {
-		database.schemaSet[schema.Name] = newSchemaState(schema, database.ctx)
+		database.schemaSet[schema.Name] = newSchemaState(schema, database.ignoreCaseSensitive, database.dbType)
 	}
 
 	for _, schema := range d.Schemas {
@@ -45,17 +44,17 @@ func NewDatabaseState(d *storepb.DatabaseSchemaMetadata, context *FinderContext)
 	return database
 }
 
-func newSchemaState(s *storepb.SchemaMetadata, context *FinderContext) *SchemaState {
+func newSchemaState(s *storepb.SchemaMetadata, ignoreCaseSensitive bool, engineType storepb.Engine) *SchemaState {
 	schema := &SchemaState{
-		ctx:           context,
-		name:          s.Name,
-		tableSet:      make(tableStateMap),
-		viewSet:       make(viewStateMap),
-		identifierMap: make(identifierMap),
+		ignoreCaseSensitive: ignoreCaseSensitive,
+		name:                s.Name,
+		tableSet:            make(tableStateMap),
+		viewSet:             make(viewStateMap),
+		identifierMap:       make(identifierMap),
 	}
 
 	for _, table := range s.Tables {
-		tableState := newTableState(table, context)
+		tableState := newTableState(table, engineType)
 		schema.tableSet[table.Name] = tableState
 
 		schema.identifierMap[table.Name] = true
@@ -81,7 +80,7 @@ func newViewState(v *storepb.ViewMetadata) *ViewState {
 	}
 }
 
-func newTableState(t *storepb.TableMetadata, context *FinderContext) *TableState {
+func newTableState(t *storepb.TableMetadata, engineType storepb.Engine) *TableState {
 	table := &TableState{
 		name:           t.Name,
 		engine:         newStringPointer(t.Engine),
@@ -94,7 +93,7 @@ func newTableState(t *storepb.TableMetadata, context *FinderContext) *TableState
 
 	for i, column := range t.Columns {
 		columnName := column.Name
-		switch context.EngineType {
+		switch engineType {
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			columnName = strings.ToLower(columnName)
 		default:
@@ -105,7 +104,7 @@ func newTableState(t *storepb.TableMetadata, context *FinderContext) *TableState
 
 	for _, index := range t.Indexes {
 		indexName := index.Name
-		switch context.EngineType {
+		switch engineType {
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			indexName = strings.ToLower(indexName)
 		default:
@@ -153,14 +152,13 @@ func newIndexState(i *storepb.IndexMetadata) *IndexState {
 
 // DatabaseState is the state for walk-through.
 type DatabaseState struct {
-	ctx          *FinderContext
-	name         string
-	characterSet string
-	collation    string
-	dbType       storepb.Engine
-	schemaSet    schemaStateMap
-	deleted      bool
-	usable       bool
+	ignoreCaseSensitive bool
+	name                string
+	characterSet        string
+	collation           string
+	dbType              storepb.Engine
+	schemaSet           schemaStateMap
+	deleted             bool
 }
 
 // Index returns the index map of the table.
@@ -170,11 +168,6 @@ func (d *DatabaseState) Index(schemaName string, tableName string) *IndexStateMa
 		return nil
 	}
 	return schema.Index(tableName)
-}
-
-// Usable returns the usable of the database state.
-func (d *DatabaseState) Usable() bool {
-	return d.usable
 }
 
 // HasNoTable returns true if the current database has no table.
@@ -251,7 +244,7 @@ func (d *DatabaseState) GetPrimaryKey(schemaName string, tableName string) *Inde
 			continue
 		}
 		for _, table := range schema.tableSet {
-			if !compareIdentifier(table.name, tableName, schema.ctx.IgnoreCaseSensitive) {
+			if !compareIdentifier(table.name, tableName, schema.ignoreCaseSensitive) {
 				continue
 			}
 			for _, index := range table.indexSet {
@@ -328,10 +321,10 @@ type identifierMap map[string]bool
 
 // SchemaState is the state for walk-through.
 type SchemaState struct {
-	ctx      *FinderContext
-	name     string
-	tableSet tableStateMap
-	viewSet  viewStateMap
+	ignoreCaseSensitive bool
+	name                string
+	tableSet            tableStateMap
+	viewSet             viewStateMap
 
 	// PostgreSQL specific fields
 	// All relation names in PostgreSQL must be distinct in schema level.
@@ -599,11 +592,11 @@ func newBoolPointer(v bool) *bool {
 // createSchemaState creates a new schema state with the given name.
 func (d *DatabaseState) createSchemaState(schemaName string) *SchemaState {
 	schema := &SchemaState{
-		ctx:           d.ctx,
-		name:          schemaName,
-		tableSet:      make(tableStateMap),
-		viewSet:       make(viewStateMap),
-		identifierMap: make(identifierMap),
+		ignoreCaseSensitive: d.ignoreCaseSensitive,
+		name:                schemaName,
+		tableSet:            make(tableStateMap),
+		viewSet:             make(viewStateMap),
+		identifierMap:       make(identifierMap),
 	}
 	d.schemaSet[schemaName] = schema
 	return schema

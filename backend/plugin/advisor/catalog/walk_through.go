@@ -205,7 +205,7 @@ func compareIdentifier(a, b string, ignoreCaseSensitive bool) bool {
 
 // isCurrentDatabase returns true if the given database is the current database of the state.
 func (d *DatabaseState) isCurrentDatabase(database string) bool {
-	return compareIdentifier(d.name, database, d.ctx.IgnoreCaseSensitive)
+	return compareIdentifier(d.name, database, d.ignoreCaseSensitive)
 }
 
 // getTable returns the table with the given name if it exists in the schema.
@@ -214,7 +214,7 @@ func (d *DatabaseState) isCurrentDatabase(database string) bool {
 //nolint:revive
 func (s *SchemaState) getTable(table string) (*TableState, bool) {
 	for k, v := range s.tableSet {
-		if compareIdentifier(k, table, s.ctx.IgnoreCaseSensitive) {
+		if compareIdentifier(k, table, s.ignoreCaseSensitive) {
 			return v, true
 		}
 	}
@@ -223,7 +223,7 @@ func (s *SchemaState) getTable(table string) (*TableState, bool) {
 }
 
 //nolint:revive
-func (s *SchemaState) renameTable(_ *FinderContext, oldName string, newName string) *WalkThroughError {
+func (s *SchemaState) renameTable(oldName string, newName string) *WalkThroughError {
 	if oldName == newName {
 		return nil
 	}
@@ -251,10 +251,10 @@ func (s *SchemaState) renameTable(_ *FinderContext, oldName string, newName stri
 
 func (d *DatabaseState) createSchema() *SchemaState {
 	schema := &SchemaState{
-		ctx:      d.ctx,
-		name:     "",
-		tableSet: make(tableStateMap),
-		viewSet:  make(viewStateMap),
+		ignoreCaseSensitive: d.ignoreCaseSensitive,
+		name:                "",
+		tableSet:            make(tableStateMap),
+		viewSet:             make(viewStateMap),
 	}
 
 	d.schemaSet[""] = schema
@@ -328,11 +328,11 @@ func (d *DatabaseState) getSchema(schemaName string) (*SchemaState, *WalkThrough
 			}
 		}
 		schema = &SchemaState{
-			ctx:           d.ctx,
-			name:          publicSchemaName,
-			tableSet:      make(tableStateMap),
-			viewSet:       make(viewStateMap),
-			identifierMap: make(identifierMap),
+			ignoreCaseSensitive: d.ignoreCaseSensitive,
+			name:                publicSchemaName,
+			tableSet:            make(tableStateMap),
+			viewSet:             make(viewStateMap),
+			identifierMap:       make(identifierMap),
 		}
 		d.schemaSet[publicSchemaName] = schema
 	}

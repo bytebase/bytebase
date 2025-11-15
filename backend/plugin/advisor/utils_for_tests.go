@@ -200,9 +200,8 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 		if dbType == storepb.Engine_POSTGRES {
 			database = MockPostgreSQLDatabase
 		}
-		ctx := &catalog.FinderContext{EngineType: dbType}
-		originCatalog := catalog.NewDatabaseState(database, ctx)
-		finalCatalog := catalog.NewDatabaseState(database, ctx)
+		originCatalog := catalog.NewDatabaseState(database, false /* ignoreCaseSensitive */, dbType)
+		finalCatalog := catalog.NewDatabaseState(database, false /* ignoreCaseSensitive */, dbType)
 
 		payload, err := SetDefaultSQLReviewRulePayload(rule, dbType)
 		require.NoError(t, err)

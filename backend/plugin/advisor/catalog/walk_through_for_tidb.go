@@ -80,7 +80,7 @@ func (d *DatabaseState) renameTable(node *tidbast.RenameTableStmt) *WalkThroughE
 		oldTableName := tableToTable.OldTable.Name.O
 		newTableName := tableToTable.NewTable.Name.O
 		if d.theCurrentDatabase(tableToTable) {
-			if compareIdentifier(oldTableName, newTableName, d.ctx.IgnoreCaseSensitive) {
+			if compareIdentifier(oldTableName, newTableName, d.ignoreCaseSensitive) {
 				return nil
 			}
 			table, exists := schema.getTable(oldTableName)
@@ -207,7 +207,7 @@ func (d *DatabaseState) createIndex(node *tidbast.CreateIndexStmt) *WalkThroughE
 		// Other index key types
 	}
 
-	keyList, err := table.validateAndGetKeyStringList(d.ctx, node.IndexPartSpecifications, false /* primary */, isSpatial)
+	keyList, err := table.validateAndGetKeyStringList(node.IndexPartSpecifications, false /* primary */, isSpatial)
 	if err != nil {
 		return err
 	}
@@ -242,18 +242,18 @@ func (d *DatabaseState) alterTable(node *tidbast.AlterTableStmt) *WalkThroughErr
 				if len(spec.NewColumns) == 1 {
 					pos = spec.Position
 				}
-				if err := table.createColumn(d.ctx, column, pos); err != nil {
+				if err := table.createColumn(column, pos); err != nil {
 					return err
 				}
 			}
 			// MySQL can add table constraints in ALTER TABLE ADD COLUMN statements.
 			for _, constraint := range spec.NewConstraints {
-				if err := table.createConstraint(d.ctx, constraint); err != nil {
+				if err := table.createConstraint(constraint); err != nil {
 					return err
 				}
 			}
 		case tidbast.AlterTableAddConstraint:
-			if err := table.createConstraint(d.ctx, spec.Constraint); err != nil {
+			if err := table.createConstraint(spec.Constraint); err != nil {
 				return err
 			}
 		case tidbast.AlterTableDropColumn:
@@ -271,11 +271,11 @@ func (d *DatabaseState) alterTable(node *tidbast.AlterTableStmt) *WalkThroughErr
 		case tidbast.AlterTableDropForeignKey:
 			// we do not deal with DROP FOREIGN KEY statements.
 		case tidbast.AlterTableModifyColumn:
-			if err := table.changeColumn(d.ctx, spec.NewColumns[0].Name.Name.O, spec.NewColumns[0], spec.Position); err != nil {
+			if err := table.changeColumn(spec.NewColumns[0].Name.Name.O, spec.NewColumns[0], spec.Position); err != nil {
 				return err
 			}
 		case tidbast.AlterTableChangeColumn:
-			if err := table.changeColumn(d.ctx, spec.OldColumnName.Name.O, spec.NewColumns[0], spec.Position); err != nil {
+			if err := table.changeColumn(spec.OldColumnName.Name.O, spec.NewColumns[0], spec.Position); err != nil {
 				return err
 			}
 		case tidbast.AlterTableRenameColumn:
@@ -284,11 +284,11 @@ func (d *DatabaseState) alterTable(node *tidbast.AlterTableStmt) *WalkThroughErr
 			}
 		case tidbast.AlterTableRenameTable:
 			schema := d.schemaSet[""]
-			if err := schema.renameTable(d.ctx, table.name, spec.NewTable.Name.O); err != nil {
+			if err := schema.renameTable(table.name, spec.NewTable.Name.O); err != nil {
 				return err
 			}
 		case tidbast.AlterTableAlterColumn:
-			if err := table.changeColumnDefault(d.ctx, spec.NewColumns[0]); err != nil {
+			if err := table.changeColumnDefault(spec.NewColumns[0]); err != nil {
 				return err
 			}
 		case tidbast.AlterTableRenameIndex:
@@ -296,7 +296,7 @@ func (d *DatabaseState) alterTable(node *tidbast.AlterTableStmt) *WalkThroughErr
 				return err
 			}
 		case tidbast.AlterTableIndexInvisible:
-			if err := table.changeIndexVisibility(d.ctx, spec.IndexName.O, spec.Visibility); err != nil {
+			if err := table.changeIndexVisibility(spec.IndexName.O, spec.Visibility); err != nil {
 				return err
 			}
 		default:
@@ -307,7 +307,7 @@ func (d *DatabaseState) alterTable(node *tidbast.AlterTableStmt) *WalkThroughErr
 	return nil
 }
 
-func (t *TableState) changeIndexVisibility(_ *FinderContext, indexName string, visibility tidbast.IndexVisibility) *WalkThroughError {
+func (t *TableState) changeIndexVisibility(indexName string, visibility tidbast.IndexVisibility) *WalkThroughError {
 	index, exists := t.indexSet[strings.ToLower(indexName)]
 	if !exists {
 		return NewIndexNotExistsError(t.name, indexName)
@@ -323,7 +323,7 @@ func (t *TableState) changeIndexVisibility(_ *FinderContext, indexName string, v
 	return nil
 }
 
-func (t *TableState) changeColumnDefault(_ *FinderContext, column *tidbast.ColumnDef) *WalkThroughError {
+func (t *TableState) changeColumnDefault(column *tidbast.ColumnDef) *WalkThroughError {
 	columnName := column.Name.Name.L
 	colState, exists := t.columnSet[columnName]
 	if !exists {
@@ -389,7 +389,7 @@ func (t *TableState) renameColumnInIndexKey(oldName string, newName string) {
 // 1. drop column from tableState.columnSet, but do not drop column from indexSet.
 // 2. rename column from indexSet.
 // 3. create a new column in columnSet.
-func (t *TableState) completeTableChangeColumn(ctx *FinderContext, oldName string, newColumn *tidbast.ColumnDef, position *tidbast.ColumnPosition) *WalkThroughError {
+func (t *TableState) completeTableChangeColumn(oldName string, newColumn *tidbast.ColumnDef, position *tidbast.ColumnPosition) *WalkThroughError {
 	column, exists := t.columnSet[strings.ToLower(oldName)]
 	if !exists {
 		return NewColumnNotExistsError(t.name, oldName)
@@ -437,11 +437,11 @@ func (t *TableState) completeTableChangeColumn(ctx *FinderContext, oldName strin
 	t.renameColumnInIndexKey(oldName, newColumn.Name.Name.O)
 
 	// create a new column in columnSet
-	return t.createColumn(ctx, newColumn, position)
+	return t.createColumn(newColumn, position)
 }
 
-func (t *TableState) changeColumn(ctx *FinderContext, oldName string, newColumn *tidbast.ColumnDef, position *tidbast.ColumnPosition) *WalkThroughError {
-	return t.completeTableChangeColumn(ctx, oldName, newColumn, position)
+func (t *TableState) changeColumn(oldName string, newColumn *tidbast.ColumnDef, position *tidbast.ColumnPosition) *WalkThroughError {
+	return t.completeTableChangeColumn(oldName, newColumn, position)
 }
 
 // reorderColumn reorders the columns for new column and returns the new column position.
@@ -581,14 +581,14 @@ func (d *DatabaseState) createTable(node *tidbast.CreateTableStmt) *WalkThroughE
 			}
 			hasAutoIncrement = true
 		}
-		if err := table.createColumn(d.ctx, column, nil /* position */); err != nil {
+		if err := table.createColumn(column, nil /* position */); err != nil {
 			err.Line = column.OriginTextPosition()
 			return err
 		}
 	}
 
 	for _, constraint := range node.Constraints {
-		if err := table.createConstraint(d.ctx, constraint); err != nil {
+		if err := table.createConstraint(constraint); err != nil {
 			err.Line = constraint.OriginTextPosition()
 			return err
 		}
@@ -597,10 +597,10 @@ func (d *DatabaseState) createTable(node *tidbast.CreateTableStmt) *WalkThroughE
 	return nil
 }
 
-func (t *TableState) createConstraint(ctx *FinderContext, constraint *tidbast.Constraint) *WalkThroughError {
+func (t *TableState) createConstraint(constraint *tidbast.Constraint) *WalkThroughError {
 	switch constraint.Tp {
 	case tidbast.ConstraintPrimaryKey:
-		keyList, err := t.validateAndGetKeyStringList(ctx, constraint.Keys, true /* primary */, false /* isSpatial */)
+		keyList, err := t.validateAndGetKeyStringList(constraint.Keys, true /* primary */, false /* isSpatial */)
 		if err != nil {
 			return err
 		}
@@ -608,7 +608,7 @@ func (t *TableState) createConstraint(ctx *FinderContext, constraint *tidbast.Co
 			return err
 		}
 	case tidbast.ConstraintKey, tidbast.ConstraintIndex:
-		keyList, err := t.validateAndGetKeyStringList(ctx, constraint.Keys, false /* primary */, false /* isSpatial */)
+		keyList, err := t.validateAndGetKeyStringList(constraint.Keys, false /* primary */, false /* isSpatial */)
 		if err != nil {
 			return err
 		}
@@ -616,7 +616,7 @@ func (t *TableState) createConstraint(ctx *FinderContext, constraint *tidbast.Co
 			return err
 		}
 	case tidbast.ConstraintUniq, tidbast.ConstraintUniqKey, tidbast.ConstraintUniqIndex:
-		keyList, err := t.validateAndGetKeyStringList(ctx, constraint.Keys, false /* primary */, false /* isSpatial */)
+		keyList, err := t.validateAndGetKeyStringList(constraint.Keys, false /* primary */, false /* isSpatial */)
 		if err != nil {
 			return err
 		}
@@ -626,7 +626,7 @@ func (t *TableState) createConstraint(ctx *FinderContext, constraint *tidbast.Co
 	case tidbast.ConstraintForeignKey:
 		// we do not deal with FOREIGN KEY constraints
 	case tidbast.ConstraintFulltext:
-		keyList, err := t.validateAndGetKeyStringList(ctx, constraint.Keys, false /* primary */, false /* isSpatial */)
+		keyList, err := t.validateAndGetKeyStringList(constraint.Keys, false /* primary */, false /* isSpatial */)
 		if err != nil {
 			return err
 		}
@@ -642,7 +642,7 @@ func (t *TableState) createConstraint(ctx *FinderContext, constraint *tidbast.Co
 	return nil
 }
 
-func (t *TableState) validateAndGetKeyStringList(_ *FinderContext, keyList []*tidbast.IndexPartSpecification, primary bool, isSpatial bool) ([]string, *WalkThroughError) {
+func (t *TableState) validateAndGetKeyStringList(keyList []*tidbast.IndexPartSpecification, primary bool, isSpatial bool) ([]string, *WalkThroughError) {
 	var res []string
 	for _, key := range keyList {
 		if key.Expr != nil {
@@ -710,7 +710,7 @@ func checkDefault(columnName string, columnType *types.FieldType, value tidbast.
 }
 
 //nolint:revive
-func (t *TableState) createColumn(_ *FinderContext, column *tidbast.ColumnDef, position *tidbast.ColumnPosition) *WalkThroughError {
+func (t *TableState) createColumn(column *tidbast.ColumnDef, position *tidbast.ColumnPosition) *WalkThroughError {
 	if _, exists := t.columnSet[column.Name.Name.L]; exists {
 		return &WalkThroughError{
 			Type:    ErrorTypeColumnExists,
