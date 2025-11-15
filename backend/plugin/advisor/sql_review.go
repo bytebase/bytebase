@@ -534,7 +534,7 @@ func SQLReviewCheck(
 	if !builtinOnly && checkContext.FinalCatalog != nil {
 		switch checkContext.DBType {
 		case storepb.Engine_TIDB, storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_POSTGRES, storepb.Engine_OCEANBASE:
-			if err := checkContext.FinalCatalog.WalkThrough(asts); err != nil {
+			if err := catalog.WalkThrough(checkContext.FinalCatalog, asts); err != nil {
 				return convertWalkThroughErrorToAdvice(err)
 			}
 		default:

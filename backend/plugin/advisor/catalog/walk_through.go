@@ -179,14 +179,14 @@ func (e *WalkThroughError) Error() string {
 }
 
 // WalkThrough will collect the catalog schema in the databaseState as it walks through the stmt.
-func (d *DatabaseState) WalkThrough(ast any) error {
+func WalkThrough(d *DatabaseState, ast any) error {
 	switch d.dbType {
 	case storepb.Engine_TIDB:
-		return d.tidbWalkThrough(ast)
+		return TiDBWalkThrough(d, ast)
 	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-		return d.mysqlWalkThrough(ast)
+		return MySQLWalkThrough(d, ast)
 	case storepb.Engine_POSTGRES:
-		if err := d.pgWalkThrough(ast); err != nil {
+		if err := PgWalkThrough(d, ast); err != nil {
 			if d.ctx.CheckIntegrity {
 				return err
 			}
