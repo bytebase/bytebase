@@ -158,7 +158,6 @@ type DatabaseState struct {
 	collation    string
 	dbType       storepb.Engine
 	schemaSet    schemaStateMap
-	deleted      bool
 	usable       bool
 }
 
@@ -422,17 +421,6 @@ func (t *TableState) Index(_ *TableIndexFind) *IndexStateMap {
 	return &t.indexSet
 }
 
-func (t *TableState) copy() *TableState {
-	return &TableState{
-		name:      t.name,
-		engine:    copyStringPointer(t.engine),
-		collation: copyStringPointer(t.collation),
-		comment:   copyStringPointer(t.comment),
-		columnSet: t.columnSet.copy(),
-		indexSet:  t.indexSet.copy(),
-	}
-}
-
 type tableStateMap map[string]*TableState
 
 // IndexState is the state for walk-through.
@@ -453,19 +441,6 @@ type IndexState struct {
 
 	// PostgreSQL treats INDEX and CONSTRAINT differently.
 	isConstraint bool
-}
-
-func (idx *IndexState) copy() *IndexState {
-	return &IndexState{
-		name:           idx.name,
-		expressionList: copyStringSlice(idx.expressionList),
-		indexType:      copyStringPointer(idx.indexType),
-		unique:         copyBoolPointer(idx.unique),
-		primary:        copyBoolPointer(idx.primary),
-		visible:        copyBoolPointer(idx.visible),
-		comment:        copyStringPointer(idx.comment),
-		isConstraint:   idx.isConstraint,
-	}
 }
 
 // Unique returns the unique for the index.
@@ -491,14 +466,6 @@ func (idx *IndexState) ExpressionList() []string {
 
 type IndexStateMap map[string]*IndexState
 
-func (m IndexStateMap) copy() IndexStateMap {
-	res := make(IndexStateMap)
-	for k, v := range m {
-		res[k] = v.copy()
-	}
-	return res
-}
-
 // ColumnState is the state for walk-through.
 type ColumnState struct {
 	name         string
@@ -517,19 +484,6 @@ type ColumnState struct {
 	// dependencyView is used to record the dependency view for the column.
 	// Used to check if the column is used by any view.
 	dependencyView map[string]bool
-}
-
-func (col *ColumnState) copy() *ColumnState {
-	return &ColumnState{
-		name:         col.name,
-		position:     copyIntPointer(col.position),
-		defaultValue: copyStringPointer(col.defaultValue),
-		nullable:     copyBoolPointer(col.nullable),
-		columnType:   copyStringPointer(col.columnType),
-		characterSet: copyStringPointer(col.characterSet),
-		collation:    copyStringPointer(col.collation),
-		comment:      copyStringPointer(col.comment),
-	}
 }
 
 // Nullable returns nullable for the column.
@@ -558,14 +512,6 @@ func (col *ColumnState) HasDefault() bool {
 
 type columnStateMap map[string]*ColumnState
 
-func (m columnStateMap) copy() columnStateMap {
-	res := make(columnStateMap)
-	for k, v := range m {
-		res[k] = v.copy()
-	}
-	return res
-}
-
 // ViewState is the state for walk-through.
 type ViewState struct {
 	name       string
@@ -582,31 +528,10 @@ func copyStringPointer(p *string) *string {
 	return nil
 }
 
-func copyBoolPointer(p *bool) *bool {
-	if p != nil {
-		v := *p
-		return &v
-	}
-	return nil
-}
-
-func copyIntPointer(p *int) *int {
-	if p != nil {
-		v := *p
-		return &v
-	}
-	return nil
-}
-
 func copyStringSlice(in []string) []string {
 	var res []string
 	res = append(res, in...)
 	return res
-}
-
-func newEmptyStringPointer() *string {
-	res := ""
-	return &res
 }
 
 func newStringPointer(v string) *string {
@@ -617,16 +542,26 @@ func newIntPointer(v int) *int {
 	return &v
 }
 
-func newTruePointer() *bool {
-	v := true
-	return &v
-}
-
-func newFalsePointer() *bool {
-	v := false
-	return &v
-}
-
 func newBoolPointer(v bool) *bool {
 	return &v
+}
+
+// compareIdentifier returns true if the engine will regard the two identifiers as the same one.
+func compareIdentifier(a, b string, ignoreCaseSensitive bool) bool {
+	if ignoreCaseSensitive {
+		return strings.EqualFold(a, b)
+	}
+	return a == b
+}
+
+// getTable returns the table with the given name if it exists in the schema.
+// TODO(zp): It's used for MySQL, we should refactor the package to make it more clear.
+func (s *SchemaState) getTable(table string) (*TableState, bool) {
+	for k, v := range s.tableSet {
+		if compareIdentifier(k, table, s.ctx.IgnoreCaseSensitive) {
+			return v, true
+		}
+	}
+
+	return nil, false
 }

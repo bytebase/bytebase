@@ -61,8 +61,8 @@ func (*SchemaIntegrityAdvisor) Check(_ context.Context, ctx advisor.Context) ([]
 		}
 	}
 
-	// No violations found, return empty advice list
-	return []*storepb.Advice{}, nil
+	// No violations found
+	return make([]*storepb.Advice, 0), nil
 }
 
 type schemaViolationError struct {

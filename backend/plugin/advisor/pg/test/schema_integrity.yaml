@@ -1,0 +1,181 @@
+- statement: |-
+    CREATE TABLE t1 (a INT);
+    CREATE TABLE t1 (b INT);
+  want:
+    - status: 3
+      code: 1
+      title: schema.integrity
+      content: Relation "t1" already exists
+      line: 2
+- statement: |-
+    CREATE TABLE t1 (a INT);
+    CREATE TABLE t2 (a INT);
+  want: []
+- statement: |-
+    DROP TABLE t1;
+  want:
+    - status: 3
+      code: 604
+      title: schema.integrity
+      content: Table `t1` does not exist
+      line: 1
+- statement: |-
+    CREATE TABLE t1 (a INT);
+    DROP TABLE t1;
+  want: []
+- statement: |-
+    CREATE TABLE t1 (a INT PRIMARY KEY);
+    ALTER TABLE t1 ADD COLUMN a VARCHAR(255);
+  want:
+    - status: 3
+      code: 412
+      title: schema.integrity
+      content: Column `a` already exists in table `t1`
+      line: 2
+- statement: |-
+    CREATE TABLE t1 (a INT);
+    ALTER TABLE t1 DROP COLUMN b;
+  want:
+    - status: 3
+      code: 405
+      title: schema.integrity
+      content: Column `b` does not exist in table `t1`
+      line: 2
+- statement: |-
+    CREATE TABLE t1 (a INT, b VARCHAR(255));
+    ALTER TABLE t1 DROP COLUMN b;
+  want: []
+- statement: |-
+    CREATE TABLE t1 (a INT);
+    CREATE INDEX idx1 ON t1 (a);
+    CREATE INDEX idx1 ON t1 (a);
+  want:
+    - status: 3
+      code: 805
+      title: schema.integrity
+      content: Index `idx1` already exists in table `t1`
+      line: 3
+- statement: |-
+    CREATE TABLE t1 (a INT);
+    DROP INDEX idx1;
+  want:
+    - status: 3
+      code: 809
+      title: schema.integrity
+      content: Index `idx1` does not exist
+      line: 2
+- statement: |-
+    CREATE TABLE t1 (a INT);
+    CREATE INDEX idx1 ON t1 (a);
+    DROP INDEX idx1;
+  want: []
+- statement: |-
+    CREATE SCHEMA myschema;
+    CREATE TABLE myschema.t1 (a INT);
+  want: []
+- statement: |-
+    CREATE TABLE public.t1 (a INT);
+    CREATE TABLE public.t1 (b INT);
+  want:
+    - status: 3
+      code: 1
+      title: schema.integrity
+      content: Relation "t1" already exists
+      line: 2
+- statement: |-
+    CREATE TABLE IF NOT EXISTS t1 (a INT);
+    CREATE TABLE IF NOT EXISTS t1 (b INT);
+  want: []
+- statement: |-
+    DROP TABLE IF EXISTS t1;
+  want: []
+- statement: |-
+    CREATE TABLE t1 (a INT);
+    ALTER TABLE t1 RENAME COLUMN a TO b;
+  want: []
+- statement: |-
+    CREATE TABLE t1 (a INT, b VARCHAR(255));
+    ALTER TABLE t1 RENAME COLUMN a TO b;
+  want:
+    - status: 3
+      code: 412
+      title: schema.integrity
+      content: Column `b` already exists in table `t1`
+      line: 2
+- statement: |-
+    CREATE TABLE t1 (a INT);
+    ALTER TABLE t1 RENAME COLUMN c TO d;
+  want:
+    - status: 3
+      code: 405
+      title: schema.integrity
+      content: Column `c` does not exist in table `t1`
+      line: 2
+- statement: |-
+    CREATE TABLE t1 (a INT);
+    ALTER TABLE t1 ADD PRIMARY KEY (a);
+  want: []
+- statement: |-
+    CREATE TABLE t1 (a INT PRIMARY KEY);
+    ALTER TABLE t1 ADD PRIMARY KEY (a);
+  want:
+    - status: 3
+      code: 805
+      title: schema.integrity
+      content: Index `t1_pkey` already exists in table `t1`
+      line: 2
+- statement: |-
+    CREATE TABLE t1 (a INT);
+    CREATE UNIQUE INDEX uk1 ON t1 (a);
+  want: []
+- statement: |-
+    CREATE TABLE t1 (a INT);
+    ALTER TABLE t1 ALTER COLUMN a SET DEFAULT 1;
+  want: []
+- statement: |-
+    CREATE TABLE t1 (a INT);
+    ALTER TABLE t1 ALTER COLUMN b SET DEFAULT 1;
+  want:
+    - status: 3
+      code: 405
+      title: schema.integrity
+      content: Column `b` does not exist in table `t1`
+      line: 2
+- statement: |-
+    CREATE TABLE t1 (a INT);
+    ALTER TABLE t1 ALTER COLUMN a TYPE VARCHAR(255);
+  want: []
+- statement: |-
+    CREATE TABLE t1 (a INT);
+    ALTER TABLE t1 ALTER COLUMN b TYPE VARCHAR(255);
+  want:
+    - status: 3
+      code: 405
+      title: schema.integrity
+      content: Column `b` does not exist in table `t1`
+      line: 2
+- statement: |-
+    CREATE TABLE t1 (a INT);
+    ALTER TABLE t1 ADD CONSTRAINT uk1 UNIQUE (a);
+  want: []
+- statement: |-
+    CREATE TABLE t1 (a INT);
+    ALTER TABLE t1 DROP CONSTRAINT uk1;
+  want:
+    - status: 3
+      code: 809
+      title: schema.integrity
+      content: Index `uk1` does not exist in table `t1`
+      line: 2
+- statement: |-
+    CREATE VIEW v1 AS SELECT * FROM t1;
+  want:
+    - status: 3
+      code: 604
+      title: schema.integrity
+      content: Table `t1` does not exist
+      line: 1
+- statement: |-
+    CREATE TABLE t1 (a INT);
+    CREATE VIEW v1 AS SELECT * FROM t1;
+  want: []

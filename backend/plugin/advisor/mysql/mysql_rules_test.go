@@ -145,6 +145,8 @@ func TestMySQLRules(t *testing.T) {
 		advisor.SchemaRuleIndexTypeAllowList,
 
 		// System related rules.
+		// advisor.SchemaRuleSchemaIntegrity enforce the schema integrity.
+		advisor.SchemaRuleSchemaIntegrity,
 		// advisor.SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
 		advisor.SchemaRuleSchemaBackwardCompatibility,
 		// advisor.SchemaRuleCurrentTimeColumnCountLimit enforce the current column count limit.
