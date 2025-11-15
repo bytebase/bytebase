@@ -15,9 +15,7 @@ func (d *DatabaseState) tidbWalkThrough(ast any) error {
 	// We define the Catalog as Database -> Schema -> Table. The Schema is only for PostgreSQL.
 	// So we use a Schema whose name is empty for other engines, such as MySQL.
 	// If there is no empty-string-name schema, create it to avoid corner cases.
-	if _, exists := d.schemaSet[""]; !exists {
-		d.createSchema()
-	}
+	d.GetOrCreateSchema("")
 
 	nodeList, ok := ast.([]tidbast.StmtNode)
 	if !ok {
@@ -188,7 +186,7 @@ func (d *DatabaseState) dropIndex(node *tidbast.DropIndexStmt) *WalkThroughError
 		return err
 	}
 
-	return table.dropIndex(d.ctx, node.IndexName)
+	return table.DropIndex(node.IndexName, d.ctx.CheckIntegrity, nil)
 }
 
 func (d *DatabaseState) createIndex(node *tidbast.CreateIndexStmt) *WalkThroughError {
@@ -264,15 +262,15 @@ func (d *DatabaseState) alterTable(node *tidbast.AlterTableStmt) *WalkThroughErr
 				return err
 			}
 		case tidbast.AlterTableDropColumn:
-			if err := table.dropColumn(d.ctx, spec.OldColumnName.Name.O); err != nil {
+			if err := table.DropColumn(spec.OldColumnName.Name.O, d.ctx.CheckIntegrity, nil); err != nil {
 				return err
 			}
 		case tidbast.AlterTableDropPrimaryKey:
-			if err := table.dropIndex(d.ctx, PrimaryKeyName); err != nil {
+			if err := table.DropIndex(PrimaryKeyName, d.ctx.CheckIntegrity, nil); err != nil {
 				return err
 			}
 		case tidbast.AlterTableDropIndex:
-			if err := table.dropIndex(d.ctx, spec.Name); err != nil {
+			if err := table.DropIndex(spec.Name, d.ctx.CheckIntegrity, nil); err != nil {
 				return err
 			}
 		case tidbast.AlterTableDropForeignKey:
@@ -286,7 +284,7 @@ func (d *DatabaseState) alterTable(node *tidbast.AlterTableStmt) *WalkThroughErr
 				return err
 			}
 		case tidbast.AlterTableRenameColumn:
-			if err := table.renameColumn(d.ctx, spec.OldColumnName.Name.O, spec.NewColumnName.Name.O); err != nil {
+			if err := table.RenameColumn(spec.OldColumnName.Name.O, spec.NewColumnName.Name.O, d.ctx.CheckIntegrity); err != nil {
 				return err
 			}
 		case tidbast.AlterTableRenameTable:
@@ -299,7 +297,7 @@ func (d *DatabaseState) alterTable(node *tidbast.AlterTableStmt) *WalkThroughErr
 				return err
 			}
 		case tidbast.AlterTableRenameIndex:
-			if err := table.renameIndex(d.ctx, spec.FromKey.O, spec.ToKey.O); err != nil {
+			if err := table.RenameIndex(spec.FromKey.O, spec.ToKey.O, d.ctx.CheckIntegrity, nil); err != nil {
 				return err
 			}
 		case tidbast.AlterTableIndexInvisible:
@@ -330,38 +328,6 @@ func (t *TableState) changeIndexVisibility(ctx *FinderContext, indexName string,
 	default:
 		// Keep current visibility
 	}
-	return nil
-}
-
-func (t *TableState) renameIndex(ctx *FinderContext, oldName string, newName string) *WalkThroughError {
-	// For MySQL, the primary key has a special name 'PRIMARY'.
-	// And the other indexes cannot use the name which case-insensitive equals 'PRIMARY'.
-	if strings.ToUpper(oldName) == PrimaryKeyName || strings.ToUpper(newName) == PrimaryKeyName {
-		incorrectName := oldName
-		if strings.ToUpper(oldName) != PrimaryKeyName {
-			incorrectName = newName
-		}
-		return &WalkThroughError{
-			Type:    ErrorTypeIncorrectIndexName,
-			Content: fmt.Sprintf("Incorrect index name `%s`", incorrectName),
-		}
-	}
-
-	index, exists := t.indexSet[strings.ToLower(oldName)]
-	if !exists {
-		if ctx.CheckIntegrity {
-			return NewIndexNotExistsError(t.name, oldName)
-		}
-		index = t.createIncompleteIndex(oldName)
-	}
-
-	if _, exists := t.indexSet[strings.ToLower(newName)]; exists {
-		return NewIndexExistsError(t.name, newName)
-	}
-
-	index.name = newName
-	delete(t.indexSet, strings.ToLower(oldName))
-	t.indexSet[strings.ToLower(newName)] = index
 	return nil
 }
 
@@ -413,34 +379,6 @@ func (t *TableState) changeColumnDefault(ctx *FinderContext, column *tidbast.Col
 		// DROP DEFAULT
 		colState.defaultValue = nil
 	}
-	return nil
-}
-
-func (t *TableState) renameColumn(ctx *FinderContext, oldName string, newName string) *WalkThroughError {
-	if strings.EqualFold(oldName, newName) {
-		return nil
-	}
-
-	column, exists := t.columnSet[strings.ToLower(oldName)]
-	if !exists {
-		if ctx.CheckIntegrity {
-			return NewColumnNotExistsError(t.name, oldName)
-		}
-		column = t.createIncompleteColumn(oldName)
-	}
-
-	if _, exists := t.columnSet[strings.ToLower(newName)]; exists {
-		return &WalkThroughError{
-			Type:    ErrorTypeColumnExists,
-			Content: fmt.Sprintf("Column `%s` already exists in table `%s", newName, t.name),
-		}
-	}
-
-	column.name = newName
-	delete(t.columnSet, strings.ToLower(oldName))
-	t.columnSet[strings.ToLower(newName)] = column
-
-	t.renameColumnInIndexKey(oldName, newName)
 	return nil
 }
 
@@ -530,96 +468,6 @@ func (t *TableState) changeColumn(ctx *FinderContext, oldName string, newColumn 
 		return t.completeTableChangeColumn(ctx, oldName, newColumn, position)
 	}
 	return t.incompleteTableChangeColumn(ctx, oldName, newColumn, position)
-}
-
-func (t *TableState) dropIndex(ctx *FinderContext, indexName string) *WalkThroughError {
-	if ctx.CheckIntegrity {
-		if _, exists := t.indexSet[strings.ToLower(indexName)]; !exists {
-			if strings.EqualFold(indexName, PrimaryKeyName) {
-				return &WalkThroughError{
-					Type:    ErrorTypePrimaryKeyNotExists,
-					Content: fmt.Sprintf("Primary key does not exist in table `%s`", t.name),
-				}
-			}
-			return NewIndexNotExistsError(t.name, indexName)
-		}
-	}
-
-	delete(t.indexSet, strings.ToLower(indexName))
-	return nil
-}
-
-func (t *TableState) completeTableDropColumn(columnName string) *WalkThroughError {
-	column, exists := t.columnSet[strings.ToLower(columnName)]
-	if !exists {
-		return NewColumnNotExistsError(t.name, columnName)
-	}
-
-	// Cannot drop all columns in a table using ALTER TABLE DROP COLUMN.
-	if len(t.columnSet) == 1 {
-		return &WalkThroughError{
-			Type: ErrorTypeDropAllColumns,
-			// Error content comes from MySQL error content.
-			Content: fmt.Sprintf("Can't delete all columns with ALTER TABLE; use DROP TABLE %s instead", t.name),
-		}
-	}
-
-	// If columns are dropped from a table, the columns are also removed from any index of which they are a part.
-	for _, index := range t.indexSet {
-		index.dropColumn(columnName)
-		// If all columns that make up an index are dropped, the index is dropped as well.
-		if len(index.expressionList) == 0 {
-			delete(t.indexSet, strings.ToLower(index.name))
-		}
-	}
-
-	// modify the column position
-	for _, col := range t.columnSet {
-		if *col.position > *column.position {
-			*col.position--
-		}
-	}
-
-	delete(t.columnSet, strings.ToLower(columnName))
-	return nil
-}
-
-func (t *TableState) incompleteTableDropColumn(columnName string) *WalkThroughError {
-	// If columns are dropped from a table, the columns are also removed from any index of which they are a part.
-	for _, index := range t.indexSet {
-		if len(index.expressionList) == 0 {
-			continue
-		}
-		index.dropColumn(columnName)
-		// If all columns that make up an index are dropped, the index is dropped as well.
-		if len(index.expressionList) == 0 {
-			delete(t.indexSet, strings.ToLower(index.name))
-		}
-	}
-
-	delete(t.columnSet, strings.ToLower(columnName))
-	return nil
-}
-
-func (t *TableState) dropColumn(ctx *FinderContext, columnName string) *WalkThroughError {
-	if ctx.CheckIntegrity {
-		return t.completeTableDropColumn(columnName)
-	}
-	return t.incompleteTableDropColumn(columnName)
-}
-
-func (idx *IndexState) dropColumn(columnName string) {
-	if len(idx.expressionList) == 0 {
-		return
-	}
-	var newKeyList []string
-	for _, key := range idx.expressionList {
-		if !strings.EqualFold(key, columnName) {
-			newKeyList = append(newKeyList, key)
-		}
-	}
-
-	idx.expressionList = newKeyList
 }
 
 // reorderColumn reorders the columns for new column and returns the new column position.
@@ -890,6 +738,7 @@ func checkDefault(columnName string, columnType *types.FieldType, value tidbast.
 	return nil
 }
 
+//nolint:revive
 func (t *TableState) createColumn(ctx *FinderContext, column *tidbast.ColumnDef, position *tidbast.ColumnPosition) *WalkThroughError {
 	if _, exists := t.columnSet[column.Name.Name.L]; exists {
 		return &WalkThroughError{
@@ -996,6 +845,7 @@ func (t *TableState) createColumn(ctx *FinderContext, column *tidbast.ColumnDef,
 	return nil
 }
 
+//nolint:revive
 func (t *TableState) createIndex(name string, keyList []string, unique bool, tp string, option *tidbast.IndexOption) *WalkThroughError {
 	if len(keyList) == 0 {
 		return &WalkThroughError{
@@ -1039,6 +889,7 @@ func (t *TableState) createIndex(name string, keyList []string, unique bool, tp 
 	return nil
 }
 
+//nolint:revive
 func (t *TableState) createPrimaryKey(keys []string, tp string) *WalkThroughError {
 	if _, exists := t.indexSet[strings.ToLower(PrimaryKeyName)]; exists {
 		return &WalkThroughError{

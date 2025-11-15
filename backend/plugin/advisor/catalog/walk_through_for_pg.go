@@ -67,7 +67,7 @@ func (l *pgCatalogListener) setError(err *WalkThroughError) {
 
 // Helper method to check if database is deleted
 func (l *pgCatalogListener) checkDatabaseNotDeleted() bool {
-	if l.databaseState.deleted {
+	if l.databaseState.IsDeleted() {
 		l.setError(&WalkThroughError{
 			Type:    ErrorTypeDatabaseIsDeleted,
 			Content: fmt.Sprintf(`Database %q is deleted`, l.databaseState.name),

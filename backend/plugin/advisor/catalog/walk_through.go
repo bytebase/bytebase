@@ -216,6 +216,8 @@ func (d *DatabaseState) isCurrentDatabase(database string) bool {
 
 // getTable returns the table with the given name if it exists in the schema.
 // TODO(zp): It's used for MySQL, we should refactor the package to make it more clear.
+//
+//nolint:revive
 func (s *SchemaState) getTable(table string) (*TableState, bool) {
 	for k, v := range s.tableSet {
 		if compareIdentifier(k, table, s.ctx.IgnoreCaseSensitive) {
@@ -234,6 +236,7 @@ func (t *TableState) createIncompleteIndex(name string) *IndexState {
 	return index
 }
 
+//nolint:revive
 func (s *SchemaState) renameTable(ctx *FinderContext, oldName string, newName string) *WalkThroughError {
 	if oldName == newName {
 		return nil
@@ -346,6 +349,7 @@ func (s *SchemaState) pgGeneratePrimaryKeyName(tableName string) string {
 	}
 }
 
+//nolint:revive
 func (d *DatabaseState) getSchema(schemaName string) (*SchemaState, *WalkThroughError) {
 	if schemaName == "" {
 		schemaName = publicSchemaName
@@ -370,6 +374,7 @@ func (d *DatabaseState) getSchema(schemaName string) (*SchemaState, *WalkThrough
 	return schema, nil
 }
 
+//nolint:revive
 func (t *TableState) getColumn(columnName string) (*ColumnState, *WalkThroughError) {
 	column, exists := t.columnSet[columnName]
 	if !exists {
