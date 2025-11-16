@@ -2047,7 +2047,7 @@
     "project-write-desc": "シート所有者と「bb.worksheets.get」権限を持つプロジェクトユーザーの両方が読み取り/書き込みできます。",
     "create-read-only-data-source": "作成に行く",
     "save-sheet": "ワークシートの保存",
-    "choose-folder": "フォルダを選択",
+    "choose-folder": "フォルダを選択または作成",
     "choose-folder-tips": "存在しないパスを入力することで新しいフォルダを作成できます。フォルダは「/」で結合する必要があります。",
     "save-sheet-input-placeholder": "ワークシート名を入力してください",
     "format": "フォーマット",
@@ -2075,7 +2075,8 @@
           "close-all": "すべて閉じる",
           "rename": "名前の変更",
           "add-folder": "フォルダを追加",
-          "add-worksheet": "ワークシートを追加"
+          "add-worksheet": "ワークシートを追加",
+          "multi-select": "複数選択"
         }
       }
     },
@@ -2360,7 +2361,8 @@
       "confirm-to-delete-sheet-title": "このワークシートを削除しますか?",
       "confirm-to-duplicate-sheet": "このワークシートをコピーしてもよろしいですか?"
     },
-    "search-sheets": "ワークシートの検索"
+    "search-sheets": "ワークシートの検索",
+    "move-worksheets": "ワークシートを移動する"
   },
   "sql-review": {
     "title": "SQL監査ポリシー",

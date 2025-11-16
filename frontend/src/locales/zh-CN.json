@@ -2047,7 +2047,7 @@
     "project-write-desc": "工作表所有者和具有“bb.worksheets.get”权限的项目用户都可以读/写",
     "create-read-only-data-source": "前去创建",
     "save-sheet": "保存工作表",
-    "choose-folder": "选择文件夹",
+    "choose-folder": "选择或创建文件夹",
     "choose-folder-tips": "您可以通过输入不存在的路径来创建新文件夹。文件夹之间应以“/”连接。",
     "save-sheet-input-placeholder": "请输入工作表名称",
     "format": "格式化",
@@ -2075,7 +2075,8 @@
           "close-all": "关闭所有",
           "rename": "重命名",
           "add-folder": "添加文件夹",
-          "add-worksheet": "添加工作表"
+          "add-worksheet": "添加工作表",
+          "multi-select": "多选"
         }
       }
     },
@@ -2360,7 +2361,8 @@
       "confirm-to-delete-sheet-title": "确认删除此工作表？",
       "confirm-to-duplicate-sheet": "确定要复制这条工作表?"
     },
-    "search-sheets": "搜索工作表"
+    "search-sheets": "搜索工作表",
+    "move-worksheets": "移动工作表"
   },
   "sql-review": {
     "title": "SQL 审核策略",

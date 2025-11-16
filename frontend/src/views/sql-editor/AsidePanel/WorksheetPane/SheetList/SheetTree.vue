@@ -4,28 +4,61 @@
       <BBSpin :size="16" />
     </div>
 
-    <!-- TODO(ed): do we need to support batch operations? -->
-    <!-- For example, batch select worksheets then move the folder or delete -->
-    <NTree
-      v-else
-      block-line
-      block-node
-      :keyboard="false"
-      :draggable="!editingNode"
-      :data="[sheetTree]"
-      :multiple="false"
-      :show-irrelevant-nodes="false"
-      :filter="filterNode(folderContext.rootPath.value)"
-      :pattern="worksheetFilter.keyword"
-      :render-suffix="renderSuffix"
-      :render-prefix="renderPrefix"
-      :render-label="renderLabel"
-      :node-props="nodeProps"
-      :expanded-keys="expandedKeysArray"
-      :selected-keys="selectedKeys"
-      @drop="handleDrop"
-      @update:expanded-keys="(keys: string[]) => expandedKeys = new Set(keys)"
-    />
+    <template v-else>
+      <div v-if="checkable" class="px-1 flex items-center justify-start flex-wrap gap-y-1 gap-x-1 bg-blue-100 py-2">
+        <NButton
+          quaternary
+          size="tiny"
+          :disabled="checkedNodes.length === 0" @click="handleMultiDelete"
+        >
+          <template #icon>
+            <TrashIcon />
+          </template>
+          {{ t("common.delete") }}
+        </NButton>
+        <NButton
+          quaternary
+          size="tiny"
+          :disabled="checkedWorksheets.length === 0"
+          @click="showReorgModal = true"
+        >
+          <template #icon>
+            <FolderInputIcon />
+          </template>
+          {{ $t('sheet.move-worksheets') }}
+        </NButton>
+        <NButton quaternary size="tiny" @click="checkable = false">
+          <template #icon>
+            <XIcon />
+          </template>
+          {{$t("common.cancel")}}
+        </NButton>
+      </div>
+      <NTree
+        block-line
+        block-node
+        :keyboard="false"
+        :draggable="!editingNode && !checkable"
+        :data="treeData"
+        :multiple="false"
+        cascade
+        :selectable="true"
+        :checkable="checkable"
+        :show-irrelevant-nodes="false"
+        :filter="filterNode(folderContext.rootPath.value)"
+        :pattern="worksheetFilter.keyword"
+        :render-suffix="renderSuffix"
+        :render-prefix="renderPrefix"
+        :render-label="renderLabel"
+        :node-props="nodeProps"
+        :expanded-keys="expandedKeysArray"
+        :selected-keys="selectedKeys"
+        :checked-keys="checkedKeys"
+        @drop="handleDrop"
+        @update:expanded-keys="(keys: string[]) => expandedKeys = new Set(keys)"
+        @update:checked-keys="onCheckedKeysUpdate"
+      />
+    </template>
 
     <NDropdown
       class="worksheet-menu"
@@ -54,14 +87,35 @@
         @on-updated="handleContextMenuClickOutside"
       />
     </NPopover>
+
+    <BBModal
+      :show="showReorgModal"
+      :title="$t('sheet.move-worksheets')"
+      @close="() => showReorgModal = false"
+    >
+      <div class="flex flex-col gap-y-3 w-lg max-w-[calc(100vw-8rem)]">
+        <FolderForm ref="folderFormRef" :folder="''" />
+        <div class="flex justify-end gap-x-2 mt-4">
+          <NButton @click="showReorgModal = false">{{ $t("common.close") }}</NButton>
+          <NButton
+            type="primary"
+            @click="handleMoveWorksheets"
+          >
+            {{ $t("common.save") }}
+          </NButton>
+        </div>
+      </div>
+    </BBModal>
   </div>
 </template>
 
 <script setup lang="tsx">
 import { create } from "@bufbuild/protobuf";
 import { useDebounceFn } from "@vueuse/core";
+import { FolderInputIcon, TrashIcon, XIcon } from "lucide-vue-next";
 import {
   type DialogReactive,
+  NButton,
   NDropdown,
   NInput,
   NPopover,
@@ -71,8 +125,8 @@ import {
   useDialog,
 } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { computed, nextTick, watch } from "vue";
-import { BBSpin } from "@/bbkit";
+import { computed, nextTick, ref, watch } from "vue";
+import { BBModal, BBSpin } from "@/bbkit";
 import { HighlightLabelText } from "@/components/v2";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { t } from "@/plugins/i18n";
@@ -97,10 +151,11 @@ import {
   type SheetViewMode,
   useSheetContext,
   useSheetContextByView,
-  type WorsheetFolderNode,
+  type WorksheetFolderNode,
 } from "@/views/sql-editor/Sheet";
 import { filterNode } from "./common";
 import { type DropdownOptionType, useDropdown } from "./dropdown";
+import FolderForm from "./FolderForm.vue";
 import TreeNodePrefix from "./TreeNodePrefix.vue";
 import TreeNodeSuffix from "./TreeNodeSuffix.vue";
 
@@ -142,6 +197,37 @@ const {
 } = useDropdown(props.view);
 
 const expandedKeysArray = computed(() => Array.from(expandedKeys.value));
+const treeData = computed(() => [sheetTree.value]);
+
+// multi-select operations
+const checkedNodes = ref<WorksheetFolderNode[]>([]);
+const checkedKeys = computed(() => checkedNodes.value.map((node) => node.key));
+const checkable = ref(false);
+const showReorgModal = ref(false);
+const checkedWorksheets = computed(() => {
+  const worksheets: string[] = [];
+  for (const node of checkedNodes.value) {
+    if (node.worksheet) {
+      worksheets.push(node.worksheet.name);
+    }
+  }
+  return worksheets;
+});
+const folderFormRef = ref<InstanceType<typeof FolderForm>>();
+
+const onCheckedKeysUpdate = (
+  _: Array<string | number>,
+  options: Array<TreeOption | null>
+) => {
+  checkedNodes.value = options.filter((node) => node) as WorksheetFolderNode[];
+};
+
+watch(
+  () => checkable.value,
+  () => {
+    checkedNodes.value = [];
+  }
+);
 
 watch(
   isInitialized,
@@ -175,7 +261,7 @@ const handleWorksheetToggleStar = useDebounceFn(
 );
 
 const renderPrefix = ({ option }: { option: TreeOption }) => {
-  const node = option as WorsheetFolderNode;
+  const node = option as WorksheetFolderNode;
   return (
     <TreeNodePrefix
       node={node}
@@ -187,7 +273,7 @@ const renderPrefix = ({ option }: { option: TreeOption }) => {
 };
 
 const renderSuffix = ({ option }: { option: TreeOption }) => {
-  const node = option as WorsheetFolderNode;
+  const node = option as WorksheetFolderNode;
   return (
     <TreeNodeSuffix
       node={node}
@@ -272,7 +358,7 @@ const handleRenameNode = useDebounceFn(async () => {
 }, DEBOUNCE_SEARCH_DELAY);
 
 const renderLabel = ({ option }: { option: TreeOption }) => {
-  const node = option as WorsheetFolderNode;
+  const node = option as WorksheetFolderNode;
 
   if (editingNode.value && editingNode.value.node.key === node.key) {
     return (
@@ -315,7 +401,7 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
 };
 
 const nodeProps = ({ option }: { option: TreeOption }) => {
-  const node = option as WorsheetFolderNode;
+  const node = option as WorksheetFolderNode;
 
   return {
     "data-item-key": node.key,
@@ -365,10 +451,51 @@ const deleteWorksheets = async (worksheets: string[]) => {
   }
 };
 
-const handleDeleteFolder = (node: WorsheetFolderNode) => {
-  const worksheets = revealWorksheets(node, (node) => node.worksheet?.name);
+const handleMoveWorksheets = async () => {
+  const folders = folderFormRef.value?.folders ?? [];
+  await batchUpdateWorksheetFolders(
+    checkedWorksheets.value.map((worksheet) => ({
+      name: worksheet,
+      folders,
+    }))
+  );
+  showReorgModal.value = false;
+  checkable.value = false;
+};
+
+const handleMultiDelete = async () => {
+  const folders: string[] = [];
+  for (const node of checkedNodes.value) {
+    if (node.key === folderContext.rootPath.value || node.worksheet) {
+      continue;
+    }
+    if (
+      folders.length > 0 &&
+      folderContext.isSubFolder({
+        parent: folders.slice(-1)[0],
+        path: node.key,
+        dig: true,
+      })
+    ) {
+      continue;
+    }
+    folders.push(node.key);
+  }
+  await handleDeleteFolders(folders, [...checkedWorksheets.value]);
+  checkable.value = false;
+};
+
+const handleDeleteFolders = (folders: string[], worksheets: string[]) => {
+  const _defer = defer<boolean>();
+  const cleanFolders = () => {
+    for (const folder of folders) {
+      folderContext.removeFolder(folder);
+    }
+  };
+
   if (worksheets.length === 0) {
-    folderContext.removeFolder(node.key);
+    cleanFolders();
+    _defer.resolve(true);
   } else {
     const dialogInstance = $dialog.create({
       title: t("sheet.hint-tips.non-empty-folder-title"),
@@ -385,8 +512,9 @@ const handleDeleteFolder = (node: WorsheetFolderNode) => {
       onNegativeClick: async () => {
         dialogInstance.loading = true;
         await deleteWorksheets(worksheets);
-        folderContext.removeFolder(node.key);
+        cleanFolders();
         dialogInstance.destroy();
+        _defer.resolve(true);
       },
       positiveText: t("sheet.hint-tips.move-to-root-folder"),
       onPositiveClick: async () => {
@@ -397,15 +525,18 @@ const handleDeleteFolder = (node: WorsheetFolderNode) => {
             folders: [],
           }))
         );
-        folderContext.removeFolder(node.key);
+        cleanFolders();
         dialogInstance.destroy();
+        _defer.resolve(true);
       },
       showIcon: false,
       onClose() {
         dialogInstance.destroy();
+        _defer.resolve(false);
       },
     });
   }
+  return _defer.promise;
 };
 
 const handleDeleteSheet = (worksheetName: string) => {
@@ -513,7 +644,7 @@ useEmitteryEventListener(events, "on-built", ({ viewMode }) => {
 // Generate unique folder name based on existing children
 // Returns "new folder", "new folder2", "new folder3", etc.
 // Optimized: children are already sorted, so iterate in reverse to find max quickly
-const generateNewFolderName = (children: WorsheetFolderNode[]): string => {
+const generateNewFolderName = (children: WorksheetFolderNode[]): string => {
   const baseName = "new folder";
   const regex = /^new folder(\d+)$/;
 
@@ -565,7 +696,11 @@ const handleContextMenuSelect = async (key: DropdownOptionType) => {
       if (contextMenuContext.node.worksheet) {
         handleDeleteSheet(contextMenuContext.node.worksheet.name);
       } else {
-        handleDeleteFolder(contextMenuContext.node);
+        const worksheets = revealWorksheets(
+          contextMenuContext.node,
+          (node) => node.worksheet?.name
+        );
+        handleDeleteFolders([contextMenuContext.node.key], worksheets);
       }
       break;
     case "duplicate":
@@ -615,6 +750,9 @@ const handleContextMenuSelect = async (key: DropdownOptionType) => {
         editorContext.showConnectionPanel.value = true;
       });
       break;
+    case "multi-select":
+      checkable.value = true;
+      break;
     default:
       break;
   }
@@ -622,9 +760,9 @@ const handleContextMenuSelect = async (key: DropdownOptionType) => {
 };
 
 const findParentNode = (
-  node: WorsheetFolderNode,
+  node: WorksheetFolderNode,
   key: string
-): WorsheetFolderNode | undefined => {
+): WorksheetFolderNode | undefined => {
   if (node.key === key) {
     return;
   }
@@ -641,15 +779,17 @@ const findParentNode = (
 };
 
 const updateWorksheetFolders = async (
-  node: WorsheetFolderNode,
+  node: WorksheetFolderNode,
   oldParentKey: string,
   newParentKey: string
 ) => {
-  const worksheets = revealWorksheets(node, (node: WorsheetFolderNode) => {
+  const worksheets = revealWorksheets(node, (node: WorksheetFolderNode) => {
     if (node.worksheet) {
       const newFullPath = node.key.replace(oldParentKey, newParentKey);
-      node.worksheet.folders = getFoldersForWorksheet(newFullPath);
-      return node.worksheet;
+      return {
+        name: node.worksheet.name,
+        folders: getFoldersForWorksheet(newFullPath),
+      };
     }
   });
   await batchUpdateWorksheetFolders(
@@ -683,8 +823,8 @@ const replaceExpandedKeys = (oldKey: string, newKey: string) => {
   }
 };
 
-const handleDuplicateFolderName = async (
-  parentNode: WorsheetFolderNode | undefined,
+const handleDuplicateFolderName = (
+  parentNode: WorksheetFolderNode | undefined,
   key: string
 ) => {
   const sameNode = parentNode?.children.find((child) => child.key === key);
@@ -701,11 +841,11 @@ const handleDuplicateFolderName = async (
       closable: true,
       maskClosable: true,
       closeOnEsc: true,
-      async onPositiveClick() {
+      onPositiveClick() {
         dialogInstance.destroy();
         _defer.resolve(true);
       },
-      async onNegativeClick() {
+      onNegativeClick() {
         dialogInstance.destroy();
         _defer.resolve(false);
       },
@@ -725,8 +865,8 @@ const handleDuplicateFolderName = async (
 };
 
 const handleDrop = async ({ node, dragNode }: TreeDropInfo) => {
-  const parentNode = node as WorsheetFolderNode;
-  const draggedNode = dragNode as WorsheetFolderNode;
+  const parentNode = node as WorksheetFolderNode;
+  const draggedNode = dragNode as WorksheetFolderNode;
 
   const oldParentNode = findParentNode(sheetTree.value, draggedNode.key);
   if (!oldParentNode) {

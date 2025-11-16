@@ -44,13 +44,13 @@ export interface WorksheetLikeItem {
   type: "worksheet" | "draft";
 }
 
-export interface WorsheetFolderNode extends TreeOption {
+export interface WorksheetFolderNode extends TreeOption {
   key: string;
   label: string;
   editable: boolean;
   empty?: boolean;
   worksheet?: WorksheetLikeItem;
-  children: WorsheetFolderNode[];
+  children: WorksheetFolderNode[];
 }
 
 interface WorksheetFilter {
@@ -99,14 +99,14 @@ const useSheetTreeByView = (
     }
   });
 
-  const getRootTreeNode = (): WorsheetFolderNode => ({
+  const getRootTreeNode = (): WorksheetFolderNode => ({
     isLeaf: false,
     children: [],
     key: folderContext.rootPath.value,
     label: rootNodeLabel.value,
     editable: false,
   });
-  const sheetTree = ref<WorsheetFolderNode>(getRootTreeNode());
+  const sheetTree = ref<WorksheetFolderNode>(getRootTreeNode());
 
   const worksheetList = computed((): Worksheet[] => {
     let list: Worksheet[] = [];
@@ -170,7 +170,7 @@ const useSheetTreeByView = (
   const getKeyForWorksheet = (worksheet: WorksheetLikeItem): string => {
     return [
       getPwdForWorksheet(worksheet),
-      `bytebase-${worksheet.type}-${worksheet.name}`,
+      `bytebase-${worksheet.type}-${worksheet.name.split("/").slice(-1)[0]}`,
     ].join("/");
   };
 
@@ -183,7 +183,7 @@ const useSheetTreeByView = (
   };
 
   const buildTree = (
-    parent: WorsheetFolderNode,
+    parent: WorksheetFolderNode,
     worksheetsByFolder: Map<string, WorksheetLikeItem[]>
   ) => {
     parent.children = folderContext
@@ -220,7 +220,9 @@ const useSheetTreeByView = (
 
     parent.children.push(...sheets);
     parent.empty = sheets.length === 0 && empty;
-    parent.isLeaf = parent.children.length === 0;
+    if (parent.key !== folderContext.rootPath.value) {
+      parent.isLeaf = parent.children.length === 0;
+    }
 
     return parent;
   };
@@ -228,6 +230,14 @@ const useSheetTreeByView = (
   const folderTree = computed(() => buildTree(getRootTreeNode(), new Map()));
 
   const rebuildTree = useDebounceFn(() => {
+    const folderPathes = new Set<string>([]);
+    for (const worksheet of sheetLikeItemList.value) {
+      for (const path of getPathesForWorksheet(worksheet)) {
+        folderPathes.add(path);
+      }
+    }
+    folderContext.mergeFolders(folderPathes);
+
     const worksheetsByFolder = new Map<string, WorksheetLikeItem[]>();
     for (const worksheet of sheetLikeItemList.value) {
       const pwd = getPwdForWorksheet(worksheet);
@@ -242,10 +252,18 @@ const useSheetTreeByView = (
   }, DEBOUNCE_SEARCH_DELAY);
 
   // Watch only relevant properties: folder structure and worksheet name/folders
-  // No deep watch needed - computed will track changes to name, folders automatically
+  // Use deep comparison to avoid unnecessary triggers when array references change
+  // but content is the same
   watch(
     [() => folderContext.folders.value, () => sheetLikeItemList.value],
-    () => {
+    ([newFolders, newSheetList], [oldFolders, oldSheetList]) => {
+      // Only rebuild if the actual content changed, not just the array reference
+      if (
+        isEqual(newFolders, oldFolders) &&
+        isEqual(newSheetList, oldSheetList)
+      ) {
+        return;
+      }
       rebuildTree();
     }
   );
@@ -277,13 +295,13 @@ const useSheetTreeByView = (
           return;
       }
 
-      const folderPathes = new Set<string>([]);
-      for (const worksheet of sheetLikeItemList.value) {
-        for (const path of getPathesForWorksheet(worksheet)) {
-          folderPathes.add(path);
-        }
-      }
-      folderContext.mergeFolders(folderPathes);
+      // const folderPathes = new Set<string>([]);
+      // for (const worksheet of sheetLikeItemList.value) {
+      //   for (const path of getPathesForWorksheet(worksheet)) {
+      //     folderPathes.add(path);
+      //   }
+      // }
+      // folderContext.mergeFolders(folderPathes);
       rebuildTree();
 
       isInitialized.value = true;
@@ -314,7 +332,7 @@ export type SheetContext = {
   filterChanged: ComputedRef<boolean>;
   expandedKeys: Ref<Set<string>>;
   selectedKeys: Ref<string[]>;
-  editingNode: Ref<{ node: WorsheetFolderNode; rawLabel: string } | undefined>;
+  editingNode: Ref<{ node: WorksheetFolderNode; rawLabel: string } | undefined>;
   isWorksheetCreator: (worksheet: Worksheet) => boolean;
   batchUpdateWorksheetFolders: (
     worksheets: { name: string; folders: string[] }[]
@@ -333,8 +351,8 @@ export const useSheetContextByView = (view: SheetViewMode) => {
 };
 
 export const revealWorksheets = <T>(
-  node: WorsheetFolderNode,
-  callback: (node: WorsheetFolderNode) => T | undefined
+  node: WorksheetFolderNode,
+  callback: (node: WorksheetFolderNode) => T | undefined
 ): T[] => {
   if (node.worksheet) {
     const worksheet = callback(node);
@@ -472,6 +490,9 @@ export const provideSheetContext = () => {
   const batchUpdateWorksheetFolders = async (
     worksheets: { name: string; folders: string[] }[]
   ) => {
+    if (worksheets.length === 0) {
+      return;
+    }
     await worksheetV1Store.batchUpsertWorksheetOrganizers(
       worksheets.map((worksheet) => ({
         organizer: {
@@ -493,7 +514,7 @@ export const provideSheetContext = () => {
     filterChanged,
     isWorksheetCreator,
     editingNode: ref<
-      { node: WorsheetFolderNode; rawLabel: string } | undefined
+      { node: WorksheetFolderNode; rawLabel: string } | undefined
     >(),
     batchUpdateWorksheetFolders,
   };

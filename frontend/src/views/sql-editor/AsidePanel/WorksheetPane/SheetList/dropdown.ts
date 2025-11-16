@@ -2,19 +2,21 @@ import {
   FileCodeIcon,
   FilesIcon,
   FolderIcon,
+  ListCheckIcon,
+  type LucideProps,
   PencilLineIcon,
   Share2Icon,
   TrashIcon,
 } from "lucide-vue-next";
 import { type DropdownOption } from "naive-ui";
-import { computed, h, reactive, watch } from "vue";
+import { computed, type FunctionalComponent, h, reactive, watch } from "vue";
 import { t } from "@/plugins/i18n";
 import { useCurrentUserV1, useWorkSheetStore } from "@/store";
 import { type Position } from "@/types";
 import { isWorksheetWritableV1 } from "@/utils";
 import type {
   SheetViewMode,
-  WorsheetFolderNode,
+  WorksheetFolderNode,
 } from "@/views/sql-editor/Sheet";
 
 export type DropdownOptionType =
@@ -23,6 +25,7 @@ export type DropdownOptionType =
   | "delete"
   | "add-folder"
   | "add-worksheet"
+  | "multi-select"
   | "duplicate";
 
 type WorksheetDropdown = DropdownOption & {
@@ -33,7 +36,7 @@ interface DropdownContext {
   position: Position;
   showDropdown: boolean;
   showSharePanel: boolean;
-  node?: WorsheetFolderNode;
+  node?: WorksheetFolderNode;
 }
 
 export const useDropdown = (viewMode: SheetViewMode) => {
@@ -89,7 +92,16 @@ export const useDropdown = (viewMode: SheetViewMode) => {
       return [];
     }
 
-    const items: WorksheetDropdown[] = [];
+    const items: {
+      icon: FunctionalComponent<
+        LucideProps,
+        Record<string, any>,
+        any,
+        Record<string, any>
+      >;
+      key: DropdownOptionType;
+      label: string;
+    }[] = [];
     if (context.node.worksheet) {
       if (!worksheetEntity.value) {
         return [];
@@ -97,13 +109,13 @@ export const useDropdown = (viewMode: SheetViewMode) => {
       const isCreator =
         worksheetEntity.value.creator === `users/${me.value.email}`;
       items.push({
-        icon: () => h(FilesIcon, { class: "w-4 text-gray-600" }),
+        icon: FilesIcon,
         key: "duplicate",
         label: isCreator ? t("common.duplicate") : t("common.fork"),
       });
       if (isCreator) {
         items.push({
-          icon: () => h(Share2Icon, { class: "w-4 text-gray-600" }),
+          icon: Share2Icon,
           key: "share",
           label: t("common.share"),
         });
@@ -112,12 +124,12 @@ export const useDropdown = (viewMode: SheetViewMode) => {
       if (canWriteSheet) {
         items.push(
           {
-            icon: () => h(PencilLineIcon, { class: "w-4 text-gray-600" }),
+            icon: PencilLineIcon,
             key: "rename",
             label: t("sql-editor.tab.context-menu.actions.rename"),
           },
           {
-            icon: () => h(TrashIcon, { class: "w-4 text-gray-600" }),
+            icon: TrashIcon,
             key: "delete",
             label: t("common.delete"),
           }
@@ -125,26 +137,33 @@ export const useDropdown = (viewMode: SheetViewMode) => {
       }
     } else {
       items.push({
-        icon: () => h(FolderIcon, { class: "w-4 text-gray-600" }),
+        icon: FolderIcon,
         key: "add-folder",
         label: t("sql-editor.tab.context-menu.actions.add-folder"),
       });
       if (viewMode === "my") {
-        items.push({
-          icon: () => h(FileCodeIcon, { class: "w-4 text-gray-600" }),
-          key: "add-worksheet",
-          label: t("sql-editor.tab.context-menu.actions.add-worksheet"),
-        });
+        items.push(
+          {
+            icon: FileCodeIcon,
+            key: "add-worksheet",
+            label: t("sql-editor.tab.context-menu.actions.add-worksheet"),
+          },
+          {
+            icon: ListCheckIcon,
+            key: "multi-select",
+            label: t("sql-editor.tab.context-menu.actions.multi-select"),
+          }
+        );
       }
       if (context.node.editable) {
         items.push(
           {
-            icon: () => h(PencilLineIcon, { class: "w-4 text-gray-600" }),
+            icon: PencilLineIcon,
             key: "rename",
             label: t("sql-editor.tab.context-menu.actions.rename"),
           },
           {
-            icon: () => h(TrashIcon, { class: "w-4 text-gray-600" }),
+            icon: TrashIcon,
             key: "delete",
             label: t("common.delete"),
           }
@@ -152,10 +171,14 @@ export const useDropdown = (viewMode: SheetViewMode) => {
       }
     }
 
-    return items;
+    return items.map((item) => ({
+      icon: () => h(item.icon, { class: "w-4 text-gray-600" }),
+      key: item.key,
+      label: item.label,
+    }));
   });
 
-  const resetData = (e: MouseEvent, node: WorsheetFolderNode) => {
+  const resetData = (e: MouseEvent, node: WorksheetFolderNode) => {
     e.preventDefault();
     e.stopPropagation();
     context.node = node;
@@ -165,12 +188,12 @@ export const useDropdown = (viewMode: SheetViewMode) => {
     };
   };
 
-  const handleMenuShow = (e: MouseEvent, node: WorsheetFolderNode) => {
+  const handleMenuShow = (e: MouseEvent, node: WorksheetFolderNode) => {
     resetData(e, node);
     context.showDropdown = true;
   };
 
-  const handleSharePanelShow = (e: MouseEvent, node: WorsheetFolderNode) => {
+  const handleSharePanelShow = (e: MouseEvent, node: WorksheetFolderNode) => {
     resetData(e, node);
     context.showSharePanel = true;
   };

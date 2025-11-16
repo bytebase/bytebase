@@ -2047,7 +2047,7 @@
     "project-write-desc": "Tanto el propietario de la hoja como los usuarios del proyecto con permiso \"bb.worksheets.get\" pueden leer/escribir",
     "create-read-only-data-source": "Ir a crear",
     "save-sheet": "Guardar hoja",
-    "choose-folder": "Seleccionar carpeta",
+    "choose-folder": "Seleccionar o crear una carpeta",
     "choose-folder-tips": "Puedes crear una nueva carpeta introduciendo una ruta que no exista. Las carpetas deben unirse con una barra diagonal (\"/\").",
     "save-sheet-input-placeholder": "Por favor, ingresa un nombre para la hoja",
     "format": "Formato",
@@ -2075,7 +2075,8 @@
           "close-all": "Cierra todo",
           "rename": "Rebautizar",
           "add-folder": "Agregar carpeta",
-          "add-worksheet": "Agregar hoja de trabajo"
+          "add-worksheet": "Agregar hoja de trabajo",
+          "multi-select": "Selección múltiple"
         }
       }
     },
@@ -2360,7 +2361,8 @@
       "confirm-to-delete-sheet-title": "¿Confirmar la eliminación de esta hoja de cálculo?",
       "confirm-to-duplicate-sheet": "¿Confirmar para duplicar esta hoja?"
     },
-    "search-sheets": "Hojas de búsqueda"
+    "search-sheets": "Hojas de búsqueda",
+    "move-worksheets": "Hojas de trabajo de movimiento"
   },
   "sql-review": {
     "title": "Revisión de SQL",
