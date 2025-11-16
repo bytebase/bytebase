@@ -147,6 +147,9 @@ const useSheetTreeByView = (
     }
   });
 
+  // getPathesForWorksheet returns all folder pathes for a worksheet.
+  // For example, if the worksheet folders is ["ed", "sample", "pro"],
+  // then all pathes should be: ["/{root}", "/{root}/ed", "/{root}/ed/sample", "/{root}/ed/sample/pro"]
   const getPathesForWorksheet = (worksheet: {
     folders: string[];
   }): string[] => {
@@ -161,25 +164,33 @@ const useSheetTreeByView = (
     return pathes;
   };
 
+  // getPwdForWorksheet print working directory (pwd) for the worksheet.
+  // For example, if the worksheet folders is ["ed", "sample", "pro"],
+  // then the pwd is: /{root}/ed/sample/pro
   const getPwdForWorksheet = (worksheet: { folders: string[] }): string => {
-    return folderContext.ensureFolderPath(
-      [folderContext.rootPath.value, ...worksheet.folders].join("/")
-    );
+    return folderContext.ensureFolderPath(worksheet.folders.join("/"));
   };
 
+  // getKeyForWorksheet returns the worksheet node key in the tree node.
+  // For example, if the worksheet worksheets/001 folders is ["ed", "sample", "pro"],
+  // then the path should be: /{root}/ed/sample/pro/bytebase-worksheet-001.sql
   const getKeyForWorksheet = (worksheet: WorksheetLikeItem): string => {
     return [
       getPwdForWorksheet(worksheet),
-      `bytebase-${worksheet.type}-${worksheet.name.split("/").slice(-1)[0]}`,
+      `bytebase-${worksheet.type}-${worksheet.name.split("/").slice(-1)[0]}.sql`,
     ].join("/");
   };
 
+  // getFoldersForWorksheet returns the folders for a worksheet.
+  // The folders should NOT contains the root folder
+  // For example, the fullpath for a worksheet can be: /{root}/ed/sample/bytebase-worksheet-001.sql,
+  // then the folders should be ["ed", "sample"]
   const getFoldersForWorksheet = (path: string): string[] => {
-    return path
-      .replace(folderContext.rootPath.value, "")
-      .split("/")
-      .slice(0, -1) // the last element should be the getKeyForWorksheet(worksheet)
-      .filter((p) => p);
+    const pathes = path.replace(folderContext.rootPath.value, "").split("/");
+    if (pathes.slice(-1)[0].endsWith(".sql")) {
+      pathes.pop();
+    }
+    return pathes.map((p) => p.trim()).filter((p) => p);
   };
 
   const buildTree = (
@@ -295,15 +306,7 @@ const useSheetTreeByView = (
           return;
       }
 
-      // const folderPathes = new Set<string>([]);
-      // for (const worksheet of sheetLikeItemList.value) {
-      //   for (const path of getPathesForWorksheet(worksheet)) {
-      //     folderPathes.add(path);
-      //   }
-      // }
-      // folderContext.mergeFolders(folderPathes);
       rebuildTree();
-
       isInitialized.value = true;
     } finally {
       isLoading.value = false;
@@ -497,7 +500,6 @@ export const provideSheetContext = () => {
       worksheets.map((worksheet) => ({
         organizer: {
           worksheet: worksheet.name,
-          starred: false, // don't care about the starred
           folders: worksheet.folders,
         },
         updateMask: ["folders"],

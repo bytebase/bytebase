@@ -114,7 +114,6 @@ import { create } from "@bufbuild/protobuf";
 import { useDebounceFn } from "@vueuse/core";
 import { FolderInputIcon, TrashIcon, XIcon } from "lucide-vue-next";
 import {
-  type DialogReactive,
   NButton,
   NDropdown,
   NInput,
@@ -252,7 +251,6 @@ const handleWorksheetToggleStar = useDebounceFn(
       {
         worksheet: worksheet,
         starred,
-        folders: [], // don't care about folders
       },
       ["starred"]
     );
@@ -383,8 +381,13 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
           if (!editingNode.value) {
             return;
           }
-          if (val.includes("/")) {
-            return;
+          if (!editingNode.value.node.worksheet) {
+            {
+              /* the folder name cannot contains "/" or "." */
+            }
+            if (val.includes("/") || val.includes(".")) {
+              return;
+            }
           }
           editingNode.value.node.label = val;
         }}
@@ -481,8 +484,12 @@ const handleMultiDelete = async () => {
     }
     folders.push(node.key);
   }
-  await handleDeleteFolders(folders, [...checkedWorksheets.value]);
-  checkable.value = false;
+  const removed = await handleDeleteFolders(folders, [
+    ...checkedWorksheets.value,
+  ]);
+  if (removed) {
+    checkable.value = false;
+  }
 };
 
 const handleDeleteFolders = (folders: string[], worksheets: string[]) => {
@@ -540,10 +547,6 @@ const handleDeleteFolders = (folders: string[], worksheets: string[]) => {
 };
 
 const handleDeleteSheet = (worksheetName: string) => {
-  const cleanup = (dialogInstance: DialogReactive | undefined) => {
-    dialogInstance?.destroy();
-  };
-
   const dialogInstance = $dialog.create({
     title: t("sheet.hint-tips.confirm-to-delete-sheet-title"),
     type: "error",
@@ -554,13 +557,13 @@ const handleDeleteSheet = (worksheetName: string) => {
     async onPositiveClick() {
       dialogInstance.loading = true;
       await deleteWorksheets([worksheetName]);
-      cleanup(dialogInstance);
+      dialogInstance.destroy();
     },
     onNegativeClick() {
-      cleanup(dialogInstance);
+      dialogInstance.destroy();
     },
     onClose() {
-      cleanup(dialogInstance);
+      dialogInstance.destroy();
     },
     negativeText: t("common.cancel"),
     positiveText: t("common.delete"),
@@ -597,7 +600,6 @@ const handleDuplicateSheet = async (worksheetName: string) => {
           {
             worksheet: newWorksheet.name,
             folders: worksheet.folders,
-            starred: false,
           },
           ["folders"]
         );
@@ -732,15 +734,10 @@ const handleContextMenuSelect = async (key: DropdownOptionType) => {
           visibility: Worksheet_Visibility.PRIVATE,
         })
       );
-      const folders = contextMenuContext.node.key
-        .replace(folderContext.rootPath.value, "")
-        .split("/")
-        .filter((p) => p);
       await worksheetV1Store.upsertWorksheetOrganizer(
         {
           worksheet: newWorksheet.name,
-          starred: false,
-          folders,
+          folders: getFoldersForWorksheet(contextMenuContext.node.key),
         },
         ["folders"]
       );

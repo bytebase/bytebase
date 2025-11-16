@@ -23,22 +23,23 @@ export const useFolderByView = (
 
   const folders = computed(() => sortBy([...localCache.value]));
 
-  // A valid folder path should be like "/xxx"
+  // A valid folder path should be like "/{root}/xx"
   // It must not end with "/", for example, "xxx/" is not valid
-  // It must starts with "/", like "/xxx"
+  // It must starts with "/{root}", like "/mine/xxx"
   const ensureFolderPath = (path: string) => {
-    let p = path;
-    while (p.startsWith("/")) {
-      p = p.slice(1);
-    }
-    while (p.endsWith("/")) {
-      p = p.slice(0, -1);
-    }
+    let p = path
+      .split("/")
+      .map((p) => p.trim())
+      .filter((p) => p)
+      .join("/");
     if (!p) {
       return rootPath.value;
     }
     if (!p.startsWith("/")) {
       p = `/${p}`;
+    }
+    if (!p.startsWith(rootPath.value)) {
+      p = `${rootPath.value}${p}`;
     }
     return p;
   };
