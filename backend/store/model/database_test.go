@@ -94,3 +94,52 @@ func TestBuildTablesMetadata(t *testing.T) {
 		}
 	}
 }
+
+func TestSchemaMetadata_CreateTable(t *testing.T) {
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Name: "testdb",
+		Schemas: []*storepb.SchemaMetadata{
+			{Name: "public"},
+		},
+	}
+
+	schema := NewDatabaseSchema(metadata, nil, nil, storepb.Engine_POSTGRES, true)
+	dbMeta := schema.GetDatabaseMetadata()
+	schemaMeta := dbMeta.GetSchema("public")
+
+	// Create a new table
+	tableMeta, err := schemaMeta.CreateTable("products")
+
+	require.Nil(t, err)
+	require.NotNil(t, tableMeta)
+	require.Equal(t, "products", tableMeta.GetProto().Name)
+
+	// Verify table is now accessible via GetTable
+	retrieved := schemaMeta.GetTable("products")
+	require.NotNil(t, retrieved)
+	require.Equal(t, "products", retrieved.GetProto().Name)
+}
+
+func TestSchemaMetadata_CreateTable_AlreadyExists(t *testing.T) {
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Name: "testdb",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Tables: []*storepb.TableMetadata{
+					{Name: "users"},
+				},
+			},
+		},
+	}
+
+	schema := NewDatabaseSchema(metadata, nil, nil, storepb.Engine_POSTGRES, true)
+	dbMeta := schema.GetDatabaseMetadata()
+	schemaMeta := dbMeta.GetSchema("public")
+
+	// Try to create table that already exists
+	_, err := schemaMeta.CreateTable("users")
+
+	require.NotNil(t, err)
+	require.Contains(t, err.Error(), "already exists")
+}

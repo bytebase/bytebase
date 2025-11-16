@@ -6,6 +6,8 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -799,6 +801,45 @@ func (s *SchemaMetadata) ListMaterializedViewNames() []string {
 
 	slices.Sort(result)
 	return result
+}
+
+// CreateTable creates a new table in the schema.
+// Returns the created TableMetadata or an error if the table already exists.
+func (s *SchemaMetadata) CreateTable(tableName string) (*TableMetadata, error) {
+	// Check if table already exists
+	if s.GetTable(tableName) != nil {
+		return nil, errors.Errorf("table %q already exists in schema %q", tableName, s.proto.Name)
+	}
+
+	// Create new table proto
+	newTableProto := &storepb.TableMetadata{
+		Name:    tableName,
+		Columns: []*storepb.ColumnMetadata{},
+		Indexes: []*storepb.IndexMetadata{},
+	}
+
+	// Add to proto's table list
+	s.proto.Tables = append(s.proto.Tables, newTableProto)
+
+	// Create TableMetadata wrapper
+	tableMeta := &TableMetadata{
+		isDetailCaseSensitive: s.isDetailCaseSensitive,
+		internalColumn:        make(map[string]*storepb.ColumnMetadata),
+		internalIndexes:       make(map[string]*IndexMetadata),
+		columns:               []*storepb.ColumnMetadata{},
+		proto:                 newTableProto,
+	}
+
+	// Add to internal map
+	var tableID string
+	if s.isObjectCaseSensitive {
+		tableID = tableName
+	} else {
+		tableID = strings.ToLower(tableName)
+	}
+	s.internalTables[tableID] = tableMeta
+
+	return tableMeta, nil
 }
 
 func buildTablesMetadata(table *storepb.TableMetadata, isDetailCaseSensitive bool) ([]*TableMetadata, []string) {
