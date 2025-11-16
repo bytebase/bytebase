@@ -9,6 +9,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 const (
@@ -92,17 +93,27 @@ func (e *WalkThroughError) Error() string {
 	return e.Content
 }
 
-// WalkThrough will collect the catalog schema in the databaseState as it walks through the stmt.
-func WalkThrough(d *DatabaseState, ast any) error {
-	switch d.dbType {
+// WalkThrough will collect the catalog schema in the database metadata as it walks through the stmt.
+// The DatabaseMetadata proto will be modified in-place during the walk-through.
+func WalkThrough(d *model.DatabaseMetadata, engineType storepb.Engine, ast any) error {
+	// Get the proto from DatabaseMetadata - this will be modified in-place by DatabaseState
+	proto := d.GetProto()
+
+	// Convert to DatabaseState for walk-through
+	// Note: DatabaseState references and modifies the proto directly during walk-through
+	ignoreCaseSensitive := !d.GetIsObjectCaseSensitive()
+	dbState := NewDatabaseState(proto, ignoreCaseSensitive, engineType)
+
+	// Perform walk-through on DatabaseState, which modifies the proto in-place
+	switch engineType {
 	case storepb.Engine_TIDB:
-		return TiDBWalkThrough(d, ast)
+		return TiDBWalkThrough(dbState, ast)
 	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-		return MySQLWalkThrough(d, ast)
+		return MySQLWalkThrough(dbState, ast)
 	case storepb.Engine_POSTGRES:
-		return PgWalkThrough(d, ast)
+		return PgWalkThrough(dbState, ast)
 	default:
-		return errors.Errorf("Walk-through doesn't support engine type: %s", d.dbType)
+		return errors.Errorf("Walk-through doesn't support engine type: %s", engineType)
 	}
 }
 

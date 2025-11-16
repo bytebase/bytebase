@@ -233,6 +233,7 @@ func (t *TableConfig) IsEmpty() bool {
 
 // DatabaseMetadata is the metadata for a database.
 type DatabaseMetadata struct {
+	proto                 *storepb.DatabaseSchemaMetadata
 	name                  string
 	owner                 string
 	searchPath            []string
@@ -245,6 +246,7 @@ type DatabaseMetadata struct {
 // NewDatabaseMetadata creates a new database metadata.
 func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, isObjectCaseSensitive bool, isDetailCaseSensitive bool) *DatabaseMetadata {
 	databaseMetadata := &DatabaseMetadata{
+		proto:                 metadata,
 		name:                  metadata.Name,
 		owner:                 metadata.Owner,
 		searchPath:            NormalizeSearchPath(metadata.SearchPath),
@@ -563,6 +565,16 @@ func (d *DatabaseMetadata) GetOwner() string {
 
 func (d *DatabaseMetadata) GetSearchPath() []string {
 	return d.searchPath
+}
+
+// GetProto returns the underlying proto for this database metadata.
+func (d *DatabaseMetadata) GetProto() *storepb.DatabaseSchemaMetadata {
+	return d.proto
+}
+
+// GetIsObjectCaseSensitive returns whether object names (schemas, tables) are case-sensitive.
+func (d *DatabaseMetadata) GetIsObjectCaseSensitive() bool {
+	return d.isObjectCaseSensitive
 }
 
 // LinkedDatabaseMetadata is the metadata for a linked database.
