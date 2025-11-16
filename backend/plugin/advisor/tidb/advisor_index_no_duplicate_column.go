@@ -6,6 +6,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
@@ -129,7 +131,7 @@ func (checker *indexNoDuplicateColumnChecker) Enter(in ast.Node) (ast.Node, bool
 	for _, column := range columnList {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:        checker.level,
-			Code:          advisor.DuplicateColumnInIndex.Int32(),
+			Code:          code.DuplicateColumnInIndex.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("%s `%s` has duplicate column `%s`.`%s`", column.tp, column.index, column.table, column.column),
 			StartPosition: common.ConvertANTLRLineToPosition(column.line),

@@ -6,6 +6,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pingcap/tidb/pkg/parser/mysql"
 	"github.com/pkg/errors"
@@ -104,7 +106,7 @@ func (checker *columnAutoIncrementMustUnsignedChecker) Enter(in ast.Node) (ast.N
 	for _, column := range columnList {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:        checker.level,
-			Code:          advisor.AutoIncrementColumnSigned.Int32(),
+			Code:          code.AutoIncrementColumnSigned.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("Auto-increment column `%s`.`%s` is not UNSIGNED type", column.table, column.column),
 			StartPosition: common.ConvertANTLRLineToPosition(checker.line),

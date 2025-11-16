@@ -11,6 +11,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
@@ -192,7 +193,7 @@ func (r *tableRequirePKRule) validateFinalState() {
 
 			r.AddAdvice(&storepb.Advice{
 				Status:  r.level,
-				Code:    advisor.TableNoPK.Int32(),
+				Code:    code.TableNoPK.Int32(),
 				Title:   r.title,
 				Content: content,
 				StartPosition: &storepb.Position{

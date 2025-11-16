@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/snowflake"
 	"github.com/pkg/errors"
@@ -151,7 +153,7 @@ func (r *ColumnRequireRule) exitCreateTable(ctx *parser.Create_tableContext) {
 	for _, column := range columnNames {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.NoRequiredColumn.Int32(),
+			Code:          code.NoRequiredColumn.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("Table %s missing required column %q", r.currentOriginalTableName, column),
 			StartPosition: common.ConvertANTLRLineToPosition(ctx.Column_decl_item_list().GetStop().GetLine()),
@@ -193,7 +195,7 @@ func (r *ColumnRequireRule) exitAlterTable(ctx *parser.Alter_tableContext) {
 	for _, column := range columnNames {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.NoRequiredColumn.Int32(),
+			Code:          code.NoRequiredColumn.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("Table %s missing required column %q", r.currentOriginalTableName, column),
 			StartPosition: common.ConvertANTLRLineToPosition(ctx.Table_column_action().GetStart().GetLine()),

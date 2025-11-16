@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
@@ -87,7 +88,7 @@ func (r *SelectNoSelectAllRule) handleSelectedList(ctx *parser.Selected_listCont
 	if ctx.ASTERISK() != nil {
 		r.AddAdvice(
 			r.level,
-			advisor.StatementSelectAll.Int32(),
+			code.StatementSelectAll.Int32(),
 			"Avoid using SELECT *.",
 			common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
 		)

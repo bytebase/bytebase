@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
@@ -92,7 +93,7 @@ func (r *WhereRequireForUpdateDeleteRule) handleUpdateStatement(ctx *parser.Upda
 	if ctx.Where_clause() == nil {
 		r.AddAdvice(
 			r.level,
-			advisor.StatementNoWhere.Int32(),
+			code.StatementNoWhere.Int32(),
 			"WHERE clause is required for UPDATE statement.",
 			common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStop().GetLine()),
 		)
@@ -103,7 +104,7 @@ func (r *WhereRequireForUpdateDeleteRule) handleDeleteStatement(ctx *parser.Dele
 	if ctx.Where_clause() == nil {
 		r.AddAdvice(
 			r.level,
-			advisor.StatementNoWhere.Int32(),
+			code.StatementNoWhere.Int32(),
 			"WHERE clause is required for DELETE statement.",
 			common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStop().GetLine()),
 		)

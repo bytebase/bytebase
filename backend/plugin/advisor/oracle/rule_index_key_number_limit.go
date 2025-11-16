@@ -5,6 +5,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/plsql"
 	"github.com/pkg/errors"
@@ -103,7 +105,7 @@ func (r *IndexKeyNumberLimitRule) handleTableIndexClause(ctx *parser.Table_index
 	if keys > r.max {
 		r.AddAdvice(
 			r.level,
-			advisor.IndexKeyNumberExceedsLimit.Int32(),
+			code.IndexKeyNumberExceedsLimit.Int32(),
 			fmt.Sprintf("Index key number should be less than or equal to %d", r.max),
 			common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
 		)
@@ -115,7 +117,7 @@ func (r *IndexKeyNumberLimitRule) handleOutOfLineConstraint(ctx *parser.Out_of_l
 	if keys > r.max {
 		r.AddAdvice(
 			r.level,
-			advisor.IndexKeyNumberExceedsLimit.Int32(),
+			code.IndexKeyNumberExceedsLimit.Int32(),
 			fmt.Sprintf("Index key number should be less than or equal to %d", r.max),
 			common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
 		)

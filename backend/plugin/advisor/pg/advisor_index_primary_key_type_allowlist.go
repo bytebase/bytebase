@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 
 	parser "github.com/bytebase/parser/postgresql"
@@ -180,7 +182,7 @@ func (r *indexPrimaryKeyTypeAllowlistRule) isTypeAllowed(columnType string) bool
 func (r *indexPrimaryKeyTypeAllowlistRule) addAdvice(columnName, columnType string, line int) {
 	r.AddAdvice(&storepb.Advice{
 		Status:  r.level,
-		Code:    advisor.IndexPKType.Int32(),
+		Code:    code.IndexPKType.Int32(),
 		Title:   r.title,
 		Content: fmt.Sprintf("The column %q is one of the primary key, but its type %q is not in allowlist", columnName, columnType),
 		StartPosition: &storepb.Position{

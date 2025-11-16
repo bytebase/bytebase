@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/parser/mysql"
 	"github.com/pkg/errors"
@@ -175,7 +177,7 @@ func (r *ColumnRequireDefaultRule) checkFieldDefinition(tableName, columnName st
 	if !r.hasDefault(ctx) && r.columnNeedDefault(ctx) {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.NoDefault.Int32(),
+			Code:          code.NoDefault.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("Column `%s`.`%s` doesn't have DEFAULT.", tableName, columnName),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),

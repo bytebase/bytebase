@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 )
 
@@ -126,7 +127,7 @@ func (r *TableRequirePkRule) GetAdviceList() []*storepb.Advice {
 		if !has {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
-				Code:          advisor.TableNoPK.Int32(),
+				Code:          code.TableNoPK.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("Table %s requires PRIMARY KEY.", r.tableOriginalName[tableName]),
 				StartPosition: common.ConvertANTLRLineToPosition(r.tableLine[tableName]),

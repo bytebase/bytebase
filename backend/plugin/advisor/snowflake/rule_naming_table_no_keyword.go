@@ -5,6 +5,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/snowflake"
 	"github.com/pkg/errors"
@@ -90,7 +92,7 @@ func (r *NamingTableNoKeywordRule) enterCreateTable(ctx *parser.Create_tableCont
 	if snowsqlparser.IsSnowflakeKeyword(tableName, false) {
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
-			Code:    advisor.NameIsKeywordIdentifier.Int32(),
+			Code:    code.NameIsKeywordIdentifier.Int32(),
 			Title:   r.title,
 			Content: fmt.Sprintf("Table name %q is a keyword identifier and should be avoided.", tableName),
 		})
@@ -106,7 +108,7 @@ func (r *NamingTableNoKeywordRule) enterAlterTable(ctx *parser.Alter_tableContex
 	if snowsqlparser.IsSnowflakeKeyword(tableName, false) {
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
-			Code:    advisor.NameIsKeywordIdentifier.Int32(),
+			Code:    code.NameIsKeywordIdentifier.Int32(),
 			Title:   r.title,
 			Content: fmt.Sprintf("Table name %q is a keyword identifier and should be avoided.", tableName),
 		})

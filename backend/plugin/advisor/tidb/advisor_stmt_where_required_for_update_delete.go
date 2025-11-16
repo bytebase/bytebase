@@ -9,6 +9,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
 
 	"github.com/pingcap/tidb/pkg/parser/ast"
 )
@@ -60,21 +61,21 @@ type whereRequirementForUpdateDeleteChecker struct {
 
 // Enter implements the ast.Visitor interface.
 func (v *whereRequirementForUpdateDeleteChecker) Enter(in ast.Node) (ast.Node, bool) {
-	code := advisor.Ok
+	code := advisorcode.Ok
 	switch node := in.(type) {
 	// DELETE
 	case *ast.DeleteStmt:
 		if node.Where == nil {
-			code = advisor.StatementNoWhere
+			code = advisorcode.StatementNoWhere
 		}
 	// UPDATE
 	case *ast.UpdateStmt:
 		if node.Where == nil {
-			code = advisor.StatementNoWhere
+			code = advisorcode.StatementNoWhere
 		}
 	}
 
-	if code != advisor.Ok {
+	if code != advisorcode.Ok {
 		v.adviceList = append(v.adviceList, &storepb.Advice{
 			Status:        v.level,
 			Code:          code.Int32(),

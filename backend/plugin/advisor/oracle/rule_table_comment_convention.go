@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
@@ -130,7 +131,7 @@ func (r *TableCommentConventionRule) GetAdviceList() ([]*storepb.Advice, error) 
 			if r.payload.Required {
 				r.AddAdvice(
 					r.level,
-					advisor.CommentEmpty.Int32(),
+					code.CommentEmpty.Int32(),
 					fmt.Sprintf("Comment is required for table %s", normalizeIdentifierName(tableName)),
 					common.ConvertANTLRLineToPosition(r.tableLine[tableName]),
 				)
@@ -139,7 +140,7 @@ func (r *TableCommentConventionRule) GetAdviceList() ([]*storepb.Advice, error) 
 			if r.payload.MaxLength > 0 && len(comment) > r.payload.MaxLength {
 				r.AddAdvice(
 					r.level,
-					advisor.CommentTooLong.Int32(),
+					code.CommentTooLong.Int32(),
 					fmt.Sprintf("Table %s comment is too long. The length of comment should be within %d characters", normalizeIdentifierName(tableName), r.payload.MaxLength),
 					common.ConvertANTLRLineToPosition(r.tableLine[tableName]),
 				)
@@ -148,7 +149,7 @@ func (r *TableCommentConventionRule) GetAdviceList() ([]*storepb.Advice, error) 
 				if classification, _ := common.GetClassificationAndUserComment(comment, r.classificationConfig); classification == "" {
 					r.AddAdvice(
 						r.level,
-						advisor.CommentMissingClassification.Int32(),
+						code.CommentMissingClassification.Int32(),
 						fmt.Sprintf("Table %s comment requires classification", normalizeIdentifierName(tableName)),
 						common.ConvertANTLRLineToPosition(r.tableLine[tableName]),
 					)

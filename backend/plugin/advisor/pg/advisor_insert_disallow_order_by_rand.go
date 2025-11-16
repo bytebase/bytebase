@@ -11,6 +11,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -97,7 +98,7 @@ func (r *insertDisallowOrderByRandRule) handleInsertstmt(ctx antlr.ParserRuleCon
 
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
-			Code:    advisor.InsertUseOrderByRand.Int32(),
+			Code:    code.InsertUseOrderByRand.Int32(),
 			Title:   r.title,
 			Content: fmt.Sprintf("The INSERT statement uses ORDER BY random() or random_between(), related statement \"%s\"", stmtText),
 			StartPosition: &storepb.Position{

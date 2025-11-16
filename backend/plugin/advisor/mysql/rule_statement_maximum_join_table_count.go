@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -107,7 +108,7 @@ func (r *StatementMaximumJoinTableCountRule) checkJoinedTable(ctx *mysql.JoinedT
 	if r.count == r.limitMaxValue {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.StatementMaximumJoinTableCount.Int32(),
+			Code:          code.StatementMaximumJoinTableCount.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("\"%s\" exceeds the maximum number of joins %d.", r.text, r.limitMaxValue),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),

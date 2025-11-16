@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
@@ -95,7 +96,7 @@ func (r *WhereRequireForSelectRule) handleQueryBlock(ctx *parser.Query_blockCont
 	if ctx.Where_clause() == nil {
 		r.AddAdvice(
 			r.level,
-			advisor.StatementNoWhere.Int32(),
+			code.StatementNoWhere.Int32(),
 			"WHERE clause is required for SELECT statement.",
 			common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStop().GetLine()),
 		)

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
@@ -127,7 +129,7 @@ func (r *ColumnMaximumCharacterLengthRule) checkCreateTable(ctx *mysql.CreateTab
 		if r.maximum > 0 && charLength > r.maximum {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
-				Code:          advisor.CharLengthExceedsLimit.Int32(),
+				Code:          code.CharLengthExceedsLimit.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("The length of the CHAR column `%s.%s` is bigger than %d, please use VARCHAR instead", tableName, columnName, r.maximum),
 				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + tableElement.ColumnDefinition().GetStart().GetLine()),
@@ -214,7 +216,7 @@ func (r *ColumnMaximumCharacterLengthRule) checkAlterTable(ctx *mysql.AlterTable
 			if charLength, ok := charLengthMap[columnName]; ok && r.maximum > 0 && charLength > r.maximum {
 				r.AddAdvice(&storepb.Advice{
 					Status:        r.level,
-					Code:          advisor.CharLengthExceedsLimit.Int32(),
+					Code:          code.CharLengthExceedsLimit.Int32(),
 					Title:         r.title,
 					Content:       fmt.Sprintf("The length of the CHAR column `%s.%s` is bigger than %d, please use VARCHAR instead", tableName, columnName, r.maximum),
 					StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),

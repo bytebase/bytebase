@@ -10,6 +10,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -110,7 +111,7 @@ func (r *statementNoLeadingWildcardLikeRule) handleAExprLike(ctx *parser.A_expr_
 		stmtText := extractStatementText(r.statementsText, stmtCtx.GetStart().GetLine(), stmtCtx.GetStop().GetLine())
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
-			Code:    advisor.StatementLeadingWildcardLike.Int32(),
+			Code:    code.StatementLeadingWildcardLike.Int32(),
 			Title:   r.title,
 			Content: fmt.Sprintf("\"%s\" uses leading wildcard LIKE", stmtText),
 			StartPosition: &storepb.Position{

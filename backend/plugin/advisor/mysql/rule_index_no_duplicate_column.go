@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
@@ -189,7 +191,7 @@ func (r *IndexNoDuplicateColumnRule) checkCreateIndex(ctx *mysql.CreateIndexCont
 	if column, duplicate := r.hasDuplicateColumn(columnList); duplicate {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.DuplicateColumnInIndex.Int32(),
+			Code:          code.DuplicateColumnInIndex.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("%s`%s` has duplicate column `%s`.`%s`", indexType, indexName, tableName, column),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
@@ -241,7 +243,7 @@ func (r *IndexNoDuplicateColumnRule) handleConstraintDef(tableName string, ctx m
 	if column, duplicate := r.hasDuplicateColumn(columnList); duplicate {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.DuplicateColumnInIndex.Int32(),
+			Code:          code.DuplicateColumnInIndex.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("%s`%s` has duplicate column `%s`.`%s`", indexType, indexName, tableName, column),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),

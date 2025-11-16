@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/parser/mysql"
 	"github.com/pkg/errors"
@@ -119,7 +121,7 @@ func (r *NamingIdentifierNoKeywordRule) checkIdentifier(identifier string) *stor
 	if isKeyword(identifier) {
 		return &storepb.Advice{
 			Status:  r.level,
-			Code:    advisor.NameIsKeywordIdentifier.Int32(),
+			Code:    code.NameIsKeywordIdentifier.Int32(),
 			Title:   r.title,
 			Content: fmt.Sprintf("Identifier %q is a keyword and should be avoided", identifier),
 		}

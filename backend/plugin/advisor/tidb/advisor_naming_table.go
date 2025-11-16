@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -89,7 +90,7 @@ func (v *namingTableConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 		if !v.format.MatchString(tableName) {
 			v.adviceList = append(v.adviceList, &storepb.Advice{
 				Status:        v.level,
-				Code:          advisor.NamingTableConventionMismatch.Int32(),
+				Code:          code.NamingTableConventionMismatch.Int32(),
 				Title:         v.title,
 				Content:       fmt.Sprintf("`%s` mismatches table naming convention, naming format should be %q", tableName, v.format),
 				StartPosition: common.ConvertANTLRLineToPosition(in.OriginTextPosition()),
@@ -98,7 +99,7 @@ func (v *namingTableConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 		if v.maxLength > 0 && len(tableName) > v.maxLength {
 			v.adviceList = append(v.adviceList, &storepb.Advice{
 				Status:        v.level,
-				Code:          advisor.NamingTableConventionMismatch.Int32(),
+				Code:          code.NamingTableConventionMismatch.Int32(),
 				Title:         v.title,
 				Content:       fmt.Sprintf("`%s` mismatches table naming convention, its length should be within %d characters", tableName, v.maxLength),
 				StartPosition: common.ConvertANTLRLineToPosition(in.OriginTextPosition()),

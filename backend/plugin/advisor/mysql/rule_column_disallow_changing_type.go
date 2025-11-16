@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
@@ -177,7 +179,7 @@ func (r *ColumnDisallowChangingTypeRule) changeColumnType(tableName, columnName 
 	if normalizeColumnType(column.Type()) != normalizeColumnType(tp) {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.ChangeColumnType.Int32(),
+			Code:          code.ChangeColumnType.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("\"%s\" changes column type", r.text),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + dataType.GetStart().GetLine()),

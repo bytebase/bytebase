@@ -5,6 +5,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/plsql"
 	"github.com/pkg/errors"
@@ -89,7 +91,7 @@ func (r *NamingIdentifierNoKeywordRule) handleIDExpression(ctx *parser.Id_expres
 	if plsqlparser.IsOracleKeyword(identifier) {
 		r.AddAdvice(
 			r.level,
-			advisor.NameIsKeywordIdentifier.Int32(),
+			code.NameIsKeywordIdentifier.Int32(),
 			fmt.Sprintf("Identifier %q is a keyword and should be avoided", identifier),
 			common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
 		)

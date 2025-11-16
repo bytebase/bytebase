@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 
 	parser "github.com/bytebase/parser/postgresql"
@@ -93,7 +95,7 @@ func (r *columnDisallowChangingTypeRule) handleAltertablestmt(ctx *parser.Altert
 
 			r.AddAdvice(&storepb.Advice{
 				Status:  r.level,
-				Code:    advisor.ChangeColumnType.Int32(),
+				Code:    code.ChangeColumnType.Int32(),
 				Title:   r.title,
 				Content: fmt.Sprintf("The statement \"%s\" changes column type", text),
 				StartPosition: &storepb.Position{

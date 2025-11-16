@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
@@ -142,7 +144,7 @@ func (r *ColumnTypeDisallowListRule) checkFieldDefinition(tableName, columnName 
 	if _, exists := r.typeRestriction[columnType]; exists {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.DisabledColumnType.Int32(),
+			Code:          code.DisabledColumnType.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("Disallow column type %s but column `%s`.`%s` is", columnType, tableName, columnName),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),

@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -131,7 +132,7 @@ func (r *StatementMaximumLimitValueRule) checkLimitClause(ctx *mysql.LimitClause
 		if limitValue > r.limitMaxValue {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
-				Code:          advisor.StatementExceedMaximumLimitValue.Int32(),
+				Code:          code.StatementExceedMaximumLimitValue.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("The limit value %d exceeds the maximum allowed value %d", limitValue, r.limitMaxValue),
 				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),

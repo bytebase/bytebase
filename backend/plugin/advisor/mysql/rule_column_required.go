@@ -6,6 +6,8 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/parser/mysql"
 	"github.com/pkg/errors"
@@ -212,7 +214,7 @@ func (r *ColumnRequiredRule) generateAdviceList() []*storepb.Advice {
 			slices.Sort(missingColumns)
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
-				Code:          advisor.NoRequiredColumn.Int32(),
+				Code:          code.NoRequiredColumn.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("Table `%s` requires columns: %s", tableName, strings.Join(missingColumns, ", ")),
 				StartPosition: common.ConvertANTLRLineToPosition(r.line[tableName]),

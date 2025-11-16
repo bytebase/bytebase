@@ -3,6 +3,8 @@ package pg
 import (
 	"context"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 )
@@ -29,7 +31,7 @@ func (*HelloWorldAdvisor) Check(_ context.Context, _ advisor.Context) ([]*storep
 	return []*storepb.Advice{
 		{
 			Status:  storepb.Advice_WARNING,
-			Code:    advisor.Ok.Int32(),
+			Code:    code.Ok.Int32(),
 			Title:   "Hello World Test",
 			Content: "hello world",
 			StartPosition: &storepb.Position{

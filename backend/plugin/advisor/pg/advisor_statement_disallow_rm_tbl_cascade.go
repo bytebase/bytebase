@@ -9,6 +9,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -89,7 +90,7 @@ func (r *statementDisallowRemoveTblCascadeRule) handleDropstmt(ctx *parser.Drops
 	if r.hasCascadeOption(ctx.Opt_drop_behavior()) {
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
-			Code:    advisor.StatementDisallowCascade.Int32(),
+			Code:    code.StatementDisallowCascade.Int32(),
 			Title:   r.title,
 			Content: "The use of CASCADE is not permitted when removing a table",
 			StartPosition: &storepb.Position{
@@ -109,7 +110,7 @@ func (r *statementDisallowRemoveTblCascadeRule) handleTruncatestmt(ctx *parser.T
 	if r.hasCascadeOption(ctx.Opt_drop_behavior()) {
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
-			Code:    advisor.StatementDisallowCascade.Int32(),
+			Code:    code.StatementDisallowCascade.Int32(),
 			Title:   r.title,
 			Content: "The use of CASCADE is not permitted when removing a table",
 			StartPosition: &storepb.Position{

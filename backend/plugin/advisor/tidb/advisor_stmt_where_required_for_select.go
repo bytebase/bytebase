@@ -9,6 +9,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
 
 	"github.com/pingcap/tidb/pkg/parser/ast"
 )
@@ -60,15 +61,15 @@ type whereRequirementForSelectChecker struct {
 
 // Enter implements the ast.Visitor interface.
 func (v *whereRequirementForSelectChecker) Enter(in ast.Node) (ast.Node, bool) {
-	code := advisor.Ok
+	code := advisorcode.Ok
 	if node, ok := in.(*ast.SelectStmt); ok {
 		// Allow SELECT queries without a FROM clause to proceed, e.g. SELECT 1.
 		if node.Where == nil && node.From != nil {
-			code = advisor.StatementNoWhere
+			code = advisorcode.StatementNoWhere
 		}
 	}
 
-	if code != advisor.Ok {
+	if code != advisorcode.Ok {
 		v.adviceList = append(v.adviceList, &storepb.Advice{
 			Status:        v.level,
 			Code:          code.Int32(),

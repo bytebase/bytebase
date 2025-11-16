@@ -10,6 +10,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -116,7 +117,7 @@ func (r *compatibilityRule) handleDropdbstmt(ctx antlr.ParserRuleContext) {
 	stmtText := extractStatementText(r.statementsText, dropdbstmtCtx.GetStart().GetLine(), dropdbstmtCtx.GetStop().GetLine())
 	r.AddAdvice(&storepb.Advice{
 		Status:  r.level,
-		Code:    advisor.CompatibilityDropDatabase.Int32(),
+		Code:    advisorcode.CompatibilityDropDatabase.Int32(),
 		Title:   r.title,
 		Content: fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, stmtText),
 		StartPosition: &storepb.Position{
@@ -144,7 +145,7 @@ func (r *compatibilityRule) handleDropstmt(ctx antlr.ParserRuleContext) {
 			stmtText := extractStatementText(r.statementsText, dropstmtCtx.GetStart().GetLine(), dropstmtCtx.GetStop().GetLine())
 			r.AddAdvice(&storepb.Advice{
 				Status:  r.level,
-				Code:    advisor.CompatibilityDropTable.Int32(),
+				Code:    advisorcode.CompatibilityDropTable.Int32(),
 				Title:   r.title,
 				Content: fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, stmtText),
 				StartPosition: &storepb.Position{
@@ -167,7 +168,7 @@ func (r *compatibilityRule) handleRenamestmt(ctx antlr.ParserRuleContext) {
 		return
 	}
 
-	code := advisor.Ok
+	code := advisorcode.Ok
 
 	// Check if this is a column rename
 	if renamestmtCtx.Opt_column() != nil && renamestmtCtx.Opt_column().COLUMN() != nil {
@@ -175,15 +176,15 @@ func (r *compatibilityRule) handleRenamestmt(ctx antlr.ParserRuleContext) {
 		if renamestmtCtx.Relation_expr() != nil && renamestmtCtx.Relation_expr().Qualified_name() != nil {
 			tableName := extractTableName(renamestmtCtx.Relation_expr().Qualified_name())
 			if r.lastCreateTable != tableName {
-				code = advisor.CompatibilityRenameColumn
+				code = advisorcode.CompatibilityRenameColumn
 			}
 		}
 	} else {
 		// RENAME TABLE/VIEW
-		code = advisor.CompatibilityRenameTable
+		code = advisorcode.CompatibilityRenameTable
 	}
 
-	if code != advisor.Ok {
+	if code != advisorcode.Ok {
 		stmtText := extractStatementText(r.statementsText, renamestmtCtx.GetStart().GetLine(), renamestmtCtx.GetStop().GetLine())
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
@@ -225,16 +226,16 @@ func (r *compatibilityRule) handleAltertablestmt(ctx antlr.ParserRuleContext) {
 
 	allCmds := altertablestmtCtx.Alter_table_cmds().AllAlter_table_cmd()
 	for _, cmd := range allCmds {
-		code := advisor.Ok
+		code := advisorcode.Ok
 
 		// DROP COLUMN
 		if cmd.DROP() != nil && cmd.COLUMN() != nil {
-			code = advisor.CompatibilityDropColumn
+			code = advisorcode.CompatibilityDropColumn
 		}
 
 		// ALTER COLUMN TYPE
 		if cmd.ALTER() != nil && cmd.TYPE_P() != nil {
-			code = advisor.CompatibilityAlterColumn
+			code = advisorcode.CompatibilityAlterColumn
 		}
 
 		// ADD CONSTRAINT
@@ -245,17 +246,17 @@ func (r *compatibilityRule) handleAltertablestmt(ctx antlr.ParserRuleContext) {
 
 				// PRIMARY KEY
 				if elem.PRIMARY() != nil && elem.KEY() != nil {
-					code = advisor.CompatibilityAddPrimaryKey
+					code = advisorcode.CompatibilityAddPrimaryKey
 				}
 
 				// UNIQUE
 				if elem.UNIQUE() != nil {
-					code = advisor.CompatibilityAddUniqueKey
+					code = advisorcode.CompatibilityAddUniqueKey
 				}
 
 				// FOREIGN KEY
 				if elem.FOREIGN() != nil && elem.KEY() != nil {
-					code = advisor.CompatibilityAddForeignKey
+					code = advisorcode.CompatibilityAddForeignKey
 				}
 
 				// CHECK - only if NOT VALID is not present
@@ -272,13 +273,13 @@ func (r *compatibilityRule) handleAltertablestmt(ctx antlr.ParserRuleContext) {
 						}
 					}
 					if !hasNotValid {
-						code = advisor.CompatibilityAddCheck
+						code = advisorcode.CompatibilityAddCheck
 					}
 				}
 			}
 		}
 
-		if code != advisor.Ok {
+		if code != advisorcode.Ok {
 			stmtText := extractStatementText(r.statementsText, altertablestmtCtx.GetStart().GetLine(), altertablestmtCtx.GetStop().GetLine())
 			r.AddAdvice(&storepb.Advice{
 				Status:  r.level,
@@ -325,7 +326,7 @@ func (r *compatibilityRule) handleIndexstmt(ctx antlr.ParserRuleContext) {
 	stmtText := extractStatementText(r.statementsText, indexstmtCtx.GetStart().GetLine(), indexstmtCtx.GetStop().GetLine())
 	r.AddAdvice(&storepb.Advice{
 		Status:  r.level,
-		Code:    advisor.CompatibilityAddUniqueKey.Int32(),
+		Code:    advisorcode.CompatibilityAddUniqueKey.Int32(),
 		Title:   r.title,
 		Content: fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, stmtText),
 		StartPosition: &storepb.Position{

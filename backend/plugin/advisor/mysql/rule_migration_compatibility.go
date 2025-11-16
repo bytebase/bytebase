@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -61,7 +62,7 @@ type CompatibilityRule struct {
 	BaseRule
 	text            string
 	lastCreateTable string
-	code            advisor.Code
+	code            code.Code
 }
 
 // NewCompatibilityRule creates a new CompatibilityRule.
@@ -88,7 +89,7 @@ func (r *CompatibilityRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string
 			return nil
 		}
 		r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
-		r.code = advisor.Ok
+		r.code = code.Ok
 	case NodeTypeCreateTable:
 		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
 	case NodeTypeDropDatabase:
@@ -108,7 +109,7 @@ func (r *CompatibilityRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string
 
 // OnExit is called when exiting a parse tree node.
 func (r *CompatibilityRule) OnExit(ctx antlr.ParserRuleContext, nodeType string) error {
-	if nodeType == NodeTypeQuery && r.code != advisor.Ok {
+	if nodeType == NodeTypeQuery && r.code != code.Ok {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
 			Code:          r.code.Int32(),
@@ -139,21 +140,21 @@ func (r *CompatibilityRule) checkDropDatabase(ctx *mysql.DropDatabaseContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
-	r.code = advisor.CompatibilityDropDatabase
+	r.code = code.CompatibilityDropDatabase
 }
 
 func (r *CompatibilityRule) checkRenameTableStatement(ctx *mysql.RenameTableStatementContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
-	r.code = advisor.CompatibilityRenameTable
+	r.code = code.CompatibilityRenameTable
 }
 
 func (r *CompatibilityRule) checkDropTable(ctx *mysql.DropTableContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
-	r.code = advisor.CompatibilityDropTable
+	r.code = code.CompatibilityDropTable
 }
 
 func (r *CompatibilityRule) checkAlterTable(ctx *mysql.AlterTableContext) {
@@ -183,16 +184,16 @@ func (r *CompatibilityRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 		}
 
 		if item.RENAME_SYMBOL() != nil && item.COLUMN_SYMBOL() != nil {
-			r.code = advisor.CompatibilityRenameColumn
+			r.code = code.CompatibilityRenameColumn
 			return
 		}
 
 		if item.DROP_SYMBOL() != nil && item.ColumnInternalRef() != nil {
-			r.code = advisor.CompatibilityDropColumn
+			r.code = code.CompatibilityDropColumn
 			return
 		}
 		if item.DROP_SYMBOL() != nil && item.TableName() != nil {
-			r.code = advisor.CompatibilityRenameTable
+			r.code = code.CompatibilityRenameTable
 			return
 		}
 
@@ -204,15 +205,15 @@ func (r *CompatibilityRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 				switch item.TableConstraintDef().GetType_().GetTokenType() {
 				// add primary key.
 				case mysql.MySQLParserPRIMARY_SYMBOL:
-					r.code = advisor.CompatibilityAddPrimaryKey
+					r.code = code.CompatibilityAddPrimaryKey
 					return
 				// add unique key.
 				case mysql.MySQLParserUNIQUE_SYMBOL:
-					r.code = advisor.CompatibilityAddUniqueKey
+					r.code = code.CompatibilityAddUniqueKey
 					return
 				// add foreign key.
 				case mysql.MySQLParserFOREIGN_SYMBOL:
-					r.code = advisor.CompatibilityAddForeignKey
+					r.code = code.CompatibilityAddForeignKey
 					return
 				default:
 				}
@@ -221,7 +222,7 @@ func (r *CompatibilityRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 			// add check enforced.
 			// Check is only supported after 8.0.16 https://dev.mysql.com/doc/refman/8.0/en/create-table-check-constraints.html
 			if item.TableConstraintDef() != nil && item.TableConstraintDef().CheckConstraint() != nil && item.TableConstraintDef().ConstraintEnforcement() != nil {
-				r.code = advisor.CompatibilityAddCheck
+				r.code = code.CompatibilityAddCheck
 				return
 			}
 		}
@@ -230,7 +231,7 @@ func (r *CompatibilityRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 		// Check is only supported after 8.0.16 https://dev.mysql.com/doc/refman/8.0/en/create-table-check-constraints.html
 		if item.ALTER_SYMBOL() != nil && item.CHECK_SYMBOL() != nil {
 			if item.ConstraintEnforcement() != nil {
-				r.code = advisor.CompatibilityAlterCheck
+				r.code = code.CompatibilityAlterCheck
 				return
 			}
 		}
@@ -242,12 +243,12 @@ func (r *CompatibilityRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 		// 2. Change properties such as comment, change it to NULL
 		// modify column
 		if item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil {
-			r.code = advisor.CompatibilityAlterColumn
+			r.code = code.CompatibilityAlterColumn
 			return
 		}
 		// change column
 		if item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil {
-			r.code = advisor.CompatibilityAlterColumn
+			r.code = code.CompatibilityAlterColumn
 			return
 		}
 	}
@@ -269,6 +270,6 @@ func (r *CompatibilityRule) checkCreateIndex(ctx *mysql.CreateIndexContext) {
 
 	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.CreateIndexTarget().TableRef())
 	if r.lastCreateTable != tableName {
-		r.code = advisor.CompatibilityAddUniqueKey
+		r.code = code.CompatibilityAddUniqueKey
 	}
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -71,27 +72,27 @@ type charsetAllowlistChecker struct {
 
 // Enter implements the ast.Visitor interface.
 func (checker *charsetAllowlistChecker) Enter(in ast.Node) (ast.Node, bool) {
-	code := advisor.Ok
+	code := advisorcode.Ok
 	var disabledCharset string
 	line := checker.line
 	switch node := in.(type) {
 	case *ast.CreateDatabaseStmt:
 		charset := getDatabaseCharset(node.Options)
 		if _, exist := checker.allowlist[charset]; charset != "" && !exist {
-			code = advisor.DisabledCharset
+			code = advisorcode.DisabledCharset
 			disabledCharset = charset
 		}
 	case *ast.CreateTableStmt:
 		charset := getTableCharset(node.Options)
 		if _, exist := checker.allowlist[charset]; charset != "" && !exist {
-			code = advisor.DisabledCharset
+			code = advisorcode.DisabledCharset
 			disabledCharset = charset
 			break
 		}
 		for _, column := range node.Cols {
 			charset := getColumnCharset(column)
 			if _, exist := checker.allowlist[charset]; charset != "" && !exist {
-				code = advisor.DisabledCharset
+				code = advisorcode.DisabledCharset
 				disabledCharset = charset
 				line = column.OriginTextPosition()
 				break
@@ -100,7 +101,7 @@ func (checker *charsetAllowlistChecker) Enter(in ast.Node) (ast.Node, bool) {
 	case *ast.AlterDatabaseStmt:
 		charset := getDatabaseCharset(node.Options)
 		if _, exist := checker.allowlist[charset]; charset != "" && !exist {
-			code = advisor.DisabledCharset
+			code = advisorcode.DisabledCharset
 			disabledCharset = charset
 		}
 	case *ast.AlterTableStmt:
@@ -109,14 +110,14 @@ func (checker *charsetAllowlistChecker) Enter(in ast.Node) (ast.Node, bool) {
 			case ast.AlterTableOption:
 				charset := getTableCharset(spec.Options)
 				if _, exist := checker.allowlist[charset]; charset != "" && !exist {
-					code = advisor.DisabledCharset
+					code = advisorcode.DisabledCharset
 					disabledCharset = charset
 				}
 			case ast.AlterTableAddColumns:
 				for _, column := range spec.NewColumns {
 					charset := getColumnCharset(column)
 					if _, exist := checker.allowlist[charset]; charset != "" && !exist {
-						code = advisor.DisabledCharset
+						code = advisorcode.DisabledCharset
 						disabledCharset = charset
 						break
 					}
@@ -124,7 +125,7 @@ func (checker *charsetAllowlistChecker) Enter(in ast.Node) (ast.Node, bool) {
 			case ast.AlterTableChangeColumn, ast.AlterTableModifyColumn:
 				charset := getColumnCharset(spec.NewColumns[0])
 				if _, exist := checker.allowlist[charset]; charset != "" && !exist {
-					code = advisor.DisabledCharset
+					code = advisorcode.DisabledCharset
 					disabledCharset = charset
 				}
 			default:
@@ -132,7 +133,7 @@ func (checker *charsetAllowlistChecker) Enter(in ast.Node) (ast.Node, bool) {
 		}
 	}
 
-	if code != advisor.Ok {
+	if code != advisorcode.Ok {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:        checker.level,
 			Code:          code.Int32(),

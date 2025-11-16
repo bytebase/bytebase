@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/parser/mysql"
 	"github.com/pkg/errors"
@@ -106,7 +108,7 @@ func (r *TableRequireCharsetRule) checkCreateTable(ctx *mysql.CreateTableContext
 	if !hasCharset {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.NoCharset.Int32(),
+			Code:          code.NoCharset.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("Table %s does not have a character set specified", tableName),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),

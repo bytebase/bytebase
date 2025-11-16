@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/parser/mysql"
 	"github.com/pkg/errors"
@@ -151,7 +153,7 @@ func (r *IndexKeyNumberLimitRule) handleConstraintDef(tableName string, ctx mysq
 	if r.max > 0 && len(columnList) > r.max {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.IndexKeyNumberExceedsLimit.Int32(),
+			Code:          code.IndexKeyNumberExceedsLimit.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("The number of index `%s` in table `%s` should be not greater than %d", indexName, tableName, r.max),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
@@ -185,7 +187,7 @@ func (r *IndexKeyNumberLimitRule) checkCreateIndex(ctx *mysql.CreateIndexContext
 	if r.max > 0 && len(columnList) > r.max {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.IndexKeyNumberExceedsLimit.Int32(),
+			Code:          code.IndexKeyNumberExceedsLimit.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("The number of index `%s` in table `%s` should be not greater than %d", indexName, tableName, r.max),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),

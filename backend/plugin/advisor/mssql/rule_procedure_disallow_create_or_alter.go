@@ -10,6 +10,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 func init() {
@@ -77,7 +78,7 @@ func (*ProcedureDisallowCreateOrAlterRule) OnExit(_ antlr.ParserRuleContext, _ s
 func (r *ProcedureDisallowCreateOrAlterRule) enterCreateOrAlterProcedure(ctx *parser.Create_or_alter_procedureContext) {
 	r.AddAdvice(&storepb.Advice{
 		Status:        r.level,
-		Code:          advisor.DisallowCreateProcedure.Int32(),
+		Code:          code.DisallowCreateProcedure.Int32(),
 		Title:         r.title,
 		Content:       "Creating or altering procedures is prohibited",
 		StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),

@@ -6,6 +6,8 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 
 	parser "github.com/bytebase/parser/postgresql"
@@ -142,7 +144,7 @@ func (r *columnRequirementRule) handleCreatestmt(ctx antlr.ParserRuleContext) {
 
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
-			Code:    advisor.NoRequiredColumn.Int32(),
+			Code:    code.NoRequiredColumn.Int32(),
 			Title:   r.title,
 			Content: fmt.Sprintf("Table %q requires columns: %s", tableName, strings.Join(missingColumns, ", ")),
 			StartPosition: &storepb.Position{
@@ -184,7 +186,7 @@ func (r *columnRequirementRule) handleAltertablestmt(ctx antlr.ParserRuleContext
 					if r.requiredColumnsMap[columnName] {
 						r.AddAdvice(&storepb.Advice{
 							Status:  r.level,
-							Code:    advisor.NoRequiredColumn.Int32(),
+							Code:    code.NoRequiredColumn.Int32(),
 							Title:   r.title,
 							Content: fmt.Sprintf("Table %q requires columns: %s", tableName, columnName),
 							StartPosition: &storepb.Position{
@@ -235,7 +237,7 @@ func (r *columnRequirementRule) handleRenamestmt(ctx antlr.ParserRuleContext) {
 	if r.requiredColumnsMap[oldName] && oldName != newName {
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
-			Code:    advisor.NoRequiredColumn.Int32(),
+			Code:    code.NoRequiredColumn.Int32(),
 			Title:   r.title,
 			Content: fmt.Sprintf("Table %q requires columns: %s", tableName, oldName),
 			StartPosition: &storepb.Position{

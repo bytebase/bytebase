@@ -5,6 +5,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/snowflake"
 	"github.com/pkg/errors"
@@ -124,7 +126,7 @@ func (r *TableNoForeignKeyRule) GetAdviceList() []*storepb.Advice {
 		if times > 0 {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
-				Code:          advisor.TableHasFK.Int32(),
+				Code:          code.TableHasFK.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("FOREIGN KEY is not allowed in the table %s.", r.tableOriginalName[tableName]),
 				StartPosition: common.ConvertANTLRLineToPosition(r.tableLine[tableName]),

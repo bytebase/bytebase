@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 
 	parser "github.com/bytebase/parser/postgresql"
@@ -111,7 +113,7 @@ func (r *indexKeyNumberLimitRule) handleIndexstmt(ctx antlr.ParserRuleContext) {
 
 			r.AddAdvice(&storepb.Advice{
 				Status:  r.level,
-				Code:    advisor.IndexKeyNumberExceedsLimit.Int32(),
+				Code:    code.IndexKeyNumberExceedsLimit.Int32(),
 				Title:   r.title,
 				Content: fmt.Sprintf("The number of keys of index %q in table %q should be not greater than %d", indexName, tableName, r.max),
 				StartPosition: &storepb.Position{
@@ -225,7 +227,7 @@ func (r *indexKeyNumberLimitRule) checkTableConstraint(constraint parser.ITablec
 	if r.max > 0 && keyCount > r.max {
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
-			Code:    advisor.IndexKeyNumberExceedsLimit.Int32(),
+			Code:    code.IndexKeyNumberExceedsLimit.Int32(),
 			Title:   r.title,
 			Content: fmt.Sprintf("The number of keys of index %q in table %q should be not greater than %d", constraintName, tableName, r.max),
 			StartPosition: &storepb.Position{

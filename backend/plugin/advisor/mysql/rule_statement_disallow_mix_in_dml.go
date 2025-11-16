@@ -10,6 +10,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -52,7 +53,7 @@ func (*StatementDisallowMixInDMLAdvisor) Check(_ context.Context, checkCtx advis
 				Status:        level,
 				Title:         title,
 				Content:       fmt.Sprintf("Data change can only run DML, \"%s\" is not DML", checker.Text),
-				Code:          advisor.StatementDisallowMixDDLDML.Int32(),
+				Code:          code.StatementDisallowMixDDLDML.Int32(),
 				StartPosition: common.ConvertANTLRLineToPosition(stmt.BaseLine),
 			})
 		}

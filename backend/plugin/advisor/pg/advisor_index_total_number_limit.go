@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 
 	parser "github.com/bytebase/parser/postgresql"
@@ -124,7 +126,7 @@ func (r *indexTotalNumberLimitRule) generateAdvice() {
 		if tableInfo != nil && tableInfo.CountIndex() > r.max {
 			r.AddAdvice(&storepb.Advice{
 				Status:  r.level,
-				Code:    advisor.IndexCountExceedsLimit.Int32(),
+				Code:    code.IndexCountExceedsLimit.Int32(),
 				Title:   r.title,
 				Content: fmt.Sprintf("The count of index in table %q.%q should be no more than %d, but found %d", table.schema, table.table, r.max, tableInfo.CountIndex()),
 				StartPosition: &storepb.Position{

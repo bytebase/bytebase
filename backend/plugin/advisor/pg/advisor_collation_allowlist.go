@@ -10,6 +10,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -192,7 +193,7 @@ func (r *collationAllowlistRule) addAdvice(collation string, ctx antlr.ParserRul
 
 	r.AddAdvice(&storepb.Advice{
 		Status:  r.level,
-		Code:    advisor.DisabledCollation.Int32(),
+		Code:    code.DisabledCollation.Int32(),
 		Title:   r.title,
 		Content: fmt.Sprintf("Use disabled collation \"%s\", related statement \"%s\"", collation, text),
 		StartPosition: &storepb.Position{

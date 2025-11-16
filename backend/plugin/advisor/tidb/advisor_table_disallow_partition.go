@@ -6,6 +6,8 @@ import (
 	"context"
 	"fmt"
 
+	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
@@ -62,22 +64,22 @@ type tableDisallowPartitionChecker struct {
 
 // Enter implements the ast.Visitor interface.
 func (checker *tableDisallowPartitionChecker) Enter(in ast.Node) (ast.Node, bool) {
-	code := advisor.Ok
+	code := advisorcode.Ok
 	switch node := in.(type) {
 	case *ast.CreateTableStmt:
 		if node.Partition != nil {
-			code = advisor.CreateTablePartition
+			code = advisorcode.CreateTablePartition
 		}
 	case *ast.AlterTableStmt:
 		for _, spec := range node.Specs {
 			if spec.Tp == ast.AlterTablePartition {
-				code = advisor.CreateTablePartition
+				code = advisorcode.CreateTablePartition
 				break
 			}
 		}
 	}
 
-	if code != advisor.Ok {
+	if code != advisorcode.Ok {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:        checker.level,
 			Code:          code.Int32(),

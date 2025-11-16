@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 
 	parser "github.com/bytebase/parser/postgresql"
@@ -262,7 +264,7 @@ func findDuplicate(columns []string) string {
 func (r *indexNoDuplicateColumnRule) addAdvice(constraintType, constraintName, tableName, duplicateColumn string, line int) {
 	r.AddAdvice(&storepb.Advice{
 		Status:  r.level,
-		Code:    advisor.DuplicateColumnInIndex.Int32(),
+		Code:    code.DuplicateColumnInIndex.Int32(),
 		Title:   r.title,
 		Content: fmt.Sprintf("%s %q has duplicate column %q.%q", constraintType, constraintName, tableName, duplicateColumn),
 		StartPosition: &storepb.Position{

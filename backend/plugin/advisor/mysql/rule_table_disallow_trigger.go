@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/parser/mysql"
 	"github.com/pkg/errors"
@@ -100,12 +102,12 @@ func (r *TableDisallowTriggerRule) checkCreateTrigger(ctx *mysql.CreateTriggerCo
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
-	code := advisor.Ok
+	code := advisorcode.Ok
 	if ctx.TriggerName() != nil {
-		code = advisor.CreateTableTrigger
+		code = advisorcode.CreateTableTrigger
 	}
 
-	if code != advisor.Ok {
+	if code != advisorcode.Ok {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
 			Code:          code.Int32(),

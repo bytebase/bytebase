@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -232,7 +233,7 @@ func (r *StatementJoinStrictColumnAttrsRule) checkColumnAttrs(leftColumnAttr *Co
 	if leftColumn.Type != rightColumn.Type || leftColumn.CharacterSet != rightColumn.CharacterSet || leftColumn.Collation != rightColumn.Collation {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.StatementJoinColumnAttrsNotMatch.Int32(),
+			Code:          code.StatementJoinColumnAttrsNotMatch.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("%s.%s and %s.%s column fields do not match", leftColumnAttr.Table, leftColumnAttr.Column, rightColumnAttr.Table, rightColumnAttr.Column),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine),

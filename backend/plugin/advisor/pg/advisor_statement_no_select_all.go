@@ -10,6 +10,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -125,7 +126,7 @@ func (r *noSelectAllRule) handleSimpleSelectPramary(ctx *parser.Simple_select_pr
 
 				r.AddAdvice(&storepb.Advice{
 					Status:  r.level,
-					Code:    advisor.StatementSelectAll.Int32(),
+					Code:    code.StatementSelectAll.Int32(),
 					Title:   r.title,
 					Content: fmt.Sprintf("\"%s\" uses SELECT all", stmtText),
 					StartPosition: &storepb.Position{

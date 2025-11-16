@@ -14,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
@@ -71,7 +72,7 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor
 			Status:        level,
 			Title:         title,
 			Content:       fmt.Sprintf("Need schema %q to do prior backup but it does not exist", schemaName),
-			Code:          advisor.SchemaNotExists.Int32(),
+			Code:          code.SchemaNotExists.Int32(),
 			StartPosition: nil,
 		})
 	}
@@ -100,7 +101,7 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor
 					Status:        level,
 					Title:         title,
 					Content:       fmt.Sprintf("The statement type is not the same for all statements on the same table %q", key),
-					Code:          advisor.BuiltinPriorBackupCheck.Int32(),
+					Code:          code.BuiltinPriorBackupCheck.Int32(),
 					StartPosition: nil,
 				})
 				break
@@ -247,7 +248,7 @@ func (r *ddlRule) handleEveryRule(ctx antlr.ParserRuleContext) error {
 			Status:  r.level,
 			Title:   r.title,
 			Content: fmt.Sprintf("Data change can only run DML, \"%s\" is not DML", r.getStatementText(ctx)),
-			Code:    advisor.BuiltinPriorBackupCheck.Int32(),
+			Code:    code.BuiltinPriorBackupCheck.Int32(),
 			StartPosition: &storepb.Position{
 				Line:   int32(ctx.GetStart().GetLine()),
 				Column: 0,

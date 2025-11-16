@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 )
 
@@ -90,7 +91,7 @@ func (r *DisallowCrossDBQueriesRule) enterTableSourceItem(ctx *parser.Table_sour
 		if fullTblName, err := tsql.NormalizeFullTableName(fullTblnameCtx); err == nil && fullTblName.Database != "" && !strings.EqualFold(fullTblName.Database, r.curDB) {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
-				Code:          advisor.StatementDisallowCrossDBQueries.Int32(),
+				Code:          code.StatementDisallowCrossDBQueries.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("Cross database queries (target databse: '%s', current database: '%s') are prohibited", fullTblName.Database, r.curDB),
 				StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),

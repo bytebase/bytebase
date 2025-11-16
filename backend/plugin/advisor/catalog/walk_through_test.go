@@ -162,14 +162,6 @@ func TestPostgreSQLANTLRWalkThrough(t *testing.T) {
 	}
 }
 
-func convertInterfaceSliceToStringSlice(slice []any) []string {
-	var res []string
-	for _, item := range slice {
-		res = append(res, item.(string))
-	}
-	return res
-}
-
 func runWalkThroughTest(t *testing.T, file string, engineType storepb.Engine, originDatabase *storepb.DatabaseSchemaMetadata) {
 	tests := []testData{}
 	filepath := filepath.Join("test", file+".yaml")
@@ -196,17 +188,7 @@ func runWalkThroughTest(t *testing.T, file string, engineType storepb.Engine, or
 		if err != nil {
 			err, yes := err.(*WalkThroughError)
 			require.True(t, yes)
-			if err.Payload != nil {
-				actualPayloadText, yes := err.Payload.([]string)
-				require.True(t, yes)
-				expectedPayloadText := convertInterfaceSliceToStringSlice(test.Err.Payload.([]any))
-				err.Payload = nil
-				test.Err.Payload = nil
-				require.Equal(t, test.Err, err)
-				require.Equal(t, expectedPayloadText, actualPayloadText)
-			} else {
-				require.Equal(t, test.Err, err)
-			}
+			require.Equal(t, test.Err, err)
 			continue
 		}
 		require.NoError(t, err, test.Statement)
@@ -251,17 +233,7 @@ func runANTLRWalkThroughTest(t *testing.T, file string, engineType storepb.Engin
 		if err != nil {
 			err, yes := err.(*WalkThroughError)
 			require.True(t, yes)
-			if err.Payload != nil {
-				actualPayloadText, yes := err.Payload.([]string)
-				require.True(t, yes)
-				expectedPayloadText := convertInterfaceSliceToStringSlice(test.Err.Payload.([]any))
-				err.Payload = nil
-				test.Err.Payload = nil
-				require.Equal(t, test.Err, err)
-				require.Equal(t, expectedPayloadText, actualPayloadText)
-			} else {
-				require.Equal(t, test.Err, err)
-			}
+			require.Equal(t, test.Err, err)
 			continue
 		}
 		require.NoError(t, err, test.Statement)

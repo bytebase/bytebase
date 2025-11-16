@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
@@ -107,7 +109,7 @@ func (r *ColumnDisallowDropRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 		columnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.DropColumn.Int32(),
+			Code:          code.DropColumn.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("drops column \"%s\" of table \"%s\"", columnName, tableName),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + item.GetStart().GetLine()),

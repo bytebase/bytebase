@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -187,7 +188,7 @@ func (r *NamingFKConventionRule) handleIndexList(indexDataList []*fkIndexMetaDat
 		if err != nil {
 			r.AddAdvice(&storepb.Advice{
 				Status:  r.level,
-				Code:    advisor.Internal.Int32(),
+				Code:    code.Internal.Int32(),
 				Title:   "Internal error for foreign key naming convention rule",
 				Content: fmt.Sprintf("%q meet internal error %q", r.text, err.Error()),
 			})
@@ -196,7 +197,7 @@ func (r *NamingFKConventionRule) handleIndexList(indexDataList []*fkIndexMetaDat
 		if !regex.MatchString(indexData.indexName) {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
-				Code:          advisor.NamingFKConventionMismatch.Int32(),
+				Code:          code.NamingFKConventionMismatch.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("Foreign key in table `%s` mismatches the naming convention, expect %q but found `%s`", indexData.tableName, regex, indexData.indexName),
 				StartPosition: common.ConvertANTLRLineToPosition(indexData.line),
@@ -205,7 +206,7 @@ func (r *NamingFKConventionRule) handleIndexList(indexDataList []*fkIndexMetaDat
 		if r.maxLength > 0 && len(indexData.indexName) > r.maxLength {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
-				Code:          advisor.NamingFKConventionMismatch.Int32(),
+				Code:          code.NamingFKConventionMismatch.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("Foreign key `%s` in table `%s` mismatches the naming convention, its length should be within %d characters", indexData.indexName, indexData.tableName, r.maxLength),
 				StartPosition: common.ConvertANTLRLineToPosition(indexData.line),

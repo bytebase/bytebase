@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -127,7 +128,7 @@ func (r *StatementAffectedRowLimitRule) handleStmt(lineNumber int) {
 	if err != nil {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.StatementAffectedRowExceedsLimit.Int32(),
+			Code:          code.StatementAffectedRowExceedsLimit.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", r.text, err.Error()),
 			StartPosition: common.ConvertANTLRLineToPosition(lineNumber),
@@ -137,7 +138,7 @@ func (r *StatementAffectedRowLimitRule) handleStmt(lineNumber int) {
 		if err != nil {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
-				Code:          advisor.Internal.Int32(),
+				Code:          code.Internal.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("failed to get row count for \"%s\": %s", r.text, err.Error()),
 				StartPosition: common.ConvertANTLRLineToPosition(lineNumber),
@@ -145,7 +146,7 @@ func (r *StatementAffectedRowLimitRule) handleStmt(lineNumber int) {
 		} else if rowCount > int64(r.maxRow) {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
-				Code:          advisor.StatementAffectedRowExceedsLimit.Int32(),
+				Code:          code.StatementAffectedRowExceedsLimit.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("\"%s\" affected %d rows (estimated). The count exceeds %d.", r.text, rowCount, r.maxRow),
 				StartPosition: common.ConvertANTLRLineToPosition(lineNumber),

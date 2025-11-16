@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 )
 
@@ -103,7 +104,7 @@ func (r *StatementDisallowMixInDMLRule) enterSQLClauses(ctx *parser.Sql_clausesC
 			Status:        r.level,
 			Title:         r.title,
 			Content:       "Data change can only run DML",
-			Code:          advisor.StatementDisallowMixDDLDML.Int32(),
+			Code:          code.StatementDisallowMixDDLDML.Int32(),
 			StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 		})
 	}

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
@@ -268,7 +270,7 @@ func (r *ColumnCurrentTimeCountLimitRule) generateAdvice() {
 		if table.defaultCurrentTimeCount > maxDefaultCurrentTimeColumCount {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
-				Code:          advisor.DefaultCurrentTimeColumnCountExceedsLimit.Int32(),
+				Code:          code.DefaultCurrentTimeColumnCountExceedsLimit.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("Table `%s` has %d DEFAULT CURRENT_TIMESTAMP() columns. The count greater than %d.", table.tableName, table.defaultCurrentTimeCount, maxDefaultCurrentTimeColumCount),
 				StartPosition: common.ConvertANTLRLineToPosition(table.line),
@@ -277,7 +279,7 @@ func (r *ColumnCurrentTimeCountLimitRule) generateAdvice() {
 		if table.onUpdateCurrentTimeCount > maxOnUpdateCurrentTimeColumnCount {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
-				Code:          advisor.OnUpdateCurrentTimeColumnCountExceedsLimit.Int32(),
+				Code:          code.OnUpdateCurrentTimeColumnCountExceedsLimit.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("Table `%s` has %d ON UPDATE CURRENT_TIMESTAMP() columns. The count greater than %d.", table.tableName, table.onUpdateCurrentTimeCount, maxOnUpdateCurrentTimeColumnCount),
 				StartPosition: common.ConvertANTLRLineToPosition(table.line),

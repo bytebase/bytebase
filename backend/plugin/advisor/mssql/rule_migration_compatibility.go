@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 )
 
@@ -150,7 +151,7 @@ func (r *MigrationCompatibilityRule) enterDropTable(ctx *parser.Drop_tableContex
 		if _, ok := r.normalizedNewCreateTableNameMap[normalizedTableName]; !ok {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
-				Code:          advisor.CompatibilityDropSchema.Int32(),
+				Code:          advisorcode.CompatibilityDropSchema.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("Drop table %s may cause incompatibility with the existing data and code", normalizedTableName),
 				StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
@@ -167,7 +168,7 @@ func (r *MigrationCompatibilityRule) enterDropSchema(ctx *parser.Drop_schemaCont
 	if _, ok := r.normalizedNewCreateSchemaNameMap[normalizedSchemaName]; !ok {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.CompatibilityDropSchema.Int32(),
+			Code:          advisorcode.CompatibilityDropSchema.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("Drop schema %s may cause incompatibility with the existing data and code", normalizedSchemaName),
 			StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
@@ -182,7 +183,7 @@ func (r *MigrationCompatibilityRule) enterDropDatabase(ctx *parser.Drop_database
 	if _, ok := r.normalizedNewCreateDatabaseNameMap[normalizedDatabaseName]; !ok {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.CompatibilityDropSchema.Int32(),
+			Code:          advisorcode.CompatibilityDropSchema.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("Drop database %s may cause incompatibility with the existing data and code", normalizedDatabaseName),
 			StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
@@ -208,7 +209,7 @@ func (r *MigrationCompatibilityRule) enterAlterTable(ctx *parser.Alter_tableCont
 		placeholder := strings.Join(allNormalizedDropColumnNames, ", ")
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.CompatibilityDropSchema.Int32(),
+			Code:          advisorcode.CompatibilityDropSchema.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("Drop column %s may cause incompatibility with the existing data and code", placeholder),
 			StartPosition: common.ConvertANTLRLineToPosition(ctx.COLUMN().GetSymbol().GetLine()),
@@ -225,7 +226,7 @@ func (r *MigrationCompatibilityRule) enterAlterTable(ctx *parser.Alter_tableCont
 
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.CompatibilityAlterColumn.Int32(),
+			Code:          advisorcode.CompatibilityAlterColumn.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("Alter COLUMN %s may cause incompatibility with the existing data and code", normalizedColumnName),
 			StartPosition: common.ConvertANTLRLineToPosition(ctx.COLUMN().GetSymbol().GetLine()),
@@ -235,22 +236,22 @@ func (r *MigrationCompatibilityRule) enterAlterTable(ctx *parser.Alter_tableCont
 	if v := ctx.Column_def_table_constraints(); v != nil {
 		allColumnDefTableConstraints := v.AllColumn_def_table_constraint()
 		for _, columnDefTableConstraint := range allColumnDefTableConstraints {
-			code := advisor.Ok
+			code := advisorcode.Ok
 			operation := ""
 			tableConstraint := columnDefTableConstraint.Table_constraint()
 			if tableConstraint == nil {
 				continue
 			}
 			if tableConstraint.PRIMARY() != nil {
-				code = advisor.CompatibilityAddPrimaryKey
+				code = advisorcode.CompatibilityAddPrimaryKey
 				operation = "Add PRIMARY KEY"
 			}
 			if tableConstraint.UNIQUE() != nil {
-				code = advisor.CompatibilityAddUniqueKey
+				code = advisorcode.CompatibilityAddUniqueKey
 				operation = "Add UNIQUE KEY"
 			}
 			if tableConstraint.Check_constraint() != nil {
-				code = advisor.CompatibilityAddCheck
+				code = advisorcode.CompatibilityAddCheck
 				operation = "Add CHECK"
 			}
 			r.AddAdvice(&storepb.Advice{
@@ -267,7 +268,7 @@ func (r *MigrationCompatibilityRule) enterAlterTable(ctx *parser.Alter_tableCont
 		if ctx.FOREIGN() != nil {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
-				Code:          advisor.CompatibilityAddForeignKey.Int32(),
+				Code:          advisorcode.CompatibilityAddForeignKey.Int32(),
 				Title:         r.title,
 				Content:       "Add FOREIGN KEY WITH NO CHECK may cause incompatibility with the existing data and code",
 				StartPosition: common.ConvertANTLRLineToPosition(ctx.FOREIGN().GetSymbol().GetLine()),
@@ -277,7 +278,7 @@ func (r *MigrationCompatibilityRule) enterAlterTable(ctx *parser.Alter_tableCont
 		if len(ctx.AllCHECK()) == 1 {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
-				Code:          advisor.CompatibilityAddForeignKey.Int32(),
+				Code:          advisorcode.CompatibilityAddForeignKey.Int32(),
 				Title:         r.title,
 				Content:       "Add CHECK WITH NO CHECK may cause incompatibility with the existing data and code",
 				StartPosition: common.ConvertANTLRLineToPosition(ctx.CHECK(0).GetSymbol().GetLine()),
@@ -325,7 +326,7 @@ func (r *MigrationCompatibilityRule) enterExecuteBody(ctx *parser.Execute_bodyCo
 	}
 	r.AddAdvice(&storepb.Advice{
 		Status:        r.level,
-		Code:          advisor.CompatibilityRenameTable.Int32(),
+		Code:          advisorcode.CompatibilityRenameTable.Int32(),
 		Title:         r.title,
 		Content:       "sp_rename may cause incompatibility with the existing data and code, and break scripts and stored procedures.",
 		StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),

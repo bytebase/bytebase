@@ -9,6 +9,7 @@ import (
 	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 )
@@ -60,7 +61,7 @@ func (d *DatabaseState) mysqlChangeState(in *mysqlparser.ParseResult) (err *Walk
 
 	if d.IsDeleted() {
 		return &WalkThroughError{
-			Type:    ErrorTypeDatabaseIsDeleted,
+			Code:    code.DatabaseIsDeleted,
 			Content: fmt.Sprintf("Database `%s` is deleted", d.name),
 		}
 	}
@@ -90,7 +91,7 @@ func (l *mysqlListener) EnterCreateTable(ctx *mysql.CreateTableContext) {
 	databaseName, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
 	if databaseName != "" && !l.databaseState.isCurrentDatabase(databaseName) {
 		l.err = &WalkThroughError{
-			Type:    ErrorTypeAccessOtherDatabase,
+			Code:    code.NotCurrentDatabase,
 			Content: fmt.Sprintf("Database `%s` is not the current database `%s`", databaseName, l.databaseState.name),
 		}
 		return
@@ -102,7 +103,7 @@ func (l *mysqlListener) EnterCreateTable(ctx *mysql.CreateTableContext) {
 			return
 		}
 		l.err = &WalkThroughError{
-			Type:    ErrorTypeTableExists,
+			Code:    code.TableExists,
 			Content: fmt.Sprintf("Table `%s` already exists", tableName),
 		}
 		return
@@ -110,7 +111,7 @@ func (l *mysqlListener) EnterCreateTable(ctx *mysql.CreateTableContext) {
 
 	if ctx.DuplicateAsQueryExpression() != nil {
 		l.err = &WalkThroughError{
-			Type:    ErrorTypeUseCreateTableAs,
+			Code:    code.StatementCreateTableAs,
 			Content: fmt.Sprintf("Disallow the CREATE TABLE AS statement but \"%s\" uses", l.text),
 		}
 		return
@@ -143,7 +144,7 @@ func (l *mysqlListener) EnterCreateTable(ctx *mysql.CreateTableContext) {
 			if mysqlparser.IsAutoIncrement(tableElement.ColumnDefinition().FieldDefinition()) {
 				if hasAutoIncrement {
 					l.err = &WalkThroughError{
-						Type: ErrorTypeAutoIncrementExists,
+						Code: code.AutoIncrementExists,
 						// The content comes from MySQL error content.
 						Content: fmt.Sprintf("There can be only one auto column for table `%s`", table.name),
 					}
@@ -181,7 +182,7 @@ func (l *mysqlListener) EnterDropTable(ctx *mysql.DropTableContext) {
 		databaseName, tableName := mysqlparser.NormalizeMySQLTableRef(tableRef)
 		if databaseName != "" && !l.databaseState.isCurrentDatabase(databaseName) {
 			l.err = &WalkThroughError{
-				Type:    ErrorTypeAccessOtherDatabase,
+				Code:    code.NotCurrentDatabase,
 				Content: fmt.Sprintf("Database `%s` is not the current database `%s`", databaseName, tableName),
 			}
 		}
@@ -194,7 +195,7 @@ func (l *mysqlListener) EnterDropTable(ctx *mysql.DropTableContext) {
 				return
 			}
 			l.err = &WalkThroughError{
-				Type:    ErrorTypeTableNotExists,
+				Code:    code.TableNotExists,
 				Content: fmt.Sprintf("Table `%s` does not exist", tableName),
 			}
 			return
@@ -681,7 +682,7 @@ func (t *TableState) mysqlAlterColumn(itemDef mysql.IAlterListItemContext) *Walk
 						"json",
 						"geometry":
 						return &WalkThroughError{
-							Type: ErrorTypeInvalidColumnTypeForDefaultValue,
+							Code: code.InvalidColumnDefault,
 							// Content comes from MySQL Error content.
 							Content: fmt.Sprintf("BLOB, TEXT, GEOMETRY or JSON column `%s` can't have a default value", columnName),
 						}
@@ -704,7 +705,7 @@ func (t *TableState) mysqlAlterColumn(itemDef mysql.IAlterListItemContext) *Walk
 			} else {
 				if colState.nullable != nil && !*colState.nullable {
 					return &WalkThroughError{
-						Type: ErrorTypeSetNullDefaultForNotNullColumn,
+						Code: code.SetNullDefaultForNotNullColumn,
 						// Content comes from MySQL Error content.
 						Content: fmt.Sprintf("Invalid default value for column `%s`", columnName),
 					}
@@ -949,7 +950,7 @@ func (t *TableState) mysqlValidateColumnList(columnList []string, primary bool, 
 		}
 		if isSpatial && column.nullable != nil && *column.nullable {
 			return &WalkThroughError{
-				Type: ErrorTypeSpatialIndexKeyNullable,
+				Code: code.SpatialIndexKeyNullable,
 				// The error content comes from MySQL.
 				Content: fmt.Sprintf("All parts of a SPATIAL index must be NOT NULL, but `%s` is nullable", column.name),
 			}
@@ -973,7 +974,7 @@ func (t *TableState) mysqlValidateExpressionList(expressionList []string, primar
 		}
 		if isSpatial && column.nullable != nil && *column.nullable {
 			return &WalkThroughError{
-				Type: ErrorTypeSpatialIndexKeyNullable,
+				Code: code.SpatialIndexKeyNullable,
 				// The error content comes from MySQL.
 				Content: fmt.Sprintf("All parts of a SPATIAL index must be NOT NULL, but `%s` is nullable", column.name),
 			}
@@ -1023,7 +1024,7 @@ func mysqlGetIndexType(tableConstraint mysql.ITableConstraintDefContext) string 
 func (t *TableState) mysqlCreateColumn(columnName string, fieldDef mysql.IFieldDefinitionContext, position *mysqlColumnPosition) *WalkThroughError {
 	if _, exists := t.columnSet[strings.ToLower(columnName)]; exists {
 		return &WalkThroughError{
-			Type:    ErrorTypeColumnExists,
+			Code:    code.ColumnExists,
 			Content: fmt.Sprintf("Column `%s` already exists in table `%s`", columnName, t.name),
 		}
 	}
@@ -1104,7 +1105,7 @@ func (t *TableState) mysqlCreateColumn(columnName string, fieldDef mysql.IFieldD
 				}
 				if !mysqlparser.IsTimeType(fieldDef.DataType()) {
 					return &WalkThroughError{
-						Type:    ErrorTypeOnUpdateColumnNotDatetimeOrTimestamp,
+						Code:    code.OnUpdateColumnNotDatetimeOrTimestamp,
 						Content: fmt.Sprintf("Column `%s` use ON UPDATE but is not DATETIME or TIMESTAMP", col.name),
 					}
 				}
@@ -1139,7 +1140,7 @@ func (t *TableState) mysqlCreateColumn(columnName string, fieldDef mysql.IFieldD
 
 	if col.nullable != nil && !*col.nullable && setNullDefault {
 		return &WalkThroughError{
-			Type: ErrorTypeSetNullDefaultForNotNullColumn,
+			Code: code.SetNullDefaultForNotNullColumn,
 			// Content comes from MySQL Error content.
 			Content: fmt.Sprintf("Invalid default value for column `%s`", col.name),
 		}
@@ -1173,7 +1174,7 @@ func (t *TableState) mysqlReorderColumn(position *mysqlColumnPosition) (int, *Wa
 		return *column.position + 1, nil
 	default:
 		return 0, &WalkThroughError{
-			Type:    ErrorTypeUnsupported,
+			Code:    code.Unsupported,
 			Content: fmt.Sprintf("Unsupported column position type: %d", position.tp),
 		}
 	}
@@ -1182,7 +1183,7 @@ func (t *TableState) mysqlReorderColumn(position *mysqlColumnPosition) (int, *Wa
 func (t *TableState) mysqlCreateIndex(name string, keyList []string, unique bool, tp string, tableConstraint mysql.ITableConstraintDefContext, createIndexDef mysql.ICreateIndexContext) *WalkThroughError {
 	if len(keyList) == 0 {
 		return &WalkThroughError{
-			Type:    ErrorTypeIndexEmptyKeys,
+			Code:    code.IndexEmptyKeys,
 			Content: fmt.Sprintf("Index `%s` in table `%s` has empty key", name, t.name),
 		}
 	}
@@ -1291,7 +1292,7 @@ func (t *TableState) mysqlCreateIndex(name string, keyList []string, unique bool
 func (t *TableState) mysqlCreatePrimaryKey(keys []string, tp string) *WalkThroughError {
 	if _, exists := t.indexSet[strings.ToLower(PrimaryKeyName)]; exists {
 		return &WalkThroughError{
-			Type:    ErrorTypePrimaryKeyExists,
+			Code:    code.PrimaryKeyExists,
 			Content: fmt.Sprintf("Primary key exists in table `%s`", t.name),
 		}
 	}
@@ -1335,7 +1336,7 @@ func mysqlCheckDefault(columnName string, fieldDefinition mysql.IFieldDefinition
 		mysql.MySQLParserPOLYGON_SYMBOL,
 		mysql.MySQLParserMULTIPOLYGON_SYMBOL:
 		return &WalkThroughError{
-			Type: ErrorTypeInvalidColumnTypeForDefaultValue,
+			Code: code.InvalidColumnDefault,
 			// Content comes from MySQL Error content.
 			Content: fmt.Sprintf("BLOB, TEXT, GEOMETRY or JSON column `%s` can't have a default value", columnName),
 		}

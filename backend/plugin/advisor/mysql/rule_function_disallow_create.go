@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -98,12 +99,12 @@ func (r *FunctionDisallowCreateRule) checkCreateFunction(ctx *mysql.CreateFuncti
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
-	code := advisor.Ok
+	code := advisorcode.Ok
 	if ctx.FunctionName() != nil {
-		code = advisor.DisallowCreateFunction
+		code = advisorcode.DisallowCreateFunction
 	}
 
-	if code != advisor.Ok {
+	if code != advisorcode.Ok {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
 			Code:          code.Int32(),

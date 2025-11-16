@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -91,7 +92,7 @@ func (r *WhereRequireForSelectRule) enterQueryStatement(ctx *parser.Query_statem
 	if optional.Where_clause() == nil && optional.From_clause() != nil {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.StatementNoWhere.Int32(),
+			Code:          code.StatementNoWhere.Int32(),
 			Title:         r.title,
 			Content:       "WHERE clause is required for SELECT statement.",
 			StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),

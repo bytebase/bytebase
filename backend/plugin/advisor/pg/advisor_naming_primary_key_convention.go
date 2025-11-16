@@ -12,6 +12,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
@@ -341,7 +342,7 @@ func (r *namingPKConventionRule) checkPKName(pkData *pkMetaData) {
 	if err != nil {
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
-			Code:    advisor.Internal.Int32(),
+			Code:    code.Internal.Int32(),
 			Title:   "Internal error for primary key naming convention rule",
 			Content: fmt.Sprintf("Failed to compile regex: %v", err),
 			StartPosition: &storepb.Position{
@@ -355,7 +356,7 @@ func (r *namingPKConventionRule) checkPKName(pkData *pkMetaData) {
 	if !regex.MatchString(pkData.pkName) {
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
-			Code:    advisor.NamingPKConventionMismatch.Int32(),
+			Code:    code.NamingPKConventionMismatch.Int32(),
 			Title:   r.title,
 			Content: fmt.Sprintf(`Primary key in table "%s" mismatches the naming convention, expect %q but found "%s"`, pkData.tableName, regex, pkData.pkName),
 			StartPosition: &storepb.Position{
@@ -368,7 +369,7 @@ func (r *namingPKConventionRule) checkPKName(pkData *pkMetaData) {
 	if r.maxLength > 0 && len(pkData.pkName) > r.maxLength {
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
-			Code:    advisor.NamingPKConventionMismatch.Int32(),
+			Code:    code.NamingPKConventionMismatch.Int32(),
 			Title:   r.title,
 			Content: fmt.Sprintf(`Primary key "%s" in table "%s" mismatches the naming convention, its length should be within %d characters`, pkData.pkName, pkData.tableName, r.maxLength),
 			StartPosition: &storepb.Position{

@@ -11,6 +11,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -103,7 +104,7 @@ func (r *encodingAllowlistRule) handleCreatedbstmt(ctx *parser.CreatedbstmtConte
 		if !r.allowlist[strings.ToLower(encoding)] {
 			r.AddAdvice(&storepb.Advice{
 				Status:  r.level,
-				Code:    advisor.DisabledCharset.Int32(),
+				Code:    code.DisabledCharset.Int32(),
 				Title:   r.title,
 				Content: fmt.Sprintf("\"\" used disabled encoding '%s'", strings.ToLower(encoding)),
 				StartPosition: &storepb.Position{

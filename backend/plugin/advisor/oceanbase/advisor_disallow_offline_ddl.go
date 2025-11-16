@@ -16,6 +16,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -252,7 +253,7 @@ func (*disallowOfflineDdlChecker) isPrimaryKeyColumn(ctx mysql.IFieldDefinitionC
 func (checker *disallowOfflineDdlChecker) advice(ctx antlr.ParserRuleContext, operation string) {
 	checker.adviceList = append(checker.adviceList, &storepb.Advice{
 		Status:        checker.level,
-		Code:          advisor.StatementOfflineDDL.Int32(),
+		Code:          code.StatementOfflineDDL.Int32(),
 		Title:         checker.title,
 		Content:       fmt.Sprintf("%s is an offline DDL operation.", operation),
 		StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),

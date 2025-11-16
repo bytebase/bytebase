@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -75,7 +76,7 @@ func (checker *tableCommentConventionChecker) Enter(in ast.Node) (ast.Node, bool
 		if checker.payload.Required && !exist {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:        checker.level,
-				Code:          advisor.CommentEmpty.Int32(),
+				Code:          code.CommentEmpty.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("Table `%s` requires comments", node.Table.Name.O),
 				StartPosition: common.ConvertANTLRLineToPosition(checker.line),
@@ -84,7 +85,7 @@ func (checker *tableCommentConventionChecker) Enter(in ast.Node) (ast.Node, bool
 		if checker.payload.MaxLength >= 0 && len(comment) > checker.payload.MaxLength {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:        checker.level,
-				Code:          advisor.CommentTooLong.Int32(),
+				Code:          code.CommentTooLong.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("The length of table `%s` comment should be within %d characters", node.Table.Name.O, checker.payload.MaxLength),
 				StartPosition: common.ConvertANTLRLineToPosition(checker.line),
@@ -94,7 +95,7 @@ func (checker *tableCommentConventionChecker) Enter(in ast.Node) (ast.Node, bool
 			if classification, _ := common.GetClassificationAndUserComment(comment, checker.classificationConfig); classification == "" {
 				checker.adviceList = append(checker.adviceList, &storepb.Advice{
 					Status:        checker.level,
-					Code:          advisor.CommentMissingClassification.Int32(),
+					Code:          code.CommentMissingClassification.Int32(),
 					Title:         checker.title,
 					Content:       fmt.Sprintf("Table `%s` comment requires classification", node.Table.Name.O),
 					StartPosition: common.ConvertANTLRLineToPosition(checker.line),

@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
@@ -87,7 +88,7 @@ func (r *StatementDisallowMixInDDLRule) handleUnitStatement(ctx *parser.Unit_sta
 	if ctx.Data_manipulation_language_statements() != nil {
 		r.AddAdvice(
 			r.level,
-			advisor.StatementDisallowMixDDLDML.Int32(),
+			code.StatementDisallowMixDDLDML.Int32(),
 			"Alter schema can only run DDL",
 			common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
 		)

@@ -1,4 +1,4 @@
-package advisor
+package code
 
 // Code is the error code.
 type Code int
@@ -126,6 +126,9 @@ const (
 	InvalidColumnDefault                       Code = 423
 	DropIndexColumn                            Code = 424
 	DropColumn                                 Code = 425
+	AutoIncrementExists                        Code = 426
+	OnUpdateColumnNotDatetimeOrTimestamp       Code = 427
+	SetNullDefaultForNotNullColumn             Code = 428
 
 	// 501 engine error code.
 	NotInnoDBEngine Code = 501
@@ -218,9 +221,13 @@ const (
 
 	// 1901 ~ 1999 schema error code.
 	SchemaNotExists Code = 1901
+	RelationExists  Code = 1902
 
 	// 2001 ~ 2099 builtin error code.
 	BuiltinPriorBackupCheck Code = 2001
+
+	// 2101 ~ 2199 constraint error code.
+	ConstraintNotExists Code = 2101
 )
 
 // Int returns the int type of code.

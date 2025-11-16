@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -65,7 +66,7 @@ func (c *statementDisallowCommitChecker) Enter(in ast.Node) (ast.Node, bool) {
 	if _, ok := in.(*ast.CommitStmt); ok {
 		c.adviceList = append(c.adviceList, &storepb.Advice{
 			Status:        c.level,
-			Code:          advisor.StatementDisallowCommit.Int32(),
+			Code:          code.StatementDisallowCommit.Int32(),
 			Title:         c.title,
 			Content:       fmt.Sprintf("Commit is not allowed, related statement: \"%s\"", c.text),
 			StartPosition: common.ConvertANTLRLineToPosition(c.line),

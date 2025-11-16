@@ -9,6 +9,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/db/pg"
 )
 
@@ -108,7 +109,7 @@ func (r *nonTransactionalRule) checkStatement(ctx antlr.ParserRuleContext) {
 	if pg.IsNonTransactionStatement(stmtText) {
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
-			Code:    advisor.StatementNonTransactional.Int32(),
+			Code:    code.StatementNonTransactional.Int32(),
 			Title:   r.title,
 			Content: "This statement is non-transactional",
 			StartPosition: &storepb.Position{

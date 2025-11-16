@@ -12,6 +12,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -86,7 +87,7 @@ func (checker *columnNoNullChecker) generateAdvice() []*storepb.Advice {
 		if col != nil && col.Nullable() {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:        checker.level,
-				Code:          advisor.ColumnCannotNull.Int32(),
+				Code:          code.ColumnCannotNull.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("`%s`.`%s` cannot have NULL value", column.tableName, column.columnName),
 				StartPosition: common.ConvertANTLRLineToPosition(column.line),

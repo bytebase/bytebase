@@ -6,6 +6,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pingcap/tidb/pkg/parser/mysql"
 	"github.com/pkg/errors"
@@ -112,7 +114,7 @@ func (checker *columnMaximumCharacterLengthChecker) Enter(in ast.Node) (ast.Node
 	if tableName != "" {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:        checker.level,
-			Code:          advisor.CharLengthExceedsLimit.Int32(),
+			Code:          code.CharLengthExceedsLimit.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("The length of the CHAR column `%s` is bigger than %d, please use VARCHAR instead", columnName, checker.maximum),
 			StartPosition: common.ConvertANTLRLineToPosition(line),

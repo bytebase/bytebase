@@ -12,6 +12,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
@@ -298,7 +299,7 @@ func (r *namingFKConventionRule) checkFKMetadata(fkData *fkMetaData) {
 	if err != nil {
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
-			Code:    advisor.Internal.Int32(),
+			Code:    code.Internal.Int32(),
 			Title:   "Internal error for foreign key naming convention rule",
 			Content: fmt.Sprintf("Failed to compile regex: %s", err.Error()),
 			StartPosition: &storepb.Position{
@@ -312,7 +313,7 @@ func (r *namingFKConventionRule) checkFKMetadata(fkData *fkMetaData) {
 	if !regex.MatchString(fkData.indexName) {
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
-			Code:    advisor.NamingFKConventionMismatch.Int32(),
+			Code:    code.NamingFKConventionMismatch.Int32(),
 			Title:   r.title,
 			Content: fmt.Sprintf(`Foreign key in table "%s" mismatches the naming convention, expect %q but found "%s"`, fkData.tableName, regex, fkData.indexName),
 			StartPosition: &storepb.Position{
@@ -325,7 +326,7 @@ func (r *namingFKConventionRule) checkFKMetadata(fkData *fkMetaData) {
 	if r.maxLength > 0 && len(fkData.indexName) > r.maxLength {
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
-			Code:    advisor.NamingFKConventionMismatch.Int32(),
+			Code:    code.NamingFKConventionMismatch.Int32(),
 			Title:   r.title,
 			Content: fmt.Sprintf(`Foreign key "%s" in table "%s" mismatches the naming convention, its length should be within %d characters`, fkData.indexName, fkData.tableName, r.maxLength),
 			StartPosition: &storepb.Position{

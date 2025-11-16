@@ -29,7 +29,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
-	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
@@ -1560,7 +1560,7 @@ func validateQueryRequest(instance *store.InstanceMessage, statement string) err
 		if syntaxErr, ok := err.(*parserbase.SyntaxError); ok {
 			err := connect.NewError(connect.CodeInvalidArgument, syntaxErr)
 			if detail, detailErr := connect.NewErrorDetail(&v1pb.PlanCheckRun_Result{
-				Code:    int32(advisor.StatementSyntaxError),
+				Code:    int32(code.StatementSyntaxError),
 				Content: syntaxErr.Message,
 				Title:   "Syntax error",
 				Status:  v1pb.Advice_ERROR,

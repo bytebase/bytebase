@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -229,7 +230,7 @@ func (r *CollationAllowlistRule) checkCollation(collation string, lineNumber int
 	if _, exists := r.allowList[collation]; collation != "" && !exists {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.DisabledCollation.Int32(),
+			Code:          code.DisabledCollation.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("\"%s\" used disabled collation '%s'", r.text, collation),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + lineNumber),

@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
@@ -97,7 +98,7 @@ func (r *WhereNoLeadingWildcardLikeRule) handleCompoundExpression(ctx *parser.Co
 	if strings.HasPrefix(text, "'%") && strings.HasSuffix(text, "'") {
 		r.AddAdvice(
 			r.level,
-			advisor.StatementLeadingWildcardLike.Int32(),
+			code.StatementLeadingWildcardLike.Int32(),
 			"Avoid using leading wildcard LIKE.",
 			common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
 		)

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
@@ -168,7 +170,7 @@ func (r *ColumnAutoIncrementMustUnsignedRule) checkFieldDefinition(tableName, co
 	if !r.isAutoIncrementColumnIsUnsigned(ctx) {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.AutoIncrementColumnSigned.Int32(),
+			Code:          code.AutoIncrementColumnSigned.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("Auto-increment column `%s`.`%s` is not UNSIGNED type", tableName, columnName),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),

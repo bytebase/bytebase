@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/parser/mysql"
 	"github.com/pkg/errors"
@@ -173,7 +175,7 @@ func (r *ColumnDisallowDropInIndexRule) checkAlterTable(ctx *mysql.AlterTableCon
 		if !r.canDrop(tableName, columnName) {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
-				Code:          advisor.DropIndexColumn.Int32(),
+				Code:          code.DropIndexColumn.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("`%s`.`%s` cannot drop index column", tableName, columnName),
 				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + item.GetStart().GetLine()),

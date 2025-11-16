@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -119,7 +120,7 @@ func (r *InsertMustSpecifyColumnRule) checkInsertStatement(ctx *mysql.InsertStat
 	}
 	r.AddAdvice(&storepb.Advice{
 		Status:        r.level,
-		Code:          advisor.InsertNotSpecifyColumn.Int32(),
+		Code:          code.InsertNotSpecifyColumn.Int32(),
 		Title:         r.title,
 		Content:       fmt.Sprintf("The INSERT statement must specify columns but \"%s\" does not", r.text),
 		StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
@@ -130,7 +131,7 @@ func (r *InsertMustSpecifyColumnRule) checkSelectItemList(ctx *mysql.SelectItemL
 	if r.hasSelect && ctx.MULT_OPERATOR() != nil {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.InsertNotSpecifyColumn.Int32(),
+			Code:          code.InsertNotSpecifyColumn.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("The INSERT statement must specify columns but \"%s\" does not", r.text),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),

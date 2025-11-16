@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -126,7 +127,7 @@ func (r *UseInnoDBRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
 		return
 	}
-	code := advisor.Ok
+	code := advisorcode.Ok
 	for _, option := range ctx.AlterTableActions().AlterCommandList().AlterList().AllCreateTableOptionsSpaceSeparated() {
 		for _, op := range option.AllCreateTableOption() {
 			if op.ENGINE_SYMBOL() != nil {
@@ -135,14 +136,14 @@ func (r *UseInnoDBRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 				}
 				engine := op.EngineRef().GetText()
 				if strings.ToLower(engine) != innoDB {
-					code = advisor.NotInnoDBEngine
+					code = advisorcode.NotInnoDBEngine
 					break
 				}
 			}
 		}
 	}
 
-	if code != advisor.Ok {
+	if code != advisorcode.Ok {
 		content := "ALTER " + ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
 		line := ctx.GetStart().GetLine()
 		r.addAdvice(content, line)
@@ -150,7 +151,7 @@ func (r *UseInnoDBRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 }
 
 func (r *UseInnoDBRule) checkSetStatement(ctx *mysql.SetStatementContext) {
-	code := advisor.Ok
+	code := advisorcode.Ok
 	if ctx.StartOptionValueList() == nil {
 		return
 	}
@@ -170,11 +171,11 @@ func (r *UseInnoDBRule) checkSetStatement(ctx *mysql.SetStatementContext) {
 	if optionValueNoOptionType.SetExprOrDefault() != nil {
 		engine := optionValueNoOptionType.SetExprOrDefault().GetText()
 		if strings.ToLower(engine) != innoDB {
-			code = advisor.NotInnoDBEngine
+			code = advisorcode.NotInnoDBEngine
 		}
 	}
 
-	if code != advisor.Ok {
+	if code != advisorcode.Ok {
 		content := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
 		line := ctx.GetStart().GetLine()
 		r.addAdvice(content, line)
@@ -185,7 +186,7 @@ func (r *UseInnoDBRule) addAdvice(content string, lineNumber int) {
 	lineNumber += r.baseLine
 	r.AddAdvice(&storepb.Advice{
 		Status:        r.level,
-		Code:          advisor.NotInnoDBEngine.Int32(),
+		Code:          advisorcode.NotInnoDBEngine.Int32(),
 		Title:         r.title,
 		Content:       fmt.Sprintf("\"%s;\" doesn't use InnoDB engine", content),
 		StartPosition: common.ConvertANTLRLineToPosition(lineNumber),

@@ -10,6 +10,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -64,7 +65,7 @@ func (v *noSelectAllChecker) Enter(in ast.Node) (ast.Node, bool) {
 			if field.WildCard != nil {
 				v.adviceList = append(v.adviceList, &storepb.Advice{
 					Status:        v.level,
-					Code:          advisor.StatementSelectAll.Int32(),
+					Code:          code.StatementSelectAll.Int32(),
 					Title:         v.title,
 					Content:       fmt.Sprintf("\"%s\" uses SELECT all", v.text),
 					StartPosition: common.ConvertANTLRLineToPosition(v.line),
