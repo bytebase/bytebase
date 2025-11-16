@@ -59,9 +59,8 @@ func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbTyp
 		}
 
 		database := advisor.MockPostgreSQLDatabase
-		ctx := &catalog.FinderContext{EngineType: dbType}
-		originCatalog := catalog.NewDatabaseState(database, ctx)
-		finalCatalog := catalog.NewDatabaseState(database, ctx)
+		originCatalog := catalog.NewDatabaseState(database, false /* ignoreCaseSensitive */, dbType)
+		finalCatalog := catalog.NewDatabaseState(database, false /* ignoreCaseSensitive */, dbType)
 
 		// Get default payload, or use empty string for test-only rules
 		payload, err := advisor.SetDefaultSQLReviewRulePayload(rule, dbType)
