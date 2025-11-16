@@ -99,7 +99,7 @@ func (l *pgCatalogListener) EnterCreatestmt(ctx *parser.CreatestmtContext) {
 	}
 
 	// Get or create schema
-	schema, err := l.databaseState.getSchema(schemaName)
+	schema, err := l.databaseState.getOrCreatePublicSchema(schemaName)
 	if err != nil {
 		l.setError(err)
 		return
@@ -133,7 +133,7 @@ func (l *pgCatalogListener) EnterCreatestmt(ctx *parser.CreatestmtContext) {
 		for _, elem := range allElements {
 			// Handle column definitions
 			if elem.ColumnDef() != nil {
-				if err := createColumn(schema, table, elem.ColumnDef()); err != nil {
+				if err := pgCreateColumn(schema, table, elem.ColumnDef()); err != nil {
 					l.setError(err)
 					return
 				}
@@ -150,7 +150,7 @@ func (l *pgCatalogListener) EnterCreatestmt(ctx *parser.CreatestmtContext) {
 }
 
 // createColumn creates a column in the table.
-func createColumn(schema *SchemaState, table *TableState, columnDef parser.IColumnDefContext) *WalkThroughError {
+func pgCreateColumn(schema *SchemaState, table *TableState, columnDef parser.IColumnDefContext) *WalkThroughError {
 	if columnDef == nil {
 		return nil
 	}
@@ -182,11 +182,11 @@ func createColumn(schema *SchemaState, table *TableState, columnDef parser.IColu
 	pos := len(table.columnSet) + 1
 	columnState := &ColumnState{
 		name:         columnName,
-		position:     &pos,
-		defaultValue: nil,
-		nullable:     newTruePointer(),
-		columnType:   &columnType,
-		collation:    nil,
+		position:     pos,
+		defaultValue: "",
+		nullable:     true,
+		columnType:   columnType,
+		collation:    "",
 	}
 	table.columnSet[columnState.name] = columnState
 
@@ -201,7 +201,7 @@ func createColumn(schema *SchemaState, table *TableState, columnDef parser.IColu
 
 			// Handle NOT NULL
 			if elem.NOT() != nil && elem.NULL_P() != nil {
-				columnState.nullable = newFalsePointer()
+				columnState.nullable = false
 			}
 
 			// Handle DEFAULT
@@ -209,7 +209,7 @@ func createColumn(schema *SchemaState, table *TableState, columnDef parser.IColu
 				// Extract default expression from B_expr
 				if elem.B_expr() != nil {
 					defaultValue := elem.B_expr().GetText()
-					columnState.defaultValue = &defaultValue
+					columnState.defaultValue = defaultValue
 				}
 			}
 
@@ -224,15 +224,15 @@ func createColumn(schema *SchemaState, table *TableState, columnDef parser.IColu
 				}
 
 				// Set column as NOT NULL
-				columnState.nullable = newFalsePointer()
+				columnState.nullable = false
 
 				// Create primary key index
 				index := &IndexState{
 					name:           constraintName,
 					expressionList: []string{columnName},
-					indexType:      newStringPointer("btree"),
-					unique:         newTruePointer(),
-					primary:        newTruePointer(),
+					indexType:      "btree",
+					unique:         true,
+					primary:        true,
 					isConstraint:   true,
 				}
 				table.indexSet[index.name] = index
@@ -254,9 +254,9 @@ func createColumn(schema *SchemaState, table *TableState, columnDef parser.IColu
 				index := &IndexState{
 					name:           constraintName,
 					expressionList: []string{columnName},
-					indexType:      newStringPointer("btree"),
-					unique:         newTruePointer(),
-					primary:        newFalsePointer(),
+					indexType:      "btree",
+					unique:         true,
+					primary:        false,
 					isConstraint:   true,
 				}
 				table.indexSet[index.name] = index
@@ -298,7 +298,7 @@ func createTableConstraint(schema *SchemaState, table *TableState, constraint pa
 		// Set all PK columns as NOT NULL
 		for _, colName := range columnList {
 			if column, exists := table.columnSet[colName]; exists {
-				column.nullable = newFalsePointer()
+				column.nullable = false
 			} else {
 				return NewColumnNotExistsError(table.name, colName)
 			}
@@ -319,9 +319,9 @@ func createTableConstraint(schema *SchemaState, table *TableState, constraint pa
 		index := &IndexState{
 			name:           pkName,
 			expressionList: columnList,
-			indexType:      newStringPointer("btree"),
-			unique:         newTruePointer(),
-			primary:        newTruePointer(),
+			indexType:      "btree",
+			unique:         true,
+			primary:        true,
 			isConstraint:   true,
 		}
 		table.indexSet[index.name] = index
@@ -363,9 +363,9 @@ func createTableConstraint(schema *SchemaState, table *TableState, constraint pa
 		index := &IndexState{
 			name:           indexName,
 			expressionList: columnList,
-			indexType:      newStringPointer("btree"),
-			unique:         newTruePointer(),
-			primary:        newFalsePointer(),
+			indexType:      "btree",
+			unique:         true,
+			primary:        false,
 			isConstraint:   true,
 		}
 		table.indexSet[index.name] = index
@@ -398,7 +398,7 @@ func (l *pgCatalogListener) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 
 	tableName := extractTableName(relationExpr.Qualified_name())
 	schemaName := extractSchemaName(relationExpr.Qualified_name())
-	schema, err := l.databaseState.getSchema(schemaName)
+	schema, err := l.databaseState.getOrCreatePublicSchema(schemaName)
 	if err != nil {
 		l.setError(err)
 		return
@@ -484,9 +484,9 @@ func (l *pgCatalogListener) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 	index := &IndexState{
 		name:           indexName,
 		expressionList: columnList,
-		indexType:      newStringPointer(indexType),
-		unique:         newBoolPointer(isUnique),
-		primary:        newFalsePointer(),
+		indexType:      indexType,
+		unique:         isUnique,
+		primary:        false,
 		isConstraint:   false,
 	}
 
@@ -545,13 +545,13 @@ func (l *pgCatalogListener) EnterAltertablestmt(ctx *parser.AltertablestmtContex
 	}
 
 	// Get schema and table
-	schema, err := l.databaseState.getSchema(schemaName)
+	schema, err := l.databaseState.getOrCreatePublicSchema(schemaName)
 	if err != nil {
 		l.setError(err)
 		return
 	}
 
-	table, err := schema.pgGetTable(tableName)
+	table, err := schema.GetTable(tableName)
 	if err != nil {
 		l.setError(err)
 		return
@@ -703,7 +703,7 @@ func (l *pgCatalogListener) alterTableDropColumn(schema *SchemaState, table *Tab
 
 // alterTableAlterColumnType handles ALTER COLUMN TYPE command.
 func (l *pgCatalogListener) alterTableAlterColumnType(schema *SchemaState, table *TableState, columnName string, typeString string) {
-	column, err := table.getColumn(columnName)
+	column, err := table.GetColumn(columnName)
 	if err != nil {
 		l.setError(err)
 		return
@@ -727,7 +727,7 @@ func (l *pgCatalogListener) alterTableAlterColumnType(schema *SchemaState, table
 	}
 
 	// Update column type
-	column.columnType = &typeString
+	column.columnType = typeString
 }
 
 // alterTableAddColumn handles ADD COLUMN command.
@@ -762,10 +762,10 @@ func (l *pgCatalogListener) alterTableAddColumn(schema *SchemaState, table *Tabl
 	// Create column state
 	columnState := &ColumnState{
 		name:         columnName,
-		position:     &pos,
-		nullable:     newTruePointer(),
-		columnType:   &typeString,
-		defaultValue: nil,
+		position:     pos,
+		nullable:     true,
+		columnType:   typeString,
+		defaultValue: "",
 	}
 	table.columnSet[columnName] = columnState
 
@@ -780,14 +780,14 @@ func (l *pgCatalogListener) alterTableAddColumn(schema *SchemaState, table *Tabl
 
 			// Handle NOT NULL
 			if elem.NOT() != nil && elem.NULL_P() != nil {
-				columnState.nullable = newFalsePointer()
+				columnState.nullable = false
 			}
 
 			// Handle DEFAULT
 			if elem.DEFAULT() != nil {
 				if elem.B_expr() != nil {
 					defaultValue := elem.B_expr().GetText()
-					columnState.defaultValue = &defaultValue
+					columnState.defaultValue = defaultValue
 				}
 			}
 
@@ -808,9 +808,9 @@ func (l *pgCatalogListener) alterTableAddColumn(schema *SchemaState, table *Tabl
 				index := &IndexState{
 					name:           constraintName,
 					expressionList: []string{columnName},
-					indexType:      newStringPointer("btree"),
-					unique:         newTruePointer(),
-					primary:        newFalsePointer(),
+					indexType:      "btree",
+					unique:         true,
+					primary:        false,
 					isConstraint:   true,
 				}
 				table.indexSet[index.name] = index
@@ -831,14 +831,14 @@ func (l *pgCatalogListener) alterTableAddColumn(schema *SchemaState, table *Tabl
 					l.setError(NewRelationExistsError(constraintName, schema.name))
 					return
 				}
-				columnState.nullable = newFalsePointer()
+				columnState.nullable = false
 				// Create primary key index
 				index := &IndexState{
 					name:           constraintName,
 					expressionList: []string{columnName},
-					indexType:      newStringPointer("btree"),
-					unique:         newTruePointer(),
-					primary:        newTruePointer(),
+					indexType:      "btree",
+					unique:         true,
+					primary:        true,
 					isConstraint:   true,
 				}
 				table.indexSet[index.name] = index
@@ -880,39 +880,39 @@ func (l *pgCatalogListener) alterTableDropConstraint(schema *SchemaState, table 
 
 // alterTableSetDefault handles ALTER COLUMN SET DEFAULT command.
 func (l *pgCatalogListener) alterTableSetDefault(table *TableState, columnName string, defaultValue string) {
-	column, err := table.getColumn(columnName)
+	column, err := table.GetColumn(columnName)
 	if err != nil {
 		l.setError(err)
 		return
 	}
 
-	column.defaultValue = &defaultValue
+	column.defaultValue = defaultValue
 }
 
 // alterTableDropDefault handles ALTER COLUMN DROP DEFAULT command.
 func (l *pgCatalogListener) alterTableDropDefault(table *TableState, columnName string) {
-	column, err := table.getColumn(columnName)
+	column, err := table.GetColumn(columnName)
 	if err != nil {
 		l.setError(err)
 		return
 	}
 
-	column.defaultValue = nil
+	column.defaultValue = ""
 }
 
 // alterTableSetNotNull handles ALTER COLUMN SET NOT NULL command.
 func (l *pgCatalogListener) alterTableSetNotNull(table *TableState, columnName string) {
-	column, err := table.getColumn(columnName)
+	column, err := table.GetColumn(columnName)
 	if err != nil {
 		l.setError(err)
 		return
 	}
 
-	column.nullable = newFalsePointer()
+	column.nullable = false
 }
 
 // renameTable handles RENAME TO for tables.
-func (*pgCatalogListener) renameTable(schema *SchemaState, table *TableState, newName string) *WalkThroughError {
+func (*pgCatalogListener) pgRenameTable(schema *SchemaState, table *TableState, newName string) *WalkThroughError {
 	// Check if new name already exists
 	if _, exists := schema.identifierMap[newName]; exists {
 		return NewRelationExistsError(newName, schema.name)
@@ -934,7 +934,7 @@ func (*pgCatalogListener) renameTable(schema *SchemaState, table *TableState, ne
 
 // renameColumn handles RENAME COLUMN.
 func (*pgCatalogListener) renameColumn(table *TableState, oldName string, newName string) *WalkThroughError {
-	column, err := table.getColumn(oldName)
+	column, err := table.GetColumn(oldName)
 	if err != nil {
 		return err
 	}
@@ -1108,7 +1108,7 @@ func (l *pgCatalogListener) dropTable(anyName parser.IAny_nameContext, ifExists 
 		tableName = parts[1]
 	}
 
-	schema, err := l.databaseState.getSchema(schemaName)
+	schema, err := l.databaseState.getOrCreatePublicSchema(schemaName)
 	if err != nil {
 		if ifExists {
 			return nil
@@ -1116,7 +1116,7 @@ func (l *pgCatalogListener) dropTable(anyName parser.IAny_nameContext, ifExists 
 		return err
 	}
 
-	table, err := schema.pgGetTable(tableName)
+	table, err := schema.GetTable(tableName)
 	if err != nil {
 		if ifExists {
 			return nil
@@ -1164,7 +1164,7 @@ func (l *pgCatalogListener) dropView(anyName parser.IAny_nameContext, ifExists b
 		viewName = parts[1]
 	}
 
-	schema, err := l.databaseState.getSchema(schemaName)
+	schema, err := l.databaseState.getOrCreatePublicSchema(schemaName)
 	if err != nil {
 		if ifExists {
 			return nil
@@ -1192,7 +1192,7 @@ func (l *pgCatalogListener) dropIndex(anyName parser.IAny_nameContext, ifExists 
 		indexName = parts[1]
 	}
 
-	schema, err := l.databaseState.getSchema(schemaName)
+	schema, err := l.databaseState.getOrCreatePublicSchema(schemaName)
 	if err != nil {
 		if ifExists {
 			return nil
@@ -1292,7 +1292,7 @@ func (l *pgCatalogListener) EnterRenamestmt(ctx *parser.RenamestmtContext) {
 			schemaName := extractSchemaName(ctx.Qualified_name())
 			newName := pgparser.NormalizePostgreSQLName(ctx.AllName()[0])
 
-			schema, err := l.databaseState.getSchema(schemaName)
+			schema, err := l.databaseState.getOrCreatePublicSchema(schemaName)
 			if err != nil {
 				l.setError(err)
 				return
@@ -1328,7 +1328,7 @@ func (l *pgCatalogListener) EnterRenamestmt(ctx *parser.RenamestmtContext) {
 		schemaName = extractSchemaName(ctx.Relation_expr().Qualified_name())
 	}
 
-	schema, err := l.databaseState.getSchema(schemaName)
+	schema, err := l.databaseState.getOrCreatePublicSchema(schemaName)
 	if err != nil {
 		l.setError(err)
 		return
@@ -1343,7 +1343,7 @@ func (l *pgCatalogListener) EnterRenamestmt(ctx *parser.RenamestmtContext) {
 			oldName := pgparser.NormalizePostgreSQLName(allNames[0])
 			newName := pgparser.NormalizePostgreSQLName(allNames[1])
 
-			table, err := schema.pgGetTable(tableName)
+			table, err := schema.GetTable(tableName)
 			if err != nil {
 				l.setError(err)
 				return
@@ -1364,7 +1364,7 @@ func (l *pgCatalogListener) EnterRenamestmt(ctx *parser.RenamestmtContext) {
 			oldName := pgparser.NormalizePostgreSQLName(allNames[0])
 			newName := pgparser.NormalizePostgreSQLName(allNames[1])
 
-			table, err := schema.pgGetTable(tableName)
+			table, err := schema.GetTable(tableName)
 			if err != nil {
 				l.setError(err)
 				return
@@ -1381,13 +1381,13 @@ func (l *pgCatalogListener) EnterRenamestmt(ctx *parser.RenamestmtContext) {
 	if tableName != "" && ctx.AllName() != nil && len(ctx.AllName()) > 0 {
 		newName := pgparser.NormalizePostgreSQLName(ctx.AllName()[0])
 
-		table, err := schema.pgGetTable(tableName)
+		table, err := schema.GetTable(tableName)
 		if err != nil {
 			l.setError(err)
 			return
 		}
 
-		if err := l.renameTable(schema, table, newName); err != nil {
+		if err := l.pgRenameTable(schema, table, newName); err != nil {
 			l.setError(err)
 		}
 		return
@@ -1424,7 +1424,7 @@ func (l *pgCatalogListener) EnterViewstmt(ctx *parser.ViewstmtContext) {
 		return
 	}
 
-	schema, err := l.databaseState.getSchema(schemaName)
+	schema, err := l.databaseState.getOrCreatePublicSchema(schemaName)
 	if err != nil {
 		l.setError(err)
 		return

@@ -31,7 +31,7 @@ func NewDatabaseState(d *storepb.DatabaseSchemaMetadata, ignoreCaseSensitive boo
 		for _, view := range schema.Views {
 			for _, dependencyColumn := range view.DependencyColumns {
 				if schemaState, exist := database.schemaSet[dependencyColumn.Schema]; exist {
-					if tableState, exist := schemaState.getTable(dependencyColumn.Table); exist {
+					if tableState, exist := mysqlGetTable(schemaState, dependencyColumn.Table); exist {
 						tableState.dependencyView[fmt.Sprintf("%q.%q", schema.Name, view.Name)] = true
 						if columnState, exist := tableState.columnSet[dependencyColumn.Column]; exist {
 							columnState.dependencyView[fmt.Sprintf("%q.%q", schema.Name, view.Name)] = true
@@ -76,17 +76,17 @@ func newSchemaState(s *storepb.SchemaMetadata, ignoreCaseSensitive bool, engineT
 func newViewState(v *storepb.ViewMetadata) *ViewState {
 	return &ViewState{
 		name:       v.Name,
-		definition: newStringPointer(v.Definition),
-		comment:    newStringPointer(v.Comment),
+		definition: v.Definition,
+		comment:    v.Comment,
 	}
 }
 
 func newTableState(t *storepb.TableMetadata, engineType storepb.Engine) *TableState {
 	table := &TableState{
 		name:           t.Name,
-		engine:         newStringPointer(t.Engine),
-		collation:      newStringPointer(t.Collation),
-		comment:        newStringPointer(t.Comment),
+		engine:         t.Engine,
+		collation:      t.Collation,
+		comment:        t.Comment,
 		columnSet:      make(columnStateMap),
 		indexSet:       make(IndexStateMap),
 		dependencyView: make(map[string]bool),
@@ -118,19 +118,15 @@ func newTableState(t *storepb.TableMetadata, engineType storepb.Engine) *TableSt
 }
 
 func newColumnState(c *storepb.ColumnMetadata, position int) *ColumnState {
-	defaultValue := (*string)(nil)
-	if c.Default != "" {
-		defaultValue = copyStringPointer(&c.Default)
-	}
 	return &ColumnState{
 		name:           c.Name,
-		position:       newIntPointer(position),
-		defaultValue:   defaultValue,
-		nullable:       newBoolPointer(c.Nullable),
-		columnType:     newStringPointer(c.Type),
-		characterSet:   newStringPointer(c.CharacterSet),
-		collation:      newStringPointer(c.Collation),
-		comment:        newStringPointer(c.Comment),
+		position:       position,
+		defaultValue:   c.Default,
+		nullable:       c.Nullable,
+		columnType:     c.Type,
+		characterSet:   c.CharacterSet,
+		collation:      c.Collation,
+		comment:        c.Comment,
 		dependencyView: make(map[string]bool),
 	}
 }
@@ -138,15 +134,15 @@ func newColumnState(c *storepb.ColumnMetadata, position int) *ColumnState {
 func newIndexState(i *storepb.IndexMetadata) *IndexState {
 	index := &IndexState{
 		name:           i.Name,
-		indexType:      newStringPointer(i.Type),
-		unique:         newBoolPointer(i.Unique),
-		primary:        newBoolPointer(i.Primary),
-		visible:        newBoolPointer(i.Visible),
-		comment:        newStringPointer(i.Comment),
+		indexType:      i.Type,
+		unique:         i.Unique,
+		primary:        i.Primary,
+		visible:        i.Visible,
+		comment:        i.Comment,
 		expressionList: copyStringSlice(i.Expressions),
 		// We rudely think that pk and uk are constraints here.
 		// But in fact, we can create uk by CREATE UNIQUE INDEX statements.
-		isConstraint: *newBoolPointer(i.Primary || i.Unique),
+		isConstraint: i.Primary || i.Unique,
 	}
 	return index
 }
@@ -212,7 +208,7 @@ func (d *DatabaseState) GetIndex(schemaName string, tableName string, indexName 
 		if !exists {
 			return "", nil
 		}
-		table, exists := schema.getTable(tableName)
+		table, exists := mysqlGetTable(schema, tableName)
 		if !exists {
 			return "", nil
 		}
@@ -249,7 +245,7 @@ func (d *DatabaseState) GetPrimaryKey(schemaName string, tableName string) *Inde
 				continue
 			}
 			for _, index := range table.indexSet {
-				if index.primary != nil && *index.primary {
+				if index.primary {
 					return index
 				}
 			}
@@ -269,13 +265,13 @@ func (d *DatabaseState) CountColumn(schemaName string, tableName string, columnT
 	if !exists {
 		return 0
 	}
-	table, exists := schema.getTable(tableName)
+	table, exists := mysqlGetTable(schema, tableName)
 	if !exists {
 		return 0
 	}
 	res := 0
 	for _, column := range table.columnSet {
-		if column.columnType != nil && strings.EqualFold(*column.columnType, columnType) {
+		if strings.EqualFold(column.columnType, columnType) {
 			res++
 		}
 	}
@@ -294,7 +290,7 @@ func (d *DatabaseState) GetColumn(schemaName string, tableName string, columnNam
 	if !exists {
 		return nil
 	}
-	table, exists := schema.getTable(tableName)
+	table, exists := mysqlGetTable(schema, tableName)
 	if !exists {
 		return nil
 	}
@@ -311,7 +307,7 @@ func (d *DatabaseState) GetTable(schemaName string, tableName string) *TableStat
 	if !exists {
 		return nil
 	}
-	table, exists := schema.getTable(tableName)
+	table, exists := mysqlGetTable(schema, tableName)
 	if !exists {
 		return nil
 	}
@@ -333,7 +329,7 @@ type SchemaState struct {
 }
 
 func (s *SchemaState) Index(tableName string) *IndexStateMap {
-	table, exists := s.getTable(tableName)
+	table, exists := mysqlGetTable(s, tableName)
 	if !exists {
 		return nil
 	}
@@ -346,11 +342,11 @@ type schemaStateMap map[string]*SchemaState
 type TableState struct {
 	name string
 	// engine isn't supported for Postgres, Snowflake, SQLite.
-	engine *string
+	engine string
 	// collation isn't supported for Postgres, ClickHouse, Snowflake, SQLite.
-	collation *string
+	collation string
 	// comment isn't supported for SQLite.
-	comment   *string
+	comment   string
 	columnSet columnStateMap
 	// indexSet isn't supported for ClickHouse, Snowflake.
 	indexSet IndexStateMap
@@ -382,9 +378,9 @@ func (t *TableState) Index() *IndexStateMap {
 func (t *TableState) copy() *TableState {
 	return &TableState{
 		name:      t.name,
-		engine:    copyStringPointer(t.engine),
-		collation: copyStringPointer(t.collation),
-		comment:   copyStringPointer(t.comment),
+		engine:    t.engine,
+		collation: t.collation,
+		comment:   t.comment,
 		columnSet: t.columnSet.copy(),
 		indexSet:  t.indexSet.copy(),
 	}
@@ -398,13 +394,13 @@ type IndexState struct {
 	// This could refer to a column or an expression.
 	expressionList []string
 	// Type isn't supported for SQLite.
-	indexType *string
-	unique    *bool
-	primary   *bool
+	indexType string
+	unique    bool
+	primary   bool
 	// Visible isn't supported for Postgres, SQLite.
-	visible *bool
+	visible bool
 	// Comment isn't supported for SQLite.
-	comment *string
+	comment string
 
 	// PostgreSQL specific fields.
 
@@ -416,29 +412,23 @@ func (idx *IndexState) copy() *IndexState {
 	return &IndexState{
 		name:           idx.name,
 		expressionList: copyStringSlice(idx.expressionList),
-		indexType:      copyStringPointer(idx.indexType),
-		unique:         copyBoolPointer(idx.unique),
-		primary:        copyBoolPointer(idx.primary),
-		visible:        copyBoolPointer(idx.visible),
-		comment:        copyStringPointer(idx.comment),
+		indexType:      idx.indexType,
+		unique:         idx.unique,
+		primary:        idx.primary,
+		visible:        idx.visible,
+		comment:        idx.comment,
 		isConstraint:   idx.isConstraint,
 	}
 }
 
 // Unique returns the unique for the index.
 func (idx *IndexState) Unique() bool {
-	if idx.unique != nil {
-		return *idx.unique
-	}
-	return false
+	return idx.unique
 }
 
 // Primary returns the primary for the index.
 func (idx *IndexState) Primary() bool {
-	if idx.primary != nil {
-		return *idx.primary
-	}
-	return false
+	return idx.primary
 }
 
 // ExpressionList returns the expression list for the index.
@@ -459,17 +449,17 @@ func (m IndexStateMap) copy() IndexStateMap {
 // ColumnState is the state for walk-through.
 type ColumnState struct {
 	name         string
-	position     *int
-	defaultValue *string
+	position     int
+	defaultValue string
 	// nullable isn't supported for ClickHouse.
-	nullable   *bool
-	columnType *string
+	nullable   bool
+	columnType string
 	// characterSet isn't supported for Postgres, ClickHouse, SQLite.
-	characterSet *string
+	characterSet string
 	// collation isn't supported for ClickHouse, SQLite.
-	collation *string
+	collation string
 	// comment isn't supported for SQLite.
-	comment *string
+	comment string
 
 	// dependencyView is used to record the dependency view for the column.
 	// Used to check if the column is used by any view.
@@ -479,27 +469,24 @@ type ColumnState struct {
 func (col *ColumnState) copy() *ColumnState {
 	return &ColumnState{
 		name:         col.name,
-		position:     copyIntPointer(col.position),
-		defaultValue: copyStringPointer(col.defaultValue),
-		nullable:     copyBoolPointer(col.nullable),
-		columnType:   copyStringPointer(col.columnType),
-		characterSet: copyStringPointer(col.characterSet),
-		collation:    copyStringPointer(col.collation),
-		comment:      copyStringPointer(col.comment),
+		position:     col.position,
+		defaultValue: col.defaultValue,
+		nullable:     col.nullable,
+		columnType:   col.columnType,
+		characterSet: col.characterSet,
+		collation:    col.collation,
+		comment:      col.comment,
 	}
 }
 
 // Nullable returns nullable for the column.
 func (col *ColumnState) Nullable() bool {
-	return col.nullable != nil && *col.nullable
+	return col.nullable
 }
 
 // Type returns type for the column.
 func (col *ColumnState) Type() string {
-	if col.columnType != nil {
-		return *col.columnType
-	}
-	return ""
+	return col.columnType
 }
 
 // HasDefault returns if column has default value.
@@ -508,9 +495,9 @@ func (col *ColumnState) HasDefault() bool {
 	case "serial", "smallserial", "bigserial":
 		return true
 	default:
-		// For other column types, check if defaultValue is not nil
+		// For other column types, check if defaultValue is not empty
 	}
-	return col.defaultValue != nil
+	return col.defaultValue != ""
 }
 
 type columnStateMap map[string]*ColumnState
@@ -526,34 +513,10 @@ func (m columnStateMap) copy() columnStateMap {
 // ViewState is the state for walk-through.
 type ViewState struct {
 	name       string
-	definition *string
-	comment    *string
+	definition string
+	comment    string
 }
 type viewStateMap map[string]*ViewState
-
-func copyStringPointer(p *string) *string {
-	if p == nil {
-		return nil
-	}
-	v := *p
-	return &v
-}
-
-func copyBoolPointer(p *bool) *bool {
-	if p == nil {
-		return nil
-	}
-	v := *p
-	return &v
-}
-
-func copyIntPointer(p *int) *int {
-	if p == nil {
-		return nil
-	}
-	v := *p
-	return &v
-}
 
 func copyStringSlice(in []string) []string {
 	var res []string
@@ -561,37 +524,10 @@ func copyStringSlice(in []string) []string {
 	return res
 }
 
-func newEmptyStringPointer() *string {
-	res := ""
-	return &res
-}
-
-func newStringPointer(v string) *string {
-	return &v
-}
-
-func newIntPointer(v int) *int {
-	return &v
-}
-
-func newTruePointer() *bool {
-	v := true
-	return &v
-}
-
-func newFalsePointer() *bool {
-	v := false
-	return &v
-}
-
-func newBoolPointer(v bool) *bool {
-	return &v
-}
-
 // Schema-level operations.
 
-// createSchemaState creates a new schema state with the given name.
-func (d *DatabaseState) createSchemaState(schemaName string) *SchemaState {
+// CreateSchema creates a new schema state with the given name.
+func (d *DatabaseState) CreateSchema(schemaName string) *SchemaState {
 	schema := &SchemaState{
 		ignoreCaseSensitive: d.ignoreCaseSensitive,
 		name:                schemaName,
@@ -603,31 +539,15 @@ func (d *DatabaseState) createSchemaState(schemaName string) *SchemaState {
 	return schema
 }
 
-// GetOrCreateSchema gets an existing schema or creates a new one if it doesn't exist.
-func (d *DatabaseState) GetOrCreateSchema(schemaName string) *SchemaState {
-	if schema, exists := d.schemaSet[schemaName]; exists {
-		return schema
-	}
-	return d.createSchemaState(schemaName)
-}
-
 // GetSchema gets an existing schema.
-//
-//nolint:revive
 func (d *DatabaseState) GetSchema(schemaName string) (*SchemaState, *WalkThroughError) {
-	if schemaName == "" {
-		schemaName = publicSchemaName
-	}
 	if schema, exists := d.schemaSet[schemaName]; exists {
 		return schema, nil
 	}
-	if schemaName != publicSchemaName {
-		return nil, &WalkThroughError{
-			Code:    code.SchemaNotExists,
-			Content: fmt.Sprintf("The schema %q doesn't exist", schemaName),
-		}
+	return nil, &WalkThroughError{
+		Code:    code.SchemaNotExists,
+		Content: fmt.Sprintf("The schema %q doesn't exist", schemaName),
 	}
-	return d.createSchemaState(publicSchemaName), nil
 }
 
 // DropSchema drops a schema.
@@ -657,15 +577,15 @@ func (d *DatabaseState) DropSchema(schemaName string) *WalkThroughError {
 
 // CreateTable creates a new table in the schema.
 func (s *SchemaState) CreateTable(tableName string) (*TableState, *WalkThroughError) {
-	if _, exists := s.getTable(tableName); exists {
+	if _, exists := mysqlGetTable(s, tableName); exists {
 		return nil, NewTableExistsError(tableName)
 	}
 
 	table := &TableState{
 		name:           tableName,
-		engine:         newEmptyStringPointer(),
-		collation:      newEmptyStringPointer(),
-		comment:        newEmptyStringPointer(),
+		engine:         "",
+		collation:      "",
+		comment:        "",
 		columnSet:      make(columnStateMap),
 		indexSet:       make(IndexStateMap),
 		dependencyView: make(map[string]bool),
@@ -681,8 +601,6 @@ func (s *SchemaState) CreateTable(tableName string) (*TableState, *WalkThroughEr
 }
 
 // GetTable gets a table from the schema.
-//
-//nolint:revive
 func (s *SchemaState) GetTable(tableName string) (*TableState, *WalkThroughError) {
 	table, exists := s.tableSet[tableName]
 	if !exists {
@@ -728,19 +646,17 @@ func (s *SchemaState) DropTable(tableName string, checkViewDependency func(*Tabl
 }
 
 // RenameTable renames a table in the schema.
-//
-//nolint:revive
 func (s *SchemaState) RenameTable(oldName string, newName string) *WalkThroughError {
 	if oldName == newName {
 		return nil
 	}
 
-	table, exists := s.getTable(oldName)
+	table, exists := mysqlGetTable(s, oldName)
 	if !exists {
 		return NewTableNotExistsError(oldName)
 	}
 
-	if _, exists := s.getTable(newName); exists {
+	if _, exists := mysqlGetTable(s, newName); exists {
 		return NewTableExistsError(newName)
 	}
 
@@ -762,9 +678,7 @@ func (s *SchemaState) RenameTable(oldName string, newName string) *WalkThroughEr
 // Column-level operations.
 
 // CreateColumn creates a new column in the table.
-//
-//nolint:revive
-func (t *TableState) CreateColumn(columnName string, columnType *string, nullable *bool, defaultValue *string, position *int, characterSet *string, collation *string, comment *string) *WalkThroughError {
+func (t *TableState) CreateColumn(columnName string, columnType string, nullable bool, defaultValue string, position int, characterSet string, collation string, comment string) *WalkThroughError {
 	if _, exists := t.columnSet[strings.ToLower(columnName)]; exists {
 		return &WalkThroughError{
 			Code:    code.ColumnExists,
@@ -773,13 +687,13 @@ func (t *TableState) CreateColumn(columnName string, columnType *string, nullabl
 	}
 
 	pos := len(t.columnSet) + 1
-	if position != nil {
-		pos = *position
+	if position != 0 {
+		pos = position
 	}
 
 	col := &ColumnState{
 		name:           columnName,
-		position:       &pos,
+		position:       pos,
 		defaultValue:   defaultValue,
 		nullable:       nullable,
 		columnType:     columnType,
@@ -793,8 +707,6 @@ func (t *TableState) CreateColumn(columnName string, columnType *string, nullabl
 }
 
 // GetColumn gets a column from the table.
-//
-//nolint:revive
 func (t *TableState) GetColumn(columnName string) (*ColumnState, *WalkThroughError) {
 	column, exists := t.columnSet[strings.ToLower(columnName)]
 	if !exists {
@@ -804,8 +716,6 @@ func (t *TableState) GetColumn(columnName string) (*ColumnState, *WalkThroughErr
 }
 
 // DropColumn drops a column from the table.
-//
-//nolint:revive
 func (t *TableState) DropColumn(columnName string, checkViewDependency func(*ColumnState) ([]string, *WalkThroughError)) *WalkThroughError {
 	column, exists := t.columnSet[strings.ToLower(columnName)]
 	if !exists {
@@ -836,8 +746,8 @@ func (t *TableState) DropColumn(columnName string, checkViewDependency func(*Col
 
 	// Modify the column position
 	for _, col := range t.columnSet {
-		if *col.position > *column.position {
-			*col.position--
+		if col.position > column.position {
+			col.position--
 		}
 	}
 
@@ -863,8 +773,6 @@ func (t *TableState) DropColumn(columnName string, checkViewDependency func(*Col
 }
 
 // RenameColumn renames a column in the table.
-//
-//nolint:revive
 func (t *TableState) RenameColumn(oldName string, newName string) *WalkThroughError {
 	if strings.EqualFold(oldName, newName) {
 		return nil
@@ -900,9 +808,7 @@ func (t *TableState) RenameColumn(oldName string, newName string) *WalkThroughEr
 // Index-level operations.
 
 // CreateIndex creates a new index in the table.
-//
-//nolint:revive
-func (t *TableState) CreateIndex(indexName string, expressionList []string, unique bool, indexType string, primary bool, visible *bool, comment *string, isConstraint bool, identifierMap identifierMap) *WalkThroughError {
+func (t *TableState) CreateIndex(indexName string, expressionList []string, unique bool, indexType string, primary bool, visible bool, comment string, isConstraint bool, identifierMap identifierMap) *WalkThroughError {
 	if len(expressionList) == 0 {
 		return &WalkThroughError{
 			Code:    code.IndexEmptyKeys,
@@ -938,19 +844,12 @@ func (t *TableState) CreateIndex(indexName string, expressionList []string, uniq
 		}
 	}
 
-	if visible == nil {
-		visible = newTruePointer()
-	}
-	if comment == nil {
-		comment = newEmptyStringPointer()
-	}
-
 	index := &IndexState{
 		name:           indexName,
 		expressionList: expressionList,
-		indexType:      &indexType,
-		unique:         &unique,
-		primary:        &primary,
+		indexType:      indexType,
+		unique:         unique,
+		primary:        primary,
 		visible:        visible,
 		comment:        comment,
 		isConstraint:   isConstraint,
@@ -966,8 +865,6 @@ func (t *TableState) CreateIndex(indexName string, expressionList []string, uniq
 }
 
 // CreatePrimaryKey creates a primary key index in the table.
-//
-//nolint:revive
 func (t *TableState) CreatePrimaryKey(keyList []string, indexType string, identifierMap identifierMap) *WalkThroughError {
 	pkName := PrimaryKeyName
 
@@ -988,11 +885,11 @@ func (t *TableState) CreatePrimaryKey(keyList []string, indexType string, identi
 	pk := &IndexState{
 		name:           pkName,
 		expressionList: keyList,
-		indexType:      &indexType,
-		unique:         newTruePointer(),
-		primary:        newTruePointer(),
-		visible:        newTruePointer(),
-		comment:        newEmptyStringPointer(),
+		indexType:      indexType,
+		unique:         true,
+		primary:        true,
+		visible:        true,
+		comment:        "",
 		isConstraint:   true,
 	}
 	t.indexSet[strings.ToLower(pkName)] = pk
@@ -1015,8 +912,6 @@ func (t *TableState) GetIndex(indexName string) (*IndexState, *WalkThroughError)
 }
 
 // DropIndex drops an index from the table.
-//
-//nolint:revive
 func (t *TableState) DropIndex(indexName string, identifierMap identifierMap) *WalkThroughError {
 	if _, exists := t.indexSet[strings.ToLower(indexName)]; !exists {
 		if strings.EqualFold(indexName, PrimaryKeyName) {
@@ -1038,8 +933,6 @@ func (t *TableState) DropIndex(indexName string, identifierMap identifierMap) *W
 }
 
 // RenameIndex renames an index in the table.
-//
-//nolint:revive
 func (t *TableState) RenameIndex(oldName string, newName string, identifierMap identifierMap) *WalkThroughError {
 	// For MySQL, the primary key has a special name 'PRIMARY'.
 	if strings.ToUpper(oldName) == PrimaryKeyName || strings.ToUpper(newName) == PrimaryKeyName {
@@ -1080,7 +973,7 @@ func (t *TableState) RenameIndex(oldName string, newName string, identifierMap i
 // View-level operations.
 
 // CreateView creates a new view in the schema.
-func (s *SchemaState) CreateView(viewName string, definition *string, comment *string) (*ViewState, *WalkThroughError) {
+func (s *SchemaState) CreateView(viewName string, definition string, comment string) (*ViewState, *WalkThroughError) {
 	view := &ViewState{
 		name:       viewName,
 		definition: definition,
@@ -1131,35 +1024,35 @@ func (d *DatabaseState) SetCollation(collation string) {
 
 // SetTableEngine sets the engine of the table.
 func (t *TableState) SetEngine(engine string) {
-	t.engine = newStringPointer(engine)
+	t.engine = engine
 }
 
 // SetTableCollation sets the collation of the table.
 func (t *TableState) SetCollation(collation string) {
-	t.collation = newStringPointer(collation)
+	t.collation = collation
 }
 
 // SetTableComment sets the comment of the table.
 func (t *TableState) SetComment(comment string) {
-	t.comment = newStringPointer(comment)
+	t.comment = comment
 }
 
 // SetColumnNullable sets the nullable property of the column.
 func (col *ColumnState) SetNullable(nullable bool) {
-	col.nullable = newBoolPointer(nullable)
+	col.nullable = nullable
 }
 
 // SetColumnDefault sets the default value of the column.
-func (col *ColumnState) SetDefault(defaultValue *string) {
+func (col *ColumnState) SetDefault(defaultValue string) {
 	col.defaultValue = defaultValue
 }
 
 // SetColumnType sets the type of the column.
 func (col *ColumnState) SetType(columnType string) {
-	col.columnType = newStringPointer(columnType)
+	col.columnType = columnType
 }
 
 // SetIndexVisibility sets the visibility of the index.
 func (idx *IndexState) SetVisibility(visible bool) {
-	idx.visible = newBoolPointer(visible)
+	idx.visible = visible
 }
