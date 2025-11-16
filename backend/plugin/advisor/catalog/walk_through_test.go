@@ -303,17 +303,9 @@ func (s *SchemaState) convertToTableMetadataList() []*storepb.TableMetadata {
 			ForeignKeys: []*storepb.ForeignKeyMetadata{},
 		}
 
-		if table.engine != nil {
-			tableMeta.Engine = *table.engine
-		}
-
-		if table.collation != nil {
-			tableMeta.Collation = *table.collation
-		}
-
-		if table.comment != nil {
-			tableMeta.Comment = *table.comment
-		}
+		tableMeta.Engine = table.engine
+		tableMeta.Collation = table.collation
+		tableMeta.Comment = table.comment
 
 		result = append(result, tableMeta)
 	}
@@ -342,17 +334,9 @@ func (t *TableState) convertToIndexMetadataList() []*storepb.IndexMetadata {
 			Primary:     index.Primary(),
 		}
 
-		if index.indexType != nil {
-			indexMeta.Type = *index.indexType
-		}
-
-		if index.visible != nil {
-			indexMeta.Visible = *index.visible
-		}
-
-		if index.comment != nil {
-			indexMeta.Comment = *index.comment
-		}
+		indexMeta.Type = index.indexType
+		indexMeta.Visible = index.visible
+		indexMeta.Comment = index.comment
 
 		result = append(result, indexMeta)
 	}
@@ -380,25 +364,11 @@ func (t *TableState) convertToColumnMetadataList() []*storepb.ColumnMetadata {
 			Type:     column.Type(),
 		}
 
-		if column.defaultValue != nil {
-			columnMeta.Default = *column.defaultValue
-		}
-
-		if column.characterSet != nil {
-			columnMeta.CharacterSet = *column.characterSet
-		}
-
-		if column.collation != nil {
-			columnMeta.Collation = *column.collation
-		}
-
-		if column.comment != nil {
-			columnMeta.Comment = *column.comment
-		}
-
-		if column.position != nil {
-			columnMeta.Position = int32(*column.position)
-		}
+		columnMeta.Default = column.defaultValue
+		columnMeta.CharacterSet = column.characterSet
+		columnMeta.Collation = column.collation
+		columnMeta.Comment = column.comment
+		columnMeta.Position = int32(column.position)
 
 		result = append(result, columnMeta)
 	}

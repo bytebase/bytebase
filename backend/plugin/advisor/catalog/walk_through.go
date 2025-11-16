@@ -119,11 +119,9 @@ func (d *DatabaseState) isCurrentDatabase(database string) bool {
 	return compareIdentifier(d.name, database, d.ignoreCaseSensitive)
 }
 
-// getTable returns the table with the given name if it exists in the schema.
-// TODO(zp): It's used for MySQL, we should refactor the package to make it more clear.
-//
-//nolint:revive
-func (s *SchemaState) getTable(table string) (*TableState, bool) {
+// mysqlGetTable returns the table with the given name if it exists in the schema.
+// It performs case-insensitive comparison for MySQL/TiDB.
+func mysqlGetTable(s *SchemaState, table string) (*TableState, bool) {
 	for k, v := range s.tableSet {
 		if compareIdentifier(k, table, s.ignoreCaseSensitive) {
 			return v, true
@@ -133,13 +131,12 @@ func (s *SchemaState) getTable(table string) (*TableState, bool) {
 	return nil, false
 }
 
-//nolint:revive
-func (s *SchemaState) renameTable(oldName string, newName string) *WalkThroughError {
+func mysqlRenameTable(s *SchemaState, oldName string, newName string) *WalkThroughError {
 	if oldName == newName {
 		return nil
 	}
 
-	table, exists := s.getTable(oldName)
+	table, exists := mysqlGetTable(s, oldName)
 	if !exists {
 		return &WalkThroughError{
 			Code:    code.TableNotExists,
@@ -147,7 +144,7 @@ func (s *SchemaState) renameTable(oldName string, newName string) *WalkThroughEr
 		}
 	}
 
-	if _, exists := s.getTable(newName); exists {
+	if _, exists := mysqlGetTable(s, newName); exists {
 		return &WalkThroughError{
 			Code:    code.TableExists,
 			Content: fmt.Sprintf("Table `%s` already exists", newName),
@@ -158,18 +155,6 @@ func (s *SchemaState) renameTable(oldName string, newName string) *WalkThroughEr
 	delete(s.tableSet, oldName)
 	s.tableSet[newName] = table
 	return nil
-}
-
-func (d *DatabaseState) createSchema() *SchemaState {
-	schema := &SchemaState{
-		ignoreCaseSensitive: d.ignoreCaseSensitive,
-		name:                "",
-		tableSet:            make(tableStateMap),
-		viewSet:             make(viewStateMap),
-	}
-
-	d.schemaSet[""] = schema
-	return schema
 }
 
 // PostgreSQL-specific helper methods.
@@ -222,52 +207,22 @@ func (s *SchemaState) pgGeneratePrimaryKeyName(tableName string) string {
 	}
 }
 
-//nolint:revive
-func (d *DatabaseState) getSchema(schemaName string) (*SchemaState, *WalkThroughError) {
+func (d *DatabaseState) getOrCreatePublicSchema(schemaName string) (*SchemaState, *WalkThroughError) {
 	if schemaName == "" {
 		schemaName = publicSchemaName
 	}
-	schema, exists := d.schemaSet[schemaName]
-	if !exists {
-		if schemaName != publicSchemaName {
-			return nil, &WalkThroughError{
-				Code:    code.SchemaNotExists,
-				Content: fmt.Sprintf("The schema %q doesn't exist", schemaName),
-			}
-		}
-		schema = &SchemaState{
-			ignoreCaseSensitive: d.ignoreCaseSensitive,
-			name:                publicSchemaName,
-			tableSet:            make(tableStateMap),
-			viewSet:             make(viewStateMap),
-			identifierMap:       make(identifierMap),
-		}
-		d.schemaSet[publicSchemaName] = schema
-	}
-	return schema, nil
-}
 
-//nolint:revive
-func (t *TableState) getColumn(columnName string) (*ColumnState, *WalkThroughError) {
-	column, exists := t.columnSet[columnName]
-	if !exists {
-		return nil, &WalkThroughError{
-			Code:    code.ColumnNotExists,
-			Content: fmt.Sprintf("The column %q does not exist in the table %q", columnName, t.name),
-		}
+	schema, err := d.GetSchema(schemaName)
+	if err == nil {
+		return schema, nil
 	}
-	return column, nil
-}
 
-func (s *SchemaState) pgGetTable(tableName string) (*TableState, *WalkThroughError) {
-	table, exists := s.tableSet[tableName]
-	if !exists {
-		return nil, &WalkThroughError{
-			Code:    code.TableNotExists,
-			Content: fmt.Sprintf("The table %q does not exist in schema %q", tableName, s.name),
-		}
+	// Only auto-create the "public" schema
+	if schemaName != publicSchemaName {
+		return nil, err
 	}
-	return table, nil
+
+	return d.CreateSchema(publicSchemaName), nil
 }
 
 func (s *SchemaState) getIndex(indexName string) (*TableState, *IndexState, *WalkThroughError) {
