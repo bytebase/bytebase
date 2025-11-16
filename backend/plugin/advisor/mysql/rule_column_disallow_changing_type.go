@@ -17,6 +17,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -64,11 +65,11 @@ func (*ColumnDisallowChangingTypeAdvisor) Check(_ context.Context, checkCtx advi
 type ColumnDisallowChangingTypeRule struct {
 	BaseRule
 	text          string
-	originCatalog *catalog.DatabaseState
+	originCatalog *model.DatabaseMetadata
 }
 
 // NewColumnDisallowChangingTypeRule creates a new ColumnDisallowChangingTypeRule.
-func NewColumnDisallowChangingTypeRule(level storepb.Advice_Status, title string, originCatalog *catalog.DatabaseState) *ColumnDisallowChangingTypeRule {
+func NewColumnDisallowChangingTypeRule(level storepb.Advice_Status, title string, originCatalog *model.DatabaseMetadata) *ColumnDisallowChangingTypeRule {
 	return &ColumnDisallowChangingTypeRule{
 		BaseRule: BaseRule{
 			level: level,
@@ -170,7 +171,8 @@ func normalizeColumnType(tp string) string {
 
 func (r *ColumnDisallowChangingTypeRule) changeColumnType(tableName, columnName string, dataType mysql.IDataTypeContext) {
 	tp := dataType.GetParser().GetTokenStream().GetTextFromRuleContext(dataType)
-	column := r.originCatalog.GetColumn("", tableName, columnName)
+	dbState := catalog.ToDatabaseState(r.originCatalog, storepb.Engine_MYSQL)
+	column := dbState.GetColumn("", tableName, columnName)
 
 	if column == nil {
 		return

@@ -15,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -62,11 +63,11 @@ func (*ColumnDisallowDropInIndexAdvisor) Check(_ context.Context, checkCtx advis
 type ColumnDisallowDropInIndexRule struct {
 	BaseRule
 	tables        tableState
-	originCatalog *catalog.DatabaseState
+	originCatalog *model.DatabaseMetadata
 }
 
 // NewColumnDisallowDropInIndexRule creates a new ColumnDisallowDropInIndexRule.
-func NewColumnDisallowDropInIndexRule(level storepb.Advice_Status, title string, originCatalog *catalog.DatabaseState) *ColumnDisallowDropInIndexRule {
+func NewColumnDisallowDropInIndexRule(level storepb.Advice_Status, title string, originCatalog *model.DatabaseMetadata) *ColumnDisallowDropInIndexRule {
 	return &ColumnDisallowDropInIndexRule{
 		BaseRule: BaseRule{
 			level: level,
@@ -158,7 +159,8 @@ func (r *ColumnDisallowDropInIndexRule) checkAlterTable(ctx *mysql.AlterTableCon
 			continue
 		}
 
-		index := r.originCatalog.Index("", tableName)
+		dbState := catalog.ToDatabaseState(r.originCatalog, storepb.Engine_MYSQL)
+		index := dbState.Index("", tableName)
 
 		if index != nil {
 			if r.tables[tableName] == nil {

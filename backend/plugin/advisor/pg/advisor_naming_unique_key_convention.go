@@ -14,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -68,7 +69,7 @@ type namingUKConventionRule struct {
 	format        string
 	maxLength     int
 	templateList  []string
-	originCatalog *catalog.DatabaseState
+	originCatalog *model.DatabaseMetadata
 }
 
 //nolint:unused
@@ -411,5 +412,5 @@ func (r *namingUKConventionRule) findIndex(schemaName string, tableName string, 
 	if r.originCatalog == nil {
 		return "", nil
 	}
-	return r.originCatalog.GetIndex(normalizeSchemaName(schemaName), tableName, indexName)
+	return catalog.ToDatabaseState(r.originCatalog, storepb.Engine_POSTGRES).GetIndex(normalizeSchemaName(schemaName), tableName, indexName)
 }

@@ -15,6 +15,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -64,7 +65,7 @@ type columnDisallowDropInIndexChecker struct {
 	title         string
 	text          string
 	tables        tableState // the variable mean whether the column in index.
-	originCatalog *catalog.DatabaseState
+	originCatalog *model.DatabaseMetadata
 	line          int
 }
 
@@ -88,7 +89,7 @@ func (checker *columnDisallowDropInIndexChecker) dropColumn(in ast.Node) (ast.No
 			if spec.Tp == ast.AlterTableDropColumn {
 				table := node.Table.Name.O
 
-				index := checker.originCatalog.Index("", table)
+				index := catalog.ToDatabaseState(checker.originCatalog, storepb.Engine_TIDB).Index("", table)
 
 				if index != nil {
 					if checker.tables[table] == nil {

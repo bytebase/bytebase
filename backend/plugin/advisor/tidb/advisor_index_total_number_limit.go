@@ -16,6 +16,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -71,7 +72,7 @@ type indexTotalNumberLimitChecker struct {
 	line         int
 	max          int
 	lineForTable map[string]int
-	finalCatalog *catalog.DatabaseState
+	finalCatalog *model.DatabaseMetadata
 }
 
 func (checker *indexTotalNumberLimitChecker) generateAdvice() []*storepb.Advice {
@@ -98,7 +99,7 @@ func (checker *indexTotalNumberLimitChecker) generateAdvice() []*storepb.Advice 
 	})
 
 	for _, table := range tableList {
-		tableInfo := checker.finalCatalog.GetTable("", table.name)
+		tableInfo := catalog.ToDatabaseState(checker.finalCatalog, storepb.Engine_TIDB).GetTable("", table.name)
 		if tableInfo != nil && tableInfo.CountIndex() > checker.max {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:        checker.level,

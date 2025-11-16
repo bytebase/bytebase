@@ -15,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -78,11 +79,11 @@ type NamingIndexConventionRule struct {
 	format        string
 	maxLength     int
 	templateList  []string
-	originCatalog *catalog.DatabaseState
+	originCatalog *model.DatabaseMetadata
 }
 
 // NewNamingIndexConventionRule creates a new NamingIndexConventionRule.
-func NewNamingIndexConventionRule(level storepb.Advice_Status, title string, format string, maxLength int, templateList []string, originCatalog *catalog.DatabaseState) *NamingIndexConventionRule {
+func NewNamingIndexConventionRule(level storepb.Advice_Status, title string, format string, maxLength int, templateList []string, originCatalog *model.DatabaseMetadata) *NamingIndexConventionRule {
 	return &NamingIndexConventionRule{
 		BaseRule: BaseRule{
 			level: level,
@@ -187,7 +188,8 @@ func (r *NamingIndexConventionRule) checkAlterTable(ctx *mysql.AlterTableContext
 		case alterListItem.RENAME_SYMBOL() != nil && alterListItem.KeyOrIndex() != nil && alterListItem.IndexRef() != nil && alterListItem.IndexName() != nil:
 			_, _, oldIndexName := mysqlparser.NormalizeIndexRef(alterListItem.IndexRef())
 			newIndexName := mysqlparser.NormalizeIndexName(alterListItem.IndexName())
-			_, indexState := r.originCatalog.GetIndex("", tableName, oldIndexName)
+			dbState := catalog.ToDatabaseState(r.originCatalog, storepb.Engine_MYSQL)
+			_, indexState := dbState.GetIndex("", tableName, oldIndexName)
 			if indexState == nil {
 				continue
 			}

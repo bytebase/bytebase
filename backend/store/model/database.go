@@ -577,6 +577,11 @@ func (d *DatabaseMetadata) GetIsObjectCaseSensitive() bool {
 	return d.isObjectCaseSensitive
 }
 
+// GetIsDetailCaseSensitive returns whether detail names (columns, indexes) are case-sensitive.
+func (d *DatabaseMetadata) GetIsDetailCaseSensitive() bool {
+	return d.isDetailCaseSensitive
+}
+
 // LinkedDatabaseMetadata is the metadata for a linked database.
 type LinkedDatabaseMetadata struct {
 	name     string

@@ -16,6 +16,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -63,7 +64,7 @@ type columnDisallowChangingTypeChecker struct {
 	title         string
 	text          string
 	line          int
-	originCatalog *catalog.DatabaseState
+	originCatalog *model.DatabaseMetadata
 }
 
 // Enter implements the ast.Visitor interface.
@@ -131,7 +132,7 @@ func normalizeColumnType(tp string) string {
 }
 
 func (checker *columnDisallowChangingTypeChecker) changeColumnType(tableName string, columName string, newType string) bool {
-	column := checker.originCatalog.GetColumn("", tableName, columName)
+	column := catalog.ToDatabaseState(checker.originCatalog, storepb.Engine_TIDB).GetColumn("", tableName, columName)
 
 	if column == nil {
 		return false

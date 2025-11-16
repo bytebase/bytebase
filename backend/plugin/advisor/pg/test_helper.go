@@ -73,7 +73,7 @@ func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbTyp
 		require.NoError(t, err, "Failed to parse SQL: %s", tc.Statement)
 
 		// Always walk through the catalog to build metadata.
-		err = catalog.WalkThrough(finalCatalog, tree)
+		err = catalog.WalkThrough(finalCatalog, dbType, tree)
 		require.NoError(t, err, "Failed to walk through final catalog: %s", tc.Statement)
 
 		ruleList := []*storepb.SQLReviewRule{

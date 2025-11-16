@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -58,7 +59,7 @@ type columnNoNullChecker struct {
 	level        storepb.Advice_Status
 	title        string
 	columnSet    map[string]columnName
-	finalCatalog *catalog.DatabaseState
+	finalCatalog *model.DatabaseMetadata
 }
 
 func (checker *columnNoNullChecker) generateAdvice() []*storepb.Advice {
@@ -83,7 +84,7 @@ func (checker *columnNoNullChecker) generateAdvice() []*storepb.Advice {
 	})
 
 	for _, column := range columnList {
-		col := checker.finalCatalog.GetColumn("", column.tableName, column.columnName)
+		col := catalog.ToDatabaseState(checker.finalCatalog, storepb.Engine_TIDB).GetColumn("", column.tableName, column.columnName)
 		if col != nil && col.Nullable() {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:        checker.level,

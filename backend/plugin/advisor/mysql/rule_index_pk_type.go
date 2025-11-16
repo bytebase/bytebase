@@ -16,6 +16,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -63,12 +64,12 @@ func (*IndexPkTypeAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 type IndexPkTypeRule struct {
 	BaseRule
 	line             map[string]int
-	originCatalog    *catalog.DatabaseState
+	originCatalog    *model.DatabaseMetadata
 	tablesNewColumns tableColumnTypes
 }
 
 // NewIndexPkTypeRule creates a new IndexPkTypeRule.
-func NewIndexPkTypeRule(level storepb.Advice_Status, title string, originCatalog *catalog.DatabaseState) *IndexPkTypeRule {
+func NewIndexPkTypeRule(level storepb.Advice_Status, title string, originCatalog *model.DatabaseMetadata) *IndexPkTypeRule {
 	return &IndexPkTypeRule{
 		BaseRule: BaseRule{
 			level: level,
@@ -238,7 +239,9 @@ func (r *IndexPkTypeRule) getPKColumnType(tableName string, columnName string) (
 	if columnType, ok := r.tablesNewColumns.get(tableName, columnName); ok {
 		return columnType, nil
 	}
-	column := r.originCatalog.GetColumn("", tableName, columnName)
+	// Convert DatabaseMetadata to DatabaseState for compatibility
+	dbState := catalog.ToDatabaseState(r.originCatalog, storepb.Engine_MYSQL)
+	column := dbState.GetColumn("", tableName, columnName)
 	if column != nil {
 		return column.Type(), nil
 	}

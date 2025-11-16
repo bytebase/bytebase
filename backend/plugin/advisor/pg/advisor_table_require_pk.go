@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -66,7 +67,7 @@ type tableMention struct {
 type tableRequirePKRule struct {
 	BaseRule
 	statementsText string
-	finalCatalog   *catalog.DatabaseState
+	finalCatalog   *model.DatabaseMetadata
 
 	// Simple Solution: Track last mention of each table
 	tableMentions map[string]*tableMention // key: "schema.table", value: last mention info
@@ -180,7 +181,7 @@ func (r *tableRequirePKRule) validateFinalState() {
 		schemaName, tableName := parseTableKey(tableKey)
 
 		// Check catalog.Final for PRIMARY KEY
-		hasPK := r.finalCatalog.HasPrimaryKey(schemaName, tableName)
+		hasPK := catalog.ToDatabaseState(r.finalCatalog, storepb.Engine_POSTGRES).HasPrimaryKey(schemaName, tableName)
 
 		if !hasPK {
 			content := fmt.Sprintf("Table %q.%q requires PRIMARY KEY", schemaName, tableName)

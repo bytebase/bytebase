@@ -16,6 +16,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -62,12 +63,12 @@ func (*IndexTypeNoBlobAdvisor) Check(_ context.Context, checkCtx advisor.Context
 // IndexTypeNoBlobRule checks for index type no blob.
 type IndexTypeNoBlobRule struct {
 	BaseRule
-	originCatalog    *catalog.DatabaseState
+	originCatalog    *model.DatabaseMetadata
 	tablesNewColumns tableColumnTypes
 }
 
 // NewIndexTypeNoBlobRule creates a new IndexTypeNoBlobRule.
-func NewIndexTypeNoBlobRule(level storepb.Advice_Status, title string, originCatalog *catalog.DatabaseState) *IndexTypeNoBlobRule {
+func NewIndexTypeNoBlobRule(level storepb.Advice_Status, title string, originCatalog *model.DatabaseMetadata) *IndexTypeNoBlobRule {
 	return &IndexTypeNoBlobRule{
 		BaseRule: BaseRule{
 			level: level,
@@ -295,7 +296,8 @@ func (r *IndexTypeNoBlobRule) getColumnType(tableName string, columnName string)
 	if columnType, ok := r.tablesNewColumns.get(tableName, columnName); ok {
 		return columnType, nil
 	}
-	column := r.originCatalog.GetColumn("", tableName, columnName)
+	dbState := catalog.ToDatabaseState(r.originCatalog, storepb.Engine_MYSQL)
+	column := dbState.GetColumn("", tableName, columnName)
 	if column != nil {
 		return column.Type(), nil
 	}

@@ -27,6 +27,12 @@ func NewCatalogWithMetadata(metadata *storepb.DatabaseSchemaMetadata, engineType
 	return origin, final, nil
 }
 
+// ToDatabaseState converts DatabaseMetadata to DatabaseState for use in advisor rules.
+// This is a compatibility helper during the migration from DatabaseState to DatabaseMetadata.
+func ToDatabaseState(d *model.DatabaseMetadata, engineType storepb.Engine) *DatabaseState {
+	return NewDatabaseState(d.GetProto(), !d.GetIsObjectCaseSensitive(), engineType)
+}
+
 // NewCatalog creates origin and final database catalog states.
 func NewCatalog(ctx context.Context, s *store.Store, instanceID, databaseName string, engineType storepb.Engine, isCaseSensitive bool, overrideDatabaseMetadata *storepb.DatabaseSchemaMetadata) (origin *DatabaseState, final *DatabaseState, err error) {
 	dbMetadata := overrideDatabaseMetadata

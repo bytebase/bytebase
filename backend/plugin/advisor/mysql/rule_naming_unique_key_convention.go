@@ -15,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -78,11 +79,11 @@ type NamingUKConventionRule struct {
 	format        string
 	maxLength     int
 	templateList  []string
-	originCatalog *catalog.DatabaseState
+	originCatalog *model.DatabaseMetadata
 }
 
 // NewNamingUKConventionRule creates a new NamingUKConventionRule.
-func NewNamingUKConventionRule(level storepb.Advice_Status, title string, format string, maxLength int, templateList []string, originCatalog *catalog.DatabaseState) *NamingUKConventionRule {
+func NewNamingUKConventionRule(level storepb.Advice_Status, title string, format string, maxLength int, templateList []string, originCatalog *model.DatabaseMetadata) *NamingUKConventionRule {
 	return &NamingUKConventionRule{
 		BaseRule: BaseRule{
 			level: level,
@@ -188,7 +189,8 @@ func (r *NamingUKConventionRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 		case alterListItem.RENAME_SYMBOL() != nil && alterListItem.KeyOrIndex() != nil && alterListItem.IndexRef() != nil && alterListItem.IndexName() != nil:
 			_, _, oldIndexName := mysqlparser.NormalizeIndexRef(alterListItem.IndexRef())
 			newIndexName := mysqlparser.NormalizeIndexName(alterListItem.IndexName())
-			indexStateMap := r.originCatalog.Index("", tableName)
+			dbState := catalog.ToDatabaseState(r.originCatalog, storepb.Engine_MYSQL)
+			indexStateMap := dbState.Index("", tableName)
 			if indexStateMap == nil {
 				continue
 			}

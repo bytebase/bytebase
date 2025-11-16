@@ -17,6 +17,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -88,7 +89,7 @@ type indexPkTypeChecker struct {
 	level            storepb.Advice_Status
 	title            string
 	line             map[string]int
-	originCatalog    *catalog.DatabaseState
+	originCatalog    *model.DatabaseMetadata
 	tablesNewColumns tableNewColumn
 }
 
@@ -220,7 +221,7 @@ func (v *indexPkTypeChecker) getPKColumnType(tableName string, columnName string
 	if colDef, ok := v.tablesNewColumns.get(tableName, columnName); ok {
 		return v.getIntOrBigIntStr(colDef.Tp), nil
 	}
-	column := v.originCatalog.GetColumn("", tableName, columnName)
+	column := catalog.ToDatabaseState(v.originCatalog, storepb.Engine_TIDB).GetColumn("", tableName, columnName)
 	if column != nil {
 		return column.Type(), nil
 	}

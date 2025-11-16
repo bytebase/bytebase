@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 const (
@@ -65,8 +66,8 @@ type tableRequirePKChecker struct {
 	title         string
 	tables        tablePK
 	line          map[string]int
-	originCatalog *catalog.DatabaseState
-	finalCatalog  *catalog.DatabaseState
+	originCatalog *model.DatabaseMetadata
+	finalCatalog  *model.DatabaseMetadata
 }
 
 // Enter implements the ast.Visitor interface.
@@ -182,7 +183,7 @@ func (v *tableRequirePKChecker) createTableLike(node *ast.CreateTableStmt) {
 		}
 		v.tables[table] = newColumnSet(columns)
 	} else {
-		referTableState := v.originCatalog.GetTable("", referTableName)
+		referTableState := catalog.ToDatabaseState(v.originCatalog, storepb.Engine_TIDB).GetTable("", referTableName)
 		if referTableState != nil {
 			indexSet := referTableState.Index()
 			for _, index := range *indexSet {
@@ -196,7 +197,7 @@ func (v *tableRequirePKChecker) createTableLike(node *ast.CreateTableStmt) {
 
 func (v *tableRequirePKChecker) dropColumn(table string, column string) bool {
 	if _, ok := v.tables[table]; !ok {
-		_, pk := v.originCatalog.GetIndex("", table, primaryKeyName)
+		_, pk := catalog.ToDatabaseState(v.originCatalog, storepb.Engine_TIDB).GetIndex("", table, primaryKeyName)
 		if pk == nil {
 			return false
 		}

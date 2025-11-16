@@ -18,6 +18,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -66,7 +67,7 @@ type indexTypeNoBlobChecker struct {
 	title            string
 	text             string
 	line             int
-	originCatalog    *catalog.DatabaseState
+	originCatalog    *model.DatabaseMetadata
 	tablesNewColumns tableNewColumn
 }
 
@@ -223,7 +224,7 @@ func (v *indexTypeNoBlobChecker) getColumnType(tableName string, columnName stri
 	if colDef, ok := v.tablesNewColumns.get(tableName, columnName); ok {
 		return v.getBlobStr(colDef.Tp), nil
 	}
-	column := v.originCatalog.GetColumn("", tableName, columnName)
+	column := catalog.ToDatabaseState(v.originCatalog, storepb.Engine_TIDB).GetColumn("", tableName, columnName)
 	if column != nil {
 		return column.Type(), nil
 	}

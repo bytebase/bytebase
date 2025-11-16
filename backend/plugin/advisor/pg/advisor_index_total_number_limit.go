@@ -14,6 +14,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -80,7 +81,7 @@ type indexTotalNumberLimitRule struct {
 	BaseRule
 
 	max          int
-	finalCatalog *catalog.DatabaseState
+	finalCatalog *model.DatabaseMetadata
 	tableLine    tableLineMap
 }
 
@@ -122,7 +123,7 @@ func (r *indexTotalNumberLimitRule) generateAdvice() {
 	})
 
 	for _, table := range tableList {
-		tableInfo := r.finalCatalog.GetTable(table.schema, table.table)
+		tableInfo := catalog.ToDatabaseState(r.finalCatalog, storepb.Engine_POSTGRES).GetTable(table.schema, table.table)
 		if tableInfo != nil && tableInfo.CountIndex() > r.max {
 			r.AddAdvice(&storepb.Advice{
 				Status:  r.level,

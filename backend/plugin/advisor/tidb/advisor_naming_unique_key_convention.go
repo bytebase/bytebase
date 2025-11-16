@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -66,7 +67,7 @@ type namingUKConventionChecker struct {
 	format        string
 	maxLength     int
 	templateList  []string
-	originCatalog *catalog.DatabaseState
+	originCatalog *model.DatabaseMetadata
 }
 
 // Enter implements the ast.Visitor interface.
@@ -142,7 +143,7 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 		for _, spec := range node.Specs {
 			switch spec.Tp {
 			case ast.AlterTableRenameIndex:
-				_, index := checker.originCatalog.GetIndex("", node.Table.Name.String(), spec.FromKey.String())
+				_, index := catalog.ToDatabaseState(checker.originCatalog, storepb.Engine_TIDB).GetIndex("", node.Table.Name.String(), spec.FromKey.String())
 				if index == nil {
 					continue
 				}

@@ -16,6 +16,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 const (
@@ -71,11 +72,11 @@ type TableRequirePKRule struct {
 	BaseRule
 	tables        map[string]columnSet
 	line          map[string]int
-	originCatalog *catalog.DatabaseState
+	originCatalog *model.DatabaseMetadata
 }
 
 // NewTableRequirePKRule creates a new TableRequirePKRule.
-func NewTableRequirePKRule(level storepb.Advice_Status, title string, originCatalog *catalog.DatabaseState) *TableRequirePKRule {
+func NewTableRequirePKRule(level storepb.Advice_Status, title string, originCatalog *model.DatabaseMetadata) *TableRequirePKRule {
 	return &TableRequirePKRule{
 		BaseRule: BaseRule{
 			level: level,
@@ -251,7 +252,8 @@ func (r *TableRequirePKRule) changeColumn(tableName string, oldColumn string, ne
 
 func (r *TableRequirePKRule) dropColumn(tableName string, columnName string) bool {
 	if _, ok := r.tables[tableName]; !ok {
-		_, pk := r.originCatalog.GetIndex("", tableName, primaryKeyName)
+		dbState := catalog.ToDatabaseState(r.originCatalog, storepb.Engine_MYSQL)
+		_, pk := dbState.GetIndex("", tableName, primaryKeyName)
 		if pk == nil {
 			return false
 		}

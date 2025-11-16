@@ -15,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -61,11 +62,11 @@ func (*DatabaseAllowDropIfEmptyAdvisor) Check(_ context.Context, checkCtx adviso
 // DatabaseDropEmptyDBRule checks for drop database only if empty.
 type DatabaseDropEmptyDBRule struct {
 	BaseRule
-	originCatalog *catalog.DatabaseState
+	originCatalog *model.DatabaseMetadata
 }
 
 // NewDatabaseDropEmptyDBRule creates a new DatabaseDropEmptyDBRule.
-func NewDatabaseDropEmptyDBRule(level storepb.Advice_Status, title string, originCatalog *catalog.DatabaseState) *DatabaseDropEmptyDBRule {
+func NewDatabaseDropEmptyDBRule(level storepb.Advice_Status, title string, originCatalog *model.DatabaseMetadata) *DatabaseDropEmptyDBRule {
 	return &DatabaseDropEmptyDBRule{
 		BaseRule: BaseRule{
 			level: level,
@@ -102,15 +103,16 @@ func (r *DatabaseDropEmptyDBRule) checkDropDatabase(ctx *mysql.DropDatabaseConte
 	}
 
 	dbName := mysqlparser.NormalizeMySQLSchemaRef(ctx.SchemaRef())
-	if r.originCatalog.DatabaseName() != dbName {
+	dbState := catalog.ToDatabaseState(r.originCatalog, storepb.Engine_MYSQL)
+	if dbState.DatabaseName() != dbName {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
 			Code:          code.NotCurrentDatabase.Int32(),
 			Title:         r.title,
-			Content:       fmt.Sprintf("Database `%s` that is trying to be deleted is not the current database `%s`", dbName, r.originCatalog.DatabaseName()),
+			Content:       fmt.Sprintf("Database `%s` that is trying to be deleted is not the current database `%s`", dbName, dbState.DatabaseName()),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
 		})
-	} else if !r.originCatalog.HasNoTable() {
+	} else if !dbState.HasNoTable() {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
 			Code:          code.DatabaseNotEmpty.Int32(),

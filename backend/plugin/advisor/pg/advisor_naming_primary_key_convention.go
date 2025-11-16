@@ -14,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -70,7 +71,7 @@ type namingPKConventionRule struct {
 	format         string
 	maxLength      int
 	templateList   []string
-	originCatalog  *catalog.DatabaseState
+	originCatalog  *model.DatabaseMetadata
 	statementsText string
 }
 
@@ -196,7 +197,7 @@ func (r *namingPKConventionRule) handleRenamestmt(ctx *parser.RenamestmtContext)
 				if normalizedSchema == "" {
 					normalizedSchema = "public"
 				}
-				_, index := r.originCatalog.GetIndex(normalizedSchema, tableName, oldName)
+				_, index := catalog.ToDatabaseState(r.originCatalog, storepb.Engine_POSTGRES).GetIndex(normalizedSchema, tableName, oldName)
 				if index != nil && index.Primary() {
 					metaData := map[string]string{
 						advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList(), "_"),
@@ -241,7 +242,7 @@ func (r *namingPKConventionRule) handleRenamestmt(ctx *parser.RenamestmtContext)
 				}
 				// "ALTER INDEX name RENAME TO new_name" doesn't specify table name
 				// Empty table name for ALTER INDEX
-				tableName, index := r.originCatalog.GetIndex(normalizedSchema, "", oldIndexName)
+				tableName, index := catalog.ToDatabaseState(r.originCatalog, storepb.Engine_POSTGRES).GetIndex(normalizedSchema, "", oldIndexName)
 				if index != nil && index.Primary() {
 					metaData := map[string]string{
 						advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList(), "_"),
@@ -312,7 +313,7 @@ func (r *namingPKConventionRule) getPKMetaDataFromTableConstraint(constraint par
 				if normalizedSchema == "" {
 					normalizedSchema = "public"
 				}
-				_, index := r.originCatalog.GetIndex(normalizedSchema, tableName, indexName)
+				_, index := catalog.ToDatabaseState(r.originCatalog, storepb.Engine_POSTGRES).GetIndex(normalizedSchema, tableName, indexName)
 				if index != nil {
 					columnList = index.ExpressionList()
 				}

@@ -149,7 +149,7 @@ func (e *StatementAdviseExecutor) runReview(
 		}
 	}
 
-	originCatalog, finalCatalog, err := catalog.NewCatalog(ctx, e.store, database.InstanceID, database.DatabaseName, instance.Metadata.GetEngine(), store.IsObjectCaseSensitive(instance), nil /* Override Metadata */)
+	originCatalog, finalCatalog, err := catalog.NewCatalogWithMetadata(dbSchema.GetMetadata(), instance.Metadata.GetEngine(), store.IsObjectCaseSensitive(instance))
 	if err != nil {
 		return nil, common.Wrapf(err, common.Internal, "failed to create a catalog")
 	}

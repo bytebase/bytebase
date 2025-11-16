@@ -17,6 +17,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -75,7 +76,7 @@ type indexPrimaryKeyTypeAllowlistChecker struct {
 	text             string
 	line             int
 	allowlist        map[string]bool
-	originCatalog    *catalog.DatabaseState
+	originCatalog    *model.DatabaseMetadata
 	tablesNewColumns tableNewColumn
 }
 
@@ -201,7 +202,7 @@ func (v *indexPrimaryKeyTypeAllowlistChecker) getPKColumnType(tableName string, 
 	if colDef, ok := v.tablesNewColumns.get(tableName, columnName); ok {
 		return tidbparser.TypeString(colDef.Tp.GetType()), nil
 	}
-	column := v.originCatalog.GetColumn("", tableName, columnName)
+	column := catalog.ToDatabaseState(v.originCatalog, storepb.Engine_TIDB).GetColumn("", tableName, columnName)
 	if column != nil {
 		return column.Type(), nil
 	}
