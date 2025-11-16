@@ -842,6 +842,41 @@ func (s *SchemaMetadata) CreateTable(tableName string) (*TableMetadata, error) {
 	return tableMeta, nil
 }
 
+// DropTable drops a table from the schema.
+// Returns an error if the table does not exist.
+func (s *SchemaMetadata) DropTable(tableName string) error {
+	// Check if table exists
+	if s.GetTable(tableName) == nil {
+		return errors.Errorf("table %q does not exist in schema %q", tableName, s.proto.Name)
+	}
+
+	// Remove from internal map
+	var tableID string
+	if s.isObjectCaseSensitive {
+		tableID = tableName
+	} else {
+		tableID = strings.ToLower(tableName)
+	}
+	delete(s.internalTables, tableID)
+
+	// Remove from proto's table list
+	newTables := make([]*storepb.TableMetadata, 0, len(s.proto.Tables)-1)
+	for _, table := range s.proto.Tables {
+		if s.isObjectCaseSensitive {
+			if table.Name != tableName {
+				newTables = append(newTables, table)
+			}
+		} else {
+			if !strings.EqualFold(table.Name, tableName) {
+				newTables = append(newTables, table)
+			}
+		}
+	}
+	s.proto.Tables = newTables
+
+	return nil
+}
+
 func buildTablesMetadata(table *storepb.TableMetadata, isDetailCaseSensitive bool) ([]*TableMetadata, []string) {
 	if table == nil {
 		return nil, nil

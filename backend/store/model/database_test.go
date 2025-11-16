@@ -143,3 +143,54 @@ func TestSchemaMetadata_CreateTable_AlreadyExists(t *testing.T) {
 	require.NotNil(t, err)
 	require.Contains(t, err.Error(), "already exists")
 }
+
+func TestSchemaMetadata_DropTable(t *testing.T) {
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Name: "testdb",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Tables: []*storepb.TableMetadata{
+					{Name: "users"},
+					{Name: "products"},
+				},
+			},
+		},
+	}
+
+	schema := NewDatabaseSchema(metadata, nil, nil, storepb.Engine_POSTGRES, true)
+	dbMeta := schema.GetDatabaseMetadata()
+	schemaMeta := dbMeta.GetSchema("public")
+
+	// Drop table
+	err := schemaMeta.DropTable("users")
+
+	require.Nil(t, err)
+
+	// Verify table is gone
+	retrieved := schemaMeta.GetTable("users")
+	require.Nil(t, retrieved)
+
+	// Verify other table still exists
+	retrieved = schemaMeta.GetTable("products")
+	require.NotNil(t, retrieved)
+}
+
+func TestSchemaMetadata_DropTable_NotExists(t *testing.T) {
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Name: "testdb",
+		Schemas: []*storepb.SchemaMetadata{
+			{Name: "public"},
+		},
+	}
+
+	schema := NewDatabaseSchema(metadata, nil, nil, storepb.Engine_POSTGRES, true)
+	dbMeta := schema.GetDatabaseMetadata()
+	schemaMeta := dbMeta.GetSchema("public")
+
+	// Try to drop non-existent table
+	err := schemaMeta.DropTable("nonexistent")
+
+	require.NotNil(t, err)
+	require.Contains(t, err.Error(), "does not exist")
+}
