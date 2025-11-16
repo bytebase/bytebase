@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/plsql"
 	"github.com/pkg/errors"
@@ -116,7 +118,7 @@ func (r *ColumnRequireDefaultRule) GetAdviceList() ([]*storepb.Advice, error) {
 		line := r.noDefaultColumns[columnID]
 		r.AddAdvice(
 			r.level,
-			advisor.NoDefault.Int32(),
+			code.NoDefault.Int32(),
 			fmt.Sprintf("Column %q doesn't have default value", lastIdentifier(columnID)),
 			common.ConvertANTLRLineToPosition(line),
 		)

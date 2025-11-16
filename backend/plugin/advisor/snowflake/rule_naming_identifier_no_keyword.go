@@ -5,6 +5,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/snowflake"
 	"github.com/pkg/errors"
@@ -114,7 +116,7 @@ func (r *NamingIdentifierNoKeywordRule) enterColumnDeclItemList(ctx *parser.Colu
 			if snowsqlparser.IsSnowflakeKeyword(originalColName, false) {
 				r.AddAdvice(&storepb.Advice{
 					Status:        r.level,
-					Code:          advisor.NameIsKeywordIdentifier.Int32(),
+					Code:          code.NameIsKeywordIdentifier.Int32(),
 					Title:         r.title,
 					Content:       fmt.Sprintf("Identifier %s is a keyword and should be avoided", originalID.GetText()),
 					StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
@@ -134,7 +136,7 @@ func (r *NamingIdentifierNoKeywordRule) enterAlterTable(ctx *parser.Alter_tableC
 	if snowsqlparser.IsSnowflakeKeyword(renameToColName, false) {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.NameIsKeywordIdentifier.Int32(),
+			Code:          code.NameIsKeywordIdentifier.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("Identifier %s is a keyword and should be avoided", renameToID.GetText()),
 			StartPosition: common.ConvertANTLRLineToPosition(renameToID.GetStart().GetLine()),

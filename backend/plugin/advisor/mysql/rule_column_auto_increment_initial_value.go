@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
@@ -124,7 +126,7 @@ func (r *ColumnAutoIncrementInitialValueRule) checkCreateTable(ctx *mysql.Create
 		if value != uint64(r.value) {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
-				Code:          advisor.AutoIncrementColumnInitialValueNotMatch.Int32(),
+				Code:          code.AutoIncrementColumnInitialValueNotMatch.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("The initial auto-increment value in table `%s` is %v, which doesn't equal %v", tableName, value, r.value),
 				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
@@ -171,7 +173,7 @@ func (r *ColumnAutoIncrementInitialValueRule) checkAlterTable(ctx *mysql.AlterTa
 			if value != uint64(r.value) {
 				r.AddAdvice(&storepb.Advice{
 					Status:        r.level,
-					Code:          advisor.AutoIncrementColumnInitialValueNotMatch.Int32(),
+					Code:          code.AutoIncrementColumnInitialValueNotMatch.Int32(),
 					Title:         r.title,
 					Content:       fmt.Sprintf("The initial auto-increment value in table `%s` is %v, which doesn't equal %v", tableName, value, r.value),
 					StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),

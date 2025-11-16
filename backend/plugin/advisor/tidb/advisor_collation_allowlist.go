@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -72,27 +73,27 @@ type collationAllowlistChecker struct {
 
 // Enter implements the ast.Visitor interface.
 func (checker *collationAllowlistChecker) Enter(in ast.Node) (ast.Node, bool) {
-	code := advisor.Ok
+	code := advisorcode.Ok
 	var disabledCollation string
 	line := checker.line
 	switch node := in.(type) {
 	case *ast.CreateDatabaseStmt:
 		collation := getDatabaseCollation(node.Options)
 		if _, exists := checker.allowlist[collation]; collation != "" && !exists {
-			code = advisor.DisabledCollation
+			code = advisorcode.DisabledCollation
 			disabledCollation = collation
 		}
 	case *ast.CreateTableStmt:
 		collation := getTableCollation(node.Options)
 		if _, exist := checker.allowlist[collation]; collation != "" && !exist {
-			code = advisor.DisabledCollation
+			code = advisorcode.DisabledCollation
 			disabledCollation = collation
 			break
 		}
 		for _, column := range node.Cols {
 			collation := getColumnCollation(column)
 			if _, exist := checker.allowlist[collation]; collation != "" && !exist {
-				code = advisor.DisabledCollation
+				code = advisorcode.DisabledCollation
 				disabledCollation = collation
 				line = column.OriginTextPosition()
 				break
@@ -101,7 +102,7 @@ func (checker *collationAllowlistChecker) Enter(in ast.Node) (ast.Node, bool) {
 	case *ast.AlterDatabaseStmt:
 		collation := getDatabaseCollation(node.Options)
 		if _, exist := checker.allowlist[collation]; collation != "" && !exist {
-			code = advisor.DisabledCollation
+			code = advisorcode.DisabledCollation
 			disabledCollation = collation
 		}
 	case *ast.AlterTableStmt:
@@ -110,14 +111,14 @@ func (checker *collationAllowlistChecker) Enter(in ast.Node) (ast.Node, bool) {
 			case ast.AlterTableOption:
 				collation := getTableCollation(spec.Options)
 				if _, exist := checker.allowlist[collation]; collation != "" && !exist {
-					code = advisor.DisabledCollation
+					code = advisorcode.DisabledCollation
 					disabledCollation = collation
 				}
 			case ast.AlterTableAddColumns:
 				for _, column := range spec.NewColumns {
 					collation := getColumnCollation(column)
 					if _, exist := checker.allowlist[collation]; collation != "" && !exist {
-						code = advisor.DisabledCollation
+						code = advisorcode.DisabledCollation
 						disabledCollation = collation
 						break
 					}
@@ -125,7 +126,7 @@ func (checker *collationAllowlistChecker) Enter(in ast.Node) (ast.Node, bool) {
 			case ast.AlterTableChangeColumn, ast.AlterTableModifyColumn:
 				collation := getColumnCollation(spec.NewColumns[0])
 				if _, exist := checker.allowlist[collation]; collation != "" && !exist {
-					code = advisor.DisabledCollation
+					code = advisorcode.DisabledCollation
 					disabledCollation = collation
 				}
 			default:
@@ -134,7 +135,7 @@ func (checker *collationAllowlistChecker) Enter(in ast.Node) (ast.Node, bool) {
 		}
 	}
 
-	if code != advisor.Ok {
+	if code != advisorcode.Ok {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:        checker.level,
 			Code:          code.Int32(),

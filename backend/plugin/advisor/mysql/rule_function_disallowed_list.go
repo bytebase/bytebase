@@ -6,6 +6,8 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/parser/mysql"
 	"github.com/pkg/errors"
@@ -114,7 +116,7 @@ func (r *FunctionDisallowedListRule) checkFunctionCall(ctx *mysql.FunctionCallCo
 		if slices.Contains(r.disallowList, strings.ToUpper(functionName)) {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
-				Code:          advisor.DisabledFunction.Int32(),
+				Code:          code.DisabledFunction.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("Function \"%s\" is disallowed, but \"%s\" uses", functionName, r.text),
 				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),

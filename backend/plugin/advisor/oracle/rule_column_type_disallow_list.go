@@ -5,6 +5,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/plsql"
 	"github.com/pkg/errors"
@@ -112,7 +114,7 @@ func (r *ColumnTypeDisallowListRule) handleColumnDefinition(ctx *parser.Column_d
 	if r.isDisallowType(ctx.Datatype()) {
 		r.AddAdvice(
 			r.level,
-			advisor.DisabledColumnType.Int32(),
+			code.DisabledColumnType.Int32(),
 			fmt.Sprintf("Disallow column type %s but column \"%s\" is", ctx.Datatype().GetText(), normalizeIdentifier(ctx.Column_name(), r.currentDatabase)),
 			common.ConvertANTLRLineToPosition(r.baseLine+ctx.Datatype().GetStart().GetLine()),
 		)
@@ -122,7 +124,7 @@ func (r *ColumnTypeDisallowListRule) handleColumnDefinition(ctx *parser.Column_d
 			if ctx.Regular_id().GetText() == tp {
 				r.AddAdvice(
 					r.level,
-					advisor.DisabledColumnType.Int32(),
+					code.DisabledColumnType.Int32(),
 					fmt.Sprintf("Disallow column type %s but column \"%s\" is", ctx.Regular_id().GetText(), normalizeIdentifier(ctx.Column_name(), r.currentDatabase)),
 					common.ConvertANTLRLineToPosition(r.baseLine+ctx.Regular_id().GetStart().GetLine()),
 				)
@@ -136,7 +138,7 @@ func (r *ColumnTypeDisallowListRule) handleModifyColProperties(ctx *parser.Modif
 	if r.isDisallowType(ctx.Datatype()) {
 		r.AddAdvice(
 			r.level,
-			advisor.DisabledColumnType.Int32(),
+			code.DisabledColumnType.Int32(),
 			fmt.Sprintf("Disallow column type %s but column \"%s\" is", ctx.Datatype().GetText(), normalizeIdentifier(ctx.Column_name(), r.currentDatabase)),
 			common.ConvertANTLRLineToPosition(r.baseLine+ctx.Datatype().GetStart().GetLine()),
 		)

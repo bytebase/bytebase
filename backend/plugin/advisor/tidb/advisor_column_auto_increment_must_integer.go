@@ -6,6 +6,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pingcap/tidb/pkg/parser/mysql"
 	"github.com/pingcap/tidb/pkg/parser/types"
@@ -112,7 +114,7 @@ func (checker *columnAutoIncrementMustIntegerChecker) Enter(in ast.Node) (ast.No
 	for _, column := range columnList {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:        checker.level,
-			Code:          advisor.AutoIncrementColumnNotInteger.Int32(),
+			Code:          code.AutoIncrementColumnNotInteger.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("Auto-increment column `%s`.`%s` requires integer type", column.table, column.column),
 			StartPosition: common.ConvertANTLRLineToPosition(checker.line),

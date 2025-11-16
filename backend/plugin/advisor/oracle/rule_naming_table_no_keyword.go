@@ -5,6 +5,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/plsql"
 	"github.com/pkg/errors"
@@ -93,7 +95,7 @@ func (r *NamingTableNoKeywordRule) handleCreateTable(ctx *parser.Create_tableCon
 	if plsqlparser.IsOracleKeyword(tableName) {
 		r.AddAdvice(
 			r.level,
-			advisor.NameIsKeywordIdentifier.Int32(),
+			code.NameIsKeywordIdentifier.Int32(),
 			fmt.Sprintf("Table name %q is a keyword identifier and should be avoided.", tableName),
 			common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
 		)
@@ -108,7 +110,7 @@ func (r *NamingTableNoKeywordRule) handleAlterTableProperties(ctx *parser.Alter_
 	if plsqlparser.IsOracleKeyword(tableName) {
 		r.AddAdvice(
 			r.level,
-			advisor.NameIsKeywordIdentifier.Int32(),
+			code.NameIsKeywordIdentifier.Int32(),
 			fmt.Sprintf("Table name %q is a keyword identifier and should be avoided.", tableName),
 			common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
 		)

@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 )
 
@@ -54,7 +55,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 			Status:        level,
 			Title:         title,
 			Content:       fmt.Sprintf("The size of statements in the sheet exceeds the limit of %d", common.MaxSheetCheckSize),
-			Code:          advisor.BuiltinPriorBackupCheck.Int32(),
+			Code:          code.BuiltinPriorBackupCheck.Int32(),
 			StartPosition: common.ConvertANTLRLineToPosition(1),
 		})
 	}
@@ -65,7 +66,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 			Status:        level,
 			Title:         title,
 			Content:       fmt.Sprintf("Need database %q to do prior backup but it does not exist", databaseName),
-			Code:          advisor.DatabaseNotExists.Int32(),
+			Code:          code.DatabaseNotExists.Int32(),
 			StartPosition: common.ConvertANTLRLineToPosition(1),
 		})
 		return adviceList, nil
@@ -81,7 +82,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 			Status:        level,
 			Title:         title,
 			Content:       "Prior backup cannot deal with mixed DDL and DML statements",
-			Code:          int32(advisor.BuiltinPriorBackupCheck),
+			Code:          int32(code.BuiltinPriorBackupCheck),
 			StartPosition: common.ConvertANTLRLineToPosition(1),
 		})
 	}
@@ -109,7 +110,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 					Status:        level,
 					Title:         title,
 					Content:       fmt.Sprintf("The statement type is not the same for all statements on the same table %q", key),
-					Code:          advisor.BuiltinPriorBackupCheck.Int32(),
+					Code:          code.BuiltinPriorBackupCheck.Int32(),
 					StartPosition: common.ConvertANTLRLineToPosition(1),
 				})
 				break

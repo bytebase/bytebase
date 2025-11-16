@@ -9,6 +9,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -122,7 +123,7 @@ func (r *statementWhereRequiredSelectRule) checkSelect(
 
 	r.AddAdvice(&storepb.Advice{
 		Status:  r.level,
-		Code:    advisor.StatementNoWhere.Int32(),
+		Code:    code.StatementNoWhere.Int32(),
 		Title:   r.title,
 		Content: fmt.Sprintf("\"%s\" requires WHERE clause", stmtText),
 		StartPosition: &storepb.Position{

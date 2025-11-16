@@ -10,6 +10,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -40,9 +41,9 @@ func (*RequireAlgorithmOrLockOptionAdvisor) Check(_ context.Context, checkCtx ad
 		return nil, err
 	}
 
-	requiredOption, errorCode := "ALGORITHM", advisor.StatementNoAlgorithmOption
+	requiredOption, errorCode := "ALGORITHM", code.StatementNoAlgorithmOption
 	if checkCtx.Rule.Type == string(advisor.SchemaRuleStatementRequireLockOption) {
-		requiredOption, errorCode = "LOCK", advisor.StatementNoLockOption
+		requiredOption, errorCode = "LOCK", code.StatementNoLockOption
 	}
 
 	// Create the rule
@@ -66,13 +67,13 @@ type RequireAlgorithmOrLockOptionRule struct {
 	requiredOption        string
 	hasOption             bool
 	inAlterTableStatement bool
-	errorCode             advisor.Code
+	errorCode             code.Code
 	text                  string
 	line                  int
 }
 
 // NewRequireAlgorithmOrLockOptionRule creates a new RequireAlgorithmOrLockOptionRule.
-func NewRequireAlgorithmOrLockOptionRule(level storepb.Advice_Status, title string, requiredOption string, errorCode advisor.Code) *RequireAlgorithmOrLockOptionRule {
+func NewRequireAlgorithmOrLockOptionRule(level storepb.Advice_Status, title string, requiredOption string, errorCode code.Code) *RequireAlgorithmOrLockOptionRule {
 	return &RequireAlgorithmOrLockOptionRule{
 		BaseRule: BaseRule{
 			level: level,

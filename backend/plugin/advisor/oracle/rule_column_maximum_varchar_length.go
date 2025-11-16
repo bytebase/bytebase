@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/plsql"
 	"github.com/pkg/errors"
@@ -116,7 +118,7 @@ func (r *ColumnMaximumVarcharLengthRule) handleDatatype(ctx *parser.DatatypeCont
 
 	r.AddAdvice(
 		r.level,
-		advisor.VarcharLengthExceedsLimit.Int32(),
+		code.VarcharLengthExceedsLimit.Int32(),
 		fmt.Sprintf("The maximum varchar length is %d.", r.maximum),
 		common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
 	)

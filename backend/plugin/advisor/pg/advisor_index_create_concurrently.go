@@ -3,6 +3,8 @@ package pg
 import (
 	"context"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 
 	parser "github.com/bytebase/parser/postgresql"
@@ -120,7 +122,7 @@ func (r *indexCreateConcurrentlyRule) handleIndexstmt(ctx *parser.IndexstmtConte
 
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
-			Code:    advisor.CreateIndexUnconcurrently.Int32(),
+			Code:    code.CreateIndexUnconcurrently.Int32(),
 			Title:   r.title,
 			Content: "Creating indexes will block writes on the table, unless use CONCURRENTLY",
 			StartPosition: &storepb.Position{
@@ -143,7 +145,7 @@ func (r *indexCreateConcurrentlyRule) handleDropstmt(ctx *parser.DropstmtContext
 		if ctx.CONCURRENTLY() == nil {
 			r.AddAdvice(&storepb.Advice{
 				Status:  r.level,
-				Code:    advisor.DropIndexUnconcurrently.Int32(),
+				Code:    code.DropIndexUnconcurrently.Int32(),
 				Title:   r.title,
 				Content: "Droping indexes will block writes on the table, unless use CONCURRENTLY",
 				StartPosition: &storepb.Position{

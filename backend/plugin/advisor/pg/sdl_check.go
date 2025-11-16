@@ -3,11 +3,12 @@ package pg
 import (
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/postgresql"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
@@ -58,7 +59,7 @@ func (c *sdlChecker) EnterCreatestmt(ctx *parser.CreatestmtContext) {
 	if schemaName == "" {
 		c.adviceList = append(c.adviceList, &storepb.Advice{
 			Status: storepb.Advice_ERROR,
-			Code:   advisor.SDLRequireSchemaName.Int32(),
+			Code:   code.SDLRequireSchemaName.Int32(),
 			Title:  "sdl.require-schema-name",
 			Content: fmt.Sprintf(
 				"Table '%s' is created without explicit schema name.\n\n"+
@@ -110,7 +111,7 @@ func (c *sdlChecker) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 	if indexName == "" {
 		c.adviceList = append(c.adviceList, &storepb.Advice{
 			Status: storepb.Advice_ERROR,
-			Code:   advisor.SDLRequireIndexName.Int32(),
+			Code:   code.SDLRequireIndexName.Int32(),
 			Title:  "sdl.require-index-name",
 			Content: "Index is created without an explicit name.\n\n" +
 				"SDL requires all indexes to have explicit names.\n\n" +
@@ -158,7 +159,7 @@ func (c *sdlChecker) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 
 			c.adviceList = append(c.adviceList, &storepb.Advice{
 				Status:  storepb.Advice_ERROR,
-				Code:    advisor.SDLRequireSchemaName.Int32(),
+				Code:    code.SDLRequireSchemaName.Int32(),
 				Title:   "sdl.require-schema-name",
 				Content: content,
 				StartPosition: &storepb.Position{
@@ -182,7 +183,7 @@ func (c *sdlChecker) EnterViewstmt(ctx *parser.ViewstmtContext) {
 		if schemaName == "" {
 			c.adviceList = append(c.adviceList, &storepb.Advice{
 				Status: storepb.Advice_ERROR,
-				Code:   advisor.SDLRequireSchemaName.Int32(),
+				Code:   code.SDLRequireSchemaName.Int32(),
 				Title:  "sdl.require-schema-name",
 				Content: fmt.Sprintf(
 					"View '%s' is created without explicit schema name.\n\n"+
@@ -214,7 +215,7 @@ func (c *sdlChecker) EnterCreateseqstmt(ctx *parser.CreateseqstmtContext) {
 		if schemaName == "" {
 			c.adviceList = append(c.adviceList, &storepb.Advice{
 				Status: storepb.Advice_ERROR,
-				Code:   advisor.SDLRequireSchemaName.Int32(),
+				Code:   code.SDLRequireSchemaName.Int32(),
 				Title:  "sdl.require-schema-name",
 				Content: fmt.Sprintf(
 					"Sequence '%s' is created without explicit schema name.\n\n"+
@@ -245,7 +246,7 @@ func (c *sdlChecker) EnterCreatefunctionstmt(ctx *parser.CreatefunctionstmtConte
 		if schemaName == "" {
 			c.adviceList = append(c.adviceList, &storepb.Advice{
 				Status: storepb.Advice_ERROR,
-				Code:   advisor.SDLRequireSchemaName.Int32(),
+				Code:   code.SDLRequireSchemaName.Int32(),
 				Title:  "sdl.require-schema-name",
 				Content: fmt.Sprintf(
 					"Function '%s' is created without explicit schema name.\n\n"+
@@ -277,7 +278,7 @@ func (c *sdlChecker) EnterAlterseqstmt(ctx *parser.AlterseqstmtContext) {
 		if schemaName == "" {
 			c.adviceList = append(c.adviceList, &storepb.Advice{
 				Status: storepb.Advice_ERROR,
-				Code:   advisor.SDLRequireSchemaName.Int32(),
+				Code:   code.SDLRequireSchemaName.Int32(),
 				Title:  "sdl.require-schema-name",
 				Content: fmt.Sprintf(
 					"Sequence '%s' is altered without explicit schema name.\n\n"+
@@ -354,7 +355,7 @@ func (c *sdlChecker) checkColumnConstraints(columnDef parser.IColumnDefContext, 
 
 			c.adviceList = append(c.adviceList, &storepb.Advice{
 				Status:  storepb.Advice_ERROR,
-				Code:    advisor.SDLDisallowColumnConstraint.Int32(),
+				Code:    code.SDLDisallowColumnConstraint.Int32(),
 				Title:   "sdl.disallow-column-constraint",
 				Content: content,
 				StartPosition: &storepb.Position{
@@ -427,7 +428,7 @@ func (c *sdlChecker) checkTableConstraintName(constraint parser.ITableconstraint
 
 		c.adviceList = append(c.adviceList, &storepb.Advice{
 			Status:  storepb.Advice_ERROR,
-			Code:    advisor.SDLRequireConstraintName.Int32(),
+			Code:    code.SDLRequireConstraintName.Int32(),
 			Title:   "sdl.require-constraint-name",
 			Content: content,
 			StartPosition: &storepb.Position{
@@ -476,7 +477,7 @@ func (c *sdlChecker) checkForeignKeyReferenceSchema(constraint parser.ITablecons
 
 			c.adviceList = append(c.adviceList, &storepb.Advice{
 				Status:  storepb.Advice_ERROR,
-				Code:    advisor.SDLRequireSchemaName.Int32(),
+				Code:    code.SDLRequireSchemaName.Int32(),
 				Title:   "sdl.require-schema-name",
 				Content: content,
 				StartPosition: &storepb.Position{
@@ -525,7 +526,7 @@ func (c *sdlChecker) checkColumnForeignKeyReferenceSchema(elem parser.IColconstr
 
 			c.adviceList = append(c.adviceList, &storepb.Advice{
 				Status:  storepb.Advice_ERROR,
-				Code:    advisor.SDLRequireSchemaName.Int32(),
+				Code:    code.SDLRequireSchemaName.Int32(),
 				Title:   "sdl.require-schema-name",
 				Content: content,
 				StartPosition: &storepb.Position{

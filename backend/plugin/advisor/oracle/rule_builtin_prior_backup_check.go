@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
@@ -252,7 +253,7 @@ func (r *StatementPriorBackupCheckRule) handleSQLScriptExit() {
 			Status:        r.level,
 			Title:         r.title,
 			Content:       fmt.Sprintf("The size of the SQL statements exceeds the maximum limit of %d bytes for backup", common.MaxSheetCheckSize),
-			Code:          advisor.BuiltinPriorBackupCheck.Int32(),
+			Code:          code.BuiltinPriorBackupCheck.Int32(),
 			StartPosition: nil,
 		})
 	}
@@ -263,7 +264,7 @@ func (r *StatementPriorBackupCheckRule) handleSQLScriptExit() {
 			Status:        r.level,
 			Title:         r.title,
 			Content:       fmt.Sprintf("Need database %q to do prior backup but it does not exist", databaseName),
-			Code:          advisor.DatabaseNotExists.Int32(),
+			Code:          code.DatabaseNotExists.Int32(),
 			StartPosition: nil,
 		})
 		r.adviceList = append(r.adviceList, adviceList...)
@@ -275,7 +276,7 @@ func (r *StatementPriorBackupCheckRule) handleSQLScriptExit() {
 			Status:        r.level,
 			Title:         r.title,
 			Content:       "Prior backup cannot deal with mixed DDL and DML statements",
-			Code:          int32(advisor.BuiltinPriorBackupCheck),
+			Code:          int32(code.BuiltinPriorBackupCheck),
 			StartPosition: nil,
 		})
 	}
@@ -303,7 +304,7 @@ func (r *StatementPriorBackupCheckRule) handleSQLScriptExit() {
 					Status:        r.level,
 					Title:         r.title,
 					Content:       fmt.Sprintf("Prior backup cannot handle mixed DML statements on the same table %q", key),
-					Code:          advisor.BuiltinPriorBackupCheck.Int32(),
+					Code:          code.BuiltinPriorBackupCheck.Int32(),
 					StartPosition: nil,
 				})
 				break

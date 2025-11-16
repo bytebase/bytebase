@@ -12,6 +12,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
@@ -133,7 +134,7 @@ func (r *columnNoNullRule) OnExit(ctx antlr.ParserRuleContext, _ string) error {
 		for _, column := range columnList {
 			r.AddAdvice(&storepb.Advice{
 				Status:  r.level,
-				Code:    advisor.ColumnCannotNull.Int32(),
+				Code:    code.ColumnCannotNull.Int32(),
 				Title:   r.title,
 				Content: fmt.Sprintf("Column %q in %s cannot have NULL value", column.column, column.normalizeTableName()),
 				StartPosition: &storepb.Position{

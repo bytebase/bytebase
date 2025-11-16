@@ -11,6 +11,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
@@ -119,7 +120,7 @@ func (r *namingTableConventionRule) checkTableName(tableName string, ctx antlr.P
 	if !r.format.MatchString(tableName) {
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
-			Code:    advisor.NamingTableConventionMismatch.Int32(),
+			Code:    code.NamingTableConventionMismatch.Int32(),
 			Title:   r.title,
 			Content: fmt.Sprintf(`"%s" mismatches table naming convention, naming format should be %q`, tableName, r.format),
 			StartPosition: &storepb.Position{
@@ -131,7 +132,7 @@ func (r *namingTableConventionRule) checkTableName(tableName string, ctx antlr.P
 	if r.maxLength > 0 && len(tableName) > r.maxLength {
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
-			Code:    advisor.NamingTableConventionMismatch.Int32(),
+			Code:    code.NamingTableConventionMismatch.Int32(),
 			Title:   r.title,
 			Content: fmt.Sprintf("\"%s\" mismatches table naming convention, its length should be within %d characters", tableName, r.maxLength),
 			StartPosition: &storepb.Position{

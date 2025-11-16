@@ -6,6 +6,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
@@ -67,7 +69,7 @@ func (checker *columnDisallowChangingChecker) Enter(in ast.Node) (ast.Node, bool
 			if spec.Tp == ast.AlterTableChangeColumn {
 				checker.adviceList = append(checker.adviceList, &storepb.Advice{
 					Status:        checker.level,
-					Code:          advisor.UseChangeColumnStatement.Int32(),
+					Code:          code.UseChangeColumnStatement.Int32(),
 					Title:         checker.title,
 					Content:       fmt.Sprintf("\"%s\" contains CHANGE COLUMN statement", checker.text),
 					StartPosition: common.ConvertANTLRLineToPosition(checker.line),

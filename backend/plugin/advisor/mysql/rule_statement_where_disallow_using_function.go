@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/parser/mysql"
 	"github.com/pkg/errors"
@@ -115,7 +117,7 @@ func (r *StatementWhereDisallowUsingFunctionRule) checkFunctionCall(ctx *mysql.F
 	if pi != nil {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.DisabledFunction.Int32(),
+			Code:          code.DisabledFunction.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("Function is disallowed in where clause, but \"%s\" uses", r.text),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),

@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -150,7 +151,7 @@ func (r *NamingTableRule) handleTableName(tableName string, lineNumber int) {
 	if !r.format.MatchString(tableName) {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.NamingTableConventionMismatch.Int32(),
+			Code:          code.NamingTableConventionMismatch.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("`%s` mismatches table naming convention, naming format should be %q", tableName, r.format),
 			StartPosition: common.ConvertANTLRLineToPosition(lineNumber),
@@ -159,7 +160,7 @@ func (r *NamingTableRule) handleTableName(tableName string, lineNumber int) {
 	if r.maxLength > 0 && len(tableName) > r.maxLength {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.NamingTableConventionMismatch.Int32(),
+			Code:          code.NamingTableConventionMismatch.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("`%s` mismatches table naming convention, its length should be within %d characters", tableName, r.maxLength),
 			StartPosition: common.ConvertANTLRLineToPosition(lineNumber),

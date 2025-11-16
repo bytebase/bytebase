@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -66,7 +67,7 @@ func (checker *insertMustSpecifyColumnChecker) Enter(in ast.Node) (ast.Node, boo
 		if node.Columns == nil {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:        checker.level,
-				Code:          advisor.InsertNotSpecifyColumn.Int32(),
+				Code:          code.InsertNotSpecifyColumn.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("The INSERT statement must specify columns but \"%s\" does not", checker.text),
 				StartPosition: common.ConvertANTLRLineToPosition(checker.line),

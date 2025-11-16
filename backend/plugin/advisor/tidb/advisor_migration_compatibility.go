@@ -9,6 +9,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
 
 	"github.com/pingcap/tidb/pkg/parser/ast"
 )
@@ -58,20 +59,20 @@ type compatibilityChecker struct {
 
 // Enter implements the ast.Visitor interface.
 func (v *compatibilityChecker) Enter(in ast.Node) (ast.Node, bool) {
-	code := advisor.Ok
+	code := advisorcode.Ok
 	switch node := in.(type) {
 	// CREATE TABLE
 	case *ast.CreateTableStmt:
 		v.lastCreateTable = node.Table.Name.O
 	// DROP DATABASE
 	case *ast.DropDatabaseStmt:
-		code = advisor.CompatibilityDropDatabase
+		code = advisorcode.CompatibilityDropDatabase
 	// RENAME TABLE
 	case *ast.RenameTableStmt:
-		code = advisor.CompatibilityRenameTable
+		code = advisorcode.CompatibilityRenameTable
 	// DROP TABLE/VIEW
 	case *ast.DropTableStmt:
-		code = advisor.CompatibilityDropTable
+		code = advisorcode.CompatibilityDropTable
 	// ALTER TABLE
 	case *ast.AlterTableStmt:
 		if node.Table.Name.O == v.lastCreateTable {
@@ -80,42 +81,42 @@ func (v *compatibilityChecker) Enter(in ast.Node) (ast.Node, bool) {
 		for _, spec := range node.Specs {
 			// RENAME COLUMN
 			if spec.Tp == ast.AlterTableRenameColumn {
-				code = advisor.CompatibilityRenameColumn
+				code = advisorcode.CompatibilityRenameColumn
 				break
 			}
 			// DROP COLUMN
 			if spec.Tp == ast.AlterTableDropColumn {
-				code = advisor.CompatibilityDropColumn
+				code = advisorcode.CompatibilityDropColumn
 				break
 			}
 			// RENAME TABLE
 			if spec.Tp == ast.AlterTableRenameTable {
-				code = advisor.CompatibilityRenameTable
+				code = advisorcode.CompatibilityRenameTable
 				break
 			}
 
 			if spec.Tp == ast.AlterTableAddConstraint {
 				// ADD PRIMARY KEY
 				if spec.Constraint.Tp == ast.ConstraintPrimaryKey {
-					code = advisor.CompatibilityAddPrimaryKey
+					code = advisorcode.CompatibilityAddPrimaryKey
 					break
 				}
 				// ADD UNIQUE/UNIQUE KEY/UNIQUE INDEX
 				if spec.Constraint.Tp == ast.ConstraintPrimaryKey ||
 					spec.Constraint.Tp == ast.ConstraintUniq ||
 					spec.Constraint.Tp == ast.ConstraintUniqKey {
-					code = advisor.CompatibilityAddUniqueKey
+					code = advisorcode.CompatibilityAddUniqueKey
 					break
 				}
 				// ADD FOREIGN KEY
 				if spec.Constraint.Tp == ast.ConstraintForeignKey {
-					code = advisor.CompatibilityAddForeignKey
+					code = advisorcode.CompatibilityAddForeignKey
 					break
 				}
 				// Check is only supported after 8.0.16 https://dev.mysql.com/doc/refman/8.0/en/create-table-check-constraints.html
 				// ADD CHECK ENFORCED
 				if spec.Constraint.Tp == ast.ConstraintCheck && spec.Constraint.Enforced {
-					code = advisor.CompatibilityAddCheck
+					code = advisorcode.CompatibilityAddCheck
 					break
 				}
 			}
@@ -124,7 +125,7 @@ func (v *compatibilityChecker) Enter(in ast.Node) (ast.Node, bool) {
 			// ALTER CHECK ENFORCED
 			if spec.Tp == ast.AlterTableAlterCheck {
 				if spec.Constraint.Enforced {
-					code = advisor.CompatibilityAlterCheck
+					code = advisorcode.CompatibilityAlterCheck
 					break
 				}
 			}
@@ -135,7 +136,7 @@ func (v *compatibilityChecker) Enter(in ast.Node) (ast.Node, bool) {
 			// 1. Change to a compatible data type such as INT to BIGINT
 			// 2. Change properties such as comment, change it to NULL
 			if spec.Tp == ast.AlterTableModifyColumn || spec.Tp == ast.AlterTableChangeColumn {
-				code = advisor.CompatibilityAlterColumn
+				code = advisorcode.CompatibilityAlterColumn
 				break
 			}
 		}
@@ -146,11 +147,11 @@ func (v *compatibilityChecker) Enter(in ast.Node) (ast.Node, bool) {
 	// CREATE UNIQUE INDEX
 	case *ast.CreateIndexStmt:
 		if v.lastCreateTable != node.Table.Name.O && node.KeyType == ast.IndexKeyTypeUnique {
-			code = advisor.CompatibilityAddUniqueKey
+			code = advisorcode.CompatibilityAddUniqueKey
 		}
 	}
 
-	if code != advisor.Ok {
+	if code != advisorcode.Ok {
 		v.adviceList = append(v.adviceList, &storepb.Advice{
 			Status:        v.level,
 			Code:          code.Int32(),

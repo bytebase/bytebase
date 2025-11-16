@@ -10,6 +10,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
@@ -95,7 +96,7 @@ func (r *statementDisallowAddNotNullRule) handleAltertablestmt(ctx antlr.ParserR
 					columnName := pgparser.NormalizePostgreSQLColid(allColIDs[0])
 					r.AddAdvice(&storepb.Advice{
 						Status:  r.level,
-						Code:    advisor.StatementAddNotNull.Int32(),
+						Code:    code.StatementAddNotNull.Int32(),
 						Title:   r.title,
 						Content: fmt.Sprintf("Setting NOT NULL will block reads and writes. You can use CHECK (%q IS NOT NULL) instead", columnName),
 						StartPosition: &storepb.Position{

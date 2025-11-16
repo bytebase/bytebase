@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 func init() {
@@ -131,7 +132,7 @@ func (r *DisallowFuncAndCalculationsRule) generateAdviceOnFunctionUsing(ctx antl
 	r.hasTriggeredRule = true
 	return &storepb.Advice{
 		Status:        r.level,
-		Code:          advisor.StatementDisallowFunctionsAndCalculations.Int32(),
+		Code:          code.StatementDisallowFunctionsAndCalculations.Int32(),
 		Title:         r.title,
 		Content:       fmt.Sprintf("Calling function '%s' in 'WHERE' clause is not allowed", ctx.GetText()),
 		StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
@@ -145,7 +146,7 @@ func (r *DisallowFuncAndCalculationsRule) generateAdviceOnPerformingCalculations
 	r.hasTriggeredRule = true
 	return &storepb.Advice{
 		Status:        r.level,
-		Code:          advisor.StatementDisallowFunctionsAndCalculations.Int32(),
+		Code:          code.StatementDisallowFunctionsAndCalculations.Int32(),
 		Title:         r.title,
 		Content:       "Performing calculations in 'WHERE' clause is not allowed",
 		StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),

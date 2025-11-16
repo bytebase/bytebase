@@ -14,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -61,7 +62,7 @@ func (*OnlineMigrationAdvisor) Check(ctx context.Context, checkCtx advisor.Conte
 					Status:        level,
 					Title:         title,
 					Content:       fmt.Sprintf("Needs database %q to save temporary data for online migration but it does not exist", ghostDatabaseName),
-					Code:          advisor.DatabaseNotExists.Int32(),
+					Code:          code.DatabaseNotExists.Int32(),
 					StartPosition: nil,
 				},
 			}, nil
@@ -101,7 +102,7 @@ func (*OnlineMigrationAdvisor) Check(ctx context.Context, checkCtx advisor.Conte
 			return nil, nil
 		}
 
-		adviceList[0].Code = advisor.AdviseOnlineMigration.Int32()
+		adviceList[0].Code = code.AdviseOnlineMigration.Int32()
 		return adviceList, nil
 	}
 
@@ -111,7 +112,7 @@ func (*OnlineMigrationAdvisor) Check(ctx context.Context, checkCtx advisor.Conte
 		if checkCtx.ChangeType == storepb.PlanCheckRunConfig_DDL_GHOST {
 			return []*storepb.Advice{{
 				Status:  level,
-				Code:    advisor.AdviseNoOnlineMigration.Int32(),
+				Code:    code.AdviseNoOnlineMigration.Int32(),
 				Title:   title,
 				Content: "Advise to disable online migration because found no statements that need online migration",
 			}}, nil
@@ -212,7 +213,7 @@ func (r *OnlineMigrationRule) exitAlterStatement(ctx *mysql.AlterStatementContex
 		if tableRows >= r.minRows {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
-				Code:          advisor.AdviseOnlineMigrationForStatement.Int32(),
+				Code:          code.AdviseOnlineMigrationForStatement.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("Estimated table row count of %q is %d exceeding the set value %d. Consider using online migration for this statement", fmt.Sprintf("%s.%s", resource.Schema, resource.Table), tableRows, r.minRows),
 				StartPosition: r.start,

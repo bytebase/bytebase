@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
@@ -119,7 +121,7 @@ func (r *ColumnDisallowChangingRule) checkAlterTable(ctx *mysql.AlterTableContex
 		if item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
-				Code:          advisor.UseChangeColumnStatement.Int32(),
+				Code:          code.UseChangeColumnStatement.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("\"%s\" contains CHANGE COLUMN statement", r.text),
 				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
@@ -114,7 +116,7 @@ func (r *ColumnRequireCharsetRule) checkCreateTable(ctx *mysql.CreateTableContex
 			if dataType.CharsetWithOptBinary() == nil {
 				r.AddAdvice(&storepb.Advice{
 					Status:        r.level,
-					Code:          advisor.NoCharset.Int32(),
+					Code:          code.NoCharset.Int32(),
 					Title:         r.title,
 					Content:       fmt.Sprintf("Column %s does not have a character set specified", columnName),
 					StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + columnDefinition.GetStart().GetLine()),
@@ -140,7 +142,7 @@ func (r *ColumnRequireCharsetRule) checkAlterTable(ctx *mysql.AlterTableContext)
 			if dataType.CharsetWithOptBinary() == nil {
 				r.AddAdvice(&storepb.Advice{
 					Status:        r.level,
-					Code:          advisor.NoCharset.Int32(),
+					Code:          code.NoCharset.Int32(),
 					Title:         r.title,
 					Content:       fmt.Sprintf("Column %s does not have a character set specified", columnName),
 					StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + alterListItem.GetStart().GetLine()),

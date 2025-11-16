@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/parser/mysql"
 	"github.com/pkg/errors"
@@ -189,7 +191,7 @@ func (r *IndexTypeAllowListRule) validateIndexType(indexType string, line int) {
 
 	r.AddAdvice(&storepb.Advice{
 		Status:        r.level,
-		Code:          advisor.IndexTypeNotAllowed.Int32(),
+		Code:          code.IndexTypeNotAllowed.Int32(),
 		Title:         r.title,
 		Content:       fmt.Sprintf("Index type `%s` is not allowed", indexType),
 		StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + line),

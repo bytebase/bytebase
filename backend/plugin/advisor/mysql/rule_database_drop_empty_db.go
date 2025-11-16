@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/parser/mysql"
 	"github.com/pkg/errors"
@@ -103,7 +105,7 @@ func (r *DatabaseDropEmptyDBRule) checkDropDatabase(ctx *mysql.DropDatabaseConte
 	if r.originCatalog.DatabaseName() != dbName {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.NotCurrentDatabase.Int32(),
+			Code:          code.NotCurrentDatabase.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("Database `%s` that is trying to be deleted is not the current database `%s`", dbName, r.originCatalog.DatabaseName()),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
@@ -111,7 +113,7 @@ func (r *DatabaseDropEmptyDBRule) checkDropDatabase(ctx *mysql.DropDatabaseConte
 	} else if !r.originCatalog.HasNoTable() {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.DatabaseNotEmpty.Int32(),
+			Code:          code.DatabaseNotEmpty.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("Database `%s` is not allowed to drop if not empty", dbName),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),

@@ -6,6 +6,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
@@ -108,7 +110,7 @@ func (checker *indexKeyNumberLimitChecker) Enter(in ast.Node) (ast.Node, bool) {
 	for _, index := range indexList {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:        checker.level,
-			Code:          advisor.IndexKeyNumberExceedsLimit.Int32(),
+			Code:          code.IndexKeyNumberExceedsLimit.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("The number of index `%s` in table `%s` should be not greater than %d", index.index, index.table, checker.max),
 			StartPosition: common.ConvertANTLRLineToPosition(index.line),

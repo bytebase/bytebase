@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
@@ -87,7 +88,7 @@ func (r *InsertMustSpecifyColumnRule) handleInsertIntoClause(ctx *parser.Insert_
 	if ctx.Paren_column_list() == nil {
 		r.AddAdvice(
 			r.level,
-			advisor.InsertNotSpecifyColumn.Int32(),
+			code.InsertNotSpecifyColumn.Int32(),
 			"INSERT statement should specify column name.",
 			common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
 		)

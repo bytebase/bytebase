@@ -10,6 +10,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -342,7 +343,7 @@ func (r *statementDisallowMixInDMLRule) addDDLAdvice(ctx antlr.ParserRuleContext
 
 	r.AddAdvice(&storepb.Advice{
 		Status:  r.level,
-		Code:    advisor.StatementDisallowMixDDLDML.Int32(),
+		Code:    code.StatementDisallowMixDDLDML.Int32(),
 		Title:   r.title,
 		Content: fmt.Sprintf("Data change can only run DML, %q is not DML", stmtText),
 		StartPosition: &storepb.Position{

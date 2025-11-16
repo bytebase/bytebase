@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 
 	parser "github.com/bytebase/parser/postgresql"
@@ -235,7 +237,7 @@ func (*columnMaximumCharacterLengthRule) getCharLength(typename parser.ITypename
 func (r *columnMaximumCharacterLengthRule) addAdvice(tableName, columnName string, line int) {
 	r.AddAdvice(&storepb.Advice{
 		Status:  r.level,
-		Code:    advisor.CharLengthExceedsLimit.Int32(),
+		Code:    code.CharLengthExceedsLimit.Int32(),
 		Title:   r.title,
 		Content: fmt.Sprintf("The length of the CHAR column %q in table %s is bigger than %d, please use VARCHAR instead", columnName, tableName, r.maximum),
 		StartPosition: &storepb.Position{

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/parser/mysql"
 	"github.com/pkg/errors"
@@ -272,7 +274,7 @@ func (r *IndexTypeNoBlobRule) addAdvice(tableName, columnName, columnType string
 	if r.isBlob(columnType) {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.IndexTypeNoBlob.Int32(),
+			Code:          code.IndexTypeNoBlob.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("Columns in index must not be BLOB but `%s`.`%s` is %s", tableName, columnName, columnType),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + lineNumber),

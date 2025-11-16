@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/parser/mysql"
 	"github.com/pkg/errors"
@@ -113,7 +115,7 @@ func (r *ColumnRequireCollationRule) checkCreateTable(ctx *mysql.CreateTableCont
 			if columnDefinition.FieldDefinition().Collate() == nil {
 				r.AddAdvice(&storepb.Advice{
 					Status:        r.level,
-					Code:          advisor.NoCollation.Int32(),
+					Code:          code.NoCollation.Int32(),
 					Title:         r.title,
 					Content:       fmt.Sprintf("Column %s does not have a collation specified", columnName),
 					StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + columnDefinition.GetStart().GetLine()),
@@ -139,7 +141,7 @@ func (r *ColumnRequireCollationRule) checkAlterTable(ctx *mysql.AlterTableContex
 			if alterListItem.FieldDefinition().Collate() == nil {
 				r.AddAdvice(&storepb.Advice{
 					Status:        r.level,
-					Code:          advisor.NoCollation.Int32(),
+					Code:          code.NoCollation.Int32(),
 					Title:         r.title,
 					Content:       fmt.Sprintf("Column %s does not have a collation specified", columnName),
 					StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + alterListItem.GetStart().GetLine()),

@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -101,17 +102,17 @@ func (*DisallowOrderByRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
 
 func (r *DisallowOrderByRule) checkDeleteStatement(ctx *mysql.DeleteStatementContext) {
 	if ctx.OrderClause() != nil && ctx.OrderClause().ORDER_SYMBOL() != nil {
-		r.handleOrderByClause(advisor.DeleteUseOrderBy, ctx.GetStart().GetLine())
+		r.handleOrderByClause(code.DeleteUseOrderBy, ctx.GetStart().GetLine())
 	}
 }
 
 func (r *DisallowOrderByRule) checkUpdateStatement(ctx *mysql.UpdateStatementContext) {
 	if ctx.OrderClause() != nil && ctx.OrderClause().ORDER_SYMBOL() != nil {
-		r.handleOrderByClause(advisor.UpdateUseOrderBy, ctx.GetStart().GetLine())
+		r.handleOrderByClause(code.UpdateUseOrderBy, ctx.GetStart().GetLine())
 	}
 }
 
-func (r *DisallowOrderByRule) handleOrderByClause(code advisor.Code, lineNumber int) {
+func (r *DisallowOrderByRule) handleOrderByClause(code code.Code, lineNumber int) {
 	r.AddAdvice(&storepb.Advice{
 		Status:        r.level,
 		Code:          code.Int32(),

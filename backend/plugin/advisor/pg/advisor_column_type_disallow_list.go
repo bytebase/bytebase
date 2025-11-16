@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 
 	parser "github.com/bytebase/parser/postgresql"
@@ -182,7 +184,7 @@ func (r *columnTypeDisallowListRule) checkType(tableName, columnName string, typ
 	if matchedDisallowedType != "" {
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
-			Code:    advisor.DisabledColumnType.Int32(),
+			Code:    code.DisabledColumnType.Int32(),
 			Title:   r.title,
 			Content: fmt.Sprintf("Disallow column type %s but column %q.%q is", strings.ToUpper(matchedDisallowedType), tableName, columnName),
 			StartPosition: &storepb.Position{

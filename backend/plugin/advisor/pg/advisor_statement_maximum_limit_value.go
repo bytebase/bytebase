@@ -11,6 +11,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -85,7 +86,7 @@ func (r *statementMaximumLimitValueRule) OnEnter(ctx antlr.ParserRuleContext, no
 	if limitValue > 0 && limitValue > r.limitMaxValue {
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
-			Code:    advisor.StatementExceedMaximumLimitValue.Int32(),
+			Code:    code.StatementExceedMaximumLimitValue.Int32(),
 			Title:   r.title,
 			Content: fmt.Sprintf("The limit value %d exceeds the maximum allowed value %d", limitValue, r.limitMaxValue),
 			StartPosition: &storepb.Position{

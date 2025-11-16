@@ -1,995 +1,419 @@
-- statement: |-
-    CREATE TABLE `test`.`t1` (a INT);
+- statement: 'CREATE TABLE `test`.`t1` (a INT);
+
     CREATE TABLE `other`.`t1` (a INT);
-    RENAME TABLE `other`.`t1` TO `other`.`t2`;
+
+    RENAME TABLE `other`.`t1` TO `other`.`t2`;'
   ignore_case_sensitive: false
-  want: ""
+  want: ''
   err:
-    type: 201
+    code: 702
     content: Database `other` is not the current database `test`
     line: 2
-    payload: null
-- statement: |-
-    CREATE TABLE `test`.`t1` (a INT);
-    RENAME TABLE `test`.`t1` TO `other`.`t1`;
+- statement: 'CREATE TABLE `test`.`t1` (a INT);
+
+    RENAME TABLE `test`.`t1` TO `other`.`t1`;'
   ignore_case_sensitive: false
-  want: |-
-    {
-      "name": "test",
-      "schemas": [
-        {}
-      ]
-    }
+  want: "{\n  \"name\": \"test\",\n  \"schemas\": [\n    {}\n  ]\n}"
   err: null
-- statement: |-
-    CREATE TABLE t1(a INT);
+- statement: 'CREATE TABLE t1(a INT);
+
     CREATE TABLE t2(a INT);
-    RENAME TABLE t2 TO t1;
+
+    RENAME TABLE t2 TO t1;'
   ignore_case_sensitive: false
-  want: ""
+  want: ''
   err:
-    type: 301
+    code: 607
     content: Table `t1` already exists
     line: 3
-    payload: null
-- statement: |-
-    CREATE TABLE t1(a INT);
-    RENAME TABLE t2 TO t3;
+- statement: 'CREATE TABLE t1(a INT);
+
+    RENAME TABLE t2 TO t3;'
   ignore_case_sensitive: false
-  want: ""
+  want: ''
   err:
-    type: 302
+    code: 604
     content: Table `t2` does not exist
     line: 2
-    payload: null
-- statement: |-
-    CREATE TABLE t1 (a INT);
-    RENAME TABLE t1 TO t2;
+- statement: 'CREATE TABLE t1 (a INT);
+
+    RENAME TABLE t1 TO t2;'
   ignore_case_sensitive: false
-  want: |-
-    {
-      "name": "test",
-      "schemas": [
-        {
-          "tables": [
-            {
-              "name": "t2",
-              "columns": [
-                {
-                  "name": "a",
-                  "position": 1,
-                  "nullable": true,
-                  "type": "int"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
+  want: "{\n  \"name\": \"test\",\n  \"schemas\": [\n    {\n      \"tables\": [\n\
+    \        {\n          \"name\": \"t2\",\n          \"columns\": [\n          \
+    \  {\n              \"name\": \"a\",\n              \"position\": 1,\n       \
+    \       \"nullable\": true,\n              \"type\": \"int\"\n            }\n\
+    \          ]\n        }\n      ]\n    }\n  ]\n}"
   err: null
 - statement: CREATE DATABASE another;
   ignore_case_sensitive: false
-  want: ""
+  want: ''
   err:
-    type: 201
+    code: 702
     content: Database `another` is not the current database `test`
     line: 1
-    payload: null
-- statement: |-
-    -- this is comment
+- statement: '-- this is comment
+
     DROP DATABASE test;
-    CREATE TABLE t(a int);
+
+    CREATE TABLE t(a int);'
   ignore_case_sensitive: false
-  want: ""
+  want: ''
   err:
-    type: 202
+    code: 703
     content: Database `test` is deleted
     line: 1
-    payload: null
-- statement: |-
-    ALTER DATABASE CHARACTER SET = utf8mb4;
-    ALTER DATABASE test COLLATE utf8mb4_polish_ci;
+- statement: 'ALTER DATABASE CHARACTER SET = utf8mb4;
+
+    ALTER DATABASE test COLLATE utf8mb4_polish_ci;'
   ignore_case_sensitive: false
-  want: |-
-    {
-      "name": "test",
-      "schemas": [
-        {}
-      ],
-      "characterSet": "utf8mb4",
-      "collation": "utf8mb4_polish_ci"
-    }
+  want: "{\n  \"name\": \"test\",\n  \"schemas\": [\n    {}\n  ],\n  \"characterSet\"\
+    : \"utf8mb4\",\n  \"collation\": \"utf8mb4_polish_ci\"\n}"
   err: null
-- statement: |-
-    CREATE TABLE t1(
-      a INT PRIMARY KEY,
-      c VARCHAR(255) NOT NULL
-    );
-    ALTER TABLE t1 ADD INDEX idx1 (c);
-    CREATE FULLTEXT INDEX ftk1 ON t1 (c);
-    DROP INDEX `PRIMARY` ON t1;
-    DROP INDEX idx1 ON t1;
-    DROP INDEX ftk1 ON t1;
+- statement: "CREATE TABLE t1(\n  a INT PRIMARY KEY,\n  c VARCHAR(255) NOT NULL\n\
+    );\nALTER TABLE t1 ADD INDEX idx1 (c);\nCREATE FULLTEXT INDEX ftk1 ON t1 (c);\n\
+    DROP INDEX `PRIMARY` ON t1;\nDROP INDEX idx1 ON t1;\nDROP INDEX ftk1 ON t1;"
   ignore_case_sensitive: false
-  want: |-
-    {
-      "name": "test",
-      "schemas": [
-        {
-          "tables": [
-            {
-              "name": "t1",
-              "columns": [
-                {
-                  "name": "a",
-                  "position": 1,
-                  "type": "int"
-                },
-                {
-                  "name": "c",
-                  "position": 2,
-                  "type": "varchar"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
+  want: "{\n  \"name\": \"test\",\n  \"schemas\": [\n    {\n      \"tables\": [\n\
+    \        {\n          \"name\": \"t1\",\n          \"columns\": [\n          \
+    \  {\n              \"name\": \"a\",\n              \"position\": 1,\n       \
+    \       \"type\": \"int\"\n            },\n            {\n              \"name\"\
+    : \"c\",\n              \"position\": 2,\n              \"type\": \"varchar\"\n\
+    \            }\n          ]\n        }\n      ]\n    }\n  ]\n}"
   err: null
-- statement: |-
-    CREATE TABLE t1(
-      a INT,
-      b INT,
-      c VARCHAR(255) NOT NULL,
-      d GEOMETRY NOT NULL
-    );
-    CREATE INDEX idx1 ON t1 (a) INVISIBLE;
-    CREATE UNIQUE INDEX uk1 ON t1 (b);
-    CREATE FULLTEXT INDEX ftk1 ON t1 (c);
-    CREATE SPATIAL INDEX sk1 ON t1 (d);
+- statement: "CREATE TABLE t1(\n  a INT,\n  b INT,\n  c VARCHAR(255) NOT NULL,\n \
+    \ d GEOMETRY NOT NULL\n);\nCREATE INDEX idx1 ON t1 (a) INVISIBLE;\nCREATE UNIQUE\
+    \ INDEX uk1 ON t1 (b);\nCREATE FULLTEXT INDEX ftk1 ON t1 (c);\nCREATE SPATIAL\
+    \ INDEX sk1 ON t1 (d);"
   ignore_case_sensitive: false
-  want: |-
-    {
-      "name": "test",
-      "schemas": [
-        {
-          "tables": [
-            {
-              "name": "t1",
-              "columns": [
-                {
-                  "name": "a",
-                  "position": 1,
-                  "nullable": true,
-                  "type": "int"
-                },
-                {
-                  "name": "b",
-                  "position": 2,
-                  "nullable": true,
-                  "type": "int"
-                },
-                {
-                  "name": "c",
-                  "position": 3,
-                  "type": "varchar"
-                },
-                {
-                  "name": "d",
-                  "position": 4,
-                  "type": "geometry"
-                }
-              ],
-              "indexes": [
-                {
-                  "name": "ftk1",
-                  "expressions": [
-                    "c"
-                  ],
-                  "type": "FULLTEXT",
-                  "visible": true
-                },
-                {
-                  "name": "idx1",
-                  "expressions": [
-                    "a"
-                  ],
-                  "type": "BTREE"
-                },
-                {
-                  "name": "sk1",
-                  "expressions": [
-                    "d"
-                  ],
-                  "type": "SPATIAL",
-                  "visible": true
-                },
-                {
-                  "name": "uk1",
-                  "expressions": [
-                    "b"
-                  ],
-                  "type": "BTREE",
-                  "unique": true,
-                  "visible": true
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
+  want: "{\n  \"name\": \"test\",\n  \"schemas\": [\n    {\n      \"tables\": [\n\
+    \        {\n          \"name\": \"t1\",\n          \"columns\": [\n          \
+    \  {\n              \"name\": \"a\",\n              \"position\": 1,\n       \
+    \       \"nullable\": true,\n              \"type\": \"int\"\n            },\n\
+    \            {\n              \"name\": \"b\",\n              \"position\": 2,\n\
+    \              \"nullable\": true,\n              \"type\": \"int\"\n        \
+    \    },\n            {\n              \"name\": \"c\",\n              \"position\"\
+    : 3,\n              \"type\": \"varchar\"\n            },\n            {\n   \
+    \           \"name\": \"d\",\n              \"position\": 4,\n              \"\
+    type\": \"geometry\"\n            }\n          ],\n          \"indexes\": [\n\
+    \            {\n              \"name\": \"ftk1\",\n              \"expressions\"\
+    : [\n                \"c\"\n              ],\n              \"type\": \"FULLTEXT\"\
+    ,\n              \"visible\": true\n            },\n            {\n          \
+    \    \"name\": \"idx1\",\n              \"expressions\": [\n                \"\
+    a\"\n              ],\n              \"type\": \"BTREE\"\n            },\n   \
+    \         {\n              \"name\": \"sk1\",\n              \"expressions\":\
+    \ [\n                \"d\"\n              ],\n              \"type\": \"SPATIAL\"\
+    ,\n              \"visible\": true\n            },\n            {\n          \
+    \    \"name\": \"uk1\",\n              \"expressions\": [\n                \"\
+    b\"\n              ],\n              \"type\": \"BTREE\",\n              \"unique\"\
+    : true,\n              \"visible\": true\n            }\n          ]\n       \
+    \ }\n      ]\n    }\n  ]\n}"
   err: null
-- statement: |-
-    CREATE TABLE t1(a GEOMETRY);
-    CREATE SPATIAL INDEX sk1 ON t1 (a);
+- statement: 'CREATE TABLE t1(a GEOMETRY);
+
+    CREATE SPATIAL INDEX sk1 ON t1 (a);'
   ignore_case_sensitive: false
-  want: ""
+  want: ''
   err:
-    type: 507
+    code: 811
     content: All parts of a SPATIAL index must be NOT NULL, but `a` is nullable
     line: 2
-    payload: null
-- statement: |-
-    CREATE TABLE t1(
-      a INT PRIMARY KEY,
-      b INT,
-      UNIQUE uk1 (b)
-    );
-    ALTER TABLE t1 ENGINE = MyISAM;
-    ALTER TABLE t1 COMMENT = 't1 table';
-    ALTER TABLE t1 COLLATE utf8mb4_unicode_ci;
+- statement: "CREATE TABLE t1(\n  a INT PRIMARY KEY,\n  b INT,\n  UNIQUE uk1 (b)\n\
+    );\nALTER TABLE t1 ENGINE = MyISAM;\nALTER TABLE t1 COMMENT = 't1 table';\nALTER\
+    \ TABLE t1 COLLATE utf8mb4_unicode_ci;"
   ignore_case_sensitive: false
-  want: |-
-    {
-      "name": "test",
-      "schemas": [
-        {
-          "tables": [
-            {
-              "name": "t1",
-              "columns": [
-                {
-                  "name": "a",
-                  "position": 1,
-                  "type": "int"
-                },
-                {
-                  "name": "b",
-                  "position": 2,
-                  "nullable": true,
-                  "type": "int"
-                }
-              ],
-              "indexes": [
-                {
-                  "name": "PRIMARY",
-                  "expressions": [
-                    "a"
-                  ],
-                  "type": "BTREE",
-                  "unique": true,
-                  "primary": true,
-                  "visible": true
-                },
-                {
-                  "name": "uk1",
-                  "expressions": [
-                    "b"
-                  ],
-                  "type": "BTREE",
-                  "unique": true,
-                  "visible": true
-                }
-              ],
-              "engine": "MyISAM",
-              "collation": "utf8mb4_unicode_ci",
-              "comment": "t1 table"
-            }
-          ]
-        }
-      ]
-    }
+  want: "{\n  \"name\": \"test\",\n  \"schemas\": [\n    {\n      \"tables\": [\n\
+    \        {\n          \"name\": \"t1\",\n          \"columns\": [\n          \
+    \  {\n              \"name\": \"a\",\n              \"position\": 1,\n       \
+    \       \"type\": \"int\"\n            },\n            {\n              \"name\"\
+    : \"b\",\n              \"position\": 2,\n              \"nullable\": true,\n\
+    \              \"type\": \"int\"\n            }\n          ],\n          \"indexes\"\
+    : [\n            {\n              \"name\": \"PRIMARY\",\n              \"expressions\"\
+    : [\n                \"a\"\n              ],\n              \"type\": \"BTREE\"\
+    ,\n              \"unique\": true,\n              \"primary\": true,\n       \
+    \       \"visible\": true\n            },\n            {\n              \"name\"\
+    : \"uk1\",\n              \"expressions\": [\n                \"b\"\n        \
+    \      ],\n              \"type\": \"BTREE\",\n              \"unique\": true,\n\
+    \              \"visible\": true\n            }\n          ],\n          \"engine\"\
+    : \"MyISAM\",\n          \"collation\": \"utf8mb4_unicode_ci\",\n          \"\
+    comment\": \"t1 table\"\n        }\n      ]\n    }\n  ]\n}"
   err: null
-- statement: |-
-    CREATE TABLE t1(
-      a INT PRIMARY KEY,
-      b INT,
-      UNIQUE uk1 (b)
-    );
-    ALTER TABLE t1 DROP PRIMARY KEY;
-    ALTER TABLE t1 DROP INDEX uk1;
+- statement: "CREATE TABLE t1(\n  a INT PRIMARY KEY,\n  b INT,\n  UNIQUE uk1 (b)\n\
+    );\nALTER TABLE t1 DROP PRIMARY KEY;\nALTER TABLE t1 DROP INDEX uk1;"
   ignore_case_sensitive: false
-  want: |-
-    {
-      "name": "test",
-      "schemas": [
-        {
-          "tables": [
-            {
-              "name": "t1",
-              "columns": [
-                {
-                  "name": "a",
-                  "position": 1,
-                  "type": "int"
-                },
-                {
-                  "name": "b",
-                  "position": 2,
-                  "nullable": true,
-                  "type": "int"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
+  want: "{\n  \"name\": \"test\",\n  \"schemas\": [\n    {\n      \"tables\": [\n\
+    \        {\n          \"name\": \"t1\",\n          \"columns\": [\n          \
+    \  {\n              \"name\": \"a\",\n              \"position\": 1,\n       \
+    \       \"type\": \"int\"\n            },\n            {\n              \"name\"\
+    : \"b\",\n              \"position\": 2,\n              \"nullable\": true,\n\
+    \              \"type\": \"int\"\n            }\n          ]\n        }\n    \
+    \  ]\n    }\n  ]\n}"
   err: null
-- statement: |-
-    CREATE TABLE t1(
-      a INT,
-      b INT,
-      UNIQUE uk1 (b)
-    );
-    ALTER TABLE t1 RENAME INDEX uk1 TO uk_b;
-    ALTER TABLE t1 ADD INDEX idx1 (b);
-    ALTER TABLE t1 RENAME INDEX idx1 TO idx2;
-    ALTER TABLE t1 ALTER INDEX idx2 INVISIBLE;
-    ALTER TABLE t1 RENAME TO t2;
+- statement: "CREATE TABLE t1(\n  a INT,\n  b INT,\n  UNIQUE uk1 (b)\n);\nALTER TABLE\
+    \ t1 RENAME INDEX uk1 TO uk_b;\nALTER TABLE t1 ADD INDEX idx1 (b);\nALTER TABLE\
+    \ t1 RENAME INDEX idx1 TO idx2;\nALTER TABLE t1 ALTER INDEX idx2 INVISIBLE;\n\
+    ALTER TABLE t1 RENAME TO t2;"
   ignore_case_sensitive: false
-  want: |-
-    {
-      "name": "test",
-      "schemas": [
-        {
-          "tables": [
-            {
-              "name": "t2",
-              "columns": [
-                {
-                  "name": "a",
-                  "position": 1,
-                  "nullable": true,
-                  "type": "int"
-                },
-                {
-                  "name": "b",
-                  "position": 2,
-                  "nullable": true,
-                  "type": "int"
-                }
-              ],
-              "indexes": [
-                {
-                  "name": "idx2",
-                  "expressions": [
-                    "b"
-                  ],
-                  "type": "BTREE"
-                },
-                {
-                  "name": "uk_b",
-                  "expressions": [
-                    "b"
-                  ],
-                  "type": "BTREE",
-                  "unique": true,
-                  "visible": true
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
+  want: "{\n  \"name\": \"test\",\n  \"schemas\": [\n    {\n      \"tables\": [\n\
+    \        {\n          \"name\": \"t2\",\n          \"columns\": [\n          \
+    \  {\n              \"name\": \"a\",\n              \"position\": 1,\n       \
+    \       \"nullable\": true,\n              \"type\": \"int\"\n            },\n\
+    \            {\n              \"name\": \"b\",\n              \"position\": 2,\n\
+    \              \"nullable\": true,\n              \"type\": \"int\"\n        \
+    \    }\n          ],\n          \"indexes\": [\n            {\n              \"\
+    name\": \"idx2\",\n              \"expressions\": [\n                \"b\"\n \
+    \             ],\n              \"type\": \"BTREE\"\n            },\n        \
+    \    {\n              \"name\": \"uk_b\",\n              \"expressions\": [\n\
+    \                \"b\"\n              ],\n              \"type\": \"BTREE\",\n\
+    \              \"unique\": true,\n              \"visible\": true\n          \
+    \  }\n          ]\n        }\n      ]\n    }\n  ]\n}"
   err: null
-- statement: |-
-    CREATE TABLE t1(a INT NOT NULL);
-    ALTER TABLE t1 ALTER COLUMN a SET DEFAULT NULL;
+- statement: 'CREATE TABLE t1(a INT NOT NULL);
+
+    ALTER TABLE t1 ALTER COLUMN a SET DEFAULT NULL;'
   ignore_case_sensitive: false
-  want: ""
+  want: ''
   err:
-    type: 406
+    code: 428
     content: Invalid default value for column `a`
     line: 2
-    payload: null
-- statement: |-
-    CREATE TABLE t1(a INT);
+- statement: 'CREATE TABLE t1(a INT);
+
     ALTER TABLE t1 CHANGE COLUMN a a BLOB;
-    ALTER TABLE t1 ALTER COLUMN a SET DEFAULT 'default value';
+
+    ALTER TABLE t1 ALTER COLUMN a SET DEFAULT ''default value'';'
   ignore_case_sensitive: false
-  want: ""
+  want: ''
   err:
-    type: 407
+    code: 423
     content: BLOB, TEXT, GEOMETRY or JSON column `a` can't have a default value
     line: 3
-    payload: null
-- statement: |-
-    CREATE TABLE t1(a INT);
+- statement: 'CREATE TABLE t1(a INT);
+
     ALTER TABLE t1 CHANGE COLUMN a a BLOB;
-    ALTER TABLE t1 ALTER COLUMN a SET DEFAULT NULL;
+
+    ALTER TABLE t1 ALTER COLUMN a SET DEFAULT NULL;'
   ignore_case_sensitive: false
-  want: |-
-    {
-      "name": "test",
-      "schemas": [
-        {
-          "tables": [
-            {
-              "name": "t1",
-              "columns": [
-                {
-                  "name": "a",
-                  "position": 1,
-                  "nullable": true,
-                  "type": "blob"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
+  want: "{\n  \"name\": \"test\",\n  \"schemas\": [\n    {\n      \"tables\": [\n\
+    \        {\n          \"name\": \"t1\",\n          \"columns\": [\n          \
+    \  {\n              \"name\": \"a\",\n              \"position\": 1,\n       \
+    \       \"nullable\": true,\n              \"type\": \"blob\"\n            }\n\
+    \          ]\n        }\n      ]\n    }\n  ]\n}"
   err: null
-- statement: |-
-    CREATE TABLE t1(
-      a INT
-    );
-    ALTER TABLE t1 ADD COLUMN b INT AFTER a;
-    ALTER TABLE t1 ADD COLUMN c INT NOT NULL DEFAULT 1 AFTER a;
-    ALTER TABLE t1 CHANGE COLUMN b d TEXT AFTER a;
-    ALTER TABLE t1 ALTER COLUMN a SET DEFAULT 1;
-    ALTER TABLE t1 ALTER COLUMN a SET INVISIBLE;
-    ALTER TABLE t1 ALTER COLUMN c DROP DEFAULT;
+- statement: "CREATE TABLE t1(\n  a INT\n);\nALTER TABLE t1 ADD COLUMN b INT AFTER\
+    \ a;\nALTER TABLE t1 ADD COLUMN c INT NOT NULL DEFAULT 1 AFTER a;\nALTER TABLE\
+    \ t1 CHANGE COLUMN b d TEXT AFTER a;\nALTER TABLE t1 ALTER COLUMN a SET DEFAULT\
+    \ 1;\nALTER TABLE t1 ALTER COLUMN a SET INVISIBLE;\nALTER TABLE t1 ALTER COLUMN\
+    \ c DROP DEFAULT;"
   ignore_case_sensitive: false
-  want: |-
-    {
-      "name": "test",
-      "schemas": [
-        {
-          "tables": [
-            {
-              "name": "t1",
-              "columns": [
-                {
-                  "name": "a",
-                  "position": 1,
-                  "default": "1",
-                  "nullable": true,
-                  "type": "int"
-                },
-                {
-                  "name": "d",
-                  "position": 2,
-                  "nullable": true,
-                  "type": "text"
-                },
-                {
-                  "name": "c",
-                  "position": 3,
-                  "type": "int"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
+  want: "{\n  \"name\": \"test\",\n  \"schemas\": [\n    {\n      \"tables\": [\n\
+    \        {\n          \"name\": \"t1\",\n          \"columns\": [\n          \
+    \  {\n              \"name\": \"a\",\n              \"position\": 1,\n       \
+    \       \"default\": \"1\",\n              \"nullable\": true,\n             \
+    \ \"type\": \"int\"\n            },\n            {\n              \"name\": \"\
+    d\",\n              \"position\": 2,\n              \"nullable\": true,\n    \
+    \          \"type\": \"text\"\n            },\n            {\n              \"\
+    name\": \"c\",\n              \"position\": 3,\n              \"type\": \"int\"\
+    \n            }\n          ]\n        }\n      ]\n    }\n  ]\n}"
   err: null
-- statement: |-
-    CREATE TABLE t1(
-      a INT
-    );
-    ALTER TABLE t1 ADD COLUMN b VARCHAR(255) FIRST;
-    ALTER TABLE t1 ADD COLUMN (c INT, d BLOB);
-    ALTER TABLE t1 MODIFY COLUMN b INT AFTER a;
-    ALTER TABLE t1 RENAME COLUMN b TO e;
-    ALTER TABLE t1 CHANGE COLUMN d f TEXT AFTER e;
-    ALTER TABLE t1 DROP COLUMN a;
+- statement: "CREATE TABLE t1(\n  a INT\n);\nALTER TABLE t1 ADD COLUMN b VARCHAR(255)\
+    \ FIRST;\nALTER TABLE t1 ADD COLUMN (c INT, d BLOB);\nALTER TABLE t1 MODIFY COLUMN\
+    \ b INT AFTER a;\nALTER TABLE t1 RENAME COLUMN b TO e;\nALTER TABLE t1 CHANGE\
+    \ COLUMN d f TEXT AFTER e;\nALTER TABLE t1 DROP COLUMN a;"
   ignore_case_sensitive: false
-  want: |-
-    {
-      "name": "test",
-      "schemas": [
-        {
-          "tables": [
-            {
-              "name": "t1",
-              "columns": [
-                {
-                  "name": "e",
-                  "position": 1,
-                  "nullable": true,
-                  "type": "int"
-                },
-                {
-                  "name": "f",
-                  "position": 2,
-                  "nullable": true,
-                  "type": "text"
-                },
-                {
-                  "name": "c",
-                  "position": 3,
-                  "nullable": true,
-                  "type": "int"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
+  want: "{\n  \"name\": \"test\",\n  \"schemas\": [\n    {\n      \"tables\": [\n\
+    \        {\n          \"name\": \"t1\",\n          \"columns\": [\n          \
+    \  {\n              \"name\": \"e\",\n              \"position\": 1,\n       \
+    \       \"nullable\": true,\n              \"type\": \"int\"\n            },\n\
+    \            {\n              \"name\": \"f\",\n              \"position\": 2,\n\
+    \              \"nullable\": true,\n              \"type\": \"text\"\n       \
+    \     },\n            {\n              \"name\": \"c\",\n              \"position\"\
+    : 3,\n              \"nullable\": true,\n              \"type\": \"int\"\n   \
+    \         }\n          ]\n        }\n      ]\n    }\n  ]\n}"
   err: null
-- statement: |-
-    CREATE TABLE t1(a INT);
+- statement: 'CREATE TABLE t1(a INT);
+
     CREATE TABLE t2(a INT);
+
     DROP TABLE t1, t2;
-    CREATE TABLE t3(a INT);
+
+    CREATE TABLE t3(a INT);'
   ignore_case_sensitive: false
-  want: |-
-    {
-      "name": "test",
-      "schemas": [
-        {
-          "tables": [
-            {
-              "name": "t3",
-              "columns": [
-                {
-                  "name": "a",
-                  "position": 1,
-                  "nullable": true,
-                  "type": "int"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
+  want: "{\n  \"name\": \"test\",\n  \"schemas\": [\n    {\n      \"tables\": [\n\
+    \        {\n          \"name\": \"t3\",\n          \"columns\": [\n          \
+    \  {\n              \"name\": \"a\",\n              \"position\": 1,\n       \
+    \       \"nullable\": true,\n              \"type\": \"int\"\n            }\n\
+    \          ]\n        }\n      ]\n    }\n  ]\n}"
   err: null
-- statement: |-
-    CREATE TABLE t1(
-      a INT AUTO_INCREMENT,
-      b INT AUTO_INCREMENT
-    );
+- statement: "CREATE TABLE t1(\n  a INT AUTO_INCREMENT,\n  b INT AUTO_INCREMENT\n\
+    );"
   ignore_case_sensitive: false
-  want: ""
+  want: ''
   err:
-    type: 404
+    code: 426
     content: There can be only one auto column for table `t1`
     line: 1
-    payload: null
-- statement: CREATE TABLE tvx SELECT (x,z) FROM (VALUES ROW(1,3,5), ROW(2,4,6)) AS v(x,y,z);
+- statement: CREATE TABLE tvx SELECT (x,z) FROM (VALUES ROW(1,3,5), ROW(2,4,6)) AS
+    v(x,y,z);
   ignore_case_sensitive: false
-  want: ""
+  want: ''
   err:
-    type: 303
-    content: Disallow the CREATE TABLE AS statement but "CREATE TABLE tvx SELECT (x,z) FROM (VALUES ROW(1,3,5), ROW(2,4,6)) AS v(x,y,z);" uses
+    code: 205
+    content: Disallow the CREATE TABLE AS statement but "CREATE TABLE tvx SELECT (x,z)
+      FROM (VALUES ROW(1,3,5), ROW(2,4,6)) AS v(x,y,z);" uses
     line: 1
-    payload: null
-- statement: |-
-    CREATE TABLE t1(a int);
-    CREATE TABLE t2 (b INT) SELECT a FROM t1;
+- statement: 'CREATE TABLE t1(a int);
+
+    CREATE TABLE t2 (b INT) SELECT a FROM t1;'
   ignore_case_sensitive: false
-  want: ""
+  want: ''
   err:
-    type: 303
-    content: Disallow the CREATE TABLE AS statement but "CREATE TABLE t2 (b INT) SELECT a FROM t1;" uses
+    code: 205
+    content: Disallow the CREATE TABLE AS statement but "CREATE TABLE t2 (b INT) SELECT
+      a FROM t1;" uses
     line: 2
-    payload: null
-- statement: |-
-    CREATE TABLE t1(
-      a int
-    );
-    CREATE TABLE t2 LIKE t1;
+- statement: "CREATE TABLE t1(\n  a int\n);\nCREATE TABLE t2 LIKE t1;"
   ignore_case_sensitive: false
-  want: |-
-    {
-      "name": "test",
-      "schemas": [
-        {
-          "tables": [
-            {
-              "name": "t1",
-              "columns": [
-                {
-                  "name": "a",
-                  "position": 1,
-                  "nullable": true,
-                  "type": "int"
-                }
-              ]
-            },
-            {
-              "name": "t2",
-              "columns": [
-                {
-                  "name": "a",
-                  "position": 1,
-                  "nullable": true,
-                  "type": "int"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
+  want: "{\n  \"name\": \"test\",\n  \"schemas\": [\n    {\n      \"tables\": [\n\
+    \        {\n          \"name\": \"t1\",\n          \"columns\": [\n          \
+    \  {\n              \"name\": \"a\",\n              \"position\": 1,\n       \
+    \       \"nullable\": true,\n              \"type\": \"int\"\n            }\n\
+    \          ]\n        },\n        {\n          \"name\": \"t2\",\n          \"\
+    columns\": [\n            {\n              \"name\": \"a\",\n              \"\
+    position\": 1,\n              \"nullable\": true,\n              \"type\": \"\
+    int\"\n            }\n          ]\n        }\n      ]\n    }\n  ]\n}"
   err: null
-- statement: |-
-    CREATE TABLE t1(
-      a INT PRIMARY KEY,
-      b INT NOT NULL DEFAULT 1,
-      c INT,
-      d VARCHAR(255) NOT NULL,
-      e VARCHAR(255),
-      UNIQUE KEY uk1 (b, c),
-      KEY idx1 (c),
-      FULLTEXT(d, e) WITH PARSER ngram INVISIBLE
-    );
+- statement: "CREATE TABLE t1(\n  a INT PRIMARY KEY,\n  b INT NOT NULL DEFAULT 1,\n\
+    \  c INT,\n  d VARCHAR(255) NOT NULL,\n  e VARCHAR(255),\n  UNIQUE KEY uk1 (b,\
+    \ c),\n  KEY idx1 (c),\n  FULLTEXT(d, e) WITH PARSER ngram INVISIBLE\n);"
   ignore_case_sensitive: false
-  want: |-
-    {
-      "name": "test",
-      "schemas": [
-        {
-          "tables": [
-            {
-              "name": "t1",
-              "columns": [
-                {
-                  "name": "a",
-                  "position": 1,
-                  "type": "int"
-                },
-                {
-                  "name": "b",
-                  "position": 2,
-                  "default": "1",
-                  "type": "int"
-                },
-                {
-                  "name": "c",
-                  "position": 3,
-                  "nullable": true,
-                  "type": "int"
-                },
-                {
-                  "name": "d",
-                  "position": 4,
-                  "type": "varchar"
-                },
-                {
-                  "name": "e",
-                  "position": 5,
-                  "nullable": true,
-                  "type": "varchar"
-                }
-              ],
-              "indexes": [
-                {
-                  "name": "PRIMARY",
-                  "expressions": [
-                    "a"
-                  ],
-                  "type": "BTREE",
-                  "unique": true,
-                  "primary": true,
-                  "visible": true
-                },
-                {
-                  "name": "d",
-                  "expressions": [
-                    "d",
-                    "e"
-                  ],
-                  "type": "FULLTEXT"
-                },
-                {
-                  "name": "idx1",
-                  "expressions": [
-                    "c"
-                  ],
-                  "type": "BTREE",
-                  "visible": true
-                },
-                {
-                  "name": "uk1",
-                  "expressions": [
-                    "b",
-                    "c"
-                  ],
-                  "type": "BTREE",
-                  "unique": true,
-                  "visible": true
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
+  want: "{\n  \"name\": \"test\",\n  \"schemas\": [\n    {\n      \"tables\": [\n\
+    \        {\n          \"name\": \"t1\",\n          \"columns\": [\n          \
+    \  {\n              \"name\": \"a\",\n              \"position\": 1,\n       \
+    \       \"type\": \"int\"\n            },\n            {\n              \"name\"\
+    : \"b\",\n              \"position\": 2,\n              \"default\": \"1\",\n\
+    \              \"type\": \"int\"\n            },\n            {\n            \
+    \  \"name\": \"c\",\n              \"position\": 3,\n              \"nullable\"\
+    : true,\n              \"type\": \"int\"\n            },\n            {\n    \
+    \          \"name\": \"d\",\n              \"position\": 4,\n              \"\
+    type\": \"varchar\"\n            },\n            {\n              \"name\": \"\
+    e\",\n              \"position\": 5,\n              \"nullable\": true,\n    \
+    \          \"type\": \"varchar\"\n            }\n          ],\n          \"indexes\"\
+    : [\n            {\n              \"name\": \"PRIMARY\",\n              \"expressions\"\
+    : [\n                \"a\"\n              ],\n              \"type\": \"BTREE\"\
+    ,\n              \"unique\": true,\n              \"primary\": true,\n       \
+    \       \"visible\": true\n            },\n            {\n              \"name\"\
+    : \"d\",\n              \"expressions\": [\n                \"d\",\n         \
+    \       \"e\"\n              ],\n              \"type\": \"FULLTEXT\"\n      \
+    \      },\n            {\n              \"name\": \"idx1\",\n              \"\
+    expressions\": [\n                \"c\"\n              ],\n              \"type\"\
+    : \"BTREE\",\n              \"visible\": true\n            },\n            {\n\
+    \              \"name\": \"uk1\",\n              \"expressions\": [\n        \
+    \        \"b\",\n                \"c\"\n              ],\n              \"type\"\
+    : \"BTREE\",\n              \"unique\": true,\n              \"visible\": true\n\
+    \            }\n          ]\n        }\n      ]\n    }\n  ]\n}"
   err: null
-- statement: |-
-    CREATE TABLE t1(
-      a INT NOT NULL DEFAULT NULL
-    );
+- statement: "CREATE TABLE t1(\n  a INT NOT NULL DEFAULT NULL\n);"
   ignore_case_sensitive: false
-  want: ""
+  want: ''
   err:
-    type: 406
+    code: 428
     content: Invalid default value for column `a`
     line: 2
-    payload: null
-- statement: |-
-    CREATE TABLE t1(
-      a BLOB DEFAULT 'this is a default value'
-    );
+- statement: "CREATE TABLE t1(\n  a BLOB DEFAULT 'this is a default value'\n);"
   ignore_case_sensitive: false
-  want: ""
+  want: ''
   err:
-    type: 407
+    code: 423
     content: BLOB, TEXT, GEOMETRY or JSON column `a` can't have a default value
     line: 2
-    payload: null
-- statement: |-
-    CREATE TABLE t1(
-      a INT ON UPDATE NOW()
-    );
+- statement: "CREATE TABLE t1(\n  a INT ON UPDATE NOW()\n);"
   ignore_case_sensitive: false
-  want: ""
+  want: ''
   err:
-    type: 405
+    code: 427
     content: Column `a` use ON UPDATE but is not DATETIME or TIMESTAMP
     line: 2
-    payload: null
-- statement: |-
-    CREATE TABLE t1(
-      a INT NOT NULL DEFAULT 1 PRIMARY KEY,
-      b INT UNIQUE,
-      c VARCHAR(255) NOT NULL DEFAULT 'NULL' COMMENT 'column c',
-      e INT NULL DEFAULT NULL,
-      f VARCHAR(10) NOT NULL COLLATE utf8mb4_polish_ci,
-      g VARCHAR(200) CHARACTER SET utf8mb4 NOT NULL
-    );
+- statement: "CREATE TABLE t1(\n  a INT NOT NULL DEFAULT 1 PRIMARY KEY,\n  b INT UNIQUE,\n\
+    \  c VARCHAR(255) NOT NULL DEFAULT 'NULL' COMMENT 'column c',\n  e INT NULL DEFAULT\
+    \ NULL,\n  f VARCHAR(10) NOT NULL COLLATE utf8mb4_polish_ci,\n  g VARCHAR(200)\
+    \ CHARACTER SET utf8mb4 NOT NULL\n);"
   ignore_case_sensitive: false
-  want: |-
-    {
-      "name": "test",
-      "schemas": [
-        {
-          "tables": [
-            {
-              "name": "t1",
-              "columns": [
-                {
-                  "name": "a",
-                  "position": 1,
-                  "default": "1",
-                  "type": "int"
-                },
-                {
-                  "name": "b",
-                  "position": 2,
-                  "nullable": true,
-                  "type": "int"
-                },
-                {
-                  "name": "c",
-                  "position": 3,
-                  "default": "NULL",
-                  "type": "varchar",
-                  "comment": "column c"
-                },
-                {
-                  "name": "e",
-                  "position": 4,
-                  "nullable": true,
-                  "type": "int"
-                },
-                {
-                  "name": "f",
-                  "position": 5,
-                  "type": "varchar",
-                  "collation": "utf8mb4_polish_ci"
-                },
-                {
-                  "name": "g",
-                  "position": 6,
-                  "type": "varchar",
-                  "characterSet": "utf8mb4"
-                }
-              ],
-              "indexes": [
-                {
-                  "name": "PRIMARY",
-                  "expressions": [
-                    "a"
-                  ],
-                  "type": "BTREE",
-                  "unique": true,
-                  "primary": true,
-                  "visible": true
-                },
-                {
-                  "name": "b",
-                  "expressions": [
-                    "b"
-                  ],
-                  "type": "BTREE",
-                  "unique": true,
-                  "visible": true
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
+  want: "{\n  \"name\": \"test\",\n  \"schemas\": [\n    {\n      \"tables\": [\n\
+    \        {\n          \"name\": \"t1\",\n          \"columns\": [\n          \
+    \  {\n              \"name\": \"a\",\n              \"position\": 1,\n       \
+    \       \"default\": \"1\",\n              \"type\": \"int\"\n            },\n\
+    \            {\n              \"name\": \"b\",\n              \"position\": 2,\n\
+    \              \"nullable\": true,\n              \"type\": \"int\"\n        \
+    \    },\n            {\n              \"name\": \"c\",\n              \"position\"\
+    : 3,\n              \"default\": \"NULL\",\n              \"type\": \"varchar\"\
+    ,\n              \"comment\": \"column c\"\n            },\n            {\n  \
+    \            \"name\": \"e\",\n              \"position\": 4,\n              \"\
+    nullable\": true,\n              \"type\": \"int\"\n            },\n         \
+    \   {\n              \"name\": \"f\",\n              \"position\": 5,\n      \
+    \        \"type\": \"varchar\",\n              \"collation\": \"utf8mb4_polish_ci\"\
+    \n            },\n            {\n              \"name\": \"g\",\n            \
+    \  \"position\": 6,\n              \"type\": \"varchar\",\n              \"characterSet\"\
+    : \"utf8mb4\"\n            }\n          ],\n          \"indexes\": [\n       \
+    \     {\n              \"name\": \"PRIMARY\",\n              \"expressions\":\
+    \ [\n                \"a\"\n              ],\n              \"type\": \"BTREE\"\
+    ,\n              \"unique\": true,\n              \"primary\": true,\n       \
+    \       \"visible\": true\n            },\n            {\n              \"name\"\
+    : \"b\",\n              \"expressions\": [\n                \"b\"\n          \
+    \    ],\n              \"type\": \"BTREE\",\n              \"unique\": true,\n\
+    \              \"visible\": true\n            }\n          ]\n        }\n    \
+    \  ]\n    }\n  ]\n}"
   err: null
-- statement: |-
-    CREATE TABLE t1(
-      id int,
-      name varchar(255),
-      key idx_name(name)
-    );
-    create table t2 (
-      id int,
-      t1_name varchar(255),
-      constraint fk_t1_name foreign key (t1_name) references t1 (name)
-    );
-    alter table t2 drop foreign key fk_t1_name;
+- statement: "CREATE TABLE t1(\n  id int,\n  name varchar(255),\n  key idx_name(name)\n\
+    );\ncreate table t2 (\n  id int,\n  t1_name varchar(255),\n  constraint fk_t1_name\
+    \ foreign key (t1_name) references t1 (name)\n);\nalter table t2 drop foreign\
+    \ key fk_t1_name;"
   ignore_case_sensitive: false
-  want: |-
-    {
-      "name": "test",
-      "schemas": [
-        {
-          "tables": [
-            {
-              "name": "t1",
-              "columns": [
-                {
-                  "name": "id",
-                  "position": 1,
-                  "nullable": true,
-                  "type": "int"
-                },
-                {
-                  "name": "name",
-                  "position": 2,
-                  "nullable": true,
-                  "type": "varchar"
-                }
-              ],
-              "indexes": [
-                {
-                  "name": "idx_name",
-                  "expressions": [
-                    "name"
-                  ],
-                  "type": "BTREE",
-                  "visible": true
-                }
-              ]
-            },
-            {
-              "name": "t2",
-              "columns": [
-                {
-                  "name": "id",
-                  "position": 1,
-                  "nullable": true,
-                  "type": "int"
-                },
-                {
-                  "name": "t1_name",
-                  "position": 2,
-                  "nullable": true,
-                  "type": "varchar"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
+  want: "{\n  \"name\": \"test\",\n  \"schemas\": [\n    {\n      \"tables\": [\n\
+    \        {\n          \"name\": \"t1\",\n          \"columns\": [\n          \
+    \  {\n              \"name\": \"id\",\n              \"position\": 1,\n      \
+    \        \"nullable\": true,\n              \"type\": \"int\"\n            },\n\
+    \            {\n              \"name\": \"name\",\n              \"position\"\
+    : 2,\n              \"nullable\": true,\n              \"type\": \"varchar\"\n\
+    \            }\n          ],\n          \"indexes\": [\n            {\n      \
+    \        \"name\": \"idx_name\",\n              \"expressions\": [\n         \
+    \       \"name\"\n              ],\n              \"type\": \"BTREE\",\n     \
+    \         \"visible\": true\n            }\n          ]\n        },\n        {\n\
+    \          \"name\": \"t2\",\n          \"columns\": [\n            {\n      \
+    \        \"name\": \"id\",\n              \"position\": 1,\n              \"nullable\"\
+    : true,\n              \"type\": \"int\"\n            },\n            {\n    \
+    \          \"name\": \"t1_name\",\n              \"position\": 2,\n          \
+    \    \"nullable\": true,\n              \"type\": \"varchar\"\n            }\n\
+    \          ]\n        }\n      ]\n    }\n  ]\n}"
   err: null
-- statement: |-
-    create table all_types(
-      c1 tinyblob not null,
-      c2 blob not null,
-      c3 mediumblob not null,
-      c4 longblob not null,
-      c5 tinytext not null,
-      c6 text not null,
-      c7 mediumtext not null,
-      c8 longtext not null,
-      c9 json not null,
-      c10 serial not null,
-      c11 long varbinary not null,
-      c12 long varchar not null 
-    );
+- statement: "create table all_types(\n  c1 tinyblob not null,\n  c2 blob not null,\n\
+    \  c3 mediumblob not null,\n  c4 longblob not null,\n  c5 tinytext not null,\n\
+    \  c6 text not null,\n  c7 mediumtext not null,\n  c8 longtext not null,\n  c9\
+    \ json not null,\n  c10 serial not null,\n  c11 long varbinary not null,\n  c12\
+    \ long varchar not null \n);"
   ignore_case_sensitive: false
-  want: |-
-    {
-      "name": "test",
-      "schemas": [
-        {
-          "tables": [
-            {
-              "name": "all_types",
-              "columns": [
-                {
-                  "name": "c1",
-                  "position": 1,
-                  "type": "tinyblob"
-                },
-                {
-                  "name": "c2",
-                  "position": 2,
-                  "type": "blob"
-                },
-                {
-                  "name": "c3",
-                  "position": 3,
-                  "type": "mediumblob"
-                },
-                {
-                  "name": "c4",
-                  "position": 4,
-                  "type": "longblob"
-                },
-                {
-                  "name": "c5",
-                  "position": 5,
-                  "type": "tinytext"
-                },
-                {
-                  "name": "c6",
-                  "position": 6,
-                  "type": "text"
-                },
-                {
-                  "name": "c7",
-                  "position": 7,
-                  "type": "mediumtext"
-                },
-                {
-                  "name": "c8",
-                  "position": 8,
-                  "type": "longtext"
-                },
-                {
-                  "name": "c9",
-                  "position": 9,
-                  "type": "json"
-                },
-                {
-                  "name": "c10",
-                  "position": 10,
-                  "type": "serial"
-                },
-                {
-                  "name": "c11",
-                  "position": 11,
-                  "type": "long"
-                },
-                {
-                  "name": "c12",
-                  "position": 12,
-                  "type": "long"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
+  want: "{\n  \"name\": \"test\",\n  \"schemas\": [\n    {\n      \"tables\": [\n\
+    \        {\n          \"name\": \"all_types\",\n          \"columns\": [\n   \
+    \         {\n              \"name\": \"c1\",\n              \"position\": 1,\n\
+    \              \"type\": \"tinyblob\"\n            },\n            {\n       \
+    \       \"name\": \"c2\",\n              \"position\": 2,\n              \"type\"\
+    : \"blob\"\n            },\n            {\n              \"name\": \"c3\",\n \
+    \             \"position\": 3,\n              \"type\": \"mediumblob\"\n     \
+    \       },\n            {\n              \"name\": \"c4\",\n              \"position\"\
+    : 4,\n              \"type\": \"longblob\"\n            },\n            {\n  \
+    \            \"name\": \"c5\",\n              \"position\": 5,\n             \
+    \ \"type\": \"tinytext\"\n            },\n            {\n              \"name\"\
+    : \"c6\",\n              \"position\": 6,\n              \"type\": \"text\"\n\
+    \            },\n            {\n              \"name\": \"c7\",\n            \
+    \  \"position\": 7,\n              \"type\": \"mediumtext\"\n            },\n\
+    \            {\n              \"name\": \"c8\",\n              \"position\": 8,\n\
+    \              \"type\": \"longtext\"\n            },\n            {\n       \
+    \       \"name\": \"c9\",\n              \"position\": 9,\n              \"type\"\
+    : \"json\"\n            },\n            {\n              \"name\": \"c10\",\n\
+    \              \"position\": 10,\n              \"type\": \"serial\"\n       \
+    \     },\n            {\n              \"name\": \"c11\",\n              \"position\"\
+    : 11,\n              \"type\": \"long\"\n            },\n            {\n     \
+    \         \"name\": \"c12\",\n              \"position\": 12,\n              \"\
+    type\": \"long\"\n            }\n          ]\n        }\n      ]\n    }\n  ]\n\
+    }"
   err: null

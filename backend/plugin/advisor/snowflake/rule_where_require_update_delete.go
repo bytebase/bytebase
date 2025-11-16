@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -88,7 +89,7 @@ func (r *WhereRequireForUpdateDeleteRule) enterUpdateStatement(ctx *parser.Updat
 	if ctx.WHERE() == nil {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.StatementNoWhere.Int32(),
+			Code:          code.StatementNoWhere.Int32(),
 			Title:         r.title,
 			Content:       "WHERE clause is required for UPDATE statement.",
 			StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
@@ -100,7 +101,7 @@ func (r *WhereRequireForUpdateDeleteRule) enterDeleteStatement(ctx *parser.Delet
 	if ctx.WHERE() == nil {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.StatementNoWhere.Int32(),
+			Code:          code.StatementNoWhere.Int32(),
 			Title:         r.title,
 			Content:       "WHERE clause is required for DELETE statement.",
 			StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),

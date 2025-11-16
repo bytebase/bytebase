@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -138,7 +139,7 @@ func (r *StatementAddColumnWithoutPositionRule) checkAlterTable(ctx *mysql.Alter
 		if len(position) != 0 {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
-				Code:          advisor.StatementAddColumnWithPosition.Int32(),
+				Code:          code.StatementAddColumnWithPosition.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("add column with position \"%s\"", position),
 				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),

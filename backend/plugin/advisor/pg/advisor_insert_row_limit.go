@@ -15,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -122,7 +123,7 @@ func (r *insertRowLimitRule) handleInsertstmt(ctx *parser.InsertstmtContext) {
 		return
 	}
 
-	code := advisor.Ok
+	code := advisorcode.Ok
 	rows := int64(0)
 
 	// Check if this is INSERT ... VALUES or INSERT ... SELECT
@@ -132,7 +133,7 @@ func (r *insertRowLimitRule) handleInsertstmt(ctx *parser.InsertstmtContext) {
 		if rowCount > 0 {
 			// This is INSERT ... VALUES
 			if rowCount > r.maxRow {
-				code = advisor.InsertTooManyRows
+				code = advisorcode.InsertTooManyRows
 				rows = int64(rowCount)
 			}
 		} else if r.driver != nil {
@@ -151,7 +152,7 @@ func (r *insertRowLimitRule) handleInsertstmt(ctx *parser.InsertstmtContext) {
 			if err != nil {
 				r.AddAdvice(&storepb.Advice{
 					Status:  r.level,
-					Code:    advisor.InsertTooManyRows.Int32(),
+					Code:    advisorcode.InsertTooManyRows.Int32(),
 					Title:   r.title,
 					Content: fmt.Sprintf("\"%s\" dry runs failed: %s", stmtText, err.Error()),
 					StartPosition: &storepb.Position{
@@ -166,7 +167,7 @@ func (r *insertRowLimitRule) handleInsertstmt(ctx *parser.InsertstmtContext) {
 			if err != nil {
 				r.AddAdvice(&storepb.Advice{
 					Status:  r.level,
-					Code:    advisor.Internal.Int32(),
+					Code:    advisorcode.Internal.Int32(),
 					Title:   r.title,
 					Content: fmt.Sprintf("failed to get row count for \"%s\": %s", stmtText, err.Error()),
 					StartPosition: &storepb.Position{
@@ -178,13 +179,13 @@ func (r *insertRowLimitRule) handleInsertstmt(ctx *parser.InsertstmtContext) {
 			}
 
 			if rowCount > int64(r.maxRow) {
-				code = advisor.InsertTooManyRows
+				code = advisorcode.InsertTooManyRows
 				rows = rowCount
 			}
 		}
 	}
 
-	if code != advisor.Ok {
+	if code != advisorcode.Ok {
 		stmtText := extractStatementText(r.statementsText, ctx.GetStart().GetLine(), ctx.GetStop().GetLine())
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,

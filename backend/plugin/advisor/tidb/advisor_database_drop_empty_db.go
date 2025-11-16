@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
@@ -63,7 +65,7 @@ func (v *allowDropEmptyDBChecker) Enter(in ast.Node) (ast.Node, bool) {
 		if v.originCatalog.DatabaseName() != node.Name.O {
 			v.adviceList = append(v.adviceList, &storepb.Advice{
 				Status:        v.level,
-				Code:          advisor.NotCurrentDatabase.Int32(),
+				Code:          code.NotCurrentDatabase.Int32(),
 				Title:         v.title,
 				Content:       fmt.Sprintf("Database `%s` that is trying to be deleted is not the current database `%s`", node.Name, v.originCatalog.DatabaseName()),
 				StartPosition: common.ConvertANTLRLineToPosition(node.OriginTextPosition()),
@@ -71,7 +73,7 @@ func (v *allowDropEmptyDBChecker) Enter(in ast.Node) (ast.Node, bool) {
 		} else if !v.originCatalog.HasNoTable() {
 			v.adviceList = append(v.adviceList, &storepb.Advice{
 				Status:        v.level,
-				Code:          advisor.DatabaseNotEmpty.Int32(),
+				Code:          code.DatabaseNotEmpty.Int32(),
 				Title:         v.title,
 				Content:       fmt.Sprintf("Database `%s` is not allowed to drop if not empty", node.Name),
 				StartPosition: common.ConvertANTLRLineToPosition(node.OriginTextPosition()),

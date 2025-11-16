@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -130,7 +131,7 @@ func (r *CharsetAllowlistRule) checkCharset(charset string, lineNumber int) {
 	if _, exists := r.allowList[charset]; charset != "" && !exists {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.DisabledCharset.Int32(),
+			Code:          code.DisabledCharset.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("\"%s\" used disabled charset '%s'", r.text, charset),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + lineNumber),

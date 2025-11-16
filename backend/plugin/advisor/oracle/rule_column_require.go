@@ -7,6 +7,8 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/plsql"
 	"github.com/pkg/errors"
@@ -140,7 +142,7 @@ func (r *ColumnRequireRule) handleCreateTableExit(ctx *parser.Create_tableContex
 	tableName := normalizeIdentifier(ctx.Table_name(), r.currentDatabase)
 	r.AddAdvice(
 		r.level,
-		advisor.NoRequiredColumn.Int32(),
+		code.NoRequiredColumn.Int32(),
 		fmt.Sprintf("Table %q requires columns: %s", tableName, strings.Join(missingColumns, ", ")),
 		common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStop().GetLine()),
 	)
@@ -173,7 +175,7 @@ func (r *ColumnRequireRule) handleAlterTableExit(ctx *parser.Alter_tableContext)
 	tableName := lastIdentifier(normalizeIdentifier(ctx.Tableview_name(), r.currentDatabase))
 	r.AddAdvice(
 		r.level,
-		advisor.NoRequiredColumn.Int32(),
+		code.NoRequiredColumn.Int32(),
 		fmt.Sprintf("Table %q requires columns: %s", tableName, strings.Join(missingColumns, ", ")),
 		common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStop().GetLine()),
 	)

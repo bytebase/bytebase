@@ -11,6 +11,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
@@ -266,7 +267,7 @@ func (r *fullyQualifiedObjectNameRule) handleSelectstmt(ctx *parser.SelectstmtCo
 		if !r.isFullyQualified(objName) {
 			r.AddAdvice(&storepb.Advice{
 				Status:  r.level,
-				Code:    int32(advisor.NamingNotFullyQualifiedName),
+				Code:    int32(code.NamingNotFullyQualifiedName),
 				Title:   r.title,
 				Content: fmt.Sprintf("unqualified object name: '%s'", objName),
 				StartPosition: &storepb.Position{
@@ -290,7 +291,7 @@ func (r *fullyQualifiedObjectNameRule) checkQualifiedName(ctx parser.IQualified_
 	if !r.isFullyQualified(objName) {
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
-			Code:    int32(advisor.NamingNotFullyQualifiedName),
+			Code:    int32(code.NamingNotFullyQualifiedName),
 			Title:   r.title,
 			Content: fmt.Sprintf("unqualified object name: '%s'", objName),
 			StartPosition: &storepb.Position{
@@ -314,7 +315,7 @@ func (r *fullyQualifiedObjectNameRule) checkAnyName(ctx parser.IAny_nameContext,
 	if !r.isFullyQualified(objName) {
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
-			Code:    int32(advisor.NamingNotFullyQualifiedName),
+			Code:    int32(code.NamingNotFullyQualifiedName),
 			Title:   r.title,
 			Content: fmt.Sprintf("unqualified object name: '%s'", objName),
 			StartPosition: &storepb.Position{

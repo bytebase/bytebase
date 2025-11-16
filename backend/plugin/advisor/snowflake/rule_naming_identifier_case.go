@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 )
 
@@ -115,7 +116,7 @@ func (r *NamingIdentifierCaseRule) enterColumnDeclItemList(ctx *parser.Column_de
 			if strings.ToUpper(originalColName) != originalColName {
 				r.AddAdvice(&storepb.Advice{
 					Status:        r.level,
-					Code:          advisor.NamingCaseMismatch.Int32(),
+					Code:          code.NamingCaseMismatch.Int32(),
 					Title:         r.title,
 					Content:       fmt.Sprintf("Identifier %q should be upper case", originalColName),
 					StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
@@ -135,7 +136,7 @@ func (r *NamingIdentifierCaseRule) enterAlterTable(ctx *parser.Alter_tableContex
 	if strings.ToUpper(renameToColName) != renameToColName {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.NamingCaseMismatch.Int32(),
+			Code:          code.NamingCaseMismatch.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("Identifier %q should be upper case", renameToColName),
 			StartPosition: common.ConvertANTLRLineToPosition(renameToID.GetStart().GetLine()),

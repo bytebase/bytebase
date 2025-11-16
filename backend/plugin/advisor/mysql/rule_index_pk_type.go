@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/parser/mysql"
 	"github.com/pkg/errors"
@@ -223,7 +225,7 @@ func (r *IndexPkTypeRule) addAdvice(tableName, columnName, columnType string, li
 	if !strings.EqualFold(columnType, "INT") && !strings.EqualFold(columnType, "BIGINT") {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.IndexPKType.Int32(),
+			Code:          code.IndexPKType.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("Columns in primary key must be INT/BIGINT but `%s`.`%s` is %s", tableName, columnName, columnType),
 			StartPosition: common.ConvertANTLRLineToPosition(lineNumber),

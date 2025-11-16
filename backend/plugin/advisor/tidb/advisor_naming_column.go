@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -116,7 +117,7 @@ func (v *namingColumnConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 		if !v.format.MatchString(column.name) {
 			v.adviceList = append(v.adviceList, &storepb.Advice{
 				Status:        v.level,
-				Code:          advisor.NamingColumnConventionMismatch.Int32(),
+				Code:          code.NamingColumnConventionMismatch.Int32(),
 				Title:         v.title,
 				Content:       fmt.Sprintf("`%s`.`%s` mismatches column naming convention, naming format should be %q", tableName, column.name, v.format),
 				StartPosition: common.ConvertANTLRLineToPosition(column.line),
@@ -125,7 +126,7 @@ func (v *namingColumnConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 		if v.maxLength > 0 && len(column.name) > v.maxLength {
 			v.adviceList = append(v.adviceList, &storepb.Advice{
 				Status:        v.level,
-				Code:          advisor.NamingColumnConventionMismatch.Int32(),
+				Code:          code.NamingColumnConventionMismatch.Int32(),
 				Title:         v.title,
 				Content:       fmt.Sprintf("`%s`.`%s` mismatches column naming convention, its length should be within %d characters", tableName, column.name, v.maxLength),
 				StartPosition: common.ConvertANTLRLineToPosition(column.line),

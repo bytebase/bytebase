@@ -8,6 +8,8 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pingcap/tidb/pkg/parser/mysql"
 	"github.com/pkg/errors"
@@ -95,7 +97,7 @@ func (checker *columnCurrentTimeCountLimitChecker) generateAdvice() []*storepb.A
 		if table.defaultCurrentTimeCount > maxDefaultCurrentTimeColumCount {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:        checker.level,
-				Code:          advisor.DefaultCurrentTimeColumnCountExceedsLimit.Int32(),
+				Code:          code.DefaultCurrentTimeColumnCountExceedsLimit.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("Table `%s` has %d DEFAULT CURRENT_TIMESTAMP() columns. The count greater than %d.", table.tableName, table.defaultCurrentTimeCount, maxDefaultCurrentTimeColumCount),
 				StartPosition: common.ConvertANTLRLineToPosition(table.line),
@@ -104,7 +106,7 @@ func (checker *columnCurrentTimeCountLimitChecker) generateAdvice() []*storepb.A
 		if table.onUpdateCurrentTimeCount > maxOnUpdateCurrentTimeColumnCount {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:        checker.level,
-				Code:          advisor.OnUpdateCurrentTimeColumnCountExceedsLimit.Int32(),
+				Code:          code.OnUpdateCurrentTimeColumnCountExceedsLimit.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("Table `%s` has %d ON UPDATE CURRENT_TIMESTAMP() columns. The count greater than %d.", table.tableName, table.onUpdateCurrentTimeCount, maxOnUpdateCurrentTimeColumnCount),
 				StartPosition: common.ConvertANTLRLineToPosition(table.line),

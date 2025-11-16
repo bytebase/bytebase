@@ -10,6 +10,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -81,7 +82,7 @@ func (r *statementDisallowCommitRule) OnEnter(ctx antlr.ParserRuleContext, nodeT
 	stmtText := extractStatementText(r.statementsText, transactionCtx.GetStart().GetLine(), transactionCtx.GetStop().GetLine())
 	r.AddAdvice(&storepb.Advice{
 		Status:  r.level,
-		Code:    advisor.StatementDisallowCommit.Int32(),
+		Code:    code.StatementDisallowCommit.Int32(),
 		Title:   r.title,
 		Content: fmt.Sprintf("Commit is not allowed, related statement: \"%s\"", stmtText),
 		StartPosition: &storepb.Position{

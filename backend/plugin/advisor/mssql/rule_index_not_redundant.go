@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/tsql"
 	"github.com/pkg/errors"
@@ -126,7 +128,7 @@ func (r *IndexNotRedundantRule) enterCreateIndex(ctx *parser.Create_indexContext
 		r.AddAdvice(&storepb.Advice{
 			Status: r.level,
 			Title:  r.title,
-			Code:   advisor.RedundantIndex.Int32(),
+			Code:   code.RedundantIndex.Int32(),
 			Content: fmt.Sprintf("Redundant indexes with the same prefix ('%s' and '%s') in '%s.%s' is not allowed",
 				metaIdxName, statIdxName, findIdxKey.schemaName, findIdxKey.tblName),
 			StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),

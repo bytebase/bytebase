@@ -3,10 +3,11 @@ package pg
 import (
 	"testing"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/plugin/advisor"
 )
 
 func TestCheckSDLIntegrity(t *testing.T) {
@@ -14,7 +15,7 @@ func TestCheckSDLIntegrity(t *testing.T) {
 		name      string
 		statement string
 		wantCount int
-		wantCodes []advisor.Code
+		wantCodes []code.Code
 	}{
 		// ============================================================
 		// FOREIGN KEY VALIDATION TESTS
@@ -46,7 +47,7 @@ CREATE TABLE public.orders (
 	CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES public.users(id)
 );`,
 			wantCount: 1,
-			wantCodes: []advisor.Code{advisor.SDLForeignKeyTableNotFound},
+			wantCodes: []code.Code{code.SDLForeignKeyTableNotFound},
 		},
 		{
 			name: "Error - FK references non-existent column",
@@ -64,7 +65,7 @@ CREATE TABLE public.orders (
 	CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES public.users(user_id)
 );`,
 			wantCount: 1,
-			wantCodes: []advisor.Code{advisor.SDLForeignKeyColumnNotFound},
+			wantCodes: []code.Code{code.SDLForeignKeyColumnNotFound},
 		},
 		{
 			name: "Valid FK - Composite FK with matching types",
@@ -133,7 +134,7 @@ CREATE TABLE public.users (
 	CONSTRAINT pk_users2 PRIMARY KEY (user_id)
 );`,
 			wantCount: 1,
-			wantCodes: []advisor.Code{advisor.SDLDuplicateTableName},
+			wantCodes: []code.Code{code.SDLDuplicateTableName},
 		},
 		{
 			name: "Valid - Same table name in different schemas",
@@ -161,7 +162,7 @@ CREATE TABLE public.users (
 CREATE INDEX idx_users_email ON public.users(email);
 CREATE INDEX idx_users_email ON public.users(id);`,
 			wantCount: 1,
-			wantCodes: []advisor.Code{advisor.SDLDuplicateIndexName},
+			wantCodes: []code.Code{code.SDLDuplicateIndexName},
 		},
 		{
 			name: "Error - Duplicate constraint name in same schema",
@@ -180,7 +181,7 @@ CREATE TABLE public.products (
 	CONSTRAINT uk_products_code UNIQUE (code)
 );`,
 			wantCount: 1,
-			wantCodes: []advisor.Code{advisor.SDLDuplicateConstraintName},
+			wantCodes: []code.Code{code.SDLDuplicateConstraintName},
 		},
 		{
 			name: "Error - Duplicate column name in same table",
@@ -192,7 +193,7 @@ CREATE TABLE public.users (
 	CONSTRAINT pk_users PRIMARY KEY (id)
 );`,
 			wantCount: 1,
-			wantCodes: []advisor.Code{advisor.SDLDuplicateColumnName},
+			wantCodes: []code.Code{code.SDLDuplicateColumnName},
 		},
 		{
 			name: "Valid - Same column name in different tables",
@@ -224,7 +225,7 @@ CREATE TABLE public.users (
 	CONSTRAINT pk_users_email PRIMARY KEY (email)
 );`,
 			wantCount: 1,
-			wantCodes: []advisor.Code{advisor.SDLMultiplePrimaryKey},
+			wantCodes: []code.Code{code.SDLMultiplePrimaryKey},
 		},
 		{
 			name: "Error - Three PRIMARY KEY constraints on same table",
@@ -238,7 +239,7 @@ CREATE TABLE public.users (
 	CONSTRAINT pk3 PRIMARY KEY (username)
 );`,
 			wantCount: 1,
-			wantCodes: []advisor.Code{advisor.SDLMultiplePrimaryKey},
+			wantCodes: []code.Code{code.SDLMultiplePrimaryKey},
 		},
 		{
 			name: "Valid - One PRIMARY KEY with multiple columns (composite PK)",
@@ -274,7 +275,7 @@ CREATE VIEW public.active_users AS
 CREATE VIEW public.active_users AS
 	SELECT id, email FROM public.users WHERE active = true;`,
 			wantCount: 1,
-			wantCodes: []advisor.Code{advisor.SDLViewDependencyNotFound},
+			wantCodes: []code.Code{code.SDLViewDependencyNotFound},
 		},
 		{
 			name: "Error - VIEW references multiple tables, one doesn't exist",
@@ -290,7 +291,7 @@ CREATE VIEW public.user_orders AS
 	FROM public.users u
 	JOIN public.orders o ON u.id = o.user_id;`,
 			wantCount: 1,
-			wantCodes: []advisor.Code{advisor.SDLViewDependencyNotFound},
+			wantCodes: []code.Code{code.SDLViewDependencyNotFound},
 		},
 		{
 			name: "Valid VIEW - references all existing tables",
@@ -329,8 +330,8 @@ CREATE TABLE public.orders (
 	CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES public.users(id)
 );`,
 			wantCount: 1,
-			wantCodes: []advisor.Code{
-				advisor.SDLForeignKeyTableNotFound,
+			wantCodes: []code.Code{
+				code.SDLForeignKeyTableNotFound,
 			},
 		},
 		{
@@ -349,9 +350,9 @@ CREATE TABLE public.orders (
 	CONSTRAINT pk_common PRIMARY KEY (id)
 );`,
 			wantCount: 2,
-			wantCodes: []advisor.Code{
-				advisor.SDLDuplicateConstraintName, // Detected first during Pass 1
-				advisor.SDLMultiplePrimaryKey,      // Detected during Pass 2
+			wantCodes: []code.Code{
+				code.SDLDuplicateConstraintName, // Detected first during Pass 1
+				code.SDLMultiplePrimaryKey,      // Detected during Pass 2
 			},
 		},
 
@@ -416,7 +417,7 @@ CREATE TABLE public.posts (
 	CONSTRAINT fk_user FOREIGN KEY (editor_id) REFERENCES public.users(id)
 );`,
 			wantCount: 1,
-			wantCodes: []advisor.Code{advisor.SDLDuplicateConstraintName},
+			wantCodes: []code.Code{code.SDLDuplicateConstraintName},
 		},
 		{
 			name: "Error - Duplicate PRIMARY KEY name across tables (schema-level scoping)",
@@ -431,7 +432,7 @@ CREATE TABLE public.orders (
 	CONSTRAINT pk_common PRIMARY KEY (id)
 );`,
 			wantCount: 1,
-			wantCodes: []advisor.Code{advisor.SDLDuplicateConstraintName},
+			wantCodes: []code.Code{code.SDLDuplicateConstraintName},
 		},
 		{
 			name: "Error - Duplicate UNIQUE name across tables (schema-level scoping)",
@@ -446,7 +447,7 @@ CREATE TABLE public.customers (
 	CONSTRAINT uk_email UNIQUE (email)
 );`,
 			wantCount: 1,
-			wantCodes: []advisor.Code{advisor.SDLDuplicateConstraintName},
+			wantCodes: []code.Code{code.SDLDuplicateConstraintName},
 		},
 
 		// ============================================================
@@ -547,7 +548,7 @@ func TestCheckSDLIntegrity_InvalidSQL(t *testing.T) {
 			// Syntax errors are returned as advices, not as errors
 			require.NoError(t, err)
 			require.Greater(t, len(advices), 0, "Should have syntax error advice")
-			require.Equal(t, advisor.StatementSyntaxError.Int32(), advices[0].Code)
+			require.Equal(t, code.StatementSyntaxError.Int32(), advices[0].Code)
 		})
 	}
 }

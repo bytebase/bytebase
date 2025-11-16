@@ -5,6 +5,8 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/tsql"
 	"github.com/pkg/errors"
@@ -98,7 +100,7 @@ func (r *ColumnTypeDisallowListRule) enterDataType(ctx *parser.Data_typeContext)
 	if slices.Contains(r.disallowTypes, formatedDataType) {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.DisabledColumnType.Int32(),
+			Code:          code.DisabledColumnType.Int32(),
 			Title:         r.title,
 			Content:       "Column type " + formatedDataType + " is disallowed",
 			StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),

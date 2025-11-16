@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
@@ -145,7 +147,7 @@ func (r *TableLimitSizeRule) generateAdvice() {
 			if tableRows >= int64(r.maxRows) {
 				r.AddAdvice(&storepb.Advice{
 					Status:        r.level,
-					Code:          advisor.TableExceedLimitSize.Int32(),
+					Code:          code.TableExceedLimitSize.Int32(),
 					Title:         r.title,
 					Content:       fmt.Sprintf("Apply DDL on large table '%s' ( %d rows ) will lock table for a long time", tabName, tableRows),
 					StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + r.statementBaseLine),

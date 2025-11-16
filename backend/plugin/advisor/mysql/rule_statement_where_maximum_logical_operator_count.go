@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -143,7 +144,7 @@ func (r *StatementWhereMaximumLogicalOperatorCountRule) checkExprList(ctx *mysql
 	if count > r.maximum {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.StatementWhereMaximumLogicalOperatorCount.Int32(),
+			Code:          code.StatementWhereMaximumLogicalOperatorCount.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("Number of tokens (%d) in IN predicate operation exceeds limit (%d) in statement %q.", count, r.maximum, r.text),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
@@ -164,7 +165,7 @@ func (r *StatementWhereMaximumLogicalOperatorCountRule) checkOrConditions() {
 	if r.maxOrCount > r.maximum {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.StatementWhereMaximumLogicalOperatorCount.Int32(),
+			Code:          code.StatementWhereMaximumLogicalOperatorCount.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("Number of tokens (%d) in the OR predicate operation exceeds limit (%d) in statement %q.", r.maxOrCount, r.maximum, r.text),
 			StartPosition: common.ConvertANTLRLineToPosition(r.maxOrCountLine),

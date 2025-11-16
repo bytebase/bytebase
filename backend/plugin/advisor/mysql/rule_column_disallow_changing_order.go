@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
@@ -129,7 +131,7 @@ func (r *ColumnDisallowChangingOrderRule) checkAlterTable(ctx *mysql.AlterTableC
 		if item.Place() != nil {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
-				Code:          advisor.ChangeColumnOrder.Int32(),
+				Code:          code.ChangeColumnOrder.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("\"%s\" changes column order", r.text),
 				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),

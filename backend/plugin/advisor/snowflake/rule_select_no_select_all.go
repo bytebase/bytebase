@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -84,7 +85,7 @@ func (r *SelectNoSelectAllRule) enterSelectListElem(ctx *parser.Select_list_elem
 		if v.STAR() != nil {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
-				Code:          advisor.StatementSelectAll.Int32(),
+				Code:          code.StatementSelectAll.Int32(),
 				Title:         r.title,
 				Content:       "Avoid using SELECT *.",
 				StartPosition: common.ConvertANTLRLineToPosition(v.STAR().GetSymbol().GetLine()),

@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -79,7 +80,7 @@ func (checker *statementDmlDryRunChecker) Enter(in ast.Node) (ast.Node, bool) {
 		if _, err := advisor.Query(checker.ctx, advisor.QueryContext{}, checker.driver, storepb.Engine_TIDB, fmt.Sprintf("EXPLAIN %s", node.Text())); err != nil {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:        checker.level,
-				Code:          advisor.StatementDMLDryRunFailed.Int32(),
+				Code:          code.StatementDMLDryRunFailed.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", node.Text(), err.Error()),
 				StartPosition: common.ConvertANTLRLineToPosition(checker.line),

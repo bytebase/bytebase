@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -107,7 +108,7 @@ func (checker *insertRowLimitChecker) handleInsertQueryExpression(ctx mysql.IIns
 	if err != nil {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:        checker.level,
-			Code:          advisor.InsertTooManyRows.Int32(),
+			Code:          code.InsertTooManyRows.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", checker.text, err.Error()),
 			StartPosition: common.ConvertANTLRLineToPosition(checker.line),
@@ -118,7 +119,7 @@ func (checker *insertRowLimitChecker) handleInsertQueryExpression(ctx mysql.IIns
 	if err != nil {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:        checker.level,
-			Code:          advisor.Internal.Int32(),
+			Code:          code.Internal.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("failed to get row count for \"%s\": %s", checker.text, err.Error()),
 			StartPosition: common.ConvertANTLRLineToPosition(checker.line),
@@ -126,7 +127,7 @@ func (checker *insertRowLimitChecker) handleInsertQueryExpression(ctx mysql.IIns
 	} else if rowCount > int64(checker.maxRow) {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:        checker.level,
-			Code:          advisor.InsertTooManyRows.Int32(),
+			Code:          code.InsertTooManyRows.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("\"%s\" inserts %d rows. The count exceeds %d.", checker.text, rowCount, checker.maxRow),
 			StartPosition: common.ConvertANTLRLineToPosition(checker.line),
@@ -149,7 +150,7 @@ func (checker *insertRowLimitChecker) handleNoInsertQueryExpression(ctx mysql.II
 	if len(allValues) > checker.maxRow {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:        checker.level,
-			Code:          advisor.InsertTooManyRows.Int32(),
+			Code:          code.InsertTooManyRows.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("\"%s\" inserts %d rows. The count exceeds %d.", checker.text, len(allValues), checker.maxRow),
 			StartPosition: common.ConvertANTLRLineToPosition(checker.line),

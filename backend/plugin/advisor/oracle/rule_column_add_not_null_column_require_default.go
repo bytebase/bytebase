@@ -5,6 +5,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/plsql"
 	"github.com/pkg/errors"
@@ -125,7 +127,7 @@ func (r *ColumnAddNotNullColumnRequireDefaultRule) handleColumnDefinitionExit(ct
 	if ctx.DEFAULT() == nil {
 		r.AddAdvice(
 			r.level,
-			advisor.NotNullColumnWithNoDefault.Int32(),
+			code.NotNullColumnWithNoDefault.Int32(),
 			fmt.Sprintf("Adding not null column %q requires default.", normalizeIdentifier(ctx.Column_name(), r.currentDatabase)),
 			common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
 		)

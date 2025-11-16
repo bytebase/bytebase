@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 
 	parser "github.com/bytebase/parser/postgresql"
@@ -101,7 +103,7 @@ func (r *tableDropNamingConventionRule) handleDropstmt(ctx *parser.DropstmtConte
 			if tableName != "" && !r.format.MatchString(tableName) {
 				r.AddAdvice(&storepb.Advice{
 					Status:  r.level,
-					Code:    advisor.TableDropNamingConventionMismatch.Int32(),
+					Code:    code.TableDropNamingConventionMismatch.Int32(),
 					Title:   r.title,
 					Content: fmt.Sprintf("`%s` mismatches drop table naming convention, naming format should be %q", tableName, r.format),
 					StartPosition: &storepb.Position{

@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -116,7 +117,7 @@ func (r *StatementDisallowUsingTemporaryRule) checkSelectStatement(ctx *mysql.Se
 	if err != nil {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.StatementExplainQueryFailed.Int32(),
+			Code:          code.StatementExplainQueryFailed.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("Failed to explain query: %s, with error: %s", query, err),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
@@ -126,7 +127,7 @@ func (r *StatementDisallowUsingTemporaryRule) checkSelectStatement(ctx *mysql.Se
 		if err != nil {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
-				Code:          advisor.Internal.Int32(),
+				Code:          code.Internal.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("Failed to check extra column: %s, with error: %s", query, err),
 				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
@@ -134,7 +135,7 @@ func (r *StatementDisallowUsingTemporaryRule) checkSelectStatement(ctx *mysql.Se
 		} else if hasUsingTemporary {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
-				Code:          advisor.StatementHasUsingTemporary.Int32(),
+				Code:          code.StatementHasUsingTemporary.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("Using temporary detected on table(s): %s", tables),
 				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),

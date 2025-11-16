@@ -13,6 +13,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -258,7 +259,7 @@ func (r *NamingIndexConventionRule) handleIndexList(indexDataList []*indexMetaDa
 		if err != nil {
 			r.AddAdvice(&storepb.Advice{
 				Status:  r.level,
-				Code:    advisor.Internal.Int32(),
+				Code:    code.Internal.Int32(),
 				Title:   "Internal error for unique key naming convention rule",
 				Content: fmt.Sprintf("%q meet internal error %q", r.text, err.Error()),
 			})
@@ -267,7 +268,7 @@ func (r *NamingIndexConventionRule) handleIndexList(indexDataList []*indexMetaDa
 		if !regex.MatchString(indexData.indexName) {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
-				Code:          advisor.NamingIndexConventionMismatch.Int32(),
+				Code:          code.NamingIndexConventionMismatch.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("Index in table `%s` mismatches the naming convention, expect %q but found `%s`", indexData.tableName, regex, indexData.indexName),
 				StartPosition: common.ConvertANTLRLineToPosition(indexData.line),
@@ -276,7 +277,7 @@ func (r *NamingIndexConventionRule) handleIndexList(indexDataList []*indexMetaDa
 		if r.maxLength > 0 && len(indexData.indexName) > r.maxLength {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
-				Code:          advisor.NamingIndexConventionMismatch.Int32(),
+				Code:          code.NamingIndexConventionMismatch.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("Index `%s` in table `%s` mismatches the naming convention, its length should be within %d characters", indexData.indexName, indexData.tableName, r.maxLength),
 				StartPosition: common.ConvertANTLRLineToPosition(indexData.line),

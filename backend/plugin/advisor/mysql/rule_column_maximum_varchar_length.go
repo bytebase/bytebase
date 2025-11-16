@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/parser/mysql"
 	"github.com/pkg/errors"
@@ -125,7 +127,7 @@ func (r *VarcharLengthRule) checkCreateTable(ctx *mysql.CreateTableContext) {
 		if r.maximum > 0 && length > r.maximum {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
-				Code:          advisor.VarcharLengthExceedsLimit.Int32(),
+				Code:          code.VarcharLengthExceedsLimit.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("The length of the VARCHAR column `%s.%s` is bigger than %d", tableName, columnName, r.maximum),
 				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + tableElement.ColumnDefinition().GetStart().GetLine()),
@@ -209,7 +211,7 @@ func (r *VarcharLengthRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 			if length, ok := varcharLengthMap[columnName]; ok && r.maximum > 0 && length > r.maximum {
 				r.AddAdvice(&storepb.Advice{
 					Status:        r.level,
-					Code:          advisor.VarcharLengthExceedsLimit.Int32(),
+					Code:          code.VarcharLengthExceedsLimit.Int32(),
 					Title:         r.title,
 					Content:       fmt.Sprintf("The length of the VARCHAR column `%s.%s` is bigger than %d", tableName, columnName, r.maximum),
 					StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),

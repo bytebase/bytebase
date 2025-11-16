@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/tsql"
 	"github.com/pkg/errors"
@@ -107,7 +109,7 @@ func (r *NamingIdentifierNoKeywordRule) enterID(ctx *parser.Id_Context) {
 	if tsqlparser.IsTSQLReservedKeyword(normalizedID, false) {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.NameIsKeywordIdentifier.Int32(),
+			Code:          code.NameIsKeywordIdentifier.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("Identifier [%s] is a keyword identifier and should be avoided.", normalizedID),
 			StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),

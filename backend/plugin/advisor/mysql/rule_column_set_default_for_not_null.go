@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
@@ -150,7 +152,7 @@ func (r *ColumnSetDefaultForNotNullRule) checkCreateTable(ctx *mysql.CreateTable
 		if !r.canNull(field) && !r.hasDefault(field) && r.columnNeedDefault(field) {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
-				Code:          advisor.NotNullColumnWithNoDefault.Int32(),
+				Code:          code.NotNullColumnWithNoDefault.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("Column `%s`.`%s` is NOT NULL but doesn't have DEFAULT", tableName, columnName),
 				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + tableElement.ColumnDefinition().GetStart().GetLine()),
@@ -163,7 +165,7 @@ func (r *ColumnSetDefaultForNotNullRule) checkFieldDefinition(tableName, columnN
 	if !r.canNull(ctx) && !r.hasDefault(ctx) && r.columnNeedDefault(ctx) {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.NotNullColumnWithNoDefault.Int32(),
+			Code:          code.NotNullColumnWithNoDefault.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("Column `%s`.`%s` is NOT NULL but doesn't have DEFAULT", tableName, columnName),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
