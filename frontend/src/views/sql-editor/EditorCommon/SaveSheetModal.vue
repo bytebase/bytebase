@@ -15,50 +15,7 @@
           :maxlength="200"
         />
       </div>
-      <div class="flex flex-col gap-y-2">
-        <div>
-          <p>{{ $t("sql-editor.choose-folder") }}</p>
-          <span class="textinfolabel">
-            {{ $t("sql-editor.choose-folder-tips") }}
-          </span>
-        </div>
-        <NPopover
-          placement="bottom"
-          :show="showPopover"
-          :show-arrow="false"
-          trigger="manual"
-          :width="folderInputRef?.wrapperElRef?.clientWidth"
-        >
-          <template #trigger>
-            <NInput
-              ref="folderInputRef"
-              :value="formattedFolderPath.split('/').join(' / ')"
-              :placeholder="$t('sql-editor.choose-folder')"
-              @focus="onFocus"
-              @update:value="onInput"
-            />
-          </template>
-          <NTree
-            ref="folderTreeRef"
-            block-line
-            block-node
-            virtual-scroll
-            :clearable="false"
-            :filterable="true"
-            :pattern="pendingEdit.folder"
-            :checkable="false"
-            :check-on-click="true"
-            :selectable="true"
-            :selected-keys="[pendingEdit.folder]"
-            :multiple="false"
-            :data="folderTree.children"
-            :render-prefix="renderPrefix"
-            :expanded-keys="expandedKeysArray"
-            @update:expanded-keys="(keys: string[]) => expandedKeys = new Set(keys)"
-            @update:selected-keys="onSelect"
-          />
-        </NPopover>
-      </div>
+      <FolderForm ref="folderFormRef" :folder="pendingEdit.folder" />
       <div class="flex justify-end gap-x-2 mt-4">
         <NButton @click="close">{{ $t("common.close") }}</NButton>
         <NButton
@@ -75,9 +32,8 @@
 
 <script lang="tsx" setup>
 import { create } from "@bufbuild/protobuf";
-import { onClickOutside } from "@vueuse/core";
-import { NButton, NInput, NPopover, NTree, type TreeOption } from "naive-ui";
-import { computed, nextTick, ref } from "vue";
+import { NButton, NInput } from "naive-ui";
+import { ref } from "vue";
 import { BBModal } from "@/bbkit";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
@@ -90,16 +46,15 @@ import {
   WorksheetSchema,
 } from "@/types/proto-es/v1/worksheet_service_pb";
 import { extractWorksheetUID } from "@/utils";
-import TreeNodePrefix from "@/views/sql-editor/AsidePanel/WorksheetPane/SheetList/TreeNodePrefix.vue";
-import type { WorsheetFolderNode } from "@/views/sql-editor/Sheet";
+import FolderForm from "@/views/sql-editor/AsidePanel/WorksheetPane/SheetList/FolderForm.vue";
 import { useSheetContextByView } from "@/views/sql-editor/Sheet";
 import { useSQLEditorContext } from "../context";
 
 const tabStore = useSQLEditorTabStore();
 const worksheetV1Store = useWorkSheetStore();
 const { events: editorEvents } = useSQLEditorContext();
-const { folderTree, folderContext, getPwdForWorksheet, getPathesForWorksheet } =
-  useSheetContextByView("my");
+const { getPwdForWorksheet } = useSheetContextByView("my");
+const folderFormRef = ref<InstanceType<typeof FolderForm>>();
 
 const pendingEdit = ref<{
   title: string;
@@ -109,24 +64,7 @@ const pendingEdit = ref<{
   title: "",
   folder: "",
 });
-const expandedKeys = ref<Set<string>>(new Set([]));
-const expandedKeysArray = computed(() => Array.from(expandedKeys.value));
-const folderInputRef = ref<InstanceType<typeof NInput>>();
-const folderTreeRef = ref<InstanceType<typeof NTree>>();
-const showPopover = ref<boolean>(false);
 const showModal = ref(false);
-
-onClickOutside(folderTreeRef, () => {
-  showPopover.value = false;
-});
-
-const formattedFolderPath = computed(() => {
-  let val = pendingEdit.value.folder.replace(folderContext.rootPath.value, "");
-  if (val[0] === "/") {
-    val = val.slice(1);
-  }
-  return val;
-});
 
 const doSaveSheet = async () => {
   if (!pendingEdit.value.rawTab) {
@@ -169,11 +107,8 @@ const doSaveSheet = async () => {
   }
 
   if (worksheetEntity) {
-    if (formattedFolderPath.value) {
-      const folders = formattedFolderPath.value
-        .split("/")
-        .map((p) => p.trim())
-        .filter((p) => p);
+    const folders = folderFormRef.value?.folders ?? [];
+    if (folders.length > 0) {
       await worksheetV1Store.upsertWorksheetOrganizer(
         {
           worksheet: worksheetEntity.name,
@@ -182,12 +117,6 @@ const doSaveSheet = async () => {
         },
         ["folders"]
       );
-
-      const folderPathes = new Set<string>([]);
-      for (const path of getPathesForWorksheet({ folders })) {
-        folderPathes.add(path);
-      }
-      folderContext.mergeFolders(folderPathes);
     }
 
     tabStore.updateTab(pendingEdit.value.rawTab.id, {
@@ -198,27 +127,6 @@ const doSaveSheet = async () => {
   }
 
   showModal.value = false;
-};
-
-const onFocus = () => {
-  showPopover.value = true;
-};
-
-const onSelect = (keys: string[]) => {
-  pendingEdit.value.folder = keys[0] ?? "";
-  nextTick(() => (showPopover.value = false));
-};
-
-const onInput = (val: string) => {
-  let changedVal = val;
-  if (val.endsWith(" /")) {
-    changedVal = val.slice(0, -2);
-  }
-  const rawPath = changedVal
-    .split("/")
-    .map((p) => p.trim())
-    .join("/");
-  pendingEdit.value.folder = rawPath;
 };
 
 const needShowModal = (tab: SQLEditorTab) => {
@@ -247,16 +155,4 @@ useEmitteryEventListener(editorEvents, "save-sheet", ({ tab, editTitle }) => {
   }
   doSaveSheet();
 });
-
-const renderPrefix = ({ option }: { option: TreeOption }) => {
-  const node = option as WorsheetFolderNode;
-  return (
-    <TreeNodePrefix
-      node={node}
-      expandedKeys={expandedKeys.value}
-      rootPath={folderContext.rootPath.value}
-      view={"my"}
-    />
-  );
-};
 </script>

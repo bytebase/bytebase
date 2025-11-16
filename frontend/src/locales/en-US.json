@@ -2075,7 +2075,8 @@
           "close-all": "Close all",
           "rename": "Rename",
           "add-folder": "Add folder",
-          "add-worksheet": "Add worksheet"
+          "add-worksheet": "Add worksheet",
+          "multi-select": "Multi-select"
         }
       }
     },
@@ -2360,7 +2361,8 @@
       "confirm-to-delete-sheet-title": "Confirm to delete this worksheet?",
       "confirm-to-duplicate-sheet": "Confirm to duplicate this worksheet?"
     },
-    "search-sheets": "Search Sheets"
+    "search-sheets": "Search Sheets",
+    "move-worksheets": "Move worksheets"
   },
   "sql-review": {
     "title": "SQL Review",

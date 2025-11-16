@@ -4,7 +4,7 @@
       class="default-theme flex flex-col flex-1 overflow-hidden"
       :dbl-click-splitter="false"
     >
-      <Pane v-if="windowWidth >= 800" size="20">
+      <Pane v-if="windowWidth >= 800" size="30">
         <AsidePanel />
       </Pane>
       <template v-else>

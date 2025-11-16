@@ -70,17 +70,17 @@ import {
 import { Worksheet_Visibility } from "@/types/proto-es/v1/worksheet_service_pb";
 import type {
   SheetViewMode,
-  WorsheetFolderNode,
+  WorksheetFolderNode,
 } from "@/views/sql-editor/Sheet";
 
 const props = defineProps<{
-  node: WorsheetFolderNode;
+  node: WorksheetFolderNode;
   view: SheetViewMode;
 }>();
 
 const emit = defineEmits<{
-  (e: "contextMenuShow", event: MouseEvent, node: WorsheetFolderNode): void;
-  (e: "sharePanelShow", event: MouseEvent, node: WorsheetFolderNode): void;
+  (e: "contextMenuShow", event: MouseEvent, node: WorksheetFolderNode): void;
+  (e: "sharePanelShow", event: MouseEvent, node: WorksheetFolderNode): void;
   (e: "toggleStar", item: { worksheet: string; starred: boolean }): void;
 }>();
 

@@ -2047,7 +2047,7 @@
     "project-write-desc": "Cả chủ sở hữu trang tính và người dùng dự án có quyền \"bb.worksheets.get\" đều có thể đọc/ghi",
     "create-read-only-data-source": "Đi tới tạo",
     "save-sheet": "Lưu trang tính",
-    "choose-folder": "Chọn thư mục",
+    "choose-folder": "Chọn hoặc tạo thư mục",
     "choose-folder-tips": "Bạn có thể tạo một thư mục mới bằng cách nhập một đường dẫn không tồn tại. Các thư mục phải được nối bằng dấu \"/\".",
     "save-sheet-input-placeholder": "Vui lòng nhập tên trang tính",
     "format": "Định dạng",
@@ -2075,7 +2075,8 @@
           "close-all": "Đóng tất cả",
           "rename": "Đổi tên",
           "add-folder": "Thêm thư mục",
-          "add-worksheet": "Thêm bảng tính"
+          "add-worksheet": "Thêm bảng tính",
+          "multi-select": "Chọn nhiều"
         }
       }
     },
@@ -2360,7 +2361,8 @@
       "confirm-to-delete-sheet-title": "Xác nhận xóa bảng tính này?",
       "confirm-to-duplicate-sheet": "Xác nhận nhân bản trang tính này?"
     },
-    "search-sheets": "Tìm kiếm Trang tính"
+    "search-sheets": "Tìm kiếm Trang tính",
+    "move-worksheets": "Di chuyển các trang tính"
   },
   "sql-review": {
     "title": "Đánh giá SQL",

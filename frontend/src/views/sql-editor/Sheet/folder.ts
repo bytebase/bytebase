@@ -17,8 +17,9 @@ export const useFolderByView = (
   );
   const localCache = useDynamicLocalStorage<Set<string>>(
     localCacheKey,
-    new Set()
+    new Set([rootPath.value])
   );
+  localCache.value.add(rootPath.value);
 
   const folders = computed(() => sortBy([...localCache.value]));
 
@@ -98,17 +99,21 @@ export const useFolderByView = (
       }
     }
 
+    const newSet = new Set(localCache.value);
     for (const item of pendingUpdatePathes) {
-      localCache.value.delete(item.old);
-      localCache.value.add(item.new);
+      newSet.delete(item.old);
+      newSet.add(item.new);
     }
+    localCache.value = newSet;
   };
 
   const mergeFolders = (pathes: Set<string>) => {
+    const newSet = new Set(localCache.value);
     for (const folder of pathes.values()) {
       const validPath = ensureFolderPath(folder);
-      localCache.value.add(validPath);
+      newSet.add(validPath);
     }
+    localCache.value = newSet;
   };
 
   const listSubFolders = (parent: string) => {

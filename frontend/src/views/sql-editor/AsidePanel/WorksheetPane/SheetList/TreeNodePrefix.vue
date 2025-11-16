@@ -42,11 +42,11 @@ import {
 } from "lucide-vue-next";
 import type {
   SheetViewMode,
-  WorsheetFolderNode,
+  WorksheetFolderNode,
 } from "@/views/sql-editor/Sheet";
 
 defineProps<{
-  node: WorsheetFolderNode;
+  node: WorksheetFolderNode;
   expandedKeys: Set<string>;
   rootPath: string;
   view: SheetViewMode;
