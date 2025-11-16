@@ -9,7 +9,6 @@ import (
 
 func TestPostgreSQLANTLRRules(t *testing.T) {
 	antlrRules := []advisor.SQLReviewRuleType{
-		HelloWorldRule,                                          // Test advisor to verify framework works
 		advisor.BuiltinRulePriorBackupCheck,                     // Migrated from legacy
 		advisor.SchemaRuleCharsetAllowlist,                      // Migrated from legacy
 		advisor.SchemaRuleCollationAllowlist,                    // Migrated from legacy
