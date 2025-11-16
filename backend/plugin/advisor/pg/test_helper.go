@@ -58,9 +58,8 @@ func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbTyp
 			t.Fatalf("%s doesn't have mocked metadata support", storepb.Engine_name[int32(dbType)])
 		}
 
-		database := advisor.MockPostgreSQLDatabase
-		originCatalog := catalog.NewDatabaseState(database, false /* ignoreCaseSensitive */, dbType)
-		finalCatalog := catalog.NewDatabaseState(database, false /* ignoreCaseSensitive */, dbType)
+		originCatalog, finalCatalog, err := catalog.NewCatalogWithMetadata(schemaMetadata, dbType, true /* isCaseSensitive for PostgreSQL */)
+		require.NoError(t, err)
 
 		// Get default payload, or use empty string for test-only rules
 		payload, err := advisor.SetDefaultSQLReviewRulePayload(rule, dbType)

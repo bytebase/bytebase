@@ -196,12 +196,12 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 			}
 		}
 
-		database := MockMySQLDatabase
+		isCaseSensitive := false
 		if dbType == storepb.Engine_POSTGRES {
-			database = MockPostgreSQLDatabase
+			isCaseSensitive = true
 		}
-		originCatalog := catalog.NewDatabaseState(database, false /* ignoreCaseSensitive */, dbType)
-		finalCatalog := catalog.NewDatabaseState(database, false /* ignoreCaseSensitive */, dbType)
+		originCatalog, finalCatalog, err := catalog.NewCatalogWithMetadata(schemaMetadata, dbType, isCaseSensitive)
+		require.NoError(t, err)
 
 		payload, err := SetDefaultSQLReviewRulePayload(rule, dbType)
 		require.NoError(t, err)

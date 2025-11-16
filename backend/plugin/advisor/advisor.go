@@ -13,8 +13,8 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 const (
@@ -47,8 +47,8 @@ type Context struct {
 	// SQL review rule special fields.
 	AST           any
 	Rule          *storepb.SQLReviewRule
-	OriginCatalog *catalog.DatabaseState
-	FinalCatalog  *catalog.DatabaseState
+	OriginCatalog *model.DatabaseMetadata
+	FinalCatalog  *model.DatabaseMetadata
 	Driver        *sql.DB
 
 	// CurrentDatabase is the current database.
