@@ -1,8 +1,16 @@
 package catalog
 
-// This file defines the database state during walk-through. The only two cases will use database state:
-//   1. during walk-through
-//   2. the underlying implementation of Finder
+// This file defines the internal database state used during walk-through.
+//
+// INTERNAL USE ONLY: DatabaseState is an internal implementation detail of the catalog package.
+// External code should use model.DatabaseMetadata instead.
+//
+// DatabaseState is used internally for:
+//   1. Walk-through implementations (MySQLWalkThrough, PgWalkThrough, TiDBWalkThrough)
+//   2. Advisor rules that need mutable catalog operations
+//
+// The public API uses model.DatabaseMetadata, which provides a cleaner interface
+// and better integration with the rest of the codebase.
 
 import (
 	"fmt"
