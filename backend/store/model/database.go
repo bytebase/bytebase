@@ -1047,6 +1047,32 @@ func (t *TableMetadata) GetProto() *storepb.TableMetadata {
 	return t.proto
 }
 
+// CreateColumn creates a new column in the table.
+// Returns an error if the column already exists.
+func (t *TableMetadata) CreateColumn(columnProto *storepb.ColumnMetadata) error {
+	// Check if column already exists
+	if t.GetColumn(columnProto.Name) != nil {
+		return errors.Errorf("column %q already exists in table %q", columnProto.Name, t.proto.Name)
+	}
+
+	// Add to proto's column list
+	t.proto.Columns = append(t.proto.Columns, columnProto)
+
+	// Add to internal map
+	var columnID string
+	if t.isDetailCaseSensitive {
+		columnID = columnProto.Name
+	} else {
+		columnID = strings.ToLower(columnProto.Name)
+	}
+	t.internalColumn[columnID] = columnProto
+
+	// Add to columns slice
+	t.columns = append(t.columns, columnProto)
+
+	return nil
+}
+
 // ExternalTableMetadata is the metadata for a external table.
 type ExternalTableMetadata struct {
 	isDetailCaseSensitive bool
