@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -105,7 +106,7 @@ func (r *TableDisallowSetCharsetRule) checkCreateTable(ctx *mysql.CreateTableCon
 			if option.DefaultCharset() != nil {
 				r.AddAdvice(&storepb.Advice{
 					Status:        r.level,
-					Code:          advisor.DisallowSetCharset.Int32(),
+					Code:          code.DisallowSetCharset.Int32(),
 					Title:         r.title,
 					Content:       fmt.Sprintf("Set charset on tables is disallowed, but \"%s\" uses", r.text),
 					StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
@@ -135,7 +136,7 @@ func (r *TableDisallowSetCharsetRule) checkAlterTable(ctx *mysql.AlterTableConte
 		if alterListItem.Charset() != nil {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
-				Code:          advisor.DisallowSetCharset.Int32(),
+				Code:          code.DisallowSetCharset.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("Set charset on tables is disallowed, but \"%s\" uses", r.text),
 				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),

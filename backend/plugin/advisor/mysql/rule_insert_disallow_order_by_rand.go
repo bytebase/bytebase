@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -129,7 +130,7 @@ func (r *InsertDisallowOrderByRandRule) checkQueryExpression(ctx *mysql.QueryExp
 		if strings.EqualFold(text, RandFn) {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
-				Code:          advisor.InsertUseOrderByRand.Int32(),
+				Code:          code.InsertUseOrderByRand.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("\"%s\" uses ORDER BY RAND in the INSERT statement", r.text),
 				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),

@@ -14,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -182,7 +183,7 @@ func (r *StatementQueryMinumumPlanLevelRule) checkSelectStatement(ctx *mysql.Sel
 	if err != nil {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.StatementExplainQueryFailed.Int32(),
+			Code:          code.StatementExplainQueryFailed.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("Failed to explain query: %s, with error: %s", query, err),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
@@ -192,7 +193,7 @@ func (r *StatementQueryMinumumPlanLevelRule) checkSelectStatement(ctx *mysql.Sel
 		if err != nil {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
-				Code:          advisor.Internal.Int32(),
+				Code:          code.Internal.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("Failed to check explain type column: %s, with error: %s", query, err),
 				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
@@ -209,7 +210,7 @@ func (r *StatementQueryMinumumPlanLevelRule) checkSelectStatement(ctx *mysql.Sel
 			if overused {
 				r.AddAdvice(&storepb.Advice{
 					Status:        r.level,
-					Code:          advisor.StatementUnwantedQueryPlanLevel.Int32(),
+					Code:          code.StatementUnwantedQueryPlanLevel.Int32(),
 					Title:         r.title,
 					Content:       fmt.Sprintf("Overused query plan level detected %s, minimum plan level: %s", overusedType.String(), r.explainType.String()),
 					StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),

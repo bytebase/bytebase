@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
@@ -134,7 +136,7 @@ func (r *TableNoDuplicateIndexRule) checkCreateTable(ctx *mysql.CreateTableConte
 	if index := hasDuplicateIndexes(r.indexList); index != nil {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.DuplicateIndexInTable.Int32(),
+			Code:          code.DuplicateIndexInTable.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("`%s` has duplicate index `%s`", tableName, index.indexName),
 			StartPosition: common.ConvertANTLRLineToPosition(index.line),
@@ -165,7 +167,7 @@ func (r *TableNoDuplicateIndexRule) checkAlterTable(ctx *mysql.AlterTableContext
 	if index := hasDuplicateIndexes(r.indexList); index != nil {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.DuplicateIndexInTable.Int32(),
+			Code:          code.DuplicateIndexInTable.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("`%s` has duplicate index `%s`", tableName, index.indexName),
 			StartPosition: common.ConvertANTLRLineToPosition(index.line),
@@ -247,7 +249,7 @@ func (r *TableNoDuplicateIndexRule) checkCreateIndex(ctx *mysql.CreateIndexConte
 	if index := hasDuplicateIndexes(r.indexList); index != nil {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.DuplicateIndexInTable.Int32(),
+			Code:          code.DuplicateIndexInTable.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("`%s` has duplicate index `%s`", tableName, index.indexName),
 			StartPosition: common.ConvertANTLRLineToPosition(index.line),

@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
@@ -102,7 +103,7 @@ func (r *NamingTableRule) handleCreateTable(ctx *parser.Create_tableContext) {
 	if !r.format.MatchString(tableName) {
 		r.AddAdvice(
 			r.level,
-			advisor.NamingTableConventionMismatch.Int32(),
+			code.NamingTableConventionMismatch.Int32(),
 			fmt.Sprintf(`"%s" mismatches table naming convention, naming format should be %q`, tableName, r.format),
 			common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
 		)
@@ -110,7 +111,7 @@ func (r *NamingTableRule) handleCreateTable(ctx *parser.Create_tableContext) {
 	if r.maxLength > 0 && len(tableName) > r.maxLength {
 		r.AddAdvice(
 			r.level,
-			advisor.NamingTableConventionMismatch.Int32(),
+			code.NamingTableConventionMismatch.Int32(),
 			fmt.Sprintf("\"%s\" mismatches table naming convention, its length should be within %d characters", tableName, r.maxLength),
 			common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
 		)
@@ -128,7 +129,7 @@ func (r *NamingTableRule) handleAlterTableProperties(ctx *parser.Alter_table_pro
 	if !r.format.MatchString(tableName) {
 		r.AddAdvice(
 			r.level,
-			advisor.NamingTableConventionMismatch.Int32(),
+			code.NamingTableConventionMismatch.Int32(),
 			fmt.Sprintf(`"%s" mismatches table naming convention, naming format should be %q`, tableName, r.format),
 			common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
 		)
@@ -136,7 +137,7 @@ func (r *NamingTableRule) handleAlterTableProperties(ctx *parser.Alter_table_pro
 	if r.maxLength > 0 && len(tableName) > r.maxLength {
 		r.AddAdvice(
 			r.level,
-			advisor.NamingTableConventionMismatch.Int32(),
+			code.NamingTableConventionMismatch.Int32(),
 			fmt.Sprintf("\"%s\" mismatches table naming convention, its length should be within %d characters", tableName, r.maxLength),
 			common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
 		)

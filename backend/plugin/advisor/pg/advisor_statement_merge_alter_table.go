@@ -10,6 +10,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -180,7 +181,7 @@ func (r *statementMergeAlterTableRule) generateAdvice() []*storepb.Advice {
 		if table.count > 1 {
 			adviceList = append(adviceList, &storepb.Advice{
 				Status:  r.level,
-				Code:    advisor.StatementRedundantAlterTable.Int32(),
+				Code:    code.StatementRedundantAlterTable.Int32(),
 				Title:   r.title,
 				Content: fmt.Sprintf("There are %d statements to modify table `%s`", table.count, table.name),
 				StartPosition: &storepb.Position{

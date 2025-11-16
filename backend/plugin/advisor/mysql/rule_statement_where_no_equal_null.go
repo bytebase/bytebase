@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -112,7 +113,7 @@ func (r *StatementWhereNoEqualNullRule) checkPrimaryExprCompare(ctx *mysql.Prima
 	if ctx.Predicate() != nil && ctx.Predicate().GetText() == "NULL" {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.StatementWhereNoEqualNull.Int32(),
+			Code:          code.StatementWhereNoEqualNull.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("WHERE clause contains equal null: %s", r.text),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),

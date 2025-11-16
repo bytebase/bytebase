@@ -7,6 +7,8 @@ import (
 	"math"
 	"strconv"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/tsql"
 	"github.com/pkg/errors"
@@ -133,7 +135,7 @@ func (r *ColumnMaximumVarcharLengthRule) enterDataType(ctx *parser.Data_typeCont
 	if currentLength > r.maximum {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.VarcharLengthExceedsLimit.Int32(),
+			Code:          code.VarcharLengthExceedsLimit.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("The maximum varchar length is %d.", r.maximum),
 			StartPosition: common.ConvertANTLRLineToPosition(line),

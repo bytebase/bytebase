@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -109,13 +110,13 @@ func (r *StatementDisallowLimitRule) OnExit(_ antlr.ParserRuleContext, nodeType 
 
 func (r *StatementDisallowLimitRule) checkDeleteStatement(ctx *mysql.DeleteStatementContext) {
 	if ctx.SimpleLimitClause() != nil && ctx.SimpleLimitClause().LIMIT_SYMBOL() != nil {
-		r.handleLimitClause(advisor.DeleteUseLimit, ctx.GetStart().GetLine())
+		r.handleLimitClause(code.DeleteUseLimit, ctx.GetStart().GetLine())
 	}
 }
 
 func (r *StatementDisallowLimitRule) checkUpdateStatement(ctx *mysql.UpdateStatementContext) {
 	if ctx.SimpleLimitClause() != nil && ctx.SimpleLimitClause().LIMIT_SYMBOL() != nil {
-		r.handleLimitClause(advisor.UpdateUseLimit, ctx.GetStart().GetLine())
+		r.handleLimitClause(code.UpdateUseLimit, ctx.GetStart().GetLine())
 	}
 }
 
@@ -124,11 +125,11 @@ func (r *StatementDisallowLimitRule) checkQueryExpression(ctx *mysql.QueryExpres
 		return
 	}
 	if ctx.LimitClause() != nil && ctx.LimitClause().LIMIT_SYMBOL() != nil {
-		r.handleLimitClause(advisor.InsertUseLimit, ctx.GetStart().GetLine())
+		r.handleLimitClause(code.InsertUseLimit, ctx.GetStart().GetLine())
 	}
 }
 
-func (r *StatementDisallowLimitRule) handleLimitClause(code advisor.Code, lineNumber int) {
+func (r *StatementDisallowLimitRule) handleLimitClause(code code.Code, lineNumber int) {
 	r.AddAdvice(&storepb.Advice{
 		Status:        r.level,
 		Code:          code.Int32(),

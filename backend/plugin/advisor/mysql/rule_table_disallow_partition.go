@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/parser/mysql"
 	"github.com/pkg/errors"
@@ -103,12 +105,12 @@ func (r *TableDisallowPartitionRule) checkCreateTable(ctx *mysql.CreateTableCont
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
-	code := advisor.Ok
+	code := advisorcode.Ok
 	if ctx.PartitionClause() != nil && ctx.PartitionClause().PartitionTypeDef() != nil {
-		code = advisor.CreateTablePartition
+		code = advisorcode.CreateTablePartition
 	}
 
-	if code != advisor.Ok {
+	if code != advisorcode.Ok {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
 			Code:          code.Int32(),
@@ -123,11 +125,11 @@ func (r *TableDisallowPartitionRule) checkAlterTable(ctx *mysql.AlterTableContex
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
-	code := advisor.Ok
+	code := advisorcode.Ok
 	if ctx.AlterTableActions() != nil && ctx.AlterTableActions().PartitionClause() != nil && ctx.AlterTableActions().PartitionClause().PartitionTypeDef() != nil {
-		code = advisor.CreateTablePartition
+		code = advisorcode.CreateTablePartition
 	}
-	if code != advisor.Ok {
+	if code != advisorcode.Ok {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
 			Code:          code.Int32(),

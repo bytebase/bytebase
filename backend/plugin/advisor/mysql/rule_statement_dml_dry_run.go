@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -129,7 +130,7 @@ func (r *StatementDmlDryRunRule) handleStmt(text string, lineNumber int) {
 	if _, err := advisor.Query(r.ctx, advisor.QueryContext{}, r.driver, storepb.Engine_MYSQL, fmt.Sprintf("EXPLAIN %s", text)); err != nil {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.StatementDMLDryRunFailed.Int32(),
+			Code:          code.StatementDMLDryRunFailed.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", text, err.Error()),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + lineNumber),

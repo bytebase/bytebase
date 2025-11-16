@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 
 	parser "github.com/bytebase/parser/postgresql"
@@ -178,7 +180,7 @@ func (r *tableNoFKRule) addFKAdvice(schemaName, tableName string, ctx antlr.Pars
 	stmtText := extractStatementText(r.statementsText, ctx.GetStart().GetLine(), ctx.GetStop().GetLine())
 	r.AddAdvice(&storepb.Advice{
 		Status:  r.level,
-		Code:    advisor.TableHasFK.Int32(),
+		Code:    code.TableHasFK.Int32(),
 		Title:   r.title,
 		Content: fmt.Sprintf("Foreign key is not allowed in the table %q.%q, related statement: \"%s\"", schemaName, tableName, stmtText),
 		StartPosition: &storepb.Position{

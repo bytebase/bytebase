@@ -10,6 +10,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -97,7 +98,7 @@ func (r *commentConventionRule) handleCommentstmt(ctx antlr.ParserRuleContext) {
 		if r.maxLength > 0 && len(comment) > r.maxLength {
 			r.AddAdvice(&storepb.Advice{
 				Status:  r.level,
-				Code:    advisor.CommentTooLong.Int32(),
+				Code:    code.CommentTooLong.Int32(),
 				Title:   r.title,
 				Content: fmt.Sprintf("The length of comment should be within %d characters", r.maxLength),
 				StartPosition: &storepb.Position{

@@ -6,6 +6,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
@@ -103,7 +105,7 @@ func (checker *columnDisallowDropInIndexChecker) dropColumn(in ast.Node) (ast.No
 				if !checker.canDrop(table, colName) {
 					checker.adviceList = append(checker.adviceList, &storepb.Advice{
 						Status:        checker.level,
-						Code:          advisor.DropIndexColumn.Int32(),
+						Code:          code.DropIndexColumn.Int32(),
 						Title:         checker.title,
 						Content:       fmt.Sprintf("`%s`.`%s` cannot drop index column", table, colName),
 						StartPosition: common.ConvertANTLRLineToPosition(checker.line),

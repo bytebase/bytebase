@@ -12,6 +12,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -152,7 +153,7 @@ func (r *MaxExecutionTimeRule) checkSetStatement(ctx *mysql.SetStatementContext)
 func (r *MaxExecutionTimeRule) setAdvice() {
 	r.adviceList = append(r.adviceList, &storepb.Advice{
 		Status:  r.level,
-		Code:    advisor.StatementNoMaxExecutionTime.Int32(),
+		Code:    code.StatementNoMaxExecutionTime.Int32(),
 		Title:   r.title,
 		Content: fmt.Sprintf("The %s is not set", r.systemVariable),
 	})

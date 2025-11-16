@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/parser/mysql"
 	"github.com/pkg/errors"
@@ -122,7 +124,7 @@ func (r *ColumnDisallowSetCharsetRule) checkCreateTable(ctx *mysql.CreateTableCo
 		if !r.checkCharset(charset) {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
-				Code:          advisor.SetColumnCharset.Int32(),
+				Code:          code.SetColumnCharset.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("Disallow set column charset but \"%s\" does", r.text),
 				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
@@ -201,7 +203,7 @@ func (r *ColumnDisallowSetCharsetRule) checkAlterTable(ctx *mysql.AlterTableCont
 			if !r.checkCharset(charsetName) {
 				r.AddAdvice(&storepb.Advice{
 					Status:        r.level,
-					Code:          advisor.SetColumnCharset.Int32(),
+					Code:          code.SetColumnCharset.Int32(),
 					Title:         r.title,
 					Content:       fmt.Sprintf("Disallow set column charset but \"%s\" does", r.text),
 					StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),

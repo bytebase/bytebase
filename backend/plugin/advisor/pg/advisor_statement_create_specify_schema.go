@@ -9,6 +9,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -85,7 +86,7 @@ func (r *statementCreateSpecifySchemaRule) handleCreatestmt(ctx antlr.ParserRule
 		if schemaName == "" {
 			r.AddAdvice(&storepb.Advice{
 				Status:  r.level,
-				Code:    advisor.StatementCreateWithoutSchemaName.Int32(),
+				Code:    code.StatementCreateWithoutSchemaName.Int32(),
 				Title:   r.title,
 				Content: "Table schema should be specified.",
 				StartPosition: &storepb.Position{

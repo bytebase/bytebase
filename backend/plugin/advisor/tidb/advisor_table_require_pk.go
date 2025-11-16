@@ -12,6 +12,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 const (
@@ -141,7 +142,7 @@ func (v *tableRequirePKChecker) generateAdviceList() []*storepb.Advice {
 		if len(v.tables[tableName]) == 0 {
 			v.adviceList = append(v.adviceList, &storepb.Advice{
 				Status:        v.level,
-				Code:          advisor.TableNoPK.Int32(),
+				Code:          code.TableNoPK.Int32(),
 				Title:         v.title,
 				Content:       fmt.Sprintf("Table `%s` requires PRIMARY KEY", tableName),
 				StartPosition: common.ConvertANTLRLineToPosition(v.line[tableName]),

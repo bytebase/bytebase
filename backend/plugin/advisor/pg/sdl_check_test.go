@@ -3,10 +3,11 @@ package pg
 import (
 	"testing"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/plugin/advisor"
 )
 
 func TestCheckSDLStyle(t *testing.T) {
@@ -14,7 +15,7 @@ func TestCheckSDLStyle(t *testing.T) {
 		name      string
 		statement string
 		wantCount int
-		wantCodes []advisor.Code
+		wantCodes []code.Code
 	}{
 		{
 			name: "Valid SDL - table with schema name, table-level named constraints",
@@ -56,7 +57,7 @@ func TestCheckSDLStyle(t *testing.T) {
 				CONSTRAINT pk_users PRIMARY KEY (id)
 			);`,
 			wantCount: 1,
-			wantCodes: []advisor.Code{advisor.SDLRequireSchemaName},
+			wantCodes: []code.Code{code.SDLRequireSchemaName},
 		},
 		{
 			name: "Error - Column-level PRIMARY KEY constraint",
@@ -65,7 +66,7 @@ func TestCheckSDLStyle(t *testing.T) {
 				email TEXT
 			);`,
 			wantCount: 1,
-			wantCodes: []advisor.Code{advisor.SDLDisallowColumnConstraint},
+			wantCodes: []code.Code{code.SDLDisallowColumnConstraint},
 		},
 		{
 			name: "Error - Column-level UNIQUE constraint",
@@ -74,7 +75,7 @@ func TestCheckSDLStyle(t *testing.T) {
 				email TEXT UNIQUE
 			);`,
 			wantCount: 1,
-			wantCodes: []advisor.Code{advisor.SDLDisallowColumnConstraint},
+			wantCodes: []code.Code{code.SDLDisallowColumnConstraint},
 		},
 		{
 			name: "Error - Column-level CHECK constraint",
@@ -83,7 +84,7 @@ func TestCheckSDLStyle(t *testing.T) {
 				email TEXT
 			);`,
 			wantCount: 1,
-			wantCodes: []advisor.Code{advisor.SDLDisallowColumnConstraint},
+			wantCodes: []code.Code{code.SDLDisallowColumnConstraint},
 		},
 		{
 			name: "Error - Column-level FOREIGN KEY constraint",
@@ -92,7 +93,7 @@ func TestCheckSDLStyle(t *testing.T) {
 				user_id INTEGER REFERENCES public.users(id)
 			);`,
 			wantCount: 1,
-			wantCodes: []advisor.Code{advisor.SDLDisallowColumnConstraint},
+			wantCodes: []code.Code{code.SDLDisallowColumnConstraint},
 		},
 		{
 			name: "Error - Table-level constraint without name",
@@ -101,7 +102,7 @@ func TestCheckSDLStyle(t *testing.T) {
 				PRIMARY KEY (id)
 			);`,
 			wantCount: 1,
-			wantCodes: []advisor.Code{advisor.SDLRequireConstraintName},
+			wantCodes: []code.Code{code.SDLRequireConstraintName},
 		},
 		{
 			name: "Error - Table-level UNIQUE without name",
@@ -111,7 +112,7 @@ func TestCheckSDLStyle(t *testing.T) {
 				UNIQUE (email)
 			);`,
 			wantCount: 1,
-			wantCodes: []advisor.Code{advisor.SDLRequireConstraintName},
+			wantCodes: []code.Code{code.SDLRequireConstraintName},
 		},
 		{
 			name: "Error - Table-level CHECK without name",
@@ -120,7 +121,7 @@ func TestCheckSDLStyle(t *testing.T) {
 				CHECK (id > 0)
 			);`,
 			wantCount: 1,
-			wantCodes: []advisor.Code{advisor.SDLRequireConstraintName},
+			wantCodes: []code.Code{code.SDLRequireConstraintName},
 		},
 		{
 			name: "Error - Table-level FOREIGN KEY without name",
@@ -134,7 +135,7 @@ func TestCheckSDLStyle(t *testing.T) {
 				FOREIGN KEY (user_id) REFERENCES public.users(id)
 			);`,
 			wantCount: 1,
-			wantCodes: []advisor.Code{advisor.SDLRequireConstraintName},
+			wantCodes: []code.Code{code.SDLRequireConstraintName},
 		},
 		{
 			name: "Error - Multiple disallowed column-level constraints on one column",
@@ -143,8 +144,8 @@ func TestCheckSDLStyle(t *testing.T) {
 				email TEXT
 			);`,
 			wantCount: 1, // One column with multiple disallowed constraints
-			wantCodes: []advisor.Code{
-				advisor.SDLDisallowColumnConstraint,
+			wantCodes: []code.Code{
+				code.SDLDisallowColumnConstraint,
 			},
 		},
 		{
@@ -154,9 +155,9 @@ func TestCheckSDLStyle(t *testing.T) {
 				email TEXT UNIQUE
 			);`,
 			wantCount: 2, // Two columns with disallowed constraints
-			wantCodes: []advisor.Code{
-				advisor.SDLDisallowColumnConstraint,
-				advisor.SDLDisallowColumnConstraint,
+			wantCodes: []code.Code{
+				code.SDLDisallowColumnConstraint,
+				code.SDLDisallowColumnConstraint,
 			},
 		},
 		{
@@ -178,9 +179,9 @@ func TestCheckSDLStyle(t *testing.T) {
 				PRIMARY KEY (id)
 			);`,
 			wantCount: 2,
-			wantCodes: []advisor.Code{
-				advisor.SDLRequireSchemaName,
-				advisor.SDLRequireConstraintName,
+			wantCodes: []code.Code{
+				code.SDLRequireSchemaName,
+				code.SDLRequireConstraintName,
 			},
 		},
 		{
@@ -190,10 +191,10 @@ func TestCheckSDLStyle(t *testing.T) {
 				UNIQUE (id)
 			);`,
 			wantCount: 3,
-			wantCodes: []advisor.Code{
-				advisor.SDLRequireSchemaName,
-				advisor.SDLDisallowColumnConstraint,
-				advisor.SDLRequireConstraintName,
+			wantCodes: []code.Code{
+				code.SDLRequireSchemaName,
+				code.SDLDisallowColumnConstraint,
+				code.SDLRequireConstraintName,
 			},
 		},
 		{
@@ -206,13 +207,13 @@ func TestCheckSDLStyle(t *testing.T) {
 			name:      "Error - CREATE INDEX without schema name",
 			statement: `CREATE INDEX idx_users_email ON users (email);`,
 			wantCount: 1,
-			wantCodes: []advisor.Code{advisor.SDLRequireSchemaName},
+			wantCodes: []code.Code{code.SDLRequireSchemaName},
 		},
 		{
 			name:      "Error - CREATE INDEX without schema name (quoted table)",
 			statement: `CREATE INDEX "idx_departments_budget" ON ONLY "departments" (budget);`,
 			wantCount: 1,
-			wantCodes: []advisor.Code{advisor.SDLRequireSchemaName},
+			wantCodes: []code.Code{code.SDLRequireSchemaName},
 		},
 		{
 			name:      "Valid SDL - CREATE UNIQUE INDEX with schema name",
@@ -224,22 +225,22 @@ func TestCheckSDLStyle(t *testing.T) {
 			name:      "Error - CREATE UNIQUE INDEX without schema name",
 			statement: `CREATE UNIQUE INDEX idx_users_email ON users (email);`,
 			wantCount: 1,
-			wantCodes: []advisor.Code{advisor.SDLRequireSchemaName},
+			wantCodes: []code.Code{code.SDLRequireSchemaName},
 		},
 		{
 			name:      "Error - CREATE INDEX (unnamed) without schema name",
 			statement: `CREATE INDEX ON users (email);`,
 			wantCount: 2, // Both: missing index name AND missing schema name
-			wantCodes: []advisor.Code{
-				advisor.SDLRequireIndexName,
-				advisor.SDLRequireSchemaName,
+			wantCodes: []code.Code{
+				code.SDLRequireIndexName,
+				code.SDLRequireSchemaName,
 			},
 		},
 		{
 			name:      "Error - CREATE INDEX (unnamed) with schema name",
 			statement: `CREATE INDEX ON public.users (email);`,
 			wantCount: 1, // Only missing index name
-			wantCodes: []advisor.Code{advisor.SDLRequireIndexName},
+			wantCodes: []code.Code{code.SDLRequireIndexName},
 		},
 		{
 			name: "Valid SDL - CREATE VIEW with schema name",
@@ -253,7 +254,7 @@ CREATE VIEW public.active_users AS SELECT * FROM public.users WHERE active = tru
 			statement: `CREATE TABLE public.users (id INTEGER, active BOOLEAN, CONSTRAINT pk_users PRIMARY KEY (id));
 CREATE VIEW active_users AS SELECT * FROM public.users WHERE active = true;`,
 			wantCount: 1,
-			wantCodes: []advisor.Code{advisor.SDLRequireSchemaName},
+			wantCodes: []code.Code{code.SDLRequireSchemaName},
 		},
 		{
 			name:      "Valid SDL - CREATE SEQUENCE with schema name",
@@ -265,7 +266,7 @@ CREATE VIEW active_users AS SELECT * FROM public.users WHERE active = true;`,
 			name:      "Error - CREATE SEQUENCE without schema name",
 			statement: `CREATE SEQUENCE user_id_seq START 1;`,
 			wantCount: 1,
-			wantCodes: []advisor.Code{advisor.SDLRequireSchemaName},
+			wantCodes: []code.Code{code.SDLRequireSchemaName},
 		},
 		{
 			name: "Valid SDL - CREATE FUNCTION with schema name",
@@ -281,7 +282,7 @@ CREATE VIEW active_users AS SELECT * FROM public.users WHERE active = true;`,
 				SELECT COUNT(*) FROM public.users;
 			$$ LANGUAGE SQL;`,
 			wantCount: 1,
-			wantCodes: []advisor.Code{advisor.SDLRequireSchemaName},
+			wantCodes: []code.Code{code.SDLRequireSchemaName},
 		},
 		{
 			name:      "Valid SDL - ALTER SEQUENCE with schema name",
@@ -293,7 +294,7 @@ CREATE VIEW active_users AS SELECT * FROM public.users WHERE active = true;`,
 			name:      "Error - ALTER SEQUENCE without schema name",
 			statement: `ALTER SEQUENCE user_id_seq OWNED BY public.users.id;`,
 			wantCount: 1,
-			wantCodes: []advisor.Code{advisor.SDLRequireSchemaName},
+			wantCodes: []code.Code{code.SDLRequireSchemaName},
 		},
 		{
 			name:      "Valid SDL - ALTER SEQUENCE with other options",
@@ -325,11 +326,11 @@ CREATE VIEW active_users AS SELECT * FROM public.users WHERE active = true;`,
 
 			CREATE VIEW active_users AS SELECT * FROM users;`,
 			wantCount: 4, // schema name for table + column constraint + schema name for index + schema name for view
-			wantCodes: []advisor.Code{
-				advisor.SDLRequireSchemaName,        // table
-				advisor.SDLDisallowColumnConstraint, // column constraint
-				advisor.SDLRequireSchemaName,        // index
-				advisor.SDLRequireSchemaName,        // view
+			wantCodes: []code.Code{
+				code.SDLRequireSchemaName,        // table
+				code.SDLDisallowColumnConstraint, // column constraint
+				code.SDLRequireSchemaName,        // index
+				code.SDLRequireSchemaName,        // view
 			},
 		},
 		{
@@ -371,7 +372,7 @@ CREATE VIEW active_users AS SELECT * FROM public.users WHERE active = true;`,
 				CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id)
 			);`,
 			wantCount: 1,
-			wantCodes: []advisor.Code{advisor.SDLRequireSchemaName},
+			wantCodes: []code.Code{code.SDLRequireSchemaName},
 		},
 		{
 			name: "Error - FK reference without schema name (column-level)",
@@ -380,9 +381,9 @@ CREATE VIEW active_users AS SELECT * FROM public.users WHERE active = true;`,
 				user_id INTEGER REFERENCES users(id)
 			);`,
 			wantCount: 2, // Both: disallowed column constraint AND missing schema
-			wantCodes: []advisor.Code{
-				advisor.SDLRequireSchemaName,
-				advisor.SDLDisallowColumnConstraint,
+			wantCodes: []code.Code{
+				code.SDLRequireSchemaName,
+				code.SDLDisallowColumnConstraint,
 			},
 		},
 		{
@@ -403,9 +404,9 @@ CREATE VIEW active_users AS SELECT * FROM public.users WHERE active = true;`,
 				CONSTRAINT fk_orders_product FOREIGN KEY (product_id) REFERENCES products(id)
 			);`,
 			wantCount: 2, // Two FK references without schema
-			wantCodes: []advisor.Code{
-				advisor.SDLRequireSchemaName,
-				advisor.SDLRequireSchemaName,
+			wantCodes: []code.Code{
+				code.SDLRequireSchemaName,
+				code.SDLRequireSchemaName,
 			},
 		},
 		{

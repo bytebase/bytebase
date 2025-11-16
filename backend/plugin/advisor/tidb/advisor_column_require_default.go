@@ -6,6 +6,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
@@ -123,7 +125,7 @@ func (checker *columRequireDefaultChecker) Enter(in ast.Node) (ast.Node, bool) {
 	for _, column := range columnList {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:        checker.level,
-			Code:          advisor.NoDefault.Int32(),
+			Code:          code.NoDefault.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("Column `%s`.`%s` doesn't have DEFAULT.", column.table, column.column),
 			StartPosition: common.ConvertANTLRLineToPosition(column.line),

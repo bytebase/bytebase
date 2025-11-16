@@ -10,6 +10,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -107,7 +108,7 @@ func (r *statementDisallowOnDelCascadeRule) handleKeyDelete(ctx *parser.Key_dele
 				}
 				r.AddAdvice(&storepb.Advice{
 					Status:  r.level,
-					Code:    advisor.StatementDisallowCascade.Int32(),
+					Code:    code.StatementDisallowCascade.Int32(),
 					Title:   r.title,
 					Content: "The CASCADE option is not permitted for ON DELETE clauses",
 					StartPosition: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{

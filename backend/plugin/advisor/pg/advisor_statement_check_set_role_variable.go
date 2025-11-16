@@ -9,6 +9,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -46,7 +47,7 @@ func (*StatementCheckSetRoleVariable) Check(_ context.Context, checkCtx advisor.
 	if !rule.hasSetRole {
 		rule.AddAdvice(&storepb.Advice{
 			Status:        level,
-			Code:          advisor.StatementCheckSetRoleVariable.Int32(),
+			Code:          code.StatementCheckSetRoleVariable.Int32(),
 			Title:         rule.title,
 			Content:       "No SET ROLE statement found.",
 			StartPosition: nil,

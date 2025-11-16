@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/parser/mysql"
 	"github.com/pkg/errors"
@@ -207,7 +209,7 @@ func (r *IndexPrimaryKeyTypeAllowlistRule) checkFieldDefinition(tableName, colum
 			if _, exists := r.allowlist[columnType]; !exists {
 				r.AddAdvice(&storepb.Advice{
 					Status:        r.level,
-					Code:          advisor.IndexPKType.Int32(),
+					Code:          code.IndexPKType.Int32(),
 					Title:         r.title,
 					Content:       fmt.Sprintf("The column `%s` in table `%s` is one of the primary key, but its type \"%s\" is not in allowlist", columnName, tableName, columnType),
 					StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
@@ -236,7 +238,7 @@ func (r *IndexPrimaryKeyTypeAllowlistRule) checkConstraintDef(tableName string, 
 		if _, exists := r.allowlist[columnType]; !exists {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
-				Code:          advisor.IndexPKType.Int32(),
+				Code:          code.IndexPKType.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("The column `%s` in table `%s` is one of the primary key, but its type \"%s\" is not in allowlist", columnName, tableName, columnType),
 				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),

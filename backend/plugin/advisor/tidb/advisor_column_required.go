@@ -6,6 +6,8 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
@@ -133,7 +135,7 @@ func (v *columnRequirementChecker) generateAdviceList() []*storepb.Advice {
 			slices.Sort(missingColumns)
 			v.adviceList = append(v.adviceList, &storepb.Advice{
 				Status:        v.level,
-				Code:          advisor.NoRequiredColumn.Int32(),
+				Code:          code.NoRequiredColumn.Int32(),
 				Title:         v.title,
 				Content:       fmt.Sprintf("Table `%s` requires columns: %s", tableName, strings.Join(missingColumns, ", ")),
 				StartPosition: common.ConvertANTLRLineToPosition(v.line[tableName]),

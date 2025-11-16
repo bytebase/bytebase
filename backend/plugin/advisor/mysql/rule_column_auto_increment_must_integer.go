@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
@@ -174,7 +176,7 @@ func (r *ColumnAutoIncrementMustIntegerRule) checkFieldDefinition(tableName, col
 	if !r.isAutoIncrementColumnIsInteger(ctx) {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.AutoIncrementColumnNotInteger.Int32(),
+			Code:          code.AutoIncrementColumnNotInteger.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("Auto-increment column `%s`.`%s` requires integer type", tableName, columnName),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),

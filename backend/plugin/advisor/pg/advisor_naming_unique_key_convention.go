@@ -12,6 +12,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
@@ -361,7 +362,7 @@ func (r *namingUKConventionRule) checkUniqueKeyName(indexName, tableName string,
 	if err != nil {
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
-			Code:    advisor.Internal.Int32(),
+			Code:    code.Internal.Int32(),
 			Title:   "Internal error for unique key naming convention rule",
 			Content: fmt.Sprintf("Failed to compile regex for unique key naming convention: %v", err),
 		})
@@ -371,7 +372,7 @@ func (r *namingUKConventionRule) checkUniqueKeyName(indexName, tableName string,
 	if !regex.MatchString(indexName) {
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
-			Code:    advisor.NamingUKConventionMismatch.Int32(),
+			Code:    code.NamingUKConventionMismatch.Int32(),
 			Title:   r.title,
 			Content: fmt.Sprintf(`Unique key in table "%s" mismatches the naming convention, expect %q but found "%s"`, tableName, regex, indexName),
 			StartPosition: &storepb.Position{
@@ -384,7 +385,7 @@ func (r *namingUKConventionRule) checkUniqueKeyName(indexName, tableName string,
 	if r.maxLength > 0 && len(indexName) > r.maxLength {
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
-			Code:    advisor.NamingUKConventionMismatch.Int32(),
+			Code:    code.NamingUKConventionMismatch.Int32(),
 			Title:   r.title,
 			Content: fmt.Sprintf(`Unique key "%s" in table "%s" mismatches the naming convention, its length should be within %d characters`, indexName, tableName, r.maxLength),
 			StartPosition: &storepb.Position{

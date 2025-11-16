@@ -6,6 +6,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
@@ -68,7 +70,7 @@ func (checker *columnDisallowChangingOrderChecker) Enter(in ast.Node) (ast.Node,
 				spec.Position.Tp != ast.ColumnPositionNone {
 				checker.adviceList = append(checker.adviceList, &storepb.Advice{
 					Status:        checker.level,
-					Code:          advisor.ChangeColumnOrder.Int32(),
+					Code:          code.ChangeColumnOrder.Int32(),
 					Title:         checker.title,
 					Content:       fmt.Sprintf("\"%s\" changes column order", checker.text),
 					StartPosition: common.ConvertANTLRLineToPosition(checker.line),

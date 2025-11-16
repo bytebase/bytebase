@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
@@ -65,7 +66,7 @@ func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 			if rule.payload.Required {
 				rule.AddAdvice(&storepb.Advice{
 					Status:  rule.level,
-					Code:    advisor.CommentEmpty.Int32(),
+					Code:    code.CommentEmpty.Int32(),
 					Title:   rule.title,
 					Content: fmt.Sprintf("Comment is required for table `%s`", tableInfo.displayName),
 					StartPosition: &storepb.Position{
@@ -79,7 +80,7 @@ func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 			if rule.payload.MaxLength > 0 && len(comment) > rule.payload.MaxLength {
 				rule.AddAdvice(&storepb.Advice{
 					Status:  rule.level,
-					Code:    advisor.CommentTooLong.Int32(),
+					Code:    code.CommentTooLong.Int32(),
 					Title:   rule.title,
 					Content: fmt.Sprintf("Table `%s` comment is too long. The length of comment should be within %d characters", tableInfo.displayName, rule.payload.MaxLength),
 					StartPosition: &storepb.Position{
@@ -92,7 +93,7 @@ func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 				if classification, _ := common.GetClassificationAndUserComment(comment, rule.classificationConfig); classification == "" {
 					rule.AddAdvice(&storepb.Advice{
 						Status:  rule.level,
-						Code:    advisor.CommentMissingClassification.Int32(),
+						Code:    code.CommentMissingClassification.Int32(),
 						Title:   rule.title,
 						Content: fmt.Sprintf("Table `%s` comment requires classification", tableInfo.displayName),
 						StartPosition: &storepb.Position{

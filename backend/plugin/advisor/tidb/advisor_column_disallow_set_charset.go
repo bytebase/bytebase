@@ -6,6 +6,8 @@ import (
 	"context"
 	"fmt"
 
+	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
@@ -62,13 +64,13 @@ type columnDisallowSetCharsetChecker struct {
 
 // Enter implements the ast.Visitor interface.
 func (checker *columnDisallowSetCharsetChecker) Enter(in ast.Node) (ast.Node, bool) {
-	code := advisor.Ok
+	code := advisorcode.Ok
 	switch node := in.(type) {
 	case *ast.CreateTableStmt:
 		for _, column := range node.Cols {
 			charset := getColumnCharset(column)
 			if !checkCharset(charset) {
-				code = advisor.SetColumnCharset
+				code = advisorcode.SetColumnCharset
 				break
 			}
 		}
@@ -79,27 +81,27 @@ func (checker *columnDisallowSetCharsetChecker) Enter(in ast.Node) (ast.Node, bo
 				for _, column := range spec.NewColumns {
 					charset := getColumnCharset(column)
 					if !checkCharset(charset) {
-						code = advisor.SetColumnCharset
+						code = advisorcode.SetColumnCharset
 					}
 				}
 			case ast.AlterTableChangeColumn, ast.AlterTableModifyColumn:
 				charset := getColumnCharset(spec.NewColumns[0])
 				if !checkCharset(charset) {
-					code = advisor.SetColumnCharset
+					code = advisorcode.SetColumnCharset
 				}
 			default:
 				// Other alter table types
 			}
-			if code != advisor.Ok {
+			if code != advisorcode.Ok {
 				break
 			}
 		}
 	}
 
-	if code != advisor.Ok {
+	if code != advisorcode.Ok {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:        checker.level,
-			Code:          advisor.SetColumnCharset.Int32(),
+			Code:          advisorcode.SetColumnCharset.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("Disallow set column charset but \"%s\" does", checker.text),
 			StartPosition: common.ConvertANTLRLineToPosition(checker.line),

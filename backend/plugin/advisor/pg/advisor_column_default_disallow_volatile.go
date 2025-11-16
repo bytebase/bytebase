@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 
 	parser "github.com/bytebase/parser/postgresql"
@@ -213,7 +215,7 @@ func (r *columnDefaultDisallowVolatileRule) generateAdvice() {
 	for _, column := range columnList {
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
-			Code:    advisor.NoDefault.Int32(),
+			Code:    code.NoDefault.Int32(),
 			Title:   r.title,
 			Content: fmt.Sprintf("Column %q.%q in schema %q has volatile DEFAULT", column.table, column.name, column.schema),
 			StartPosition: &storepb.Position{

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 
 	parser "github.com/bytebase/parser/postgresql"
@@ -106,7 +108,7 @@ func (r *columnRequireDefaultRule) handleCreatestmt(ctx *parser.CreatestmtContex
 					if !r.hasDefault(colDef) {
 						r.AddAdvice(&storepb.Advice{
 							Status:  r.level,
-							Code:    advisor.NoDefault.Int32(),
+							Code:    code.NoDefault.Int32(),
 							Title:   r.title,
 							Content: fmt.Sprintf("Column %q.%q in schema %q doesn't have DEFAULT", tableName, columnName, "public"),
 							StartPosition: &storepb.Position{
@@ -148,7 +150,7 @@ func (r *columnRequireDefaultRule) handleAltertablestmt(ctx *parser.Altertablest
 					if !r.hasDefault(colDef) {
 						r.AddAdvice(&storepb.Advice{
 							Status:  r.level,
-							Code:    advisor.NoDefault.Int32(),
+							Code:    code.NoDefault.Int32(),
 							Title:   r.title,
 							Content: fmt.Sprintf("Column %q.%q in schema %q doesn't have DEFAULT", tableName, columnName, "public"),
 							StartPosition: &storepb.Position{

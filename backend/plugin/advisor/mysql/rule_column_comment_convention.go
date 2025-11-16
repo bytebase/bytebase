@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -196,7 +197,7 @@ func (r *ColumnCommentConventionRule) checkFieldDefinition(tableName, columnName
 		if r.payload.MaxLength >= 0 && len(comment) > r.payload.MaxLength {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
-				Code:          advisor.CommentTooLong.Int32(),
+				Code:          code.CommentTooLong.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("The length of column `%s`.`%s` comment should be within %d characters", tableName, columnName, r.payload.MaxLength),
 				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
@@ -207,7 +208,7 @@ func (r *ColumnCommentConventionRule) checkFieldDefinition(tableName, columnName
 			if classification, _ := common.GetClassificationAndUserComment(comment, r.classificationConfig); classification == "" {
 				r.AddAdvice(&storepb.Advice{
 					Status:        r.level,
-					Code:          advisor.CommentMissingClassification.Int32(),
+					Code:          code.CommentMissingClassification.Int32(),
 					Title:         r.title,
 					Content:       fmt.Sprintf("Column `%s`.`%s` comment requires classification", tableName, columnName),
 					StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
@@ -221,7 +222,7 @@ func (r *ColumnCommentConventionRule) checkFieldDefinition(tableName, columnName
 	if len(comment) == 0 && r.payload.Required {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.CommentEmpty.Int32(),
+			Code:          code.CommentEmpty.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("Column `%s`.`%s` requires comments", tableName, columnName),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),

@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -77,7 +78,7 @@ func (checker *statementMaximumLimitValueChecker) Enter(in ast.Node) (ast.Node, 
 			if limitVal > int64(checker.limitMaxValue) {
 				checker.adviceList = append(checker.adviceList, &storepb.Advice{
 					Status:        checker.level,
-					Code:          advisor.StatementExceedMaximumLimitValue.Int32(),
+					Code:          code.StatementExceedMaximumLimitValue.Int32(),
 					Title:         checker.title,
 					Content:       fmt.Sprintf("The limit value %d exceeds the maximum allowed value %d", limitVal, checker.limitMaxValue),
 					StartPosition: common.ConvertANTLRLineToPosition(checker.line),

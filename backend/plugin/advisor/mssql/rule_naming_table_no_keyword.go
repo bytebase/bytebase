@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/tsql"
 	"github.com/pkg/errors"
@@ -89,7 +91,7 @@ func (r *NamingTableNoKeywordRule) enterCreateTable(ctx *parser.Create_tableCont
 	if tsqlparser.IsTSQLReservedKeyword(normalizedTableName, false) {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.NameIsKeywordIdentifier.Int32(),
+			Code:          code.NameIsKeywordIdentifier.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("Table name [%s] is a reserved keyword and should be avoided.", normalizedTableName),
 			StartPosition: common.ConvertANTLRLineToPosition(tableName.GetStart().GetLine()),

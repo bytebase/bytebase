@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/tsql"
 	"github.com/pkg/errors"
@@ -101,7 +103,7 @@ func (r *TableDropNamingConventionRule) enterDropTable(ctx *parser.Drop_tableCon
 		if !r.format.MatchString(normalizedTableName) {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
-				Code:          advisor.TableDropNamingConventionMismatch.Int32(),
+				Code:          code.TableDropNamingConventionMismatch.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("[%s] mismatches drop table naming convention, naming format should be %q", normalizedTableName, r.format),
 				StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),

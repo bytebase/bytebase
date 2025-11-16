@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 const (
@@ -51,7 +52,7 @@ func (*NoLeadingWildcardLikeAdvisor) Check(_ context.Context, checkCtx advisor.C
 		if checker.leadingWildcardLike {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:        checker.level,
-				Code:          advisor.StatementLeadingWildcardLike.Int32(),
+				Code:          code.StatementLeadingWildcardLike.Int32(),
 				Title:         string(checkCtx.Rule.Type),
 				Content:       fmt.Sprintf("\"%s\" uses leading wildcard LIKE", checker.text),
 				StartPosition: common.ConvertANTLRLineToPosition(stmtNode.OriginTextPosition()),
@@ -76,7 +77,7 @@ func (v *noLeadingWildcardLikeChecker) Enter(in ast.Node) (ast.Node, bool) {
 		if err != nil {
 			v.adviceList = append(v.adviceList, &storepb.Advice{
 				Status:  v.level,
-				Code:    advisor.Internal.Int32(),
+				Code:    code.Internal.Int32(),
 				Title:   "Internal error for no leading wildcard LIKE rule",
 				Content: fmt.Sprintf("\"%s\" meet internal error %q", v.text, err.Error()),
 			})

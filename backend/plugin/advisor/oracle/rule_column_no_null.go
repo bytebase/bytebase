@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
@@ -125,7 +126,7 @@ func (r *ColumnNoNullRule) GetAdviceList() ([]*storepb.Advice, error) {
 		line := r.nullableColumns[columnID]
 		r.AddAdvice(
 			r.level,
-			advisor.ColumnCannotNull.Int32(),
+			code.ColumnCannotNull.Int32(),
 			fmt.Sprintf("Column %q is nullable, which is not allowed.", lastIdentifier(columnID)),
 			common.ConvertANTLRLineToPosition(line),
 		)

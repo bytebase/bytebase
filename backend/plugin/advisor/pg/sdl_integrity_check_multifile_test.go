@@ -4,10 +4,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/plugin/advisor"
 )
 
 func TestCheckSDLIntegrity_ValidCrossFileReferences(t *testing.T) {
@@ -111,7 +112,7 @@ func TestCheckSDLIntegrity_DuplicateTableAcrossFiles(t *testing.T) {
 	}
 
 	require.Equal(t, storepb.Advice_ERROR, advice.Status)
-	require.Equal(t, advisor.SDLDuplicateTableName.Int32(), advice.Code)
+	require.Equal(t, code.SDLDuplicateTableName.Int32(), advice.Code)
 	require.Contains(t, advice.Content, "Table 'public.users' is defined in multiple SDL files")
 }
 
@@ -149,7 +150,7 @@ func TestCheckSDLIntegrity_DuplicateIndexAcrossFiles(t *testing.T) {
 	}
 
 	require.Equal(t, storepb.Advice_ERROR, advice.Status)
-	require.Equal(t, advisor.SDLDuplicateIndexName.Int32(), advice.Code)
+	require.Equal(t, code.SDLDuplicateIndexName.Int32(), advice.Code)
 	require.Contains(t, advice.Content, "Index 'public.idx_employee_email' is defined in multiple SDL files")
 }
 
@@ -180,7 +181,7 @@ func TestCheckSDLIntegrity_DuplicateConstraintAcrossFiles(t *testing.T) {
 	hasError := false
 	for _, advices := range results {
 		for _, advice := range advices {
-			if advice.Code == advisor.SDLDuplicateConstraintName.Int32() {
+			if advice.Code == code.SDLDuplicateConstraintName.Int32() {
 				require.Contains(t, advice.Content, "Constraint 'pk_common' in schema 'public' is defined in multiple SDL files")
 				require.Contains(t, advice.Content, "PostgreSQL requires PRIMARY KEY and UNIQUE constraint names to be unique within a schema")
 				hasError = true
@@ -253,7 +254,7 @@ func TestCheckSDLIntegrity_ForeignKeyTableNotFound(t *testing.T) {
 
 	var foundError bool
 	for _, advice := range results["orders.sql"] {
-		if advice.Code == advisor.SDLForeignKeyTableNotFound.Int32() {
+		if advice.Code == code.SDLForeignKeyTableNotFound.Int32() {
 			require.Contains(t, advice.Content, "references table 'public.users' which does not exist in any SDL file")
 			foundError = true
 		}
@@ -283,7 +284,7 @@ func TestCheckSDLIntegrity_ViewReferencesNonExistentTable(t *testing.T) {
 	// Should have view dependency error in views.sql
 	var foundError bool
 	for _, advice := range results["views.sql"] {
-		if advice.Code == advisor.SDLViewDependencyNotFound.Int32() {
+		if advice.Code == code.SDLViewDependencyNotFound.Int32() {
 			require.Contains(t, advice.Content, "View 'public.order_summary'")
 			require.Contains(t, advice.Content, "references table or view 'public.orders' which does not exist")
 			foundError = true
@@ -423,7 +424,7 @@ func TestCheckSDLIntegrity_ViewWithCTEAndMissingTable(t *testing.T) {
 	var foundOrdersError bool
 	var foundCTEError bool
 	for _, advice := range results["views.sql"] {
-		if advice.Code == advisor.SDLViewDependencyNotFound.Int32() {
+		if advice.Code == code.SDLViewDependencyNotFound.Int32() {
 			if strings.Contains(advice.Content, "'public.orders'") {
 				foundOrdersError = true
 			}
@@ -510,7 +511,7 @@ func TestCheckSDLIntegrity_ViewReferencesMixedTablesWithError(t *testing.T) {
 	// Should have error for 'orders' table but not for pg_table_size or pg_size_pretty
 	var foundOrdersError bool
 	for _, advice := range results["views.sql"] {
-		if advice.Code == advisor.SDLViewDependencyNotFound.Int32() {
+		if advice.Code == code.SDLViewDependencyNotFound.Int32() {
 			require.Contains(t, advice.Content, "public.orders")
 			require.NotContains(t, advice.Content, "pg_")
 			foundOrdersError = true
@@ -557,9 +558,9 @@ func TestCheckSDLIntegrity_MultipleErrorsInSameFile(t *testing.T) {
 	}
 
 	// Should have: duplicate table, FK table not found, view dependency not found
-	require.Greater(t, errorCodes[advisor.SDLDuplicateTableName.Int32()], 0, "Should have duplicate table")
-	require.Greater(t, errorCodes[advisor.SDLForeignKeyTableNotFound.Int32()], 0, "Should have FK table not found")
-	require.Greater(t, errorCodes[advisor.SDLViewDependencyNotFound.Int32()], 0, "Should have view dependency error")
+	require.Greater(t, errorCodes[code.SDLDuplicateTableName.Int32()], 0, "Should have duplicate table")
+	require.Greater(t, errorCodes[code.SDLForeignKeyTableNotFound.Int32()], 0, "Should have FK table not found")
+	require.Greater(t, errorCodes[code.SDLViewDependencyNotFound.Int32()], 0, "Should have view dependency error")
 
 	// Should have at least 3 total errors
 	totalErrors := 0
@@ -609,7 +610,7 @@ func TestCheckSDLIntegrity_SyntaxErrorInOneFile(t *testing.T) {
 
 	var foundSyntaxError bool
 	for _, advice := range results["invalid.sql"] {
-		if advice.Code == advisor.StatementSyntaxError.Int32() {
+		if advice.Code == code.StatementSyntaxError.Int32() {
 			foundSyntaxError = true
 		}
 	}
@@ -708,7 +709,7 @@ func TestCheckSDLIntegrity_ForeignKeyColumnNotFound(t *testing.T) {
 	// Should have FK column not found error
 	var foundError bool
 	for _, advice := range results["orders.sql"] {
-		if advice.Code == advisor.SDLForeignKeyColumnNotFound.Int32() {
+		if advice.Code == code.SDLForeignKeyColumnNotFound.Int32() {
 			require.Contains(t, advice.Content, "references column 'user_uuid'")
 			require.Contains(t, advice.Content, "does not exist")
 			foundError = true
@@ -737,7 +738,7 @@ func TestCheckSDLIntegrity_DuplicateViewAcrossFiles(t *testing.T) {
 	var foundError bool
 	for _, advices := range results {
 		for _, advice := range advices {
-			if advice.Code == advisor.SDLDuplicateTableName.Int32() && advice.Title == "Duplicate view name across files" {
+			if advice.Code == code.SDLDuplicateTableName.Int32() && advice.Title == "Duplicate view name across files" {
 				require.Contains(t, advice.Content, "View 'public.product_list' is defined in multiple SDL files")
 				foundError = true
 			}

@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"regexp"
 
 	"github.com/pkg/errors"
@@ -13,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
@@ -607,186 +607,20 @@ func convertWalkThroughErrorToAdvice(err error) ([]*storepb.Advice, error) {
 		return nil, err
 	}
 
-	var res []*storepb.Advice
-	switch walkThroughError.Type {
-	case catalog.ErrorTypeUnsupported:
-		res = append(res, &storepb.Advice{
-			Status:        storepb.Advice_ERROR,
-			Code:          Unsupported.Int32(),
-			Title:         walkThroughError.Content,
-			Content:       "",
-			StartPosition: common.ConvertANTLRLineToPosition(walkThroughError.Line),
-		})
-	case catalog.ErrorTypeParseError:
-		res = append(res, &storepb.Advice{
-			Status:  storepb.Advice_ERROR,
-			Code:    StatementSyntaxError.Int32(),
-			Title:   SyntaxErrorTitle,
-			Content: walkThroughError.Content,
-		})
-	case catalog.ErrorTypeDeparseError:
-		res = append(res, &storepb.Advice{
-			Status:        storepb.Advice_ERROR,
-			Code:          Internal.Int32(),
-			Title:         "Internal error for walk-through",
-			Content:       walkThroughError.Content,
-			StartPosition: common.ConvertANTLRLineToPosition(walkThroughError.Line),
-		})
-	case catalog.ErrorTypeAccessOtherDatabase:
-		res = append(res, &storepb.Advice{
-			Status:        storepb.Advice_ERROR,
-			Code:          NotCurrentDatabase.Int32(),
-			Title:         "Access other database",
-			Content:       walkThroughError.Content,
-			StartPosition: common.ConvertANTLRLineToPosition(walkThroughError.Line),
-		})
-	case catalog.ErrorTypeDatabaseIsDeleted:
-		res = append(res, &storepb.Advice{
-			Status:        storepb.Advice_ERROR,
-			Code:          DatabaseIsDeleted.Int32(),
-			Title:         "Access deleted database",
-			Content:       walkThroughError.Content,
-			StartPosition: common.ConvertANTLRLineToPosition(walkThroughError.Line),
-		})
-	case catalog.ErrorTypeReferenceOtherDatabase:
-		res = append(res, &storepb.Advice{
-			Status:        storepb.Advice_WARNING,
-			Code:          ReferenceOtherDatabase.Int32(),
-			Title:         "Reference other database",
-			Content:       walkThroughError.Content,
-			StartPosition: common.ConvertANTLRLineToPosition(walkThroughError.Line),
-		})
-	case catalog.ErrorTypeTableExists:
-		res = append(res, &storepb.Advice{
-			Status:        storepb.Advice_ERROR,
-			Code:          TableExists.Int32(),
-			Title:         "Table already exists",
-			Content:       walkThroughError.Content,
-			StartPosition: common.ConvertANTLRLineToPosition(walkThroughError.Line),
-		})
-	case catalog.ErrorTypeTableNotExists:
-		res = append(res, &storepb.Advice{
-			Status:        storepb.Advice_ERROR,
-			Code:          TableNotExists.Int32(),
-			Title:         "Table does not exist",
-			Content:       walkThroughError.Content,
-			StartPosition: common.ConvertANTLRLineToPosition(walkThroughError.Line),
-		})
-	case catalog.ErrorTypeColumnExists:
-		res = append(res, &storepb.Advice{
-			Status:        storepb.Advice_ERROR,
-			Code:          ColumnExists.Int32(),
-			Title:         "Column already exists",
-			Content:       walkThroughError.Content,
-			StartPosition: common.ConvertANTLRLineToPosition(walkThroughError.Line),
-		})
-	case catalog.ErrorTypeColumnNotExists:
-		res = append(res, &storepb.Advice{
-			Status:        storepb.Advice_ERROR,
-			Code:          ColumnNotExists.Int32(),
-			Title:         "Column does not exist",
-			Content:       walkThroughError.Content,
-			StartPosition: common.ConvertANTLRLineToPosition(walkThroughError.Line),
-		})
-	case catalog.ErrorTypeDropAllColumns:
-		res = append(res, &storepb.Advice{
-			Status:        storepb.Advice_ERROR,
-			Code:          DropAllColumns.Int32(),
-			Title:         "Drop all columns",
-			Content:       walkThroughError.Content,
-			StartPosition: common.ConvertANTLRLineToPosition(walkThroughError.Line),
-		})
-	case catalog.ErrorTypePrimaryKeyExists:
-		res = append(res, &storepb.Advice{
-			Status:        storepb.Advice_ERROR,
-			Code:          PrimaryKeyExists.Int32(),
-			Title:         "Primary key exists",
-			Content:       walkThroughError.Content,
-			StartPosition: common.ConvertANTLRLineToPosition(walkThroughError.Line),
-		})
-	case catalog.ErrorTypeIndexExists:
-		res = append(res, &storepb.Advice{
-			Status:        storepb.Advice_ERROR,
-			Code:          IndexExists.Int32(),
-			Title:         "Index exists",
-			Content:       walkThroughError.Content,
-			StartPosition: common.ConvertANTLRLineToPosition(walkThroughError.Line),
-		})
-	case catalog.ErrorTypeIndexEmptyKeys:
-		res = append(res, &storepb.Advice{
-			Status:        storepb.Advice_ERROR,
-			Code:          IndexEmptyKeys.Int32(),
-			Title:         "Index empty keys",
-			Content:       walkThroughError.Content,
-			StartPosition: common.ConvertANTLRLineToPosition(walkThroughError.Line),
-		})
-	case catalog.ErrorTypePrimaryKeyNotExists:
-		res = append(res, &storepb.Advice{
-			Status:        storepb.Advice_ERROR,
-			Code:          PrimaryKeyNotExists.Int32(),
-			Title:         "Primary key does not exist",
-			Content:       walkThroughError.Content,
-			StartPosition: common.ConvertANTLRLineToPosition(walkThroughError.Line),
-		})
-	case catalog.ErrorTypeIndexNotExists:
-		res = append(res, &storepb.Advice{
-			Status:        storepb.Advice_ERROR,
-			Code:          IndexNotExists.Int32(),
-			Title:         "Index does not exist",
-			Content:       walkThroughError.Content,
-			StartPosition: common.ConvertANTLRLineToPosition(walkThroughError.Line),
-		})
-	case catalog.ErrorTypeIncorrectIndexName:
-		res = append(res, &storepb.Advice{
-			Status:        storepb.Advice_ERROR,
-			Code:          IncorrectIndexName.Int32(),
-			Title:         "Incorrect index name",
-			Content:       walkThroughError.Content,
-			StartPosition: common.ConvertANTLRLineToPosition(walkThroughError.Line),
-		})
-	case catalog.ErrorTypeSpatialIndexKeyNullable:
-		res = append(res, &storepb.Advice{
-			Status:        storepb.Advice_ERROR,
-			Code:          SpatialIndexKeyNullable.Int32(),
-			Title:         "Spatial index key must be NOT NULL",
-			Content:       walkThroughError.Content,
-			StartPosition: common.ConvertANTLRLineToPosition(walkThroughError.Line),
-		})
-	case catalog.ErrorTypeColumnIsReferencedByView:
-		details := walkThroughError.Content
-		res = append(res, &storepb.Advice{
-			Status:        storepb.Advice_ERROR,
-			Code:          ColumnIsReferencedByView.Int32(),
-			Title:         "Column is referenced by view",
-			Content:       details,
-			StartPosition: common.ConvertANTLRLineToPosition(walkThroughError.Line),
-		})
-	case catalog.ErrorTypeTableIsReferencedByView:
-		details := walkThroughError.Content
-		res = append(res, &storepb.Advice{
-			Status:        storepb.Advice_ERROR,
-			Code:          TableIsReferencedByView.Int32(),
-			Title:         "Table is referenced by view",
-			Content:       details,
-			StartPosition: common.ConvertANTLRLineToPosition(walkThroughError.Line),
-		})
-	case catalog.ErrorTypeInvalidColumnTypeForDefaultValue:
-		res = append(res, &storepb.Advice{
-			Status:        storepb.Advice_ERROR,
-			Code:          InvalidColumnDefault.Int32(),
-			Title:         "Invalid column default value",
-			Content:       walkThroughError.Content,
-			StartPosition: common.ConvertANTLRLineToPosition(walkThroughError.Line),
-		})
-	default:
-		res = append(res, &storepb.Advice{
-			Status:        storepb.Advice_ERROR,
-			Code:          Internal.Int32(),
-			Title:         fmt.Sprintf("Failed to walk-through with code %d", walkThroughError.Type),
-			Content:       walkThroughError.Content,
-			StartPosition: common.ConvertANTLRLineToPosition(walkThroughError.Line),
-		})
+	// Determine the advice status based on the error code
+	// Most errors are ERROR level, except for a few special cases
+	status := storepb.Advice_ERROR
+	if walkThroughError.Code == code.ReferenceOtherDatabase {
+		status = storepb.Advice_WARNING
 	}
 
-	return res, nil
+	return []*storepb.Advice{
+		{
+			Status:        status,
+			Code:          walkThroughError.Code.Int32(),
+			Title:         walkThroughError.Content,
+			Content:       walkThroughError.Content,
+			StartPosition: common.ConvertANTLRLineToPosition(walkThroughError.Line),
+		},
+	}, nil
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
@@ -128,7 +129,7 @@ func (r *StatementDmlDryRunRule) handleStmt(text string, lineNumber int) {
 	if _, err := advisor.Query(r.ctx, advisor.QueryContext{}, r.driver, storepb.Engine_ORACLE, fmt.Sprintf("EXPLAIN PLAN FOR %s", text)); err != nil {
 		r.AddAdvice(
 			r.level,
-			advisor.StatementDMLDryRunFailed.Int32(),
+			code.StatementDMLDryRunFailed.Int32(),
 			fmt.Sprintf("Failed to dry run statement at line %d: %v", lineNumber, err),
 			common.ConvertANTLRLineToPosition(lineNumber),
 		)

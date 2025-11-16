@@ -9,6 +9,7 @@ import (
 
 	parser "github.com/bytebase/parser/postgresql"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
@@ -17,10 +18,7 @@ func PgWalkThrough(d *DatabaseState, ast any) error {
 	// ANTLR-based walkthrough
 	parseResult, ok := ast.(*pgparser.ParseResult)
 	if !ok {
-		return &WalkThroughError{
-			Type:    ErrorTypeUnsupported,
-			Content: fmt.Sprintf("PostgreSQL walk-through expects *pgparser.ParseResult, got %T", ast),
-		}
+		return errors.Errorf("PostgreSQL walk-through expects *pgparser.ParseResult, got %T", ast)
 	}
 
 	root, ok := parseResult.Tree.(parser.IRootContext)
@@ -94,7 +92,7 @@ func (l *pgCatalogListener) EnterCreatestmt(ctx *parser.CreatestmtContext) {
 	databaseName := extractDatabaseName(qualifiedNames[0])
 	if databaseName != "" && l.databaseState.name != databaseName {
 		l.setError(&WalkThroughError{
-			Type:    ErrorTypeAccessOtherDatabase,
+			Code:    code.NotCurrentDatabase,
 			Content: fmt.Sprintf("Database %q is not the current database %q", databaseName, l.databaseState.name),
 		})
 		return
@@ -115,7 +113,7 @@ func (l *pgCatalogListener) EnterCreatestmt(ctx *parser.CreatestmtContext) {
 			return
 		}
 		l.setError(&WalkThroughError{
-			Type:    ErrorTypeTableExists,
+			Code:    code.TableExists,
 			Content: fmt.Sprintf(`The table %q already exists in the schema %q`, tableName, schema.name),
 		})
 		return
@@ -169,7 +167,7 @@ func createColumn(schema *SchemaState, table *TableState, columnDef parser.IColu
 	// Check if column already exists
 	if _, exists := table.columnSet[columnName]; exists {
 		return &WalkThroughError{
-			Type:    ErrorTypeColumnExists,
+			Code:    code.ColumnExists,
 			Content: fmt.Sprintf("The column %q already exists in table %q", columnName, table.name),
 		}
 	}
@@ -438,7 +436,7 @@ func (l *pgCatalogListener) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 
 	if len(columnList) == 0 {
 		l.setError(&WalkThroughError{
-			Type:    ErrorTypeIndexEmptyKeys,
+			Code:    code.IndexEmptyKeys,
 			Content: fmt.Sprintf("Index %q in table %q has empty key", indexName, tableName),
 		})
 		return
@@ -540,7 +538,7 @@ func (l *pgCatalogListener) EnterAltertablestmt(ctx *parser.AltertablestmtContex
 	// Check database access
 	if databaseName != "" && l.databaseState.name != databaseName {
 		l.setError(&WalkThroughError{
-			Type:    ErrorTypeAccessOtherDatabase,
+			Code:    code.NotCurrentDatabase,
 			Content: fmt.Sprintf("Database %q is not the current database %q", databaseName, l.databaseState.name),
 		})
 		return
@@ -665,14 +663,16 @@ func (l *pgCatalogListener) alterTableDropColumn(schema *SchemaState, table *Tab
 	// Check if column is referenced by any views
 	viewList, err := l.databaseState.existedViewList(column.dependencyView)
 	if err != nil {
-		l.setError(err)
+		l.setError(&WalkThroughError{
+			Code:    code.Internal,
+			Content: fmt.Sprintf("Failed to check view dependency: %v", err),
+		})
 		return
 	}
 	if len(viewList) > 0 {
 		l.setError(&WalkThroughError{
-			Type:    ErrorTypeColumnIsReferencedByView,
+			Code:    code.ColumnIsReferencedByView,
 			Content: fmt.Sprintf("Cannot drop column %q in table %q.%q, it's referenced by view: %s", column.name, schema.name, table.name, strings.Join(viewList, ", ")),
-			Payload: viewList,
 		})
 		return
 	}
@@ -712,14 +712,16 @@ func (l *pgCatalogListener) alterTableAlterColumnType(schema *SchemaState, table
 	// Check if column is referenced by any views
 	viewList, viewErr := l.databaseState.existedViewList(column.dependencyView)
 	if viewErr != nil {
-		l.setError(viewErr)
+		l.setError(&WalkThroughError{
+			Code:    code.Internal,
+			Content: fmt.Sprintf("Failed to check view dependency: %v", viewErr),
+		})
 		return
 	}
 	if len(viewList) > 0 {
 		l.setError(&WalkThroughError{
-			Type:    ErrorTypeColumnIsReferencedByView,
+			Code:    code.ColumnIsReferencedByView,
 			Content: fmt.Sprintf("Cannot alter type of column %q in table %q.%q, it's referenced by view: %s", column.name, schema.name, table.name, strings.Join(viewList, ", ")),
-			Payload: viewList,
 		})
 		return
 	}
@@ -742,7 +744,7 @@ func (l *pgCatalogListener) alterTableAddColumn(schema *SchemaState, table *Tabl
 			return
 		}
 		l.setError(&WalkThroughError{
-			Type:    ErrorTypeColumnExists,
+			Code:    code.ColumnExists,
 			Content: fmt.Sprintf("The column %q already exists in table %q", columnName, table.name),
 		})
 		return
@@ -870,7 +872,7 @@ func (l *pgCatalogListener) alterTableDropConstraint(schema *SchemaState, table 
 
 	if !ifExists {
 		l.setError(&WalkThroughError{
-			Type:    ErrorTypeConstraintNotExists,
+			Code:    code.ConstraintNotExists,
 			Content: fmt.Sprintf("Constraint %q for table %q does not exist", constraintName, table.name),
 		})
 	}
@@ -944,7 +946,7 @@ func (*pgCatalogListener) renameColumn(table *TableState, oldName string, newNam
 	// Check if new name already exists
 	if _, exists := table.columnSet[newName]; exists {
 		return &WalkThroughError{
-			Type:    ErrorTypeColumnExists,
+			Code:    code.ColumnExists,
 			Content: fmt.Sprintf("The column %q already exists in table %q", newName, table.name),
 		}
 	}
@@ -1081,7 +1083,7 @@ func (l *pgCatalogListener) EnterDropdbstmt(ctx *parser.DropdbstmtContext) {
 	// This matches the real PostgreSQL behavior: "ERROR: cannot drop the currently open database"
 	if l.databaseState.isCurrentDatabase(databaseName) {
 		l.setError(&WalkThroughError{
-			Type:    ErrorTypeAccessOtherDatabase,
+			Code:    code.NotCurrentDatabase,
 			Content: fmt.Sprintf("Cannot drop the currently open database %q", databaseName),
 		})
 		return
@@ -1123,15 +1125,17 @@ func (l *pgCatalogListener) dropTable(anyName parser.IAny_nameContext, ifExists 
 	}
 
 	// Check for view dependencies
-	viewList, err := l.databaseState.existedViewList(table.dependencyView)
-	if err != nil {
-		return err
+	viewList, viewErr := l.databaseState.existedViewList(table.dependencyView)
+	if viewErr != nil {
+		return &WalkThroughError{
+			Code:    code.Internal,
+			Content: fmt.Sprintf("Failed to check view dependency: %v", viewErr),
+		}
 	}
 	if len(viewList) > 0 {
 		return &WalkThroughError{
-			Type:    ErrorTypeTableIsReferencedByView,
+			Code:    code.TableIsReferencedByView,
 			Content: fmt.Sprintf("Cannot drop table %q.%q, it's referenced by view: %s", schema.name, table.name, strings.Join(viewList, ", ")),
-			Payload: viewList,
 		}
 	}
 
@@ -1218,7 +1222,7 @@ func (l *pgCatalogListener) dropSchema(schemaNameCtx parser.INameContext, ifExis
 			return nil
 		}
 		return &WalkThroughError{
-			Type:    ErrorTypeSchemaNotExists,
+			Code:    code.SchemaNotExists,
 			Content: fmt.Sprintf("Schema %q does not exist", schemaName),
 		}
 	}
@@ -1414,7 +1418,7 @@ func (l *pgCatalogListener) EnterViewstmt(ctx *parser.ViewstmtContext) {
 	// Check if accessing other database
 	if databaseName != "" && l.databaseState.name != databaseName {
 		l.setError(&WalkThroughError{
-			Type:    ErrorTypeAccessOtherDatabase,
+			Code:    code.NotCurrentDatabase,
 			Content: fmt.Sprintf("Database %q is not the current database %q", databaseName, l.databaseState.name),
 		})
 		return

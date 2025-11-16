@@ -6,6 +6,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
@@ -74,7 +76,7 @@ func (checker *columnAutoIncrementInitialValueChecker) Enter(in ast.Node) (ast.N
 				if option.UintValue != uint64(checker.value) {
 					checker.adviceList = append(checker.adviceList, &storepb.Advice{
 						Status:        checker.level,
-						Code:          advisor.AutoIncrementColumnInitialValueNotMatch.Int32(),
+						Code:          code.AutoIncrementColumnInitialValueNotMatch.Int32(),
 						Title:         checker.title,
 						Content:       fmt.Sprintf("The initial auto-increment value in table `%s` is %v, which doesn't equal %v", createTable.Table.Name.O, option.UintValue, checker.value),
 						StartPosition: common.ConvertANTLRLineToPosition(checker.line),

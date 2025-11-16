@@ -9,6 +9,8 @@ import (
 	"github.com/pingcap/tidb/pkg/parser/mysql"
 	"github.com/pingcap/tidb/pkg/types"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 // TiDBWalkThrough walks through TiDB AST and updates the database state.
@@ -43,7 +45,7 @@ func (d *DatabaseState) changeState(in tidbast.StmtNode) (err *WalkThroughError)
 	}()
 	if d.IsDeleted() {
 		return &WalkThroughError{
-			Type:    ErrorTypeDatabaseIsDeleted,
+			Code:    code.DatabaseIsDeleted,
 			Content: fmt.Sprintf("Database `%s` is deleted", d.name),
 		}
 	}
@@ -340,7 +342,7 @@ func (t *TableState) changeColumnDefault(column *tidbast.ColumnDef) *WalkThrough
 					"json",
 					"geometry":
 					return &WalkThroughError{
-						Type: ErrorTypeInvalidColumnTypeForDefaultValue,
+						Code: code.InvalidColumnDefault,
 						// Content comes from MySQL Error content.
 						Content: fmt.Sprintf("BLOB, TEXT, GEOMETRY or JSON column `%s` can't have a default value", columnName),
 					}
@@ -351,13 +353,16 @@ func (t *TableState) changeColumnDefault(column *tidbast.ColumnDef) *WalkThrough
 
 			defaultValue, err := restoreNode(column.Options[0].Expr, format.RestoreStringWithoutCharset)
 			if err != nil {
-				return err
+				return &WalkThroughError{
+					Code:    code.Internal,
+					Content: fmt.Sprintf("Failed to deparse default value: %v", err),
+				}
 			}
 			colState.defaultValue = &defaultValue
 		} else {
 			if colState.nullable != nil && !*colState.nullable {
 				return &WalkThroughError{
-					Type: ErrorTypeSetNullDefaultForNotNullColumn,
+					Code: code.SetNullDefaultForNotNullColumn,
 					// Content comes from MySQL Error content.
 					Content: fmt.Sprintf("Invalid default value for column `%s`", columnName),
 				}
@@ -468,7 +473,7 @@ func (t *TableState) reorderColumn(position *tidbast.ColumnPosition) (int, *Walk
 		return *column.position + 1, nil
 	default:
 		return 0, &WalkThroughError{
-			Type:    ErrorTypeUnsupported,
+			Code:    code.Unsupported,
 			Content: fmt.Sprintf("Unsupported column position type: %d", position.Tp),
 		}
 	}
@@ -480,7 +485,7 @@ func (d *DatabaseState) dropTable(node *tidbast.DropTableStmt) *WalkThroughError
 		for _, name := range node.Tables {
 			if name.Schema.O != "" && !d.isCurrentDatabase(name.Schema.O) {
 				return &WalkThroughError{
-					Type:    ErrorTypeAccessOtherDatabase,
+					Code:    code.NotCurrentDatabase,
 					Content: fmt.Sprintf("Database `%s` is not the current database `%s`", name.Schema.O, d.name),
 				}
 			}
@@ -496,7 +501,7 @@ func (d *DatabaseState) dropTable(node *tidbast.DropTableStmt) *WalkThroughError
 					return nil
 				}
 				return &WalkThroughError{
-					Type:    ErrorTypeTableNotExists,
+					Code:    code.TableNotExists,
 					Content: fmt.Sprintf("Table `%s` does not exist", name.Name.O),
 				}
 			}
@@ -510,9 +515,9 @@ func (d *DatabaseState) dropTable(node *tidbast.DropTableStmt) *WalkThroughError
 func (d *DatabaseState) copyTable(node *tidbast.CreateTableStmt) *WalkThroughError {
 	targetTable, err := d.findTableState(node.ReferTable)
 	if err != nil {
-		if err.Type == ErrorTypeAccessOtherDatabase {
+		if err.Code == code.NotCurrentDatabase {
 			return &WalkThroughError{
-				Type:    ErrorTypeReferenceOtherDatabase,
+				Code:    code.ReferenceOtherDatabase,
 				Content: fmt.Sprintf("Reference table `%s` in other database `%s`, skip walkthrough", node.ReferTable.Name.O, node.ReferTable.Schema.O),
 			}
 		}
@@ -528,7 +533,7 @@ func (d *DatabaseState) copyTable(node *tidbast.CreateTableStmt) *WalkThroughErr
 func (d *DatabaseState) createTable(node *tidbast.CreateTableStmt) *WalkThroughError {
 	if node.Table.Schema.O != "" && !d.isCurrentDatabase(node.Table.Schema.O) {
 		return &WalkThroughError{
-			Type:    ErrorTypeAccessOtherDatabase,
+			Code:    code.NotCurrentDatabase,
 			Content: fmt.Sprintf("Database `%s` is not the current database `%s`", node.Table.Schema.O, d.name),
 		}
 	}
@@ -543,14 +548,14 @@ func (d *DatabaseState) createTable(node *tidbast.CreateTableStmt) *WalkThroughE
 			return nil
 		}
 		return &WalkThroughError{
-			Type:    ErrorTypeTableExists,
+			Code:    code.TableExists,
 			Content: fmt.Sprintf("Table `%s` already exists", node.Table.Name.O),
 		}
 	}
 
 	if node.Select != nil {
 		return &WalkThroughError{
-			Type:    ErrorTypeUseCreateTableAs,
+			Code:    code.StatementCreateTableAs,
 			Content: fmt.Sprintf("Disallow the CREATE TABLE AS statement but \"%s\" uses", node.Text()),
 		}
 	}
@@ -574,7 +579,7 @@ func (d *DatabaseState) createTable(node *tidbast.CreateTableStmt) *WalkThroughE
 		if isAutoIncrement(column) {
 			if hasAutoIncrement {
 				return &WalkThroughError{
-					Type: ErrorTypeAutoIncrementExists,
+					Code: code.AutoIncrementExists,
 					// The content comes from MySQL error content.
 					Content: fmt.Sprintf("There can be only one auto column for table `%s`", table.name),
 				}
@@ -648,7 +653,10 @@ func (t *TableState) validateAndGetKeyStringList(keyList []*tidbast.IndexPartSpe
 		if key.Expr != nil {
 			str, err := restoreNode(key, format.DefaultRestoreFlags)
 			if err != nil {
-				return nil, err
+				return nil, &WalkThroughError{
+					Code:    code.Internal,
+					Content: fmt.Sprintf("Failed to deparse index key: %v", err),
+				}
 			}
 			res = append(res, str)
 		} else {
@@ -662,7 +670,7 @@ func (t *TableState) validateAndGetKeyStringList(keyList []*tidbast.IndexPartSpe
 			}
 			if isSpatial && column.nullable != nil && *column.nullable {
 				return nil, &WalkThroughError{
-					Type: ErrorTypeSpatialIndexKeyNullable,
+					Code: code.SpatialIndexKeyNullable,
 					// The error content comes from MySQL.
 					Content: fmt.Sprintf("All parts of a SPATIAL index must be NOT NULL, but `%s` is nullable", column.name),
 				}
@@ -688,7 +696,7 @@ func checkDefault(columnName string, columnType *types.FieldType, value tidbast.
 		switch columnType.GetType() {
 		case mysql.TypeBlob, mysql.TypeTinyBlob, mysql.TypeMediumBlob, mysql.TypeLongBlob, mysql.TypeJSON, mysql.TypeGeometry:
 			return &WalkThroughError{
-				Type: ErrorTypeInvalidColumnTypeForDefaultValue,
+				Code: code.InvalidColumnDefault,
 				// Content comes from MySQL Error content.
 				Content: fmt.Sprintf("BLOB, TEXT, GEOMETRY or JSON column `%s` can't have a default value", columnName),
 			}
@@ -701,7 +709,7 @@ func checkDefault(columnName string, columnType *types.FieldType, value tidbast.
 		datum := types.NewDatum(valueExpr.GetValue())
 		if _, err := datum.ConvertTo(types.Context{}, columnType); err != nil {
 			return &WalkThroughError{
-				Type:    ErrorTypeInvalidColumnTypeForDefaultValue,
+				Code:    code.InvalidColumnDefault,
 				Content: err.Error(),
 			}
 		}
@@ -713,7 +721,7 @@ func checkDefault(columnName string, columnType *types.FieldType, value tidbast.
 func (t *TableState) createColumn(column *tidbast.ColumnDef, position *tidbast.ColumnPosition) *WalkThroughError {
 	if _, exists := t.columnSet[column.Name.Name.L]; exists {
 		return &WalkThroughError{
-			Type:    ErrorTypeColumnExists,
+			Code:    code.ColumnExists,
 			Content: fmt.Sprintf("Column `%s` already exists in table `%s`", column.Name.Name.O, t.name),
 		}
 	}
@@ -758,7 +766,10 @@ func (t *TableState) createColumn(column *tidbast.ColumnDef, position *tidbast.C
 			if option.Expr.GetType().GetType() != mysql.TypeNull {
 				defaultValue, err := restoreNode(option.Expr, format.RestoreStringWithoutCharset)
 				if err != nil {
-					return err
+					return &WalkThroughError{
+						Code:    code.Internal,
+						Content: fmt.Sprintf("Failed to deparse default value: %v", err),
+					}
 				}
 				col.defaultValue = &defaultValue
 			} else {
@@ -774,14 +785,17 @@ func (t *TableState) createColumn(column *tidbast.ColumnDef, position *tidbast.C
 			// we do not deal with ON UPDATE
 			if column.Tp.GetType() != mysql.TypeDatetime && column.Tp.GetType() != mysql.TypeTimestamp {
 				return &WalkThroughError{
-					Type:    ErrorTypeOnUpdateColumnNotDatetimeOrTimestamp,
+					Code:    code.OnUpdateColumnNotDatetimeOrTimestamp,
 					Content: fmt.Sprintf("Column `%s` use ON UPDATE but is not DATETIME or TIMESTAMP", col.name),
 				}
 			}
 		case tidbast.ColumnOptionComment:
 			comment, err := restoreNode(option.Expr, format.RestoreStringWithoutCharset)
 			if err != nil {
-				return err
+				return &WalkThroughError{
+					Code:    code.Internal,
+					Content: fmt.Sprintf("Failed to deparse comment: %v", err),
+				}
 			}
 			col.comment = &comment
 		case tidbast.ColumnOptionGenerated:
@@ -806,7 +820,7 @@ func (t *TableState) createColumn(column *tidbast.ColumnDef, position *tidbast.C
 
 	if col.nullable != nil && !*col.nullable && setNullDefault {
 		return &WalkThroughError{
-			Type: ErrorTypeSetNullDefaultForNotNullColumn,
+			Code: code.SetNullDefaultForNotNullColumn,
 			// Content comes from MySQL Error content.
 			Content: fmt.Sprintf("Invalid default value for column `%s`", col.name),
 		}
@@ -820,7 +834,7 @@ func (t *TableState) createColumn(column *tidbast.ColumnDef, position *tidbast.C
 func (t *TableState) createIndex(name string, keyList []string, unique bool, tp string, option *tidbast.IndexOption) *WalkThroughError {
 	if len(keyList) == 0 {
 		return &WalkThroughError{
-			Type:    ErrorTypeIndexEmptyKeys,
+			Code:    code.IndexEmptyKeys,
 			Content: fmt.Sprintf("Index `%s` in table `%s` has empty key", name, t.name),
 		}
 	}
@@ -864,7 +878,7 @@ func (t *TableState) createIndex(name string, keyList []string, unique bool, tp 
 func (t *TableState) createPrimaryKey(keys []string, tp string) *WalkThroughError {
 	if _, exists := t.indexSet[strings.ToLower(PrimaryKeyName)]; exists {
 		return &WalkThroughError{
-			Type:    ErrorTypePrimaryKeyExists,
+			Code:    code.PrimaryKeyExists,
 			Content: fmt.Sprintf("Primary key exists in table `%s`", t.name),
 		}
 	}
@@ -882,14 +896,11 @@ func (t *TableState) createPrimaryKey(keys []string, tp string) *WalkThroughErro
 	return nil
 }
 
-func restoreNode(node tidbast.Node, flag format.RestoreFlags) (string, *WalkThroughError) {
+func restoreNode(node tidbast.Node, flag format.RestoreFlags) (string, error) {
 	var buffer strings.Builder
 	ctx := format.NewRestoreCtx(flag, &buffer)
 	if err := node.Restore(ctx); err != nil {
-		return "", &WalkThroughError{
-			Type:    ErrorTypeDeparseError,
-			Content: err.Error(),
-		}
+		return "", errors.Wrapf(err, "failed to deparse node")
 	}
 	return buffer.String(), nil
 }

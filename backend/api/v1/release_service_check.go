@@ -13,6 +13,7 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	advisorpg "github.com/bytebase/bytebase/backend/plugin/advisor/pg"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
@@ -220,7 +221,7 @@ loop:
 						Advices: []*v1pb.Advice{
 							{
 								Status:  v1pb.Advice_WARNING,
-								Code:    advisor.Internal.Int32(),
+								Code:    code.Internal.Int32(),
 								Title:   "Applied file has been modified",
 								Content: fmt.Sprintf("The file %q with version %q has already been applied to the database, but its content has been modified. Applied SHA256: %s, Release SHA256: %s", file.Path, file.Version, appliedRevision.Payload.SheetSha256, file.SheetSha256),
 							},
@@ -328,7 +329,7 @@ loop:
 					Advices: []*v1pb.Advice{
 						{
 							Status:  v1pb.Advice_ERROR,
-							Code:    advisor.Internal.Int32(),
+							Code:    code.Internal.Int32(),
 							Title:   "Failed to check",
 							Content: err.Error(),
 						},
@@ -409,7 +410,7 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 						Advices: []*v1pb.Advice{
 							{
 								Status:  v1pb.Advice_WARNING,
-								Code:    advisor.Internal.Int32(),
+								Code:    code.Internal.Int32(),
 								Title:   "Applied file has been modified",
 								Content: fmt.Sprintf("The file %q has version %q, but there is an equal or higher version %q applied", file.Path, file.Version, revisions[0].Version),
 							},
@@ -438,7 +439,7 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 					// Continue with other checks even if style check fails
 					sdlStyleAdvices[filePath] = []*storepb.Advice{{
 						Status:  storepb.Advice_ERROR,
-						Code:    advisor.Internal.Int32(),
+						Code:    code.Internal.Int32(),
 						Title:   "Failed to check SDL style",
 						Content: err.Error(),
 					}}
@@ -501,7 +502,7 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 					if err != nil {
 						checkResult.Advices = append(checkResult.Advices, &v1pb.Advice{
 							Status:  v1pb.Advice_ERROR,
-							Code:    advisor.Internal.Int32(),
+							Code:    code.Internal.Int32(),
 							Title:   "Failed to parse statement types",
 							Content: err.Error(),
 						})
@@ -512,7 +513,7 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 								// Create a separate advice for each disallowed statement with position
 								advice := &v1pb.Advice{
 									Status: v1pb.Advice_ERROR,
-									Code:   advisor.StatementDisallowedInSDL.Int32(),
+									Code:   code.StatementDisallowedInSDL.Int32(),
 									Title:  "Disallowed statement in SDL file",
 									Content: fmt.Sprintf(
 										"Statement type '%s' is not allowed in SDL files.\n\n"+

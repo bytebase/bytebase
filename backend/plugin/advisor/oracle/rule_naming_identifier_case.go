@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
@@ -97,7 +98,7 @@ func (r *NamingIdentifierCaseRule) handleIDExpression(ctx *parser.Id_expressionC
 		if identifier != strings.ToUpper(identifier) {
 			r.AddAdvice(
 				r.level,
-				advisor.NamingCaseMismatch.Int32(),
+				code.NamingCaseMismatch.Int32(),
 				fmt.Sprintf("Identifier %q should be upper case", identifier),
 				common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
 			)
@@ -106,7 +107,7 @@ func (r *NamingIdentifierCaseRule) handleIDExpression(ctx *parser.Id_expressionC
 		if identifier != strings.ToLower(identifier) {
 			r.AddAdvice(
 				r.level,
-				advisor.NamingCaseMismatch.Int32(),
+				code.NamingCaseMismatch.Int32(),
 				fmt.Sprintf("Identifier %q should be lower case", identifier),
 				common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
 			)

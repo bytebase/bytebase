@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/plsql"
 	"github.com/pkg/errors"
@@ -116,7 +118,7 @@ func (r *ColumnMaximumCharacterLengthRule) handleDatatype(ctx *parser.DatatypeCo
 
 	r.AddAdvice(
 		r.level,
-		advisor.CharLengthExceedsLimit.Int32(),
+		code.CharLengthExceedsLimit.Int32(),
 		fmt.Sprintf("The maximum character length is %d.", r.maximum),
 		common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
 	)

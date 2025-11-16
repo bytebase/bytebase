@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
@@ -228,7 +229,7 @@ func (r *columnCommentConventionRule) generateAdvice() []*storepb.Advice {
 			if r.payload.Required {
 				adviceList = append(adviceList, &storepb.Advice{
 					Status:  r.level,
-					Code:    advisor.CommentEmpty.Int32(),
+					Code:    code.CommentEmpty.Int32(),
 					Title:   r.title,
 					Content: fmt.Sprintf("Comment is required for column `%s.%s`", col.table, col.column),
 					StartPosition: &storepb.Position{
@@ -244,7 +245,7 @@ func (r *columnCommentConventionRule) generateAdvice() []*storepb.Advice {
 			if r.payload.MaxLength > 0 && len(comment) > r.payload.MaxLength {
 				adviceList = append(adviceList, &storepb.Advice{
 					Status:  r.level,
-					Code:    advisor.CommentTooLong.Int32(),
+					Code:    code.CommentTooLong.Int32(),
 					Title:   r.title,
 					Content: fmt.Sprintf("Column `%s.%s` comment is too long. The length of comment should be within %d characters", col.table, col.column, r.payload.MaxLength),
 					StartPosition: &storepb.Position{
@@ -259,7 +260,7 @@ func (r *columnCommentConventionRule) generateAdvice() []*storepb.Advice {
 				if classification, _ := common.GetClassificationAndUserComment(comment, r.classificationConfig); classification == "" {
 					adviceList = append(adviceList, &storepb.Advice{
 						Status:  r.level,
-						Code:    advisor.CommentMissingClassification.Int32(),
+						Code:    code.CommentMissingClassification.Int32(),
 						Title:   r.title,
 						Content: fmt.Sprintf("Column `%s.%s` comment requires classification", col.table, col.column),
 						StartPosition: &storepb.Position{

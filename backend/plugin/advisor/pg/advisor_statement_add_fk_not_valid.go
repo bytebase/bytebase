@@ -9,6 +9,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -124,7 +125,7 @@ func (r *statementAddFKNotValidRule) handleAltertablestmt(ctx antlr.ParserRuleCo
 		if !hasNotValid {
 			r.AddAdvice(&storepb.Advice{
 				Status:  r.level,
-				Code:    advisor.StatementAddFKWithValidation.Int32(),
+				Code:    code.StatementAddFKWithValidation.Int32(),
 				Title:   r.title,
 				Content: "Adding foreign keys with validation will block reads and writes. You can add check foreign keys not valid and then validate separately",
 				StartPosition: &storepb.Position{

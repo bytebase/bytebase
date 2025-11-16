@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -107,7 +108,7 @@ func (r *StatementDisallowCommitRule) checkTransactionStatement(ctx *mysql.Trans
 
 	r.AddAdvice(&storepb.Advice{
 		Status:        r.level,
-		Code:          advisor.StatementDisallowCommit.Int32(),
+		Code:          code.StatementDisallowCommit.Int32(),
 		Title:         r.title,
 		Content:       fmt.Sprintf("Commit is not allowed, related statement: \"%s\"", r.text),
 		StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),

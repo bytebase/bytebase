@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -167,7 +168,7 @@ func (r *StatementMergeAlterTableRule) generateAdvice() {
 		if table.count > 1 {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
-				Code:          advisor.StatementRedundantAlterTable.Int32(),
+				Code:          code.StatementRedundantAlterTable.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("There are %d statements to modify table `%s`", table.count, table.name),
 				StartPosition: common.ConvertANTLRLineToPosition(table.lastLine),

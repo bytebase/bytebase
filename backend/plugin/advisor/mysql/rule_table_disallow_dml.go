@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/parser/mysql"
 	"github.com/pkg/errors"
@@ -142,7 +144,7 @@ func (r *TableDisallowDMLRule) checkTableName(tableName string, line int) {
 		if tableName == disallow {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
-				Code:          advisor.TableDisallowDML.Int32(),
+				Code:          code.TableDisallowDML.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("DML is disallowed on table %s.", tableName),
 				StartPosition: common.ConvertANTLRLineToPosition(line),

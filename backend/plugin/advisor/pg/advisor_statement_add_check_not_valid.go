@@ -9,6 +9,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -108,7 +109,7 @@ func (r *statementAddCheckNotValidRule) handleColconstraint(ctx antlr.ParserRule
 			// (when NOT VALID is present, it's parsed as a table constraint)
 			r.AddAdvice(&storepb.Advice{
 				Status:  r.level,
-				Code:    advisor.StatementAddCheckWithValidation.Int32(),
+				Code:    code.StatementAddCheckWithValidation.Int32(),
 				Title:   r.title,
 				Content: "Adding check constraints with validation will block reads and writes. You can add check constraints not valid and then validate separately",
 				StartPosition: &storepb.Position{
@@ -167,7 +168,7 @@ func (r *statementAddCheckNotValidRule) handleTableconstraint(ctx antlr.ParserRu
 			if !hasNotValid {
 				r.AddAdvice(&storepb.Advice{
 					Status:  r.level,
-					Code:    advisor.StatementAddCheckWithValidation.Int32(),
+					Code:    code.StatementAddCheckWithValidation.Int32(),
 					Title:   r.title,
 					Content: "Adding check constraints with validation will block reads and writes. You can add check constraints not valid and then validate separately",
 					StartPosition: &storepb.Position{

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
@@ -61,7 +63,7 @@ func (checker *tableNoFKChecker) Enter(in ast.Node) (ast.Node, bool) {
 			if constraint.Tp == ast.ConstraintForeignKey {
 				checker.adviceList = append(checker.adviceList, &storepb.Advice{
 					Status:        checker.level,
-					Code:          advisor.TableHasFK.Int32(),
+					Code:          code.TableHasFK.Int32(),
 					Title:         checker.title,
 					Content:       fmt.Sprintf("Foreign key is not allowed in the table `%s`", node.Table.Name),
 					StartPosition: common.ConvertANTLRLineToPosition(constraint.OriginTextPosition()),
@@ -73,7 +75,7 @@ func (checker *tableNoFKChecker) Enter(in ast.Node) (ast.Node, bool) {
 			if spec.Tp == ast.AlterTableAddConstraint && spec.Constraint.Tp == ast.ConstraintForeignKey {
 				checker.adviceList = append(checker.adviceList, &storepb.Advice{
 					Status:        checker.level,
-					Code:          advisor.TableHasFK.Int32(),
+					Code:          code.TableHasFK.Int32(),
 					Title:         checker.title,
 					Content:       fmt.Sprintf("Foreign key is not allowed in the table `%s`", node.Table.Name),
 					StartPosition: common.ConvertANTLRLineToPosition(in.OriginTextPosition()),

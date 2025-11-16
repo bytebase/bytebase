@@ -10,6 +10,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 func init() {
@@ -78,7 +79,7 @@ func (*FunctionDisallowCreateOrAlterRule) OnExit(_ antlr.ParserRuleContext, _ st
 func (r *FunctionDisallowCreateOrAlterRule) enterCreateOrAlterFunction(ctx *parser.Create_or_alter_functionContext) {
 	r.AddAdvice(&storepb.Advice{
 		Status:        r.level,
-		Code:          advisor.DisallowCreateFunction.Int32(),
+		Code:          code.DisallowCreateFunction.Int32(),
 		Title:         r.title,
 		Content:       "Creating or altering functions is prohibited",
 		StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),

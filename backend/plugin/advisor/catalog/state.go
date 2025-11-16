@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 // NewDatabaseState creates a new database state from schema metadata and context.
@@ -622,7 +623,7 @@ func (d *DatabaseState) GetSchema(schemaName string) (*SchemaState, *WalkThrough
 	}
 	if schemaName != publicSchemaName {
 		return nil, &WalkThroughError{
-			Type:    ErrorTypeSchemaNotExists,
+			Code:    code.SchemaNotExists,
 			Content: fmt.Sprintf("The schema %q doesn't exist", schemaName),
 		}
 	}
@@ -634,7 +635,7 @@ func (d *DatabaseState) DropSchema(schemaName string) *WalkThroughError {
 	schema, exists := d.schemaSet[schemaName]
 	if !exists {
 		return &WalkThroughError{
-			Type:    ErrorTypeSchemaNotExists,
+			Code:    code.SchemaNotExists,
 			Content: fmt.Sprintf("Schema %q does not exist", schemaName),
 		}
 	}
@@ -686,7 +687,7 @@ func (s *SchemaState) GetTable(tableName string) (*TableState, *WalkThroughError
 	table, exists := s.tableSet[tableName]
 	if !exists {
 		return nil, &WalkThroughError{
-			Type:    ErrorTypeTableNotExists,
+			Code:    code.TableNotExists,
 			Content: fmt.Sprintf("The table %q does not exist in schema %q", tableName, s.name),
 		}
 	}
@@ -708,9 +709,8 @@ func (s *SchemaState) DropTable(tableName string, checkViewDependency func(*Tabl
 		}
 		if len(viewList) > 0 {
 			return &WalkThroughError{
-				Type:    ErrorTypeTableIsReferencedByView,
+				Code:    code.TableIsReferencedByView,
 				Content: fmt.Sprintf("Cannot drop table %q.%q, it's referenced by view: %s", s.name, table.name, strings.Join(viewList, ", ")),
-				Payload: viewList,
 			}
 		}
 	}
@@ -767,7 +767,7 @@ func (s *SchemaState) RenameTable(oldName string, newName string) *WalkThroughEr
 func (t *TableState) CreateColumn(columnName string, columnType *string, nullable *bool, defaultValue *string, position *int, characterSet *string, collation *string, comment *string) *WalkThroughError {
 	if _, exists := t.columnSet[strings.ToLower(columnName)]; exists {
 		return &WalkThroughError{
-			Type:    ErrorTypeColumnExists,
+			Code:    code.ColumnExists,
 			Content: fmt.Sprintf("Column `%s` already exists in table `%s`", columnName, t.name),
 		}
 	}
@@ -815,7 +815,7 @@ func (t *TableState) DropColumn(columnName string, checkViewDependency func(*Col
 	// Cannot drop all columns in a table using ALTER TABLE DROP COLUMN.
 	if len(t.columnSet) == 1 {
 		return &WalkThroughError{
-			Type:    ErrorTypeDropAllColumns,
+			Code:    code.DropAllColumns,
 			Content: fmt.Sprintf("Can't delete all columns with ALTER TABLE; use DROP TABLE %s instead", t.name),
 		}
 	}
@@ -828,9 +828,8 @@ func (t *TableState) DropColumn(columnName string, checkViewDependency func(*Col
 		}
 		if len(viewList) > 0 {
 			return &WalkThroughError{
-				Type:    ErrorTypeColumnIsReferencedByView,
+				Code:    code.ColumnIsReferencedByView,
 				Content: fmt.Sprintf("Cannot drop column %q in table %q, it's referenced by view: %s", column.name, t.name, strings.Join(viewList, ", ")),
-				Payload: viewList,
 			}
 		}
 	}
@@ -878,7 +877,7 @@ func (t *TableState) RenameColumn(oldName string, newName string) *WalkThroughEr
 
 	if _, exists := t.columnSet[strings.ToLower(newName)]; exists {
 		return &WalkThroughError{
-			Type:    ErrorTypeColumnExists,
+			Code:    code.ColumnExists,
 			Content: fmt.Sprintf("Column `%s` already exists in table `%s`", newName, t.name),
 		}
 	}
@@ -906,7 +905,7 @@ func (t *TableState) RenameColumn(oldName string, newName string) *WalkThroughEr
 func (t *TableState) CreateIndex(indexName string, expressionList []string, unique bool, indexType string, primary bool, visible *bool, comment *string, isConstraint bool, identifierMap identifierMap) *WalkThroughError {
 	if len(expressionList) == 0 {
 		return &WalkThroughError{
-			Type:    ErrorTypeIndexEmptyKeys,
+			Code:    code.IndexEmptyKeys,
 			Content: fmt.Sprintf("Index `%s` in table `%s` has empty key", indexName, t.name),
 		}
 	}
@@ -974,7 +973,7 @@ func (t *TableState) CreatePrimaryKey(keyList []string, indexType string, identi
 
 	if _, exists := t.indexSet[strings.ToLower(pkName)]; exists {
 		return &WalkThroughError{
-			Type:    ErrorTypePrimaryKeyExists,
+			Code:    code.PrimaryKeyExists,
 			Content: fmt.Sprintf("Primary key exists in table `%s`", t.name),
 		}
 	}
@@ -1022,7 +1021,7 @@ func (t *TableState) DropIndex(indexName string, identifierMap identifierMap) *W
 	if _, exists := t.indexSet[strings.ToLower(indexName)]; !exists {
 		if strings.EqualFold(indexName, PrimaryKeyName) {
 			return &WalkThroughError{
-				Type:    ErrorTypePrimaryKeyNotExists,
+				Code:    code.PrimaryKeyNotExists,
 				Content: fmt.Sprintf("Primary key does not exist in table `%s`", t.name),
 			}
 		}
@@ -1049,7 +1048,7 @@ func (t *TableState) RenameIndex(oldName string, newName string, identifierMap i
 			incorrectName = newName
 		}
 		return &WalkThroughError{
-			Type:    ErrorTypeIncorrectIndexName,
+			Code:    code.IncorrectIndexName,
 			Content: fmt.Sprintf("Incorrect index name `%s`", incorrectName),
 		}
 	}

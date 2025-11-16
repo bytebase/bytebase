@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
@@ -124,7 +126,7 @@ func (checker *columnTypeDisallowListChecker) Enter(in ast.Node) (ast.Node, bool
 	for _, column := range columnList {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:        checker.level,
-			Code:          advisor.DisabledColumnType.Int32(),
+			Code:          code.DisabledColumnType.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("Disallow column type %s but column `%s`.`%s` is", column.tp, column.table, column.column),
 			StartPosition: common.ConvertANTLRLineToPosition(column.line),

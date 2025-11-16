@@ -9,7 +9,7 @@ import (
 	parser "github.com/bytebase/parser/postgresql"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
@@ -38,7 +38,7 @@ func CheckSDLIntegrity(files map[string]string) (map[string][]*storepb.Advice, e
 			return map[string][]*storepb.Advice{
 				filePath: {{
 					Status:  storepb.Advice_ERROR,
-					Code:    advisor.StatementSyntaxError.Int32(),
+					Code:    code.StatementSyntaxError.Int32(),
 					Title:   "SQL syntax error",
 					Content: fmt.Sprintf("Failed to parse SQL in file '%s': %v", filePath, err),
 				}},
@@ -208,7 +208,7 @@ func detectCrossFileDuplicates(fileCheckers []*fileSymbolTable) map[string][]*st
 			if first, exists := seenTables[key]; exists {
 				advice := &storepb.Advice{
 					Status: storepb.Advice_ERROR,
-					Code:   advisor.SDLDuplicateTableName.Int32(),
+					Code:   code.SDLDuplicateTableName.Int32(),
 					Title:  "Duplicate table name across files",
 					Content: fmt.Sprintf(
 						"Table '%s.%s' is defined in multiple SDL files.\n\n"+
@@ -236,7 +236,7 @@ func detectCrossFileDuplicates(fileCheckers []*fileSymbolTable) map[string][]*st
 			if first, exists := seenIndexes[key]; exists {
 				advice := &storepb.Advice{
 					Status: storepb.Advice_ERROR,
-					Code:   advisor.SDLDuplicateIndexName.Int32(),
+					Code:   code.SDLDuplicateIndexName.Int32(),
 					Title:  "Duplicate index name across files",
 					Content: fmt.Sprintf(
 						"Index '%s.%s' is defined in multiple SDL files.\n\n"+
@@ -264,7 +264,7 @@ func detectCrossFileDuplicates(fileCheckers []*fileSymbolTable) map[string][]*st
 			if first, exists := seenViews[key]; exists {
 				advice := &storepb.Advice{
 					Status: storepb.Advice_ERROR,
-					Code:   advisor.SDLDuplicateTableName.Int32(),
+					Code:   code.SDLDuplicateTableName.Int32(),
 					Title:  "Duplicate view name across files",
 					Content: fmt.Sprintf(
 						"View '%s.%s' is defined in multiple SDL files.\n\n"+
@@ -297,7 +297,7 @@ func detectCrossFileDuplicates(fileCheckers []*fileSymbolTable) map[string][]*st
 				if first, exists := seenConstraints[schema][name]; exists {
 					advice := &storepb.Advice{
 						Status: storepb.Advice_ERROR,
-						Code:   advisor.SDLDuplicateConstraintName.Int32(),
+						Code:   code.SDLDuplicateConstraintName.Int32(),
 						Title:  "Duplicate constraint name across files",
 						Content: fmt.Sprintf(
 							"Constraint '%s' in schema '%s' is defined in multiple SDL files.\n\n"+
@@ -357,7 +357,7 @@ func (c *sdlIntegrityChecker) validateForeignKeysWithMergedTable(merged *mergedS
 			if refTable == nil {
 				c.adviceList = append(c.adviceList, &storepb.Advice{
 					Status: storepb.Advice_ERROR,
-					Code:   advisor.SDLForeignKeyTableNotFound.Int32(),
+					Code:   code.SDLForeignKeyTableNotFound.Int32(),
 					Title:  "Foreign key references non-existent table",
 					Content: fmt.Sprintf(
 						"Foreign key constraint '%s' on table '%s.%s' references table '%s.%s' which does not exist in any SDL file.\n\n"+
@@ -390,7 +390,7 @@ func (c *sdlIntegrityChecker) validateForeignKeysWithMergedTable(merged *mergedS
 				if targetCol == nil {
 					c.adviceList = append(c.adviceList, &storepb.Advice{
 						Status: storepb.Advice_ERROR,
-						Code:   advisor.SDLForeignKeyColumnNotFound.Int32(),
+						Code:   code.SDLForeignKeyColumnNotFound.Int32(),
 						Title:  "Foreign key references non-existent column",
 						Content: fmt.Sprintf(
 							"Foreign key constraint '%s' on table '%s.%s' references column '%s' in table '%s.%s', but this column does not exist.\n\n"+
@@ -442,7 +442,7 @@ func (c *sdlIntegrityChecker) validateViewDependenciesWithMergedTable(merged *me
 				objectType := "table or view"
 				c.adviceList = append(c.adviceList, &storepb.Advice{
 					Status: storepb.Advice_ERROR,
-					Code:   advisor.SDLViewDependencyNotFound.Int32(),
+					Code:   code.SDLViewDependencyNotFound.Int32(),
 					Title:  "View references non-existent table or view",
 					Content: fmt.Sprintf(
 						"View '%s.%s' (line %d) references %s '%s.%s' which does not exist in any SDL file.\n\n"+
@@ -664,7 +664,7 @@ func (c *sdlIntegrityChecker) EnterCreatestmt(ctx *parser.CreatestmtContext) {
 	if existing := c.symbolTable.getTable(schemaName, tableName); existing != nil {
 		c.adviceList = append(c.adviceList, &storepb.Advice{
 			Status: storepb.Advice_ERROR,
-			Code:   advisor.SDLDuplicateTableName.Int32(),
+			Code:   code.SDLDuplicateTableName.Int32(),
 			Title:  "Duplicate table name",
 			Content: fmt.Sprintf(
 				"Table '%s.%s' is defined multiple times in the SDL.\n\n"+
@@ -698,7 +698,7 @@ func (c *sdlIntegrityChecker) EnterCreatestmt(ctx *parser.CreatestmtContext) {
 				if _, exists := table.columns[colName]; exists {
 					c.adviceList = append(c.adviceList, &storepb.Advice{
 						Status: storepb.Advice_ERROR,
-						Code:   advisor.SDLDuplicateColumnName.Int32(),
+						Code:   code.SDLDuplicateColumnName.Int32(),
 						Title:  "Duplicate column name",
 						Content: fmt.Sprintf(
 							"Column '%s' is defined multiple times in table '%s.%s'.\n\n"+
@@ -828,7 +828,7 @@ func (c *sdlIntegrityChecker) collectTableConstraint(ctx parser.ITableconstraint
 
 			c.adviceList = append(c.adviceList, &storepb.Advice{
 				Status: storepb.Advice_ERROR,
-				Code:   advisor.SDLDuplicateConstraintName.Int32(),
+				Code:   code.SDLDuplicateConstraintName.Int32(),
 				Title:  "Duplicate constraint name",
 				Content: fmt.Sprintf(
 					"Constraint '%s' is defined multiple times in %s '%s'.\n\n"+
@@ -936,7 +936,7 @@ func (c *sdlIntegrityChecker) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 	if existing, exists := c.symbolTable.indexes[key]; exists {
 		c.adviceList = append(c.adviceList, &storepb.Advice{
 			Status: storepb.Advice_ERROR,
-			Code:   advisor.SDLDuplicateIndexName.Int32(),
+			Code:   code.SDLDuplicateIndexName.Int32(),
 			Title:  "Duplicate index name",
 			Content: fmt.Sprintf(
 				"Index '%s.%s' is defined multiple times in the SDL.\n\n"+
@@ -997,7 +997,7 @@ func (c *sdlIntegrityChecker) checkMultiplePrimaryKeys() {
 
 			c.adviceList = append(c.adviceList, &storepb.Advice{
 				Status: storepb.Advice_ERROR,
-				Code:   advisor.SDLMultiplePrimaryKey.Int32(),
+				Code:   code.SDLMultiplePrimaryKey.Int32(),
 				Title:  "Multiple primary keys defined",
 				Content: fmt.Sprintf(
 					"Table '%s.%s' has multiple PRIMARY KEY constraints defined.\n\n"+

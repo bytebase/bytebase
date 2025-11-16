@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 )
 
@@ -121,7 +122,7 @@ func (r *ColumnNoNullRule) exitCreateTable() {
 	for normalizedColumnName, columnNullableLine := range r.columnNullable {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.ColumnCannotNull.Int32(),
+			Code:          code.ColumnCannotNull.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("Column %s is nullable, which is not allowed.", normalizedColumnName),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + columnNullableLine),
@@ -173,7 +174,7 @@ func (r *ColumnNoNullRule) exitAlterTable() {
 	for normalizedColumnName, columnNullableLine := range r.columnNullable {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.ColumnCannotNull.Int32(),
+			Code:          code.ColumnCannotNull.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("Column %s is nullable, which is not allowed.", normalizedColumnName),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + columnNullableLine),
@@ -215,7 +216,7 @@ func (r *ColumnNoNullRule) exitAlterTableAlterColumn() {
 	for normalizedColumnName, columnNullableLine := range r.columnNullable {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.ColumnCannotNull.Int32(),
+			Code:          code.ColumnCannotNull.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("After dropping NOT NULL of column %s, it will be nullable, which is not allowed.", normalizedColumnName),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + columnNullableLine),

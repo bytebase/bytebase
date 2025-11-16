@@ -12,6 +12,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
@@ -193,7 +194,7 @@ func (r *namingIndexConventionRule) checkIndexName(indexName, tableName string, 
 	if err != nil {
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
-			Code:    advisor.Internal.Int32(),
+			Code:    code.Internal.Int32(),
 			Title:   "Internal error for index naming convention rule",
 			Content: fmt.Sprintf("Failed to compile regex: %v", err),
 			StartPosition: &storepb.Position{
@@ -207,7 +208,7 @@ func (r *namingIndexConventionRule) checkIndexName(indexName, tableName string, 
 	if !regex.MatchString(indexName) {
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
-			Code:    advisor.NamingIndexConventionMismatch.Int32(),
+			Code:    code.NamingIndexConventionMismatch.Int32(),
 			Title:   r.title,
 			Content: fmt.Sprintf("Index in table %q mismatches the naming convention, expect %q but found %q", tableName, regex, indexName),
 			StartPosition: &storepb.Position{
@@ -220,7 +221,7 @@ func (r *namingIndexConventionRule) checkIndexName(indexName, tableName string, 
 	if r.maxLength > 0 && len(indexName) > r.maxLength {
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
-			Code:    advisor.NamingIndexConventionMismatch.Int32(),
+			Code:    code.NamingIndexConventionMismatch.Int32(),
 			Title:   r.title,
 			Content: fmt.Sprintf("Index %q in table %q mismatches the naming convention, its length should be within %d characters", indexName, tableName, r.maxLength),
 			StartPosition: &storepb.Position{

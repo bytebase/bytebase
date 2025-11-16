@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -155,7 +156,7 @@ func (r *statementObjectOwnerCheckRule) checkSchemaOwnership(schemaName string, 
 			Status:  r.level,
 			Title:   r.title,
 			Content: fmt.Sprintf("Schema \"%s\" is owned by \"%s\", but the current role is \"%s\".", schemaName, owner, r.currentRole),
-			Code:    advisor.StatementObjectOwnerCheck.Int32(),
+			Code:    code.StatementObjectOwnerCheck.Int32(),
 			StartPosition: &storepb.Position{
 				Line:   int32(line),
 				Column: 0,
@@ -188,7 +189,7 @@ func (r *statementObjectOwnerCheckRule) checkTableOwnership(schemaName, tableNam
 			Status:  r.level,
 			Title:   r.title,
 			Content: fmt.Sprintf("Table \"%s\" is owned by \"%s\", but the current role is \"%s\".", tableName, owner, r.currentRole),
-			Code:    advisor.StatementObjectOwnerCheck.Int32(),
+			Code:    code.StatementObjectOwnerCheck.Int32(),
 			StartPosition: &storepb.Position{
 				Line:   int32(line),
 				Column: 0,
@@ -312,7 +313,7 @@ func (r *statementObjectOwnerCheckRule) handleCreateschemastmt(ctx *parser.Creat
 			Status:  r.level,
 			Title:   r.title,
 			Content: fmt.Sprintf("Database \"%s\" is owned by \"%s\", but the current role is \"%s\".", r.dbMetadata.GetName(), owner, r.currentRole),
-			Code:    advisor.StatementObjectOwnerCheck.Int32(),
+			Code:    code.StatementObjectOwnerCheck.Int32(),
 			StartPosition: &storepb.Position{
 				Line:   int32(ctx.GetStart().GetLine()),
 				Column: 0,

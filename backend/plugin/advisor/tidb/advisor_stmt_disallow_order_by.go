@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -62,19 +63,19 @@ type disallowOrderByChecker struct {
 
 // Enter implements the ast.Visitor interface.
 func (checker *disallowOrderByChecker) Enter(in ast.Node) (ast.Node, bool) {
-	code := advisor.Ok
+	code := advisorcode.Ok
 	switch node := in.(type) {
 	case *ast.UpdateStmt:
 		if node.Order != nil {
-			code = advisor.UpdateUseOrderBy
+			code = advisorcode.UpdateUseOrderBy
 		}
 	case *ast.DeleteStmt:
 		if node.Order != nil {
-			code = advisor.DeleteUseOrderBy
+			code = advisorcode.DeleteUseOrderBy
 		}
 	}
 
-	if code != advisor.Ok {
+	if code != advisorcode.Ok {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:        checker.level,
 			Code:          code.Int32(),

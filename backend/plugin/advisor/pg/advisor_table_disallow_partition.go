@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+
 	"github.com/antlr4-go/antlr/v4"
 
 	parser "github.com/bytebase/parser/postgresql"
@@ -89,7 +91,7 @@ func (r *tableDisallowPartitionRule) handleCreatestmt(ctx *parser.CreatestmtCont
 
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
-			Code:    advisor.CreateTablePartition.Int32(),
+			Code:    code.CreateTablePartition.Int32(),
 			Title:   r.title,
 			Content: fmt.Sprintf("Table partition is forbidden, but %q creates", stmtText),
 			StartPosition: &storepb.Position{
@@ -115,7 +117,7 @@ func (r *tableDisallowPartitionRule) handlePartitionCmd(ctx *parser.Partition_cm
 				stmtText := extractStatementText(r.statementsText, alterTableCtx.GetStart().GetLine(), alterTableCtx.GetStop().GetLine())
 				r.AddAdvice(&storepb.Advice{
 					Status:  r.level,
-					Code:    advisor.CreateTablePartition.Int32(),
+					Code:    code.CreateTablePartition.Int32(),
 					Title:   r.title,
 					Content: fmt.Sprintf("Table partition is forbidden, but %q creates", stmtText),
 					StartPosition: &storepb.Position{

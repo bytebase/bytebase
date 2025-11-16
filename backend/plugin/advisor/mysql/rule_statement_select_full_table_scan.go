@@ -14,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -118,7 +119,7 @@ func (r *StatementSelectFullTableScanRule) checkSelectStatement(ctx *mysql.Selec
 	if err != nil {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.StatementCheckSelectFullTableScanFailed.Int32(),
+			Code:          code.StatementCheckSelectFullTableScanFailed.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("Failed to check full table scan: %s, with error: %s", query, err),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
@@ -128,7 +129,7 @@ func (r *StatementSelectFullTableScanRule) checkSelectStatement(ctx *mysql.Selec
 		if err != nil {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
-				Code:          advisor.Internal.Int32(),
+				Code:          code.Internal.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("Failed to check full table scan: %s, with error: %s", query, err),
 				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
@@ -136,7 +137,7 @@ func (r *StatementSelectFullTableScanRule) checkSelectStatement(ctx *mysql.Selec
 		} else if hasFullScan {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
-				Code:          advisor.StatementHasTableFullScan.Int32(),
+				Code:          code.StatementHasTableFullScan.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("Full table scan detected on table(s): %s", tables),
 				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),

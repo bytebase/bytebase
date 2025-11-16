@@ -9,6 +9,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -95,7 +96,7 @@ func (r *statementDisallowAddColumnWithDefaultRule) handleAltertablestmt(ctx *pa
 							if constraintElem.DEFAULT() != nil {
 								r.AddAdvice(&storepb.Advice{
 									Status:  r.level,
-									Code:    advisor.StatementAddColumnWithDefault.Int32(),
+									Code:    code.StatementAddColumnWithDefault.Int32(),
 									Title:   r.title,
 									Content: "Adding column with DEFAULT will locked the whole table and rewriting each rows",
 									StartPosition: &storepb.Position{

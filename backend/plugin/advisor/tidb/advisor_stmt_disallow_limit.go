@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -62,23 +63,23 @@ type statementDisallowLimitChecker struct {
 
 // Enter implements the ast.Visitor interface.
 func (checker *statementDisallowLimitChecker) Enter(in ast.Node) (ast.Node, bool) {
-	code := advisor.Ok
+	code := advisorcode.Ok
 	switch node := in.(type) {
 	case *ast.UpdateStmt:
 		if node.Limit != nil {
-			code = advisor.UpdateUseLimit
+			code = advisorcode.UpdateUseLimit
 		}
 	case *ast.DeleteStmt:
 		if node.Limit != nil {
-			code = advisor.DeleteUseLimit
+			code = advisorcode.DeleteUseLimit
 		}
 	case *ast.InsertStmt:
 		if useLimit(node) {
-			code = advisor.InsertUseLimit
+			code = advisorcode.InsertUseLimit
 		}
 	}
 
-	if code != advisor.Ok {
+	if code != advisorcode.Ok {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:        checker.level,
 			Code:          code.Int32(),

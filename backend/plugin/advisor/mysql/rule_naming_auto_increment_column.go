@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -185,7 +186,7 @@ func (r *NamingAutoIncrementColumnRule) checkFieldDefinition(tableName, columnNa
 	if !r.format.MatchString(columnName) {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.NamingAutoIncrementColumnConventionMismatch.Int32(),
+			Code:          code.NamingAutoIncrementColumnConventionMismatch.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("`%s`.`%s` mismatches auto_increment column naming convention, naming format should be %q", tableName, columnName, r.format),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
@@ -194,7 +195,7 @@ func (r *NamingAutoIncrementColumnRule) checkFieldDefinition(tableName, columnNa
 	if r.maxLength > 0 && len(columnName) > r.maxLength {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
-			Code:          advisor.NamingAutoIncrementColumnConventionMismatch.Int32(),
+			Code:          code.NamingAutoIncrementColumnConventionMismatch.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("`%s`.`%s` mismatches auto_increment column naming convention, its length should be within %d characters", tableName, columnName, r.maxLength),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),

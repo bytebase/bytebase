@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -62,7 +63,7 @@ type insertDisallowOrderByRandChecker struct {
 
 // Enter implements the ast.Visitor interface.
 func (checker *insertDisallowOrderByRandChecker) Enter(in ast.Node) (ast.Node, bool) {
-	code := advisor.Ok
+	code := advisorcode.Ok
 	if insert, ok := in.(*ast.InsertStmt); ok {
 		if insert.Select != nil {
 			if selectNode, ok := insert.Select.(*ast.SelectStmt); ok {
@@ -70,7 +71,7 @@ func (checker *insertDisallowOrderByRandChecker) Enter(in ast.Node) (ast.Node, b
 					for _, item := range selectNode.OrderBy.Items {
 						if f, ok := item.Expr.(*ast.FuncCallExpr); ok {
 							if f.FnName.L == ast.Rand {
-								code = advisor.InsertUseOrderByRand
+								code = advisorcode.InsertUseOrderByRand
 								break
 							}
 						}
@@ -80,7 +81,7 @@ func (checker *insertDisallowOrderByRandChecker) Enter(in ast.Node) (ast.Node, b
 		}
 	}
 
-	if code != advisor.Ok {
+	if code != advisorcode.Ok {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:        checker.level,
 			Code:          code.Int32(),
