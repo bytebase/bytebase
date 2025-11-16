@@ -1073,6 +1073,44 @@ func (t *TableMetadata) CreateColumn(columnProto *storepb.ColumnMetadata) error 
 	return nil
 }
 
+// DropColumn drops a column from the table.
+// Returns an error if the column does not exist.
+func (t *TableMetadata) DropColumn(columnName string) error {
+	// Check if column exists
+	if t.GetColumn(columnName) == nil {
+		return errors.Errorf("column %q does not exist in table %q", columnName, t.proto.Name)
+	}
+
+	// Remove from internal map
+	var columnID string
+	if t.isDetailCaseSensitive {
+		columnID = columnName
+	} else {
+		columnID = strings.ToLower(columnName)
+	}
+	delete(t.internalColumn, columnID)
+
+	// Remove from proto's column list
+	newColumns := make([]*storepb.ColumnMetadata, 0, len(t.proto.Columns)-1)
+	for _, column := range t.proto.Columns {
+		if t.isDetailCaseSensitive {
+			if column.Name != columnName {
+				newColumns = append(newColumns, column)
+			}
+		} else {
+			if !strings.EqualFold(column.Name, columnName) {
+				newColumns = append(newColumns, column)
+			}
+		}
+	}
+	t.proto.Columns = newColumns
+
+	// Rebuild columns slice
+	t.columns = newColumns
+
+	return nil
+}
+
 // ExternalTableMetadata is the metadata for a external table.
 type ExternalTableMetadata struct {
 	isDetailCaseSensitive bool

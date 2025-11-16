@@ -268,3 +268,67 @@ func TestTableMetadata_CreateColumn_AlreadyExists(t *testing.T) {
 	require.NotNil(t, err)
 	require.Contains(t, err.Error(), "already exists")
 }
+
+func TestTableMetadata_DropColumn(t *testing.T) {
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Name: "testdb",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "users",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "id", Type: "int"},
+							{Name: "email", Type: "varchar"},
+							{Name: "name", Type: "varchar"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	schema := NewDatabaseSchema(metadata, nil, nil, storepb.Engine_POSTGRES, true)
+	dbMeta := schema.GetDatabaseMetadata()
+	schemaMeta := dbMeta.GetSchema("public")
+	tableMeta := schemaMeta.GetTable("users")
+
+	// Drop column
+	err := tableMeta.DropColumn("email")
+
+	require.Nil(t, err)
+
+	// Verify column is gone
+	retrieved := tableMeta.GetColumn("email")
+	require.Nil(t, retrieved)
+
+	// Verify other columns still exist
+	require.NotNil(t, tableMeta.GetColumn("id"))
+	require.NotNil(t, tableMeta.GetColumn("name"))
+}
+
+func TestTableMetadata_DropColumn_NotExists(t *testing.T) {
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Name: "testdb",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Tables: []*storepb.TableMetadata{
+					{Name: "users"},
+				},
+			},
+		},
+	}
+
+	schema := NewDatabaseSchema(metadata, nil, nil, storepb.Engine_POSTGRES, true)
+	dbMeta := schema.GetDatabaseMetadata()
+	schemaMeta := dbMeta.GetSchema("public")
+	tableMeta := schemaMeta.GetTable("users")
+
+	// Try to drop non-existent column
+	err := tableMeta.DropColumn("nonexistent")
+
+	require.NotNil(t, err)
+	require.Contains(t, err.Error(), "does not exist")
+}
