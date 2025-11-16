@@ -16,7 +16,7 @@
       <template #trigger>
         <NInput
           ref="folderInputRef"
-          :value="formattedFolderPath.split('/').join(' / ')"
+          :value="formattedFolderPath"
           :placeholder="$t('sql-editor.choose-folder')"
           @focus="onFocus"
           @update:value="onInput"
@@ -74,7 +74,8 @@ watch(
   (val) => emits("update:folder", val)
 );
 
-const { folderTree, folderContext } = useSheetContextByView("my");
+const { folderTree, folderContext, getFoldersForWorksheet } =
+  useSheetContextByView("my");
 
 const expandedKeys = ref<Set<string>>(new Set([]));
 const expandedKeysArray = computed(() => Array.from(expandedKeys.value));
@@ -91,7 +92,7 @@ const formattedFolderPath = computed(() => {
   if (val[0] === "/") {
     val = val.slice(1);
   }
-  return val;
+  return val.split("/").join(" / ");
 });
 
 const onFocus = () => {
@@ -107,6 +108,9 @@ const onInput = (val: string) => {
   let changedVal = val;
   if (val.endsWith(" /")) {
     changedVal = val.slice(0, -2);
+  }
+  if (changedVal.endsWith(".")) {
+    changedVal = changedVal.slice(0, -1);
   }
   const rawPath = changedVal
     .split("/")
@@ -128,12 +132,6 @@ const renderPrefix = ({ option }: { option: TreeOption }) => {
 };
 
 defineExpose({
-  folderPath: formattedFolderPath,
-  folders: computed(() =>
-    formattedFolderPath.value
-      .split("/")
-      .map((p) => p.trim())
-      .filter((p) => p)
-  ),
+  folders: computed(() => getFoldersForWorksheet(folderPath.value)),
 });
 </script>

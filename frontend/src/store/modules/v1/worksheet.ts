@@ -19,6 +19,7 @@ import {
   SearchWorksheetsRequestSchema,
   UpdateWorksheetOrganizerRequestSchema,
   UpdateWorksheetRequestSchema,
+  WorksheetOrganizerSchema,
 } from "@/types/proto-es/v1/worksheet_service_pb";
 import {
   extractWorksheetUID,
@@ -237,14 +238,16 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
 
   const batchUpsertWorksheetOrganizers = async (
     requests: {
-      organizer: Pick<WorksheetOrganizer, "worksheet" | "starred" | "folders">;
+      organizer: Partial<WorksheetOrganizer>;
       updateMask: string[];
     }[]
   ) => {
     const request = create(BatchUpdateWorksheetOrganizerRequestSchema, {
       requests: requests.map((request) =>
         create(UpdateWorksheetOrganizerRequestSchema, {
-          organizer: { ...request.organizer } as WorksheetOrganizer,
+          organizer: create(WorksheetOrganizerSchema, {
+            ...request.organizer,
+          } as WorksheetOrganizer),
           updateMask: { paths: request.updateMask },
         })
       ),
@@ -260,12 +263,13 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
   };
 
   const upsertWorksheetOrganizer = async (
-    organizer: Pick<WorksheetOrganizer, "worksheet" | "starred" | "folders">,
+    organizer: Partial<WorksheetOrganizer>,
     updateMask: string[]
   ) => {
-    const fullOrganizer = { ...organizer } as WorksheetOrganizer;
     const request = create(UpdateWorksheetOrganizerRequestSchema, {
-      organizer: fullOrganizer,
+      organizer: create(WorksheetOrganizerSchema, {
+        ...organizer,
+      } as WorksheetOrganizer),
       updateMask: { paths: updateMask },
     });
     const response =
