@@ -2,30 +2,24 @@
 package catalog
 
 import (
-	"context"
+	"google.golang.org/protobuf/proto"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-// NewCatalog creates origin and final database catalog states.
-func NewCatalog(ctx context.Context, s *store.Store, instanceID, databaseName string, engineType storepb.Engine, isCaseSensitive bool, overrideDatabaseMetadata *storepb.DatabaseSchemaMetadata) (origin *DatabaseState, final *DatabaseState, err error) {
-	dbMetadata := overrideDatabaseMetadata
-	if dbMetadata == nil {
-		databaseMeta, err := s.GetDBSchema(ctx, &store.FindDBSchemaMessage{
-			InstanceID:   instanceID,
-			DatabaseName: databaseName,
-		})
-		if err != nil {
-			return nil, nil, err
-		}
-		if databaseMeta == nil {
-			return nil, nil, nil
-		}
-		dbMetadata = databaseMeta.GetMetadata()
-	}
-	ignoreCaseSensitive := !isCaseSensitive
-	origin = NewDatabaseState(dbMetadata, ignoreCaseSensitive, engineType)
-	final = NewDatabaseState(dbMetadata, ignoreCaseSensitive, engineType)
-	return origin, final, nil
+// NewCatalogWithMetadata creates original and final database catalogs from schema metadata.
+// OriginalMetadata is DatabaseMetadata (read-only), FinalCatalog is DatabaseState (mutable for walk-through).
+func NewCatalogWithMetadata(metadata *storepb.DatabaseSchemaMetadata, engineType storepb.Engine, isCaseSensitive bool) (originalMetadata *model.DatabaseMetadata, final *DatabaseState, err error) {
+	// Create original metadata from original metadata as DatabaseMetadata (read-only)
+	originalSchema := model.NewDatabaseSchema(metadata, nil, nil, engineType, isCaseSensitive)
+	originalMetadata = originalSchema.GetDatabaseMetadata()
+
+	// Clone metadata for final to avoid modifying the original
+	clonedMetadata := proto.CloneOf(metadata)
+
+	// Create final as DatabaseState (mutable for walk-through)
+	final = NewDatabaseState(clonedMetadata, !isCaseSensitive, engineType)
+
+	return originalMetadata, final, nil
 }

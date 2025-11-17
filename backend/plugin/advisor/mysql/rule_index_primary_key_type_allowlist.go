@@ -14,8 +14,8 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -52,7 +52,7 @@ func (*IndexPrimaryKeyTypeAllowlistAdvisor) Check(_ context.Context, checkCtx ad
 	}
 
 	// Create the rule
-	rule := NewIndexPrimaryKeyTypeAllowlistRule(level, string(checkCtx.Rule.Type), allowlist, checkCtx.OriginCatalog)
+	rule := NewIndexPrimaryKeyTypeAllowlistRule(level, string(checkCtx.Rule.Type), allowlist, checkCtx.OriginalMetadata)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
@@ -70,12 +70,12 @@ func (*IndexPrimaryKeyTypeAllowlistAdvisor) Check(_ context.Context, checkCtx ad
 type IndexPrimaryKeyTypeAllowlistRule struct {
 	BaseRule
 	allowlist        map[string]bool
-	originCatalog    *catalog.DatabaseState
+	originCatalog    *model.DatabaseMetadata
 	tablesNewColumns tableColumnTypes
 }
 
 // NewIndexPrimaryKeyTypeAllowlistRule creates a new IndexPrimaryKeyTypeAllowlistRule.
-func NewIndexPrimaryKeyTypeAllowlistRule(level storepb.Advice_Status, title string, allowlist map[string]bool, originCatalog *catalog.DatabaseState) *IndexPrimaryKeyTypeAllowlistRule {
+func NewIndexPrimaryKeyTypeAllowlistRule(level storepb.Advice_Status, title string, allowlist map[string]bool, originCatalog *model.DatabaseMetadata) *IndexPrimaryKeyTypeAllowlistRule {
 	return &IndexPrimaryKeyTypeAllowlistRule{
 		BaseRule: BaseRule{
 			level: level,
@@ -254,7 +254,7 @@ func (r *IndexPrimaryKeyTypeAllowlistRule) getPKColumnType(tableName string, col
 	}
 	column := r.originCatalog.GetColumn("", tableName, columnName)
 	if column != nil {
-		return column.Type(), nil
+		return column.Type, nil
 	}
 	return "", errors.Errorf("cannot find the type of `%s`.`%s`", tableName, columnName)
 }

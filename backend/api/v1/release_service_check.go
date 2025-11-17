@@ -161,7 +161,18 @@ loop:
 		}
 
 		engine := instance.Metadata.GetEngine()
-		originCatalog, finalCatalog, err := catalog.NewCatalog(ctx, s.store, database.InstanceID, database.DatabaseName, engine, store.IsObjectCaseSensitive(instance), nil)
+		// Get the database metadata
+		dbSchema, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+			InstanceID:   database.InstanceID,
+			DatabaseName: database.DatabaseName,
+		})
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database schema"))
+		}
+		if dbSchema == nil {
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database schema not found for %s", database.DatabaseName))
+		}
+		originCatalog, finalCatalog, err := catalog.NewCatalogWithMetadata(dbSchema.GetMetadata(), engine, store.IsObjectCaseSensitive(instance))
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create catalog"))
 		}
@@ -603,7 +614,7 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 
 func (s *ReleaseService) runSQLReviewCheckForFile(
 	ctx context.Context,
-	originCatalog *catalog.DatabaseState,
+	originCatalog *model.DatabaseMetadata,
 	finalCatalog *catalog.DatabaseState,
 	instance *store.InstanceMessage,
 	database *store.DatabaseMessage,
@@ -652,7 +663,7 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 		ChangeType:               changeType,
 		DBSchema:                 dbMetadata,
 		DBType:                   instance.Metadata.GetEngine(),
-		OriginCatalog:            originCatalog,
+		OriginalMetadata:         originCatalog,
 		FinalCatalog:             finalCatalog,
 		Driver:                   connection,
 		CurrentDatabase:          database.DatabaseName,

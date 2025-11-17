@@ -14,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 // How to add a SQL review rule:
@@ -491,7 +492,7 @@ type SQLReviewCheckContext struct {
 	ChangeType            storepb.PlanCheckRunConfig_ChangeDatabaseType
 	DBSchema              *storepb.DatabaseSchemaMetadata
 	DBType                storepb.Engine
-	OriginCatalog         *catalog.DatabaseState
+	OriginalMetadata      *model.DatabaseMetadata
 	FinalCatalog          *catalog.DatabaseState
 	Driver                *sql.DB
 	EnablePriorBackup     bool
@@ -561,7 +562,7 @@ func SQLReviewCheck(
 				AST:                      asts,
 				Statements:               statements,
 				Rule:                     rule,
-				OriginCatalog:            checkContext.OriginCatalog,
+				OriginalMetadata:         checkContext.OriginalMetadata,
 				FinalCatalog:             checkContext.FinalCatalog,
 				Driver:                   checkContext.Driver,
 				CurrentDatabase:          checkContext.CurrentDatabase,

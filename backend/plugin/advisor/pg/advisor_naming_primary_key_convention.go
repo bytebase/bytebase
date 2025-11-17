@@ -11,9 +11,9 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -53,7 +53,7 @@ func (*NamingPKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 		format:         format,
 		maxLength:      maxLength,
 		templateList:   templateList,
-		originCatalog:  checkCtx.OriginCatalog,
+		originCatalog:  checkCtx.OriginalMetadata,
 		statementsText: checkCtx.Statements,
 	}
 
@@ -70,7 +70,7 @@ type namingPKConventionRule struct {
 	format         string
 	maxLength      int
 	templateList   []string
-	originCatalog  *catalog.DatabaseState
+	originCatalog  *model.DatabaseMetadata
 	statementsText string
 }
 

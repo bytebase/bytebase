@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 const (
@@ -48,7 +49,7 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 		title:         string(checkCtx.Rule.Type),
 		tables:        make(tablePK),
 		line:          make(map[string]int),
-		originCatalog: checkCtx.OriginCatalog,
+		originCatalog: checkCtx.OriginalMetadata,
 		finalCatalog:  checkCtx.FinalCatalog,
 	}
 
@@ -65,7 +66,7 @@ type tableRequirePKChecker struct {
 	title         string
 	tables        tablePK
 	line          map[string]int
-	originCatalog *catalog.DatabaseState
+	originCatalog *model.DatabaseMetadata
 	finalCatalog  *catalog.DatabaseState
 }
 
@@ -182,13 +183,11 @@ func (v *tableRequirePKChecker) createTableLike(node *ast.CreateTableStmt) {
 		}
 		v.tables[table] = newColumnSet(columns)
 	} else {
-		referTableState := v.originCatalog.GetTable("", referTableName)
-		if referTableState != nil {
-			indexSet := referTableState.Index()
-			for _, index := range *indexSet {
-				if index.Primary() {
-					v.tables[table] = newColumnSet(index.ExpressionList())
-				}
+		referTableMetadata := v.originCatalog.GetTable("", referTableName)
+		if referTableMetadata != nil {
+			primaryKey := referTableMetadata.GetPrimaryKey()
+			if primaryKey != nil {
+				v.tables[table] = newColumnSet(primaryKey.ExpressionList())
 			}
 		}
 	}

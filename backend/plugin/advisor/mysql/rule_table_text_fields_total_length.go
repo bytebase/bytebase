@@ -116,7 +116,8 @@ func (r *TableTextFieldsTotalLengthRule) checkCreateTable(ctx *mysql.CreateTable
 	if tableName == "" {
 		return
 	}
-	tableInfo := r.finalCatalog.GetTable("", tableName)
+	dbState := r.finalCatalog
+	tableInfo := dbState.GetTable("", tableName)
 	if tableInfo == nil {
 		return
 	}
@@ -150,7 +151,8 @@ func (r *TableTextFieldsTotalLengthRule) checkAlterTable(ctx *mysql.AlterTableCo
 	if tableName == "" {
 		return
 	}
-	tableInfo := r.finalCatalog.GetTable("", tableName)
+	dbState := r.finalCatalog
+	tableInfo := dbState.GetTable("", tableName)
 	if tableInfo == nil {
 		return
 	}

@@ -13,8 +13,8 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -44,7 +44,7 @@ func (*DatabaseAllowDropIfEmptyAdvisor) Check(_ context.Context, checkCtx adviso
 	}
 
 	// Create the rule
-	rule := NewDatabaseDropEmptyDBRule(level, string(checkCtx.Rule.Type), checkCtx.OriginCatalog)
+	rule := NewDatabaseDropEmptyDBRule(level, string(checkCtx.Rule.Type), checkCtx.OriginalMetadata)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
@@ -61,11 +61,11 @@ func (*DatabaseAllowDropIfEmptyAdvisor) Check(_ context.Context, checkCtx adviso
 // DatabaseDropEmptyDBRule checks for drop database only if empty.
 type DatabaseDropEmptyDBRule struct {
 	BaseRule
-	originCatalog *catalog.DatabaseState
+	originCatalog *model.DatabaseMetadata
 }
 
 // NewDatabaseDropEmptyDBRule creates a new DatabaseDropEmptyDBRule.
-func NewDatabaseDropEmptyDBRule(level storepb.Advice_Status, title string, originCatalog *catalog.DatabaseState) *DatabaseDropEmptyDBRule {
+func NewDatabaseDropEmptyDBRule(level storepb.Advice_Status, title string, originCatalog *model.DatabaseMetadata) *DatabaseDropEmptyDBRule {
 	return &DatabaseDropEmptyDBRule{
 		BaseRule: BaseRule{
 			level: level,

@@ -122,7 +122,14 @@ func (r *indexTotalNumberLimitRule) generateAdvice() {
 	})
 
 	for _, table := range tableList {
-		tableInfo := r.finalCatalog.GetTable(table.schema, table.table)
+		schema, err := r.finalCatalog.GetSchema(table.schema)
+		if err != nil {
+			continue
+		}
+		tableInfo, err := schema.GetTable(table.table)
+		if err != nil {
+			continue
+		}
 		if tableInfo != nil && tableInfo.CountIndex() > r.max {
 			r.AddAdvice(&storepb.Advice{
 				Status:  r.level,

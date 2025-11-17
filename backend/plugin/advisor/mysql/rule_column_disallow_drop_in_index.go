@@ -13,8 +13,8 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -44,7 +44,7 @@ func (*ColumnDisallowDropInIndexAdvisor) Check(_ context.Context, checkCtx advis
 	}
 
 	// Create the rule
-	rule := NewColumnDisallowDropInIndexRule(level, string(checkCtx.Rule.Type), checkCtx.OriginCatalog)
+	rule := NewColumnDisallowDropInIndexRule(level, string(checkCtx.Rule.Type), checkCtx.OriginalMetadata)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
@@ -62,11 +62,11 @@ func (*ColumnDisallowDropInIndexAdvisor) Check(_ context.Context, checkCtx advis
 type ColumnDisallowDropInIndexRule struct {
 	BaseRule
 	tables        tableState
-	originCatalog *catalog.DatabaseState
+	originCatalog *model.DatabaseMetadata
 }
 
 // NewColumnDisallowDropInIndexRule creates a new ColumnDisallowDropInIndexRule.
-func NewColumnDisallowDropInIndexRule(level storepb.Advice_Status, title string, originCatalog *catalog.DatabaseState) *ColumnDisallowDropInIndexRule {
+func NewColumnDisallowDropInIndexRule(level storepb.Advice_Status, title string, originCatalog *model.DatabaseMetadata) *ColumnDisallowDropInIndexRule {
 	return &ColumnDisallowDropInIndexRule{
 		BaseRule: BaseRule{
 			level: level,
@@ -164,7 +164,7 @@ func (r *ColumnDisallowDropInIndexRule) checkAlterTable(ctx *mysql.AlterTableCon
 			if r.tables[tableName] == nil {
 				r.tables[tableName] = make(columnSet)
 			}
-			for _, indexColumn := range *index {
+			for _, indexColumn := range index {
 				for _, column := range indexColumn.ExpressionList() {
 					r.tables[tableName][column] = true
 				}

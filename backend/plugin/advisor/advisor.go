@@ -15,6 +15,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 const (
@@ -45,11 +46,11 @@ type Context struct {
 	IsObjectCaseSensitive bool
 
 	// SQL review rule special fields.
-	AST           any
-	Rule          *storepb.SQLReviewRule
-	OriginCatalog *catalog.DatabaseState
-	FinalCatalog  *catalog.DatabaseState
-	Driver        *sql.DB
+	AST              any
+	Rule             *storepb.SQLReviewRule
+	OriginalMetadata *model.DatabaseMetadata
+	FinalCatalog     *catalog.DatabaseState
+	Driver           *sql.DB
 
 	// CurrentDatabase is the current database.
 	CurrentDatabase string

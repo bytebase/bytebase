@@ -15,8 +15,8 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -55,7 +55,7 @@ func (*IndexPrimaryKeyTypeAllowlistAdvisor) Check(_ context.Context, checkCtx ad
 		level:            level,
 		title:            string(checkCtx.Rule.Type),
 		allowlist:        allowlist,
-		originCatalog:    checkCtx.OriginCatalog,
+		originCatalog:    checkCtx.OriginalMetadata,
 		tablesNewColumns: make(map[string]columnNameToColumnDef),
 	}
 
@@ -75,7 +75,7 @@ type indexPrimaryKeyTypeAllowlistChecker struct {
 	text             string
 	line             int
 	allowlist        map[string]bool
-	originCatalog    *catalog.DatabaseState
+	originCatalog    *model.DatabaseMetadata
 	tablesNewColumns tableNewColumn
 }
 
@@ -203,7 +203,7 @@ func (v *indexPrimaryKeyTypeAllowlistChecker) getPKColumnType(tableName string, 
 	}
 	column := v.originCatalog.GetColumn("", tableName, columnName)
 	if column != nil {
-		return column.Type(), nil
+		return column.Type, nil
 	}
 	return "", errors.Errorf("cannot find the type of `%s`.`%s`", tableName, columnName)
 }

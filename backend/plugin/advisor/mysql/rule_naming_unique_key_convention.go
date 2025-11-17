@@ -12,9 +12,9 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -49,7 +49,7 @@ func (*NamingUKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 	}
 
 	// Create the rule
-	rule := NewNamingUKConventionRule(level, string(checkCtx.Rule.Type), format, maxLength, templateList, checkCtx.OriginCatalog)
+	rule := NewNamingUKConventionRule(level, string(checkCtx.Rule.Type), format, maxLength, templateList, checkCtx.OriginalMetadata)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
@@ -78,11 +78,11 @@ type NamingUKConventionRule struct {
 	format        string
 	maxLength     int
 	templateList  []string
-	originCatalog *catalog.DatabaseState
+	originCatalog *model.DatabaseMetadata
 }
 
 // NewNamingUKConventionRule creates a new NamingUKConventionRule.
-func NewNamingUKConventionRule(level storepb.Advice_Status, title string, format string, maxLength int, templateList []string, originCatalog *catalog.DatabaseState) *NamingUKConventionRule {
+func NewNamingUKConventionRule(level storepb.Advice_Status, title string, format string, maxLength int, templateList []string, originCatalog *model.DatabaseMetadata) *NamingUKConventionRule {
 	return &NamingUKConventionRule{
 		BaseRule: BaseRule{
 			level: level,
@@ -192,7 +192,7 @@ func (r *NamingUKConventionRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 			if indexStateMap == nil {
 				continue
 			}
-			indexState, ok := (*indexStateMap)[oldIndexName]
+			indexState, ok := indexStateMap[oldIndexName]
 			if !ok {
 				continue
 			}

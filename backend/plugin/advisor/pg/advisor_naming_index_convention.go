@@ -11,9 +11,9 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -53,7 +53,7 @@ func (*NamingIndexConventionAdvisor) Check(_ context.Context, checkCtx advisor.C
 		format:        format,
 		maxLength:     maxLength,
 		templateList:  templateList,
-		originCatalog: checkCtx.OriginCatalog,
+		originCatalog: checkCtx.OriginalMetadata,
 	}
 
 	checker := NewGenericChecker([]Rule{rule})
@@ -68,7 +68,7 @@ type namingIndexConventionRule struct {
 	format        string
 	maxLength     int
 	templateList  []string
-	originCatalog *catalog.DatabaseState
+	originCatalog *model.DatabaseMetadata
 }
 
 // Name returns the rule name.
@@ -233,7 +233,7 @@ func (r *namingIndexConventionRule) checkIndexName(indexName, tableName string, 
 }
 
 // findIndex returns index found in catalogs, nil if not found.
-func (r *namingIndexConventionRule) findIndex(schemaName string, tableName string, indexName string) (string, *catalog.IndexState) {
+func (r *namingIndexConventionRule) findIndex(schemaName string, tableName string, indexName string) (string, *model.IndexMetadata) {
 	if r.originCatalog == nil {
 		return "", nil
 	}

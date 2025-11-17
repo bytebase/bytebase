@@ -16,7 +16,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -47,7 +47,7 @@ func (*IndexPkTypeAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 		level:            level,
 		title:            string(checkCtx.Rule.Type),
 		line:             make(map[string]int),
-		originCatalog:    checkCtx.OriginCatalog,
+		originCatalog:    checkCtx.OriginalMetadata,
 		tablesNewColumns: make(map[string]columnNameToColumnDef),
 	}
 
@@ -88,7 +88,7 @@ type indexPkTypeChecker struct {
 	level            storepb.Advice_Status
 	title            string
 	line             map[string]int
-	originCatalog    *catalog.DatabaseState
+	originCatalog    *model.DatabaseMetadata
 	tablesNewColumns tableNewColumn
 }
 
@@ -222,7 +222,7 @@ func (v *indexPkTypeChecker) getPKColumnType(tableName string, columnName string
 	}
 	column := v.originCatalog.GetColumn("", tableName, columnName)
 	if column != nil {
-		return column.Type(), nil
+		return column.Type, nil
 	}
 	return "", errors.Errorf("cannot find the type of `%s`.`%s`", tableName, columnName)
 }

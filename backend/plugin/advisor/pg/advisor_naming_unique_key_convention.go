@@ -11,9 +11,9 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -53,7 +53,7 @@ func (*NamingUKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 		format:        format,
 		maxLength:     maxLength,
 		templateList:  templateList,
-		originCatalog: checkCtx.OriginCatalog,
+		originCatalog: checkCtx.OriginalMetadata,
 	}
 
 	checker := NewGenericChecker([]Rule{rule})
@@ -68,7 +68,7 @@ type namingUKConventionRule struct {
 	format        string
 	maxLength     int
 	templateList  []string
-	originCatalog *catalog.DatabaseState
+	originCatalog *model.DatabaseMetadata
 }
 
 //nolint:unused
@@ -407,7 +407,7 @@ func (r *namingUKConventionRule) getTemplateRegexp(tokens map[string]string) (*r
 }
 
 // findIndex returns index found in catalogs, nil if not found.
-func (r *namingUKConventionRule) findIndex(schemaName string, tableName string, indexName string) (string, *catalog.IndexState) {
+func (r *namingUKConventionRule) findIndex(schemaName string, tableName string, indexName string) (string, *model.IndexMetadata) {
 	if r.originCatalog == nil {
 		return "", nil
 	}

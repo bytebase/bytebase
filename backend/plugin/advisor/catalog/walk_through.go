@@ -92,7 +92,7 @@ func (e *WalkThroughError) Error() string {
 	return e.Content
 }
 
-// WalkThrough will collect the catalog schema in the databaseState as it walks through the stmt.
+// WalkThrough will collect the catalog schema in the database state as it walks through the stmt.
 func WalkThrough(d *DatabaseState, ast any) error {
 	switch d.dbType {
 	case storepb.Engine_TIDB:

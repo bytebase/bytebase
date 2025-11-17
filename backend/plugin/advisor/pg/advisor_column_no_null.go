@@ -11,9 +11,9 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -45,7 +45,7 @@ func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) (
 			level: level,
 			title: string(checkCtx.Rule.Type),
 		},
-		originCatalog:   checkCtx.OriginCatalog,
+		originCatalog:   checkCtx.OriginalMetadata,
 		nullableColumns: make(columnMap),
 	}
 
@@ -74,7 +74,7 @@ type columnMap map[columnName]int
 type columnNoNullRule struct {
 	BaseRule
 
-	originCatalog   *catalog.DatabaseState
+	originCatalog   *model.DatabaseMetadata
 	nullableColumns columnMap
 }
 

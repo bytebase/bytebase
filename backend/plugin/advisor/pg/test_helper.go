@@ -16,6 +16,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 // TestCase is the data struct for test.
@@ -58,9 +59,12 @@ func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbTyp
 			t.Fatalf("%s doesn't have mocked metadata support", storepb.Engine_name[int32(dbType)])
 		}
 
-		database := advisor.MockPostgreSQLDatabase
-		originCatalog := catalog.NewDatabaseState(database, false /* ignoreCaseSensitive */, dbType)
-		finalCatalog := catalog.NewDatabaseState(database, false /* ignoreCaseSensitive */, dbType)
+		// Create OriginalMetadata as DatabaseMetadata (read-only)
+		originalSchema := model.NewDatabaseSchema(schemaMetadata, nil, nil, dbType, true /* isCaseSensitive for PostgreSQL */)
+		originalMetadata := originalSchema.GetDatabaseMetadata()
+
+		// Create FinalCatalog as DatabaseState (mutable for walk-through)
+		finalCatalog := catalog.NewDatabaseState(schemaMetadata, false /* ignoreCaseSensitive */, dbType)
 
 		// Get default payload, or use empty string for test-only rules
 		payload, err := advisor.SetDefaultSQLReviewRulePayload(rule, dbType)
@@ -97,7 +101,7 @@ func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbTyp
 				AST:                      tree, // Pass ANTLR parse result
 				Statements:               tc.Statement,
 				Rule:                     ruleList[0],
-				OriginCatalog:            originCatalog,
+				OriginalMetadata:         originalMetadata,
 				FinalCatalog:             finalCatalog,
 				Driver:                   nil,
 				CurrentDatabase:          "TEST_DB",

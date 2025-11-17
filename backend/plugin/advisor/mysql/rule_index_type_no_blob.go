@@ -14,8 +14,8 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -45,7 +45,7 @@ func (*IndexTypeNoBlobAdvisor) Check(_ context.Context, checkCtx advisor.Context
 	}
 
 	// Create the rule
-	rule := NewIndexTypeNoBlobRule(level, string(checkCtx.Rule.Type), checkCtx.OriginCatalog)
+	rule := NewIndexTypeNoBlobRule(level, string(checkCtx.Rule.Type), checkCtx.OriginalMetadata)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
@@ -62,12 +62,12 @@ func (*IndexTypeNoBlobAdvisor) Check(_ context.Context, checkCtx advisor.Context
 // IndexTypeNoBlobRule checks for index type no blob.
 type IndexTypeNoBlobRule struct {
 	BaseRule
-	originCatalog    *catalog.DatabaseState
+	originCatalog    *model.DatabaseMetadata
 	tablesNewColumns tableColumnTypes
 }
 
 // NewIndexTypeNoBlobRule creates a new IndexTypeNoBlobRule.
-func NewIndexTypeNoBlobRule(level storepb.Advice_Status, title string, originCatalog *catalog.DatabaseState) *IndexTypeNoBlobRule {
+func NewIndexTypeNoBlobRule(level storepb.Advice_Status, title string, originCatalog *model.DatabaseMetadata) *IndexTypeNoBlobRule {
 	return &IndexTypeNoBlobRule{
 		BaseRule: BaseRule{
 			level: level,
@@ -297,7 +297,7 @@ func (r *IndexTypeNoBlobRule) getColumnType(tableName string, columnName string)
 	}
 	column := r.originCatalog.GetColumn("", tableName, columnName)
 	if column != nil {
-		return column.Type(), nil
+		return column.Type, nil
 	}
 	return "", errors.Errorf("cannot find the type of `%s`.`%s`", tableName, columnName)
 }

@@ -13,9 +13,9 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 const (
@@ -49,7 +49,7 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 	}
 
 	// Create the rule
-	rule := NewTableRequirePKRule(level, string(checkCtx.Rule.Type), checkCtx.OriginCatalog)
+	rule := NewTableRequirePKRule(level, string(checkCtx.Rule.Type), checkCtx.OriginalMetadata)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
@@ -71,11 +71,11 @@ type TableRequirePKRule struct {
 	BaseRule
 	tables        map[string]columnSet
 	line          map[string]int
-	originCatalog *catalog.DatabaseState
+	originCatalog *model.DatabaseMetadata
 }
 
 // NewTableRequirePKRule creates a new TableRequirePKRule.
-func NewTableRequirePKRule(level storepb.Advice_Status, title string, originCatalog *catalog.DatabaseState) *TableRequirePKRule {
+func NewTableRequirePKRule(level storepb.Advice_Status, title string, originCatalog *model.DatabaseMetadata) *TableRequirePKRule {
 	return &TableRequirePKRule{
 		BaseRule: BaseRule{
 			level: level,

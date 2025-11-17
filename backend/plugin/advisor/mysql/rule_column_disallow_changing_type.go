@@ -15,8 +15,8 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -46,7 +46,7 @@ func (*ColumnDisallowChangingTypeAdvisor) Check(_ context.Context, checkCtx advi
 	}
 
 	// Create the rule
-	rule := NewColumnDisallowChangingTypeRule(level, string(checkCtx.Rule.Type), checkCtx.OriginCatalog)
+	rule := NewColumnDisallowChangingTypeRule(level, string(checkCtx.Rule.Type), checkCtx.OriginalMetadata)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
@@ -64,11 +64,11 @@ func (*ColumnDisallowChangingTypeAdvisor) Check(_ context.Context, checkCtx advi
 type ColumnDisallowChangingTypeRule struct {
 	BaseRule
 	text          string
-	originCatalog *catalog.DatabaseState
+	originCatalog *model.DatabaseMetadata
 }
 
 // NewColumnDisallowChangingTypeRule creates a new ColumnDisallowChangingTypeRule.
-func NewColumnDisallowChangingTypeRule(level storepb.Advice_Status, title string, originCatalog *catalog.DatabaseState) *ColumnDisallowChangingTypeRule {
+func NewColumnDisallowChangingTypeRule(level storepb.Advice_Status, title string, originCatalog *model.DatabaseMetadata) *ColumnDisallowChangingTypeRule {
 	return &ColumnDisallowChangingTypeRule{
 		BaseRule: BaseRule{
 			level: level,
@@ -176,7 +176,7 @@ func (r *ColumnDisallowChangingTypeRule) changeColumnType(tableName, columnName 
 		return
 	}
 
-	if normalizeColumnType(column.Type()) != normalizeColumnType(tp) {
+	if normalizeColumnType(column.Type) != normalizeColumnType(tp) {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
 			Code:          code.ChangeColumnType.Int32(),

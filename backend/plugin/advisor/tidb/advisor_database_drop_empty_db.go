@@ -12,7 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -43,7 +43,7 @@ func (*DatabaseAllowDropIfEmptyAdvisor) Check(_ context.Context, checkCtx adviso
 	checker := &allowDropEmptyDBChecker{
 		level:         level,
 		title:         string(checkCtx.Rule.Type),
-		originCatalog: checkCtx.OriginCatalog,
+		originCatalog: checkCtx.OriginalMetadata,
 	}
 	for _, stmtNode := range root {
 		(stmtNode).Accept(checker)
@@ -56,7 +56,7 @@ type allowDropEmptyDBChecker struct {
 	adviceList    []*storepb.Advice
 	level         storepb.Advice_Status
 	title         string
-	originCatalog *catalog.DatabaseState
+	originCatalog *model.DatabaseMetadata
 }
 
 // Enter implements the ast.Visitor interface.

@@ -15,7 +15,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -45,7 +45,7 @@ func (*ColumnDisallowChangingTypeAdvisor) Check(_ context.Context, checkCtx advi
 	checker := &columnDisallowChangingTypeChecker{
 		level:         level,
 		title:         string(checkCtx.Rule.Type),
-		originCatalog: checkCtx.OriginCatalog,
+		originCatalog: checkCtx.OriginalMetadata,
 	}
 
 	for _, stmt := range stmtList {
@@ -63,7 +63,7 @@ type columnDisallowChangingTypeChecker struct {
 	title         string
 	text          string
 	line          int
-	originCatalog *catalog.DatabaseState
+	originCatalog *model.DatabaseMetadata
 }
 
 // Enter implements the ast.Visitor interface.
@@ -137,5 +137,5 @@ func (checker *columnDisallowChangingTypeChecker) changeColumnType(tableName str
 		return false
 	}
 
-	return normalizeColumnType(column.Type()) != normalizeColumnType(newType)
+	return normalizeColumnType(column.Type) != normalizeColumnType(newType)
 }

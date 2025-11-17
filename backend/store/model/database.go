@@ -6,6 +6,8 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -231,6 +233,7 @@ func (t *TableConfig) IsEmpty() bool {
 
 // DatabaseMetadata is the metadata for a database.
 type DatabaseMetadata struct {
+	proto                 *storepb.DatabaseSchemaMetadata
 	name                  string
 	owner                 string
 	searchPath            []string
@@ -243,6 +246,7 @@ type DatabaseMetadata struct {
 // NewDatabaseMetadata creates a new database metadata.
 func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, isObjectCaseSensitive bool, isDetailCaseSensitive bool) *DatabaseMetadata {
 	databaseMetadata := &DatabaseMetadata{
+		proto:                 metadata,
 		name:                  metadata.Name,
 		owner:                 metadata.Owner,
 		searchPath:            NormalizeSearchPath(metadata.SearchPath),
@@ -466,6 +470,104 @@ func (d *DatabaseMetadata) SearchExternalTable(searchPath []string, name string)
 	return "", nil
 }
 
+// Convenience methods for advisor rules
+
+// GetColumn gets a column from the database by schema, table, and column name.
+// Returns nil if the column is not found.
+func (d *DatabaseMetadata) GetColumn(schemaName, tableName, columnName string) *storepb.ColumnMetadata {
+	schema := d.GetSchema(schemaName)
+	if schema == nil {
+		return nil
+	}
+	table := schema.GetTable(tableName)
+	if table == nil {
+		return nil
+	}
+	return table.GetColumn(columnName)
+}
+
+// GetIndex gets an index from the database by schema, table, and index name.
+// Returns the table name and index metadata, or ("", nil) if not found.
+func (d *DatabaseMetadata) GetIndex(schemaName, tableName, indexName string) (string, *IndexMetadata) {
+	schema := d.GetSchema(schemaName)
+	if schema == nil {
+		return "", nil
+	}
+
+	if tableName != "" {
+		// Look for index in specific table
+		table := schema.GetTable(tableName)
+		if table == nil {
+			return "", nil
+		}
+		index := table.GetIndex(indexName)
+		if index != nil {
+			return tableName, index
+		}
+		return "", nil
+	}
+
+	// Search all tables in the schema for the index
+	for _, table := range schema.proto.Tables {
+		tableMetadata := schema.GetTable(table.Name)
+		if tableMetadata == nil {
+			continue
+		}
+		index := tableMetadata.GetIndex(indexName)
+		if index != nil {
+			return table.Name, index
+		}
+	}
+
+	return "", nil
+}
+
+// GetTable gets a table from the database by schema and table name.
+// Returns nil if the table is not found.
+func (d *DatabaseMetadata) GetTable(schemaName, tableName string) *TableMetadata {
+	schema := d.GetSchema(schemaName)
+	if schema == nil {
+		return nil
+	}
+	return schema.GetTable(tableName)
+}
+
+// Index returns all indexes for a table as a map[indexName]*IndexMetadata.
+// Returns nil if the schema or table is not found.
+func (d *DatabaseMetadata) Index(schemaName, tableName string) map[string]*IndexMetadata {
+	table := d.GetTable(schemaName, tableName)
+	if table == nil {
+		return nil
+	}
+
+	indexes := table.ListIndexes()
+	result := make(map[string]*IndexMetadata)
+	for _, index := range indexes {
+		if index.proto != nil {
+			result[index.proto.Name] = index
+		}
+	}
+	return result
+}
+
+// DatabaseName returns the name of the database.
+func (d *DatabaseMetadata) DatabaseName() string {
+	if d.proto == nil {
+		return ""
+	}
+	return d.proto.Name
+}
+
+// HasNoTable returns true if the database has no tables.
+func (d *DatabaseMetadata) HasNoTable() bool {
+	for _, schema := range d.internal {
+		if schema != nil && schema.proto != nil && len(schema.proto.Tables) > 0 {
+			return false
+		}
+	}
+	return true
+}
+
 func (d *DatabaseMetadata) SearchSequence(searchPath []string, name string) (string, *SequenceMetadata) {
 	// Search in the search path first.
 	for _, schemaName := range searchPath {
@@ -561,6 +663,21 @@ func (d *DatabaseMetadata) GetOwner() string {
 
 func (d *DatabaseMetadata) GetSearchPath() []string {
 	return d.searchPath
+}
+
+// GetProto returns the underlying proto for this database metadata.
+func (d *DatabaseMetadata) GetProto() *storepb.DatabaseSchemaMetadata {
+	return d.proto
+}
+
+// GetIsObjectCaseSensitive returns whether object names (schemas, tables) are case-sensitive.
+func (d *DatabaseMetadata) GetIsObjectCaseSensitive() bool {
+	return d.isObjectCaseSensitive
+}
+
+// GetIsDetailCaseSensitive returns whether detail names (columns, indexes) are case-sensitive.
+func (d *DatabaseMetadata) GetIsDetailCaseSensitive() bool {
+	return d.isDetailCaseSensitive
 }
 
 // LinkedDatabaseMetadata is the metadata for a linked database.
@@ -801,6 +918,80 @@ func (s *SchemaMetadata) ListMaterializedViewNames() []string {
 	return result
 }
 
+// CreateTable creates a new table in the schema.
+// Returns the created TableMetadata or an error if the table already exists.
+func (s *SchemaMetadata) CreateTable(tableName string) (*TableMetadata, error) {
+	// Check if table already exists
+	if s.GetTable(tableName) != nil {
+		return nil, errors.Errorf("table %q already exists in schema %q", tableName, s.proto.Name)
+	}
+
+	// Create new table proto
+	newTableProto := &storepb.TableMetadata{
+		Name:    tableName,
+		Columns: []*storepb.ColumnMetadata{},
+		Indexes: []*storepb.IndexMetadata{},
+	}
+
+	// Add to proto's table list
+	s.proto.Tables = append(s.proto.Tables, newTableProto)
+
+	// Create TableMetadata wrapper
+	tableMeta := &TableMetadata{
+		isDetailCaseSensitive: s.isDetailCaseSensitive,
+		internalColumn:        make(map[string]*storepb.ColumnMetadata),
+		internalIndexes:       make(map[string]*IndexMetadata),
+		columns:               []*storepb.ColumnMetadata{},
+		proto:                 newTableProto,
+	}
+
+	// Add to internal map
+	var tableID string
+	if s.isObjectCaseSensitive {
+		tableID = tableName
+	} else {
+		tableID = strings.ToLower(tableName)
+	}
+	s.internalTables[tableID] = tableMeta
+
+	return tableMeta, nil
+}
+
+// DropTable drops a table from the schema.
+// Returns an error if the table does not exist.
+func (s *SchemaMetadata) DropTable(tableName string) error {
+	// Check if table exists
+	if s.GetTable(tableName) == nil {
+		return errors.Errorf("table %q does not exist in schema %q", tableName, s.proto.Name)
+	}
+
+	// Remove from internal map
+	var tableID string
+	if s.isObjectCaseSensitive {
+		tableID = tableName
+	} else {
+		tableID = strings.ToLower(tableName)
+	}
+	delete(s.internalTables, tableID)
+
+	// Remove from proto's table list
+	newTables := make([]*storepb.TableMetadata, 0, len(s.proto.Tables)-1)
+	for _, table := range s.proto.Tables {
+		if s.isObjectCaseSensitive {
+			if table.Name != tableName {
+				newTables = append(newTables, table)
+			}
+		} else {
+			if !strings.EqualFold(table.Name, tableName) {
+				newTables = append(newTables, table)
+			}
+		}
+	}
+	s.proto.Tables = newTables
+
+	return nil
+}
+
 func buildTablesMetadata(table *storepb.TableMetadata, isDetailCaseSensitive bool) ([]*TableMetadata, []string) {
 	if table == nil {
 		return nil, nil
@@ -971,6 +1162,70 @@ func (t *TableMetadata) GetProto() *storepb.TableMetadata {
 	return t.proto
 }
 
+// CreateColumn creates a new column in the table.
+// Returns an error if the column already exists.
+func (t *TableMetadata) CreateColumn(columnProto *storepb.ColumnMetadata) error {
+	// Check if column already exists
+	if t.GetColumn(columnProto.Name) != nil {
+		return errors.Errorf("column %q already exists in table %q", columnProto.Name, t.proto.Name)
+	}
+
+	// Add to proto's column list
+	t.proto.Columns = append(t.proto.Columns, columnProto)
+
+	// Add to internal map
+	var columnID string
+	if t.isDetailCaseSensitive {
+		columnID = columnProto.Name
+	} else {
+		columnID = strings.ToLower(columnProto.Name)
+	}
+	t.internalColumn[columnID] = columnProto
+
+	// Add to columns slice
+	t.columns = append(t.columns, columnProto)
+
+	return nil
+}
+
+// DropColumn drops a column from the table.
+// Returns an error if the column does not exist.
+func (t *TableMetadata) DropColumn(columnName string) error {
+	// Check if column exists
+	if t.GetColumn(columnName) == nil {
+		return errors.Errorf("column %q does not exist in table %q", columnName, t.proto.Name)
+	}
+
+	// Remove from internal map
+	var columnID string
+	if t.isDetailCaseSensitive {
+		columnID = columnName
+	} else {
+		columnID = strings.ToLower(columnName)
+	}
+	delete(t.internalColumn, columnID)
+
+	// Remove from proto's column list
+	newColumns := make([]*storepb.ColumnMetadata, 0, len(t.proto.Columns)-1)
+	for _, column := range t.proto.Columns {
+		if t.isDetailCaseSensitive {
+			if column.Name != columnName {
+				newColumns = append(newColumns, column)
+			}
+		} else {
+			if !strings.EqualFold(column.Name, columnName) {
+				newColumns = append(newColumns, column)
+			}
+		}
+	}
+	t.proto.Columns = newColumns
+
+	// Rebuild columns slice
+	t.columns = newColumns
+
+	return nil
+}
+
 // ExternalTableMetadata is the metadata for a external table.
 type ExternalTableMetadata struct {
 	isDetailCaseSensitive bool
@@ -1010,6 +1265,30 @@ func (i *IndexMetadata) GetProto() *storepb.IndexMetadata {
 
 func (i *IndexMetadata) GetTableProto() *storepb.TableMetadata {
 	return i.tableProto
+}
+
+// Primary returns true if the index is a primary key.
+func (i *IndexMetadata) Primary() bool {
+	if i.proto == nil {
+		return false
+	}
+	return i.proto.Primary
+}
+
+// Unique returns true if the index is unique.
+func (i *IndexMetadata) Unique() bool {
+	if i.proto == nil {
+		return false
+	}
+	return i.proto.Unique
+}
+
+// ExpressionList returns the list of expressions/columns in the index.
+func (i *IndexMetadata) ExpressionList() []string {
+	if i.proto == nil {
+		return nil
+	}
+	return i.proto.Expressions
 }
 
 // ViewMetadata is the metadata for a view.

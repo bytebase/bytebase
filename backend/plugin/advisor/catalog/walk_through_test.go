@@ -176,12 +176,15 @@ func runWalkThroughTest(t *testing.T, file string, engineType storepb.Engine, or
 	sm := sheet.NewManager(nil)
 
 	for _, test := range tests {
-		var state *DatabaseState
+		var proto *storepb.DatabaseSchemaMetadata
 		if originDatabase != nil {
-			state = NewDatabaseState(originDatabase, test.IgnoreCaseSensitive, engineType)
+			proto = originDatabase
 		} else {
-			state = NewDatabaseState(&storepb.DatabaseSchemaMetadata{}, test.IgnoreCaseSensitive, engineType)
+			proto = &storepb.DatabaseSchemaMetadata{}
 		}
+
+		// Create DatabaseState for walk-through
+		state := NewDatabaseState(proto, test.IgnoreCaseSensitive, engineType)
 
 		asts, _ := sm.GetASTsForChecks(engineType, test.Statement)
 		err := WalkThrough(state, asts)
@@ -215,12 +218,15 @@ func runANTLRWalkThroughTest(t *testing.T, file string, engineType storepb.Engin
 	require.NoError(t, err)
 
 	for _, test := range tests {
-		var state *DatabaseState
+		var proto *storepb.DatabaseSchemaMetadata
 		if originDatabase != nil {
-			state = NewDatabaseState(originDatabase, test.IgnoreCaseSensitive, engineType)
+			proto = originDatabase
 		} else {
-			state = NewDatabaseState(&storepb.DatabaseSchemaMetadata{}, test.IgnoreCaseSensitive, engineType)
+			proto = &storepb.DatabaseSchemaMetadata{}
 		}
+
+		// Create DatabaseState for walk-through
+		state := NewDatabaseState(proto, test.IgnoreCaseSensitive, engineType)
 
 		// Parse using ANTLR parser instead of legacy parser
 		parseResult, parseErr := pgparser.ParsePostgreSQL(test.Statement)

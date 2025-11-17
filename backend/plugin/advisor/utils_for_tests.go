@@ -21,6 +21,7 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	database "github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -196,12 +197,27 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 			}
 		}
 
-		database := MockMySQLDatabase
-		if dbType == storepb.Engine_POSTGRES {
-			database = MockPostgreSQLDatabase
+		// Use the schemaMetadata if available, otherwise use mock database for catalog creation
+		catalogMetadata := schemaMetadata
+		if catalogMetadata == nil {
+			if dbType == storepb.Engine_POSTGRES {
+				catalogMetadata = MockPostgreSQLDatabase
+			} else {
+				catalogMetadata = MockMySQLDatabase
+			}
 		}
-		originCatalog := catalog.NewDatabaseState(database, false /* ignoreCaseSensitive */, dbType)
-		finalCatalog := catalog.NewDatabaseState(database, false /* ignoreCaseSensitive */, dbType)
+
+		isCaseSensitive := false
+		if dbType == storepb.Engine_POSTGRES {
+			isCaseSensitive = true
+		}
+
+		// Create OriginalMetadata as DatabaseMetadata (read-only)
+		originalSchema := model.NewDatabaseSchema(catalogMetadata, nil, nil, dbType, isCaseSensitive)
+		originalMetadata := originalSchema.GetDatabaseMetadata()
+
+		// Create FinalCatalog as DatabaseState (mutable for walk-through)
+		finalCatalog := catalog.NewDatabaseState(catalogMetadata, !isCaseSensitive, dbType)
 
 		payload, err := SetDefaultSQLReviewRulePayload(rule, dbType)
 		require.NoError(t, err)
@@ -218,7 +234,7 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 			Charset:                  "",
 			Collation:                "",
 			DBType:                   dbType,
-			OriginCatalog:            originCatalog,
+			OriginalMetadata:         originalMetadata,
 			FinalCatalog:             finalCatalog,
 			Driver:                   nil,
 			CurrentDatabase:          curDB,
