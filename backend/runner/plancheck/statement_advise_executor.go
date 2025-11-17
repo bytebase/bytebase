@@ -176,7 +176,7 @@ func (e *StatementAdviseExecutor) runReview(
 		DBSchema:                 dbSchema.GetMetadata(),
 		ChangeType:               changeType,
 		DBType:                   instance.Metadata.GetEngine(),
-		OriginCatalog:            originCatalog,
+		OriginalMetadata:         originCatalog,
 		FinalCatalog:             finalCatalog,
 		Driver:                   connection,
 		EnablePriorBackup:        enablePriorBackup,

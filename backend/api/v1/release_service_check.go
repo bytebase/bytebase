@@ -615,7 +615,7 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 func (s *ReleaseService) runSQLReviewCheckForFile(
 	ctx context.Context,
 	originCatalog *model.DatabaseMetadata,
-	finalCatalog *model.DatabaseMetadata,
+	finalCatalog *catalog.DatabaseState,
 	instance *store.InstanceMessage,
 	database *store.DatabaseMessage,
 	changeType storepb.PlanCheckRunConfig_ChangeDatabaseType,
@@ -663,7 +663,7 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 		ChangeType:               changeType,
 		DBSchema:                 dbMetadata,
 		DBType:                   instance.Metadata.GetEngine(),
-		OriginCatalog:            originCatalog,
+		OriginalMetadata:         originCatalog,
 		FinalCatalog:             finalCatalog,
 		Driver:                   connection,
 		CurrentDatabase:          database.DatabaseName,
