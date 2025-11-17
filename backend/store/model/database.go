@@ -455,8 +455,49 @@ func (d *DatabaseMetadata) GetSearchPath() []string {
 }
 
 // GetProto returns the underlying proto for this database metadata.
+// The proto is sorted to ensure deterministic output for tests.
 func (d *DatabaseMetadata) GetProto() *storepb.DatabaseSchemaMetadata {
+	d.sortProto()
 	return d.proto
+}
+
+// sortProto sorts the proto structures to ensure deterministic output.
+// This matches the behavior of the old DatabaseState.convertToDatabaseMetadata.
+func (d *DatabaseMetadata) sortProto() {
+	// Sort schemas by name
+	slices.SortFunc(d.proto.Schemas, func(x, y *storepb.SchemaMetadata) int {
+		return strings.Compare(x.Name, y.Name)
+	})
+
+	// Sort tables and indexes within each schema
+	for _, schema := range d.proto.Schemas {
+		// Sort tables by name
+		slices.SortFunc(schema.Tables, func(x, y *storepb.TableMetadata) int {
+			return strings.Compare(x.Name, y.Name)
+		})
+
+		// Sort indexes within each table by name
+		for _, table := range schema.Tables {
+			slices.SortFunc(table.Indexes, func(x, y *storepb.IndexMetadata) int {
+				return strings.Compare(x.Name, y.Name)
+			})
+
+			// Sort columns by position
+			slices.SortFunc(table.Columns, func(x, y *storepb.ColumnMetadata) int {
+				if x.Position < y.Position {
+					return -1
+				} else if x.Position > y.Position {
+					return 1
+				}
+				return 0
+			})
+		}
+
+		// Sort views by name
+		slices.SortFunc(schema.Views, func(x, y *storepb.ViewMetadata) int {
+			return strings.Compare(x.Name, y.Name)
+		})
+	}
 }
 
 // GetIsObjectCaseSensitive returns whether object names (schemas, tables) are case-sensitive.
@@ -1030,7 +1071,11 @@ func buildTablesMetadata(table *storepb.TableMetadata, isDetailCaseSensitive boo
 		internalIndexes:       make(map[string]*IndexMetadata),
 		proto:                 table,
 	}
-	for _, column := range table.Columns {
+	for i, column := range table.Columns {
+		// Assign position if not set (position is 1-indexed)
+		if column.Position == 0 {
+			column.Position = int32(i + 1)
+		}
 		var columnID string
 		if isDetailCaseSensitive {
 			columnID = column.Name
