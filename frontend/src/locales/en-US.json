@@ -410,7 +410,6 @@
       "subscription": "(Upgrade to enable role management)"
     },
     "members": {
-      "inactive": "Inactive",
       "inactive-users": "Inactive users",
       "table": {
         "account": "Account",

@@ -410,7 +410,6 @@
       "subscription": "(Actualice para habilitar la gestión de roles)"
     },
     "members": {
-      "inactive": "Inactivo",
       "inactive-users": "Usuarios inactivos",
       "table": {
         "account": "Cuenta",
