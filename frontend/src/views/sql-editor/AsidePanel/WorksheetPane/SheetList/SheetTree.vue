@@ -112,7 +112,6 @@
 <script setup lang="tsx">
 import { create } from "@bufbuild/protobuf";
 import { useDebounceFn } from "@vueuse/core";
-import { cloneDeep } from "lodash-es";
 import { FolderInputIcon, TrashIcon, XIcon } from "lucide-vue-next";
 import {
   NButton,
@@ -877,7 +876,7 @@ const handleDuplicateFolderName = (
   return _defer.promise;
 };
 
-const handleDrop = async ({ node, dragNode, dropPosition }: TreeDropInfo) => {
+const handleDrop = async ({ node, dragNode }: TreeDropInfo) => {
   let parentNode = node as WorksheetFolderNode | undefined;
   if (parentNode && parentNode.worksheet) {
     // CANNOT drop a node into the worksheet node.
