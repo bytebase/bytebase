@@ -53,7 +53,7 @@ func (*IndexPrimaryKeyTypeAllowlistAdvisor) Check(_ context.Context, checkCtx ad
 	}
 
 	// Create the rule
-	rule := NewIndexPrimaryKeyTypeAllowlistRule(level, string(checkCtx.Rule.Type), allowlist, checkCtx.OriginCatalog)
+	rule := NewIndexPrimaryKeyTypeAllowlistRule(level, string(checkCtx.Rule.Type), allowlist, checkCtx.OriginalMetadata)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

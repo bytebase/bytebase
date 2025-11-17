@@ -492,7 +492,7 @@ type SQLReviewCheckContext struct {
 	ChangeType            storepb.PlanCheckRunConfig_ChangeDatabaseType
 	DBSchema              *storepb.DatabaseSchemaMetadata
 	DBType                storepb.Engine
-	OriginCatalog         *model.DatabaseMetadata
+	OriginalMetadata      *model.DatabaseMetadata
 	FinalCatalog          *catalog.DatabaseState
 	Driver                *sql.DB
 	EnablePriorBackup     bool
@@ -562,7 +562,7 @@ func SQLReviewCheck(
 				AST:                      asts,
 				Statements:               statements,
 				Rule:                     rule,
-				OriginCatalog:            checkContext.OriginCatalog,
+				OriginalMetadata:         checkContext.OriginalMetadata,
 				FinalCatalog:             checkContext.FinalCatalog,
 				Driver:                   checkContext.Driver,
 				CurrentDatabase:          checkContext.CurrentDatabase,

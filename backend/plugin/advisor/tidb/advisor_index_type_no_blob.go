@@ -48,7 +48,7 @@ func (*IndexTypeNoBlobAdvisor) Check(_ context.Context, checkCtx advisor.Context
 	checker := &indexTypeNoBlobChecker{
 		level:            level,
 		title:            string(checkCtx.Rule.Type),
-		originCatalog:    checkCtx.OriginCatalog,
+		originCatalog:    checkCtx.OriginalMetadata,
 		tablesNewColumns: make(map[string]columnNameToColumnDef),
 	}
 

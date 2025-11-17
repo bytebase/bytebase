@@ -59,9 +59,9 @@ func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbTyp
 			t.Fatalf("%s doesn't have mocked metadata support", storepb.Engine_name[int32(dbType)])
 		}
 
-		// Create OriginCatalog as DatabaseMetadata (read-only)
-		originSchema := model.NewDatabaseSchema(schemaMetadata, nil, nil, dbType, true /* isCaseSensitive for PostgreSQL */)
-		originCatalog := originSchema.GetDatabaseMetadata()
+		// Create OriginalMetadata as DatabaseMetadata (read-only)
+		originalSchema := model.NewDatabaseSchema(schemaMetadata, nil, nil, dbType, true /* isCaseSensitive for PostgreSQL */)
+		originalMetadata := originalSchema.GetDatabaseMetadata()
 
 		// Create FinalCatalog as DatabaseState (mutable for walk-through)
 		finalCatalog := catalog.NewDatabaseState(schemaMetadata, false /* ignoreCaseSensitive */, dbType)
@@ -101,7 +101,7 @@ func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbTyp
 				AST:                      tree, // Pass ANTLR parse result
 				Statements:               tc.Statement,
 				Rule:                     ruleList[0],
-				OriginCatalog:            originCatalog,
+				OriginalMetadata:         originalMetadata,
 				FinalCatalog:             finalCatalog,
 				Driver:                   nil,
 				CurrentDatabase:          "TEST_DB",

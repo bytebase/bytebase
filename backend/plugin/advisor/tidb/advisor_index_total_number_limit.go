@@ -98,7 +98,7 @@ func (checker *indexTotalNumberLimitChecker) generateAdvice() []*storepb.Advice 
 	})
 
 	for _, table := range tableList {
-		tableInfo := catalog.ToDatabaseState(checker.finalCatalog, storepb.Engine_TIDB).GetTable("", table.name)
+		tableInfo := checker.finalCatalog.GetTable("", table.name)
 		if tableInfo != nil && tableInfo.CountIndex() > checker.max {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:        checker.level,

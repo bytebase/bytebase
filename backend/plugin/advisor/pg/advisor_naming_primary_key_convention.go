@@ -54,7 +54,7 @@ func (*NamingPKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 		format:         format,
 		maxLength:      maxLength,
 		templateList:   templateList,
-		originCatalog:  checkCtx.OriginCatalog,
+		originCatalog:  checkCtx.OriginalMetadata,
 		statementsText: checkCtx.Statements,
 	}
 

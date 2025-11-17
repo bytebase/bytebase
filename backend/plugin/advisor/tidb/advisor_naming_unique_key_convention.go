@@ -51,7 +51,7 @@ func (*NamingUKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 		format:        format,
 		maxLength:     maxLength,
 		templateList:  templateList,
-		originCatalog: checkCtx.OriginCatalog,
+		originCatalog: checkCtx.OriginalMetadata,
 	}
 	for _, stmtNode := range root {
 		(stmtNode).Accept(checker)

@@ -45,7 +45,7 @@ func (*DatabaseAllowDropIfEmptyAdvisor) Check(_ context.Context, checkCtx adviso
 	}
 
 	// Create the rule
-	rule := NewDatabaseDropEmptyDBRule(level, string(checkCtx.Rule.Type), checkCtx.OriginCatalog)
+	rule := NewDatabaseDropEmptyDBRule(level, string(checkCtx.Rule.Type), checkCtx.OriginalMetadata)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

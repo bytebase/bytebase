@@ -46,7 +46,7 @@ func (*ColumnDisallowChangingTypeAdvisor) Check(_ context.Context, checkCtx advi
 	checker := &columnDisallowChangingTypeChecker{
 		level:         level,
 		title:         string(checkCtx.Rule.Type),
-		originCatalog: checkCtx.OriginCatalog,
+		originCatalog: checkCtx.OriginalMetadata,
 	}
 
 	for _, stmt := range stmtList {

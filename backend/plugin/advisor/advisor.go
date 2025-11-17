@@ -46,11 +46,11 @@ type Context struct {
 	IsObjectCaseSensitive bool
 
 	// SQL review rule special fields.
-	AST           any
-	Rule          *storepb.SQLReviewRule
-	OriginCatalog *model.DatabaseMetadata
-	FinalCatalog  *catalog.DatabaseState
-	Driver        *sql.DB
+	AST              any
+	Rule             *storepb.SQLReviewRule
+	OriginalMetadata *model.DatabaseMetadata
+	FinalCatalog     *catalog.DatabaseState
+	Driver           *sql.DB
 
 	// CurrentDatabase is the current database.
 	CurrentDatabase string

@@ -54,7 +54,7 @@ func (*NamingIndexConventionAdvisor) Check(_ context.Context, checkCtx advisor.C
 		format:        format,
 		maxLength:     maxLength,
 		templateList:  templateList,
-		originCatalog: checkCtx.OriginCatalog,
+		originCatalog: checkCtx.OriginalMetadata,
 	}
 
 	checker := NewGenericChecker([]Rule{rule})

@@ -212,9 +212,9 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 			isCaseSensitive = true
 		}
 
-		// Create OriginCatalog as DatabaseMetadata (read-only)
-		originSchema := model.NewDatabaseSchema(catalogMetadata, nil, nil, dbType, isCaseSensitive)
-		originCatalog := originSchema.GetDatabaseMetadata()
+		// Create OriginalMetadata as DatabaseMetadata (read-only)
+		originalSchema := model.NewDatabaseSchema(catalogMetadata, nil, nil, dbType, isCaseSensitive)
+		originalMetadata := originalSchema.GetDatabaseMetadata()
 
 		// Create FinalCatalog as DatabaseState (mutable for walk-through)
 		finalCatalog := catalog.NewDatabaseState(catalogMetadata, !isCaseSensitive, dbType)
@@ -234,7 +234,7 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 			Charset:                  "",
 			Collation:                "",
 			DBType:                   dbType,
-			OriginCatalog:            originCatalog,
+			OriginalMetadata:         originalMetadata,
 			FinalCatalog:             finalCatalog,
 			Driver:                   nil,
 			CurrentDatabase:          curDB,

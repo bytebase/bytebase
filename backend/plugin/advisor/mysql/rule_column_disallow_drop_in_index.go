@@ -45,7 +45,7 @@ func (*ColumnDisallowDropInIndexAdvisor) Check(_ context.Context, checkCtx advis
 	}
 
 	// Create the rule
-	rule := NewColumnDisallowDropInIndexRule(level, string(checkCtx.Rule.Type), checkCtx.OriginCatalog)
+	rule := NewColumnDisallowDropInIndexRule(level, string(checkCtx.Rule.Type), checkCtx.OriginalMetadata)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

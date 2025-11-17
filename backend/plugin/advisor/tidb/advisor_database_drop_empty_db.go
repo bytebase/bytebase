@@ -44,7 +44,7 @@ func (*DatabaseAllowDropIfEmptyAdvisor) Check(_ context.Context, checkCtx adviso
 	checker := &allowDropEmptyDBChecker{
 		level:         level,
 		title:         string(checkCtx.Rule.Type),
-		originCatalog: checkCtx.OriginCatalog,
+		originCatalog: checkCtx.OriginalMetadata,
 	}
 	for _, stmtNode := range root {
 		(stmtNode).Accept(checker)

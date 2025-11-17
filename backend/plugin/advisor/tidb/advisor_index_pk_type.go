@@ -48,7 +48,7 @@ func (*IndexPkTypeAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 		level:            level,
 		title:            string(checkCtx.Rule.Type),
 		line:             make(map[string]int),
-		originCatalog:    checkCtx.OriginCatalog,
+		originCatalog:    checkCtx.OriginalMetadata,
 		tablesNewColumns: make(map[string]columnNameToColumnDef),
 	}
 

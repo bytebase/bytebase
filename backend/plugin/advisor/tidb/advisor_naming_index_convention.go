@@ -52,7 +52,7 @@ func (*NamingIndexConventionAdvisor) Check(_ context.Context, checkCtx advisor.C
 		format:        format,
 		maxLength:     maxLength,
 		templateList:  templateList,
-		originCatalog: checkCtx.OriginCatalog,
+		originCatalog: checkCtx.OriginalMetadata,
 	}
 	for _, stmtNode := range root {
 		(stmtNode).Accept(checker)

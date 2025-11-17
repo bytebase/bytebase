@@ -50,7 +50,7 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 	}
 
 	// Create the rule
-	rule := NewTableRequirePKRule(level, string(checkCtx.Rule.Type), checkCtx.OriginCatalog)
+	rule := NewTableRequirePKRule(level, string(checkCtx.Rule.Type), checkCtx.OriginalMetadata)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

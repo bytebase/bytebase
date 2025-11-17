@@ -8,12 +8,12 @@ import (
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-// NewCatalogWithMetadata creates origin and final database catalogs from schema metadata.
-// OriginCatalog is DatabaseMetadata (read-only), FinalCatalog is DatabaseState (mutable for walk-through).
-func NewCatalogWithMetadata(metadata *storepb.DatabaseSchemaMetadata, engineType storepb.Engine, isCaseSensitive bool) (origin *model.DatabaseMetadata, final *DatabaseState, err error) {
-	// Create origin from original metadata as DatabaseMetadata (read-only)
-	originSchema := model.NewDatabaseSchema(metadata, nil, nil, engineType, isCaseSensitive)
-	origin = originSchema.GetDatabaseMetadata()
+// NewCatalogWithMetadata creates original and final database catalogs from schema metadata.
+// OriginalMetadata is DatabaseMetadata (read-only), FinalCatalog is DatabaseState (mutable for walk-through).
+func NewCatalogWithMetadata(metadata *storepb.DatabaseSchemaMetadata, engineType storepb.Engine, isCaseSensitive bool) (originalMetadata *model.DatabaseMetadata, final *DatabaseState, err error) {
+	// Create original metadata from original metadata as DatabaseMetadata (read-only)
+	originalSchema := model.NewDatabaseSchema(metadata, nil, nil, engineType, isCaseSensitive)
+	originalMetadata = originalSchema.GetDatabaseMetadata()
 
 	// Clone metadata for final to avoid modifying the original
 	clonedMetadata := proto.CloneOf(metadata)
@@ -21,7 +21,7 @@ func NewCatalogWithMetadata(metadata *storepb.DatabaseSchemaMetadata, engineType
 	// Create final as DatabaseState (mutable for walk-through)
 	final = NewDatabaseState(clonedMetadata, !isCaseSensitive, engineType)
 
-	return origin, final, nil
+	return originalMetadata, final, nil
 }
 
 // ToDatabaseState converts DatabaseMetadata to DatabaseState for internal use.

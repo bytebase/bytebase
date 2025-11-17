@@ -47,7 +47,7 @@ func (*ColumnDisallowChangingTypeAdvisor) Check(_ context.Context, checkCtx advi
 	}
 
 	// Create the rule
-	rule := NewColumnDisallowChangingTypeRule(level, string(checkCtx.Rule.Type), checkCtx.OriginCatalog)
+	rule := NewColumnDisallowChangingTypeRule(level, string(checkCtx.Rule.Type), checkCtx.OriginalMetadata)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

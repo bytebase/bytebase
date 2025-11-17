@@ -58,7 +58,7 @@ func (*NamingIndexConventionAdvisor) Check(_ context.Context, checkCtx advisor.C
 	}
 
 	// Create the rule
-	rule := NewNamingIndexConventionRule(level, string(checkCtx.Rule.Type), format, maxLength, templateList, checkCtx.OriginCatalog)
+	rule := NewNamingIndexConventionRule(level, string(checkCtx.Rule.Type), format, maxLength, templateList, checkCtx.OriginalMetadata)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

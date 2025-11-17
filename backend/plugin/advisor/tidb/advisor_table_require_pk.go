@@ -49,7 +49,7 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 		title:         string(checkCtx.Rule.Type),
 		tables:        make(tablePK),
 		line:          make(map[string]int),
-		originCatalog: checkCtx.OriginCatalog,
+		originCatalog: checkCtx.OriginalMetadata,
 		finalCatalog:  checkCtx.FinalCatalog,
 	}
 
@@ -67,7 +67,7 @@ type tableRequirePKChecker struct {
 	tables        tablePK
 	line          map[string]int
 	originCatalog *model.DatabaseMetadata
-	finalCatalog  *model.DatabaseMetadata
+	finalCatalog  *catalog.DatabaseState
 }
 
 // Enter implements the ast.Visitor interface.

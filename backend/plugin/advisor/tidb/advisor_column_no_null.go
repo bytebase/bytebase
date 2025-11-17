@@ -83,7 +83,7 @@ func (checker *columnNoNullChecker) generateAdvice() []*storepb.Advice {
 	})
 
 	for _, column := range columnList {
-		col := catalog.ToDatabaseState(checker.finalCatalog, storepb.Engine_TIDB).GetColumn("", column.tableName, column.columnName)
+		col := checker.finalCatalog.GetColumn("", column.tableName, column.columnName)
 		if col != nil && col.Nullable() {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:        checker.level,

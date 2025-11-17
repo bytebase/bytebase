@@ -56,7 +56,7 @@ func (*IndexPrimaryKeyTypeAllowlistAdvisor) Check(_ context.Context, checkCtx ad
 		level:            level,
 		title:            string(checkCtx.Rule.Type),
 		allowlist:        allowlist,
-		originCatalog:    checkCtx.OriginCatalog,
+		originCatalog:    checkCtx.OriginalMetadata,
 		tablesNewColumns: make(map[string]columnNameToColumnDef),
 	}
 

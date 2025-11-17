@@ -50,7 +50,7 @@ func (*NamingUKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 	}
 
 	// Create the rule
-	rule := NewNamingUKConventionRule(level, string(checkCtx.Rule.Type), format, maxLength, templateList, checkCtx.OriginCatalog)
+	rule := NewNamingUKConventionRule(level, string(checkCtx.Rule.Type), format, maxLength, templateList, checkCtx.OriginalMetadata)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

@@ -46,7 +46,7 @@ func (*IndexPkTypeAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 	}
 
 	// Create the rule
-	rule := NewIndexPkTypeRule(level, string(checkCtx.Rule.Type), checkCtx.OriginCatalog)
+	rule := NewIndexPkTypeRule(level, string(checkCtx.Rule.Type), checkCtx.OriginalMetadata)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

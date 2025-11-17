@@ -47,7 +47,7 @@ func (*ColumnDisallowDropInIndexAdvisor) Check(_ context.Context, checkCtx advis
 		level:         level,
 		title:         string(checkCtx.Rule.Type),
 		tables:        make(tableState),
-		originCatalog: checkCtx.OriginCatalog,
+		originCatalog: checkCtx.OriginalMetadata,
 	}
 
 	for _, stmt := range stmtList {

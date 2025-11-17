@@ -46,7 +46,7 @@ func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) (
 			level: level,
 			title: string(checkCtx.Rule.Type),
 		},
-		originCatalog:   checkCtx.OriginCatalog,
+		originCatalog:   checkCtx.OriginalMetadata,
 		nullableColumns: make(columnMap),
 	}
 
