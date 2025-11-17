@@ -28,20 +28,27 @@ func getQuerySpanImpl(statement string) (*base.QuerySpan, error) {
 	}
 
 	if len(parseResults) == 0 {
-		return nil, errors.New("no parse result")
+		return &base.QuerySpan{
+			Results:        []base.QuerySpanResult{},
+			PredicatePaths: nil,
+		}, nil
+	}
+
+	if len(parseResults) != 1 {
+		return nil, errors.Errorf("expecting only one statement to get query span, but got %d", len(parseResults))
 	}
 
 	ast := parseResults[0].Tree
 	querySpanResultListener := &querySpanResultListener{}
 	antlr.ParseTreeWalkerDefault.Walk(querySpanResultListener, ast)
 	if querySpanResultListener.err != nil {
-		return nil, err
+		return nil, querySpanResultListener.err
 	}
 
 	querySpanPredicatePathsListener := &querySpanPredicatePathsListener{}
 	antlr.ParseTreeWalkerDefault.Walk(querySpanPredicatePathsListener, ast)
 	if querySpanPredicatePathsListener.err != nil {
-		return nil, err
+		return nil, querySpanPredicatePathsListener.err
 	}
 	return &base.QuerySpan{
 		Results:        querySpanResultListener.result,
