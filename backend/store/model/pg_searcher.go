@@ -68,11 +68,15 @@ type DatabaseSearcher struct {
 
 // NewSearcher creates a searcher for database objects.
 // If schemaName is provided (non-empty), it searches only in that schema; otherwise uses the database's search path.
+// If the database's search path is empty, defaults to ["public"] for PostgreSQL.
 // NOTE: This is primarily designed for PostgreSQL's search_path concept.
 func (d *DatabaseMetadata) NewSearcher(schemaName string) *DatabaseSearcher {
 	searchPath := d.searchPath
 	if schemaName != "" {
 		searchPath = []string{schemaName}
+	} else if len(searchPath) == 0 {
+		// Default to "public" schema if no search path is set (PostgreSQL default)
+		searchPath = []string{"public"}
 	}
 	return &DatabaseSearcher{
 		db:         d,
