@@ -205,6 +205,8 @@ func runWalkThroughTest(t *testing.T, file string, engineType storepb.Engine, or
 		want := &storepb.DatabaseSchemaMetadata{}
 		err = common.ProtojsonUnmarshaler.Unmarshal([]byte(test.Want), want)
 		require.NoError(t, err)
+		// Sort proto for deterministic comparison
+		state.SortProto()
 		result := state.GetProto()
 		diff := cmp.Diff(want, result, protocmp.Transform())
 		require.Empty(t, diff)
@@ -259,6 +261,8 @@ func runANTLRWalkThroughTest(t *testing.T, file string, engineType storepb.Engin
 		want := &storepb.DatabaseSchemaMetadata{}
 		err = common.ProtojsonUnmarshaler.Unmarshal([]byte(test.Want), want)
 		require.NoError(t, err)
+		// Sort proto for deterministic comparison
+		state.SortProto()
 		result := state.GetProto()
 		diff := cmp.Diff(want, result, protocmp.Transform())
 		require.Empty(t, diff)

@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
@@ -317,8 +318,16 @@ func tidbAlterTable(d *model.DatabaseMetadata, node *tidbast.AlterTableStmt) *Wa
 				return err
 			}
 		case tidbast.AlterTableRenameIndex:
+			// Validate old index exists
+			if table.GetIndex(spec.FromKey.O) == nil {
+				return &WalkThroughError{Code: code.IndexNotExists, Content: fmt.Sprintf("index %q does not exist in table %q", spec.FromKey.O, table.GetProto().Name)}
+			}
+			// Validate new index doesn't already exist
+			if table.GetIndex(spec.ToKey.O) != nil {
+				return &WalkThroughError{Code: code.IndexExists, Content: fmt.Sprintf("index %q already exists in table %q", spec.ToKey.O, table.GetProto().Name)}
+			}
 			if err := table.RenameIndex(spec.FromKey.O, spec.ToKey.O); err != nil {
-				return &WalkThroughError{Code: code.IndexNotExists, Content: err.Error()}
+				return &WalkThroughError{Code: code.Internal, Content: fmt.Sprintf("failed to rename index: %v", err)}
 			}
 		case tidbast.AlterTableIndexInvisible:
 			if err := tidbChangeIndexVisibility(table, spec.IndexName.O, spec.Visibility); err != nil {
@@ -413,61 +422,83 @@ func tidbRenameColumnInIndexKey(t *model.TableMetadata, oldName string, newName 
 }
 
 // tidbCompleteTableChangeColumn changes column definition.
-// It works as:
-// 1. drop column from table, but do not drop column from index expressions.
-// 2. rename column in index expressions.
-// 3. create a new column.
+// It works by:
+// 1. Dropping the old column from the column list (but keeping it in index expressions)
+// 2. Renaming the column in index expressions
+// 3. Creating a new column with the new definition
 func tidbCompleteTableChangeColumn(t *model.TableMetadata, oldName string, newColumn *tidbast.ColumnDef, position *tidbast.ColumnPosition) *WalkThroughError {
 	column := t.GetColumn(oldName)
 	if column == nil {
 		return NewColumnNotExistsError(t.GetProto().Name, oldName)
 	}
 
-	pos := column.Position
-
-	// generate Position struct for creating new column
-	// Create a local copy to avoid modifying the input parameter
+	// Store the current position info if no position specified
 	var localPosition *tidbast.ColumnPosition
 	if position == nil {
 		localPosition = &tidbast.ColumnPosition{Tp: tidbast.ColumnPositionNone}
 	} else {
-		// Create a copy of the position to avoid modifying the original
 		localPosition = &tidbast.ColumnPosition{
 			Tp:             position.Tp,
 			RelativeColumn: position.RelativeColumn,
 		}
 	}
 
+	// If position not specified, preserve current position by finding the column before it
 	if localPosition.Tp == tidbast.ColumnPositionNone {
-		if pos == 1 {
-			localPosition.Tp = tidbast.ColumnPositionFirst
-		} else {
-			for _, col := range t.GetColumns() {
-				if col.Position == pos-1 {
-					localPosition.Tp = tidbast.ColumnPositionAfter
-					localPosition.RelativeColumn = &tidbast.ColumnName{Name: tidbast.NewCIStr(col.Name)}
-					break
-				}
+		tableProto := t.GetProto()
+		var currentIdx int
+		for i, col := range tableProto.Columns {
+			if col == column {
+				currentIdx = i
+				break
 			}
 		}
-	}
-	position = localPosition
 
-	// drop column from column list
-	for _, col := range t.GetColumns() {
-		if col.Position > pos {
-			col.Position--
+		if currentIdx == 0 {
+			localPosition.Tp = tidbast.ColumnPositionFirst
+		} else {
+			// Position after the previous column
+			localPosition.Tp = tidbast.ColumnPositionAfter
+			previousColumn := tableProto.Columns[currentIdx-1]
+			localPosition.RelativeColumn = &tidbast.ColumnName{Name: tidbast.NewCIStr(previousColumn.Name)}
 		}
 	}
-	if err := t.DropColumn(strings.ToLower(column.Name)); err != nil {
+
+	// Remove the old column from the table (but keep it in index expressions)
+	// We use DropColumnWithoutUpdatingIndexes to remove from internal map and proto
+	// without affecting index expressions
+	if err := t.DropColumnWithoutUpdatingIndexes(oldName); err != nil {
 		return &WalkThroughError{Code: code.Internal, Content: fmt.Sprintf("failed to drop column: %v", err)}
 	}
 
-	// rename column from index expressions
+	// Rename column in index expressions
 	tidbRenameColumnInIndexKey(t, oldName, newColumn.Name.Name.O)
 
-	// create a new column
-	return tidbCreateColumnHelper(t, newColumn, position)
+	// Create the new column
+	if err := tidbCreateColumnHelper(t, newColumn, localPosition); err != nil {
+		return err
+	}
+
+	// Sort columns by position value to get the correct array order
+	// CreateColumn appends to the end, but tidbReorderColumn sets position values,
+	// so we need to sort the array to match the position values
+	tableProto := t.GetProto()
+	slices.SortFunc(tableProto.Columns, func(a, b *storepb.ColumnMetadata) int {
+		if a.Position < b.Position {
+			return -1
+		} else if a.Position > b.Position {
+			return 1
+		}
+		return 0
+	})
+
+	// Renumber all column positions to be sequential (1, 2, 3, ...)
+	// This closes any gaps left by DropColumnWithoutUpdatingIndexes
+	for i, col := range tableProto.Columns {
+		col.Position = int32(i + 1)
+	}
+
+	return nil
 }
 
 func tidbChangeColumn(t *model.TableMetadata, oldName string, newColumn *tidbast.ColumnDef, position *tidbast.ColumnPosition) *WalkThroughError {

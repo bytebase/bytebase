@@ -455,15 +455,14 @@ func (d *DatabaseMetadata) GetSearchPath() []string {
 }
 
 // GetProto returns the underlying proto for this database metadata.
-// The proto is sorted to ensure deterministic output for tests.
 func (d *DatabaseMetadata) GetProto() *storepb.DatabaseSchemaMetadata {
-	d.sortProto()
 	return d.proto
 }
 
-// sortProto sorts the proto structures to ensure deterministic output.
+// SortProto sorts the proto structures to ensure deterministic output.
 // This matches the behavior of the old DatabaseState.convertToDatabaseMetadata.
-func (d *DatabaseMetadata) sortProto() {
+// This should be called before comparing protos in tests.
+func (d *DatabaseMetadata) SortProto() {
 	// Sort schemas by name
 	slices.SortFunc(d.proto.Schemas, func(x, y *storepb.SchemaMetadata) int {
 		return strings.Compare(x.Name, y.Name)
@@ -1300,6 +1299,11 @@ func (t *TableMetadata) DropColumn(columnName string) error {
 	// Rebuild columns slice
 	t.columns = newColumns
 
+	// Renumber positions to be sequential (1-indexed)
+	for i, col := range newColumns {
+		col.Position = int32(i + 1)
+	}
+
 	// Remove column from indexes that reference it
 	for _, index := range t.internalIndexes {
 		var newExpressions []string
@@ -1336,6 +1340,55 @@ func (t *TableMetadata) DropColumn(columnName string) error {
 		}
 	}
 	t.proto.Indexes = newIndexes
+
+	return nil
+}
+
+// DropColumnWithoutUpdatingIndexes drops a column from the table without updating index expressions.
+// This is used when changing a column definition (MODIFY/CHANGE COLUMN) where we want to:
+// 1. Drop the old column from the column list
+// 2. Manually rename it in index expressions
+// 3. Create a new column with the new definition
+// Returns an error if the column doesn't exist.
+func (t *TableMetadata) DropColumnWithoutUpdatingIndexes(columnName string) error {
+	// Check if column exists
+	if t.GetColumn(columnName) == nil {
+		return errors.Errorf("column %q does not exist in table %q", columnName, t.proto.Name)
+	}
+
+	// Remove from internal map
+	var columnID string
+	if t.isDetailCaseSensitive {
+		columnID = columnName
+	} else {
+		columnID = strings.ToLower(columnName)
+	}
+	delete(t.internalColumn, columnID)
+
+	// Remove from proto's column list
+	newColumns := make([]*storepb.ColumnMetadata, 0, len(t.proto.Columns)-1)
+	for _, column := range t.proto.Columns {
+		if t.isDetailCaseSensitive {
+			if column.Name != columnName {
+				newColumns = append(newColumns, column)
+			}
+		} else {
+			if !strings.EqualFold(column.Name, columnName) {
+				newColumns = append(newColumns, column)
+			}
+		}
+	}
+	t.proto.Columns = newColumns
+
+	// Rebuild columns slice
+	t.columns = newColumns
+
+	// NOTE: We intentionally do NOT renumber positions here
+	// The caller (tidbCompleteTableChangeColumn) will handle position adjustments
+	// as part of the column reordering logic.
+
+	// NOTE: We intentionally do NOT update index expressions here
+	// The caller is responsible for updating index expressions as needed
 
 	return nil
 }
