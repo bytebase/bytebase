@@ -3448,6 +3448,14 @@ func buildCurrentDatabaseSDLChunks(currentSchema *model.DatabaseSchema) (*curren
 			sdlChunks.comments[identifier] = []string{commentText}
 		}
 	}
+	for extensionName, chunk := range currentSDLChunks.Extensions {
+		sdlChunks.chunks[extensionName] = strings.TrimSpace(chunk.GetTextWithoutComments())
+		// Store comment text for usability check
+		commentText := extractCommentTextFromChunk(chunk)
+		if commentText != "" {
+			sdlChunks.comments[extensionName] = []string{commentText}
+		}
+	}
 
 	return sdlChunks, nil
 }

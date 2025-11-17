@@ -589,3 +589,119 @@ func TestExtensionNotFilteredByArchiveSchemaFilter(t *testing.T) {
 	require.Equal(t, "public", filtered.TableChanges[0].SchemaName)
 	require.Equal(t, "test_table", filtered.TableChanges[0].TableName)
 }
+
+// TestExtensionRoundtripNoDiff tests that dumping SDL from database doesn't create false diffs
+// This reproduces the issue where:
+// 1. User creates extension with format A (e.g., manual SQL)
+// 2. Bytebase dumps SDL from database
+// 3. No changes were made, but extension is detected as changed and DROP+CREATE is generated
+func TestExtensionRoundtripNoDiff(t *testing.T) {
+	t.Run("User creates extension then dump from database - should not generate diff", func(t *testing.T) {
+		// STEP 1: User's initial SDL (manual creation)
+		userSDL := `CREATE EXTENSION IF NOT EXISTS "citext" WITH SCHEMA public;`
+
+		// Parse user SDL to get metadata (simulate database state)
+		chunks, err := ChunkSDLText(userSDL)
+		require.NoError(t, err)
+		require.Equal(t, 1, len(chunks.Extensions))
+
+		// STEP 2: Simulate database dump - create metadata and dump back to SDL
+		// This simulates what happens when Bytebase dumps the current database state
+		metadata := &storepb.DatabaseSchemaMetadata{
+			Extensions: []*storepb.ExtensionMetadata{
+				{
+					Name:   "citext",
+					Schema: "public",
+					// Version might or might not be specified by user
+					Version: "",
+					// Description might be empty
+					Description: "",
+				},
+			},
+		}
+
+		// Create current database schema from metadata (this is the actual database state)
+		currentSchema := model.NewDatabaseSchema(metadata, nil, nil, storepb.Engine_POSTGRES, false)
+
+		// Dump SDL from metadata (this is what getSDLFormat does)
+		dumpedSDL, err := getSDLFormat(metadata)
+		require.NoError(t, err)
+
+		// STEP 3: Compare user SDL (previous) vs dumped SDL (current)
+		// This is what happens in bb rollout when user doesn't change anything
+		// Pass currentSchema so usability check can work
+		diff, err := GetSDLDiff(dumpedSDL, userSDL, currentSchema, nil)
+		require.NoError(t, err)
+
+		// CRITICAL: There should be NO extension changes!
+		// The extension is the same, just different text representation
+		if len(diff.ExtensionChanges) > 0 {
+			t.Errorf("FAILED: Extension changes detected when there should be none!")
+			t.Errorf("This means Bytebase will try to DROP+CREATE the extension even though nothing changed")
+
+			// Generate migration to see what would happen
+			migration, err := schema.GenerateMigration(storepb.Engine_POSTGRES, diff)
+			require.NoError(t, err)
+
+			// Check if DROP is in the migration
+			if strings.Contains(migration, "DROP EXTENSION") {
+				t.Errorf("CRITICAL: Migration contains DROP EXTENSION - this will fail with '2BP01' error!")
+			}
+		}
+
+		require.Equal(t, 0, len(diff.ExtensionChanges), "No changes should be detected for unchanged extension")
+	})
+
+	t.Run("Extension with version - roundtrip test", func(t *testing.T) {
+		// User creates with explicit version
+		userSDL := `CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public VERSION '1.1';`
+
+		// Database metadata after creation
+		metadata := &storepb.DatabaseSchemaMetadata{
+			Extensions: []*storepb.ExtensionMetadata{
+				{
+					Name:    "uuid-ossp",
+					Schema:  "public",
+					Version: "1.1",
+				},
+			},
+		}
+
+		currentSchema := model.NewDatabaseSchema(metadata, nil, nil, storepb.Engine_POSTGRES, false)
+
+		dumpedSDL, err := getSDLFormat(metadata)
+		require.NoError(t, err)
+
+		diff, err := GetSDLDiff(dumpedSDL, userSDL, currentSchema, nil)
+		require.NoError(t, err)
+
+		require.Equal(t, 0, len(diff.ExtensionChanges), "No changes for extension with version")
+	})
+
+	t.Run("Extension with comment - roundtrip test", func(t *testing.T) {
+		// User creates with comment
+		userSDL := `CREATE EXTENSION IF NOT EXISTS "citext" WITH SCHEMA public;
+
+COMMENT ON EXTENSION "citext" IS 'Case-insensitive text type';`
+
+		metadata := &storepb.DatabaseSchemaMetadata{
+			Extensions: []*storepb.ExtensionMetadata{
+				{
+					Name:        "citext",
+					Schema:      "public",
+					Description: "Case-insensitive text type",
+				},
+			},
+		}
+
+		currentSchema := model.NewDatabaseSchema(metadata, nil, nil, storepb.Engine_POSTGRES, false)
+
+		dumpedSDL, err := getSDLFormat(metadata)
+		require.NoError(t, err)
+
+		diff, err := GetSDLDiff(dumpedSDL, userSDL, currentSchema, nil)
+		require.NoError(t, err)
+
+		require.Equal(t, 0, len(diff.ExtensionChanges), "No changes for extension with comment")
+	})
+}
