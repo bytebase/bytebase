@@ -169,13 +169,11 @@ import { type ComposedDatabase, isValidDatabaseName } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { DiffSchemaRequestSchema } from "@/types/proto-es/v1/database_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import { isValidChangelogName } from "@/utils/v1/changelog";
 import DiffViewPanel from "./DiffViewPanel.vue";
 import SourceSchemaInfo from "./SourceSchemaInfo.vue";
 import TargetDatabasesSelectPanel from "./TargetDatabasesSelectPanel.vue";
 import type { ChangelogSourceSchema } from "./types";
-import {
-  isValidChangelogName,
-} from "@/utils/v1/changelog";
 
 interface LocalState {
   isLoading: boolean;
@@ -324,7 +322,9 @@ watch(
         continue;
       } else {
         // Use changelog name if source is from changelog, otherwise use schema string
-        const diffRequest = isValidChangelogName(props.changelogSourceSchema?.changelogName)
+        const diffRequest = isValidChangelogName(
+          props.changelogSourceSchema?.changelogName
+        )
           ? create(DiffSchemaRequestSchema, {
               name: db.name,
               target: {
