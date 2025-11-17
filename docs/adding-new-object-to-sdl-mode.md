@@ -1840,6 +1840,116 @@ func TestMaterializedViewDependencyOrder(t *testing.T) {
 
 ---
 
+## Phase 6: Integration Points (CRITICAL - Often Forgotten!)
+
+This phase covers integration points that are **not** in the main implementation flow but are **critical** for production usage.
+
+### 6.1 Archive Schema Filter (CRITICAL!)
+
+**File**: `backend/plugin/schema/differ.go` - `FilterPostgresArchiveSchema` function
+
+The `FilterPostgresArchiveSchema` function filters out objects from the `bbdataarchive` schema. This is called in **every** `bb rollout` execution.
+
+**⚠️ CRITICAL**: If you forget to add your object type here, it will be correctly detected in diff but **filtered out during execution**!
+
+#### For Database-level Objects (Extensions, Events)
+
+Database-level objects are stored directly in `DatabaseSchemaMetadata` (not in `SchemaMetadata`). They don't have a schema name, so they should be **copied directly** without filtering:
+
+```go
+// Extensions and Events are database-level objects, not schema-specific, so copy them all
+filtered.ExtensionChanges = diff.ExtensionChanges
+filtered.EventChanges = diff.EventChanges
+```
+
+#### For Schema-scoped Objects (Tables, Views, Functions, etc.)
+
+Schema-scoped objects must be **filtered by schema name**:
+
+```go
+// Filter table changes
+for _, tableChange := range diff.TableChanges {
+    if tableChange.SchemaName != archiveSchemaName {
+        filtered.TableChanges = append(filtered.TableChanges, tableChange)
+    }
+}
+```
+
+#### Example Implementation
+
+**Before** (missing ExtensionChanges):
+```go
+func FilterPostgresArchiveSchema(diff *MetadataDiff) *MetadataDiff {
+    // ... filter schema-scoped objects ...
+
+    // Events are database-level objects, not schema-specific, so copy them all
+    filtered.EventChanges = diff.EventChanges
+
+    return filtered  // ❌ ExtensionChanges are lost!
+}
+```
+
+**After** (correct):
+```go
+func FilterPostgresArchiveSchema(diff *MetadataDiff) *MetadataDiff {
+    // ... filter schema-scoped objects ...
+
+    // Extensions and Events are database-level objects, not schema-specific, so copy them all
+    filtered.ExtensionChanges = diff.ExtensionChanges  // ✅ Added
+    filtered.EventChanges = diff.EventChanges
+
+    return filtered
+}
+```
+
+#### Symptoms of Forgetting This
+
+- ✅ SDL parsing works correctly
+- ✅ Diff calculation detects changes correctly
+- ✅ All unit tests pass
+- ❌ **bb rollout execution silently drops the object**
+- ❌ Dependent objects fail with "relation does not exist" errors
+
+**Real-world example**: Extension implementation forgot this, causing:
+```
+ERROR: type "citext" does not exist (SQLSTATE 42704)
+```
+Even though the SDL file contained `CREATE EXTENSION "citext"` and the diff correctly detected it!
+
+#### Test for This
+
+Always add a filter test to catch this issue:
+
+```go
+func TestXXXNotFilteredByArchiveSchemaFilter(t *testing.T) {
+    diff := &schema.MetadataDiff{
+        ExtensionChanges: []*schema.ExtensionDiff{
+            {
+                Action:        schema.MetadataDiffActionCreate,
+                ExtensionName: "test_extension",
+            },
+        },
+        TableChanges: []*schema.TableDiff{
+            {
+                Action:     schema.MetadataDiffActionCreate,
+                SchemaName: "bbdataarchive",  // Should be filtered
+                TableName:  "archive_table",
+            },
+        },
+    }
+
+    filtered := schema.FilterPostgresArchiveSchema(diff)
+
+    // Extension should be preserved (database-level)
+    require.Equal(t, 1, len(filtered.ExtensionChanges))
+
+    // Archive schema table should be filtered out
+    require.Equal(t, 0, len(filtered.TableChanges))
+}
+```
+
+---
+
 ## Critical Points & Common Pitfalls
 
 ### 🚨 Most Common Mistakes
@@ -1914,6 +2024,41 @@ case "MATERIALIZED VIEW", "MATERIALIZEDVIEW":
     // handle comment
 ```
 
+#### 6. Forgetting to Update Archive Schema Filter (CRITICAL!)
+
+**The #1 mistake that breaks production but passes all tests!**
+
+**Problem**: Adding the object to all processing functions but forgetting `FilterPostgresArchiveSchema`.
+
+**Symptom**:
+- ✅ All tests pass
+- ✅ SDL parsing works
+- ✅ Diff detection works
+- ❌ **bb rollout silently drops the object during execution**
+
+**Why it happens**: The filter function is **not** in the normal implementation flow. It's an integration point that only gets called during actual `bb rollout` execution.
+
+**Fix**: Always check and update both patterns:
+
+**For database-level objects** (Extensions, Events):
+```go
+// In FilterPostgresArchiveSchema:
+filtered.ExtensionChanges = diff.ExtensionChanges  // Direct copy
+filtered.EventChanges = diff.EventChanges
+```
+
+**For schema-scoped objects** (Tables, Views, etc.):
+```go
+// In FilterPostgresArchiveSchema:
+for _, tableChange := range diff.TableChanges {
+    if tableChange.SchemaName != archiveSchemaName {
+        filtered.TableChanges = append(filtered.TableChanges, tableChange)
+    }
+}
+```
+
+**Prevention**: Always add a `TestXXXNotFilteredByArchiveSchemaFilter` test (see Phase 6.1).
+
 ---
 
 ### ✅ Verification Checklist
@@ -1975,17 +2120,22 @@ Use this checklist to ensure complete implementation:
 - [ ] All tests pass
 - [ ] Linter passes
 
+#### Integration Points (CRITICAL!)
+- [ ] **Added to `FilterPostgresArchiveSchema` (database-level: direct copy; schema-scoped: filter by schema)**
+- [ ] **Filter test added (`TestXXXNotFilteredByArchiveSchemaFilter`)**
+
 ---
 
 ## Summary
 
-Adding a new database object to SDL mode requires changes in **5 major phases**:
+Adding a new database object to SDL mode requires changes in **6 major phases**:
 
 1. **Parser**: Extract AST nodes and associate COMMENT statements
 2. **SDL Diff**: Detect CREATE/DROP/MODIFY and comment-only changes + **Drift handling (REQUIRED)**
 3. **Migration Generation**: Add to topological sort with **AST-only dependency extraction** (both CREATE and DROP!)
 4. **SDL Output**: Generate single-file and multi-file SDL formats
 5. **Testing**: Comprehensive tests including dependency ordering
+6. **Integration Points**: Update `FilterPostgresArchiveSchema` and add filter test
 
 The **most critical** and **most often forgotten** parts are:
 
@@ -2007,3 +2157,23 @@ Without this, the object type will not work correctly when:
 - Database schema differs from SDL (drift detection)
 
 All other object types (tables, views, functions, sequences, materialized views) implement drift handling. Your new object type must too.
+
+### 3. Archive schema filter (MOST CRITICAL - Breaks production!)
+> **Add object to `FilterPostgresArchiveSchema` in `differ.go`**
+
+This is **the #1 mistake** that:
+- ✅ Passes all unit tests
+- ✅ Works correctly in SDL parsing and diff calculation
+- ❌ **Silently fails in production `bb rollout`**
+
+Without this:
+- The object will be correctly detected in diff
+- But **filtered out** before migration execution
+- Causing "relation does not exist" errors for dependent objects
+
+**Prevention**:
+- For database-level objects: `filtered.ExtensionChanges = diff.ExtensionChanges`
+- For schema-scoped objects: Filter by `schemaName != archiveSchemaName`
+- Always add `TestXXXNotFilteredByArchiveSchemaFilter` test
+
+See **Phase 6.1** for detailed explanation and real-world example.

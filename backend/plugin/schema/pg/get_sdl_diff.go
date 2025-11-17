@@ -103,6 +103,9 @@ func GetSDLDiff(currentSDLText, previousUserSDLText string, currentSchema, previ
 	// Process enum type changes
 	processEnumTypeChanges(currentChunks, previousChunks, currentDBSDLChunks, diff)
 
+	// Process extension changes
+	processExtensionChanges(currentChunks, previousChunks, currentDBSDLChunks, diff)
+
 	// Process explicit schema changes (CREATE SCHEMA statements)
 	processSchemaChanges(currentChunks, previousChunks, currentSchema, diff)
 
@@ -127,6 +130,7 @@ func ChunkSDLText(sdlText string) (*schema.SDLChunks, error) {
 			Sequences:         make(map[string]*schema.SDLChunk),
 			Schemas:           make(map[string]*schema.SDLChunk),
 			EnumTypes:         make(map[string]*schema.SDLChunk),
+			Extensions:        make(map[string]*schema.SDLChunk),
 			ColumnComments:    make(map[string]map[string]antlr.ParserRuleContext),
 			IndexComments:     make(map[string]map[string]antlr.ParserRuleContext),
 		}, nil
@@ -148,6 +152,7 @@ func ChunkSDLText(sdlText string) (*schema.SDLChunks, error) {
 			Sequences:         make(map[string]*schema.SDLChunk),
 			Schemas:           make(map[string]*schema.SDLChunk),
 			EnumTypes:         make(map[string]*schema.SDLChunk),
+			Extensions:        make(map[string]*schema.SDLChunk),
 			ColumnComments:    make(map[string]map[string]antlr.ParserRuleContext),
 			IndexComments:     make(map[string]map[string]antlr.ParserRuleContext),
 		},
@@ -432,6 +437,23 @@ func (l *sdlChunkExtractor) EnterCreateschemastmt(ctx *parser.CreateschemastmtCo
 	}
 }
 
+func (l *sdlChunkExtractor) EnterCreateextensionstmt(ctx *parser.CreateextensionstmtContext) {
+	// Extract extension name from AST
+	if ctx.Name() == nil {
+		return
+	}
+
+	extensionName := pgparser.NormalizePostgreSQLName(ctx.Name())
+
+	// Extension is database-level, no schema prefix needed
+	chunk := &schema.SDLChunk{
+		Identifier: extensionName, // Just the extension name
+		ASTNode:    ctx,
+	}
+
+	l.chunks.Extensions[extensionName] = chunk
+}
+
 func (l *sdlChunkExtractor) EnterCommentstmt(ctx *parser.CommentstmtContext) {
 	// Extract the comment text (can be sconst or NULL)
 	// We store the entire AST node, not just the comment text
@@ -648,12 +670,14 @@ func (l *sdlChunkExtractor) EnterCommentstmt(ctx *parser.CommentstmtContext) {
 		return
 	}
 
-	// Check for object_type_name: SCHEMA, DATABASE, etc.
+	// Check for object_type_name: SCHEMA, EXTENSION, DATABASE, etc.
 	if ctx.Object_type_name() != nil && ctx.Name() != nil {
 		objectType := ctx.Object_type_name().GetText()
 		name := pgparser.NormalizePostgreSQLName(ctx.Name())
 
-		if strings.ToUpper(objectType) == "SCHEMA" {
+		objectTypeUpper := strings.ToUpper(objectType)
+		switch objectTypeUpper {
+		case "SCHEMA":
 			if chunk, exists := l.chunks.Schemas[name]; exists {
 				chunk.CommentStatements = append(chunk.CommentStatements, ctx)
 			} else {
@@ -664,6 +688,20 @@ func (l *sdlChunkExtractor) EnterCommentstmt(ctx *parser.CommentstmtContext) {
 				}
 				l.chunks.Schemas[name] = chunk
 			}
+		case "EXTENSION":
+			// Extensions are database-level, no schema prefix
+			if chunk, exists := l.chunks.Extensions[name]; exists {
+				chunk.CommentStatements = append(chunk.CommentStatements, ctx)
+			} else {
+				chunk := &schema.SDLChunk{
+					Identifier:        name,
+					ASTNode:           nil,
+					CommentStatements: []antlr.ParserRuleContext{ctx},
+				}
+				l.chunks.Extensions[name] = chunk
+			}
+		default:
+			// Other object types are handled elsewhere
 		}
 		return
 	}
@@ -2736,6 +2774,13 @@ func applyMinimalChangesToChunks(previousChunks *schema.SDLChunks, currentSchema
 		return errors.Wrap(err, "failed to apply enum type changes")
 	}
 
+	// Process extension changes: apply minimal changes to extension chunks
+	// Extensions are database-level objects
+	err = applyExtensionChangesToChunks(previousChunks, currentSchema, previousSchema)
+	if err != nil {
+		return errors.Wrap(err, "failed to apply extension changes")
+	}
+
 	// Process column comment changes: sync column comments based on metadata
 	err = applyColumnCommentChanges(previousChunks, currentSchema, previousSchema)
 	if err != nil {
@@ -3403,6 +3448,14 @@ func buildCurrentDatabaseSDLChunks(currentSchema *model.DatabaseSchema) (*curren
 		commentText := extractCommentTextFromChunk(chunk)
 		if commentText != "" {
 			sdlChunks.comments[identifier] = []string{commentText}
+		}
+	}
+	for extensionName, chunk := range currentSDLChunks.Extensions {
+		sdlChunks.chunks[extensionName] = strings.TrimSpace(chunk.GetTextWithoutComments())
+		// Store comment text for usability check
+		commentText := extractCommentTextFromChunk(chunk)
+		if commentText != "" {
+			sdlChunks.comments[extensionName] = []string{commentText}
 		}
 	}
 
@@ -5275,6 +5328,7 @@ func processCommentChanges(currentChunks, previousChunks *schema.SDLChunks, curr
 	processObjectComments(currentChunks.MaterializedViews, previousChunks.MaterializedViews, schema.CommentObjectTypeMaterializedView, createdObjects, droppedObjects, currentDBSDLChunks, diff)
 	processObjectComments(currentChunks.Functions, previousChunks.Functions, schema.CommentObjectTypeFunction, createdObjects, droppedObjects, currentDBSDLChunks, diff)
 	processObjectComments(currentChunks.Sequences, previousChunks.Sequences, schema.CommentObjectTypeSequence, createdObjects, droppedObjects, currentDBSDLChunks, diff)
+	processObjectComments(currentChunks.Extensions, previousChunks.Extensions, schema.CommentObjectTypeExtension, createdObjects, droppedObjects, currentDBSDLChunks, diff)
 	processObjectComments(currentChunks.EnumTypes, previousChunks.EnumTypes, schema.CommentObjectTypeType, createdObjects, droppedObjects, currentDBSDLChunks, diff)
 	processObjectComments(currentChunks.Indexes, previousChunks.Indexes, schema.CommentObjectTypeIndex, createdObjects, droppedObjects, currentDBSDLChunks, diff)
 	processObjectComments(currentChunks.Schemas, previousChunks.Schemas, schema.CommentObjectTypeSchema, createdObjects, droppedObjects, currentDBSDLChunks, diff)
@@ -5329,6 +5383,13 @@ func buildCreatedObjectsSet(diff *schema.MetadataDiff) map[string]bool {
 		}
 	}
 
+	for _, extDiff := range diff.ExtensionChanges {
+		if extDiff.Action == schema.MetadataDiffActionCreate {
+			// Extensions are database-level, no schema prefix
+			created[extDiff.ExtensionName] = true
+		}
+	}
+
 	return created
 }
 
@@ -5378,6 +5439,13 @@ func buildDroppedObjectsSet(diff *schema.MetadataDiff) map[string]bool {
 		}
 	}
 
+	for _, extDiff := range diff.ExtensionChanges {
+		if extDiff.Action == schema.MetadataDiffActionDrop {
+			// Extensions are database-level, no schema prefix
+			dropped[extDiff.ExtensionName] = true
+		}
+	}
+
 	return dropped
 }
 
@@ -5410,12 +5478,16 @@ func processObjectComments(currentMap, previousMap map[string]*schema.SDLChunk, 
 			}
 			var schemaName, objectName string
 
-			// For SCHEMA objects, identifier is just the schema name
+			// For SCHEMA and EXTENSION objects, identifier is just the object name (database-level)
 			// For other objects, identifier is "schema.object"
-			if objectType == schema.CommentObjectTypeSchema {
+			switch objectType {
+			case schema.CommentObjectTypeSchema:
 				schemaName = identifier
 				objectName = identifier // For schemas, objectName is also the schema name
-			} else {
+			case schema.CommentObjectTypeExtension:
+				schemaName = "" // Extensions are database-level, no schema
+				objectName = identifier
+			default:
 				schemaName, objectName = parseIdentifier(identifier)
 			}
 
@@ -6545,6 +6617,98 @@ func processEnumTypeChanges(currentChunks, previousChunks *schema.SDLChunks, cur
 	}
 }
 
+// processExtensionChanges processes extension changes between current and previous chunks
+func processExtensionChanges(currentChunks, previousChunks *schema.SDLChunks, currentDBSDLChunks *currentDatabaseSDLChunks, diff *schema.MetadataDiff) {
+	// Process current extensions to find created and modified ones
+	for extensionName, currentChunk := range currentChunks.Extensions {
+		if previousChunk, exists := previousChunks.Extensions[extensionName]; exists {
+			// Extension exists in both - check if modified by comparing text (excluding comments)
+			currentText := currentChunk.GetTextWithoutComments()
+			previousText := previousChunk.GetTextWithoutComments()
+			if currentText != previousText {
+				// Apply usability check
+				if currentDBSDLChunks.shouldSkipChunkDiffForUsability(currentText, extensionName) {
+					continue
+				}
+				// Extension was modified - use DROP + CREATE pattern
+				// (PostgreSQL doesn't support ALTER EXTENSION for most changes)
+				diff.ExtensionChanges = append(diff.ExtensionChanges, &schema.ExtensionDiff{
+					Action:        schema.MetadataDiffActionDrop,
+					ExtensionName: extensionName,
+					OldExtension:  nil,
+					NewExtension:  nil,
+					OldASTNode:    previousChunk.ASTNode,
+					NewASTNode:    nil,
+				})
+				diff.ExtensionChanges = append(diff.ExtensionChanges, &schema.ExtensionDiff{
+					Action:        schema.MetadataDiffActionCreate,
+					ExtensionName: extensionName,
+					OldExtension:  nil,
+					NewExtension:  nil,
+					OldASTNode:    nil,
+					NewASTNode:    currentChunk.ASTNode,
+				})
+				// Add COMMENT ON EXTENSION diffs if they exist in the new version
+				if len(currentChunk.CommentStatements) > 0 {
+					for _, commentNode := range currentChunk.CommentStatements {
+						commentText := extractCommentTextFromNode(commentNode)
+						diff.CommentChanges = append(diff.CommentChanges, &schema.CommentDiff{
+							Action:     schema.MetadataDiffActionCreate,
+							ObjectType: schema.CommentObjectTypeExtension,
+							ObjectName: extensionName,
+							OldComment: "",
+							NewComment: commentText,
+							OldASTNode: nil,
+							NewASTNode: commentNode,
+						})
+					}
+				}
+			}
+			// If text is identical, skip - no changes detected
+		} else {
+			// New extension
+			diff.ExtensionChanges = append(diff.ExtensionChanges, &schema.ExtensionDiff{
+				Action:        schema.MetadataDiffActionCreate,
+				ExtensionName: extensionName,
+				OldExtension:  nil,
+				NewExtension:  nil,
+				OldASTNode:    nil,
+				NewASTNode:    currentChunk.ASTNode,
+			})
+			// Add COMMENT ON EXTENSION diffs if they exist
+			if len(currentChunk.CommentStatements) > 0 {
+				for _, commentNode := range currentChunk.CommentStatements {
+					commentText := extractCommentTextFromNode(commentNode)
+					diff.CommentChanges = append(diff.CommentChanges, &schema.CommentDiff{
+						Action:     schema.MetadataDiffActionCreate,
+						ObjectType: schema.CommentObjectTypeExtension,
+						ObjectName: extensionName,
+						OldComment: "",
+						NewComment: commentText,
+						OldASTNode: nil,
+						NewASTNode: commentNode,
+					})
+				}
+			}
+		}
+	}
+
+	// Process previous extensions to find dropped ones
+	for extensionName, previousChunk := range previousChunks.Extensions {
+		if _, exists := currentChunks.Extensions[extensionName]; !exists {
+			// Extension was dropped
+			diff.ExtensionChanges = append(diff.ExtensionChanges, &schema.ExtensionDiff{
+				Action:        schema.MetadataDiffActionDrop,
+				ExtensionName: extensionName,
+				OldExtension:  nil,
+				NewExtension:  nil,
+				OldASTNode:    previousChunk.ASTNode,
+				NewASTNode:    nil,
+			})
+		}
+	}
+}
+
 // processSchemaChanges processes explicit CREATE SCHEMA statements in the SDL
 func processSchemaChanges(currentChunks, previousChunks *schema.SDLChunks, currentSchema *model.DatabaseSchema, diff *schema.MetadataDiff) {
 	// Build set of existing schemas in current database
@@ -6685,4 +6849,264 @@ func addImplicitSchemaCreation(diff *schema.MetadataDiff, currentSchema *model.D
 			})
 		}
 	}
+}
+
+// applyExtensionChangesToChunks applies minimal changes to extension chunks based on schema differences
+// Extensions are database-level objects (not schema-scoped)
+func applyExtensionChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseSchema) error {
+	if currentSchema == nil || previousSchema == nil || previousChunks == nil {
+		return nil
+	}
+
+	// Get extension differences by comparing schema metadata
+	currentMetadata := currentSchema.GetMetadata()
+	previousMetadata := previousSchema.GetMetadata()
+	if currentMetadata == nil || previousMetadata == nil {
+		return nil
+	}
+
+	// Build extension maps for current and previous schemas
+	// Extensions are database-level, stored directly in DatabaseSchemaMetadata
+	currentExtensions := make(map[string]*storepb.ExtensionMetadata)
+	previousExtensions := make(map[string]*storepb.ExtensionMetadata)
+
+	// Collect all extensions from current schema
+	for _, extension := range currentMetadata.Extensions {
+		// Extension key is just the name (database-level, no schema prefix)
+		currentExtensions[extension.Name] = extension
+	}
+
+	// Collect all extensions from previous schema
+	for _, extension := range previousMetadata.Extensions {
+		previousExtensions[extension.Name] = extension
+	}
+
+	// Process extension additions: create new extension chunks
+	for extensionName, currentExtension := range currentExtensions {
+		if _, exists := previousExtensions[extensionName]; !exists {
+			// New extension - create a chunk for it
+			err := createExtensionChunk(previousChunks, currentExtension)
+			if err != nil {
+				return errors.Wrapf(err, "failed to create extension chunk for %s", extensionName)
+			}
+		}
+	}
+
+	// Process extension modifications: update existing chunks
+	for extensionName, currentExtension := range currentExtensions {
+		if previousExtension, exists := previousExtensions[extensionName]; exists {
+			// Extension exists in both metadata
+			// Only update if chunk exists in SDL (user explicitly defined it)
+			if _, chunkExists := previousChunks.Extensions[extensionName]; chunkExists {
+				// Chunk exists - update if needed
+				err := updateExtensionChunkIfNeeded(previousChunks, currentExtension, previousExtension)
+				if err != nil {
+					return errors.Wrapf(err, "failed to update extension chunk for %s", extensionName)
+				}
+			}
+			// If chunk doesn't exist, skip - user didn't define this extension in SDL
+		}
+	}
+
+	// Process extension deletions: remove dropped extension chunks
+	for extensionName := range previousExtensions {
+		if _, exists := currentExtensions[extensionName]; !exists {
+			// Extension was dropped - remove it from chunks
+			deleteExtensionChunk(previousChunks, extensionName)
+		}
+	}
+
+	return nil
+}
+
+// createExtensionChunk creates a new CREATE EXTENSION chunk and adds it to the chunks
+func createExtensionChunk(chunks *schema.SDLChunks, extension *storepb.ExtensionMetadata) error {
+	if extension == nil || chunks == nil {
+		return nil
+	}
+
+	// Generate SDL text for the extension
+	extensionSDL := generateCreateExtensionSQL(extension)
+	if extensionSDL == "" {
+		return errors.New("failed to generate SDL for extension")
+	}
+
+	// Parse the SDL to get AST node
+	parseResult, err := pgparser.ParsePostgreSQL(extensionSDL)
+	if err != nil {
+		return errors.Wrapf(err, "failed to parse generated extension SDL: %s", extensionSDL)
+	}
+
+	// Extract the CREATE EXTENSION AST node
+	var extensionASTNode *parser.CreateextensionstmtContext
+	antlr.ParseTreeWalkerDefault.Walk(&extensionExtractor{
+		result: &extensionASTNode,
+	}, parseResult.Tree)
+
+	if extensionASTNode == nil {
+		return errors.New("failed to extract CREATE EXTENSION AST node")
+	}
+
+	// Create and add the chunk
+	chunk := &schema.SDLChunk{
+		Identifier: extension.Name, // Extensions are database-level, no schema prefix
+		ASTNode:    extensionASTNode,
+	}
+
+	// Handle comment if present (description field is the comment)
+	if len(extension.Description) > 0 {
+		commentSQL := generateCommentOnExtensionSQL(extension.Name, extension.Description)
+		commentParseResult, err := pgparser.ParsePostgreSQL(commentSQL)
+		if err == nil {
+			var commentNode *parser.CommentstmtContext
+			antlr.ParseTreeWalkerDefault.Walk(&commentExtractor{
+				result: &commentNode,
+			}, commentParseResult.Tree)
+			if commentNode != nil {
+				chunk.CommentStatements = []antlr.ParserRuleContext{commentNode}
+			}
+		}
+	}
+
+	chunks.Extensions[extension.Name] = chunk
+	return nil
+}
+
+// updateExtensionChunkIfNeeded updates an extension chunk if the definition or comment changed
+func updateExtensionChunkIfNeeded(chunks *schema.SDLChunks, currentExtension, previousExtension *storepb.ExtensionMetadata) error {
+	if currentExtension == nil || previousExtension == nil {
+		return nil
+	}
+
+	chunk, exists := chunks.Extensions[currentExtension.Name]
+	if !exists {
+		return errors.Errorf("extension chunk not found for %s", currentExtension.Name)
+	}
+
+	// Check if the extension definition has changed (schema, version, or description)
+	definitionChanged := !extensionsEqual(currentExtension, previousExtension)
+
+	if definitionChanged {
+		// Extension definition has changed - regenerate the CREATE EXTENSION chunk
+		extensionSDL := generateCreateExtensionSQL(currentExtension)
+		if extensionSDL == "" {
+			return errors.New("failed to generate SDL for extension")
+		}
+
+		// Parse the SDL to get AST node
+		parseResult, err := pgparser.ParsePostgreSQL(extensionSDL)
+		if err != nil {
+			return errors.Wrapf(err, "failed to parse generated extension SDL: %s", extensionSDL)
+		}
+
+		// Extract the CREATE EXTENSION AST node
+		var extensionASTNode *parser.CreateextensionstmtContext
+		antlr.ParseTreeWalkerDefault.Walk(&extensionExtractor{
+			result: &extensionASTNode,
+		}, parseResult.Tree)
+
+		if extensionASTNode == nil {
+			return errors.New("failed to extract CREATE EXTENSION AST node")
+		}
+
+		// Update the AST node in the chunk
+		chunk.ASTNode = extensionASTNode
+	}
+
+	// Handle comment changes (description field)
+	commentChanged := currentExtension.Description != previousExtension.Description
+
+	if commentChanged {
+		// Remove old comment statements
+		chunk.CommentStatements = nil
+
+		// Add new comment if present
+		if len(currentExtension.Description) > 0 {
+			commentSQL := generateCommentOnExtensionSQL(currentExtension.Name, currentExtension.Description)
+			commentParseResult, err := pgparser.ParsePostgreSQL(commentSQL)
+			if err == nil {
+				var commentNode *parser.CommentstmtContext
+				antlr.ParseTreeWalkerDefault.Walk(&commentExtractor{
+					result: &commentNode,
+				}, commentParseResult.Tree)
+				if commentNode != nil {
+					chunk.CommentStatements = []antlr.ParserRuleContext{commentNode}
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+// deleteExtensionChunk removes an extension chunk from the chunks map
+func deleteExtensionChunk(chunks *schema.SDLChunks, extensionName string) {
+	if chunks == nil {
+		return
+	}
+	delete(chunks.Extensions, extensionName)
+}
+
+// generateCreateExtensionSQL generates a CREATE EXTENSION IF NOT EXISTS statement
+func generateCreateExtensionSQL(extension *storepb.ExtensionMetadata) string {
+	if extension == nil {
+		return ""
+	}
+
+	var buf strings.Builder
+	buf.WriteString(`CREATE EXTENSION IF NOT EXISTS "`)
+	buf.WriteString(extension.Name)
+	buf.WriteString(`"`)
+
+	// Add WITH SCHEMA clause if schema is specified
+	if extension.Schema != "" {
+		buf.WriteString(` WITH SCHEMA "`)
+		buf.WriteString(extension.Schema)
+		buf.WriteString(`"`)
+	}
+
+	// Add VERSION clause if version is specified
+	if extension.Version != "" {
+		buf.WriteString(` VERSION '`)
+		buf.WriteString(extension.Version)
+		buf.WriteString(`'`)
+	}
+
+	buf.WriteString(`;`)
+
+	return buf.String()
+}
+
+// generateCommentOnExtensionSQL generates a COMMENT ON EXTENSION statement
+func generateCommentOnExtensionSQL(extensionName, comment string) string {
+	// Escape single quotes in comment
+	escapedComment := strings.ReplaceAll(comment, "'", "''")
+	return fmt.Sprintf("COMMENT ON EXTENSION \"%s\" IS '%s';", extensionName, escapedComment)
+}
+
+// extensionExtractor is a walker to extract CREATE EXTENSION AST nodes
+type extensionExtractor struct {
+	parser.BasePostgreSQLParserListener
+	result **parser.CreateextensionstmtContext
+}
+
+func (e *extensionExtractor) EnterCreateextensionstmt(ctx *parser.CreateextensionstmtContext) {
+	if e.result != nil {
+		*e.result = ctx
+	}
+}
+
+// extensionsEqual compares two extension metadata for equality (excluding comments)
+func extensionsEqual(a, b *storepb.ExtensionMetadata) bool {
+	if a == nil && b == nil {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+
+	return a.Name == b.Name &&
+		a.Schema == b.Schema &&
+		a.Version == b.Version &&
+		a.Description == b.Description
 }

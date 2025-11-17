@@ -50,6 +50,9 @@ type MetadataDiff struct {
 	// Enum type changes
 	EnumTypeChanges []*EnumTypeDiff
 
+	// Extension changes
+	ExtensionChanges []*ExtensionDiff
+
 	// Event changes
 	EventChanges []*EventDiff
 
@@ -247,6 +250,16 @@ type EnumTypeDiff struct {
 	NewASTNode   any // For SDL/AST-only mode
 }
 
+// ExtensionDiff represents changes to an extension.
+type ExtensionDiff struct {
+	Action        MetadataDiffAction
+	ExtensionName string
+	OldExtension  *storepb.ExtensionMetadata
+	NewExtension  *storepb.ExtensionMetadata
+	OldASTNode    any // For SDL/AST-only mode
+	NewASTNode    any // For SDL/AST-only mode
+}
+
 // EventDiff represents changes to an event.
 type EventDiff struct {
 	Action    MetadataDiffAction
@@ -268,6 +281,7 @@ const (
 	CommentObjectTypeSequence         CommentObjectType = "SEQUENCE"
 	CommentObjectTypeIndex            CommentObjectType = "INDEX"
 	CommentObjectTypeType             CommentObjectType = "TYPE"
+	CommentObjectTypeExtension        CommentObjectType = "EXTENSION"
 )
 
 // CommentDiff represents changes to database object comments.
@@ -341,6 +355,9 @@ func GetDatabaseSchemaDiff(engine storepb.Engine, oldSchema, newSchema *model.Da
 			}
 		}
 	}
+
+	// Compare database-level objects (extensions)
+	compareExtensions(diff, oldMetadata, newMetadata)
 
 	// Sort all diff lists to ensure stable output order
 	sortDiffLists(diff)
@@ -1932,6 +1949,64 @@ func compareEnumTypes(diff *MetadataDiff, schemaName string, oldSchema, newSchem
 	}
 }
 
+// compareExtensions compares extensions between old and new database metadata.
+func compareExtensions(diff *MetadataDiff, oldMetadata, newMetadata *storepb.DatabaseSchemaMetadata) {
+	// Build maps of extensions
+	oldExtensionMap := make(map[string]*storepb.ExtensionMetadata)
+	for _, extension := range oldMetadata.Extensions {
+		oldExtensionMap[extension.Name] = extension
+	}
+
+	newExtensionMap := make(map[string]*storepb.ExtensionMetadata)
+	for _, extension := range newMetadata.Extensions {
+		newExtensionMap[extension.Name] = extension
+	}
+
+	// Check for dropped extensions
+	for extensionName, oldExtension := range oldExtensionMap {
+		if _, exists := newExtensionMap[extensionName]; !exists {
+			diff.ExtensionChanges = append(diff.ExtensionChanges, &ExtensionDiff{
+				Action:        MetadataDiffActionDrop,
+				ExtensionName: extensionName,
+				OldExtension:  oldExtension,
+			})
+		}
+	}
+
+	// Check for new extensions
+	for extensionName, newExtension := range newExtensionMap {
+		if _, exists := oldExtensionMap[extensionName]; !exists {
+			diff.ExtensionChanges = append(diff.ExtensionChanges, &ExtensionDiff{
+				Action:        MetadataDiffActionCreate,
+				ExtensionName: extensionName,
+				NewExtension:  newExtension,
+			})
+		}
+	}
+
+	// Check for modified extensions
+	for extensionName, newExtension := range newExtensionMap {
+		if oldExtension, exists := oldExtensionMap[extensionName]; exists {
+			// Check if extension has changed (schema, version, or description)
+			if oldExtension.Schema != newExtension.Schema ||
+				oldExtension.Version != newExtension.Version ||
+				oldExtension.Description != newExtension.Description {
+				// Use DROP + CREATE pattern for modifications
+				diff.ExtensionChanges = append(diff.ExtensionChanges, &ExtensionDiff{
+					Action:        MetadataDiffActionDrop,
+					ExtensionName: extensionName,
+					OldExtension:  oldExtension,
+				})
+				diff.ExtensionChanges = append(diff.ExtensionChanges, &ExtensionDiff{
+					Action:        MetadataDiffActionCreate,
+					ExtensionName: extensionName,
+					NewExtension:  newExtension,
+				})
+			}
+		}
+	}
+}
+
 // compareEvents compares events between old and new schemas.
 func compareEvents(diff *MetadataDiff, _ string, oldSchema, newSchema *model.SchemaMetadata) {
 	oldSchemaProto := oldSchema.GetProto()
@@ -2056,7 +2131,8 @@ func FilterPostgresArchiveSchema(diff *MetadataDiff) *MetadataDiff {
 		}
 	}
 
-	// Events are database-level objects, not schema-specific, so copy them all
+	// Extensions and Events are database-level objects, not schema-specific, so copy them all
+	filtered.ExtensionChanges = diff.ExtensionChanges
 	filtered.EventChanges = diff.EventChanges
 
 	return filtered
@@ -2269,6 +2345,14 @@ func sortDiffLists(diff *MetadataDiff) {
 		}
 		if a.EnumTypeName != b.EnumTypeName {
 			return strings.Compare(a.EnumTypeName, b.EnumTypeName)
+		}
+		return strings.Compare(string(a.Action), string(b.Action))
+	})
+
+	// Sort extension changes by extension name, then action
+	slices.SortFunc(diff.ExtensionChanges, func(a, b *ExtensionDiff) int {
+		if a.ExtensionName != b.ExtensionName {
+			return strings.Compare(a.ExtensionName, b.ExtensionName)
 		}
 		return strings.Compare(string(a.Action), string(b.Action))
 	})
