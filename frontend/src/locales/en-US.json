@@ -1189,6 +1189,7 @@
     "task-execution-notices": "Task execution notices",
     "task-execution-errors": "Task execution errors",
     "no-active-task-to-cancel": "No active task to cancel.",
+    "no-runnable-task": "No runnable task available.",
     "automatic-rollout": {
       "description": "This environment has automatic rollout enabled."
     },

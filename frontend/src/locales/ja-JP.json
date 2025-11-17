@@ -1189,6 +1189,7 @@
     "task-execution-notices": "タスク実行通知",
     "task-execution-errors": "タスク実行エラー",
     "no-active-task-to-cancel": "キャンセルするアクティブなタスクはありません。",
+    "no-runnable-task": "実行可能なタスクがありません。",
     "automatic-rollout": {
       "description": "この環境では自動ロールアウトが有効になっています。"
     },
