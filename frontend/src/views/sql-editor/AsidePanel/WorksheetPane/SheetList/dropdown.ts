@@ -9,13 +9,21 @@ import {
   TrashIcon,
 } from "lucide-vue-next";
 import { type DropdownOption } from "naive-ui";
-import { computed, type FunctionalComponent, h, reactive, watch } from "vue";
+import {
+  type ComputedRef,
+  computed,
+  type FunctionalComponent,
+  h,
+  reactive,
+  watch,
+} from "vue";
 import { t } from "@/plugins/i18n";
 import { useCurrentUserV1, useWorkSheetStore } from "@/store";
 import { type Position } from "@/types";
 import { isWorksheetWritableV1 } from "@/utils";
 import type {
   SheetViewMode,
+  WorksheetFilter,
   WorksheetFolderNode,
 } from "@/views/sql-editor/Sheet";
 
@@ -39,7 +47,10 @@ interface DropdownContext {
   node?: WorksheetFolderNode;
 }
 
-export const useDropdown = (viewMode: SheetViewMode) => {
+export const useDropdown = (
+  viewMode: SheetViewMode,
+  filter: ComputedRef<WorksheetFilter>
+) => {
   const me = useCurrentUserV1();
   const sheetStore = useWorkSheetStore();
 
@@ -136,24 +147,26 @@ export const useDropdown = (viewMode: SheetViewMode) => {
         );
       }
     } else {
-      items.push({
-        icon: FolderIcon,
-        key: "add-folder",
-        label: t("sql-editor.tab.context-menu.actions.add-folder"),
-      });
+      if (!filter.value.keyword) {
+        items.push({
+          icon: FolderIcon,
+          key: "add-folder",
+          label: t("sql-editor.tab.context-menu.actions.add-folder"),
+        });
+      }
       if (viewMode === "my") {
-        items.push(
-          {
+        if (!filter.value.keyword) {
+          items.push({
             icon: FileCodeIcon,
             key: "add-worksheet",
             label: t("sql-editor.tab.context-menu.actions.add-worksheet"),
-          },
-          {
-            icon: ListCheckIcon,
-            key: "multi-select",
-            label: t("sql-editor.tab.context-menu.actions.multi-select"),
-          }
-        );
+          });
+        }
+        items.push({
+          icon: ListCheckIcon,
+          key: "multi-select",
+          label: t("sql-editor.tab.context-menu.actions.multi-select"),
+        });
       }
       if (context.node.editable) {
         items.push(
