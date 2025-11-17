@@ -470,6 +470,104 @@ func (d *DatabaseMetadata) SearchExternalTable(searchPath []string, name string)
 	return "", nil
 }
 
+// Convenience methods for advisor rules
+
+// GetColumn gets a column from the database by schema, table, and column name.
+// Returns nil if the column is not found.
+func (d *DatabaseMetadata) GetColumn(schemaName, tableName, columnName string) *storepb.ColumnMetadata {
+	schema := d.GetSchema(schemaName)
+	if schema == nil {
+		return nil
+	}
+	table := schema.GetTable(tableName)
+	if table == nil {
+		return nil
+	}
+	return table.GetColumn(columnName)
+}
+
+// GetIndex gets an index from the database by schema, table, and index name.
+// Returns the table name and index metadata, or ("", nil) if not found.
+func (d *DatabaseMetadata) GetIndex(schemaName, tableName, indexName string) (string, *IndexMetadata) {
+	schema := d.GetSchema(schemaName)
+	if schema == nil {
+		return "", nil
+	}
+
+	if tableName != "" {
+		// Look for index in specific table
+		table := schema.GetTable(tableName)
+		if table == nil {
+			return "", nil
+		}
+		index := table.GetIndex(indexName)
+		if index != nil {
+			return tableName, index
+		}
+		return "", nil
+	}
+
+	// Search all tables in the schema for the index
+	for _, table := range schema.proto.Tables {
+		tableMetadata := schema.GetTable(table.Name)
+		if tableMetadata == nil {
+			continue
+		}
+		index := tableMetadata.GetIndex(indexName)
+		if index != nil {
+			return table.Name, index
+		}
+	}
+
+	return "", nil
+}
+
+// GetTable gets a table from the database by schema and table name.
+// Returns nil if the table is not found.
+func (d *DatabaseMetadata) GetTable(schemaName, tableName string) *TableMetadata {
+	schema := d.GetSchema(schemaName)
+	if schema == nil {
+		return nil
+	}
+	return schema.GetTable(tableName)
+}
+
+// Index returns all indexes for a table as a map[indexName]*IndexMetadata.
+// Returns nil if the schema or table is not found.
+func (d *DatabaseMetadata) Index(schemaName, tableName string) map[string]*IndexMetadata {
+	table := d.GetTable(schemaName, tableName)
+	if table == nil {
+		return nil
+	}
+
+	indexes := table.ListIndexes()
+	result := make(map[string]*IndexMetadata)
+	for _, index := range indexes {
+		if index.proto != nil {
+			result[index.proto.Name] = index
+		}
+	}
+	return result
+}
+
+// DatabaseName returns the name of the database.
+func (d *DatabaseMetadata) DatabaseName() string {
+	if d.proto == nil {
+		return ""
+	}
+	return d.proto.Name
+}
+
+// HasNoTable returns true if the database has no tables.
+func (d *DatabaseMetadata) HasNoTable() bool {
+	for _, schema := range d.internal {
+		if schema != nil && schema.proto != nil && len(schema.proto.Tables) > 0 {
+			return false
+		}
+	}
+	return true
+}
+
 func (d *DatabaseMetadata) SearchSequence(searchPath []string, name string) (string, *SequenceMetadata) {
 	// Search in the search path first.
 	for _, schemaName := range searchPath {
@@ -1167,6 +1265,30 @@ func (i *IndexMetadata) GetProto() *storepb.IndexMetadata {
 
 func (i *IndexMetadata) GetTableProto() *storepb.TableMetadata {
 	return i.tableProto
+}
+
+// Primary returns true if the index is a primary key.
+func (i *IndexMetadata) Primary() bool {
+	if i.proto == nil {
+		return false
+	}
+	return i.proto.Primary
+}
+
+// Unique returns true if the index is unique.
+func (i *IndexMetadata) Unique() bool {
+	if i.proto == nil {
+		return false
+	}
+	return i.proto.Unique
+}
+
+// ExpressionList returns the list of expressions/columns in the index.
+func (i *IndexMetadata) ExpressionList() []string {
+	if i.proto == nil {
+		return nil
+	}
+	return i.proto.Expressions
 }
 
 // ViewMetadata is the metadata for a view.
