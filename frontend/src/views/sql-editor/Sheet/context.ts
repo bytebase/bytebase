@@ -53,7 +53,7 @@ export interface WorksheetFolderNode extends TreeOption {
   children: WorksheetFolderNode[];
 }
 
-interface WorksheetFilter {
+export interface WorksheetFilter {
   keyword: string;
   onlyShowStarred: boolean;
   showMine: boolean;
@@ -353,20 +353,31 @@ export const useSheetContextByView = (view: SheetViewMode) => {
   return context.viewContexts[view];
 };
 
+export const revealNodes = <T>(
+  node: WorksheetFolderNode,
+  callback: (node: WorksheetFolderNode) => T | undefined
+): T[] => {
+  const results: T[] = [];
+  const item = callback(node);
+  if (item) {
+    results.push(item);
+  }
+  for (const child of node.children) {
+    results.push(...revealNodes(child, callback));
+  }
+  return results;
+};
+
 export const revealWorksheets = <T>(
   node: WorksheetFolderNode,
   callback: (node: WorksheetFolderNode) => T | undefined
 ): T[] => {
-  if (node.worksheet) {
-    const worksheet = callback(node);
-    return worksheet ? [worksheet] : [];
-  }
-
-  const worksheets: T[] = [];
-  for (const child of node.children) {
-    worksheets.push(...revealWorksheets(child, callback));
-  }
-  return worksheets;
+  return revealNodes(node, (node) => {
+    if (!node.worksheet) {
+      return undefined;
+    }
+    return callback(node);
+  });
 };
 
 export const provideSheetContext = () => {

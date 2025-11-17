@@ -27,13 +27,14 @@
     </div>
     <div class="flex-1 flex flex-col gap-y-2 overflow-y-auto worksheet-scroll">
       <SheetTree v-for="view in views" :key="view" :view="view" />
+      <NEmpty v-if="views.length === 0" class="mt-10" />
     </div>
   </div>
 </template>
 
 <script setup lang="tsx">
 import { FunnelIcon } from "lucide-vue-next";
-import { type DropdownOption, NButton, NDropdown } from "naive-ui";
+import { type DropdownOption, NButton, NDropdown, NEmpty } from "naive-ui";
 import { computed, ref } from "vue";
 import { SearchBox } from "@/components/v2";
 import { t } from "@/plugins/i18n";

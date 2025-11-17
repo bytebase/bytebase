@@ -55,7 +55,7 @@
         :selected-keys="selectedKeys"
         :checked-keys="checkedKeys"
         @drop="handleDrop"
-        @update:expanded-keys="(keys: string[]) => expandedKeys = new Set(keys)"
+        @update:expanded-keys="onExpandedKeysUpdate"
         @update:checked-keys="onCheckedKeysUpdate"
       />
     </template>
@@ -112,6 +112,7 @@
 <script setup lang="tsx">
 import { create } from "@bufbuild/protobuf";
 import { useDebounceFn } from "@vueuse/core";
+import { cloneDeep } from "lodash-es";
 import { FolderInputIcon, TrashIcon, XIcon } from "lucide-vue-next";
 import {
   NButton,
@@ -146,6 +147,7 @@ import { useSQLEditorContext } from "@/views/sql-editor/context";
 import SharePopover from "@/views/sql-editor/EditorCommon/SharePopover.vue";
 import {
   openWorksheetByName,
+  revealNodes,
   revealWorksheets,
   type SheetViewMode,
   useSheetContext,
@@ -193,7 +195,10 @@ const {
   handleSharePanelShow,
   handleMenuShow,
   handleClickOutside: handleContextMenuClickOutside,
-} = useDropdown(props.view);
+} = useDropdown(
+  props.view,
+  computed(() => worksheetFilter.value)
+);
 
 const expandedKeysArray = computed(() => Array.from(expandedKeys.value));
 const treeData = computed(() => [sheetTree.value]);
@@ -221,10 +226,20 @@ const onCheckedKeysUpdate = (
   checkedNodes.value = options.filter((node) => node) as WorksheetFolderNode[];
 };
 
+const onExpandedKeysUpdate = (keys: string[]) => {
+  if (expandedKeys.value.size > 1 && keys.length === 0) {
+    // do not clear the expanded keys
+    return;
+  }
+  expandedKeys.value = new Set(keys);
+};
+
 watch(
   () => checkable.value,
-  () => {
-    checkedNodes.value = [];
+  (check) => {
+    if (!check) {
+      checkedNodes.value = [];
+    }
   }
 );
 
@@ -749,6 +764,7 @@ const handleContextMenuSelect = async (key: DropdownOptionType) => {
       break;
     case "multi-select":
       checkable.value = true;
+      checkedNodes.value = revealNodes(contextMenuContext.node, (n) => n);
       break;
     default:
       break;
@@ -861,10 +877,17 @@ const handleDuplicateFolderName = (
   return _defer.promise;
 };
 
-const handleDrop = async ({ node, dragNode }: TreeDropInfo) => {
-  const parentNode = node as WorksheetFolderNode;
-  const draggedNode = dragNode as WorksheetFolderNode;
+const handleDrop = async ({ node, dragNode, dropPosition }: TreeDropInfo) => {
+  let parentNode = node as WorksheetFolderNode | undefined;
+  if (parentNode && parentNode.worksheet) {
+    // CANNOT drop a node into the worksheet node.
+    parentNode = findParentNode(sheetTree.value, parentNode.key);
+  }
+  if (!parentNode) {
+    return;
+  }
 
+  const draggedNode = dragNode as WorksheetFolderNode;
   const oldParentNode = findParentNode(sheetTree.value, draggedNode.key);
   if (!oldParentNode) {
     return;
@@ -874,10 +897,8 @@ const handleDrop = async ({ node, dragNode }: TreeDropInfo) => {
     return;
   }
 
-  const nodeKeys = draggedNode.key.split("/");
-  const oldParentKey = nodeKeys.slice(0, -1).join("/");
-  const nodeKey = nodeKeys.slice(-1)[0];
-  const newKey = folderContext.ensureFolderPath(`${parentNode.key}/${nodeKey}`);
+  const nodeId = draggedNode.key.split("/").slice(-1)[0];
+  const newKey = folderContext.ensureFolderPath(`${parentNode.key}/${nodeId}`);
 
   const merge = await handleDuplicateFolderName(parentNode, newKey);
   if (!merge) {
@@ -887,8 +908,9 @@ const handleDrop = async ({ node, dragNode }: TreeDropInfo) => {
   const shouldCloseOldParent =
     !draggedNode.worksheet && oldParentNode.children.length === 1;
 
-  await updateWorksheetFolders(draggedNode, oldParentKey, parentNode.key);
+  await updateWorksheetFolders(draggedNode, oldParentNode.key, parentNode.key);
   if (!draggedNode.worksheet) {
+    // if the dragged node is a folder, we also need to move it in the folder context.
     folderContext.moveFolder(draggedNode.key, newKey);
   }
 
