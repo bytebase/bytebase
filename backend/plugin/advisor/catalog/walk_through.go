@@ -104,6 +104,12 @@ func WalkThrough(d *model.DatabaseMetadata, engineType storepb.Engine, ast any) 
 	ignoreCaseSensitive := !d.GetIsObjectCaseSensitive()
 	dbState := NewDatabaseState(proto, ignoreCaseSensitive, engineType)
 
+	return walkThroughDatabaseState(dbState, engineType, ast)
+}
+
+// walkThroughDatabaseState performs walk-through on a DatabaseState.
+// This is the internal implementation that processes the AST.
+func walkThroughDatabaseState(dbState *DatabaseState, engineType storepb.Engine, ast any) error {
 	// Perform walk-through on DatabaseState, which modifies the proto in-place
 	switch engineType {
 	case storepb.Engine_TIDB:

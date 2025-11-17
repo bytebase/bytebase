@@ -16,7 +16,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 type testData struct {
@@ -184,16 +183,11 @@ func runWalkThroughTest(t *testing.T, file string, engineType storepb.Engine, or
 			proto = &storepb.DatabaseSchemaMetadata{}
 		}
 
-		// Create DatabaseMetadata from proto
-		isCaseSensitive := !test.IgnoreCaseSensitive
-		isDetailCaseSensitive := isCaseSensitive
-		if engineType == storepb.Engine_MYSQL || engineType == storepb.Engine_MARIADB || engineType == storepb.Engine_TIDB {
-			isDetailCaseSensitive = false // MySQL/MariaDB/TiDB are case-insensitive for column/index names
-		}
-		dbMetadata := model.NewDatabaseMetadata(proto, isCaseSensitive, isDetailCaseSensitive)
+		// Create DatabaseState for walk-through (legacy approach for tests)
+		state := NewDatabaseState(proto, test.IgnoreCaseSensitive, engineType)
 
 		asts, _ := sm.GetASTsForChecks(engineType, test.Statement)
-		err := WalkThrough(dbMetadata, engineType, asts)
+		err := walkThroughDatabaseState(state, engineType, asts)
 		if err != nil {
 			err, yes := err.(*WalkThroughError)
 			require.True(t, yes)
@@ -205,7 +199,7 @@ func runWalkThroughTest(t *testing.T, file string, engineType storepb.Engine, or
 		want := &storepb.DatabaseSchemaMetadata{}
 		err = common.ProtojsonUnmarshaler.Unmarshal([]byte(test.Want), want)
 		require.NoError(t, err)
-		result := dbMetadata.GetProto()
+		result := state.convertToDatabaseMetadata()
 		diff := cmp.Diff(want, result, protocmp.Transform())
 		require.Empty(t, diff)
 	}
@@ -231,13 +225,8 @@ func runANTLRWalkThroughTest(t *testing.T, file string, engineType storepb.Engin
 			proto = &storepb.DatabaseSchemaMetadata{}
 		}
 
-		// Create DatabaseMetadata from proto
-		isCaseSensitive := !test.IgnoreCaseSensitive
-		isDetailCaseSensitive := isCaseSensitive
-		if engineType == storepb.Engine_MYSQL || engineType == storepb.Engine_MARIADB || engineType == storepb.Engine_TIDB {
-			isDetailCaseSensitive = false // MySQL/MariaDB/TiDB are case-insensitive for column/index names
-		}
-		dbMetadata := model.NewDatabaseMetadata(proto, isCaseSensitive, isDetailCaseSensitive)
+		// Create DatabaseState for walk-through (legacy approach for tests)
+		state := NewDatabaseState(proto, test.IgnoreCaseSensitive, engineType)
 
 		// Parse using ANTLR parser instead of legacy parser
 		parseResult, parseErr := pgparser.ParsePostgreSQL(test.Statement)
@@ -245,8 +234,8 @@ func runANTLRWalkThroughTest(t *testing.T, file string, engineType storepb.Engin
 			t.Fatalf("Failed to parse SQL with ANTLR: %v\nSQL: %s", parseErr, test.Statement)
 		}
 
-		// Call WalkThrough with ANTLR tree
-		err := WalkThrough(dbMetadata, engineType, parseResult)
+		// Call walkThroughDatabaseState with ANTLR tree
+		err := walkThroughDatabaseState(state, engineType, parseResult)
 		if err != nil {
 			err, yes := err.(*WalkThroughError)
 			require.True(t, yes)
@@ -258,7 +247,7 @@ func runANTLRWalkThroughTest(t *testing.T, file string, engineType storepb.Engin
 		want := &storepb.DatabaseSchemaMetadata{}
 		err = common.ProtojsonUnmarshaler.Unmarshal([]byte(test.Want), want)
 		require.NoError(t, err)
-		result := dbMetadata.GetProto()
+		result := state.convertToDatabaseMetadata()
 		diff := cmp.Diff(want, result, protocmp.Transform())
 		require.Empty(t, diff)
 	}
