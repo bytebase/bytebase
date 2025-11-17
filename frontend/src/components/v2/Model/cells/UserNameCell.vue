@@ -1,10 +1,13 @@
 <template>
   <div class="flex flex-row items-center gap-x-2">
-    <UserAvatar :user="user" />
+    <UserAvatar :user="user" :size="avatarSize" />
 
     <div class="flex flex-row items-center">
       <div class="flex flex-col">
-        <div class="flex flex-row items-center gap-x-2">
+        <div :class="[
+          'flex flex-row items-center gap-x-1',
+          user.state === State.DELETED ? 'line-through' : ''
+        ]">
           <span
             v-if="onClickUser"
             class="normal-link truncate max-w-40"
@@ -25,27 +28,38 @@
           >
             {{ user.title }}
           </router-link>
-          <NTag v-if="user.profile?.source" size="small" round type="primary">
+          <slot name="suffix">
+          </slot>
+          <NTag v-if="user.state === State.DELETED" :size="tagSize" type="error" round>
+            {{$t("common.deleted")}}
+          </NTag>
+          <NTag v-if="user.profile?.source" :size="tagSize" round type="primary">
             {{ user.profile.source }}
           </NTag>
-          <YouTag v-if="currentUserV1.name === user.name" />
-          <SystemBotTag v-if="user.name === SYSTEM_BOT_USER_NAME" />
+          <YouTag v-if="currentUserV1.name === user.name" :size="tagSize"/>
+          <SystemBotTag v-if="user.name === SYSTEM_BOT_USER_NAME" :size="tagSize"/>
           <ServiceAccountTag
             v-if="user.userType === UserType.SERVICE_ACCOUNT"
+            :size="tagSize"
           />
-          <span
+          <NTag v-if="user.mfaEnabled" :size="tagSize" type="success" round>
+            {{ $t("two-factor.enabled") }}
+          </NTag>
+          <!-- <span
             v-if="user.mfaEnabled"
             class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs bg-green-800 text-green-100"
           >
             {{ $t("two-factor.enabled") }}
-          </span>
+          </span> -->
         </div>
-        <span v-if="user.name !== SYSTEM_BOT_USER_NAME" class="textlabel">
-          {{ user.email }}
-        </span>
+        <slot name="footer">
+          <span v-if="user.name !== SYSTEM_BOT_USER_NAME" class="textinfolabel">
+            {{ user.email }}
+          </span>
+        </slot>
       </div>
       <div
-        v-if="user.userType === UserType.SERVICE_ACCOUNT && allowEdit"
+        v-if="user.state === State.ACTIVE && user.userType === UserType.SERVICE_ACCOUNT && allowEdit && hasPermission"
         class="ml-3 text-xs"
       >
         <CopyButton
@@ -85,13 +99,19 @@ import UserAvatar from "@/components/User/UserAvatar.vue";
 import { CopyButton } from "@/components/v2";
 import { useCurrentUserV1, usePermissionStore } from "@/store";
 import { SYSTEM_BOT_USER_NAME } from "@/types";
+import { State } from "@/types/proto-es/v1/common_pb";
 import { type User, UserType } from "@/types/proto-es/v1/user_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
-defineProps<{
-  user: User;
-  onClickUser?: (user: User, event: MouseEvent) => void;
-}>();
+const props = withDefaults(
+  defineProps<{
+    user: User;
+    allowEdit?: boolean;
+    size?: "small" | "medium";
+    onClickUser?: (user: User, event: MouseEvent) => void;
+  }>(),
+  { allowEdit: true, size: "medium" }
+);
 
 defineEmits<{
   (event: "reset-service-key", user: User): void;
@@ -100,7 +120,21 @@ defineEmits<{
 const currentUserV1 = useCurrentUserV1();
 const permissionStore = usePermissionStore();
 
-const allowEdit = computed(() => {
+const hasPermission = computed(() => {
   return hasWorkspacePermissionV2("bb.policies.update");
+});
+
+const tagSize = computed(() => {
+  if (props.size === "small") {
+    return "tiny";
+  }
+  return "small";
+});
+
+const avatarSize = computed(() => {
+  if (props.size === "small") {
+    return "SMALL";
+  }
+  return "NORMAL";
 });
 </script>

@@ -410,7 +410,6 @@
       "subscription": "(有料プランにアップグレードするとキャラクター管理が可能になります)"
     },
     "members": {
-      "inactive": "非アクティブ",
       "inactive-users": "非アクティブユーザー",
       "table": {
         "account": "アカウント",

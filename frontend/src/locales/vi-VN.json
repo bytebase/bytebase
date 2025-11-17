@@ -410,7 +410,6 @@
       "subscription": "(Nâng cấp để kích hoạt quản lý vai trò)"
     },
     "members": {
-      "inactive": "Không hoạt động",
       "inactive-users": "Người dùng không hoạt động",
       "table": {
         "account": "Tài khoản",

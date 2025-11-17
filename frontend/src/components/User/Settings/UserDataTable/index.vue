@@ -28,6 +28,7 @@ import { NDataTable } from "naive-ui";
 import { computed, h, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBAlert } from "@/bbkit";
+import { UserNameCell } from "@/components/v2/Model/cells";
 import {
   pushNotification,
   useGroupStore,
@@ -41,7 +42,6 @@ import {
 } from "@/types/proto-es/v1/user_service_pb";
 import { toClipboard } from "@/utils";
 import GroupsCell from "./cells/GroupsCell.vue";
-import UserNameCell from "./cells/UserNameCell.vue";
 import UserOperationsCell from "./cells/UserOperationsCell.vue";
 import UserRolesCell from "./cells/UserRolesCell.vue";
 
