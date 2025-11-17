@@ -14,8 +14,8 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -49,7 +49,7 @@ func (*IndexTotalNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.C
 	}
 
 	// Create the rule
-	rule := NewIndexTotalNumberLimitRule(level, string(checkCtx.Rule.Type), payload.Number, checkCtx.FinalCatalog)
+	rule := NewIndexTotalNumberLimitRule(level, string(checkCtx.Rule.Type), payload.Number, checkCtx.FinalMetadata)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
@@ -66,21 +66,21 @@ func (*IndexTotalNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.C
 // IndexTotalNumberLimitRule checks for index total number limit.
 type IndexTotalNumberLimitRule struct {
 	BaseRule
-	max          int
-	lineForTable map[string]int
-	finalCatalog *catalog.DatabaseState
+	max           int
+	lineForTable  map[string]int
+	finalMetadata *model.DatabaseMetadata
 }
 
 // NewIndexTotalNumberLimitRule creates a new IndexTotalNumberLimitRule.
-func NewIndexTotalNumberLimitRule(level storepb.Advice_Status, title string, maxIndexes int, finalCatalog *catalog.DatabaseState) *IndexTotalNumberLimitRule {
+func NewIndexTotalNumberLimitRule(level storepb.Advice_Status, title string, maxIndexes int, finalMetadata *model.DatabaseMetadata) *IndexTotalNumberLimitRule {
 	return &IndexTotalNumberLimitRule{
 		BaseRule: BaseRule{
 			level: level,
 			title: title,
 		},
-		max:          maxIndexes,
-		lineForTable: make(map[string]int),
-		finalCatalog: finalCatalog,
+		max:           maxIndexes,
+		lineForTable:  make(map[string]int),
+		finalMetadata: finalMetadata,
 	}
 }
 
@@ -132,14 +132,17 @@ func (r *IndexTotalNumberLimitRule) generateAdvice() []*storepb.Advice {
 	})
 
 	for _, table := range tableList {
-		dbState := r.finalCatalog
-		tableInfo := dbState.GetTable("", table.name)
-		if tableInfo != nil && tableInfo.CountIndex() > r.max {
+		schema := r.finalMetadata.GetSchema("")
+		if schema == nil {
+			continue
+		}
+		tableInfo := schema.GetTable(table.name)
+		if tableInfo != nil && len(tableInfo.GetProto().Indexes) > r.max {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
 				Code:          code.IndexCountExceedsLimit.Int32(),
 				Title:         r.title,
-				Content:       fmt.Sprintf("The count of index in table `%s` should be no more than %d, but found %d", table.name, r.max, tableInfo.CountIndex()),
+				Content:       fmt.Sprintf("The count of index in table `%s` should be no more than %d, but found %d", table.name, r.max, len(tableInfo.GetProto().Indexes)),
 				StartPosition: common.ConvertANTLRLineToPosition(table.line),
 			})
 		}

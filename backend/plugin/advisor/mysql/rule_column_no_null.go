@@ -12,9 +12,9 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -44,7 +44,7 @@ func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) (
 	}
 
 	// Create the rule
-	rule := NewColumnNoNullRule(level, string(checkCtx.Rule.Type), checkCtx.FinalCatalog)
+	rule := NewColumnNoNullRule(level, string(checkCtx.Rule.Type), checkCtx.FinalMetadata)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
@@ -74,19 +74,19 @@ func (c columnName) name() string {
 // ColumnNoNullRule checks for column no NULL value.
 type ColumnNoNullRule struct {
 	BaseRule
-	columnSet    map[string]columnName
-	finalCatalog *catalog.DatabaseState
+	columnSet     map[string]columnName
+	finalMetadata *model.DatabaseMetadata
 }
 
 // NewColumnNoNullRule creates a new ColumnNoNullRule.
-func NewColumnNoNullRule(level storepb.Advice_Status, title string, finalCatalog *catalog.DatabaseState) *ColumnNoNullRule {
+func NewColumnNoNullRule(level storepb.Advice_Status, title string, finalMetadata *model.DatabaseMetadata) *ColumnNoNullRule {
 	return &ColumnNoNullRule{
 		BaseRule: BaseRule{
 			level: level,
 			title: title,
 		},
-		columnSet:    make(map[string]columnName),
-		finalCatalog: finalCatalog,
+		columnSet:     make(map[string]columnName),
+		finalMetadata: finalMetadata,
 	}
 }
 
@@ -135,16 +135,16 @@ func (r *ColumnNoNullRule) generateAdvice() {
 	})
 
 	for _, column := range columnList {
-		schema, _ := r.finalCatalog.GetSchema("")
+		schema := r.finalMetadata.GetSchema("")
 		if schema == nil {
 			continue
 		}
-		table, _ := schema.GetTable(column.tableName)
+		table := schema.GetTable(column.tableName)
 		if table == nil {
 			continue
 		}
-		col, _ := table.GetColumn(column.columnName)
-		if col != nil && col.Nullable() {
+		col := table.GetColumn(column.columnName)
+		if col != nil && col.Nullable {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
 				Code:          code.ColumnCannotNull.Int32(),

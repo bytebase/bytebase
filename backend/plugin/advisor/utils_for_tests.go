@@ -19,7 +19,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	database "github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -216,8 +215,8 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 		originalSchema := model.NewDatabaseSchema(catalogMetadata, nil, nil, dbType, isCaseSensitive)
 		originalMetadata := originalSchema.GetDatabaseMetadata()
 
-		// Create FinalCatalog as DatabaseState (mutable for walk-through)
-		finalCatalog := catalog.NewDatabaseState(catalogMetadata, !isCaseSensitive, dbType)
+		// Create FinalMetadata as DatabaseMetadata (mutable for walk-through)
+		finalMetadata := model.NewDatabaseMetadata(catalogMetadata, isCaseSensitive, isCaseSensitive)
 
 		payload, err := SetDefaultSQLReviewRulePayload(rule, dbType)
 		require.NoError(t, err)
@@ -235,7 +234,7 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 			Collation:                "",
 			DBType:                   dbType,
 			OriginalMetadata:         originalMetadata,
-			FinalCatalog:             finalCatalog,
+			FinalMetadata:            finalMetadata,
 			Driver:                   nil,
 			CurrentDatabase:          curDB,
 			DBSchema:                 schemaMetadata,

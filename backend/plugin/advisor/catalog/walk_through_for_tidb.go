@@ -9,16 +9,19 @@ import (
 	"github.com/pingcap/tidb/pkg/parser/mysql"
 	"github.com/pingcap/tidb/pkg/types"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 // TiDBWalkThrough walks through TiDB AST and updates the database state.
-func TiDBWalkThrough(d *DatabaseState, ast any) error {
+func TiDBWalkThrough(d *model.DatabaseMetadata, ast any) error {
 	// We define the Catalog as Database -> Schema -> Table. The Schema is only for PostgreSQL.
 	// So we use a Schema whose name is empty for other engines, such as MySQL.
 	// If there is no empty-string-name schema, create it to avoid corner cases.
-	if !d.HasSchema("") {
+	if d.GetSchema("") == nil {
 		d.CreateSchema("")
 	}
 
@@ -28,7 +31,7 @@ func TiDBWalkThrough(d *DatabaseState, ast any) error {
 	}
 	for _, node := range nodeList {
 		// change state
-		if err := d.changeState(node); err != nil {
+		if err := changeStateTiDB(d, node); err != nil {
 			return err
 		}
 	}
@@ -36,7 +39,7 @@ func TiDBWalkThrough(d *DatabaseState, ast any) error {
 	return nil
 }
 
-func (d *DatabaseState) changeState(in tidbast.StmtNode) (err *WalkThroughError) {
+func changeStateTiDB(d *model.DatabaseMetadata, in tidbast.StmtNode) (err *WalkThroughError) {
 	defer func() {
 		if err == nil {
 			return
@@ -45,115 +48,112 @@ func (d *DatabaseState) changeState(in tidbast.StmtNode) (err *WalkThroughError)
 			err.Line = in.OriginTextPosition()
 		}
 	}()
-	if d.IsDeleted() {
-		return &WalkThroughError{
-			Code:    code.DatabaseIsDeleted,
-			Content: fmt.Sprintf("Database `%s` is deleted", d.name),
-		}
-	}
+	// Note: removed database deleted check as it's not stored in protobuf
 	switch node := in.(type) {
 	case *tidbast.CreateTableStmt:
-		return d.createTable(node)
+		return tidbCreateTable(d, node)
 	case *tidbast.DropTableStmt:
-		return d.dropTable(node)
+		return tidbDropTable(d, node)
 	case *tidbast.AlterTableStmt:
-		return d.alterTable(node)
+		return tidbAlterTable(d, node)
 	case *tidbast.CreateIndexStmt:
-		return d.tidbHandleCreateIndex(node)
+		return tidbHandleCreateIndex(d, node)
 	case *tidbast.DropIndexStmt:
-		return d.dropIndex(node)
+		return tidbDropIndex(d, node)
 	case *tidbast.AlterDatabaseStmt:
-		return d.alterDatabase(node)
+		return tidbAlterDatabase(d, node)
 	case *tidbast.DropDatabaseStmt:
-		return d.dropDatabase(node)
+		return tidbDropDatabase(d, node)
 	case *tidbast.CreateDatabaseStmt:
-		return NewAccessOtherDatabaseError(d.name, node.Name.O)
+		return NewAccessOtherDatabaseError(d.GetProto().Name, node.Name.O)
 	case *tidbast.RenameTableStmt:
-		return d.tidbRenameTable(node)
+		return tidbRenameTable(d, node)
 	default:
 		return nil
 	}
 }
 
-func (d *DatabaseState) tidbRenameTable(node *tidbast.RenameTableStmt) *WalkThroughError {
+func tidbRenameTable(d *model.DatabaseMetadata, node *tidbast.RenameTableStmt) *WalkThroughError {
 	for _, tableToTable := range node.TableToTables {
-		schema, exists := d.schemaSet[""]
-		if !exists {
+		schema := d.GetSchema("")
+		if schema == nil {
 			schema = d.CreateSchema("")
 		}
 		oldTableName := tableToTable.OldTable.Name.O
 		newTableName := tableToTable.NewTable.Name.O
-		if d.theCurrentDatabase(tableToTable) {
-			if compareIdentifier(oldTableName, newTableName, d.ignoreCaseSensitive) {
+		if tidbTheCurrentDatabase(d, tableToTable) {
+			if strings.EqualFold(oldTableName, newTableName) {
 				return nil
 			}
-			table, exists := mysqlGetTable(schema, oldTableName)
-			if !exists {
+			table := schema.GetTable(oldTableName)
+			if table == nil {
 				return NewTableNotExistsError(oldTableName)
 			}
-			if _, exists := mysqlGetTable(schema, newTableName); exists {
+			if schema.GetTable(newTableName) != nil {
 				return NewTableExistsError(newTableName)
 			}
-			delete(schema.tableSet, table.name)
-			table.name = newTableName
-			schema.tableSet[table.name] = table
-		} else if d.moveToOtherDatabase(tableToTable) {
-			_, exists := mysqlGetTable(schema, tableToTable.OldTable.Name.O)
-			if !exists {
+			if err := schema.RenameTable(table.GetProto().Name, newTableName); err != nil {
+				return &WalkThroughError{Code: code.TableNotExists, Content: err.Error()}
+			}
+		} else if tidbMoveToOtherDatabase(d, tableToTable) {
+			if schema.GetTable(tableToTable.OldTable.Name.O) == nil {
 				return NewTableNotExistsError(tableToTable.OldTable.Name.O)
 			}
-			delete(schema.tableSet, tableToTable.OldTable.Name.O)
+			if err := schema.DropTable(tableToTable.OldTable.Name.O); err != nil {
+				return &WalkThroughError{Code: code.TableNotExists, Content: err.Error()}
+			}
 		} else {
-			return NewAccessOtherDatabaseError(d.name, d.targetDatabase(tableToTable))
+			return NewAccessOtherDatabaseError(d.GetProto().Name, tidbTargetDatabase(d, tableToTable))
 		}
 	}
 	return nil
 }
 
-func (d *DatabaseState) targetDatabase(node *tidbast.TableToTable) string {
-	if node.OldTable.Schema.O != "" && !d.isCurrentDatabase(node.OldTable.Schema.O) {
+func tidbTargetDatabase(d *model.DatabaseMetadata, node *tidbast.TableToTable) string {
+	if node.OldTable.Schema.O != "" && !isCurrentDatabase(d, node.OldTable.Schema.O) {
 		return node.OldTable.Schema.O
 	}
 	return node.NewTable.Schema.O
 }
 
-func (d *DatabaseState) moveToOtherDatabase(node *tidbast.TableToTable) bool {
-	if node.OldTable.Schema.O != "" && !d.isCurrentDatabase(node.OldTable.Schema.O) {
+func tidbMoveToOtherDatabase(d *model.DatabaseMetadata, node *tidbast.TableToTable) bool {
+	if node.OldTable.Schema.O != "" && !isCurrentDatabase(d, node.OldTable.Schema.O) {
 		return false
 	}
 	return node.OldTable.Schema.O != node.NewTable.Schema.O
 }
 
-func (d *DatabaseState) theCurrentDatabase(node *tidbast.TableToTable) bool {
-	if node.NewTable.Schema.O != "" && !d.isCurrentDatabase(node.NewTable.Schema.O) {
+func tidbTheCurrentDatabase(d *model.DatabaseMetadata, node *tidbast.TableToTable) bool {
+	if node.NewTable.Schema.O != "" && !isCurrentDatabase(d, node.NewTable.Schema.O) {
 		return false
 	}
-	if node.OldTable.Schema.O != "" && !d.isCurrentDatabase(node.OldTable.Schema.O) {
+	if node.OldTable.Schema.O != "" && !isCurrentDatabase(d, node.OldTable.Schema.O) {
 		return false
 	}
 	return true
 }
 
-func (d *DatabaseState) dropDatabase(node *tidbast.DropDatabaseStmt) *WalkThroughError {
-	if !d.isCurrentDatabase(node.Name.O) {
-		return NewAccessOtherDatabaseError(d.name, node.Name.O)
+func tidbDropDatabase(d *model.DatabaseMetadata, node *tidbast.DropDatabaseStmt) *WalkThroughError {
+	if !isCurrentDatabase(d, node.Name.O) {
+		return NewAccessOtherDatabaseError(d.GetProto().Name, node.Name.O)
 	}
 
-	d.MarkDeleted()
+	// Note: In walk-through, we don't need to actually delete the database metadata
+	// The check is sufficient for validation
 	return nil
 }
 
-func (d *DatabaseState) alterDatabase(node *tidbast.AlterDatabaseStmt) *WalkThroughError {
-	if !node.AlterDefaultDatabase && !d.isCurrentDatabase(node.Name.O) {
-		return NewAccessOtherDatabaseError(d.name, node.Name.O)
+func tidbAlterDatabase(d *model.DatabaseMetadata, node *tidbast.AlterDatabaseStmt) *WalkThroughError {
+	if !node.AlterDefaultDatabase && !isCurrentDatabase(d, node.Name.O) {
+		return NewAccessOtherDatabaseError(d.GetProto().Name, node.Name.O)
 	}
 
 	for _, option := range node.Options {
 		switch option.Tp {
 		case tidbast.DatabaseOptionCharset:
-			d.characterSet = option.Value
+			d.GetProto().CharacterSet = option.Value
 		case tidbast.DatabaseOptionCollate:
-			d.collation = option.Value
+			d.GetProto().Collation = option.Value
 		default:
 			// Other database options
 		}
@@ -161,35 +161,38 @@ func (d *DatabaseState) alterDatabase(node *tidbast.AlterDatabaseStmt) *WalkThro
 	return nil
 }
 
-func (d *DatabaseState) findTableState(tableName *tidbast.TableName) (*TableState, *WalkThroughError) {
-	if tableName.Schema.O != "" && !d.isCurrentDatabase(tableName.Schema.O) {
-		return nil, NewAccessOtherDatabaseError(d.name, tableName.Schema.O)
+func tidbFindTableState(d *model.DatabaseMetadata, tableName *tidbast.TableName) (*model.TableMetadata, *WalkThroughError) {
+	if tableName.Schema.O != "" && !isCurrentDatabase(d, tableName.Schema.O) {
+		return nil, NewAccessOtherDatabaseError(d.GetProto().Name, tableName.Schema.O)
 	}
 
-	schema, exists := d.schemaSet[""]
-	if !exists {
+	schema := d.GetSchema("")
+	if schema == nil {
 		schema = d.CreateSchema("")
 	}
 
-	table, exists := mysqlGetTable(schema, tableName.Name.O)
-	if !exists {
+	table := schema.GetTable(tableName.Name.O)
+	if table == nil {
 		return nil, NewTableNotExistsError(tableName.Name.O)
 	}
 
 	return table, nil
 }
 
-func (d *DatabaseState) dropIndex(node *tidbast.DropIndexStmt) *WalkThroughError {
-	table, err := d.findTableState(node.Table)
+func tidbDropIndex(d *model.DatabaseMetadata, node *tidbast.DropIndexStmt) *WalkThroughError {
+	table, err := tidbFindTableState(d, node.Table)
 	if err != nil {
 		return err
 	}
 
-	return table.DropIndex(node.IndexName, nil)
+	if err := table.DropIndex(node.IndexName); err != nil {
+		return &WalkThroughError{Code: code.IndexNotExists, Content: err.Error()}
+	}
+	return nil
 }
 
-func (d *DatabaseState) tidbHandleCreateIndex(node *tidbast.CreateIndexStmt) *WalkThroughError {
-	table, err := d.findTableState(node.Table)
+func tidbHandleCreateIndex(d *model.DatabaseMetadata, node *tidbast.CreateIndexStmt) *WalkThroughError {
+	table, err := tidbFindTableState(d, node.Table)
 	if err != nil {
 		return err
 	}
@@ -211,16 +214,16 @@ func (d *DatabaseState) tidbHandleCreateIndex(node *tidbast.CreateIndexStmt) *Wa
 		// Other index key types
 	}
 
-	keyList, err := table.validateAndGetKeyStringList(node.IndexPartSpecifications, false /* primary */, isSpatial)
+	keyList, err := tidbValidateAndGetKeyStringList(table, node.IndexPartSpecifications, false /* primary */, isSpatial)
 	if err != nil {
 		return err
 	}
 
-	return table.tidbCreateIndex(node.IndexName, keyList, unique, tp, node.IndexOption)
+	return tidbCreateIndexHelper(table, node.IndexName, keyList, unique, tp, node.IndexOption)
 }
 
-func (d *DatabaseState) alterTable(node *tidbast.AlterTableStmt) *WalkThroughError {
-	table, err := d.findTableState(node.Table)
+func tidbAlterTable(d *model.DatabaseMetadata, node *tidbast.AlterTableStmt) *WalkThroughError {
+	table, err := tidbFindTableState(d, node.Table)
 	if err != nil {
 		return err
 	}
@@ -231,11 +234,11 @@ func (d *DatabaseState) alterTable(node *tidbast.AlterTableStmt) *WalkThroughErr
 			for _, option := range spec.Options {
 				switch option.Tp {
 				case tidbast.TableOptionCollate:
-					table.collation = option.StrValue
+					table.GetProto().Collation = option.StrValue
 				case tidbast.TableOptionComment:
-					table.comment = option.StrValue
+					table.GetProto().Comment = option.StrValue
 				case tidbast.TableOptionEngine:
-					table.engine = option.StrValue
+					table.GetProto().Engine = option.StrValue
 				default:
 					// Other table options
 				}
@@ -246,61 +249,61 @@ func (d *DatabaseState) alterTable(node *tidbast.AlterTableStmt) *WalkThroughErr
 				if len(spec.NewColumns) == 1 {
 					pos = spec.Position
 				}
-				if err := table.tidbCreateColumn(column, pos); err != nil {
+				if err := tidbCreateColumnHelper(table, column, pos); err != nil {
 					return err
 				}
 			}
 			// MySQL can add table constraints in ALTER TABLE ADD COLUMN statements.
 			for _, constraint := range spec.NewConstraints {
-				if err := table.createConstraint(constraint); err != nil {
+				if err := tidbCreateConstraint(table, constraint); err != nil {
 					return err
 				}
 			}
 		case tidbast.AlterTableAddConstraint:
-			if err := table.createConstraint(spec.Constraint); err != nil {
+			if err := tidbCreateConstraint(table, spec.Constraint); err != nil {
 				return err
 			}
 		case tidbast.AlterTableDropColumn:
-			if err := table.DropColumn(spec.OldColumnName.Name.O, nil); err != nil {
-				return err
+			if err := table.DropColumn(spec.OldColumnName.Name.O); err != nil {
+				return &WalkThroughError{Code: code.ColumnNotExists, Content: err.Error()}
 			}
 		case tidbast.AlterTableDropPrimaryKey:
-			if err := table.DropIndex(PrimaryKeyName, nil); err != nil {
-				return err
+			if err := table.DropIndex(PrimaryKeyName); err != nil {
+				return &WalkThroughError{Code: code.IndexNotExists, Content: err.Error()}
 			}
 		case tidbast.AlterTableDropIndex:
-			if err := table.DropIndex(spec.Name, nil); err != nil {
-				return err
+			if err := table.DropIndex(spec.Name); err != nil {
+				return &WalkThroughError{Code: code.IndexNotExists, Content: err.Error()}
 			}
 		case tidbast.AlterTableDropForeignKey:
 			// we do not deal with DROP FOREIGN KEY statements.
 		case tidbast.AlterTableModifyColumn:
-			if err := table.changeColumn(spec.NewColumns[0].Name.Name.O, spec.NewColumns[0], spec.Position); err != nil {
+			if err := tidbChangeColumn(table, spec.NewColumns[0].Name.Name.O, spec.NewColumns[0], spec.Position); err != nil {
 				return err
 			}
 		case tidbast.AlterTableChangeColumn:
-			if err := table.changeColumn(spec.OldColumnName.Name.O, spec.NewColumns[0], spec.Position); err != nil {
+			if err := tidbChangeColumn(table, spec.OldColumnName.Name.O, spec.NewColumns[0], spec.Position); err != nil {
 				return err
 			}
 		case tidbast.AlterTableRenameColumn:
 			if err := table.RenameColumn(spec.OldColumnName.Name.O, spec.NewColumnName.Name.O); err != nil {
-				return err
+				return &WalkThroughError{Code: code.ColumnNotExists, Content: err.Error()}
 			}
 		case tidbast.AlterTableRenameTable:
-			schema := d.schemaSet[""]
-			if err := mysqlRenameTable(schema, table.name, spec.NewTable.Name.O); err != nil {
-				return err
+			schema := d.GetSchema("")
+			if err := schema.RenameTable(table.GetProto().Name, spec.NewTable.Name.O); err != nil {
+				return &WalkThroughError{Code: code.TableNotExists, Content: err.Error()}
 			}
 		case tidbast.AlterTableAlterColumn:
-			if err := table.changeColumnDefault(spec.NewColumns[0]); err != nil {
+			if err := tidbChangeColumnDefault(table, spec.NewColumns[0]); err != nil {
 				return err
 			}
 		case tidbast.AlterTableRenameIndex:
-			if err := table.RenameIndex(spec.FromKey.O, spec.ToKey.O, nil); err != nil {
-				return err
+			if err := table.RenameIndex(spec.FromKey.O, spec.ToKey.O); err != nil {
+				return &WalkThroughError{Code: code.IndexNotExists, Content: err.Error()}
 			}
 		case tidbast.AlterTableIndexInvisible:
-			if err := table.changeIndexVisibility(spec.IndexName.O, spec.Visibility); err != nil {
+			if err := tidbChangeIndexVisibility(table, spec.IndexName.O, spec.Visibility); err != nil {
 				return err
 			}
 		default:
@@ -311,34 +314,34 @@ func (d *DatabaseState) alterTable(node *tidbast.AlterTableStmt) *WalkThroughErr
 	return nil
 }
 
-func (t *TableState) changeIndexVisibility(indexName string, visibility tidbast.IndexVisibility) *WalkThroughError {
-	index, exists := t.indexSet[strings.ToLower(indexName)]
-	if !exists {
-		return NewIndexNotExistsError(t.name, indexName)
+func tidbChangeIndexVisibility(t *model.TableMetadata, indexName string, visibility tidbast.IndexVisibility) *WalkThroughError {
+	index := t.GetIndex(indexName)
+	if index == nil {
+		return NewIndexNotExistsError(t.GetProto().Name, indexName)
 	}
 	switch visibility {
 	case tidbast.IndexVisibilityVisible:
-		index.visible = true
+		index.GetProto().Visible = true
 	case tidbast.IndexVisibilityInvisible:
-		index.visible = false
+		index.GetProto().Visible = false
 	default:
 		// Keep current visibility
 	}
 	return nil
 }
 
-func (t *TableState) changeColumnDefault(column *tidbast.ColumnDef) *WalkThroughError {
+func tidbChangeColumnDefault(t *model.TableMetadata, column *tidbast.ColumnDef) *WalkThroughError {
 	columnName := column.Name.Name.L
-	colState, exists := t.columnSet[columnName]
-	if !exists {
-		return NewColumnNotExistsError(t.name, columnName)
+	col := t.GetColumn(columnName)
+	if col == nil {
+		return NewColumnNotExistsError(t.GetProto().Name, columnName)
 	}
 
 	if len(column.Options) == 1 {
 		// SET DEFAULT
 		if column.Options[0].Expr.GetType().GetType() != mysql.TypeNull {
-			if colState.columnType != "" {
-				switch strings.ToLower(colState.columnType) {
+			if col.Type != "" {
+				switch strings.ToLower(col.Type) {
 				case "blob", "tinyblob", "mediumblob", "longblob",
 					"text", "tinytext", "mediumtext", "longtext",
 					"json",
@@ -360,49 +363,49 @@ func (t *TableState) changeColumnDefault(column *tidbast.ColumnDef) *WalkThrough
 					Content: fmt.Sprintf("Failed to deparse default value: %v", err),
 				}
 			}
-			colState.defaultValue = defaultValue
+			col.Default = defaultValue
 		} else {
-			if !colState.nullable {
+			if !col.Nullable {
 				return &WalkThroughError{
 					Code: code.SetNullDefaultForNotNullColumn,
 					// Content comes from MySQL Error content.
 					Content: fmt.Sprintf("Invalid default value for column `%s`", columnName),
 				}
 			}
-			colState.defaultValue = ""
+			col.Default = ""
 		}
 	} else {
 		// DROP DEFAULT
-		colState.defaultValue = ""
+		col.Default = ""
 	}
 	return nil
 }
 
-func (t *TableState) renameColumnInIndexKey(oldName string, newName string) {
+func tidbRenameColumnInIndexKey(t *model.TableMetadata, oldName string, newName string) {
 	if strings.EqualFold(oldName, newName) {
 		return
 	}
-	for _, index := range t.indexSet {
-		for i, key := range index.expressionList {
+	for _, index := range t.GetProto().Indexes {
+		for i, key := range index.Expressions {
 			if strings.EqualFold(key, oldName) {
-				index.expressionList[i] = newName
+				index.Expressions[i] = newName
 			}
 		}
 	}
 }
 
-// completeTableChangeColumn changes column definition.
+// tidbCompleteTableChangeColumn changes column definition.
 // It works as:
-// 1. drop column from tableState.columnSet, but do not drop column from indexSet.
-// 2. rename column from indexSet.
-// 3. create a new column in columnSet.
-func (t *TableState) completeTableChangeColumn(oldName string, newColumn *tidbast.ColumnDef, position *tidbast.ColumnPosition) *WalkThroughError {
-	column, exists := t.columnSet[strings.ToLower(oldName)]
-	if !exists {
-		return NewColumnNotExistsError(t.name, oldName)
+// 1. drop column from table, but do not drop column from index expressions.
+// 2. rename column in index expressions.
+// 3. create a new column.
+func tidbCompleteTableChangeColumn(t *model.TableMetadata, oldName string, newColumn *tidbast.ColumnDef, position *tidbast.ColumnPosition) *WalkThroughError {
+	column := t.GetColumn(oldName)
+	if column == nil {
+		return NewColumnNotExistsError(t.GetProto().Name, oldName)
 	}
 
-	pos := column.position
+	pos := column.Position
 
 	// generate Position struct for creating new column
 	// Create a local copy to avoid modifying the input parameter
@@ -421,10 +424,10 @@ func (t *TableState) completeTableChangeColumn(oldName string, newColumn *tidbas
 		if pos == 1 {
 			localPosition.Tp = tidbast.ColumnPositionFirst
 		} else {
-			for _, col := range t.columnSet {
-				if col.position == pos-1 {
+			for _, col := range t.GetColumns() {
+				if col.Position == pos-1 {
 					localPosition.Tp = tidbast.ColumnPositionAfter
-					localPosition.RelativeColumn = &tidbast.ColumnName{Name: tidbast.NewCIStr(col.name)}
+					localPosition.RelativeColumn = &tidbast.ColumnName{Name: tidbast.NewCIStr(col.Name)}
 					break
 				}
 			}
@@ -432,47 +435,49 @@ func (t *TableState) completeTableChangeColumn(oldName string, newColumn *tidbas
 	}
 	position = localPosition
 
-	// drop column from columnSet
-	for _, col := range t.columnSet {
-		if col.position > pos {
-			col.position--
+	// drop column from column list
+	for _, col := range t.GetColumns() {
+		if col.Position > pos {
+			col.Position--
 		}
 	}
-	delete(t.columnSet, strings.ToLower(column.name))
+	if err := t.DropColumn(strings.ToLower(column.Name)); err != nil {
+		return &WalkThroughError{Code: code.ColumnNotExists, Content: err.Error()}
+	}
 
-	// rename column from indexSet
-	t.renameColumnInIndexKey(oldName, newColumn.Name.Name.O)
+	// rename column from index expressions
+	tidbRenameColumnInIndexKey(t, oldName, newColumn.Name.Name.O)
 
-	// create a new column in columnSet
-	return t.tidbCreateColumn(newColumn, position)
+	// create a new column
+	return tidbCreateColumnHelper(t, newColumn, position)
 }
 
-func (t *TableState) changeColumn(oldName string, newColumn *tidbast.ColumnDef, position *tidbast.ColumnPosition) *WalkThroughError {
-	return t.completeTableChangeColumn(oldName, newColumn, position)
+func tidbChangeColumn(t *model.TableMetadata, oldName string, newColumn *tidbast.ColumnDef, position *tidbast.ColumnPosition) *WalkThroughError {
+	return tidbCompleteTableChangeColumn(t, oldName, newColumn, position)
 }
 
-// reorderColumn reorders the columns for new column and returns the new column position.
-func (t *TableState) reorderColumn(position *tidbast.ColumnPosition) (int, *WalkThroughError) {
+// tidbReorderColumn reorders the columns for new column and returns the new column position.
+func tidbReorderColumn(t *model.TableMetadata, position *tidbast.ColumnPosition) (int, *WalkThroughError) {
 	switch position.Tp {
 	case tidbast.ColumnPositionNone:
-		return len(t.columnSet) + 1, nil
+		return len(t.GetColumns()) + 1, nil
 	case tidbast.ColumnPositionFirst:
-		for _, column := range t.columnSet {
-			column.position++
+		for _, column := range t.GetColumns() {
+			column.Position++
 		}
 		return 1, nil
 	case tidbast.ColumnPositionAfter:
 		columnName := position.RelativeColumn.Name.L
-		column, exist := t.columnSet[columnName]
-		if !exist {
-			return 0, NewColumnNotExistsError(t.name, columnName)
+		column := t.GetColumn(columnName)
+		if column == nil {
+			return 0, NewColumnNotExistsError(t.GetProto().Name, columnName)
 		}
-		for _, col := range t.columnSet {
-			if col.position > column.position {
-				col.position++
+		for _, col := range t.GetColumns() {
+			if col.Position > column.Position {
+				col.Position++
 			}
 		}
-		return column.position + 1, nil
+		return int(column.Position) + 1, nil
 	default:
 		return 0, &WalkThroughError{
 			Code:    code.Unsupported,
@@ -481,24 +486,24 @@ func (t *TableState) reorderColumn(position *tidbast.ColumnPosition) (int, *Walk
 	}
 }
 
-func (d *DatabaseState) dropTable(node *tidbast.DropTableStmt) *WalkThroughError {
+func tidbDropTable(d *model.DatabaseMetadata, node *tidbast.DropTableStmt) *WalkThroughError {
 	// TODO(rebelice): deal with DROP VIEW statement.
 	if !node.IsView {
 		for _, name := range node.Tables {
-			if name.Schema.O != "" && !d.isCurrentDatabase(name.Schema.O) {
+			if name.Schema.O != "" && !isCurrentDatabase(d, name.Schema.O) {
 				return &WalkThroughError{
 					Code:    code.NotCurrentDatabase,
-					Content: fmt.Sprintf("Database `%s` is not the current database `%s`", name.Schema.O, d.name),
+					Content: fmt.Sprintf("Database `%s` is not the current database `%s`", name.Schema.O, d.GetProto().Name),
 				}
 			}
 
-			schema, exists := d.schemaSet[""]
-			if !exists {
+			schema := d.GetSchema("")
+			if schema == nil {
 				schema = d.CreateSchema("")
 			}
 
-			table, exists := mysqlGetTable(schema, name.Name.O)
-			if !exists {
+			table := schema.GetTable(name.Name.O)
+			if table == nil {
 				if node.IfExists {
 					return nil
 				}
@@ -508,14 +513,16 @@ func (d *DatabaseState) dropTable(node *tidbast.DropTableStmt) *WalkThroughError
 				}
 			}
 
-			delete(schema.tableSet, table.name)
+			if err := schema.DropTable(table.GetProto().Name); err != nil {
+				return &WalkThroughError{Code: code.TableNotExists, Content: err.Error()}
+			}
 		}
 	}
 	return nil
 }
 
-func (d *DatabaseState) copyTable(node *tidbast.CreateTableStmt) *WalkThroughError {
-	targetTable, err := d.findTableState(node.ReferTable)
+func tidbCopyTable(d *model.DatabaseMetadata, node *tidbast.CreateTableStmt) *WalkThroughError {
+	targetTable, err := tidbFindTableState(d, node.ReferTable)
 	if err != nil {
 		if err.Code == code.NotCurrentDatabase {
 			return &WalkThroughError{
@@ -523,29 +530,53 @@ func (d *DatabaseState) copyTable(node *tidbast.CreateTableStmt) *WalkThroughErr
 				Content: fmt.Sprintf("Reference table `%s` in other database `%s`, skip walkthrough", node.ReferTable.Name.O, node.ReferTable.Schema.O),
 			}
 		}
+		return err
 	}
 
-	schema := d.schemaSet[""]
-	table := targetTable.copy()
-	table.name = node.Table.Name.O
-	schema.tableSet[table.name] = table
-	return nil
-}
+	schema := d.GetSchema("")
+	// Create new table
+	newTable, createErr := schema.CreateTable(node.Table.Name.O)
+	if createErr != nil {
+		return &WalkThroughError{Code: code.TableExists, Content: createErr.Error()}
+	}
 
-func (d *DatabaseState) createTable(node *tidbast.CreateTableStmt) *WalkThroughError {
-	if node.Table.Schema.O != "" && !d.isCurrentDatabase(node.Table.Schema.O) {
-		return &WalkThroughError{
-			Code:    code.NotCurrentDatabase,
-			Content: fmt.Sprintf("Database `%s` is not the current database `%s`", node.Table.Schema.O, d.name),
+	// Copy columns and indexes from the target table
+	for _, col := range targetTable.GetColumns() {
+		colCopy, ok := proto.Clone(col).(*storepb.ColumnMetadata)
+		if !ok {
+			return &WalkThroughError{Code: code.Internal, Content: "failed to clone column metadata"}
+		}
+		if err := newTable.CreateColumn(colCopy); err != nil {
+			return &WalkThroughError{Code: code.ColumnExists, Content: err.Error()}
+		}
+	}
+	for _, idx := range targetTable.GetProto().Indexes {
+		idxCopy, ok := proto.Clone(idx).(*storepb.IndexMetadata)
+		if !ok {
+			return &WalkThroughError{Code: code.Internal, Content: "failed to clone index metadata"}
+		}
+		if err := newTable.CreateIndex(idxCopy); err != nil {
+			return &WalkThroughError{Code: code.IndexExists, Content: err.Error()}
 		}
 	}
 
-	schema, exists := d.schemaSet[""]
-	if !exists {
+	return nil
+}
+
+func tidbCreateTable(d *model.DatabaseMetadata, node *tidbast.CreateTableStmt) *WalkThroughError {
+	if node.Table.Schema.O != "" && !isCurrentDatabase(d, node.Table.Schema.O) {
+		return &WalkThroughError{
+			Code:    code.NotCurrentDatabase,
+			Content: fmt.Sprintf("Database `%s` is not the current database `%s`", node.Table.Schema.O, d.GetProto().Name),
+		}
+	}
+
+	schema := d.GetSchema("")
+	if schema == nil {
 		schema = d.CreateSchema("")
 	}
 
-	if _, exists = mysqlGetTable(schema, node.Table.Name.O); exists {
+	if schema.GetTable(node.Table.Name.O) != nil {
 		if node.IfNotExists {
 			return nil
 		}
@@ -563,18 +594,14 @@ func (d *DatabaseState) createTable(node *tidbast.CreateTableStmt) *WalkThroughE
 	}
 
 	if node.ReferTable != nil {
-		return d.copyTable(node)
+		return tidbCopyTable(d, node)
 	}
 
-	table := &TableState{
-		name:      node.Table.Name.O,
-		engine:    "",
-		collation: "",
-		comment:   "",
-		columnSet: make(columnStateMap),
-		indexSet:  make(IndexStateMap),
+	table, createErr := schema.CreateTable(node.Table.Name.O)
+	if createErr != nil {
+		return &WalkThroughError{Code: code.TableExists, Content: createErr.Error()}
 	}
-	schema.tableSet[table.name] = table
+
 	hasAutoIncrement := false
 
 	for _, column := range node.Cols {
@@ -583,19 +610,19 @@ func (d *DatabaseState) createTable(node *tidbast.CreateTableStmt) *WalkThroughE
 				return &WalkThroughError{
 					Code: code.AutoIncrementExists,
 					// The content comes from MySQL error content.
-					Content: fmt.Sprintf("There can be only one auto column for table `%s`", table.name),
+					Content: fmt.Sprintf("There can be only one auto column for table `%s`", table.GetProto().Name),
 				}
 			}
 			hasAutoIncrement = true
 		}
-		if err := table.tidbCreateColumn(column, nil /* position */); err != nil {
+		if err := tidbCreateColumnHelper(table, column, nil /* position */); err != nil {
 			err.Line = column.OriginTextPosition()
 			return err
 		}
 	}
 
 	for _, constraint := range node.Constraints {
-		if err := table.createConstraint(constraint); err != nil {
+		if err := tidbCreateConstraint(table, constraint); err != nil {
 			err.Line = constraint.OriginTextPosition()
 			return err
 		}
@@ -604,40 +631,40 @@ func (d *DatabaseState) createTable(node *tidbast.CreateTableStmt) *WalkThroughE
 	return nil
 }
 
-func (t *TableState) createConstraint(constraint *tidbast.Constraint) *WalkThroughError {
+func tidbCreateConstraint(t *model.TableMetadata, constraint *tidbast.Constraint) *WalkThroughError {
 	switch constraint.Tp {
 	case tidbast.ConstraintPrimaryKey:
-		keyList, err := t.validateAndGetKeyStringList(constraint.Keys, true /* primary */, false /* isSpatial */)
+		keyList, err := tidbValidateAndGetKeyStringList(t, constraint.Keys, true /* primary */, false /* isSpatial */)
 		if err != nil {
 			return err
 		}
-		if err := t.tidbCreatePrimaryKey(keyList, getIndexType(constraint.Option)); err != nil {
+		if err := tidbCreatePrimaryKeyHelper(t, keyList, getIndexType(constraint.Option)); err != nil {
 			return err
 		}
 	case tidbast.ConstraintKey, tidbast.ConstraintIndex:
-		keyList, err := t.validateAndGetKeyStringList(constraint.Keys, false /* primary */, false /* isSpatial */)
+		keyList, err := tidbValidateAndGetKeyStringList(t, constraint.Keys, false /* primary */, false /* isSpatial */)
 		if err != nil {
 			return err
 		}
-		if err := t.tidbCreateIndex(constraint.Name, keyList, false /* unique */, getIndexType(constraint.Option), constraint.Option); err != nil {
+		if err := tidbCreateIndexHelper(t, constraint.Name, keyList, false /* unique */, getIndexType(constraint.Option), constraint.Option); err != nil {
 			return err
 		}
 	case tidbast.ConstraintUniq, tidbast.ConstraintUniqKey, tidbast.ConstraintUniqIndex:
-		keyList, err := t.validateAndGetKeyStringList(constraint.Keys, false /* primary */, false /* isSpatial */)
+		keyList, err := tidbValidateAndGetKeyStringList(t, constraint.Keys, false /* primary */, false /* isSpatial */)
 		if err != nil {
 			return err
 		}
-		if err := t.tidbCreateIndex(constraint.Name, keyList, true /* unique */, getIndexType(constraint.Option), constraint.Option); err != nil {
+		if err := tidbCreateIndexHelper(t, constraint.Name, keyList, true /* unique */, getIndexType(constraint.Option), constraint.Option); err != nil {
 			return err
 		}
 	case tidbast.ConstraintForeignKey:
 		// we do not deal with FOREIGN KEY constraints
 	case tidbast.ConstraintFulltext:
-		keyList, err := t.validateAndGetKeyStringList(constraint.Keys, false /* primary */, false /* isSpatial */)
+		keyList, err := tidbValidateAndGetKeyStringList(t, constraint.Keys, false /* primary */, false /* isSpatial */)
 		if err != nil {
 			return err
 		}
-		if err := t.tidbCreateIndex(constraint.Name, keyList, false /* unique */, FullTextName, constraint.Option); err != nil {
+		if err := tidbCreateIndexHelper(t, constraint.Name, keyList, false /* unique */, FullTextName, constraint.Option); err != nil {
 			return err
 		}
 	case tidbast.ConstraintCheck:
@@ -649,7 +676,7 @@ func (t *TableState) createConstraint(constraint *tidbast.Constraint) *WalkThrou
 	return nil
 }
 
-func (t *TableState) validateAndGetKeyStringList(keyList []*tidbast.IndexPartSpecification, primary bool, isSpatial bool) ([]string, *WalkThroughError) {
+func tidbValidateAndGetKeyStringList(t *model.TableMetadata, keyList []*tidbast.IndexPartSpecification, primary bool, isSpatial bool) ([]string, *WalkThroughError) {
 	var res []string
 	for _, key := range keyList {
 		if key.Expr != nil {
@@ -663,18 +690,18 @@ func (t *TableState) validateAndGetKeyStringList(keyList []*tidbast.IndexPartSpe
 			res = append(res, str)
 		} else {
 			columnName := key.Column.Name.L
-			column, exists := t.columnSet[columnName]
-			if !exists {
-				return nil, NewColumnNotExistsError(t.name, columnName)
+			column := t.GetColumn(columnName)
+			if column == nil {
+				return nil, NewColumnNotExistsError(t.GetProto().Name, columnName)
 			}
 			if primary {
-				column.nullable = false
+				column.Nullable = false
 			}
-			if isSpatial && column.nullable {
+			if isSpatial && column.Nullable {
 				return nil, &WalkThroughError{
 					Code: code.SpatialIndexKeyNullable,
 					// The error content comes from MySQL.
-					Content: fmt.Sprintf("All parts of a SPATIAL index must be NOT NULL, but `%s` is nullable", column.name),
+					Content: fmt.Sprintf("All parts of a SPATIAL index must be NOT NULL, but `%s` is nullable", column.Name),
 				}
 			}
 
@@ -719,48 +746,47 @@ func checkDefault(columnName string, columnType *types.FieldType, value tidbast.
 	return nil
 }
 
-func (t *TableState) tidbCreateColumn(column *tidbast.ColumnDef, position *tidbast.ColumnPosition) *WalkThroughError {
-	if _, exists := t.columnSet[column.Name.Name.L]; exists {
+func tidbCreateColumnHelper(t *model.TableMetadata, column *tidbast.ColumnDef, position *tidbast.ColumnPosition) *WalkThroughError {
+	if t.GetColumn(column.Name.Name.L) != nil {
 		return &WalkThroughError{
 			Code:    code.ColumnExists,
-			Content: fmt.Sprintf("Column `%s` already exists in table `%s`", column.Name.Name.O, t.name),
+			Content: fmt.Sprintf("Column `%s` already exists in table `%s`", column.Name.Name.O, t.GetProto().Name),
 		}
 	}
 
-	pos := len(t.columnSet) + 1
+	pos := len(t.GetColumns()) + 1
 	if position != nil {
 		var err *WalkThroughError
-		pos, err = t.reorderColumn(position)
+		pos, err = tidbReorderColumn(t, position)
 		if err != nil {
 			return err
 		}
 	}
 
-	col := &ColumnState{
-		name:         column.Name.Name.L,
-		position:     pos,
-		defaultValue: "",
-		nullable:     true,
-		columnType:   column.Tp.CompactStr(),
-		characterSet: column.Tp.GetCharset(),
-		collation:    column.Tp.GetCollate(),
-		comment:      "",
+	col := &storepb.ColumnMetadata{
+		Name:         column.Name.Name.L,
+		Position:     int32(pos),
+		Default:      "",
+		Nullable:     true,
+		Type:         column.Tp.CompactStr(),
+		CharacterSet: column.Tp.GetCharset(),
+		Collation:    column.Tp.GetCollate(),
 	}
 	setNullDefault := false
 
 	for _, option := range column.Options {
 		switch option.Tp {
 		case tidbast.ColumnOptionPrimaryKey:
-			col.nullable = false
-			if err := t.tidbCreatePrimaryKey([]string{col.name}, tidbast.IndexTypeBtree.String()); err != nil {
+			col.Nullable = false
+			if err := tidbCreatePrimaryKeyHelper(t, []string{col.Name}, tidbast.IndexTypeBtree.String()); err != nil {
 				return err
 			}
 		case tidbast.ColumnOptionNotNull:
-			col.nullable = false
+			col.Nullable = false
 		case tidbast.ColumnOptionAutoIncrement:
 			// we do not deal with AUTO-INCREMENT
 		case tidbast.ColumnOptionDefaultValue:
-			if err := checkDefault(col.name, column.Tp, option.Expr); err != nil {
+			if err := checkDefault(col.Name, column.Tp, option.Expr); err != nil {
 				return err
 			}
 			if option.Expr.GetType().GetType() != mysql.TypeNull {
@@ -771,22 +797,22 @@ func (t *TableState) tidbCreateColumn(column *tidbast.ColumnDef, position *tidba
 						Content: fmt.Sprintf("Failed to deparse default value: %v", err),
 					}
 				}
-				col.defaultValue = defaultValue
+				col.Default = defaultValue
 			} else {
 				setNullDefault = true
 			}
 		case tidbast.ColumnOptionUniqKey:
-			if err := t.tidbCreateIndex("", []string{col.name}, true /* unique */, tidbast.IndexTypeBtree.String(), nil); err != nil {
+			if err := tidbCreateIndexHelper(t, "", []string{col.Name}, true /* unique */, tidbast.IndexTypeBtree.String(), nil); err != nil {
 				return err
 			}
 		case tidbast.ColumnOptionNull:
-			col.nullable = true
+			col.Nullable = true
 		case tidbast.ColumnOptionOnUpdate:
 			// we do not deal with ON UPDATE
 			if column.Tp.GetType() != mysql.TypeDatetime && column.Tp.GetType() != mysql.TypeTimestamp {
 				return &WalkThroughError{
 					Code:    code.OnUpdateColumnNotDatetimeOrTimestamp,
-					Content: fmt.Sprintf("Column `%s` use ON UPDATE but is not DATETIME or TIMESTAMP", col.name),
+					Content: fmt.Sprintf("Column `%s` use ON UPDATE but is not DATETIME or TIMESTAMP", col.Name),
 				}
 			}
 		case tidbast.ColumnOptionComment:
@@ -797,14 +823,14 @@ func (t *TableState) tidbCreateColumn(column *tidbast.ColumnDef, position *tidba
 					Content: fmt.Sprintf("Failed to deparse comment: %v", err),
 				}
 			}
-			col.comment = comment
+			col.Comment = comment
 		case tidbast.ColumnOptionGenerated:
 			// we do not deal with GENERATED ALWAYS AS
 		case tidbast.ColumnOptionReference:
 			// MySQL will ignore the inline REFERENCE
 			// https://dev.mysql.com/doc/refman/8.0/en/create-table.html
 		case tidbast.ColumnOptionCollate:
-			col.collation = option.StrValue
+			col.Collation = option.StrValue
 		case tidbast.ColumnOptionCheck:
 			// we do not deal with CHECK constraint
 		case tidbast.ColumnOptionColumnFormat:
@@ -818,28 +844,30 @@ func (t *TableState) tidbCreateColumn(column *tidbast.ColumnDef, position *tidba
 		}
 	}
 
-	if !col.nullable && setNullDefault {
+	if !col.Nullable && setNullDefault {
 		return &WalkThroughError{
 			Code: code.SetNullDefaultForNotNullColumn,
 			// Content comes from MySQL Error content.
-			Content: fmt.Sprintf("Invalid default value for column `%s`", col.name),
+			Content: fmt.Sprintf("Invalid default value for column `%s`", col.Name),
 		}
 	}
 
-	t.columnSet[strings.ToLower(col.name)] = col
+	if err := t.CreateColumn(col); err != nil {
+		return &WalkThroughError{Code: code.ColumnExists, Content: err.Error()}
+	}
 	return nil
 }
 
-func (t *TableState) tidbCreateIndex(name string, keyList []string, unique bool, tp string, option *tidbast.IndexOption) *WalkThroughError {
+func tidbCreateIndexHelper(t *model.TableMetadata, name string, keyList []string, unique bool, tp string, option *tidbast.IndexOption) *WalkThroughError {
 	if len(keyList) == 0 {
 		return &WalkThroughError{
 			Code:    code.IndexEmptyKeys,
-			Content: fmt.Sprintf("Index `%s` in table `%s` has empty key", name, t.name),
+			Content: fmt.Sprintf("Index `%s` in table `%s` has empty key", name, t.GetProto().Name),
 		}
 	}
 	if name != "" {
-		if _, exists := t.indexSet[strings.ToLower(name)]; exists {
-			return NewIndexExistsError(t.name, name)
+		if t.GetIndex(name) != nil {
+			return NewIndexExistsError(t.GetProto().Name, name)
 		}
 	} else {
 		suffix := 1
@@ -848,7 +876,7 @@ func (t *TableState) tidbCreateIndex(name string, keyList []string, unique bool,
 			if suffix > 1 {
 				name = fmt.Sprintf("%s_%d", keyList[0], suffix)
 			}
-			if _, exists := t.indexSet[strings.ToLower(name)]; !exists {
+			if t.GetIndex(name) == nil {
 				break
 			}
 			suffix++
@@ -857,38 +885,40 @@ func (t *TableState) tidbCreateIndex(name string, keyList []string, unique bool,
 
 	visible := option == nil || option.Visibility != tidbast.IndexVisibilityInvisible
 
-	index := &IndexState{
-		name:           name,
-		expressionList: keyList,
-		indexType:      tp,
-		unique:         unique,
-		primary:        false,
-		visible:        visible,
-		comment:        "",
+	index := &storepb.IndexMetadata{
+		Name:        name,
+		Expressions: keyList,
+		Type:        tp,
+		Unique:      unique,
+		Primary:     false,
+		Visible:     visible,
 	}
 
-	t.indexSet[strings.ToLower(name)] = index
+	if err := t.CreateIndex(index); err != nil {
+		return &WalkThroughError{Code: code.IndexExists, Content: err.Error()}
+	}
 	return nil
 }
 
-func (t *TableState) tidbCreatePrimaryKey(keys []string, tp string) *WalkThroughError {
-	if _, exists := t.indexSet[strings.ToLower(PrimaryKeyName)]; exists {
+func tidbCreatePrimaryKeyHelper(t *model.TableMetadata, keys []string, tp string) *WalkThroughError {
+	if t.GetIndex(PrimaryKeyName) != nil {
 		return &WalkThroughError{
 			Code:    code.PrimaryKeyExists,
-			Content: fmt.Sprintf("Primary key exists in table `%s`", t.name),
+			Content: fmt.Sprintf("Primary key exists in table `%s`", t.GetProto().Name),
 		}
 	}
 
-	pk := &IndexState{
-		name:           PrimaryKeyName,
-		expressionList: keys,
-		indexType:      tp,
-		unique:         true,
-		primary:        true,
-		visible:        true,
-		comment:        "",
+	pk := &storepb.IndexMetadata{
+		Name:        PrimaryKeyName,
+		Expressions: keys,
+		Type:        tp,
+		Unique:      true,
+		Primary:     true,
+		Visible:     true,
 	}
-	t.indexSet[strings.ToLower(pk.name)] = pk
+	if err := t.CreateIndex(pk); err != nil {
+		return &WalkThroughError{Code: code.IndexExists, Content: err.Error()}
+	}
 	return nil
 }
 

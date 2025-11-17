@@ -63,8 +63,8 @@ func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbTyp
 		originalSchema := model.NewDatabaseSchema(schemaMetadata, nil, nil, dbType, true /* isCaseSensitive for PostgreSQL */)
 		originalMetadata := originalSchema.GetDatabaseMetadata()
 
-		// Create FinalCatalog as DatabaseState (mutable for walk-through)
-		finalCatalog := catalog.NewDatabaseState(schemaMetadata, false /* ignoreCaseSensitive */, dbType)
+		// Create FinalMetadata as DatabaseMetadata (mutable for walk-through)
+		finalMetadata := model.NewDatabaseMetadata(schemaMetadata, true /* isCaseSensitive for PostgreSQL */, true /* isDetailCaseSensitive */)
 
 		// Get default payload, or use empty string for test-only rules
 		payload, err := advisor.SetDefaultSQLReviewRulePayload(rule, dbType)
@@ -78,7 +78,7 @@ func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbTyp
 		require.NoError(t, err, "Failed to parse SQL: %s", tc.Statement)
 
 		// Always walk through the catalog to build metadata.
-		err = catalog.WalkThrough(finalCatalog, tree)
+		err = catalog.WalkThrough(finalMetadata, dbType, tree)
 		require.NoError(t, err, "Failed to walk through final catalog: %s", tc.Statement)
 
 		ruleList := []*storepb.SQLReviewRule{
@@ -102,7 +102,7 @@ func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbTyp
 				Statements:               tc.Statement,
 				Rule:                     ruleList[0],
 				OriginalMetadata:         originalMetadata,
-				FinalCatalog:             finalCatalog,
+				FinalMetadata:            finalMetadata,
 				Driver:                   nil,
 				CurrentDatabase:          "TEST_DB",
 				UsePostgresDatabaseOwner: true,

@@ -469,6 +469,81 @@ func (d *DatabaseMetadata) GetIsDetailCaseSensitive() bool {
 	return d.isDetailCaseSensitive
 }
 
+// CreateSchema creates a new schema in the database.
+// Returns the created SchemaMetadata.
+func (d *DatabaseMetadata) CreateSchema(schemaName string) *SchemaMetadata {
+	// Create new schema proto
+	newSchemaProto := &storepb.SchemaMetadata{
+		Name:   schemaName,
+		Tables: []*storepb.TableMetadata{},
+		Views:  []*storepb.ViewMetadata{},
+	}
+
+	// Add to proto's schema list
+	d.proto.Schemas = append(d.proto.Schemas, newSchemaProto)
+
+	// Create SchemaMetadata wrapper
+	schemaMeta := &SchemaMetadata{
+		isObjectCaseSensitive:    d.isObjectCaseSensitive,
+		isDetailCaseSensitive:    d.isDetailCaseSensitive,
+		internalTables:           make(map[string]*TableMetadata),
+		internalExternalTable:    make(map[string]*ExternalTableMetadata),
+		internalViews:            make(map[string]*ViewMetadata),
+		internalMaterializedView: make(map[string]*MaterializedViewMetadata),
+		internalFunctions:        []*FunctionMetadata{},
+		internalProcedures:       make(map[string]*ProcedureMetadata),
+		internalPackages:         make(map[string]*PackageMetadata),
+		internalSequences:        make(map[string]*SequenceMetadata),
+		proto:                    newSchemaProto,
+	}
+
+	// Add to internal map
+	var schemaID string
+	if d.isObjectCaseSensitive {
+		schemaID = schemaName
+	} else {
+		schemaID = strings.ToLower(schemaName)
+	}
+	d.internal[schemaID] = schemaMeta
+
+	return schemaMeta
+}
+
+// DropSchema drops a schema from the database.
+// Returns an error if the schema does not exist.
+func (d *DatabaseMetadata) DropSchema(schemaName string) error {
+	// Check if schema exists
+	if d.GetSchema(schemaName) == nil {
+		return errors.Errorf("schema %q does not exist in database %q", schemaName, d.name)
+	}
+
+	// Remove from internal map
+	var schemaID string
+	if d.isObjectCaseSensitive {
+		schemaID = schemaName
+	} else {
+		schemaID = strings.ToLower(schemaName)
+	}
+	delete(d.internal, schemaID)
+
+	// Remove from proto's schema list
+	newSchemas := make([]*storepb.SchemaMetadata, 0, len(d.proto.Schemas)-1)
+	for _, schema := range d.proto.Schemas {
+		if d.isObjectCaseSensitive {
+			if schema.Name != schemaName {
+				newSchemas = append(newSchemas, schema)
+			}
+		} else {
+			if !strings.EqualFold(schema.Name, schemaName) {
+				newSchemas = append(newSchemas, schema)
+			}
+		}
+	}
+	d.proto.Schemas = newSchemas
+
+	return nil
+}
+
 // LinkedDatabaseMetadata is the metadata for a linked database.
 type LinkedDatabaseMetadata struct {
 	name     string
@@ -788,6 +863,161 @@ func (s *SchemaMetadata) DropTable(tableName string) error {
 	return nil
 }
 
+// RenameTable renames a table in the schema.
+// Returns an error if the old table doesn't exist or new table already exists.
+func (s *SchemaMetadata) RenameTable(oldName string, newName string) error {
+	if oldName == newName {
+		return nil
+	}
+
+	// Check if old table exists
+	oldTable := s.GetTable(oldName)
+	if oldTable == nil {
+		return errors.Errorf("table %q does not exist in schema %q", oldName, s.proto.Name)
+	}
+
+	// Check if new table already exists
+	if s.GetTable(newName) != nil {
+		return errors.Errorf("table %q already exists in schema %q", newName, s.proto.Name)
+	}
+
+	// Remove from internal map using old name
+	var oldTableID string
+	if s.isObjectCaseSensitive {
+		oldTableID = oldName
+	} else {
+		oldTableID = strings.ToLower(oldName)
+	}
+	delete(s.internalTables, oldTableID)
+
+	// Update the table name in the proto
+	oldTable.proto.Name = newName
+
+	// Add back to internal map using new name
+	var newTableID string
+	if s.isObjectCaseSensitive {
+		newTableID = newName
+	} else {
+		newTableID = strings.ToLower(newName)
+	}
+	s.internalTables[newTableID] = oldTable
+
+	return nil
+}
+
+// CreateView creates a new view in the schema.
+// Returns an error if the view already exists.
+func (s *SchemaMetadata) CreateView(viewName string, definition string, dependencyColumns []*storepb.DependencyColumn) (*ViewMetadata, error) {
+	// Check if view already exists
+	if s.GetView(viewName) != nil {
+		return nil, errors.Errorf("view %q already exists in schema %q", viewName, s.proto.Name)
+	}
+
+	// Create new view proto
+	newViewProto := &storepb.ViewMetadata{
+		Name:              viewName,
+		Definition:        definition,
+		DependencyColumns: dependencyColumns,
+	}
+
+	// Add to proto's view list
+	s.proto.Views = append(s.proto.Views, newViewProto)
+
+	// Create ViewMetadata wrapper
+	viewMeta := &ViewMetadata{
+		Definition: definition,
+		proto:      newViewProto,
+	}
+
+	// Add to internal map
+	var viewID string
+	if s.isObjectCaseSensitive {
+		viewID = viewName
+	} else {
+		viewID = strings.ToLower(viewName)
+	}
+	s.internalViews[viewID] = viewMeta
+
+	return viewMeta, nil
+}
+
+// DropView drops a view from the schema.
+// Returns an error if the view does not exist.
+func (s *SchemaMetadata) DropView(viewName string) error {
+	// Check if view exists
+	if s.GetView(viewName) == nil {
+		return errors.Errorf("view %q does not exist in schema %q", viewName, s.proto.Name)
+	}
+
+	// Remove from internal map
+	var viewID string
+	if s.isObjectCaseSensitive {
+		viewID = viewName
+	} else {
+		viewID = strings.ToLower(viewName)
+	}
+	delete(s.internalViews, viewID)
+
+	// Remove from proto's view list
+	newViews := make([]*storepb.ViewMetadata, 0, len(s.proto.Views)-1)
+	for _, view := range s.proto.Views {
+		if s.isObjectCaseSensitive {
+			if view.Name != viewName {
+				newViews = append(newViews, view)
+			}
+		} else {
+			if !strings.EqualFold(view.Name, viewName) {
+				newViews = append(newViews, view)
+			}
+		}
+	}
+	s.proto.Views = newViews
+
+	return nil
+}
+
+// GetDependentViews returns all views that depend on the given table and column.
+// This is used to check if a column can be dropped or if a table can be dropped.
+func (s *SchemaMetadata) GetDependentViews(tableName string, columnName string) []string {
+	var dependentViews []string
+
+	for _, view := range s.internalViews {
+		viewProto := view.GetProto()
+		for _, dep := range viewProto.DependencyColumns {
+			// Schema is implicitly the same schema, or explicitly matches
+			tableMatches := false
+			if s.isObjectCaseSensitive {
+				tableMatches = dep.Table == tableName
+			} else {
+				tableMatches = strings.EqualFold(dep.Table, tableName)
+			}
+
+			if tableMatches {
+				// If columnName is empty, we're checking for table dependency
+				if columnName == "" {
+					dependentViews = append(dependentViews, viewProto.Name)
+					break
+				}
+
+				// Check column dependency
+				if s.isDetailCaseSensitive {
+					if dep.Column == columnName {
+						dependentViews = append(dependentViews, viewProto.Name)
+						break
+					}
+				} else {
+					if strings.EqualFold(dep.Column, columnName) {
+						dependentViews = append(dependentViews, viewProto.Name)
+						break
+					}
+				}
+			}
+		}
+	}
+
+	return dependentViews
+}
+
 func buildTablesMetadata(table *storepb.TableMetadata, isDetailCaseSensitive bool) ([]*TableMetadata, []string) {
 	if table == nil {
 		return nil, nil
@@ -1025,6 +1255,100 @@ func (t *TableMetadata) DropColumn(columnName string) error {
 	// Rebuild columns slice
 	t.columns = newColumns
 
+	// Remove column from indexes that reference it
+	for _, index := range t.internalIndexes {
+		var newExpressions []string
+		for _, expr := range index.proto.Expressions {
+			if t.isDetailCaseSensitive {
+				if expr != columnName {
+					newExpressions = append(newExpressions, expr)
+				}
+			} else {
+				if !strings.EqualFold(expr, columnName) {
+					newExpressions = append(newExpressions, expr)
+				}
+			}
+		}
+		index.proto.Expressions = newExpressions
+	}
+
+	// Remove empty indexes (indexes that had all columns dropped)
+	var indexesToRemove []string
+	for indexName, index := range t.internalIndexes {
+		if len(index.proto.Expressions) == 0 {
+			indexesToRemove = append(indexesToRemove, indexName)
+		}
+	}
+	for _, indexName := range indexesToRemove {
+		delete(t.internalIndexes, indexName)
+	}
+
+	// Remove empty indexes from proto
+	newIndexes := make([]*storepb.IndexMetadata, 0)
+	for _, index := range t.proto.Indexes {
+		if len(index.Expressions) > 0 {
+			newIndexes = append(newIndexes, index)
+		}
+	}
+	t.proto.Indexes = newIndexes
+
+	return nil
+}
+
+// RenameColumn renames a column in the table.
+// Returns an error if the old column doesn't exist or new column already exists.
+func (t *TableMetadata) RenameColumn(oldName string, newName string) error {
+	if oldName == newName {
+		return nil
+	}
+
+	// Check if old column exists
+	oldColumn := t.GetColumn(oldName)
+	if oldColumn == nil {
+		return errors.Errorf("column %q does not exist in table %q", oldName, t.proto.Name)
+	}
+
+	// Check if new column already exists
+	if t.GetColumn(newName) != nil {
+		return errors.Errorf("column %q already exists in table %q", newName, t.proto.Name)
+	}
+
+	// Remove from internal map using old name
+	var oldColumnID string
+	if t.isDetailCaseSensitive {
+		oldColumnID = oldName
+	} else {
+		oldColumnID = strings.ToLower(oldName)
+	}
+	delete(t.internalColumn, oldColumnID)
+
+	// Update the column name in the proto
+	oldColumn.Name = newName
+
+	// Add back to internal map using new name
+	var newColumnID string
+	if t.isDetailCaseSensitive {
+		newColumnID = newName
+	} else {
+		newColumnID = strings.ToLower(newName)
+	}
+	t.internalColumn[newColumnID] = oldColumn
+
+	// Update column references in indexes
+	for _, index := range t.internalIndexes {
+		for i, expr := range index.proto.Expressions {
+			if t.isDetailCaseSensitive {
+				if expr == oldName {
+					index.proto.Expressions[i] = newName
+				}
+			} else {
+				if strings.EqualFold(expr, oldName) {
+					index.proto.Expressions[i] = newName
+				}
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -1091,6 +1415,109 @@ func (i *IndexMetadata) ExpressionList() []string {
 		return nil
 	}
 	return i.proto.Expressions
+}
+
+// CreateIndex creates a new index in the table.
+// Returns an error if the index already exists.
+func (t *TableMetadata) CreateIndex(indexProto *storepb.IndexMetadata) error {
+	// Check if index already exists
+	if t.GetIndex(indexProto.Name) != nil {
+		return errors.Errorf("index %q already exists in table %q", indexProto.Name, t.proto.Name)
+	}
+
+	// Add to proto's index list
+	t.proto.Indexes = append(t.proto.Indexes, indexProto)
+
+	// Add to internal map
+	var indexID string
+	if t.isDetailCaseSensitive {
+		indexID = indexProto.Name
+	} else {
+		indexID = strings.ToLower(indexProto.Name)
+	}
+	t.internalIndexes[indexID] = &IndexMetadata{
+		tableProto: t.proto,
+		proto:      indexProto,
+	}
+
+	return nil
+}
+
+// DropIndex drops an index from the table.
+// Returns an error if the index does not exist.
+func (t *TableMetadata) DropIndex(indexName string) error {
+	// Check if index exists
+	if t.GetIndex(indexName) == nil {
+		return errors.Errorf("index %q does not exist in table %q", indexName, t.proto.Name)
+	}
+
+	// Remove from internal map
+	var indexID string
+	if t.isDetailCaseSensitive {
+		indexID = indexName
+	} else {
+		indexID = strings.ToLower(indexName)
+	}
+	delete(t.internalIndexes, indexID)
+
+	// Remove from proto's index list
+	newIndexes := make([]*storepb.IndexMetadata, 0, len(t.proto.Indexes)-1)
+	for _, index := range t.proto.Indexes {
+		if t.isDetailCaseSensitive {
+			if index.Name != indexName {
+				newIndexes = append(newIndexes, index)
+			}
+		} else {
+			if !strings.EqualFold(index.Name, indexName) {
+				newIndexes = append(newIndexes, index)
+			}
+		}
+	}
+	t.proto.Indexes = newIndexes
+
+	return nil
+}
+
+// RenameIndex renames an index in the table.
+// Returns an error if the old index doesn't exist or new index already exists.
+func (t *TableMetadata) RenameIndex(oldName string, newName string) error {
+	if oldName == newName {
+		return nil
+	}
+
+	// Check if old index exists
+	oldIndex := t.GetIndex(oldName)
+	if oldIndex == nil {
+		return errors.Errorf("index %q does not exist in table %q", oldName, t.proto.Name)
+	}
+
+	// Check if new index already exists
+	if t.GetIndex(newName) != nil {
+		return errors.Errorf("index %q already exists in table %q", newName, t.proto.Name)
+	}
+
+	// Remove from internal map using old name
+	var oldIndexID string
+	if t.isDetailCaseSensitive {
+		oldIndexID = oldName
+	} else {
+		oldIndexID = strings.ToLower(oldName)
+	}
+	delete(t.internalIndexes, oldIndexID)
+
+	// Update the index name in the proto
+	oldIndex.proto.Name = newName
+
+	// Add back to internal map using new name
+	var newIndexID string
+	if t.isDetailCaseSensitive {
+		newIndexID = newName
+	} else {
+		newIndexID = strings.ToLower(newName)
+	}
+	t.internalIndexes[newIndexID] = oldIndex
+
+	return nil
 }
 
 // ViewMetadata is the metadata for a view.

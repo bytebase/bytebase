@@ -5,49 +5,44 @@ import (
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
+	parser "github.com/bytebase/parser/postgresql"
 	"github.com/pkg/errors"
 
-	parser "github.com/bytebase/parser/postgresql"
-
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-// PgWalkThrough walks through the PostgreSQL ANTLR parse tree and builds catalog state.
-func PgWalkThrough(d *DatabaseState, ast any) error {
+// PgWalkThrough walks through the PostgreSQL ANTLR parse tree and builds catalog metadata.
+func PgWalkThrough(d *model.DatabaseMetadata, ast any) error {
 	// ANTLR-based walkthrough
 	parseResult, ok := ast.(*pgparser.ParseResult)
 	if !ok {
 		return errors.Errorf("PostgreSQL walk-through expects *pgparser.ParseResult, got %T", ast)
 	}
-
 	root, ok := parseResult.Tree.(parser.IRootContext)
 	if !ok {
 		return errors.Errorf("invalid ANTLR tree type %T", parseResult.Tree)
 	}
-
 	// Build listener with database state
 	listener := &pgCatalogListener{
 		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
 		databaseState:                d,
 	}
-
 	// Walk through the parse tree
 	antlr.ParseTreeWalkerDefault.Walk(listener, root)
-
 	// Return any error encountered during walk
 	if listener.err != nil {
 		return listener.err
 	}
-
 	return nil
 }
 
 // pgCatalogListener builds catalog state by listening to ANTLR parse tree events.
 type pgCatalogListener struct {
 	*parser.BasePostgreSQLParserListener
-
-	databaseState *DatabaseState
+	databaseState *model.DatabaseMetadata
 	err           *WalkThroughError
 	currentLine   int
 }
@@ -66,47 +61,39 @@ func (l *pgCatalogListener) setError(err *WalkThroughError) {
 // ========================================
 // CREATE TABLE handling
 // ========================================
-
 // EnterCreatestmt handles CREATE TABLE statements.
 func (l *pgCatalogListener) EnterCreatestmt(ctx *parser.CreatestmtContext) {
 	if !isTopLevel(ctx.GetParent()) || l.err != nil {
 		return
 	}
-
 	l.currentLine = ctx.GetStart().GetLine()
-
 	// Extract table name and schema
 	qualifiedNames := ctx.AllQualified_name()
 	if len(qualifiedNames) == 0 {
 		return
 	}
-
 	tableName := extractTableName(qualifiedNames[0])
 	schemaName := extractSchemaName(qualifiedNames[0])
-
 	if tableName == "" {
 		return
 	}
-
 	// Check database name if specified
 	databaseName := extractDatabaseName(qualifiedNames[0])
-	if databaseName != "" && l.databaseState.name != databaseName {
+	if databaseName != "" && l.databaseState.DatabaseName() != databaseName {
 		l.setError(&WalkThroughError{
 			Code:    code.NotCurrentDatabase,
-			Content: fmt.Sprintf("Database %q is not the current database %q", databaseName, l.databaseState.name),
+			Content: fmt.Sprintf("Database %q is not the current database %q", databaseName, l.databaseState.DatabaseName()),
 		})
 		return
 	}
-
 	// Get or create schema
-	schema, err := l.databaseState.getOrCreatePublicSchema(schemaName)
+	schema, err := getOrCreatePublicSchema(l.databaseState, schemaName)
 	if err != nil {
 		l.setError(err)
 		return
 	}
-
 	// Check if table already exists
-	if _, exists := schema.tableSet[tableName]; exists {
+	if schema.GetTable(tableName) != nil {
 		// Check IF NOT EXISTS clause
 		ifNotExists := ctx.IF_P() != nil && ctx.NOT() != nil && ctx.EXISTS() != nil
 		if ifNotExists {
@@ -114,19 +101,16 @@ func (l *pgCatalogListener) EnterCreatestmt(ctx *parser.CreatestmtContext) {
 		}
 		l.setError(&WalkThroughError{
 			Code:    code.TableExists,
-			Content: fmt.Sprintf(`The table %q already exists in the schema %q`, tableName, schema.name),
+			Content: fmt.Sprintf(`The table %q already exists in the schema %q`, tableName, schema.GetProto().Name),
 		})
 		return
 	}
-
-	// Create table state
-	table := &TableState{
-		name:      tableName,
-		columnSet: make(columnStateMap),
-		indexSet:  make(IndexStateMap),
+	// Create table
+	table, createErr := schema.CreateTable(tableName)
+	if createErr != nil {
+		l.setError(&WalkThroughError{Code: code.TableExists, Content: createErr.Error()})
+		return
 	}
-	schema.tableSet[table.name] = table
-
 	// Process column definitions
 	if ctx.Opttableelementlist() != nil && ctx.Opttableelementlist().Tableelementlist() != nil {
 		allElements := ctx.Opttableelementlist().Tableelementlist().AllTableelement()
@@ -149,12 +133,11 @@ func (l *pgCatalogListener) EnterCreatestmt(ctx *parser.CreatestmtContext) {
 	}
 }
 
-// createColumn creates a column in the table.
-func pgCreateColumn(schema *SchemaState, table *TableState, columnDef parser.IColumnDefContext) *WalkThroughError {
+// pgCreateColumn creates a column in the table.
+func pgCreateColumn(schema *model.SchemaMetadata, table *model.TableMetadata, columnDef parser.IColumnDefContext) *WalkThroughError {
 	if columnDef == nil {
 		return nil
 	}
-
 	// Extract column name
 	var columnName string
 	if columnDef.Colid() != nil {
@@ -163,33 +146,26 @@ func pgCreateColumn(schema *SchemaState, table *TableState, columnDef parser.ICo
 	if columnName == "" {
 		return nil
 	}
-
 	// Check if column already exists
-	if _, exists := table.columnSet[columnName]; exists {
+	if table.GetColumn(columnName) != nil {
 		return &WalkThroughError{
 			Code:    code.ColumnExists,
-			Content: fmt.Sprintf("The column %q already exists in table %q", columnName, table.name),
+			Content: fmt.Sprintf("The column %q already exists in table %q", columnName, table.GetProto().Name),
 		}
 	}
-
 	// Get column type
 	var columnType string
 	if columnDef.Typename() != nil {
 		columnType = extractTypeName(columnDef.Typename())
 	}
-
-	// Create column state
-	pos := len(table.columnSet) + 1
-	columnState := &ColumnState{
-		name:         columnName,
-		position:     pos,
-		defaultValue: "",
-		nullable:     true,
-		columnType:   columnType,
-		collation:    "",
+	// Create column metadata
+	col := &storepb.ColumnMetadata{
+		Name:     columnName,
+		Position: int32(len(table.GetColumns()) + 1),
+		Default:  "",
+		Nullable: true,
+		Type:     columnType,
 	}
-	table.columnSet[columnState.name] = columnState
-
 	// Process column constraints
 	if columnDef.Colquallist() != nil {
 		allQuals := columnDef.Colquallist().AllColconstraint()
@@ -198,21 +174,18 @@ func pgCreateColumn(schema *SchemaState, table *TableState, columnDef parser.ICo
 				continue
 			}
 			elem := qual.Colconstraintelem()
-
 			// Handle NOT NULL
 			if elem.NOT() != nil && elem.NULL_P() != nil {
-				columnState.nullable = false
+				col.Nullable = false
 			}
-
 			// Handle DEFAULT
 			if elem.DEFAULT() != nil {
 				// Extract default expression from B_expr
 				if elem.B_expr() != nil {
 					defaultValue := elem.B_expr().GetText()
-					columnState.defaultValue = defaultValue
+					col.Default = defaultValue
 				}
 			}
-
 			// Handle PRIMARY KEY
 			if elem.PRIMARY() != nil && elem.KEY() != nil {
 				constraintName := ""
@@ -220,68 +193,64 @@ func pgCreateColumn(schema *SchemaState, table *TableState, columnDef parser.ICo
 					constraintName = pgparser.NormalizePostgreSQLName(qual.Name())
 				}
 				if constraintName == "" {
-					constraintName = schema.pgGeneratePrimaryKeyName(table.name)
+					constraintName = pgGeneratePrimaryKeyName(schema, table.GetProto().Name)
 				}
-
 				// Set column as NOT NULL
-				columnState.nullable = false
-
+				col.Nullable = false
 				// Create primary key index
-				index := &IndexState{
-					name:           constraintName,
-					expressionList: []string{columnName},
-					indexType:      "btree",
-					unique:         true,
-					primary:        true,
-					isConstraint:   true,
+				index := &storepb.IndexMetadata{
+					Name:         constraintName,
+					Expressions:  []string{columnName},
+					Type:         "btree",
+					Unique:       true,
+					Primary:      true,
+					IsConstraint: true,
 				}
-				table.indexSet[index.name] = index
-				schema.identifierMap[index.name] = true
+				if err := table.CreateIndex(index); err != nil {
+					return &WalkThroughError{Code: code.PrimaryKeyExists, Content: err.Error()}
+				}
 			}
-
 			// Handle UNIQUE
 			if elem.UNIQUE() != nil && (elem.PRIMARY() == nil || elem.KEY() == nil) {
 				constraintName := ""
 				if qual.Name() != nil {
 					constraintName = pgparser.NormalizePostgreSQLName(qual.Name())
 				}
-
 				// Generate index name if not specified
 				if constraintName == "" {
-					constraintName = generateIndexName(table.name, []string{columnName}, true)
+					constraintName = generateIndexName(table.GetProto().Name, []string{columnName}, true)
 				}
-
-				index := &IndexState{
-					name:           constraintName,
-					expressionList: []string{columnName},
-					indexType:      "btree",
-					unique:         true,
-					primary:        false,
-					isConstraint:   true,
+				index := &storepb.IndexMetadata{
+					Name:        constraintName,
+					Expressions: []string{columnName},
+					Type:        "btree",
+					Unique:      true,
+					Primary:     false,
 				}
-				table.indexSet[index.name] = index
-				schema.identifierMap[index.name] = true
+				if err := table.CreateIndex(index); err != nil {
+					return &WalkThroughError{Code: code.IndexExists, Content: err.Error()}
+				}
 			}
 		}
 	}
-
+	// Create the column
+	if err := table.CreateColumn(col); err != nil {
+		return &WalkThroughError{Code: code.ColumnExists, Content: err.Error()}
+	}
 	return nil
 }
 
 // createTableConstraint creates a table-level constraint.
-func createTableConstraint(schema *SchemaState, table *TableState, constraint parser.ITableconstraintContext) *WalkThroughError {
+func createTableConstraint(schema *model.SchemaMetadata, table *model.TableMetadata, constraint parser.ITableconstraintContext) *WalkThroughError {
 	if constraint == nil || constraint.Constraintelem() == nil {
 		return nil
 	}
-
 	elem := constraint.Constraintelem()
-
 	// Extract constraint name
 	constraintName := ""
 	if constraint.Name() != nil {
 		constraintName = pgparser.NormalizePostgreSQLName(constraint.Name())
 	}
-
 	// Handle PRIMARY KEY constraint
 	if elem.PRIMARY() != nil && elem.KEY() != nil {
 		var columnList []string
@@ -294,40 +263,40 @@ func createTableConstraint(schema *SchemaState, table *TableState, constraint pa
 				}
 			}
 		}
-
 		// Set all PK columns as NOT NULL
 		for _, colName := range columnList {
-			if column, exists := table.columnSet[colName]; exists {
-				column.nullable = false
+			column := table.GetColumn(colName)
+			if column != nil {
+				column.Nullable = false
 			} else {
-				return NewColumnNotExistsError(table.name, colName)
+				return NewColumnNotExistsError(table.GetProto().Name, colName)
 			}
 		}
-
 		// Generate PK name if not provided
 		pkName := constraintName
 		if pkName == "" {
-			pkName = schema.pgGeneratePrimaryKeyName(table.name)
+			pkName = pgGeneratePrimaryKeyName(schema, table.GetProto().Name)
 		}
-
-		// Check if identifier already exists
-		if _, exists := schema.identifierMap[pkName]; exists {
-			return NewRelationExistsError(pkName, schema.name)
+		// Check if primary key already exists
+		if table.GetPrimaryKey() != nil {
+			return &WalkThroughError{
+				Code:    code.PrimaryKeyExists,
+				Content: fmt.Sprintf("Primary key already exists in table %q", table.GetProto().Name),
+			}
 		}
-
 		// Create primary key index
-		index := &IndexState{
-			name:           pkName,
-			expressionList: columnList,
-			indexType:      "btree",
-			unique:         true,
-			primary:        true,
-			isConstraint:   true,
+		index := &storepb.IndexMetadata{
+			Name:         pkName,
+			Expressions:  columnList,
+			Type:         "btree",
+			Unique:       true,
+			Primary:      true,
+			IsConstraint: true,
 		}
-		table.indexSet[index.name] = index
-		schema.identifierMap[index.name] = true
+		if err := table.CreateIndex(index); err != nil {
+			return &WalkThroughError{Code: code.PrimaryKeyExists, Content: err.Error()}
+		}
 	}
-
 	// Handle UNIQUE constraint
 	if elem.UNIQUE() != nil && (elem.PRIMARY() == nil || elem.KEY() == nil) {
 		var columnList []string
@@ -340,85 +309,75 @@ func createTableConstraint(schema *SchemaState, table *TableState, constraint pa
 				}
 			}
 		}
-
 		// Generate index name if not specified
 		indexName := constraintName
 		if indexName == "" {
-			indexName = generateIndexName(table.name, columnList, true)
+			indexName = generateIndexName(table.GetProto().Name, columnList, true)
 		}
-
-		// Check if identifier already exists
-		if _, exists := schema.identifierMap[indexName]; exists {
-			return NewRelationExistsError(indexName, schema.name)
-		}
-
-		// Validate columns exist
-		for _, colName := range columnList {
-			if _, exists := table.columnSet[colName]; !exists {
-				return NewColumnNotExistsError(table.name, colName)
+		// Check if index already exists
+		if table.GetIndex(indexName) != nil {
+			return &WalkThroughError{
+				Code:    code.IndexExists,
+				Content: fmt.Sprintf("Index %q already exists in table %q", indexName, table.GetProto().Name),
 			}
 		}
-
-		// Create unique index
-		index := &IndexState{
-			name:           indexName,
-			expressionList: columnList,
-			indexType:      "btree",
-			unique:         true,
-			primary:        false,
-			isConstraint:   true,
+		// Validate columns exist
+		for _, colName := range columnList {
+			if table.GetColumn(colName) == nil {
+				return NewColumnNotExistsError(table.GetProto().Name, colName)
+			}
 		}
-		table.indexSet[index.name] = index
-		schema.identifierMap[index.name] = true
+		// Create unique index (from UNIQUE constraint)
+		index := &storepb.IndexMetadata{
+			Name:         indexName,
+			Expressions:  columnList,
+			Type:         "btree",
+			Unique:       true,
+			Primary:      false,
+			IsConstraint: true,
+		}
+		if err := table.CreateIndex(index); err != nil {
+			return &WalkThroughError{Code: code.IndexExists, Content: err.Error()}
+		}
 	}
-
 	// Note: We skip CHECK, FOREIGN KEY, EXCLUSION constraints for now
 	// as the legacy implementation also skips them
-
 	return nil
 }
 
 // ========================================
 // CREATE INDEX handling
 // ========================================
-
 // EnterIndexstmt handles CREATE INDEX statements.
 func (l *pgCatalogListener) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 	if !isTopLevel(ctx.GetParent()) || l.err != nil {
 		return
 	}
-
 	l.currentLine = ctx.GetStart().GetLine()
-
 	// Extract relation (table) name
 	relationExpr := ctx.Relation_expr()
 	if relationExpr == nil || relationExpr.Qualified_name() == nil {
 		return
 	}
-
 	tableName := extractTableName(relationExpr.Qualified_name())
 	schemaName := extractSchemaName(relationExpr.Qualified_name())
-	schema, err := l.databaseState.getOrCreatePublicSchema(schemaName)
+	schema, err := getOrCreatePublicSchema(l.databaseState, schemaName)
 	if err != nil {
 		l.setError(err)
 		return
 	}
-
-	table, exists := schema.tableSet[tableName]
-	if !exists {
+	table := schema.GetTable(tableName)
+	if table == nil {
 		l.setError(NewTableNotExistsError(tableName))
 		return
 	}
-
 	// Extract index name (can be empty for auto-generated names)
 	indexName := ""
 	if ctx.Name() != nil {
 		indexName = pgparser.NormalizePostgreSQLName(ctx.Name())
 	}
-
 	// Check IF NOT EXISTS
 	ifNotExists := ctx.IF_P() != nil && ctx.NOT() != nil && ctx.EXISTS() != nil
-
 	// Extract column list
 	var columnList []string
 	if ctx.Index_params() != nil {
@@ -433,7 +392,6 @@ func (l *pgCatalogListener) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 			}
 		}
 	}
-
 	if len(columnList) == 0 {
 		l.setError(&WalkThroughError{
 			Code:    code.IndexEmptyKeys,
@@ -441,16 +399,14 @@ func (l *pgCatalogListener) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 		})
 		return
 	}
-
 	// Generate index name if not provided
 	isUnique := ctx.Opt_unique() != nil && ctx.Opt_unique().UNIQUE() != nil
 	wasAutoGenerated := indexName == ""
 	if indexName == "" {
 		indexName = generateIndexName(tableName, columnList, isUnique)
 	}
-
 	// Check if index name already exists
-	if _, exists := schema.identifierMap[indexName]; exists {
+	if table.GetIndex(indexName) != nil {
 		if ifNotExists {
 			return
 		}
@@ -458,110 +414,97 @@ func (l *pgCatalogListener) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 		if wasAutoGenerated {
 			indexName = generateUniqueIndexName(schema, tableName, columnList, isUnique)
 		} else {
-			l.setError(NewRelationExistsError(indexName, schema.name))
+			l.setError(NewRelationExistsError(indexName, schema.GetProto().Name))
 			return
 		}
 	}
-
 	// Check that all columns exist (skip expressions)
 	for _, colName := range columnList {
 		if colName != "expr" {
-			if _, exists := table.columnSet[colName]; !exists {
+			if table.GetColumn(colName) == nil {
 				l.setError(NewColumnNotExistsError(tableName, colName))
 				return
 			}
 		}
 	}
-
 	// Determine index type
 	indexType := "btree" // default
 	if ctx.Access_method_clause() != nil && ctx.Access_method_clause().Name() != nil {
 		method := pgparser.NormalizePostgreSQLName(ctx.Access_method_clause().Name())
 		indexType = method
 	}
-
-	// Create index state
-	index := &IndexState{
-		name:           indexName,
-		expressionList: columnList,
-		indexType:      indexType,
-		unique:         isUnique,
-		primary:        false,
-		isConstraint:   false,
+	// Create index
+	index := &storepb.IndexMetadata{
+		Name:        indexName,
+		Expressions: columnList,
+		Type:        indexType,
+		Unique:      isUnique,
+		Primary:     false,
 	}
-
-	table.indexSet[index.name] = index
-	schema.identifierMap[index.name] = true
+	if err := table.CreateIndex(index); err != nil {
+		l.setError(&WalkThroughError{Code: code.IndexExists, Content: err.Error()})
+	}
 }
 
 // ========================================
 // CREATE SCHEMA handling
 // ========================================
-
 // TODO: EnterCreateschemastatement - Need to find correct ANTLR context name
-// func (l *pgCatalogListener) EnterCreateschemastatement(ctx *parser.CreateschemaContext) {
-// 	if !isTopLevel(ctx.GetParent()) || l.err != nil {
-// 		return
-// 	}
 //
-// 	if !l.checkDatabaseNotDeleted() {
-// 		return
-// 	}
+//	func (l *pgCatalogListener) EnterCreateschemastatement(ctx *parser.CreateschemaContext) {
+//		if !isTopLevel(ctx.GetParent()) || l.err != nil {
+//			return
+//		}
 //
-// 	l.currentLine = ctx.GetStart().GetLine()
+//		if !l.checkDatabaseNotDeleted() {
+//			return
+//		}
 //
-// 	// TODO: Implement CREATE SCHEMA logic
-// 	// Similar to pgCreateSchema() in walk_through_for_pg.go
-// }
-
+//		l.currentLine = ctx.GetStart().GetLine()
+//
+//		// TODO: Implement CREATE SCHEMA logic
+//		// Similar to pgCreateSchema() in walk_through_for_pg.go
+//	}
+//
 // ========================================
 // ALTER TABLE handling
 // ========================================
-
 // EnterAltertablestmt handles ALTER TABLE statements.
 func (l *pgCatalogListener) EnterAltertablestmt(ctx *parser.AltertablestmtContext) {
 	if !isTopLevel(ctx.GetParent()) || l.err != nil {
 		return
 	}
-
 	l.currentLine = ctx.GetStart().GetLine()
-
 	// Extract table name
 	if ctx.Relation_expr() == nil || ctx.Relation_expr().Qualified_name() == nil {
 		return
 	}
-
 	tableName := extractTableName(ctx.Relation_expr().Qualified_name())
 	schemaName := extractSchemaName(ctx.Relation_expr().Qualified_name())
 	databaseName := extractDatabaseName(ctx.Relation_expr().Qualified_name())
-
 	// Check database access
-	if databaseName != "" && l.databaseState.name != databaseName {
+	if databaseName != "" && l.databaseState.DatabaseName() != databaseName {
 		l.setError(&WalkThroughError{
 			Code:    code.NotCurrentDatabase,
-			Content: fmt.Sprintf("Database %q is not the current database %q", databaseName, l.databaseState.name),
+			Content: fmt.Sprintf("Database %q is not the current database %q", databaseName, l.databaseState.DatabaseName()),
 		})
 		return
 	}
-
 	// Get schema and table
-	schema, err := l.databaseState.getOrCreatePublicSchema(schemaName)
+	schema, err := getOrCreatePublicSchema(l.databaseState, schemaName)
 	if err != nil {
 		l.setError(err)
 		return
 	}
-
-	table, err := schema.GetTable(tableName)
-	if err != nil {
-		l.setError(err)
+	table := schema.GetTable(tableName)
+	if table == nil {
+		l.setError(NewTableNotExistsError(tableName))
 		return
 	}
-
 	// Process alter table commands
 	if ctx.Alter_table_cmds() == nil {
 		return
 	}
-
 	allCmds := ctx.Alter_table_cmds().AllAlter_table_cmd()
 	for _, cmd := range allCmds {
 		l.processAlterTableCmd(schema, table, cmd)
@@ -572,9 +515,8 @@ func (l *pgCatalogListener) EnterAltertablestmt(ctx *parser.AltertablestmtContex
 }
 
 // processAlterTableCmd handles individual ALTER TABLE commands.
-func (l *pgCatalogListener) processAlterTableCmd(schema *SchemaState, table *TableState, cmd parser.IAlter_table_cmdContext) {
+func (l *pgCatalogListener) processAlterTableCmd(schema *model.SchemaMetadata, table *model.TableMetadata, cmd parser.IAlter_table_cmdContext) {
 	// RENAME operations are handled by EnterRenamestmt, not here
-
 	// Handle ADD COLUMN
 	if cmd.ADD_P() != nil && cmd.COLUMN() != nil {
 		if cmd.ColumnDef() != nil {
@@ -583,13 +525,11 @@ func (l *pgCatalogListener) processAlterTableCmd(schema *SchemaState, table *Tab
 		}
 		return
 	}
-
 	// Handle ADD CONSTRAINT
 	if cmd.ADD_P() != nil && cmd.Tableconstraint() != nil {
 		l.alterTableAddConstraint(schema, table, cmd.Tableconstraint())
 		return
 	}
-
 	// Handle DROP CONSTRAINT
 	if cmd.DROP() != nil && cmd.CONSTRAINT() != nil {
 		ifExists := cmd.IF_P() != nil && cmd.EXISTS() != nil
@@ -599,7 +539,6 @@ func (l *pgCatalogListener) processAlterTableCmd(schema *SchemaState, table *Tab
 		}
 		return
 	}
-
 	// Handle DROP COLUMN
 	if cmd.DROP() != nil && cmd.Opt_column() != nil {
 		ifExists := cmd.IF_P() != nil && cmd.EXISTS() != nil
@@ -611,20 +550,17 @@ func (l *pgCatalogListener) processAlterTableCmd(schema *SchemaState, table *Tab
 		}
 		return
 	}
-
 	// Handle ALTER COLUMN commands
 	if cmd.ALTER() != nil && cmd.Opt_column() != nil {
 		allColids := cmd.AllColid()
 		if len(allColids) > 0 {
 			columnName := pgparser.NormalizePostgreSQLColid(allColids[0])
-
 			// Check for SET DATA TYPE
 			if cmd.TYPE_P() != nil && cmd.Typename() != nil {
 				typeString := extractTypeName(cmd.Typename())
 				l.alterTableAlterColumnType(schema, table, columnName, typeString)
 				return
 			}
-
 			// Check for SET/DROP DEFAULT
 			if cmd.Alter_column_default() != nil {
 				altDefault := cmd.Alter_column_default()
@@ -638,7 +574,6 @@ func (l *pgCatalogListener) processAlterTableCmd(schema *SchemaState, table *Tab
 				}
 				return
 			}
-
 			// Check for SET NOT NULL
 			if cmd.SET() != nil && cmd.NOT() != nil && cmd.NULL_P() != nil {
 				l.alterTableSetNotNull(table, columnName)
@@ -650,125 +585,99 @@ func (l *pgCatalogListener) processAlterTableCmd(schema *SchemaState, table *Tab
 }
 
 // alterTableDropColumn handles DROP COLUMN command.
-func (l *pgCatalogListener) alterTableDropColumn(schema *SchemaState, table *TableState, columnName string, ifExists bool) {
-	column, exists := table.columnSet[columnName]
-	if !exists {
+func (l *pgCatalogListener) alterTableDropColumn(schema *model.SchemaMetadata, table *model.TableMetadata, columnName string, ifExists bool) {
+	column := table.GetColumn(columnName)
+	if column == nil {
 		if ifExists {
 			return
 		}
-		l.setError(NewColumnNotExistsError(table.name, columnName))
+		l.setError(NewColumnNotExistsError(table.GetProto().Name, columnName))
 		return
 	}
-
-	// Check if column is referenced by any views
-	viewList, err := l.databaseState.existedViewList(column.dependencyView)
-	if err != nil {
+	// Check if any views depend on this column
+	dependentViews := schema.GetDependentViews(table.GetProto().Name, columnName)
+	if len(dependentViews) > 0 {
 		l.setError(&WalkThroughError{
-			Code:    code.Internal,
-			Content: fmt.Sprintf("Failed to check view dependency: %v", err),
+			Code:    code.TableIsReferencedByView,
+			Content: fmt.Sprintf("Cannot drop column %q because view(s) %v depend on it", columnName, dependentViews),
 		})
 		return
 	}
-	if len(viewList) > 0 {
-		l.setError(&WalkThroughError{
-			Code:    code.ColumnIsReferencedByView,
-			Content: fmt.Sprintf("Cannot drop column %q in table %q.%q, it's referenced by view: %s", column.name, schema.name, table.name, strings.Join(viewList, ", ")),
-		})
-		return
-	}
-
-	// Drop the constraints and indexes involving the column.
+	// Drop the constraints and indexes involving the column
 	var dropIndexList []string
-
-	for _, index := range table.indexSet {
-		for _, key := range index.expressionList {
+	for _, index := range table.GetProto().Indexes {
+		for _, key := range index.Expressions {
 			// TODO(zp): deal with expression key.
 			if key == columnName {
-				dropIndexList = append(dropIndexList, index.name)
+				dropIndexList = append(dropIndexList, index.Name)
 				break // Once we find the column in this index, mark for deletion and move to next index
 			}
 		}
 	}
 	for _, indexName := range dropIndexList {
-		delete(table.indexSet, indexName)
+		if err := table.DropIndex(indexName); err != nil {
+			l.setError(&WalkThroughError{Code: code.IndexNotExists, Content: err.Error()})
+			return
+		}
 	}
-
 	// TODO(zp): deal with other constraints.
-
 	// TODO(zp): deal with CASCADE.
-
 	// Delete the column
-	delete(table.columnSet, columnName)
+	if err := table.DropColumn(columnName); err != nil {
+		l.setError(&WalkThroughError{Code: code.ColumnNotExists, Content: err.Error()})
+	}
 }
 
 // alterTableAlterColumnType handles ALTER COLUMN TYPE command.
-func (l *pgCatalogListener) alterTableAlterColumnType(schema *SchemaState, table *TableState, columnName string, typeString string) {
-	column, err := table.GetColumn(columnName)
-	if err != nil {
-		l.setError(err)
+func (l *pgCatalogListener) alterTableAlterColumnType(schema *model.SchemaMetadata, table *model.TableMetadata, columnName string, typeString string) {
+	column := table.GetColumn(columnName)
+	if column == nil {
+		l.setError(NewColumnNotExistsError(table.GetProto().Name, columnName))
 		return
 	}
-
-	// Check if column is referenced by any views
-	viewList, viewErr := l.databaseState.existedViewList(column.dependencyView)
-	if viewErr != nil {
+	// Check if any views depend on this column
+	dependentViews := schema.GetDependentViews(table.GetProto().Name, columnName)
+	if len(dependentViews) > 0 {
 		l.setError(&WalkThroughError{
-			Code:    code.Internal,
-			Content: fmt.Sprintf("Failed to check view dependency: %v", viewErr),
+			Code:    code.TableIsReferencedByView,
+			Content: fmt.Sprintf("Cannot alter column %q type because view(s) %v depend on it", columnName, dependentViews),
 		})
 		return
 	}
-	if len(viewList) > 0 {
-		l.setError(&WalkThroughError{
-			Code:    code.ColumnIsReferencedByView,
-			Content: fmt.Sprintf("Cannot alter type of column %q in table %q.%q, it's referenced by view: %s", column.name, schema.name, table.name, strings.Join(viewList, ", ")),
-		})
-		return
-	}
-
 	// Update column type
-	column.columnType = typeString
+	column.Type = typeString
 }
 
 // alterTableAddColumn handles ADD COLUMN command.
-func (l *pgCatalogListener) alterTableAddColumn(schema *SchemaState, table *TableState, columndef parser.IColumnDefContext, ifNotExists bool) {
+func (l *pgCatalogListener) alterTableAddColumn(schema *model.SchemaMetadata, table *model.TableMetadata, columndef parser.IColumnDefContext, ifNotExists bool) {
 	if columndef == nil {
 		return
 	}
-
 	columnName := pgparser.NormalizePostgreSQLColid(columndef.Colid())
-
 	// Check if column already exists
-	if _, exists := table.columnSet[columnName]; exists {
+	if table.GetColumn(columnName) != nil {
 		if ifNotExists {
 			return
 		}
 		l.setError(&WalkThroughError{
 			Code:    code.ColumnExists,
-			Content: fmt.Sprintf("The column %q already exists in table %q", columnName, table.name),
+			Content: fmt.Sprintf("The column %q already exists in table %q", columnName, table.GetProto().Name),
 		})
 		return
 	}
-
-	// Get position for new column
-	pos := len(table.columnSet) + 1
-
 	// Extract column type
 	var typeString string
 	if columndef.Typename() != nil {
 		typeString = extractTypeName(columndef.Typename())
 	}
-
-	// Create column state
-	columnState := &ColumnState{
-		name:         columnName,
-		position:     pos,
-		nullable:     true,
-		columnType:   typeString,
-		defaultValue: "",
+	// Create column metadata
+	col := &storepb.ColumnMetadata{
+		Name:     columnName,
+		Position: int32(len(table.GetColumns()) + 1),
+		Nullable: true,
+		Type:     typeString,
+		Default:  "",
 	}
-	table.columnSet[columnName] = columnState
-
 	// Process column constraints if any (inline processing like in createColumn)
 	if columndef.Colquallist() != nil {
 		allQuals := columndef.Colquallist().AllColconstraint()
@@ -777,20 +686,17 @@ func (l *pgCatalogListener) alterTableAddColumn(schema *SchemaState, table *Tabl
 				continue
 			}
 			elem := qual.Colconstraintelem()
-
 			// Handle NOT NULL
 			if elem.NOT() != nil && elem.NULL_P() != nil {
-				columnState.nullable = false
+				col.Nullable = false
 			}
-
 			// Handle DEFAULT
 			if elem.DEFAULT() != nil {
 				if elem.B_expr() != nil {
 					defaultValue := elem.B_expr().GetText()
-					columnState.defaultValue = defaultValue
+					col.Default = defaultValue
 				}
 			}
-
 			// Handle UNIQUE - creates an index
 			if elem.UNIQUE() != nil && (elem.PRIMARY() == nil || elem.KEY() == nil) {
 				var constraintName string
@@ -798,25 +704,25 @@ func (l *pgCatalogListener) alterTableAddColumn(schema *SchemaState, table *Tabl
 					constraintName = pgparser.NormalizePostgreSQLName(qual.Name())
 				}
 				if constraintName == "" {
-					constraintName = generateIndexName(table.name, []string{columnName}, true)
+					constraintName = generateIndexName(table.GetProto().Name, []string{columnName}, true)
 				}
 				// Check for collision
-				if _, exists := schema.identifierMap[constraintName]; exists {
-					constraintName = generateUniqueIndexName(schema, table.name, []string{columnName}, true)
+				if table.GetIndex(constraintName) != nil {
+					constraintName = generateUniqueIndexName(schema, table.GetProto().Name, []string{columnName}, true)
 				}
 				// Create index
-				index := &IndexState{
-					name:           constraintName,
-					expressionList: []string{columnName},
-					indexType:      "btree",
-					unique:         true,
-					primary:        false,
-					isConstraint:   true,
+				index := &storepb.IndexMetadata{
+					Name:        constraintName,
+					Expressions: []string{columnName},
+					Type:        "btree",
+					Unique:      true,
+					Primary:     false,
 				}
-				table.indexSet[index.name] = index
-				schema.identifierMap[index.name] = true
+				if err := table.CreateIndex(index); err != nil {
+					l.setError(&WalkThroughError{Code: code.IndexExists, Content: err.Error()})
+					return
+				}
 			}
-
 			// Handle PRIMARY KEY - creates an index
 			if (elem.PRIMARY() != nil && elem.KEY() != nil) || (elem.UNIQUE() != nil && elem.PRIMARY() != nil) {
 				var constraintName string
@@ -824,36 +730,41 @@ func (l *pgCatalogListener) alterTableAddColumn(schema *SchemaState, table *Tabl
 					constraintName = pgparser.NormalizePostgreSQLName(qual.Name())
 				}
 				if constraintName == "" {
-					constraintName = schema.pgGeneratePrimaryKeyName(table.name)
+					constraintName = pgGeneratePrimaryKeyName(schema, table.GetProto().Name)
 				}
 				// Check for collision
-				if _, exists := schema.identifierMap[constraintName]; exists {
-					l.setError(NewRelationExistsError(constraintName, schema.name))
+				if table.GetIndex(constraintName) != nil {
+					l.setError(NewRelationExistsError(constraintName, schema.GetProto().Name))
 					return
 				}
-				columnState.nullable = false
+				col.Nullable = false
 				// Create primary key index
-				index := &IndexState{
-					name:           constraintName,
-					expressionList: []string{columnName},
-					indexType:      "btree",
-					unique:         true,
-					primary:        true,
-					isConstraint:   true,
+				index := &storepb.IndexMetadata{
+					Name:         constraintName,
+					Expressions:  []string{columnName},
+					Type:         "btree",
+					Unique:       true,
+					Primary:      true,
+					IsConstraint: true,
 				}
-				table.indexSet[index.name] = index
-				schema.identifierMap[index.name] = true
+				if err := table.CreateIndex(index); err != nil {
+					l.setError(&WalkThroughError{Code: code.PrimaryKeyExists, Content: err.Error()})
+					return
+				}
 			}
 		}
+	}
+	// Create the column
+	if err := table.CreateColumn(col); err != nil {
+		l.setError(&WalkThroughError{Code: code.ColumnExists, Content: err.Error()})
 	}
 }
 
 // alterTableAddConstraint handles ADD CONSTRAINT command.
-func (l *pgCatalogListener) alterTableAddConstraint(schema *SchemaState, table *TableState, constraint parser.ITableconstraintContext) {
+func (l *pgCatalogListener) alterTableAddConstraint(schema *model.SchemaMetadata, table *model.TableMetadata, constraint parser.ITableconstraintContext) {
 	if constraint == nil {
 		return
 	}
-
 	// Reuse the constraint creation logic from CREATE TABLE
 	err := createTableConstraint(schema, table, constraint)
 	if err != nil {
@@ -862,158 +773,118 @@ func (l *pgCatalogListener) alterTableAddConstraint(schema *SchemaState, table *
 }
 
 // alterTableDropConstraint handles DROP CONSTRAINT command.
-func (l *pgCatalogListener) alterTableDropConstraint(schema *SchemaState, table *TableState, constraintName string, ifExists bool) {
+func (l *pgCatalogListener) alterTableDropConstraint(_ *model.SchemaMetadata, table *model.TableMetadata, constraintName string, ifExists bool) {
 	// Check if constraint exists as an index
-	if index, exists := table.indexSet[constraintName]; exists {
-		delete(schema.identifierMap, index.name)
-		delete(table.indexSet, index.name)
+	if table.GetIndex(constraintName) != nil {
+		if err := table.DropIndex(constraintName); err != nil {
+			l.setError(&WalkThroughError{Code: code.IndexNotExists, Content: err.Error()})
+		}
 		return
 	}
-
 	if !ifExists {
 		l.setError(&WalkThroughError{
 			Code:    code.ConstraintNotExists,
-			Content: fmt.Sprintf("Constraint %q for table %q does not exist", constraintName, table.name),
+			Content: fmt.Sprintf("Constraint %q for table %q does not exist", constraintName, table.GetProto().Name),
 		})
 	}
 }
 
 // alterTableSetDefault handles ALTER COLUMN SET DEFAULT command.
-func (l *pgCatalogListener) alterTableSetDefault(table *TableState, columnName string, defaultValue string) {
-	column, err := table.GetColumn(columnName)
-	if err != nil {
-		l.setError(err)
+func (l *pgCatalogListener) alterTableSetDefault(table *model.TableMetadata, columnName string, defaultValue string) {
+	column := table.GetColumn(columnName)
+	if column == nil {
+		l.setError(NewColumnNotExistsError(table.GetProto().Name, columnName))
 		return
 	}
-
-	column.defaultValue = defaultValue
+	column.Default = defaultValue
 }
 
 // alterTableDropDefault handles ALTER COLUMN DROP DEFAULT command.
-func (l *pgCatalogListener) alterTableDropDefault(table *TableState, columnName string) {
-	column, err := table.GetColumn(columnName)
-	if err != nil {
-		l.setError(err)
+func (l *pgCatalogListener) alterTableDropDefault(table *model.TableMetadata, columnName string) {
+	column := table.GetColumn(columnName)
+	if column == nil {
+		l.setError(NewColumnNotExistsError(table.GetProto().Name, columnName))
 		return
 	}
-
-	column.defaultValue = ""
+	column.Default = ""
 }
 
 // alterTableSetNotNull handles ALTER COLUMN SET NOT NULL command.
-func (l *pgCatalogListener) alterTableSetNotNull(table *TableState, columnName string) {
-	column, err := table.GetColumn(columnName)
-	if err != nil {
-		l.setError(err)
+func (l *pgCatalogListener) alterTableSetNotNull(table *model.TableMetadata, columnName string) {
+	column := table.GetColumn(columnName)
+	if column == nil {
+		l.setError(NewColumnNotExistsError(table.GetProto().Name, columnName))
 		return
 	}
-
-	column.nullable = false
+	column.Nullable = false
 }
 
 // renameTable handles RENAME TO for tables.
-func (*pgCatalogListener) pgRenameTable(schema *SchemaState, table *TableState, newName string) *WalkThroughError {
+func (*pgCatalogListener) pgRenameTable(schema *model.SchemaMetadata, table *model.TableMetadata, newName string) *WalkThroughError {
 	// Check if new name already exists
-	if _, exists := schema.identifierMap[newName]; exists {
-		return NewRelationExistsError(newName, schema.name)
+	if schema.GetTable(newName) != nil {
+		return NewRelationExistsError(newName, schema.GetProto().Name)
 	}
-
-	// Remove old name from maps
-	delete(schema.identifierMap, table.name)
-	delete(schema.tableSet, table.name)
-
-	// Update table name
-	table.name = newName
-
-	// Add new name to maps
-	schema.identifierMap[table.name] = true
-	schema.tableSet[table.name] = table
-
+	// Use the RenameTable method from schema
+	oldName := table.GetProto().Name
+	if err := schema.RenameTable(oldName, newName); err != nil {
+		return &WalkThroughError{Code: code.TableNotExists, Content: err.Error()}
+	}
 	return nil
 }
 
 // renameColumn handles RENAME COLUMN.
-func (*pgCatalogListener) renameColumn(table *TableState, oldName string, newName string) *WalkThroughError {
-	column, err := table.GetColumn(oldName)
-	if err != nil {
-		return err
-	}
-
+func (*pgCatalogListener) renameColumn(table *model.TableMetadata, oldName string, newName string) *WalkThroughError {
 	if oldName == newName {
 		return nil
 	}
-
-	// Check if new name already exists
-	if _, exists := table.columnSet[newName]; exists {
-		return &WalkThroughError{
-			Code:    code.ColumnExists,
-			Content: fmt.Sprintf("The column %q already exists in table %q", newName, table.name),
-		}
+	// Use the RenameColumn method
+	if err := table.RenameColumn(oldName, newName); err != nil {
+		return &WalkThroughError{Code: code.ColumnNotExists, Content: err.Error()}
 	}
-
 	// Rename column in all indexes that reference it
-	for _, index := range table.indexSet {
-		for i, key := range index.expressionList {
+	for _, index := range table.GetProto().Indexes {
+		for i, key := range index.Expressions {
 			if key == oldName {
-				index.expressionList[i] = newName
+				index.Expressions[i] = newName
 			}
 		}
 	}
-
-	// Update column name
-	delete(table.columnSet, column.name)
-	column.name = newName
-	table.columnSet[column.name] = column
-
 	return nil
 }
 
 // renameConstraint handles RENAME CONSTRAINT.
-func (*pgCatalogListener) renameConstraint(schema *SchemaState, table *TableState, oldName string, newName string) *WalkThroughError {
-	index, exists := table.indexSet[oldName]
-	if !exists {
+func (*pgCatalogListener) renameConstraint(schema *model.SchemaMetadata, table *model.TableMetadata, oldName string, newName string) *WalkThroughError {
+	index := table.GetIndex(oldName)
+	if index == nil {
 		// We haven't dealt with foreign and check constraints, so skip if not exists
 		return nil
 	}
-
 	// Check if new name already exists
-	if _, exists := schema.identifierMap[newName]; exists {
-		return NewRelationExistsError(newName, schema.name)
+	if table.GetIndex(newName) != nil {
+		return NewRelationExistsError(newName, schema.GetProto().Name)
 	}
-
-	// Remove old name from maps
-	delete(schema.identifierMap, index.name)
-	delete(table.indexSet, index.name)
-
-	// Update index name
-	index.name = newName
-
-	// Add new name to maps
-	schema.identifierMap[index.name] = true
-	table.indexSet[index.name] = index
-
+	// Use the RenameIndex method
+	if err := table.RenameIndex(oldName, newName); err != nil {
+		return &WalkThroughError{Code: code.IndexNotExists, Content: err.Error()}
+	}
 	return nil
 }
 
 // ========================================
 // DROP statements handling
 // ========================================
-
 // EnterDropstmt handles DROP TABLE/VIEW/INDEX statements.
 func (l *pgCatalogListener) EnterDropstmt(ctx *parser.DropstmtContext) {
 	if !isTopLevel(ctx.GetParent()) || l.err != nil {
 		return
 	}
-
 	l.currentLine = ctx.GetStart().GetLine()
-
 	// Check IF EXISTS
 	ifExists := ctx.IF_P() != nil && ctx.EXISTS() != nil
-
 	// Check object type and get list of names
 	if ctx.Object_type_any_name() != nil {
 		objType := ctx.Object_type_any_name()
-
 		if objType.TABLE() != nil {
 			// DROP TABLE
 			if ctx.Any_name_list() != nil {
@@ -1061,7 +932,6 @@ func (l *pgCatalogListener) EnterDropstmt(ctx *parser.DropstmtContext) {
 // ========================================
 // DROP DATABASE handling
 // ========================================
-
 // EnterDropdbstmt handles DROP DATABASE statements.
 // PostgreSQL does not allow dropping the currently connected database.
 // Walk-through also disallows DROP DATABASE for other databases as it's out of scope.
@@ -1069,36 +939,29 @@ func (l *pgCatalogListener) EnterDropdbstmt(ctx *parser.DropdbstmtContext) {
 	if !isTopLevel(ctx.GetParent()) || l.err != nil {
 		return
 	}
-
 	l.currentLine = ctx.GetStart().GetLine()
-
 	// Extract database name
 	if ctx.Name() == nil {
 		return
 	}
-
 	databaseName := pgparser.NormalizePostgreSQLName(ctx.Name())
-
 	// PostgreSQL does not allow dropping the currently open database.
 	// This matches the real PostgreSQL behavior: "ERROR: cannot drop the currently open database"
-	if l.databaseState.isCurrentDatabase(databaseName) {
+	if isCurrentDatabase(l.databaseState, databaseName) {
 		l.setError(&WalkThroughError{
 			Code:    code.NotCurrentDatabase,
 			Content: fmt.Sprintf("Cannot drop the currently open database %q", databaseName),
 		})
 		return
 	}
-
 	// DROP DATABASE for other databases is out of scope for single-database walk-through
-	l.setError(NewAccessOtherDatabaseError(l.databaseState.name, databaseName))
+	l.setError(NewAccessOtherDatabaseError(l.databaseState.DatabaseName(), databaseName))
 }
-
 func (l *pgCatalogListener) dropTable(anyName parser.IAny_nameContext, ifExists bool) *WalkThroughError {
 	parts := pgparser.NormalizePostgreSQLAnyName(anyName)
 	if len(parts) == 0 {
 		return nil
 	}
-
 	var schemaName, tableName string
 	if len(parts) == 1 {
 		schemaName = ""
@@ -1107,82 +970,66 @@ func (l *pgCatalogListener) dropTable(anyName parser.IAny_nameContext, ifExists 
 		schemaName = parts[0]
 		tableName = parts[1]
 	}
-
-	schema, err := l.databaseState.getOrCreatePublicSchema(schemaName)
+	schema, err := getOrCreatePublicSchema(l.databaseState, schemaName)
 	if err != nil {
 		if ifExists {
 			return nil
 		}
 		return err
 	}
-
-	table, err := schema.GetTable(tableName)
-	if err != nil {
+	table := schema.GetTable(tableName)
+	if table == nil {
 		if ifExists {
 			return nil
 		}
-		return err
+		return NewTableNotExistsError(tableName)
 	}
-
-	// Check for view dependencies
-	viewList, viewErr := l.databaseState.existedViewList(table.dependencyView)
-	if viewErr != nil {
-		return &WalkThroughError{
-			Code:    code.Internal,
-			Content: fmt.Sprintf("Failed to check view dependency: %v", viewErr),
-		}
-	}
-	if len(viewList) > 0 {
+	// Check if any views depend on this table
+	dependentViews := schema.GetDependentViews(tableName, "")
+	if len(dependentViews) > 0 {
 		return &WalkThroughError{
 			Code:    code.TableIsReferencedByView,
-			Content: fmt.Sprintf("Cannot drop table %q.%q, it's referenced by view: %s", schema.name, table.name, strings.Join(viewList, ", ")),
+			Content: fmt.Sprintf("Cannot drop table %q because view(s) %v depend on it", tableName, dependentViews),
 		}
 	}
-
-	// Delete all indexes associated with the table
-	for indexName := range table.indexSet {
-		delete(schema.identifierMap, indexName)
+	// Drop the table using the schema method
+	if err := schema.DropTable(tableName); err != nil {
+		return &WalkThroughError{Code: code.TableNotExists, Content: err.Error()}
 	}
-
-	delete(schema.identifierMap, table.name)
-	delete(schema.tableSet, table.name)
 	return nil
 }
-
 func (l *pgCatalogListener) dropView(anyName parser.IAny_nameContext, ifExists bool) *WalkThroughError {
 	parts := pgparser.NormalizePostgreSQLAnyName(anyName)
 	if len(parts) == 0 {
 		return nil
 	}
-
 	var schemaName, viewName string
-	if len(parts) == 1 {
-		schemaName = ""
+	switch len(parts) {
+	case 1:
 		viewName = parts[0]
-	} else {
+	case 2:
 		schemaName = parts[0]
 		viewName = parts[1]
+	default:
+		return nil
 	}
-
-	schema, err := l.databaseState.getOrCreatePublicSchema(schemaName)
+	schema, err := getOrCreatePublicSchema(l.databaseState, schemaName)
 	if err != nil {
-		if ifExists {
-			return nil
-		}
 		return err
 	}
-
-	delete(schema.identifierMap, viewName)
-	delete(schema.viewSet, viewName)
+	// Try to drop the view
+	if dropErr := schema.DropView(viewName); dropErr != nil {
+		if !ifExists {
+			return &WalkThroughError{Code: code.ViewNotExists, Content: dropErr.Error()}
+		}
+	}
 	return nil
 }
-
 func (l *pgCatalogListener) dropIndex(anyName parser.IAny_nameContext, ifExists bool) *WalkThroughError {
 	parts := pgparser.NormalizePostgreSQLAnyName(anyName)
 	if len(parts) == 0 {
 		return nil
 	}
-
 	var schemaName, indexName string
 	if len(parts) == 1 {
 		schemaName = ""
@@ -1191,33 +1038,30 @@ func (l *pgCatalogListener) dropIndex(anyName parser.IAny_nameContext, ifExists 
 		schemaName = parts[0]
 		indexName = parts[1]
 	}
-
-	schema, err := l.databaseState.getOrCreatePublicSchema(schemaName)
+	schema, err := getOrCreatePublicSchema(l.databaseState, schemaName)
 	if err != nil {
 		if ifExists {
 			return nil
 		}
 		return err
 	}
-
-	table, index, err := schema.getIndex(indexName)
+	table, index, err := getIndexFromSchema(schema, indexName)
 	if err != nil {
 		if ifExists {
 			return nil
 		}
 		return err
 	}
-
-	delete(schema.identifierMap, index.name)
-	delete(table.indexSet, index.name)
+	// Drop the index from the table
+	if err := table.DropIndex(index.GetProto().Name); err != nil {
+		return &WalkThroughError{Code: code.IndexNotExists, Content: err.Error()}
+	}
 	return nil
 }
-
 func (l *pgCatalogListener) dropSchema(schemaNameCtx parser.INameContext, ifExists bool) *WalkThroughError {
 	schemaName := pgparser.NormalizePostgreSQLName(schemaNameCtx)
-
-	schema, exists := l.databaseState.schemaSet[schemaName]
-	if !exists {
+	schema := l.databaseState.GetSchema(schemaName)
+	if schema == nil {
 		if ifExists {
 			return nil
 		}
@@ -1226,64 +1070,65 @@ func (l *pgCatalogListener) dropSchema(schemaNameCtx parser.INameContext, ifExis
 			Content: fmt.Sprintf("Schema %q does not exist", schemaName),
 		}
 	}
-
-	// Delete all identifiers in this schema
-	for tableName := range schema.tableSet {
-		delete(schema.identifierMap, tableName)
+	// Check if schema is empty (PostgreSQL requires CASCADE or RESTRICT, but we check if empty)
+	// Get all tables, views, etc. in the schema
+	hasObjects := len(schema.ListTableNames()) > 0 || len(schema.ListViewNames()) > 0
+	if hasObjects {
+		return &WalkThroughError{
+			Code:    code.DatabaseNotEmpty,
+			Content: fmt.Sprintf("Cannot drop schema %q because it contains objects (use CASCADE to drop)", schemaName),
+		}
 	}
-	for viewName := range schema.viewSet {
-		delete(schema.identifierMap, viewName)
+	// Drop the schema
+	if err := l.databaseState.DropSchema(schemaName); err != nil {
+		return &WalkThroughError{Code: code.SchemaNotExists, Content: err.Error()}
 	}
-
-	// Delete the schema
-	delete(l.databaseState.schemaSet, schemaName)
 	return nil
 }
 
 // TODO: EnterDropindexstmt - Need to find correct ANTLR context name
-// func (l *pgCatalogListener) EnterDropindexstmt(ctx *parser.DropIndexContext) {
-// 	if !isTopLevel(ctx.GetParent()) || l.err != nil {
-// 		return
-// 	}
 //
-// 	if !l.checkDatabaseNotDeleted() {
-// 		return
-// 	}
+//	func (l *pgCatalogListener) EnterDropindexstmt(ctx *parser.DropIndexContext) {
+//		if !isTopLevel(ctx.GetParent()) || l.err != nil {
+//			return
+//		}
 //
-// 	l.currentLine = ctx.GetStart().GetLine()
+//		if !l.checkDatabaseNotDeleted() {
+//			return
+//		}
 //
-// 	// TODO: Implement DROP INDEX logic
-// 	// Similar to pgDropIndexList() in walk_through_for_pg.go
-// }
-
+//		l.currentLine = ctx.GetStart().GetLine()
+//
+//		// TODO: Implement DROP INDEX logic
+//		// Similar to pgDropIndexList() in walk_through_for_pg.go
+//	}
+//
 // TODO: EnterDropschemastatement - Need to find correct ANTLR context name
-// func (l *pgCatalogListener) EnterDropschemastatement(ctx *parser.DropschemaContext) {
-// 	if !isTopLevel(ctx.GetParent()) || l.err != nil {
-// 		return
-// 	}
 //
-// 	if !l.checkDatabaseNotDeleted() {
-// 		return
-// 	}
+//	func (l *pgCatalogListener) EnterDropschemastatement(ctx *parser.DropschemaContext) {
+//		if !isTopLevel(ctx.GetParent()) || l.err != nil {
+//			return
+//		}
 //
-// 	l.currentLine = ctx.GetStart().GetLine()
+//		if !l.checkDatabaseNotDeleted() {
+//			return
+//		}
 //
-// 	// TODO: Implement DROP SCHEMA logic
-// 	// Similar to pgDropSchema() in walk_through_for_pg.go
-// }
-
+//		l.currentLine = ctx.GetStart().GetLine()
+//
+//		// TODO: Implement DROP SCHEMA logic
+//		// Similar to pgDropSchema() in walk_through_for_pg.go
+//	}
+//
 // ========================================
 // RENAME statements handling
 // ========================================
-
 // EnterRenamestmt handles RENAME INDEX/CONSTRAINT/TABLE/COLUMN statements.
 func (l *pgCatalogListener) EnterRenamestmt(ctx *parser.RenamestmtContext) {
 	if !isTopLevel(ctx.GetParent()) || l.err != nil {
 		return
 	}
-
 	l.currentLine = ctx.GetStart().GetLine()
-
 	// Check if this is INDEX rename (ALTER INDEX ... RENAME TO ...)
 	if ctx.INDEX() != nil {
 		// ALTER INDEX index_name RENAME TO new_name
@@ -1291,49 +1136,34 @@ func (l *pgCatalogListener) EnterRenamestmt(ctx *parser.RenamestmtContext) {
 			indexName := extractTableName(ctx.Qualified_name())
 			schemaName := extractSchemaName(ctx.Qualified_name())
 			newName := pgparser.NormalizePostgreSQLName(ctx.AllName()[0])
-
-			schema, err := l.databaseState.getOrCreatePublicSchema(schemaName)
+			schema, err := getOrCreatePublicSchema(l.databaseState, schemaName)
 			if err != nil {
 				l.setError(err)
 				return
 			}
-
 			// Find the index across all tables
-			var foundIndex *IndexState
-			var foundTable *TableState
-			for _, table := range schema.tableSet {
-				if index, exists := table.indexSet[indexName]; exists {
-					foundIndex = index
-					foundTable = table
-					break
-				}
-			}
-
-			if foundIndex == nil {
+			foundTable, _, err := getIndexFromSchema(schema, indexName)
+			if err != nil {
 				// Index not found, silently ignore (PostgreSQL behavior)
 				return
 			}
-
 			if err := l.renameConstraint(schema, foundTable, indexName, newName); err != nil {
 				l.setError(err)
 			}
 		}
 		return
 	}
-
 	// Extract relation (table) if present
 	var tableName, schemaName string
 	if ctx.Relation_expr() != nil && ctx.Relation_expr().Qualified_name() != nil {
 		tableName = extractTableName(ctx.Relation_expr().Qualified_name())
 		schemaName = extractSchemaName(ctx.Relation_expr().Qualified_name())
 	}
-
-	schema, err := l.databaseState.getOrCreatePublicSchema(schemaName)
+	schema, err := getOrCreatePublicSchema(l.databaseState, schemaName)
 	if err != nil {
 		l.setError(err)
 		return
 	}
-
 	// Check if this is column rename
 	if ctx.Opt_column() != nil {
 		// RENAME COLUMN: ALTER TABLE table RENAME COLUMN oldname TO newname
@@ -1342,20 +1172,17 @@ func (l *pgCatalogListener) EnterRenamestmt(ctx *parser.RenamestmtContext) {
 		if len(allNames) >= 2 && tableName != "" {
 			oldName := pgparser.NormalizePostgreSQLName(allNames[0])
 			newName := pgparser.NormalizePostgreSQLName(allNames[1])
-
-			table, err := schema.GetTable(tableName)
-			if err != nil {
-				l.setError(err)
+			table := schema.GetTable(tableName)
+			if table == nil {
+				l.setError(NewTableNotExistsError(tableName))
 				return
 			}
-
 			if err := l.renameColumn(table, oldName, newName); err != nil {
 				l.setError(err)
 			}
 		}
 		return
 	}
-
 	// Check if this is constraint rename
 	if ctx.CONSTRAINT() != nil && tableName != "" {
 		// RENAME CONSTRAINT: ALTER TABLE table RENAME CONSTRAINT oldname TO newname
@@ -1363,30 +1190,25 @@ func (l *pgCatalogListener) EnterRenamestmt(ctx *parser.RenamestmtContext) {
 		if len(allNames) >= 2 {
 			oldName := pgparser.NormalizePostgreSQLName(allNames[0])
 			newName := pgparser.NormalizePostgreSQLName(allNames[1])
-
-			table, err := schema.GetTable(tableName)
-			if err != nil {
-				l.setError(err)
+			table := schema.GetTable(tableName)
+			if table == nil {
+				l.setError(NewTableNotExistsError(tableName))
 				return
 			}
-
 			if err := l.renameConstraint(schema, table, oldName, newName); err != nil {
 				l.setError(err)
 			}
 		}
 		return
 	}
-
 	// Otherwise it's table rename: ALTER TABLE oldname RENAME TO newname
 	if tableName != "" && ctx.AllName() != nil && len(ctx.AllName()) > 0 {
 		newName := pgparser.NormalizePostgreSQLName(ctx.AllName()[0])
-
-		table, err := schema.GetTable(tableName)
-		if err != nil {
-			l.setError(err)
+		table := schema.GetTable(tableName)
+		if table == nil {
+			l.setError(NewTableNotExistsError(tableName))
 			return
 		}
-
 		if err := l.pgRenameTable(schema, table, newName); err != nil {
 			l.setError(err)
 		}
@@ -1397,62 +1219,54 @@ func (l *pgCatalogListener) EnterRenamestmt(ctx *parser.RenamestmtContext) {
 // ========================================
 // CREATE VIEW handling
 // ========================================
-
 // EnterViewstmt handles CREATE VIEW statements.
 func (l *pgCatalogListener) EnterViewstmt(ctx *parser.ViewstmtContext) {
 	if !isTopLevel(ctx.GetParent()) || l.err != nil {
 		return
 	}
-
 	l.currentLine = ctx.GetStart().GetLine()
-
 	// Extract view name
 	if ctx.Qualified_name() == nil {
 		return
 	}
-
 	viewName := extractTableName(ctx.Qualified_name())
 	schemaName := extractSchemaName(ctx.Qualified_name())
 	databaseName := extractDatabaseName(ctx.Qualified_name())
-
 	// Check if accessing other database
-	if databaseName != "" && l.databaseState.name != databaseName {
+	if databaseName != "" && l.databaseState.DatabaseName() != databaseName {
 		l.setError(&WalkThroughError{
 			Code:    code.NotCurrentDatabase,
-			Content: fmt.Sprintf("Database %q is not the current database %q", databaseName, l.databaseState.name),
+			Content: fmt.Sprintf("Database %q is not the current database %q", databaseName, l.databaseState.DatabaseName()),
 		})
 		return
 	}
-
-	schema, err := l.databaseState.getOrCreatePublicSchema(schemaName)
+	schema, err := getOrCreatePublicSchema(l.databaseState, schemaName)
 	if err != nil {
 		l.setError(err)
 		return
 	}
-
-	// Check if view already exists - currently we don't check views
-	// This matches the legacy behavior in walk_through_for_pg.go:619-622
-	if _, exists := schema.viewSet[viewName]; exists {
-		return
+	// Get the view definition (the SELECT statement)
+	// We don't parse the dependencies yet - that would require full SQL analysis
+	// For now, create the view with empty dependency list
+	definition := ""
+	if ctx.Selectstmt() != nil {
+		definition = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Selectstmt())
 	}
-
-	// Create view state
-	view := &ViewState{
-		name: viewName,
+	// Create the view
+	_, createErr := schema.CreateView(viewName, definition, nil)
+	if createErr != nil {
+		l.setError(&WalkThroughError{Code: code.ViewExists, Content: createErr.Error()})
 	}
-	schema.viewSet[view.name] = view
 }
 
 // ========================================
 // Helper functions
 // ========================================
-
 // isTopLevel checks if the context is at the top level (not nested).
 func isTopLevel(ctx antlr.Tree) bool {
 	if ctx == nil {
 		return true
 	}
-
 	switch ctx := ctx.(type) {
 	case *parser.RootContext, *parser.StmtblockContext:
 		return true
@@ -1471,11 +1285,9 @@ func extractTypeName(typename parser.ITypenameContext) string {
 	if typename == nil {
 		return ""
 	}
-
 	// Use GetText() to get the full type string
 	// The parser should have already normalized type names
 	typeText := typename.GetText()
-
 	// Normalize common PostgreSQL type aliases
 	switch strings.ToLower(typeText) {
 	case "int", "int4":
@@ -1501,7 +1313,6 @@ func extractTableName(qualifiedName parser.IQualified_nameContext) string {
 	if qualifiedName == nil {
 		return ""
 	}
-
 	parts := pgparser.NormalizePostgreSQLQualifiedName(qualifiedName)
 	if len(parts) == 0 {
 		return ""
@@ -1518,7 +1329,6 @@ func extractSchemaName(qualifiedName parser.IQualified_nameContext) string {
 	if qualifiedName == nil {
 		return ""
 	}
-
 	parts := pgparser.NormalizePostgreSQLQualifiedName(qualifiedName)
 	switch len(parts) {
 	case 1:
@@ -1542,7 +1352,6 @@ func extractDatabaseName(qualifiedName parser.IQualified_nameContext) string {
 	if qualifiedName == nil {
 		return ""
 	}
-
 	parts := pgparser.NormalizePostgreSQLQualifiedName(qualifiedName)
 	if len(parts) == 3 {
 		// db.schema.table
@@ -1556,7 +1365,6 @@ func extractDatabaseName(qualifiedName parser.IQualified_nameContext) string {
 func generateIndexName(tableName string, columnList []string, _ bool) string {
 	var builder strings.Builder
 	builder.WriteString(tableName)
-
 	expressionID := 0
 	for _, col := range columnList {
 		builder.WriteByte('_')
@@ -1570,25 +1378,82 @@ func generateIndexName(tableName string, columnList []string, _ bool) string {
 			builder.WriteString(col)
 		}
 	}
-
 	builder.WriteString("_idx")
-
 	return builder.String()
 }
 
 // generateUniqueIndexName generates a unique index name by adding numeric suffixes.
 // Tries name1, name2, name3, etc. until finding an available name.
-func generateUniqueIndexName(schema *SchemaState, tableName string, columnList []string, isUnique bool) string {
+func generateUniqueIndexName(schema *model.SchemaMetadata, tableName string, columnList []string, isUnique bool) string {
 	baseName := generateIndexName(tableName, columnList, isUnique)
-
 	// Try with numeric suffixes starting from 1
 	for i := 1; i < 1000; i++ {
 		candidateName := fmt.Sprintf("%s%d", baseName, i)
-		if _, exists := schema.identifierMap[candidateName]; !exists {
+		// Check if index exists in the schema
+		if schema.GetIndex(candidateName) == nil {
 			return candidateName
 		}
 	}
-
 	// Fallback (should never reach here)
 	return fmt.Sprintf("%s_collision", baseName)
+}
+
+// pgGeneratePrimaryKeyName generates a primary key name following PostgreSQL conventions.
+// Uses the pattern "{tableName}_pkey" and adds numeric suffixes if there are collisions.
+func pgGeneratePrimaryKeyName(schema *model.SchemaMetadata, tableName string) string {
+	pkName := fmt.Sprintf("%s_pkey", tableName)
+	// For PostgreSQL, check if the index name already exists in the schema
+	if schema.GetIndex(pkName) == nil {
+		return pkName
+	}
+	suffix := 1
+	for {
+		candidateName := fmt.Sprintf("%s%d", pkName, suffix)
+		if schema.GetIndex(candidateName) == nil {
+			return candidateName
+		}
+		suffix++
+	}
+}
+
+// getOrCreatePublicSchema gets a schema by name, or creates the "public" schema if it doesn't exist.
+// For PostgreSQL, the "public" schema is auto-created, but other schemas must exist.
+func getOrCreatePublicSchema(d *model.DatabaseMetadata, schemaName string) (*model.SchemaMetadata, *WalkThroughError) {
+	if schemaName == "" {
+		schemaName = publicSchemaName
+	}
+	schema := d.GetSchema(schemaName)
+	if schema != nil {
+		return schema, nil
+	}
+	// Only auto-create the "public" schema
+	if schemaName != publicSchemaName {
+		return nil, &WalkThroughError{
+			Code:    code.SchemaNotExists,
+			Content: fmt.Sprintf("The schema %q doesn't exist", schemaName),
+		}
+	}
+	return d.CreateSchema(publicSchemaName), nil
+}
+
+// getIndexFromSchema finds an index by name within a schema and returns the table and index.
+// For PostgreSQL, index names are unique within a schema (not just within a table).
+func getIndexFromSchema(s *model.SchemaMetadata, indexName string) (*model.TableMetadata, *model.IndexMetadata, *WalkThroughError) {
+	// For PostgreSQL, index names are unique within a schema
+	index := s.GetIndex(indexName)
+	if index == nil {
+		return nil, nil, &WalkThroughError{
+			Code:    code.IndexNotExists,
+			Content: fmt.Sprintf("Index %q does not exist in schema %q", indexName, s.GetProto().Name),
+		}
+	}
+	// Find the table that owns this index
+	table := s.GetTable(index.GetTableProto().Name)
+	if table == nil {
+		return nil, nil, &WalkThroughError{
+			Code:    code.TableNotExists,
+			Content: fmt.Sprintf("Table %q does not exist in schema %q", index.GetTableProto().Name, s.GetProto().Name),
+		}
+	}
+	return table, index, nil
 }
