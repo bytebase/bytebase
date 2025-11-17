@@ -11,7 +11,6 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -234,9 +233,9 @@ func (r *namingIndexConventionRule) checkIndexName(indexName, tableName string, 
 }
 
 // findIndex returns index found in catalogs, nil if not found.
-func (r *namingIndexConventionRule) findIndex(schemaName string, tableName string, indexName string) (string, *catalog.IndexState) {
+func (r *namingIndexConventionRule) findIndex(schemaName string, tableName string, indexName string) (string, *model.IndexMetadata) {
 	if r.originCatalog == nil {
 		return "", nil
 	}
-	return catalog.ToDatabaseState(r.originCatalog, storepb.Engine_POSTGRES).GetIndex(normalizeSchemaName(schemaName), tableName, indexName)
+	return r.originCatalog.GetIndex(normalizeSchemaName(schemaName), tableName, indexName)
 }

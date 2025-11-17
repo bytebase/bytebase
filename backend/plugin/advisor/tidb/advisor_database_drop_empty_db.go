@@ -12,7 +12,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -63,15 +62,15 @@ type allowDropEmptyDBChecker struct {
 // Enter implements the ast.Visitor interface.
 func (v *allowDropEmptyDBChecker) Enter(in ast.Node) (ast.Node, bool) {
 	if node, ok := in.(*ast.DropDatabaseStmt); ok {
-		if catalog.ToDatabaseState(v.originCatalog, storepb.Engine_TIDB).DatabaseName() != node.Name.O {
+		if v.originCatalog.DatabaseName() != node.Name.O {
 			v.adviceList = append(v.adviceList, &storepb.Advice{
 				Status:        v.level,
 				Code:          code.NotCurrentDatabase.Int32(),
 				Title:         v.title,
-				Content:       fmt.Sprintf("Database `%s` that is trying to be deleted is not the current database `%s`", node.Name, catalog.ToDatabaseState(v.originCatalog, storepb.Engine_TIDB).DatabaseName()),
+				Content:       fmt.Sprintf("Database `%s` that is trying to be deleted is not the current database `%s`", node.Name, v.originCatalog.DatabaseName()),
 				StartPosition: common.ConvertANTLRLineToPosition(node.OriginTextPosition()),
 			})
-		} else if !catalog.ToDatabaseState(v.originCatalog, storepb.Engine_TIDB).HasNoTable() {
+		} else if !v.originCatalog.HasNoTable() {
 			v.adviceList = append(v.adviceList, &storepb.Advice{
 				Status:        v.level,
 				Code:          code.DatabaseNotEmpty.Int32(),

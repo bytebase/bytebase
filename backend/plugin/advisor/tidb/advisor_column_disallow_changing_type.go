@@ -15,7 +15,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -132,11 +131,11 @@ func normalizeColumnType(tp string) string {
 }
 
 func (checker *columnDisallowChangingTypeChecker) changeColumnType(tableName string, columName string, newType string) bool {
-	column := catalog.ToDatabaseState(checker.originCatalog, storepb.Engine_TIDB).GetColumn("", tableName, columName)
+	column := checker.originCatalog.GetColumn("", tableName, columName)
 
 	if column == nil {
 		return false
 	}
 
-	return normalizeColumnType(column.Type()) != normalizeColumnType(newType)
+	return normalizeColumnType(column.Type) != normalizeColumnType(newType)
 }

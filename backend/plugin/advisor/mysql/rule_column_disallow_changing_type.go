@@ -15,7 +15,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -171,14 +170,13 @@ func normalizeColumnType(tp string) string {
 
 func (r *ColumnDisallowChangingTypeRule) changeColumnType(tableName, columnName string, dataType mysql.IDataTypeContext) {
 	tp := dataType.GetParser().GetTokenStream().GetTextFromRuleContext(dataType)
-	dbState := catalog.ToDatabaseState(r.originCatalog, storepb.Engine_MYSQL)
-	column := dbState.GetColumn("", tableName, columnName)
+	column := r.originCatalog.GetColumn("", tableName, columnName)
 
 	if column == nil {
 		return
 	}
 
-	if normalizeColumnType(column.Type()) != normalizeColumnType(tp) {
+	if normalizeColumnType(column.Type) != normalizeColumnType(tp) {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
 			Code:          code.ChangeColumnType.Int32(),

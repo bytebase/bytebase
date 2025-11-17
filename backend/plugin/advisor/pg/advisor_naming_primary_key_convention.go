@@ -11,7 +11,6 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -197,7 +196,7 @@ func (r *namingPKConventionRule) handleRenamestmt(ctx *parser.RenamestmtContext)
 				if normalizedSchema == "" {
 					normalizedSchema = "public"
 				}
-				_, index := catalog.ToDatabaseState(r.originCatalog, storepb.Engine_POSTGRES).GetIndex(normalizedSchema, tableName, oldName)
+				_, index := r.originCatalog.GetIndex(normalizedSchema, tableName, oldName)
 				if index != nil && index.Primary() {
 					metaData := map[string]string{
 						advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList(), "_"),
@@ -242,7 +241,7 @@ func (r *namingPKConventionRule) handleRenamestmt(ctx *parser.RenamestmtContext)
 				}
 				// "ALTER INDEX name RENAME TO new_name" doesn't specify table name
 				// Empty table name for ALTER INDEX
-				tableName, index := catalog.ToDatabaseState(r.originCatalog, storepb.Engine_POSTGRES).GetIndex(normalizedSchema, "", oldIndexName)
+				tableName, index := r.originCatalog.GetIndex(normalizedSchema, "", oldIndexName)
 				if index != nil && index.Primary() {
 					metaData := map[string]string{
 						advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList(), "_"),
@@ -313,7 +312,7 @@ func (r *namingPKConventionRule) getPKMetaDataFromTableConstraint(constraint par
 				if normalizedSchema == "" {
 					normalizedSchema = "public"
 				}
-				_, index := catalog.ToDatabaseState(r.originCatalog, storepb.Engine_POSTGRES).GetIndex(normalizedSchema, tableName, indexName)
+				_, index := r.originCatalog.GetIndex(normalizedSchema, tableName, indexName)
 				if index != nil {
 					columnList = index.ExpressionList()
 				}

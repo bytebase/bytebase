@@ -13,7 +13,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -103,16 +102,15 @@ func (r *DatabaseDropEmptyDBRule) checkDropDatabase(ctx *mysql.DropDatabaseConte
 	}
 
 	dbName := mysqlparser.NormalizeMySQLSchemaRef(ctx.SchemaRef())
-	dbState := catalog.ToDatabaseState(r.originCatalog, storepb.Engine_MYSQL)
-	if dbState.DatabaseName() != dbName {
+	if r.originCatalog.DatabaseName() != dbName {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
 			Code:          code.NotCurrentDatabase.Int32(),
 			Title:         r.title,
-			Content:       fmt.Sprintf("Database `%s` that is trying to be deleted is not the current database `%s`", dbName, dbState.DatabaseName()),
+			Content:       fmt.Sprintf("Database `%s` that is trying to be deleted is not the current database `%s`", dbName, r.originCatalog.DatabaseName()),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
 		})
-	} else if !dbState.HasNoTable() {
+	} else if !r.originCatalog.HasNoTable() {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
 			Code:          code.DatabaseNotEmpty.Int32(),

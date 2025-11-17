@@ -13,7 +13,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -159,14 +158,13 @@ func (r *ColumnDisallowDropInIndexRule) checkAlterTable(ctx *mysql.AlterTableCon
 			continue
 		}
 
-		dbState := catalog.ToDatabaseState(r.originCatalog, storepb.Engine_MYSQL)
-		index := dbState.Index("", tableName)
+		index := r.originCatalog.Index("", tableName)
 
 		if index != nil {
 			if r.tables[tableName] == nil {
 				r.tables[tableName] = make(columnSet)
 			}
-			for _, indexColumn := range *index {
+			for _, indexColumn := range index {
 				for _, column := range indexColumn.ExpressionList() {
 					r.tables[tableName][column] = true
 				}

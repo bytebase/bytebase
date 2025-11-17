@@ -14,7 +14,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
@@ -68,8 +67,7 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor
 
 	// Check if backup schema exists
 	schemaName := common.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES)
-	dbState := catalog.ToDatabaseState(checkCtx.OriginalMetadata, storepb.Engine_POSTGRES)
-	if !dbState.HasSchema(schemaName) {
+	if checkCtx.OriginalMetadata.GetSchema(schemaName) == nil {
 		adviceList = append(adviceList, &storepb.Advice{
 			Status:        level,
 			Title:         title,

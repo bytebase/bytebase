@@ -23,10 +23,3 @@ func NewCatalogWithMetadata(metadata *storepb.DatabaseSchemaMetadata, engineType
 
 	return originalMetadata, final, nil
 }
-
-// ToDatabaseState converts DatabaseMetadata to DatabaseState for internal use.
-// DatabaseState is used internally by walk-through implementations and advisor rules.
-// This is a compatibility helper that allows gradual migration of internal code.
-func ToDatabaseState(d *model.DatabaseMetadata, engineType storepb.Engine) *DatabaseState {
-	return NewDatabaseState(d.GetProto(), !d.GetIsObjectCaseSensitive(), engineType)
-}

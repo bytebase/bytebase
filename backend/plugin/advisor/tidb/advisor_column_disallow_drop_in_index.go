@@ -14,7 +14,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -89,13 +88,13 @@ func (checker *columnDisallowDropInIndexChecker) dropColumn(in ast.Node) (ast.No
 			if spec.Tp == ast.AlterTableDropColumn {
 				table := node.Table.Name.O
 
-				index := catalog.ToDatabaseState(checker.originCatalog, storepb.Engine_TIDB).Index("", table)
+				tableMetadata := checker.originCatalog.GetTable("", table)
 
-				if index != nil {
+				if tableMetadata != nil {
 					if checker.tables[table] == nil {
 						checker.tables[table] = make(columnSet)
 					}
-					for _, indexColumn := range *index {
+					for _, indexColumn := range tableMetadata.ListIndexes() {
 						for _, column := range indexColumn.ExpressionList() {
 							checker.tables[table][column] = true
 						}

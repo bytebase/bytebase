@@ -183,13 +183,11 @@ func (v *tableRequirePKChecker) createTableLike(node *ast.CreateTableStmt) {
 		}
 		v.tables[table] = newColumnSet(columns)
 	} else {
-		referTableState := catalog.ToDatabaseState(v.originCatalog, storepb.Engine_TIDB).GetTable("", referTableName)
-		if referTableState != nil {
-			indexSet := referTableState.Index()
-			for _, index := range *indexSet {
-				if index.Primary() {
-					v.tables[table] = newColumnSet(index.ExpressionList())
-				}
+		referTableMetadata := v.originCatalog.GetTable("", referTableName)
+		if referTableMetadata != nil {
+			primaryKey := referTableMetadata.GetPrimaryKey()
+			if primaryKey != nil {
+				v.tables[table] = newColumnSet(primaryKey.ExpressionList())
 			}
 		}
 	}
@@ -197,7 +195,7 @@ func (v *tableRequirePKChecker) createTableLike(node *ast.CreateTableStmt) {
 
 func (v *tableRequirePKChecker) dropColumn(table string, column string) bool {
 	if _, ok := v.tables[table]; !ok {
-		_, pk := catalog.ToDatabaseState(v.originCatalog, storepb.Engine_TIDB).GetIndex("", table, primaryKeyName)
+		_, pk := v.originCatalog.GetIndex("", table, primaryKeyName)
 		if pk == nil {
 			return false
 		}
