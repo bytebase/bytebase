@@ -183,11 +183,11 @@ func runWalkThroughTest(t *testing.T, file string, engineType storepb.Engine, or
 			proto = &storepb.DatabaseSchemaMetadata{}
 		}
 
-		// Create DatabaseState for walk-through (legacy approach for tests)
+		// Create DatabaseState for walk-through
 		state := NewDatabaseState(proto, test.IgnoreCaseSensitive, engineType)
 
 		asts, _ := sm.GetASTsForChecks(engineType, test.Statement)
-		err := walkThroughDatabaseState(state, engineType, asts)
+		err := WalkThrough(state, asts)
 		if err != nil {
 			err, yes := err.(*WalkThroughError)
 			require.True(t, yes)
@@ -225,7 +225,7 @@ func runANTLRWalkThroughTest(t *testing.T, file string, engineType storepb.Engin
 			proto = &storepb.DatabaseSchemaMetadata{}
 		}
 
-		// Create DatabaseState for walk-through (legacy approach for tests)
+		// Create DatabaseState for walk-through
 		state := NewDatabaseState(proto, test.IgnoreCaseSensitive, engineType)
 
 		// Parse using ANTLR parser instead of legacy parser
@@ -234,8 +234,8 @@ func runANTLRWalkThroughTest(t *testing.T, file string, engineType storepb.Engin
 			t.Fatalf("Failed to parse SQL with ANTLR: %v\nSQL: %s", parseErr, test.Statement)
 		}
 
-		// Call walkThroughDatabaseState with ANTLR tree
-		err := walkThroughDatabaseState(state, engineType, parseResult)
+		// Call WalkThrough with ANTLR tree
+		err := WalkThrough(state, parseResult)
 		if err != nil {
 			err, yes := err.(*WalkThroughError)
 			require.True(t, yes)

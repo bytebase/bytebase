@@ -15,7 +15,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -76,11 +75,11 @@ func (c columnName) name() string {
 type ColumnNoNullRule struct {
 	BaseRule
 	columnSet    map[string]columnName
-	finalCatalog *model.DatabaseMetadata
+	finalCatalog *catalog.DatabaseState
 }
 
 // NewColumnNoNullRule creates a new ColumnNoNullRule.
-func NewColumnNoNullRule(level storepb.Advice_Status, title string, finalCatalog *model.DatabaseMetadata) *ColumnNoNullRule {
+func NewColumnNoNullRule(level storepb.Advice_Status, title string, finalCatalog *catalog.DatabaseState) *ColumnNoNullRule {
 	return &ColumnNoNullRule{
 		BaseRule: BaseRule{
 			level: level,
@@ -136,7 +135,7 @@ func (r *ColumnNoNullRule) generateAdvice() {
 	})
 
 	for _, column := range columnList {
-		dbState := catalog.ToDatabaseState(r.finalCatalog, storepb.Engine_MYSQL)
+		dbState := r.finalCatalog
 		col := dbState.GetColumn("", column.tableName, column.columnName)
 		if col != nil && col.Nullable() {
 			r.AddAdvice(&storepb.Advice{

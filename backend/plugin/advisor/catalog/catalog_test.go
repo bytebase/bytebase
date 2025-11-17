@@ -29,15 +29,21 @@ func TestNewCatalogWithMetadata(t *testing.T) {
 
 	// Verify both have the table initially
 	require.NotNil(t, origin.GetSchema("public").GetTable("users"))
-	require.NotNil(t, final.GetSchema("public").GetTable("users"))
-
-	// Mutate final
-	_, err = final.GetSchema("public").CreateTable("products")
+	finalSchema, err := final.GetSchema("public")
 	require.Nil(t, err)
+	finalTable, err := finalSchema.GetTable("users")
+	require.Nil(t, err)
+	require.NotNil(t, finalTable)
 
-	// Verify origin is unchanged
+	// Mutate final - DatabaseState CreateTable returns (*TableState, *WalkThroughError)
+	_, walkErr := finalSchema.CreateTable("products")
+	require.Nil(t, walkErr)
+
+	// Verify origin is unchanged (DatabaseMetadata)
 	require.Nil(t, origin.GetSchema("public").GetTable("products"))
 
-	// Verify final has the new table
-	require.NotNil(t, final.GetSchema("public").GetTable("products"))
+	// Verify final has the new table (DatabaseState)
+	newTable, walkErr := finalSchema.GetTable("products")
+	require.Nil(t, walkErr)
+	require.NotNil(t, newTable)
 }

@@ -16,7 +16,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -69,11 +68,11 @@ type IndexTotalNumberLimitRule struct {
 	BaseRule
 	max          int
 	lineForTable map[string]int
-	finalCatalog *model.DatabaseMetadata
+	finalCatalog *catalog.DatabaseState
 }
 
 // NewIndexTotalNumberLimitRule creates a new IndexTotalNumberLimitRule.
-func NewIndexTotalNumberLimitRule(level storepb.Advice_Status, title string, maxIndexes int, finalCatalog *model.DatabaseMetadata) *IndexTotalNumberLimitRule {
+func NewIndexTotalNumberLimitRule(level storepb.Advice_Status, title string, maxIndexes int, finalCatalog *catalog.DatabaseState) *IndexTotalNumberLimitRule {
 	return &IndexTotalNumberLimitRule{
 		BaseRule: BaseRule{
 			level: level,
@@ -133,7 +132,7 @@ func (r *IndexTotalNumberLimitRule) generateAdvice() []*storepb.Advice {
 	})
 
 	for _, table := range tableList {
-		dbState := catalog.ToDatabaseState(r.finalCatalog, storepb.Engine_MYSQL)
+		dbState := r.finalCatalog
 		tableInfo := dbState.GetTable("", table.name)
 		if tableInfo != nil && tableInfo.CountIndex() > r.max {
 			r.AddAdvice(&storepb.Advice{

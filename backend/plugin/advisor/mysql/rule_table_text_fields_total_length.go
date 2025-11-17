@@ -19,7 +19,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -66,12 +65,12 @@ func (*TableMaximumVarcharLengthAdvisor) Check(_ context.Context, checkCtx advis
 // TableTextFieldsTotalLengthRule checks for table text fields total length.
 type TableTextFieldsTotalLengthRule struct {
 	BaseRule
-	finalCatalog *model.DatabaseMetadata
+	finalCatalog *catalog.DatabaseState
 	maximum      int
 }
 
 // NewTableTextFieldsTotalLengthRule creates a new TableTextFieldsTotalLengthRule.
-func NewTableTextFieldsTotalLengthRule(level storepb.Advice_Status, title string, finalCatalog *model.DatabaseMetadata, maximum int) *TableTextFieldsTotalLengthRule {
+func NewTableTextFieldsTotalLengthRule(level storepb.Advice_Status, title string, finalCatalog *catalog.DatabaseState, maximum int) *TableTextFieldsTotalLengthRule {
 	return &TableTextFieldsTotalLengthRule{
 		BaseRule: BaseRule{
 			level: level,
@@ -117,7 +116,7 @@ func (r *TableTextFieldsTotalLengthRule) checkCreateTable(ctx *mysql.CreateTable
 	if tableName == "" {
 		return
 	}
-	dbState := catalog.ToDatabaseState(r.finalCatalog, storepb.Engine_MYSQL)
+	dbState := r.finalCatalog
 	tableInfo := dbState.GetTable("", tableName)
 	if tableInfo == nil {
 		return
@@ -152,7 +151,7 @@ func (r *TableTextFieldsTotalLengthRule) checkAlterTable(ctx *mysql.AlterTableCo
 	if tableName == "" {
 		return
 	}
-	dbState := catalog.ToDatabaseState(r.finalCatalog, storepb.Engine_MYSQL)
+	dbState := r.finalCatalog
 	tableInfo := dbState.GetTable("", tableName)
 	if tableInfo == nil {
 		return

@@ -16,7 +16,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -72,7 +71,7 @@ type indexTotalNumberLimitChecker struct {
 	line         int
 	max          int
 	lineForTable map[string]int
-	finalCatalog *model.DatabaseMetadata
+	finalCatalog *catalog.DatabaseState
 }
 
 func (checker *indexTotalNumberLimitChecker) generateAdvice() []*storepb.Advice {

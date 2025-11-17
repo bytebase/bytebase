@@ -13,7 +13,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -59,7 +58,7 @@ type columnNoNullChecker struct {
 	level        storepb.Advice_Status
 	title        string
 	columnSet    map[string]columnName
-	finalCatalog *model.DatabaseMetadata
+	finalCatalog *catalog.DatabaseState
 }
 
 func (checker *columnNoNullChecker) generateAdvice() []*storepb.Advice {

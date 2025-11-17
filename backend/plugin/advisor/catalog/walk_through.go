@@ -9,7 +9,6 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 const (
@@ -93,33 +92,17 @@ func (e *WalkThroughError) Error() string {
 	return e.Content
 }
 
-// WalkThrough will collect the catalog schema in the database metadata as it walks through the stmt.
-// The DatabaseMetadata proto will be modified in-place during the walk-through.
-func WalkThrough(d *model.DatabaseMetadata, engineType storepb.Engine, ast any) error {
-	// Get the proto from DatabaseMetadata - this will be modified in-place by DatabaseState
-	proto := d.GetProto()
-
-	// Convert to DatabaseState for walk-through
-	// Note: DatabaseState references and modifies the proto directly during walk-through
-	ignoreCaseSensitive := !d.GetIsObjectCaseSensitive()
-	dbState := NewDatabaseState(proto, ignoreCaseSensitive, engineType)
-
-	return walkThroughDatabaseState(dbState, engineType, ast)
-}
-
-// walkThroughDatabaseState performs walk-through on a DatabaseState.
-// This is the internal implementation that processes the AST.
-func walkThroughDatabaseState(dbState *DatabaseState, engineType storepb.Engine, ast any) error {
-	// Perform walk-through on DatabaseState, which modifies the proto in-place
-	switch engineType {
+// WalkThrough will collect the catalog schema in the database state as it walks through the stmt.
+func WalkThrough(d *DatabaseState, ast any) error {
+	switch d.dbType {
 	case storepb.Engine_TIDB:
-		return TiDBWalkThrough(dbState, ast)
+		return TiDBWalkThrough(d, ast)
 	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-		return MySQLWalkThrough(dbState, ast)
+		return MySQLWalkThrough(d, ast)
 	case storepb.Engine_POSTGRES:
-		return PgWalkThrough(dbState, ast)
+		return PgWalkThrough(d, ast)
 	default:
-		return errors.Errorf("Walk-through doesn't support engine type: %s", engineType)
+		return errors.Errorf("Walk-through doesn't support engine type: %s", d.dbType)
 	}
 }
 

@@ -16,6 +16,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 // TestCase is the data struct for test.
@@ -58,8 +59,12 @@ func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbTyp
 			t.Fatalf("%s doesn't have mocked metadata support", storepb.Engine_name[int32(dbType)])
 		}
 
-		originCatalog, finalCatalog, err := catalog.NewCatalogWithMetadata(schemaMetadata, dbType, true /* isCaseSensitive for PostgreSQL */)
-		require.NoError(t, err)
+		// Create OriginCatalog as DatabaseMetadata (read-only)
+		originSchema := model.NewDatabaseSchema(schemaMetadata, nil, nil, dbType, true /* isCaseSensitive for PostgreSQL */)
+		originCatalog := originSchema.GetDatabaseMetadata()
+
+		// Create FinalCatalog as DatabaseState (mutable for walk-through)
+		finalCatalog := catalog.NewDatabaseState(schemaMetadata, false /* ignoreCaseSensitive */, dbType)
 
 		// Get default payload, or use empty string for test-only rules
 		payload, err := advisor.SetDefaultSQLReviewRulePayload(rule, dbType)
@@ -73,7 +78,7 @@ func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbTyp
 		require.NoError(t, err, "Failed to parse SQL: %s", tc.Statement)
 
 		// Always walk through the catalog to build metadata.
-		err = catalog.WalkThrough(finalCatalog, dbType, tree)
+		err = catalog.WalkThrough(finalCatalog, tree)
 		require.NoError(t, err, "Failed to walk through final catalog: %s", tc.Statement)
 
 		ruleList := []*storepb.SQLReviewRule{

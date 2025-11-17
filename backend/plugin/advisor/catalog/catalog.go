@@ -8,18 +8,18 @@ import (
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-// NewCatalogWithMetadata creates origin and final database metadata from schema metadata.
-// Uses proto cloning to create independent copies.
-func NewCatalogWithMetadata(metadata *storepb.DatabaseSchemaMetadata, engineType storepb.Engine, isCaseSensitive bool) (origin *model.DatabaseMetadata, final *model.DatabaseMetadata, err error) {
-	// Create origin from original metadata
+// NewCatalogWithMetadata creates origin and final database catalogs from schema metadata.
+// OriginCatalog is DatabaseMetadata (read-only), FinalCatalog is DatabaseState (mutable for walk-through).
+func NewCatalogWithMetadata(metadata *storepb.DatabaseSchemaMetadata, engineType storepb.Engine, isCaseSensitive bool) (origin *model.DatabaseMetadata, final *DatabaseState, err error) {
+	// Create origin from original metadata as DatabaseMetadata (read-only)
 	originSchema := model.NewDatabaseSchema(metadata, nil, nil, engineType, isCaseSensitive)
 	origin = originSchema.GetDatabaseMetadata()
 
-	// Clone metadata for final
+	// Clone metadata for final to avoid modifying the original
 	clonedMetadata := proto.CloneOf(metadata)
 
-	finalSchema := model.NewDatabaseSchema(clonedMetadata, nil, nil, engineType, isCaseSensitive)
-	final = finalSchema.GetDatabaseMetadata()
+	// Create final as DatabaseState (mutable for walk-through)
+	final = NewDatabaseState(clonedMetadata, !isCaseSensitive, engineType)
 
 	return origin, final, nil
 }
