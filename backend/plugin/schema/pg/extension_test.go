@@ -636,8 +636,8 @@ func TestExtensionRoundtripNoDiff(t *testing.T) {
 		// CRITICAL: There should be NO extension changes!
 		// The extension is the same, just different text representation
 		if len(diff.ExtensionChanges) > 0 {
-			t.Errorf("FAILED: Extension changes detected when there should be none!")
-			t.Errorf("This means Bytebase will try to DROP+CREATE the extension even though nothing changed")
+			t.Error("FAILED: Extension changes detected when there should be none!")
+			t.Error("This means Bytebase will try to DROP+CREATE the extension even though nothing changed")
 
 			// Generate migration to see what would happen
 			migration, err := schema.GenerateMigration(storepb.Engine_POSTGRES, diff)
@@ -645,7 +645,7 @@ func TestExtensionRoundtripNoDiff(t *testing.T) {
 
 			// Check if DROP is in the migration
 			if strings.Contains(migration, "DROP EXTENSION") {
-				t.Errorf("CRITICAL: Migration contains DROP EXTENSION - this will fail with '2BP01' error!")
+				t.Error("CRITICAL: Migration contains DROP EXTENSION - this will fail with '2BP01' error!")
 			}
 		}
 

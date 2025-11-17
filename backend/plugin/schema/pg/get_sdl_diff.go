@@ -700,6 +700,8 @@ func (l *sdlChunkExtractor) EnterCommentstmt(ctx *parser.CommentstmtContext) {
 				}
 				l.chunks.Extensions[name] = chunk
 			}
+		default:
+			// Other object types are handled elsewhere
 		}
 		return
 	}
