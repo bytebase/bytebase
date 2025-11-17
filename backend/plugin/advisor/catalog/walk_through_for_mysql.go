@@ -19,7 +19,9 @@ func MySQLWalkThrough(d *DatabaseState, ast any) error {
 	// We define the Catalog as Database -> Schema -> Table. The Schema is only for PostgreSQL.
 	// So we use a Schema whose name is empty for other engines, such as MySQL.
 	// If there is no empty-string-name schema, create it to avoid corner cases.
-	d.GetOrCreateSchema("")
+	if !d.HasSchema("") {
+		d.CreateSchema("")
+	}
 
 	nodeList, ok := ast.([]*mysqlparser.ParseResult)
 	if !ok {
@@ -97,8 +99,12 @@ func (l *mysqlListener) EnterCreateTable(ctx *mysql.CreateTableContext) {
 		return
 	}
 
-	schema := l.databaseState.GetOrCreateSchema("")
-	if _, exists := schema.getTable(tableName); exists {
+	schema, err := l.databaseState.GetSchema("")
+	if err != nil {
+		l.err = err
+		return
+	}
+	if _, exists := mysqlGetTable(schema, tableName); exists {
 		if ctx.IfNotExists() != nil {
 			return
 		}
@@ -187,9 +193,13 @@ func (l *mysqlListener) EnterDropTable(ctx *mysql.DropTableContext) {
 			}
 		}
 
-		schema := l.databaseState.GetOrCreateSchema("")
+		schema, err := l.databaseState.GetSchema("")
+		if err != nil {
+			l.err = err
+			return
+		}
 
-		table, exists := schema.getTable(tableName)
+		table, exists := mysqlGetTable(schema, tableName)
 		if !exists {
 			if ctx.IfExists() != nil {
 				return
@@ -368,7 +378,11 @@ func (l *mysqlListener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 		// rename table.
 		case item.RENAME_SYMBOL() != nil && item.TableName() != nil:
 			_, newTableName := mysqlparser.NormalizeMySQLTableName(item.TableName())
-			schema := l.databaseState.GetOrCreateSchema("")
+			schema, err := l.databaseState.GetSchema("")
+			if err != nil {
+				l.err = err
+				return
+			}
 			if err := schema.RenameTable(table.name, newTableName); err != nil {
 				l.err = err
 				return
@@ -537,7 +551,11 @@ func (l *mysqlListener) EnterRenameTableStatement(ctx *mysql.RenameTableStatemen
 		return
 	}
 	for _, pair := range ctx.AllRenamePair() {
-		schema := l.databaseState.GetOrCreateSchema("")
+		schema, err := l.databaseState.GetSchema("")
+		if err != nil {
+			l.err = err
+			return
+		}
 
 		_, oldTableName := mysqlparser.NormalizeMySQLTableRef(pair.TableRef())
 		_, newTableName := mysqlparser.NormalizeMySQLTableName(pair.TableName())
@@ -546,12 +564,12 @@ func (l *mysqlListener) EnterRenameTableStatement(ctx *mysql.RenameTableStatemen
 			if compareIdentifier(oldTableName, newTableName, l.databaseState.ignoreCaseSensitive) {
 				return
 			}
-			table, exists := schema.getTable(oldTableName)
+			table, exists := mysqlGetTable(schema, oldTableName)
 			if !exists {
 				l.err = NewTableNotExistsError(oldTableName)
 				return
 			}
-			if _, exists := schema.getTable(newTableName); exists {
+			if _, exists := mysqlGetTable(schema, newTableName); exists {
 				l.err = NewTableExistsError(newTableName)
 				return
 			}
@@ -559,7 +577,7 @@ func (l *mysqlListener) EnterRenameTableStatement(ctx *mysql.RenameTableStatemen
 			table.name = newTableName
 			schema.tableSet[table.name] = table
 		} else if l.databaseState.mysqlMoveToOtherDatabase(pair) {
-			_, exists := schema.getTable(oldTableName)
+			_, exists := mysqlGetTable(schema, oldTableName)
 			if !exists {
 				l.err = NewTableNotExistsError(oldTableName)
 				return
@@ -649,9 +667,9 @@ func (t *TableState) mysqlChangeIndexVisibility(indexName string, visibility mys
 	}
 	switch {
 	case visibility.VISIBLE_SYMBOL() != nil:
-		index.visible = newTruePointer()
+		index.visible = true
 	case visibility.INVISIBLE_SYMBOL() != nil:
-		index.visible = newFalsePointer()
+		index.visible = false
 	default:
 		// No visibility specified
 	}
@@ -675,8 +693,8 @@ func (t *TableState) mysqlAlterColumn(itemDef mysql.IAlterListItemContext) *Walk
 		// SET DEFAULT.
 		case itemDef.DEFAULT_SYMBOL() != nil:
 			if itemDef.SignedLiteral() != nil && itemDef.SignedLiteral().Literal() != nil && itemDef.SignedLiteral().Literal().NullLiteral() == nil {
-				if colState.columnType != nil {
-					switch strings.ToLower(*colState.columnType) {
+				if colState.columnType != "" {
+					switch strings.ToLower(colState.columnType) {
 					case "blob", "tinyblob", "mediumblob", "longblob",
 						"text", "tinytext", "mediumtext", "longtext",
 						"json",
@@ -701,9 +719,9 @@ func (t *TableState) mysqlAlterColumn(itemDef mysql.IAlterListItemContext) *Walk
 					// No default value expression
 				}
 
-				colState.defaultValue = &defaultValue
+				colState.defaultValue = defaultValue
 			} else {
-				if colState.nullable != nil && !*colState.nullable {
+				if !colState.nullable {
 					return &WalkThroughError{
 						Code: code.SetNullDefaultForNotNullColumn,
 						// Content comes from MySQL Error content.
@@ -711,14 +729,14 @@ func (t *TableState) mysqlAlterColumn(itemDef mysql.IAlterListItemContext) *Walk
 					}
 				}
 
-				colState.defaultValue = nil
+				colState.defaultValue = ""
 			}
 		// SET VISIBLE/INVISIBLE.
 		default:
 		}
 	case itemDef.DROP_SYMBOL() != nil && itemDef.DEFAULT_SYMBOL() != nil:
 		// DROP DEFAULT.
-		colState.defaultValue = nil
+		colState.defaultValue = ""
 	default:
 		// Other ALTER operations
 	}
@@ -740,7 +758,7 @@ func (t *TableState) mysqlCompleteTableChangeColumn(oldColumnName string, newCol
 		return NewColumnNotExistsError(t.name, oldColumnName)
 	}
 
-	pos := *column.position
+	pos := column.position
 
 	if position == nil {
 		position = &mysqlColumnPosition{
@@ -752,7 +770,7 @@ func (t *TableState) mysqlCompleteTableChangeColumn(oldColumnName string, newCol
 			position.tp = ColumnPositionFirst
 		} else {
 			for _, col := range t.columnSet {
-				if *col.position == pos-1 {
+				if col.position == pos-1 {
 					position.tp = ColumnPositionAfter
 					position.relativeColumn = col.name
 					break
@@ -763,8 +781,8 @@ func (t *TableState) mysqlCompleteTableChangeColumn(oldColumnName string, newCol
 
 	// drop column from columnSet.
 	for _, col := range t.columnSet {
-		if *col.position > pos {
-			*col.position--
+		if col.position > pos {
+			col.position--
 		}
 	}
 	delete(t.columnSet, strings.ToLower(column.name))
@@ -816,7 +834,10 @@ func (d *DatabaseState) mysqlCopyTable(databaseName, tableName, referTable strin
 		return err
 	}
 
-	schema := d.GetOrCreateSchema("")
+	schema, err := d.GetSchema("")
+	if err != nil {
+		return err
+	}
 	table := targetTable.copy()
 	table.name = tableName
 	schema.tableSet[table.name] = table
@@ -828,9 +849,12 @@ func (d *DatabaseState) mysqlFindTableState(databaseName, tableName string) (*Ta
 		return nil, NewAccessOtherDatabaseError(d.name, databaseName)
 	}
 
-	schema := d.GetOrCreateSchema("")
+	schema, err := d.GetSchema("")
+	if err != nil {
+		return nil, err
+	}
 
-	table, exists := schema.getTable(tableName)
+	table, exists := mysqlGetTable(schema, tableName)
 	if !exists {
 		return nil, NewTableNotExistsError(tableName)
 	}
@@ -946,9 +970,9 @@ func (t *TableState) mysqlValidateColumnList(columnList []string, primary bool, 
 			return NewColumnNotExistsError(t.name, columnName)
 		}
 		if primary {
-			column.nullable = newFalsePointer()
+			column.nullable = false
 		}
-		if isSpatial && column.nullable != nil && *column.nullable {
+		if isSpatial && column.nullable {
 			return &WalkThroughError{
 				Code: code.SpatialIndexKeyNullable,
 				// The error content comes from MySQL.
@@ -970,9 +994,9 @@ func (t *TableState) mysqlValidateExpressionList(expressionList []string, primar
 		}
 
 		if primary {
-			column.nullable = newFalsePointer()
+			column.nullable = false
 		}
-		if isSpatial && column.nullable != nil && *column.nullable {
+		if isSpatial && column.nullable {
 			return &WalkThroughError{
 				Code: code.SpatialIndexKeyNullable,
 				// The error content comes from MySQL.
@@ -1051,13 +1075,13 @@ func (t *TableState) mysqlCreateColumn(columnName string, fieldDef mysql.IFieldD
 
 	col := &ColumnState{
 		name:         columnName,
-		position:     &pos,
-		defaultValue: nil,
-		nullable:     newTruePointer(),
-		columnType:   newStringPointer(columnType),
-		characterSet: newStringPointer(characterSet),
-		collation:    newStringPointer(collation),
-		comment:      newEmptyStringPointer(),
+		position:     pos,
+		defaultValue: "",
+		nullable:     true,
+		columnType:   columnType,
+		characterSet: characterSet,
+		collation:    collation,
+		comment:      "",
 	}
 	setNullDefault := false
 
@@ -1071,7 +1095,7 @@ func (t *TableState) mysqlCreateColumn(columnName string, fieldDef mysql.IFieldD
 		}
 		// not null.
 		if attribute.NullLiteral() != nil && attribute.NOT_SYMBOL() != nil {
-			col.nullable = newFalsePointer()
+			col.nullable = false
 		}
 		if attribute.GetValue() != nil {
 			switch attribute.GetValue().GetTokenType() {
@@ -1090,14 +1114,14 @@ func (t *TableState) mysqlCreateColumn(columnName string, fieldDef mysql.IFieldD
 				}
 				// handle default 'null' etc.
 				defaultValue := mysqlparser.NormalizeMySQLSignedLiteral(attribute.SignedLiteral())
-				col.defaultValue = &defaultValue
+				col.defaultValue = defaultValue
 			// comment.
 			case mysql.MySQLParserCOMMENT_SYMBOL:
 				if attribute.TextLiteral() == nil {
 					continue
 				}
 				comment := mysqlparser.NormalizeMySQLTextLiteral(attribute.TextLiteral())
-				col.comment = &comment
+				col.comment = comment
 			// on update now().
 			case mysql.MySQLParserON_SYMBOL:
 				if attribute.UPDATE_SYMBOL() == nil || attribute.NOW_SYMBOL() == nil {
@@ -1112,7 +1136,7 @@ func (t *TableState) mysqlCreateColumn(columnName string, fieldDef mysql.IFieldD
 			// primary key.
 			case mysql.MySQLParserKEY_SYMBOL:
 				// the key attribute for in a column meaning primary key.
-				col.nullable = newFalsePointer()
+				col.nullable = false
 				// we need to check the key type which generated by tidb parser.
 				if err := t.mysqlCreatePrimaryKey([]string{strings.ToLower(col.name)}, "BTREE"); err != nil {
 					return err
@@ -1138,7 +1162,7 @@ func (t *TableState) mysqlCreateColumn(columnName string, fieldDef mysql.IFieldD
 		}
 	}
 
-	if col.nullable != nil && !*col.nullable && setNullDefault {
+	if !col.nullable && setNullDefault {
 		return &WalkThroughError{
 			Code: code.SetNullDefaultForNotNullColumn,
 			// Content comes from MySQL Error content.
@@ -1157,7 +1181,7 @@ func (t *TableState) mysqlReorderColumn(position *mysqlColumnPosition) (int, *Wa
 		return len(t.columnSet) + 1, nil
 	case ColumnPositionFirst:
 		for _, column := range t.columnSet {
-			*column.position++
+			column.position++
 		}
 		return 1, nil
 	case ColumnPositionAfter:
@@ -1167,11 +1191,11 @@ func (t *TableState) mysqlReorderColumn(position *mysqlColumnPosition) (int, *Wa
 			return 0, NewColumnNotExistsError(t.name, columnName)
 		}
 		for _, col := range t.columnSet {
-			if *col.position > *column.position {
-				*col.position++
+			if col.position > column.position {
+				col.position++
 			}
 		}
-		return *column.position + 1, nil
+		return column.position + 1, nil
 	default:
 		return 0, &WalkThroughError{
 			Code:    code.Unsupported,
@@ -1209,11 +1233,11 @@ func (t *TableState) mysqlCreateIndex(name string, keyList []string, unique bool
 	index := &IndexState{
 		name:           name,
 		expressionList: keyList,
-		indexType:      &tp,
-		unique:         &unique,
-		primary:        newFalsePointer(),
-		visible:        newTruePointer(),
-		comment:        newEmptyStringPointer(),
+		indexType:      tp,
+		unique:         unique,
+		primary:        false,
+		visible:        true,
+		comment:        "",
 	}
 
 	// need to check the visibility of index.
@@ -1229,7 +1253,7 @@ func (t *TableState) mysqlCreateIndex(name string, keyList []string, unique bool
 			continue
 		}
 		if attribute.CommonIndexOption().Visibility() != nil && attribute.CommonIndexOption().Visibility().INVISIBLE_SYMBOL() != nil {
-			index.visible = newFalsePointer()
+			index.visible = false
 		}
 	}
 
@@ -1239,7 +1263,7 @@ func (t *TableState) mysqlCreateIndex(name string, keyList []string, unique bool
 			continue
 		}
 		if attribute.CommonIndexOption().Visibility() != nil && attribute.CommonIndexOption().Visibility().INVISIBLE_SYMBOL() != nil {
-			index.visible = newFalsePointer()
+			index.visible = false
 		}
 	}
 
@@ -1250,7 +1274,7 @@ func (t *TableState) mysqlCreateIndex(name string, keyList []string, unique bool
 			continue
 		}
 		if attribute.CommonIndexOption().Visibility() != nil && attribute.CommonIndexOption().Visibility().INVISIBLE_SYMBOL() != nil {
-			index.visible = newFalsePointer()
+			index.visible = false
 		}
 	}
 
@@ -1260,7 +1284,7 @@ func (t *TableState) mysqlCreateIndex(name string, keyList []string, unique bool
 			continue
 		}
 		if attribute.CommonIndexOption().Visibility() != nil && attribute.CommonIndexOption().Visibility().INVISIBLE_SYMBOL() != nil {
-			index.visible = newFalsePointer()
+			index.visible = false
 		}
 	}
 
@@ -1271,7 +1295,7 @@ func (t *TableState) mysqlCreateIndex(name string, keyList []string, unique bool
 			continue
 		}
 		if attribute.CommonIndexOption().Visibility() != nil && attribute.CommonIndexOption().Visibility().INVISIBLE_SYMBOL() != nil {
-			index.visible = newFalsePointer()
+			index.visible = false
 		}
 	}
 
@@ -1281,7 +1305,7 @@ func (t *TableState) mysqlCreateIndex(name string, keyList []string, unique bool
 			continue
 		}
 		if attribute.CommonIndexOption().Visibility() != nil && attribute.CommonIndexOption().Visibility().INVISIBLE_SYMBOL() != nil {
-			index.visible = newFalsePointer()
+			index.visible = false
 		}
 	}
 
@@ -1300,11 +1324,11 @@ func (t *TableState) mysqlCreatePrimaryKey(keys []string, tp string) *WalkThroug
 	pk := &IndexState{
 		name:           PrimaryKeyName,
 		expressionList: keys,
-		indexType:      &tp,
-		unique:         newTruePointer(),
-		primary:        newTruePointer(),
-		visible:        newTruePointer(),
-		comment:        newEmptyStringPointer(),
+		indexType:      tp,
+		unique:         true,
+		primary:        true,
+		visible:        true,
+		comment:        "",
 	}
 	t.indexSet[strings.ToLower(pk.name)] = pk
 	return nil
