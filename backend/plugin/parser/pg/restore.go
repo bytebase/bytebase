@@ -34,9 +34,17 @@ func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement
 		return "", errors.Errorf("no original SQL")
 	}
 
-	tree, err := ParsePostgreSQL(statement)
+	trees, err := ParsePostgreSQL(statement)
 	if err != nil {
 		return "", err
+	}
+
+	if len(trees) == 0 {
+		return "", errors.Errorf("no parsed result")
+	}
+
+	if len(trees) != 1 {
+		return "", errors.Errorf("expecting only one statement for restore SQL, but got %d", len(trees))
 	}
 
 	sqlForComment, truncated := common.TruncateString(originalSQL, maxCommentLength)
@@ -49,7 +57,7 @@ func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement
 		return "", errors.Wrap(err, "failed to get prepend statements")
 	}
 
-	return doGenerate(ctx, rCtx, sqlForComment, tree, backupItem, prependStatements)
+	return doGenerate(ctx, rCtx, sqlForComment, trees[0], backupItem, prependStatements)
 }
 
 func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment string, tree *ParseResult, backupItem *storepb.PriorBackupDetail_Item, prependStatements string) (string, error) {
@@ -223,16 +231,24 @@ func extractSingleSQL(statement string, backupItem *storepb.PriorBackupDetail_It
 		return "", errors.Errorf("backup item is nil")
 	}
 
-	tree, err := ParsePostgreSQL(statement)
+	trees, err := ParsePostgreSQL(statement)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to parse statement")
+	}
+
+	if len(trees) == 0 {
+		return "", errors.Errorf("no parsed result")
+	}
+
+	if len(trees) != 1 {
+		return "", errors.Errorf("expecting only one statement for extract single SQL, but got %d", len(trees))
 	}
 
 	l := &originalSQLExtractor{
 		startPos: backupItem.StartPosition,
 		endPos:   backupItem.EndPosition,
 	}
-	antlr.ParseTreeWalkerDefault.Walk(l, tree.Tree)
+	antlr.ParseTreeWalkerDefault.Walk(l, trees[0].Tree)
 	return strings.Join(l.originalSQL, ";\n"), nil
 }
 
@@ -284,14 +300,22 @@ func inRange(start, end, targetStart, targetEnd *storepb.Position) bool {
 
 func getPrependStatements(statement string) (string, error) {
 	// Parse with ANTLR
-	parseResult, err := ParsePostgreSQL(statement)
+	parseResults, err := ParsePostgreSQL(statement)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to parse statement")
 	}
 
+	if len(parseResults) == 0 {
+		return "", nil
+	}
+
+	if len(parseResults) != 1 {
+		return "", errors.Errorf("expecting only one statement for prepend statements, but got %d", len(parseResults))
+	}
+
 	// Create listener to find SET role statements
 	listener := &setRoleListener{}
-	antlr.ParseTreeWalkerDefault.Walk(listener, parseResult.Tree)
+	antlr.ParseTreeWalkerDefault.Walk(listener, parseResults[0].Tree)
 
 	return listener.setRoleText, nil
 }

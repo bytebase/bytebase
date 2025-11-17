@@ -18,7 +18,7 @@ import (
 // 5. Reject: All other statements (DDL, DML except SELECT)
 func validateQueryANTLR(statement string) (bool, bool, error) {
 	// Parse with ANTLR
-	result, err := ParsePostgreSQL(statement)
+	results, err := ParsePostgreSQL(statement)
 	if err != nil {
 		// Return syntax error
 		if syntaxErr, ok := err.(*base.SyntaxError); ok {
@@ -27,8 +27,16 @@ func validateQueryANTLR(statement string) (bool, bool, error) {
 		return false, false, err
 	}
 
+	if len(results) == 0 {
+		return false, false, nil
+	}
+
+	if len(results) != 1 {
+		return false, false, nil
+	}
+
 	// Analyze the parse tree
-	tree := result.Tree
+	tree := results[0].Tree
 	listener := &queryValidatorListener{
 		hasExecute:     false,
 		explainAnalyze: false,

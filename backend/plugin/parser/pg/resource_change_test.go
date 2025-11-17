@@ -65,9 +65,10 @@ func TestExtractChangedResources(t *testing.T) {
 		InsertCount:      2,
 	}
 
-	parseResult, err := ParsePostgreSQL(statement)
+	parseResults, err := ParsePostgreSQL(statement)
 	require.NoError(t, err)
-	got, err := extractChangedResources("db", "public", dbSchema, parseResult, statement)
+	require.Len(t, parseResults, 1, "expected exactly one statement")
+	got, err := extractChangedResources("db", "public", dbSchema, parseResults[0], statement)
 	require.NoError(t, err)
 	require.Equal(t, want, got)
 }

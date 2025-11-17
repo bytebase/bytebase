@@ -30,9 +30,17 @@ type ExtractAccessTablesOption struct {
 // ExtractAccessTables extracts all table/view references from a SQL statement.
 // This is a lightweight version that doesn't perform full query span analysis.
 func ExtractAccessTables(statement string, option ExtractAccessTablesOption) ([]base.ColumnResource, error) {
-	parseResult, err := ParsePostgreSQL(statement)
+	parseResults, err := ParsePostgreSQL(statement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse PostgreSQL statement")
+	}
+
+	if len(parseResults) == 0 {
+		return nil, nil
+	}
+
+	if len(parseResults) != 1 {
+		return nil, errors.Errorf("expecting only one statement to extract access tables, but got %d", len(parseResults))
 	}
 
 	searchPath := []string{option.DefaultSchema}
@@ -49,7 +57,7 @@ func ExtractAccessTables(statement string, option ExtractAccessTablesOption) ([]
 		skipMetadataValidation: option.SkipMetadataValidation,
 	}
 
-	antlr.ParseTreeWalkerDefault.Walk(extractor, parseResult.Tree)
+	antlr.ParseTreeWalkerDefault.Walk(extractor, parseResults[0].Tree)
 
 	if extractor.err != nil {
 		return nil, errors.Wrapf(extractor.err, "failed to extract access tables")

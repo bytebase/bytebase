@@ -102,14 +102,8 @@ func (q *querySpanExtractor) getDatabaseMetadata(database string) (*model.Databa
 // resultTableSource base.TableSource  // Stores the extracted table source from EnterStmtmulti
 
 // getQuerySpan is the ANTLR-based implementation of query span extraction.
-func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*base.QuerySpan, error) {
+func (q *querySpanExtractor) getQuerySpan(ctx context.Context, parseResult *ParseResult) (*base.QuerySpan, error) {
 	q.ctx = ctx
-
-	// Parse the statement using ANTLR
-	parseResult, err := ParsePostgreSQL(stmt)
-	if err != nil {
-		return nil, err
-	}
 
 	// Walk the tree to extract access tables
 
@@ -122,7 +116,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	}
 	antlr.ParseTreeWalkerDefault.Walk(accessTableExtractor, parseResult.Tree)
 	if accessTableExtractor.err != nil {
-		return nil, errors.Wrapf(accessTableExtractor.err, "failed to extract query span from statement: %s", stmt)
+		return nil, errors.Wrap(accessTableExtractor.err, "failed to extract query span from statement")
 	}
 
 	// Build access map
@@ -144,7 +138,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	}
 	antlr.ParseTreeWalkerDefault.Walk(queryTypeListener, parseResult.Tree)
 	if queryTypeListener.err != nil {
-		return nil, errors.Wrapf(queryTypeListener.err, "failed to get query type from statement: %s", stmt)
+		return nil, errors.Wrap(queryTypeListener.err, "failed to get query type from statement")
 	}
 
 	queryType, isExplainAnalyze := queryTypeListener.result, queryTypeListener.isExplainAnalyze
@@ -301,15 +295,23 @@ type functionDefinitionDetail struct {
 func buildFunctionDefinitionDetail(funcDef *functionDefinition) (*functionDefinitionDetail, error) {
 	function := funcDef.metadata
 	definition := function.GetProto().GetDefinition()
-	res, err := ParsePostgreSQL(definition)
+	results, err := ParsePostgreSQL(definition)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse function definition: %s", definition)
 	}
 
+	if len(results) == 0 {
+		return nil, errors.Errorf("no parsed result for function definition: %s", definition)
+	}
+
+	if len(results) != 1 {
+		return nil, errors.Errorf("expecting only one statement for function definition, but got %d", len(results))
+	}
+
 	// Navigate: root -> stmtblock -> stmt -> createfunctionstmt
-	root, ok := res.Tree.(*postgresql.RootContext)
+	root, ok := results[0].Tree.(*postgresql.RootContext)
 	if !ok {
-		return nil, errors.Errorf("expecting RootContext but got %T", res.Tree)
+		return nil, errors.Errorf("expecting RootContext but got %T", results[0].Tree)
 	}
 
 	stmtblock := root.Stmtblock()
@@ -425,15 +427,23 @@ const (
 )
 
 func (q *querySpanExtractor) getColumnsFromFunction(name, definition string) ([]base.QuerySpanResult, error) {
-	res, err := ParsePostgreSQL(definition)
+	results, err := ParsePostgreSQL(definition)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse function definition: %s", definition)
 	}
 
+	if len(results) == 0 {
+		return nil, errors.Errorf("no parsed result for function definition: %s", definition)
+	}
+
+	if len(results) != 1 {
+		return nil, errors.Errorf("expecting only one statement for function definition, but got %d", len(results))
+	}
+
 	// Navigate: root -> stmtblock -> stmt -> createfunctionstmt
-	root, ok := res.Tree.(*postgresql.RootContext)
+	root, ok := results[0].Tree.(*postgresql.RootContext)
 	if !ok {
-		return nil, errors.Errorf("expecting RootContext but got %T", res.Tree)
+		return nil, errors.Errorf("expecting RootContext but got %T", results[0].Tree)
 	}
 
 	stmtblock := root.Stmtblock()
@@ -488,8 +498,19 @@ func (q *querySpanExtractor) getColumnsFromSQLFunction(createFuncStmt postgresql
 
 	columnNames := q.extractParameterNamesFromCreateFunction(createFuncStmt)
 
+	asBodyResults, err := ParsePostgreSQL(asBody)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse function body for function: %s", name)
+	}
+	if len(asBodyResults) == 0 {
+		return nil, errors.Errorf("no parsed result for function body for function: %s", name)
+	}
+	if len(asBodyResults) != 1 {
+		return nil, errors.Errorf("expecting only one statement for function body, but got %d", len(asBodyResults))
+	}
+
 	newQ := newQuerySpanExtractor(q.defaultDatabase, q.searchPath, q.gCtx)
-	span, err := newQ.getQuerySpan(q.ctx, asBody)
+	span, err := newQ.getQuerySpan(q.ctx, asBodyResults[0])
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get query span for function: %s", name)
 	}
@@ -552,8 +573,19 @@ func (q *querySpanExtractor) getColumnsFromSimplePLPGSQL(name, asBody string, co
 
 	// Process each RETURN QUERY statement and merge source columns
 	for _, sql := range sqlList {
+		sqlResults, err := ParsePostgreSQL(sql)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse RETURN QUERY statement for function: %s", name)
+		}
+		if len(sqlResults) == 0 {
+			continue
+		}
+		if len(sqlResults) != 1 {
+			return nil, errors.Errorf("expecting only one statement for RETURN QUERY, but got %d", len(sqlResults))
+		}
+
 		newQ := newQuerySpanExtractor(q.defaultDatabase, q.searchPath, q.gCtx)
-		span, err := newQ.getQuerySpan(q.ctx, sql)
+		span, err := newQ.getQuerySpan(q.ctx, sqlResults[0])
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get query span for function: %s", name)
 		}
@@ -632,16 +664,24 @@ func (l *returnQueryListener) EnterStmt_return(ctx *postgresql.Stmt_returnContex
 }
 
 func (q *querySpanExtractor) getColumnsFromComplexPLPGSQL(name string, columnNames []string, definition string) ([]base.QuerySpanResult, error) {
-	res, err := ParsePostgreSQL(definition)
+	results, err := ParsePostgreSQL(definition)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse PLpgSQL function body for function %s", name)
+	}
+
+	if len(results) == 0 {
+		return nil, errors.Errorf("no parsed result for PLpgSQL function body for function %s", name)
+	}
+
+	if len(results) != 1 {
+		return nil, errors.Errorf("expecting only one statement for PLpgSQL function body, but got %d", len(results))
 	}
 
 	listener := &plpgSQLListener{
 		q:         q,
 		variables: make(map[string]*base.QuerySpanResult),
 	}
-	antlr.ParseTreeWalkerDefault.Walk(listener, res.Tree)
+	antlr.ParseTreeWalkerDefault.Walk(listener, results[0].Tree)
 	if listener.err != nil {
 		return nil, errors.Wrapf(listener.err, "failed to extract table source from PLpgSQL function body for function %s", name)
 	}
@@ -995,9 +1035,24 @@ func (l *plpgSQLListener) EnterStmt_assign(ctx *postgresql.Stmt_assignContext) {
 	}
 	assignVar := names[0]
 
-	newQ := newQuerySpanExtractor(l.q.defaultDatabase, l.q.searchPath, l.q.gCtx)
-	span, err := newQ.getQuerySpan(l.q.ctx, fmt.Sprintf("SELECT %s", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Sql_expression())))
+	sqlExpr := fmt.Sprintf("SELECT %s", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Sql_expression()))
+	sqlResults, err := ParsePostgreSQL(sqlExpr)
 	if err != nil {
+		l.err = err
+		return
+	}
+	if len(sqlResults) == 0 {
+		return
+	}
+	if len(sqlResults) != 1 {
+		l.err = errors.Errorf("expecting only one statement for SQL expression, but got %d", len(sqlResults))
+		return
+	}
+
+	newQ := newQuerySpanExtractor(l.q.defaultDatabase, l.q.searchPath, l.q.gCtx)
+	span, err := newQ.getQuerySpan(l.q.ctx, sqlResults[0])
+	if err != nil {
+		l.err = err
 		return
 	}
 	if span.NotFoundError != nil {
@@ -1032,9 +1087,23 @@ func (l *plpgSQLListener) EnterStmt_return(ctx *postgresql.Stmt_returnContext) {
 		return
 	}
 
+	selectStmt := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Selectstmt())
+	selectResults, err := ParsePostgreSQL(selectStmt)
+	if err != nil {
+		l.err = err
+		return
+	}
+	if len(selectResults) == 0 {
+		return
+	}
+	if len(selectResults) != 1 {
+		l.err = errors.Errorf("expecting only one statement for SELECT statement, but got %d", len(selectResults))
+		return
+	}
+
 	newQ := newQuerySpanExtractor(l.q.defaultDatabase, l.q.searchPath, l.q.gCtx)
 	newQ.variables = l.variables
-	l.span, l.err = newQ.getQuerySpan(l.q.ctx, ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Selectstmt()))
+	l.span, l.err = newQ.getQuerySpan(l.q.ctx, selectResults[0])
 }
 
 func (q *querySpanExtractor) getAllTableColumnSources(schemaName, tableName string) ([]base.QuerySpanResult, bool) {
@@ -1290,8 +1359,19 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 }
 
 func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QuerySpanResult, error) {
+	defResults, err := ParsePostgreSQL(definition)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse view definition")
+	}
+	if len(defResults) == 0 {
+		return nil, errors.Errorf("no parsed result for view definition")
+	}
+	if len(defResults) != 1 {
+		return nil, errors.Errorf("expecting only one statement for view definition, but got %d", len(defResults))
+	}
+
 	newQ := newQuerySpanExtractor(q.defaultDatabase, q.searchPath, q.gCtx)
-	span, err := newQ.getQuerySpan(q.ctx, definition)
+	span, err := newQ.getQuerySpan(q.ctx, defResults[0])
 	if err != nil {
 		return nil, err
 	}
@@ -1302,8 +1382,19 @@ func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QueryS
 }
 
 func (q *querySpanExtractor) getColumnsForMaterializedView(definition string) ([]base.QuerySpanResult, error) {
+	defResults, err := ParsePostgreSQL(definition)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse materialized view definition")
+	}
+	if len(defResults) == 0 {
+		return nil, errors.Errorf("no parsed result for materialized view definition")
+	}
+	if len(defResults) != 1 {
+		return nil, errors.Errorf("expecting only one statement for materialized view definition, but got %d", len(defResults))
+	}
+
 	newQ := newQuerySpanExtractor(q.defaultDatabase, q.searchPath, q.gCtx)
-	span, err := newQ.getQuerySpan(q.ctx, definition)
+	span, err := newQ.getQuerySpan(q.ctx, defResults[0])
 	if err != nil {
 		return nil, err
 	}

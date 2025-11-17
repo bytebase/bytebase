@@ -235,9 +235,17 @@ func (e *suffixSelectClauseExtractor) EnterDeletestmt(ctx *parser.DeletestmtCont
 }
 
 func prepareTransformation(ctx context.Context, tCtx base.TransformContext, statement string) ([]statementInfo, error) {
-	tree, err := ParsePostgreSQL(statement)
+	trees, err := ParsePostgreSQL(statement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse statement")
+	}
+
+	if len(trees) == 0 {
+		return nil, errors.Errorf("no parsed result")
+	}
+
+	if len(trees) != 1 {
+		return nil, errors.Errorf("expecting only one statement for backup transformation, but got %d", len(trees))
 	}
 
 	if tCtx.GetDatabaseMetadataFunc == nil {
@@ -253,7 +261,7 @@ func prepareTransformation(ctx context.Context, tCtx base.TransformContext, stat
 		metadata:   metadata,
 		searchPath: metadata.GetSearchPath(),
 	}
-	antlr.ParseTreeWalkerDefault.Walk(extractor, tree.Tree)
+	antlr.ParseTreeWalkerDefault.Walk(extractor, trees[0].Tree)
 	return extractor.dmls, extractor.err
 }
 

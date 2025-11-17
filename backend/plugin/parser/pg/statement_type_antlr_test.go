@@ -218,10 +218,11 @@ func TestGetStatementTypesANTLR(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			parseResult, err := ParsePostgreSQL(tt.sql)
+			parseResults, err := ParsePostgreSQL(tt.sql)
 			require.NoError(t, err)
+			require.Len(t, parseResults, 1, "expected exactly one statement")
 
-			stmtsWithPos, err := GetStatementTypes(parseResult)
+			stmtsWithPos, err := GetStatementTypes(parseResults[0])
 			require.NoError(t, err)
 
 			// Extract types from statements with positions
@@ -275,10 +276,11 @@ INSERT INTO t1 VALUES (1);`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			parseResult, err := ParsePostgreSQL(tt.sql)
+			parseResults, err := ParsePostgreSQL(tt.sql)
 			require.NoError(t, err)
+			require.Len(t, parseResults, 1, "expected exactly one statement")
 
-			results, err := GetStatementTypes(parseResult)
+			results, err := GetStatementTypes(parseResults[0])
 			require.NoError(t, err)
 			require.Len(t, results, len(tt.expected))
 
