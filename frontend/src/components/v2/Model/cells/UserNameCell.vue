@@ -4,33 +4,32 @@
 
     <div class="flex flex-row items-center">
       <div class="flex flex-col">
-        <div :class="[
-          'flex flex-row items-center gap-x-1',
-          user.state === State.DELETED ? 'line-through' : ''
-        ]">
-          <span
-            v-if="onClickUser"
-            class="normal-link truncate max-w-40"
-            @click="onClickUser(user, $event)"
-          >
-            {{ user.title }}
-          </span>
-          <span
-            v-else-if="permissionStore.onlyWorkspaceMember"
-            class="truncate max-w-[10em]"
-          >
-            {{ user.title }}
-          </span>
-          <router-link
-            v-else
-            :to="`/users/${user.email}`"
-            class="normal-link truncate max-w-[10em]"
-          >
-            {{ user.title }}
-          </router-link>
+        <div class="flex flex-row items-center gap-x-1">
+          <div :class="isDeleted ? 'line-through' : ''">
+            <span
+              v-if="onClickUser"
+              class="normal-link truncate max-w-40"
+              @click="onClickUser(user, $event)"
+            >
+              {{ user.title }}
+            </span>
+            <span
+              v-else-if="permissionStore.onlyWorkspaceMember"
+              class="truncate max-w-[10em]"
+            >
+              {{ user.title }}
+            </span>
+            <router-link
+              v-else
+              :to="`/users/${user.email}`"
+              class="normal-link truncate max-w-[10em]"
+            >
+              {{ user.title }}
+            </router-link>
+          </div>
           <slot name="suffix">
           </slot>
-          <NTag v-if="user.state === State.DELETED" :size="tagSize" type="error" round>
+          <NTag v-if="isDeleted" :size="tagSize" type="error" round>
             {{$t("common.deleted")}}
           </NTag>
           <NTag v-if="user.profile?.source" :size="tagSize" round type="primary">
@@ -45,12 +44,6 @@
           <NTag v-if="user.mfaEnabled" :size="tagSize" type="success" round>
             {{ $t("two-factor.enabled") }}
           </NTag>
-          <!-- <span
-            v-if="user.mfaEnabled"
-            class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs bg-green-800 text-green-100"
-          >
-            {{ $t("two-factor.enabled") }}
-          </span> -->
         </div>
         <slot name="footer">
           <span v-if="user.name !== SYSTEM_BOT_USER_NAME" class="textinfolabel">
@@ -59,7 +52,7 @@
         </slot>
       </div>
       <div
-        v-if="user.state === State.ACTIVE && user.userType === UserType.SERVICE_ACCOUNT && allowEdit && hasPermission"
+        v-if="!isDeleted && user.userType === UserType.SERVICE_ACCOUNT && allowEdit && hasPermission"
         class="ml-3 text-xs"
       >
         <CopyButton
@@ -123,6 +116,8 @@ const permissionStore = usePermissionStore();
 const hasPermission = computed(() => {
   return hasWorkspacePermissionV2("bb.policies.update");
 });
+
+const isDeleted = computed(() => props.user.state === State.DELETED);
 
 const tagSize = computed(() => {
   if (props.size === "small") {
