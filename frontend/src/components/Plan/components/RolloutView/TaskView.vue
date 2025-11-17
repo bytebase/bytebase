@@ -30,7 +30,7 @@
               </template>
               {{ $t("common.version") }}
             </NTooltip>
-            <NTooltip v-if="task.runTime">
+            <NTooltip v-if="task.runTime && task.status === Task_Status.PENDING">
               <template #trigger>
                 <NTag round>
                   <div class="flex items-center gap-1">
@@ -155,7 +155,10 @@ import {
   useSheetV1Store,
 } from "@/store";
 import { getTimeForPbTimestampProtoEs, unknownTask } from "@/types";
-import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import {
+  Task_Status,
+  TaskRun_Status,
+} from "@/types/proto-es/v1/rollout_service_pb";
 import {
   databaseForTask,
   extractPlanUID,
