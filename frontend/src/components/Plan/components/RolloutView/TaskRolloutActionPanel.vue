@@ -316,7 +316,13 @@ import {
   usePolicyByParentAndType,
   useCurrentUserV1,
 } from "@/store";
-import { userNamePrefix } from "@/store/modules/v1/common";
+import {
+  getProjectIdRolloutUidStageUidTaskUid,
+  projectNamePrefix,
+  rolloutNamePrefix,
+  stageNamePrefix,
+  userNamePrefix,
+} from "@/store/modules/v1/common";
 import {
   Issue_Approver_Status,
   Issue_ApprovalStatus,
@@ -423,7 +429,6 @@ const planCheckError = computed(() => {
       ? rolloutPolicy.value.policy.value.checkers?.requiredStatusChecks
           ?.planCheckEnforcement
       : undefined;
-
   // If no enforcement is specified, default to no validation
   if (!planCheckEnforcement) {
     return undefined;
@@ -533,6 +538,19 @@ const validationErrors = computed(() => {
   }
 
   if (props.action === "RUN") {
+    // No runnable tasks - blocking error
+    if (
+      eligibleTasks.value.length > 0 &&
+      !eligibleTasks.value.some(
+        (task) =>
+          task.status === Task_Status.NOT_STARTED ||
+          task.status === Task_Status.FAILED ||
+          task.status === Task_Status.CANCELED
+      )
+    ) {
+      errors.push(t("rollout.no-runnable-task"));
+    }
+
     // Issue approval errors (only if policy requires it) - HARD BLOCK
     const requiresIssueApproval =
       rolloutPolicy.value?.policy?.case === "rolloutPolicy"
@@ -720,8 +738,8 @@ const eligibleTasks = computed(() => {
     return stageTasks.filter(
       (task) =>
         task.status === Task_Status.NOT_STARTED ||
-        task.status === Task_Status.PENDING ||
-        task.status === Task_Status.FAILED
+        task.status === Task_Status.FAILED ||
+        task.status === Task_Status.CANCELED
     );
   } else if (props.action === "SKIP") {
     return stageTasks.filter(
@@ -812,7 +830,6 @@ const handleConfirm = async () => {
   loading.value = true;
   try {
     if (props.action === "RUN") {
-      await cancelTasks();
       // For export tasks, group by stage/environment and make separate batch calls
       if (isDatabaseExportTask.value) {
         const tasksByStage = groupTasksByStage(eligibleTasks.value);
@@ -903,67 +920,60 @@ watchEffect(() => {
 });
 
 const cancelTasks = async () => {
-  // Fetch task runs for the tasks to be canceled.
-  const taskRuns = (
-    await Promise.all(
-      eligibleTasks.value.map(async (task) => {
-        const request = create(ListTaskRunsRequestSchema, {
-          parent: task.name,
-        });
-        return rolloutServiceClientConnect
-          .listTaskRuns(request)
-          .then((response) => response.taskRuns || []);
-      })
-    )
-  ).flat();
-  const cancelableTaskRuns = taskRuns.filter(
-    (taskRun) =>
-      taskRun.status === TaskRun_Status.PENDING ||
-      taskRun.status === TaskRun_Status.RUNNING
-  );
-
-  if (isDatabaseCreationOrExportTask.value) {
-    // For database creation/export tasks, group task runs by stage and cancel them per stage
-    const taskRunsByStage = new Map<string, typeof cancelableTaskRuns>();
-
-    for (const taskRun of cancelableTaskRuns) {
-      // Extract stage name from task run path: projects/.../rollouts/.../stages/{stage}/tasks/.../taskRuns/...
-      const pathParts = taskRun.name.split("/");
-      const stageIndex = pathParts.findIndex((part) => part === "stages");
-      if (stageIndex >= 0 && stageIndex + 1 < pathParts.length) {
-        const stageName = pathParts.slice(0, stageIndex + 2).join("/"); // projects/.../rollouts/.../stages/{stage}
-        if (!taskRunsByStage.has(stageName)) {
-          taskRunsByStage.set(stageName, []);
-        }
-        taskRunsByStage.get(stageName)!.push(taskRun);
+  // Group tasks by stage first
+  const tasksByStage = new Map<string, Task[]>();
+  for (const task of eligibleTasks.value) {
+    // Extract stage name from task path: projects/{projectId}/rollouts/{rolloutId}/stages/{stageId}/tasks/...
+    const [projectId, rolloutId, stageId] =
+      getProjectIdRolloutUidStageUidTaskUid(task.name);
+    if (projectId && rolloutId && stageId) {
+      const stageName = `${projectNamePrefix}${projectId}/${rolloutNamePrefix}${rolloutId}/${stageNamePrefix}${stageId}`;
+      if (!tasksByStage.has(stageName)) {
+        tasksByStage.set(stageName, []);
       }
-    }
-
-    // Cancel task runs for each stage separately
-    await Promise.all(
-      Array.from(taskRunsByStage.entries()).map(
-        ([stageName, stageTaskRuns]) => {
-          const request = create(BatchCancelTaskRunsRequestSchema, {
-            parent: `${stageName}/tasks/-`,
-            taskRuns: stageTaskRuns.map((taskRun) => taskRun.name),
-            reason: comment.value,
-          });
-          if (request.taskRuns.length > 0) {
-            return rolloutServiceClientConnect.batchCancelTaskRuns(request);
-          }
-        }
-      )
-    );
-  } else {
-    // For regular stage-level tasks
-    const request = create(BatchCancelTaskRunsRequestSchema, {
-      parent: `${targetStage.value.name}/tasks/-`,
-      taskRuns: cancelableTaskRuns.map((taskRun) => taskRun.name),
-      reason: comment.value,
-    });
-    if (request.taskRuns.length > 0) {
-      await rolloutServiceClientConnect.batchCancelTaskRuns(request);
+      tasksByStage.get(stageName)!.push(task);
     }
   }
+
+  // Fetch task runs at stage level and filter by eligible tasks
+  const cancelableTaskRunsByStage = new Map<string, string[]>();
+
+  for (const [stageName, tasks] of tasksByStage) {
+    const taskNames = new Set(tasks.map((t) => t.name));
+    const request = create(ListTaskRunsRequestSchema, {
+      parent: `${stageName}/tasks/-`,
+    });
+
+    const response = await rolloutServiceClientConnect.listTaskRuns(request);
+    const stageTaskRuns = (response.taskRuns || [])
+      .filter((taskRun) => {
+        // Only include task runs for our eligible tasks
+        const taskName = taskRun.name.split("/taskRuns/")[0];
+        return (
+          taskNames.has(taskName) &&
+          (taskRun.status === TaskRun_Status.PENDING ||
+            taskRun.status === TaskRun_Status.RUNNING)
+        );
+      })
+      .map((taskRun) => taskRun.name);
+
+    if (stageTaskRuns.length > 0) {
+      cancelableTaskRunsByStage.set(stageName, stageTaskRuns);
+    }
+  }
+
+  // Cancel task runs for each stage
+  await Promise.all(
+    Array.from(cancelableTaskRunsByStage.entries()).map(
+      ([stageName, taskRunNames]) => {
+        const request = create(BatchCancelTaskRunsRequestSchema, {
+          parent: `${stageName}/tasks/-`,
+          taskRuns: taskRunNames,
+          reason: comment.value,
+        });
+        return rolloutServiceClientConnect.batchCancelTaskRuns(request);
+      }
+    )
+  );
 };
 </script>

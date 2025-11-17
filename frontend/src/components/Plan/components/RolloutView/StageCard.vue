@@ -114,7 +114,7 @@
               </template>
               <div class="flex items-center flex-nowrap gap-2">
                 <DatabaseDisplay :database="task.target" />
-                <template v-if="task.runTime">
+                <template v-if="task.runTime && task.status === Task_Status.PENDING">
                   <span class="font-mono text-control-light opacity-80">/</span>
                   <NTooltip>
                     <template #trigger>
@@ -284,7 +284,6 @@ const runableTasks = computed(() => {
   return filteredTasks.value.filter(
     (task) =>
       task.status === Task_Status.NOT_STARTED ||
-      task.status === Task_Status.PENDING ||
       task.status === Task_Status.FAILED ||
       task.status === Task_Status.CANCELED
   );
