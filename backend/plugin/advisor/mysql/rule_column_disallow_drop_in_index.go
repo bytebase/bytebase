@@ -61,19 +61,19 @@ func (*ColumnDisallowDropInIndexAdvisor) Check(_ context.Context, checkCtx advis
 // ColumnDisallowDropInIndexRule checks for disallow DROP COLUMN in index.
 type ColumnDisallowDropInIndexRule struct {
 	BaseRule
-	tables        tableState
-	originCatalog *model.DatabaseMetadata
+	tables           tableState
+	originalMetadata *model.DatabaseMetadata
 }
 
 // NewColumnDisallowDropInIndexRule creates a new ColumnDisallowDropInIndexRule.
-func NewColumnDisallowDropInIndexRule(level storepb.Advice_Status, title string, originCatalog *model.DatabaseMetadata) *ColumnDisallowDropInIndexRule {
+func NewColumnDisallowDropInIndexRule(level storepb.Advice_Status, title string, originalMetadata *model.DatabaseMetadata) *ColumnDisallowDropInIndexRule {
 	return &ColumnDisallowDropInIndexRule{
 		BaseRule: BaseRule{
 			level: level,
 			title: title,
 		},
-		tables:        make(tableState),
-		originCatalog: originCatalog,
+		tables:           make(tableState),
+		originalMetadata: originalMetadata,
 	}
 }
 
@@ -158,13 +158,12 @@ func (r *ColumnDisallowDropInIndexRule) checkAlterTable(ctx *mysql.AlterTableCon
 			continue
 		}
 
-		index := r.originCatalog.Index("", tableName)
-
-		if index != nil {
+		table := r.originalMetadata.GetSchema("").GetTable(tableName)
+		if table != nil {
 			if r.tables[tableName] == nil {
 				r.tables[tableName] = make(columnSet)
 			}
-			for _, indexColumn := range index {
+			for _, indexColumn := range table.ListIndexes() {
 				for _, column := range indexColumn.ExpressionList() {
 					r.tables[tableName][column] = true
 				}

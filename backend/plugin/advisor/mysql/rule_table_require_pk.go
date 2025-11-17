@@ -69,21 +69,21 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 // TableRequirePKRule checks table requires PK.
 type TableRequirePKRule struct {
 	BaseRule
-	tables        map[string]columnSet
-	line          map[string]int
-	originCatalog *model.DatabaseMetadata
+	tables           map[string]columnSet
+	line             map[string]int
+	originalMetadata *model.DatabaseMetadata
 }
 
 // NewTableRequirePKRule creates a new TableRequirePKRule.
-func NewTableRequirePKRule(level storepb.Advice_Status, title string, originCatalog *model.DatabaseMetadata) *TableRequirePKRule {
+func NewTableRequirePKRule(level storepb.Advice_Status, title string, originalMetadata *model.DatabaseMetadata) *TableRequirePKRule {
 	return &TableRequirePKRule{
 		BaseRule: BaseRule{
 			level: level,
 			title: title,
 		},
-		tables:        make(map[string]columnSet),
-		line:          make(map[string]int),
-		originCatalog: originCatalog,
+		tables:           make(map[string]columnSet),
+		line:             make(map[string]int),
+		originalMetadata: originalMetadata,
 	}
 }
 
@@ -251,7 +251,7 @@ func (r *TableRequirePKRule) changeColumn(tableName string, oldColumn string, ne
 
 func (r *TableRequirePKRule) dropColumn(tableName string, columnName string) bool {
 	if _, ok := r.tables[tableName]; !ok {
-		_, pk := r.originCatalog.GetIndex("", tableName, primaryKeyName)
+		pk := r.originalMetadata.GetSchema("").GetTable(tableName).GetIndex(primaryKeyName)
 		if pk == nil {
 			return false
 		}

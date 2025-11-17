@@ -202,11 +202,11 @@ func (l *plsqlChangedResourceExtractListener) EnterDrop_index(ctx *parser.Drop_i
 	if foundSchema == nil {
 		return
 	}
-	indexes := foundSchema.GetIndexes(index)
-	if len(indexes) == 0 {
+	foundIndex := foundSchema.GetIndex(index)
+	if foundIndex == nil {
 		return
 	}
-	foundTable := indexes[0].GetTableProto().GetName()
+	foundTable := foundIndex.GetTableProto().GetName()
 
 	l.changedResources.AddTable(
 		schema,

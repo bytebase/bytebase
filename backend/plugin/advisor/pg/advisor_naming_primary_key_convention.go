@@ -50,11 +50,11 @@ func (*NamingPKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 			level: level,
 			title: string(checkCtx.Rule.Type),
 		},
-		format:         format,
-		maxLength:      maxLength,
-		templateList:   templateList,
-		originCatalog:  checkCtx.OriginalMetadata,
-		statementsText: checkCtx.Statements,
+		format:           format,
+		maxLength:        maxLength,
+		templateList:     templateList,
+		originalMetadata: checkCtx.OriginalMetadata,
+		statementsText:   checkCtx.Statements,
 	}
 
 	checker := NewGenericChecker([]Rule{rule})
@@ -67,11 +67,11 @@ func (*NamingPKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 type namingPKConventionRule struct {
 	BaseRule
 
-	format         string
-	maxLength      int
-	templateList   []string
-	originCatalog  *model.DatabaseMetadata
-	statementsText string
+	format           string
+	maxLength        int
+	templateList     []string
+	originalMetadata *model.DatabaseMetadata
+	statementsText   string
 }
 
 type pkMetaData struct {
@@ -191,12 +191,12 @@ func (r *namingPKConventionRule) handleRenamestmt(ctx *parser.RenamestmtContext)
 			newName := pgparser.NormalizePostgreSQLName(allNames[len(allNames)-1])
 
 			// Check if old constraint is a primary key using catalog
-			if r.originCatalog != nil {
+			if r.originalMetadata != nil {
 				normalizedSchema := schemaName
 				if normalizedSchema == "" {
 					normalizedSchema = "public"
 				}
-				_, index := r.originCatalog.GetIndex(normalizedSchema, tableName, oldName)
+				index := r.originalMetadata.GetSchema(normalizedSchema).GetTable(tableName).GetIndex(oldName)
 				if index != nil && index.Primary() {
 					metaData := map[string]string{
 						advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList(), "_"),
@@ -234,14 +234,22 @@ func (r *namingPKConventionRule) handleRenamestmt(ctx *parser.RenamestmtContext)
 			newIndexName := pgparser.NormalizePostgreSQLName(allNames[len(allNames)-1])
 
 			// Check if this index is a primary key using catalog
-			if r.originCatalog != nil {
+			if r.originalMetadata != nil {
 				normalizedSchema := schemaName
 				if normalizedSchema == "" {
 					normalizedSchema = "public"
 				}
 				// "ALTER INDEX name RENAME TO new_name" doesn't specify table name
 				// Empty table name for ALTER INDEX
-				tableName, index := r.originCatalog.GetIndex(normalizedSchema, "", oldIndexName)
+				schema := r.originalMetadata.GetSchema(normalizedSchema)
+				var tableName string
+				var index *model.IndexMetadata
+				if schema != nil {
+					index = schema.GetIndex(oldIndexName)
+					if index != nil {
+						tableName = index.GetTableProto().Name
+					}
+				}
 				if index != nil && index.Primary() {
 					metaData := map[string]string{
 						advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList(), "_"),
@@ -307,12 +315,19 @@ func (r *namingPKConventionRule) getPKMetaDataFromTableConstraint(constraint par
 			// Extract index name properly
 			indexName := pgparser.NormalizePostgreSQLName(elem.Existingindex().Name())
 			// Find the index in catalog to get column list
-			if r.originCatalog != nil && indexName != "" {
+			if r.originalMetadata != nil && indexName != "" {
 				normalizedSchema := schemaName
 				if normalizedSchema == "" {
 					normalizedSchema = "public"
 				}
-				_, index := r.originCatalog.GetIndex(normalizedSchema, tableName, indexName)
+				schema := r.originalMetadata.GetSchema(normalizedSchema)
+				var index *model.IndexMetadata
+				if schema != nil {
+					table := schema.GetTable(tableName)
+					if table != nil {
+						index = table.GetIndex(indexName)
+					}
+				}
 				if index != nil {
 					columnList = index.ExpressionList()
 				}

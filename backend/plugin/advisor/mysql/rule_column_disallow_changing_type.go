@@ -63,18 +63,18 @@ func (*ColumnDisallowChangingTypeAdvisor) Check(_ context.Context, checkCtx advi
 // ColumnDisallowChangingTypeRule checks for disallow changing column type.
 type ColumnDisallowChangingTypeRule struct {
 	BaseRule
-	text          string
-	originCatalog *model.DatabaseMetadata
+	text             string
+	originalMetadata *model.DatabaseMetadata
 }
 
 // NewColumnDisallowChangingTypeRule creates a new ColumnDisallowChangingTypeRule.
-func NewColumnDisallowChangingTypeRule(level storepb.Advice_Status, title string, originCatalog *model.DatabaseMetadata) *ColumnDisallowChangingTypeRule {
+func NewColumnDisallowChangingTypeRule(level storepb.Advice_Status, title string, originalMetadata *model.DatabaseMetadata) *ColumnDisallowChangingTypeRule {
 	return &ColumnDisallowChangingTypeRule{
 		BaseRule: BaseRule{
 			level: level,
 			title: title,
 		},
-		originCatalog: originCatalog,
+		originalMetadata: originalMetadata,
 	}
 }
 
@@ -170,8 +170,7 @@ func normalizeColumnType(tp string) string {
 
 func (r *ColumnDisallowChangingTypeRule) changeColumnType(tableName, columnName string, dataType mysql.IDataTypeContext) {
 	tp := dataType.GetParser().GetTokenStream().GetTextFromRuleContext(dataType)
-	column := r.originCatalog.GetColumn("", tableName, columnName)
-
+	column := r.originalMetadata.GetSchema("").GetTable(tableName).GetColumn(columnName)
 	if column == nil {
 		return
 	}

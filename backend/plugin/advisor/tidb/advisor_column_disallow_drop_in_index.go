@@ -43,10 +43,10 @@ func (*ColumnDisallowDropInIndexAdvisor) Check(_ context.Context, checkCtx advis
 	}
 
 	checker := &columnDisallowDropInIndexChecker{
-		level:         level,
-		title:         string(checkCtx.Rule.Type),
-		tables:        make(tableState),
-		originCatalog: checkCtx.OriginalMetadata,
+		level:            level,
+		title:            string(checkCtx.Rule.Type),
+		tables:           make(tableState),
+		originalMetadata: checkCtx.OriginalMetadata,
 	}
 
 	for _, stmt := range stmtList {
@@ -59,13 +59,13 @@ func (*ColumnDisallowDropInIndexAdvisor) Check(_ context.Context, checkCtx advis
 }
 
 type columnDisallowDropInIndexChecker struct {
-	adviceList    []*storepb.Advice
-	level         storepb.Advice_Status
-	title         string
-	text          string
-	tables        tableState // the variable mean whether the column in index.
-	originCatalog *model.DatabaseMetadata
-	line          int
+	adviceList       []*storepb.Advice
+	level            storepb.Advice_Status
+	title            string
+	text             string
+	tables           tableState // the variable mean whether the column in index.
+	originalMetadata *model.DatabaseMetadata
+	line             int
 }
 
 func (checker *columnDisallowDropInIndexChecker) Enter(in ast.Node) (ast.Node, bool) {
@@ -88,8 +88,7 @@ func (checker *columnDisallowDropInIndexChecker) dropColumn(in ast.Node) (ast.No
 			if spec.Tp == ast.AlterTableDropColumn {
 				table := node.Table.Name.O
 
-				tableMetadata := checker.originCatalog.GetTable("", table)
-
+				tableMetadata := checker.originalMetadata.GetSchema("").GetTable(table)
 				if tableMetadata != nil {
 					if checker.tables[table] == nil {
 						checker.tables[table] = make(columnSet)

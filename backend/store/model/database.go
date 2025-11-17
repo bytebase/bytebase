@@ -432,9 +432,9 @@ func (d *DatabaseMetadata) SearchIndex(searchPath []string, name string) (string
 		if schema == nil {
 			continue
 		}
-		indexes := schema.GetIndexes(name)
-		if len(indexes) > 0 {
-			return schema.proto.Name, indexes[0] // Return the first index found.
+		index := schema.GetIndex(name)
+		if index != nil {
+			return schema.proto.Name, index
 		}
 	}
 	return "", nil
@@ -468,86 +468,6 @@ func (d *DatabaseMetadata) SearchExternalTable(searchPath []string, name string)
 		}
 	}
 	return "", nil
-}
-
-// Convenience methods for advisor rules
-
-// GetColumn gets a column from the database by schema, table, and column name.
-// Returns nil if the column is not found.
-func (d *DatabaseMetadata) GetColumn(schemaName, tableName, columnName string) *storepb.ColumnMetadata {
-	schema := d.GetSchema(schemaName)
-	if schema == nil {
-		return nil
-	}
-	table := schema.GetTable(tableName)
-	if table == nil {
-		return nil
-	}
-	return table.GetColumn(columnName)
-}
-
-// GetIndex gets an index from the database by schema, table, and index name.
-// Returns the table name and index metadata, or ("", nil) if not found.
-func (d *DatabaseMetadata) GetIndex(schemaName, tableName, indexName string) (string, *IndexMetadata) {
-	schema := d.GetSchema(schemaName)
-	if schema == nil {
-		return "", nil
-	}
-
-	if tableName != "" {
-		// Look for index in specific table
-		table := schema.GetTable(tableName)
-		if table == nil {
-			return "", nil
-		}
-		index := table.GetIndex(indexName)
-		if index != nil {
-			return tableName, index
-		}
-		return "", nil
-	}
-
-	// Search all tables in the schema for the index
-	for _, table := range schema.proto.Tables {
-		tableMetadata := schema.GetTable(table.Name)
-		if tableMetadata == nil {
-			continue
-		}
-		index := tableMetadata.GetIndex(indexName)
-		if index != nil {
-			return table.Name, index
-		}
-	}
-
-	return "", nil
-}
-
-// GetTable gets a table from the database by schema and table name.
-// Returns nil if the table is not found.
-func (d *DatabaseMetadata) GetTable(schemaName, tableName string) *TableMetadata {
-	schema := d.GetSchema(schemaName)
-	if schema == nil {
-		return nil
-	}
-	return schema.GetTable(tableName)
-}
-
-// Index returns all indexes for a table as a map[indexName]*IndexMetadata.
-// Returns nil if the schema or table is not found.
-func (d *DatabaseMetadata) Index(schemaName, tableName string) map[string]*IndexMetadata {
-	table := d.GetTable(schemaName, tableName)
-	if table == nil {
-		return nil
-	}
-
-	indexes := table.ListIndexes()
-	result := make(map[string]*IndexMetadata)
-	for _, index := range indexes {
-		if index.proto != nil {
-			result[index.proto.Name] = index
-		}
-	}
-	return result
 }
 
 // DatabaseName returns the name of the database.
@@ -725,6 +645,9 @@ func (s *SchemaMetadata) GetOwner() string {
 
 // GetTable gets the schema by name.
 func (s *SchemaMetadata) GetTable(name string) *TableMetadata {
+	if s == nil {
+		return nil
+	}
 	var nameID string
 	if s.isObjectCaseSensitive {
 		nameID = name
@@ -734,14 +657,18 @@ func (s *SchemaMetadata) GetTable(name string) *TableMetadata {
 	return s.internalTables[nameID]
 }
 
-func (s *SchemaMetadata) GetIndexes(name string) []*IndexMetadata {
-	var result []*IndexMetadata
+// GetIndex gets the index by name.
+// Index names are unique within a schema in most databases.
+func (s *SchemaMetadata) GetIndex(name string) *IndexMetadata {
+	if s == nil {
+		return nil
+	}
 	for _, table := range s.internalTables {
 		if index := table.GetIndex(name); index != nil {
-			result = append(result, index)
+			return index
 		}
 	}
-	return result
+	return nil
 }
 
 // GetView gets the view by name.
@@ -1113,6 +1040,9 @@ func (t *TableMetadata) GetTableComment() string {
 
 // GetColumn gets the column by name.
 func (t *TableMetadata) GetColumn(name string) *storepb.ColumnMetadata {
+	if t == nil {
+		return nil
+	}
 	var nameID string
 	if t.isDetailCaseSensitive {
 		nameID = name
@@ -1123,6 +1053,9 @@ func (t *TableMetadata) GetColumn(name string) *storepb.ColumnMetadata {
 }
 
 func (t *TableMetadata) GetIndex(name string) *IndexMetadata {
+	if t == nil {
+		return nil
+	}
 	var nameID string
 	if t.isDetailCaseSensitive {
 		nameID = name
