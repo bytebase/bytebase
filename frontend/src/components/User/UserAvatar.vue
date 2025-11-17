@@ -12,18 +12,19 @@
 import { computed } from "vue";
 import { BBAvatar } from "@/bbkit";
 import type { BBAvatarSizeType } from "@/bbkit/types";
-import { UNKNOWN_ID } from "@/types";
+import { UNKNOWN_ID, unknownUser } from "@/types";
 import { type User } from "@/types/proto-es/v1/user_service_pb";
 import type { VueClass } from "@/utils";
 
 const props = withDefaults(
   defineProps<{
-    user: User;
+    user?: User;
     size?: BBAvatarSizeType;
     overrideClass?: VueClass;
     overrideTextSize?: string;
   }>(),
   {
+    user: () => unknownUser(),
     size: "NORMAL",
     overrideClass: undefined,
     overrideTextSize: undefined,
