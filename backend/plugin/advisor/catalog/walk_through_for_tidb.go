@@ -264,8 +264,13 @@ func tidbAlterTable(d *model.DatabaseMetadata, node *tidbast.AlterTableStmt) *Wa
 				return err
 			}
 		case tidbast.AlterTableDropColumn:
-			if err := table.DropColumn(spec.OldColumnName.Name.O); err != nil {
-				return &WalkThroughError{Code: code.ColumnNotExists, Content: err.Error()}
+			columnName := spec.OldColumnName.Name.O
+			// Validate column exists
+			if table.GetColumn(columnName) == nil {
+				return NewColumnNotExistsError(table.GetProto().Name, columnName)
+			}
+			if err := table.DropColumn(columnName); err != nil {
+				return &WalkThroughError{Code: code.Internal, Content: fmt.Sprintf("failed to drop column: %v", err)}
 			}
 		case tidbast.AlterTableDropPrimaryKey:
 			if err := table.DropIndex(PrimaryKeyName); err != nil {
@@ -286,8 +291,21 @@ func tidbAlterTable(d *model.DatabaseMetadata, node *tidbast.AlterTableStmt) *Wa
 				return err
 			}
 		case tidbast.AlterTableRenameColumn:
-			if err := table.RenameColumn(spec.OldColumnName.Name.O, spec.NewColumnName.Name.O); err != nil {
-				return &WalkThroughError{Code: code.ColumnNotExists, Content: err.Error()}
+			oldColumnName := spec.OldColumnName.Name.O
+			newColumnName := spec.NewColumnName.Name.O
+			// Validate old column exists
+			if table.GetColumn(oldColumnName) == nil {
+				return NewColumnNotExistsError(table.GetProto().Name, oldColumnName)
+			}
+			// Validate new column doesn't already exist
+			if table.GetColumn(newColumnName) != nil {
+				return &WalkThroughError{
+					Code:    code.ColumnExists,
+					Content: fmt.Sprintf("Column `%s` already exists in table `%s`", newColumnName, table.GetProto().Name),
+				}
+			}
+			if err := table.RenameColumn(oldColumnName, newColumnName); err != nil {
+				return &WalkThroughError{Code: code.Internal, Content: fmt.Sprintf("failed to rename column: %v", err)}
 			}
 		case tidbast.AlterTableRenameTable:
 			schema := d.GetSchema("")
@@ -442,7 +460,7 @@ func tidbCompleteTableChangeColumn(t *model.TableMetadata, oldName string, newCo
 		}
 	}
 	if err := t.DropColumn(strings.ToLower(column.Name)); err != nil {
-		return &WalkThroughError{Code: code.ColumnNotExists, Content: err.Error()}
+		return &WalkThroughError{Code: code.Internal, Content: fmt.Sprintf("failed to drop column: %v", err)}
 	}
 
 	// rename column from index expressions

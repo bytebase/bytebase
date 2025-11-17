@@ -317,8 +317,13 @@ func (l *mysqlListener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 			// drop column.
 			case item.ColumnInternalRef() != nil:
 				columnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
+				// Validate column exists
+				if table.GetColumn(columnName) == nil {
+					l.err = NewColumnNotExistsError(table.GetProto().Name, columnName)
+					return
+				}
 				if err := table.DropColumn(columnName); err != nil {
-					l.err = &WalkThroughError{Code: code.ColumnNotExists, Content: err.Error()}
+					l.err = &WalkThroughError{Code: code.Internal, Content: fmt.Sprintf("failed to drop column: %v", err)}
 					return
 				}
 				// drop primary key.
@@ -356,8 +361,21 @@ func (l *mysqlListener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 		case item.RENAME_SYMBOL() != nil && item.COLUMN_SYMBOL() != nil:
 			oldColumnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
 			newColumnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
+			// Validate old column exists
+			if table.GetColumn(oldColumnName) == nil {
+				l.err = NewColumnNotExistsError(table.GetProto().Name, oldColumnName)
+				return
+			}
+			// Validate new column doesn't already exist
+			if table.GetColumn(newColumnName) != nil {
+				l.err = &WalkThroughError{
+					Code:    code.ColumnExists,
+					Content: fmt.Sprintf("Column `%s` already exists in table `%s`", newColumnName, table.GetProto().Name),
+				}
+				return
+			}
 			if err := table.RenameColumn(oldColumnName, newColumnName); err != nil {
-				l.err = &WalkThroughError{Code: code.ColumnNotExists, Content: err.Error()}
+				l.err = &WalkThroughError{Code: code.Internal, Content: fmt.Sprintf("failed to rename column: %v", err)}
 				return
 			}
 		case item.ALTER_SYMBOL() != nil:
@@ -765,10 +783,17 @@ func mysqlChangeColumn(table *model.TableMetadata, oldColumnName string, newColu
 		return NewColumnNotExistsError(table.GetProto().Name, oldColumnName)
 	}
 
-	// If renaming, use RenameColumn
+	// If renaming, validate and use RenameColumn
 	if oldColumnName != newColumnName {
+		// Validate new column doesn't already exist
+		if table.GetColumn(newColumnName) != nil {
+			return &WalkThroughError{
+				Code:    code.ColumnExists,
+				Content: fmt.Sprintf("Column `%s` already exists in table `%s`", newColumnName, table.GetProto().Name),
+			}
+		}
 		if err := table.RenameColumn(oldColumnName, newColumnName); err != nil {
-			return &WalkThroughError{Code: code.ColumnNotExists, Content: err.Error()}
+			return &WalkThroughError{Code: code.Internal, Content: fmt.Sprintf("failed to rename column: %v", err)}
 		}
 		// Get the renamed column
 		column = table.GetColumn(newColumnName)

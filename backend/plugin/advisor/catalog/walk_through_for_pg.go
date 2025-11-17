@@ -622,9 +622,14 @@ func (l *pgCatalogListener) alterTableDropColumn(schema *model.SchemaMetadata, t
 	}
 	// TODO(zp): deal with other constraints.
 	// TODO(zp): deal with CASCADE.
+	// Validate column exists before dropping
+	if table.GetColumn(columnName) == nil {
+		l.setError(NewColumnNotExistsError(table.GetProto().Name, columnName))
+		return
+	}
 	// Delete the column
 	if err := table.DropColumn(columnName); err != nil {
-		l.setError(&WalkThroughError{Code: code.ColumnNotExists, Content: err.Error()})
+		l.setError(&WalkThroughError{Code: code.Internal, Content: fmt.Sprintf("failed to drop column: %v", err)})
 	}
 }
 
@@ -838,9 +843,20 @@ func (*pgCatalogListener) renameColumn(table *model.TableMetadata, oldName strin
 	if oldName == newName {
 		return nil
 	}
+	// Validate old column exists
+	if table.GetColumn(oldName) == nil {
+		return NewColumnNotExistsError(table.GetProto().Name, oldName)
+	}
+	// Validate new column doesn't already exist
+	if table.GetColumn(newName) != nil {
+		return &WalkThroughError{
+			Code:    code.ColumnExists,
+			Content: fmt.Sprintf("Column `%s` already exists in table `%s`", newName, table.GetProto().Name),
+		}
+	}
 	// Use the RenameColumn method
 	if err := table.RenameColumn(oldName, newName); err != nil {
-		return &WalkThroughError{Code: code.ColumnNotExists, Content: err.Error()}
+		return &WalkThroughError{Code: code.Internal, Content: fmt.Sprintf("failed to rename column: %v", err)}
 	}
 	// Rename column in all indexes that reference it
 	for _, index := range table.GetProto().Indexes {
