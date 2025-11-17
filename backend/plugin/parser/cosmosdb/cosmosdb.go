@@ -6,24 +6,9 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/cosmosdb"
 
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/utils"
 )
-
-func init() {
-	base.RegisterParseFunc(storepb.Engine_COSMOSDB, parseCosmosDBForRegistry)
-}
-
-// parseCosmosDBForRegistry is the ParseFunc for CosmosDB.
-// Returns []*ParseResult on success.
-func parseCosmosDBForRegistry(statement string) (any, error) {
-	result, err := ParseCosmosDBQuery(statement)
-	if err != nil {
-		return nil, err
-	}
-	return result, nil
-}
 
 type ParseResult struct {
 	Tree     antlr.Tree
