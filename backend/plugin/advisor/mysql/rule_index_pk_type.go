@@ -63,19 +63,19 @@ func (*IndexPkTypeAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 type IndexPkTypeRule struct {
 	BaseRule
 	line             map[string]int
-	originCatalog    *model.DatabaseMetadata
+	originalMetadata *model.DatabaseMetadata
 	tablesNewColumns tableColumnTypes
 }
 
 // NewIndexPkTypeRule creates a new IndexPkTypeRule.
-func NewIndexPkTypeRule(level storepb.Advice_Status, title string, originCatalog *model.DatabaseMetadata) *IndexPkTypeRule {
+func NewIndexPkTypeRule(level storepb.Advice_Status, title string, originalMetadata *model.DatabaseMetadata) *IndexPkTypeRule {
 	return &IndexPkTypeRule{
 		BaseRule: BaseRule{
 			level: level,
 			title: title,
 		},
 		line:             make(map[string]int),
-		originCatalog:    originCatalog,
+		originalMetadata: originalMetadata,
 		tablesNewColumns: make(tableColumnTypes),
 	}
 }
@@ -238,7 +238,7 @@ func (r *IndexPkTypeRule) getPKColumnType(tableName string, columnName string) (
 	if columnType, ok := r.tablesNewColumns.get(tableName, columnName); ok {
 		return columnType, nil
 	}
-	column := r.originCatalog.GetColumn("", tableName, columnName)
+	column := r.originalMetadata.GetSchema("").GetTable(tableName).GetColumn(columnName)
 	if column != nil {
 		return column.Type, nil
 	}

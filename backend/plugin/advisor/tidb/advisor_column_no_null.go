@@ -83,7 +83,15 @@ func (checker *columnNoNullChecker) generateAdvice() []*storepb.Advice {
 	})
 
 	for _, column := range columnList {
-		col := checker.finalCatalog.GetColumn("", column.tableName, column.columnName)
+		schema, _ := checker.finalCatalog.GetSchema("")
+		if schema == nil {
+			continue
+		}
+		table, _ := schema.GetTable(column.tableName)
+		if table == nil {
+			continue
+		}
+		col, _ := table.GetColumn(column.columnName)
 		if col != nil && col.Nullable() {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:        checker.level,

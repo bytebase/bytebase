@@ -47,7 +47,7 @@ func (*IndexPkTypeAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 		level:            level,
 		title:            string(checkCtx.Rule.Type),
 		line:             make(map[string]int),
-		originCatalog:    checkCtx.OriginalMetadata,
+		originalMetadata: checkCtx.OriginalMetadata,
 		tablesNewColumns: make(map[string]columnNameToColumnDef),
 	}
 
@@ -88,7 +88,7 @@ type indexPkTypeChecker struct {
 	level            storepb.Advice_Status
 	title            string
 	line             map[string]int
-	originCatalog    *model.DatabaseMetadata
+	originalMetadata *model.DatabaseMetadata
 	tablesNewColumns tableNewColumn
 }
 
@@ -220,7 +220,7 @@ func (v *indexPkTypeChecker) getPKColumnType(tableName string, columnName string
 	if colDef, ok := v.tablesNewColumns.get(tableName, columnName); ok {
 		return v.getIntOrBigIntStr(colDef.Tp), nil
 	}
-	column := v.originCatalog.GetColumn("", tableName, columnName)
+	column := v.originalMetadata.GetSchema("").GetTable(tableName).GetColumn(columnName)
 	if column != nil {
 		return column.Type, nil
 	}

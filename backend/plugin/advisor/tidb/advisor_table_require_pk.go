@@ -45,12 +45,12 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 		return nil, err
 	}
 	checker := &tableRequirePKChecker{
-		level:         level,
-		title:         string(checkCtx.Rule.Type),
-		tables:        make(tablePK),
-		line:          make(map[string]int),
-		originCatalog: checkCtx.OriginalMetadata,
-		finalCatalog:  checkCtx.FinalCatalog,
+		level:            level,
+		title:            string(checkCtx.Rule.Type),
+		tables:           make(tablePK),
+		line:             make(map[string]int),
+		originalMetadata: checkCtx.OriginalMetadata,
+		finalCatalog:     checkCtx.FinalCatalog,
 	}
 
 	for _, stmtNode := range root {
@@ -61,13 +61,13 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 }
 
 type tableRequirePKChecker struct {
-	adviceList    []*storepb.Advice
-	level         storepb.Advice_Status
-	title         string
-	tables        tablePK
-	line          map[string]int
-	originCatalog *model.DatabaseMetadata
-	finalCatalog  *catalog.DatabaseState
+	adviceList       []*storepb.Advice
+	level            storepb.Advice_Status
+	title            string
+	tables           tablePK
+	line             map[string]int
+	originalMetadata *model.DatabaseMetadata
+	finalCatalog     *catalog.DatabaseState
 }
 
 // Enter implements the ast.Visitor interface.
@@ -183,11 +183,14 @@ func (v *tableRequirePKChecker) createTableLike(node *ast.CreateTableStmt) {
 		}
 		v.tables[table] = newColumnSet(columns)
 	} else {
-		referTableMetadata := v.originCatalog.GetTable("", referTableName)
-		if referTableMetadata != nil {
-			primaryKey := referTableMetadata.GetPrimaryKey()
-			if primaryKey != nil {
-				v.tables[table] = newColumnSet(primaryKey.ExpressionList())
+		schema := v.originalMetadata.GetSchema("")
+		if schema != nil {
+			referTableMetadata := schema.GetTable(referTableName)
+			if referTableMetadata != nil {
+				primaryKey := referTableMetadata.GetPrimaryKey()
+				if primaryKey != nil {
+					v.tables[table] = newColumnSet(primaryKey.ExpressionList())
+				}
 			}
 		}
 	}
@@ -195,7 +198,7 @@ func (v *tableRequirePKChecker) createTableLike(node *ast.CreateTableStmt) {
 
 func (v *tableRequirePKChecker) dropColumn(table string, column string) bool {
 	if _, ok := v.tables[table]; !ok {
-		_, pk := v.originCatalog.GetIndex("", table, primaryKeyName)
+		pk := v.originalMetadata.GetSchema("").GetTable(table).GetIndex(primaryKeyName)
 		if pk == nil {
 			return false
 		}

@@ -62,18 +62,18 @@ func (*IndexTypeNoBlobAdvisor) Check(_ context.Context, checkCtx advisor.Context
 // IndexTypeNoBlobRule checks for index type no blob.
 type IndexTypeNoBlobRule struct {
 	BaseRule
-	originCatalog    *model.DatabaseMetadata
+	originalMetadata *model.DatabaseMetadata
 	tablesNewColumns tableColumnTypes
 }
 
 // NewIndexTypeNoBlobRule creates a new IndexTypeNoBlobRule.
-func NewIndexTypeNoBlobRule(level storepb.Advice_Status, title string, originCatalog *model.DatabaseMetadata) *IndexTypeNoBlobRule {
+func NewIndexTypeNoBlobRule(level storepb.Advice_Status, title string, originalMetadata *model.DatabaseMetadata) *IndexTypeNoBlobRule {
 	return &IndexTypeNoBlobRule{
 		BaseRule: BaseRule{
 			level: level,
 			title: title,
 		},
-		originCatalog:    originCatalog,
+		originalMetadata: originalMetadata,
 		tablesNewColumns: make(tableColumnTypes),
 	}
 }
@@ -295,7 +295,7 @@ func (r *IndexTypeNoBlobRule) getColumnType(tableName string, columnName string)
 	if columnType, ok := r.tablesNewColumns.get(tableName, columnName); ok {
 		return columnType, nil
 	}
-	column := r.originCatalog.GetColumn("", tableName, columnName)
+	column := r.originalMetadata.GetSchema("").GetTable(tableName).GetColumn(columnName)
 	if column != nil {
 		return column.Type, nil
 	}
