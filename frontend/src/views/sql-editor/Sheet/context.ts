@@ -195,9 +195,10 @@ const useSheetTreeByView = (
 
   const buildTree = (
     parent: WorksheetFolderNode,
-    worksheetsByFolder: Map<string, WorksheetLikeItem[]>
+    worksheetsByFolder: Map<string, WorksheetLikeItem[]>,
+    hideEmpty: boolean
   ) => {
-    parent.children = folderContext
+    const subfolders = folderContext
       .listSubFolders(parent.key)
       .map((folder) => ({
         isLeaf: false,
@@ -208,8 +209,11 @@ const useSheetTreeByView = (
       }));
 
     let empty = true;
-    for (const childNode of parent.children) {
-      const subtree = buildTree(childNode, worksheetsByFolder);
+    for (const childNode of subfolders) {
+      const subtree = buildTree(childNode, worksheetsByFolder, hideEmpty);
+      if (!subtree.empty || !hideEmpty) {
+        parent.children.push(subtree);
+      }
       if (!subtree.empty) {
         empty = false;
       }
@@ -238,19 +242,19 @@ const useSheetTreeByView = (
     return parent;
   };
 
-  const folderTree = computed(() => buildTree(getRootTreeNode(), new Map()));
+  const folderTree = computed(() =>
+    buildTree(getRootTreeNode(), new Map(), false)
+  );
 
   const rebuildTree = useDebounceFn(() => {
-    const folderPathes = new Set<string>([]);
+    const folderPaths = new Set<string>([]);
+    const worksheetsByFolder = new Map<string, WorksheetLikeItem[]>();
+
     for (const worksheet of sheetLikeItemList.value) {
       for (const path of getPathesForWorksheet(worksheet)) {
-        folderPathes.add(path);
+        folderPaths.add(path);
       }
-    }
-    folderContext.mergeFolders(folderPathes);
 
-    const worksheetsByFolder = new Map<string, WorksheetLikeItem[]>();
-    for (const worksheet of sheetLikeItemList.value) {
       const pwd = getPwdForWorksheet(worksheet);
       if (!worksheetsByFolder.has(pwd)) {
         worksheetsByFolder.set(pwd, []);
@@ -258,7 +262,12 @@ const useSheetTreeByView = (
       worksheetsByFolder.get(pwd)!.push(worksheet);
     }
 
-    sheetTree.value = buildTree(getRootTreeNode(), worksheetsByFolder);
+    folderContext.mergeFolders(folderPaths);
+    sheetTree.value = buildTree(
+      getRootTreeNode(),
+      worksheetsByFolder,
+      filter.value.onlyShowStarred
+    );
     events.emit("on-built", { viewMode });
   }, DEBOUNCE_SEARCH_DELAY);
 
@@ -380,32 +389,29 @@ export const revealWorksheets = <T>(
   });
 };
 
+const INITIAL_FILTER: WorksheetFilter = {
+  keyword: "",
+  showShared: true,
+  showMine: true,
+  showDraft: true,
+  onlyShowStarred: false,
+};
+
 export const provideSheetContext = () => {
   const me = useCurrentUserV1();
   const tabStore = useSQLEditorTabStore();
   const worksheetV1Store = useWorkSheetStore();
   const { project } = storeToRefs(useSQLEditorStore());
 
-  const initialFilter = computed(
-    (): WorksheetFilter => ({
-      keyword: "",
-      showShared: true,
-      showMine: true,
-      showDraft: true,
-      onlyShowStarred: false,
-    })
-  );
   const filter = useDynamicLocalStorage<WorksheetFilter>(
     computed(
       () => `bb.sql-editor.${project.value}.worksheet-filter.${me.value.name}`
     ),
     {
-      ...initialFilter.value,
+      ...INITIAL_FILTER,
     }
   );
-  const filterChanged = computed(
-    () => !isEqual(filter.value, initialFilter.value)
-  );
+  const filterChanged = computed(() => !isEqual(filter.value, INITIAL_FILTER));
 
   const viewContexts = {
     my: useSheetTreeByView(

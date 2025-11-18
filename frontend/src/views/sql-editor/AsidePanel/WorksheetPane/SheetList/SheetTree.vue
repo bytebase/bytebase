@@ -350,7 +350,7 @@ const handleRenameNode = useDebounceFn(async () => {
     const editing = editingNode.value;
     const moveFolder = async () => {
       await updateWorksheetFolders(editing.node, editing.node.key, newKey);
-      replaceExpandedKeys(editing.node.key, newKey);
+      replaceExpandedKeys({ oldKey: editing.node.key, newKey });
       folderContext.moveFolder(editing.node.key, newKey);
       cleanup();
     };
@@ -804,35 +804,32 @@ const updateWorksheetFolders = async (
       };
     }
   });
-  await batchUpdateWorksheetFolders(
-    worksheets.map((worksheet) => ({
-      name: worksheet.name,
-      folders: worksheet.folders,
-    }))
-  );
+  await batchUpdateWorksheetFolders(worksheets);
 };
 
-const replaceExpandedKeys = (oldKey: string, newKey: string) => {
-  const updates: Array<{ oldPath: string; newPath: string }> = [];
+const replaceExpandedKeys = ({
+  oldKey,
+  newKey,
+}: {
+  oldKey: string;
+  newKey?: string;
+}) => {
+  const newSet = new Set<string>();
 
   for (const path of expandedKeys.value) {
     if (
       path === oldKey ||
       folderContext.isSubFolder({ parent: oldKey, path, dig: true })
     ) {
-      updates.push({
-        oldPath: path,
-        newPath: newKey ? path.replace(oldKey, newKey) : "",
-      });
+      if (newKey) {
+        newSet.add(path.replace(oldKey, newKey));
+      }
+    } else {
+      newSet.add(path);
     }
   }
 
-  for (const { oldPath, newPath } of updates) {
-    expandedKeys.value.delete(oldPath);
-    if (newPath) {
-      expandedKeys.value.add(newPath);
-    }
-  }
+  expandedKeys.value = newSet;
 };
 
 const handleDuplicateFolderName = (
@@ -842,7 +839,7 @@ const handleDuplicateFolderName = (
   const sameNode = parentNode?.children.find((child) => child.key === key);
   const _defer = defer<boolean>();
 
-  if (!!sameNode) {
+  if (sameNode) {
     const dialogInstance = $dialog.create({
       title: t("sheet.hint-tips.duplicate-folder-name-title"),
       content: t("sheet.hint-tips.duplicate-folder-name-content", {
@@ -915,12 +912,12 @@ const handleDrop = async ({ node, dragNode }: TreeDropInfo) => {
 
   nextTick(() => {
     // Update expanded keys for the moved folder and all its subfolders
-    replaceExpandedKeys(draggedNode.key, newKey);
+    replaceExpandedKeys({ oldKey: draggedNode.key, newKey });
     // Ensure new parent folder is expanded to show the moved item
     expandedKeys.value.add(parentNode.key);
     // Close old parent folder if it's now empty
     if (shouldCloseOldParent) {
-      replaceExpandedKeys(oldParentNode.key, "");
+      replaceExpandedKeys({ oldKey: oldParentNode.key });
     }
   });
 };
