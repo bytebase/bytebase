@@ -297,6 +297,10 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 				// Drop triggers
 				for _, triggerDiff := range tableDiff.TriggerChanges {
 					if triggerDiff.Action == schema.MetadataDiffActionDrop {
+						// Skip triggers with empty names (defensive check)
+						if triggerDiff.TriggerName == "" {
+							continue
+						}
 						writeDropTrigger(buf, tableDiff.SchemaName, tableDiff.TableName, triggerDiff.TriggerName)
 					}
 				}
@@ -422,6 +426,10 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 				// Drop triggers
 				for _, triggerDiff := range tableDiff.TriggerChanges {
 					if triggerDiff.Action == schema.MetadataDiffActionDrop {
+						// Skip triggers with empty names (defensive check)
+						if triggerDiff.TriggerName == "" {
+							continue
+						}
 						writeDropTrigger(buf, tableDiff.SchemaName, tableDiff.TableName, triggerDiff.TriggerName)
 					}
 				}

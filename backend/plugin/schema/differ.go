@@ -1403,8 +1403,9 @@ func compareTriggers(oldTriggers, newTriggers []*storepb.TriggerMetadata) []*Tri
 	for triggerName, oldTrigger := range oldTriggerMap {
 		if _, exists := newTriggerMap[triggerName]; !exists {
 			changes = append(changes, &TriggerDiff{
-				Action:     MetadataDiffActionDrop,
-				OldTrigger: oldTrigger,
+				Action:      MetadataDiffActionDrop,
+				TriggerName: triggerName,
+				OldTrigger:  oldTrigger,
 			})
 		}
 	}
@@ -1414,18 +1415,21 @@ func compareTriggers(oldTriggers, newTriggers []*storepb.TriggerMetadata) []*Tri
 		oldTrigger, exists := oldTriggerMap[triggerName]
 		if !exists {
 			changes = append(changes, &TriggerDiff{
-				Action:     MetadataDiffActionCreate,
-				NewTrigger: newTrigger,
+				Action:      MetadataDiffActionCreate,
+				TriggerName: triggerName,
+				NewTrigger:  newTrigger,
 			})
 		} else if !triggersEqual(oldTrigger, newTrigger) {
 			// Drop and recreate the trigger instead of altering
 			changes = append(changes, &TriggerDiff{
-				Action:     MetadataDiffActionDrop,
-				OldTrigger: oldTrigger,
+				Action:      MetadataDiffActionDrop,
+				TriggerName: triggerName,
+				OldTrigger:  oldTrigger,
 			})
 			changes = append(changes, &TriggerDiff{
-				Action:     MetadataDiffActionCreate,
-				NewTrigger: newTrigger,
+				Action:      MetadataDiffActionCreate,
+				TriggerName: triggerName,
+				NewTrigger:  newTrigger,
 			})
 		}
 	}
