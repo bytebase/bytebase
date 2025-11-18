@@ -16,9 +16,14 @@ import (
 )
 
 func GetAWSConnectionConfig(ctx context.Context, connCfg db.ConnectionConfig) (aws.Config, error) {
-	if awsCredential := connCfg.DataSource.GetAwsCredential(); awsCredential != nil {
+	region := connCfg.DataSource.GetRegion()
+
+	// Only use static credentials if access key is provided
+	// If awsCredential exists but AccessKeyId is empty, fall back to default credential chain
+	// (EC2 instance role, env vars, etc.) for cross-account role assumption
+	if awsCredential := connCfg.DataSource.GetAwsCredential(); awsCredential != nil && awsCredential.AccessKeyId != "" {
 		return config.LoadDefaultConfig(ctx,
-			config.WithRegion(connCfg.DataSource.GetRegion()),
+			config.WithRegion(region),
 			config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
 				awsCredential.AccessKeyId,
 				awsCredential.SecretAccessKey,
@@ -27,7 +32,8 @@ func GetAWSConnectionConfig(ctx context.Context, connCfg db.ConnectionConfig) (a
 		)
 	}
 
-	return config.LoadDefaultConfig(ctx)
+	// Use default credential chain when no static credentials provided
+	return config.LoadDefaultConfig(ctx, config.WithRegion(region))
 }
 
 func GetGCPConnectionConfig(ctx context.Context, connCfg db.ConnectionConfig) (*cloudsqlconn.Dialer, error) {
