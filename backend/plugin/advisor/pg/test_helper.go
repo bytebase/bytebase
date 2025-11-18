@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 	"gopkg.in/yaml.v3"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -60,11 +61,15 @@ func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbTyp
 		}
 
 		// Create OriginalMetadata as DatabaseMetadata (read-only)
-		originalSchema := model.NewDatabaseSchema(schemaMetadata, nil, nil, dbType, true /* isCaseSensitive for PostgreSQL */)
+		// Clone to avoid mutations affecting future test cases
+		originalCatalogClone := proto.Clone(schemaMetadata).(*storepb.DatabaseSchemaMetadata)
+		originalSchema := model.NewDatabaseSchema(originalCatalogClone, nil, nil, dbType, true /* isCaseSensitive for PostgreSQL */)
 		originalMetadata := originalSchema.GetDatabaseMetadata()
 
 		// Create FinalMetadata as DatabaseMetadata (mutable for walk-through)
-		finalMetadata := model.NewDatabaseMetadata(schemaMetadata, true /* isCaseSensitive for PostgreSQL */, true /* isDetailCaseSensitive */)
+		// Clone to avoid mutations affecting future test cases
+		finalCatalogClone := proto.Clone(schemaMetadata).(*storepb.DatabaseSchemaMetadata)
+		finalMetadata := model.NewDatabaseMetadata(finalCatalogClone, true /* isCaseSensitive for PostgreSQL */, true /* isDetailCaseSensitive */)
 
 		// Get default payload, or use empty string for test-only rules
 		payload, err := advisor.SetDefaultSQLReviewRulePayload(rule, dbType)

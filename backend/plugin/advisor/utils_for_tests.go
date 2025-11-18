@@ -14,6 +14,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/component/sheet"
@@ -212,11 +213,15 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 		}
 
 		// Create OriginalMetadata as DatabaseMetadata (read-only)
-		originalSchema := model.NewDatabaseSchema(catalogMetadata, nil, nil, dbType, isCaseSensitive)
+		// Clone to avoid mutations affecting future test cases
+		originalCatalogClone := proto.Clone(catalogMetadata).(*storepb.DatabaseSchemaMetadata)
+		originalSchema := model.NewDatabaseSchema(originalCatalogClone, nil, nil, dbType, isCaseSensitive)
 		originalMetadata := originalSchema.GetDatabaseMetadata()
 
 		// Create FinalMetadata as DatabaseMetadata (mutable for walk-through)
-		finalMetadata := model.NewDatabaseMetadata(catalogMetadata, isCaseSensitive, isCaseSensitive)
+		// Clone to avoid mutations affecting future test cases
+		finalCatalogClone := proto.Clone(catalogMetadata).(*storepb.DatabaseSchemaMetadata)
+		finalMetadata := model.NewDatabaseMetadata(finalCatalogClone, isCaseSensitive, isCaseSensitive)
 
 		payload, err := SetDefaultSQLReviewRulePayload(rule, dbType)
 		require.NoError(t, err)
