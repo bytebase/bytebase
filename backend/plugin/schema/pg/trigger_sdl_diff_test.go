@@ -98,3 +98,27 @@ func TestCreateTriggerExtraction(t *testing.T) {
 		})
 	}
 }
+
+func TestTriggerCommentExtraction(t *testing.T) {
+	sql := `
+		CREATE TABLE users (id SERIAL PRIMARY KEY);
+		CREATE FUNCTION f() RETURNS TRIGGER AS $$ BEGIN RETURN NEW; END; $$ LANGUAGE plpgsql;
+		CREATE TRIGGER audit_trigger AFTER INSERT ON users FOR EACH ROW EXECUTE FUNCTION f();
+		COMMENT ON TRIGGER audit_trigger ON users IS 'Audit log trigger';
+	`
+
+	diff, err := GetSDLDiff(sql, "", nil, nil)
+	require.NoError(t, err)
+
+	// Check that comment change exists
+	found := false
+	for _, commentDiff := range diff.CommentChanges {
+		if commentDiff.ObjectType == schema.CommentObjectTypeTrigger &&
+			commentDiff.ObjectName == "audit_trigger" &&
+			commentDiff.NewComment == "Audit log trigger" {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "Should have trigger comment")
+}

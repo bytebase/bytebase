@@ -750,6 +750,59 @@ func (l *sdlChunkExtractor) EnterCommentstmt(ctx *parser.CommentstmtContext) {
 		return
 	}
 
+	// Handle: COMMENT ON TRIGGER trigger_name ON table_name IS 'comment'
+	if ctx.Object_type_name_on_any_name() != nil {
+		objectType := ctx.Object_type_name_on_any_name().GetText()
+		if strings.ToUpper(objectType) == "TRIGGER" {
+			// Extract trigger name
+			if ctx.Name() == nil {
+				return
+			}
+			triggerName := pgparser.NormalizePostgreSQLName(ctx.Name())
+
+			// Extract table name from Any_name
+			if ctx.Any_name() == nil {
+				return
+			}
+			anyName := pgparser.NormalizePostgreSQLAnyName(ctx.Any_name())
+			if len(anyName) == 0 {
+				return
+			}
+
+			// Build fully qualified table name
+			var tableName string
+			if len(anyName) >= 2 {
+				// schema.table
+				tableName = strings.Join(anyName, ".")
+			} else {
+				// table (default to public schema)
+				tableName = "public." + anyName[0]
+			}
+
+			// Parse schema from table name
+			parts := strings.Split(tableName, ".")
+			var schemaName string
+			if len(parts) == 2 {
+				schemaName = parts[0]
+			} else {
+				schemaName = "public"
+			}
+
+			identifier := schemaName + "." + triggerName
+
+			if chunk, exists := l.chunks.Triggers[identifier]; exists {
+				chunk.CommentStatements = append(chunk.CommentStatements, ctx)
+			} else {
+				chunk := &schema.SDLChunk{
+					Identifier:        identifier,
+					ASTNode:           nil,
+					CommentStatements: []antlr.ParserRuleContext{ctx},
+				}
+				l.chunks.Triggers[identifier] = chunk
+			}
+		}
+	}
+
 	// Check for object_type_name_on_any_name: TRIGGER, RULE, POLICY (we don't track these currently)
 	// These are table-level objects that we may want to support in the future
 }
