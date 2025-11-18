@@ -2886,6 +2886,12 @@ func applyMinimalChangesToChunks(previousChunks *schema.SDLChunks, currentSchema
 		return errors.Wrap(err, "failed to apply extension changes")
 	}
 
+	// Process trigger changes: apply minimal changes to trigger chunks
+	err = applyTriggerChangesToChunks(previousChunks, currentSchema, previousSchema)
+	if err != nil {
+		return errors.Wrap(err, "failed to apply trigger changes")
+	}
+
 	// Process column comment changes: sync column comments based on metadata
 	err = applyColumnCommentChanges(previousChunks, currentSchema, previousSchema)
 	if err != nil {
@@ -7242,4 +7248,284 @@ func extractTableNameFromTrigger(ctx *parser.CreatetrigstmtContext) string {
 	}
 	// Schema is specified
 	return strings.Join(qualifiedNameParts, ".")
+}
+
+// applyTriggerChangesToChunks applies minimal changes to trigger chunks based on schema metadata
+func applyTriggerChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseSchema) error {
+	if currentSchema == nil || previousSchema == nil || previousChunks == nil {
+		return nil
+	}
+
+	// Get trigger differences by comparing schema metadata
+	currentMetadata := currentSchema.GetMetadata()
+	previousMetadata := previousSchema.GetMetadata()
+	if currentMetadata == nil || previousMetadata == nil {
+		return nil
+	}
+
+	// Build trigger maps for current and previous schemas
+	// Key format: schema.table.trigger_name (table-scoped)
+	currentTriggers := make(map[string]*triggerWithContext)
+	previousTriggers := make(map[string]*triggerWithContext)
+
+	// Collect all triggers from current schema
+	for _, schemaObj := range currentMetadata.Schemas {
+		schemaName := schemaObj.Name
+		if schemaName == "" {
+			schemaName = "public"
+		}
+		for _, table := range schemaObj.Tables {
+			for _, trigger := range table.Triggers {
+				// Use table-scoped identifier: schema.table.trigger_name
+				triggerKey := schemaName + "." + table.Name + "." + trigger.Name
+				currentTriggers[triggerKey] = &triggerWithContext{
+					trigger:    trigger,
+					schemaName: schemaName,
+					tableName:  table.Name,
+				}
+			}
+		}
+	}
+
+	// Collect all triggers from previous schema
+	for _, schemaObj := range previousMetadata.Schemas {
+		schemaName := schemaObj.Name
+		if schemaName == "" {
+			schemaName = "public"
+		}
+		for _, table := range schemaObj.Tables {
+			for _, trigger := range table.Triggers {
+				// Use table-scoped identifier: schema.table.trigger_name
+				triggerKey := schemaName + "." + table.Name + "." + trigger.Name
+				previousTriggers[triggerKey] = &triggerWithContext{
+					trigger:    trigger,
+					schemaName: schemaName,
+					tableName:  table.Name,
+				}
+			}
+		}
+	}
+
+	// Process trigger additions: create new trigger chunks
+	for triggerKey, currentTrigger := range currentTriggers {
+		if _, exists := previousTriggers[triggerKey]; !exists {
+			// New trigger - create a chunk for it
+			err := createTriggerChunk(previousChunks, currentTrigger, triggerKey)
+			if err != nil {
+				return errors.Wrapf(err, "failed to create trigger chunk for %s", triggerKey)
+			}
+		}
+	}
+
+	// Process trigger modifications: update existing chunks
+	for triggerKey, currentTrigger := range currentTriggers {
+		if previousTrigger, exists := previousTriggers[triggerKey]; exists {
+			// Trigger exists in both metadata
+			// Only update if chunk exists in SDL (user explicitly defined it)
+			// If chunk doesn't exist, skip - we don't force-add database objects that user didn't define
+			if _, chunkExists := previousChunks.Triggers[triggerKey]; chunkExists {
+				// Chunk exists - update if needed
+				err := updateTriggerChunkIfNeeded(previousChunks, currentTrigger, previousTrigger, triggerKey)
+				if err != nil {
+					return errors.Wrapf(err, "failed to update trigger chunk for %s", triggerKey)
+				}
+			}
+			// If chunk doesn't exist, skip - user didn't define this trigger in SDL
+		}
+	}
+
+	// Process trigger deletions: remove dropped trigger chunks
+	for triggerKey := range previousTriggers {
+		if _, exists := currentTriggers[triggerKey]; !exists {
+			// Trigger was dropped - remove it from chunks
+			deleteTriggerChunk(previousChunks, triggerKey)
+		}
+	}
+
+	return nil
+}
+
+// triggerWithContext holds trigger metadata with its schema and table context
+type triggerWithContext struct {
+	trigger    *storepb.TriggerMetadata
+	schemaName string
+	tableName  string
+}
+
+// createTriggerChunk creates a new CREATE TRIGGER chunk and adds it to the chunks
+func createTriggerChunk(chunks *schema.SDLChunks, triggerCtx *triggerWithContext, triggerKey string) error {
+	if triggerCtx == nil || triggerCtx.trigger == nil || chunks == nil {
+		return nil
+	}
+
+	trigger := triggerCtx.trigger
+	schemaName := triggerCtx.schemaName
+	tableName := triggerCtx.tableName
+
+	// Generate SDL text for the trigger
+	triggerSDL := generateCreateTriggerSDL(schemaName, tableName, trigger)
+	if triggerSDL == "" {
+		return errors.New("failed to generate SDL for trigger")
+	}
+
+	// Parse the SDL to get AST node
+	parseResult, err := pgparser.ParsePostgreSQL(triggerSDL)
+	if err != nil {
+		return errors.Wrapf(err, "failed to parse generated trigger SDL: %s", triggerSDL)
+	}
+
+	// Extract the CREATE TRIGGER AST node
+	var triggerASTNode *parser.CreatetrigstmtContext
+	antlr.ParseTreeWalkerDefault.Walk(&triggerExtractor{
+		result: &triggerASTNode,
+	}, parseResult.Tree)
+
+	if triggerASTNode == nil {
+		return errors.New("failed to extract CREATE TRIGGER AST node")
+	}
+
+	// Create and add the chunk
+	chunk := &schema.SDLChunk{
+		Identifier: triggerKey,
+		ASTNode:    triggerASTNode,
+	}
+
+	// Add comment if the trigger has one
+	if trigger.Comment != "" {
+		commentSQL := generateCommentOnTriggerSQL(schemaName, tableName, trigger.Name, trigger.Comment)
+		commentParseResult, err := pgparser.ParsePostgreSQL(commentSQL)
+		if err == nil && commentParseResult.Tree != nil {
+			// Extract COMMENT ON TRIGGER AST node
+			var commentASTNode *parser.CommentstmtContext
+			antlr.ParseTreeWalkerDefault.Walk(&commentExtractor{
+				result: &commentASTNode,
+			}, commentParseResult.Tree)
+
+			if commentASTNode != nil {
+				chunk.CommentStatements = []antlr.ParserRuleContext{commentASTNode}
+			}
+		}
+	}
+
+	if chunks.Triggers == nil {
+		chunks.Triggers = make(map[string]*schema.SDLChunk)
+	}
+	chunks.Triggers[triggerKey] = chunk
+
+	return nil
+}
+
+// updateTriggerChunkIfNeeded updates an existing trigger chunk if the definition has changed
+func updateTriggerChunkIfNeeded(chunks *schema.SDLChunks, currentTriggerCtx, previousTriggerCtx *triggerWithContext, triggerKey string) error {
+	if currentTriggerCtx == nil || previousTriggerCtx == nil || chunks == nil {
+		return nil
+	}
+
+	currentTrigger := currentTriggerCtx.trigger
+	previousTrigger := previousTriggerCtx.trigger
+	schemaName := currentTriggerCtx.schemaName
+	tableName := currentTriggerCtx.tableName
+
+	// Get the existing chunk
+	chunk, exists := chunks.Triggers[triggerKey]
+	if !exists {
+		return errors.Errorf("trigger chunk not found for key %s", triggerKey)
+	}
+
+	// Check if the trigger definition has changed
+	// Trigger.Body contains the complete CREATE TRIGGER statement
+	if currentTrigger.Body != previousTrigger.Body {
+		// Trigger definition changed - regenerate the chunk
+		triggerSDL := generateCreateTriggerSDL(schemaName, tableName, currentTrigger)
+		if triggerSDL == "" {
+			return errors.New("failed to generate SDL for trigger")
+		}
+
+		// Parse the new SDL to get a fresh AST node
+		parseResult, err := pgparser.ParsePostgreSQL(triggerSDL)
+		if err != nil {
+			return errors.Wrapf(err, "failed to parse generated trigger SDL: %s", triggerSDL)
+		}
+
+		// Extract the CREATE TRIGGER AST node
+		var triggerASTNode *parser.CreatetrigstmtContext
+		antlr.ParseTreeWalkerDefault.Walk(&triggerExtractor{
+			result: &triggerASTNode,
+		}, parseResult.Tree)
+
+		if triggerASTNode == nil {
+			return errors.New("failed to extract CREATE TRIGGER AST node")
+		}
+
+		// Update the chunk's AST node
+		chunk.ASTNode = triggerASTNode
+	}
+
+	// Handle comment changes independently of definition changes
+	if currentTrigger.Comment != previousTrigger.Comment {
+		if currentTrigger.Comment != "" {
+			// New or updated comment
+			commentSQL := generateCommentOnTriggerSQL(schemaName, tableName, currentTrigger.Name, currentTrigger.Comment)
+			commentParseResult, err := pgparser.ParsePostgreSQL(commentSQL)
+			if err == nil && commentParseResult.Tree != nil {
+				// Extract COMMENT ON TRIGGER AST node
+				var commentASTNode *parser.CommentstmtContext
+				antlr.ParseTreeWalkerDefault.Walk(&commentExtractor{
+					result: &commentASTNode,
+				}, commentParseResult.Tree)
+
+				if commentASTNode != nil {
+					chunk.CommentStatements = []antlr.ParserRuleContext{commentASTNode}
+				}
+			}
+		} else {
+			// Comment was removed
+			chunk.CommentStatements = nil
+		}
+	}
+
+	return nil
+}
+
+// deleteTriggerChunk removes a trigger chunk from the chunks
+func deleteTriggerChunk(chunks *schema.SDLChunks, triggerKey string) {
+	if chunks != nil && chunks.Triggers != nil {
+		delete(chunks.Triggers, triggerKey)
+	}
+}
+
+// generateCreateTriggerSDL generates the SDL text for a CREATE TRIGGER statement
+func generateCreateTriggerSDL(schemaName, tableName string, trigger *storepb.TriggerMetadata) string {
+	if trigger == nil {
+		return ""
+	}
+
+	var buf strings.Builder
+	if err := writeTriggerSDL(&buf, schemaName, tableName, trigger); err != nil {
+		return ""
+	}
+
+	return buf.String()
+}
+
+// generateCommentOnTriggerSQL generates a COMMENT ON TRIGGER statement
+func generateCommentOnTriggerSQL(schemaName, tableName, triggerName, comment string) string {
+	if schemaName == "" {
+		schemaName = "public"
+	}
+	// Escape single quotes in comment
+	escapedComment := strings.ReplaceAll(comment, "'", "''")
+	return fmt.Sprintf("COMMENT ON TRIGGER \"%s\" ON \"%s\".\"%s\" IS '%s';", triggerName, schemaName, tableName, escapedComment)
+}
+
+// triggerExtractor extracts CREATE TRIGGER AST nodes
+type triggerExtractor struct {
+	*parser.BasePostgreSQLParserListener
+	result **parser.CreatetrigstmtContext
+}
+
+func (e *triggerExtractor) EnterCreatetrigstmt(ctx *parser.CreatetrigstmtContext) {
+	if e.result != nil && *e.result == nil {
+		*e.result = ctx
+	}
 }
