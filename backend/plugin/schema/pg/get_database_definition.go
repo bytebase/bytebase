@@ -2475,6 +2475,20 @@ func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 					}
 				}
 			}
+
+			// Write CREATE TRIGGER statements
+			if err := writeTriggersSDL(&buf, schema.Name, table); err != nil {
+				return "", err
+			}
+
+			// Write trigger comments if present
+			for _, trigger := range table.Triggers {
+				if len(trigger.Comment) > 0 {
+					if err := writeTriggerCommentSDL(&buf, schema.Name, table.Name, trigger); err != nil {
+						return "", err
+					}
+				}
+			}
 		}
 
 		// Write ALTER SEQUENCE OWNED BY statements for sequences that have owners
@@ -3425,6 +3439,20 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 				}
 			}
 
+			// Write CREATE TRIGGER statements
+			if err := writeTriggersSDL(&buf, schemaName, table); err != nil {
+				return nil, errors.Wrapf(err, "failed to generate triggers SDL for %s.%s", schemaName, table.Name)
+			}
+
+			// Write trigger comments if present
+			for _, trigger := range table.Triggers {
+				if len(trigger.Comment) > 0 {
+					if err := writeTriggerCommentSDL(&buf, schemaName, table.Name, trigger); err != nil {
+						return nil, errors.Wrapf(err, "failed to generate trigger comment for %s.%s.%s", schemaName, table.Name, trigger.Name)
+					}
+				}
+			}
+
 			// Write owned sequences (non-serial/non-identity) for this table
 			for _, sequence := range tableSequences {
 				// Skip sequences that belong to serial or identity columns
@@ -3939,6 +3967,67 @@ func writeIndexCommentSDL(out io.Writer, schemaName string, index *storepb.Index
 	if _, err := io.WriteString(out, `';`); err != nil {
 		return err
 	}
+	_, err := io.WriteString(out, "\n\n")
+	return err
+}
+
+func writeTriggersSDL(out io.Writer, schemaName string, table *storepb.TableMetadata) error {
+	for _, trigger := range table.Triggers {
+		if trigger.SkipDump {
+			continue
+		}
+
+		if err := writeTriggerSDL(out, schemaName, table.Name, trigger); err != nil {
+			return err
+		}
+
+		if _, err := io.WriteString(out, ";\n\n"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func writeTriggerSDL(out io.Writer, _ /* schemaName */, _ /* tableName */ string, trigger *storepb.TriggerMetadata) error {
+	// For PostgreSQL, trigger.Body contains the complete CREATE TRIGGER statement
+	// built by buildTriggerDefinition in get_database_metadata.go
+	_, err := io.WriteString(out, trigger.Body)
+	return err
+}
+
+func writeTriggerCommentSDL(out io.Writer, schemaName, tableName string, trigger *storepb.TriggerMetadata) error {
+	if len(trigger.Comment) == 0 {
+		return nil
+	}
+
+	if _, err := io.WriteString(out, `COMMENT ON TRIGGER "`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, trigger.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `" ON "`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, schemaName); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, tableName); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `" IS '`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, escapeSingleQuote(trigger.Comment)); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `';`); err != nil {
+		return err
+	}
+
 	_, err := io.WriteString(out, "\n\n")
 	return err
 }
