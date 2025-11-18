@@ -46,3 +46,55 @@ func TestTriggerDiffStructure(t *testing.T) {
 	// assert.Equal(t, "users", triggerDiff.TableName)
 	// assert.Equal(t, "audit_trigger", triggerDiff.TriggerName)
 }
+
+func TestCreateTriggerExtraction(t *testing.T) {
+	tests := []struct {
+		name             string
+		sql              string
+		expectedTriggers int
+	}{
+		{
+			name: "Simple trigger",
+			sql: `
+				CREATE TABLE users (id SERIAL PRIMARY KEY);
+				CREATE FUNCTION f() RETURNS TRIGGER AS $$ BEGIN RETURN NEW; END; $$ LANGUAGE plpgsql;
+				CREATE TRIGGER t1 AFTER INSERT ON users FOR EACH ROW EXECUTE FUNCTION f();
+			`,
+			expectedTriggers: 1,
+		},
+		{
+			name: "Multiple triggers on same table",
+			sql: `
+				CREATE TABLE users (id SERIAL PRIMARY KEY);
+				CREATE FUNCTION f() RETURNS TRIGGER AS $$ BEGIN RETURN NEW; END; $$ LANGUAGE plpgsql;
+				CREATE TRIGGER t1 AFTER INSERT ON users FOR EACH ROW EXECUTE FUNCTION f();
+				CREATE TRIGGER t2 BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION f();
+			`,
+			expectedTriggers: 2,
+		},
+		{
+			name: "Trigger with schema-qualified table",
+			sql: `
+				CREATE SCHEMA app;
+				CREATE TABLE app.users (id SERIAL PRIMARY KEY);
+				CREATE FUNCTION app.f() RETURNS TRIGGER AS $$ BEGIN RETURN NEW; END; $$ LANGUAGE plpgsql;
+				CREATE TRIGGER t1 AFTER INSERT ON app.users FOR EACH ROW EXECUTE FUNCTION app.f();
+			`,
+			expectedTriggers: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			diff, err := GetSDLDiff(tt.sql, "", nil, nil)
+			require.NoError(t, err)
+
+			totalTriggers := 0
+			for _, tableDiff := range diff.TableChanges {
+				totalTriggers += len(tableDiff.TriggerChanges)
+			}
+
+			assert.Equal(t, tt.expectedTriggers, totalTriggers)
+		})
+	}
+}

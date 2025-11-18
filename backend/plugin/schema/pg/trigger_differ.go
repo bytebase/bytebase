@@ -1,0 +1,181 @@
+package pg
+
+import (
+	"strings"
+
+	parser "github.com/bytebase/parser/postgresql"
+
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	"github.com/bytebase/bytebase/backend/plugin/schema"
+)
+
+// processStandaloneTriggerChanges analyzes standalone CREATE TRIGGER statement changes
+// and adds them to the appropriate table's TriggerChanges
+func processStandaloneTriggerChanges(currentChunks, previousChunks *schema.SDLChunks, currentDBSDLChunks *currentDatabaseSDLChunks, diff *schema.MetadataDiff) {
+	if currentChunks == nil || previousChunks == nil {
+		return
+	}
+
+	// Build map of affected tables for efficient lookups
+	affectedTables := make(map[string]*schema.TableDiff, len(diff.TableChanges))
+	for _, tableDiff := range diff.TableChanges {
+		qualifiedTableName := tableDiff.SchemaName + "." + tableDiff.TableName
+		affectedTables[qualifiedTableName] = tableDiff
+	}
+
+	// Step 1: Process current triggers (CREATE and MODIFY)
+	for _, currentChunk := range currentChunks.Triggers {
+		targetTableName := extractTableNameFromTrigger(currentChunk.ASTNode.(*parser.CreatetrigstmtContext))
+		if targetTableName == "" {
+			continue
+		}
+
+		if previousChunk, exists := previousChunks.Triggers[currentChunk.Identifier]; exists {
+			// Trigger exists in both - check if modified
+			currentText := getStandaloneTriggerText(currentChunk.ASTNode)
+			previousText := getStandaloneTriggerText(previousChunk.ASTNode)
+
+			if currentText != previousText {
+				// Usability check
+				if currentDBSDLChunks.shouldSkipChunkDiffForUsability(currentText, currentChunk.Identifier) {
+					continue
+				}
+
+				// Trigger was modified - use DROP + CREATE pattern
+				tableDiff := getOrCreateTableDiff(diff, targetTableName, affectedTables)
+
+				// Extract trigger info for TriggerDiff
+				schemaName, tableName := parseSchemaAndTableFromQualifiedName(targetTableName)
+				triggerName := extractTriggerNameFromAST(currentChunk.ASTNode)
+
+				tableDiff.TriggerChanges = append(tableDiff.TriggerChanges, &schema.TriggerDiff{
+					Action:      schema.MetadataDiffActionDrop,
+					SchemaName:  schemaName,
+					TableName:   tableName,
+					TriggerName: triggerName,
+					OldASTNode:  previousChunk.ASTNode,
+				})
+				tableDiff.TriggerChanges = append(tableDiff.TriggerChanges, &schema.TriggerDiff{
+					Action:      schema.MetadataDiffActionCreate,
+					SchemaName:  schemaName,
+					TableName:   tableName,
+					TriggerName: triggerName,
+					NewASTNode:  currentChunk.ASTNode,
+				})
+
+				// Add COMMENT changes
+				if len(currentChunk.CommentStatements) > 0 {
+					for _, commentNode := range currentChunk.CommentStatements {
+						commentText := extractCommentTextFromNode(commentNode)
+						diff.CommentChanges = append(diff.CommentChanges, &schema.CommentDiff{
+							Action:     schema.MetadataDiffActionCreate,
+							ObjectType: schema.CommentObjectTypeTrigger,
+							SchemaName: schemaName,
+							TableName:  targetTableName,
+							ObjectName: triggerName,
+							OldComment: "",
+							NewComment: commentText,
+							OldASTNode: nil,
+							NewASTNode: commentNode,
+						})
+					}
+				}
+			}
+		} else {
+			// New trigger
+			tableDiff := getOrCreateTableDiff(diff, targetTableName, affectedTables)
+
+			schemaName, tableName := parseSchemaAndTableFromQualifiedName(targetTableName)
+			triggerName := extractTriggerNameFromAST(currentChunk.ASTNode)
+
+			tableDiff.TriggerChanges = append(tableDiff.TriggerChanges, &schema.TriggerDiff{
+				Action:      schema.MetadataDiffActionCreate,
+				SchemaName:  schemaName,
+				TableName:   tableName,
+				TriggerName: triggerName,
+				NewASTNode:  currentChunk.ASTNode,
+			})
+
+			// Add comments
+			if len(currentChunk.CommentStatements) > 0 {
+				for _, commentNode := range currentChunk.CommentStatements {
+					commentText := extractCommentTextFromNode(commentNode)
+					diff.CommentChanges = append(diff.CommentChanges, &schema.CommentDiff{
+						Action:     schema.MetadataDiffActionCreate,
+						ObjectType: schema.CommentObjectTypeTrigger,
+						SchemaName: schemaName,
+						TableName:  targetTableName,
+						ObjectName: triggerName,
+						OldComment: "",
+						NewComment: commentText,
+						OldASTNode: nil,
+						NewASTNode: commentNode,
+					})
+				}
+			}
+		}
+	}
+
+	// Step 2: Process previous triggers (DROP)
+	for triggerName, previousChunk := range previousChunks.Triggers {
+		if _, exists := currentChunks.Triggers[triggerName]; !exists {
+			// Trigger was dropped
+			targetTableName := extractTableNameFromTrigger(previousChunk.ASTNode.(*parser.CreatetrigstmtContext))
+			if targetTableName == "" {
+				continue
+			}
+
+			tableDiff := getOrCreateTableDiff(diff, targetTableName, affectedTables)
+
+			schemaName, tableName := parseSchemaAndTableFromQualifiedName(targetTableName)
+			triggerNameStr := extractTriggerNameFromAST(previousChunk.ASTNode)
+
+			tableDiff.TriggerChanges = append(tableDiff.TriggerChanges, &schema.TriggerDiff{
+				Action:      schema.MetadataDiffActionDrop,
+				SchemaName:  schemaName,
+				TableName:   tableName,
+				TriggerName: triggerNameStr,
+				OldASTNode:  previousChunk.ASTNode,
+			})
+		}
+	}
+}
+
+// getStandaloneTriggerText returns the text representation of a CREATE TRIGGER statement
+func getStandaloneTriggerText(astNode any) string {
+	triggerStmt, ok := astNode.(*parser.CreatetrigstmtContext)
+	if !ok || triggerStmt == nil {
+		return ""
+	}
+
+	// Get text from token stream
+	if parser := triggerStmt.GetParser(); parser != nil {
+		if tokenStream := parser.GetTokenStream(); tokenStream != nil {
+			start := triggerStmt.GetStart()
+			stop := triggerStmt.GetStop()
+			if start != nil && stop != nil {
+				return tokenStream.GetTextFromTokens(start, stop)
+			}
+		}
+	}
+
+	return triggerStmt.GetText()
+}
+
+// extractTriggerNameFromAST extracts trigger name from CREATE TRIGGER AST
+func extractTriggerNameFromAST(astNode any) string {
+	triggerStmt, ok := astNode.(*parser.CreatetrigstmtContext)
+	if !ok || triggerStmt == nil || triggerStmt.Name() == nil {
+		return ""
+	}
+	return pgparser.NormalizePostgreSQLName(triggerStmt.Name())
+}
+
+// parseSchemaAndTableFromQualifiedName parses "schema.table" into separate parts
+func parseSchemaAndTableFromQualifiedName(qualifiedName string) (schemaName, tableName string) {
+	parts := strings.Split(qualifiedName, ".")
+	if len(parts) == 2 {
+		return parts[0], parts[1]
+	}
+	return "public", qualifiedName
+}

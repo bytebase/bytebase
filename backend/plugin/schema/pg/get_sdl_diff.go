@@ -88,6 +88,9 @@ func GetSDLDiff(currentSDLText, previousUserSDLText string, currentSchema, previ
 	// Process index changes (standalone CREATE INDEX statements)
 	processStandaloneIndexChanges(currentChunks, previousChunks, currentDBSDLChunks, diff)
 
+	// Process trigger changes (standalone CREATE TRIGGER statements)
+	processStandaloneTriggerChanges(currentChunks, previousChunks, currentDBSDLChunks, diff)
+
 	// Process view changes
 	processViewChanges(currentChunks, previousChunks, currentDBSDLChunks, diff)
 
@@ -361,6 +364,45 @@ func (l *sdlChunkExtractor) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 	}
 
 	l.chunks.Indexes[schemaQualifiedName] = chunk
+}
+
+// EnterCreatetrigstmt handles CREATE TRIGGER statements
+func (l *sdlChunkExtractor) EnterCreatetrigstmt(ctx *parser.CreatetrigstmtContext) {
+	// Check if this is CREATE TRIGGER
+	if ctx.CREATE() == nil || ctx.TRIGGER() == nil {
+		return
+	}
+
+	// Extract trigger name
+	if ctx.Name() == nil {
+		return
+	}
+	triggerName := pgparser.NormalizePostgreSQLName(ctx.Name())
+
+	// Extract table name from ON clause
+	tableName := extractTableNameFromTrigger(ctx)
+	if tableName == "" {
+		return
+	}
+
+	// Parse schema from table name (format: schema.table)
+	parts := strings.Split(tableName, ".")
+	var schemaName string
+	if len(parts) == 2 {
+		schemaName = parts[0]
+	} else {
+		schemaName = "public"
+	}
+
+	// Create identifier: schema.trigger_name
+	schemaQualifiedName := schemaName + "." + triggerName
+
+	chunk := &schema.SDLChunk{
+		Identifier: schemaQualifiedName,
+		ASTNode:    ctx,
+	}
+
+	l.chunks.Triggers[schemaQualifiedName] = chunk
 }
 
 func (l *sdlChunkExtractor) EnterViewstmt(ctx *parser.ViewstmtContext) {
@@ -7111,4 +7153,32 @@ func extensionsEqual(a, b *storepb.ExtensionMetadata) bool {
 		a.Schema == b.Schema &&
 		a.Version == b.Version &&
 		a.Description == b.Description
+}
+
+// extractTableNameFromTrigger extracts the fully qualified table name from CREATE TRIGGER ... ON table
+// Returns schema.table format, defaulting to public schema if not specified
+func extractTableNameFromTrigger(ctx *parser.CreatetrigstmtContext) string {
+	if ctx == nil {
+		return ""
+	}
+
+	// Find ON clause - the table name comes after ON keyword
+	// In PostgreSQL grammar: CREATE TRIGGER name ... ON qualified_name
+	if ctx.Qualified_name() == nil {
+		return ""
+	}
+
+	// Extract table name
+	qualifiedNameParts := pgparser.NormalizePostgreSQLQualifiedName(ctx.Qualified_name())
+	if len(qualifiedNameParts) == 0 {
+		return ""
+	}
+
+	// Return fully qualified name (schema.table)
+	if len(qualifiedNameParts) == 1 {
+		// No schema specified, default to public
+		return "public." + qualifiedNameParts[0]
+	}
+	// Schema is specified
+	return strings.Join(qualifiedNameParts, ".")
 }
