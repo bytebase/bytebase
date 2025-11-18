@@ -3988,7 +3988,7 @@ func writeTriggersSDL(out io.Writer, schemaName string, table *storepb.TableMeta
 	return nil
 }
 
-func writeTriggerSDL(out io.Writer, schemaName, tableName string, trigger *storepb.TriggerMetadata) error {
+func writeTriggerSDL(out io.Writer, _ /* schemaName */, _ /* tableName */ string, trigger *storepb.TriggerMetadata) error {
 	// For PostgreSQL, trigger.Body contains the complete CREATE TRIGGER statement
 	// built by buildTriggerDefinition in get_database_metadata.go
 	_, err := io.WriteString(out, trigger.Body)

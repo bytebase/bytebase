@@ -171,8 +171,8 @@ func TestCreateTriggerMigrationWithDependencyOrder(t *testing.T) {
 	// Print migration for debugging
 	t.Logf("Migration:\n%s", migration)
 
-	// Verify CREATE TRIGGER is in migration
-	assert.Contains(t, migration, "CREATE TRIGGER")
+	// Verify CREATE OR REPLACE TRIGGER is in migration
+	assert.Contains(t, migration, "CREATE OR REPLACE TRIGGER")
 	assert.Contains(t, migration, "audit_trigger")
 
 	// Verify dependency order: Both TABLE and FUNCTION must be created before TRIGGER
@@ -180,7 +180,7 @@ func TestCreateTriggerMigrationWithDependencyOrder(t *testing.T) {
 	// since trigger functions don't reference the table until the trigger is created
 	tableIdx := strings.Index(migration, "CREATE TABLE")
 	functionIdx := strings.Index(migration, "CREATE FUNCTION audit_log")
-	triggerIdx := strings.Index(migration, "CREATE TRIGGER audit_trigger")
+	triggerIdx := strings.Index(migration, "CREATE OR REPLACE TRIGGER audit_trigger")
 
 	t.Logf("Indices: table=%d, function=%d, trigger=%d", tableIdx, functionIdx, triggerIdx)
 
@@ -242,7 +242,7 @@ func TestStandaloneTriggerDiff(t *testing.T) {
 			expectedActions:     []schema.MetadataDiffAction{schema.MetadataDiffActionDrop},
 		},
 		{
-			name: "Modify trigger (drop and recreate)",
+			name: "Modify trigger (CREATE OR REPLACE)",
 			previousUserSDL: `
 				CREATE TABLE users (id SERIAL PRIMARY KEY);
 				CREATE FUNCTION f() RETURNS TRIGGER AS $$ BEGIN RETURN NEW; END; $$ LANGUAGE plpgsql;
@@ -253,8 +253,8 @@ func TestStandaloneTriggerDiff(t *testing.T) {
 				CREATE FUNCTION f() RETURNS TRIGGER AS $$ BEGIN RETURN NEW; END; $$ LANGUAGE plpgsql;
 				CREATE TRIGGER t1 AFTER INSERT OR UPDATE ON users FOR EACH ROW EXECUTE FUNCTION f();
 			`,
-			expectedTriggerDiff: 2, // Drop + Create
-			expectedActions:     []schema.MetadataDiffAction{schema.MetadataDiffActionDrop, schema.MetadataDiffActionCreate},
+			expectedTriggerDiff: 1, // ALTER (CREATE OR REPLACE)
+			expectedActions:     []schema.MetadataDiffAction{schema.MetadataDiffActionAlter},
 		},
 		{
 			name: "No changes to trigger",
@@ -381,12 +381,19 @@ func TestTriggerSDLIntegration(t *testing.T) {
 		diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
 		require.NoError(t, err)
 
-		// Should have 2 changes for t1 (drop + create), none for t2
+		// Should have 1 change for t1 (ALTER using CREATE OR REPLACE), none for t2
 		totalChanges := 0
+		alterChanges := 0
 		for _, tableDiff := range diff.TableChanges {
-			totalChanges += len(tableDiff.TriggerChanges)
+			for _, triggerDiff := range tableDiff.TriggerChanges {
+				totalChanges++
+				if triggerDiff.Action == schema.MetadataDiffActionAlter {
+					alterChanges++
+				}
+			}
 		}
-		assert.Equal(t, 2, totalChanges, "Should only modify t1 (drop + create)")
+		assert.Equal(t, 1, totalChanges, "Should only modify t1 (ALTER)")
+		assert.Equal(t, 1, alterChanges, "Should use ALTER action (CREATE OR REPLACE)")
 	})
 
 	t.Run("Trigger with multiple events", func(t *testing.T) {
@@ -403,7 +410,7 @@ func TestTriggerSDLIntegration(t *testing.T) {
 
 		migration, err := generateMigration(diff)
 		require.NoError(t, err)
-		assert.Contains(t, migration, "CREATE TRIGGER")
+		assert.Contains(t, migration, "CREATE OR REPLACE TRIGGER")
 		assert.Contains(t, migration, "INSERT OR UPDATE OR DELETE")
 	})
 
@@ -507,5 +514,67 @@ func TestTriggerSDLIntegration(t *testing.T) {
 		migration, err := generateMigration(diff)
 		require.NoError(t, err)
 		assert.Contains(t, migration, "INSTEAD OF INSERT")
+	})
+
+	t.Run("CREATE OR REPLACE conversion test", func(t *testing.T) {
+		// Test that CREATE TRIGGER is converted to CREATE OR REPLACE TRIGGER
+		currentSDL := `
+			CREATE TABLE test_table (id SERIAL PRIMARY KEY);
+			CREATE FUNCTION test_func() RETURNS TRIGGER AS $$ BEGIN RETURN NEW; END; $$ LANGUAGE plpgsql;
+			CREATE TRIGGER test_trigger
+			AFTER INSERT ON test_table
+			FOR EACH ROW EXECUTE FUNCTION test_func();
+		`
+
+		diff, err := GetSDLDiff(currentSDL, "", nil, nil)
+		require.NoError(t, err)
+
+		migration, err := generateMigration(diff)
+		require.NoError(t, err)
+
+		// Should contain CREATE OR REPLACE TRIGGER, not just CREATE TRIGGER
+		assert.Contains(t, migration, "CREATE OR REPLACE TRIGGER")
+		assert.NotContains(t, migration, "CREATE TRIGGER test_trigger\n")
+	})
+
+	t.Run("Trigger modification uses CREATE OR REPLACE", func(t *testing.T) {
+		// Test that modifying a trigger uses CREATE OR REPLACE instead of DROP + CREATE
+		previousSDL := `
+			CREATE TABLE test_table (id SERIAL PRIMARY KEY);
+			CREATE FUNCTION test_func() RETURNS TRIGGER AS $$ BEGIN RETURN NEW; END; $$ LANGUAGE plpgsql;
+			CREATE TRIGGER test_trigger
+			AFTER INSERT ON test_table
+			FOR EACH ROW EXECUTE FUNCTION test_func();
+		`
+
+		currentSDL := `
+			CREATE TABLE test_table (id SERIAL PRIMARY KEY);
+			CREATE FUNCTION test_func() RETURNS TRIGGER AS $$ BEGIN RETURN NEW; END; $$ LANGUAGE plpgsql;
+			CREATE TRIGGER test_trigger
+			AFTER INSERT OR UPDATE ON test_table
+			FOR EACH ROW EXECUTE FUNCTION test_func();
+		`
+
+		diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+		require.NoError(t, err)
+
+		// Should have 1 ALTER action (not DROP + CREATE)
+		var alterCount int
+		for _, tableDiff := range diff.TableChanges {
+			for _, triggerDiff := range tableDiff.TriggerChanges {
+				if triggerDiff.Action == schema.MetadataDiffActionAlter {
+					alterCount++
+				}
+			}
+		}
+		assert.Equal(t, 1, alterCount, "Should use ALTER action")
+
+		migration, err := generateMigration(diff)
+		require.NoError(t, err)
+
+		// Should use CREATE OR REPLACE
+		assert.Contains(t, migration, "CREATE OR REPLACE TRIGGER")
+		// Should NOT contain DROP TRIGGER
+		assert.NotContains(t, migration, "DROP TRIGGER")
 	})
 }
