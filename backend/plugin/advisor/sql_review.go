@@ -493,7 +493,7 @@ type SQLReviewCheckContext struct {
 	DBSchema              *storepb.DatabaseSchemaMetadata
 	DBType                storepb.Engine
 	OriginalMetadata      *model.DatabaseMetadata
-	FinalCatalog          *catalog.DatabaseState
+	FinalMetadata         *model.DatabaseMetadata
 	Driver                *sql.DB
 	EnablePriorBackup     bool
 	ClassificationConfig  *storepb.DataClassificationSetting_DataClassificationConfig
@@ -532,10 +532,10 @@ func SQLReviewCheck(
 		return parseResult, nil
 	}
 
-	if !builtinOnly && checkContext.FinalCatalog != nil {
+	if !builtinOnly && checkContext.FinalMetadata != nil {
 		switch checkContext.DBType {
 		case storepb.Engine_TIDB, storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_POSTGRES, storepb.Engine_OCEANBASE:
-			if err := catalog.WalkThrough(checkContext.FinalCatalog, asts); err != nil {
+			if err := catalog.WalkThrough(checkContext.FinalMetadata, checkContext.DBType, asts); err != nil {
 				return convertWalkThroughErrorToAdvice(err)
 			}
 		default:
@@ -563,7 +563,7 @@ func SQLReviewCheck(
 				Statements:               statements,
 				Rule:                     rule,
 				OriginalMetadata:         checkContext.OriginalMetadata,
-				FinalCatalog:             checkContext.FinalCatalog,
+				FinalMetadata:            checkContext.FinalMetadata,
 				Driver:                   checkContext.Driver,
 				CurrentDatabase:          checkContext.CurrentDatabase,
 				ClassificationConfig:     checkContext.ClassificationConfig,
