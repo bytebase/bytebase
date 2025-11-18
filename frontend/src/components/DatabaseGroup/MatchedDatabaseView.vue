@@ -22,7 +22,7 @@
       :disabled="item.databaseList.length === 0"
       :name="item.name"
     >
-      <template #header-extra>{{ item.databaseList.length }}</template>
+      <template #header-extra>{{ item.getTotal ? item.getTotal() : undefined }}</template>
       <div class="flex flex-col gap-y-2 w-full max-h-48 overflow-y-auto">
         <div class="">
           <div
@@ -62,7 +62,7 @@
 import type { ConnectError } from "@connectrpc/connect";
 import { useDebounceFn } from "@vueuse/core";
 import { NButton, NCollapse, NCollapseItem } from "naive-ui";
-import { reactive, ref, watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
 import {
@@ -83,6 +83,7 @@ import { getDefaultPagination } from "@/utils";
 interface DatabaseMatchList<T> {
   token: T;
   loading: boolean;
+  getTotal?: () => number;
   databaseList: ComposedDatabase[];
   name: "matched" | "unmatched";
   title: string;
@@ -104,10 +105,11 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const matchedDatabaseNameList = ref<string[]>([]);
+const pageSize = computed(() => getDefaultPagination());
 
 const loadMoreMatched = async (index: number) => {
   const previous = index;
-  const next = previous + 20;
+  const next = previous + pageSize.value;
 
   const databases = await Promise.all(
     matchedDatabaseNameList.value
@@ -127,7 +129,7 @@ const loadMoreUnmatched = async (token: string) => {
   while (true) {
     const { databases, nextPageToken } = await databaseStore.fetchDatabases({
       pageToken,
-      pageSize: getDefaultPagination(),
+      pageSize: pageSize.value,
       parent: props.project,
     });
     pageToken = nextPageToken;
@@ -149,6 +151,7 @@ const getMatched = (title: string): DatabaseMatchList<number> => ({
   loading: false,
   databaseList: [],
   title,
+  getTotal: () => matchedDatabaseNameList.value.length,
   name: "matched",
   hasNext: (token: number) => token < matchedDatabaseNameList.value.length,
   loadMore: loadMoreMatched,
