@@ -637,7 +637,7 @@ func getTableColumns(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.
 		LEFT JOIN sys.schemas s ON s.schema_id = o.schema_id
 		LEFT JOIN sys.identity_columns id ON c.object_id = id.object_id AND c.column_id = id.column_id
 	WHERE s.name in (%s)
-	ORDER BY s.name ASC, c.object_id ASC, c.column_id ASC 
+	ORDER BY s.name ASC, c.object_id ASC, c.column_id ASC
 	`, quoteList(schemas))
 
 	rows, err := txn.Query(getColumnSQL)
@@ -645,6 +645,11 @@ func getTableColumns(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.
 		return nil, err
 	}
 	defer rows.Close()
+
+	// Track position counter per table to compute ordinal positions
+	// Since results are ordered by object_id and column_id, we can calculate sequential positions
+	positionMap := make(map[db.TableKey]int32)
+
 	for rows.Next() {
 		var schemaName, tableName, columnName, typeName, definition, collationName sql.NullString
 		var isComputed, isPersisted, isNullable, isIdentity sql.NullBool
@@ -678,6 +683,12 @@ func getTableColumns(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.
 		column := &storepb.ColumnMetadata{
 			Name: columnName.String,
 		}
+
+		// Calculate ordinal position (1-based sequential position per table)
+		// Results are ordered by column_id, so we increment position for each column in the table
+		key := db.TableKey{Schema: schemaName.String, Table: tableName.String}
+		positionMap[key]++
+		column.Position = positionMap[key]
 		column.Type, err = getColumnType(definition, typeName, isComputed, isPersisted, precision, scale, maxLength)
 		if err != nil {
 			return nil, errors.Errorf("failed to get column type: %v", err)
@@ -707,7 +718,6 @@ func getTableColumns(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.
 				column.Comment = comment
 			}
 		}
-		key := db.TableKey{Schema: schemaName.String, Table: tableName.String}
 		columnsMap[key] = append(columnsMap[key], column)
 	}
 	if err := rows.Err(); err != nil {
