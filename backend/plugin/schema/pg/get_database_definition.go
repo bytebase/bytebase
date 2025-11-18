@@ -3989,47 +3989,8 @@ func writeTriggersSDL(out io.Writer, schemaName string, table *storepb.TableMeta
 }
 
 func writeTriggerSDL(out io.Writer, schemaName, tableName string, trigger *storepb.TriggerMetadata) error {
-	if _, err := io.WriteString(out, `CREATE TRIGGER "`); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, trigger.Name); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, `"`); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, "\n"); err != nil {
-		return err
-	}
-
-	if _, err := io.WriteString(out, trigger.Timing); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, " "); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, trigger.Event); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, ` ON "`); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, schemaName); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, `"."`); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, tableName); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, `"`); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, "\n"); err != nil {
-		return err
-	}
-
+	// For PostgreSQL, trigger.Body contains the complete CREATE TRIGGER statement
+	// built by buildTriggerDefinition in get_database_metadata.go
 	_, err := io.WriteString(out, trigger.Body)
 	return err
 }
