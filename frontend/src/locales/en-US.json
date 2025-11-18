@@ -738,7 +738,11 @@
         "description": "Use global rule to apply masking in batch, e.g. all columns named as \"email\" will be masked with the specific semantic type and apply the masking algorithm.",
         "condition-order": "Condition order",
         "re-order": "Re-order",
-        "delete-rule-tip": "Delete this rule?"
+        "delete-rule-tip": "Delete this rule?",
+        "error": {
+          "missing-semantic-type": "Semantic type is required",
+          "invalid-condition": "Condition is invalid"
+        }
       },
       "semantic-types": {
         "self": "Semantic Types",

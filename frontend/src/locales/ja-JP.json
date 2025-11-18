@@ -738,7 +738,11 @@
         "description": "グローバル ルールを使用してバッチでマスキングを適用します。たとえば、「email」という名前のすべての列は特定のセマンティック タイプでマスキングされ、マスキング アルゴリズムが適用されます。",
         "condition-order": "条件付きシーケンス",
         "re-order": "並び替え",
-        "delete-rule-tip": "このルールを削除しますか?"
+        "delete-rule-tip": "このルールを削除しますか?",
+        "error": {
+          "missing-semantic-type": "セマンティックタイプは必須です",
+          "invalid-condition": "条件が無効です"
+        }
       },
       "semantic-types": {
         "self": "セマンティックタイプ",

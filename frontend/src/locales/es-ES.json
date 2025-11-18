@@ -738,7 +738,11 @@
         "description": "Utilice una regla global para aplicar el enmascaramiento en lote, por ejemplo, todas las columnas denominadas \"correo electrónico\" se enmascararán con el tipo semántico específico y se aplicará el algoritmo de enmascaramiento.",
         "condition-order": "Orden de condición",
         "re-order": "Reordenar",
-        "delete-rule-tip": "¿Eliminar esta regla?"
+        "delete-rule-tip": "¿Eliminar esta regla?",
+        "error": {
+          "missing-semantic-type": "Se requiere el tipo semántico.",
+          "invalid-condition": "La condición no es válida."
+        }
       },
       "semantic-types": {
         "self": "Tipos Semánticos",

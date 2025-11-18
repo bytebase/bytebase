@@ -6,7 +6,7 @@
       <div
         class="flex-1 flex flex-col gap-y-2 overflow-x-hidden overflow-y-auto"
       >
-        <div class="flex items-center h-[36px]">
+        <div class="flex items-center h-9">
           <NInput
             v-if="!readonly"
             v-model:value="state.title"
@@ -72,13 +72,22 @@
         <NButton :disabled="disabled" @click="onCancel">
           {{ $t("common.cancel") }}
         </NButton>
-        <NButton
-          type="primary"
-          :disabled="!isValid || disabled || !state.dirty"
-          @click="onConfirm"
-        >
-          {{ $t("common.confirm") }}
-        </NButton>
+        <NTooltip :disabled="errorMessages.length === 0">
+          <template #trigger>
+            <NButton
+              type="primary"
+              :disabled="errorMessages.length !== 0 || disabled || !state.dirty"
+              @click="onConfirm"
+            >
+              {{ $t("common.confirm") }}
+            </NButton>
+          </template>
+          <ul class="list-disc pl-4">
+            <li v-for="(msg, i) in errorMessages" :key="i">
+              {{ msg }}
+            </li>
+          </ul>
+        </NTooltip>
       </div>
     </div>
   </div>
@@ -89,7 +98,7 @@ import { create } from "@bufbuild/protobuf";
 import { head } from "lodash-es";
 import { TrashIcon } from "lucide-vue-next";
 import type { SelectOption } from "naive-ui";
-import { NButton, NInput, NPopconfirm, NSelect } from "naive-ui";
+import { NButton, NInput, NPopconfirm, NSelect, NTooltip } from "naive-ui";
 import { computed, nextTick, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import ExprEditor from "@/components/ExprEditor";
@@ -148,6 +157,19 @@ const state = reactive<LocalState>({
   dirty: false,
 });
 const settingStore = useSettingV1Store();
+
+const errorMessages = computed(() => {
+  const msg: string[] = [];
+  if (!state.semanticType) {
+    msg.push(
+      t("settings.sensitive-data.global-rules.error.missing-semantic-type")
+    );
+  }
+  if (!validateSimpleExpr(state.expr)) {
+    msg.push(t("settings.sensitive-data.global-rules.error.invalid-condition"));
+  }
+  return msg;
+});
 
 const semanticTypeSettingValue = computed(() => {
   const semanticTypeSetting = settingStore.getSettingByName(
@@ -208,12 +230,6 @@ const onCancel = async () => {
   emit("cancel");
   nextTick(() => (state.dirty = false));
 };
-
-const isValid = computed(() => {
-  const { expr, semanticType } = state;
-  if (!expr || !semanticType) return false;
-  return validateSimpleExpr(expr);
-});
 
 const onConfirm = async () => {
   const celexpr = await buildCELExpr(state.expr);

@@ -738,7 +738,11 @@
         "description": "Sử dụng quy tắc toàn cục để áp dụng che giấu hàng loạt, ví dụ: tất cả các cột có tên là \"email\" sẽ được che bằng loại ngữ nghĩa cụ thể và áp dụng thuật toán che.",
         "condition-order": "Thứ tự điều kiện",
         "re-order": "Sắp xếp lại",
-        "delete-rule-tip": "Xóa quy tắc này?"
+        "delete-rule-tip": "Xóa quy tắc này?",
+        "error": {
+          "missing-semantic-type": "Kiểu ngữ nghĩa là bắt buộc",
+          "invalid-condition": "Điều kiện không hợp lệ"
+        }
       },
       "semantic-types": {
         "self": "Loại ngữ nghĩa",
