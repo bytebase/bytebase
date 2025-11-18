@@ -11,9 +11,10 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/schema"
+	"github.com/bytebase/bytebase/backend/plugin/schema/catalogutil"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -535,7 +536,7 @@ func SQLReviewCheck(
 	if !builtinOnly && checkContext.FinalMetadata != nil {
 		switch checkContext.DBType {
 		case storepb.Engine_TIDB, storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_POSTGRES, storepb.Engine_OCEANBASE:
-			if err := catalog.WalkThrough(checkContext.FinalMetadata, checkContext.DBType, asts); err != nil {
+			if err := schema.WalkThrough(checkContext.DBType, checkContext.FinalMetadata, asts); err != nil {
 				return convertWalkThroughErrorToAdvice(err)
 			}
 		default:
@@ -603,7 +604,7 @@ func SQLReviewCheck(
 }
 
 func convertWalkThroughErrorToAdvice(err error) ([]*storepb.Advice, error) {
-	walkThroughError, ok := err.(*catalog.WalkThroughError)
+	walkThroughError, ok := err.(*catalogutil.WalkThroughError)
 	if !ok {
 		return nil, err
 	}

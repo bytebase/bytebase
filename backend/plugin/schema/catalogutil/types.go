@@ -1,25 +1,10 @@
-package catalog
+package catalogutil
 
 import (
 	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
-
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/store/model"
-)
-
-const (
-	// PrimaryKeyName is the string for PK.
-	PrimaryKeyName string = "PRIMARY"
-	// FullTextName is the string for FULLTEXT.
-	FullTextName string = "FULLTEXT"
-	// SpatialName is the string for SPATIAL.
-	SpatialName string = "SPATIAL"
-
-	publicSchemaName = "public"
 )
 
 // WalkThroughError is the error for walking-through.
@@ -29,6 +14,20 @@ type WalkThroughError struct {
 	Content string
 	// TODO(zp): position
 	Line int
+}
+
+// Error implements the error interface.
+func (e *WalkThroughError) Error() string {
+	return e.Content
+}
+
+// CompareIdentifier returns true if the engine will regard the two identifiers as the same one.
+// This is kept in catalogutil for the isCurrentDatabase helper functions in engine packages.
+func CompareIdentifier(a, b string, ignoreCaseSensitive bool) bool {
+	if ignoreCaseSensitive {
+		return strings.EqualFold(a, b)
+	}
+	return a == b
 }
 
 // NewRelationExistsError returns a new RelationExists error.
@@ -85,36 +84,4 @@ func NewTableExistsError(tableName string) *WalkThroughError {
 		Code:    code.TableExists,
 		Content: fmt.Sprintf("Table `%s` already exists", tableName),
 	}
-}
-
-// Error implements the error interface.
-func (e *WalkThroughError) Error() string {
-	return e.Content
-}
-
-// WalkThrough will collect the catalog schema in the database metadata as it walks through the stmt.
-func WalkThrough(d *model.DatabaseMetadata, engineType storepb.Engine, ast any) error {
-	switch engineType {
-	case storepb.Engine_TIDB:
-		return TiDBWalkThrough(d, ast)
-	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-		return MySQLWalkThrough(d, ast)
-	case storepb.Engine_POSTGRES:
-		return PgWalkThrough(d, ast)
-	default:
-		return errors.Errorf("Walk-through doesn't support engine type: %s", engineType)
-	}
-}
-
-// compareIdentifier returns true if the engine will regard the two identifiers as the same one.
-func compareIdentifier(a, b string, ignoreCaseSensitive bool) bool {
-	if ignoreCaseSensitive {
-		return strings.EqualFold(a, b)
-	}
-	return a == b
-}
-
-// isCurrentDatabase returns true if the given database is the current database.
-func isCurrentDatabase(d *model.DatabaseMetadata, database string) bool {
-	return compareIdentifier(d.DatabaseName(), database, !d.GetIsObjectCaseSensitive())
 }
