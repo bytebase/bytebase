@@ -53,7 +53,7 @@ import { useResizeObserver } from "@vueuse/core";
 import { escape } from "lodash-es";
 import { NButton } from "naive-ui";
 import { twMerge } from "tailwind-merge";
-import { computed, ref, watchEffect } from "vue";
+import { computed, ref } from "vue";
 import { useConnectionOfCurrentSQLEditorTab } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { QueryRow, RowValue } from "@/types/proto-es/v1/sql_service_pb";
