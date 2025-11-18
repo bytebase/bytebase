@@ -214,13 +214,15 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 
 		// Create OriginalMetadata as DatabaseMetadata (read-only)
 		// Clone to avoid mutations affecting future test cases
-		originalCatalogClone := proto.Clone(catalogMetadata).(*storepb.DatabaseSchemaMetadata)
+		originalCatalogClone, ok := proto.Clone(catalogMetadata).(*storepb.DatabaseSchemaMetadata)
+		require.True(t, ok, "failed to clone catalog metadata")
 		originalSchema := model.NewDatabaseSchema(originalCatalogClone, nil, nil, dbType, isCaseSensitive)
 		originalMetadata := originalSchema.GetDatabaseMetadata()
 
 		// Create FinalMetadata as DatabaseMetadata (mutable for walk-through)
 		// Clone to avoid mutations affecting future test cases
-		finalCatalogClone := proto.Clone(catalogMetadata).(*storepb.DatabaseSchemaMetadata)
+		finalCatalogClone, ok := proto.Clone(catalogMetadata).(*storepb.DatabaseSchemaMetadata)
+		require.True(t, ok, "failed to clone catalog metadata")
 		finalMetadata := model.NewDatabaseMetadata(finalCatalogClone, isCaseSensitive, isCaseSensitive)
 
 		payload, err := SetDefaultSQLReviewRulePayload(rule, dbType)
