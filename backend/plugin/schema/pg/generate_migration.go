@@ -3591,6 +3591,36 @@ func writeCommentOnExtension(out *strings.Builder, extensionName, comment string
 	_, _ = out.WriteString("\n")
 }
 
+func writeCommentOnTrigger(out *strings.Builder, schemaName, tableName, triggerName, comment string) {
+	// Parse table name to get schema and table separately
+	parts := strings.Split(tableName, ".")
+	var tableSchemaName, tableNameOnly string
+	if len(parts) == 2 {
+		tableSchemaName, tableNameOnly = parts[0], parts[1]
+	} else {
+		tableSchemaName, tableNameOnly = schemaName, tableName
+	}
+
+	_, _ = out.WriteString(`COMMENT ON TRIGGER "`)
+	_, _ = out.WriteString(triggerName)
+	_, _ = out.WriteString(`" ON "`)
+	_, _ = out.WriteString(tableSchemaName)
+	_, _ = out.WriteString(`"."`)
+	_, _ = out.WriteString(tableNameOnly)
+	_, _ = out.WriteString(`" IS `)
+	if comment == "" {
+		_, _ = out.WriteString(`NULL`)
+	} else {
+		_, _ = out.WriteString(`'`)
+		// Escape single quotes in the comment
+		escapedComment := strings.ReplaceAll(comment, "'", "''")
+		_, _ = out.WriteString(escapedComment)
+		_, _ = out.WriteString(`'`)
+	}
+	_, _ = out.WriteString(`;`)
+	_, _ = out.WriteString("\n")
+}
+
 // generateCommentChangesFromSDL generates COMMENT ON statements from SDL-based comment diffs
 // This handles comment changes detected from SDL diff mode (AST-based)
 func generateCommentChangesFromSDL(buf *strings.Builder, diff *schema.MetadataDiff) error {
@@ -3719,6 +3749,10 @@ func generateCommentChangesFromSDL(buf *strings.Builder, diff *schema.MetadataDi
 		case schema.CommentObjectTypeExtension:
 			// COMMENT ON EXTENSION
 			writeCommentOnExtension(buf, commentDiff.ObjectName, newComment)
+
+		case schema.CommentObjectTypeTrigger:
+			// COMMENT ON TRIGGER trigger_name ON table_name
+			writeCommentOnTrigger(buf, commentDiff.SchemaName, commentDiff.TableName, commentDiff.ObjectName, newComment)
 
 		default:
 			// Unknown object type, skip

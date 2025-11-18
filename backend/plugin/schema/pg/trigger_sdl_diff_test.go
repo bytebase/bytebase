@@ -188,3 +188,22 @@ func TestCreateTriggerMigrationWithDependencyOrder(t *testing.T) {
 	assert.Less(t, tableIdx, triggerIdx, "Table must be created before trigger")
 	assert.Less(t, functionIdx, triggerIdx, "Function must be created before trigger")
 }
+
+func TestTriggerCommentMigration(t *testing.T) {
+	currentSDL := `
+		CREATE TABLE users (id SERIAL PRIMARY KEY);
+		CREATE FUNCTION f() RETURNS TRIGGER AS $$ BEGIN RETURN NEW; END; $$ LANGUAGE plpgsql;
+		CREATE TRIGGER audit_trigger AFTER INSERT ON users FOR EACH ROW EXECUTE FUNCTION f();
+		COMMENT ON TRIGGER audit_trigger ON users IS 'Audit log trigger';
+	`
+
+	diff, err := GetSDLDiff(currentSDL, "", nil, nil)
+	require.NoError(t, err)
+
+	migration, err := generateMigration(diff)
+	require.NoError(t, err)
+
+	assert.Contains(t, migration, "COMMENT ON TRIGGER")
+	assert.Contains(t, migration, "audit_trigger")
+	assert.Contains(t, migration, "Audit log trigger")
+}
