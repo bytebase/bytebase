@@ -63,6 +63,10 @@ func processStandaloneTriggerChanges(currentChunks, previousChunks *schema.SDLCh
 			currentText := getStandaloneTriggerText(currentChunk.ASTNode)
 			previousText := getStandaloneTriggerText(previousChunk.ASTNode)
 
+			// Extract trigger info once for both trigger and comment changes
+			schemaName, tableName := parseSchemaAndTableFromQualifiedName(targetTableName)
+			triggerName := extractTriggerNameFromAST(currentChunk.ASTNode)
+
 			if currentText != previousText {
 				// Usability check
 				if currentDBSDLChunks.shouldSkipChunkDiffForUsability(currentText, currentChunk.Identifier) {
@@ -72,10 +76,6 @@ func processStandaloneTriggerChanges(currentChunks, previousChunks *schema.SDLCh
 				// Trigger was modified - use ALTER action (will be converted to CREATE OR REPLACE)
 				tableDiff := getOrCreateTableDiff(diff, targetTableName, affectedTables)
 
-				// Extract trigger info for TriggerDiff
-				schemaName, tableName := parseSchemaAndTableFromQualifiedName(targetTableName)
-				triggerName := extractTriggerNameFromAST(currentChunk.ASTNode)
-
 				tableDiff.TriggerChanges = append(tableDiff.TriggerChanges, &schema.TriggerDiff{
 					Action:      schema.MetadataDiffActionAlter,
 					SchemaName:  schemaName,
@@ -84,23 +84,58 @@ func processStandaloneTriggerChanges(currentChunks, previousChunks *schema.SDLCh
 					OldASTNode:  previousChunk.ASTNode,
 					NewASTNode:  currentChunk.ASTNode,
 				})
+			}
 
-				// Add COMMENT changes
-				if len(currentChunk.CommentStatements) > 0 {
-					for _, commentNode := range currentChunk.CommentStatements {
-						commentText := extractCommentTextFromNode(commentNode)
-						diff.CommentChanges = append(diff.CommentChanges, &schema.CommentDiff{
-							Action:     schema.MetadataDiffActionCreate,
-							ObjectType: schema.CommentObjectTypeTrigger,
-							SchemaName: schemaName,
-							TableName:  targetTableName,
-							ObjectName: triggerName,
-							OldComment: "",
-							NewComment: commentText,
-							OldASTNode: nil,
-							NewASTNode: commentNode,
-						})
-					}
+			// Check for comment changes independently of trigger definition changes
+			currentCommentText := ""
+			if len(currentChunk.CommentStatements) > 0 {
+				currentCommentText = extractCommentTextFromNode(currentChunk.CommentStatements[0])
+			}
+			previousCommentText := ""
+			if len(previousChunk.CommentStatements) > 0 {
+				previousCommentText = extractCommentTextFromNode(previousChunk.CommentStatements[0])
+			}
+
+			if currentCommentText != previousCommentText {
+				if currentCommentText != "" && previousCommentText == "" {
+					// Comment added
+					diff.CommentChanges = append(diff.CommentChanges, &schema.CommentDiff{
+						Action:     schema.MetadataDiffActionCreate,
+						ObjectType: schema.CommentObjectTypeTrigger,
+						SchemaName: schemaName,
+						TableName:  targetTableName,
+						ObjectName: triggerName,
+						OldComment: "",
+						NewComment: currentCommentText,
+						OldASTNode: nil,
+						NewASTNode: currentChunk.CommentStatements[0],
+					})
+				} else if currentCommentText == "" && previousCommentText != "" {
+					// Comment removed
+					diff.CommentChanges = append(diff.CommentChanges, &schema.CommentDiff{
+						Action:     schema.MetadataDiffActionDrop,
+						ObjectType: schema.CommentObjectTypeTrigger,
+						SchemaName: schemaName,
+						TableName:  targetTableName,
+						ObjectName: triggerName,
+						OldComment: previousCommentText,
+						NewComment: "",
+						OldASTNode: previousChunk.CommentStatements[0],
+						NewASTNode: nil,
+					})
+				} else if currentCommentText != "" && previousCommentText != "" {
+					// Comment modified
+					diff.CommentChanges = append(diff.CommentChanges, &schema.CommentDiff{
+						Action:     schema.MetadataDiffActionAlter,
+						ObjectType: schema.CommentObjectTypeTrigger,
+						SchemaName: schemaName,
+						TableName:  targetTableName,
+						ObjectName: triggerName,
+						OldComment: previousCommentText,
+						NewComment: currentCommentText,
+						OldASTNode: previousChunk.CommentStatements[0],
+						NewASTNode: currentChunk.CommentStatements[0],
+					})
 				}
 			}
 		} else {

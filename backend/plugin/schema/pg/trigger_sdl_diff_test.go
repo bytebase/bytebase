@@ -577,4 +577,163 @@ func TestTriggerSDLIntegration(t *testing.T) {
 		// Should NOT contain DROP TRIGGER
 		assert.NotContains(t, migration, "DROP TRIGGER")
 	})
+
+	t.Run("Modify trigger comment only", func(t *testing.T) {
+		// Test that modifying only the trigger comment doesn't trigger ALTER on the trigger itself
+		previousSDL := `
+			CREATE TABLE users (id SERIAL PRIMARY KEY);
+			CREATE FUNCTION audit() RETURNS TRIGGER AS $$ BEGIN RETURN NEW; END; $$ LANGUAGE plpgsql;
+			CREATE TRIGGER audit_trigger
+			AFTER INSERT ON users
+			FOR EACH ROW EXECUTE FUNCTION audit();
+			COMMENT ON TRIGGER audit_trigger ON users IS 'Original comment';
+		`
+
+		currentSDL := `
+			CREATE TABLE users (id SERIAL PRIMARY KEY);
+			CREATE FUNCTION audit() RETURNS TRIGGER AS $$ BEGIN RETURN NEW; END; $$ LANGUAGE plpgsql;
+			CREATE TRIGGER audit_trigger
+			AFTER INSERT ON users
+			FOR EACH ROW EXECUTE FUNCTION audit();
+			COMMENT ON TRIGGER audit_trigger ON users IS 'Updated comment';
+		`
+
+		diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+		require.NoError(t, err)
+
+		// Trigger itself should NOT have ALTER action (definition unchanged)
+		triggerAlterCount := 0
+		for _, tableDiff := range diff.TableChanges {
+			for _, triggerDiff := range tableDiff.TriggerChanges {
+				if triggerDiff.Action == schema.MetadataDiffActionAlter {
+					triggerAlterCount++
+				}
+			}
+		}
+		assert.Equal(t, 0, triggerAlterCount, "Trigger should not have ALTER action when only comment changes")
+
+		// Should have comment change
+		commentChanged := false
+		for _, commentDiff := range diff.CommentChanges {
+			if commentDiff.ObjectType == schema.CommentObjectTypeTrigger &&
+				commentDiff.ObjectName == "audit_trigger" &&
+				commentDiff.OldComment == "Original comment" &&
+				commentDiff.NewComment == "Updated comment" {
+				commentChanged = true
+			}
+		}
+		assert.True(t, commentChanged, "Should have trigger comment change")
+
+		// Migration should only contain COMMENT statement, not CREATE OR REPLACE TRIGGER
+		migration, err := generateMigration(diff)
+		require.NoError(t, err)
+
+		assert.Contains(t, migration, "COMMENT ON TRIGGER", "Should have COMMENT ON TRIGGER")
+		assert.Contains(t, migration, "Updated comment", "Should have new comment text")
+		assert.NotContains(t, migration, "CREATE OR REPLACE TRIGGER", "Should NOT recreate trigger when only comment changes")
+	})
+
+	t.Run("Add comment to trigger without comment", func(t *testing.T) {
+		// Test adding a comment to a trigger that previously had no comment
+		previousSDL := `
+			CREATE TABLE users (id SERIAL PRIMARY KEY);
+			CREATE FUNCTION audit() RETURNS TRIGGER AS $$ BEGIN RETURN NEW; END; $$ LANGUAGE plpgsql;
+			CREATE TRIGGER audit_trigger
+			AFTER INSERT ON users
+			FOR EACH ROW EXECUTE FUNCTION audit();
+		`
+
+		currentSDL := `
+			CREATE TABLE users (id SERIAL PRIMARY KEY);
+			CREATE FUNCTION audit() RETURNS TRIGGER AS $$ BEGIN RETURN NEW; END; $$ LANGUAGE plpgsql;
+			CREATE TRIGGER audit_trigger
+			AFTER INSERT ON users
+			FOR EACH ROW EXECUTE FUNCTION audit();
+			COMMENT ON TRIGGER audit_trigger ON users IS 'New comment';
+		`
+
+		diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+		require.NoError(t, err)
+
+		// Trigger should NOT have ALTER action
+		triggerAlterCount := 0
+		for _, tableDiff := range diff.TableChanges {
+			for _, triggerDiff := range tableDiff.TriggerChanges {
+				if triggerDiff.Action == schema.MetadataDiffActionAlter {
+					triggerAlterCount++
+				}
+			}
+		}
+		assert.Equal(t, 0, triggerAlterCount, "Trigger should not have ALTER action when adding comment")
+
+		// Should have comment addition
+		commentAdded := false
+		for _, commentDiff := range diff.CommentChanges {
+			if commentDiff.ObjectType == schema.CommentObjectTypeTrigger &&
+				commentDiff.ObjectName == "audit_trigger" &&
+				commentDiff.Action == schema.MetadataDiffActionCreate &&
+				commentDiff.NewComment == "New comment" {
+				commentAdded = true
+			}
+		}
+		assert.True(t, commentAdded, "Should have comment addition")
+
+		migration, err := generateMigration(diff)
+		require.NoError(t, err)
+
+		assert.Contains(t, migration, "COMMENT ON TRIGGER", "Should have COMMENT ON TRIGGER")
+		assert.NotContains(t, migration, "CREATE OR REPLACE TRIGGER", "Should NOT recreate trigger")
+	})
+
+	t.Run("Remove trigger comment", func(t *testing.T) {
+		// Test removing a comment from a trigger
+		previousSDL := `
+			CREATE TABLE users (id SERIAL PRIMARY KEY);
+			CREATE FUNCTION audit() RETURNS TRIGGER AS $$ BEGIN RETURN NEW; END; $$ LANGUAGE plpgsql;
+			CREATE TRIGGER audit_trigger
+			AFTER INSERT ON users
+			FOR EACH ROW EXECUTE FUNCTION audit();
+			COMMENT ON TRIGGER audit_trigger ON users IS 'Old comment';
+		`
+
+		currentSDL := `
+			CREATE TABLE users (id SERIAL PRIMARY KEY);
+			CREATE FUNCTION audit() RETURNS TRIGGER AS $$ BEGIN RETURN NEW; END; $$ LANGUAGE plpgsql;
+			CREATE TRIGGER audit_trigger
+			AFTER INSERT ON users
+			FOR EACH ROW EXECUTE FUNCTION audit();
+		`
+
+		diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+		require.NoError(t, err)
+
+		// Trigger should NOT have ALTER action
+		triggerAlterCount := 0
+		for _, tableDiff := range diff.TableChanges {
+			for _, triggerDiff := range tableDiff.TriggerChanges {
+				if triggerDiff.Action == schema.MetadataDiffActionAlter {
+					triggerAlterCount++
+				}
+			}
+		}
+		assert.Equal(t, 0, triggerAlterCount, "Trigger should not have ALTER action when removing comment")
+
+		// Should have comment drop
+		commentDropped := false
+		for _, commentDiff := range diff.CommentChanges {
+			if commentDiff.ObjectType == schema.CommentObjectTypeTrigger &&
+				commentDiff.ObjectName == "audit_trigger" &&
+				commentDiff.Action == schema.MetadataDiffActionDrop {
+				commentDropped = true
+			}
+		}
+		assert.True(t, commentDropped, "Should have comment drop action")
+
+		migration, err := generateMigration(diff)
+		require.NoError(t, err)
+
+		assert.Contains(t, migration, "COMMENT ON TRIGGER", "Should have COMMENT ON TRIGGER")
+		assert.Contains(t, migration, "NULL", "Should set comment to NULL")
+		assert.NotContains(t, migration, "CREATE OR REPLACE TRIGGER", "Should NOT recreate trigger")
+	})
 }
