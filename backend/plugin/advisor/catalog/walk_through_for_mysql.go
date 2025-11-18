@@ -908,17 +908,39 @@ func mysqlCopyTable(d *model.DatabaseMetadata, databaseName, tableName, referTab
 		}
 	}
 
-	// Copy table structure by creating a new table with the same proto
-	targetProto := targetTable.GetProto()
-	cloned := proto.Clone(targetProto)
-	newTableProto, ok := cloned.(*storepb.TableMetadata)
-	if !ok {
-		return &WalkThroughError{Code: code.Internal, Content: errors.Errorf("failed to clone table metadata").Error()}
-	}
-	newTableProto.Name = tableName
-
-	if _, createErr := schema.CreateTable(tableName); createErr != nil {
+	// Create the new table
+	newTable, createErr := schema.CreateTable(tableName)
+	if createErr != nil {
 		return &WalkThroughError{Code: code.TableExists, Content: createErr.Error()}
+	}
+
+	// Copy table properties
+	targetProto := targetTable.GetProto()
+	newTableProto := newTable.GetProto()
+	newTableProto.Engine = targetProto.Engine
+	newTableProto.Collation = targetProto.Collation
+	newTableProto.Comment = targetProto.Comment
+
+	// Copy columns
+	for _, col := range targetTable.GetColumns() {
+		colCopy, ok := proto.Clone(col).(*storepb.ColumnMetadata)
+		if !ok {
+			return &WalkThroughError{Code: code.Internal, Content: "failed to clone column metadata"}
+		}
+		if err := newTable.CreateColumn(colCopy); err != nil {
+			return &WalkThroughError{Code: code.ColumnExists, Content: err.Error()}
+		}
+	}
+
+	// Copy indexes
+	for _, idx := range targetProto.Indexes {
+		idxCopy, ok := proto.Clone(idx).(*storepb.IndexMetadata)
+		if !ok {
+			return &WalkThroughError{Code: code.Internal, Content: "failed to clone index metadata"}
+		}
+		if err := newTable.CreateIndex(idxCopy); err != nil {
+			return &WalkThroughError{Code: code.IndexExists, Content: err.Error()}
+		}
 	}
 
 	return nil
