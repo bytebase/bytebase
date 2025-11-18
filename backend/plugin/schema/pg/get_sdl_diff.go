@@ -385,17 +385,20 @@ func (l *sdlChunkExtractor) EnterCreatetrigstmt(ctx *parser.CreatetrigstmtContex
 		return
 	}
 
-	// Parse schema from table name (format: schema.table)
+	// Parse schema and table from table name (format: schema.table)
 	parts := strings.Split(tableName, ".")
 	var schemaName string
+	var unqualifiedTableName string
 	if len(parts) == 2 {
 		schemaName = parts[0]
+		unqualifiedTableName = parts[1]
 	} else {
 		schemaName = "public"
+		unqualifiedTableName = tableName
 	}
 
-	// Create identifier: schema.trigger_name
-	schemaQualifiedName := schemaName + "." + triggerName
+	// Create identifier: schema.table.trigger_name (table-scoped)
+	schemaQualifiedName := schemaName + "." + unqualifiedTableName + "." + triggerName
 
 	chunk := &schema.SDLChunk{
 		Identifier: schemaQualifiedName,

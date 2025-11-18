@@ -61,18 +61,32 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 		}
 	}
 
-	// Drop triggers that might depend on functions being dropped
-	// This includes triggers from tables being dropped AND from tables being altered
+	// Drop all triggers first (before dropping functions or tables they depend on)
+	// This avoids dependency errors when dropping functions or tables
 	for _, tableDiff := range diff.TableChanges {
-		if tableDiff.OldTable != nil {
+		// Use TriggerChanges for AST-only mode, OldTable.Triggers for metadata mode
+		if len(tableDiff.TriggerChanges) > 0 {
+			// AST-only mode: use TriggerChanges
+			for _, triggerDiff := range tableDiff.TriggerChanges {
+				if triggerDiff.Action == schema.MetadataDiffActionDrop {
+					writeDropTrigger(buf, tableDiff.SchemaName, tableDiff.TableName, triggerDiff.TriggerName)
+				}
+			}
+		} else if tableDiff.OldTable != nil && tableDiff.Action == schema.MetadataDiffActionDrop {
+			// Metadata mode: use OldTable.Triggers
+			// Only drop triggers for tables being dropped
 			for _, trigger := range tableDiff.OldTable.Triggers {
-				// Check if trigger body references any function being dropped
-				triggerBody := strings.ToLower(trigger.Body)
-				for funcName := range functionsBeingDropped {
-					if strings.Contains(triggerBody, funcName) {
-						writeDropTrigger(buf, tableDiff.SchemaName, tableDiff.TableName, trigger.Name)
-						break
-					}
+				writeDropTrigger(buf, tableDiff.SchemaName, tableDiff.TableName, trigger.Name)
+			}
+		}
+	}
+
+	// Also drop triggers for ALTER table operations
+	for _, tableDiff := range diff.TableChanges {
+		if tableDiff.Action == schema.MetadataDiffActionAlter {
+			for _, triggerDiff := range tableDiff.TriggerChanges {
+				if triggerDiff.Action == schema.MetadataDiffActionDrop {
+					writeDropTrigger(buf, tableDiff.SchemaName, tableDiff.TableName, triggerDiff.TriggerName)
 				}
 			}
 		}
@@ -248,14 +262,8 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 			}
 		}
 
-		// Drop triggers
-		for _, tableDiff := range diff.TableChanges {
-			if tableDiff.Action == schema.MetadataDiffActionDrop && tableDiff.OldTable != nil {
-				for _, trigger := range tableDiff.OldTable.Triggers {
-					writeDropTrigger(buf, tableDiff.SchemaName, tableDiff.TableName, trigger.Name)
-				}
-			}
-		}
+		// Triggers have already been dropped at the beginning of generateDrops function
+		// to avoid dependency errors with functions and tables
 
 		// Drop foreign keys from tables being dropped
 		for _, tableDiff := range diff.TableChanges {
@@ -389,14 +397,8 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 		}
 
 		// Drop in topological order (most dependent first)
+		// Note: Triggers have already been dropped at the beginning of generateDrops
 		for _, objID := range orderedList {
-			// Drop triggers for tables being dropped
-			if tableDiff, ok := tableMap[objID]; ok && tableDiff.OldTable != nil {
-				for _, trigger := range tableDiff.OldTable.Triggers {
-					writeDropTrigger(buf, tableDiff.SchemaName, tableDiff.TableName, trigger.Name)
-				}
-			}
-
 			// Drop the object itself
 			if viewDiff, ok := viewMap[objID]; ok {
 				if viewDiff.Action == schema.MetadataDiffActionDrop {
@@ -774,11 +776,11 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 	}
 
 	// Add triggers to graph (only for CREATE table operations)
-	// Triggers for ALTER table operations are handled separately after all objects are created
+	// Triggers on ALTER tables are handled separately via generateAlterTableTriggers
 	triggerMap := make(map[string]*schema.TriggerDiff)
 	for _, tableDiff := range diff.TableChanges {
-		// Only add triggers for CREATE table operations to the dependency graph
-		// ALTER table triggers are processed after all objects are created
+		// Only add triggers for CREATE table operations
+		// ALTER table triggers are handled in generateAlterTableTriggers to avoid duplicates
 		if tableDiff.Action == schema.MetadataDiffActionCreate {
 			for _, triggerDiff := range tableDiff.TriggerChanges {
 				if triggerDiff.Action == schema.MetadataDiffActionCreate {
@@ -1154,8 +1156,8 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 					writeCommentOnFunction(buf, funcDiff.SchemaName, funcDiff.NewFunction.Signature, funcDiff.NewFunction.Comment, funcDiff.NewASTNode, funcDiff.NewFunction.Definition)
 				}
 			} else if triggerDiff, ok := triggerMap[objID]; ok {
-				// Handle triggers
-				if triggerDiff.Action == schema.MetadataDiffActionCreate {
+				// Handle triggers (both CREATE and ALTER use CREATE OR REPLACE)
+				if triggerDiff.Action == schema.MetadataDiffActionCreate || triggerDiff.Action == schema.MetadataDiffActionAlter {
 					if err := writeCreateTrigger(buf, triggerDiff); err != nil {
 						return err
 					}
@@ -1525,8 +1527,9 @@ func generateAlterTableTriggers(tableDiff *schema.TableDiff) string {
 	var buf strings.Builder
 
 	for _, triggerDiff := range tableDiff.TriggerChanges {
-		if triggerDiff.Action == schema.MetadataDiffActionCreate {
+		if triggerDiff.Action == schema.MetadataDiffActionCreate || triggerDiff.Action == schema.MetadataDiffActionAlter {
 			// Use writeCreateTrigger which supports both AST and metadata modes
+			// Both CREATE and ALTER use CREATE OR REPLACE
 			if err := writeCreateTrigger(&buf, triggerDiff); err != nil {
 				// Log error but continue - this is a best-effort operation
 				// The error will be caught in the caller if needed
@@ -4539,51 +4542,67 @@ func extractForeignKeysFromAST(createStmt *pgparser.CreatestmtContext, defaultSc
 }
 
 // getTriggerObjectID generates a unique identifier for trigger objects
+// Triggers are table-scoped in PostgreSQL, so identifier is schema.table.trigger_name
 func getTriggerObjectID(triggerDiff *schema.TriggerDiff) string {
-	return fmt.Sprintf("trigger:%s.%s", triggerDiff.SchemaName, triggerDiff.TriggerName)
+	return fmt.Sprintf("trigger:%s.%s.%s", triggerDiff.SchemaName, triggerDiff.TableName, triggerDiff.TriggerName)
 }
 
-// writeCreateTrigger writes a CREATE TRIGGER statement from either AST node or metadata
+// writeCreateTrigger writes a CREATE TRIGGER or CREATE OR REPLACE TRIGGER statement
 func writeCreateTrigger(buf *strings.Builder, triggerDiff *schema.TriggerDiff) error {
-	// Try AST mode first (SDL mode)
-	if triggerDiff.NewASTNode != nil {
-		triggerStmt, ok := triggerDiff.NewASTNode.(*pgparser.CreatetrigstmtContext)
-		if !ok {
-			return errors.New("invalid AST node type for trigger")
-		}
-
-		// Extract SQL from token stream
-		var sqlText string
-		if tokenStream := triggerStmt.GetParser().GetTokenStream(); tokenStream != nil {
-			start := triggerStmt.GetStart()
-			stop := triggerStmt.GetStop()
-			if start != nil && stop != nil {
-				sqlText = tokenStream.GetTextFromTokens(start, stop)
+	switch triggerDiff.Action {
+	case schema.MetadataDiffActionCreate, schema.MetadataDiffActionAlter:
+		// For both CREATE and ALTER, use CREATE OR REPLACE TRIGGER
+		if triggerDiff.NewASTNode != nil {
+			// AST mode: extract SQL from AST node
+			triggerStmt, ok := triggerDiff.NewASTNode.(*pgparser.CreatetrigstmtContext)
+			if !ok {
+				return errors.New("invalid AST node type for trigger")
 			}
+
+			// Extract SQL from token stream
+			var sqlText string
+			if tokenStream := triggerStmt.GetParser().GetTokenStream(); tokenStream != nil {
+				start := triggerStmt.GetStart()
+				stop := triggerStmt.GetStop()
+				if start != nil && stop != nil {
+					sqlText = tokenStream.GetTextFromTokens(start, stop)
+				}
+			}
+
+			if sqlText == "" {
+				sqlText = triggerStmt.GetText()
+			}
+
+			// Convert to CREATE OR REPLACE for idempotency
+			sqlText = convertTriggerToCreateOrReplace(sqlText)
+
+			sqlText = strings.TrimSpace(sqlText)
+			if !strings.HasSuffix(sqlText, ";") {
+				sqlText += ";"
+			}
+
+			buf.WriteString(sqlText)
+			buf.WriteString("\n\n")
+
+			return nil
+		} else if triggerDiff.NewTrigger != nil {
+			// Metadata mode: convert trigger body to CREATE OR REPLACE
+			triggerSQL := convertTriggerToCreateOrReplace(triggerDiff.NewTrigger.Body)
+			buf.WriteString(triggerSQL)
+			if !strings.HasSuffix(strings.TrimSpace(triggerSQL), ";") {
+				buf.WriteString(";")
+			}
+			buf.WriteString("\n\n")
+			return nil
 		}
 
-		if sqlText == "" {
-			sqlText = triggerStmt.GetText()
-		}
+		return errors.Errorf("trigger %s requires either NewASTNode or NewTrigger", triggerDiff.Action)
 
-		sqlText = strings.TrimSpace(sqlText)
-		if !strings.HasSuffix(sqlText, ";") {
-			sqlText += ";"
-		}
-
-		buf.WriteString(sqlText)
-		buf.WriteString("\n\n")
-
-		return nil
+	default:
+		// Ignore other actions like DROP (handled elsewhere)
 	}
 
-	// Fall back to metadata mode
-	if triggerDiff.NewTrigger != nil {
-		writeMigrationTrigger(buf, triggerDiff.NewTrigger)
-		return nil
-	}
-
-	return errors.New("CREATE trigger requires either NewASTNode or NewTrigger")
+	return nil
 }
 
 // extractTriggerFunctionName extracts the function name from EXECUTE FUNCTION clause
@@ -4631,4 +4650,151 @@ func extractTriggerFunctionName(astNode any) string {
 	}
 
 	return ""
+}
+
+// convertTriggerToCreateOrReplace converts CREATE TRIGGER to CREATE OR REPLACE TRIGGER using ANTLR
+func convertTriggerToCreateOrReplace(definition string) string {
+	// Parse the SQL statement using ANTLR
+	inputStream := antlr.NewInputStream(definition)
+	lexer := pgparser.NewPostgreSQLLexer(inputStream)
+	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	parser := pgparser.NewPostgreSQLParser(stream)
+
+	// Parse the root
+	tree := parser.Root()
+	if tree == nil {
+		// If parsing fails, return original definition
+		return definition
+	}
+
+	// Create a visitor to find and modify CREATE TRIGGER statements
+	visitor := &CreateOrReplaceTriggerVisitor{
+		tokens:     stream,
+		rewriter:   antlr.NewTokenStreamRewriter(stream),
+		definition: definition,
+	}
+
+	// Visit the tree
+	visitor.Visit(tree)
+
+	// Get the modified text
+	interval := antlr.NewInterval(0, len(definition)-1)
+	result := visitor.rewriter.GetText("", interval)
+	if result == "" {
+		// If rewriting fails, return original definition
+		return definition
+	}
+
+	return result
+}
+
+// CreateOrReplaceTriggerVisitor visits the parse tree and modifies CREATE TRIGGER to CREATE OR REPLACE TRIGGER
+type CreateOrReplaceTriggerVisitor struct {
+	*pgparser.BasePostgreSQLParserVisitor
+	tokens     *antlr.CommonTokenStream
+	rewriter   *antlr.TokenStreamRewriter
+	definition string
+}
+
+// Visit implements the visitor pattern
+func (v *CreateOrReplaceTriggerVisitor) Visit(tree antlr.ParseTree) any {
+	switch t := tree.(type) {
+	case *pgparser.CreatetrigstmtContext:
+		return v.visitCreateTriggerStmt(t)
+	default:
+		// Continue visiting children
+		return v.visitChildren(tree)
+	}
+}
+
+// visitChildren visits all children of a node
+func (v *CreateOrReplaceTriggerVisitor) visitChildren(node antlr.ParseTree) any {
+	for i := 0; i < node.GetChildCount(); i++ {
+		child := node.GetChild(i)
+		if parseTree, ok := child.(antlr.ParseTree); ok {
+			v.Visit(parseTree)
+		}
+	}
+	return nil
+}
+
+// visitCreateTriggerStmt handles CREATE TRIGGER statements
+func (v *CreateOrReplaceTriggerVisitor) visitCreateTriggerStmt(ctx *pgparser.CreatetrigstmtContext) any {
+	if ctx == nil {
+		return nil
+	}
+
+	// Check if "OR REPLACE" already exists
+	if v.hasOrReplace(ctx) {
+		// Already has "OR REPLACE", no need to modify
+		return nil
+	}
+
+	// Find the CREATE token
+	createToken := ctx.GetStart()
+	if createToken == nil {
+		return nil
+	}
+
+	// Look for the TRIGGER keyword after CREATE
+	triggerToken := v.findTriggerToken(ctx)
+	if triggerToken == nil {
+		return nil
+	}
+
+	// Insert "OR REPLACE" between CREATE and TRIGGER
+	// We insert it right before the TRIGGER token
+	v.rewriter.InsertBefore("", triggerToken.GetTokenIndex(), "OR REPLACE ")
+
+	return nil
+}
+
+// findTriggerToken finds the TRIGGER token in the CREATE TRIGGER statement
+func (v *CreateOrReplaceTriggerVisitor) findTriggerToken(ctx *pgparser.CreatetrigstmtContext) antlr.Token {
+	// Get all tokens in the context range
+	start := ctx.GetStart().GetTokenIndex()
+	stop := ctx.GetStop().GetTokenIndex()
+
+	for i := start; i <= stop; i++ {
+		token := v.tokens.Get(i)
+		if token.GetTokenType() == pgparser.PostgreSQLParserTRIGGER {
+			return token
+		}
+	}
+
+	return nil
+}
+
+// hasOrReplace checks if the CREATE TRIGGER statement already contains "OR REPLACE"
+func (v *CreateOrReplaceTriggerVisitor) hasOrReplace(ctx *pgparser.CreatetrigstmtContext) bool {
+	// Get all tokens in the context range between CREATE and TRIGGER
+	start := ctx.GetStart().GetTokenIndex()
+	triggerToken := v.findTriggerToken(ctx)
+	if triggerToken == nil {
+		return false
+	}
+	stop := triggerToken.GetTokenIndex()
+
+	// Look for "OR" followed by "REPLACE" tokens, skipping whitespace
+	for i := start; i < stop; i++ {
+		token := v.tokens.Get(i)
+		if token.GetTokenType() == pgparser.PostgreSQLParserOR {
+			// Found OR, now look for REPLACE after it (skipping whitespace)
+			for j := i + 1; j < stop; j++ {
+				nextToken := v.tokens.Get(j)
+				// Skip whitespace tokens (channel 1 is hidden channel)
+				if nextToken.GetChannel() == 1 {
+					continue
+				}
+				// Check if the next non-whitespace token is REPLACE
+				if nextToken.GetTokenType() == pgparser.PostgreSQLParserREPLACE {
+					return true
+				}
+				// If it's not REPLACE, this OR is not our OR REPLACE pattern
+				break
+			}
+		}
+	}
+
+	return false
 }

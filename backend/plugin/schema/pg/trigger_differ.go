@@ -25,7 +25,12 @@ func processStandaloneTriggerChanges(currentChunks, previousChunks *schema.SDLCh
 
 	// Step 1: Process current triggers (CREATE and MODIFY)
 	for _, currentChunk := range currentChunks.Triggers {
-		targetTableName := extractTableNameFromTrigger(currentChunk.ASTNode.(*parser.CreatetrigstmtContext))
+		// Skip non-trigger AST nodes (e.g., COMMENT ON TRIGGER)
+		triggerCtx, ok := currentChunk.ASTNode.(*parser.CreatetrigstmtContext)
+		if !ok {
+			continue
+		}
+		targetTableName := extractTableNameFromTrigger(triggerCtx)
 		if targetTableName == "" {
 			continue
 		}
@@ -41,7 +46,7 @@ func processStandaloneTriggerChanges(currentChunks, previousChunks *schema.SDLCh
 					continue
 				}
 
-				// Trigger was modified - use DROP + CREATE pattern
+				// Trigger was modified - use ALTER action (will be converted to CREATE OR REPLACE)
 				tableDiff := getOrCreateTableDiff(diff, targetTableName, affectedTables)
 
 				// Extract trigger info for TriggerDiff
@@ -49,17 +54,11 @@ func processStandaloneTriggerChanges(currentChunks, previousChunks *schema.SDLCh
 				triggerName := extractTriggerNameFromAST(currentChunk.ASTNode)
 
 				tableDiff.TriggerChanges = append(tableDiff.TriggerChanges, &schema.TriggerDiff{
-					Action:      schema.MetadataDiffActionDrop,
+					Action:      schema.MetadataDiffActionAlter,
 					SchemaName:  schemaName,
 					TableName:   tableName,
 					TriggerName: triggerName,
 					OldASTNode:  previousChunk.ASTNode,
-				})
-				tableDiff.TriggerChanges = append(tableDiff.TriggerChanges, &schema.TriggerDiff{
-					Action:      schema.MetadataDiffActionCreate,
-					SchemaName:  schemaName,
-					TableName:   tableName,
-					TriggerName: triggerName,
 					NewASTNode:  currentChunk.ASTNode,
 				})
 
@@ -120,7 +119,12 @@ func processStandaloneTriggerChanges(currentChunks, previousChunks *schema.SDLCh
 	for triggerName, previousChunk := range previousChunks.Triggers {
 		if _, exists := currentChunks.Triggers[triggerName]; !exists {
 			// Trigger was dropped
-			targetTableName := extractTableNameFromTrigger(previousChunk.ASTNode.(*parser.CreatetrigstmtContext))
+			// Skip non-trigger AST nodes (e.g., COMMENT ON TRIGGER)
+			triggerCtx, ok := previousChunk.ASTNode.(*parser.CreatetrigstmtContext)
+			if !ok {
+				continue
+			}
+			targetTableName := extractTableNameFromTrigger(triggerCtx)
 			if targetTableName == "" {
 				continue
 			}
