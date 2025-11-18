@@ -285,6 +285,7 @@ const (
 	CommentObjectTypeFunction         CommentObjectType = "FUNCTION"
 	CommentObjectTypeSequence         CommentObjectType = "SEQUENCE"
 	CommentObjectTypeIndex            CommentObjectType = "INDEX"
+	CommentObjectTypeTrigger          CommentObjectType = "TRIGGER"
 	CommentObjectTypeType             CommentObjectType = "TYPE"
 	CommentObjectTypeExtension        CommentObjectType = "EXTENSION"
 )
@@ -295,6 +296,7 @@ type CommentDiff struct {
 	Action     MetadataDiffAction // CREATE or ALTER (no DROP since object deletion removes comments automatically)
 	ObjectType CommentObjectType
 	SchemaName string
+	TableName  string // used for TRIGGER comments (COMMENT ON TRIGGER trigger_name ON table_name)
 	ObjectName string // table/view/function/sequence/index name
 	ColumnName string // only used for COLUMN comments
 	IndexName  string // only used for table-level INDEX comments
