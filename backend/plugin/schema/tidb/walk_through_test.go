@@ -45,13 +45,9 @@ func TestWalkThrough(t *testing.T) {
 	sm := sheet.NewManager(nil)
 
 	for _, test := range tests {
-		var protoData *storepb.DatabaseSchemaMetadata
-		if originDatabase != nil {
-			// Make a deep copy to avoid mutation across tests
-			protoData = proto.Clone(originDatabase).(*storepb.DatabaseSchemaMetadata)
-		} else {
-			protoData = &storepb.DatabaseSchemaMetadata{}
-		}
+		// Make a deep copy to avoid mutation across tests
+		protoData, ok := proto.Clone(originDatabase).(*storepb.DatabaseSchemaMetadata)
+		require.True(t, ok)
 
 		// Create DatabaseMetadata for walk-through
 		state := model.NewDatabaseMetadata(protoData, !test.IgnoreCaseSensitive, !test.IgnoreCaseSensitive)
