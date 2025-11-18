@@ -164,9 +164,14 @@ type UniqueConstraintDiff struct {
 
 // TriggerDiff represents changes to a trigger.
 type TriggerDiff struct {
-	Action     MetadataDiffAction
-	OldTrigger *storepb.TriggerMetadata
-	NewTrigger *storepb.TriggerMetadata
+	Action      MetadataDiffAction
+	SchemaName  string // Schema name of the table that owns the trigger
+	TableName   string // Table name that owns the trigger
+	TriggerName string // Trigger name
+	OldTrigger  *storepb.TriggerMetadata
+	NewTrigger  *storepb.TriggerMetadata
+	OldASTNode  any // AST node for old trigger (*parser.CreatetrigstmtContext)
+	NewASTNode  any // AST node for new trigger (*parser.CreatetrigstmtContext)
 }
 
 // PartitionDiff represents changes to table partitions.
