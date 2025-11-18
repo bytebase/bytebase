@@ -25,13 +25,36 @@ func processStandaloneTriggerChanges(currentChunks, previousChunks *schema.SDLCh
 
 	// Step 1: Process current triggers (CREATE and MODIFY)
 	for _, currentChunk := range currentChunks.Triggers {
-		// Skip non-trigger AST nodes (e.g., COMMENT ON TRIGGER)
-		triggerCtx, ok := currentChunk.ASTNode.(*parser.CreatetrigstmtContext)
-		if !ok {
-			continue
-		}
-		targetTableName := extractTableNameFromTrigger(triggerCtx)
+		targetTableName := extractTableNameFromTriggerChunk(currentChunk.ASTNode)
 		if targetTableName == "" {
+			// No CREATE TRIGGER statement, might be comment-only chunk
+			// Handle comment-only chunks separately
+			if len(currentChunk.CommentStatements) > 0 {
+				// Extract info from chunk identifier: schema.table.trigger_name
+				parts := strings.Split(currentChunk.Identifier, ".")
+				if len(parts) == 3 {
+					schemaName := parts[0]
+					tableName := parts[1]
+					triggerName := parts[2]
+					targetTableName = schemaName + "." + tableName
+
+					// Add COMMENT changes
+					for _, commentNode := range currentChunk.CommentStatements {
+						commentText := extractCommentTextFromNode(commentNode)
+						diff.CommentChanges = append(diff.CommentChanges, &schema.CommentDiff{
+							Action:     schema.MetadataDiffActionCreate,
+							ObjectType: schema.CommentObjectTypeTrigger,
+							SchemaName: schemaName,
+							TableName:  targetTableName,
+							ObjectName: triggerName,
+							OldComment: "",
+							NewComment: commentText,
+							OldASTNode: nil,
+							NewASTNode: commentNode,
+						})
+					}
+				}
+			}
 			continue
 		}
 
@@ -119,13 +142,9 @@ func processStandaloneTriggerChanges(currentChunks, previousChunks *schema.SDLCh
 	for triggerName, previousChunk := range previousChunks.Triggers {
 		if _, exists := currentChunks.Triggers[triggerName]; !exists {
 			// Trigger was dropped
-			// Skip non-trigger AST nodes (e.g., COMMENT ON TRIGGER)
-			triggerCtx, ok := previousChunk.ASTNode.(*parser.CreatetrigstmtContext)
-			if !ok {
-				continue
-			}
-			targetTableName := extractTableNameFromTrigger(triggerCtx)
+			targetTableName := extractTableNameFromTriggerChunk(previousChunk.ASTNode)
 			if targetTableName == "" {
+				// No CREATE TRIGGER statement, skip (comment-only chunks don't need DROP)
 				continue
 			}
 
@@ -143,6 +162,19 @@ func processStandaloneTriggerChanges(currentChunks, previousChunks *schema.SDLCh
 			})
 		}
 	}
+}
+
+// extractTableNameFromTriggerChunk extracts the table name from a trigger chunk's AST node
+// Returns empty string if the AST node is not a CREATE TRIGGER statement or if extraction fails
+func extractTableNameFromTriggerChunk(astNode any) string {
+	if astNode == nil {
+		return ""
+	}
+	triggerCtx, ok := astNode.(*parser.CreatetrigstmtContext)
+	if !ok {
+		return ""
+	}
+	return extractTableNameFromTrigger(triggerCtx)
 }
 
 // getStandaloneTriggerText returns the text representation of a CREATE TRIGGER statement

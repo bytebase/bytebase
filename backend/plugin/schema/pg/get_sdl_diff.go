@@ -774,12 +774,15 @@ func (l *sdlChunkExtractor) EnterCommentstmt(ctx *parser.CommentstmtContext) {
 
 			// Build fully qualified table name
 			var tableName string
+			var unqualifiedTableName string
 			if len(anyName) >= 2 {
 				// schema.table
 				tableName = strings.Join(anyName, ".")
+				unqualifiedTableName = anyName[1]
 			} else {
 				// table (default to public schema)
 				tableName = "public." + anyName[0]
+				unqualifiedTableName = anyName[0]
 			}
 
 			// Parse schema from table name
@@ -791,7 +794,9 @@ func (l *sdlChunkExtractor) EnterCommentstmt(ctx *parser.CommentstmtContext) {
 				schemaName = "public"
 			}
 
-			identifier := schemaName + "." + triggerName
+			// Use table-scoped identifier: schema.table.trigger_name
+			// This matches the identifier format in EnterCreatetrigstmt
+			identifier := schemaName + "." + unqualifiedTableName + "." + triggerName
 
 			if chunk, exists := l.chunks.Triggers[identifier]; exists {
 				chunk.CommentStatements = append(chunk.CommentStatements, ctx)
