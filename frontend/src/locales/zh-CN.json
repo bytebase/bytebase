@@ -738,7 +738,11 @@
         "description": "使用全局规则批量脱敏，例如所有名为「电子邮件」的列将被脱敏成特定语义类型，并应用对应的脱敏算法。",
         "condition-order": "条件序列",
         "re-order": "排序",
-        "delete-rule-tip": "删除这条规则？"
+        "delete-rule-tip": "删除这条规则？",
+        "error": {
+          "missing-semantic-type": "需要指定语义类型",
+          "invalid-condition": "规则的条件无效"
+        }
       },
       "semantic-types": {
         "self": "语义类型",
