@@ -207,3 +207,305 @@ func TestTriggerCommentMigration(t *testing.T) {
 	assert.Contains(t, migration, "audit_trigger")
 	assert.Contains(t, migration, "Audit log trigger")
 }
+
+func TestStandaloneTriggerDiff(t *testing.T) {
+	tests := []struct {
+		name                string
+		previousUserSDL     string
+		currentSDL          string
+		expectedTriggerDiff int
+		expectedActions     []schema.MetadataDiffAction
+	}{
+		{
+			name:            "Create new trigger",
+			previousUserSDL: "",
+			currentSDL: `
+				CREATE TABLE users (id SERIAL PRIMARY KEY);
+				CREATE FUNCTION f() RETURNS TRIGGER AS $$ BEGIN RETURN NEW; END; $$ LANGUAGE plpgsql;
+				CREATE TRIGGER t1 AFTER INSERT ON users FOR EACH ROW EXECUTE FUNCTION f();
+			`,
+			expectedTriggerDiff: 1,
+			expectedActions:     []schema.MetadataDiffAction{schema.MetadataDiffActionCreate},
+		},
+		{
+			name: "Drop trigger",
+			previousUserSDL: `
+				CREATE TABLE users (id SERIAL PRIMARY KEY);
+				CREATE FUNCTION f() RETURNS TRIGGER AS $$ BEGIN RETURN NEW; END; $$ LANGUAGE plpgsql;
+				CREATE TRIGGER t1 AFTER INSERT ON users FOR EACH ROW EXECUTE FUNCTION f();
+			`,
+			currentSDL: `
+				CREATE TABLE users (id SERIAL PRIMARY KEY);
+				CREATE FUNCTION f() RETURNS TRIGGER AS $$ BEGIN RETURN NEW; END; $$ LANGUAGE plpgsql;
+			`,
+			expectedTriggerDiff: 1,
+			expectedActions:     []schema.MetadataDiffAction{schema.MetadataDiffActionDrop},
+		},
+		{
+			name: "Modify trigger (drop and recreate)",
+			previousUserSDL: `
+				CREATE TABLE users (id SERIAL PRIMARY KEY);
+				CREATE FUNCTION f() RETURNS TRIGGER AS $$ BEGIN RETURN NEW; END; $$ LANGUAGE plpgsql;
+				CREATE TRIGGER t1 AFTER INSERT ON users FOR EACH ROW EXECUTE FUNCTION f();
+			`,
+			currentSDL: `
+				CREATE TABLE users (id SERIAL PRIMARY KEY);
+				CREATE FUNCTION f() RETURNS TRIGGER AS $$ BEGIN RETURN NEW; END; $$ LANGUAGE plpgsql;
+				CREATE TRIGGER t1 AFTER INSERT OR UPDATE ON users FOR EACH ROW EXECUTE FUNCTION f();
+			`,
+			expectedTriggerDiff: 2, // Drop + Create
+			expectedActions:     []schema.MetadataDiffAction{schema.MetadataDiffActionDrop, schema.MetadataDiffActionCreate},
+		},
+		{
+			name: "No changes to trigger",
+			previousUserSDL: `
+				CREATE TABLE users (id SERIAL PRIMARY KEY);
+				CREATE FUNCTION f() RETURNS TRIGGER AS $$ BEGIN RETURN NEW; END; $$ LANGUAGE plpgsql;
+				CREATE TRIGGER t1 AFTER INSERT ON users FOR EACH ROW EXECUTE FUNCTION f();
+			`,
+			currentSDL: `
+				CREATE TABLE users (id SERIAL PRIMARY KEY);
+				CREATE FUNCTION f() RETURNS TRIGGER AS $$ BEGIN RETURN NEW; END; $$ LANGUAGE plpgsql;
+				CREATE TRIGGER t1 AFTER INSERT ON users FOR EACH ROW EXECUTE FUNCTION f();
+			`,
+			expectedTriggerDiff: 0,
+			expectedActions:     []schema.MetadataDiffAction{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousUserSDL, nil, nil)
+			require.NoError(t, err)
+
+			totalTriggers := 0
+			var actions []schema.MetadataDiffAction
+			for _, tableDiff := range diff.TableChanges {
+				for _, triggerDiff := range tableDiff.TriggerChanges {
+					totalTriggers++
+					actions = append(actions, triggerDiff.Action)
+				}
+			}
+
+			assert.Equal(t, tt.expectedTriggerDiff, totalTriggers)
+			if len(tt.expectedActions) == 0 {
+				assert.Empty(t, actions)
+			} else {
+				assert.Equal(t, tt.expectedActions, actions)
+			}
+		})
+	}
+}
+
+func TestTriggerSDLIntegration(t *testing.T) {
+	t.Run("Multiple triggers on same table", func(t *testing.T) {
+		currentSDL := `
+			CREATE TABLE orders (id SERIAL PRIMARY KEY, status VARCHAR(20));
+			CREATE FUNCTION log_insert() RETURNS TRIGGER AS $$ BEGIN RETURN NEW; END; $$ LANGUAGE plpgsql;
+			CREATE FUNCTION log_update() RETURNS TRIGGER AS $$ BEGIN RETURN NEW; END; $$ LANGUAGE plpgsql;
+
+			CREATE TRIGGER insert_trigger AFTER INSERT ON orders FOR EACH ROW EXECUTE FUNCTION log_insert();
+			CREATE TRIGGER update_trigger BEFORE UPDATE ON orders FOR EACH ROW EXECUTE FUNCTION log_update();
+		`
+
+		diff, err := GetSDLDiff(currentSDL, "", nil, nil)
+		require.NoError(t, err)
+
+		totalTriggers := 0
+		for _, tableDiff := range diff.TableChanges {
+			totalTriggers += len(tableDiff.TriggerChanges)
+		}
+		assert.Equal(t, 2, totalTriggers, "Should have 2 triggers")
+
+		migration, err := generateMigration(diff)
+		require.NoError(t, err)
+		assert.Contains(t, migration, "insert_trigger")
+		assert.Contains(t, migration, "update_trigger")
+	})
+
+	t.Run("Trigger with schema-qualified table", func(t *testing.T) {
+		currentSDL := `
+			CREATE SCHEMA app;
+			CREATE TABLE app.events (id SERIAL PRIMARY KEY);
+			CREATE FUNCTION app.notify() RETURNS TRIGGER AS $$ BEGIN RETURN NEW; END; $$ LANGUAGE plpgsql;
+			CREATE TRIGGER event_trigger AFTER INSERT ON app.events FOR EACH ROW EXECUTE FUNCTION app.notify();
+		`
+
+		diff, err := GetSDLDiff(currentSDL, "", nil, nil)
+		require.NoError(t, err)
+
+		found := false
+		for _, tableDiff := range diff.TableChanges {
+			if tableDiff.SchemaName == "app" && tableDiff.TableName == "events" {
+				assert.Len(t, tableDiff.TriggerChanges, 1)
+				found = true
+			}
+		}
+		assert.True(t, found, "Should find trigger on app.events")
+	})
+
+	t.Run("Trigger with WHEN condition", func(t *testing.T) {
+		currentSDL := `
+			CREATE TABLE products (id SERIAL PRIMARY KEY, price NUMERIC);
+			CREATE FUNCTION check_price() RETURNS TRIGGER AS $$ BEGIN RETURN NEW; END; $$ LANGUAGE plpgsql;
+			CREATE TRIGGER price_check
+			BEFORE UPDATE ON products
+			FOR EACH ROW
+			WHEN (NEW.price > 1000)
+			EXECUTE FUNCTION check_price();
+		`
+
+		diff, err := GetSDLDiff(currentSDL, "", nil, nil)
+		require.NoError(t, err)
+
+		migration, err := generateMigration(diff)
+		require.NoError(t, err)
+		assert.Contains(t, migration, "WHEN")
+		assert.Contains(t, migration, "NEW.price > 1000")
+	})
+
+	t.Run("Trigger modification preserves other triggers", func(t *testing.T) {
+		previousSDL := `
+			CREATE TABLE users (id SERIAL PRIMARY KEY);
+			CREATE FUNCTION f() RETURNS TRIGGER AS $$ BEGIN RETURN NEW; END; $$ LANGUAGE plpgsql;
+			CREATE TRIGGER t1 AFTER INSERT ON users FOR EACH ROW EXECUTE FUNCTION f();
+			CREATE TRIGGER t2 AFTER UPDATE ON users FOR EACH ROW EXECUTE FUNCTION f();
+		`
+		currentSDL := `
+			CREATE TABLE users (id SERIAL PRIMARY KEY);
+			CREATE FUNCTION f() RETURNS TRIGGER AS $$ BEGIN RETURN NEW; END; $$ LANGUAGE plpgsql;
+			CREATE TRIGGER t1 AFTER INSERT OR UPDATE ON users FOR EACH ROW EXECUTE FUNCTION f();
+			CREATE TRIGGER t2 AFTER UPDATE ON users FOR EACH ROW EXECUTE FUNCTION f();
+		`
+
+		diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+		require.NoError(t, err)
+
+		// Should have 2 changes for t1 (drop + create), none for t2
+		totalChanges := 0
+		for _, tableDiff := range diff.TableChanges {
+			totalChanges += len(tableDiff.TriggerChanges)
+		}
+		assert.Equal(t, 2, totalChanges, "Should only modify t1 (drop + create)")
+	})
+
+	t.Run("Trigger with multiple events", func(t *testing.T) {
+		currentSDL := `
+			CREATE TABLE audit_log (id SERIAL PRIMARY KEY);
+			CREATE FUNCTION log_changes() RETURNS TRIGGER AS $$ BEGIN RETURN NEW; END; $$ LANGUAGE plpgsql;
+			CREATE TRIGGER multi_event_trigger
+			AFTER INSERT OR UPDATE OR DELETE ON audit_log
+			FOR EACH ROW EXECUTE FUNCTION log_changes();
+		`
+
+		diff, err := GetSDLDiff(currentSDL, "", nil, nil)
+		require.NoError(t, err)
+
+		migration, err := generateMigration(diff)
+		require.NoError(t, err)
+		assert.Contains(t, migration, "CREATE TRIGGER")
+		assert.Contains(t, migration, "INSERT OR UPDATE OR DELETE")
+	})
+
+	t.Run("Trigger with FOR EACH STATEMENT", func(t *testing.T) {
+		currentSDL := `
+			CREATE TABLE statements (id SERIAL PRIMARY KEY);
+			CREATE FUNCTION stmt_trigger() RETURNS TRIGGER AS $$ BEGIN RETURN NULL; END; $$ LANGUAGE plpgsql;
+			CREATE TRIGGER statement_level_trigger
+			AFTER INSERT ON statements
+			FOR EACH STATEMENT EXECUTE FUNCTION stmt_trigger();
+		`
+
+		diff, err := GetSDLDiff(currentSDL, "", nil, nil)
+		require.NoError(t, err)
+
+		migration, err := generateMigration(diff)
+		require.NoError(t, err)
+		assert.Contains(t, migration, "FOR EACH STATEMENT")
+	})
+
+	t.Run("Multiple comments on triggers", func(t *testing.T) {
+		currentSDL := `
+			CREATE TABLE events (id SERIAL PRIMARY KEY);
+			CREATE FUNCTION f() RETURNS TRIGGER AS $$ BEGIN RETURN NEW; END; $$ LANGUAGE plpgsql;
+			CREATE TRIGGER t1 AFTER INSERT ON events FOR EACH ROW EXECUTE FUNCTION f();
+			CREATE TRIGGER t2 AFTER UPDATE ON events FOR EACH ROW EXECUTE FUNCTION f();
+			COMMENT ON TRIGGER t1 ON events IS 'Insert trigger';
+			COMMENT ON TRIGGER t2 ON events IS 'Update trigger';
+		`
+
+		diff, err := GetSDLDiff(currentSDL, "", nil, nil)
+		require.NoError(t, err)
+
+		// Check both comments are extracted
+		triggerCommentCount := 0
+		for _, commentDiff := range diff.CommentChanges {
+			if commentDiff.ObjectType == schema.CommentObjectTypeTrigger {
+				triggerCommentCount++
+			}
+		}
+		assert.Equal(t, 2, triggerCommentCount, "Should have 2 trigger comments")
+	})
+
+	t.Run("Drop trigger removes comment", func(t *testing.T) {
+		previousSDL := `
+			CREATE TABLE users (id SERIAL PRIMARY KEY);
+			CREATE FUNCTION f() RETURNS TRIGGER AS $$ BEGIN RETURN NEW; END; $$ LANGUAGE plpgsql;
+			CREATE TRIGGER t1 AFTER INSERT ON users FOR EACH ROW EXECUTE FUNCTION f();
+			COMMENT ON TRIGGER t1 ON users IS 'My trigger';
+		`
+		currentSDL := `
+			CREATE TABLE users (id SERIAL PRIMARY KEY);
+			CREATE FUNCTION f() RETURNS TRIGGER AS $$ BEGIN RETURN NEW; END; $$ LANGUAGE plpgsql;
+		`
+
+		diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+		require.NoError(t, err)
+
+		// Should have trigger drop
+		found := false
+		for _, tableDiff := range diff.TableChanges {
+			for _, triggerDiff := range tableDiff.TriggerChanges {
+				if triggerDiff.Action == schema.MetadataDiffActionDrop {
+					found = true
+				}
+			}
+		}
+		assert.True(t, found, "Should have trigger drop action")
+	})
+
+	t.Run("Trigger referencing columns", func(t *testing.T) {
+		currentSDL := `
+			CREATE TABLE inventory (id SERIAL PRIMARY KEY, stock INT);
+			CREATE FUNCTION check_stock() RETURNS TRIGGER AS $$ BEGIN RETURN NEW; END; $$ LANGUAGE plpgsql;
+			CREATE TRIGGER stock_check
+			BEFORE UPDATE OF stock ON inventory
+			FOR EACH ROW EXECUTE FUNCTION check_stock();
+		`
+
+		diff, err := GetSDLDiff(currentSDL, "", nil, nil)
+		require.NoError(t, err)
+
+		migration, err := generateMigration(diff)
+		require.NoError(t, err)
+		assert.Contains(t, migration, "UPDATE OF stock")
+	})
+
+	t.Run("INSTEAD OF trigger on view", func(t *testing.T) {
+		currentSDL := `
+			CREATE TABLE base_table (id SERIAL PRIMARY KEY);
+			CREATE VIEW my_view AS SELECT * FROM base_table;
+			CREATE FUNCTION instead_trigger() RETURNS TRIGGER AS $$ BEGIN RETURN NEW; END; $$ LANGUAGE plpgsql;
+			CREATE TRIGGER view_trigger
+			INSTEAD OF INSERT ON my_view
+			FOR EACH ROW EXECUTE FUNCTION instead_trigger();
+		`
+
+		diff, err := GetSDLDiff(currentSDL, "", nil, nil)
+		require.NoError(t, err)
+
+		migration, err := generateMigration(diff)
+		require.NoError(t, err)
+		assert.Contains(t, migration, "INSTEAD OF INSERT")
+	})
+}
