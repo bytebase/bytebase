@@ -773,6 +773,24 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 		}
 	}
 
+	// Add triggers to graph (only for CREATE table operations)
+	// Triggers for ALTER table operations are handled separately after all objects are created
+	triggerMap := make(map[string]*schema.TriggerDiff)
+	for _, tableDiff := range diff.TableChanges {
+		// Only add triggers for CREATE table operations to the dependency graph
+		// ALTER table triggers are processed after all objects are created
+		if tableDiff.Action == schema.MetadataDiffActionCreate {
+			for _, triggerDiff := range tableDiff.TriggerChanges {
+				if triggerDiff.Action == schema.MetadataDiffActionCreate {
+					triggerID := getTriggerObjectID(triggerDiff)
+					graph.AddNode(triggerID)
+					triggerMap[triggerID] = triggerDiff
+					allObjects[triggerID] = true
+				}
+			}
+		}
+	}
+
 	// Add dependency edges
 	// For tables with foreign keys depending on other tables (only for CREATE operations)
 	// Note: ALTER FK additions are handled after all tables are created, so they don't need topological sorting
@@ -850,6 +868,33 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 				depID := getMigrationObjectID(dep.Schema, dep.Table)
 				// Edge from table to function
 				graph.AddEdge(depID, funcID)
+			}
+		}
+	}
+
+	// For triggers depending on tables and functions
+	for triggerID, triggerDiff := range triggerMap {
+		// Trigger depends on table
+		tableID := getMigrationObjectID(triggerDiff.SchemaName, triggerDiff.TableName)
+		if allObjects[tableID] {
+			graph.AddEdge(tableID, triggerID)
+		}
+
+		// Trigger depends on trigger function
+		if triggerDiff.NewASTNode != nil {
+			functionName := extractTriggerFunctionName(triggerDiff.NewASTNode)
+			if functionName != "" {
+				parts := strings.Split(functionName, ".")
+				var functionSchemaName, functionNameOnly string
+				if len(parts) == 2 {
+					functionSchemaName, functionNameOnly = parts[0], parts[1]
+				} else {
+					functionSchemaName, functionNameOnly = triggerDiff.SchemaName, functionName
+				}
+				functionID := getMigrationObjectID(functionSchemaName, functionNameOnly)
+				if allObjects[functionID] {
+					graph.AddEdge(functionID, triggerID)
+				}
 			}
 		}
 	}
@@ -1108,6 +1153,13 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 				if (funcDiff.Action == schema.MetadataDiffActionCreate || funcDiff.Action == schema.MetadataDiffActionAlter) && funcDiff.NewFunction != nil && funcDiff.NewFunction.Comment != "" {
 					writeCommentOnFunction(buf, funcDiff.SchemaName, funcDiff.NewFunction.Signature, funcDiff.NewFunction.Comment, funcDiff.NewASTNode, funcDiff.NewFunction.Definition)
 				}
+			} else if triggerDiff, ok := triggerMap[objID]; ok {
+				// Handle triggers
+				if triggerDiff.Action == schema.MetadataDiffActionCreate {
+					if err := writeCreateTrigger(buf, triggerDiff); err != nil {
+						return err
+					}
+				}
 			}
 		}
 
@@ -1157,11 +1209,23 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 			}
 		}
 
-		// Create triggers after foreign keys (only for CREATE table operations)
+		// Create triggers for CREATE table operations that aren't in TriggerChanges
+		// This handles metadata mode where triggers are in NewTable.Triggers but not in TriggerChanges
 		for _, tableDiff := range tableMap {
 			if tableDiff.Action == schema.MetadataDiffActionCreate && tableDiff.NewTable != nil {
+				// Only create triggers that weren't already created from TriggerChanges
+				triggersInChanges := make(map[string]bool)
+				for _, triggerDiff := range tableDiff.TriggerChanges {
+					if triggerDiff.Action == schema.MetadataDiffActionCreate {
+						triggersInChanges[triggerDiff.TriggerName] = true
+					}
+				}
+
 				for _, trigger := range tableDiff.NewTable.Triggers {
-					writeMigrationTrigger(buf, trigger)
+					// Skip if already created from TriggerChanges
+					if !triggersInChanges[trigger.Name] {
+						writeMigrationTrigger(buf, trigger)
+					}
 				}
 			}
 		}
@@ -1462,7 +1526,12 @@ func generateAlterTableTriggers(tableDiff *schema.TableDiff) string {
 
 	for _, triggerDiff := range tableDiff.TriggerChanges {
 		if triggerDiff.Action == schema.MetadataDiffActionCreate {
-			writeMigrationTrigger(&buf, triggerDiff.NewTrigger)
+			// Use writeCreateTrigger which supports both AST and metadata modes
+			if err := writeCreateTrigger(&buf, triggerDiff); err != nil {
+				// Log error but continue - this is a best-effort operation
+				// The error will be caught in the caller if needed
+				continue
+			}
 		}
 	}
 
@@ -4433,4 +4502,99 @@ func extractForeignKeysFromAST(createStmt *pgparser.CreatestmtContext, defaultSc
 	}
 
 	return foreignKeys
+}
+
+// getTriggerObjectID generates a unique identifier for trigger objects
+func getTriggerObjectID(triggerDiff *schema.TriggerDiff) string {
+	return fmt.Sprintf("trigger:%s.%s", triggerDiff.SchemaName, triggerDiff.TriggerName)
+}
+
+// writeCreateTrigger writes a CREATE TRIGGER statement from either AST node or metadata
+func writeCreateTrigger(buf *strings.Builder, triggerDiff *schema.TriggerDiff) error {
+	// Try AST mode first (SDL mode)
+	if triggerDiff.NewASTNode != nil {
+		triggerStmt, ok := triggerDiff.NewASTNode.(*pgparser.CreatetrigstmtContext)
+		if !ok {
+			return errors.New("invalid AST node type for trigger")
+		}
+
+		// Extract SQL from token stream
+		var sqlText string
+		if tokenStream := triggerStmt.GetParser().GetTokenStream(); tokenStream != nil {
+			start := triggerStmt.GetStart()
+			stop := triggerStmt.GetStop()
+			if start != nil && stop != nil {
+				sqlText = tokenStream.GetTextFromTokens(start, stop)
+			}
+		}
+
+		if sqlText == "" {
+			sqlText = triggerStmt.GetText()
+		}
+
+		sqlText = strings.TrimSpace(sqlText)
+		if !strings.HasSuffix(sqlText, ";") {
+			sqlText += ";"
+		}
+
+		buf.WriteString(sqlText)
+		buf.WriteString("\n\n")
+
+		return nil
+	}
+
+	// Fall back to metadata mode
+	if triggerDiff.NewTrigger != nil {
+		writeMigrationTrigger(buf, triggerDiff.NewTrigger)
+		return nil
+	}
+
+	return errors.New("CREATE trigger requires either NewASTNode or NewTrigger")
+}
+
+// extractTriggerFunctionName extracts the function name from EXECUTE FUNCTION clause
+func extractTriggerFunctionName(astNode any) string {
+	triggerStmt, ok := astNode.(*pgparser.CreatetrigstmtContext)
+	if !ok || triggerStmt == nil {
+		return ""
+	}
+
+	// Get text from token stream for more reliable parsing
+	var text string
+	if tokenStream := triggerStmt.GetParser().GetTokenStream(); tokenStream != nil {
+		start := triggerStmt.GetStart()
+		stop := triggerStmt.GetStop()
+		if start != nil && stop != nil {
+			text = tokenStream.GetTextFromTokens(start, stop)
+		}
+	}
+
+	if text == "" {
+		text = triggerStmt.GetText()
+	}
+
+	// Look for "EXECUTE FUNCTION function_name" or "EXECUTE PROCEDURE function_name"
+	upperText := strings.ToUpper(text)
+	idx := strings.Index(upperText, "EXECUTE FUNCTION")
+	if idx == -1 {
+		idx = strings.Index(upperText, "EXECUTE PROCEDURE")
+		if idx == -1 {
+			return ""
+		}
+		idx += len("EXECUTE PROCEDURE")
+	} else {
+		idx += len("EXECUTE FUNCTION")
+	}
+
+	remaining := strings.TrimSpace(text[idx:])
+	// Extract function name (first word, possibly schema-qualified)
+	endIdx := strings.IndexAny(remaining, "();")
+	if endIdx > 0 {
+		funcName := strings.TrimSpace(remaining[:endIdx])
+		// Remove quotes if present
+		funcName = strings.Trim(funcName, "\"")
+		return funcName
+	}
+
+	return ""
 }

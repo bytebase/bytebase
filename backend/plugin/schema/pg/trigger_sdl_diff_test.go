@@ -1,6 +1,7 @@
 package pg
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -144,4 +145,46 @@ func TestDropTriggerMigration(t *testing.T) {
 	assert.Contains(t, migration, "audit_trigger")
 	assert.Contains(t, migration, "ON")
 	assert.Contains(t, migration, "users")
+}
+
+func TestCreateTriggerMigrationWithDependencyOrder(t *testing.T) {
+	currentSDL := `
+		CREATE TABLE users (id SERIAL PRIMARY KEY);
+		CREATE FUNCTION audit_log() RETURNS TRIGGER AS $$
+		BEGIN
+			RAISE NOTICE 'Audit';
+			RETURN NEW;
+		END;
+		$$ LANGUAGE plpgsql;
+
+		CREATE TRIGGER audit_trigger
+		AFTER INSERT ON users
+		FOR EACH ROW EXECUTE FUNCTION audit_log();
+	`
+
+	diff, err := GetSDLDiff(currentSDL, "", nil, nil)
+	require.NoError(t, err)
+
+	migration, err := generateMigration(diff)
+	require.NoError(t, err)
+
+	// Print migration for debugging
+	t.Logf("Migration:\n%s", migration)
+
+	// Verify CREATE TRIGGER is in migration
+	assert.Contains(t, migration, "CREATE TRIGGER")
+	assert.Contains(t, migration, "audit_trigger")
+
+	// Verify dependency order: Both TABLE and FUNCTION must be created before TRIGGER
+	// The order between TABLE and FUNCTION doesn't matter - either is valid in PostgreSQL
+	// since trigger functions don't reference the table until the trigger is created
+	tableIdx := strings.Index(migration, "CREATE TABLE")
+	functionIdx := strings.Index(migration, "CREATE FUNCTION audit_log")
+	triggerIdx := strings.Index(migration, "CREATE TRIGGER audit_trigger")
+
+	t.Logf("Indices: table=%d, function=%d, trigger=%d", tableIdx, functionIdx, triggerIdx)
+
+	// Both table and function must exist before trigger
+	assert.Less(t, tableIdx, triggerIdx, "Table must be created before trigger")
+	assert.Less(t, functionIdx, triggerIdx, "Function must be created before trigger")
 }
