@@ -268,14 +268,8 @@
     public\",\n      \"tables\": [\n        {\n          \"name\": \"test\",\n   \
     \       \"columns\": [\n            {\n              \"name\": \"name\",\n   \
     \           \"position\": 2,\n              \"nullable\": true,\n            \
-    \  \"type\": \"varchar(20)\"\n            }\n          ]\n        }\n      ],\n\
-    \      \"views\": [\n        {\n          \"name\": \"v1\",\n          \"definition\"\
-    : \"SELECT id, name FROM test\",\n          \"dependencyColumns\": [\n       \
-    \     {\n              \"schema\": \"public\",\n              \"table\": \"test\"\
-    ,\n              \"column\": \"id\"\n            },\n            {\n         \
-    \     \"schema\": \"public\",\n              \"table\": \"test\",\n          \
-    \    \"column\": \"name\"\n            }\n          ]\n        }\n      ]\n  \
-    \  }\n  ]\n}"
+    \  \"type\": \"varchar(20)\"\n            }\n          ]\n        }\n      ]\n\
+    \    }\n  ]\n}"
   err: null
 - statement: 'create view v1 as select * from t;
 

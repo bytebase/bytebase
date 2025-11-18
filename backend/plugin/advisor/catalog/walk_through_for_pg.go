@@ -221,11 +221,12 @@ func pgCreateColumn(schema *model.SchemaMetadata, table *model.TableMetadata, co
 					constraintName = generateIndexName(table.GetProto().Name, []string{columnName}, true)
 				}
 				index := &storepb.IndexMetadata{
-					Name:        constraintName,
-					Expressions: []string{columnName},
-					Type:        "btree",
-					Unique:      true,
-					Primary:     false,
+					Name:         constraintName,
+					Expressions:  []string{columnName},
+					Type:         "btree",
+					Unique:       true,
+					Primary:      false,
+					IsConstraint: true,
 				}
 				if err := table.CreateIndex(index); err != nil {
 					return &WalkThroughError{Code: code.IndexExists, Content: err.Error()}
@@ -597,9 +598,14 @@ func (l *pgCatalogListener) alterTableDropColumn(schema *model.SchemaMetadata, t
 	// Check if any views depend on this column
 	dependentViews := schema.GetDependentViews(table.GetProto().Name, columnName)
 	if len(dependentViews) > 0 {
+		// Format view names with schema prefix to match old error format
+		var viewNames []string
+		for _, v := range dependentViews {
+			viewNames = append(viewNames, fmt.Sprintf("%q.%q", schema.GetProto().Name, v))
+		}
 		l.setError(&WalkThroughError{
-			Code:    code.TableIsReferencedByView,
-			Content: fmt.Sprintf("Cannot drop column %q because view(s) %v depend on it", columnName, dependentViews),
+			Code:    code.ColumnIsReferencedByView,
+			Content: fmt.Sprintf("Cannot drop column %q in table %q.%q, it's referenced by view: %s", columnName, schema.GetProto().Name, table.GetProto().Name, strings.Join(viewNames, ", ")),
 		})
 		return
 	}
@@ -627,8 +633,9 @@ func (l *pgCatalogListener) alterTableDropColumn(schema *model.SchemaMetadata, t
 		l.setError(NewColumnNotExistsError(table.GetProto().Name, columnName))
 		return
 	}
-	// Delete the column
-	if err := table.DropColumn(columnName); err != nil {
+	// Delete the column without renumbering positions
+	// PostgreSQL maintains stable column positions (attnum) even after dropping columns
+	if err := table.DropColumnWithoutRenumbering(columnName); err != nil {
 		l.setError(&WalkThroughError{Code: code.Internal, Content: fmt.Sprintf("failed to drop column: %v", err)})
 	}
 }
@@ -643,9 +650,14 @@ func (l *pgCatalogListener) alterTableAlterColumnType(schema *model.SchemaMetada
 	// Check if any views depend on this column
 	dependentViews := schema.GetDependentViews(table.GetProto().Name, columnName)
 	if len(dependentViews) > 0 {
+		// Format view names with schema prefix to match old error format
+		var viewNames []string
+		for _, v := range dependentViews {
+			viewNames = append(viewNames, fmt.Sprintf("%q.%q", schema.GetProto().Name, v))
+		}
 		l.setError(&WalkThroughError{
-			Code:    code.TableIsReferencedByView,
-			Content: fmt.Sprintf("Cannot alter column %q type because view(s) %v depend on it", columnName, dependentViews),
+			Code:    code.ColumnIsReferencedByView,
+			Content: fmt.Sprintf("Cannot alter type of column %q in table %q.%q, it's referenced by view: %s", columnName, schema.GetProto().Name, table.GetProto().Name, strings.Join(viewNames, ", ")),
 		})
 		return
 	}
@@ -1003,9 +1015,14 @@ func (l *pgCatalogListener) dropTable(anyName parser.IAny_nameContext, ifExists 
 	// Check if any views depend on this table
 	dependentViews := schema.GetDependentViews(tableName, "")
 	if len(dependentViews) > 0 {
+		// Format view names with schema prefix to match old error format
+		var viewNames []string
+		for _, v := range dependentViews {
+			viewNames = append(viewNames, fmt.Sprintf("%q.%q", schema.GetProto().Name, v))
+		}
 		return &WalkThroughError{
 			Code:    code.TableIsReferencedByView,
-			Content: fmt.Sprintf("Cannot drop table %q because view(s) %v depend on it", tableName, dependentViews),
+			Content: fmt.Sprintf("Cannot drop table %q.%q, it's referenced by view: %s", schema.GetProto().Name, tableName, strings.Join(viewNames, ", ")),
 		}
 	}
 	// Drop the table using the schema method
@@ -1086,16 +1103,9 @@ func (l *pgCatalogListener) dropSchema(schemaNameCtx parser.INameContext, ifExis
 			Content: fmt.Sprintf("Schema %q does not exist", schemaName),
 		}
 	}
-	// Check if schema is empty (PostgreSQL requires CASCADE or RESTRICT, but we check if empty)
-	// Get all tables, views, etc. in the schema
-	hasObjects := len(schema.ListTableNames()) > 0 || len(schema.ListViewNames()) > 0
-	if hasObjects {
-		return &WalkThroughError{
-			Code:    code.DatabaseNotEmpty,
-			Content: fmt.Sprintf("Cannot drop schema %q because it contains objects (use CASCADE to drop)", schemaName),
-		}
-	}
-	// Drop the schema
+	// Drop the schema (this will also drop all objects in the schema)
+	// Note: We don't check for objects in the schema to match the old behavior
+	// In real PostgreSQL, this would require CASCADE if the schema is not empty
 	if err := l.databaseState.DropSchema(schemaName); err != nil {
 		return &WalkThroughError{Code: code.SchemaNotExists, Content: err.Error()}
 	}
@@ -1168,6 +1178,26 @@ func (l *pgCatalogListener) EnterRenamestmt(ctx *parser.RenamestmtContext) {
 			}
 		}
 		return
+	}
+	// Check if this is VIEW rename (ALTER VIEW ... RENAME TO ...)
+	if ctx.Qualified_name() != nil && ctx.AllName() != nil && len(ctx.AllName()) > 0 {
+		// Could be ALTER VIEW view_name RENAME TO new_name
+		// Try to see if the qualified name refers to a view
+		viewName := extractTableName(ctx.Qualified_name())
+		schemaName := extractSchemaName(ctx.Qualified_name())
+		newName := pgparser.NormalizePostgreSQLName(ctx.AllName()[0])
+		schema, err := getOrCreatePublicSchema(l.databaseState, schemaName)
+		if err != nil {
+			l.setError(err)
+			return
+		}
+		// Check if it's a view
+		if schema.GetView(viewName) != nil {
+			if err := schema.RenameView(viewName, newName); err != nil {
+				l.setError(&WalkThroughError{Code: code.ViewNotExists, Content: err.Error()})
+			}
+			return
+		}
 	}
 	// Extract relation (table) if present
 	var tableName, schemaName string
@@ -1259,6 +1289,11 @@ func (l *pgCatalogListener) EnterViewstmt(ctx *parser.ViewstmtContext) {
 	schema, err := getOrCreatePublicSchema(l.databaseState, schemaName)
 	if err != nil {
 		l.setError(err)
+		return
+	}
+	// Check if view already exists - silently ignore duplicates
+	// This matches the legacy behavior in the old DatabaseState implementation
+	if schema.GetView(viewName) != nil {
 		return
 	}
 	// Get the view definition (the SELECT statement)

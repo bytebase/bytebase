@@ -1016,6 +1016,48 @@ func (s *SchemaMetadata) DropView(viewName string) error {
 	return nil
 }
 
+// RenameView renames a view in the schema.
+// Returns an error if the old view doesn't exist or new view already exists.
+func (s *SchemaMetadata) RenameView(oldName string, newName string) error {
+	if oldName == newName {
+		return nil
+	}
+
+	// Check if old view exists
+	oldView := s.GetView(oldName)
+	if oldView == nil {
+		return errors.Errorf("view %q does not exist in schema %q", oldName, s.proto.Name)
+	}
+
+	// Check if new view already exists
+	if s.GetView(newName) != nil {
+		return errors.Errorf("view %q already exists in schema %q", newName, s.proto.Name)
+	}
+
+	// Remove from internal map using old name
+	var oldViewID string
+	if s.isObjectCaseSensitive {
+		oldViewID = oldName
+	} else {
+		oldViewID = strings.ToLower(oldName)
+	}
+	delete(s.internalViews, oldViewID)
+
+	// Update the view name in the proto
+	oldView.proto.Name = newName
+
+	// Add back to internal map using new name
+	var newViewID string
+	if s.isObjectCaseSensitive {
+		newViewID = newName
+	} else {
+		newViewID = strings.ToLower(newName)
+	}
+	s.internalViews[newViewID] = oldView
+
+	return nil
+}
+
 // GetDependentViews returns all views that depend on the given table and column.
 // This is used to check if a column can be dropped or if a table can be dropped.
 func (s *SchemaMetadata) GetDependentViews(tableName string, columnName string) []string {
@@ -1267,6 +1309,11 @@ func (t *TableMetadata) CreateColumn(columnProto *storepb.ColumnMetadata) error 
 // DropColumn drops a column from the table.
 // Returns an error if the column does not exist.
 func (t *TableMetadata) DropColumn(columnName string) error {
+	return t.dropColumn(columnName, true)
+}
+
+// dropColumn is the internal implementation that allows controlling position renumbering.
+func (t *TableMetadata) dropColumn(columnName string, renumberPositions bool) error {
 	// Check if column exists
 	if t.GetColumn(columnName) == nil {
 		return errors.Errorf("column %q does not exist in table %q", columnName, t.proto.Name)
@@ -1299,9 +1346,13 @@ func (t *TableMetadata) DropColumn(columnName string) error {
 	// Rebuild columns slice
 	t.columns = newColumns
 
-	// Renumber positions to be sequential (1-indexed)
-	for i, col := range newColumns {
-		col.Position = int32(i + 1)
+	// Renumber positions to be sequential (1-indexed) if requested
+	// MySQL/TiDB: renumber positions (1, 2, 3, ...)
+	// PostgreSQL: keep original positions (gaps are allowed)
+	if renumberPositions {
+		for i, col := range newColumns {
+			col.Position = int32(i + 1)
+		}
 	}
 
 	// Remove column from indexes that reference it
@@ -1342,6 +1393,13 @@ func (t *TableMetadata) DropColumn(columnName string) error {
 	t.proto.Indexes = newIndexes
 
 	return nil
+}
+
+// DropColumnWithoutRenumbering drops a column from the table without renumbering positions.
+// This is used for PostgreSQL where column positions are stable (attnum) and shouldn't be renumbered.
+// Returns an error if the column doesn't exist.
+func (t *TableMetadata) DropColumnWithoutRenumbering(columnName string) error {
+	return t.dropColumn(columnName, false)
 }
 
 // DropColumnWithoutUpdatingIndexes drops a column from the table without updating index expressions.
