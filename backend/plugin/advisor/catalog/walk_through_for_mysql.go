@@ -806,6 +806,25 @@ func mysqlChangeColumn(table *model.TableMetadata, oldColumnName string, newColu
 		column.Collation = mysqlparser.GetCollationName(fieldDef)
 	}
 
+	// Reset nullable to true, then check for NOT NULL constraint
+	// This ensures that if the new definition doesn't have NOT NULL, the column becomes nullable
+	column.Nullable = true
+	for _, attribute := range fieldDef.AllColumnAttribute() {
+		if attribute == nil {
+			continue
+		}
+		// Check for NOT NULL constraint
+		if attribute.NullLiteral() != nil && attribute.NOT_SYMBOL() != nil {
+			column.Nullable = false
+			break
+		}
+		// Check for PRIMARY KEY or UNIQUE KEY (these imply NOT NULL for primary keys)
+		if attribute.GetValue() != nil && attribute.GetValue().GetTokenType() == mysql.MySQLParserKEY_SYMBOL {
+			column.Nullable = false
+			break
+		}
+	}
+
 	// Handle position changes by reordering columns in the proto
 	if position != nil && position.tp != ColumnPositionNone {
 		tableProto := table.GetProto()
