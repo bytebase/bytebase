@@ -294,6 +294,13 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 		// Handle remaining ALTER table operations (constraints, indexes, columns)
 		for _, tableDiff := range diff.TableChanges {
 			if tableDiff.Action == schema.MetadataDiffActionAlter {
+				// Drop triggers
+				for _, triggerDiff := range tableDiff.TriggerChanges {
+					if triggerDiff.Action == schema.MetadataDiffActionDrop {
+						writeDropTrigger(buf, tableDiff.SchemaName, tableDiff.TableName, triggerDiff.TriggerName)
+					}
+				}
+
 				// Drop check constraints
 				for _, checkDiff := range tableDiff.CheckConstraintChanges {
 					if checkDiff.Action == schema.MetadataDiffActionDrop {
@@ -412,6 +419,13 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 		// Handle remaining ALTER table drops (constraints, indexes, columns)
 		for _, tableDiff := range diff.TableChanges {
 			if tableDiff.Action == schema.MetadataDiffActionAlter {
+				// Drop triggers
+				for _, triggerDiff := range tableDiff.TriggerChanges {
+					if triggerDiff.Action == schema.MetadataDiffActionDrop {
+						writeDropTrigger(buf, tableDiff.SchemaName, tableDiff.TableName, triggerDiff.TriggerName)
+					}
+				}
+
 				// Drop check constraints
 				for _, checkDiff := range tableDiff.CheckConstraintChanges {
 					if checkDiff.Action == schema.MetadataDiffActionDrop {

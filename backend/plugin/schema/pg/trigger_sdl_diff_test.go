@@ -122,3 +122,26 @@ func TestTriggerCommentExtraction(t *testing.T) {
 	}
 	assert.True(t, found, "Should have trigger comment")
 }
+
+func TestDropTriggerMigration(t *testing.T) {
+	previousSDL := `
+		CREATE TABLE users (id SERIAL PRIMARY KEY);
+		CREATE FUNCTION f() RETURNS TRIGGER AS $$ BEGIN RETURN NEW; END; $$ LANGUAGE plpgsql;
+		CREATE TRIGGER audit_trigger AFTER INSERT ON users FOR EACH ROW EXECUTE FUNCTION f();
+	`
+	currentSDL := `
+		CREATE TABLE users (id SERIAL PRIMARY KEY);
+		CREATE FUNCTION f() RETURNS TRIGGER AS $$ BEGIN RETURN NEW; END; $$ LANGUAGE plpgsql;
+	`
+
+	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+	require.NoError(t, err)
+
+	migration, err := generateMigration(diff)
+	require.NoError(t, err)
+
+	assert.Contains(t, migration, "DROP TRIGGER")
+	assert.Contains(t, migration, "audit_trigger")
+	assert.Contains(t, migration, "ON")
+	assert.Contains(t, migration, "users")
+}
