@@ -109,30 +109,6 @@ const binaryFormat = computed(() => {
   });
 });
 
-watchEffect(() => {
-  if (!hasByteData.value) {
-    return;
-  }
-  if (!binaryFormat.value) {
-    const bytesValue =
-      props.value.kind?.case === "bytesValue"
-        ? props.value.kind.value
-        : undefined;
-    if (bytesValue) {
-      const binaryFormat = detectBinaryFormat({
-        bytesValue,
-        columnType: props.columnType,
-      });
-      setBinaryFormat({
-        rowIndex: props.rowIndex,
-        colIndex: props.colIndex,
-        setIndex: props.setIndex,
-        format: binaryFormat,
-      });
-    }
-  }
-});
-
 useResizeObserver(wrapperRef, (entries) => {
   const div = entries[0].target as HTMLDivElement;
   const contentHeight = div.scrollHeight;
@@ -203,7 +179,7 @@ const formattedValue = computed(() => {
   // Determine the format to use - column override, cell override, or auto-detected format
   let actualFormat = binaryFormat.value ?? "DEFAULT";
 
-  // If format is DEFAULT, use the auto-detected format
+  // If format is DEFAULT or undefined, auto-detect based on column type and content
   if (actualFormat === "DEFAULT") {
     actualFormat = detectBinaryFormat({
       bytesValue,

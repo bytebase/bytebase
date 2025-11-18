@@ -87,7 +87,13 @@ export const provideBinaryFormatContext = (contextId: Ref<string>) => {
             setIndex,
             contextId: contextId.value,
           });
-    formattedBinaryValues.value.set(key, format);
+
+    // If setting to DEFAULT, delete the key so it falls through to column/auto-detect
+    if (format === "DEFAULT") {
+      formattedBinaryValues.value.delete(key);
+    } else {
+      formattedBinaryValues.value.set(key, format);
+    }
   };
 
   const context: BinaryFormatContext = {
@@ -146,34 +152,39 @@ export const formatBinaryValue = ({
     .map((byte) => byte.toString(2).padStart(8, "0"))
     .join("");
 
+  let result: string;
   switch (format) {
     case "BINARY":
-      return binaryValue;
+      result = binaryValue;
+      break;
     case "TEXT":
       try {
-        return new TextDecoder().decode(new Uint8Array(byteArray));
+        result = new TextDecoder().decode(new Uint8Array(byteArray));
       } catch {
         // Fallback to BINARY if text decoding fails
-        return binaryValue;
+        result = binaryValue;
       }
+      break;
     case "HEX":
-      return (
+      result =
         "0x" +
         byteArray
           .map((byte) => byte.toString(16).toUpperCase().padStart(2, "0"))
-          .join("")
-      );
+          .join("");
+      break;
     case "BOOLEAN":
       if (
         byteArray.length === 1 &&
         (byteArray[0] === 0 || byteArray[0] === 1)
       ) {
-        return byteArray[0] === 1 ? "true" : "false";
+        result = byteArray[0] === 1 ? "true" : "false";
+        break;
       }
     // Fall through to DEFAULT
     default:
-      return binaryValue;
+      result = binaryValue;
   }
+  return result;
 };
 
 // Determine the suitable format for a column based on column type and content
