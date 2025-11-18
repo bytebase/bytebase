@@ -12,7 +12,13 @@
     type\": \"int\"\n            },\n            {\n              \"name\": \"name\"\
     ,\n              \"position\": 2,\n              \"nullable\": true,\n       \
     \       \"type\": \"varchar(20)\"\n            }\n          ]\n        }\n   \
-    \   ]\n    }\n  ]\n}"
+    \   ],\n      \"views\": [\n        {\n          \"name\": \"v1\",\n         \
+    \ \"definition\": \"SELECT id, name FROM test\",\n          \"dependencyColumns\"\
+    : [\n            {\n              \"schema\": \"public\",\n              \"table\"\
+    : \"test\",\n              \"column\": \"id\"\n            },\n            {\n\
+    \              \"schema\": \"public\",\n              \"table\": \"test\",\n \
+    \             \"column\": \"name\"\n            }\n          ]\n        }\n  \
+    \    ]\n    }\n  ]\n}"
   err: null
 - statement: 'CREATE TABLE public.t(a int, "B" int);
 
@@ -40,7 +46,13 @@
     \   \"type\": \"int\"\n            },\n            {\n              \"name\":\
     \ \"name\",\n              \"position\": 2,\n              \"nullable\": true,\n\
     \              \"type\": \"varchar(20)\"\n            }\n          ]\n       \
-    \ }\n      ]\n    }\n  ]\n}"
+    \ }\n      ],\n      \"views\": [\n        {\n          \"name\": \"v1\",\n  \
+    \        \"definition\": \"SELECT id, name FROM test\",\n          \"dependencyColumns\"\
+    : [\n            {\n              \"schema\": \"public\",\n              \"table\"\
+    : \"test\",\n              \"column\": \"id\"\n            },\n            {\n\
+    \              \"schema\": \"public\",\n              \"table\": \"test\",\n \
+    \             \"column\": \"name\"\n            }\n          ]\n        }\n  \
+    \    ]\n    }\n  ]\n}"
   err: null
 - statement: "CREATE TABLE public.t(\n  a int primary key,\n  b int NOT NULL DEFAULT\
     \ 1,\n  c int UNIQUE,\n  UNIQUE (a, b, c),\n  CONSTRAINT uk_a_b UNIQUE (a, b)\n\
@@ -57,22 +69,30 @@
     \            }\n          ],\n          \"indexes\": [\n            {\n      \
     \        \"name\": \"t_a_b_c_idx\",\n              \"expressions\": [\n      \
     \          \"a\",\n                \"b\",\n                \"c\"\n           \
-    \   ],\n              \"type\": \"btree\",\n              \"unique\": true\n \
-    \           },\n            {\n              \"name\": \"t_c_idx\",\n        \
-    \      \"expressions\": [\n                \"c\"\n              ],\n         \
-    \     \"type\": \"btree\",\n              \"unique\": true\n            },\n \
-    \           {\n              \"name\": \"t_pkey\",\n              \"expressions\"\
+    \   ],\n              \"type\": \"btree\",\n              \"unique\": true,\n\
+    \              \"isConstraint\": true\n            },\n            {\n       \
+    \       \"name\": \"t_c_idx\",\n              \"expressions\": [\n           \
+    \     \"c\"\n              ],\n              \"type\": \"btree\",\n          \
+    \    \"unique\": true,\n              \"isConstraint\": true\n            },\n\
+    \            {\n              \"name\": \"t_pkey\",\n              \"expressions\"\
     : [\n                \"a\"\n              ],\n              \"type\": \"btree\"\
-    ,\n              \"unique\": true,\n              \"primary\": true\n        \
-    \    },\n            {\n              \"name\": \"uk_a_b\",\n              \"\
-    expressions\": [\n                \"a\",\n                \"b\"\n            \
-    \  ],\n              \"type\": \"btree\",\n              \"unique\": true\n  \
-    \          }\n          ]\n        },\n        {\n          \"name\": \"test\"\
-    ,\n          \"columns\": [\n            {\n              \"name\": \"id\",\n\
-    \              \"position\": 1,\n              \"type\": \"int\"\n           \
-    \ },\n            {\n              \"name\": \"name\",\n              \"position\"\
+    ,\n              \"unique\": true,\n              \"primary\": true,\n       \
+    \       \"isConstraint\": true\n            },\n            {\n              \"\
+    name\": \"uk_a_b\",\n              \"expressions\": [\n                \"a\",\n\
+    \                \"b\"\n              ],\n              \"type\": \"btree\",\n\
+    \              \"unique\": true,\n              \"isConstraint\": true\n     \
+    \       }\n          ]\n        },\n        {\n          \"name\": \"test\",\n\
+    \          \"columns\": [\n            {\n              \"name\": \"id\",\n  \
+    \            \"position\": 1,\n              \"type\": \"int\"\n            },\n\
+    \            {\n              \"name\": \"name\",\n              \"position\"\
     : 2,\n              \"nullable\": true,\n              \"type\": \"varchar(20)\"\
-    \n            }\n          ]\n        }\n      ]\n    }\n  ]\n}"
+    \n            }\n          ]\n        }\n      ],\n      \"views\": [\n      \
+    \  {\n          \"name\": \"v1\",\n          \"definition\": \"SELECT id, name\
+    \ FROM test\",\n          \"dependencyColumns\": [\n            {\n          \
+    \    \"schema\": \"public\",\n              \"table\": \"test\",\n           \
+    \   \"column\": \"id\"\n            },\n            {\n              \"schema\"\
+    : \"public\",\n              \"table\": \"test\",\n              \"column\": \"\
+    name\"\n            }\n          ]\n        }\n      ]\n    }\n  ]\n}"
   err: null
 - statement: "CREATE TABLE public.t(\n  a int primary key,\n  b int NOT NULL DEFAULT\
     \ 1,\n  c int UNIQUE,\n  UNIQUE (a, b, c),\n  CONSTRAINT uk_a_b UNIQUE (a, b)\n\
@@ -95,19 +115,26 @@
     \ ],\n          \"indexes\": [\n            {\n              \"name\": \"t_pkey\"\
     ,\n              \"expressions\": [\n                \"a1\"\n              ],\n\
     \              \"type\": \"btree\",\n              \"unique\": true,\n       \
-    \       \"primary\": true\n            },\n            {\n              \"name\"\
-    : \"uk_d\",\n              \"expressions\": [\n                \"d\"\n       \
-    \       ],\n              \"type\": \"btree\",\n              \"unique\": true\n\
-    \            },\n            {\n              \"name\": \"ukk_a_b\",\n       \
-    \       \"expressions\": [\n                \"a1\",\n                \"b\"\n \
-    \             ],\n              \"type\": \"btree\",\n              \"unique\"\
-    : true\n            }\n          ]\n        },\n        {\n          \"name\"\
-    : \"test\",\n          \"columns\": [\n            {\n              \"name\":\
-    \ \"id\",\n              \"position\": 1,\n              \"type\": \"int\"\n \
-    \           },\n            {\n              \"name\": \"name\",\n           \
-    \   \"position\": 2,\n              \"nullable\": true,\n              \"type\"\
-    : \"varchar(20)\"\n            }\n          ]\n        }\n      ]\n    }\n  ]\n\
-    }"
+    \       \"primary\": true,\n              \"isConstraint\": true\n           \
+    \ },\n            {\n              \"name\": \"uk_d\",\n              \"expressions\"\
+    : [\n                \"d\"\n              ],\n              \"type\": \"btree\"\
+    ,\n              \"unique\": true,\n              \"isConstraint\": true\n   \
+    \         },\n            {\n              \"name\": \"ukk_a_b\",\n          \
+    \    \"expressions\": [\n                \"a1\",\n                \"b\"\n    \
+    \          ],\n              \"type\": \"btree\",\n              \"unique\": true,\n\
+    \              \"isConstraint\": true\n            }\n          ]\n        },\n\
+    \        {\n          \"name\": \"test\",\n          \"columns\": [\n        \
+    \    {\n              \"name\": \"id\",\n              \"position\": 1,\n    \
+    \          \"type\": \"int\"\n            },\n            {\n              \"\
+    name\": \"name\",\n              \"position\": 2,\n              \"nullable\"\
+    : true,\n              \"type\": \"varchar(20)\"\n            }\n          ]\n\
+    \        }\n      ],\n      \"views\": [\n        {\n          \"name\": \"v1\"\
+    ,\n          \"definition\": \"SELECT id, name FROM test\",\n          \"dependencyColumns\"\
+    : [\n            {\n              \"schema\": \"public\",\n              \"table\"\
+    : \"test\",\n              \"column\": \"id\"\n            },\n            {\n\
+    \              \"schema\": \"public\",\n              \"table\": \"test\",\n \
+    \             \"column\": \"name\"\n            }\n          ]\n        }\n  \
+    \    ]\n    }\n  ]\n}"
   err: null
 - statement: "CREATE TABLE public.t(\n  a int primary key,\n  b int NOT NULL DEFAULT\
     \ 1,\n  c int UNIQUE,\n  UNIQUE (a, b, c),\n  CONSTRAINT uk_a_b UNIQUE (a, b)\n\
@@ -124,22 +151,30 @@
     \            }\n          ],\n          \"indexes\": [\n            {\n      \
     \        \"name\": \"t_a_b_c_idx\",\n              \"expressions\": [\n      \
     \          \"a\",\n                \"b\",\n                \"c\"\n           \
-    \   ],\n              \"type\": \"btree\",\n              \"unique\": true\n \
-    \           },\n            {\n              \"name\": \"t_c_idx\",\n        \
-    \      \"expressions\": [\n                \"c\"\n              ],\n         \
-    \     \"type\": \"btree\",\n              \"unique\": true\n            },\n \
-    \           {\n              \"name\": \"t_pkey\",\n              \"expressions\"\
+    \   ],\n              \"type\": \"btree\",\n              \"unique\": true,\n\
+    \              \"isConstraint\": true\n            },\n            {\n       \
+    \       \"name\": \"t_c_idx\",\n              \"expressions\": [\n           \
+    \     \"c\"\n              ],\n              \"type\": \"btree\",\n          \
+    \    \"unique\": true,\n              \"isConstraint\": true\n            },\n\
+    \            {\n              \"name\": \"t_pkey\",\n              \"expressions\"\
     : [\n                \"a\"\n              ],\n              \"type\": \"btree\"\
-    ,\n              \"unique\": true,\n              \"primary\": true\n        \
-    \    },\n            {\n              \"name\": \"ukk_a_b\",\n              \"\
-    expressions\": [\n                \"a\",\n                \"b\"\n            \
-    \  ],\n              \"type\": \"btree\",\n              \"unique\": true\n  \
-    \          }\n          ]\n        },\n        {\n          \"name\": \"test\"\
+    ,\n              \"unique\": true,\n              \"primary\": true,\n       \
+    \       \"isConstraint\": true\n            },\n            {\n              \"\
+    name\": \"ukk_a_b\",\n              \"expressions\": [\n                \"a\"\
+    ,\n                \"b\"\n              ],\n              \"type\": \"btree\"\
+    ,\n              \"unique\": true,\n              \"isConstraint\": true\n   \
+    \         }\n          ]\n        },\n        {\n          \"name\": \"test\"\
     ,\n          \"columns\": [\n            {\n              \"name\": \"id\",\n\
     \              \"position\": 1,\n              \"type\": \"int\"\n           \
     \ },\n            {\n              \"name\": \"name\",\n              \"position\"\
     : 2,\n              \"nullable\": true,\n              \"type\": \"varchar(20)\"\
-    \n            }\n          ]\n        }\n      ]\n    }\n  ]\n}"
+    \n            }\n          ]\n        }\n      ],\n      \"views\": [\n      \
+    \  {\n          \"name\": \"v1\",\n          \"definition\": \"SELECT id, name\
+    \ FROM test\",\n          \"dependencyColumns\": [\n            {\n          \
+    \    \"schema\": \"public\",\n              \"table\": \"test\",\n           \
+    \   \"column\": \"id\"\n            },\n            {\n              \"schema\"\
+    : \"public\",\n              \"table\": \"test\",\n              \"column\": \"\
+    name\"\n            }\n          ]\n        }\n      ]\n    }\n  ]\n}"
   err: null
 - statement: "CREATE TABLE public.t(\n  a int primary key,\n  b int NOT NULL DEFAULT\
     \ 1,\n  c int UNIQUE,\n  UNIQUE (a, b, c),\n  CONSTRAINT uk_a_b UNIQUE (a, b)\n\
@@ -156,19 +191,27 @@
     \            }\n          ],\n          \"indexes\": [\n            {\n      \
     \        \"name\": \"t_a_b_c_idx\",\n              \"expressions\": [\n      \
     \          \"a\",\n                \"b\",\n                \"c\"\n           \
-    \   ],\n              \"type\": \"btree\",\n              \"unique\": true\n \
-    \           },\n            {\n              \"name\": \"t_c_idx\",\n        \
-    \      \"expressions\": [\n                \"c\"\n              ],\n         \
-    \     \"type\": \"btree\",\n              \"unique\": true\n            },\n \
-    \           {\n              \"name\": \"t_pkey\",\n              \"expressions\"\
+    \   ],\n              \"type\": \"btree\",\n              \"unique\": true,\n\
+    \              \"isConstraint\": true\n            },\n            {\n       \
+    \       \"name\": \"t_c_idx\",\n              \"expressions\": [\n           \
+    \     \"c\"\n              ],\n              \"type\": \"btree\",\n          \
+    \    \"unique\": true,\n              \"isConstraint\": true\n            },\n\
+    \            {\n              \"name\": \"t_pkey\",\n              \"expressions\"\
     : [\n                \"a\"\n              ],\n              \"type\": \"btree\"\
-    ,\n              \"unique\": true,\n              \"primary\": true\n        \
-    \    }\n          ]\n        },\n        {\n          \"name\": \"test\",\n  \
-    \        \"columns\": [\n            {\n              \"name\": \"id\",\n    \
-    \          \"position\": 1,\n              \"type\": \"int\"\n            },\n\
-    \            {\n              \"name\": \"name\",\n              \"position\"\
-    : 2,\n              \"nullable\": true,\n              \"type\": \"varchar(20)\"\
-    \n            }\n          ]\n        }\n      ]\n    }\n  ]\n}"
+    ,\n              \"unique\": true,\n              \"primary\": true,\n       \
+    \       \"isConstraint\": true\n            }\n          ]\n        },\n     \
+    \   {\n          \"name\": \"test\",\n          \"columns\": [\n            {\n\
+    \              \"name\": \"id\",\n              \"position\": 1,\n           \
+    \   \"type\": \"int\"\n            },\n            {\n              \"name\":\
+    \ \"name\",\n              \"position\": 2,\n              \"nullable\": true,\n\
+    \              \"type\": \"varchar(20)\"\n            }\n          ]\n       \
+    \ }\n      ],\n      \"views\": [\n        {\n          \"name\": \"v1\",\n  \
+    \        \"definition\": \"SELECT id, name FROM test\",\n          \"dependencyColumns\"\
+    : [\n            {\n              \"schema\": \"public\",\n              \"table\"\
+    : \"test\",\n              \"column\": \"id\"\n            },\n            {\n\
+    \              \"schema\": \"public\",\n              \"table\": \"test\",\n \
+    \             \"column\": \"name\"\n            }\n          ]\n        }\n  \
+    \    ]\n    }\n  ]\n}"
   err: null
 - statement: "CREATE TABLE public.t(\n  a int primary key,\n  b int NOT NULL DEFAULT\
     \ 1,\n  c int UNIQUE,\n  UNIQUE (a, b, c),\n  CONSTRAINT uk_a_b UNIQUE (a, b)\n\
@@ -180,7 +223,13 @@
     \         \"position\": 1,\n              \"type\": \"int\"\n            },\n\
     \            {\n              \"name\": \"name\",\n              \"position\"\
     : 2,\n              \"nullable\": true,\n              \"type\": \"varchar(20)\"\
-    \n            }\n          ]\n        }\n      ]\n    }\n  ]\n}"
+    \n            }\n          ]\n        }\n      ],\n      \"views\": [\n      \
+    \  {\n          \"name\": \"v1\",\n          \"definition\": \"SELECT id, name\
+    \ FROM test\",\n          \"dependencyColumns\": [\n            {\n          \
+    \    \"schema\": \"public\",\n              \"table\": \"test\",\n           \
+    \   \"column\": \"id\"\n            },\n            {\n              \"schema\"\
+    : \"public\",\n              \"table\": \"test\",\n              \"column\": \"\
+    name\"\n            }\n          ]\n        }\n      ]\n    }\n  ]\n}"
   err: null
 - statement: "CREATE TABLE public.t(\n  a int primary key,\n  b int NOT NULL DEFAULT\
     \ 1,\n  c int UNIQUE,\n  UNIQUE (a, b, c),\n  CONSTRAINT uk_a_b UNIQUE (a, b)\n\

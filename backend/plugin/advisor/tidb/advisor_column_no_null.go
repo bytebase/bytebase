@@ -11,8 +11,8 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -40,10 +40,10 @@ func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) (
 		return nil, err
 	}
 	checker := &columnNoNullChecker{
-		level:        level,
-		title:        string(checkCtx.Rule.Type),
-		columnSet:    make(map[string]columnName),
-		finalCatalog: checkCtx.FinalCatalog,
+		level:         level,
+		title:         string(checkCtx.Rule.Type),
+		columnSet:     make(map[string]columnName),
+		finalMetadata: checkCtx.FinalMetadata,
 	}
 
 	for _, stmtNode := range root {
@@ -54,11 +54,11 @@ func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) (
 }
 
 type columnNoNullChecker struct {
-	adviceList   []*storepb.Advice
-	level        storepb.Advice_Status
-	title        string
-	columnSet    map[string]columnName
-	finalCatalog *catalog.DatabaseState
+	adviceList    []*storepb.Advice
+	level         storepb.Advice_Status
+	title         string
+	columnSet     map[string]columnName
+	finalMetadata *model.DatabaseMetadata
 }
 
 func (checker *columnNoNullChecker) generateAdvice() []*storepb.Advice {
@@ -83,16 +83,16 @@ func (checker *columnNoNullChecker) generateAdvice() []*storepb.Advice {
 	})
 
 	for _, column := range columnList {
-		schema, _ := checker.finalCatalog.GetSchema("")
+		schema := checker.finalMetadata.GetSchema("")
 		if schema == nil {
 			continue
 		}
-		table, _ := schema.GetTable(column.tableName)
+		table := schema.GetTable(column.tableName)
 		if table == nil {
 			continue
 		}
-		col, _ := table.GetColumn(column.columnName)
-		if col != nil && col.Nullable() {
+		col := table.GetColumn(column.columnName)
+		if col != nil && col.Nullable {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:        checker.level,
 				Code:          code.ColumnCannotNull.Int32(),

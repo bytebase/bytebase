@@ -172,7 +172,7 @@ loop:
 		if dbSchema == nil {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database schema not found for %s", database.DatabaseName))
 		}
-		originCatalog, finalCatalog, err := catalog.NewCatalogWithMetadata(dbSchema.GetMetadata(), engine, store.IsObjectCaseSensitive(instance))
+		originMetadata, finalMetadata, err := catalog.NewCatalogWithMetadata(dbSchema.GetMetadata(), engine, store.IsObjectCaseSensitive(instance))
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create catalog"))
 		}
@@ -308,7 +308,7 @@ loop:
 					checkResult.RiskLevel = riskLevelEnum
 				}
 				if common.EngineSupportSQLReview(engine) {
-					adviceStatus, sqlReviewAdvices, err := s.runSQLReviewCheckForFile(ctx, originCatalog, finalCatalog, instance, database, changeType, statement)
+					adviceStatus, sqlReviewAdvices, err := s.runSQLReviewCheckForFile(ctx, originMetadata, finalMetadata, instance, database, changeType, statement)
 					if err != nil {
 						return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check SQL review"))
 					}
@@ -614,8 +614,8 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 
 func (s *ReleaseService) runSQLReviewCheckForFile(
 	ctx context.Context,
-	originCatalog *model.DatabaseMetadata,
-	finalCatalog *catalog.DatabaseState,
+	originMetadata *model.DatabaseMetadata,
+	finalMetadata *model.DatabaseMetadata,
 	instance *store.InstanceMessage,
 	database *store.DatabaseMessage,
 	changeType storepb.PlanCheckRunConfig_ChangeDatabaseType,
@@ -663,8 +663,8 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 		ChangeType:               changeType,
 		DBSchema:                 dbMetadata,
 		DBType:                   instance.Metadata.GetEngine(),
-		OriginalMetadata:         originCatalog,
-		FinalCatalog:             finalCatalog,
+		OriginalMetadata:         originMetadata,
+		FinalMetadata:            finalMetadata,
 		Driver:                   connection,
 		CurrentDatabase:          database.DatabaseName,
 		ClassificationConfig:     classificationConfig,
