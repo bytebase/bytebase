@@ -260,6 +260,20 @@ func tidbAlterTable(d *model.DatabaseMetadata, node *tidbast.AlterTableStmt) *Wa
 					return err
 				}
 			}
+			// Sort and renumber columns after adding
+			// CreateColumn appends to end, but tidbReorderColumn sets position values
+			tableProto := table.GetProto()
+			slices.SortFunc(tableProto.Columns, func(a, b *storepb.ColumnMetadata) int {
+				if a.Position < b.Position {
+					return -1
+				} else if a.Position > b.Position {
+					return 1
+				}
+				return 0
+			})
+			for i, col := range tableProto.Columns {
+				col.Position = int32(i + 1)
+			}
 		case tidbast.AlterTableAddConstraint:
 			if err := tidbCreateConstraint(table, spec.Constraint); err != nil {
 				return err

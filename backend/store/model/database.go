@@ -1309,11 +1309,11 @@ func (t *TableMetadata) CreateColumn(columnProto *storepb.ColumnMetadata) error 
 // DropColumn drops a column from the table.
 // Returns an error if the column does not exist.
 func (t *TableMetadata) DropColumn(columnName string) error {
-	return t.dropColumn(columnName, true)
+	return t.dropColumnInternal(columnName, true)
 }
 
-// dropColumn is the internal implementation that allows controlling position renumbering.
-func (t *TableMetadata) dropColumn(columnName string, renumberPositions bool) error {
+// dropColumnInternal is the internal implementation that allows controlling position renumbering.
+func (t *TableMetadata) dropColumnInternal(columnName string, renumberPositions bool) error {
 	// Check if column exists
 	if t.GetColumn(columnName) == nil {
 		return errors.Errorf("column %q does not exist in table %q", columnName, t.proto.Name)
@@ -1399,7 +1399,7 @@ func (t *TableMetadata) dropColumn(columnName string, renumberPositions bool) er
 // This is used for PostgreSQL where column positions are stable (attnum) and shouldn't be renumbered.
 // Returns an error if the column doesn't exist.
 func (t *TableMetadata) DropColumnWithoutRenumbering(columnName string) error {
-	return t.dropColumn(columnName, false)
+	return t.dropColumnInternal(columnName, false)
 }
 
 // DropColumnWithoutUpdatingIndexes drops a column from the table without updating index expressions.
