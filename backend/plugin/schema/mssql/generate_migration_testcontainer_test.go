@@ -2644,11 +2644,17 @@ func compareSchemas(schemaA, schemaC *storepb.DatabaseSchemaMetadata) error {
 	normalizeSchema(schemaA)
 	normalizeSchema(schemaC)
 
-	// Use protocmp for detailed comparison, ignoring DefaultConstraintName field
+	// Use protocmp for detailed comparison, ignoring DefaultConstraintName and Position fields
 	// DefaultConstraintName is only populated when syncing from database, not when parsing SQL
+	// Position must be ignored because:
+	//   - In SQL Server, column positions are determined by column_id (physical order)
+	//   - When a column is dropped and re-added, it gets a new column_id at the end
+	//   - Our migration generator uses DROP+ADD for column renames (doesn't use sp_rename)
+	//   - This causes legitimate position changes that don't affect functional equivalence
+	//   - Example: table with [id(1), name(2), email(3)] -> DROP name -> ADD name -> [id(1), email(3), name(4)]
 	opts := cmp.Options{
 		protocmp.Transform(),
-		protocmp.IgnoreFields(&storepb.ColumnMetadata{}, "default_constraint_name"),
+		protocmp.IgnoreFields(&storepb.ColumnMetadata{}, "default_constraint_name", "position"),
 	}
 	if diff := cmp.Diff(schemaA, schemaC, opts); diff != "" {
 		return errors.Errorf("schemas differ:\n%s", diff)

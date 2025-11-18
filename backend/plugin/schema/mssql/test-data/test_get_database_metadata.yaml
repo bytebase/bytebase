@@ -15,6 +15,7 @@
               "columns": [
                 {
                   "name": "id",
+                  "position": 1,
                   "type": "INT",
                   "is_identity": true,
                   "identity_seed": 1,
@@ -22,10 +23,12 @@
                 },
                 {
                   "name": "name",
+                  "position": 2,
                   "type": "NVARCHAR(255)"
                 },
                 {
                   "name": "email",
+                  "position": 3,
                   "nullable": true,
                   "type": "NVARCHAR(255)"
                 }
@@ -84,10 +87,12 @@
               "columns": [
                 {
                   "name": "dept_id",
+                  "position": 1,
                   "type": "INT"
                 },
                 {
                   "name": "dept_name",
+                  "position": 2,
                   "type": "NVARCHAR(100)"
                 }
               ],
@@ -111,14 +116,17 @@
               "columns": [
                 {
                   "name": "emp_id",
+                  "position": 1,
                   "type": "INT"
                 },
                 {
                   "name": "emp_name",
+                  "position": 2,
                   "type": "NVARCHAR(100)"
                 },
                 {
                   "name": "dept_id",
+                  "position": 3,
                   "nullable": true,
                   "type": "INT"
                 }
@@ -174,10 +182,12 @@
               "columns": [
                 {
                   "name": "product_id",
+                  "position": 1,
                   "type": "INT"
                 },
                 {
                   "name": "price",
+                  "position": 2,
                   "nullable": true,
                   "type": "DECIMAL(10,2)"
                 }
@@ -227,15 +237,18 @@
               "columns": [
                 {
                   "name": "id",
+                  "position": 1,
                   "type": "INT"
                 },
                 {
                   "name": "name",
+                  "position": 2,
                   "nullable": true,
                   "type": "NVARCHAR(255)"
                 },
                 {
                   "name": "category",
+                  "position": 3,
                   "nullable": true,
                   "type": "NVARCHAR(50)"
                 }
@@ -298,16 +311,19 @@
               "columns": [
                 {
                   "name": "order_id",
+                  "position": 1,
                   "nullable": true,
                   "type": "INT"
                 },
                 {
                   "name": "customer_id",
+                  "position": 2,
                   "nullable": true,
                   "type": "INT"
                 },
                 {
                   "name": "order_date",
+                  "position": 3,
                   "nullable": true,
                   "type": "DATETIME"
                 }
@@ -450,10 +466,12 @@
               "columns": [
                 {
                   "name": "emp_id",
+                  "position": 1,
                   "type": "INT"
                 },
                 {
                   "name": "name",
+                  "position": 2,
                   "nullable": true,
                   "type": "NVARCHAR(100)"
                 }
@@ -483,10 +501,12 @@
               "columns": [
                 {
                   "name": "order_id",
+                  "position": 1,
                   "type": "INT"
                 },
                 {
                   "name": "amount",
+                  "position": 2,
                   "nullable": true,
                   "type": "DECIMAL(10,2)"
                 }
@@ -528,22 +548,26 @@
               "columns": [
                 {
                   "name": "id",
+                  "position": 1,
                   "type": "INT"
                 },
                 {
                   "name": "created_at",
+                  "position": 2,
                   "default": "GETDATE()",
                   "nullable": true,
                   "type": "DATETIME"
                 },
                 {
                   "name": "is_active",
+                  "position": 3,
                   "default": "1",
                   "nullable": true,
                   "type": "BIT"
                 },
                 {
                   "name": "status",
+                  "position": 4,
                   "default": "N'pending'",
                   "nullable": true,
                   "type": "NVARCHAR(20)"
@@ -588,20 +612,24 @@
               "columns": [
                 {
                   "name": "id",
+                  "position": 1,
                   "type": "INT"
                 },
                 {
                   "name": "user_id",
+                  "position": 2,
                   "nullable": true,
                   "type": "INT"
                 },
                 {
                   "name": "action",
+                  "position": 3,
                   "nullable": true,
                   "type": "NVARCHAR(50)"
                 },
                 {
                   "name": "timestamp",
+                  "position": 4,
                   "nullable": true,
                   "type": "DATETIME"
                 }
@@ -654,10 +682,12 @@
               "columns": [
                 {
                   "name": "id",
+                  "position": 1,
                   "type": "INT"
                 },
                 {
                   "name": "email",
+                  "position": 2,
                   "nullable": true,
                   "type": "NVARCHAR(255)"
                 }
@@ -710,10 +740,12 @@
               "columns": [
                 {
                   "name": "id",
+                  "position": 1,
                   "type": "INT"
                 },
                 {
                   "name": "email",
+                  "position": 2,
                   "nullable": true,
                   "type": "NVARCHAR(255)"
                 }
@@ -782,6 +814,7 @@
               "columns": [
                 {
                   "name": "customer_id",
+                  "position": 1,
                   "type": "INT",
                   "is_identity": true,
                   "identity_seed": 1,
@@ -789,67 +822,80 @@
                 },
                 {
                   "name": "first_name",
+                  "position": 2,
                   "type": "VARCHAR(50)"
                 },
                 {
                   "name": "last_name",
+                  "position": 3,
                   "type": "VARCHAR(50)"
                 },
                 {
                   "name": "email",
+                  "position": 4,
                   "nullable": true,
                   "type": "VARCHAR(100)"
                 },
                 {
                   "name": "phone",
+                  "position": 5,
                   "nullable": true,
                   "type": "VARCHAR(20)"
                 },
                 {
                   "name": "address",
+                  "position": 6,
                   "nullable": true,
                   "type": "NVARCHAR(200)"
                 },
                 {
                   "name": "city",
+                  "position": 7,
                   "nullable": true,
                   "type": "NVARCHAR(50)"
                 },
                 {
                   "name": "state",
+                  "position": 8,
                   "nullable": true,
                   "type": "CHAR(2)"
                 },
                 {
                   "name": "zip_code",
+                  "position": 9,
                   "nullable": true,
                   "type": "VARCHAR(10)"
                 },
                 {
                   "name": "country",
+                  "position": 10,
                   "default": "'USA'",
                   "nullable": true,
                   "type": "VARCHAR(50)"
                 },
                 {
                   "name": "created_date",
+                  "position": 11,
                   "default": "GETDATE()",
                   "nullable": true,
                   "type": "DATETIME"
                 },
                 {
                   "name": "modified_date",
+                  "position": 12,
                   "nullable": true,
                   "type": "DATETIME"
                 },
                 {
                   "name": "is_active",
+                  "position": 13,
                   "default": "1",
                   "nullable": true,
                   "type": "BIT"
                 },
                 {
                   "name": "credit_limit",
+                  "position": 14,
                   "default": "0.00",
                   "nullable": true,
                   "type": "DECIMAL(10,2)"
@@ -934,19 +980,23 @@
               "columns": [
                 {
                   "name": "product_id",
+                  "position": 1,
                   "type": "INT"
                 },
                 {
                   "name": "warehouse_id",
+                  "position": 2,
                   "type": "INT"
                 },
                 {
                   "name": "quantity",
+                  "position": 3,
                   "default": "0",
                   "type": "INT"
                 },
                 {
                   "name": "last_updated",
+                  "position": 4,
                   "default": "SYSDATETIME()",
                   "nullable": true,
                   "type": "DATETIME2"
@@ -1001,6 +1051,7 @@
               "columns": [
                 {
                   "name": "log_id",
+                  "position": 1,
                   "type": "BIGINT",
                   "is_identity": true,
                   "identity_seed": 1,
@@ -1008,31 +1059,37 @@
                 },
                 {
                   "name": "table_name",
+                  "position": 2,
                   "type": "SYSNAME"
                 },
                 {
                   "name": "operation",
+                  "position": 3,
                   "type": "CHAR(1)"
                 },
                 {
                   "name": "user_name",
+                  "position": 4,
                   "default": "SUSER_SNAME()",
                   "nullable": true,
                   "type": "NVARCHAR(128)"
                 },
                 {
                   "name": "timestamp",
+                  "position": 5,
                   "default": "SYSDATETIME()",
                   "nullable": true,
                   "type": "DATETIME2"
                 },
                 {
                   "name": "old_values",
+                  "position": 6,
                   "nullable": true,
                   "type": "NVARCHAR(MAX)"
                 },
                 {
                   "name": "new_values",
+                  "position": 7,
                   "nullable": true,
                   "type": "NVARCHAR(MAX)"
                 }
@@ -1087,56 +1144,67 @@
               "columns": [
                 {
                   "name": "doc_id",
+                  "position": 1,
                   "default": "NEWID()",
                   "type": "UNIQUEIDENTIFIER"
                 },
                 {
                   "name": "title",
+                  "position": 2,
                   "type": "NVARCHAR(200)"
                 },
                 {
                   "name": "content",
+                  "position": 3,
                   "nullable": true,
                   "type": "NVARCHAR(MAX)"
                 },
                 {
                   "name": "file_data",
+                  "position": 4,
                   "nullable": true,
                   "type": "VARBINARY(MAX)"
                 },
                 {
                   "name": "file_name",
+                  "position": 5,
                   "nullable": true,
                   "type": "NVARCHAR(255)"
                 },
                 {
                   "name": "file_size",
+                  "position": 6,
                   "nullable": true,
                   "type": "BIGINT"
                 },
                 {
                   "name": "mime_type",
+                  "position": 7,
                   "nullable": true,
                   "type": "VARCHAR(100)"
                 },
                 {
                   "name": "created_by",
+                  "position": 8,
                   "type": "INT"
                 },
                 {
                   "name": "created_date",
+                  "position": 9,
                   "default": "SYSDATETIMEOFFSET()",
                   "nullable": true,
                   "type": "DATETIMEOFFSET"
                 },
                 {
                   "name": "version",
+                  "position": 10,
                   "default": "1",
                   "nullable": true,
                   "type": "INT"
                 },
                 {
                   "name": "is_published",
+                  "position": 11,
                   "default": "0",
                   "nullable": true,
                   "type": "BIT"
@@ -1184,6 +1252,7 @@
               "columns": [
                 {
                   "name": "node_id",
+                  "position": 1,
                   "type": "INT",
                   "is_identity": true,
                   "identity_seed": 1,
@@ -1191,20 +1260,24 @@
                 },
                 {
                   "name": "parent_id",
+                  "position": 2,
                   "nullable": true,
                   "type": "INT"
                 },
                 {
                   "name": "node_name",
+                  "position": 3,
                   "type": "NVARCHAR(100)"
                 },
                 {
                   "name": "node_path",
+                  "position": 4,
                   "nullable": true,
                   "type": "HIERARCHYID"
                 },
                 {
                   "name": "level",
+                  "position": 5,
                   "nullable": true
                 }
               ],
@@ -1272,36 +1345,43 @@
               "columns": [
                 {
                   "name": "Column With Spaces",
+                  "position": 1,
                   "nullable": true,
                   "type": "INT"
                 },
                 {
                   "name": "Column-With-Dashes",
+                  "position": 2,
                   "nullable": true,
                   "type": "NVARCHAR(50)"
                 },
                 {
                   "name": "Column.With.Dots",
+                  "position": 3,
                   "nullable": true,
                   "type": "VARCHAR(100)"
                 },
                 {
                   "name": "列名",
+                  "position": 4,
                   "nullable": true,
                   "type": "NVARCHAR(50)"
                 },
                 {
                   "name": "SELECT",
+                  "position": 5,
                   "nullable": true,
                   "type": "INT"
                 },
                 {
                   "name": "FROM",
+                  "position": 6,
                   "nullable": true,
                   "type": "VARCHAR(50)"
                 },
                 {
                   "name": "WHERE",
+                  "position": 7,
                   "nullable": true,
                   "type": "BIT"
                 }
@@ -1374,181 +1454,217 @@
               "columns": [
                 {
                   "name": "col_bit",
+                  "position": 1,
                   "nullable": true,
                   "type": "BIT"
                 },
                 {
                   "name": "col_tinyint",
+                  "position": 2,
                   "nullable": true,
                   "type": "TINYINT"
                 },
                 {
                   "name": "col_smallint",
+                  "position": 3,
                   "nullable": true,
                   "type": "SMALLINT"
                 },
                 {
                   "name": "col_int",
+                  "position": 4,
                   "nullable": true,
                   "type": "INT"
                 },
                 {
                   "name": "col_bigint",
+                  "position": 5,
                   "nullable": true,
                   "type": "BIGINT"
                 },
                 {
                   "name": "col_decimal",
+                  "position": 6,
                   "nullable": true,
                   "type": "DECIMAL(18,4)"
                 },
                 {
                   "name": "col_numeric",
+                  "position": 7,
                   "nullable": true,
                   "type": "NUMERIC(15,2)"
                 },
                 {
                   "name": "col_smallmoney",
+                  "position": 8,
                   "nullable": true,
                   "type": "SMALLMONEY"
                 },
                 {
                   "name": "col_money",
+                  "position": 9,
                   "nullable": true,
                   "type": "MONEY"
                 },
                 {
                   "name": "col_float",
+                  "position": 10,
                   "nullable": true,
                   "type": "FLOAT"
                 },
                 {
                   "name": "col_real",
+                  "position": 11,
                   "nullable": true,
                   "type": "REAL"
                 },
                 {
                   "name": "col_date",
+                  "position": 12,
                   "nullable": true,
                   "type": "DATE"
                 },
                 {
                   "name": "col_time",
+                  "position": 13,
                   "nullable": true,
                   "type": "TIME"
                 },
                 {
                   "name": "col_datetime",
+                  "position": 14,
                   "nullable": true,
                   "type": "DATETIME"
                 },
                 {
                   "name": "col_datetime2",
+                  "position": 15,
                   "nullable": true,
                   "type": "DATETIME2"
                 },
                 {
                   "name": "col_smalldatetime",
+                  "position": 16,
                   "nullable": true,
                   "type": "SMALLDATETIME"
                 },
                 {
                   "name": "col_datetimeoffset",
+                  "position": 17,
                   "nullable": true,
                   "type": "DATETIMEOFFSET"
                 },
                 {
                   "name": "col_char",
+                  "position": 18,
                   "nullable": true,
                   "type": "CHAR(10)"
                 },
                 {
                   "name": "col_varchar",
+                  "position": 19,
                   "nullable": true,
                   "type": "VARCHAR(50)"
                 },
                 {
                   "name": "col_varchar_max",
+                  "position": 20,
                   "nullable": true,
                   "type": "VARCHAR(MAX)"
                 },
                 {
                   "name": "col_text",
+                  "position": 21,
                   "nullable": true,
                   "type": "TEXT"
                 },
                 {
                   "name": "col_nchar",
+                  "position": 22,
                   "nullable": true,
                   "type": "NCHAR(10)"
                 },
                 {
                   "name": "col_nvarchar",
+                  "position": 23,
                   "nullable": true,
                   "type": "NVARCHAR(50)"
                 },
                 {
                   "name": "col_nvarchar_max",
+                  "position": 24,
                   "nullable": true,
                   "type": "NVARCHAR(MAX)"
                 },
                 {
                   "name": "col_ntext",
+                  "position": 25,
                   "nullable": true,
                   "type": "NTEXT"
                 },
                 {
                   "name": "col_binary",
+                  "position": 26,
                   "nullable": true,
                   "type": "BINARY(10)"
                 },
                 {
                   "name": "col_varbinary",
+                  "position": 27,
                   "nullable": true,
                   "type": "VARBINARY(50)"
                 },
                 {
                   "name": "col_varbinary_max",
+                  "position": 28,
                   "nullable": true,
                   "type": "VARBINARY(MAX)"
                 },
                 {
                   "name": "col_image",
+                  "position": 29,
                   "nullable": true,
                   "type": "IMAGE"
                 },
                 {
                   "name": "col_uniqueidentifier",
+                  "position": 30,
                   "nullable": true,
                   "type": "UNIQUEIDENTIFIER"
                 },
                 {
                   "name": "col_xml",
+                  "position": 31,
                   "nullable": true,
                   "type": "XML"
                 },
                 {
                   "name": "col_timestamp",
+                  "position": 32,
                   "nullable": true,
                   "type": "TIMESTAMP"
                 },
                 {
                   "name": "col_hierarchyid",
+                  "position": 33,
                   "nullable": true,
                   "type": "HIERARCHYID"
                 },
                 {
                   "name": "col_geography",
+                  "position": 34,
                   "nullable": true,
                   "type": "GEOGRAPHY"
                 },
                 {
                   "name": "col_geometry",
+                  "position": 35,
                   "nullable": true,
                   "type": "GEOMETRY"
                 },
                 {
                   "name": "col_sql_variant",
+                  "position": 36,
                   "nullable": true,
                   "type": "SQL_VARIANT"
                 }
@@ -1578,34 +1694,40 @@
               "columns": [
                 {
                   "name": "id",
+                  "position": 1,
                   "type": "INT"
                 },
                 {
                   "name": "case_sensitive",
+                  "position": 2,
                   "nullable": true,
                   "type": "VARCHAR(50)",
                   "collation": "Latin1_General_CS_AS"
                 },
                 {
                   "name": "case_insensitive",
+                  "position": 3,
                   "nullable": true,
                   "type": "VARCHAR(50)",
                   "collation": "Latin1_General_CI_AS"
                 },
                 {
                   "name": "accent_sensitive",
+                  "position": 4,
                   "nullable": true,
                   "type": "NVARCHAR(50)",
                   "collation": "Latin1_General_CI_AS"
                 },
                 {
                   "name": "accent_insensitive",
+                  "position": 5,
                   "nullable": true,
                   "type": "NVARCHAR(50)",
                   "collation": "Latin1_General_CI_AI"
                 },
                 {
                   "name": "binary_sort",
+                  "position": 6,
                   "nullable": true,
                   "type": "VARCHAR(50)",
                   "collation": "Latin1_General_BIN2"
@@ -1651,6 +1773,7 @@
               "columns": [
                 {
                   "name": "sale_id",
+                  "position": 1,
                   "type": "INT",
                   "is_identity": true,
                   "identity_seed": 1,
@@ -1658,18 +1781,22 @@
                 },
                 {
                   "name": "product_id",
+                  "position": 2,
                   "type": "INT"
                 },
                 {
                   "name": "sale_date",
+                  "position": 3,
                   "type": "DATE"
                 },
                 {
                   "name": "quantity",
+                  "position": 4,
                   "type": "INT"
                 },
                 {
                   "name": "amount",
+                  "position": 5,
                   "type": "DECIMAL(10,2)"
                 }
               ],
@@ -1717,23 +1844,28 @@
               "columns": [
                 {
                   "name": "id",
+                  "position": 1,
                   "type": "INT"
                 },
                 {
                   "name": "year",
+                  "position": 2,
                   "type": "INT"
                 },
                 {
                   "name": "month",
+                  "position": 3,
                   "type": "INT"
                 },
                 {
                   "name": "revenue",
+                  "position": 4,
                   "nullable": true,
                   "type": "DECIMAL(15,2)"
                 },
                 {
                   "name": "expenses",
+                  "position": 5,
                   "nullable": true,
                   "type": "DECIMAL(15,2)"
                 }
@@ -1781,22 +1913,27 @@
               "columns": [
                 {
                   "name": "sale_id",
+                  "position": 1,
                   "type": "INT"
                 },
                 {
                   "name": "product_id",
+                  "position": 2,
                   "type": "INT"
                 },
                 {
                   "name": "customer_id",
+                  "position": 3,
                   "type": "INT"
                 },
                 {
                   "name": "sale_date",
+                  "position": 4,
                   "type": "DATE"
                 },
                 {
                   "name": "amount",
+                  "position": 5,
                   "type": "DECIMAL(10,2)"
                 }
               ],
@@ -1831,19 +1968,23 @@
               "columns": [
                 {
                   "name": "id",
+                  "position": 1,
                   "type": "INT"
                 },
                 {
                   "name": "category",
+                  "position": 2,
                   "type": "VARCHAR(50)"
                 },
                 {
                   "name": "value",
+                  "position": 3,
                   "nullable": true,
                   "type": "DECIMAL(10,2)"
                 },
                 {
                   "name": "created_date",
+                  "position": 4,
                   "nullable": true,
                   "type": "DATETIME"
                 }
@@ -1906,6 +2047,7 @@
               "columns": [
                 {
                   "name": "id",
+                  "position": 1,
                   "type": "INT",
                   "comment": "Unique product identifier",
                   "is_identity": true,
@@ -1914,11 +2056,13 @@
                 },
                 {
                   "name": "name",
+                  "position": 2,
                   "type": "NVARCHAR(255)",
                   "comment": "Product display name"
                 },
                 {
                   "name": "price",
+                  "position": 3,
                   "nullable": true,
                   "type": "DECIMAL(10,2)",
                   "comment": "Product price in USD"
@@ -1965,6 +2109,7 @@
               "columns": [
                 {
                   "name": "id",
+                  "position": 1,
                   "type": "INT",
                   "is_identity": true,
                   "identity_seed": 1,
@@ -1972,14 +2117,17 @@
                 },
                 {
                   "name": "name",
+                  "position": 2,
                   "type": "NVARCHAR(100)"
                 },
                 {
                   "name": "position",
+                  "position": 3,
                   "type": "GEOMETRY"
                 },
                 {
                   "name": "area",
+                  "position": 4,
                   "nullable": true,
                   "type": "GEOGRAPHY"
                 }
@@ -2075,6 +2223,7 @@
               "columns": [
                 {
                   "name": "feature_id",
+                  "position": 1,
                   "type": "INT",
                   "is_identity": true,
                   "identity_seed": 1,
@@ -2082,32 +2231,39 @@
                 },
                 {
                   "name": "feature_name",
+                  "position": 2,
                   "type": "NVARCHAR(200)"
                 },
                 {
                   "name": "feature_type",
+                  "position": 3,
                   "nullable": true,
                   "type": "NVARCHAR(50)"
                 },
                 {
                   "name": "geometry_data",
+                  "position": 4,
                   "type": "GEOMETRY"
                 },
                 {
                   "name": "geography_data",
+                  "position": 5,
                   "type": "GEOGRAPHY"
                 },
                 {
                   "name": "bbox_geometry",
+                  "position": 6,
                   "nullable": true,
                   "type": "GEOMETRY"
                 },
                 {
                   "name": "center_point",
+                  "position": 7,
                   "type": "GEOMETRY"
                 },
                 {
                   "name": "area_polygon",
+                  "position": 8,
                   "nullable": true,
                   "type": "GEOGRAPHY"
                 }
@@ -2290,6 +2446,7 @@
               "columns": [
                 {
                   "name": "id",
+                  "position": 1,
                   "type": "INT",
                   "is_identity": true,
                   "identity_seed": 1,
@@ -2297,18 +2454,22 @@
                 },
                 {
                   "name": "name",
+                  "position": 2,
                   "type": "NVARCHAR(100)"
                 },
                 {
                   "name": "geo_point",
+                  "position": 3,
                   "type": "GEOMETRY"
                 },
                 {
                   "name": "geo_polygon",
+                  "position": 4,
                   "type": "GEOMETRY"
                 },
                 {
                   "name": "geo_location",
+                  "position": 5,
                   "type": "GEOGRAPHY"
                 }
               ],
