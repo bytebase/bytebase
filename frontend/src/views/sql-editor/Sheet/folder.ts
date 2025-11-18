@@ -87,30 +87,23 @@ export const useFolderByView = (
     const fromPath = ensureFolderPath(from);
     const toPath = ensureFolderPath(to);
 
-    const pendingUpdatePathes = [];
+    const newSet = new Set<string>();
     for (const path of localCache.value.values()) {
       if (
         path === fromPath ||
         isSubFolder({ parent: fromPath, path, dig: true })
       ) {
-        pendingUpdatePathes.push({
-          old: path,
-          new: path.replace(fromPath, toPath),
-        });
+        newSet.add(path.replace(fromPath, toPath));
+      } else {
+        newSet.add(path);
       }
-    }
-
-    const newSet = new Set(localCache.value);
-    for (const item of pendingUpdatePathes) {
-      newSet.delete(item.old);
-      newSet.add(item.new);
     }
     localCache.value = newSet;
   };
 
-  const mergeFolders = (pathes: Set<string>) => {
+  const mergeFolders = (paths: Set<string>) => {
     const newSet = new Set(localCache.value);
-    for (const folder of pathes.values()) {
+    for (const folder of paths.values()) {
       const validPath = ensureFolderPath(folder);
       newSet.add(validPath);
     }

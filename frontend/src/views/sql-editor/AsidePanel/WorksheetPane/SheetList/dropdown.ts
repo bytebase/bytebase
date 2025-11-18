@@ -98,6 +98,10 @@ export const useDropdown = (
     return sheetStore.getWorksheetByName(context.node.worksheet.name);
   });
 
+  const allowCreateNew = computed(
+    () => !filter.value.keyword && !filter.value.onlyShowStarred
+  );
+
   const options = computed((): WorksheetDropdown[] => {
     if (viewMode === "draft" || !context.node) {
       return [];
@@ -147,7 +151,7 @@ export const useDropdown = (
         );
       }
     } else {
-      if (!filter.value.keyword) {
+      if (allowCreateNew.value) {
         items.push({
           icon: FolderIcon,
           key: "add-folder",
@@ -155,7 +159,7 @@ export const useDropdown = (
         });
       }
       if (viewMode === "my") {
-        if (!filter.value.keyword) {
+        if (allowCreateNew.value) {
           items.push({
             icon: FileCodeIcon,
             key: "add-worksheet",
