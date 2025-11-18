@@ -228,6 +228,10 @@ const (
 
 	// 2101 ~ 2199 constraint error code.
 	ConstraintNotExists Code = 2101
+
+	// 2201 ~ 2299 view error code.
+	ViewNotExists Code = 2201
+	ViewExists    Code = 2202
 )
 
 // Int returns the int type of code.

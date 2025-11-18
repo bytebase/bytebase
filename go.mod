@@ -293,7 +293,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.39.0
 	github.com/aws/smithy-go v1.23.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/bytebase/parser v0.0.0-20251113094200-734ef85da6ad
+	github.com/bytebase/parser v0.0.0-20251117032631-393e2917be3f
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cncf/xds/go v0.0.0-20250501225837-2ac532fd4443 // indirect
 	github.com/cockroachdb/cockroach-go/v2 v2.4.2

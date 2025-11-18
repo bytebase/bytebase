@@ -10,12 +10,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 	"gopkg.in/yaml.v3"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 // TestCase is the data struct for test.
@@ -58,9 +60,18 @@ func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbTyp
 			t.Fatalf("%s doesn't have mocked metadata support", storepb.Engine_name[int32(dbType)])
 		}
 
-		database := advisor.MockPostgreSQLDatabase
-		originCatalog := catalog.NewDatabaseState(database, false /* ignoreCaseSensitive */, dbType)
-		finalCatalog := catalog.NewDatabaseState(database, false /* ignoreCaseSensitive */, dbType)
+		// Create OriginalMetadata as DatabaseMetadata (read-only)
+		// Clone to avoid mutations affecting future test cases
+		originalCatalogClone, ok := proto.Clone(schemaMetadata).(*storepb.DatabaseSchemaMetadata)
+		require.True(t, ok, "failed to clone schema metadata")
+		originalSchema := model.NewDatabaseSchema(originalCatalogClone, nil, nil, dbType, true /* isCaseSensitive for PostgreSQL */)
+		originalMetadata := originalSchema.GetDatabaseMetadata()
+
+		// Create FinalMetadata as DatabaseMetadata (mutable for walk-through)
+		// Clone to avoid mutations affecting future test cases
+		finalCatalogClone, ok := proto.Clone(schemaMetadata).(*storepb.DatabaseSchemaMetadata)
+		require.True(t, ok, "failed to clone schema metadata")
+		finalMetadata := model.NewDatabaseMetadata(finalCatalogClone, true /* isCaseSensitive for PostgreSQL */, true /* isDetailCaseSensitive */)
 
 		// Get default payload, or use empty string for test-only rules
 		payload, err := advisor.SetDefaultSQLReviewRulePayload(rule, dbType)
@@ -74,7 +85,7 @@ func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbTyp
 		require.NoError(t, err, "Failed to parse SQL: %s", tc.Statement)
 
 		// Always walk through the catalog to build metadata.
-		err = catalog.WalkThrough(finalCatalog, tree)
+		err = catalog.WalkThrough(finalMetadata, dbType, tree)
 		require.NoError(t, err, "Failed to walk through final catalog: %s", tc.Statement)
 
 		ruleList := []*storepb.SQLReviewRule{
@@ -97,8 +108,8 @@ func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbTyp
 				AST:                      tree, // Pass ANTLR parse result
 				Statements:               tc.Statement,
 				Rule:                     ruleList[0],
-				OriginCatalog:            originCatalog,
-				FinalCatalog:             finalCatalog,
+				OriginalMetadata:         originalMetadata,
+				FinalMetadata:            finalMetadata,
 				Driver:                   nil,
 				CurrentDatabase:          "TEST_DB",
 				UsePostgresDatabaseOwner: true,

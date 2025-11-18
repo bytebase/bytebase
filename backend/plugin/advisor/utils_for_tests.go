@@ -14,13 +14,14 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	database "github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -196,12 +197,33 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 			}
 		}
 
-		database := MockMySQLDatabase
-		if dbType == storepb.Engine_POSTGRES {
-			database = MockPostgreSQLDatabase
+		// Use the schemaMetadata if available, otherwise use mock database for catalog creation
+		catalogMetadata := schemaMetadata
+		if catalogMetadata == nil {
+			if dbType == storepb.Engine_POSTGRES {
+				catalogMetadata = MockPostgreSQLDatabase
+			} else {
+				catalogMetadata = MockMySQLDatabase
+			}
 		}
-		originCatalog := catalog.NewDatabaseState(database, false /* ignoreCaseSensitive */, dbType)
-		finalCatalog := catalog.NewDatabaseState(database, false /* ignoreCaseSensitive */, dbType)
+
+		isCaseSensitive := false
+		if dbType == storepb.Engine_POSTGRES {
+			isCaseSensitive = true
+		}
+
+		// Create OriginalMetadata as DatabaseMetadata (read-only)
+		// Clone to avoid mutations affecting future test cases
+		originalCatalogClone, ok := proto.Clone(catalogMetadata).(*storepb.DatabaseSchemaMetadata)
+		require.True(t, ok, "failed to clone catalog metadata")
+		originalSchema := model.NewDatabaseSchema(originalCatalogClone, nil, nil, dbType, isCaseSensitive)
+		originalMetadata := originalSchema.GetDatabaseMetadata()
+
+		// Create FinalMetadata as DatabaseMetadata (mutable for walk-through)
+		// Clone to avoid mutations affecting future test cases
+		finalCatalogClone, ok := proto.Clone(catalogMetadata).(*storepb.DatabaseSchemaMetadata)
+		require.True(t, ok, "failed to clone catalog metadata")
+		finalMetadata := model.NewDatabaseMetadata(finalCatalogClone, isCaseSensitive, isCaseSensitive)
 
 		payload, err := SetDefaultSQLReviewRulePayload(rule, dbType)
 		require.NoError(t, err)
@@ -218,8 +240,8 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 			Charset:                  "",
 			Collation:                "",
 			DBType:                   dbType,
-			OriginCatalog:            originCatalog,
-			FinalCatalog:             finalCatalog,
+			OriginalMetadata:         originalMetadata,
+			FinalMetadata:            finalMetadata,
 			Driver:                   nil,
 			CurrentDatabase:          curDB,
 			DBSchema:                 schemaMetadata,

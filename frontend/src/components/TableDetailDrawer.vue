@@ -303,7 +303,7 @@
 </template>
 
 <script lang="ts" setup>
-import { create } from "@bufbuild/protobuf";
+import { create, fromJsonString, toJsonString } from "@bufbuild/protobuf";
 import { computedAsync } from "@vueuse/core";
 import { cloneDeep } from "lodash-es";
 import { CodeIcon } from "lucide-vue-next";
@@ -331,7 +331,6 @@ import {
 } from "@/store";
 import { DEFAULT_PROJECT_NAME, defaultProject } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import type { TableCatalog } from "@/types/proto-es/v1/database_catalog_service_pb";
 import {
   SchemaCatalogSchema,
   TableCatalogSchema,
@@ -392,17 +391,18 @@ const tableCatalog = computed(() =>
 
 const initTableCatalog = computed(() => {
   if (!tableCatalog.value) {
-    return JSON.stringify(
+    return toJsonString(
+      TableCatalogSchema,
       create(TableCatalogSchema, {
         name: props.tableName,
       }),
-      null,
-      4
+      { prettySpaces: 2 }
     );
   }
 
-  const catalog = cloneDeep(tableCatalog.value);
-  return JSON.stringify(catalog, null, 4);
+  return toJsonString(TableCatalogSchema, tableCatalog.value, {
+    prettySpaces: 2,
+  });
 });
 
 const state = reactive<LocalState>({
@@ -448,7 +448,7 @@ watch(
 );
 
 const onCatalogUpload = async () => {
-  const catalog = JSON.parse(state.tableCatalog) as TableCatalog;
+  const catalog = fromJsonString(TableCatalogSchema, state.tableCatalog);
   if (catalog.name !== props.tableName) {
     pushNotification({
       module: "bytebase",

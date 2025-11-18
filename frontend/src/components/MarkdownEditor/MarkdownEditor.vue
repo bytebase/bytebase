@@ -128,14 +128,20 @@ interface Toolbar {
 
 type EditorMode = "editor" | "preview";
 
-const props = defineProps<{
-  content: string;
-  mode: EditorMode;
-  project: Project;
-  placeholder?: string;
-  autofocus?: boolean;
-  maxlength?: number;
-}>();
+const props = withDefaults(
+  defineProps<{
+    content: string;
+    mode: EditorMode;
+    project: Project;
+    placeholder?: string;
+    autofocus?: boolean;
+    maxlength?: number;
+    maxHeight?: number;
+  }>(),
+  {
+    maxHeight: 192,
+  }
+);
 
 const emit = defineEmits<{
   (event: "change", value: string): void;
@@ -189,6 +195,7 @@ const { renderedContent } = useRenderMarkdown(
   toRef(props, "project"),
   {
     placeholder: `<span>${t("issue.comment-editor.nothing-to-preview")}</span>`,
+    maxHeight: props.maxHeight,
   }
 );
 

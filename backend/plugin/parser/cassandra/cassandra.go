@@ -1,14 +1,29 @@
-package cosmosdb
+package cassandra
 
 import (
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/cosmosdb"
+	"github.com/bytebase/parser/cql"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/utils"
 )
+
+func init() {
+	base.RegisterParseFunc(storepb.Engine_CASSANDRA, parseCassandraForRegistry)
+}
+
+// parseCassandraForRegistry is the ParseFunc for Cassandra.
+// Returns []*ParseResult on success.
+func parseCassandraForRegistry(statement string) (any, error) {
+	result, err := ParseCassandraSQL(statement)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
 
 type ParseResult struct {
 	Tree     antlr.Tree
@@ -16,9 +31,8 @@ type ParseResult struct {
 	BaseLine int
 }
 
-// ParseCosmosDBQuery parses the given CosmosDB SQL statement by using antlr4. Returns a list of AST and token stream if no error.
-// Note: CosmosDB only supports single SELECT statements, so this will typically return a list with one element.
-func ParseCosmosDBQuery(statement string) ([]*ParseResult, error) {
+// ParseCassandraSQL parses the given CQL statement by using antlr4. Returns a list of AST and token stream if no error.
+func ParseCassandraSQL(statement string) ([]*ParseResult, error) {
 	stmts, err := SplitSQL(statement)
 	if err != nil {
 		return nil, err
@@ -30,7 +44,7 @@ func ParseCosmosDBQuery(statement string) ([]*ParseResult, error) {
 			continue
 		}
 
-		parseResult, err := parseSingleCosmosDBQuery(stmt.Text, stmt.BaseLine)
+		parseResult, err := parseSingleCassandraSQL(stmt.Text, stmt.BaseLine)
 		if err != nil {
 			return nil, err
 		}
@@ -40,12 +54,12 @@ func ParseCosmosDBQuery(statement string) ([]*ParseResult, error) {
 	return result, nil
 }
 
-func parseSingleCosmosDBQuery(statement string, baseLine int) (*ParseResult, error) {
-	statement = strings.TrimRightFunc(statement, utils.IsSpaceOrSemicolon)
+func parseSingleCassandraSQL(statement string, baseLine int) (*ParseResult, error) {
+	statement = strings.TrimRightFunc(statement, utils.IsSpaceOrSemicolon) + "\n;"
 	inputStream := antlr.NewInputStream(statement)
-	lexer := parser.NewCosmosDBLexer(inputStream)
+	lexer := cql.NewCqlLexer(inputStream)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	p := parser.NewCosmosDBParser(stream)
+	p := cql.NewCqlParser(stream)
 
 	// Remove default error listener and add our own error listener.
 	lexer.RemoveErrorListeners()

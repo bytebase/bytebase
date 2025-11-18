@@ -17,8 +17,8 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -48,7 +48,7 @@ func (*TableMaximumVarcharLengthAdvisor) Check(_ context.Context, checkCtx advis
 	}
 
 	// Create the rule
-	rule := NewTableTextFieldsTotalLengthRule(level, string(checkCtx.Rule.Type), checkCtx.FinalCatalog, payload.Number)
+	rule := NewTableTextFieldsTotalLengthRule(level, string(checkCtx.Rule.Type), checkCtx.FinalMetadata, payload.Number)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
@@ -65,19 +65,19 @@ func (*TableMaximumVarcharLengthAdvisor) Check(_ context.Context, checkCtx advis
 // TableTextFieldsTotalLengthRule checks for table text fields total length.
 type TableTextFieldsTotalLengthRule struct {
 	BaseRule
-	finalCatalog *catalog.DatabaseState
-	maximum      int
+	finalMetadata *model.DatabaseMetadata
+	maximum       int
 }
 
 // NewTableTextFieldsTotalLengthRule creates a new TableTextFieldsTotalLengthRule.
-func NewTableTextFieldsTotalLengthRule(level storepb.Advice_Status, title string, finalCatalog *catalog.DatabaseState, maximum int) *TableTextFieldsTotalLengthRule {
+func NewTableTextFieldsTotalLengthRule(level storepb.Advice_Status, title string, finalMetadata *model.DatabaseMetadata, maximum int) *TableTextFieldsTotalLengthRule {
 	return &TableTextFieldsTotalLengthRule{
 		BaseRule: BaseRule{
 			level: level,
 			title: title,
 		},
-		finalCatalog: finalCatalog,
-		maximum:      maximum,
+		finalMetadata: finalMetadata,
+		maximum:       maximum,
 	}
 }
 
@@ -116,7 +116,11 @@ func (r *TableTextFieldsTotalLengthRule) checkCreateTable(ctx *mysql.CreateTable
 	if tableName == "" {
 		return
 	}
-	tableInfo := r.finalCatalog.GetTable("", tableName)
+	schema := r.finalMetadata.GetSchema("")
+	if schema == nil {
+		return
+	}
+	tableInfo := schema.GetTable(tableName)
 	if tableInfo == nil {
 		return
 	}
@@ -150,7 +154,11 @@ func (r *TableTextFieldsTotalLengthRule) checkAlterTable(ctx *mysql.AlterTableCo
 	if tableName == "" {
 		return
 	}
-	tableInfo := r.finalCatalog.GetTable("", tableName)
+	schema := r.finalMetadata.GetSchema("")
+	if schema == nil {
+		return
+	}
+	tableInfo := schema.GetTable(tableName)
 	if tableInfo == nil {
 		return
 	}
@@ -166,11 +174,11 @@ func (r *TableTextFieldsTotalLengthRule) checkAlterTable(ctx *mysql.AlterTableCo
 	}
 }
 
-func getTotalTextLength(tableInfo *catalog.TableState) int64 {
+func getTotalTextLength(tableInfo *model.TableMetadata) int64 {
 	var total int64
-	columns := tableInfo.ListColumns()
+	columns := tableInfo.GetColumns()
 	for _, column := range columns {
-		total += getTextLength(column.Type())
+		total += getTextLength(column.Type)
 	}
 	return total
 }

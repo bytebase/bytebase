@@ -14,8 +14,8 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -45,7 +45,7 @@ func (*IndexPkTypeAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 	}
 
 	// Create the rule
-	rule := NewIndexPkTypeRule(level, string(checkCtx.Rule.Type), checkCtx.OriginCatalog)
+	rule := NewIndexPkTypeRule(level, string(checkCtx.Rule.Type), checkCtx.OriginalMetadata)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
@@ -63,19 +63,19 @@ func (*IndexPkTypeAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 type IndexPkTypeRule struct {
 	BaseRule
 	line             map[string]int
-	originCatalog    *catalog.DatabaseState
+	originalMetadata *model.DatabaseMetadata
 	tablesNewColumns tableColumnTypes
 }
 
 // NewIndexPkTypeRule creates a new IndexPkTypeRule.
-func NewIndexPkTypeRule(level storepb.Advice_Status, title string, originCatalog *catalog.DatabaseState) *IndexPkTypeRule {
+func NewIndexPkTypeRule(level storepb.Advice_Status, title string, originalMetadata *model.DatabaseMetadata) *IndexPkTypeRule {
 	return &IndexPkTypeRule{
 		BaseRule: BaseRule{
 			level: level,
 			title: title,
 		},
 		line:             make(map[string]int),
-		originCatalog:    originCatalog,
+		originalMetadata: originalMetadata,
 		tablesNewColumns: make(tableColumnTypes),
 	}
 }
@@ -238,9 +238,9 @@ func (r *IndexPkTypeRule) getPKColumnType(tableName string, columnName string) (
 	if columnType, ok := r.tablesNewColumns.get(tableName, columnName); ok {
 		return columnType, nil
 	}
-	column := r.originCatalog.GetColumn("", tableName, columnName)
+	column := r.originalMetadata.GetSchema("").GetTable(tableName).GetColumn(columnName)
 	if column != nil {
-		return column.Type(), nil
+		return column.Type, nil
 	}
 	return "", errors.Errorf("cannot find the type of `%s`.`%s`", tableName, columnName)
 }

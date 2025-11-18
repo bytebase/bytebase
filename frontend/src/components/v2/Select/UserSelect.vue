@@ -12,7 +12,6 @@
     :placeholder="$t('settings.members.select-user', multiple ? 2 : 1)"
     :filter="filterByEmail"
     :show-resource-name="false"
-    class="bb-user-select"
     @search="handleSearch"
     @update:value="(val) => $emit('update:user', val)"
     @update:values="(val) => $emit('update:users', val)"
@@ -22,20 +21,11 @@
 <script lang="tsx" setup>
 import { useDebounceFn } from "@vueuse/core";
 import { computed, onMounted, reactive, watch } from "vue";
-import { useI18n } from "vue-i18n";
-import ServiceAccountTag from "@/components/misc/ServiceAccountTag.vue";
-import UserAvatar from "@/components/User/UserAvatar.vue";
+import { UserNameCell } from "@/components/v2/Model/cells";
 import { extractUserId, type UserFilter, useUserStore } from "@/store";
-import {
-  allUsersUser,
-  DEBOUNCE_SEARCH_DELAY,
-  isValidUserName,
-  SYSTEM_BOT_USER_NAME,
-  UNKNOWN_USER_NAME,
-} from "@/types";
+import { allUsersUser, DEBOUNCE_SEARCH_DELAY, isValidUserName } from "@/types";
 import { type User, UserType } from "@/types/proto-es/v1/user_service_pb";
 import { ensureUserFullName, getDefaultPagination } from "@/utils";
-import UserIcon from "~icons/heroicons-outline/user";
 import ResourceSelect from "./ResourceSelect.vue";
 
 const props = withDefaults(
@@ -76,7 +66,6 @@ interface LocalState {
   rawUserList: User[];
 }
 
-const { t } = useI18n();
 const userStore = useUserStore();
 const state = reactive<LocalState>({
   loading: false,
@@ -148,42 +137,21 @@ onMounted(async () => {
   await handleSearch("");
 });
 
-const renderAvatar = (user: User) => {
-  if (user.name === UNKNOWN_USER_NAME) {
-    return (
-      <div class="bb-user-select--avatar w-6 h-6 rounded-full border-2 border-current flex justify-center items-center select-none bg-white">
-        <UserIcon class="w-4 h-4 text-main text-current" />
-      </div>
-    );
-  } else {
-    return (
-      <UserAvatar class="bb-user-select--avatar" user={user} size="SMALL" />
-    );
-  }
-};
-
 const renderLabel = (user: User) => {
-  const avatar = renderAvatar(user);
-  const title =
-    user.name === SYSTEM_BOT_USER_NAME
-      ? t("settings.members.system-bot")
-      : user.title;
-  const children = [<span class="truncate">{title}</span>];
-  if (user.name !== UNKNOWN_USER_NAME && user.name !== SYSTEM_BOT_USER_NAME) {
-    children.push(
-      <span class="text-gray-400 truncate">{`(${user.email})`}</span>
-    );
-  }
-  if (user.userType === UserType.SERVICE_ACCOUNT) {
-    children.push(<ServiceAccountTag />);
-  }
   return (
-    <div class="w-full flex items-center gap-x-2">
-      {avatar}
-      <div class="flex flex-row justify-start items-center gap-x-0.5 truncate">
-        {children}
-      </div>
-    </div>
+    <UserNameCell
+      user={user}
+      allowEdit={false}
+      size="small"
+      onClickUser={() => {}}
+    >
+      {{
+        suffix: () => (
+          <span class="textinfolabel truncate">{`(${user.email})`}</span>
+        ),
+        footer: () => <div />,
+      }}
+    </UserNameCell>
   );
 };
 
@@ -227,9 +195,3 @@ watch(
   }
 );
 </script>
-
-<style lang="postcss" scoped>
-.bb-user-select :deep(.n-base-selection--active .bb-user-select--avatar) {
-  opacity: 0.3;
-}
-</style>

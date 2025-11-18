@@ -507,6 +507,13 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 		}
 	}
 
+	// Drop extensions (after enum types and tables)
+	for _, extDiff := range diff.ExtensionChanges {
+		if extDiff.Action == schema.MetadataDiffActionDrop {
+			writeDropExtension(buf, extDiff.ExtensionName)
+		}
+	}
+
 	// Drop sequences - prioritize sequences in schemas being dropped
 	var sequencesInDroppedSchemas []string
 	var otherSequences []string
@@ -629,6 +636,24 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 	// Add blank line after schema creation only if we have schemas and more content follows
 	if len(schemasToCreate) > 0 && (hasCreateOrAlterTables(diff) || hasCreateViewsOrFunctions(diff)) {
 		_, _ = buf.WriteString("\n")
+	}
+
+	// Create extensions (before enum types and tables as they might provide types used in definitions)
+	for _, extDiff := range diff.ExtensionChanges {
+		if extDiff.Action == schema.MetadataDiffActionCreate {
+			// Support both metadata and AST-only modes
+			if extDiff.NewExtension != nil {
+				// Metadata mode: use extension metadata
+				if err := writeCreateExtension(buf, extDiff.NewExtension); err != nil {
+					return err
+				}
+			} else if extDiff.NewASTNode != nil {
+				// AST-only mode: extract SQL from AST node
+				if err := writeMigrationExtensionFromAST(buf, extDiff.NewASTNode); err != nil {
+					return err
+				}
+			}
+		}
 	}
 
 	// Create enum types (before tables as they might be used in column definitions)
@@ -1894,6 +1919,67 @@ func writeCreateEnumType(out *strings.Builder, schema string, enum *storepb.Enum
 	_, _ = out.WriteString(");")
 	_, _ = out.WriteString("\n")
 	return nil
+}
+
+func writeDropExtension(out *strings.Builder, extensionName string) {
+	_, _ = out.WriteString(`DROP EXTENSION IF EXISTS "`)
+	_, _ = out.WriteString(extensionName)
+	_, _ = out.WriteString(`";`)
+	_, _ = out.WriteString("\n")
+}
+
+func writeCreateExtension(out *strings.Builder, extension *storepb.ExtensionMetadata) error {
+	_, _ = out.WriteString(`CREATE EXTENSION IF NOT EXISTS "`)
+	_, _ = out.WriteString(extension.Name)
+	_, _ = out.WriteString(`"`)
+
+	// Add WITH SCHEMA clause if schema is specified
+	if extension.Schema != "" {
+		_, _ = out.WriteString(` WITH SCHEMA "`)
+		_, _ = out.WriteString(extension.Schema)
+		_, _ = out.WriteString(`"`)
+	}
+
+	// Add VERSION clause if version is specified
+	if extension.Version != "" {
+		_, _ = out.WriteString(` VERSION '`)
+		_, _ = out.WriteString(extension.Version)
+		_, _ = out.WriteString(`'`)
+	}
+
+	_, _ = out.WriteString(`;`)
+	_, _ = out.WriteString("\n")
+
+	// Write description (comment) if present
+	if extension.Description != "" {
+		writeCommentOnExtension(out, extension.Name, extension.Description)
+	}
+
+	return nil
+}
+
+func writeMigrationExtensionFromAST(out *strings.Builder, astNode any) error {
+	if astNode == nil {
+		return errors.New("AST node is nil")
+	}
+
+	// Try to cast to PostgreSQL CreateextensionstmtContext
+	if ctx, ok := astNode.(*pgparser.CreateextensionstmtContext); ok {
+		// Get text using token stream
+		if stream := ctx.GetParser().GetTokenStream(); stream != nil {
+			text := stream.GetTextFromInterval(antlr.Interval{
+				Start: ctx.GetStart().GetTokenIndex(),
+				Stop:  ctx.GetStop().GetTokenIndex(),
+			})
+			_, _ = out.WriteString(text)
+			_, _ = out.WriteString(";")
+			_, _ = out.WriteString("\n")
+			return nil
+		}
+		return errors.New("token stream not available for extension AST node")
+	}
+
+	return errors.Errorf("unexpected AST node type for extension: %T", astNode)
 }
 
 func writeCreateSchema(out *strings.Builder, schema string) error {
@@ -3397,6 +3483,23 @@ func writeCommentOnType(out *strings.Builder, schema, typeName, comment string) 
 	_, _ = out.WriteString("\n")
 }
 
+func writeCommentOnExtension(out *strings.Builder, extensionName, comment string) {
+	_, _ = out.WriteString(`COMMENT ON EXTENSION "`)
+	_, _ = out.WriteString(extensionName)
+	_, _ = out.WriteString(`" IS `)
+	if comment == "" {
+		_, _ = out.WriteString(`NULL`)
+	} else {
+		_, _ = out.WriteString(`'`)
+		// Escape single quotes in the comment
+		escapedComment := strings.ReplaceAll(comment, "'", "''")
+		_, _ = out.WriteString(escapedComment)
+		_, _ = out.WriteString(`'`)
+	}
+	_, _ = out.WriteString(`;`)
+	_, _ = out.WriteString("\n")
+}
+
 // generateCommentChangesFromSDL generates COMMENT ON statements from SDL-based comment diffs
 // This handles comment changes detected from SDL diff mode (AST-based)
 func generateCommentChangesFromSDL(buf *strings.Builder, diff *schema.MetadataDiff) error {
@@ -3521,6 +3624,10 @@ func generateCommentChangesFromSDL(buf *strings.Builder, diff *schema.MetadataDi
 		case schema.CommentObjectTypeType:
 			// COMMENT ON TYPE (for enum types)
 			writeCommentOnType(buf, commentDiff.SchemaName, commentDiff.ObjectName, newComment)
+
+		case schema.CommentObjectTypeExtension:
+			// COMMENT ON EXTENSION
+			writeCommentOnExtension(buf, commentDiff.ObjectName, newComment)
 
 		default:
 			// Unknown object type, skip

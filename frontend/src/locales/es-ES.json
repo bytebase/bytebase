@@ -410,7 +410,6 @@
       "subscription": "(Actualice para habilitar la gestión de roles)"
     },
     "members": {
-      "inactive": "Inactivo",
       "inactive-users": "Usuarios inactivos",
       "table": {
         "account": "Cuenta",
@@ -739,7 +738,11 @@
         "description": "Utilice una regla global para aplicar el enmascaramiento en lote, por ejemplo, todas las columnas denominadas \"correo electrónico\" se enmascararán con el tipo semántico específico y se aplicará el algoritmo de enmascaramiento.",
         "condition-order": "Orden de condición",
         "re-order": "Reordenar",
-        "delete-rule-tip": "¿Eliminar esta regla?"
+        "delete-rule-tip": "¿Eliminar esta regla?",
+        "error": {
+          "missing-semantic-type": "Se requiere el tipo semántico.",
+          "invalid-condition": "La condición no es válida."
+        }
       },
       "semantic-types": {
         "self": "Tipos Semánticos",
@@ -1189,6 +1192,7 @@
     "task-execution-notices": "Avisos de ejecución de tareas",
     "task-execution-errors": "Errores de ejecución de tareas",
     "no-active-task-to-cancel": "No hay ninguna tarea activa para cancelar.",
+    "no-runnable-task": "No hay ninguna tarea ejecutable disponible.",
     "automatic-rollout": {
       "description": "Este entorno tiene habilitada la implementación automática."
     },

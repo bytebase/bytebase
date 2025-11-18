@@ -67,7 +67,7 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor
 
 	// Check if backup schema exists
 	schemaName := common.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES)
-	if !checkCtx.OriginCatalog.HasSchema(schemaName) {
+	if checkCtx.OriginalMetadata.GetSchema(schemaName) == nil {
 		adviceList = append(adviceList, &storepb.Advice{
 			Status:        level,
 			Title:         title,

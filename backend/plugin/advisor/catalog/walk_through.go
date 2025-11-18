@@ -2,13 +2,13 @@ package catalog
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 const (
@@ -92,9 +92,9 @@ func (e *WalkThroughError) Error() string {
 	return e.Content
 }
 
-// WalkThrough will collect the catalog schema in the databaseState as it walks through the stmt.
-func WalkThrough(d *DatabaseState, ast any) error {
-	switch d.dbType {
+// WalkThrough will collect the catalog schema in the database metadata as it walks through the stmt.
+func WalkThrough(d *model.DatabaseMetadata, engineType storepb.Engine, ast any) error {
+	switch engineType {
 	case storepb.Engine_TIDB:
 		return TiDBWalkThrough(d, ast)
 	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
@@ -102,7 +102,7 @@ func WalkThrough(d *DatabaseState, ast any) error {
 	case storepb.Engine_POSTGRES:
 		return PgWalkThrough(d, ast)
 	default:
-		return errors.Errorf("Walk-through doesn't support engine type: %s", d.dbType)
+		return errors.Errorf("Walk-through doesn't support engine type: %s", engineType)
 	}
 }
 
@@ -114,126 +114,7 @@ func compareIdentifier(a, b string, ignoreCaseSensitive bool) bool {
 	return a == b
 }
 
-// isCurrentDatabase returns true if the given database is the current database of the state.
-func (d *DatabaseState) isCurrentDatabase(database string) bool {
-	return compareIdentifier(d.name, database, d.ignoreCaseSensitive)
-}
-
-// mysqlGetTable returns the table with the given name if it exists in the schema.
-// It performs case-insensitive comparison for MySQL/TiDB.
-func mysqlGetTable(s *SchemaState, table string) (*TableState, bool) {
-	for k, v := range s.tableSet {
-		if compareIdentifier(k, table, s.ignoreCaseSensitive) {
-			return v, true
-		}
-	}
-
-	return nil, false
-}
-
-func mysqlRenameTable(s *SchemaState, oldName string, newName string) *WalkThroughError {
-	if oldName == newName {
-		return nil
-	}
-
-	table, exists := mysqlGetTable(s, oldName)
-	if !exists {
-		return &WalkThroughError{
-			Code:    code.TableNotExists,
-			Content: fmt.Sprintf("Table `%s` does not exist", oldName),
-		}
-	}
-
-	if _, exists := mysqlGetTable(s, newName); exists {
-		return &WalkThroughError{
-			Code:    code.TableExists,
-			Content: fmt.Sprintf("Table `%s` already exists", newName),
-		}
-	}
-
-	table.name = newName
-	delete(s.tableSet, oldName)
-	s.tableSet[newName] = table
-	return nil
-}
-
-// PostgreSQL-specific helper methods.
-
-func parseViewName(viewName string) (string, string, error) {
-	pattern := `^"(.+?)"\."(.+?)"$`
-
-	re := regexp.MustCompile(pattern)
-
-	match := re.FindStringSubmatch(viewName)
-
-	if len(match) != 3 {
-		return "", "", errors.Errorf("invalid view name: %s", viewName)
-	}
-
-	return match[1], match[2], nil
-}
-
-func (d *DatabaseState) existedViewList(viewMap map[string]bool) ([]string, error) {
-	var result []string
-	for viewName := range viewMap {
-		schemaName, viewName, err := parseViewName(viewName)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to check view dependency")
-		}
-		schemaMeta, exists := d.schemaSet[schemaName]
-		if !exists {
-			continue
-		}
-		if _, exists := schemaMeta.viewSet[viewName]; !exists {
-			continue
-		}
-
-		result = append(result, fmt.Sprintf("%q.%q", schemaName, viewName))
-	}
-	return result, nil
-}
-
-func (s *SchemaState) pgGeneratePrimaryKeyName(tableName string) string {
-	pkName := fmt.Sprintf("%s_pkey", tableName)
-	if _, exists := s.identifierMap[pkName]; !exists {
-		return pkName
-	}
-	suffix := 1
-	for {
-		if _, exists := s.identifierMap[fmt.Sprintf("%s%d", pkName, suffix)]; !exists {
-			return fmt.Sprintf("%s%d", pkName, suffix)
-		}
-		suffix++
-	}
-}
-
-func (d *DatabaseState) getOrCreatePublicSchema(schemaName string) (*SchemaState, *WalkThroughError) {
-	if schemaName == "" {
-		schemaName = publicSchemaName
-	}
-
-	schema, err := d.GetSchema(schemaName)
-	if err == nil {
-		return schema, nil
-	}
-
-	// Only auto-create the "public" schema
-	if schemaName != publicSchemaName {
-		return nil, err
-	}
-
-	return d.CreateSchema(publicSchemaName), nil
-}
-
-func (s *SchemaState) getIndex(indexName string) (*TableState, *IndexState, *WalkThroughError) {
-	for _, table := range s.tableSet {
-		if index, exists := table.indexSet[indexName]; exists {
-			return table, index, nil
-		}
-	}
-
-	return nil, nil, &WalkThroughError{
-		Code:    code.IndexNotExists,
-		Content: fmt.Sprintf("Index %q does not exists in schema %q", indexName, s.name),
-	}
+// isCurrentDatabase returns true if the given database is the current database.
+func isCurrentDatabase(d *model.DatabaseMetadata, database string) bool {
+	return compareIdentifier(d.DatabaseName(), database, !d.GetIsObjectCaseSensitive())
 }

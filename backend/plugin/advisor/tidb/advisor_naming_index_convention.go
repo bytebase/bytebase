@@ -12,8 +12,8 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -46,12 +46,12 @@ func (*NamingIndexConventionAdvisor) Check(_ context.Context, checkCtx advisor.C
 		return nil, err
 	}
 	checker := &namingIndexConventionChecker{
-		level:         level,
-		title:         string(checkCtx.Rule.Type),
-		format:        format,
-		maxLength:     maxLength,
-		templateList:  templateList,
-		originCatalog: checkCtx.OriginCatalog,
+		level:            level,
+		title:            string(checkCtx.Rule.Type),
+		format:           format,
+		maxLength:        maxLength,
+		templateList:     templateList,
+		originalMetadata: checkCtx.OriginalMetadata,
 	}
 	for _, stmtNode := range root {
 		(stmtNode).Accept(checker)
@@ -61,13 +61,13 @@ func (*NamingIndexConventionAdvisor) Check(_ context.Context, checkCtx advisor.C
 }
 
 type namingIndexConventionChecker struct {
-	adviceList    []*storepb.Advice
-	level         storepb.Advice_Status
-	title         string
-	format        string
-	maxLength     int
-	templateList  []string
-	originCatalog *catalog.DatabaseState
+	adviceList       []*storepb.Advice
+	level            storepb.Advice_Status
+	title            string
+	format           string
+	maxLength        int
+	templateList     []string
+	originalMetadata *model.DatabaseMetadata
 }
 
 // Enter implements the ast.Visitor interface.
@@ -151,7 +151,11 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 		for _, spec := range node.Specs {
 			switch spec.Tp {
 			case ast.AlterTableRenameIndex:
-				_, index := checker.originCatalog.GetIndex("", node.Table.Name.String(), spec.FromKey.String())
+				schema := checker.originalMetadata.GetSchema("")
+				var index *model.IndexMetadata
+				if schema != nil {
+					index = schema.GetIndex(spec.FromKey.String())
+				}
 				if index == nil {
 					continue
 				}

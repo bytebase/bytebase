@@ -40,6 +40,7 @@
             :content="item.comment.comment"
             :project="project"
             :maxlength="65536"
+            :max-height="Number.MAX_SAFE_INTEGER"
             @change="(val: string) => (state.editComment = val)"
             @submit="doUpdateComment"
           />

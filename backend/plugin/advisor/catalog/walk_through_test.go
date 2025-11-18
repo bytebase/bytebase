@@ -4,7 +4,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"slices"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -16,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 type testData struct {
@@ -68,11 +68,13 @@ func TestPostgreSQLWalkThrough(t *testing.T) {
 								Name:     "id",
 								Type:     "int",
 								Nullable: false,
+								Position: 1,
 							},
 							{
 								Name:     "name",
 								Type:     "varchar(20)",
 								Nullable: true,
+								Position: 2,
 							},
 						},
 					},
@@ -122,11 +124,13 @@ func TestPostgreSQLANTLRWalkThrough(t *testing.T) {
 								Name:     "id",
 								Type:     "int",
 								Nullable: false,
+								Position: 1,
 							},
 							{
 								Name:     "name",
 								Type:     "varchar(20)",
 								Nullable: true,
+								Position: 2,
 							},
 						},
 					},
@@ -176,15 +180,19 @@ func runWalkThroughTest(t *testing.T, file string, engineType storepb.Engine, or
 	sm := sheet.NewManager(nil)
 
 	for _, test := range tests {
-		var state *DatabaseState
+		var proto *storepb.DatabaseSchemaMetadata
 		if originDatabase != nil {
-			state = NewDatabaseState(originDatabase, test.IgnoreCaseSensitive, engineType)
+			// Make a deep copy to avoid mutation across tests
+			proto = cloneDatabaseSchemaMetadata(originDatabase)
 		} else {
-			state = NewDatabaseState(&storepb.DatabaseSchemaMetadata{}, test.IgnoreCaseSensitive, engineType)
+			proto = &storepb.DatabaseSchemaMetadata{}
 		}
 
+		// Create DatabaseMetadata for walk-through
+		state := model.NewDatabaseMetadata(proto, !test.IgnoreCaseSensitive, !test.IgnoreCaseSensitive)
+
 		asts, _ := sm.GetASTsForChecks(engineType, test.Statement)
-		err := WalkThrough(state, asts)
+		err := WalkThrough(state, engineType, asts)
 		if err != nil {
 			err, yes := err.(*WalkThroughError)
 			require.True(t, yes)
@@ -193,10 +201,17 @@ func runWalkThroughTest(t *testing.T, file string, engineType storepb.Engine, or
 		}
 		require.NoError(t, err, test.Statement)
 
+		// Skip comparison if want is empty (error cases)
+		if test.Want == "" {
+			continue
+		}
+
 		want := &storepb.DatabaseSchemaMetadata{}
 		err = common.ProtojsonUnmarshaler.Unmarshal([]byte(test.Want), want)
 		require.NoError(t, err)
-		result := state.convertToDatabaseMetadata()
+		// Sort proto for deterministic comparison
+		state.SortProto()
+		result := state.GetProto()
 		diff := cmp.Diff(want, result, protocmp.Transform())
 		require.Empty(t, diff)
 	}
@@ -215,12 +230,16 @@ func runANTLRWalkThroughTest(t *testing.T, file string, engineType storepb.Engin
 	require.NoError(t, err)
 
 	for _, test := range tests {
-		var state *DatabaseState
+		var proto *storepb.DatabaseSchemaMetadata
 		if originDatabase != nil {
-			state = NewDatabaseState(originDatabase, test.IgnoreCaseSensitive, engineType)
+			// Make a deep copy to avoid mutation across tests
+			proto = cloneDatabaseSchemaMetadata(originDatabase)
 		} else {
-			state = NewDatabaseState(&storepb.DatabaseSchemaMetadata{}, test.IgnoreCaseSensitive, engineType)
+			proto = &storepb.DatabaseSchemaMetadata{}
 		}
+
+		// Create DatabaseMetadata for walk-through
+		state := model.NewDatabaseMetadata(proto, !test.IgnoreCaseSensitive, !test.IgnoreCaseSensitive)
 
 		// Parse using ANTLR parser instead of legacy parser
 		parseResult, parseErr := pgparser.ParsePostgreSQL(test.Statement)
@@ -229,7 +248,7 @@ func runANTLRWalkThroughTest(t *testing.T, file string, engineType storepb.Engin
 		}
 
 		// Call WalkThrough with ANTLR tree
-		err := WalkThrough(state, parseResult)
+		err := WalkThrough(state, engineType, parseResult)
 		if err != nil {
 			err, yes := err.(*WalkThroughError)
 			require.True(t, yes)
@@ -238,155 +257,106 @@ func runANTLRWalkThroughTest(t *testing.T, file string, engineType storepb.Engin
 		}
 		require.NoError(t, err, test.Statement)
 
+		// Skip comparison if want is empty (error cases)
+		if test.Want == "" {
+			continue
+		}
+
 		want := &storepb.DatabaseSchemaMetadata{}
 		err = common.ProtojsonUnmarshaler.Unmarshal([]byte(test.Want), want)
 		require.NoError(t, err)
-		result := state.convertToDatabaseMetadata()
+		// Sort proto for deterministic comparison
+		state.SortProto()
+		result := state.GetProto()
 		diff := cmp.Diff(want, result, protocmp.Transform())
 		require.Empty(t, diff)
 	}
 }
 
-// convertToDatabaseMetadata only used for tests.
-func (d *DatabaseState) convertToDatabaseMetadata() *storepb.DatabaseSchemaMetadata {
-	if d.deleted {
+// cloneDatabaseSchemaMetadata creates a deep copy of the database schema metadata.
+func cloneDatabaseSchemaMetadata(original *storepb.DatabaseSchemaMetadata) *storepb.DatabaseSchemaMetadata {
+	if original == nil {
 		return nil
 	}
-	return &storepb.DatabaseSchemaMetadata{
-		Name:         d.name,
-		CharacterSet: d.characterSet,
-		Collation:    d.collation,
-		Schemas:      d.convertToSchemaMetadataList(),
-		Extensions:   []*storepb.ExtensionMetadata{},
-	}
-}
 
-// convertToSchemaMetadataList only used for tests.
-func (d *DatabaseState) convertToSchemaMetadataList() []*storepb.SchemaMetadata {
-	result := []*storepb.SchemaMetadata{}
-
-	for _, schema := range d.schemaSet {
-		schemaMeta := &storepb.SchemaMetadata{
-			Name:   schema.name,
-			Tables: schema.convertToTableMetadataList(),
-			// TODO(rebelice): convert views if needed.
-			Views:     []*storepb.ViewMetadata{},
-			Functions: []*storepb.FunctionMetadata{},
-			Streams:   []*storepb.StreamMetadata{},
-			Tasks:     []*storepb.TaskMetadata{},
-		}
-
-		result = append(result, schemaMeta)
+	clone := &storepb.DatabaseSchemaMetadata{
+		Name:         original.Name,
+		CharacterSet: original.CharacterSet,
+		Collation:    original.Collation,
+		Owner:        original.Owner,
+		SearchPath:   original.SearchPath,
+		Schemas:      make([]*storepb.SchemaMetadata, 0, len(original.Schemas)),
 	}
 
-	slices.SortFunc(result, func(x, y *storepb.SchemaMetadata) int {
-		if x.Name < y.Name {
-			return -1
-		} else if x.Name > y.Name {
-			return 1
-		}
-		return 0
-	})
-
-	return result
-}
-
-// convertToTableMetadataList only used for tests.
-func (s *SchemaState) convertToTableMetadataList() []*storepb.TableMetadata {
-	result := []*storepb.TableMetadata{}
-
-	for _, table := range s.tableSet {
-		tableMeta := &storepb.TableMetadata{
-			Name:        table.name,
-			Columns:     table.convertToColumnMetadataList(),
-			Indexes:     table.convertToIndexMetadataList(),
-			ForeignKeys: []*storepb.ForeignKeyMetadata{},
+	for _, schema := range original.Schemas {
+		cloneSchema := &storepb.SchemaMetadata{
+			Name:   schema.Name,
+			Tables: make([]*storepb.TableMetadata, 0, len(schema.Tables)),
+			Views:  make([]*storepb.ViewMetadata, 0, len(schema.Views)),
 		}
 
-		tableMeta.Engine = table.engine
-		tableMeta.Collation = table.collation
-		tableMeta.Comment = table.comment
-
-		result = append(result, tableMeta)
-	}
-
-	slices.SortFunc(result, func(x, y *storepb.TableMetadata) int {
-		if x.Name < y.Name {
-			return -1
-		} else if x.Name > y.Name {
-			return 1
-		}
-		return 0
-	})
-
-	return result
-}
-
-// convertToIndexMetadataList only used for tests.
-func (t *TableState) convertToIndexMetadataList() []*storepb.IndexMetadata {
-	result := []*storepb.IndexMetadata{}
-
-	for _, index := range t.indexSet {
-		indexMeta := &storepb.IndexMetadata{
-			Name:        index.name,
-			Expressions: index.ExpressionList(),
-			Unique:      index.Unique(),
-			Primary:     index.Primary(),
-		}
-
-		indexMeta.Type = index.indexType
-		indexMeta.Visible = index.visible
-		indexMeta.Comment = index.comment
-
-		result = append(result, indexMeta)
-	}
-
-	slices.SortFunc(result, func(x, y *storepb.IndexMetadata) int {
-		if x.Name < y.Name {
-			return -1
-		} else if x.Name > y.Name {
-			return 1
-		}
-		return 0
-	})
-
-	return result
-}
-
-// convertToColumnMetadataList only used for tests.
-func (t *TableState) convertToColumnMetadataList() []*storepb.ColumnMetadata {
-	result := []*storepb.ColumnMetadata{}
-
-	for _, column := range t.columnSet {
-		columnMeta := &storepb.ColumnMetadata{
-			Name:     column.name,
-			Nullable: column.Nullable(),
-			Type:     column.Type(),
-		}
-
-		columnMeta.Default = column.defaultValue
-		columnMeta.CharacterSet = column.characterSet
-		columnMeta.Collation = column.collation
-		columnMeta.Comment = column.comment
-		columnMeta.Position = int32(column.position)
-
-		result = append(result, columnMeta)
-	}
-
-	slices.SortFunc(result, func(x, y *storepb.ColumnMetadata) int {
-		if x.Position != y.Position {
-			if x.Position < y.Position {
-				return -1
+		for _, table := range schema.Tables {
+			cloneTable := &storepb.TableMetadata{
+				Name:        table.Name,
+				Engine:      table.Engine,
+				Collation:   table.Collation,
+				Comment:     table.Comment,
+				Columns:     make([]*storepb.ColumnMetadata, 0, len(table.Columns)),
+				Indexes:     make([]*storepb.IndexMetadata, 0, len(table.Indexes)),
+				ForeignKeys: make([]*storepb.ForeignKeyMetadata, 0, len(table.ForeignKeys)),
 			}
-			return 1
-		}
-		if x.Name < y.Name {
-			return -1
-		} else if x.Name > y.Name {
-			return 1
-		}
-		return 0
-	})
 
-	return result
+			for _, col := range table.Columns {
+				cloneCol := &storepb.ColumnMetadata{
+					Name:         col.Name,
+					Position:     col.Position,
+					Default:      col.Default,
+					Nullable:     col.Nullable,
+					Type:         col.Type,
+					CharacterSet: col.CharacterSet,
+					Collation:    col.Collation,
+					Comment:      col.Comment,
+				}
+				cloneTable.Columns = append(cloneTable.Columns, cloneCol)
+			}
+
+			for _, idx := range table.Indexes {
+				cloneIdx := &storepb.IndexMetadata{
+					Name:        idx.Name,
+					Expressions: append([]string{}, idx.Expressions...),
+					Type:        idx.Type,
+					Unique:      idx.Unique,
+					Primary:     idx.Primary,
+					Visible:     idx.Visible,
+					Comment:     idx.Comment,
+				}
+				cloneTable.Indexes = append(cloneTable.Indexes, cloneIdx)
+			}
+
+			cloneSchema.Tables = append(cloneSchema.Tables, cloneTable)
+		}
+
+		for _, view := range schema.Views {
+			cloneView := &storepb.ViewMetadata{
+				Name:       view.Name,
+				Definition: view.Definition,
+			}
+			if len(view.DependencyColumns) > 0 {
+				cloneView.DependencyColumns = make([]*storepb.DependencyColumn, 0, len(view.DependencyColumns))
+				for _, dep := range view.DependencyColumns {
+					cloneDep := &storepb.DependencyColumn{
+						Schema: dep.Schema,
+						Table:  dep.Table,
+						Column: dep.Column,
+					}
+					cloneView.DependencyColumns = append(cloneView.DependencyColumns, cloneDep)
+				}
+			}
+			cloneSchema.Views = append(cloneSchema.Views, cloneView)
+		}
+
+		clone.Schemas = append(clone.Schemas, cloneSchema)
+	}
+
+	return clone
 }

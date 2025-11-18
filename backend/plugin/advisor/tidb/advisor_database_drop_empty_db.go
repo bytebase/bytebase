@@ -12,7 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -41,9 +41,9 @@ func (*DatabaseAllowDropIfEmptyAdvisor) Check(_ context.Context, checkCtx adviso
 	}
 
 	checker := &allowDropEmptyDBChecker{
-		level:         level,
-		title:         string(checkCtx.Rule.Type),
-		originCatalog: checkCtx.OriginCatalog,
+		level:            level,
+		title:            string(checkCtx.Rule.Type),
+		originalMetadata: checkCtx.OriginalMetadata,
 	}
 	for _, stmtNode := range root {
 		(stmtNode).Accept(checker)
@@ -53,24 +53,24 @@ func (*DatabaseAllowDropIfEmptyAdvisor) Check(_ context.Context, checkCtx adviso
 }
 
 type allowDropEmptyDBChecker struct {
-	adviceList    []*storepb.Advice
-	level         storepb.Advice_Status
-	title         string
-	originCatalog *catalog.DatabaseState
+	adviceList       []*storepb.Advice
+	level            storepb.Advice_Status
+	title            string
+	originalMetadata *model.DatabaseMetadata
 }
 
 // Enter implements the ast.Visitor interface.
 func (v *allowDropEmptyDBChecker) Enter(in ast.Node) (ast.Node, bool) {
 	if node, ok := in.(*ast.DropDatabaseStmt); ok {
-		if v.originCatalog.DatabaseName() != node.Name.O {
+		if v.originalMetadata.DatabaseName() != node.Name.O {
 			v.adviceList = append(v.adviceList, &storepb.Advice{
 				Status:        v.level,
 				Code:          code.NotCurrentDatabase.Int32(),
 				Title:         v.title,
-				Content:       fmt.Sprintf("Database `%s` that is trying to be deleted is not the current database `%s`", node.Name, v.originCatalog.DatabaseName()),
+				Content:       fmt.Sprintf("Database `%s` that is trying to be deleted is not the current database `%s`", node.Name, v.originalMetadata.DatabaseName()),
 				StartPosition: common.ConvertANTLRLineToPosition(node.OriginTextPosition()),
 			})
-		} else if !v.originCatalog.HasNoTable() {
+		} else if !v.originalMetadata.HasNoTable() {
 			v.adviceList = append(v.adviceList, &storepb.Advice{
 				Status:        v.level,
 				Code:          code.DatabaseNotEmpty.Int32(),

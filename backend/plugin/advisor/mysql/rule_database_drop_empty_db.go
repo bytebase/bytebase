@@ -13,8 +13,8 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -44,7 +44,7 @@ func (*DatabaseAllowDropIfEmptyAdvisor) Check(_ context.Context, checkCtx adviso
 	}
 
 	// Create the rule
-	rule := NewDatabaseDropEmptyDBRule(level, string(checkCtx.Rule.Type), checkCtx.OriginCatalog)
+	rule := NewDatabaseDropEmptyDBRule(level, string(checkCtx.Rule.Type), checkCtx.OriginalMetadata)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
@@ -61,17 +61,17 @@ func (*DatabaseAllowDropIfEmptyAdvisor) Check(_ context.Context, checkCtx adviso
 // DatabaseDropEmptyDBRule checks for drop database only if empty.
 type DatabaseDropEmptyDBRule struct {
 	BaseRule
-	originCatalog *catalog.DatabaseState
+	originMetadata *model.DatabaseMetadata
 }
 
 // NewDatabaseDropEmptyDBRule creates a new DatabaseDropEmptyDBRule.
-func NewDatabaseDropEmptyDBRule(level storepb.Advice_Status, title string, originCatalog *catalog.DatabaseState) *DatabaseDropEmptyDBRule {
+func NewDatabaseDropEmptyDBRule(level storepb.Advice_Status, title string, originMetadata *model.DatabaseMetadata) *DatabaseDropEmptyDBRule {
 	return &DatabaseDropEmptyDBRule{
 		BaseRule: BaseRule{
 			level: level,
 			title: title,
 		},
-		originCatalog: originCatalog,
+		originMetadata: originMetadata,
 	}
 }
 
@@ -102,15 +102,15 @@ func (r *DatabaseDropEmptyDBRule) checkDropDatabase(ctx *mysql.DropDatabaseConte
 	}
 
 	dbName := mysqlparser.NormalizeMySQLSchemaRef(ctx.SchemaRef())
-	if r.originCatalog.DatabaseName() != dbName {
+	if r.originMetadata.DatabaseName() != dbName {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
 			Code:          code.NotCurrentDatabase.Int32(),
 			Title:         r.title,
-			Content:       fmt.Sprintf("Database `%s` that is trying to be deleted is not the current database `%s`", dbName, r.originCatalog.DatabaseName()),
+			Content:       fmt.Sprintf("Database `%s` that is trying to be deleted is not the current database `%s`", dbName, r.originMetadata.DatabaseName()),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
 		})
-	} else if !r.originCatalog.HasNoTable() {
+	} else if !r.originMetadata.HasNoTable() {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
 			Code:          code.DatabaseNotEmpty.Int32(),

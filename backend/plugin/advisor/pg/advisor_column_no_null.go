@@ -11,9 +11,9 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -45,8 +45,8 @@ func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) (
 			level: level,
 			title: string(checkCtx.Rule.Type),
 		},
-		originCatalog:   checkCtx.OriginCatalog,
-		nullableColumns: make(columnMap),
+		originalMetadata: checkCtx.OriginalMetadata,
+		nullableColumns:  make(columnMap),
 	}
 
 	checker := NewGenericChecker([]Rule{rule})
@@ -74,8 +74,8 @@ type columnMap map[columnName]int
 type columnNoNullRule struct {
 	BaseRule
 
-	originCatalog   *catalog.DatabaseState
-	nullableColumns columnMap
+	originalMetadata *model.DatabaseMetadata
+	nullableColumns  columnMap
 }
 
 func (*columnNoNullRule) Name() string {
@@ -307,8 +307,15 @@ func (r *columnNoNullRule) removeColumnByTableConstraint(schema, table string, c
 		if existingIndex.Name() != nil {
 			indexName := pg.NormalizePostgreSQLName(existingIndex.Name())
 			// Try to find index in catalog
-			if r.originCatalog != nil {
-				_, index := r.originCatalog.GetIndex(schema, table, indexName)
+			if r.originalMetadata != nil {
+				dbSchema := r.originalMetadata.GetSchema(schema)
+				var index *model.IndexMetadata
+				if dbSchema != nil {
+					dbTable := dbSchema.GetTable(table)
+					if dbTable != nil {
+						index = dbTable.GetIndex(indexName)
+					}
+				}
 				if index != nil {
 					for _, expression := range index.ExpressionList() {
 						r.removeColumn(schema, table, expression)

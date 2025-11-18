@@ -14,7 +14,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -43,10 +43,10 @@ func (*ColumnDisallowDropInIndexAdvisor) Check(_ context.Context, checkCtx advis
 	}
 
 	checker := &columnDisallowDropInIndexChecker{
-		level:         level,
-		title:         string(checkCtx.Rule.Type),
-		tables:        make(tableState),
-		originCatalog: checkCtx.OriginCatalog,
+		level:            level,
+		title:            string(checkCtx.Rule.Type),
+		tables:           make(tableState),
+		originalMetadata: checkCtx.OriginalMetadata,
 	}
 
 	for _, stmt := range stmtList {
@@ -59,13 +59,13 @@ func (*ColumnDisallowDropInIndexAdvisor) Check(_ context.Context, checkCtx advis
 }
 
 type columnDisallowDropInIndexChecker struct {
-	adviceList    []*storepb.Advice
-	level         storepb.Advice_Status
-	title         string
-	text          string
-	tables        tableState // the variable mean whether the column in index.
-	originCatalog *catalog.DatabaseState
-	line          int
+	adviceList       []*storepb.Advice
+	level            storepb.Advice_Status
+	title            string
+	text             string
+	tables           tableState // the variable mean whether the column in index.
+	originalMetadata *model.DatabaseMetadata
+	line             int
 }
 
 func (checker *columnDisallowDropInIndexChecker) Enter(in ast.Node) (ast.Node, bool) {
@@ -88,13 +88,12 @@ func (checker *columnDisallowDropInIndexChecker) dropColumn(in ast.Node) (ast.No
 			if spec.Tp == ast.AlterTableDropColumn {
 				table := node.Table.Name.O
 
-				index := checker.originCatalog.Index("", table)
-
-				if index != nil {
+				tableMetadata := checker.originalMetadata.GetSchema("").GetTable(table)
+				if tableMetadata != nil {
 					if checker.tables[table] == nil {
 						checker.tables[table] = make(columnSet)
 					}
-					for _, indexColumn := range *index {
+					for _, indexColumn := range tableMetadata.ListIndexes() {
 						for _, column := range indexColumn.ExpressionList() {
 							checker.tables[table][column] = true
 						}

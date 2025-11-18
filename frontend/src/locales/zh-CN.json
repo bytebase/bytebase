@@ -410,7 +410,6 @@
       "subscription": "（升级到付费方案来解锁角色管理）"
     },
     "members": {
-      "inactive": "未激活",
       "inactive-users": "未激活用户",
       "table": {
         "account": "账户",
@@ -739,7 +738,11 @@
         "description": "使用全局规则批量脱敏，例如所有名为「电子邮件」的列将被脱敏成特定语义类型，并应用对应的脱敏算法。",
         "condition-order": "条件序列",
         "re-order": "排序",
-        "delete-rule-tip": "删除这条规则？"
+        "delete-rule-tip": "删除这条规则？",
+        "error": {
+          "missing-semantic-type": "需要指定语义类型",
+          "invalid-condition": "规则的条件无效"
+        }
       },
       "semantic-types": {
         "self": "语义类型",
@@ -1189,6 +1192,7 @@
     "task-execution-notices": "任务执行提醒",
     "task-execution-errors": "任务执行警告",
     "no-active-task-to-cancel": "没有要取消的任务。",
+    "no-runnable-task": "没有可运行的任务。",
     "automatic-rollout": {
       "description": "此环境已启用自动部署。"
     },

@@ -410,7 +410,6 @@
       "subscription": "(有料プランにアップグレードするとキャラクター管理が可能になります)"
     },
     "members": {
-      "inactive": "非アクティブ",
       "inactive-users": "非アクティブユーザー",
       "table": {
         "account": "アカウント",
@@ -739,7 +738,11 @@
         "description": "グローバル ルールを使用してバッチでマスキングを適用します。たとえば、「email」という名前のすべての列は特定のセマンティック タイプでマスキングされ、マスキング アルゴリズムが適用されます。",
         "condition-order": "条件付きシーケンス",
         "re-order": "並び替え",
-        "delete-rule-tip": "このルールを削除しますか?"
+        "delete-rule-tip": "このルールを削除しますか?",
+        "error": {
+          "missing-semantic-type": "セマンティックタイプは必須です",
+          "invalid-condition": "条件が無効です"
+        }
       },
       "semantic-types": {
         "self": "セマンティックタイプ",
@@ -1189,6 +1192,7 @@
     "task-execution-notices": "タスク実行通知",
     "task-execution-errors": "タスク実行エラー",
     "no-active-task-to-cancel": "キャンセルするアクティブなタスクはありません。",
+    "no-runnable-task": "実行可能なタスクがありません。",
     "automatic-rollout": {
       "description": "この環境では自動ロールアウトが有効になっています。"
     },

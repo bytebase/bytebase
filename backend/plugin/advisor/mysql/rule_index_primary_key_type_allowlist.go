@@ -14,8 +14,8 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -52,7 +52,7 @@ func (*IndexPrimaryKeyTypeAllowlistAdvisor) Check(_ context.Context, checkCtx ad
 	}
 
 	// Create the rule
-	rule := NewIndexPrimaryKeyTypeAllowlistRule(level, string(checkCtx.Rule.Type), allowlist, checkCtx.OriginCatalog)
+	rule := NewIndexPrimaryKeyTypeAllowlistRule(level, string(checkCtx.Rule.Type), allowlist, checkCtx.OriginalMetadata)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
@@ -70,19 +70,19 @@ func (*IndexPrimaryKeyTypeAllowlistAdvisor) Check(_ context.Context, checkCtx ad
 type IndexPrimaryKeyTypeAllowlistRule struct {
 	BaseRule
 	allowlist        map[string]bool
-	originCatalog    *catalog.DatabaseState
+	originalMetadata *model.DatabaseMetadata
 	tablesNewColumns tableColumnTypes
 }
 
 // NewIndexPrimaryKeyTypeAllowlistRule creates a new IndexPrimaryKeyTypeAllowlistRule.
-func NewIndexPrimaryKeyTypeAllowlistRule(level storepb.Advice_Status, title string, allowlist map[string]bool, originCatalog *catalog.DatabaseState) *IndexPrimaryKeyTypeAllowlistRule {
+func NewIndexPrimaryKeyTypeAllowlistRule(level storepb.Advice_Status, title string, allowlist map[string]bool, originalMetadata *model.DatabaseMetadata) *IndexPrimaryKeyTypeAllowlistRule {
 	return &IndexPrimaryKeyTypeAllowlistRule{
 		BaseRule: BaseRule{
 			level: level,
 			title: title,
 		},
 		allowlist:        allowlist,
-		originCatalog:    originCatalog,
+		originalMetadata: originalMetadata,
 		tablesNewColumns: make(tableColumnTypes),
 	}
 }
@@ -252,9 +252,9 @@ func (r *IndexPrimaryKeyTypeAllowlistRule) getPKColumnType(tableName string, col
 	if columnType, ok := r.tablesNewColumns.get(tableName, columnName); ok {
 		return columnType, nil
 	}
-	column := r.originCatalog.GetColumn("", tableName, columnName)
+	column := r.originalMetadata.GetSchema("").GetTable(tableName).GetColumn(columnName)
 	if column != nil {
-		return column.Type(), nil
+		return column.Type, nil
 	}
 	return "", errors.Errorf("cannot find the type of `%s`.`%s`", tableName, columnName)
 }

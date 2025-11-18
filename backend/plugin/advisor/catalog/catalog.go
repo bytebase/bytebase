@@ -2,30 +2,43 @@
 package catalog
 
 import (
-	"context"
+	"errors"
+
+	"google.golang.org/protobuf/proto"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-// NewCatalog creates origin and final database catalog states.
-func NewCatalog(ctx context.Context, s *store.Store, instanceID, databaseName string, engineType storepb.Engine, isCaseSensitive bool, overrideDatabaseMetadata *storepb.DatabaseSchemaMetadata) (origin *DatabaseState, final *DatabaseState, err error) {
-	dbMetadata := overrideDatabaseMetadata
-	if dbMetadata == nil {
-		databaseMeta, err := s.GetDBSchema(ctx, &store.FindDBSchemaMessage{
-			InstanceID:   instanceID,
-			DatabaseName: databaseName,
-		})
-		if err != nil {
-			return nil, nil, err
-		}
-		if databaseMeta == nil {
-			return nil, nil, nil
-		}
-		dbMetadata = databaseMeta.GetMetadata()
+// NewCatalogWithMetadata creates original and final database catalogs from schema metadata.
+// Both are DatabaseMetadata - original is the starting state, final is mutable for walk-through.
+func NewCatalogWithMetadata(metadata *storepb.DatabaseSchemaMetadata, engineType storepb.Engine, isObjectCaseSensitive bool) (originalMetadata *model.DatabaseMetadata, final *model.DatabaseMetadata, err error) {
+	// Determine detail case sensitivity based on engine type
+	isDetailCaseSensitive := getIsDetailCaseSensitive(engineType)
+
+	// Create original metadata as read-only
+	originalMetadata = model.NewDatabaseMetadata(metadata, isObjectCaseSensitive, isDetailCaseSensitive)
+
+	// Clone metadata for final to avoid modifying the original
+	cloned := proto.Clone(metadata)
+	clonedMetadata, ok := cloned.(*storepb.DatabaseSchemaMetadata)
+	if !ok {
+		return nil, nil, errors.New("failed to clone database schema metadata")
 	}
-	ignoreCaseSensitive := !isCaseSensitive
-	origin = NewDatabaseState(dbMetadata, ignoreCaseSensitive, engineType)
-	final = NewDatabaseState(dbMetadata, ignoreCaseSensitive, engineType)
-	return origin, final, nil
+
+	// Create final as mutable for walk-through
+	final = model.NewDatabaseMetadata(clonedMetadata, isObjectCaseSensitive, isDetailCaseSensitive)
+
+	return originalMetadata, final, nil
+}
+
+// getIsDetailCaseSensitive determines if detail names (columns, indexes) are case-sensitive
+// based on the database engine type.
+func getIsDetailCaseSensitive(engine storepb.Engine) bool {
+	switch engine {
+	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_TIDB, storepb.Engine_MSSQL, storepb.Engine_OCEANBASE:
+		return false
+	default:
+		return true
+	}
 }

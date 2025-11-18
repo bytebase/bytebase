@@ -13,7 +13,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -45,10 +45,10 @@ func (*IndexTotalNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.C
 	}
 
 	rule := &indexTotalNumberLimitRule{
-		BaseRule:     BaseRule{level: level, title: string(checkCtx.Rule.Type)},
-		max:          payload.Number,
-		finalCatalog: checkCtx.FinalCatalog,
-		tableLine:    make(tableLineMap),
+		BaseRule:      BaseRule{level: level, title: string(checkCtx.Rule.Type)},
+		max:           payload.Number,
+		finalMetadata: checkCtx.FinalMetadata,
+		tableLine:     make(tableLineMap),
 	}
 
 	checker := NewGenericChecker([]Rule{rule})
@@ -79,9 +79,9 @@ func (m tableLineMap) set(schema string, table string, line int) {
 type indexTotalNumberLimitRule struct {
 	BaseRule
 
-	max          int
-	finalCatalog *catalog.DatabaseState
-	tableLine    tableLineMap
+	max           int
+	finalMetadata *model.DatabaseMetadata
+	tableLine     tableLineMap
 }
 
 func (*indexTotalNumberLimitRule) Name() string {
@@ -122,13 +122,20 @@ func (r *indexTotalNumberLimitRule) generateAdvice() {
 	})
 
 	for _, table := range tableList {
-		tableInfo := r.finalCatalog.GetTable(table.schema, table.table)
-		if tableInfo != nil && tableInfo.CountIndex() > r.max {
+		schema := r.finalMetadata.GetSchema(table.schema)
+		if schema == nil {
+			continue
+		}
+		tableInfo := schema.GetTable(table.table)
+		if tableInfo == nil {
+			continue
+		}
+		if len(tableInfo.GetProto().Indexes) > r.max {
 			r.AddAdvice(&storepb.Advice{
 				Status:  r.level,
 				Code:    code.IndexCountExceedsLimit.Int32(),
 				Title:   r.title,
-				Content: fmt.Sprintf("The count of index in table %q.%q should be no more than %d, but found %d", table.schema, table.table, r.max, tableInfo.CountIndex()),
+				Content: fmt.Sprintf("The count of index in table %q.%q should be no more than %d, but found %d", table.schema, table.table, r.max, len(tableInfo.GetProto().Indexes)),
 				StartPosition: &storepb.Position{
 					Line:   int32(table.line),
 					Column: 0,

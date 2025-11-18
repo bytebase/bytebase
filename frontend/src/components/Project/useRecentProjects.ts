@@ -35,16 +35,18 @@ export const useRecentProjects = () => {
   const recentViewProjects = computedAsync(async () => {
     const projects = [];
     for (const projectName of recentViewProjectNames.value) {
-      const project = await projectV1Store.getOrFetchProjectByName(
-        projectName,
-        true /* silent */
-      );
-      if (
-        isValidProjectName(project.name) &&
-        hasProjectPermissionV2(project, "bb.projects.get")
-      ) {
-        projects.push(project);
-      }
+      try {
+        const project = await projectV1Store.getOrFetchProjectByName(
+          projectName,
+          true /* silent */
+        );
+        if (
+          isValidProjectName(project.name) &&
+          hasProjectPermissionV2(project, "bb.projects.get")
+        ) {
+          projects.push(project);
+        }
+      } catch {}
     }
     return projects;
   }, []);

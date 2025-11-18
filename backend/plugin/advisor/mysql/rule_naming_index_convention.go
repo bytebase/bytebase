@@ -12,9 +12,9 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -57,7 +57,7 @@ func (*NamingIndexConventionAdvisor) Check(_ context.Context, checkCtx advisor.C
 	}
 
 	// Create the rule
-	rule := NewNamingIndexConventionRule(level, string(checkCtx.Rule.Type), format, maxLength, templateList, checkCtx.OriginCatalog)
+	rule := NewNamingIndexConventionRule(level, string(checkCtx.Rule.Type), format, maxLength, templateList, checkCtx.OriginalMetadata)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
@@ -74,24 +74,24 @@ func (*NamingIndexConventionAdvisor) Check(_ context.Context, checkCtx advisor.C
 // NamingIndexConventionRule checks for index naming convention.
 type NamingIndexConventionRule struct {
 	BaseRule
-	text          string
-	format        string
-	maxLength     int
-	templateList  []string
-	originCatalog *catalog.DatabaseState
+	text             string
+	format           string
+	maxLength        int
+	templateList     []string
+	originalMetadata *model.DatabaseMetadata
 }
 
 // NewNamingIndexConventionRule creates a new NamingIndexConventionRule.
-func NewNamingIndexConventionRule(level storepb.Advice_Status, title string, format string, maxLength int, templateList []string, originCatalog *catalog.DatabaseState) *NamingIndexConventionRule {
+func NewNamingIndexConventionRule(level storepb.Advice_Status, title string, format string, maxLength int, templateList []string, originalMetadata *model.DatabaseMetadata) *NamingIndexConventionRule {
 	return &NamingIndexConventionRule{
 		BaseRule: BaseRule{
 			level: level,
 			title: title,
 		},
-		format:        format,
-		maxLength:     maxLength,
-		templateList:  templateList,
-		originCatalog: originCatalog,
+		format:           format,
+		maxLength:        maxLength,
+		templateList:     templateList,
+		originalMetadata: originalMetadata,
 	}
 }
 
@@ -187,7 +187,7 @@ func (r *NamingIndexConventionRule) checkAlterTable(ctx *mysql.AlterTableContext
 		case alterListItem.RENAME_SYMBOL() != nil && alterListItem.KeyOrIndex() != nil && alterListItem.IndexRef() != nil && alterListItem.IndexName() != nil:
 			_, _, oldIndexName := mysqlparser.NormalizeIndexRef(alterListItem.IndexRef())
 			newIndexName := mysqlparser.NormalizeIndexName(alterListItem.IndexName())
-			_, indexState := r.originCatalog.GetIndex("", tableName, oldIndexName)
+			indexState := r.originalMetadata.GetSchema("").GetTable(tableName).GetIndex(oldIndexName)
 			if indexState == nil {
 				continue
 			}

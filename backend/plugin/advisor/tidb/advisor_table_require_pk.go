@@ -11,8 +11,8 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 const (
@@ -44,12 +44,12 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 		return nil, err
 	}
 	checker := &tableRequirePKChecker{
-		level:         level,
-		title:         string(checkCtx.Rule.Type),
-		tables:        make(tablePK),
-		line:          make(map[string]int),
-		originCatalog: checkCtx.OriginCatalog,
-		finalCatalog:  checkCtx.FinalCatalog,
+		level:            level,
+		title:            string(checkCtx.Rule.Type),
+		tables:           make(tablePK),
+		line:             make(map[string]int),
+		originalMetadata: checkCtx.OriginalMetadata,
+		finalMetadata:    checkCtx.FinalMetadata,
 	}
 
 	for _, stmtNode := range root {
@@ -60,13 +60,13 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 }
 
 type tableRequirePKChecker struct {
-	adviceList    []*storepb.Advice
-	level         storepb.Advice_Status
-	title         string
-	tables        tablePK
-	line          map[string]int
-	originCatalog *catalog.DatabaseState
-	finalCatalog  *catalog.DatabaseState
+	adviceList       []*storepb.Advice
+	level            storepb.Advice_Status
+	title            string
+	tables           tablePK
+	line             map[string]int
+	originalMetadata *model.DatabaseMetadata
+	finalMetadata    *model.DatabaseMetadata
 }
 
 // Enter implements the ast.Visitor interface.
@@ -182,12 +182,13 @@ func (v *tableRequirePKChecker) createTableLike(node *ast.CreateTableStmt) {
 		}
 		v.tables[table] = newColumnSet(columns)
 	} else {
-		referTableState := v.originCatalog.GetTable("", referTableName)
-		if referTableState != nil {
-			indexSet := referTableState.Index()
-			for _, index := range *indexSet {
-				if index.Primary() {
-					v.tables[table] = newColumnSet(index.ExpressionList())
+		schema := v.originalMetadata.GetSchema("")
+		if schema != nil {
+			referTableMetadata := schema.GetTable(referTableName)
+			if referTableMetadata != nil {
+				primaryKey := referTableMetadata.GetPrimaryKey()
+				if primaryKey != nil {
+					v.tables[table] = newColumnSet(primaryKey.ExpressionList())
 				}
 			}
 		}
@@ -196,7 +197,7 @@ func (v *tableRequirePKChecker) createTableLike(node *ast.CreateTableStmt) {
 
 func (v *tableRequirePKChecker) dropColumn(table string, column string) bool {
 	if _, ok := v.tables[table]; !ok {
-		_, pk := v.originCatalog.GetIndex("", table, primaryKeyName)
+		pk := v.originalMetadata.GetSchema("").GetTable(table).GetIndex(primaryKeyName)
 		if pk == nil {
 			return false
 		}

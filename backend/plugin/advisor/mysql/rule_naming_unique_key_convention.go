@@ -12,9 +12,9 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -49,7 +49,7 @@ func (*NamingUKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 	}
 
 	// Create the rule
-	rule := NewNamingUKConventionRule(level, string(checkCtx.Rule.Type), format, maxLength, templateList, checkCtx.OriginCatalog)
+	rule := NewNamingUKConventionRule(level, string(checkCtx.Rule.Type), format, maxLength, templateList, checkCtx.OriginalMetadata)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
@@ -74,24 +74,24 @@ type ukIndexMetaData struct {
 // NamingUKConventionRule checks for unique key naming convention.
 type NamingUKConventionRule struct {
 	BaseRule
-	text          string
-	format        string
-	maxLength     int
-	templateList  []string
-	originCatalog *catalog.DatabaseState
+	text             string
+	format           string
+	maxLength        int
+	templateList     []string
+	originalMetadata *model.DatabaseMetadata
 }
 
 // NewNamingUKConventionRule creates a new NamingUKConventionRule.
-func NewNamingUKConventionRule(level storepb.Advice_Status, title string, format string, maxLength int, templateList []string, originCatalog *catalog.DatabaseState) *NamingUKConventionRule {
+func NewNamingUKConventionRule(level storepb.Advice_Status, title string, format string, maxLength int, templateList []string, originalMetadata *model.DatabaseMetadata) *NamingUKConventionRule {
 	return &NamingUKConventionRule{
 		BaseRule: BaseRule{
 			level: level,
 			title: title,
 		},
-		format:        format,
-		maxLength:     maxLength,
-		templateList:  templateList,
-		originCatalog: originCatalog,
+		format:           format,
+		maxLength:        maxLength,
+		templateList:     templateList,
+		originalMetadata: originalMetadata,
 	}
 }
 
@@ -188,12 +188,8 @@ func (r *NamingUKConventionRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 		case alterListItem.RENAME_SYMBOL() != nil && alterListItem.KeyOrIndex() != nil && alterListItem.IndexRef() != nil && alterListItem.IndexName() != nil:
 			_, _, oldIndexName := mysqlparser.NormalizeIndexRef(alterListItem.IndexRef())
 			newIndexName := mysqlparser.NormalizeIndexName(alterListItem.IndexName())
-			indexStateMap := r.originCatalog.Index("", tableName)
-			if indexStateMap == nil {
-				continue
-			}
-			indexState, ok := (*indexStateMap)[oldIndexName]
-			if !ok {
+			indexState := r.originalMetadata.GetSchema("").GetTable(tableName).GetIndex(oldIndexName)
+			if indexState == nil {
 				continue
 			}
 			if !indexState.Unique() {

@@ -218,7 +218,7 @@ const columnList = computed((): DataTableColumn<Task>[] => {
                 {schemaVersion}
               </NTag>
             )}
-            {task.runTime && (
+            {task.runTime && task.status === Task_Status.PENDING && (
               <NTooltip>
                 {{
                   trigger: () => (

@@ -11,9 +11,9 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -50,10 +50,10 @@ func (*NamingUKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 			level: level,
 			title: string(checkCtx.Rule.Type),
 		},
-		format:        format,
-		maxLength:     maxLength,
-		templateList:  templateList,
-		originCatalog: checkCtx.OriginCatalog,
+		format:           format,
+		maxLength:        maxLength,
+		templateList:     templateList,
+		originalMetadata: checkCtx.OriginalMetadata,
 	}
 
 	checker := NewGenericChecker([]Rule{rule})
@@ -65,10 +65,10 @@ func (*NamingUKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 type namingUKConventionRule struct {
 	BaseRule
 
-	format        string
-	maxLength     int
-	templateList  []string
-	originCatalog *catalog.DatabaseState
+	format           string
+	maxLength        int
+	templateList     []string
+	originalMetadata *model.DatabaseMetadata
 }
 
 //nolint:unused
@@ -235,7 +235,7 @@ func (r *namingUKConventionRule) handleRenamestmt(ctx *parser.RenamestmtContext)
 		newIndexName := pgparser.NormalizePostgreSQLName(allNames[0])
 
 		// Look up the index in catalog to determine if it's a unique key
-		if r.originCatalog != nil && oldIndexName != "" {
+		if r.originalMetadata != nil && oldIndexName != "" {
 			tableName, index := r.findIndex("", "", oldIndexName)
 			if index != nil && index.Unique() && !index.Primary() {
 				r.checkUniqueKeyName(newIndexName, tableName, map[string]string{
@@ -247,7 +247,7 @@ func (r *namingUKConventionRule) handleRenamestmt(ctx *parser.RenamestmtContext)
 	}
 
 	// Check for ALTER TABLE ... RENAME CONSTRAINT
-	if ctx.CONSTRAINT() != nil && ctx.TO() != nil && r.originCatalog != nil {
+	if ctx.CONSTRAINT() != nil && ctx.TO() != nil && r.originalMetadata != nil {
 		allNames := ctx.AllName()
 		if len(allNames) >= 2 {
 			oldConstraintName := pgparser.NormalizePostgreSQLName(allNames[0])
@@ -300,10 +300,16 @@ func (r *namingUKConventionRule) checkTableConstraint(constraint parser.ITableco
 			} else if elem.Existingindex() != nil && elem.Existingindex().Name() != nil {
 				// Handle UNIQUE USING INDEX - the column list is in the existing index
 				indexName := pgparser.NormalizePostgreSQLName(elem.Existingindex().Name())
-				foundTableName, index := r.findIndex("", tableName, indexName)
+				schema := r.originalMetadata.GetSchema(normalizeSchemaName(""))
+				var index *model.IndexMetadata
+				if schema != nil {
+					table := schema.GetTable(tableName)
+					if table != nil {
+						index = table.GetIndex(indexName)
+					}
+				}
 				if index != nil {
 					columnList = index.ExpressionList()
-					tableName = foundTableName
 				}
 			}
 
@@ -407,9 +413,28 @@ func (r *namingUKConventionRule) getTemplateRegexp(tokens map[string]string) (*r
 }
 
 // findIndex returns index found in catalogs, nil if not found.
-func (r *namingUKConventionRule) findIndex(schemaName string, tableName string, indexName string) (string, *catalog.IndexState) {
-	if r.originCatalog == nil {
+func (r *namingUKConventionRule) findIndex(schemaName string, tableName string, indexName string) (string, *model.IndexMetadata) {
+	if r.originalMetadata == nil {
 		return "", nil
 	}
-	return r.originCatalog.GetIndex(normalizeSchemaName(schemaName), tableName, indexName)
+	schema := r.originalMetadata.GetSchema(normalizeSchemaName(schemaName))
+	if schema == nil {
+		return "", nil
+	}
+	if tableName != "" {
+		table := schema.GetTable(tableName)
+		if table != nil {
+			index := table.GetIndex(indexName)
+			if index != nil {
+				return tableName, index
+			}
+		}
+		return "", nil
+	}
+	// tableName is empty, search all tables
+	index := schema.GetIndex(indexName)
+	if index != nil {
+		return index.GetTableProto().Name, index
+	}
+	return "", nil
 }
