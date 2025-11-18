@@ -1,0 +1,79 @@
+package mysql
+
+import (
+	"io"
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/testing/protocmp"
+	"gopkg.in/yaml.v3"
+
+	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/sheet"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/schema/catalogutil"
+	"github.com/bytebase/bytebase/backend/store/model"
+)
+
+type testData struct {
+	Statement string
+	// Use custom yaml tag to avoid generate field name `ignorecasesensitive`.
+	IgnoreCaseSensitive bool `yaml:"ignore_case_sensitive"`
+	Want                string
+	Err                 *catalogutil.WalkThroughError
+}
+
+func TestWalkThrough(t *testing.T) {
+	originDatabase := &storepb.DatabaseSchemaMetadata{
+		Name: "test",
+	}
+
+	tests := []testData{}
+	filepath := filepath.Join("testdata", "walk_through.yaml")
+	yamlFile, err := os.Open(filepath)
+	require.NoError(t, err)
+	defer yamlFile.Close()
+
+	byteValue, err := io.ReadAll(yamlFile)
+	require.NoError(t, err)
+	err = yaml.Unmarshal(byteValue, &tests)
+	require.NoError(t, err)
+	sm := sheet.NewManager(nil)
+
+	for _, test := range tests {
+		// Make a deep copy to avoid mutation across tests
+		protoData, ok := proto.Clone(originDatabase).(*storepb.DatabaseSchemaMetadata)
+		require.True(t, ok)
+
+		// Create DatabaseMetadata for walk-through
+		state := model.NewDatabaseMetadata(protoData, !test.IgnoreCaseSensitive, !test.IgnoreCaseSensitive)
+
+		asts, _ := sm.GetASTsForChecks(storepb.Engine_MYSQL, test.Statement)
+		err := WalkThrough(state, asts)
+		if err != nil {
+			walkErr, yes := err.(*catalogutil.WalkThroughError)
+			require.True(t, yes)
+			require.Equal(t, test.Err, walkErr)
+			continue
+		}
+		require.NoError(t, err, test.Statement)
+
+		// Skip comparison if want is empty (error cases)
+		if test.Want == "" {
+			continue
+		}
+
+		want := &storepb.DatabaseSchemaMetadata{}
+		err = common.ProtojsonUnmarshaler.Unmarshal([]byte(test.Want), want)
+		require.NoError(t, err)
+		// Sort proto for deterministic comparison
+		state.SortProto()
+		result := state.GetProto()
+		diff := cmp.Diff(want, result, protocmp.Transform())
+		require.Empty(t, diff)
+	}
+}
