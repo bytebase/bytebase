@@ -16,6 +16,11 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/plugin/schema/catalogutil"
 	"github.com/bytebase/bytebase/backend/store/model"
+
+	// Register walk-through implementations
+	_ "github.com/bytebase/bytebase/backend/plugin/schema/mysql"
+	_ "github.com/bytebase/bytebase/backend/plugin/schema/pg"
+	_ "github.com/bytebase/bytebase/backend/plugin/schema/tidb"
 )
 
 // How to add a SQL review rule:
