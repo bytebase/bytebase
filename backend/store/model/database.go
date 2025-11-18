@@ -1112,11 +1112,7 @@ func buildTablesMetadata(table *storepb.TableMetadata, isDetailCaseSensitive boo
 		internalIndexes:       make(map[string]*IndexMetadata),
 		proto:                 table,
 	}
-	for i, column := range table.Columns {
-		// Assign position if not set (position is 1-indexed)
-		if column.Position == 0 {
-			column.Position = int32(i + 1)
-		}
+	for _, column := range table.Columns {
 		var columnID string
 		if isDetailCaseSensitive {
 			columnID = column.Name
