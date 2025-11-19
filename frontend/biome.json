@@ -185,10 +185,9 @@
   },
   "overrides": [
     {
-      "includes": ["**/proto-es/**"],
+      "includes": ["**/proto-es/**", "src/types/proto-es/**"],
       "formatter": { "enabled": false },
-      "linter": { "enabled": false },
-      "assist": { "enabled": false }
+      "linter": { "enabled": false }
     },
     {
       "includes": [
