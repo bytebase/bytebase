@@ -51,8 +51,6 @@ message TaskRunLog {
     string statement = 2;
   }
   message CommandResponse {
-    // The indexes of the executed commands.
-    repeated int32 command_indexes = 1 [deprecated = true];
     string error = 2;
     int64 affected_rows = 3;
     // `all_affected_rows` is the affected rows of each command.

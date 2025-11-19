@@ -498,13 +498,9 @@ func (x *TaskRunLog_CommandExecute) GetStatement() string {
 }
 
 type TaskRunLog_CommandResponse struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// The indexes of the executed commands.
-	//
-	// Deprecated: Marked as deprecated in store/task_run_log.proto.
-	CommandIndexes []int32 `protobuf:"varint,1,rep,packed,name=command_indexes,json=commandIndexes,proto3" json:"command_indexes,omitempty"`
-	Error          string  `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
-	AffectedRows   int64   `protobuf:"varint,3,opt,name=affected_rows,json=affectedRows,proto3" json:"affected_rows,omitempty"`
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	Error        string                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
+	AffectedRows int64                  `protobuf:"varint,3,opt,name=affected_rows,json=affectedRows,proto3" json:"affected_rows,omitempty"`
 	// `all_affected_rows` is the affected rows of each command.
 	// `all_affected_rows` may be unavailable if the database driver doesn't support it. Caller should fallback to `affected_rows` in that case.
 	AllAffectedRows []int64 `protobuf:"varint,4,rep,packed,name=all_affected_rows,json=allAffectedRows,proto3" json:"all_affected_rows,omitempty"`
@@ -540,14 +536,6 @@ func (x *TaskRunLog_CommandResponse) ProtoReflect() protoreflect.Message {
 // Deprecated: Use TaskRunLog_CommandResponse.ProtoReflect.Descriptor instead.
 func (*TaskRunLog_CommandResponse) Descriptor() ([]byte, []int) {
 	return file_store_task_run_log_proto_rawDescGZIP(), []int{0, 3}
-}
-
-// Deprecated: Marked as deprecated in store/task_run_log.proto.
-func (x *TaskRunLog_CommandResponse) GetCommandIndexes() []int32 {
-	if x != nil {
-		return x.CommandIndexes
-	}
-	return nil
 }
 
 func (x *TaskRunLog_CommandResponse) GetError() string {
@@ -979,7 +967,7 @@ var File_store_task_run_log_proto protoreflect.FileDescriptor
 
 const file_store_task_run_log_proto_rawDesc = "" +
 	"\n" +
-	"\x18store/task_run_log.proto\x12\x0ebytebase.store\x1a\x14store/task_run.proto\"\xb6\x14\n" +
+	"\x18store/task_run_log.proto\x12\x0ebytebase.store\x1a\x14store/task_run.proto\"\x88\x14\n" +
 	"\n" +
 	"TaskRunLog\x123\n" +
 	"\x04type\x18\x01 \x01(\x0e2\x1f.bytebase.store.TaskRunLog.TypeR\x04type\x12\x1b\n" +
@@ -1004,9 +992,8 @@ const file_store_task_run_log_proto_rawDesc = "" +
 	"\x05error\x18\x01 \x01(\tR\x05error\x1aW\n" +
 	"\x0eCommandExecute\x12'\n" +
 	"\x0fcommand_indexes\x18\x01 \x03(\x05R\x0ecommandIndexes\x12\x1c\n" +
-	"\tstatement\x18\x02 \x01(\tR\tstatement\x1a\xa5\x01\n" +
-	"\x0fCommandResponse\x12+\n" +
-	"\x0fcommand_indexes\x18\x01 \x03(\x05B\x02\x18\x01R\x0ecommandIndexes\x12\x14\n" +
+	"\tstatement\x18\x02 \x01(\tR\tstatement\x1ax\n" +
+	"\x0fCommandResponse\x12\x14\n" +
 	"\x05error\x18\x02 \x01(\tR\x05error\x12#\n" +
 	"\raffected_rows\x18\x03 \x01(\x03R\faffectedRows\x12*\n" +
 	"\x11all_affected_rows\x18\x04 \x03(\x03R\x0fallAffectedRows\x1a\x13\n" +

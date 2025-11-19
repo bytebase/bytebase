@@ -6355,7 +6355,7 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\vLINEAR_HASH\x10\x06\x12\a\n" +
 	"\x03KEY\x10\a\x12\x0e\n" +
 	"\n" +
-	"LINEAR_KEY\x10\b\"\xa8\x06\n" +
+	"LINEAR_KEY\x10\b\"\x96\x06\n" +
 	"\x0eColumnMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
 	"\bposition\x18\x02 \x01(\x05R\bposition\x12\x1f\n" +
@@ -6385,7 +6385,7 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\n" +
 	"\x06ALWAYS\x10\x01\x12\x0e\n" +
 	"\n" +
-	"BY_DEFAULT\x10\x02J\x04\b\x04\x10\x05J\x04\b\x05\x10\x06J\x04\b\x06\x10\a\"\xa5\x01\n" +
+	"BY_DEFAULT\x10\x02\"\xa5\x01\n" +
 	"\x12GenerationMetadata\x128\n" +
 	"\x04type\x18\x01 \x01(\x0e2$.bytebase.v1.GenerationMetadata.TypeR\x04type\x12\x1e\n" +
 	"\n" +
