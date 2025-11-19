@@ -164,9 +164,14 @@ type UniqueConstraintDiff struct {
 
 // TriggerDiff represents changes to a trigger.
 type TriggerDiff struct {
-	Action     MetadataDiffAction
-	OldTrigger *storepb.TriggerMetadata
-	NewTrigger *storepb.TriggerMetadata
+	Action      MetadataDiffAction
+	SchemaName  string // Schema name of the table that owns the trigger
+	TableName   string // Table name that owns the trigger
+	TriggerName string // Trigger name
+	OldTrigger  *storepb.TriggerMetadata
+	NewTrigger  *storepb.TriggerMetadata
+	OldASTNode  any // AST node for old trigger (*parser.CreatetrigstmtContext)
+	NewASTNode  any // AST node for new trigger (*parser.CreatetrigstmtContext)
 }
 
 // PartitionDiff represents changes to table partitions.
@@ -280,6 +285,7 @@ const (
 	CommentObjectTypeFunction         CommentObjectType = "FUNCTION"
 	CommentObjectTypeSequence         CommentObjectType = "SEQUENCE"
 	CommentObjectTypeIndex            CommentObjectType = "INDEX"
+	CommentObjectTypeTrigger          CommentObjectType = "TRIGGER"
 	CommentObjectTypeType             CommentObjectType = "TYPE"
 	CommentObjectTypeExtension        CommentObjectType = "EXTENSION"
 )
@@ -290,6 +296,7 @@ type CommentDiff struct {
 	Action     MetadataDiffAction // CREATE or ALTER (no DROP since object deletion removes comments automatically)
 	ObjectType CommentObjectType
 	SchemaName string
+	TableName  string // used for TRIGGER comments (COMMENT ON TRIGGER trigger_name ON table_name)
 	ObjectName string // table/view/function/sequence/index name
 	ColumnName string // only used for COLUMN comments
 	IndexName  string // only used for table-level INDEX comments
@@ -1396,8 +1403,9 @@ func compareTriggers(oldTriggers, newTriggers []*storepb.TriggerMetadata) []*Tri
 	for triggerName, oldTrigger := range oldTriggerMap {
 		if _, exists := newTriggerMap[triggerName]; !exists {
 			changes = append(changes, &TriggerDiff{
-				Action:     MetadataDiffActionDrop,
-				OldTrigger: oldTrigger,
+				Action:      MetadataDiffActionDrop,
+				TriggerName: triggerName,
+				OldTrigger:  oldTrigger,
 			})
 		}
 	}
@@ -1407,18 +1415,21 @@ func compareTriggers(oldTriggers, newTriggers []*storepb.TriggerMetadata) []*Tri
 		oldTrigger, exists := oldTriggerMap[triggerName]
 		if !exists {
 			changes = append(changes, &TriggerDiff{
-				Action:     MetadataDiffActionCreate,
-				NewTrigger: newTrigger,
+				Action:      MetadataDiffActionCreate,
+				TriggerName: triggerName,
+				NewTrigger:  newTrigger,
 			})
 		} else if !triggersEqual(oldTrigger, newTrigger) {
 			// Drop and recreate the trigger instead of altering
 			changes = append(changes, &TriggerDiff{
-				Action:     MetadataDiffActionDrop,
-				OldTrigger: oldTrigger,
+				Action:      MetadataDiffActionDrop,
+				TriggerName: triggerName,
+				OldTrigger:  oldTrigger,
 			})
 			changes = append(changes, &TriggerDiff{
-				Action:     MetadataDiffActionCreate,
-				NewTrigger: newTrigger,
+				Action:      MetadataDiffActionCreate,
+				TriggerName: triggerName,
+				NewTrigger:  newTrigger,
 			})
 		}
 	}

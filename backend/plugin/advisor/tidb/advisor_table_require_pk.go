@@ -11,7 +11,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -50,7 +49,7 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 		tables:           make(tablePK),
 		line:             make(map[string]int),
 		originalMetadata: checkCtx.OriginalMetadata,
-		finalCatalog:     checkCtx.FinalCatalog,
+		finalMetadata:    checkCtx.FinalMetadata,
 	}
 
 	for _, stmtNode := range root {
@@ -67,7 +66,7 @@ type tableRequirePKChecker struct {
 	tables           tablePK
 	line             map[string]int
 	originalMetadata *model.DatabaseMetadata
-	finalCatalog     *catalog.DatabaseState
+	finalMetadata    *model.DatabaseMetadata
 }
 
 // Enter implements the ast.Visitor interface.

@@ -14162,12 +14162,6 @@ components:
         TaskRunLog_CommandResponse:
             type: object
             properties:
-                commandIndexes:
-                    type: array
-                    items:
-                        type: integer
-                        format: int32
-                    description: The indexes of the executed commands.
                 error:
                     type: string
                 affectedRows:

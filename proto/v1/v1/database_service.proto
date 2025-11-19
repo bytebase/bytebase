@@ -826,8 +826,6 @@ message ColumnMetadata {
 
   bool has_default = 3;
 
-  reserved 4, 5, 6; // Removed deprecated default_null, default_string, default_expression
-
   // The default value of column.
   string default = 23;
 

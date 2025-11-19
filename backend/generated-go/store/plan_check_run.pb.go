@@ -84,9 +84,7 @@ type PlanCheckRunConfig struct {
 	ChangeDatabaseType PlanCheckRunConfig_ChangeDatabaseType `protobuf:"varint,2,opt,name=change_database_type,json=changeDatabaseType,proto3,enum=bytebase.store.PlanCheckRunConfig_ChangeDatabaseType" json:"change_database_type,omitempty"`
 	InstanceId         string                                `protobuf:"bytes,3,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
 	DatabaseName       string                                `protobuf:"bytes,4,opt,name=database_name,json=databaseName,proto3" json:"database_name,omitempty"`
-	// Deprecated: Marked as deprecated in store/plan_check_run.proto.
-	DatabaseGroupUid *int64            `protobuf:"varint,5,opt,name=database_group_uid,json=databaseGroupUid,proto3,oneof" json:"database_group_uid,omitempty"`
-	GhostFlags       map[string]string `protobuf:"bytes,6,rep,name=ghost_flags,json=ghostFlags,proto3" json:"ghost_flags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	GhostFlags         map[string]string                     `protobuf:"bytes,6,rep,name=ghost_flags,json=ghostFlags,proto3" json:"ghost_flags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// If set, a backup of the modified data will be created automatically before any changes are applied.
 	EnablePriorBackup bool `protobuf:"varint,7,opt,name=enable_prior_backup,json=enablePriorBackup,proto3" json:"enable_prior_backup,omitempty"`
 	unknownFields     protoimpl.UnknownFields
@@ -149,14 +147,6 @@ func (x *PlanCheckRunConfig) GetDatabaseName() string {
 		return x.DatabaseName
 	}
 	return ""
-}
-
-// Deprecated: Marked as deprecated in store/plan_check_run.proto.
-func (x *PlanCheckRunConfig) GetDatabaseGroupUid() int64 {
-	if x != nil && x.DatabaseGroupUid != nil {
-		return *x.DatabaseGroupUid
-	}
-	return 0
 }
 
 func (x *PlanCheckRunConfig) GetGhostFlags() map[string]string {
@@ -457,14 +447,13 @@ var File_store_plan_check_run_proto protoreflect.FileDescriptor
 
 const file_store_plan_check_run_proto_rawDesc = "" +
 	"\n" +
-	"\x1astore/plan_check_run.proto\x12\x0ebytebase.store\x1a\x12store/advice.proto\x1a\x15store/changelog.proto\x1a\x12store/common.proto\"\xd8\x04\n" +
+	"\x1astore/plan_check_run.proto\x12\x0ebytebase.store\x1a\x12store/advice.proto\x1a\x15store/changelog.proto\x1a\x12store/common.proto\"\x8a\x04\n" +
 	"\x12PlanCheckRunConfig\x12\x1b\n" +
 	"\tsheet_uid\x18\x01 \x01(\x05R\bsheetUid\x12g\n" +
 	"\x14change_database_type\x18\x02 \x01(\x0e25.bytebase.store.PlanCheckRunConfig.ChangeDatabaseTypeR\x12changeDatabaseType\x12\x1f\n" +
 	"\vinstance_id\x18\x03 \x01(\tR\n" +
 	"instanceId\x12#\n" +
-	"\rdatabase_name\x18\x04 \x01(\tR\fdatabaseName\x125\n" +
-	"\x12database_group_uid\x18\x05 \x01(\x03B\x02\x18\x01H\x00R\x10databaseGroupUid\x88\x01\x01\x12S\n" +
+	"\rdatabase_name\x18\x04 \x01(\tR\fdatabaseName\x12S\n" +
 	"\vghost_flags\x18\x06 \x03(\v22.bytebase.store.PlanCheckRunConfig.GhostFlagsEntryR\n" +
 	"ghostFlags\x12.\n" +
 	"\x13enable_prior_backup\x18\a \x01(\bR\x11enablePriorBackup\x1a=\n" +
@@ -476,8 +465,7 @@ const file_store_plan_check_run_proto_rawDesc = "" +
 	"\x03DDL\x10\x01\x12\a\n" +
 	"\x03DML\x10\x02\x12\a\n" +
 	"\x03SDL\x10\x03\x12\r\n" +
-	"\tDDL_GHOST\x10\x04B\x15\n" +
-	"\x13_database_group_uid\"\xb6\x06\n" +
+	"\tDDL_GHOST\x10\x04\"\xb6\x06\n" +
 	"\x12PlanCheckRunResult\x12C\n" +
 	"\aresults\x18\x01 \x03(\v2).bytebase.store.PlanCheckRunResult.ResultR\aresults\x12\x14\n" +
 	"\x05error\x18\x02 \x01(\tR\x05error\x1a\xc4\x05\n" +
@@ -549,7 +537,6 @@ func file_store_plan_check_run_proto_init() {
 	file_store_advice_proto_init()
 	file_store_changelog_proto_init()
 	file_store_common_proto_init()
-	file_store_plan_check_run_proto_msgTypes[0].OneofWrappers = []any{}
 	file_store_plan_check_run_proto_msgTypes[3].OneofWrappers = []any{
 		(*PlanCheckRunResult_Result_SqlSummaryReport_)(nil),
 		(*PlanCheckRunResult_Result_SqlReviewReport_)(nil),

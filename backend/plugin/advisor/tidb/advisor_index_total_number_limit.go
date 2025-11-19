@@ -15,7 +15,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -47,11 +47,11 @@ func (*IndexTotalNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.C
 		return nil, err
 	}
 	checker := &indexTotalNumberLimitChecker{
-		level:        level,
-		title:        string(checkCtx.Rule.Type),
-		max:          payload.Number,
-		lineForTable: make(map[string]int),
-		finalCatalog: checkCtx.FinalCatalog,
+		level:         level,
+		title:         string(checkCtx.Rule.Type),
+		max:           payload.Number,
+		lineForTable:  make(map[string]int),
+		finalMetadata: checkCtx.FinalMetadata,
 	}
 
 	for _, stmt := range stmtList {
@@ -64,14 +64,14 @@ func (*IndexTotalNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.C
 }
 
 type indexTotalNumberLimitChecker struct {
-	adviceList   []*storepb.Advice
-	level        storepb.Advice_Status
-	title        string
-	text         string
-	line         int
-	max          int
-	lineForTable map[string]int
-	finalCatalog *catalog.DatabaseState
+	adviceList    []*storepb.Advice
+	level         storepb.Advice_Status
+	title         string
+	text          string
+	line          int
+	max           int
+	lineForTable  map[string]int
+	finalMetadata *model.DatabaseMetadata
 }
 
 func (checker *indexTotalNumberLimitChecker) generateAdvice() []*storepb.Advice {
@@ -98,13 +98,17 @@ func (checker *indexTotalNumberLimitChecker) generateAdvice() []*storepb.Advice 
 	})
 
 	for _, table := range tableList {
-		tableInfo := checker.finalCatalog.GetTable("", table.name)
-		if tableInfo != nil && tableInfo.CountIndex() > checker.max {
+		schema := checker.finalMetadata.GetSchema("")
+		if schema == nil {
+			continue
+		}
+		tableInfo := schema.GetTable(table.name)
+		if tableInfo != nil && len(tableInfo.GetProto().Indexes) > checker.max {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:        checker.level,
 				Code:          code.IndexCountExceedsLimit.Int32(),
 				Title:         checker.title,
-				Content:       fmt.Sprintf("The count of index in table `%s` should be no more than %d, but found %d", table.name, checker.max, tableInfo.CountIndex()),
+				Content:       fmt.Sprintf("The count of index in table `%s` should be no more than %d, but found %d", table.name, checker.max, len(tableInfo.GetProto().Indexes)),
 				StartPosition: common.ConvertANTLRLineToPosition(table.line),
 			})
 		}

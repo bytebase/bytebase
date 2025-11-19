@@ -207,7 +207,7 @@ func buildMockDatabaseMetadataGetterLister() (base.GetDatabaseMetadataFunc, base
 	return func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
 			m := make(map[string]*model.DatabaseMetadata)
 			for _, metadata := range databaseMetadatas {
-				m[metadata.Name] = model.NewDatabaseMetadata(metadata, false /* isObjectCaseSensitive */, false /* isDetailCaseSensitive */)
+				m[metadata.Name] = model.NewDatabaseMetadata(metadata, storepb.Engine_MYSQL, false /* isObjectCaseSensitive */)
 			}
 
 			if databaseMetadata, ok := m[databaseName]; ok {

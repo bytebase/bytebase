@@ -10,9 +10,9 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -45,7 +45,7 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 			title: string(checkCtx.Rule.Type),
 		},
 		statementsText: checkCtx.Statements,
-		finalCatalog:   checkCtx.FinalCatalog,
+		finalMetadata:  checkCtx.FinalMetadata,
 		tableMentions:  make(map[string]*tableMention),
 	}
 
@@ -71,7 +71,7 @@ type tableMention struct {
 type tableRequirePKRule struct {
 	BaseRule
 	statementsText string
-	finalCatalog   *catalog.DatabaseState
+	finalMetadata  *model.DatabaseMetadata
 
 	// Simple Solution: Track last mention of each table
 	tableMentions map[string]*tableMention // key: "schema.table", value: last mention info
@@ -185,7 +185,14 @@ func (r *tableRequirePKRule) validateFinalState() {
 		schemaName, tableName := parseTableKey(tableKey)
 
 		// Check catalog.Final for PRIMARY KEY
-		hasPK := r.finalCatalog.HasPrimaryKey(schemaName, tableName)
+		schema := r.finalMetadata.GetSchema(schemaName)
+		var hasPK bool
+		if schema != nil {
+			table := schema.GetTable(tableName)
+			if table != nil {
+				hasPK = table.GetPrimaryKey() != nil
+			}
+		}
 
 		if !hasPK {
 			content := fmt.Sprintf("Table %q.%q requires PRIMARY KEY", schemaName, tableName)

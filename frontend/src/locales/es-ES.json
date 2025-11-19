@@ -645,7 +645,11 @@
             "self": "Tiempo máximo de consulta",
             "description": "El tiempo máximo permitido para ejecutar una consulta en el Editor SQL."
           },
-          "seconds": "Artículos de segunda clase"
+          "seconds": "Artículos de segunda clase",
+          "project-scope": "proyecto",
+          "workspace-scope": "espacio de trabajo",
+          "environment-scope": "ambiente",
+          "tooltip": "También es configurable a nivel {scope}. Bytebase aplicará el valor más estricto."
         },
         "domain-restriction": {
           "self": "Dominio de espacio de trabajo",
@@ -738,7 +742,11 @@
         "description": "Utilice una regla global para aplicar el enmascaramiento en lote, por ejemplo, todas las columnas denominadas \"correo electrónico\" se enmascararán con el tipo semántico específico y se aplicará el algoritmo de enmascaramiento.",
         "condition-order": "Orden de condición",
         "re-order": "Reordenar",
-        "delete-rule-tip": "¿Eliminar esta regla?"
+        "delete-rule-tip": "¿Eliminar esta regla?",
+        "error": {
+          "missing-semantic-type": "Se requiere el tipo semántico.",
+          "invalid-condition": "La condición no es válida."
+        }
       },
       "semantic-types": {
         "self": "Tipos Semánticos",
@@ -2124,9 +2132,7 @@
       "only-for-cluster": "Sólo disponible para conexión de clúster"
     },
     "result-limit": {
-      "self": "Límite de resultados",
-      "n-rows": "{n} filas",
-      "rows": "filas"
+      "self": "Límite de resultados"
     },
     "n-per-page": "{n} / página",
     "add-a-new-instance": "Agregar una nueva instancia",
@@ -2422,7 +2428,8 @@
       "name": "Nivel",
       "error": "Error",
       "warning": "Advertencia"
-    }
+    },
+    "tooltip-for-resource": "También es configurable a nivel {scope}. Bytebase dará prioridad a la configuración a nivel de entorno."
   },
   "audit-log": {
     "export-finished": "Exportación finalizada",

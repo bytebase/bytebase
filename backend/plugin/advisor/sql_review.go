@@ -11,10 +11,14 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store/model"
+
+	// Register walk-through implementations
+	_ "github.com/bytebase/bytebase/backend/plugin/schema/mysql"
+	_ "github.com/bytebase/bytebase/backend/plugin/schema/pg"
+	_ "github.com/bytebase/bytebase/backend/plugin/schema/tidb"
 )
 
 // How to add a SQL review rule:
@@ -493,7 +497,7 @@ type SQLReviewCheckContext struct {
 	DBSchema              *storepb.DatabaseSchemaMetadata
 	DBType                storepb.Engine
 	OriginalMetadata      *model.DatabaseMetadata
-	FinalCatalog          *catalog.DatabaseState
+	FinalMetadata         *model.DatabaseMetadata
 	Driver                *sql.DB
 	EnablePriorBackup     bool
 	ClassificationConfig  *storepb.DataClassificationSetting_DataClassificationConfig
@@ -532,11 +536,11 @@ func SQLReviewCheck(
 		return parseResult, nil
 	}
 
-	if !builtinOnly && checkContext.FinalCatalog != nil {
+	if !builtinOnly && checkContext.FinalMetadata != nil {
 		switch checkContext.DBType {
 		case storepb.Engine_TIDB, storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_POSTGRES, storepb.Engine_OCEANBASE:
-			if err := catalog.WalkThrough(checkContext.FinalCatalog, asts); err != nil {
-				return convertWalkThroughErrorToAdvice(err)
+			if advice := schema.WalkThrough(checkContext.DBType, checkContext.FinalMetadata, asts); advice != nil {
+				return []*storepb.Advice{advice}, nil
 			}
 		default:
 			// Other database types don't need walkthrough
@@ -563,7 +567,7 @@ func SQLReviewCheck(
 				Statements:               statements,
 				Rule:                     rule,
 				OriginalMetadata:         checkContext.OriginalMetadata,
-				FinalCatalog:             checkContext.FinalCatalog,
+				FinalMetadata:            checkContext.FinalMetadata,
 				Driver:                   checkContext.Driver,
 				CurrentDatabase:          checkContext.CurrentDatabase,
 				ClassificationConfig:     checkContext.ClassificationConfig,
@@ -600,28 +604,4 @@ func SQLReviewCheck(
 	advices = append(advices, errorAdvices...)
 	advices = append(advices, warningAdvices...)
 	return advices, nil
-}
-
-func convertWalkThroughErrorToAdvice(err error) ([]*storepb.Advice, error) {
-	walkThroughError, ok := err.(*catalog.WalkThroughError)
-	if !ok {
-		return nil, err
-	}
-
-	// Determine the advice status based on the error code
-	// Most errors are ERROR level, except for a few special cases
-	status := storepb.Advice_ERROR
-	if walkThroughError.Code == code.ReferenceOtherDatabase {
-		status = storepb.Advice_WARNING
-	}
-
-	return []*storepb.Advice{
-		{
-			Status:        status,
-			Code:          walkThroughError.Code.Int32(),
-			Title:         walkThroughError.Content,
-			Content:       walkThroughError.Content,
-			StartPosition: common.ConvertANTLRLineToPosition(walkThroughError.Line),
-		},
-	}, nil
 }

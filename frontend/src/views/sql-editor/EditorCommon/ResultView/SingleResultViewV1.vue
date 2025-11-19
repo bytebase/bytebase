@@ -99,6 +99,7 @@
             ]"
             :view-mode="'DRAWER'"
             :support-password="true"
+            :maximum-export-count="maximumExportCount"
             @export="
               ($event) =>
                 $emit('export', {
@@ -262,6 +263,7 @@ const props = defineProps<{
   result: QueryResult;
   setIndex: number;
   showExport: boolean;
+  maximumExportCount?: number;
 }>();
 
 defineEmits<{

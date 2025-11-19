@@ -1,8 +1,18 @@
 <template>
   <div class="flex flex-col gap-y-2">
-    <label class="font-medium">
-      {{ $t("sql-review.title") }}
-    </label>
+    <div class="flex items-center gap-x-2">
+      <label class="font-medium">
+        {{ $t("sql-review.title") }}
+      </label>
+      <NTooltip v-if="tooltip">
+        <template #trigger>
+          <CircleQuestionMarkIcon class="w-4 textinfolabel" />
+        </template>
+        <span>
+          {{ tooltip }}
+        </span>
+      </NTooltip>
+    </div>
     <div>
       <div
         v-if="pendingSelectReviewPolicy"
@@ -52,13 +62,18 @@
 
 <script setup lang="ts">
 import { isEqual } from "lodash-es";
-import { XIcon } from "lucide-vue-next";
-import { NButton } from "naive-ui";
+import { CircleQuestionMarkIcon, XIcon } from "lucide-vue-next";
+import { NButton, NTooltip } from "naive-ui";
 import { computed, ref, watchEffect } from "vue";
 import { useRouter } from "vue-router";
 import { Switch } from "@/components/v2";
+import { t } from "@/plugins/i18n";
 import { WORKSPACE_ROUTE_SQL_REVIEW_DETAIL } from "@/router/dashboard/workspaceRoutes";
 import { useReviewPolicyByResource, useSQLReviewStore } from "@/store";
+import {
+  environmentNamePrefix,
+  projectNamePrefix,
+} from "@/store/modules/v1/common";
 import type { SQLReviewPolicy } from "@/types";
 import { hasWorkspacePermissionV2, sqlReviewPolicySlug } from "@/utils";
 import SQLReviewPolicySelectPanel from "./SQLReviewPolicySelectPanel.vue";
@@ -72,6 +87,23 @@ const router = useRouter();
 const reviewStore = useSQLReviewStore();
 const showReviewSelectPanel = ref<boolean>(false);
 const pendingSelectReviewPolicy = ref<SQLReviewPolicy | undefined>(undefined);
+
+const scope = computed(() => {
+  if (props.resource.startsWith(projectNamePrefix)) {
+    return t("settings.general.workspace.query-data-policy.environment-scope");
+  }
+  if (props.resource.startsWith(environmentNamePrefix)) {
+    return t("settings.general.workspace.query-data-policy.project-scope");
+  }
+  return "";
+});
+
+const tooltip = computed(() => {
+  if (!scope.value) {
+    return "";
+  }
+  return t("sql-review.tooltip-for-resource", { scope: scope.value });
+});
 
 const sqlReviewPolicy = useReviewPolicyByResource(
   computed(() => props.resource)

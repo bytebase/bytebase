@@ -61,17 +61,17 @@ func (*DatabaseAllowDropIfEmptyAdvisor) Check(_ context.Context, checkCtx adviso
 // DatabaseDropEmptyDBRule checks for drop database only if empty.
 type DatabaseDropEmptyDBRule struct {
 	BaseRule
-	originCatalog *model.DatabaseMetadata
+	originMetadata *model.DatabaseMetadata
 }
 
 // NewDatabaseDropEmptyDBRule creates a new DatabaseDropEmptyDBRule.
-func NewDatabaseDropEmptyDBRule(level storepb.Advice_Status, title string, originCatalog *model.DatabaseMetadata) *DatabaseDropEmptyDBRule {
+func NewDatabaseDropEmptyDBRule(level storepb.Advice_Status, title string, originMetadata *model.DatabaseMetadata) *DatabaseDropEmptyDBRule {
 	return &DatabaseDropEmptyDBRule{
 		BaseRule: BaseRule{
 			level: level,
 			title: title,
 		},
-		originCatalog: originCatalog,
+		originMetadata: originMetadata,
 	}
 }
 
@@ -102,15 +102,15 @@ func (r *DatabaseDropEmptyDBRule) checkDropDatabase(ctx *mysql.DropDatabaseConte
 	}
 
 	dbName := mysqlparser.NormalizeMySQLSchemaRef(ctx.SchemaRef())
-	if r.originCatalog.DatabaseName() != dbName {
+	if r.originMetadata.DatabaseName() != dbName {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
 			Code:          code.NotCurrentDatabase.Int32(),
 			Title:         r.title,
-			Content:       fmt.Sprintf("Database `%s` that is trying to be deleted is not the current database `%s`", dbName, r.originCatalog.DatabaseName()),
+			Content:       fmt.Sprintf("Database `%s` that is trying to be deleted is not the current database `%s`", dbName, r.originMetadata.DatabaseName()),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
 		})
-	} else if !r.originCatalog.HasNoTable() {
+	} else if !r.originMetadata.HasNoTable() {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
 			Code:          code.DatabaseNotEmpty.Int32(),

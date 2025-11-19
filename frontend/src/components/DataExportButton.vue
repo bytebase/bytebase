@@ -42,7 +42,11 @@
         >
           <slot name="form" />
           <NFormItem path="limit" :label="$t('export-data.export-rows')">
-            <MaxRowCountSelect v-model:value="formData.limit" />
+            <MaxRowCountSelect
+              ref="maxRowCountSelectRef"
+              :maximum-export-count="maximumExportCount"
+              v-model:value="formData.limit"
+            />
           </NFormItem>
           <NFormItem path="format" :label="$t('export-data.export-format')">
             <NRadioGroup v-model:value="formData.format">
@@ -133,7 +137,7 @@ import {
   NRadioGroup,
   NTooltip,
 } from "naive-ui";
-import { computed, reactive, ref, watch } from "vue";
+import { computed, nextTick, reactive, ref, watch } from "vue";
 import { BBModal, BBTextField } from "@/bbkit";
 import { t } from "@/plugins/i18n";
 import { pushNotification } from "@/store";
@@ -169,6 +173,7 @@ const props = withDefaults(
     tooltip?: string;
     text?: string;
     validate?: (option: ExportOption) => boolean;
+    maximumExportCount?: number;
   }>(),
   {
     size: "small",
@@ -177,11 +182,17 @@ const props = withDefaults(
     supportPassword: false,
     text: () => t("common.export"),
     validate: (_: ExportOption) => true,
+    maximumExportCount: Number.MAX_VALUE,
   }
 );
 
+const maxRowCountSelectRef = ref<InstanceType<typeof MaxRowCountSelect>>();
+
 const defaultFormData = (): ExportOption => ({
-  limit: 1000,
+  limit: Math.min(
+    maxRowCountSelectRef.value?.maximum ?? Number.MAX_VALUE,
+    1000
+  ),
   format: props.supportFormats[0],
   password: "",
 });
@@ -385,6 +396,12 @@ watch(
   ([showDrawer, showModal]) => {
     if (showDrawer) {
       formData.value = defaultFormData();
+      nextTick(() => {
+        formData.value.limit = Math.min(
+          maxRowCountSelectRef.value?.maximum ?? Number.MAX_VALUE,
+          formData.value.limit
+        );
+      });
     } else if (showModal) {
       formData.value.password = "";
     }

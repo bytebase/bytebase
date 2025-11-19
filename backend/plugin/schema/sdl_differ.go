@@ -121,6 +121,7 @@ type SDLChunks struct {
 	Views             map[string]*SDLChunk // key: view name/identifier
 	MaterializedViews map[string]*SDLChunk // key: materialized view name/identifier
 	Functions         map[string]*SDLChunk // key: function name/identifier
+	Triggers          map[string]*SDLChunk // key: schema.table.trigger_name (table-scoped)
 	Indexes           map[string]*SDLChunk // key: index name/identifier
 	Sequences         map[string]*SDLChunk // key: sequence name/identifier
 	Schemas           map[string]*SDLChunk // key: schema name/identifier

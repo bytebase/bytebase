@@ -8,11 +8,12 @@ import (
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 
+	"google.golang.org/protobuf/proto"
+
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	advisorpg "github.com/bytebase/bytebase/backend/plugin/advisor/pg"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -172,10 +173,15 @@ loop:
 		if dbSchema == nil {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database schema not found for %s", database.DatabaseName))
 		}
-		originCatalog, finalCatalog, err := catalog.NewCatalogWithMetadata(dbSchema.GetMetadata(), engine, store.IsObjectCaseSensitive(instance))
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create catalog"))
+		// Create original metadata as read-only
+		originMetadata := model.NewDatabaseMetadata(dbSchema.GetMetadata(), engine, store.IsObjectCaseSensitive(instance))
+
+		// Clone metadata for final to avoid modifying the original
+		clonedMetadata, ok := proto.Clone(dbSchema.GetMetadata()).(*storepb.DatabaseSchemaMetadata)
+		if !ok {
+			return nil, connect.NewError(connect.CodeInternal, errors.New("failed to clone database schema metadata"))
 		}
+		finalMetadata := model.NewDatabaseMetadata(clonedMetadata, engine, store.IsObjectCaseSensitive(instance))
 		// Batch fetch all revisions for this database
 		revisions, err := s.store.ListRevisions(ctx, &store.FindRevisionMessage{
 			InstanceID:   &database.InstanceID,
@@ -308,7 +314,7 @@ loop:
 					checkResult.RiskLevel = riskLevelEnum
 				}
 				if common.EngineSupportSQLReview(engine) {
-					adviceStatus, sqlReviewAdvices, err := s.runSQLReviewCheckForFile(ctx, originCatalog, finalCatalog, instance, database, changeType, statement)
+					adviceStatus, sqlReviewAdvices, err := s.runSQLReviewCheckForFile(ctx, originMetadata, finalMetadata, instance, database, changeType, statement)
 					if err != nil {
 						return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check SQL review"))
 					}
@@ -614,8 +620,8 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 
 func (s *ReleaseService) runSQLReviewCheckForFile(
 	ctx context.Context,
-	originCatalog *model.DatabaseMetadata,
-	finalCatalog *catalog.DatabaseState,
+	originMetadata *model.DatabaseMetadata,
+	finalMetadata *model.DatabaseMetadata,
 	instance *store.InstanceMessage,
 	database *store.DatabaseMessage,
 	changeType storepb.PlanCheckRunConfig_ChangeDatabaseType,
@@ -663,8 +669,8 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 		ChangeType:               changeType,
 		DBSchema:                 dbMetadata,
 		DBType:                   instance.Metadata.GetEngine(),
-		OriginalMetadata:         originCatalog,
-		FinalCatalog:             finalCatalog,
+		OriginalMetadata:         originMetadata,
+		FinalMetadata:            finalMetadata,
 		Driver:                   connection,
 		CurrentDatabase:          database.DatabaseName,
 		ClassificationConfig:     classificationConfig,

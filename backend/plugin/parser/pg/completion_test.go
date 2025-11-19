@@ -173,7 +173,7 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 				},
 			},
 		},
-	}, true /* isObjectCaseSensitive */, true /* isDetailCaseSensitive */), nil
+	}, storepb.Engine_POSTGRES, true /* isObjectCaseSensitive */), nil
 }
 
 func catchCaret(s string) (string, int) {

@@ -659,6 +659,9 @@ func (e *metadataExtractor) extractColumn(ctx parser.IColumn_definitionContext, 
 		column.Name, _ = tsql.NormalizeTSQLIdentifier(ctx.Id_())
 	}
 
+	// Set position based on current column count (1-based)
+	column.Position = int32(len(table.Columns) + 1)
+
 	// Data type and IDENTITY handling
 	if dataTypeCtx := ctx.Data_type(); dataTypeCtx != nil {
 		column.Type = extractDataType(dataTypeCtx)
