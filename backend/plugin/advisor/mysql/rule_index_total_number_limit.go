@@ -132,7 +132,7 @@ func (r *IndexTotalNumberLimitRule) generateAdvice() []*storepb.Advice {
 	})
 
 	for _, table := range tableList {
-		schema := r.finalMetadata.GetSchema("")
+		schema := r.finalMetadata.GetSchemaMetadata("")
 		if schema == nil {
 			continue
 		}

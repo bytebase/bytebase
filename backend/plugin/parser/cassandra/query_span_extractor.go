@@ -196,7 +196,7 @@ func (e *querySpanExtractor) expandSelectAsterisk(keyspace, table string) []base
 	var results []base.QuerySpanResult
 	schemaNames := metadata.ListSchemaNames()
 	for _, schemaName := range schemaNames {
-		schema := metadata.GetSchema(schemaName)
+		schema := metadata.GetSchemaMetadata(schemaName)
 		if schema == nil {
 			continue
 		}

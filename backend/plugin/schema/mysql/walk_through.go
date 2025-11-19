@@ -39,7 +39,7 @@ func WalkThrough(d *model.DatabaseMetadata, ast any) *storepb.Advice {
 	// We define the Catalog as Database -> Schema -> Table. The Schema is only for PostgreSQL.
 	// So we use a Schema whose name is empty for other engines, such as MySQL.
 	// If there is no empty-string-name schema, create it to avoid corner cases.
-	if d.GetSchema("") == nil {
+	if d.GetSchemaMetadata("") == nil {
 		d.CreateSchema("")
 	}
 
@@ -114,7 +114,7 @@ func (l *mysqlListener) EnterCreateTable(ctx *mysql.CreateTableContext) {
 		return
 	}
 
-	schema := l.databaseMetadata.GetSchema("")
+	schema := l.databaseMetadata.GetSchemaMetadata("")
 	if schema == nil {
 		l.advice = &storepb.Advice{
 			Status:        storepb.Advice_ERROR,
@@ -237,7 +237,7 @@ func (l *mysqlListener) EnterDropTable(ctx *mysql.DropTableContext) {
 			}
 		}
 
-		schema := l.databaseMetadata.GetSchema("")
+		schema := l.databaseMetadata.GetSchemaMetadata("")
 		if schema == nil {
 			l.advice = &storepb.Advice{
 				Status:        storepb.Advice_ERROR,
@@ -494,7 +494,7 @@ func (l *mysqlListener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 		// rename table.
 		case item.RENAME_SYMBOL() != nil && item.TableName() != nil:
 			_, newTableName := mysqlparser.NormalizeMySQLTableName(item.TableName())
-			schema := l.databaseMetadata.GetSchema("")
+			schema := l.databaseMetadata.GetSchemaMetadata("")
 			if schema == nil {
 				l.advice = &storepb.Advice{
 					Status:        storepb.Advice_ERROR,
@@ -709,7 +709,7 @@ func (l *mysqlListener) EnterRenameTableStatement(ctx *mysql.RenameTableStatemen
 		return
 	}
 	for _, pair := range ctx.AllRenamePair() {
-		schema := l.databaseMetadata.GetSchema("")
+		schema := l.databaseMetadata.GetSchemaMetadata("")
 		if schema == nil {
 			l.advice = &storepb.Advice{
 				Status:        storepb.Advice_ERROR,
@@ -1124,7 +1124,7 @@ func mysqlCopyTable(d *model.DatabaseMetadata, databaseName, tableName, referTab
 		return advice
 	}
 
-	schema := d.GetSchema("")
+	schema := d.GetSchemaMetadata("")
 	if schema == nil {
 		return &storepb.Advice{
 			Status:        storepb.Advice_ERROR,
@@ -1214,7 +1214,7 @@ func mysqlFindTableState(d *model.DatabaseMetadata, databaseName, tableName stri
 		}
 	}
 
-	schema := d.GetSchema("")
+	schema := d.GetSchemaMetadata("")
 	if schema == nil {
 		return nil, &storepb.Advice{
 			Status:        storepb.Advice_ERROR,

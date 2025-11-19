@@ -24,8 +24,8 @@ type FindDBSchemaMessage struct {
 }
 
 // GetDBSchema gets the schema for a database.
-func (s *Store) GetDBSchema(ctx context.Context, find *FindDBSchemaMessage) (*model.DatabaseSchema, error) {
-	if v, ok := s.dbSchemaCache.Get(getDatabaseCacheKey(find.InstanceID, find.DatabaseName)); ok && s.enableCache {
+func (s *Store) GetDBSchema(ctx context.Context, find *FindDBSchemaMessage) (*model.DatabaseMetadata, error) {
+	if v, ok := s.dbMetadataCache.Get(getDatabaseCacheKey(find.InstanceID, find.DatabaseName)); ok && s.enableCache {
 		return v, nil
 	}
 
@@ -63,13 +63,13 @@ func (s *Store) GetDBSchema(ctx context.Context, find *FindDBSchemaMessage) (*mo
 		return nil, err
 	}
 
-	dbSchema, err := s.convertMetadataAndConfig(ctx, metadata, schema, config, find.InstanceID)
+	dbMetadata, err := s.convertMetadataAndConfig(ctx, metadata, schema, config, find.InstanceID)
 	if err != nil {
 		return nil, err
 	}
 
-	s.dbSchemaCache.Add(getDatabaseCacheKey(find.InstanceID, find.DatabaseName), dbSchema)
-	return dbSchema, nil
+	s.dbMetadataCache.Add(getDatabaseCacheKey(find.InstanceID, find.DatabaseName), dbMetadata)
+	return dbMetadata, nil
 }
 
 // UpsertDBSchema upserts a database schema.
@@ -79,7 +79,7 @@ func (s *Store) UpsertDBSchema(
 	databaseName string,
 	dbMetadata *storepb.DatabaseSchemaMetadata,
 	dbConfig *storepb.DatabaseConfig,
-	dbSchema []byte,
+	rawDump []byte,
 ) error {
 	metadataBytes, err := protojson.Marshal(dbMetadata)
 	if err != nil {
@@ -108,7 +108,7 @@ func (s *Store) UpsertDBSchema(
 		databaseName,
 		metadataBytes,
 		// Convert to string because []byte{} is null which violates db schema constraints.
-		string(dbSchema),
+		string(rawDump),
 		configBytes)
 
 	query, args, err := q.ToSQL()
@@ -138,7 +138,7 @@ func (s *Store) UpsertDBSchema(
 		return err
 	}
 
-	s.dbSchemaCache.Add(getDatabaseCacheKey(instanceID, databaseName), updatedDBSchema)
+	s.dbMetadataCache.Add(getDatabaseCacheKey(instanceID, databaseName), updatedDBSchema)
 	return nil
 }
 
@@ -175,11 +175,11 @@ func (s *Store) UpdateDBSchema(ctx context.Context, instanceID, databaseName str
 		return err
 	}
 	// Invalid the cache and read the value again.
-	s.dbSchemaCache.Remove(getDatabaseCacheKey(instanceID, databaseName))
+	s.dbMetadataCache.Remove(getDatabaseCacheKey(instanceID, databaseName))
 	return nil
 }
 
-func (s *Store) convertMetadataAndConfig(ctx context.Context, metadata, schema, config []byte, instanceID string) (*model.DatabaseSchema, error) {
+func (s *Store) convertMetadataAndConfig(ctx context.Context, metadata, schema, config []byte, instanceID string) (*model.DatabaseMetadata, error) {
 	var databaseSchema storepb.DatabaseSchemaMetadata
 	var databaseConfig storepb.DatabaseConfig
 	if err := common.ProtojsonUnmarshaler.Unmarshal(metadata, &databaseSchema); err != nil {
@@ -192,5 +192,5 @@ func (s *Store) convertMetadataAndConfig(ctx context.Context, metadata, schema, 
 	if err != nil {
 		return nil, err
 	}
-	return model.NewDatabaseSchema(&databaseSchema, schema, &databaseConfig, instance.Metadata.GetEngine(), IsObjectCaseSensitive(instance)), nil
+	return model.NewDatabaseMetadata(&databaseSchema, schema, &databaseConfig, instance.Metadata.GetEngine(), IsObjectCaseSensitive(instance)), nil
 }

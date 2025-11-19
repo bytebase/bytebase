@@ -9,96 +9,407 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
-// DatabaseSchema is the database schema including the metadata and schema (raw dump).
-type DatabaseSchema struct {
-	metadata              *storepb.DatabaseSchemaMetadata
-	schema                []byte
-	config                *storepb.DatabaseConfig
+// DatabaseMetadata is the unified database schema including metadata, config, and raw dump.
+// This struct combines what were previously separate types: DatabaseMetadata, and DatabaseConfig.
+type DatabaseMetadata struct {
+	// Proto representations for serialization
+	metadata *storepb.DatabaseSchemaMetadata
+	config   *storepb.DatabaseConfig
+	schema   []byte
+
+	// Case sensitivity flags
 	isObjectCaseSensitive bool
 	isDetailCaseSensitive bool
 
-	metadataInternal *DatabaseMetadata
-	configInternal   *DatabaseConfig
+	// Metadata fields (formerly in DatabaseMetadata)
+	name           string
+	owner          string
+	searchPath     []string
+	internal       map[string]*SchemaMetadata
+	linkedDatabase map[string]*LinkedDatabaseMetadata
+
+	// Config fields (formerly in DatabaseConfig)
+	configName     string
+	configInternal map[string]*SchemaConfig
 }
 
-func NewDatabaseSchema(
+func NewDatabaseMetadata(
 	metadata *storepb.DatabaseSchemaMetadata,
 	schema []byte,
 	config *storepb.DatabaseConfig,
 	engine storepb.Engine,
 	isObjectCaseSensitive bool,
-) *DatabaseSchema {
-	databaseMetadata := NewDatabaseMetadata(metadata, engine, isObjectCaseSensitive)
-	databaseConfig := NewDatabaseConfig(config)
-	return &DatabaseSchema{
+) *DatabaseMetadata {
+	isDetailCaseSensitive := getIsDetailCaseSensitive(engine)
+	dbMetadata := &DatabaseMetadata{
 		metadata:              metadata,
 		schema:                schema,
 		config:                config,
 		isObjectCaseSensitive: isObjectCaseSensitive,
-		isDetailCaseSensitive: getIsDetailCaseSensitive(engine),
-		metadataInternal:      databaseMetadata,
-		configInternal:        databaseConfig,
+		isDetailCaseSensitive: isDetailCaseSensitive,
+		name:                  metadata.Name,
+		owner:                 metadata.Owner,
+		searchPath:            normalizeSearchPathSlice(metadata.SearchPath),
+		internal:              make(map[string]*SchemaMetadata),
+		linkedDatabase:        make(map[string]*LinkedDatabaseMetadata),
+		configInternal:        make(map[string]*SchemaConfig),
 	}
-}
 
-func (dbs *DatabaseSchema) GetMetadata() *storepb.DatabaseSchemaMetadata {
-	return dbs.metadata
-}
-
-func (dbs *DatabaseSchema) GetSchema() []byte {
-	return dbs.schema
-}
-
-func (dbs *DatabaseSchema) GetConfig() *storepb.DatabaseConfig {
-	return dbs.config
-}
-
-func (dbs *DatabaseSchema) GetDatabaseMetadata() *DatabaseMetadata {
-	return dbs.metadataInternal
-}
-
-func (dbs *DatabaseSchema) GetInternalConfig() *DatabaseConfig {
-	return dbs.configInternal
-}
-
-// DatabaseConfig is the config for a database.
-type DatabaseConfig struct {
-	name     string
-	internal map[string]*SchemaConfig
-}
-
-// NewDatabaseConfig creates a new database config.
-func NewDatabaseConfig(config *storepb.DatabaseConfig) *DatabaseConfig {
-	databaseConfig := &DatabaseConfig{
-		internal: make(map[string]*SchemaConfig),
+	if config != nil {
+		dbMetadata.configName = config.Name
 	}
-	if config == nil {
-		return databaseConfig
-	}
-	databaseConfig.name = config.Name
-	for _, schema := range config.Schemas {
-		schemaConfig := &SchemaConfig{
-			internal: make(map[string]*TableConfig),
+
+	// Build schema metadata maps
+	for _, s := range metadata.Schemas {
+		schemaMetadata := &SchemaMetadata{
+			isObjectCaseSensitive:    isObjectCaseSensitive,
+			isDetailCaseSensitive:    isDetailCaseSensitive,
+			internalTables:           make(map[string]*TableMetadata),
+			internalExternalTable:    make(map[string]*ExternalTableMetadata),
+			internalViews:            make(map[string]*ViewMetadata),
+			internalMaterializedView: make(map[string]*MaterializedViewMetadata),
+			internalFunctions:        make([]*FunctionMetadata, 0),
+			internalProcedures:       make(map[string]*ProcedureMetadata),
+			internalPackages:         make(map[string]*PackageMetadata),
+			internalSequences:        make(map[string]*SequenceMetadata),
+			proto:                    s,
 		}
+		for _, table := range s.Tables {
+			tables, names := buildTablesMetadata(table, isDetailCaseSensitive)
+			for i, table := range tables {
+				var tableID string
+				if isObjectCaseSensitive {
+					tableID = names[i]
+				} else {
+					tableID = strings.ToLower(names[i])
+				}
+				schemaMetadata.internalTables[tableID] = table
+			}
+		}
+		for _, externalTable := range s.ExternalTables {
+			externalTableMetadata := &ExternalTableMetadata{
+				isDetailCaseSensitive: isDetailCaseSensitive,
+				internal:              make(map[string]*storepb.ColumnMetadata),
+				proto:                 externalTable,
+			}
+			for _, column := range externalTable.Columns {
+				var columnID string
+				if isDetailCaseSensitive {
+					columnID = column.Name
+				} else {
+					columnID = strings.ToLower(column.Name)
+				}
+				externalTableMetadata.internal[columnID] = column
+				externalTableMetadata.columns = append(externalTableMetadata.columns, column)
+			}
+			var tableID string
+			if isObjectCaseSensitive {
+				tableID = externalTable.Name
+			} else {
+				tableID = strings.ToLower(externalTable.Name)
+			}
+			schemaMetadata.internalExternalTable[tableID] = externalTableMetadata
+		}
+		for _, view := range s.Views {
+			var viewID string
+			if isObjectCaseSensitive {
+				viewID = view.Name
+			} else {
+				viewID = strings.ToLower(view.Name)
+			}
+			schemaMetadata.internalViews[viewID] = &ViewMetadata{
+				Definition: view.Definition,
+				proto:      view,
+			}
+		}
+		for _, materializedView := range s.MaterializedViews {
+			var viewID string
+			if isObjectCaseSensitive {
+				viewID = materializedView.Name
+			} else {
+				viewID = strings.ToLower(materializedView.Name)
+			}
+			schemaMetadata.internalMaterializedView[viewID] = &MaterializedViewMetadata{
+				Definition: materializedView.Definition,
+				proto:      materializedView,
+			}
+		}
+		for _, function := range s.Functions {
+			schemaMetadata.internalFunctions = append(schemaMetadata.internalFunctions, &FunctionMetadata{
+				Definition: function.Definition,
+				proto:      function,
+			})
+		}
+		for _, procedure := range s.Procedures {
+			var procedureID string
+			if isDetailCaseSensitive {
+				procedureID = procedure.Name
+			} else {
+				procedureID = strings.ToLower(procedure.Name)
+			}
+			schemaMetadata.internalProcedures[procedureID] = &ProcedureMetadata{
+				Definition: procedure.Definition,
+				proto:      procedure,
+			}
+		}
+		for _, p := range s.Packages {
+			var packageID string
+			if isDetailCaseSensitive {
+				packageID = p.Name
+			} else {
+				packageID = strings.ToLower(p.Name)
+			}
+			schemaMetadata.internalPackages[packageID] = &PackageMetadata{
+				Definition: p.Definition,
+				proto:      p,
+			}
+		}
+		for _, sequence := range s.Sequences {
+			var sequenceID string
+			if isDetailCaseSensitive {
+				sequenceID = sequence.Name
+			} else {
+				sequenceID = strings.ToLower(sequence.Name)
+			}
+			schemaMetadata.internalSequences[sequenceID] = &SequenceMetadata{
+				proto: sequence,
+			}
+		}
+		var schemaID string
+		if isObjectCaseSensitive {
+			schemaID = s.Name
+		} else {
+			schemaID = strings.ToLower(s.Name)
+		}
+		dbMetadata.internal[schemaID] = schemaMetadata
+	}
+
+	for _, dbLink := range metadata.LinkedDatabases {
+		var dbLinkID string
+		if isObjectCaseSensitive {
+			dbLinkID = dbLink.Name
+		} else {
+			dbLinkID = strings.ToLower(dbLink.Name)
+		}
+		dbMetadata.linkedDatabase[dbLinkID] = &LinkedDatabaseMetadata{
+			name:     dbLink.Name,
+			username: dbLink.Username,
+			host:     dbLink.Host,
+		}
+	}
+
+	// Build config maps
+	if config != nil {
+		for _, schemaProto := range config.Schemas {
+			schemaConfig := &SchemaConfig{
+				internal: make(map[string]*TableConfig),
+			}
+			for _, table := range schemaProto.Tables {
+				tableConfig := &TableConfig{
+					Classification: table.Classification,
+					internal:       make(map[string]*storepb.ColumnCatalog),
+				}
+				for _, column := range table.Columns {
+					tableConfig.internal[column.Name] = column
+				}
+				schemaConfig.internal[table.Name] = tableConfig
+			}
+			dbMetadata.configInternal[schemaProto.Name] = schemaConfig
+		}
+	}
+
+	return dbMetadata
+}
+
+// Proto getters for serialization
+func (d *DatabaseMetadata) GetMetadata() *storepb.DatabaseSchemaMetadata {
+	return d.metadata
+}
+
+func (d *DatabaseMetadata) GetSchema() []byte {
+	return d.schema
+}
+
+func (d *DatabaseMetadata) GetConfig() *storepb.DatabaseConfig {
+	return d.config
+}
+
+// Metadata methods (formerly from DatabaseMetadata)
+func (d *DatabaseMetadata) GetName() string {
+	return d.name
+}
+
+func (d *DatabaseMetadata) GetOwner() string {
+	return d.owner
+}
+
+func (d *DatabaseMetadata) GetSearchPath() []string {
+	return d.searchPath
+}
+
+func (d *DatabaseMetadata) GetSchemaMetadata(name string) *SchemaMetadata {
+	var schemaID string
+	if d.isObjectCaseSensitive {
+		schemaID = name
+	} else {
+		schemaID = strings.ToLower(name)
+	}
+	return d.internal[schemaID]
+}
+
+func (d *DatabaseMetadata) DatabaseName() string {
+	if d.metadata == nil {
+		return ""
+	}
+	return d.metadata.Name
+}
+
+func (d *DatabaseMetadata) HasNoTable() bool {
+	for _, schema := range d.internal {
+		if schema != nil && schema.proto != nil && len(schema.proto.Tables) > 0 {
+			return false
+		}
+	}
+	return true
+}
+
+func (d *DatabaseMetadata) ListSchemaNames() []string {
+	var result []string
+	for _, schema := range d.internal {
+		result = append(result, schema.GetProto().Name)
+	}
+	return result
+}
+
+func (d *DatabaseMetadata) GetLinkedDatabase(name string) *LinkedDatabaseMetadata {
+	var nameID string
+	if d.isObjectCaseSensitive {
+		nameID = name
+	} else {
+		nameID = strings.ToLower(name)
+	}
+	return d.linkedDatabase[nameID]
+}
+
+func (d *DatabaseMetadata) GetProto() *storepb.DatabaseSchemaMetadata {
+	return d.metadata
+}
+
+func (d *DatabaseMetadata) SortProto() {
+	// Sort schemas by name
+	slices.SortFunc(d.metadata.Schemas, func(x, y *storepb.SchemaMetadata) int {
+		return strings.Compare(x.Name, y.Name)
+	})
+
+	// Sort tables and indexes within each schema
+	for _, schema := range d.metadata.Schemas {
+		// Sort tables by name
+		slices.SortFunc(schema.Tables, func(x, y *storepb.TableMetadata) int {
+			return strings.Compare(x.Name, y.Name)
+		})
+
+		// Sort indexes within each table by name
 		for _, table := range schema.Tables {
-			tableConfig := &TableConfig{
-				Classification: table.Classification,
-				internal:       make(map[string]*storepb.ColumnCatalog),
-			}
-			for _, column := range table.Columns {
-				tableConfig.internal[column.Name] = column
-			}
-			schemaConfig.internal[table.Name] = tableConfig
+			slices.SortFunc(table.Indexes, func(x, y *storepb.IndexMetadata) int {
+				return strings.Compare(x.Name, y.Name)
+			})
+
+			// Sort columns by position
+			slices.SortFunc(table.Columns, func(x, y *storepb.ColumnMetadata) int {
+				if x.Position < y.Position {
+					return -1
+				} else if x.Position > y.Position {
+					return 1
+				}
+				return 0
+			})
 		}
-		databaseConfig.internal[schema.Name] = schemaConfig
+
+		// Sort views by name
+		slices.SortFunc(schema.Views, func(x, y *storepb.ViewMetadata) int {
+			return strings.Compare(x.Name, y.Name)
+		})
 	}
-	return databaseConfig
 }
 
-// GetSchemaConfig gets the schema config by name.
-// If not found, returns a new empty schema config.
-func (d *DatabaseConfig) GetSchemaConfig(name string) *SchemaConfig {
-	if config := d.internal[name]; config != nil {
+func (d *DatabaseMetadata) GetIsObjectCaseSensitive() bool {
+	return d.isObjectCaseSensitive
+}
+
+func (d *DatabaseMetadata) CreateSchema(schemaName string) *SchemaMetadata {
+	// Create new schema proto
+	newSchemaProto := &storepb.SchemaMetadata{
+		Name:   schemaName,
+		Tables: []*storepb.TableMetadata{},
+		Views:  []*storepb.ViewMetadata{},
+	}
+
+	// Add to proto's schema list
+	d.metadata.Schemas = append(d.metadata.Schemas, newSchemaProto)
+
+	// Create SchemaMetadata wrapper
+	schemaMeta := &SchemaMetadata{
+		isObjectCaseSensitive:    d.isObjectCaseSensitive,
+		isDetailCaseSensitive:    d.isDetailCaseSensitive,
+		internalTables:           make(map[string]*TableMetadata),
+		internalExternalTable:    make(map[string]*ExternalTableMetadata),
+		internalViews:            make(map[string]*ViewMetadata),
+		internalMaterializedView: make(map[string]*MaterializedViewMetadata),
+		internalFunctions:        []*FunctionMetadata{},
+		internalProcedures:       make(map[string]*ProcedureMetadata),
+		internalPackages:         make(map[string]*PackageMetadata),
+		internalSequences:        make(map[string]*SequenceMetadata),
+		proto:                    newSchemaProto,
+	}
+
+	// Add to internal map
+	var schemaID string
+	if d.isObjectCaseSensitive {
+		schemaID = schemaName
+	} else {
+		schemaID = strings.ToLower(schemaName)
+	}
+	d.internal[schemaID] = schemaMeta
+
+	return schemaMeta
+}
+
+func (d *DatabaseMetadata) DropSchema(schemaName string) error {
+	// Check if schema exists
+	if d.GetSchemaMetadata(schemaName) == nil {
+		return errors.Errorf("schema %q does not exist in database %q", schemaName, d.name)
+	}
+
+	// Remove from internal map
+	var schemaID string
+	if d.isObjectCaseSensitive {
+		schemaID = schemaName
+	} else {
+		schemaID = strings.ToLower(schemaName)
+	}
+	delete(d.internal, schemaID)
+
+	// Remove from proto's schema list
+	newSchemas := make([]*storepb.SchemaMetadata, 0, len(d.metadata.Schemas)-1)
+	for _, schema := range d.metadata.Schemas {
+		if d.isObjectCaseSensitive {
+			if schema.Name != schemaName {
+				newSchemas = append(newSchemas, schema)
+			}
+		} else {
+			if !strings.EqualFold(schema.Name, schemaName) {
+				newSchemas = append(newSchemas, schema)
+			}
+		}
+	}
+	d.metadata.Schemas = newSchemas
+
+	return nil
+}
+
+// Config methods (formerly from DatabaseConfig)
+func (d *DatabaseMetadata) GetSchemaConfig(name string) *SchemaConfig {
+	if config := d.configInternal[name]; config != nil {
 		return config
 	}
 	return &SchemaConfig{
@@ -106,10 +417,10 @@ func (d *DatabaseConfig) GetSchemaConfig(name string) *SchemaConfig {
 	}
 }
 
-func (d *DatabaseConfig) BuildDatabaseConfig() *storepb.DatabaseConfig {
-	config := &storepb.DatabaseConfig{Name: d.name}
+func (d *DatabaseMetadata) BuildDatabaseConfig() *storepb.DatabaseConfig {
+	config := &storepb.DatabaseConfig{Name: d.configName}
 
-	for schemaName, sConfig := range d.internal {
+	for schemaName, sConfig := range d.configInternal {
 		schemaConfig := &storepb.SchemaCatalog{Name: schemaName}
 
 		for tableName, tConfig := range sConfig.internal {
@@ -164,353 +475,21 @@ func (t *TableConfig) GetColumnConfig(name string) *storepb.ColumnCatalog {
 	}
 }
 
-// DatabaseMetadata is the metadata for a database.
-type DatabaseMetadata struct {
-	proto                 *storepb.DatabaseSchemaMetadata
-	name                  string
-	owner                 string
-	searchPath            []string
-	isObjectCaseSensitive bool
-	isDetailCaseSensitive bool
-	internal              map[string]*SchemaMetadata
-	linkedDatabase        map[string]*LinkedDatabaseMetadata
-}
-
-// NewDatabaseMetadata creates a new database metadata.
-func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, engineType storepb.Engine, isObjectCaseSensitive bool) *DatabaseMetadata {
-	isDetailCaseSensitive := getIsDetailCaseSensitive(engineType)
-	databaseMetadata := &DatabaseMetadata{
-		proto:                 metadata,
-		name:                  metadata.Name,
-		owner:                 metadata.Owner,
-		searchPath:            normalizeSearchPath(metadata.SearchPath),
-		isObjectCaseSensitive: isObjectCaseSensitive,
-		isDetailCaseSensitive: isDetailCaseSensitive,
-		internal:              make(map[string]*SchemaMetadata),
-		linkedDatabase:        make(map[string]*LinkedDatabaseMetadata),
+// normalizeSearchPathSlice normalizes the search path from a string to a slice.
+func normalizeSearchPathSlice(searchPath string) []string {
+	if searchPath == "" {
+		return []string{}
 	}
-	for _, schema := range metadata.Schemas {
-		schemaMetadata := &SchemaMetadata{
-			isObjectCaseSensitive:    isObjectCaseSensitive,
-			isDetailCaseSensitive:    isDetailCaseSensitive,
-			internalTables:           make(map[string]*TableMetadata),
-			internalExternalTable:    make(map[string]*ExternalTableMetadata),
-			internalViews:            make(map[string]*ViewMetadata),
-			internalMaterializedView: make(map[string]*MaterializedViewMetadata),
-			internalFunctions:        make([]*FunctionMetadata, 0),
-			internalProcedures:       make(map[string]*ProcedureMetadata),
-			internalPackages:         make(map[string]*PackageMetadata),
-			internalSequences:        make(map[string]*SequenceMetadata),
-			proto:                    schema,
-		}
-		for _, table := range schema.Tables {
-			tables, names := buildTablesMetadata(table, isDetailCaseSensitive)
-			for i, table := range tables {
-				var tableID string
-				if isObjectCaseSensitive {
-					tableID = names[i]
-				} else {
-					tableID = strings.ToLower(names[i])
-				}
-				schemaMetadata.internalTables[tableID] = table
-			}
-		}
-		for _, externalTable := range schema.ExternalTables {
-			externalTableMetadata := &ExternalTableMetadata{
-				isDetailCaseSensitive: isDetailCaseSensitive,
-				internal:              make(map[string]*storepb.ColumnMetadata),
-				proto:                 externalTable,
-			}
-			for _, column := range externalTable.Columns {
-				var columnID string
-				if isDetailCaseSensitive {
-					columnID = column.Name
-				} else {
-					columnID = strings.ToLower(column.Name)
-				}
-				externalTableMetadata.internal[columnID] = column
-				externalTableMetadata.columns = append(externalTableMetadata.columns, column)
-			}
-			var tableID string
-			if isObjectCaseSensitive {
-				tableID = externalTable.Name
-			} else {
-				tableID = strings.ToLower(externalTable.Name)
-			}
-			schemaMetadata.internalExternalTable[tableID] = externalTableMetadata
-		}
-		for _, view := range schema.Views {
-			var viewID string
-			if isObjectCaseSensitive {
-				viewID = view.Name
-			} else {
-				viewID = strings.ToLower(view.Name)
-			}
-			schemaMetadata.internalViews[viewID] = &ViewMetadata{
-				Definition: view.Definition,
-				proto:      view,
-			}
-		}
-		for _, materializedView := range schema.MaterializedViews {
-			var viewID string
-			if isObjectCaseSensitive {
-				viewID = materializedView.Name
-			} else {
-				viewID = strings.ToLower(materializedView.Name)
-			}
-			schemaMetadata.internalMaterializedView[viewID] = &MaterializedViewMetadata{
-				Definition: materializedView.Definition,
-				proto:      materializedView,
-			}
-		}
-		for _, function := range schema.Functions {
-			schemaMetadata.internalFunctions = append(schemaMetadata.internalFunctions, &FunctionMetadata{
-				Definition: function.Definition,
-				proto:      function,
-			})
-		}
-		for _, procedure := range schema.Procedures {
-			var procedureID string
-			if isDetailCaseSensitive {
-				procedureID = procedure.Name
-			} else {
-				procedureID = strings.ToLower(procedure.Name)
-			}
-			schemaMetadata.internalProcedures[procedureID] = &ProcedureMetadata{
-				Definition: procedure.Definition,
-				proto:      procedure,
-			}
-		}
-		for _, p := range schema.Packages {
-			var packageID string
-			if isDetailCaseSensitive {
-				packageID = p.Name
-			} else {
-				packageID = strings.ToLower(p.Name)
-			}
-			schemaMetadata.internalPackages[packageID] = &PackageMetadata{
-				Definition: p.Definition,
-				proto:      p,
-			}
-		}
-		for _, sequence := range schema.Sequences {
-			var sequenceID string
-			if isDetailCaseSensitive {
-				sequenceID = sequence.Name
-			} else {
-				sequenceID = strings.ToLower(sequence.Name)
-			}
-			schemaMetadata.internalSequences[sequenceID] = &SequenceMetadata{
-				proto: sequence,
-			}
-		}
-		var schemaID string
-		if isObjectCaseSensitive {
-			schemaID = schema.Name
-		} else {
-			schemaID = strings.ToLower(schema.Name)
-		}
-		databaseMetadata.internal[schemaID] = schemaMetadata
-	}
-	for _, dbLink := range metadata.LinkedDatabases {
-		var dbLinkID string
-		if isObjectCaseSensitive {
-			dbLinkID = dbLink.Name
-		} else {
-			dbLinkID = strings.ToLower(dbLink.Name)
-		}
-		databaseMetadata.linkedDatabase[dbLinkID] = &LinkedDatabaseMetadata{
-			name:     dbLink.Name,
-			username: dbLink.Username,
-			host:     dbLink.Host,
-		}
-	}
-	return databaseMetadata
-}
-
-func (d *DatabaseMetadata) GetName() string {
-	return d.name
-}
-
-// GetSchema gets the schema by name.
-func (d *DatabaseMetadata) GetSchema(name string) *SchemaMetadata {
-	var schemaID string
-	if d.isObjectCaseSensitive {
-		schemaID = name
-	} else {
-		schemaID = strings.ToLower(name)
-	}
-	return d.internal[schemaID]
-}
-
-// DatabaseName returns the name of the database.
-func (d *DatabaseMetadata) DatabaseName() string {
-	if d.proto == nil {
-		return ""
-	}
-	return d.proto.Name
-}
-
-// HasNoTable returns true if the database has no tables.
-func (d *DatabaseMetadata) HasNoTable() bool {
-	for _, schema := range d.internal {
-		if schema != nil && schema.proto != nil && len(schema.proto.Tables) > 0 {
-			return false
-		}
-	}
-	return true
-}
-
-// ListSchemaNames lists the schema names.
-func (d *DatabaseMetadata) ListSchemaNames() []string {
+	// Split by comma and remove empty strings and "$user"
+	parts := strings.Split(searchPath, ",")
 	var result []string
-	for _, schema := range d.internal {
-		result = append(result, schema.GetProto().Name)
+	for _, path := range parts {
+		trimmed := strings.TrimSpace(path)
+		if trimmed != "" && trimmed != "$user" {
+			result = append(result, trimmed)
+		}
 	}
 	return result
-}
-
-func (d *DatabaseMetadata) GetLinkedDatabase(name string) *LinkedDatabaseMetadata {
-	var nameID string
-	if d.isObjectCaseSensitive {
-		nameID = name
-	} else {
-		nameID = strings.ToLower(name)
-	}
-	return d.linkedDatabase[nameID]
-}
-
-func (d *DatabaseMetadata) GetOwner() string {
-	return d.owner
-}
-
-func (d *DatabaseMetadata) GetSearchPath() []string {
-	return d.searchPath
-}
-
-// GetProto returns the underlying proto for this database metadata.
-func (d *DatabaseMetadata) GetProto() *storepb.DatabaseSchemaMetadata {
-	return d.proto
-}
-
-// SortProto sorts the proto structures to ensure deterministic output.
-// This matches the behavior of the old DatabaseState.convertToDatabaseMetadata.
-// This should be called before comparing protos in tests.
-func (d *DatabaseMetadata) SortProto() {
-	// Sort schemas by name
-	slices.SortFunc(d.proto.Schemas, func(x, y *storepb.SchemaMetadata) int {
-		return strings.Compare(x.Name, y.Name)
-	})
-
-	// Sort tables and indexes within each schema
-	for _, schema := range d.proto.Schemas {
-		// Sort tables by name
-		slices.SortFunc(schema.Tables, func(x, y *storepb.TableMetadata) int {
-			return strings.Compare(x.Name, y.Name)
-		})
-
-		// Sort indexes within each table by name
-		for _, table := range schema.Tables {
-			slices.SortFunc(table.Indexes, func(x, y *storepb.IndexMetadata) int {
-				return strings.Compare(x.Name, y.Name)
-			})
-
-			// Sort columns by position
-			slices.SortFunc(table.Columns, func(x, y *storepb.ColumnMetadata) int {
-				if x.Position < y.Position {
-					return -1
-				} else if x.Position > y.Position {
-					return 1
-				}
-				return 0
-			})
-		}
-
-		// Sort views by name
-		slices.SortFunc(schema.Views, func(x, y *storepb.ViewMetadata) int {
-			return strings.Compare(x.Name, y.Name)
-		})
-	}
-}
-
-// GetIsObjectCaseSensitive returns whether object names (schemas, tables) are case-sensitive.
-func (d *DatabaseMetadata) GetIsObjectCaseSensitive() bool {
-	return d.isObjectCaseSensitive
-}
-
-// CreateSchema creates a new schema in the database.
-// Returns the created SchemaMetadata.
-func (d *DatabaseMetadata) CreateSchema(schemaName string) *SchemaMetadata {
-	// Create new schema proto
-	newSchemaProto := &storepb.SchemaMetadata{
-		Name:   schemaName,
-		Tables: []*storepb.TableMetadata{},
-		Views:  []*storepb.ViewMetadata{},
-	}
-
-	// Add to proto's schema list
-	d.proto.Schemas = append(d.proto.Schemas, newSchemaProto)
-
-	// Create SchemaMetadata wrapper
-	schemaMeta := &SchemaMetadata{
-		isObjectCaseSensitive:    d.isObjectCaseSensitive,
-		isDetailCaseSensitive:    d.isDetailCaseSensitive,
-		internalTables:           make(map[string]*TableMetadata),
-		internalExternalTable:    make(map[string]*ExternalTableMetadata),
-		internalViews:            make(map[string]*ViewMetadata),
-		internalMaterializedView: make(map[string]*MaterializedViewMetadata),
-		internalFunctions:        []*FunctionMetadata{},
-		internalProcedures:       make(map[string]*ProcedureMetadata),
-		internalPackages:         make(map[string]*PackageMetadata),
-		internalSequences:        make(map[string]*SequenceMetadata),
-		proto:                    newSchemaProto,
-	}
-
-	// Add to internal map
-	var schemaID string
-	if d.isObjectCaseSensitive {
-		schemaID = schemaName
-	} else {
-		schemaID = strings.ToLower(schemaName)
-	}
-	d.internal[schemaID] = schemaMeta
-
-	return schemaMeta
-}
-
-// DropSchema drops a schema from the database.
-// Returns an error if the schema does not exist.
-func (d *DatabaseMetadata) DropSchema(schemaName string) error {
-	// Check if schema exists
-	if d.GetSchema(schemaName) == nil {
-		return errors.Errorf("schema %q does not exist in database %q", schemaName, d.name)
-	}
-
-	// Remove from internal map
-	var schemaID string
-	if d.isObjectCaseSensitive {
-		schemaID = schemaName
-	} else {
-		schemaID = strings.ToLower(schemaName)
-	}
-	delete(d.internal, schemaID)
-
-	// Remove from proto's schema list
-	newSchemas := make([]*storepb.SchemaMetadata, 0, len(d.proto.Schemas)-1)
-	for _, schema := range d.proto.Schemas {
-		if d.isObjectCaseSensitive {
-			if schema.Name != schemaName {
-				newSchemas = append(newSchemas, schema)
-			}
-		} else {
-			if !strings.EqualFold(schema.Name, schemaName) {
-				newSchemas = append(newSchemas, schema)
-			}
-		}
-	}
-	d.proto.Schemas = newSchemas
-
-	return nil
 }
 
 // LinkedDatabaseMetadata is the metadata for a linked database.

@@ -118,7 +118,7 @@ func (m CompletionMap) insertMetadataColumns(c *Completer) {
 			if databaseMetadata == nil {
 				return
 			}
-			schema := databaseMetadata.GetSchema("")
+			schema := databaseMetadata.GetSchemaMetadata("")
 			if schema == nil {
 				return
 			}
@@ -159,7 +159,7 @@ func (m CompletionMap) insertMetadataTables(c *Completer) {
 	if databaseMetadata == nil {
 		return
 	}
-	schema := databaseMetadata.GetSchema("")
+	schema := databaseMetadata.GetSchemaMetadata("")
 	if schema == nil {
 		return
 	}

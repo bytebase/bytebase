@@ -569,16 +569,16 @@ func compareMetadata(t *testing.T, dbMeta, parsedMeta *storepb.DatabaseSchemaMet
 	// For MySQL, we only have one schema
 	require.Equal(t, 1, len(parsedMeta.Schemas), "parsed metadata should have exactly one schema")
 
-	dbSchema := dbMeta.Schemas[0]
+	dbMetadata := dbMeta.Schemas[0]
 	parsedSchema := parsedMeta.Schemas[0]
 
 	// Compare tables
-	require.Equal(t, len(dbSchema.Tables), len(parsedSchema.Tables),
+	require.Equal(t, len(dbMetadata.Tables), len(parsedSchema.Tables),
 		"mismatch in number of tables for test %s", testName)
 
 	// Create a map for easier lookup
 	dbTableMap := make(map[string]*storepb.TableMetadata)
-	for _, table := range dbSchema.Tables {
+	for _, table := range dbMetadata.Tables {
 		dbTableMap[table.Name] = table
 	}
 
@@ -603,13 +603,13 @@ func compareMetadata(t *testing.T, dbMeta, parsedMeta *storepb.DatabaseSchemaMet
 	}
 
 	// Compare views
-	compareViews(t, dbSchema.Views, parsedSchema.Views)
+	compareViews(t, dbMetadata.Views, parsedSchema.Views)
 
 	// Compare functions
-	compareFunctions(t, dbSchema.Functions, parsedSchema.Functions)
+	compareFunctions(t, dbMetadata.Functions, parsedSchema.Functions)
 
 	// Compare procedures
-	compareProcedures(t, dbSchema.Procedures, parsedSchema.Procedures)
+	compareProcedures(t, dbMetadata.Procedures, parsedSchema.Procedures)
 }
 
 func compareColumns(t *testing.T, dbColumns, parsedColumns []*storepb.ColumnMetadata, tableName string) {

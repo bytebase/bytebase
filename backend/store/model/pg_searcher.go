@@ -2,62 +2,6 @@ package model
 
 import "strings"
 
-// isSystemPath checks if a path is a PostgreSQL system schema.
-// NOTE: This is primarily designed for PostgreSQL.
-func isSystemPath(path string) bool {
-	// PostgreSQL system schemas.
-	systemSchemas := []string{"pg_catalog", "information_schema", "pg_toast", "pg_temp_1", "pg_temp_2", "pg_global", "$user"}
-	for _, schema := range systemSchemas {
-		if strings.EqualFold(path, schema) {
-			return true
-		}
-	}
-	return false
-}
-
-// normalizeSearchPath normalizes the search path string into a slice of strings.
-// NOTE: This is primarily designed for PostgreSQL's search_path concept.
-func normalizeSearchPath(searchPath string) []string {
-	if searchPath == "" {
-		return []string{}
-	}
-
-	// Split the search path by comma and trim spaces.
-	parts := strings.Split(searchPath, ",")
-	for i, part := range parts {
-		parts[i] = strings.TrimSpace(part)
-	}
-
-	// Remove empty parts.
-	var result []string
-	for _, part := range parts {
-		schema := strings.TrimSpace(part)
-		if part == "\"$user\"" {
-			continue
-		}
-		if strings.HasPrefix(part, "\"") && strings.HasSuffix(part, "\"") {
-			// Remove the quotes from the schema name.
-			schema = strings.Trim(schema, "\"")
-		} else if strings.HasPrefix(part, "'") && strings.HasSuffix(part, "'") {
-			// Remove the single quotes from the schema name.
-			schema = strings.Trim(schema, "'")
-		} else {
-			// For non-quoted schema names, we just return the lower string for PostgreSQL.
-			schema = strings.ToLower(schema)
-		}
-		schema = strings.TrimSpace(schema)
-		if isSystemPath(schema) {
-			// Skip system schemas.
-			continue
-		}
-		if schema != "" {
-			result = append(result, schema)
-		}
-	}
-
-	return result
-}
-
 // DatabaseSearcher provides a fluent interface for searching database objects with a specific search path.
 // This helper avoids repetitive searchPath parameter passing when performing multiple searches.
 // NOTE: This is primarily designed for PostgreSQL's search_path concept.
@@ -71,7 +15,7 @@ type DatabaseSearcher struct {
 // If the database's search path is empty, defaults to ["public"] for PostgreSQL.
 // NOTE: This is primarily designed for PostgreSQL's search_path concept.
 func (d *DatabaseMetadata) NewSearcher(schemaName string) *DatabaseSearcher {
-	searchPath := d.searchPath
+	searchPath := d.GetSearchPath()
 	if schemaName != "" {
 		searchPath = []string{schemaName}
 	} else if len(searchPath) == 0 {
@@ -88,7 +32,7 @@ func (d *DatabaseMetadata) NewSearcher(schemaName string) *DatabaseSearcher {
 // NOTE: This is primarily designed for PostgreSQL's search_path concept.
 func (s *DatabaseSearcher) SearchTable(name string) (string, *TableMetadata) {
 	for _, schemaName := range s.searchPath {
-		schema := s.db.GetSchema(schemaName)
+		schema := s.db.GetSchemaMetadata(schemaName)
 		if schema == nil {
 			continue
 		}
@@ -104,7 +48,7 @@ func (s *DatabaseSearcher) SearchTable(name string) (string, *TableMetadata) {
 // NOTE: This is primarily designed for PostgreSQL's search_path concept.
 func (s *DatabaseSearcher) SearchIndex(name string) (string, *IndexMetadata) {
 	for _, schemaName := range s.searchPath {
-		schema := s.db.GetSchema(schemaName)
+		schema := s.db.GetSchemaMetadata(schemaName)
 		if schema == nil {
 			continue
 		}
@@ -120,7 +64,7 @@ func (s *DatabaseSearcher) SearchIndex(name string) (string, *IndexMetadata) {
 // NOTE: This is primarily designed for PostgreSQL's search_path concept.
 func (s *DatabaseSearcher) SearchView(name string) (string, *ViewMetadata) {
 	for _, schemaName := range s.searchPath {
-		schema := s.db.GetSchema(schemaName)
+		schema := s.db.GetSchemaMetadata(schemaName)
 		if schema == nil {
 			continue
 		}
@@ -136,7 +80,7 @@ func (s *DatabaseSearcher) SearchView(name string) (string, *ViewMetadata) {
 // NOTE: This is primarily designed for PostgreSQL's search_path concept.
 func (s *DatabaseSearcher) SearchExternalTable(name string) (string, *ExternalTableMetadata) {
 	for _, schemaName := range s.searchPath {
-		schema := s.db.GetSchema(schemaName)
+		schema := s.db.GetSchemaMetadata(schemaName)
 		if schema == nil {
 			continue
 		}
@@ -152,7 +96,7 @@ func (s *DatabaseSearcher) SearchExternalTable(name string) (string, *ExternalTa
 // NOTE: This is primarily designed for PostgreSQL's search_path concept.
 func (s *DatabaseSearcher) SearchSequence(name string) (string, *SequenceMetadata) {
 	for _, schemaName := range s.searchPath {
-		schema := s.db.GetSchema(schemaName)
+		schema := s.db.GetSchemaMetadata(schemaName)
 		if schema == nil {
 			continue
 		}
@@ -168,7 +112,7 @@ func (s *DatabaseSearcher) SearchSequence(name string) (string, *SequenceMetadat
 // NOTE: This is primarily designed for PostgreSQL's search_path concept.
 func (s *DatabaseSearcher) SearchMaterializedView(name string) (string, *MaterializedViewMetadata) {
 	for _, schemaName := range s.searchPath {
-		schema := s.db.GetSchema(schemaName)
+		schema := s.db.GetSchemaMetadata(schemaName)
 		if schema == nil {
 			continue
 		}
@@ -186,7 +130,7 @@ func (s *DatabaseSearcher) SearchFunctions(name string) ([]string, []*FunctionMe
 	var schemas []string
 	var funcs []*FunctionMetadata
 	for _, schemaName := range s.searchPath {
-		schema := s.db.GetSchema(schemaName)
+		schema := s.db.GetSchemaMetadata(schemaName)
 		if schema == nil {
 			continue
 		}
@@ -211,7 +155,7 @@ func (s *DatabaseSearcher) SearchFunctions(name string) ([]string, []*FunctionMe
 // NOTE: This is primarily designed for PostgreSQL's search_path concept.
 func (s *DatabaseSearcher) SearchObject(name string) (string, string) {
 	for _, schemaName := range s.searchPath {
-		schema := s.db.GetSchema(schemaName)
+		schema := s.db.GetSchemaMetadata(schemaName)
 		if schema == nil {
 			continue
 		}
@@ -226,7 +170,7 @@ func (s *DatabaseSearcher) SearchObject(name string) (string, string) {
 // NOTE: This is primarily designed for PostgreSQL's search_path concept.
 func (d *DatabaseMetadata) SearchTable(searchPath []string, name string) (string, *TableMetadata) {
 	for _, schemaName := range searchPath {
-		schema := d.GetSchema(schemaName)
+		schema := d.GetSchemaMetadata(schemaName)
 		if schema == nil {
 			continue
 		}
@@ -242,7 +186,7 @@ func (d *DatabaseMetadata) SearchTable(searchPath []string, name string) (string
 // NOTE: This is primarily designed for PostgreSQL's search_path concept.
 func (d *DatabaseMetadata) SearchIndex(searchPath []string, name string) (string, *IndexMetadata) {
 	for _, schemaName := range searchPath {
-		schema := d.GetSchema(schemaName)
+		schema := d.GetSchemaMetadata(schemaName)
 		if schema == nil {
 			continue
 		}
@@ -258,7 +202,7 @@ func (d *DatabaseMetadata) SearchIndex(searchPath []string, name string) (string
 // NOTE: This is primarily designed for PostgreSQL's search_path concept.
 func (d *DatabaseMetadata) SearchView(searchPath []string, name string) (string, *ViewMetadata) {
 	for _, schemaName := range searchPath {
-		schema := d.GetSchema(schemaName)
+		schema := d.GetSchemaMetadata(schemaName)
 		if schema == nil {
 			continue
 		}
@@ -274,7 +218,7 @@ func (d *DatabaseMetadata) SearchView(searchPath []string, name string) (string,
 // NOTE: This is primarily designed for PostgreSQL's search_path concept.
 func (d *DatabaseMetadata) SearchExternalTable(searchPath []string, name string) (string, *ExternalTableMetadata) {
 	for _, schemaName := range searchPath {
-		schema := d.GetSchema(schemaName)
+		schema := d.GetSchemaMetadata(schemaName)
 		if schema == nil {
 			continue
 		}
@@ -290,7 +234,7 @@ func (d *DatabaseMetadata) SearchExternalTable(searchPath []string, name string)
 // NOTE: This is primarily designed for PostgreSQL's search_path concept.
 func (d *DatabaseMetadata) SearchSequence(searchPath []string, name string) (string, *SequenceMetadata) {
 	for _, schemaName := range searchPath {
-		schema := d.GetSchema(schemaName)
+		schema := d.GetSchemaMetadata(schemaName)
 		if schema == nil {
 			continue
 		}
@@ -306,7 +250,7 @@ func (d *DatabaseMetadata) SearchSequence(searchPath []string, name string) (str
 // NOTE: This is primarily designed for PostgreSQL's search_path concept.
 func (d *DatabaseMetadata) SearchMaterializedView(searchPath []string, name string) (string, *MaterializedViewMetadata) {
 	for _, schemaName := range searchPath {
-		schema := d.GetSchema(schemaName)
+		schema := d.GetSchemaMetadata(schemaName)
 		if schema == nil {
 			continue
 		}
@@ -324,7 +268,7 @@ func (d *DatabaseMetadata) SearchFunctions(searchPath []string, name string) ([]
 	var schemas []string
 	var funcs []*FunctionMetadata
 	for _, schemaName := range searchPath {
-		schema := d.GetSchema(schemaName)
+		schema := d.GetSchemaMetadata(schemaName)
 		if schema == nil {
 			continue
 		}
@@ -349,7 +293,7 @@ func (d *DatabaseMetadata) SearchFunctions(searchPath []string, name string) ([]
 // NOTE: This is primarily designed for PostgreSQL's search_path concept.
 func (d *DatabaseMetadata) SearchObject(searchPath []string, name string) (string, string) {
 	for _, schemaName := range searchPath {
-		schema := d.GetSchema(schemaName)
+		schema := d.GetSchemaMetadata(schemaName)
 		if schema == nil {
 			continue
 		}

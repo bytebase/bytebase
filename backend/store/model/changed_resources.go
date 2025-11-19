@@ -9,7 +9,7 @@ import (
 type ChangedResources struct {
 	databases map[string]*ChangedDatabase
 
-	dbSchema *DatabaseSchema
+	dbMetadata *DatabaseMetadata
 }
 
 type ChangedDatabase struct {
@@ -28,10 +28,10 @@ type ChangedTable struct {
 	affectedTable bool
 }
 
-func NewChangedResources(dbSchema *DatabaseSchema) *ChangedResources {
+func NewChangedResources(dbMetadata *DatabaseMetadata) *ChangedResources {
 	return &ChangedResources{
-		databases: make(map[string]*ChangedDatabase),
-		dbSchema:  dbSchema,
+		databases:  make(map[string]*ChangedDatabase),
+		dbMetadata: dbMetadata,
 	}
 }
 
@@ -42,13 +42,10 @@ func (r *ChangedResources) Build() *storepb.ChangedResources {
 		d.Name = name
 		for _, schema := range d.Schemas {
 			for _, table := range schema.Tables {
-				if r.dbSchema == nil {
+				if r.dbMetadata == nil {
 					continue
 				}
-				if r.dbSchema.GetDatabaseMetadata() == nil {
-					continue
-				}
-				schemaMetadata := r.dbSchema.GetDatabaseMetadata().GetSchema(schema.GetName())
+				schemaMetadata := r.dbMetadata.GetSchemaMetadata(schema.GetName())
 				if schemaMetadata == nil {
 					continue
 				}
@@ -229,7 +226,7 @@ func (r *ChangedResources) AddProcedure(database string, schema string, change *
 }
 
 func (r *ChangedResources) CountAffectedTableRows() int64 {
-	if r.dbSchema == nil {
+	if r.dbMetadata == nil {
 		return 0
 	}
 
@@ -240,11 +237,10 @@ func (r *ChangedResources) CountAffectedTableRows() int64 {
 				if !table.affectedTable {
 					continue
 				}
-				dbMeta := r.dbSchema.GetDatabaseMetadata()
-				if dbMeta == nil {
+				if r.dbMetadata == nil {
 					continue
 				}
-				schemaMeta := dbMeta.GetSchema(schemaName)
+				schemaMeta := r.dbMetadata.GetSchemaMetadata(schemaName)
 				if schemaMeta == nil {
 					continue
 				}

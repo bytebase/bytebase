@@ -83,14 +83,14 @@ func diff(ctx context.Context, s *store.Store, instance *store.InstanceMessage, 
 		return "", errors.Wrapf(err, "failed to convert %q to parser engine", instance.Metadata.GetEngine())
 	}
 
-	dbSchema, err := s.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+	dbMetadata, err := s.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
 	})
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get database schema for database %q", database.DatabaseName)
 	}
-	if dbSchema == nil {
+	if dbMetadata == nil {
 		return "", errors.Errorf("database schema %q not found", database.DatabaseName)
 	}
 
@@ -106,7 +106,7 @@ func diff(ctx context.Context, s *store.Store, instance *store.InstanceMessage, 
 	// - previousUserSDLText: previous SDL text (empty triggers initialization scenario)
 	// - currentSchema: current database schema (used as baseline in initialization)
 	// - previousSchema: previous database schema from changelog
-	schemaDiff, err := schema.GetSDLDiff(pengine, sheetContent, previousUserSDLText, dbSchema, previousSchema)
+	schemaDiff, err := schema.GetSDLDiff(pengine, sheetContent, previousUserSDLText, dbMetadata, previousSchema)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to compute SDL schema diff")
 	}
@@ -128,7 +128,7 @@ func diff(ctx context.Context, s *store.Store, instance *store.InstanceMessage, 
 // successfully completed SDL changelog for the given database.
 // Returns empty string if no previous successful SDL changelog is found.
 // getPreviousSuccessfulSDLAndSchema gets both the SDL text and database schema from the most recent successful SDL changelog
-func getPreviousSuccessfulSDLAndSchema(ctx context.Context, s *store.Store, instanceID string, databaseName string) (string, *model.DatabaseSchema, error) {
+func getPreviousSuccessfulSDLAndSchema(ctx context.Context, s *store.Store, instanceID string, databaseName string) (string, *model.DatabaseMetadata, error) {
 	// Find the most recent successful SDL changelog for this database
 	// We only want MIGRATE_SDL type changelogs that are completed (DONE status)
 	doneStatus := store.ChangelogStatusDone
@@ -174,7 +174,7 @@ func getPreviousSuccessfulSDLAndSchema(ctx context.Context, s *store.Store, inst
 	// Get the previous schema from sync history
 	// Use SyncHistoryUID (after applying the SDL) instead of PrevSyncHistoryUID (before applying)
 	// This represents the database schema state after the previous SDL was successfully applied
-	var previousSchema *model.DatabaseSchema
+	var previousSchema *model.DatabaseMetadata
 	if mostRecentChangelog.SyncHistoryUID != nil {
 		// Get the sync history record to obtain the schema metadata
 		syncHistory, err := s.GetSyncHistoryByUID(ctx, *mostRecentChangelog.SyncHistoryUID)
@@ -193,7 +193,7 @@ func getPreviousSuccessfulSDLAndSchema(ctx context.Context, s *store.Store, inst
 			}
 
 			// Create a DatabaseSchema wrapper using the metadata from sync history
-			previousSchema = model.NewDatabaseSchema(
+			previousSchema = model.NewDatabaseMetadata(
 				syncHistory.Metadata,
 				[]byte(syncHistory.Schema), // Use the schema content from sync history
 				&storepb.DatabaseConfig{},  // Empty config

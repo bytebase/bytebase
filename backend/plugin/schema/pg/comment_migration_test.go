@@ -600,7 +600,7 @@ COMMENT ON VIEW "public"."test_view" IS 'A view that combines test_table and tes
 
 	// Create mock schemas with view metadata
 	// Previous schema: no views
-	previousSchema := model.NewDatabaseSchema(
+	previousSchema := model.NewDatabaseMetadata(
 		&storepb.DatabaseSchemaMetadata{
 			Name: "testdb",
 			Schemas: []*storepb.SchemaMetadata{
@@ -616,7 +616,7 @@ COMMENT ON VIEW "public"."test_view" IS 'A view that combines test_table and tes
 	)
 
 	// Current schema: includes view with comment
-	currentSchema := model.NewDatabaseSchema(
+	currentSchema := model.NewDatabaseMetadata(
 		&storepb.DatabaseSchemaMetadata{
 			Name: "testdb",
 			Schemas: []*storepb.SchemaMetadata{
@@ -935,7 +935,7 @@ COMMENT ON INDEX "public"."idx_products_name" IS 'Index for product name lookup'
 `
 
 	// Previous schema: table with columns but no indexes
-	previousSchema := model.NewDatabaseSchema(
+	previousSchema := model.NewDatabaseMetadata(
 		&storepb.DatabaseSchemaMetadata{
 			Name: "testdb",
 			Schemas: []*storepb.SchemaMetadata{
@@ -971,7 +971,7 @@ COMMENT ON INDEX "public"."idx_products_name" IS 'Index for product name lookup'
 	)
 
 	// Current schema: includes index with comment
-	currentSchema := model.NewDatabaseSchema(
+	currentSchema := model.NewDatabaseMetadata(
 		&storepb.DatabaseSchemaMetadata{
 			Name: "testdb",
 			Schemas: []*storepb.SchemaMetadata{
@@ -1052,7 +1052,7 @@ COMMENT ON SEQUENCE "public"."product_id_seq" IS 'Product ID sequence';
 `
 
 	// Previous schema: table but no sequences
-	previousSchema := model.NewDatabaseSchema(
+	previousSchema := model.NewDatabaseMetadata(
 		&storepb.DatabaseSchemaMetadata{
 			Name: "testdb",
 			Schemas: []*storepb.SchemaMetadata{
@@ -1084,7 +1084,7 @@ COMMENT ON SEQUENCE "public"."product_id_seq" IS 'Product ID sequence';
 	)
 
 	// Current schema: table and sequence with comment
-	currentSchema := model.NewDatabaseSchema(
+	currentSchema := model.NewDatabaseMetadata(
 		&storepb.DatabaseSchemaMetadata{
 			Name: "testdb",
 			Schemas: []*storepb.SchemaMetadata{

@@ -2493,11 +2493,11 @@ func executeFiveStepWorkflow(ctx context.Context, host string, port int, initial
 
 	// Step 3: Generate rollback DDL using generate_migration
 	// Convert to model schemas for diff
-	dbSchemaA := model.NewDatabaseSchema(schemaA, nil, nil, storepb.Engine_MSSQL, false)
-	dbSchemaB := model.NewDatabaseSchema(schemaB, nil, nil, storepb.Engine_MSSQL, false)
+	dbMetadataA := model.NewDatabaseMetadata(schemaA, nil, nil, storepb.Engine_MSSQL, false)
+	dbMetadataB := model.NewDatabaseMetadata(schemaB, nil, nil, storepb.Engine_MSSQL, false)
 
 	// Get diff from B to A (to generate rollback)
-	diff, err := schema.GetDatabaseSchemaDiff(storepb.Engine_MSSQL, dbSchemaB, dbSchemaA)
+	diff, err := schema.GetDatabaseSchemaDiff(storepb.Engine_MSSQL, dbMetadataB, dbMetadataA)
 	if err != nil {
 		return errors.Wrap(err, "failed to generate diff")
 	}

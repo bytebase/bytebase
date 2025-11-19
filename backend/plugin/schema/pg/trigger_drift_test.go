@@ -83,8 +83,8 @@ func TestTriggerDriftHandling(t *testing.T) {
 			},
 		}
 
-		currentSchema := model.NewDatabaseSchema(currentDBMetadata, nil, nil, storepb.Engine_POSTGRES, false)
-		previousSchema := model.NewDatabaseSchema(previousDBMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+		currentSchema := model.NewDatabaseMetadata(currentDBMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+		previousSchema := model.NewDatabaseMetadata(previousDBMetadata, nil, nil, storepb.Engine_POSTGRES, false)
 
 		diff, err := GetSDLDiff(userSDL, userSDL, currentSchema, previousSchema)
 		require.NoError(t, err)
@@ -140,8 +140,8 @@ func TestTriggerDriftHandling(t *testing.T) {
 			},
 		}
 
-		currentSchema := model.NewDatabaseSchema(currentDBMetadata, nil, nil, storepb.Engine_POSTGRES, false)
-		previousSchema := model.NewDatabaseSchema(previousDBMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+		currentSchema := model.NewDatabaseMetadata(currentDBMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+		previousSchema := model.NewDatabaseMetadata(previousDBMetadata, nil, nil, storepb.Engine_POSTGRES, false)
 
 		// Apply changes
 		err := applyTriggerChangesToChunks(chunks, currentSchema, previousSchema)

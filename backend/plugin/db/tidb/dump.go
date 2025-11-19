@@ -11,10 +11,10 @@ import (
 )
 
 // Dump dumps the database.
-func (*Driver) Dump(_ context.Context, out io.Writer, dbSchema *storepb.DatabaseSchemaMetadata) error {
+func (*Driver) Dump(_ context.Context, out io.Writer, dbMetadata *storepb.DatabaseSchemaMetadata) error {
 	text, err := schema.GetDatabaseDefinition(storepb.Engine_TIDB, schema.GetDefinitionContext{
 		PrintHeader: true,
-	}, dbSchema)
+	}, dbMetadata)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get database definition")
 	}

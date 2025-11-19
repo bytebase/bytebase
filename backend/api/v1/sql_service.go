@@ -357,14 +357,14 @@ func extractSourceTable(comment string) (string, string, string, error) {
 	return "", "", "", errors.Errorf("failed to extract source table from comment: %s", comment)
 }
 
-func getSchemaMetadata(engine storepb.Engine, dbSchema *model.DatabaseSchema) *model.SchemaMetadata {
+func getSchemaMetadata(engine storepb.Engine, dbMetadata *model.DatabaseMetadata) *model.SchemaMetadata {
 	switch engine {
 	case storepb.Engine_POSTGRES:
-		return dbSchema.GetDatabaseMetadata().GetSchema(common.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES))
+		return dbMetadata.GetSchemaMetadata(common.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES))
 	case storepb.Engine_MSSQL:
-		return dbSchema.GetDatabaseMetadata().GetSchema("dbo")
+		return dbMetadata.GetSchemaMetadata("dbo")
 	default:
-		return dbSchema.GetDatabaseMetadata().GetSchema("")
+		return dbMetadata.GetSchemaMetadata("")
 	}
 }
 
@@ -382,14 +382,14 @@ func replaceBackupTableWithSource(ctx context.Context, stores *store.Store, inst
 			return nil
 		}
 	}
-	dbSchema, err := stores.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+	dbMetadata, err := stores.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
 	})
 	if err != nil {
 		return err
 	}
-	schema := getSchemaMetadata(instance.Metadata.GetEngine(), dbSchema)
+	schema := getSchemaMetadata(instance.Metadata.GetEngine(), dbMetadata)
 	if schema == nil {
 		return nil
 	}
@@ -686,7 +686,7 @@ func queryRetry(
 }
 
 func getCosmosDBContainerObjectSchema(ctx context.Context, stores *store.Store, instanceID string, databaseName string, containerName string) (*storepb.ObjectSchema, error) {
-	dbSchema, err := stores.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+	dbMetadata, err := stores.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 		InstanceID:   instanceID,
 		DatabaseName: databaseName,
 	})
@@ -694,11 +694,11 @@ func getCosmosDBContainerObjectSchema(ctx context.Context, stores *store.Store, 
 		return nil, errors.Wrapf(err, "failed to get database schema: %q", databaseName)
 	}
 
-	if dbSchema == nil {
+	if dbMetadata == nil {
 		return nil, nil
 	}
 
-	schemas := dbSchema.GetConfig().GetSchemas()
+	schemas := dbMetadata.GetConfig().GetSchemas()
 	if len(schemas) == 0 {
 		return nil, nil
 	}
@@ -1343,7 +1343,7 @@ func BuildGetLinkedDatabaseMetadataFunc(storeInstance *store.Store, engine store
 			if err != nil {
 				return "", "", nil, err
 			}
-			if linkedMeta = meta.GetDatabaseMetadata().GetLinkedDatabase(linkedDatabaseName); linkedMeta != nil {
+			if linkedMeta = meta.GetLinkedDatabase(linkedDatabaseName); linkedMeta != nil {
 				break
 			}
 		}
@@ -1394,7 +1394,7 @@ func BuildGetLinkedDatabaseMetadataFunc(storeInstance *store.Store, engine store
 		if linkedDatabaseMetadata == nil {
 			return "", "", nil, nil
 		}
-		return linkedDatabase.InstanceID, linkedDatabaseName, linkedDatabaseMetadata.GetDatabaseMetadata(), nil
+		return linkedDatabase.InstanceID, linkedDatabaseName, linkedDatabaseMetadata, nil
 	}
 }
 
@@ -1420,7 +1420,7 @@ func BuildGetDatabaseMetadataFunc(storeInstance *store.Store) parserbase.GetData
 		if databaseMetadata == nil {
 			return "", nil, nil
 		}
-		return databaseName, databaseMetadata.GetDatabaseMetadata(), nil
+		return databaseName, databaseMetadata, nil
 	}
 }
 
@@ -1724,7 +1724,7 @@ func (*SQLService) DiffMetadata(_ context.Context, req *connect.Request[v1pb.Dif
 	storeSourceMetadata := convertV1DatabaseMetadata(request.SourceMetadata)
 
 	sourceConfig := convertDatabaseCatalog(request.GetSourceCatalog())
-	sanitizeCommentForSchemaMetadata(storeSourceMetadata, model.NewDatabaseConfig(sourceConfig), request.ClassificationFromConfig)
+	sanitizeCommentForSchemaMetadata(storeSourceMetadata, model.NewDatabaseMetadata(storeSourceMetadata, nil, sourceConfig, storepb.Engine(request.Engine), true /* isObjectCaseSensitive */), request.ClassificationFromConfig)
 
 	storeTargetMetadata := convertV1DatabaseMetadata(request.TargetMetadata)
 
@@ -1732,12 +1732,12 @@ func (*SQLService) DiffMetadata(_ context.Context, req *connect.Request[v1pb.Dif
 	if err := checkDatabaseMetadata(storepb.Engine(request.Engine), storeTargetMetadata); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrap(err, "invalid target metadata"))
 	}
-	sanitizeCommentForSchemaMetadata(storeTargetMetadata, model.NewDatabaseConfig(targetConfig), request.ClassificationFromConfig)
+	sanitizeCommentForSchemaMetadata(storeTargetMetadata, model.NewDatabaseMetadata(storeTargetMetadata, nil, targetConfig, storepb.Engine(request.Engine), true /* isObjectCaseSensitive */), request.ClassificationFromConfig)
 
-	// Convert metadata to model.DatabaseSchema for diffing
+	// Convert metadata to model.DatabaseMetadata for diffing
 	isObjectCaseSensitive := true
-	sourceDBSchema := model.NewDatabaseSchema(storeSourceMetadata, nil, nil, storepb.Engine(request.Engine), isObjectCaseSensitive)
-	targetDBSchema := model.NewDatabaseSchema(storeTargetMetadata, nil, nil, storepb.Engine(request.Engine), isObjectCaseSensitive)
+	sourceDBSchema := model.NewDatabaseMetadata(storeSourceMetadata, nil, nil, storepb.Engine(request.Engine), isObjectCaseSensitive)
+	targetDBSchema := model.NewDatabaseMetadata(storeTargetMetadata, nil, nil, storepb.Engine(request.Engine), isObjectCaseSensitive)
 
 	// Get the metadata diff between source and target
 	metadataDiff, err := schema.GetDatabaseSchemaDiff(storepb.Engine(request.Engine), sourceDBSchema, targetDBSchema)
@@ -1756,8 +1756,8 @@ func (*SQLService) DiffMetadata(_ context.Context, req *connect.Request[v1pb.Dif
 	}), nil
 }
 
-func sanitizeCommentForSchemaMetadata(dbSchema *storepb.DatabaseSchemaMetadata, dbModelConfig *model.DatabaseConfig, classificationFromConfig bool) {
-	for _, schema := range dbSchema.Schemas {
+func sanitizeCommentForSchemaMetadata(dbMetadata *storepb.DatabaseSchemaMetadata, dbModelConfig *model.DatabaseMetadata, classificationFromConfig bool) {
+	for _, schema := range dbMetadata.Schemas {
 		schemaConfig := dbModelConfig.GetSchemaConfig(schema.Name)
 		for _, table := range schema.Tables {
 			tableConfig := schemaConfig.GetTableConfig(table.Name)

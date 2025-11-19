@@ -306,8 +306,8 @@ type CommentDiff struct {
 	NewASTNode antlr.ParserRuleContext
 }
 
-// GetDatabaseSchemaDiff compares two model.DatabaseSchema instances and returns the differences.
-func GetDatabaseSchemaDiff(engine storepb.Engine, oldSchema, newSchema *model.DatabaseSchema) (*MetadataDiff, error) {
+// GetDatabaseSchemaDiff compares two model.DatabaseMetadata instances and returns the differences.
+func GetDatabaseSchemaDiff(engine storepb.Engine, oldSchema, newSchema *model.DatabaseMetadata) (*MetadataDiff, error) {
 	if oldSchema == nil || newSchema == nil {
 		return nil, nil
 	}
@@ -323,12 +323,12 @@ func GetDatabaseSchemaDiff(engine storepb.Engine, oldSchema, newSchema *model.Da
 	}
 
 	// Use the internal DatabaseMetadata structures for efficient access
-	oldMeta := oldSchema.GetDatabaseMetadata()
-	newMeta := newSchema.GetDatabaseMetadata()
+	oldMeta := oldSchema
+	newMeta := newSchema
 
 	for _, schemaName := range oldMeta.ListSchemaNames() {
-		if newMeta.GetSchema(schemaName) == nil {
-			oldSchemaMeta := oldMeta.GetSchema(schemaName)
+		if newMeta.GetSchemaMetadata(schemaName) == nil {
+			oldSchemaMeta := oldMeta.GetSchemaMetadata(schemaName)
 			if oldSchemaMeta != nil {
 				diff.SchemaChanges = append(diff.SchemaChanges, &SchemaDiff{
 					Action:     MetadataDiffActionDrop,
@@ -340,12 +340,12 @@ func GetDatabaseSchemaDiff(engine storepb.Engine, oldSchema, newSchema *model.Da
 	}
 
 	for _, schemaName := range newMeta.ListSchemaNames() {
-		newSchemaMeta := newMeta.GetSchema(schemaName)
+		newSchemaMeta := newMeta.GetSchemaMetadata(schemaName)
 		if newSchemaMeta == nil {
 			continue
 		}
 
-		if oldMeta.GetSchema(schemaName) == nil {
+		if oldMeta.GetSchemaMetadata(schemaName) == nil {
 			// New schema
 			diff.SchemaChanges = append(diff.SchemaChanges, &SchemaDiff{
 				Action:     MetadataDiffActionCreate,
@@ -356,7 +356,7 @@ func GetDatabaseSchemaDiff(engine storepb.Engine, oldSchema, newSchema *model.Da
 			addNewSchemaObjects(diff, schemaName, newSchemaMeta)
 		} else {
 			// Compare schema objects
-			oldSchemaMeta := oldMeta.GetSchema(schemaName)
+			oldSchemaMeta := oldMeta.GetSchemaMetadata(schemaName)
 			if oldSchemaMeta != nil {
 				compareSchemaObjects(engine, diff, schemaName, oldSchemaMeta, newSchemaMeta)
 			}

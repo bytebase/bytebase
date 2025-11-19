@@ -116,7 +116,7 @@ func (r *TableTextFieldsTotalLengthRule) checkCreateTable(ctx *mysql.CreateTable
 	if tableName == "" {
 		return
 	}
-	schema := r.finalMetadata.GetSchema("")
+	schema := r.finalMetadata.GetSchemaMetadata("")
 	if schema == nil {
 		return
 	}
@@ -154,7 +154,7 @@ func (r *TableTextFieldsTotalLengthRule) checkAlterTable(ctx *mysql.AlterTableCo
 	if tableName == "" {
 		return
 	}
-	schema := r.finalMetadata.GetSchema("")
+	schema := r.finalMetadata.GetSchemaMetadata("")
 	if schema == nil {
 		return
 	}

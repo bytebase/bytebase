@@ -201,7 +201,7 @@ func (v *indexPrimaryKeyTypeAllowlistChecker) getPKColumnType(tableName string, 
 	if colDef, ok := v.tablesNewColumns.get(tableName, columnName); ok {
 		return tidbparser.TypeString(colDef.Tp.GetType()), nil
 	}
-	column := v.originalMetadata.GetSchema("").GetTable(tableName).GetColumn(columnName)
+	column := v.originalMetadata.GetSchemaMetadata("").GetTable(tableName).GetColumn(columnName)
 	if column != nil {
 		return column.Type, nil
 	}

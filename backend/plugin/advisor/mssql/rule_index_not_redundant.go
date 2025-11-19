@@ -60,14 +60,14 @@ type IndexNotRedundantRule struct {
 }
 
 // NewIndexNotRedundantRule creates a new IndexNotRedundantRule.
-func NewIndexNotRedundantRule(level storepb.Advice_Status, title string, currentDB string, dbSchema *storepb.DatabaseSchemaMetadata) *IndexNotRedundantRule {
+func NewIndexNotRedundantRule(level storepb.Advice_Status, title string, currentDB string, dbMetadata *storepb.DatabaseSchemaMetadata) *IndexNotRedundantRule {
 	return &IndexNotRedundantRule{
 		BaseRule: BaseRule{
 			level: level,
 			title: title,
 		},
 		curDB:    currentDB,
-		indexMap: getIndexMapFromMetadata(dbSchema),
+		indexMap: getIndexMapFromMetadata(dbMetadata),
 	}
 }
 

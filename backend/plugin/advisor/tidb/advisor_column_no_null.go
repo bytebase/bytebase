@@ -83,7 +83,7 @@ func (checker *columnNoNullChecker) generateAdvice() []*storepb.Advice {
 	})
 
 	for _, column := range columnList {
-		schema := checker.finalMetadata.GetSchema("")
+		schema := checker.finalMetadata.GetSchemaMetadata("")
 		if schema == nil {
 			continue
 		}

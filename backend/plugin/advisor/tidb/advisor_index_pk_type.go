@@ -220,7 +220,7 @@ func (v *indexPkTypeChecker) getPKColumnType(tableName string, columnName string
 	if colDef, ok := v.tablesNewColumns.get(tableName, columnName); ok {
 		return v.getIntOrBigIntStr(colDef.Tp), nil
 	}
-	column := v.originalMetadata.GetSchema("").GetTable(tableName).GetColumn(columnName)
+	column := v.originalMetadata.GetSchemaMetadata("").GetTable(tableName).GetColumn(columnName)
 	if column != nil {
 		return column.Type, nil
 	}

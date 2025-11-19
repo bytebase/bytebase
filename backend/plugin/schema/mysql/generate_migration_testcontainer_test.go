@@ -1677,11 +1677,11 @@ CREATE TABLE some_table (
 
 			// Step 3: Call generate migration to get the rollback DDL
 			// Convert to model.DatabaseSchema
-			dbSchemaA := model.NewDatabaseSchema(schemaA, nil, nil, storepb.Engine_MYSQL, false)
-			dbSchemaB := model.NewDatabaseSchema(schemaB, nil, nil, storepb.Engine_MYSQL, false)
+			dbMetadataA := model.NewDatabaseMetadata(schemaA, nil, nil, storepb.Engine_MYSQL, false)
+			dbMetadataB := model.NewDatabaseMetadata(schemaB, nil, nil, storepb.Engine_MYSQL, false)
 
 			// Get diff from B to A (to generate rollback)
-			diff, err := schema.GetDatabaseSchemaDiff(storepb.Engine_MYSQL, dbSchemaB, dbSchemaA)
+			diff, err := schema.GetDatabaseSchemaDiff(storepb.Engine_MYSQL, dbMetadataB, dbMetadataA)
 			require.NoError(t, err)
 
 			// Log the diff for debugging

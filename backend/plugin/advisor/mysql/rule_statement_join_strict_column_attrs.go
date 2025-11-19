@@ -42,8 +42,8 @@ func (*StatementJoinStrictColumnAttrsAdvisor) Check(_ context.Context, checkCtx 
 	// Create the rule
 	rule := NewStatementJoinStrictColumnAttrsRule(level, string(checkCtx.Rule.Type))
 	if checkCtx.DBSchema != nil {
-		dbSchema := model.NewDatabaseSchema(checkCtx.DBSchema, nil, nil, storepb.Engine_MYSQL, checkCtx.IsObjectCaseSensitive)
-		rule.dbSchema = dbSchema
+		dbMetadata := model.NewDatabaseMetadata(checkCtx.DBSchema, nil, nil, storepb.Engine_MYSQL, checkCtx.IsObjectCaseSensitive)
+		rule.dbMetadata = dbMetadata
 	}
 
 	// Create the generic checker with the rule
@@ -77,7 +77,7 @@ type ColumnAttr struct {
 type StatementJoinStrictColumnAttrsRule struct {
 	BaseRule
 	text           string
-	dbSchema       *model.DatabaseSchema
+	dbMetadata     *model.DatabaseMetadata
 	isSelect       bool
 	isInFromClause bool
 	sourceTables   []SourceTable
@@ -242,10 +242,10 @@ func (r *StatementJoinStrictColumnAttrsRule) checkColumnAttrs(leftColumnAttr *Co
 }
 
 func (r *StatementJoinStrictColumnAttrsRule) findTable(tableName string) *model.TableMetadata {
-	if r.dbSchema == nil {
+	if r.dbMetadata == nil {
 		return nil
 	}
-	return r.dbSchema.GetDatabaseMetadata().GetSchema("").GetTable(tableName)
+	return r.dbMetadata.GetSchemaMetadata("").GetTable(tableName)
 }
 
 func extractJoinInfoFromText(text string) *ColumnAttr {

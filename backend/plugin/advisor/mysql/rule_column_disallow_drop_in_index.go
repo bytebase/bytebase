@@ -158,7 +158,7 @@ func (r *ColumnDisallowDropInIndexRule) checkAlterTable(ctx *mysql.AlterTableCon
 			continue
 		}
 
-		table := r.originalMetadata.GetSchema("").GetTable(tableName)
+		table := r.originalMetadata.GetSchemaMetadata("").GetTable(tableName)
 		if table != nil {
 			if r.tables[tableName] == nil {
 				r.tables[tableName] = make(columnSet)

@@ -168,7 +168,7 @@ func (h *Handler) GetDatabaseMetadataFunc(ctx context.Context, instanceID, datab
 	if metadata == nil {
 		return "", nil, errors.Errorf("database %s schema for instance %s not found", databaseName, instanceID)
 	}
-	return databaseName, metadata.GetDatabaseMetadata(), nil
+	return databaseName, metadata, nil
 }
 
 func (h *Handler) ListDatabaseNamesFunc(ctx context.Context, instanceID string) ([]string, error) {

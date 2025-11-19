@@ -19,7 +19,7 @@ func TestExtractChangedResources(t *testing.T) {
 	UPDATE t1 SET c1 = 5;
 	CREATE PROCEDURE getUser(id INT) SELECT * FROM hello WHERE uid = id;
 	`
-	changedResources := model.NewChangedResources(nil /* dbSchema */)
+	changedResources := model.NewChangedResources(nil /* dbMetadata */)
 	changedResources.AddTable(
 		"db",
 		"",
@@ -61,7 +61,7 @@ func TestExtractChangedResources(t *testing.T) {
 	}
 
 	asts, _ := ParseMySQL(statement)
-	got, err := extractChangedResources("db", "", nil /* dbSchema */, asts, statement)
+	got, err := extractChangedResources("db", "", nil /* dbMetadata */, asts, statement)
 	require.NoError(t, err)
 	require.Equal(t, want, got)
 }

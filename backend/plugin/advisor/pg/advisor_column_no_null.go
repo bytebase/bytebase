@@ -308,10 +308,10 @@ func (r *columnNoNullRule) removeColumnByTableConstraint(schema, table string, c
 			indexName := pg.NormalizePostgreSQLName(existingIndex.Name())
 			// Try to find index in catalog
 			if r.originalMetadata != nil {
-				dbSchema := r.originalMetadata.GetSchema(schema)
+				schemaMetadata := r.originalMetadata.GetSchemaMetadata(schema)
 				var index *model.IndexMetadata
-				if dbSchema != nil {
-					dbTable := dbSchema.GetTable(table)
+				if schemaMetadata != nil {
+					dbTable := schemaMetadata.GetTable(table)
 					if dbTable != nil {
 						index = dbTable.GetIndex(indexName)
 					}

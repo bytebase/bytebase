@@ -262,7 +262,7 @@ func (m CompletionMap) insertMetadataTables(c *Completer, linkedServer string, d
 		}
 	}
 
-	schemaMetadata := databaseMetadata.GetSchema(schemaName)
+	schemaMetadata := databaseMetadata.GetSchemaMetadata(schemaName)
 	if schemaMetadata == nil {
 		return
 	}
@@ -282,7 +282,7 @@ func (m CompletionMap) insertAllColumns(c *Completer) {
 		return
 	}
 	for _, schema := range databaseMeta.ListSchemaNames() {
-		schemaMeta := databaseMeta.GetSchema(schema)
+		schemaMeta := databaseMeta.GetSchemaMetadata(schema)
 		if schemaMeta == nil {
 			continue
 		}
@@ -369,7 +369,7 @@ func (m CompletionMap) insertMetadataColumns(c *Completer, linkedServer string, 
 			break
 		}
 	}
-	schemaMetadata := databaseMetadata.GetSchema(schemaName)
+	schemaMetadata := databaseMetadata.GetSchemaMetadata(schemaName)
 	if schemaMetadata == nil {
 		return
 	}
@@ -449,7 +449,7 @@ func (m CompletionMap) insertMetadataViews(c *Completer, linkedServer string, da
 		}
 	}
 
-	schemaMetadata := databaseMetadata.GetSchema(schemaName)
+	schemaMetadata := databaseMetadata.GetSchemaMetadata(schemaName)
 	if schemaMetadata == nil {
 		return
 	}

@@ -126,17 +126,17 @@ func (e *StatementAdviseExecutor) runReview(
 	statement string,
 	enablePriorBackup bool,
 ) ([]*storepb.PlanCheckRunResult_Result, error) {
-	dbSchema, err := e.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+	dbMetadata, err := e.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
 	})
 	if err != nil {
 		return nil, err
 	}
-	if dbSchema == nil {
+	if dbMetadata == nil {
 		return nil, errors.Errorf("database schema %s not found", database.String())
 	}
-	if dbSchema.GetMetadata() == nil {
+	if dbMetadata.GetMetadata() == nil {
 		return nil, errors.Errorf("database schema metadata %s not found", database.String())
 	}
 
@@ -151,14 +151,14 @@ func (e *StatementAdviseExecutor) runReview(
 	}
 
 	// Create original metadata as read-only
-	originMetadata := model.NewDatabaseMetadata(dbSchema.GetMetadata(), instance.Metadata.GetEngine(), store.IsObjectCaseSensitive(instance))
+	originMetadata := model.NewDatabaseMetadata(dbMetadata.GetMetadata(), nil, nil, instance.Metadata.GetEngine(), store.IsObjectCaseSensitive(instance))
 
 	// Clone metadata for final to avoid modifying the original
-	clonedMetadata, ok := proto.Clone(dbSchema.GetMetadata()).(*storepb.DatabaseSchemaMetadata)
+	clonedMetadata, ok := proto.Clone(dbMetadata.GetMetadata()).(*storepb.DatabaseSchemaMetadata)
 	if !ok {
 		return nil, common.Wrapf(errors.New("failed to clone database schema metadata"), common.Internal, "failed to create a catalog")
 	}
-	finalMetadata := model.NewDatabaseMetadata(clonedMetadata, instance.Metadata.GetEngine(), store.IsObjectCaseSensitive(instance))
+	finalMetadata := model.NewDatabaseMetadata(clonedMetadata, nil, nil, instance.Metadata.GetEngine(), store.IsObjectCaseSensitive(instance))
 
 	useDatabaseOwner, err := getUseDatabaseOwner(ctx, e.store, instance, database)
 	if err != nil {
@@ -177,9 +177,9 @@ func (e *StatementAdviseExecutor) runReview(
 	classificationConfig := getClassificationByProject(ctx, e.store, database.ProjectID)
 
 	adviceList, err := advisor.SQLReviewCheck(ctx, e.sheetManager, statement, reviewConfig.SqlReviewRules, advisor.SQLReviewCheckContext{
-		Charset:                  dbSchema.GetMetadata().CharacterSet,
-		Collation:                dbSchema.GetMetadata().Collation,
-		DBSchema:                 dbSchema.GetMetadata(),
+		Charset:                  dbMetadata.GetMetadata().CharacterSet,
+		Collation:                dbMetadata.GetMetadata().Collation,
+		DBSchema:                 dbMetadata.GetMetadata(),
 		ChangeType:               changeType,
 		DBType:                   instance.Metadata.GetEngine(),
 		OriginalMetadata:         originMetadata,

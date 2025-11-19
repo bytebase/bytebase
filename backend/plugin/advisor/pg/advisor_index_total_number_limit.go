@@ -122,7 +122,7 @@ func (r *indexTotalNumberLimitRule) generateAdvice() {
 	})
 
 	for _, table := range tableList {
-		schema := r.finalMetadata.GetSchema(table.schema)
+		schema := r.finalMetadata.GetSchemaMetadata(table.schema)
 		if schema == nil {
 			continue
 		}

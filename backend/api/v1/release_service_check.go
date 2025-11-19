@@ -163,25 +163,25 @@ loop:
 
 		engine := instance.Metadata.GetEngine()
 		// Get the database metadata
-		dbSchema, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 			InstanceID:   database.InstanceID,
 			DatabaseName: database.DatabaseName,
 		})
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database schema"))
 		}
-		if dbSchema == nil {
+		if dbMetadata == nil {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database schema not found for %s", database.DatabaseName))
 		}
 		// Create original metadata as read-only
-		originMetadata := model.NewDatabaseMetadata(dbSchema.GetMetadata(), engine, store.IsObjectCaseSensitive(instance))
+		originMetadata := model.NewDatabaseMetadata(dbMetadata.GetMetadata(), nil, nil, engine, store.IsObjectCaseSensitive(instance))
 
 		// Clone metadata for final to avoid modifying the original
-		clonedMetadata, ok := proto.Clone(dbSchema.GetMetadata()).(*storepb.DatabaseSchemaMetadata)
+		clonedMetadata, ok := proto.Clone(dbMetadata.GetMetadata()).(*storepb.DatabaseSchemaMetadata)
 		if !ok {
 			return nil, connect.NewError(connect.CodeInternal, errors.New("failed to clone database schema metadata"))
 		}
-		finalMetadata := model.NewDatabaseMetadata(clonedMetadata, engine, store.IsObjectCaseSensitive(instance))
+		finalMetadata := model.NewDatabaseMetadata(clonedMetadata, nil, nil, engine, store.IsObjectCaseSensitive(instance))
 		// Batch fetch all revisions for this database
 		revisions, err := s.store.ListRevisions(ctx, &store.FindRevisionMessage{
 			InstanceID:   &database.InstanceID,
@@ -627,30 +627,30 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 	changeType storepb.PlanCheckRunConfig_ChangeDatabaseType,
 	statement string,
 ) (storepb.Advice_Status, []*v1pb.Advice, error) {
-	dbSchema, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+	dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
 	})
 	if err != nil {
 		return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to fetch database schema for database %s", database.String())
 	}
-	if dbSchema == nil {
+	if dbMetadata == nil {
 		if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database); err != nil {
 			return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to sync database schema for database %s", database.String())
 		}
-		dbSchema, err = s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		dbMetadata, err = s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 			InstanceID:   database.InstanceID,
 			DatabaseName: database.DatabaseName,
 		})
 		if err != nil {
 			return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to fetch database schema for database %s", database.String())
 		}
-		if dbSchema == nil {
+		if dbMetadata == nil {
 			return storepb.Advice_ERROR, nil, errors.Wrapf(err, "cannot found schema for database %s", database.String())
 		}
 	}
 
-	dbMetadata := dbSchema.GetMetadata()
+	dbMetadataProto := dbMetadata.GetMetadata()
 	useDatabaseOwner, err := getUseDatabaseOwner(ctx, s.store, instance, database)
 	if err != nil {
 		return storepb.Advice_ERROR, nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get use database owner"))
@@ -664,10 +664,10 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 
 	classificationConfig := getClassificationByProject(ctx, s.store, database.ProjectID)
 	context := advisor.SQLReviewCheckContext{
-		Charset:                  dbMetadata.CharacterSet,
-		Collation:                dbMetadata.Collation,
+		Charset:                  dbMetadataProto.CharacterSet,
+		Collation:                dbMetadataProto.Collation,
 		ChangeType:               changeType,
-		DBSchema:                 dbMetadata,
+		DBSchema:                 dbMetadataProto,
 		DBType:                   instance.Metadata.GetEngine(),
 		OriginalMetadata:         originMetadata,
 		FinalMetadata:            finalMetadata,

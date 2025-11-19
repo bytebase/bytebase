@@ -1111,7 +1111,7 @@ func getViewDependencies(viewDef string, schemaName string) ([]string, error) {
 						},
 					},
 				}
-				dbMetadata := model.NewDatabaseMetadata(metadata, storepb.Engine_MSSQL, false)
+				dbMetadata := model.NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_MSSQL, false)
 				return databaseName, dbMetadata, nil
 			},
 			ListDatabaseNamesFunc: func(_ context.Context, _ string) ([]string, error) {

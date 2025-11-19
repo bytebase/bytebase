@@ -379,7 +379,7 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 	}
 	rawDump := schemaBuf.Bytes()
 
-	dbSchema, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+	dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
 	})
@@ -387,10 +387,7 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 		return 0, errors.Wrapf(err, "failed to get database schema for database %q", database.DatabaseName)
 	}
 
-	dbModelConfig := model.NewDatabaseConfig(nil)
-	if dbSchema != nil {
-		dbModelConfig = dbSchema.GetInternalConfig()
-	}
+	dbModelConfig := dbMetadata
 
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &database.ProjectID,
@@ -523,16 +520,16 @@ func (s *Syncer) getSchemaDrifted(ctx context.Context, instance *store.InstanceM
 	return changelog.Schema != latestSchema, false, nil
 }
 
-func (s *Syncer) databaseBackupAvailable(ctx context.Context, instance *store.InstanceMessage, dbSchema *storepb.DatabaseSchemaMetadata) bool {
+func (s *Syncer) databaseBackupAvailable(ctx context.Context, instance *store.InstanceMessage, dbMetadata *storepb.DatabaseSchemaMetadata) bool {
 	if !common.EngineSupportPriorBackup(instance.Metadata.GetEngine()) {
 		return false
 	}
 	switch instance.Metadata.GetEngine() {
 	case storepb.Engine_POSTGRES:
-		if dbSchema == nil {
+		if dbMetadata == nil {
 			return false
 		}
-		for _, schema := range dbSchema.Schemas {
+		for _, schema := range dbMetadata.Schemas {
 			if schema.GetName() == common.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES) {
 				return true
 			}
@@ -567,13 +564,13 @@ func (s *Syncer) databaseBackupAvailable(ctx context.Context, instance *store.In
 	return false
 }
 
-func buildDatabaseConfigWithClassificationFromComment(dbSchema *storepb.DatabaseSchemaMetadata, databaseConfig *model.DatabaseConfig, classificationConfig *storepb.DataClassificationSetting_DataClassificationConfig) *storepb.DatabaseConfig {
+func buildDatabaseConfigWithClassificationFromComment(dbMetadata *storepb.DatabaseSchemaMetadata, databaseConfig *model.DatabaseMetadata, classificationConfig *storepb.DataClassificationSetting_DataClassificationConfig) *storepb.DatabaseConfig {
 	// Create a new DatabaseConfig to build from scratch
 	newConfig := &storepb.DatabaseConfig{
-		Name: dbSchema.Name,
+		Name: dbMetadata.Name,
 	}
 
-	for _, schema := range dbSchema.Schemas {
+	for _, schema := range dbMetadata.Schemas {
 		var tables []*storepb.TableCatalog
 		hasSchemaContent := false
 
@@ -641,8 +638,8 @@ func buildDatabaseConfigWithClassificationFromComment(dbSchema *storepb.Database
 	return newConfig
 }
 
-func setUserCommentFromComment(dbSchema *storepb.DatabaseSchemaMetadata) {
-	for _, schema := range dbSchema.Schemas {
+func setUserCommentFromComment(dbMetadata *storepb.DatabaseSchemaMetadata) {
+	for _, schema := range dbMetadata.Schemas {
 		for _, table := range schema.Tables {
 			table.UserComment = table.Comment
 			for _, col := range table.Columns {
