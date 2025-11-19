@@ -9,7 +9,6 @@ import (
 	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
 	mysqldriver "github.com/pingcap/tidb/pkg/parser/mysql"
 	"github.com/pingcap/tidb/pkg/types"
-	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -17,7 +16,6 @@ import (
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
-	"github.com/bytebase/bytebase/backend/plugin/schema/catalogutil"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -37,7 +35,7 @@ func init() {
 }
 
 // WalkThrough walks through MySQL AST and updates the database metadata.
-func WalkThrough(d *model.DatabaseMetadata, ast any) error {
+func WalkThrough(d *model.DatabaseMetadata, ast any) *storepb.Advice {
 	// We define the Catalog as Database -> Schema -> Table. The Schema is only for PostgreSQL.
 	// So we use a Schema whose name is empty for other engines, such as MySQL.
 	// If there is no empty-string-name schema, create it to avoid corner cases.
@@ -47,11 +45,19 @@ func WalkThrough(d *model.DatabaseMetadata, ast any) error {
 
 	nodeList, ok := ast.([]*mysqlparser.ParseResult)
 	if !ok {
-		return errors.Errorf("invalid ast type %T", ast)
+		return &storepb.Advice{
+			Status:  storepb.Advice_ERROR,
+			Code:    code.Internal.Int32(),
+			Title:   fmt.Sprintf("invalid ast type %T", ast),
+			Content: fmt.Sprintf("invalid ast type %T", ast),
+			StartPosition: &storepb.Position{
+				Line: 0,
+			},
+		}
 	}
 	for _, node := range nodeList {
-		if err := mysqlChangeState(d, node); err != nil {
-			return err
+		if advice := mysqlChangeState(d, node); advice != nil {
+			return advice
 		}
 	}
 
@@ -65,7 +71,7 @@ type mysqlListener struct {
 	lineNumber       int
 	text             string
 	databaseMetadata *model.DatabaseMetadata
-	err              *catalogutil.WalkThroughError
+	advice           *storepb.Advice
 }
 
 func (l *mysqlListener) EnterQuery(ctx *mysql.QueryContext) {
@@ -73,26 +79,17 @@ func (l *mysqlListener) EnterQuery(ctx *mysql.QueryContext) {
 	l.lineNumber = l.baseLine + ctx.GetStart().GetLine()
 }
 
-func mysqlChangeState(d *model.DatabaseMetadata, in *mysqlparser.ParseResult) (err *catalogutil.WalkThroughError) {
-	defer func() {
-		if err == nil {
-			return
-		}
-		if err.Line == 0 {
-			err.Line = in.BaseLine
-		}
-	}()
-
+func mysqlChangeState(d *model.DatabaseMetadata, in *mysqlparser.ParseResult) *storepb.Advice {
 	listener := &mysqlListener{
 		baseLine:         in.BaseLine,
 		databaseMetadata: d,
 	}
 	antlr.ParseTreeWalkerDefault.Walk(listener, in.Tree)
-	if listener.err != nil {
-		if listener.err.Line == 0 {
-			listener.err.Line = listener.lineNumber
+	if listener.advice != nil {
+		if listener.advice.StartPosition.Line == 0 {
+			listener.advice.StartPosition.Line = int32(listener.lineNumber)
 		}
-		return listener.err
+		return listener.advice
 	}
 	return nil
 }
@@ -107,18 +104,24 @@ func (l *mysqlListener) EnterCreateTable(ctx *mysql.CreateTableContext) {
 	}
 	databaseName, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
 	if databaseName != "" && !isCurrentDatabase(l.databaseMetadata, databaseName) {
-		l.err = &catalogutil.WalkThroughError{
-			Code:    code.NotCurrentDatabase,
-			Content: fmt.Sprintf("Database `%s` is not the current database `%s`", databaseName, l.databaseMetadata.DatabaseName()),
+		l.advice = &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.NotCurrentDatabase.Int32(),
+			Title:         fmt.Sprintf("Database `%s` is not the current database `%s`", databaseName, l.databaseMetadata.DatabaseName()),
+			Content:       fmt.Sprintf("Database `%s` is not the current database `%s`", databaseName, l.databaseMetadata.DatabaseName()),
+			StartPosition: &storepb.Position{Line: 0},
 		}
 		return
 	}
 
 	schema := l.databaseMetadata.GetSchema("")
 	if schema == nil {
-		l.err = &catalogutil.WalkThroughError{
-			Code:    code.SchemaNotExists,
-			Content: "Schema does not exist",
+		l.advice = &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.SchemaNotExists.Int32(),
+			Title:         "Schema does not exist",
+			Content:       "Schema does not exist",
+			StartPosition: &storepb.Position{Line: 0},
 		}
 		return
 	}
@@ -126,30 +129,42 @@ func (l *mysqlListener) EnterCreateTable(ctx *mysql.CreateTableContext) {
 		if ctx.IfNotExists() != nil {
 			return
 		}
-		l.err = &catalogutil.WalkThroughError{
-			Code:    code.TableExists,
-			Content: fmt.Sprintf("Table `%s` already exists", tableName),
+		l.advice = &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.TableExists.Int32(),
+			Title:         fmt.Sprintf("Table `%s` already exists", tableName),
+			Content:       fmt.Sprintf("Table `%s` already exists", tableName),
+			StartPosition: &storepb.Position{Line: 0},
 		}
 		return
 	}
 
 	if ctx.DuplicateAsQueryExpression() != nil {
-		l.err = &catalogutil.WalkThroughError{
-			Code:    code.StatementCreateTableAs,
-			Content: fmt.Sprintf("Disallow the CREATE TABLE AS statement but \"%s\" uses", l.text),
+		l.advice = &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.StatementCreateTableAs.Int32(),
+			Title:         fmt.Sprintf("Disallow the CREATE TABLE AS statement but \"%s\" uses", l.text),
+			Content:       fmt.Sprintf("Disallow the CREATE TABLE AS statement but \"%s\" uses", l.text),
+			StartPosition: &storepb.Position{Line: 0},
 		}
 		return
 	}
 
 	if ctx.LIKE_SYMBOL() != nil {
 		_, referTable := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
-		l.err = mysqlCopyTable(l.databaseMetadata, databaseName, tableName, referTable)
+		l.advice = mysqlCopyTable(l.databaseMetadata, databaseName, tableName, referTable)
 		return
 	}
 
 	table, err := schema.CreateTable(tableName)
 	if err != nil {
-		l.err = &catalogutil.WalkThroughError{Code: code.TableExists, Content: err.Error()}
+		l.advice = &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.TableExists.Int32(),
+			Title:         err.Error(),
+			Content:       err.Error(),
+			StartPosition: &storepb.Position{Line: 0},
+		}
 		return
 	}
 
@@ -167,24 +182,32 @@ func (l *mysqlListener) EnterCreateTable(ctx *mysql.CreateTableContext) {
 			}
 			if mysqlparser.IsAutoIncrement(tableElement.ColumnDefinition().FieldDefinition()) {
 				if hasAutoIncrement {
-					l.err = &catalogutil.WalkThroughError{
-						Code: code.AutoIncrementExists,
-						// The content comes from MySQL error content.
+					l.advice = &storepb.Advice{
+						Status:  storepb.Advice_ERROR,
+						Code:    code.AutoIncrementExists.Int32(),
+						Title:   fmt.Sprintf("There can be only one auto column for table `%s`", table.GetProto().Name),
 						Content: fmt.Sprintf("There can be only one auto column for table `%s`", table.GetProto().Name),
+						StartPosition: &storepb.Position{
+							Line: int32(l.baseLine + tableElement.GetStart().GetLine()),
+						},
 					}
 				}
 				hasAutoIncrement = true
 			}
 			_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
-			if err := mysqlCreateColumn(table, columnName, tableElement.ColumnDefinition().FieldDefinition(), nil /* position */); err != nil {
-				err.Line = l.baseLine + tableElement.GetStart().GetLine()
-				l.err = err
+			if advice := mysqlCreateColumn(table, columnName, tableElement.ColumnDefinition().FieldDefinition(), nil /* position */); advice != nil {
+				if advice.StartPosition.Line == 0 {
+					advice.StartPosition.Line = int32(l.baseLine + tableElement.GetStart().GetLine())
+				}
+				l.advice = advice
 				return
 			}
 		case tableElement.TableConstraintDef() != nil:
-			if err := mysqlCreateConstraint(table, tableElement.TableConstraintDef()); err != nil {
-				err.Line = tableElement.GetStart().GetLine()
-				l.err = err
+			if advice := mysqlCreateConstraint(table, tableElement.TableConstraintDef()); advice != nil {
+				if advice.StartPosition.Line == 0 {
+					advice.StartPosition.Line = int32(tableElement.GetStart().GetLine())
+				}
+				l.advice = advice
 				return
 			}
 		default:
@@ -205,17 +228,23 @@ func (l *mysqlListener) EnterDropTable(ctx *mysql.DropTableContext) {
 	for _, tableRef := range ctx.TableRefList().AllTableRef() {
 		databaseName, tableName := mysqlparser.NormalizeMySQLTableRef(tableRef)
 		if databaseName != "" && !isCurrentDatabase(l.databaseMetadata, databaseName) {
-			l.err = &catalogutil.WalkThroughError{
-				Code:    code.NotCurrentDatabase,
-				Content: fmt.Sprintf("Database `%s` is not the current database `%s`", databaseName, tableName),
+			l.advice = &storepb.Advice{
+				Status:        storepb.Advice_ERROR,
+				Code:          code.NotCurrentDatabase.Int32(),
+				Title:         fmt.Sprintf("Database `%s` is not the current database `%s`", databaseName, tableName),
+				Content:       fmt.Sprintf("Database `%s` is not the current database `%s`", databaseName, tableName),
+				StartPosition: &storepb.Position{Line: 0},
 			}
 		}
 
 		schema := l.databaseMetadata.GetSchema("")
 		if schema == nil {
-			l.err = &catalogutil.WalkThroughError{
-				Code:    code.SchemaNotExists,
-				Content: "Schema does not exist",
+			l.advice = &storepb.Advice{
+				Status:        storepb.Advice_ERROR,
+				Code:          code.SchemaNotExists.Int32(),
+				Title:         "Schema does not exist",
+				Content:       "Schema does not exist",
+				StartPosition: &storepb.Position{Line: 0},
 			}
 			return
 		}
@@ -225,16 +254,25 @@ func (l *mysqlListener) EnterDropTable(ctx *mysql.DropTableContext) {
 			if ctx.IfExists() != nil {
 				return
 			}
-			l.err = &catalogutil.WalkThroughError{
-				Code:    code.TableNotExists,
-				Content: fmt.Sprintf("Table `%s` does not exist", tableName),
+			l.advice = &storepb.Advice{
+				Status:        storepb.Advice_ERROR,
+				Code:          code.TableNotExists.Int32(),
+				Title:         fmt.Sprintf("Table `%s` does not exist", tableName),
+				Content:       fmt.Sprintf("Table `%s` does not exist", tableName),
+				StartPosition: &storepb.Position{Line: 0},
 			}
 			return
 		}
 
 		// MySQL doesn't check view dependencies for DROP TABLE
 		if err := schema.DropTable(tableName); err != nil {
-			l.err = &catalogutil.WalkThroughError{Code: code.TableNotExists, Content: err.Error()}
+			l.advice = &storepb.Advice{
+				Status:        storepb.Advice_ERROR,
+				Code:          code.TableNotExists.Int32(),
+				Title:         err.Error(),
+				Content:       err.Error(),
+				StartPosition: &storepb.Position{Line: 0},
+			}
 			return
 		}
 	}
@@ -251,9 +289,9 @@ func (l *mysqlListener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 	}
 
 	databaseName, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
-	table, err := mysqlFindTableState(l.databaseMetadata, databaseName, tableName)
-	if err != nil {
-		l.err = err
+	table, advice := mysqlFindTableState(l.databaseMetadata, databaseName, tableName)
+	if advice != nil {
+		l.advice = advice
 		return
 	}
 
@@ -302,8 +340,8 @@ func (l *mysqlListener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 			// add single column.
 			case item.Identifier() != nil && item.FieldDefinition() != nil:
 				columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
-				if err := mysqlCreateColumn(table, columnName, item.FieldDefinition(), positionFromPlaceContext(item.Place())); err != nil {
-					l.err = err
+				if advice := mysqlCreateColumn(table, columnName, item.FieldDefinition(), positionFromPlaceContext(item.Place())); advice != nil {
+					l.advice = advice
 					return
 				}
 			// add multi columns.
@@ -313,15 +351,15 @@ func (l *mysqlListener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 						continue
 					}
 					_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
-					if err := mysqlCreateColumn(table, columnName, tableElement.ColumnDefinition().FieldDefinition(), nil); err != nil {
-						l.err = err
+					if advice := mysqlCreateColumn(table, columnName, tableElement.ColumnDefinition().FieldDefinition(), nil); advice != nil {
+						l.advice = advice
 						return
 					}
 				}
 			// add constraint.
 			case item.TableConstraintDef() != nil:
-				if err := mysqlCreateConstraint(table, item.TableConstraintDef()); err != nil {
-					l.err = err
+				if advice := mysqlCreateConstraint(table, item.TableConstraintDef()); advice != nil {
+					l.advice = advice
 					return
 				}
 			default:
@@ -338,24 +376,48 @@ func (l *mysqlListener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 				columnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
 				// Validate column exists
 				if table.GetColumn(columnName) == nil {
-					l.err = catalogutil.NewColumnNotExistsError(table.GetProto().Name, columnName)
+					l.advice = &storepb.Advice{
+						Status:        storepb.Advice_ERROR,
+						Code:          code.ColumnNotExists.Int32(),
+						Title:         fmt.Sprintf("Column `%s` does not exist in table `%s`", columnName, table.GetProto().Name),
+						Content:       fmt.Sprintf("Column `%s` does not exist in table `%s`", columnName, table.GetProto().Name),
+						StartPosition: &storepb.Position{Line: 0},
+					}
 					return
 				}
 				if err := table.DropColumn(columnName); err != nil {
-					l.err = &catalogutil.WalkThroughError{Code: code.Internal, Content: fmt.Sprintf("failed to drop column: %v", err)}
+					l.advice = &storepb.Advice{
+						Status:        storepb.Advice_ERROR,
+						Code:          code.Internal.Int32(),
+						Title:         fmt.Sprintf("failed to drop column: %v", err),
+						Content:       fmt.Sprintf("failed to drop column: %v", err),
+						StartPosition: &storepb.Position{Line: 0},
+					}
 					return
 				}
 				// drop primary key.
 			case item.PRIMARY_SYMBOL() != nil && item.KEY_SYMBOL() != nil:
 				if err := table.DropIndex(PrimaryKeyName); err != nil {
-					l.err = &catalogutil.WalkThroughError{Code: code.IndexNotExists, Content: err.Error()}
+					l.advice = &storepb.Advice{
+						Status:        storepb.Advice_ERROR,
+						Code:          code.IndexNotExists.Int32(),
+						Title:         err.Error(),
+						Content:       err.Error(),
+						StartPosition: &storepb.Position{Line: 0},
+					}
 					return
 				}
 				// drop key/index.
 			case item.KeyOrIndex() != nil && item.IndexRef() != nil:
 				_, _, indexName := mysqlparser.NormalizeIndexRef(item.IndexRef())
 				if err := table.DropIndex(indexName); err != nil {
-					l.err = &catalogutil.WalkThroughError{Code: code.IndexNotExists, Content: err.Error()}
+					l.advice = &storepb.Advice{
+						Status:        storepb.Advice_ERROR,
+						Code:          code.IndexNotExists.Int32(),
+						Title:         err.Error(),
+						Content:       err.Error(),
+						StartPosition: &storepb.Position{Line: 0},
+					}
 					return
 				}
 			default:
@@ -364,16 +426,16 @@ func (l *mysqlListener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 		// modify column.
 		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil:
 			columnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
-			if err := mysqlChangeColumn(table, columnName, columnName, item.FieldDefinition(), positionFromPlaceContext(item.Place())); err != nil {
-				l.err = err
+			if advice := mysqlChangeColumn(table, columnName, columnName, item.FieldDefinition(), positionFromPlaceContext(item.Place())); advice != nil {
+				l.advice = advice
 				return
 			}
 		// change column
 		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil:
 			oldColumnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
 			newColumnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
-			if err := mysqlChangeColumn(table, oldColumnName, newColumnName, item.FieldDefinition(), positionFromPlaceContext(item.Place())); err != nil {
-				l.err = err
+			if advice := mysqlChangeColumn(table, oldColumnName, newColumnName, item.FieldDefinition(), positionFromPlaceContext(item.Place())); advice != nil {
+				l.advice = advice
 				return
 			}
 		// rename column
@@ -382,34 +444,49 @@ func (l *mysqlListener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 			newColumnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
 			// Validate old column exists
 			if table.GetColumn(oldColumnName) == nil {
-				l.err = catalogutil.NewColumnNotExistsError(table.GetProto().Name, oldColumnName)
+				l.advice = &storepb.Advice{
+					Status:        storepb.Advice_ERROR,
+					Code:          code.ColumnNotExists.Int32(),
+					Title:         fmt.Sprintf("Column `%s` does not exist in table `%s`", oldColumnName, table.GetProto().Name),
+					Content:       fmt.Sprintf("Column `%s` does not exist in table `%s`", oldColumnName, table.GetProto().Name),
+					StartPosition: &storepb.Position{Line: 0},
+				}
 				return
 			}
 			// Validate new column doesn't already exist
 			if table.GetColumn(newColumnName) != nil {
-				l.err = &catalogutil.WalkThroughError{
-					Code:    code.ColumnExists,
-					Content: fmt.Sprintf("Column `%s` already exists in table `%s`", newColumnName, table.GetProto().Name),
+				l.advice = &storepb.Advice{
+					Status:        storepb.Advice_ERROR,
+					Code:          code.ColumnExists.Int32(),
+					Title:         fmt.Sprintf("Column `%s` already exists in table `%s`", newColumnName, table.GetProto().Name),
+					Content:       fmt.Sprintf("Column `%s` already exists in table `%s`", newColumnName, table.GetProto().Name),
+					StartPosition: &storepb.Position{Line: 0},
 				}
 				return
 			}
 			if err := table.RenameColumn(oldColumnName, newColumnName); err != nil {
-				l.err = &catalogutil.WalkThroughError{Code: code.Internal, Content: fmt.Sprintf("failed to rename column: %v", err)}
+				l.advice = &storepb.Advice{
+					Status:        storepb.Advice_ERROR,
+					Code:          code.Internal.Int32(),
+					Title:         fmt.Sprintf("failed to rename column: %v", err),
+					Content:       fmt.Sprintf("failed to rename column: %v", err),
+					StartPosition: &storepb.Position{Line: 0},
+				}
 				return
 			}
 		case item.ALTER_SYMBOL() != nil:
 			switch {
 			// alter column.
 			case item.ColumnInternalRef() != nil:
-				if err := mysqlAlterColumn(table, item); err != nil {
-					l.err = err
+				if advice := mysqlAlterColumn(table, item); advice != nil {
+					l.advice = advice
 					return
 				}
 			// alter index visibility.
 			case item.INDEX_SYMBOL() != nil && item.IndexRef() != nil && item.Visibility() != nil:
 				_, _, indexName := mysqlparser.NormalizeIndexRef(item.IndexRef())
-				if err := mysqlChangeIndexVisibility(table, indexName, item.Visibility()); err != nil {
-					l.err = err
+				if advice := mysqlChangeIndexVisibility(table, indexName, item.Visibility()); advice != nil {
+					l.advice = advice
 					return
 				}
 			default:
@@ -419,14 +496,23 @@ func (l *mysqlListener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 			_, newTableName := mysqlparser.NormalizeMySQLTableName(item.TableName())
 			schema := l.databaseMetadata.GetSchema("")
 			if schema == nil {
-				l.err = &catalogutil.WalkThroughError{
-					Code:    code.SchemaNotExists,
-					Content: "Schema does not exist",
+				l.advice = &storepb.Advice{
+					Status:        storepb.Advice_ERROR,
+					Code:          code.SchemaNotExists.Int32(),
+					Title:         "Schema does not exist",
+					Content:       "Schema does not exist",
+					StartPosition: &storepb.Position{Line: 0},
 				}
 				return
 			}
 			if err := schema.RenameTable(table.GetProto().Name, newTableName); err != nil {
-				l.err = &catalogutil.WalkThroughError{Code: code.TableNotExists, Content: err.Error()}
+				l.advice = &storepb.Advice{
+					Status:        storepb.Advice_ERROR,
+					Code:          code.TableNotExists.Int32(),
+					Title:         err.Error(),
+					Content:       err.Error(),
+					StartPosition: &storepb.Position{Line: 0},
+				}
 				return
 			}
 		// rename index.
@@ -434,7 +520,13 @@ func (l *mysqlListener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 			_, _, oldIndexName := mysqlparser.NormalizeIndexRef(item.IndexRef())
 			newIndexName := mysqlparser.NormalizeIndexName(item.IndexName())
 			if err := table.RenameIndex(oldIndexName, newIndexName); err != nil {
-				l.err = &catalogutil.WalkThroughError{Code: code.IndexNotExists, Content: err.Error()}
+				l.advice = &storepb.Advice{
+					Status:        storepb.Advice_ERROR,
+					Code:          code.IndexNotExists.Int32(),
+					Title:         err.Error(),
+					Content:       err.Error(),
+					StartPosition: &storepb.Position{Line: 0},
+				}
 				return
 			}
 		default:
@@ -452,9 +544,9 @@ func (l *mysqlListener) EnterDropIndex(ctx *mysql.DropIndexContext) {
 		return
 	}
 	databaseName, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
-	table, err := mysqlFindTableState(l.databaseMetadata, databaseName, tableName)
-	if err != nil {
-		l.err = err
+	table, advice := mysqlFindTableState(l.databaseMetadata, databaseName, tableName)
+	if advice != nil {
+		l.advice = advice
 		return
 	}
 
@@ -464,7 +556,13 @@ func (l *mysqlListener) EnterDropIndex(ctx *mysql.DropIndexContext) {
 
 	_, _, indexName := mysqlparser.NormalizeIndexRef(ctx.IndexRef())
 	if err := table.DropIndex(indexName); err != nil {
-		l.err = &catalogutil.WalkThroughError{Code: code.IndexNotExists, Content: err.Error()}
+		l.advice = &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.IndexNotExists.Int32(),
+			Title:         err.Error(),
+			Content:       err.Error(),
+			StartPosition: &storepb.Position{Line: 0},
+		}
 	}
 }
 
@@ -476,9 +574,9 @@ func (l *mysqlListener) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
 		return
 	}
 	databaseName, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.CreateIndexTarget().TableRef())
-	table, err := mysqlFindTableState(l.databaseMetadata, databaseName, tableName)
-	if err != nil {
-		l.err = err
+	table, advice := mysqlFindTableState(l.databaseMetadata, databaseName, tableName)
+	if advice != nil {
+		l.advice = advice
 		return
 	}
 
@@ -514,14 +612,14 @@ func (l *mysqlListener) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
 	if ctx.CreateIndexTarget() == nil || ctx.CreateIndexTarget().KeyListVariants() == nil {
 		return
 	}
-	if err := mysqlValidateKeyListVariants(table, ctx.CreateIndexTarget().KeyListVariants(), false /* primary */, isSpatial); err != nil {
-		l.err = err
+	if advice := mysqlValidateKeyListVariants(table, ctx.CreateIndexTarget().KeyListVariants(), false /* primary */, isSpatial); advice != nil {
+		l.advice = advice
 		return
 	}
 
 	columnList := mysqlparser.NormalizeKeyListVariants(ctx.CreateIndexTarget().KeyListVariants())
-	if err := mysqlCreateIndex(table, indexName, columnList, unique, tp, mysql.NewEmptyTableConstraintDefContext(), ctx); err != nil {
-		l.err = err
+	if advice := mysqlCreateIndex(table, indexName, columnList, unique, tp, mysql.NewEmptyTableConstraintDefContext(), ctx); advice != nil {
+		l.advice = advice
 		return
 	}
 }
@@ -534,7 +632,13 @@ func (l *mysqlListener) EnterAlterDatabase(ctx *mysql.AlterDatabaseContext) {
 	if ctx.SchemaRef() != nil {
 		databaseName := mysqlparser.NormalizeMySQLSchemaRef(ctx.SchemaRef())
 		if !isCurrentDatabase(l.databaseMetadata, databaseName) {
-			l.err = catalogutil.NewAccessOtherDatabaseError(l.databaseMetadata.DatabaseName(), databaseName)
+			l.advice = &storepb.Advice{
+				Status:        storepb.Advice_WARNING,
+				Code:          code.NotCurrentDatabase.Int32(),
+				Title:         fmt.Sprintf("Database `%s` is not the current database `%s`", databaseName, l.databaseMetadata.DatabaseName()),
+				Content:       fmt.Sprintf("Database `%s` is not the current database `%s`", databaseName, l.databaseMetadata.DatabaseName()),
+				StartPosition: &storepb.Position{Line: 0},
+			}
 			return
 		}
 	}
@@ -568,7 +672,13 @@ func (l *mysqlListener) EnterDropDatabase(ctx *mysql.DropDatabaseContext) {
 
 	databaseName := mysqlparser.NormalizeMySQLSchemaRef(ctx.SchemaRef())
 	if !isCurrentDatabase(l.databaseMetadata, databaseName) {
-		l.err = catalogutil.NewAccessOtherDatabaseError(l.databaseMetadata.DatabaseName(), databaseName)
+		l.advice = &storepb.Advice{
+			Status:        storepb.Advice_WARNING,
+			Code:          code.NotCurrentDatabase.Int32(),
+			Title:         fmt.Sprintf("Database `%s` is not the current database `%s`", databaseName, l.databaseMetadata.DatabaseName()),
+			Content:       fmt.Sprintf("Database `%s` is not the current database `%s`", databaseName, l.databaseMetadata.DatabaseName()),
+			StartPosition: &storepb.Position{Line: 0},
+		}
 		return
 	}
 
@@ -584,7 +694,13 @@ func (l *mysqlListener) EnterCreateDatabase(ctx *mysql.CreateDatabaseContext) {
 		return
 	}
 	databaseName := mysqlparser.NormalizeMySQLSchemaName(ctx.SchemaName())
-	l.err = catalogutil.NewAccessOtherDatabaseError(l.databaseMetadata.DatabaseName(), databaseName)
+	l.advice = &storepb.Advice{
+		Status:        storepb.Advice_WARNING,
+		Code:          code.NotCurrentDatabase.Int32(),
+		Title:         fmt.Sprintf("Database `%s` is not the current database `%s`", databaseName, l.databaseMetadata.DatabaseName()),
+		Content:       fmt.Sprintf("Database `%s` is not the current database `%s`", databaseName, l.databaseMetadata.DatabaseName()),
+		StartPosition: &storepb.Position{Line: 0},
+	}
 }
 
 // EnterRenameTableStatement is called when production renameTableStatement is entered.
@@ -595,9 +711,12 @@ func (l *mysqlListener) EnterRenameTableStatement(ctx *mysql.RenameTableStatemen
 	for _, pair := range ctx.AllRenamePair() {
 		schema := l.databaseMetadata.GetSchema("")
 		if schema == nil {
-			l.err = &catalogutil.WalkThroughError{
-				Code:    code.SchemaNotExists,
-				Content: "Schema does not exist",
+			l.advice = &storepb.Advice{
+				Status:        storepb.Advice_ERROR,
+				Code:          code.SchemaNotExists.Int32(),
+				Title:         "Schema does not exist",
+				Content:       "Schema does not exist",
+				StartPosition: &storepb.Position{Line: 0},
 			}
 			return
 		}
@@ -610,28 +729,64 @@ func (l *mysqlListener) EnterRenameTableStatement(ctx *mysql.RenameTableStatemen
 				return
 			}
 			if schema.GetTable(oldTableName) == nil {
-				l.err = catalogutil.NewTableNotExistsError(oldTableName)
+				l.advice = &storepb.Advice{
+					Status:        storepb.Advice_ERROR,
+					Code:          code.TableNotExists.Int32(),
+					Title:         fmt.Sprintf("Table `%s` does not exist", oldTableName),
+					Content:       fmt.Sprintf("Table `%s` does not exist", oldTableName),
+					StartPosition: &storepb.Position{Line: 0},
+				}
 				return
 			}
 			if schema.GetTable(newTableName) != nil {
-				l.err = catalogutil.NewTableExistsError(newTableName)
+				l.advice = &storepb.Advice{
+					Status:        storepb.Advice_ERROR,
+					Code:          code.TableExists.Int32(),
+					Title:         fmt.Sprintf("Table `%s` already exists", newTableName),
+					Content:       fmt.Sprintf("Table `%s` already exists", newTableName),
+					StartPosition: &storepb.Position{Line: 0},
+				}
 				return
 			}
 			if err := schema.RenameTable(oldTableName, newTableName); err != nil {
-				l.err = &catalogutil.WalkThroughError{Code: code.Internal, Content: err.Error()}
+				l.advice = &storepb.Advice{
+					Status:        storepb.Advice_ERROR,
+					Code:          code.Internal.Int32(),
+					Title:         err.Error(),
+					Content:       err.Error(),
+					StartPosition: &storepb.Position{Line: 0},
+				}
 				return
 			}
 		} else if mysqlMoveToOtherDatabase(l.databaseMetadata, pair) {
 			if schema.GetTable(oldTableName) == nil {
-				l.err = catalogutil.NewTableNotExistsError(oldTableName)
+				l.advice = &storepb.Advice{
+					Status:        storepb.Advice_ERROR,
+					Code:          code.TableNotExists.Int32(),
+					Title:         fmt.Sprintf("Table `%s` does not exist", oldTableName),
+					Content:       fmt.Sprintf("Table `%s` does not exist", oldTableName),
+					StartPosition: &storepb.Position{Line: 0},
+				}
 				return
 			}
 			if err := schema.DropTable(oldTableName); err != nil {
-				l.err = &catalogutil.WalkThroughError{Code: code.TableNotExists, Content: err.Error()}
+				l.advice = &storepb.Advice{
+					Status:        storepb.Advice_ERROR,
+					Code:          code.TableNotExists.Int32(),
+					Title:         err.Error(),
+					Content:       err.Error(),
+					StartPosition: &storepb.Position{Line: 0},
+				}
 				return
 			}
 		} else {
-			l.err = catalogutil.NewAccessOtherDatabaseError(l.databaseMetadata.DatabaseName(), mysqlTargetDatabase(l.databaseMetadata, pair))
+			l.advice = &storepb.Advice{
+				Status:        storepb.Advice_WARNING,
+				Code:          code.NotCurrentDatabase.Int32(),
+				Title:         fmt.Sprintf("Database `%s` is not the current database `%s`", mysqlTargetDatabase(l.databaseMetadata, pair), l.databaseMetadata.DatabaseName()),
+				Content:       fmt.Sprintf("Database `%s` is not the current database `%s`", mysqlTargetDatabase(l.databaseMetadata, pair), l.databaseMetadata.DatabaseName()),
+				StartPosition: &storepb.Position{Line: 0},
+			}
 			return
 		}
 	}
@@ -650,9 +805,9 @@ func (l *mysqlListener) EnterCreateTrigger(ctx *mysql.CreateTriggerContext) {
 		return
 	}
 	databaseName, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
-	_, err := mysqlFindTableState(l.databaseMetadata, databaseName, tableName)
-	if err != nil {
-		l.err = err
+	_, advice := mysqlFindTableState(l.databaseMetadata, databaseName, tableName)
+	if advice != nil {
+		l.advice = advice
 		return
 	}
 }
@@ -707,10 +862,16 @@ func mysqlTheCurrentDatabase(d *model.DatabaseMetadata, renamePair mysql.IRename
 	return true
 }
 
-func mysqlChangeIndexVisibility(table *model.TableMetadata, indexName string, visibility mysql.IVisibilityContext) *catalogutil.WalkThroughError {
+func mysqlChangeIndexVisibility(table *model.TableMetadata, indexName string, visibility mysql.IVisibilityContext) *storepb.Advice {
 	index := table.GetIndex(indexName)
 	if index == nil {
-		return catalogutil.NewIndexNotExistsError(table.GetProto().Name, indexName)
+		return &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.IndexNotExists.Int32(),
+			Title:         fmt.Sprintf("Index `%s` does not exist in table `%s`", indexName, table.GetProto().Name),
+			Content:       fmt.Sprintf("Index `%s` does not exist in table `%s`", indexName, table.GetProto().Name),
+			StartPosition: &storepb.Position{Line: 0},
+		}
 	}
 	indexProto := index.GetProto()
 	switch {
@@ -724,7 +885,7 @@ func mysqlChangeIndexVisibility(table *model.TableMetadata, indexName string, vi
 	return nil
 }
 
-func mysqlAlterColumn(table *model.TableMetadata, itemDef mysql.IAlterListItemContext) *catalogutil.WalkThroughError {
+func mysqlAlterColumn(table *model.TableMetadata, itemDef mysql.IAlterListItemContext) *storepb.Advice {
 	if itemDef.ColumnInternalRef() == nil {
 		// should not reach here.
 		return nil
@@ -732,7 +893,13 @@ func mysqlAlterColumn(table *model.TableMetadata, itemDef mysql.IAlterListItemCo
 	columnName := mysqlparser.NormalizeMySQLColumnInternalRef(itemDef.ColumnInternalRef())
 	col := table.GetColumn(columnName)
 	if col == nil {
-		return catalogutil.NewColumnNotExistsError(table.GetProto().Name, columnName)
+		return &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.ColumnNotExists.Int32(),
+			Title:         fmt.Sprintf("Column `%s` does not exist in table `%s`", columnName, table.GetProto().Name),
+			Content:       fmt.Sprintf("Column `%s` does not exist in table `%s`", columnName, table.GetProto().Name),
+			StartPosition: &storepb.Position{Line: 0},
+		}
 	}
 
 	switch {
@@ -747,10 +914,12 @@ func mysqlAlterColumn(table *model.TableMetadata, itemDef mysql.IAlterListItemCo
 						"text", "tinytext", "mediumtext", "longtext",
 						"json",
 						"geometry":
-						return &catalogutil.WalkThroughError{
-							Code: code.InvalidColumnDefault,
-							// Content comes from MySQL Error content.
-							Content: fmt.Sprintf("BLOB, TEXT, GEOMETRY or JSON column `%s` can't have a default value", columnName),
+						return &storepb.Advice{
+							Status:        storepb.Advice_ERROR,
+							Code:          code.InvalidColumnDefault.Int32(),
+							Title:         fmt.Sprintf("BLOB, TEXT, GEOMETRY or JSON column `%s` can't have a default value", columnName),
+							Content:       fmt.Sprintf("BLOB, TEXT, GEOMETRY or JSON column `%s` can't have a default value", columnName),
+							StartPosition: &storepb.Position{Line: 0},
 						}
 					default:
 						// Other column types allow default values
@@ -770,10 +939,12 @@ func mysqlAlterColumn(table *model.TableMetadata, itemDef mysql.IAlterListItemCo
 				col.Default = defaultValue
 			} else {
 				if !col.Nullable {
-					return &catalogutil.WalkThroughError{
-						Code: code.SetNullDefaultForNotNullColumn,
-						// Content comes from MySQL Error content.
-						Content: fmt.Sprintf("Invalid default value for column `%s`", columnName),
+					return &storepb.Advice{
+						Status:        storepb.Advice_ERROR,
+						Code:          code.SetNullDefaultForNotNullColumn.Int32(),
+						Title:         fmt.Sprintf("Invalid default value for column `%s`", columnName),
+						Content:       fmt.Sprintf("Invalid default value for column `%s`", columnName),
+						StartPosition: &storepb.Position{Line: 0},
 					}
 				}
 
@@ -796,23 +967,38 @@ func mysqlAlterColumn(table *model.TableMetadata, itemDef mysql.IAlterListItemCo
 // 1. rename column if name changed
 // 2. update column properties from fieldDef
 // 3. handle position changes by reordering columns in the table
-func mysqlChangeColumn(table *model.TableMetadata, oldColumnName string, newColumnName string, fieldDef mysql.IFieldDefinitionContext, position *mysqlColumnPosition) *catalogutil.WalkThroughError {
+func mysqlChangeColumn(table *model.TableMetadata, oldColumnName string, newColumnName string, fieldDef mysql.IFieldDefinitionContext, position *mysqlColumnPosition) *storepb.Advice {
 	column := table.GetColumn(oldColumnName)
 	if column == nil {
-		return catalogutil.NewColumnNotExistsError(table.GetProto().Name, oldColumnName)
+		return &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.ColumnNotExists.Int32(),
+			Title:         fmt.Sprintf("Column `%s` does not exist in table `%s`", oldColumnName, table.GetProto().Name),
+			Content:       fmt.Sprintf("Column `%s` does not exist in table `%s`", oldColumnName, table.GetProto().Name),
+			StartPosition: &storepb.Position{Line: 0},
+		}
 	}
 
 	// If renaming, validate and use RenameColumn
 	if oldColumnName != newColumnName {
 		// Validate new column doesn't already exist
 		if table.GetColumn(newColumnName) != nil {
-			return &catalogutil.WalkThroughError{
-				Code:    code.ColumnExists,
-				Content: fmt.Sprintf("Column `%s` already exists in table `%s`", newColumnName, table.GetProto().Name),
+			return &storepb.Advice{
+				Status:        storepb.Advice_ERROR,
+				Code:          code.ColumnExists.Int32(),
+				Title:         fmt.Sprintf("Column `%s` already exists in table `%s`", newColumnName, table.GetProto().Name),
+				Content:       fmt.Sprintf("Column `%s` already exists in table `%s`", newColumnName, table.GetProto().Name),
+				StartPosition: &storepb.Position{Line: 0},
 			}
 		}
 		if err := table.RenameColumn(oldColumnName, newColumnName); err != nil {
-			return &catalogutil.WalkThroughError{Code: code.Internal, Content: fmt.Sprintf("failed to rename column: %v", err)}
+			return &storepb.Advice{
+				Status:        storepb.Advice_ERROR,
+				Code:          code.Internal.Int32(),
+				Title:         fmt.Sprintf("failed to rename column: %v", err),
+				Content:       fmt.Sprintf("failed to rename column: %v", err),
+				StartPosition: &storepb.Position{Line: 0},
+			}
 		}
 		// Get the renamed column
 		column = table.GetColumn(newColumnName)
@@ -932,24 +1118,33 @@ func positionFromPlaceContext(place mysql.IPlaceContext) *mysqlColumnPosition {
 	return columnPosition
 }
 
-func mysqlCopyTable(d *model.DatabaseMetadata, databaseName, tableName, referTable string) *catalogutil.WalkThroughError {
-	targetTable, err := mysqlFindTableState(d, databaseName, referTable)
-	if err != nil {
-		return err
+func mysqlCopyTable(d *model.DatabaseMetadata, databaseName, tableName, referTable string) *storepb.Advice {
+	targetTable, advice := mysqlFindTableState(d, databaseName, referTable)
+	if advice != nil {
+		return advice
 	}
 
 	schema := d.GetSchema("")
 	if schema == nil {
-		return &catalogutil.WalkThroughError{
-			Code:    code.SchemaNotExists,
-			Content: "Schema does not exist",
+		return &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.SchemaNotExists.Int32(),
+			Title:         "Schema does not exist",
+			Content:       "Schema does not exist",
+			StartPosition: &storepb.Position{Line: 0},
 		}
 	}
 
 	// Create the new table
 	newTable, createErr := schema.CreateTable(tableName)
 	if createErr != nil {
-		return &catalogutil.WalkThroughError{Code: code.TableExists, Content: createErr.Error()}
+		return &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.TableExists.Int32(),
+			Title:         createErr.Error(),
+			Content:       createErr.Error(),
+			StartPosition: &storepb.Position{Line: 0},
+		}
 	}
 
 	// Copy table properties
@@ -963,10 +1158,22 @@ func mysqlCopyTable(d *model.DatabaseMetadata, databaseName, tableName, referTab
 	for _, col := range targetTable.GetColumns() {
 		colCopy, ok := proto.Clone(col).(*storepb.ColumnMetadata)
 		if !ok {
-			return &catalogutil.WalkThroughError{Code: code.Internal, Content: "failed to clone column metadata"}
+			return &storepb.Advice{
+				Status:        storepb.Advice_ERROR,
+				Code:          code.Internal.Int32(),
+				Title:         "failed to clone column metadata",
+				Content:       "failed to clone column metadata",
+				StartPosition: &storepb.Position{Line: 0},
+			}
 		}
 		if err := newTable.CreateColumn(colCopy); err != nil {
-			return &catalogutil.WalkThroughError{Code: code.ColumnExists, Content: err.Error()}
+			return &storepb.Advice{
+				Status:        storepb.Advice_ERROR,
+				Code:          code.ColumnExists.Int32(),
+				Title:         err.Error(),
+				Content:       err.Error(),
+				StartPosition: &storepb.Position{Line: 0},
+			}
 		}
 	}
 
@@ -974,38 +1181,65 @@ func mysqlCopyTable(d *model.DatabaseMetadata, databaseName, tableName, referTab
 	for _, idx := range targetProto.Indexes {
 		idxCopy, ok := proto.Clone(idx).(*storepb.IndexMetadata)
 		if !ok {
-			return &catalogutil.WalkThroughError{Code: code.Internal, Content: "failed to clone index metadata"}
+			return &storepb.Advice{
+				Status:        storepb.Advice_ERROR,
+				Code:          code.Internal.Int32(),
+				Title:         "failed to clone index metadata",
+				Content:       "failed to clone index metadata",
+				StartPosition: &storepb.Position{Line: 0},
+			}
 		}
 		if err := newTable.CreateIndex(idxCopy); err != nil {
-			return &catalogutil.WalkThroughError{Code: code.IndexExists, Content: err.Error()}
+			return &storepb.Advice{
+				Status:        storepb.Advice_ERROR,
+				Code:          code.IndexExists.Int32(),
+				Title:         err.Error(),
+				Content:       err.Error(),
+				StartPosition: &storepb.Position{Line: 0},
+			}
 		}
 	}
 
 	return nil
 }
 
-func mysqlFindTableState(d *model.DatabaseMetadata, databaseName, tableName string) (*model.TableMetadata, *catalogutil.WalkThroughError) {
+func mysqlFindTableState(d *model.DatabaseMetadata, databaseName, tableName string) (*model.TableMetadata, *storepb.Advice) {
 	if databaseName != "" && !isCurrentDatabase(d, databaseName) {
-		return nil, catalogutil.NewAccessOtherDatabaseError(d.DatabaseName(), databaseName)
+		return nil, &storepb.Advice{
+			Status:        storepb.Advice_WARNING,
+			Code:          code.NotCurrentDatabase.Int32(),
+			Title:         fmt.Sprintf("Database `%s` is not the current database `%s`", databaseName, d.DatabaseName()),
+			Content:       fmt.Sprintf("Database `%s` is not the current database `%s`", databaseName, d.DatabaseName()),
+			StartPosition: &storepb.Position{Line: 0},
+		}
 	}
 
 	schema := d.GetSchema("")
 	if schema == nil {
-		return nil, &catalogutil.WalkThroughError{
-			Code:    code.SchemaNotExists,
-			Content: "Schema does not exist",
+		return nil, &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.SchemaNotExists.Int32(),
+			Title:         "Schema does not exist",
+			Content:       "Schema does not exist",
+			StartPosition: &storepb.Position{Line: 0},
 		}
 	}
 
 	table := schema.GetTable(tableName)
 	if table == nil {
-		return nil, catalogutil.NewTableNotExistsError(tableName)
+		return nil, &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.TableNotExists.Int32(),
+			Title:         fmt.Sprintf("Table `%s` does not exist", tableName),
+			Content:       fmt.Sprintf("Table `%s` does not exist", tableName),
+			StartPosition: &storepb.Position{Line: 0},
+		}
 	}
 
 	return table, nil
 }
 
-func mysqlCreateConstraint(table *model.TableMetadata, constraintDef mysql.ITableConstraintDefContext) *catalogutil.WalkThroughError {
+func mysqlCreateConstraint(table *model.TableMetadata, constraintDef mysql.ITableConstraintDefContext) *storepb.Advice {
 	if constraintDef.GetType_() != nil {
 		switch constraintDef.GetType_().GetTokenType() {
 		// PRIMARY KEY.
@@ -1090,7 +1324,7 @@ func mysqlCreateConstraint(table *model.TableMetadata, constraintDef mysql.ITabl
 }
 
 // mysqlValidateKeyListVariants validates the key list variants.
-func mysqlValidateKeyListVariants(table *model.TableMetadata, keyList mysql.IKeyListVariantsContext, primary bool, isSpatial bool) *catalogutil.WalkThroughError {
+func mysqlValidateKeyListVariants(table *model.TableMetadata, keyList mysql.IKeyListVariantsContext, primary bool, isSpatial bool) *storepb.Advice {
 	if keyList.KeyList() != nil {
 		columns := mysqlparser.NormalizeKeyList(keyList.KeyList())
 		if err := mysqlValidateColumnList(table, columns, primary, isSpatial); err != nil {
@@ -1106,20 +1340,28 @@ func mysqlValidateKeyListVariants(table *model.TableMetadata, keyList mysql.IKey
 	return nil
 }
 
-func mysqlValidateColumnList(table *model.TableMetadata, columnList []string, primary bool, isSpatial bool) *catalogutil.WalkThroughError {
+func mysqlValidateColumnList(table *model.TableMetadata, columnList []string, primary bool, isSpatial bool) *storepb.Advice {
 	for _, columnName := range columnList {
 		column := table.GetColumn(columnName)
 		if column == nil {
-			return catalogutil.NewColumnNotExistsError(table.GetProto().Name, columnName)
+			return &storepb.Advice{
+				Status:        storepb.Advice_ERROR,
+				Code:          code.ColumnNotExists.Int32(),
+				Title:         fmt.Sprintf("Column `%s` does not exist in table `%s`", columnName, table.GetProto().Name),
+				Content:       fmt.Sprintf("Column `%s` does not exist in table `%s`", columnName, table.GetProto().Name),
+				StartPosition: &storepb.Position{Line: 0},
+			}
 		}
 		if primary {
 			column.Nullable = false
 		}
 		if isSpatial && column.Nullable {
-			return &catalogutil.WalkThroughError{
-				Code: code.SpatialIndexKeyNullable,
-				// The error content comes from MySQL.
-				Content: fmt.Sprintf("All parts of a SPATIAL index must be NOT NULL, but `%s` is nullable", column.Name),
+			return &storepb.Advice{
+				Status:        storepb.Advice_ERROR,
+				Code:          code.SpatialIndexKeyNullable.Int32(),
+				Title:         fmt.Sprintf("All parts of a SPATIAL index must be NOT NULL, but `%s` is nullable", column.Name),
+				Content:       fmt.Sprintf("All parts of a SPATIAL index must be NOT NULL, but `%s` is nullable", column.Name),
+				StartPosition: &storepb.Position{Line: 0},
 			}
 		}
 	}
@@ -1128,7 +1370,7 @@ func mysqlValidateColumnList(table *model.TableMetadata, columnList []string, pr
 
 // mysqlValidateExpressionList validates the expression list.
 // TODO: update expression validation.
-func mysqlValidateExpressionList(table *model.TableMetadata, expressionList []string, primary bool, isSpatial bool) *catalogutil.WalkThroughError {
+func mysqlValidateExpressionList(table *model.TableMetadata, expressionList []string, primary bool, isSpatial bool) *storepb.Advice {
 	for _, expression := range expressionList {
 		column := table.GetColumn(expression)
 		// If expression is not a column, we do not need to validate it.
@@ -1140,10 +1382,12 @@ func mysqlValidateExpressionList(table *model.TableMetadata, expressionList []st
 			column.Nullable = false
 		}
 		if isSpatial && column.Nullable {
-			return &catalogutil.WalkThroughError{
-				Code: code.SpatialIndexKeyNullable,
-				// The error content comes from MySQL.
-				Content: fmt.Sprintf("All parts of a SPATIAL index must be NOT NULL, but `%s` is nullable", column.Name),
+			return &storepb.Advice{
+				Status:        storepb.Advice_ERROR,
+				Code:          code.SpatialIndexKeyNullable.Int32(),
+				Title:         fmt.Sprintf("All parts of a SPATIAL index must be NOT NULL, but `%s` is nullable", column.Name),
+				Content:       fmt.Sprintf("All parts of a SPATIAL index must be NOT NULL, but `%s` is nullable", column.Name),
+				StartPosition: &storepb.Position{Line: 0},
 			}
 		}
 	}
@@ -1188,11 +1432,14 @@ func mysqlGetIndexType(tableConstraint mysql.ITableConstraintDefContext) string 
 	return "BTREE"
 }
 
-func mysqlCreateColumn(table *model.TableMetadata, columnName string, fieldDef mysql.IFieldDefinitionContext, position *mysqlColumnPosition) *catalogutil.WalkThroughError {
+func mysqlCreateColumn(table *model.TableMetadata, columnName string, fieldDef mysql.IFieldDefinitionContext, position *mysqlColumnPosition) *storepb.Advice {
 	if table.GetColumn(columnName) != nil {
-		return &catalogutil.WalkThroughError{
-			Code:    code.ColumnExists,
-			Content: fmt.Sprintf("Column `%s` already exists in table `%s`", columnName, table.GetProto().Name),
+		return &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.ColumnExists.Int32(),
+			Title:         fmt.Sprintf("Column `%s` already exists in table `%s`", columnName, table.GetProto().Name),
+			Content:       fmt.Sprintf("Column `%s` already exists in table `%s`", columnName, table.GetProto().Name),
+			StartPosition: &storepb.Position{Line: 0},
 		}
 	}
 
@@ -1261,9 +1508,12 @@ func mysqlCreateColumn(table *model.TableMetadata, columnName string, fieldDef m
 					continue
 				}
 				if !mysqlparser.IsTimeType(fieldDef.DataType()) {
-					return &catalogutil.WalkThroughError{
-						Code:    code.OnUpdateColumnNotDatetimeOrTimestamp,
-						Content: fmt.Sprintf("Column `%s` use ON UPDATE but is not DATETIME or TIMESTAMP", col.Name),
+					return &storepb.Advice{
+						Status:        storepb.Advice_ERROR,
+						Code:          code.OnUpdateColumnNotDatetimeOrTimestamp.Int32(),
+						Title:         fmt.Sprintf("Column `%s` use ON UPDATE but is not DATETIME or TIMESTAMP", col.Name),
+						Content:       fmt.Sprintf("Column `%s` use ON UPDATE but is not DATETIME or TIMESTAMP", col.Name),
+						StartPosition: &storepb.Position{Line: 0},
 					}
 				}
 			// primary key.
@@ -1296,15 +1546,23 @@ func mysqlCreateColumn(table *model.TableMetadata, columnName string, fieldDef m
 	}
 
 	if !col.Nullable && setNullDefault {
-		return &catalogutil.WalkThroughError{
-			Code: code.SetNullDefaultForNotNullColumn,
-			// Content comes from MySQL Error content.
-			Content: fmt.Sprintf("Invalid default value for column `%s`", col.Name),
+		return &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.SetNullDefaultForNotNullColumn.Int32(),
+			Title:         fmt.Sprintf("Invalid default value for column `%s`", col.Name),
+			Content:       fmt.Sprintf("Invalid default value for column `%s`", col.Name),
+			StartPosition: &storepb.Position{Line: 0},
 		}
 	}
 
 	if err := table.CreateColumn(col); err != nil {
-		return &catalogutil.WalkThroughError{Code: code.ColumnExists, Content: err.Error()}
+		return &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.ColumnExists.Int32(),
+			Title:         err.Error(),
+			Content:       err.Error(),
+			StartPosition: &storepb.Position{Line: 0},
+		}
 	}
 
 	// Handle position by reordering columns in the proto
@@ -1356,17 +1614,26 @@ func mysqlCreateColumn(table *model.TableMetadata, columnName string, fieldDef m
 	return nil
 }
 
-func mysqlCreateIndex(table *model.TableMetadata, name string, keyList []string, unique bool, tp string, tableConstraint mysql.ITableConstraintDefContext, createIndexDef mysql.ICreateIndexContext) *catalogutil.WalkThroughError {
+func mysqlCreateIndex(table *model.TableMetadata, name string, keyList []string, unique bool, tp string, tableConstraint mysql.ITableConstraintDefContext, createIndexDef mysql.ICreateIndexContext) *storepb.Advice {
 	if len(keyList) == 0 {
-		return &catalogutil.WalkThroughError{
-			Code:    code.IndexEmptyKeys,
-			Content: fmt.Sprintf("Index `%s` in table `%s` has empty key", name, table.GetProto().Name),
+		return &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.IndexEmptyKeys.Int32(),
+			Title:         fmt.Sprintf("Index `%s` in table `%s` has empty key", name, table.GetProto().Name),
+			Content:       fmt.Sprintf("Index `%s` in table `%s` has empty key", name, table.GetProto().Name),
+			StartPosition: &storepb.Position{Line: 0},
 		}
 	}
 	// construct a index name if name is empty.
 	if name != "" {
 		if table.GetIndex(name) != nil {
-			return catalogutil.NewIndexExistsError(table.GetProto().Name, name)
+			return &storepb.Advice{
+				Status:        storepb.Advice_ERROR,
+				Code:          code.IndexExists.Int32(),
+				Title:         fmt.Sprintf("Index `%s` already exists in table `%s`", name, table.GetProto().Name),
+				Content:       fmt.Sprintf("Index `%s` already exists in table `%s`", name, table.GetProto().Name),
+				StartPosition: &storepb.Position{Line: 0},
+			}
 		}
 	} else {
 		suffix := 1
@@ -1452,16 +1719,25 @@ func mysqlCreateIndex(table *model.TableMetadata, name string, keyList []string,
 	}
 
 	if err := table.CreateIndex(index); err != nil {
-		return &catalogutil.WalkThroughError{Code: code.IndexExists, Content: err.Error()}
+		return &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.IndexExists.Int32(),
+			Title:         err.Error(),
+			Content:       err.Error(),
+			StartPosition: &storepb.Position{Line: 0},
+		}
 	}
 	return nil
 }
 
-func mysqlCreatePrimaryKey(table *model.TableMetadata, keys []string, tp string) *catalogutil.WalkThroughError {
+func mysqlCreatePrimaryKey(table *model.TableMetadata, keys []string, tp string) *storepb.Advice {
 	if table.GetPrimaryKey() != nil {
-		return &catalogutil.WalkThroughError{
-			Code:    code.PrimaryKeyExists,
-			Content: fmt.Sprintf("Primary key exists in table `%s`", table.GetProto().Name),
+		return &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.PrimaryKeyExists.Int32(),
+			Title:         fmt.Sprintf("Primary key exists in table `%s`", table.GetProto().Name),
+			Content:       fmt.Sprintf("Primary key exists in table `%s`", table.GetProto().Name),
+			StartPosition: &storepb.Position{Line: 0},
 		}
 	}
 
@@ -1474,12 +1750,18 @@ func mysqlCreatePrimaryKey(table *model.TableMetadata, keys []string, tp string)
 		Visible:     true,
 	}
 	if err := table.CreateIndex(pk); err != nil {
-		return &catalogutil.WalkThroughError{Code: code.PrimaryKeyExists, Content: err.Error()}
+		return &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.PrimaryKeyExists.Int32(),
+			Title:         err.Error(),
+			Content:       err.Error(),
+			StartPosition: &storepb.Position{Line: 0},
+		}
 	}
 	return nil
 }
 
-func mysqlCheckDefault(_ *model.TableMetadata, columnName string, fieldDefinition mysql.IFieldDefinitionContext) *catalogutil.WalkThroughError {
+func mysqlCheckDefault(_ *model.TableMetadata, columnName string, fieldDefinition mysql.IFieldDefinitionContext) *storepb.Advice {
 	if fieldDefinition.DataType() == nil || fieldDefinition.DataType().GetType_() == nil {
 		return nil
 	}
@@ -1504,10 +1786,12 @@ func mysqlCheckDefault(_ *model.TableMetadata, columnName string, fieldDefinitio
 		mysql.MySQLParserMULTILINESTRING_SYMBOL,
 		mysql.MySQLParserPOLYGON_SYMBOL,
 		mysql.MySQLParserMULTIPOLYGON_SYMBOL:
-		return &catalogutil.WalkThroughError{
-			Code: code.InvalidColumnDefault,
-			// Content comes from MySQL Error content.
-			Content: fmt.Sprintf("BLOB, TEXT, GEOMETRY or JSON column `%s` can't have a default value", columnName),
+		return &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.InvalidColumnDefault.Int32(),
+			Title:         fmt.Sprintf("BLOB, TEXT, GEOMETRY or JSON column `%s` can't have a default value", columnName),
+			Content:       fmt.Sprintf("BLOB, TEXT, GEOMETRY or JSON column `%s` can't have a default value", columnName),
+			StartPosition: &storepb.Position{Line: 0},
 		}
 	default:
 		// Other data types are allowed to have default values
@@ -1516,7 +1800,7 @@ func mysqlCheckDefault(_ *model.TableMetadata, columnName string, fieldDefinitio
 	return checkDefaultConvert(columnName, fieldDefinition)
 }
 
-func checkDefaultConvert(columnName string, fieldDefinition mysql.IFieldDefinitionContext) *catalogutil.WalkThroughError {
+func checkDefaultConvert(columnName string, fieldDefinition mysql.IFieldDefinitionContext) *storepb.Advice {
 	if fieldDefinition == nil {
 		return nil
 	}
@@ -1546,14 +1830,16 @@ func checkDefaultConvert(columnName string, fieldDefinition mysql.IFieldDefiniti
 	return nil
 }
 
-func checkDefault(columnName string, columnType *types.FieldType, value tidbast.ExprNode) *catalogutil.WalkThroughError {
+func checkDefault(columnName string, columnType *types.FieldType, value tidbast.ExprNode) *storepb.Advice {
 	if value.GetType().GetType() != mysqldriver.TypeNull {
 		switch columnType.GetType() {
 		case mysqldriver.TypeBlob, mysqldriver.TypeTinyBlob, mysqldriver.TypeMediumBlob, mysqldriver.TypeLongBlob, mysqldriver.TypeJSON, mysqldriver.TypeGeometry:
-			return &catalogutil.WalkThroughError{
-				Code: code.InvalidColumnDefault,
-				// Content comes from MySQL Error content.
-				Content: fmt.Sprintf("BLOB, TEXT, GEOMETRY or JSON column `%s` can't have a default value", columnName),
+			return &storepb.Advice{
+				Status:        storepb.Advice_ERROR,
+				Code:          code.InvalidColumnDefault.Int32(),
+				Title:         fmt.Sprintf("BLOB, TEXT, GEOMETRY or JSON column `%s` can't have a default value", columnName),
+				Content:       fmt.Sprintf("BLOB, TEXT, GEOMETRY or JSON column `%s` can't have a default value", columnName),
+				StartPosition: &storepb.Position{Line: 0},
 			}
 		default:
 			// Other column types allow default values
@@ -1563,9 +1849,12 @@ func checkDefault(columnName string, columnType *types.FieldType, value tidbast.
 	if valueExpr, yes := value.(tidbast.ValueExpr); yes {
 		datum := types.NewDatum(valueExpr.GetValue())
 		if _, err := datum.ConvertTo(types.Context{}, columnType); err != nil {
-			return &catalogutil.WalkThroughError{
-				Code:    code.InvalidColumnDefault,
-				Content: err.Error(),
+			return &storepb.Advice{
+				Status:        storepb.Advice_ERROR,
+				Code:          code.InvalidColumnDefault.Int32(),
+				Title:         err.Error(),
+				Content:       err.Error(),
+				StartPosition: &storepb.Position{Line: 0},
 			}
 		}
 	}

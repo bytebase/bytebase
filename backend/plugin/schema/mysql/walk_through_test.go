@@ -15,7 +15,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/plugin/schema/catalogutil"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -24,7 +23,7 @@ type testData struct {
 	// Use custom yaml tag to avoid generate field name `ignorecasesensitive`.
 	IgnoreCaseSensitive bool `yaml:"ignore_case_sensitive"`
 	Want                string
-	Err                 *catalogutil.WalkThroughError
+	Advice              *storepb.Advice
 }
 
 func TestWalkThrough(t *testing.T) {
@@ -53,14 +52,13 @@ func TestWalkThrough(t *testing.T) {
 		state := model.NewDatabaseMetadata(protoData, !test.IgnoreCaseSensitive, !test.IgnoreCaseSensitive)
 
 		asts, _ := sm.GetASTsForChecks(storepb.Engine_MYSQL, test.Statement)
-		err := WalkThrough(state, asts)
-		if err != nil {
-			walkErr, yes := err.(*catalogutil.WalkThroughError)
-			require.True(t, yes)
-			require.Equal(t, test.Err, walkErr)
+		advice := WalkThrough(state, asts)
+		if advice != nil {
+			// Compare the advice fields
+			require.Equal(t, test.Advice.Code, advice.Code)
+			require.Equal(t, test.Advice.Content, advice.Content)
 			continue
 		}
-		require.NoError(t, err, test.Statement)
 
 		// Skip comparison if want is empty (error cases)
 		if test.Want == "" {
@@ -68,7 +66,7 @@ func TestWalkThrough(t *testing.T) {
 		}
 
 		want := &storepb.DatabaseSchemaMetadata{}
-		err = common.ProtojsonUnmarshaler.Unmarshal([]byte(test.Want), want)
+		err := common.ProtojsonUnmarshaler.Unmarshal([]byte(test.Want), want)
 		require.NoError(t, err)
 		// Sort proto for deterministic comparison
 		state.SortProto()

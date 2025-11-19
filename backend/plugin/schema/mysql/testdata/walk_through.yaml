@@ -5,16 +5,19 @@
     RENAME TABLE `other`.`t1` TO `other`.`t2`;'
   ignore_case_sensitive: false
   want: ''
-  err:
+  advice:
+    status: 1
     code: 702
+    title: Database `other` is not the current database `test`
     content: Database `other` is not the current database `test`
-    line: 2
+    startPosition:
+      line: 2
 - statement: 'CREATE TABLE `test`.`t1` (a INT);
 
     RENAME TABLE `test`.`t1` TO `other`.`t1`;'
   ignore_case_sensitive: false
   want: "{\n  \"name\": \"test\",\n  \"schemas\": [\n    {}\n  ]\n}"
-  err: null
+  advice: null
 - statement: 'CREATE TABLE t1(a INT);
 
     CREATE TABLE t2(a INT);
@@ -22,19 +25,25 @@
     RENAME TABLE t2 TO t1;'
   ignore_case_sensitive: false
   want: ''
-  err:
+  advice:
+    status: 1
     code: 607
+    title: Table `t1` already exists
     content: Table `t1` already exists
-    line: 3
+    startPosition:
+      line: 3
 - statement: 'CREATE TABLE t1(a INT);
 
     RENAME TABLE t2 TO t3;'
   ignore_case_sensitive: false
   want: ''
-  err:
+  advice:
+    status: 1
     code: 604
+    title: Table `t2` does not exist
     content: Table `t2` does not exist
-    line: 2
+    startPosition:
+      line: 2
 - statement: 'CREATE TABLE t1 (a INT);
 
     RENAME TABLE t1 TO t2;'
@@ -44,14 +53,17 @@
     \  {\n              \"name\": \"a\",\n              \"position\": 1,\n       \
     \       \"nullable\": true,\n              \"type\": \"int\"\n            }\n\
     \          ]\n        }\n      ]\n    }\n  ]\n}"
-  err: null
+  advice: null
 - statement: CREATE DATABASE another;
   ignore_case_sensitive: false
   want: ''
-  err:
+  advice:
+    status: 1
     code: 702
+    title: Database `another` is not the current database `test`
     content: Database `another` is not the current database `test`
-    line: 1
+    startPosition:
+      line: 1
 - statement: '-- this is comment
 
     DROP DATABASE test;
@@ -59,17 +71,20 @@
     CREATE TABLE t(a int);'
   ignore_case_sensitive: false
   want: ''
-  err:
+  advice:
+    status: 1
     code: 703
+    title: Database `test` is deleted
     content: Database `test` is deleted
-    line: 1
+    startPosition:
+      line: 1
 - statement: 'ALTER DATABASE CHARACTER SET = utf8mb4;
 
     ALTER DATABASE test COLLATE utf8mb4_polish_ci;'
   ignore_case_sensitive: false
   want: "{\n  \"name\": \"test\",\n  \"schemas\": [\n    {}\n  ],\n  \"characterSet\"\
     : \"utf8mb4\",\n  \"collation\": \"utf8mb4_polish_ci\"\n}"
-  err: null
+  advice: null
 - statement: "CREATE TABLE t1(\n  a INT PRIMARY KEY,\n  c VARCHAR(255) NOT NULL\n\
     );\nALTER TABLE t1 ADD INDEX idx1 (c);\nCREATE FULLTEXT INDEX ftk1 ON t1 (c);\n\
     DROP INDEX `PRIMARY` ON t1;\nDROP INDEX idx1 ON t1;\nDROP INDEX ftk1 ON t1;"
@@ -80,7 +95,7 @@
     \       \"type\": \"int\"\n            },\n            {\n              \"name\"\
     : \"c\",\n              \"position\": 2,\n              \"type\": \"varchar\"\n\
     \            }\n          ]\n        }\n      ]\n    }\n  ]\n}"
-  err: null
+  advice: null
 - statement: "CREATE TABLE t1(\n  a INT,\n  b INT,\n  c VARCHAR(255) NOT NULL,\n \
     \ d GEOMETRY NOT NULL\n);\nCREATE INDEX idx1 ON t1 (a) INVISIBLE;\nCREATE UNIQUE\
     \ INDEX uk1 ON t1 (b);\nCREATE FULLTEXT INDEX ftk1 ON t1 (c);\nCREATE SPATIAL\
@@ -108,16 +123,19 @@
     b\"\n              ],\n              \"type\": \"BTREE\",\n              \"unique\"\
     : true,\n              \"visible\": true\n            }\n          ]\n       \
     \ }\n      ]\n    }\n  ]\n}"
-  err: null
+  advice: null
 - statement: 'CREATE TABLE t1(a GEOMETRY);
 
     CREATE SPATIAL INDEX sk1 ON t1 (a);'
   ignore_case_sensitive: false
   want: ''
-  err:
+  advice:
+    status: 1
     code: 811
+    title: All parts of a SPATIAL index must be NOT NULL, but `a` is nullable
     content: All parts of a SPATIAL index must be NOT NULL, but `a` is nullable
-    line: 2
+    startPosition:
+      line: 2
 - statement: "CREATE TABLE t1(\n  a INT PRIMARY KEY,\n  b INT,\n  UNIQUE uk1 (b)\n\
     );\nALTER TABLE t1 ENGINE = MyISAM;\nALTER TABLE t1 COMMENT = 't1 table';\nALTER\
     \ TABLE t1 COLLATE utf8mb4_unicode_ci;"
@@ -137,7 +155,7 @@
     \              \"visible\": true\n            }\n          ],\n          \"engine\"\
     : \"MyISAM\",\n          \"collation\": \"utf8mb4_unicode_ci\",\n          \"\
     comment\": \"t1 table\"\n        }\n      ]\n    }\n  ]\n}"
-  err: null
+  advice: null
 - statement: "CREATE TABLE t1(\n  a INT PRIMARY KEY,\n  b INT,\n  UNIQUE uk1 (b)\n\
     );\nALTER TABLE t1 DROP PRIMARY KEY;\nALTER TABLE t1 DROP INDEX uk1;"
   ignore_case_sensitive: false
@@ -148,7 +166,7 @@
     : \"b\",\n              \"position\": 2,\n              \"nullable\": true,\n\
     \              \"type\": \"int\"\n            }\n          ]\n        }\n    \
     \  ]\n    }\n  ]\n}"
-  err: null
+  advice: null
 - statement: "CREATE TABLE t1(\n  a INT,\n  b INT,\n  UNIQUE uk1 (b)\n);\nALTER TABLE\
     \ t1 RENAME INDEX uk1 TO uk_b;\nALTER TABLE t1 ADD INDEX idx1 (b);\nALTER TABLE\
     \ t1 RENAME INDEX idx1 TO idx2;\nALTER TABLE t1 ALTER INDEX idx2 INVISIBLE;\n\
@@ -167,16 +185,19 @@
     \                \"b\"\n              ],\n              \"type\": \"BTREE\",\n\
     \              \"unique\": true,\n              \"visible\": true\n          \
     \  }\n          ]\n        }\n      ]\n    }\n  ]\n}"
-  err: null
+  advice: null
 - statement: 'CREATE TABLE t1(a INT NOT NULL);
 
     ALTER TABLE t1 ALTER COLUMN a SET DEFAULT NULL;'
   ignore_case_sensitive: false
   want: ''
-  err:
+  advice:
+    status: 1
     code: 428
+    title: Invalid default value for column `a`
     content: Invalid default value for column `a`
-    line: 2
+    startPosition:
+      line: 2
 - statement: 'CREATE TABLE t1(a INT);
 
     ALTER TABLE t1 CHANGE COLUMN a a BLOB;
@@ -184,10 +205,13 @@
     ALTER TABLE t1 ALTER COLUMN a SET DEFAULT ''default value'';'
   ignore_case_sensitive: false
   want: ''
-  err:
+  advice:
+    status: 1
     code: 423
+    title: BLOB, TEXT, GEOMETRY or JSON column `a` can't have a default value
     content: BLOB, TEXT, GEOMETRY or JSON column `a` can't have a default value
-    line: 3
+    startPosition:
+      line: 3
 - statement: 'CREATE TABLE t1(a INT);
 
     ALTER TABLE t1 CHANGE COLUMN a a BLOB;
@@ -199,7 +223,7 @@
     \  {\n              \"name\": \"a\",\n              \"position\": 1,\n       \
     \       \"nullable\": true,\n              \"type\": \"blob\"\n            }\n\
     \          ]\n        }\n      ]\n    }\n  ]\n}"
-  err: null
+  advice: null
 - statement: "CREATE TABLE t1(\n  a INT\n);\nALTER TABLE t1 ADD COLUMN b INT AFTER\
     \ a;\nALTER TABLE t1 ADD COLUMN c INT NOT NULL DEFAULT 1 AFTER a;\nALTER TABLE\
     \ t1 CHANGE COLUMN b d TEXT AFTER a;\nALTER TABLE t1 ALTER COLUMN a SET DEFAULT\
@@ -215,7 +239,7 @@
     \          \"type\": \"text\"\n            },\n            {\n              \"\
     name\": \"c\",\n              \"position\": 3,\n              \"type\": \"int\"\
     \n            }\n          ]\n        }\n      ]\n    }\n  ]\n}"
-  err: null
+  advice: null
 - statement: "CREATE TABLE t1(\n  a INT\n);\nALTER TABLE t1 ADD COLUMN b VARCHAR(255)\
     \ FIRST;\nALTER TABLE t1 ADD COLUMN (c INT, d BLOB);\nALTER TABLE t1 MODIFY COLUMN\
     \ b INT AFTER a;\nALTER TABLE t1 RENAME COLUMN b TO e;\nALTER TABLE t1 CHANGE\
@@ -230,7 +254,7 @@
     \     },\n            {\n              \"name\": \"c\",\n              \"position\"\
     : 3,\n              \"nullable\": true,\n              \"type\": \"int\"\n   \
     \         }\n          ]\n        }\n      ]\n    }\n  ]\n}"
-  err: null
+  advice: null
 - statement: 'CREATE TABLE t1(a INT);
 
     CREATE TABLE t2(a INT);
@@ -244,34 +268,45 @@
     \  {\n              \"name\": \"a\",\n              \"position\": 1,\n       \
     \       \"nullable\": true,\n              \"type\": \"int\"\n            }\n\
     \          ]\n        }\n      ]\n    }\n  ]\n}"
-  err: null
+  advice: null
 - statement: "CREATE TABLE t1(\n  a INT AUTO_INCREMENT,\n  b INT AUTO_INCREMENT\n\
     );"
   ignore_case_sensitive: false
   want: ''
-  err:
+  advice:
+    status: 1
     code: 426
+    title: There can be only one auto column for table `t1`
     content: There can be only one auto column for table `t1`
-    line: 1
+    startPosition:
+      line: 1
 - statement: CREATE TABLE tvx SELECT (x,z) FROM (VALUES ROW(1,3,5), ROW(2,4,6)) AS
     v(x,y,z);
   ignore_case_sensitive: false
   want: ''
-  err:
+  advice:
+    status: 1
     code: 205
+    title: Disallow the CREATE TABLE AS statement but "CREATE TABLE tvx SELECT (x,z)
+      FROM (VALUES ROW(1,3,5), ROW(2,4,6)) AS v(x,y,z);" uses
     content: Disallow the CREATE TABLE AS statement but "CREATE TABLE tvx SELECT (x,z)
       FROM (VALUES ROW(1,3,5), ROW(2,4,6)) AS v(x,y,z);" uses
-    line: 1
+    startPosition:
+      line: 1
 - statement: 'CREATE TABLE t1(a int);
 
     CREATE TABLE t2 (b INT) SELECT a FROM t1;'
   ignore_case_sensitive: false
   want: ''
-  err:
+  advice:
+    status: 1
     code: 205
+    title: Disallow the CREATE TABLE AS statement but "CREATE TABLE t2 (b INT) SELECT
+      a FROM t1;" uses
     content: Disallow the CREATE TABLE AS statement but "CREATE TABLE t2 (b INT) SELECT
       a FROM t1;" uses
-    line: 2
+    startPosition:
+      line: 2
 - statement: "CREATE TABLE t1(\n  a int\n);\nCREATE TABLE t2 LIKE t1;"
   ignore_case_sensitive: false
   want: "{\n  \"name\": \"test\",\n  \"schemas\": [\n    {\n      \"tables\": [\n\
@@ -282,7 +317,7 @@
     columns\": [\n            {\n              \"name\": \"a\",\n              \"\
     position\": 1,\n              \"nullable\": true,\n              \"type\": \"\
     int\"\n            }\n          ]\n        }\n      ]\n    }\n  ]\n}"
-  err: null
+  advice: null
 - statement: "CREATE TABLE t1(\n  a INT PRIMARY KEY,\n  b INT NOT NULL DEFAULT 1,\n\
     \  c INT,\n  d VARCHAR(255) NOT NULL,\n  e VARCHAR(255),\n  UNIQUE KEY uk1 (b,\
     \ c),\n  KEY idx1 (c),\n  FULLTEXT(d, e) WITH PARSER ngram INVISIBLE\n);"
@@ -312,28 +347,37 @@
     \        \"b\",\n                \"c\"\n              ],\n              \"type\"\
     : \"BTREE\",\n              \"unique\": true,\n              \"visible\": true\n\
     \            }\n          ]\n        }\n      ]\n    }\n  ]\n}"
-  err: null
+  advice: null
 - statement: "CREATE TABLE t1(\n  a INT NOT NULL DEFAULT NULL\n);"
   ignore_case_sensitive: false
   want: ''
-  err:
+  advice:
+    status: 1
     code: 428
+    title: Invalid default value for column `a`
     content: Invalid default value for column `a`
-    line: 2
+    startPosition:
+      line: 2
 - statement: "CREATE TABLE t1(\n  a BLOB DEFAULT 'this is a default value'\n);"
   ignore_case_sensitive: false
   want: ''
-  err:
+  advice:
+    status: 1
     code: 423
+    title: BLOB, TEXT, GEOMETRY or JSON column `a` can't have a default value
     content: BLOB, TEXT, GEOMETRY or JSON column `a` can't have a default value
-    line: 2
+    startPosition:
+      line: 2
 - statement: "CREATE TABLE t1(\n  a INT ON UPDATE NOW()\n);"
   ignore_case_sensitive: false
   want: ''
-  err:
+  advice:
+    status: 1
     code: 427
+    title: Column `a` use ON UPDATE but is not DATETIME or TIMESTAMP
     content: Column `a` use ON UPDATE but is not DATETIME or TIMESTAMP
-    line: 2
+    startPosition:
+      line: 2
 - statement: "CREATE TABLE t1(\n  a INT NOT NULL DEFAULT 1 PRIMARY KEY,\n  b INT UNIQUE,\n\
     \  c VARCHAR(255) NOT NULL DEFAULT 'NULL' COMMENT 'column c',\n  e INT NULL DEFAULT\
     \ NULL,\n  f VARCHAR(10) NOT NULL COLLATE utf8mb4_polish_ci,\n  g VARCHAR(200)\
@@ -363,7 +407,7 @@
     \    ],\n              \"type\": \"BTREE\",\n              \"unique\": true,\n\
     \              \"visible\": true\n            }\n          ]\n        }\n    \
     \  ]\n    }\n  ]\n}"
-  err: null
+  advice: null
 - statement: "CREATE TABLE t1(\n  id int,\n  name varchar(255),\n  key idx_name(name)\n\
     );\ncreate table t2 (\n  id int,\n  t1_name varchar(255),\n  constraint fk_t1_name\
     \ foreign key (t1_name) references t1 (name)\n);\nalter table t2 drop foreign\
@@ -385,7 +429,7 @@
     \          \"name\": \"t1_name\",\n              \"position\": 2,\n          \
     \    \"nullable\": true,\n              \"type\": \"varchar\"\n            }\n\
     \          ]\n        }\n      ]\n    }\n  ]\n}"
-  err: null
+  advice: null
 - statement: "create table all_types(\n  c1 tinyblob not null,\n  c2 blob not null,\n\
     \  c3 mediumblob not null,\n  c4 longblob not null,\n  c5 tinytext not null,\n\
     \  c6 text not null,\n  c7 mediumtext not null,\n  c8 longtext not null,\n  c9\
@@ -416,4 +460,4 @@
     \         \"name\": \"c12\",\n              \"position\": 12,\n              \"\
     type\": \"long\"\n            }\n          ]\n        }\n      ]\n    }\n  ]\n\
     }"
-  err: null
+  advice: null
