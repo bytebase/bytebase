@@ -352,7 +352,6 @@ func TestSQLReviewForMySQL(t *testing.T) {
 		Name:         database.Msg.Name,
 		Statement:    countSQL,
 		DataSourceId: "admin",
-		Limit:        100,
 	}))
 	a.NoError(err)
 	a.Equal(1, len(originQueryResp.Msg.Results))
