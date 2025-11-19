@@ -284,13 +284,15 @@ type statementInfo struct {
 }
 
 func prepareTransformation(statement string) ([]statementInfo, error) {
-	tree, err := pg.ParsePostgreSQL(statement)
+	parseResults, err := pg.ParsePostgreSQL(statement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse statement")
 	}
 
 	extractor := &dmlExtractor{}
-	antlr.ParseTreeWalkerDefault.Walk(extractor, tree.Tree)
+	for _, parseResult := range parseResults {
+		antlr.ParseTreeWalkerDefault.Walk(extractor, parseResult.Tree)
+	}
 	return extractor.dmls, nil
 }
 

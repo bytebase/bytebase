@@ -331,14 +331,15 @@ func TestNewTableASTParsing(t *testing.T) {
     "name" text NOT NULL
 );`
 
-	parseResult, err := pgparser.ParsePostgreSQL(tableSDL)
+	parseResults, err := pgparser.ParsePostgreSQL(tableSDL)
 	require.NoError(t, err)
+	require.Len(t, parseResults, 1, "Should parse single statement")
 
 	// Extract the CREATE TABLE AST node
 	var createTableNode *parser.CreatestmtContext
 	antlr.ParseTreeWalkerDefault.Walk(&createTableExtractor{
 		result: &createTableNode,
-	}, parseResult.Tree)
+	}, parseResults[0].Tree)
 
 	require.NotNil(t, createTableNode, "Should extract CREATE TABLE AST node")
 

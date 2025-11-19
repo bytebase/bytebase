@@ -338,7 +338,7 @@ func (*fullyQualifiedObjectNameRule) isFullyQualified(objName string) bool {
 // findAllTablesInSelect finds all table references in a SELECT statement
 func (r *fullyQualifiedObjectNameRule) findAllTablesInSelect(statement string) []base.ColumnResource {
 	// Parse the statement to extract table references
-	result, err := pgparser.ParsePostgreSQL(statement)
+	parseResults, err := pgparser.ParsePostgreSQL(statement)
 	if err != nil {
 		return nil
 	}
@@ -348,8 +348,10 @@ func (r *fullyQualifiedObjectNameRule) findAllTablesInSelect(statement string) [
 		schemaNameMap: r.getSchemaNameMapFromPublic(),
 	}
 
-	if result.Tree != nil {
-		antlr.ParseTreeWalkerDefault.Walk(collector, result.Tree)
+	for _, parseResult := range parseResults {
+		if parseResult.Tree != nil {
+			antlr.ParseTreeWalkerDefault.Walk(collector, parseResult.Tree)
+		}
 	}
 
 	return collector.tables

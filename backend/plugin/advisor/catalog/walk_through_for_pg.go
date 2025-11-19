@@ -16,28 +16,30 @@ import (
 // PgWalkThrough walks through the PostgreSQL ANTLR parse tree and builds catalog state.
 func PgWalkThrough(d *DatabaseState, ast any) error {
 	// ANTLR-based walkthrough
-	parseResult, ok := ast.(*pgparser.ParseResult)
+	parseResults, ok := ast.([]*pgparser.ParseResult)
 	if !ok {
-		return errors.Errorf("PostgreSQL walk-through expects *pgparser.ParseResult, got %T", ast)
+		return errors.Errorf("PostgreSQL walk-through expects []*pgparser.ParseResult, got %T", ast)
 	}
 
-	root, ok := parseResult.Tree.(parser.IRootContext)
-	if !ok {
-		return errors.Errorf("invalid ANTLR tree type %T", parseResult.Tree)
-	}
+	for _, parseResult := range parseResults {
+		root, ok := parseResult.Tree.(parser.IRootContext)
+		if !ok {
+			return errors.Errorf("invalid ANTLR tree type %T", parseResult.Tree)
+		}
 
-	// Build listener with database state
-	listener := &pgCatalogListener{
-		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-		databaseState:                d,
-	}
+		// Build listener with database state
+		listener := &pgCatalogListener{
+			BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
+			databaseState:                d,
+		}
 
-	// Walk through the parse tree
-	antlr.ParseTreeWalkerDefault.Walk(listener, root)
+		// Walk through the parse tree
+		antlr.ParseTreeWalkerDefault.Walk(listener, root)
 
-	// Return any error encountered during walk
-	if listener.err != nil {
-		return listener.err
+		// Return any error encountered during walk
+		if listener.err != nil {
+			return listener.err
+		}
 	}
 
 	return nil

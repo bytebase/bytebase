@@ -74,11 +74,11 @@ func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbTyp
 		}
 
 		// Parse SQL using ANTLR for pg advisors
-		tree, err := pg.ParsePostgreSQL(tc.Statement)
+		trees, err := pg.ParsePostgreSQL(tc.Statement)
 		require.NoError(t, err, "Failed to parse SQL: %s", tc.Statement)
 
 		// Always walk through the catalog to build metadata.
-		err = catalog.WalkThrough(finalCatalog, tree)
+		err = catalog.WalkThrough(finalCatalog, trees)
 		require.NoError(t, err, "Failed to walk through final catalog: %s", tc.Statement)
 
 		ruleList := []*storepb.SQLReviewRule{
@@ -98,7 +98,7 @@ func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbTyp
 				DBSchema:                 schemaMetadata,
 				ChangeType:               tc.ChangeType,
 				EnablePriorBackup:        true,
-				AST:                      tree, // Pass ANTLR parse result
+				AST:                      trees, // Pass ANTLR parse result list
 				Statements:               tc.Statement,
 				Rule:                     ruleList[0],
 				OriginalMetadata:         originalMetadata,

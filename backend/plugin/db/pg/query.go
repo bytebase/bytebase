@@ -198,10 +198,16 @@ func getStatementWithResultLimitInline(statement string, limitCount int) (string
 		return "", errors.New("empty statement")
 	}
 
-	parseResult, err := pgparser.ParsePostgreSQL(statement)
+	parseResults, err := pgparser.ParsePostgreSQL(statement)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to parse statement")
 	}
+
+	if len(parseResults) != 1 {
+		return "", errors.Errorf("expected exactly one statement, got %d", len(parseResults))
+	}
+
+	parseResult := parseResults[0]
 
 	listener := &postgresqlRewriter{
 		limitCount:     limitCount,

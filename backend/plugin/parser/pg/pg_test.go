@@ -24,15 +24,16 @@ func TestPostgreSQLParser(t *testing.T) {
 		},
 		{
 			statement:    "SELECT 1;\n   SELEC 5;\nSELECT 6;",
-			errorMessage: "Syntax error at line 2:4 \nrelated text: SELECT 1;\n   SELEC",
+			errorMessage: "Syntax error at line 2:4 \nrelated text: \n   SELEC",
 		},
 	}
 
 	for _, test := range tests {
-		res, err := ParsePostgreSQL(test.statement)
-		if res != nil {
-			_, ok := res.Tree.(*parser.RootContext)
-			require.True(t, ok)
+		parseResults, err := ParsePostgreSQL(test.statement)
+		// Assert each element's Tree is a RootContext
+		for i, result := range parseResults {
+			_, ok := result.Tree.(*parser.RootContext)
+			require.True(t, ok, "parseResults[%d].Tree should be a RootContext", i)
 		}
 		if test.errorMessage == "" {
 			require.NoError(t, err)

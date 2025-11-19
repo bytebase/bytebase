@@ -136,7 +136,7 @@ func ChunkSDLText(sdlText string) (*schema.SDLChunks, error) {
 		}, nil
 	}
 
-	parseResult, err := pgparser.ParsePostgreSQL(sdlText)
+	parseResults, err := pgparser.ParsePostgreSQL(sdlText)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse SDL text")
 	}
@@ -156,10 +156,13 @@ func ChunkSDLText(sdlText string) (*schema.SDLChunks, error) {
 			ColumnComments:    make(map[string]map[string]antlr.ParserRuleContext),
 			IndexComments:     make(map[string]map[string]antlr.ParserRuleContext),
 		},
-		tokens: parseResult.Tokens,
 	}
 
-	antlr.ParseTreeWalkerDefault.Walk(extractor, parseResult.Tree)
+	// Walk all parsed statements
+	for _, parseResult := range parseResults {
+		extractor.tokens = parseResult.Tokens
+		antlr.ParseTreeWalkerDefault.Walk(extractor, parseResult.Tree)
+	}
 
 	return extractor.chunks, nil
 }
@@ -2682,12 +2685,16 @@ func applyMinimalChangesToChunks(previousChunks *schema.SDLChunks, currentSchema
 			tableSDL := buf.String()
 
 			// Parse the generated SDL to create AST node
-			parseResult, err := pgparser.ParsePostgreSQL(tableSDL)
+			parseResults, err := pgparser.ParsePostgreSQL(tableSDL)
 			if err != nil {
 				return errors.Wrapf(err, "failed to parse generated SDL for new table %s", tableKey)
 			}
 
 			// Extract the CREATE TABLE AST node
+			if len(parseResults) != 1 {
+				return errors.Errorf("expected exactly one statement, got %d", len(parseResults))
+			}
+			parseResult := parseResults[0]
 			var createTableNode *parser.CreatestmtContext
 			antlr.ParseTreeWalkerDefault.Walk(&createTableExtractor{
 				result: &createTableNode,
@@ -2804,10 +2811,16 @@ func applyTableChangesToChunk(chunk *schema.SDLChunk, currentTable, previousTabl
 	}
 
 	// Parse the individual chunk text to get a fresh AST with its own tokenStream
-	parseResult, err := pgparser.ParsePostgreSQL(originalChunkText)
+	parseResults, err := pgparser.ParsePostgreSQL(originalChunkText)
 	if err != nil {
 		return errors.Wrapf(err, "failed to parse original chunk text: %s", originalChunkText)
 	}
+
+	// Expect single statement
+	if len(parseResults) != 1 {
+		return errors.Errorf("expected exactly one statement, got %d", len(parseResults))
+	}
+	parseResult := parseResults[0]
 
 	// Extract the CREATE TABLE AST node from the fresh parse
 	var createStmt *parser.CreatestmtContext
@@ -2854,11 +2867,15 @@ func applyTableChangesToChunk(chunk *schema.SDLChunk, currentTable, previousTabl
 		return errors.Wrapf(err, "failed to parse modified SQL: %s", modifiedSQL)
 	}
 
+	if len(finalParseResult) != 1 {
+		return errors.Errorf("expected exactly one statement in modified SQL, got %d", len(finalParseResult))
+	}
+
 	// Extract the final CREATE TABLE AST node
 	var newCreateTableNode *parser.CreatestmtContext
 	antlr.ParseTreeWalkerDefault.Walk(&createTableExtractor{
 		result: &newCreateTableNode,
-	}, finalParseResult.Tree)
+	}, finalParseResult[0].Tree)
 
 	if newCreateTableNode == nil {
 		return errors.New("failed to extract CREATE TABLE AST node from modified text")
@@ -4277,10 +4294,16 @@ func createIndexChunk(chunks *schema.SDLChunks, extIndex *extendedIndexMetadata,
 	}
 
 	// Parse the SDL to get AST node
-	parseResult, err := pgparser.ParsePostgreSQL(indexSDL)
+	parseResults, err := pgparser.ParsePostgreSQL(indexSDL)
 	if err != nil {
 		return errors.Wrapf(err, "failed to parse generated index SDL: %s", indexSDL)
 	}
+
+	// Expect single statement
+	if len(parseResults) != 1 {
+		return errors.Errorf("expected exactly one statement, got %d", len(parseResults))
+	}
+	parseResult := parseResults[0]
 
 	// Extract the CREATE INDEX AST node
 	var indexASTNode *parser.IndexstmtContext
@@ -4340,10 +4363,16 @@ func updateIndexChunkIfNeeded(chunks *schema.SDLChunks, currentIndex, previousIn
 		}
 
 		// Parse the SDL to get AST node
-		parseResult, err := pgparser.ParsePostgreSQL(indexSDL)
+		parseResults, err := pgparser.ParsePostgreSQL(indexSDL)
 		if err != nil {
 			return errors.Wrapf(err, "failed to parse generated index SDL: %s", indexSDL)
 		}
+
+		// Expect single statement
+		if len(parseResults) != 1 {
+			return errors.Errorf("expected exactly one statement, got %d", len(parseResults))
+		}
+		parseResult := parseResults[0]
 
 		// Extract the CREATE INDEX AST node
 		var indexASTNode *parser.IndexstmtContext
@@ -4555,10 +4584,16 @@ func extractFunctionSignatureFromDefinition(function *storepb.FunctionMetadata) 
 	}
 
 	// Parse the function definition to extract signature
-	parseResult, err := pgparser.ParsePostgreSQL(function.Definition)
+	parseResults, err := pgparser.ParsePostgreSQL(function.Definition)
 	if err != nil {
 		return ""
 	}
+
+	// Expect single statement
+	if len(parseResults) != 1 {
+		return ""
+	}
+	parseResult := parseResults[0]
 
 	tree := parseResult.Tree
 
@@ -4800,10 +4835,16 @@ func extractFunctionASTFromSDL(sdl string) (antlr.ParserRuleContext, error) {
 	}
 
 	// Parse the SDL to get AST
-	parseResult, err := pgparser.ParsePostgreSQL(sdl)
+	parseResults, err := pgparser.ParsePostgreSQL(sdl)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse function SDL")
 	}
+
+	// Expect single statement
+	if len(parseResults) != 1 {
+		return nil, errors.Errorf("expected exactly one statement, got %d", len(parseResults))
+	}
+	parseResult := parseResults[0]
 
 	tree := parseResult.Tree
 
@@ -5106,10 +5147,16 @@ func extractAlterSequenceASTFromSDL(sdl string) (antlr.ParserRuleContext, error)
 		return nil, errors.New("empty ALTER SEQUENCE SDL provided")
 	}
 
-	parseResult, err := pgparser.ParsePostgreSQL(sdl)
+	parseResults, err := pgparser.ParsePostgreSQL(sdl)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse ALTER SEQUENCE SDL")
 	}
+
+	// Expect single statement
+	if len(parseResults) != 1 {
+		return nil, errors.Errorf("expected exactly one statement, got %d", len(parseResults))
+	}
+	parseResult := parseResults[0]
 
 	tree := parseResult.Tree
 	if tree == nil {
@@ -5134,10 +5181,16 @@ func extractCommentASTFromSDL(sdl string) (antlr.ParserRuleContext, error) {
 		return nil, errors.New("empty COMMENT SDL provided")
 	}
 
-	parseResult, err := pgparser.ParsePostgreSQL(sdl)
+	parseResults, err := pgparser.ParsePostgreSQL(sdl)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse COMMENT SDL")
 	}
+
+	// Expect single statement
+	if len(parseResults) != 1 {
+		return nil, errors.Errorf("expected exactly one statement, got %d", len(parseResults))
+	}
+	parseResult := parseResults[0]
 
 	tree := parseResult.Tree
 	if tree == nil {
@@ -5262,10 +5315,16 @@ func extractSequenceASTFromSDL(sdl string) (antlr.ParserRuleContext, error) {
 	}
 
 	// Parse the SDL to get AST
-	parseResult, err := pgparser.ParsePostgreSQL(sdl)
+	parseResults, err := pgparser.ParsePostgreSQL(sdl)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse sequence SDL")
 	}
+
+	// Expect single statement
+	if len(parseResults) != 1 {
+		return nil, errors.Errorf("expected exactly one statement, got %d", len(parseResults))
+	}
+	parseResult := parseResults[0]
 
 	tree := parseResult.Tree
 
@@ -5720,10 +5779,16 @@ func createViewChunk(chunks *schema.SDLChunks, view *storepb.ViewMetadata, viewK
 	}
 
 	// Parse the SDL to get AST node
-	parseResult, err := pgparser.ParsePostgreSQL(viewSDL)
+	parseResults, err := pgparser.ParsePostgreSQL(viewSDL)
 	if err != nil {
 		return errors.Wrapf(err, "failed to parse generated view SDL: %s", viewSDL)
 	}
+
+	// Expect single statement
+	if len(parseResults) != 1 {
+		return errors.Errorf("expected exactly one statement, got %d", len(parseResults))
+	}
+	parseResult := parseResults[0]
 
 	// Extract the CREATE VIEW AST node
 	var viewASTNode *parser.ViewstmtContext
@@ -5745,12 +5810,12 @@ func createViewChunk(chunks *schema.SDLChunks, view *storepb.ViewMetadata, viewK
 	if view.Comment != "" {
 		commentSQL := generateCommentOnViewSQL(schemaName, view.Name, view.Comment)
 		commentParseResult, err := pgparser.ParsePostgreSQL(commentSQL)
-		if err == nil && commentParseResult.Tree != nil {
+		if err == nil && len(commentParseResult) > 0 && commentParseResult[0].Tree != nil {
 			// Extract COMMENT ON VIEW AST node
 			var commentASTNode *parser.CommentstmtContext
 			antlr.ParseTreeWalkerDefault.Walk(&commentExtractor{
 				result: &commentASTNode,
-			}, commentParseResult.Tree)
+			}, commentParseResult[0].Tree)
 
 			if commentASTNode != nil {
 				chunk.CommentStatements = []antlr.ParserRuleContext{commentASTNode}
@@ -5790,10 +5855,16 @@ func updateViewChunkIfNeeded(chunks *schema.SDLChunks, currentView, previousView
 		}
 
 		// Parse the SDL to get AST node
-		parseResult, err := pgparser.ParsePostgreSQL(viewSDL)
+		parseResults, err := pgparser.ParsePostgreSQL(viewSDL)
 		if err != nil {
 			return errors.Wrapf(err, "failed to parse generated view SDL: %s", viewSDL)
 		}
+
+		// Expect single statement
+		if len(parseResults) != 1 {
+			return errors.Errorf("expected exactly one statement, got %d", len(parseResults))
+		}
+		parseResult := parseResults[0]
 
 		// Extract the CREATE VIEW AST node
 		var viewASTNode *parser.ViewstmtContext
@@ -5963,10 +6034,16 @@ func createMaterializedViewChunk(chunks *schema.SDLChunks, mv *storepb.Materiali
 	}
 
 	// Parse the SDL to get AST node
-	parseResult, err := pgparser.ParsePostgreSQL(mvSDL)
+	parseResults, err := pgparser.ParsePostgreSQL(mvSDL)
 	if err != nil {
 		return errors.Wrapf(err, "failed to parse generated materialized view SDL: %s", mvSDL)
 	}
+
+	// Expect single statement
+	if len(parseResults) != 1 {
+		return errors.Errorf("expected exactly one statement, got %d", len(parseResults))
+	}
+	parseResult := parseResults[0]
 
 	// Extract the CREATE MATERIALIZED VIEW AST node
 	var mvASTNode *parser.CreatematviewstmtContext
@@ -5988,12 +6065,12 @@ func createMaterializedViewChunk(chunks *schema.SDLChunks, mv *storepb.Materiali
 	if mv.Comment != "" {
 		commentSQL := generateCommentOnMaterializedViewSQL(schemaName, mv.Name, mv.Comment)
 		commentParseResult, err := pgparser.ParsePostgreSQL(commentSQL)
-		if err == nil && commentParseResult.Tree != nil {
+		if err == nil && len(commentParseResult) > 0 && commentParseResult[0].Tree != nil {
 			// Extract COMMENT ON MATERIALIZED VIEW AST node
 			var commentASTNode *parser.CommentstmtContext
 			antlr.ParseTreeWalkerDefault.Walk(&commentExtractor{
 				result: &commentASTNode,
-			}, commentParseResult.Tree)
+			}, commentParseResult[0].Tree)
 
 			if commentASTNode != nil {
 				chunk.CommentStatements = []antlr.ParserRuleContext{commentASTNode}
@@ -6031,10 +6108,16 @@ func updateMaterializedViewChunkIfNeeded(chunks *schema.SDLChunks, currentMV, pr
 		}
 
 		// Parse the new SDL to get a fresh AST node
-		parseResult, err := pgparser.ParsePostgreSQL(mvSDL)
+		parseResults, err := pgparser.ParsePostgreSQL(mvSDL)
 		if err != nil {
 			return errors.Wrapf(err, "failed to parse generated materialized view SDL: %s", mvSDL)
 		}
+
+		// Expect single statement
+		if len(parseResults) != 1 {
+			return errors.Errorf("expected exactly one statement, got %d", len(parseResults))
+		}
+		parseResult := parseResults[0]
 
 		// Extract the CREATE MATERIALIZED VIEW AST node
 		var mvASTNode *parser.CreatematviewstmtContext
@@ -6057,12 +6140,12 @@ func updateMaterializedViewChunkIfNeeded(chunks *schema.SDLChunks, currentMV, pr
 			// New or updated comment
 			commentSQL := generateCommentOnMaterializedViewSQL(schemaName, currentMV.Name, currentMV.Comment)
 			commentParseResult, err := pgparser.ParsePostgreSQL(commentSQL)
-			if err == nil && commentParseResult.Tree != nil {
+			if err == nil && len(commentParseResult) > 0 && commentParseResult[0].Tree != nil {
 				// Extract COMMENT ON MATERIALIZED VIEW AST node
 				var commentASTNode *parser.CommentstmtContext
 				antlr.ParseTreeWalkerDefault.Walk(&commentExtractor{
 					result: &commentASTNode,
-				}, commentParseResult.Tree)
+				}, commentParseResult[0].Tree)
 
 				if commentASTNode != nil {
 					chunk.CommentStatements = []antlr.ParserRuleContext{commentASTNode}
@@ -6193,10 +6276,16 @@ func createEnumTypeChunk(chunks *schema.SDLChunks, enumType *storepb.EnumTypeMet
 	}
 
 	// Parse the SDL to get AST node
-	parseResult, err := pgparser.ParsePostgreSQL(enumSDL)
+	parseResults, err := pgparser.ParsePostgreSQL(enumSDL)
 	if err != nil {
 		return errors.Wrapf(err, "failed to parse generated enum type SDL: %s", enumSDL)
 	}
+
+	// Expect single statement
+	if len(parseResults) != 1 {
+		return errors.Errorf("expected exactly one statement, got %d", len(parseResults))
+	}
+	parseResult := parseResults[0]
 
 	// Extract the CREATE TYPE AS ENUM AST node
 	var enumASTNode *parser.DefinestmtContext
@@ -6222,7 +6311,7 @@ func createEnumTypeChunk(chunks *schema.SDLChunks, enumType *storepb.EnumTypeMet
 			var commentNode *parser.CommentstmtContext
 			antlr.ParseTreeWalkerDefault.Walk(&commentExtractor{
 				result: &commentNode,
-			}, commentParseResult.Tree)
+			}, commentParseResult[0].Tree)
 			if commentNode != nil {
 				chunk.CommentStatements = []antlr.ParserRuleContext{commentNode}
 			}
@@ -6256,10 +6345,16 @@ func updateEnumTypeChunkIfNeeded(chunks *schema.SDLChunks, currentEnum, previous
 		}
 
 		// Parse the SDL to get AST node
-		parseResult, err := pgparser.ParsePostgreSQL(enumSDL)
+		parseResults, err := pgparser.ParsePostgreSQL(enumSDL)
 		if err != nil {
 			return errors.Wrapf(err, "failed to parse generated enum type SDL: %s", enumSDL)
 		}
+
+		// Expect single statement
+		if len(parseResults) != 1 {
+			return errors.Errorf("expected exactly one statement, got %d", len(parseResults))
+		}
+		parseResult := parseResults[0]
 
 		// Extract the CREATE TYPE AS ENUM AST node
 		var enumASTNode *parser.DefinestmtContext
@@ -6932,10 +7027,16 @@ func createExtensionChunk(chunks *schema.SDLChunks, extension *storepb.Extension
 	}
 
 	// Parse the SDL to get AST node
-	parseResult, err := pgparser.ParsePostgreSQL(extensionSDL)
+	parseResults, err := pgparser.ParsePostgreSQL(extensionSDL)
 	if err != nil {
 		return errors.Wrapf(err, "failed to parse generated extension SDL: %s", extensionSDL)
 	}
+
+	// Expect single statement
+	if len(parseResults) != 1 {
+		return errors.Errorf("expected exactly one statement, got %d", len(parseResults))
+	}
+	parseResult := parseResults[0]
 
 	// Extract the CREATE EXTENSION AST node
 	var extensionASTNode *parser.CreateextensionstmtContext
@@ -6961,7 +7062,7 @@ func createExtensionChunk(chunks *schema.SDLChunks, extension *storepb.Extension
 			var commentNode *parser.CommentstmtContext
 			antlr.ParseTreeWalkerDefault.Walk(&commentExtractor{
 				result: &commentNode,
-			}, commentParseResult.Tree)
+			}, commentParseResult[0].Tree)
 			if commentNode != nil {
 				chunk.CommentStatements = []antlr.ParserRuleContext{commentNode}
 			}
@@ -6994,10 +7095,16 @@ func updateExtensionChunkIfNeeded(chunks *schema.SDLChunks, currentExtension, pr
 		}
 
 		// Parse the SDL to get AST node
-		parseResult, err := pgparser.ParsePostgreSQL(extensionSDL)
+		parseResults, err := pgparser.ParsePostgreSQL(extensionSDL)
 		if err != nil {
 			return errors.Wrapf(err, "failed to parse generated extension SDL: %s", extensionSDL)
 		}
+
+		// Expect single statement
+		if len(parseResults) != 1 {
+			return errors.Errorf("expected exactly one statement, got %d", len(parseResults))
+		}
+		parseResult := parseResults[0]
 
 		// Extract the CREATE EXTENSION AST node
 		var extensionASTNode *parser.CreateextensionstmtContext
@@ -7028,7 +7135,7 @@ func updateExtensionChunkIfNeeded(chunks *schema.SDLChunks, currentExtension, pr
 				var commentNode *parser.CommentstmtContext
 				antlr.ParseTreeWalkerDefault.Walk(&commentExtractor{
 					result: &commentNode,
-				}, commentParseResult.Tree)
+				}, commentParseResult[0].Tree)
 				if commentNode != nil {
 					chunk.CommentStatements = []antlr.ParserRuleContext{commentNode}
 				}

@@ -8,13 +8,18 @@ import (
 // Returns true if the statement is a DO block only, false otherwise.
 func IsPlSQLBlock(stmt string) bool {
 	// Parse using the existing ANTLR-based parser
-	result, err := ParsePostgreSQL(stmt)
+	results, err := ParsePostgreSQL(stmt)
 	if err != nil {
 		return false
 	}
 
+	// Must be exactly one statement
+	if len(results) != 1 {
+		return false
+	}
+
 	// Check if the parsed tree is a single DO statement
-	root, ok := result.Tree.(*parser.RootContext)
+	root, ok := results[0].Tree.(*parser.RootContext)
 	if !ok || root == nil {
 		return false
 	}

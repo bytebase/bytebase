@@ -20,13 +20,13 @@ func init() {
 }
 
 func extractChangedResources(database string, _ string, dbSchema *model.DatabaseSchema, asts any, statement string) (*base.ChangeSummary, error) {
-	parseResult, ok := asts.(*ParseResult)
+	parseResults, ok := asts.([]*ParseResult)
 	if !ok {
-		return nil, errors.Errorf("invalid ast type %T, expected *ParseResult", asts)
+		return nil, errors.Errorf("invalid ast type %T, expected []*ParseResult", asts)
 	}
 
-	if parseResult == nil || parseResult.Tree == nil {
-		return nil, errors.New("parse result or tree is nil")
+	if len(parseResults) == 0 {
+		return nil, errors.New("empty parse results")
 	}
 
 	changedResources := model.NewChangedResources(dbSchema)
@@ -41,13 +41,20 @@ func extractChangedResources(database string, _ string, dbSchema *model.Database
 		changedResources: changedResources,
 		databaseMetadata: dbSchema.GetDatabaseMetadata(),
 		statement:        statement,
-		tokenStream:      parseResult.Tokens,
 		dmlCount:         0,
 		insertCount:      0,
 		sampleDMLs:       []string{},
 	}
 
-	antlr.ParseTreeWalkerDefault.Walk(listener, parseResult.Tree)
+	// Walk all parse results to extract changed resources
+	for _, parseResult := range parseResults {
+		if parseResult == nil || parseResult.Tree == nil {
+			return nil, errors.New("parse result or tree is nil")
+		}
+
+		listener.tokenStream = parseResult.Tokens
+		antlr.ParseTreeWalkerDefault.Walk(listener, parseResult.Tree)
+	}
 
 	return &base.ChangeSummary{
 		ChangedResources: changedResources,
