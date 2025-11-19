@@ -329,6 +329,9 @@ func getEffectiveQueryDataPolicy(
 	if limit > 0 {
 		value.MaximumResultRows = min(limit, value.MaximumResultRows)
 	}
+	if value.MaximumResultRows == math.MaxInt32 {
+		value.MaximumResultRows = 0
+	}
 	return value
 }
 
