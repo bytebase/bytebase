@@ -3,11 +3,11 @@
 /* eslint-disable */
 
 import { enumDesc, fileDesc, messageDesc, serviceDesc, tsEnum } from "@bufbuild/protobuf/codegenv2";
+import { file_google_protobuf_empty, file_google_protobuf_field_mask, file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import { file_buf_validate_validate } from "../buf/validate/validate_pb";
 import { file_google_api_annotations } from "../google/api/annotations_pb";
 import { file_google_api_client } from "../google/api/client_pb";
 import { file_google_api_field_behavior } from "../google/api/field_behavior_pb";
-import { file_google_protobuf_empty, file_google_protobuf_field_mask, file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import { file_v1_annotation } from "./annotation_pb";
 
 /**
