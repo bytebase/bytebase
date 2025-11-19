@@ -19,17 +19,17 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_MSSQL, extractChangedResources)
 }
 
-func extractChangedResources(currentDatabase string, currentSchema string, dbSchema *model.DatabaseSchema, asts any, statement string) (*base.ChangeSummary, error) {
+func extractChangedResources(currentDatabase string, currentSchema string, dbMetadata *model.DatabaseMetadata, asts any, statement string) (*base.ChangeSummary, error) {
 	tree, ok := asts.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert ast to antlr.Tree")
 	}
 
-	changedResources := model.NewChangedResources(dbSchema)
+	changedResources := model.NewChangedResources(dbMetadata)
 	l := &tsqlChangedResourceExtractListener{
 		currentDatabase:  currentDatabase,
 		currentSchema:    currentSchema,
-		dbSchema:         dbSchema,
+		dbMetadata:       dbMetadata,
 		changedResources: changedResources,
 		statement:        statement,
 	}
@@ -49,7 +49,7 @@ type tsqlChangedResourceExtractListener struct {
 
 	currentDatabase  string
 	currentSchema    string
-	dbSchema         *model.DatabaseSchema
+	dbMetadata       *model.DatabaseMetadata
 	changedResources *model.ChangedResources
 	statement        string
 	sampleDMLs       []string

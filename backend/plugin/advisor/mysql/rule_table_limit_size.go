@@ -79,19 +79,19 @@ type TableLimitSizeRule struct {
 	BaseRule
 	affectedTabNames  []string
 	maxRows           int
-	dbSchema          *storepb.DatabaseSchemaMetadata
+	dbMetadata        *storepb.DatabaseSchemaMetadata
 	statementBaseLine int
 }
 
 // NewTableLimitSizeRule creates a new TableLimitSizeRule.
-func NewTableLimitSizeRule(level storepb.Advice_Status, title string, maxRows int, dbSchema *storepb.DatabaseSchemaMetadata) *TableLimitSizeRule {
+func NewTableLimitSizeRule(level storepb.Advice_Status, title string, maxRows int, dbMetadata *storepb.DatabaseSchemaMetadata) *TableLimitSizeRule {
 	return &TableLimitSizeRule{
 		BaseRule: BaseRule{
 			level: level,
 			title: title,
 		},
-		maxRows:  maxRows,
-		dbSchema: dbSchema,
+		maxRows:    maxRows,
+		dbMetadata: dbMetadata,
 	}
 }
 
@@ -140,10 +140,10 @@ func (r *TableLimitSizeRule) checkDropTable(ctx *mysql.DropTableContext) {
 }
 
 func (r *TableLimitSizeRule) generateAdvice() {
-	if r.dbSchema != nil && len(r.dbSchema.Schemas) != 0 {
+	if r.dbMetadata != nil && len(r.dbMetadata.Schemas) != 0 {
 		// Check all table size.
 		for _, tabName := range r.affectedTabNames {
-			tableRows := getTabRowsByName(tabName, r.dbSchema.Schemas[0].Tables)
+			tableRows := getTabRowsByName(tabName, r.dbMetadata.Schemas[0].Tables)
 			if tableRows >= int64(r.maxRows) {
 				r.AddAdvice(&storepb.Advice{
 					Status:        r.level,

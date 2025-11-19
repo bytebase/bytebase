@@ -15,17 +15,17 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_ORACLE, extractChangedResources)
 }
 
-func extractChangedResources(currentDatabase string, _ string, dbSchema *model.DatabaseSchema, asts any, statement string) (*base.ChangeSummary, error) {
+func extractChangedResources(currentDatabase string, _ string, dbMetadata *model.DatabaseMetadata, asts any, statement string) (*base.ChangeSummary, error) {
 	// currentDatabase is the same as currentSchema for Oracle.
 	results, ok := asts.([]*ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert ast to []*ParseResult, got %T", asts)
 	}
 
-	changedResources := model.NewChangedResources(dbSchema)
+	changedResources := model.NewChangedResources(dbMetadata)
 	l := &plsqlChangedResourceExtractListener{
 		currentSchema:    currentDatabase,
-		dbSchema:         dbSchema,
+		dbMetadata:       dbMetadata,
 		changedResources: changedResources,
 		statement:        statement,
 	}
@@ -46,7 +46,7 @@ type plsqlChangedResourceExtractListener struct {
 	*parser.BasePlSqlParserListener
 
 	currentSchema    string
-	dbSchema         *model.DatabaseSchema
+	dbMetadata       *model.DatabaseMetadata
 	changedResources *model.ChangedResources
 	statement        string
 	sampleDMLs       []string
@@ -198,7 +198,7 @@ func (l *plsqlChangedResourceExtractListener) EnterDrop_index(ctx *parser.Drop_i
 	if schema == "" {
 		schema = l.currentSchema
 	}
-	foundSchema := l.dbSchema.GetDatabaseMetadata().GetSchema(schema)
+	foundSchema := l.dbMetadata.GetSchemaMetadata(schema)
 	if foundSchema == nil {
 		return
 	}

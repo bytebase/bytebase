@@ -204,7 +204,7 @@ func (m CompletionMap) insertMetadataTables(c *Completer, catalog string, schema
 		}
 	}
 
-	schemaMetadata := catalogMetadata.GetSchema(schemaName)
+	schemaMetadata := catalogMetadata.GetSchemaMetadata(schemaName)
 	if schemaMetadata == nil {
 		return
 	}
@@ -224,7 +224,7 @@ func (m CompletionMap) insertAllColumns(c *Completer) {
 		return
 	}
 	for _, schema := range catalogMeta.ListSchemaNames() {
-		schemaMeta := catalogMeta.GetSchema(schema)
+		schemaMeta := catalogMeta.GetSchemaMetadata(schema)
 		if schemaMeta == nil {
 			continue
 		}
@@ -308,7 +308,7 @@ func (m CompletionMap) insertMetadataColumns(c *Completer, catalog string, schem
 			break
 		}
 	}
-	schemaMetadata := catalogMetadata.GetSchema(schemaName)
+	schemaMetadata := catalogMetadata.GetSchemaMetadata(schemaName)
 	if schemaMetadata == nil {
 		return
 	}
@@ -394,7 +394,7 @@ func (m CompletionMap) insertMetadataViews(c *Completer, catalog string, schema 
 		return
 	}
 
-	schemaMetadata := catalogMetadata.GetSchema(schemaName)
+	schemaMetadata := catalogMetadata.GetSchemaMetadata(schemaName)
 	if schemaMetadata == nil {
 		return
 	}

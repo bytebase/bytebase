@@ -196,7 +196,7 @@ func (r *namingPKConventionRule) handleRenamestmt(ctx *parser.RenamestmtContext)
 				if normalizedSchema == "" {
 					normalizedSchema = "public"
 				}
-				index := r.originalMetadata.GetSchema(normalizedSchema).GetTable(tableName).GetIndex(oldName)
+				index := r.originalMetadata.GetSchemaMetadata(normalizedSchema).GetTable(tableName).GetIndex(oldName)
 				if index != nil && index.Primary() {
 					metaData := map[string]string{
 						advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList(), "_"),
@@ -241,7 +241,7 @@ func (r *namingPKConventionRule) handleRenamestmt(ctx *parser.RenamestmtContext)
 				}
 				// "ALTER INDEX name RENAME TO new_name" doesn't specify table name
 				// Empty table name for ALTER INDEX
-				schema := r.originalMetadata.GetSchema(normalizedSchema)
+				schema := r.originalMetadata.GetSchemaMetadata(normalizedSchema)
 				var tableName string
 				var index *model.IndexMetadata
 				if schema != nil {
@@ -320,7 +320,7 @@ func (r *namingPKConventionRule) getPKMetaDataFromTableConstraint(constraint par
 				if normalizedSchema == "" {
 					normalizedSchema = "public"
 				}
-				schema := r.originalMetadata.GetSchema(normalizedSchema)
+				schema := r.originalMetadata.GetSchemaMetadata(normalizedSchema)
 				var index *model.IndexMetadata
 				if schema != nil {
 					table := schema.GetTable(tableName)

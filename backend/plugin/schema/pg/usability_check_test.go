@@ -16,7 +16,7 @@ func TestUsabilityCheck_TableScenarios(t *testing.T) {
 		name              string
 		currentSDL        string
 		previousSDL       string
-		currentSchema     *model.DatabaseSchema
+		currentSchema     *model.DatabaseMetadata
 		expectTableDiff   bool
 		expectCommentDiff bool
 		description       string
@@ -39,7 +39,7 @@ CREATE TABLE "public"."users" (
 
 COMMENT ON TABLE "public"."users" IS 'User table description';
 `,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -82,7 +82,7 @@ CREATE TABLE "public"."users" (
 
 COMMENT ON TABLE "public"."users" IS 'Old user table description';
 `,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -126,7 +126,7 @@ CREATE TABLE "public"."users" (
 
 COMMENT ON TABLE "public"."users" IS 'Old user table';
 `,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -170,7 +170,7 @@ CREATE TABLE "public"."users" (
 
 COMMENT ON TABLE "public"."users" IS 'Old user table';
 `,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -211,7 +211,7 @@ CREATE TABLE "public"."users" (
     "name" text
 );
 `,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -252,7 +252,7 @@ CREATE TABLE "public"."users" (
 
 COMMENT ON TABLE "public"."users" IS 'To be removed';
 `,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -328,7 +328,7 @@ func TestUsabilityCheck_ViewScenarios(t *testing.T) {
 		name              string
 		currentSDL        string
 		previousSDL       string
-		currentSchema     *model.DatabaseSchema
+		currentSchema     *model.DatabaseMetadata
 		expectViewDiff    bool
 		expectCommentDiff bool
 		description       string
@@ -355,7 +355,7 @@ CREATE VIEW "public"."active_users" AS SELECT * FROM users WHERE id < 0;
 
 COMMENT ON VIEW "public"."active_users" IS 'View of all users';
 `,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -408,7 +408,7 @@ CREATE VIEW "public"."active_users" AS SELECT * FROM users;
 
 COMMENT ON VIEW "public"."active_users" IS 'Old view comment';
 `,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -477,7 +477,7 @@ func TestUsabilityCheck_FunctionScenarios(t *testing.T) {
 		name               string
 		currentSDL         string
 		previousSDL        string
-		currentSchema      *model.DatabaseSchema
+		currentSchema      *model.DatabaseMetadata
 		expectFunctionDiff bool
 		expectCommentDiff  bool
 		description        string
@@ -506,7 +506,7 @@ $$;
 
 COMMENT ON FUNCTION "public"."add_numbers"(a integer, b integer) IS 'Old comment';
 `,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -573,7 +573,7 @@ func TestUsabilityCheck_SequenceScenarios(t *testing.T) {
 		name               string
 		currentSDL         string
 		previousSDL        string
-		currentSchema      *model.DatabaseSchema
+		currentSchema      *model.DatabaseMetadata
 		expectSequenceDiff bool
 		expectCommentDiff  bool
 		description        string
@@ -590,7 +590,7 @@ CREATE SEQUENCE "public"."user_id_seq" START WITH 100 INCREMENT BY 2 NO CYCLE;
 
 COMMENT ON SEQUENCE "public"."user_id_seq" IS 'Old sequence comment';
 `,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{

@@ -695,7 +695,7 @@ func (q *querySpanExtractor) tsqlFindTableSchema(fullTableName parser.IFull_tabl
 			if normalizedSchemaName != "" && !q.isIdentifierEqual(normalizedSchemaName, schemaName) {
 				continue
 			}
-			schemaSchema := database.GetSchema(schemaName)
+			schemaSchema := database.GetSchemaMetadata(schemaName)
 			allTableNames := schemaSchema.ListTableNames()
 			for _, tableName := range allTableNames {
 				if !q.isIdentifierEqual(normalizedTableName, tableName) {

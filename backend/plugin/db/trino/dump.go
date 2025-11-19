@@ -11,8 +11,8 @@ import (
 )
 
 // Dump dumps the database schema as SQL statements.
-func (*Driver) Dump(_ context.Context, out io.Writer, dbSchema *storepb.DatabaseSchemaMetadata) error {
-	text, err := schema.GetDatabaseDefinition(storepb.Engine_TRINO, schema.GetDefinitionContext{}, dbSchema)
+func (*Driver) Dump(_ context.Context, out io.Writer, dbMetadata *storepb.DatabaseSchemaMetadata) error {
+	text, err := schema.GetDatabaseDefinition(storepb.Engine_TRINO, schema.GetDefinitionContext{}, dbMetadata)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get database definition")
 	}

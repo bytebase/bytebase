@@ -151,7 +151,7 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 		for _, spec := range node.Specs {
 			switch spec.Tp {
 			case ast.AlterTableRenameIndex:
-				schema := checker.originalMetadata.GetSchema("")
+				schema := checker.originalMetadata.GetSchemaMetadata("")
 				var index *model.IndexMetadata
 				if schema != nil {
 					index = schema.GetIndex(spec.FromKey.String())

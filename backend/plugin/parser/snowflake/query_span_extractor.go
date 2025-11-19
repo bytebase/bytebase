@@ -1105,7 +1105,7 @@ func (q *querySpanExtractor) findTableSchema(objectName parser.IObject_nameConte
 			if normalizedSchemaName != "" && normalizedSchemaName != schemaSchema {
 				continue
 			}
-			schema := database.GetSchema(normalizedSchemaName)
+			schema := database.GetSchemaMetadata(normalizedSchemaName)
 			if schema == nil {
 				return "", nil, errors.Errorf(`schema %s.%s is not found`, normalizedDatabaseName, normalizedSchemaName)
 			}

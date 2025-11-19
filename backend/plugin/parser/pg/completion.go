@@ -400,7 +400,7 @@ func (m CompletionMap) insertColumns(c *Completer, schemas, tables map[string]bo
 			}
 			continue
 		}
-		schemaMeta := c.metadataCache[c.defaultDatabase].GetSchema(schema)
+		schemaMeta := c.metadataCache[c.defaultDatabase].GetSchemaMetadata(schema)
 		if schemaMeta == nil {
 			continue
 		}
@@ -437,7 +437,7 @@ func (m CompletionMap) insertAllColumns(c *Completer) {
 
 	metadata := c.metadataCache[c.defaultDatabase]
 	for _, schema := range metadata.ListSchemaNames() {
-		schemaMeta := metadata.GetSchema(schema)
+		schemaMeta := metadata.GetSchemaMetadata(schema)
 		if schemaMeta == nil {
 			continue
 		}
@@ -1343,7 +1343,7 @@ func (c *Completer) listTables(schema string) []string {
 		c.metadataCache[c.defaultDatabase] = metadata
 	}
 
-	schemaMeta := c.metadataCache[c.defaultDatabase].GetSchema(schema)
+	schemaMeta := c.metadataCache[c.defaultDatabase].GetSchemaMetadata(schema)
 	if schemaMeta == nil {
 		return nil
 	}
@@ -1359,7 +1359,7 @@ func (c *Completer) listForeignTables(schema string) []string {
 		c.metadataCache[c.defaultDatabase] = metadata
 	}
 
-	schemaMeta := c.metadataCache[c.defaultDatabase].GetSchema(schema)
+	schemaMeta := c.metadataCache[c.defaultDatabase].GetSchemaMetadata(schema)
 	if schemaMeta == nil {
 		return nil
 	}
@@ -1375,7 +1375,7 @@ func (c *Completer) listMaterializedViews(schema string) []string {
 		c.metadataCache[c.defaultDatabase] = metadata
 	}
 
-	schemaMeta := c.metadataCache[c.defaultDatabase].GetSchema(schema)
+	schemaMeta := c.metadataCache[c.defaultDatabase].GetSchemaMetadata(schema)
 	if schemaMeta == nil {
 		return nil
 	}
@@ -1391,7 +1391,7 @@ func (c *Completer) listViews(schema string) []string {
 		c.metadataCache[c.defaultDatabase] = metadata
 	}
 
-	schemaMeta := c.metadataCache[c.defaultDatabase].GetSchema(schema)
+	schemaMeta := c.metadataCache[c.defaultDatabase].GetSchemaMetadata(schema)
 	if schemaMeta == nil {
 		return nil
 	}

@@ -88,7 +88,7 @@ func (checker *columnDisallowDropInIndexChecker) dropColumn(in ast.Node) (ast.No
 			if spec.Tp == ast.AlterTableDropColumn {
 				table := node.Table.Name.O
 
-				tableMetadata := checker.originalMetadata.GetSchema("").GetTable(table)
+				tableMetadata := checker.originalMetadata.GetSchemaMetadata("").GetTable(table)
 				if tableMetadata != nil {
 					if checker.tables[table] == nil {
 						checker.tables[table] = make(columnSet)

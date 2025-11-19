@@ -300,7 +300,7 @@ func (r *namingUKConventionRule) checkTableConstraint(constraint parser.ITableco
 			} else if elem.Existingindex() != nil && elem.Existingindex().Name() != nil {
 				// Handle UNIQUE USING INDEX - the column list is in the existing index
 				indexName := pgparser.NormalizePostgreSQLName(elem.Existingindex().Name())
-				schema := r.originalMetadata.GetSchema(normalizeSchemaName(""))
+				schema := r.originalMetadata.GetSchemaMetadata(normalizeSchemaName(""))
 				var index *model.IndexMetadata
 				if schema != nil {
 					table := schema.GetTable(tableName)
@@ -417,7 +417,7 @@ func (r *namingUKConventionRule) findIndex(schemaName string, tableName string, 
 	if r.originalMetadata == nil {
 		return "", nil
 	}
-	schema := r.originalMetadata.GetSchema(normalizeSchemaName(schemaName))
+	schema := r.originalMetadata.GetSchemaMetadata(normalizeSchemaName(schemaName))
 	if schema == nil {
 		return "", nil
 	}

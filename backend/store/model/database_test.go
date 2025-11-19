@@ -103,9 +103,8 @@ func TestSchemaMetadata_CreateTable(t *testing.T) {
 		},
 	}
 
-	schema := NewDatabaseSchema(metadata, nil, nil, storepb.Engine_POSTGRES, true)
-	dbMeta := schema.GetDatabaseMetadata()
-	schemaMeta := dbMeta.GetSchema("public")
+	schema := NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_POSTGRES, true)
+	schemaMeta := schema.GetSchemaMetadata("public")
 
 	// Create a new table
 	tableMeta, err := schemaMeta.CreateTable("products")
@@ -133,9 +132,8 @@ func TestSchemaMetadata_CreateTable_AlreadyExists(t *testing.T) {
 		},
 	}
 
-	schema := NewDatabaseSchema(metadata, nil, nil, storepb.Engine_POSTGRES, true)
-	dbMeta := schema.GetDatabaseMetadata()
-	schemaMeta := dbMeta.GetSchema("public")
+	schema := NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_POSTGRES, true)
+	schemaMeta := schema.GetSchemaMetadata("public")
 
 	// Try to create table that already exists
 	_, err := schemaMeta.CreateTable("users")
@@ -158,9 +156,8 @@ func TestSchemaMetadata_DropTable(t *testing.T) {
 		},
 	}
 
-	schema := NewDatabaseSchema(metadata, nil, nil, storepb.Engine_POSTGRES, true)
-	dbMeta := schema.GetDatabaseMetadata()
-	schemaMeta := dbMeta.GetSchema("public")
+	schema := NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_POSTGRES, true)
+	schemaMeta := schema.GetSchemaMetadata("public")
 
 	// Drop table
 	err := schemaMeta.DropTable("users")
@@ -184,9 +181,8 @@ func TestSchemaMetadata_DropTable_NotExists(t *testing.T) {
 		},
 	}
 
-	schema := NewDatabaseSchema(metadata, nil, nil, storepb.Engine_POSTGRES, true)
-	dbMeta := schema.GetDatabaseMetadata()
-	schemaMeta := dbMeta.GetSchema("public")
+	schema := NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_POSTGRES, true)
+	schemaMeta := schema.GetSchemaMetadata("public")
 
 	// Try to drop non-existent table
 	err := schemaMeta.DropTable("nonexistent")
@@ -213,9 +209,8 @@ func TestTableMetadata_CreateColumn(t *testing.T) {
 		},
 	}
 
-	schema := NewDatabaseSchema(metadata, nil, nil, storepb.Engine_POSTGRES, true)
-	dbMeta := schema.GetDatabaseMetadata()
-	schemaMeta := dbMeta.GetSchema("public")
+	schema := NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_POSTGRES, true)
+	schemaMeta := schema.GetSchemaMetadata("public")
 	tableMeta := schemaMeta.GetTable("users")
 
 	// Create a new column
@@ -253,9 +248,8 @@ func TestTableMetadata_CreateColumn_AlreadyExists(t *testing.T) {
 		},
 	}
 
-	schema := NewDatabaseSchema(metadata, nil, nil, storepb.Engine_POSTGRES, true)
-	dbMeta := schema.GetDatabaseMetadata()
-	schemaMeta := dbMeta.GetSchema("public")
+	schema := NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_POSTGRES, true)
+	schemaMeta := schema.GetSchemaMetadata("public")
 	tableMeta := schemaMeta.GetTable("users")
 
 	// Try to create column that already exists
@@ -289,9 +283,8 @@ func TestTableMetadata_DropColumn(t *testing.T) {
 		},
 	}
 
-	schema := NewDatabaseSchema(metadata, nil, nil, storepb.Engine_POSTGRES, true)
-	dbMeta := schema.GetDatabaseMetadata()
-	schemaMeta := dbMeta.GetSchema("public")
+	schema := NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_POSTGRES, true)
+	schemaMeta := schema.GetSchemaMetadata("public")
 	tableMeta := schemaMeta.GetTable("users")
 
 	// Drop column
@@ -321,9 +314,8 @@ func TestTableMetadata_DropColumn_NotExists(t *testing.T) {
 		},
 	}
 
-	schema := NewDatabaseSchema(metadata, nil, nil, storepb.Engine_POSTGRES, true)
-	dbMeta := schema.GetDatabaseMetadata()
-	schemaMeta := dbMeta.GetSchema("public")
+	schema := NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_POSTGRES, true)
+	schemaMeta := schema.GetSchemaMetadata("public")
 	tableMeta := schemaMeta.GetTable("users")
 
 	// Try to drop non-existent column

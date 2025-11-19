@@ -1123,7 +1123,7 @@ func (q *querySpanExtractor) findTableSchema(datasetName string, tableName strin
 		return nil, errors.Errorf("dataset %q not found", datasetName)
 	}
 
-	schema := databaseMetadata.GetSchema("")
+	schema := databaseMetadata.GetSchemaMetadata("")
 	if schema == nil {
 		return nil, errors.Errorf("table %q not found", tableName)
 	}

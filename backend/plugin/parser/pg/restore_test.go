@@ -210,5 +210,5 @@ func fixedMockDatabaseMetadataGetter(_ context.Context, _ string, database strin
 				},
 			},
 		},
-	}, store.Engine_POSTGRES, true /* isObjectCaseSensitive */), nil
+	}, nil, nil, store.Engine_POSTGRES, true /* isObjectCaseSensitive */), nil
 }

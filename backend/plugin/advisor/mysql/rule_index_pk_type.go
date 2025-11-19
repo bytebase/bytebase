@@ -238,7 +238,7 @@ func (r *IndexPkTypeRule) getPKColumnType(tableName string, columnName string) (
 	if columnType, ok := r.tablesNewColumns.get(tableName, columnName); ok {
 		return columnType, nil
 	}
-	column := r.originalMetadata.GetSchema("").GetTable(tableName).GetColumn(columnName)
+	column := r.originalMetadata.GetSchemaMetadata("").GetTable(tableName).GetColumn(columnName)
 	if column != nil {
 		return column.Type, nil
 	}

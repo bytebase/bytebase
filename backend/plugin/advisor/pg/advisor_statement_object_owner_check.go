@@ -43,7 +43,7 @@ func (*StatementObjectOwnerCheckAdvisor) Check(ctx context.Context, checkCtx adv
 		return nil, err
 	}
 
-	dbMetadata := model.NewDatabaseMetadata(checkCtx.DBSchema, storepb.Engine_POSTGRES, checkCtx.IsObjectCaseSensitive)
+	dbMetadata := model.NewDatabaseMetadata(checkCtx.DBSchema, nil, nil, storepb.Engine_POSTGRES, checkCtx.IsObjectCaseSensitive)
 	currentRole := checkCtx.DBSchema.Owner
 	if !checkCtx.UsePostgresDatabaseOwner {
 		currentRole, err = getCurrentUser(ctx, checkCtx.Driver)
@@ -142,7 +142,7 @@ func (r *statementObjectOwnerCheckRule) checkSchemaOwnership(schemaName string, 
 		schemaName = defaultSchema
 	}
 
-	schemaMeta := r.dbMetadata.GetSchema(schemaName)
+	schemaMeta := r.dbMetadata.GetSchemaMetadata(schemaName)
 	if schemaMeta == nil {
 		return
 	}
@@ -170,7 +170,7 @@ func (r *statementObjectOwnerCheckRule) checkTableOwnership(schemaName, tableNam
 		schemaName = defaultSchema
 	}
 
-	schemaMeta := r.dbMetadata.GetSchema(schemaName)
+	schemaMeta := r.dbMetadata.GetSchemaMetadata(schemaName)
 	if schemaMeta == nil {
 		return
 	}

@@ -1376,7 +1376,7 @@ func (l *pgCatalogListener) dropIndex(anyName parser.IAny_nameContext, ifExists 
 }
 func (l *pgCatalogListener) dropSchema(schemaNameCtx parser.INameContext, ifExists bool) *storepb.Advice {
 	schemaName := pgparser.NormalizePostgreSQLName(schemaNameCtx)
-	schema := l.databaseState.GetSchema(schemaName)
+	schema := l.databaseState.GetSchemaMetadata(schemaName)
 	if schema == nil {
 		if ifExists {
 			return nil
@@ -1798,7 +1798,7 @@ func getOrCreatePublicSchema(d *model.DatabaseMetadata, schemaName string, line 
 	if schemaName == "" {
 		schemaName = PublicSchemaName
 	}
-	schema := d.GetSchema(schemaName)
+	schema := d.GetSchemaMetadata(schemaName)
 	if schema != nil {
 		return schema, nil
 	}

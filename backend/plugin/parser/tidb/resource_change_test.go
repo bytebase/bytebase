@@ -18,7 +18,7 @@ func TestExtractChangedResources(t *testing.T) {
 	INSERT INTO t1 (c1) VALUES (1), (5);
 	UPDATE t1 SET c1 = 5;
 	`
-	changedResources := model.NewChangedResources(nil /* dbSchema */)
+	changedResources := model.NewChangedResources(nil /* dbMetadata */)
 	changedResources.AddTable(
 		"db",
 		"",
@@ -54,7 +54,7 @@ func TestExtractChangedResources(t *testing.T) {
 	}
 
 	asts, _ := ParseTiDB(statement, "", "")
-	got, err := extractChangedResources("db", "", nil /* dbSchema */, asts, statement)
+	got, err := extractChangedResources("db", "", nil /* dbMetadata */, asts, statement)
 	require.NoError(t, err)
 	require.Equal(t, want, got)
 }

@@ -223,7 +223,7 @@ func (v *indexTypeNoBlobChecker) getColumnType(tableName string, columnName stri
 	if colDef, ok := v.tablesNewColumns.get(tableName, columnName); ok {
 		return v.getBlobStr(colDef.Tp), nil
 	}
-	column := v.originalMetadata.GetSchema("").GetTable(tableName).GetColumn(columnName)
+	column := v.originalMetadata.GetSchemaMetadata("").GetTable(tableName).GetColumn(columnName)
 	if column != nil {
 		return column.Type, nil
 	}

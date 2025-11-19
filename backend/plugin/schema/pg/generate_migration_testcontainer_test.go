@@ -2176,11 +2176,11 @@ $$ LANGUAGE plpgsql;
 
 			// Step 3: Call generate migration to get the rollback DDL
 			// Convert to model.DatabaseSchema
-			dbSchemaA := model.NewDatabaseSchema(schemaA, nil, nil, storepb.Engine_POSTGRES, false)
-			dbSchemaB := model.NewDatabaseSchema(schemaB, nil, nil, storepb.Engine_POSTGRES, false)
+			dbMetadataA := model.NewDatabaseMetadata(schemaA, nil, nil, storepb.Engine_POSTGRES, false)
+			dbMetadataB := model.NewDatabaseMetadata(schemaB, nil, nil, storepb.Engine_POSTGRES, false)
 
 			// Get diff from B to A (to generate rollback)
-			diff, err := schema.GetDatabaseSchemaDiff(storepb.Engine_POSTGRES, dbSchemaB, dbSchemaA)
+			diff, err := schema.GetDatabaseSchemaDiff(storepb.Engine_POSTGRES, dbMetadataB, dbMetadataA)
 			require.NoError(t, err)
 
 			// Log the diff for debugging
@@ -2473,10 +2473,10 @@ CREATE TABLE table2 (
 	// Get current schema (empty database)
 	currentSchema, err := getSyncMetadataForGenerateMigration(ctx, connConfig, connConfig.Database)
 	require.NoError(t, err)
-	dbSchema := model.NewDatabaseSchema(currentSchema, nil, nil, storepb.Engine_POSTGRES, false)
+	dbMetadata := model.NewDatabaseMetadata(currentSchema, nil, nil, storepb.Engine_POSTGRES, false)
 
 	// Get SDL diff
-	diff, err := GetSDLDiff(currentSDL, previousSDL, dbSchema, nil)
+	diff, err := GetSDLDiff(currentSDL, previousSDL, dbMetadata, nil)
 	require.NoError(t, err)
 
 	// Generate migration SQL with topological sorting
@@ -2572,10 +2572,10 @@ SELECT id, info, created_at, updated_at FROM table_base;
 	// Get current schema (empty database)
 	currentSchema, err := getSyncMetadataForGenerateMigration(ctx, connConfig, connConfig.Database)
 	require.NoError(t, err)
-	dbSchema := model.NewDatabaseSchema(currentSchema, nil, nil, storepb.Engine_POSTGRES, false)
+	dbMetadata := model.NewDatabaseMetadata(currentSchema, nil, nil, storepb.Engine_POSTGRES, false)
 
 	// Get SDL diff
-	diff, err := GetSDLDiff(currentSDL, previousSDL, dbSchema, nil)
+	diff, err := GetSDLDiff(currentSDL, previousSDL, dbMetadata, nil)
 	require.NoError(t, err)
 
 	// Generate migration SQL with topological sorting

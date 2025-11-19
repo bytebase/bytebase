@@ -18,7 +18,7 @@ func TestGetSDLDiff_ImplicitSchemaCreation(t *testing.T) {
 		name                  string
 		currentSDLText        string
 		previousUserSDLText   string
-		currentSchema         *model.DatabaseSchema
+		currentSchema         *model.DatabaseMetadata
 		expectedSchemaChanges int
 		expectedTableChanges  int
 		expectSchemaCreation  bool
@@ -47,7 +47,7 @@ CREATE TABLE new_schema.t(
 );
 `,
 			// Current database state: only has public schema with existing_table
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -105,7 +105,7 @@ CREATE TABLE new_schema.orders(
     user_id INT REFERENCES new_schema.users(id)
 );
 `,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -159,7 +159,7 @@ CREATE TABLE new_schema.t(
     value VARCHAR(50)
 );
 `,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -210,7 +210,7 @@ CREATE TABLE public.existing_table(
 
 CREATE SCHEMA new_schema;
 `,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -264,7 +264,7 @@ CREATE TABLE schema_b.table_b(
     id INT PRIMARY KEY
 );
 `,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{

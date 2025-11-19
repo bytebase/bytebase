@@ -1050,9 +1050,9 @@ func getSyncMetadataForSDL(ctx context.Context, connConfig *pgx.ConnConfig, dbNa
 
 // generateMigrationDDLFromMetadata generates migration DDL from schema B to schema C using schema.differ
 func generateMigrationDDLFromMetadata(schemaB, schemaC *storepb.DatabaseSchemaMetadata) (string, *schema.MetadataDiff, error) {
-	// Create model.DatabaseSchema objects for comparison
-	modelSchemaB := model.NewDatabaseSchema(schemaB, nil, nil, storepb.Engine_POSTGRES, true)
-	modelSchemaC := model.NewDatabaseSchema(schemaC, nil, nil, storepb.Engine_POSTGRES, true)
+	// Create model.DatabaseMetadata objects for comparison
+	modelSchemaB := model.NewDatabaseMetadata(schemaB, nil, nil, storepb.Engine_POSTGRES, true)
+	modelSchemaC := model.NewDatabaseMetadata(schemaC, nil, nil, storepb.Engine_POSTGRES, true)
 
 	// Use the schema differ to compute differences
 	diff, err := schema.GetDatabaseSchemaDiff(storepb.Engine_POSTGRES, modelSchemaB, modelSchemaC)
@@ -1072,10 +1072,10 @@ func generateMigrationDDLFromMetadata(schemaB, schemaC *storepb.DatabaseSchemaMe
 
 // validateSchemaConsistency compares two schema metadata objects to ensure they are equivalent
 func validateSchemaConsistency(schemaD, schemaC *storepb.DatabaseSchemaMetadata) error {
-	// Create model.DatabaseSchema objects for comparison
+	// Create model.DatabaseMetadata objects for comparison
 	// PostgreSQL is case-sensitive for object names but case-insensitive for details
-	modelSchemaD := model.NewDatabaseSchema(schemaD, nil, nil, storepb.Engine_POSTGRES, true)
-	modelSchemaC := model.NewDatabaseSchema(schemaC, nil, nil, storepb.Engine_POSTGRES, true)
+	modelSchemaD := model.NewDatabaseMetadata(schemaD, nil, nil, storepb.Engine_POSTGRES, true)
+	modelSchemaC := model.NewDatabaseMetadata(schemaC, nil, nil, storepb.Engine_POSTGRES, true)
 
 	// Use the schema differ to compare the two schemas
 	diff, err := schema.GetDatabaseSchemaDiff(storepb.Engine_POSTGRES, modelSchemaD, modelSchemaC)

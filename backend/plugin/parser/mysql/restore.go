@@ -218,7 +218,7 @@ func (g *generator) hasDisjointUniqueKey(updateColumns []string) (bool, error) {
 		return false, errors.Errorf("database metadata is nil for %s", g.originalDatabase)
 	}
 
-	schema := metadata.GetSchema("")
+	schema := metadata.GetSchemaMetadata("")
 	if schema == nil {
 		return false, errors.Errorf("schema is nil for %s", g.originalDatabase)
 	}

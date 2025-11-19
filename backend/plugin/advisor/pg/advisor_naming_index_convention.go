@@ -237,7 +237,7 @@ func (r *namingIndexConventionRule) findIndex(schemaName string, tableName strin
 	if r.originalMetadata == nil {
 		return "", nil
 	}
-	schema := r.originalMetadata.GetSchema(normalizeSchemaName(schemaName))
+	schema := r.originalMetadata.GetSchemaMetadata(normalizeSchemaName(schemaName))
 	if schema == nil {
 		return "", nil
 	}

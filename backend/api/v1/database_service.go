@@ -589,14 +589,14 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, req *connect.
 	if database.Deleted {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q was deleted", name))
 	}
-	dbSchema, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+	dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("%v", err.Error()))
 	}
-	if dbSchema == nil {
+	if dbMetadata == nil {
 		if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to sync database schema for database %q, error %v", name, err))
 		}
@@ -610,14 +610,14 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, req *connect.
 		if newDBSchema == nil {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database schema %q not found", name))
 		}
-		dbSchema = newDBSchema
+		dbMetadata = newDBSchema
 	}
 
 	filter, err := getDatabaseMetadataFilter(req.Msg.Filter)
 	if err != nil {
 		return nil, err
 	}
-	v1pbMetadata := convertStoreDatabaseMetadata(dbSchema.GetMetadata(), filter, int(req.Msg.Limit))
+	v1pbMetadata := convertStoreDatabaseMetadata(dbMetadata.GetMetadata(), filter, int(req.Msg.Limit))
 	v1pbMetadata.Name = fmt.Sprintf("%s%s/%s%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName, common.MetadataSuffix)
 
 	return connect.NewResponse(v1pbMetadata), nil
@@ -647,14 +647,14 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, req *connect.Re
 	if database == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", databaseName))
 	}
-	dbSchema, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+	dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("%v", err.Error()))
 	}
-	if dbSchema == nil {
+	if dbMetadata == nil {
 		if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to sync database schema for database %q, error %v", databaseName, err))
 		}
@@ -668,9 +668,9 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, req *connect.Re
 		if newDBSchema == nil {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database schema %q not found", databaseName))
 		}
-		dbSchema = newDBSchema
+		dbMetadata = newDBSchema
 	}
-	schemaString := string(dbSchema.GetSchema())
+	schemaString := string(dbMetadata.GetSchema())
 	return connect.NewResponse(&v1pb.DatabaseSchema{Schema: schemaString}), nil
 }
 
@@ -701,14 +701,14 @@ func (s *DatabaseService) GetDatabaseSDLSchema(ctx context.Context, req *connect
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", databaseName))
 	}
 
-	dbSchema, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+	dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("%v", err.Error()))
 	}
-	if dbSchema == nil {
+	if dbMetadata == nil {
 		if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to sync database schema for database %q, error %v", databaseName, err))
 		}
@@ -722,10 +722,10 @@ func (s *DatabaseService) GetDatabaseSDLSchema(ctx context.Context, req *connect
 		if newDBSchema == nil {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database schema %q not found", databaseName))
 		}
-		dbSchema = newDBSchema
+		dbMetadata = newDBSchema
 	}
 
-	metadata := dbSchema.GetMetadata()
+	metadata := dbMetadata.GetMetadata()
 	if metadata == nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("database metadata not found for database %q", databaseName))
 	}
@@ -748,12 +748,12 @@ func (s *DatabaseService) GetDatabaseSDLSchema(ctx context.Context, req *connect
 // DiffSchema diff the database schema.
 func (s *DatabaseService) DiffSchema(ctx context.Context, req *connect.Request[v1pb.DiffSchemaRequest]) (*connect.Response[v1pb.DiffSchemaResponse], error) {
 	// Use unified SDL-based approach for all scenarios
-	sourceDBSchema, err := s.getSourceDBSchema(ctx, req.Msg)
+	sourceDBSchema, err := s.getSourceDBMetadata(ctx, req.Msg)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get source schema, error: %v", err))
 	}
 
-	targetDBSchema, err := s.getTargetDBSchema(ctx, req.Msg)
+	targetDBSchema, err := s.getTargetDBMetadata(ctx, req.Msg)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get target schema, error: %v", err))
 	}
@@ -783,7 +783,7 @@ func (s *DatabaseService) DiffSchema(ctx context.Context, req *connect.Request[v
 	}), nil
 }
 
-func (s *DatabaseService) getSourceDBSchema(ctx context.Context, request *v1pb.DiffSchemaRequest) (*model.DatabaseSchema, error) {
+func (s *DatabaseService) getSourceDBMetadata(ctx context.Context, request *v1pb.DiffSchemaRequest) (*model.DatabaseMetadata, error) {
 	if strings.Contains(request.Name, common.ChangelogPrefix) {
 		instanceID, databaseName, changelogUID, err := common.GetInstanceDatabaseChangelogUID(request.Name)
 		if err != nil {
@@ -819,7 +819,7 @@ func (s *DatabaseService) getSourceDBSchema(ctx context.Context, request *v1pb.D
 				return nil, errors.Errorf("instance %s not found", instanceID)
 			}
 
-			return model.NewDatabaseSchema(
+			return model.NewDatabaseMetadata(
 				syncHistory.Metadata,
 				[]byte(syncHistory.Schema),
 				&storepb.DatabaseConfig{},
@@ -829,17 +829,17 @@ func (s *DatabaseService) getSourceDBSchema(ctx context.Context, request *v1pb.D
 		}
 
 		// Fallback to current database schema if no sync history
-		dbSchema, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 			InstanceID:   instanceID,
 			DatabaseName: databaseName,
 		})
 		if err != nil {
 			return nil, err
 		}
-		if dbSchema == nil {
+		if dbMetadata == nil {
 			return nil, errors.Errorf("database schema not found for %s/%s", instanceID, databaseName)
 		}
-		return dbSchema, nil
+		return dbMetadata, nil
 	}
 
 	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Name)
@@ -847,20 +847,20 @@ func (s *DatabaseService) getSourceDBSchema(ctx context.Context, request *v1pb.D
 		return nil, err
 	}
 
-	dbSchema, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+	dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 		InstanceID:   instanceID,
 		DatabaseName: databaseName,
 	})
 	if err != nil {
 		return nil, err
 	}
-	if dbSchema == nil {
+	if dbMetadata == nil {
 		return nil, errors.Errorf("database schema not found for %s/%s", instanceID, databaseName)
 	}
-	return dbSchema, nil
+	return dbMetadata, nil
 }
 
-func (s *DatabaseService) getTargetDBSchema(ctx context.Context, request *v1pb.DiffSchemaRequest) (*model.DatabaseSchema, error) {
+func (s *DatabaseService) getTargetDBMetadata(ctx context.Context, request *v1pb.DiffSchemaRequest) (*model.DatabaseMetadata, error) {
 	changeHistoryID := request.GetChangelog()
 
 	// If the change history id is set, use the schema of the change history as the target.
@@ -899,7 +899,7 @@ func (s *DatabaseService) getTargetDBSchema(ctx context.Context, request *v1pb.D
 				return nil, errors.Errorf("instance %s not found", instanceID)
 			}
 
-			return model.NewDatabaseSchema(
+			return model.NewDatabaseMetadata(
 				syncHistory.Metadata,
 				[]byte(syncHistory.Schema),
 				&storepb.DatabaseConfig{},
@@ -909,17 +909,17 @@ func (s *DatabaseService) getTargetDBSchema(ctx context.Context, request *v1pb.D
 		}
 
 		// Fallback to current database schema if no sync history
-		dbSchema, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 			InstanceID:   instanceID,
 			DatabaseName: databaseName,
 		})
 		if err != nil {
 			return nil, err
 		}
-		if dbSchema == nil {
+		if dbMetadata == nil {
 			return nil, errors.Errorf("database schema not found for %s/%s", instanceID, databaseName)
 		}
-		return dbSchema, nil
+		return dbMetadata, nil
 	}
 
 	// If schema is provided, we need to parse it using GetDatabaseMetadata
@@ -951,7 +951,7 @@ func (s *DatabaseService) getTargetDBSchema(ctx context.Context, request *v1pb.D
 		}
 
 		// Create DatabaseSchema from the parsed metadata
-		return model.NewDatabaseSchema(
+		return model.NewDatabaseMetadata(
 			metadata,
 			[]byte(schemaStr),
 			&storepb.DatabaseConfig{},
@@ -1105,7 +1105,7 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Requ
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", database.InstanceID))
 	}
 
-	dbSchema, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+	dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
 	})
@@ -1128,7 +1128,7 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Requ
 		}
 		return connect.NewResponse(&v1pb.GetSchemaStringResponse{SchemaString: s}), nil
 	case v1pb.GetSchemaStringRequest_DATABASE:
-		metadata := dbSchema.GetMetadata()
+		metadata := dbMetadata.GetMetadata()
 		s, err := schema.GetDatabaseDefinition(instance.Metadata.Engine, schema.GetDefinitionContext{
 			SkipBackupSchema: false,
 			PrintHeader:      false,
@@ -1138,7 +1138,7 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Requ
 		}
 		return connect.NewResponse(&v1pb.GetSchemaStringResponse{SchemaString: s}), nil
 	case v1pb.GetSchemaStringRequest_SCHEMA:
-		schemaMetadata := dbSchema.GetDatabaseMetadata().GetSchema(req.Msg.Schema)
+		schemaMetadata := dbMetadata.GetSchemaMetadata(req.Msg.Schema)
 		if schemaMetadata == nil {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("schema %q not found", req.Msg.Schema))
 		}
@@ -1149,7 +1149,7 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Requ
 		}
 		return connect.NewResponse(&v1pb.GetSchemaStringResponse{SchemaString: s}), nil
 	case v1pb.GetSchemaStringRequest_TABLE:
-		schemaMetadata := dbSchema.GetDatabaseMetadata().GetSchema(req.Msg.Schema)
+		schemaMetadata := dbMetadata.GetSchemaMetadata(req.Msg.Schema)
 		if schemaMetadata == nil {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("schema %q not found", req.Msg.Schema))
 		}
@@ -1168,7 +1168,7 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Requ
 		}
 		return connect.NewResponse(&v1pb.GetSchemaStringResponse{SchemaString: s}), nil
 	case v1pb.GetSchemaStringRequest_VIEW:
-		schemaMetadata := dbSchema.GetDatabaseMetadata().GetSchema(req.Msg.Schema)
+		schemaMetadata := dbMetadata.GetSchemaMetadata(req.Msg.Schema)
 		if schemaMetadata == nil {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("schema %q not found", req.Msg.Schema))
 		}
@@ -1182,7 +1182,7 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Requ
 		}
 		return connect.NewResponse(&v1pb.GetSchemaStringResponse{SchemaString: s}), nil
 	case v1pb.GetSchemaStringRequest_MATERIALIZED_VIEW:
-		schemaMetadata := dbSchema.GetDatabaseMetadata().GetSchema(req.Msg.Schema)
+		schemaMetadata := dbMetadata.GetSchemaMetadata(req.Msg.Schema)
 		if schemaMetadata == nil {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("schema %q not found", req.Msg.Schema))
 		}
@@ -1196,7 +1196,7 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Requ
 		}
 		return connect.NewResponse(&v1pb.GetSchemaStringResponse{SchemaString: s}), nil
 	case v1pb.GetSchemaStringRequest_FUNCTION:
-		schemaMetadata := dbSchema.GetDatabaseMetadata().GetSchema(req.Msg.Schema)
+		schemaMetadata := dbMetadata.GetSchemaMetadata(req.Msg.Schema)
 		if schemaMetadata == nil {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("schema %q not found", req.Msg.Schema))
 		}
@@ -1210,7 +1210,7 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Requ
 		}
 		return connect.NewResponse(&v1pb.GetSchemaStringResponse{SchemaString: s}), nil
 	case v1pb.GetSchemaStringRequest_PROCEDURE:
-		schemaMetadata := dbSchema.GetDatabaseMetadata().GetSchema(req.Msg.Schema)
+		schemaMetadata := dbMetadata.GetSchemaMetadata(req.Msg.Schema)
 		if schemaMetadata == nil {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("schema %q not found", req.Msg.Schema))
 		}
@@ -1224,7 +1224,7 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Requ
 		}
 		return connect.NewResponse(&v1pb.GetSchemaStringResponse{SchemaString: s}), nil
 	case v1pb.GetSchemaStringRequest_SEQUENCE:
-		schemaMetadata := dbSchema.GetDatabaseMetadata().GetSchema(req.Msg.Schema)
+		schemaMetadata := dbMetadata.GetSchemaMetadata(req.Msg.Schema)
 		if schemaMetadata == nil {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("schema %q not found", req.Msg.Schema))
 		}

@@ -41,20 +41,20 @@ func (s *DatabaseCatalogService) GetDatabaseCatalog(ctx context.Context, req *co
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	dbSchema, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+	dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	if dbSchema == nil {
+	if dbMetadata == nil {
 		return connect.NewResponse(&v1pb.DatabaseCatalog{
 			Name: fmt.Sprintf("%s%s/%s%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName, common.CatalogSuffix),
 		}), nil
 	}
 
-	return connect.NewResponse(convertDatabaseConfig(database, dbSchema.GetConfig())), nil
+	return connect.NewResponse(convertDatabaseConfig(database, dbMetadata.GetConfig())), nil
 }
 
 // UpdateDatabaseCatalog updates a database catalog.
@@ -69,14 +69,14 @@ func (s *DatabaseCatalogService) UpdateDatabaseCatalog(ctx context.Context, req 
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	dbSchema, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+	dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	if dbSchema == nil {
+	if dbMetadata == nil {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("database schema metadata not found"))
 	}
 

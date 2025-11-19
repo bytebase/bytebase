@@ -188,7 +188,7 @@ func (r *NamingUKConventionRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 		case alterListItem.RENAME_SYMBOL() != nil && alterListItem.KeyOrIndex() != nil && alterListItem.IndexRef() != nil && alterListItem.IndexName() != nil:
 			_, _, oldIndexName := mysqlparser.NormalizeIndexRef(alterListItem.IndexRef())
 			newIndexName := mysqlparser.NormalizeIndexName(alterListItem.IndexName())
-			indexState := r.originalMetadata.GetSchema("").GetTable(tableName).GetIndex(oldIndexName)
+			indexState := r.originalMetadata.GetSchemaMetadata("").GetTable(tableName).GetIndex(oldIndexName)
 			if indexState == nil {
 				continue
 			}

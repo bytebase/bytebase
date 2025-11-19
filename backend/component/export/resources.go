@@ -95,7 +95,7 @@ func getResourcesForMySQL(
 		return nil, nil
 	}
 
-	dbSchema, err := storeInstance.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+	dbMetadata, err := storeInstance.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
 	})
@@ -112,7 +112,7 @@ func getResourcesForMySQL(
 				Table:        sourceColumn.Table,
 				LinkedServer: sourceColumn.Server,
 			}
-			if sourceColumn.Database != dbSchema.GetMetadata().Name {
+			if sourceColumn.Database != dbMetadata.GetMetadata().Name {
 				resourceDB, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 					InstanceID:      &instance.ResourceID,
 					DatabaseName:    &sourceColumn.Database,
@@ -137,7 +137,7 @@ func getResourcesForMySQL(
 				result = append(result, sr)
 				continue
 			}
-			if !resourceExists(dbSchema, sr) {
+			if !resourceExists(dbMetadata, sr) {
 				continue
 			}
 			result = append(result, sr)
@@ -180,7 +180,7 @@ func getResourcesForPostgres(
 		return nil, nil
 	}
 
-	dbSchema, err := storeInstance.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+	dbMetadata, err := storeInstance.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
 	})
@@ -198,11 +198,11 @@ func getResourcesForPostgres(
 				LinkedServer: sourceColumn.Server,
 			}
 
-			if sourceColumn.Database != dbSchema.GetMetadata().Name {
+			if sourceColumn.Database != dbMetadata.GetMetadata().Name {
 				continue
 			}
 
-			if !resourceExists(dbSchema, sr) {
+			if !resourceExists(dbMetadata, sr) {
 				continue
 			}
 
@@ -271,8 +271,8 @@ func getResourcesForMSSQL(
 	return getResourcesForPostgres(ctx, storeInstance, engine, databaseName, statement, instance, "dbo", getDatabaseMetadataFunc, listDatabaseNamesFunc, getLinkedDatabaseMetadataFunc)
 }
 
-func resourceExists(dbSchema *model.DatabaseSchema, resource base.SchemaResource) bool {
-	schema := dbSchema.GetDatabaseMetadata().GetSchema(resource.Schema)
+func resourceExists(dbMetadata *model.DatabaseMetadata, resource base.SchemaResource) bool {
+	schema := dbMetadata.GetSchemaMetadata(resource.Schema)
 	if schema == nil {
 		return false
 	}

@@ -288,7 +288,7 @@ func (q *querySpanExtractor) findTableSchema(db, schema, name string) (*model.Ta
 	}
 
 	// Get schema metadata
-	schemaMeta := metadata.GetSchema(schema)
+	schemaMeta := metadata.GetSchemaMetadata(schema)
 	if schemaMeta == nil {
 		return nil, &parsererror.ResourceNotFoundError{
 			Database: &db,

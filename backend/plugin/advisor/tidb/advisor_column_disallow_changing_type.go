@@ -131,7 +131,7 @@ func normalizeColumnType(tp string) string {
 }
 
 func (checker *columnDisallowChangingTypeChecker) changeColumnType(tableName string, columName string, newType string) bool {
-	column := checker.originalMetadata.GetSchema("").GetTable(tableName).GetColumn(columName)
+	column := checker.originalMetadata.GetSchemaMetadata("").GetTable(tableName).GetColumn(columName)
 	if column == nil {
 		return false
 	}

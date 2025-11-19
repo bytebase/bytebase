@@ -320,23 +320,19 @@ func (s *QueryResultMasker) getColumnForColumnResource(ctx context.Context, inst
 	if database == nil {
 		return nil, nil, nil
 	}
-	dbSchema, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+	dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
 	})
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to find database schema: %q", sourceColumn.Database)
 	}
-	if dbSchema == nil {
+	if dbMetadata == nil {
 		return nil, nil, nil
 	}
 
 	var columnMetadata *storepb.ColumnMetadata
-	metadata := dbSchema.GetDatabaseMetadata()
-	if metadata == nil {
-		return nil, nil, nil
-	}
-	schema := metadata.GetSchema(sourceColumn.Schema)
+	schema := dbMetadata.GetSchemaMetadata(sourceColumn.Schema)
 	if schema == nil {
 		return nil, nil, nil
 	}
@@ -351,11 +347,7 @@ func (s *QueryResultMasker) getColumnForColumnResource(ctx context.Context, inst
 	columnMetadata = column
 
 	var columnConfig *storepb.ColumnCatalog
-	config := dbSchema.GetInternalConfig()
-	if config == nil {
-		return columnMetadata, nil, nil
-	}
-	schemaConfig := config.GetSchemaConfig(sourceColumn.Schema)
+	schemaConfig := dbMetadata.GetSchemaConfig(sourceColumn.Schema)
 	tableConfig := schemaConfig.GetTableConfig(sourceColumn.Table)
 	columnConfig = tableConfig.GetColumnConfig(sourceColumn.Column)
 	return columnMetadata, columnConfig, nil

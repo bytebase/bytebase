@@ -90,7 +90,7 @@ func buildMockDatabaseMetadataGetter(defaultMetadata []*storepb.DatabaseSchemaMe
 			}
 			m := make(map[string]*model.DatabaseMetadata)
 			for _, metadata := range databaseMetadata {
-				m[metadata.Name] = model.NewDatabaseMetadata(metadata, storepb.Engine_ORACLE, true /* isObjectCaseSensitive */)
+				m[metadata.Name] = model.NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_ORACLE, true /* isObjectCaseSensitive */)
 			}
 
 			if databaseMetadata, ok := m[databaseName]; ok {
@@ -128,7 +128,7 @@ func buildMockDatabaseMetadataGetter(defaultMetadata []*storepb.DatabaseSchemaMe
 
 			for _, metadata := range getLinkedDatabaseMetadata() {
 				if metadata.Name == linkedDBInfo.Username {
-					return instanceIDB, metadata.Name, model.NewDatabaseMetadata(metadata, storepb.Engine_ORACLE, true /* isObjectCaseSensitive */), nil
+					return instanceIDB, metadata.Name, model.NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_ORACLE, true /* isObjectCaseSensitive */), nil
 				}
 			}
 

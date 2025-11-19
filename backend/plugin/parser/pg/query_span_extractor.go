@@ -239,11 +239,11 @@ type functionDefinition struct {
 }
 
 func (q *querySpanExtractor) findFunctionDefine(schemaName, funcName string, nArgs int) (base.TableSource, error) {
-	dbSchema, err := q.getDatabaseMetadata(q.defaultDatabase)
+	dbMetadata, err := q.getDatabaseMetadata(q.defaultDatabase)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database metadata for database: %s", q.defaultDatabase)
 	}
-	if dbSchema == nil {
+	if dbMetadata == nil {
 		return nil, &parsererror.ResourceNotFoundError{
 			Database: &q.defaultDatabase,
 		}
@@ -253,7 +253,7 @@ func (q *querySpanExtractor) findFunctionDefine(schemaName, funcName string, nAr
 	if schemaName != "" {
 		searchPath = []string{schemaName}
 	}
-	schemas, functions := dbSchema.SearchFunctions(searchPath, funcName)
+	schemas, functions := dbMetadata.SearchFunctions(searchPath, funcName)
 	for i, fun := range functions {
 		funcs = append(funcs, &functionDefinition{
 			schemaName: schemas[i],
@@ -1192,16 +1192,16 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 	}
 
 	// FIXME: consider cross database query which is supported in Redshift.
-	dbSchema, err := q.getDatabaseMetadata(q.defaultDatabase)
+	dbMetadata, err := q.getDatabaseMetadata(q.defaultDatabase)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database metadata for database: %s", q.defaultDatabase)
 	}
-	if dbSchema == nil {
+	if dbMetadata == nil {
 		return nil, &parsererror.ResourceNotFoundError{
 			Database: &q.defaultDatabase,
 		}
 	}
-	searcher := dbSchema.NewSearcher(schemaName)
+	searcher := dbMetadata.NewSearcher(schemaName)
 	tableSchemaName, table := searcher.SearchTable(tableName)
 	viewSchemaName, view := searcher.SearchView(tableName)
 	materializedViewSchemaName, materializedView := searcher.SearchMaterializedView(tableName)

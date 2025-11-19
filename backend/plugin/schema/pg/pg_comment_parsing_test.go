@@ -50,8 +50,8 @@ func TestCommentOnTable(t *testing.T) {
 	require.Equal(t, "Invoice records", dbMetadata.Schemas[0].Tables[0].Comment)
 
 	// Compare schemas
-	userDBSchema := model.NewDatabaseSchema(userMetadata, nil, nil, storepb.Engine_POSTGRES, false)
-	dbDBSchema := model.NewDatabaseSchema(dbMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+	userDBSchema := model.NewDatabaseMetadata(userMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+	dbDBSchema := model.NewDatabaseMetadata(dbMetadata, nil, nil, storepb.Engine_POSTGRES, false)
 
 	diff, err := schema.GetDatabaseSchemaDiff(storepb.Engine_POSTGRES, dbDBSchema, userDBSchema)
 	require.NoError(t, err)
@@ -115,8 +115,8 @@ func TestCommentOnColumn(t *testing.T) {
 	require.Equal(t, "Current plan identifier", dbTable.Columns[2].Comment)
 
 	// Compare schemas
-	userDBSchema := model.NewDatabaseSchema(userMetadata, nil, nil, storepb.Engine_POSTGRES, false)
-	dbDBSchema := model.NewDatabaseSchema(dbMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+	userDBSchema := model.NewDatabaseMetadata(userMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+	dbDBSchema := model.NewDatabaseMetadata(dbMetadata, nil, nil, storepb.Engine_POSTGRES, false)
 
 	diff, err := schema.GetDatabaseSchemaDiff(storepb.Engine_POSTGRES, dbDBSchema, userDBSchema)
 	require.NoError(t, err)
@@ -170,8 +170,8 @@ func TestMultilineComment(t *testing.T) {
 	require.Equal(t, userCol.Comment, dbCol.Comment, "Comments should be identical")
 
 	// Compare schemas
-	userDBSchema := model.NewDatabaseSchema(userMetadata, nil, nil, storepb.Engine_POSTGRES, false)
-	dbDBSchema := model.NewDatabaseSchema(dbMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+	userDBSchema := model.NewDatabaseMetadata(userMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+	dbDBSchema := model.NewDatabaseMetadata(dbMetadata, nil, nil, storepb.Engine_POSTGRES, false)
 
 	diff, err := schema.GetDatabaseSchemaDiff(storepb.Engine_POSTGRES, dbDBSchema, userDBSchema)
 	require.NoError(t, err)
@@ -287,8 +287,8 @@ func TestCommentEquivalence(t *testing.T) {
 	targetMetadata, err := GetDatabaseMetadata(targetSchema)
 	require.NoError(t, err)
 
-	sourceDBSchema := model.NewDatabaseSchema(sourceMetadata, nil, nil, storepb.Engine_POSTGRES, false)
-	targetDBSchema := model.NewDatabaseSchema(targetMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+	sourceDBSchema := model.NewDatabaseMetadata(sourceMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+	targetDBSchema := model.NewDatabaseMetadata(targetMetadata, nil, nil, storepb.Engine_POSTGRES, false)
 
 	diff, err := schema.GetDatabaseSchemaDiff(storepb.Engine_POSTGRES, sourceDBSchema, targetDBSchema)
 	require.NoError(t, err)

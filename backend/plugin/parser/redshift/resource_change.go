@@ -17,17 +17,17 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_REDSHIFT, extractChangedResources)
 }
 
-func extractChangedResources(database string, _ string, dbSchema *model.DatabaseSchema, asts any, _ string) (*base.ChangeSummary, error) {
+func extractChangedResources(database string, _ string, dbMetadata *model.DatabaseMetadata, asts any, _ string) (*base.ChangeSummary, error) {
 	tree, ok := asts.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("invalid ast type %T, expected antlr.Tree", asts)
 	}
 
-	changedResources := model.NewChangedResources(dbSchema)
+	changedResources := model.NewChangedResources(dbMetadata)
 	listener := &resourceChangeListener{
 		currentDatabase:  database,
 		changedResources: changedResources,
-		dbSchema:         dbSchema,
+		dbMetadata:       dbMetadata,
 		searchPath:       []string{"public"}, // Default search path for Redshift
 	}
 
@@ -46,7 +46,7 @@ type resourceChangeListener struct {
 
 	currentDatabase  string
 	changedResources *model.ChangedResources
-	dbSchema         *model.DatabaseSchema
+	dbMetadata       *model.DatabaseMetadata
 	searchPath       []string
 	sampleDMLs       []string
 	dmlCount         int

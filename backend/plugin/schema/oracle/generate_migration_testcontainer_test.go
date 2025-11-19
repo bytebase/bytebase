@@ -1806,11 +1806,11 @@ COMMENT ON TABLE SPECIAL_DATA IS '';
 
 			// Step 3: Call generate migration to get the rollback DDL
 			// Convert to model.DatabaseSchema
-			dbSchemaA := model.NewDatabaseSchema(schemaA, nil, nil, storepb.Engine_ORACLE, false)
-			dbSchemaB := model.NewDatabaseSchema(schemaB, nil, nil, storepb.Engine_ORACLE, false)
+			dbMetadataA := model.NewDatabaseMetadata(schemaA, nil, nil, storepb.Engine_ORACLE, false)
+			dbMetadataB := model.NewDatabaseMetadata(schemaB, nil, nil, storepb.Engine_ORACLE, false)
 
 			// Get diff from B to A (to generate rollback)
-			diff, err := schema.GetDatabaseSchemaDiff(storepb.Engine_ORACLE, dbSchemaB, dbSchemaA)
+			diff, err := schema.GetDatabaseSchemaDiff(storepb.Engine_ORACLE, dbMetadataB, dbMetadataA)
 			require.NoError(t, err)
 
 			// Generate rollback migration

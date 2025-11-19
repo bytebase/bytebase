@@ -48,11 +48,11 @@ func runMigrationTest(t *testing.T, file string) {
 			require.NoErrorf(t, err, "Failed to parse new schema for test case [%02d]: %s", i+1, test.Description)
 
 			// Convert to model.DatabaseSchema
-			var oldDBSchema *model.DatabaseSchema
+			var oldDBSchema *model.DatabaseMetadata
 			if oldMetadata != nil {
-				oldDBSchema = model.NewDatabaseSchema(oldMetadata, nil, nil, storepb.Engine_MSSQL, false)
+				oldDBSchema = model.NewDatabaseMetadata(oldMetadata, nil, nil, storepb.Engine_MSSQL, false)
 			}
-			newDBSchema := model.NewDatabaseSchema(newMetadata, nil, nil, storepb.Engine_MSSQL, false)
+			newDBSchema := model.NewDatabaseMetadata(newMetadata, nil, nil, storepb.Engine_MSSQL, false)
 
 			// Get diff
 			var diff *schema.MetadataDiff
@@ -64,7 +64,7 @@ func runMigrationTest(t *testing.T, file string) {
 					Name:    "",
 					Schemas: []*storepb.SchemaMetadata{},
 				}
-				oldDBSchema = model.NewDatabaseSchema(emptyMetadata, nil, nil, storepb.Engine_MSSQL, false)
+				oldDBSchema = model.NewDatabaseMetadata(emptyMetadata, nil, nil, storepb.Engine_MSSQL, false)
 			}
 
 			// Handle case where new schema is empty (dropping everything)
@@ -79,7 +79,7 @@ func runMigrationTest(t *testing.T, file string) {
 						},
 					},
 				}
-				newDBSchema = model.NewDatabaseSchema(emptyMetadata, nil, nil, storepb.Engine_MSSQL, false)
+				newDBSchema = model.NewDatabaseMetadata(emptyMetadata, nil, nil, storepb.Engine_MSSQL, false)
 			}
 
 			diff, err = schema.GetDatabaseSchemaDiff(storepb.Engine_MSSQL, oldDBSchema, newDBSchema)

@@ -150,7 +150,7 @@ type Driver interface {
 	SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error)
 
 	// Dump dumps the schema of database.
-	Dump(ctx context.Context, out io.Writer, dbSchema *storepb.DatabaseSchemaMetadata) error
+	Dump(ctx context.Context, out io.Writer, dbMetadata *storepb.DatabaseSchemaMetadata) error
 }
 
 // Register makes a database driver available by the provided type.
