@@ -26,7 +26,7 @@ type DatabaseMetadata struct {
 	owner          string
 	searchPath     []string
 	internal       map[string]*SchemaMetadata
-	linkedDatabase map[string]*LinkedDatabaseMetadata
+	linkedDatabase map[string]*storepb.LinkedDatabaseMetadata
 
 	// Config fields (formerly in DatabaseConfig)
 	configName     string
@@ -51,7 +51,7 @@ func NewDatabaseMetadata(
 		owner:                 metadata.Owner,
 		searchPath:            normalizeSearchPath(metadata.SearchPath),
 		internal:              make(map[string]*SchemaMetadata),
-		linkedDatabase:        make(map[string]*LinkedDatabaseMetadata),
+		linkedDatabase:        make(map[string]*storepb.LinkedDatabaseMetadata),
 		configInternal:        make(map[string]*SchemaConfig),
 	}
 
@@ -191,11 +191,7 @@ func NewDatabaseMetadata(
 		} else {
 			dbLinkID = strings.ToLower(dbLink.Name)
 		}
-		dbMetadata.linkedDatabase[dbLinkID] = &LinkedDatabaseMetadata{
-			name:     dbLink.Name,
-			username: dbLink.Username,
-			host:     dbLink.Host,
-		}
+		dbMetadata.linkedDatabase[dbLinkID] = dbLink
 	}
 
 	// Build config maps
@@ -281,7 +277,7 @@ func (d *DatabaseMetadata) ListSchemaNames() []string {
 	return result
 }
 
-func (d *DatabaseMetadata) GetLinkedDatabase(name string) *LinkedDatabaseMetadata {
+func (d *DatabaseMetadata) GetLinkedDatabase(name string) *storepb.LinkedDatabaseMetadata {
 	var nameID string
 	if d.isObjectCaseSensitive {
 		nameID = name
@@ -485,25 +481,6 @@ func (t *TableConfig) GetColumnConfig(name string) *storepb.ColumnCatalog {
 	return &storepb.ColumnCatalog{
 		Name: name,
 	}
-}
-
-// LinkedDatabaseMetadata is the metadata for a linked database.
-type LinkedDatabaseMetadata struct {
-	name     string
-	username string
-	host     string
-}
-
-func (l *LinkedDatabaseMetadata) GetName() string {
-	return l.name
-}
-
-func (l *LinkedDatabaseMetadata) GetUsername() string {
-	return l.username
-}
-
-func (l *LinkedDatabaseMetadata) GetHost() string {
-	return l.host
 }
 
 // SchemaMetadata is the metadata for a schema.
