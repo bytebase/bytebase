@@ -39,7 +39,7 @@ type getSequenceDefinition func(string, *storepb.SequenceMetadata) (string, erro
 type getDatabaseMetadata func(string) (*storepb.DatabaseSchemaMetadata, error)
 type generateMigration func(*MetadataDiff) (string, error)
 type getSDLDiff func(currentSDLText, previousUserSDLText string, currentSchema, previousSchema *model.DatabaseSchema) (*MetadataDiff, error)
-type walkThrough func(*model.DatabaseMetadata, any) error
+type walkThrough func(*model.DatabaseMetadata, any) *storepb.Advice
 
 type GetDefinitionContext struct {
 	SkipBackupSchema bool
@@ -277,10 +277,10 @@ func RegisterWalkThrough(engine storepb.Engine, f walkThrough) {
 	walkThroughs[engine] = f
 }
 
-func WalkThrough(engine storepb.Engine, d *model.DatabaseMetadata, ast any) error {
+func WalkThrough(engine storepb.Engine, d *model.DatabaseMetadata, ast any) *storepb.Advice {
 	f, ok := walkThroughs[engine]
 	if !ok {
-		return errors.Errorf("Walk-through doesn't support engine type: %s", engine)
+		return nil
 	}
 	return f(d, ast)
 }

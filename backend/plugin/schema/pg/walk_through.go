@@ -6,13 +6,11 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/postgresql"
-	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
-	"github.com/bytebase/bytebase/backend/plugin/schema/catalogutil"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -26,15 +24,31 @@ func init() {
 }
 
 // WalkThrough walks through the PostgreSQL ANTLR parse tree and builds catalog metadata.
-func WalkThrough(d *model.DatabaseMetadata, ast any) error {
+func WalkThrough(d *model.DatabaseMetadata, ast any) *storepb.Advice {
 	// ANTLR-based walkthrough
 	parseResult, ok := ast.(*pgparser.ParseResult)
 	if !ok {
-		return errors.Errorf("PostgreSQL walk-through expects *pgparser.ParseResult, got %T", ast)
+		return &storepb.Advice{
+			Status:  storepb.Advice_ERROR,
+			Code:    code.Internal.Int32(),
+			Title:   fmt.Sprintf("PostgreSQL walk-through expects *pgparser.ParseResult, got %T", ast),
+			Content: fmt.Sprintf("PostgreSQL walk-through expects *pgparser.ParseResult, got %T", ast),
+			StartPosition: &storepb.Position{
+				Line: 0,
+			},
+		}
 	}
 	root, ok := parseResult.Tree.(parser.IRootContext)
 	if !ok {
-		return errors.Errorf("invalid ANTLR tree type %T", parseResult.Tree)
+		return &storepb.Advice{
+			Status:  storepb.Advice_ERROR,
+			Code:    code.Internal.Int32(),
+			Title:   fmt.Sprintf("invalid ANTLR tree type %T", parseResult.Tree),
+			Content: fmt.Sprintf("invalid ANTLR tree type %T", parseResult.Tree),
+			StartPosition: &storepb.Position{
+				Line: 0,
+			},
+		}
 	}
 	// Build listener with database state
 	listener := &pgCatalogListener{
@@ -44,29 +58,15 @@ func WalkThrough(d *model.DatabaseMetadata, ast any) error {
 	// Walk through the parse tree
 	antlr.ParseTreeWalkerDefault.Walk(listener, root)
 	// Return any error encountered during walk
-	if listener.err != nil {
-		return listener.err
-	}
-	return nil
+	return listener.advice
 }
 
 // pgCatalogListener builds catalog state by listening to ANTLR parse tree events.
 type pgCatalogListener struct {
 	*parser.BasePostgreSQLParserListener
 	databaseState *model.DatabaseMetadata
-	err           *catalogutil.WalkThroughError
+	advice        *storepb.Advice
 	currentLine   int
-}
-
-// Helper method to set error with line number
-func (l *pgCatalogListener) setError(err *catalogutil.WalkThroughError) {
-	if l.err != nil {
-		return // Keep first error
-	}
-	if err != nil && err.Line == 0 {
-		err.Line = l.currentLine
-	}
-	l.err = err
 }
 
 // ========================================
@@ -74,7 +74,7 @@ func (l *pgCatalogListener) setError(err *catalogutil.WalkThroughError) {
 // ========================================
 // EnterCreatestmt handles CREATE TABLE statements.
 func (l *pgCatalogListener) EnterCreatestmt(ctx *parser.CreatestmtContext) {
-	if !isTopLevel(ctx.GetParent()) || l.err != nil {
+	if !isTopLevel(ctx.GetParent()) || l.advice != nil {
 		return
 	}
 	l.currentLine = ctx.GetStart().GetLine()
@@ -91,16 +91,21 @@ func (l *pgCatalogListener) EnterCreatestmt(ctx *parser.CreatestmtContext) {
 	// Check database name if specified
 	databaseName := extractDatabaseName(qualifiedNames[0])
 	if databaseName != "" && l.databaseState.DatabaseName() != databaseName {
-		l.setError(&catalogutil.WalkThroughError{
-			Code:    code.NotCurrentDatabase,
+		l.advice = &storepb.Advice{
+			Status:  storepb.Advice_WARNING,
+			Code:    code.NotCurrentDatabase.Int32(),
+			Title:   fmt.Sprintf("Database %q is not the current database %q", databaseName, l.databaseState.DatabaseName()),
 			Content: fmt.Sprintf("Database %q is not the current database %q", databaseName, l.databaseState.DatabaseName()),
-		})
+			StartPosition: &storepb.Position{
+				Line: int32(l.currentLine),
+			},
+		}
 		return
 	}
 	// Get or create schema
-	schema, err := getOrCreatePublicSchema(l.databaseState, schemaName)
+	schema, err := getOrCreatePublicSchema(l.databaseState, schemaName, l.currentLine)
 	if err != nil {
-		l.setError(err)
+		l.advice = err
 		return
 	}
 	// Check if table already exists
@@ -110,16 +115,29 @@ func (l *pgCatalogListener) EnterCreatestmt(ctx *parser.CreatestmtContext) {
 		if ifNotExists {
 			return
 		}
-		l.setError(&catalogutil.WalkThroughError{
-			Code:    code.TableExists,
+		l.advice = &storepb.Advice{
+			Status:  storepb.Advice_ERROR,
+			Code:    code.TableExists.Int32(),
+			Title:   fmt.Sprintf(`The table %q already exists in the schema %q`, tableName, schema.GetProto().Name),
 			Content: fmt.Sprintf(`The table %q already exists in the schema %q`, tableName, schema.GetProto().Name),
-		})
+			StartPosition: &storepb.Position{
+				Line: int32(l.currentLine),
+			},
+		}
 		return
 	}
 	// Create table
 	table, createErr := schema.CreateTable(tableName)
 	if createErr != nil {
-		l.setError(&catalogutil.WalkThroughError{Code: code.TableExists, Content: createErr.Error()})
+		l.advice = &storepb.Advice{
+			Status:  storepb.Advice_ERROR,
+			Code:    code.TableExists.Int32(),
+			Title:   createErr.Error(),
+			Content: createErr.Error(),
+			StartPosition: &storepb.Position{
+				Line: int32(l.currentLine),
+			},
+		}
 		return
 	}
 	// Process column definitions
@@ -129,14 +147,14 @@ func (l *pgCatalogListener) EnterCreatestmt(ctx *parser.CreatestmtContext) {
 			// Handle column definitions
 			if elem.ColumnDef() != nil {
 				if err := pgCreateColumn(schema, table, elem.ColumnDef()); err != nil {
-					l.setError(err)
+					l.advice = err
 					return
 				}
 			}
 			// Handle table-level constraints
 			if elem.Tableconstraint() != nil {
-				if err := createTableConstraint(schema, table, elem.Tableconstraint()); err != nil {
-					l.setError(err)
+				if err := createTableConstraint(schema, table, elem.Tableconstraint(), l.currentLine); err != nil {
+					l.advice = err
 					return
 				}
 			}
@@ -145,7 +163,7 @@ func (l *pgCatalogListener) EnterCreatestmt(ctx *parser.CreatestmtContext) {
 }
 
 // pgCreateColumn creates a column in the table.
-func pgCreateColumn(schema *model.SchemaMetadata, table *model.TableMetadata, columnDef parser.IColumnDefContext) *catalogutil.WalkThroughError {
+func pgCreateColumn(schema *model.SchemaMetadata, table *model.TableMetadata, columnDef parser.IColumnDefContext) *storepb.Advice {
 	if columnDef == nil {
 		return nil
 	}
@@ -159,9 +177,14 @@ func pgCreateColumn(schema *model.SchemaMetadata, table *model.TableMetadata, co
 	}
 	// Check if column already exists
 	if table.GetColumn(columnName) != nil {
-		return &catalogutil.WalkThroughError{
-			Code:    code.ColumnExists,
+		return &storepb.Advice{
+			Status:  storepb.Advice_ERROR,
+			Code:    code.ColumnExists.Int32(),
+			Title:   fmt.Sprintf("The column %q already exists in table %q", columnName, table.GetProto().Name),
 			Content: fmt.Sprintf("The column %q already exists in table %q", columnName, table.GetProto().Name),
+			StartPosition: &storepb.Position{
+				Line: 0,
+			},
 		}
 	}
 	// Get column type
@@ -218,7 +241,13 @@ func pgCreateColumn(schema *model.SchemaMetadata, table *model.TableMetadata, co
 					IsConstraint: true,
 				}
 				if err := table.CreateIndex(index); err != nil {
-					return &catalogutil.WalkThroughError{Code: code.PrimaryKeyExists, Content: err.Error()}
+					return &storepb.Advice{
+						Status:        storepb.Advice_ERROR,
+						Code:          code.PrimaryKeyExists.Int32(),
+						Title:         err.Error(),
+						Content:       err.Error(),
+						StartPosition: &storepb.Position{Line: 0},
+					}
 				}
 			}
 			// Handle UNIQUE
@@ -240,20 +269,32 @@ func pgCreateColumn(schema *model.SchemaMetadata, table *model.TableMetadata, co
 					IsConstraint: true,
 				}
 				if err := table.CreateIndex(index); err != nil {
-					return &catalogutil.WalkThroughError{Code: code.IndexExists, Content: err.Error()}
+					return &storepb.Advice{
+						Status:        storepb.Advice_ERROR,
+						Code:          code.IndexExists.Int32(),
+						Title:         err.Error(),
+						Content:       err.Error(),
+						StartPosition: &storepb.Position{Line: 0},
+					}
 				}
 			}
 		}
 	}
 	// Create the column
 	if err := table.CreateColumn(col); err != nil {
-		return &catalogutil.WalkThroughError{Code: code.ColumnExists, Content: err.Error()}
+		return &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.ColumnExists.Int32(),
+			Title:         err.Error(),
+			Content:       err.Error(),
+			StartPosition: &storepb.Position{Line: 0},
+		}
 	}
 	return nil
 }
 
 // createTableConstraint creates a table-level constraint.
-func createTableConstraint(schema *model.SchemaMetadata, table *model.TableMetadata, constraint parser.ITableconstraintContext) *catalogutil.WalkThroughError {
+func createTableConstraint(schema *model.SchemaMetadata, table *model.TableMetadata, constraint parser.ITableconstraintContext, line int) *storepb.Advice {
 	if constraint == nil || constraint.Constraintelem() == nil {
 		return nil
 	}
@@ -281,7 +322,13 @@ func createTableConstraint(schema *model.SchemaMetadata, table *model.TableMetad
 			if column != nil {
 				column.Nullable = false
 			} else {
-				return catalogutil.NewColumnNotExistsError(table.GetProto().Name, colName)
+				return &storepb.Advice{
+					Status:        storepb.Advice_ERROR,
+					Code:          code.ColumnNotExists.Int32(),
+					Title:         fmt.Sprintf("Column `%s` does not exist in table `%s`", colName, table.GetProto().Name),
+					Content:       fmt.Sprintf("Column `%s` does not exist in table `%s`", colName, table.GetProto().Name),
+					StartPosition: &storepb.Position{Line: int32(line)},
+				}
 			}
 		}
 		// Generate PK name if not provided
@@ -291,9 +338,12 @@ func createTableConstraint(schema *model.SchemaMetadata, table *model.TableMetad
 		}
 		// Check if primary key already exists
 		if table.GetPrimaryKey() != nil {
-			return &catalogutil.WalkThroughError{
-				Code:    code.PrimaryKeyExists,
-				Content: fmt.Sprintf("Primary key already exists in table %q", table.GetProto().Name),
+			return &storepb.Advice{
+				Status:        storepb.Advice_ERROR,
+				Code:          code.PrimaryKeyExists.Int32(),
+				Title:         fmt.Sprintf("Primary key already exists in table %q", table.GetProto().Name),
+				Content:       fmt.Sprintf("Primary key already exists in table %q", table.GetProto().Name),
+				StartPosition: &storepb.Position{Line: int32(line)},
 			}
 		}
 		// Create primary key index
@@ -306,7 +356,13 @@ func createTableConstraint(schema *model.SchemaMetadata, table *model.TableMetad
 			IsConstraint: true,
 		}
 		if err := table.CreateIndex(index); err != nil {
-			return &catalogutil.WalkThroughError{Code: code.PrimaryKeyExists, Content: err.Error()}
+			return &storepb.Advice{
+				Status:        storepb.Advice_ERROR,
+				Code:          code.PrimaryKeyExists.Int32(),
+				Title:         err.Error(),
+				Content:       err.Error(),
+				StartPosition: &storepb.Position{Line: int32(line)},
+			}
 		}
 	}
 	// Handle UNIQUE constraint
@@ -328,15 +384,24 @@ func createTableConstraint(schema *model.SchemaMetadata, table *model.TableMetad
 		}
 		// Check if index already exists
 		if table.GetIndex(indexName) != nil {
-			return &catalogutil.WalkThroughError{
-				Code:    code.IndexExists,
-				Content: fmt.Sprintf("Index %q already exists in table %q", indexName, table.GetProto().Name),
+			return &storepb.Advice{
+				Status:        storepb.Advice_ERROR,
+				Code:          code.IndexExists.Int32(),
+				Title:         fmt.Sprintf("Index %q already exists in table %q", indexName, table.GetProto().Name),
+				Content:       fmt.Sprintf("Index %q already exists in table %q", indexName, table.GetProto().Name),
+				StartPosition: &storepb.Position{Line: int32(line)},
 			}
 		}
 		// Validate columns exist
 		for _, colName := range columnList {
 			if table.GetColumn(colName) == nil {
-				return catalogutil.NewColumnNotExistsError(table.GetProto().Name, colName)
+				return &storepb.Advice{
+					Status:        storepb.Advice_ERROR,
+					Code:          code.ColumnNotExists.Int32(),
+					Title:         fmt.Sprintf("Column `%s` does not exist in table `%s`", colName, table.GetProto().Name),
+					Content:       fmt.Sprintf("Column `%s` does not exist in table `%s`", colName, table.GetProto().Name),
+					StartPosition: &storepb.Position{Line: int32(line)},
+				}
 			}
 		}
 		// Create unique index (from UNIQUE constraint)
@@ -349,7 +414,13 @@ func createTableConstraint(schema *model.SchemaMetadata, table *model.TableMetad
 			IsConstraint: true,
 		}
 		if err := table.CreateIndex(index); err != nil {
-			return &catalogutil.WalkThroughError{Code: code.IndexExists, Content: err.Error()}
+			return &storepb.Advice{
+				Status:        storepb.Advice_ERROR,
+				Code:          code.IndexExists.Int32(),
+				Title:         err.Error(),
+				Content:       err.Error(),
+				StartPosition: &storepb.Position{Line: int32(line)},
+			}
 		}
 	}
 	// Note: We skip CHECK, FOREIGN KEY, EXCLUSION constraints for now
@@ -362,7 +433,7 @@ func createTableConstraint(schema *model.SchemaMetadata, table *model.TableMetad
 // ========================================
 // EnterIndexstmt handles CREATE INDEX statements.
 func (l *pgCatalogListener) EnterIndexstmt(ctx *parser.IndexstmtContext) {
-	if !isTopLevel(ctx.GetParent()) || l.err != nil {
+	if !isTopLevel(ctx.GetParent()) || l.advice != nil {
 		return
 	}
 	l.currentLine = ctx.GetStart().GetLine()
@@ -373,14 +444,20 @@ func (l *pgCatalogListener) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 	}
 	tableName := extractTableName(relationExpr.Qualified_name())
 	schemaName := extractSchemaName(relationExpr.Qualified_name())
-	schema, err := getOrCreatePublicSchema(l.databaseState, schemaName)
+	schema, err := getOrCreatePublicSchema(l.databaseState, schemaName, l.currentLine)
 	if err != nil {
-		l.setError(err)
+		l.advice = err
 		return
 	}
 	table := schema.GetTable(tableName)
 	if table == nil {
-		l.setError(catalogutil.NewTableNotExistsError(tableName))
+		l.advice = &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.TableNotExists.Int32(),
+			Title:         fmt.Sprintf("Table `%s` does not exist", tableName),
+			Content:       fmt.Sprintf("Table `%s` does not exist", tableName),
+			StartPosition: &storepb.Position{Line: int32(l.currentLine)},
+		}
 		return
 	}
 	// Extract index name (can be empty for auto-generated names)
@@ -405,10 +482,13 @@ func (l *pgCatalogListener) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 		}
 	}
 	if len(columnList) == 0 {
-		l.setError(&catalogutil.WalkThroughError{
-			Code:    code.IndexEmptyKeys,
-			Content: fmt.Sprintf("Index %q in table %q has empty key", indexName, tableName),
-		})
+		l.advice = &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.IndexEmptyKeys.Int32(),
+			Title:         fmt.Sprintf("Index %q in table %q has empty key", indexName, tableName),
+			Content:       fmt.Sprintf("Index %q in table %q has empty key", indexName, tableName),
+			StartPosition: &storepb.Position{Line: int32(l.currentLine)},
+		}
 		return
 	}
 	// Generate index name if not provided
@@ -426,7 +506,13 @@ func (l *pgCatalogListener) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 		if wasAutoGenerated {
 			indexName = generateUniqueIndexName(schema, tableName, columnList, isUnique)
 		} else {
-			l.setError(catalogutil.NewRelationExistsError(indexName, schema.GetProto().Name))
+			l.advice = &storepb.Advice{
+				Status:        storepb.Advice_ERROR,
+				Code:          code.RelationExists.Int32(),
+				Title:         fmt.Sprintf("Relation %q already exists in schema %q", indexName, schema.GetProto().Name),
+				Content:       fmt.Sprintf("Relation %q already exists in schema %q", indexName, schema.GetProto().Name),
+				StartPosition: &storepb.Position{Line: int32(l.currentLine)},
+			}
 			return
 		}
 	}
@@ -434,7 +520,13 @@ func (l *pgCatalogListener) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 	for _, colName := range columnList {
 		if colName != "expr" {
 			if table.GetColumn(colName) == nil {
-				l.setError(catalogutil.NewColumnNotExistsError(tableName, colName))
+				l.advice = &storepb.Advice{
+					Status:        storepb.Advice_ERROR,
+					Code:          code.ColumnNotExists.Int32(),
+					Title:         fmt.Sprintf("Column `%s` does not exist in table `%s`", colName, tableName),
+					Content:       fmt.Sprintf("Column `%s` does not exist in table `%s`", colName, tableName),
+					StartPosition: &storepb.Position{Line: int32(l.currentLine)},
+				}
 				return
 			}
 		}
@@ -454,7 +546,13 @@ func (l *pgCatalogListener) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 		Primary:     false,
 	}
 	if err := table.CreateIndex(index); err != nil {
-		l.setError(&catalogutil.WalkThroughError{Code: code.IndexExists, Content: err.Error()})
+		l.advice = &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.IndexExists.Int32(),
+			Title:         err.Error(),
+			Content:       err.Error(),
+			StartPosition: &storepb.Position{Line: int32(l.currentLine)},
+		}
 	}
 }
 
@@ -464,7 +562,7 @@ func (l *pgCatalogListener) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 // TODO: EnterCreateschemastatement - Need to find correct ANTLR context name
 //
 //	func (l *pgCatalogListener) EnterCreateschemastatement(ctx *parser.CreateschemaContext) {
-//		if !isTopLevel(ctx.GetParent()) || l.err != nil {
+//		if !isTopLevel(ctx.GetParent()) || l.advice != nil {
 //			return
 //		}
 //
@@ -483,7 +581,7 @@ func (l *pgCatalogListener) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 // ========================================
 // EnterAltertablestmt handles ALTER TABLE statements.
 func (l *pgCatalogListener) EnterAltertablestmt(ctx *parser.AltertablestmtContext) {
-	if !isTopLevel(ctx.GetParent()) || l.err != nil {
+	if !isTopLevel(ctx.GetParent()) || l.advice != nil {
 		return
 	}
 	l.currentLine = ctx.GetStart().GetLine()
@@ -496,21 +594,30 @@ func (l *pgCatalogListener) EnterAltertablestmt(ctx *parser.AltertablestmtContex
 	databaseName := extractDatabaseName(ctx.Relation_expr().Qualified_name())
 	// Check database access
 	if databaseName != "" && l.databaseState.DatabaseName() != databaseName {
-		l.setError(&catalogutil.WalkThroughError{
-			Code:    code.NotCurrentDatabase,
-			Content: fmt.Sprintf("Database %q is not the current database %q", databaseName, l.databaseState.DatabaseName()),
-		})
+		l.advice = &storepb.Advice{
+			Status:        storepb.Advice_WARNING,
+			Code:          code.NotCurrentDatabase.Int32(),
+			Title:         fmt.Sprintf("Database %q is not the current database %q", databaseName, l.databaseState.DatabaseName()),
+			Content:       fmt.Sprintf("Database %q is not the current database %q", databaseName, l.databaseState.DatabaseName()),
+			StartPosition: &storepb.Position{Line: int32(l.currentLine)},
+		}
 		return
 	}
 	// Get schema and table
-	schema, err := getOrCreatePublicSchema(l.databaseState, schemaName)
+	schema, err := getOrCreatePublicSchema(l.databaseState, schemaName, l.currentLine)
 	if err != nil {
-		l.setError(err)
+		l.advice = err
 		return
 	}
 	table := schema.GetTable(tableName)
 	if table == nil {
-		l.setError(catalogutil.NewTableNotExistsError(tableName))
+		l.advice = &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.TableNotExists.Int32(),
+			Title:         fmt.Sprintf("Table `%s` does not exist", tableName),
+			Content:       fmt.Sprintf("Table `%s` does not exist", tableName),
+			StartPosition: &storepb.Position{Line: int32(l.currentLine)},
+		}
 		return
 	}
 	// Process alter table commands
@@ -520,7 +627,7 @@ func (l *pgCatalogListener) EnterAltertablestmt(ctx *parser.AltertablestmtContex
 	allCmds := ctx.Alter_table_cmds().AllAlter_table_cmd()
 	for _, cmd := range allCmds {
 		l.processAlterTableCmd(schema, table, cmd)
-		if l.err != nil {
+		if l.advice != nil {
 			return
 		}
 	}
@@ -603,7 +710,13 @@ func (l *pgCatalogListener) alterTableDropColumn(schema *model.SchemaMetadata, t
 		if ifExists {
 			return
 		}
-		l.setError(catalogutil.NewColumnNotExistsError(table.GetProto().Name, columnName))
+		l.advice = &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.ColumnNotExists.Int32(),
+			Title:         fmt.Sprintf("Column `%s` does not exist in table `%s`", columnName, table.GetProto().Name),
+			Content:       fmt.Sprintf("Column `%s` does not exist in table `%s`", columnName, table.GetProto().Name),
+			StartPosition: &storepb.Position{Line: int32(l.currentLine)},
+		}
 		return
 	}
 	// Check if any views depend on this column
@@ -614,10 +727,13 @@ func (l *pgCatalogListener) alterTableDropColumn(schema *model.SchemaMetadata, t
 		for _, v := range dependentViews {
 			viewNames = append(viewNames, fmt.Sprintf("%q.%q", schema.GetProto().Name, v))
 		}
-		l.setError(&catalogutil.WalkThroughError{
-			Code:    code.ColumnIsReferencedByView,
-			Content: fmt.Sprintf("Cannot drop column %q in table %q.%q, it's referenced by view: %s", columnName, schema.GetProto().Name, table.GetProto().Name, strings.Join(viewNames, ", ")),
-		})
+		l.advice = &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.ColumnIsReferencedByView.Int32(),
+			Title:         fmt.Sprintf("Cannot drop column %q in table %q.%q, it's referenced by view: %s", columnName, schema.GetProto().Name, table.GetProto().Name, strings.Join(viewNames, ", ")),
+			Content:       fmt.Sprintf("Cannot drop column %q in table %q.%q, it's referenced by view: %s", columnName, schema.GetProto().Name, table.GetProto().Name, strings.Join(viewNames, ", ")),
+			StartPosition: &storepb.Position{Line: int32(l.currentLine)},
+		}
 		return
 	}
 	// Drop the constraints and indexes involving the column
@@ -633,7 +749,13 @@ func (l *pgCatalogListener) alterTableDropColumn(schema *model.SchemaMetadata, t
 	}
 	for _, indexName := range dropIndexList {
 		if err := table.DropIndex(indexName); err != nil {
-			l.setError(&catalogutil.WalkThroughError{Code: code.IndexNotExists, Content: err.Error()})
+			l.advice = &storepb.Advice{
+				Status:        storepb.Advice_ERROR,
+				Code:          code.IndexNotExists.Int32(),
+				Title:         err.Error(),
+				Content:       err.Error(),
+				StartPosition: &storepb.Position{Line: int32(l.currentLine)},
+			}
 			return
 		}
 	}
@@ -641,13 +763,25 @@ func (l *pgCatalogListener) alterTableDropColumn(schema *model.SchemaMetadata, t
 	// TODO(zp): deal with CASCADE.
 	// Validate column exists before dropping
 	if table.GetColumn(columnName) == nil {
-		l.setError(catalogutil.NewColumnNotExistsError(table.GetProto().Name, columnName))
+		l.advice = &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.ColumnNotExists.Int32(),
+			Title:         fmt.Sprintf("Column `%s` does not exist in table `%s`", columnName, table.GetProto().Name),
+			Content:       fmt.Sprintf("Column `%s` does not exist in table `%s`", columnName, table.GetProto().Name),
+			StartPosition: &storepb.Position{Line: int32(l.currentLine)},
+		}
 		return
 	}
 	// Delete the column without renumbering positions
 	// PostgreSQL maintains stable column positions (attnum) even after dropping columns
 	if err := table.DropColumnWithoutRenumbering(columnName); err != nil {
-		l.setError(&catalogutil.WalkThroughError{Code: code.Internal, Content: fmt.Sprintf("failed to drop column: %v", err)})
+		l.advice = &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.Internal.Int32(),
+			Title:         fmt.Sprintf("failed to drop column: %v", err),
+			Content:       fmt.Sprintf("failed to drop column: %v", err),
+			StartPosition: &storepb.Position{Line: int32(l.currentLine)},
+		}
 	}
 }
 
@@ -655,7 +789,13 @@ func (l *pgCatalogListener) alterTableDropColumn(schema *model.SchemaMetadata, t
 func (l *pgCatalogListener) alterTableAlterColumnType(schema *model.SchemaMetadata, table *model.TableMetadata, columnName string, typeString string) {
 	column := table.GetColumn(columnName)
 	if column == nil {
-		l.setError(catalogutil.NewColumnNotExistsError(table.GetProto().Name, columnName))
+		l.advice = &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.ColumnNotExists.Int32(),
+			Title:         fmt.Sprintf("Column `%s` does not exist in table `%s`", columnName, table.GetProto().Name),
+			Content:       fmt.Sprintf("Column `%s` does not exist in table `%s`", columnName, table.GetProto().Name),
+			StartPosition: &storepb.Position{Line: int32(l.currentLine)},
+		}
 		return
 	}
 	// Check if any views depend on this column
@@ -666,10 +806,13 @@ func (l *pgCatalogListener) alterTableAlterColumnType(schema *model.SchemaMetada
 		for _, v := range dependentViews {
 			viewNames = append(viewNames, fmt.Sprintf("%q.%q", schema.GetProto().Name, v))
 		}
-		l.setError(&catalogutil.WalkThroughError{
-			Code:    code.ColumnIsReferencedByView,
-			Content: fmt.Sprintf("Cannot alter type of column %q in table %q.%q, it's referenced by view: %s", columnName, schema.GetProto().Name, table.GetProto().Name, strings.Join(viewNames, ", ")),
-		})
+		l.advice = &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.ColumnIsReferencedByView.Int32(),
+			Title:         fmt.Sprintf("Cannot alter type of column %q in table %q.%q, it's referenced by view: %s", columnName, schema.GetProto().Name, table.GetProto().Name, strings.Join(viewNames, ", ")),
+			Content:       fmt.Sprintf("Cannot alter type of column %q in table %q.%q, it's referenced by view: %s", columnName, schema.GetProto().Name, table.GetProto().Name, strings.Join(viewNames, ", ")),
+			StartPosition: &storepb.Position{Line: int32(l.currentLine)},
+		}
 		return
 	}
 	// Update column type
@@ -687,10 +830,13 @@ func (l *pgCatalogListener) alterTableAddColumn(schema *model.SchemaMetadata, ta
 		if ifNotExists {
 			return
 		}
-		l.setError(&catalogutil.WalkThroughError{
-			Code:    code.ColumnExists,
-			Content: fmt.Sprintf("The column %q already exists in table %q", columnName, table.GetProto().Name),
-		})
+		l.advice = &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.ColumnExists.Int32(),
+			Title:         fmt.Sprintf("The column %q already exists in table %q", columnName, table.GetProto().Name),
+			Content:       fmt.Sprintf("The column %q already exists in table %q", columnName, table.GetProto().Name),
+			StartPosition: &storepb.Position{Line: int32(l.currentLine)},
+		}
 		return
 	}
 	// Extract column type
@@ -747,7 +893,13 @@ func (l *pgCatalogListener) alterTableAddColumn(schema *model.SchemaMetadata, ta
 					Primary:     false,
 				}
 				if err := table.CreateIndex(index); err != nil {
-					l.setError(&catalogutil.WalkThroughError{Code: code.IndexExists, Content: err.Error()})
+					l.advice = &storepb.Advice{
+						Status:        storepb.Advice_ERROR,
+						Code:          code.IndexExists.Int32(),
+						Title:         err.Error(),
+						Content:       err.Error(),
+						StartPosition: &storepb.Position{Line: int32(l.currentLine)},
+					}
 					return
 				}
 			}
@@ -762,7 +914,13 @@ func (l *pgCatalogListener) alterTableAddColumn(schema *model.SchemaMetadata, ta
 				}
 				// Check for collision
 				if table.GetIndex(constraintName) != nil {
-					l.setError(catalogutil.NewRelationExistsError(constraintName, schema.GetProto().Name))
+					l.advice = &storepb.Advice{
+						Status:        storepb.Advice_ERROR,
+						Code:          code.RelationExists.Int32(),
+						Title:         fmt.Sprintf("Relation %q already exists in schema %q", constraintName, schema.GetProto().Name),
+						Content:       fmt.Sprintf("Relation %q already exists in schema %q", constraintName, schema.GetProto().Name),
+						StartPosition: &storepb.Position{Line: int32(l.currentLine)},
+					}
 					return
 				}
 				col.Nullable = false
@@ -776,7 +934,13 @@ func (l *pgCatalogListener) alterTableAddColumn(schema *model.SchemaMetadata, ta
 					IsConstraint: true,
 				}
 				if err := table.CreateIndex(index); err != nil {
-					l.setError(&catalogutil.WalkThroughError{Code: code.PrimaryKeyExists, Content: err.Error()})
+					l.advice = &storepb.Advice{
+						Status:        storepb.Advice_ERROR,
+						Code:          code.PrimaryKeyExists.Int32(),
+						Title:         err.Error(),
+						Content:       err.Error(),
+						StartPosition: &storepb.Position{Line: int32(l.currentLine)},
+					}
 					return
 				}
 			}
@@ -784,7 +948,13 @@ func (l *pgCatalogListener) alterTableAddColumn(schema *model.SchemaMetadata, ta
 	}
 	// Create the column
 	if err := table.CreateColumn(col); err != nil {
-		l.setError(&catalogutil.WalkThroughError{Code: code.ColumnExists, Content: err.Error()})
+		l.advice = &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.ColumnExists.Int32(),
+			Title:         err.Error(),
+			Content:       err.Error(),
+			StartPosition: &storepb.Position{Line: int32(l.currentLine)},
+		}
 	}
 }
 
@@ -794,9 +964,9 @@ func (l *pgCatalogListener) alterTableAddConstraint(schema *model.SchemaMetadata
 		return
 	}
 	// Reuse the constraint creation logic from CREATE TABLE
-	err := createTableConstraint(schema, table, constraint)
+	err := createTableConstraint(schema, table, constraint, l.currentLine)
 	if err != nil {
-		l.setError(err)
+		l.advice = err
 	}
 }
 
@@ -805,15 +975,24 @@ func (l *pgCatalogListener) alterTableDropConstraint(_ *model.SchemaMetadata, ta
 	// Check if constraint exists as an index
 	if table.GetIndex(constraintName) != nil {
 		if err := table.DropIndex(constraintName); err != nil {
-			l.setError(&catalogutil.WalkThroughError{Code: code.IndexNotExists, Content: err.Error()})
+			l.advice = &storepb.Advice{
+				Status:        storepb.Advice_ERROR,
+				Code:          code.IndexNotExists.Int32(),
+				Title:         err.Error(),
+				Content:       err.Error(),
+				StartPosition: &storepb.Position{Line: int32(l.currentLine)},
+			}
 		}
 		return
 	}
 	if !ifExists {
-		l.setError(&catalogutil.WalkThroughError{
-			Code:    code.ConstraintNotExists,
-			Content: fmt.Sprintf("Constraint %q for table %q does not exist", constraintName, table.GetProto().Name),
-		})
+		l.advice = &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.ConstraintNotExists.Int32(),
+			Title:         fmt.Sprintf("Constraint %q for table %q does not exist", constraintName, table.GetProto().Name),
+			Content:       fmt.Sprintf("Constraint %q for table %q does not exist", constraintName, table.GetProto().Name),
+			StartPosition: &storepb.Position{Line: int32(l.currentLine)},
+		}
 	}
 }
 
@@ -821,7 +1000,13 @@ func (l *pgCatalogListener) alterTableDropConstraint(_ *model.SchemaMetadata, ta
 func (l *pgCatalogListener) alterTableSetDefault(table *model.TableMetadata, columnName string, defaultValue string) {
 	column := table.GetColumn(columnName)
 	if column == nil {
-		l.setError(catalogutil.NewColumnNotExistsError(table.GetProto().Name, columnName))
+		l.advice = &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.ColumnNotExists.Int32(),
+			Title:         fmt.Sprintf("Column `%s` does not exist in table `%s`", columnName, table.GetProto().Name),
+			Content:       fmt.Sprintf("Column `%s` does not exist in table `%s`", columnName, table.GetProto().Name),
+			StartPosition: &storepb.Position{Line: int32(l.currentLine)},
+		}
 		return
 	}
 	column.Default = defaultValue
@@ -831,7 +1016,13 @@ func (l *pgCatalogListener) alterTableSetDefault(table *model.TableMetadata, col
 func (l *pgCatalogListener) alterTableDropDefault(table *model.TableMetadata, columnName string) {
 	column := table.GetColumn(columnName)
 	if column == nil {
-		l.setError(catalogutil.NewColumnNotExistsError(table.GetProto().Name, columnName))
+		l.advice = &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.ColumnNotExists.Int32(),
+			Title:         fmt.Sprintf("Column `%s` does not exist in table `%s`", columnName, table.GetProto().Name),
+			Content:       fmt.Sprintf("Column `%s` does not exist in table `%s`", columnName, table.GetProto().Name),
+			StartPosition: &storepb.Position{Line: int32(l.currentLine)},
+		}
 		return
 	}
 	column.Default = ""
@@ -841,45 +1032,78 @@ func (l *pgCatalogListener) alterTableDropDefault(table *model.TableMetadata, co
 func (l *pgCatalogListener) alterTableSetNotNull(table *model.TableMetadata, columnName string) {
 	column := table.GetColumn(columnName)
 	if column == nil {
-		l.setError(catalogutil.NewColumnNotExistsError(table.GetProto().Name, columnName))
+		l.advice = &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.ColumnNotExists.Int32(),
+			Title:         fmt.Sprintf("Column `%s` does not exist in table `%s`", columnName, table.GetProto().Name),
+			Content:       fmt.Sprintf("Column `%s` does not exist in table `%s`", columnName, table.GetProto().Name),
+			StartPosition: &storepb.Position{Line: int32(l.currentLine)},
+		}
 		return
 	}
 	column.Nullable = false
 }
 
 // renameTable handles RENAME TO for tables.
-func (*pgCatalogListener) pgRenameTable(schema *model.SchemaMetadata, table *model.TableMetadata, newName string) *catalogutil.WalkThroughError {
+func (*pgCatalogListener) pgRenameTable(schema *model.SchemaMetadata, table *model.TableMetadata, newName string, line int) *storepb.Advice {
 	// Check if new name already exists
 	if schema.GetTable(newName) != nil {
-		return catalogutil.NewRelationExistsError(newName, schema.GetProto().Name)
+		return &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.RelationExists.Int32(),
+			Title:         fmt.Sprintf("Relation %q already exists in schema %q", newName, schema.GetProto().Name),
+			Content:       fmt.Sprintf("Relation %q already exists in schema %q", newName, schema.GetProto().Name),
+			StartPosition: &storepb.Position{Line: int32(line)},
+		}
 	}
 	// Use the RenameTable method from schema
 	oldName := table.GetProto().Name
 	if err := schema.RenameTable(oldName, newName); err != nil {
-		return &catalogutil.WalkThroughError{Code: code.TableNotExists, Content: err.Error()}
+		return &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.TableNotExists.Int32(),
+			Title:         err.Error(),
+			Content:       err.Error(),
+			StartPosition: &storepb.Position{Line: int32(line)},
+		}
 	}
 	return nil
 }
 
 // renameColumn handles RENAME COLUMN.
-func (*pgCatalogListener) renameColumn(table *model.TableMetadata, oldName string, newName string) *catalogutil.WalkThroughError {
+func (*pgCatalogListener) renameColumn(table *model.TableMetadata, oldName string, newName string, line int) *storepb.Advice {
 	if oldName == newName {
 		return nil
 	}
 	// Validate old column exists
 	if table.GetColumn(oldName) == nil {
-		return catalogutil.NewColumnNotExistsError(table.GetProto().Name, oldName)
+		return &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.ColumnNotExists.Int32(),
+			Title:         fmt.Sprintf("Column `%s` does not exist in table `%s`", oldName, table.GetProto().Name),
+			Content:       fmt.Sprintf("Column `%s` does not exist in table `%s`", oldName, table.GetProto().Name),
+			StartPosition: &storepb.Position{Line: int32(line)},
+		}
 	}
 	// Validate new column doesn't already exist
 	if table.GetColumn(newName) != nil {
-		return &catalogutil.WalkThroughError{
-			Code:    code.ColumnExists,
-			Content: fmt.Sprintf("Column `%s` already exists in table `%s`", newName, table.GetProto().Name),
+		return &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.ColumnExists.Int32(),
+			Title:         fmt.Sprintf("Column `%s` already exists in table `%s`", newName, table.GetProto().Name),
+			Content:       fmt.Sprintf("Column `%s` already exists in table `%s`", newName, table.GetProto().Name),
+			StartPosition: &storepb.Position{Line: int32(line)},
 		}
 	}
 	// Use the RenameColumn method
 	if err := table.RenameColumn(oldName, newName); err != nil {
-		return &catalogutil.WalkThroughError{Code: code.Internal, Content: fmt.Sprintf("failed to rename column: %v", err)}
+		return &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.Internal.Int32(),
+			Title:         fmt.Sprintf("failed to rename column: %v", err),
+			Content:       fmt.Sprintf("failed to rename column: %v", err),
+			StartPosition: &storepb.Position{Line: int32(line)},
+		}
 	}
 	// Rename column in all indexes that reference it
 	for _, index := range table.GetProto().Indexes {
@@ -893,7 +1117,7 @@ func (*pgCatalogListener) renameColumn(table *model.TableMetadata, oldName strin
 }
 
 // renameConstraint handles RENAME CONSTRAINT.
-func (*pgCatalogListener) renameConstraint(schema *model.SchemaMetadata, table *model.TableMetadata, oldName string, newName string) *catalogutil.WalkThroughError {
+func (*pgCatalogListener) renameConstraint(schema *model.SchemaMetadata, table *model.TableMetadata, oldName string, newName string, line int) *storepb.Advice {
 	index := table.GetIndex(oldName)
 	if index == nil {
 		// We haven't dealt with foreign and check constraints, so skip if not exists
@@ -901,11 +1125,23 @@ func (*pgCatalogListener) renameConstraint(schema *model.SchemaMetadata, table *
 	}
 	// Check if new name already exists
 	if table.GetIndex(newName) != nil {
-		return catalogutil.NewRelationExistsError(newName, schema.GetProto().Name)
+		return &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.RelationExists.Int32(),
+			Title:         fmt.Sprintf("Relation %q already exists in schema %q", newName, schema.GetProto().Name),
+			Content:       fmt.Sprintf("Relation %q already exists in schema %q", newName, schema.GetProto().Name),
+			StartPosition: &storepb.Position{Line: int32(line)},
+		}
 	}
 	// Use the RenameIndex method
 	if err := table.RenameIndex(oldName, newName); err != nil {
-		return &catalogutil.WalkThroughError{Code: code.IndexNotExists, Content: err.Error()}
+		return &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.IndexNotExists.Int32(),
+			Title:         err.Error(),
+			Content:       err.Error(),
+			StartPosition: &storepb.Position{Line: int32(line)},
+		}
 	}
 	return nil
 }
@@ -915,7 +1151,7 @@ func (*pgCatalogListener) renameConstraint(schema *model.SchemaMetadata, table *
 // ========================================
 // EnterDropstmt handles DROP TABLE/VIEW/INDEX statements.
 func (l *pgCatalogListener) EnterDropstmt(ctx *parser.DropstmtContext) {
-	if !isTopLevel(ctx.GetParent()) || l.err != nil {
+	if !isTopLevel(ctx.GetParent()) || l.advice != nil {
 		return
 	}
 	l.currentLine = ctx.GetStart().GetLine()
@@ -929,7 +1165,7 @@ func (l *pgCatalogListener) EnterDropstmt(ctx *parser.DropstmtContext) {
 			if ctx.Any_name_list() != nil {
 				for _, anyName := range ctx.Any_name_list().AllAny_name() {
 					if err := l.dropTable(anyName, ifExists); err != nil {
-						l.setError(err)
+						l.advice = err
 						return
 					}
 				}
@@ -939,7 +1175,7 @@ func (l *pgCatalogListener) EnterDropstmt(ctx *parser.DropstmtContext) {
 			if ctx.Any_name_list() != nil {
 				for _, anyName := range ctx.Any_name_list().AllAny_name() {
 					if err := l.dropView(anyName, ifExists); err != nil {
-						l.setError(err)
+						l.advice = err
 						return
 					}
 				}
@@ -949,7 +1185,7 @@ func (l *pgCatalogListener) EnterDropstmt(ctx *parser.DropstmtContext) {
 			if ctx.Any_name_list() != nil {
 				for _, anyName := range ctx.Any_name_list().AllAny_name() {
 					if err := l.dropIndex(anyName, ifExists); err != nil {
-						l.setError(err)
+						l.advice = err
 						return
 					}
 				}
@@ -960,7 +1196,7 @@ func (l *pgCatalogListener) EnterDropstmt(ctx *parser.DropstmtContext) {
 		if ctx.Name_list() != nil {
 			for _, schemaName := range ctx.Name_list().AllName() {
 				if err := l.dropSchema(schemaName, ifExists); err != nil {
-					l.setError(err)
+					l.advice = err
 					return
 				}
 			}
@@ -975,7 +1211,7 @@ func (l *pgCatalogListener) EnterDropstmt(ctx *parser.DropstmtContext) {
 // PostgreSQL does not allow dropping the currently connected database.
 // Walk-through also disallows DROP DATABASE for other databases as it's out of scope.
 func (l *pgCatalogListener) EnterDropdbstmt(ctx *parser.DropdbstmtContext) {
-	if !isTopLevel(ctx.GetParent()) || l.err != nil {
+	if !isTopLevel(ctx.GetParent()) || l.advice != nil {
 		return
 	}
 	l.currentLine = ctx.GetStart().GetLine()
@@ -987,16 +1223,25 @@ func (l *pgCatalogListener) EnterDropdbstmt(ctx *parser.DropdbstmtContext) {
 	// PostgreSQL does not allow dropping the currently open database.
 	// This matches the real PostgreSQL behavior: "ERROR: cannot drop the currently open database"
 	if isCurrentDatabase(l.databaseState, databaseName) {
-		l.setError(&catalogutil.WalkThroughError{
-			Code:    code.NotCurrentDatabase,
-			Content: fmt.Sprintf("Cannot drop the currently open database %q", databaseName),
-		})
+		l.advice = &storepb.Advice{
+			Status:        storepb.Advice_WARNING,
+			Code:          code.NotCurrentDatabase.Int32(),
+			Title:         fmt.Sprintf("Cannot drop the currently open database %q", databaseName),
+			Content:       fmt.Sprintf("Cannot drop the currently open database %q", databaseName),
+			StartPosition: &storepb.Position{Line: int32(l.currentLine)},
+		}
 		return
 	}
 	// DROP DATABASE for other databases is out of scope for single-database walk-through
-	l.setError(catalogutil.NewAccessOtherDatabaseError(l.databaseState.DatabaseName(), databaseName))
+	l.advice = &storepb.Advice{
+		Status:        storepb.Advice_WARNING,
+		Code:          code.NotCurrentDatabase.Int32(),
+		Title:         fmt.Sprintf("Database `%s` is not the current database `%s`", databaseName, l.databaseState.DatabaseName()),
+		Content:       fmt.Sprintf("Database `%s` is not the current database `%s`", databaseName, l.databaseState.DatabaseName()),
+		StartPosition: &storepb.Position{Line: int32(l.currentLine)},
+	}
 }
-func (l *pgCatalogListener) dropTable(anyName parser.IAny_nameContext, ifExists bool) *catalogutil.WalkThroughError {
+func (l *pgCatalogListener) dropTable(anyName parser.IAny_nameContext, ifExists bool) *storepb.Advice {
 	parts := pgparser.NormalizePostgreSQLAnyName(anyName)
 	if len(parts) == 0 {
 		return nil
@@ -1009,7 +1254,7 @@ func (l *pgCatalogListener) dropTable(anyName parser.IAny_nameContext, ifExists 
 		schemaName = parts[0]
 		tableName = parts[1]
 	}
-	schema, err := getOrCreatePublicSchema(l.databaseState, schemaName)
+	schema, err := getOrCreatePublicSchema(l.databaseState, schemaName, l.currentLine)
 	if err != nil {
 		if ifExists {
 			return nil
@@ -1021,7 +1266,13 @@ func (l *pgCatalogListener) dropTable(anyName parser.IAny_nameContext, ifExists 
 		if ifExists {
 			return nil
 		}
-		return catalogutil.NewTableNotExistsError(tableName)
+		return &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.TableNotExists.Int32(),
+			Title:         fmt.Sprintf("Table `%s` does not exist", tableName),
+			Content:       fmt.Sprintf("Table `%s` does not exist", tableName),
+			StartPosition: &storepb.Position{Line: int32(l.currentLine)},
+		}
 	}
 	// Check if any views depend on this table
 	dependentViews := schema.GetDependentViews(tableName, "")
@@ -1031,18 +1282,27 @@ func (l *pgCatalogListener) dropTable(anyName parser.IAny_nameContext, ifExists 
 		for _, v := range dependentViews {
 			viewNames = append(viewNames, fmt.Sprintf("%q.%q", schema.GetProto().Name, v))
 		}
-		return &catalogutil.WalkThroughError{
-			Code:    code.TableIsReferencedByView,
-			Content: fmt.Sprintf("Cannot drop table %q.%q, it's referenced by view: %s", schema.GetProto().Name, tableName, strings.Join(viewNames, ", ")),
+		return &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.TableIsReferencedByView.Int32(),
+			Title:         fmt.Sprintf("Cannot drop table %q.%q, it's referenced by view: %s", schema.GetProto().Name, tableName, strings.Join(viewNames, ", ")),
+			Content:       fmt.Sprintf("Cannot drop table %q.%q, it's referenced by view: %s", schema.GetProto().Name, tableName, strings.Join(viewNames, ", ")),
+			StartPosition: &storepb.Position{Line: int32(l.currentLine)},
 		}
 	}
 	// Drop the table using the schema method
 	if err := schema.DropTable(tableName); err != nil {
-		return &catalogutil.WalkThroughError{Code: code.TableNotExists, Content: err.Error()}
+		return &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.TableNotExists.Int32(),
+			Title:         err.Error(),
+			Content:       err.Error(),
+			StartPosition: &storepb.Position{Line: int32(l.currentLine)},
+		}
 	}
 	return nil
 }
-func (l *pgCatalogListener) dropView(anyName parser.IAny_nameContext, ifExists bool) *catalogutil.WalkThroughError {
+func (l *pgCatalogListener) dropView(anyName parser.IAny_nameContext, ifExists bool) *storepb.Advice {
 	parts := pgparser.NormalizePostgreSQLAnyName(anyName)
 	if len(parts) == 0 {
 		return nil
@@ -1057,19 +1317,25 @@ func (l *pgCatalogListener) dropView(anyName parser.IAny_nameContext, ifExists b
 	default:
 		return nil
 	}
-	schema, err := getOrCreatePublicSchema(l.databaseState, schemaName)
+	schema, err := getOrCreatePublicSchema(l.databaseState, schemaName, l.currentLine)
 	if err != nil {
 		return err
 	}
 	// Try to drop the view
 	if dropErr := schema.DropView(viewName); dropErr != nil {
 		if !ifExists {
-			return &catalogutil.WalkThroughError{Code: code.ViewNotExists, Content: dropErr.Error()}
+			return &storepb.Advice{
+				Status:        storepb.Advice_ERROR,
+				Code:          code.ViewNotExists.Int32(),
+				Title:         dropErr.Error(),
+				Content:       dropErr.Error(),
+				StartPosition: &storepb.Position{Line: int32(l.currentLine)},
+			}
 		}
 	}
 	return nil
 }
-func (l *pgCatalogListener) dropIndex(anyName parser.IAny_nameContext, ifExists bool) *catalogutil.WalkThroughError {
+func (l *pgCatalogListener) dropIndex(anyName parser.IAny_nameContext, ifExists bool) *storepb.Advice {
 	parts := pgparser.NormalizePostgreSQLAnyName(anyName)
 	if len(parts) == 0 {
 		return nil
@@ -1082,7 +1348,7 @@ func (l *pgCatalogListener) dropIndex(anyName parser.IAny_nameContext, ifExists 
 		schemaName = parts[0]
 		indexName = parts[1]
 	}
-	schema, err := getOrCreatePublicSchema(l.databaseState, schemaName)
+	schema, err := getOrCreatePublicSchema(l.databaseState, schemaName, l.currentLine)
 	if err != nil {
 		if ifExists {
 			return nil
@@ -1098,27 +1364,42 @@ func (l *pgCatalogListener) dropIndex(anyName parser.IAny_nameContext, ifExists 
 	}
 	// Drop the index from the table
 	if err := table.DropIndex(index.GetProto().Name); err != nil {
-		return &catalogutil.WalkThroughError{Code: code.IndexNotExists, Content: err.Error()}
+		return &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.IndexNotExists.Int32(),
+			Title:         err.Error(),
+			Content:       err.Error(),
+			StartPosition: &storepb.Position{Line: int32(l.currentLine)},
+		}
 	}
 	return nil
 }
-func (l *pgCatalogListener) dropSchema(schemaNameCtx parser.INameContext, ifExists bool) *catalogutil.WalkThroughError {
+func (l *pgCatalogListener) dropSchema(schemaNameCtx parser.INameContext, ifExists bool) *storepb.Advice {
 	schemaName := pgparser.NormalizePostgreSQLName(schemaNameCtx)
 	schema := l.databaseState.GetSchema(schemaName)
 	if schema == nil {
 		if ifExists {
 			return nil
 		}
-		return &catalogutil.WalkThroughError{
-			Code:    code.SchemaNotExists,
-			Content: fmt.Sprintf("Schema %q does not exist", schemaName),
+		return &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.SchemaNotExists.Int32(),
+			Title:         fmt.Sprintf("Schema %q does not exist", schemaName),
+			Content:       fmt.Sprintf("Schema %q does not exist", schemaName),
+			StartPosition: &storepb.Position{Line: int32(l.currentLine)},
 		}
 	}
 	// Drop the schema (this will also drop all objects in the schema)
 	// Note: We don't check for objects in the schema to match the old behavior
 	// In real PostgreSQL, this would require CASCADE if the schema is not empty
 	if err := l.databaseState.DropSchema(schemaName); err != nil {
-		return &catalogutil.WalkThroughError{Code: code.SchemaNotExists, Content: err.Error()}
+		return &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.SchemaNotExists.Int32(),
+			Title:         err.Error(),
+			Content:       err.Error(),
+			StartPosition: &storepb.Position{Line: int32(l.currentLine)},
+		}
 	}
 	return nil
 }
@@ -1126,7 +1407,7 @@ func (l *pgCatalogListener) dropSchema(schemaNameCtx parser.INameContext, ifExis
 // TODO: EnterDropindexstmt - Need to find correct ANTLR context name
 //
 //	func (l *pgCatalogListener) EnterDropindexstmt(ctx *parser.DropIndexContext) {
-//		if !isTopLevel(ctx.GetParent()) || l.err != nil {
+//		if !isTopLevel(ctx.GetParent()) || l.advice != nil {
 //			return
 //		}
 //
@@ -1143,7 +1424,7 @@ func (l *pgCatalogListener) dropSchema(schemaNameCtx parser.INameContext, ifExis
 // TODO: EnterDropschemastatement - Need to find correct ANTLR context name
 //
 //	func (l *pgCatalogListener) EnterDropschemastatement(ctx *parser.DropschemaContext) {
-//		if !isTopLevel(ctx.GetParent()) || l.err != nil {
+//		if !isTopLevel(ctx.GetParent()) || l.advice != nil {
 //			return
 //		}
 //
@@ -1162,7 +1443,7 @@ func (l *pgCatalogListener) dropSchema(schemaNameCtx parser.INameContext, ifExis
 // ========================================
 // EnterRenamestmt handles RENAME INDEX/CONSTRAINT/TABLE/COLUMN statements.
 func (l *pgCatalogListener) EnterRenamestmt(ctx *parser.RenamestmtContext) {
-	if !isTopLevel(ctx.GetParent()) || l.err != nil {
+	if !isTopLevel(ctx.GetParent()) || l.advice != nil {
 		return
 	}
 	l.currentLine = ctx.GetStart().GetLine()
@@ -1173,9 +1454,9 @@ func (l *pgCatalogListener) EnterRenamestmt(ctx *parser.RenamestmtContext) {
 			indexName := extractTableName(ctx.Qualified_name())
 			schemaName := extractSchemaName(ctx.Qualified_name())
 			newName := pgparser.NormalizePostgreSQLName(ctx.AllName()[0])
-			schema, err := getOrCreatePublicSchema(l.databaseState, schemaName)
+			schema, err := getOrCreatePublicSchema(l.databaseState, schemaName, l.currentLine)
 			if err != nil {
-				l.setError(err)
+				l.advice = err
 				return
 			}
 			// Find the index across all tables
@@ -1184,8 +1465,8 @@ func (l *pgCatalogListener) EnterRenamestmt(ctx *parser.RenamestmtContext) {
 				// Index not found, silently ignore (PostgreSQL behavior)
 				return
 			}
-			if err := l.renameConstraint(schema, foundTable, indexName, newName); err != nil {
-				l.setError(err)
+			if err := l.renameConstraint(schema, foundTable, indexName, newName, l.currentLine); err != nil {
+				l.advice = err
 			}
 		}
 		return
@@ -1197,15 +1478,21 @@ func (l *pgCatalogListener) EnterRenamestmt(ctx *parser.RenamestmtContext) {
 		viewName := extractTableName(ctx.Qualified_name())
 		schemaName := extractSchemaName(ctx.Qualified_name())
 		newName := pgparser.NormalizePostgreSQLName(ctx.AllName()[0])
-		schema, err := getOrCreatePublicSchema(l.databaseState, schemaName)
+		schema, err := getOrCreatePublicSchema(l.databaseState, schemaName, l.currentLine)
 		if err != nil {
-			l.setError(err)
+			l.advice = err
 			return
 		}
 		// Check if it's a view
 		if schema.GetView(viewName) != nil {
 			if err := schema.RenameView(viewName, newName); err != nil {
-				l.setError(&catalogutil.WalkThroughError{Code: code.ViewNotExists, Content: err.Error()})
+				l.advice = &storepb.Advice{
+					Status:        storepb.Advice_ERROR,
+					Code:          code.ViewNotExists.Int32(),
+					Title:         err.Error(),
+					Content:       err.Error(),
+					StartPosition: &storepb.Position{Line: int32(l.currentLine)},
+				}
 			}
 			return
 		}
@@ -1216,9 +1503,9 @@ func (l *pgCatalogListener) EnterRenamestmt(ctx *parser.RenamestmtContext) {
 		tableName = extractTableName(ctx.Relation_expr().Qualified_name())
 		schemaName = extractSchemaName(ctx.Relation_expr().Qualified_name())
 	}
-	schema, err := getOrCreatePublicSchema(l.databaseState, schemaName)
+	schema, err := getOrCreatePublicSchema(l.databaseState, schemaName, l.currentLine)
 	if err != nil {
-		l.setError(err)
+		l.advice = err
 		return
 	}
 	// Check if this is column rename
@@ -1231,11 +1518,17 @@ func (l *pgCatalogListener) EnterRenamestmt(ctx *parser.RenamestmtContext) {
 			newName := pgparser.NormalizePostgreSQLName(allNames[1])
 			table := schema.GetTable(tableName)
 			if table == nil {
-				l.setError(catalogutil.NewTableNotExistsError(tableName))
+				l.advice = &storepb.Advice{
+					Status:        storepb.Advice_ERROR,
+					Code:          code.TableNotExists.Int32(),
+					Title:         fmt.Sprintf("Table `%s` does not exist", tableName),
+					Content:       fmt.Sprintf("Table `%s` does not exist", tableName),
+					StartPosition: &storepb.Position{Line: int32(l.currentLine)},
+				}
 				return
 			}
-			if err := l.renameColumn(table, oldName, newName); err != nil {
-				l.setError(err)
+			if err := l.renameColumn(table, oldName, newName, l.currentLine); err != nil {
+				l.advice = err
 			}
 		}
 		return
@@ -1249,11 +1542,17 @@ func (l *pgCatalogListener) EnterRenamestmt(ctx *parser.RenamestmtContext) {
 			newName := pgparser.NormalizePostgreSQLName(allNames[1])
 			table := schema.GetTable(tableName)
 			if table == nil {
-				l.setError(catalogutil.NewTableNotExistsError(tableName))
+				l.advice = &storepb.Advice{
+					Status:        storepb.Advice_ERROR,
+					Code:          code.TableNotExists.Int32(),
+					Title:         fmt.Sprintf("Table `%s` does not exist", tableName),
+					Content:       fmt.Sprintf("Table `%s` does not exist", tableName),
+					StartPosition: &storepb.Position{Line: int32(l.currentLine)},
+				}
 				return
 			}
-			if err := l.renameConstraint(schema, table, oldName, newName); err != nil {
-				l.setError(err)
+			if err := l.renameConstraint(schema, table, oldName, newName, l.currentLine); err != nil {
+				l.advice = err
 			}
 		}
 		return
@@ -1263,11 +1562,17 @@ func (l *pgCatalogListener) EnterRenamestmt(ctx *parser.RenamestmtContext) {
 		newName := pgparser.NormalizePostgreSQLName(ctx.AllName()[0])
 		table := schema.GetTable(tableName)
 		if table == nil {
-			l.setError(catalogutil.NewTableNotExistsError(tableName))
+			l.advice = &storepb.Advice{
+				Status:        storepb.Advice_ERROR,
+				Code:          code.TableNotExists.Int32(),
+				Title:         fmt.Sprintf("Table `%s` does not exist", tableName),
+				Content:       fmt.Sprintf("Table `%s` does not exist", tableName),
+				StartPosition: &storepb.Position{Line: int32(l.currentLine)},
+			}
 			return
 		}
-		if err := l.pgRenameTable(schema, table, newName); err != nil {
-			l.setError(err)
+		if err := l.pgRenameTable(schema, table, newName, l.currentLine); err != nil {
+			l.advice = err
 		}
 		return
 	}
@@ -1278,7 +1583,7 @@ func (l *pgCatalogListener) EnterRenamestmt(ctx *parser.RenamestmtContext) {
 // ========================================
 // EnterViewstmt handles CREATE VIEW statements.
 func (l *pgCatalogListener) EnterViewstmt(ctx *parser.ViewstmtContext) {
-	if !isTopLevel(ctx.GetParent()) || l.err != nil {
+	if !isTopLevel(ctx.GetParent()) || l.advice != nil {
 		return
 	}
 	l.currentLine = ctx.GetStart().GetLine()
@@ -1291,15 +1596,18 @@ func (l *pgCatalogListener) EnterViewstmt(ctx *parser.ViewstmtContext) {
 	databaseName := extractDatabaseName(ctx.Qualified_name())
 	// Check if accessing other database
 	if databaseName != "" && l.databaseState.DatabaseName() != databaseName {
-		l.setError(&catalogutil.WalkThroughError{
-			Code:    code.NotCurrentDatabase,
-			Content: fmt.Sprintf("Database %q is not the current database %q", databaseName, l.databaseState.DatabaseName()),
-		})
+		l.advice = &storepb.Advice{
+			Status:        storepb.Advice_WARNING,
+			Code:          code.NotCurrentDatabase.Int32(),
+			Title:         fmt.Sprintf("Database %q is not the current database %q", databaseName, l.databaseState.DatabaseName()),
+			Content:       fmt.Sprintf("Database %q is not the current database %q", databaseName, l.databaseState.DatabaseName()),
+			StartPosition: &storepb.Position{Line: int32(l.currentLine)},
+		}
 		return
 	}
-	schema, err := getOrCreatePublicSchema(l.databaseState, schemaName)
+	schema, err := getOrCreatePublicSchema(l.databaseState, schemaName, l.currentLine)
 	if err != nil {
-		l.setError(err)
+		l.advice = err
 		return
 	}
 	// Check if view already exists - silently ignore duplicates
@@ -1317,7 +1625,13 @@ func (l *pgCatalogListener) EnterViewstmt(ctx *parser.ViewstmtContext) {
 	// Create the view
 	_, createErr := schema.CreateView(viewName, definition, nil)
 	if createErr != nil {
-		l.setError(&catalogutil.WalkThroughError{Code: code.ViewExists, Content: createErr.Error()})
+		l.advice = &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.ViewExists.Int32(),
+			Title:         createErr.Error(),
+			Content:       createErr.Error(),
+			StartPosition: &storepb.Position{Line: int32(l.currentLine)},
+		}
 	}
 }
 
@@ -1480,7 +1794,7 @@ func pgGeneratePrimaryKeyName(schema *model.SchemaMetadata, tableName string) st
 
 // getOrCreatePublicSchema gets a schema by name, or creates the "public" schema if it doesn't exist.
 // For PostgreSQL, the "public" schema is auto-created, but other schemas must exist.
-func getOrCreatePublicSchema(d *model.DatabaseMetadata, schemaName string) (*model.SchemaMetadata, *catalogutil.WalkThroughError) {
+func getOrCreatePublicSchema(d *model.DatabaseMetadata, schemaName string, line int) (*model.SchemaMetadata, *storepb.Advice) {
 	if schemaName == "" {
 		schemaName = PublicSchemaName
 	}
@@ -1490,9 +1804,12 @@ func getOrCreatePublicSchema(d *model.DatabaseMetadata, schemaName string) (*mod
 	}
 	// Only auto-create the "public" schema
 	if schemaName != PublicSchemaName {
-		return nil, &catalogutil.WalkThroughError{
-			Code:    code.SchemaNotExists,
-			Content: fmt.Sprintf("The schema %q doesn't exist", schemaName),
+		return nil, &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.SchemaNotExists.Int32(),
+			Title:         fmt.Sprintf("The schema %q doesn't exist", schemaName),
+			Content:       fmt.Sprintf("The schema %q doesn't exist", schemaName),
+			StartPosition: &storepb.Position{Line: int32(line)},
 		}
 	}
 	return d.CreateSchema(PublicSchemaName), nil
@@ -1500,21 +1817,27 @@ func getOrCreatePublicSchema(d *model.DatabaseMetadata, schemaName string) (*mod
 
 // getIndexFromSchema finds an index by name within a schema and returns the table and index.
 // For PostgreSQL, index names are unique within a schema (not just within a table).
-func getIndexFromSchema(s *model.SchemaMetadata, indexName string) (*model.TableMetadata, *model.IndexMetadata, *catalogutil.WalkThroughError) {
+func getIndexFromSchema(s *model.SchemaMetadata, indexName string) (*model.TableMetadata, *model.IndexMetadata, *storepb.Advice) {
 	// For PostgreSQL, index names are unique within a schema
 	index := s.GetIndex(indexName)
 	if index == nil {
-		return nil, nil, &catalogutil.WalkThroughError{
-			Code:    code.IndexNotExists,
-			Content: fmt.Sprintf("Index %q does not exist in schema %q", indexName, s.GetProto().Name),
+		return nil, nil, &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.IndexNotExists.Int32(),
+			Title:         fmt.Sprintf("Index %q does not exist in schema %q", indexName, s.GetProto().Name),
+			Content:       fmt.Sprintf("Index %q does not exist in schema %q", indexName, s.GetProto().Name),
+			StartPosition: &storepb.Position{Line: 0},
 		}
 	}
 	// Find the table that owns this index
 	table := s.GetTable(index.GetTableProto().Name)
 	if table == nil {
-		return nil, nil, &catalogutil.WalkThroughError{
-			Code:    code.TableNotExists,
-			Content: fmt.Sprintf("Table %q does not exist in schema %q", index.GetTableProto().Name, s.GetProto().Name),
+		return nil, nil, &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.TableNotExists.Int32(),
+			Title:         fmt.Sprintf("Table %q does not exist in schema %q", index.GetTableProto().Name, s.GetProto().Name),
+			Content:       fmt.Sprintf("Table %q does not exist in schema %q", index.GetTableProto().Name, s.GetProto().Name),
+			StartPosition: &storepb.Position{Line: 0},
 		}
 	}
 	return table, index, nil
@@ -1522,5 +1845,5 @@ func getIndexFromSchema(s *model.SchemaMetadata, indexName string) (*model.Table
 
 // isCurrentDatabase returns true if the given database is the current database.
 func isCurrentDatabase(d *model.DatabaseMetadata, database string) bool {
-	return catalogutil.CompareIdentifier(d.DatabaseName(), database, !d.GetIsObjectCaseSensitive())
+	return d.DatabaseName() == database
 }
