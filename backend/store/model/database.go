@@ -49,7 +49,7 @@ func NewDatabaseMetadata(
 		isDetailCaseSensitive: isDetailCaseSensitive,
 		name:                  metadata.Name,
 		owner:                 metadata.Owner,
-		searchPath:            normalizeSearchPathSlice(metadata.SearchPath),
+		searchPath:            normalizeSearchPath(metadata.SearchPath),
 		internal:              make(map[string]*SchemaMetadata),
 		linkedDatabase:        make(map[string]*LinkedDatabaseMetadata),
 		configInternal:        make(map[string]*SchemaConfig),
@@ -485,23 +485,6 @@ func (t *TableConfig) GetColumnConfig(name string) *storepb.ColumnCatalog {
 	return &storepb.ColumnCatalog{
 		Name: name,
 	}
-}
-
-// normalizeSearchPathSlice normalizes the search path from a string to a slice.
-func normalizeSearchPathSlice(searchPath string) []string {
-	if searchPath == "" {
-		return []string{}
-	}
-	// Split by comma and remove empty strings and "$user"
-	parts := strings.Split(searchPath, ",")
-	var result []string
-	for _, path := range parts {
-		trimmed := strings.TrimSpace(path)
-		if trimmed != "" && trimmed != "$user" {
-			result = append(result, trimmed)
-		}
-	}
-	return result
 }
 
 // LinkedDatabaseMetadata is the metadata for a linked database.

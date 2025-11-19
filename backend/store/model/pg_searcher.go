@@ -303,3 +303,59 @@ func (d *DatabaseMetadata) SearchObject(searchPath []string, name string) (strin
 	}
 	return "", ""
 }
+
+// normalizeSearchPath normalizes the search path string into a slice of strings.
+// NOTE: This is primarily designed for PostgreSQL's search_path concept.
+func normalizeSearchPath(searchPath string) []string {
+	if searchPath == "" {
+		return []string{}
+	}
+
+	// Split the search path by comma and trim spaces.
+	parts := strings.Split(searchPath, ",")
+	for i, part := range parts {
+		parts[i] = strings.TrimSpace(part)
+	}
+
+	// Remove empty parts.
+	var result []string
+	for _, part := range parts {
+		schema := strings.TrimSpace(part)
+		if part == "\"$user\"" {
+			continue
+		}
+		if strings.HasPrefix(part, "\"") && strings.HasSuffix(part, "\"") {
+			// Remove the quotes from the schema name.
+			schema = strings.Trim(schema, "\"")
+		} else if strings.HasPrefix(part, "'") && strings.HasSuffix(part, "'") {
+			// Remove the single quotes from the schema name.
+			schema = strings.Trim(schema, "'")
+		} else {
+			// For non-quoted schema names, we just return the lower string for PostgreSQL.
+			schema = strings.ToLower(schema)
+		}
+		schema = strings.TrimSpace(schema)
+		if isSystemPath(schema) {
+			// Skip system schemas.
+			continue
+		}
+		if schema != "" {
+			result = append(result, schema)
+		}
+	}
+
+	return result
+}
+
+// isSystemPath checks if a path is a PostgreSQL system schema.
+// NOTE: This is primarily designed for PostgreSQL.
+func isSystemPath(path string) bool {
+	// PostgreSQL system schemas.
+	systemSchemas := []string{"pg_catalog", "information_schema", "pg_toast", "pg_temp_1", "pg_temp_2", "pg_global", "$user"}
+	for _, schema := range systemSchemas {
+		if strings.EqualFold(path, schema) {
+			return true
+		}
+	}
+	return false
+}
