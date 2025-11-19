@@ -34,9 +34,31 @@ func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement
 		return "", errors.Errorf("no original SQL")
 	}
 
-	tree, err := ParsePostgreSQL(statement)
+	parseResults, err := ParsePostgreSQL(statement)
 	if err != nil {
 		return "", err
+	}
+
+	// Find the parse result that contains the statement at the backup position
+	var targetResult *ParseResult
+	for _, parseResult := range parseResults {
+		// Walk the tree to find if this parse result contains the target statement
+		finder := &statementAtPositionFinder{
+			startPos: backupItem.StartPosition,
+			endPos:   backupItem.EndPosition,
+			baseLine: parseResult.BaseLine,
+		}
+		antlr.ParseTreeWalkerDefault.Walk(finder, parseResult.Tree)
+		if finder.found {
+			targetResult = parseResult
+			break
+		}
+	}
+
+	if targetResult == nil {
+		return "", errors.Errorf("could not find statement at position (line %d:%d - %d:%d)",
+			backupItem.StartPosition.Line, backupItem.StartPosition.Column,
+			backupItem.EndPosition.Line, backupItem.EndPosition.Column)
 	}
 
 	sqlForComment, truncated := common.TruncateString(originalSQL, maxCommentLength)
@@ -49,7 +71,7 @@ func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement
 		return "", errors.Wrap(err, "failed to get prepend statements")
 	}
 
-	return doGenerate(ctx, rCtx, sqlForComment, tree, backupItem, prependStatements)
+	return doGenerate(ctx, rCtx, sqlForComment, targetResult, backupItem, prependStatements)
 }
 
 func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment string, tree *ParseResult, backupItem *storepb.PriorBackupDetail_Item, prependStatements string) (string, error) {
@@ -223,7 +245,7 @@ func extractSingleSQL(statement string, backupItem *storepb.PriorBackupDetail_It
 		return "", errors.Errorf("backup item is nil")
 	}
 
-	tree, err := ParsePostgreSQL(statement)
+	parseResults, err := ParsePostgreSQL(statement)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to parse statement")
 	}
@@ -232,7 +254,13 @@ func extractSingleSQL(statement string, backupItem *storepb.PriorBackupDetail_It
 		startPos: backupItem.StartPosition,
 		endPos:   backupItem.EndPosition,
 	}
-	antlr.ParseTreeWalkerDefault.Walk(l, tree.Tree)
+
+	// Walk all parse results to find statements within the specified position range
+	for _, parseResult := range parseResults {
+		l.baseLine = parseResult.BaseLine
+		antlr.ParseTreeWalkerDefault.Walk(l, parseResult.Tree)
+	}
+
 	return strings.Join(l.originalSQL, ";\n"), nil
 }
 
@@ -242,15 +270,16 @@ type originalSQLExtractor struct {
 	originalSQL []string
 	startPos    *storepb.Position
 	endPos      *storepb.Position
+	baseLine    int
 }
 
 func (l *originalSQLExtractor) EnterUpdatestmt(ctx *parser.UpdatestmtContext) {
 	if isTopLevel(ctx.GetParent()) {
 		if inRange(&storepb.Position{
-			Line:   int32(ctx.GetStart().GetLine()),
+			Line:   int32(ctx.GetStart().GetLine()) + int32(l.baseLine),
 			Column: int32(ctx.GetStart().GetColumn()),
 		}, &storepb.Position{
-			Line:   int32(ctx.GetStop().GetLine()),
+			Line:   int32(ctx.GetStop().GetLine()) + int32(l.baseLine),
 			Column: int32(ctx.GetStop().GetColumn()),
 		}, l.startPos, l.endPos) {
 			l.originalSQL = append(l.originalSQL, ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx))
@@ -261,10 +290,10 @@ func (l *originalSQLExtractor) EnterUpdatestmt(ctx *parser.UpdatestmtContext) {
 func (l *originalSQLExtractor) EnterDeletestmt(ctx *parser.DeletestmtContext) {
 	if isTopLevel(ctx.GetParent()) {
 		if inRange(&storepb.Position{
-			Line:   int32(ctx.GetStart().GetLine()),
+			Line:   int32(ctx.GetStart().GetLine()) + int32(l.baseLine),
 			Column: int32(ctx.GetStart().GetColumn()),
 		}, &storepb.Position{
-			Line:   int32(ctx.GetStop().GetLine()),
+			Line:   int32(ctx.GetStop().GetLine()) + int32(l.baseLine),
 			Column: int32(ctx.GetStop().GetColumn()),
 		}, l.startPos, l.endPos) {
 			l.originalSQL = append(l.originalSQL, ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx))
@@ -284,14 +313,20 @@ func inRange(start, end, targetStart, targetEnd *storepb.Position) bool {
 
 func getPrependStatements(statement string) (string, error) {
 	// Parse with ANTLR
-	parseResult, err := ParsePostgreSQL(statement)
+	parseResults, err := ParsePostgreSQL(statement)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to parse statement")
 	}
 
-	// Create listener to find SET role statements
+	// Create listener to find SET role statements across all parsed statements
 	listener := &setRoleListener{}
-	antlr.ParseTreeWalkerDefault.Walk(listener, parseResult.Tree)
+	for _, parseResult := range parseResults {
+		antlr.ParseTreeWalkerDefault.Walk(listener, parseResult.Tree)
+		// If we found a SET role statement, return it immediately
+		if listener.setRoleText != "" {
+			break
+		}
+	}
 
 	return listener.setRoleText, nil
 }
@@ -326,5 +361,38 @@ func (l *setRoleListener) EnterVariablesetstmt(ctx *parser.VariablesetstmtContex
 				}
 			}
 		}
+	}
+}
+
+// statementAtPositionFinder finds if a parse tree contains a statement at the given position.
+type statementAtPositionFinder struct {
+	*parser.BasePostgreSQLParserListener
+	startPos *storepb.Position
+	endPos   *storepb.Position
+	baseLine int
+	found    bool
+}
+
+func (f *statementAtPositionFinder) EnterUpdatestmt(ctx *parser.UpdatestmtContext) {
+	if isTopLevel(ctx.GetParent()) && inRange(&storepb.Position{
+		Line:   int32(ctx.GetStart().GetLine()) + int32(f.baseLine),
+		Column: int32(ctx.GetStart().GetColumn()),
+	}, &storepb.Position{
+		Line:   int32(ctx.GetStop().GetLine()) + int32(f.baseLine),
+		Column: int32(ctx.GetStop().GetColumn()),
+	}, f.startPos, f.endPos) {
+		f.found = true
+	}
+}
+
+func (f *statementAtPositionFinder) EnterDeletestmt(ctx *parser.DeletestmtContext) {
+	if isTopLevel(ctx.GetParent()) && inRange(&storepb.Position{
+		Line:   int32(ctx.GetStart().GetLine()) + int32(f.baseLine),
+		Column: int32(ctx.GetStart().GetColumn()),
+	}, &storepb.Position{
+		Line:   int32(ctx.GetStop().GetLine()) + int32(f.baseLine),
+		Column: int32(ctx.GetStop().GetColumn()),
+	}, f.startPos, f.endPos) {
+		f.found = true
 	}
 }
