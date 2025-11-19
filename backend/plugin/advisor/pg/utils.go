@@ -30,20 +30,21 @@ func isTopLevel(ctx antlr.Tree) bool {
 	}
 }
 
-// getANTLRTree extracts the ANTLR parse tree from the advisor context.
+// getANTLRTree extracts the ANTLR parse trees from the advisor context.
 // The AST must be pre-parsed and passed via checkCtx.AST (e.g., in tests or by the framework).
 // This enforces proper AST caching and makes any missing cache obvious.
-func getANTLRTree(checkCtx advisor.Context) (*pg.ParseResult, error) {
+// Returns all parse results for multi-statement SQL review.
+func getANTLRTree(checkCtx advisor.Context) ([]*pg.ParseResult, error) {
 	if checkCtx.AST == nil {
 		return nil, errors.New("AST is not provided in context - must be parsed before calling advisor")
 	}
 
-	parseResult, ok := checkCtx.AST.(*pg.ParseResult)
+	parseResults, ok := checkCtx.AST.([]*pg.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("AST type mismatch: expected *pg.ParseResult, got %T", checkCtx.AST)
+		return nil, errors.Errorf("AST type mismatch: expected []*pg.ParseResult, got %T", checkCtx.AST)
 	}
 
-	return parseResult, nil
+	return parseResults, nil
 }
 
 // extractTableName extracts the table name (last component) from a qualified name.

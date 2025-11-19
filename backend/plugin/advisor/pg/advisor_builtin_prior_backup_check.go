@@ -49,7 +49,7 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor
 	var adviceList []*storepb.Advice
 
 	// Check for DDL statements in DML context
-	tree, err := getANTLRTree(checkCtx)
+	parseResults, err := getANTLRTree(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -59,10 +59,16 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor
 			level: level,
 			title: title,
 		},
-		tokens: tree.Tokens,
 	}
 	checker := NewGenericChecker([]Rule{ddlRule})
-	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
+
+	for _, parseResult := range parseResults {
+		ddlRule.SetBaseLine(parseResult.BaseLine)
+		checker.SetBaseLine(parseResult.BaseLine)
+		ddlRule.tokens = parseResult.Tokens
+		antlr.ParseTreeWalkerDefault.Walk(checker, parseResult.Tree)
+	}
+
 	adviceList = append(adviceList, checker.GetAdviceList()...)
 
 	// Check if backup schema exists

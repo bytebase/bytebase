@@ -26,7 +26,7 @@
     - status: 2
       code: 227
       title: statement.disallow-mix-in-ddl
-      content: Alter schema can only run DDL, "DELETE FROM tech_book WHERE a > 1;" is not DDL
+      content: Alter schema can only run DDL, "ALTER TABLE tech_book ADD COLUMN author TEXT;" is not DDL
       startposition:
         line: 1
         column: 0
@@ -34,7 +34,7 @@
     - status: 2
       code: 227
       title: statement.disallow-mix-in-ddl
-      content: Alter schema can only run DDL, "UPDATE tech_book SET id = 1;" is not DDL
+      content: Alter schema can only run DDL, "LTER TABLE tech_book ADD COLUMN author TEXT;" is not DDL
       startposition:
         line: 1
         column: 0

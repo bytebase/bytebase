@@ -12,6 +12,7 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: ALTER TABLE "tech_book" DROP CONSTRAINT "old_pk"
   changeType: 1
   want:
@@ -22,6 +23,7 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: ALTER TABLE "tech_book" DROP CONSTRAINT "old_index"
   changeType: 1
 - statement: ALTER TABLE "tech_book" DROP CONSTRAINT IF EXISTS constraint_not_in_catalog
@@ -36,6 +38,7 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: |-
     ALTER TABLE tech_book ADD COLUMN column_not_in_pk int;
     ALTER TABLE "tech_book" DROP COLUMN column_not_in_pk;
@@ -56,6 +59,7 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE product(id INT, name TEXT);
     ALTER TABLE product ADD PRIMARY KEY (id);
@@ -65,7 +69,8 @@
     - status: 2
       code: 601
       title: table.require-pk
-      content: 'Table "public"."product" requires PRIMARY KEY, related statement: "ALTER TABLE product DROP CONSTRAINT product_pkey;"'
+      content: 'Table "public"."product" requires PRIMARY KEY, related statement: "ALTER TABLE product ADD PRIMARY KEY (id);"'
       startposition:
         line: 3
         column: 0
+      endposition: null
