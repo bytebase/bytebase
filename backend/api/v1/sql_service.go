@@ -1334,7 +1334,7 @@ func BuildGetLinkedDatabaseMetadataFunc(storeInstance *store.Store, engine store
 		if err != nil {
 			return "", "", nil, err
 		}
-		var linkedMeta *model.LinkedDatabaseMetadata
+		var linkedMeta *storepb.LinkedDatabaseMetadata
 		for _, database := range databases {
 			meta, err := storeInstance.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 				InstanceID:   database.InstanceID,
