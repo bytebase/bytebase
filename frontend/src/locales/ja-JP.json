@@ -645,7 +645,11 @@
             "self": "最大クエリ時間",
             "description": "SQL エディターでクエリを実行するために許可される最大時間。"
           },
-          "seconds": "秒"
+          "seconds": "秒",
+          "project-scope": "プロジェクト",
+          "workspace-scope": "ワークスペース",
+          "environment-scope": "環境",
+          "tooltip": "{scope} レベルでも設定可能です。Bytebase は最も厳格な値を適用します。"
         },
         "domain-restriction": {
           "self": "ワークスペースドメイン",
@@ -2426,7 +2430,8 @@
       "name": "レベル",
       "error": "エラー",
       "warning": "警告"
-    }
+    },
+    "tooltip-for-resource": "{scope} レベルでも設定可能です。Bytebase は環境レベルの設定を優先します。"
   },
   "audit-log": {
     "export-finished": "エクスポートが完了しました",

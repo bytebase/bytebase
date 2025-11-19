@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"regexp"
 	"strings"
 	"time"
@@ -120,16 +121,34 @@ func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStrea
 			}
 		}
 
-		queryRestriction := getMaximumSQLResultLimit(ctx, s.store, s.licenseService, 0)
+		queryRestriction := getEffectiveQueryDataPolicy(
+			ctx,
+			s.store,
+			s.licenseService,
+			request.Limit,
+			database.ProjectID,
+		)
 		queryContext := db.QueryContext{
 			OperatorEmail:        user.Email,
 			Container:            request.GetContainer(),
 			MaximumSQLResultSize: queryRestriction.MaximumResultSize,
+			Limit:                int(queryRestriction.MaximumResultRows),
 		}
 		if request.Schema != nil {
 			queryContext.Schema = *request.Schema
 		}
-		result, duration, queryErr := executeWithTimeout(ctx, s.store, s.licenseService, driver, conn, request.Statement, queryContext)
+		if queryRestriction.MaxQueryTimeoutInSeconds > 0 {
+			queryContext.Timeout = &durationpb.Duration{Seconds: queryRestriction.MaxQueryTimeoutInSeconds}
+		}
+
+		result, duration, queryErr := executeWithTimeout(
+			ctx,
+			s.store,
+			driver,
+			conn,
+			request.Statement,
+			queryContext,
+		)
 
 		s.createQueryHistory(database, store.QueryHistoryTypeQuery, request.Statement, user.ID, duration, queryErr)
 		response := &v1pb.AdminExecuteResponse{}
@@ -196,7 +215,13 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 	}
 
 	startTime := time.Now()
-	queryRestriction := getMaximumSQLResultLimit(ctx, s.store, s.licenseService, request.Limit)
+	queryRestriction := getEffectiveQueryDataPolicy(
+		ctx,
+		s.store,
+		s.licenseService,
+		request.Limit,
+		database.ProjectID,
+	)
 	queryContext := db.QueryContext{
 		Explain:              request.Explain,
 		Limit:                int(queryRestriction.MaximumResultRows),
@@ -208,6 +233,10 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 	if request.Schema != nil {
 		queryContext.Schema = *request.Schema
 	}
+	if queryRestriction.MaxQueryTimeoutInSeconds > 0 {
+		queryContext.Timeout = &durationpb.Duration{Seconds: queryRestriction.MaxQueryTimeoutInSeconds}
+	}
+
 	results, _, duration, queryErr := queryRetryStopOnError(
 		ctx,
 		s.store,
@@ -279,26 +308,27 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 	return connect.NewResponse(response), nil
 }
 
-func getMaximumSQLResultLimit(
+func getEffectiveQueryDataPolicy(
 	ctx context.Context,
 	stores *store.Store,
 	licenseService *enterprise.LicenseService,
 	limit int32,
-) *storepb.QueryDataPolicy {
-	value := &storepb.QueryDataPolicy{
+	projectID string,
+) *store.EffectiveQueryDataPolicy {
+	value := &store.EffectiveQueryDataPolicy{
 		MaximumResultSize: common.DefaultMaximumSQLResultSize,
-		MaximumResultRows: -1,
+		MaximumResultRows: math.MaxInt32,
 	}
 	if err := licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_QUERY_POLICY); err == nil {
-		policy, err := stores.GetQueryDataPolicy(ctx)
+		policy, err := stores.GetEffectiveQueryDataPolicy(ctx, common.FormatProject(projectID))
 		if err != nil {
 			slog.Error("failed to get the query data policy", log.BBError(err))
 			return value
 		}
 		value = policy
 	}
-	if limit > 0 && (value.GetMaximumResultRows() < 0 || limit < value.GetMaximumResultRows()) {
-		value.MaximumResultRows = limit
+	if limit > 0 {
+		value.MaximumResultRows = min(limit, value.MaximumResultRows)
 	}
 	return value
 }
@@ -486,7 +516,14 @@ func queryRetry(
 	}
 
 	slog.Debug("start execute with timeout", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName), slog.String("statement", statement))
-	results, duration, queryErr := executeWithTimeout(ctx, stores, licenseService, driver, conn, statement, queryContext)
+	results, duration, queryErr := executeWithTimeout(
+		ctx,
+		stores,
+		driver,
+		conn,
+		statement,
+		queryContext,
+	)
 	if queryErr != nil {
 		return nil, nil, duration, queryErr
 	}
@@ -748,25 +785,26 @@ func queryRetryStopOnError(
 	return allResults, allSpans, totalDuration, nil
 }
 
-func executeWithTimeout(ctx context.Context, stores *store.Store, licenseService *enterprise.LicenseService, driver db.Driver, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, time.Duration, error) {
+func executeWithTimeout(
+	ctx context.Context,
+	stores *store.Store,
+	driver db.Driver,
+	conn *sql.Conn,
+	statement string,
+	queryContext db.QueryContext,
+) ([]*v1pb.QueryResult, time.Duration, error) {
 	queryCtx := ctx
 	var timeout time.Duration
 	// For access control feature, we will use the timeout from request and query data policy.
 	// Otherwise, no timeout will be applied.
-	if licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_QUERY_POLICY) == nil {
-		queryDataPolicy, err := stores.GetQueryDataPolicy(ctx)
-		if err != nil {
-			return nil, time.Duration(0), errors.Wrap(err, "failed to get query data policy")
-		}
-		// Override the timeout if the query data policy has a smaller timeout.
-		if queryDataPolicy.Timeout.GetSeconds() > 0 || queryDataPolicy.Timeout.GetNanos() > 0 {
-			timeout = queryDataPolicy.Timeout.AsDuration()
-			slog.Debug("create query context with timeout", slog.Duration("timeout", timeout))
-			newCtx, cancelCtx := context.WithTimeout(ctx, timeout)
-			defer cancelCtx()
-			queryCtx = newCtx
-		}
+	if queryContext.Timeout != nil {
+		timeout = queryContext.Timeout.AsDuration()
+		slog.Debug("create query context with timeout", slog.Duration("timeout", timeout))
+		newCtx, cancelCtx := context.WithTimeout(ctx, timeout)
+		defer cancelCtx()
+		queryCtx = newCtx
 	}
+
 	start := time.Now()
 	result, err := driver.QueryConn(queryCtx, conn, statement, queryContext)
 	select {
@@ -792,19 +830,22 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 		return connect.NewResponse(response), nil
 	}
 
-	// Check if data export is allowed.
-	queryDataPolicy, err := s.store.GetQueryDataPolicy(ctx)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get data export policy: %v", err))
-	}
-	if queryDataPolicy.DisableExport {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("data export is not allowed"))
-	}
-
 	// Prepare related message.
 	user, instance, database, err := s.prepareRelatedMessage(ctx, request.Name)
 	if err != nil {
 		return nil, err
+	}
+
+	// Check if data export is allowed.
+	queryDataPolicy := getEffectiveQueryDataPolicy(
+		ctx,
+		s.store,
+		s.licenseService,
+		request.Limit,
+		database.ProjectID,
+	)
+	if queryDataPolicy.DisableExport {
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("data export is not allowed"))
 	}
 
 	statement := request.Statement
@@ -970,11 +1011,20 @@ func DoExport(
 		}
 		defer conn.Close()
 	}
-	queryRestriction := getMaximumSQLResultLimit(ctx, stores, licenseService, request.Limit)
+	queryRestriction := getEffectiveQueryDataPolicy(
+		ctx,
+		stores,
+		licenseService,
+		request.Limit,
+		database.ProjectID,
+	)
 	queryContext := db.QueryContext{
 		Limit:                int(queryRestriction.MaximumResultRows),
 		OperatorEmail:        user.Email,
 		MaximumSQLResultSize: queryRestriction.MaximumResultSize,
+	}
+	if queryRestriction.MaxQueryTimeoutInSeconds > 0 {
+		queryContext.Timeout = &durationpb.Duration{Seconds: queryRestriction.MaxQueryTimeoutInSeconds}
 	}
 	if request.Schema != nil {
 		queryContext.Schema = *request.Schema

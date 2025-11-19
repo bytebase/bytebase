@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -124,6 +125,7 @@ type QueryContext struct {
 	Option        *v1pb.QueryOption
 	// The maximum number of bytes for sql results in response body.
 	MaximumSQLResultSize int64
+	Timeout              *durationpb.Duration
 }
 
 // Driver is the interface for database driver.

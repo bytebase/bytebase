@@ -36,6 +36,7 @@
       :tooltip="$t('sql-editor.batch-export.tooltip', { max: MAX_EXPORT })"
       :validate="validateExport"
       :support-password="true"
+      :maximum-export-count="effectiveQueryDataPolicy.maximumResultRows"
       @export="handleExportBtnClick"
     >
       <template #form>
@@ -120,6 +121,8 @@ import { t } from "@/plugins/i18n";
 import {
   pushNotification,
   useDatabaseV1Store,
+  usePolicyV1Store,
+  useSQLEditorStore,
   useSQLEditorTabStore,
   useSQLStore,
 } from "@/store";
@@ -148,6 +151,12 @@ const { currentTab: tab } = storeToRefs(tabStore);
 const databaseStore = useDatabaseV1Store();
 const sqlStore = useSQLStore();
 const showEmpty = ref<boolean>(true);
+const policyStore = usePolicyV1Store();
+const { project } = storeToRefs(useSQLEditorStore());
+
+const effectiveQueryDataPolicy = computed(() => {
+  return policyStore.getEffectiveQueryDataPolicyForProject(project.value);
+});
 
 const selectedDatabaseNameList = ref<string[]>([]);
 

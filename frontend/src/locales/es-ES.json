@@ -645,7 +645,11 @@
             "self": "Tiempo máximo de consulta",
             "description": "El tiempo máximo permitido para ejecutar una consulta en el Editor SQL."
           },
-          "seconds": "Artículos de segunda clase"
+          "seconds": "Artículos de segunda clase",
+          "project-scope": "proyecto",
+          "workspace-scope": "espacio de trabajo",
+          "environment-scope": "ambiente",
+          "tooltip": "También es configurable a nivel {scope}. Bytebase aplicará el valor más estricto."
         },
         "domain-restriction": {
           "self": "Dominio de espacio de trabajo",
@@ -2426,7 +2430,8 @@
       "name": "Nivel",
       "error": "Error",
       "warning": "Advertencia"
-    }
+    },
+    "tooltip-for-resource": "También es configurable a nivel {scope}. Bytebase dará prioridad a la configuración a nivel de entorno."
   },
   "audit-log": {
     "export-finished": "Exportación finalizada",

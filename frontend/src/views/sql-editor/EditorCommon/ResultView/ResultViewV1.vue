@@ -26,7 +26,8 @@
           :database="database"
           :result="resultSet.results[0]"
           :set-index="0"
-          :show-export="!disableExport"
+          :show-export="!effectiveQueryDataPolicy.disableExport"
+          :maximum-export-count="effectiveQueryDataPolicy.maximumResultRows"
           @export="handleExportBtnClick"
         />
       </template>
@@ -77,11 +78,12 @@
               :database="database"
               :result="result"
               :set-index="i"
-              :show-export="!enableExportData"
+              :show-export="false"
+              :maximum-export-count="effectiveQueryDataPolicy.maximumResultRows"
               @export="handleExportBtnClick"
             />
           </NTabPane>
-          <template v-if="enableExportData" #suffix>
+          <template v-if="!effectiveQueryDataPolicy.disableExport" #suffix>
             <div class="mb-1">
               <DataExportButton
                 size="small"
@@ -94,6 +96,7 @@
                 ]"
                 :view-mode="'DRAWER'"
                 :support-password="true"
+                :maximum-export-count="effectiveQueryDataPolicy.maximumResultRows"
                 @export="
                   ($event) =>
                     handleExportBtnClick({
@@ -170,6 +173,7 @@ import {
   NTabs,
   NTooltip,
 } from "naive-ui";
+import { storeToRefs } from "pinia";
 import { computed, ref, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 import { darkThemeOverrides } from "@/../naive-ui.config";
@@ -197,11 +201,6 @@ import type {
   SQLResultSetV1,
 } from "@/types";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
-import {
-  PolicyType,
-  type QueryDataPolicy,
-  QueryDataPolicySchema,
-} from "@/types/proto-es/v1/org_policy_service_pb";
 import { ExportRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import type { SQLResultViewContext } from "./context";
@@ -241,24 +240,10 @@ const policyStore = usePolicyV1Store();
 const { instance, database: connectedDatabase } =
   useConnectionOfCurrentSQLEditorTab();
 const tabStore = useSQLEditorTabStore();
-const editorStore = useSQLEditorStore();
+const { project } = storeToRefs(useSQLEditorStore());
 
-const getQueryDataPolicyByParent = (parent: string): QueryDataPolicy => {
-  const policy = policyStore.getPolicyByParentAndType({
-    parentPath: parent,
-    policyType: PolicyType.DATA_QUERY,
-  });
-  return policy?.policy?.case === "queryDataPolicy"
-    ? policy.policy.value
-    : create(QueryDataPolicySchema, {});
-};
-
-const disableExport = computed(
-  () => getQueryDataPolicyByParent("").disableExport
-);
-
-const enableExportData = computed(() => {
-  return !disableExport.value;
+const effectiveQueryDataPolicy = computed(() => {
+  return policyStore.getEffectiveQueryDataPolicyForProject(project.value);
 });
 
 const keyword = ref("");
@@ -332,7 +317,10 @@ const disallowCopyingData = computed(() => {
 
   let environment = instance.value.environment;
   if (props.database) {
-    if (getQueryDataPolicyByParent(props.database?.project).disableCopyData) {
+    if (
+      policyStore.getQueryDataPolicyByParent(props.database.project)
+        .disableCopyData
+    ) {
       return true;
     }
     // If the database is provided, use its effective environment.
@@ -341,7 +329,7 @@ const disallowCopyingData = computed(() => {
 
   // Check if the environment has a policy that disables copying data.
   if (environment) {
-    if (getQueryDataPolicyByParent(environment).disableCopyData) {
+    if (policyStore.getQueryDataPolicyByParent(environment).disableCopyData) {
       return true;
     }
   }
@@ -378,7 +366,7 @@ const handleExportBtnClick = async ({
   resolve: (content: DownloadContent[]) => void;
 }) => {
   const admin = tabStore.currentTab?.mode === "ADMIN";
-  const limit = options.limit ?? (admin ? 0 : editorStore.resultRowsLimit);
+  const limit = options.limit;
 
   try {
     const content = await useSQLStore().exportData(

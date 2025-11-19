@@ -645,7 +645,11 @@
             "self": "最大查询时间",
             "description": "SQL 编辑器中允许运行查询的最长时间。"
           },
-          "seconds": "秒"
+          "seconds": "秒",
+          "project-scope": "项目",
+          "workspace-scope": "工作区",
+          "environment-scope": "环境",
+          "tooltip": "也可在 {scope} 级别进行配置。Bytebase 将应用最严格的值。"
         },
         "domain-restriction": {
           "self": "工作空间域名",
@@ -2426,7 +2430,8 @@
       "name": "级别",
       "error": "错误",
       "warning": "警告"
-    }
+    },
+    "tooltip-for-resource": "也可在 {scope} 级别进行配置。Bytebase 将优先考虑环境级别的配置。"
   },
   "audit-log": {
     "export-finished": "导出完成",
