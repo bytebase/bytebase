@@ -22,9 +22,6 @@ func (x *PlanCheckRunConfig) Equal(y *PlanCheckRunConfig) bool {
 	if x.DatabaseName != y.DatabaseName {
 		return false
 	}
-	if p, q := x.DatabaseGroupUid, y.DatabaseGroupUid; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
-		return false
-	}
 	if len(x.GhostFlags) != len(y.GhostFlags) {
 		return false
 	}
