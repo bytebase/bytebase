@@ -64,7 +64,7 @@ func TestRestoreIdentityHandling(t *testing.T) {
 					},
 				},
 			},
-		}, store.Engine_MSSQL, false), nil
+		}, nil, nil, store.Engine_MSSQL, false), nil
 	}
 
 	// Test DELETE rollback with IDENTITY column
@@ -255,5 +255,5 @@ func fixedMockDatabaseMetadataGetter(_ context.Context, _ string, database strin
 				},
 			},
 		},
-	}, store.Engine_MSSQL, false /* isObjectCaseSensitive */), nil
+	}, nil, nil, store.Engine_MSSQL, false /* isObjectCaseSensitive */), nil
 }
