@@ -606,10 +606,34 @@ func (x *TableMetadata) Equal(y *TableMetadata) bool {
 	if x.PrimaryKeyType != y.PrimaryKeyType {
 		return false
 	}
+	if len(x.ExcludeConstraints) != len(y.ExcludeConstraints) {
+		return false
+	}
+	for i := 0; i < len(x.ExcludeConstraints); i++ {
+		if !x.ExcludeConstraints[i].Equal(y.ExcludeConstraints[i]) {
+			return false
+		}
+	}
 	return true
 }
 
 func (x *CheckConstraintMetadata) Equal(y *CheckConstraintMetadata) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
+		return false
+	}
+	if x.Expression != y.Expression {
+		return false
+	}
+	return true
+}
+
+func (x *ExcludeConstraintMetadata) Equal(y *ExcludeConstraintMetadata) bool {
 	if x == y {
 		return true
 	}
@@ -695,6 +719,14 @@ func (x *TablePartitionMetadata) Equal(y *TablePartitionMetadata) bool {
 	}
 	for i := 0; i < len(x.CheckConstraints); i++ {
 		if !x.CheckConstraints[i].Equal(y.CheckConstraints[i]) {
+			return false
+		}
+	}
+	if len(x.ExcludeConstraints) != len(y.ExcludeConstraints) {
+		return false
+	}
+	for i := 0; i < len(x.ExcludeConstraints); i++ {
+		if !x.ExcludeConstraints[i].Equal(y.ExcludeConstraints[i]) {
 			return false
 		}
 	}

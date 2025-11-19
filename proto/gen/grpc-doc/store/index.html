@@ -406,6 +406,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.ExcludeConstraintMetadata"><span class="badge">M</span>ExcludeConstraintMetadata</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.ExtensionMetadata"><span class="badge">M</span>ExtensionMetadata</a>
                 </li>
               
@@ -3711,6 +3715,38 @@ Examples: POINT, LINE, POLYGON, COLLECTION </p></td>
 
         
       
+        <h3 id="bytebase.store.ExcludeConstraintMetadata">ExcludeConstraintMetadata</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the EXCLUDE constraint. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>expression</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The expression is the full EXCLUDE constraint definition including &#34;EXCLUDE&#34; keyword.
+Example: &#34;EXCLUDE USING gist (room_id WITH =, during WITH &amp;&amp;)&#34; </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.ExtensionMetadata">ExtensionMetadata</h3>
         <p>ExtensionMetadata is the metadata for extensions.</p>
 
@@ -5370,6 +5406,13 @@ Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family
 CLUSTERED or NONCLUSTERED. </p></td>
                 </tr>
               
+                <tr>
+                  <td>exclude_constraints</td>
+                  <td><a href="#bytebase.store.ExcludeConstraintMetadata">ExcludeConstraintMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The exclude_constraints is the list of EXCLUDE constraints in a table (PostgreSQL specific). </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -5458,6 +5501,13 @@ in syntax [SUB]PARTITION {number}. </p></td>
                 <tr>
                   <td>check_constraints</td>
                   <td><a href="#bytebase.store.CheckConstraintMetadata">CheckConstraintMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>exclude_constraints</td>
+                  <td><a href="#bytebase.store.ExcludeConstraintMetadata">ExcludeConstraintMetadata</a></td>
                   <td>repeated</td>
                   <td><p> </p></td>
                 </tr>

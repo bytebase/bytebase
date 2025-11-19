@@ -62,6 +62,7 @@
     - [DimensionalConfig](#bytebase-store-DimensionalConfig)
     - [EnumTypeMetadata](#bytebase-store-EnumTypeMetadata)
     - [EventMetadata](#bytebase-store-EventMetadata)
+    - [ExcludeConstraintMetadata](#bytebase-store-ExcludeConstraintMetadata)
     - [ExtensionMetadata](#bytebase-store-ExtensionMetadata)
     - [ExternalTableMetadata](#bytebase-store-ExternalTableMetadata)
     - [ForeignKeyMetadata](#bytebase-store-ForeignKeyMetadata)
@@ -1216,6 +1217,22 @@ DimensionalConfig defines dimensional and constraint parameters for spatial inde
 
 
 
+<a name="bytebase-store-ExcludeConstraintMetadata"></a>
+
+### ExcludeConstraintMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the EXCLUDE constraint. |
+| expression | [string](#string) |  | The expression is the full EXCLUDE constraint definition including &#34;EXCLUDE&#34; keyword. Example: &#34;EXCLUDE USING gist (room_id WITH =, during WITH &amp;&amp;)&#34; |
+
+
+
+
+
+
 <a name="bytebase-store-ExtensionMetadata"></a>
 
 ### ExtensionMetadata
@@ -1749,6 +1766,7 @@ TableMetadata is the metadata for tables.
 | rules | [RuleMetadata](#bytebase-store-RuleMetadata) | repeated | The rules is the list of rules in a table (PostgreSQL specific). |
 | sharding_info | [string](#string) |  | https://docs.pingcap.com/tidb/stable/information-schema-tables/ |
 | primary_key_type | [string](#string) |  | https://docs.pingcap.com/tidb/stable/clustered-indexes/#clustered-indexes CLUSTERED or NONCLUSTERED. |
+| exclude_constraints | [ExcludeConstraintMetadata](#bytebase-store-ExcludeConstraintMetadata) | repeated | The exclude_constraints is the list of EXCLUDE constraints in a table (PostgreSQL specific). |
 
 
 
@@ -1771,6 +1789,7 @@ TablePartitionMetadata is the metadata for table partitions.
 | subpartitions | [TablePartitionMetadata](#bytebase-store-TablePartitionMetadata) | repeated | The subpartitions is the list of subpartitions in a table partition. |
 | indexes | [IndexMetadata](#bytebase-store-IndexMetadata) | repeated |  |
 | check_constraints | [CheckConstraintMetadata](#bytebase-store-CheckConstraintMetadata) | repeated |  |
+| exclude_constraints | [ExcludeConstraintMetadata](#bytebase-store-ExcludeConstraintMetadata) | repeated |  |
 
 
 
