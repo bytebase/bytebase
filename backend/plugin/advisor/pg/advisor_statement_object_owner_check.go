@@ -43,7 +43,7 @@ func (*StatementObjectOwnerCheckAdvisor) Check(ctx context.Context, checkCtx adv
 		return nil, err
 	}
 
-	dbMetadata := model.NewDatabaseMetadata(checkCtx.DBSchema, checkCtx.IsObjectCaseSensitive, true /* IsDetailCaseSensitive */)
+	dbMetadata := model.NewDatabaseMetadata(checkCtx.DBSchema, storepb.Engine_POSTGRES, checkCtx.IsObjectCaseSensitive)
 	currentRole := checkCtx.DBSchema.Owner
 	if !checkCtx.UsePostgresDatabaseOwner {
 		currentRole, err = getCurrentUser(ctx, checkCtx.Driver)

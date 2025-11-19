@@ -6,6 +6,7 @@ import (
 	"log/slog"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -15,10 +16,10 @@ import (
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 // NewStatementAdviseExecutor creates a plan check statement advise executor.
@@ -149,10 +150,15 @@ func (e *StatementAdviseExecutor) runReview(
 		}
 	}
 
-	originMetadata, finalMetadata, err := catalog.NewCatalogWithMetadata(dbSchema.GetMetadata(), instance.Metadata.GetEngine(), store.IsObjectCaseSensitive(instance))
-	if err != nil {
-		return nil, common.Wrapf(err, common.Internal, "failed to create a catalog")
+	// Create original metadata as read-only
+	originMetadata := model.NewDatabaseMetadata(dbSchema.GetMetadata(), instance.Metadata.GetEngine(), store.IsObjectCaseSensitive(instance))
+
+	// Clone metadata for final to avoid modifying the original
+	clonedMetadata, ok := proto.Clone(dbSchema.GetMetadata()).(*storepb.DatabaseSchemaMetadata)
+	if !ok {
+		return nil, common.Wrapf(errors.New("failed to clone database schema metadata"), common.Internal, "failed to create a catalog")
 	}
+	finalMetadata := model.NewDatabaseMetadata(clonedMetadata, instance.Metadata.GetEngine(), store.IsObjectCaseSensitive(instance))
 
 	useDatabaseOwner, err := getUseDatabaseOwner(ctx, e.store, instance, database)
 	if err != nil {

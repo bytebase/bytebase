@@ -2873,7 +2873,7 @@ func getViewDependencies(viewDef string, schemaName string, fullSchemaMetadata *
 		base.GetQuerySpanContext{
 			GetDatabaseMetadataFunc: func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
 				// Return the full schema metadata so GetQuerySpan can resolve references
-				dbMetadata := model.NewDatabaseMetadata(fullSchemaMetadata, false, false)
+				dbMetadata := model.NewDatabaseMetadata(fullSchemaMetadata, storepb.Engine_POSTGRES, false)
 				return databaseName, dbMetadata, nil
 			},
 			ListDatabaseNamesFunc: func(_ context.Context, _ string) ([]string, error) {

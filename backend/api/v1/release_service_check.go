@@ -8,11 +8,12 @@ import (
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 
+	"google.golang.org/protobuf/proto"
+
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	advisorpg "github.com/bytebase/bytebase/backend/plugin/advisor/pg"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -172,10 +173,15 @@ loop:
 		if dbSchema == nil {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database schema not found for %s", database.DatabaseName))
 		}
-		originMetadata, finalMetadata, err := catalog.NewCatalogWithMetadata(dbSchema.GetMetadata(), engine, store.IsObjectCaseSensitive(instance))
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create catalog"))
+		// Create original metadata as read-only
+		originMetadata := model.NewDatabaseMetadata(dbSchema.GetMetadata(), engine, store.IsObjectCaseSensitive(instance))
+
+		// Clone metadata for final to avoid modifying the original
+		clonedMetadata, ok := proto.Clone(dbSchema.GetMetadata()).(*storepb.DatabaseSchemaMetadata)
+		if !ok {
+			return nil, connect.NewError(connect.CodeInternal, errors.New("failed to clone database schema metadata"))
 		}
+		finalMetadata := model.NewDatabaseMetadata(clonedMetadata, engine, store.IsObjectCaseSensitive(instance))
 		// Batch fetch all revisions for this database
 		revisions, err := s.store.ListRevisions(ctx, &store.FindRevisionMessage{
 			InstanceID:   &database.InstanceID,

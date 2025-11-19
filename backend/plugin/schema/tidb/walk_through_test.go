@@ -49,7 +49,7 @@ func TestWalkThrough(t *testing.T) {
 		require.True(t, ok)
 
 		// Create DatabaseMetadata for walk-through
-		state := model.NewDatabaseMetadata(protoData, !test.IgnoreCaseSensitive, !test.IgnoreCaseSensitive)
+		state := model.NewDatabaseMetadata(protoData, storepb.Engine_TIDB, !test.IgnoreCaseSensitive)
 
 		asts, _ := sm.GetASTsForChecks(storepb.Engine_TIDB, test.Statement)
 		advice := WalkThrough(state, asts)

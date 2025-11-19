@@ -71,7 +71,7 @@ func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbTyp
 		// Clone to avoid mutations affecting future test cases
 		finalCatalogClone, ok := proto.Clone(schemaMetadata).(*storepb.DatabaseSchemaMetadata)
 		require.True(t, ok, "failed to clone schema metadata")
-		finalMetadata := model.NewDatabaseMetadata(finalCatalogClone, true /* isCaseSensitive for PostgreSQL */, true /* isDetailCaseSensitive */)
+		finalMetadata := model.NewDatabaseMetadata(finalCatalogClone, storepb.Engine_POSTGRES, true /* isCaseSensitive for PostgreSQL */)
 
 		// Get default payload, or use empty string for test-only rules
 		payload, err := advisor.SetDefaultSQLReviewRulePayload(rule, dbType)

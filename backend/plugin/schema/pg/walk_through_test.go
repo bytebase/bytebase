@@ -92,7 +92,7 @@ func TestWalkThrough(t *testing.T) {
 		require.True(t, ok)
 
 		// Create DatabaseMetadata for walk-through
-		state := model.NewDatabaseMetadata(protoData, !test.IgnoreCaseSensitive, !test.IgnoreCaseSensitive)
+		state := model.NewDatabaseMetadata(protoData, storepb.Engine_POSTGRES, !test.IgnoreCaseSensitive)
 
 		asts, _ := sm.GetASTsForChecks(storepb.Engine_POSTGRES, test.Statement)
 		advice := WalkThrough(state, asts)
@@ -183,7 +183,7 @@ func TestWalkThroughANTLR(t *testing.T) {
 		require.True(t, ok)
 
 		// Create DatabaseMetadata for walk-through
-		state := model.NewDatabaseMetadata(protoData, !test.IgnoreCaseSensitive, !test.IgnoreCaseSensitive)
+		state := model.NewDatabaseMetadata(protoData, storepb.Engine_POSTGRES, !test.IgnoreCaseSensitive)
 
 		// Parse using ANTLR parser instead of legacy parser
 		parseResult, parseErr := pgparser.ParsePostgreSQL(test.Statement)
