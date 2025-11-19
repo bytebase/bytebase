@@ -409,6 +409,9 @@ func (d *DatabaseMetadata) DropSchema(schemaName string) error {
 
 // Config methods (formerly from DatabaseConfig)
 func (d *DatabaseMetadata) GetSchemaConfig(name string) *SchemaConfig {
+	if d == nil {
+		return nil
+	}
 	if config := d.configInternal[name]; config != nil {
 		return config
 	}
@@ -418,6 +421,9 @@ func (d *DatabaseMetadata) GetSchemaConfig(name string) *SchemaConfig {
 }
 
 func (d *DatabaseMetadata) BuildDatabaseConfig() *storepb.DatabaseConfig {
+	if d == nil {
+		return nil
+	}
 	config := &storepb.DatabaseConfig{Name: d.configName}
 
 	for schemaName, sConfig := range d.configInternal {
@@ -450,6 +456,9 @@ type SchemaConfig struct {
 // GetTableConfig gets the table config by name.
 // If not found, returns a new empty table config.
 func (s *SchemaConfig) GetTableConfig(name string) *TableConfig {
+	if s == nil {
+		return nil
+	}
 	if config := s.internal[name]; config != nil {
 		return config
 	}
@@ -467,6 +476,9 @@ type TableConfig struct {
 // GetColumnConfig gets the column config by name.
 // If not found, returns a new empty column config.
 func (t *TableConfig) GetColumnConfig(name string) *storepb.ColumnCatalog {
+	if t == nil {
+		return nil
+	}
 	if config := t.internal[name]; config != nil {
 		return config
 	}

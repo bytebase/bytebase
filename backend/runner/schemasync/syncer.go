@@ -387,8 +387,6 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 		return 0, errors.Wrapf(err, "failed to get database schema for database %q", database.DatabaseName)
 	}
 
-	dbModelConfig := dbMetadata
-
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &database.ProjectID,
 	})
@@ -408,13 +406,13 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 	if classificationConfig.ClassificationFromConfig {
 		// Only set the user comment.
 		setUserCommentFromComment(databaseMetadata)
-		dbConfig = dbModelConfig.BuildDatabaseConfig()
+		dbConfig = dbMetadata.BuildDatabaseConfig()
 	} else {
 		// Get classification from the comment.
 		if err := s.licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_DATA_CLASSIFICATION, instance); err == nil {
-			dbConfig = buildDatabaseConfigWithClassificationFromComment(databaseMetadata, dbModelConfig, classificationConfig)
+			dbConfig = buildDatabaseConfigWithClassificationFromComment(databaseMetadata, dbMetadata, classificationConfig)
 		} else {
-			dbConfig = dbModelConfig.BuildDatabaseConfig()
+			dbConfig = dbMetadata.BuildDatabaseConfig()
 		}
 	}
 
