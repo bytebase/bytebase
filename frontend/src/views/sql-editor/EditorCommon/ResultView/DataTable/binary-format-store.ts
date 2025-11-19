@@ -152,39 +152,34 @@ export const formatBinaryValue = ({
     .map((byte) => byte.toString(2).padStart(8, "0"))
     .join("");
 
-  let result: string;
   switch (format) {
     case "BINARY":
-      result = binaryValue;
-      break;
+      return binaryValue;
     case "TEXT":
       try {
-        result = new TextDecoder().decode(new Uint8Array(byteArray));
+        return new TextDecoder().decode(new Uint8Array(byteArray));
       } catch {
         // Fallback to BINARY if text decoding fails
-        result = binaryValue;
+        return binaryValue;
       }
-      break;
     case "HEX":
-      result =
+      return (
         "0x" +
         byteArray
           .map((byte) => byte.toString(16).toUpperCase().padStart(2, "0"))
-          .join("");
-      break;
+          .join("")
+      );
     case "BOOLEAN":
       if (
         byteArray.length === 1 &&
         (byteArray[0] === 0 || byteArray[0] === 1)
       ) {
-        result = byteArray[0] === 1 ? "true" : "false";
-        break;
+        return byteArray[0] === 1 ? "true" : "false";
       }
     // Fall through to DEFAULT
     default:
-      result = binaryValue;
+      return binaryValue;
   }
-  return result;
 };
 
 // Determine the suitable format for a column based on column type and content
