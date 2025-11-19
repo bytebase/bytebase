@@ -18,7 +18,6 @@ import {
   SetIamPolicyRequestSchema,
 } from "@/types/proto-es/v1/iam_policy_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import { BatchGetIamPolicyRequestSchema } from "@/types/proto-es/v1/project_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { getUserEmailListInBinding } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
@@ -71,17 +70,10 @@ export const useProjectIamPolicyStore = defineStore(
     };
 
     const batchFetchIamPolicy = async (projectList: string[]) => {
-      const request = create(BatchGetIamPolicyRequestSchema, {
-        scope: "projects/-",
-        names: projectList,
-      });
-      const response =
-        await projectServiceClientConnect.batchGetIamPolicy(request);
-      for (const item of response.policyResults) {
-        if (item.policy) {
-          await setIamPolicy(item.project, item.policy);
-        }
-      }
+      // Fetch IAM policies individually for each project
+      await Promise.all(
+        projectList.map((project) => fetchProjectIamPolicy(project))
+      );
     };
 
     const updateProjectIamPolicy = async (
