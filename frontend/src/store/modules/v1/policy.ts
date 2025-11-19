@@ -1,4 +1,5 @@
 import { create } from "@bufbuild/protobuf";
+import { DurationSchema } from "@bufbuild/protobuf/wkt";
 import { Code, ConnectError, createContextValues } from "@connectrpc/connect";
 import { defineStore } from "pinia";
 import { computed, reactive, ref, unref, watchEffect } from "vue";
@@ -7,7 +8,10 @@ import { silentContextKey } from "@/grpcweb/context-key";
 import { policyNamePrefix } from "@/store/modules/v1/common";
 import type { MaybeRef } from "@/types";
 import { UNKNOWN_USER_NAME } from "@/types";
-import type { Policy } from "@/types/proto-es/v1/org_policy_service_pb";
+import type {
+  Policy,
+  QueryDataPolicy,
+} from "@/types/proto-es/v1/org_policy_service_pb";
 import {
   DeletePolicyRequestSchema,
   GetPolicyRequestSchema,
@@ -25,6 +29,8 @@ import { useCurrentUserV1 } from "./auth";
 interface PolicyState {
   policyMapByName: Map<string, Policy>;
 }
+
+export const DEFAULT_MAX_RESULT_SIZE_IN_MB = 100;
 
 const replacePolicyTypeNameToLowerCase = (name: string) => {
   const pattern = /(^|\/)policies\/([^/]+)($|\/)/;
@@ -60,22 +66,75 @@ export const usePolicyV1Store = defineStore("policy_v1", () => {
 
   const policyList = computed(() => Array.from(state.policyMapByName.values()));
 
-  const maximumResultRows = computed(() => {
-    const queryDataPolicy = getPolicyByParentAndType({
-      parentPath: "",
+  const getQueryDataPolicyByParent = (parent: string): QueryDataPolicy => {
+    const policy = getPolicyByParentAndType({
+      parentPath: parent,
       policyType: PolicyType.DATA_QUERY,
     });
+    return policy?.policy?.case === "queryDataPolicy"
+      ? policy.policy.value
+      : create(QueryDataPolicySchema, {
+          maximumResultSize: BigInt(
+            DEFAULT_MAX_RESULT_SIZE_IN_MB * 1024 * 1024
+          ),
+          maximumResultRows: -1,
+          timeout: create(DurationSchema, {
+            seconds: BigInt(0),
+          }),
+        });
+  };
 
-    const vaule =
-      queryDataPolicy?.policy?.case === "queryDataPolicy"
-        ? queryDataPolicy.policy.value
-        : create(QueryDataPolicySchema);
+  const formatQueryDataPolicy = (policy: QueryDataPolicy) => {
+    let maximumResultSize = Number(policy.maximumResultSize);
+    let maximumResultRows = policy.maximumResultRows;
+    let queryTimeoutInSeconds = Number(policy.timeout?.seconds ?? 0);
 
-    if (vaule.maximumResultRows <= 0) {
-      return Number.MAX_VALUE;
+    if (maximumResultSize <= 0) {
+      maximumResultSize = DEFAULT_MAX_RESULT_SIZE_IN_MB * 1024 * 1024;
     }
-    return vaule.maximumResultRows;
-  });
+    if (maximumResultRows <= 0) {
+      maximumResultRows = Number.MAX_VALUE;
+    }
+    if (queryTimeoutInSeconds <= 0) {
+      queryTimeoutInSeconds = Number.MAX_VALUE;
+    }
+
+    return {
+      disableCopyData: policy.disableCopyData,
+      disableExport: policy.disableExport,
+      maximumResultSize,
+      maximumResultRows,
+      queryTimeoutInSeconds,
+    };
+  };
+
+  const getEffectiveQueryDataPolicyForProject = (project: string) => {
+    const workspacePolicy = formatQueryDataPolicy(
+      getQueryDataPolicyByParent("")
+    );
+    const projectPolicy = formatQueryDataPolicy(
+      getQueryDataPolicyByParent(project)
+    );
+
+    return {
+      disableCopyData:
+        projectPolicy.disableCopyData || workspacePolicy.disableCopyData,
+      disableExport:
+        projectPolicy.disableExport || workspacePolicy.disableExport,
+      maximumResultRows: Math.min(
+        projectPolicy.maximumResultRows,
+        workspacePolicy.maximumResultRows
+      ),
+      maximumResultSize: Math.min(
+        projectPolicy.maximumResultSize,
+        workspacePolicy.maximumResultSize
+      ),
+      queryTimeoutInSeconds: Math.min(
+        projectPolicy.queryTimeoutInSeconds,
+        workspacePolicy.queryTimeoutInSeconds
+      ),
+    };
+  };
 
   const fetchPolicies = async ({
     resourceType,
@@ -219,7 +278,6 @@ export const usePolicyV1Store = defineStore("policy_v1", () => {
 
   return {
     policyList,
-    maximumResultRows,
     fetchPolicies,
     getPolicies,
     getOrFetchPolicyByParentAndType,
@@ -228,6 +286,8 @@ export const usePolicyV1Store = defineStore("policy_v1", () => {
     getPolicyByName,
     upsertPolicy,
     deletePolicy,
+    getQueryDataPolicyByParent,
+    getEffectiveQueryDataPolicyForProject,
   };
 });
 

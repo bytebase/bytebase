@@ -75,9 +75,9 @@ func (s *OrgPolicyService) GetPolicy(ctx context.Context, req *connect.Request[v
 
 // ListPolicies lists policies in a specific resource.
 func (s *OrgPolicyService) ListPolicies(ctx context.Context, req *connect.Request[v1pb.ListPoliciesRequest]) (*connect.Response[v1pb.ListPoliciesResponse], error) {
-	resourceType, resource, err := getPolicyResourceTypeAndResource(req.Msg.Parent)
+	resourceType, resource, err := common.GetPolicyResourceTypeAndResource(req.Msg.Parent)
 	if err != nil {
-		return nil, err
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	find := &store.FindPolicyMessage{
@@ -260,9 +260,9 @@ func extractPolicyTypeFromName(policyName string) (storepb.Policy_Type, error) {
 // getDefaultRolloutPolicy returns the default rollout policy when no custom policy exists.
 // Uses the shared store.GetDefaultRolloutPolicy to ensure consistency across API and store layers.
 func (*OrgPolicyService) getDefaultRolloutPolicy(_ context.Context, parent string, policyName string) (*v1pb.Policy, error) {
-	resourceType, _, err := getPolicyResourceTypeAndResource(parent)
+	resourceType, _, err := common.GetPolicyResourceTypeAndResource(parent)
 	if err != nil {
-		return nil, err
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	v1ResourceType := v1pb.PolicyResourceType_RESOURCE_TYPE_UNSPECIFIED
@@ -303,9 +303,9 @@ func (s *OrgPolicyService) findPolicyMessage(ctx context.Context, policyName str
 	if strings.HasSuffix(policyParent, "/") {
 		policyParent = policyParent[:(len(policyParent) - 1)]
 	}
-	resourceType, resource, err := getPolicyResourceTypeAndResource(policyParent)
+	resourceType, resource, err := common.GetPolicyResourceTypeAndResource(policyParent)
 	if err != nil {
-		return nil, policyParent, err
+		return nil, policyParent, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	if resource == nil && resourceType != storepb.Policy_WORKSPACE {
 		return nil, policyParent, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("resource for %s must be specific", resourceType))
@@ -337,41 +337,10 @@ func (s *OrgPolicyService) findPolicyMessage(ctx context.Context, policyName str
 	return policy, policyParent, nil
 }
 
-func getPolicyResourceTypeAndResource(requestName string) (storepb.Policy_Resource, *string, error) {
-	if requestName == "" {
-		return storepb.Policy_WORKSPACE, nil, nil
-	}
-
-	if strings.HasPrefix(requestName, common.ProjectNamePrefix) {
-		projectID, err := common.GetProjectID(requestName)
-		if err != nil {
-			return storepb.Policy_RESOURCE_UNSPECIFIED, nil, connect.NewError(connect.CodeInvalidArgument, err)
-		}
-		if projectID == "-" {
-			return storepb.Policy_PROJECT, nil, nil
-		}
-		return storepb.Policy_PROJECT, &requestName, nil
-	}
-
-	if strings.HasPrefix(requestName, common.EnvironmentNamePrefix) {
-		// environment policy request name should be environments/{environment id}
-		environmentID, err := common.GetEnvironmentID(requestName)
-		if err != nil {
-			return storepb.Policy_RESOURCE_UNSPECIFIED, nil, connect.NewError(connect.CodeInvalidArgument, err)
-		}
-		if environmentID == "-" {
-			return storepb.Policy_ENVIRONMENT, nil, nil
-		}
-		return storepb.Policy_ENVIRONMENT, &requestName, nil
-	}
-
-	return storepb.Policy_RESOURCE_UNSPECIFIED, nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unknown request name %s", requestName))
-}
-
 func (s *OrgPolicyService) createPolicyMessage(ctx context.Context, parent string, policy *v1pb.Policy) (*v1pb.Policy, error) {
-	resourceType, _, err := getPolicyResourceTypeAndResource(parent)
+	resourceType, _, err := common.GetPolicyResourceTypeAndResource(parent)
 	if err != nil {
-		return nil, err
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	policyType, err := convertV1PBToStorePBPolicyType(policy.Type)

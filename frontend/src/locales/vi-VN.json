@@ -645,7 +645,11 @@
             "self": "Thời gian truy vấn tối đa",
             "description": "Thời gian tối đa được phép chạy truy vấn trong SQL Editor."
           },
-          "seconds": "Giây"
+          "seconds": "Giây",
+          "project-scope": "dự án",
+          "workspace-scope": "không gian làm việc",
+          "environment-scope": "môi trường",
+          "tooltip": "Bạn cũng có thể cấu hình ở cấp độ {scope}. Bytebase sẽ áp dụng giá trị nghiêm ngặt nhất."
         },
         "domain-restriction": {
           "self": "Tên miền không gian làm việc",
@@ -2128,9 +2132,7 @@
       "only-for-cluster": "Chỉ khả dụng cho kết nối cụm"
     },
     "result-limit": {
-      "self": "Giới hạn kết quả",
-      "n-rows": "{n} dòng",
-      "rows": "dòng"
+      "self": "Giới hạn kết quả"
     },
     "n-per-page": "{n} / trang",
     "add-a-new-instance": "Thêm một phiên bản mới",
@@ -2426,7 +2428,8 @@
       "name": "Cấp độ",
       "error": "Lỗi",
       "warning": "Cảnh báo"
-    }
+    },
+    "tooltip-for-resource": "Bạn cũng có thể cấu hình ở cấp độ {scope}. Bytebase sẽ ưu tiên cấu hình ở cấp độ môi trường."
   },
   "audit-log": {
     "export-finished": "Xuất hoàn tất",
