@@ -17,8 +17,8 @@
 /* eslint-disable */
 
 import { extDesc, fileDesc } from "@bufbuild/protobuf/codegenv2";
-import { file_google_protobuf_descriptor } from "@bufbuild/protobuf/wkt";
 import { file_google_api_http } from "./http_pb";
+import { file_google_protobuf_descriptor } from "@bufbuild/protobuf/wkt";
 
 /**
  * Describes the file google/api/annotations.proto.
