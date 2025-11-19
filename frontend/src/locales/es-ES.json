@@ -2132,9 +2132,7 @@
       "only-for-cluster": "Sólo disponible para conexión de clúster"
     },
     "result-limit": {
-      "self": "Límite de resultados",
-      "n-rows": "{n} filas",
-      "rows": "filas"
+      "self": "Límite de resultados"
     },
     "n-per-page": "{n} / página",
     "add-a-new-instance": "Agregar una nueva instancia",

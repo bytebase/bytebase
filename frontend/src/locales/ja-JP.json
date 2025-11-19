@@ -2132,9 +2132,7 @@
       "only-for-cluster": "クラスタ接続のみ使用可能"
     },
     "result-limit": {
-      "self": "結果の制限",
-      "n-rows": "{n} 行",
-      "rows": "行"
+      "self": "結果の制限"
     },
     "n-per-page": "{n} / ページ",
     "add-a-new-instance": "新しいインスタンスを追加する",

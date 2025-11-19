@@ -237,7 +237,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 					},
 				},
 			},
-			Statement: "SELECT count(*) FROM test WHERE 1=1;",
+			Statement: "SELECT count(*) FROM test WHERE 1=1 LIMIT 100;",
 			RowsCount: 1,
 		}
 	)
@@ -346,12 +346,13 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	for _, stmt := range initialStmts {
 		createIssueAndReturnSQLReviewResult(ctx, a, ctl, ctl.project, database.Msg, stmt, true /* wait */)
 	}
-	countSQL := "SELECT count(*) FROM test WHERE 1=1;"
+	countSQL := "SELECT count(*) FROM test WHERE 1=1 LIMIT 100;"
 	dmlSQL := "INSERT INTO test SELECT * FROM " + valueTable
 	originQueryResp, err := ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
 		Name:         database.Msg.Name,
 		Statement:    countSQL,
 		DataSourceId: "admin",
+		Limit:        100,
 	}))
 	a.NoError(err)
 	a.Equal(1, len(originQueryResp.Msg.Results))

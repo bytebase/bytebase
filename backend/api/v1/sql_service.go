@@ -143,7 +143,6 @@ func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStrea
 
 		result, duration, queryErr := executeWithTimeout(
 			ctx,
-			s.store,
 			driver,
 			conn,
 			request.Statement,
@@ -518,7 +517,6 @@ func queryRetry(
 	slog.Debug("start execute with timeout", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName), slog.String("statement", statement))
 	results, duration, queryErr := executeWithTimeout(
 		ctx,
-		stores,
 		driver,
 		conn,
 		statement,
@@ -787,7 +785,6 @@ func queryRetryStopOnError(
 
 func executeWithTimeout(
 	ctx context.Context,
-	stores *store.Store,
 	driver db.Driver,
 	conn *sql.Conn,
 	statement string,

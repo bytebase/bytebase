@@ -2132,9 +2132,7 @@
       "only-for-cluster": "Chỉ khả dụng cho kết nối cụm"
     },
     "result-limit": {
-      "self": "Giới hạn kết quả",
-      "n-rows": "{n} dòng",
-      "rows": "dòng"
+      "self": "Giới hạn kết quả"
     },
     "n-per-page": "{n} / trang",
     "add-a-new-instance": "Thêm một phiên bản mới",

@@ -2132,9 +2132,7 @@
       "only-for-cluster": "仅适用于集群连接"
     },
     "result-limit": {
-      "self": "结果限制",
-      "n-rows": "{n} 行",
-      "rows": "行"
+      "self": "结果限制"
     },
     "n-per-page": "{n} / 页",
     "add-a-new-instance": "添加实例",
