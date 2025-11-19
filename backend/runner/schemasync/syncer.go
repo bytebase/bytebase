@@ -600,7 +600,7 @@ func buildDatabaseConfigWithClassificationFromComment(dbMetadata *storepb.Databa
 				existingColumnConfig := tableConfig.GetColumnConfig(col.Name)
 
 				// Add column config if it has any meaningful data
-				if colClassification != "" || existingColumnConfig.SemanticType != "" || len(existingColumnConfig.Labels) > 0 {
+				if colClassification != "" || existingColumnConfig.GetSemanticType() != "" || len(existingColumnConfig.GetLabels()) > 0 {
 					columns = append(columns, &storepb.ColumnCatalog{
 						Name:           col.Name,
 						Classification: colClassification,
