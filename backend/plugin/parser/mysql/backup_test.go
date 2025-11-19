@@ -196,7 +196,7 @@ func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFu
 			return database, model.NewDatabaseMetadata(&store.DatabaseSchemaMetadata{
 				Name:    database,
 				Schemas: schemaMetadata,
-			}, true /* isObjectCaseSensitive */, true /* isDetailCaseSensitive */), nil
+			}, store.Engine_MYSQL, true /* isObjectCaseSensitive */), nil
 		}, func(_ context.Context, _ string) ([]string, error) {
 			return []string{"db", "db1", "db2"}, nil
 		}

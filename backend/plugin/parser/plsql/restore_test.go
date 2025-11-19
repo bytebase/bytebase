@@ -178,5 +178,5 @@ func fixedMockDatabaseMetadataGetter(_ context.Context, _ string, database strin
 				},
 			},
 		},
-	}, true /* isObjectCaseSensitive */, true /* isDetailCaseSensitive */), nil
+	}, store.Engine_ORACLE, true /* isObjectCaseSensitive */), nil
 }

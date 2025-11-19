@@ -223,7 +223,7 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 		// Clone to avoid mutations affecting future test cases
 		finalCatalogClone, ok := proto.Clone(catalogMetadata).(*storepb.DatabaseSchemaMetadata)
 		require.True(t, ok, "failed to clone catalog metadata")
-		finalMetadata := model.NewDatabaseMetadata(finalCatalogClone, isCaseSensitive, isCaseSensitive)
+		finalMetadata := model.NewDatabaseMetadata(finalCatalogClone, dbType, isCaseSensitive)
 
 		payload, err := SetDefaultSQLReviewRulePayload(rule, dbType)
 		require.NoError(t, err)

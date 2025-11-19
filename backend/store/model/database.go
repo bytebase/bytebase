@@ -30,7 +30,7 @@ func NewDatabaseSchema(
 	engine storepb.Engine,
 	isObjectCaseSensitive bool,
 ) *DatabaseSchema {
-	databaseMetadata := NewDatabaseMetadata(metadata, isObjectCaseSensitive, getIsDetailCaseSensitive(engine))
+	databaseMetadata := NewDatabaseMetadata(metadata, engine, isObjectCaseSensitive)
 	databaseConfig := NewDatabaseConfig(config)
 	return &DatabaseSchema{
 		metadata:              metadata,
@@ -244,7 +244,8 @@ type DatabaseMetadata struct {
 }
 
 // NewDatabaseMetadata creates a new database metadata.
-func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, isObjectCaseSensitive bool, isDetailCaseSensitive bool) *DatabaseMetadata {
+func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, engineType storepb.Engine, isObjectCaseSensitive bool) *DatabaseMetadata {
+	isDetailCaseSensitive := getIsDetailCaseSensitive(engineType)
 	databaseMetadata := &DatabaseMetadata{
 		proto:                 metadata,
 		name:                  metadata.Name,
