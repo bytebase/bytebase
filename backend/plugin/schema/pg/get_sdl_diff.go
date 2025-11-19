@@ -6821,15 +6821,12 @@ func processExtensionChanges(currentChunks, previousChunks *schema.SDLChunks, cu
 }
 
 // processSchemaChanges processes explicit CREATE SCHEMA statements in the SDL
-func processSchemaChanges(currentChunks, previousChunks *schema.SDLChunks, currentSchema *model.DatabaseMetadata, diff *schema.MetadataDiff) {
+func processSchemaChanges(currentChunks, previousChunks *schema.SDLChunks, currentMeta *model.DatabaseMetadata, diff *schema.MetadataDiff) {
 	// Build set of existing schemas in current database
 	existingSchemas := make(map[string]bool)
-	if currentSchema != nil {
-		currentMeta := currentSchema
-		if currentMeta != nil {
-			for _, schemaName := range currentMeta.ListSchemaNames() {
-				existingSchemas[schemaName] = true
-			}
+	if currentMeta != nil {
+		for _, schemaName := range currentMeta.ListSchemaNames() {
+			existingSchemas[schemaName] = true
 		}
 	}
 
@@ -6870,8 +6867,8 @@ func processSchemaChanges(currentChunks, previousChunks *schema.SDLChunks, curre
 // addImplicitSchemaCreation adds schema creation diffs for schemas that are referenced
 // by new objects but don't exist in the current database and aren't explicitly created in the SDL.
 // This handles the case where users write "CREATE TABLE new_schema.t(...)" without "CREATE SCHEMA new_schema".
-func addImplicitSchemaCreation(diff *schema.MetadataDiff, currentSchema *model.DatabaseMetadata) {
-	if currentSchema == nil {
+func addImplicitSchemaCreation(diff *schema.MetadataDiff, currentMeta *model.DatabaseMetadata) {
+	if currentMeta == nil {
 		return
 	}
 
@@ -6929,11 +6926,8 @@ func addImplicitSchemaCreation(diff *schema.MetadataDiff, currentSchema *model.D
 
 	// Get existing schemas from current database
 	existingSchemas := make(map[string]bool)
-	currentMeta := currentSchema
-	if currentMeta != nil {
-		for _, schemaName := range currentMeta.ListSchemaNames() {
-			existingSchemas[schemaName] = true
-		}
+	for _, schemaName := range currentMeta.ListSchemaNames() {
+		existingSchemas[schemaName] = true
 	}
 
 	// Check which schemas are already in SchemaChanges with CREATE action
