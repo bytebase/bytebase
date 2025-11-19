@@ -125,13 +125,17 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get checks from database %q", d.databaseName)
 	}
-	tableMap, externalTableMap, tableOidMap, err := getTables(txn, isAtLeastPG10, columnMap, indexMap, triggerMap, checksMap, extensionDepend)
+	excludesMap, err := getExcludeConstraints(txn)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get exclude constraints from database %q", d.databaseName)
+	}
+	tableMap, externalTableMap, tableOidMap, err := getTables(txn, isAtLeastPG10, columnMap, indexMap, triggerMap, checksMap, excludesMap, extensionDepend)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get tables from database %q", d.databaseName)
 	}
 	var tablePartitionMap map[db.TableKey][]*storepb.TablePartitionMetadata
 	if isAtLeastPG10 {
-		tablePartitionMap, err = getTablePartitions(txn, indexMap, checksMap)
+		tablePartitionMap, err = getTablePartitions(txn, indexMap, checksMap, excludesMap)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get table partitions from database %q", d.databaseName)
 		}
@@ -284,6 +288,40 @@ func getChecks(txn *sql.Tx) (map[db.TableKey][]*storepb.CheckConstraintMetadata,
 		return nil, err
 	}
 	return checksMap, nil
+}
+
+var listExcludeConstraintsQuery = `
+SELECT nsp.nspname, rel.relname, con.conname, pg_get_constraintdef(con.oid, true)
+    FROM pg_catalog.pg_constraint con
+        INNER JOIN pg_catalog.pg_class rel ON rel.oid = con.conrelid
+        INNER JOIN pg_catalog.pg_namespace nsp ON nsp.oid = connamespace
+        WHERE contype = 'x' and ` + fmt.Sprintf(`nsp.nspname NOT IN (%s)
+        AND nsp.nspname NOT LIKE 'pg_temp%%'
+        AND nsp.nspname NOT LIKE 'pg_toast%%'`, pgparser.SystemSchemaWhereClause)
+
+func getExcludeConstraints(txn *sql.Tx) (map[db.TableKey][]*storepb.ExcludeConstraintMetadata, error) {
+	excludesMap := make(map[db.TableKey][]*storepb.ExcludeConstraintMetadata)
+	rows, err := txn.Query(listExcludeConstraintsQuery)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var excludeMetadata storepb.ExcludeConstraintMetadata
+		var schemaName, tableName string
+		if err := rows.Scan(&schemaName, &tableName, &excludeMetadata.Name, &excludeMetadata.Expression); err != nil {
+			return nil, err
+		}
+		// Expression keeps full definition including "EXCLUDE" keyword
+
+		key := db.TableKey{Schema: schemaName, Table: tableName}
+		excludesMap[key] = append(excludesMap[key], &excludeMetadata)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return excludesMap, nil
 }
 
 var listForeignKeyQuery = `
@@ -506,6 +544,7 @@ func getTables(
 	indexMap map[db.TableKey][]*storepb.IndexMetadata,
 	triggerMap map[db.TableKey][]*storepb.TriggerMetadata,
 	checksMap map[db.TableKey][]*storepb.CheckConstraintMetadata,
+	excludesMap map[db.TableKey][]*storepb.ExcludeConstraintMetadata,
 	extensionDepend map[int]bool,
 ) (map[string][]*storepb.TableMetadata, map[string][]*storepb.ExternalTableMetadata, map[int]*db.TableKeyWithColumns, error) {
 	foreignKeysMap, err := getForeignKeys(txn)
@@ -549,6 +588,7 @@ func getTables(
 		table.ForeignKeys = foreignKeysMap[key]
 		table.Triggers = triggerMap[key]
 		table.CheckConstraints = checksMap[key]
+		table.ExcludeConstraints = excludesMap[key]
 
 		tableMap[schemaName] = append(tableMap[schemaName], table)
 		tableOidMap[oid] = &db.TableKeyWithColumns{Schema: schemaName, Table: table.Name, Columns: table.Columns}
@@ -623,7 +663,7 @@ WHERE
 	AND n.nspname NOT LIKE 'pg_toast%%'
 ORDER BY c.oid;`, pgparser.SystemSchemaWhereClause)
 
-func getTablePartitions(txn *sql.Tx, indexMap map[db.TableKey][]*storepb.IndexMetadata, checksMap map[db.TableKey][]*storepb.CheckConstraintMetadata) (map[db.TableKey][]*storepb.TablePartitionMetadata, error) {
+func getTablePartitions(txn *sql.Tx, indexMap map[db.TableKey][]*storepb.IndexMetadata, checksMap map[db.TableKey][]*storepb.CheckConstraintMetadata, excludesMap map[db.TableKey][]*storepb.ExcludeConstraintMetadata) (map[db.TableKey][]*storepb.TablePartitionMetadata, error) {
 	result := make(map[db.TableKey][]*storepb.TablePartitionMetadata)
 	rows, err := txn.Query(listTablePartitionQuery)
 	if err != nil {
@@ -642,11 +682,12 @@ func getTablePartitions(txn *sql.Tx, indexMap map[db.TableKey][]*storepb.IndexMe
 		key := db.TableKey{Schema: schemaName, Table: tableName}
 		inhKey := db.TableKey{Schema: inhSchemaName, Table: inhTableName}
 		metadata := &storepb.TablePartitionMetadata{
-			Name:             tableName,
-			Expression:       partKeyDef,
-			Value:            relPartBound,
-			Indexes:          indexMap[key],
-			CheckConstraints: checksMap[key],
+			Name:               tableName,
+			Expression:         partKeyDef,
+			Value:              relPartBound,
+			Indexes:            indexMap[key],
+			CheckConstraints:   checksMap[key],
+			ExcludeConstraints: excludesMap[key],
 		}
 		switch strings.ToLower(partitionType) {
 		case "l":
@@ -1381,12 +1422,12 @@ SELECT
      JOIN pg_opclass op ON ix.indclass[k] = op.oid
      WHERE k < ix.indnkeyatts  -- Only key columns, not included columns
     ) as key_opclass_defaults,
-    -- Check if it's a constraint (primary key or unique constraint)
-    CASE 
+    -- Check if it's a constraint (primary key, unique, or exclude constraint)
+    CASE
         WHEN ix.indisprimary THEN true
         WHEN EXISTS (
-            SELECT 1 FROM pg_constraint c 
-            WHERE c.conindid = i.oid AND c.contype IN ('u', 'p')
+            SELECT 1 FROM pg_constraint c
+            WHERE c.conindid = i.oid AND c.contype IN ('u', 'p', 'x')
         ) THEN true
         ELSE false
     END as is_constraint,
