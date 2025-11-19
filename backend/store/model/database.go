@@ -1,8 +1,6 @@
 package model
 
 import (
-	"bytes"
-	"fmt"
 	"slices"
 	"strings"
 
@@ -63,51 +61,6 @@ func (dbs *DatabaseSchema) GetInternalConfig() *DatabaseConfig {
 	return dbs.configInternal
 }
 
-// CompactText returns the compact text representation of the database schema.
-func (dbs *DatabaseSchema) CompactText() (string, error) {
-	if dbs.metadata == nil {
-		return "", nil
-	}
-
-	var buf bytes.Buffer
-	for _, schema := range dbs.metadata.Schemas {
-		schemaName := schema.Name
-		// If the schema name is empty, use the database name instead, such as MySQL.
-		if schemaName == "" {
-			schemaName = dbs.metadata.Name
-		}
-		for _, table := range schema.Tables {
-			// Table with columns.
-			if _, err := buf.WriteString(fmt.Sprintf("# Table %s.%s(", schemaName, table.Name)); err != nil {
-				return "", err
-			}
-			for i, column := range table.Columns {
-				if i == 0 {
-					if _, err := buf.WriteString(column.Name); err != nil {
-						return "", err
-					}
-				} else {
-					if _, err := buf.WriteString(fmt.Sprintf(", %s", column.Name)); err != nil {
-						return "", err
-					}
-				}
-			}
-			if _, err := buf.WriteString(") #\n"); err != nil {
-				return "", err
-			}
-
-			// Indexes.
-			for _, index := range table.Indexes {
-				if _, err := buf.WriteString(fmt.Sprintf("# Index %s(%s) ON table %s.%s #\n", index.Name, strings.Join(index.Expressions, ", "), schemaName, table.Name)); err != nil {
-					return "", err
-				}
-			}
-		}
-	}
-
-	return buf.String(), nil
-}
-
 // DatabaseConfig is the config for a database.
 type DatabaseConfig struct {
 	name     string
@@ -153,11 +106,6 @@ func (d *DatabaseConfig) GetSchemaConfig(name string) *SchemaConfig {
 	}
 }
 
-// RemoveSchemaConfig delete the schema config by name.
-func (d *DatabaseConfig) RemoveSchemaConfig(name string) {
-	delete(d.internal, name)
-}
-
 func (d *DatabaseConfig) BuildDatabaseConfig() *storepb.DatabaseConfig {
 	config := &storepb.DatabaseConfig{Name: d.name}
 
@@ -188,11 +136,6 @@ type SchemaConfig struct {
 	internal map[string]*TableConfig
 }
 
-// Size returns the table config count for the schema config.
-func (s *SchemaConfig) IsEmpty() bool {
-	return len(s.internal) == 0
-}
-
 // GetTableConfig gets the table config by name.
 // If not found, returns a new empty table config.
 func (s *SchemaConfig) GetTableConfig(name string) *TableConfig {
@@ -219,16 +162,6 @@ func (t *TableConfig) GetColumnConfig(name string) *storepb.ColumnCatalog {
 	return &storepb.ColumnCatalog{
 		Name: name,
 	}
-}
-
-// RemoveColumnConfig delete the column config by name.
-func (t *TableConfig) RemoveColumnConfig(name string) {
-	delete(t.internal, name)
-}
-
-// RemoveColumnConfig delete the column config by name.
-func (t *TableConfig) IsEmpty() bool {
-	return len(t.internal) == 0 && t.Classification == ""
 }
 
 // DatabaseMetadata is the metadata for a database.
@@ -503,11 +436,6 @@ func (d *DatabaseMetadata) SortProto() {
 // GetIsObjectCaseSensitive returns whether object names (schemas, tables) are case-sensitive.
 func (d *DatabaseMetadata) GetIsObjectCaseSensitive() bool {
 	return d.isObjectCaseSensitive
-}
-
-// GetIsDetailCaseSensitive returns whether detail names (columns, indexes) are case-sensitive.
-func (d *DatabaseMetadata) GetIsDetailCaseSensitive() bool {
-	return d.isDetailCaseSensitive
 }
 
 // CreateSchema creates a new schema in the database.

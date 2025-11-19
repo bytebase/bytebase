@@ -6,7 +6,10 @@ import (
 	"strconv"
 	"strings"
 
+	"connectrpc.com/connect"
 	"github.com/pkg/errors"
+
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 // nolint:revive
@@ -609,4 +612,35 @@ func FormatPlan(projectID string, planUID int64) string {
 
 func FormatPlanCheckRun(projectID string, planUID, runUID int64) string {
 	return fmt.Sprintf("%s/%s%d", FormatPlan(projectID, planUID), PlanCheckRunPrefix, runUID)
+}
+
+func GetPolicyResourceTypeAndResource(requestName string) (storepb.Policy_Resource, *string, error) {
+	if requestName == "" {
+		return storepb.Policy_WORKSPACE, nil, nil
+	}
+
+	if strings.HasPrefix(requestName, ProjectNamePrefix) {
+		projectID, err := GetProjectID(requestName)
+		if err != nil {
+			return storepb.Policy_RESOURCE_UNSPECIFIED, nil, connect.NewError(connect.CodeInvalidArgument, err)
+		}
+		if projectID == "-" {
+			return storepb.Policy_PROJECT, nil, nil
+		}
+		return storepb.Policy_PROJECT, &requestName, nil
+	}
+
+	if strings.HasPrefix(requestName, EnvironmentNamePrefix) {
+		// environment policy request name should be environments/{environment id}
+		environmentID, err := GetEnvironmentID(requestName)
+		if err != nil {
+			return storepb.Policy_RESOURCE_UNSPECIFIED, nil, err
+		}
+		if environmentID == "-" {
+			return storepb.Policy_ENVIRONMENT, nil, nil
+		}
+		return storepb.Policy_ENVIRONMENT, &requestName, nil
+	}
+
+	return storepb.Policy_RESOURCE_UNSPECIFIED, nil, errors.Errorf("unknown request name %s", requestName)
 }

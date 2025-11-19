@@ -2189,10 +2189,6 @@ type ColumnMetadata struct {
 	Position int32 `protobuf:"varint,2,opt,name=position,proto3" json:"position,omitempty"`
 	// The default value of the column.
 	Default string `protobuf:"bytes,3,opt,name=default,proto3" json:"default,omitempty"`
-	// Deprecated.
-	DefaultNull bool `protobuf:"varint,4,opt,name=default_null,json=defaultNull,proto3" json:"default_null,omitempty"`
-	// Deprecated.
-	DefaultExpression string `protobuf:"bytes,5,opt,name=default_expression,json=defaultExpression,proto3" json:"default_expression,omitempty"`
 	// Oracle specific metadata.
 	// The default_on_null is the default on null of a column.
 	DefaultOnNull bool `protobuf:"varint,16,opt,name=default_on_null,json=defaultOnNull,proto3" json:"default_on_null,omitempty"`
@@ -2297,20 +2293,6 @@ func (x *ColumnMetadata) GetPosition() int32 {
 func (x *ColumnMetadata) GetDefault() string {
 	if x != nil {
 		return x.Default
-	}
-	return ""
-}
-
-func (x *ColumnMetadata) GetDefaultNull() bool {
-	if x != nil {
-		return x.DefaultNull
-	}
-	return false
-}
-
-func (x *ColumnMetadata) GetDefaultExpression() string {
-	if x != nil {
-		return x.DefaultExpression
 	}
 	return ""
 }
@@ -4222,14 +4204,8 @@ type ColumnCatalog struct {
 	Labels         map[string]string `protobuf:"bytes,3,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Classification string            `protobuf:"bytes,4,opt,name=classification,proto3" json:"classification,omitempty"`
 	ObjectSchema   *ObjectSchema     `protobuf:"bytes,5,opt,name=object_schema,json=objectSchema,proto3,oneof" json:"object_schema,omitempty"`
-	// Deprecated.
-	MaskingLevel MaskingLevel `protobuf:"varint,6,opt,name=masking_level,json=maskingLevel,proto3,enum=bytebase.store.MaskingLevel" json:"masking_level,omitempty"`
-	// Deprecated.
-	FullMaskingAlgorithmId string `protobuf:"bytes,7,opt,name=full_masking_algorithm_id,json=fullMaskingAlgorithmId,proto3" json:"full_masking_algorithm_id,omitempty"`
-	// Deprecated.
-	PartialMaskingAlgorithmId string `protobuf:"bytes,8,opt,name=partial_masking_algorithm_id,json=partialMaskingAlgorithmId,proto3" json:"partial_masking_algorithm_id,omitempty"`
-	unknownFields             protoimpl.UnknownFields
-	sizeCache                 protoimpl.SizeCache
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *ColumnCatalog) Reset() {
@@ -4295,27 +4271,6 @@ func (x *ColumnCatalog) GetObjectSchema() *ObjectSchema {
 		return x.ObjectSchema
 	}
 	return nil
-}
-
-func (x *ColumnCatalog) GetMaskingLevel() MaskingLevel {
-	if x != nil {
-		return x.MaskingLevel
-	}
-	return MaskingLevel_MASKING_LEVEL_UNSPECIFIED
-}
-
-func (x *ColumnCatalog) GetFullMaskingAlgorithmId() string {
-	if x != nil {
-		return x.FullMaskingAlgorithmId
-	}
-	return ""
-}
-
-func (x *ColumnCatalog) GetPartialMaskingAlgorithmId() string {
-	if x != nil {
-		return x.PartialMaskingAlgorithmId
-	}
-	return ""
 }
 
 type ObjectSchema struct {
@@ -4508,7 +4463,7 @@ var File_store_database_proto protoreflect.FileDescriptor
 
 const file_store_database_proto_rawDesc = "" +
 	"\n" +
-	"\x14store/database.proto\x12\x0ebytebase.store\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12store/common.proto\"\xd2\x02\n" +
+	"\x14store/database.proto\x12\x0ebytebase.store\x1a\x1fgoogle/protobuf/timestamp.proto\"\xd2\x02\n" +
 	"\x10DatabaseMetadata\x12D\n" +
 	"\x06labels\x18\x01 \x03(\v2,.bytebase.store.DatabaseMetadata.LabelsEntryR\x06labels\x12@\n" +
 	"\x0elast_sync_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\flastSyncTime\x12)\n" +
@@ -4721,13 +4676,11 @@ const file_store_database_proto_rawDesc = "" +
 	"\vLINEAR_HASH\x10\x06\x12\a\n" +
 	"\x03KEY\x10\a\x12\x0e\n" +
 	"\n" +
-	"LINEAR_KEY\x10\b\"\xcd\x06\n" +
+	"LINEAR_KEY\x10\b\"\xfb\x05\n" +
 	"\x0eColumnMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
 	"\bposition\x18\x02 \x01(\x05R\bposition\x12\x18\n" +
-	"\adefault\x18\x03 \x01(\tR\adefault\x12!\n" +
-	"\fdefault_null\x18\x04 \x01(\bR\vdefaultNull\x12-\n" +
-	"\x12default_expression\x18\x05 \x01(\tR\x11defaultExpression\x12&\n" +
+	"\adefault\x18\x03 \x01(\tR\adefault\x12&\n" +
 	"\x0fdefault_on_null\x18\x10 \x01(\bR\rdefaultOnNull\x12\x1b\n" +
 	"\ton_update\x18\r \x01(\tR\bonUpdate\x12\x1a\n" +
 	"\bnullable\x18\x06 \x01(\bR\bnullable\x12\x12\n" +
@@ -4925,16 +4878,13 @@ const file_store_database_proto_rawDesc = "" +
 	"\acolumns\x18\x02 \x03(\v2\x1d.bytebase.store.ColumnCatalogR\acolumns\x12F\n" +
 	"\robject_schema\x18\a \x01(\v2\x1c.bytebase.store.ObjectSchemaH\x00R\fobjectSchema\x88\x01\x01\x12&\n" +
 	"\x0eclassification\x18\x03 \x01(\tR\x0eclassificationB\x10\n" +
-	"\x0e_object_schema\"\x87\x04\n" +
+	"\x0e_object_schema\"\xc8\x02\n" +
 	"\rColumnCatalog\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12#\n" +
 	"\rsemantic_type\x18\x02 \x01(\tR\fsemanticType\x12A\n" +
 	"\x06labels\x18\x03 \x03(\v2).bytebase.store.ColumnCatalog.LabelsEntryR\x06labels\x12&\n" +
 	"\x0eclassification\x18\x04 \x01(\tR\x0eclassification\x12F\n" +
-	"\robject_schema\x18\x05 \x01(\v2\x1c.bytebase.store.ObjectSchemaH\x00R\fobjectSchema\x88\x01\x01\x12A\n" +
-	"\rmasking_level\x18\x06 \x01(\x0e2\x1c.bytebase.store.MaskingLevelR\fmaskingLevel\x129\n" +
-	"\x19full_masking_algorithm_id\x18\a \x01(\tR\x16fullMaskingAlgorithmId\x12?\n" +
-	"\x1cpartial_masking_algorithm_id\x18\b \x01(\tR\x19partialMaskingAlgorithmId\x1a9\n" +
+	"\robject_schema\x18\x05 \x01(\v2\x1c.bytebase.store.ObjectSchemaH\x00R\fobjectSchema\x88\x01\x01\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x10\n" +
@@ -5038,7 +4988,6 @@ var file_store_database_proto_goTypes = []any{
 	(*ObjectSchema_ArrayKind)(nil),         // 51: bytebase.store.ObjectSchema.ArrayKind
 	nil,                                    // 52: bytebase.store.ObjectSchema.StructKind.PropertiesEntry
 	(*timestamppb.Timestamp)(nil),          // 53: google.protobuf.Timestamp
-	(MaskingLevel)(0),                      // 54: bytebase.store.MaskingLevel
 }
 var file_store_database_proto_depIdxs = []int32{
 	47, // 0: bytebase.store.DatabaseMetadata.labels:type_name -> bytebase.store.DatabaseMetadata.LabelsEntry
@@ -5099,18 +5048,17 @@ var file_store_database_proto_depIdxs = []int32{
 	46, // 55: bytebase.store.TableCatalog.object_schema:type_name -> bytebase.store.ObjectSchema
 	49, // 56: bytebase.store.ColumnCatalog.labels:type_name -> bytebase.store.ColumnCatalog.LabelsEntry
 	46, // 57: bytebase.store.ColumnCatalog.object_schema:type_name -> bytebase.store.ObjectSchema
-	54, // 58: bytebase.store.ColumnCatalog.masking_level:type_name -> bytebase.store.MaskingLevel
-	6,  // 59: bytebase.store.ObjectSchema.type:type_name -> bytebase.store.ObjectSchema.Type
-	50, // 60: bytebase.store.ObjectSchema.struct_kind:type_name -> bytebase.store.ObjectSchema.StructKind
-	51, // 61: bytebase.store.ObjectSchema.array_kind:type_name -> bytebase.store.ObjectSchema.ArrayKind
-	52, // 62: bytebase.store.ObjectSchema.StructKind.properties:type_name -> bytebase.store.ObjectSchema.StructKind.PropertiesEntry
-	46, // 63: bytebase.store.ObjectSchema.ArrayKind.kind:type_name -> bytebase.store.ObjectSchema
-	46, // 64: bytebase.store.ObjectSchema.StructKind.PropertiesEntry.value:type_name -> bytebase.store.ObjectSchema
-	65, // [65:65] is the sub-list for method output_type
-	65, // [65:65] is the sub-list for method input_type
-	65, // [65:65] is the sub-list for extension type_name
-	65, // [65:65] is the sub-list for extension extendee
-	0,  // [0:65] is the sub-list for field type_name
+	6,  // 58: bytebase.store.ObjectSchema.type:type_name -> bytebase.store.ObjectSchema.Type
+	50, // 59: bytebase.store.ObjectSchema.struct_kind:type_name -> bytebase.store.ObjectSchema.StructKind
+	51, // 60: bytebase.store.ObjectSchema.array_kind:type_name -> bytebase.store.ObjectSchema.ArrayKind
+	52, // 61: bytebase.store.ObjectSchema.StructKind.properties:type_name -> bytebase.store.ObjectSchema.StructKind.PropertiesEntry
+	46, // 62: bytebase.store.ObjectSchema.ArrayKind.kind:type_name -> bytebase.store.ObjectSchema
+	46, // 63: bytebase.store.ObjectSchema.StructKind.PropertiesEntry.value:type_name -> bytebase.store.ObjectSchema
+	64, // [64:64] is the sub-list for method output_type
+	64, // [64:64] is the sub-list for method input_type
+	64, // [64:64] is the sub-list for extension type_name
+	64, // [64:64] is the sub-list for extension extendee
+	0,  // [0:64] is the sub-list for field type_name
 }
 
 func init() { file_store_database_proto_init() }
@@ -5118,7 +5066,6 @@ func file_store_database_proto_init() {
 	if File_store_database_proto != nil {
 		return
 	}
-	file_store_common_proto_init()
 	file_store_database_proto_msgTypes[37].OneofWrappers = []any{}
 	file_store_database_proto_msgTypes[38].OneofWrappers = []any{}
 	file_store_database_proto_msgTypes[39].OneofWrappers = []any{

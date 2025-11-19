@@ -645,7 +645,11 @@
             "self": "Maximum query time",
             "description": "The maximum time allowed for a query to run in SQL Editor."
           },
-          "seconds": "Seconds"
+          "seconds": "Seconds",
+          "project-scope": "project",
+          "workspace-scope": "workspace",
+          "environment-scope": "environment",
+          "tooltip": "It's also configurable at the {scope} level. Bytebase will apply the most strict value."
         },
         "domain-restriction": {
           "self": "Workspace Domain",
@@ -2128,9 +2132,7 @@
       "only-for-cluster": "Only available for cluster connection"
     },
     "result-limit": {
-      "self": "Result limit",
-      "n-rows": "{n} rows",
-      "rows": "rows"
+      "self": "Result limit"
     },
     "n-per-page": "{n} / page",
     "add-a-new-instance": "Add a new instance",
@@ -2426,7 +2428,8 @@
       "name": "Level",
       "error": "Error",
       "warning": "Warning"
-    }
+    },
+    "tooltip-for-resource": "It's also configurable at the {scope} level. Bytebase will prioritize the environment-level configuration."
   },
   "audit-log": {
     "export-finished": "Export finished",

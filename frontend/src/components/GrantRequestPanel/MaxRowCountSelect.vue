@@ -7,8 +7,17 @@
     scrollable
     @update:value="handleUpdateValue"
   >
-    <NButton class="bb-overlay-stack-ignore-esc">
+    <NButton
+      icon-placement="right"
+      :quaternary="quaternary"
+      class="bb-overlay-stack-ignore-esc"
+      style="justify-content: start; --n-padding: 0 8px;"
+    >
+      {{ $t("sql-editor.result-limit.self") }}
       {{ $t("common.rows.n-rows", { n: value }) }}
+      <template #icon>
+        <ChevronRight />
+      </template>
     </NButton>
     <template #action>
       <div class="flex items-center justify-between gap-1">
@@ -28,14 +37,16 @@
 
 <script setup lang="ts">
 import { first, last } from "lodash-es";
+import { ChevronRight } from "lucide-vue-next";
 import { NButton, NInputNumber, NPopselect, type SelectOption } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { usePolicyV1Store } from "@/store";
 import { minmax } from "@/utils";
 
-defineProps<{
+const props = defineProps<{
   value: number;
+  quaternary?: boolean;
+  maximumExportCount: number;
 }>();
 
 const emit = defineEmits<{
@@ -43,17 +54,16 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const policyStore = usePolicyV1Store();
 
 const rowCountOptions = computed(() => {
   const list = [1, 100, 500, 1000, 5000, 10000, 100000].filter(
-    (num) => num <= policyStore.maximumResultRows
+    (num) => num <= props.maximumExportCount
   );
   if (
-    policyStore.maximumResultRows !== Number.MAX_VALUE &&
-    !list.includes(policyStore.maximumResultRows)
+    props.maximumExportCount !== Number.MAX_VALUE &&
+    !list.includes(props.maximumExportCount)
   ) {
-    list.push(policyStore.maximumResultRows);
+    list.push(props.maximumExportCount);
   }
   return list;
 });
@@ -77,4 +87,8 @@ const handleInput = (value: number | null) => {
   );
   emit("update:value", normalizedValue);
 };
+
+defineExpose({
+  maximum: computed(() => rowCountOptions.value.slice(-1)[0]),
+});
 </script>

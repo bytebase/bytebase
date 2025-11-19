@@ -984,9 +984,6 @@ BoundingBox defines the bounding box for spatial indexes.
 | labels | [ColumnCatalog.LabelsEntry](#bytebase-store-ColumnCatalog-LabelsEntry) | repeated | The user labels for a column. |
 | classification | [string](#string) |  |  |
 | object_schema | [ObjectSchema](#bytebase-store-ObjectSchema) | optional |  |
-| masking_level | [MaskingLevel](#bytebase-store-MaskingLevel) |  | Deprecated. |
-| full_masking_algorithm_id | [string](#string) |  | Deprecated. |
-| partial_masking_algorithm_id | [string](#string) |  | Deprecated. |
 
 
 
@@ -1020,8 +1017,6 @@ ColumnMetadata is the metadata for columns.
 | name | [string](#string) |  | The name of the column. |
 | position | [int32](#int32) |  | The position is the position in columns. |
 | default | [string](#string) |  | The default value of the column. |
-| default_null | [bool](#bool) |  | Deprecated. |
-| default_expression | [string](#string) |  | Deprecated. |
 | default_on_null | [bool](#bool) |  | Oracle specific metadata. The default_on_null is the default on null of a column. |
 | on_update | [string](#string) |  | The on_update is the on update action of a column. For MySQL like databases, it&#39;s only supported for TIMESTAMP columns with CURRENT_TIMESTAMP as on update value. |
 | nullable | [bool](#bool) |  | The nullable is the nullable of a column. |
@@ -3252,7 +3247,6 @@ Type is the database change type.
 | change_database_type | [PlanCheckRunConfig.ChangeDatabaseType](#bytebase-store-PlanCheckRunConfig-ChangeDatabaseType) |  |  |
 | instance_id | [string](#string) |  |  |
 | database_name | [string](#string) |  |  |
-| database_group_uid | [int64](#int64) | optional | **Deprecated.**  |
 | ghost_flags | [PlanCheckRunConfig.GhostFlagsEntry](#bytebase-store-PlanCheckRunConfig-GhostFlagsEntry) | repeated |  |
 | enable_prior_backup | [bool](#bool) |  | If set, a backup of the modified data will be created automatically before any changes are applied. |
 
@@ -4988,7 +4982,6 @@ Type represents the type of database operation to perform.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| command_indexes | [int32](#int32) | repeated | **Deprecated.** The indexes of the executed commands. |
 | error | [string](#string) |  |  |
 | affected_rows | [int64](#int64) |  |  |
 | all_affected_rows | [int64](#int64) | repeated | `all_affected_rows` is the affected rows of each command. `all_affected_rows` may be unavailable if the database driver doesn&#39;t support it. Caller should fallback to `affected_rows` in that case. |

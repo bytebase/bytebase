@@ -749,12 +749,6 @@ func (x *ColumnMetadata) Equal(y *ColumnMetadata) bool {
 	if x.Default != y.Default {
 		return false
 	}
-	if x.DefaultNull != y.DefaultNull {
-		return false
-	}
-	if x.DefaultExpression != y.DefaultExpression {
-		return false
-	}
 	if x.DefaultOnNull != y.DefaultOnNull {
 		return false
 	}
@@ -1491,15 +1485,6 @@ func (x *ColumnCatalog) Equal(y *ColumnCatalog) bool {
 		return false
 	}
 	if !x.ObjectSchema.Equal(y.ObjectSchema) {
-		return false
-	}
-	if x.MaskingLevel != y.MaskingLevel {
-		return false
-	}
-	if x.FullMaskingAlgorithmId != y.FullMaskingAlgorithmId {
-		return false
-	}
-	if x.PartialMaskingAlgorithmId != y.PartialMaskingAlgorithmId {
 		return false
 	}
 	return true

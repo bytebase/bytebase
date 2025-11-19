@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"math"
 	"slices"
 	"time"
 
@@ -172,9 +173,68 @@ func (s *Store) GetRolloutPolicy(ctx context.Context, environment string) (*stor
 	return p, nil
 }
 
-func (s *Store) GetQueryDataPolicy(ctx context.Context) (*storepb.QueryDataPolicy, error) {
-	resourceType := storepb.Policy_WORKSPACE
-	resource := ""
+type EffectiveQueryDataPolicy struct {
+	MaximumResultSize        int64
+	MaximumResultRows        int32
+	DisableCopyData          bool
+	DisableExport            bool
+	MaxQueryTimeoutInSeconds int64
+}
+
+func formatEffectiveQueryDataPolicy(policy *storepb.QueryDataPolicy) *EffectiveQueryDataPolicy {
+	maximumResultSize := policy.GetMaximumResultSize()
+	if maximumResultSize <= 0 {
+		maximumResultSize = common.DefaultMaximumSQLResultSize
+	}
+	maximumResultRows := policy.GetMaximumResultRows()
+	if maximumResultRows <= 0 {
+		maximumResultRows = math.MaxInt32
+	}
+	timeoutInSeconds := policy.GetTimeout().GetSeconds()
+	if timeoutInSeconds <= 0 {
+		timeoutInSeconds = math.MaxInt64
+	}
+
+	return &EffectiveQueryDataPolicy{
+		MaximumResultSize:        maximumResultSize,
+		MaximumResultRows:        maximumResultRows,
+		MaxQueryTimeoutInSeconds: timeoutInSeconds,
+		DisableCopyData:          policy.GetDisableCopyData(),
+		DisableExport:            policy.GetDisableExport(),
+	}
+}
+
+func (s *Store) GetEffectiveQueryDataPolicy(ctx context.Context, project string) (*EffectiveQueryDataPolicy, error) {
+	projectPolicy, err := s.getQueryDataPolicy(ctx, project)
+	if err != nil {
+		return nil, err
+	}
+	workspacePolicy, err := s.getQueryDataPolicy(ctx, "")
+	if err != nil {
+		return nil, err
+	}
+
+	formatPorjectPolicy := formatEffectiveQueryDataPolicy(projectPolicy)
+	formatWorkspacePolicy := formatEffectiveQueryDataPolicy(workspacePolicy)
+
+	maximumResultSize := min(formatPorjectPolicy.MaximumResultSize, formatWorkspacePolicy.MaximumResultSize)
+	maximumResultRows := min(formatPorjectPolicy.MaximumResultRows, formatWorkspacePolicy.MaximumResultRows)
+	maximumTimeout := min(formatPorjectPolicy.MaxQueryTimeoutInSeconds, formatWorkspacePolicy.MaxQueryTimeoutInSeconds)
+
+	return &EffectiveQueryDataPolicy{
+		DisableCopyData:          formatPorjectPolicy.DisableCopyData || formatWorkspacePolicy.DisableCopyData,
+		DisableExport:            formatPorjectPolicy.DisableExport || formatWorkspacePolicy.DisableExport,
+		MaximumResultSize:        maximumResultSize,
+		MaximumResultRows:        maximumResultRows,
+		MaxQueryTimeoutInSeconds: maximumTimeout,
+	}, nil
+}
+
+func (s *Store) getQueryDataPolicy(ctx context.Context, resource string) (*storepb.QueryDataPolicy, error) {
+	resourceType, _, err := common.GetPolicyResourceTypeAndResource(resource)
+	if err != nil {
+		return nil, err
+	}
 	pType := storepb.Policy_QUERY_DATA
 	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
 		ResourceType: &resourceType,
@@ -186,19 +246,13 @@ func (s *Store) GetQueryDataPolicy(ctx context.Context) (*storepb.QueryDataPolic
 	}
 	if policy == nil {
 		return &storepb.QueryDataPolicy{
-			Timeout:           &durationpb.Duration{},
-			DisableExport:     false,
-			MaximumResultSize: common.DefaultMaximumSQLResultSize,
-			MaximumResultRows: -1,
+			Timeout: &durationpb.Duration{},
 		}, nil
 	}
 
 	p := &storepb.QueryDataPolicy{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policy.Payload), p); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal query data policy")
-	}
-	if p.MaximumResultSize <= 0 {
-		p.MaximumResultSize = common.DefaultMaximumSQLResultSize
 	}
 	return p, nil
 }
