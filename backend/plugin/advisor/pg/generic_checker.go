@@ -32,7 +32,8 @@ type Rule interface {
 type GenericChecker struct {
 	*parser.BasePostgreSQLParserListener
 
-	rules []Rule
+	rules    []Rule
+	baseLine int
 }
 
 // NewGenericChecker creates a new instance of GenericChecker with the given rules.
@@ -41,6 +42,11 @@ func NewGenericChecker(rules []Rule) *GenericChecker {
 		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
 		rules:                        rules,
 	}
+}
+
+// SetBaseLine sets the base line number for error reporting.
+func (g *GenericChecker) SetBaseLine(baseLine int) {
+	g.baseLine = baseLine
 }
 
 // EnterEveryRule is called when any rule is entered.
@@ -94,6 +100,12 @@ type BaseRule struct {
 	level      storepb.Advice_Status
 	title      string
 	adviceList []*storepb.Advice
+	baseLine   int
+}
+
+// SetBaseLine sets the base line for the rule.
+func (r *BaseRule) SetBaseLine(baseLine int) {
+	r.baseLine = baseLine
 }
 
 // GetAdviceList returns the accumulated advice.
@@ -102,6 +114,10 @@ func (r *BaseRule) GetAdviceList() []*storepb.Advice {
 }
 
 // AddAdvice adds a new advice to the list.
+// Automatically adds baseLine offset to the line number.
 func (r *BaseRule) AddAdvice(advice *storepb.Advice) {
+	if advice.StartPosition != nil {
+		advice.StartPosition.Line += int32(r.baseLine)
+	}
 	r.adviceList = append(r.adviceList, advice)
 }

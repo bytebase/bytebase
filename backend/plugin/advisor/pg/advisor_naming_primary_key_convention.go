@@ -30,7 +30,7 @@ type NamingPKConventionAdvisor struct {
 
 // Check checks for primary key naming convention.
 func (*NamingPKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	tree, err := getANTLRTree(checkCtx)
+	parseResults, err := getANTLRTree(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +59,11 @@ func (*NamingPKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 
 	checker := NewGenericChecker([]Rule{rule})
 
-	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
+	for _, parseResult := range parseResults {
+		rule.SetBaseLine(parseResult.BaseLine)
+		checker.SetBaseLine(parseResult.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, parseResult.Tree)
+	}
 
 	return checker.GetAdviceList(), nil
 }
@@ -197,9 +201,9 @@ func (r *namingPKConventionRule) handleRenamestmt(ctx *parser.RenamestmtContext)
 					normalizedSchema = "public"
 				}
 				index := r.originalMetadata.GetSchemaMetadata(normalizedSchema).GetTable(tableName).GetIndex(oldName)
-				if index != nil && index.Primary() {
+				if index != nil && index.GetProto().GetPrimary() {
 					metaData := map[string]string{
-						advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList(), "_"),
+						advisor.ColumnListTemplateToken: strings.Join(index.GetProto().GetExpressions(), "_"),
 						advisor.TableNameTemplateToken:  tableName,
 					}
 					pkData := &pkMetaData{
@@ -250,9 +254,9 @@ func (r *namingPKConventionRule) handleRenamestmt(ctx *parser.RenamestmtContext)
 						tableName = index.GetTableProto().Name
 					}
 				}
-				if index != nil && index.Primary() {
+				if index != nil && index.GetProto().GetPrimary() {
 					metaData := map[string]string{
-						advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList(), "_"),
+						advisor.ColumnListTemplateToken: strings.Join(index.GetProto().GetExpressions(), "_"),
 						advisor.TableNameTemplateToken:  tableName,
 					}
 					pkData := &pkMetaData{
@@ -329,7 +333,7 @@ func (r *namingPKConventionRule) getPKMetaDataFromTableConstraint(constraint par
 					}
 				}
 				if index != nil {
-					columnList = index.ExpressionList()
+					columnList = index.GetProto().GetExpressions()
 				}
 			}
 		}

@@ -136,7 +136,7 @@ func (m CompletionMap) insertMetadataColumns(c *Completer) {
 			if table == nil {
 				return
 			}
-			for _, column := range table.GetColumns() {
+			for _, column := range table.GetProto().GetColumns() {
 				if _, ok := m[column.Name]; !ok {
 					m.Insert(base.Candidate{
 						Type: base.CandidateTypeColumn,

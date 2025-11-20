@@ -1334,7 +1334,7 @@ func (q *querySpanExtractor) findTableSchemaInMetadata(instanceID string, dbMeta
 
 	if table != nil {
 		var columns []string
-		for _, column := range table.GetColumns() {
+		for _, column := range table.GetProto().GetColumns() {
 			columns = append(columns, column.Name)
 		}
 		return &base.PhysicalTable{
@@ -1347,7 +1347,7 @@ func (q *querySpanExtractor) findTableSchemaInMetadata(instanceID string, dbMeta
 
 	if foreignTable != nil {
 		var columns []string
-		for _, column := range foreignTable.GetColumns() {
+		for _, column := range foreignTable.GetProto().GetColumns() {
 			columns = append(columns, column.Name)
 		}
 		return &base.PhysicalTable{

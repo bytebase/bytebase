@@ -107,10 +107,16 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	q.ctx = ctx
 
 	// Parse the statement using ANTLR
-	parseResult, err := ParsePostgreSQL(stmt)
+	parseResults, err := ParsePostgreSQL(stmt)
 	if err != nil {
 		return nil, err
 	}
+
+	if len(parseResults) != 1 {
+		return nil, errors.Errorf("expected exactly 1 statement, got %d", len(parseResults))
+	}
+
+	parseResult := parseResults[0]
 
 	// Walk the tree to extract access tables
 
@@ -302,15 +308,19 @@ type functionDefinitionDetail struct {
 func buildFunctionDefinitionDetail(funcDef *functionDefinition) (*functionDefinitionDetail, error) {
 	function := funcDef.metadata
 	definition := function.GetDefinition()
-	res, err := ParsePostgreSQL(definition)
+	parseResults, err := ParsePostgreSQL(definition)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse function definition: %s", definition)
 	}
 
+	if len(parseResults) != 1 {
+		return nil, errors.Errorf("expected exactly 1 statement in function definition, got %d", len(parseResults))
+	}
+
 	// Navigate: root -> stmtblock -> stmt -> createfunctionstmt
-	root, ok := res.Tree.(*postgresql.RootContext)
+	root, ok := parseResults[0].Tree.(*postgresql.RootContext)
 	if !ok {
-		return nil, errors.Errorf("expecting RootContext but got %T", res.Tree)
+		return nil, errors.Errorf("expecting RootContext but got %T", parseResults[0].Tree)
 	}
 
 	stmtblock := root.Stmtblock()
@@ -426,15 +436,19 @@ const (
 )
 
 func (q *querySpanExtractor) getColumnsFromFunction(name, definition string) ([]base.QuerySpanResult, error) {
-	res, err := ParsePostgreSQL(definition)
+	parseResults, err := ParsePostgreSQL(definition)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse function definition: %s", definition)
 	}
 
+	if len(parseResults) != 1 {
+		return nil, errors.Errorf("expected exactly 1 statement in function definition, got %d", len(parseResults))
+	}
+
 	// Navigate: root -> stmtblock -> stmt -> createfunctionstmt
-	root, ok := res.Tree.(*postgresql.RootContext)
+	root, ok := parseResults[0].Tree.(*postgresql.RootContext)
 	if !ok {
-		return nil, errors.Errorf("expecting RootContext but got %T", res.Tree)
+		return nil, errors.Errorf("expecting RootContext but got %T", parseResults[0].Tree)
 	}
 
 	stmtblock := root.Stmtblock()
@@ -633,16 +647,20 @@ func (l *returnQueryListener) EnterStmt_return(ctx *postgresql.Stmt_returnContex
 }
 
 func (q *querySpanExtractor) getColumnsFromComplexPLPGSQL(name string, columnNames []string, definition string) ([]base.QuerySpanResult, error) {
-	res, err := ParsePostgreSQL(definition)
+	parseResults, err := ParsePostgreSQL(definition)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse PLpgSQL function body for function %s", name)
+	}
+
+	if len(parseResults) != 1 {
+		return nil, errors.Errorf("expected exactly 1 statement in function definition, got %d", len(parseResults))
 	}
 
 	listener := &plpgSQLListener{
 		q:         q,
 		variables: make(map[string]*base.QuerySpanResult),
 	}
-	antlr.ParseTreeWalkerDefault.Walk(listener, res.Tree)
+	antlr.ParseTreeWalkerDefault.Walk(listener, parseResults[0].Tree)
 	if listener.err != nil {
 		return nil, errors.Wrapf(listener.err, "failed to extract table source from PLpgSQL function body for function %s", name)
 	}
@@ -1219,7 +1237,7 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 
 	if table != nil {
 		var columns []string
-		for _, column := range table.GetColumns() {
+		for _, column := range table.GetProto().GetColumns() {
 			columns = append(columns, column.Name)
 		}
 		return &base.PhysicalTable{
@@ -1233,7 +1251,7 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 
 	if foreignTable != nil {
 		var columns []string
-		for _, column := range foreignTable.GetColumns() {
+		for _, column := range foreignTable.GetProto().GetColumns() {
 			columns = append(columns, column.Name)
 		}
 		return &base.PhysicalTable{

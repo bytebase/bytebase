@@ -58,8 +58,6 @@ type TableMetadata struct {
 	isDetailCaseSensitive bool
 	internalColumn        map[string]*storepb.ColumnMetadata
 	internalIndexes       map[string]*IndexMetadata
-	columns               []*storepb.ColumnMetadata
-	rowCount              int64
 	proto                 *storepb.TableMetadata
 }
 
@@ -80,6 +78,15 @@ type ExternalTableMetadata struct {
 type IndexMetadata struct {
 	tableProto *storepb.TableMetadata
 	proto      *storepb.IndexMetadata
+}
+
+// normalizeNameByCaseSensitivity normalizes a name based on case sensitivity.
+// If caseSensitive is true, returns the name as-is; otherwise returns lowercase.
+func normalizeNameByCaseSensitivity(name string, caseSensitive bool) string {
+	if caseSensitive {
+		return name
+	}
+	return strings.ToLower(name)
 }
 
 func NewDatabaseMetadata(
@@ -119,12 +126,7 @@ func NewDatabaseMetadata(
 		for _, table := range s.Tables {
 			tables, names := buildTablesMetadata(table, isDetailCaseSensitive)
 			for i, table := range tables {
-				var tableID string
-				if isObjectCaseSensitive {
-					tableID = names[i]
-				} else {
-					tableID = strings.ToLower(names[i])
-				}
+				tableID := normalizeNameByCaseSensitivity(names[i], isObjectCaseSensitive)
 				schemaMetadata.internalTables[tableID] = table
 			}
 		}
@@ -135,85 +137,40 @@ func NewDatabaseMetadata(
 				proto:                 externalTable,
 			}
 			for _, column := range externalTable.Columns {
-				var columnID string
-				if isDetailCaseSensitive {
-					columnID = column.Name
-				} else {
-					columnID = strings.ToLower(column.Name)
-				}
+				columnID := normalizeNameByCaseSensitivity(column.Name, isDetailCaseSensitive)
 				externalTableMetadata.internal[columnID] = column
 				externalTableMetadata.columns = append(externalTableMetadata.columns, column)
 			}
-			var tableID string
-			if isObjectCaseSensitive {
-				tableID = externalTable.Name
-			} else {
-				tableID = strings.ToLower(externalTable.Name)
-			}
+			tableID := normalizeNameByCaseSensitivity(externalTable.Name, isObjectCaseSensitive)
 			schemaMetadata.internalExternalTable[tableID] = externalTableMetadata
 		}
 		for _, view := range s.Views {
-			var viewID string
-			if isObjectCaseSensitive {
-				viewID = view.Name
-			} else {
-				viewID = strings.ToLower(view.Name)
-			}
+			viewID := normalizeNameByCaseSensitivity(view.Name, isObjectCaseSensitive)
 			schemaMetadata.internalViews[viewID] = view
 		}
 		for _, materializedView := range s.MaterializedViews {
-			var viewID string
-			if isObjectCaseSensitive {
-				viewID = materializedView.Name
-			} else {
-				viewID = strings.ToLower(materializedView.Name)
-			}
+			viewID := normalizeNameByCaseSensitivity(materializedView.Name, isObjectCaseSensitive)
 			schemaMetadata.internalMaterializedView[viewID] = materializedView
 		}
 		schemaMetadata.functions = s.Functions
 		for _, procedure := range s.Procedures {
-			var procedureID string
-			if isDetailCaseSensitive {
-				procedureID = procedure.Name
-			} else {
-				procedureID = strings.ToLower(procedure.Name)
-			}
+			procedureID := normalizeNameByCaseSensitivity(procedure.Name, isDetailCaseSensitive)
 			schemaMetadata.internalProcedures[procedureID] = procedure
 		}
 		for _, p := range s.Packages {
-			var packageID string
-			if isDetailCaseSensitive {
-				packageID = p.Name
-			} else {
-				packageID = strings.ToLower(p.Name)
-			}
+			packageID := normalizeNameByCaseSensitivity(p.Name, isDetailCaseSensitive)
 			schemaMetadata.internalPackages[packageID] = p
 		}
 		for _, sequence := range s.Sequences {
-			var sequenceID string
-			if isDetailCaseSensitive {
-				sequenceID = sequence.Name
-			} else {
-				sequenceID = strings.ToLower(sequence.Name)
-			}
+			sequenceID := normalizeNameByCaseSensitivity(sequence.Name, isDetailCaseSensitive)
 			schemaMetadata.internalSequences[sequenceID] = sequence
 		}
-		var schemaID string
-		if isObjectCaseSensitive {
-			schemaID = s.Name
-		} else {
-			schemaID = strings.ToLower(s.Name)
-		}
+		schemaID := normalizeNameByCaseSensitivity(s.Name, isObjectCaseSensitive)
 		dbMetadata.internal[schemaID] = schemaMetadata
 	}
 
 	for _, dbLink := range metadata.LinkedDatabases {
-		var dbLinkID string
-		if isObjectCaseSensitive {
-			dbLinkID = dbLink.Name
-		} else {
-			dbLinkID = strings.ToLower(dbLink.Name)
-		}
+		dbLinkID := normalizeNameByCaseSensitivity(dbLink.Name, isObjectCaseSensitive)
 		dbMetadata.linkedDatabase[dbLinkID] = dbLink
 	}
 
@@ -257,12 +214,7 @@ func (d *DatabaseMetadata) GetSearchPath() []string {
 }
 
 func (d *DatabaseMetadata) GetSchemaMetadata(name string) *SchemaMetadata {
-	var schemaID string
-	if d.isObjectCaseSensitive {
-		schemaID = name
-	} else {
-		schemaID = strings.ToLower(name)
-	}
+	schemaID := normalizeNameByCaseSensitivity(name, d.isObjectCaseSensitive)
 	return d.internal[schemaID]
 }
 
@@ -291,12 +243,7 @@ func (d *DatabaseMetadata) ListSchemaNames() []string {
 }
 
 func (d *DatabaseMetadata) GetLinkedDatabase(name string) *storepb.LinkedDatabaseMetadata {
-	var nameID string
-	if d.isObjectCaseSensitive {
-		nameID = name
-	} else {
-		nameID = strings.ToLower(name)
-	}
+	nameID := normalizeNameByCaseSensitivity(name, d.isObjectCaseSensitive)
 	return d.linkedDatabase[nameID]
 }
 
@@ -330,12 +277,7 @@ func (d *DatabaseMetadata) CreateSchema(schemaName string) *SchemaMetadata {
 	}
 
 	// Add to internal map
-	var schemaID string
-	if d.isObjectCaseSensitive {
-		schemaID = schemaName
-	} else {
-		schemaID = strings.ToLower(schemaName)
-	}
+	schemaID := normalizeNameByCaseSensitivity(schemaName, d.isObjectCaseSensitive)
 	d.internal[schemaID] = schemaMeta
 
 	return schemaMeta
@@ -348,12 +290,7 @@ func (d *DatabaseMetadata) DropSchema(schemaName string) error {
 	}
 
 	// Remove from internal map
-	var schemaID string
-	if d.isObjectCaseSensitive {
-		schemaID = schemaName
-	} else {
-		schemaID = strings.ToLower(schemaName)
-	}
+	schemaID := normalizeNameByCaseSensitivity(schemaName, d.isObjectCaseSensitive)
 	delete(d.internal, schemaID)
 
 	// Remove from proto's schema list
@@ -448,12 +385,7 @@ func (s *SchemaMetadata) GetTable(name string) *TableMetadata {
 	if s == nil {
 		return nil
 	}
-	var nameID string
-	if s.isObjectCaseSensitive {
-		nameID = name
-	} else {
-		nameID = strings.ToLower(name)
-	}
+	nameID := normalizeNameByCaseSensitivity(name, s.isObjectCaseSensitive)
 	return s.internalTables[nameID]
 }
 
@@ -473,54 +405,29 @@ func (s *SchemaMetadata) GetIndex(name string) *IndexMetadata {
 
 // GetView gets the view by name.
 func (s *SchemaMetadata) GetView(name string) *storepb.ViewMetadata {
-	var nameID string
-	if s.isObjectCaseSensitive {
-		nameID = name
-	} else {
-		nameID = strings.ToLower(name)
-	}
+	nameID := normalizeNameByCaseSensitivity(name, s.isObjectCaseSensitive)
 	return s.internalViews[nameID]
 }
 
 func (s *SchemaMetadata) GetProcedure(name string) *storepb.ProcedureMetadata {
-	var nameID string
-	if s.isDetailCaseSensitive {
-		nameID = name
-	} else {
-		nameID = strings.ToLower(name)
-	}
+	nameID := normalizeNameByCaseSensitivity(name, s.isDetailCaseSensitive)
 	return s.internalProcedures[nameID]
 }
 
 func (s *SchemaMetadata) GetPackage(name string) *storepb.PackageMetadata {
-	var nameID string
-	if s.isDetailCaseSensitive {
-		nameID = name
-	} else {
-		nameID = strings.ToLower(name)
-	}
+	nameID := normalizeNameByCaseSensitivity(name, s.isDetailCaseSensitive)
 	return s.internalPackages[nameID]
 }
 
 // GetMaterializedView gets the materialized view by name.
 func (s *SchemaMetadata) GetMaterializedView(name string) *storepb.MaterializedViewMetadata {
-	var nameID string
-	if s.isObjectCaseSensitive {
-		nameID = name
-	} else {
-		nameID = strings.ToLower(name)
-	}
+	nameID := normalizeNameByCaseSensitivity(name, s.isObjectCaseSensitive)
 	return s.internalMaterializedView[nameID]
 }
 
 // GetExternalTable gets the external table by name.
 func (s *SchemaMetadata) GetExternalTable(name string) *ExternalTableMetadata {
-	var nameID string
-	if s.isObjectCaseSensitive {
-		nameID = name
-	} else {
-		nameID = strings.ToLower(name)
-	}
+	nameID := normalizeNameByCaseSensitivity(name, s.isObjectCaseSensitive)
 	return s.internalExternalTable[nameID]
 }
 
@@ -547,12 +454,7 @@ func (s *SchemaMetadata) GetFunction(name string) *storepb.FunctionMetadata {
 
 // GetSequence gets the sequence by name.
 func (s *SchemaMetadata) GetSequence(name string) *storepb.SequenceMetadata {
-	var nameID string
-	if s.isDetailCaseSensitive {
-		nameID = name
-	} else {
-		nameID = strings.ToLower(name)
-	}
+	nameID := normalizeNameByCaseSensitivity(name, s.isDetailCaseSensitive)
 	return s.internalSequences[nameID]
 }
 
@@ -666,17 +568,11 @@ func (s *SchemaMetadata) CreateTable(tableName string) (*TableMetadata, error) {
 		isDetailCaseSensitive: s.isDetailCaseSensitive,
 		internalColumn:        make(map[string]*storepb.ColumnMetadata),
 		internalIndexes:       make(map[string]*IndexMetadata),
-		columns:               []*storepb.ColumnMetadata{},
 		proto:                 newTableProto,
 	}
 
 	// Add to internal map
-	var tableID string
-	if s.isObjectCaseSensitive {
-		tableID = tableName
-	} else {
-		tableID = strings.ToLower(tableName)
-	}
+	tableID := normalizeNameByCaseSensitivity(tableName, s.isObjectCaseSensitive)
 	s.internalTables[tableID] = tableMeta
 
 	return tableMeta, nil
@@ -691,12 +587,7 @@ func (s *SchemaMetadata) DropTable(tableName string) error {
 	}
 
 	// Remove from internal map
-	var tableID string
-	if s.isObjectCaseSensitive {
-		tableID = tableName
-	} else {
-		tableID = strings.ToLower(tableName)
-	}
+	tableID := normalizeNameByCaseSensitivity(tableName, s.isObjectCaseSensitive)
 	delete(s.internalTables, tableID)
 
 	// Remove from proto's table list
@@ -736,24 +627,14 @@ func (s *SchemaMetadata) RenameTable(oldName string, newName string) error {
 	}
 
 	// Remove from internal map using old name
-	var oldTableID string
-	if s.isObjectCaseSensitive {
-		oldTableID = oldName
-	} else {
-		oldTableID = strings.ToLower(oldName)
-	}
+	oldTableID := normalizeNameByCaseSensitivity(oldName, s.isObjectCaseSensitive)
 	delete(s.internalTables, oldTableID)
 
 	// Update the table name in the proto
 	oldTable.proto.Name = newName
 
 	// Add back to internal map using new name
-	var newTableID string
-	if s.isObjectCaseSensitive {
-		newTableID = newName
-	} else {
-		newTableID = strings.ToLower(newName)
-	}
+	newTableID := normalizeNameByCaseSensitivity(newName, s.isObjectCaseSensitive)
 	s.internalTables[newTableID] = oldTable
 
 	return nil
@@ -778,12 +659,7 @@ func (s *SchemaMetadata) CreateView(viewName string, definition string, dependen
 	s.proto.Views = append(s.proto.Views, newViewProto)
 
 	// Add to internal map
-	var viewID string
-	if s.isObjectCaseSensitive {
-		viewID = viewName
-	} else {
-		viewID = strings.ToLower(viewName)
-	}
+	viewID := normalizeNameByCaseSensitivity(viewName, s.isObjectCaseSensitive)
 	s.internalViews[viewID] = newViewProto
 
 	return newViewProto, nil
@@ -798,12 +674,7 @@ func (s *SchemaMetadata) DropView(viewName string) error {
 	}
 
 	// Remove from internal map
-	var viewID string
-	if s.isObjectCaseSensitive {
-		viewID = viewName
-	} else {
-		viewID = strings.ToLower(viewName)
-	}
+	viewID := normalizeNameByCaseSensitivity(viewName, s.isObjectCaseSensitive)
 	delete(s.internalViews, viewID)
 
 	// Remove from proto's view list
@@ -843,24 +714,14 @@ func (s *SchemaMetadata) RenameView(oldName string, newName string) error {
 	}
 
 	// Remove from internal map using old name
-	var oldViewID string
-	if s.isObjectCaseSensitive {
-		oldViewID = oldName
-	} else {
-		oldViewID = strings.ToLower(oldName)
-	}
+	oldViewID := normalizeNameByCaseSensitivity(oldName, s.isObjectCaseSensitive)
 	delete(s.internalViews, oldViewID)
 
 	// Update the view name in the proto
 	oldView.Name = newName
 
 	// Add back to internal map using new name
-	var newViewID string
-	if s.isObjectCaseSensitive {
-		newViewID = newName
-	} else {
-		newViewID = strings.ToLower(newName)
-	}
+	newViewID := normalizeNameByCaseSensitivity(newName, s.isObjectCaseSensitive)
 	s.internalViews[newViewID] = oldView
 
 	return nil
@@ -921,26 +782,14 @@ func buildTablesMetadata(table *storepb.TableMetadata, isDetailCaseSensitive boo
 		proto:                 table,
 	}
 	for _, column := range table.Columns {
-		var columnID string
-		if isDetailCaseSensitive {
-			columnID = column.Name
-		} else {
-			columnID = strings.ToLower(column.Name)
-		}
+		columnID := normalizeNameByCaseSensitivity(column.Name, isDetailCaseSensitive)
 		tableMetadata.internalColumn[columnID] = column
-		tableMetadata.columns = append(tableMetadata.columns, column)
 	}
 	indexes := buildIndexesMetadata(table)
 	for _, index := range indexes {
-		var indexID string
-		if isDetailCaseSensitive {
-			indexID = index.proto.Name
-		} else {
-			indexID = strings.ToLower(index.proto.Name)
-		}
+		indexID := normalizeNameByCaseSensitivity(index.proto.Name, isDetailCaseSensitive)
 		tableMetadata.internalIndexes[indexID] = index
 	}
-	tableMetadata.rowCount = table.RowCount
 	result = append(result, tableMetadata)
 	name = append(name, table.Name)
 
@@ -986,14 +835,8 @@ func buildTablesMetadataRecursive(originalColumn []*storepb.ColumnMetadata, part
 			proto:          proto,
 		}
 		for _, column := range originalColumn {
-			var columnID string
-			if isDetailCaseSensitive {
-				columnID = column.Name
-			} else {
-				columnID = strings.ToLower(column.Name)
-			}
+			columnID := normalizeNameByCaseSensitivity(column.Name, isDetailCaseSensitive)
 			partitionMetadata.internalColumn[columnID] = column
-			partitionMetadata.columns = append(partitionMetadata.columns, column)
 		}
 		tables = append(tables, partitionMetadata)
 		names = append(names, partition.Name)
@@ -1019,12 +862,7 @@ func (t *TableMetadata) GetColumn(name string) *storepb.ColumnMetadata {
 	if t == nil {
 		return nil
 	}
-	var nameID string
-	if t.isDetailCaseSensitive {
-		nameID = name
-	} else {
-		nameID = strings.ToLower(name)
-	}
+	nameID := normalizeNameByCaseSensitivity(name, t.isDetailCaseSensitive)
 	return t.internalColumn[nameID]
 }
 
@@ -1032,12 +870,7 @@ func (t *TableMetadata) GetIndex(name string) *IndexMetadata {
 	if t == nil {
 		return nil
 	}
-	var nameID string
-	if t.isDetailCaseSensitive {
-		nameID = name
-	} else {
-		nameID = strings.ToLower(name)
-	}
+	nameID := normalizeNameByCaseSensitivity(name, t.isDetailCaseSensitive)
 	return t.internalIndexes[nameID]
 }
 
@@ -1058,15 +891,6 @@ func (t *TableMetadata) GetPrimaryKey() *IndexMetadata {
 	return nil
 }
 
-// GetColumns gets the columns.
-func (t *TableMetadata) GetColumns() []*storepb.ColumnMetadata {
-	return t.columns
-}
-
-func (t *TableMetadata) GetRowCount() int64 {
-	return t.rowCount
-}
-
 func (t *TableMetadata) GetProto() *storepb.TableMetadata {
 	return t.proto
 }
@@ -1083,16 +907,8 @@ func (t *TableMetadata) CreateColumn(columnProto *storepb.ColumnMetadata) error 
 	t.proto.Columns = append(t.proto.Columns, columnProto)
 
 	// Add to internal map
-	var columnID string
-	if t.isDetailCaseSensitive {
-		columnID = columnProto.Name
-	} else {
-		columnID = strings.ToLower(columnProto.Name)
-	}
+	columnID := normalizeNameByCaseSensitivity(columnProto.Name, t.isDetailCaseSensitive)
 	t.internalColumn[columnID] = columnProto
-
-	// Add to columns slice
-	t.columns = append(t.columns, columnProto)
 
 	return nil
 }
@@ -1111,12 +927,7 @@ func (t *TableMetadata) dropColumnInternal(columnName string, renumberPositions 
 	}
 
 	// Remove from internal map
-	var columnID string
-	if t.isDetailCaseSensitive {
-		columnID = columnName
-	} else {
-		columnID = strings.ToLower(columnName)
-	}
+	columnID := normalizeNameByCaseSensitivity(columnName, t.isDetailCaseSensitive)
 	delete(t.internalColumn, columnID)
 
 	// Remove from proto's column list
@@ -1133,9 +944,6 @@ func (t *TableMetadata) dropColumnInternal(columnName string, renumberPositions 
 		}
 	}
 	t.proto.Columns = newColumns
-
-	// Rebuild columns slice
-	t.columns = newColumns
 
 	// Renumber positions to be sequential (1-indexed) if requested
 	// MySQL/TiDB: renumber positions (1, 2, 3, ...)
@@ -1206,12 +1014,7 @@ func (t *TableMetadata) DropColumnWithoutUpdatingIndexes(columnName string) erro
 	}
 
 	// Remove from internal map
-	var columnID string
-	if t.isDetailCaseSensitive {
-		columnID = columnName
-	} else {
-		columnID = strings.ToLower(columnName)
-	}
+	columnID := normalizeNameByCaseSensitivity(columnName, t.isDetailCaseSensitive)
 	delete(t.internalColumn, columnID)
 
 	// Remove from proto's column list
@@ -1228,9 +1031,6 @@ func (t *TableMetadata) DropColumnWithoutUpdatingIndexes(columnName string) erro
 		}
 	}
 	t.proto.Columns = newColumns
-
-	// Rebuild columns slice
-	t.columns = newColumns
 
 	// NOTE: We intentionally do NOT renumber positions here
 	// The caller (tidbCompleteTableChangeColumn) will handle position adjustments
@@ -1261,24 +1061,14 @@ func (t *TableMetadata) RenameColumn(oldName string, newName string) error {
 	}
 
 	// Remove from internal map using old name
-	var oldColumnID string
-	if t.isDetailCaseSensitive {
-		oldColumnID = oldName
-	} else {
-		oldColumnID = strings.ToLower(oldName)
-	}
+	oldColumnID := normalizeNameByCaseSensitivity(oldName, t.isDetailCaseSensitive)
 	delete(t.internalColumn, oldColumnID)
 
 	// Update the column name in the proto
 	oldColumn.Name = newName
 
 	// Add back to internal map using new name
-	var newColumnID string
-	if t.isDetailCaseSensitive {
-		newColumnID = newName
-	} else {
-		newColumnID = strings.ToLower(newName)
-	}
+	newColumnID := normalizeNameByCaseSensitivity(newName, t.isDetailCaseSensitive)
 	t.internalColumn[newColumnID] = oldColumn
 
 	// Update column references in indexes
@@ -1305,12 +1095,7 @@ func (t *ExternalTableMetadata) GetProto() *storepb.ExternalTableMetadata {
 
 // GetColumn gets the column by name.
 func (t *ExternalTableMetadata) GetColumn(name string) *storepb.ColumnMetadata {
-	var nameID string
-	if t.isDetailCaseSensitive {
-		nameID = name
-	} else {
-		nameID = strings.ToLower(name)
-	}
+	nameID := normalizeNameByCaseSensitivity(name, t.isDetailCaseSensitive)
 	return t.internal[nameID]
 }
 
@@ -1327,30 +1112,6 @@ func (i *IndexMetadata) GetTableProto() *storepb.TableMetadata {
 	return i.tableProto
 }
 
-// Primary returns true if the index is a primary key.
-func (i *IndexMetadata) Primary() bool {
-	if i.proto == nil {
-		return false
-	}
-	return i.proto.Primary
-}
-
-// Unique returns true if the index is unique.
-func (i *IndexMetadata) Unique() bool {
-	if i.proto == nil {
-		return false
-	}
-	return i.proto.Unique
-}
-
-// ExpressionList returns the list of expressions/columns in the index.
-func (i *IndexMetadata) ExpressionList() []string {
-	if i.proto == nil {
-		return nil
-	}
-	return i.proto.Expressions
-}
-
 // CreateIndex creates a new index in the table.
 // Returns an error if the index already exists.
 func (t *TableMetadata) CreateIndex(indexProto *storepb.IndexMetadata) error {
@@ -1363,12 +1124,7 @@ func (t *TableMetadata) CreateIndex(indexProto *storepb.IndexMetadata) error {
 	t.proto.Indexes = append(t.proto.Indexes, indexProto)
 
 	// Add to internal map
-	var indexID string
-	if t.isDetailCaseSensitive {
-		indexID = indexProto.Name
-	} else {
-		indexID = strings.ToLower(indexProto.Name)
-	}
+	indexID := normalizeNameByCaseSensitivity(indexProto.Name, t.isDetailCaseSensitive)
 	t.internalIndexes[indexID] = &IndexMetadata{
 		tableProto: t.proto,
 		proto:      indexProto,
@@ -1386,12 +1142,7 @@ func (t *TableMetadata) DropIndex(indexName string) error {
 	}
 
 	// Remove from internal map
-	var indexID string
-	if t.isDetailCaseSensitive {
-		indexID = indexName
-	} else {
-		indexID = strings.ToLower(indexName)
-	}
+	indexID := normalizeNameByCaseSensitivity(indexName, t.isDetailCaseSensitive)
 	delete(t.internalIndexes, indexID)
 
 	// Remove from proto's index list
@@ -1431,24 +1182,14 @@ func (t *TableMetadata) RenameIndex(oldName string, newName string) error {
 	}
 
 	// Remove from internal map using old name
-	var oldIndexID string
-	if t.isDetailCaseSensitive {
-		oldIndexID = oldName
-	} else {
-		oldIndexID = strings.ToLower(oldName)
-	}
+	oldIndexID := normalizeNameByCaseSensitivity(oldName, t.isDetailCaseSensitive)
 	delete(t.internalIndexes, oldIndexID)
 
 	// Update the index name in the proto
 	oldIndex.proto.Name = newName
 
 	// Add back to internal map using new name
-	var newIndexID string
-	if t.isDetailCaseSensitive {
-		newIndexID = newName
-	} else {
-		newIndexID = strings.ToLower(newName)
-	}
+	newIndexID := normalizeNameByCaseSensitivity(newName, t.isDetailCaseSensitive)
 	t.internalIndexes[newIndexID] = oldIndex
 
 	return nil

@@ -192,10 +192,10 @@ func (r *NamingUKConventionRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 			if indexState == nil {
 				continue
 			}
-			if !indexState.Unique() {
+			if !indexState.GetProto().GetUnique() {
 				continue
 			}
-			columnList := indexState.ExpressionList()
+			columnList := indexState.GetProto().GetExpressions()
 			metaData := map[string]string{
 				advisor.ColumnListTemplateToken: strings.Join(columnList, "_"),
 				advisor.TableNameTemplateToken:  tableName,

@@ -1118,7 +1118,7 @@ func (q *querySpanExtractor) findTableSchema(objectName parser.IObject_nameConte
 				if tableSchema == nil {
 					return "", nil, errors.Errorf(`table %s.%s.%s is not found`, normalizedDatabaseName, normalizedSchemaName, normalizedTableName)
 				}
-				columns := tableSchema.GetColumns()
+				columns := tableSchema.GetProto().GetColumns()
 				return normalizedDatabaseName, &base.PhysicalTable{
 					Name:     tableSchema.GetProto().Name,
 					Database: normalizedDatabaseName,

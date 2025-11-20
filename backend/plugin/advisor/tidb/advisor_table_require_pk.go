@@ -188,7 +188,7 @@ func (v *tableRequirePKChecker) createTableLike(node *ast.CreateTableStmt) {
 			if referTableMetadata != nil {
 				primaryKey := referTableMetadata.GetPrimaryKey()
 				if primaryKey != nil {
-					v.tables[table] = newColumnSet(primaryKey.ExpressionList())
+					v.tables[table] = newColumnSet(primaryKey.GetProto().GetExpressions())
 				}
 			}
 		}
@@ -201,7 +201,7 @@ func (v *tableRequirePKChecker) dropColumn(table string, column string) bool {
 		if pk == nil {
 			return false
 		}
-		v.tables[table] = newColumnSet(pk.ExpressionList())
+		v.tables[table] = newColumnSet(pk.GetProto().GetExpressions())
 	}
 
 	pk := v.tables[table]

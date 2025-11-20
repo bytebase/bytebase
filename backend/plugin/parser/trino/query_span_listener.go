@@ -115,7 +115,7 @@ func (l *trinoQuerySpanListener) EnterTableName(ctx *parser.TableNameContext) {
 
 	// Create physical table with column names from metadata
 	var columnNames []string
-	for _, col := range tableMeta.GetColumns() {
+	for _, col := range tableMeta.GetProto().GetColumns() {
 		columnNames = append(columnNames, col.Name)
 	}
 
@@ -128,7 +128,7 @@ func (l *trinoQuerySpanListener) EnterTableName(ctx *parser.TableNameContext) {
 	l.extractor.tableSourcesFrom = append(l.extractor.tableSourcesFrom, physicalTable)
 
 	// Add each column from the table as a source column
-	for _, col := range tableMeta.GetColumns() {
+	for _, col := range tableMeta.GetProto().GetColumns() {
 		colResource := base.ColumnResource{
 			Database: db,
 			Schema:   schema,

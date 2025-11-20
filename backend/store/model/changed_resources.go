@@ -51,7 +51,7 @@ func (r *ChangedResources) Build() *storepb.ChangedResources {
 				}
 				tableMetadata := schemaMetadata.GetTable(table.GetName())
 				if tableMetadata != nil {
-					table.TableRows = tableMetadata.GetRowCount()
+					table.TableRows = tableMetadata.GetProto().GetRowCount()
 				}
 			}
 		}
@@ -248,7 +248,7 @@ func (r *ChangedResources) CountAffectedTableRows() int64 {
 				if tableMeta == nil {
 					continue
 				}
-				totalAffectedRows += tableMeta.GetRowCount()
+				totalAffectedRows += tableMeta.GetProto().GetRowCount()
 			}
 		}
 	}

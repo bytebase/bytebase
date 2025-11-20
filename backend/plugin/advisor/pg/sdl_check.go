@@ -23,16 +23,19 @@ import (
 //
 // For integrity checks (foreign key validation, duplicate detection, etc.), use CheckSDLIntegrity from sdl_integrity_check.go.
 func CheckSDLStyle(statement string) ([]*storepb.Advice, error) {
-	tree, err := pgparser.ParsePostgreSQL(statement)
+	parseResults, err := pgparser.ParsePostgreSQL(statement)
 	if err != nil {
 		return nil, err
 	}
 
-	// Run style/convention checks
+	// Run style/convention checks on all statements
 	styleChecker := &sdlChecker{
 		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
 	}
-	antlr.ParseTreeWalkerDefault.Walk(styleChecker, tree.Tree)
+
+	for _, parseResult := range parseResults {
+		antlr.ParseTreeWalkerDefault.Walk(styleChecker, parseResult.Tree)
+	}
 
 	return styleChecker.adviceList, nil
 }

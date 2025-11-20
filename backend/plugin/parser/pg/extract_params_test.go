@@ -73,10 +73,11 @@ $$ LANGUAGE SQL;`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := ParsePostgreSQL(tt.definition)
+			parseResults, err := ParsePostgreSQL(tt.definition)
 			require.NoError(t, err, "failed to parse function definition")
+			require.Len(t, parseResults, 1, "expected exactly 1 statement")
 
-			root, ok := res.Tree.(*postgresql.RootContext)
+			root, ok := parseResults[0].Tree.(*postgresql.RootContext)
 			require.True(t, ok, "expected RootContext")
 			stmtblock := root.Stmtblock()
 			stmtmulti := stmtblock.Stmtmulti()

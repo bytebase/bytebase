@@ -18,7 +18,7 @@ import (
 // 5. Reject: All other statements (DDL, DML except SELECT)
 func validateQueryANTLR(statement string) (bool, bool, error) {
 	// Parse with ANTLR
-	result, err := ParsePostgreSQL(statement)
+	results, err := ParsePostgreSQL(statement)
 	if err != nil {
 		// Return syntax error
 		if syntaxErr, ok := err.(*base.SyntaxError); ok {
@@ -27,8 +27,7 @@ func validateQueryANTLR(statement string) (bool, bool, error) {
 		return false, false, err
 	}
 
-	// Analyze the parse tree
-	tree := result.Tree
+	// Create a single listener to accumulate validation state across all statements
 	listener := &queryValidatorListener{
 		hasExecute:     false,
 		explainAnalyze: false,
@@ -37,21 +36,27 @@ func validateQueryANTLR(statement string) (bool, bool, error) {
 		validStmtCount: 0,
 	}
 
-	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
+	// Walk through each parsed statement
+	for _, result := range results {
+		tree := result.Tree
 
-	// If we found invalid statements, reject
-	if listener.hasInvalidStmt {
-		return false, false, nil
-	}
+		// Analyze the parse tree
+		antlr.ParseTreeWalkerDefault.Walk(listener, tree)
 
-	// Check for DML in CTEs or EXPLAIN ANALYZE
-	// This is done in a second pass to detect DML statements anywhere in the tree
-	if listener.hasCTE || listener.explainAnalyze {
-		dmlDetector := &dmlDetectorListener{}
-		antlr.ParseTreeWalkerDefault.Walk(dmlDetector, tree)
-
-		if dmlDetector.hasDML {
+		// If we found invalid statements, reject immediately
+		if listener.hasInvalidStmt {
 			return false, false, nil
+		}
+
+		// Check for DML in CTEs or EXPLAIN ANALYZE
+		// This is done in a second pass to detect DML statements anywhere in the tree
+		if listener.hasCTE || listener.explainAnalyze {
+			dmlDetector := &dmlDetectorListener{}
+			antlr.ParseTreeWalkerDefault.Walk(dmlDetector, tree)
+
+			if dmlDetector.hasDML {
+				return false, false, nil
+			}
 		}
 	}
 

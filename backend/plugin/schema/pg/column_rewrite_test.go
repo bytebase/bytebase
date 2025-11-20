@@ -298,14 +298,15 @@ func TestColumnRewriteOperations(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Parse the original SDL to create an AST chunk
-			parseResult, err := pgparser.ParsePostgreSQL(tc.originalSDL)
+			parseResults, err := pgparser.ParsePostgreSQL(tc.originalSDL)
 			require.NoError(t, err, "Failed to parse original SDL")
+			require.Len(t, parseResults, 1, "Should parse single statement")
 
 			// Extract the CREATE TABLE AST node
 			var createTableNode *parser.CreatestmtContext
 			antlr.ParseTreeWalkerDefault.Walk(&createTableExtractor{
 				result: &createTableNode,
-			}, parseResult.Tree)
+			}, parseResults[0].Tree)
 			require.NotNil(t, createTableNode, "Failed to extract CREATE TABLE AST node")
 
 			// Create a mock chunk
@@ -379,13 +380,14 @@ func TestColumnCommaHandlingEdgeCases(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Parse the SDL
-			parseResult, err := pgparser.ParsePostgreSQL(tc.originalSDL)
+			parseResults, err := pgparser.ParsePostgreSQL(tc.originalSDL)
 			require.NoError(t, err, "Failed to parse SDL")
+			require.Len(t, parseResults, 1, "Should parse single statement")
 
 			var createTableNode *parser.CreatestmtContext
 			antlr.ParseTreeWalkerDefault.Walk(&createTableExtractor{
 				result: &createTableNode,
-			}, parseResult.Tree)
+			}, parseResults[0].Tree)
 			require.NotNil(t, createTableNode, "Failed to extract CREATE TABLE AST")
 
 			// Extract columns
@@ -397,7 +399,7 @@ func TestColumnCommaHandlingEdgeCases(t *testing.T) {
 			columnDef := columnDefs.Map[columnName]
 
 			// Get the rewriter
-			tokenStream := parseResult.Tokens
+			tokenStream := parseResults[0].Tokens
 			rewriter := antlr.NewTokenStreamRewriter(tokenStream)
 
 			// Test the deleteColumnFromAST function directly
@@ -439,13 +441,14 @@ func TestColumnRewriteWithCollation(t *testing.T) {
 	}
 
 	// Parse and test
-	parseResult, err := pgparser.ParsePostgreSQL(originalSDL)
+	parseResults, err := pgparser.ParsePostgreSQL(originalSDL)
 	require.NoError(t, err)
+	require.Len(t, parseResults, 1, "Should parse single statement")
 
 	var createTableNode *parser.CreatestmtContext
 	antlr.ParseTreeWalkerDefault.Walk(&createTableExtractor{
 		result: &createTableNode,
-	}, parseResult.Tree)
+	}, parseResults[0].Tree)
 	require.NotNil(t, createTableNode)
 
 	chunk := &schema.SDLChunk{

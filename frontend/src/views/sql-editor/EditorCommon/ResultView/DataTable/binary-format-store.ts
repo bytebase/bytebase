@@ -87,7 +87,13 @@ export const provideBinaryFormatContext = (contextId: Ref<string>) => {
             setIndex,
             contextId: contextId.value,
           });
-    formattedBinaryValues.value.set(key, format);
+
+    // If setting to DEFAULT, delete the key so it falls through to column/auto-detect
+    if (format === "DEFAULT") {
+      formattedBinaryValues.value.delete(key);
+    } else {
+      formattedBinaryValues.value.set(key, format);
+    }
   };
 
   const context: BinaryFormatContext = {

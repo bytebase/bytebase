@@ -2109,7 +2109,7 @@ func isDefinitionProcedure(definition string) bool {
 	}
 
 	// Parse the definition to get AST
-	parseResult, err := pgparser.ParsePostgreSQL(definition)
+	parseResults, err := pgparser.ParsePostgreSQL(definition)
 	if err != nil {
 		// If parsing fails, fall back to string-based detection
 		// This should rarely happen for valid definitions
@@ -2119,7 +2119,12 @@ func isDefinitionProcedure(definition string) bool {
 			strings.HasPrefix(upperDef, "CREATE OR REPLACE PROCEDURE")
 	}
 
-	tree := parseResult.Tree
+	// For function/procedure definition, we expect exactly one statement
+	if len(parseResults) != 1 {
+		return false
+	}
+
+	tree := parseResults[0].Tree
 	if tree == nil {
 		return false
 	}
