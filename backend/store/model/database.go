@@ -69,7 +69,6 @@ type TableConfig struct {
 type ExternalTableMetadata struct {
 	isDetailCaseSensitive bool
 	internal              map[string]*storepb.ColumnMetadata
-	columns               []*storepb.ColumnMetadata
 	proto                 *storepb.ExternalTableMetadata
 }
 
@@ -137,7 +136,6 @@ func NewDatabaseMetadata(
 			for _, column := range externalTable.Columns {
 				columnID := normalizeNameByCaseSensitivity(column.Name, isDetailCaseSensitive)
 				externalTableMetadata.internal[columnID] = column
-				externalTableMetadata.columns = append(externalTableMetadata.columns, column)
 			}
 			tableID := normalizeNameByCaseSensitivity(externalTable.Name, isObjectCaseSensitive)
 			schemaMetadata.internalExternalTable[tableID] = externalTableMetadata
@@ -1080,11 +1078,6 @@ func (t *ExternalTableMetadata) GetProto() *storepb.ExternalTableMetadata {
 func (t *ExternalTableMetadata) GetColumn(name string) *storepb.ColumnMetadata {
 	nameID := normalizeNameByCaseSensitivity(name, t.isDetailCaseSensitive)
 	return t.internal[nameID]
-}
-
-// GetColumns gets the columns.
-func (t *ExternalTableMetadata) GetColumns() []*storepb.ColumnMetadata {
-	return t.columns
 }
 
 func (i *IndexMetadata) GetProto() *storepb.IndexMetadata {
