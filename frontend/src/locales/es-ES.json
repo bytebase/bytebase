@@ -922,9 +922,9 @@
           "title": "Creador",
           "description": "Búsqueda por creador"
         },
-        "approver": {
-          "title": "Aprobador",
-          "description": "Búsqueda por aprobador del problema"
+        "current-approver": {
+          "title": "aprobador actual",
+          "description": "Buscar por el aprobador actual del problema"
         },
         "approval": {
           "value": {

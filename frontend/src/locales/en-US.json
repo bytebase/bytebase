@@ -922,9 +922,9 @@
           "title": "Creator",
           "description": "Search by the creator"
         },
-        "approver": {
-          "title": "Approver",
-          "description": "Search by the issue approver"
+        "current-approver": {
+          "title": "Current approver",
+          "description": "Search by the issue current approver"
         },
         "approval": {
           "value": {

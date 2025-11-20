@@ -18,6 +18,11 @@ import {
   useUserStore,
 } from "@/store";
 import { isValidProjectName, SYSTEM_BOT_USER_NAME, UNKNOWN_ID } from "@/types";
+import { MigrationType } from "@/types/proto-es/v1/common_pb";
+import {
+  Issue_ApprovalStatus,
+  IssueStatus,
+} from "@/types/proto-es/v1/issue_service_pb";
 import { type Label } from "@/types/proto-es/v1/project_service_pb";
 import { UserType } from "@/types/proto-es/v1/user_service_pb";
 import type { SearchParams, SearchScopeId } from "@/utils";
@@ -175,18 +180,24 @@ export const useIssueSearchScopeOptions = (
       },
       {
         id: "status",
+        allowMultiple: true,
         title: t("common.status"),
         description: t("issue.advanced-search.scope.approval.description"),
         options: [
           {
-            value: "OPEN",
+            value: IssueStatus[IssueStatus.OPEN],
             keywords: ["open"],
             render: () => renderSpan(t("issue.table.open")),
           },
           {
-            value: "CLOSED",
-            keywords: ["closed", "canceled", "done"],
-            render: () => renderSpan(t("issue.table.closed")),
+            value: IssueStatus[IssueStatus.DONE],
+            keywords: ["closed", "done"],
+            render: () => renderSpan(t("common.done")),
+          },
+          {
+            value: IssueStatus[IssueStatus.CANCELED],
+            keywords: ["closed", "canceled"],
+            render: () => renderSpan(t("common.canceled")),
           },
         ],
       },
@@ -196,7 +207,7 @@ export const useIssueSearchScopeOptions = (
         description: t("issue.advanced-search.scope.approval.description"),
         options: [
           {
-            value: "pending",
+            value: Issue_ApprovalStatus[Issue_ApprovalStatus.PENDING],
             keywords: ["pending"],
             render: () =>
               renderSpan(
@@ -204,7 +215,7 @@ export const useIssueSearchScopeOptions = (
               ),
           },
           {
-            value: "approved",
+            value: Issue_ApprovalStatus[Issue_ApprovalStatus.APPROVED],
             keywords: ["approved", "done"],
             render: () =>
               renderSpan(
@@ -224,9 +235,11 @@ export const useIssueSearchScopeOptions = (
         ]),
       },
       {
-        id: "approver",
-        title: t("issue.advanced-search.scope.approver.title"),
-        description: t("issue.advanced-search.scope.approver.description"),
+        id: "current-approver",
+        title: t("issue.advanced-search.scope.current-approver.title"),
+        description: t(
+          "issue.advanced-search.scope.current-approver.description"
+        ),
         search: searchPrincipalSearchValueOptions([
           UserType.USER,
           UserType.SERVICE_ACCOUNT,
@@ -238,12 +251,12 @@ export const useIssueSearchScopeOptions = (
         description: t("issue.advanced-search.scope.type.description"),
         options: [
           {
-            value: "DDL",
+            value: MigrationType[MigrationType.DDL],
             keywords: ["ddl", "data definition language"],
             render: () => renderSpan("Data Definition Language"),
           },
           {
-            value: "DML",
+            value: MigrationType[MigrationType.DML],
             keywords: ["dml", "data manipulation language"],
             render: () => renderSpan("Data Manipulation Language"),
           },

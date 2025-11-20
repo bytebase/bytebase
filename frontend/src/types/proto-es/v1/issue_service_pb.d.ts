@@ -112,6 +112,8 @@ export declare type ListIssuesRequest = Message<"bytebase.v1.ListIssuesRequest">
    * - database: the database full name in the "instances/{id}/databases/{name}" format, support "==" operator.
    * - environment: the database full name in the "environments/{name}" format, support "==" operator.
    * - labels: the issue labels, support "==" and "in" operator.
+   * - approval_status: issue approval status, support "==" operator.
+   * - current_approver: the issue approver, should in "users/{email} format", support "==" operator.
    *
    * For example:
    * creator == "users/ed@bytebase.com" && status in ["OPEN", "DONE"]
@@ -515,7 +517,6 @@ export declare type Issue = Message<"bytebase.v1.Issue"> & {
    * - roles/workspaceDBA
    * - roles/projectOwner
    * - roles/projectReleaser
-   * - users/{email}
    *
    * @generated from field: repeated string releasers = 20;
    */

@@ -922,9 +922,9 @@
           "title": "Người tạo",
           "description": "Tìm kiếm theo người sáng tạo"
         },
-        "approver": {
-          "title": "Người phê duyệt",
-          "description": "Tìm kiếm theo người phê duyệt vấn đề"
+        "current-approver": {
+          "title": "Người phê duyệt hiện tại",
+          "description": "Tìm kiếm theo người phê duyệt hiện tại"
         },
         "approval": {
           "value": {

@@ -922,9 +922,9 @@
           "title": "作成者",
           "description": "作成者で検索"
         },
-        "approver": {
-          "title": "承認者",
-          "description": "イシューの承認者で検索"
+        "current-approver": {
+          "title": "現在の承認者",
+          "description": "問題の現在の承認者による検索"
         },
         "approval": {
           "value": {

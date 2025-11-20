@@ -3,26 +3,73 @@ package v1
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 )
 
-func (s *IssueService) convertToIssues(ctx context.Context, issues []*store.IssueMessage) ([]*v1pb.Issue, error) {
+func (s *IssueService) convertToIssues(ctx context.Context, issues []*store.IssueMessage, issueFilter *filterIssueMessage) ([]*v1pb.Issue, error) {
 	var converted []*v1pb.Issue
 	for _, issue := range issues {
 		v1Issue, err := s.convertToIssue(ctx, issue)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to convert to issue")
 		}
+		if v1Issue == nil {
+			continue
+		}
+		if issueFilter != nil {
+			if v := issueFilter.ApprovalStatus; v != nil && v1Issue.ApprovalStatus != *v {
+				continue
+			}
+			projectID, _, err := common.GetProjectIDIssueUID(v1Issue.Name)
+			if err != nil {
+				slog.Error("failed to parse the issue name", log.BBError(err), slog.String("issue", v1Issue.Name))
+				continue
+			}
+			if v := issueFilter.ApproverID; v != nil && !s.isIssueNextApprover(ctx, v1Issue, projectID, *v) {
+				continue
+			}
+		}
 		converted = append(converted, v1Issue)
 	}
 	return converted, nil
+}
+
+func (s *IssueService) getUserRoleMap(ctx context.Context, projectResourceID string, principalUID int) map[string]bool {
+	policy, err := s.store.GetProjectIamPolicy(ctx, projectResourceID)
+	slog.Error("failed to get project iam policy", log.BBError(err), slog.String("project", projectResourceID))
+	if err != nil {
+		return map[string]bool{}
+	}
+	workspacePolicy, err := s.store.GetWorkspaceIamPolicy(ctx)
+	if err != nil {
+		slog.Error("failed to get workspace iam policy", log.BBError(err))
+		return map[string]bool{}
+	}
+
+	return utils.GetUserFormattedRolesMap(ctx, s.store, &store.UserMessage{
+		ID: principalUID,
+	}, policy.Policy, workspacePolicy.Policy)
+}
+
+func (s *IssueService) isIssueNextApprover(ctx context.Context, issue *v1pb.Issue, projectResourceID string, principalUID int) bool {
+	roles := s.getUserRoleMap(ctx, projectResourceID, principalUID)
+	approvalRoles := issue.GetApprovalTemplate().GetFlow().GetRoles()
+	index := len(issue.Approvers)
+	if index >= len(approvalRoles) {
+		return false
+	}
+
+	return roles[approvalRoles[index]]
 }
 
 func (s *IssueService) convertToIssue(ctx context.Context, issue *store.IssueMessage) (*v1pb.Issue, error) {

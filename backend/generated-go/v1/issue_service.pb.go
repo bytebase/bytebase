@@ -532,6 +532,8 @@ type ListIssuesRequest struct {
 	// - database: the database full name in the "instances/{id}/databases/{name}" format, support "==" operator.
 	// - environment: the database full name in the "environments/{name}" format, support "==" operator.
 	// - labels: the issue labels, support "==" and "in" operator.
+	// - approval_status: issue approval status, support "==" operator.
+	// - current_approver: the issue approver, should in "users/{email} format", support "==" operator.
 	//
 	// For example:
 	// creator == "users/ed@bytebase.com" && status in ["OPEN", "DONE"]
@@ -1192,7 +1194,6 @@ type Issue struct {
 	// - roles/workspaceDBA
 	// - roles/projectOwner
 	// - roles/projectReleaser
-	// - users/{email}
 	Releasers []string `protobuf:"bytes,20,rep,name=releasers,proto3" json:"releasers,omitempty"`
 	// The risk level of the issue.
 	RiskLevel RiskLevel `protobuf:"varint,21,opt,name=risk_level,json=riskLevel,proto3,enum=bytebase.v1.RiskLevel" json:"risk_level,omitempty"`

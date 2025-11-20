@@ -55,7 +55,7 @@
       <div
         v-show="showMenu"
         v-zindexable="{ enabled: true }"
-        class="absolute top-[36px] w-full bg-gray-100 shadow-xl origin-top-left rounded-[3px] overflow-clip"
+        class="absolute top-9 w-full bg-gray-100 shadow-xl origin-top-left rounded-[3px] overflow-clip"
       >
         <ScopeMenu
           :show="state.menuView === 'scope'"
@@ -99,6 +99,7 @@ import {
   buildSearchTextBySearchParams,
   emptySearchParams,
   getValueFromSearchParams,
+  getValuesFromSearchParams,
   mergeSearchParams,
   minmax,
   upsertScope,
@@ -317,33 +318,26 @@ const visibleScopeOptions = computed(() => {
 const visibleValueOptions = computed(() => {
   if (!state.currentScope) return [];
 
+  const selectedValues = new Set(
+    getValuesFromSearchParams(props.params, state.currentScope)
+  );
+  const options = valueOptions.value.filter(
+    (option) => !selectedValues.has(option.value)
+  );
+
   const keyword = currentValueForScope.value
     .trim()
     .replace(/:.*$/, "")
     .toLowerCase();
   if (!keyword || currentScopeOption.value?.search) {
-    return valueOptions.value;
+    return options;
   }
 
-  const filtered = valueOptions.value.filter(
+  return options.filter(
     (option) =>
       option.value.toLowerCase().includes(keyword) ||
       option.keywords.some((key) => key.includes(keyword))
   );
-
-  const currentValue = getValueFromSearchParams(
-    props.params,
-    state.currentScope
-  );
-  const option = valueOptions.value.find((opt) => opt.value === currentValue);
-  if (currentValue && option) {
-    // If we have current value, put it to the first if it doesn't match the keyword
-    const index = filtered.findIndex((opt) => opt.value === currentValue);
-    if (index < 0) {
-      filtered.unshift(option);
-    }
-  }
-  return filtered;
 });
 
 const visibleOptions = computed(() => {

@@ -76,7 +76,7 @@ import {
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedIssue } from "@/types";
-import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
+import { Issue_Type, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import {
   buildIssueFilterBySearchParams,
   extractProjectResourceName,
@@ -112,7 +112,10 @@ const readonlyScopes = computed((): SearchScope[] => {
 const defaultSearchParams = () => {
   const params: SearchParams = {
     query: "",
-    scopes: [...readonlyScopes.value, { id: "status", value: "OPEN" }],
+    scopes: [
+      ...readonlyScopes.value,
+      { id: "status", value: IssueStatus[IssueStatus.OPEN] },
+    ],
   };
   return params;
 };

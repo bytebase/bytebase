@@ -16,7 +16,7 @@
           <IssueTableV1
             class="border-x-0"
             :loading="loading"
-            :issue-list="applyUIIssueFilter(list, mergedUIIssueFilter)"
+            :issue-list="list"
             :highlight-text="state.params.query"
             :show-project="true"
           />
@@ -27,7 +27,7 @@
 </template>
 
 <script lang="ts" setup>
-import { type UseStorageOptions, useLocalStorage } from "@vueuse/core";
+import { useLocalStorage } from "@vueuse/core";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
 import { useRoute, useRouter } from "vue-router";
@@ -41,15 +41,15 @@ import {
   useRefreshIssueList,
 } from "@/store";
 import { type ComposedIssue } from "@/types";
-import type { SearchParams, SemanticIssueStatus } from "@/utils";
 import {
-  applyUIIssueFilter,
+  Issue_ApprovalStatus,
+  IssueStatus,
+} from "@/types/proto-es/v1/issue_service_pb";
+import type { SearchParams } from "@/utils";
+import {
   buildIssueFilterBySearchParams,
   buildSearchParamsBySearchText,
   buildSearchTextBySearchParams,
-  buildUIIssueFilterBySearchParams,
-  getSemanticIssueStatusFromSearchParams,
-  useDynamicLocalStorage,
 } from "@/utils";
 import { getComponentIdLocalStorageKey } from "@/utils/localStorage";
 
@@ -69,31 +69,17 @@ const viewId = useLocalStorage<string>(
   ""
 );
 
-const storedStatus = useDynamicLocalStorage<SemanticIssueStatus>(
-  computed(() => `bb.home.issue-list-status.${me.value.name}`),
-  "OPEN",
-  window.localStorage,
-  {
-    serializer: {
-      read(raw: SemanticIssueStatus) {
-        if (!["OPEN", "CLOSED"].includes(raw)) return "OPEN";
-        return raw;
-      },
-      write(value) {
-        return value;
-      },
-    },
-  } as UseStorageOptions<SemanticIssueStatus>
-);
-
 const defaultSearchParams = (): SearchParams => {
   const myEmail = me.value.email;
   return {
     query: "",
     scopes: [
-      { id: "status", value: "OPEN" },
-      { id: "approval", value: "pending" },
-      { id: "approver", value: myEmail },
+      { id: "status", value: IssueStatus[IssueStatus.OPEN] },
+      {
+        id: "approval",
+        value: Issue_ApprovalStatus[Issue_ApprovalStatus.PENDING],
+      },
+      { id: "current-approver", value: myEmail },
     ],
   };
 };
@@ -104,9 +90,6 @@ const state = reactive<LocalState>({
 
 const mergedIssueFilter = computed(() => {
   return buildIssueFilterBySearchParams(state.params);
-});
-const mergedUIIssueFilter = computed(() => {
-  return buildUIIssueFilterBySearchParams(state.params);
 });
 
 const fetchIssueList = async ({
@@ -132,13 +115,6 @@ watch(
   () => issuePagedTable.value?.refresh()
 );
 useRefreshIssueList(() => issuePagedTable.value?.refresh());
-
-watch(
-  () => getSemanticIssueStatusFromSearchParams(state.params),
-  (status) => {
-    storedStatus.value = status;
-  }
-);
 
 // Helper to check if params match the default preset
 const isDefaultPreset = (params: SearchParams): boolean => {

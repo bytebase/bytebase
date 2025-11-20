@@ -45,7 +45,7 @@ import { computed, ref } from "vue";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import TimeRange from "@/components/AdvancedSearch/TimeRange.vue";
 import type { SearchParams, SearchScopeId } from "@/utils";
-import { UIIssueFilterScopeIdList } from "@/utils";
+
 import PresetButtons from "./PresetButtons.vue";
 import Status from "./Status.vue";
 import { useIssueSearchScopeOptions } from "./useIssueSearchScopeOptions";
@@ -78,8 +78,9 @@ const allowedScopes = computed((): SearchScopeId[] => {
     return props.overrideScopeIdList;
   }
   return [
-    ...UIIssueFilterScopeIdList,
     "creator",
+    "current-approver",
+    "approval",
     "instance",
     "database",
     "status",

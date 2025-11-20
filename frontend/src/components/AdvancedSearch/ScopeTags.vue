@@ -1,7 +1,7 @@
 <template>
   <NTag
     v-for="(scope, i) in params.scopes"
-    :key="scope.id"
+    :key="`${i}-${scope.id}`"
     :closable="!scope.readonly"
     :disabled="scope.readonly"
     :data-search-scope-id="scope.id"
