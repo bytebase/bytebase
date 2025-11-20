@@ -244,6 +244,8 @@
       "notification": "Xóa thành công tài nguyên '{name}'."
     },
     "collapse": "Sụp đổ",
+    "show-more": "Hiển thị thêm",
+    "remaining": "còn lại",
     "line": "Dòng",
     "column": "Cột",
     "apply-to-database": "Áp dụng cho cơ sở dữ liệu"
@@ -312,6 +314,7 @@
     "no-runnable-tasks": "Không có tác vụ nào có thể chạy được",
     "no-skippable-tasks": "Không có nhiệm vụ nào có thể bỏ qua",
     "no-cancellable-tasks": "Không có nhiệm vụ nào có thể hủy bỏ",
+    "no-selectable-tasks": "Không thể chọn bất kỳ tác vụ nào",
     "no-permission": "Không có quyền thực hiện hành động này",
     "data-export-creator-only": "Chỉ người tạo sự cố mới có thể thực hiện tác vụ xuất dữ liệu",
     "scheduled-time": "Thời gian đã lên lịch",
@@ -342,6 +345,8 @@
     "failed-runs": "Nhiệm vụ thất bại - Nhật ký thực thi mới nhất",
     "history": "Lịch sử thực hiện nhiệm vụ",
     "latest-logs": "Nhật ký mới nhất",
+    "latest": "Thực hiện mới nhất",
+    "no-detail": "Không có thông tin chi tiết về việc thực hiện",
     "status": {
       "enqueued": "Đang chờ thực thi.",
       "enqueued-with-rollout-time": "Đang chờ thực thi sau {time}.",
@@ -1203,11 +1208,21 @@
     "stage": {
       "self": "Giai đoạn | Các giai đoạn",
       "start-stage": "Giai đoạn bắt đầu",
+      "run-stage": "Chạy sân khấu",
+      "create-stage": "Tạo sân khấu",
+      "back-to-stage": "Trở lại sân khấu {stage}",
       "no-stages": {
         "self": "Không có giai đoạn",
         "description": "Không có giai đoạn nào được xác định cho lần triển khai này."
       }
-    }
+    },
+    "task": {
+      "selected-count": "{count} nhiệm vụ đã chọn | {count} nhiệm vụ đã chọn",
+      "no-tasks": "Không có nhiệm vụ nào ở giai đoạn này",
+      "no-statement": "Không có câu lệnh SQL",
+      "view-full-details": "Xem chi tiết đầy đủ"
+    },
+    "no-stages": "Không có giai đoạn nào có sẵn"
   },
   "quick-action": {
     "create-db": "Tạo cơ sở dữ liệu",

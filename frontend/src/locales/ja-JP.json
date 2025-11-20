@@ -244,6 +244,8 @@
       "notification": "リソース '{name}' を正常に削除しました。"
     },
     "collapse": "閉じる",
+    "show-more": "もっと見る",
+    "remaining": "残り",
     "line": "行",
     "column": "列",
     "apply-to-database": "データベースに適用"
@@ -312,6 +314,7 @@
     "no-runnable-tasks": "実行可能なタスクはありません",
     "no-skippable-tasks": "スキップ可能なタスクはありません",
     "no-cancellable-tasks": "キャンセル可能なタスクはありません",
+    "no-selectable-tasks": "タスクを選択できません",
     "no-permission": "この操作を実行する権限がありません",
     "data-export-creator-only": "問題作成者のみがデータエクスポートタスクを実行できます",
     "scheduled-time": "予定時刻",
@@ -342,6 +345,8 @@
     "failed-runs": "失敗したタスク - 最新の実行ログ",
     "history": "タスク実行履歴",
     "latest-logs": "最新のログ",
+    "latest": "最新の実行",
+    "no-detail": "実行の詳細は不明です",
     "status": {
       "enqueued": "処刑を待っています。",
       "enqueued-with-rollout-time": "実行を待機しています。{time} の後に実行されます。",
@@ -1203,11 +1208,21 @@
     "stage": {
       "self": "ステージ | ステージ",
       "start-stage": "スタートステージ",
+      "run-stage": "ランステージ",
+      "create-stage": "ステージを作成",
+      "back-to-stage": "ステージに戻る {stage}",
       "no-stages": {
         "self": "ステージなし",
         "description": "このロールアウトにはステージが定義されていません。"
       }
-    }
+    },
+    "task": {
+      "selected-count": "{count} 個のタスクが選択されました | {count} 個のタスクが選択されました",
+      "no-tasks": "このステージにはタスクはありません",
+      "no-statement": "SQL文なし",
+      "view-full-details": "詳細を表示"
+    },
+    "no-stages": "利用可能なステージはありません"
   },
   "quick-action": {
     "create-db": "データベースの作成",
