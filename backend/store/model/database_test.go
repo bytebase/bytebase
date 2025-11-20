@@ -77,7 +77,7 @@ func TestBuildTablesMetadata(t *testing.T) {
 
 	a := require.New(t)
 	for _, tc := range testCases {
-		tables, names := buildTablesMetadata(tc.input, true /* isDetailCaseSensitive */)
+		tables, names := buildTablesMetadata(tc.input, nil /* tableCatalog */, true /* isDetailCaseSensitive */)
 
 		// The length of the tables should be the same as the length of the names.
 		a.Equal(len(tables), len(names))
@@ -219,15 +219,15 @@ func TestTableMetadata_CreateColumn(t *testing.T) {
 		Type:     "varchar",
 		Nullable: true,
 	}
-	err := tableMeta.CreateColumn(columnProto)
+	err := tableMeta.CreateColumn(columnProto, nil /* columnCatalog */)
 
 	require.Nil(t, err)
 
 	// Verify column is now accessible
 	retrieved := tableMeta.GetColumn("email")
 	require.NotNil(t, retrieved)
-	require.Equal(t, "email", retrieved.Name)
-	require.Equal(t, "varchar", retrieved.Type)
+	require.Equal(t, "email", retrieved.GetProto().Name)
+	require.Equal(t, "varchar", retrieved.GetProto().Type)
 }
 
 func TestTableMetadata_CreateColumn_AlreadyExists(t *testing.T) {
@@ -257,7 +257,7 @@ func TestTableMetadata_CreateColumn_AlreadyExists(t *testing.T) {
 		Name: "id",
 		Type: "bigint",
 	}
-	err := tableMeta.CreateColumn(columnProto)
+	err := tableMeta.CreateColumn(columnProto, nil /* columnCatalog */)
 
 	require.NotNil(t, err)
 	require.Contains(t, err.Error(), "already exists")

@@ -572,16 +572,22 @@ func buildDatabaseConfigWithClassificationFromComment(dbMetadata *storepb.Databa
 		var tables []*storepb.TableCatalog
 		hasSchemaContent := false
 
-		// Get existing schema config to preserve SemanticType and Labels
-		schemaConfig := databaseConfig.GetSchemaConfig(schema.Name)
+		// Get existing schema metadata to preserve SemanticType and Labels
+		var schemaMetadata *model.SchemaMetadata
+		if databaseConfig != nil {
+			schemaMetadata = databaseConfig.GetSchemaMetadata(schema.Name)
+		}
 
 		for _, table := range schema.Tables {
 			classification, userComment := common.GetClassificationAndUserComment(table.Comment, classificationConfig)
 
 			table.UserComment = userComment
 
-			// Get existing table config
-			tableConfig := schemaConfig.GetTableConfig(table.Name)
+			// Get existing table metadata and catalog
+			var tableMetadata *model.TableMetadata
+			if schemaMetadata != nil {
+				tableMetadata = schemaMetadata.GetTable(table.Name)
+			}
 
 			var columns []*storepb.ColumnCatalog
 			hasTableContent := false
@@ -597,7 +603,15 @@ func buildDatabaseConfigWithClassificationFromComment(dbMetadata *storepb.Databa
 				col.UserComment = colUserComment
 
 				// Get existing column config to preserve SemanticType and Labels
-				existingColumnConfig := tableConfig.GetColumnConfig(col.Name)
+				var existingColumnConfig *storepb.ColumnCatalog
+				if tableMetadata != nil {
+					if columnMetadata := tableMetadata.GetColumn(col.Name); columnMetadata != nil {
+						existingColumnConfig = columnMetadata.GetCatalog()
+					}
+				}
+				if existingColumnConfig == nil {
+					existingColumnConfig = &storepb.ColumnCatalog{}
+				}
 
 				// Add column config if it has any meaningful data
 				if colClassification != "" || existingColumnConfig.GetSemanticType() != "" || len(existingColumnConfig.GetLabels()) > 0 {

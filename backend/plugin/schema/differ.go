@@ -645,18 +645,21 @@ func compareColumns(engine storepb.Engine, oldTable, newTable *model.TableMetada
 
 	// Check for new and modified columns
 	for _, newCol := range newColumns {
-		oldCol := oldTable.GetColumn(newCol.Name)
-		if oldCol == nil {
+		oldColWrapper := oldTable.GetColumn(newCol.Name)
+		if oldColWrapper == nil {
 			changes = append(changes, &ColumnDiff{
 				Action:    MetadataDiffActionCreate,
 				NewColumn: newCol,
 			})
-		} else if !columnsEqual(engine, oldCol, newCol) {
-			changes = append(changes, &ColumnDiff{
-				Action:    MetadataDiffActionAlter,
-				OldColumn: oldCol,
-				NewColumn: newCol,
-			})
+		} else {
+			oldCol := oldColWrapper.GetProto()
+			if !columnsEqual(engine, oldCol, newCol) {
+				changes = append(changes, &ColumnDiff{
+					Action:    MetadataDiffActionAlter,
+					OldColumn: oldCol,
+					NewColumn: newCol,
+				})
+			}
 		}
 	}
 

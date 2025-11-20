@@ -92,7 +92,7 @@ func (checker *columnNoNullChecker) generateAdvice() []*storepb.Advice {
 			continue
 		}
 		col := table.GetColumn(column.columnName)
-		if col != nil && col.Nullable {
+		if col != nil && col.GetProto().Nullable {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:        checker.level,
 				Code:          code.ColumnCannotNull.Int32(),

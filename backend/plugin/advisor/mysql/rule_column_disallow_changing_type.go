@@ -175,7 +175,7 @@ func (r *ColumnDisallowChangingTypeRule) changeColumnType(tableName, columnName 
 		return
 	}
 
-	if normalizeColumnType(column.Type) != normalizeColumnType(tp) {
+	if normalizeColumnType(column.GetProto().Type) != normalizeColumnType(tp) {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
 			Code:          code.ChangeColumnType.Int32(),

@@ -1758,19 +1758,31 @@ func (*SQLService) DiffMetadata(_ context.Context, req *connect.Request[v1pb.Dif
 
 func sanitizeCommentForSchemaMetadata(dbMetadata *storepb.DatabaseSchemaMetadata, dbModelConfig *model.DatabaseMetadata, classificationFromConfig bool) {
 	for _, schema := range dbMetadata.Schemas {
-		schemaConfig := dbModelConfig.GetSchemaConfig(schema.Name)
+		schemaMetadata := dbModelConfig.GetSchemaMetadata(schema.Name)
 		for _, table := range schema.Tables {
-			tableConfig := schemaConfig.GetTableConfig(table.Name)
 			classificationID := ""
 			if !classificationFromConfig {
-				classificationID = tableConfig.Classification
+				if schemaMetadata != nil {
+					if tableMetadata := schemaMetadata.GetTable(table.Name); tableMetadata != nil {
+						if tableCatalog := tableMetadata.GetCatalog(); tableCatalog != nil {
+							classificationID = tableCatalog.Classification
+						}
+					}
+				}
 			}
 			table.Comment = common.GetCommentFromClassificationAndUserComment(classificationID, table.UserComment)
 			for _, col := range table.Columns {
-				columnConfig := tableConfig.GetColumnConfig(col.Name)
 				classificationID := ""
 				if !classificationFromConfig {
-					classificationID = columnConfig.Classification
+					if schemaMetadata != nil {
+						if tableMetadata := schemaMetadata.GetTable(table.Name); tableMetadata != nil {
+							if columnMetadata := tableMetadata.GetColumn(col.Name); columnMetadata != nil {
+								if columnCatalog := columnMetadata.GetCatalog(); columnCatalog != nil {
+									classificationID = columnCatalog.Classification
+								}
+							}
+						}
+					}
 				}
 				col.Comment = common.GetCommentFromClassificationAndUserComment(classificationID, col.UserComment)
 			}

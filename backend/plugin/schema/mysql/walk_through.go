@@ -902,14 +902,15 @@ func mysqlAlterColumn(table *model.TableMetadata, itemDef mysql.IAlterListItemCo
 		}
 	}
 
+	colProto := col.GetProto()
 	switch {
 	case itemDef.SET_SYMBOL() != nil:
 		switch {
 		// SET DEFAULT.
 		case itemDef.DEFAULT_SYMBOL() != nil:
 			if itemDef.SignedLiteral() != nil && itemDef.SignedLiteral().Literal() != nil && itemDef.SignedLiteral().Literal().NullLiteral() == nil {
-				if col.Type != "" {
-					switch strings.ToLower(col.Type) {
+				if colProto.Type != "" {
+					switch strings.ToLower(colProto.Type) {
 					case "blob", "tinyblob", "mediumblob", "longblob",
 						"text", "tinytext", "mediumtext", "longtext",
 						"json",
@@ -936,9 +937,9 @@ func mysqlAlterColumn(table *model.TableMetadata, itemDef mysql.IAlterListItemCo
 					// No default value expression
 				}
 
-				col.Default = defaultValue
+				colProto.Default = defaultValue
 			} else {
-				if !col.Nullable {
+				if !colProto.Nullable {
 					return &storepb.Advice{
 						Status:        storepb.Advice_ERROR,
 						Code:          code.SetNullDefaultForNotNullColumn.Int32(),
@@ -948,14 +949,14 @@ func mysqlAlterColumn(table *model.TableMetadata, itemDef mysql.IAlterListItemCo
 					}
 				}
 
-				col.Default = ""
+				colProto.Default = ""
 			}
 		// SET VISIBLE/INVISIBLE.
 		default:
 		}
 	case itemDef.DROP_SYMBOL() != nil && itemDef.DEFAULT_SYMBOL() != nil:
 		// DROP DEFAULT.
-		col.Default = ""
+		colProto.Default = ""
 	default:
 		// Other ALTER operations
 	}
@@ -1004,28 +1005,29 @@ func mysqlChangeColumn(table *model.TableMetadata, oldColumnName string, newColu
 		column = table.GetColumn(newColumnName)
 	}
 
+	columnProto := column.GetProto()
 	// Update column properties from fieldDef
 	if fieldDef.DataType() != nil {
-		column.Type = mysqlparser.NormalizeMySQLDataType(fieldDef.DataType(), true /* compact */)
-		column.CharacterSet = mysqlparser.GetCharSetName(fieldDef.DataType())
-		column.Collation = mysqlparser.GetCollationName(fieldDef)
+		columnProto.Type = mysqlparser.NormalizeMySQLDataType(fieldDef.DataType(), true /* compact */)
+		columnProto.CharacterSet = mysqlparser.GetCharSetName(fieldDef.DataType())
+		columnProto.Collation = mysqlparser.GetCollationName(fieldDef)
 	}
 
 	// Reset nullable to true, then check for NOT NULL constraint
 	// This ensures that if the new definition doesn't have NOT NULL, the column becomes nullable
-	column.Nullable = true
+	columnProto.Nullable = true
 	for _, attribute := range fieldDef.AllColumnAttribute() {
 		if attribute == nil {
 			continue
 		}
 		// Check for NOT NULL constraint
 		if attribute.NullLiteral() != nil && attribute.NOT_SYMBOL() != nil {
-			column.Nullable = false
+			columnProto.Nullable = false
 			break
 		}
 		// Check for PRIMARY KEY or UNIQUE KEY (these imply NOT NULL for primary keys)
 		if attribute.GetValue() != nil && attribute.GetValue().GetTokenType() == mysql.MySQLParserKEY_SYMBOL {
-			column.Nullable = false
+			columnProto.Nullable = false
 			break
 		}
 	}
@@ -1038,7 +1040,7 @@ func mysqlChangeColumn(table *model.TableMetadata, oldColumnName string, newColu
 		// Find the current position of the column
 		var currentIdx int
 		for i, col := range columns {
-			if col == column {
+			if col == column.GetProto() {
 				currentIdx = i
 				break
 			}
@@ -1067,9 +1069,9 @@ func mysqlChangeColumn(table *model.TableMetadata, oldColumnName string, newColu
 
 		// Insert at newIdx
 		if newIdx >= len(columns) {
-			columns = append(columns, column)
+			columns = append(columns, column.GetProto())
 		} else {
-			columns = append(columns[:newIdx], append([]*storepb.ColumnMetadata{column}, columns[newIdx:]...)...)
+			columns = append(columns[:newIdx], append([]*storepb.ColumnMetadata{column.GetProto()}, columns[newIdx:]...)...)
 		}
 
 		// Update the proto's column list
@@ -1166,7 +1168,7 @@ func mysqlCopyTable(d *model.DatabaseMetadata, databaseName, tableName, referTab
 				StartPosition: &storepb.Position{Line: 0},
 			}
 		}
-		if err := newTable.CreateColumn(colCopy); err != nil {
+		if err := newTable.CreateColumn(colCopy, nil /* columnCatalog */); err != nil {
 			return &storepb.Advice{
 				Status:        storepb.Advice_ERROR,
 				Code:          code.ColumnExists.Int32(),
@@ -1353,14 +1355,14 @@ func mysqlValidateColumnList(table *model.TableMetadata, columnList []string, pr
 			}
 		}
 		if primary {
-			column.Nullable = false
+			column.GetProto().Nullable = false
 		}
-		if isSpatial && column.Nullable {
+		if isSpatial && column.GetProto().Nullable {
 			return &storepb.Advice{
 				Status:        storepb.Advice_ERROR,
 				Code:          code.SpatialIndexKeyNullable.Int32(),
-				Title:         fmt.Sprintf("All parts of a SPATIAL index must be NOT NULL, but `%s` is nullable", column.Name),
-				Content:       fmt.Sprintf("All parts of a SPATIAL index must be NOT NULL, but `%s` is nullable", column.Name),
+				Title:         fmt.Sprintf("All parts of a SPATIAL index must be NOT NULL, but `%s` is nullable", column.GetProto().Name),
+				Content:       fmt.Sprintf("All parts of a SPATIAL index must be NOT NULL, but `%s` is nullable", column.GetProto().Name),
 				StartPosition: &storepb.Position{Line: 0},
 			}
 		}
@@ -1379,14 +1381,14 @@ func mysqlValidateExpressionList(table *model.TableMetadata, expressionList []st
 		}
 
 		if primary {
-			column.Nullable = false
+			column.GetProto().Nullable = false
 		}
-		if isSpatial && column.Nullable {
+		if isSpatial && column.GetProto().Nullable {
 			return &storepb.Advice{
 				Status:        storepb.Advice_ERROR,
 				Code:          code.SpatialIndexKeyNullable.Int32(),
-				Title:         fmt.Sprintf("All parts of a SPATIAL index must be NOT NULL, but `%s` is nullable", column.Name),
-				Content:       fmt.Sprintf("All parts of a SPATIAL index must be NOT NULL, but `%s` is nullable", column.Name),
+				Title:         fmt.Sprintf("All parts of a SPATIAL index must be NOT NULL, but `%s` is nullable", column.GetProto().Name),
+				Content:       fmt.Sprintf("All parts of a SPATIAL index must be NOT NULL, but `%s` is nullable", column.GetProto().Name),
 				StartPosition: &storepb.Position{Line: 0},
 			}
 		}
@@ -1555,7 +1557,7 @@ func mysqlCreateColumn(table *model.TableMetadata, columnName string, fieldDef m
 		}
 	}
 
-	if err := table.CreateColumn(col); err != nil {
+	if err := table.CreateColumn(col, nil /* columnCatalog */); err != nil {
 		return &storepb.Advice{
 			Status:        storepb.Advice_ERROR,
 			Code:          code.ColumnExists.Int32(),
