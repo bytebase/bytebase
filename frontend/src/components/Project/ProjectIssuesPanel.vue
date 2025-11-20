@@ -36,7 +36,10 @@ import {
   useRefreshIssueList,
 } from "@/store";
 import type { ComposedIssue } from "@/types";
-import { Issue_ApprovalStatus, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  Issue_ApprovalStatus,
+  IssueStatus,
+} from "@/types/proto-es/v1/issue_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { SearchParams, SearchScope } from "@/utils";
 import {

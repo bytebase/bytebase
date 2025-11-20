@@ -112,7 +112,10 @@ const readonlyScopes = computed((): SearchScope[] => {
 const defaultSearchParams = () => {
   const params: SearchParams = {
     query: "",
-    scopes: [...readonlyScopes.value, { id: "status", value: IssueStatus[IssueStatus.OPEN] }],
+    scopes: [
+      ...readonlyScopes.value,
+      { id: "status", value: IssueStatus[IssueStatus.OPEN] },
+    ],
   };
   return params;
 };

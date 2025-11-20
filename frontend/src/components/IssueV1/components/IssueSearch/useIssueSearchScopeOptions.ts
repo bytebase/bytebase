@@ -18,7 +18,10 @@ import {
   useUserStore,
 } from "@/store";
 import { isValidProjectName, SYSTEM_BOT_USER_NAME, UNKNOWN_ID } from "@/types";
-import { Issue_ApprovalStatus, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  Issue_ApprovalStatus,
+  IssueStatus,
+} from "@/types/proto-es/v1/issue_service_pb";
 import { type Label } from "@/types/proto-es/v1/project_service_pb";
 import { UserType } from "@/types/proto-es/v1/user_service_pb";
 import type { SearchParams, SearchScopeId } from "@/utils";
@@ -233,7 +236,9 @@ export const useIssueSearchScopeOptions = (
       {
         id: "current-approver",
         title: t("issue.advanced-search.scope.current-approver.title"),
-        description: t("issue.advanced-search.scope.current-approver.description"),
+        description: t(
+          "issue.advanced-search.scope.current-approver.description"
+        ),
         search: searchPrincipalSearchValueOptions([
           UserType.USER,
           UserType.SERVICE_ACCOUNT,

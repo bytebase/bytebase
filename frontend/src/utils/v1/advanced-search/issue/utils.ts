@@ -61,7 +61,9 @@ export const buildIssueFilterBySearchParams = (
         ]
       : undefined,
     releaser: getValueFromSearchParams(params, "releaser", userNamePrefix),
-    statusList: getValuesFromSearchParams(params, "status").map(status => IssueStatus[status as keyof typeof IssueStatus]),
+    statusList: getValuesFromSearchParams(params, "status").map(
+      (status) => IssueStatus[status as keyof typeof IssueStatus]
+    ),
     labels,
     environment: getValueFromSearchParams(
       params,

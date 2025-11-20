@@ -922,6 +922,10 @@
           "title": "Người tạo",
           "description": "Tìm kiếm theo người sáng tạo"
         },
+        "current-approver": {
+          "title": "Người phê duyệt hiện tại",
+          "description": "Tìm kiếm theo người phê duyệt hiện tại"
+        },
         "approval": {
           "value": {
             "pending": "Đang chờ phê duyệt",

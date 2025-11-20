@@ -922,6 +922,10 @@
           "title": "Creador",
           "description": "Búsqueda por creador"
         },
+        "current-approver": {
+          "title": "aprobador actual",
+          "description": "Buscar por el aprobador actual del problema"
+        },
         "approval": {
           "value": {
             "pending": "Aprobación pendiente",

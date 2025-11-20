@@ -72,7 +72,7 @@ export const buildSearchTextBySearchParams = (
 
 export const mergeSearchParams = (base: SearchParams, patch: SearchParams) => {
   for (const scope of patch.scopes) {
-    const existed = base.scopes.find((s) => s.id === scope.id)
+    const existed = base.scopes.find((s) => s.id === scope.id);
     if (!existed || existed.value !== scope.value) {
       base.scopes.push(scope);
     }
@@ -185,7 +185,6 @@ export const upsertScope = ({
       }
     }
   }
-    console.log("updated params", target)
 
   return target;
 };

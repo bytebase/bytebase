@@ -18,12 +18,12 @@ import { NTab, NTabs } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useCurrentUserV1 } from "@/store";
-import type { SearchParams } from "@/utils";
 import {
-  getValueFromSearchParams,
-  upsertScope,
-} from "@/utils";
-import { IssueStatus, Issue_ApprovalStatus } from "@/types/proto-es/v1/issue_service_pb";
+  Issue_ApprovalStatus,
+  IssueStatus,
+} from "@/types/proto-es/v1/issue_service_pb";
+import type { SearchParams } from "@/utils";
+import { getValueFromSearchParams, upsertScope } from "@/utils";
 
 type PresetValue = "WAITING_APPROVAL" | "CREATED" | "ALL";
 
@@ -68,14 +68,13 @@ const isActive = (preset: PresetValue): boolean => {
 
   if (preset === "WAITING_APPROVAL") {
     return (
-      getValueFromSearchParams(props.params, "approval") === Issue_ApprovalStatus[Issue_ApprovalStatus.PENDING]
+      getValueFromSearchParams(props.params, "approval") ===
+      Issue_ApprovalStatus[Issue_ApprovalStatus.PENDING]
     );
   }
 
   if (preset === "CREATED") {
-    return (
-      getValueFromSearchParams(props.params, "creator") === myEmail
-    );
+    return getValueFromSearchParams(props.params, "creator") === myEmail;
   }
 
   if (preset === "ALL") {
@@ -99,7 +98,10 @@ const selectPreset = (preset: PresetValue) => {
       params: newParams,
       scopes: [
         { id: "status", value: IssueStatus[IssueStatus.OPEN] },
-        { id: "approval", value: Issue_ApprovalStatus[Issue_ApprovalStatus.PENDING] },
+        {
+          id: "approval",
+          value: Issue_ApprovalStatus[Issue_ApprovalStatus.PENDING],
+        },
         { id: "current-approver", value: myEmail },
       ],
     });

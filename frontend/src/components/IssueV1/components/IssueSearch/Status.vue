@@ -17,9 +17,9 @@
 import { NTab, NTabs } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
+import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import type { SearchParams, SearchScope } from "@/utils";
 import { getValuesFromSearchParams, upsertScope } from "@/utils";
-import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 
 const props = defineProps<{
   params: SearchParams;
@@ -48,21 +48,23 @@ const tabItemList = computed(() => {
 });
 
 const tab = computed((): IssueStatus => {
-  const statusList = getValuesFromSearchParams(props.params, "status").map(status => IssueStatus[status as keyof typeof IssueStatus])
+  const statusList = getValuesFromSearchParams(props.params, "status").map(
+    (status) => IssueStatus[status as keyof typeof IssueStatus]
+  );
 
   switch (statusList.length) {
     case 0:
-      return IssueStatus.ISSUE_STATUS_UNSPECIFIED
+      return IssueStatus.ISSUE_STATUS_UNSPECIFIED;
     case 1:
       if (statusList[0] === IssueStatus.OPEN) {
-        return IssueStatus.OPEN
+        return IssueStatus.OPEN;
       }
       return IssueStatus.DONE;
     default:
       if (!statusList.includes(IssueStatus.OPEN)) {
         return IssueStatus.DONE;
       }
-      return IssueStatus.ISSUE_STATUS_UNSPECIFIED
+      return IssueStatus.ISSUE_STATUS_UNSPECIFIED;
   }
 });
 
@@ -73,17 +75,17 @@ const updateStatus = (value: IssueStatus) => {
     scopes.push({
       id: "status",
       value: IssueStatus[IssueStatus.OPEN],
-    })
+    });
   } else {
     scopes.push(
       {
-      id: "status",
-      value: IssueStatus[IssueStatus.DONE],
-    },
-    {
-      id: "status",
-      value: IssueStatus[IssueStatus.CANCELED],
-    }
+        id: "status",
+        value: IssueStatus[IssueStatus.DONE],
+      },
+      {
+        id: "status",
+        value: IssueStatus[IssueStatus.CANCELED],
+      }
     );
     allowMultiple = true;
   }
@@ -91,7 +93,7 @@ const updateStatus = (value: IssueStatus) => {
   const updated = upsertScope({
     params: {
       ...props.params,
-      scopes: props.params.scopes.filter(scope => scope.id !== "status"),
+      scopes: props.params.scopes.filter((scope) => scope.id !== "status"),
     },
     scopes,
     allowMultiple,

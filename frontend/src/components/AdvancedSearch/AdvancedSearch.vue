@@ -318,11 +318,12 @@ const visibleScopeOptions = computed(() => {
 const visibleValueOptions = computed(() => {
   if (!state.currentScope) return [];
 
-  const selectedValues = new Set(getValuesFromSearchParams(
-    props.params,
-    state.currentScope
-  ));
-  const options = valueOptions.value.filter(option => !selectedValues.has(option.value))
+  const selectedValues = new Set(
+    getValuesFromSearchParams(props.params, state.currentScope)
+  );
+  const options = valueOptions.value.filter(
+    (option) => !selectedValues.has(option.value)
+  );
 
   const keyword = currentValueForScope.value
     .trim()
