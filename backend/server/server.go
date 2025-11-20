@@ -30,6 +30,7 @@ import (
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	_ "github.com/bytebase/bytebase/backend/metrics"
 	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/runner/approval"

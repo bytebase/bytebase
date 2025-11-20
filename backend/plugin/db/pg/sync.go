@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/blang/semver/v4"
 	"github.com/lib/pq"
@@ -16,6 +17,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/metrics"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
@@ -59,6 +61,17 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 
 // SyncDBSchema syncs a single database schema.
 func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
+	start := time.Now()
+	var status string
+
+	defer func() {
+		metrics.PostgresDatabaseSyncDuration.
+			WithLabelValues(d.connectionCtx.InstanceID, d.databaseName, status).
+			Observe(time.Since(start).Seconds())
+	}()
+
+	status = "error"
+
 	// Query db info
 	databases, err := d.getDatabases(ctx)
 	if err != nil {
@@ -102,7 +115,16 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get schemas from database %q", d.databaseName)
 	}
+
+	columnStart := time.Now()
 	columnMap, err := getTableColumns(txn)
+	columnStatus := "success"
+	if err != nil {
+		columnStatus = "error"
+	}
+	metrics.PostgresQueryDuration.
+		WithLabelValues(d.connectionCtx.InstanceID, d.databaseName, "columns", columnStatus).
+		Observe(time.Since(columnStart).Seconds())
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get columns from database %q", d.databaseName)
 	}
@@ -113,7 +135,16 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			return nil, errors.Wrapf(err, "failed to get index inheritance from database %q", d.databaseName)
 		}
 	}
+
+	indexStart := time.Now()
 	indexMap, err := getIndexes(txn, indexInheritanceMap)
+	indexStatus := "success"
+	if err != nil {
+		indexStatus = "error"
+	}
+	metrics.PostgresQueryDuration.
+		WithLabelValues(d.connectionCtx.InstanceID, d.databaseName, "indexes", indexStatus).
+		Observe(time.Since(indexStart).Seconds())
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get indexes from database %q", d.databaseName)
 	}
@@ -129,7 +160,16 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get exclude constraints from database %q", d.databaseName)
 	}
+
+	tableStart := time.Now()
 	tableMap, externalTableMap, tableOidMap, err := getTables(txn, isAtLeastPG10, columnMap, indexMap, triggerMap, checksMap, excludesMap, extensionDepend)
+	tableStatus := "success"
+	if err != nil {
+		tableStatus = "error"
+	}
+	metrics.PostgresQueryDuration.
+		WithLabelValues(d.connectionCtx.InstanceID, d.databaseName, "tables", tableStatus).
+		Observe(time.Since(tableStart).Seconds())
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get tables from database %q", d.databaseName)
 	}
@@ -211,7 +251,8 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	}
 	databaseMetadata.Extensions = extensions
 
-	return databaseMetadata, err
+	status = "success"
+	return databaseMetadata, nil
 }
 
 func warpTablePartitions(m map[db.TableKey][]*storepb.TablePartitionMetadata, schemaName, tableName string) []*storepb.TablePartitionMetadata {
