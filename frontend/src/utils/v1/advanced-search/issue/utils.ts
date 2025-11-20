@@ -7,6 +7,7 @@ import {
 } from "@/store";
 import type { IssueFilter } from "@/types";
 import { unknownDatabase } from "@/types";
+import { MigrationType } from "@/types/proto-es/v1/common_pb";
 import {
   Issue_ApprovalStatus,
   IssueStatus,
@@ -16,21 +17,20 @@ import {
   getTsRangeFromSearchParams,
   getValueFromSearchParams,
   getValuesFromSearchParams,
-  type SearchScopeId,
 } from "../common";
 
 export const buildIssueFilterBySearchParams = (
   params: SearchParams,
   defaultFilter?: Partial<IssueFilter>
 ) => {
-  const { query, scopes } = params;
-  const projectScope = scopes.find((s) => s.id === "project");
-  const taskTypeScope = scopes.find((s) => s.id === "taskType");
-  const databaseScope = scopes.find((s) => s.id === "database");
+  const { query } = params;
+  const projectScope = getValueFromSearchParams(params, "project");
+  const taskTypeScope = getValueFromSearchParams(params, "taskType");
+  const databaseScope = getValueFromSearchParams(params, "database");
 
   let database = "";
   if (databaseScope) {
-    const db = useDatabaseV1Store().getDatabaseByName(databaseScope.value);
+    const db = useDatabaseV1Store().getDatabaseByName(databaseScope);
     if (db.name !== unknownDatabase().name) {
       database = db.name;
     }
@@ -45,10 +45,10 @@ export const buildIssueFilterBySearchParams = (
     query,
     instance: getValueFromSearchParams(params, "instance", instanceNamePrefix),
     database,
-    project: `${projectNamePrefix}${projectScope?.value ?? "-"}`,
+    project: `${projectNamePrefix}${projectScope || "-"}`,
     createdTsAfter: createdTsRange?.[0],
     createdTsBefore: createdTsRange?.[1],
-    taskType: taskTypeScope?.value,
+    taskType: MigrationType[taskTypeScope as keyof typeof MigrationType],
     creator: getValueFromSearchParams(params, "creator", userNamePrefix),
     currentApprover: getValueFromSearchParams(
       params,

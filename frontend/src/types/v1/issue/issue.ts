@@ -5,6 +5,7 @@ import {
   UNKNOWN_PROJECT_NAME,
   UNKNOWN_ROLLOUT_NAME,
 } from "@/types";
+import { MigrationType } from "@/types/proto-es/v1/common_pb";
 import type {
   Issue,
   Issue_ApprovalStatus,
@@ -77,7 +78,7 @@ export interface IssueFilter {
   // type is the issue type, for example: GRANT_REQUEST, DATABASE_EXPORT
   type?: Issue_Type;
   // taskType is the task type, for example: DDL, DML
-  taskType?: string;
+  taskType?: MigrationType;
   // filter by labels, for example: labels = "feature & bug"
   labels?: string[];
 }
