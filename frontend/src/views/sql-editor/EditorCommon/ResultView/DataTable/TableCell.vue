@@ -53,7 +53,7 @@ import { useResizeObserver } from "@vueuse/core";
 import { escape } from "lodash-es";
 import { NButton } from "naive-ui";
 import { twMerge } from "tailwind-merge";
-import { computed, ref, watchEffect } from "vue";
+import { computed, ref } from "vue";
 import { useConnectionOfCurrentSQLEditorTab } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { QueryRow, RowValue } from "@/types/proto-es/v1/sql_service_pb";
@@ -107,30 +107,6 @@ const binaryFormat = computed(() => {
     colIndex: props.colIndex,
     setIndex: props.setIndex,
   });
-});
-
-watchEffect(() => {
-  if (!hasByteData.value) {
-    return;
-  }
-  if (!binaryFormat.value) {
-    const bytesValue =
-      props.value.kind?.case === "bytesValue"
-        ? props.value.kind.value
-        : undefined;
-    if (bytesValue) {
-      const binaryFormat = detectBinaryFormat({
-        bytesValue,
-        columnType: props.columnType,
-      });
-      setBinaryFormat({
-        rowIndex: props.rowIndex,
-        colIndex: props.colIndex,
-        setIndex: props.setIndex,
-        format: binaryFormat,
-      });
-    }
-  }
 });
 
 useResizeObserver(wrapperRef, (entries) => {
@@ -203,7 +179,7 @@ const formattedValue = computed(() => {
   // Determine the format to use - column override, cell override, or auto-detected format
   let actualFormat = binaryFormat.value ?? "DEFAULT";
 
-  // If format is DEFAULT, use the auto-detected format
+  // If format is DEFAULT or undefined, auto-detect based on column type and content
   if (actualFormat === "DEFAULT") {
     actualFormat = detectBinaryFormat({
       bytesValue,
