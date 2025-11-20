@@ -1204,6 +1204,37 @@ func (e *metadataExtractor) extractTableConstraint(ctx parser.ITableconstraintCo
 			table.ForeignKeys = []*storepb.ForeignKeyMetadata{}
 		}
 		table.ForeignKeys = append(table.ForeignKeys, fk)
+
+	case constraintElem.EXCLUDE() != nil:
+		// EXCLUDE constraint
+		exclude := &storepb.ExcludeConstraintMetadata{}
+		// Set constraint name
+		if constraintName != "" {
+			exclude.Name = constraintName
+		} else {
+			// Generate name if not provided (PostgreSQL auto-generates names)
+			excludeIndex := len(table.ExcludeConstraints) + 1
+			exclude.Name = fmt.Sprintf("%s_exclude_%d", table.Name, excludeIndex)
+		}
+
+		// Extract full EXCLUDE constraint expression from token stream
+		// This includes "EXCLUDE USING gist (...)" format
+		if parser := ctx.GetParser(); parser != nil {
+			if tokenStream := parser.GetTokenStream(); tokenStream != nil {
+				start := constraintElem.GetStart()
+				stop := constraintElem.GetStop()
+				if start != nil && stop != nil {
+					rawExpression := tokenStream.GetTextFromTokens(start, stop)
+					exclude.Expression = strings.TrimSpace(rawExpression)
+				}
+			}
+		}
+
+		if table.ExcludeConstraints == nil {
+			table.ExcludeConstraints = []*storepb.ExcludeConstraintMetadata{}
+		}
+		table.ExcludeConstraints = append(table.ExcludeConstraints, exclude)
+
 	default:
 		// Other constraint types not handled
 	}

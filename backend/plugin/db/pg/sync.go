@@ -263,7 +263,8 @@ SELECT nsp.nspname, rel.relname, con.conname, pg_get_constraintdef(con.oid, true
         INNER JOIN pg_catalog.pg_namespace nsp ON nsp.oid = connamespace
         WHERE contype = 'c' and ` + fmt.Sprintf(`nsp.nspname NOT IN (%s)
         AND nsp.nspname NOT LIKE 'pg_temp%%'
-        AND nsp.nspname NOT LIKE 'pg_toast%%'`, pgparser.SystemSchemaWhereClause)
+        AND nsp.nspname NOT LIKE 'pg_toast%%'
+        ORDER BY nsp.nspname, rel.relname, con.conname`, pgparser.SystemSchemaWhereClause)
 
 func getChecks(txn *sql.Tx) (map[db.TableKey][]*storepb.CheckConstraintMetadata, error) {
 	checksMap := make(map[db.TableKey][]*storepb.CheckConstraintMetadata)

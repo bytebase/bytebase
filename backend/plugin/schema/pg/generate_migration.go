@@ -327,6 +327,20 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 						}
 					}
 				}
+				// Drop EXCLUDE constraints
+				for _, excludeDiff := range tableDiff.ExcludeConstraintChanges {
+					if excludeDiff.Action == schema.MetadataDiffActionDrop {
+						if excludeDiff.OldExcludeConstraint != nil {
+							// Metadata mode: use constraint metadata
+							writeDropConstraint(buf, tableDiff.SchemaName, tableDiff.TableName, excludeDiff.OldExcludeConstraint.Name)
+						} else if excludeDiff.OldASTNode != nil {
+							// AST-only mode: extract from AST node
+							if constraintAST, ok := excludeDiff.OldASTNode.(pgparser.ITableconstraintContext); ok {
+								writeDropExcludeConstraintFromAST(buf, tableDiff.SchemaName, tableDiff.TableName, constraintAST)
+							}
+						}
+					}
+				}
 				// Drop primary key constraints
 				for _, pkDiff := range tableDiff.PrimaryKeyChanges {
 					if pkDiff.Action == schema.MetadataDiffActionDrop {
@@ -446,6 +460,20 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 							// AST-only mode: extract from AST node
 							if constraintAST, ok := checkDiff.OldASTNode.(pgparser.ITableconstraintContext); ok {
 								writeDropCheckConstraintFromAST(buf, tableDiff.SchemaName, tableDiff.TableName, constraintAST)
+							}
+						}
+					}
+				}
+				// Drop EXCLUDE constraints
+				for _, excludeDiff := range tableDiff.ExcludeConstraintChanges {
+					if excludeDiff.Action == schema.MetadataDiffActionDrop {
+						if excludeDiff.OldExcludeConstraint != nil {
+							// Metadata mode: use constraint metadata
+							writeDropConstraint(buf, tableDiff.SchemaName, tableDiff.TableName, excludeDiff.OldExcludeConstraint.Name)
+						} else if excludeDiff.OldASTNode != nil {
+							// AST-only mode: extract from AST node
+							if constraintAST, ok := excludeDiff.OldASTNode.(pgparser.ITableconstraintContext); ok {
+								writeDropExcludeConstraintFromAST(buf, tableDiff.SchemaName, tableDiff.TableName, constraintAST)
 							}
 						}
 					}
@@ -937,6 +965,30 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 				} else {
 					return errors.Errorf("table CREATE action requires either NewTable metadata or NewASTNode for table %s.%s", tableDiff.SchemaName, tableDiff.TableName)
 				}
+
+				// Add indexes for newly created tables immediately after table creation
+				// This is necessary because later tables might have FK that reference indexed columns
+				for _, indexDiff := range tableDiff.IndexChanges {
+					if indexDiff.Action == schema.MetadataDiffActionCreate {
+						if indexDiff.NewIndex != nil {
+							// Metadata mode: use index metadata
+							if indexDiff.NewIndex.IsConstraint {
+								// Skip constraint-based indexes (primary key, unique, exclude)
+								// They are already included in CREATE TABLE statement
+								continue
+							}
+							writeMigrationIndex(buf, tableDiff.SchemaName, tableDiff.TableName, indexDiff.NewIndex)
+						} else if indexDiff.NewASTNode != nil {
+							// AST-only mode: extract from AST node
+							if indexAST, ok := indexDiff.NewASTNode.(*pgparser.IndexstmtContext); ok {
+								if err := writeCreateIndexFromAST(buf, indexAST); err != nil {
+									// If AST extraction fails, log error but continue (non-fatal)
+									_, _ = fmt.Fprintf(buf, "-- Error creating index: %v\n", err)
+								}
+							}
+						}
+					}
+				}
 			}
 		}
 
@@ -1065,6 +1117,30 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 						}
 					} else {
 						return errors.Errorf("table CREATE action requires either NewTable metadata or NewASTNode for table %s.%s", tableDiff.SchemaName, tableDiff.TableName)
+					}
+
+					// Add indexes for newly created tables immediately after table creation
+					// This is necessary because later tables might have FK that reference indexed columns
+					for _, indexDiff := range tableDiff.IndexChanges {
+						if indexDiff.Action == schema.MetadataDiffActionCreate {
+							if indexDiff.NewIndex != nil {
+								// Metadata mode: use index metadata
+								if indexDiff.NewIndex.IsConstraint {
+									// Skip constraint-based indexes (primary key, unique, exclude)
+									// They are already included in CREATE TABLE statement
+									continue
+								}
+								writeMigrationIndex(buf, tableDiff.SchemaName, tableDiff.TableName, indexDiff.NewIndex)
+							} else if indexDiff.NewASTNode != nil {
+								// AST-only mode: extract from AST node
+								if indexAST, ok := indexDiff.NewASTNode.(*pgparser.IndexstmtContext); ok {
+									if err := writeCreateIndexFromAST(buf, indexAST); err != nil {
+										// If AST extraction fails, log error but continue (non-fatal)
+										_, _ = fmt.Fprintf(buf, "-- Error creating index: %v\n", err)
+									}
+								}
+							}
+						}
 					}
 				case schema.MetadataDiffActionAlter:
 					// Handle ALTER table operations with generateAlterTableWithOptions
@@ -1451,6 +1527,24 @@ func generateAlterTableWithOptions(tableDiff *schema.TableDiff, includeColumnAdd
 					if err := writeAddCheckConstraintFromAST(&buf, tableDiff.SchemaName, tableDiff.TableName, constraintAST); err != nil {
 						// If AST extraction fails, log error but continue (non-fatal)
 						_, _ = buf.WriteString(fmt.Sprintf("-- Error adding check constraint: %v\n", err))
+					}
+				}
+			}
+		}
+	}
+
+	// Add EXCLUDE constraints
+	for _, excludeDiff := range tableDiff.ExcludeConstraintChanges {
+		if excludeDiff.Action == schema.MetadataDiffActionCreate {
+			if excludeDiff.NewExcludeConstraint != nil {
+				// Metadata mode: use constraint metadata
+				writeAddExcludeConstraint(&buf, tableDiff.SchemaName, tableDiff.TableName, excludeDiff.NewExcludeConstraint)
+			} else if excludeDiff.NewASTNode != nil {
+				// AST-only mode: extract from AST node
+				if constraintAST, ok := excludeDiff.NewASTNode.(pgparser.ITableconstraintContext); ok {
+					if err := writeAddExcludeConstraintFromAST(&buf, tableDiff.SchemaName, tableDiff.TableName, constraintAST); err != nil {
+						// If AST extraction fails, log error but continue (non-fatal)
+						_, _ = buf.WriteString(fmt.Sprintf("-- Error adding EXCLUDE constraint: %v\n", err))
 					}
 				}
 			}
@@ -4287,6 +4381,67 @@ func writeAddCheckConstraintFromAST(out *strings.Builder, schema, table string, 
 	}
 
 	return errors.New("could not extract CHECK constraint from AST node")
+}
+
+// writeAddExcludeConstraint adds an EXCLUDE constraint using constraint metadata
+func writeAddExcludeConstraint(out *strings.Builder, schema, table string, exclude *storepb.ExcludeConstraintMetadata) {
+	_, _ = out.WriteString(`ALTER TABLE "`)
+	_, _ = out.WriteString(schema)
+	_, _ = out.WriteString(`"."`)
+	_, _ = out.WriteString(table)
+	_, _ = out.WriteString(`" ADD CONSTRAINT "`)
+	_, _ = out.WriteString(exclude.Name)
+	_, _ = out.WriteString(`" `)
+	_, _ = out.WriteString(exclude.Expression) // Already includes "EXCLUDE USING ..."
+	_, _ = out.WriteString(`;`)
+	_, _ = out.WriteString("\n")
+}
+
+// writeAddExcludeConstraintFromAST adds an EXCLUDE constraint using AST node
+func writeAddExcludeConstraintFromAST(out *strings.Builder, schema, table string, constraintAST pgparser.ITableconstraintContext) error {
+	if constraintAST == nil {
+		return errors.New("constraint AST node is nil")
+	}
+
+	constraintName := extractConstraintNameFromAST(constraintAST)
+
+	// Extract EXCLUDE constraint definition
+	if constraintAST.Constraintelem() != nil {
+		elem := constraintAST.Constraintelem()
+		if elem.EXCLUDE() != nil {
+			// Get the full EXCLUDE expression (EXCLUDE USING ...)
+			excludeExpr := getTextFromAST(elem)
+
+			// Generate constraint name if not provided
+			if constraintName == "" || constraintName == "exclude_constraint" {
+				constraintName = fmt.Sprintf("%s_exclude", table)
+			}
+
+			_, _ = out.WriteString(`ALTER TABLE "`)
+			_, _ = out.WriteString(schema)
+			_, _ = out.WriteString(`"."`)
+			_, _ = out.WriteString(table)
+			_, _ = out.WriteString(`" ADD CONSTRAINT "`)
+			_, _ = out.WriteString(constraintName)
+			_, _ = out.WriteString(`" `)
+			_, _ = out.WriteString(excludeExpr) // Full expression including "EXCLUDE USING ..."
+			_, _ = out.WriteString(`;`)
+			_, _ = out.WriteString("\n")
+			return nil
+		}
+	}
+
+	return errors.New("could not extract EXCLUDE constraint from AST node")
+}
+
+// writeDropExcludeConstraintFromAST drops an EXCLUDE constraint using AST node
+func writeDropExcludeConstraintFromAST(out *strings.Builder, schema, table string, constraintAST pgparser.ITableconstraintContext) {
+	constraintName := extractConstraintNameFromAST(constraintAST)
+	if constraintName == "" {
+		// If we can't extract a name, use the constraint text as fallback
+		constraintName = getTextFromAST(constraintAST)
+	}
+	writeDropConstraint(out, schema, table, constraintName)
 }
 
 // writeAddForeignKeyFromAST adds a foreign key constraint using AST node

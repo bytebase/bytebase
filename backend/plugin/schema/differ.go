@@ -99,6 +99,9 @@ type TableDiff struct {
 	// Check constraint changes
 	CheckConstraintChanges []*CheckConstraintDiff
 
+	// EXCLUDE constraint changes (PostgreSQL specific)
+	ExcludeConstraintChanges []*ExcludeConstraintDiff
+
 	// Partition changes
 	PartitionChanges []*PartitionDiff
 
@@ -142,6 +145,15 @@ type CheckConstraintDiff struct {
 	NewCheckConstraint *storepb.CheckConstraintMetadata
 	OldASTNode         any // AST node for old check constraint
 	NewASTNode         any // AST node for new check constraint
+}
+
+// ExcludeConstraintDiff represents changes to an EXCLUDE constraint (PostgreSQL specific).
+type ExcludeConstraintDiff struct {
+	Action               MetadataDiffAction
+	OldExcludeConstraint *storepb.ExcludeConstraintMetadata
+	NewExcludeConstraint *storepb.ExcludeConstraintMetadata
+	OldASTNode           any // AST node for old EXCLUDE constraint
+	NewASTNode           any // AST node for new EXCLUDE constraint
 }
 
 // PrimaryKeyDiff represents changes to a primary key constraint.

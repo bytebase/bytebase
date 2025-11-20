@@ -1302,7 +1302,7 @@ func writeUniqueKeyConstraintSDL(out io.Writer, index *storepb.IndexMetadata) er
 	return nil
 }
 
-func writeCreateTable(out io.Writer, schema string, tableName string, columns []*storepb.ColumnMetadata, checks []*storepb.CheckConstraintMetadata) error {
+func writeCreateTable(out io.Writer, schema string, tableName string, columns []*storepb.ColumnMetadata, checks []*storepb.CheckConstraintMetadata, excludes []*storepb.ExcludeConstraintMetadata) error {
 	if _, err := io.WriteString(out, `CREATE TABLE "`); err != nil {
 		return err
 	}
@@ -1375,6 +1375,14 @@ func writeCreateTable(out io.Writer, schema string, tableName string, columns []
 		_, _ = io.WriteString(out, check.Expression)
 	}
 
+	for _, exclude := range excludes {
+		_, _ = io.WriteString(out, ",\n    ")
+		_, _ = io.WriteString(out, `CONSTRAINT "`)
+		_, _ = io.WriteString(out, exclude.Name)
+		_, _ = io.WriteString(out, `" `)
+		_, _ = io.WriteString(out, exclude.Expression) // Already includes "EXCLUDE USING ..."
+	}
+
 	_, err := io.WriteString(out, "\n)")
 	return err
 }
@@ -1442,7 +1450,7 @@ func splitSequencesByIdentityOrNot(table *storepb.TableMetadata, sequences []*st
 func writeTable(out io.Writer, schema string, table *storepb.TableMetadata, sequences []*storepb.SequenceMetadata) error {
 	generationTypes, identitySequences, nonIdentitySequences := splitSequencesByIdentityOrNot(table, sequences)
 
-	if err := writeCreateTable(out, schema, table.Name, table.Columns, table.CheckConstraints); err != nil {
+	if err := writeCreateTable(out, schema, table.Name, table.Columns, table.CheckConstraints, table.ExcludeConstraints); err != nil {
 		return err
 	}
 
@@ -2052,7 +2060,7 @@ func writeAttachPartition(out io.Writer, schema string, tableName string, partit
 }
 
 func writePartitionTable(out io.Writer, schema string, columns []*storepb.ColumnMetadata, partition *storepb.TablePartitionMetadata) error {
-	if err := writeCreateTable(out, schema, partition.Name, columns, partition.CheckConstraints); err != nil {
+	if err := writeCreateTable(out, schema, partition.Name, columns, partition.CheckConstraints, partition.ExcludeConstraints); err != nil {
 		return err
 	}
 
@@ -2981,6 +2989,16 @@ func writeTableConstraintsSDL(out io.Writer, table *storepb.TableMetadata) error
 		}
 	}
 
+	// Write EXCLUDE constraints
+	for _, exclude := range table.ExcludeConstraints {
+		if _, err := io.WriteString(out, ",\n    "); err != nil {
+			return err
+		}
+		if err := writeExcludeConstraintSDL(out, exclude); err != nil {
+			return err
+		}
+	}
+
 	// Write foreign key constraints
 	for _, fk := range table.ForeignKeys {
 		if _, err := io.WriteString(out, ",\n    "); err != nil {
@@ -3249,6 +3267,23 @@ func writeCheckConstraintSDL(out io.Writer, check *storepb.CheckConstraintMetada
 		return err
 	}
 	if _, err := io.WriteString(out, check.Expression); err != nil {
+		return err
+	}
+	return nil
+}
+
+func writeExcludeConstraintSDL(out io.Writer, exclude *storepb.ExcludeConstraintMetadata) error {
+	if _, err := io.WriteString(out, `CONSTRAINT "`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, exclude.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `" `); err != nil {
+		return err
+	}
+	// Expression already includes "EXCLUDE USING ..." prefix
+	if _, err := io.WriteString(out, exclude.Expression); err != nil {
 		return err
 	}
 	return nil
