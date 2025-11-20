@@ -47,6 +47,7 @@
       v-model:show="state.showChangeDatabaseDrawer"
       :title="$t('database.change-database')"
       :project-name="project.name"
+      :pre-selected-database-group="databaseGroupResourceName"
       :use-legacy-issue-flow="true"
     />
   </div>
