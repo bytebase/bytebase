@@ -94,7 +94,7 @@ func (checker *columnDisallowDropInIndexChecker) dropColumn(in ast.Node) (ast.No
 						checker.tables[table] = make(columnSet)
 					}
 					for _, indexColumn := range tableMetadata.ListIndexes() {
-						for _, column := range indexColumn.ExpressionList() {
+						for _, column := range indexColumn.GetProto().GetExpressions() {
 							checker.tables[table][column] = true
 						}
 					}

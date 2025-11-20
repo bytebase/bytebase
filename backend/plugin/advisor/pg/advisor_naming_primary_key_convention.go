@@ -197,9 +197,9 @@ func (r *namingPKConventionRule) handleRenamestmt(ctx *parser.RenamestmtContext)
 					normalizedSchema = "public"
 				}
 				index := r.originalMetadata.GetSchemaMetadata(normalizedSchema).GetTable(tableName).GetIndex(oldName)
-				if index != nil && index.Primary() {
+				if index != nil && index.GetProto().GetPrimary() {
 					metaData := map[string]string{
-						advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList(), "_"),
+						advisor.ColumnListTemplateToken: strings.Join(index.GetProto().GetExpressions(), "_"),
 						advisor.TableNameTemplateToken:  tableName,
 					}
 					pkData := &pkMetaData{
@@ -250,9 +250,9 @@ func (r *namingPKConventionRule) handleRenamestmt(ctx *parser.RenamestmtContext)
 						tableName = index.GetTableProto().Name
 					}
 				}
-				if index != nil && index.Primary() {
+				if index != nil && index.GetProto().GetPrimary() {
 					metaData := map[string]string{
-						advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList(), "_"),
+						advisor.ColumnListTemplateToken: strings.Join(index.GetProto().GetExpressions(), "_"),
 						advisor.TableNameTemplateToken:  tableName,
 					}
 					pkData := &pkMetaData{
@@ -329,7 +329,7 @@ func (r *namingPKConventionRule) getPKMetaDataFromTableConstraint(constraint par
 					}
 				}
 				if index != nil {
-					columnList = index.ExpressionList()
+					columnList = index.GetProto().GetExpressions()
 				}
 			}
 		}

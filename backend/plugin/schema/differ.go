@@ -618,8 +618,8 @@ func compareTableDetails(engine storepb.Engine, schemaName, tableName string, ol
 func compareColumns(engine storepb.Engine, oldTable, newTable *model.TableMetadata) []*ColumnDiff {
 	var changes []*ColumnDiff
 
-	oldColumns := oldTable.GetColumns()
-	newColumns := newTable.GetColumns()
+	oldColumns := oldTable.GetProto().GetColumns()
+	newColumns := newTable.GetProto().GetColumns()
 
 	// Check for dropped columns
 	for _, oldCol := range oldColumns {

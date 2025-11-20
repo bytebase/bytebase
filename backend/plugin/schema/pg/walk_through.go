@@ -195,7 +195,7 @@ func pgCreateColumn(schema *model.SchemaMetadata, table *model.TableMetadata, co
 	// Create column metadata
 	col := &storepb.ColumnMetadata{
 		Name:     columnName,
-		Position: int32(len(table.GetColumns()) + 1),
+		Position: int32(len(table.GetProto().GetColumns()) + 1),
 		Default:  "",
 		Nullable: true,
 		Type:     columnType,
@@ -847,7 +847,7 @@ func (l *pgCatalogListener) alterTableAddColumn(schema *model.SchemaMetadata, ta
 	// Create column metadata
 	col := &storepb.ColumnMetadata{
 		Name:     columnName,
-		Position: int32(len(table.GetColumns()) + 1),
+		Position: int32(len(table.GetProto().GetColumns()) + 1),
 		Nullable: true,
 		Type:     typeString,
 		Default:  "",

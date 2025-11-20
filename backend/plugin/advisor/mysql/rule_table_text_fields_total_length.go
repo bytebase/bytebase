@@ -176,7 +176,7 @@ func (r *TableTextFieldsTotalLengthRule) checkAlterTable(ctx *mysql.AlterTableCo
 
 func getTotalTextLength(tableInfo *model.TableMetadata) int64 {
 	var total int64
-	columns := tableInfo.GetColumns()
+	columns := tableInfo.GetProto().GetColumns()
 	for _, column := range columns {
 		total += getTextLength(column.Type)
 	}

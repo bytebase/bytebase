@@ -224,7 +224,7 @@ func (g *generator) EnterUpdate_statement(ctx *parser.Update_statementContext) {
 		g.err = err
 		return
 	}
-	for i, column := range g.table.GetColumns() {
+	for i, column := range g.table.GetProto().GetColumns() {
 		if i > 0 {
 			if _, err := fmt.Fprint(&buf, ", "); err != nil {
 				g.err = err
@@ -240,7 +240,7 @@ func (g *generator) EnterUpdate_statement(ctx *parser.Update_statementContext) {
 		g.err = err
 		return
 	}
-	for i, column := range g.table.GetColumns() {
+	for i, column := range g.table.GetProto().GetColumns() {
 		if i > 0 {
 			if _, err := fmt.Fprint(&buf, ", "); err != nil {
 				g.err = err

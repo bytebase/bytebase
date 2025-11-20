@@ -233,7 +233,7 @@ func (m CompletionMap) insertAllColumns(c *Completer) {
 			if tableMeta == nil {
 				continue
 			}
-			for _, column := range tableMeta.GetColumns() {
+			for _, column := range tableMeta.GetProto().GetColumns() {
 				columnID := getColumnID(c.defaultCatalog, schema, table, column.Name)
 				if _, ok := m[columnID]; !ok {
 					definition := fmt.Sprintf("%s.%s.%s | %s", c.defaultCatalog, schema, table, column.Type)
@@ -323,7 +323,7 @@ func (m CompletionMap) insertMetadataColumns(c *Completer, catalog string, schem
 	}
 	for _, table := range tableNames {
 		tableMetadata := schemaMetadata.GetTable(table)
-		for _, column := range tableMetadata.GetColumns() {
+		for _, column := range tableMetadata.GetProto().GetColumns() {
 			columnID := getColumnID(catalogName, schemaName, table, column.Name)
 			if _, ok := m[columnID]; !ok {
 				definition := fmt.Sprintf("%s.%s.%s | %s", catalogName, schemaName, table, column.Type)

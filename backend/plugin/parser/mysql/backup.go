@@ -326,7 +326,7 @@ func classifyColumns(ctx context.Context, getDatabaseMetadataFunc base.GetDataba
 	}
 
 	var generatedColumns, normalColumns []string
-	for _, column := range tableSchema.GetColumns() {
+	for _, column := range tableSchema.GetProto().GetColumns() {
 		if column.GetGeneration() != nil {
 			generatedColumns = append(generatedColumns, column.GetName())
 		} else {

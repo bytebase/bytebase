@@ -164,7 +164,7 @@ func (r *ColumnDisallowDropInIndexRule) checkAlterTable(ctx *mysql.AlterTableCon
 				r.tables[tableName] = make(columnSet)
 			}
 			for _, indexColumn := range table.ListIndexes() {
-				for _, column := range indexColumn.ExpressionList() {
+				for _, column := range indexColumn.GetProto().GetExpressions() {
 					r.tables[tableName][column] = true
 				}
 			}

@@ -206,7 +206,7 @@ func (q *querySpanExtractor) expandTableReferencesToColumns(accessTables base.So
 			tableMeta, err := q.findTableSchema(db, schema, table)
 			if err == nil && tableMeta != nil {
 				// Add each column from the table as a source column with full path
-				for _, col := range tableMeta.GetColumns() {
+				for _, col := range tableMeta.GetProto().GetColumns() {
 					colResource := base.ColumnResource{
 						Database: db,
 						Schema:   schema,

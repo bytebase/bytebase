@@ -87,7 +87,7 @@ func TestBuildTablesMetadata(t *testing.T) {
 
 		// Each table should have the same columns as the input.
 		for _, table := range tables {
-			a.Equal(len(table.GetColumns()), len(tc.wantColumns))
+			a.Equal(len(table.GetProto().GetColumns()), len(tc.wantColumns))
 			for _, column := range tc.wantColumns {
 				a.NotNil(table.GetColumn(column.Name))
 			}

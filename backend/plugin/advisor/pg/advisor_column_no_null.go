@@ -317,7 +317,7 @@ func (r *columnNoNullRule) removeColumnByTableConstraint(schema, table string, c
 					}
 				}
 				if index != nil {
-					for _, expression := range index.ExpressionList() {
+					for _, expression := range index.GetProto().GetExpressions() {
 						r.removeColumn(schema, table, expression)
 					}
 				}

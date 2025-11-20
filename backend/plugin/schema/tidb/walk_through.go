@@ -735,9 +735,9 @@ func tidbChangeColumn(t *model.TableMetadata, oldName string, newColumn *tidbast
 func tidbReorderColumn(t *model.TableMetadata, position *tidbast.ColumnPosition) (int, *storepb.Advice) {
 	switch position.Tp {
 	case tidbast.ColumnPositionNone:
-		return len(t.GetColumns()) + 1, nil
+		return len(t.GetProto().GetColumns()) + 1, nil
 	case tidbast.ColumnPositionFirst:
-		for _, column := range t.GetColumns() {
+		for _, column := range t.GetProto().GetColumns() {
 			column.Position++
 		}
 		return 1, nil
@@ -754,7 +754,7 @@ func tidbReorderColumn(t *model.TableMetadata, position *tidbast.ColumnPosition)
 				StartPosition: &storepb.Position{Line: 0},
 			}
 		}
-		for _, col := range t.GetColumns() {
+		for _, col := range t.GetProto().GetColumns() {
 			if col.Position > column.Position {
 				col.Position++
 			}
@@ -851,7 +851,7 @@ func tidbCopyTable(d *model.DatabaseMetadata, node *tidbast.CreateTableStmt) *st
 	}
 
 	// Copy columns and indexes from the target table
-	for _, col := range targetTable.GetColumns() {
+	for _, col := range targetTable.GetProto().GetColumns() {
 		colCopy, ok := proto.Clone(col).(*storepb.ColumnMetadata)
 		if !ok {
 			return &storepb.Advice{
@@ -1133,7 +1133,7 @@ func tidbCreateColumnHelper(t *model.TableMetadata, column *tidbast.ColumnDef, p
 		}
 	}
 
-	pos := len(t.GetColumns()) + 1
+	pos := len(t.GetProto().GetColumns()) + 1
 	if position != nil {
 		var err *storepb.Advice
 		pos, err = tidbReorderColumn(t, position)

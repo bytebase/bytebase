@@ -203,7 +203,7 @@ func (e *querySpanExtractor) expandSelectAsterisk(keyspace, table string) []base
 
 		tbl := schema.GetTable(table)
 		if tbl != nil {
-			for _, col := range tbl.GetColumns() {
+			for _, col := range tbl.GetProto().GetColumns() {
 				sourceColumn := base.SourceColumnSet{}
 				sourceColumn[base.ColumnResource{
 					Database: keyspace,
