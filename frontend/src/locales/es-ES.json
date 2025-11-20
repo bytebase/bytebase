@@ -244,6 +244,8 @@
       "notification": "Se eliminó exitosamente el recurso '{name}'."
     },
     "collapse": "Colapsar",
+    "show-more": "Mostrar más",
+    "remaining": "restante",
     "line": "Línea",
     "column": "Columna",
     "apply-to-database": "Aplicar a la base de datos"
@@ -312,6 +314,7 @@
     "no-runnable-tasks": "No hay tareas ejecutables",
     "no-skippable-tasks": "No hay tareas que se puedan omitir",
     "no-cancellable-tasks": "No hay tareas cancelables",
+    "no-selectable-tasks": "No se puede seleccionar ninguna tarea.",
     "no-permission": "No hay permiso para realizar esta acción",
     "data-export-creator-only": "Sólo el creador del problema puede ejecutar tareas de exportación de datos",
     "scheduled-time": "Hora programada",
@@ -342,6 +345,8 @@
     "failed-runs": "Tareas fallidas: últimos registros de ejecución",
     "history": "Historial de ejecución de tareas",
     "latest-logs": "Últimos registros",
+    "latest": "Última ejecución",
+    "no-detail": "No hay detalles de ejecución disponibles.",
     "status": {
       "enqueued": "Esperando a ser ejecutada.",
       "enqueued-with-rollout-time": "Esperando para ejecutar, {time} para ejecutar.",
@@ -1203,11 +1208,21 @@
     "stage": {
       "self": "Escenario | Escenarios",
       "start-stage": "Etapa de inicio",
+      "run-stage": "Etapa de ejecución",
+      "create-stage": "Crear etapa",
+      "back-to-stage": "Volver a la etapa {stage}",
       "no-stages": {
         "self": "Sin etapas",
         "description": "No se definen etapas para este lanzamiento."
       }
-    }
+    },
+    "task": {
+      "selected-count": "{count} tarea seleccionada | {count} tareas seleccionadas",
+      "no-tasks": "No hay tareas en esta etapa",
+      "no-statement": "Declaración sin SQL",
+      "view-full-details": "Ver detalles completos"
+    },
+    "no-stages": "No hay etapas disponibles"
   },
   "quick-action": {
     "create-db": "Crear base de datos",

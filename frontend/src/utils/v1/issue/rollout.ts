@@ -78,6 +78,17 @@ export const taskV1Slug = (task: Task): string => {
   return extractTaskUID(task.name);
 };
 
+/**
+ * Extracts the stage resource name from a task resource name.
+ * Task name format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+ * Returns: projects/{project}/rollouts/{rollout}/stages/{stage}
+ */
+export const extractStageNameFromTaskName = (taskName: string): string => {
+  const pattern = /^(.+\/stages\/[^/]+)\/tasks\/[^/]+$/;
+  const matches = taskName.match(pattern);
+  return matches?.[1] ?? "";
+};
+
 export const activeTaskInTaskList = (tasks: Task[]): Task => {
   // Focus on the running task first.
   const runningTask = tasks.find((task) => task.status === Task_Status.RUNNING);
@@ -135,7 +146,7 @@ export const findTaskByName = (
 ): Task => {
   for (const stage of rollout?.stages ?? []) {
     for (const task of stage.tasks) {
-      if (task.name == name) {
+      if (task.name === name) {
         return task;
       }
     }

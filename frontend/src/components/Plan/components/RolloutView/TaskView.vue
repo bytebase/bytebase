@@ -1,5 +1,20 @@
 <template>
   <div v-if="task" class="w-full h-full flex flex-col gap-y-4 p-4">
+    <p v-if="selectedStage">
+      <RouterLink
+        :to="{
+          name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
+          params: {
+            projectId: extractProjectResourceName(plan.name),
+            rolloutId: rolloutId,
+            stageId: stageId,
+          },
+        }"
+        class="textinfolabel hover:underline"
+      >
+        &larr; {{ $t("rollout.stage.back-to-stage", { stage: selectedStageTitle }) }}
+      </RouterLink>
+    </p>
     <!-- Task Basic Info -->
     <div class="w-full flex flex-col gap-y-3">
       <div
@@ -148,10 +163,14 @@ import { semanticTaskType } from "@/components/IssueV1";
 import TaskRunDetail from "@/components/IssueV1/components/TaskRunSection/TaskRunDetail.vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
-import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
+import {
+  PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
+  PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
+} from "@/router/dashboard/projectV1";
 import {
   taskRunNamePrefix,
   useCurrentProjectV1,
+  useEnvironmentV1Store,
   useSheetV1Store,
 } from "@/store";
 import { getTimeForPbTimestampProtoEs, unknownTask } from "@/types";
@@ -188,12 +207,33 @@ const {
   plan,
 } = usePlanContextWithRollout();
 const sheetStore = useSheetV1Store();
+const environmentStore = useEnvironmentV1Store();
 
+// Stage-related computed properties
+// Stage → Task relationship: Access tasks via stage.tasks array
+const selectedStage = computed(() => {
+  return rollout.value.stages.find((s) => s.id === props.stageId);
+});
+
+const selectedStageEnvironment = computed(() => {
+  if (!selectedStage.value?.environment) return undefined;
+  return environmentStore.getEnvironmentByName(selectedStage.value.environment);
+});
+
+const selectedStageTitle = computed(() => {
+  // Prefer environment title, fallback to stage name
+  return (
+    selectedStageEnvironment.value?.title || selectedStage.value?.name || ""
+  );
+});
+
+// Task-related computed properties
+// Efficient lookup: We already have the stage from URL, so search within that stage's tasks only
 const task = computed(() => {
   return (
-    rollout.value.stages
-      .find((s) => s.id === props.stageId)
-      ?.tasks.find((t) => t.name.endsWith(`/${props.taskId}`)) || unknownTask()
+    selectedStage.value?.tasks.find((t) =>
+      t.name.endsWith(`/${props.taskId}`)
+    ) || unknownTask()
   );
 });
 

@@ -244,6 +244,8 @@
       "notification": "Successfully delete the resource '{name}'."
     },
     "collapse": "Collapse",
+    "show-more": "Show more",
+    "remaining": "remaining",
     "line": "Line",
     "column": "Column",
     "apply-to-database": "Apply to database"
@@ -312,6 +314,7 @@
     "no-runnable-tasks": "No runnable tasks",
     "no-skippable-tasks": "No skippable tasks",
     "no-cancellable-tasks": "No cancellable tasks",
+    "no-selectable-tasks": "No tasks can be selected",
     "no-permission": "No permission to perform this action",
     "data-export-creator-only": "Only the issue creator can execute data export tasks",
     "scheduled-time": "Scheduled time",
@@ -342,6 +345,8 @@
     "failed-runs": "Failed Tasks - Latest Execution Logs",
     "history": "Execution History",
     "latest-logs": "Latest Logs",
+    "latest": "Latest Execution",
+    "no-detail": "No execution details available",
     "status": {
       "enqueued": "Waiting for execution.",
       "enqueued-with-rollout-time": "Waiting to execute after {time}.",
@@ -1203,11 +1208,21 @@
     "stage": {
       "self": "Stage | Stages",
       "start-stage": "Start stage",
+      "run-stage": "Run Stage",
+      "create-stage": "Create Stage",
+      "back-to-stage": "Back to Stage {stage}",
       "no-stages": {
         "self": "No stages",
         "description": "No stages are defined for this rollout."
       }
-    }
+    },
+    "task": {
+      "selected-count": "{count} task selected | {count} tasks selected",
+      "no-tasks": "No tasks in this stage",
+      "no-statement": "No SQL statement",
+      "view-full-details": "View Full Details"
+    },
+    "no-stages": "No stages available"
   },
   "quick-action": {
     "create-db": "Create database",

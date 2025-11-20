@@ -89,7 +89,7 @@ const cicdRoutes: RouteRecordRaw[] = [
             name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
             component: () =>
               import(
-                "@/components/Plan/components/RolloutView/RolloutView.vue"
+                "@/components/Plan/components/RolloutView/v2/RolloutView.vue"
               ),
             props: true,
             meta: {
@@ -100,8 +100,13 @@ const cicdRoutes: RouteRecordRaw[] = [
             path: "stages/:stageId",
             name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
             component: () =>
-              import("@/components/Plan/components/RolloutView/StageView.vue"),
+              import(
+                "@/components/Plan/components/RolloutView/v2/RolloutView.vue"
+              ),
             props: true,
+            meta: {
+              requiredPermissionList: () => ["bb.rollouts.get"],
+            },
           },
           {
             path: "stages/:stageId/tasks/:taskId",
@@ -109,6 +114,9 @@ const cicdRoutes: RouteRecordRaw[] = [
             component: () =>
               import("@/components/Plan/components/RolloutView/TaskView.vue"),
             props: true,
+            meta: {
+              requiredPermissionList: () => ["bb.rollouts.get"],
+            },
           },
         ],
       },

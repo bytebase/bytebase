@@ -244,6 +244,8 @@
       "notification": "成功删除资源“{name}”。"
     },
     "collapse": "收起",
+    "show-more": "显示更多",
+    "remaining": "剩余",
     "line": "行",
     "column": "列",
     "apply-to-database": "应用到数据库"
@@ -312,6 +314,7 @@
     "no-runnable-tasks": "没有可运行的任务",
     "no-skippable-tasks": "没有可跳过的任务",
     "no-cancellable-tasks": "没有可取消的任务",
+    "no-selectable-tasks": "没有可选择的任务",
     "no-permission": "无权限执行该操作",
     "data-export-creator-only": "只有工单创建者可以执行数据导出任务",
     "scheduled-time": "计划时间",
@@ -342,6 +345,8 @@
     "failed-runs": "失败的任务 - 最新的执行日志",
     "history": "执行记录",
     "latest-logs": "执行日志",
+    "latest": "最新执行",
+    "no-detail": "暂无执行详情",
     "status": {
       "enqueued": "等待执行。",
       "enqueued-with-rollout-time": "等待执行，{time}后执行。",
@@ -1203,11 +1208,21 @@
     "stage": {
       "self": "阶段 | 阶段",
       "start-stage": "开始该阶段",
+      "run-stage": "运行阶段",
+      "create-stage": "创建阶段",
+      "back-to-stage": "返回阶段 {stage}",
       "no-stages": {
         "self": "没有阶段",
         "description": "本次发布任务未定义任何阶段。"
       }
-    }
+    },
+    "task": {
+      "selected-count": "已选择 {count} 个任务",
+      "no-tasks": "此阶段没有任务",
+      "no-statement": "没有 SQL 语句",
+      "view-full-details": "查看完整详情"
+    },
+    "no-stages": "没有可用的阶段"
   },
   "quick-action": {
     "create-db": "创建数据库",
