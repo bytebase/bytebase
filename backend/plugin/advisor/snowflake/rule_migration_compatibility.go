@@ -8,7 +8,6 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/snowflake"
-	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -31,9 +30,9 @@ type MigrationCompatibilityAdvisor struct {
 
 // Check checks for migration compatibility.
 func (*MigrationCompatibilityAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	tree, ok := checkCtx.AST.(antlr.Tree)
-	if !ok {
-		return nil, errors.Errorf("failed to convert to Tree")
+	parseResults, err := getANTLRTree(checkCtx)
+	if err != nil {
+		return nil, err
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
@@ -44,7 +43,11 @@ func (*MigrationCompatibilityAdvisor) Check(_ context.Context, checkCtx advisor.
 	rule := NewMigrationCompatibilityRule(level, string(checkCtx.Rule.Type), checkCtx.CurrentDatabase)
 	checker := NewGenericChecker([]Rule{rule})
 
-	antlr.ParseTreeWalkerDefault.Walk(checker, tree)
+	for _, parseResult := range parseResults {
+		rule.SetBaseLine(parseResult.BaseLine)
+		checker.SetBaseLine(parseResult.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, parseResult.Tree)
+	}
 
 	return checker.GetAdviceList(), nil
 }
@@ -148,7 +151,7 @@ func (r *MigrationCompatibilityRule) enterDropTable(ctx *parser.Drop_tableContex
 		Code:          code.CompatibilityDropTable.Int32(),
 		Title:         r.title,
 		Content:       fmt.Sprintf("Drop table %q may cause incompatibility with the existing data and code", normalizedFullDropTableName),
-		StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+		StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
 	})
 }
 
@@ -167,7 +170,7 @@ func (r *MigrationCompatibilityRule) enterDropSchema(ctx *parser.Drop_schemaCont
 		Code:          code.CompatibilityDropSchema.Int32(),
 		Title:         r.title,
 		Content:       fmt.Sprintf("Drop schema %q may cause incompatibility with the existing data and code", normalizedFullDropSchemaName),
-		StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+		StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
 	})
 }
 
@@ -186,7 +189,7 @@ func (r *MigrationCompatibilityRule) enterDropDatabase(ctx *parser.Drop_database
 		Code:          code.CompatibilityDropDatabase.Int32(),
 		Title:         r.title,
 		Content:       fmt.Sprintf("Drop database %q may cause incompatibility with the existing data and code", normalizedFullDropDatabaseName),
-		StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+		StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
 	})
 }
 
@@ -209,6 +212,6 @@ func (r *MigrationCompatibilityRule) enterAlterTable(ctx *parser.Alter_tableCont
 		Code:          code.CompatibilityDropColumn.Int32(),
 		Title:         r.title,
 		Content:       fmt.Sprintf("Drop column %s may cause incompatibility with the existing data and code", strings.Join(normalizedAllColumnNames, ",")),
-		StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+		StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
 	})
 }

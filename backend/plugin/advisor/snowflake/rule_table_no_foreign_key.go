@@ -5,15 +5,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/snowflake"
-	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 )
 
@@ -31,9 +29,9 @@ type TableNoForeignKeyAdvisor struct {
 
 // Check checks for table disallow foreign key.
 func (*TableNoForeignKeyAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	tree, ok := checkCtx.AST.(antlr.Tree)
-	if !ok {
-		return nil, errors.Errorf("failed to convert to Tree")
+	parseResults, err := getANTLRTree(checkCtx)
+	if err != nil {
+		return nil, err
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
@@ -44,7 +42,11 @@ func (*TableNoForeignKeyAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 	rule := NewTableNoForeignKeyRule(level, string(checkCtx.Rule.Type))
 	checker := NewGenericChecker([]Rule{rule})
 
-	antlr.ParseTreeWalkerDefault.Walk(checker, tree)
+	for _, parseResult := range parseResults {
+		rule.SetBaseLine(parseResult.BaseLine)
+		checker.SetBaseLine(parseResult.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, parseResult.Tree)
+	}
 
 	return checker.GetAdviceList(), nil
 }
@@ -142,7 +144,7 @@ func (r *TableNoForeignKeyRule) enterCreateTable(ctx *parser.Create_tableContext
 
 	r.tableForeignKeyTimes[normalizedTableName] = 0
 	r.tableOriginalName[normalizedTableName] = originalTableName.GetText()
-	r.tableLine[normalizedTableName] = ctx.GetStart().GetLine()
+	r.tableLine[normalizedTableName] = r.baseLine + ctx.GetStart().GetLine()
 	r.currentNormalizedTableName = normalizedTableName
 	r.currentConstraintAction = currentConstraintActionAdd
 }
@@ -166,7 +168,7 @@ func (r *TableNoForeignKeyRule) enterOutOfLineConstraint(ctx *parser.Out_of_line
 	switch r.currentConstraintAction {
 	case currentConstraintActionAdd:
 		r.tableForeignKeyTimes[r.currentNormalizedTableName]++
-		r.tableLine[r.currentNormalizedTableName] = ctx.GetStart().GetLine()
+		r.tableLine[r.currentNormalizedTableName] = r.baseLine + ctx.GetStart().GetLine()
 	case currentConstraintActionDrop:
 		if times, ok := r.tableForeignKeyTimes[r.currentNormalizedTableName]; ok && times > 0 {
 			r.tableForeignKeyTimes[r.currentNormalizedTableName]--

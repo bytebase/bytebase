@@ -271,7 +271,7 @@ func RegisterParseFunc(engine storepb.Engine, f ParseFunc) {
 //   - CockroachDB: statements.Statements (github.com/cockroachdb/cockroachdb-parser/pkg/sql/parser/statements)
 //   - Redshift: antlr.Tree
 //   - Oracle: antlr.Tree
-//   - Snowflake: antlr.Tree
+//   - Snowflake: []*ParseResult (github.com/bytebase/bytebase/backend/plugin/parser/snowflake) - ANTLR-based
 //   - MSSQL: antlr.Tree
 //   - DynamoDB (PartiQL): antlr.Tree
 //   - Doris: *ParseResult (github.com/bytebase/bytebase/backend/plugin/parser/doris)

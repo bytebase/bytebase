@@ -48,13 +48,16 @@ func newQuerySpanExtractor(defaultDatabase, defaultSchema string, gCtx base.GetQ
 func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string) (*base.QuerySpan, error) {
 	q.ctx = ctx
 
-	parseResult, err := ParseSnowSQL(statement)
+	parseResults, err := ParseSnowSQL(statement)
 	if err != nil {
 		return nil, err
 	}
-	if parseResult == nil {
-		return nil, nil
+
+	if len(parseResults) != 1 {
+		return nil, errors.Errorf("expected exactly 1 statement, got %d", len(parseResults))
 	}
+
+	parseResult := parseResults[0]
 	tree := parseResult.Tree
 	if tree == nil {
 		return nil, nil

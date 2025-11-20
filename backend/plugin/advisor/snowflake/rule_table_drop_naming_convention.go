@@ -10,7 +10,6 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/snowflake"
-	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -32,9 +31,9 @@ type TableDropNamingConventionAdvisor struct {
 
 // Check checks for table drop with naming convention.
 func (*TableDropNamingConventionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	tree, ok := checkCtx.AST.(antlr.Tree)
-	if !ok {
-		return nil, errors.Errorf("failed to convert to Tree")
+	parseResults, err := getANTLRTree(checkCtx)
+	if err != nil {
+		return nil, err
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
@@ -50,7 +49,11 @@ func (*TableDropNamingConventionAdvisor) Check(_ context.Context, checkCtx advis
 	rule := NewTableDropNamingConventionRule(level, string(checkCtx.Rule.Type), format)
 	checker := NewGenericChecker([]Rule{rule})
 
-	antlr.ParseTreeWalkerDefault.Walk(checker, tree)
+	for _, parseResult := range parseResults {
+		rule.SetBaseLine(parseResult.BaseLine)
+		checker.SetBaseLine(parseResult.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, parseResult.Tree)
+	}
 
 	return checker.GetAdviceList(), nil
 }
@@ -99,7 +102,7 @@ func (r *TableDropNamingConventionRule) enterDropTable(ctx *parser.Drop_tableCon
 			Code:          code.TableDropNamingConventionMismatch.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("%q mismatches drop table naming convention, naming format should be %q", normalizedObjectName, r.format),
-			StartPosition: common.ConvertANTLRLineToPosition(ctx.Object_name().GetO().GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.Object_name().GetO().GetStart().GetLine()),
 		})
 	}
 }

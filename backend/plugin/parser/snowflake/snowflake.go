@@ -17,25 +17,48 @@ func init() {
 }
 
 // parseSnowflakeForRegistry is the ParseFunc for Snowflake.
-// Returns antlr.Tree on success.
+// Returns []*ParseResult on success.
 func parseSnowflakeForRegistry(statement string) (any, error) {
-	result, err := ParseSnowSQL(statement + ";")
-	if err != nil {
-		return nil, err
-	}
-	if result == nil {
-		return nil, nil
-	}
-	return result.Tree, nil
+	return ParseSnowSQL(statement)
 }
 
 type ParseResult struct {
-	Tree   antlr.Tree
-	Tokens *antlr.CommonTokenStream
+	Tree     antlr.Tree
+	Tokens   *antlr.CommonTokenStream
+	BaseLine int
 }
 
-// ParseSnowSQL parses the given SQL statement by using antlr4. Returns the AST and token stream if no error.
-func ParseSnowSQL(statement string) (*ParseResult, error) {
+// ParseSnowSQL parses the given SQL and returns a list of ParseResult (one per statement).
+// Use the Snowflake parser based on antlr4.
+func ParseSnowSQL(sql string) ([]*ParseResult, error) {
+	stmts, err := SplitSQL(sql)
+	if err != nil {
+		return nil, err
+	}
+
+	var results []*ParseResult
+	for _, stmt := range stmts {
+		if stmt.Empty {
+			continue
+		}
+
+		parseResult, err := parseSingleSnowSQL(stmt.Text, stmt.BaseLine)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, parseResult)
+	}
+
+	return results, nil
+}
+
+// parseSingleSnowSQL parses a single Snowflake statement and returns the ParseResult.
+func parseSingleSnowSQL(statement string, baseLine int) (*ParseResult, error) {
+	// Trim leading newlines to ensure the first token starts at line 1 in ANTLR
+	// This makes baseLine calculations simpler: baseLine + line = original line
+	statement = strings.TrimLeftFunc(statement, func(r rune) bool {
+		return r == '\n' || r == '\r'
+	})
 	statement = strings.TrimRightFunc(statement, utils.IsSpaceOrSemicolon) + "\n;"
 	inputStream := antlr.NewInputStream(statement)
 	lexer := parser.NewSnowflakeLexer(inputStream)
@@ -46,12 +69,14 @@ func ParseSnowSQL(statement string) (*ParseResult, error) {
 	lexer.RemoveErrorListeners()
 	lexerErrorListener := &base.ParseErrorListener{
 		Statement: statement,
+		BaseLine:  baseLine,
 	}
 	lexer.AddErrorListener(lexerErrorListener)
 
 	p.RemoveErrorListeners()
 	parserErrorListener := &base.ParseErrorListener{
 		Statement: statement,
+		BaseLine:  baseLine,
 	}
 	p.AddErrorListener(parserErrorListener)
 
@@ -68,8 +93,9 @@ func ParseSnowSQL(statement string) (*ParseResult, error) {
 	}
 
 	result := &ParseResult{
-		Tree:   tree,
-		Tokens: stream,
+		Tree:     tree,
+		Tokens:   stream,
+		BaseLine: baseLine,
 	}
 
 	return result, nil

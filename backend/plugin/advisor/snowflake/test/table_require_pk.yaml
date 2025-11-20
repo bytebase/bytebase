@@ -126,7 +126,7 @@
       title: table.require-pk
       content: Table CUSTOMER requires PRIMARY KEY.
       startposition:
-        line: 24
+        line: 25
         column: 0
       endposition: null
     - status: 2

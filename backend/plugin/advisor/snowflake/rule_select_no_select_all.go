@@ -6,7 +6,6 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/snowflake"
-	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -28,9 +27,9 @@ type SelectNoSelectAllAdvisor struct {
 
 // Check checks for no select all.
 func (*SelectNoSelectAllAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	tree, ok := checkCtx.AST.(antlr.Tree)
-	if !ok {
-		return nil, errors.Errorf("failed to convert to Tree")
+	parseResults, err := getANTLRTree(checkCtx)
+	if err != nil {
+		return nil, err
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
@@ -41,7 +40,11 @@ func (*SelectNoSelectAllAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 	rule := NewSelectNoSelectAllRule(level, string(checkCtx.Rule.Type))
 	checker := NewGenericChecker([]Rule{rule})
 
-	antlr.ParseTreeWalkerDefault.Walk(checker, tree)
+	for _, parseResult := range parseResults {
+		rule.SetBaseLine(parseResult.BaseLine)
+		checker.SetBaseLine(parseResult.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, parseResult.Tree)
+	}
 
 	return checker.GetAdviceList(), nil
 }
@@ -88,7 +91,7 @@ func (r *SelectNoSelectAllRule) enterSelectListElem(ctx *parser.Select_list_elem
 				Code:          code.StatementSelectAll.Int32(),
 				Title:         r.title,
 				Content:       "Avoid using SELECT *.",
-				StartPosition: common.ConvertANTLRLineToPosition(v.STAR().GetSymbol().GetLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + v.STAR().GetSymbol().GetLine()),
 			})
 		}
 	}

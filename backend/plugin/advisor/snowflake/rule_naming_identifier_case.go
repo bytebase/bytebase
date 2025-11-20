@@ -8,7 +8,6 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/snowflake"
-	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -31,9 +30,9 @@ type NamingIdentifierCaseAdvisor struct {
 
 // Check checks for identifier case.
 func (*NamingIdentifierCaseAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	tree, ok := checkCtx.AST.(antlr.Tree)
-	if !ok {
-		return nil, errors.Errorf("failed to convert to Tree")
+	parseResults, err := getANTLRTree(checkCtx)
+	if err != nil {
+		return nil, err
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
@@ -44,7 +43,11 @@ func (*NamingIdentifierCaseAdvisor) Check(_ context.Context, checkCtx advisor.Co
 	rule := NewNamingIdentifierCaseRule(level, string(checkCtx.Rule.Type))
 	checker := NewGenericChecker([]Rule{rule})
 
-	antlr.ParseTreeWalkerDefault.Walk(checker, tree)
+	for _, parseResult := range parseResults {
+		rule.SetBaseLine(parseResult.BaseLine)
+		checker.SetBaseLine(parseResult.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, parseResult.Tree)
+	}
 
 	return checker.GetAdviceList(), nil
 }
@@ -119,7 +122,7 @@ func (r *NamingIdentifierCaseRule) enterColumnDeclItemList(ctx *parser.Column_de
 					Code:          code.NamingCaseMismatch.Int32(),
 					Title:         r.title,
 					Content:       fmt.Sprintf("Identifier %q should be upper case", originalColName),
-					StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+					StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
 				})
 			}
 		}
@@ -139,7 +142,7 @@ func (r *NamingIdentifierCaseRule) enterAlterTable(ctx *parser.Alter_tableContex
 			Code:          code.NamingCaseMismatch.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("Identifier %q should be upper case", renameToColName),
-			StartPosition: common.ConvertANTLRLineToPosition(renameToID.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + renameToID.GetStart().GetLine()),
 		})
 	}
 }
