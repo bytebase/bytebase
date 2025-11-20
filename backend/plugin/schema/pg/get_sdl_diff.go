@@ -847,22 +847,24 @@ func processTableChanges(currentChunks, previousChunks *schema.SDLChunks, curren
 				columnChanges := processColumnChanges(oldASTNode, newASTNode, currentSchema, previousSchema, currentDBSDLChunks, currentChunk.Identifier)
 				foreignKeyChanges := processForeignKeyChanges(oldASTNode, newASTNode, currentDBSDLChunks, currentChunk.Identifier)
 				checkConstraintChanges := processCheckConstraintChanges(oldASTNode, newASTNode, currentDBSDLChunks, currentChunk.Identifier)
+				excludeConstraintChanges := processExcludeConstraintChanges(oldASTNode, newASTNode, currentDBSDLChunks, currentChunk.Identifier)
 				primaryKeyChanges := processPrimaryKeyChanges(oldASTNode, newASTNode, currentDBSDLChunks, currentChunk.Identifier)
 				uniqueConstraintChanges := processUniqueConstraintChanges(oldASTNode, newASTNode, currentDBSDLChunks, currentChunk.Identifier)
 
 				tableDiff := &schema.TableDiff{
-					Action:                  schema.MetadataDiffActionAlter,
-					SchemaName:              schemaName,
-					TableName:               tableName,
-					OldTable:                nil, // Will be populated when SDL drift detection is implemented
-					NewTable:                nil, // Will be populated when SDL drift detection is implemented
-					OldASTNode:              oldASTNode,
-					NewASTNode:              newASTNode,
-					ColumnChanges:           columnChanges,
-					ForeignKeyChanges:       foreignKeyChanges,
-					CheckConstraintChanges:  checkConstraintChanges,
-					PrimaryKeyChanges:       primaryKeyChanges,
-					UniqueConstraintChanges: uniqueConstraintChanges,
+					Action:                   schema.MetadataDiffActionAlter,
+					SchemaName:               schemaName,
+					TableName:                tableName,
+					OldTable:                 nil, // Will be populated when SDL drift detection is implemented
+					NewTable:                 nil, // Will be populated when SDL drift detection is implemented
+					OldASTNode:               oldASTNode,
+					NewASTNode:               newASTNode,
+					ColumnChanges:            columnChanges,
+					ForeignKeyChanges:        foreignKeyChanges,
+					CheckConstraintChanges:   checkConstraintChanges,
+					ExcludeConstraintChanges: excludeConstraintChanges,
+					PrimaryKeyChanges:        primaryKeyChanges,
+					UniqueConstraintChanges:  uniqueConstraintChanges,
 				}
 				diff.TableChanges = append(diff.TableChanges, tableDiff)
 			}
@@ -1399,6 +1401,12 @@ type CheckConstraintDefWithAST struct {
 	ASTNode parser.ITableconstraintContext
 }
 
+// ExcludeConstraintDefWithAST holds EXCLUDE constraint definition with its AST node for text comparison
+type ExcludeConstraintDefWithAST struct {
+	Name    string
+	ASTNode parser.ITableconstraintContext
+}
+
 // IndexDefWithAST holds index/unique constraint definition with its AST node for text comparison
 type IndexDefWithAST struct {
 	Name    string
@@ -1539,6 +1547,74 @@ func processCheckConstraintChanges(oldTable, newTable *parser.CreatestmtContext,
 	}
 
 	return checkDiffs
+}
+
+// processExcludeConstraintChanges analyzes EXCLUDE constraint changes between old and new table definitions
+// Following the text-first comparison pattern for performance optimization
+func processExcludeConstraintChanges(oldTable, newTable *parser.CreatestmtContext, currentDBSDLChunks *currentDatabaseSDLChunks, tableIdentifier string) []*schema.ExcludeConstraintDiff {
+	if oldTable == nil || newTable == nil {
+		return []*schema.ExcludeConstraintDiff{}
+	}
+
+	// Step 1: Extract all EXCLUDE constraint definitions with their AST nodes for text comparison
+	oldExcludeList := extractExcludeConstraintDefinitionsInOrder(oldTable)
+	newExcludeList := extractExcludeConstraintDefinitionsInOrder(newTable)
+
+	// Create maps for quick lookup
+	oldExcludeMap := make(map[string]*ExcludeConstraintDefWithAST)
+	for _, def := range oldExcludeList {
+		oldExcludeMap[def.Name] = def
+	}
+	newExcludeMap := make(map[string]*ExcludeConstraintDefWithAST)
+	for _, def := range newExcludeList {
+		newExcludeMap[def.Name] = def
+	}
+
+	var excludeDiffs []*schema.ExcludeConstraintDiff
+
+	// Step 2: Process current EXCLUDE constraints to find created and modified EXCLUDE constraints
+	for _, newExcludeDef := range newExcludeList {
+		if oldExcludeDef, exists := oldExcludeMap[newExcludeDef.Name]; exists {
+			// EXCLUDE constraint exists in both - check if modified by comparing text first
+			currentText := getExcludeConstraintText(newExcludeDef.ASTNode)
+			previousText := getExcludeConstraintText(oldExcludeDef.ASTNode)
+			if currentText != previousText {
+				// Apply constraint-level usability check: skip diff if current constraint matches database metadata SDL
+				schemaName, tableName := parseIdentifier(tableIdentifier)
+				if currentDBSDLChunks != nil && currentDBSDLChunks.shouldSkipConstraintDiffForUsability(currentText, schemaName, tableName, newExcludeDef.Name) {
+					continue
+				}
+				// EXCLUDE constraint was modified - drop and recreate (PostgreSQL pattern)
+				excludeDiffs = append(excludeDiffs, &schema.ExcludeConstraintDiff{
+					Action:     schema.MetadataDiffActionDrop,
+					OldASTNode: oldExcludeDef.ASTNode,
+				})
+				excludeDiffs = append(excludeDiffs, &schema.ExcludeConstraintDiff{
+					Action:     schema.MetadataDiffActionCreate,
+					NewASTNode: newExcludeDef.ASTNode,
+				})
+			}
+		} else {
+			// New EXCLUDE constraint - store AST node only
+			excludeDiffs = append(excludeDiffs, &schema.ExcludeConstraintDiff{
+				Action:     schema.MetadataDiffActionCreate,
+				NewASTNode: newExcludeDef.ASTNode,
+			})
+		}
+	}
+
+	// Step 3: Process old EXCLUDE constraints to find dropped ones
+	for _, oldExcludeDef := range oldExcludeList {
+		if _, exists := newExcludeMap[oldExcludeDef.Name]; !exists {
+			// EXCLUDE constraint was dropped - store AST node only
+			excludeDiffs = append(excludeDiffs, &schema.ExcludeConstraintDiff{
+				Action:     schema.MetadataDiffActionDrop,
+				OldASTNode: oldExcludeDef.ASTNode,
+			})
+		}
+	}
+
+	return excludeDiffs
 }
 
 // processPrimaryKeyChanges analyzes primary key constraint changes between old and new table definitions
@@ -1812,6 +1888,54 @@ func extractCheckConstraintDefinitionsInOrder(createStmt *parser.CreatestmtConte
 	return checkList
 }
 
+// extractExcludeConstraintDefinitionsInOrder extracts EXCLUDE constraints in their original order with AST nodes
+func extractExcludeConstraintDefinitionsInOrder(createStmt *parser.CreatestmtContext) []*ExcludeConstraintDefWithAST {
+	var excludeList []*ExcludeConstraintDefWithAST
+
+	if createStmt == nil || createStmt.Opttableelementlist() == nil {
+		return excludeList
+	}
+
+	tableElementList := createStmt.Opttableelementlist().Tableelementlist()
+	if tableElementList == nil {
+		return excludeList
+	}
+
+	for _, element := range tableElementList.AllTableelement() {
+		if element.Tableconstraint() != nil {
+			constraint := element.Tableconstraint()
+			if constraint.Constraintelem() != nil {
+				elem := constraint.Constraintelem()
+				if elem.EXCLUDE() != nil {
+					// This is an EXCLUDE constraint
+					name := ""
+					if constraint.Name() != nil {
+						name = pgparser.NormalizePostgreSQLName(constraint.Name())
+					}
+					// Use constraint definition text as fallback key if name is empty
+					if name == "" {
+						// Get the full original text from tokens
+						if parser := constraint.GetParser(); parser != nil {
+							if tokenStream := parser.GetTokenStream(); tokenStream != nil {
+								name = tokenStream.GetTextFromRuleContext(constraint)
+							}
+						}
+						if name == "" {
+							name = constraint.GetText() // Final fallback
+						}
+					}
+					excludeList = append(excludeList, &ExcludeConstraintDefWithAST{
+						Name:    name,
+						ASTNode: constraint,
+					})
+				}
+			}
+		}
+	}
+
+	return excludeList
+}
+
 // extractPrimaryKeyDefinitionsWithAST extracts primary key constraints with their AST nodes
 func extractPrimaryKeyDefinitionsWithAST(createStmt *parser.CreatestmtContext) map[string]*IndexDefWithAST {
 	pkMap := make(map[string]*IndexDefWithAST)
@@ -1886,6 +2010,27 @@ func getForeignKeyText(constraintAST parser.ITableconstraintContext) string {
 
 // getCheckConstraintText returns the text representation of a check constraint for comparison
 func getCheckConstraintText(constraintAST parser.ITableconstraintContext) string {
+	if constraintAST == nil {
+		return ""
+	}
+
+	// Get tokens from the parser for precise text extraction
+	if parser := constraintAST.GetParser(); parser != nil {
+		if tokenStream := parser.GetTokenStream(); tokenStream != nil {
+			start := constraintAST.GetStart()
+			stop := constraintAST.GetStop()
+			if start != nil && stop != nil {
+				return tokenStream.GetTextFromTokens(start, stop)
+			}
+		}
+	}
+
+	// Fallback to GetText() if tokens are not available
+	return constraintAST.GetText()
+}
+
+// getExcludeConstraintText returns the text representation of an EXCLUDE constraint for comparison
+func getExcludeConstraintText(constraintAST parser.ITableconstraintContext) string {
 	if constraintAST == nil {
 		return ""
 	}
@@ -2140,19 +2285,20 @@ func getOrCreateTableDiff(diff *schema.MetadataDiff, tableName string, affectedT
 	// Create a new table diff for standalone index changes
 	// We set Action to ALTER since we're modifying an existing table by adding/removing indexes
 	newTableDiff := &schema.TableDiff{
-		Action:                  schema.MetadataDiffActionAlter,
-		SchemaName:              schemaName,
-		TableName:               tableNameOnly,
-		OldTable:                nil, // Will be populated when SDL drift detection is implemented
-		NewTable:                nil, // Will be populated when SDL drift detection is implemented
-		OldASTNode:              nil, // No table-level AST changes for standalone indexes
-		NewASTNode:              nil, // No table-level AST changes for standalone indexes
-		ColumnChanges:           []*schema.ColumnDiff{},
-		IndexChanges:            []*schema.IndexDiff{},
-		PrimaryKeyChanges:       []*schema.PrimaryKeyDiff{},
-		UniqueConstraintChanges: []*schema.UniqueConstraintDiff{},
-		ForeignKeyChanges:       []*schema.ForeignKeyDiff{},
-		CheckConstraintChanges:  []*schema.CheckConstraintDiff{},
+		Action:                   schema.MetadataDiffActionAlter,
+		SchemaName:               schemaName,
+		TableName:                tableNameOnly,
+		OldTable:                 nil, // Will be populated when SDL drift detection is implemented
+		NewTable:                 nil, // Will be populated when SDL drift detection is implemented
+		OldASTNode:               nil, // No table-level AST changes for standalone indexes
+		NewASTNode:               nil, // No table-level AST changes for standalone indexes
+		ColumnChanges:            []*schema.ColumnDiff{},
+		IndexChanges:             []*schema.IndexDiff{},
+		PrimaryKeyChanges:        []*schema.PrimaryKeyDiff{},
+		UniqueConstraintChanges:  []*schema.UniqueConstraintDiff{},
+		ForeignKeyChanges:        []*schema.ForeignKeyDiff{},
+		CheckConstraintChanges:   []*schema.CheckConstraintDiff{},
+		ExcludeConstraintChanges: []*schema.ExcludeConstraintDiff{},
 	}
 
 	diff.TableChanges = append(diff.TableChanges, newTableDiff)
@@ -3076,6 +3222,8 @@ func applyConstraintChanges(rewriter *antlr.TokenStreamRewriter, createStmt *par
 	previousPKConstraints := make(map[string]*storepb.IndexMetadata)
 	currentUKConstraints := make(map[string]*storepb.IndexMetadata)
 	previousUKConstraints := make(map[string]*storepb.IndexMetadata)
+	currentExcludeConstraints := make(map[string]*storepb.ExcludeConstraintMetadata)
+	previousExcludeConstraints := make(map[string]*storepb.ExcludeConstraintMetadata)
 
 	// Build constraint maps from metadata
 	for _, constraint := range currentTable.CheckConstraints {
@@ -3112,12 +3260,20 @@ func applyConstraintChanges(rewriter *antlr.TokenStreamRewriter, createStmt *par
 			previousUKConstraints[index.Name] = index
 		}
 	}
+	// Build EXCLUDE constraint maps
+	for _, constraint := range currentTable.ExcludeConstraints {
+		currentExcludeConstraints[constraint.Name] = constraint
+	}
+	for _, constraint := range previousTable.ExcludeConstraints {
+		previousExcludeConstraints[constraint.Name] = constraint
+	}
 
 	// Extract constraint definitions with AST nodes for precise manipulation
 	currentCheckDefs := extractCheckConstraintDefinitionsWithAST(createStmt)
 	currentFKDefs := extractForeignKeyDefinitionsWithAST(createStmt)
 	currentPKDefs := extractPrimaryKeyDefinitionsInOrder(createStmt)
 	currentUKDefs := extractUniqueKeyDefinitionsInOrder(createStmt)
+	currentExcludeDefs := extractExcludeConstraintDefinitionsWithAST(createStmt)
 
 	// Phase 1: Handle constraint deletions (reverse order for stability)
 	// Delete check constraints
@@ -3164,6 +3320,18 @@ func applyConstraintChanges(rewriter *antlr.TokenStreamRewriter, createStmt *par
 			err := deleteConstraintFromAST(rewriter, ukDef.ASTNode, createStmt)
 			if err != nil {
 				return errors.Wrapf(err, "failed to delete unique key constraint %s", ukDef.Name)
+			}
+		}
+	}
+
+	// Delete EXCLUDE constraints
+	for i := len(currentExcludeDefs) - 1; i >= 0; i-- {
+		excludeDef := currentExcludeDefs[i]
+		if _, exists := currentExcludeConstraints[excludeDef.Name]; !exists {
+			// Constraint was dropped
+			err := deleteConstraintFromAST(rewriter, excludeDef.ASTNode, createStmt)
+			if err != nil {
+				return errors.Wrapf(err, "failed to delete exclude constraint %s", excludeDef.Name)
 			}
 		}
 	}
@@ -3229,6 +3397,21 @@ func applyConstraintChanges(rewriter *antlr.TokenStreamRewriter, createStmt *par
 		}
 	}
 
+	// Modify EXCLUDE constraints
+	for _, excludeDef := range currentExcludeDefs {
+		if currentConstraint, exists := currentExcludeConstraints[excludeDef.Name]; exists {
+			if previousConstraint, wasPresent := previousExcludeConstraints[excludeDef.Name]; wasPresent {
+				// Check if constraint was modified
+				if !excludeConstraintsEqual(currentConstraint, previousConstraint) {
+					err := modifyConstraintInAST(rewriter, excludeDef.ASTNode, currentConstraint)
+					if err != nil {
+						return errors.Wrapf(err, "failed to modify exclude constraint %s", excludeDef.Name)
+					}
+				}
+			}
+		}
+	}
+
 	// Phase 3: Handle constraint additions
 	// Add new check constraints
 	for _, currentConstraint := range currentTable.CheckConstraints {
@@ -3274,6 +3457,17 @@ func applyConstraintChanges(rewriter *antlr.TokenStreamRewriter, createStmt *par
 				if err != nil {
 					return errors.Wrapf(err, "failed to add unique key constraint %s", currentIndex.Name)
 				}
+			}
+		}
+	}
+
+	// Add new EXCLUDE constraints
+	for _, currentConstraint := range currentTable.ExcludeConstraints {
+		if _, existed := previousExcludeConstraints[currentConstraint.Name]; !existed {
+			// New EXCLUDE constraint
+			err := addConstraintToAST(rewriter, createStmt, currentConstraint)
+			if err != nil {
+				return errors.Wrapf(err, "failed to add exclude constraint %s", currentConstraint.Name)
 			}
 		}
 	}
@@ -3885,6 +4079,8 @@ func modifyConstraintInAST(rewriter *antlr.TokenStreamRewriter, constraintAST pa
 		} else {
 			return errors.New("unsupported index constraint type")
 		}
+	case *storepb.ExcludeConstraintMetadata:
+		newConstraintSDL = generateExcludeConstraintSDL(constraint)
 	default:
 		return errors.New("unsupported constraint type")
 	}
@@ -3916,6 +4112,8 @@ func addConstraintToAST(rewriter *antlr.TokenStreamRewriter, createStmt *parser.
 		} else {
 			return errors.New("unsupported index constraint type")
 		}
+	case *storepb.ExcludeConstraintMetadata:
+		newConstraintSDL = generateExcludeConstraintSDL(constraint)
 	default:
 		return errors.New("unsupported constraint type")
 	}
@@ -3988,6 +4186,23 @@ func generateForeignKeyConstraintSDL(constraint *storepb.ForeignKeyMetadata) str
 	return buf.String()
 }
 
+// generateExcludeConstraintSDL generates SDL text for an EXCLUDE constraint using the existing writeExcludeConstraintSDL function
+func generateExcludeConstraintSDL(constraint *storepb.ExcludeConstraintMetadata) string {
+	if constraint == nil {
+		return ""
+	}
+
+	var buf strings.Builder
+	err := writeExcludeConstraintSDL(&buf, constraint)
+	if err != nil {
+		// If there's an error writing to the buffer, return empty string
+		// This should rarely happen since we're writing to a strings.Builder
+		return ""
+	}
+
+	return buf.String()
+}
+
 // constraintsEqual compares two check constraint metadata objects for equality
 func constraintsEqual(a, b *storepb.CheckConstraintMetadata) bool {
 	if a == nil || b == nil {
@@ -4043,6 +4258,12 @@ func extractCheckConstraintDefinitionsWithAST(createStmt *parser.CreatestmtConte
 // Note: This is a wrapper around the existing function with a different name for clarity
 func extractForeignKeyDefinitionsWithAST(createStmt *parser.CreatestmtContext) []*ForeignKeyDefWithAST {
 	return extractForeignKeyDefinitionsInOrder(createStmt)
+}
+
+// extractExcludeConstraintDefinitionsWithAST extracts EXCLUDE constraint definitions with their AST nodes
+// Note: This is a wrapper around the existing function with a different name for clarity
+func extractExcludeConstraintDefinitionsWithAST(createStmt *parser.CreatestmtContext) []*ExcludeConstraintDefWithAST {
+	return extractExcludeConstraintDefinitionsInOrder(createStmt)
 }
 
 // PrimaryKeyDefWithAST represents a primary key constraint definition with its AST node
@@ -4213,6 +4434,15 @@ func ukConstraintsEqual(a, b *storepb.IndexMetadata) bool {
 	}
 
 	return true
+}
+
+// excludeConstraintsEqual compares two EXCLUDE constraint metadata objects for equality
+func excludeConstraintsEqual(a, b *storepb.ExcludeConstraintMetadata) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+
+	return a.Name == b.Name && a.Expression == b.Expression
 }
 
 // generatePrimaryKeyConstraintSDL generates SDL text for a primary key constraint
