@@ -43,6 +43,14 @@ type IssueService struct {
 	metricReporter *metricreport.Reporter
 }
 
+type filterIssueMessage struct {
+	ApprovalStatus *v1pb.Issue_ApprovalStatus
+	// ReleaserID is the principal uid.
+	ReleaserID *int
+	// ApproverName is the principal uid.
+	ApproverID *int
+}
+
 // NewIssueService creates a new IssueService.
 func NewIssueService(
 	store *store.Store,
@@ -77,7 +85,13 @@ func (s *IssueService) GetIssue(ctx context.Context, req *connect.Request[v1pb.G
 	return connect.NewResponse(issueV1), nil
 }
 
-func (s *IssueService) getIssueFind(ctx context.Context, filter string, query string, limit, offset *int) (*store.FindIssueMessage, error) {
+func (s *IssueService) getIssueFind(
+	ctx context.Context,
+	filter string,
+	query string,
+	limit,
+	offset *int,
+) (*store.FindIssueMessage, *filterIssueMessage, error) {
 	issueFind := &store.FindIssueMessage{
 		Limit:  limit,
 		Offset: offset,
@@ -86,17 +100,19 @@ func (s *IssueService) getIssueFind(ctx context.Context, filter string, query st
 		issueFind.Query = &query
 	}
 	if filter == "" {
-		return issueFind, nil
+		return issueFind, nil, nil
 	}
 
 	e, err := cel.NewEnv()
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create cel env"))
+		return nil, nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create cel env"))
 	}
 	ast, iss := e.Parse(filter)
 	if iss != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String()))
+		return nil, nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String()))
 	}
+
+	filterIssue := &filterIssueMessage{}
 
 	var parseFilter func(expr celast.Expr) (string, error)
 	parseFilter = func(expr celast.Expr) (string, error) {
@@ -109,12 +125,6 @@ func (s *IssueService) getIssueFind(ctx context.Context, filter string, query st
 			case celoperators.Equals:
 				variable, value := getVariableAndValueFromExpr(expr)
 				switch variable {
-				case "creator":
-					user, err := s.getUserByIdentifier(ctx, value.(string))
-					if err != nil {
-						return "", connect.NewError(connect.CodeInternal, errors.Errorf("failed to get user %v with error %v", value, err.Error()))
-					}
-					issueFind.CreatorID = &user.ID
 				case "instance":
 					instanceResourceID, err := common.GetInstanceID(value.(string))
 					if err != nil {
@@ -180,6 +190,26 @@ func (s *IssueService) getIssueFind(ctx context.Context, filter string, query st
 					}
 				case "labels":
 					issueFind.LabelList = append(issueFind.LabelList, value.(string))
+				case "approval_status":
+					approvalStatusValue, ok := v1pb.Issue_ApprovalStatus_value[value.(string)]
+					if !ok {
+						return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`invalid approval_status %q`, value))
+					}
+					approvalStatus := v1pb.Issue_ApprovalStatus(approvalStatusValue)
+					filterIssue.ApprovalStatus = &approvalStatus
+				case "current_approver", "releaser", "creator":
+					user, err := s.getUserByIdentifier(ctx, value.(string))
+					if err != nil {
+						return "", connect.NewError(connect.CodeInternal, errors.Errorf("failed to get user %v with error %v", value, err.Error()))
+					}
+					switch variable {
+					case "current_approver":
+						filterIssue.ApproverID = &user.ID
+					case "releaser":
+						filterIssue.ReleaserID = &user.ID
+					case "creator":
+						issueFind.CreatorID = &user.ID
+					}
 				default:
 					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q with %v operator", variable, celoperators.Equals))
 				}
@@ -251,9 +281,9 @@ func (s *IssueService) getIssueFind(ctx context.Context, filter string, query st
 	}
 
 	if _, err := parseFilter(ast.NativeRep().Expr()); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse filter, error: %v", err))
+		return nil, nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse filter, error: %v", err))
 	}
-	return issueFind, nil
+	return issueFind, filterIssue, nil
 }
 
 func (s *IssueService) ListIssues(ctx context.Context, req *connect.Request[v1pb.ListIssuesRequest]) (*connect.Response[v1pb.ListIssuesResponse], error) {
@@ -276,7 +306,7 @@ func (s *IssueService) ListIssues(ctx context.Context, req *connect.Request[v1pb
 	}
 	limitPlusOne := offset.limit + 1
 
-	issueFind, err := s.getIssueFind(ctx, req.Msg.Filter, req.Msg.Query, &limitPlusOne, &offset.offset)
+	issueFind, issueFilter, err := s.getIssueFind(ctx, req.Msg.Filter, req.Msg.Query, &limitPlusOne, &offset.offset)
 	if err != nil {
 		return nil, err
 	}
@@ -295,7 +325,7 @@ func (s *IssueService) ListIssues(ctx context.Context, req *connect.Request[v1pb
 		issues = issues[:offset.limit]
 	}
 
-	converted, err := s.convertToIssues(ctx, issues)
+	converted, err := s.convertToIssues(ctx, issues, issueFilter)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to issue, error: %v", err))
 	}
@@ -325,22 +355,24 @@ func (s *IssueService) SearchIssues(ctx context.Context, req *connect.Request[v1
 	}
 	limitPlusOne := offset.limit + 1
 
-	issueFind, err := s.getIssueFind(ctx, req.Msg.Filter, req.Msg.Query, &limitPlusOne, &offset.offset)
+	issueFind, issueFilter, err := s.getIssueFind(ctx, req.Msg.Filter, req.Msg.Query, &limitPlusOne, &offset.offset)
 	if err != nil {
 		return nil, err
 	}
 	if projectID != "-" {
 		issueFind.ProjectID = &projectID
 	}
-	user, ok := GetUserFromContext(ctx)
-	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
+	if issueFind.ProjectID == nil {
+		user, ok := GetUserFromContext(ctx)
+		if !ok {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
+		}
+		projectIDsFilter, err := getProjectIDsSearchFilter(ctx, user, iam.PermissionIssuesGet, s.iamManager, s.store)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get projectIDs, error: %v", err))
+		}
+		issueFind.ProjectIDs = projectIDsFilter
 	}
-	projectIDsFilter, err := getProjectIDsSearchFilter(ctx, user, iam.PermissionIssuesGet, s.iamManager, s.store)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get projectIDs, error: %v", err))
-	}
-	issueFind.ProjectIDs = projectIDsFilter
 
 	issues, err := s.store.ListIssueV2(ctx, issueFind)
 	if err != nil {
@@ -355,7 +387,7 @@ func (s *IssueService) SearchIssues(ctx context.Context, req *connect.Request[v1
 		issues = issues[:offset.limit]
 	}
 
-	converted, err := s.convertToIssues(ctx, issues)
+	converted, err := s.convertToIssues(ctx, issues, issueFilter)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to issue, error: %v", err))
 	}
@@ -722,17 +754,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 
-	policy, err := s.store.GetProjectIamPolicy(ctx, issue.Project.ResourceID)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get project policy, error: %v", err))
-	}
-
-	workspacePolicy, err := s.store.GetWorkspaceIamPolicy(ctx)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get workspace policy, error: %v", err))
-	}
-
-	canApprove, err := isUserReviewer(ctx, s.store, issue, role, user, policy.Policy, workspacePolicy.Policy)
+	canApprove, err := s.isUserReviewer(ctx, issue, role, user)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check if principal can approve step, error: %v", err))
 	}
@@ -925,17 +947,7 @@ func (s *IssueService) RejectIssue(ctx context.Context, req *connect.Request[v1p
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 
-	policy, err := s.store.GetProjectIamPolicy(ctx, issue.Project.ResourceID)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get project policy, error: %v", err))
-	}
-
-	workspacePolicy, err := s.store.GetWorkspaceIamPolicy(ctx)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get workspace policy, error: %v", err))
-	}
-
-	canApprove, err := isUserReviewer(ctx, s.store, issue, role, user, policy.Policy, workspacePolicy.Policy)
+	canApprove, err := s.isUserReviewer(ctx, issue, role, user)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check if principal can reject step, error: %v", err))
 	}
@@ -1544,16 +1556,11 @@ func (s *IssueService) getIssueMessage(ctx context.Context, name string) (*store
 	return issue, nil
 }
 
-func canRequestIssue(issueCreator *store.UserMessage, user *store.UserMessage) bool {
-	return issueCreator.ID == user.ID
+func (s *IssueService) isUserReviewer(ctx context.Context, issue *store.IssueMessage, role string, user *store.UserMessage) (bool, error) {
+	roles := s.getUserRoleMap(ctx, issue.Project.ResourceID, user.ID)
+	return roles[role], nil
 }
 
-func isUserReviewer(ctx context.Context, stores *store.Store, issue *store.IssueMessage, role string, user *store.UserMessage, policies ...*storepb.IamPolicy) (bool, error) {
-	// Check project policy about self approval.
-	if !issue.Project.Setting.AllowSelfApproval && issue.Creator.ID == user.ID {
-		return false, errors.Errorf("creator cannot self approve")
-	}
-
-	roles := utils.GetUserFormattedRolesMap(ctx, stores, user, policies...)
-	return roles[role], nil
+func canRequestIssue(issueCreator *store.UserMessage, user *store.UserMessage) bool {
+	return issueCreator.ID == user.ID
 }

@@ -17,8 +17,9 @@
 import { NTab, NTabs } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import type { SearchParams, SemanticIssueStatus } from "@/utils";
-import { getSemanticIssueStatusFromSearchParams, upsertScope } from "@/utils";
+import type { SearchParams, SearchScope } from "@/utils";
+import { getValuesFromSearchParams, upsertScope } from "@/utils";
+import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 
 const props = defineProps<{
   params: SearchParams;
@@ -33,32 +34,67 @@ const { t } = useI18n();
 const tabItemList = computed(() => {
   return [
     {
-      value: "OPEN",
+      value: IssueStatus.OPEN,
       label: t("issue.table.open"),
     },
     {
-      value: "CLOSED",
+      value: IssueStatus.DONE,
       label: t("issue.table.closed"),
     },
   ] as {
-    value: SemanticIssueStatus;
+    value: IssueStatus;
     label: string;
   }[];
 });
 
-const tab = computed(() => {
-  return getSemanticIssueStatusFromSearchParams(props.params) ?? "";
+const tab = computed((): IssueStatus => {
+  const statusList = getValuesFromSearchParams(props.params, "status").map(status => IssueStatus[status as keyof typeof IssueStatus])
+
+  switch (statusList.length) {
+    case 0:
+      return IssueStatus.ISSUE_STATUS_UNSPECIFIED
+    case 1:
+      if (statusList[0] === IssueStatus.OPEN) {
+        return IssueStatus.OPEN
+      }
+      return IssueStatus.DONE;
+    default:
+      if (!statusList.includes(IssueStatus.OPEN)) {
+        return IssueStatus.DONE;
+      }
+      return IssueStatus.ISSUE_STATUS_UNSPECIFIED
+  }
 });
 
-const updateStatus = (value: SemanticIssueStatus) => {
-  if (!["", "OPEN", "CLOSED"].includes(value)) return;
+const updateStatus = (value: IssueStatus) => {
+  const scopes: SearchScope[] = [];
+  let allowMultiple = false;
+  if (value === IssueStatus.OPEN) {
+    scopes.push({
+      id: "status",
+      value: IssueStatus[IssueStatus.OPEN],
+    })
+  } else {
+    scopes.push(
+      {
+      id: "status",
+      value: IssueStatus[IssueStatus.DONE],
+    },
+    {
+      id: "status",
+      value: IssueStatus[IssueStatus.CANCELED],
+    }
+    );
+    allowMultiple = true;
+  }
 
   const updated = upsertScope({
-    params: props.params,
-    scopes: {
-      id: "status",
-      value: value,
+    params: {
+      ...props.params,
+      scopes: props.params.scopes.filter(scope => scope.id !== "status"),
     },
+    scopes,
+    allowMultiple,
   });
   emit("update:params", updated);
 };

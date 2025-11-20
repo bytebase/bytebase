@@ -5,7 +5,10 @@ import {
   UNKNOWN_PROJECT_NAME,
   UNKNOWN_ROLLOUT_NAME,
 } from "@/types";
-import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
+import type {
+  Issue,
+  Issue_ApprovalStatus,
+} from "@/types/proto-es/v1/issue_service_pb";
 import {
   Issue_Type,
   IssueSchema,
@@ -65,6 +68,9 @@ export interface IssueFilter {
   environment?: string;
   query: string;
   creator?: string;
+  currentApprover?: string;
+  releaser?: string;
+  approvalStatus?: Issue_ApprovalStatus;
   statusList?: IssueStatus[];
   createdTsAfter?: number;
   createdTsBefore?: number;

@@ -922,10 +922,6 @@
           "title": "创建人",
           "description": "根据创建人搜索"
         },
-        "approver": {
-          "title": "审批人",
-          "description": "根据工单审批人搜索"
-        },
         "approval": {
           "value": {
             "pending": "待审批",

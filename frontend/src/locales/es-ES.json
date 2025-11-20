@@ -922,10 +922,6 @@
           "title": "Creador",
           "description": "Búsqueda por creador"
         },
-        "approver": {
-          "title": "Aprobador",
-          "description": "Búsqueda por aprobador del problema"
-        },
         "approval": {
           "value": {
             "pending": "Aprobación pendiente",

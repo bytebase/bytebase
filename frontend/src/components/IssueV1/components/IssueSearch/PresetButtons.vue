@@ -20,10 +20,10 @@ import { useI18n } from "vue-i18n";
 import { useCurrentUserV1 } from "@/store";
 import type { SearchParams } from "@/utils";
 import {
-  getSemanticIssueStatusFromSearchParams,
   getValueFromSearchParams,
   upsertScope,
 } from "@/utils";
+import { IssueStatus, Issue_ApprovalStatus } from "@/types/proto-es/v1/issue_service_pb";
 
 type PresetValue = "WAITING_APPROVAL" | "CREATED" | "ALL";
 
@@ -60,7 +60,7 @@ const presets = computed((): Preset[] => [
 
 const activePreset = computed((): PresetValue | "" => {
   const preset = presets.value.find((p) => isActive(p.value));
-  return preset ? preset.value : "";
+  return preset?.value ?? "";
 });
 
 const isActive = (preset: PresetValue): boolean => {
@@ -68,18 +68,13 @@ const isActive = (preset: PresetValue): boolean => {
 
   if (preset === "WAITING_APPROVAL") {
     return (
-      getSemanticIssueStatusFromSearchParams(props.params) === "OPEN" &&
-      getValueFromSearchParams(props.params, "approval") === "pending" &&
-      getValueFromSearchParams(props.params, "approver") === myEmail &&
-      props.params.scopes.filter((s) => !s.readonly).length === 3
+      getValueFromSearchParams(props.params, "approval") === Issue_ApprovalStatus[Issue_ApprovalStatus.PENDING]
     );
   }
 
   if (preset === "CREATED") {
     return (
-      getSemanticIssueStatusFromSearchParams(props.params) === "OPEN" &&
-      getValueFromSearchParams(props.params, "creator") === myEmail &&
-      props.params.scopes.filter((s) => !s.readonly).length === 2
+      getValueFromSearchParams(props.params, "creator") === myEmail
     );
   }
 
@@ -90,9 +85,7 @@ const isActive = (preset: PresetValue): boolean => {
   return false;
 };
 
-const selectPreset = (preset: PresetValue | string) => {
-  if (!["WAITING_APPROVAL", "CREATED", "ALL"].includes(preset)) return;
-
+const selectPreset = (preset: PresetValue) => {
   const myEmail = me.value.email;
   const readonlyScopes = props.params.scopes.filter((s) => s.readonly);
 
@@ -105,16 +98,16 @@ const selectPreset = (preset: PresetValue | string) => {
     newParams = upsertScope({
       params: newParams,
       scopes: [
-        { id: "status", value: "OPEN" },
-        { id: "approval", value: "pending" },
-        { id: "approver", value: myEmail },
+        { id: "status", value: IssueStatus[IssueStatus.OPEN] },
+        { id: "approval", value: Issue_ApprovalStatus[Issue_ApprovalStatus.PENDING] },
+        { id: "current-approver", value: myEmail },
       ],
     });
   } else if (preset === "CREATED") {
     newParams = upsertScope({
       params: newParams,
       scopes: [
-        { id: "status", value: "OPEN" },
+        { id: "status", value: IssueStatus[IssueStatus.OPEN] },
         { id: "creator", value: myEmail },
       ],
     });

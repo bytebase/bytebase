@@ -7,20 +7,17 @@ import {
 } from "@/store";
 import type { IssueFilter } from "@/types";
 import { unknownDatabase } from "@/types";
-import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
-import type { SearchParams, SemanticIssueStatus } from "../common";
+import {
+  Issue_ApprovalStatus,
+  IssueStatus,
+} from "@/types/proto-es/v1/issue_service_pb";
+import type { SearchParams } from "../common";
 import {
   getTsRangeFromSearchParams,
   getValueFromSearchParams,
+  getValuesFromSearchParams,
   type SearchScopeId,
 } from "../common";
-
-const getValuesFromSearchParams = (
-  params: SearchParams,
-  scopeId: SearchScopeId
-) => {
-  return params.scopes.filter((s) => s.id === scopeId).map((s) => s.value);
-};
 
 export const buildIssueFilterBySearchParams = (
   params: SearchParams,
@@ -40,8 +37,8 @@ export const buildIssueFilterBySearchParams = (
   }
 
   const createdTsRange = getTsRangeFromSearchParams(params, "created");
-  const status = getSemanticIssueStatusFromSearchParams(params);
   const labels = getValuesFromSearchParams(params, "issue-label");
+  const approvalStatus = getValueFromSearchParams(params, "approval");
 
   const filter: IssueFilter = {
     ...defaultFilter,
@@ -53,12 +50,18 @@ export const buildIssueFilterBySearchParams = (
     createdTsBefore: createdTsRange?.[1],
     taskType: taskTypeScope?.value,
     creator: getValueFromSearchParams(params, "creator", userNamePrefix),
-    statusList:
-      status === "OPEN"
-        ? [IssueStatus.OPEN]
-        : status === "CLOSED"
-          ? [IssueStatus.DONE, IssueStatus.CANCELED]
-          : undefined,
+    currentApprover: getValueFromSearchParams(
+      params,
+      "current-approver",
+      userNamePrefix
+    ),
+    approvalStatus: approvalStatus
+      ? Issue_ApprovalStatus[
+          approvalStatus as keyof typeof Issue_ApprovalStatus
+        ]
+      : undefined,
+    releaser: getValueFromSearchParams(params, "releaser", userNamePrefix),
+    statusList: getValuesFromSearchParams(params, "status").map(status => IssueStatus[status as keyof typeof IssueStatus]),
     labels,
     environment: getValueFromSearchParams(
       params,
@@ -67,17 +70,4 @@ export const buildIssueFilterBySearchParams = (
     ),
   };
   return filter;
-};
-
-export const getSemanticIssueStatusFromSearchParams = (
-  params: SearchParams
-) => {
-  const status = getValueFromSearchParams(
-    params,
-    "status",
-    "" /* prefix='' */,
-    ["OPEN", "CLOSED"]
-  ) as SemanticIssueStatus | "";
-  if (!status) return undefined;
-  return status;
 };
