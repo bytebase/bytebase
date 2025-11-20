@@ -25,14 +25,20 @@ func extractChangedResources(database string, _ string, dbSchema *model.Database
 		return nil, errors.Errorf("invalid ast type %T, expected []*ParseResult", asts)
 	}
 
-	if len(parseResults) == 0 {
-		return nil, errors.New("empty parse results")
-	}
-
 	changedResources := model.NewChangedResources(dbSchema)
 	searchPath := dbSchema.GetDatabaseMetadata().GetSearchPath()
 	if len(searchPath) == 0 {
 		searchPath = []string{"public"} // default search path for PostgreSQL
+	}
+
+	// If no parse results, return empty summary
+	if len(parseResults) == 0 {
+		return &base.ChangeSummary{
+			ChangedResources: changedResources,
+			DMLCount:         0,
+			SampleDMLS:       []string{},
+			InsertCount:      0,
+		}, nil
 	}
 
 	listener := &changedResourcesListener{

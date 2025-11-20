@@ -119,10 +119,11 @@ func (r *tableRequirePKRule) handleCreatestmt(ctx *parser.CreatestmtContext) {
 	}
 
 	// Simple Solution: Just record the table mention (ALWAYS update for last occurrence)
+	// Store absolute line numbers (with baseLine offset added now)
 	key := fmt.Sprintf("%s.%s", schemaName, tableName)
 	r.tableMentions[key] = &tableMention{
-		startLine: ctx.GetStart().GetLine(),
-		endLine:   ctx.GetStop().GetLine(),
+		startLine: ctx.GetStart().GetLine() + r.baseLine,
+		endLine:   ctx.GetStop().GetLine() + r.baseLine,
 	}
 }
 
@@ -142,10 +143,11 @@ func (r *tableRequirePKRule) handleAltertablestmt(ctx *parser.AltertablestmtCont
 	}
 
 	// Simple Solution: Just record the table mention (ALWAYS update for last occurrence)
+	// Store absolute line numbers (with baseLine offset added now)
 	key := fmt.Sprintf("%s.%s", schemaName, tableName)
 	r.tableMentions[key] = &tableMention{
-		startLine: ctx.GetStart().GetLine(),
-		endLine:   ctx.GetStop().GetLine(),
+		startLine: ctx.GetStart().GetLine() + r.baseLine,
+		endLine:   ctx.GetStop().GetLine() + r.baseLine,
 	}
 }
 
@@ -203,13 +205,15 @@ func (r *tableRequirePKRule) validateFinalState() {
 				content = fmt.Sprintf("%s, related statement: %q", content, statement)
 			}
 
+			// Note: We already added baseLine offset when storing the line number,
+			// but AddAdvice will add it again, so we need to subtract it first
 			r.AddAdvice(&storepb.Advice{
 				Status:  r.level,
 				Code:    code.TableNoPK.Int32(),
 				Title:   r.title,
 				Content: content,
 				StartPosition: &storepb.Position{
-					Line:   int32(mention.startLine),
+					Line:   int32(mention.startLine - r.baseLine),
 					Column: 0,
 				},
 			})

@@ -22,7 +22,7 @@ func GetStatementTypes(asts any) ([]StatementTypeWithPosition, error) {
 	}
 
 	if len(parseResults) == 0 {
-		return nil, errors.New("empty parse results")
+		return []StatementTypeWithPosition{}, nil
 	}
 
 	var allResults []StatementTypeWithPosition

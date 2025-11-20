@@ -69,7 +69,7 @@
     - status: 2
       code: 601
       title: table.require-pk
-      content: 'Table "public"."product" requires PRIMARY KEY, related statement: "ALTER TABLE product ADD PRIMARY KEY (id);"'
+      content: 'Table "public"."product" requires PRIMARY KEY, related statement: "ALTER TABLE product DROP CONSTRAINT product_pkey;"'
       startposition:
         line: 3
         column: 0
