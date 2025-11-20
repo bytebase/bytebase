@@ -24,7 +24,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -369,12 +368,12 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 	// Sync database schema
 	deadlineCtx, cancelFunc := context.WithDeadline(ctx, time.Now().Add(syncTimeout))
 	defer cancelFunc()
-	databaseMetadata, err := driver.SyncDBSchema(deadlineCtx)
+	syncedDatabaseMetadata, err := driver.SyncDBSchema(deadlineCtx)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to sync database schema for database %q", database.DatabaseName)
 	}
 	var schemaBuf bytes.Buffer
-	if err := driver.Dump(deadlineCtx, &schemaBuf, databaseMetadata); err != nil {
+	if err := driver.Dump(deadlineCtx, &schemaBuf, syncedDatabaseMetadata); err != nil {
 		return 0, errors.Wrapf(err, "failed to dump database schema for database %q", database.DatabaseName)
 	}
 	rawDump := schemaBuf.Bytes()
@@ -385,6 +384,11 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 	})
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to get database schema for database %q", database.DatabaseName)
+	}
+	// If the schema does not exist, then we create a new one.
+	// This happens when creating a new database in the test.
+	if dbMetadata == nil {
+		dbMetadata = model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{}, nil, &storepb.DatabaseConfig{}, instance.Metadata.GetEngine(), store.IsObjectCaseSensitive(instance))
 	}
 
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
@@ -402,18 +406,14 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 		// Force to disable classification from comment if the engine is not MYSQL or PG.
 		classificationConfig.ClassificationFromConfig = true
 	}
-	var dbConfig *storepb.DatabaseConfig
+
+	dbConfig := dbMetadata.GetConfig()
 	if classificationConfig.ClassificationFromConfig {
-		// Only set the user comment.
-		setUserCommentFromComment(databaseMetadata)
-		dbConfig = dbMetadata.BuildDatabaseConfig()
+		// Only set the user comment from the database comment.
+		setUserCommentFromComment(syncedDatabaseMetadata)
 	} else {
-		// Get classification from the comment.
-		if err := s.licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_DATA_CLASSIFICATION, instance); err == nil {
-			dbConfig = buildDatabaseConfigWithClassificationFromComment(databaseMetadata, dbMetadata, classificationConfig)
-		} else {
-			dbConfig = dbMetadata.BuildDatabaseConfig()
-		}
+		// Extract classification from comments and update the config in place.
+		dbConfig = updateClassificationFromComment(syncedDatabaseMetadata, dbMetadata, classificationConfig)
 	}
 
 	// Check for schema drift only when not creating sync history
@@ -429,8 +429,8 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 	metadataUpdates := []func(*storepb.DatabaseMetadata){
 		func(md *storepb.DatabaseMetadata) {
 			md.LastSyncTime = timestamppb.Now()
-			md.BackupAvailable = s.databaseBackupAvailable(ctx, instance, databaseMetadata)
-			md.Datashare = databaseMetadata.Datashare
+			md.BackupAvailable = s.databaseBackupAvailable(ctx, instance, syncedDatabaseMetadata)
+			md.Datashare = syncedDatabaseMetadata.Datashare
 			if !createSyncHistory {
 				md.Drifted = !skipped && drifted
 			}
@@ -448,10 +448,10 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 
 	if err := s.store.UpsertDBSchema(ctx,
 		database.InstanceID, database.DatabaseName,
-		databaseMetadata, dbConfig, rawDump,
+		syncedDatabaseMetadata, dbConfig, rawDump,
 	); err != nil {
 		if strings.Contains(err.Error(), "escape sequence") {
-			if metadataBytes, err := protojson.Marshal(databaseMetadata); err == nil {
+			if metadataBytes, err := protojson.Marshal(syncedDatabaseMetadata); err == nil {
 				slog.Error("unsupported Unicode escape sequence", slog.String("metadata", string(metadataBytes)), slog.String("raw_dump", string(rawDump)))
 			}
 		}
@@ -460,10 +460,10 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 
 	// Create sync history if requested
 	if createSyncHistory {
-		id, err := s.store.CreateSyncHistory(ctx, database.InstanceID, database.DatabaseName, databaseMetadata, string(rawDump))
+		id, err := s.store.CreateSyncHistory(ctx, database.InstanceID, database.DatabaseName, syncedDatabaseMetadata, string(rawDump))
 		if err != nil {
 			if strings.Contains(err.Error(), "escape sequence") {
-				if metadataBytes, err := protojson.Marshal(databaseMetadata); err == nil {
+				if metadataBytes, err := protojson.Marshal(syncedDatabaseMetadata); err == nil {
 					slog.Error("unsupported Unicode escape sequence", slog.String("metadata", string(metadataBytes)), slog.String("raw_dump", string(rawDump)))
 				}
 			}
@@ -562,92 +562,42 @@ func (s *Syncer) databaseBackupAvailable(ctx context.Context, instance *store.In
 	return false
 }
 
-func buildDatabaseConfigWithClassificationFromComment(dbMetadata *storepb.DatabaseSchemaMetadata, databaseConfig *model.DatabaseMetadata, classificationConfig *storepb.DataClassificationSetting_DataClassificationConfig) *storepb.DatabaseConfig {
-	// Create a new DatabaseConfig to build from scratch
-	newConfig := &storepb.DatabaseConfig{
-		Name: dbMetadata.Name,
-	}
+func updateClassificationFromComment(syncedDatabaseMetadata *storepb.DatabaseSchemaMetadata, dbMetadata *model.DatabaseMetadata, classificationConfig *storepb.DataClassificationSetting_DataClassificationConfig) *storepb.DatabaseConfig {
+	dbConfig := &storepb.DatabaseConfig{Name: syncedDatabaseMetadata.Name}
 
-	for _, schema := range dbMetadata.Schemas {
-		var tables []*storepb.TableCatalog
-		hasSchemaContent := false
-
-		// Get existing schema metadata to preserve SemanticType and Labels
-		var schemaMetadata *model.SchemaMetadata
-		if databaseConfig != nil {
-			schemaMetadata = databaseConfig.GetSchemaMetadata(schema.Name)
-		}
+	for _, schema := range syncedDatabaseMetadata.Schemas {
+		schemaCatalog := &storepb.SchemaCatalog{Name: schema.Name}
+		existSchema := dbMetadata.GetSchemaMetadata(schema.Name)
 
 		for _, table := range schema.Tables {
 			classification, userComment := common.GetClassificationAndUserComment(table.Comment, classificationConfig)
-
 			table.UserComment = userComment
 
-			// Get existing table metadata and catalog
-			var tableMetadata *model.TableMetadata
-			if schemaMetadata != nil {
-				tableMetadata = schemaMetadata.GetTable(table.Name)
+			tableCatalog := &storepb.TableCatalog{Name: table.Name, Classification: classification}
+			existTable := existSchema.GetTable(table.Name)
+			if existTable != nil {
+				if existTableCatalog := existTable.GetCatalog(); existTableCatalog != nil {
+					tableCatalog.Classification = existTableCatalog.Classification
+				}
 			}
-
-			var columns []*storepb.ColumnCatalog
-			hasTableContent := false
-
-			// Check if table has classification
-			if classification != "" {
-				hasTableContent = true
-			}
-
 			for _, col := range table.Columns {
 				colClassification, colUserComment := common.GetClassificationAndUserComment(col.Comment, classificationConfig)
-
 				col.UserComment = colUserComment
 
-				// Get existing column config to preserve SemanticType and Labels
-				var existingColumnConfig *storepb.ColumnCatalog
-				if tableMetadata != nil {
-					if columnMetadata := tableMetadata.GetColumn(col.Name); columnMetadata != nil {
-						existingColumnConfig = columnMetadata.GetCatalog()
+				columnCatalog := &storepb.ColumnCatalog{Name: col.Name, Classification: colClassification}
+				if existColumn := existTable.GetColumn(col.Name); existColumn != nil {
+					if existColumnCatalog := existColumn.GetCatalog(); existColumnCatalog != nil {
+						columnCatalog.SemanticType = existColumnCatalog.SemanticType
+						columnCatalog.Labels = existColumnCatalog.Labels
 					}
 				}
-				if existingColumnConfig == nil {
-					existingColumnConfig = &storepb.ColumnCatalog{}
-				}
-
-				// Add column config if it has any meaningful data
-				if colClassification != "" || existingColumnConfig.GetSemanticType() != "" || len(existingColumnConfig.GetLabels()) > 0 {
-					columns = append(columns, &storepb.ColumnCatalog{
-						Name:           col.Name,
-						Classification: colClassification,
-						SemanticType:   existingColumnConfig.SemanticType,
-						Labels:         existingColumnConfig.Labels,
-					})
-					hasTableContent = true
-				}
+				tableCatalog.Columns = append(tableCatalog.Columns, columnCatalog)
 			}
-
-			// Only add table catalog if it has content (either table classification or column configurations)
-			if hasTableContent {
-				tableCatalog := &storepb.TableCatalog{
-					Name:           table.Name,
-					Classification: classification,
-					Columns:        columns,
-				}
-				tables = append(tables, tableCatalog)
-				hasSchemaContent = true
-			}
+			schemaCatalog.Tables = append(schemaCatalog.Tables, tableCatalog)
 		}
-
-		// Only add schema catalog if it has content
-		if hasSchemaContent {
-			schemaCatalog := &storepb.SchemaCatalog{
-				Name:   schema.Name,
-				Tables: tables,
-			}
-			newConfig.Schemas = append(newConfig.Schemas, schemaCatalog)
-		}
+		dbConfig.Schemas = append(dbConfig.Schemas, schemaCatalog)
 	}
-
-	return newConfig
+	return dbConfig
 }
 
 func setUserCommentFromComment(dbMetadata *storepb.DatabaseSchemaMetadata) {
