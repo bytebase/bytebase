@@ -1196,7 +1196,13 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Requ
 		if schemaMetadata == nil {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("schema %q not found", req.Msg.Schema))
 		}
-		functionMetadata := schemaMetadata.GetFunction(req.Msg.Object)
+		var functionMetadata *storepb.FunctionMetadata
+		for _, fn := range schemaMetadata.GetProto().GetFunctions() {
+			if fn.Name == req.Msg.Object {
+				functionMetadata = fn
+				break
+			}
+		}
 		if functionMetadata == nil {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("function %q not found", req.Msg.Object))
 		}

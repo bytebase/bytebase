@@ -138,7 +138,7 @@ func (s *DatabaseSearcher) SearchFunctions(name string) ([]string, []*storepb.Fu
 		if schema == nil {
 			continue
 		}
-		for _, function := range schema.functions {
+		for _, function := range schema.GetProto().GetFunctions() {
 			if s.db.isDetailCaseSensitive {
 				if function.Name == name {
 					schemas = append(schemas, schema.proto.Name)
@@ -276,7 +276,7 @@ func (d *DatabaseMetadata) SearchFunctions(searchPath []string, name string) ([]
 		if schema == nil {
 			continue
 		}
-		for _, function := range schema.functions {
+		for _, function := range schema.GetProto().GetFunctions() {
 			if d.isDetailCaseSensitive {
 				if function.Name == name {
 					schemas = append(schemas, schema.proto.Name)
