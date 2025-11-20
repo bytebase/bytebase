@@ -617,7 +617,7 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, req *connect.
 	if err != nil {
 		return nil, err
 	}
-	v1pbMetadata := convertStoreDatabaseMetadata(dbMetadata.GetMetadata(), filter, int(req.Msg.Limit))
+	v1pbMetadata := convertStoreDatabaseMetadata(dbMetadata.GetProto(), filter, int(req.Msg.Limit))
 	v1pbMetadata.Name = fmt.Sprintf("%s%s/%s%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName, common.MetadataSuffix)
 
 	return connect.NewResponse(v1pbMetadata), nil
@@ -670,7 +670,7 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, req *connect.Re
 		}
 		dbMetadata = newDBSchema
 	}
-	schemaString := string(dbMetadata.GetSchema())
+	schemaString := string(dbMetadata.GetRawDump())
 	return connect.NewResponse(&v1pb.DatabaseSchema{Schema: schemaString}), nil
 }
 
@@ -725,7 +725,7 @@ func (s *DatabaseService) GetDatabaseSDLSchema(ctx context.Context, req *connect
 		dbMetadata = newDBSchema
 	}
 
-	metadata := dbMetadata.GetMetadata()
+	metadata := dbMetadata.GetProto()
 	if metadata == nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("database metadata not found for database %q", databaseName))
 	}
@@ -1128,7 +1128,7 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Requ
 		}
 		return connect.NewResponse(&v1pb.GetSchemaStringResponse{SchemaString: s}), nil
 	case v1pb.GetSchemaStringRequest_DATABASE:
-		metadata := dbMetadata.GetMetadata()
+		metadata := dbMetadata.GetProto()
 		s, err := schema.GetDatabaseDefinition(instance.Metadata.Engine, schema.GetDefinitionContext{
 			SkipBackupSchema: false,
 			PrintHeader:      false,
@@ -1204,7 +1204,7 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Requ
 		if functionMetadata == nil {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("function %q not found", req.Msg.Object))
 		}
-		s, err := schema.GetFunctionDefinition(instance.Metadata.Engine, req.Msg.Schema, functionMetadata.GetProto())
+		s, err := schema.GetFunctionDefinition(instance.Metadata.Engine, req.Msg.Schema, functionMetadata)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("Failed to get function schema: %v", err))
 		}

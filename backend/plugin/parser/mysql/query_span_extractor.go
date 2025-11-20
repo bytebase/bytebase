@@ -1379,7 +1379,7 @@ func (q *querySpanExtractor) findTableSchema(databaseName, tableName string) (ba
 		return &base.PhysicalTable{
 			Name:     tableSchema.GetProto().Name,
 			Schema:   emptySchema,
-			Database: dbMetadata.GetName(),
+			Database: dbMetadata.GetProto().GetName(),
 			Server:   "",
 			Columns:  columnNames,
 		}, nil
@@ -1404,7 +1404,7 @@ func (q *querySpanExtractor) findTableSchema(databaseName, tableName string) (ba
 		return &base.PhysicalView{
 			Name:     viewSchema.GetProto().Name,
 			Schema:   emptySchema,
-			Database: dbMetadata.GetName(),
+			Database: dbMetadata.GetProto().GetName(),
 			Server:   "",
 			Columns:  columns,
 		}, nil

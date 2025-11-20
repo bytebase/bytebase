@@ -2715,8 +2715,8 @@ func applyMinimalChangesToChunks(previousChunks *schema.SDLChunks, currentSchema
 	}
 
 	// Get table differences between schemas
-	currentMetadata := currentSchema.GetMetadata()
-	previousMetadata := previousSchema.GetMetadata()
+	currentMetadata := currentSchema.GetProto()
+	previousMetadata := previousSchema.GetProto()
 	if currentMetadata == nil || previousMetadata == nil {
 		return nil
 	}
@@ -3730,7 +3730,7 @@ func convertDatabaseSchemaToSDL(dbMetadata *model.DatabaseMetadata) (string, err
 		return "", nil
 	}
 
-	metadata := dbMetadata.GetMetadata()
+	metadata := dbMetadata.GetProto()
 	if metadata == nil {
 		return "", nil
 	}
@@ -4242,8 +4242,8 @@ func applyStandaloneIndexChangesToChunks(previousChunks *schema.SDLChunks, curre
 	}
 
 	// Get index differences by comparing schema metadata
-	currentMetadata := currentSchema.GetMetadata()
-	previousMetadata := previousSchema.GetMetadata()
+	currentMetadata := currentSchema.GetProto()
+	previousMetadata := previousSchema.GetProto()
 	if currentMetadata == nil || previousMetadata == nil {
 		return nil
 	}
@@ -4578,8 +4578,8 @@ func applyFunctionChangesToChunks(previousChunks *schema.SDLChunks, currentSchem
 	}
 
 	// Get function differences by comparing schema metadata
-	currentMetadata := currentSchema.GetMetadata()
-	previousMetadata := previousSchema.GetMetadata()
+	currentMetadata := currentSchema.GetProto()
+	previousMetadata := previousSchema.GetProto()
 	if currentMetadata == nil || previousMetadata == nil {
 		return nil
 	}
@@ -4950,8 +4950,8 @@ func applySequenceChangesToChunks(previousChunks *schema.SDLChunks, currentSchem
 	}
 
 	// Get sequence differences by comparing schema metadata
-	currentMetadata := currentSchema.GetMetadata()
-	previousMetadata := previousSchema.GetMetadata()
+	currentMetadata := currentSchema.GetProto()
+	previousMetadata := previousSchema.GetProto()
 	if currentMetadata == nil || previousMetadata == nil {
 		return nil
 	}
@@ -5744,8 +5744,8 @@ func applyViewChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, p
 	}
 
 	// Get view differences by comparing schema metadata
-	currentMetadata := currentSchema.GetMetadata()
-	previousMetadata := previousSchema.GetMetadata()
+	currentMetadata := currentSchema.GetProto()
+	previousMetadata := previousSchema.GetProto()
 	if currentMetadata == nil || previousMetadata == nil {
 		return nil
 	}
@@ -5996,8 +5996,8 @@ func applyMaterializedViewChangesToChunks(previousChunks *schema.SDLChunks, curr
 	}
 
 	// Get materialized view differences by comparing schema metadata
-	currentMetadata := currentSchema.GetMetadata()
-	previousMetadata := previousSchema.GetMetadata()
+	currentMetadata := currentSchema.GetProto()
+	previousMetadata := previousSchema.GetProto()
 	if currentMetadata == nil || previousMetadata == nil {
 		return nil
 	}
@@ -6226,8 +6226,8 @@ func applyEnumTypeChangesToChunks(previousChunks *schema.SDLChunks, currentSchem
 	}
 
 	// Get enum type differences by comparing schema metadata
-	currentMetadata := currentSchema.GetMetadata()
-	previousMetadata := previousSchema.GetMetadata()
+	currentMetadata := currentSchema.GetProto()
+	previousMetadata := previousSchema.GetProto()
 	if currentMetadata == nil || previousMetadata == nil {
 		return nil
 	}
@@ -6488,8 +6488,8 @@ func applyColumnCommentChanges(previousChunks *schema.SDLChunks, currentSchema, 
 	}
 
 	// Get table metadata from schemas
-	currentMetadata := currentSchema.GetMetadata()
-	previousMetadata := previousSchema.GetMetadata()
+	currentMetadata := currentSchema.GetProto()
+	previousMetadata := previousSchema.GetProto()
 	if currentMetadata == nil || previousMetadata == nil {
 		return nil
 	}
@@ -6964,8 +6964,8 @@ func applyExtensionChangesToChunks(previousChunks *schema.SDLChunks, currentSche
 	}
 
 	// Get extension differences by comparing schema metadata
-	currentMetadata := currentSchema.GetMetadata()
-	previousMetadata := previousSchema.GetMetadata()
+	currentMetadata := currentSchema.GetProto()
+	previousMetadata := previousSchema.GetProto()
 	if currentMetadata == nil || previousMetadata == nil {
 		return nil
 	}
@@ -7251,8 +7251,8 @@ func applyTriggerChangesToChunks(previousChunks *schema.SDLChunks, currentSchema
 	}
 
 	// Get trigger differences by comparing schema metadata
-	currentMetadata := currentSchema.GetMetadata()
-	previousMetadata := previousSchema.GetMetadata()
+	currentMetadata := currentSchema.GetProto()
+	previousMetadata := previousSchema.GetProto()
 	if currentMetadata == nil || previousMetadata == nil {
 		return nil
 	}

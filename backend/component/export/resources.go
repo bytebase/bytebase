@@ -112,7 +112,7 @@ func getResourcesForMySQL(
 				Table:        sourceColumn.Table,
 				LinkedServer: sourceColumn.Server,
 			}
-			if sourceColumn.Database != dbMetadata.GetMetadata().Name {
+			if sourceColumn.Database != dbMetadata.GetProto().Name {
 				resourceDB, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 					InstanceID:      &instance.ResourceID,
 					DatabaseName:    &sourceColumn.Database,
@@ -198,7 +198,7 @@ func getResourcesForPostgres(
 				LinkedServer: sourceColumn.Server,
 			}
 
-			if sourceColumn.Database != dbMetadata.GetMetadata().Name {
+			if sourceColumn.Database != dbMetadata.GetProto().Name {
 				continue
 			}
 

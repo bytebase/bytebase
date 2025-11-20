@@ -174,10 +174,10 @@ loop:
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database schema not found for %s", database.DatabaseName))
 		}
 		// Create original metadata as read-only
-		originMetadata := model.NewDatabaseMetadata(dbMetadata.GetMetadata(), nil, nil, engine, store.IsObjectCaseSensitive(instance))
+		originMetadata := model.NewDatabaseMetadata(dbMetadata.GetProto(), nil, nil, engine, store.IsObjectCaseSensitive(instance))
 
 		// Clone metadata for final to avoid modifying the original
-		clonedMetadata, ok := proto.Clone(dbMetadata.GetMetadata()).(*storepb.DatabaseSchemaMetadata)
+		clonedMetadata, ok := proto.Clone(dbMetadata.GetProto()).(*storepb.DatabaseSchemaMetadata)
 		if !ok {
 			return nil, connect.NewError(connect.CodeInternal, errors.New("failed to clone database schema metadata"))
 		}
@@ -650,7 +650,7 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 		}
 	}
 
-	dbMetadataProto := dbMetadata.GetMetadata()
+	dbMetadataProto := dbMetadata.GetProto()
 	useDatabaseOwner, err := getUseDatabaseOwner(ctx, s.store, instance, database)
 	if err != nil {
 		return storepb.Advice_ERROR, nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get use database owner"))

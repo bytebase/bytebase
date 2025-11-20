@@ -136,7 +136,7 @@ func (e *StatementAdviseExecutor) runReview(
 	if dbMetadata == nil {
 		return nil, errors.Errorf("database schema %s not found", database.String())
 	}
-	if dbMetadata.GetMetadata() == nil {
+	if dbMetadata.GetProto() == nil {
 		return nil, errors.Errorf("database schema metadata %s not found", database.String())
 	}
 
@@ -151,10 +151,10 @@ func (e *StatementAdviseExecutor) runReview(
 	}
 
 	// Create original metadata as read-only
-	originMetadata := model.NewDatabaseMetadata(dbMetadata.GetMetadata(), nil, nil, instance.Metadata.GetEngine(), store.IsObjectCaseSensitive(instance))
+	originMetadata := model.NewDatabaseMetadata(dbMetadata.GetProto(), nil, nil, instance.Metadata.GetEngine(), store.IsObjectCaseSensitive(instance))
 
 	// Clone metadata for final to avoid modifying the original
-	clonedMetadata, ok := proto.Clone(dbMetadata.GetMetadata()).(*storepb.DatabaseSchemaMetadata)
+	clonedMetadata, ok := proto.Clone(dbMetadata.GetProto()).(*storepb.DatabaseSchemaMetadata)
 	if !ok {
 		return nil, common.Wrapf(errors.New("failed to clone database schema metadata"), common.Internal, "failed to create a catalog")
 	}
@@ -177,9 +177,9 @@ func (e *StatementAdviseExecutor) runReview(
 	classificationConfig := getClassificationByProject(ctx, e.store, database.ProjectID)
 
 	adviceList, err := advisor.SQLReviewCheck(ctx, e.sheetManager, statement, reviewConfig.SqlReviewRules, advisor.SQLReviewCheckContext{
-		Charset:                  dbMetadata.GetMetadata().CharacterSet,
-		Collation:                dbMetadata.GetMetadata().Collation,
-		DBSchema:                 dbMetadata.GetMetadata(),
+		Charset:                  dbMetadata.GetProto().CharacterSet,
+		Collation:                dbMetadata.GetProto().Collation,
+		DBSchema:                 dbMetadata.GetProto(),
 		ChangeType:               changeType,
 		DBType:                   instance.Metadata.GetEngine(),
 		OriginalMetadata:         originMetadata,

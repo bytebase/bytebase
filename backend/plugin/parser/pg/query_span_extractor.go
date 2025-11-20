@@ -9,6 +9,7 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	parsererror "github.com/bytebase/bytebase/backend/plugin/parser/errors"
 
 	"github.com/bytebase/parser/postgresql"
@@ -235,7 +236,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 
 type functionDefinition struct {
 	schemaName string
-	metadata   *model.FunctionMetadata
+	metadata   *storepb.FunctionMetadata
 }
 
 func (q *querySpanExtractor) findFunctionDefine(schemaName, funcName string, nArgs int) (base.TableSource, error) {
@@ -300,7 +301,7 @@ type functionDefinitionDetail struct {
 
 func buildFunctionDefinitionDetail(funcDef *functionDefinition) (*functionDefinitionDetail, error) {
 	function := funcDef.metadata
-	definition := function.GetProto().GetDefinition()
+	definition := function.GetDefinition()
 	res, err := ParsePostgreSQL(definition)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse function definition: %s", definition)
@@ -365,7 +366,7 @@ func getFunctionCandidates(functions []*functionDefinition, nArgs int, funcName 
 	// Filter by name only.
 	var nameFiltered []*functionDefinition
 	for _, function := range functions {
-		if function.metadata.GetProto().GetName() != funcName {
+		if function.metadata.GetName() != funcName {
 			continue
 		}
 		nameFiltered = append(nameFiltered, function)
