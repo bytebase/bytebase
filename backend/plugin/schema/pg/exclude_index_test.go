@@ -52,8 +52,8 @@ CREATE INDEX idx_employee_shifts_type ON "public"."employee_shifts" (shift_type)
 		Schemas: []*storepb.SchemaMetadata{},
 	}
 
-	previousSchema := model.NewDatabaseSchema(previousDBMetadata, nil, nil, storepb.Engine_POSTGRES, false)
-	currentSchema := model.NewDatabaseSchema(currentDBMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+	previousSchema := model.NewDatabaseMetadata(previousDBMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+	currentSchema := model.NewDatabaseMetadata(currentDBMetadata, nil, nil, storepb.Engine_POSTGRES, false)
 
 	diff, err := GetSDLDiff(currentSDL, previousSDL, currentSchema, previousSchema)
 	require.NoError(t, err)
@@ -157,8 +157,8 @@ CREATE TABLE "public"."meetings" (
 		Schemas: []*storepb.SchemaMetadata{},
 	}
 
-	previousSchema := model.NewDatabaseSchema(previousDBMetadata, nil, nil, storepb.Engine_POSTGRES, false)
-	currentSchema := model.NewDatabaseSchema(currentDBMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+	previousSchema := model.NewDatabaseMetadata(previousDBMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+	currentSchema := model.NewDatabaseMetadata(currentDBMetadata, nil, nil, storepb.Engine_POSTGRES, false)
 
 	diff, err := GetSDLDiff(currentSDL, previousSDL, currentSchema, previousSchema)
 	require.NoError(t, err)
@@ -215,8 +215,8 @@ CREATE UNIQUE INDEX idx_order_summary_unique ON "public"."order_summary" (custom
 		Schemas: []*storepb.SchemaMetadata{},
 	}
 
-	previousSchema := model.NewDatabaseSchema(previousDBMetadata, nil, nil, storepb.Engine_POSTGRES, false)
-	currentSchema := model.NewDatabaseSchema(currentDBMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+	previousSchema := model.NewDatabaseMetadata(previousDBMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+	currentSchema := model.NewDatabaseMetadata(currentDBMetadata, nil, nil, storepb.Engine_POSTGRES, false)
 
 	diff, err := GetSDLDiff(currentSDL, previousSDL, currentSchema, previousSchema)
 	require.NoError(t, err)
@@ -292,8 +292,8 @@ CREATE INDEX idx_orders_customer ON "public"."orders" (customer_id);
 		Schemas: []*storepb.SchemaMetadata{},
 	}
 
-	previousSchema := model.NewDatabaseSchema(previousDBMetadata, nil, nil, storepb.Engine_POSTGRES, false)
-	currentSchema := model.NewDatabaseSchema(currentDBMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+	previousSchema := model.NewDatabaseMetadata(previousDBMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+	currentSchema := model.NewDatabaseMetadata(currentDBMetadata, nil, nil, storepb.Engine_POSTGRES, false)
 
 	diff, err := GetSDLDiff(currentSDL, previousSDL, currentSchema, previousSchema)
 	require.NoError(t, err)
