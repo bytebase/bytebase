@@ -291,7 +291,7 @@ func pgCreateColumn(schema *model.SchemaMetadata, table *model.TableMetadata, co
 		}
 	}
 	// Create the column
-	if err := table.CreateColumn(col); err != nil {
+	if err := table.CreateColumn(col, nil /* columnCatalog */); err != nil {
 		return &storepb.Advice{
 			Status:        storepb.Advice_ERROR,
 			Code:          code.ColumnExists.Int32(),
@@ -330,7 +330,7 @@ func createTableConstraint(schema *model.SchemaMetadata, table *model.TableMetad
 		for _, colName := range columnList {
 			column := table.GetColumn(colName)
 			if column != nil {
-				column.Nullable = false
+				column.GetProto().Nullable = false
 			} else {
 				return &storepb.Advice{
 					Status:        storepb.Advice_ERROR,
@@ -826,7 +826,7 @@ func (l *pgCatalogListener) alterTableAlterColumnType(schema *model.SchemaMetada
 		return
 	}
 	// Update column type
-	column.Type = typeString
+	column.GetProto().Type = typeString
 }
 
 // alterTableAddColumn handles ADD COLUMN command.
@@ -957,7 +957,7 @@ func (l *pgCatalogListener) alterTableAddColumn(schema *model.SchemaMetadata, ta
 		}
 	}
 	// Create the column
-	if err := table.CreateColumn(col); err != nil {
+	if err := table.CreateColumn(col, nil /* columnCatalog */); err != nil {
 		l.advice = &storepb.Advice{
 			Status:        storepb.Advice_ERROR,
 			Code:          code.ColumnExists.Int32(),
@@ -1019,7 +1019,7 @@ func (l *pgCatalogListener) alterTableSetDefault(table *model.TableMetadata, col
 		}
 		return
 	}
-	column.Default = defaultValue
+	column.GetProto().Default = defaultValue
 }
 
 // alterTableDropDefault handles ALTER COLUMN DROP DEFAULT command.
@@ -1035,7 +1035,7 @@ func (l *pgCatalogListener) alterTableDropDefault(table *model.TableMetadata, co
 		}
 		return
 	}
-	column.Default = ""
+	column.GetProto().Default = ""
 }
 
 // alterTableSetNotNull handles ALTER COLUMN SET NOT NULL command.
@@ -1051,7 +1051,7 @@ func (l *pgCatalogListener) alterTableSetNotNull(table *model.TableMetadata, col
 		}
 		return
 	}
-	column.Nullable = false
+	column.GetProto().Nullable = false
 }
 
 // renameTable handles RENAME TO for tables.

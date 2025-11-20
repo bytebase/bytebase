@@ -24,11 +24,10 @@ type DatabaseMetadata struct {
 	// Metadata fields (formerly in DatabaseMetadata)
 	searchPath     []string
 	internal       map[string]*SchemaMetadata
-	configInternal map[string]*SchemaConfig
 	linkedDatabase map[string]*storepb.LinkedDatabaseMetadata
 }
 
-// SchemaMetadata is the metadata for a schema.
+// SchemaMetadata is the unified metadata for a schema, combining proto metadata and catalog config.
 type SchemaMetadata struct {
 	isObjectCaseSensitive    bool
 	isDetailCaseSensitive    bool
@@ -40,29 +39,21 @@ type SchemaMetadata struct {
 	internalSequences        map[string]*storepb.SequenceMetadata
 	internalPackages         map[string]*storepb.PackageMetadata
 
-	proto *storepb.SchemaMetadata
+	proto  *storepb.SchemaMetadata
+	config *storepb.SchemaCatalog
 }
 
-// SchemaConfig is the config for a schema.
-type SchemaConfig struct {
-	internal map[string]*TableConfig
-}
-
-// TableMetadata is the metadata for a table.
+// TableMetadata is the unified metadata for a table, combining proto metadata and catalog config.
 type TableMetadata struct {
 	// If partitionOf is not nil, it means this table is a partition table.
 	partitionOf *TableMetadata
 
 	isDetailCaseSensitive bool
-	internalColumn        map[string]*storepb.ColumnMetadata
+	internalColumn        map[string]*ColumnMetadata
 	internalIndexes       map[string]*IndexMetadata
-	proto                 *storepb.TableMetadata
-}
 
-// TableConfig is the config for a table.
-type TableConfig struct {
-	Classification string
-	internal       map[string]*storepb.ColumnCatalog
+	proto  *storepb.TableMetadata
+	config *storepb.TableCatalog
 }
 
 // ExternalTableMetadata is the metadata for a external table.
@@ -75,6 +66,12 @@ type ExternalTableMetadata struct {
 type IndexMetadata struct {
 	tableProto *storepb.TableMetadata
 	proto      *storepb.IndexMetadata
+}
+
+// ColumnMetadata is the unified metadata for a column, combining proto metadata and catalog config.
+type ColumnMetadata struct {
+	proto  *storepb.ColumnMetadata
+	config *storepb.ColumnCatalog
 }
 
 // normalizeNameByCaseSensitivity normalizes a name based on case sensitivity.
@@ -103,11 +100,29 @@ func NewDatabaseMetadata(
 		searchPath:            normalizeSearchPath(metadata.SearchPath),
 		internal:              make(map[string]*SchemaMetadata),
 		linkedDatabase:        make(map[string]*storepb.LinkedDatabaseMetadata),
-		configInternal:        make(map[string]*SchemaConfig),
+	}
+
+	// Build a map of schema catalogs for quick lookup
+	schemaCatalogMap := make(map[string]*storepb.SchemaCatalog)
+	if config != nil {
+		for _, schemaCatalog := range config.Schemas {
+			schemaCatalogMap[schemaCatalog.Name] = schemaCatalog
+		}
 	}
 
 	// Build schema metadata maps
 	for _, s := range metadata.Schemas {
+		// Get matching schema catalog if it exists
+		schemaCatalog := schemaCatalogMap[s.Name]
+
+		// Build a map of table catalogs for this schema
+		tableCatalogMap := make(map[string]*storepb.TableCatalog)
+		if schemaCatalog != nil {
+			for _, tableCatalog := range schemaCatalog.Tables {
+				tableCatalogMap[tableCatalog.Name] = tableCatalog
+			}
+		}
+
 		schemaMetadata := &SchemaMetadata{
 			isObjectCaseSensitive:    isObjectCaseSensitive,
 			isDetailCaseSensitive:    isDetailCaseSensitive,
@@ -119,9 +134,11 @@ func NewDatabaseMetadata(
 			internalPackages:         make(map[string]*storepb.PackageMetadata),
 			internalSequences:        make(map[string]*storepb.SequenceMetadata),
 			proto:                    s,
+			config:                   schemaCatalog,
 		}
 		for _, table := range s.Tables {
-			tables, names := buildTablesMetadata(table, isDetailCaseSensitive)
+			tableCatalog := tableCatalogMap[table.Name]
+			tables, names := buildTablesMetadata(table, tableCatalog, isDetailCaseSensitive)
 			for i, table := range tables {
 				tableID := normalizeNameByCaseSensitivity(names[i], isObjectCaseSensitive)
 				schemaMetadata.internalTables[tableID] = table
@@ -167,26 +184,6 @@ func NewDatabaseMetadata(
 	for _, dbLink := range metadata.LinkedDatabases {
 		dbLinkID := normalizeNameByCaseSensitivity(dbLink.Name, isObjectCaseSensitive)
 		dbMetadata.linkedDatabase[dbLinkID] = dbLink
-	}
-
-	// Build config maps
-	if config != nil {
-		for _, schemaProto := range config.Schemas {
-			schemaConfig := &SchemaConfig{
-				internal: make(map[string]*TableConfig),
-			}
-			for _, table := range schemaProto.Tables {
-				tableConfig := &TableConfig{
-					Classification: table.Classification,
-					internal:       make(map[string]*storepb.ColumnCatalog),
-				}
-				for _, column := range table.Columns {
-					tableConfig.internal[column.Name] = column
-				}
-				schemaConfig.internal[table.Name] = tableConfig
-			}
-			dbMetadata.configInternal[schemaProto.Name] = schemaConfig
-		}
 	}
 
 	return dbMetadata
@@ -306,73 +303,47 @@ func (d *DatabaseMetadata) DropSchema(schemaName string) error {
 	return nil
 }
 
-// Config methods (formerly from DatabaseConfig)
-func (d *DatabaseMetadata) GetSchemaConfig(name string) *SchemaConfig {
-	if d == nil {
-		return nil
-	}
-	if config := d.configInternal[name]; config != nil {
-		return config
-	}
-	return &SchemaConfig{
-		internal: make(map[string]*TableConfig),
-	}
-}
-
 func (d *DatabaseMetadata) BuildDatabaseConfig() *storepb.DatabaseConfig {
 	if d == nil {
 		return nil
 	}
 	config := &storepb.DatabaseConfig{Name: d.config.GetName()}
 
-	for schemaName, sConfig := range d.configInternal {
-		schemaConfig := &storepb.SchemaCatalog{Name: schemaName}
-
-		for tableName, tConfig := range sConfig.internal {
-			tableConfig := &storepb.TableCatalog{Name: tableName, Classification: tConfig.Classification}
-
-			for colName, colConfig := range tConfig.internal {
-				tableConfig.Columns = append(tableConfig.Columns, &storepb.ColumnCatalog{
-					Name:           colName,
-					SemanticType:   colConfig.SemanticType,
-					Labels:         colConfig.Labels,
-					Classification: colConfig.Classification,
-				})
-			}
-			schemaConfig.Tables = append(schemaConfig.Tables, tableConfig)
+	for _, schemaMetadata := range d.internal {
+		schemaCatalog := schemaMetadata.GetCatalog()
+		if schemaCatalog == nil {
+			continue
 		}
-		config.Schemas = append(config.Schemas, schemaConfig)
+
+		// Reconstruct the schema catalog with updated table/column catalogs
+		reconstructedSchema := &storepb.SchemaCatalog{Name: schemaMetadata.proto.Name}
+
+		for _, tableMetadata := range schemaMetadata.internalTables {
+			tableCatalog := tableMetadata.GetCatalog()
+			if tableCatalog == nil {
+				continue
+			}
+
+			// Reconstruct the table catalog with updated column catalogs
+			reconstructedTable := &storepb.TableCatalog{
+				Name:           tableMetadata.proto.Name,
+				Classification: tableCatalog.Classification,
+			}
+
+			for _, columnMetadata := range tableMetadata.internalColumn {
+				columnCatalog := columnMetadata.GetCatalog()
+				if columnCatalog != nil {
+					reconstructedTable.Columns = append(reconstructedTable.Columns, columnCatalog)
+				}
+			}
+
+			reconstructedSchema.Tables = append(reconstructedSchema.Tables, reconstructedTable)
+		}
+
+		config.Schemas = append(config.Schemas, reconstructedSchema)
 	}
 
 	return config
-}
-
-// GetTableConfig gets the table config by name.
-// If not found, returns a new empty table config.
-func (s *SchemaConfig) GetTableConfig(name string) *TableConfig {
-	if s == nil {
-		return nil
-	}
-	if config := s.internal[name]; config != nil {
-		return config
-	}
-	return &TableConfig{
-		internal: make(map[string]*storepb.ColumnCatalog),
-	}
-}
-
-// GetColumnConfig gets the column config by name.
-// If not found, returns a new empty column config.
-func (t *TableConfig) GetColumnConfig(name string) *storepb.ColumnCatalog {
-	if t == nil {
-		return nil
-	}
-	if config := t.internal[name]; config != nil {
-		return config
-	}
-	return &storepb.ColumnCatalog{
-		Name: name,
-	}
 }
 
 // GetTable gets the schema by name.
@@ -471,6 +442,11 @@ func (s *SchemaMetadata) GetProto() *storepb.SchemaMetadata {
 	return s.proto
 }
 
+// GetCatalog gets the catalog of SchemaMetadata.
+func (s *SchemaMetadata) GetCatalog() *storepb.SchemaCatalog {
+	return s.config
+}
+
 // ListTableNames lists the table names.
 func (s *SchemaMetadata) ListTableNames() []string {
 	var result []string
@@ -547,7 +523,7 @@ func (s *SchemaMetadata) CreateTable(tableName string) (*TableMetadata, error) {
 	// Create TableMetadata wrapper
 	tableMeta := &TableMetadata{
 		isDetailCaseSensitive: s.isDetailCaseSensitive,
-		internalColumn:        make(map[string]*storepb.ColumnMetadata),
+		internalColumn:        make(map[string]*ColumnMetadata),
 		internalIndexes:       make(map[string]*IndexMetadata),
 		proto:                 newTableProto,
 	}
@@ -750,21 +726,35 @@ func (s *SchemaMetadata) GetDependentViews(tableName string, columnName string) 
 	return dependentViews
 }
 
-func buildTablesMetadata(table *storepb.TableMetadata, isDetailCaseSensitive bool) ([]*TableMetadata, []string) {
+func buildTablesMetadata(table *storepb.TableMetadata, tableCatalog *storepb.TableCatalog, isDetailCaseSensitive bool) ([]*TableMetadata, []string) {
 	if table == nil {
 		return nil, nil
 	}
+
+	// Build a map of column catalogs
+	columnCatalogMap := make(map[string]*storepb.ColumnCatalog)
+	if tableCatalog != nil {
+		for _, columnCatalog := range tableCatalog.Columns {
+			columnCatalogMap[columnCatalog.Name] = columnCatalog
+		}
+	}
+
 	var result []*TableMetadata
 	var name []string
 	tableMetadata := &TableMetadata{
 		isDetailCaseSensitive: isDetailCaseSensitive,
-		internalColumn:        make(map[string]*storepb.ColumnMetadata),
+		internalColumn:        make(map[string]*ColumnMetadata),
 		internalIndexes:       make(map[string]*IndexMetadata),
 		proto:                 table,
+		config:                tableCatalog,
 	}
 	for _, column := range table.Columns {
+		columnCatalog := columnCatalogMap[column.Name]
 		columnID := normalizeNameByCaseSensitivity(column.Name, isDetailCaseSensitive)
-		tableMetadata.internalColumn[columnID] = column
+		tableMetadata.internalColumn[columnID] = &ColumnMetadata{
+			proto:  column,
+			config: columnCatalog,
+		}
 	}
 	indexes := buildIndexesMetadata(table)
 	for _, index := range indexes {
@@ -775,7 +765,7 @@ func buildTablesMetadata(table *storepb.TableMetadata, isDetailCaseSensitive boo
 	name = append(name, table.Name)
 
 	if table.Partitions != nil {
-		partitionTables, partitionNames := buildTablesMetadataRecursive(table.Columns, table.Partitions, tableMetadata, table, isDetailCaseSensitive)
+		partitionTables, partitionNames := buildTablesMetadataRecursive(table.Columns, columnCatalogMap, table.Partitions, tableMetadata, table, isDetailCaseSensitive)
 		result = append(result, partitionTables...)
 		name = append(name, partitionNames...)
 	}
@@ -801,7 +791,7 @@ func buildIndexesMetadata(table *storepb.TableMetadata) []*IndexMetadata {
 
 // buildTablesMetadataRecursive builds the partition tables recursively,
 // returns the table metadata and the partition names, the length of them must be the same.
-func buildTablesMetadataRecursive(originalColumn []*storepb.ColumnMetadata, partitions []*storepb.TablePartitionMetadata, root *TableMetadata, proto *storepb.TableMetadata, isDetailCaseSensitive bool) ([]*TableMetadata, []string) {
+func buildTablesMetadataRecursive(originalColumn []*storepb.ColumnMetadata, columnCatalogMap map[string]*storepb.ColumnCatalog, partitions []*storepb.TablePartitionMetadata, root *TableMetadata, proto *storepb.TableMetadata, isDetailCaseSensitive bool) ([]*TableMetadata, []string) {
 	if partitions == nil {
 		return nil, nil
 	}
@@ -812,17 +802,21 @@ func buildTablesMetadataRecursive(originalColumn []*storepb.ColumnMetadata, part
 	for _, partition := range partitions {
 		partitionMetadata := &TableMetadata{
 			partitionOf:    root,
-			internalColumn: make(map[string]*storepb.ColumnMetadata),
+			internalColumn: make(map[string]*ColumnMetadata),
 			proto:          proto,
 		}
 		for _, column := range originalColumn {
+			columnCatalog := columnCatalogMap[column.Name]
 			columnID := normalizeNameByCaseSensitivity(column.Name, isDetailCaseSensitive)
-			partitionMetadata.internalColumn[columnID] = column
+			partitionMetadata.internalColumn[columnID] = &ColumnMetadata{
+				proto:  column,
+				config: columnCatalog,
+			}
 		}
 		tables = append(tables, partitionMetadata)
 		names = append(names, partition.Name)
 		if partition.Subpartitions != nil {
-			subTables, subNames := buildTablesMetadataRecursive(originalColumn, partition.Subpartitions, partitionMetadata, proto, isDetailCaseSensitive)
+			subTables, subNames := buildTablesMetadataRecursive(originalColumn, columnCatalogMap, partition.Subpartitions, partitionMetadata, proto, isDetailCaseSensitive)
 			tables = append(tables, subTables...)
 			names = append(names, subNames...)
 		}
@@ -839,7 +833,7 @@ func (t *TableMetadata) GetTableComment() string {
 }
 
 // GetColumn gets the column by name.
-func (t *TableMetadata) GetColumn(name string) *storepb.ColumnMetadata {
+func (t *TableMetadata) GetColumn(name string) *ColumnMetadata {
 	if t == nil {
 		return nil
 	}
@@ -876,9 +870,13 @@ func (t *TableMetadata) GetProto() *storepb.TableMetadata {
 	return t.proto
 }
 
+func (t *TableMetadata) GetCatalog() *storepb.TableCatalog {
+	return t.config
+}
+
 // CreateColumn creates a new column in the table.
 // Returns an error if the column already exists.
-func (t *TableMetadata) CreateColumn(columnProto *storepb.ColumnMetadata) error {
+func (t *TableMetadata) CreateColumn(columnProto *storepb.ColumnMetadata, columnCatalog *storepb.ColumnCatalog) error {
 	// Check if column already exists
 	if t.GetColumn(columnProto.Name) != nil {
 		return errors.Errorf("column %q already exists in table %q", columnProto.Name, t.proto.Name)
@@ -887,9 +885,12 @@ func (t *TableMetadata) CreateColumn(columnProto *storepb.ColumnMetadata) error 
 	// Add to proto's column list
 	t.proto.Columns = append(t.proto.Columns, columnProto)
 
-	// Add to internal map
+	// Create ColumnMetadata wrapper and add to internal map
 	columnID := normalizeNameByCaseSensitivity(columnProto.Name, t.isDetailCaseSensitive)
-	t.internalColumn[columnID] = columnProto
+	t.internalColumn[columnID] = &ColumnMetadata{
+		proto:  columnProto,
+		config: columnCatalog,
+	}
 
 	return nil
 }
@@ -1046,7 +1047,7 @@ func (t *TableMetadata) RenameColumn(oldName string, newName string) error {
 	delete(t.internalColumn, oldColumnID)
 
 	// Update the column name in the proto
-	oldColumn.Name = newName
+	oldColumn.proto.Name = newName
 
 	// Add back to internal map using new name
 	newColumnID := normalizeNameByCaseSensitivity(newName, t.isDetailCaseSensitive)
@@ -1086,6 +1087,14 @@ func (i *IndexMetadata) GetProto() *storepb.IndexMetadata {
 
 func (i *IndexMetadata) GetTableProto() *storepb.TableMetadata {
 	return i.tableProto
+}
+
+func (c *ColumnMetadata) GetProto() *storepb.ColumnMetadata {
+	return c.proto
+}
+
+func (c *ColumnMetadata) GetCatalog() *storepb.ColumnCatalog {
+	return c.config
 }
 
 // CreateIndex creates a new index in the table.

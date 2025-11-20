@@ -144,7 +144,7 @@ func (r *ColumnNoNullRule) generateAdvice() {
 			continue
 		}
 		col := table.GetColumn(column.columnName)
-		if col != nil && col.Nullable {
+		if col != nil && col.GetProto().Nullable {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
 				Code:          code.ColumnCannotNull.Int32(),

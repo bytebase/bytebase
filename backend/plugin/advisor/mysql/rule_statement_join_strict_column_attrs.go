@@ -230,7 +230,7 @@ func (r *StatementJoinStrictColumnAttrsRule) checkColumnAttrs(leftColumnAttr *Co
 	if leftColumn == nil || rightColumn == nil {
 		return
 	}
-	if leftColumn.Type != rightColumn.Type || leftColumn.CharacterSet != rightColumn.CharacterSet || leftColumn.Collation != rightColumn.Collation {
+	if leftColumn.GetProto().Type != rightColumn.GetProto().Type || leftColumn.GetProto().CharacterSet != rightColumn.GetProto().CharacterSet || leftColumn.GetProto().Collation != rightColumn.GetProto().Collation {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
 			Code:          code.StatementJoinColumnAttrsNotMatch.Int32(),

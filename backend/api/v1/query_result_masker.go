@@ -340,16 +340,13 @@ func (s *QueryResultMasker) getColumnForColumnResource(ctx context.Context, inst
 	if table == nil {
 		return nil, nil, nil
 	}
-	column := table.GetColumn(sourceColumn.Column)
-	if column == nil {
+	columnMetadataWrapper := table.GetColumn(sourceColumn.Column)
+	if columnMetadataWrapper == nil {
 		return nil, nil, nil
 	}
-	columnMetadata = column
+	columnMetadata = columnMetadataWrapper.GetProto()
 
-	var columnConfig *storepb.ColumnCatalog
-	schemaConfig := dbMetadata.GetSchemaConfig(sourceColumn.Schema)
-	tableConfig := schemaConfig.GetTableConfig(sourceColumn.Table)
-	columnConfig = tableConfig.GetColumnConfig(sourceColumn.Column)
+	columnConfig := columnMetadataWrapper.GetCatalog()
 	return columnMetadata, columnConfig, nil
 }
 

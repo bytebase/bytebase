@@ -254,7 +254,7 @@ func (r *IndexPrimaryKeyTypeAllowlistRule) getPKColumnType(tableName string, col
 	}
 	column := r.originalMetadata.GetSchemaMetadata("").GetTable(tableName).GetColumn(columnName)
 	if column != nil {
-		return column.Type, nil
+		return column.GetProto().Type, nil
 	}
 	return "", errors.Errorf("cannot find the type of `%s`.`%s`", tableName, columnName)
 }

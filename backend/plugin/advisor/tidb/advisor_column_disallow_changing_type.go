@@ -136,5 +136,5 @@ func (checker *columnDisallowChangingTypeChecker) changeColumnType(tableName str
 		return false
 	}
 
-	return normalizeColumnType(column.Type) != normalizeColumnType(newType)
+	return normalizeColumnType(column.GetProto().Type) != normalizeColumnType(newType)
 }

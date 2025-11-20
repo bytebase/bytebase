@@ -566,11 +566,12 @@ func tidbChangeColumnDefault(t *model.TableMetadata, column *tidbast.ColumnDef) 
 		}
 	}
 
+	colProto := col.GetProto()
 	if len(column.Options) == 1 {
 		// SET DEFAULT
 		if column.Options[0].Expr.GetType().GetType() != mysql.TypeNull {
-			if col.Type != "" {
-				switch strings.ToLower(col.Type) {
+			if colProto.Type != "" {
+				switch strings.ToLower(colProto.Type) {
 				case "blob", "tinyblob", "mediumblob", "longblob",
 					"text", "tinytext", "mediumtext", "longtext",
 					"json",
@@ -599,9 +600,9 @@ func tidbChangeColumnDefault(t *model.TableMetadata, column *tidbast.ColumnDef) 
 					StartPosition: &storepb.Position{Line: 0},
 				}
 			}
-			col.Default = defaultValue
+			colProto.Default = defaultValue
 		} else {
-			if !col.Nullable {
+			if !colProto.Nullable {
 				content := fmt.Sprintf("Invalid default value for column `%s`", columnName)
 				return &storepb.Advice{
 					Status:        storepb.Advice_ERROR,
@@ -611,11 +612,11 @@ func tidbChangeColumnDefault(t *model.TableMetadata, column *tidbast.ColumnDef) 
 					StartPosition: &storepb.Position{Line: 0},
 				}
 			}
-			col.Default = ""
+			colProto.Default = ""
 		}
 	} else {
 		// DROP DEFAULT
-		col.Default = ""
+		colProto.Default = ""
 	}
 	return nil
 }
@@ -667,7 +668,7 @@ func tidbCompleteTableChangeColumn(t *model.TableMetadata, oldName string, newCo
 		tableProto := t.GetProto()
 		var currentIdx int
 		for i, col := range tableProto.Columns {
-			if col == column {
+			if col == column.GetProto() {
 				currentIdx = i
 				break
 			}
@@ -754,12 +755,13 @@ func tidbReorderColumn(t *model.TableMetadata, position *tidbast.ColumnPosition)
 				StartPosition: &storepb.Position{Line: 0},
 			}
 		}
+		columnProto := column.GetProto()
 		for _, col := range t.GetProto().GetColumns() {
-			if col.Position > column.Position {
+			if col.Position > columnProto.Position {
 				col.Position++
 			}
 		}
-		return int(column.Position) + 1, nil
+		return int(columnProto.Position) + 1, nil
 	default:
 		content := fmt.Sprintf("Unsupported column position type: %d", position.Tp)
 		return 0, &storepb.Advice{
@@ -862,7 +864,7 @@ func tidbCopyTable(d *model.DatabaseMetadata, node *tidbast.CreateTableStmt) *st
 				StartPosition: &storepb.Position{Line: 0},
 			}
 		}
-		if err := newTable.CreateColumn(colCopy); err != nil {
+		if err := newTable.CreateColumn(colCopy, nil /* columnCatalog */); err != nil {
 			return &storepb.Advice{
 				Status:        storepb.Advice_ERROR,
 				Code:          code.ColumnExists.Int32(),
@@ -1061,10 +1063,10 @@ func tidbValidateAndGetKeyStringList(t *model.TableMetadata, keyList []*tidbast.
 				}
 			}
 			if primary {
-				column.Nullable = false
+				column.GetProto().Nullable = false
 			}
-			if isSpatial && column.Nullable {
-				content := fmt.Sprintf("All parts of a SPATIAL index must be NOT NULL, but `%s` is nullable", column.Name)
+			if isSpatial && column.GetProto().Nullable {
+				content := fmt.Sprintf("All parts of a SPATIAL index must be NOT NULL, but `%s` is nullable", column.GetProto().Name)
 				return nil, &storepb.Advice{
 					Status:        storepb.Advice_ERROR,
 					Code:          code.SpatialIndexKeyNullable.Int32(),
@@ -1246,7 +1248,7 @@ func tidbCreateColumnHelper(t *model.TableMetadata, column *tidbast.ColumnDef, p
 		}
 	}
 
-	if err := t.CreateColumn(col); err != nil {
+	if err := t.CreateColumn(col, nil /* columnCatalog */); err != nil {
 		return &storepb.Advice{
 			Status:        storepb.Advice_ERROR,
 			Code:          code.ColumnExists.Int32(),
