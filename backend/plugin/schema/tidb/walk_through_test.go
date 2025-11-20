@@ -68,10 +68,12 @@ func TestWalkThrough(t *testing.T) {
 		want := &storepb.DatabaseSchemaMetadata{}
 		err := common.ProtojsonUnmarshaler.Unmarshal([]byte(test.Want), want)
 		require.NoError(t, err)
-		// Sort proto for deterministic comparison
-		state.SortProto()
 		result := state.GetProto()
-		diff := cmp.Diff(want, result, protocmp.Transform())
+		diff := cmp.Diff(want, result, protocmp.Transform(),
+			protocmp.SortRepeatedFields(&storepb.DatabaseSchemaMetadata{}, "schemas"),
+			protocmp.SortRepeatedFields(&storepb.SchemaMetadata{}, "tables", "views"),
+			protocmp.SortRepeatedFields(&storepb.TableMetadata{}, "indexes", "columns"),
+		)
 		require.Empty(t, diff)
 	}
 }

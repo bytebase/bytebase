@@ -147,7 +147,7 @@ func (r *statementObjectOwnerCheckRule) checkSchemaOwnership(schemaName string, 
 		return
 	}
 
-	owner := schemaMeta.GetOwner()
+	owner := schemaMeta.GetProto().GetOwner()
 	if owner == pgDatabaseOwner {
 		owner = r.dbMetadata.GetProto().GetOwner()
 	}
