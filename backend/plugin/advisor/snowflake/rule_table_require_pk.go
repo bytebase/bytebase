@@ -7,7 +7,6 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/snowflake"
-	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -30,9 +29,9 @@ type TableRequirePkAdvisor struct {
 
 // Check checks for table require primary key.
 func (*TableRequirePkAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	tree, ok := checkCtx.AST.(antlr.Tree)
-	if !ok {
-		return nil, errors.Errorf("failed to convert to Tree")
+	parseResults, err := getANTLRTree(checkCtx)
+	if err != nil {
+		return nil, err
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
@@ -43,7 +42,11 @@ func (*TableRequirePkAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 	rule := NewTableRequirePkRule(level, string(checkCtx.Rule.Type))
 	checker := NewGenericChecker([]Rule{rule})
 
-	antlr.ParseTreeWalkerDefault.Walk(checker, tree)
+	for _, parseResult := range parseResults {
+		rule.SetBaseLine(parseResult.BaseLine)
+		checker.SetBaseLine(parseResult.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, parseResult.Tree)
+	}
 
 	return checker.GetAdviceList(), nil
 }
@@ -130,7 +133,7 @@ func (r *TableRequirePkRule) GetAdviceList() []*storepb.Advice {
 				Code:          code.TableNoPK.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("Table %s requires PRIMARY KEY.", r.tableOriginalName[tableName]),
-				StartPosition: common.ConvertANTLRLineToPosition(r.tableLine[tableName]),
+				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + r.tableLine[tableName]),
 			})
 		}
 	}

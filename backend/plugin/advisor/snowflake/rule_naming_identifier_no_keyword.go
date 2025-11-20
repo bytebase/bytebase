@@ -9,7 +9,6 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/snowflake"
-	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -31,9 +30,9 @@ type NamingIdentifierNoKeywordAdvisor struct {
 
 // Check checks for identifier naming convention without keyword.
 func (*NamingIdentifierNoKeywordAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	tree, ok := checkCtx.AST.(antlr.Tree)
-	if !ok {
-		return nil, errors.Errorf("failed to convert to Tree")
+	parseResults, err := getANTLRTree(checkCtx)
+	if err != nil {
+		return nil, err
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
@@ -44,7 +43,11 @@ func (*NamingIdentifierNoKeywordAdvisor) Check(_ context.Context, checkCtx advis
 	rule := NewNamingIdentifierNoKeywordRule(level, string(checkCtx.Rule.Type))
 	checker := NewGenericChecker([]Rule{rule})
 
-	antlr.ParseTreeWalkerDefault.Walk(checker, tree)
+	for _, parseResult := range parseResults {
+		rule.SetBaseLine(parseResult.BaseLine)
+		checker.SetBaseLine(parseResult.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, parseResult.Tree)
+	}
 
 	return checker.GetAdviceList(), nil
 }
@@ -119,7 +122,7 @@ func (r *NamingIdentifierNoKeywordRule) enterColumnDeclItemList(ctx *parser.Colu
 					Code:          code.NameIsKeywordIdentifier.Int32(),
 					Title:         r.title,
 					Content:       fmt.Sprintf("Identifier %s is a keyword and should be avoided", originalID.GetText()),
-					StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+					StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
 				})
 			}
 		}
@@ -139,7 +142,7 @@ func (r *NamingIdentifierNoKeywordRule) enterAlterTable(ctx *parser.Alter_tableC
 			Code:          code.NameIsKeywordIdentifier.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("Identifier %s is a keyword and should be avoided", renameToID.GetText()),
-			StartPosition: common.ConvertANTLRLineToPosition(renameToID.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + renameToID.GetStart().GetLine()),
 		})
 	}
 }

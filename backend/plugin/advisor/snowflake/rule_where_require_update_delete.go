@@ -6,7 +6,6 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/snowflake"
-	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -28,9 +27,9 @@ type WhereRequireForUpdateDeleteAdvisor struct {
 
 // Check checks for WHERE clause requirement.
 func (*WhereRequireForUpdateDeleteAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	tree, ok := checkCtx.AST.(antlr.Tree)
-	if !ok {
-		return nil, errors.Errorf("failed to convert to Tree")
+	parseResults, err := getANTLRTree(checkCtx)
+	if err != nil {
+		return nil, err
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
@@ -41,7 +40,11 @@ func (*WhereRequireForUpdateDeleteAdvisor) Check(_ context.Context, checkCtx adv
 	rule := NewWhereRequireForUpdateDeleteRule(level, string(checkCtx.Rule.Type))
 	checker := NewGenericChecker([]Rule{rule})
 
-	antlr.ParseTreeWalkerDefault.Walk(checker, tree)
+	for _, parseResult := range parseResults {
+		rule.SetBaseLine(parseResult.BaseLine)
+		checker.SetBaseLine(parseResult.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, parseResult.Tree)
+	}
 
 	return checker.GetAdviceList(), nil
 }
@@ -92,7 +95,7 @@ func (r *WhereRequireForUpdateDeleteRule) enterUpdateStatement(ctx *parser.Updat
 			Code:          code.StatementNoWhere.Int32(),
 			Title:         r.title,
 			Content:       "WHERE clause is required for UPDATE statement.",
-			StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
 		})
 	}
 }
@@ -104,7 +107,7 @@ func (r *WhereRequireForUpdateDeleteRule) enterDeleteStatement(ctx *parser.Delet
 			Code:          code.StatementNoWhere.Int32(),
 			Title:         r.title,
 			Content:       "WHERE clause is required for DELETE statement.",
-			StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
 		})
 	}
 }
