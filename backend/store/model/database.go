@@ -303,49 +303,6 @@ func (d *DatabaseMetadata) DropSchema(schemaName string) error {
 	return nil
 }
 
-func (d *DatabaseMetadata) BuildDatabaseConfig() *storepb.DatabaseConfig {
-	if d == nil {
-		return nil
-	}
-	config := &storepb.DatabaseConfig{Name: d.config.GetName()}
-
-	for _, schemaMetadata := range d.internal {
-		schemaCatalog := schemaMetadata.GetCatalog()
-		if schemaCatalog == nil {
-			continue
-		}
-
-		// Reconstruct the schema catalog with updated table/column catalogs
-		reconstructedSchema := &storepb.SchemaCatalog{Name: schemaMetadata.proto.Name}
-
-		for _, tableMetadata := range schemaMetadata.internalTables {
-			tableCatalog := tableMetadata.GetCatalog()
-			if tableCatalog == nil {
-				continue
-			}
-
-			// Reconstruct the table catalog with updated column catalogs
-			reconstructedTable := &storepb.TableCatalog{
-				Name:           tableMetadata.proto.Name,
-				Classification: tableCatalog.Classification,
-			}
-
-			for _, columnMetadata := range tableMetadata.internalColumn {
-				columnCatalog := columnMetadata.GetCatalog()
-				if columnCatalog != nil {
-					reconstructedTable.Columns = append(reconstructedTable.Columns, columnCatalog)
-				}
-			}
-
-			reconstructedSchema.Tables = append(reconstructedSchema.Tables, reconstructedTable)
-		}
-
-		config.Schemas = append(config.Schemas, reconstructedSchema)
-	}
-
-	return config
-}
-
 // GetTable gets the schema by name.
 func (s *SchemaMetadata) GetTable(name string) *TableMetadata {
 	if s == nil {
