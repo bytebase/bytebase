@@ -300,43 +300,6 @@ func (d *DatabaseMetadata) GetLinkedDatabase(name string) *storepb.LinkedDatabas
 	return d.linkedDatabase[nameID]
 }
 
-func (d *DatabaseMetadata) SortProto() {
-	// Sort schemas by name
-	slices.SortFunc(d.proto.Schemas, func(x, y *storepb.SchemaMetadata) int {
-		return strings.Compare(x.Name, y.Name)
-	})
-
-	// Sort tables and indexes within each schema
-	for _, schema := range d.proto.Schemas {
-		// Sort tables by name
-		slices.SortFunc(schema.Tables, func(x, y *storepb.TableMetadata) int {
-			return strings.Compare(x.Name, y.Name)
-		})
-
-		// Sort indexes within each table by name
-		for _, table := range schema.Tables {
-			slices.SortFunc(table.Indexes, func(x, y *storepb.IndexMetadata) int {
-				return strings.Compare(x.Name, y.Name)
-			})
-
-			// Sort columns by position
-			slices.SortFunc(table.Columns, func(x, y *storepb.ColumnMetadata) int {
-				if x.Position < y.Position {
-					return -1
-				} else if x.Position > y.Position {
-					return 1
-				}
-				return 0
-			})
-		}
-
-		// Sort views by name
-		slices.SortFunc(schema.Views, func(x, y *storepb.ViewMetadata) int {
-			return strings.Compare(x.Name, y.Name)
-		})
-	}
-}
-
 func (d *DatabaseMetadata) GetIsObjectCaseSensitive() bool {
 	return d.isObjectCaseSensitive
 }
