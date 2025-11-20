@@ -430,7 +430,7 @@ func addNewSchemaObjects(diff *MetadataDiff, schemaName string, schema *model.Sc
 	}
 
 	// Add all functions
-	for _, function := range schema.ListFunctions() {
+	for _, function := range schema.GetProto().GetFunctions() {
 		if !function.GetSkipDump() {
 			// Use signature if available, otherwise fall back to name
 			functionName := function.Signature
@@ -1690,7 +1690,7 @@ func compareFunctions(engine storepb.Engine, diff *MetadataDiff, schemaName stri
 	// Group functions by signature to properly match overloaded functions
 	// Build map of old functions by signature
 	oldFuncsBySignature := make(map[string]*storepb.FunctionMetadata)
-	for _, fn := range oldSchema.ListFunctions() {
+	for _, fn := range oldSchema.GetProto().GetFunctions() {
 		if !fn.GetSkipDump() {
 			sig := fn.Signature
 			if sig == "" {
@@ -1702,7 +1702,7 @@ func compareFunctions(engine storepb.Engine, diff *MetadataDiff, schemaName stri
 
 	// Build map of new functions by signature
 	newFuncsBySignature := make(map[string]*storepb.FunctionMetadata)
-	for _, fn := range newSchema.ListFunctions() {
+	for _, fn := range newSchema.GetProto().GetFunctions() {
 		if !fn.GetSkipDump() {
 			sig := fn.Signature
 			if sig == "" {

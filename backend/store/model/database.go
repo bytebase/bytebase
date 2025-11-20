@@ -36,11 +36,9 @@ type SchemaMetadata struct {
 	internalExternalTable    map[string]*ExternalTableMetadata
 	internalViews            map[string]*storepb.ViewMetadata
 	internalMaterializedView map[string]*storepb.MaterializedViewMetadata
-	// Store internal functions by list to take care of the overloadings.
-	functions          []*storepb.FunctionMetadata
-	internalProcedures map[string]*storepb.ProcedureMetadata
-	internalSequences  map[string]*storepb.SequenceMetadata
-	internalPackages   map[string]*storepb.PackageMetadata
+	internalProcedures       map[string]*storepb.ProcedureMetadata
+	internalSequences        map[string]*storepb.SequenceMetadata
+	internalPackages         map[string]*storepb.PackageMetadata
 
 	proto *storepb.SchemaMetadata
 }
@@ -152,7 +150,6 @@ func NewDatabaseMetadata(
 			viewID := normalizeNameByCaseSensitivity(materializedView.Name, isObjectCaseSensitive)
 			schemaMetadata.internalMaterializedView[viewID] = materializedView
 		}
-		schemaMetadata.functions = s.Functions
 		for _, procedure := range s.Procedures {
 			procedureID := normalizeNameByCaseSensitivity(procedure.Name, isDetailCaseSensitive)
 			schemaMetadata.internalProcedures[procedureID] = procedure
@@ -431,14 +428,11 @@ func (s *SchemaMetadata) GetExternalTable(name string) *ExternalTableMetadata {
 	return s.internalExternalTable[nameID]
 }
 
-// ListFunctions lists the functions.
-func (s *SchemaMetadata) ListFunctions() []*storepb.FunctionMetadata {
-	return s.functions
-}
-
 // GetFunction gets the function by name.
+// Note: For overloaded functions, this returns the first match by name only.
+// Use signature-based lookup for precise matching.
 func (s *SchemaMetadata) GetFunction(name string) *storepb.FunctionMetadata {
-	for _, function := range s.functions {
+	for _, function := range s.proto.GetFunctions() {
 		if s.isDetailCaseSensitive {
 			if function.Name == name {
 				return function
@@ -495,17 +489,6 @@ func (s *SchemaMetadata) ListProcedureNames() []string {
 	var result []string
 	for _, procedure := range s.internalProcedures {
 		result = append(result, procedure.GetName())
-	}
-
-	slices.Sort(result)
-	return result
-}
-
-// ListFunctionNames lists the function names.
-func (s *SchemaMetadata) ListFunctionNames() []string {
-	var result []string
-	for _, function := range s.functions {
-		result = append(result, function.GetName())
 	}
 
 	slices.Sort(result)
