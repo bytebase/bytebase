@@ -732,7 +732,7 @@ func (q *querySpanExtractor) tsqlFindTableSchema(fullTableName parser.IFull_tabl
 					Server:   "",
 					Database: databaseName,
 					Schema:   schemaName,
-					Name:     view.GetProto().Name,
+					Name:     view.Name,
 					Columns:  columns,
 				}
 				return tableSource, nil

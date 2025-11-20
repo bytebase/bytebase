@@ -1385,7 +1385,7 @@ func (q *querySpanExtractor) findTableSchema(databaseName, tableName string) (ba
 		}, nil
 	}
 
-	var viewSchema *model.ViewMetadata
+	var viewSchema *storepb.ViewMetadata
 	if q.ignoreCaseSensitive {
 		for _, view := range schema.ListViewNames() {
 			if strings.EqualFold(view, tableName) {
@@ -1402,7 +1402,7 @@ func (q *querySpanExtractor) findTableSchema(databaseName, tableName string) (ba
 			return nil, errors.Wrapf(err, "failed to get columns for view %q", tableName)
 		}
 		return &base.PhysicalView{
-			Name:     viewSchema.GetProto().Name,
+			Name:     viewSchema.Name,
 			Schema:   emptySchema,
 			Database: dbMetadata.GetProto().GetName(),
 			Server:   "",

@@ -34,13 +34,13 @@ type SchemaMetadata struct {
 	isDetailCaseSensitive    bool
 	internalTables           map[string]*TableMetadata
 	internalExternalTable    map[string]*ExternalTableMetadata
-	internalViews            map[string]*ViewMetadata
-	internalMaterializedView map[string]*MaterializedViewMetadata
+	internalViews            map[string]*storepb.ViewMetadata
+	internalMaterializedView map[string]*storepb.MaterializedViewMetadata
 	// Store internal functions by list to take care of the overloadings.
 	functions          []*storepb.FunctionMetadata
-	internalProcedures map[string]*ProcedureMetadata
-	internalSequences  map[string]*SequenceMetadata
-	internalPackages   map[string]*PackageMetadata
+	internalProcedures map[string]*storepb.ProcedureMetadata
+	internalSequences  map[string]*storepb.SequenceMetadata
+	internalPackages   map[string]*storepb.PackageMetadata
 
 	proto *storepb.SchemaMetadata
 }
@@ -82,30 +82,6 @@ type IndexMetadata struct {
 	proto      *storepb.IndexMetadata
 }
 
-// ViewMetadata is the metadata for a view.
-type ViewMetadata struct {
-	Definition string
-	proto      *storepb.ViewMetadata
-}
-
-type MaterializedViewMetadata struct {
-	Definition string
-	proto      *storepb.MaterializedViewMetadata
-}
-
-type ProcedureMetadata struct {
-	Definition string
-	proto      *storepb.ProcedureMetadata
-}
-type PackageMetadata struct {
-	Definition string
-	proto      *storepb.PackageMetadata
-}
-
-type SequenceMetadata struct {
-	proto *storepb.SequenceMetadata
-}
-
 func NewDatabaseMetadata(
 	metadata *storepb.DatabaseSchemaMetadata,
 	schema []byte,
@@ -133,11 +109,11 @@ func NewDatabaseMetadata(
 			isDetailCaseSensitive:    isDetailCaseSensitive,
 			internalTables:           make(map[string]*TableMetadata),
 			internalExternalTable:    make(map[string]*ExternalTableMetadata),
-			internalViews:            make(map[string]*ViewMetadata),
-			internalMaterializedView: make(map[string]*MaterializedViewMetadata),
-			internalProcedures:       make(map[string]*ProcedureMetadata),
-			internalPackages:         make(map[string]*PackageMetadata),
-			internalSequences:        make(map[string]*SequenceMetadata),
+			internalViews:            make(map[string]*storepb.ViewMetadata),
+			internalMaterializedView: make(map[string]*storepb.MaterializedViewMetadata),
+			internalProcedures:       make(map[string]*storepb.ProcedureMetadata),
+			internalPackages:         make(map[string]*storepb.PackageMetadata),
+			internalSequences:        make(map[string]*storepb.SequenceMetadata),
 			proto:                    s,
 		}
 		for _, table := range s.Tables {
@@ -183,10 +159,7 @@ func NewDatabaseMetadata(
 			} else {
 				viewID = strings.ToLower(view.Name)
 			}
-			schemaMetadata.internalViews[viewID] = &ViewMetadata{
-				Definition: view.Definition,
-				proto:      view,
-			}
+			schemaMetadata.internalViews[viewID] = view
 		}
 		for _, materializedView := range s.MaterializedViews {
 			var viewID string
@@ -195,10 +168,7 @@ func NewDatabaseMetadata(
 			} else {
 				viewID = strings.ToLower(materializedView.Name)
 			}
-			schemaMetadata.internalMaterializedView[viewID] = &MaterializedViewMetadata{
-				Definition: materializedView.Definition,
-				proto:      materializedView,
-			}
+			schemaMetadata.internalMaterializedView[viewID] = materializedView
 		}
 		schemaMetadata.functions = s.Functions
 		for _, procedure := range s.Procedures {
@@ -208,10 +178,7 @@ func NewDatabaseMetadata(
 			} else {
 				procedureID = strings.ToLower(procedure.Name)
 			}
-			schemaMetadata.internalProcedures[procedureID] = &ProcedureMetadata{
-				Definition: procedure.Definition,
-				proto:      procedure,
-			}
+			schemaMetadata.internalProcedures[procedureID] = procedure
 		}
 		for _, p := range s.Packages {
 			var packageID string
@@ -220,10 +187,7 @@ func NewDatabaseMetadata(
 			} else {
 				packageID = strings.ToLower(p.Name)
 			}
-			schemaMetadata.internalPackages[packageID] = &PackageMetadata{
-				Definition: p.Definition,
-				proto:      p,
-			}
+			schemaMetadata.internalPackages[packageID] = p
 		}
 		for _, sequence := range s.Sequences {
 			var sequenceID string
@@ -232,9 +196,7 @@ func NewDatabaseMetadata(
 			} else {
 				sequenceID = strings.ToLower(sequence.Name)
 			}
-			schemaMetadata.internalSequences[sequenceID] = &SequenceMetadata{
-				proto: sequence,
-			}
+			schemaMetadata.internalSequences[sequenceID] = sequence
 		}
 		var schemaID string
 		if isObjectCaseSensitive {
@@ -396,11 +358,11 @@ func (d *DatabaseMetadata) CreateSchema(schemaName string) *SchemaMetadata {
 		isDetailCaseSensitive:    d.isDetailCaseSensitive,
 		internalTables:           make(map[string]*TableMetadata),
 		internalExternalTable:    make(map[string]*ExternalTableMetadata),
-		internalViews:            make(map[string]*ViewMetadata),
-		internalMaterializedView: make(map[string]*MaterializedViewMetadata),
-		internalProcedures:       make(map[string]*ProcedureMetadata),
-		internalPackages:         make(map[string]*PackageMetadata),
-		internalSequences:        make(map[string]*SequenceMetadata),
+		internalViews:            make(map[string]*storepb.ViewMetadata),
+		internalMaterializedView: make(map[string]*storepb.MaterializedViewMetadata),
+		internalProcedures:       make(map[string]*storepb.ProcedureMetadata),
+		internalPackages:         make(map[string]*storepb.PackageMetadata),
+		internalSequences:        make(map[string]*storepb.SequenceMetadata),
 		proto:                    newSchemaProto,
 	}
 
@@ -554,7 +516,7 @@ func (s *SchemaMetadata) GetIndex(name string) *IndexMetadata {
 }
 
 // GetView gets the view by name.
-func (s *SchemaMetadata) GetView(name string) *ViewMetadata {
+func (s *SchemaMetadata) GetView(name string) *storepb.ViewMetadata {
 	var nameID string
 	if s.isObjectCaseSensitive {
 		nameID = name
@@ -564,7 +526,7 @@ func (s *SchemaMetadata) GetView(name string) *ViewMetadata {
 	return s.internalViews[nameID]
 }
 
-func (s *SchemaMetadata) GetProcedure(name string) *ProcedureMetadata {
+func (s *SchemaMetadata) GetProcedure(name string) *storepb.ProcedureMetadata {
 	var nameID string
 	if s.isDetailCaseSensitive {
 		nameID = name
@@ -574,7 +536,7 @@ func (s *SchemaMetadata) GetProcedure(name string) *ProcedureMetadata {
 	return s.internalProcedures[nameID]
 }
 
-func (s *SchemaMetadata) GetPackage(name string) *PackageMetadata {
+func (s *SchemaMetadata) GetPackage(name string) *storepb.PackageMetadata {
 	var nameID string
 	if s.isDetailCaseSensitive {
 		nameID = name
@@ -585,7 +547,7 @@ func (s *SchemaMetadata) GetPackage(name string) *PackageMetadata {
 }
 
 // GetMaterializedView gets the materialized view by name.
-func (s *SchemaMetadata) GetMaterializedView(name string) *MaterializedViewMetadata {
+func (s *SchemaMetadata) GetMaterializedView(name string) *storepb.MaterializedViewMetadata {
 	var nameID string
 	if s.isObjectCaseSensitive {
 		nameID = name
@@ -628,7 +590,7 @@ func (s *SchemaMetadata) GetFunction(name string) *storepb.FunctionMetadata {
 }
 
 // GetSequence gets the sequence by name.
-func (s *SchemaMetadata) GetSequence(name string) *SequenceMetadata {
+func (s *SchemaMetadata) GetSequence(name string) *storepb.SequenceMetadata {
 	var nameID string
 	if s.isDetailCaseSensitive {
 		nameID = name
@@ -638,15 +600,15 @@ func (s *SchemaMetadata) GetSequence(name string) *SequenceMetadata {
 	return s.internalSequences[nameID]
 }
 
-func (s *SchemaMetadata) GetSequencesByOwnerTable(name string) []*SequenceMetadata {
-	var result []*SequenceMetadata
+func (s *SchemaMetadata) GetSequencesByOwnerTable(name string) []*storepb.SequenceMetadata {
+	var result []*storepb.SequenceMetadata
 	for _, sequence := range s.internalSequences {
 		if s.isObjectCaseSensitive {
-			if sequence.GetProto().OwnerTable == name {
+			if sequence.OwnerTable == name {
 				result = append(result, sequence)
 			}
 		} else {
-			if strings.EqualFold(sequence.GetProto().OwnerTable, name) {
+			if strings.EqualFold(sequence.OwnerTable, name) {
 				result = append(result, sequence)
 			}
 		}
@@ -674,7 +636,7 @@ func (s *SchemaMetadata) ListTableNames() []string {
 func (s *SchemaMetadata) ListProcedureNames() []string {
 	var result []string
 	for _, procedure := range s.internalProcedures {
-		result = append(result, procedure.GetProto().GetName())
+		result = append(result, procedure.GetName())
 	}
 
 	slices.Sort(result)
@@ -696,7 +658,7 @@ func (s *SchemaMetadata) ListFunctionNames() []string {
 func (s *SchemaMetadata) ListViewNames() []string {
 	var result []string
 	for _, view := range s.internalViews {
-		result = append(result, view.GetProto().GetName())
+		result = append(result, view.GetName())
 	}
 
 	slices.Sort(result)
@@ -718,7 +680,7 @@ func (s *SchemaMetadata) ListForeignTableNames() []string {
 func (s *SchemaMetadata) ListMaterializedViewNames() []string {
 	var result []string
 	for _, view := range s.internalMaterializedView {
-		result = append(result, view.GetProto().GetName())
+		result = append(result, view.GetName())
 	}
 
 	slices.Sort(result)
@@ -843,7 +805,7 @@ func (s *SchemaMetadata) RenameTable(oldName string, newName string) error {
 
 // CreateView creates a new view in the schema.
 // Returns an error if the view already exists.
-func (s *SchemaMetadata) CreateView(viewName string, definition string, dependencyColumns []*storepb.DependencyColumn) (*ViewMetadata, error) {
+func (s *SchemaMetadata) CreateView(viewName string, definition string, dependencyColumns []*storepb.DependencyColumn) (*storepb.ViewMetadata, error) {
 	// Check if view already exists
 	if s.GetView(viewName) != nil {
 		return nil, errors.Errorf("view %q already exists in schema %q", viewName, s.proto.Name)
@@ -859,12 +821,6 @@ func (s *SchemaMetadata) CreateView(viewName string, definition string, dependen
 	// Add to proto's view list
 	s.proto.Views = append(s.proto.Views, newViewProto)
 
-	// Create ViewMetadata wrapper
-	viewMeta := &ViewMetadata{
-		Definition: definition,
-		proto:      newViewProto,
-	}
-
 	// Add to internal map
 	var viewID string
 	if s.isObjectCaseSensitive {
@@ -872,9 +828,9 @@ func (s *SchemaMetadata) CreateView(viewName string, definition string, dependen
 	} else {
 		viewID = strings.ToLower(viewName)
 	}
-	s.internalViews[viewID] = viewMeta
+	s.internalViews[viewID] = newViewProto
 
-	return viewMeta, nil
+	return newViewProto, nil
 }
 
 // DropView drops a view from the schema.
@@ -940,7 +896,7 @@ func (s *SchemaMetadata) RenameView(oldName string, newName string) error {
 	delete(s.internalViews, oldViewID)
 
 	// Update the view name in the proto
-	oldView.proto.Name = newName
+	oldView.Name = newName
 
 	// Add back to internal map using new name
 	var newViewID string
@@ -960,7 +916,7 @@ func (s *SchemaMetadata) GetDependentViews(tableName string, columnName string) 
 	var dependentViews []string
 
 	for _, view := range s.internalViews {
-		viewProto := view.GetProto()
+		viewProto := view
 		for _, dep := range viewProto.DependencyColumns {
 			// Schema is implicitly the same schema, or explicitly matches
 			tableMatches := false
@@ -1540,26 +1496,6 @@ func (t *TableMetadata) RenameIndex(oldName string, newName string) error {
 	t.internalIndexes[newIndexID] = oldIndex
 
 	return nil
-}
-
-func (v *ViewMetadata) GetProto() *storepb.ViewMetadata {
-	return v.proto
-}
-
-func (m *MaterializedViewMetadata) GetProto() *storepb.MaterializedViewMetadata {
-	return m.proto
-}
-
-func (p *ProcedureMetadata) GetProto() *storepb.ProcedureMetadata {
-	return p.proto
-}
-
-func (p *PackageMetadata) GetProto() *storepb.PackageMetadata {
-	return p.proto
-}
-
-func (p *SequenceMetadata) GetProto() *storepb.SequenceMetadata {
-	return p.proto
 }
 
 // getIsDetailCaseSensitive is a special case for MySQL, MariaDB, and TiDB.

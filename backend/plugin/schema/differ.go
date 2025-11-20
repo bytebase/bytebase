@@ -392,12 +392,12 @@ func addNewSchemaObjects(diff *MetadataDiff, schemaName string, schema *model.Sc
 	// Add all views
 	for _, viewName := range schema.ListViewNames() {
 		view := schema.GetView(viewName)
-		if view != nil && !view.GetProto().GetSkipDump() {
+		if view != nil && !view.SkipDump {
 			diff.ViewChanges = append(diff.ViewChanges, &ViewDiff{
 				Action:     MetadataDiffActionCreate,
 				SchemaName: schemaName,
 				ViewName:   viewName,
-				NewView:    view.GetProto(),
+				NewView:    view,
 				OldASTNode: nil,
 				NewASTNode: nil,
 			})
@@ -407,12 +407,12 @@ func addNewSchemaObjects(diff *MetadataDiff, schemaName string, schema *model.Sc
 	// Add all materialized views
 	for _, mvName := range schema.ListMaterializedViewNames() {
 		mv := schema.GetMaterializedView(mvName)
-		if mv != nil && !mv.GetProto().GetSkipDump() {
+		if mv != nil && !mv.SkipDump {
 			diff.MaterializedViewChanges = append(diff.MaterializedViewChanges, &MaterializedViewDiff{
 				Action:               MetadataDiffActionCreate,
 				SchemaName:           schemaName,
 				MaterializedViewName: mvName,
-				NewMaterializedView:  mv.GetProto(),
+				NewMaterializedView:  mv,
 			})
 		}
 	}
@@ -437,12 +437,12 @@ func addNewSchemaObjects(diff *MetadataDiff, schemaName string, schema *model.Sc
 	// Add all procedures
 	for _, procName := range schema.ListProcedureNames() {
 		proc := schema.GetProcedure(procName)
-		if proc != nil && !proc.GetProto().GetSkipDump() {
+		if proc != nil && !proc.SkipDump {
 			diff.ProcedureChanges = append(diff.ProcedureChanges, &ProcedureDiff{
 				Action:        MetadataDiffActionCreate,
 				SchemaName:    schemaName,
 				ProcedureName: procName,
-				NewProcedure:  proc.GetProto(),
+				NewProcedure:  proc,
 			})
 		}
 	}
@@ -1523,12 +1523,12 @@ func compareViews(engine storepb.Engine, diff *MetadataDiff, schemaName string, 
 	for _, viewName := range oldSchema.ListViewNames() {
 		if newSchema.GetView(viewName) == nil {
 			oldView := oldSchema.GetView(viewName)
-			if oldView != nil && !oldView.GetProto().GetSkipDump() {
+			if oldView != nil && !oldView.SkipDump {
 				diff.ViewChanges = append(diff.ViewChanges, &ViewDiff{
 					Action:     MetadataDiffActionDrop,
 					SchemaName: schemaName,
 					ViewName:   viewName,
-					OldView:    oldView.GetProto(),
+					OldView:    oldView,
 					OldASTNode: nil,
 					NewASTNode: nil,
 				})
@@ -1539,7 +1539,7 @@ func compareViews(engine storepb.Engine, diff *MetadataDiff, schemaName string, 
 	// Check for new and modified views
 	for _, viewName := range newSchema.ListViewNames() {
 		newView := newSchema.GetView(viewName)
-		if newView == nil || newView.GetProto().GetSkipDump() {
+		if newView == nil || newView.SkipDump {
 			continue
 		}
 
@@ -1549,11 +1549,11 @@ func compareViews(engine storepb.Engine, diff *MetadataDiff, schemaName string, 
 				Action:     MetadataDiffActionCreate,
 				SchemaName: schemaName,
 				ViewName:   viewName,
-				NewView:    newView.GetProto(),
+				NewView:    newView,
 				OldASTNode: nil,
 				NewASTNode: nil,
 			})
-		} else if !oldView.GetProto().GetSkipDump() {
+		} else if !oldView.SkipDump {
 			// Use engine-specific comparison
 			changes, err := comparer.CompareView(oldView, newView)
 			if err != nil {
@@ -1563,8 +1563,8 @@ func compareViews(engine storepb.Engine, diff *MetadataDiff, schemaName string, 
 						Action:     MetadataDiffActionAlter,
 						SchemaName: schemaName,
 						ViewName:   viewName,
-						OldView:    oldView.GetProto(),
-						NewView:    newView.GetProto(),
+						OldView:    oldView,
+						NewView:    newView,
 						OldASTNode: nil,
 						NewASTNode: nil,
 					})
@@ -1584,8 +1584,8 @@ func compareViews(engine storepb.Engine, diff *MetadataDiff, schemaName string, 
 						Action:     MetadataDiffActionAlter,
 						SchemaName: schemaName,
 						ViewName:   viewName,
-						OldView:    oldView.GetProto(),
-						NewView:    newView.GetProto(),
+						OldView:    oldView,
+						NewView:    newView,
 						OldASTNode: nil,
 						NewASTNode: nil,
 					})
@@ -1604,12 +1604,12 @@ func compareMaterializedViews(engine storepb.Engine, diff *MetadataDiff, schemaN
 	for _, mvName := range oldSchema.ListMaterializedViewNames() {
 		if newSchema.GetMaterializedView(mvName) == nil {
 			oldMV := oldSchema.GetMaterializedView(mvName)
-			if oldMV != nil && !oldMV.GetProto().GetSkipDump() {
+			if oldMV != nil && !oldMV.SkipDump {
 				diff.MaterializedViewChanges = append(diff.MaterializedViewChanges, &MaterializedViewDiff{
 					Action:               MetadataDiffActionDrop,
 					SchemaName:           schemaName,
 					MaterializedViewName: mvName,
-					OldMaterializedView:  oldMV.GetProto(),
+					OldMaterializedView:  oldMV,
 				})
 			}
 		}
@@ -1618,7 +1618,7 @@ func compareMaterializedViews(engine storepb.Engine, diff *MetadataDiff, schemaN
 	// Check for new and modified materialized views
 	for _, mvName := range newSchema.ListMaterializedViewNames() {
 		newMV := newSchema.GetMaterializedView(mvName)
-		if newMV == nil || newMV.GetProto().GetSkipDump() {
+		if newMV == nil || newMV.SkipDump {
 			continue
 		}
 
@@ -1628,9 +1628,9 @@ func compareMaterializedViews(engine storepb.Engine, diff *MetadataDiff, schemaN
 				Action:               MetadataDiffActionCreate,
 				SchemaName:           schemaName,
 				MaterializedViewName: mvName,
-				NewMaterializedView:  newMV.GetProto(),
+				NewMaterializedView:  newMV,
 			})
-		} else if !oldMV.GetProto().GetSkipDump() {
+		} else if !oldMV.SkipDump {
 			// Use engine-specific comparison
 			changes, err := comparer.CompareMaterializedView(oldMV, newMV)
 			if err != nil {
@@ -1640,8 +1640,8 @@ func compareMaterializedViews(engine storepb.Engine, diff *MetadataDiff, schemaN
 						Action:               MetadataDiffActionAlter,
 						SchemaName:           schemaName,
 						MaterializedViewName: mvName,
-						OldMaterializedView:  oldMV.GetProto(),
-						NewMaterializedView:  newMV.GetProto(),
+						OldMaterializedView:  oldMV,
+						NewMaterializedView:  newMV,
 					})
 				}
 			} else if len(changes) > 0 {
@@ -1659,8 +1659,8 @@ func compareMaterializedViews(engine storepb.Engine, diff *MetadataDiff, schemaN
 						Action:               MetadataDiffActionAlter,
 						SchemaName:           schemaName,
 						MaterializedViewName: mvName,
-						OldMaterializedView:  oldMV.GetProto(),
-						NewMaterializedView:  newMV.GetProto(),
+						OldMaterializedView:  oldMV,
+						NewMaterializedView:  newMV,
 					})
 				}
 				// TODO: Handle non-recreating changes like comment updates or index-only changes
@@ -1833,12 +1833,12 @@ func compareProcedures(diff *MetadataDiff, schemaName string, oldSchema, newSche
 	for _, procName := range oldSchema.ListProcedureNames() {
 		if newSchema.GetProcedure(procName) == nil {
 			oldProc := oldSchema.GetProcedure(procName)
-			if oldProc != nil && !oldProc.GetProto().GetSkipDump() {
+			if oldProc != nil && !oldProc.SkipDump {
 				diff.ProcedureChanges = append(diff.ProcedureChanges, &ProcedureDiff{
 					Action:        MetadataDiffActionDrop,
 					SchemaName:    schemaName,
 					ProcedureName: procName,
-					OldProcedure:  oldProc.GetProto(),
+					OldProcedure:  oldProc,
 				})
 			}
 		}
@@ -1847,7 +1847,7 @@ func compareProcedures(diff *MetadataDiff, schemaName string, oldSchema, newSche
 	// Check for new and modified procedures
 	for _, procName := range newSchema.ListProcedureNames() {
 		newProc := newSchema.GetProcedure(procName)
-		if newProc == nil || newProc.GetProto().GetSkipDump() {
+		if newProc == nil || newProc.SkipDump {
 			continue
 		}
 
@@ -1857,15 +1857,15 @@ func compareProcedures(diff *MetadataDiff, schemaName string, oldSchema, newSche
 				Action:        MetadataDiffActionCreate,
 				SchemaName:    schemaName,
 				ProcedureName: procName,
-				NewProcedure:  newProc.GetProto(),
+				NewProcedure:  newProc,
 			})
-		} else if !oldProc.GetProto().GetSkipDump() && !procedureDefinitionsEqual(oldProc.Definition, newProc.Definition, procName) {
+		} else if !oldProc.SkipDump && !procedureDefinitionsEqual(oldProc.Definition, newProc.Definition, procName) {
 			diff.ProcedureChanges = append(diff.ProcedureChanges, &ProcedureDiff{
 				Action:        MetadataDiffActionAlter,
 				SchemaName:    schemaName,
 				ProcedureName: procName,
-				OldProcedure:  oldProc.GetProto(),
-				NewProcedure:  newProc.GetProto(),
+				OldProcedure:  oldProc,
+				NewProcedure:  newProc,
 			})
 		}
 	}

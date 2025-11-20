@@ -8,6 +8,7 @@ import (
 	parser "github.com/bytebase/parser/trino"
 	"github.com/pkg/errors"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	parsererror "github.com/bytebase/bytebase/backend/plugin/parser/errors"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -314,7 +315,7 @@ func (q *querySpanExtractor) findTableSchema(db, schema, name string) (*model.Ta
 	}
 
 	// Look for view
-	var viewMeta *model.ViewMetadata
+	var viewMeta *storepb.ViewMetadata
 	if q.ignoreCaseSensitive {
 		for _, viewName := range schemaMeta.ListViewNames() {
 			if strings.EqualFold(viewName, name) {
