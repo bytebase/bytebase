@@ -54,11 +54,6 @@ func ParseSnowSQL(sql string) ([]*ParseResult, error) {
 
 // parseSingleSnowSQL parses a single Snowflake statement and returns the ParseResult.
 func parseSingleSnowSQL(statement string, baseLine int) (*ParseResult, error) {
-	// Trim leading newlines to ensure the first token starts at line 1 in ANTLR
-	// This makes baseLine calculations simpler: baseLine + line = original line
-	statement = strings.TrimLeftFunc(statement, func(r rune) bool {
-		return r == '\n' || r == '\r'
-	})
 	statement = strings.TrimRightFunc(statement, utils.IsSpaceOrSemicolon) + "\n;"
 	inputStream := antlr.NewInputStream(statement)
 	lexer := parser.NewSnowflakeLexer(inputStream)
