@@ -573,7 +573,10 @@ func buildDatabaseConfigWithClassificationFromComment(dbMetadata *storepb.Databa
 		hasSchemaContent := false
 
 		// Get existing schema metadata to preserve SemanticType and Labels
-		schemaMetadata := databaseConfig.GetSchemaMetadata(schema.Name)
+		var schemaMetadata *model.SchemaMetadata
+		if databaseConfig != nil {
+			schemaMetadata = databaseConfig.GetSchemaMetadata(schema.Name)
+		}
 
 		for _, table := range schema.Tables {
 			classification, userComment := common.GetClassificationAndUserComment(table.Comment, classificationConfig)
