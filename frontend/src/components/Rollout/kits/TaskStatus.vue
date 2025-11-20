@@ -9,10 +9,12 @@
           )
         "
       >
+        <template v-if="status === Task_Status.STATUS_UNSPECIFIED">
+          <CircleDotDashedIcon class="w-full h-auto" />
+        </template>
         <template
-          v-if="
-            status === Task_Status.NOT_STARTED ||
-            status === Task_Status.STATUS_UNSPECIFIED
+          v-else-if="
+            status === Task_Status.NOT_STARTED
           "
         >
           <span
@@ -61,7 +63,11 @@
 </template>
 
 <script lang="ts" setup>
-import { FastForwardIcon, PauseIcon } from "lucide-vue-next";
+import {
+  CircleDotDashedIcon,
+  FastForwardIcon,
+  PauseIcon,
+} from "lucide-vue-next";
 import { NTooltip } from "naive-ui";
 import { twMerge } from "tailwind-merge";
 import { computed } from "vue";
@@ -96,7 +102,6 @@ const classes = computed((): string => {
   let statusClass = "";
   switch (props.status) {
     case Task_Status.NOT_STARTED:
-    case Task_Status.STATUS_UNSPECIFIED:
       statusClass = "bg-white border-2 border-control";
       break;
     case Task_Status.PENDING:
