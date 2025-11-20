@@ -443,13 +443,6 @@ func (t *TableConfig) GetColumnConfig(name string) *storepb.ColumnCatalog {
 	}
 }
 
-func (s *SchemaMetadata) GetOwner() string {
-	if s.proto == nil {
-		return ""
-	}
-	return s.proto.Owner
-}
-
 // GetTable gets the schema by name.
 func (s *SchemaMetadata) GetTable(name string) *TableMetadata {
 	if s == nil {
