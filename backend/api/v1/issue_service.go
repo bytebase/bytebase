@@ -45,9 +45,7 @@ type IssueService struct {
 
 type filterIssueMessage struct {
 	ApprovalStatus *v1pb.Issue_ApprovalStatus
-	// ReleaserID is the principal uid.
-	ReleaserID *int
-	// ApproverName is the principal uid.
+	// ApproverID is the principal uid.
 	ApproverID *int
 }
 
@@ -197,17 +195,14 @@ func (s *IssueService) getIssueFind(
 					}
 					approvalStatus := v1pb.Issue_ApprovalStatus(approvalStatusValue)
 					filterIssue.ApprovalStatus = &approvalStatus
-				case "current_approver", "releaser", "creator":
+				case "current_approver", "creator":
 					user, err := s.getUserByIdentifier(ctx, value.(string))
 					if err != nil {
 						return "", connect.NewError(connect.CodeInternal, errors.Errorf("failed to get user %v with error %v", value, err.Error()))
 					}
-					switch variable {
-					case "current_approver":
+					if variable == "current_approver" {
 						filterIssue.ApproverID = &user.ID
-					case "releaser":
-						filterIssue.ReleaserID = &user.ID
-					case "creator":
+					} else {
 						issueFind.CreatorID = &user.ID
 					}
 				default:

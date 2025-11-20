@@ -38,9 +38,6 @@ func (s *IssueService) convertToIssues(ctx context.Context, issues []*store.Issu
 			if v := issueFilter.ApproverID; v != nil && !s.isIssueNextApprover(ctx, v1Issue, projectID, *v) {
 				continue
 			}
-			if v := issueFilter.ReleaserID; v != nil && !s.isIssueReleaser(ctx, v1Issue, projectID, *v) {
-				continue
-			}
 		}
 		converted = append(converted, v1Issue)
 	}

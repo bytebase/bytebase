@@ -60,7 +60,6 @@ export const buildIssueFilterBySearchParams = (
           approvalStatus as keyof typeof Issue_ApprovalStatus
         ]
       : undefined,
-    releaser: getValueFromSearchParams(params, "releaser", userNamePrefix),
     statusList: getValuesFromSearchParams(params, "status").map(
       (status) => IssueStatus[status as keyof typeof IssueStatus]
     ),

@@ -45,9 +45,6 @@ export const buildIssueFilter = (find: IssueFilter): string => {
   if (find.currentApprover) {
     filter.push(`current_approver == "${find.currentApprover}"`);
   }
-  if (find.releaser) {
-    filter.push(`releaser == "${find.releaser}"`);
-  }
   if (find.approvalStatus) {
     filter.push(
       `approval_status == "${Issue_ApprovalStatus[find.approvalStatus]}"`

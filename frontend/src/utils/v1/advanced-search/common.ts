@@ -25,7 +25,6 @@ export const AllSearchScopeIdList = [
   "taskType",
   "current-approver",
   "approval",
-  "releaser",
   // auditLog related search scopes.
   "method",
   "level",

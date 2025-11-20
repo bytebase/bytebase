@@ -70,7 +70,6 @@ export interface IssueFilter {
   query: string;
   creator?: string;
   currentApprover?: string;
-  releaser?: string;
   approvalStatus?: Issue_ApprovalStatus;
   statusList?: IssueStatus[];
   createdTsAfter?: number;

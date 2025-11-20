@@ -114,7 +114,6 @@ export declare type ListIssuesRequest = Message<"bytebase.v1.ListIssuesRequest">
    * - labels: the issue labels, support "==" and "in" operator.
    * - approval_status: issue approval status, support "==" operator.
    * - current_approver: the issue approver, should in "users/{email} format", support "==" operator.
-   * - releaser: the issue releaser, should in "users/{email} format", support "==" operator.
    *
    * For example:
    * creator == "users/ed@bytebase.com" && status in ["OPEN", "DONE"]
