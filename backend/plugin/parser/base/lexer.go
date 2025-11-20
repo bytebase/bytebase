@@ -1,6 +1,8 @@
 package base
 
 import (
+	"strings"
+
 	"github.com/antlr4-go/antlr/v4"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -52,4 +54,70 @@ func IsEmpty(tokens []antlr.Token, semi int) bool {
 		}
 	}
 	return true
+}
+
+// SplitSQLByLexer is a grammar-free helper function that splits SQL statements using an ANTLR lexer.
+// It works with any ANTLR-based lexer by accepting the token stream and semicolon token type as parameters.
+//
+// Parameters:
+//   - stream: The ANTLR token stream (must be already filled with stream.Fill())
+//   - semiTokenType: The token type value for semicolon in the specific grammar
+//   - statement: The original SQL statement string (used for position conversion)
+//
+// Returns:
+//   - A slice of SingleSQL, each representing one statement with its text, position, and metadata
+//
+// Example usage:
+//
+//	lexer := parser.NewSnowflakeLexer(antlr.NewInputStream(statement))
+//	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+//	stream.Fill()
+//	return SplitSQLByLexer(stream, parser.SnowflakeLexerSEMI, statement)
+func SplitSQLByLexer(stream *antlr.CommonTokenStream, semiTokenType int, statement string) ([]SingleSQL, error) {
+	tokens := stream.GetAllTokens()
+	var buf []antlr.Token
+	var sqls []SingleSQL
+
+	for i, token := range tokens {
+		// Collect all tokens except the last one (EOF)
+		if i < len(tokens)-1 {
+			buf = append(buf, token)
+		}
+
+		// Split on semicolon or at the end of tokens
+		if (token.GetTokenType() == semiTokenType || i == len(tokens)-1) && len(buf) > 0 {
+			// Reconstruct the text from tokens
+			bufStr := new(strings.Builder)
+			empty := true
+
+			for _, b := range buf {
+				if _, err := bufStr.WriteString(b.GetText()); err != nil {
+					return nil, err
+				}
+				// Check if there's any non-hidden token (actual code, not just comments/whitespace)
+				if b.GetChannel() != antlr.TokenHiddenChannel {
+					empty = false
+				}
+			}
+
+			// Get the position of the first default channel token for Start position
+			antlrPosition := FirstDefaultChannelTokenPosition(buf)
+
+			sqls = append(sqls, SingleSQL{
+				Text:     bufStr.String(),
+				BaseLine: buf[0].GetLine() - 1, // BaseLine is the offset of the first token
+				End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
+					Line:   int32(token.GetLine()),
+					Column: int32(token.GetColumn()),
+				}, statement),
+				Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
+				Empty: empty,
+			})
+
+			buf = nil
+			continue
+		}
+	}
+
+	return sqls, nil
 }

@@ -1,9 +1,11 @@
 package snowflake
 
 import (
+	"github.com/antlr4-go/antlr/v4"
+	parser "github.com/bytebase/parser/snowflake"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/plugin/parser/tokenizer"
 )
 
 func init() {
@@ -12,10 +14,9 @@ func init() {
 
 // SplitSQL splits the given SQL statement into multiple SQL statements.
 func SplitSQL(statement string) ([]base.SingleSQL, error) {
-	t := tokenizer.NewTokenizer(statement)
-	list, err := t.SplitStandardMultiSQL()
-	if err != nil {
-		return nil, err
-	}
-	return list, nil
+	lexer := parser.NewSnowflakeLexer(antlr.NewInputStream(statement))
+	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	stream.Fill()
+
+	return base.SplitSQLByLexer(stream, parser.SnowflakeLexerSEMI, statement)
 }
