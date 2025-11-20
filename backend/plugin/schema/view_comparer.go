@@ -2,7 +2,6 @@ package schema
 
 import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 // ViewChangeType represents the type of change detected in a view.
@@ -60,17 +59,17 @@ type MaterializedViewChange struct {
 // ViewComparer provides engine-specific view comparison logic.
 type ViewComparer interface {
 	// CompareView compares two views and returns the detected changes.
-	CompareView(oldView, newView *model.ViewMetadata) ([]ViewChange, error)
+	CompareView(oldView, newView *storepb.ViewMetadata) ([]ViewChange, error)
 
 	// CompareMaterializedView compares two materialized views and returns the detected changes.
-	CompareMaterializedView(oldMV, newMV *model.MaterializedViewMetadata) ([]MaterializedViewChange, error)
+	CompareMaterializedView(oldMV, newMV *storepb.MaterializedViewMetadata) ([]MaterializedViewChange, error)
 }
 
 // DefaultViewComparer provides default view comparison logic that can be used by most engines.
 type DefaultViewComparer struct{}
 
 // CompareView compares two views using default logic.
-func (*DefaultViewComparer) CompareView(oldView, newView *model.ViewMetadata) ([]ViewChange, error) {
+func (*DefaultViewComparer) CompareView(oldView, newView *storepb.ViewMetadata) ([]ViewChange, error) {
 	if oldView == nil || newView == nil {
 		return nil, nil
 	}
@@ -86,24 +85,20 @@ func (*DefaultViewComparer) CompareView(oldView, newView *model.ViewMetadata) ([
 		})
 	}
 
-	// Compare comment from proto
-	oldProto := oldView.GetProto()
-	newProto := newView.GetProto()
-	if oldProto != nil && newProto != nil {
-		if oldProto.Comment != newProto.Comment {
-			changes = append(changes, ViewChange{
-				Type:               ViewChangeComment,
-				Description:        "View comment changed",
-				RequiresRecreation: false,
-			})
-		}
+	// Compare comment
+	if oldView.Comment != newView.Comment {
+		changes = append(changes, ViewChange{
+			Type:               ViewChangeComment,
+			Description:        "View comment changed",
+			RequiresRecreation: false,
+		})
 	}
 
 	return changes, nil
 }
 
 // CompareMaterializedView compares two materialized views using default logic.
-func (*DefaultViewComparer) CompareMaterializedView(oldMV, newMV *model.MaterializedViewMetadata) ([]MaterializedViewChange, error) {
+func (*DefaultViewComparer) CompareMaterializedView(oldMV, newMV *storepb.MaterializedViewMetadata) ([]MaterializedViewChange, error) {
 	if oldMV == nil || newMV == nil {
 		return nil, nil
 	}
@@ -119,17 +114,13 @@ func (*DefaultViewComparer) CompareMaterializedView(oldMV, newMV *model.Material
 		})
 	}
 
-	// Compare comment from proto
-	oldProto := oldMV.GetProto()
-	newProto := newMV.GetProto()
-	if oldProto != nil && newProto != nil {
-		if oldProto.Comment != newProto.Comment {
-			changes = append(changes, MaterializedViewChange{
-				Type:               MaterializedViewChangeComment,
-				Description:        "Materialized view comment changed",
-				RequiresRecreation: false,
-			})
-		}
+	// Compare comment
+	if oldMV.Comment != newMV.Comment {
+		changes = append(changes, MaterializedViewChange{
+			Type:               MaterializedViewChangeComment,
+			Description:        "Materialized view comment changed",
+			RequiresRecreation: false,
+		})
 	}
 
 	return changes, nil

@@ -842,7 +842,7 @@ func (q *querySpanExtractor) findTableSchema(databaseName string, tableName stri
 				}
 				return &base.PhysicalView{
 					Database: databaseName,
-					Name:     viewMeta.GetProto().Name,
+					Name:     viewMeta.Name,
 					Columns:  columns,
 				}, nil
 			}

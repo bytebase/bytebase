@@ -9,7 +9,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/plugin/schema/pg/ast"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 func init() {
@@ -23,7 +22,7 @@ type PostgreSQLViewComparer struct {
 }
 
 // CompareView compares two views with PostgreSQL-specific logic using AST semantic analysis.
-func (c *PostgreSQLViewComparer) CompareView(oldView, newView *model.ViewMetadata) ([]schema.ViewChange, error) {
+func (c *PostgreSQLViewComparer) CompareView(oldView, newView *storepb.ViewMetadata) ([]schema.ViewChange, error) {
 	if oldView == nil || newView == nil {
 		return nil, nil
 	}
@@ -43,23 +42,21 @@ func (c *PostgreSQLViewComparer) CompareView(oldView, newView *model.ViewMetadat
 	}
 
 	// Compare comment from proto
-	oldProto := oldView.GetProto()
-	newProto := newView.GetProto()
-	if oldProto != nil && newProto != nil {
-		if oldProto.Comment != newProto.Comment {
-			changes = append(changes, schema.ViewChange{
-				Type:               schema.ViewChangeComment,
-				Description:        "View comment changed",
-				RequiresRecreation: false,
-			})
-		}
+	oldComment := oldView.Comment
+	newComment := newView.Comment
+	if oldComment != newComment {
+		changes = append(changes, schema.ViewChange{
+			Type:               schema.ViewChangeComment,
+			Description:        "View comment changed",
+			RequiresRecreation: false,
+		})
 	}
 
 	return changes, nil
 }
 
 // CompareMaterializedView compares two materialized views with PostgreSQL-specific logic.
-func (c *PostgreSQLViewComparer) CompareMaterializedView(oldMV, newMV *model.MaterializedViewMetadata) ([]schema.MaterializedViewChange, error) {
+func (c *PostgreSQLViewComparer) CompareMaterializedView(oldMV, newMV *storepb.MaterializedViewMetadata) ([]schema.MaterializedViewChange, error) {
 	if oldMV == nil || newMV == nil {
 		return nil, nil
 	}
@@ -78,34 +75,32 @@ func (c *PostgreSQLViewComparer) CompareMaterializedView(oldMV, newMV *model.Mat
 	}
 
 	// Compare comment from proto
-	oldProto := oldMV.GetProto()
-	newProto := newMV.GetProto()
-	if oldProto != nil && newProto != nil {
-		if oldProto.Comment != newProto.Comment {
-			changes = append(changes, schema.MaterializedViewChange{
-				Type:               schema.MaterializedViewChangeComment,
-				Description:        "Materialized view comment changed",
-				RequiresRecreation: false,
-			})
-		}
+	oldComment := oldMV.Comment
+	newComment := newMV.Comment
+	if oldComment != newComment {
+		changes = append(changes, schema.MaterializedViewChange{
+			Type:               schema.MaterializedViewChangeComment,
+			Description:        "Materialized view comment changed",
+			RequiresRecreation: false,
+		})
+	}
 
-		// Compare indexes - PostgreSQL can add/drop indexes without recreating materialized views
-		if !c.compareIndexes(oldProto.Indexes, newProto.Indexes) {
-			changes = append(changes, schema.MaterializedViewChange{
-				Type:               schema.MaterializedViewChangeIndex,
-				Description:        "Materialized view indexes changed",
-				RequiresRecreation: false, // PostgreSQL can modify indexes separately
-			})
-		}
+	// Compare indexes - PostgreSQL can add/drop indexes without recreating materialized views
+	if !c.compareIndexes(oldMV.Indexes, newMV.Indexes) {
+		changes = append(changes, schema.MaterializedViewChange{
+			Type:               schema.MaterializedViewChangeIndex,
+			Description:        "Materialized view indexes changed",
+			RequiresRecreation: false, // PostgreSQL can modify indexes separately
+		})
+	}
 
-		// Compare triggers
-		if !c.compareTriggers(oldProto.Triggers, newProto.Triggers) {
-			changes = append(changes, schema.MaterializedViewChange{
-				Type:               schema.MaterializedViewChangeTrigger,
-				Description:        "Materialized view triggers changed",
-				RequiresRecreation: false,
-			})
-		}
+	// Compare triggers
+	if !c.compareTriggers(oldMV.Triggers, newMV.Triggers) {
+		changes = append(changes, schema.MaterializedViewChange{
+			Type:               schema.MaterializedViewChangeTrigger,
+			Description:        "Materialized view triggers changed",
+			RequiresRecreation: false,
+		})
 	}
 
 	return changes, nil

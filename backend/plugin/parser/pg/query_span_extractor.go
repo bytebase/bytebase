@@ -1254,7 +1254,7 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 			Server:   "",
 			Database: q.defaultDatabase,
 			Schema:   viewSchemaName,
-			Name:     view.GetProto().Name,
+			Name:     view.Name,
 			Columns:  columns,
 		}, nil
 	}
@@ -1268,7 +1268,7 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 			Server:   "",
 			Database: q.defaultDatabase,
 			Schema:   materializedViewSchemaName,
-			Name:     materializedView.GetProto().Name,
+			Name:     materializedView.Name,
 			Columns:  columns,
 		}, nil
 	}
@@ -1280,7 +1280,7 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 			Server:   "",
 			Database: q.defaultDatabase,
 			Schema:   sequenceSchemaName,
-			Name:     sequence.GetProto().Name,
+			Name:     sequence.Name,
 			Columns:  columns,
 		}, nil
 	}

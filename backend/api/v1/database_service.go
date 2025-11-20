@@ -1158,11 +1158,7 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Requ
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("table %q not found", req.Msg.Object))
 		}
 		sequences := schemaMetadata.GetSequencesByOwnerTable(req.Msg.Object)
-		var sequencesProto []*storepb.SequenceMetadata
-		for _, sequence := range sequences {
-			sequencesProto = append(sequencesProto, sequence.GetProto())
-		}
-		s, err := schema.GetTableDefinition(instance.Metadata.Engine, req.Msg.Schema, tableMetadata.GetProto(), sequencesProto)
+		s, err := schema.GetTableDefinition(instance.Metadata.Engine, req.Msg.Schema, tableMetadata.GetProto(), sequences)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("Failed to get table schema: %v", err))
 		}
@@ -1176,7 +1172,7 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Requ
 		if viewMetadata == nil {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("view %q not found", req.Msg.Object))
 		}
-		s, err := schema.GetViewDefinition(instance.Metadata.Engine, req.Msg.Schema, viewMetadata.GetProto())
+		s, err := schema.GetViewDefinition(instance.Metadata.Engine, req.Msg.Schema, viewMetadata)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("Failed to get view schema: %v", err))
 		}
@@ -1190,7 +1186,7 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Requ
 		if materializedViewMetadata == nil {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("materialized view %q not found", req.Msg.Object))
 		}
-		s, err := schema.GetMaterializedViewDefinition(instance.Metadata.Engine, req.Msg.Schema, materializedViewMetadata.GetProto())
+		s, err := schema.GetMaterializedViewDefinition(instance.Metadata.Engine, req.Msg.Schema, materializedViewMetadata)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("Failed to get materialized view schema: %v", err))
 		}
@@ -1218,7 +1214,7 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Requ
 		if procedureMetadata == nil {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("procedure %q not found", req.Msg.Object))
 		}
-		s, err := schema.GetProcedureDefinition(instance.Metadata.Engine, req.Msg.Schema, procedureMetadata.GetProto())
+		s, err := schema.GetProcedureDefinition(instance.Metadata.Engine, req.Msg.Schema, procedureMetadata)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("Failed to get procedure schema: %v", err))
 		}
@@ -1232,7 +1228,7 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Requ
 		if sequenceMetadata == nil {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("sequence %q not found", req.Msg.Object))
 		}
-		s, err := schema.GetSequenceDefinition(instance.Metadata.Engine, req.Msg.Schema, sequenceMetadata.GetProto())
+		s, err := schema.GetSequenceDefinition(instance.Metadata.Engine, req.Msg.Schema, sequenceMetadata)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("Failed to get sequence schema: %v", err))
 		}

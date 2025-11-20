@@ -1365,7 +1365,7 @@ func (q *querySpanExtractor) findTableSchemaInMetadata(instanceID string, dbMeta
 			return nil, err
 		}
 		return &base.PseudoTable{
-			Name:    view.GetProto().Name,
+			Name:    view.Name,
 			Columns: columns,
 		}, nil
 	}
@@ -1377,7 +1377,7 @@ func (q *querySpanExtractor) findTableSchemaInMetadata(instanceID string, dbMeta
 			return nil, err
 		}
 		return &base.PseudoTable{
-			Name:    materializedView.GetProto().Name,
+			Name:    materializedView.Name,
 			Columns: columns,
 		}, nil
 	}
