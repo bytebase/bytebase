@@ -72,16 +72,6 @@ func (s *IssueService) isIssueNextApprover(ctx context.Context, issue *v1pb.Issu
 	return roles[approvalRoles[index]]
 }
 
-func (s *IssueService) isIssueReleaser(ctx context.Context, issue *v1pb.Issue, projectResourceID string, principalUID int) bool {
-	roles := s.getUserRoleMap(ctx, projectResourceID, principalUID)
-	for _, releaser := range issue.Releasers {
-		if roles[releaser] {
-			return true
-		}
-	}
-	return false
-}
-
 func (s *IssueService) convertToIssue(ctx context.Context, issue *store.IssueMessage) (*v1pb.Issue, error) {
 	issuePayload := issue.Payload
 

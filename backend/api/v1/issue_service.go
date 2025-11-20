@@ -749,10 +749,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 
-	canApprove, err := s.isUserReviewer(ctx, issue, role, user)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check if principal can approve step, error: %v", err))
-	}
+	canApprove := s.isUserReviewer(ctx, issue, role, user)
 	if !canApprove {
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("cannot approve because the user does not have the required permission"))
 	}
@@ -942,10 +939,7 @@ func (s *IssueService) RejectIssue(ctx context.Context, req *connect.Request[v1p
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 
-	canApprove, err := s.isUserReviewer(ctx, issue, role, user)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check if principal can reject step, error: %v", err))
-	}
+	canApprove := s.isUserReviewer(ctx, issue, role, user)
 	if !canApprove {
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("cannot reject because the user does not have the required permission"))
 	}
@@ -1551,9 +1545,9 @@ func (s *IssueService) getIssueMessage(ctx context.Context, name string) (*store
 	return issue, nil
 }
 
-func (s *IssueService) isUserReviewer(ctx context.Context, issue *store.IssueMessage, role string, user *store.UserMessage) (bool, error) {
+func (s *IssueService) isUserReviewer(ctx context.Context, issue *store.IssueMessage, role string, user *store.UserMessage) bool {
 	roles := s.getUserRoleMap(ctx, issue.Project.ResourceID, user.ID)
-	return roles[role], nil
+	return roles[role]
 }
 
 func canRequestIssue(issueCreator *store.UserMessage, user *store.UserMessage) bool {
