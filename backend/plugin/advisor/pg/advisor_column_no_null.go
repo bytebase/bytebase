@@ -30,7 +30,7 @@ type ColumnNoNullAdvisor struct {
 
 // Check checks for column no NULL value.
 func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	tree, err := getANTLRTree(checkCtx)
+	parseResults, err := getANTLRTree(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +51,14 @@ func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) (
 
 	checker := NewGenericChecker([]Rule{rule})
 
-	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
+	for _, parseResult := range parseResults {
+		rule.SetBaseLine(parseResult.BaseLine)
+		checker.SetBaseLine(parseResult.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, parseResult.Tree)
+	}
+
+	// Generate advice after all parse trees have been walked
+	rule.generateAdvice()
 
 	return checker.GetAdviceList(), nil
 }
@@ -98,53 +105,58 @@ func (r *columnNoNullRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string)
 	return nil
 }
 
-func (r *columnNoNullRule) OnExit(ctx antlr.ParserRuleContext, _ string) error {
-	// Generate advice when we exit the root node
-	if _, ok := ctx.(*parser.RootContext); ok {
-		var columnList []columnName
-		for column := range r.nullableColumns {
-			columnList = append(columnList, column)
-		}
+func (*columnNoNullRule) OnExit(antlr.ParserRuleContext, string) error {
+	return nil
+}
 
-		if len(columnList) > 0 {
-			// Order it cause the random iteration order in Go
-			slices.SortFunc(columnList, func(i, j columnName) int {
-				if i.schema != j.schema {
-					if i.schema < j.schema {
-						return -1
-					}
-					return 1
-				}
-				if i.table != j.table {
-					if i.table < j.table {
-						return -1
-					}
-					return 1
-				}
-				if i.column < j.column {
+// generateAdvice generates advice for all nullable columns.
+// This should be called AFTER walking all parse trees to avoid duplicates.
+func (r *columnNoNullRule) generateAdvice() {
+	var columnList []columnName
+	for column := range r.nullableColumns {
+		columnList = append(columnList, column)
+	}
+
+	if len(columnList) > 0 {
+		// Order it cause the random iteration order in Go
+		slices.SortFunc(columnList, func(i, j columnName) int {
+			if i.schema != j.schema {
+				if i.schema < j.schema {
 					return -1
 				}
-				if i.column > j.column {
-					return 1
+				return 1
+			}
+			if i.table != j.table {
+				if i.table < j.table {
+					return -1
 				}
-				return 0
-			})
-		}
-
-		for _, column := range columnList {
-			r.AddAdvice(&storepb.Advice{
-				Status:  r.level,
-				Code:    code.ColumnCannotNull.Int32(),
-				Title:   r.title,
-				Content: fmt.Sprintf("Column %q in %s cannot have NULL value", column.column, column.normalizeTableName()),
-				StartPosition: &storepb.Position{
-					Line:   int32(r.nullableColumns[column]),
-					Column: 0,
-				},
-			})
-		}
+				return 1
+			}
+			if i.column < j.column {
+				return -1
+			}
+			if i.column > j.column {
+				return 1
+			}
+			return 0
+		})
 	}
-	return nil
+
+	for _, column := range columnList {
+		// Note: We already added baseLine offset when storing the line number,
+		// but AddAdvice will add it again, so we need to subtract it first
+		lineNumber := r.nullableColumns[column]
+		r.AddAdvice(&storepb.Advice{
+			Status:  r.level,
+			Code:    code.ColumnCannotNull.Int32(),
+			Title:   r.title,
+			Content: fmt.Sprintf("Column %q in %s cannot have NULL value", column.column, column.normalizeTableName()),
+			StartPosition: &storepb.Position{
+				Line:   int32(lineNumber - r.baseLine),
+				Column: 0,
+			},
+		})
+	}
 }
 
 func (r *columnNoNullRule) handleCreatestmt(ctx *parser.CreatestmtContext) {
@@ -245,7 +257,8 @@ func (r *columnNoNullRule) addColumn(schema, table, column string, line int) {
 	if schema == "" {
 		schema = "public"
 	}
-	r.nullableColumns[columnName{schema: schema, table: table, column: column}] = line
+	// Store absolute line number (adding baseLine offset now, not later in AddAdvice)
+	r.nullableColumns[columnName{schema: schema, table: table, column: column}] = line + r.baseLine
 }
 
 func (r *columnNoNullRule) removeColumn(schema, table, column string) {

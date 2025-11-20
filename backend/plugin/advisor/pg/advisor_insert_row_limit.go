@@ -32,7 +32,7 @@ type InsertRowLimitAdvisor struct {
 
 // Check checks for the INSERT row limit.
 func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	tree, err := getANTLRTree(checkCtx)
+	parseResults, err := getANTLRTree(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +60,12 @@ func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Contex
 
 	if payload.Number > 0 {
 		checker := NewGenericChecker([]Rule{rule})
-		antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
+
+		for _, parseResult := range parseResults {
+			rule.SetBaseLine(parseResult.BaseLine)
+			checker.SetBaseLine(parseResult.BaseLine)
+			antlr.ParseTreeWalkerDefault.Walk(checker, parseResult.Tree)
+		}
 		return checker.GetAdviceList(), nil
 	}
 

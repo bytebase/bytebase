@@ -529,7 +529,7 @@ func getPrependStatements(engine storepb.Engine, statement string) (string, erro
 		return "", nil
 	}
 
-	parseResult, err := pg.ParsePostgreSQL(statement)
+	parseResults, err := pg.ParsePostgreSQL(statement)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to parse statement")
 	}
@@ -537,7 +537,16 @@ func getPrependStatements(engine storepb.Engine, statement string) (string, erro
 	visitor := &prependStatementsVisitor{
 		statement: statement,
 	}
-	antlr.ParseTreeWalkerDefault.Walk(visitor, parseResult.Tree)
+
+	// Walk through all statements to find the first SET role/search_path statement
+	// The visitor will stop after finding the first one due to its internal check
+	for _, result := range parseResults {
+		antlr.ParseTreeWalkerDefault.Walk(visitor, result.Tree)
+		// If we found a result, stop walking remaining statements
+		if visitor.result != "" {
+			break
+		}
+	}
 
 	return visitor.result, nil
 }

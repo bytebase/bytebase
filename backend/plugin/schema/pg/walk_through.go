@@ -26,37 +26,47 @@ func init() {
 // WalkThrough walks through the PostgreSQL ANTLR parse tree and builds catalog metadata.
 func WalkThrough(d *model.DatabaseMetadata, ast any) *storepb.Advice {
 	// ANTLR-based walkthrough
-	parseResult, ok := ast.(*pgparser.ParseResult)
+	parseResults, ok := ast.([]*pgparser.ParseResult)
 	if !ok {
 		return &storepb.Advice{
 			Status:  storepb.Advice_ERROR,
 			Code:    code.Internal.Int32(),
-			Title:   fmt.Sprintf("PostgreSQL walk-through expects *pgparser.ParseResult, got %T", ast),
-			Content: fmt.Sprintf("PostgreSQL walk-through expects *pgparser.ParseResult, got %T", ast),
+			Title:   fmt.Sprintf("PostgreSQL walk-through expects []*pgparser.ParseResult, got %T", ast),
+			Content: fmt.Sprintf("PostgreSQL walk-through expects []*pgparser.ParseResult, got %T", ast),
 			StartPosition: &storepb.Position{
 				Line: 0,
 			},
 		}
 	}
-	root, ok := parseResult.Tree.(parser.IRootContext)
-	if !ok {
-		return &storepb.Advice{
-			Status:  storepb.Advice_ERROR,
-			Code:    code.Internal.Int32(),
-			Title:   fmt.Sprintf("invalid ANTLR tree type %T", parseResult.Tree),
-			Content: fmt.Sprintf("invalid ANTLR tree type %T", parseResult.Tree),
-			StartPosition: &storepb.Position{
-				Line: 0,
-			},
-		}
-	}
+
 	// Build listener with database state
 	listener := &pgCatalogListener{
 		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
 		databaseState:                d,
 	}
-	// Walk through the parse tree
-	antlr.ParseTreeWalkerDefault.Walk(listener, root)
+
+	// Walk through all parse results
+	for _, parseResult := range parseResults {
+		root, ok := parseResult.Tree.(parser.IRootContext)
+		if !ok {
+			return &storepb.Advice{
+				Status:  storepb.Advice_ERROR,
+				Code:    code.Internal.Int32(),
+				Title:   fmt.Sprintf("invalid ANTLR tree type %T", parseResult.Tree),
+				Content: fmt.Sprintf("invalid ANTLR tree type %T", parseResult.Tree),
+				StartPosition: &storepb.Position{
+					Line: 0,
+				},
+			}
+		}
+		// Walk through the parse tree
+		antlr.ParseTreeWalkerDefault.Walk(listener, root)
+		// Return immediately if error encountered
+		if listener.advice != nil {
+			return listener.advice
+		}
+	}
+
 	// Return any error encountered during walk
 	return listener.advice
 }

@@ -20,13 +20,9 @@ func init() {
 }
 
 func extractChangedResources(database string, _ string, dbMetadata *model.DatabaseMetadata, asts any, statement string) (*base.ChangeSummary, error) {
-	parseResult, ok := asts.(*ParseResult)
+	parseResults, ok := asts.([]*ParseResult)
 	if !ok {
-		return nil, errors.Errorf("invalid ast type %T, expected *ParseResult", asts)
-	}
-
-	if parseResult == nil || parseResult.Tree == nil {
-		return nil, errors.New("parse result or tree is nil")
+		return nil, errors.Errorf("invalid ast type %T, expected []*ParseResult", asts)
 	}
 
 	changedResources := model.NewChangedResources(dbMetadata)
@@ -35,19 +31,36 @@ func extractChangedResources(database string, _ string, dbMetadata *model.Databa
 		searchPath = []string{"public"} // default search path for PostgreSQL
 	}
 
+	// If no parse results, return empty summary
+	if len(parseResults) == 0 {
+		return &base.ChangeSummary{
+			ChangedResources: changedResources,
+			DMLCount:         0,
+			SampleDMLS:       []string{},
+			InsertCount:      0,
+		}, nil
+	}
+
 	listener := &changedResourcesListener{
 		database:         database,
 		searchPath:       searchPath,
 		changedResources: changedResources,
 		databaseMetadata: dbMetadata,
 		statement:        statement,
-		tokenStream:      parseResult.Tokens,
 		dmlCount:         0,
 		insertCount:      0,
 		sampleDMLs:       []string{},
 	}
 
-	antlr.ParseTreeWalkerDefault.Walk(listener, parseResult.Tree)
+	// Walk all parse results to extract changed resources
+	for _, parseResult := range parseResults {
+		if parseResult == nil || parseResult.Tree == nil {
+			return nil, errors.New("parse result or tree is nil")
+		}
+
+		listener.tokenStream = parseResult.Tokens
+		antlr.ParseTreeWalkerDefault.Walk(listener, parseResult.Tree)
+	}
 
 	return &base.ChangeSummary{
 		ChangedResources: changedResources,

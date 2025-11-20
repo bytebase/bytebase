@@ -21,24 +21,50 @@ func parsePostgreSQLForRegistry(statement string) (any, error) {
 }
 
 type ParseResult struct {
-	Tree   antlr.Tree
-	Tokens *antlr.CommonTokenStream
+	Tree     antlr.Tree
+	Tokens   *antlr.CommonTokenStream
+	BaseLine int
 }
 
-// ParsePostgreSQL parses the given SQL and returns the ParseResult.
+// ParsePostgreSQL parses the given SQL and returns a list of ParseResult (one per statement).
 // Use the PostgreSQL parser based on antlr4.
-func ParsePostgreSQL(sql string) (*ParseResult, error) {
+func ParsePostgreSQL(sql string) ([]*ParseResult, error) {
+	stmts, err := SplitSQL(sql)
+	if err != nil {
+		return nil, err
+	}
+
+	var results []*ParseResult
+	for _, stmt := range stmts {
+		if stmt.Empty {
+			continue
+		}
+
+		parseResult, err := parseSinglePostgreSQL(stmt.Text, stmt.BaseLine)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, parseResult)
+	}
+
+	return results, nil
+}
+
+// parseSinglePostgreSQL parses a single PostgreSQL statement and returns the ParseResult.
+func parseSinglePostgreSQL(sql string, baseLine int) (*ParseResult, error) {
 	lexer := parser.NewPostgreSQLLexer(antlr.NewInputStream(sql))
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 	p := parser.NewPostgreSQLParser(stream)
 	lexerErrorListener := &base.ParseErrorListener{
 		Statement: sql,
+		BaseLine:  baseLine,
 	}
 	lexer.RemoveErrorListeners()
 	lexer.AddErrorListener(lexerErrorListener)
 
 	parserErrorListener := &base.ParseErrorListener{
 		Statement: sql,
+		BaseLine:  baseLine,
 	}
 	p.RemoveErrorListeners()
 	p.AddErrorListener(parserErrorListener)
@@ -55,8 +81,9 @@ func ParsePostgreSQL(sql string) (*ParseResult, error) {
 	}
 
 	result := &ParseResult{
-		Tree:   tree,
-		Tokens: stream,
+		Tree:     tree,
+		Tokens:   stream,
+		BaseLine: baseLine,
 	}
 
 	return result, nil

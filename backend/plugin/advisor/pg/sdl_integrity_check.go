@@ -32,7 +32,7 @@ func CheckSDLIntegrity(files map[string]string) (map[string][]*storepb.Advice, e
 	// Parse each file and build individual symbol tables
 	fileCheckers := make([]*fileSymbolTable, 0, len(files))
 	for filePath, statement := range files {
-		tree, err := pgparser.ParsePostgreSQL(statement)
+		parseResults, err := pgparser.ParsePostgreSQL(statement)
 		if err != nil {
 			// Return parse error for this file
 			return map[string][]*storepb.Advice{
@@ -50,8 +50,10 @@ func CheckSDLIntegrity(files map[string]string) (map[string][]*storepb.Advice, e
 			symbolTable:                  newSymbolTable(),
 		}
 
-		// Build symbol table for this file
-		antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
+		// Build symbol table for this file - process all statements
+		for _, parseResult := range parseResults {
+			antlr.ParseTreeWalkerDefault.Walk(checker, parseResult.Tree)
+		}
 
 		fileCheckers = append(fileCheckers, &fileSymbolTable{
 			filePath:   filePath,

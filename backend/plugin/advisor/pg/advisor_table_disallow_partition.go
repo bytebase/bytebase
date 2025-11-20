@@ -28,7 +28,7 @@ type TableDisallowPartitionAdvisor struct {
 
 // Check checks for partitioned tables.
 func (*TableDisallowPartitionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	tree, err := getANTLRTree(checkCtx)
+	parseResults, err := getANTLRTree(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +47,12 @@ func (*TableDisallowPartitionAdvisor) Check(_ context.Context, checkCtx advisor.
 	}
 
 	checker := NewGenericChecker([]Rule{rule})
-	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
+
+	for _, parseResult := range parseResults {
+		rule.SetBaseLine(parseResult.BaseLine)
+		checker.SetBaseLine(parseResult.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, parseResult.Tree)
+	}
 
 	return checker.GetAdviceList(), nil
 }

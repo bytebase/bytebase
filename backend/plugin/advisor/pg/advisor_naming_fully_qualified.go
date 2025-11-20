@@ -30,7 +30,7 @@ type FullyQualifiedObjectNameAdvisor struct {
 
 // Check checks for fully qualified object names.
 func (*FullyQualifiedObjectNameAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	tree, err := getANTLRTree(checkCtx)
+	parseResults, err := getANTLRTree(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +50,12 @@ func (*FullyQualifiedObjectNameAdvisor) Check(_ context.Context, checkCtx adviso
 	}
 
 	checker := NewGenericChecker([]Rule{rule})
-	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
+
+	for _, parseResult := range parseResults {
+		rule.SetBaseLine(parseResult.BaseLine)
+		checker.SetBaseLine(parseResult.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, parseResult.Tree)
+	}
 
 	return checker.GetAdviceList(), nil
 }
@@ -338,7 +343,7 @@ func (*fullyQualifiedObjectNameRule) isFullyQualified(objName string) bool {
 // findAllTablesInSelect finds all table references in a SELECT statement
 func (r *fullyQualifiedObjectNameRule) findAllTablesInSelect(statement string) []base.ColumnResource {
 	// Parse the statement to extract table references
-	result, err := pgparser.ParsePostgreSQL(statement)
+	parseResults, err := pgparser.ParsePostgreSQL(statement)
 	if err != nil {
 		return nil
 	}
@@ -348,8 +353,10 @@ func (r *fullyQualifiedObjectNameRule) findAllTablesInSelect(statement string) [
 		schemaNameMap: r.getSchemaNameMapFromPublic(),
 	}
 
-	if result.Tree != nil {
-		antlr.ParseTreeWalkerDefault.Walk(collector, result.Tree)
+	for _, parseResult := range parseResults {
+		if parseResult.Tree != nil {
+			antlr.ParseTreeWalkerDefault.Walk(collector, parseResult.Tree)
+		}
 	}
 
 	return collector.tables

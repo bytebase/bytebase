@@ -12,7 +12,7 @@ import (
 	parser "github.com/bytebase/parser/postgresql"
 
 	"github.com/bytebase/bytebase/backend/common"
-	storebp "github.com/bytebase/bytebase/backend/generated-go/store"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -55,10 +55,11 @@ type statementInfo struct {
 	statement string
 	tree      antlr.ParserRuleContext
 	table     *TableReference
+	baseLine  int
 }
 
 func init() {
-	base.RegisterTransformDMLToSelect(storebp.Engine_POSTGRES, TransformDMLToSelect)
+	base.RegisterTransformDMLToSelect(storepb.Engine_POSTGRES, TransformDMLToSelect)
 }
 
 func TransformDMLToSelect(ctx context.Context, tCtx base.TransformContext, statement string, _ string, targetSchema string, tablePrefix string) ([]base.BackupStatement, error) {
@@ -164,12 +165,12 @@ func generateSQLForTable(statementInfoList []statementInfo, targetSchema string,
 		SourceSchema:    table.Schema,
 		SourceTableName: table.Table,
 		TargetTableName: targetTable,
-		StartPosition: &storebp.Position{
-			Line:   int32(statementInfoList[0].tree.GetStart().GetLine()),
+		StartPosition: &storepb.Position{
+			Line:   int32(statementInfoList[0].tree.GetStart().GetLine() + statementInfoList[0].baseLine),
 			Column: int32(statementInfoList[0].tree.GetStart().GetColumn()),
 		},
-		EndPosition: &storebp.Position{
-			Line:   int32(statementInfoList[len(statementInfoList)-1].tree.GetStop().GetLine()),
+		EndPosition: &storepb.Position{
+			Line:   int32(statementInfoList[len(statementInfoList)-1].tree.GetStop().GetLine() + statementInfoList[len(statementInfoList)-1].baseLine),
 			Column: int32(statementInfoList[len(statementInfoList)-1].tree.GetStop().GetColumn()),
 		},
 	}, nil
@@ -235,7 +236,7 @@ func (e *suffixSelectClauseExtractor) EnterDeletestmt(ctx *parser.DeletestmtCont
 }
 
 func prepareTransformation(ctx context.Context, tCtx base.TransformContext, statement string) ([]statementInfo, error) {
-	tree, err := ParsePostgreSQL(statement)
+	parseResults, err := ParsePostgreSQL(statement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse statement")
 	}
@@ -253,18 +254,28 @@ func prepareTransformation(ctx context.Context, tCtx base.TransformContext, stat
 		metadata:   metadata,
 		searchPath: metadata.GetSearchPath(),
 	}
-	antlr.ParseTreeWalkerDefault.Walk(extractor, tree.Tree)
-	return extractor.dmls, extractor.err
+
+	// Walk all parse results to extract DML statements
+	for _, parseResult := range parseResults {
+		extractor.currentBaseLine = parseResult.BaseLine
+		antlr.ParseTreeWalkerDefault.Walk(extractor, parseResult.Tree)
+		if extractor.err != nil {
+			return nil, extractor.err
+		}
+	}
+
+	return extractor.dmls, nil
 }
 
 type dmlExtractor struct {
 	*parser.BasePostgreSQLParserListener
 
-	metadata   *model.DatabaseMetadata
-	searchPath []string
-	dmls       []statementInfo
-	offset     int
-	err        error
+	metadata        *model.DatabaseMetadata
+	searchPath      []string
+	dmls            []statementInfo
+	offset          int
+	err             error
+	currentBaseLine int
 }
 
 func isTopLevel(ctx antlr.Tree) bool {
@@ -346,6 +357,7 @@ func (e *dmlExtractor) EnterUpdatestmt(ctx *parser.UpdatestmtContext) {
 			statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
 			tree:      ctx,
 			table:     table,
+			baseLine:  e.currentBaseLine,
 		})
 	}
 }
@@ -366,6 +378,7 @@ func (e *dmlExtractor) EnterDeletestmt(ctx *parser.DeletestmtContext) {
 			statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
 			tree:      ctx,
 			table:     table,
+			baseLine:  e.currentBaseLine,
 		})
 	}
 }

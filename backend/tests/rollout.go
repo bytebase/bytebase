@@ -69,17 +69,36 @@ func (ctl *controller) waitRollout(ctx context.Context, issueName, rolloutName s
 	ticker := time.NewTicker(300 * time.Millisecond)
 	defer ticker.Stop()
 
-	for range ticker.C {
-		issueResp, err := ctl.issueServiceClient.GetIssue(ctx, connect.NewRequest(&v1pb.GetIssueRequest{Name: issueName}))
-		if err != nil {
-			return err
-		}
-		issue := issueResp.Msg
-		if issue.ApprovalStatus == v1pb.Issue_ERROR {
-			return errors.Errorf("approval finding error: %v", issue.ApprovalStatusError)
-		}
-		if issue.ApprovalStatus == v1pb.Issue_APPROVED || issue.ApprovalStatus == v1pb.Issue_SKIPPED {
-			break
+	// Add timeout to prevent infinite loops
+	timeout := time.After(2 * time.Minute)
+	startTime := time.Now()
+
+	// Wait for approval
+waitApproval:
+	for {
+		select {
+		case <-timeout:
+			// Timeout - fetch current state for debugging
+			issueResp, err := ctl.issueServiceClient.GetIssue(ctx, connect.NewRequest(&v1pb.GetIssueRequest{Name: issueName}))
+			if err != nil {
+				return errors.Wrapf(err, "timeout after %v waiting for approval (failed to fetch issue state)", time.Since(startTime))
+			}
+			issue := issueResp.Msg
+			return errors.Errorf("timeout after %v waiting for approval to complete, current approval status: %s, approval status error: %v",
+				time.Since(startTime), issue.ApprovalStatus.String(), issue.ApprovalStatusError)
+
+		case <-ticker.C:
+			issueResp, err := ctl.issueServiceClient.GetIssue(ctx, connect.NewRequest(&v1pb.GetIssueRequest{Name: issueName}))
+			if err != nil {
+				return err
+			}
+			issue := issueResp.Msg
+			if issue.ApprovalStatus == v1pb.Issue_ERROR {
+				return errors.Errorf("approval finding error: %v", issue.ApprovalStatusError)
+			}
+			if issue.ApprovalStatus == v1pb.Issue_APPROVED || issue.ApprovalStatus == v1pb.Issue_SKIPPED {
+				break waitApproval
+			}
 		}
 	}
 

@@ -28,7 +28,7 @@ type StatementMaximumLimitValueAdvisor struct {
 
 // Check checks for maximum LIMIT value.
 func (*StatementMaximumLimitValueAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	tree, err := getANTLRTree(checkCtx)
+	parseResults, err := getANTLRTree(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +51,12 @@ func (*StatementMaximumLimitValueAdvisor) Check(_ context.Context, checkCtx advi
 	}
 
 	checker := NewGenericChecker([]Rule{rule})
-	antlr.ParseTreeWalkerDefault.Walk(checker, tree.Tree)
+
+	for _, parseResult := range parseResults {
+		rule.SetBaseLine(parseResult.BaseLine)
+		checker.SetBaseLine(parseResult.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, parseResult.Tree)
+	}
 
 	return checker.GetAdviceList(), nil
 }

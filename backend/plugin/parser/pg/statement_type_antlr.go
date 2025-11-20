@@ -56,8 +56,9 @@ const (
 // statementTypeCollectorWithPosition collects statement types with positions.
 type statementTypeCollectorWithPosition struct {
 	*parser.BasePostgreSQLParserListener
-	tokens  *antlr.CommonTokenStream
-	results []StatementTypeWithPosition
+	tokens   *antlr.CommonTokenStream
+	baseLine int
+	results  []StatementTypeWithPosition
 }
 
 // Helper function to add statement with position.
@@ -69,7 +70,7 @@ func (c *statementTypeCollectorWithPosition) addStatement(stmtType string, ctx a
 	// Get line number from the stop token
 	line := 0
 	if ctx.GetStop() != nil {
-		line = ctx.GetStop().GetLine()
+		line = ctx.GetStop().GetLine() + c.baseLine
 	}
 
 	// Get statement text

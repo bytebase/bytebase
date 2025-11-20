@@ -25,7 +25,7 @@ func init() {
 
 // GetDatabaseMetadata parses the SQL schema text and returns the database metadata.
 func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, error) {
-	parseResult, err := pgparser.ParsePostgreSQL(schemaText)
+	parseResults, err := pgparser.ParsePostgreSQL(schemaText)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse PostgreSQL schema")
 	}
@@ -47,9 +47,11 @@ func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, er
 	// Always ensure public schema exists
 	extractor.getOrCreateSchema("public")
 
-	// Only walk the tree if it's not empty
-	if parseResult.Tree != nil {
-		antlr.ParseTreeWalkerDefault.Walk(extractor, parseResult.Tree)
+	// Walk all parsed statements
+	for _, parseResult := range parseResults {
+		if parseResult.Tree != nil {
+			antlr.ParseTreeWalkerDefault.Walk(extractor, parseResult.Tree)
+		}
 	}
 
 	if extractor.err != nil {
