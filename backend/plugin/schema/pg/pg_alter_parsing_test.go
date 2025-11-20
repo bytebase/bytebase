@@ -99,8 +99,8 @@ func TestAlterColumnIdentityEquivalence(t *testing.T) {
 	}
 
 	// Compare schemas
-	userDBSchema := model.NewDatabaseSchema(userMetadata, nil, nil, storepb.Engine_POSTGRES, false)
-	dbDBSchema := model.NewDatabaseSchema(dbMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+	userDBSchema := model.NewDatabaseMetadata(userMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+	dbDBSchema := model.NewDatabaseMetadata(dbMetadata, nil, nil, storepb.Engine_POSTGRES, false)
 
 	diff, err := schema.GetDatabaseSchemaDiff(storepb.Engine_POSTGRES, dbDBSchema, userDBSchema)
 	require.NoError(t, err)

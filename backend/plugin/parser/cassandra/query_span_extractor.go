@@ -196,14 +196,14 @@ func (e *querySpanExtractor) expandSelectAsterisk(keyspace, table string) []base
 	var results []base.QuerySpanResult
 	schemaNames := metadata.ListSchemaNames()
 	for _, schemaName := range schemaNames {
-		schema := metadata.GetSchema(schemaName)
+		schema := metadata.GetSchemaMetadata(schemaName)
 		if schema == nil {
 			continue
 		}
 
 		tbl := schema.GetTable(table)
 		if tbl != nil {
-			for _, col := range tbl.GetColumns() {
+			for _, col := range tbl.GetProto().GetColumns() {
 				sourceColumn := base.SourceColumnSet{}
 				sourceColumn[base.ColumnResource{
 					Database: keyspace,

@@ -182,13 +182,13 @@ func (v *tableRequirePKChecker) createTableLike(node *ast.CreateTableStmt) {
 		}
 		v.tables[table] = newColumnSet(columns)
 	} else {
-		schema := v.originalMetadata.GetSchema("")
+		schema := v.originalMetadata.GetSchemaMetadata("")
 		if schema != nil {
 			referTableMetadata := schema.GetTable(referTableName)
 			if referTableMetadata != nil {
 				primaryKey := referTableMetadata.GetPrimaryKey()
 				if primaryKey != nil {
-					v.tables[table] = newColumnSet(primaryKey.ExpressionList())
+					v.tables[table] = newColumnSet(primaryKey.GetProto().GetExpressions())
 				}
 			}
 		}
@@ -197,11 +197,11 @@ func (v *tableRequirePKChecker) createTableLike(node *ast.CreateTableStmt) {
 
 func (v *tableRequirePKChecker) dropColumn(table string, column string) bool {
 	if _, ok := v.tables[table]; !ok {
-		pk := v.originalMetadata.GetSchema("").GetTable(table).GetIndex(primaryKeyName)
+		pk := v.originalMetadata.GetSchemaMetadata("").GetTable(table).GetIndex(primaryKeyName)
 		if pk == nil {
 			return false
 		}
-		v.tables[table] = newColumnSet(pk.ExpressionList())
+		v.tables[table] = newColumnSet(pk.GetProto().GetExpressions())
 	}
 
 	pk := v.tables[table]

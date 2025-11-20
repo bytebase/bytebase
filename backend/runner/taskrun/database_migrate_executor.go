@@ -504,7 +504,7 @@ func buildGetDatabaseMetadataFunc(storeInstance *store.Store) parserbase.GetData
 		if databaseMetadata == nil {
 			return "", nil, nil
 		}
-		return databaseName, databaseMetadata.GetDatabaseMetadata(), nil
+		return databaseName, databaseMetadata, nil
 	}
 }
 

@@ -184,7 +184,7 @@ func (q *querySpanExtractor) existsTableMetadata(databaseName string, tableName 
 	if databaseMetadata == nil {
 		return false
 	}
-	schemaMetadata := databaseMetadata.GetSchema("")
+	schemaMetadata := databaseMetadata.GetSchemaMetadata("")
 	if schemaMetadata == nil {
 		return false
 	}
@@ -797,17 +797,17 @@ func (q *querySpanExtractor) findTableSchema(databaseName string, tableName stri
 		databaseName = q.defaultDatabase
 	}
 
-	dbSchema, err := q.getDatabaseMetadata(databaseName)
+	dbMetadata, err := q.getDatabaseMetadata(databaseName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database metadata for %q", databaseName)
 	}
-	if dbSchema == nil {
+	if dbMetadata == nil {
 		return nil, &parsererror.ResourceNotFoundError{
 			Database: &databaseName,
 		}
 	}
 	emptySchema := ""
-	schema := dbSchema.GetSchema("")
+	schema := dbMetadata.GetSchemaMetadata("")
 	if schema == nil {
 		return nil, &parsererror.ResourceNotFoundError{
 			Database: &databaseName,
@@ -820,7 +820,7 @@ func (q *querySpanExtractor) findTableSchema(databaseName string, tableName stri
 			var columns []string
 			tableMeta := schema.GetTable(table)
 			if tableMeta != nil {
-				for _, column := range tableMeta.GetColumns() {
+				for _, column := range tableMeta.GetProto().GetColumns() {
 					columns = append(columns, column.Name)
 				}
 				return &base.PhysicalTable{
@@ -842,7 +842,7 @@ func (q *querySpanExtractor) findTableSchema(databaseName string, tableName stri
 				}
 				return &base.PhysicalView{
 					Database: databaseName,
-					Name:     viewMeta.GetProto().Name,
+					Name:     viewMeta.Name,
 					Columns:  columns,
 				}, nil
 			}

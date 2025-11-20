@@ -20,7 +20,7 @@ func init() {
 	schema.RegisterGetSDLDiff(storepb.Engine_COCKROACHDB, GetSDLDiff)
 }
 
-func GetSDLDiff(currentSDLText, previousUserSDLText string, currentSchema, previousSchema *model.DatabaseSchema) (*schema.MetadataDiff, error) {
+func GetSDLDiff(currentSDLText, previousUserSDLText string, currentSchema, previousSchema *model.DatabaseMetadata) (*schema.MetadataDiff, error) {
 	generatedSDL, err := convertDatabaseSchemaToSDL(currentSchema)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to convert current schema to SDL format for initialization")
@@ -820,7 +820,7 @@ func (l *sdlChunkExtractor) EnterCommentstmt(ctx *parser.CommentstmtContext) {
 
 // processTableChanges processes changes to tables by comparing SDL chunks
 // nolint:unparam
-func processTableChanges(currentChunks, previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseSchema, currentDBSDLChunks *currentDatabaseSDLChunks, diff *schema.MetadataDiff) error {
+func processTableChanges(currentChunks, previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseMetadata, currentDBSDLChunks *currentDatabaseSDLChunks, diff *schema.MetadataDiff) error {
 	// Process current table chunks to find created and modified tables
 	for _, currentChunk := range currentChunks.Tables {
 		schemaName, tableName := parseIdentifier(currentChunk.Identifier)
@@ -977,7 +977,7 @@ func processTableChanges(currentChunks, previousChunks *schema.SDLChunks, curren
 // processColumnChanges analyzes column changes between old and new table definitions
 // Following the same pattern as processTableChanges: compare text first, then analyze differences
 // If schemas are nil, operates in AST-only mode without metadata extraction
-func processColumnChanges(oldTable, newTable *parser.CreatestmtContext, currentSchema, previousSchema *model.DatabaseSchema, currentDBSDLChunks *currentDatabaseSDLChunks, tableIdentifier string) []*schema.ColumnDiff {
+func processColumnChanges(oldTable, newTable *parser.CreatestmtContext, currentSchema, previousSchema *model.DatabaseMetadata, currentDBSDLChunks *currentDatabaseSDLChunks, tableIdentifier string) []*schema.ColumnDiff {
 	if oldTable == nil || newTable == nil {
 		return []*schema.ColumnDiff{}
 	}
@@ -2712,14 +2712,14 @@ func processSequenceChanges(currentChunks, previousChunks *schema.SDLChunks, cur
 
 // applyMinimalChangesToChunks applies minimal changes to the previous SDL chunks based on schema differences
 // This implements the minimal change principle for drift scenarios by directly manipulating chunks
-func applyMinimalChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseSchema) error {
+func applyMinimalChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseMetadata) error {
 	if currentSchema == nil || previousSchema == nil || previousChunks == nil {
 		return nil
 	}
 
 	// Get table differences between schemas
-	currentMetadata := currentSchema.GetMetadata()
-	previousMetadata := previousSchema.GetMetadata()
+	currentMetadata := currentSchema.GetProto()
+	previousMetadata := previousSchema.GetProto()
 	if currentMetadata == nil || previousMetadata == nil {
 		return nil
 	}
@@ -3488,7 +3488,7 @@ type currentDatabaseSDLChunks struct {
 // buildCurrentDatabaseSDLChunks pre-computes SDL chunks from the current database schema
 // for usability checks. This avoids repeated expensive calls to convertDatabaseSchemaToSDL
 // and ChunkSDLText during diff processing by storing normalized SDL text from current database metadata.
-func buildCurrentDatabaseSDLChunks(currentSchema *model.DatabaseSchema) (*currentDatabaseSDLChunks, error) {
+func buildCurrentDatabaseSDLChunks(currentSchema *model.DatabaseMetadata) (*currentDatabaseSDLChunks, error) {
 	sdlChunks := &currentDatabaseSDLChunks{
 		chunks:      make(map[string]string),
 		comments:    make(map[string][]string),
@@ -3740,14 +3740,14 @@ func (sdlChunks *currentDatabaseSDLChunks) shouldSkipConstraintDiffForUsability(
 	return normalizedConstraintText == currentDatabaseConstraintSDL
 }
 
-// convertDatabaseSchemaToSDL converts a model.DatabaseSchema to SDL format string
+// convertDatabaseSchemaToSDL converts a model.DatabaseMetadata to SDL format string
 // This is used in initialization scenarios where previousUserSDLText is empty
-func convertDatabaseSchemaToSDL(dbSchema *model.DatabaseSchema) (string, error) {
-	if dbSchema == nil {
+func convertDatabaseSchemaToSDL(dbMetadata *model.DatabaseMetadata) (string, error) {
+	if dbMetadata == nil {
 		return "", nil
 	}
 
-	metadata := dbSchema.GetMetadata()
+	metadata := dbMetadata.GetProto()
 	if metadata == nil {
 		return "", nil
 	}
@@ -4253,14 +4253,14 @@ type extendedIndexMetadata struct {
 
 // applyStandaloneIndexChangesToChunks applies minimal changes to standalone CREATE INDEX chunks
 // This handles creation, modification, and deletion of independent index statements
-func applyStandaloneIndexChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseSchema) error {
+func applyStandaloneIndexChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseMetadata) error {
 	if currentSchema == nil || previousSchema == nil || previousChunks == nil {
 		return nil
 	}
 
 	// Get index differences by comparing schema metadata
-	currentMetadata := currentSchema.GetMetadata()
-	previousMetadata := previousSchema.GetMetadata()
+	currentMetadata := currentSchema.GetProto()
+	previousMetadata := previousSchema.GetProto()
 	if currentMetadata == nil || previousMetadata == nil {
 		return nil
 	}
@@ -4601,14 +4601,14 @@ func (e *indexExtractor) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 
 // applyFunctionChangesToChunks applies minimal changes to CREATE FUNCTION chunks
 // This handles creation, modification, and deletion of function statements
-func applyFunctionChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseSchema) error {
+func applyFunctionChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseMetadata) error {
 	if currentSchema == nil || previousSchema == nil || previousChunks == nil {
 		return nil
 	}
 
 	// Get function differences by comparing schema metadata
-	currentMetadata := currentSchema.GetMetadata()
-	previousMetadata := previousSchema.GetMetadata()
+	currentMetadata := currentSchema.GetProto()
+	previousMetadata := previousSchema.GetProto()
 	if currentMetadata == nil || previousMetadata == nil {
 		return nil
 	}
@@ -4985,14 +4985,14 @@ func (e *functionExtractor) EnterCreatefunctionstmt(ctx *parser.Createfunctionst
 
 // applySequenceChangesToChunks applies minimal changes to CREATE SEQUENCE chunks
 // This handles creation, modification, and deletion of sequence statements
-func applySequenceChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseSchema) error {
+func applySequenceChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseMetadata) error {
 	if currentSchema == nil || previousSchema == nil || previousChunks == nil {
 		return nil
 	}
 
 	// Get sequence differences by comparing schema metadata
-	currentMetadata := currentSchema.GetMetadata()
-	previousMetadata := previousSchema.GetMetadata()
+	currentMetadata := currentSchema.GetProto()
+	previousMetadata := previousSchema.GetProto()
 	if currentMetadata == nil || previousMetadata == nil {
 		return nil
 	}
@@ -5797,14 +5797,14 @@ func getFirstCommentNode(nodes []antlr.ParserRuleContext) antlr.ParserRuleContex
 
 // applyViewChangesToChunks applies minimal changes to CREATE VIEW chunks
 // This handles creation, modification, and deletion of view statements
-func applyViewChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseSchema) error {
+func applyViewChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseMetadata) error {
 	if currentSchema == nil || previousSchema == nil || previousChunks == nil {
 		return nil
 	}
 
 	// Get view differences by comparing schema metadata
-	currentMetadata := currentSchema.GetMetadata()
-	previousMetadata := previousSchema.GetMetadata()
+	currentMetadata := currentSchema.GetProto()
+	previousMetadata := previousSchema.GetProto()
 	if currentMetadata == nil || previousMetadata == nil {
 		return nil
 	}
@@ -6061,14 +6061,14 @@ func (e *viewExtractor) EnterViewstmt(ctx *parser.ViewstmtContext) {
 }
 
 // applyMaterializedViewChangesToChunks applies minimal changes to materialized view chunks based on schema metadata
-func applyMaterializedViewChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseSchema) error {
+func applyMaterializedViewChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseMetadata) error {
 	if currentSchema == nil || previousSchema == nil || previousChunks == nil {
 		return nil
 	}
 
 	// Get materialized view differences by comparing schema metadata
-	currentMetadata := currentSchema.GetMetadata()
-	previousMetadata := previousSchema.GetMetadata()
+	currentMetadata := currentSchema.GetProto()
+	previousMetadata := previousSchema.GetProto()
 	if currentMetadata == nil || previousMetadata == nil {
 		return nil
 	}
@@ -6303,14 +6303,14 @@ func generateCommentOnMaterializedViewSQL(schemaName, mvName, comment string) st
 }
 
 // applyEnumTypeChangesToChunks applies minimal changes to enum type chunks based on schema metadata
-func applyEnumTypeChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseSchema) error {
+func applyEnumTypeChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseMetadata) error {
 	if currentSchema == nil || previousSchema == nil || previousChunks == nil {
 		return nil
 	}
 
 	// Get enum type differences by comparing schema metadata
-	currentMetadata := currentSchema.GetMetadata()
-	previousMetadata := previousSchema.GetMetadata()
+	currentMetadata := currentSchema.GetProto()
+	previousMetadata := previousSchema.GetProto()
 	if currentMetadata == nil || previousMetadata == nil {
 		return nil
 	}
@@ -6577,14 +6577,14 @@ func (e *materializedViewExtractor) EnterCreatematviewstmt(ctx *parser.Createmat
 
 // applyColumnCommentChanges applies minimal changes to column comments based on schema metadata
 // This function only updates COMMENT ON COLUMN statements without modifying CREATE TABLE statements
-func applyColumnCommentChanges(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseSchema) error {
+func applyColumnCommentChanges(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseMetadata) error {
 	if currentSchema == nil || previousSchema == nil || previousChunks == nil {
 		return nil
 	}
 
 	// Get table metadata from schemas
-	currentMetadata := currentSchema.GetMetadata()
-	previousMetadata := previousSchema.GetMetadata()
+	currentMetadata := currentSchema.GetProto()
+	previousMetadata := previousSchema.GetProto()
 	if currentMetadata == nil || previousMetadata == nil {
 		return nil
 	}
@@ -6916,15 +6916,12 @@ func processExtensionChanges(currentChunks, previousChunks *schema.SDLChunks, cu
 }
 
 // processSchemaChanges processes explicit CREATE SCHEMA statements in the SDL
-func processSchemaChanges(currentChunks, previousChunks *schema.SDLChunks, currentSchema *model.DatabaseSchema, diff *schema.MetadataDiff) {
+func processSchemaChanges(currentChunks, previousChunks *schema.SDLChunks, currentMeta *model.DatabaseMetadata, diff *schema.MetadataDiff) {
 	// Build set of existing schemas in current database
 	existingSchemas := make(map[string]bool)
-	if currentSchema != nil {
-		currentMeta := currentSchema.GetDatabaseMetadata()
-		if currentMeta != nil {
-			for _, schemaName := range currentMeta.ListSchemaNames() {
-				existingSchemas[schemaName] = true
-			}
+	if currentMeta != nil {
+		for _, schemaName := range currentMeta.ListSchemaNames() {
+			existingSchemas[schemaName] = true
 		}
 	}
 
@@ -6965,8 +6962,8 @@ func processSchemaChanges(currentChunks, previousChunks *schema.SDLChunks, curre
 // addImplicitSchemaCreation adds schema creation diffs for schemas that are referenced
 // by new objects but don't exist in the current database and aren't explicitly created in the SDL.
 // This handles the case where users write "CREATE TABLE new_schema.t(...)" without "CREATE SCHEMA new_schema".
-func addImplicitSchemaCreation(diff *schema.MetadataDiff, currentSchema *model.DatabaseSchema) {
-	if currentSchema == nil {
+func addImplicitSchemaCreation(diff *schema.MetadataDiff, currentMeta *model.DatabaseMetadata) {
+	if currentMeta == nil {
 		return
 	}
 
@@ -7024,11 +7021,8 @@ func addImplicitSchemaCreation(diff *schema.MetadataDiff, currentSchema *model.D
 
 	// Get existing schemas from current database
 	existingSchemas := make(map[string]bool)
-	currentMeta := currentSchema.GetDatabaseMetadata()
-	if currentMeta != nil {
-		for _, schemaName := range currentMeta.ListSchemaNames() {
-			existingSchemas[schemaName] = true
-		}
+	for _, schemaName := range currentMeta.ListSchemaNames() {
+		existingSchemas[schemaName] = true
 	}
 
 	// Check which schemas are already in SchemaChanges with CREATE action
@@ -7059,14 +7053,14 @@ func addImplicitSchemaCreation(diff *schema.MetadataDiff, currentSchema *model.D
 
 // applyExtensionChangesToChunks applies minimal changes to extension chunks based on schema differences
 // Extensions are database-level objects (not schema-scoped)
-func applyExtensionChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseSchema) error {
+func applyExtensionChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseMetadata) error {
 	if currentSchema == nil || previousSchema == nil || previousChunks == nil {
 		return nil
 	}
 
 	// Get extension differences by comparing schema metadata
-	currentMetadata := currentSchema.GetMetadata()
-	previousMetadata := previousSchema.GetMetadata()
+	currentMetadata := currentSchema.GetProto()
+	previousMetadata := previousSchema.GetProto()
 	if currentMetadata == nil || previousMetadata == nil {
 		return nil
 	}
@@ -7358,14 +7352,14 @@ func extractTableNameFromTrigger(ctx *parser.CreatetrigstmtContext) string {
 }
 
 // applyTriggerChangesToChunks applies minimal changes to trigger chunks based on schema metadata
-func applyTriggerChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseSchema) error {
+func applyTriggerChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseMetadata) error {
 	if currentSchema == nil || previousSchema == nil || previousChunks == nil {
 		return nil
 	}
 
 	// Get trigger differences by comparing schema metadata
-	currentMetadata := currentSchema.GetMetadata()
-	previousMetadata := previousSchema.GetMetadata()
+	currentMetadata := currentSchema.GetProto()
+	previousMetadata := previousSchema.GetProto()
 	if currentMetadata == nil || previousMetadata == nil {
 		return nil
 	}

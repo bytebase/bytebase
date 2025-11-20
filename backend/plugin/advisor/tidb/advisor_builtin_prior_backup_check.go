@@ -103,7 +103,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 	return adviceList, nil
 }
 
-func updateForOneTableWithUnique(dbSchema *storepb.DatabaseSchemaMetadata, updates []*ast.UpdateStmt, deletes []*ast.DeleteStmt) bool {
+func updateForOneTableWithUnique(dbMetadata *storepb.DatabaseSchemaMetadata, updates []*ast.UpdateStmt, deletes []*ast.DeleteStmt) bool {
 	if len(deletes) > 0 {
 		return false
 	}
@@ -123,7 +123,7 @@ func updateForOneTableWithUnique(dbSchema *storepb.DatabaseSchemaMetadata, updat
 		} else if !equalTable(table, &tables[0]) {
 			return false
 		}
-		if !hasUniqueInWhereClause(dbSchema, update, table) {
+		if !hasUniqueInWhereClause(dbMetadata, update, table) {
 			return false
 		}
 	}
@@ -131,7 +131,7 @@ func updateForOneTableWithUnique(dbSchema *storepb.DatabaseSchemaMetadata, updat
 	return true
 }
 
-func hasUniqueInWhereClause(dbSchema *storepb.DatabaseSchemaMetadata, update *ast.UpdateStmt, table *table) bool {
+func hasUniqueInWhereClause(dbMetadata *storepb.DatabaseSchemaMetadata, update *ast.UpdateStmt, table *table) bool {
 	if update.Where == nil {
 		return false
 	}
@@ -141,8 +141,8 @@ func hasUniqueInWhereClause(dbSchema *storepb.DatabaseSchemaMetadata, update *as
 		columnMap[strings.ToLower(column)] = true
 	}
 
-	if dbSchema != nil {
-		for _, schema := range dbSchema.Schemas {
+	if dbMetadata != nil {
+		for _, schema := range dbMetadata.Schemas {
 			for _, tableSchema := range schema.Tables {
 				if strings.EqualFold(tableSchema.Name, table.table) {
 					for _, index := range tableSchema.Indexes {

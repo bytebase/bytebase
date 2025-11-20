@@ -44,7 +44,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 
 // SyncDBSchema implements db.Driver.
 func (d *Driver) SyncDBSchema(_ context.Context) (*storepb.DatabaseSchemaMetadata, error) {
-	var dbSchemaMetadata storepb.DatabaseSchemaMetadata
+	var dbMetadataProto storepb.DatabaseSchemaMetadata
 
 	// indices.
 	indices, err := d.getIndices()
@@ -53,10 +53,10 @@ func (d *Driver) SyncDBSchema(_ context.Context) (*storepb.DatabaseSchemaMetadat
 	}
 
 	// TODO(tommy): database name?
-	dbSchemaMetadata.Name = "node"
-	dbSchemaMetadata.Schemas = append(dbSchemaMetadata.Schemas, &storepb.SchemaMetadata{Tables: indices})
+	dbMetadataProto.Name = "node"
+	dbMetadataProto.Schemas = append(dbMetadataProto.Schemas, &storepb.SchemaMetadata{Tables: indices})
 
-	return &dbSchemaMetadata, nil
+	return &dbMetadataProto, nil
 }
 
 // struct for getVersion().

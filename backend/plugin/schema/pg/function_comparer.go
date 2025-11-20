@@ -10,7 +10,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/plugin/schema/pg/ast"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 func init() {
@@ -35,29 +34,20 @@ const (
 )
 
 // CompareDetailed compares two functions with PostgreSQL-specific logic using ANTLR parsing.
-func (*PostgreSQLFunctionComparer) CompareDetailed(oldFunc, newFunc *model.FunctionMetadata) (*schema.FunctionComparisonResult, error) {
+func (*PostgreSQLFunctionComparer) CompareDetailed(oldFunc, newFunc *storepb.FunctionMetadata) (*schema.FunctionComparisonResult, error) {
 	if oldFunc == nil || newFunc == nil {
-		return nil, nil
+		if oldFunc == newFunc {
+			return nil, nil
+		}
+		return nil, errors.New("cannot compare nil functions")
 	}
 
 	result := &schema.FunctionComparisonResult{}
 
-	// Compare function signature using ANTLR parsing
-	oldProto := oldFunc.GetProto()
-	newProto := newFunc.GetProto()
-
-	// If proto is nil, create temporary proto with definition for comparison
-	if oldProto == nil {
-		oldProto = &storepb.FunctionMetadata{Definition: oldFunc.Definition}
-	}
-	if newProto == nil {
-		newProto = &storepb.FunctionMetadata{Definition: newFunc.Definition}
-	}
-
-	result.SignatureChanged = compareFunctionSignature(oldProto, newProto)
+	result.SignatureChanged = compareFunctionSignature(oldFunc, newFunc)
 
 	// Compare function attributes (comment, volatility, etc.)
-	attributesChanged, changedAttrs := compareFunctionAttributes(oldProto, newProto)
+	attributesChanged, changedAttrs := compareFunctionAttributes(oldFunc, newFunc)
 	result.AttributesChanged = attributesChanged
 	result.ChangedAttributes = changedAttrs
 
@@ -77,6 +67,27 @@ func (*PostgreSQLFunctionComparer) CompareDetailed(oldFunc, newFunc *model.Funct
 	}
 
 	return result, nil
+}
+
+// Equal compares two functions for equality (implements the interface expected by the schema differ).
+func (c *PostgreSQLFunctionComparer) Equal(oldFunc, newFunc *storepb.FunctionMetadata) bool {
+	if oldFunc == nil || newFunc == nil {
+		return oldFunc == newFunc
+	}
+
+	result, err := c.CompareDetailed(oldFunc, newFunc)
+	if err != nil {
+		// Fallback to simple definition comparison on error
+		return oldFunc.Definition == newFunc.Definition
+	}
+
+	// If result is nil, functions are equal
+	if result == nil {
+		return true
+	}
+
+	// Functions are not equal if there are any changes
+	return false
 }
 
 // compareFunctionSignature compares function signatures using ANTLR parsing.
@@ -611,23 +622,6 @@ func determineMigrationStrategy(changeType FunctionChangeType, changedAttrs []st
 	default:
 		return true, false
 	}
-}
-
-// Equal compares two functions for equality (implements the interface expected by the schema differ).
-func (c *PostgreSQLFunctionComparer) Equal(oldFunc, newFunc *model.FunctionMetadata) bool {
-	result, err := c.CompareDetailed(oldFunc, newFunc)
-	if err != nil {
-		// Fallback to simple definition comparison on error
-		return oldFunc.Definition == newFunc.Definition
-	}
-
-	// If result is nil, functions are equal
-	if result == nil {
-		return true
-	}
-
-	// Functions are not equal if there are any changes
-	return false
 }
 
 // postgreSQLTypeStringsEqual compares two PostgreSQL type strings, handling type aliases and format differences.

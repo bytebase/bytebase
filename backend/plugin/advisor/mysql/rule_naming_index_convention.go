@@ -187,16 +187,16 @@ func (r *NamingIndexConventionRule) checkAlterTable(ctx *mysql.AlterTableContext
 		case alterListItem.RENAME_SYMBOL() != nil && alterListItem.KeyOrIndex() != nil && alterListItem.IndexRef() != nil && alterListItem.IndexName() != nil:
 			_, _, oldIndexName := mysqlparser.NormalizeIndexRef(alterListItem.IndexRef())
 			newIndexName := mysqlparser.NormalizeIndexName(alterListItem.IndexName())
-			indexState := r.originalMetadata.GetSchema("").GetTable(tableName).GetIndex(oldIndexName)
+			indexState := r.originalMetadata.GetSchemaMetadata("").GetTable(tableName).GetIndex(oldIndexName)
 			if indexState == nil {
 				continue
 			}
-			if indexState.Unique() {
+			if indexState.GetProto().GetUnique() {
 				// Unique index naming convention should in advisor_naming_unique_key_convention.go
 				continue
 			}
 			metaData := map[string]string{
-				advisor.ColumnListTemplateToken: strings.Join(indexState.ExpressionList(), "_"),
+				advisor.ColumnListTemplateToken: strings.Join(indexState.GetProto().GetExpressions(), "_"),
 				advisor.TableNameTemplateToken:  tableName,
 			}
 			indexData := &indexMetaData{

@@ -321,16 +321,16 @@ func (r *columnNoNullRule) removeColumnByTableConstraint(schema, table string, c
 			indexName := pg.NormalizePostgreSQLName(existingIndex.Name())
 			// Try to find index in catalog
 			if r.originalMetadata != nil {
-				dbSchema := r.originalMetadata.GetSchema(schema)
+				schemaMetadata := r.originalMetadata.GetSchemaMetadata(schema)
 				var index *model.IndexMetadata
-				if dbSchema != nil {
-					dbTable := dbSchema.GetTable(table)
+				if schemaMetadata != nil {
+					dbTable := schemaMetadata.GetTable(table)
 					if dbTable != nil {
 						index = dbTable.GetIndex(indexName)
 					}
 				}
 				if index != nil {
-					for _, expression := range index.ExpressionList() {
+					for _, expression := range index.GetProto().GetExpressions() {
 						r.removeColumn(schema, table, expression)
 					}
 				}

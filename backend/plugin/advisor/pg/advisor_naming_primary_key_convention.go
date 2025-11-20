@@ -200,10 +200,10 @@ func (r *namingPKConventionRule) handleRenamestmt(ctx *parser.RenamestmtContext)
 				if normalizedSchema == "" {
 					normalizedSchema = "public"
 				}
-				index := r.originalMetadata.GetSchema(normalizedSchema).GetTable(tableName).GetIndex(oldName)
-				if index != nil && index.Primary() {
+				index := r.originalMetadata.GetSchemaMetadata(normalizedSchema).GetTable(tableName).GetIndex(oldName)
+				if index != nil && index.GetProto().GetPrimary() {
 					metaData := map[string]string{
-						advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList(), "_"),
+						advisor.ColumnListTemplateToken: strings.Join(index.GetProto().GetExpressions(), "_"),
 						advisor.TableNameTemplateToken:  tableName,
 					}
 					pkData := &pkMetaData{
@@ -245,7 +245,7 @@ func (r *namingPKConventionRule) handleRenamestmt(ctx *parser.RenamestmtContext)
 				}
 				// "ALTER INDEX name RENAME TO new_name" doesn't specify table name
 				// Empty table name for ALTER INDEX
-				schema := r.originalMetadata.GetSchema(normalizedSchema)
+				schema := r.originalMetadata.GetSchemaMetadata(normalizedSchema)
 				var tableName string
 				var index *model.IndexMetadata
 				if schema != nil {
@@ -254,9 +254,9 @@ func (r *namingPKConventionRule) handleRenamestmt(ctx *parser.RenamestmtContext)
 						tableName = index.GetTableProto().Name
 					}
 				}
-				if index != nil && index.Primary() {
+				if index != nil && index.GetProto().GetPrimary() {
 					metaData := map[string]string{
-						advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList(), "_"),
+						advisor.ColumnListTemplateToken: strings.Join(index.GetProto().GetExpressions(), "_"),
 						advisor.TableNameTemplateToken:  tableName,
 					}
 					pkData := &pkMetaData{
@@ -324,7 +324,7 @@ func (r *namingPKConventionRule) getPKMetaDataFromTableConstraint(constraint par
 				if normalizedSchema == "" {
 					normalizedSchema = "public"
 				}
-				schema := r.originalMetadata.GetSchema(normalizedSchema)
+				schema := r.originalMetadata.GetSchemaMetadata(normalizedSchema)
 				var index *model.IndexMetadata
 				if schema != nil {
 					table := schema.GetTable(tableName)
@@ -333,7 +333,7 @@ func (r *namingPKConventionRule) getPKMetaDataFromTableConstraint(constraint par
 					}
 				}
 				if index != nil {
-					columnList = index.ExpressionList()
+					columnList = index.GetProto().GetExpressions()
 				}
 			}
 		}

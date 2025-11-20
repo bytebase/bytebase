@@ -139,7 +139,7 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 				},
 			},
 		},
-	}, storepb.Engine_MYSQL, true /* isObjectCaseSensitive */), nil
+	}, nil, nil, storepb.Engine_MYSQL, true /* isObjectCaseSensitive */), nil
 }
 
 func catchCaret(s string) (string, int) {

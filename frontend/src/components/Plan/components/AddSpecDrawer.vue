@@ -159,6 +159,7 @@ import {
   pushNotification,
   useCurrentProjectV1,
   useDatabaseV1Store,
+  useDBGroupStore,
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import {
@@ -175,6 +176,7 @@ import { extractProjectResourceName, generateIssueTitle } from "@/utils";
 const props = defineProps<{
   title?: string;
   preSelectedDatabases?: ComposedDatabase[];
+  preSelectedDatabaseGroup?: string;
   projectName?: string;
   useLegacyIssueFlow?: boolean;
 }>();
@@ -193,6 +195,7 @@ const { t } = useI18n();
 const router = useRouter();
 const dialog = useDialog();
 const databaseStore = useDatabaseV1Store();
+const dbGroupStore = useDBGroupStore();
 const show = defineModel<boolean>("show", { default: false });
 
 const selectedMigrationType: Ref<MigrationType> = ref(MigrationType.DDL);
@@ -205,7 +208,10 @@ const databaseSelectState = reactive<DatabaseSelectState>({
 });
 
 const hasPreSelectedDatabases = computed(() => {
-  return (props.preSelectedDatabases?.length ?? 0) > 0;
+  return (
+    (props.preSelectedDatabases?.length ?? 0) > 0 ||
+    !!props.preSelectedDatabaseGroup
+  );
 });
 
 const hasSelection = computed(() => {
@@ -264,9 +270,19 @@ watch(show, (newVal) => {
   if (newVal) {
     currentStep.value = Step.SELECT_CHANGE_TYPE;
     selectedMigrationType.value = MigrationType.DDL;
-    databaseSelectState.changeSource = "DATABASE";
-    databaseSelectState.selectedDatabaseNameList = [];
-    databaseSelectState.selectedDatabaseGroup = undefined;
+
+    // Initialize with pre-selected database group if provided
+    if (props.preSelectedDatabaseGroup) {
+      databaseSelectState.changeSource = "GROUP";
+      databaseSelectState.selectedDatabaseNameList = [];
+      databaseSelectState.selectedDatabaseGroup =
+        props.preSelectedDatabaseGroup;
+    } else {
+      databaseSelectState.changeSource = "DATABASE";
+      databaseSelectState.selectedDatabaseNameList = [];
+      databaseSelectState.selectedDatabaseGroup = undefined;
+    }
+
     isCreating.value = false;
   }
 });
@@ -328,8 +344,10 @@ const handleConfirm = async () => {
   try {
     // Get targets
     const targets: string[] = [];
-    if (hasPreSelectedDatabases.value) {
-      targets.push(...(props.preSelectedDatabases?.map((db) => db.name) ?? []));
+    if (props.preSelectedDatabaseGroup) {
+      targets.push(props.preSelectedDatabaseGroup);
+    } else if (props.preSelectedDatabases) {
+      targets.push(...(props.preSelectedDatabases.map((db) => db.name) ?? []));
     } else if (databaseSelectState.changeSource === "DATABASE") {
       targets.push(...databaseSelectState.selectedDatabaseNameList);
     } else if (databaseSelectState.selectedDatabaseGroup) {
@@ -354,14 +372,25 @@ const handleConfirm = async () => {
           ? "bb.issue.database.schema.update"
           : "bb.issue.database.data.update";
 
-      const databaseNames = hasPreSelectedDatabases.value
-        ? (props.preSelectedDatabases?.map((db) => db.databaseName) ?? [])
-        : await Promise.all(
-            targets.map(async (target) => {
-              const db = await databaseStore.getOrFetchDatabaseByName(target);
-              return db.databaseName;
-            })
-          );
+      let databaseNames: string[] = [];
+      // For database groups, use the group title for the issue title
+      if (props.preSelectedDatabaseGroup) {
+        const dbGroup = await dbGroupStore.getOrFetchDBGroupByName(
+          props.preSelectedDatabaseGroup
+        );
+        databaseNames = [dbGroup.title];
+      } else if (props.preSelectedDatabases) {
+        // Pre-selected individual databases
+        databaseNames = props.preSelectedDatabases.map((db) => db.databaseName);
+      } else {
+        // Fetch database names from targets
+        databaseNames = await Promise.all(
+          targets.map(async (target) => {
+            const db = await databaseStore.getOrFetchDatabaseByName(target);
+            return db.databaseName;
+          })
+        );
+      }
 
       const query: LocationQueryRaw = {
         template: type,

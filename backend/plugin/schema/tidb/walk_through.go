@@ -43,7 +43,7 @@ func WalkThrough(d *model.DatabaseMetadata, ast any) *storepb.Advice {
 	// We define the Catalog as Database -> Schema -> Table. The Schema is only for PostgreSQL.
 	// So we use a Schema whose name is empty for other engines, such as MySQL.
 	// If there is no empty-string-name schema, create it to avoid corner cases.
-	if d.GetSchema("") == nil {
+	if d.GetSchemaMetadata("") == nil {
 		d.CreateSchema("")
 	}
 
@@ -105,7 +105,7 @@ func changeStateTiDB(d *model.DatabaseMetadata, in tidbast.StmtNode) (err *store
 
 func tidbRenameTable(d *model.DatabaseMetadata, node *tidbast.RenameTableStmt) *storepb.Advice {
 	for _, tableToTable := range node.TableToTables {
-		schema := d.GetSchema("")
+		schema := d.GetSchemaMetadata("")
 		if schema == nil {
 			schema = d.CreateSchema("")
 		}
@@ -257,7 +257,7 @@ func tidbFindTableState(d *model.DatabaseMetadata, tableName *tidbast.TableName)
 		}
 	}
 
-	schema := d.GetSchema("")
+	schema := d.GetSchemaMetadata("")
 	if schema == nil {
 		schema = d.CreateSchema("")
 	}
@@ -470,7 +470,7 @@ func tidbAlterTable(d *model.DatabaseMetadata, node *tidbast.AlterTableStmt) *st
 				}
 			}
 		case tidbast.AlterTableRenameTable:
-			schema := d.GetSchema("")
+			schema := d.GetSchemaMetadata("")
 			if err := schema.RenameTable(table.GetProto().Name, spec.NewTable.Name.O); err != nil {
 				return &storepb.Advice{
 					Status:        storepb.Advice_ERROR,
@@ -735,9 +735,9 @@ func tidbChangeColumn(t *model.TableMetadata, oldName string, newColumn *tidbast
 func tidbReorderColumn(t *model.TableMetadata, position *tidbast.ColumnPosition) (int, *storepb.Advice) {
 	switch position.Tp {
 	case tidbast.ColumnPositionNone:
-		return len(t.GetColumns()) + 1, nil
+		return len(t.GetProto().GetColumns()) + 1, nil
 	case tidbast.ColumnPositionFirst:
-		for _, column := range t.GetColumns() {
+		for _, column := range t.GetProto().GetColumns() {
 			column.Position++
 		}
 		return 1, nil
@@ -754,7 +754,7 @@ func tidbReorderColumn(t *model.TableMetadata, position *tidbast.ColumnPosition)
 				StartPosition: &storepb.Position{Line: 0},
 			}
 		}
-		for _, col := range t.GetColumns() {
+		for _, col := range t.GetProto().GetColumns() {
 			if col.Position > column.Position {
 				col.Position++
 			}
@@ -787,7 +787,7 @@ func tidbDropTable(d *model.DatabaseMetadata, node *tidbast.DropTableStmt) *stor
 				}
 			}
 
-			schema := d.GetSchema("")
+			schema := d.GetSchemaMetadata("")
 			if schema == nil {
 				schema = d.CreateSchema("")
 			}
@@ -837,7 +837,7 @@ func tidbCopyTable(d *model.DatabaseMetadata, node *tidbast.CreateTableStmt) *st
 		return err
 	}
 
-	schema := d.GetSchema("")
+	schema := d.GetSchemaMetadata("")
 	// Create new table
 	newTable, createErr := schema.CreateTable(node.Table.Name.O)
 	if createErr != nil {
@@ -851,7 +851,7 @@ func tidbCopyTable(d *model.DatabaseMetadata, node *tidbast.CreateTableStmt) *st
 	}
 
 	// Copy columns and indexes from the target table
-	for _, col := range targetTable.GetColumns() {
+	for _, col := range targetTable.GetProto().GetColumns() {
 		colCopy, ok := proto.Clone(col).(*storepb.ColumnMetadata)
 		if !ok {
 			return &storepb.Advice{
@@ -909,7 +909,7 @@ func tidbCreateTable(d *model.DatabaseMetadata, node *tidbast.CreateTableStmt) *
 		}
 	}
 
-	schema := d.GetSchema("")
+	schema := d.GetSchemaMetadata("")
 	if schema == nil {
 		schema = d.CreateSchema("")
 	}
@@ -1133,7 +1133,7 @@ func tidbCreateColumnHelper(t *model.TableMetadata, column *tidbast.ColumnDef, p
 		}
 	}
 
-	pos := len(t.GetColumns()) + 1
+	pos := len(t.GetProto().GetColumns()) + 1
 	if position != nil {
 		var err *storepb.Advice
 		pos, err = tidbReorderColumn(t, position)

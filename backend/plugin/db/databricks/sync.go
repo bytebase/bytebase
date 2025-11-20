@@ -37,17 +37,17 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		return nil, err
 	}
 
-	dbSchemaMeta := storepb.DatabaseSchemaMetadata{}
+	dbMetadataMeta := storepb.DatabaseSchemaMetadata{}
 	schemaMap, ok := (catalogMap)[d.curCatalog]
 	if !ok {
 		return nil, errors.Errorf("cannot find metadata for catalog '%s'", d.curCatalog)
 	}
 
-	dbSchemaMeta.Name = d.curCatalog
+	dbMetadataMeta.Name = d.curCatalog
 	schemas := convertToStorepbSchemas(schemaMap)
-	dbSchemaMeta.Schemas = schemas
+	dbMetadataMeta.Schemas = schemas
 
-	return &dbSchemaMeta, nil
+	return &dbMetadataMeta, nil
 }
 
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
@@ -74,11 +74,11 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	}
 
 	for catalogName, schemaMap := range catalogMap {
-		dbSchemaMeta := storepb.DatabaseSchemaMetadata{}
+		dbMetadataMeta := storepb.DatabaseSchemaMetadata{}
 		schemas := convertToStorepbSchemas(schemaMap)
-		dbSchemaMeta.Name = catalogName
-		dbSchemaMeta.Schemas = schemas
-		instanceMetadata.Databases = append(instanceMetadata.Databases, &dbSchemaMeta)
+		dbMetadataMeta.Name = catalogName
+		dbMetadataMeta.Schemas = schemas
+		instanceMetadata.Databases = append(instanceMetadata.Databases, &dbMetadataMeta)
 	}
 
 	// fetch workspace users.

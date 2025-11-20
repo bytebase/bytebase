@@ -1106,7 +1106,7 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 		return nil, errors.Errorf("database %q not found", q.defaultDatabase)
 	}
 
-	schema := databaseMetadata.GetSchema(schemaName)
+	schema := databaseMetadata.GetSchemaMetadata(schemaName)
 	if schema == nil {
 		return nil, &parsererror.ResourceNotFoundError{
 			Database: &q.defaultDatabase,
@@ -1130,7 +1130,7 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 	}
 
 	var columns []string
-	for _, column := range table.GetColumns() {
+	for _, column := range table.GetProto().GetColumns() {
 		columns = append(columns, column.Name)
 	}
 	return &base.PhysicalTable{

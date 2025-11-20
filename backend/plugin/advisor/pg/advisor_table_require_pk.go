@@ -187,7 +187,7 @@ func (r *tableRequirePKRule) validateFinalState() {
 		schemaName, tableName := parseTableKey(tableKey)
 
 		// Check catalog.Final for PRIMARY KEY
-		schema := r.finalMetadata.GetSchema(schemaName)
+		schema := r.finalMetadata.GetSchemaMetadata(schemaName)
 		var hasPK bool
 		if schema != nil {
 			table := schema.GetTable(tableName)

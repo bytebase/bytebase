@@ -43,7 +43,7 @@ func (*StatementObjectOwnerCheckAdvisor) Check(ctx context.Context, checkCtx adv
 		return nil, err
 	}
 
-	dbMetadata := model.NewDatabaseMetadata(checkCtx.DBSchema, storepb.Engine_POSTGRES, checkCtx.IsObjectCaseSensitive)
+	dbMetadata := model.NewDatabaseMetadata(checkCtx.DBSchema, nil, nil, storepb.Engine_POSTGRES, checkCtx.IsObjectCaseSensitive)
 	currentRole := checkCtx.DBSchema.Owner
 	if !checkCtx.UsePostgresDatabaseOwner {
 		currentRole, err = getCurrentUser(ctx, checkCtx.Driver)
@@ -147,14 +147,14 @@ func (r *statementObjectOwnerCheckRule) checkSchemaOwnership(schemaName string, 
 		schemaName = defaultSchema
 	}
 
-	schemaMeta := r.dbMetadata.GetSchema(schemaName)
+	schemaMeta := r.dbMetadata.GetSchemaMetadata(schemaName)
 	if schemaMeta == nil {
 		return
 	}
 
-	owner := schemaMeta.GetOwner()
+	owner := schemaMeta.GetProto().GetOwner()
 	if owner == pgDatabaseOwner {
-		owner = r.dbMetadata.GetOwner()
+		owner = r.dbMetadata.GetProto().GetOwner()
 	}
 	if owner != r.currentRole {
 		r.AddAdvice(&storepb.Advice{
@@ -175,7 +175,7 @@ func (r *statementObjectOwnerCheckRule) checkTableOwnership(schemaName, tableNam
 		schemaName = defaultSchema
 	}
 
-	schemaMeta := r.dbMetadata.GetSchema(schemaName)
+	schemaMeta := r.dbMetadata.GetSchemaMetadata(schemaName)
 	if schemaMeta == nil {
 		return
 	}
@@ -187,7 +187,7 @@ func (r *statementObjectOwnerCheckRule) checkTableOwnership(schemaName, tableNam
 
 	owner := tableMeta.GetOwner()
 	if owner == pgDatabaseOwner {
-		owner = r.dbMetadata.GetOwner()
+		owner = r.dbMetadata.GetProto().GetOwner()
 	}
 	if owner != r.currentRole {
 		r.AddAdvice(&storepb.Advice{
@@ -312,12 +312,12 @@ func (r *statementObjectOwnerCheckRule) handleCreateschemastmt(ctx *parser.Creat
 		return
 	}
 
-	owner := r.dbMetadata.GetOwner()
+	owner := r.dbMetadata.GetProto().GetOwner()
 	if owner != r.currentRole {
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
 			Title:   r.title,
-			Content: fmt.Sprintf("Database \"%s\" is owned by \"%s\", but the current role is \"%s\".", r.dbMetadata.GetName(), owner, r.currentRole),
+			Content: fmt.Sprintf("Database \"%s\" is owned by \"%s\", but the current role is \"%s\".", r.dbMetadata.GetProto().GetName(), owner, r.currentRole),
 			Code:    code.StatementObjectOwnerCheck.Int32(),
 			StartPosition: &storepb.Position{
 				Line:   int32(ctx.GetStart().GetLine()),

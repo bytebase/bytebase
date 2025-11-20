@@ -369,6 +369,9 @@ message TableMetadata {
   // https://docs.pingcap.com/tidb/stable/clustered-indexes/#clustered-indexes
   // CLUSTERED or NONCLUSTERED.
   string primary_key_type = 23;
+
+  // The exclude_constraints is the list of EXCLUDE constraints in a table (PostgreSQL specific).
+  repeated ExcludeConstraintMetadata exclude_constraints = 25;
 }
 
 message CheckConstraintMetadata {
@@ -376,6 +379,15 @@ message CheckConstraintMetadata {
   string name = 1;
 
   // The expression is the expression of a check constraint.
+  string expression = 2;
+}
+
+message ExcludeConstraintMetadata {
+  // The name of the EXCLUDE constraint.
+  string name = 1;
+
+  // The expression is the full EXCLUDE constraint definition including "EXCLUDE" keyword.
+  // Example: "EXCLUDE USING gist (room_id WITH =, during WITH &&)"
   string expression = 2;
 }
 
@@ -454,6 +466,8 @@ message TablePartitionMetadata {
   repeated IndexMetadata indexes = 7;
 
   repeated CheckConstraintMetadata check_constraints = 8;
+
+  repeated ExcludeConstraintMetadata exclude_constraints = 9;
 }
 
 // ColumnMetadata is the metadata for columns.

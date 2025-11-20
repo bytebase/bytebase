@@ -19,14 +19,14 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_COCKROACHDB, extractChangedResources)
 }
 
-func extractChangedResources(database string, _ string, dbSchema *model.DatabaseSchema, asts any, statement string) (*base.ChangeSummary, error) {
+func extractChangedResources(database string, _ string, dbMetadata *model.DatabaseMetadata, asts any, statement string) (*base.ChangeSummary, error) {
 	parseResults, ok := asts.([]*ParseResult)
 	if !ok {
 		return nil, errors.Errorf("invalid ast type %T, expected []*ParseResult", asts)
 	}
 
-	changedResources := model.NewChangedResources(dbSchema)
-	searchPath := dbSchema.GetDatabaseMetadata().GetSearchPath()
+	changedResources := model.NewChangedResources(dbMetadata)
+	searchPath := dbMetadata.GetSearchPath()
 	if len(searchPath) == 0 {
 		searchPath = []string{"public"} // default search path for PostgreSQL
 	}
@@ -45,7 +45,7 @@ func extractChangedResources(database string, _ string, dbSchema *model.Database
 		database:         database,
 		searchPath:       searchPath,
 		changedResources: changedResources,
-		databaseMetadata: dbSchema.GetDatabaseMetadata(),
+		databaseMetadata: dbMetadata,
 		statement:        statement,
 		dmlCount:         0,
 		insertCount:      0,

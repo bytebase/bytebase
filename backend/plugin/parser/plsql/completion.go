@@ -354,13 +354,13 @@ func (m CompletionMap) insertAllColumns(c *Completer) {
 			}
 			c.metadataCache[schema] = metadata
 		}
-		schemaMeta := c.metadataCache[schema].GetSchema("")
+		schemaMeta := c.metadataCache[schema].GetSchemaMetadata("")
 		for _, table := range schemaMeta.ListTableNames() {
 			tableMeta := schemaMeta.GetTable(table)
 			if tableMeta == nil {
 				continue
 			}
-			for _, column := range tableMeta.GetColumns() {
+			for _, column := range tableMeta.GetProto().GetColumns() {
 				definition := fmt.Sprintf("%s.%s | %s", schema, table, column.Type)
 				if !column.Nullable {
 					definition += ", NOT NULL"
@@ -402,11 +402,11 @@ func (m CompletionMap) insertColumns(c *Completer, schemas, tables map[string]bo
 		}
 
 		for table := range tables {
-			tableMeta := c.metadataCache[schema].GetSchema("").GetTable(table)
+			tableMeta := c.metadataCache[schema].GetSchemaMetadata("").GetTable(table)
 			if tableMeta == nil {
 				continue
 			}
-			for _, column := range tableMeta.GetColumns() {
+			for _, column := range tableMeta.GetProto().GetColumns() {
 				definition := fmt.Sprintf("%s.%s | %s", schema, table, column.Type)
 				if !column.Nullable {
 					definition += ", NOT NULL"
@@ -449,7 +449,7 @@ func (c *Completer) listTables(schema string) []string {
 		c.metadataCache[schema] = metadata
 	}
 
-	return c.metadataCache[schema].GetSchema("").ListTableNames()
+	return c.metadataCache[schema].GetSchemaMetadata("").ListTableNames()
 }
 
 func (c *Completer) listViews(schema string) []string {
@@ -461,7 +461,7 @@ func (c *Completer) listViews(schema string) []string {
 		c.metadataCache[schema] = metadata
 	}
 
-	return c.metadataCache[schema].GetSchema("").ListViewNames()
+	return c.metadataCache[schema].GetSchemaMetadata("").ListViewNames()
 }
 
 func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]base.Candidate, error) {

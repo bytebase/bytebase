@@ -843,38 +843,38 @@ func compareMetadata(t *testing.T, dbMeta, parsedMeta *storepb.DatabaseSchemaMet
 	// For Oracle, we have one schema per database
 	require.Equal(t, 1, len(parsedMeta.Schemas), "parsed metadata should have exactly one schema")
 
-	dbSchema := dbMeta.Schemas[0]
+	dbMetadata := dbMeta.Schemas[0]
 	parsedSchema := parsedMeta.Schemas[0]
 
 	t.Logf("Test case %s - DB: %d tables, %d views, %d materialized views, %d sequences, %d functions, %d procedures | Parsed: %d tables, %d views, %d materialized views, %d sequences, %d functions, %d procedures",
 		testName,
-		len(dbSchema.Tables), len(dbSchema.Views), len(dbSchema.MaterializedViews), len(dbSchema.Sequences), len(dbSchema.Functions), len(dbSchema.Procedures),
+		len(dbMetadata.Tables), len(dbMetadata.Views), len(dbMetadata.MaterializedViews), len(dbMetadata.Sequences), len(dbMetadata.Functions), len(dbMetadata.Procedures),
 		len(parsedSchema.Tables), len(parsedSchema.Views), len(parsedSchema.MaterializedViews), len(parsedSchema.Sequences), len(parsedSchema.Functions), len(parsedSchema.Procedures))
 
 	// Compare schema names (allow flexibility for Oracle default schema)
-	if dbSchema.Name != "" && parsedSchema.Name != "" {
-		require.Equal(t, dbSchema.Name, parsedSchema.Name, "schema names should match")
+	if dbMetadata.Name != "" && parsedSchema.Name != "" {
+		require.Equal(t, dbMetadata.Name, parsedSchema.Name, "schema names should match")
 	} else {
-		t.Logf("Schema names: DB='%s', Parsed='%s' (allowing flexibility for Oracle default schema)", dbSchema.Name, parsedSchema.Name)
+		t.Logf("Schema names: DB='%s', Parsed='%s' (allowing flexibility for Oracle default schema)", dbMetadata.Name, parsedSchema.Name)
 	}
 
 	// Compare tables with deep content validation
-	compareTables(t, dbSchema.Tables, parsedSchema.Tables, testName)
+	compareTables(t, dbMetadata.Tables, parsedSchema.Tables, testName)
 
 	// Compare views with content validation
-	compareViews(t, dbSchema.Views, parsedSchema.Views, testName)
+	compareViews(t, dbMetadata.Views, parsedSchema.Views, testName)
 
 	// Compare materialized views
-	compareMaterializedViews(t, dbSchema.MaterializedViews, parsedSchema.MaterializedViews, testName)
+	compareMaterializedViews(t, dbMetadata.MaterializedViews, parsedSchema.MaterializedViews, testName)
 
 	// Compare sequences with content validation
-	compareSequences(t, dbSchema.Sequences, parsedSchema.Sequences, testName)
+	compareSequences(t, dbMetadata.Sequences, parsedSchema.Sequences, testName)
 
 	// Compare functions with content validation
-	compareFunctions(t, dbSchema.Functions, parsedSchema.Functions, testName)
+	compareFunctions(t, dbMetadata.Functions, parsedSchema.Functions, testName)
 
 	// Compare procedures with content validation
-	compareProcedures(t, dbSchema.Procedures, parsedSchema.Procedures, testName)
+	compareProcedures(t, dbMetadata.Procedures, parsedSchema.Procedures, testName)
 }
 
 // compareTables does deep comparison of table metadata

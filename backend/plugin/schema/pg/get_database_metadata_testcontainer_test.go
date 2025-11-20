@@ -1393,8 +1393,8 @@ func compareFunctions(t *testing.T, syncFuncs, parseFuncs []*storepb.FunctionMet
 
 		// Compare function definitions using PostgreSQL function comparer
 		comparer := &PostgreSQLFunctionComparer{}
-		syncFunc := &model.FunctionMetadata{Definition: syncFn.Definition}
-		parseFunc := &model.FunctionMetadata{Definition: parseFn.Definition}
+		syncFunc := &storepb.FunctionMetadata{Definition: syncFn.Definition}
+		parseFunc := &storepb.FunctionMetadata{Definition: parseFn.Definition}
 
 		// Use function comparer to check if they are equal
 		if !comparer.Equal(syncFunc, parseFunc) {
@@ -1670,9 +1670,9 @@ func compareAllSchemas(t *testing.T, syncSchemas, parseSchemas []*storepb.Schema
 
 // validateWithSchemaDiffer validates that the schema differ returns no significant differences between sync and parse metadata
 func validateWithSchemaDiffer(t *testing.T, testName string, syncMeta, parseMeta *storepb.DatabaseSchemaMetadata) {
-	// Convert metadata to model.DatabaseSchema for differ
-	syncSchema := model.NewDatabaseSchema(syncMeta, nil, nil, storepb.Engine_POSTGRES, false)
-	parseSchema := model.NewDatabaseSchema(parseMeta, nil, nil, storepb.Engine_POSTGRES, false)
+	// Convert metadata to model.DatabaseMetadata for differ
+	syncSchema := model.NewDatabaseMetadata(syncMeta, nil, nil, storepb.Engine_POSTGRES, false)
+	parseSchema := model.NewDatabaseMetadata(parseMeta, nil, nil, storepb.Engine_POSTGRES, false)
 
 	// Get schema diff
 	diff, err := schema.GetDatabaseSchemaDiff(storepb.Engine_POSTGRES, syncSchema, parseSchema)

@@ -135,7 +135,7 @@ func (r *ColumnNoNullRule) generateAdvice() {
 	})
 
 	for _, column := range columnList {
-		schema := r.finalMetadata.GetSchema("")
+		schema := r.finalMetadata.GetSchemaMetadata("")
 		if schema == nil {
 			continue
 		}

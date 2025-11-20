@@ -142,7 +142,7 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 		for _, spec := range node.Specs {
 			switch spec.Tp {
 			case ast.AlterTableRenameIndex:
-				schema := checker.originalMetadata.GetSchema("")
+				schema := checker.originalMetadata.GetSchemaMetadata("")
 				var index *model.IndexMetadata
 				if schema != nil {
 					index = schema.GetIndex(spec.FromKey.String())
@@ -150,12 +150,12 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 				if index == nil {
 					continue
 				}
-				if !index.Unique() {
+				if !index.GetProto().GetUnique() {
 					// Index naming convention should in advisor_naming_index_convention.go
 					continue
 				}
 				metaData := map[string]string{
-					advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList(), "_"),
+					advisor.ColumnListTemplateToken: strings.Join(index.GetProto().GetExpressions(), "_"),
 					advisor.TableNameTemplateToken:  node.Table.Name.String(),
 				}
 				res = append(res, &indexMetaData{

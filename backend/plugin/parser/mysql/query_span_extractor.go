@@ -1319,7 +1319,7 @@ func (q *querySpanExtractor) findTableSchema(databaseName, tableName string) (ba
 
 	databaseName = q.filterClusterName(databaseName)
 
-	var dbSchema *model.DatabaseMetadata
+	var dbMetadata *model.DatabaseMetadata
 	allDatabaseNames, err := q.gCtx.ListDatabaseNamesFunc(q.ctx, q.gCtx.InstanceID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list databases")
@@ -1327,7 +1327,7 @@ func (q *querySpanExtractor) findTableSchema(databaseName, tableName string) (ba
 	if q.ignoreCaseSensitive {
 		for _, db := range allDatabaseNames {
 			if strings.EqualFold(db, databaseName) {
-				_, dbSchema, err = q.gCtx.GetDatabaseMetadataFunc(q.ctx, q.gCtx.InstanceID, db)
+				_, dbMetadata, err = q.gCtx.GetDatabaseMetadataFunc(q.ctx, q.gCtx.InstanceID, db)
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to get database metadata for database %q", db)
 				}
@@ -1337,7 +1337,7 @@ func (q *querySpanExtractor) findTableSchema(databaseName, tableName string) (ba
 	} else {
 		for _, db := range allDatabaseNames {
 			if db == databaseName {
-				_, dbSchema, err = q.gCtx.GetDatabaseMetadataFunc(q.ctx, q.gCtx.InstanceID, db)
+				_, dbMetadata, err = q.gCtx.GetDatabaseMetadataFunc(q.ctx, q.gCtx.InstanceID, db)
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to get database metadata for database %q", db)
 				}
@@ -1345,14 +1345,14 @@ func (q *querySpanExtractor) findTableSchema(databaseName, tableName string) (ba
 			}
 		}
 	}
-	if dbSchema == nil {
+	if dbMetadata == nil {
 		return nil, &parsererror.ResourceNotFoundError{
 			Database: &databaseName,
 		}
 	}
 
 	emptySchema := ""
-	schema := dbSchema.GetSchema(emptySchema)
+	schema := dbMetadata.GetSchemaMetadata(emptySchema)
 	if schema == nil {
 		return nil, &parsererror.ResourceNotFoundError{
 			Database: &databaseName,
@@ -1372,20 +1372,20 @@ func (q *querySpanExtractor) findTableSchema(databaseName, tableName string) (ba
 		tableSchema = schema.GetTable(tableName)
 	}
 	if tableSchema != nil {
-		columnNames := make([]string, 0, len(tableSchema.GetColumns()))
-		for _, column := range tableSchema.GetColumns() {
+		columnNames := make([]string, 0, len(tableSchema.GetProto().GetColumns()))
+		for _, column := range tableSchema.GetProto().GetColumns() {
 			columnNames = append(columnNames, column.Name)
 		}
 		return &base.PhysicalTable{
 			Name:     tableSchema.GetProto().Name,
 			Schema:   emptySchema,
-			Database: dbSchema.GetName(),
+			Database: dbMetadata.GetProto().GetName(),
 			Server:   "",
 			Columns:  columnNames,
 		}, nil
 	}
 
-	var viewSchema *model.ViewMetadata
+	var viewSchema *storepb.ViewMetadata
 	if q.ignoreCaseSensitive {
 		for _, view := range schema.ListViewNames() {
 			if strings.EqualFold(view, tableName) {
@@ -1402,9 +1402,9 @@ func (q *querySpanExtractor) findTableSchema(databaseName, tableName string) (ba
 			return nil, errors.Wrapf(err, "failed to get columns for view %q", tableName)
 		}
 		return &base.PhysicalView{
-			Name:     viewSchema.GetProto().Name,
+			Name:     viewSchema.Name,
 			Schema:   emptySchema,
-			Database: dbSchema.GetName(),
+			Database: dbMetadata.GetProto().GetName(),
 			Server:   "",
 			Columns:  columns,
 		}, nil

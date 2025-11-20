@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 func TestPostgreSQLFunctionComparer_Equal(t *testing.T) {
@@ -13,36 +13,36 @@ func TestPostgreSQLFunctionComparer_Equal(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		oldFunc   *model.FunctionMetadata
-		newFunc   *model.FunctionMetadata
+		oldFunc   *storepb.FunctionMetadata
+		newFunc   *storepb.FunctionMetadata
 		wantEqual bool
 	}{
 		{
 			name: "identical functions",
-			oldFunc: &model.FunctionMetadata{
+			oldFunc: &storepb.FunctionMetadata{
 				Definition: `CREATE OR REPLACE FUNCTION add_numbers(a integer, b integer) RETURNS integer AS $$ BEGIN RETURN a + b; END; $$ LANGUAGE plpgsql;`,
 			},
-			newFunc: &model.FunctionMetadata{
+			newFunc: &storepb.FunctionMetadata{
 				Definition: `CREATE OR REPLACE FUNCTION add_numbers(a integer, b integer) RETURNS integer AS $$ BEGIN RETURN a + b; END; $$ LANGUAGE plpgsql;`,
 			},
 			wantEqual: true,
 		},
 		{
 			name: "body only difference",
-			oldFunc: &model.FunctionMetadata{
+			oldFunc: &storepb.FunctionMetadata{
 				Definition: `CREATE OR REPLACE FUNCTION add_numbers(a integer, b integer) RETURNS integer AS $$ BEGIN RETURN a + b; END; $$ LANGUAGE plpgsql;`,
 			},
-			newFunc: &model.FunctionMetadata{
+			newFunc: &storepb.FunctionMetadata{
 				Definition: `CREATE OR REPLACE FUNCTION add_numbers(a integer, b integer) RETURNS integer AS $$ BEGIN RETURN a * b; END; $$ LANGUAGE plpgsql;`,
 			},
 			wantEqual: false,
 		},
 		{
 			name: "signature difference",
-			oldFunc: &model.FunctionMetadata{
+			oldFunc: &storepb.FunctionMetadata{
 				Definition: `CREATE OR REPLACE FUNCTION add_numbers(a integer, b integer) RETURNS integer AS $$ BEGIN RETURN a + b; END; $$ LANGUAGE plpgsql;`,
 			},
-			newFunc: &model.FunctionMetadata{
+			newFunc: &storepb.FunctionMetadata{
 				Definition: `CREATE OR REPLACE FUNCTION add_numbers(a integer, b integer, c integer) RETURNS integer AS $$ BEGIN RETURN a + b; END; $$ LANGUAGE plpgsql;`,
 			},
 			wantEqual: false,
@@ -55,48 +55,48 @@ func TestPostgreSQLFunctionComparer_Equal(t *testing.T) {
 		},
 		{
 			name: "one nil function",
-			oldFunc: &model.FunctionMetadata{
+			oldFunc: &storepb.FunctionMetadata{
 				Definition: `CREATE FUNCTION test() RETURNS integer AS $$ BEGIN RETURN 1; END; $$ LANGUAGE plpgsql;`,
 			},
 			newFunc:   nil,
-			wantEqual: true, // CompareDetailed returns nil for nil inputs, so Equal returns true
+			wantEqual: false,
 		},
 		{
 			name: "identical procedures",
-			oldFunc: &model.FunctionMetadata{
+			oldFunc: &storepb.FunctionMetadata{
 				Definition: `CREATE OR REPLACE PROCEDURE update_user(user_id integer, new_name text) AS $$ BEGIN UPDATE users SET name = new_name WHERE id = user_id; END; $$ LANGUAGE plpgsql;`,
 			},
-			newFunc: &model.FunctionMetadata{
+			newFunc: &storepb.FunctionMetadata{
 				Definition: `CREATE OR REPLACE PROCEDURE update_user(user_id integer, new_name text) AS $$ BEGIN UPDATE users SET name = new_name WHERE id = user_id; END; $$ LANGUAGE plpgsql;`,
 			},
 			wantEqual: true,
 		},
 		{
 			name: "procedure body only difference",
-			oldFunc: &model.FunctionMetadata{
+			oldFunc: &storepb.FunctionMetadata{
 				Definition: `CREATE OR REPLACE PROCEDURE update_user(user_id integer, new_name text) AS $$ BEGIN UPDATE users SET name = new_name WHERE id = user_id; END; $$ LANGUAGE plpgsql;`,
 			},
-			newFunc: &model.FunctionMetadata{
+			newFunc: &storepb.FunctionMetadata{
 				Definition: `CREATE OR REPLACE PROCEDURE update_user(user_id integer, new_name text) AS $$ BEGIN UPDATE users SET name = new_name, updated_at = NOW() WHERE id = user_id; END; $$ LANGUAGE plpgsql;`,
 			},
 			wantEqual: false,
 		},
 		{
 			name: "procedure with dollar quote differences",
-			oldFunc: &model.FunctionMetadata{
+			oldFunc: &storepb.FunctionMetadata{
 				Definition: `CREATE OR REPLACE PROCEDURE public.refresh_stats() LANGUAGE plpgsql AS $procedure$ BEGIN REFRESH MATERIALIZED VIEW stats; END; $procedure$`,
 			},
-			newFunc: &model.FunctionMetadata{
+			newFunc: &storepb.FunctionMetadata{
 				Definition: `CREATE OR REPLACE PROCEDURE refresh_stats() LANGUAGE plpgsql AS $$ BEGIN REFRESH MATERIALIZED VIEW stats; END; $$`,
 			},
 			wantEqual: true, // Should be equal - only formatting differences
 		},
 		{
 			name: "function vs procedure - different types should not be equal",
-			oldFunc: &model.FunctionMetadata{
+			oldFunc: &storepb.FunctionMetadata{
 				Definition: `CREATE OR REPLACE FUNCTION get_user_count() RETURNS integer AS $$ BEGIN RETURN (SELECT COUNT(*) FROM users); END; $$ LANGUAGE plpgsql;`,
 			},
-			newFunc: &model.FunctionMetadata{
+			newFunc: &storepb.FunctionMetadata{
 				Definition: `CREATE OR REPLACE PROCEDURE get_user_count() AS $$ DECLARE count_val integer; BEGIN SELECT COUNT(*) INTO count_val FROM users; END; $$ LANGUAGE plpgsql;`,
 			},
 			wantEqual: false,
@@ -118,8 +118,8 @@ func TestPostgreSQLFunctionComparer_CompareDetailed(t *testing.T) {
 
 	tests := []struct {
 		name                 string
-		oldFunc              *model.FunctionMetadata
-		newFunc              *model.FunctionMetadata
+		oldFunc              *storepb.FunctionMetadata
+		newFunc              *storepb.FunctionMetadata
 		wantResult           *schema.FunctionComparisonResult
 		wantSignatureChanged bool
 		wantBodyChanged      bool
@@ -127,20 +127,20 @@ func TestPostgreSQLFunctionComparer_CompareDetailed(t *testing.T) {
 	}{
 		{
 			name: "identical functions",
-			oldFunc: &model.FunctionMetadata{
+			oldFunc: &storepb.FunctionMetadata{
 				Definition: `CREATE OR REPLACE FUNCTION add_numbers(a integer, b integer) RETURNS integer AS $$ BEGIN RETURN a + b; END; $$ LANGUAGE plpgsql;`,
 			},
-			newFunc: &model.FunctionMetadata{
+			newFunc: &storepb.FunctionMetadata{
 				Definition: `CREATE OR REPLACE FUNCTION add_numbers(a integer, b integer) RETURNS integer AS $$ BEGIN RETURN a + b; END; $$ LANGUAGE plpgsql;`,
 			},
 			wantResult: nil, // No changes, should return nil
 		},
 		{
 			name: "body only difference",
-			oldFunc: &model.FunctionMetadata{
+			oldFunc: &storepb.FunctionMetadata{
 				Definition: `CREATE OR REPLACE FUNCTION add_numbers(a integer, b integer) RETURNS integer AS $$ BEGIN RETURN a + b; END; $$ LANGUAGE plpgsql;`,
 			},
-			newFunc: &model.FunctionMetadata{
+			newFunc: &storepb.FunctionMetadata{
 				Definition: `CREATE OR REPLACE FUNCTION add_numbers(a integer, b integer) RETURNS integer AS $$ BEGIN RETURN a * b; END; $$ LANGUAGE plpgsql;`,
 			},
 			wantResult:           &schema.FunctionComparisonResult{}, // Expect a result, not nil
@@ -150,10 +150,10 @@ func TestPostgreSQLFunctionComparer_CompareDetailed(t *testing.T) {
 		},
 		{
 			name: "signature difference",
-			oldFunc: &model.FunctionMetadata{
+			oldFunc: &storepb.FunctionMetadata{
 				Definition: `CREATE OR REPLACE FUNCTION add_numbers(a integer, b integer) RETURNS integer AS $$ BEGIN RETURN a + b; END; $$ LANGUAGE plpgsql;`,
 			},
-			newFunc: &model.FunctionMetadata{
+			newFunc: &storepb.FunctionMetadata{
 				Definition: `CREATE OR REPLACE FUNCTION add_numbers(a integer, b integer, c integer) RETURNS integer AS $$ BEGIN RETURN a + b; END; $$ LANGUAGE plpgsql;`,
 			},
 			wantResult:           &schema.FunctionComparisonResult{}, // Expect a result, not nil
@@ -169,10 +169,10 @@ func TestPostgreSQLFunctionComparer_CompareDetailed(t *testing.T) {
 		},
 		{
 			name: "procedure body only difference",
-			oldFunc: &model.FunctionMetadata{
+			oldFunc: &storepb.FunctionMetadata{
 				Definition: `CREATE OR REPLACE PROCEDURE update_stats() AS $$ BEGIN UPDATE stats SET last_updated = NOW(); END; $$ LANGUAGE plpgsql;`,
 			},
-			newFunc: &model.FunctionMetadata{
+			newFunc: &storepb.FunctionMetadata{
 				Definition: `CREATE OR REPLACE PROCEDURE update_stats() AS $$ BEGIN UPDATE stats SET last_updated = NOW(), count = count + 1; END; $$ LANGUAGE plpgsql;`,
 			},
 			wantResult:           &schema.FunctionComparisonResult{}, // Expect a result, not nil
@@ -182,10 +182,10 @@ func TestPostgreSQLFunctionComparer_CompareDetailed(t *testing.T) {
 		},
 		{
 			name: "procedure signature difference",
-			oldFunc: &model.FunctionMetadata{
+			oldFunc: &storepb.FunctionMetadata{
 				Definition: `CREATE OR REPLACE PROCEDURE update_user(user_id integer) AS $$ BEGIN UPDATE users SET updated_at = NOW() WHERE id = user_id; END; $$ LANGUAGE plpgsql;`,
 			},
-			newFunc: &model.FunctionMetadata{
+			newFunc: &storepb.FunctionMetadata{
 				Definition: `CREATE OR REPLACE PROCEDURE update_user(user_id integer, new_status text) AS $$ BEGIN UPDATE users SET updated_at = NOW() WHERE id = user_id; END; $$ LANGUAGE plpgsql;`,
 			},
 			wantResult:           &schema.FunctionComparisonResult{}, // Expect a result, not nil
@@ -195,20 +195,20 @@ func TestPostgreSQLFunctionComparer_CompareDetailed(t *testing.T) {
 		},
 		{
 			name: "procedure with dollar quote formatting differences",
-			oldFunc: &model.FunctionMetadata{
+			oldFunc: &storepb.FunctionMetadata{
 				Definition: `CREATE OR REPLACE PROCEDURE public.refresh_data() LANGUAGE plpgsql AS $procedure$ BEGIN REFRESH MATERIALIZED VIEW data_view; END; $procedure$`,
 			},
-			newFunc: &model.FunctionMetadata{
+			newFunc: &storepb.FunctionMetadata{
 				Definition: `CREATE OR REPLACE PROCEDURE refresh_data() LANGUAGE plpgsql AS $$ BEGIN REFRESH MATERIALIZED VIEW data_view; END; $$`,
 			},
 			wantResult: nil, // Should be nil - functions are equivalent after normalization
 		},
 		{
 			name: "function to procedure change",
-			oldFunc: &model.FunctionMetadata{
+			oldFunc: &storepb.FunctionMetadata{
 				Definition: `CREATE OR REPLACE FUNCTION calculate_total() RETURNS integer AS $$ BEGIN RETURN (SELECT SUM(amount) FROM orders); END; $$ LANGUAGE plpgsql;`,
 			},
-			newFunc: &model.FunctionMetadata{
+			newFunc: &storepb.FunctionMetadata{
 				Definition: `CREATE OR REPLACE PROCEDURE calculate_total() AS $$ BEGIN RETURN (SELECT SUM(amount) FROM orders); END; $$ LANGUAGE plpgsql;`,
 			},
 			wantResult:           &schema.FunctionComparisonResult{}, // Expect a result, not nil
@@ -425,8 +425,8 @@ func TestPostgreSQLFunctionComparer_ProcedureSupport(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			oldFunc := &model.FunctionMetadata{Definition: tt.def1}
-			newFunc := &model.FunctionMetadata{Definition: tt.def2}
+			oldFunc := &storepb.FunctionMetadata{Definition: tt.def1}
+			newFunc := &storepb.FunctionMetadata{Definition: tt.def2}
 
 			equal := comparer.Equal(oldFunc, newFunc)
 			if equal == tt.wantDiff {

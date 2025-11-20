@@ -45,7 +45,7 @@ func (*FullyQualifiedObjectNameAdvisor) Check(_ context.Context, checkCtx adviso
 			level: level,
 			title: string(checkCtx.Rule.Type),
 		},
-		dbSchema:       checkCtx.DBSchema,
+		dbMetadata:     checkCtx.DBSchema,
 		statementsText: checkCtx.Statements,
 	}
 
@@ -63,7 +63,7 @@ func (*FullyQualifiedObjectNameAdvisor) Check(_ context.Context, checkCtx adviso
 type fullyQualifiedObjectNameRule struct {
 	BaseRule
 
-	dbSchema       *storepb.DatabaseSchemaMetadata
+	dbMetadata     *storepb.DatabaseSchemaMetadata
 	statementsText string
 }
 
@@ -253,7 +253,7 @@ func (r *fullyQualifiedObjectNameRule) handleSelectstmt(ctx *parser.SelectstmtCo
 
 	// For SELECT statements, we need to extract tables from the query
 	// and check them against the database schema
-	if r.dbSchema == nil {
+	if r.dbMetadata == nil {
 		return
 	}
 
@@ -364,12 +364,12 @@ func (r *fullyQualifiedObjectNameRule) findAllTablesInSelect(statement string) [
 
 // getSchemaNameMapFromPublic creates a map of table names from the database schema
 func (r *fullyQualifiedObjectNameRule) getSchemaNameMapFromPublic() map[string]bool {
-	if r.dbSchema == nil || r.dbSchema.Schemas == nil {
+	if r.dbMetadata == nil || r.dbMetadata.Schemas == nil {
 		return nil
 	}
 
 	filterMap := map[string]bool{}
-	for _, schema := range r.dbSchema.Schemas {
+	for _, schema := range r.dbMetadata.Schemas {
 		// Tables
 		for _, tbl := range schema.Tables {
 			filterMap[tbl.Name] = true

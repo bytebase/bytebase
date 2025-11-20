@@ -12,7 +12,7 @@ import (
 )
 
 func TestExtractChangedResources(t *testing.T) {
-	dbSchema := model.NewDatabaseSchema(&storepb.DatabaseSchemaMetadata{}, []byte{}, &storepb.DatabaseConfig{}, storepb.Engine_POSTGRES, true /* caseSensitive */)
+	dbMetadata := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{}, []byte{}, &storepb.DatabaseConfig{}, storepb.Engine_POSTGRES, true /* caseSensitive */)
 	statement :=
 		`CREATE TABLE t1 (c1 INT);
 						DROP TABLE t1;
@@ -22,7 +22,7 @@ func TestExtractChangedResources(t *testing.T) {
 						INSERT INTO t1 (c1) VALUES (1), (5);
 						UPDATE t1 SET c1 = 5;
 			`
-	changedResources := model.NewChangedResources(dbSchema)
+	changedResources := model.NewChangedResources(dbMetadata)
 	changedResources.AddTable(
 		"db",
 		"public",
@@ -67,7 +67,7 @@ func TestExtractChangedResources(t *testing.T) {
 
 	parseResult, err := ParsePostgreSQL(statement)
 	require.NoError(t, err)
-	got, err := extractChangedResources("db", "public", dbSchema, parseResult, statement)
+	got, err := extractChangedResources("db", "public", dbMetadata, parseResult, statement)
 	require.NoError(t, err)
 	require.Equal(t, want, got)
 }

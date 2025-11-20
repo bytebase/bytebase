@@ -1123,7 +1123,7 @@ func (q *querySpanExtractor) findTableSchema(datasetName string, tableName strin
 		return nil, errors.Errorf("dataset %q not found", datasetName)
 	}
 
-	schema := databaseMetadata.GetSchema("")
+	schema := databaseMetadata.GetSchemaMetadata("")
 	if schema == nil {
 		return nil, errors.Errorf("table %q not found", tableName)
 	}
@@ -1145,7 +1145,7 @@ func (q *querySpanExtractor) findTableSchema(datasetName string, tableName strin
 	}
 
 	var columns []string
-	for _, column := range table.GetColumns() {
+	for _, column := range table.GetProto().GetColumns() {
 		columns = append(columns, column.Name)
 	}
 	return &base.PhysicalTable{

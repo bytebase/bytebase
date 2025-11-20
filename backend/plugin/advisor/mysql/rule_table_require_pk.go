@@ -251,11 +251,11 @@ func (r *TableRequirePKRule) changeColumn(tableName string, oldColumn string, ne
 
 func (r *TableRequirePKRule) dropColumn(tableName string, columnName string) bool {
 	if _, ok := r.tables[tableName]; !ok {
-		pk := r.originalMetadata.GetSchema("").GetTable(tableName).GetIndex(primaryKeyName)
+		pk := r.originalMetadata.GetSchemaMetadata("").GetTable(tableName).GetIndex(primaryKeyName)
 		if pk == nil {
 			return false
 		}
-		r.tables[tableName] = newColumnSet(pk.ExpressionList())
+		r.tables[tableName] = newColumnSet(pk.GetProto().GetExpressions())
 	}
 
 	pk := r.tables[tableName]

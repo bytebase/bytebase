@@ -76,7 +76,7 @@ func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment str
 		return "", errors.Wrapf(err, "failed to get database metadata for %s", sourceDatabase)
 	}
 
-	schemaMetadata := metadata.GetSchema("")
+	schemaMetadata := metadata.GetSchemaMetadata("")
 	if schemaMetadata == nil {
 		return "", errors.Errorf("no schema metadata for %s", sourceDatabase)
 	}
@@ -224,7 +224,7 @@ func (g *generator) EnterUpdate_statement(ctx *parser.Update_statementContext) {
 		g.err = err
 		return
 	}
-	for i, column := range g.table.GetColumns() {
+	for i, column := range g.table.GetProto().GetColumns() {
 		if i > 0 {
 			if _, err := fmt.Fprint(&buf, ", "); err != nil {
 				g.err = err
@@ -240,7 +240,7 @@ func (g *generator) EnterUpdate_statement(ctx *parser.Update_statementContext) {
 		g.err = err
 		return
 	}
-	for i, column := range g.table.GetColumns() {
+	for i, column := range g.table.GetProto().GetColumns() {
 		if i > 0 {
 			if _, err := fmt.Fprint(&buf, ", "); err != nil {
 				g.err = err

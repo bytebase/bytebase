@@ -20,8 +20,8 @@ func TestGetSDLDiff_InitializationScenario(t *testing.T) {
 		name                    string
 		currentSDLText          string
 		previousUserSDLText     string
-		currentSchema           *model.DatabaseSchema
-		previousSchema          *model.DatabaseSchema
+		currentSchema           *model.DatabaseMetadata
+		previousSchema          *model.DatabaseMetadata
 		expectedDiffEmpty       bool
 		expectedTableChanges    int
 		expectedViewChanges     int
@@ -32,7 +32,7 @@ func TestGetSDLDiff_InitializationScenario(t *testing.T) {
 			name:                "initialization_with_empty_previous_SDL",
 			currentSDLText:      "CREATE TABLE users (id SERIAL PRIMARY KEY, name TEXT NOT NULL);",
 			previousUserSDLText: "", // Empty - initialization scenario
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -82,7 +82,7 @@ func TestGetSDLDiff_InitializationScenario(t *testing.T) {
 			name:                "initialization_with_complex_schema",
 			currentSDLText:      "CREATE TABLE users (id SERIAL PRIMARY KEY, name TEXT NOT NULL); CREATE VIEW user_view AS SELECT * FROM users;",
 			previousUserSDLText: "", // Empty - initialization scenario
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -169,19 +169,19 @@ func TestGetSDLDiff_InitializationScenario(t *testing.T) {
 func TestConvertDatabaseSchemaToSDL(t *testing.T) {
 	tests := []struct {
 		name          string
-		dbSchema      *model.DatabaseSchema
+		dbMetadata    *model.DatabaseMetadata
 		expectedSDL   string
 		expectedError bool
 	}{
 		{
 			name:          "nil_schema",
-			dbSchema:      nil,
+			dbMetadata:    nil,
 			expectedSDL:   "",
 			expectedError: false,
 		},
 		{
 			name: "empty_metadata",
-			dbSchema: model.NewDatabaseSchema(
+			dbMetadata: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{}, // empty but not nil metadata
 				nil,
 				nil,
@@ -193,7 +193,7 @@ func TestConvertDatabaseSchemaToSDL(t *testing.T) {
 		},
 		{
 			name: "simple_table_schema",
-			dbSchema: model.NewDatabaseSchema(
+			dbMetadata: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -229,7 +229,7 @@ func TestConvertDatabaseSchemaToSDL(t *testing.T) {
 		},
 		{
 			name: "schema_with_materialized_view",
-			dbSchema: model.NewDatabaseSchema(
+			dbMetadata: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -279,7 +279,7 @@ func TestConvertDatabaseSchemaToSDL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := convertDatabaseSchemaToSDL(tt.dbSchema)
+			result, err := convertDatabaseSchemaToSDL(tt.dbMetadata)
 
 			if tt.expectedError {
 				require.Error(t, err)
@@ -313,7 +313,7 @@ func TestGetSDLDiff_MinimalChangesScenario(t *testing.T) {
 		name TEXT NOT NULL
 	);`
 
-	currentSchema := model.NewDatabaseSchema(
+	currentSchema := model.NewDatabaseMetadata(
 		&storepb.DatabaseSchemaMetadata{
 			Name: "test_db",
 			Schemas: []*storepb.SchemaMetadata{
@@ -344,7 +344,7 @@ func TestGetSDLDiff_MinimalChangesScenario(t *testing.T) {
 		false,
 	)
 
-	previousSchema := model.NewDatabaseSchema(
+	previousSchema := model.NewDatabaseMetadata(
 		&storepb.DatabaseSchemaMetadata{
 			Name: "test_db",
 			Schemas: []*storepb.SchemaMetadata{
@@ -385,8 +385,8 @@ func TestApplyMinimalChangesToChunks(t *testing.T) {
 	tests := []struct {
 		name                  string
 		previousUserSDLText   string
-		currentSchema         *model.DatabaseSchema
-		previousSchema        *model.DatabaseSchema
+		currentSchema         *model.DatabaseMetadata
+		previousSchema        *model.DatabaseMetadata
 		expectedTables        []string
 		shouldContainSerial   bool
 		shouldContainIdentity bool
@@ -397,7 +397,7 @@ func TestApplyMinimalChangesToChunks(t *testing.T) {
 				id SERIAL PRIMARY KEY,
 				name TEXT NOT NULL
 			);`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -427,7 +427,7 @@ func TestApplyMinimalChangesToChunks(t *testing.T) {
 				storepb.Engine_POSTGRES,
 				false,
 			),
-			previousSchema: model.NewDatabaseSchema(
+			previousSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -459,7 +459,7 @@ func TestApplyMinimalChangesToChunks(t *testing.T) {
 				id SERIAL PRIMARY KEY,
 				name TEXT NOT NULL
 			);`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -507,7 +507,7 @@ func TestApplyMinimalChangesToChunks(t *testing.T) {
 				storepb.Engine_POSTGRES,
 				false,
 			),
-			previousSchema: model.NewDatabaseSchema(
+			previousSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -539,7 +539,7 @@ func TestApplyMinimalChangesToChunks(t *testing.T) {
 				id SERIAL PRIMARY KEY,
 				name TEXT NOT NULL
 			);`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -587,7 +587,7 @@ func TestApplyMinimalChangesToChunks(t *testing.T) {
 				storepb.Engine_POSTGRES,
 				false,
 			),
-			previousSchema: model.NewDatabaseSchema(
+			previousSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -619,7 +619,7 @@ func TestApplyMinimalChangesToChunks(t *testing.T) {
 				id SERIAL PRIMARY KEY,
 				name TEXT NOT NULL
 			);`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -654,7 +654,7 @@ func TestApplyMinimalChangesToChunks(t *testing.T) {
 				storepb.Engine_POSTGRES,
 				false,
 			),
-			previousSchema: model.NewDatabaseSchema(
+			previousSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -726,7 +726,7 @@ func TestGetSDLDiff_UsabilityHandling(t *testing.T) {
 		name                    string
 		currentSDLText          string
 		previousUserSDLText     string
-		currentSchema           *model.DatabaseSchema
+		currentSchema           *model.DatabaseMetadata
 		expectedTableChanges    int
 		expectedViewChanges     int
 		expectedFunctionChanges int
@@ -744,7 +744,7 @@ func TestGetSDLDiff_UsabilityHandling(t *testing.T) {
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL
 );`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -795,7 +795,7 @@ func TestGetSDLDiff_UsabilityHandling(t *testing.T) {
 			name:                "view_format_difference_but_same_definition",
 			currentSDLText:      `CREATE VIEW "public"."user_view" AS SELECT users.id, users.name FROM public.users;`,
 			previousUserSDLText: `CREATE VIEW user_view AS SELECT id, name FROM users;`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -833,7 +833,7 @@ func TestGetSDLDiff_UsabilityHandling(t *testing.T) {
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL
 );`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -898,7 +898,7 @@ CREATE UNIQUE INDEX "users_email_key" ON ONLY "public"."users" (email);`,
 );
 
 CREATE UNIQUE INDEX "users_email_key" ON ONLY "public"."users" ("email");`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -969,7 +969,7 @@ CREATE UNIQUE INDEX "users_email_key" ON ONLY "public"."users" ("email");`,
     "customer_name" text NOT NULL,
     CONSTRAINT "orders_pkey" PRIMARY KEY ("order_id")
 );`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -1028,7 +1028,7 @@ CREATE UNIQUE INDEX "users_email_key" ON ONLY "public"."users" ("email");`,
     name TEXT NOT NULL,
     price DECIMAL(10,2)
 );`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -1083,7 +1083,7 @@ CREATE UNIQUE INDEX "users_email_key" ON ONLY "public"."users" ("email");`,
     order_id BIGSERIAL PRIMARY KEY,
     customer_name TEXT NOT NULL CHECK (length(customer_name) > 0)
 );`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -1171,7 +1171,7 @@ CREATE UNIQUE INDEX "users_email_key" ON ONLY "public"."users" ("email");`,
 // TestShouldSkipChunkDiffForUsability tests the core usability logic
 func TestShouldSkipChunkDiffForUsability(t *testing.T) {
 	// Create a test schema
-	testSchema := model.NewDatabaseSchema(
+	testSchema := model.NewDatabaseMetadata(
 		&storepb.DatabaseSchemaMetadata{
 			Name: "test_db",
 			Schemas: []*storepb.SchemaMetadata{
@@ -1217,7 +1217,7 @@ func TestShouldSkipChunkDiffForUsability(t *testing.T) {
 		name          string
 		chunkText     string
 		chunkID       string
-		currentSchema *model.DatabaseSchema
+		currentSchema *model.DatabaseMetadata
 		expectedSkip  bool
 		description   string
 	}{
@@ -1264,7 +1264,7 @@ func TestShouldSkipChunkDiffForUsability(t *testing.T) {
 	}
 
 	// Create a schema with table comment for testing comment-related scenarios
-	testSchemaWithComment := model.NewDatabaseSchema(
+	testSchemaWithComment := model.NewDatabaseMetadata(
 		&storepb.DatabaseSchemaMetadata{
 			Name: "test_db",
 			Schemas: []*storepb.SchemaMetadata{
@@ -1311,7 +1311,7 @@ func TestShouldSkipChunkDiffForUsability(t *testing.T) {
 		name          string
 		chunkText     string
 		chunkID       string
-		currentSchema *model.DatabaseSchema
+		currentSchema *model.DatabaseMetadata
 		expectedSkip  bool
 		description   string
 	}{
@@ -1350,7 +1350,7 @@ func TestShouldSkipChunkDiffForUsability(t *testing.T) {
 // TestCurrentDatabaseSDLChunksPerformance validates that the current database SDL chunks provide performance benefits
 func TestCurrentDatabaseSDLChunksPerformance(t *testing.T) {
 	// Create a simple test schema
-	testSchema := model.NewDatabaseSchema(
+	testSchema := model.NewDatabaseMetadata(
 		&storepb.DatabaseSchemaMetadata{
 			Name: "test_db",
 			Schemas: []*storepb.SchemaMetadata{
@@ -1477,7 +1477,7 @@ func TestApplyMinimalChangesToChunks_MultipleTableCorruption(t *testing.T) {
 			}
 
 			// Create mock schemas for applyMinimalChangesToChunks based on test case
-			var currentSchema, previousSchema *model.DatabaseSchema
+			var currentSchema, previousSchema *model.DatabaseMetadata
 
 			switch tc.name {
 			case "simple_constraint_deletion_test":
@@ -1947,7 +1947,7 @@ func TestProcessUniqueConstraintChanges(t *testing.T) {
 	}
 }
 
-func createMockDatabaseSchema() *model.DatabaseSchema {
+func createMockDatabaseSchema() *model.DatabaseMetadata {
 	metadata := &storepb.DatabaseSchemaMetadata{
 		Schemas: []*storepb.SchemaMetadata{
 			{
@@ -1966,10 +1966,10 @@ func createMockDatabaseSchema() *model.DatabaseSchema {
 		},
 	}
 
-	return model.NewDatabaseSchema(metadata, nil, nil, storepb.Engine_POSTGRES, false)
+	return model.NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_POSTGRES, false)
 }
 
-func createMockDatabaseSchemaWithoutTestColumn() *model.DatabaseSchema {
+func createMockDatabaseSchemaWithoutTestColumn() *model.DatabaseMetadata {
 	metadata := &storepb.DatabaseSchemaMetadata{
 		Schemas: []*storepb.SchemaMetadata{
 			{
@@ -1996,10 +1996,10 @@ func createMockDatabaseSchemaWithoutTestColumn() *model.DatabaseSchema {
 		},
 	}
 
-	return model.NewDatabaseSchema(metadata, nil, nil, storepb.Engine_POSTGRES, false)
+	return model.NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_POSTGRES, false)
 }
 
-func createMockDatabaseSchemaForColumnDeletion() *model.DatabaseSchema {
+func createMockDatabaseSchemaForColumnDeletion() *model.DatabaseMetadata {
 	// Create schema for column deletion test - only has id column (name column deleted)
 	metadata := &storepb.DatabaseSchemaMetadata{
 		Schemas: []*storepb.SchemaMetadata{
@@ -2022,7 +2022,7 @@ func createMockDatabaseSchemaForColumnDeletion() *model.DatabaseSchema {
 		},
 	}
 
-	return model.NewDatabaseSchema(metadata, nil, nil, storepb.Engine_POSTGRES, false)
+	return model.NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_POSTGRES, false)
 }
 
 // TestGetSDLDiff_SerialAndIdentityColumns tests serial and identity column handling in SDL diff
@@ -2031,7 +2031,7 @@ func TestGetSDLDiff_SerialAndIdentityColumns(t *testing.T) {
 		name                 string
 		currentSDLText       string
 		previousUserSDLText  string
-		currentSchema        *model.DatabaseSchema
+		currentSchema        *model.DatabaseMetadata
 		expectedTableChanges int
 		description          string
 	}{
@@ -2045,7 +2045,7 @@ func TestGetSDLDiff_SerialAndIdentityColumns(t *testing.T) {
     id integer NOT NULL DEFAULT nextval('users_id_seq'::regclass),
     name TEXT NOT NULL
 );`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -2103,7 +2103,7 @@ func TestGetSDLDiff_SerialAndIdentityColumns(t *testing.T) {
     order_id bigint NOT NULL DEFAULT nextval('orders_order_id_seq'::regclass),
     customer_name TEXT NOT NULL
 );`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -2161,7 +2161,7 @@ func TestGetSDLDiff_SerialAndIdentityColumns(t *testing.T) {
     item_id smallint NOT NULL DEFAULT nextval('items_item_id_seq'::regclass),
     item_name TEXT NOT NULL
 );`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -2219,7 +2219,7 @@ func TestGetSDLDiff_SerialAndIdentityColumns(t *testing.T) {
     id bigint NOT NULL,
     name TEXT NOT NULL
 );`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -2277,7 +2277,7 @@ func TestGetSDLDiff_SerialAndIdentityColumns(t *testing.T) {
     id integer NOT NULL,
     amount DECIMAL(10,2) NOT NULL
 );`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -2356,7 +2356,7 @@ func TestGetSDLDiff_SerialAndIdentityColumns(t *testing.T) {
 func TestConvertDatabaseSchemaToSDL_SerialAndIdentitySequences(t *testing.T) {
 	tests := []struct {
 		name                     string
-		dbSchema                 *model.DatabaseSchema
+		dbMetadata               *model.DatabaseMetadata
 		shouldContainSerial      bool
 		shouldContainIdentity    bool
 		shouldNotContainSequence []string
@@ -2365,7 +2365,7 @@ func TestConvertDatabaseSchemaToSDL_SerialAndIdentitySequences(t *testing.T) {
 	}{
 		{
 			name: "serial_column_should_not_generate_separate_sequence",
-			dbSchema: model.NewDatabaseSchema(
+			dbMetadata: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -2417,7 +2417,7 @@ func TestConvertDatabaseSchemaToSDL_SerialAndIdentitySequences(t *testing.T) {
 		},
 		{
 			name: "identity_column_should_not_generate_separate_sequence",
-			dbSchema: model.NewDatabaseSchema(
+			dbMetadata: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -2468,7 +2468,7 @@ func TestConvertDatabaseSchemaToSDL_SerialAndIdentitySequences(t *testing.T) {
 		},
 		{
 			name: "independent_sequence_should_still_be_generated",
-			dbSchema: model.NewDatabaseSchema(
+			dbMetadata: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -2529,7 +2529,7 @@ func TestConvertDatabaseSchemaToSDL_SerialAndIdentitySequences(t *testing.T) {
 			t.Logf("Test description: %s", tt.description)
 
 			// Convert database schema to SDL
-			result, err := convertDatabaseSchemaToSDL(tt.dbSchema)
+			result, err := convertDatabaseSchemaToSDL(tt.dbMetadata)
 			require.NoError(t, err)
 			require.NotEmpty(t, result)
 
@@ -2573,8 +2573,8 @@ func TestApplySequenceChangesToChunks_PreservesAlterAndComment(t *testing.T) {
 	tests := []struct {
 		name                       string
 		previousUserSDLText        string
-		currentSchema              *model.DatabaseSchema
-		previousSchema             *model.DatabaseSchema
+		currentSchema              *model.DatabaseMetadata
+		previousSchema             *model.DatabaseMetadata
 		shouldPreserveAlter        bool
 		shouldPreserveComment      bool
 		expectedAlterCount         int
@@ -2593,7 +2593,7 @@ func TestApplySequenceChangesToChunks_PreservesAlterAndComment(t *testing.T) {
 ALTER SEQUENCE public.my_seq OWNED BY public.users.id;
 
 COMMENT ON SEQUENCE public.my_seq IS 'User ID sequence';`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -2622,7 +2622,7 @@ COMMENT ON SEQUENCE public.my_seq IS 'User ID sequence';`,
 				storepb.Engine_POSTGRES,
 				false,
 			),
-			previousSchema: model.NewDatabaseSchema(
+			previousSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -2669,7 +2669,7 @@ COMMENT ON SEQUENCE public.my_seq IS 'User ID sequence';`,
     CACHE 1;
 
 COMMENT ON SEQUENCE public.counter_seq IS 'Global counter';`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -2696,7 +2696,7 @@ COMMENT ON SEQUENCE public.counter_seq IS 'Global counter';`,
 				storepb.Engine_POSTGRES,
 				false,
 			),
-			previousSchema: model.NewDatabaseSchema(
+			previousSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -2815,8 +2815,8 @@ func TestApplySequenceChangesToChunks_OwnerDrift(t *testing.T) {
 	tests := []struct {
 		name                    string
 		previousUserSDLText     string
-		currentSchema           *model.DatabaseSchema
-		previousSchema          *model.DatabaseSchema
+		currentSchema           *model.DatabaseMetadata
+		previousSchema          *model.DatabaseMetadata
 		expectedAlterStatements int
 		expectedOwnerTable      string
 		expectedOwnerColumn     string
@@ -2831,7 +2831,7 @@ func TestApplySequenceChangesToChunks_OwnerDrift(t *testing.T) {
     CACHE 1;
 
 ALTER SEQUENCE public.my_seq OWNED BY public.users.id;`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -2859,7 +2859,7 @@ ALTER SEQUENCE public.my_seq OWNED BY public.users.id;`,
 				storepb.Engine_POSTGRES,
 				false,
 			),
-			previousSchema: model.NewDatabaseSchema(
+			previousSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -2901,7 +2901,7 @@ ALTER SEQUENCE public.my_seq OWNED BY public.users.id;`,
     CACHE 1;
 
 ALTER SEQUENCE public.counter_seq OWNED BY public.users.id;`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -2929,7 +2929,7 @@ ALTER SEQUENCE public.counter_seq OWNED BY public.users.id;`,
 				storepb.Engine_POSTGRES,
 				false,
 			),
-			previousSchema: model.NewDatabaseSchema(
+			previousSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -3032,8 +3032,8 @@ func TestApplySequenceChangesToChunks_CommentDrift(t *testing.T) {
 	tests := []struct {
 		name                      string
 		previousUserSDLText       string
-		currentSchema             *model.DatabaseSchema
-		previousSchema            *model.DatabaseSchema
+		currentSchema             *model.DatabaseMetadata
+		previousSchema            *model.DatabaseMetadata
 		expectedCommentStatements int
 		expectedCommentText       string
 	}{
@@ -3047,7 +3047,7 @@ func TestApplySequenceChangesToChunks_CommentDrift(t *testing.T) {
     CACHE 1;
 
 COMMENT ON SEQUENCE public.my_seq IS 'Old comment';`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -3074,7 +3074,7 @@ COMMENT ON SEQUENCE public.my_seq IS 'Old comment';`,
 				storepb.Engine_POSTGRES,
 				false,
 			),
-			previousSchema: model.NewDatabaseSchema(
+			previousSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -3112,7 +3112,7 @@ COMMENT ON SEQUENCE public.my_seq IS 'Old comment';`,
     NO MINVALUE
     NO MAXVALUE
     CACHE 1;`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -3139,7 +3139,7 @@ COMMENT ON SEQUENCE public.my_seq IS 'Old comment';`,
 				storepb.Engine_POSTGRES,
 				false,
 			),
-			previousSchema: model.NewDatabaseSchema(
+			previousSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -3179,7 +3179,7 @@ COMMENT ON SEQUENCE public.my_seq IS 'Old comment';`,
     CACHE 1;
 
 COMMENT ON SEQUENCE public.counter_seq IS 'Some comment';`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -3206,7 +3206,7 @@ COMMENT ON SEQUENCE public.counter_seq IS 'Some comment';`,
 				storepb.Engine_POSTGRES,
 				false,
 			),
-			previousSchema: model.NewDatabaseSchema(
+			previousSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -3246,7 +3246,7 @@ COMMENT ON SEQUENCE public.counter_seq IS 'Some comment';`,
     CACHE 1;
 
 COMMENT   ON   SEQUENCE   public.preserve_seq   IS   'Unchanged comment';`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -3273,7 +3273,7 @@ COMMENT   ON   SEQUENCE   public.preserve_seq   IS   'Unchanged comment';`,
 				storepb.Engine_POSTGRES,
 				false,
 			),
-			previousSchema: model.NewDatabaseSchema(
+			previousSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -3370,8 +3370,8 @@ func TestApplySequenceChangesToChunks_OwnedSequenceNotInSDL(t *testing.T) {
 	tests := []struct {
 		name                string
 		previousUserSDLText string
-		currentSchema       *model.DatabaseSchema
-		previousSchema      *model.DatabaseSchema
+		currentSchema       *model.DatabaseMetadata
+		previousSchema      *model.DatabaseMetadata
 		expectSequenceChunk bool
 		sequenceKey         string
 	}{
@@ -3382,7 +3382,7 @@ func TestApplySequenceChangesToChunks_OwnedSequenceNotInSDL(t *testing.T) {
     id SERIAL PRIMARY KEY,
     name TEXT
 );`,
-			previousSchema: model.NewDatabaseSchema(
+			previousSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -3419,7 +3419,7 @@ func TestApplySequenceChangesToChunks_OwnedSequenceNotInSDL(t *testing.T) {
 				storepb.Engine_POSTGRES,
 				false,
 			),
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -3466,7 +3466,7 @@ func TestApplySequenceChangesToChunks_OwnedSequenceNotInSDL(t *testing.T) {
     id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name TEXT
 );`,
-			previousSchema: model.NewDatabaseSchema(
+			previousSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -3503,7 +3503,7 @@ func TestApplySequenceChangesToChunks_OwnedSequenceNotInSDL(t *testing.T) {
 				storepb.Engine_POSTGRES,
 				false,
 			),
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -3559,7 +3559,7 @@ CREATE TABLE public.orders (
 );
 
 ALTER SEQUENCE public.orders_id_seq OWNED BY public.orders.id;`,
-			previousSchema: model.NewDatabaseSchema(
+			previousSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -3596,7 +3596,7 @@ ALTER SEQUENCE public.orders_id_seq OWNED BY public.orders.id;`,
 				storepb.Engine_POSTGRES,
 				false,
 			),
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -3663,8 +3663,8 @@ func TestApplyFunctionChangesToChunks_CommentDrift(t *testing.T) {
 	tests := []struct {
 		name                      string
 		previousUserSDLText       string
-		currentSchema             *model.DatabaseSchema
-		previousSchema            *model.DatabaseSchema
+		currentSchema             *model.DatabaseMetadata
+		previousSchema            *model.DatabaseMetadata
 		expectedCommentStatements int
 		expectedCommentText       string
 	}{
@@ -3676,7 +3676,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 COMMENT ON FUNCTION public.calculate_total(INTEGER) IS 'Old comment';`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -3697,7 +3697,7 @@ COMMENT ON FUNCTION public.calculate_total(INTEGER) IS 'Old comment';`,
 				storepb.Engine_POSTGRES,
 				false,
 			),
-			previousSchema: model.NewDatabaseSchema(
+			previousSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -3728,7 +3728,7 @@ BEGIN
     RETURN a + b;
 END;
 $$ LANGUAGE plpgsql;`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -3749,7 +3749,7 @@ $$ LANGUAGE plpgsql;`,
 				storepb.Engine_POSTGRES,
 				false,
 			),
-			previousSchema: model.NewDatabaseSchema(
+			previousSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -3781,7 +3781,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 COMMENT ON FUNCTION public.process_data(TEXT) IS 'Old comment';`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -3802,7 +3802,7 @@ COMMENT ON FUNCTION public.process_data(TEXT) IS 'Old comment';`,
 				storepb.Engine_POSTGRES,
 				false,
 			),
-			previousSchema: model.NewDatabaseSchema(
+			previousSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -3890,8 +3890,8 @@ func TestApplyIndexChangesToChunks_CommentDrift(t *testing.T) {
 	tests := []struct {
 		name                      string
 		previousUserSDLText       string
-		currentSchema             *model.DatabaseSchema
-		previousSchema            *model.DatabaseSchema
+		currentSchema             *model.DatabaseMetadata
+		previousSchema            *model.DatabaseMetadata
 		expectedCommentStatements int
 		expectedCommentText       string
 	}{
@@ -3905,7 +3905,7 @@ func TestApplyIndexChangesToChunks_CommentDrift(t *testing.T) {
 CREATE INDEX idx_users_email ON public.users (email);
 
 COMMENT ON INDEX public.idx_users_email IS 'Old comment';`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -3938,7 +3938,7 @@ COMMENT ON INDEX public.idx_users_email IS 'Old comment';`,
 				storepb.Engine_POSTGRES,
 				false,
 			),
-			previousSchema: model.NewDatabaseSchema(
+			previousSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -3982,7 +3982,7 @@ COMMENT ON INDEX public.idx_users_email IS 'Old comment';`,
 );
 
 CREATE INDEX idx_products_name ON public.products (name);`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -4015,7 +4015,7 @@ CREATE INDEX idx_products_name ON public.products (name);`,
 				storepb.Engine_POSTGRES,
 				false,
 			),
-			previousSchema: model.NewDatabaseSchema(
+			previousSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -4061,7 +4061,7 @@ CREATE INDEX idx_products_name ON public.products (name);`,
 CREATE UNIQUE INDEX idx_posts_title ON public.posts (title);
 
 COMMENT ON INDEX public.idx_posts_title IS 'Old comment';`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -4094,7 +4094,7 @@ COMMENT ON INDEX public.idx_posts_title IS 'Old comment';`,
 				storepb.Engine_POSTGRES,
 				false,
 			),
-			previousSchema: model.NewDatabaseSchema(
+			previousSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -4194,8 +4194,8 @@ func TestApplyViewChangesToChunks_CommentDrift(t *testing.T) {
 	tests := []struct {
 		name                      string
 		previousUserSDLText       string
-		currentSchema             *model.DatabaseSchema
-		previousSchema            *model.DatabaseSchema
+		currentSchema             *model.DatabaseMetadata
+		previousSchema            *model.DatabaseMetadata
 		expectedCommentStatements int
 		expectedCommentText       string
 	}{
@@ -4205,7 +4205,7 @@ func TestApplyViewChangesToChunks_CommentDrift(t *testing.T) {
 SELECT id, email FROM users;
 
 COMMENT ON VIEW public.user_emails IS 'Old comment';`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -4226,7 +4226,7 @@ COMMENT ON VIEW public.user_emails IS 'Old comment';`,
 				storepb.Engine_POSTGRES,
 				false,
 			),
-			previousSchema: model.NewDatabaseSchema(
+			previousSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -4254,7 +4254,7 @@ COMMENT ON VIEW public.user_emails IS 'Old comment';`,
 			name: "view_comment_added_when_previously_none",
 			previousUserSDLText: `CREATE VIEW public.admin_users AS
 SELECT * FROM users WHERE role = 'admin';`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -4275,7 +4275,7 @@ SELECT * FROM users WHERE role = 'admin';`,
 				storepb.Engine_POSTGRES,
 				false,
 			),
-			previousSchema: model.NewDatabaseSchema(
+			previousSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -4305,7 +4305,7 @@ SELECT * FROM users WHERE role = 'admin';`,
 SELECT * FROM users WHERE active = true;
 
 COMMENT ON VIEW public.active_users IS 'Old comment';`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -4326,7 +4326,7 @@ COMMENT ON VIEW public.active_users IS 'Old comment';`,
 				storepb.Engine_POSTGRES,
 				false,
 			),
-			previousSchema: model.NewDatabaseSchema(
+			previousSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -4414,8 +4414,8 @@ func TestApplyMaterializedViewChangesToChunks_CommentDrift(t *testing.T) {
 	tests := []struct {
 		name                      string
 		previousUserSDLText       string
-		currentSchema             *model.DatabaseSchema
-		previousSchema            *model.DatabaseSchema
+		currentSchema             *model.DatabaseMetadata
+		previousSchema            *model.DatabaseMetadata
 		expectedCommentStatements int
 		expectedCommentText       string
 	}{
@@ -4430,7 +4430,7 @@ CREATE MATERIALIZED VIEW public.user_emails_mv AS
 SELECT id, email FROM users;
 
 COMMENT ON MATERIALIZED VIEW public.user_emails_mv IS 'Old comment';`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -4460,7 +4460,7 @@ COMMENT ON MATERIALIZED VIEW public.user_emails_mv IS 'Old comment';`,
 				storepb.Engine_POSTGRES,
 				false,
 			),
-			previousSchema: model.NewDatabaseSchema(
+			previousSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -4502,7 +4502,7 @@ COMMENT ON MATERIALIZED VIEW public.user_emails_mv IS 'Old comment';`,
 
 CREATE MATERIALIZED VIEW public.admin_users_mv AS
 SELECT * FROM users WHERE role = 'admin';`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -4532,7 +4532,7 @@ SELECT * FROM users WHERE role = 'admin';`,
 				storepb.Engine_POSTGRES,
 				false,
 			),
-			previousSchema: model.NewDatabaseSchema(
+			previousSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -4576,7 +4576,7 @@ CREATE MATERIALIZED VIEW public.active_users_mv AS
 SELECT * FROM users WHERE active = true;
 
 COMMENT ON MATERIALIZED VIEW public.active_users_mv IS 'Old comment';`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -4606,7 +4606,7 @@ COMMENT ON MATERIALIZED VIEW public.active_users_mv IS 'Old comment';`,
 				storepb.Engine_POSTGRES,
 				false,
 			),
-			previousSchema: model.NewDatabaseSchema(
+			previousSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -4703,8 +4703,8 @@ func TestApplyTableChangesToChunk_CommentDrift(t *testing.T) {
 	tests := []struct {
 		name                      string
 		previousUserSDLText       string
-		currentSchema             *model.DatabaseSchema
-		previousSchema            *model.DatabaseSchema
+		currentSchema             *model.DatabaseMetadata
+		previousSchema            *model.DatabaseMetadata
 		expectedCommentStatements int
 		expectedCommentText       string
 	}{
@@ -4716,7 +4716,7 @@ func TestApplyTableChangesToChunk_CommentDrift(t *testing.T) {
 );
 
 COMMENT ON TABLE public.products IS 'Old comment';`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -4740,7 +4740,7 @@ COMMENT ON TABLE public.products IS 'Old comment';`,
 				storepb.Engine_POSTGRES,
 				false,
 			),
-			previousSchema: model.NewDatabaseSchema(
+			previousSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -4773,7 +4773,7 @@ COMMENT ON TABLE public.products IS 'Old comment';`,
     id INTEGER PRIMARY KEY,
     email TEXT NOT NULL
 );`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -4797,7 +4797,7 @@ COMMENT ON TABLE public.products IS 'Old comment';`,
 				storepb.Engine_POSTGRES,
 				false,
 			),
-			previousSchema: model.NewDatabaseSchema(
+			previousSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -4832,7 +4832,7 @@ COMMENT ON TABLE public.products IS 'Old comment';`,
 );
 
 COMMENT ON TABLE public.orders IS 'Old comment';`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -4856,7 +4856,7 @@ COMMENT ON TABLE public.orders IS 'Old comment';`,
 				storepb.Engine_POSTGRES,
 				false,
 			),
-			previousSchema: model.NewDatabaseSchema(
+			previousSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -4947,8 +4947,8 @@ func TestApplyColumnCommentChanges(t *testing.T) {
 	tests := []struct {
 		name                      string
 		previousUserSDLText       string
-		currentSchema             *model.DatabaseSchema
-		previousSchema            *model.DatabaseSchema
+		currentSchema             *model.DatabaseMetadata
+		previousSchema            *model.DatabaseMetadata
 		expectedColumnComments    map[string]map[string]string // tableKey -> columnName -> comment
 		shouldContainCommentOn    []string                     // Expected COMMENT ON COLUMN statements
 		shouldNotContainCommentOn []string                     // Should not contain these
@@ -4961,7 +4961,7 @@ func TestApplyColumnCommentChanges(t *testing.T) {
 );
 
 COMMENT ON COLUMN public.products.name IS 'Old column comment';`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -4984,7 +4984,7 @@ COMMENT ON COLUMN public.products.name IS 'Old column comment';`,
 				storepb.Engine_POSTGRES,
 				false,
 			),
-			previousSchema: model.NewDatabaseSchema(
+			previousSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -5022,7 +5022,7 @@ COMMENT ON COLUMN public.products.name IS 'Old column comment';`,
     id INTEGER PRIMARY KEY,
     quantity INTEGER NOT NULL
 );`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -5045,7 +5045,7 @@ COMMENT ON COLUMN public.products.name IS 'Old column comment';`,
 				storepb.Engine_POSTGRES,
 				false,
 			),
-			previousSchema: model.NewDatabaseSchema(
+			previousSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -5085,7 +5085,7 @@ COMMENT ON COLUMN public.products.name IS 'Old column comment';`,
 );
 
 COMMENT ON COLUMN public.orders.total IS 'Old column comment';`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -5108,7 +5108,7 @@ COMMENT ON COLUMN public.orders.total IS 'Old column comment';`,
 				storepb.Engine_POSTGRES,
 				false,
 			),
-			previousSchema: model.NewDatabaseSchema(
+			previousSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -5147,7 +5147,7 @@ COMMENT ON COLUMN public.orders.total IS 'Old column comment';`,
 
 COMMENT ON COLUMN public.users.username IS 'Old username comment';
 COMMENT ON COLUMN public.users.email IS 'Old email comment';`,
-			currentSchema: model.NewDatabaseSchema(
+			currentSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{
@@ -5172,7 +5172,7 @@ COMMENT ON COLUMN public.users.email IS 'Old email comment';`,
 				storepb.Engine_POSTGRES,
 				false,
 			),
-			previousSchema: model.NewDatabaseSchema(
+			previousSchema: model.NewDatabaseMetadata(
 				&storepb.DatabaseSchemaMetadata{
 					Name: "test_db",
 					Schemas: []*storepb.SchemaMetadata{

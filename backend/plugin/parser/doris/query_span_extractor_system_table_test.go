@@ -77,7 +77,7 @@ func buildMockDatabaseMetadataGetter(databaseMetadata []*storepb.DatabaseSchemaM
 			m := make(map[string]*model.DatabaseMetadata)
 			for _, metadata := range databaseMetadata {
 				// Doris is case-insensitive for most objects
-				m[metadata.Name] = model.NewDatabaseMetadata(metadata, storepb.Engine_MYSQL, false /* isObjectCaseSensitive */)
+				m[metadata.Name] = model.NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_MYSQL, false /* isObjectCaseSensitive */)
 			}
 
 			if databaseMetadata, ok := m[databaseName]; ok {

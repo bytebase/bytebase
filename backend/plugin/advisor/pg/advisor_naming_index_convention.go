@@ -181,8 +181,8 @@ func (r *namingIndexConventionRule) handleRenamestmt(ctx antlr.ParserRuleContext
 			tableName, index := r.findIndex("", "", oldIndexName)
 			if index != nil {
 				// Only check if it's a regular index (not unique, not primary)
-				if !index.Unique() && !index.Primary() {
-					r.checkIndexName(newIndexName, tableName, index.ExpressionList(), renamestmtCtx.GetStart().GetLine())
+				if !index.GetProto().GetUnique() && !index.GetProto().GetPrimary() {
+					r.checkIndexName(newIndexName, tableName, index.GetProto().GetExpressions(), renamestmtCtx.GetStart().GetLine())
 				}
 			}
 		}
@@ -242,7 +242,7 @@ func (r *namingIndexConventionRule) findIndex(schemaName string, tableName strin
 	if r.originalMetadata == nil {
 		return "", nil
 	}
-	schema := r.originalMetadata.GetSchema(normalizeSchemaName(schemaName))
+	schema := r.originalMetadata.GetSchemaMetadata(normalizeSchemaName(schemaName))
 	if schema == nil {
 		return "", nil
 	}

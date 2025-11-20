@@ -9,6 +9,7 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	parsererror "github.com/bytebase/bytebase/backend/plugin/parser/errors"
 
 	"github.com/bytebase/parser/postgresql"
@@ -241,15 +242,15 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 
 type functionDefinition struct {
 	schemaName string
-	metadata   *model.FunctionMetadata
+	metadata   *storepb.FunctionMetadata
 }
 
 func (q *querySpanExtractor) findFunctionDefine(schemaName, funcName string, nArgs int) (base.TableSource, error) {
-	dbSchema, err := q.getDatabaseMetadata(q.defaultDatabase)
+	dbMetadata, err := q.getDatabaseMetadata(q.defaultDatabase)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database metadata for database: %s", q.defaultDatabase)
 	}
-	if dbSchema == nil {
+	if dbMetadata == nil {
 		return nil, &parsererror.ResourceNotFoundError{
 			Database: &q.defaultDatabase,
 		}
@@ -259,7 +260,7 @@ func (q *querySpanExtractor) findFunctionDefine(schemaName, funcName string, nAr
 	if schemaName != "" {
 		searchPath = []string{schemaName}
 	}
-	schemas, functions := dbSchema.SearchFunctions(searchPath, funcName)
+	schemas, functions := dbMetadata.SearchFunctions(searchPath, funcName)
 	for i, fun := range functions {
 		funcs = append(funcs, &functionDefinition{
 			schemaName: schemas[i],
@@ -306,7 +307,7 @@ type functionDefinitionDetail struct {
 
 func buildFunctionDefinitionDetail(funcDef *functionDefinition) (*functionDefinitionDetail, error) {
 	function := funcDef.metadata
-	definition := function.GetProto().GetDefinition()
+	definition := function.GetDefinition()
 	parseResults, err := ParsePostgreSQL(definition)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse function definition: %s", definition)
@@ -375,7 +376,7 @@ func getFunctionCandidates(functions []*functionDefinition, nArgs int, funcName 
 	// Filter by name only.
 	var nameFiltered []*functionDefinition
 	for _, function := range functions {
-		if function.metadata.GetProto().GetName() != funcName {
+		if function.metadata.GetName() != funcName {
 			continue
 		}
 		nameFiltered = append(nameFiltered, function)
@@ -1210,16 +1211,16 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 	}
 
 	// FIXME: consider cross database query which is supported in Redshift.
-	dbSchema, err := q.getDatabaseMetadata(q.defaultDatabase)
+	dbMetadata, err := q.getDatabaseMetadata(q.defaultDatabase)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database metadata for database: %s", q.defaultDatabase)
 	}
-	if dbSchema == nil {
+	if dbMetadata == nil {
 		return nil, &parsererror.ResourceNotFoundError{
 			Database: &q.defaultDatabase,
 		}
 	}
-	searcher := dbSchema.NewSearcher(schemaName)
+	searcher := dbMetadata.NewSearcher(schemaName)
 	tableSchemaName, table := searcher.SearchTable(tableName)
 	viewSchemaName, view := searcher.SearchView(tableName)
 	materializedViewSchemaName, materializedView := searcher.SearchMaterializedView(tableName)
@@ -1236,7 +1237,7 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 
 	if table != nil {
 		var columns []string
-		for _, column := range table.GetColumns() {
+		for _, column := range table.GetProto().GetColumns() {
 			columns = append(columns, column.Name)
 		}
 		return &base.PhysicalTable{
@@ -1250,7 +1251,7 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 
 	if foreignTable != nil {
 		var columns []string
-		for _, column := range foreignTable.GetColumns() {
+		for _, column := range foreignTable.GetProto().GetColumns() {
 			columns = append(columns, column.Name)
 		}
 		return &base.PhysicalTable{
@@ -1271,7 +1272,7 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 			Server:   "",
 			Database: q.defaultDatabase,
 			Schema:   viewSchemaName,
-			Name:     view.GetProto().Name,
+			Name:     view.Name,
 			Columns:  columns,
 		}, nil
 	}
@@ -1285,7 +1286,7 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 			Server:   "",
 			Database: q.defaultDatabase,
 			Schema:   materializedViewSchemaName,
-			Name:     materializedView.GetProto().Name,
+			Name:     materializedView.Name,
 			Columns:  columns,
 		}, nil
 	}
@@ -1297,7 +1298,7 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 			Server:   "",
 			Database: q.defaultDatabase,
 			Schema:   sequenceSchemaName,
-			Name:     sequence.GetProto().Name,
+			Name:     sequence.Name,
 			Columns:  columns,
 		}, nil
 	}

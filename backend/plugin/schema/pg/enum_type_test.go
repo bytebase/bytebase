@@ -138,8 +138,8 @@ func TestEnumTypeDependencyOrdering(t *testing.T) {
 		}
 
 		// Convert to model.DatabaseSchema
-		oldSchema := model.NewDatabaseSchema(oldMetadata, nil, nil, storepb.Engine_POSTGRES, false)
-		newSchema := model.NewDatabaseSchema(newMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+		oldSchema := model.NewDatabaseMetadata(oldMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+		newSchema := model.NewDatabaseMetadata(newMetadata, nil, nil, storepb.Engine_POSTGRES, false)
 
 		// Get diff
 		diff, err := schema.GetDatabaseSchemaDiff(storepb.Engine_POSTGRES, oldSchema, newSchema)
@@ -214,8 +214,8 @@ func TestEnumTypeDependencyOrdering(t *testing.T) {
 		}
 
 		// Convert to model.DatabaseSchema
-		oldSchema := model.NewDatabaseSchema(oldMetadata, nil, nil, storepb.Engine_POSTGRES, false)
-		newSchema := model.NewDatabaseSchema(newMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+		oldSchema := model.NewDatabaseMetadata(oldMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+		newSchema := model.NewDatabaseMetadata(newMetadata, nil, nil, storepb.Engine_POSTGRES, false)
 
 		// Get diff
 		diff, err := schema.GetDatabaseSchemaDiff(storepb.Engine_POSTGRES, oldSchema, newSchema)

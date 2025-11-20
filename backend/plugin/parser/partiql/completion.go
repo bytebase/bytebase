@@ -118,7 +118,7 @@ func (m CompletionMap) insertMetadataColumns(c *Completer) {
 			if databaseMetadata == nil {
 				return
 			}
-			schema := databaseMetadata.GetSchema("")
+			schema := databaseMetadata.GetSchemaMetadata("")
 			if schema == nil {
 				return
 			}
@@ -136,7 +136,7 @@ func (m CompletionMap) insertMetadataColumns(c *Completer) {
 			if table == nil {
 				return
 			}
-			for _, column := range table.GetColumns() {
+			for _, column := range table.GetProto().GetColumns() {
 				if _, ok := m[column.Name]; !ok {
 					m.Insert(base.Candidate{
 						Type: base.CandidateTypeColumn,
@@ -159,7 +159,7 @@ func (m CompletionMap) insertMetadataTables(c *Completer) {
 	if databaseMetadata == nil {
 		return
 	}
-	schema := databaseMetadata.GetSchema("")
+	schema := databaseMetadata.GetSchemaMetadata("")
 	if schema == nil {
 		return
 	}

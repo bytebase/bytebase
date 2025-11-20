@@ -15,7 +15,7 @@ func TestExtractChangedResources(t *testing.T) {
 	CREATE VIEW hello AS SELECT * FROM world;
 	INSERT INTO T1 (c1) VALUES (1);
 	`
-	changedResources := model.NewChangedResources(nil /* dbSchema */)
+	changedResources := model.NewChangedResources(nil /* dbMetadata */)
 	changedResources.AddTable(
 		"DB",
 		"",
@@ -48,7 +48,7 @@ func TestExtractChangedResources(t *testing.T) {
 	require.NotEmpty(t, results)
 
 	// Pass the full results array to extractChangedResources
-	got, err := extractChangedResources("DB", "", nil /* dbSchema */, results, statement)
+	got, err := extractChangedResources("DB", "", nil /* dbMetadata */, results, statement)
 	require.NoError(t, err)
 	require.Equal(t, want, got)
 }

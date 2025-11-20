@@ -158,13 +158,13 @@ func (r *ColumnDisallowDropInIndexRule) checkAlterTable(ctx *mysql.AlterTableCon
 			continue
 		}
 
-		table := r.originalMetadata.GetSchema("").GetTable(tableName)
+		table := r.originalMetadata.GetSchemaMetadata("").GetTable(tableName)
 		if table != nil {
 			if r.tables[tableName] == nil {
 				r.tables[tableName] = make(columnSet)
 			}
 			for _, indexColumn := range table.ListIndexes() {
-				for _, column := range indexColumn.ExpressionList() {
+				for _, column := range indexColumn.GetProto().GetExpressions() {
 					r.tables[tableName][column] = true
 				}
 			}

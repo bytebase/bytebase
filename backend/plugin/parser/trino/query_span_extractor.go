@@ -8,6 +8,7 @@ import (
 	parser "github.com/bytebase/parser/trino"
 	"github.com/pkg/errors"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	parsererror "github.com/bytebase/bytebase/backend/plugin/parser/errors"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -205,7 +206,7 @@ func (q *querySpanExtractor) expandTableReferencesToColumns(accessTables base.So
 			tableMeta, err := q.findTableSchema(db, schema, table)
 			if err == nil && tableMeta != nil {
 				// Add each column from the table as a source column with full path
-				for _, col := range tableMeta.GetColumns() {
+				for _, col := range tableMeta.GetProto().GetColumns() {
 					colResource := base.ColumnResource{
 						Database: db,
 						Schema:   schema,
@@ -288,7 +289,7 @@ func (q *querySpanExtractor) findTableSchema(db, schema, name string) (*model.Ta
 	}
 
 	// Get schema metadata
-	schemaMeta := metadata.GetSchema(schema)
+	schemaMeta := metadata.GetSchemaMetadata(schema)
 	if schemaMeta == nil {
 		return nil, &parsererror.ResourceNotFoundError{
 			Database: &db,
@@ -314,7 +315,7 @@ func (q *querySpanExtractor) findTableSchema(db, schema, name string) (*model.Ta
 	}
 
 	// Look for view
-	var viewMeta *model.ViewMetadata
+	var viewMeta *storepb.ViewMetadata
 	if q.ignoreCaseSensitive {
 		for _, viewName := range schemaMeta.ListViewNames() {
 			if strings.EqualFold(viewName, name) {

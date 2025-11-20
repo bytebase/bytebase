@@ -98,7 +98,7 @@ func (checker *indexTotalNumberLimitChecker) generateAdvice() []*storepb.Advice 
 	})
 
 	for _, table := range tableList {
-		schema := checker.finalMetadata.GetSchema("")
+		schema := checker.finalMetadata.GetSchemaMetadata("")
 		if schema == nil {
 			continue
 		}

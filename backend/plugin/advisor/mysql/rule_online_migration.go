@@ -50,7 +50,7 @@ func (*OnlineMigrationAdvisor) Check(ctx context.Context, checkCtx advisor.Conte
 	if err != nil {
 		return nil, err
 	}
-	dbSchema := model.NewDatabaseSchema(checkCtx.DBSchema, nil, nil, storepb.Engine_MYSQL, checkCtx.IsObjectCaseSensitive)
+	dbMetadata := model.NewDatabaseMetadata(checkCtx.DBSchema, nil, nil, storepb.Engine_MYSQL, checkCtx.IsObjectCaseSensitive)
 	title := string(checkCtx.Rule.Type)
 
 	// Check gh-ost database existence first if the change type is gh-ost.
@@ -70,7 +70,7 @@ func (*OnlineMigrationAdvisor) Check(ctx context.Context, checkCtx advisor.Conte
 	}
 
 	// Create the rule
-	rule := NewOnlineMigrationRule(level, title, minRows, dbSchema, checkCtx)
+	rule := NewOnlineMigrationRule(level, title, minRows, dbMetadata, checkCtx)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
@@ -128,7 +128,7 @@ func (*OnlineMigrationAdvisor) Check(ctx context.Context, checkCtx advisor.Conte
 type OnlineMigrationRule struct {
 	BaseRule
 	minRows          int64
-	dbSchema         *model.DatabaseSchema
+	dbMetadata       *model.DatabaseMetadata
 	checkCtx         advisor.Context
 	currentDatabase  string
 	changedResources map[string]parserbase.SchemaResource
@@ -138,14 +138,14 @@ type OnlineMigrationRule struct {
 }
 
 // NewOnlineMigrationRule creates a new OnlineMigrationRule.
-func NewOnlineMigrationRule(level storepb.Advice_Status, title string, minRows int64, dbSchema *model.DatabaseSchema, checkCtx advisor.Context) *OnlineMigrationRule {
+func NewOnlineMigrationRule(level storepb.Advice_Status, title string, minRows int64, dbMetadata *model.DatabaseMetadata, checkCtx advisor.Context) *OnlineMigrationRule {
 	return &OnlineMigrationRule{
 		BaseRule: BaseRule{
 			level: level,
 			title: title,
 		},
 		minRows:          minRows,
-		dbSchema:         dbSchema,
+		dbMetadata:       dbMetadata,
 		checkCtx:         checkCtx,
 		currentDatabase:  checkCtx.CurrentDatabase,
 		changedResources: make(map[string]parserbase.SchemaResource),
@@ -204,7 +204,7 @@ func (r *OnlineMigrationRule) exitAlterStatement(ctx *mysql.AlterStatementContex
 
 	for _, resource := range r.changedResources {
 		var tableRows int64
-		for _, table := range r.dbSchema.GetMetadata().GetSchemas()[0].GetTables() {
+		for _, table := range r.dbMetadata.GetProto().GetSchemas()[0].GetTables() {
 			if table.GetName() == resource.Table {
 				tableRows = table.GetRowCount()
 				break

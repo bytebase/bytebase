@@ -92,7 +92,7 @@ func TestWalkThrough(t *testing.T) {
 		require.True(t, ok)
 
 		// Create DatabaseMetadata for walk-through
-		state := model.NewDatabaseMetadata(protoData, storepb.Engine_POSTGRES, !test.IgnoreCaseSensitive)
+		state := model.NewDatabaseMetadata(protoData, nil, nil, storepb.Engine_POSTGRES, !test.IgnoreCaseSensitive)
 
 		asts, _ := sm.GetASTsForChecks(storepb.Engine_POSTGRES, test.Statement)
 		advice := WalkThrough(state, asts)
@@ -111,10 +111,12 @@ func TestWalkThrough(t *testing.T) {
 		want := &storepb.DatabaseSchemaMetadata{}
 		err := common.ProtojsonUnmarshaler.Unmarshal([]byte(test.Want), want)
 		require.NoError(t, err)
-		// Sort proto for deterministic comparison
-		state.SortProto()
 		result := state.GetProto()
-		diff := cmp.Diff(want, result, protocmp.Transform())
+		diff := cmp.Diff(want, result, protocmp.Transform(),
+			protocmp.SortRepeatedFields(&storepb.DatabaseSchemaMetadata{}, "schemas"),
+			protocmp.SortRepeatedFields(&storepb.SchemaMetadata{}, "tables", "views"),
+			protocmp.SortRepeatedFields(&storepb.TableMetadata{}, "indexes", "columns"),
+		)
 		require.Empty(t, diff)
 	}
 }
@@ -183,7 +185,7 @@ func TestWalkThroughANTLR(t *testing.T) {
 		require.True(t, ok)
 
 		// Create DatabaseMetadata for walk-through
-		state := model.NewDatabaseMetadata(protoData, storepb.Engine_POSTGRES, !test.IgnoreCaseSensitive)
+		state := model.NewDatabaseMetadata(protoData, nil, nil, storepb.Engine_POSTGRES, !test.IgnoreCaseSensitive)
 
 		// Parse using ANTLR parser instead of legacy parser
 		parseResult, parseErr := pgparser.ParsePostgreSQL(test.Statement)
@@ -208,10 +210,12 @@ func TestWalkThroughANTLR(t *testing.T) {
 		want := &storepb.DatabaseSchemaMetadata{}
 		err := common.ProtojsonUnmarshaler.Unmarshal([]byte(test.Want), want)
 		require.NoError(t, err)
-		// Sort proto for deterministic comparison
-		state.SortProto()
 		result := state.GetProto()
-		diff := cmp.Diff(want, result, protocmp.Transform())
+		diff := cmp.Diff(want, result, protocmp.Transform(),
+			protocmp.SortRepeatedFields(&storepb.DatabaseSchemaMetadata{}, "schemas"),
+			protocmp.SortRepeatedFields(&storepb.SchemaMetadata{}, "tables", "views"),
+			protocmp.SortRepeatedFields(&storepb.TableMetadata{}, "indexes", "columns"),
+		)
 		require.Empty(t, diff)
 	}
 }

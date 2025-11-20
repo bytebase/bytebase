@@ -141,8 +141,8 @@ func TestExtensionDependencyOrdering(t *testing.T) {
 		}
 
 		// Convert to model.DatabaseSchema
-		oldSchema := model.NewDatabaseSchema(oldMetadata, nil, nil, storepb.Engine_POSTGRES, false)
-		newSchema := model.NewDatabaseSchema(newMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+		oldSchema := model.NewDatabaseMetadata(oldMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+		newSchema := model.NewDatabaseMetadata(newMetadata, nil, nil, storepb.Engine_POSTGRES, false)
 
 		// Get diff
 		diff, err := schema.GetDatabaseSchemaDiff(storepb.Engine_POSTGRES, oldSchema, newSchema)
@@ -230,8 +230,8 @@ func TestExtensionDependencyOrdering(t *testing.T) {
 		}
 
 		// Convert to model.DatabaseSchema
-		oldSchema := model.NewDatabaseSchema(oldMetadata, nil, nil, storepb.Engine_POSTGRES, false)
-		newSchema := model.NewDatabaseSchema(newMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+		oldSchema := model.NewDatabaseMetadata(oldMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+		newSchema := model.NewDatabaseMetadata(newMetadata, nil, nil, storepb.Engine_POSTGRES, false)
 
 		// Get diff
 		diff, err := schema.GetDatabaseSchemaDiff(storepb.Engine_POSTGRES, oldSchema, newSchema)
@@ -621,7 +621,7 @@ func TestExtensionRoundtripNoDiff(t *testing.T) {
 		}
 
 		// Create current database schema from metadata (this is the actual database state)
-		currentSchema := model.NewDatabaseSchema(metadata, nil, nil, storepb.Engine_POSTGRES, false)
+		currentSchema := model.NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_POSTGRES, false)
 
 		// Dump SDL from metadata (this is what getSDLFormat does)
 		dumpedSDL, err := getSDLFormat(metadata)
@@ -667,7 +667,7 @@ func TestExtensionRoundtripNoDiff(t *testing.T) {
 			},
 		}
 
-		currentSchema := model.NewDatabaseSchema(metadata, nil, nil, storepb.Engine_POSTGRES, false)
+		currentSchema := model.NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_POSTGRES, false)
 
 		dumpedSDL, err := getSDLFormat(metadata)
 		require.NoError(t, err)
@@ -694,7 +694,7 @@ COMMENT ON EXTENSION "citext" IS 'Case-insensitive text type';`
 			},
 		}
 
-		currentSchema := model.NewDatabaseSchema(metadata, nil, nil, storepb.Engine_POSTGRES, false)
+		currentSchema := model.NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_POSTGRES, false)
 
 		dumpedSDL, err := getSDLFormat(metadata)
 		require.NoError(t, err)

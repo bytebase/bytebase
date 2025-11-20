@@ -155,7 +155,7 @@ func (q *querySpanExtractor) existsTableMetadata(resource base.SchemaResource) b
 	if meta == nil {
 		return false
 	}
-	schema := meta.GetSchema("")
+	schema := meta.GetSchemaMetadata("")
 	if schema == nil {
 		return false
 	}
@@ -1301,21 +1301,21 @@ func (q *querySpanExtractor) plsqlFindTableSchema(dbLink []string, schemaName, t
 		}
 	}
 
-	dbSchema, err := q.getDatabaseMetadata(schemaName)
+	dbMetadata, err := q.getDatabaseMetadata(schemaName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database metadata for: %s", schemaName)
 	}
-	if dbSchema == nil {
+	if dbMetadata == nil {
 		return nil, &parsererror.ResourceNotFoundError{
 			Database: &schemaName,
 		}
 	}
 
-	return q.findTableSchemaInMetadata(q.gCtx.InstanceID, dbSchema, schemaName, tableName)
+	return q.findTableSchemaInMetadata(q.gCtx.InstanceID, dbMetadata, schemaName, tableName)
 }
 
-func (q *querySpanExtractor) findTableSchemaInMetadata(instanceID string, dbSchema *model.DatabaseMetadata, databaseName, tableName string) (base.TableSource, error) {
-	schema := dbSchema.GetSchema("")
+func (q *querySpanExtractor) findTableSchemaInMetadata(instanceID string, dbMetadata *model.DatabaseMetadata, databaseName, tableName string) (base.TableSource, error) {
+	schema := dbMetadata.GetSchemaMetadata("")
 	if schema == nil {
 		return nil, &parsererror.ResourceNotFoundError{
 			Database: &databaseName,
@@ -1334,7 +1334,7 @@ func (q *querySpanExtractor) findTableSchemaInMetadata(instanceID string, dbSche
 
 	if table != nil {
 		var columns []string
-		for _, column := range table.GetColumns() {
+		for _, column := range table.GetProto().GetColumns() {
 			columns = append(columns, column.Name)
 		}
 		return &base.PhysicalTable{
@@ -1347,7 +1347,7 @@ func (q *querySpanExtractor) findTableSchemaInMetadata(instanceID string, dbSche
 
 	if foreignTable != nil {
 		var columns []string
-		for _, column := range foreignTable.GetColumns() {
+		for _, column := range foreignTable.GetProto().GetColumns() {
 			columns = append(columns, column.Name)
 		}
 		return &base.PhysicalTable{
@@ -1365,7 +1365,7 @@ func (q *querySpanExtractor) findTableSchemaInMetadata(instanceID string, dbSche
 			return nil, err
 		}
 		return &base.PseudoTable{
-			Name:    view.GetProto().Name,
+			Name:    view.Name,
 			Columns: columns,
 		}, nil
 	}
@@ -1377,7 +1377,7 @@ func (q *querySpanExtractor) findTableSchemaInMetadata(instanceID string, dbSche
 			return nil, err
 		}
 		return &base.PseudoTable{
-			Name:    materializedView.GetProto().Name,
+			Name:    materializedView.Name,
 			Columns: columns,
 		}, nil
 	}

@@ -97,7 +97,7 @@ func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment str
 	if schema == "" {
 		schema = "public"
 	}
-	schemaMetadata := metadata.GetSchema(schema)
+	schemaMetadata := metadata.GetSchemaMetadata(schema)
 	if schemaMetadata == nil {
 		return "", errors.Errorf("schema metadata not found for %s", schema)
 	}

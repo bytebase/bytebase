@@ -38,7 +38,7 @@ type Store struct {
 
 	// Large objects.
 	sheetStatementCache *lru.Cache[int, string]
-	dbSchemaCache       *lru.Cache[string, *model.DatabaseSchema]
+	dbMetadataCache     *lru.Cache[string, *model.DatabaseMetadata]
 }
 
 // New creates a new instance of Store.
@@ -108,7 +108,7 @@ func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	dbSchemaCache, err := lru.New[string, *model.DatabaseSchema](128)
+	dbMetadataCache, err := lru.New[string, *model.DatabaseMetadata](128)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +144,7 @@ func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 		rolesCache:           rolesCache,
 		sheetCache:           sheetCache,
 		sheetStatementCache:  sheetStatementCache,
-		dbSchemaCache:        dbSchemaCache,
+		dbMetadataCache:      dbMetadataCache,
 		groupCache:           groupCache,
 	}
 
