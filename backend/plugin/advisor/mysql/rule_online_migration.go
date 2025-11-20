@@ -204,7 +204,7 @@ func (r *OnlineMigrationRule) exitAlterStatement(ctx *mysql.AlterStatementContex
 
 	for _, resource := range r.changedResources {
 		var tableRows int64
-		for _, table := range r.dbMetadata.GetMetadata().GetSchemas()[0].GetTables() {
+		for _, table := range r.dbMetadata.GetProto().GetSchemas()[0].GetTables() {
 			if table.GetName() == resource.Table {
 				tableRows = table.GetRowCount()
 				break

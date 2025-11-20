@@ -13,24 +13,97 @@ import (
 // This struct combines what were previously separate types: DatabaseMetadata, and DatabaseConfig.
 type DatabaseMetadata struct {
 	// Proto representations for serialization
-	metadata *storepb.DatabaseSchemaMetadata
-	config   *storepb.DatabaseConfig
-	schema   []byte
+	proto   *storepb.DatabaseSchemaMetadata
+	config  *storepb.DatabaseConfig
+	rawDump []byte
 
 	// Case sensitivity flags
 	isObjectCaseSensitive bool
 	isDetailCaseSensitive bool
 
 	// Metadata fields (formerly in DatabaseMetadata)
-	name           string
-	owner          string
 	searchPath     []string
 	internal       map[string]*SchemaMetadata
-	linkedDatabase map[string]*storepb.LinkedDatabaseMetadata
-
-	// Config fields (formerly in DatabaseConfig)
-	configName     string
 	configInternal map[string]*SchemaConfig
+	linkedDatabase map[string]*storepb.LinkedDatabaseMetadata
+}
+
+// SchemaMetadata is the metadata for a schema.
+type SchemaMetadata struct {
+	isObjectCaseSensitive    bool
+	isDetailCaseSensitive    bool
+	internalTables           map[string]*TableMetadata
+	internalExternalTable    map[string]*ExternalTableMetadata
+	internalViews            map[string]*ViewMetadata
+	internalMaterializedView map[string]*MaterializedViewMetadata
+	// Store internal functions by list to take care of the overloadings.
+	functions          []*storepb.FunctionMetadata
+	internalProcedures map[string]*ProcedureMetadata
+	internalSequences  map[string]*SequenceMetadata
+	internalPackages   map[string]*PackageMetadata
+
+	proto *storepb.SchemaMetadata
+}
+
+// SchemaConfig is the config for a schema.
+type SchemaConfig struct {
+	internal map[string]*TableConfig
+}
+
+// TableMetadata is the metadata for a table.
+type TableMetadata struct {
+	// If partitionOf is not nil, it means this table is a partition table.
+	partitionOf *TableMetadata
+
+	isDetailCaseSensitive bool
+	internalColumn        map[string]*storepb.ColumnMetadata
+	internalIndexes       map[string]*IndexMetadata
+	columns               []*storepb.ColumnMetadata
+	rowCount              int64
+	proto                 *storepb.TableMetadata
+}
+
+// TableConfig is the config for a table.
+type TableConfig struct {
+	Classification string
+	internal       map[string]*storepb.ColumnCatalog
+}
+
+// ExternalTableMetadata is the metadata for a external table.
+type ExternalTableMetadata struct {
+	isDetailCaseSensitive bool
+	internal              map[string]*storepb.ColumnMetadata
+	columns               []*storepb.ColumnMetadata
+	proto                 *storepb.ExternalTableMetadata
+}
+
+type IndexMetadata struct {
+	tableProto *storepb.TableMetadata
+	proto      *storepb.IndexMetadata
+}
+
+// ViewMetadata is the metadata for a view.
+type ViewMetadata struct {
+	Definition string
+	proto      *storepb.ViewMetadata
+}
+
+type MaterializedViewMetadata struct {
+	Definition string
+	proto      *storepb.MaterializedViewMetadata
+}
+
+type ProcedureMetadata struct {
+	Definition string
+	proto      *storepb.ProcedureMetadata
+}
+type PackageMetadata struct {
+	Definition string
+	proto      *storepb.PackageMetadata
+}
+
+type SequenceMetadata struct {
+	proto *storepb.SequenceMetadata
 }
 
 func NewDatabaseMetadata(
@@ -42,21 +115,15 @@ func NewDatabaseMetadata(
 ) *DatabaseMetadata {
 	isDetailCaseSensitive := getIsDetailCaseSensitive(engine)
 	dbMetadata := &DatabaseMetadata{
-		metadata:              metadata,
-		schema:                schema,
+		proto:                 metadata,
+		rawDump:               schema,
 		config:                config,
 		isObjectCaseSensitive: isObjectCaseSensitive,
 		isDetailCaseSensitive: isDetailCaseSensitive,
-		name:                  metadata.Name,
-		owner:                 metadata.Owner,
 		searchPath:            normalizeSearchPath(metadata.SearchPath),
 		internal:              make(map[string]*SchemaMetadata),
 		linkedDatabase:        make(map[string]*storepb.LinkedDatabaseMetadata),
 		configInternal:        make(map[string]*SchemaConfig),
-	}
-
-	if config != nil {
-		dbMetadata.configName = config.Name
 	}
 
 	// Build schema metadata maps
@@ -68,7 +135,6 @@ func NewDatabaseMetadata(
 			internalExternalTable:    make(map[string]*ExternalTableMetadata),
 			internalViews:            make(map[string]*ViewMetadata),
 			internalMaterializedView: make(map[string]*MaterializedViewMetadata),
-			internalFunctions:        make([]*FunctionMetadata, 0),
 			internalProcedures:       make(map[string]*ProcedureMetadata),
 			internalPackages:         make(map[string]*PackageMetadata),
 			internalSequences:        make(map[string]*SequenceMetadata),
@@ -134,12 +200,7 @@ func NewDatabaseMetadata(
 				proto:      materializedView,
 			}
 		}
-		for _, function := range s.Functions {
-			schemaMetadata.internalFunctions = append(schemaMetadata.internalFunctions, &FunctionMetadata{
-				Definition: function.Definition,
-				proto:      function,
-			})
-		}
+		schemaMetadata.functions = s.Functions
 		for _, procedure := range s.Procedures {
 			var procedureID string
 			if isDetailCaseSensitive {
@@ -217,26 +278,16 @@ func NewDatabaseMetadata(
 	return dbMetadata
 }
 
-// Proto getters for serialization
-func (d *DatabaseMetadata) GetMetadata() *storepb.DatabaseSchemaMetadata {
-	return d.metadata
+func (d *DatabaseMetadata) GetProto() *storepb.DatabaseSchemaMetadata {
+	return d.proto
 }
 
-func (d *DatabaseMetadata) GetSchema() []byte {
-	return d.schema
+func (d *DatabaseMetadata) GetRawDump() []byte {
+	return d.rawDump
 }
 
 func (d *DatabaseMetadata) GetConfig() *storepb.DatabaseConfig {
 	return d.config
-}
-
-// Metadata methods (formerly from DatabaseMetadata)
-func (d *DatabaseMetadata) GetName() string {
-	return d.name
-}
-
-func (d *DatabaseMetadata) GetOwner() string {
-	return d.owner
 }
 
 func (d *DatabaseMetadata) GetSearchPath() []string {
@@ -254,10 +305,10 @@ func (d *DatabaseMetadata) GetSchemaMetadata(name string) *SchemaMetadata {
 }
 
 func (d *DatabaseMetadata) DatabaseName() string {
-	if d.metadata == nil {
+	if d.proto == nil {
 		return ""
 	}
-	return d.metadata.Name
+	return d.proto.Name
 }
 
 func (d *DatabaseMetadata) HasNoTable() bool {
@@ -287,18 +338,14 @@ func (d *DatabaseMetadata) GetLinkedDatabase(name string) *storepb.LinkedDatabas
 	return d.linkedDatabase[nameID]
 }
 
-func (d *DatabaseMetadata) GetProto() *storepb.DatabaseSchemaMetadata {
-	return d.metadata
-}
-
 func (d *DatabaseMetadata) SortProto() {
 	// Sort schemas by name
-	slices.SortFunc(d.metadata.Schemas, func(x, y *storepb.SchemaMetadata) int {
+	slices.SortFunc(d.proto.Schemas, func(x, y *storepb.SchemaMetadata) int {
 		return strings.Compare(x.Name, y.Name)
 	})
 
 	// Sort tables and indexes within each schema
-	for _, schema := range d.metadata.Schemas {
+	for _, schema := range d.proto.Schemas {
 		// Sort tables by name
 		slices.SortFunc(schema.Tables, func(x, y *storepb.TableMetadata) int {
 			return strings.Compare(x.Name, y.Name)
@@ -341,7 +388,7 @@ func (d *DatabaseMetadata) CreateSchema(schemaName string) *SchemaMetadata {
 	}
 
 	// Add to proto's schema list
-	d.metadata.Schemas = append(d.metadata.Schemas, newSchemaProto)
+	d.proto.Schemas = append(d.proto.Schemas, newSchemaProto)
 
 	// Create SchemaMetadata wrapper
 	schemaMeta := &SchemaMetadata{
@@ -351,7 +398,6 @@ func (d *DatabaseMetadata) CreateSchema(schemaName string) *SchemaMetadata {
 		internalExternalTable:    make(map[string]*ExternalTableMetadata),
 		internalViews:            make(map[string]*ViewMetadata),
 		internalMaterializedView: make(map[string]*MaterializedViewMetadata),
-		internalFunctions:        []*FunctionMetadata{},
 		internalProcedures:       make(map[string]*ProcedureMetadata),
 		internalPackages:         make(map[string]*PackageMetadata),
 		internalSequences:        make(map[string]*SequenceMetadata),
@@ -373,7 +419,7 @@ func (d *DatabaseMetadata) CreateSchema(schemaName string) *SchemaMetadata {
 func (d *DatabaseMetadata) DropSchema(schemaName string) error {
 	// Check if schema exists
 	if d.GetSchemaMetadata(schemaName) == nil {
-		return errors.Errorf("schema %q does not exist in database %q", schemaName, d.name)
+		return errors.Errorf("schema %q does not exist in database %q", schemaName, d.proto.GetName())
 	}
 
 	// Remove from internal map
@@ -386,8 +432,8 @@ func (d *DatabaseMetadata) DropSchema(schemaName string) error {
 	delete(d.internal, schemaID)
 
 	// Remove from proto's schema list
-	newSchemas := make([]*storepb.SchemaMetadata, 0, len(d.metadata.Schemas)-1)
-	for _, schema := range d.metadata.Schemas {
+	newSchemas := make([]*storepb.SchemaMetadata, 0, len(d.proto.Schemas)-1)
+	for _, schema := range d.proto.Schemas {
 		if d.isObjectCaseSensitive {
 			if schema.Name != schemaName {
 				newSchemas = append(newSchemas, schema)
@@ -398,7 +444,7 @@ func (d *DatabaseMetadata) DropSchema(schemaName string) error {
 			}
 		}
 	}
-	d.metadata.Schemas = newSchemas
+	d.proto.Schemas = newSchemas
 
 	return nil
 }
@@ -420,7 +466,7 @@ func (d *DatabaseMetadata) BuildDatabaseConfig() *storepb.DatabaseConfig {
 	if d == nil {
 		return nil
 	}
-	config := &storepb.DatabaseConfig{Name: d.configName}
+	config := &storepb.DatabaseConfig{Name: d.config.GetName()}
 
 	for schemaName, sConfig := range d.configInternal {
 		schemaConfig := &storepb.SchemaCatalog{Name: schemaName}
@@ -444,11 +490,6 @@ func (d *DatabaseMetadata) BuildDatabaseConfig() *storepb.DatabaseConfig {
 	return config
 }
 
-// SchemaConfig is the config for a schema.
-type SchemaConfig struct {
-	internal map[string]*TableConfig
-}
-
 // GetTableConfig gets the table config by name.
 // If not found, returns a new empty table config.
 func (s *SchemaConfig) GetTableConfig(name string) *TableConfig {
@@ -463,12 +504,6 @@ func (s *SchemaConfig) GetTableConfig(name string) *TableConfig {
 	}
 }
 
-// TableConfig is the config for a table.
-type TableConfig struct {
-	Classification string
-	internal       map[string]*storepb.ColumnCatalog
-}
-
 // GetColumnConfig gets the column config by name.
 // If not found, returns a new empty column config.
 func (t *TableConfig) GetColumnConfig(name string) *storepb.ColumnCatalog {
@@ -481,23 +516,6 @@ func (t *TableConfig) GetColumnConfig(name string) *storepb.ColumnCatalog {
 	return &storepb.ColumnCatalog{
 		Name: name,
 	}
-}
-
-// SchemaMetadata is the metadata for a schema.
-type SchemaMetadata struct {
-	isObjectCaseSensitive    bool
-	isDetailCaseSensitive    bool
-	internalTables           map[string]*TableMetadata
-	internalExternalTable    map[string]*ExternalTableMetadata
-	internalViews            map[string]*ViewMetadata
-	internalMaterializedView map[string]*MaterializedViewMetadata
-	// Store internal functions by list to take care of the overloadings.
-	internalFunctions  []*FunctionMetadata
-	internalProcedures map[string]*ProcedureMetadata
-	internalSequences  map[string]*SequenceMetadata
-	internalPackages   map[string]*PackageMetadata
-
-	proto *storepb.SchemaMetadata
 }
 
 func (s *SchemaMetadata) GetOwner() string {
@@ -589,21 +607,19 @@ func (s *SchemaMetadata) GetExternalTable(name string) *ExternalTableMetadata {
 }
 
 // ListFunctions lists the functions.
-func (s *SchemaMetadata) ListFunctions() []*FunctionMetadata {
-	var result []*FunctionMetadata
-	result = append(result, s.internalFunctions...)
-	return result
+func (s *SchemaMetadata) ListFunctions() []*storepb.FunctionMetadata {
+	return s.functions
 }
 
 // GetFunction gets the function by name.
-func (s *SchemaMetadata) GetFunction(name string) *FunctionMetadata {
-	for _, function := range s.internalFunctions {
+func (s *SchemaMetadata) GetFunction(name string) *storepb.FunctionMetadata {
+	for _, function := range s.functions {
 		if s.isDetailCaseSensitive {
-			if function.proto.Name == name {
+			if function.Name == name {
 				return function
 			}
 		} else {
-			if strings.EqualFold(function.proto.Name, name) {
+			if strings.EqualFold(function.Name, name) {
 				return function
 			}
 		}
@@ -668,8 +684,8 @@ func (s *SchemaMetadata) ListProcedureNames() []string {
 // ListFunctionNames lists the function names.
 func (s *SchemaMetadata) ListFunctionNames() []string {
 	var result []string
-	for _, function := range s.internalFunctions {
-		result = append(result, function.GetProto().GetName())
+	for _, function := range s.functions {
+		result = append(result, function.GetName())
 	}
 
 	slices.Sort(result)
@@ -1078,19 +1094,6 @@ func buildTablesMetadataRecursive(originalColumn []*storepb.ColumnMetadata, part
 	return tables, names
 }
 
-// TableMetadata is the metadata for a table.
-type TableMetadata struct {
-	// If partitionOf is not nil, it means this table is a partition table.
-	partitionOf *TableMetadata
-
-	isDetailCaseSensitive bool
-	internalColumn        map[string]*storepb.ColumnMetadata
-	internalIndexes       map[string]*IndexMetadata
-	columns               []*storepb.ColumnMetadata
-	rowCount              int64
-	proto                 *storepb.TableMetadata
-}
-
 func (t *TableMetadata) GetOwner() string {
 	return t.proto.Owner
 }
@@ -1384,14 +1387,6 @@ func (t *TableMetadata) RenameColumn(oldName string, newName string) error {
 	return nil
 }
 
-// ExternalTableMetadata is the metadata for a external table.
-type ExternalTableMetadata struct {
-	isDetailCaseSensitive bool
-	internal              map[string]*storepb.ColumnMetadata
-	columns               []*storepb.ColumnMetadata
-	proto                 *storepb.ExternalTableMetadata
-}
-
 func (t *ExternalTableMetadata) GetProto() *storepb.ExternalTableMetadata {
 	return t.proto
 }
@@ -1410,11 +1405,6 @@ func (t *ExternalTableMetadata) GetColumn(name string) *storepb.ColumnMetadata {
 // GetColumns gets the columns.
 func (t *ExternalTableMetadata) GetColumns() []*storepb.ColumnMetadata {
 	return t.columns
-}
-
-type IndexMetadata struct {
-	tableProto *storepb.TableMetadata
-	proto      *storepb.IndexMetadata
 }
 
 func (i *IndexMetadata) GetProto() *storepb.IndexMetadata {
@@ -1552,54 +1542,20 @@ func (t *TableMetadata) RenameIndex(oldName string, newName string) error {
 	return nil
 }
 
-// ViewMetadata is the metadata for a view.
-type ViewMetadata struct {
-	Definition string
-	proto      *storepb.ViewMetadata
-}
-
 func (v *ViewMetadata) GetProto() *storepb.ViewMetadata {
 	return v.proto
-}
-
-type MaterializedViewMetadata struct {
-	Definition string
-	proto      *storepb.MaterializedViewMetadata
 }
 
 func (m *MaterializedViewMetadata) GetProto() *storepb.MaterializedViewMetadata {
 	return m.proto
 }
 
-type FunctionMetadata struct {
-	Definition string
-	proto      *storepb.FunctionMetadata
-}
-
-func (f *FunctionMetadata) GetProto() *storepb.FunctionMetadata {
-	return f.proto
-}
-
-type ProcedureMetadata struct {
-	Definition string
-	proto      *storepb.ProcedureMetadata
-}
-
 func (p *ProcedureMetadata) GetProto() *storepb.ProcedureMetadata {
 	return p.proto
 }
 
-type PackageMetadata struct {
-	Definition string
-	proto      *storepb.PackageMetadata
-}
-
 func (p *PackageMetadata) GetProto() *storepb.PackageMetadata {
 	return p.proto
-}
-
-type SequenceMetadata struct {
-	proto *storepb.SequenceMetadata
 }
 
 func (p *SequenceMetadata) GetProto() *storepb.SequenceMetadata {

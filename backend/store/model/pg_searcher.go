@@ -1,6 +1,10 @@
 package model
 
-import "strings"
+import (
+	"strings"
+
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+)
 
 // DatabaseSearcher provides a fluent interface for searching database objects with a specific search path.
 // This helper avoids repetitive searchPath parameter passing when performing multiple searches.
@@ -126,22 +130,22 @@ func (s *DatabaseSearcher) SearchMaterializedView(name string) (string, *Materia
 
 // SearchFunctions searches for functions in the search path.
 // NOTE: This is primarily designed for PostgreSQL's search_path concept.
-func (s *DatabaseSearcher) SearchFunctions(name string) ([]string, []*FunctionMetadata) {
+func (s *DatabaseSearcher) SearchFunctions(name string) ([]string, []*storepb.FunctionMetadata) {
 	var schemas []string
-	var funcs []*FunctionMetadata
+	var funcs []*storepb.FunctionMetadata
 	for _, schemaName := range s.searchPath {
 		schema := s.db.GetSchemaMetadata(schemaName)
 		if schema == nil {
 			continue
 		}
-		for _, function := range schema.ListFunctions() {
+		for _, function := range schema.functions {
 			if s.db.isDetailCaseSensitive {
-				if function.proto.Name == name {
+				if function.Name == name {
 					schemas = append(schemas, schema.proto.Name)
 					funcs = append(funcs, function)
 				}
 			} else {
-				if strings.EqualFold(function.proto.Name, name) {
+				if strings.EqualFold(function.Name, name) {
 					schemas = append(schemas, schema.proto.Name)
 					funcs = append(funcs, function)
 				}
@@ -264,22 +268,22 @@ func (d *DatabaseMetadata) SearchMaterializedView(searchPath []string, name stri
 
 // SearchFunctions searches for functions in the search path.
 // NOTE: This is primarily designed for PostgreSQL's search_path concept.
-func (d *DatabaseMetadata) SearchFunctions(searchPath []string, name string) ([]string, []*FunctionMetadata) {
+func (d *DatabaseMetadata) SearchFunctions(searchPath []string, name string) ([]string, []*storepb.FunctionMetadata) {
 	var schemas []string
-	var funcs []*FunctionMetadata
+	var funcs []*storepb.FunctionMetadata
 	for _, schemaName := range searchPath {
 		schema := d.GetSchemaMetadata(schemaName)
 		if schema == nil {
 			continue
 		}
-		for _, function := range schema.ListFunctions() {
+		for _, function := range schema.functions {
 			if d.isDetailCaseSensitive {
-				if function.proto.Name == name {
+				if function.Name == name {
 					schemas = append(schemas, schema.proto.Name)
 					funcs = append(funcs, function)
 				}
 			} else {
-				if strings.EqualFold(function.proto.Name, name) {
+				if strings.EqualFold(function.Name, name) {
 					schemas = append(schemas, schema.proto.Name)
 					funcs = append(funcs, function)
 				}

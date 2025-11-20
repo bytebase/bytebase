@@ -1393,8 +1393,8 @@ func compareFunctions(t *testing.T, syncFuncs, parseFuncs []*storepb.FunctionMet
 
 		// Compare function definitions using PostgreSQL function comparer
 		comparer := &PostgreSQLFunctionComparer{}
-		syncFunc := &model.FunctionMetadata{Definition: syncFn.Definition}
-		parseFunc := &model.FunctionMetadata{Definition: parseFn.Definition}
+		syncFunc := &storepb.FunctionMetadata{Definition: syncFn.Definition}
+		parseFunc := &storepb.FunctionMetadata{Definition: parseFn.Definition}
 
 		// Use function comparer to check if they are equal
 		if !comparer.Equal(syncFunc, parseFunc) {

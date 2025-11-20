@@ -146,7 +146,7 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 	if databaseSchema == nil {
 		return nil, errors.Errorf("database schema %s not found", database.String())
 	}
-	if databaseSchema.GetMetadata() == nil {
+	if databaseSchema.GetProto() == nil {
 		return nil, errors.Errorf("database schema metadata %s not found", database.String())
 	}
 	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})

@@ -4,7 +4,6 @@ import (
 	"sync"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 // FunctionChange represents a type of change detected in a function.
@@ -37,51 +36,30 @@ type FunctionComparisonResult struct {
 // FunctionComparer provides an interface for engine-specific function comparison logic.
 type FunctionComparer interface {
 	// Equal compares two functions and returns whether they are equal.
-	Equal(oldFunc, newFunc *model.FunctionMetadata) bool
+	Equal(oldFunc, newFunc *storepb.FunctionMetadata) bool
 
 	// CompareDetailed performs detailed comparison and returns migration strategy information.
 	// Returns nil if functions are equal.
-	CompareDetailed(oldFunc, newFunc *model.FunctionMetadata) (*FunctionComparisonResult, error)
+	CompareDetailed(oldFunc, newFunc *storepb.FunctionMetadata) (*FunctionComparisonResult, error)
 }
 
 // DefaultFunctionComparer provides default function comparison logic that can be used by most engines.
 type DefaultFunctionComparer struct{}
 
 // Equal compares two functions using simple definition comparison.
-func (*DefaultFunctionComparer) Equal(oldFunc, newFunc *model.FunctionMetadata) bool {
+func (*DefaultFunctionComparer) Equal(oldFunc, newFunc *storepb.FunctionMetadata) bool {
 	if oldFunc == nil || newFunc == nil {
 		return oldFunc == newFunc
 	}
 
-	oldProto := oldFunc.GetProto()
-	newProto := newFunc.GetProto()
-	if oldProto == nil || newProto == nil {
-		return oldProto == newProto
-	}
-
 	// Simple definition comparison
-	return functionsEqual(oldProto, newProto)
+	return functionsEqual(oldFunc, newFunc)
 }
 
 // CompareDetailed provides basic comparison for engines that don't have advanced comparison logic.
-func (*DefaultFunctionComparer) CompareDetailed(oldFunc, newFunc *model.FunctionMetadata) (*FunctionComparisonResult, error) {
-	if oldFunc == nil || newFunc == nil {
-		return nil, nil
-	}
-
-	oldProto := oldFunc.GetProto()
-	newProto := newFunc.GetProto()
-
-	// Handle nil protos
-	if oldProto == nil {
-		oldProto = &storepb.FunctionMetadata{Definition: oldFunc.Definition}
-	}
-	if newProto == nil {
-		newProto = &storepb.FunctionMetadata{Definition: newFunc.Definition}
-	}
-
+func (*DefaultFunctionComparer) CompareDetailed(oldFunc, newFunc *storepb.FunctionMetadata) (*FunctionComparisonResult, error) {
 	// For default implementation, if functions are equal, return nil
-	if functionsEqual(oldProto, newProto) {
+	if functionsEqual(oldFunc, newFunc) {
 		return nil, nil
 	}
 
