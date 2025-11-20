@@ -15,13 +15,6 @@ func init() {
 	base.RegisterSplitterFunc(storepb.Engine_SNOWFLAKE, SplitSQL)
 }
 
-// calculateBaseLine calculates the base line offset for a split statement.
-// Since we trim leading newlines before parsing, the first token will be on line 1
-// in the parsed result. Therefore, baseLine = original line - 1.
-func calculateBaseLine(_ []antlr.Token, antlrPosition *common.ANTLRPosition) int {
-	return int(antlrPosition.Line) - 1
-}
-
 // SplitSQL splits the given SQL statement into multiple SQL statements using ANTLR lexer.
 func SplitSQL(statement string) ([]base.SingleSQL, error) {
 	lexer := parser.NewSnowflakeLexer(antlr.NewInputStream(statement))
@@ -54,7 +47,7 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 			// instead of the last token in buf
 			sqls = append(sqls, base.SingleSQL{
 				Text:     bufStr.String(),
-				BaseLine: calculateBaseLine(buf, antlrPosition),
+				BaseLine: buf[0].GetLine() - 1,
 				End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
 					Line:   int32(token.GetLine()),
 					Column: int32(token.GetColumn()),

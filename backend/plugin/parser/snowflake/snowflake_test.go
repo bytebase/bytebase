@@ -54,8 +54,7 @@ func TestParseSnowSQL(t *testing.T) {
 			sql: "SELECT 1;\n   SELEC 5;\nSELECT 6;",
 			// After standardization, each statement is parsed separately, so the error context
 			// only includes the current statement being parsed (not previous statements).
-			// Leading newlines are trimmed, so the error context shows the trimmed text.
-			err: "Syntax error at line 2:4 \nrelated text:    SELEC",
+			err: "Syntax error at line 2:4 \nrelated text: \n   SELEC",
 		},
 	}
 

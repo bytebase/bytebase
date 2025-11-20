@@ -23,14 +23,14 @@ func TestSplitSQL(t *testing.T) {
 		},
 		{
 			Text:     "\n\tSELECT * FROM orders;",
-			BaseLine: 1, // Corrected: first token is on line 2 of original SQL
+			BaseLine: 0,
 			Start:    &storepb.Position{Line: 2, Column: 2},
 			End:      &storepb.Position{Line: 2, Column: 22},
 			Empty:    false,
 		},
 		{
 			Text:     "\n\tSELECT * FROM products;",
-			BaseLine: 2, // Corrected: first token is on line 3 of original SQL
+			BaseLine: 1,
 			Start:    &storepb.Position{Line: 3, Column: 2},
 			End:      &storepb.Position{Line: 3, Column: 24},
 			Empty:    false,
