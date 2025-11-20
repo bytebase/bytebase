@@ -105,7 +105,7 @@ func (r *columnNoNullRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string)
 	return nil
 }
 
-func (r *columnNoNullRule) OnExit(antlr.ParserRuleContext, string) error {
+func (*columnNoNullRule) OnExit(antlr.ParserRuleContext, string) error {
 	return nil
 }
 
