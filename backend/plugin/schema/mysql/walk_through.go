@@ -1155,7 +1155,7 @@ func mysqlCopyTable(d *model.DatabaseMetadata, databaseName, tableName, referTab
 	newTableProto.Comment = targetProto.Comment
 
 	// Copy columns
-	for _, col := range targetTable.GetColumns() {
+	for _, col := range targetTable.GetProto().GetColumns() {
 		colCopy, ok := proto.Clone(col).(*storepb.ColumnMetadata)
 		if !ok {
 			return &storepb.Advice{
@@ -1456,7 +1456,7 @@ func mysqlCreateColumn(table *model.TableMetadata, columnName string, fieldDef m
 
 	col := &storepb.ColumnMetadata{
 		Name:         columnName,
-		Position:     int32(len(table.GetColumns()) + 1),
+		Position:     int32(len(table.GetProto().GetColumns()) + 1),
 		Default:      "",
 		Nullable:     true,
 		Type:         columnType,

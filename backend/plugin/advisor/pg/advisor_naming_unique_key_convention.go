@@ -237,9 +237,9 @@ func (r *namingUKConventionRule) handleRenamestmt(ctx *parser.RenamestmtContext)
 		// Look up the index in catalog to determine if it's a unique key
 		if r.originalMetadata != nil && oldIndexName != "" {
 			tableName, index := r.findIndex("", "", oldIndexName)
-			if index != nil && index.Unique() && !index.Primary() {
+			if index != nil && index.GetProto().GetUnique() && !index.GetProto().GetPrimary() {
 				r.checkUniqueKeyName(newIndexName, tableName, map[string]string{
-					advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList(), "_"),
+					advisor.ColumnListTemplateToken: strings.Join(index.GetProto().GetExpressions(), "_"),
 					advisor.TableNameTemplateToken:  tableName,
 				}, ctx.GetStart().GetLine())
 			}
@@ -262,9 +262,9 @@ func (r *namingUKConventionRule) handleRenamestmt(ctx *parser.RenamestmtContext)
 
 			// Check if this is a unique key constraint in catalog
 			foundTableName, index := r.findIndex(schemaName, tableName, oldConstraintName)
-			if index != nil && index.Unique() && !index.Primary() {
+			if index != nil && index.GetProto().GetUnique() && !index.GetProto().GetPrimary() {
 				metaData := map[string]string{
-					advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList(), "_"),
+					advisor.ColumnListTemplateToken: strings.Join(index.GetProto().GetExpressions(), "_"),
 					advisor.TableNameTemplateToken:  foundTableName,
 				}
 				r.checkUniqueKeyName(newConstraintName, foundTableName, metaData, ctx.GetStart().GetLine())
@@ -309,7 +309,7 @@ func (r *namingUKConventionRule) checkTableConstraint(constraint parser.ITableco
 					}
 				}
 				if index != nil {
-					columnList = index.ExpressionList()
+					columnList = index.GetProto().GetExpressions()
 				}
 			}
 

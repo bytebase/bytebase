@@ -1145,7 +1145,7 @@ func (q *querySpanExtractor) findTableSchema(datasetName string, tableName strin
 	}
 
 	var columns []string
-	for _, column := range table.GetColumns() {
+	for _, column := range table.GetProto().GetColumns() {
 		columns = append(columns, column.Name)
 	}
 	return &base.PhysicalTable{

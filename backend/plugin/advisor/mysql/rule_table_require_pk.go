@@ -255,7 +255,7 @@ func (r *TableRequirePKRule) dropColumn(tableName string, columnName string) boo
 		if pk == nil {
 			return false
 		}
-		r.tables[tableName] = newColumnSet(pk.ExpressionList())
+		r.tables[tableName] = newColumnSet(pk.GetProto().GetExpressions())
 	}
 
 	pk := r.tables[tableName]

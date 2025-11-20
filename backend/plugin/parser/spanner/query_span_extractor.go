@@ -1130,7 +1130,7 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 	}
 
 	var columns []string
-	for _, column := range table.GetColumns() {
+	for _, column := range table.GetProto().GetColumns() {
 		columns = append(columns, column.Name)
 	}
 	return &base.PhysicalTable{

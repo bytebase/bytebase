@@ -176,8 +176,8 @@ func (r *namingIndexConventionRule) handleRenamestmt(ctx antlr.ParserRuleContext
 			tableName, index := r.findIndex("", "", oldIndexName)
 			if index != nil {
 				// Only check if it's a regular index (not unique, not primary)
-				if !index.Unique() && !index.Primary() {
-					r.checkIndexName(newIndexName, tableName, index.ExpressionList(), renamestmtCtx.GetStart().GetLine())
+				if !index.GetProto().GetUnique() && !index.GetProto().GetPrimary() {
+					r.checkIndexName(newIndexName, tableName, index.GetProto().GetExpressions(), renamestmtCtx.GetStart().GetLine())
 				}
 			}
 		}

@@ -58,8 +58,6 @@ type TableMetadata struct {
 	isDetailCaseSensitive bool
 	internalColumn        map[string]*storepb.ColumnMetadata
 	internalIndexes       map[string]*IndexMetadata
-	columns               []*storepb.ColumnMetadata
-	rowCount              int64
 	proto                 *storepb.TableMetadata
 }
 
@@ -666,7 +664,6 @@ func (s *SchemaMetadata) CreateTable(tableName string) (*TableMetadata, error) {
 		isDetailCaseSensitive: s.isDetailCaseSensitive,
 		internalColumn:        make(map[string]*storepb.ColumnMetadata),
 		internalIndexes:       make(map[string]*IndexMetadata),
-		columns:               []*storepb.ColumnMetadata{},
 		proto:                 newTableProto,
 	}
 
@@ -928,7 +925,6 @@ func buildTablesMetadata(table *storepb.TableMetadata, isDetailCaseSensitive boo
 			columnID = strings.ToLower(column.Name)
 		}
 		tableMetadata.internalColumn[columnID] = column
-		tableMetadata.columns = append(tableMetadata.columns, column)
 	}
 	indexes := buildIndexesMetadata(table)
 	for _, index := range indexes {
@@ -940,7 +936,6 @@ func buildTablesMetadata(table *storepb.TableMetadata, isDetailCaseSensitive boo
 		}
 		tableMetadata.internalIndexes[indexID] = index
 	}
-	tableMetadata.rowCount = table.RowCount
 	result = append(result, tableMetadata)
 	name = append(name, table.Name)
 
@@ -993,7 +988,6 @@ func buildTablesMetadataRecursive(originalColumn []*storepb.ColumnMetadata, part
 				columnID = strings.ToLower(column.Name)
 			}
 			partitionMetadata.internalColumn[columnID] = column
-			partitionMetadata.columns = append(partitionMetadata.columns, column)
 		}
 		tables = append(tables, partitionMetadata)
 		names = append(names, partition.Name)
@@ -1058,15 +1052,6 @@ func (t *TableMetadata) GetPrimaryKey() *IndexMetadata {
 	return nil
 }
 
-// GetColumns gets the columns.
-func (t *TableMetadata) GetColumns() []*storepb.ColumnMetadata {
-	return t.columns
-}
-
-func (t *TableMetadata) GetRowCount() int64 {
-	return t.rowCount
-}
-
 func (t *TableMetadata) GetProto() *storepb.TableMetadata {
 	return t.proto
 }
@@ -1090,9 +1075,6 @@ func (t *TableMetadata) CreateColumn(columnProto *storepb.ColumnMetadata) error 
 		columnID = strings.ToLower(columnProto.Name)
 	}
 	t.internalColumn[columnID] = columnProto
-
-	// Add to columns slice
-	t.columns = append(t.columns, columnProto)
 
 	return nil
 }
@@ -1133,9 +1115,6 @@ func (t *TableMetadata) dropColumnInternal(columnName string, renumberPositions 
 		}
 	}
 	t.proto.Columns = newColumns
-
-	// Rebuild columns slice
-	t.columns = newColumns
 
 	// Renumber positions to be sequential (1-indexed) if requested
 	// MySQL/TiDB: renumber positions (1, 2, 3, ...)
@@ -1228,9 +1207,6 @@ func (t *TableMetadata) DropColumnWithoutUpdatingIndexes(columnName string) erro
 		}
 	}
 	t.proto.Columns = newColumns
-
-	// Rebuild columns slice
-	t.columns = newColumns
 
 	// NOTE: We intentionally do NOT renumber positions here
 	// The caller (tidbCompleteTableChangeColumn) will handle position adjustments
@@ -1325,30 +1301,6 @@ func (i *IndexMetadata) GetProto() *storepb.IndexMetadata {
 
 func (i *IndexMetadata) GetTableProto() *storepb.TableMetadata {
 	return i.tableProto
-}
-
-// Primary returns true if the index is a primary key.
-func (i *IndexMetadata) Primary() bool {
-	if i.proto == nil {
-		return false
-	}
-	return i.proto.Primary
-}
-
-// Unique returns true if the index is unique.
-func (i *IndexMetadata) Unique() bool {
-	if i.proto == nil {
-		return false
-	}
-	return i.proto.Unique
-}
-
-// ExpressionList returns the list of expressions/columns in the index.
-func (i *IndexMetadata) ExpressionList() []string {
-	if i.proto == nil {
-		return nil
-	}
-	return i.proto.Expressions
 }
 
 // CreateIndex creates a new index in the table.

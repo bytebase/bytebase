@@ -126,7 +126,7 @@ func (g *generator) hasIdentityColumn() bool {
 	if g.table == nil {
 		return false
 	}
-	for _, col := range g.table.GetColumns() {
+	for _, col := range g.table.GetProto().GetColumns() {
 		if col.IsIdentity {
 			return true
 		}
@@ -148,7 +148,7 @@ func (g *generator) EnterDelete_statement(ctx *parser.Delete_statementContext) {
 
 			// Build column list
 			var columnList strings.Builder
-			for i, column := range g.table.GetColumns() {
+			for i, column := range g.table.GetProto().GetColumns() {
 				if i > 0 {
 					columnList.WriteString(", ")
 				}
@@ -277,7 +277,7 @@ func (g *generator) EnterUpdate_statement(ctx *parser.Update_statementContext) {
 			g.err = err
 			return
 		}
-		for i, column := range g.table.GetColumns() {
+		for i, column := range g.table.GetProto().GetColumns() {
 			if i > 0 {
 				if _, err := fmt.Fprint(&buf, ", "); err != nil {
 					g.err = err
@@ -293,7 +293,7 @@ func (g *generator) EnterUpdate_statement(ctx *parser.Update_statementContext) {
 			g.err = err
 			return
 		}
-		for i, column := range g.table.GetColumns() {
+		for i, column := range g.table.GetProto().GetColumns() {
 			if i > 0 {
 				if _, err := fmt.Fprint(&buf, ", "); err != nil {
 					g.err = err

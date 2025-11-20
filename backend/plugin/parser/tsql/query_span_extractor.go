@@ -709,7 +709,7 @@ func (q *querySpanExtractor) tsqlFindTableSchema(fullTableName parser.IFull_tabl
 					Name:     table.GetProto().Name,
 					Columns: func() []string {
 						var result []string
-						for _, column := range table.GetColumns() {
+						for _, column := range table.GetProto().GetColumns() {
 							result = append(result, column.Name)
 						}
 						return result
