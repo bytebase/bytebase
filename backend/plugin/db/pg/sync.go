@@ -116,18 +116,20 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		return nil, errors.Wrapf(err, "failed to get schemas from database %q", d.databaseName)
 	}
 
+	// Instrument the 3 most expensive metadata queries (columns, indexes, tables).
+	// Other queries (views, sequences, functions, etc.) are typically fast and not instrumented
+	// to avoid excessive metric cardinality.
 	columnStart := time.Now()
 	columnMap, err := getTableColumns(txn)
-	columnStatus := "success"
 	if err != nil {
-		columnStatus = "error"
-	}
-	metrics.PostgresQueryDuration.
-		WithLabelValues(d.connectionCtx.InstanceID, d.databaseName, "columns", columnStatus).
-		Observe(time.Since(columnStart).Seconds())
-	if err != nil {
+		metrics.PostgresQueryDuration.
+			WithLabelValues(d.connectionCtx.InstanceID, d.databaseName, "columns", "error").
+			Observe(time.Since(columnStart).Seconds())
 		return nil, errors.Wrapf(err, "failed to get columns from database %q", d.databaseName)
 	}
+	metrics.PostgresQueryDuration.
+		WithLabelValues(d.connectionCtx.InstanceID, d.databaseName, "columns", "success").
+		Observe(time.Since(columnStart).Seconds())
 	var indexInheritanceMap map[db.IndexKey]*db.IndexKey
 	if isAtLeastPG10 {
 		indexInheritanceMap, err = getIndexInheritance(txn)
@@ -138,16 +140,15 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 
 	indexStart := time.Now()
 	indexMap, err := getIndexes(txn, indexInheritanceMap)
-	indexStatus := "success"
 	if err != nil {
-		indexStatus = "error"
-	}
-	metrics.PostgresQueryDuration.
-		WithLabelValues(d.connectionCtx.InstanceID, d.databaseName, "indexes", indexStatus).
-		Observe(time.Since(indexStart).Seconds())
-	if err != nil {
+		metrics.PostgresQueryDuration.
+			WithLabelValues(d.connectionCtx.InstanceID, d.databaseName, "indexes", "error").
+			Observe(time.Since(indexStart).Seconds())
 		return nil, errors.Wrapf(err, "failed to get indexes from database %q", d.databaseName)
 	}
+	metrics.PostgresQueryDuration.
+		WithLabelValues(d.connectionCtx.InstanceID, d.databaseName, "indexes", "success").
+		Observe(time.Since(indexStart).Seconds())
 	triggerMap, err := getTriggers(txn, extensionDepend)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get triggers from database %q", d.databaseName)
@@ -163,16 +164,15 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 
 	tableStart := time.Now()
 	tableMap, externalTableMap, tableOidMap, err := getTables(txn, isAtLeastPG10, columnMap, indexMap, triggerMap, checksMap, excludesMap, extensionDepend)
-	tableStatus := "success"
 	if err != nil {
-		tableStatus = "error"
-	}
-	metrics.PostgresQueryDuration.
-		WithLabelValues(d.connectionCtx.InstanceID, d.databaseName, "tables", tableStatus).
-		Observe(time.Since(tableStart).Seconds())
-	if err != nil {
+		metrics.PostgresQueryDuration.
+			WithLabelValues(d.connectionCtx.InstanceID, d.databaseName, "tables", "error").
+			Observe(time.Since(tableStart).Seconds())
 		return nil, errors.Wrapf(err, "failed to get tables from database %q", d.databaseName)
 	}
+	metrics.PostgresQueryDuration.
+		WithLabelValues(d.connectionCtx.InstanceID, d.databaseName, "tables", "success").
+		Observe(time.Since(tableStart).Seconds())
 	var tablePartitionMap map[db.TableKey][]*storepb.TablePartitionMetadata
 	if isAtLeastPG10 {
 		tablePartitionMap, err = getTablePartitions(txn, indexMap, checksMap, excludesMap)
