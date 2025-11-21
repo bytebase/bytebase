@@ -43,7 +43,13 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	if err != nil {
 		return nil, err
 	}
-	tree := parseResults.Tree
+
+	if len(parseResults) != 1 {
+		return nil, errors.Errorf("expected exactly 1 statement, got %d", len(parseResults))
+	}
+
+	parseResult := parseResults[0]
+	tree := parseResult.Tree
 	q.ctx = ctx
 	accessTables, err := getAccessTables(q.defaultDatabase, tree)
 	if err != nil {
