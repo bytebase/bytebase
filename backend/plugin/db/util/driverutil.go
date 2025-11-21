@@ -81,7 +81,7 @@ func RowsToQueryResult(rows *sql.Rows, valueMaker func(string, *sql.ColumnType) 
 			}
 
 			row := &v1pb.QueryRow{}
-			for i := 0; i < columnLength; i++ {
+			for i := range columnLength {
 				row.Values = append(row.Values, rowValueConverter(columnTypeNames[i], columnTypes[i], values[i]))
 			}
 

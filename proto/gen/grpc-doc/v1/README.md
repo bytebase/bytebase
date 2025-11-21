@@ -486,6 +486,7 @@
     - [Advice.Level](#bytebase-v1-Advice-Level)
     - [Advice.RuleType](#bytebase-v1-Advice-RuleType)
     - [QueryHistory.Type](#bytebase-v1-QueryHistory-Type)
+    - [QueryOption.MSSQLExplainFormat](#bytebase-v1-QueryOption-MSSQLExplainFormat)
     - [QueryOption.RedisRunCommandsOn](#bytebase-v1-QueryOption-RedisRunCommandsOn)
     - [QueryResult.Message.Level](#bytebase-v1-QueryResult-Message-Level)
     - [QueryResult.PermissionDenied.CommandType](#bytebase-v1-QueryResult-PermissionDenied-CommandType)
@@ -7822,6 +7823,7 @@ OrgPolicyService manages organizational policies at various resource levels.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | redis_run_commands_on | [QueryOption.RedisRunCommandsOn](#bytebase-v1-QueryOption-RedisRunCommandsOn) |  |  |
+| mssql_explain_format | [QueryOption.MSSQLExplainFormat](#bytebase-v1-QueryOption-MSSQLExplainFormat) |  |  |
 
 
 
@@ -8123,6 +8125,19 @@ RuleType indicates the source of the linting rule.
 | TYPE_UNSPECIFIED | 0 | Unspecified query history type. |
 | QUERY | 1 | Query execution for data retrieval. |
 | EXPORT | 2 | Data export operation to file. |
+
+
+
+<a name="bytebase-v1-QueryOption-MSSQLExplainFormat"></a>
+
+### QueryOption.MSSQLExplainFormat
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| MSSQL_EXPLAIN_FORMAT_UNSPECIFIED | 0 | defaults to SHOWPLAN_ALL |
+| MSSQL_EXPLAIN_FORMAT_ALL | 1 | SHOWPLAN_ALL |
+| MSSQL_EXPLAIN_FORMAT_XML | 2 | SHOWPLAN_XML |
 
 
 

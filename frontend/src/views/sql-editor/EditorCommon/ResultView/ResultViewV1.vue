@@ -134,7 +134,7 @@
               v-else-if="resultSet.error.includes('resource not found')"
               :type="'primary'"
               :text="true"
-              :database="database ?? connectedDatabase"
+              :database="database"
             />
           </template>
         </ErrorView>
@@ -188,7 +188,6 @@ import DataExportButton from "@/components/DataExportButton.vue";
 import { parseStringToResource } from "@/components/GrantRequestPanel/DatabaseResourceForm/common";
 import { Drawer } from "@/components/v2";
 import {
-  useConnectionOfCurrentSQLEditorTab,
   usePolicyV1Store,
   useSQLEditorStore,
   useSQLEditorTabStore,
@@ -237,8 +236,6 @@ defineEmits<{
 
 const { t } = useI18n();
 const policyStore = usePolicyV1Store();
-const { instance, database: connectedDatabase } =
-  useConnectionOfCurrentSQLEditorTab();
 const tabStore = useSQLEditorTabStore();
 const { project } = storeToRefs(useSQLEditorStore());
 
@@ -315,17 +312,14 @@ const disallowCopyingData = computed(() => {
     return false;
   }
 
-  let environment = instance.value.environment;
-  if (props.database) {
-    if (
-      policyStore.getQueryDataPolicyByParent(props.database.project)
-        .disableCopyData
-    ) {
-      return true;
-    }
-    // If the database is provided, use its effective environment.
-    environment = props.database.effectiveEnvironment;
+  if (
+    policyStore.getQueryDataPolicyByParent(props.database.project)
+      .disableCopyData
+  ) {
+    return true;
   }
+  // If the database is provided, use its effective environment.
+  const environment = props.database.effectiveEnvironment;
 
   // Check if the environment has a policy that disables copying data.
   if (environment) {

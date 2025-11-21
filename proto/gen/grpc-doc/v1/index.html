@@ -2037,6 +2037,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.QueryOption.MSSQLExplainFormat"><span class="badge">E</span>QueryOption.MSSQLExplainFormat</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.QueryOption.RedisRunCommandsOn"><span class="badge">E</span>QueryOption.RedisRunCommandsOn</a>
                 </li>
               
@@ -22029,6 +22033,13 @@ Format: instances/{instance}/databases/{databaseName} </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>mssql_explain_format</td>
+                  <td><a href="#bytebase.v1.QueryOption.MSSQLExplainFormat">QueryOption.MSSQLExplainFormat</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -22870,6 +22881,35 @@ These are custom, flexible checks powered by AI models.</p></td>
                 <td>EXPORT</td>
                 <td>2</td>
                 <td><p>Data export operation to file.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.QueryOption.MSSQLExplainFormat">QueryOption.MSSQLExplainFormat</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>MSSQL_EXPLAIN_FORMAT_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p>defaults to SHOWPLAN_ALL</p></td>
+              </tr>
+            
+              <tr>
+                <td>MSSQL_EXPLAIN_FORMAT_ALL</td>
+                <td>1</td>
+                <td><p>SHOWPLAN_ALL</p></td>
+              </tr>
+            
+              <tr>
+                <td>MSSQL_EXPLAIN_FORMAT_XML</td>
+                <td>2</td>
+                <td><p>SHOWPLAN_XML</p></td>
               </tr>
             
           </tbody>

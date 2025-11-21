@@ -178,6 +178,11 @@ export declare type QueryOption = Message<"bytebase.v1.QueryOption"> & {
    * @generated from field: bytebase.v1.QueryOption.RedisRunCommandsOn redis_run_commands_on = 1;
    */
   redisRunCommandsOn: QueryOption_RedisRunCommandsOn;
+
+  /**
+   * @generated from field: bytebase.v1.QueryOption.MSSQLExplainFormat mssql_explain_format = 2;
+   */
+  mssqlExplainFormat: QueryOption_MSSQLExplainFormat;
 };
 
 /**
@@ -216,6 +221,37 @@ export enum QueryOption_RedisRunCommandsOn {
  * Describes the enum bytebase.v1.QueryOption.RedisRunCommandsOn.
  */
 export declare const QueryOption_RedisRunCommandsOnSchema: GenEnum<QueryOption_RedisRunCommandsOn>;
+
+/**
+ * @generated from enum bytebase.v1.QueryOption.MSSQLExplainFormat
+ */
+export enum QueryOption_MSSQLExplainFormat {
+  /**
+   * defaults to SHOWPLAN_ALL
+   *
+   * @generated from enum value: MSSQL_EXPLAIN_FORMAT_UNSPECIFIED = 0;
+   */
+  MSSQL_EXPLAIN_FORMAT_UNSPECIFIED = 0,
+
+  /**
+   * SHOWPLAN_ALL
+   *
+   * @generated from enum value: MSSQL_EXPLAIN_FORMAT_ALL = 1;
+   */
+  MSSQL_EXPLAIN_FORMAT_ALL = 1,
+
+  /**
+   * SHOWPLAN_XML
+   *
+   * @generated from enum value: MSSQL_EXPLAIN_FORMAT_XML = 2;
+   */
+  MSSQL_EXPLAIN_FORMAT_XML = 2,
+}
+
+/**
+ * Describes the enum bytebase.v1.QueryOption.MSSQLExplainFormat.
+ */
+export declare const QueryOption_MSSQLExplainFormatSchema: GenEnum<QueryOption_MSSQLExplainFormat>;
 
 /**
  * @generated from message bytebase.v1.QueryResult

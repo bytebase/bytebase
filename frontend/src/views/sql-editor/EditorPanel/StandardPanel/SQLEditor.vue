@@ -70,8 +70,10 @@ import { activeSQLEditorRef } from "./state";
 import UploadFileButton from "./UploadFileButton.vue";
 
 const emit = defineEmits<{
-  (e: "execute", params: SQLEditorQueryParams): void;
-  (e: "execute-in-new-tab", params: SQLEditorQueryParams): void;
+  (
+    e: "execute",
+    params: { params: SQLEditorQueryParams; newTab: boolean }
+  ): void;
 }>();
 
 const tabStore = useSQLEditorTabStore();
@@ -192,10 +194,8 @@ const runQueryAction = ({
   };
   if (!newTab) {
     params.selection = tab.editorState.selection;
-    emit("execute", params);
-  } else {
-    emit("execute-in-new-tab", params);
   }
+  emit("execute", { params, newTab });
   uiStateStore.saveIntroStateByKey({
     key: "data.query",
     newState: true,
