@@ -105,7 +105,7 @@ func (l *mysqlListener) EnterCreateTable(ctx *mysql.CreateTableContext) {
 	databaseName, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
 	if databaseName != "" && !isCurrentDatabase(l.databaseMetadata, databaseName) {
 		l.advice = &storepb.Advice{
-			Status:        storepb.Advice_ERROR,
+			Status:        storepb.Advice_WARNING,
 			Code:          code.NotCurrentDatabase.Int32(),
 			Title:         fmt.Sprintf("Database `%s` is not the current database `%s`", databaseName, l.databaseMetadata.DatabaseName()),
 			Content:       fmt.Sprintf("Database `%s` is not the current database `%s`", databaseName, l.databaseMetadata.DatabaseName()),
@@ -141,10 +141,10 @@ func (l *mysqlListener) EnterCreateTable(ctx *mysql.CreateTableContext) {
 
 	if ctx.DuplicateAsQueryExpression() != nil {
 		l.advice = &storepb.Advice{
-			Status:        storepb.Advice_ERROR,
+			Status:        storepb.Advice_WARNING,
 			Code:          code.StatementCreateTableAs.Int32(),
-			Title:         fmt.Sprintf("Disallow the CREATE TABLE AS statement but \"%s\" uses", l.text),
-			Content:       fmt.Sprintf("Disallow the CREATE TABLE AS statement but \"%s\" uses", l.text),
+			Title:         fmt.Sprintf("CREATE TABLE AS statement is used in \"%s\"", l.text),
+			Content:       fmt.Sprintf("CREATE TABLE AS statement is used in \"%s\"", l.text),
 			StartPosition: &storepb.Position{Line: 0},
 		}
 		return
@@ -229,10 +229,10 @@ func (l *mysqlListener) EnterDropTable(ctx *mysql.DropTableContext) {
 		databaseName, tableName := mysqlparser.NormalizeMySQLTableRef(tableRef)
 		if databaseName != "" && !isCurrentDatabase(l.databaseMetadata, databaseName) {
 			l.advice = &storepb.Advice{
-				Status:        storepb.Advice_ERROR,
+				Status:        storepb.Advice_WARNING,
 				Code:          code.NotCurrentDatabase.Int32(),
-				Title:         fmt.Sprintf("Database `%s` is not the current database `%s`", databaseName, tableName),
-				Content:       fmt.Sprintf("Database `%s` is not the current database `%s`", databaseName, tableName),
+				Title:         fmt.Sprintf("Database `%s` is not the current database `%s`", databaseName, l.databaseMetadata.DatabaseName()),
+				Content:       fmt.Sprintf("Database `%s` is not the current database `%s`", databaseName, l.databaseMetadata.DatabaseName()),
 				StartPosition: &storepb.Position{Line: 0},
 			}
 		}
