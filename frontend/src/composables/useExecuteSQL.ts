@@ -29,6 +29,7 @@ import { isValidDatabaseName } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
 import {
+  type QueryOption,
   QueryOptionSchema,
   QueryRequestSchema,
   QueryResult_PermissionDenied_CommandType,
@@ -288,6 +289,7 @@ const useExecuteSQL = () => {
     }
 
     const queryOption = create(QueryOptionSchema, {
+      ...(context.params.queryOption ?? ({} as QueryOption)),
       redisRunCommandsOn: sqlEditorStore.redisCommandOption,
     });
     const resultSet = await sqlStore.query(

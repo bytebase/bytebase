@@ -186,6 +186,7 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import type { ColumnDef } from "@tanstack/vue-table";
 import {
   getCoreRowModel,
@@ -205,6 +206,7 @@ import {
   NTooltip,
   type SelectOption,
 } from "naive-ui";
+import { v4 as uuidv4 } from "uuid";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBAttention } from "@/bbkit";
@@ -215,16 +217,23 @@ import type {
 } from "@/components/DataExportButton.vue";
 import DataExportButton from "@/components/DataExportButton.vue";
 import { RichDatabaseName } from "@/components/v2";
+import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { DISMISS_PLACEHOLDER } from "@/plugins/ai/components/state";
 import {
   pushNotification,
   useSQLEditorStore,
   useSQLEditorTabStore,
 } from "@/store";
-import type { ComposedDatabase, SQLEditorQueryParams } from "@/types";
+import type {
+  ComposedDatabase,
+  SQLEditorDatabaseQueryContext,
+  SQLEditorQueryParams,
+} from "@/types";
 import { DEBOUNCE_SEARCH_DELAY, isValidInstanceName } from "@/types";
 import { Engine, ExportFormat } from "@/types/proto-es/v1/common_pb";
 import {
+  QueryOption_MSSQLExplainFormat,
+  QueryOptionSchema,
   type QueryResult,
   type QueryRow,
   type RowValue,
@@ -306,6 +315,7 @@ const { dark, keyword } = useSQLResultViewContext();
 const tabStore = useSQLEditorTabStore();
 const editorStore = useSQLEditorStore();
 const currentTab = computed(() => tabStore.currentTab);
+const { runQuery } = useExecuteSQL();
 
 const viewMode = computed((): ViewMode => {
   const { result } = props;
@@ -461,28 +471,58 @@ const showVisualizeButton = computed((): boolean => {
   );
 });
 
-const visualizeExplain = () => {
+const visualizeExplain = async () => {
+  let token: string | undefined;
   try {
-    const { result } = props;
-    const { statement } = result;
-    if (!statement) return;
-
-    const lines = result.rows.map((row) =>
-      row.values.map((value) => String(extractSQLRowValuePlain(value)))
-    );
-    const explain = lines.map((line) => line[0]).join("\n");
-    if (!explain) return;
-
-    const token = createExplainToken({
-      statement,
-      explain,
-      engine: engine.value,
-    });
+    if (engine.value === Engine.POSTGRES) {
+      token = getExplainToken(props.result);
+    } else if (engine.value === Engine.MSSQL) {
+      token = await getExplainTokenForMSSQL();
+    }
+    if (!token) return;
 
     window.open(`/explain-visualizer.html?token=${token}`, "_blank");
   } catch {
     // nothing
   }
+};
+
+const getExplainToken = (result: QueryResult) => {
+  const { statement } = result;
+  if (!statement) return;
+
+  const lines = result.rows.map((row) =>
+    row.values.map((value) => String(extractSQLRowValuePlain(value)))
+  );
+  const explain = lines.map((line) => line[0]).join("\n");
+  if (!explain) return;
+
+  return createExplainToken({
+    statement,
+    explain,
+    engine: engine.value,
+  });
+};
+
+const getExplainTokenForMSSQL = async () => {
+  const context: SQLEditorDatabaseQueryContext = {
+    id: uuidv4(),
+    params: {
+      ...props.params,
+      queryOption: create(QueryOptionSchema, {
+        mssqlExplainFormat:
+          QueryOption_MSSQLExplainFormat.MSSQL_EXPLAIN_FORMAT_XML,
+      }),
+    },
+    status: "PENDING",
+  };
+  await runQuery(props.database, context);
+
+  const result = context.resultSet?.results[0];
+  if (!result) {
+    return;
+  }
+  return getExplainToken(result);
 };
 
 const handleChangePage = (page: number) => {

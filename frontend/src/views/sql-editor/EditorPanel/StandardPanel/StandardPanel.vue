@@ -19,7 +19,6 @@
               <SQLEditor
                 ref="sqlEditorRef"
                 @execute="handleExecute"
-                @execute-in-new-tab="handleExecuteInNewTab"
               />
               <template #fallback>
                 <div
@@ -118,31 +117,39 @@ const handleExecuteFromActionBar = (params: SQLEditorQueryParams) => {
     return;
   }
   const statement = sqlEditorRef.value.getActiveStatement();
-  handleExecute({ ...params, statement });
+  handleExecute({
+    params: { ...params, statement },
+    newTab: false,
+  });
 };
 
-const handleExecute = (params: SQLEditorQueryParams) => {
-  execute(params);
-};
-const handleExecuteInNewTab = (params: SQLEditorQueryParams) => {
-  const fromTab = tabStore.currentTab;
-  const clonedTab = defaultSQLEditorTab();
-  if (fromTab) {
-    clonedTab.connection = cloneDeep(fromTab.connection);
-    clonedTab.treeState = cloneDeep(fromTab.treeState);
-  }
-  clonedTab.title = suggestedTabTitleForSQLEditorConnection(
-    clonedTab.connection
-  );
-  const newTab = tabStore.addTab(clonedTab, /* beside */ true);
-  if (fromTab) {
-    const vs = cloneViewState(fromTab.id, newTab.id);
-    if (vs) {
-      vs.view = "CODE";
-      vs.detail = {};
+const handleExecute = ({
+  params,
+  newTab,
+}: {
+  params: SQLEditorQueryParams;
+  newTab: boolean;
+}) => {
+  if (newTab) {
+    const fromTab = tabStore.currentTab;
+    const clonedTab = defaultSQLEditorTab();
+    if (fromTab) {
+      clonedTab.connection = cloneDeep(fromTab.connection);
+      clonedTab.treeState = cloneDeep(fromTab.treeState);
     }
+    clonedTab.title = suggestedTabTitleForSQLEditorConnection(
+      clonedTab.connection
+    );
+    const newTab = tabStore.addTab(clonedTab, /* beside */ true);
+    if (fromTab) {
+      const vs = cloneViewState(fromTab.id, newTab.id);
+      if (vs) {
+        vs.view = "CODE";
+        vs.detail = {};
+      }
+    }
+    newTab.statement = params.statement;
   }
-  newTab.statement = params.statement;
 
   nextTick(() => {
     execute(params);
