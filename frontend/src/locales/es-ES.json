@@ -1404,7 +1404,8 @@
       "tenant-id": "Tenant ID",
       "client-id": "Client ID",
       "client-secret": "Client Secret",
-      "specific-credential": "Credencial específica"
+      "specific-credential": "Credencial específica",
+      "saas-default-credential-restriction": "Las credenciales predeterminadas no están disponibles en Bytebase Cloud por seguridad. Proporcione credenciales específicas."
     },
     "database-region": "Región de la base de datos",
     "external-secret-gcp": {

@@ -1404,7 +1404,8 @@
       "tenant-id": "Tenant ID",
       "client-id": "Client ID",
       "client-secret": "Client Secret",
-      "specific-credential": "特定の資格情報"
+      "specific-credential": "特定の資格情報",
+      "saas-default-credential-restriction": "セキュリティ上の理由により、Bytebase Cloud ではデフォルトの認証情報は使用できません。具体的な認証情報を入力してください。"
     },
     "database-region": "データベース領域",
     "external-secret-gcp": {

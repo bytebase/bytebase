@@ -1404,7 +1404,8 @@
       "tenant-id": "Tenant ID",
       "client-id": "Client ID",
       "client-secret": "Client Secret",
-      "specific-credential": "Chứng chỉ cụ thể"
+      "specific-credential": "Chứng chỉ cụ thể",
+      "saas-default-credential-restriction": "Thông tin xác thực mặc định không khả dụng trong Bytebase Cloud vì lý do bảo mật. Vui lòng cung cấp thông tin xác thực cụ thể."
     },
     "database-region": "Khu vực cơ sở dữ liệu",
     "external-secret-gcp": {

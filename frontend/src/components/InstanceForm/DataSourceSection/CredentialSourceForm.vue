@@ -14,8 +14,15 @@
         :value="option.value"
         :key="option.value"
         :label="option.label"
+        :disabled="!allowEdit || option.disabled"
       />
     </NRadioGroup>
+    <div
+      v-if="isDefaultCredentialDisabled"
+      class="mt-2 text-sm text-warning-600 bg-warning-50 p-2 rounded"
+    >
+      {{ $t("instance.iam-extension.saas-default-credential-restriction") }}
+    </div>
     <template v-if="credentialSource === 'specific-credential'">
       <div
         v-if="
@@ -277,6 +284,7 @@ import {
   DataSource_AzureCredentialSchema,
   DataSource_GCPCredentialSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
+import { useActuatorV1Store } from "@/store";
 import type { EditDataSource } from "../common";
 import GcpCredentialInput from "./GcpCredentialInput.vue";
 
@@ -288,14 +296,31 @@ const props = defineProps<{
 }>();
 
 const credentialSource = ref<credentialSource>("default");
+const actuatorStore = useActuatorV1Store();
 
 const { t } = useI18n();
+
+const isIAMAuthentication = computed(() => {
+  return (
+    props.dataSource.authenticationType ===
+      DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM ||
+    props.dataSource.authenticationType ===
+      DataSource_AuthenticationType.AWS_RDS_IAM ||
+    props.dataSource.authenticationType ===
+      DataSource_AuthenticationType.AZURE_IAM
+  );
+});
+
+const isDefaultCredentialDisabled = computed(() => {
+  return actuatorStore.isSaaSMode && isIAMAuthentication.value;
+});
 
 const iamExtensionOptions = computed(() => {
   return [
     {
       label: t("common.Default"),
       value: "default",
+      disabled: isDefaultCredentialDisabled.value,
     },
     {
       label: t("instance.iam-extension.specific-credential"),
@@ -325,6 +350,17 @@ watch(
   () => {
     credentialSource.value = "default";
   }
+);
+
+// Force specific credential in SaaS mode for IAM authentication
+watch(
+  () => isDefaultCredentialDisabled.value,
+  (disabled) => {
+    if (disabled && credentialSource.value === "default") {
+      credentialSource.value = "specific-credential";
+    }
+  },
+  { immediate: true }
 );
 
 watch(
