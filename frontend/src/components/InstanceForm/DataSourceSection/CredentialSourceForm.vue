@@ -287,13 +287,13 @@ import { create } from "@bufbuild/protobuf";
 import { NInput, NRadio, NRadioGroup, NTooltip } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { useActuatorV1Store } from "@/store";
 import {
   DataSource_AuthenticationType,
   DataSource_AWSCredentialSchema,
   DataSource_AzureCredentialSchema,
   DataSource_GCPCredentialSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
-import { useActuatorV1Store } from "@/store";
 import type { EditDataSource } from "../common";
 import GcpCredentialInput from "./GcpCredentialInput.vue";
 
