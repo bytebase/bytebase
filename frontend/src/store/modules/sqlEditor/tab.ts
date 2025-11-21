@@ -243,7 +243,7 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     } else {
       tabIdList.value.push(id);
     }
-    currentTabId.value = id;
+    setCurrentTabId(id);
     tabsById.set(id, newTab);
 
     return newTab;
@@ -399,7 +399,7 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
         ) {
           curr.title = defaultTitle;
         }
-        return;
+        return curr;
       }
     }
     const similarNewTab = tabList.value.find(
@@ -407,8 +407,9 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     );
     if (similarNewTab) {
       setCurrentTabId(similarNewTab.id);
+      return similarNewTab;
     } else {
-      addTab(
+      return addTab(
         {
           ...tab,
           title: defaultTitle,

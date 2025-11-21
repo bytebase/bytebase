@@ -2120,7 +2120,6 @@
     "last-synced": "Last synced: {time}",
     "click-to-sync-now": "Click to sync now",
     "sync-in-progress": "Sync in progress",
-    "create-a-worksheet": "Create a new worksheet",
     "select-a-database-to-start": "Select a database to start",
     "show-empty-environments": "Show empty environments",
     "select-encoding": "Select encoding",

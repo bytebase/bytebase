@@ -24,6 +24,7 @@ import {
 import {
   emptySQLEditorConnection,
   getSheetStatement,
+  isDatabaseV1Queryable,
   isWorksheetReadableV1,
   suggestedTabTitleForSQLEditorConnection,
   useDynamicLocalStorage,
@@ -550,6 +551,9 @@ export const extractWorksheetConnection = async (worksheet: Worksheet) => {
       const database = await useDatabaseV1Store().getOrFetchDatabaseByName(
         worksheet.database
       );
+      if (!isDatabaseV1Queryable(database)) {
+        return connection;
+      }
       connection.instance = database.instance;
       connection.database = database.name;
       setDefaultDataSourceForConn(connection, database);
