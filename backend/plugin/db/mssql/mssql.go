@@ -424,22 +424,26 @@ func (*Driver) queryBatch(ctx context.Context, conn *sql.Conn, batch string, que
 		return nil, nil
 	}
 
-	// Special handling for EXPLAIN queries in MSSQL using SHOWPLAN_ALL
+	// Special handling for EXPLAIN queries in MSSQL using explain
 	if queryContext.Explain {
-		// Enable SHOWPLAN_ALL mode once for all statements
-		if _, err := conn.ExecContext(ctx, "SET SHOWPLAN_ALL ON"); err != nil {
-			return nil, errors.Wrap(err, "failed to enable SHOWPLAN_ALL mode")
+		explain := "SHOWPLAN_ALL"
+		if queryContext.Option.MssqlExplainFormat == v1pb.QueryOption_MSSQL_EXPLAIN_FORMAT_XML {
+			explain = "SHOWPLAN_XML"
 		}
-		// Ensure SHOWPLAN_ALL is turned off after processing
+		// Enable explain mode once for all statements
+		if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET %s ON", explain)); err != nil {
+			return nil, errors.Wrap(err, "failed to enable explain mode")
+		}
+		// Ensure explain is turned off after processing
 		defer func() {
-			if _, err := conn.ExecContext(ctx, "SET SHOWPLAN_ALL OFF"); err != nil {
-				slog.Warn("failed to disable SHOWPLAN_ALL mode", log.BBError(err))
+			if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET %s OFF", explain)); err != nil {
+				slog.Warn("failed to disable explain mode", log.BBError(err))
 			}
 		}()
 
 		var results []*v1pb.QueryResult
 
-		// Process each statement with SHOWPLAN_ALL enabled
+		// Process each statement with explain enabled
 		for _, singleSQL := range singleSQLs {
 			startTime := time.Now()
 

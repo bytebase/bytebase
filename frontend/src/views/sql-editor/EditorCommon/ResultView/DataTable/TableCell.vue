@@ -54,7 +54,7 @@ import { escape } from "lodash-es";
 import { NButton } from "naive-ui";
 import { twMerge } from "tailwind-merge";
 import { computed, ref } from "vue";
-import { useConnectionOfCurrentSQLEditorTab } from "@/store";
+import { type ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { QueryRow, RowValue } from "@/types/proto-es/v1/sql_service_pb";
 import { extractSQLRowValuePlain, getHighlightHTMLByRegExp } from "@/utils";
@@ -76,10 +76,10 @@ const props = defineProps<{
   colIndex: number;
   allowSelect?: boolean;
   columnType: string; // Column type from QueryResult
+  database: ComposedDatabase;
 }>();
 
 const { detail, keyword } = useSQLResultViewContext();
-const { database } = useConnectionOfCurrentSQLEditorTab();
 const { getBinaryFormat, setBinaryFormat } = useBinaryFormatContext();
 
 const {
@@ -124,7 +124,7 @@ useResizeObserver(wrapperRef, (entries) => {
 
 const clickable = computed(() => {
   if (truncated.value) return true;
-  if (database.value.instanceResource.engine === Engine.MONGODB) {
+  if (props.database.instanceResource.engine === Engine.MONGODB) {
     // A cheap way to check JSON string without paying the parsing cost.
     const maybeJSON = String(props.value).trim();
     return (

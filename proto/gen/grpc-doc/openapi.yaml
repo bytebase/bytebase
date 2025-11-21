@@ -12196,6 +12196,13 @@ components:
                         - ALL_NODES
                     type: string
                     format: enum
+                mssqlExplainFormat:
+                    enum:
+                        - MSSQL_EXPLAIN_FORMAT_UNSPECIFIED
+                        - MSSQL_EXPLAIN_FORMAT_ALL
+                        - MSSQL_EXPLAIN_FORMAT_XML
+                    type: string
+                    format: enum
         QueryRequest:
             required:
                 - name

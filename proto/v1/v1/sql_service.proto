@@ -175,6 +175,16 @@ message QueryOption {
     ALL_NODES = 2;
   }
   RedisRunCommandsOn redis_run_commands_on = 1;
+
+  enum MSSQLExplainFormat {
+    // defaults to SHOWPLAN_ALL
+    MSSQL_EXPLAIN_FORMAT_UNSPECIFIED = 0;
+    // SHOWPLAN_ALL
+    MSSQL_EXPLAIN_FORMAT_ALL = 1;
+    // SHOWPLAN_XML
+    MSSQL_EXPLAIN_FORMAT_XML = 2;
+  }
+  MSSQLExplainFormat mssql_explain_format = 2;
 }
 
 message QueryResult {

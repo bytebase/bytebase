@@ -1,18 +1,24 @@
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import { randomString } from "./util";
 
-export const createExplainToken = (
-  statement: string,
-  explain: string
-): string => {
+export type StoredExplain = {
+  statement: string;
+  explain: string;
+  engine: Engine;
+};
+
+export const createExplainToken = ({
+  statement,
+  explain,
+  engine,
+}: StoredExplain): string => {
   const token = `pev2-${randomString(32)}`;
 
-  const json = JSON.stringify({ statement, explain });
+  const json = JSON.stringify({ statement, explain, engine });
   sessionStorage.setItem(token, json);
 
   return token;
 };
-
-export type StoredExplain = { statement: string; explain: string };
 
 export const readExplainFromToken = (token: string) => {
   if (!token) return undefined;

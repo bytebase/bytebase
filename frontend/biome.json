@@ -190,6 +190,11 @@
       "linter": { "enabled": false }
     },
     {
+      "includes": ["public/libs/**"],
+      "formatter": { "enabled": false },
+      "linter": { "enabled": false }
+    },
+    {
       "includes": [
         "src/shims-3rd-party.d.ts",
         "tailwind.config.js",

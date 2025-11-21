@@ -68,6 +68,7 @@
                   :col-index="header.index"
                   :column-type="getColumnType(header)"
                   :allow-select="true"
+                  :database="database"
                 />
               </div>
             </div>
@@ -89,6 +90,7 @@ import type { Table } from "@tanstack/vue-table";
 import { useVirtualizer } from "@tanstack/vue-virtual";
 import { computed, ref, watch } from "vue";
 import { CopyButton } from "@/components/v2";
+import { type ComposedDatabase } from "@/types";
 import type { QueryRow, RowValue } from "@/types/proto-es/v1/sql_service_pb";
 import { useSQLResultViewContext } from "./context";
 import MaskingReasonPopover from "./DataTable/common/MaskingReasonPopover.vue";
@@ -102,6 +104,7 @@ const props = defineProps<{
   offset: number;
   isSensitiveColumn: (index: number) => boolean;
   getMaskingReason?: (index: number) => any;
+  database: ComposedDatabase;
 }>();
 
 const { keyword } = useSQLResultViewContext();

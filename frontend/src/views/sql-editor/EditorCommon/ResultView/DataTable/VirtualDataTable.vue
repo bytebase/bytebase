@@ -80,7 +80,7 @@
 
             <!-- The drag-to-resize handler -->
             <div
-              class="absolute w-[8px] right-0 top-0 bottom-0 cursor-col-resize"
+              class="absolute w-2 right-0 top-0 bottom-0 cursor-col-resize"
               @pointerdown="tableResize.startResizing(header.index)"
               @click.stop.prevent
             />
@@ -158,6 +158,7 @@
                               'h-full': true,
                               'w-full': true,
                             }"
+                            :database="database"
                           />
                         </div>
                         <div
@@ -198,6 +199,7 @@ import type { Table } from "@tanstack/vue-table";
 import { useVirtualizer } from "@tanstack/vue-virtual";
 import { NEmpty } from "naive-ui";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { type ComposedDatabase } from "@/types";
 import {
   type QueryRow,
   type RowValue,
@@ -224,6 +226,7 @@ const props = defineProps<{
   isSensitiveColumn: (index: number) => boolean;
   getMaskingReason?: (index: number) => any;
   maxHeight?: number;
+  database: ComposedDatabase;
 }>();
 
 const {

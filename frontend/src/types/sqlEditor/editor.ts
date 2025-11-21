@@ -1,5 +1,6 @@
 import type * as monaco from "monaco-editor";
 import { Engine } from "../proto-es/v1/common_pb";
+import { type QueryOption } from "../proto-es/v1/sql_service_pb";
 
 export type EditorModel = monaco.editor.ITextModel;
 export type EditorPosition = monaco.Position;
@@ -76,4 +77,5 @@ export type SQLEditorQueryParams = {
   explain: boolean;
   // Use to calculate the advice position.
   selection: monaco.Selection | null;
+  queryOption?: QueryOption;
 };
