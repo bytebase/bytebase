@@ -85,9 +85,15 @@ export const provideSQLEditorContext = () => {
       return Promise.resolve(editorStore.project);
     },
     handleAIPanelResize: (panes, index = 0) => {
-      if (panes.length <= index) return;
-      const { size } = panes[index];
-      storedAIPanelSize.value = size;
+      try {
+        if (!panes || !Array.isArray(panes) || panes.length <= index) return;
+        const pane = panes[index];
+        if (!pane || typeof pane.size !== "number") return;
+        storedAIPanelSize.value = pane.size;
+      } catch (error) {
+        // Silently ignore errors from splitpanes during initialization
+        console.debug("Splitpanes resize handler error (ignored):", error);
+      }
     },
   };
 
