@@ -1404,7 +1404,8 @@
       "tenant-id": "Tenant ID",
       "client-id": "Client ID",
       "client-secret": "Client Secret",
-      "specific-credential": "指定凭证"
+      "specific-credential": "指定凭证",
+      "saas-default-credential-restriction": "出于安全考虑，Bytebase Cloud 不支持使用默认凭证。请提供具体凭证。"
     },
     "database-region": "数据库区域",
     "external-secret-gcp": {
