@@ -235,7 +235,7 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 			},
 		}
 
-		checkCtx := SQLReviewCheckContext{
+		checkCtx := Context{
 			Charset:                  "",
 			Collation:                "",
 			DBType:                   dbType,

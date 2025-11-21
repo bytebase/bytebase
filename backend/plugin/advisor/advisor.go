@@ -58,6 +58,17 @@ type Context struct {
 	Statements string
 	// UsePostgresDatabaseOwner is true if the advisor should use the database owner as default role.
 	UsePostgresDatabaseOwner bool
+
+	// SQL review level fields.
+	Charset   string
+	Collation string
+	DBType    storepb.Engine
+
+	// Snowflake specific fields (duplicates CurrentDatabase, kept for compatibility).
+	// CurrentDatabase string
+
+	// Used for test only.
+	NoAppendBuiltin bool
 }
 
 // Advisor is the interface for advisor.
