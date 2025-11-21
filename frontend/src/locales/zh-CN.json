@@ -2135,7 +2135,6 @@
     "last-synced": "上次同步时间：{time}",
     "click-to-sync-now": "点击立即同步",
     "sync-in-progress": "正在同步",
-    "create-a-worksheet": "新建工作表",
     "select-a-database-to-start": "选择数据库以开始",
     "show-empty-environments": "显示空环境",
     "select-encoding": "选择编码",

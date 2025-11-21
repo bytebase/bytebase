@@ -57,12 +57,6 @@ const sqlEditorRoutes: RouteRecordRaw[] = [
         meta: { title: () => "Bytebase SQL Editor" },
         component: () => import("../views/sql-editor/SQLEditorPage.vue"),
       },
-      {
-        path: "sheet/:sheetSlug",
-        name: SQL_EDITOR_SHARE_MODULE_LEGACY,
-        meta: { title: () => "Bytebase SQL Editor" },
-        component: () => import("../views/sql-editor/SQLEditorPage.vue"),
-      },
     ],
   },
 ];
