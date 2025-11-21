@@ -22,13 +22,13 @@ func init() {
 
 // GetDatabaseMetadata parses the SQL schema text and returns the database metadata.
 func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, error) {
-	parseResult, err := tsql.ParseTSQL(schemaText)
+	parseResults, err := tsql.ParseTSQL(schemaText)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse SQL schema")
 	}
 
-	if parseResult.Tree == nil {
-		return nil, errors.Errorf("empty parse tree")
+	if len(parseResults) == 0 {
+		return nil, errors.Errorf("empty parse results")
 	}
 
 	extractor := &metadataExtractor{
@@ -38,7 +38,11 @@ func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, er
 		tables:          make(map[tableKey]*storepb.TableMetadata),
 	}
 
-	antlr.ParseTreeWalkerDefault.Walk(extractor, parseResult.Tree)
+	for _, parseResult := range parseResults {
+		if parseResult.Tree != nil {
+			antlr.ParseTreeWalkerDefault.Walk(extractor, parseResult.Tree)
+		}
+	}
 
 	if extractor.err != nil {
 		return nil, extractor.err

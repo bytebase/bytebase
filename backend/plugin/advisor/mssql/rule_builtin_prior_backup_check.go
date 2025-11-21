@@ -206,7 +206,7 @@ type statementInfo struct {
 }
 
 func prepareTransformation(databaseName, statement string) ([]statementInfo, error) {
-	parseResult, err := tsqlparser.ParseTSQL(statement)
+	parseResults, err := tsqlparser.ParseTSQL(statement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse statement")
 	}
@@ -214,7 +214,11 @@ func prepareTransformation(databaseName, statement string) ([]statementInfo, err
 	extractor := &dmlExtractor{
 		databaseName: databaseName,
 	}
-	antlr.ParseTreeWalkerDefault.Walk(extractor, parseResult.Tree)
+
+	for _, parseResult := range parseResults {
+		antlr.ParseTreeWalkerDefault.Walk(extractor, parseResult.Tree)
+	}
+
 	return extractor.dmls, nil
 }
 

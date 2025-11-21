@@ -75,6 +75,52 @@ go
 				},
 			},
 		},
+		{
+			statement: `
+
+
+
+
+
+
+
+
+UPDATE SalesLT.Address SET City = "Shanghai";
+
+UPDATE SalesLT.Address SET PostalCode = 0;
+
+
+UPDATE SalesLT.ProductModelProductDescription SET Culture = "zh-cn";
+
+
+
+`,
+			want: resData{
+				res: []base.SingleSQL{
+					{
+						Text:     "\n\n\n\n\n\n\n\n\nUPDATE SalesLT.Address SET City = \"Shanghai\";",
+						BaseLine: 0,
+						Start:    &storepb.Position{Line: 10, Column: 1},
+						End:      &storepb.Position{Line: 10, Column: 45},
+						Empty:    false,
+					},
+					{
+						Text:     "\n\nUPDATE SalesLT.Address SET PostalCode = 0;",
+						BaseLine: 9,
+						Start:    &storepb.Position{Line: 12, Column: 1},
+						End:      &storepb.Position{Line: 12, Column: 42},
+						Empty:    false,
+					},
+					{
+						Text:     "\n\n\nUPDATE SalesLT.ProductModelProductDescription SET Culture = \"zh-cn\";",
+						BaseLine: 11,
+						Start:    &storepb.Position{Line: 15, Column: 1},
+						End:      &storepb.Position{Line: 15, Column: 68},
+						Empty:    false,
+					},
+				},
+			},
+		},
 	}
 
 	for _, test := range tests {

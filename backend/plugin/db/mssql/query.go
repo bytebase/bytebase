@@ -171,10 +171,16 @@ func getStatementWithResultLimit(statement string, limit int) string {
 }
 
 func getStatementWithResultLimitInline(singleStatement string, limitCount int) (string, error) {
-	result, err := tsqlparser.ParseTSQL(singleStatement)
+	results, err := tsqlparser.ParseTSQL(singleStatement)
 	if err != nil {
 		return "", err
 	}
+
+	if len(results) != 1 {
+		return "", errors.Errorf("expected exactly 1 statement, got %d", len(results))
+	}
+
+	result := results[0]
 
 	listener := &tsqlRewriter{
 		limitCount: limitCount,

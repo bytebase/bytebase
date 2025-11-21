@@ -143,6 +143,7 @@ type BaseRule struct {
 	level      storepb.Advice_Status
 	title      string
 	adviceList []*storepb.Advice
+	baseLine   int
 }
 
 // GetAdviceList returns the accumulated advice.
@@ -151,6 +152,16 @@ func (r *BaseRule) GetAdviceList() []*storepb.Advice {
 }
 
 // AddAdvice adds a new advice to the list.
+// It automatically adjusts the StartPosition by adding the baseLine offset.
 func (r *BaseRule) AddAdvice(advice *storepb.Advice) {
+	// Adjust the line number by adding baseLine offset
+	if advice.StartPosition != nil && r.baseLine > 0 {
+		advice.StartPosition.Line += int32(r.baseLine)
+	}
 	r.adviceList = append(r.adviceList, advice)
+}
+
+// SetBaseLine sets the base line number for multi-statement SQL.
+func (r *BaseRule) SetBaseLine(baseLine int) {
+	r.baseLine = baseLine
 }
