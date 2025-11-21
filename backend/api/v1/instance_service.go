@@ -12,6 +12,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/sampleinstance"
@@ -32,6 +33,7 @@ import (
 type InstanceService struct {
 	v1connect.UnimplementedInstanceServiceHandler
 	store                 *store.Store
+	profile               *config.Profile
 	licenseService        *enterprise.LicenseService
 	metricReporter        *metricreport.Reporter
 	stateCfg              *state.State
@@ -42,9 +44,10 @@ type InstanceService struct {
 }
 
 // NewInstanceService creates a new InstanceService.
-func NewInstanceService(store *store.Store, licenseService *enterprise.LicenseService, metricReporter *metricreport.Reporter, stateCfg *state.State, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, iamManager *iam.Manager, sampleInstanceManager *sampleinstance.Manager) *InstanceService {
+func NewInstanceService(store *store.Store, profile *config.Profile, licenseService *enterprise.LicenseService, metricReporter *metricreport.Reporter, stateCfg *state.State, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, iamManager *iam.Manager, sampleInstanceManager *sampleinstance.Manager) *InstanceService {
 	return &InstanceService{
 		store:                 store,
+		profile:               profile,
 		licenseService:        licenseService,
 		metricReporter:        metricReporter,
 		stateCfg:              stateCfg,
@@ -262,6 +265,11 @@ func (s *InstanceService) checkDataSource(instance *store.InstanceMessage, dataS
 		return connect.NewError(connect.CodeInvalidArgument, errors.New("data source id is required"))
 	}
 
+	// Validate IAM credential restrictions in SaaS mode
+	if err := s.validateIAMCredentialForSaaS(dataSource); err != nil {
+		return err
+	}
+
 	if err := s.licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_EXTERNAL_SECRET_MANAGER, instance); err != nil {
 		missingFeatureError := connect.NewError(connect.CodePermissionDenied, err)
 		if dataSource.GetExternalSecret() != nil {
@@ -273,6 +281,33 @@ func (s *InstanceService) checkDataSource(instance *store.InstanceMessage, dataS
 	// Validate extra connection parameters for MySQL-based engines
 	if err := validateExtraConnectionParameters(instance.Metadata.GetEngine(), dataSource.GetExtraConnectionParameters()); err != nil {
 		return connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	return nil
+}
+
+func (s *InstanceService) validateIAMCredentialForSaaS(dataSource *storepb.DataSource) error {
+	if !s.profile.SaaS {
+		return nil
+	}
+
+	// Check if using IAM authentication
+	iamAuthTypes := map[storepb.DataSource_AuthenticationType]bool{
+		storepb.DataSource_GOOGLE_CLOUD_SQL_IAM: true,
+		storepb.DataSource_AWS_RDS_IAM:          true,
+		storepb.DataSource_AZURE_IAM:            true,
+	}
+
+	if !iamAuthTypes[dataSource.GetAuthenticationType()] {
+		return nil
+	}
+
+	// Check if using default credentials (iam_extension is not set)
+	if dataSource.GetIamExtension() == nil {
+		return connect.NewError(
+			connect.CodeInvalidArgument,
+			errors.New("default credentials are not allowed in SaaS mode for security. Please provide specific credentials"),
+		)
 	}
 
 	return nil
