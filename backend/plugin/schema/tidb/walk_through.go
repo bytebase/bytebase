@@ -931,9 +931,9 @@ func tidbCreateTable(d *model.DatabaseMetadata, node *tidbast.CreateTableStmt) *
 	}
 
 	if node.Select != nil {
-		content := fmt.Sprintf("Disallow the CREATE TABLE AS statement but \"%s\" uses", node.Text())
+		content := fmt.Sprintf("CREATE TABLE AS statement is used in \"%s\"", node.Text())
 		return &storepb.Advice{
-			Status:        storepb.Advice_ERROR,
+			Status:        storepb.Advice_WARNING,
 			Code:          code.StatementCreateTableAs.Int32(),
 			Title:         content,
 			Content:       content,
