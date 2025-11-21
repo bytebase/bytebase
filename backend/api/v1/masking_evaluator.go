@@ -313,7 +313,6 @@ func evaluateMaskingRulePolicyCondition(expression string, attributes map[string
 	return boolVar, nil
 }
 
-// nolint:unused
 func evaluateQueryExportPolicyCondition(expression string, attributes map[string]any) (bool, error) {
 	if expression == "" {
 		return true, nil

@@ -42,10 +42,9 @@ func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, er
 	}
 
 	extractor := &metadataExtractor{
-		schemas:   make(map[string]*storepb.SchemaMetadata),
-		tables:    make(map[tableKey]*storepb.TableMetadata),
-		views:     make(map[viewKey]*storepb.ViewMetadata),
-		functions: make(map[functionKey]*storepb.FunctionMetadata),
+		schemas: make(map[string]*storepb.SchemaMetadata),
+		tables:  make(map[tableKey]*storepb.TableMetadata),
+		views:   make(map[viewKey]*storepb.ViewMetadata),
 		result: &storepb.DatabaseSchemaMetadata{
 			Name: "",
 		},
@@ -84,16 +83,6 @@ func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, er
 	})
 	defaultSchema.Views = views
 
-	// Add functions to schema
-	var functions []*storepb.FunctionMetadata
-	for _, function := range extractor.functions {
-		functions = append(functions, function)
-	}
-	slices.SortFunc(functions, func(a, b *storepb.FunctionMetadata) int {
-		return strings.Compare(a.Name, b.Name)
-	})
-	defaultSchema.Functions = functions
-
 	extractor.result.Schemas = []*storepb.SchemaMetadata{defaultSchema}
 
 	return extractor.result, nil
@@ -109,16 +98,10 @@ type viewKey struct {
 	name   string
 }
 
-type functionKey struct {
-	schema string // nolint:unused
-	name   string // nolint:unused
-}
-
 type metadataExtractor struct {
-	schemas   map[string]*storepb.SchemaMetadata
-	tables    map[tableKey]*storepb.TableMetadata
-	views     map[viewKey]*storepb.ViewMetadata
-	functions map[functionKey]*storepb.FunctionMetadata
+	schemas map[string]*storepb.SchemaMetadata
+	tables  map[tableKey]*storepb.TableMetadata
+	views   map[viewKey]*storepb.ViewMetadata
 
 	result *storepb.DatabaseSchemaMetadata
 }
