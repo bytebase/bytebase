@@ -20,9 +20,9 @@ func init() {
 }
 
 func extractChangedResources(currentDatabase string, currentSchema string, dbMetadata *model.DatabaseMetadata, asts any, statement string) (*base.ChangeSummary, error) {
-	tree, ok := asts.(antlr.Tree)
+	parseResults, ok := asts.([]*ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert ast to antlr.Tree")
+		return nil, errors.Errorf("failed to convert ast to ParseResult list")
 	}
 
 	changedResources := model.NewChangedResources(dbMetadata)
@@ -34,7 +34,9 @@ func extractChangedResources(currentDatabase string, currentSchema string, dbMet
 		statement:        statement,
 	}
 
-	antlr.ParseTreeWalkerDefault.Walk(l, tree)
+	for _, parseResult := range parseResults {
+		antlr.ParseTreeWalkerDefault.Walk(l, parseResult.Tree)
+	}
 
 	return &base.ChangeSummary{
 		ChangedResources: changedResources,

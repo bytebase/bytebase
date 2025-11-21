@@ -50,6 +50,7 @@ type statementInfo struct {
 	statement string
 	tree      antlr.ParserRuleContext
 	table     *TableReference
+	baseLine  int
 }
 
 func TransformDMLToSelect(_ context.Context, _ base.TransformContext, statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]base.BackupStatement, error) {
@@ -166,11 +167,11 @@ func generateSQLForTable(statementInfoList []statementInfo, targetDatabase strin
 		SourceTableName: table.Table,
 		TargetTableName: targetTable,
 		StartPosition: &storepb.Position{
-			Line:   int32(statementInfoList[0].tree.GetStart().GetLine()),
+			Line:   int32(statementInfoList[0].baseLine + statementInfoList[0].tree.GetStart().GetLine()),
 			Column: int32(statementInfoList[0].tree.GetStart().GetColumn()),
 		},
 		EndPosition: &storepb.Position{
-			Line:   int32(statementInfoList[len(statementInfoList)-1].tree.GetStop().GetLine()),
+			Line:   int32(statementInfoList[len(statementInfoList)-1].baseLine + statementInfoList[len(statementInfoList)-1].tree.GetStop().GetLine()),
 			Column: int32(statementInfoList[len(statementInfoList)-1].tree.GetStop().GetColumn()),
 		},
 	}, nil
@@ -326,7 +327,7 @@ func (e *suffixSelectStatementExtractor) EnterDelete_statement(ctx *parser.Delet
 }
 
 func prepareTransformation(databaseName, statement string) ([]statementInfo, error) {
-	parseResult, err := ParseTSQL(statement)
+	parseResults, err := ParseTSQL(statement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse statement")
 	}
@@ -334,7 +335,12 @@ func prepareTransformation(databaseName, statement string) ([]statementInfo, err
 	extractor := &dmlExtractor{
 		databaseName: databaseName,
 	}
-	antlr.ParseTreeWalkerDefault.Walk(extractor, parseResult.Tree)
+
+	for _, parseResult := range parseResults {
+		extractor.baseLine = parseResult.BaseLine
+		antlr.ParseTreeWalkerDefault.Walk(extractor, parseResult.Tree)
+	}
+
 	return extractor.dmls, nil
 }
 
@@ -344,6 +350,7 @@ type dmlExtractor struct {
 	databaseName string
 	dmls         []statementInfo
 	offset       int
+	baseLine     int
 }
 
 func IsTopLevel(ctx antlr.Tree) bool {
@@ -391,6 +398,7 @@ func (e *dmlExtractor) EnterUpdate_statement(ctx *parser.Update_statementContext
 			statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
 			tree:      ctx,
 			table:     table,
+			baseLine:  e.baseLine,
 		})
 	}
 }
@@ -412,6 +420,7 @@ func (e *dmlExtractor) EnterDelete_statement(ctx *parser.Delete_statementContext
 			statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
 			tree:      ctx,
 			table:     table,
+			baseLine:  e.baseLine,
 		})
 	}
 }

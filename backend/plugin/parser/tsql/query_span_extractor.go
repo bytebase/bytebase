@@ -59,13 +59,16 @@ func newQuerySpanExtractor(defaultDatabase string, defaultSchema string, gCtx ba
 func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string) (*base.QuerySpan, error) {
 	q.ctx = ctx
 
-	parseResult, err := ParseTSQL(statement)
+	parseResults, err := ParseTSQL(statement)
 	if err != nil {
 		return nil, err
 	}
-	if parseResult == nil {
-		return nil, nil
+
+	if len(parseResults) != 1 {
+		return nil, errors.Errorf("expected exactly 1 statement, got %d", len(parseResults))
 	}
+
+	parseResult := parseResults[0]
 	tree := parseResult.Tree
 	if tree == nil {
 		return nil, nil
@@ -104,7 +107,12 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 	listener := &tsqlSelectOnlyListener{
 		extractor: q,
 	}
-	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
+	// Walk all parse results to collect temp table declarations from earlier statements
+	for _, parseResult := range parseResults {
+		if parseResult.Tree != nil {
+			antlr.ParseTreeWalkerDefault.Walk(listener, parseResult.Tree)
+		}
+	}
 	err = listener.err
 	if err != nil {
 		var resourceNotFound *parsererror.ResourceNotFoundError
@@ -3659,13 +3667,16 @@ func unquote(name string) string {
 }
 
 func getSelectBodyFromCreateView(createView string) (string, error) {
-	parseResult, err := ParseTSQL(createView)
+	parseResults, err := ParseTSQL(createView)
 	if err != nil {
 		return "", err
 	}
-	if parseResult == nil {
-		return "", errors.Errorf("failed to parse CREATE VIEW statement")
+
+	if len(parseResults) != 1 {
+		return "", errors.Errorf("expected exactly 1 statement, got %d", len(parseResults))
 	}
+
+	parseResult := parseResults[0]
 	tree := parseResult.Tree
 	if tree == nil {
 		return "", errors.Errorf("parse tree is nil")

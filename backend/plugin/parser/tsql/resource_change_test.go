@@ -44,7 +44,8 @@ func TestExtractChangedResources(t *testing.T) {
 
 	asts, err := ParseTSQL(statement)
 	require.NoError(t, err)
-	got, err := extractChangedResources("DB", "dbo", nil /* dbMetadata */, asts.Tree, statement)
+	require.Len(t, asts, 5)
+	got, err := extractChangedResources("DB", "dbo", nil /* dbMetadata */, asts, statement)
 	require.NoError(t, err)
 	require.Equal(t, want, got)
 }

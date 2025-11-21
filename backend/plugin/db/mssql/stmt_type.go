@@ -23,12 +23,17 @@ type stmtTypeListener struct {
 }
 
 func getStmtType(stmt string) (stmtType, error) {
-	parseResult, err := parser.ParseTSQL(stmt)
+	parseResults, err := parser.ParseTSQL(stmt)
 	if err != nil {
 		return stmtTypeUnknown, err
 	}
+
+	if len(parseResults) != 1 {
+		return stmtTypeUnknown, errors.Errorf("expected exactly 1 statement, got %d", len(parseResults))
+	}
+
 	l := &stmtTypeListener{}
-	antlr.ParseTreeWalkerDefault.Walk(l, parseResult.Tree)
+	antlr.ParseTreeWalkerDefault.Walk(l, parseResults[0].Tree)
 	if l.err != nil {
 		return stmtTypeUnknown, l.err
 	}

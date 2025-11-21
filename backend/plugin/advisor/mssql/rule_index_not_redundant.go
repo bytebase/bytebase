@@ -8,11 +8,12 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/tsql"
+
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/tsql"
+	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
@@ -31,7 +32,7 @@ type IndexNotRedundantAdvisor struct{}
 
 // TODO(zp): we currently don't have runtime checks for indexes created in the statements.
 func (IndexNotRedundantAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	tree, ok := checkCtx.AST.(antlr.Tree)
+	parseResults, ok := checkCtx.AST.([]*tsqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to AST tree")
 	}
@@ -47,7 +48,10 @@ func (IndexNotRedundantAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
 
-	antlr.ParseTreeWalkerDefault.Walk(checker, tree)
+	for _, parseResult := range parseResults {
+		rule.SetBaseLine(parseResult.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, parseResult.Tree)
+	}
 
 	return checker.GetAdviceList(), nil
 }
@@ -99,18 +103,18 @@ func (r *IndexNotRedundantRule) enterCreateIndex(ctx *parser.Create_indexContext
 		// TODO(zp): we only check indexes in the current database due to the lack of necessary metadata.
 		// Case sensitive!
 		if database := fullTblName.GetDatabase(); database != nil {
-			if oriName, _ := tsql.NormalizeTSQLIdentifier(database); oriName != r.curDB {
+			if oriName, _ := tsqlparser.NormalizeTSQLIdentifier(database); oriName != r.curDB {
 				return
 			}
 		}
 		if schema := fullTblName.GetSchema(); schema != nil {
-			idxSchemaName, _ = tsql.NormalizeTSQLIdentifier(schema)
+			idxSchemaName, _ = tsqlparser.NormalizeTSQLIdentifier(schema)
 		}
-		idxTblName, _ = tsql.NormalizeTSQLIdentifier(fullTblName.GetTable())
+		idxTblName, _ = tsqlparser.NormalizeTSQLIdentifier(fullTblName.GetTable())
 	}
 
 	// Get index name from statement.
-	statIdxName, _ := tsql.NormalizeTSQLIdentifier(ctx.AllId_()[0])
+	statIdxName, _ := tsqlparser.NormalizeTSQLIdentifier(ctx.AllId_()[0])
 
 	// Get ordered index list from metadata.
 	findIdxKey := FindIndexesKey{
@@ -148,7 +152,7 @@ type IndexMap = map[FindIndexesKey][]*storepb.IndexMetadata
 func containRedundantPrefix(metaIdxList []*storepb.IndexMetadata, statColumnList *parser.IColumn_name_list_with_orderContext) string {
 	for _, metaIndex := range metaIdxList {
 		if statColumnList != nil && len((*statColumnList).AllColumn_name_with_order()) != 0 && len(metaIdxList) != 0 {
-			statIdxCol, _ := tsql.NormalizeTSQLIdentifier((*statColumnList).AllColumn_name_with_order()[0].Id_())
+			statIdxCol, _ := tsqlparser.NormalizeTSQLIdentifier((*statColumnList).AllColumn_name_with_order()[0].Id_())
 			if metaIndex.Expressions[0] == statIdxCol {
 				return metaIndex.Name
 			}

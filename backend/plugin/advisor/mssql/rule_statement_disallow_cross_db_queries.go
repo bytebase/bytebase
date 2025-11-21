@@ -7,13 +7,14 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/tsql"
+
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/tsql"
+	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 )
 
 func init() {
@@ -23,9 +24,9 @@ func init() {
 type DisallowCrossDBQueriesAdvisor struct{}
 
 func (*DisallowCrossDBQueriesAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	tree, ok := checkCtx.AST.(antlr.Tree)
+	parseResults, ok := checkCtx.AST.([]*tsqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to Tree")
+		return nil, errors.Errorf("failed to convert to ParseResult list")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
@@ -39,7 +40,10 @@ func (*DisallowCrossDBQueriesAdvisor) Check(_ context.Context, checkCtx advisor.
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
 
-	antlr.ParseTreeWalkerDefault.Walk(checker, tree)
+	for _, parseResult := range parseResults {
+		rule.SetBaseLine(parseResult.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, parseResult.Tree)
+	}
 
 	return checker.GetAdviceList(), nil
 }
@@ -88,7 +92,7 @@ func (*DisallowCrossDBQueriesRule) OnExit(_ antlr.ParserRuleContext, _ string) e
 func (r *DisallowCrossDBQueriesRule) enterTableSourceItem(ctx *parser.Table_source_itemContext) {
 	if fullTblnameCtx := ctx.Full_table_name(); fullTblnameCtx != nil {
 		// Case insensitive.
-		if fullTblName, err := tsql.NormalizeFullTableName(fullTblnameCtx); err == nil && fullTblName.Database != "" && !strings.EqualFold(fullTblName.Database, r.curDB) {
+		if fullTblName, err := tsqlparser.NormalizeFullTableName(fullTblnameCtx); err == nil && fullTblName.Database != "" && !strings.EqualFold(fullTblName.Database, r.curDB) {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.level,
 				Code:          code.StatementDisallowCrossDBQueries.Int32(),
@@ -103,7 +107,7 @@ func (r *DisallowCrossDBQueriesRule) enterTableSourceItem(ctx *parser.Table_sour
 
 func (r *DisallowCrossDBQueriesRule) enterUseStatement(ctx *parser.Use_statementContext) {
 	if newDB := ctx.GetDatabase(); newDB != nil {
-		_, lowercaceDBName := tsql.NormalizeTSQLIdentifier(newDB)
+		_, lowercaceDBName := tsqlparser.NormalizeTSQLIdentifier(newDB)
 		r.curDB = lowercaceDBName
 	}
 }

@@ -83,7 +83,7 @@ func TestRestoreIdentityHandling(t *testing.T) {
 			Table:    "backup_positions",
 		},
 		StartPosition: &store.Position{Line: 1, Column: 0},
-		EndPosition:   &store.Position{Line: 1, Column: 40},
+		EndPosition:   &store.Position{Line: 1, Column: 43},
 	})
 
 	a.NoError(err)
@@ -133,12 +133,12 @@ func TestRestore(t *testing.T) {
 				Table:    t.BackupTable,
 			},
 			StartPosition: &store.Position{
-				Line:   0,
+				Line:   1,
 				Column: 0,
 			},
 			EndPosition: &store.Position{
 				Line:   math.MaxInt32,
-				Column: 0,
+				Column: 1,
 			},
 		})
 		a.NoError(err)
