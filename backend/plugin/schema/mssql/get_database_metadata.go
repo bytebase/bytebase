@@ -27,8 +27,17 @@ func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, er
 		return nil, errors.Wrapf(err, "failed to parse SQL schema")
 	}
 
+	// Handle empty schema (no statements) by returning empty metadata with default dbo schema
 	if len(parseResults) == 0 {
-		return nil, errors.Errorf("empty parse results")
+		return &storepb.DatabaseSchemaMetadata{
+			Name: "",
+			Schemas: []*storepb.SchemaMetadata{
+				{
+					Name:   "dbo",
+					Tables: []*storepb.TableMetadata{},
+				},
+			},
+		}, nil
 	}
 
 	extractor := &metadataExtractor{
