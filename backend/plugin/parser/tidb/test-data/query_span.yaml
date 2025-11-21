@@ -1314,3 +1314,160 @@
           table: t
           column: ""
     predicatecolumns: []
+- description: 'BYT-8415: UNION ALL in FROM subquery - parser extracts all tables for permission checks'
+  statement: |
+    SELECT * FROM (
+      SELECT id, name FROM public_table
+      UNION ALL
+      SELECT id, secret FROM restricted_table
+    ) AS combined_data
+  defaultDatabase: testdb
+  metadata: |-
+    {
+      "name":  "testdb",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "public_table",
+              "columns":  [
+                {
+                  "name":  "id"
+                },
+                {
+                  "name":  "name"
+                }
+              ]
+            },
+            {
+              "name":  "restricted_table",
+              "columns":  [
+                {
+                  "name":  "id"
+                },
+                {
+                  "name":  "secret"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: id
+          sourcecolumns:
+            - server: ""
+              database: testdb
+              schema: ""
+              table: public_table
+              column: id
+            - server: ""
+              database: testdb
+              schema: ""
+              table: restricted_table
+              column: id
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: name
+          sourcecolumns:
+            - server: ""
+              database: testdb
+              schema: ""
+              table: public_table
+              column: name
+            - server: ""
+              database: testdb
+              schema: ""
+              table: restricted_table
+              column: secret
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: testdb
+          schema: ""
+          table: public_table
+          column: ""
+        - server: ""
+          database: testdb
+          schema: ""
+          table: restricted_table
+          column: ""
+    predicatecolumns: []
+- description: UNION ALL with three queries - all tables must be in sourcecolumns
+  statement: |
+    SELECT id FROM table1
+    UNION ALL
+    SELECT id FROM table2
+    UNION ALL
+    SELECT id FROM table3
+  defaultDatabase: testdb
+  metadata: |-
+    {
+      "name":  "testdb",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "table1",
+              "columns":  [{"name":  "id"}]
+            },
+            {
+              "name":  "table2",
+              "columns":  [{"name":  "id"}]
+            },
+            {
+              "name":  "table3",
+              "columns":  [{"name":  "id"}]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: id
+          sourcecolumns:
+            - server: ""
+              database: testdb
+              schema: ""
+              table: table1
+              column: id
+            - server: ""
+              database: testdb
+              schema: ""
+              table: table2
+              column: id
+            - server: ""
+              database: testdb
+              schema: ""
+              table: table3
+              column: id
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: testdb
+          schema: ""
+          table: table1
+          column: ""
+        - server: ""
+          database: testdb
+          schema: ""
+          table: table2
+          column: ""
+        - server: ""
+          database: testdb
+          schema: ""
+          table: table3
+          column: ""
+    predicatecolumns: []
