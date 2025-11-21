@@ -9,20 +9,29 @@
       class="textlabel mt-2"
       :disabled="!allowEdit"
     >
-      <NRadio
-        v-for="option in iamExtensionOptions"
-        :value="option.value"
-        :key="option.value"
-        :label="option.label"
-        :disabled="!allowEdit || option.disabled"
-      />
+      <template v-for="option in iamExtensionOptions" :key="option.value">
+        <NTooltip
+          v-if="option.disabled"
+          :show-arrow="true"
+          trigger="hover"
+        >
+          <template #trigger>
+            <NRadio
+              :value="option.value"
+              :label="option.label"
+              :disabled="!allowEdit || option.disabled"
+            />
+          </template>
+          {{ $t("instance.iam-extension.saas-default-credential-restriction") }}
+        </NTooltip>
+        <NRadio
+          v-else
+          :value="option.value"
+          :label="option.label"
+          :disabled="!allowEdit"
+        />
+      </template>
     </NRadioGroup>
-    <div
-      v-if="isDefaultCredentialDisabled"
-      class="mt-2 text-sm text-warning-600 bg-warning-50 p-2 rounded"
-    >
-      {{ $t("instance.iam-extension.saas-default-credential-restriction") }}
-    </div>
     <template v-if="credentialSource === 'specific-credential'">
       <div
         v-if="
@@ -275,7 +284,7 @@
 <script lang="tsx" setup>
 /* eslint-disable vue/no-mutating-props */
 import { create } from "@bufbuild/protobuf";
-import { NInput, NRadio, NRadioGroup } from "naive-ui";
+import { NInput, NRadio, NRadioGroup, NTooltip } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import {
