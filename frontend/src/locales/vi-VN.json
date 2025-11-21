@@ -2135,7 +2135,6 @@
     "last-synced": "Đã đồng bộ lần cuối: {time}",
     "click-to-sync-now": "Nhấp để đồng bộ ngay",
     "sync-in-progress": "Đang đồng bộ",
-    "create-a-worksheet": "Tạo một trang tính mới",
     "select-a-database-to-start": "Chọn một cơ sở dữ liệu để bắt đầu",
     "show-empty-environments": "Hiển thị môi trường trống",
     "select-encoding": "Chọn mã hóa",
