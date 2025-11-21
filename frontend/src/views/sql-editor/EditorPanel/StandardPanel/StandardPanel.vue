@@ -47,9 +47,7 @@
             </Suspense>
           </Pane>
         </Splitpanes>
-        <template v-else>
-          <Welcome />
-        </template>
+        <Welcome v-else />
 
         <ExecutingHintModal />
 
