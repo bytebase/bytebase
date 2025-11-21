@@ -153,6 +153,9 @@ func extractTableList(node tidbast.Node, input []*tidbast.TableName, asName bool
 					input = append(input, innerTableName)
 				}
 			}
+		} else if s, ok := x.Source.(*ast.SetOprStmt); ok {
+			// BYT-8415: Handle UNION ALL and other set operations in FROM subqueries
+			input = extractTableList(s, input, asName)
 		}
 	}
 	return input
