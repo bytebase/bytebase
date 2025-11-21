@@ -2120,7 +2120,6 @@
     "last-synced": "最終同期時間: {time}",
     "click-to-sync-now": "クリックして今すぐ同期します",
     "sync-in-progress": "同期中",
-    "create-a-worksheet": "新しいワークシートを作成する",
     "select-a-database-to-start": "開始するにはデータベースを選択してください",
     "show-empty-environments": "空の環境を表示",
     "select-encoding": "エンコーディングの選択",
