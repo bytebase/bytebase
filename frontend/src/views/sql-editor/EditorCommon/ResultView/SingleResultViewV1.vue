@@ -127,6 +127,7 @@
         :offset="pageIndex * pageSize"
         :is-sensitive-column="isSensitiveColumn"
         :get-masking-reason="getMaskingReason"
+        :database="database"
       />
       <VirtualDataTable
         v-else
@@ -135,6 +136,7 @@
         :offset="pageIndex * pageSize"
         :is-sensitive-column="isSensitiveColumn"
         :get-masking-reason="getMaskingReason"
+        :database="database"
       />
     </div>
 
@@ -155,7 +157,7 @@
           {{ $t("common.click-to-copy") }}
         </NTooltip>
       </div>
-      <div class="shrink-0 gap-x-2">
+      <div class="flex items-center shrink-0 gap-x-2">
         <NButton
           v-if="showVisualizeButton"
           text
@@ -216,7 +218,6 @@ import { RichDatabaseName } from "@/components/v2";
 import { DISMISS_PLACEHOLDER } from "@/plugins/ai/components/state";
 import {
   pushNotification,
-  useConnectionOfCurrentSQLEditorTab,
   useSQLEditorStore,
   useSQLEditorTabStore,
 } from "@/store";
@@ -305,7 +306,6 @@ const { dark, keyword } = useSQLResultViewContext();
 const tabStore = useSQLEditorTabStore();
 const editorStore = useSQLEditorStore();
 const currentTab = computed(() => tabStore.currentTab);
-const { instance: connectedInstance } = useConnectionOfCurrentSQLEditorTab();
 
 const viewMode = computed((): ViewMode => {
   const { result } = props;
@@ -323,10 +323,10 @@ const viewMode = computed((): ViewMode => {
 });
 
 const showSearchFeature = computed(() => {
-  if (!isValidInstanceName(connectedInstance.value.name)) {
+  if (!isValidInstanceName(props.database.instance)) {
     return false;
   }
-  return instanceV1HasStructuredQueryResult(connectedInstance.value);
+  return instanceV1HasStructuredQueryResult(props.database.instanceResource);
 });
 
 // use a debounced value to improve performance when typing rapidly
@@ -452,9 +452,12 @@ const pageSizeOptions = computed(() => {
   }));
 });
 
+const engine = computed(() => props.database.instanceResource.engine);
+
 const showVisualizeButton = computed((): boolean => {
   return (
-    connectedInstance.value.engine === Engine.POSTGRES && props.params.explain
+    (engine.value === Engine.POSTGRES || engine.value === Engine.MSSQL) &&
+    props.params.explain
   );
 });
 
@@ -470,7 +473,11 @@ const visualizeExplain = () => {
     const explain = lines.map((line) => line[0]).join("\n");
     if (!explain) return;
 
-    const token = createExplainToken(statement, explain);
+    const token = createExplainToken({
+      statement,
+      explain,
+      engine: engine.value,
+    });
 
     window.open(`/explain-visualizer.html?token=${token}`, "_blank");
   } catch {

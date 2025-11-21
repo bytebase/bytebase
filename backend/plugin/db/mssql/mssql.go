@@ -424,22 +424,22 @@ func (*Driver) queryBatch(ctx context.Context, conn *sql.Conn, batch string, que
 		return nil, nil
 	}
 
-	// Special handling for EXPLAIN queries in MSSQL using SHOWPLAN_ALL
+	// Special handling for EXPLAIN queries in MSSQL using SHOWPLAN_XML
 	if queryContext.Explain {
-		// Enable SHOWPLAN_ALL mode once for all statements
-		if _, err := conn.ExecContext(ctx, "SET SHOWPLAN_ALL ON"); err != nil {
-			return nil, errors.Wrap(err, "failed to enable SHOWPLAN_ALL mode")
+		// Enable SHOWPLAN_XML mode once for all statements
+		if _, err := conn.ExecContext(ctx, "SET SHOWPLAN_XML ON"); err != nil {
+			return nil, errors.Wrap(err, "failed to enable SHOWPLAN_XML mode")
 		}
-		// Ensure SHOWPLAN_ALL is turned off after processing
+		// Ensure SHOWPLAN_XML is turned off after processing
 		defer func() {
-			if _, err := conn.ExecContext(ctx, "SET SHOWPLAN_ALL OFF"); err != nil {
-				slog.Warn("failed to disable SHOWPLAN_ALL mode", log.BBError(err))
+			if _, err := conn.ExecContext(ctx, "SET SHOWPLAN_XML OFF"); err != nil {
+				slog.Warn("failed to disable SHOWPLAN_XML mode", log.BBError(err))
 			}
 		}()
 
 		var results []*v1pb.QueryResult
 
-		// Process each statement with SHOWPLAN_ALL enabled
+		// Process each statement with SHOWPLAN_XML enabled
 		for _, singleSQL := range singleSQLs {
 			startTime := time.Now()
 
