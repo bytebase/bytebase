@@ -285,12 +285,12 @@
   ignore_case_sensitive: false
   want: ''
   advice:
-    status: 1
+    status: 2
     code: 205
-    title: Disallow the CREATE TABLE AS statement but "CREATE TABLE tvx SELECT (x,z)
-      FROM (VALUES ROW(1,3,5), ROW(2,4,6)) AS v(x,y,z);" uses
-    content: Disallow the CREATE TABLE AS statement but "CREATE TABLE tvx SELECT (x,z)
-      FROM (VALUES ROW(1,3,5), ROW(2,4,6)) AS v(x,y,z);" uses
+    title: CREATE TABLE AS statement is used in "CREATE TABLE tvx SELECT (x,z) FROM
+      (VALUES ROW(1,3,5), ROW(2,4,6)) AS v(x,y,z);"
+    content: CREATE TABLE AS statement is used in "CREATE TABLE tvx SELECT (x,z) FROM
+      (VALUES ROW(1,3,5), ROW(2,4,6)) AS v(x,y,z);"
     startPosition:
       line: 1
 - statement: 'CREATE TABLE t1(a int);
@@ -299,12 +299,12 @@
   ignore_case_sensitive: false
   want: ''
   advice:
-    status: 1
+    status: 2
     code: 205
-    title: Disallow the CREATE TABLE AS statement but "CREATE TABLE t2 (b INT) SELECT
-      a FROM t1;" uses
-    content: Disallow the CREATE TABLE AS statement but "CREATE TABLE t2 (b INT) SELECT
-      a FROM t1;" uses
+    title: CREATE TABLE AS statement is used in "CREATE TABLE t2 (b INT) SELECT a FROM
+      t1;"
+    content: CREATE TABLE AS statement is used in "CREATE TABLE t2 (b INT) SELECT a
+      FROM t1;"
     startPosition:
       line: 2
 - statement: "CREATE TABLE t1(\n  a int\n);\nCREATE TABLE t2 LIKE t1;"

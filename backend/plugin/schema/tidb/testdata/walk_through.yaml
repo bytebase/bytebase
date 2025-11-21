@@ -76,12 +76,11 @@
   ignore_case_sensitive: false
   want: ''
   advice:
-    status: 1
+    status: 2
     code: 205
-    title: Disallow the CREATE TABLE AS statement but "CREATE TABLE t as select *
-      from t1;" uses
-    content: Disallow the CREATE TABLE AS statement but "CREATE TABLE t as select
-      * from t1;" uses
+    title: CREATE TABLE AS statement is used in "CREATE TABLE t as select * from t1;"
+    content: CREATE TABLE AS statement is used in "CREATE TABLE t as select * from
+      t1;"
     startPosition:
       line: 1
 - statement: "\n\t\t\t\tCREATE TABLE t(a int, b int); \n\t\t\t\tCREATE INDEX idx_c\
