@@ -94,9 +94,9 @@ const allowCreateProject = computed(() => {
 
 const handleSwitchProject = (name: string | undefined) => {
   if (!name || !isValidProjectName(name)) {
-    project.value = "";
+    editorStore.setProject("");
   } else {
-    project.value = name;
+    editorStore.setProject(name);
   }
 };
 </script>

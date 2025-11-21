@@ -1,13 +1,11 @@
 <template>
   <div
-    class="w-full flex-1 flex flex-col items-center justify-start gap-y-4"
-    style="padding-top: calc(clamp(40px, 15vh, 200px))"
+    class="w-full flex-1 flex flex-col items-center justify-center gap-y-4"
   >
     <BytebaseLogo />
 
     <div
-      class="hidden lg:grid items-center gap-4"
-      :class="showCreateInstanceButton ? 'grid-cols-3' : 'grid-cols-2'"
+      class="flex items-center flex-wrap gap-4"
     >
       <Button
         v-if="showCreateInstanceButton"
@@ -19,56 +17,44 @@
         </template>
         {{ $t("sql-editor.add-a-new-instance") }}
       </Button>
-      <Button type="primary" secondary @click="changeConnection">
+      <Button v-if="showConnectButton" type="primary" secondary @click="changeConnection">
         <template #icon>
           <LinkIcon :stroke-width="1.5" class="w-8 h-8" />
         </template>
         {{ $t("sql-editor.connect-to-a-database") }}
       </Button>
     </div>
-    <div class="flex lg:hidden flex-col items-start gap-y-2 w-max">
-      <NButton
-        type="primary"
-        class="w-full! justify-start!"
-        @click="changeConnection"
-      >
-        <template #icon>
-          <LinkIcon class="w-4 h-4" />
-        </template>
-        {{ $t("sql-editor.connect-to-a-database") }}
-      </NButton>
-      <NButton
-        v-if="showCreateInstanceButton"
-        type="default"
-        class="w-full! justify-start!"
-        @click="gotoInstanceCreatePage"
-      >
-        <template #icon>
-          <LayersIcon class="w-4 h-4" />
-        </template>
-        {{ $t("sql-editor.add-a-new-instance") }}
-      </NButton>
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { LayersIcon, LinkIcon } from "lucide-vue-next";
-import { NButton } from "naive-ui";
+import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import BytebaseLogo from "@/components/BytebaseLogo.vue";
 import { INSTANCE_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
-import { hasWorkspacePermissionV2 } from "@/utils";
+import { useProjectV1Store, useSQLEditorStore } from "@/store";
+import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
 import { useSQLEditorContext } from "../../context";
 import Button from "./Button.vue";
 
 const { showConnectionPanel, asidePanelTab } = useSQLEditorContext();
 const router = useRouter();
+const projectStore = useProjectV1Store();
+const { project: projectName } = storeToRefs(useSQLEditorStore());
+
+const project = computed(() =>
+  projectStore.getProjectByName(projectName.value)
+);
 
 const showCreateInstanceButton = computed(() => {
   return hasWorkspacePermissionV2("bb.instances.create");
 });
+
+const showConnectButton = computed(() =>
+  hasProjectPermissionV2(project.value, "bb.sql.select")
+);
 
 const changeConnection = () => {
   asidePanelTab.value = "SCHEMA";

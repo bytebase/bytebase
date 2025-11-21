@@ -3,8 +3,9 @@ import Emittery from "emittery";
 import { type IRange } from "monaco-editor";
 import type { InjectionKey, Ref } from "vue";
 import { inject, provide, ref } from "vue";
-import { useSQLEditorStore } from "@/store";
+import { useProjectV1Store, useSQLEditorStore } from "@/store";
 import type { SQLEditorTab } from "@/types";
+import { isValidProjectName } from "@/types";
 import type { GetSchemaStringRequest_ObjectType } from "@/types/proto-es/v1/database_service_pb";
 
 export type AsidePanelTab = "SCHEMA" | "WORKSHEET" | "HISTORY";
@@ -53,7 +54,7 @@ export type SQLEditorContext = {
 
   events: SQLEditorEvents;
 
-  maybeSwitchProject: (project: string) => Promise<string>;
+  maybeSwitchProject: (project: string) => Promise<string | undefined>;
   handleAIPanelResize: (panes: { size: number }[], index?: number) => void;
 };
 
@@ -67,6 +68,8 @@ export const useSQLEditorContext = () => {
 
 export const provideSQLEditorContext = () => {
   const editorStore = useSQLEditorStore();
+  const projectStore = useProjectV1Store();
+
   const context: SQLEditorContext = {
     asidePanelTab: ref("WORKSHEET"),
     showConnectionPanel: ref(false),
@@ -76,13 +79,21 @@ export const provideSQLEditorContext = () => {
     pendingInsertAtCaret: ref(),
     events: new Emittery(),
 
-    maybeSwitchProject: async (project) => {
-      if (editorStore.project !== project) {
-        editorStore.project = project;
-        await context.events.once("project-context-ready");
-        return project;
+    maybeSwitchProject: async (projectName) => {
+      if (!isValidProjectName(projectName)) {
+        return;
       }
-      return Promise.resolve(editorStore.project);
+      editorStore.projectContextReady = false;
+      try {
+        const project = await projectStore.getOrFetchProjectByName(projectName);
+        editorStore.setProject(project.name);
+        context.events.emit("project-context-ready", { project: project.name });
+        return project.name;
+      } catch {
+        // Nothing
+      } finally {
+        editorStore.projectContextReady = true;
+      }
     },
     handleAIPanelResize: (panes, index = 0) => {
       try {
