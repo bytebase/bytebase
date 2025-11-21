@@ -127,7 +127,6 @@ func ParsePostgreSQLPLBlock(plBlock string) (*ParseResult, error) {
 	return result, nil
 }
 
-// nolint:unused
 func normalizePostgreSQLTableAlias(ctx parser.ITable_aliasContext) string {
 	if ctx == nil {
 		return ""
@@ -142,7 +141,6 @@ func normalizePostgreSQLTableAlias(ctx parser.ITable_aliasContext) string {
 	}
 }
 
-// nolint:unused
 func normalizePostgreSQLNameList(ctx parser.IName_listContext) []string {
 	if ctx == nil {
 		return nil
@@ -199,7 +197,6 @@ func NormalizePostgreSQLQualifiedName(ctx parser.IQualified_nameContext) []strin
 	return res
 }
 
-// nolint:unused
 func normalizePostgreSQLSetTarget(ctx parser.ISet_targetContext) []string {
 	if ctx == nil {
 		return []string{}
@@ -211,7 +208,6 @@ func normalizePostgreSQLSetTarget(ctx parser.ISet_targetContext) []string {
 	return res
 }
 
-// nolint:unused
 func normalizePostgreSQLOptIndirection(ctx parser.IOpt_indirectionContext) []string {
 	var res []string
 	for _, child := range ctx.AllIndirection_el() {
@@ -274,7 +270,6 @@ func NormalizePostgreSQLColid(ctx parser.IColidContext) string {
 	return strings.ToLower(ctx.GetText())
 }
 
-// nolint:unused
 func normalizePostgreSQLAnyIdentifier(ctx parser.IAny_identifierContext) string {
 	if ctx == nil {
 		return ""

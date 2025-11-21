@@ -2570,57 +2570,6 @@ func (*metadataExtractor) generateConstraintIndexDefinition(index *storepb.Index
 		}
 		parts = append(parts, fmt.Sprintf("(%s)", strings.Join(columnList, ", ")))
 	}
-
-	// End with semicolon
-	return strings.Join(parts, " ") + ";"
-}
-
-// generateForeignKeyDefinition generates the ALTER TABLE ADD CONSTRAINT definition for foreign keys
-// nolint:unused
-func (*metadataExtractor) generateForeignKeyDefinition(fk *storepb.ForeignKeyMetadata, tableName, schemaName string) string {
-	var parts []string
-
-	// Start with ALTER TABLE
-	parts = append(parts, "ALTER TABLE ONLY")
-	if schemaName != "" && schemaName != "public" {
-		parts = append(parts, fmt.Sprintf("%s.%s", schemaName, tableName))
-	} else {
-		parts = append(parts, fmt.Sprintf("public.%s", tableName))
-	}
-
-	// Add ADD CONSTRAINT
-	parts = append(parts, "ADD CONSTRAINT")
-	parts = append(parts, fk.Name)
-
-	// Add FOREIGN KEY
-	if len(fk.Columns) > 0 {
-		parts = append(parts, fmt.Sprintf("FOREIGN KEY (%s)", strings.Join(fk.Columns, ", ")))
-	}
-
-	// Add REFERENCES
-	if fk.ReferencedTable != "" {
-		var referencedTable string
-		if fk.ReferencedSchema != "" && fk.ReferencedSchema != "public" {
-			referencedTable = fmt.Sprintf("%s.%s", fk.ReferencedSchema, fk.ReferencedTable)
-		} else {
-			referencedTable = fmt.Sprintf("public.%s", fk.ReferencedTable)
-		}
-
-		if len(fk.ReferencedColumns) > 0 {
-			parts = append(parts, fmt.Sprintf("REFERENCES %s(%s)", referencedTable, strings.Join(fk.ReferencedColumns, ", ")))
-		} else {
-			parts = append(parts, fmt.Sprintf("REFERENCES %s", referencedTable))
-		}
-	}
-
-	// Add ON DELETE/UPDATE actions
-	if fk.OnDelete != "" && fk.OnDelete != "NO ACTION" {
-		parts = append(parts, fmt.Sprintf("ON DELETE %s", fk.OnDelete))
-	}
-	if fk.OnUpdate != "" && fk.OnUpdate != "NO ACTION" {
-		parts = append(parts, fmt.Sprintf("ON UPDATE %s", fk.OnUpdate))
-	}
-
 	// End with semicolon
 	return strings.Join(parts, " ") + ";"
 }

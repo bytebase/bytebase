@@ -44,8 +44,8 @@ const (
 
 	// Login rate limiting configuration.
 	// Password phase: 10 failed attempts within 10 minutes.
-	passwordMaxFailedAttempts = 10               //nolint:unused // Will be used for password rate limiting
-	passwordLockoutWindow     = 10 * time.Minute //nolint:unused // Will be used for password rate limiting
+	passwordMaxFailedAttempts = 10               // Will be used for password rate limiting
+	passwordLockoutWindow     = 10 * time.Minute // Will be used for password rate limiting
 
 	// MFA phase: 5 failed attempts within 5 minutes.
 	mfaMaxFailedAttempts = 5
@@ -56,7 +56,7 @@ const (
 	errMsgInvalidCredentials  = "invalid email or password"
 	errMsgInvalidMFACode      = "invalid MFA code"
 	errMsgInvalidRecoveryCode = "invalid recovery code"
-	errMsgTooManyPassword     = "too many failed login attempts, please try again later" //nolint:unused // Will be used for password rate limiting
+	errMsgTooManyPassword     = "too many failed login attempts, please try again later" // Will be used for password rate limiting
 	errMsgTooManyMFA          = "too many failed MFA attempts, please try again later"
 )
 

@@ -76,14 +76,6 @@ type namingUKConventionRule struct {
 	originalMetadata *model.DatabaseMetadata
 }
 
-//nolint:unused
-type indexMetaData struct {
-	indexName string
-	tableName string
-	line      int
-	metaData  map[string]string
-}
-
 func (*namingUKConventionRule) Name() string {
 	return "naming-unique-key-convention"
 }

@@ -3794,6 +3794,32 @@ func buildTableSequencesMap(metadata *storepb.DatabaseSchemaMetadata) map[string
 	return tableSequencesMap
 }
 
+func writeMaterializedViewCommentSDL(out io.Writer, schemaName string, view *storepb.MaterializedViewMetadata) error {
+	if _, err := io.WriteString(out, `COMMENT ON MATERIALIZED VIEW "`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, schemaName); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, view.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `" IS '`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, escapeSingleQuote(view.Comment)); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `';`); err != nil {
+		return err
+	}
+	_, err := io.WriteString(out, "\n\n")
+	return err
+}
+
 // SDL Comment Functions
 
 func writeSchemaCommentSDL(out io.Writer, schema *storepb.SchemaMetadata) error {
@@ -3876,33 +3902,6 @@ func writeColumnCommentSDL(out io.Writer, schemaName, tableName string, column *
 
 func writeViewCommentSDL(out io.Writer, schemaName string, view *storepb.ViewMetadata) error {
 	if _, err := io.WriteString(out, `COMMENT ON VIEW "`); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, schemaName); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, `"."`); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, view.Name); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, `" IS '`); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, escapeSingleQuote(view.Comment)); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, `';`); err != nil {
-		return err
-	}
-	_, err := io.WriteString(out, "\n\n")
-	return err
-}
-
-// nolint:unused
-func writeMaterializedViewCommentSDL(out io.Writer, schemaName string, view *storepb.MaterializedViewMetadata) error {
-	if _, err := io.WriteString(out, `COMMENT ON MATERIALIZED VIEW "`); err != nil {
 		return err
 	}
 	if _, err := io.WriteString(out, schemaName); err != nil {
