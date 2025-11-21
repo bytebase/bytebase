@@ -2,7 +2,6 @@ package advisor
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"regexp"
 
@@ -11,9 +10,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
-	"github.com/bytebase/bytebase/backend/store/model"
 
 	// Register walk-through implementations
 	_ "github.com/bytebase/bytebase/backend/plugin/schema/mysql"
@@ -489,39 +486,13 @@ func UnmarshalNamingCaseRulePayload(payload string) (*NamingCaseRulePayload, err
 	return &ncr, nil
 }
 
-// SQLReviewCheckContext is the context for SQL review check.
-type SQLReviewCheckContext struct {
-	Charset               string
-	Collation             string
-	ChangeType            storepb.PlanCheckRunConfig_ChangeDatabaseType
-	DBSchema              *storepb.DatabaseSchemaMetadata
-	DBType                storepb.Engine
-	OriginalMetadata      *model.DatabaseMetadata
-	FinalMetadata         *model.DatabaseMetadata
-	Driver                *sql.DB
-	EnablePriorBackup     bool
-	ClassificationConfig  *storepb.DataClassificationSetting_DataClassificationConfig
-	ListDatabaseNamesFunc base.ListDatabaseNamesFunc
-	InstanceID            string
-	IsObjectCaseSensitive bool
-
-	// Snowflake specific fields
-	CurrentDatabase string
-
-	// Used for test only.
-	NoAppendBuiltin bool
-
-	// UsePostgresDatabaseOwner is true if the advisor should use the database owner as default role.
-	UsePostgresDatabaseOwner bool
-}
-
 // SQLReviewCheck checks the statements with sql review rules.
 func SQLReviewCheck(
 	ctx context.Context,
 	sm *sheet.Manager,
 	statements string,
 	ruleList []*storepb.SQLReviewRule,
-	checkContext SQLReviewCheckContext,
+	checkContext Context,
 ) ([]*storepb.Advice, error) {
 	asts, parseResult := sm.GetASTsForChecks(checkContext.DBType, statements)
 
@@ -555,27 +526,16 @@ func SQLReviewCheck(
 
 		ruleType := SQLReviewRuleType(rule.Type)
 
+		// Set per-rule fields
+		checkContext.AST = asts
+		checkContext.Statements = statements
+		checkContext.Rule = rule
+
 		adviceList, err := Check(
 			ctx,
 			checkContext.DBType,
 			ruleType,
-			Context{
-				DBSchema:                 checkContext.DBSchema,
-				ChangeType:               checkContext.ChangeType,
-				EnablePriorBackup:        checkContext.EnablePriorBackup,
-				AST:                      asts,
-				Statements:               statements,
-				Rule:                     rule,
-				OriginalMetadata:         checkContext.OriginalMetadata,
-				FinalMetadata:            checkContext.FinalMetadata,
-				Driver:                   checkContext.Driver,
-				CurrentDatabase:          checkContext.CurrentDatabase,
-				ClassificationConfig:     checkContext.ClassificationConfig,
-				UsePostgresDatabaseOwner: checkContext.UsePostgresDatabaseOwner,
-				ListDatabaseNamesFunc:    checkContext.ListDatabaseNamesFunc,
-				InstanceID:               checkContext.InstanceID,
-				IsObjectCaseSensitive:    checkContext.IsObjectCaseSensitive,
-			},
+			checkContext,
 		)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to check statement")

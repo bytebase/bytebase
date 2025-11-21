@@ -176,7 +176,7 @@ func (e *StatementAdviseExecutor) runReview(
 	// Database secrets feature removed - using original statement directly
 	classificationConfig := getClassificationByProject(ctx, e.store, database.ProjectID)
 
-	adviceList, err := advisor.SQLReviewCheck(ctx, e.sheetManager, statement, reviewConfig.SqlReviewRules, advisor.SQLReviewCheckContext{
+	adviceList, err := advisor.SQLReviewCheck(ctx, e.sheetManager, statement, reviewConfig.SqlReviewRules, advisor.Context{
 		Charset:                  dbMetadata.GetProto().CharacterSet,
 		Collation:                dbMetadata.GetProto().Collation,
 		DBSchema:                 dbMetadata.GetProto(),

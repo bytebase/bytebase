@@ -663,7 +663,7 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 	connection := driver.GetDB()
 
 	classificationConfig := getClassificationByProject(ctx, s.store, database.ProjectID)
-	context := advisor.SQLReviewCheckContext{
+	context := advisor.Context{
 		Charset:                  dbMetadataProto.CharacterSet,
 		Collation:                dbMetadataProto.Collation,
 		ChangeType:               changeType,
