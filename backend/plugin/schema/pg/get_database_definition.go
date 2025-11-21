@@ -3793,6 +3793,7 @@ func buildTableSequencesMap(metadata *storepb.DatabaseSchemaMetadata) map[string
 	}
 	return tableSequencesMap
 }
+
 func writeMaterializedViewCommentSDL(out io.Writer, schemaName string, view *storepb.MaterializedViewMetadata) error {
 	if _, err := io.WriteString(out, `COMMENT ON MATERIALIZED VIEW "`); err != nil {
 		return err
