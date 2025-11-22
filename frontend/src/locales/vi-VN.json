@@ -641,10 +641,10 @@
           "rows": {
             "self": "Số lượng hàng kết quả SQL tối đa",
             "rows": "Hàng",
-            "description": "Giới hạn số hàng đầu ra trong kết quả truy vấn SQL, giá trị <= 0 nghĩa là không giới hạn.",
-            "limit": "Không giới hạn khi giá trị <= 0"
+            "description": "Giới hạn số hàng đầu ra trong kết quả truy vấn SQL, giá trị <= 0 nghĩa là không giới hạn."
           }
         },
+        "no-limit": "Không giới hạn khi giá trị <= 0",
         "query-data-policy": {
           "timeout": {
             "self": "Thời gian truy vấn tối đa",

@@ -65,7 +65,7 @@
           $t("settings.general.workspace.maximum-sql-result.rows.description")
         }}
         <span class="font-semibold! textinfolabel">
-          {{ $t("settings.general.workspace.maximum-sql-result.rows.limit") }}
+          {{ $t("settings.general.workspace.no-limit") }}
         </span>
       </p>
       <div class="mt-3 w-full flex flex-row justify-start items-center gap-4">
