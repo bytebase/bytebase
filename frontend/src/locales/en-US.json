@@ -641,10 +641,10 @@
           "rows": {
             "self": "Maximum SQL result rows",
             "rows": "Rows",
-            "description": "Limit the output rows in SQL query result.",
-            "limit": "No limit when the value <= 0"
+            "description": "Limit the output rows in SQL query result."
           }
         },
+        "no-limit": "No limit when the value <= 0",
         "query-data-policy": {
           "timeout": {
             "self": "Maximum query time",
