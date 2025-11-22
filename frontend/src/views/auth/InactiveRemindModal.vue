@@ -35,7 +35,7 @@
 
 <script lang="tsx" setup>
 import { NButton } from "naive-ui";
-import { computed } from "vue";
+import { computed, onUnmounted, ref, watch } from "vue";
 import { BBModal } from "@/bbkit";
 import { useCurrentTimestamp } from "@/composables/useCurrentTimestamp";
 import { useLastActivity } from "@/composables/useLastActivity";
@@ -43,6 +43,7 @@ import { useAuthStore, useSettingV1Store } from "@/store";
 
 const authStore = useAuthStore();
 const settingStore = useSettingV1Store();
+const timer = ref<NodeJS.Timeout | undefined>();
 
 // Show the modal 3min before the inactiveTimeout threshold.
 const showModalThresholdInMins = 3;
@@ -74,5 +75,32 @@ const shouldShow = computed(() => {
     inactiveInSeconds >
     inactiveTimeoutInSeconds.value - showModalThresholdInMins * 60
   );
+});
+
+const resetTimeout = () => {
+  if (timer.value) {
+    clearTimeout(timer.value);
+    timer.value = undefined;
+  }
+};
+
+watch(
+  () => shouldShow.value,
+  (show) => {
+    resetTimeout();
+
+    if (show) {
+      timer.value = setTimeout(
+        () => {
+          logout();
+        },
+        showModalThresholdInMins * 60 * 1000
+      );
+    }
+  }
+);
+
+onUnmounted(() => {
+  resetTimeout();
 });
 </script>
