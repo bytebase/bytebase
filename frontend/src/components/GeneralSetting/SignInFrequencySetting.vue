@@ -52,6 +52,9 @@
       {{
         $t("settings.general.workspace.inactive-session-timeout.description")
       }}
+      <span class="font-semibold! textinfolabel">
+        {{ $t("settings.general.workspace.no-limit") }}
+      </span>
     </p>
     <NTooltip placement="top-start" :disabled="allowChangeSetting">
       <template #trigger>
@@ -59,6 +62,7 @@
           <NInputNumber
             v-model:value="state.inactiveTimeout"
             class="w-24 mr-4"
+            :min="-1"
             :disabled="!allowChangeSetting"
           />
           <span class="textinfo text-sm">
@@ -129,7 +133,7 @@ const getInitialState = (): LocalState => {
   );
   if (inactiveTimeoutSeconds) {
     defaultState.inactiveTimeout =
-      Math.floor(inactiveTimeoutSeconds / (60 * 60)) || 1;
+      Math.floor(inactiveTimeoutSeconds / (60 * 60)) || 0;
   }
   return defaultState;
 };
