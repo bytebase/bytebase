@@ -2102,8 +2102,7 @@
           "add-worksheet": "Add worksheet",
           "multi-select": "Multi-select"
         }
-      },
-      "unsaved-worksheet": "You have unsaved worksheet."
+      }
     },
     "batch-query": {
       "batch": "Batch",
