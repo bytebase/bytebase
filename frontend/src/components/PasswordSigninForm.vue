@@ -103,7 +103,7 @@ interface LocalState {
   showPassword: boolean;
 }
 
-const props = defineProps<{
+defineProps<{
   loading: boolean;
 }>();
 
