@@ -2102,7 +2102,8 @@
           "add-worksheet": "ワークシートを追加",
           "multi-select": "複数選択"
         }
-      }
+      },
+      "unsaved-worksheet": "保存されていないワークシートがあります。"
     },
     "batch-query": {
       "batch": "バッチ",

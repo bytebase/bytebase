@@ -38,7 +38,7 @@ export const defaultSQLEditorTab = (): SQLEditorTab => {
     connection: emptySQLEditorConnection(),
     statement: "",
     selectedStatement: "",
-    status: "NEW",
+    status: "CLEAN",
     mode: DEFAULT_SQL_EDITOR_TAB_MODE,
     worksheet: "",
     treeState: {

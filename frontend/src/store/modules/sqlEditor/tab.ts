@@ -35,7 +35,6 @@ import {
   type ExtendedTab,
   useExtendedTabStore,
 } from "./extendedTab";
-import { useTabViewStateStore } from "./tabViewState";
 import { useWebTerminalStore } from "./webTerminal";
 
 const LOCAL_STORAGE_KEY_PREFIX = "bb.sql-editor-tab";
@@ -62,7 +61,6 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
   // states
   const { fetchExtendedTab, saveExtendedTab, deleteExtendedTab } =
     useExtendedTabStore();
-  const tabViewStateStore = useTabViewStateStore();
 
   const me = useCurrentUserV1();
   const userUID = computed(() => extractUserId(me.value.name));
@@ -164,7 +162,6 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
   // it's a combination of `project` and `tabIdListMapByProject`
   const tabIdList = computed({
     get() {
-      // _maybeInitProject(project.value);
       return tabIdListMapByProject.value[project.value] ?? [];
     },
     set(list) {
@@ -175,7 +172,6 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
   // it's a combination of `project` and `currentTabIdMapByProject`
   const currentTabId = computed({
     get() {
-      // _maybeInitProject(project.value);
       return currentTabIdMapByProject.value[project.value] ?? "";
     },
     set(id) {
@@ -390,20 +386,16 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
         isDisconnectedSQLEditorTab(curr) ||
         isSimilarSQLEditorTab(tab, curr, ignoreMode)
       ) {
-        curr.connection = tab.connection;
-        curr.worksheet = tab.worksheet;
-        curr.mode = tab.mode;
-        if (
-          defaultTitle &&
-          tabViewStateStore.getViewState(curr.id).view === "CODE"
-        ) {
-          curr.title = defaultTitle;
-        }
+        updateTab(curr.id, {
+          connection: tab.connection,
+          worksheet: tab.worksheet,
+          mode: tab.mode,
+        });
         return curr;
       }
     }
     const similarNewTab = tabList.value.find(
-      (tmp) => tmp.status === "NEW" && isSimilarSQLEditorTab(tmp, tab)
+      (tmp) => tmp.status === "CLEAN" && isSimilarSQLEditorTab(tmp, tab)
     );
     if (similarNewTab) {
       setCurrentTabId(similarNewTab.id);
@@ -479,7 +471,7 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
               keyForTab(persistent.id),
               persistent
             );
-            const activeTab = tabsById.get(tabId);
+            const activeTab = tabsById.get(persistent.id);
             if (activeTab) {
               saveExtendedTab(activeTab, extended);
             }

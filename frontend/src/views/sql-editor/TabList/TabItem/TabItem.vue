@@ -8,15 +8,12 @@
       },
       tab.status.toLowerCase(),
     ]"
-    :data-status="tab.status"
-    :data-sheet="tab.worksheet"
-    :data-connection="JSON.stringify(tab.connection)"
     @mousedown.left="$emit('select', tab, index)"
     @mouseenter="state.hovering = true"
     @mouseleave="state.hovering = false"
   >
     <div
-      class="body"
+      class="body flex items-center gap-x-2"
       :style="
         backgroundColorRgb
           ? {
@@ -106,7 +103,6 @@ const backgroundColorRgb = computed(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  column-gap: 0.25rem;
   padding-left: 0.5rem;
   padding-right: 0.25rem;
   border-top-width: 1px;

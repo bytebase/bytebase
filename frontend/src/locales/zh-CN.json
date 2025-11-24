@@ -2102,7 +2102,8 @@
           "add-worksheet": "添加工作表",
           "multi-select": "多选"
         }
-      }
+      },
+      "unsaved-worksheet": "您有未保存的工作表。"
     },
     "batch-query": {
       "batch": "批量",
