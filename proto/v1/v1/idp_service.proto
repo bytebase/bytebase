@@ -144,11 +144,18 @@ message TestIdentityProviderRequest {
 
   oneof context {
     OAuth2IdentityProviderTestRequestContext oauth2_context = 2;
+    // OIDC authentication context for test connection.
+    OIDCIdentityProviderTestRequestContext oidc_context = 3;
   }
 }
 
 message OAuth2IdentityProviderTestRequestContext {
   // Authorize code from website.
+  string code = 1;
+}
+
+message OIDCIdentityProviderTestRequestContext {
+  // Authorize code from OIDC provider.
   string code = 1;
 }
 

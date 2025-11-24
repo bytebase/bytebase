@@ -1742,6 +1742,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.OIDCIdentityProviderTestRequestContext"><span class="badge">M</span>OIDCIdentityProviderTestRequestContext</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.TestIdentityProviderRequest"><span class="badge">M</span>TestIdentityProviderRequest</a>
                 </li>
               
@@ -19694,6 +19698,30 @@ Should be fetched from the well-known configuration file of the OIDC provider. <
 
         
       
+        <h3 id="bytebase.v1.OIDCIdentityProviderTestRequestContext">OIDCIdentityProviderTestRequestContext</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>code</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Authorize code from OIDC provider. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.TestIdentityProviderRequest">TestIdentityProviderRequest</h3>
         <p></p>
 
@@ -19716,6 +19744,13 @@ Should be fetched from the well-known configuration file of the OIDC provider. <
                   <td><a href="#bytebase.v1.OAuth2IdentityProviderTestRequestContext">OAuth2IdentityProviderTestRequestContext</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>oidc_context</td>
+                  <td><a href="#bytebase.v1.OIDCIdentityProviderTestRequestContext">OIDCIdentityProviderTestRequestContext</a></td>
+                  <td></td>
+                  <td><p>OIDC authentication context for test connection. </p></td>
                 </tr>
               
             </tbody>

@@ -409,6 +409,7 @@
     - [OAuth2IdentityProviderConfig](#bytebase-v1-OAuth2IdentityProviderConfig)
     - [OAuth2IdentityProviderTestRequestContext](#bytebase-v1-OAuth2IdentityProviderTestRequestContext)
     - [OIDCIdentityProviderConfig](#bytebase-v1-OIDCIdentityProviderConfig)
+    - [OIDCIdentityProviderTestRequestContext](#bytebase-v1-OIDCIdentityProviderTestRequestContext)
     - [TestIdentityProviderRequest](#bytebase-v1-TestIdentityProviderRequest)
     - [TestIdentityProviderResponse](#bytebase-v1-TestIdentityProviderResponse)
     - [TestIdentityProviderResponse.ClaimsEntry](#bytebase-v1-TestIdentityProviderResponse-ClaimsEntry)
@@ -6935,6 +6936,21 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 
 
 
+<a name="bytebase-v1-OIDCIdentityProviderTestRequestContext"></a>
+
+### OIDCIdentityProviderTestRequestContext
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| code | [string](#string) |  | Authorize code from OIDC provider. |
+
+
+
+
+
+
 <a name="bytebase-v1-TestIdentityProviderRequest"></a>
 
 ### TestIdentityProviderRequest
@@ -6945,6 +6961,7 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | ----- | ---- | ----- | ----------- |
 | identity_provider | [IdentityProvider](#bytebase-v1-IdentityProvider) |  | The identity provider to test connection including uncreated. |
 | oauth2_context | [OAuth2IdentityProviderTestRequestContext](#bytebase-v1-OAuth2IdentityProviderTestRequestContext) |  |  |
+| oidc_context | [OIDCIdentityProviderTestRequestContext](#bytebase-v1-OIDCIdentityProviderTestRequestContext) |  | OIDC authentication context for test connection. |
 
 
 

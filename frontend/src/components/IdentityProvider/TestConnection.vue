@@ -143,14 +143,26 @@ const loginWithIdentityProviderEventListener = async (event: Event) => {
   const code = payload.code;
   try {
     isTestingInProgress.value = true;
+
+    // Send correct context type based on IdP type
+    // OIDC providers use oidcContext, OAuth2 providers use oauth2Context
+    const isOidc = props.idp.type === IdentityProviderType.OIDC;
+
     const request = create(TestIdentityProviderRequestSchema, {
       identityProvider: props.idp,
-      context: {
-        case: "oauth2Context",
-        value: {
-          code: code,
-        },
-      },
+      context: isOidc
+        ? {
+            case: "oidcContext",
+            value: {
+              code: code,
+            },
+          }
+        : {
+            case: "oauth2Context",
+            value: {
+              code: code,
+            },
+          },
     });
     const response =
       await identityProviderServiceClientConnect.testIdentityProvider(request);

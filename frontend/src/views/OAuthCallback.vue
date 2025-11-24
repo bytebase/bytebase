@@ -9,12 +9,25 @@
         Back to Sign in
       </router-link>
     </div>
+    <div v-else class="mt-2">
+      <div class="flex items-center gap-x-2">
+        <NSpin size="small" />
+        <span>{{ state.message || "Processing authentication..." }}</span>
+      </div>
+      <NButton
+        v-if="state.oAuthState?.popup && state.showCloseButton"
+        class="mt-4"
+        @click="window.close()"
+      >
+        Close this window
+      </NButton>
+    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
-import { NButton } from "naive-ui";
+import { NButton, NSpin } from "naive-ui";
 import { onMounted, reactive } from "vue";
 import { useRoute } from "vue-router";
 import { AUTH_SIGNIN_MODULE } from "@/router/auth";
@@ -29,6 +42,7 @@ interface LocalState {
   hasError: boolean;
   oAuthState: OAuthState | undefined;
   payload: OAuthWindowEventPayload;
+  showCloseButton: boolean;
 }
 
 const route = useRoute();
@@ -42,6 +56,7 @@ const state = reactive<LocalState>({
     error: "",
     code: "",
   },
+  showCloseButton: false,
 });
 
 onMounted(() => {
@@ -99,59 +114,97 @@ onMounted(() => {
 
 const triggerAuthCallback = async () => {
   const { oAuthState, hasError } = state;
-  if (hasError || !oAuthState) {
-    window.opener.dispatchEvent(
-      new CustomEvent("bb.oauth.unknown", {
-        detail: state.payload,
-      })
-    );
-    return;
-  }
 
-  const eventName = oAuthState.event;
-  if (eventName.startsWith("bb.oauth.signin")) {
-    if (oAuthState.popup) {
+  // Handle popup flow with robust error handling
+  if (oAuthState?.popup) {
+    try {
+      // Check if opener window is available and not closed
+      if (!window.opener || window.opener.closed) {
+        state.hasError = true;
+        state.message =
+          "Authentication completed, but the parent window is no longer available. Please close this window and try again.";
+        state.showCloseButton = true;
+        return;
+      }
+
+      const eventName = hasError ? "bb.oauth.unknown" : oAuthState.event;
+
+      // Dispatch event to parent window
       window.opener.dispatchEvent(
         new CustomEvent(eventName, {
           detail: state.payload,
         })
       );
-      window.close();
-    } else {
-      // Determine context type based on the stored IdP type
-      // OIDC providers use oidcContext, OAuth2 providers use oauth2Context
-      const isOidc = oAuthState.idpType === IdentityProviderType.OIDC;
 
-      await authStore.login(
-        create(LoginRequestSchema, {
-          idpName: eventName.split(".").pop()!,
-          idpContext: {
-            context: isOidc
-              ? {
-                  case: "oidcContext",
-                  value: {
-                    code: state.payload.code,
-                  },
-                }
-              : {
-                  case: "oauth2Context",
-                  value: {
-                    code: state.payload.code,
-                  },
-                },
-          },
-          web: true,
-        }),
-        oAuthState.redirect
-      );
+      // Try to close the popup window
+      try {
+        window.close();
+
+        // If window.close() doesn't work immediately (some browsers delay it),
+        // show a close button after a short delay
+        setTimeout(() => {
+          if (!window.closed) {
+            state.showCloseButton = true;
+            state.message = hasError
+              ? state.message
+              : "Authentication completed. You can close this window.";
+          }
+        }, 500);
+      } catch {
+        // Browser blocked window.close()
+        state.showCloseButton = true;
+        state.message = hasError
+          ? state.message
+          : "Authentication completed. Please close this window.";
+      }
+    } catch (error) {
+      console.error("Failed to communicate with opener window:", error);
+      state.hasError = true;
+      state.message =
+        "Authentication completed, but failed to communicate with the parent window. Please close this window and try again.";
+      state.showCloseButton = true;
     }
-  } else {
-    window.opener.dispatchEvent(
-      new CustomEvent("bb.oauth.unknown", {
-        detail: state.payload,
-      })
+    return;
+  }
+
+  // Handle redirect flow (non-popup)
+  if (hasError || !oAuthState) {
+    // For redirect flow, errors are already displayed in the template
+    return;
+  }
+
+  const eventName = oAuthState.event;
+  if (eventName.startsWith("bb.oauth.signin")) {
+    // Determine context type based on the stored IdP type
+    // OIDC providers use oidcContext, OAuth2 providers use oauth2Context
+    const isOidc = oAuthState.idpType === IdentityProviderType.OIDC;
+    const idpName = eventName.split(".").pop();
+    if (!idpName) {
+      return;
+    }
+
+    await authStore.login(
+      create(LoginRequestSchema, {
+        idpName,
+        idpContext: {
+          context: isOidc
+            ? {
+                case: "oidcContext",
+                value: {
+                  code: state.payload.code,
+                },
+              }
+            : {
+                case: "oauth2Context",
+                value: {
+                  code: state.payload.code,
+                },
+              },
+        },
+        web: true,
+      }),
+      oAuthState.redirect
     );
-    window.close();
   }
 };
 </script>

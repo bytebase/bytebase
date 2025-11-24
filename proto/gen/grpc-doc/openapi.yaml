@@ -11603,6 +11603,12 @@ components:
                     type: string
                     description: Authorization code from OIDC provider.
             description: OpenID Connect authentication context.
+        OIDCIdentityProviderTestRequestContext:
+            type: object
+            properties:
+                code:
+                    type: string
+                    description: Authorize code from OIDC provider.
         ObjectSchema:
             type: object
             properties:
@@ -14385,6 +14391,10 @@ components:
                     description: The identity provider to test connection including uncreated.
                 oauth2Context:
                     $ref: '#/components/schemas/OAuth2IdentityProviderTestRequestContext'
+                oidcContext:
+                    allOf:
+                        - $ref: '#/components/schemas/OIDCIdentityProviderTestRequestContext'
+                    description: OIDC authentication context for test connection.
         TestIdentityProviderResponse:
             type: object
             properties:
