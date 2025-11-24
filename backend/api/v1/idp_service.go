@@ -294,10 +294,12 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, req 
 			}
 			identityProvider.Config.GetOidcConfig().ClientSecret = storedIdentityProvider.Config.GetOidcConfig().ClientSecret
 		}
-		oauth2Context := req.Msg.GetOauth2Context()
-		if oauth2Context == nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("missing OAuth2 context"))
+
+		oidcContext := req.Msg.GetOidcContext()
+		if oidcContext == nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("missing OIDC context"))
 		}
+
 		identityProviderConfig := convertIdentityProviderConfigToStore(identityProvider.Config)
 		oidcIdentityProvider, err := oidc.NewIdentityProvider(ctx, identityProviderConfig.GetOidcConfig())
 		if err != nil {
@@ -305,7 +307,7 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, req 
 		}
 
 		redirectURL := fmt.Sprintf("%s/oidc/callback", setting.ExternalUrl)
-		token, err := oidcIdentityProvider.ExchangeToken(ctx, redirectURL, oauth2Context.Code)
+		token, err := oidcIdentityProvider.ExchangeToken(ctx, redirectURL, oidcContext.Code)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to exchange access token, error: %s", err.Error()))
 		}

@@ -117,10 +117,26 @@ func (x *TestIdentityProviderRequest) Equal(y *TestIdentityProviderRequest) bool
 	if !x.GetOauth2Context().Equal(y.GetOauth2Context()) {
 		return false
 	}
+	if !x.GetOidcContext().Equal(y.GetOidcContext()) {
+		return false
+	}
 	return true
 }
 
 func (x *OAuth2IdentityProviderTestRequestContext) Equal(y *OAuth2IdentityProviderTestRequestContext) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Code != y.Code {
+		return false
+	}
+	return true
+}
+
+func (x *OIDCIdentityProviderTestRequestContext) Equal(y *OIDCIdentityProviderTestRequestContext) bool {
 	if x == y {
 		return true
 	}
