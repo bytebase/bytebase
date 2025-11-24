@@ -1440,6 +1440,7 @@ func BuildListDatabaseNamesFunc(storeInstance *store.Store) parserbase.ListDatab
 	}
 }
 
+// accessCheck check the access for the database. Do not support cross-project resources.
 func (s *SQLService) accessCheck(
 	ctx context.Context,
 	instance *store.InstanceMessage,
@@ -1454,6 +1455,35 @@ func (s *SQLService) accessCheck(
 	}
 	if project == nil {
 		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("project %q not found", database.ProjectID))
+	}
+
+	workspacePolicy, err := s.store.GetWorkspaceIamPolicy(ctx)
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get workspace iam policy, error: %v", err))
+	}
+
+	projectPolicy, err := s.store.GetProjectIamPolicy(ctx, project.ResourceID)
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, errors.New(err.Error()))
+	}
+
+	checkDatabaseAccess := func() error {
+		databaseFullName := common.FormatDatabase(instance.ResourceID, database.DatabaseName)
+		ok, err := s.hasDatabaseAccessRights(ctx, user, []*storepb.IamPolicy{workspacePolicy.Policy, projectPolicy.Policy}, map[string]any{
+			common.CELAttributeRequestTime:      time.Now(),
+			common.CELAttributeResourceDatabase: databaseFullName,
+		})
+		if err != nil {
+			return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check access control for database: %q, error %v", databaseFullName, err))
+		}
+		if !ok {
+			return connect.NewError(connect.CodePermissionDenied, errors.Errorf("user %q does not have permission for database %q", user.Email, databaseFullName))
+		}
+		return nil
+	}
+
+	if len(spans) == 0 {
+		return checkDatabaseAccess()
 	}
 
 	for _, span := range spans {
@@ -1494,44 +1524,21 @@ func (s *SQLService) accessCheck(
 			}
 		}
 		if span.Type == parserbase.Select {
+			if len(span.SourceColumns) == 0 {
+				if err := checkDatabaseAccess(); err != nil {
+					return err
+				}
+			}
+
 			var deniedResources []string
 			for column := range span.SourceColumns {
+				fmt.Println(column)
 				attributes := map[string]any{
 					common.CELAttributeRequestTime:        time.Now(),
 					common.CELAttributeResourceDatabase:   common.FormatDatabase(instance.ResourceID, column.Database),
 					common.CELAttributeResourceSchemaName: column.Schema,
 					common.CELAttributeResourceTableName:  column.Table,
 				}
-
-				databaseMessage, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-					InstanceID:      &instance.ResourceID,
-					DatabaseName:    &column.Database,
-					IsCaseSensitive: store.IsObjectCaseSensitive(instance),
-				})
-				if err != nil {
-					return err
-				}
-				if databaseMessage == nil {
-					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("database %q not found", column.Database))
-				}
-				project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &databaseMessage.ProjectID})
-				if err != nil {
-					return err
-				}
-				if project == nil {
-					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("project %q not found", databaseMessage.ProjectID))
-				}
-
-				workspacePolicy, err := s.store.GetWorkspaceIamPolicy(ctx)
-				if err != nil {
-					return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get workspace iam policy, error: %v", err))
-				}
-				// Allow query databases across different projects.
-				projectPolicy, err := s.store.GetProjectIamPolicy(ctx, project.ResourceID)
-				if err != nil {
-					return connect.NewError(connect.CodeInternal, errors.New(err.Error()))
-				}
-
 				ok, err := s.hasDatabaseAccessRights(ctx, user, []*storepb.IamPolicy{workspacePolicy.Policy, projectPolicy.Policy}, attributes)
 				if err != nil {
 					return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check access control for database: %q, error %v", column.Database, err))

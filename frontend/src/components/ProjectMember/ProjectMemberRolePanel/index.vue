@@ -52,7 +52,7 @@
         <div v-for="role in roleList" :key="role.role" class="mb-4">
           <template v-if="role.singleBindingList.length > 0">
             <div
-              class="w-full px-2 py-2 flex flex-row justify-start items-center"
+              class="w-full px-2 py-2 flex flex-row justify-start items-center gap-x-1"
             >
               <span class="textlabel">{{ displayRoleTitle(role.role) }}</span>
               <NTooltip
@@ -62,15 +62,13 @@
                 "
               >
                 <template #trigger>
-                  <NButton
-                    tag="div"
-                    text
-                    class="cursor-pointer opacity-60 hover:opacity-100"
+                  <MiniActionButton
+                    type="error"
                     :disabled="!allowRemoveRole(role.role)"
-                    @click="handleDeleteRole(role.role)"
+                    @click.prevent="handleDeleteRole(role.role)"
                   >
-                    <heroicons-outline:trash class="w-4 h-4 ml-1" />
-                  </NButton>
+                    <TrashIcon class="w-4 h-4" />
+                  </MiniActionButton>
                 </template>
                 <div>
                   {{ $t("project.members.cannot-remove-last-owner") }}
@@ -173,6 +171,7 @@ import AddProjectMembersPanel from "../AddProjectMember/AddProjectMembersPanel.v
 import EditProjectRolePanel from "./EditProjectRolePanel.vue";
 import RoleDescription from "./RoleDescription.vue";
 import RoleExpiredTip from "./RoleExpiredTip.vue";
+import { MiniActionButton } from "@/components/v2";
 
 interface SingleBinding {
   databaseResource?: DatabaseResource;
@@ -319,9 +318,8 @@ const getDataTableColumns = (
       key: "operations",
       width: 32,
       render: (singleBinding) => (
-        <div class="flex justify-end pr-2 gap-x-2">
-          <NButton
-            text
+        <div class="flex justify-end pr-2 gap-x-1">
+          <MiniActionButton
             onClick={() => {
               editingBinding.value = create(BindingSchema, {
                 role: role,
@@ -332,16 +330,15 @@ const getDataTableColumns = (
             }}
           >
             <PencilIcon class="w-4 h-4" />
-          </NButton>
+          </MiniActionButton>
           {(roleList.value.find((r) => r.role === role)?.singleBindingList
             ?.length ?? 0) > 1 && (
             <NTooltip
               disabled={allowDeleteCondition(singleBinding)}
               v-slots={{
                 trigger: () => (
-                  <NButton
-                    text
-                    class="cursor-pointer opacity-60 hover:opacity-100"
+                  <MiniActionButton
+                    type="error"
                     disabled={!allowDeleteCondition(singleBinding)}
                     onClick={() => {
                       const item = roleList.value.find((r) => r.role === role);
@@ -355,7 +352,7 @@ const getDataTableColumns = (
                     }}
                   >
                     <TrashIcon class="w-4 h-4" />
-                  </NButton>
+                  </MiniActionButton>
                 ),
                 default: () => t("project.members.cannot-remove-last-owner"),
               }}

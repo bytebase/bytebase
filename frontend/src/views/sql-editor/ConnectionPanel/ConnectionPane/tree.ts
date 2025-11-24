@@ -54,6 +54,8 @@ export const useSQLEditorTreeByEnvironment = (
   const currentUser = useCurrentUserV1();
   const environmentStore = useEnvironmentV1Store();
 
+  const tree = ref<TreeNode[]>([]);
+  const showMissingQueryDatabases = ref<boolean>(false);
   const databaseList = ref<ComposedDatabase[]>([]);
   const fetchDataState = ref<{
     loading: boolean;
@@ -82,11 +84,16 @@ export const useSQLEditorTreeByEnvironment = (
     { deep: true }
   );
 
-  const fetchDatabases = useDebounceFn(async (filter?: DatabaseFilter) => {
-    fetchDataState.value.loading = true;
-    const pageToken = fetchDataState.value.nextPageToken;
+  const _fetchDatabases = async (filter?: DatabaseFilter) => {
+    let pageToken = fetchDataState.value.nextPageToken;
+    const response: ComposedDatabase[] = [];
 
-    try {
+    // Try to fetch 5 pages to avoid empty filteredDatabaseList (filtered by permission in the frontend).
+    // TODO: support list databases with specific permissions via the API.
+    let i = 5;
+    while (i > 0) {
+      i--;
+
       const { databases, nextPageToken } = await databaseStore.fetchDatabases({
         parent: project.value,
         pageToken,
@@ -96,6 +103,26 @@ export const useSQLEditorTreeByEnvironment = (
           environment,
         },
       });
+      response.push(...databases);
+      pageToken = nextPageToken;
+
+      if (!showMissingQueryDatabases.value && databases.some(db => isDatabaseV1Queryable(db))) {
+        break;
+      }
+    }
+
+    return {
+      nextPageToken: pageToken,
+      databases: response,
+    }
+  }
+
+  const fetchDatabases = useDebounceFn(async (filter?: DatabaseFilter) => {
+    fetchDataState.value.loading = true;
+    const pageToken = fetchDataState.value.nextPageToken;
+
+    try {
+      const { databases, nextPageToken } = await _fetchDatabases(filter);
 
       if (pageToken) {
         databaseList.value.push(...databases);
@@ -125,9 +152,6 @@ export const useSQLEditorTreeByEnvironment = (
     }
     return databaseList.value;
   });
-
-  const tree = ref<TreeNode[]>([]);
-  const showMissingQueryDatabases = ref<boolean>(false);
 
   const buildTree = () => {
     tree.value = buildTreeImpl(filteredDatabaseList.value, [
