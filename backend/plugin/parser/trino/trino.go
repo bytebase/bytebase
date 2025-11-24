@@ -7,18 +7,44 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/trino"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 // ParseResult is the result of parsing a Trino statement.
 type ParseResult struct {
-	Tree   antlr.Tree
-	Tokens *antlr.CommonTokenStream
+	Tree     antlr.Tree
+	Tokens   *antlr.CommonTokenStream
+	BaseLine int
 }
 
-// ParseTrino parses the given SQL and returns the ParseResult.
-func ParseTrino(sql string) (*ParseResult, error) {
+// ParseTrino parses the given SQL statement and returns a list of ParseResults.
+// Each ParseResult represents one statement with its AST, tokens, and base line offset.
+func ParseTrino(sql string) ([]*ParseResult, error) {
+	stmts, err := SplitSQL(sql)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to split SQL")
+	}
+
+	var results []*ParseResult
+	for _, stmt := range stmts {
+		if stmt.Empty {
+			continue
+		}
+
+		parseResult, err := parseSingleTrino(stmt.Text, stmt.BaseLine)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, parseResult)
+	}
+
+	return results, nil
+}
+
+// parseSingleTrino parses a single Trino statement and returns the ParseResult.
+func parseSingleTrino(sql string, baseLine int) (*ParseResult, error) {
 	// Add a semicolon if it's missing to allow users to omit the semicolon
 	trimmedSQL := strings.TrimRightFunc(sql, unicode.IsSpace)
 	if len(trimmedSQL) > 0 && !strings.HasSuffix(trimmedSQL, ";") {
@@ -59,8 +85,9 @@ func ParseTrino(sql string) (*ParseResult, error) {
 
 	// Return the parse result
 	return &ParseResult{
-		Tree:   tree,
-		Tokens: stream,
+		Tree:     tree,
+		Tokens:   stream,
+		BaseLine: baseLine,
 	}, nil
 }
 

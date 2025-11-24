@@ -191,8 +191,11 @@ func TestGetStatementType(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Parse the statement
-			result, err := ParseTrino(tt.sql)
+			results, err := ParseTrino(tt.sql)
 			require.NoError(t, err, "Parsing should not fail")
+			require.Len(t, results, 1, "Should parse exactly one statement")
+
+			result := results[0]
 
 			// Test GetStatementType
 			stmtType := GetStatementType(result.Tree)

@@ -151,11 +151,17 @@ func splitByParser(statement string) ([]base.SingleSQL, error) {
 			continue
 		}
 
-		// Find the actual start position (first non-hidden token)
+		// Find the actual start position
 		startIdx := startToken.GetTokenIndex()
 		endIdx := stopToken.GetTokenIndex()
 
-		// Find the first non-hidden token for accurate start position
+		// Get the first token (any channel) for baseLine calculation
+		// This is important because when ANTLR reparses fragments, it sees ALL tokens
+		// including comments on hidden channels, so baseLine must be from the first token
+		// of any channel for correct error position mapping: originalLine = antlrLine + baseLine
+		firstToken := tokens[startIdx]
+
+		// Find the first non-hidden token for accurate start position display
 		var firstDefaultToken antlr.Token
 		for i := startIdx; i <= endIdx && i < len(tokens); i++ {
 			if tokens[i].GetChannel() == antlr.TokenDefaultChannel {
@@ -184,7 +190,7 @@ func splitByParser(statement string) ([]base.SingleSQL, error) {
 
 		result = append(result, base.SingleSQL{
 			Text:     text,
-			BaseLine: firstDefaultToken.GetLine() - 1,
+			BaseLine: firstToken.GetLine() - 1,
 			Start: &storepb.Position{
 				Line:   int32(firstDefaultToken.GetLine() - 1),
 				Column: int32(firstDefaultToken.GetColumn()),

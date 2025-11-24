@@ -15,30 +15,33 @@ func TestTrinoParser(t *testing.T) {
 	// Simple query parsing test
 	sql := "SELECT a.id, b.name FROM table1 a JOIN table2 b ON a.id = b.id"
 
-	result, err := ParseTrino(sql)
+	results, err := ParseTrino(sql)
 	require.NoError(t, err, "Failed to parse valid SQL")
-	require.NotNil(t, result.Tree, "Parse tree should not be nil")
+	require.Len(t, results, 1, "Should parse exactly one statement")
+	require.NotNil(t, results[0].Tree, "Parse tree should not be nil")
 
 	// Verify statement type
-	stmtType := GetStatementType(result.Tree)
+	stmtType := GetStatementType(results[0].Tree)
 	assert.Equal(t, Select, stmtType, "Statement should be recognized as SELECT")
 
 	// Verify the statement is read-only
-	isReadOnly := IsReadOnlyStatement(result.Tree)
+	isReadOnly := IsReadOnlyStatement(results[0].Tree)
 	assert.True(t, isReadOnly, "SELECT statement should be read-only")
 
 	// Test data-changing statement detection
 	sqlDML := "INSERT INTO users (id, name) VALUES (1, 'John')"
-	resultDML, err := ParseTrino(sqlDML)
+	resultsDML, err := ParseTrino(sqlDML)
 	require.NoError(t, err)
-	isDML := IsDataChangingStatement(resultDML.Tree)
+	require.Len(t, resultsDML, 1)
+	isDML := IsDataChangingStatement(resultsDML[0].Tree)
 	assert.True(t, isDML, "INSERT statement should be data-changing")
 
 	// Test schema-changing statement detection
 	sqlDDL := "CREATE TABLE test (id INT, name VARCHAR)"
-	resultDDL, err := ParseTrino(sqlDDL)
+	resultsDDL, err := ParseTrino(sqlDDL)
 	require.NoError(t, err)
-	isDDL := IsSchemaChangingStatement(resultDDL.Tree)
+	require.Len(t, resultsDDL, 1)
+	isDDL := IsSchemaChangingStatement(resultsDDL[0].Tree)
 	assert.True(t, isDDL, "CREATE TABLE should be schema-changing")
 }
 
@@ -91,10 +94,11 @@ func TestTrinoQueryType(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.sql, func(t *testing.T) {
-			result, err := ParseTrino(tc.sql)
+			results, err := ParseTrino(tc.sql)
 			require.NoError(t, err)
+			require.Len(t, results, 1)
 
-			queryType, _ := getQueryType(result.Tree)
+			queryType, _ := getQueryType(results[0].Tree)
 			assert.Equal(t, tc.expected, queryType)
 		})
 	}
