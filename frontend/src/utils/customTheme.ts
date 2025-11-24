@@ -8,10 +8,10 @@ export const useCustomTheme = (
     theme,
     (to, from) => {
       const rootElement = document.documentElement;
-      for (const cssVar in from) {
+      for (const cssVar of Object.keys(from ?? {})) {
         rootElement.style.removeProperty(cssVar);
       }
-      for (const cssVar in to) {
+      for (const cssVar of Object.keys(to ?? {})) {
         rootElement.style.setProperty(cssVar, hexToRgb(to[cssVar]).join(" "));
       }
     },

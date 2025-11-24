@@ -333,7 +333,7 @@ const getDataTableColumns = (
           >
             <PencilIcon class="w-4 h-4" />
           </NButton>
-          {roleList.value.filter((r) => r.role === role)[0]?.singleBindingList
+          {roleList.value.find((r) => r.role === role)?.singleBindingList
             .length > 1 && (
             <NTooltip
               disabled={allowDeleteCondition(singleBinding)}
