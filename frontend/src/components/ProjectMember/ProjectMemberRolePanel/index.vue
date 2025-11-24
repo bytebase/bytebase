@@ -176,7 +176,6 @@ import AddProjectMembersPanel from "../AddProjectMember/AddProjectMembersPanel.v
 import EditProjectRolePanel from "./EditProjectRolePanel.vue";
 import RoleDescription from "./RoleDescription.vue";
 import RoleExpiredTip from "./RoleExpiredTip.vue";
-import { MiniActionButton } from "@/components/v2";
 
 interface SingleBinding {
   databaseResource?: DatabaseResource;
