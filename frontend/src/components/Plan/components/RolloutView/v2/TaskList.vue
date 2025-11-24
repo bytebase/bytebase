@@ -125,11 +125,21 @@ const handleActionComplete = () => {
   events.emit("status-changed", { eager: true });
 };
 
-// Reset pagination when filters change or tasks change
+// Reset pagination when filters change, but preserve state on refresh
 watch(
-  () => [props.filterStatuses, props.stage.tasks.length],
+  () => props.filterStatuses,
   () => {
     displayedTaskCount.value = DEFAULT_PAGE_SIZE;
+  }
+);
+
+// Ensure displayedTaskCount doesn't exceed available tasks
+watch(
+  () => filteredTasks.value.length,
+  (newLength) => {
+    if (displayedTaskCount.value > newLength) {
+      displayedTaskCount.value = Math.max(DEFAULT_PAGE_SIZE, newLength);
+    }
   }
 );
 </script>
