@@ -152,7 +152,12 @@ func GetOffsetLength(total int) int {
 
 // ParseResult is the result of parsing SQL statements.
 type ParseResult struct {
-	Tree     antlr.Tree
-	Tokens   *antlr.CommonTokenStream
+	Tree   antlr.Tree
+	Tokens *antlr.CommonTokenStream
+	// BaseLine stores the zero-based line offset where this SQL statement starts in the original multi-statement input.
+	// When splitting a multi-statement SQL script (e.g., "SELECT 1;\nSELECT 2;"), each statement is parsed separately.
+	// BaseLine tracks the original line number (minus 1) of the first token in this statement, allowing error messages
+	// and positions to be correctly reported relative to the original script rather than the isolated statement.
+	// Calculated as: token.GetLine() - 1 (since ANTLR uses 1-based line numbers, but BaseLine is 0-based for offset arithmetic).
 	BaseLine int
 }
