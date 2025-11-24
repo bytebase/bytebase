@@ -423,7 +423,7 @@ func (l *suffixSelectStatementListener) EnterUpdateStatement(ctx *parser.UpdateS
 	}
 }
 
-func ExtractTables(databaseName string, parseResult *ParseResult, offset int) ([]StatementInfo, error) {
+func ExtractTables(databaseName string, parseResult *base.ParseResult, offset int) ([]StatementInfo, error) {
 	listener := &tableReferenceListener{
 		databaseName: databaseName,
 		offset:       offset,

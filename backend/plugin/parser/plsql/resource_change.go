@@ -17,7 +17,7 @@ func init() {
 
 func extractChangedResources(currentDatabase string, _ string, dbMetadata *model.DatabaseMetadata, asts any, statement string) (*base.ChangeSummary, error) {
 	// currentDatabase is the same as currentSchema for Oracle.
-	results, ok := asts.([]*ParseResult)
+	results, ok := asts.([]*base.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert ast to []*ParseResult, got %T", asts)
 	}

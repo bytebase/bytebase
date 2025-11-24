@@ -16,7 +16,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -33,7 +33,7 @@ type ColumnRequireAdvisor struct {
 
 // Check checks for column requirement.
 func (*ColumnRequireAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmtList, ok := checkCtx.AST.([]*plsqlparser.ParseResult)
+	stmtList, ok := checkCtx.AST.([]*base.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to ParseResult")
 	}

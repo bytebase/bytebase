@@ -18,26 +18,20 @@ func init() {
 }
 
 // parseTSQLForRegistry is the ParseFunc for T-SQL.
-// Returns []*ParseResult on success.
+// Returns []*base.ParseResult on success.
 func parseTSQLForRegistry(statement string) (any, error) {
 	return ParseTSQL(statement)
 }
 
-type ParseResult struct {
-	Tree     antlr.Tree
-	Tokens   *antlr.CommonTokenStream
-	BaseLine int
-}
-
 // ParseTSQL parses the given SQL and returns a list of ParseResult (one per statement).
 // Use the T-SQL parser based on antlr4.
-func ParseTSQL(sql string) ([]*ParseResult, error) {
+func ParseTSQL(sql string) ([]*base.ParseResult, error) {
 	stmts, err := SplitSQL(sql)
 	if err != nil {
 		return nil, err
 	}
 
-	var results []*ParseResult
+	var results []*base.ParseResult
 	for _, stmt := range stmts {
 		if stmt.Empty {
 			continue
@@ -54,7 +48,7 @@ func ParseTSQL(sql string) ([]*ParseResult, error) {
 }
 
 // parseSingleTSQL parses a single T-SQL statement and returns the ParseResult.
-func parseSingleTSQL(statement string, baseLine int) (*ParseResult, error) {
+func parseSingleTSQL(statement string, baseLine int) (*base.ParseResult, error) {
 	inputStream := antlr.NewInputStream(statement)
 	lexer := parser.NewTSqlLexer(inputStream)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
@@ -87,7 +81,7 @@ func parseSingleTSQL(statement string, baseLine int) (*ParseResult, error) {
 		return nil, parserErrorListener.Err
 	}
 
-	result := &ParseResult{
+	result := &base.ParseResult{
 		Tree:     tree,
 		Tokens:   stream,
 		BaseLine: baseLine,

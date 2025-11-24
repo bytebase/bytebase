@@ -266,15 +266,15 @@ func RegisterParseFunc(engine storepb.Engine, f ParseFunc) {
 // Parse parses the SQL statement and returns the AST.
 // The return type (any) varies by database engine:
 //   - TiDB: []ast.StmtNode (github.com/pingcap/tidb/pkg/parser/ast)
-//   - MySQL, MariaDB, OceanBase: []*ParseResult (github.com/bytebase/bytebase/backend/plugin/parser/mysql)
-//   - PostgreSQL: []*ParseResult (github.com/bytebase/bytebase/backend/plugin/parser/pg) - ANTLR-based
+//   - MySQL, MariaDB, OceanBase: []*base.ParseResult (github.com/bytebase/bytebase/backend/plugin/parser/base)
+//   - PostgreSQL: []*base.ParseResult (github.com/bytebase/bytebase/backend/plugin/parser/base) - ANTLR-based
 //   - CockroachDB: statements.Statements (github.com/cockroachdb/cockroachdb-parser/pkg/sql/parser/statements)
 //   - Redshift: antlr.Tree
 //   - Oracle: antlr.Tree
-//   - Snowflake: []*ParseResult (github.com/bytebase/bytebase/backend/plugin/parser/snowflake) - ANTLR-based
+//   - Snowflake: []*base.ParseResult (github.com/bytebase/bytebase/backend/plugin/parser/base) - ANTLR-based
 //   - MSSQL: antlr.Tree
 //   - DynamoDB (PartiQL): antlr.Tree
-//   - Doris: *ParseResult (github.com/bytebase/bytebase/backend/plugin/parser/doris)
+//   - Doris: *base.ParseResult (github.com/bytebase/bytebase/backend/plugin/parser/base)
 func Parse(engine storepb.Engine, statement string) (any, error) {
 	f, ok := parsers[engine]
 	if !ok {

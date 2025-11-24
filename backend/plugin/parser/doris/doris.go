@@ -13,7 +13,7 @@ func init() {
 }
 
 // parseDorisForRegistry is the ParseFunc for Doris.
-// Returns []*ParseResult on success.
+// Returns []*base.ParseResult on success.
 func parseDorisForRegistry(statement string) (any, error) {
 	result, err := ParseDorisSQL(statement)
 	if err != nil {
@@ -22,21 +22,14 @@ func parseDorisForRegistry(statement string) (any, error) {
 	return result, nil
 }
 
-// ParseResult is the result of parsing a Doris statement.
-type ParseResult struct {
-	Tree     antlr.Tree
-	Tokens   *antlr.CommonTokenStream
-	BaseLine int
-}
-
 // ParseDorisSQL parses the given SQL statement by using antlr4. Returns a list of AST and token stream if no error.
-func ParseDorisSQL(statement string) ([]*ParseResult, error) {
+func ParseDorisSQL(statement string) ([]*base.ParseResult, error) {
 	stmts, err := SplitSQL(statement)
 	if err != nil {
 		return nil, err
 	}
 
-	var result []*ParseResult
+	var result []*base.ParseResult
 	for _, stmt := range stmts {
 		if stmt.Empty {
 			continue
@@ -52,7 +45,7 @@ func ParseDorisSQL(statement string) ([]*ParseResult, error) {
 	return result, nil
 }
 
-func parseSingleDorisSQL(statement string, baseLine int) (*ParseResult, error) {
+func parseSingleDorisSQL(statement string, baseLine int) (*base.ParseResult, error) {
 	lexer := parser.NewDorisSQLLexer(antlr.NewInputStream(statement))
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 	p := parser.NewDorisSQLParser(stream)
@@ -81,7 +74,7 @@ func parseSingleDorisSQL(statement string, baseLine int) (*ParseResult, error) {
 		return nil, parserErrorListener.Err
 	}
 
-	result := &ParseResult{
+	result := &base.ParseResult{
 		Tree:     tree,
 		Tokens:   stream,
 		BaseLine: baseLine,

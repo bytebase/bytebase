@@ -13,6 +13,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
@@ -43,7 +44,7 @@ func WalkThrough(d *model.DatabaseMetadata, ast any) *storepb.Advice {
 		d.CreateSchema("")
 	}
 
-	nodeList, ok := ast.([]*mysqlparser.ParseResult)
+	nodeList, ok := ast.([]*base.ParseResult)
 	if !ok {
 		return &storepb.Advice{
 			Status:  storepb.Advice_ERROR,
@@ -79,7 +80,7 @@ func (l *mysqlListener) EnterQuery(ctx *mysql.QueryContext) {
 	l.lineNumber = l.baseLine + ctx.GetStart().GetLine()
 }
 
-func mysqlChangeState(d *model.DatabaseMetadata, in *mysqlparser.ParseResult) *storepb.Advice {
+func mysqlChangeState(d *model.DatabaseMetadata, in *base.ParseResult) *storepb.Advice {
 	listener := &mysqlListener{
 		baseLine:         in.BaseLine,
 		databaseMetadata: d,

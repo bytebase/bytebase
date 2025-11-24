@@ -20,21 +20,15 @@ func parsePostgreSQLForRegistry(statement string) (any, error) {
 	return ParsePostgreSQL(statement)
 }
 
-type ParseResult struct {
-	Tree     antlr.Tree
-	Tokens   *antlr.CommonTokenStream
-	BaseLine int
-}
-
 // ParsePostgreSQL parses the given SQL and returns a list of ParseResult (one per statement).
 // Use the PostgreSQL parser based on antlr4.
-func ParsePostgreSQL(sql string) ([]*ParseResult, error) {
+func ParsePostgreSQL(sql string) ([]*base.ParseResult, error) {
 	stmts, err := SplitSQL(sql)
 	if err != nil {
 		return nil, err
 	}
 
-	var results []*ParseResult
+	var results []*base.ParseResult
 	for _, stmt := range stmts {
 		if stmt.Empty {
 			continue
@@ -51,7 +45,7 @@ func ParsePostgreSQL(sql string) ([]*ParseResult, error) {
 }
 
 // parseSinglePostgreSQL parses a single PostgreSQL statement and returns the ParseResult.
-func parseSinglePostgreSQL(sql string, baseLine int) (*ParseResult, error) {
+func parseSinglePostgreSQL(sql string, baseLine int) (*base.ParseResult, error) {
 	lexer := parser.NewPostgreSQLLexer(antlr.NewInputStream(sql))
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 	p := parser.NewPostgreSQLParser(stream)
@@ -80,7 +74,7 @@ func parseSinglePostgreSQL(sql string, baseLine int) (*ParseResult, error) {
 		return nil, parserErrorListener.Err
 	}
 
-	result := &ParseResult{
+	result := &base.ParseResult{
 		Tree:     tree,
 		Tokens:   stream,
 		BaseLine: baseLine,
@@ -91,7 +85,7 @@ func parseSinglePostgreSQL(sql string, baseLine int) (*ParseResult, error) {
 
 // ParsePostgreSQLPLBlock parses the given PL/pgSQL block (BEGIN...END) and returns the ParseResult.
 // Use the PostgreSQL parser based on antlr4, starting from pl_block rule.
-func ParsePostgreSQLPLBlock(plBlock string) (*ParseResult, error) {
+func ParsePostgreSQLPLBlock(plBlock string) (*base.ParseResult, error) {
 	lexer := parser.NewPostgreSQLLexer(antlr.NewInputStream(plBlock))
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 	p := parser.NewPostgreSQLParser(stream)
@@ -119,7 +113,7 @@ func ParsePostgreSQLPLBlock(plBlock string) (*ParseResult, error) {
 		return nil, parserErrorListener.Err
 	}
 
-	result := &ParseResult{
+	result := &base.ParseResult{
 		Tree:   tree,
 		Tokens: stream,
 	}

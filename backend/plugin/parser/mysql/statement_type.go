@@ -3,12 +3,14 @@ package mysql
 import (
 	"github.com/bytebase/parser/mysql"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 func GetStatementTypes(asts any) ([]string, error) {
-	nodes, ok := asts.([]*ParseResult)
+	nodes, ok := asts.([]*base.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("invalid ast type %T", asts)
+		return nil, errors.Errorf("invalid ast type %T, expected []*base.ParseResult", asts)
 	}
 	sqlTypeSet := make(map[string]bool)
 	for _, node := range nodes {
@@ -23,7 +25,7 @@ func GetStatementTypes(asts any) ([]string, error) {
 }
 
 // GetStatementType return the type of statement.
-func getStatementType(stmt *ParseResult) string {
+func getStatementType(stmt *base.ParseResult) string {
 	for _, child := range stmt.Tree.GetChildren() {
 		switch ctx := child.(type) {
 		case *mysql.QueryContext:

@@ -13,21 +13,16 @@ import (
 )
 
 // ParseResult is the result of parsing a Trino statement.
-type ParseResult struct {
-	Tree     antlr.Tree
-	Tokens   *antlr.CommonTokenStream
-	BaseLine int
-}
 
 // ParseTrino parses the given SQL statement and returns a list of ParseResults.
 // Each ParseResult represents one statement with its AST, tokens, and base line offset.
-func ParseTrino(sql string) ([]*ParseResult, error) {
+func ParseTrino(sql string) ([]*base.ParseResult, error) {
 	stmts, err := SplitSQL(sql)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to split SQL")
 	}
 
-	var results []*ParseResult
+	var results []*base.ParseResult
 	for _, stmt := range stmts {
 		if stmt.Empty {
 			continue
@@ -44,7 +39,7 @@ func ParseTrino(sql string) ([]*ParseResult, error) {
 }
 
 // parseSingleTrino parses a single Trino statement and returns the ParseResult.
-func parseSingleTrino(sql string, baseLine int) (*ParseResult, error) {
+func parseSingleTrino(sql string, baseLine int) (*base.ParseResult, error) {
 	// Add a semicolon if it's missing to allow users to omit the semicolon
 	trimmedSQL := strings.TrimRightFunc(sql, unicode.IsSpace)
 	if len(trimmedSQL) > 0 && !strings.HasSuffix(trimmedSQL, ";") {
@@ -84,7 +79,7 @@ func parseSingleTrino(sql string, baseLine int) (*ParseResult, error) {
 	}
 
 	// Return the parse result
-	return &ParseResult{
+	return &base.ParseResult{
 		Tree:     tree,
 		Tokens:   stream,
 		BaseLine: baseLine,

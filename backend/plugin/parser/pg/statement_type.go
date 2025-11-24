@@ -3,6 +3,8 @@ package pg
 import (
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 // StatementTypeWithPosition contains statement type and its position information.
@@ -16,9 +18,9 @@ type StatementTypeWithPosition struct {
 // GetStatementTypes returns statement types with position information.
 // The line numbers are one-based.
 func GetStatementTypes(asts any) ([]StatementTypeWithPosition, error) {
-	parseResults, ok := asts.([]*ParseResult)
+	parseResults, ok := asts.([]*base.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("invalid ast type %T, expected []*ParseResult", asts)
+		return nil, errors.Errorf("invalid ast type %T, expected []*base.ParseResult", asts)
 	}
 
 	if len(parseResults) == 0 {

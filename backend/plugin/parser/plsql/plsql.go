@@ -19,7 +19,7 @@ func init() {
 }
 
 // parsePLSQLForRegistry is the ParseFunc for PL/SQL.
-// Returns []*ParseResult on success.
+// Returns []*base.ParseResult on success.
 func parsePLSQLForRegistry(statement string) (any, error) {
 	return ParsePLSQL(statement + ";")
 }
@@ -57,17 +57,10 @@ func ParseVersion(banner string) (*Version, error) {
 	return nil, errors.Errorf("failed to parse version from banner: %s", banner)
 }
 
-// ParseResult is the result of parsing a PL/SQL statement.
-type ParseResult struct {
-	Tree     antlr.Tree
-	Tokens   *antlr.CommonTokenStream
-	BaseLine int
-}
-
 // ParsePLSQL parses the given PLSQL and returns a list of parse results.
 // It first parses the whole statement to get the AST, then splits by unit_statement
 // and sql_plus_command nodes, and re-parses each individual statement.
-func ParsePLSQL(sql string) ([]*ParseResult, error) {
+func ParsePLSQL(sql string) ([]*base.ParseResult, error) {
 	sql = addSemicolonIfNeeded(sql)
 
 	// First pass: parse the whole statement to get the AST for splitting
@@ -83,7 +76,7 @@ func ParsePLSQL(sql string) ([]*ParseResult, error) {
 	}
 
 	// Iterate through children in order to preserve statement ordering and re-parse each one
-	var result []*ParseResult
+	var result []*base.ParseResult
 	for _, child := range sqlScript.GetChildren() {
 		var stmtText string
 		var stmtBaseLine int
@@ -111,7 +104,7 @@ func ParsePLSQL(sql string) ([]*ParseResult, error) {
 			return nil, err
 		}
 
-		result = append(result, &ParseResult{
+		result = append(result, &base.ParseResult{
 			Tree:     stmtTree,
 			Tokens:   stmtTokens,
 			BaseLine: stmtBaseLine,

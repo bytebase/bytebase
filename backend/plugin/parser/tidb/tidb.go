@@ -104,14 +104,7 @@ func ParseTiDB(sql string, charset string, collation string) ([]ast.StmtNode, er
 	return nodes, nil
 }
 
-// ParseResult is the result of parsing a MySQL statement.
-type ParseResult struct {
-	Tree     antlr.Tree
-	Tokens   *antlr.CommonTokenStream
-	BaseLine int
-}
-
-func ANTLRParseTiDB(statement string) ([]*ParseResult, error) {
+func ANTLRParseTiDB(statement string) ([]*base.ParseResult, error) {
 	statement, err := DealWithDelimiter(statement)
 	if err != nil {
 		return nil, err
@@ -160,8 +153,8 @@ func parseSingleStatement(baseLine int, statement string) (antlr.Tree, *antlr.Co
 	return tree, stream, nil
 }
 
-func parseInputStream(input *antlr.InputStream, statement string) ([]*ParseResult, error) {
-	var result []*ParseResult
+func parseInputStream(input *antlr.InputStream, statement string) ([]*base.ParseResult, error) {
+	var result []*base.ParseResult
 	lexer := parser.NewTiDBLexer(input)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 
@@ -185,7 +178,7 @@ func parseInputStream(input *antlr.InputStream, statement string) ([]*ParseResul
 			continue
 		}
 
-		result = append(result, &ParseResult{
+		result = append(result, &base.ParseResult{
 			Tree:     tree,
 			Tokens:   tokens,
 			BaseLine: s.BaseLine,

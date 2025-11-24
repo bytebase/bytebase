@@ -17,27 +17,20 @@ func init() {
 }
 
 // parseRedshiftForRegistry is the ParseFunc for Redshift.
-// Returns []*ParseResult (list of AST nodes, one per statement) on success.
+// Returns []*base.ParseResult (list of AST nodes, one per statement) on success.
 func parseRedshiftForRegistry(statement string) (any, error) {
 	return ParseRedshift(statement)
 }
 
-// ParseResult is the result of parsing a Redshift statement.
-type ParseResult struct {
-	Tree     antlr.Tree
-	Tokens   *antlr.CommonTokenStream
-	BaseLine int
-}
-
 // ParseRedshift parses the given SQL statement and returns a list of ParseResults.
 // Each ParseResult represents one statement with its AST, tokens, and base line offset.
-func ParseRedshift(sql string) ([]*ParseResult, error) {
+func ParseRedshift(sql string) ([]*base.ParseResult, error) {
 	stmts, err := SplitSQL(sql)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to split SQL")
 	}
 
-	var results []*ParseResult
+	var results []*base.ParseResult
 	for _, stmt := range stmts {
 		if stmt.Empty {
 			continue
@@ -54,7 +47,7 @@ func ParseRedshift(sql string) ([]*ParseResult, error) {
 }
 
 // parseSingleRedshift parses a single Redshift statement by using antlr4. Returns the AST and token stream if no error.
-func parseSingleRedshift(statement string, baseLine int) (*ParseResult, error) {
+func parseSingleRedshift(statement string, baseLine int) (*base.ParseResult, error) {
 	statement = strings.TrimRightFunc(statement, utils.IsSpaceOrSemicolon) + ";"
 	inputStream := antlr.NewInputStream(statement)
 	lexer := parser.NewRedshiftLexer(inputStream)
@@ -88,7 +81,7 @@ func parseSingleRedshift(statement string, baseLine int) (*ParseResult, error) {
 		return nil, parserErrorListener.Err
 	}
 
-	result := &ParseResult{
+	result := &base.ParseResult{
 		Tree:     tree,
 		Tokens:   stream,
 		BaseLine: baseLine,
