@@ -358,10 +358,7 @@ func waitForRollout(ctx context.Context, w *world.World, client *Client, pending
 				Parent: stage.Name,
 				Tasks:  notStartedTasks,
 			}); err != nil {
-				// Check for specific error indicating task runs already exist (retryable)
-				if !strings.Contains(err.Error(), "cannot create pending task runs because there are pending/running/done task runs") {
-					return errors.Wrapf(err, "failed to batch create tasks")
-				}
+				return errors.Wrapf(err, "failed to batch create tasks")
 			}
 		}
 		time.Sleep(5 * time.Second)

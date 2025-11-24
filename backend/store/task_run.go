@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"database/sql"
-	"slices"
 	"time"
 
 	"github.com/pkg/errors"
@@ -258,90 +257,15 @@ func (s *Store) UpdateTaskRunStartAt(ctx context.Context, taskRunID int) error {
 }
 
 // CreatePendingTaskRuns creates pending task runs.
+// This operation is idempotent and safe for concurrent calls:
+// - Uses WHERE NOT EXISTS to skip tasks that already have active (PENDING/RUNNING/DONE) task runs
+// - Uses ON CONFLICT DO NOTHING to handle race conditions where two requests try to create the same task run
+// - The unique constraint on (task_id, attempt) ensures no duplicates
 func (s *Store) CreatePendingTaskRuns(ctx context.Context, creatorID int, creates ...*TaskRunMessage) error {
 	if len(creates) == 0 {
 		return nil
 	}
 
-	slices.SortFunc(creates, func(a, b *TaskRunMessage) int {
-		return a.TaskUID - b.TaskUID
-	})
-
-	var taskIDs []int
-	for _, create := range creates {
-		taskIDs = append(taskIDs, create.TaskUID)
-	}
-
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return errors.Wrapf(err, "failed to begin tx")
-	}
-	defer tx.Rollback()
-
-	attempts, err := s.getTaskNextAttempt(ctx, tx, taskIDs)
-	if err != nil {
-		return errors.Wrapf(err, "failed to get task next attempt")
-	}
-
-	exist, err := s.checkTaskRunsExist(ctx, tx, taskIDs, []storepb.TaskRun_Status{storepb.TaskRun_PENDING, storepb.TaskRun_RUNNING, storepb.TaskRun_DONE})
-	if err != nil {
-		return errors.Wrapf(err, "failed to check if task runs exist")
-	}
-	if exist {
-		return errors.Errorf("cannot create pending task runs because there are pending/running/done task runs")
-	}
-
-	if err := s.createPendingTaskRunsTx(ctx, tx, creatorID, attempts, creates); err != nil {
-		return errors.Wrapf(err, "failed to create pending task runs")
-	}
-
-	if err := tx.Commit(); err != nil {
-		return errors.Wrapf(err, "failed to commit tx")
-	}
-
-	return nil
-}
-
-func (*Store) getTaskNextAttempt(ctx context.Context, txn *sql.Tx, taskIDs []int) ([]int, error) {
-	q := qb.Q().Space(`
-		WITH tasks AS (
-			SELECT id FROM unnest(CAST(? AS INTEGER[])) AS id
-		)
-		SELECT
-			(SELECT COALESCE(MAX(attempt)+1, 0) FROM task_run WHERE task_run.task_id = tasks.id)
-		FROM tasks ORDER BY tasks.id ASC
-	`, taskIDs)
-
-	query, args, err := q.ToSQL()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
-	}
-
-	rows, err := txn.QueryContext(ctx, query, args...)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to query")
-	}
-	defer rows.Close()
-
-	var attempts []int
-	for rows.Next() {
-		var attempt int
-		if err := rows.Scan(&attempt); err != nil {
-			return nil, errors.Wrap(err, "failed to scan")
-		}
-		attempts = append(attempts, attempt)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, errors.Wrap(err, "failed to scan rows")
-	}
-
-	return attempts, nil
-}
-
-func (*Store) createPendingTaskRunsTx(ctx context.Context, txn *sql.Tx, creatorID int, attempts []int, creates []*TaskRunMessage) error {
-	if len(attempts) != len(creates) {
-		return errors.Errorf("length of attempts and creates are different")
-	}
 	var taskUIDs []int
 	var sheetUIDs []*int
 	var runAts []*time.Time
@@ -351,6 +275,11 @@ func (*Store) createPendingTaskRunsTx(ctx context.Context, txn *sql.Tx, creatorI
 		runAts = append(runAts, create.RunAt)
 	}
 
+	// Single query that:
+	// 1. Filters out tasks with existing PENDING/RUNNING/DONE task runs (idempotent)
+	// 2. Calculates next attempt for each remaining task
+	// 3. Inserts task runs
+	// 4. Uses ON CONFLICT DO NOTHING to handle race conditions
 	q := qb.Q().Space(`
 		INSERT INTO task_run (
 			creator_id,
@@ -359,51 +288,39 @@ func (*Store) createPendingTaskRunsTx(ctx context.Context, txn *sql.Tx, creatorI
 			run_at,
 			attempt,
 			status
-		) SELECT
+		)
+		SELECT
 			?,
-			unnest(CAST(? AS INTEGER[])),
-			unnest(CAST(? AS INTEGER[])),
-			unnest(CAST(? AS TIMESTAMPTZ[])),
-			unnest(CAST(? AS INTEGER[])),
+			tasks.task_id,
+			tasks.sheet_id,
+			tasks.run_at,
+			COALESCE((SELECT MAX(attempt) + 1 FROM task_run WHERE task_run.task_id = tasks.task_id), 0) as attempt,
 			?
-	`, creatorID, taskUIDs, sheetUIDs, runAts, attempts, storepb.TaskRun_PENDING.String())
+		FROM (
+			SELECT
+				unnest(CAST(? AS INTEGER[])) AS task_id,
+				unnest(CAST(? AS INTEGER[])) AS sheet_id,
+				unnest(CAST(? AS TIMESTAMPTZ[])) AS run_at
+		) tasks
+		WHERE NOT EXISTS (
+			SELECT 1 FROM task_run
+			WHERE task_run.task_id = tasks.task_id
+			AND task_run.status IN (?, ?, ?)
+		)
+		ON CONFLICT (task_id, attempt) DO NOTHING
+	`, creatorID, storepb.TaskRun_PENDING.String(), taskUIDs, sheetUIDs, runAts,
+		storepb.TaskRun_PENDING.String(), storepb.TaskRun_RUNNING.String(), storepb.TaskRun_DONE.String())
 
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return errors.Wrapf(err, "failed to build sql")
 	}
 
-	if _, err := txn.ExecContext(ctx, query, args...); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return errors.Wrapf(err, "failed to create pending task runs")
 	}
+
 	return nil
-}
-
-func (*Store) checkTaskRunsExist(ctx context.Context, txn *sql.Tx, taskIDs []int, statuses []storepb.TaskRun_Status) (bool, error) {
-	var statusStrings []string
-	for _, status := range statuses {
-		statusStrings = append(statusStrings, status.String())
-	}
-
-	q := qb.Q().Space(`
-		SELECT EXISTS (
-			SELECT 1
-			FROM task_run
-			WHERE task_run.task_id = ANY(?) AND task_run.status = ANY(?)
-		)
-	`, taskIDs, statusStrings)
-
-	query, args, err := q.ToSQL()
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to build sql")
-	}
-
-	var exist bool
-	if err := txn.QueryRowContext(ctx, query, args...).Scan(&exist); err != nil {
-		return false, errors.Wrapf(err, "failed to query if task runs exist")
-	}
-
-	return exist, nil
 }
 
 // patchTaskRunStatusImpl updates a taskRun status. Returns the new state of the taskRun after update.
