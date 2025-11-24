@@ -171,6 +171,14 @@ export declare type TestIdentityProviderRequest = Message<"bytebase.v1.TestIdent
      */
     value: OAuth2IdentityProviderTestRequestContext;
     case: "oauth2Context";
+  } | {
+    /**
+     * OIDC authentication context for test connection.
+     *
+     * @generated from field: bytebase.v1.OIDCIdentityProviderTestRequestContext oidc_context = 3;
+     */
+    value: OIDCIdentityProviderTestRequestContext;
+    case: "oidcContext";
   } | { case: undefined; value?: undefined };
 };
 
@@ -197,6 +205,24 @@ export declare type OAuth2IdentityProviderTestRequestContext = Message<"bytebase
  * Use `create(OAuth2IdentityProviderTestRequestContextSchema)` to create a new message.
  */
 export declare const OAuth2IdentityProviderTestRequestContextSchema: GenMessage<OAuth2IdentityProviderTestRequestContext>;
+
+/**
+ * @generated from message bytebase.v1.OIDCIdentityProviderTestRequestContext
+ */
+export declare type OIDCIdentityProviderTestRequestContext = Message<"bytebase.v1.OIDCIdentityProviderTestRequestContext"> & {
+  /**
+   * Authorize code from OIDC provider.
+   *
+   * @generated from field: string code = 1;
+   */
+  code: string;
+};
+
+/**
+ * Describes the message bytebase.v1.OIDCIdentityProviderTestRequestContext.
+ * Use `create(OIDCIdentityProviderTestRequestContextSchema)` to create a new message.
+ */
+export declare const OIDCIdentityProviderTestRequestContextSchema: GenMessage<OIDCIdentityProviderTestRequestContext>;
 
 /**
  * @generated from message bytebase.v1.TestIdentityProviderResponse
