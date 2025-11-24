@@ -84,11 +84,14 @@ export const useSQLEditorTreeByEnvironment = (
     { deep: true }
   );
 
-  const _fetchDatabases = async (filter?: DatabaseFilter) => {
+  // fetchMultiPageDatabases will fetch databases with multi-pages (maximum 5).
+  // The filteredDatabaseList will filter databases by the permission,
+  // so we may need to fetch database for multi-pages to avoid empty databases in the UI.
+  const fetchMultiPageDatabases = async (filter?: DatabaseFilter) => {
     let pageToken = fetchDataState.value.nextPageToken;
     const response: ComposedDatabase[] = [];
 
-    // Try to fetch 5 pages to avoid empty filteredDatabaseList (filtered by permission in the frontend).
+    // Try to fetch 5 pages.
     // TODO: support list databases with specific permissions via the API.
     let i = 5;
     while (i > 0) {
@@ -125,8 +128,7 @@ export const useSQLEditorTreeByEnvironment = (
     const pageToken = fetchDataState.value.nextPageToken;
 
     try {
-      const { databases, nextPageToken } = await _fetchDatabases(filter);
-
+      const { databases, nextPageToken } = await fetchMultiPageDatabases(filter);
       if (pageToken) {
         databaseList.value.push(...databases);
       } else {
