@@ -77,20 +77,37 @@ export const useAuthStore = defineStore("auth_v1", () => {
     return query.get("redirect");
   };
 
-  const login = async (request: LoginRequest, redirect: string = "") => {
-    const resp = await authServiceClientConnect.login(request, {
-      contextValues: createContextValues().set(ignoredCodesContextKey, [
-        Code.NotFound,
-      ]),
-    });
-    const redirectUrl = redirect || getRedirectQuery() || "/";
+  // sometimes we have to redirect users even if we don't want to redirect them.
+  // for example, the user is forced to reset their password,
+  // or the user is using the LDAP to signin.
+  const login = async ({
+    request,
+    redirect = true,
+    redirectUrl,
+  }: {
+    request: LoginRequest;
+    redirect?: boolean;
+    redirectUrl?: string;
+  }) => {
+    const resp = await authServiceClientConnect.login(
+      create(LoginRequestSchema, {
+        ...request,
+        web: true,
+      }),
+      {
+        contextValues: createContextValues().set(ignoredCodesContextKey, [
+          Code.NotFound,
+        ]),
+      }
+    );
+    let nextPage = redirectUrl ?? (getRedirectQuery() || "/");
     if (resp.mfaTempToken) {
       unauthenticatedOccurred.value = false;
       return router.push({
         name: AUTH_MFA_MODULE,
         query: {
           mfaTempToken: resp.mfaTempToken,
-          redirect: redirectUrl,
+          redirect: nextPage,
         },
       });
     }
@@ -118,7 +135,6 @@ export const useAuthStore = defineStore("auth_v1", () => {
       });
     }
     const mode = useAppFeature("bb.feature.database-change-mode");
-    let nextPage = redirectUrl;
     if (mode.value === DatabaseChangeMode.EDITOR) {
       const route = router.resolve({
         name: SQL_EDITOR_HOME_MODULE,
@@ -133,7 +149,9 @@ export const useAuthStore = defineStore("auth_v1", () => {
         },
       });
     }
-    return router.replace(nextPage);
+    if (redirect) {
+      router.replace(nextPage);
+    }
   };
 
   const signup = async (request: Partial<User>) => {
@@ -147,13 +165,14 @@ export const useAuthStore = defineStore("auth_v1", () => {
       user: user,
     });
     await userServiceClientConnect.createUser(createRequest);
-    await login(
-      create(LoginRequestSchema, {
+    await login({
+      request: create(LoginRequestSchema, {
         email: request.email,
         password: request.password,
         web: true,
-      })
-    );
+      }),
+      redirect: true,
+    });
   };
 
   const logout = async () => {

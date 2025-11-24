@@ -27,6 +27,7 @@ const authRoutes: RouteRecordRaw[] = [
         component: () => import("@/views/auth/Signin.vue"),
       },
       {
+        // We need the admin as the backdoor for the workspace admin.
         path: "admin",
         name: AUTH_SIGNIN_ADMIN_MODULE,
         meta: { title: () => t("common.sign-in-as-admin") },

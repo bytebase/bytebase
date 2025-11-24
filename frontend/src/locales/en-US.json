@@ -1572,7 +1572,9 @@
       "title": "Your session is about to end",
       "description": "You've been inactive for a while. For your security, we'll automatically sign you out in {minutes} minutes.",
       "stay-signed-in": "Stay signed in"
-    }
+    },
+    "back-to-signin": "Back to Sign in",
+    "close-window": "Close this window"
   },
   "policy": {
     "rollout": {

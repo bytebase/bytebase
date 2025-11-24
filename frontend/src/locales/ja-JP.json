@@ -1572,7 +1572,9 @@
       "title": "セッションの有効期限が近づいています",
       "description": "しばらく操作がありませんでした。セキュリティのため、{minutes}分後に自動的にログアウトします。",
       "stay-signed-in": "ログインしたままにする"
-    }
+    },
+    "back-to-signin": "サインインに戻る",
+    "close-window": "このウィンドウを閉じる"
   },
   "policy": {
     "rollout": {

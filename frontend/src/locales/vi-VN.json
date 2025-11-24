@@ -1572,7 +1572,9 @@
       "title": "Phiên của bạn sắp kết thúc",
       "description": "Bạn đã không hoạt động trong một thời gian. Để bảo mật cho bạn, chúng tôi sẽ tự động đăng xuất bạn sau {minutes} phút nữa.",
       "stay-signed-in": "Tiếp tục duy trì đăng nhập"
-    }
+    },
+    "back-to-signin": "Quay lại Đăng nhập",
+    "close-window": "Đóng cửa sổ này"
   },
   "policy": {
     "rollout": {
