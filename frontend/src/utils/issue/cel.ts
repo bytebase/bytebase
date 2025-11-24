@@ -462,7 +462,7 @@ const mergeSchemaLevelConditions = (
 
   const mergedConditions: SchemaLevelCondition[] = [];
 
-  for (const database in groupedConditions) {
+  for (const database of Object.keys(groupedConditions)) {
     const condition: SchemaLevelCondition = {
       database,
       schema: groupedConditions[database],
@@ -491,7 +491,7 @@ const mergeTableLevelConditions = (
 
   const mergedConditions: TableLevelCondition[] = [];
 
-  for (const key in groupedConditions) {
+  for (const key of Object.keys(groupedConditions)) {
     const [database, schema] = key.split(":");
     const condition: TableLevelCondition = {
       database,

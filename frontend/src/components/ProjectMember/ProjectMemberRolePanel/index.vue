@@ -333,8 +333,8 @@ const getDataTableColumns = (
           >
             <PencilIcon class="w-4 h-4" />
           </NButton>
-          {roleList.value.filter((r) => r.role === role)[0]?.singleBindingList
-            .length > 1 && (
+          {(roleList.value.find((r) => r.role === role)?.singleBindingList
+            ?.length ?? 0) > 1 && (
             <NTooltip
               disabled={allowDeleteCondition(singleBinding)}
               v-slots={{

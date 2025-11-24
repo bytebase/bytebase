@@ -7,7 +7,7 @@ export class ResourceComposer {
   }
   compose(method: "all" | "allSettled" = "all") {
     const distinctRequests: Promise<void>[] = [];
-    for (const resource in this.requests) {
+    for (const resource of Object.keys(this.requests)) {
       distinctRequests.push(this.requests[resource]());
     }
     return method === "all"
