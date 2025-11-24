@@ -106,7 +106,10 @@ export const useSQLEditorTreeByEnvironment = (
       response.push(...databases);
       pageToken = nextPageToken;
 
-      if (!showMissingQueryDatabases.value && databases.some(db => isDatabaseV1Queryable(db))) {
+      if (
+        !showMissingQueryDatabases.value &&
+        databases.some((db) => isDatabaseV1Queryable(db))
+      ) {
         break;
       }
     }
@@ -114,8 +117,8 @@ export const useSQLEditorTreeByEnvironment = (
     return {
       nextPageToken: pageToken,
       databases: response,
-    }
-  }
+    };
+  };
 
   const fetchDatabases = useDebounceFn(async (filter?: DatabaseFilter) => {
     fetchDataState.value.loading = true;

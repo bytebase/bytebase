@@ -144,7 +144,12 @@ import { BBButtonConfirm } from "@/bbkit";
 import type { MemberBinding } from "@/components/Member/types";
 import GroupMemberNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupMemberNameCell.vue";
 import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
-import { Drawer, DrawerContent, InstanceV1Name } from "@/components/v2";
+import {
+  Drawer,
+  DrawerContent,
+  InstanceV1Name,
+  MiniActionButton,
+} from "@/components/v2";
 import {
   batchGetOrFetchDatabases,
   extractGroupEmail,
@@ -171,7 +176,6 @@ import AddProjectMembersPanel from "../AddProjectMember/AddProjectMembersPanel.v
 import EditProjectRolePanel from "./EditProjectRolePanel.vue";
 import RoleDescription from "./RoleDescription.vue";
 import RoleExpiredTip from "./RoleExpiredTip.vue";
-import { MiniActionButton } from "@/components/v2";
 
 interface SingleBinding {
   databaseResource?: DatabaseResource;
