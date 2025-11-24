@@ -1524,6 +1524,7 @@ func (s *SQLService) accessCheck(
 
 			var deniedResources []string
 			for column := range span.SourceColumns {
+				fmt.Println(column)
 				attributes := map[string]any{
 					common.CELAttributeRequestTime:        time.Now(),
 					common.CELAttributeResourceDatabase:   common.FormatDatabase(instance.ResourceID, column.Database),
