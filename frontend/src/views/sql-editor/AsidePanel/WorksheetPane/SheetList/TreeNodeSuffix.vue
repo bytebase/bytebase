@@ -33,7 +33,7 @@
           {{ t("common.visibility") }}{{ ": " }}{{ visibilityDisplayName(worksheetLite.visibility) }}
         </div>
         <div
-          v-if="!isWorksheetCreator(worksheetLite.creator)"
+          v-if="!isWorksheetCreator(worksheetLite)"
         >
           {{ t("common.creator") }}{{ ": " }}{{ creatorForSheet(worksheetLite.creator) }}
         </div>
@@ -61,7 +61,6 @@ import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { t } from "@/plugins/i18n";
 import {
-  useCurrentUserV1,
   useSQLEditorTabStore,
   useTabViewStateStore,
   useUserStore,
@@ -72,6 +71,7 @@ import type {
   SheetViewMode,
   WorksheetFolderNode,
 } from "@/views/sql-editor/Sheet";
+import { useSheetContext } from "@/views/sql-editor/Sheet";
 
 const props = defineProps<{
   node: WorksheetFolderNode;
@@ -86,9 +86,9 @@ const emit = defineEmits<{
 
 const userStore = useUserStore();
 const worksheetStore = useWorkSheetStore();
-const me = useCurrentUserV1();
 const { removeViewState } = useTabViewStateStore();
 const tabStore = useSQLEditorTabStore();
+const { isWorksheetCreator } = useSheetContext();
 
 const worksheetLite = computed(() => {
   if (!props.node.worksheet) {
@@ -121,10 +121,6 @@ const visibilityDisplayName = (visibility: Worksheet_Visibility) => {
 
 const creatorForSheet = (creator: string) => {
   return userStore.getUserByIdentifier(creator)?.title ?? creator;
-};
-
-const isWorksheetCreator = (creator: string) => {
-  return creator === `users/${me.value.email}`;
 };
 
 const handleDeleteDraft = () => {

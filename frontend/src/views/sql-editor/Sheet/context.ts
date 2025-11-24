@@ -346,7 +346,7 @@ export type SheetContext = {
   expandedKeys: Ref<Set<string>>;
   selectedKeys: Ref<string[]>;
   editingNode: Ref<{ node: WorksheetFolderNode; rawLabel: string } | undefined>;
-  isWorksheetCreator: (worksheet: Worksheet) => boolean;
+  isWorksheetCreator: (worksheet: { creator: string }) => boolean;
   batchUpdateWorksheetFolders: (
     worksheets: { name: string; folders: string[] }[]
   ) => Promise<void>;
@@ -445,7 +445,7 @@ export const provideSheetContext = () => {
   );
   const selectedKeys = ref<string[]>([]);
 
-  const isWorksheetCreator = (worksheet: Worksheet) => {
+  const isWorksheetCreator = (worksheet: { creator: string }) => {
     return worksheet.creator === `users/${me.value.email}`;
   };
 
@@ -622,6 +622,6 @@ export const addNewSheet = () => {
   tabStore.addTab({
     title,
     connection,
-    status: "NEW",
+    status: "CLEAN",
   });
 };

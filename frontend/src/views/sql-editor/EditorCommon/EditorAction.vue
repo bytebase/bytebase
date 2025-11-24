@@ -268,7 +268,7 @@ const allowSave = computed(() => {
       return true;
     }
   }
-  if (tab.status === "NEW" || tab.status === "CLEAN") {
+  if (tab.status === "CLEAN") {
     return false;
   }
   if (!tab.connection.database) {
@@ -281,7 +281,7 @@ const allowSave = computed(() => {
 const allowShare = computed(() => {
   const tab = currentTab.value;
   if (!tab) return false;
-  if (tab.status === "NEW" || tab.status === "DIRTY") return false;
+  if (tab.status === "DIRTY") return false;
   if (isEmptyStatement.value) return false;
   if (isDisconnected.value) return false;
   if (tab.worksheet) {

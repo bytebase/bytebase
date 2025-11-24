@@ -1,23 +1,23 @@
 <template>
-  <SheetConnectionIcon :tab="tab" class="w-4 h-4" />
-  <UsersIcon
-    v-if="
-      sheet?.visibility === Worksheet_Visibility.PROJECT_READ ||
-      sheet?.visibility === Worksheet_Visibility.PROJECT_WRITE
-    "
-    class="w-4 h-4"
-  />
-  <template v-if="tab.mode === 'ADMIN'">
-    <WrenchIcon class="w-4 h-4" />
-  </template>
+  <div class="opacity-80 flex items-center gap-x-2">
+    <PencilLineIcon v-if="!tab.worksheet" class="w-4 h-4" />
+    <template v-else>
+      <UsersIcon
+        v-if="sheet && !isWorksheetCreator(sheet)"
+        class="w-4 h-4"
+      />
+      <WrenchIcon v-if="tab.mode === 'ADMIN'" class="w-4 h-4" />
+    </template>
+    <SheetConnectionIcon :tab="tab" class="w-4 h-4" />
+  </div>
 </template>
 
 <script lang="ts" setup>
-import { UsersIcon, WrenchIcon } from "lucide-vue-next";
+import { PencilLineIcon, UsersIcon, WrenchIcon } from "lucide-vue-next";
 import { computed } from "vue";
 import { useWorkSheetStore } from "@/store";
 import type { SQLEditorTab } from "@/types";
-import { Worksheet_Visibility } from "@/types/proto-es/v1/worksheet_service_pb";
+import { useSheetContext } from "@/views/sql-editor/Sheet";
 import { SheetConnectionIcon } from "../../EditorCommon";
 
 const props = defineProps<{
@@ -25,6 +25,7 @@ const props = defineProps<{
 }>();
 
 const sheetV1Store = useWorkSheetStore();
+const { isWorksheetCreator } = useSheetContext();
 
 const sheet = computed(() => {
   const { worksheet: sheetName } = props.tab;

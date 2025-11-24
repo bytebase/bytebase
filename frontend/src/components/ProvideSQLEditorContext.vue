@@ -25,6 +25,7 @@ import { computed, nextTick, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
+import { useRouteChangeGuard } from "@/composables/useRouteChangeGuard";
 import { ProvideAIContext } from "@/plugins/ai";
 import {
   SQL_EDITOR_DATABASE_MODULE,
@@ -84,6 +85,17 @@ const {
   events: editorEvents,
   maybeSwitchProject,
 } = useSQLEditorContext();
+
+useRouteChangeGuard(
+  computed(() => {
+    return (
+      tabStore.tabList.find(
+        (tab) => !!tab?.worksheet && tab.status === "DIRTY"
+      ) !== undefined
+    );
+  }),
+  `${t("sql-editor.tab.unsaved-worksheet")} ${t("common.leave-without-saving")}`
+);
 
 const fallbackToFirstProject = async () => {
   const { projects } = await projectStore.fetchProjectList({
