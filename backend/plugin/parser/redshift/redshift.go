@@ -5,6 +5,7 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/redshift"
+	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -16,26 +17,44 @@ func init() {
 }
 
 // parseRedshiftForRegistry is the ParseFunc for Redshift.
-// Returns antlr.Tree on success.
+// Returns []*ParseResult (list of AST nodes, one per statement) on success.
 func parseRedshiftForRegistry(statement string) (any, error) {
-	result, err := ParseRedshift(statement)
-	if err != nil {
-		return nil, err
-	}
-	if result == nil {
-		return nil, nil
-	}
-	return result.Tree, nil
+	return ParseRedshift(statement)
 }
 
 // ParseResult is the result of parsing a Redshift statement.
 type ParseResult struct {
-	Tree   antlr.Tree
-	Tokens *antlr.CommonTokenStream
+	Tree     antlr.Tree
+	Tokens   *antlr.CommonTokenStream
+	BaseLine int
 }
 
-// ParseRedshift parses the given SQL statement by using antlr4. Returns the AST and token stream if no error.
-func ParseRedshift(statement string) (*ParseResult, error) {
+// ParseRedshift parses the given SQL statement and returns a list of ParseResults.
+// Each ParseResult represents one statement with its AST, tokens, and base line offset.
+func ParseRedshift(sql string) ([]*ParseResult, error) {
+	stmts, err := SplitSQL(sql)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to split SQL")
+	}
+
+	var results []*ParseResult
+	for _, stmt := range stmts {
+		if stmt.Empty {
+			continue
+		}
+
+		parseResult, err := parseSingleRedshift(stmt.Text, stmt.BaseLine)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, parseResult)
+	}
+
+	return results, nil
+}
+
+// parseSingleRedshift parses a single Redshift statement by using antlr4. Returns the AST and token stream if no error.
+func parseSingleRedshift(statement string, baseLine int) (*ParseResult, error) {
 	statement = strings.TrimRightFunc(statement, utils.IsSpaceOrSemicolon) + ";"
 	inputStream := antlr.NewInputStream(statement)
 	lexer := parser.NewRedshiftLexer(inputStream)
@@ -70,8 +89,9 @@ func ParseRedshift(statement string) (*ParseResult, error) {
 	}
 
 	result := &ParseResult{
-		Tree:   tree,
-		Tokens: stream,
+		Tree:     tree,
+		Tokens:   stream,
+		BaseLine: baseLine,
 	}
 
 	return result, nil

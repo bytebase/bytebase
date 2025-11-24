@@ -19,12 +19,12 @@ func init() {
 // 2. SELECT statement
 // We also support CTE with SELECT statements, but not with DML statements.
 // Returns (canRunInReadOnly, returnsData, error):
-// - canRunInReadOnly: whether the query can run in read-only mode
+// - canRunInReadOnly: whether all queries can run in read-only mode
 // - returnsData: whether all queries return data
 // - error: parsing error if the statement is invalid
 func ValidateSQLForEditor(statement string) (bool, bool, error) {
 	// Parse the statement using the Redshift parser
-	result, err := ParseRedshift(statement)
+	parseResults, err := ParseRedshift(statement)
 	if err != nil {
 		return false, false, err
 	}
@@ -35,7 +35,14 @@ func ValidateSQLForEditor(statement string) (bool, bool, error) {
 		returnsData:      true,
 	}
 
-	antlr.ParseTreeWalkerDefault.Walk(validator, result.Tree)
+	// Validate each statement
+	for _, parseResult := range parseResults {
+		antlr.ParseTreeWalkerDefault.Walk(validator, parseResult.Tree)
+		// If any statement fails validation, return immediately
+		if !validator.canRunInReadOnly {
+			break
+		}
+	}
 
 	return validator.canRunInReadOnly, validator.returnsData, nil
 }
