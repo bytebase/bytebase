@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
@@ -18,6 +19,7 @@ import (
 	advisorpg "github.com/bytebase/bytebase/backend/plugin/advisor/pg"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -442,6 +444,7 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 		// Perform SDL style and integrity checks for PostgreSQL
 		var sdlStyleAdvices map[string][]*storepb.Advice
 		var sdlIntegrityAdvices map[string][]*storepb.Advice
+		var sdlDropAdvices []*storepb.Advice
 		if engine == storepb.Engine_POSTGRES {
 			fileContents := make(map[string]string)
 			for _, file := range files {
@@ -470,6 +473,45 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 			sdlIntegrityAdvices, err = advisorpg.CheckSDLIntegrity(fileContents)
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check SDL integrity"))
+			}
+
+			// Run SDL DROP operation checks
+			// This checks for data loss risks from DROP operations by analyzing the schema diff
+			pengine, err := common.ConvertToParserEngine(engine)
+			if err == nil {
+				// Get current database schema
+				dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+					InstanceID:   database.InstanceID,
+					DatabaseName: database.DatabaseName,
+				})
+				if err == nil && dbMetadata != nil {
+					// Get previous SDL from latest revision
+					var previousUserSDL string
+					if len(revisions) > 0 {
+						// Get sheet statement from revision
+						_, sheetUID, err := common.GetProjectResourceIDSheetUID(revisions[0].Payload.Sheet)
+						if err == nil {
+							previousUserSDL, _ = s.store.GetSheetStatementByID(ctx, sheetUID)
+						}
+					}
+
+					// Combine all SDL files into single text
+					var combinedCurrentSDL strings.Builder
+					for _, file := range files {
+						combinedCurrentSDL.Write(file.Statement)
+						combinedCurrentSDL.WriteString("\n\n")
+					}
+
+					// Generate diff
+					schemaDiff, err := schema.GetSDLDiff(pengine, combinedCurrentSDL.String(), previousUserSDL, dbMetadata, nil)
+					if err == nil {
+						// Filter out bbdataarchive schema changes for Postgres
+						schemaDiff = schema.FilterPostgresArchiveSchema(schemaDiff)
+
+						// Check for DROP operations in the diff
+						sdlDropAdvices = advisorpg.CheckSDLDropOperations(schemaDiff)
+					}
+				}
 			}
 		}
 
@@ -567,6 +609,12 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 						// Add SDL integrity check results
 						if advices, exists := sdlIntegrityAdvices[file.Path]; exists {
 							for _, advice := range advices {
+								checkResult.Advices = append(checkResult.Advices, convertToV1Advice(advice))
+							}
+						}
+						// Add SDL DROP operation warnings (only to first file since they apply to entire migration)
+						if file.Path == files[0].Path && len(sdlDropAdvices) > 0 {
+							for _, advice := range sdlDropAdvices {
 								checkResult.Advices = append(checkResult.Advices, convertToV1Advice(advice))
 							}
 						}
