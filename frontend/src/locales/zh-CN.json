@@ -17,6 +17,7 @@
     "webhooks": "Webhook",
     "activity": "活动",
     "sign-in": "登录",
+    "sign-in-as-admin": "以管理员身份登录",
     "sign-up": "注册",
     "email": "邮箱",
     "username": "用户名",

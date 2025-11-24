@@ -3,7 +3,7 @@ import SplashLayout from "@/layouts/SplashLayout.vue";
 import { t } from "@/plugins/i18n";
 
 export const AUTH_SIGNIN_MODULE = "auth.signin";
-const AUTH_SIGNIN_ADMIN_MODULE = "auth.signin.admin";
+export const AUTH_SIGNIN_ADMIN_MODULE = "auth.signin.admin";
 export const AUTH_SIGNUP_MODULE = "auth.signup";
 export const AUTH_MFA_MODULE = "auth.mfa";
 export const AUTH_PASSWORD_RESET_MODULE = "auth.password.reset";
@@ -27,11 +27,11 @@ const authRoutes: RouteRecordRaw[] = [
         component: () => import("@/views/auth/Signin.vue"),
       },
       {
+        // We need the admin as the backdoor for the workspace admin.
         path: "admin",
         name: AUTH_SIGNIN_ADMIN_MODULE,
-        redirect: {
-          name: AUTH_SIGNIN_MODULE,
-        },
+        meta: { title: () => t("common.sign-in-as-admin") },
+        component: () => import("@/views/auth/SigninAdmin.vue"),
       },
       {
         path: "signup",

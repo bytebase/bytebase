@@ -32,6 +32,7 @@
           <RequiredStar />
         </div>
         <router-link
+          v-if="showForgotPassword"
           :to="{
             path: '/auth/password-forgot',
             query: {
@@ -103,9 +104,15 @@ interface LocalState {
   showPassword: boolean;
 }
 
-defineProps<{
-  loading: boolean;
-}>();
+withDefaults(
+  defineProps<{
+    showForgotPassword?: boolean;
+    loading: boolean;
+  }>(),
+  {
+    showForgotPassword: true,
+  }
+);
 
 const emit = defineEmits<{
   (event: "signin", payload: LoginRequest): void;
