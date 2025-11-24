@@ -54,6 +54,8 @@ export const useSQLEditorTreeByEnvironment = (
   const currentUser = useCurrentUserV1();
   const environmentStore = useEnvironmentV1Store();
 
+  const tree = ref<TreeNode[]>([]);
+  const showMissingQueryDatabases = ref<boolean>(false);
   const databaseList = ref<ComposedDatabase[]>([]);
   const fetchDataState = ref<{
     loading: boolean;
@@ -82,11 +84,19 @@ export const useSQLEditorTreeByEnvironment = (
     { deep: true }
   );
 
-  const fetchDatabases = useDebounceFn(async (filter?: DatabaseFilter) => {
-    fetchDataState.value.loading = true;
-    const pageToken = fetchDataState.value.nextPageToken;
+  // fetchMultiPageDatabases will fetch databases with multi-pages (maximum 5).
+  // The filteredDatabaseList will filter databases by the permission,
+  // so we may need to fetch database for multi-pages to avoid empty databases in the UI.
+  const fetchMultiPageDatabases = async (filter?: DatabaseFilter) => {
+    let pageToken = fetchDataState.value.nextPageToken;
+    const response: ComposedDatabase[] = [];
 
-    try {
+    // Try to fetch 5 pages.
+    // TODO: support list databases with specific permissions via the API.
+    let i = 5;
+    while (i > 0) {
+      i--;
+
       const { databases, nextPageToken } = await databaseStore.fetchDatabases({
         parent: project.value,
         pageToken,
@@ -96,7 +106,30 @@ export const useSQLEditorTreeByEnvironment = (
           environment,
         },
       });
+      response.push(...databases);
+      pageToken = nextPageToken;
 
+      if (showMissingQueryDatabases.value) {
+        break;
+      }
+      if (databases.some((db) => isDatabaseV1Queryable(db))) {
+        break;
+      }
+    }
+
+    return {
+      nextPageToken: pageToken,
+      databases: response,
+    };
+  };
+
+  const fetchDatabases = useDebounceFn(async (filter?: DatabaseFilter) => {
+    fetchDataState.value.loading = true;
+    const pageToken = fetchDataState.value.nextPageToken;
+
+    try {
+      const { databases, nextPageToken } =
+        await fetchMultiPageDatabases(filter);
       if (pageToken) {
         databaseList.value.push(...databases);
       } else {
@@ -125,9 +158,6 @@ export const useSQLEditorTreeByEnvironment = (
     }
     return databaseList.value;
   });
-
-  const tree = ref<TreeNode[]>([]);
-  const showMissingQueryDatabases = ref<boolean>(false);
 
   const buildTree = () => {
     tree.value = buildTreeImpl(filteredDatabaseList.value, [
