@@ -66,10 +66,17 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 	q.ctes = []*base.PseudoTable{}
 
 	// Parse the statement
-	result, err := ParseTrino(statement)
+	parseResults, err := ParseTrino(statement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse Trino statement")
 	}
+
+	// Query span extraction expects exactly one statement
+	if len(parseResults) != 1 {
+		return nil, errors.Errorf("expected exactly 1 statement, got %d", len(parseResults))
+	}
+
+	result := parseResults[0]
 
 	if result.Tree == nil {
 		return nil, errors.New("failed to parse Trino statement, no parse tree found")
