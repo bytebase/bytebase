@@ -77,8 +77,8 @@ export const useAuthStore = defineStore("auth_v1", () => {
     return query.get("redirect");
   };
 
-  // sometimes we have t redirect users even we don't need to redirect users after loged-in
-  // for example, a user is forced to require reset the password,
+  // sometimes we have to redirect users even if we don't want to redirect them.
+  // for example, the user is forced to reset their password,
   // or the user is using the LDAP to signin.
   const login = async ({
     request,
