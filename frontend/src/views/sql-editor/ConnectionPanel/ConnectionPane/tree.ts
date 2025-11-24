@@ -128,7 +128,8 @@ export const useSQLEditorTreeByEnvironment = (
     const pageToken = fetchDataState.value.nextPageToken;
 
     try {
-      const { databases, nextPageToken } = await fetchMultiPageDatabases(filter);
+      const { databases, nextPageToken } =
+        await fetchMultiPageDatabases(filter);
       if (pageToken) {
         databaseList.value.push(...databases);
       } else {
