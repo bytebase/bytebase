@@ -109,10 +109,10 @@ export const useSQLEditorTreeByEnvironment = (
       response.push(...databases);
       pageToken = nextPageToken;
 
-      if (
-        !showMissingQueryDatabases.value &&
-        databases.some((db) => isDatabaseV1Queryable(db))
-      ) {
+      if (showMissingQueryDatabases.value) {
+        break;
+      }
+      if (databases.some((db) => isDatabaseV1Queryable(db))) {
         break;
       }
     }
