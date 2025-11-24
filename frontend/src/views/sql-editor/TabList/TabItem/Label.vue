@@ -90,8 +90,11 @@ const confirmEdit = () => {
     return cancelEdit();
   }
 
-  tab.title = title;
-  tab.status = "DIRTY";
+  tabStore.updateTab(tab.id, {
+    title,
+    status: "DIRTY",
+  });
+
   if (tab.worksheet) {
     worksheetV1Store
       .patchWorksheet(
@@ -130,20 +133,14 @@ watch(isCurrentTab, (value) => {
 <style scoped lang="postcss">
 .label {
   position: relative;
-  display: flex;
-  align-items: center;
-  white-space: nowrap;
   min-width: 6rem;
-  max-width: 12rem;
+  max-width: 16rem;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .label :deep(.name) {
-  height: 1.5rem;
   width: 100%;
-  display: flex;
-  align-items: center;
   font-size: 0.875rem;
   line-height: 1.25rem;
 }

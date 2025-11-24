@@ -2087,7 +2087,8 @@
           "add-worksheet": "Thêm bảng tính",
           "multi-select": "Chọn nhiều"
         }
-      }
+      },
+      "unsaved-worksheet": "Bạn có bảng tính chưa lưu."
     },
     "batch-query": {
       "batch": "Hàng loạt",

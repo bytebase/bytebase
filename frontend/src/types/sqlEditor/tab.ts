@@ -8,7 +8,6 @@ import type { SQLResultSetV1 } from "../v1/sql";
 import type { SQLEditorConnection, SQLEditorQueryParams } from "./editor";
 
 export type SQLEditorTabStatus =
-  | "NEW" // just created and untouched
   | "DIRTY" // edited
   | "CLEAN"; // saved to a remote sheet
 

@@ -1,8 +1,6 @@
 <template>
-  <div class="inline-flex items-center justify-center">
-    <EngineIcon v-if="instance" :engine="instance.engine" />
-    <UnlinkIcon v-else class="w-3.5 h-3.5 text-control opacity-50" />
-  </div>
+  <EngineIcon v-if="instance" :engine="instance.engine" />
+  <UnlinkIcon v-else />
 </template>
 
 <script setup lang="ts">

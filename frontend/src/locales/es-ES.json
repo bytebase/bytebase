@@ -2087,7 +2087,8 @@
           "add-worksheet": "Agregar hoja de trabajo",
           "multi-select": "Selección múltiple"
         }
-      }
+      },
+      "unsaved-worksheet": "Tiene una hoja de trabajo sin guardar."
     },
     "batch-query": {
       "batch": "Lote",
