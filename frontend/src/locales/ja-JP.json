@@ -17,7 +17,6 @@
     "webhooks": "Webhook",
     "activity": "活動",
     "sign-in": "ログイン",
-    "sign-in-as-admin": "管理者としてサインイン",
     "sign-up": "登録する",
     "email": "メールアドレス",
     "username": "ユーザー名",
@@ -1572,7 +1571,9 @@
       "title": "セッションの有効期限が近づいています",
       "description": "しばらく操作がありませんでした。セキュリティのため、{minutes}分後に自動的にログアウトします。",
       "stay-signed-in": "ログインしたままにする"
-    }
+    },
+    "back-to-signin": "サインインに戻る",
+    "close-window": "このウィンドウを閉じる"
   },
   "policy": {
     "rollout": {

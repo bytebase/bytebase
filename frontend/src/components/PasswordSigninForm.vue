@@ -32,7 +32,6 @@
           <RequiredStar />
         </div>
         <router-link
-          v-if="props.showForgotPassword"
           :to="{
             path: '/auth/password-forgot',
             query: {
@@ -73,7 +72,7 @@
         attr-type="submit"
         type="primary"
         :disabled="!allowSignin"
-        :loading="state.isLoading"
+        :loading="loading"
         size="large"
         style="width: 100%"
       >
@@ -92,34 +91,33 @@ import { computed, onMounted, reactive } from "vue";
 import { useRoute } from "vue-router";
 import { BBTextField } from "@/bbkit";
 import RequiredStar from "@/components/RequiredStar.vue";
-import { useActuatorV1Store, useAuthStore } from "@/store";
-import { LoginRequestSchema } from "@/types/proto-es/v1/auth_service_pb";
+import { useActuatorV1Store } from "@/store";
+import {
+  type LoginRequest,
+  LoginRequestSchema,
+} from "@/types/proto-es/v1/auth_service_pb";
 
 interface LocalState {
   email: string;
   password: string;
   showPassword: boolean;
-  isLoading: boolean;
 }
 
-const props = withDefaults(
-  defineProps<{
-    showForgotPassword?: boolean;
-  }>(),
-  {
-    showForgotPassword: true,
-  }
-);
+const props = defineProps<{
+  loading: boolean;
+}>();
+
+const emit = defineEmits<{
+  (event: "signin", payload: LoginRequest): void;
+}>();
 
 const route = useRoute();
-const authStore = useAuthStore();
 const { isDemo } = storeToRefs(useActuatorV1Store());
 
 const state = reactive<LocalState>({
   email: "",
   password: "",
   showPassword: false,
-  isLoading: false,
 });
 
 onMounted(async () => {
@@ -146,18 +144,12 @@ const allowSignin = computed(() => {
 });
 
 const trySignin = async () => {
-  if (state.isLoading) return;
-  state.isLoading = true;
-  try {
-    await authStore.login(
-      create(LoginRequestSchema, {
-        email: state.email,
-        password: state.password,
-        web: true,
-      })
-    );
-  } finally {
-    state.isLoading = false;
-  }
+  emit(
+    "signin",
+    create(LoginRequestSchema, {
+      email: state.email,
+      password: state.password,
+    })
+  );
 };
 </script>

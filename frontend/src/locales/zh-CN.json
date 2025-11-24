@@ -17,7 +17,6 @@
     "webhooks": "Webhook",
     "activity": "活动",
     "sign-in": "登录",
-    "sign-in-as-admin": "以管理员身份登录",
     "sign-up": "注册",
     "email": "邮箱",
     "username": "用户名",
@@ -1572,7 +1571,9 @@
       "title": "您的会话即将结束",
       "description": "您已有一段时间未活动。为了您的安全，我们将在{minutes}分钟后自动退出您的登录。",
       "stay-signed-in": "保持登录状态"
-    }
+    },
+    "back-to-signin": "返回登录页面",
+    "close-window": "关闭此窗口"
   },
   "policy": {
     "rollout": {

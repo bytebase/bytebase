@@ -17,7 +17,6 @@
     "webhooks": "Webhooks",
     "activity": "Actividad",
     "sign-in": "Iniciar sesión",
-    "sign-in-as-admin": "Iniciar sesión como administrador",
     "sign-up": "Registrarse",
     "email": "Correo electrónico",
     "username": "Nombre de usuario",
@@ -1572,7 +1571,9 @@
       "title": "Tu sesión está a punto de terminar",
       "description": "Has estado inactivo un tiempo. Por tu seguridad, cerraremos tu sesión automáticamente en {minutes} minutos.",
       "stay-signed-in": "Permanecer conectado"
-    }
+    },
+    "back-to-signin": "Volver a Iniciar sesión",
+    "close-window": "Cerrar esta ventana"
   },
   "policy": {
     "rollout": {
