@@ -16,7 +16,7 @@ func init() {
 }
 
 // parseCassandraForRegistry is the ParseFunc for Cassandra.
-// Returns []*ParseResult on success.
+// Returns []*base.ParseResult on success.
 func parseCassandraForRegistry(statement string) (any, error) {
 	result, err := ParseCassandraSQL(statement)
 	if err != nil {
@@ -25,20 +25,14 @@ func parseCassandraForRegistry(statement string) (any, error) {
 	return result, nil
 }
 
-type ParseResult struct {
-	Tree     antlr.Tree
-	Tokens   *antlr.CommonTokenStream
-	BaseLine int
-}
-
 // ParseCassandraSQL parses the given CQL statement by using antlr4. Returns a list of AST and token stream if no error.
-func ParseCassandraSQL(statement string) ([]*ParseResult, error) {
+func ParseCassandraSQL(statement string) ([]*base.ParseResult, error) {
 	stmts, err := SplitSQL(statement)
 	if err != nil {
 		return nil, err
 	}
 
-	var result []*ParseResult
+	var result []*base.ParseResult
 	for _, stmt := range stmts {
 		if stmt.Empty {
 			continue
@@ -54,7 +48,7 @@ func ParseCassandraSQL(statement string) ([]*ParseResult, error) {
 	return result, nil
 }
 
-func parseSingleCassandraSQL(statement string, baseLine int) (*ParseResult, error) {
+func parseSingleCassandraSQL(statement string, baseLine int) (*base.ParseResult, error) {
 	statement = strings.TrimRightFunc(statement, utils.IsSpaceOrSemicolon) + "\n;"
 	inputStream := antlr.NewInputStream(statement)
 	lexer := cql.NewCqlLexer(inputStream)
@@ -88,7 +82,7 @@ func parseSingleCassandraSQL(statement string, baseLine int) (*ParseResult, erro
 		return nil, parserErrorListener.Err
 	}
 
-	result := &ParseResult{
+	result := &base.ParseResult{
 		Tree:     tree,
 		Tokens:   stream,
 		BaseLine: baseLine,

@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -29,7 +30,7 @@ type TableDisallowDDLAdvisor struct {
 }
 
 func (*TableDisallowDDLAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	list, ok := checkCtx.AST.([]*mysqlparser.ParseResult)
+	list, ok := checkCtx.AST.([]*base.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parser result")
 	}

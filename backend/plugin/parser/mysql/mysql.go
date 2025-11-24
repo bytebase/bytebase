@@ -28,15 +28,8 @@ func parseMySQLForRegistry(statement string) (any, error) {
 	return ParseMySQL(statement)
 }
 
-// ParseResult is the result of parsing a MySQL statement.
-type ParseResult struct {
-	Tree     antlr.Tree
-	Tokens   *antlr.CommonTokenStream
-	BaseLine int
-}
-
 // ParseMySQL parses the given SQL statement and returns the AST.
-func ParseMySQL(statement string) ([]*ParseResult, error) {
+func ParseMySQL(statement string) ([]*base.ParseResult, error) {
 	statement, err := DealWithDelimiter(statement)
 	if err != nil {
 		return nil, err
@@ -224,8 +217,8 @@ func mysqlAddSemicolonIfNeeded(sql string) string {
 	return sql
 }
 
-func parseInputStream(input *antlr.InputStream, statement string) ([]*ParseResult, error) {
-	var result []*ParseResult
+func parseInputStream(input *antlr.InputStream, statement string) ([]*base.ParseResult, error) {
+	var result []*base.ParseResult
 	lexer := parser.NewMySQLLexer(input)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 
@@ -249,7 +242,7 @@ func parseInputStream(input *antlr.InputStream, statement string) ([]*ParseResul
 			continue
 		}
 
-		result = append(result, &ParseResult{
+		result = append(result, &base.ParseResult{
 			Tree:     tree,
 			Tokens:   tokens,
 			BaseLine: s.BaseLine,

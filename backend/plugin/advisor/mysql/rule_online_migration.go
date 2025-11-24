@@ -15,7 +15,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -35,7 +35,7 @@ type OnlineMigrationAdvisor struct {
 
 // Check checks for using gh-ost to migrate large tables.
 func (*OnlineMigrationAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmtList, ok := checkCtx.AST.([]*mysqlparser.ParseResult)
+	stmtList, ok := checkCtx.AST.([]*base.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")
 	}
@@ -131,7 +131,7 @@ type OnlineMigrationRule struct {
 	dbMetadata       *model.DatabaseMetadata
 	checkCtx         advisor.Context
 	currentDatabase  string
-	changedResources map[string]parserbase.SchemaResource
+	changedResources map[string]base.SchemaResource
 	ghostCompatible  bool
 	start            *storepb.Position
 	end              *storepb.Position
@@ -148,7 +148,7 @@ func NewOnlineMigrationRule(level storepb.Advice_Status, title string, minRows i
 		dbMetadata:       dbMetadata,
 		checkCtx:         checkCtx,
 		currentDatabase:  checkCtx.CurrentDatabase,
-		changedResources: make(map[string]parserbase.SchemaResource),
+		changedResources: make(map[string]base.SchemaResource),
 	}
 }
 
@@ -227,7 +227,7 @@ func (r *OnlineMigrationRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
-	resource := parserbase.SchemaResource{
+	resource := base.SchemaResource{
 		Database: r.currentDatabase,
 	}
 	db, table := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())

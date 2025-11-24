@@ -149,3 +149,10 @@ func GetOffsetLength(total int) int {
 		length++
 	}
 }
+
+// ParseResult is the result of parsing SQL statements.
+type ParseResult struct {
+	Tree     antlr.Tree
+	Tokens   *antlr.CommonTokenStream
+	BaseLine int
+}

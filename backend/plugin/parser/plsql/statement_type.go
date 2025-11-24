@@ -4,10 +4,12 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/plsql"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 func GetStatementTypes(asts any) ([]string, error) {
-	nodes, ok := asts.([]*ParseResult)
+	nodes, ok := asts.([]*base.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("invalid ast type %T", asts)
 	}

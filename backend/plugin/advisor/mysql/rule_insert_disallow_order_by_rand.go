@@ -13,6 +13,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -34,7 +35,7 @@ type InsertDisallowOrderByRandAdvisor struct {
 
 // Check checks for to disallow order by rand in INSERT statements.
 func (*InsertDisallowOrderByRandAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmtList, ok := checkCtx.AST.([]*mysqlparser.ParseResult)
+	stmtList, ok := checkCtx.AST.([]*base.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parse result")
 	}

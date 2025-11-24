@@ -9,6 +9,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -26,13 +27,13 @@ func init() {
 // WalkThrough walks through the PostgreSQL ANTLR parse tree and builds catalog metadata.
 func WalkThrough(d *model.DatabaseMetadata, ast any) *storepb.Advice {
 	// ANTLR-based walkthrough
-	parseResults, ok := ast.([]*pgparser.ParseResult)
+	parseResults, ok := ast.([]*base.ParseResult)
 	if !ok {
 		return &storepb.Advice{
 			Status:  storepb.Advice_ERROR,
 			Code:    code.Internal.Int32(),
-			Title:   fmt.Sprintf("PostgreSQL walk-through expects []*pgparser.ParseResult, got %T", ast),
-			Content: fmt.Sprintf("PostgreSQL walk-through expects []*pgparser.ParseResult, got %T", ast),
+			Title:   fmt.Sprintf("PostgreSQL walk-through expects []*base.ParseResult, got %T", ast),
+			Content: fmt.Sprintf("PostgreSQL walk-through expects []*base.ParseResult, got %T", ast),
 			StartPosition: &storepb.Position{
 				Line: 0,
 			},

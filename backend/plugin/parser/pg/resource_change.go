@@ -20,9 +20,9 @@ func init() {
 }
 
 func extractChangedResources(database string, _ string, dbMetadata *model.DatabaseMetadata, asts any, statement string) (*base.ChangeSummary, error) {
-	parseResults, ok := asts.([]*ParseResult)
+	parseResults, ok := asts.([]*base.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("invalid ast type %T, expected []*ParseResult", asts)
+		return nil, errors.Errorf("invalid ast type %T, expected []*base.ParseResult", asts)
 	}
 
 	changedResources := model.NewChangedResources(dbMetadata)

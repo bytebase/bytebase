@@ -20,7 +20,7 @@ func init() {
 }
 
 func extractChangedResources(currentDatabase string, currentSchema string, dbMetadata *model.DatabaseMetadata, asts any, statement string) (*base.ChangeSummary, error) {
-	parseResults, ok := asts.([]*ParseResult)
+	parseResults, ok := asts.([]*base.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert ast to ParseResult list")
 	}
