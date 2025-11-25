@@ -883,11 +883,6 @@ const handleConfirm = async () => {
     }
 
     emit("confirm");
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("common.success"),
-    });
   } catch (error) {
     pushNotification({
       module: "bytebase",
