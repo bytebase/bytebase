@@ -1476,16 +1476,20 @@ func (s *SQLService) accessCheck(
 		return nil
 	}
 
+	// When spans is empty, it's an EXPLAIN query where GetQuerySpan is skipped (queryContext.Explain is true).
+	// Check at database level with EXPLAIN permission.
 	if len(spans) == 0 {
-		return checkDatabaseAccess(iam.PermissionSQLSelect)
+		permission := iam.PermissionSQLSelect
+		if isExplain {
+			permission = iam.PermissionSQLExplain
+		}
+		return checkDatabaseAccess(permission)
 	}
 
 	for _, span := range spans {
 		var permission iam.Permission
 		// New query ACL experience.
-		if isExplain {
-			permission = iam.PermissionSQLExplain
-		} else if common.EngineSupportQueryNewACL(instance.Metadata.GetEngine()) {
+		if common.EngineSupportQueryNewACL(instance.Metadata.GetEngine()) {
 			switch span.Type {
 			case parserbase.QueryTypeUnknown:
 				return connect.NewError(connect.CodePermissionDenied, errors.New("disallowed query type"))
@@ -1515,10 +1519,13 @@ func (s *SQLService) accessCheck(
 			permission = iam.PermissionSQLSelect
 		}
 
-		if len(span.SourceColumns) == 0 {
+		// For non-SELECT queries or SELECT queries with no source columns (e.g., SELECT 1),
+		// check at database level and skip column-level checks
+		if span.Type != parserbase.Select || len(span.SourceColumns) == 0 {
 			if err := checkDatabaseAccess(permission); err != nil {
 				return err
 			}
+			continue
 		}
 
 		var deniedResources []string
