@@ -14,6 +14,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -39,7 +40,7 @@ func init() {
 }
 
 // WalkThrough walks through TiDB AST and updates the database state.
-func WalkThrough(d *model.DatabaseMetadata, ast any) *storepb.Advice {
+func WalkThrough(d *model.DatabaseMetadata, ast []*base.UnifiedAST) *storepb.Advice {
 	// We define the Catalog as Database -> Schema -> Table. The Schema is only for PostgreSQL.
 	// So we use a Schema whose name is empty for other engines, such as MySQL.
 	// If there is no empty-string-name schema, create it to avoid corner cases.
@@ -47,11 +48,24 @@ func WalkThrough(d *model.DatabaseMetadata, ast any) *storepb.Advice {
 		d.CreateSchema("")
 	}
 
-	nodeList, ok := ast.([]tidbast.StmtNode)
-	if !ok {
-		// Internal error - invalid AST type, return nil to skip walkthrough
-		return nil
+	// Extract TiDB nodes from UnifiedAST
+	var nodeList []tidbast.StmtNode
+	for _, unifiedAST := range ast {
+		tidbData, ok := unifiedAST.GetTiDBNode()
+		if !ok {
+			return &storepb.Advice{
+				Status:  storepb.Advice_ERROR,
+				Code:    code.Internal.Int32(),
+				Title:   fmt.Sprintf("TiDB walk-through expects TiDB parser result, got engine %s", unifiedAST.GetEngine()),
+				Content: fmt.Sprintf("TiDB walk-through expects TiDB parser result, got engine %s", unifiedAST.GetEngine()),
+				StartPosition: &storepb.Position{
+					Line: 0,
+				},
+			}
+		}
+		nodeList = append(nodeList, tidbData.Node)
 	}
+
 	for _, node := range nodeList {
 		// change state
 		if err := changeStateTiDB(d, node); err != nil {

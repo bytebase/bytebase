@@ -32,9 +32,10 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 		return nil, nil
 	}
 
-	stmtList, ok := checkCtx.AST.([]*plsqlparser.ParseResult)
-	if !ok {
-		return nil, errors.Errorf("failed to convert to ParseResult")
+	stmtList, err := getANTLRTree(checkCtx)
+
+	if err != nil {
+		return nil, err
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)

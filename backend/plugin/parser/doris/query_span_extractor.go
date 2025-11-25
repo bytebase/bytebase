@@ -71,7 +71,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 	}, nil
 }
 
-func getAccessTables(database string, parseResult *ParseResult, ctes map[string]bool, gCtx base.GetQuerySpanContext, ignoreCaseSensitive bool) base.SourceColumnSet {
+func getAccessTables(database string, parseResult *base.ParseResult, ctes map[string]bool, gCtx base.GetQuerySpanContext, ignoreCaseSensitive bool) base.SourceColumnSet {
 	// First, extract CTEs from the query
 	cteListener := newCTEListener()
 	antlr.ParseTreeWalkerDefault.Walk(cteListener, parseResult.Tree)

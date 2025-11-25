@@ -83,7 +83,9 @@
           v-else
           :code="displayedStatement"
           language="sql"
-          class="text-sm whitespace-pre-wrap wrap-break-word max-h-96 overflow-y-auto rounded p-2 bg-white border border-gray-200"
+          :lazy="true"
+          :virtual="true"
+          class="text-sm whitespace-pre-wrap wrap-break-word max-h-64 rounded p-2 bg-white border border-gray-200"
         />
       </div>
 

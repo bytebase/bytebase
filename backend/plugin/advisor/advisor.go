@@ -45,7 +45,7 @@ type Context struct {
 	IsObjectCaseSensitive bool
 
 	// SQL review rule special fields.
-	AST              any
+	AST              []*base.UnifiedAST
 	Rule             *storepb.SQLReviewRule
 	OriginalMetadata *model.DatabaseMetadata
 	FinalMetadata    *model.DatabaseMetadata

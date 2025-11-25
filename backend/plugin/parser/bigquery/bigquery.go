@@ -11,20 +11,14 @@ import (
 	"github.com/bytebase/bytebase/backend/utils"
 )
 
-type ParseResult struct {
-	Tree     antlr.Tree
-	Tokens   *antlr.CommonTokenStream
-	BaseLine int
-}
-
 // ParseBigQuerySQL parses the given SQL statement by using antlr4. Returns a list of AST and token stream if no error.
-func ParseBigQuerySQL(statement string) ([]*ParseResult, error) {
+func ParseBigQuerySQL(statement string) ([]*base.ParseResult, error) {
 	stmts, err := SplitSQL(statement)
 	if err != nil {
 		return nil, err
 	}
 
-	var result []*ParseResult
+	var result []*base.ParseResult
 	for _, stmt := range stmts {
 		if stmt.Empty {
 			continue
@@ -40,7 +34,7 @@ func ParseBigQuerySQL(statement string) ([]*ParseResult, error) {
 	return result, nil
 }
 
-func parseSingleBigQuerySQL(statement string, baseLine int) (*ParseResult, error) {
+func parseSingleBigQuerySQL(statement string, baseLine int) (*base.ParseResult, error) {
 	statement = strings.TrimRightFunc(statement, utils.IsSpaceOrSemicolon) + "\n;"
 	inputStream := antlr.NewInputStream(statement)
 	lexer := parser.NewGoogleSQLLexer(inputStream)
@@ -74,7 +68,7 @@ func parseSingleBigQuerySQL(statement string, baseLine int) (*ParseResult, error
 		return nil, parserErrorListener.Err
 	}
 
-	result := &ParseResult{
+	result := &base.ParseResult{
 		Tree:     tree,
 		Tokens:   stream,
 		BaseLine: baseLine,

@@ -249,9 +249,8 @@ export const checkQuerierPermission = (
           }
         }
         return false;
-      } else {
-        return true;
       }
+      return true;
     }
   );
 };

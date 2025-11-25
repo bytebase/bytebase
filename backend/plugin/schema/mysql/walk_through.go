@@ -13,6 +13,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
@@ -35,7 +36,7 @@ func init() {
 }
 
 // WalkThrough walks through MySQL AST and updates the database metadata.
-func WalkThrough(d *model.DatabaseMetadata, ast any) *storepb.Advice {
+func WalkThrough(d *model.DatabaseMetadata, ast []*base.UnifiedAST) *storepb.Advice {
 	// We define the Catalog as Database -> Schema -> Table. The Schema is only for PostgreSQL.
 	// So we use a Schema whose name is empty for other engines, such as MySQL.
 	// If there is no empty-string-name schema, create it to avoid corner cases.
@@ -43,18 +44,28 @@ func WalkThrough(d *model.DatabaseMetadata, ast any) *storepb.Advice {
 		d.CreateSchema("")
 	}
 
-	nodeList, ok := ast.([]*mysqlparser.ParseResult)
-	if !ok {
-		return &storepb.Advice{
-			Status:  storepb.Advice_ERROR,
-			Code:    code.Internal.Int32(),
-			Title:   fmt.Sprintf("invalid ast type %T", ast),
-			Content: fmt.Sprintf("invalid ast type %T", ast),
-			StartPosition: &storepb.Position{
-				Line: 0,
-			},
+	// Extract ParseResult from UnifiedAST
+	var nodeList []*base.ParseResult
+	for _, unifiedAST := range ast {
+		antlrData, ok := unifiedAST.GetANTLRTree()
+		if !ok {
+			return &storepb.Advice{
+				Status:  storepb.Advice_ERROR,
+				Code:    code.Internal.Int32(),
+				Title:   fmt.Sprintf("MySQL walk-through expects ANTLR-based parser result, got engine %s", unifiedAST.GetEngine()),
+				Content: fmt.Sprintf("MySQL walk-through expects ANTLR-based parser result, got engine %s", unifiedAST.GetEngine()),
+				StartPosition: &storepb.Position{
+					Line: 0,
+				},
+			}
 		}
+		nodeList = append(nodeList, &base.ParseResult{
+			Tree:     antlrData.Tree,
+			Tokens:   antlrData.Tokens,
+			BaseLine: unifiedAST.GetBaseLine(),
+		})
 	}
+
 	for _, node := range nodeList {
 		if advice := mysqlChangeState(d, node); advice != nil {
 			return advice
@@ -79,7 +90,7 @@ func (l *mysqlListener) EnterQuery(ctx *mysql.QueryContext) {
 	l.lineNumber = l.baseLine + ctx.GetStart().GetLine()
 }
 
-func mysqlChangeState(d *model.DatabaseMetadata, in *mysqlparser.ParseResult) *storepb.Advice {
+func mysqlChangeState(d *model.DatabaseMetadata, in *base.ParseResult) *storepb.Advice {
 	listener := &mysqlListener{
 		baseLine:         in.BaseLine,
 		databaseMetadata: d,

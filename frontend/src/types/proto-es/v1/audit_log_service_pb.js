@@ -3,10 +3,10 @@
 /* eslint-disable */
 
 import { enumDesc, fileDesc, messageDesc, serviceDesc, tsEnum } from "@bufbuild/protobuf/codegenv2";
-import { file_google_protobuf_any, file_google_protobuf_duration, file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_api_annotations } from "../google/api/annotations_pb";
 import { file_google_api_field_behavior } from "../google/api/field_behavior_pb";
 import { file_google_api_resource } from "../google/api/resource_pb";
+import { file_google_protobuf_any, file_google_protobuf_duration, file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_rpc_status } from "../google/rpc/status_pb";
 import { file_v1_annotation } from "./annotation_pb";
 import { file_v1_common } from "./common_pb";

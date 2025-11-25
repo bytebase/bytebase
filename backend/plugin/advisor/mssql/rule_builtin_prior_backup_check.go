@@ -39,9 +39,10 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 	}
 
 	var adviceList []*storepb.Advice
-	stmtList, ok := checkCtx.AST.(antlr.Tree)
-	if !ok {
-		return nil, nil
+	stmtList, err := getANTLRTree(checkCtx)
+
+	if err != nil {
+		return nil, err
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
@@ -75,7 +76,10 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 	// Use the refactored rule for DDL/DML checking
 	rule := NewStatementDisallowMixDMLRule(level, title)
 	checker := NewGenericChecker([]Rule{rule})
-	antlr.ParseTreeWalkerDefault.Walk(checker, stmtList)
+	for _, stmt := range stmtList {
+		rule.SetBaseLine(stmt.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
+	}
 
 	if rule.hasDDL {
 		adviceList = append(adviceList, &storepb.Advice{

@@ -30,9 +30,10 @@ type StatementDisallowUsingFilesortAdvisor struct {
 }
 
 func (*StatementDisallowUsingFilesortAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmtList, ok := checkCtx.AST.([]*mysqlparser.ParseResult)
-	if !ok {
-		return nil, errors.Errorf("failed to convert to mysql ParseResult")
+	stmtList, err := getANTLRTree(checkCtx)
+
+	if err != nil {
+		return nil, err
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)

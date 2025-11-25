@@ -11,6 +11,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -31,9 +32,10 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 	}
 
 	var adviceList []*storepb.Advice
-	stmtList, ok := checkCtx.AST.([]*mysqlparser.ParseResult)
-	if !ok {
-		return nil, errors.Errorf("failed to convert to mysql parse result")
+	stmtList, err := getANTLRTree(checkCtx)
+
+	if err != nil {
+		return nil, err
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
@@ -110,7 +112,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 	return adviceList, nil
 }
 
-func prepareTransformation(databaseName string, parseResult []*mysqlparser.ParseResult) ([]*mysqlparser.TableReference, error) {
+func prepareTransformation(databaseName string, parseResult []*base.ParseResult) ([]*mysqlparser.TableReference, error) {
 	var result []*mysqlparser.TableReference
 	for i, sql := range parseResult {
 		tables, err := mysqlparser.ExtractTables(databaseName, sql, i)

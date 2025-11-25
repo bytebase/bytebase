@@ -15,7 +15,10 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+
+	// Import pg parser to register PostgreSQL parser via init()
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -80,12 +83,21 @@ func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbTyp
 			payload = ""
 		}
 
-		// Parse SQL using ANTLR for pg advisors
-		trees, err := pg.ParsePostgreSQL(tc.Statement)
+		// Parse SQL using base.Parse() to get UnifiedAST
+		unifiedASTs, err := base.Parse(dbType, tc.Statement)
 		require.NoError(t, err, "Failed to parse SQL: %s", tc.Statement)
 
-		// Always walk through the catalog to build metadata.
-		advice := schema.WalkThrough(dbType, finalMetadata, trees)
+		// Skip test cases with only comments or no SQL statements (parser returns nil/empty)
+		if len(unifiedASTs) == 0 {
+			// For empty/comment-only statements, the advisor should return no advice
+			if len(tc.Want) > 0 {
+				t.Fatalf("Test case expects advice but statement has no SQL: %s", tc.Statement)
+			}
+			continue
+		}
+
+		// Walk through the catalog to build metadata using UnifiedAST directly
+		advice := schema.WalkThrough(dbType, finalMetadata, unifiedASTs)
 		require.Nil(t, advice, "Failed to walk through final catalog: %s", tc.Statement)
 
 		ruleList := []*storepb.SQLReviewRule{
@@ -105,7 +117,7 @@ func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbTyp
 				DBSchema:                 schemaMetadata,
 				ChangeType:               tc.ChangeType,
 				EnablePriorBackup:        true,
-				AST:                      trees, // Pass ANTLR parse result list
+				AST:                      unifiedASTs, // Pass UnifiedAST list
 				Statements:               tc.Statement,
 				Rule:                     ruleList[0],
 				OriginalMetadata:         originalMetadata,

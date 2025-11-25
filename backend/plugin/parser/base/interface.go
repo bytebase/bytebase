@@ -263,24 +263,20 @@ func RegisterParseFunc(engine storepb.Engine, f ParseFunc) {
 	parsers[engine] = f
 }
 
-// Parse parses the SQL statement and returns the AST.
-// The return type (any) varies by database engine:
-//   - TiDB: []ast.StmtNode (github.com/pingcap/tidb/pkg/parser/ast)
-//   - MySQL, MariaDB, OceanBase: []*ParseResult (github.com/bytebase/bytebase/backend/plugin/parser/mysql)
-//   - PostgreSQL: []*ParseResult (github.com/bytebase/bytebase/backend/plugin/parser/pg) - ANTLR-based
-//   - CockroachDB: statements.Statements (github.com/cockroachdb/cockroachdb-parser/pkg/sql/parser/statements)
-//   - Redshift: antlr.Tree
-//   - Oracle: antlr.Tree
-//   - Snowflake: []*ParseResult (github.com/bytebase/bytebase/backend/plugin/parser/snowflake) - ANTLR-based
-//   - MSSQL: antlr.Tree
-//   - DynamoDB (PartiQL): antlr.Tree
-//   - Doris: *ParseResult (github.com/bytebase/bytebase/backend/plugin/parser/doris)
-func Parse(engine storepb.Engine, statement string) (any, error) {
+// Parse parses the SQL statement and returns a unified AST representation.
+// All parser outputs are wrapped into []*UnifiedAST for consistent handling.
+func Parse(engine storepb.Engine, statement string) ([]*UnifiedAST, error) {
 	f, ok := parsers[engine]
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported", engine)
 	}
-	return f(statement)
+
+	rawAST, err := f(statement)
+	if err != nil {
+		return nil, err
+	}
+
+	return convertToUnifiedAST(engine, statement, rawAST)
 }
 
 type ChangeSummary struct {

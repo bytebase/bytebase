@@ -111,9 +111,11 @@ const challenge = async () => {
     mfaContext.recoveryCode = state.recoveryCode;
   }
   await authStore.login({
-    web: true,
-    mfaTempToken: mfaTempToken.value,
-    ...mfaContext,
+    request: {
+      mfaTempToken: mfaTempToken.value,
+      ...mfaContext,
+    },
+    redirect: true,
   });
 };
 </script>

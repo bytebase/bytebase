@@ -12,7 +12,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 var (
@@ -31,8 +30,8 @@ type WhereRequirementForSelectAdvisor struct {
 
 // Check checks for the WHERE clause requirement.
 func (*WhereRequirementForSelectAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	root, ok := checkCtx.AST.([]*mysqlparser.ParseResult)
-	if !ok {
+	root, err := getANTLRTree(checkCtx)
+	if err != nil {
 		return nil, errors.Errorf("failed to convert to StmtNode")
 	}
 

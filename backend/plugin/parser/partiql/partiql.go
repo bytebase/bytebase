@@ -17,7 +17,7 @@ func init() {
 }
 
 // parsePartiQLForRegistry is the ParseFunc for PartiQL.
-// Returns []*ParseResult on success.
+// Returns []*base.ParseResult on success.
 func parsePartiQLForRegistry(statement string) (any, error) {
 	result, err := ParsePartiQL(statement)
 	if err != nil {
@@ -26,20 +26,14 @@ func parsePartiQLForRegistry(statement string) (any, error) {
 	return result, nil
 }
 
-type ParseResult struct {
-	Tree     antlr.Tree
-	Tokens   *antlr.CommonTokenStream
-	BaseLine int
-}
-
 // ParsePartiQL parses the given PartiQL statement by using antlr4. Returns a list of AST and token stream if no error.
-func ParsePartiQL(statement string) ([]*ParseResult, error) {
+func ParsePartiQL(statement string) ([]*base.ParseResult, error) {
 	stmts, err := SplitSQL(statement)
 	if err != nil {
 		return nil, err
 	}
 
-	var result []*ParseResult
+	var result []*base.ParseResult
 	for _, stmt := range stmts {
 		if stmt.Empty {
 			continue
@@ -55,7 +49,7 @@ func ParsePartiQL(statement string) ([]*ParseResult, error) {
 	return result, nil
 }
 
-func parseSinglePartiQL(statement string, baseLine int) (*ParseResult, error) {
+func parseSinglePartiQL(statement string, baseLine int) (*base.ParseResult, error) {
 	statement = strings.TrimRightFunc(statement, utils.IsSpaceOrSemicolon) + "\n;"
 	inputStream := antlr.NewInputStream(statement)
 	lexer := parser.NewPartiQLLexer(inputStream)
@@ -89,7 +83,7 @@ func parseSinglePartiQL(statement string, baseLine int) (*ParseResult, error) {
 		return nil, parserErrorListener.Err
 	}
 
-	result := &ParseResult{
+	result := &base.ParseResult{
 		Tree:     tree,
 		Tokens:   stream,
 		BaseLine: baseLine,

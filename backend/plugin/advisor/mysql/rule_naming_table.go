@@ -32,8 +32,8 @@ type NamingTableConventionAdvisor struct {
 
 // Check checks for table naming convention.
 func (*NamingTableConventionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	list, ok := checkCtx.AST.([]*mysqlparser.ParseResult)
-	if !ok {
+	list, err := getANTLRTree(checkCtx)
+	if err != nil {
 		return nil, errors.Errorf("failed to convert to Tree")
 	}
 

@@ -8,7 +8,11 @@
   >
     <div class="flex items-center w-auto md:min-w-96 max-w-full h-auto md:py-4">
       <div class="flex flex-col justify-center items-center flex-1 gap-y-2">
-        <Signin :allow-signup="false">
+        <Signin
+          :redirect="false"
+          :redirect-url="currentPath"
+          :allow-signup="false"
+        >
           <template #footer>
             <NButton quaternary size="small" @click="logout">
               {{ $t("common.logout") }}
@@ -22,13 +26,18 @@
 
 <script lang="tsx" setup>
 import { NButton } from "naive-ui";
+import { computed } from "vue";
+import { useRoute } from "vue-router";
 import { BBModal } from "@/bbkit";
 import { useAuthStore } from "@/store";
 import Signin from "@/views/auth/Signin.vue";
 
 const authStore = useAuthStore();
+const route = useRoute();
 
 const logout = () => {
   authStore.logout();
 };
+
+const currentPath = computed(() => route.fullPath);
 </script>

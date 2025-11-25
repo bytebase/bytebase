@@ -35,8 +35,8 @@ type OnlineMigrationAdvisor struct {
 
 // Check checks for using gh-ost to migrate large tables.
 func (*OnlineMigrationAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmtList, ok := checkCtx.AST.([]*mysqlparser.ParseResult)
-	if !ok {
+	stmtList, err := getANTLRTree(checkCtx)
+	if err != nil {
 		return nil, errors.Errorf("failed to convert to StmtNode")
 	}
 

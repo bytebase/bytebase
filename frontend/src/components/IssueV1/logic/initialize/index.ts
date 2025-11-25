@@ -112,7 +112,7 @@ export function useInitializeIssue(
 
 export const convertRouterQuery = (query: LocationQuery) => {
   const kv: Record<string, string> = {};
-  for (const key in query) {
+  for (const key of Object.keys(query)) {
     const value = query[key];
     if (typeof value === "string") {
       kv[key] = value;

@@ -3,10 +3,10 @@
     <div v-if="state.hasError" class="mt-2">
       <div>{{ state.message }}</div>
       <NButton v-if="state.oAuthState?.popup" @click="window.close()">
-        Close
+        {{ $t("common.close") }}
       </NButton>
       <router-link v-else :to="{ name: AUTH_SIGNIN_MODULE }" class="btn-normal">
-        Back to Sign in
+        {{ $t("auth.back-to-signin") }}
       </router-link>
     </div>
     <div v-else class="mt-2">
@@ -19,7 +19,7 @@
         class="mt-4"
         @click="window.close()"
       >
-        Close this window
+        {{ $t("auth.close-window") }}
       </NButton>
     </div>
   </div>
@@ -183,28 +183,21 @@ const triggerAuthCallback = async () => {
       return;
     }
 
-    await authStore.login(
-      create(LoginRequestSchema, {
+    await authStore.login({
+      request: create(LoginRequestSchema, {
         idpName,
         idpContext: {
-          context: isOidc
-            ? {
-                case: "oidcContext",
-                value: {
-                  code: state.payload.code,
-                },
-              }
-            : {
-                case: "oauth2Context",
-                value: {
-                  code: state.payload.code,
-                },
-              },
+          context: {
+            case: isOidc ? "oidcContext" : "oauth2Context",
+            value: {
+              code: state.payload.code,
+            },
+          },
         },
-        web: true,
       }),
-      oAuthState.redirect
-    );
+      redirect: true,
+      redirectUrl: oAuthState.redirect,
+    });
   }
 };
 </script>

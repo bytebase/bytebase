@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/antlr4-go/antlr/v4"
-	"github.com/pkg/errors"
 
 	parser "github.com/bytebase/parser/tsql"
 
@@ -32,9 +31,10 @@ func (*StatementDisallowMixInDDLAdvisor) Check(_ context.Context, checkCtx advis
 	default:
 		return nil, nil
 	}
-	parseResults, ok := checkCtx.AST.([]*tsqlparser.ParseResult)
-	if !ok {
-		return nil, errors.Errorf("failed to convert to ParseResult list")
+	parseResults, err := getANTLRTree(checkCtx)
+
+	if err != nil {
+		return nil, err
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)

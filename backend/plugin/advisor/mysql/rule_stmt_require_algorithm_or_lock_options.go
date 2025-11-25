@@ -31,8 +31,8 @@ type RequireAlgorithmOrLockOptionAdvisor struct {
 }
 
 func (*RequireAlgorithmOrLockOptionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmtList, ok := checkCtx.AST.([]*mysqlparser.ParseResult)
-	if !ok {
+	stmtList, err := getANTLRTree(checkCtx)
+	if err != nil {
 		return nil, errors.Errorf("failed to convert to stmt list")
 	}
 

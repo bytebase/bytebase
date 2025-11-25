@@ -26,7 +26,7 @@ export const useUIStateStore = defineStore("uistate", () => {
 
   const setCollapseState = (fullState: any) => {
     const newMap = new Map();
-    for (const key in fullState) {
+    for (const key of Object.keys(fullState)) {
       newMap.set(key, fullState[key]);
     }
     state.collapseStateByKey = newMap;
@@ -34,7 +34,7 @@ export const useUIStateStore = defineStore("uistate", () => {
 
   const setIntroState = (fullState: any) => {
     const newMap = new Map();
-    for (const key in fullState) {
+    for (const key of Object.keys(fullState)) {
       newMap.set(key, fullState[key]);
     }
     state.introStateByKey = newMap;

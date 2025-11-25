@@ -9,8 +9,6 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/tsql"
 
-	"github.com/pkg/errors"
-
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
@@ -32,9 +30,10 @@ type IndexNotRedundantAdvisor struct{}
 
 // TODO(zp): we currently don't have runtime checks for indexes created in the statements.
 func (IndexNotRedundantAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	parseResults, ok := checkCtx.AST.([]*tsqlparser.ParseResult)
-	if !ok {
-		return nil, errors.Errorf("failed to convert to AST tree")
+	parseResults, err := getANTLRTree(checkCtx)
+
+	if err != nil {
+		return nil, err
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)

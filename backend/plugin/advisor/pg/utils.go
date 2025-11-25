@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
@@ -34,14 +35,24 @@ func isTopLevel(ctx antlr.Tree) bool {
 // The AST must be pre-parsed and passed via checkCtx.AST (e.g., in tests or by the framework).
 // This enforces proper AST caching and makes any missing cache obvious.
 // Returns all parse results for multi-statement SQL review.
-func getANTLRTree(checkCtx advisor.Context) ([]*pg.ParseResult, error) {
+func getANTLRTree(checkCtx advisor.Context) ([]*base.ParseResult, error) {
 	if checkCtx.AST == nil {
 		return nil, errors.New("AST is not provided in context - must be parsed before calling advisor")
 	}
 
-	parseResults, ok := checkCtx.AST.([]*pg.ParseResult)
-	if !ok {
-		return nil, errors.Errorf("AST type mismatch: expected []*pg.ParseResult, got %T", checkCtx.AST)
+	var parseResults []*base.ParseResult
+	for _, unifiedAST := range checkCtx.AST {
+		antlrData, ok := unifiedAST.GetANTLRTree()
+		if !ok {
+			return nil, errors.Errorf("AST type mismatch: expected ANTLR-based parser result, got engine %s", unifiedAST.GetEngine())
+		}
+
+		// Reconstruct base.ParseResult from UnifiedAST
+		parseResults = append(parseResults, &base.ParseResult{
+			Tree:     antlrData.Tree,
+			Tokens:   antlrData.Tokens,
+			BaseLine: unifiedAST.GetBaseLine(),
+		})
 	}
 
 	return parseResults, nil
