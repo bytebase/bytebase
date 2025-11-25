@@ -32,7 +32,7 @@ var (
 )
 
 type ValidateSQLForEditorFunc func(string) (bool, bool, error)
-type ExtractChangedResourcesFunc func(string, string, *model.DatabaseMetadata, []*UnifiedAST, string) (*ChangeSummary, error)
+type ExtractChangedResourcesFunc func(string, string, *model.DatabaseMetadata, []*AST, string) (*ChangeSummary, error)
 type SplitMultiSQLFunc func(string) ([]SingleSQL, error)
 type CompletionFunc func(ctx context.Context, cCtx CompletionContext, statement string, caretLine int, caretOffset int) ([]Candidate, error)
 type DiagnoseFunc func(ctx context.Context, dCtx DiagnoseContext, statement string) ([]Diagnostic, error)
@@ -84,7 +84,7 @@ func RegisterExtractChangedResourcesFunc(engine storepb.Engine, f ExtractChanged
 }
 
 // ExtractChangedResources extracts the changed resources from the SQL.
-func ExtractChangedResources(engine storepb.Engine, currentDatabase string, currentSchema string, dbMetadata *model.DatabaseMetadata, asts []*UnifiedAST, statement string) (*ChangeSummary, error) {
+func ExtractChangedResources(engine storepb.Engine, currentDatabase string, currentSchema string, dbMetadata *model.DatabaseMetadata, asts []*AST, statement string) (*ChangeSummary, error) {
 	f, ok := changedResourcesGetters[engine]
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported", engine)
@@ -265,7 +265,7 @@ func RegisterParseFunc(engine storepb.Engine, f ParseFunc) {
 
 // Parse parses the SQL statement and returns a unified AST representation.
 // All parser outputs are wrapped into []*UnifiedAST for consistent handling.
-func Parse(engine storepb.Engine, statement string) ([]*UnifiedAST, error) {
+func Parse(engine storepb.Engine, statement string) ([]*AST, error) {
 	f, ok := parsers[engine]
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported", engine)

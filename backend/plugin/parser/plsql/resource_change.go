@@ -15,7 +15,7 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_ORACLE, extractChangedResources)
 }
 
-func extractChangedResources(currentDatabase string, _ string, dbMetadata *model.DatabaseMetadata, asts []*base.UnifiedAST, statement string) (*base.ChangeSummary, error) {
+func extractChangedResources(currentDatabase string, _ string, dbMetadata *model.DatabaseMetadata, asts []*base.AST, statement string) (*base.ChangeSummary, error) {
 	// currentDatabase is the same as currentSchema for Oracle.
 	changedResources := model.NewChangedResources(dbMetadata)
 	l := &plsqlChangedResourceExtractListener{

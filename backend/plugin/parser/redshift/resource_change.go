@@ -17,7 +17,7 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_REDSHIFT, extractChangedResources)
 }
 
-func extractChangedResources(database string, _ string, dbMetadata *model.DatabaseMetadata, asts []*base.UnifiedAST, _ string) (*base.ChangeSummary, error) {
+func extractChangedResources(database string, _ string, dbMetadata *model.DatabaseMetadata, asts []*base.AST, _ string) (*base.ChangeSummary, error) {
 	changedResources := model.NewChangedResources(dbMetadata)
 	listener := &resourceChangeListener{
 		currentDatabase:  database,

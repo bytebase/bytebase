@@ -7,7 +7,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func GetStatementTypes(asts []*base.UnifiedAST) ([]string, error) {
+func GetStatementTypes(asts []*base.AST) ([]string, error) {
 	sqlTypeSet := make(map[string]bool)
 	for _, ast := range asts {
 		antlrData, ok := ast.GetANTLRTree()

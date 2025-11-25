@@ -12,9 +12,9 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
-// UnifiedAST represents a parsed SQL statement with standardized metadata.
+// AST represents a parsed SQL statement with standardized metadata.
 // It wraps different parser outputs (ANTLR, TiDB, CockroachDB) into a single unified type.
-type UnifiedAST struct {
+type AST struct {
 	// Engine is the database engine that parsed this SQL
 	Engine storepb.Engine
 
@@ -65,36 +65,36 @@ type CockroachDBParseData struct {
 
 // GetANTLRTree returns ANTLR parse data if this statement was parsed by an ANTLR-based parser.
 // Returns the data and true if available, nil and false otherwise.
-func (u *UnifiedAST) GetANTLRTree() (*ANTLRParseData, bool) {
+func (u *AST) GetANTLRTree() (*ANTLRParseData, bool) {
 	return u.ANTLRResult, u.ANTLRResult != nil
 }
 
 // GetTiDBNode returns TiDB AST node if this statement was parsed by TiDB parser.
 // Returns the node and true if available, nil and false otherwise.
-func (u *UnifiedAST) GetTiDBNode() (*TiDBParseData, bool) {
+func (u *AST) GetTiDBNode() (*TiDBParseData, bool) {
 	return u.TiDBNode, u.TiDBNode != nil
 }
 
 // GetCockroachDBStmt returns CockroachDB statement if this statement was parsed by CockroachDB parser.
 // Returns the statement and true if available, nil and false otherwise.
-func (u *UnifiedAST) GetCockroachDBStmt() (*CockroachDBParseData, bool) {
+func (u *AST) GetCockroachDBStmt() (*CockroachDBParseData, bool) {
 	return u.CockroachDBStmt, u.CockroachDBStmt != nil
 }
 
 // GetEngine returns the database engine that parsed this SQL.
-func (u *UnifiedAST) GetEngine() storepb.Engine {
+func (u *AST) GetEngine() storepb.Engine {
 	return u.Engine
 }
 
 // GetBaseLine returns the zero-based line offset where this SQL statement starts.
-func (u *UnifiedAST) GetBaseLine() int {
+func (u *AST) GetBaseLine() int {
 	return u.BaseLine
 }
 
 // convertToUnifiedAST converts raw parser output to a slice of UnifiedAST.
 // This function handles different parser types (ANTLR, TiDB, CockroachDB) and wraps
 // them into a consistent unified representation.
-func convertToUnifiedAST(engine storepb.Engine, _ string, rawAST any) ([]*UnifiedAST, error) {
+func convertToUnifiedAST(engine storepb.Engine, _ string, rawAST any) ([]*AST, error) {
 	switch engine {
 	case storepb.Engine_TIDB:
 		// TiDB parser returns []ast.StmtNode
@@ -103,9 +103,9 @@ func convertToUnifiedAST(engine storepb.Engine, _ string, rawAST any) ([]*Unifie
 			return nil, errors.Errorf("expected []ast.StmtNode for TiDB, got %T", rawAST)
 		}
 
-		var results []*UnifiedAST
+		var results []*AST
 		for _, node := range nodes {
-			results = append(results, &UnifiedAST{
+			results = append(results, &AST{
 				Engine:   engine,
 				TiDBNode: &TiDBParseData{Node: node},
 			})
@@ -119,9 +119,9 @@ func convertToUnifiedAST(engine storepb.Engine, _ string, rawAST any) ([]*Unifie
 			return nil, errors.Errorf("expected statements.Statements for CockroachDB, got %T", rawAST)
 		}
 
-		var results []*UnifiedAST
+		var results []*AST
 		for _, stmt := range stmts {
-			results = append(results, &UnifiedAST{
+			results = append(results, &AST{
 				Engine:          engine,
 				OriginalText:    stmt.SQL,
 				CockroachDBStmt: &CockroachDBParseData{Stmt: stmt},
@@ -143,14 +143,14 @@ func convertToUnifiedAST(engine storepb.Engine, _ string, rawAST any) ([]*Unifie
 
 // convertANTLRParseResults converts ANTLR parser results using reflection.
 // All ANTLR parsers return a slice of structs with Tree, Tokens, and BaseLine fields.
-func convertANTLRParseResults(engine storepb.Engine, rawAST any) ([]*UnifiedAST, error) {
+func convertANTLRParseResults(engine storepb.Engine, rawAST any) ([]*AST, error) {
 	// Use reflection to handle slices of ParseResult from different packages
 	v := reflect.ValueOf(rawAST)
 	if v.Kind() != reflect.Slice {
 		return nil, errors.Errorf("expected slice of ParseResult for %s, got %T", engine, rawAST)
 	}
 
-	var results []*UnifiedAST
+	var results []*AST
 	for i := 0; i < v.Len(); i++ {
 		item := v.Index(i)
 
@@ -169,7 +169,7 @@ func convertANTLRParseResults(engine storepb.Engine, rawAST any) ([]*UnifiedAST,
 			return nil, errors.Wrapf(err, "failed to extract ParseResult fields for %s", engine)
 		}
 
-		results = append(results, &UnifiedAST{
+		results = append(results, &AST{
 			Engine:   engine,
 			BaseLine: baseLine,
 			ANTLRResult: &ANTLRParseData{

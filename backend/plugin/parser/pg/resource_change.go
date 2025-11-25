@@ -19,7 +19,7 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_COCKROACHDB, extractChangedResources)
 }
 
-func extractChangedResources(database string, _ string, dbMetadata *model.DatabaseMetadata, asts []*base.UnifiedAST, statement string) (*base.ChangeSummary, error) {
+func extractChangedResources(database string, _ string, dbMetadata *model.DatabaseMetadata, asts []*base.AST, statement string) (*base.ChangeSummary, error) {
 	changedResources := model.NewChangedResources(dbMetadata)
 	searchPath := dbMetadata.GetSearchPath()
 	if len(searchPath) == 0 {

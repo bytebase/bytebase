@@ -19,7 +19,7 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_MSSQL, extractChangedResources)
 }
 
-func extractChangedResources(currentDatabase string, currentSchema string, dbMetadata *model.DatabaseMetadata, asts []*base.UnifiedAST, statement string) (*base.ChangeSummary, error) {
+func extractChangedResources(currentDatabase string, currentSchema string, dbMetadata *model.DatabaseMetadata, asts []*base.AST, statement string) (*base.ChangeSummary, error) {
 	changedResources := model.NewChangedResources(dbMetadata)
 	l := &tsqlChangedResourceExtractListener{
 		currentDatabase:  currentDatabase,

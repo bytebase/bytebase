@@ -11,7 +11,7 @@ import (
 )
 
 // GetStatementTypes returns the statement types from the given AST.
-func GetStatementTypes(asts []*base.UnifiedAST) ([]string, error) {
+func GetStatementTypes(asts []*base.AST) ([]string, error) {
 	listener := &statementTypeListener{
 		types: make(map[string]bool),
 	}

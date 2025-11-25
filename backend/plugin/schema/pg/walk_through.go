@@ -25,7 +25,7 @@ func init() {
 }
 
 // WalkThrough walks through the PostgreSQL ANTLR parse tree and builds catalog metadata.
-func WalkThrough(d *model.DatabaseMetadata, ast []*base.UnifiedAST) *storepb.Advice {
+func WalkThrough(d *model.DatabaseMetadata, ast []*base.AST) *storepb.Advice {
 	// Extract ParseResult from UnifiedAST
 	var parseResults []*base.ParseResult
 	for _, unifiedAST := range ast {

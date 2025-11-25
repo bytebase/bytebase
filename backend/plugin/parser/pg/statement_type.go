@@ -17,7 +17,7 @@ type StatementTypeWithPosition struct {
 
 // GetStatementTypes returns statement types with position information.
 // The line numbers are one-based.
-func GetStatementTypes(asts []*base.UnifiedAST) ([]StatementTypeWithPosition, error) {
+func GetStatementTypes(asts []*base.AST) ([]StatementTypeWithPosition, error) {
 	if len(asts) == 0 {
 		return []StatementTypeWithPosition{}, nil
 	}
