@@ -318,6 +318,8 @@
     "no-permission": "この操作を実行する権限がありません",
     "data-export-creator-only": "問題作成者のみがデータエクスポートタスクを実行できます",
     "scheduled-time": "予定時刻",
+    "scheduled-at": "予定日時",
+    "run-history": "実行履歴",
     "select-scheduled-time": "予定時刻を選択してください",
     "error": {
       "scheduled-time-must-be-in-the-future": "スケジュール時間は将来の時間である必要があります"

@@ -318,6 +318,8 @@
     "no-permission": "No permission to perform this action",
     "data-export-creator-only": "Only the issue creator can execute data export tasks",
     "scheduled-time": "Scheduled time",
+    "scheduled-at": "Scheduled at",
+    "run-history": "Run History",
     "select-scheduled-time": "Select scheduled time",
     "error": {
       "scheduled-time-must-be-in-the-future": "Scheduled time must be in the future"

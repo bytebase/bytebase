@@ -70,13 +70,43 @@
       </div>
     </div>
 
-    <!-- Task list content -->
-    <TaskList
-      :stage="selectedStage"
-      :rollout="rollout"
-      :filter-statuses="filterStatuses"
-      :readonly="!isStageCreated(selectedStage)"
-    />
+    <!-- Main content area: responsive layout -->
+    <div class="flex" :class="isWideScreen ? 'flex-row' : 'flex-col'">
+      <!-- Timeline: inline above on narrow screen -->
+       <div v-if="!isWideScreen && isStageCreated(selectedStage)" class="mb-4">
+         <StageTimeline
+           :stage="selectedStage"
+           :task-runs="taskRuns"
+           :is-inline="true"
+           class="border-y"
+         />
+
+       </div>
+
+      <!-- Task list content -->
+      <div class="flex-1 min-w-0">
+        <TaskList
+          :stage="selectedStage"
+          :rollout="rollout"
+          :filter-statuses="filterStatuses"
+          :readonly="!isStageCreated(selectedStage)"
+        />
+      </div>
+
+      <!-- Timeline: sidebar on wide screen (sticky) -->
+      <div
+        v-if="isWideScreen && isStageCreated(selectedStage)"
+        class="shrink-0 pr-4 self-start sticky top-0"
+      >
+        <div class="w-64 border rounded-lg">
+          <StageTimeline
+            :stage="selectedStage"
+            :task-runs="taskRuns"
+            :is-inline="false"
+          />
+        </div>
+      </div>
+    </div>
 
     <!-- Rollback drawer -->
     <TaskRunRollbackDrawer
@@ -95,6 +125,7 @@
 </template>
 
 <script lang="ts" setup>
+import { useMediaQuery } from "@vueuse/core";
 import { DatabaseBackupIcon, PlayIcon, PlusIcon } from "lucide-vue-next";
 import { NButton, NTag } from "naive-ui";
 import { computed, ref, toRef } from "vue";
@@ -105,6 +136,7 @@ import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { usePlanContextWithRollout } from "../../../logic";
 import TaskRunRollbackDrawer from "../TaskRunRollbackDrawer.vue";
 import { useRollbackableTasks } from "./composables/useRollbackableTasks";
+import StageTimeline from "./StageTimeline.vue";
 import TaskFilter from "./TaskFilter.vue";
 import TaskList from "./TaskList.vue";
 
@@ -121,6 +153,9 @@ defineEmits<{
 
 const environmentStore = useEnvironmentV1Store();
 const filterStatuses = ref<Task_Status[]>([]);
+
+// Responsive layout: sidebar on wide screen, inline on narrow
+const isWideScreen = useMediaQuery("(min-width: 1024px)");
 
 // Rollback functionality
 const { taskRuns } = usePlanContextWithRollout();
