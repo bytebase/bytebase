@@ -79,6 +79,8 @@ const (
 	SDLDuplicateColumnName                    Code = 252
 	SDLMultiplePrimaryKey                     Code = 253
 	SDLViewDependencyNotFound                 Code = 254
+	SDLDropOperation                          Code = 255
+	SDLReplaceOperation                       Code = 256
 
 	// 301 ～ 399 naming error code
 	// 301 table naming advisor error code.
