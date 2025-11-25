@@ -5,8 +5,8 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"maps"
 	"math"
-	"slices"
 	"sync"
 	"time"
 
@@ -84,11 +84,6 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 func (r *Runner) runOnce(ctx context.Context) {
-	risks, err := r.store.ListRisks(ctx)
-	if err != nil {
-		slog.Error("failed to list risks", log.BBError(err))
-		return
-	}
 	approvalSetting, err := r.store.GetWorkspaceApprovalSetting(ctx)
 	if err != nil {
 		slog.Error("failed to get workspace approval setting", log.BBError(err))
@@ -100,7 +95,7 @@ func (r *Runner) runOnce(ctx context.Context) {
 		if !ok {
 			return true
 		}
-		done, err := r.findApprovalTemplateForIssue(ctx, issue, risks, approvalSetting)
+		done, err := r.findApprovalTemplateForIssue(ctx, issue, approvalSetting)
 		if err != nil {
 			slog.Error("failed to find approval template for issue", slog.Int("issue", issue.UID), log.BBError(err))
 		}
@@ -127,35 +122,46 @@ func (r *Runner) retryFindApprovalTemplate(ctx context.Context) {
 	}
 }
 
-func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.IssueMessage, risks []*store.RiskMessage, approvalSetting *storepb.WorkspaceApprovalSetting) (bool, error) {
+func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.IssueMessage, approvalSetting *storepb.WorkspaceApprovalSetting) (bool, error) {
 	payload := issue.Payload
 	if payload.Approval != nil && payload.Approval.ApprovalFindingDone {
 		return true, nil
 	}
 
-	approvalTemplate, riskLevel, done, err := func() (*storepb.ApprovalTemplate, storepb.RiskLevel, bool, error) {
-		// no need to find if
-		// - feature is not enabled
+	approvalTemplate, done, err := func() (*storepb.ApprovalTemplate, bool, error) {
+		// no need to find if feature is not enabled
 		if r.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_APPROVAL_WORKFLOW) != nil {
 			// nolint:nilerr
-			return nil, 0, true, nil
+			return nil, true, nil
 		}
 
-		riskLevel, riskSource, done, err := r.getIssueRisk(ctx, issue, risks)
+		// Step 1: Determine approval source from issue type
+		approvalSource, err := r.getApprovalSourceFromIssue(ctx, issue)
 		if err != nil {
-			err = errors.Wrap(err, "failed to get issue risk level")
-			return nil, 0, false, err
+			return nil, false, errors.Wrap(err, "failed to get approval source from issue")
+		}
+		if approvalSource == storepb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED {
+			// Cannot determine source, no approval needed
+			return nil, true, nil
+		}
+
+		// Step 2: Build CEL variables for evaluation
+		celVarsList, done, err := r.buildCELVariablesForIssue(ctx, issue)
+		if err != nil {
+			return nil, false, errors.Wrap(err, "failed to build CEL variables for issue")
 		}
 		if !done {
-			return nil, 0, false, nil
+			// Not ready yet (e.g., waiting for plan check runs)
+			return nil, false, nil
 		}
 
-		approvalTemplate, err := getApprovalTemplate(approvalSetting, riskLevel, riskSource)
+		// Step 3: Find matching approval template
+		approvalTemplate, err := getApprovalTemplate(approvalSetting, approvalSource, celVarsList)
 		if err != nil {
-			return nil, 0, false, errors.Wrapf(err, "failed to get approval template, riskLevel: %v", riskLevel)
+			return nil, false, errors.Wrapf(err, "failed to get approval template for source: %v", approvalSource)
 		}
 
-		return approvalTemplate, riskLevel, true, nil
+		return approvalTemplate, true, nil
 	}()
 	if err != nil {
 		if updateErr := updateIssueApprovalPayload(ctx, r.store, issue, &storepb.IssuePayloadApproval{
@@ -182,7 +188,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 
 	payload.Approval = &storepb.IssuePayloadApproval{
 		ApprovalFindingDone: true,
-		RiskLevel:           riskLevel,
+		RiskLevel:           storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, // Risk level no longer calculated after 3.13
 		ApprovalTemplate:    approvalTemplate,
 		Approvers:           nil,
 	}
@@ -267,8 +273,23 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 	return true, nil
 }
 
-func getApprovalTemplate(approvalSetting *storepb.WorkspaceApprovalSetting, riskLevel storepb.RiskLevel, riskSource store.RiskSource) (*storepb.ApprovalTemplate, error) {
+// getApprovalTemplate finds the first matching approval template for the given source and CEL variables.
+// After the risk layer removal (3.13), approval rules are directly evaluated with full CEL context.
+// The rules are ordered by priority (HIGH risk rules first, then MODERATE, then LOW, then UNSPECIFIED).
+// First matching rule wins.
+//
+// Parameters:
+// - approvalSetting: workspace approval setting containing rules
+// - riskSource: the approval source enum (DDL, DML, CREATE_DATABASE, EXPORT_DATA, REQUEST_ROLE)
+// - celVarsList: list of CEL variable maps (one per task/component in the issue)
+//
+// For each rule filtered by source, we check if ANY of the celVars maps matches the condition.
+// This preserves the "maximum risk" behavior: if any task matches a high-priority rule, that template is used.
+func getApprovalTemplate(approvalSetting *storepb.WorkspaceApprovalSetting, riskSource storepb.WorkspaceApprovalSetting_Rule_Source, celVarsList []map[string]any) (*storepb.ApprovalTemplate, error) {
 	if len(approvalSetting.Rules) == 0 {
+		return nil, nil
+	}
+	if len(celVarsList) == 0 {
 		return nil, nil
 	}
 
@@ -276,83 +297,100 @@ func getApprovalTemplate(approvalSetting *storepb.WorkspaceApprovalSetting, risk
 	if err != nil {
 		return nil, err
 	}
+
+	// Rules are already ordered by priority (migration ensures this)
+	// First matching rule wins
 	for _, rule := range approvalSetting.Rules {
+		// Filter by source
+		if rule.Source != riskSource {
+			continue
+		}
+
+		// Empty condition means this rule always matches (fallback rule)
 		if rule.Condition == nil || rule.Condition.Expression == "" {
 			continue
 		}
+
+		// Special case: "true" expression always matches (fallback from UNSPECIFIED level)
+		if rule.Condition.Expression == "true" {
+			return rule.Template, nil
+		}
+
 		ast, issues := e.Compile(rule.Condition.Expression)
 		if issues != nil && issues.Err() != nil {
 			return nil, issues.Err()
 		}
 
-		prg, err := e.Program(ast)
+		prg, err := e.Program(ast, cel.EvalOptions(cel.OptPartialEval))
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to compile expression")
 		}
 
-		out, _, err := prg.Eval(map[string]any{
-			common.CELAttributeLevel:  riskLevel.String(),
-			common.CELAttributeSource: apiv1.ConvertToV1Source(riskSource).String(),
-		})
-		if err != nil {
-			return nil, err
-		}
-		if res, ok := out.Equal(celtypes.True).Value().(bool); ok && res {
-			return rule.Template, nil
+		// Check if ANY of the CEL variable maps matches this rule's condition
+		for _, celVars := range celVarsList {
+			vars, err := e.PartialVars(celVars)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to create partial vars")
+			}
+			out, _, err := prg.Eval(vars)
+			if err != nil {
+				// Evaluation error - continue to next celVars map
+				continue
+			}
+			if res, ok := out.Equal(celtypes.True).Value().(bool); ok && res {
+				return rule.Template, nil
+			}
 		}
 	}
 	return nil, nil
 }
 
-func (r *Runner) getIssueRisk(ctx context.Context, issue *store.IssueMessage, risks []*store.RiskMessage) (storepb.RiskLevel, store.RiskSource, bool, error) {
-	// sort by level DESC, higher risks go first.
-	slices.SortFunc(risks, func(a, b *store.RiskMessage) int {
-		if a.Level > b.Level {
-			return -1
-		} else if a.Level < b.Level {
-			return 1
-		}
-		return 0
-	})
-
+// buildCELVariablesForIssue builds the CEL variable maps for evaluating approval rules.
+// Returns a list of CEL variable maps (one per task/component), done flag, and error.
+// done=false means the caller should retry later (e.g., waiting for plan check runs).
+func (r *Runner) buildCELVariablesForIssue(ctx context.Context, issue *store.IssueMessage) ([]map[string]any, bool, error) {
 	switch issue.Type {
 	case storepb.Issue_GRANT_REQUEST:
-		return r.getGrantRequestIssueRisk(ctx, issue, risks)
+		return r.buildCELVariablesForGrantRequest(ctx, issue)
 	case storepb.Issue_DATABASE_CHANGE:
-		return r.getDatabaseGeneralIssueRisk(ctx, issue, risks)
+		return r.buildCELVariablesForDatabaseChange(ctx, issue)
 	case storepb.Issue_DATABASE_EXPORT:
-		return r.getDatabaseDataExportIssueRisk(ctx, issue, risks)
+		return r.buildCELVariablesForDataExport(ctx, issue)
 	default:
-		return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, errors.Errorf("unknown issue type %v", issue.Type)
+		return nil, false, errors.Errorf("unknown issue type %v", issue.Type)
 	}
 }
 
-func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.IssueMessage, risks []*store.RiskMessage) (storepb.RiskLevel, store.RiskSource, bool, error) {
+// buildCELVariablesForDatabaseChange builds CEL variables for DATABASE_CHANGE issues.
+// This includes DDL and DML operations.
+func (r *Runner) buildCELVariablesForDatabaseChange(ctx context.Context, issue *store.IssueMessage) ([]map[string]any, bool, error) {
 	if issue.PlanUID == nil {
-		return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, errors.Errorf("expected plan UID in issue %v", issue.UID)
+		return nil, false, errors.Errorf("expected plan UID in issue %v", issue.UID)
 	}
 	plan, err := r.store.GetPlan(ctx, &store.FindPlanMessage{UID: issue.PlanUID})
 	if err != nil {
-		return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to get plan %v", *issue.PlanUID)
+		return nil, false, errors.Wrapf(err, "failed to get plan %v", *issue.PlanUID)
 	}
 	if plan == nil {
-		return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, errors.Errorf("plan %v not found", *issue.PlanUID)
+		return nil, false, errors.Errorf("plan %v not found", *issue.PlanUID)
 	}
 
-	// Conclude risk source from task types.
+	// Check if we can conclude the operation type
 	riskSource := getRiskSourceFromPlan(plan.Config)
-	// Cannot conclude risk source.
 	if riskSource == store.RiskSourceUnknown {
-		return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, true, nil
+		// Cannot determine source, return done=true with empty list (no approval needed)
+		return []map[string]any{{}}, true, nil
 	}
 
+	// Check plan check runs status
 	planCheckRuns, err := r.store.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{
 		PlanUID: &plan.UID,
 		Type:    &[]store.PlanCheckRunType{store.PlanCheckDatabaseStatementSummaryReport},
 	})
 	if err != nil {
-		return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to list plan check runs for plan %v", plan.UID)
+		return nil, false, errors.Wrapf(err, "failed to list plan check runs for plan %v", plan.UID)
 	}
+
 	type Key struct {
 		InstanceID   string
 		DatabaseName string
@@ -366,61 +404,34 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 		latestPlanCheckRun[key] = run
 	}
 
-	// Get the max risk level of the same risk source.
-	// risks is sorted by level DESC, so we just need to return the 1st matched risk.
-	var maxRiskSourceRiskLevel storepb.RiskLevel
-	for _, risk := range risks {
-		if !risk.Active {
-			continue
-		}
-		if risk.Source != riskSource {
-			continue
-		}
-		maxRiskSourceRiskLevel = risk.Level
-		break
-	}
-
-	// If any plan check run is skipped because of large SQL,
-	// return the max risk level in the risks of the same risk source.
-	for _, run := range latestPlanCheckRun {
-		for _, result := range run.Result.GetResults() {
-			if result.GetCode() == common.SizeExceeded.Int32() {
-				return maxRiskSourceRiskLevel, riskSource, true, nil
-			}
-		}
-	}
-
+	// Wait for plan check runs to complete
 	var planCheckRunDone int
-	// the latest plan check run is not done yet, return done=false
 	for _, run := range latestPlanCheckRun {
 		if run.Status == store.PlanCheckRunStatusDone {
 			planCheckRunDone++
 		}
 	}
 	planCheckRunCount := len(latestPlanCheckRun)
-	// We have less than 5 planCheckRuns in total.
-	// We wait for all of them to finish.
 	if planCheckRunCount < common.MinimumCompletedPlanCheckRun && planCheckRunCount != planCheckRunDone {
-		return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, nil
+		return nil, false, nil // Not ready yet, retry later
 	}
-	// We have 5 or more planCheckRuns in total.
-	// We need at least 5 completed plan check run.
 	if planCheckRunCount >= common.MinimumCompletedPlanCheckRun && planCheckRunDone < common.MinimumCompletedPlanCheckRun {
-		return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, nil
+		return nil, false, nil // Not ready yet, retry later
 	}
 
+	// Build CEL variables for each task
 	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, r.store, r.sheetManager, r.dbFactory, plan.Config.GetSpecs(), plan.Config.GetDeployment(), issue.Project)
 	if err != nil {
-		return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get pipeline create")
+		return nil, false, errors.Wrap(err, "failed to get pipeline create")
 	}
 
-	var maxRiskLevel storepb.RiskLevel
+	var celVarsList []map[string]any
 	for _, task := range pipelineCreate.Tasks {
 		instance, err := r.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 			ResourceID: &task.InstanceID,
 		})
 		if err != nil {
-			return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to get instance %v", task.InstanceID)
+			return nil, false, errors.Wrapf(err, "failed to get instance %v", task.InstanceID)
 		}
 		if instance.Deleted {
 			continue
@@ -431,7 +442,7 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 		if sheetUID != 0 {
 			statement, err := r.store.GetSheetStatementByID(ctx, sheetUID)
 			if err != nil {
-				return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, true, errors.Wrapf(err, "failed to get statement in sheet %v", sheetUID)
+				return nil, true, errors.Wrapf(err, "failed to get statement in sheet %v", sheetUID)
 			}
 			taskStatement = statement
 		}
@@ -447,7 +458,7 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 				DatabaseName: task.DatabaseName,
 			})
 			if err != nil {
-				return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, err
+				return nil, false, err
 			}
 			databaseName = database.DatabaseName
 			if database.EffectiveEnvironmentID != nil {
@@ -455,87 +466,96 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 			}
 		}
 
-		commonArgs := map[string]any{
+		// Base CEL variables
+		celVars := map[string]any{
 			common.CELAttributeResourceEnvironmentID: environmentID,
 			common.CELAttributeResourceProjectID:     issue.Project.ResourceID,
 			common.CELAttributeResourceInstanceID:    instance.ResourceID,
 			common.CELAttributeResourceDatabaseName:  databaseName,
-			// convert to string type otherwise cel-go will complain that storepb.Engine is not string type.
-			common.CELAttributeResourceDBEngine: instance.Metadata.GetEngine().String(),
-			common.CELAttributeStatementText:    taskStatement,
+			common.CELAttributeResourceDBEngine:      instance.Metadata.GetEngine().String(),
+			common.CELAttributeStatementText:         taskStatement,
 		}
-		risk, err := func() (storepb.RiskLevel, error) {
-			// The summary report is not always available.
-			// Use the greatest risk.
-			var greatestRiskLevel storepb.RiskLevel
-			riskLevel, err := apiv1.CalculateRiskLevelWithOptionalSummaryReport(ctx, risks, commonArgs, riskSource, nil)
-			if err != nil {
-				return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, err
-			}
-			if riskLevel > greatestRiskLevel {
-				greatestRiskLevel = riskLevel
-			}
 
-			if run, ok := latestPlanCheckRun[Key{
-				InstanceID:   instance.ResourceID,
-				DatabaseName: databaseName,
-			}]; ok {
-				for _, result := range run.Result.Results {
-					report := result.GetSqlSummaryReport()
-					if report == nil {
-						continue
-					}
-					riskLevel, err := apiv1.CalculateRiskLevelWithOptionalSummaryReport(ctx, risks, commonArgs, riskSource, report)
-					if err != nil {
-						return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, err
-					}
-					if riskLevel > greatestRiskLevel {
-						greatestRiskLevel = riskLevel
+		// Add summary report data if available
+		if run, ok := latestPlanCheckRun[Key{
+			InstanceID:   instance.ResourceID,
+			DatabaseName: databaseName,
+		}]; ok {
+			for _, result := range run.Result.Results {
+				report := result.GetSqlSummaryReport()
+				if report == nil {
+					continue
+				}
+
+				// Calculate table rows from changed resources
+				var tableRows int64
+				var tableNames []string
+				for _, db := range report.GetChangedResources().GetDatabases() {
+					for _, sc := range db.GetSchemas() {
+						for _, tb := range sc.GetTables() {
+							tableRows += tb.GetTableRows()
+							tableNames = append(tableNames, tb.Name)
+						}
 					}
 				}
-			}
-			return greatestRiskLevel, nil
-		}()
-		if err != nil {
-			return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to evaluate risk expression for risk source %v", riskSource)
-		}
 
-		if maxRiskLevel < risk {
-			maxRiskLevel = risk
-		}
-		if maxRiskLevel == maxRiskSourceRiskLevel {
-			return maxRiskLevel, riskSource, true, nil
+				celVars[common.CELAttributeStatementAffectedRows] = report.AffectedRows
+				celVars[common.CELAttributeStatementTableRows] = tableRows
+
+				// Create CEL variables for each statement type and table combination
+				// to ensure we match the most appropriate approval rule
+				if len(report.StatementTypes) > 0 && len(tableNames) > 0 {
+					for _, statementType := range report.StatementTypes {
+						for _, tableName := range tableNames {
+							vars := maps.Clone(celVars)
+							vars[common.CELAttributeStatementSQLType] = statementType
+							vars[common.CELAttributeResourceTableName] = tableName
+							celVarsList = append(celVarsList, vars)
+						}
+					}
+				} else if len(report.StatementTypes) > 0 {
+					for _, statementType := range report.StatementTypes {
+						vars := maps.Clone(celVars)
+						vars[common.CELAttributeStatementSQLType] = statementType
+						celVarsList = append(celVarsList, vars)
+					}
+				} else {
+					celVarsList = append(celVarsList, celVars)
+				}
+				break // Use first report
+			}
+		} else {
+			celVarsList = append(celVarsList, celVars)
 		}
 	}
 
-	return maxRiskLevel, riskSource, true, nil
+	// If no tasks, return empty list (no approval needed)
+	if len(celVarsList) == 0 {
+		celVarsList = append(celVarsList, map[string]any{})
+	}
+
+	return celVarsList, true, nil
 }
 
-func (r *Runner) getDatabaseDataExportIssueRisk(ctx context.Context, issue *store.IssueMessage, risks []*store.RiskMessage) (storepb.RiskLevel, store.RiskSource, bool, error) {
+// buildCELVariablesForDataExport builds CEL variables for DATABASE_EXPORT issues.
+func (r *Runner) buildCELVariablesForDataExport(ctx context.Context, issue *store.IssueMessage) ([]map[string]any, bool, error) {
 	if issue.PlanUID == nil {
-		return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, errors.Errorf("expected plan UID in issue %v", issue.UID)
+		return nil, false, errors.Errorf("expected plan UID in issue %v", issue.UID)
 	}
 	plan, err := r.store.GetPlan(ctx, &store.FindPlanMessage{UID: issue.PlanUID})
 	if err != nil {
-		return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to get plan %v", *issue.PlanUID)
+		return nil, false, errors.Wrapf(err, "failed to get plan %v", *issue.PlanUID)
 	}
 	if plan == nil {
-		return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, errors.Errorf("plan %v not found", *issue.PlanUID)
+		return nil, false, errors.Errorf("plan %v not found", *issue.PlanUID)
 	}
 
 	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, r.store, r.sheetManager, r.dbFactory, plan.Config.GetSpecs(), plan.Config.GetDeployment(), issue.Project)
 	if err != nil {
-		return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get pipeline create")
+		return nil, false, errors.Wrap(err, "failed to get pipeline create")
 	}
 
-	riskSource := store.RiskSourceDatabaseDataExport
-
-	e, err := cel.NewEnv(common.RiskFactors...)
-	if err != nil {
-		return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, err
-	}
-
-	var maxRiskLevel storepb.RiskLevel
+	var celVarsList []map[string]any
 	for _, task := range pipelineCreate.Tasks {
 		if task.Type != storepb.Task_DATABASE_EXPORT {
 			continue
@@ -544,7 +564,7 @@ func (r *Runner) getDatabaseDataExportIssueRisk(ctx context.Context, issue *stor
 			ResourceID: &task.InstanceID,
 		})
 		if err != nil {
-			return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to get instance %v", task.InstanceID)
+			return nil, false, errors.Wrapf(err, "failed to get instance %v", task.InstanceID)
 		}
 		if instance.Deleted {
 			continue
@@ -555,171 +575,101 @@ func (r *Runner) getDatabaseDataExportIssueRisk(ctx context.Context, issue *stor
 			DatabaseName: task.DatabaseName,
 		})
 		if err != nil {
-			return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, err
-		}
-		databaseName := database.DatabaseName
-		environmentID := database.EffectiveEnvironmentID
-
-		risk, err := func() (storepb.RiskLevel, error) {
-			for _, risk := range risks {
-				if !risk.Active {
-					continue
-				}
-				if risk.Source != riskSource {
-					continue
-				}
-				if risk.Expression == nil || risk.Expression.Expression == "" {
-					continue
-				}
-				ast, issues := e.Parse(risk.Expression.Expression)
-				if issues != nil && issues.Err() != nil {
-					return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, errors.Errorf("failed to parse expression: %v", issues.Err())
-				}
-				prg, err := e.Program(ast, cel.EvalOptions(cel.OptPartialEval))
-				if err != nil {
-					return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, err
-				}
-				envID := ""
-				if environmentID != nil {
-					envID = *environmentID
-				}
-				args := map[string]any{
-					common.CELAttributeResourceEnvironmentID: envID,
-					common.CELAttributeResourceProjectID:     issue.Project.ResourceID,
-					common.CELAttributeResourceInstanceID:    instance.ResourceID,
-					common.CELAttributeResourceDatabaseName:  databaseName,
-					common.CELAttributeResourceDBEngine:      instance.Metadata.GetEngine().String(),
-				}
-
-				vars, err := e.PartialVars(args)
-				if err != nil {
-					return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to get vars")
-				}
-				out, _, err := prg.Eval(vars)
-				if err != nil {
-					return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to eval expression")
-				}
-				if res, ok := out.Equal(celtypes.True).Value().(bool); ok && res {
-					return risk.Level, nil
-				}
-			}
-			return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, nil
-		}()
-		if err != nil {
-			return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to evaluate risk expression for risk source %v", riskSource)
+			return nil, false, err
 		}
 
-		if maxRiskLevel < risk {
-			maxRiskLevel = risk
+		envID := ""
+		if database.EffectiveEnvironmentID != nil {
+			envID = *database.EffectiveEnvironmentID
 		}
-		if maxRiskLevel == storepb.RiskLevel_HIGH {
-			return maxRiskLevel, riskSource, true, nil
+
+		celVars := map[string]any{
+			common.CELAttributeResourceEnvironmentID: envID,
+			common.CELAttributeResourceProjectID:     issue.Project.ResourceID,
+			common.CELAttributeResourceInstanceID:    instance.ResourceID,
+			common.CELAttributeResourceDatabaseName:  database.DatabaseName,
+			common.CELAttributeResourceDBEngine:      instance.Metadata.GetEngine().String(),
 		}
+		celVarsList = append(celVarsList, celVars)
 	}
 
-	return maxRiskLevel, riskSource, true, nil
+	if len(celVarsList) == 0 {
+		celVarsList = append(celVarsList, map[string]any{})
+	}
+
+	return celVarsList, true, nil
 }
 
-func (r *Runner) getGrantRequestIssueRisk(ctx context.Context, issue *store.IssueMessage, risks []*store.RiskMessage) (storepb.RiskLevel, store.RiskSource, bool, error) {
+// buildCELVariablesForGrantRequest builds CEL variables for GRANT_REQUEST issues.
+func (r *Runner) buildCELVariablesForGrantRequest(ctx context.Context, issue *store.IssueMessage) ([]map[string]any, bool, error) {
 	payload := issue.Payload
 	if payload.GrantRequest == nil {
-		return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, errors.New("grant request payload not found")
-	}
-
-	// fast path, no risks so return the DEFAULT risk level
-	if len(risks) == 0 {
-		return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskRequestRole, true, nil
-	}
-
-	e, err := cel.NewEnv(common.RiskFactors...)
-	if err != nil {
-		return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, err
+		return nil, false, errors.New("grant request payload not found")
 	}
 
 	factors, err := common.GetQueryExportFactors(payload.GetGrantRequest().GetCondition().GetExpression())
 	if err != nil {
-		return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get query export factors")
-	}
-	// Default to max float64 if expiration is not set. AKA no expiration.
-	expirationDays := math.MaxFloat64
-	if payload.GrantRequest.Expiration != nil {
-		expirationDays = payload.GrantRequest.Expiration.AsDuration().Hours() / 24
+		return nil, false, errors.Wrap(err, "failed to get query export factors")
 	}
 
+	// Default to max int if expiration is not set (no expiration)
+	expirationDays := int64(math.MaxInt32)
+	if payload.GrantRequest.Expiration != nil {
+		expirationDays = int64(payload.GrantRequest.Expiration.AsDuration().Hours() / 24)
+	}
+
+	baseVars := map[string]any{
+		common.CELAttributeResourceProjectID:     issue.Project.ResourceID,
+		common.CELAttributeRequestExpirationDays: expirationDays,
+		common.CELAttributeRequestRole:           payload.GrantRequest.Role,
+	}
+
+	// If no specific databases, create one entry per environment
+	if len(factors.Databases) == 0 {
+		environments, err := r.store.GetEnvironmentSetting(ctx)
+		if err != nil {
+			return nil, false, err
+		}
+		var celVarsList []map[string]any
+		for _, environment := range environments.GetEnvironments() {
+			celVars := make(map[string]any)
+			for k, v := range baseVars {
+				celVars[k] = v
+			}
+			celVars[common.CELAttributeResourceEnvironmentID] = environment.Id
+			celVarsList = append(celVarsList, celVars)
+		}
+		if len(celVarsList) == 0 {
+			celVarsList = append(celVarsList, baseVars)
+		}
+		return celVarsList, true, nil
+	}
+
+	// Build one entry per database
 	databaseMap, err := r.getDatabaseMap(ctx, factors.Databases)
 	if err != nil {
-		return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to retrieve database map")
+		return nil, false, errors.Wrap(err, "failed to retrieve database map")
 	}
 
-	// Get the max risk level of the same risk source.
-	// risks is sorted by level DESC, so we just need to return the 1st matched risk.
-	for _, risk := range risks {
-		if !risk.Active {
-			continue
+	var celVarsList []map[string]any
+	for _, database := range databaseMap {
+		celVars := make(map[string]any)
+		for k, v := range baseVars {
+			celVars[k] = v
 		}
-		if risk.Source != store.RiskRequestRole {
-			continue
+		if database.EffectiveEnvironmentID != nil {
+			celVars[common.CELAttributeResourceEnvironmentID] = *database.EffectiveEnvironmentID
+		} else {
+			celVars[common.CELAttributeResourceEnvironmentID] = ""
 		}
-		if risk.Expression == nil || risk.Expression.Expression == "" {
-			continue
-		}
-
-		ast, issues := e.Parse(risk.Expression.Expression)
-		if issues != nil && issues.Err() != nil {
-			return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, errors.Errorf("failed to parse expression: %v", issues.Err())
-		}
-		prg, err := e.Program(ast, cel.EvalOptions(cel.OptPartialEval))
-		if err != nil {
-			return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, err
-		}
-
-		args := map[string]any{
-			common.CELAttributeResourceProjectID:     issue.Project.ResourceID,
-			common.CELAttributeRequestExpirationDays: expirationDays,
-			common.CELAttributeRequestRole:           payload.GrantRequest.Role,
-		}
-		if len(factors.Databases) == 0 {
-			environments, err := r.store.GetEnvironmentSetting(ctx)
-			if err != nil {
-				return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, err
-			}
-			for _, environment := range environments.GetEnvironments() {
-				args[common.CELAttributeResourceEnvironmentID] = environment.Id
-				vars, err := e.PartialVars(args)
-				if err != nil {
-					return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, err
-				}
-				out, _, err := prg.Eval(vars)
-				if err != nil {
-					return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, err
-				}
-				if res, ok := out.Equal(celtypes.True).Value().(bool); ok && res {
-					return risk.Level, store.RiskRequestRole, true, nil
-				}
-			}
-		}
-
-		for _, database := range databaseMap {
-			if database.EffectiveEnvironmentID != nil {
-				args[common.CELAttributeResourceEnvironmentID] = *database.EffectiveEnvironmentID
-			} else {
-				args[common.CELAttributeResourceEnvironmentID] = ""
-			}
-			vars, err := e.PartialVars(args)
-			if err != nil {
-				return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, err
-			}
-			out, _, err := prg.Eval(vars)
-			if err != nil {
-				return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, err
-			}
-			if res, ok := out.Equal(celtypes.True).Value().(bool); ok && res {
-				return risk.Level, store.RiskRequestRole, true, nil
-			}
-		}
+		celVarsList = append(celVarsList, celVars)
 	}
 
-	return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskRequestRole, true, nil
+	if len(celVarsList) == 0 {
+		celVarsList = append(celVarsList, baseVars)
+	}
+
+	return celVarsList, true, nil
 }
 
 func (r *Runner) getDatabaseMap(ctx context.Context, databases []string) (map[string]*store.DatabaseMessage, error) {
@@ -775,6 +725,58 @@ func getRiskSourceFromPlan(config *storepb.PlanConfig) store.RiskSource {
 		}
 	}
 	return store.RiskSourceUnknown
+}
+
+// getApprovalSourceFromPlan determines the approval rule source enum from the plan config.
+// This is used after the risk layer removal to directly filter approval rules by source.
+func getApprovalSourceFromPlan(config *storepb.PlanConfig) storepb.WorkspaceApprovalSetting_Rule_Source {
+	for _, spec := range config.GetSpecs() {
+		switch v := spec.Config.(type) {
+		case *storepb.PlanConfig_Spec_CreateDatabaseConfig:
+			return storepb.WorkspaceApprovalSetting_Rule_CREATE_DATABASE
+		case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
+			switch v.ChangeDatabaseConfig.Type {
+			case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE:
+				switch v.ChangeDatabaseConfig.MigrateType {
+				case storepb.MigrationType_DML:
+					return storepb.WorkspaceApprovalSetting_Rule_DML
+				default:
+					return storepb.WorkspaceApprovalSetting_Rule_DDL
+				}
+			case storepb.PlanConfig_ChangeDatabaseConfig_SDL:
+				return storepb.WorkspaceApprovalSetting_Rule_DDL
+			default:
+				return storepb.WorkspaceApprovalSetting_Rule_DDL
+			}
+		case *storepb.PlanConfig_Spec_ExportDataConfig:
+			return storepb.WorkspaceApprovalSetting_Rule_EXPORT_DATA
+		}
+	}
+	return storepb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED
+}
+
+// getApprovalSourceFromIssue determines the approval rule source enum from the issue type.
+func (r *Runner) getApprovalSourceFromIssue(ctx context.Context, issue *store.IssueMessage) (storepb.WorkspaceApprovalSetting_Rule_Source, error) {
+	switch issue.Type {
+	case storepb.Issue_GRANT_REQUEST:
+		return storepb.WorkspaceApprovalSetting_Rule_REQUEST_ROLE, nil
+	case storepb.Issue_DATABASE_CHANGE:
+		if issue.PlanUID == nil {
+			return storepb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED, errors.Errorf("expected plan UID in issue %v", issue.UID)
+		}
+		plan, err := r.store.GetPlan(ctx, &store.FindPlanMessage{UID: issue.PlanUID})
+		if err != nil {
+			return storepb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED, errors.Wrapf(err, "failed to get plan %v", *issue.PlanUID)
+		}
+		if plan == nil {
+			return storepb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED, errors.Errorf("plan %v not found", *issue.PlanUID)
+		}
+		return getApprovalSourceFromPlan(plan.Config), nil
+	case storepb.Issue_DATABASE_EXPORT:
+		return storepb.WorkspaceApprovalSetting_Rule_EXPORT_DATA, nil
+	default:
+		return storepb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED, errors.Errorf("unknown issue type %v", issue.Type)
+	}
 }
 
 func updateIssueApprovalPayload(ctx context.Context, s *store.Store, issue *store.IssueMessage, approval *storepb.IssuePayloadApproval) error {

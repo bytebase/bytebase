@@ -1,8 +1,9 @@
 # Remove Risk Intermediate Layer
 
 **Date:** 2025-11-25
-**Status:** Draft
+**Status:** In Progress - Backend Complete, Frontend Pending
 **Breaking Change:** Phased - Phase 1 is non-breaking, Phase 3 is breaking
+**Version:** 3.13.0
 
 ## Implementation Order
 
@@ -611,43 +612,60 @@ backend/migrator/migration/LATEST.sql - Remove risk table definition
 
 ## Implementation Checklist
 
-### Step 1: Data Migration (First)
+### Step 1: Data Migration (First) - ✅ COMPLETED
 
 - [x] Update proto definitions - add source field to WorkspaceApprovalSetting.Rule
-- [ ] Update proto comments - document new CEL variables (proto/v1/v1/setting_service.proto:254)
-- [ ] Run `buf generate` to update generated code
-- [ ] Write migration Go code:
-  - [ ] Load all risks and approval rules
-  - [ ] Parse existing approval rule conditions to find source + level references
-  - [ ] Expand each rule: create one rule per matching risk
-  - [ ] Sort by risk level DESC to preserve "first match wins" semantics
-  - [ ] Save updated approval rules to WORKSPACE_APPROVAL setting
+- [x] Update proto comments - document new CEL variables
+- [x] Run `buf generate` to update generated code
+- [x] Write migration SQL code:
+  - [x] Created `backend/migrator/migration/3.13/0000##migrate_risk_to_approval_rules.sql`
+  - [x] Load all risks and approval rules using PostgreSQL CTEs and helper functions
+  - [x] Parse existing approval rule conditions to find source + level references
+  - [x] Expand each rule: create one rule per matching risk
+  - [x] Sort by risk level DESC to preserve "first match wins" semantics
+  - [x] Save updated approval rules to WORKSPACE_APPROVAL setting
+- [x] Updated `backend/migrator/migrator_test.go` to expect version 3.13.0
 - [ ] Test migration with real data from production
 - [ ] Verify migrated rules preserve exact same behavior
 
-### Step 2: Backend Update (Second - Immediate Focus)
+### Step 2: Backend Update (Second) - ✅ COMPLETED
 
-- [ ] Update approval runner logic:
-  - [ ] Add `getApprovalSourceFromIssue` to determine source from issue/plan type
-  - [ ] Extract CEL variable building from `getIssueRisk` into `buildCELVariablesForIssue`
-  - [ ] Update `getApprovalTemplate` to filter by source enum and evaluate with full CEL context
-  - [ ] Remove `getIssueRisk` and related functions (no longer needed)
-- [ ] Update CEL environment:
-  - [ ] Expand ApprovalFactors to include all RiskFactors (or alias them)
-  - [ ] Remove deprecated level/source from ApprovalFactors
-- [ ] Write tests:
-  - [ ] Test approval rule matching with various source types
-  - [ ] Test CEL evaluation with full variable context
-  - [ ] Test rule ordering (first match wins)
-- [ ] Verify approval finding works correctly with migrated data
+- [x] Update approval runner logic (`backend/runner/approval/runner.go`):
+  - [x] Add `getApprovalSourceFromIssue` to determine source from issue/plan type
+  - [x] Add `getApprovalSourceFromPlan` to map plan config to approval source enum
+  - [x] Extract CEL variable building into `buildCELVariablesForIssue`
+  - [x] Add `buildCELVariablesForDatabaseChange`, `buildCELVariablesForDataExport`, `buildCELVariablesForGrantRequest`
+  - [x] Update `getApprovalTemplate` to filter by source enum and evaluate with full CEL context
+  - [x] Remove `getIssueRisk` and related functions (no longer needed)
+- [x] Update CEL environment (`backend/common/cel.go`):
+  - [x] Expand ApprovalFactors to include all RiskFactors
+  - [x] Added comment explaining post-3.13 change
+- [x] Fix pre-existing bugs:
+  - [x] Removed non-existent `ApprovalTemplate.Id` field references in `issue_service_converter.go` and `setting_service.go`
+  - [x] Added `Source` field to approval rule conversion in `setting_service.go`
+- [x] Write tests:
+  - [x] Updated `backend/tests/risk_calculation_test.go` → `TestApprovalRuleMatching`
+  - [x] Test approval rule matching with various source types
+  - [x] Test approval finding completes without errors
+- [x] Build passes: `go build -ldflags "-w -s" -p=16 -o ./bytebase-build/bytebase ./backend/bin/server/main.go`
+- [x] Lint passes: `golangci-lint run --allow-parallel-runners ./backend/...`
 
-### Step 3: Frontend Update (Third)
+### Step 3: Frontend Update (Third) - PENDING
 
 - [ ] Update approval rule editor:
+  - [ ] Read `source` field directly from rule (not parse from CEL)
   - [ ] Add source dropdown field (DDL, DML, CREATE_DATABASE, EXPORT_DATA, REQUEST_ROLE)
+  - [ ] Enable full CEL expression editing for conditions
   - [ ] Document available CEL variables in UI (resource.*, statement.*, request.*)
-  - [ ] Remove old format references (source/level string variables)
-  - [ ] Update examples to show new format
+  - [ ] Remove risk level grid UI (RulesSection.vue currently shows source × level grid)
+  - [ ] Change to list-based UI showing: source + condition → approval flow
+- [ ] Update `frontend/src/utils/workspaceApprovalSetting.ts`:
+  - [ ] Update `resolveLocalApprovalConfig` to read source field from rule
+  - [ ] Update `buildWorkspaceApprovalSetting` to set source field on rule
+  - [ ] Remove `resolveSourceExpr` and `resolveLevelExpr` (source now from proto field)
+- [ ] Update type definitions in `frontend/src/types/workspaceApprovalSetting.ts`:
+  - [ ] Remove `level` from `ParsedApprovalRule` type
+  - [ ] Add CEL condition to `ParsedApprovalRule` or `LocalApprovalRule`
 - [ ] Update i18n strings
 - [ ] Test creating/editing approval rules with new format
 
