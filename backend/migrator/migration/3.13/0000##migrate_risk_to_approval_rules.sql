@@ -72,25 +72,33 @@ CREATE OR REPLACE FUNCTION pg_temp.cel_matches_source_level(
 )
 RETURNS boolean AS $$
 DECLARE
-    source_match boolean;
-    level_match boolean;
+    clause text;
+    source_in_clause boolean;
+    level_in_clause boolean;
 BEGIN
-    -- Check if the expression references this source
-    -- Handle both source == "DDL" and source == 'DDL' patterns
-    source_match := (
-        cel_expr LIKE '%source == "' || source_val || '"%'
-        OR cel_expr LIKE '%source == ''' || source_val || '''%'
-    );
+    -- Split expression by '||' (OR operator) and check each clause
+    -- For a match, source and level must appear TOGETHER in the same AND clause
+    FOR clause IN SELECT unnest(string_to_array(cel_expr, '||'))
+    LOOP
+        -- Check if this clause contains the source
+        source_in_clause := (
+            clause LIKE '%source == "' || source_val || '"%'
+            OR clause LIKE '%source == ''' || source_val || '''%'
+        );
 
-    -- Check if the expression references this level
-    level_match := (
-        cel_expr LIKE '%level == "' || level_val || '"%'
-        OR cel_expr LIKE '%level == ''' || level_val || '''%'
-    );
+        -- Check if this clause contains the level
+        level_in_clause := (
+            clause LIKE '%level == "' || level_val || '"%'
+            OR clause LIKE '%level == ''' || level_val || '''%'
+        );
 
-    -- For a match, we need both source and level to be referenced together
-    -- This is a simplified check; a full CEL parser would be needed for complex expressions
-    RETURN source_match AND level_match;
+        -- If both source and level are in the same clause, it's a match
+        IF source_in_clause AND level_in_clause THEN
+            RETURN true;
+        END IF;
+    END LOOP;
+
+    RETURN false;
 END;
 $$ LANGUAGE plpgsql;
 
