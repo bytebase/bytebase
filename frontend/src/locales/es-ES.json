@@ -318,6 +318,8 @@
     "no-permission": "No hay permiso para realizar esta acción",
     "data-export-creator-only": "Sólo el creador del problema puede ejecutar tareas de exportación de datos",
     "scheduled-time": "Hora programada",
+    "scheduled-at": "Programado en",
+    "run-history": "Historial de ejecución",
     "select-scheduled-time": "Seleccionar hora programada",
     "error": {
       "scheduled-time-must-be-in-the-future": "La hora programada debe ser en el futuro"

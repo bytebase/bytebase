@@ -1,8 +1,8 @@
 <template>
   <div
-    class="task-toolbar sticky top-0 z-10 px-4 py-3 transition-colors bg-blue-100"
+    class="task-toolbar sticky top-0 z-10 px-4"
   >
-    <div class="flex items-center justify-between">
+    <div class="flex items-center justify-between border px-2 py-1 rounded-lg border-blue-200 bg-blue-100">
       <!-- Left section -->
       <div class="flex items-center gap-x-3">
         <!-- Select all checkbox -->

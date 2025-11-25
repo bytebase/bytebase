@@ -96,7 +96,7 @@ export const useTaskTiming = (
   };
 };
 
-const formatDuration = (durationMs: number): string => {
+export const formatDuration = (durationMs: number): string => {
   const seconds = Math.floor(durationMs / 1000);
   const minutes = Math.floor(seconds / 60);
   const hours = Math.floor(minutes / 60);
