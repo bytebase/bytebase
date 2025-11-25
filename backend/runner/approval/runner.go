@@ -393,7 +393,7 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 	var planCheckRunDone int
 	// the latest plan check run is not done yet, return done=false
 	for _, run := range latestPlanCheckRun {
-		if run.Status == store.PlanCheckRunStatusDone {
+		if run.Status != store.PlanCheckRunStatusRunning {
 			planCheckRunDone++
 		}
 	}
