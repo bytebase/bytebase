@@ -46,18 +46,6 @@ export const isTaskRunning = (task: Task): boolean => {
 };
 
 /**
- * Get border and background CSS classes for a task based on its status
- */
-export const getTaskBorderClass = (status: Task_Status): string => {
-  switch (status) {
-    case Task_Status.FAILED:
-      return "border-red-300";
-    default:
-      return "border-gray-300";
-  }
-};
-
-/**
  * Create a Map of task status to sort priority based on TASK_STATUS_FILTERS order.
  * This ensures a single source of truth for task ordering.
  *

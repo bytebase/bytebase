@@ -2,6 +2,7 @@ import type { ComputedRef } from "vue";
 import { computed } from "vue";
 import type { Task, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import { formatDuration } from "./useTaskRunUtils";
 
 export type TimingType = "scheduled" | "running" | "completed" | "none";
 
@@ -94,22 +95,4 @@ export const useTaskTiming = (
     duration,
     scheduledTime,
   };
-};
-
-export const formatDuration = (durationMs: number): string => {
-  const seconds = Math.floor(durationMs / 1000);
-  const minutes = Math.floor(seconds / 60);
-  const hours = Math.floor(minutes / 60);
-
-  if (hours > 0) {
-    const remainingMinutes = minutes % 60;
-    return `${hours}h ${remainingMinutes}m`;
-  }
-
-  if (minutes > 0) {
-    const remainingSeconds = seconds % 60;
-    return `${minutes}m ${remainingSeconds}s`;
-  }
-
-  return `${seconds}s`;
 };

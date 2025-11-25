@@ -3,7 +3,6 @@
     <!-- Header -->
     <div
       class="flex items-center justify-between px-3 py-2"
-      :class="[isExpanded && 'border-b']"
       @click="isInline && (isCollapsed = !isCollapsed)"
     >
       <div class="flex items-center gap-2">
@@ -22,10 +21,27 @@
       </div>
     </div>
 
+    <!-- Rollback entry -->
+    <div
+      v-if="rollbackableTaskRuns.length > 0"
+      class="px-3 pb-3"
+    >
+      <NButton
+        size="small"
+        text
+        @click="showRollbackDrawer = true"
+      >
+        <template #icon>
+          <DatabaseBackupIcon :size="16" />
+        </template>
+        {{ $t("task-run.rollback.available", rollbackableTaskRuns.length) }}
+      </NButton>
+    </div>
+
     <!-- Timeline entries: always show in sidebar mode, toggle in inline mode -->
     <div
       v-if="isExpanded"
-      class="overflow-y-auto px-3 py-3"
+      class="overflow-y-auto px-3 pt-1 pb-3"
       :class="isInline ? 'max-h-48' : 'max-h-[calc(100vh-300px)]'"
     >
       <div
@@ -98,13 +114,13 @@
             </div>
             <!-- Duration and Timestamp -->
             <div class="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
-              <NTooltip v-if="getDuration(taskRun)">
+              <NTooltip v-if="getTaskRunDuration(taskRun)">
                 <template #trigger>
-                  <span class="">{{ getDuration(taskRun) }}</span>
+                  <span>{{ getTaskRunDuration(taskRun) }}</span>
                 </template>
                 {{ $t("common.duration") }}
               </NTooltip>
-              <span v-if="getDuration(taskRun)">·</span>
+              <span v-if="getTaskRunDuration(taskRun)">·</span>
               <TimestampDisplay
                 :timestamp="taskRun.updateTime"
                 custom-class="!text-xs !text-gray-400"
@@ -114,35 +130,55 @@
         </NTimelineItem>
       </NTimeline>
     </div>
+
+    <!-- Rollback drawer -->
+    <TaskRunRollbackDrawer
+      v-model:show="showRollbackDrawer"
+      :rollout="rollout"
+      :rollbackable-task-runs="rollbackableTaskRuns"
+      @close="showRollbackDrawer = false"
+    />
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ChevronDownIcon, ChevronRightIcon } from "lucide-vue-next";
-import { NTimeline, NTimelineItem, NTooltip } from "naive-ui";
+import {
+  ChevronDownIcon,
+  ChevronRightIcon,
+  DatabaseBackupIcon,
+} from "lucide-vue-next";
+import { NButton, NTimeline, NTimelineItem, NTooltip } from "naive-ui";
 import { computed, ref } from "vue";
 import TimestampDisplay from "@/components/misc/Timestamp.vue";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
-import type { Stage, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
+import type {
+  Rollout,
+  Stage,
+  TaskRun,
+} from "@/types/proto-es/v1/rollout_service_pb";
 import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   extractDatabaseResourceName,
   extractInstanceResourceName,
 } from "@/utils";
 import { useResourcePoller } from "../../../logic/poller";
+import TaskRunRollbackDrawer from "../TaskRunRollbackDrawer.vue";
+import type { RollbackableTaskRun } from "./composables/useRollbackableTasks";
 import { useTaskNavigation } from "./composables/useTaskNavigation";
 import {
   getErrorPreview,
   getTaskNameFromTaskRun,
+  getTaskRunDuration,
   getTimelineType,
   mapTaskRunStatusToTaskStatus,
 } from "./composables/useTaskRunUtils";
-import { formatDuration } from "./composables/useTaskTiming";
 
 const props = withDefaults(
   defineProps<{
     stage: Stage | null | undefined;
     taskRuns: TaskRun[];
+    rollout: Rollout;
+    rollbackableTaskRuns: RollbackableTaskRun[];
     isInline?: boolean;
   }>(),
   {
@@ -155,6 +191,7 @@ const emit = defineEmits<{
 }>();
 
 const isCollapsed = ref(false);
+const showRollbackDrawer = ref(false);
 const { navigateToTaskDetail } = useTaskNavigation();
 const { lastRefreshTime } = useResourcePoller();
 
@@ -207,32 +244,6 @@ const getTaskTargetDisplay = (
     instance: extractInstanceResourceName(target) || "",
     database: extractDatabaseResourceName(target).databaseName || "unknown",
   };
-};
-
-const getDuration = (taskRun: TaskRun): string => {
-  const startTime = taskRun.startTime;
-  const status = taskRun.status;
-
-  // PENDING tasks are scheduled/queued, not running - no duration to show
-  if (status === TaskRun_Status.PENDING) {
-    return "";
-  }
-
-  if (!startTime) return "";
-
-  if (status === TaskRun_Status.RUNNING) {
-    // Show elapsed time for running tasks
-    const elapsedMs = Date.now() - Number(startTime.seconds) * 1000;
-    return elapsedMs > 0 ? formatDuration(elapsedMs) : "";
-  }
-
-  // For completed tasks (DONE, FAILED, CANCELED), show total duration
-  const endTime = taskRun.updateTime;
-  if (!endTime) return "";
-
-  const durationMs =
-    (Number(endTime.seconds) - Number(startTime.seconds)) * 1000;
-  return durationMs > 0 ? formatDuration(durationMs) : "";
 };
 
 const handleClickTarget = (taskRun: TaskRun) => {
