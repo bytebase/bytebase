@@ -1,4 +1,5 @@
 import { taskRunNamePrefix } from "@/store";
+import type { TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   Task_Status,
   TaskRun_Status,
@@ -67,4 +68,72 @@ export const getErrorPreview = (detail: string, maxLength = 50): string => {
   return firstLine.length > maxLength
     ? `${firstLine.substring(0, maxLength)}...`
     : firstLine;
+};
+
+/**
+ * Format duration in milliseconds to human-readable string.
+ * - >= 1h: "Xh Ym"
+ * - >= 1m: "Xm Ys"
+ * - >= 1s: "Xs"
+ * - > 0ms: "Xms"
+ * - <= 0: "< 1s"
+ */
+export const formatDuration = (durationMs: number): string => {
+  const seconds = Math.floor(durationMs / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+
+  if (hours > 0) {
+    const remainingMinutes = minutes % 60;
+    return `${hours}h ${remainingMinutes}m`;
+  }
+
+  if (minutes > 0) {
+    const remainingSeconds = seconds % 60;
+    return `${minutes}m ${remainingSeconds}s`;
+  }
+
+  if (seconds > 0) {
+    return `${seconds}s`;
+  }
+
+  if (durationMs > 0) {
+    return `${Math.round(durationMs)}ms`;
+  }
+
+  return "< 1s";
+};
+
+/**
+ * Get duration display string for a task run.
+ * - PENDING: empty (not started yet)
+ * - RUNNING: elapsed time from startTime to now
+ * - Completed (DONE/FAILED/CANCELED): total duration from startTime to updateTime
+ */
+export const getTaskRunDuration = (taskRun: TaskRun): string => {
+  const { startTime, status, updateTime } = taskRun;
+
+  // PENDING tasks are scheduled/queued, not running - no duration to show
+  if (status === TaskRun_Status.PENDING) {
+    return "";
+  }
+
+  if (!startTime) {
+    return "";
+  }
+
+  if (status === TaskRun_Status.RUNNING) {
+    // Show elapsed time for running tasks
+    const elapsedMs = Date.now() - Number(startTime.seconds) * 1000;
+    return formatDuration(elapsedMs);
+  }
+
+  // For completed tasks (DONE, FAILED, CANCELED), show total duration
+  if (!updateTime) {
+    return "";
+  }
+
+  const durationMs =
+    (Number(updateTime.seconds) - Number(startTime.seconds)) * 1000;
+  return formatDuration(durationMs);
 };

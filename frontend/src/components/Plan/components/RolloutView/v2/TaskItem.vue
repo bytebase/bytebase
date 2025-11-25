@@ -1,8 +1,7 @@
 <template>
   <div
-    class="collapsible-task-item relative bg-white border rounded-lg transition-all group"
+    class="collapsible-task-item relative bg-white border border-gray-300 rounded-lg transition-all group"
     :class="[
-      borderClass,
       isExpanded ? 'shadow-sm' : 'hover:shadow-sm',
     ]"
   >
@@ -195,7 +194,6 @@
 
           <!-- Error message for failed tasks -->
           <div v-if="task.status === Task_Status.FAILED && latestTaskRun.detail" class="mb-2 p-2 bg-red-50 border border-red-200 rounded">
-            <div class="text-sm font-medium text-red-700 mb-1">{{ t("common.error") }}</div>
             <div class="text-sm text-red-600 whitespace-pre-wrap">
               {{ latestTaskRun.detail }}
             </div>
@@ -271,7 +269,6 @@ import { useTaskNavigation } from "./composables/useTaskNavigation";
 import { useTaskRunSummary } from "./composables/useTaskRunSummary";
 import { useTaskStatement } from "./composables/useTaskStatement";
 import { useTaskTiming } from "./composables/useTaskTiming";
-import { getTaskBorderClass } from "./utils/taskStatus";
 
 const props = withDefaults(
   defineProps<{
@@ -339,10 +336,6 @@ const { loading, statementPreview, displayedStatement } = useTaskStatement(
   () => props.task,
   () => props.isExpanded
 );
-
-const borderClass = computed(() => {
-  return getTaskBorderClass(props.task.status);
-});
 
 const latestTaskRun = computed(() => {
   const taskRunsForTask = allTaskRuns.value.filter((run) =>
