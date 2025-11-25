@@ -339,6 +339,17 @@
     "database-create": {
       "created": "已创建",
       "pending": "待创建"
+    },
+    "executed-by": "执行者",
+    "affected-rows": "影响行数",
+    "result": {
+      "schema-version": "版本: {version}",
+      "export-archive-ready": "归档: 可下载"
+    },
+    "waiting": {
+      "connection-limit": "等待可用连接",
+      "parallel-tasks-limit": "等待其他任务完成",
+      "blocking-task": "等待另一个任务"
     }
   },
   "task-run": {

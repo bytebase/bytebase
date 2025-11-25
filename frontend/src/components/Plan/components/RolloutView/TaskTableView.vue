@@ -5,7 +5,6 @@
       :tasks="selectedTasks"
       :rollout="rollout"
       :stage="props.stage"
-      @refresh="handleRefresh"
       @action-confirmed="handleTaskActionConfirmed"
     />
 
@@ -45,13 +44,9 @@ const handleSelectedTasksUpdate = (tasks: Task[]) => {
   selectedTasks.value = tasks;
 };
 
-const handleRefresh = () => {
-  events.emit("status-changed", { eager: true });
-};
-
 const handleTaskActionConfirmed = () => {
   // Clear selection after action is confirmed.
   selectedTasks.value = [];
-  handleRefresh();
+  events.emit("status-changed", { eager: true });
 };
 </script>
