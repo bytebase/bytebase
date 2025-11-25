@@ -18,32 +18,32 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_TIDB, extractChangedResources)
 }
 
-func extractChangedResources(database string, _ string, dbMetadata *model.DatabaseMetadata, asts any, statement string) (*base.ChangeSummary, error) {
-	nodes, ok := asts.([]tidbast.StmtNode)
-	if !ok {
-		return nil, errors.Errorf("invalid ast type %T", asts)
-	}
-
+func extractChangedResources(database string, _ string, dbMetadata *model.DatabaseMetadata, asts []*base.UnifiedAST, statement string) (*base.ChangeSummary, error) {
 	changedResources := model.NewChangedResources(dbMetadata)
 	dmlCount := 0
 	insertCount := 0
 	var sampleDMLs []string
-	for _, node := range nodes {
+	for _, ast := range asts {
+		tidbData, ok := ast.GetTiDBNode()
+		if !ok {
+			return nil, errors.Errorf("expected TiDB node, got engine %s", ast.GetEngine())
+		}
+		node := tidbData.Node
 		err := getResourceChanges(database, node, statement, changedResources)
 		if err != nil {
 			return nil, err
 		}
 
-		switch node := node.(type) {
+		switch n := node.(type) {
 		case *tidbast.InsertStmt:
-			if len(node.Lists) > 0 {
-				insertCount += len(node.Lists)
+			if len(n.Lists) > 0 {
+				insertCount += len(n.Lists)
 				continue
 			}
 
 			dmlCount++
 			if len(sampleDMLs) < common.MaximumLintExplainSize {
-				sampleDMLs = append(sampleDMLs, trimStatement(node.Text()))
+				sampleDMLs = append(sampleDMLs, trimStatement(n.Text()))
 			}
 		case *tidbast.UpdateStmt, *tidbast.DeleteStmt:
 			dmlCount++

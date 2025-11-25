@@ -60,7 +60,8 @@ func TestExtractChangedResources(t *testing.T) {
 		InsertCount: 2,
 	}
 
-	asts, _ := ParseMySQL(statement)
+	asts, err := base.Parse(storepb.Engine_MYSQL, statement)
+	require.NoError(t, err)
 	got, err := extractChangedResources("db", "", nil /* dbMetadata */, asts, statement)
 	require.NoError(t, err)
 	require.Equal(t, want, got)

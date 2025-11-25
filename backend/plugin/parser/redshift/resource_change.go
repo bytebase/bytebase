@@ -17,12 +17,7 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_REDSHIFT, extractChangedResources)
 }
 
-func extractChangedResources(database string, _ string, dbMetadata *model.DatabaseMetadata, asts any, _ string) (*base.ChangeSummary, error) {
-	tree, ok := asts.(antlr.Tree)
-	if !ok {
-		return nil, errors.Errorf("invalid ast type %T, expected antlr.Tree", asts)
-	}
-
+func extractChangedResources(database string, _ string, dbMetadata *model.DatabaseMetadata, asts []*base.UnifiedAST, _ string) (*base.ChangeSummary, error) {
 	changedResources := model.NewChangedResources(dbMetadata)
 	listener := &resourceChangeListener{
 		currentDatabase:  database,
@@ -31,7 +26,13 @@ func extractChangedResources(database string, _ string, dbMetadata *model.Databa
 		searchPath:       []string{"public"}, // Default search path for Redshift
 	}
 
-	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
+	for _, ast := range asts {
+		antlrData, ok := ast.GetANTLRTree()
+		if !ok {
+			return nil, errors.Errorf("expected ANTLR tree for Redshift, got engine %s", ast.GetEngine())
+		}
+		antlr.ParseTreeWalkerDefault.Walk(listener, antlrData.Tree)
+	}
 
 	return &base.ChangeSummary{
 		ChangedResources: changedResources,

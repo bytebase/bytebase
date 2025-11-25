@@ -42,7 +42,7 @@ func TestExtractChangedResources(t *testing.T) {
 		InsertCount: 2,
 	}
 
-	asts, err := ParseTSQL(statement)
+	asts, err := base.Parse(storepb.Engine_MSSQL, statement)
 	require.NoError(t, err)
 	require.Len(t, asts, 5)
 	got, err := extractChangedResources("DB", "dbo", nil /* dbMetadata */, asts, statement)

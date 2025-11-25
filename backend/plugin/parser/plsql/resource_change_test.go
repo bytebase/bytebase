@@ -43,12 +43,12 @@ func TestExtractChangedResources(t *testing.T) {
 		InsertCount:      1,
 	}
 
-	results, err := ParsePLSQL(statement)
+	asts, err := base.Parse(storepb.Engine_ORACLE, statement)
 	require.NoError(t, err)
-	require.NotEmpty(t, results)
+	require.NotEmpty(t, asts)
 
-	// Pass the full results array to extractChangedResources
-	got, err := extractChangedResources("DB", "", nil /* dbMetadata */, results, statement)
+	// Pass the full asts array to extractChangedResources
+	got, err := extractChangedResources("DB", "", nil /* dbMetadata */, asts, statement)
 	require.NoError(t, err)
 	require.Equal(t, want, got)
 }

@@ -19,20 +19,20 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_DORIS, extractChangedResources)
 }
 
-func extractChangedResources(currentDatabase string, _ string, dbMetadata *model.DatabaseMetadata, asts any, statement string) (*base.ChangeSummary, error) {
-	nodes, ok := asts.([]*base.ParseResult)
-	if !ok {
-		return nil, errors.Errorf("invalid ast type %T, expected []*base.ParseResult", asts)
-	}
+func extractChangedResources(currentDatabase string, _ string, dbMetadata *model.DatabaseMetadata, asts []*base.UnifiedAST, statement string) (*base.ChangeSummary, error) {
 	changedResources := model.NewChangedResources(dbMetadata)
 	l := &resourceChangedListener{
 		currentDatabase:  currentDatabase,
 		statement:        statement,
 		changedResources: changedResources,
 	}
-	for _, node := range nodes {
+	for _, ast := range asts {
+		antlrData, ok := ast.GetANTLRTree()
+		if !ok {
+			return nil, errors.Errorf("expected ANTLR tree for MySQL, got engine %s", ast.GetEngine())
+		}
 		l.reset()
-		antlr.ParseTreeWalkerDefault.Walk(l, node.Tree)
+		antlr.ParseTreeWalkerDefault.Walk(l, antlrData.Tree)
 	}
 
 	return &base.ChangeSummary{

@@ -15,13 +15,8 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_ORACLE, extractChangedResources)
 }
 
-func extractChangedResources(currentDatabase string, _ string, dbMetadata *model.DatabaseMetadata, asts any, statement string) (*base.ChangeSummary, error) {
+func extractChangedResources(currentDatabase string, _ string, dbMetadata *model.DatabaseMetadata, asts []*base.UnifiedAST, statement string) (*base.ChangeSummary, error) {
 	// currentDatabase is the same as currentSchema for Oracle.
-	results, ok := asts.([]*base.ParseResult)
-	if !ok {
-		return nil, errors.Errorf("failed to convert ast to []*ParseResult, got %T", asts)
-	}
-
 	changedResources := model.NewChangedResources(dbMetadata)
 	l := &plsqlChangedResourceExtractListener{
 		currentSchema:    currentDatabase,
@@ -30,8 +25,12 @@ func extractChangedResources(currentDatabase string, _ string, dbMetadata *model
 		statement:        statement,
 	}
 
-	for _, result := range results {
-		antlr.ParseTreeWalkerDefault.Walk(l, result.Tree)
+	for _, ast := range asts {
+		antlrData, ok := ast.GetANTLRTree()
+		if !ok {
+			return nil, errors.Errorf("expected ANTLR tree for Oracle, got engine %s", ast.GetEngine())
+		}
+		antlr.ParseTreeWalkerDefault.Walk(l, antlrData.Tree)
 	}
 
 	return &base.ChangeSummary{

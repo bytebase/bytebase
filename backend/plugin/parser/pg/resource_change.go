@@ -19,12 +19,7 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_COCKROACHDB, extractChangedResources)
 }
 
-func extractChangedResources(database string, _ string, dbMetadata *model.DatabaseMetadata, asts any, statement string) (*base.ChangeSummary, error) {
-	parseResults, ok := asts.([]*base.ParseResult)
-	if !ok {
-		return nil, errors.Errorf("invalid ast type %T, expected []*base.ParseResult", asts)
-	}
-
+func extractChangedResources(database string, _ string, dbMetadata *model.DatabaseMetadata, asts []*base.UnifiedAST, statement string) (*base.ChangeSummary, error) {
 	changedResources := model.NewChangedResources(dbMetadata)
 	searchPath := dbMetadata.GetSearchPath()
 	if len(searchPath) == 0 {
@@ -32,7 +27,7 @@ func extractChangedResources(database string, _ string, dbMetadata *model.Databa
 	}
 
 	// If no parse results, return empty summary
-	if len(parseResults) == 0 {
+	if len(asts) == 0 {
 		return &base.ChangeSummary{
 			ChangedResources: changedResources,
 			DMLCount:         0,
@@ -53,13 +48,17 @@ func extractChangedResources(database string, _ string, dbMetadata *model.Databa
 	}
 
 	// Walk all parse results to extract changed resources
-	for _, parseResult := range parseResults {
-		if parseResult == nil || parseResult.Tree == nil {
-			return nil, errors.New("parse result or tree is nil")
+	for _, ast := range asts {
+		antlrData, ok := ast.GetANTLRTree()
+		if !ok {
+			return nil, errors.Errorf("expected ANTLR tree for PostgreSQL, got engine %s", ast.GetEngine())
+		}
+		if antlrData.Tree == nil {
+			return nil, errors.New("ANTLR tree is nil")
 		}
 
-		listener.tokenStream = parseResult.Tokens
-		antlr.ParseTreeWalkerDefault.Walk(listener, parseResult.Tree)
+		listener.tokenStream = antlrData.Tokens
+		antlr.ParseTreeWalkerDefault.Walk(listener, antlrData.Tree)
 	}
 
 	return &base.ChangeSummary{

@@ -19,12 +19,7 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_MSSQL, extractChangedResources)
 }
 
-func extractChangedResources(currentDatabase string, currentSchema string, dbMetadata *model.DatabaseMetadata, asts any, statement string) (*base.ChangeSummary, error) {
-	parseResults, ok := asts.([]*base.ParseResult)
-	if !ok {
-		return nil, errors.Errorf("failed to convert ast to ParseResult list")
-	}
-
+func extractChangedResources(currentDatabase string, currentSchema string, dbMetadata *model.DatabaseMetadata, asts []*base.UnifiedAST, statement string) (*base.ChangeSummary, error) {
 	changedResources := model.NewChangedResources(dbMetadata)
 	l := &tsqlChangedResourceExtractListener{
 		currentDatabase:  currentDatabase,
@@ -34,8 +29,12 @@ func extractChangedResources(currentDatabase string, currentSchema string, dbMet
 		statement:        statement,
 	}
 
-	for _, parseResult := range parseResults {
-		antlr.ParseTreeWalkerDefault.Walk(l, parseResult.Tree)
+	for _, ast := range asts {
+		antlrData, ok := ast.GetANTLRTree()
+		if !ok {
+			return nil, errors.Errorf("expected ANTLR tree for MSSQL, got engine %s", ast.GetEngine())
+		}
+		antlr.ParseTreeWalkerDefault.Walk(l, antlrData.Tree)
 	}
 
 	return &base.ChangeSummary{
