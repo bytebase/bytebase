@@ -1342,6 +1342,10 @@
                   <a href="#bytebase.v1.Setting.SettingName"><span class="badge">E</span>Setting.SettingName</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.v1.WorkspaceApprovalSetting.Rule.Source"><span class="badge">E</span>WorkspaceApprovalSetting.Rule.Source</a>
+                </li>
+              
               
               
                 <li>
@@ -10628,15 +10632,6 @@ Permissions required: bb.databases.getSchema</p></td>
             <tbody>
               
                 <tr>
-                  <td>id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The unique identifier for the approval template.
-For built-in templates, use &#34;bb.&#34; prefix (e.g., &#34;bb.project-owner&#34;, &#34;bb.workspace-dba&#34;).
-For custom templates, use a UUID or other unique identifier. </p></td>
-                </tr>
-              
-                <tr>
                   <td>flow</td>
                   <td><a href="#bytebase.v1.ApprovalFlow">ApprovalFlow</a></td>
                   <td></td>
@@ -15597,12 +15592,39 @@ server would not persist the setting value if it is true. </p></td>
                   <td><p>The condition that is associated with the rule.
 The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
-Support variables:
-source: the risk source, check the Source enum in the Risk message for the values, support &#34;==&#34; operator.
-level: the risk level, support 100 (low), 200 (moderate) and 300 (high), support &#34;==&#34; operator.
+The `source` field filters which rules apply. The `condition` field then evaluates with full context.
+
+All supported variables:
+statement.affected_rows: affected row count in the DDL/DML, support &#34;==&#34;, &#34;!=&#34;, &#34;&lt;&#34;, &#34;&lt;=&#34;, &#34;&gt;&#34;, &#34;&gt;=&#34; operations.
+statement.table_rows: table row count number, support &#34;==&#34;, &#34;!=&#34;, &#34;&lt;&#34;, &#34;&lt;=&#34;, &#34;&gt;&#34;, &#34;&gt;=&#34; operations.
+resource.environment_id: the environment resource id, support &#34;==&#34;, &#34;!=&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34; operations.
+resource.project_id: the project resource id, support &#34;==&#34;, &#34;!=&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34;, &#34;contains()&#34;, &#34;matches()&#34;, &#34;startsWith()&#34;, &#34;endsWith()&#34; operations.
+resource.db_engine: the database engine type, support &#34;==&#34;, &#34;!=&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34; operations. Check the Engine enum for values.
+statement.sql_type: the SQL type, support &#34;==&#34;, &#34;!=&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34; operations.
+resource.database_name: the database name, support &#34;==&#34;, &#34;!=&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34;, &#34;contains()&#34;, &#34;matches()&#34;, &#34;startsWith()&#34;, &#34;endsWith()&#34; operations.
+resource.schema_name: the schema name, support &#34;==&#34;, &#34;!=&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34;, &#34;contains()&#34;, &#34;matches()&#34;, &#34;startsWith()&#34;, &#34;endsWith()&#34; operations.
+resource.table_name: the table name, support &#34;==&#34;, &#34;!=&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34;, &#34;contains()&#34;, &#34;matches()&#34;, &#34;startsWith()&#34;, &#34;endsWith()&#34; operations.
+statement.text: the SQL statement, support &#34;contains()&#34;, &#34;matches()&#34;, &#34;startsWith()&#34;, &#34;endsWith()&#34; operations.
+request.expiration_days: the role expiration days for the request, support &#34;==&#34;, &#34;!=&#34;, &#34;&lt;&#34;, &#34;&lt;=&#34;, &#34;&gt;&#34;, &#34;&gt;=&#34; operations.
+request.role: the request role full name, support &#34;==&#34;, &#34;!=&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34;, &#34;contains()&#34;, &#34;matches()&#34;, &#34;startsWith()&#34;, &#34;endsWith()&#34; operations.
+
+When source is DDL/DML, support: statement.*, resource.* (excluding request.*)
+When source is CREATE_DATABASE, support: resource.environment_id, resource.project_id, resource.db_engine, resource.database_name
+When source is EXPORT_DATA, support: resource.environment_id, resource.project_id, resource.db_engine, resource.database_name, resource.schema_name, resource.table_name
+When source is REQUEST_ROLE, support: resource.project_id, request.expiration_days, request.role
 
 For examples:
-(source == &#34;DML&#34; &amp;&amp; level == 200) || (source == &#34;DDL&#34; &amp;&amp; level == 300) </p></td>
+resource.environment_id == &#34;prod&#34; &amp;&amp; statement.affected_rows &gt;= 100
+resource.table_name.matches(&#34;sensitive_.*&#34;) &amp;&amp; resource.db_engine == &#34;MYSQL&#34;
+
+Legacy format (deprecated): source == &#34;DDL&#34; &amp;&amp; level == &#34;HIGH&#34; </p></td>
+                </tr>
+              
+                <tr>
+                  <td>source</td>
+                  <td><a href="#bytebase.v1.WorkspaceApprovalSetting.Rule.Source">WorkspaceApprovalSetting.Rule.Source</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -15965,6 +15987,53 @@ Default to this mode.</p></td>
               <tr>
                 <td>ENVIRONMENT</td>
                 <td>19</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.WorkspaceApprovalSetting.Rule.Source">WorkspaceApprovalSetting.Rule.Source</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>SOURCE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DDL</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DML</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CREATE_DATABASE</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>EXPORT_DATA</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>REQUEST_ROLE</td>
+                <td>5</td>
                 <td><p></p></td>
               </tr>
             
