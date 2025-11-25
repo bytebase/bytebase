@@ -1143,28 +1143,15 @@ func formatExportToZip(
 		return err
 	}
 
-	return writeFormattedResult(ctx, writer, stores, instance, database, result, request)
-}
-
-// writeFormattedResult writes the query result in the requested format to the writer.
-func writeFormattedResult(
-	ctx context.Context,
-	w io.Writer,
-	stores *store.Store,
-	instance *store.InstanceMessage,
-	database *store.DatabaseMessage,
-	result *v1pb.QueryResult,
-	request *v1pb.ExportRequest,
-) error {
 	switch request.Format {
 	case v1pb.ExportFormat_CSV:
-		return export.CSVToWriter(w, result)
+		return export.CSVToWriter(writer, result)
 	case v1pb.ExportFormat_JSON:
-		return export.JSONToWriter(w, result)
+		return export.JSONToWriter(writer, result)
 	case v1pb.ExportFormat_SQL:
-		return exportSQLWithContext(ctx, w, stores, instance, database, result, request)
+		return exportSQLWithContext(ctx, writer, stores, instance, database, result, request)
 	case v1pb.ExportFormat_XLSX:
-		return export.XLSXToWriter(w, result)
+		return export.XLSXToWriter(writer, result)
 	default:
 		return errors.Errorf("unsupported export format: %s", request.Format.String())
 	}
@@ -1467,12 +1454,19 @@ func (s *SQLService) accessCheck(
 		return connect.NewError(connect.CodeInternal, errors.New(err.Error()))
 	}
 
-	checkDatabaseAccess := func() error {
+	checkDatabaseAccess := func(permission iam.Permission) error {
 		databaseFullName := common.FormatDatabase(instance.ResourceID, database.DatabaseName)
-		ok, err := s.hasDatabaseAccessRights(ctx, user, []*storepb.IamPolicy{workspacePolicy.Policy, projectPolicy.Policy}, map[string]any{
-			common.CELAttributeRequestTime:      time.Now(),
-			common.CELAttributeResourceDatabase: databaseFullName,
-		})
+		ok, err := s.hasDatabaseAccessRights(
+			ctx,
+			user,
+			permission,
+			map[string]any{
+				common.CELAttributeRequestTime:      time.Now(),
+				common.CELAttributeResourceDatabase: databaseFullName,
+			},
+			workspacePolicy.Policy,
+			projectPolicy.Policy,
+		)
 		if err != nil {
 			return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check access control for database: %q, error %v", databaseFullName, err))
 		}
@@ -1483,13 +1477,15 @@ func (s *SQLService) accessCheck(
 	}
 
 	if len(spans) == 0 {
-		return checkDatabaseAccess()
+		return checkDatabaseAccess(iam.PermissionSQLSelect)
 	}
 
 	for _, span := range spans {
+		var permission iam.Permission
 		// New query ACL experience.
-		if common.EngineSupportQueryNewACL(instance.Metadata.GetEngine()) {
-			var permission iam.Permission
+		if isExplain {
+			permission = iam.PermissionSQLExplain
+		} else if common.EngineSupportQueryNewACL(instance.Metadata.GetEngine()) {
 			switch span.Type {
 			case parserbase.QueryTypeUnknown:
 				return connect.NewError(connect.CodePermissionDenied, errors.New("disallowed query type"))
@@ -1502,68 +1498,69 @@ func (s *SQLService) accessCheck(
 			case parserbase.SelectInfoSchema:
 				permission = iam.PermissionSQLInfo
 			case parserbase.Select:
-				// Conditional permission check below.
+				permission = iam.PermissionSQLSelect
 			default:
-			}
-			if isExplain {
-				permission = iam.PermissionSQLExplain
 			}
 			if span.Type == parserbase.DDL || span.Type == parserbase.DML {
 				if err := checkDataSourceQueryPolicy(ctx, s.store, s.licenseService, database, span.Type); err != nil {
 					return err
 				}
 			}
-			if permission != "" {
-				ok, err := s.iamManager.CheckPermission(ctx, permission, user, project.ResourceID)
-				if err != nil {
-					return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
-				}
-				if !ok {
-					return connect.NewError(connect.CodePermissionDenied, errors.Errorf("user %q does not have permission %q on project %q", user.Email, permission, project.ResourceID))
-				}
+		} else if span.Type == parserbase.Select {
+			permission = iam.PermissionSQLSelect
+		}
+
+		if permission == "" {
+			// always fallback to bb.sql.select
+			permission = iam.PermissionSQLSelect
+		}
+
+		if len(span.SourceColumns) == 0 {
+			if err := checkDatabaseAccess(permission); err != nil {
+				return err
 			}
 		}
-		if span.Type == parserbase.Select {
-			if len(span.SourceColumns) == 0 {
-				if err := checkDatabaseAccess(); err != nil {
-					return err
-				}
-			}
 
-			var deniedResources []string
-			for column := range span.SourceColumns {
-				attributes := map[string]any{
-					common.CELAttributeRequestTime:        time.Now(),
-					common.CELAttributeResourceDatabase:   common.FormatDatabase(instance.ResourceID, column.Database),
-					common.CELAttributeResourceSchemaName: column.Schema,
-					common.CELAttributeResourceTableName:  column.Table,
-				}
-				ok, err := s.hasDatabaseAccessRights(ctx, user, []*storepb.IamPolicy{workspacePolicy.Policy, projectPolicy.Policy}, attributes)
-				if err != nil {
-					return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check access control for database: %q, error %v", column.Database, err))
-				}
-				if !ok {
-					resource, ok := attributes[common.CELAttributeResourceDatabase].(string)
-					if !ok {
-						resource = ""
-					}
-					if schema, ok := attributes[common.CELAttributeResourceSchemaName]; ok && schema != "" {
-						resource = fmt.Sprintf("%s/schemas/%s", resource, schema)
-					}
-					if table, ok := attributes[common.CELAttributeResourceTableName]; ok && table != "" {
-						resource = fmt.Sprintf("%s/tables/%s", resource, table)
-					}
-					deniedResources = append(deniedResources, resource)
-				}
+		var deniedResources []string
+		for column := range span.SourceColumns {
+			attributes := map[string]any{
+				common.CELAttributeRequestTime:        time.Now(),
+				common.CELAttributeResourceDatabase:   common.FormatDatabase(instance.ResourceID, column.Database),
+				common.CELAttributeResourceSchemaName: column.Schema,
+				common.CELAttributeResourceTableName:  column.Table,
 			}
-			if len(deniedResources) > 0 {
-				return &queryError{
-					err: connect.NewError(
-						connect.CodePermissionDenied,
-						errors.Errorf("permission denied to access resources: %v", deniedResources),
-					),
-					resources: deniedResources,
+			ok, err := s.hasDatabaseAccessRights(
+				ctx,
+				user,
+				permission,
+				attributes,
+				workspacePolicy.Policy,
+				projectPolicy.Policy,
+			)
+			if err != nil {
+				return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check access control for database: %q, error %v", column.Database, err))
+			}
+			if !ok {
+				resource, ok := attributes[common.CELAttributeResourceDatabase].(string)
+				if !ok {
+					resource = ""
 				}
+				if schema, ok := attributes[common.CELAttributeResourceSchemaName]; ok && schema != "" {
+					resource = fmt.Sprintf("%s/schemas/%s", resource, schema)
+				}
+				if table, ok := attributes[common.CELAttributeResourceTableName]; ok && table != "" {
+					resource = fmt.Sprintf("%s/tables/%s", resource, table)
+				}
+				deniedResources = append(deniedResources, resource)
+			}
+		}
+		if len(deniedResources) > 0 {
+			return &queryError{
+				err: connect.NewError(
+					connect.CodePermissionDenied,
+					errors.Errorf("permission denied to access resources: %v", deniedResources),
+				),
+				resources: deniedResources,
 			}
 		}
 	}
@@ -1641,16 +1638,20 @@ func validateQueryRequest(instance *store.InstanceMessage, statement string) err
 	return nil
 }
 
-func (s *SQLService) hasDatabaseAccessRights(ctx context.Context, user *store.UserMessage, iamPolicies []*storepb.IamPolicy, attributes map[string]any) (bool, error) {
-	wantPermission := iam.PermissionSQLSelect
-
+func (s *SQLService) hasDatabaseAccessRights(
+	ctx context.Context,
+	user *store.UserMessage,
+	permission iam.Permission,
+	attributes map[string]any,
+	iamPolicies ...*storepb.IamPolicy,
+) (bool, error) {
 	bindings := utils.GetUserIAMPolicyBindings(ctx, s.store, user, iamPolicies...)
 	for _, binding := range bindings {
 		permissions, err := s.iamManager.GetPermissions(binding.Role)
 		if err != nil {
 			return false, errors.Wrapf(err, "failed to get permissions")
 		}
-		if !permissions[wantPermission] {
+		if !permissions[permission] {
 			continue
 		}
 
