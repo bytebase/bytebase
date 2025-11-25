@@ -295,6 +295,7 @@
     - [Announcement.AlertLevel](#bytebase-store-Announcement-AlertLevel)
     - [DatabaseChangeMode](#bytebase-store-DatabaseChangeMode)
     - [SettingName](#bytebase-store-SettingName)
+    - [WorkspaceApprovalSetting.Rule.Source](#bytebase-store-WorkspaceApprovalSetting-Rule-Source)
   
 - [store/sheet.proto](#store_sheet-proto)
     - [SheetPayload](#bytebase-store-SheetPayload)
@@ -618,7 +619,6 @@ ApprovalTemplate defines the approval workflow and requirements for an issue.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | The unique identifier for the approval template. Built-in templates use &#34;bb.&#34; prefix (e.g., &#34;bb.project-owner&#34;, &#34;bb.workspace-dba&#34;). Custom templates use a UUID or other unique identifier. |
 | flow | [ApprovalFlow](#bytebase-store-ApprovalFlow) |  | The approval workflow specification. |
 | title | [string](#string) |  | Human-readable title of the approval template. |
 | description | [string](#string) |  | Detailed description of when this template applies. |
@@ -4674,6 +4674,7 @@ ISSUE_CREATE represents creating an issue. |
 | ----- | ---- | ----- | ----------- |
 | template | [ApprovalTemplate](#bytebase-store-ApprovalTemplate) |  |  |
 | condition | [google.type.Expr](#google-type-Expr) |  |  |
+| source | [WorkspaceApprovalSetting.Rule.Source](#bytebase-store-WorkspaceApprovalSetting-Rule-Source) |  |  |
 
 
 
@@ -4788,6 +4789,22 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | SCIM | 17 |  |
 | PASSWORD_RESTRICTION | 18 |  |
 | ENVIRONMENT | 19 |  |
+
+
+
+<a name="bytebase-store-WorkspaceApprovalSetting-Rule-Source"></a>
+
+### WorkspaceApprovalSetting.Rule.Source
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SOURCE_UNSPECIFIED | 0 |  |
+| DDL | 1 |  |
+| DML | 2 |  |
+| CREATE_DATABASE | 3 |  |
+| EXPORT_DATA | 4 |  |
+| REQUEST_ROLE | 5 |  |
 
 
  
