@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common/qb"
@@ -19,6 +21,7 @@ import (
 type DBConnectionManager struct {
 	mu          sync.Mutex
 	db          *sql.DB
+	connStr     string // Registered connection string for cleanup
 	pgURLOrFile string // Either a PostgreSQL URL or a file path
 	watcher     *fsnotify.Watcher
 	stopWatcher chan struct{}
@@ -58,12 +61,13 @@ func (m *DBConnectionManager) Initialize(ctx context.Context) error {
 	}
 
 	// Create initial connection
-	db, err := createConnection(ctx, pgURL)
+	db, connStr, err := createConnectionWithTracer(ctx, pgURL)
 	if err != nil {
 		return err
 	}
 
 	m.db = db
+	m.connStr = connStr
 	return nil
 }
 
@@ -79,10 +83,25 @@ func (m *DBConnectionManager) Close() error {
 		m.watcher.Close()
 	}
 
-	if m.db != nil {
-		return m.db.Close()
+	m.mu.Lock()
+	if m.db == nil {
+		m.mu.Unlock()
+		return nil // Already closed
 	}
-	return nil
+	db := m.db
+	connStr := m.connStr
+	m.db = nil
+	m.connStr = ""
+	m.mu.Unlock()
+
+	var err error
+	if db != nil {
+		err = db.Close()
+	}
+	if connStr != "" {
+		stdlib.UnregisterConnConfig(connStr)
+	}
+	return err
 }
 
 // startFileWatcher starts watching the PG_URL file for changes.
@@ -138,8 +157,8 @@ func (m *DBConnectionManager) reloadConnection(ctx context.Context, filePath str
 
 	slog.Info("PG URL file content updated, reconnecting database")
 
-	// Create new connection
-	newDB, err := createConnection(ctx, newURL)
+	// Create new connection first (zero downtime)
+	newDB, newConnStr, err := createConnectionWithTracer(ctx, newURL)
 	if err != nil {
 		slog.Error("Failed to create new database connection", "error", err)
 		return
@@ -148,7 +167,9 @@ func (m *DBConnectionManager) reloadConnection(ctx context.Context, filePath str
 	// Swap connections atomically
 	m.mu.Lock()
 	oldDB := m.db
+	oldConnStr := m.connStr
 	m.db = newDB
+	m.connStr = newConnStr
 	m.mu.Unlock()
 
 	// Gracefully drain old connections and force close after 1 hour
@@ -163,6 +184,9 @@ func (m *DBConnectionManager) reloadConnection(ctx context.Context, filePath str
 			time.Sleep(1 * time.Hour)
 			if err := oldDB.Close(); err != nil {
 				slog.Warn("Failed to force close old database connection", "error", err)
+			}
+			if oldConnStr != "" {
+				stdlib.UnregisterConnConfig(oldConnStr)
 			}
 		}()
 	}
@@ -192,16 +216,32 @@ func readURLFromFile(path string) (string, error) {
 	return strings.TrimSpace(string(content)), nil
 }
 
-func createConnection(ctx context.Context, pgURL string) (*sql.DB, error) {
-	db, err := sql.Open("pgx", pgURL)
+func createConnectionWithTracer(ctx context.Context, pgURL string) (*sql.DB, string, error) {
+	pgxConfig, err := pgx.ParseConfig(pgURL)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to open database connection")
+		return nil, "", errors.Wrap(err, "failed to parse database URL")
+	}
+
+	pgxConfig.Tracer = &metadataDBTracer{}
+	connStr := stdlib.RegisterConnConfig(pgxConfig)
+
+	// Defer-with-success pattern prevents resource leaks
+	success := false
+	defer func() {
+		if !success {
+			stdlib.UnregisterConnConfig(connStr)
+		}
+	}()
+
+	db, err := sql.Open("pgx", connStr)
+	if err != nil {
+		return nil, "", errors.Wrap(err, "failed to open database connection")
 	}
 
 	// Validate connection
 	if err := db.PingContext(ctx); err != nil {
 		db.Close()
-		return nil, errors.Wrap(err, "failed to ping database")
+		return nil, "", errors.Wrap(err, "failed to ping database")
 	}
 
 	// Configure connection pool
@@ -210,22 +250,22 @@ func createConnection(ctx context.Context, pgURL string) (*sql.DB, error) {
 	sql, args, err := q.ToSQL()
 	if err != nil {
 		db.Close()
-		return nil, errors.Wrap(err, "failed to build sql")
+		return nil, "", errors.Wrap(err, "failed to build sql")
 	}
 	if err := db.QueryRowContext(ctx, sql, args...).Scan(&maxConns); err != nil {
 		db.Close()
-		return nil, errors.Wrap(err, "failed to get max_connections")
+		return nil, "", errors.Wrap(err, "failed to get max_connections")
 	}
 
 	q = qb.Q().Space("SHOW superuser_reserved_connections")
 	sql, args, err = q.ToSQL()
 	if err != nil {
 		db.Close()
-		return nil, errors.Wrap(err, "failed to build sql")
+		return nil, "", errors.Wrap(err, "failed to build sql")
 	}
 	if err := db.QueryRowContext(ctx, sql, args...).Scan(&reservedConns); err != nil {
 		db.Close()
-		return nil, errors.Wrap(err, "failed to get superuser_reserved_connections")
+		return nil, "", errors.Wrap(err, "failed to get superuser_reserved_connections")
 	}
 
 	maxOpenConns := maxConns - reservedConns
@@ -234,5 +274,6 @@ func createConnection(ctx context.Context, pgURL string) (*sql.DB, error) {
 	}
 	db.SetMaxOpenConns(maxOpenConns)
 
-	return db, nil
+	success = true
+	return db, connStr, nil
 }
