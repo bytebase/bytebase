@@ -1,7 +1,7 @@
 /**
  * Number of tasks to display per page in the task list
  */
-export const DEFAULT_PAGE_SIZE = 20;
+export const DEFAULT_PAGE_SIZE = 10;
 
 /**
  * Maximum characters to show in collapsed SQL statement preview
