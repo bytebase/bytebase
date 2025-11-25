@@ -339,6 +339,17 @@
     "database-create": {
       "created": "Đã tạo",
       "pending": "Đang chờ xử lý"
+    },
+    "executed-by": "Được thực hiện bởi",
+    "affected-rows": "Hàng bị ảnh hưởng",
+    "result": {
+      "schema-version": "Sơ đồ: {version}",
+      "export-archive-ready": "Lưu trữ: Sẵn sàng để tải xuống"
+    },
+    "waiting": {
+      "connection-limit": "Đang chờ kết nối khả dụng",
+      "parallel-tasks-limit": "Đang chờ các tác vụ khác hoàn thành",
+      "blocking-task": "Đang chờ nhiệm vụ khác"
     }
   },
   "task-run": {

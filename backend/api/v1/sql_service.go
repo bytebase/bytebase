@@ -1143,28 +1143,15 @@ func formatExportToZip(
 		return err
 	}
 
-	return writeFormattedResult(ctx, writer, stores, instance, database, result, request)
-}
-
-// writeFormattedResult writes the query result in the requested format to the writer.
-func writeFormattedResult(
-	ctx context.Context,
-	w io.Writer,
-	stores *store.Store,
-	instance *store.InstanceMessage,
-	database *store.DatabaseMessage,
-	result *v1pb.QueryResult,
-	request *v1pb.ExportRequest,
-) error {
 	switch request.Format {
 	case v1pb.ExportFormat_CSV:
-		return export.CSVToWriter(w, result)
+		return export.CSVToWriter(writer, result)
 	case v1pb.ExportFormat_JSON:
-		return export.JSONToWriter(w, result)
+		return export.JSONToWriter(writer, result)
 	case v1pb.ExportFormat_SQL:
-		return exportSQLWithContext(ctx, w, stores, instance, database, result, request)
+		return exportSQLWithContext(ctx, writer, stores, instance, database, result, request)
 	case v1pb.ExportFormat_XLSX:
-		return export.XLSXToWriter(w, result)
+		return export.XLSXToWriter(writer, result)
 	default:
 		return errors.Errorf("unsupported export format: %s", request.Format.String())
 	}
@@ -1469,10 +1456,15 @@ func (s *SQLService) accessCheck(
 
 	checkDatabaseAccess := func() error {
 		databaseFullName := common.FormatDatabase(instance.ResourceID, database.DatabaseName)
-		ok, err := s.hasDatabaseAccessRights(ctx, user, []*storepb.IamPolicy{workspacePolicy.Policy, projectPolicy.Policy}, map[string]any{
-			common.CELAttributeRequestTime:      time.Now(),
-			common.CELAttributeResourceDatabase: databaseFullName,
-		})
+		ok, err := s.hasDatabaseAccessRights(
+			ctx,
+			user,
+			[]*storepb.IamPolicy{workspacePolicy.Policy, projectPolicy.Policy},
+			map[string]any{
+				common.CELAttributeRequestTime:      time.Now(),
+				common.CELAttributeResourceDatabase: databaseFullName,
+			},
+		)
 		if err != nil {
 			return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check access control for database: %q, error %v", databaseFullName, err))
 		}
@@ -1538,7 +1530,12 @@ func (s *SQLService) accessCheck(
 					common.CELAttributeResourceSchemaName: column.Schema,
 					common.CELAttributeResourceTableName:  column.Table,
 				}
-				ok, err := s.hasDatabaseAccessRights(ctx, user, []*storepb.IamPolicy{workspacePolicy.Policy, projectPolicy.Policy}, attributes)
+				ok, err := s.hasDatabaseAccessRights(
+					ctx,
+					user,
+					[]*storepb.IamPolicy{workspacePolicy.Policy, projectPolicy.Policy},
+					attributes,
+				)
 				if err != nil {
 					return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check access control for database: %q, error %v", column.Database, err))
 				}
@@ -1641,7 +1638,12 @@ func validateQueryRequest(instance *store.InstanceMessage, statement string) err
 	return nil
 }
 
-func (s *SQLService) hasDatabaseAccessRights(ctx context.Context, user *store.UserMessage, iamPolicies []*storepb.IamPolicy, attributes map[string]any) (bool, error) {
+func (s *SQLService) hasDatabaseAccessRights(
+	ctx context.Context,
+	user *store.UserMessage,
+	iamPolicies []*storepb.IamPolicy,
+	attributes map[string]any,
+) (bool, error) {
 	wantPermission := iam.PermissionSQLSelect
 
 	bindings := utils.GetUserIAMPolicyBindings(ctx, s.store, user, iamPolicies...)

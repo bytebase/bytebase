@@ -88,7 +88,6 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (event: "refresh"): void;
   (event: "action-confirmed"): void;
 }>();
 
@@ -261,7 +260,6 @@ const actions = computed((): TaskAction[] => {
 });
 
 const handleActionPanelConfirm = () => {
-  emit("refresh");
   emit("action-confirmed");
   handleActionPanelClose();
 };

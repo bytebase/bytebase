@@ -4,9 +4,8 @@
     <div class="px-4">
       <div class="w-full flex flex-row items-center justify-between py-4 gap-2">
         <!-- Left: Stage info and filters -->
-        <div class="flex flex-row items-center gap-4">
+        <div class="flex flex-row items-center gap-3">
           <div class="flex flex-row items-center gap-2">
-
             <NTag round>{{ $t("common.stage") }}</NTag>
             <span class="font-medium text-lg">
               <EnvironmentV1Name
@@ -24,6 +23,22 @@
             :selected-statuses="filterStatuses"
             @update:selected-statuses="handleFilterStatusesChange"
           />
+          <!-- Rollback entry -->
+          <NButton
+            v-if="
+              isStageCreated(selectedStage) && rollbackableTaskRuns.length > 0
+            "
+            size="small"
+            quaternary
+            @click="showRollbackDrawer = true"
+          >
+            <template #icon>
+              <DatabaseBackupIcon :size="16" />
+            </template>
+            {{
+              $t("task-run.rollback.available", rollbackableTaskRuns.length)
+            }}
+          </NButton>
         </div>
 
         <!-- Right: Stage actions -->
@@ -62,6 +77,14 @@
       :filter-statuses="filterStatuses"
       :readonly="!isStageCreated(selectedStage)"
     />
+
+    <!-- Rollback drawer -->
+    <TaskRunRollbackDrawer
+      v-model:show="showRollbackDrawer"
+      :rollout="rollout"
+      :rollbackable-task-runs="rollbackableTaskRuns"
+      @close="showRollbackDrawer = false"
+    />
   </div>
 
   <div v-else class="flex items-center justify-center py-12">
@@ -72,13 +95,16 @@
 </template>
 
 <script lang="ts" setup>
-import { PlayIcon, PlusIcon } from "lucide-vue-next";
+import { DatabaseBackupIcon, PlayIcon, PlusIcon } from "lucide-vue-next";
 import { NButton, NTag } from "naive-ui";
-import { computed, ref } from "vue";
+import { computed, ref, toRef } from "vue";
 import { EnvironmentV1Name } from "@/components/v2";
 import { useEnvironmentV1Store } from "@/store";
 import type { Rollout, Stage } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import { usePlanContextWithRollout } from "../../../logic";
+import TaskRunRollbackDrawer from "../TaskRunRollbackDrawer.vue";
+import { useRollbackableTasks } from "./composables/useRollbackableTasks";
 import TaskFilter from "./TaskFilter.vue";
 import TaskList from "./TaskList.vue";
 
@@ -95,6 +121,15 @@ defineEmits<{
 
 const environmentStore = useEnvironmentV1Store();
 const filterStatuses = ref<Task_Status[]>([]);
+
+// Rollback functionality
+const { taskRuns } = usePlanContextWithRollout();
+const selectedStageRef = toRef(props, "selectedStage");
+const { rollbackableTaskRuns } = useRollbackableTasks(
+  selectedStageRef,
+  taskRuns
+);
+const showRollbackDrawer = ref(false);
 
 const canRunStage = computed(() => {
   if (!props.selectedStage || !props.isStageCreated(props.selectedStage)) {

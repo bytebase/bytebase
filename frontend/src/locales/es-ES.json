@@ -339,6 +339,17 @@
     "database-create": {
       "created": "Creado",
       "pending": "Pendiente"
+    },
+    "executed-by": "Ejecutado por",
+    "affected-rows": "Filas afectadas",
+    "result": {
+      "schema-version": "Esquema: {version}",
+      "export-archive-ready": "Archivo: Listo para descargar"
+    },
+    "waiting": {
+      "connection-limit": "Esperando conexiones disponibles",
+      "parallel-tasks-limit": "Esperando a que se completen otras tareas",
+      "blocking-task": "Esperando otra tarea"
     }
   },
   "task-run": {

@@ -339,6 +339,17 @@
     "database-create": {
       "created": "作成済み",
       "pending": "保留中"
+    },
+    "executed-by": "実行者",
+    "affected-rows": "影響を受けた行数",
+    "result": {
+      "schema-version": "スキーマ: {version}",
+      "export-archive-ready": "アーカイブ: ダウンロード可能"
+    },
+    "waiting": {
+      "connection-limit": "利用可能な接続を待機しています",
+      "parallel-tasks-limit": "他のタスクが完了するのを待っています",
+      "blocking-task": "別のタスクを待っています"
     }
   },
   "task-run": {
