@@ -18,6 +18,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	advisorpg "github.com/bytebase/bytebase/backend/plugin/advisor/pg"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
@@ -825,7 +826,7 @@ type statementTypeWithPosition struct {
 // getStatementTypesWithPositionsForEngine returns statement types with position info for the given engine and ASTs.
 // The line numbers are one-based.
 // Currently only PostgreSQL is supported.
-func getStatementTypesWithPositionsForEngine(engine storepb.Engine, asts any) ([]statementTypeWithPosition, error) {
+func getStatementTypesWithPositionsForEngine(engine storepb.Engine, asts []*base.UnifiedAST) ([]statementTypeWithPosition, error) {
 	switch engine {
 	case storepb.Engine_POSTGRES, storepb.Engine_COCKROACHDB, storepb.Engine_REDSHIFT:
 		pgStmts, err := pg.GetStatementTypes(asts)

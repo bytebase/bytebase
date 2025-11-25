@@ -6,20 +6,23 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/redshift"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 // GetStatementTypes returns the statement types from the given AST.
-func GetStatementTypes(asts any) ([]string, error) {
-	tree, ok := asts.(antlr.Tree)
-	if !ok {
-		return nil, errors.Errorf("invalid ast type %T, expected antlr.Tree", asts)
-	}
-
+func GetStatementTypes(asts []*base.UnifiedAST) ([]string, error) {
 	listener := &statementTypeListener{
 		types: make(map[string]bool),
 	}
 
-	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
+	for _, ast := range asts {
+		antlrData, ok := ast.GetANTLRTree()
+		if !ok {
+			return nil, errors.Errorf("expected ANTLR tree for Redshift, got engine %s", ast.GetEngine())
+		}
+		antlr.ParseTreeWalkerDefault.Walk(listener, antlrData.Tree)
+	}
 
 	var sqlTypes []string
 	for sqlType := range listener.types {

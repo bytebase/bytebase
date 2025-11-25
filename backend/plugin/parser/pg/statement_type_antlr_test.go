@@ -4,6 +4,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 func TestGetStatementTypesANTLR(t *testing.T) {
@@ -218,10 +221,10 @@ func TestGetStatementTypesANTLR(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			parseResult, err := ParsePostgreSQL(tt.sql)
+			asts, err := base.Parse(storepb.Engine_POSTGRES, tt.sql)
 			require.NoError(t, err)
 
-			stmtsWithPos, err := GetStatementTypes(parseResult)
+			stmtsWithPos, err := GetStatementTypes(asts)
 			require.NoError(t, err)
 
 			// Extract types from statements with positions
@@ -275,10 +278,10 @@ INSERT INTO t1 VALUES (1);`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			parseResult, err := ParsePostgreSQL(tt.sql)
+			asts, err := base.Parse(storepb.Engine_POSTGRES, tt.sql)
 			require.NoError(t, err)
 
-			results, err := GetStatementTypes(parseResult)
+			results, err := GetStatementTypes(asts)
 			require.NoError(t, err)
 			require.Len(t, results, len(tt.expected))
 

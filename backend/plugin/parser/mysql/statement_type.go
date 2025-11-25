@@ -7,14 +7,14 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func GetStatementTypes(asts any) ([]string, error) {
-	nodes, ok := asts.([]*base.ParseResult)
-	if !ok {
-		return nil, errors.Errorf("invalid ast type %T, expected []*base.ParseResult", asts)
-	}
+func GetStatementTypes(asts []*base.UnifiedAST) ([]string, error) {
 	sqlTypeSet := make(map[string]bool)
-	for _, node := range nodes {
-		t := getStatementType(node)
+	for _, ast := range asts {
+		antlrData, ok := ast.GetANTLRTree()
+		if !ok {
+			return nil, errors.Errorf("expected ANTLR tree for MySQL, got engine %s", ast.GetEngine())
+		}
+		t := getStatementType(antlrData)
 		sqlTypeSet[t] = true
 	}
 	var sqlTypes []string
@@ -25,7 +25,7 @@ func GetStatementTypes(asts any) ([]string, error) {
 }
 
 // GetStatementType return the type of statement.
-func getStatementType(stmt *base.ParseResult) string {
+func getStatementType(stmt *base.ANTLRParseData) string {
 	for _, child := range stmt.Tree.GetChildren() {
 		switch ctx := child.(type) {
 		case *mysql.QueryContext:
