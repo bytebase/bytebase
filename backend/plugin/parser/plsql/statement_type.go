@@ -13,7 +13,7 @@ func GetStatementTypes(asts []*base.AST) ([]string, error) {
 	for _, ast := range asts {
 		antlrData, ok := ast.GetANTLRTree()
 		if !ok {
-			return nil, errors.Errorf("expected ANTLR tree for Oracle, got engine %s", ast.GetEngine())
+			return nil, errors.New("expected ANTLR tree for Oracle")
 		}
 		t := getStatementType(antlrData.Tree)
 		sqlTypeSet[t] = true

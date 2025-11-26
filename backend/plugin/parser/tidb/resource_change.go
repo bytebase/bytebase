@@ -26,7 +26,7 @@ func extractChangedResources(database string, _ string, dbMetadata *model.Databa
 	for _, ast := range asts {
 		node, ok := GetTiDBNode(ast)
 		if !ok {
-			return nil, errors.Errorf("expected TiDB node, got engine %s", ast.GetEngine())
+			return nil, errors.New("expected TiDB node")
 		}
 		err := getResourceChanges(database, node, statement, changedResources)
 		if err != nil {

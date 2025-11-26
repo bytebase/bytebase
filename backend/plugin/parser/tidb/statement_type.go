@@ -12,7 +12,7 @@ func GetStatementTypes(asts []*base.AST) ([]string, error) {
 	for _, ast := range asts {
 		node, ok := GetTiDBNode(ast)
 		if !ok {
-			return nil, errors.Errorf("expected TiDB node, got engine %s", ast.GetEngine())
+			return nil, errors.New("expected TiDB node")
 		}
 		t := getStatementType(node)
 		sqlTypeSet[t] = true

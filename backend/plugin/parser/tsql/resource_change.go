@@ -32,7 +32,7 @@ func extractChangedResources(currentDatabase string, currentSchema string, dbMet
 	for _, ast := range asts {
 		antlrData, ok := ast.GetANTLRTree()
 		if !ok {
-			return nil, errors.Errorf("expected ANTLR tree for MSSQL, got engine %s", ast.GetEngine())
+			return nil, errors.New("expected ANTLR tree for MSSQL")
 		}
 		antlr.ParseTreeWalkerDefault.Walk(l, antlrData.Tree)
 	}

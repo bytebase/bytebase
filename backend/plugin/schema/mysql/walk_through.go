@@ -52,8 +52,8 @@ func WalkThrough(d *model.DatabaseMetadata, ast []*base.AST) *storepb.Advice {
 			return &storepb.Advice{
 				Status:  storepb.Advice_ERROR,
 				Code:    code.Internal.Int32(),
-				Title:   fmt.Sprintf("MySQL walk-through expects ANTLR-based parser result, got engine %s", unifiedAST.GetEngine()),
-				Content: fmt.Sprintf("MySQL walk-through expects ANTLR-based parser result, got engine %s", unifiedAST.GetEngine()),
+				Title:   "MySQL walk-through expects ANTLR-based parser result",
+				Content: "MySQL walk-through expects ANTLR-based parser result",
 				StartPosition: &storepb.Position{
 					Line: 0,
 				},

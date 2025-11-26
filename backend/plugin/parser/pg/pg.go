@@ -29,7 +29,6 @@ func toAST(results []*base.ParseResult) []*base.AST {
 	var asts []*base.AST
 	for _, r := range results {
 		asts = append(asts, &base.AST{
-			Engine:   storepb.Engine_POSTGRES,
 			BaseLine: r.BaseLine,
 			ANTLRResult: &base.ANTLRParseData{
 				Tree:   r.Tree,

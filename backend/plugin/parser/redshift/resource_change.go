@@ -29,7 +29,7 @@ func extractChangedResources(database string, _ string, dbMetadata *model.Databa
 	for _, ast := range asts {
 		antlrData, ok := ast.GetANTLRTree()
 		if !ok {
-			return nil, errors.Errorf("expected ANTLR tree for Redshift, got engine %s", ast.GetEngine())
+			return nil, errors.New("expected ANTLR tree for Redshift")
 		}
 		antlr.ParseTreeWalkerDefault.Walk(listener, antlrData.Tree)
 	}

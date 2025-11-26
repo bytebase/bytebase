@@ -29,15 +29,14 @@ func parseMySQLForRegistry(statement string) ([]*base.AST, error) {
 	if err != nil {
 		return nil, err
 	}
-	return toAST(storepb.Engine_MYSQL, parseResults), nil
+	return toAST(parseResults), nil
 }
 
 // toAST converts []*ParseResult to []*base.AST.
-func toAST(engine storepb.Engine, results []*base.ParseResult) []*base.AST {
+func toAST(results []*base.ParseResult) []*base.AST {
 	var asts []*base.AST
 	for _, r := range results {
 		asts = append(asts, &base.AST{
-			Engine:   engine,
 			BaseLine: r.BaseLine,
 			ANTLRResult: &base.ANTLRParseData{
 				Tree:   r.Tree,

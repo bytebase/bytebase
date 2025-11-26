@@ -57,8 +57,8 @@ func WalkThrough(d *model.DatabaseMetadata, ast []*base.AST) *storepb.Advice {
 			return &storepb.Advice{
 				Status:  storepb.Advice_ERROR,
 				Code:    code.Internal.Int32(),
-				Title:   fmt.Sprintf("TiDB walk-through expects TiDB parser result, got engine %s", unifiedAST.GetEngine()),
-				Content: fmt.Sprintf("TiDB walk-through expects TiDB parser result, got engine %s", unifiedAST.GetEngine()),
+				Title:   "TiDB walk-through expects TiDB parser result",
+				Content: "TiDB walk-through expects TiDB parser result",
 				StartPosition: &storepb.Position{
 					Line: 0,
 				},

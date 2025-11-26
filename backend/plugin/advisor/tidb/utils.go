@@ -89,7 +89,7 @@ func getTiDBNodes(checkCtx advisor.Context) ([]ast.StmtNode, error) {
 	for _, unifiedAST := range checkCtx.AST {
 		node, ok := tidbparser.GetTiDBNode(unifiedAST)
 		if !ok {
-			return nil, errors.Errorf("AST type mismatch: expected TiDB parser result, got engine %s", unifiedAST.GetEngine())
+			return nil, errors.New("AST type mismatch: expected TiDB parser result")
 		}
 		stmtNodes = append(stmtNodes, node)
 	}

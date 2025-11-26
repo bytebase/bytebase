@@ -2,17 +2,12 @@ package base
 
 import (
 	"github.com/antlr4-go/antlr/v4"
-
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 // AST represents a parsed SQL statement with standardized metadata.
 // It wraps different parser outputs (ANTLR, TiDB, CockroachDB) into a single type.
 // Each parser package is responsible for creating AST instances.
 type AST struct {
-	// Engine is the database engine that parsed this SQL
-	Engine storepb.Engine
-
 	// OriginalText is the original SQL text (may be empty for some parsers)
 	OriginalText string
 
@@ -52,9 +47,4 @@ type ANTLRParseData struct {
 // Returns the data and true if available, nil and false otherwise.
 func (u *AST) GetANTLRTree() (*ANTLRParseData, bool) {
 	return u.ANTLRResult, u.ANTLRResult != nil
-}
-
-// GetEngine returns the database engine that parsed this SQL.
-func (u *AST) GetEngine() storepb.Engine {
-	return u.Engine
 }

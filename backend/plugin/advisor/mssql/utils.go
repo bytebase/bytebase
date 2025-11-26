@@ -16,7 +16,7 @@ func getANTLRTree(checkCtx advisor.Context) ([]*base.ParseResult, error) {
 	for _, unifiedAST := range checkCtx.AST {
 		antlrData, ok := unifiedAST.GetANTLRTree()
 		if !ok {
-			return nil, errors.Errorf("AST type mismatch: expected ANTLR-based parser result, got engine %s", unifiedAST.GetEngine())
+			return nil, errors.New("AST type mismatch: expected ANTLR-based parser result")
 		}
 		parseResults = append(parseResults, &base.ParseResult{
 			Tree:     antlrData.Tree,

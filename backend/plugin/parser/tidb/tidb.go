@@ -68,7 +68,6 @@ func ParseTiDBForSyntaxCheck(statement string) ([]*base.AST, error) {
 			}
 		}
 		results = append(results, &base.AST{
-			Engine:   storepb.Engine_TIDB,
 			BaseLine: singleSQL.BaseLine,
 			TiDBNode: node,
 		})

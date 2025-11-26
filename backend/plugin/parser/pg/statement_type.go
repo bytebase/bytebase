@@ -26,7 +26,7 @@ func GetStatementTypes(asts []*base.AST) ([]StatementTypeWithPosition, error) {
 	for _, unifiedAST := range asts {
 		antlrData, ok := unifiedAST.GetANTLRTree()
 		if !ok {
-			return nil, errors.Errorf("expected ANTLR tree for PostgreSQL, got engine %s", unifiedAST.GetEngine())
+			return nil, errors.New("expected ANTLR tree for PostgreSQL")
 		}
 		if antlrData.Tree == nil {
 			return nil, errors.New("ANTLR tree is nil")

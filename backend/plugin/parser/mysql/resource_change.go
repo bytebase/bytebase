@@ -29,7 +29,7 @@ func extractChangedResources(currentDatabase string, _ string, dbMetadata *model
 	for _, ast := range asts {
 		antlrData, ok := ast.GetANTLRTree()
 		if !ok {
-			return nil, errors.Errorf("expected ANTLR tree for MySQL, got engine %s", ast.GetEngine())
+			return nil, errors.New("expected ANTLR tree for MySQL")
 		}
 		l.reset()
 		antlr.ParseTreeWalkerDefault.Walk(l, antlrData.Tree)
