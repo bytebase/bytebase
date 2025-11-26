@@ -1,4 +1,6 @@
 import { toJson } from "@bufbuild/protobuf";
+import type { Value } from "@bufbuild/protobuf/wkt";
+import { ValueSchema } from "@bufbuild/protobuf/wkt";
 import dayjs from "dayjs";
 import { getDateForPbTimestampProtoEs } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
@@ -85,7 +87,7 @@ export const extractSQLRowValuePlain = (value: RowValue | undefined) => {
     return formatTimestampWithTz(value.kind.value);
   }
   if (value.kind?.case === "valueValue") {
-    return JSON.stringify(value.kind.value);
+    return extractProtobufValue(value.kind.value);
   }
 
   return Object.values(plainObject)[0];
@@ -130,6 +132,28 @@ const formatTimestampWithTz = (timestampTzValue: RowValue_TimestampTZ) => {
       ? `${fullDayjs.format("YYYY-MM-DD HH:mm:ss")}.${microseconds.toString().padStart(timestampTzValue.accuracy, "0")}${timezoneOffset}`
       : `${fullDayjs.format("YYYY-MM-DD HH:mm:ss")}${timezoneOffset}`;
   return formattedTimestamp;
+};
+
+/**
+ * Extracts a display-ready value from google.protobuf.Value.
+ * This is used for Spanner, Cassandra, and ClickHouse complex types.
+ *
+ * Primitives are returned as-is. Complex types (arrays, objects) are returned
+ * as JSON strings because the UI layer (TableCell.vue) calls String() on the
+ * result, which would convert raw objects to "[object Object]".
+ */
+const extractProtobufValue = (pbValue: Value | undefined): any => {
+  if (!pbValue) return null;
+
+  const jsonValue = toJson(ValueSchema, pbValue);
+
+  // Stringify complex types (arrays and objects) for display
+  // Keep primitives (string, number, boolean, null) as-is
+  if (typeof jsonValue === "object" && jsonValue !== null) {
+    return JSON.stringify(jsonValue);
+  }
+
+  return jsonValue;
 };
 
 export const wrapSQLIdentifier = (id: string, engine: Engine) => {
