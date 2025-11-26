@@ -96,6 +96,9 @@ func (x *WorkspaceApprovalSetting_Rule) Equal(y *WorkspaceApprovalSetting_Rule) 
 	} else if !proto.Equal(x.Condition, y.Condition) {
 		return false
 	}
+	if x.Source != y.Source {
+		return false
+	}
 	return true
 }
 

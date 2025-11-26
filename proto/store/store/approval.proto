@@ -45,10 +45,6 @@ message IssuePayloadApproval {
 
 // ApprovalTemplate defines the approval workflow and requirements for an issue.
 message ApprovalTemplate {
-  // The unique identifier for the approval template.
-  // Built-in templates use "bb." prefix (e.g., "bb.project-owner", "bb.workspace-dba").
-  // Custom templates use a UUID or other unique identifier.
-  string id = 4;
   // The approval workflow specification.
   ApprovalFlow flow = 1;
   // Human-readable title of the approval template.

@@ -8374,12 +8374,6 @@ components:
         ApprovalTemplate:
             type: object
             properties:
-                id:
-                    type: string
-                    description: |-
-                        The unique identifier for the approval template.
-                         Built-in templates use "bb." prefix (e.g., "bb.project-owner", "bb.workspace-dba").
-                         Custom templates use a UUID or other unique identifier.
                 flow:
                     allOf:
                         - $ref: '#/components/schemas/ApprovalFlow'
@@ -14846,6 +14840,16 @@ components:
                     $ref: '#/components/schemas/ApprovalTemplate'
                 condition:
                     $ref: '#/components/schemas/Expr'
+                source:
+                    enum:
+                        - SOURCE_UNSPECIFIED
+                        - DDL
+                        - DML
+                        - CREATE_DATABASE
+                        - EXPORT_DATA
+                        - REQUEST_ROLE
+                    type: string
+                    format: enum
         WorkspaceProfileSetting:
             type: object
             properties:

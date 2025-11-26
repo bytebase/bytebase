@@ -23,6 +23,7 @@ import {
 import { Engine, RiskLevel } from "@/types/proto-es/v1/common_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { type Risk, Risk_Source } from "@/types/proto-es/v1/risk_service_pb";
+import { WorkspaceApprovalSetting_Rule_Source } from "@/types/proto-es/v1/setting_service_pb";
 import {
   displayRoleTitle,
   engineNameV1,
@@ -338,4 +339,85 @@ export const getOptionConfigMap = (source: Risk_Source) => {
 
     return map;
   }, new Map<Factor, OptionConfig>());
+};
+
+// Overload for new approval rule source enum
+export const approvalSourceText = (
+  source: WorkspaceApprovalSetting_Rule_Source
+) => {
+  switch (source) {
+    case WorkspaceApprovalSetting_Rule_Source.SOURCE_UNSPECIFIED:
+      return t("common.all");
+    case WorkspaceApprovalSetting_Rule_Source.DDL:
+      return t("custom-approval.risk-rule.risk.namespace.ddl");
+    case WorkspaceApprovalSetting_Rule_Source.DML:
+      return t("custom-approval.risk-rule.risk.namespace.dml");
+    case WorkspaceApprovalSetting_Rule_Source.CREATE_DATABASE:
+      return t("custom-approval.risk-rule.risk.namespace.create_database");
+    case WorkspaceApprovalSetting_Rule_Source.EXPORT_DATA:
+      return t("custom-approval.risk-rule.risk.namespace.data_export");
+    case WorkspaceApprovalSetting_Rule_Source.REQUEST_ROLE:
+      return t("custom-approval.risk-rule.risk.namespace.request-role");
+    default:
+      return "UNRECOGNIZED";
+  }
+};
+
+// Map between WorkspaceApprovalSetting_Rule_Source and Factor lists
+export const ApprovalSourceFactorMap: Map<
+  WorkspaceApprovalSetting_Rule_Source,
+  Factor[]
+> = new Map([
+  [
+    WorkspaceApprovalSetting_Rule_Source.DDL,
+    RiskSourceFactorMap.get(Risk_Source.DDL) || [],
+  ],
+  [
+    WorkspaceApprovalSetting_Rule_Source.DML,
+    RiskSourceFactorMap.get(Risk_Source.DML) || [],
+  ],
+  [
+    WorkspaceApprovalSetting_Rule_Source.CREATE_DATABASE,
+    RiskSourceFactorMap.get(Risk_Source.CREATE_DATABASE) || [],
+  ],
+  [
+    WorkspaceApprovalSetting_Rule_Source.EXPORT_DATA,
+    RiskSourceFactorMap.get(Risk_Source.DATA_EXPORT) || [],
+  ],
+  [
+    WorkspaceApprovalSetting_Rule_Source.REQUEST_ROLE,
+    RiskSourceFactorMap.get(Risk_Source.REQUEST_ROLE) || [],
+  ],
+]);
+
+export const getApprovalFactorList = (
+  source: WorkspaceApprovalSetting_Rule_Source
+) => {
+  return ApprovalSourceFactorMap.get(source) ?? [];
+};
+
+export const getApprovalOptionConfigMap = (
+  source: WorkspaceApprovalSetting_Rule_Source
+) => {
+  const riskSource = approvalSourceToRiskSource(source);
+  return getOptionConfigMap(riskSource);
+};
+
+const approvalSourceToRiskSource = (
+  source: WorkspaceApprovalSetting_Rule_Source
+): Risk_Source => {
+  switch (source) {
+    case WorkspaceApprovalSetting_Rule_Source.DDL:
+      return Risk_Source.DDL;
+    case WorkspaceApprovalSetting_Rule_Source.DML:
+      return Risk_Source.DML;
+    case WorkspaceApprovalSetting_Rule_Source.CREATE_DATABASE:
+      return Risk_Source.CREATE_DATABASE;
+    case WorkspaceApprovalSetting_Rule_Source.EXPORT_DATA:
+      return Risk_Source.DATA_EXPORT;
+    case WorkspaceApprovalSetting_Rule_Source.REQUEST_ROLE:
+      return Risk_Source.REQUEST_ROLE;
+    default:
+      return Risk_Source.SOURCE_UNSPECIFIED;
+  }
 };

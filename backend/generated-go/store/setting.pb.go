@@ -219,6 +219,64 @@ func (Announcement_AlertLevel) EnumDescriptor() ([]byte, []int) {
 	return file_store_setting_proto_rawDescGZIP(), []int{1, 0}
 }
 
+type WorkspaceApprovalSetting_Rule_Source int32
+
+const (
+	WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED WorkspaceApprovalSetting_Rule_Source = 0
+	WorkspaceApprovalSetting_Rule_DDL                WorkspaceApprovalSetting_Rule_Source = 1
+	WorkspaceApprovalSetting_Rule_DML                WorkspaceApprovalSetting_Rule_Source = 2
+	WorkspaceApprovalSetting_Rule_CREATE_DATABASE    WorkspaceApprovalSetting_Rule_Source = 3
+	WorkspaceApprovalSetting_Rule_EXPORT_DATA        WorkspaceApprovalSetting_Rule_Source = 4
+	WorkspaceApprovalSetting_Rule_REQUEST_ROLE       WorkspaceApprovalSetting_Rule_Source = 5
+)
+
+// Enum value maps for WorkspaceApprovalSetting_Rule_Source.
+var (
+	WorkspaceApprovalSetting_Rule_Source_name = map[int32]string{
+		0: "SOURCE_UNSPECIFIED",
+		1: "DDL",
+		2: "DML",
+		3: "CREATE_DATABASE",
+		4: "EXPORT_DATA",
+		5: "REQUEST_ROLE",
+	}
+	WorkspaceApprovalSetting_Rule_Source_value = map[string]int32{
+		"SOURCE_UNSPECIFIED": 0,
+		"DDL":                1,
+		"DML":                2,
+		"CREATE_DATABASE":    3,
+		"EXPORT_DATA":        4,
+		"REQUEST_ROLE":       5,
+	}
+)
+
+func (x WorkspaceApprovalSetting_Rule_Source) Enum() *WorkspaceApprovalSetting_Rule_Source {
+	p := new(WorkspaceApprovalSetting_Rule_Source)
+	*p = x
+	return p
+}
+
+func (x WorkspaceApprovalSetting_Rule_Source) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (WorkspaceApprovalSetting_Rule_Source) Descriptor() protoreflect.EnumDescriptor {
+	return file_store_setting_proto_enumTypes[3].Descriptor()
+}
+
+func (WorkspaceApprovalSetting_Rule_Source) Type() protoreflect.EnumType {
+	return &file_store_setting_proto_enumTypes[3]
+}
+
+func (x WorkspaceApprovalSetting_Rule_Source) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use WorkspaceApprovalSetting_Rule_Source.Descriptor instead.
+func (WorkspaceApprovalSetting_Rule_Source) EnumDescriptor() ([]byte, []int) {
+	return file_store_setting_proto_rawDescGZIP(), []int{2, 0, 0}
+}
+
 type Algorithm_InnerOuterMask_MaskType int32
 
 const (
@@ -252,11 +310,11 @@ func (x Algorithm_InnerOuterMask_MaskType) String() string {
 }
 
 func (Algorithm_InnerOuterMask_MaskType) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_setting_proto_enumTypes[3].Descriptor()
+	return file_store_setting_proto_enumTypes[4].Descriptor()
 }
 
 func (Algorithm_InnerOuterMask_MaskType) Type() protoreflect.EnumType {
-	return &file_store_setting_proto_enumTypes[3]
+	return &file_store_setting_proto_enumTypes[4]
 }
 
 func (x Algorithm_InnerOuterMask_MaskType) Number() protoreflect.EnumNumber {
@@ -307,11 +365,11 @@ func (x AISetting_Provider) String() string {
 }
 
 func (AISetting_Provider) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_setting_proto_enumTypes[4].Descriptor()
+	return file_store_setting_proto_enumTypes[5].Descriptor()
 }
 
 func (AISetting_Provider) Type() protoreflect.EnumType {
-	return &file_store_setting_proto_enumTypes[4]
+	return &file_store_setting_proto_enumTypes[5]
 }
 
 func (x AISetting_Provider) Number() protoreflect.EnumNumber {
@@ -1162,9 +1220,10 @@ func (x *EnvironmentSetting) GetEnvironments() []*EnvironmentSetting_Environment
 }
 
 type WorkspaceApprovalSetting_Rule struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Template      *ApprovalTemplate      `protobuf:"bytes,1,opt,name=template,proto3" json:"template,omitempty"`
-	Condition     *expr.Expr             `protobuf:"bytes,2,opt,name=condition,proto3" json:"condition,omitempty"`
+	state         protoimpl.MessageState               `protogen:"open.v1"`
+	Template      *ApprovalTemplate                    `protobuf:"bytes,1,opt,name=template,proto3" json:"template,omitempty"`
+	Condition     *expr.Expr                           `protobuf:"bytes,2,opt,name=condition,proto3" json:"condition,omitempty"`
+	Source        WorkspaceApprovalSetting_Rule_Source `protobuf:"varint,3,opt,name=source,proto3,enum=bytebase.store.WorkspaceApprovalSetting_Rule_Source" json:"source,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1211,6 +1270,13 @@ func (x *WorkspaceApprovalSetting_Rule) GetCondition() *expr.Expr {
 		return x.Condition
 	}
 	return nil
+}
+
+func (x *WorkspaceApprovalSetting_Rule) GetSource() WorkspaceApprovalSetting_Rule_Source {
+	if x != nil {
+		return x.Source
+	}
+	return WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED
 }
 
 type SchemaTemplateSetting_FieldTemplate struct {
@@ -2495,12 +2561,20 @@ const file_store_setting_proto_rawDesc = "" +
 	"\x17ALERT_LEVEL_UNSPECIFIED\x10\x00\x12\x14\n" +
 	"\x10ALERT_LEVEL_INFO\x10\x01\x12\x17\n" +
 	"\x13ALERT_LEVEL_WARNING\x10\x02\x12\x18\n" +
-	"\x14ALERT_LEVEL_CRITICAL\x10\x03\"\xd6\x01\n" +
+	"\x14ALERT_LEVEL_CRITICAL\x10\x03\"\x91\x03\n" +
 	"\x18WorkspaceApprovalSetting\x12C\n" +
-	"\x05rules\x18\x01 \x03(\v2-.bytebase.store.WorkspaceApprovalSetting.RuleR\x05rules\x1au\n" +
+	"\x05rules\x18\x01 \x03(\v2-.bytebase.store.WorkspaceApprovalSetting.RuleR\x05rules\x1a\xaf\x02\n" +
 	"\x04Rule\x12<\n" +
 	"\btemplate\x18\x01 \x01(\v2 .bytebase.store.ApprovalTemplateR\btemplate\x12/\n" +
-	"\tcondition\x18\x02 \x01(\v2\x11.google.type.ExprR\tcondition\"\xd0\x06\n" +
+	"\tcondition\x18\x02 \x01(\v2\x11.google.type.ExprR\tcondition\x12L\n" +
+	"\x06source\x18\x03 \x01(\x0e24.bytebase.store.WorkspaceApprovalSetting.Rule.SourceR\x06source\"j\n" +
+	"\x06Source\x12\x16\n" +
+	"\x12SOURCE_UNSPECIFIED\x10\x00\x12\a\n" +
+	"\x03DDL\x10\x01\x12\a\n" +
+	"\x03DML\x10\x02\x12\x13\n" +
+	"\x0fCREATE_DATABASE\x10\x03\x12\x0f\n" +
+	"\vEXPORT_DATA\x10\x04\x12\x10\n" +
+	"\fREQUEST_ROLE\x10\x05\"\xd0\x06\n" +
 	"\x15SchemaTemplateSetting\x12\\\n" +
 	"\x0ffield_templates\x18\x01 \x03(\v23.bytebase.store.SchemaTemplateSetting.FieldTemplateR\x0efieldTemplates\x12S\n" +
 	"\fcolumn_types\x18\x02 \x03(\v20.bytebase.store.SchemaTemplateSetting.ColumnTypeR\vcolumnTypes\x12\\\n" +
@@ -2683,106 +2757,108 @@ func file_store_setting_proto_rawDescGZIP() []byte {
 	return file_store_setting_proto_rawDescData
 }
 
-var file_store_setting_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
+var file_store_setting_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
 var file_store_setting_proto_msgTypes = make([]protoimpl.MessageInfo, 34)
 var file_store_setting_proto_goTypes = []any{
 	(SettingName)(0),                                                 // 0: bytebase.store.SettingName
 	(DatabaseChangeMode)(0),                                          // 1: bytebase.store.DatabaseChangeMode
 	(Announcement_AlertLevel)(0),                                     // 2: bytebase.store.Announcement.AlertLevel
-	(Algorithm_InnerOuterMask_MaskType)(0),                           // 3: bytebase.store.Algorithm.InnerOuterMask.MaskType
-	(AISetting_Provider)(0),                                          // 4: bytebase.store.AISetting.Provider
-	(*WorkspaceProfileSetting)(nil),                                  // 5: bytebase.store.WorkspaceProfileSetting
-	(*Announcement)(nil),                                             // 6: bytebase.store.Announcement
-	(*WorkspaceApprovalSetting)(nil),                                 // 7: bytebase.store.WorkspaceApprovalSetting
-	(*SchemaTemplateSetting)(nil),                                    // 8: bytebase.store.SchemaTemplateSetting
-	(*DataClassificationSetting)(nil),                                // 9: bytebase.store.DataClassificationSetting
-	(*SemanticTypeSetting)(nil),                                      // 10: bytebase.store.SemanticTypeSetting
-	(*Algorithm)(nil),                                                // 11: bytebase.store.Algorithm
-	(*AppIMSetting)(nil),                                             // 12: bytebase.store.AppIMSetting
-	(*SCIMSetting)(nil),                                              // 13: bytebase.store.SCIMSetting
-	(*PasswordRestrictionSetting)(nil),                               // 14: bytebase.store.PasswordRestrictionSetting
-	(*AISetting)(nil),                                                // 15: bytebase.store.AISetting
-	(*EnvironmentSetting)(nil),                                       // 16: bytebase.store.EnvironmentSetting
-	(*WorkspaceApprovalSetting_Rule)(nil),                            // 17: bytebase.store.WorkspaceApprovalSetting.Rule
-	(*SchemaTemplateSetting_FieldTemplate)(nil),                      // 18: bytebase.store.SchemaTemplateSetting.FieldTemplate
-	(*SchemaTemplateSetting_ColumnType)(nil),                         // 19: bytebase.store.SchemaTemplateSetting.ColumnType
-	(*SchemaTemplateSetting_TableTemplate)(nil),                      // 20: bytebase.store.SchemaTemplateSetting.TableTemplate
-	(*DataClassificationSetting_DataClassificationConfig)(nil),       // 21: bytebase.store.DataClassificationSetting.DataClassificationConfig
-	(*DataClassificationSetting_DataClassificationConfig_Level)(nil), // 22: bytebase.store.DataClassificationSetting.DataClassificationConfig.Level
-	(*DataClassificationSetting_DataClassificationConfig_DataClassification)(nil), // 23: bytebase.store.DataClassificationSetting.DataClassificationConfig.DataClassification
-	nil,                                      // 24: bytebase.store.DataClassificationSetting.DataClassificationConfig.ClassificationEntry
-	(*SemanticTypeSetting_SemanticType)(nil), // 25: bytebase.store.SemanticTypeSetting.SemanticType
-	(*Algorithm_FullMask)(nil),               // 26: bytebase.store.Algorithm.FullMask
-	(*Algorithm_RangeMask)(nil),              // 27: bytebase.store.Algorithm.RangeMask
-	(*Algorithm_MD5Mask)(nil),                // 28: bytebase.store.Algorithm.MD5Mask
-	(*Algorithm_InnerOuterMask)(nil),         // 29: bytebase.store.Algorithm.InnerOuterMask
-	(*Algorithm_RangeMask_Slice)(nil),        // 30: bytebase.store.Algorithm.RangeMask.Slice
-	(*AppIMSetting_Slack)(nil),               // 31: bytebase.store.AppIMSetting.Slack
-	(*AppIMSetting_Feishu)(nil),              // 32: bytebase.store.AppIMSetting.Feishu
-	(*AppIMSetting_Wecom)(nil),               // 33: bytebase.store.AppIMSetting.Wecom
-	(*AppIMSetting_Lark)(nil),                // 34: bytebase.store.AppIMSetting.Lark
-	(*AppIMSetting_DingTalk)(nil),            // 35: bytebase.store.AppIMSetting.DingTalk
-	(*AppIMSetting_IMSetting)(nil),           // 36: bytebase.store.AppIMSetting.IMSetting
-	(*EnvironmentSetting_Environment)(nil),   // 37: bytebase.store.EnvironmentSetting.Environment
-	nil,                                      // 38: bytebase.store.EnvironmentSetting.Environment.TagsEntry
-	(*durationpb.Duration)(nil),              // 39: google.protobuf.Duration
-	(*ApprovalTemplate)(nil),                 // 40: bytebase.store.ApprovalTemplate
-	(*expr.Expr)(nil),                        // 41: google.type.Expr
-	(Engine)(0),                              // 42: bytebase.store.Engine
-	(*ColumnMetadata)(nil),                   // 43: bytebase.store.ColumnMetadata
-	(*ColumnCatalog)(nil),                    // 44: bytebase.store.ColumnCatalog
-	(*TableMetadata)(nil),                    // 45: bytebase.store.TableMetadata
-	(*TableCatalog)(nil),                     // 46: bytebase.store.TableCatalog
-	(ProjectWebhook_Type)(0),                 // 47: bytebase.store.ProjectWebhook.Type
+	(WorkspaceApprovalSetting_Rule_Source)(0),                        // 3: bytebase.store.WorkspaceApprovalSetting.Rule.Source
+	(Algorithm_InnerOuterMask_MaskType)(0),                           // 4: bytebase.store.Algorithm.InnerOuterMask.MaskType
+	(AISetting_Provider)(0),                                          // 5: bytebase.store.AISetting.Provider
+	(*WorkspaceProfileSetting)(nil),                                  // 6: bytebase.store.WorkspaceProfileSetting
+	(*Announcement)(nil),                                             // 7: bytebase.store.Announcement
+	(*WorkspaceApprovalSetting)(nil),                                 // 8: bytebase.store.WorkspaceApprovalSetting
+	(*SchemaTemplateSetting)(nil),                                    // 9: bytebase.store.SchemaTemplateSetting
+	(*DataClassificationSetting)(nil),                                // 10: bytebase.store.DataClassificationSetting
+	(*SemanticTypeSetting)(nil),                                      // 11: bytebase.store.SemanticTypeSetting
+	(*Algorithm)(nil),                                                // 12: bytebase.store.Algorithm
+	(*AppIMSetting)(nil),                                             // 13: bytebase.store.AppIMSetting
+	(*SCIMSetting)(nil),                                              // 14: bytebase.store.SCIMSetting
+	(*PasswordRestrictionSetting)(nil),                               // 15: bytebase.store.PasswordRestrictionSetting
+	(*AISetting)(nil),                                                // 16: bytebase.store.AISetting
+	(*EnvironmentSetting)(nil),                                       // 17: bytebase.store.EnvironmentSetting
+	(*WorkspaceApprovalSetting_Rule)(nil),                            // 18: bytebase.store.WorkspaceApprovalSetting.Rule
+	(*SchemaTemplateSetting_FieldTemplate)(nil),                      // 19: bytebase.store.SchemaTemplateSetting.FieldTemplate
+	(*SchemaTemplateSetting_ColumnType)(nil),                         // 20: bytebase.store.SchemaTemplateSetting.ColumnType
+	(*SchemaTemplateSetting_TableTemplate)(nil),                      // 21: bytebase.store.SchemaTemplateSetting.TableTemplate
+	(*DataClassificationSetting_DataClassificationConfig)(nil),       // 22: bytebase.store.DataClassificationSetting.DataClassificationConfig
+	(*DataClassificationSetting_DataClassificationConfig_Level)(nil), // 23: bytebase.store.DataClassificationSetting.DataClassificationConfig.Level
+	(*DataClassificationSetting_DataClassificationConfig_DataClassification)(nil), // 24: bytebase.store.DataClassificationSetting.DataClassificationConfig.DataClassification
+	nil,                                      // 25: bytebase.store.DataClassificationSetting.DataClassificationConfig.ClassificationEntry
+	(*SemanticTypeSetting_SemanticType)(nil), // 26: bytebase.store.SemanticTypeSetting.SemanticType
+	(*Algorithm_FullMask)(nil),               // 27: bytebase.store.Algorithm.FullMask
+	(*Algorithm_RangeMask)(nil),              // 28: bytebase.store.Algorithm.RangeMask
+	(*Algorithm_MD5Mask)(nil),                // 29: bytebase.store.Algorithm.MD5Mask
+	(*Algorithm_InnerOuterMask)(nil),         // 30: bytebase.store.Algorithm.InnerOuterMask
+	(*Algorithm_RangeMask_Slice)(nil),        // 31: bytebase.store.Algorithm.RangeMask.Slice
+	(*AppIMSetting_Slack)(nil),               // 32: bytebase.store.AppIMSetting.Slack
+	(*AppIMSetting_Feishu)(nil),              // 33: bytebase.store.AppIMSetting.Feishu
+	(*AppIMSetting_Wecom)(nil),               // 34: bytebase.store.AppIMSetting.Wecom
+	(*AppIMSetting_Lark)(nil),                // 35: bytebase.store.AppIMSetting.Lark
+	(*AppIMSetting_DingTalk)(nil),            // 36: bytebase.store.AppIMSetting.DingTalk
+	(*AppIMSetting_IMSetting)(nil),           // 37: bytebase.store.AppIMSetting.IMSetting
+	(*EnvironmentSetting_Environment)(nil),   // 38: bytebase.store.EnvironmentSetting.Environment
+	nil,                                      // 39: bytebase.store.EnvironmentSetting.Environment.TagsEntry
+	(*durationpb.Duration)(nil),              // 40: google.protobuf.Duration
+	(*ApprovalTemplate)(nil),                 // 41: bytebase.store.ApprovalTemplate
+	(*expr.Expr)(nil),                        // 42: google.type.Expr
+	(Engine)(0),                              // 43: bytebase.store.Engine
+	(*ColumnMetadata)(nil),                   // 44: bytebase.store.ColumnMetadata
+	(*ColumnCatalog)(nil),                    // 45: bytebase.store.ColumnCatalog
+	(*TableMetadata)(nil),                    // 46: bytebase.store.TableMetadata
+	(*TableCatalog)(nil),                     // 47: bytebase.store.TableCatalog
+	(ProjectWebhook_Type)(0),                 // 48: bytebase.store.ProjectWebhook.Type
 }
 var file_store_setting_proto_depIdxs = []int32{
-	39, // 0: bytebase.store.WorkspaceProfileSetting.token_duration:type_name -> google.protobuf.Duration
-	6,  // 1: bytebase.store.WorkspaceProfileSetting.announcement:type_name -> bytebase.store.Announcement
-	39, // 2: bytebase.store.WorkspaceProfileSetting.maximum_role_expiration:type_name -> google.protobuf.Duration
+	40, // 0: bytebase.store.WorkspaceProfileSetting.token_duration:type_name -> google.protobuf.Duration
+	7,  // 1: bytebase.store.WorkspaceProfileSetting.announcement:type_name -> bytebase.store.Announcement
+	40, // 2: bytebase.store.WorkspaceProfileSetting.maximum_role_expiration:type_name -> google.protobuf.Duration
 	1,  // 3: bytebase.store.WorkspaceProfileSetting.database_change_mode:type_name -> bytebase.store.DatabaseChangeMode
-	39, // 4: bytebase.store.WorkspaceProfileSetting.inactive_session_timeout:type_name -> google.protobuf.Duration
+	40, // 4: bytebase.store.WorkspaceProfileSetting.inactive_session_timeout:type_name -> google.protobuf.Duration
 	2,  // 5: bytebase.store.Announcement.level:type_name -> bytebase.store.Announcement.AlertLevel
-	17, // 6: bytebase.store.WorkspaceApprovalSetting.rules:type_name -> bytebase.store.WorkspaceApprovalSetting.Rule
-	18, // 7: bytebase.store.SchemaTemplateSetting.field_templates:type_name -> bytebase.store.SchemaTemplateSetting.FieldTemplate
-	19, // 8: bytebase.store.SchemaTemplateSetting.column_types:type_name -> bytebase.store.SchemaTemplateSetting.ColumnType
-	20, // 9: bytebase.store.SchemaTemplateSetting.table_templates:type_name -> bytebase.store.SchemaTemplateSetting.TableTemplate
-	21, // 10: bytebase.store.DataClassificationSetting.configs:type_name -> bytebase.store.DataClassificationSetting.DataClassificationConfig
-	25, // 11: bytebase.store.SemanticTypeSetting.types:type_name -> bytebase.store.SemanticTypeSetting.SemanticType
-	26, // 12: bytebase.store.Algorithm.full_mask:type_name -> bytebase.store.Algorithm.FullMask
-	27, // 13: bytebase.store.Algorithm.range_mask:type_name -> bytebase.store.Algorithm.RangeMask
-	28, // 14: bytebase.store.Algorithm.md5_mask:type_name -> bytebase.store.Algorithm.MD5Mask
-	29, // 15: bytebase.store.Algorithm.inner_outer_mask:type_name -> bytebase.store.Algorithm.InnerOuterMask
-	36, // 16: bytebase.store.AppIMSetting.settings:type_name -> bytebase.store.AppIMSetting.IMSetting
-	39, // 17: bytebase.store.PasswordRestrictionSetting.password_rotation:type_name -> google.protobuf.Duration
-	4,  // 18: bytebase.store.AISetting.provider:type_name -> bytebase.store.AISetting.Provider
-	37, // 19: bytebase.store.EnvironmentSetting.environments:type_name -> bytebase.store.EnvironmentSetting.Environment
-	40, // 20: bytebase.store.WorkspaceApprovalSetting.Rule.template:type_name -> bytebase.store.ApprovalTemplate
-	41, // 21: bytebase.store.WorkspaceApprovalSetting.Rule.condition:type_name -> google.type.Expr
-	42, // 22: bytebase.store.SchemaTemplateSetting.FieldTemplate.engine:type_name -> bytebase.store.Engine
-	43, // 23: bytebase.store.SchemaTemplateSetting.FieldTemplate.column:type_name -> bytebase.store.ColumnMetadata
-	44, // 24: bytebase.store.SchemaTemplateSetting.FieldTemplate.catalog:type_name -> bytebase.store.ColumnCatalog
-	42, // 25: bytebase.store.SchemaTemplateSetting.ColumnType.engine:type_name -> bytebase.store.Engine
-	42, // 26: bytebase.store.SchemaTemplateSetting.TableTemplate.engine:type_name -> bytebase.store.Engine
-	45, // 27: bytebase.store.SchemaTemplateSetting.TableTemplate.table:type_name -> bytebase.store.TableMetadata
-	46, // 28: bytebase.store.SchemaTemplateSetting.TableTemplate.catalog:type_name -> bytebase.store.TableCatalog
-	22, // 29: bytebase.store.DataClassificationSetting.DataClassificationConfig.levels:type_name -> bytebase.store.DataClassificationSetting.DataClassificationConfig.Level
-	24, // 30: bytebase.store.DataClassificationSetting.DataClassificationConfig.classification:type_name -> bytebase.store.DataClassificationSetting.DataClassificationConfig.ClassificationEntry
-	23, // 31: bytebase.store.DataClassificationSetting.DataClassificationConfig.ClassificationEntry.value:type_name -> bytebase.store.DataClassificationSetting.DataClassificationConfig.DataClassification
-	11, // 32: bytebase.store.SemanticTypeSetting.SemanticType.algorithm:type_name -> bytebase.store.Algorithm
-	30, // 33: bytebase.store.Algorithm.RangeMask.slices:type_name -> bytebase.store.Algorithm.RangeMask.Slice
-	3,  // 34: bytebase.store.Algorithm.InnerOuterMask.type:type_name -> bytebase.store.Algorithm.InnerOuterMask.MaskType
-	47, // 35: bytebase.store.AppIMSetting.IMSetting.type:type_name -> bytebase.store.ProjectWebhook.Type
-	31, // 36: bytebase.store.AppIMSetting.IMSetting.slack:type_name -> bytebase.store.AppIMSetting.Slack
-	32, // 37: bytebase.store.AppIMSetting.IMSetting.feishu:type_name -> bytebase.store.AppIMSetting.Feishu
-	33, // 38: bytebase.store.AppIMSetting.IMSetting.wecom:type_name -> bytebase.store.AppIMSetting.Wecom
-	34, // 39: bytebase.store.AppIMSetting.IMSetting.lark:type_name -> bytebase.store.AppIMSetting.Lark
-	35, // 40: bytebase.store.AppIMSetting.IMSetting.dingtalk:type_name -> bytebase.store.AppIMSetting.DingTalk
-	38, // 41: bytebase.store.EnvironmentSetting.Environment.tags:type_name -> bytebase.store.EnvironmentSetting.Environment.TagsEntry
-	42, // [42:42] is the sub-list for method output_type
-	42, // [42:42] is the sub-list for method input_type
-	42, // [42:42] is the sub-list for extension type_name
-	42, // [42:42] is the sub-list for extension extendee
-	0,  // [0:42] is the sub-list for field type_name
+	18, // 6: bytebase.store.WorkspaceApprovalSetting.rules:type_name -> bytebase.store.WorkspaceApprovalSetting.Rule
+	19, // 7: bytebase.store.SchemaTemplateSetting.field_templates:type_name -> bytebase.store.SchemaTemplateSetting.FieldTemplate
+	20, // 8: bytebase.store.SchemaTemplateSetting.column_types:type_name -> bytebase.store.SchemaTemplateSetting.ColumnType
+	21, // 9: bytebase.store.SchemaTemplateSetting.table_templates:type_name -> bytebase.store.SchemaTemplateSetting.TableTemplate
+	22, // 10: bytebase.store.DataClassificationSetting.configs:type_name -> bytebase.store.DataClassificationSetting.DataClassificationConfig
+	26, // 11: bytebase.store.SemanticTypeSetting.types:type_name -> bytebase.store.SemanticTypeSetting.SemanticType
+	27, // 12: bytebase.store.Algorithm.full_mask:type_name -> bytebase.store.Algorithm.FullMask
+	28, // 13: bytebase.store.Algorithm.range_mask:type_name -> bytebase.store.Algorithm.RangeMask
+	29, // 14: bytebase.store.Algorithm.md5_mask:type_name -> bytebase.store.Algorithm.MD5Mask
+	30, // 15: bytebase.store.Algorithm.inner_outer_mask:type_name -> bytebase.store.Algorithm.InnerOuterMask
+	37, // 16: bytebase.store.AppIMSetting.settings:type_name -> bytebase.store.AppIMSetting.IMSetting
+	40, // 17: bytebase.store.PasswordRestrictionSetting.password_rotation:type_name -> google.protobuf.Duration
+	5,  // 18: bytebase.store.AISetting.provider:type_name -> bytebase.store.AISetting.Provider
+	38, // 19: bytebase.store.EnvironmentSetting.environments:type_name -> bytebase.store.EnvironmentSetting.Environment
+	41, // 20: bytebase.store.WorkspaceApprovalSetting.Rule.template:type_name -> bytebase.store.ApprovalTemplate
+	42, // 21: bytebase.store.WorkspaceApprovalSetting.Rule.condition:type_name -> google.type.Expr
+	3,  // 22: bytebase.store.WorkspaceApprovalSetting.Rule.source:type_name -> bytebase.store.WorkspaceApprovalSetting.Rule.Source
+	43, // 23: bytebase.store.SchemaTemplateSetting.FieldTemplate.engine:type_name -> bytebase.store.Engine
+	44, // 24: bytebase.store.SchemaTemplateSetting.FieldTemplate.column:type_name -> bytebase.store.ColumnMetadata
+	45, // 25: bytebase.store.SchemaTemplateSetting.FieldTemplate.catalog:type_name -> bytebase.store.ColumnCatalog
+	43, // 26: bytebase.store.SchemaTemplateSetting.ColumnType.engine:type_name -> bytebase.store.Engine
+	43, // 27: bytebase.store.SchemaTemplateSetting.TableTemplate.engine:type_name -> bytebase.store.Engine
+	46, // 28: bytebase.store.SchemaTemplateSetting.TableTemplate.table:type_name -> bytebase.store.TableMetadata
+	47, // 29: bytebase.store.SchemaTemplateSetting.TableTemplate.catalog:type_name -> bytebase.store.TableCatalog
+	23, // 30: bytebase.store.DataClassificationSetting.DataClassificationConfig.levels:type_name -> bytebase.store.DataClassificationSetting.DataClassificationConfig.Level
+	25, // 31: bytebase.store.DataClassificationSetting.DataClassificationConfig.classification:type_name -> bytebase.store.DataClassificationSetting.DataClassificationConfig.ClassificationEntry
+	24, // 32: bytebase.store.DataClassificationSetting.DataClassificationConfig.ClassificationEntry.value:type_name -> bytebase.store.DataClassificationSetting.DataClassificationConfig.DataClassification
+	12, // 33: bytebase.store.SemanticTypeSetting.SemanticType.algorithm:type_name -> bytebase.store.Algorithm
+	31, // 34: bytebase.store.Algorithm.RangeMask.slices:type_name -> bytebase.store.Algorithm.RangeMask.Slice
+	4,  // 35: bytebase.store.Algorithm.InnerOuterMask.type:type_name -> bytebase.store.Algorithm.InnerOuterMask.MaskType
+	48, // 36: bytebase.store.AppIMSetting.IMSetting.type:type_name -> bytebase.store.ProjectWebhook.Type
+	32, // 37: bytebase.store.AppIMSetting.IMSetting.slack:type_name -> bytebase.store.AppIMSetting.Slack
+	33, // 38: bytebase.store.AppIMSetting.IMSetting.feishu:type_name -> bytebase.store.AppIMSetting.Feishu
+	34, // 39: bytebase.store.AppIMSetting.IMSetting.wecom:type_name -> bytebase.store.AppIMSetting.Wecom
+	35, // 40: bytebase.store.AppIMSetting.IMSetting.lark:type_name -> bytebase.store.AppIMSetting.Lark
+	36, // 41: bytebase.store.AppIMSetting.IMSetting.dingtalk:type_name -> bytebase.store.AppIMSetting.DingTalk
+	39, // 42: bytebase.store.EnvironmentSetting.Environment.tags:type_name -> bytebase.store.EnvironmentSetting.Environment.TagsEntry
+	43, // [43:43] is the sub-list for method output_type
+	43, // [43:43] is the sub-list for method input_type
+	43, // [43:43] is the sub-list for extension type_name
+	43, // [43:43] is the sub-list for extension extendee
+	0,  // [0:43] is the sub-list for field type_name
 }
 
 func init() { file_store_setting_proto_init() }
@@ -2813,7 +2889,7 @@ func file_store_setting_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_setting_proto_rawDesc), len(file_store_setting_proto_rawDesc)),
-			NumEnums:      5,
+			NumEnums:      6,
 			NumMessages:   34,
 			NumExtensions: 0,
 			NumServices:   0,

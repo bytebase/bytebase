@@ -61,16 +61,6 @@ export const getTimelineType = (status: TaskRun_Status): TimelineType => {
 };
 
 /**
- * Get first line preview of error detail, truncated to maxLength.
- */
-export const getErrorPreview = (detail: string, maxLength = 50): string => {
-  const firstLine = detail.split("\n")[0];
-  return firstLine.length > maxLength
-    ? `${firstLine.substring(0, maxLength)}...`
-    : firstLine;
-};
-
-/**
  * Format duration in milliseconds to human-readable string.
  * - >= 1h: "Xh Ym"
  * - >= 1m: "Xm Ys"

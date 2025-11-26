@@ -711,16 +711,41 @@ export declare type WorkspaceApprovalSetting_Rule = Message<"bytebase.v1.Workspa
    * The condition that is associated with the rule.
    * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
    *
-   * Support variables:
-   * source: the risk source, check the Source enum in the Risk message for the values, support "==" operator.
-   * level: the risk level, support 100 (low), 200 (moderate) and 300 (high), support "==" operator.
+   * The `source` field filters which rules apply. The `condition` field then evaluates with full context.
+   *
+   * All supported variables:
+   * statement.affected_rows: affected row count in the DDL/DML, support "==", "!=", "<", "<=", ">", ">=" operations.
+   * statement.table_rows: table row count number, support "==", "!=", "<", "<=", ">", ">=" operations.
+   * resource.environment_id: the environment resource id, support "==", "!=", "in [xx]", "!(in [xx])" operations.
+   * resource.project_id: the project resource id, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
+   * resource.db_engine: the database engine type, support "==", "!=", "in [xx]", "!(in [xx])" operations. Check the Engine enum for values.
+   * statement.sql_type: the SQL type, support "==", "!=", "in [xx]", "!(in [xx])" operations.
+   * resource.database_name: the database name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
+   * resource.schema_name: the schema name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
+   * resource.table_name: the table name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
+   * statement.text: the SQL statement, support "contains()", "matches()", "startsWith()", "endsWith()" operations.
+   * request.expiration_days: the role expiration days for the request, support "==", "!=", "<", "<=", ">", ">=" operations.
+   * request.role: the request role full name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
+   *
+   * When source is DDL/DML, support: statement.*, resource.* (excluding request.*)
+   * When source is CREATE_DATABASE, support: resource.environment_id, resource.project_id, resource.db_engine, resource.database_name
+   * When source is EXPORT_DATA, support: resource.environment_id, resource.project_id, resource.db_engine, resource.database_name, resource.schema_name, resource.table_name
+   * When source is REQUEST_ROLE, support: resource.project_id, request.expiration_days, request.role
    *
    * For examples:
-   * (source == "DML" && level == 200) || (source == "DDL" && level == 300)
+   * resource.environment_id == "prod" && statement.affected_rows >= 100
+   * resource.table_name.matches("sensitive_.*") && resource.db_engine == "MYSQL"
+   *
+   * Legacy format (deprecated): source == "DDL" && level == "HIGH"
    *
    * @generated from field: google.type.Expr condition = 2;
    */
   condition?: Expr;
+
+  /**
+   * @generated from field: bytebase.v1.WorkspaceApprovalSetting.Rule.Source source = 3;
+   */
+  source: WorkspaceApprovalSetting_Rule_Source;
 };
 
 /**
@@ -728,6 +753,46 @@ export declare type WorkspaceApprovalSetting_Rule = Message<"bytebase.v1.Workspa
  * Use `create(WorkspaceApprovalSetting_RuleSchema)` to create a new message.
  */
 export declare const WorkspaceApprovalSetting_RuleSchema: GenMessage<WorkspaceApprovalSetting_Rule>;
+
+/**
+ * @generated from enum bytebase.v1.WorkspaceApprovalSetting.Rule.Source
+ */
+export enum WorkspaceApprovalSetting_Rule_Source {
+  /**
+   * @generated from enum value: SOURCE_UNSPECIFIED = 0;
+   */
+  SOURCE_UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: DDL = 1;
+   */
+  DDL = 1,
+
+  /**
+   * @generated from enum value: DML = 2;
+   */
+  DML = 2,
+
+  /**
+   * @generated from enum value: CREATE_DATABASE = 3;
+   */
+  CREATE_DATABASE = 3,
+
+  /**
+   * @generated from enum value: EXPORT_DATA = 4;
+   */
+  EXPORT_DATA = 4,
+
+  /**
+   * @generated from enum value: REQUEST_ROLE = 5;
+   */
+  REQUEST_ROLE = 5,
+}
+
+/**
+ * Describes the enum bytebase.v1.WorkspaceApprovalSetting.Rule.Source.
+ */
+export declare const WorkspaceApprovalSetting_Rule_SourceSchema: GenEnum<WorkspaceApprovalSetting_Rule_Source>;
 
 /**
  * @generated from message bytebase.v1.SchemaTemplateSetting
