@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log/slog"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -429,6 +430,19 @@ func convertSpannerValue(colType *sppb.Type, v *structpb.Value) *v1pb.RowValue {
 	case *structpb.Value_NullValue:
 		return util.NullRowValue
 	case *structpb.Value_StringValue:
+		// Spanner encodes INT64 as strings to preserve precision
+		if colType != nil && colType.Code == sppb.TypeCode_INT64 {
+			val, err := strconv.ParseInt(v.GetStringValue(), 10, 64)
+			if err != nil {
+				slog.Error("failed to parse INT64 string value", log.BBError(err))
+				return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{
+					StringValue: v.GetStringValue(),
+				}}
+			}
+			return &v1pb.RowValue{Kind: &v1pb.RowValue_Int64Value{
+				Int64Value: val,
+			}}
+		}
 		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{
 			StringValue: v.GetStringValue(),
 		}}

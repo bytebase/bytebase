@@ -167,6 +167,38 @@ func TestConvertSpannerValue(t *testing.T) {
 			}},
 		},
 		{
+			name:    "int64 as string - small value",
+			colType: &sppb.Type{Code: sppb.TypeCode_INT64},
+			value:   structpb.NewStringValue("42"),
+			expected: &v1pb.RowValue{Kind: &v1pb.RowValue_Int64Value{
+				Int64Value: 42,
+			}},
+		},
+		{
+			name:    "int64 as string - max value",
+			colType: &sppb.Type{Code: sppb.TypeCode_INT64},
+			value:   structpb.NewStringValue("9223372036854775807"),
+			expected: &v1pb.RowValue{Kind: &v1pb.RowValue_Int64Value{
+				Int64Value: math.MaxInt64,
+			}},
+		},
+		{
+			name:    "int64 as string - min value",
+			colType: &sppb.Type{Code: sppb.TypeCode_INT64},
+			value:   structpb.NewStringValue("-9223372036854775808"),
+			expected: &v1pb.RowValue{Kind: &v1pb.RowValue_Int64Value{
+				Int64Value: math.MinInt64,
+			}},
+		},
+		{
+			name:    "int64 as string - invalid falls back to string",
+			colType: &sppb.Type{Code: sppb.TypeCode_INT64},
+			value:   structpb.NewStringValue("not-a-number"),
+			expected: &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{
+				StringValue: "not-a-number",
+			}},
+		},
+		{
 			name:    "number without type metadata defaults to double",
 			colType: nil,
 			value:   structpb.NewNumberValue(42),
