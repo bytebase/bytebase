@@ -1,11 +1,14 @@
 <template>
   <NSelect
     v-model:value="selectedIsolation"
-    class="w-60!"
-    consistent-menu-width
+    class="w-36!"
     size="small"
     :options="options"
     :placeholder="$t('plan.select-isolation-level')"
+    :filterable="true"
+    :virtual-scroll="true"
+    :fallback-option="false"
+    :consistent-menu-width="false"
     :clearable="true"
     :disabled="!allowChange"
   />

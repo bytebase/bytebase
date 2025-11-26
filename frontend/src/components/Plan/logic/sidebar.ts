@@ -35,7 +35,7 @@ export const provideSidebarContext = (
   const desktopSidebarWidth = computed(() => {
     const cw = containerWidth.value;
     if (cw < 1280) return 240;
-    return 320;
+    return 336;
   });
   const mobileSidebarOpen = ref(false);
   const context: SidebarContext = {

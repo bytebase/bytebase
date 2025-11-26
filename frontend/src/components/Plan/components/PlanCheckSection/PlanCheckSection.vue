@@ -1,33 +1,14 @@
 <template>
-  <div v-if="shouldShow" class="py-3 flex flex-col gap-y-1 overflow-hidden">
+  <div v-if="shouldShow" class="py-3 flex flex-col gap-y-2 overflow-hidden">
+    <!-- Row 1: Title + Run button -->
     <div class="flex items-center justify-between gap-2">
-      <div class="flex items-center gap-2">
+      <div class="flex flex-row items-center gap-2">
         <h3 class="text-base">{{ $t("plan.checks.self") }}</h3>
-
-        <NTooltip v-if="checksOfSelectedSpec.length > 0 && affectedRows > 0">
-          <template #trigger>
-            <NTag round :bordered="false">
-              <div class="flex items-center gap-1">
-                <span class="text-sm text-control-light">{{
-                  $t("task.check-type.affected-rows.self")
-                }}</span>
-                <span class="text-sm">
-                  {{ affectedRows }}
-                </span>
-                <CircleQuestionMarkIcon
-                  class="size-[14px] text-control-light opacity-80"
-                />
-              </div>
-            </NTag>
-          </template>
-          {{ $t("task.check-type.affected-rows.description") }}
-        </NTooltip>
-
         <NTooltip v-if="isStatementOversized">
           <template #trigger>
-            <NTag type="warning" round>
+            <NTag type="warning" round size="tiny">
               <template #icon>
-                <CircleQuestionMarkIcon class="size-4" />
+                <CircleQuestionMarkIcon class="size-3" />
               </template>
               {{ $t("common.skipped") }}
             </NTag>
@@ -35,28 +16,46 @@
           {{ $t("issue.sql-check.statement-is-too-large") }}
         </NTooltip>
       </div>
+      <NButton
+        v-if="allowRunChecks"
+        size="tiny"
+        :loading="isRunningChecks"
+        @click="runChecks"
+      >
+        <template #icon>
+          <PlayIcon class="w-4 h-4" />
+        </template>
+        {{ $t("common.run") }}
+      </NButton>
+    </div>
 
-      <div class="flex items-center gap-2">
-        <!-- Status Summary -->
-        <PlanCheckStatusCount
-          :plan="plan"
-          clickable
-          @click="openChecksDrawer($event)"
-        />
+    <!-- Row 2: Status badges -->
+    <div class="flex items-center flex-wrap gap-2 min-w-0">
+      <PlanCheckStatusCount
+        :plan="plan"
+        :show-label="true"
+        clickable
+        @click="openChecksDrawer($event)"
+      />
 
-        <!-- Run Checks Button -->
-        <NButton
-          v-if="allowRunChecks"
-          size="small"
-          :loading="isRunningChecks"
-          @click="runChecks"
-        >
-          <template #icon>
-            <PlayIcon class="w-4 h-4" />
-          </template>
-          {{ $t("task.run-checks") }}
-        </NButton>
-      </div>
+      <NTooltip v-if="checksOfSelectedSpec.length > 0 && affectedRows > 0">
+        <template #trigger>
+          <NTag round :bordered="false">
+            <div class="flex items-center gap-1">
+              <span class="text-sm text-control-light">{{
+                $t("task.check-type.affected-rows.self")
+              }}</span>
+              <span class="text-sm">
+                {{ affectedRows }}
+              </span>
+              <CircleQuestionMarkIcon
+                class="size-[14px] text-control-light opacity-80"
+              />
+            </div>
+          </NTag>
+        </template>
+        {{ $t("task.check-type.affected-rows.description") }}
+      </NTooltip>
     </div>
 
     <ChecksDrawer
