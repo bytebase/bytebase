@@ -135,22 +135,23 @@ const allowSave = computed(() => {
 });
 
 const resolveLocalState = async () => {
+  // Reset to empty state immediately to unmount old Condition components.
+  // This prevents component reuse issues when switching between rules,
+  // where the ValueInput watch would reset values when factor/operator changes.
+  state.conditionExpr = wrapAsGroup(emptySimpleExpr());
+  state.flow = createProto(ApprovalFlowSchema, { roles: [] });
+
   if (props.rule) {
-    let expr: ConditionGroupExpr = wrapAsGroup(emptySimpleExpr());
     if (props.rule.condition) {
       const parsedExprs = await batchConvertCELStringToParsedExpr([
         props.rule.condition,
       ]);
       const celExpr = head(parsedExprs);
       if (celExpr) {
-        expr = wrapAsGroup(resolveCELExpr(celExpr));
+        state.conditionExpr = wrapAsGroup(resolveCELExpr(celExpr));
       }
     }
-    state.conditionExpr = expr;
     state.flow = cloneDeep(props.rule.flow);
-  } else {
-    state.conditionExpr = wrapAsGroup(emptySimpleExpr());
-    state.flow = createProto(ApprovalFlowSchema, { roles: [] });
   }
 };
 

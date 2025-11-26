@@ -1,14 +1,14 @@
 <template>
   <NSelect
     v-model:value="selectedRole"
-    class="w-40!"
-    consistent-menu-width
+    class="w-36!"
     size="small"
     :options="options"
     :placeholder="$t('instance.select-database-user')"
     :filterable="true"
     :virtual-scroll="true"
     :fallback-option="false"
+    :consistent-menu-width="false"
     :clearable="true"
     :disabled="!allowChange"
     :loading="loading"

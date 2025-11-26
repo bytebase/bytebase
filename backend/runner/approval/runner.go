@@ -481,11 +481,13 @@ func (r *Runner) buildCELVariablesForDatabaseChange(ctx context.Context, issue *
 			InstanceID:   instance.ResourceID,
 			DatabaseName: databaseName,
 		}]; ok {
+			foundReport := false
 			for _, result := range run.Result.Results {
 				report := result.GetSqlSummaryReport()
 				if report == nil {
 					continue
 				}
+				foundReport = true
 
 				// Calculate table rows from changed resources
 				var tableRows int64
@@ -523,6 +525,10 @@ func (r *Runner) buildCELVariablesForDatabaseChange(ctx context.Context, issue *
 					celVarsList = append(celVarsList, celVars)
 				}
 				break // Use first report
+			}
+			// If no valid report was found, still append basic celVars
+			if !foundReport {
+				celVarsList = append(celVarsList, celVars)
 			}
 		} else {
 			celVarsList = append(celVarsList, celVars)

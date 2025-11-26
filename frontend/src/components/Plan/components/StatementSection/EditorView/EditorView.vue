@@ -113,7 +113,7 @@
       </template>
     </BBAttention>
 
-    <div class="relative flex-1 min-h-[200px] max-h-[50vh]">
+    <div class="relative flex-1 min-h-[256px]">
       <MonacoEditor
         class="w-full h-full min-h-[200px] border rounded-sm overflow-hidden"
         :filename="filename"

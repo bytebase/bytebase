@@ -1,68 +1,73 @@
 <template>
-  <div v-if="show" class="py-3 flex flex-col gap-y-1 overflow-hidden">
+  <div v-if="show" class="py-3 flex flex-col gap-y-2 overflow-hidden">
+    <!-- Row 1: Title + Run button -->
     <div class="flex items-center justify-between gap-2">
-      <div class="flex items-center gap-2">
-        <h3 class="text-base font-medium">{{ $t("plan.checks.self") }}</h3>
+      <div class="flex flex-row items-center gap-2">
+        <h3 class="text-base">{{ $t("plan.checks.self") }}</h3>
+      </div>
+      <NButton
+        size="tiny"
+        :loading="isRunningChecks"
+        :disabled="statement.length === 0"
+        @click="runChecks"
+      >
+        <template #icon>
+          <PlayIcon class="w-4 h-4" />
+        </template>
+        {{ $t("common.run") }}
+      </NButton>
+    </div>
 
-        <NTooltip v-if="checkResults && affectedRows > 0">
-          <template #trigger>
-            <NTag round :bordered="false">
-              <span class="text-sm text-control-light mr-1">{{
+    <!-- Row 2: Status badges -->
+    <div class="flex items-center flex-wrap gap-3 text-sm min-w-0">
+      <button
+        v-if="summary.error > 0"
+        class="flex items-center gap-1 hover:opacity-80"
+        @click="openDrawer('ERROR')"
+      >
+        <XCircleIcon class="w-4 h-4 text-error" />
+        <span class="text-error">{{ $t("common.error") }}</span>
+        <span class="text-error font-medium">{{ summary.error }}</span>
+      </button>
+      <button
+        v-if="summary.warning > 0"
+        class="flex items-center gap-1 hover:opacity-80"
+        @click="openDrawer('WARNING')"
+      >
+        <AlertCircleIcon class="w-4 h-4 text-warning" />
+        <span class="text-warning">{{ $t("common.warning") }}</span>
+        <span class="text-warning font-medium">{{ summary.warning }}</span>
+      </button>
+      <span
+        v-if="
+          !isNullOrUndefined(checkResults) &&
+          summary.error === 0 &&
+          summary.warning === 0
+        "
+        class="flex items-center gap-1"
+      >
+        <CheckCircleIcon class="w-4 h-4 text-success" />
+        <span class="text-success">{{ $t("common.success") }}</span>
+      </span>
+
+      <NTooltip v-if="checkResults && affectedRows > 0">
+        <template #trigger>
+          <NTag round :bordered="false">
+            <div class="flex items-center gap-1">
+              <span class="text-sm text-control-light">{{
                 $t("task.check-type.affected-rows.self")
               }}</span>
-              <span class="text-sm font-medium">
+              <span class="text-sm">
                 {{ affectedRows }}
               </span>
-            </NTag>
-          </template>
-          {{ $t("task.check-type.affected-rows.description") }}
-        </NTooltip>
-      </div>
-
-      <div class="flex items-center gap-4">
-        <!-- Status Summary -->
-        <div class="flex items-center gap-2 text-sm">
-          <button
-            v-if="summary.error > 0"
-            class="flex items-center gap-1 hover:opacity-80"
-            @click="openDrawer('ERROR')"
-          >
-            <XCircleIcon class="w-5 h-5 text-error" />
-            <span class="text-error font-medium">{{ summary.error }}</span>
-          </button>
-          <button
-            v-if="summary.warning > 0"
-            class="flex items-center gap-1 hover:opacity-80"
-            @click="openDrawer('WARNING')"
-          >
-            <AlertCircleIcon class="w-5 h-5 text-warning" />
-            <span class="text-warning font-medium">{{ summary.warning }}</span>
-          </button>
-          <span
-            v-if="
-              !isNullOrUndefined(checkResults) &&
-              summary.error === 0 &&
-              summary.warning === 0
-            "
-            class="flex items-center"
-          >
-            <CheckCircleIcon class="w-5 h-5 text-success" />
-          </span>
-        </div>
-
-        <!-- Run Checks Button -->
-        <NButton
-          size="small"
-          :loading="isRunningChecks"
-          :disabled="statement.length === 0"
-          @click="runChecks"
-        >
-          <template #icon>
-            <PlayIcon class="w-4 h-4" />
-          </template>
-          {{ $t("task.run-checks") }}
-        </NButton>
-      </div>
+              <CircleQuestionMarkIcon
+                class="size-3.5 text-control-light opacity-80"
+              />
+            </div>
+          </NTag>
+        </template>
+        {{ $t("task.check-type.affected-rows.description") }}
+      </NTooltip>
     </div>
 
     <!-- Checks Drawer -->
@@ -86,6 +91,7 @@ import { create } from "@bufbuild/protobuf";
 import {
   AlertCircleIcon,
   CheckCircleIcon,
+  CircleQuestionMarkIcon,
   PlayIcon,
   XCircleIcon,
 } from "lucide-vue-next";

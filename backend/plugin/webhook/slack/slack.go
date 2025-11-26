@@ -145,6 +145,7 @@ func (*Receiver) Post(context webhook.Context) error {
 		if postDirectMessage(context) {
 			return nil
 		}
+		slog.Warn("failed to send direct messages for slack users, fallback to normal webhook", slog.String("event", context.EventType))
 	}
 	return postMessage(context)
 }
@@ -196,6 +197,7 @@ func postDirectMessage(webhookCtx webhook.Context) bool {
 	ctx := context.Background()
 	t := getSlackToken(webhookCtx.IMSetting)
 	if t == "" {
+		slog.Warn("failed to found valid slack im token", slog.String("event", webhookCtx.EventType))
 		return false
 	}
 	p := newProvider(t)
@@ -228,7 +230,7 @@ func postDirectMessage(webhookCtx webhook.Context) bool {
 		}
 		return errs
 	}); err != nil {
-		slog.Warn("failed to send direct message to slack user", log.BBError(err))
+		slog.Warn("failed to send direct message to slack user", log.BBError(err), slog.String("event", webhookCtx.EventType))
 		return false
 	}
 

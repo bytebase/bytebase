@@ -84,7 +84,7 @@
           </NTag>
           <div
             :class="readonly ? '' : 'cursor-pointer'"
-            class="text-xs text-gray-600 font-mono truncate"
+            class="text-xs text-gray-600 font-mono truncate min-w-0"
             @click="handleNavigateToDetail"
           >
             {{ statementPreview }}
@@ -161,8 +161,7 @@
             :code="displayedStatement"
             language="sql"
             :lazy="true"
-            :virtual="true"
-            class="text-sm whitespace-pre-wrap wrap-break-word max-h-64 rounded p-2 bg-white border border-gray-200"
+            class="text-sm whitespace-pre-wrap wrap-break-word max-h-64 overflow-auto rounded p-2 bg-white border border-gray-200"
           />
         </div>
 
@@ -247,7 +246,7 @@ import { NButton, NCheckbox, NTag } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import BBSpin from "@/bbkit/BBSpin.vue";
-import HighlightCodeBlock from "@/components/HighlightCodeBlock";
+import HighlightCodeBlock from "@/components/HighlightCodeBlock.vue";
 import Timestamp from "@/components/misc/Timestamp.vue";
 import { usePlanContextWithRollout } from "@/components/Plan";
 import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay.vue";
