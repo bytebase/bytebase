@@ -151,19 +151,19 @@ func TestConvertSpannerValue(t *testing.T) {
 			}},
 		},
 		{
-			name:    "int64 negative large value",
+			name:    "int64 large value - within float64 safe range",
 			colType: &sppb.Type{Code: sppb.TypeCode_INT64},
-			value:   structpb.NewNumberValue(-9223372036854775808), // -2^63
+			value:   structpb.NewNumberValue(9007199254740991), // 2^53 - 1 (max safe int in float64)
 			expected: &v1pb.RowValue{Kind: &v1pb.RowValue_Int64Value{
-				Int64Value: math.MinInt64,
+				Int64Value: 9007199254740991,
 			}},
 		},
 		{
-			name:    "int64 max value",
+			name:    "int64 negative large value - within float64 safe range",
 			colType: &sppb.Type{Code: sppb.TypeCode_INT64},
-			value:   structpb.NewNumberValue(9223372036854775807), // 2^63-1
+			value:   structpb.NewNumberValue(-9007199254740991), // -(2^53 - 1)
 			expected: &v1pb.RowValue{Kind: &v1pb.RowValue_Int64Value{
-				Int64Value: math.MaxInt64,
+				Int64Value: -9007199254740991,
 			}},
 		},
 		{
