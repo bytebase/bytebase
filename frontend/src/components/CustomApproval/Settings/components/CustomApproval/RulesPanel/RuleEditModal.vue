@@ -1,7 +1,8 @@
 <template>
   <NModal
     :show="show"
-    :mask-closable="false"
+    :mask-closable="true"
+    :close-on-esc="true"
     @update:show="$emit('update:show', $event)"
   >
     <div
