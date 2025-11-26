@@ -406,6 +406,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.EventTriggerMetadata"><span class="badge">M</span>EventTriggerMetadata</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.ExcludeConstraintMetadata"><span class="badge">M</span>ExcludeConstraintMetadata</a>
                 </li>
               
@@ -3433,6 +3437,14 @@ from SQL files), the system cannot automatically drop the constraint. </p></td>
                   <td><p>The search_path is the search path of a PostgreSQL database. </p></td>
                 </tr>
               
+                <tr>
+                  <td>event_triggers</td>
+                  <td><a href="#bytebase.store.EventTriggerMetadata">EventTriggerMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The list of event triggers in a database (PostgreSQL specific).
+Event triggers are database-level objects, not schema-scoped. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -3666,6 +3678,87 @@ Examples: POINT, LINE, POLYGON, COLLECTION </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.EventTriggerMetadata">EventTriggerMetadata</h3>
+        <p>EventTriggerMetadata is the metadata for PostgreSQL event triggers.</p><p>Event triggers are database-level objects that fire on DDL events.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the event trigger. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>event</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The event type: DDL_COMMAND_START, DDL_COMMAND_END, SQL_DROP, TABLE_REWRITE. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>tags</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The tags filter (e.g., [&#39;CREATE TABLE&#39;, &#39;DROP TABLE&#39;]). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>function_schema</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The schema of the function to execute. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>function_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the function to execute. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>enabled</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether the trigger is enabled. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>definition</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The full CREATE EVENT TRIGGER definition from pg_get_event_trigger_def().
+SDL output should prefer using this field. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>comment</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The comment on the event trigger. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>skip_dump</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Skip dump flag (for extension-owned triggers). </p></td>
                 </tr>
               
             </tbody>

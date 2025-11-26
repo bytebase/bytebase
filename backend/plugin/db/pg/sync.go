@@ -175,6 +175,11 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		return nil, errors.Wrapf(err, "failed to get enum types from database %q", d.databaseName)
 	}
 
+	eventTriggers, err := getEventTriggers(txn, extensionDepend)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get event triggers from database %q", d.databaseName)
+	}
+
 	if err := txn.Commit(); err != nil {
 		return nil, err
 	}
@@ -210,6 +215,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		})
 	}
 	databaseMetadata.Extensions = extensions
+	databaseMetadata.EventTriggers = eventTriggers
 
 	return databaseMetadata, err
 }
@@ -1395,6 +1401,102 @@ func getTriggers(txn *sql.Tx, extensionDepend map[int]bool) (map[db.TableKey][]*
 	}
 
 	return triggersMap, nil
+}
+
+func getEventTriggers(txn *sql.Tx, extensionDepend map[int]bool) ([]*storepb.EventTriggerMetadata, error) {
+	query := `
+	SELECT
+		et.oid,
+		et.evtname AS trigger_name,
+		et.evtevent AS event_type,
+		et.evttags AS tags,
+		n.nspname AS function_schema,
+		p.proname AS function_name,
+		et.evtenabled AS enabled,
+		obj_description(et.oid, 'pg_event_trigger') AS comment
+	FROM pg_event_trigger et
+	JOIN pg_proc p ON et.evtfoid = p.oid
+	JOIN pg_namespace n ON p.pronamespace = n.oid
+	ORDER BY et.evtname;`
+
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var eventTriggers []*storepb.EventTriggerMetadata
+	for rows.Next() {
+		var oid int
+		var name, eventType, functionSchema, functionName, enabled string
+		var tags pq.StringArray
+		var comment sql.NullString
+
+		if err := rows.Scan(&oid, &name, &eventType, &tags, &functionSchema,
+			&functionName, &enabled, &comment); err != nil {
+			return nil, err
+		}
+
+		eventTrigger := &storepb.EventTriggerMetadata{
+			Name:           name,
+			Event:          eventType,
+			Tags:           []string(tags),
+			FunctionSchema: functionSchema,
+			FunctionName:   functionName,
+			Enabled:        enabled != "D", // D = disabled
+		}
+
+		// Build the CREATE EVENT TRIGGER definition manually
+		// PostgreSQL doesn't have pg_get_event_trigger_def() function
+		eventTrigger.Definition = buildEventTriggerDefinition(eventTrigger)
+
+		if comment.Valid {
+			eventTrigger.Comment = comment.String
+		}
+		if extensionDepend[oid] {
+			eventTrigger.SkipDump = true
+		}
+
+		eventTriggers = append(eventTriggers, eventTrigger)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return eventTriggers, nil
+}
+
+// buildEventTriggerDefinition constructs the CREATE EVENT TRIGGER statement from metadata.
+func buildEventTriggerDefinition(et *storepb.EventTriggerMetadata) string {
+	var buf strings.Builder
+	buf.WriteString("CREATE EVENT TRIGGER ")
+	buf.WriteString(fmt.Sprintf("%q", et.Name))
+	buf.WriteString(" ON ")
+	buf.WriteString(et.Event)
+
+	if len(et.Tags) > 0 {
+		buf.WriteString("\n  WHEN TAG IN (")
+		for i, tag := range et.Tags {
+			if i > 0 {
+				buf.WriteString(", ")
+			}
+			buf.WriteString("'")
+			buf.WriteString(tag)
+			buf.WriteString("'")
+		}
+		buf.WriteString(")")
+	}
+
+	buf.WriteString("\n  EXECUTE FUNCTION ")
+	if et.FunctionSchema != "" {
+		buf.WriteString(fmt.Sprintf("%q", et.FunctionSchema))
+		buf.WriteString(".")
+	}
+	buf.WriteString(fmt.Sprintf("%q", et.FunctionName))
+	buf.WriteString("()")
+
+	return buf.String()
 }
 
 // getUniqueConstraints is no longer needed - we get constraint info directly from pg_constraint in the main query
