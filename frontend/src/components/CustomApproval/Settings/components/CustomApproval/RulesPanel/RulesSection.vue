@@ -164,6 +164,7 @@ const handleSaveRule = async (ruleData: Partial<LocalApprovalRule>) => {
     } else if (editingRule.value && ruleData.uid) {
       await store.updateRule(ruleData.uid, ruleData);
     }
+    showModal.value = false;
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
