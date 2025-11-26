@@ -320,6 +320,7 @@
     "scheduled-time": "Hora programada",
     "scheduled-at": "Programado en",
     "run-history": "Historial de ejecución",
+    "only-showing-latest-n-runs": "Solo se muestran las últimas {n} ejecuciones",
     "select-scheduled-time": "Seleccionar hora programada",
     "error": {
       "scheduled-time-must-be-in-the-future": "La hora programada debe ser en el futuro"
