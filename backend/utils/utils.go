@@ -75,22 +75,6 @@ func CheckIssueApproved(issue *store.IssueMessage) (bool, error) {
 	return CheckApprovalApproved(issue.Payload.Approval)
 }
 
-// HandleIncomingApprovalSteps handles incoming approval steps.
-// - Blocks approval steps if no user can approve the step.
-func HandleIncomingApprovalSteps(approval *storepb.IssuePayloadApproval) ([]*storepb.IssuePayloadApproval_Approver, error) {
-	if approval.ApprovalTemplate == nil {
-		return nil, nil
-	}
-
-	var approvers []*storepb.IssuePayloadApproval_Approver
-
-	role := FindNextPendingRole(approval.ApprovalTemplate, approval.Approvers)
-	if role == "" {
-		return nil, nil
-	}
-	return approvers, nil
-}
-
 // UpdateProjectPolicyFromGrantIssue updates the project policy from grant issue.
 func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store, issue *store.IssueMessage, grantRequest *storepb.GrantRequest) error {
 	policyMessage, err := stores.GetProjectIamPolicy(ctx, issue.Project.ResourceID)

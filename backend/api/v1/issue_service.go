@@ -764,12 +764,6 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check if the approval is approved, error: %v", err))
 	}
 
-	newApprovers, err := utils.HandleIncomingApprovalSteps(payload.Approval)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to handle incoming approval steps, error: %v", err))
-	}
-	payload.Approval.Approvers = append(payload.Approval.Approvers, newApprovers...)
-
 	issue, err = s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
 		PayloadUpsert: &storepb.Issue{
 			Approval: payload.Approval,
@@ -1025,12 +1019,6 @@ func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1
 		updatedApprovers = append(updatedApprovers, approver)
 	}
 	payload.Approval.Approvers = updatedApprovers
-
-	newApprovers, err := utils.HandleIncomingApprovalSteps(payload.Approval)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to handle incoming approval steps, error: %v", err))
-	}
-	payload.Approval.Approvers = append(payload.Approval.Approvers, newApprovers...)
 
 	issue, err = s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
 		PayloadUpsert: &storepb.Issue{

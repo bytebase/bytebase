@@ -193,19 +193,6 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		Approvers:           nil,
 	}
 
-	newApprovers, err := utils.HandleIncomingApprovalSteps(payload.Approval)
-	if err != nil {
-		err = errors.Wrapf(err, "failed to handle incoming approval steps")
-		if updateErr := updateIssueApprovalPayload(ctx, r.store, issue, &storepb.IssuePayloadApproval{
-			ApprovalFindingDone:  true,
-			ApprovalFindingError: err.Error(),
-		}); updateErr != nil {
-			return false, multierr.Append(errors.Wrap(updateErr, "failed to update issue payload"), err)
-		}
-		return false, err
-	}
-	payload.Approval.Approvers = append(payload.Approval.Approvers, newApprovers...)
-
 	if err := updateIssueApprovalPayload(ctx, r.store, issue, payload.Approval); err != nil {
 		return false, errors.Wrap(err, "failed to update issue payload")
 	}
