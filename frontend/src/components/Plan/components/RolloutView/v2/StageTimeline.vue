@@ -15,28 +15,11 @@
         <span class="text-sm font-medium text-gray-700">
           {{ $t("task.run-history") }}
         </span>
-        <span v-if="stageTaskRuns.length > 0" class="text-gray-500">
-          ({{ stageTaskRuns.length }})
-        </span>
       </div>
     </div>
 
     <!-- Rollback entry -->
-    <div
-      v-if="rollbackableTaskRuns.length > 0"
-      class="px-3 pb-3"
-    >
-      <NButton
-        size="small"
-        text
-        @click="showRollbackDrawer = true"
-      >
-        <template #icon>
-          <DatabaseBackupIcon :size="16" />
-        </template>
-        {{ $t("task-run.rollback.available", rollbackableTaskRuns.length) }}
-      </NButton>
-    </div>
+    <StageTaskRunsRollback :stage="stage" />
 
     <!-- Timeline entries: always show in sidebar mode, toggle in inline mode -->
     <div
@@ -58,7 +41,7 @@
       </div>
       <NTimeline v-else size="medium">
         <NTimelineItem
-          v-for="taskRun in sortedTaskRuns"
+          v-for="taskRun in displayedTaskRuns"
           :key="taskRun.name"
           :type="getTimelineType(taskRun.status)"
         >
@@ -71,11 +54,10 @@
           </template>
           <div
             class="-ml-1 px-1 py-0.5 rounded -mt-0.5"
-            @click="handleClickTaskRun(taskRun)"
           >
             <div
               class="text-sm leading-4 truncate cursor-pointer hover:underline"
-              @click.stop="handleClickTarget(taskRun)"
+              @click="handleClickTarget(taskRun)"
             >
               <span
                 v-if="getTaskTargetDisplay(taskRun).instance"
@@ -95,9 +77,10 @@
             <!-- Error preview for failed -->
             <div
               v-if="taskRun.status === TaskRun_Status.FAILED && taskRun.detail"
-              class="text-xs text-red-600 truncate mt-0.5"
+              class="text-xs text-red-600 line-clamp-3 mt-0.5 cursor-pointer hover:underline"
+              @click="showDetail(taskRun)"
             >
-              {{ getErrorPreview(taskRun.detail) }}
+              {{ taskRun.detail }}
             </div>
             <!-- Scheduled run time for pending -->
             <div
@@ -106,7 +89,7 @@
               "
               class="text-xs text-gray-500 mt-0.5 flex items-center gap-1"
             >
-{{ $t("task.scheduled-at") }}
+              {{ $t("task.scheduled-at") }}
               <TimestampDisplay
                 :timestamp="taskRun.runTime"
                 custom-class="!text-xs !text-gray-500"
@@ -129,56 +112,62 @@
           </div>
         </NTimelineItem>
       </NTimeline>
+      <!-- Show message if there are more items -->
+      <div
+        v-if="sortedTaskRuns.length > MAX_DISPLAY_ITEMS"
+        class="text-xs text-gray-400 text-left"
+      >
+        {{ $t("task.only-showing-latest-n-runs", { n: MAX_DISPLAY_ITEMS }) }}
+      </div>
     </div>
 
-    <!-- Rollback drawer -->
-    <TaskRunRollbackDrawer
-      v-model:show="showRollbackDrawer"
-      :rollout="rollout"
-      :rollbackable-task-runs="rollbackableTaskRuns"
-      @close="showRollbackDrawer = false"
-    />
   </div>
+
+  <Drawer v-model:show="taskRunDetailContext.show">
+    <DrawerContent
+      :title="$t('common.detail')"
+      style="width: calc(100vw - 14rem)"
+    >
+      <TaskRunDetail
+        v-if="taskRunDetailContext.taskRun"
+        :key="taskRunDetailContext.taskRun.name"
+        :task-run="taskRunDetailContext.taskRun"
+        :database="getDatabaseForTaskRun(taskRunDetailContext.taskRun)"
+      />
+    </DrawerContent>
+  </Drawer>
 </template>
 
 <script lang="ts" setup>
-import {
-  ChevronDownIcon,
-  ChevronRightIcon,
-  DatabaseBackupIcon,
-} from "lucide-vue-next";
-import { NButton, NTimeline, NTimelineItem, NTooltip } from "naive-ui";
+import { ChevronDownIcon, ChevronRightIcon } from "lucide-vue-next";
+import { NTimeline, NTimelineItem, NTooltip } from "naive-ui";
 import { computed, ref } from "vue";
+import TaskRunDetail from "@/components/IssueV1/components/TaskRunSection/TaskRunDetail.vue";
 import TimestampDisplay from "@/components/misc/Timestamp.vue";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
-import type {
-  Rollout,
-  Stage,
-  TaskRun,
-} from "@/types/proto-es/v1/rollout_service_pb";
+import { Drawer, DrawerContent } from "@/components/v2";
+import { useCurrentProjectV1 } from "@/store";
+import type { Stage, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import {
+  databaseForTask,
   extractDatabaseResourceName,
   extractInstanceResourceName,
 } from "@/utils";
 import { useResourcePoller } from "../../../logic/poller";
-import TaskRunRollbackDrawer from "../TaskRunRollbackDrawer.vue";
-import type { RollbackableTaskRun } from "./composables/useRollbackableTasks";
 import { useTaskNavigation } from "./composables/useTaskNavigation";
 import {
-  getErrorPreview,
   getTaskNameFromTaskRun,
   getTaskRunDuration,
   getTimelineType,
   mapTaskRunStatusToTaskStatus,
 } from "./composables/useTaskRunUtils";
+import StageTaskRunsRollback from "./StageTaskRunsRollback.vue";
 
 const props = withDefaults(
   defineProps<{
     stage: Stage | null | undefined;
     taskRuns: TaskRun[];
-    rollout: Rollout;
-    rollbackableTaskRuns: RollbackableTaskRun[];
     isInline?: boolean;
   }>(),
   {
@@ -186,14 +175,18 @@ const props = withDefaults(
   }
 );
 
-const emit = defineEmits<{
-  (event: "click-task-run", taskRun: TaskRun): void;
-}>();
-
+const { project } = useCurrentProjectV1();
 const isCollapsed = ref(false);
-const showRollbackDrawer = ref(false);
 const { navigateToTaskDetail } = useTaskNavigation();
 const { lastRefreshTime } = useResourcePoller();
+
+// Drawer state for task run detail
+const taskRunDetailContext = ref<{
+  show: boolean;
+  taskRun?: TaskRun;
+}>({
+  show: false,
+});
 
 // In sidebar mode (not inline), always show expanded
 const isExpanded = computed(() => !props.isInline || !isCollapsed.value);
@@ -213,6 +206,9 @@ const isLoading = computed(
   () => lastRefreshTime.value === 0 && stageTaskRuns.value.length === 0
 );
 
+// Maximum number of task runs to display in the timeline
+const MAX_DISPLAY_ITEMS = 50;
+
 // Sort by updateTime descending (most recent first)
 const sortedTaskRuns = computed(() => {
   return [...stageTaskRuns.value].sort((a, b) => {
@@ -222,28 +218,44 @@ const sortedTaskRuns = computed(() => {
   });
 });
 
+// Limit displayed items for performance
+const displayedTaskRuns = computed(() =>
+  sortedTaskRuns.value.slice(0, MAX_DISPLAY_ITEMS)
+);
+
 const getTaskFromTaskRun = (taskRun: TaskRun) => {
   const taskName = getTaskNameFromTaskRun(taskRun.name);
   return props.stage?.tasks.find((t) => t.name === taskName);
 };
 
-const getTaskTargetDisplay = (
-  taskRun: TaskRun
-): { instance: string; database: string } => {
-  const task = getTaskFromTaskRun(taskRun);
-  const target = task?.target;
-
-  if (!target) {
-    return {
-      instance: "",
-      database: taskRun.name.split("/").pop() || "unknown",
-    };
+// Pre-compute display data for displayed task runs to avoid repeated calls in template
+const taskRunDisplayMap = computed(() => {
+  const map = new Map<string, { instance: string; database: string }>();
+  for (const taskRun of displayedTaskRuns.value) {
+    const task = getTaskFromTaskRun(taskRun);
+    const target = task?.target;
+    if (!target) {
+      map.set(taskRun.name, {
+        instance: "",
+        database: taskRun.name.split("/").pop() || "unknown",
+      });
+    } else {
+      map.set(taskRun.name, {
+        instance: extractInstanceResourceName(target) || "",
+        database: extractDatabaseResourceName(target).databaseName || "unknown",
+      });
+    }
   }
+  return map;
+});
 
-  return {
-    instance: extractInstanceResourceName(target) || "",
-    database: extractDatabaseResourceName(target).databaseName || "unknown",
-  };
+const getTaskTargetDisplay = (taskRun: TaskRun) => {
+  return (
+    taskRunDisplayMap.value.get(taskRun.name) ?? {
+      instance: "",
+      database: "unknown",
+    }
+  );
 };
 
 const handleClickTarget = (taskRun: TaskRun) => {
@@ -253,7 +265,16 @@ const handleClickTarget = (taskRun: TaskRun) => {
   }
 };
 
-const handleClickTaskRun = (taskRun: TaskRun) => {
-  emit("click-task-run", taskRun);
+// Get database for a task run (used by TaskRunDetail in drawer)
+const getDatabaseForTaskRun = (taskRun: TaskRun) => {
+  const task = getTaskFromTaskRun(taskRun);
+  return task ? databaseForTask(project.value, task) : undefined;
+};
+
+const showDetail = (taskRun: TaskRun) => {
+  taskRunDetailContext.value = {
+    show: true,
+    taskRun,
+  };
 };
 </script>

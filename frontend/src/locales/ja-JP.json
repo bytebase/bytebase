@@ -320,6 +320,7 @@
     "scheduled-time": "予定時刻",
     "scheduled-at": "予定日時",
     "run-history": "実行履歴",
+    "only-showing-latest-n-runs": "最新の {n} 実行のみを表示",
     "select-scheduled-time": "予定時刻を選択してください",
     "error": {
       "scheduled-time-must-be-in-the-future": "スケジュール時間は将来の時間である必要があります"

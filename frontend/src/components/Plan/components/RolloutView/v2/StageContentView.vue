@@ -61,8 +61,6 @@
         <StageTimeline
           :stage="selectedStage"
           :task-runs="taskRuns"
-          :rollout="rollout"
-          :rollbackable-task-runs="rollbackableTaskRuns"
           :is-inline="true"
           class="border-y"
         />
@@ -87,8 +85,6 @@
           <StageTimeline
             :stage="selectedStage"
             :task-runs="taskRuns"
-            :rollout="rollout"
-            :rollbackable-task-runs="rollbackableTaskRuns"
             :is-inline="false"
           />
         </div>
@@ -107,13 +103,12 @@
 import { useMediaQuery } from "@vueuse/core";
 import { PlayIcon, PlusIcon } from "lucide-vue-next";
 import { NButton, NTag } from "naive-ui";
-import { computed, ref, toRef } from "vue";
+import { computed, ref } from "vue";
 import { EnvironmentV1Name } from "@/components/v2";
 import { useEnvironmentV1Store } from "@/store";
 import type { Rollout, Stage } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { usePlanContextWithRollout } from "../../../logic";
-import { useRollbackableTasks } from "./composables/useRollbackableTasks";
 import StageTimeline from "./StageTimeline.vue";
 import TaskFilter from "./TaskFilter.vue";
 import TaskList from "./TaskList.vue";
@@ -135,13 +130,7 @@ const filterStatuses = ref<Task_Status[]>([]);
 // Responsive layout: sidebar on wide screen, inline on narrow
 const isWideScreen = useMediaQuery("(min-width: 1024px)");
 
-// Rollback functionality
 const { taskRuns } = usePlanContextWithRollout();
-const selectedStageRef = toRef(props, "selectedStage");
-const { rollbackableTaskRuns } = useRollbackableTasks(
-  selectedStageRef,
-  taskRuns
-);
 
 const canRunStage = computed(() => {
   if (!props.selectedStage || !props.isStageCreated(props.selectedStage)) {

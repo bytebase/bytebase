@@ -320,6 +320,7 @@
     "scheduled-time": "Thời gian đã lên lịch",
     "scheduled-at": "Đã lên lịch tại",
     "run-history": "Lịch sử chạy",
+    "only-showing-latest-n-runs": "Chỉ hiển thị các lần chạy {n} mới nhất",
     "select-scheduled-time": "Chọn thời gian đã lên lịch",
     "error": {
       "scheduled-time-must-be-in-the-future": "Thời gian dự kiến phải ở trong tương lai"

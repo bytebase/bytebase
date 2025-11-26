@@ -70,17 +70,31 @@ export const refreshIssue = async (issue: Ref<Issue>): Promise<void> => {
   issue.value = newIssue;
 };
 
+export interface TaskRunScope {
+  stageId?: string;
+  taskId?: string;
+}
+
 export const refreshTaskRuns = async (
   rollout: Rollout,
   project: Project,
-  taskRuns: Ref<TaskRun[]>
+  taskRuns: Ref<TaskRun[]>,
+  scope?: TaskRunScope
 ): Promise<void> => {
   if (!hasProjectPermissionV2(project, "bb.taskRuns.list")) {
     return;
   }
 
+  // Build parent path based on scope
+  // - No scope: fetch all task runs for the rollout
+  // - stageId only: fetch task runs for a specific stage
+  // - stageId + taskId: fetch task runs for a specific task
+  const stagePart = scope?.stageId ?? "-";
+  const taskPart = scope?.taskId ?? "-";
+  const parent = `${rollout.name}/stages/${stagePart}/tasks/${taskPart}`;
+
   const request = create(ListTaskRunsRequestSchema, {
-    parent: `${rollout.name}/stages/-/tasks/-`,
+    parent,
   });
   const response = await rolloutServiceClientConnect.listTaskRuns(request);
   taskRuns.value = response.taskRuns;

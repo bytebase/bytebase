@@ -62,13 +62,6 @@
               <LoaderCircleIcon class="w-3 h-3 animate-spin" />
               {{ timingDisplay }}
             </span>
-            <!-- Completed duration -->
-            <span
-              v-else-if="timingDisplay"
-              class="text-xs text-gray-600"
-            >
-              {{ timingDisplay }}
-            </span>
           </div>
         </div>
 

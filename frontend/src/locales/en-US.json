@@ -320,6 +320,7 @@
     "scheduled-time": "Scheduled time",
     "scheduled-at": "Scheduled at",
     "run-history": "Run History",
+    "only-showing-latest-n-runs": "Only showing latest {n} runs",
     "select-scheduled-time": "Select scheduled time",
     "error": {
       "scheduled-time-must-be-in-the-future": "Scheduled time must be in the future"
