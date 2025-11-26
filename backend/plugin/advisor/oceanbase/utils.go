@@ -22,7 +22,7 @@ func getANTLRTree(checkCtx advisor.Context) ([]*base.ParseResult, error) {
 		parseResults = append(parseResults, &base.ParseResult{
 			Tree:     antlrData.Tree,
 			Tokens:   antlrData.Tokens,
-			BaseLine: unifiedAST.GetBaseLine(),
+			BaseLine: unifiedAST.BaseLine,
 		})
 	}
 	return parseResults, nil

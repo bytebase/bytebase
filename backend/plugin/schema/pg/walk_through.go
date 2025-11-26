@@ -26,7 +26,7 @@ func init() {
 
 // WalkThrough walks through the PostgreSQL ANTLR parse tree and builds catalog metadata.
 func WalkThrough(d *model.DatabaseMetadata, ast []*base.AST) *storepb.Advice {
-	// Extract ParseResult from UnifiedAST
+	// Extract ParseResult from AST
 	var parseResults []*base.ParseResult
 	for _, unifiedAST := range ast {
 		antlrData, ok := unifiedAST.GetANTLRTree()
@@ -44,7 +44,7 @@ func WalkThrough(d *model.DatabaseMetadata, ast []*base.AST) *storepb.Advice {
 		parseResults = append(parseResults, &base.ParseResult{
 			Tree:     antlrData.Tree,
 			Tokens:   antlrData.Tokens,
-			BaseLine: unifiedAST.GetBaseLine(),
+			BaseLine: unifiedAST.BaseLine,
 		})
 	}
 

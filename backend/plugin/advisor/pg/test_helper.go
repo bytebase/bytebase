@@ -83,7 +83,7 @@ func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbTyp
 			payload = ""
 		}
 
-		// Parse SQL using base.Parse() to get UnifiedAST
+		// Parse SQL using base.Parse() to get AST
 		unifiedASTs, err := base.Parse(dbType, tc.Statement)
 		require.NoError(t, err, "Failed to parse SQL: %s", tc.Statement)
 
@@ -96,7 +96,7 @@ func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbTyp
 			continue
 		}
 
-		// Walk through the catalog to build metadata using UnifiedAST directly
+		// Walk through the catalog to build metadata using AST directly
 		advice := schema.WalkThrough(dbType, finalMetadata, unifiedASTs)
 		require.Nil(t, advice, "Failed to walk through final catalog: %s", tc.Statement)
 
@@ -117,7 +117,7 @@ func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbTyp
 				DBSchema:                 schemaMetadata,
 				ChangeType:               tc.ChangeType,
 				EnablePriorBackup:        true,
-				AST:                      unifiedASTs, // Pass UnifiedAST list
+				AST:                      unifiedASTs, // Pass AST list
 				Statements:               tc.Statement,
 				Rule:                     ruleList[0],
 				OriginalMetadata:         originalMetadata,

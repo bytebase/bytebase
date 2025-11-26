@@ -263,8 +263,8 @@ func RegisterParseFunc(engine storepb.Engine, f ParseFunc) {
 	parsers[engine] = f
 }
 
-// Parse parses the SQL statement and returns a unified AST representation.
-// All parser outputs are wrapped into []*UnifiedAST for consistent handling.
+// Parse parses the SQL statement and returns an AST representation.
+// All parser outputs are wrapped into []*AST for consistent handling.
 func Parse(engine storepb.Engine, statement string) ([]*AST, error) {
 	f, ok := parsers[engine]
 	if !ok {
@@ -276,7 +276,7 @@ func Parse(engine storepb.Engine, statement string) ([]*AST, error) {
 		return nil, err
 	}
 
-	return convertToUnifiedAST(engine, statement, rawAST)
+	return convertToAST(engine, statement, rawAST)
 }
 
 type ChangeSummary struct {

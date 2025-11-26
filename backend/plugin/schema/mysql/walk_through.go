@@ -44,7 +44,7 @@ func WalkThrough(d *model.DatabaseMetadata, ast []*base.AST) *storepb.Advice {
 		d.CreateSchema("")
 	}
 
-	// Extract ParseResult from UnifiedAST
+	// Extract ParseResult from AST
 	var nodeList []*base.ParseResult
 	for _, unifiedAST := range ast {
 		antlrData, ok := unifiedAST.GetANTLRTree()
@@ -62,7 +62,7 @@ func WalkThrough(d *model.DatabaseMetadata, ast []*base.AST) *storepb.Advice {
 		nodeList = append(nodeList, &base.ParseResult{
 			Tree:     antlrData.Tree,
 			Tokens:   antlrData.Tokens,
-			BaseLine: unifiedAST.GetBaseLine(),
+			BaseLine: unifiedAST.BaseLine,
 		})
 	}
 

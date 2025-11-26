@@ -48,7 +48,7 @@ func WalkThrough(d *model.DatabaseMetadata, ast []*base.AST) *storepb.Advice {
 		d.CreateSchema("")
 	}
 
-	// Extract TiDB nodes from UnifiedAST
+	// Extract TiDB nodes from AST
 	var nodeList []tidbast.StmtNode
 	for _, unifiedAST := range ast {
 		tidbData, ok := unifiedAST.GetTiDBNode()

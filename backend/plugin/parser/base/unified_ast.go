@@ -86,15 +86,10 @@ func (u *AST) GetEngine() storepb.Engine {
 	return u.Engine
 }
 
-// GetBaseLine returns the zero-based line offset where this SQL statement starts.
-func (u *AST) GetBaseLine() int {
-	return u.BaseLine
-}
-
-// convertToUnifiedAST converts raw parser output to a slice of UnifiedAST.
+// convertToAST converts raw parser output to a slice of AST.
 // This function handles different parser types (ANTLR, TiDB, CockroachDB) and wraps
-// them into a consistent unified representation.
-func convertToUnifiedAST(engine storepb.Engine, _ string, rawAST any) ([]*AST, error) {
+// them into a consistent representation.
+func convertToAST(engine storepb.Engine, _ string, rawAST any) ([]*AST, error) {
 	switch engine {
 	case storepb.Engine_TIDB:
 		// TiDB parser returns []ast.StmtNode
