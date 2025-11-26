@@ -95,8 +95,7 @@ type Context struct {
 	Project     *Project
 	TaskResult  *TaskResult
 	// End users that should be mentioned.
-	MentionEndUsers     []*store.UserMessage
-	MentionUsersByPhone []string
+	MentionEndUsers []*store.UserMessage
 
 	DirectMessage bool
 	IMSetting     *storepb.AppIMSetting
