@@ -24,6 +24,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 )
 
 const entraIDSource = "Entra ID"
@@ -132,7 +133,9 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		return c.JSON(http.StatusOK, convertToAADUser(user))
 	})
 
-	// List users. AAD SCIM will send ?filter=userName eq "{user name}" query
+	// List users. AAD SCIM will send ?filter=userName eq "{email}" query.
+	// userName maps to userPrincipalName in Azure, which is typically the user's email.
+	// Docs: https://learn.microsoft.com/en-us/entra/identity/app-provisioning/use-scim-to-provision-users-and-groups#get-user-by-query
 	g.GET("/workspaces/:workspaceID/Users", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		if err := s.validRequestURL(ctx, c); err != nil {
@@ -323,7 +326,8 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		// 2. POST group without members
 		// 3. PATCH group with members
 		group, err := s.store.CreateGroup(ctx, &store.GroupMessage{
-			Email: aadGroup.ExternalID,
+			ID:    aadGroup.ExternalID,
+			Email: aadGroup.Email,
 			Title: aadGroup.DisplayName,
 			Payload: &storepb.GroupPayload{
 				Source: entraIDSource,
@@ -346,12 +350,11 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			return c.String(http.StatusForbidden, err.Error())
 		}
 
-		email, err := decodeGroupEmail(c.Param("groupID"))
+		groupName, err := decodeGroupIdentifier(c.Param("groupID"))
 		if err != nil {
-			return c.String(http.StatusInternalServerError, err.Error())
+			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to parse group %v, error %v", c.Param("groupID"), err))
 		}
-
-		group, err := s.store.GetGroup(ctx, email)
+		group, err := utils.GetGroupByName(ctx, s.store, groupName)
 		if err != nil {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to find group, error %v", err))
 		}
@@ -367,7 +370,11 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		return c.JSON(http.StatusOK, convertToAADGroup(group))
 	})
 
-	// List groups. AAD SCIM will send ?filter=externalId eq "{group email}" query
+	// List groups. AAD SCIM will send ?filter=externalId eq "{value}" query.
+	// externalId can be Azure's objectId or group email depending on customer's attribute mapping:
+	//   - New default: objectId -> externalId (recommended, stable across email changes)
+	//   - Legacy mapping: mail -> externalId (for backward compatibility)
+	// Docs: https://learn.microsoft.com/en-us/entra/identity/app-provisioning/use-scim-to-provision-users-and-groups#get-group-by-query
 	g.GET("/workspaces/:workspaceID/Groups", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		if err := s.validRequestURL(ctx, c); err != nil {
@@ -405,7 +412,14 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 				slog.Warn("unsupport filter key", slog.String("key", expr.Key), slog.String("operator", string(expr.Operator)), slog.String("value", expr.Value))
 				continue
 			}
-			find.Email = &expr.Value
+			// externalId can be either Azure's objectId or group email, depending on customer's attribute mapping.
+			// - New default: objectId -> externalId (UUID format, no @)
+			// - Legacy mapping: mail -> externalId (email format, contains @)
+			if strings.Contains(expr.Value, "@") {
+				find.Email = &expr.Value
+			} else {
+				find.ID = &expr.Value
+			}
 		}
 
 		groups, err := s.store.ListGroups(ctx, find)
@@ -430,12 +444,24 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			return c.String(http.StatusForbidden, err.Error())
 		}
 
-		email, err := decodeGroupEmail(c.Param("groupID"))
+		groupName, err := decodeGroupIdentifier(c.Param("groupID"))
 		if err != nil {
-			return c.String(http.StatusInternalServerError, err.Error())
+			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to parse group %v, error %v", c.Param("groupID"), err))
+		}
+		group, err := utils.GetGroupByName(ctx, s.store, groupName)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to find group, error %v", err))
+		}
+		if group == nil {
+			return c.JSON(http.StatusNotFound, map[string]any{
+				"schemas": []string{
+					"urn:ietf:params:scim:api:messages:2.0:Error",
+				},
+				"status": "404",
+			})
 		}
 
-		if err := s.store.DeleteGroup(ctx, email); err != nil {
+		if err := s.store.DeleteGroup(ctx, group.ID); err != nil {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to delete group, error %v", err))
 		}
 
@@ -465,20 +491,26 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to unmarshal body, error %v", err))
 		}
 
-		email, err := decodeGroupEmail(c.Param("groupID"))
+		groupName, err := decodeGroupIdentifier(c.Param("groupID"))
 		if err != nil {
-			return c.String(http.StatusInternalServerError, err.Error())
+			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to parse group %v, error %v", c.Param("groupID"), err))
 		}
-
-		group, err := s.store.GetGroup(ctx, email)
+		group, err := utils.GetGroupByName(ctx, s.store, groupName)
 		if err != nil {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to find group, error %v", err))
 		}
 		if group == nil {
-			return c.String(http.StatusNotFound, "cannot found group")
+			return c.JSON(http.StatusNotFound, map[string]any{
+				"schemas": []string{
+					"urn:ietf:params:scim:api:messages:2.0:Error",
+				},
+				"status": "404",
+			})
 		}
 
-		updateGroup := &store.UpdateGroupMessage{}
+		updateGroup := &store.UpdateGroupMessage{
+			ID: group.ID,
+		}
 		for _, op := range patch.Operations {
 			switch op.Path {
 			case "members":
@@ -554,7 +586,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			}
 		}
 
-		updatedGroup, err := s.store.UpdateGroup(ctx, group.Email, updateGroup)
+		updatedGroup, err := s.store.UpdateGroup(ctx, updateGroup)
 		if err != nil {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to update group, error %v", err))
 		}
@@ -610,12 +642,12 @@ func (s *Service) validRequestURL(ctx context.Context, c echo.Context) error {
 	return nil
 }
 
-func decodeGroupEmail(groupID string) (string, error) {
-	email, err := url.QueryUnescape(groupID)
+func decodeGroupIdentifier(groupID string) (string, error) {
+	identifier, err := url.QueryUnescape(groupID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to decode group id %s", groupID)
 	}
-	return email, nil
+	return identifier, nil
 }
 
 func convertToAADUser(user *store.UserMessage) *AADUser {
@@ -645,8 +677,11 @@ func convertToAADGroup(group *store.GroupMessage) *AADGroup {
 		Schemas: []string{
 			"urn:ietf:params:scim:schemas:core:2.0:Group",
 		},
-		ID:          group.Email,
-		ExternalID:  group.Email,
+		// We use the azure group object id (external id) to create the group.
+		// So both ID and ExternalID should be the group.ID (equals external id).
+		ID:          group.ID,
+		ExternalID:  group.ID,
+		Email:       group.Email,
 		DisplayName: group.Title,
 		Meta: &AADResourceMeta{
 			ResourceType: "Group",

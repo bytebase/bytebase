@@ -19,6 +19,7 @@ import (
 
 // FindGroupMessage is the message for finding groups.
 type FindGroupMessage struct {
+	ID        *string
 	Email     *string
 	ProjectID *string
 	FilterQ   *qb.Query
@@ -29,6 +30,11 @@ type FindGroupMessage struct {
 
 // UpdateGroupMessage is the message to update a group.
 type UpdateGroupMessage struct {
+	// identifier
+	ID string
+
+	// payload
+	Email       *string
 	Title       *string
 	Description *string
 	Payload     *storepb.GroupPayload
@@ -36,6 +42,7 @@ type UpdateGroupMessage struct {
 
 // GroupMessage is the message for a group.
 type GroupMessage struct {
+	ID          string
 	Email       string
 	Title       string
 	Description string
@@ -43,9 +50,11 @@ type GroupMessage struct {
 }
 
 // GetGroup gets a group.
-func (s *Store) GetGroup(ctx context.Context, email string) (*GroupMessage, error) {
-	if v, ok := s.groupCache.Get(email); ok && s.enableCache {
-		return v, nil
+func (s *Store) GetGroup(ctx context.Context, find *FindGroupMessage) (*GroupMessage, error) {
+	if find.Email != nil {
+		if v, ok := s.groupCache.Get(*find.Email); ok && s.enableCache {
+			return v, nil
+		}
 	}
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
@@ -54,9 +63,7 @@ func (s *Store) GetGroup(ctx context.Context, email string) (*GroupMessage, erro
 	}
 	defer tx.Rollback()
 
-	groups, err := s.listGroupImpl(ctx, tx, &FindGroupMessage{
-		Email: &email,
-	})
+	groups, err := s.listGroupImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +74,7 @@ func (s *Store) GetGroup(ctx context.Context, email string) (*GroupMessage, erro
 	if len(groups) == 0 {
 		return nil, nil
 	} else if len(groups) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d groups with email %+v, expect 1", len(groups), email)}
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d groups with filter %+v, expect 1", len(groups), find)}
 	}
 	return groups[0], nil
 }
@@ -117,6 +124,9 @@ func (*Store) listGroupImpl(ctx context.Context, txn *sql.Tx, find *FindGroupMes
 	if filterQ := find.FilterQ; filterQ != nil {
 		where.And("?", filterQ)
 	}
+	if v := find.ID; v != nil {
+		where.And("id = ?", *v)
+	}
 	if v := find.Email; v != nil {
 		where.And("email = ?", *v)
 	}
@@ -127,6 +137,7 @@ func (*Store) listGroupImpl(ctx context.Context, txn *sql.Tx, find *FindGroupMes
 	}
 	q.Space(`
 		SELECT
+			user_group.id,
 			user_group.email,
 			user_group.name,
 			user_group.description,
@@ -157,14 +168,19 @@ func (*Store) listGroupImpl(ctx context.Context, txn *sql.Tx, find *FindGroupMes
 
 	for rows.Next() {
 		var group GroupMessage
+		var email sql.NullString
 		var payload []byte
 		if err := rows.Scan(
-			&group.Email,
+			&group.ID,
+			&email,
 			&group.Title,
 			&group.Description,
 			&payload,
 		); err != nil {
 			return nil, err
+		}
+		if email.Valid {
+			group.Email = email.String
 		}
 		groupPayload := storepb.GroupPayload{}
 		if err := common.ProtojsonUnmarshaler.Unmarshal(payload, &groupPayload); err != nil {
@@ -191,14 +207,21 @@ func (s *Store) CreateGroup(ctx context.Context, create *GroupMessage) (*GroupMe
 		return nil, err
 	}
 
+	var email *string
+	if create.Email != "" {
+		email = &create.Email
+	}
+
 	q := qb.Q().Space(`
 		INSERT INTO user_group (
+			id,
 			email,
 			name,
 			description,
 			payload
-		) VALUES (?, ?, ?, ?)
-	`, create.Email, create.Title, create.Description, payloadBytes)
+		) VALUES (COALESCE(NULLIF(?, ''), gen_random_uuid()::text), ?, ?, ?, ?)
+		RETURNING id
+	`, create.ID, email, create.Title, create.Description, payloadBytes)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -211,7 +234,7 @@ func (s *Store) CreateGroup(ctx context.Context, create *GroupMessage) (*GroupMe
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(&create.ID); err != nil {
 		return nil, err
 	}
 
@@ -224,9 +247,11 @@ func (s *Store) CreateGroup(ctx context.Context, create *GroupMessage) (*GroupMe
 }
 
 // UpdateGroup updates a group.
-func (s *Store) UpdateGroup(ctx context.Context, email string, patch *UpdateGroupMessage) (*GroupMessage, error) {
+func (s *Store) UpdateGroup(ctx context.Context, patch *UpdateGroupMessage) (*GroupMessage, error) {
 	set := qb.Q()
-
+	if v := patch.Email; v != nil {
+		set.Comma("email = ?", *v)
+	}
 	if v := patch.Title; v != nil {
 		set.Comma("name = ?", *v)
 	}
@@ -244,13 +269,14 @@ func (s *Store) UpdateGroup(ctx context.Context, email string, patch *UpdateGrou
 	q := qb.Q().Space(`
 		UPDATE user_group
 		SET ?
-		WHERE email = ?
+		WHERE id = ?
 		RETURNING
+			id,
 			email,
 			name,
 			description,
 			payload
-	`, set, email)
+	`, set, patch.ID)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -267,6 +293,7 @@ func (s *Store) UpdateGroup(ctx context.Context, email string, patch *UpdateGrou
 	var payload []byte
 
 	if err := tx.QueryRowContext(ctx, query, args...).Scan(
+		&group.ID,
 		&group.Email,
 		&group.Title,
 		&group.Description,
@@ -290,20 +317,21 @@ func (s *Store) UpdateGroup(ctx context.Context, email string, patch *UpdateGrou
 }
 
 // DeleteGroup deletes a group.
-func (s *Store) DeleteGroup(ctx context.Context, email string) error {
+func (s *Store) DeleteGroup(ctx context.Context, id string) error {
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(err, "failed to begin transaction")
 	}
 	defer tx.Rollback()
 
-	q := qb.Q().Space("DELETE FROM user_group WHERE email = ?", email)
+	q := qb.Q().Space("DELETE FROM user_group WHERE id = ? RETURNING email", id)
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return errors.Wrapf(err, "failed to build sql")
 	}
 
-	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+	var email string
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(&email); err != nil {
 		return err
 	}
 

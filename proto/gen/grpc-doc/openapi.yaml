@@ -10518,7 +10518,7 @@ components:
                     type: string
                     description: |-
                         The name of the group to retrieve.
-                         Format: groups/{group}, group is an email.
+                         Format: groups/{group}, the group should be email or uuid.
                 title:
                     type: string
                     description: The display title of the group.
@@ -10533,6 +10533,9 @@ components:
                 source:
                     type: string
                     description: The source system where the group originated (e.g., Entra ID for SCIM sync).
+                email:
+                    type: string
+                    description: The unique email for the group.
             description: A group of users within the workspace.
         GroupMember:
             type: object
