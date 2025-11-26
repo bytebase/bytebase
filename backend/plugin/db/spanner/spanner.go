@@ -4,8 +4,12 @@ package spanner
 import (
 	"context"
 	"database/sql"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"log/slog"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -18,8 +22,11 @@ import (
 	"google.golang.org/api/option"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -414,6 +421,114 @@ func (d *Driver) querySingleSQL(ctx context.Context, statement string, queryCont
 	return result, nil
 }
 
+// convertSpannerValue converts google.protobuf.Value to RowValue.
+// Uses type metadata to preserve INT64 precision and properly handle all Spanner types.
+func convertSpannerValue(colType *sppb.Type, v *structpb.Value) *v1pb.RowValue {
+	if v == nil || v.Kind == nil {
+		return util.NullRowValue
+	}
+
+	switch v.Kind.(type) {
+	case *structpb.Value_NullValue:
+		return util.NullRowValue
+	case *structpb.Value_StringValue:
+		stringValue := v.GetStringValue()
+		if colType == nil {
+			return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{
+				StringValue: stringValue,
+			}}
+		}
+
+		switch colType.Code {
+		case sppb.TypeCode_INT64:
+			// Spanner encodes INT64 as strings to preserve precision
+			val, err := strconv.ParseInt(stringValue, 10, 64)
+			if err != nil {
+				slog.Error("failed to parse INT64 string value", log.BBError(err))
+				return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{
+					StringValue: stringValue,
+				}}
+			}
+			return &v1pb.RowValue{Kind: &v1pb.RowValue_Int64Value{
+				Int64Value: val,
+			}}
+		case sppb.TypeCode_TIMESTAMP:
+			// Spanner encodes TIMESTAMP as RFC3339 string with nanosecond precision
+			t, err := time.Parse(time.RFC3339Nano, stringValue)
+			if err != nil {
+				slog.Error("failed to parse TIMESTAMP string value", log.BBError(err))
+				return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{
+					StringValue: stringValue,
+				}}
+			}
+			// Determine accuracy from the string
+			accuracy := int32(6) // Default to microsecond precision
+			if dotIndex := strings.Index(stringValue, "."); dotIndex >= 0 {
+				// Find the end of fractional seconds (before 'Z' or timezone)
+				endIndex := strings.IndexAny(stringValue[dotIndex:], "Z+-")
+				if endIndex > 0 {
+					accuracy = int32(endIndex - 1)
+					if accuracy > 9 {
+						accuracy = 9 // Cap at nanosecond precision
+					}
+				}
+			}
+			return &v1pb.RowValue{Kind: &v1pb.RowValue_TimestampValue{
+				TimestampValue: &v1pb.RowValue_Timestamp{
+					GoogleTimestamp: timestamppb.New(t),
+					Accuracy:        accuracy,
+				},
+			}}
+		case sppb.TypeCode_BYTES:
+			// Spanner encodes BYTES as base64 string
+			bytes, err := base64.StdEncoding.DecodeString(stringValue)
+			if err != nil {
+				slog.Error("failed to decode BYTES base64 string value", log.BBError(err))
+				return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{
+					StringValue: stringValue,
+				}}
+			}
+			return &v1pb.RowValue{Kind: &v1pb.RowValue_BytesValue{
+				BytesValue: bytes,
+			}}
+		default:
+			// DATE, JSON, STRING all stay as StringValue
+			return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{
+				StringValue: stringValue,
+			}}
+		}
+	case *structpb.Value_NumberValue:
+		// Check if this is INT64 to preserve precision
+		if colType != nil && colType.Code == sppb.TypeCode_INT64 {
+			return &v1pb.RowValue{Kind: &v1pb.RowValue_Int64Value{
+				Int64Value: int64(v.GetNumberValue()),
+			}}
+		}
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_DoubleValue{
+			DoubleValue: v.GetNumberValue(),
+		}}
+	case *structpb.Value_BoolValue:
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_BoolValue{
+			BoolValue: v.GetBoolValue(),
+		}}
+	case *structpb.Value_ListValue, *structpb.Value_StructValue:
+		// Flatten complex types to JSON strings (no array_value/struct_value in RowValue proto).
+		goValue := v.AsInterface()
+		jsonBytes, err := json.Marshal(goValue)
+		if err != nil {
+			slog.Error("failed to marshal Spanner complex value", log.BBError(err))
+			return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{
+				StringValue: fmt.Sprintf("%v", goValue),
+			}}
+		}
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{
+			StringValue: string(jsonBytes),
+		}}
+	default:
+		return util.NullRowValue
+	}
+}
+
 func readRow(row *spanner.Row) (*v1pb.QueryRow, error) {
 	result := &v1pb.QueryRow{}
 	for i := 0; i < row.Size(); i++ {
@@ -421,7 +536,7 @@ func readRow(row *spanner.Row) (*v1pb.QueryRow, error) {
 		if err := row.Column(i, &col); err != nil {
 			return nil, err
 		}
-		result.Values = append(result.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_ValueValue{ValueValue: col.Value}})
+		result.Values = append(result.Values, convertSpannerValue(col.Type, col.Value))
 	}
 
 	return result, nil
