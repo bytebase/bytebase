@@ -11,7 +11,7 @@
       @action-complete="handleActionComplete"
     />
 
-    <div class="task-list px-4 py-4 space-y-3">
+    <div class="task-list px-4 py-3 space-y-3">
       <TaskItem
         v-for="task in visibleTasks"
         :key="task.name"

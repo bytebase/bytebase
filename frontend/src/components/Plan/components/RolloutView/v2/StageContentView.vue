@@ -23,22 +23,6 @@
             :selected-statuses="filterStatuses"
             @update:selected-statuses="handleFilterStatusesChange"
           />
-          <!-- Rollback entry -->
-          <NButton
-            v-if="
-              isStageCreated(selectedStage) && rollbackableTaskRuns.length > 0
-            "
-            size="small"
-            quaternary
-            @click="showRollbackDrawer = true"
-          >
-            <template #icon>
-              <DatabaseBackupIcon :size="16" />
-            </template>
-            {{
-              $t("task-run.rollback.available", rollbackableTaskRuns.length)
-            }}
-          </NButton>
         </div>
 
         <!-- Right: Stage actions -->
@@ -70,21 +54,46 @@
       </div>
     </div>
 
-    <!-- Task list content -->
-    <TaskList
-      :stage="selectedStage"
-      :rollout="rollout"
-      :filter-statuses="filterStatuses"
-      :readonly="!isStageCreated(selectedStage)"
-    />
+    <!-- Main content area: responsive layout -->
+    <div class="flex" :class="isWideScreen ? 'flex-row' : 'flex-col'">
+      <!-- Timeline: inline above on narrow screen -->
+      <div v-if="!isWideScreen && isStageCreated(selectedStage)" class="mb-4">
+        <StageTimeline
+          :stage="selectedStage"
+          :task-runs="taskRuns"
+          :rollout="rollout"
+          :rollbackable-task-runs="rollbackableTaskRuns"
+          :is-inline="true"
+          class="border-y"
+        />
+      </div>
 
-    <!-- Rollback drawer -->
-    <TaskRunRollbackDrawer
-      v-model:show="showRollbackDrawer"
-      :rollout="rollout"
-      :rollbackable-task-runs="rollbackableTaskRuns"
-      @close="showRollbackDrawer = false"
-    />
+      <!-- Task list content -->
+      <div class="flex-1 min-w-0">
+        <TaskList
+          :stage="selectedStage"
+          :rollout="rollout"
+          :filter-statuses="filterStatuses"
+          :readonly="!isStageCreated(selectedStage)"
+        />
+      </div>
+
+      <!-- Timeline: sidebar on wide screen (sticky) -->
+      <div
+        v-if="isWideScreen && isStageCreated(selectedStage)"
+        class="shrink-0 pr-4 self-start sticky top-0"
+      >
+        <div class="w-64 border rounded-lg">
+          <StageTimeline
+            :stage="selectedStage"
+            :task-runs="taskRuns"
+            :rollout="rollout"
+            :rollbackable-task-runs="rollbackableTaskRuns"
+            :is-inline="false"
+          />
+        </div>
+      </div>
+    </div>
   </div>
 
   <div v-else class="flex items-center justify-center py-12">
@@ -95,7 +104,8 @@
 </template>
 
 <script lang="ts" setup>
-import { DatabaseBackupIcon, PlayIcon, PlusIcon } from "lucide-vue-next";
+import { useMediaQuery } from "@vueuse/core";
+import { PlayIcon, PlusIcon } from "lucide-vue-next";
 import { NButton, NTag } from "naive-ui";
 import { computed, ref, toRef } from "vue";
 import { EnvironmentV1Name } from "@/components/v2";
@@ -103,8 +113,8 @@ import { useEnvironmentV1Store } from "@/store";
 import type { Rollout, Stage } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { usePlanContextWithRollout } from "../../../logic";
-import TaskRunRollbackDrawer from "../TaskRunRollbackDrawer.vue";
 import { useRollbackableTasks } from "./composables/useRollbackableTasks";
+import StageTimeline from "./StageTimeline.vue";
 import TaskFilter from "./TaskFilter.vue";
 import TaskList from "./TaskList.vue";
 
@@ -122,6 +132,9 @@ defineEmits<{
 const environmentStore = useEnvironmentV1Store();
 const filterStatuses = ref<Task_Status[]>([]);
 
+// Responsive layout: sidebar on wide screen, inline on narrow
+const isWideScreen = useMediaQuery("(min-width: 1024px)");
+
 // Rollback functionality
 const { taskRuns } = usePlanContextWithRollout();
 const selectedStageRef = toRef(props, "selectedStage");
@@ -129,7 +142,6 @@ const { rollbackableTaskRuns } = useRollbackableTasks(
   selectedStageRef,
   taskRuns
 );
-const showRollbackDrawer = ref(false);
 
 const canRunStage = computed(() => {
   if (!props.selectedStage || !props.isStageCreated(props.selectedStage)) {

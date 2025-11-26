@@ -318,6 +318,8 @@
     "no-permission": "Không có quyền thực hiện hành động này",
     "data-export-creator-only": "Chỉ người tạo sự cố mới có thể thực hiện tác vụ xuất dữ liệu",
     "scheduled-time": "Thời gian đã lên lịch",
+    "scheduled-at": "Đã lên lịch tại",
+    "run-history": "Lịch sử chạy",
     "select-scheduled-time": "Chọn thời gian đã lên lịch",
     "error": {
       "scheduled-time-must-be-in-the-future": "Thời gian dự kiến phải ở trong tương lai"
