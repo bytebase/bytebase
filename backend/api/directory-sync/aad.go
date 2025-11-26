@@ -21,6 +21,7 @@ type AADResourceMeta struct {
 // Unlike groups, users are matched by userName (email) rather than externalId because:
 //   - Email is the natural unique identifier for users in Bytebase
 //   - Azure's default attribute mapping uses userPrincipalName -> userName
+//
 // Docs: https://learn.microsoft.com/en-us/entra/identity/app-provisioning/use-scim-to-provision-users-and-groups#get-user-by-query
 type AADUser struct {
 	// id is Bytebase's user UID, used by Azure in subsequent requests (GET/PATCH/DELETE /Users/{id}).

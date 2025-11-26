@@ -350,7 +350,11 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			return c.String(http.StatusForbidden, err.Error())
 		}
 
-		group, err := utils.GetGroupByName(ctx, s.store, c.Param("groupID"))
+		groupName, err := decodeGroupIdentifier(c.Param("groupID"))
+		if err != nil {
+			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to parse group %v, error %v", c.Param("groupID"), err))
+		}
+		group, err := utils.GetGroupByName(ctx, s.store, groupName)
 		if err != nil {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to find group, error %v", err))
 		}
@@ -440,7 +444,11 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			return c.String(http.StatusForbidden, err.Error())
 		}
 
-		group, err := utils.GetGroupByName(ctx, s.store, c.Param("groupID"))
+		groupName, err := decodeGroupIdentifier(c.Param("groupID"))
+		if err != nil {
+			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to parse group %v, error %v", c.Param("groupID"), err))
+		}
+		group, err := utils.GetGroupByName(ctx, s.store, groupName)
 		if err != nil {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to find group, error %v", err))
 		}
@@ -483,7 +491,11 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to unmarshal body, error %v", err))
 		}
 
-		group, err := utils.GetGroupByName(ctx, s.store, c.Param("groupID"))
+		groupName, err := decodeGroupIdentifier(c.Param("groupID"))
+		if err != nil {
+			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to parse group %v, error %v", c.Param("groupID"), err))
+		}
+		group, err := utils.GetGroupByName(ctx, s.store, groupName)
 		if err != nil {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to find group, error %v", err))
 		}
