@@ -87,6 +87,40 @@
             :disabled="!allowEdit"
           />
         </div>
+        <div>
+          <div class="text-md leading-6 font-medium text-main">
+            {{ $t("project.webhook.triggering-activity") }}
+            <RequiredStar />
+          </div>
+          <div class="flex flex-col gap-y-4 mt-2">
+            <div v-for="(item, index) in webhookActivityItemList" :key="index">
+              <div>
+                <div class="flex items-center">
+                  <NCheckbox
+                    :label="item.title"
+                    :checked="isEventOn(item.activity)"
+                    @update:checked="
+                      (on: boolean) => {
+                        toggleEvent(item.activity, on);
+                      }
+                    "
+                  />
+                  <NTooltip
+                    v-if="
+                      webhookSupportDirectMessage && item.supportDirectMessage
+                    "
+                  >
+                    <template #trigger>
+                      <InfoIcon class="w-4 h-auto text-gray-500" />
+                    </template>
+                    {{ $t("project.webhook.activity-support-direct-message") }}
+                  </NTooltip>
+                </div>
+                <div class="textinfolabel">{{ item.label }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
         <div v-if="webhookSupportDirectMessage">
           <div class="text-md leading-6 font-medium text-main">
             {{ $t("project.webhook.direct-messages") }}
@@ -141,44 +175,10 @@
             />
           </div>
         </div>
-        <div>
-          <div class="text-md leading-6 font-medium text-main">
-            {{ $t("project.webhook.triggering-activity") }}
-            <RequiredStar />
-          </div>
-          <div class="flex flex-col gap-y-4 mt-2">
-            <div v-for="(item, index) in webhookActivityItemList" :key="index">
-              <div>
-                <div class="flex items-center">
-                  <NCheckbox
-                    :label="item.title"
-                    :checked="isEventOn(item.activity)"
-                    @update:checked="
-                      (on: boolean) => {
-                        toggleEvent(item.activity, on);
-                      }
-                    "
-                  />
-                  <NTooltip
-                    v-if="
-                      webhookSupportDirectMessage && item.supportDirectMessage
-                    "
-                  >
-                    <template #trigger>
-                      <InfoIcon class="w-4 h-auto text-gray-500" />
-                    </template>
-                    {{ $t("project.webhook.activity-support-direct-message") }}
-                  </NTooltip>
-                </div>
-                <div class="textinfolabel">{{ item.label }}</div>
-              </div>
-            </div>
-          </div>
-          <div class="mt-4">
-            <NButton @click.prevent="testWebhook">
-              {{ $t("project.webhook.test-webhook") }}
-            </NButton>
-          </div>
+        <div class="mt-4">
+          <NButton @click.prevent="testWebhook">
+            {{ $t("project.webhook.test-webhook") }}
+          </NButton>
         </div>
       </div>
     </template>
@@ -201,7 +201,7 @@
           :require-confirm="true"
           @confirm="deleteWebhook"
         />
-        <div class="gap-x-3">
+        <div class="flex items-center gap-x-3">
           <NButton v-if="create" @click.prevent="cancel">
             {{ $t("common.cancel") }}
           </NButton>
