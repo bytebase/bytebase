@@ -20,7 +20,7 @@ import remarkGfm from "remark-gfm";
 import remarkParse from "remark-parse";
 import { unified } from "unified";
 import { computed } from "vue";
-import HighlightCodeBlock from "@/components/HighlightCodeBlock";
+import HighlightCodeBlock from "@/components/HighlightCodeBlock.vue";
 import AstToMarkdown from "./AstToVNode.vue";
 import CodeBlock, { type CodeBlockProps } from "./CodeBlock.vue";
 
