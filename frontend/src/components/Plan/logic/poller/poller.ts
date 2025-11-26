@@ -33,6 +33,7 @@ import {
   refreshPlanCheckRuns,
   refreshRollout,
   refreshTaskRuns,
+  type TaskRunScope,
 } from "./utils";
 
 type ResourceType = "plan" | "planCheckRuns" | "issue" | "rollout" | "taskRuns";
@@ -57,6 +58,14 @@ export const provideResourcePoller = () => {
   const { project } = useCurrentProjectV1();
   const { isCreating, plan, planCheckRuns, taskRuns, issue, rollout, events } =
     usePlanContext();
+
+  // Extract stage/task scope from route params for scoped taskRuns polling
+  const taskRunScope = computed<TaskRunScope | undefined>(() => {
+    const stageId = route.params.stageId as string | undefined;
+    const taskId = route.params.taskId as string | undefined;
+    if (!stageId) return undefined;
+    return { stageId, taskId };
+  });
 
   // Consolidated state management
   const pollerState = ref({
@@ -106,7 +115,12 @@ export const provideResourcePoller = () => {
       canRefresh: () => !!rollout?.value && !!taskRuns,
       refresh: () => {
         if (!rollout.value) return Promise.resolve();
-        return refreshTaskRuns(rollout.value, project.value, taskRuns);
+        return refreshTaskRuns(
+          rollout.value,
+          project.value,
+          taskRuns,
+          taskRunScope.value
+        );
       },
     },
   };
@@ -286,6 +300,21 @@ export const provideResourcePoller = () => {
 
       if (resourcesChanged) {
         restartPoller();
+      }
+    },
+    { deep: true }
+  );
+
+  // Watch for taskRunScope changes (stage/task navigation) and refresh taskRuns
+  watch(
+    taskRunScope,
+    async (newScope, oldScope) => {
+      const scopeChanged =
+        newScope?.stageId !== oldScope?.stageId ||
+        newScope?.taskId !== oldScope?.taskId;
+
+      if (scopeChanged && resourceStrategies.taskRuns.canRefresh()) {
+        await resourceStrategies.taskRuns.refresh();
       }
     },
     { deep: true }
