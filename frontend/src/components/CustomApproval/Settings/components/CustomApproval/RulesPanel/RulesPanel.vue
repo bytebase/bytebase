@@ -9,8 +9,15 @@
 </template>
 
 <script lang="ts" setup>
-import { useSupportedSourceList } from "@/types";
+import { computed } from "vue";
+import { WorkspaceApprovalSetting_Rule_Source } from "@/types/proto-es/v1/setting_service_pb";
 import RulesSection from "./RulesSection.vue";
 
-const supportedSourceList = useSupportedSourceList();
+const supportedSourceList = computed(() => [
+  WorkspaceApprovalSetting_Rule_Source.DDL,
+  WorkspaceApprovalSetting_Rule_Source.DML,
+  WorkspaceApprovalSetting_Rule_Source.CREATE_DATABASE,
+  WorkspaceApprovalSetting_Rule_Source.EXPORT_DATA,
+  WorkspaceApprovalSetting_Rule_Source.REQUEST_ROLE,
+]);
 </script>

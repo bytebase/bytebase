@@ -1,28 +1,17 @@
-import type { SimpleExpr } from "@/plugins/cel";
-import type { RiskLevel } from "@/types/proto-es/v1/common_pb";
-import type { ApprovalTemplate } from "@/types/proto-es/v1/issue_service_pb";
-import type { Risk_Source } from "@/types/proto-es/v1/risk_service_pb";
+import type { ConditionGroupExpr } from "@/plugins/cel";
+import type { ApprovalFlow } from "@/types/proto-es/v1/issue_service_pb";
+import type { WorkspaceApprovalSetting_Rule_Source } from "@/types/proto-es/v1/setting_service_pb";
 
+// A single approval rule with inline flow definition
 export type LocalApprovalRule = {
-  // Use template.id as the identifier instead of generating ephemeral uid
-  // This allows proper identification of built-in vs custom flows
-  expr?: SimpleExpr;
-  template: ApprovalTemplate;
+  uid: string; // Local unique identifier for UI tracking
+  source: WorkspaceApprovalSetting_Rule_Source;
+  condition: string; // CEL expression string
+  conditionExpr?: ConditionGroupExpr; // Parsed CEL for editor
+  flow: ApprovalFlow; // Inline approval flow (roles array)
 };
 
-export type ParsedApprovalRule = {
-  source: Risk_Source;
-  level: RiskLevel;
-  rule: string; // ApprovalTemplate.id
-};
-
-export type UnrecognizedApprovalRule = {
-  expr?: SimpleExpr;
-  rule: string; // ApprovalTemplate.id
-};
-
+// The local config is just a list of rules per source
 export type LocalApprovalConfig = {
   rules: LocalApprovalRule[];
-  parsed: ParsedApprovalRule[];
-  unrecognized: UnrecognizedApprovalRule[];
 };

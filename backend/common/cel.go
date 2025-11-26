@@ -35,9 +35,25 @@ var RiskFactors = []cel.EnvOption{
 }
 
 // ApprovalFactors are the variables when finding the approval template.
+// After the risk layer removal (3.13), approval rules use the same variables as risk evaluation.
 var ApprovalFactors = []cel.EnvOption{
-	cel.Variable(CELAttributeLevel, cel.StringType),
-	cel.Variable(CELAttributeSource, cel.StringType),
+	// Resource scope
+	cel.Variable(CELAttributeResourceEnvironmentID, cel.StringType),
+	cel.Variable(CELAttributeResourceProjectID, cel.StringType),
+	cel.Variable(CELAttributeResourceInstanceID, cel.StringType),
+	cel.Variable(CELAttributeResourceDBEngine, cel.StringType),
+	cel.Variable(CELAttributeResourceDatabaseName, cel.StringType),
+	cel.Variable(CELAttributeResourceSchemaName, cel.StringType),
+	cel.Variable(CELAttributeResourceTableName, cel.StringType),
+	// Statement scope
+	cel.Variable(CELAttributeStatementAffectedRows, cel.IntType),
+	cel.Variable(CELAttributeStatementTableRows, cel.IntType),
+	cel.Variable(CELAttributeStatementSQLType, cel.StringType),
+	cel.Variable(CELAttributeStatementText, cel.StringType),
+	// Request scope
+	cel.Variable(CELAttributeRequestExpirationDays, cel.IntType),
+	cel.Variable(CELAttributeRequestRole, cel.StringType),
+	// Size limit
 	cel.ParserExpressionSizeLimit(celLimit),
 }
 

@@ -289,7 +289,6 @@ func convertToIssueRiskLevel(riskLevel storepb.RiskLevel) v1pb.RiskLevel {
 
 func convertToApprovalTemplate(template *storepb.ApprovalTemplate) *v1pb.ApprovalTemplate {
 	return &v1pb.ApprovalTemplate{
-		Id:          template.Id,
 		Flow:        convertToApprovalFlow(template.Flow),
 		Title:       template.Title,
 		Description: template.Description,

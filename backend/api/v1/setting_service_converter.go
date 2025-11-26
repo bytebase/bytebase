@@ -54,6 +54,7 @@ func convertToSettingMessage(setting *store.SettingMessage, profile *config.Prof
 		for _, rule := range storeValue.Rules {
 			template := convertToApprovalTemplate(rule.Template)
 			v1Value.Rules = append(v1Value.Rules, &v1pb.WorkspaceApprovalSetting_Rule{
+				Source:    v1pb.WorkspaceApprovalSetting_Rule_Source(rule.Source),
 				Condition: rule.Condition,
 				Template:  template,
 			})

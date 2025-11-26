@@ -2669,16 +2669,7 @@
     },
     "approval-flow": {
       "self": "Approval Flow",
-      "approval-flows": "Approval Flows",
-      "approval-nodes": "Approval nodes",
-      "delete": "Delete approval flow",
-      "select": "Select approval flow",
       "create-approval-flow": "Create approval flow",
-      "edit-approval-flow": "Edit approval flow",
-      "built-in": "Built-in Flows",
-      "built-in-description": "Built-in flows are read-only and cannot be deleted.",
-      "custom": "Custom Flows",
-      "no-custom-flows": "No custom approval flows created yet. Click 'Create Flow' to add one.",
       "node": {
         "nodes": "Approval nodes",
         "description": "Only one approval is required on this node when there are multiple approvers.",
@@ -2687,22 +2678,20 @@
         "add": "Add node",
         "delete": "Delete approval node"
       },
-      "view-approval-flow": "View approval flow",
       "skip": "Skip manual approval",
-      "risk-not-configured-tips": "Make sure you have defined {link}.",
-      "the-related-risk-rules": "the related risk rules",
       "issue-review": {
         "sent-back": "Sent back",
         "review-sent-back-by": "Review sent back by {user}"
-      }
+      },
+      "add-rule": "Add rule",
+      "edit-rule": "Edit rule"
     },
     "risk": {
-      "self": "Risk",
       "risks": "Risks",
       "description": "Risk Center defines the risk levels for different database operations under different conditions. And risk levels determine the corresponding custom approval flows."
     },
     "rule": {
-      "rules": "Rules"
+      "first-match-wins": "Rules are evaluated in order. First matching rule applies."
     },
     "issue-review": {
       "approve-issue": "Approve issue?",

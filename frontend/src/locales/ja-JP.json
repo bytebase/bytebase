@@ -2669,16 +2669,7 @@
     },
     "approval-flow": {
       "self": "承認の流れ",
-      "approval-flows": "承認の流れ",
-      "approval-nodes": "承認ノード",
-      "delete": "承認フローの削除",
-      "select": "承認フローの選択",
       "create-approval-flow": "承認フローの作成",
-      "edit-approval-flow": "承認フローの編集",
-      "built-in": "組み込み承認フロー",
-      "built-in-description": "組み込みフローは読み取り専用であり、削除できません。",
-      "custom": "カスタム承認フロー",
-      "no-custom-flows": "カスタム承認フローがまだ作成されていません。「承認フローを作成」をクリックして追加してください。",
       "node": {
         "nodes": "承認ノード",
         "description": "ノードに複数の承認者がいる場合、必要な承認は 1 つだけです。",
@@ -2687,22 +2678,20 @@
         "add": "ノードの追加",
         "delete": "承認ノードの削除"
       },
-      "view-approval-flow": "承認フローを見る",
       "skip": "手動承認をスキップする",
-      "risk-not-configured-tips": "{link} が定義されていることを確認してください。",
-      "the-related-risk-rules": "関連するリスクルール",
       "issue-review": {
         "sent-back": "戻ってきた",
         "review-sent-back-by": "{user} から承認が返されました"
-      }
+      },
+      "add-rule": "ルールを追加",
+      "edit-rule": "ルールを編集"
     },
     "risk": {
-      "self": "リスク",
       "risks": "リスク",
       "description": "リスク センターは、さまざまな条件下でのさまざまなデータベース操作のリスク レベルを定義します。リスク レベルによって、イシューのカスタム承認プロセスが決まります。"
     },
     "rule": {
-      "rules": "ルール"
+      "first-match-wins": "ルールは順番に評価されます。最初に一致するルールが適用されます。"
     },
     "issue-review": {
       "approve-issue": "イシューを承認しますか?",

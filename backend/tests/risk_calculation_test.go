@@ -14,7 +14,11 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
-func TestRiskLevelCalculation(t *testing.T) {
+// TestApprovalRuleMatching tests that approval rules with CEL expressions
+// are correctly matched and applied to issues.
+// Note: As of 3.13, the risk intermediate layer is removed. Approval rules
+// now directly evaluate CEL expressions instead of calculating risk levels.
+func TestApprovalRuleMatching(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
@@ -47,8 +51,11 @@ func TestRiskLevelCalculation(t *testing.T) {
 	err = ctl.createDatabaseV2(ctx, ctl.project, instanceResp.Msg, nil, dbName, "")
 	a.NoError(err)
 
-	// Create a risk rule that evaluates based on environment context
-	// This should work without summary reports
+	// Note: In 3.13+, risk rules are converted to approval rules via migration.
+	// This test creates a risk rule to verify that the risk API still works
+	// and that the approval flow completes without errors.
+	// The actual approval template matching now evaluates CEL expressions directly
+	// without calculating an intermediate risk level.
 	_, err = ctl.riskServiceClient.CreateRisk(ctx, connect.NewRequest(&v1pb.CreateRiskRequest{
 		Risk: &v1pb.Risk{
 			Title:  "Production DDL Risk",
@@ -88,26 +95,26 @@ func TestRiskLevelCalculation(t *testing.T) {
 			}},
 		},
 	}))
-	a.NoError(err, "Plan creation should succeed even without summary reports")
+	a.NoError(err, "Plan creation should succeed")
 
 	// Verify plan was created successfully
 	a.NotNil(planResp.Msg)
 	a.Equal("Test DDL Plan", planResp.Msg.Title)
 
-	// Create issue with the plan - this triggers risk level calculation
+	// Create issue with the plan - this triggers approval rule matching
 	issueResp, err := ctl.issueServiceClient.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
 		Parent: ctl.project.Name,
 		Issue: &v1pb.Issue{
-			Title:       "Test Issue for Risk Calculation",
+			Title:       "Test Issue for Approval Rule Matching",
 			Type:        v1pb.Issue_DATABASE_CHANGE,
-			Description: "Testing risk calculation without summary reports",
+			Description: "Testing approval rule matching",
 			Plan:        planResp.Msg.Name,
 		},
 	}))
-	a.NoError(err, "Issue creation should succeed even without summary reports")
+	a.NoError(err, "Issue creation should succeed")
 
 	// Check issue status 5 times with 3 second intervals
-	// issue.ApprovalFindingDone indicates that the approval flow is generated and issue.RiskLevel is available
+	// Wait for approval finding to complete
 	var issue *v1pb.Issue
 	for i := 0; i < 5; i++ {
 		if i > 0 {
@@ -121,8 +128,8 @@ func TestRiskLevelCalculation(t *testing.T) {
 		issue = issueGetResp.Msg
 
 		// Log the current state for debugging
-		t.Logf("Check %d: ApprovalStatus=%v, RiskLevel=%v, ApprovalStatusError='%s'",
-			i+1, issue.ApprovalStatus, issue.RiskLevel, issue.ApprovalStatusError)
+		t.Logf("Check %d: ApprovalStatus=%v, ApprovalStatusError='%s'",
+			i+1, issue.ApprovalStatus, issue.ApprovalStatusError)
 
 		// Check if approval finding is complete
 		if issue.ApprovalStatus != v1pb.Issue_CHECKING {
@@ -132,16 +139,14 @@ func TestRiskLevelCalculation(t *testing.T) {
 
 	// Verify that the approval finding process completed successfully
 	a.NotNil(issue, "Issue should be retrievable")
-	a.NotEqual(v1pb.Issue_CHECKING, issue.ApprovalStatus, "Approval finding should complete even without summary reports")
-	a.NotEqual(v1pb.Issue_ERROR, issue.ApprovalStatus, "Approval finding should not have errors despite missing summary reports")
-
-	a.Equal(v1pb.RiskLevel_HIGH, issue.RiskLevel, "Issue risk level should be HIGH")
+	a.NotEqual(v1pb.Issue_CHECKING, issue.ApprovalStatus, "Approval finding should complete")
+	a.NotEqual(v1pb.Issue_ERROR, issue.ApprovalStatus, "Approval finding should not have errors")
 }
 
-// TestRiskLevelCalculationWithInvalidSQL tests the fix for issue where
-// risk level calculation should work without requiring summary reports.
+// TestApprovalRuleMatchingWithInvalidSQL tests that approval rule matching
+// works even when SQL is invalid and summary reports cannot be generated.
 // This is a regression test for PR #16793.
-func TestRiskLevelCalculationWithInvalidSQL(t *testing.T) {
+func TestApprovalRuleMatchingWithInvalidSQL(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
@@ -217,22 +222,22 @@ func TestRiskLevelCalculationWithInvalidSQL(t *testing.T) {
 			}},
 		},
 	}))
-	a.NoError(err, "Plan creation should succeed even with invalid SQL that breaks summary reports")
+	a.NoError(err, "Plan creation should succeed even with invalid SQL")
 
-	// Create issue with the plan - this triggers risk level calculation
+	// Create issue with the plan - this triggers approval rule matching
 	issueResp, err := ctl.issueServiceClient.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
 		Parent: ctl.project.Name,
 		Issue: &v1pb.Issue{
 			Title:       "Test Issue with Invalid SQL",
 			Type:        v1pb.Issue_DATABASE_CHANGE,
-			Description: "Testing risk calculation with invalid SQL",
+			Description: "Testing approval rule matching with invalid SQL",
 			Plan:        planResp.Msg.Name,
 		},
 	}))
 	a.NoError(err, "Issue creation should succeed even with invalid SQL in plan")
 
 	// Check issue status 5 times with 3 second intervals
-	// issue.ApprovalFindingDone indicates that the approval flow is generated and issue.RiskLevel is available
+	// Wait for approval finding to complete
 	var issue *v1pb.Issue
 	for i := 0; i < 5; i++ {
 		if i > 0 {
@@ -246,8 +251,8 @@ func TestRiskLevelCalculationWithInvalidSQL(t *testing.T) {
 		issue = issueGetResp.Msg
 
 		// Log the current state for debugging
-		t.Logf("Check %d: ApprovalStatus=%v, RiskLevel=%v, ApprovalStatusError='%s'",
-			i+1, issue.ApprovalStatus, issue.RiskLevel, issue.ApprovalStatusError)
+		t.Logf("Check %d: ApprovalStatus=%v, ApprovalStatusError='%s'",
+			i+1, issue.ApprovalStatus, issue.ApprovalStatusError)
 
 		// Check if approval finding is complete
 		if issue.ApprovalStatus != v1pb.Issue_CHECKING {
@@ -259,6 +264,4 @@ func TestRiskLevelCalculationWithInvalidSQL(t *testing.T) {
 	a.NotNil(issue, "Issue should be retrievable even with invalid SQL")
 	a.NotEqual(v1pb.Issue_CHECKING, issue.ApprovalStatus, "Approval finding should complete even with invalid SQL")
 	a.NotEqual(v1pb.Issue_ERROR, issue.ApprovalStatus, "Approval finding should not have errors despite invalid SQL")
-
-	a.Equal(v1pb.RiskLevel_HIGH, issue.RiskLevel, "Issue risk level should be HIGH")
 }

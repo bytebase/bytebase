@@ -56,9 +56,6 @@ func (x *ApprovalTemplate) Equal(y *ApprovalTemplate) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.Id != y.Id {
-		return false
-	}
 	if !x.Flow.Equal(y.Flow) {
 		return false
 	}

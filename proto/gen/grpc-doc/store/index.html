@@ -1351,6 +1351,10 @@
                   <a href="#bytebase.store.SettingName"><span class="badge">E</span>SettingName</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.store.WorkspaceApprovalSetting.Rule.Source"><span class="badge">E</span>WorkspaceApprovalSetting.Rule.Source</a>
+                </li>
+              
               
               
             </ul>
@@ -2169,15 +2173,6 @@ TODO: use range instead. </p></td>
               <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
             </thead>
             <tbody>
-              
-                <tr>
-                  <td>id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The unique identifier for the approval template.
-Built-in templates use &#34;bb.&#34; prefix (e.g., &#34;bb.project-owner&#34;, &#34;bb.workspace-dba&#34;).
-Custom templates use a UUID or other unique identifier. </p></td>
-                </tr>
               
                 <tr>
                   <td>flow</td>
@@ -12258,6 +12253,13 @@ are /[a-z][0-9]-/. </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>source</td>
+                  <td><a href="#bytebase.store.WorkspaceApprovalSetting.Rule.Source">WorkspaceApprovalSetting.Rule.Source</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -12618,6 +12620,53 @@ Default to this mode.</p></td>
               <tr>
                 <td>ENVIRONMENT</td>
                 <td>19</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.WorkspaceApprovalSetting.Rule.Source">WorkspaceApprovalSetting.Rule.Source</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>SOURCE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DDL</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DML</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CREATE_DATABASE</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>EXPORT_DATA</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>REQUEST_ROLE</td>
+                <td>5</td>
                 <td><p></p></td>
               </tr>
             
