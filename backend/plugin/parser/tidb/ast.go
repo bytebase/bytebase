@@ -3,19 +3,21 @@ package tidb
 import (
 	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 // AST is the AST implementation for TiDB parser.
 // It implements the base.AST interface.
 type AST struct {
-	BaseLine int
-	Node     tidbast.StmtNode
+	// StartPosition is the 1-based position where this statement starts.
+	StartPosition *storepb.Position
+	Node          tidbast.StmtNode
 }
 
-// GetBaseLine implements base.AST interface.
-func (a *AST) GetBaseLine() int {
-	return a.BaseLine
+// ASTStartPosition implements base.AST interface.
+func (a *AST) ASTStartPosition() *storepb.Position {
+	return a.StartPosition
 }
 
 // GetTiDBAST extracts the TiDB AST from a base.AST.

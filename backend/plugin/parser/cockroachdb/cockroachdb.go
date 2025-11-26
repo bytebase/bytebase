@@ -28,7 +28,8 @@ func parseCockroachDBForRegistry(statement string) ([]base.AST, error) {
 	var asts []base.AST
 	for _, stmt := range result.Stmts {
 		asts = append(asts, &AST{
-			Stmt: stmt,
+			StartPosition: &storepb.Position{Line: 1},
+			Stmt:          stmt,
 		})
 	}
 	return asts, nil

@@ -44,7 +44,7 @@ func WalkThrough(d *model.DatabaseMetadata, ast []base.AST) *storepb.Advice {
 		parseResults = append(parseResults, &base.ParseResult{
 			Tree:     antlrAST.Tree,
 			Tokens:   antlrAST.Tokens,
-			BaseLine: antlrAST.BaseLine,
+			BaseLine: base.GetLineOffset(antlrAST.StartPosition),
 		})
 	}
 

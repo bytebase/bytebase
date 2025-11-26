@@ -31,9 +31,9 @@ func toAST(results []*base.ParseResult) []base.AST {
 	var asts []base.AST
 	for _, r := range results {
 		asts = append(asts, &base.ANTLRAST{
-			BaseLine: r.BaseLine,
-			Tree:     r.Tree,
-			Tokens:   r.Tokens,
+			StartPosition: &storepb.Position{Line: int32(r.BaseLine) + 1},
+			Tree:          r.Tree,
+			Tokens:        r.Tokens,
 		})
 	}
 	return asts
@@ -72,17 +72,18 @@ func parseSingleSnowSQL(statement string, baseLine int) (*base.ParseResult, erro
 	p := parser.NewSnowflakeParser(stream)
 
 	// Remove default error listener and add our own error listener.
+	startPosition := &storepb.Position{Line: int32(baseLine) + 1}
 	lexer.RemoveErrorListeners()
 	lexerErrorListener := &base.ParseErrorListener{
-		Statement: statement,
-		BaseLine:  baseLine,
+		Statement:     statement,
+		StartPosition: startPosition,
 	}
 	lexer.AddErrorListener(lexerErrorListener)
 
 	p.RemoveErrorListeners()
 	parserErrorListener := &base.ParseErrorListener{
-		Statement: statement,
-		BaseLine:  baseLine,
+		Statement:     statement,
+		StartPosition: startPosition,
 	}
 	p.AddErrorListener(parserErrorListener)
 

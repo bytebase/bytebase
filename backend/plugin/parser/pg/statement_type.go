@@ -34,7 +34,7 @@ func GetStatementTypes(asts []base.AST) ([]StatementTypeWithPosition, error) {
 
 		collector := &statementTypeCollectorWithPosition{
 			tokens:   antlrAST.Tokens,
-			baseLine: antlrAST.BaseLine,
+			baseLine: base.GetLineOffset(antlrAST.StartPosition),
 		}
 
 		antlr.ParseTreeWalkerDefault.Walk(collector, antlrAST.Tree)

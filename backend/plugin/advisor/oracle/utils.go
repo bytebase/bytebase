@@ -21,7 +21,7 @@ func getANTLRTree(checkCtx advisor.Context) ([]*base.ParseResult, error) {
 		parseResults = append(parseResults, &base.ParseResult{
 			Tree:     antlrAST.Tree,
 			Tokens:   antlrAST.Tokens,
-			BaseLine: antlrAST.BaseLine,
+			BaseLine: base.GetLineOffset(antlrAST.StartPosition),
 		})
 	}
 	return parseResults, nil

@@ -37,9 +37,9 @@ func toAST(results []*base.ParseResult) []base.AST {
 	var asts []base.AST
 	for _, r := range results {
 		asts = append(asts, &base.ANTLRAST{
-			BaseLine: r.BaseLine,
-			Tree:     r.Tree,
-			Tokens:   r.Tokens,
+			StartPosition: &storepb.Position{Line: int32(r.BaseLine) + 1},
+			Tree:          r.Tree,
+			Tokens:        r.Tokens,
 		})
 	}
 	return asts
@@ -174,14 +174,15 @@ func parseSingleStatement(baseLine int, statement string) (antlr.Tree, *antlr.Co
 
 	p := parser.NewMySQLParser(stream)
 
+	startPosition := &storepb.Position{Line: int32(baseLine) + 1}
 	lexerErrorListener := &base.ParseErrorListener{
-		BaseLine: baseLine,
+		StartPosition: startPosition,
 	}
 	lexer.RemoveErrorListeners()
 	lexer.AddErrorListener(lexerErrorListener)
 
 	parserErrorListener := &base.ParseErrorListener{
-		BaseLine: baseLine,
+		StartPosition: startPosition,
 	}
 	p.RemoveErrorListeners()
 	p.AddErrorListener(parserErrorListener)

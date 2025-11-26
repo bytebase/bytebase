@@ -68,8 +68,8 @@ func ParseTiDBForSyntaxCheck(statement string) ([]base.AST, error) {
 			}
 		}
 		results = append(results, &AST{
-			BaseLine: singleSQL.BaseLine,
-			Node:     node,
+			StartPosition: &storepb.Position{Line: int32(singleSQL.BaseLine) + 1},
+			Node:          node,
 		})
 	}
 
@@ -128,16 +128,17 @@ func parseSingleStatement(baseLine int, statement string) (antlr.Tree, *antlr.Co
 
 	p := parser.NewTiDBParser(stream)
 
+	startPosition := &storepb.Position{Line: int32(baseLine) + 1}
 	lexerErrorListener := &base.ParseErrorListener{
-		Statement: statement,
-		BaseLine:  baseLine,
+		Statement:     statement,
+		StartPosition: startPosition,
 	}
 	lexer.RemoveErrorListeners()
 	lexer.AddErrorListener(lexerErrorListener)
 
 	parserErrorListener := &base.ParseErrorListener{
-		Statement: statement,
-		BaseLine:  baseLine,
+		Statement:     statement,
+		StartPosition: startPosition,
 	}
 	p.RemoveErrorListeners()
 	p.AddErrorListener(parserErrorListener)

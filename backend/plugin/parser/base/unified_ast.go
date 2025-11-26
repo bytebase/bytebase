@@ -2,14 +2,18 @@ package base
 
 import (
 	"github.com/antlr4-go/antlr/v4"
+
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 // AST is the interface that all parser AST types must implement.
 // Each parser package defines its own concrete AST type with parser-specific fields.
 type AST interface {
-	// GetBaseLine returns the zero-based line offset where this SQL statement starts
+	// ASTStartPosition returns the 1-based position where this SQL statement starts
 	// in the original multi-statement input. Used for error position reporting.
-	GetBaseLine() int
+	// Returns nil if position is unknown.
+	// Named to avoid collision with protobuf-generated GetStartPosition methods.
+	ASTStartPosition() *storepb.Position
 }
 
 // ANTLRAST is the AST implementation for ANTLR-based parsers.
@@ -18,14 +22,15 @@ type AST interface {
 //
 // Parser packages can use this directly or embed it to add engine-specific fields.
 type ANTLRAST struct {
-	BaseLine int
-	Tree     antlr.Tree
-	Tokens   *antlr.CommonTokenStream
+	// StartPosition is the 1-based position where this statement starts.
+	StartPosition *storepb.Position
+	Tree          antlr.Tree
+	Tokens        *antlr.CommonTokenStream
 }
 
-// GetBaseLine implements AST interface.
-func (a *ANTLRAST) GetBaseLine() int {
-	return a.BaseLine
+// ASTStartPosition implements AST interface.
+func (a *ANTLRAST) ASTStartPosition() *storepb.Position {
+	return a.StartPosition
 }
 
 // GetANTLRAST extracts the ANTLRAST from an AST interface.

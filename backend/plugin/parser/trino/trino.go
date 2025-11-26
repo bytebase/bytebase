@@ -9,6 +9,7 @@ import (
 	parser "github.com/bytebase/parser/trino"
 	"github.com/pkg/errors"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
@@ -52,14 +53,17 @@ func parseSingleTrino(sql string, baseLine int) (*base.ParseResult, error) {
 	p := parser.NewTrinoParser(stream)
 
 	// Set up error listeners
+	startPosition := &storepb.Position{Line: int32(baseLine) + 1}
 	lexerErrorListener := &base.ParseErrorListener{
-		Statement: sql,
+		Statement:     sql,
+		StartPosition: startPosition,
 	}
 	lexer.RemoveErrorListeners()
 	lexer.AddErrorListener(lexerErrorListener)
 
 	parserErrorListener := &base.ParseErrorListener{
-		Statement: sql,
+		Statement:     sql,
+		StartPosition: startPosition,
 	}
 	p.RemoveErrorListeners()
 	p.AddErrorListener(parserErrorListener)

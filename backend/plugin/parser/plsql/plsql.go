@@ -33,9 +33,9 @@ func toAST(results []*base.ParseResult) []base.AST {
 	var asts []base.AST
 	for _, r := range results {
 		asts = append(asts, &base.ANTLRAST{
-			BaseLine: r.BaseLine,
-			Tree:     r.Tree,
-			Tokens:   r.Tokens,
+			StartPosition: &storepb.Position{Line: int32(r.BaseLine) + 1},
+			Tree:          r.Tree,
+			Tokens:        r.Tokens,
 		})
 	}
 	return asts
@@ -138,16 +138,17 @@ func parsePLSQLInternal(sql string, baseLine int) (antlr.Tree, *antlr.CommonToke
 	p := parser.NewPlSqlParser(stream)
 	p.SetVersion12(true)
 
+	startPosition := &storepb.Position{Line: int32(baseLine) + 1}
 	lexerErrorListener := &base.ParseErrorListener{
-		Statement: sql,
-		BaseLine:  baseLine,
+		Statement:     sql,
+		StartPosition: startPosition,
 	}
 	lexer.RemoveErrorListeners()
 	lexer.AddErrorListener(lexerErrorListener)
 
 	parserErrorListener := &base.ParseErrorListener{
-		Statement: sql,
-		BaseLine:  baseLine,
+		Statement:     sql,
+		StartPosition: startPosition,
 	}
 	p.RemoveErrorListeners()
 	p.AddErrorListener(parserErrorListener)

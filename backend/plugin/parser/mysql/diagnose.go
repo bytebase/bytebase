@@ -8,15 +8,15 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/mysql"
 
-	"github.com/bytebase/bytebase/backend/generated-go/store"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 func init() {
-	base.RegisterDiagnoseFunc(store.Engine_MYSQL, Diagnose)
-	base.RegisterDiagnoseFunc(store.Engine_MARIADB, Diagnose)
-	base.RegisterDiagnoseFunc(store.Engine_OCEANBASE, Diagnose)
-	base.RegisterDiagnoseFunc(store.Engine_CLICKHOUSE, Diagnose)
+	base.RegisterDiagnoseFunc(storepb.Engine_MYSQL, Diagnose)
+	base.RegisterDiagnoseFunc(storepb.Engine_MARIADB, Diagnose)
+	base.RegisterDiagnoseFunc(storepb.Engine_OCEANBASE, Diagnose)
+	base.RegisterDiagnoseFunc(storepb.Engine_CLICKHOUSE, Diagnose)
 }
 
 func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
@@ -41,16 +41,17 @@ func parseMySQLStatement(statement string) *base.SyntaxError {
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 
 	p := parser.NewMySQLParser(stream)
+	startPosition := &storepb.Position{Line: 1}
 	lexerErrorListener := &base.ParseErrorListener{
-		Statement: statement,
-		BaseLine:  0,
+		Statement:     statement,
+		StartPosition: startPosition,
 	}
 	lexer.RemoveErrorListeners()
 	lexer.AddErrorListener(lexerErrorListener)
 
 	parserErrorListener := &base.ParseErrorListener{
-		Statement: statement,
-		BaseLine:  0,
+		Statement:     statement,
+		StartPosition: startPosition,
 	}
 	p.RemoveErrorListeners()
 	p.AddErrorListener(parserErrorListener)

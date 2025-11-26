@@ -46,15 +46,23 @@ func (e *SyntaxError) Error() string {
 
 // ParseErrorListener is a custom error listener for PLSQL parser.
 type ParseErrorListener struct {
-	BaseLine  int
-	Err       *SyntaxError
-	Statement string
+	// StartPosition is the 1-based position where this statement starts in the original multi-statement input.
+	// Used to calculate error positions relative to the original script.
+	StartPosition *storepb.Position
+	Err           *SyntaxError
+	Statement     string
 }
 
 // SyntaxError returns the errors.
 func (l *ParseErrorListener) SyntaxError(_ antlr.Recognizer, token any, line, column int, message string, _ antlr.RecognitionException) {
 	if l.Err != nil {
 		return
+	}
+
+	// Get 0-based line offset from StartPosition (1-based) for calculations
+	lineOffset := int32(0)
+	if l.StartPosition != nil {
+		lineOffset = l.StartPosition.Line - 1
 	}
 
 	errMessage := ""
@@ -73,7 +81,7 @@ func (l *ParseErrorListener) SyntaxError(_ antlr.Recognizer, token any, line, co
 	if l.Statement == "" {
 		// ANTLR provides 1-based line and 0-based column
 		// Store as 1-based line and 1-based column in Position
-		posLine := int32(line + l.BaseLine)
+		posLine := int32(line) + lineOffset
 		posColumn := int32(column + 1)
 		l.Err = &SyntaxError{
 			Position: &storepb.Position{
@@ -91,7 +99,7 @@ func (l *ParseErrorListener) SyntaxError(_ antlr.Recognizer, token any, line, co
 		Line:   int32(line),
 		Column: int32(column),
 	}, l.Statement)
-	p.Line += int32(l.BaseLine)
+	p.Line += lineOffset
 	l.Err = &SyntaxError{
 		Position: &storepb.Position{
 			Line:   p.Line,
@@ -158,6 +166,16 @@ type ParseResult struct {
 	// When splitting a multi-statement SQL script (e.g., "SELECT 1;\nSELECT 2;"), each statement is parsed separately.
 	// BaseLine tracks the original line number (minus 1) of the first token in this statement, allowing error messages
 	// and positions to be correctly reported relative to the original script rather than the isolated statement.
-	// Calculated as: token.GetLine() - 1 (since ANTLR uses 1-based line numbers, but BaseLine is 0-based for offset arithmetic).
+	// Calculated from StartPosition.Line - 1 (since StartPosition uses 1-based line numbers, but BaseLine is 0-based for offset arithmetic).
 	BaseLine int
+}
+
+// GetLineOffset returns the 0-based line offset from a StartPosition.
+// This is useful for converting from the 1-based StartPosition to the 0-based offset
+// needed for some calculations.
+func GetLineOffset(startPosition *storepb.Position) int {
+	if startPosition == nil {
+		return 0
+	}
+	return int(startPosition.Line) - 1
 }
