@@ -6,35 +6,59 @@ import (
 	"github.com/stretchr/testify/require"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
-	_ "github.com/bytebase/bytebase/backend/plugin/db/util"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
-// TestConvertValueComplexTypes tests whether complex types are converted to ValueValue
-// (which causes the protobuf structure display bug) or to proper RowValue types.
-func TestConvertValueComplexTypes(t *testing.T) {
+func TestConvertRowValueComplexTypes(t *testing.T) {
 	tests := []struct {
-		name        string
-		value       any
-		expectKind  string // "valueValue" means bug exists, "stringValue" means bug fixed
-		description string
+		name     string
+		value    any
+		expected *v1pb.RowValue
 	}{
 		{
-			name:        "list of integers",
-			value:       []any{1, 2, 3},
-			expectKind:  "stringValue",
-			description: "Cassandra LIST type becomes []any",
+			name:  "nil value",
+			value: nil,
+			expected: &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{
+				StringValue: "null",
+			}},
 		},
 		{
-			name:        "map of string to int",
-			value:       map[string]any{"a": 1, "b": 2},
-			expectKind:  "stringValue",
-			description: "Cassandra MAP type becomes map[string]any",
+			name:  "list of integers",
+			value: []any{1, 2, 3},
+			expected: &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{
+				StringValue: "[1,2,3]",
+			}},
 		},
 		{
-			name:        "nested list",
-			value:       []any{[]any{1, 2}, []any{3, 4}},
-			expectKind:  "stringValue",
-			description: "Nested Cassandra LIST",
+			name:  "map of string to int",
+			value: map[string]any{"a": 1, "b": 2},
+			expected: &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{
+				StringValue: `{"a":1,"b":2}`,
+			}},
+		},
+		{
+			name:  "nested list",
+			value: []any{[]any{1, 2}, []any{3, 4}},
+			expected: &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{
+				StringValue: "[[1,2],[3,4]]",
+			}},
+		},
+		{
+			name:  "array of maps",
+			value: []any{map[string]any{"id": 1}, map[string]any{"id": 2}},
+			expected: &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{
+				StringValue: `[{"id":1},{"id":2}]`,
+			}},
+		},
+		{
+			name:     "empty list",
+			value:    []any{},
+			expected: &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: "[]"}},
+		},
+		{
+			name:     "empty map",
+			value:    map[string]any{},
+			expected: &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: "{}"}},
 		},
 	}
 
@@ -42,35 +66,79 @@ func TestConvertValueComplexTypes(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			a := require.New(t)
 			result := convertRowValue(tt.value)
+			a.Equal(tt.expected, result)
+		})
+	}
+}
 
-			switch tt.expectKind {
-			case "valueValue":
-				// Bug exists - using ValueValue
-				if result.Kind == nil {
-					t.Fatal("result.Kind is nil")
-				}
-				if _, ok := result.Kind.(*v1pb.RowValue_ValueValue); ok {
-					t.Logf("✓ Confirmed bug exists: %s returns ValueValue (protobuf structure will be displayed)", tt.description)
-				} else {
-					t.Logf("✗ Bug might be fixed already: got %T instead of ValueValue", result.Kind)
-				}
-			case "stringValue":
-				// Bug fixed - using StringValue with JSON
-				if result.Kind == nil {
-					t.Fatal("result.Kind is nil")
-				}
-				if sv, ok := result.Kind.(*v1pb.RowValue_StringValue); ok {
-					t.Logf("✓ Bug is fixed: %s returns StringValue: %s", tt.description, sv.StringValue)
-				} else {
-					t.Fatalf("Expected StringValue but got %T", result.Kind)
-				}
-			default:
-				t.Fatalf("Unknown expectKind: %s", tt.expectKind)
-			}
+func TestConvertRowValuePrimitives(t *testing.T) {
+	tests := []struct {
+		name     string
+		value    any
+		expected *v1pb.RowValue
+	}{
+		{
+			name: "string pointer",
+			value: func() *string {
+				s := "hello"
+				return &s
+			}(),
+			expected: &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: "hello"}},
+		},
+		{
+			name: "nil string pointer",
+			value: func() *string {
+				return nil
+			}(),
+			expected: util.NullRowValue,
+		},
+		{
+			name: "int64 pointer",
+			value: func() *int64 {
+				i := int64(42)
+				return &i
+			}(),
+			expected: &v1pb.RowValue{Kind: &v1pb.RowValue_Int64Value{Int64Value: 42}},
+		},
+		{
+			name: "bool pointer true",
+			value: func() *bool {
+				b := true
+				return &b
+			}(),
+			expected: &v1pb.RowValue{Kind: &v1pb.RowValue_BoolValue{BoolValue: true}},
+		},
+		{
+			name: "bool pointer false",
+			value: func() *bool {
+				b := false
+				return &b
+			}(),
+			expected: &v1pb.RowValue{Kind: &v1pb.RowValue_BoolValue{BoolValue: false}},
+		},
+		{
+			name: "float64 pointer",
+			value: func() *float64 {
+				f := 3.14159
+				return &f
+			}(),
+			expected: &v1pb.RowValue{Kind: &v1pb.RowValue_DoubleValue{DoubleValue: 3.14159}},
+		},
+		{
+			name: "bytes pointer",
+			value: func() *[]byte {
+				b := []byte("hello")
+				return &b
+			}(),
+			expected: &v1pb.RowValue{Kind: &v1pb.RowValue_BytesValue{BytesValue: []byte("hello")}},
+		},
+	}
 
-			// Always check that it's not nil
-			a.NotNil(result)
-			a.NotNil(result.Kind)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := require.New(t)
+			result := convertRowValue(tt.value)
+			a.Equal(tt.expected, result)
 		})
 	}
 }
