@@ -2667,16 +2667,7 @@
     },
     "approval-flow": {
       "self": "审批流",
-      "approval-flows": "审批流",
-      "approval-nodes": "审批节点",
-      "delete": "删除审批流",
-      "select": "选择审批流",
       "create-approval-flow": "创建审批流",
-      "edit-approval-flow": "编辑审批流",
-      "built-in": "内置审批流",
-      "built-in-description": "内置审批流是只读的，不能删除。",
-      "custom": "自定义审批流",
-      "no-custom-flows": "尚未创建自定义审批流。点击\"创建审批流\"添加。",
       "node": {
         "nodes": "审批节点",
         "description": "当一个节点上有多个审批人时，只需要一次审批通过。",
@@ -2685,22 +2676,20 @@
         "add": "增加节点",
         "delete": "删除审批节点"
       },
-      "view-approval-flow": "查看审批流",
       "skip": "跳过人工审批",
-      "risk-not-configured-tips": "确保你已经定义了{link}。",
-      "the-related-risk-rules": "相关的风险规则",
       "issue-review": {
         "sent-back": "被退回",
         "review-sent-back-by": "审批被 {user} 退回"
-      }
+      },
+      "add-rule": "添加规则",
+      "edit-rule": "编辑规则"
     },
     "risk": {
-      "self": "风险",
       "risks": "风险",
       "description": "风险中心定义了不同数据库操作在不同条件下的风险等级。而风险等级则会决定工单的自定义审批流程。"
     },
     "rule": {
-      "rules": "规则"
+      "first-match-wins": "规则按顺序评估，第一个匹配的规则将被应用。"
     },
     "issue-review": {
       "approve-issue": "批准工单？",

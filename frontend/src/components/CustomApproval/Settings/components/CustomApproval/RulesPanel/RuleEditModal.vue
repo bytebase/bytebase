@@ -1,0 +1,192 @@
+<template>
+  <NModal
+    :show="show"
+    :mask-closable="false"
+    @update:show="$emit('update:show', $event)"
+  >
+    <div
+      class="w-[calc(100vw-8rem)] lg:max-w-[75vw] 2xl:max-w-[55vw] max-h-[calc(100vh-10rem)] bg-white rounded-lg shadow-lg flex flex-col overflow-hidden"
+    >
+      <div class="px-6 py-4 border-b flex items-center justify-between">
+        <h2 class="text-lg font-medium text-control">
+          {{
+            mode === "create"
+              ? $t("custom-approval.approval-flow.create-approval-flow")
+              : $t("custom-approval.approval-flow.edit-rule")
+          }}
+        </h2>
+      </div>
+
+      <div class="flex-1 flex flex-col px-6 py-4 overflow-hidden gap-y-4">
+        <div class="flex-1 flex flex-col gap-y-2 overflow-y-auto">
+          <h3 class="font-medium text-sm text-control">
+            {{ $t("cel.condition.self") }}
+          </h3>
+          <div class="text-sm text-control-light">
+            {{ $t("cel.condition.description-tips") }}
+          </div>
+          <ExprEditor
+            :expr="state.conditionExpr"
+            :allow-admin="allowAdmin"
+            :factor-list="factorList"
+            :option-config-map="optionConfigMap"
+            @update="handleUpdate"
+          />
+        </div>
+
+        <div class="flex flex-col gap-y-2">
+          <h3 class="font-medium text-sm text-control">
+            {{ $t("custom-approval.approval-flow.node.nodes") }}
+          </h3>
+          <div class="text-sm text-control-light">
+            {{ $t("custom-approval.approval-flow.node.description") }}
+          </div>
+          <StepsTable
+            :flow="state.flow"
+            :editable="true"
+            @update="handleUpdate"
+          />
+        </div>
+      </div>
+
+      <footer
+        class="flex items-center justify-end gap-x-2 px-6 py-4 border-t"
+      >
+        <NButton @click="$emit('update:show', false)">
+          {{ $t("common.cancel") }}
+        </NButton>
+        <NButton
+          type="primary"
+          :disabled="!allowSave"
+          @click="handleSave"
+        >
+          {{ mode === "create" ? $t("common.create") : $t("common.update") }}
+        </NButton>
+      </footer>
+    </div>
+  </NModal>
+</template>
+
+<script lang="ts" setup>
+import { create as createProto } from "@bufbuild/protobuf";
+import { cloneDeep, head } from "lodash-es";
+import { NButton, NModal } from "naive-ui";
+import { computed, reactive, watch } from "vue";
+import ExprEditor from "@/components/ExprEditor";
+import type { ConditionGroupExpr } from "@/plugins/cel";
+import {
+  buildCELExpr,
+  emptySimpleExpr,
+  resolveCELExpr,
+  validateSimpleExpr,
+  wrapAsGroup,
+} from "@/plugins/cel";
+import type { LocalApprovalRule } from "@/types";
+import type { ApprovalFlow } from "@/types/proto-es/v1/issue_service_pb";
+import { ApprovalFlowSchema } from "@/types/proto-es/v1/issue_service_pb";
+import type { WorkspaceApprovalSetting_Rule_Source } from "@/types/proto-es/v1/setting_service_pb";
+import {
+  batchConvertCELStringToParsedExpr,
+  batchConvertParsedExprToCELString,
+} from "@/utils";
+import { getApprovalFactorList, getApprovalOptionConfigMap } from "../../common/utils";
+import { StepsTable } from "../common";
+import { useCustomApprovalContext } from "../context";
+
+type LocalState = {
+  conditionExpr: ConditionGroupExpr;
+  flow: ApprovalFlow;
+};
+
+const props = defineProps<{
+  show: boolean;
+  mode: "create" | "edit";
+  source: WorkspaceApprovalSetting_Rule_Source;
+  rule?: LocalApprovalRule;
+}>();
+
+const emit = defineEmits<{
+  (event: "update:show", show: boolean): void;
+  (event: "save", rule: Partial<LocalApprovalRule>): void;
+}>();
+
+const context = useCustomApprovalContext();
+const { allowAdmin } = context;
+
+const state = reactive<LocalState>({
+  conditionExpr: wrapAsGroup(emptySimpleExpr()),
+  flow: createProto(ApprovalFlowSchema, { roles: [] }),
+});
+
+const factorList = computed(() => getApprovalFactorList(props.source));
+const optionConfigMap = computed(() => getApprovalOptionConfigMap(props.source));
+
+const allowSave = computed(() => {
+  if (!state.conditionExpr) return false;
+  if (!validateSimpleExpr(state.conditionExpr)) return false;
+  if (state.flow.roles.length === 0) return false;
+  return true;
+});
+
+const resolveLocalState = async () => {
+  if (props.rule) {
+    let expr: ConditionGroupExpr = wrapAsGroup(emptySimpleExpr());
+    if (props.rule.condition) {
+      const parsedExprs = await batchConvertCELStringToParsedExpr([
+        props.rule.condition,
+      ]);
+      const celExpr = head(parsedExprs);
+      if (celExpr) {
+        expr = wrapAsGroup(resolveCELExpr(celExpr));
+      }
+    }
+    state.conditionExpr = expr;
+    state.flow = cloneDeep(props.rule.flow);
+  } else {
+    state.conditionExpr = wrapAsGroup(emptySimpleExpr());
+    state.flow = createProto(ApprovalFlowSchema, { roles: [] });
+  }
+};
+
+const handleUpdate = () => {
+  // Trigger reactivity
+};
+
+const handleSave = async () => {
+  if (!context.hasFeature.value) {
+    context.showFeatureModal.value = true;
+    return;
+  }
+
+  const celexpr = await buildCELExpr(state.conditionExpr);
+  if (!celexpr) {
+    return;
+  }
+
+  const expressions = await batchConvertParsedExprToCELString([celexpr]);
+  const condition = expressions[0];
+
+  const ruleData: Partial<LocalApprovalRule> = {
+    condition,
+    conditionExpr: cloneDeep(state.conditionExpr),
+    flow: cloneDeep(state.flow),
+    source: props.source,
+  };
+
+  if (props.rule) {
+    ruleData.uid = props.rule.uid;
+  }
+
+  emit("save", ruleData);
+};
+
+watch(
+  () => props.show,
+  (newShow) => {
+    if (newShow) {
+      resolveLocalState();
+    }
+  },
+  { immediate: true }
+);
+</script>

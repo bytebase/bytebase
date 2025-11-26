@@ -1,22 +1,10 @@
 import { type InjectionKey, inject, provide, type Ref } from "vue";
-import type { LocalApprovalRule } from "@/types";
-
-export const TabValueList = ["rules", "flows", "external-approval"] as const;
-export type TabValue = (typeof TabValueList)[number];
-
-export type DialogContext = {
-  mode: "EDIT" | "CREATE";
-  rule: LocalApprovalRule;
-};
 
 export type CustomApprovalContext = {
   hasFeature: Ref<boolean>;
   showFeatureModal: Ref<boolean>;
   allowAdmin: Ref<boolean>;
   ready: Ref<boolean>;
-  tab: Ref<TabValue>;
-
-  dialog: Ref<DialogContext | undefined>;
 };
 
 export const KEY = Symbol(

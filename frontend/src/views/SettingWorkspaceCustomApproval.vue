@@ -8,8 +8,6 @@
     </div>
   </div>
 
-  <ApprovalRuleDialog />
-
   <FeatureModal
     :feature="PlanFeature.FEATURE_APPROVAL_WORKFLOW"
     :open="state.showFeatureModal"
@@ -18,19 +16,15 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted, reactive, ref, toRef } from "vue";
+import { onMounted, reactive, toRef } from "vue";
 import { BBSpin } from "@/bbkit";
 import {
-  ApprovalRuleDialog,
   CustomApproval,
   provideCustomApprovalContext,
-  TabValueList,
 } from "@/components/CustomApproval/Settings/components/CustomApproval/";
 import { FeatureAttention, FeatureModal } from "@/components/FeatureGuard";
-import { useRouteHash } from "@/composables/useRouteHash";
 import {
   featureToRef,
-  useRiskStore,
   useWorkspaceApprovalSettingStore,
 } from "@/store";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
@@ -48,7 +42,6 @@ const state = reactive<LocalState>({
   ready: false,
   showFeatureModal: false,
 });
-const tab = useRouteHash("rules", TabValueList, "replace");
 const hasCustomApprovalFeature = featureToRef(
   PlanFeature.FEATURE_APPROVAL_WORKFLOW
 );
@@ -58,16 +51,11 @@ provideCustomApprovalContext({
   showFeatureModal: toRef(state, "showFeatureModal"),
   allowAdmin: toRef(props, "allowEdit"),
   ready: toRef(state, "ready"),
-  tab,
-  dialog: ref(),
 });
 
 onMounted(async () => {
   try {
-    await Promise.all([
-      useWorkspaceApprovalSettingStore().fetchConfig(),
-      useRiskStore().fetchRiskList(),
-    ]);
+    await useWorkspaceApprovalSettingStore().fetchConfig();
     state.ready = true;
   } catch {
     // nothing

@@ -1,118 +1,171 @@
 <template>
   <div class="flex flex-col gap-y-2">
-    <div class="flex items-center justify-start">
+    <div class="flex items-center justify-between">
       <div class="font-medium text-base">
-        {{ sourceText(source) }}
+        {{ sourceDisplayText }}
       </div>
+      <NTooltip>
+        <template #trigger>
+          <HelpCircleIcon class="w-4 h-4 text-control-light cursor-help" />
+        </template>
+        {{ $t("custom-approval.rule.first-match-wins") }}
+      </NTooltip>
     </div>
-    <div>
-      <NDataTable
-        size="small"
-        :columns="columns"
-        :data="rows"
-        :striped="true"
-        :bordered="true"
-        :row-key="(row: Row) => String(row.level)"
-      />
+
+    <NDataTable
+      size="small"
+      :columns="columns"
+      :data="rules"
+      :striped="true"
+      :bordered="true"
+      :row-key="(row: LocalApprovalRule) => row.uid"
+    />
+
+    <div class="mt-2">
+      <NButton size="small" @click="handleAddRule">
+        <template #icon>
+          <PlusIcon class="w-4" />
+        </template>
+        {{ $t("custom-approval.approval-flow.add-rule") }}
+      </NButton>
     </div>
+
+    <RuleEditModal
+      v-model:show="showModal"
+      :mode="modalMode"
+      :source="source"
+      :rule="editingRule"
+      @save="handleSaveRule"
+    />
   </div>
 </template>
 
 <script lang="tsx" setup>
+import { HelpCircleIcon, PencilIcon, PlusIcon, TrashIcon } from "lucide-vue-next";
 import type { DataTableColumn } from "naive-ui";
-import { NDataTable } from "naive-ui";
-import { computed } from "vue";
+import { NButton, NDataTable, NTooltip, NPopconfirm } from "naive-ui";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification, useWorkspaceApprovalSettingStore } from "@/store";
-import type { ParsedApprovalRule } from "@/types";
-import { DEFAULT_RISK_LEVEL, PresetRiskLevelList } from "@/types";
-import type { Risk_Source } from "@/types/proto-es/v1/risk_service_pb";
-import { levelText, sourceText, useRiskFilter } from "../../common";
+import type { LocalApprovalRule } from "@/types";
+import type { WorkspaceApprovalSetting_Rule_Source } from "@/types/proto-es/v1/setting_service_pb";
+import { formatApprovalFlow } from "@/utils";
+import { approvalSourceText } from "../../common/utils";
 import { useCustomApprovalContext } from "../context";
-import RiskTips from "./RiskTips.vue";
-import RuleSelect from "./RuleSelect.vue";
-
-type Row = {
-  level: number;
-  rule: string | undefined; // ApprovalTemplate.id
-};
+import RuleEditModal from "./RuleEditModal.vue";
 
 const props = defineProps<{
-  source: Risk_Source;
+  source: WorkspaceApprovalSetting_Rule_Source;
 }>();
 
 const { t } = useI18n();
 const store = useWorkspaceApprovalSettingStore();
 const context = useCustomApprovalContext();
 
-const columns = computed((): DataTableColumn<Row>[] => {
-  return [
-    {
-      title: t("custom-approval.risk.self"),
-      key: "level",
-      width: 160,
-      render: (row) => levelText(row.level),
-    },
-    {
-      title: t("custom-approval.approval-flow.self"),
-      key: "rule",
-      render: (row) => (
-        <div class="flex items-center gap-x-2">
-          <RuleSelect
-            class="flex-1 max-w-md min-w-40"
-            value={row.rule}
-            onUpdate={(rule: string | undefined) => updateRow(row, rule)}
-          />
-          <RiskTips level={row.level} source={props.source} rule={row.rule} />
-        </div>
-      ),
-    },
-  ];
-});
+const showModal = ref(false);
+const modalMode = ref<"create" | "edit">("create");
+const editingRule = ref<LocalApprovalRule | undefined>();
 
-const filter = useRiskFilter();
+const rules = computed(() => store.getRulesBySource(props.source));
 
-const rulesMap = computed(() => {
-  const map = new Map<number, ParsedApprovalRule>();
-  store.config.parsed
-    .filter((item) => item.source === props.source)
-    .forEach((item) => {
-      map.set(item.level, item);
-    });
-  return map;
-});
+const sourceDisplayText = computed(() => approvalSourceText(props.source));
 
-const rows = computed(() => {
-  const filteredLevelList = [...filter.levels.value.values()];
-  filteredLevelList.sort((a, b) => -(a - b)); // by level DESC
-  const displayLevelList =
-    filteredLevelList.length === 0
-      ? [...PresetRiskLevelList.map((item) => item.level), DEFAULT_RISK_LEVEL]
-      : filteredLevelList;
+const columns = computed((): DataTableColumn<LocalApprovalRule>[] => [
+  {
+    title: t("cel.condition.self"),
+    key: "condition",
+    ellipsis: { tooltip: true },
+    render: (row) => (
+      <code class="text-xs bg-control-bg px-1 py-0.5 rounded">
+        {row.condition || "true"}
+      </code>
+    ),
+  },
+  {
+    title: t("custom-approval.approval-flow.self"),
+    key: "flow",
+    width: 280,
+    render: (row) => formatApprovalFlow(row.flow),
+  },
+  {
+    title: t("common.operations"),
+    key: "operations",
+    width: 100,
+    render: (row) => (
+      <div class="flex gap-x-1">
+        <NButton size="tiny" onClick={() => handleEditRule(row)}>
+          <PencilIcon class="w-3" />
+        </NButton>
+        <NPopconfirm
+          onPositiveClick={() => handleDeleteRule(row)}
+          positiveText={t("common.confirm")}
+          negativeText={t("common.cancel")}
+        >
+          {{
+            trigger: () => (
+              <NButton size="tiny">
+                <TrashIcon class="w-3" />
+              </NButton>
+            ),
+            default: () => t("common.confirm") + "?",
+          }}
+        </NPopconfirm>
+      </div>
+    ),
+  },
+]);
 
-  return displayLevelList.map<Row>((level) => ({
-    level,
-    rule: rulesMap.value.get(level)?.rule ?? "",
-  }));
-});
-
-const updateRow = async (row: Row, rule: string | undefined) => {
+const handleAddRule = () => {
   if (!context.hasFeature.value) {
     context.showFeatureModal.value = true;
     return;
   }
+  modalMode.value = "create";
+  editingRule.value = undefined;
+  showModal.value = true;
+};
 
-  const { source } = props;
-  const { level } = row;
+const handleEditRule = (rule: LocalApprovalRule) => {
+  if (!context.hasFeature.value) {
+    context.showFeatureModal.value = true;
+    return;
+  }
+  modalMode.value = "edit";
+  editingRule.value = rule;
+  showModal.value = true;
+};
+
+const handleDeleteRule = async (rule: LocalApprovalRule) => {
+  if (!context.hasFeature.value) {
+    context.showFeatureModal.value = true;
+    return;
+  }
   try {
-    await store.updateRuleFlow(source, level, rule);
+    await store.deleteRule(rule.uid);
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("common.deleted"),
+    });
+  } catch {
+    // Error handled by store
+  }
+};
+
+const handleSaveRule = async (ruleData: Partial<LocalApprovalRule>) => {
+  try {
+    if (modalMode.value === "create") {
+      await store.addRule(ruleData as Omit<LocalApprovalRule, "uid">);
+    } else if (editingRule.value && ruleData.uid) {
+      await store.updateRule(ruleData.uid, ruleData);
+    }
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
       title: t("common.updated"),
     });
   } catch {
-    // nothing, exception has been handled already
+    // Error handled by store
   }
 };
 </script>

@@ -2695,7 +2695,6 @@
       }
     },
     "risk": {
-      "self": "Rủi ro",
       "risks": "Rủi ro",
       "description": "Trung tâm rủi ro xác định mức độ rủi ro cho các hoạt động cơ sở dữ liệu khác nhau trong các điều kiện khác nhau. Và mức độ rủi ro xác định quy trình phê duyệt tùy chỉnh tương ứng."
     },
