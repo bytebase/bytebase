@@ -127,6 +127,7 @@ type SDLChunks struct {
 	Schemas           map[string]*SDLChunk // key: schema name/identifier
 	EnumTypes         map[string]*SDLChunk // key: enum type name/identifier
 	Extensions        map[string]*SDLChunk // key: extension name/identifier
+	EventTriggers     map[string]*SDLChunk // key: event trigger name (database-level, no schema)
 
 	// Column comments: map[schemaName.tableName][columnName] -> COMMENT ON COLUMN AST node
 	ColumnComments map[string]map[string]antlr.ParserRuleContext

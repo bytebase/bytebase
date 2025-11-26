@@ -109,6 +109,9 @@ func GetSDLDiff(currentSDLText, previousUserSDLText string, currentSchema, previ
 	// Process extension changes
 	processExtensionChanges(currentChunks, previousChunks, currentDBSDLChunks, diff)
 
+	// Process event trigger changes
+	processEventTriggerChanges(currentChunks, previousChunks, currentDBSDLChunks, diff)
+
 	// Process explicit schema changes (CREATE SCHEMA statements)
 	processSchemaChanges(currentChunks, previousChunks, currentSchema, diff)
 
@@ -135,6 +138,7 @@ func ChunkSDLText(sdlText string) (*schema.SDLChunks, error) {
 			Schemas:           make(map[string]*schema.SDLChunk),
 			EnumTypes:         make(map[string]*schema.SDLChunk),
 			Extensions:        make(map[string]*schema.SDLChunk),
+			EventTriggers:     make(map[string]*schema.SDLChunk),
 			ColumnComments:    make(map[string]map[string]antlr.ParserRuleContext),
 			IndexComments:     make(map[string]map[string]antlr.ParserRuleContext),
 		}, nil
@@ -158,6 +162,7 @@ func ChunkSDLText(sdlText string) (*schema.SDLChunks, error) {
 			Schemas:           make(map[string]*schema.SDLChunk),
 			EnumTypes:         make(map[string]*schema.SDLChunk),
 			Extensions:        make(map[string]*schema.SDLChunk),
+			EventTriggers:     make(map[string]*schema.SDLChunk),
 			ColumnComments:    make(map[string]map[string]antlr.ParserRuleContext),
 			IndexComments:     make(map[string]map[string]antlr.ParserRuleContext),
 		},
@@ -504,6 +509,23 @@ func (l *sdlChunkExtractor) EnterCreateextensionstmt(ctx *parser.Createextension
 	l.chunks.Extensions[extensionName] = chunk
 }
 
+func (l *sdlChunkExtractor) EnterCreateeventtrigstmt(ctx *parser.CreateeventtrigstmtContext) {
+	// Extract event trigger name from AST
+	if ctx.Name() == nil {
+		return
+	}
+
+	eventTriggerName := pgparser.NormalizePostgreSQLName(ctx.Name())
+
+	// Event trigger is database-level, no schema prefix needed
+	chunk := &schema.SDLChunk{
+		Identifier: eventTriggerName, // Just the event trigger name
+		ASTNode:    ctx,
+	}
+
+	l.chunks.EventTriggers[eventTriggerName] = chunk
+}
+
 func (l *sdlChunkExtractor) EnterCommentstmt(ctx *parser.CommentstmtContext) {
 	// Extract the comment text (can be sconst or NULL)
 	// We store the entire AST node, not just the comment text
@@ -749,6 +771,18 @@ func (l *sdlChunkExtractor) EnterCommentstmt(ctx *parser.CommentstmtContext) {
 					CommentStatements: []antlr.ParserRuleContext{ctx},
 				}
 				l.chunks.Extensions[name] = chunk
+			}
+		case "EVENTTRIGGER", "EVENT TRIGGER":
+			// Event triggers are database-level, no schema prefix
+			if chunk, exists := l.chunks.EventTriggers[name]; exists {
+				chunk.CommentStatements = append(chunk.CommentStatements, ctx)
+			} else {
+				chunk := &schema.SDLChunk{
+					Identifier:        name,
+					ASTNode:           nil,
+					CommentStatements: []antlr.ParserRuleContext{ctx},
+				}
+				l.chunks.EventTriggers[name] = chunk
 			}
 		default:
 			// Other object types are handled elsewhere
@@ -7140,6 +7174,99 @@ func processExtensionChanges(currentChunks, previousChunks *schema.SDLChunks, cu
 				NewExtension:  nil,
 				OldASTNode:    previousChunk.ASTNode,
 				NewASTNode:    nil,
+			})
+		}
+	}
+}
+
+// processEventTriggerChanges processes event trigger changes between current and previous chunks
+func processEventTriggerChanges(currentChunks, previousChunks *schema.SDLChunks, currentDBSDLChunks *currentDatabaseSDLChunks, diff *schema.MetadataDiff) {
+	// Process current event triggers to find created and modified ones
+	for eventTriggerName, currentChunk := range currentChunks.EventTriggers {
+		if previousChunk, exists := previousChunks.EventTriggers[eventTriggerName]; exists {
+			// Event trigger exists in both - check if modified by comparing text (excluding comments)
+			currentText := currentChunk.GetTextWithoutComments()
+			previousText := previousChunk.GetTextWithoutComments()
+			if currentText != previousText {
+				// Apply usability check
+				if currentDBSDLChunks.shouldSkipChunkDiffForUsability(currentText, eventTriggerName) {
+					continue
+				}
+				// Event trigger was modified - use DROP + CREATE pattern
+				// (PostgreSQL doesn't support CREATE OR REPLACE for event triggers)
+				diff.EventTriggerChanges = append(diff.EventTriggerChanges, &schema.EventTriggerDiff{
+					Action:           schema.MetadataDiffActionDrop,
+					EventTriggerName: eventTriggerName,
+					OldEventTrigger:  nil,
+					NewEventTrigger:  nil,
+					OldASTNode:       previousChunk.ASTNode,
+					NewASTNode:       nil,
+				})
+				diff.EventTriggerChanges = append(diff.EventTriggerChanges, &schema.EventTriggerDiff{
+					Action:           schema.MetadataDiffActionCreate,
+					EventTriggerName: eventTriggerName,
+					OldEventTrigger:  nil,
+					NewEventTrigger:  nil,
+					OldASTNode:       nil,
+					NewASTNode:       currentChunk.ASTNode,
+				})
+			}
+			// Check for comment-only changes
+			currentComments := currentChunk.CommentStatements
+			previousComments := previousChunk.CommentStatements
+			if len(currentComments) != len(previousComments) {
+				// Comment changed - this will be handled by processCommentChanges
+			} else {
+				for i := range currentComments {
+					currentCommentText := extractTextFromNode(currentComments[i])
+					previousCommentText := extractTextFromNode(previousComments[i])
+					if currentCommentText != previousCommentText {
+						// Comment changed - this will be handled by processCommentChanges
+						break
+					}
+				}
+			}
+		} else {
+			// Event trigger is new in current SDL
+			currentText := currentChunk.GetTextWithoutComments()
+			// Apply usability check
+			if currentDBSDLChunks.shouldSkipChunkDiffForUsability(currentText, eventTriggerName) {
+				continue
+			}
+			diff.EventTriggerChanges = append(diff.EventTriggerChanges, &schema.EventTriggerDiff{
+				Action:           schema.MetadataDiffActionCreate,
+				EventTriggerName: eventTriggerName,
+				OldEventTrigger:  nil,
+				NewEventTrigger:  nil,
+				OldASTNode:       nil,
+				NewASTNode:       currentChunk.ASTNode,
+			})
+			// Handle comments for new event triggers
+			if len(currentChunk.CommentStatements) > 0 {
+				for _, commentNode := range currentChunk.CommentStatements {
+					diff.CommentChanges = append(diff.CommentChanges, &schema.CommentDiff{
+						Action:     schema.MetadataDiffActionCreate,
+						ObjectType: schema.CommentObjectTypeEventTrigger,
+						ObjectName: eventTriggerName,
+						NewComment: extractTextFromNode(commentNode),
+						NewASTNode: commentNode,
+					})
+				}
+			}
+		}
+	}
+
+	// Process previous event triggers to find dropped ones
+	for eventTriggerName, previousChunk := range previousChunks.EventTriggers {
+		if _, exists := currentChunks.EventTriggers[eventTriggerName]; !exists {
+			// Event trigger was dropped
+			diff.EventTriggerChanges = append(diff.EventTriggerChanges, &schema.EventTriggerDiff{
+				Action:           schema.MetadataDiffActionDrop,
+				EventTriggerName: eventTriggerName,
+				OldEventTrigger:  nil,
+				NewEventTrigger:  nil,
+				OldASTNode:       previousChunk.ASTNode,
+				NewASTNode:       nil,
 			})
 		}
 	}
