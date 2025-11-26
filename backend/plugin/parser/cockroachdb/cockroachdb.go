@@ -28,7 +28,6 @@ func parseCockroachDBForRegistry(statement string) ([]*base.AST, error) {
 	var asts []*base.AST
 	for _, stmt := range result.Stmts {
 		asts = append(asts, &base.AST{
-			OriginalText:    stmt.SQL,
 			CockroachDBStmt: stmt,
 		})
 	}

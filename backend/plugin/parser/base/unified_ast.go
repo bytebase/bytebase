@@ -8,18 +8,6 @@ import (
 // It wraps different parser outputs (ANTLR, TiDB, CockroachDB) into a single type.
 // Each parser package is responsible for creating AST instances.
 type AST struct {
-	// OriginalText is the original SQL text.
-	// Provided by: CockroachDB.
-	OriginalText string
-
-	// ByteOffsetStart is the start byte offset in the original multi-statement SQL.
-	// Provided by: Oracle (PL/SQL).
-	ByteOffsetStart int
-
-	// ByteOffsetEnd is the end byte offset in the original multi-statement SQL.
-	// Provided by: Oracle (PL/SQL).
-	ByteOffsetEnd int
-
 	// BaseLine stores the zero-based line offset where this SQL statement starts
 	// in the original multi-statement input. Used for error position reporting.
 	// Provided by: All ANTLR-based parsers (PostgreSQL, MySQL, MariaDB, OceanBase, MSSQL,
