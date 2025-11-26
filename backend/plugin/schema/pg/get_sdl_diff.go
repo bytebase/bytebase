@@ -7234,21 +7234,7 @@ func processEventTriggerChanges(currentChunks, previousChunks *schema.SDLChunks,
 					NewASTNode:       currentChunk.ASTNode,
 				})
 			}
-			// Check for comment-only changes
-			currentComments := currentChunk.CommentStatements
-			previousComments := previousChunk.CommentStatements
-			if len(currentComments) != len(previousComments) {
-				// Comment changed - this will be handled by processCommentChanges
-			} else {
-				for i := range currentComments {
-					currentCommentText := extractTextFromNode(currentComments[i])
-					previousCommentText := extractTextFromNode(previousComments[i])
-					if currentCommentText != previousCommentText {
-						// Comment changed - this will be handled by processCommentChanges
-						break
-					}
-				}
-			}
+			// Note: Comment-only changes are handled by processCommentChanges
 		} else {
 			// Event trigger is new in current SDL
 			currentText := currentChunk.GetTextWithoutComments()
