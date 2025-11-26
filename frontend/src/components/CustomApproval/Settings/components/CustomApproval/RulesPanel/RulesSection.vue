@@ -78,7 +78,7 @@ const columns = computed((): DataTableColumn<LocalApprovalRule>[] => [
   {
     title: t("common.title"),
     key: "title",
-    width: 150,
+    width: 200,
     ellipsis: { tooltip: true },
     render: (row) => row.title || "-",
   },
