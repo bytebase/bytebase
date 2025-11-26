@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"regexp"
 	"strings"
 	"time"
@@ -22,6 +23,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -417,10 +419,8 @@ func (d *Driver) querySingleSQL(ctx context.Context, statement string, queryCont
 }
 
 // convertSpannerValue converts google.protobuf.Value to RowValue.
-// Primitives map directly; arrays/structs flatten to JSON strings.
-// Tradeoffs: type ambiguity (can't distinguish string from stringified struct),
-// precision loss for large INT64 values stored as float64.
-func convertSpannerValue(v *structpb.Value) *v1pb.RowValue {
+// Uses type metadata to preserve INT64 precision and properly handle all Spanner types.
+func convertSpannerValue(colType *sppb.Type, v *structpb.Value) *v1pb.RowValue {
 	if v == nil || v.Kind == nil {
 		return util.NullRowValue
 	}
@@ -433,6 +433,12 @@ func convertSpannerValue(v *structpb.Value) *v1pb.RowValue {
 			StringValue: v.GetStringValue(),
 		}}
 	case *structpb.Value_NumberValue:
+		// Check if this is INT64 to preserve precision
+		if colType != nil && colType.Code == sppb.TypeCode_INT64 {
+			return &v1pb.RowValue{Kind: &v1pb.RowValue_Int64Value{
+				Int64Value: int64(v.GetNumberValue()),
+			}}
+		}
 		return &v1pb.RowValue{Kind: &v1pb.RowValue_DoubleValue{
 			DoubleValue: v.GetNumberValue(),
 		}}
@@ -445,6 +451,7 @@ func convertSpannerValue(v *structpb.Value) *v1pb.RowValue {
 		goValue := v.AsInterface()
 		jsonBytes, err := json.Marshal(goValue)
 		if err != nil {
+			slog.Error("failed to marshal Spanner complex value", log.BBError(err))
 			return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{
 				StringValue: fmt.Sprintf("%v", goValue),
 			}}
@@ -464,7 +471,7 @@ func readRow(row *spanner.Row) (*v1pb.QueryRow, error) {
 		if err := row.Column(i, &col); err != nil {
 			return nil, err
 		}
-		result.Values = append(result.Values, convertSpannerValue(col.Value))
+		result.Values = append(result.Values, convertSpannerValue(col.Type, col.Value))
 	}
 
 	return result, nil
