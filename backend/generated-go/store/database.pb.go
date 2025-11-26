@@ -396,7 +396,7 @@ func (x ObjectSchema_Type) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ObjectSchema_Type.Descriptor instead.
 func (ObjectSchema_Type) EnumDescriptor() ([]byte, []int) {
-	return file_store_database_proto_rawDescGZIP(), []int{39, 0}
+	return file_store_database_proto_rawDescGZIP(), []int{40, 0}
 }
 
 // DatabaseMetadata is the metadata for databases.
@@ -505,7 +505,10 @@ type DatabaseSchemaMetadata struct {
 	LinkedDatabases []*LinkedDatabaseMetadata `protobuf:"bytes,8,rep,name=linked_databases,json=linkedDatabases,proto3" json:"linked_databases,omitempty"`
 	Owner           string                    `protobuf:"bytes,9,opt,name=owner,proto3" json:"owner,omitempty"`
 	// The search_path is the search path of a PostgreSQL database.
-	SearchPath    string `protobuf:"bytes,10,opt,name=search_path,json=searchPath,proto3" json:"search_path,omitempty"`
+	SearchPath string `protobuf:"bytes,10,opt,name=search_path,json=searchPath,proto3" json:"search_path,omitempty"`
+	// The list of event triggers in a database (PostgreSQL specific).
+	// Event triggers are database-level objects, not schema-scoped.
+	EventTriggers []*EventTriggerMetadata `protobuf:"bytes,11,rep,name=event_triggers,json=eventTriggers,proto3" json:"event_triggers,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -608,6 +611,13 @@ func (x *DatabaseSchemaMetadata) GetSearchPath() string {
 		return x.SearchPath
 	}
 	return ""
+}
+
+func (x *DatabaseSchemaMetadata) GetEventTriggers() []*EventTriggerMetadata {
+	if x != nil {
+		return x.EventTriggers
+	}
+	return nil
 }
 
 type LinkedDatabaseMetadata struct {
@@ -3849,6 +3859,126 @@ func (x *ExtensionMetadata) GetDescription() string {
 	return ""
 }
 
+// EventTriggerMetadata is the metadata for PostgreSQL event triggers.
+// Event triggers are database-level objects that fire on DDL events.
+type EventTriggerMetadata struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The name of the event trigger.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// The event type: DDL_COMMAND_START, DDL_COMMAND_END, SQL_DROP, TABLE_REWRITE.
+	Event string `protobuf:"bytes,2,opt,name=event,proto3" json:"event,omitempty"`
+	// The tags filter (e.g., ['CREATE TABLE', 'DROP TABLE']).
+	Tags []string `protobuf:"bytes,3,rep,name=tags,proto3" json:"tags,omitempty"`
+	// The schema of the function to execute.
+	FunctionSchema string `protobuf:"bytes,4,opt,name=function_schema,json=functionSchema,proto3" json:"function_schema,omitempty"`
+	// The name of the function to execute.
+	FunctionName string `protobuf:"bytes,5,opt,name=function_name,json=functionName,proto3" json:"function_name,omitempty"`
+	// Whether the trigger is enabled.
+	Enabled bool `protobuf:"varint,6,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	// The full CREATE EVENT TRIGGER definition from pg_get_event_trigger_def().
+	// SDL output should prefer using this field.
+	Definition string `protobuf:"bytes,7,opt,name=definition,proto3" json:"definition,omitempty"`
+	// The comment on the event trigger.
+	Comment string `protobuf:"bytes,8,opt,name=comment,proto3" json:"comment,omitempty"`
+	// Skip dump flag (for extension-owned triggers).
+	SkipDump      bool `protobuf:"varint,9,opt,name=skip_dump,json=skipDump,proto3" json:"skip_dump,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *EventTriggerMetadata) Reset() {
+	*x = EventTriggerMetadata{}
+	mi := &file_store_database_proto_msgTypes[33]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EventTriggerMetadata) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EventTriggerMetadata) ProtoMessage() {}
+
+func (x *EventTriggerMetadata) ProtoReflect() protoreflect.Message {
+	mi := &file_store_database_proto_msgTypes[33]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EventTriggerMetadata.ProtoReflect.Descriptor instead.
+func (*EventTriggerMetadata) Descriptor() ([]byte, []int) {
+	return file_store_database_proto_rawDescGZIP(), []int{33}
+}
+
+func (x *EventTriggerMetadata) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *EventTriggerMetadata) GetEvent() string {
+	if x != nil {
+		return x.Event
+	}
+	return ""
+}
+
+func (x *EventTriggerMetadata) GetTags() []string {
+	if x != nil {
+		return x.Tags
+	}
+	return nil
+}
+
+func (x *EventTriggerMetadata) GetFunctionSchema() string {
+	if x != nil {
+		return x.FunctionSchema
+	}
+	return ""
+}
+
+func (x *EventTriggerMetadata) GetFunctionName() string {
+	if x != nil {
+		return x.FunctionName
+	}
+	return ""
+}
+
+func (x *EventTriggerMetadata) GetEnabled() bool {
+	if x != nil {
+		return x.Enabled
+	}
+	return false
+}
+
+func (x *EventTriggerMetadata) GetDefinition() string {
+	if x != nil {
+		return x.Definition
+	}
+	return ""
+}
+
+func (x *EventTriggerMetadata) GetComment() string {
+	if x != nil {
+		return x.Comment
+	}
+	return ""
+}
+
+func (x *EventTriggerMetadata) GetSkipDump() bool {
+	if x != nil {
+		return x.SkipDump
+	}
+	return false
+}
+
 // ForeignKeyMetadata is the metadata for foreign keys.
 type ForeignKeyMetadata struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -3877,7 +4007,7 @@ type ForeignKeyMetadata struct {
 
 func (x *ForeignKeyMetadata) Reset() {
 	*x = ForeignKeyMetadata{}
-	mi := &file_store_database_proto_msgTypes[33]
+	mi := &file_store_database_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3889,7 +4019,7 @@ func (x *ForeignKeyMetadata) String() string {
 func (*ForeignKeyMetadata) ProtoMessage() {}
 
 func (x *ForeignKeyMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_store_database_proto_msgTypes[33]
+	mi := &file_store_database_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3902,7 +4032,7 @@ func (x *ForeignKeyMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ForeignKeyMetadata.ProtoReflect.Descriptor instead.
 func (*ForeignKeyMetadata) Descriptor() ([]byte, []int) {
-	return file_store_database_proto_rawDescGZIP(), []int{33}
+	return file_store_database_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *ForeignKeyMetadata) GetName() string {
@@ -3975,7 +4105,7 @@ type InstanceRoleMetadata struct {
 
 func (x *InstanceRoleMetadata) Reset() {
 	*x = InstanceRoleMetadata{}
-	mi := &file_store_database_proto_msgTypes[34]
+	mi := &file_store_database_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3987,7 +4117,7 @@ func (x *InstanceRoleMetadata) String() string {
 func (*InstanceRoleMetadata) ProtoMessage() {}
 
 func (x *InstanceRoleMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_store_database_proto_msgTypes[34]
+	mi := &file_store_database_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4000,7 +4130,7 @@ func (x *InstanceRoleMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InstanceRoleMetadata.ProtoReflect.Descriptor instead.
 func (*InstanceRoleMetadata) Descriptor() ([]byte, []int) {
-	return file_store_database_proto_rawDescGZIP(), []int{34}
+	return file_store_database_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *InstanceRoleMetadata) GetName() string {
@@ -4028,7 +4158,7 @@ type DatabaseConfig struct {
 
 func (x *DatabaseConfig) Reset() {
 	*x = DatabaseConfig{}
-	mi := &file_store_database_proto_msgTypes[35]
+	mi := &file_store_database_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4040,7 +4170,7 @@ func (x *DatabaseConfig) String() string {
 func (*DatabaseConfig) ProtoMessage() {}
 
 func (x *DatabaseConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_store_database_proto_msgTypes[35]
+	mi := &file_store_database_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4053,7 +4183,7 @@ func (x *DatabaseConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DatabaseConfig.ProtoReflect.Descriptor instead.
 func (*DatabaseConfig) Descriptor() ([]byte, []int) {
-	return file_store_database_proto_rawDescGZIP(), []int{35}
+	return file_store_database_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *DatabaseConfig) GetName() string {
@@ -4083,7 +4213,7 @@ type SchemaCatalog struct {
 
 func (x *SchemaCatalog) Reset() {
 	*x = SchemaCatalog{}
-	mi := &file_store_database_proto_msgTypes[36]
+	mi := &file_store_database_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4095,7 +4225,7 @@ func (x *SchemaCatalog) String() string {
 func (*SchemaCatalog) ProtoMessage() {}
 
 func (x *SchemaCatalog) ProtoReflect() protoreflect.Message {
-	mi := &file_store_database_proto_msgTypes[36]
+	mi := &file_store_database_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4108,7 +4238,7 @@ func (x *SchemaCatalog) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SchemaCatalog.ProtoReflect.Descriptor instead.
 func (*SchemaCatalog) Descriptor() ([]byte, []int) {
-	return file_store_database_proto_rawDescGZIP(), []int{36}
+	return file_store_database_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *SchemaCatalog) GetName() string {
@@ -4139,7 +4269,7 @@ type TableCatalog struct {
 
 func (x *TableCatalog) Reset() {
 	*x = TableCatalog{}
-	mi := &file_store_database_proto_msgTypes[37]
+	mi := &file_store_database_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4151,7 +4281,7 @@ func (x *TableCatalog) String() string {
 func (*TableCatalog) ProtoMessage() {}
 
 func (x *TableCatalog) ProtoReflect() protoreflect.Message {
-	mi := &file_store_database_proto_msgTypes[37]
+	mi := &file_store_database_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4164,7 +4294,7 @@ func (x *TableCatalog) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TableCatalog.ProtoReflect.Descriptor instead.
 func (*TableCatalog) Descriptor() ([]byte, []int) {
-	return file_store_database_proto_rawDescGZIP(), []int{37}
+	return file_store_database_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *TableCatalog) GetName() string {
@@ -4210,7 +4340,7 @@ type ColumnCatalog struct {
 
 func (x *ColumnCatalog) Reset() {
 	*x = ColumnCatalog{}
-	mi := &file_store_database_proto_msgTypes[38]
+	mi := &file_store_database_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4222,7 +4352,7 @@ func (x *ColumnCatalog) String() string {
 func (*ColumnCatalog) ProtoMessage() {}
 
 func (x *ColumnCatalog) ProtoReflect() protoreflect.Message {
-	mi := &file_store_database_proto_msgTypes[38]
+	mi := &file_store_database_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4235,7 +4365,7 @@ func (x *ColumnCatalog) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ColumnCatalog.ProtoReflect.Descriptor instead.
 func (*ColumnCatalog) Descriptor() ([]byte, []int) {
-	return file_store_database_proto_rawDescGZIP(), []int{38}
+	return file_store_database_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *ColumnCatalog) GetName() string {
@@ -4288,7 +4418,7 @@ type ObjectSchema struct {
 
 func (x *ObjectSchema) Reset() {
 	*x = ObjectSchema{}
-	mi := &file_store_database_proto_msgTypes[39]
+	mi := &file_store_database_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4300,7 +4430,7 @@ func (x *ObjectSchema) String() string {
 func (*ObjectSchema) ProtoMessage() {}
 
 func (x *ObjectSchema) ProtoReflect() protoreflect.Message {
-	mi := &file_store_database_proto_msgTypes[39]
+	mi := &file_store_database_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4313,7 +4443,7 @@ func (x *ObjectSchema) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ObjectSchema.ProtoReflect.Descriptor instead.
 func (*ObjectSchema) Descriptor() ([]byte, []int) {
-	return file_store_database_proto_rawDescGZIP(), []int{39}
+	return file_store_database_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *ObjectSchema) GetType() ObjectSchema_Type {
@@ -4380,7 +4510,7 @@ type ObjectSchema_StructKind struct {
 
 func (x *ObjectSchema_StructKind) Reset() {
 	*x = ObjectSchema_StructKind{}
-	mi := &file_store_database_proto_msgTypes[43]
+	mi := &file_store_database_proto_msgTypes[44]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4392,7 +4522,7 @@ func (x *ObjectSchema_StructKind) String() string {
 func (*ObjectSchema_StructKind) ProtoMessage() {}
 
 func (x *ObjectSchema_StructKind) ProtoReflect() protoreflect.Message {
-	mi := &file_store_database_proto_msgTypes[43]
+	mi := &file_store_database_proto_msgTypes[44]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4405,7 +4535,7 @@ func (x *ObjectSchema_StructKind) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ObjectSchema_StructKind.ProtoReflect.Descriptor instead.
 func (*ObjectSchema_StructKind) Descriptor() ([]byte, []int) {
-	return file_store_database_proto_rawDescGZIP(), []int{39, 0}
+	return file_store_database_proto_rawDescGZIP(), []int{40, 0}
 }
 
 func (x *ObjectSchema_StructKind) GetProperties() map[string]*ObjectSchema {
@@ -4424,7 +4554,7 @@ type ObjectSchema_ArrayKind struct {
 
 func (x *ObjectSchema_ArrayKind) Reset() {
 	*x = ObjectSchema_ArrayKind{}
-	mi := &file_store_database_proto_msgTypes[44]
+	mi := &file_store_database_proto_msgTypes[45]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4436,7 +4566,7 @@ func (x *ObjectSchema_ArrayKind) String() string {
 func (*ObjectSchema_ArrayKind) ProtoMessage() {}
 
 func (x *ObjectSchema_ArrayKind) ProtoReflect() protoreflect.Message {
-	mi := &file_store_database_proto_msgTypes[44]
+	mi := &file_store_database_proto_msgTypes[45]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4449,7 +4579,7 @@ func (x *ObjectSchema_ArrayKind) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ObjectSchema_ArrayKind.ProtoReflect.Descriptor instead.
 func (*ObjectSchema_ArrayKind) Descriptor() ([]byte, []int) {
-	return file_store_database_proto_rawDescGZIP(), []int{39, 1}
+	return file_store_database_proto_rawDescGZIP(), []int{40, 1}
 }
 
 func (x *ObjectSchema_ArrayKind) GetKind() *ObjectSchema {
@@ -4473,7 +4603,7 @@ const file_store_database_proto_rawDesc = "" +
 	"\aversion\x18\a \x01(\tR\aversion\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xb7\x03\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x84\x04\n" +
 	"\x16DatabaseSchemaMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x128\n" +
 	"\aschemas\x18\x02 \x03(\v2\x1e.bytebase.store.SchemaMetadataR\aschemas\x12#\n" +
@@ -4488,7 +4618,8 @@ const file_store_database_proto_rawDesc = "" +
 	"\x05owner\x18\t \x01(\tR\x05owner\x12\x1f\n" +
 	"\vsearch_path\x18\n" +
 	" \x01(\tR\n" +
-	"searchPath\"\\\n" +
+	"searchPath\x12K\n" +
+	"\x0eevent_triggers\x18\v \x03(\v2$.bytebase.store.EventTriggerMetadataR\reventTriggers\"\\\n" +
 	"\x16LinkedDatabaseMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
 	"\busername\x18\x02 \x01(\tR\busername\x12\x12\n" +
@@ -4853,7 +4984,19 @@ const file_store_database_proto_rawDesc = "" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x16\n" +
 	"\x06schema\x18\x02 \x01(\tR\x06schema\x12\x18\n" +
 	"\aversion\x18\x03 \x01(\tR\aversion\x12 \n" +
-	"\vdescription\x18\x04 \x01(\tR\vdescription\"\xa2\x02\n" +
+	"\vdescription\x18\x04 \x01(\tR\vdescription\"\x93\x02\n" +
+	"\x14EventTriggerMetadata\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
+	"\x05event\x18\x02 \x01(\tR\x05event\x12\x12\n" +
+	"\x04tags\x18\x03 \x03(\tR\x04tags\x12'\n" +
+	"\x0ffunction_schema\x18\x04 \x01(\tR\x0efunctionSchema\x12#\n" +
+	"\rfunction_name\x18\x05 \x01(\tR\ffunctionName\x12\x18\n" +
+	"\aenabled\x18\x06 \x01(\bR\aenabled\x12\x1e\n" +
+	"\n" +
+	"definition\x18\a \x01(\tR\n" +
+	"definition\x12\x18\n" +
+	"\acomment\x18\b \x01(\tR\acomment\x12\x1b\n" +
+	"\tskip_dump\x18\t \x01(\bR\bskipDump\"\xa2\x02\n" +
 	"\x12ForeignKeyMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
 	"\acolumns\x18\x02 \x03(\tR\acolumns\x12+\n" +
@@ -4932,7 +5075,7 @@ func file_store_database_proto_rawDescGZIP() []byte {
 }
 
 var file_store_database_proto_enumTypes = make([]protoimpl.EnumInfo, 7)
-var file_store_database_proto_msgTypes = make([]protoimpl.MessageInfo, 46)
+var file_store_database_proto_msgTypes = make([]protoimpl.MessageInfo, 47)
 var file_store_database_proto_goTypes = []any{
 	(TaskMetadata_State)(0),                // 0: bytebase.store.TaskMetadata.State
 	(StreamMetadata_Type)(0),               // 1: bytebase.store.StreamMetadata.Type
@@ -4974,91 +5117,93 @@ var file_store_database_proto_goTypes = []any{
 	(*StorageConfig)(nil),                  // 37: bytebase.store.StorageConfig
 	(*DimensionalConfig)(nil),              // 38: bytebase.store.DimensionalConfig
 	(*ExtensionMetadata)(nil),              // 39: bytebase.store.ExtensionMetadata
-	(*ForeignKeyMetadata)(nil),             // 40: bytebase.store.ForeignKeyMetadata
-	(*InstanceRoleMetadata)(nil),           // 41: bytebase.store.InstanceRoleMetadata
-	(*DatabaseConfig)(nil),                 // 42: bytebase.store.DatabaseConfig
-	(*SchemaCatalog)(nil),                  // 43: bytebase.store.SchemaCatalog
-	(*TableCatalog)(nil),                   // 44: bytebase.store.TableCatalog
-	(*ColumnCatalog)(nil),                  // 45: bytebase.store.ColumnCatalog
-	(*ObjectSchema)(nil),                   // 46: bytebase.store.ObjectSchema
-	nil,                                    // 47: bytebase.store.DatabaseMetadata.LabelsEntry
-	nil,                                    // 48: bytebase.store.SpatialIndexConfig.EngineSpecificEntry
-	nil,                                    // 49: bytebase.store.ColumnCatalog.LabelsEntry
-	(*ObjectSchema_StructKind)(nil),        // 50: bytebase.store.ObjectSchema.StructKind
-	(*ObjectSchema_ArrayKind)(nil),         // 51: bytebase.store.ObjectSchema.ArrayKind
-	nil,                                    // 52: bytebase.store.ObjectSchema.StructKind.PropertiesEntry
-	(*timestamppb.Timestamp)(nil),          // 53: google.protobuf.Timestamp
+	(*EventTriggerMetadata)(nil),           // 40: bytebase.store.EventTriggerMetadata
+	(*ForeignKeyMetadata)(nil),             // 41: bytebase.store.ForeignKeyMetadata
+	(*InstanceRoleMetadata)(nil),           // 42: bytebase.store.InstanceRoleMetadata
+	(*DatabaseConfig)(nil),                 // 43: bytebase.store.DatabaseConfig
+	(*SchemaCatalog)(nil),                  // 44: bytebase.store.SchemaCatalog
+	(*TableCatalog)(nil),                   // 45: bytebase.store.TableCatalog
+	(*ColumnCatalog)(nil),                  // 46: bytebase.store.ColumnCatalog
+	(*ObjectSchema)(nil),                   // 47: bytebase.store.ObjectSchema
+	nil,                                    // 48: bytebase.store.DatabaseMetadata.LabelsEntry
+	nil,                                    // 49: bytebase.store.SpatialIndexConfig.EngineSpecificEntry
+	nil,                                    // 50: bytebase.store.ColumnCatalog.LabelsEntry
+	(*ObjectSchema_StructKind)(nil),        // 51: bytebase.store.ObjectSchema.StructKind
+	(*ObjectSchema_ArrayKind)(nil),         // 52: bytebase.store.ObjectSchema.ArrayKind
+	nil,                                    // 53: bytebase.store.ObjectSchema.StructKind.PropertiesEntry
+	(*timestamppb.Timestamp)(nil),          // 54: google.protobuf.Timestamp
 }
 var file_store_database_proto_depIdxs = []int32{
-	47, // 0: bytebase.store.DatabaseMetadata.labels:type_name -> bytebase.store.DatabaseMetadata.LabelsEntry
-	53, // 1: bytebase.store.DatabaseMetadata.last_sync_time:type_name -> google.protobuf.Timestamp
+	48, // 0: bytebase.store.DatabaseMetadata.labels:type_name -> bytebase.store.DatabaseMetadata.LabelsEntry
+	54, // 1: bytebase.store.DatabaseMetadata.last_sync_time:type_name -> google.protobuf.Timestamp
 	10, // 2: bytebase.store.DatabaseSchemaMetadata.schemas:type_name -> bytebase.store.SchemaMetadata
 	39, // 3: bytebase.store.DatabaseSchemaMetadata.extensions:type_name -> bytebase.store.ExtensionMetadata
 	9,  // 4: bytebase.store.DatabaseSchemaMetadata.linked_databases:type_name -> bytebase.store.LinkedDatabaseMetadata
-	18, // 5: bytebase.store.SchemaMetadata.tables:type_name -> bytebase.store.TableMetadata
-	21, // 6: bytebase.store.SchemaMetadata.external_tables:type_name -> bytebase.store.ExternalTableMetadata
-	25, // 7: bytebase.store.SchemaMetadata.views:type_name -> bytebase.store.ViewMetadata
-	29, // 8: bytebase.store.SchemaMetadata.functions:type_name -> bytebase.store.FunctionMetadata
-	30, // 9: bytebase.store.SchemaMetadata.procedures:type_name -> bytebase.store.ProcedureMetadata
-	17, // 10: bytebase.store.SchemaMetadata.streams:type_name -> bytebase.store.StreamMetadata
-	16, // 11: bytebase.store.SchemaMetadata.tasks:type_name -> bytebase.store.TaskMetadata
-	27, // 12: bytebase.store.SchemaMetadata.materialized_views:type_name -> bytebase.store.MaterializedViewMetadata
-	13, // 13: bytebase.store.SchemaMetadata.sequences:type_name -> bytebase.store.SequenceMetadata
-	31, // 14: bytebase.store.SchemaMetadata.packages:type_name -> bytebase.store.PackageMetadata
-	12, // 15: bytebase.store.SchemaMetadata.events:type_name -> bytebase.store.EventMetadata
-	11, // 16: bytebase.store.SchemaMetadata.enum_types:type_name -> bytebase.store.EnumTypeMetadata
-	0,  // 17: bytebase.store.TaskMetadata.state:type_name -> bytebase.store.TaskMetadata.State
-	1,  // 18: bytebase.store.StreamMetadata.type:type_name -> bytebase.store.StreamMetadata.Type
-	2,  // 19: bytebase.store.StreamMetadata.mode:type_name -> bytebase.store.StreamMetadata.Mode
-	23, // 20: bytebase.store.TableMetadata.columns:type_name -> bytebase.store.ColumnMetadata
-	32, // 21: bytebase.store.TableMetadata.indexes:type_name -> bytebase.store.IndexMetadata
-	40, // 22: bytebase.store.TableMetadata.foreign_keys:type_name -> bytebase.store.ForeignKeyMetadata
-	22, // 23: bytebase.store.TableMetadata.partitions:type_name -> bytebase.store.TablePartitionMetadata
-	19, // 24: bytebase.store.TableMetadata.check_constraints:type_name -> bytebase.store.CheckConstraintMetadata
-	14, // 25: bytebase.store.TableMetadata.triggers:type_name -> bytebase.store.TriggerMetadata
-	15, // 26: bytebase.store.TableMetadata.rules:type_name -> bytebase.store.RuleMetadata
-	20, // 27: bytebase.store.TableMetadata.exclude_constraints:type_name -> bytebase.store.ExcludeConstraintMetadata
-	23, // 28: bytebase.store.ExternalTableMetadata.columns:type_name -> bytebase.store.ColumnMetadata
-	3,  // 29: bytebase.store.TablePartitionMetadata.type:type_name -> bytebase.store.TablePartitionMetadata.Type
-	22, // 30: bytebase.store.TablePartitionMetadata.subpartitions:type_name -> bytebase.store.TablePartitionMetadata
-	32, // 31: bytebase.store.TablePartitionMetadata.indexes:type_name -> bytebase.store.IndexMetadata
-	19, // 32: bytebase.store.TablePartitionMetadata.check_constraints:type_name -> bytebase.store.CheckConstraintMetadata
-	20, // 33: bytebase.store.TablePartitionMetadata.exclude_constraints:type_name -> bytebase.store.ExcludeConstraintMetadata
-	24, // 34: bytebase.store.ColumnMetadata.generation:type_name -> bytebase.store.GenerationMetadata
-	4,  // 35: bytebase.store.ColumnMetadata.identity_generation:type_name -> bytebase.store.ColumnMetadata.IdentityGeneration
-	5,  // 36: bytebase.store.GenerationMetadata.type:type_name -> bytebase.store.GenerationMetadata.Type
-	26, // 37: bytebase.store.ViewMetadata.dependency_columns:type_name -> bytebase.store.DependencyColumn
-	23, // 38: bytebase.store.ViewMetadata.columns:type_name -> bytebase.store.ColumnMetadata
-	14, // 39: bytebase.store.ViewMetadata.triggers:type_name -> bytebase.store.TriggerMetadata
-	15, // 40: bytebase.store.ViewMetadata.rules:type_name -> bytebase.store.RuleMetadata
-	26, // 41: bytebase.store.MaterializedViewMetadata.dependency_columns:type_name -> bytebase.store.DependencyColumn
-	14, // 42: bytebase.store.MaterializedViewMetadata.triggers:type_name -> bytebase.store.TriggerMetadata
-	32, // 43: bytebase.store.MaterializedViewMetadata.indexes:type_name -> bytebase.store.IndexMetadata
-	28, // 44: bytebase.store.FunctionMetadata.dependency_tables:type_name -> bytebase.store.DependencyTable
-	33, // 45: bytebase.store.IndexMetadata.spatial_config:type_name -> bytebase.store.SpatialIndexConfig
-	34, // 46: bytebase.store.SpatialIndexConfig.tessellation:type_name -> bytebase.store.TessellationConfig
-	37, // 47: bytebase.store.SpatialIndexConfig.storage:type_name -> bytebase.store.StorageConfig
-	38, // 48: bytebase.store.SpatialIndexConfig.dimensional:type_name -> bytebase.store.DimensionalConfig
-	48, // 49: bytebase.store.SpatialIndexConfig.engine_specific:type_name -> bytebase.store.SpatialIndexConfig.EngineSpecificEntry
-	35, // 50: bytebase.store.TessellationConfig.bounding_box:type_name -> bytebase.store.BoundingBox
-	36, // 51: bytebase.store.TessellationConfig.grid_levels:type_name -> bytebase.store.GridLevel
-	43, // 52: bytebase.store.DatabaseConfig.schemas:type_name -> bytebase.store.SchemaCatalog
-	44, // 53: bytebase.store.SchemaCatalog.tables:type_name -> bytebase.store.TableCatalog
-	45, // 54: bytebase.store.TableCatalog.columns:type_name -> bytebase.store.ColumnCatalog
-	46, // 55: bytebase.store.TableCatalog.object_schema:type_name -> bytebase.store.ObjectSchema
-	49, // 56: bytebase.store.ColumnCatalog.labels:type_name -> bytebase.store.ColumnCatalog.LabelsEntry
-	46, // 57: bytebase.store.ColumnCatalog.object_schema:type_name -> bytebase.store.ObjectSchema
-	6,  // 58: bytebase.store.ObjectSchema.type:type_name -> bytebase.store.ObjectSchema.Type
-	50, // 59: bytebase.store.ObjectSchema.struct_kind:type_name -> bytebase.store.ObjectSchema.StructKind
-	51, // 60: bytebase.store.ObjectSchema.array_kind:type_name -> bytebase.store.ObjectSchema.ArrayKind
-	52, // 61: bytebase.store.ObjectSchema.StructKind.properties:type_name -> bytebase.store.ObjectSchema.StructKind.PropertiesEntry
-	46, // 62: bytebase.store.ObjectSchema.ArrayKind.kind:type_name -> bytebase.store.ObjectSchema
-	46, // 63: bytebase.store.ObjectSchema.StructKind.PropertiesEntry.value:type_name -> bytebase.store.ObjectSchema
-	64, // [64:64] is the sub-list for method output_type
-	64, // [64:64] is the sub-list for method input_type
-	64, // [64:64] is the sub-list for extension type_name
-	64, // [64:64] is the sub-list for extension extendee
-	0,  // [0:64] is the sub-list for field type_name
+	40, // 5: bytebase.store.DatabaseSchemaMetadata.event_triggers:type_name -> bytebase.store.EventTriggerMetadata
+	18, // 6: bytebase.store.SchemaMetadata.tables:type_name -> bytebase.store.TableMetadata
+	21, // 7: bytebase.store.SchemaMetadata.external_tables:type_name -> bytebase.store.ExternalTableMetadata
+	25, // 8: bytebase.store.SchemaMetadata.views:type_name -> bytebase.store.ViewMetadata
+	29, // 9: bytebase.store.SchemaMetadata.functions:type_name -> bytebase.store.FunctionMetadata
+	30, // 10: bytebase.store.SchemaMetadata.procedures:type_name -> bytebase.store.ProcedureMetadata
+	17, // 11: bytebase.store.SchemaMetadata.streams:type_name -> bytebase.store.StreamMetadata
+	16, // 12: bytebase.store.SchemaMetadata.tasks:type_name -> bytebase.store.TaskMetadata
+	27, // 13: bytebase.store.SchemaMetadata.materialized_views:type_name -> bytebase.store.MaterializedViewMetadata
+	13, // 14: bytebase.store.SchemaMetadata.sequences:type_name -> bytebase.store.SequenceMetadata
+	31, // 15: bytebase.store.SchemaMetadata.packages:type_name -> bytebase.store.PackageMetadata
+	12, // 16: bytebase.store.SchemaMetadata.events:type_name -> bytebase.store.EventMetadata
+	11, // 17: bytebase.store.SchemaMetadata.enum_types:type_name -> bytebase.store.EnumTypeMetadata
+	0,  // 18: bytebase.store.TaskMetadata.state:type_name -> bytebase.store.TaskMetadata.State
+	1,  // 19: bytebase.store.StreamMetadata.type:type_name -> bytebase.store.StreamMetadata.Type
+	2,  // 20: bytebase.store.StreamMetadata.mode:type_name -> bytebase.store.StreamMetadata.Mode
+	23, // 21: bytebase.store.TableMetadata.columns:type_name -> bytebase.store.ColumnMetadata
+	32, // 22: bytebase.store.TableMetadata.indexes:type_name -> bytebase.store.IndexMetadata
+	41, // 23: bytebase.store.TableMetadata.foreign_keys:type_name -> bytebase.store.ForeignKeyMetadata
+	22, // 24: bytebase.store.TableMetadata.partitions:type_name -> bytebase.store.TablePartitionMetadata
+	19, // 25: bytebase.store.TableMetadata.check_constraints:type_name -> bytebase.store.CheckConstraintMetadata
+	14, // 26: bytebase.store.TableMetadata.triggers:type_name -> bytebase.store.TriggerMetadata
+	15, // 27: bytebase.store.TableMetadata.rules:type_name -> bytebase.store.RuleMetadata
+	20, // 28: bytebase.store.TableMetadata.exclude_constraints:type_name -> bytebase.store.ExcludeConstraintMetadata
+	23, // 29: bytebase.store.ExternalTableMetadata.columns:type_name -> bytebase.store.ColumnMetadata
+	3,  // 30: bytebase.store.TablePartitionMetadata.type:type_name -> bytebase.store.TablePartitionMetadata.Type
+	22, // 31: bytebase.store.TablePartitionMetadata.subpartitions:type_name -> bytebase.store.TablePartitionMetadata
+	32, // 32: bytebase.store.TablePartitionMetadata.indexes:type_name -> bytebase.store.IndexMetadata
+	19, // 33: bytebase.store.TablePartitionMetadata.check_constraints:type_name -> bytebase.store.CheckConstraintMetadata
+	20, // 34: bytebase.store.TablePartitionMetadata.exclude_constraints:type_name -> bytebase.store.ExcludeConstraintMetadata
+	24, // 35: bytebase.store.ColumnMetadata.generation:type_name -> bytebase.store.GenerationMetadata
+	4,  // 36: bytebase.store.ColumnMetadata.identity_generation:type_name -> bytebase.store.ColumnMetadata.IdentityGeneration
+	5,  // 37: bytebase.store.GenerationMetadata.type:type_name -> bytebase.store.GenerationMetadata.Type
+	26, // 38: bytebase.store.ViewMetadata.dependency_columns:type_name -> bytebase.store.DependencyColumn
+	23, // 39: bytebase.store.ViewMetadata.columns:type_name -> bytebase.store.ColumnMetadata
+	14, // 40: bytebase.store.ViewMetadata.triggers:type_name -> bytebase.store.TriggerMetadata
+	15, // 41: bytebase.store.ViewMetadata.rules:type_name -> bytebase.store.RuleMetadata
+	26, // 42: bytebase.store.MaterializedViewMetadata.dependency_columns:type_name -> bytebase.store.DependencyColumn
+	14, // 43: bytebase.store.MaterializedViewMetadata.triggers:type_name -> bytebase.store.TriggerMetadata
+	32, // 44: bytebase.store.MaterializedViewMetadata.indexes:type_name -> bytebase.store.IndexMetadata
+	28, // 45: bytebase.store.FunctionMetadata.dependency_tables:type_name -> bytebase.store.DependencyTable
+	33, // 46: bytebase.store.IndexMetadata.spatial_config:type_name -> bytebase.store.SpatialIndexConfig
+	34, // 47: bytebase.store.SpatialIndexConfig.tessellation:type_name -> bytebase.store.TessellationConfig
+	37, // 48: bytebase.store.SpatialIndexConfig.storage:type_name -> bytebase.store.StorageConfig
+	38, // 49: bytebase.store.SpatialIndexConfig.dimensional:type_name -> bytebase.store.DimensionalConfig
+	49, // 50: bytebase.store.SpatialIndexConfig.engine_specific:type_name -> bytebase.store.SpatialIndexConfig.EngineSpecificEntry
+	35, // 51: bytebase.store.TessellationConfig.bounding_box:type_name -> bytebase.store.BoundingBox
+	36, // 52: bytebase.store.TessellationConfig.grid_levels:type_name -> bytebase.store.GridLevel
+	44, // 53: bytebase.store.DatabaseConfig.schemas:type_name -> bytebase.store.SchemaCatalog
+	45, // 54: bytebase.store.SchemaCatalog.tables:type_name -> bytebase.store.TableCatalog
+	46, // 55: bytebase.store.TableCatalog.columns:type_name -> bytebase.store.ColumnCatalog
+	47, // 56: bytebase.store.TableCatalog.object_schema:type_name -> bytebase.store.ObjectSchema
+	50, // 57: bytebase.store.ColumnCatalog.labels:type_name -> bytebase.store.ColumnCatalog.LabelsEntry
+	47, // 58: bytebase.store.ColumnCatalog.object_schema:type_name -> bytebase.store.ObjectSchema
+	6,  // 59: bytebase.store.ObjectSchema.type:type_name -> bytebase.store.ObjectSchema.Type
+	51, // 60: bytebase.store.ObjectSchema.struct_kind:type_name -> bytebase.store.ObjectSchema.StructKind
+	52, // 61: bytebase.store.ObjectSchema.array_kind:type_name -> bytebase.store.ObjectSchema.ArrayKind
+	53, // 62: bytebase.store.ObjectSchema.StructKind.properties:type_name -> bytebase.store.ObjectSchema.StructKind.PropertiesEntry
+	47, // 63: bytebase.store.ObjectSchema.ArrayKind.kind:type_name -> bytebase.store.ObjectSchema
+	47, // 64: bytebase.store.ObjectSchema.StructKind.PropertiesEntry.value:type_name -> bytebase.store.ObjectSchema
+	65, // [65:65] is the sub-list for method output_type
+	65, // [65:65] is the sub-list for method input_type
+	65, // [65:65] is the sub-list for extension type_name
+	65, // [65:65] is the sub-list for extension extendee
+	0,  // [0:65] is the sub-list for field type_name
 }
 
 func init() { file_store_database_proto_init() }
@@ -5066,9 +5211,9 @@ func file_store_database_proto_init() {
 	if File_store_database_proto != nil {
 		return
 	}
-	file_store_database_proto_msgTypes[37].OneofWrappers = []any{}
 	file_store_database_proto_msgTypes[38].OneofWrappers = []any{}
-	file_store_database_proto_msgTypes[39].OneofWrappers = []any{
+	file_store_database_proto_msgTypes[39].OneofWrappers = []any{}
+	file_store_database_proto_msgTypes[40].OneofWrappers = []any{
 		(*ObjectSchema_StructKind_)(nil),
 		(*ObjectSchema_ArrayKind_)(nil),
 	}
@@ -5078,7 +5223,7 @@ func file_store_database_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_database_proto_rawDesc), len(file_store_database_proto_rawDesc)),
 			NumEnums:      7,
-			NumMessages:   46,
+			NumMessages:   47,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

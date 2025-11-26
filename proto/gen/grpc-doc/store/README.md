@@ -62,6 +62,7 @@
     - [DimensionalConfig](#bytebase-store-DimensionalConfig)
     - [EnumTypeMetadata](#bytebase-store-EnumTypeMetadata)
     - [EventMetadata](#bytebase-store-EventMetadata)
+    - [EventTriggerMetadata](#bytebase-store-EventTriggerMetadata)
     - [ExcludeConstraintMetadata](#bytebase-store-ExcludeConstraintMetadata)
     - [ExtensionMetadata](#bytebase-store-ExtensionMetadata)
     - [ExternalTableMetadata](#bytebase-store-ExternalTableMetadata)
@@ -1115,6 +1116,7 @@ DatabaseSchemaMetadata is the schema metadata for databases.
 | linked_databases | [LinkedDatabaseMetadata](#bytebase-store-LinkedDatabaseMetadata) | repeated |  |
 | owner | [string](#string) |  |  |
 | search_path | [string](#string) |  | The search_path is the search path of a PostgreSQL database. |
+| event_triggers | [EventTriggerMetadata](#bytebase-store-EventTriggerMetadata) | repeated | The list of event triggers in a database (PostgreSQL specific). Event triggers are database-level objects, not schema-scoped. |
 
 
 
@@ -1206,6 +1208,30 @@ DimensionalConfig defines dimensional and constraint parameters for spatial inde
 | character_set_client | [string](#string) |  |  |
 | collation_connection | [string](#string) |  |  |
 | comment | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-EventTriggerMetadata"></a>
+
+### EventTriggerMetadata
+EventTriggerMetadata is the metadata for PostgreSQL event triggers.
+Event triggers are database-level objects that fire on DDL events.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the event trigger. |
+| event | [string](#string) |  | The event type: DDL_COMMAND_START, DDL_COMMAND_END, SQL_DROP, TABLE_REWRITE. |
+| tags | [string](#string) | repeated | The tags filter (e.g., [&#39;CREATE TABLE&#39;, &#39;DROP TABLE&#39;]). |
+| function_schema | [string](#string) |  | The schema of the function to execute. |
+| function_name | [string](#string) |  | The name of the function to execute. |
+| enabled | [bool](#bool) |  | Whether the trigger is enabled. |
+| definition | [string](#string) |  | The full CREATE EVENT TRIGGER definition from pg_get_event_trigger_def(). SDL output should prefer using this field. |
+| comment | [string](#string) |  | The comment on the event trigger. |
+| skip_dump | [bool](#bool) |  | Skip dump flag (for extension-owned triggers). |
 
 
 

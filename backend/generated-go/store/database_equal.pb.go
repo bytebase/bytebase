@@ -96,6 +96,14 @@ func (x *DatabaseSchemaMetadata) Equal(y *DatabaseSchemaMetadata) bool {
 	if x.SearchPath != y.SearchPath {
 		return false
 	}
+	if len(x.EventTriggers) != len(y.EventTriggers) {
+		return false
+	}
+	for i := 0; i < len(x.EventTriggers); i++ {
+		if !x.EventTriggers[i].Equal(y.EventTriggers[i]) {
+			return false
+		}
+	}
 	return true
 }
 
@@ -1322,6 +1330,48 @@ func (x *ExtensionMetadata) Equal(y *ExtensionMetadata) bool {
 		return false
 	}
 	if x.Description != y.Description {
+		return false
+	}
+	return true
+}
+
+func (x *EventTriggerMetadata) Equal(y *EventTriggerMetadata) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
+		return false
+	}
+	if x.Event != y.Event {
+		return false
+	}
+	if len(x.Tags) != len(y.Tags) {
+		return false
+	}
+	for i := 0; i < len(x.Tags); i++ {
+		if x.Tags[i] != y.Tags[i] {
+			return false
+		}
+	}
+	if x.FunctionSchema != y.FunctionSchema {
+		return false
+	}
+	if x.FunctionName != y.FunctionName {
+		return false
+	}
+	if x.Enabled != y.Enabled {
+		return false
+	}
+	if x.Definition != y.Definition {
+		return false
+	}
+	if x.Comment != y.Comment {
+		return false
+	}
+	if x.SkipDump != y.SkipDump {
 		return false
 	}
 	return true
