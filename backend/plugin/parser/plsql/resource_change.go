@@ -15,7 +15,7 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_ORACLE, extractChangedResources)
 }
 
-func extractChangedResources(currentDatabase string, _ string, dbMetadata *model.DatabaseMetadata, asts []*base.AST, statement string) (*base.ChangeSummary, error) {
+func extractChangedResources(currentDatabase string, _ string, dbMetadata *model.DatabaseMetadata, asts []base.AST, statement string) (*base.ChangeSummary, error) {
 	// currentDatabase is the same as currentSchema for Oracle.
 	changedResources := model.NewChangedResources(dbMetadata)
 	l := &plsqlChangedResourceExtractListener{
@@ -26,11 +26,11 @@ func extractChangedResources(currentDatabase string, _ string, dbMetadata *model
 	}
 
 	for _, ast := range asts {
-		antlrData, ok := ast.GetANTLRTree()
+		antlrAST, ok := base.GetANTLRAST(ast)
 		if !ok {
-			return nil, errors.New("expected ANTLR tree for Oracle")
+			return nil, errors.New("expected ANTLR AST for Oracle")
 		}
-		antlr.ParseTreeWalkerDefault.Walk(l, antlrData.Tree)
+		antlr.ParseTreeWalkerDefault.Walk(l, antlrAST.Tree)
 	}
 
 	return &base.ChangeSummary{

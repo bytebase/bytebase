@@ -16,8 +16,8 @@ func init() {
 }
 
 // parseCockroachDBForRegistry is the ParseFunc for CockroachDB.
-// Returns []*base.AST with CockroachDBStmt populated.
-func parseCockroachDBForRegistry(statement string) ([]*base.AST, error) {
+// Returns []base.AST with *CockroachDBAST instances.
+func parseCockroachDBForRegistry(statement string) ([]base.AST, error) {
 	result, err := ParseCockroachDBSQL(statement)
 	if err != nil {
 		return nil, err
@@ -25,10 +25,10 @@ func parseCockroachDBForRegistry(statement string) ([]*base.AST, error) {
 	if result == nil {
 		return nil, nil
 	}
-	var asts []*base.AST
+	var asts []base.AST
 	for _, stmt := range result.Stmts {
-		asts = append(asts, &base.AST{
-			CockroachDBStmt: stmt,
+		asts = append(asts, &AST{
+			Stmt: stmt,
 		})
 	}
 	return asts, nil

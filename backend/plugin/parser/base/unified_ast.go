@@ -4,41 +4,36 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 )
 
-// AST represents a parsed SQL statement with standardized metadata.
-// It wraps different parser outputs (ANTLR, TiDB, CockroachDB) into a single type.
-// Each parser package is responsible for creating AST instances.
-type AST struct {
-	// BaseLine stores the zero-based line offset where this SQL statement starts
+// AST is the interface that all parser AST types must implement.
+// Each parser package defines its own concrete AST type with parser-specific fields.
+type AST interface {
+	// GetBaseLine returns the zero-based line offset where this SQL statement starts
 	// in the original multi-statement input. Used for error position reporting.
-	// Provided by: All ANTLR-based parsers (PostgreSQL, MySQL, MariaDB, OceanBase, MSSQL,
-	// Oracle, Redshift, Snowflake, BigQuery, Spanner, Doris, Cassandra, Trino, PartiQL,
-	// CosmosDB), TiDB.
+	GetBaseLine() int
+}
+
+// ANTLRAST is the AST implementation for ANTLR-based parsers.
+// Supported engines: PostgreSQL, MySQL, MariaDB, OceanBase, MSSQL, Oracle, Redshift,
+// Snowflake, BigQuery, Spanner, Doris, Cassandra, Trino, PartiQL, CosmosDB.
+//
+// Parser packages can use this directly or embed it to add engine-specific fields.
+type ANTLRAST struct {
 	BaseLine int
-
-	// Underlying representation (only one will be set based on parser type)
-
-	// ANTLRResult contains ANTLR-based parser data.
-	// Supported engines: PostgreSQL, MySQL, MariaDB, OceanBase, MSSQL, Oracle, Redshift, Snowflake, BigQuery, Spanner, Doris, Cassandra, Trino, PartiQL, CosmosDB.
-	ANTLRResult *ANTLRParseData
-	// TiDBNode contains TiDB parser AST node (ast.StmtNode).
-	// Supported engines: TiDB.
-	// Use type assertion in the tidb package to access the typed node.
-	TiDBNode any
-	// CockroachDBStmt contains CockroachDB parser statement (statements.Statement[tree.Statement]).
-	// Supported engines: CockroachDB.
-	// Use type assertion in the cockroachdb package to access the typed statement.
-	CockroachDBStmt any
+	Tree     antlr.Tree
+	Tokens   *antlr.CommonTokenStream
 }
 
-// ANTLRParseData contains ANTLR-based parser results (parse tree and token stream).
-// Supported engines: PostgreSQL, MySQL, MariaDB, OceanBase, MSSQL, Oracle, Redshift, Snowflake, BigQuery, Spanner, Doris, Cassandra, Trino, PartiQL, CosmosDB.
-type ANTLRParseData struct {
-	Tree   antlr.Tree
-	Tokens *antlr.CommonTokenStream
+// GetBaseLine implements AST interface.
+func (a *ANTLRAST) GetBaseLine() int {
+	return a.BaseLine
 }
 
-// GetANTLRTree returns ANTLR parse data if this statement was parsed by an ANTLR-based parser.
-// Returns the data and true if available, nil and false otherwise.
-func (u *AST) GetANTLRTree() (*ANTLRParseData, bool) {
-	return u.ANTLRResult, u.ANTLRResult != nil
+// GetANTLRAST extracts the ANTLRAST from an AST interface.
+// Returns the ANTLRAST and true if it is an ANTLR-based AST, nil and false otherwise.
+func GetANTLRAST(a AST) (*ANTLRAST, bool) {
+	if a == nil {
+		return nil, false
+	}
+	antlrAST, ok := a.(*ANTLRAST)
+	return antlrAST, ok
 }

@@ -7,13 +7,14 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func GetStatementTypes(asts []*base.AST) ([]string, error) {
+func GetStatementTypes(asts []base.AST) ([]string, error) {
 	sqlTypeSet := make(map[string]bool)
 	for _, ast := range asts {
-		node, ok := GetTiDBNode(ast)
+		tidbAST, ok := GetTiDBAST(ast)
 		if !ok {
-			return nil, errors.New("expected TiDB node")
+			return nil, errors.New("expected TiDB AST")
 		}
+		node := tidbAST.Node
 		t := getStatementType(node)
 		sqlTypeSet[t] = true
 	}

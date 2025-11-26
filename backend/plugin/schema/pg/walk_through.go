@@ -25,11 +25,11 @@ func init() {
 }
 
 // WalkThrough walks through the PostgreSQL ANTLR parse tree and builds catalog metadata.
-func WalkThrough(d *model.DatabaseMetadata, ast []*base.AST) *storepb.Advice {
+func WalkThrough(d *model.DatabaseMetadata, ast []base.AST) *storepb.Advice {
 	// Extract ParseResult from AST
 	var parseResults []*base.ParseResult
 	for _, unifiedAST := range ast {
-		antlrData, ok := unifiedAST.GetANTLRTree()
+		antlrAST, ok := base.GetANTLRAST(unifiedAST)
 		if !ok {
 			return &storepb.Advice{
 				Status:  storepb.Advice_ERROR,
@@ -42,9 +42,9 @@ func WalkThrough(d *model.DatabaseMetadata, ast []*base.AST) *storepb.Advice {
 			}
 		}
 		parseResults = append(parseResults, &base.ParseResult{
-			Tree:     antlrData.Tree,
-			Tokens:   antlrData.Tokens,
-			BaseLine: unifiedAST.BaseLine,
+			Tree:     antlrAST.Tree,
+			Tokens:   antlrAST.Tokens,
+			BaseLine: antlrAST.BaseLine,
 		})
 	}
 

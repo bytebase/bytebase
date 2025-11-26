@@ -5,6 +5,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 // getANTLRTree extracts a single ANTLR tree from the advisor context.
@@ -18,9 +19,9 @@ func getANTLRTree(checkCtx advisor.Context) (antlr.Tree, error) {
 	}
 	// Redshift typically processes a single statement
 	unifiedAST := checkCtx.AST[0]
-	antlrData, ok := unifiedAST.GetANTLRTree()
+	antlrAST, ok := base.GetANTLRAST(unifiedAST)
 	if !ok {
 		return nil, errors.New("AST type mismatch: expected ANTLR-based parser result")
 	}
-	return antlrData.Tree, nil
+	return antlrAST.Tree, nil
 }

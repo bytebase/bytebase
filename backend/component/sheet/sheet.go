@@ -188,13 +188,13 @@ func getSheetCommandsForMSSQL(statement string) []*storepb.Range {
 
 type Result struct {
 	sync.Mutex
-	ast     []*base.AST
+	ast     []base.AST
 	advices []*storepb.Advice
 }
 
 // GetASTsForChecks gets the ASTs of statement with caching, and it should only be used
 // for plan checks because it involves some truncating.
-func (sm *Manager) GetASTsForChecks(dbType storepb.Engine, statement string) ([]*base.AST, []*storepb.Advice) {
+func (sm *Manager) GetASTsForChecks(dbType storepb.Engine, statement string) ([]base.AST, []*storepb.Advice) {
 	var result *Result
 	h := xxh3.HashString(statement)
 	key := astHashKey{hash: h, engine: dbType}

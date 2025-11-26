@@ -16,8 +16,8 @@ func init() {
 }
 
 // parseCassandraForRegistry is the ParseFunc for Cassandra.
-// Returns []*base.AST with ANTLRResult populated.
-func parseCassandraForRegistry(statement string) ([]*base.AST, error) {
+// Returns []base.AST with *ANTLRAST instances.
+func parseCassandraForRegistry(statement string) ([]base.AST, error) {
 	parseResults, err := ParseCassandraSQL(statement)
 	if err != nil {
 		return nil, err
@@ -25,16 +25,14 @@ func parseCassandraForRegistry(statement string) ([]*base.AST, error) {
 	return toAST(parseResults), nil
 }
 
-// toAST converts []*ParseResult to []*base.AST.
-func toAST(results []*base.ParseResult) []*base.AST {
-	var asts []*base.AST
+// toAST converts []*ParseResult to []base.AST.
+func toAST(results []*base.ParseResult) []base.AST {
+	var asts []base.AST
 	for _, r := range results {
-		asts = append(asts, &base.AST{
+		asts = append(asts, &base.ANTLRAST{
 			BaseLine: r.BaseLine,
-			ANTLRResult: &base.ANTLRParseData{
-				Tree:   r.Tree,
-				Tokens: r.Tokens,
-			},
+			Tree:     r.Tree,
+			Tokens:   r.Tokens,
 		})
 	}
 	return asts

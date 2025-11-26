@@ -8,14 +8,14 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func GetStatementTypes(asts []*base.AST) ([]string, error) {
+func GetStatementTypes(asts []base.AST) ([]string, error) {
 	sqlTypeSet := make(map[string]bool)
 	for _, ast := range asts {
-		antlrData, ok := ast.GetANTLRTree()
+		antlrAST, ok := base.GetANTLRAST(ast)
 		if !ok {
-			return nil, errors.New("expected ANTLR tree for Oracle")
+			return nil, errors.New("expected ANTLR AST for Oracle")
 		}
-		t := getStatementType(antlrData.Tree)
+		t := getStatementType(antlrAST.Tree)
 		sqlTypeSet[t] = true
 	}
 	var sqlTypes []string

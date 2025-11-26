@@ -19,8 +19,8 @@ func init() {
 }
 
 // parsePLSQLForRegistry is the ParseFunc for PL/SQL.
-// Returns []*base.AST with ANTLRResult populated.
-func parsePLSQLForRegistry(statement string) ([]*base.AST, error) {
+// Returns []base.AST with *ANTLRAST instances.
+func parsePLSQLForRegistry(statement string) ([]base.AST, error) {
 	parseResults, err := ParsePLSQL(statement + ";")
 	if err != nil {
 		return nil, err
@@ -28,16 +28,14 @@ func parsePLSQLForRegistry(statement string) ([]*base.AST, error) {
 	return toAST(parseResults), nil
 }
 
-// toAST converts []*ParseResult to []*base.AST.
-func toAST(results []*base.ParseResult) []*base.AST {
-	var asts []*base.AST
+// toAST converts []*ParseResult to []base.AST.
+func toAST(results []*base.ParseResult) []base.AST {
+	var asts []base.AST
 	for _, r := range results {
-		asts = append(asts, &base.AST{
+		asts = append(asts, &base.ANTLRAST{
 			BaseLine: r.BaseLine,
-			ANTLRResult: &base.ANTLRParseData{
-				Tree:   r.Tree,
-				Tokens: r.Tokens,
-			},
+			Tree:     r.Tree,
+			Tokens:   r.Tokens,
 		})
 	}
 	return asts

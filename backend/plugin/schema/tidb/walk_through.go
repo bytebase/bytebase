@@ -41,7 +41,7 @@ func init() {
 }
 
 // WalkThrough walks through TiDB AST and updates the database state.
-func WalkThrough(d *model.DatabaseMetadata, ast []*base.AST) *storepb.Advice {
+func WalkThrough(d *model.DatabaseMetadata, ast []base.AST) *storepb.Advice {
 	// We define the Catalog as Database -> Schema -> Table. The Schema is only for PostgreSQL.
 	// So we use a Schema whose name is empty for other engines, such as MySQL.
 	// If there is no empty-string-name schema, create it to avoid corner cases.
@@ -52,7 +52,7 @@ func WalkThrough(d *model.DatabaseMetadata, ast []*base.AST) *storepb.Advice {
 	// Extract TiDB nodes from AST
 	var nodeList []tidbast.StmtNode
 	for _, unifiedAST := range ast {
-		node, ok := tidb.GetTiDBNode(unifiedAST)
+		tidbAST, ok := tidb.GetTiDBAST(unifiedAST)
 		if !ok {
 			return &storepb.Advice{
 				Status:  storepb.Advice_ERROR,
@@ -64,7 +64,7 @@ func WalkThrough(d *model.DatabaseMetadata, ast []*base.AST) *storepb.Advice {
 				},
 			}
 		}
-		nodeList = append(nodeList, node)
+		nodeList = append(nodeList, tidbAST.Node)
 	}
 
 	for _, node := range nodeList {

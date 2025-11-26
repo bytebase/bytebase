@@ -826,7 +826,7 @@ type statementTypeWithPosition struct {
 // getStatementTypesWithPositionsForEngine returns statement types with position info for the given engine and ASTs.
 // The line numbers are one-based.
 // Currently only PostgreSQL is supported.
-func getStatementTypesWithPositionsForEngine(engine storepb.Engine, asts []*base.AST) ([]statementTypeWithPosition, error) {
+func getStatementTypesWithPositionsForEngine(engine storepb.Engine, asts []base.AST) ([]statementTypeWithPosition, error) {
 	switch engine {
 	case storepb.Engine_POSTGRES, storepb.Engine_COCKROACHDB, storepb.Engine_REDSHIFT:
 		pgStmts, err := pg.GetStatementTypes(asts)

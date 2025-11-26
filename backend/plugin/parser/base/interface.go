@@ -32,7 +32,7 @@ var (
 )
 
 type ValidateSQLForEditorFunc func(string) (bool, bool, error)
-type ExtractChangedResourcesFunc func(string, string, *model.DatabaseMetadata, []*AST, string) (*ChangeSummary, error)
+type ExtractChangedResourcesFunc func(string, string, *model.DatabaseMetadata, []AST, string) (*ChangeSummary, error)
 type SplitMultiSQLFunc func(string) ([]SingleSQL, error)
 type CompletionFunc func(ctx context.Context, cCtx CompletionContext, statement string, caretLine int, caretOffset int) ([]Candidate, error)
 type DiagnoseFunc func(ctx context.Context, dCtx DiagnoseContext, statement string) ([]Diagnostic, error)
@@ -46,9 +46,10 @@ type TransformDMLToSelectFunc func(ctx context.Context, tCtx TransformContext, s
 
 type GenerateRestoreSQLFunc func(ctx context.Context, rCtx RestoreContext, statement string, backupItem *storepb.PriorBackupDetail_Item) (string, error)
 
-// ParseFunc is the interface for parsing SQL statements and returning []*AST.
+// ParseFunc is the interface for parsing SQL statements and returning []AST.
 // Each parser package is responsible for creating AST instances with the appropriate data.
-type ParseFunc func(statement string) ([]*AST, error)
+// Parser packages can return *ANTLRAST for ANTLR-based parsers or their own concrete types.
+type ParseFunc func(statement string) ([]AST, error)
 
 func RegisterQueryValidator(engine storepb.Engine, f ValidateSQLForEditorFunc) {
 	mux.Lock()
@@ -83,7 +84,7 @@ func RegisterExtractChangedResourcesFunc(engine storepb.Engine, f ExtractChanged
 }
 
 // ExtractChangedResources extracts the changed resources from the SQL.
-func ExtractChangedResources(engine storepb.Engine, currentDatabase string, currentSchema string, dbMetadata *model.DatabaseMetadata, asts []*AST, statement string) (*ChangeSummary, error) {
+func ExtractChangedResources(engine storepb.Engine, currentDatabase string, currentSchema string, dbMetadata *model.DatabaseMetadata, asts []AST, statement string) (*ChangeSummary, error) {
 	f, ok := changedResourcesGetters[engine]
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported", engine)
@@ -263,8 +264,8 @@ func RegisterParseFunc(engine storepb.Engine, f ParseFunc) {
 }
 
 // Parse parses the SQL statement and returns an AST representation.
-// Each parser is responsible for creating []*AST instances directly.
-func Parse(engine storepb.Engine, statement string) ([]*AST, error) {
+// Each parser is responsible for creating []AST instances directly.
+func Parse(engine storepb.Engine, statement string) ([]AST, error) {
 	f, ok := parsers[engine]
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported", engine)

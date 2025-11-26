@@ -17,27 +17,27 @@ type StatementTypeWithPosition struct {
 
 // GetStatementTypes returns statement types with position information.
 // The line numbers are one-based.
-func GetStatementTypes(asts []*base.AST) ([]StatementTypeWithPosition, error) {
+func GetStatementTypes(asts []base.AST) ([]StatementTypeWithPosition, error) {
 	if len(asts) == 0 {
 		return []StatementTypeWithPosition{}, nil
 	}
 
 	var allResults []StatementTypeWithPosition
 	for _, unifiedAST := range asts {
-		antlrData, ok := unifiedAST.GetANTLRTree()
+		antlrAST, ok := base.GetANTLRAST(unifiedAST)
 		if !ok {
-			return nil, errors.New("expected ANTLR tree for PostgreSQL")
+			return nil, errors.New("expected ANTLR AST for PostgreSQL")
 		}
-		if antlrData.Tree == nil {
+		if antlrAST.Tree == nil {
 			return nil, errors.New("ANTLR tree is nil")
 		}
 
 		collector := &statementTypeCollectorWithPosition{
-			tokens:   antlrData.Tokens,
-			baseLine: unifiedAST.BaseLine,
+			tokens:   antlrAST.Tokens,
+			baseLine: antlrAST.BaseLine,
 		}
 
-		antlr.ParseTreeWalkerDefault.Walk(collector, antlrData.Tree)
+		antlr.ParseTreeWalkerDefault.Walk(collector, antlrAST.Tree)
 		allResults = append(allResults, collector.results...)
 	}
 

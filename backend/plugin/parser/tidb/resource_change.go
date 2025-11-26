@@ -18,16 +18,17 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_TIDB, extractChangedResources)
 }
 
-func extractChangedResources(database string, _ string, dbMetadata *model.DatabaseMetadata, asts []*base.AST, statement string) (*base.ChangeSummary, error) {
+func extractChangedResources(database string, _ string, dbMetadata *model.DatabaseMetadata, asts []base.AST, statement string) (*base.ChangeSummary, error) {
 	changedResources := model.NewChangedResources(dbMetadata)
 	dmlCount := 0
 	insertCount := 0
 	var sampleDMLs []string
 	for _, ast := range asts {
-		node, ok := GetTiDBNode(ast)
+		tidbAST, ok := GetTiDBAST(ast)
 		if !ok {
-			return nil, errors.New("expected TiDB node")
+			return nil, errors.New("expected TiDB AST")
 		}
+		node := tidbAST.Node
 		err := getResourceChanges(database, node, statement, changedResources)
 		if err != nil {
 			return nil, err

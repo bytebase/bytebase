@@ -17,7 +17,7 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_REDSHIFT, extractChangedResources)
 }
 
-func extractChangedResources(database string, _ string, dbMetadata *model.DatabaseMetadata, asts []*base.AST, _ string) (*base.ChangeSummary, error) {
+func extractChangedResources(database string, _ string, dbMetadata *model.DatabaseMetadata, asts []base.AST, _ string) (*base.ChangeSummary, error) {
 	changedResources := model.NewChangedResources(dbMetadata)
 	listener := &resourceChangeListener{
 		currentDatabase:  database,
@@ -27,11 +27,11 @@ func extractChangedResources(database string, _ string, dbMetadata *model.Databa
 	}
 
 	for _, ast := range asts {
-		antlrData, ok := ast.GetANTLRTree()
+		antlrAST, ok := base.GetANTLRAST(ast)
 		if !ok {
-			return nil, errors.New("expected ANTLR tree for Redshift")
+			return nil, errors.New("expected ANTLR AST for Redshift")
 		}
-		antlr.ParseTreeWalkerDefault.Walk(listener, antlrData.Tree)
+		antlr.ParseTreeWalkerDefault.Walk(listener, antlrAST.Tree)
 	}
 
 	return &base.ChangeSummary{

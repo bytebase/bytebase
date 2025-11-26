@@ -19,7 +19,7 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_DORIS, extractChangedResources)
 }
 
-func extractChangedResources(currentDatabase string, _ string, dbMetadata *model.DatabaseMetadata, asts []*base.AST, statement string) (*base.ChangeSummary, error) {
+func extractChangedResources(currentDatabase string, _ string, dbMetadata *model.DatabaseMetadata, asts []base.AST, statement string) (*base.ChangeSummary, error) {
 	changedResources := model.NewChangedResources(dbMetadata)
 	l := &resourceChangedListener{
 		currentDatabase:  currentDatabase,
@@ -27,12 +27,12 @@ func extractChangedResources(currentDatabase string, _ string, dbMetadata *model
 		changedResources: changedResources,
 	}
 	for _, ast := range asts {
-		antlrData, ok := ast.GetANTLRTree()
+		antlrAST, ok := base.GetANTLRAST(ast)
 		if !ok {
-			return nil, errors.New("expected ANTLR tree for MySQL")
+			return nil, errors.New("expected ANTLR AST for MySQL")
 		}
 		l.reset()
-		antlr.ParseTreeWalkerDefault.Walk(l, antlrData.Tree)
+		antlr.ParseTreeWalkerDefault.Walk(l, antlrAST.Tree)
 	}
 
 	return &base.ChangeSummary{
