@@ -3814,6 +3814,14 @@ func buildCurrentDatabaseSDLChunks(currentSchema *model.DatabaseMetadata) (*curr
 			sdlChunks.comments[extensionName] = []string{commentText}
 		}
 	}
+	for eventTriggerName, chunk := range currentSDLChunks.EventTriggers {
+		sdlChunks.chunks[eventTriggerName] = strings.TrimSpace(chunk.GetTextWithoutComments())
+		// Store comment text for usability check
+		commentText := extractCommentTextFromChunk(chunk)
+		if commentText != "" {
+			sdlChunks.comments[eventTriggerName] = []string{commentText}
+		}
+	}
 
 	return sdlChunks, nil
 }
@@ -5766,6 +5774,7 @@ func processCommentChanges(currentChunks, previousChunks *schema.SDLChunks, curr
 	processObjectComments(currentChunks.EnumTypes, previousChunks.EnumTypes, schema.CommentObjectTypeType, createdObjects, droppedObjects, currentDBSDLChunks, diff)
 	processObjectComments(currentChunks.Indexes, previousChunks.Indexes, schema.CommentObjectTypeIndex, createdObjects, droppedObjects, currentDBSDLChunks, diff)
 	processObjectComments(currentChunks.Schemas, previousChunks.Schemas, schema.CommentObjectTypeSchema, createdObjects, droppedObjects, currentDBSDLChunks, diff)
+	processObjectComments(currentChunks.EventTriggers, previousChunks.EventTriggers, schema.CommentObjectTypeEventTrigger, createdObjects, droppedObjects, currentDBSDLChunks, diff)
 
 	// Process column comments
 	processColumnComments(currentChunks, previousChunks, createdObjects, droppedObjects, diff)
@@ -5821,6 +5830,13 @@ func buildCreatedObjectsSet(diff *schema.MetadataDiff) map[string]bool {
 		if extDiff.Action == schema.MetadataDiffActionCreate {
 			// Extensions are database-level, no schema prefix
 			created[extDiff.ExtensionName] = true
+		}
+	}
+
+	for _, etDiff := range diff.EventTriggerChanges {
+		if etDiff.Action == schema.MetadataDiffActionCreate {
+			// Event triggers are database-level, no schema prefix
+			created[etDiff.EventTriggerName] = true
 		}
 	}
 
@@ -5880,6 +5896,13 @@ func buildDroppedObjectsSet(diff *schema.MetadataDiff) map[string]bool {
 		}
 	}
 
+	for _, etDiff := range diff.EventTriggerChanges {
+		if etDiff.Action == schema.MetadataDiffActionDrop {
+			// Event triggers are database-level, no schema prefix
+			dropped[etDiff.EventTriggerName] = true
+		}
+	}
+
 	return dropped
 }
 
@@ -5912,14 +5935,14 @@ func processObjectComments(currentMap, previousMap map[string]*schema.SDLChunk, 
 			}
 			var schemaName, objectName string
 
-			// For SCHEMA and EXTENSION objects, identifier is just the object name (database-level)
+			// For SCHEMA, EXTENSION, and EVENT TRIGGER objects, identifier is just the object name (database-level)
 			// For other objects, identifier is "schema.object"
 			switch objectType {
 			case schema.CommentObjectTypeSchema:
 				schemaName = identifier
 				objectName = identifier // For schemas, objectName is also the schema name
-			case schema.CommentObjectTypeExtension:
-				schemaName = "" // Extensions are database-level, no schema
+			case schema.CommentObjectTypeExtension, schema.CommentObjectTypeEventTrigger:
+				schemaName = "" // Extensions and event triggers are database-level, no schema
 				objectName = identifier
 			default:
 				schemaName, objectName = parseIdentifier(identifier)
