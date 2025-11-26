@@ -8,6 +8,7 @@ export const emptyLocalApprovalRule = (): LocalApprovalRule => {
   return {
     uid: uuidv4(),
     source: WorkspaceApprovalSetting_Rule_Source.SOURCE_UNSPECIFIED,
+    title: "",
     condition: "",
     flow: createProto(ApprovalFlowSchema, { roles: [] }),
   };
