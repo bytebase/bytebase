@@ -28,6 +28,7 @@
           <ExprEditor
             :expr="state.conditionExpr"
             :allow-admin="allowAdmin"
+            :enable-raw-expression="true"
             :factor-list="factorList"
             :option-config-map="optionConfigMap"
             @update="handleUpdate"
