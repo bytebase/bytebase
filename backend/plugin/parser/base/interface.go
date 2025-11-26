@@ -46,10 +46,9 @@ type TransformDMLToSelectFunc func(ctx context.Context, tCtx TransformContext, s
 
 type GenerateRestoreSQLFunc func(ctx context.Context, rCtx RestoreContext, statement string, backupItem *storepb.PriorBackupDetail_Item) (string, error)
 
-// ParseFunc is the interface for parsing SQL statements and returning an AST.
-// The return type varies by database engine. See RegisterParser() in each parser package for details.
-// Common types: []ast.Node, antlr.Tree, []*ParseResult, statements.Statements.
-type ParseFunc func(statement string) (any, error)
+// ParseFunc is the interface for parsing SQL statements and returning []*AST.
+// Each parser package is responsible for creating AST instances with the appropriate data.
+type ParseFunc func(statement string) ([]*AST, error)
 
 func RegisterQueryValidator(engine storepb.Engine, f ValidateSQLForEditorFunc) {
 	mux.Lock()
@@ -264,19 +263,13 @@ func RegisterParseFunc(engine storepb.Engine, f ParseFunc) {
 }
 
 // Parse parses the SQL statement and returns an AST representation.
-// All parser outputs are wrapped into []*AST for consistent handling.
+// Each parser is responsible for creating []*AST instances directly.
 func Parse(engine storepb.Engine, statement string) ([]*AST, error) {
 	f, ok := parsers[engine]
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported", engine)
 	}
-
-	rawAST, err := f(statement)
-	if err != nil {
-		return nil, err
-	}
-
-	return convertToAST(engine, statement, rawAST)
+	return f(statement)
 }
 
 type ChangeSummary struct {

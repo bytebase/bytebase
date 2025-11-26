@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 )
 
 type columnSet map[string]bool
@@ -86,11 +87,11 @@ func getTiDBNodes(checkCtx advisor.Context) ([]ast.StmtNode, error) {
 	}
 	var stmtNodes []ast.StmtNode
 	for _, unifiedAST := range checkCtx.AST {
-		tidbData, ok := unifiedAST.GetTiDBNode()
+		node, ok := tidbparser.GetTiDBNode(unifiedAST)
 		if !ok {
 			return nil, errors.Errorf("AST type mismatch: expected TiDB parser result, got engine %s", unifiedAST.GetEngine())
 		}
-		stmtNodes = append(stmtNodes, tidbData.Node)
+		stmtNodes = append(stmtNodes, node)
 	}
 	return stmtNodes, nil
 }

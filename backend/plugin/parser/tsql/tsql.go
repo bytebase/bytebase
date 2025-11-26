@@ -18,9 +18,29 @@ func init() {
 }
 
 // parseTSQLForRegistry is the ParseFunc for T-SQL.
-// Returns []*base.ParseResult on success.
-func parseTSQLForRegistry(statement string) (any, error) {
-	return ParseTSQL(statement)
+// Returns []*base.AST with ANTLRResult populated.
+func parseTSQLForRegistry(statement string) ([]*base.AST, error) {
+	parseResults, err := ParseTSQL(statement)
+	if err != nil {
+		return nil, err
+	}
+	return toAST(parseResults), nil
+}
+
+// toAST converts []*ParseResult to []*base.AST.
+func toAST(results []*base.ParseResult) []*base.AST {
+	var asts []*base.AST
+	for _, r := range results {
+		asts = append(asts, &base.AST{
+			Engine:   storepb.Engine_MSSQL,
+			BaseLine: r.BaseLine,
+			ANTLRResult: &base.ANTLRParseData{
+				Tree:   r.Tree,
+				Tokens: r.Tokens,
+			},
+		})
+	}
+	return asts
 }
 
 // ParseTSQL parses the given SQL and returns a list of ParseResult (one per statement).

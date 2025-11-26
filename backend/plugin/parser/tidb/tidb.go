@@ -29,14 +29,15 @@ func init() {
 }
 
 // ParseTiDBForSyntaxCheck parses TiDB SQL for syntax checking purposes.
-func ParseTiDBForSyntaxCheck(statement string) (any, error) {
+// Returns []*base.AST with TiDBNode populated.
+func ParseTiDBForSyntaxCheck(statement string) ([]*base.AST, error) {
 	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_TIDB, statement)
 	if err != nil {
 		return nil, err
 	}
 
 	p := newTiDBParser()
-	var returnNodes []ast.StmtNode
+	var results []*base.AST
 	for _, singleSQL := range singleSQLs {
 		nodes, _, err := p.Parse(singleSQL.Text, "", "")
 		if err != nil {
@@ -66,10 +67,24 @@ func ParseTiDBForSyntaxCheck(statement string) (any, error) {
 				return nil, errors.Wrapf(err, "failed to set line for create table statement at line %d", singleSQL.End.GetLine())
 			}
 		}
-		returnNodes = append(returnNodes, node)
+		results = append(results, &base.AST{
+			Engine:   storepb.Engine_TIDB,
+			BaseLine: singleSQL.BaseLine,
+			TiDBNode: node,
+		})
 	}
 
-	return returnNodes, nil
+	return results, nil
+}
+
+// GetTiDBNode extracts the TiDB AST node from a base.AST.
+// Returns the node and true if the AST contains a TiDB node, nil and false otherwise.
+func GetTiDBNode(a *base.AST) (ast.StmtNode, bool) {
+	if a == nil || a.TiDBNode == nil {
+		return nil, false
+	}
+	node, ok := a.TiDBNode.(ast.StmtNode)
+	return node, ok
 }
 
 func newTiDBParser() *tidbparser.Parser {

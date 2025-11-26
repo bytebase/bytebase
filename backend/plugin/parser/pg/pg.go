@@ -15,9 +15,29 @@ func init() {
 }
 
 // parsePostgreSQLForRegistry is the ParseFunc for PostgreSQL.
-// Returns *ParseResult containing the ANTLR tree.
-func parsePostgreSQLForRegistry(statement string) (any, error) {
-	return ParsePostgreSQL(statement)
+// Returns []*base.AST with ANTLRResult populated.
+func parsePostgreSQLForRegistry(statement string) ([]*base.AST, error) {
+	parseResults, err := ParsePostgreSQL(statement)
+	if err != nil {
+		return nil, err
+	}
+	return toAST(parseResults), nil
+}
+
+// toAST converts []*ParseResult to []*base.AST.
+func toAST(results []*base.ParseResult) []*base.AST {
+	var asts []*base.AST
+	for _, r := range results {
+		asts = append(asts, &base.AST{
+			Engine:   storepb.Engine_POSTGRES,
+			BaseLine: r.BaseLine,
+			ANTLRResult: &base.ANTLRParseData{
+				Tree:   r.Tree,
+				Tokens: r.Tokens,
+			},
+		})
+	}
+	return asts
 }
 
 // ParsePostgreSQL parses the given SQL and returns a list of ParseResult (one per statement).

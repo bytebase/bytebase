@@ -15,6 +15,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -51,7 +52,7 @@ func WalkThrough(d *model.DatabaseMetadata, ast []*base.AST) *storepb.Advice {
 	// Extract TiDB nodes from AST
 	var nodeList []tidbast.StmtNode
 	for _, unifiedAST := range ast {
-		tidbData, ok := unifiedAST.GetTiDBNode()
+		node, ok := tidb.GetTiDBNode(unifiedAST)
 		if !ok {
 			return &storepb.Advice{
 				Status:  storepb.Advice_ERROR,
@@ -63,7 +64,7 @@ func WalkThrough(d *model.DatabaseMetadata, ast []*base.AST) *storepb.Advice {
 				},
 			}
 		}
-		nodeList = append(nodeList, tidbData.Node)
+		nodeList = append(nodeList, node)
 	}
 
 	for _, node := range nodeList {

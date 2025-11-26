@@ -10,11 +10,11 @@ import (
 func GetStatementTypes(asts []*base.AST) ([]string, error) {
 	sqlTypeSet := make(map[string]bool)
 	for _, ast := range asts {
-		tidbData, ok := ast.GetTiDBNode()
+		node, ok := GetTiDBNode(ast)
 		if !ok {
 			return nil, errors.Errorf("expected TiDB node, got engine %s", ast.GetEngine())
 		}
-		t := getStatementType(tidbData.Node)
+		t := getStatementType(node)
 		sqlTypeSet[t] = true
 	}
 	var sqlTypes []string

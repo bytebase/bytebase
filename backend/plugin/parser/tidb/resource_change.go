@@ -24,11 +24,10 @@ func extractChangedResources(database string, _ string, dbMetadata *model.Databa
 	insertCount := 0
 	var sampleDMLs []string
 	for _, ast := range asts {
-		tidbData, ok := ast.GetTiDBNode()
+		node, ok := GetTiDBNode(ast)
 		if !ok {
 			return nil, errors.Errorf("expected TiDB node, got engine %s", ast.GetEngine())
 		}
-		node := tidbData.Node
 		err := getResourceChanges(database, node, statement, changedResources)
 		if err != nil {
 			return nil, err

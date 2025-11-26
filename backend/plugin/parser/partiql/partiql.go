@@ -17,13 +17,29 @@ func init() {
 }
 
 // parsePartiQLForRegistry is the ParseFunc for PartiQL.
-// Returns []*base.ParseResult on success.
-func parsePartiQLForRegistry(statement string) (any, error) {
-	result, err := ParsePartiQL(statement)
+// Returns []*base.AST with ANTLRResult populated.
+func parsePartiQLForRegistry(statement string) ([]*base.AST, error) {
+	parseResults, err := ParsePartiQL(statement)
 	if err != nil {
 		return nil, err
 	}
-	return result, nil
+	return toAST(parseResults), nil
+}
+
+// toAST converts []*ParseResult to []*base.AST.
+func toAST(results []*base.ParseResult) []*base.AST {
+	var asts []*base.AST
+	for _, r := range results {
+		asts = append(asts, &base.AST{
+			Engine:   storepb.Engine_DYNAMODB,
+			BaseLine: r.BaseLine,
+			ANTLRResult: &base.ANTLRParseData{
+				Tree:   r.Tree,
+				Tokens: r.Tokens,
+			},
+		})
+	}
+	return asts
 }
 
 // ParsePartiQL parses the given PartiQL statement by using antlr4. Returns a list of AST and token stream if no error.

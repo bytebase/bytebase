@@ -13,13 +13,29 @@ func init() {
 }
 
 // parseDorisForRegistry is the ParseFunc for Doris.
-// Returns []*base.ParseResult on success.
-func parseDorisForRegistry(statement string) (any, error) {
-	result, err := ParseDorisSQL(statement)
+// Returns []*base.AST with ANTLRResult populated.
+func parseDorisForRegistry(statement string) ([]*base.AST, error) {
+	parseResults, err := ParseDorisSQL(statement)
 	if err != nil {
 		return nil, err
 	}
-	return result, nil
+	return toAST(parseResults), nil
+}
+
+// toAST converts []*ParseResult to []*base.AST.
+func toAST(results []*base.ParseResult) []*base.AST {
+	var asts []*base.AST
+	for _, r := range results {
+		asts = append(asts, &base.AST{
+			Engine:   storepb.Engine_DORIS,
+			BaseLine: r.BaseLine,
+			ANTLRResult: &base.ANTLRParseData{
+				Tree:   r.Tree,
+				Tokens: r.Tokens,
+			},
+		})
+	}
+	return asts
 }
 
 // ParseDorisSQL parses the given SQL statement by using antlr4. Returns a list of AST and token stream if no error.
