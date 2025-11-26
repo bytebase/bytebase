@@ -30,6 +30,19 @@
           />
         </div>
 
+        <div class="flex flex-col gap-y-2">
+          <h3 class="font-medium text-sm text-control">
+            {{ $t("common.description") }}
+          </h3>
+          <NInput
+            v-model:value="state.description"
+            type="textarea"
+            :placeholder="$t('common.description')"
+            :disabled="!allowAdmin"
+            :rows="2"
+          />
+        </div>
+
         <div class="flex-1 flex flex-col gap-y-2 overflow-y-auto">
           <h3 class="font-medium text-sm text-control">
             {{ $t("cel.condition.self") }}
@@ -111,6 +124,7 @@ import { useCustomApprovalContext } from "../context";
 
 type LocalState = {
   title: string;
+  description: string;
   conditionExpr: ConditionGroupExpr;
   flow: ApprovalFlow;
 };
@@ -132,6 +146,7 @@ const { allowAdmin } = context;
 
 const state = reactive<LocalState>({
   title: "",
+  description: "",
   conditionExpr: wrapAsGroup(emptySimpleExpr()),
   flow: createProto(ApprovalFlowSchema, { roles: [] }),
 });
@@ -153,11 +168,13 @@ const resolveLocalState = async () => {
   // This prevents component reuse issues when switching between rules,
   // where the ValueInput watch would reset values when factor/operator changes.
   state.title = "";
+  state.description = "";
   state.conditionExpr = wrapAsGroup(emptySimpleExpr());
   state.flow = createProto(ApprovalFlowSchema, { roles: [] });
 
   if (props.rule) {
     state.title = props.rule.title || "";
+    state.description = props.rule.description || "";
     if (props.rule.condition) {
       const parsedExprs = await batchConvertCELStringToParsedExpr([
         props.rule.condition,
@@ -191,6 +208,7 @@ const handleSave = async () => {
 
   const ruleData: Partial<LocalApprovalRule> = {
     title: state.title,
+    description: state.description,
     condition,
     conditionExpr: cloneDeep(state.conditionExpr),
     flow: cloneDeep(state.flow),
