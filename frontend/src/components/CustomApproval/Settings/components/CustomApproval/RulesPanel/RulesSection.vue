@@ -77,6 +77,13 @@ const sourceDisplayText = computed(() => approvalSourceText(props.source));
 
 const columns = computed((): DataTableColumn<LocalApprovalRule>[] => [
   {
+    title: t("common.title"),
+    key: "title",
+    width: 150,
+    ellipsis: { tooltip: true },
+    render: (row) => row.title || "-",
+  },
+  {
     title: t("cel.condition.self"),
     key: "condition",
     ellipsis: { tooltip: true },
