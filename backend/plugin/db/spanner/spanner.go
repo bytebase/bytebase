@@ -4,6 +4,7 @@ package spanner
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
@@ -18,6 +19,7 @@ import (
 	"google.golang.org/api/option"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -414,6 +416,47 @@ func (d *Driver) querySingleSQL(ctx context.Context, statement string, queryCont
 	return result, nil
 }
 
+// convertSpannerValue converts google.protobuf.Value to RowValue.
+// Primitives map directly; arrays/structs flatten to JSON strings.
+// Tradeoffs: type ambiguity (can't distinguish string from stringified struct),
+// precision loss for large INT64 values stored as float64.
+func convertSpannerValue(v *structpb.Value) *v1pb.RowValue {
+	if v == nil || v.Kind == nil {
+		return util.NullRowValue
+	}
+
+	switch v.Kind.(type) {
+	case *structpb.Value_NullValue:
+		return util.NullRowValue
+	case *structpb.Value_StringValue:
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{
+			StringValue: v.GetStringValue(),
+		}}
+	case *structpb.Value_NumberValue:
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_DoubleValue{
+			DoubleValue: v.GetNumberValue(),
+		}}
+	case *structpb.Value_BoolValue:
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_BoolValue{
+			BoolValue: v.GetBoolValue(),
+		}}
+	case *structpb.Value_ListValue, *structpb.Value_StructValue:
+		// Flatten complex types to JSON strings (no array_value/struct_value in RowValue proto).
+		goValue := v.AsInterface()
+		jsonBytes, err := json.Marshal(goValue)
+		if err != nil {
+			return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{
+				StringValue: fmt.Sprintf("%v", goValue),
+			}}
+		}
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{
+			StringValue: string(jsonBytes),
+		}}
+	default:
+		return util.NullRowValue
+	}
+}
+
 func readRow(row *spanner.Row) (*v1pb.QueryRow, error) {
 	result := &v1pb.QueryRow{}
 	for i := 0; i < row.Size(); i++ {
@@ -421,7 +464,7 @@ func readRow(row *spanner.Row) (*v1pb.QueryRow, error) {
 		if err := row.Column(i, &col); err != nil {
 			return nil, err
 		}
-		result.Values = append(result.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_ValueValue{ValueValue: col.Value}})
+		result.Values = append(result.Values, convertSpannerValue(col.Value))
 	}
 
 	return result, nil
