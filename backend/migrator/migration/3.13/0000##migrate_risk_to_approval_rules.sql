@@ -108,6 +108,7 @@ WITH
 active_risks AS (
     SELECT
         r.id,
+        r.name,
         r.source AS source_str,
         pg_temp.risk_source_to_enum(r.source) AS source_enum,
         r.level,
@@ -143,7 +144,7 @@ risk_to_template AS (
         ar.source_enum,
         ar.expression,
         ar.priority,
-        orr.template
+        jsonb_set(orr.template, '{title}', to_jsonb(ar.name::TEXT)) AS template
     FROM active_risks ar
     CROSS JOIN old_rules orr
     WHERE pg_temp.cel_matches_source_level(orr.condition_expr, ar.source_enum, ar.level)
@@ -162,7 +163,7 @@ unspecified_fallbacks AS (
         swr.source_enum,
         '"true"'::jsonb AS expression,
         100 AS priority,  -- Lower priority than any actual risk
-        orr.template
+        jsonb_set(orr.template, '{title}', to_jsonb('Fallback rule'::TEXT)) AS template
     FROM sources_with_rules swr
     CROSS JOIN old_rules orr
     WHERE pg_temp.cel_matches_source_level(orr.condition_expr, swr.source_enum, 'RISK_LEVEL_UNSPECIFIED')
