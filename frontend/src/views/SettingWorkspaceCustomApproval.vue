@@ -23,10 +23,7 @@ import {
   provideCustomApprovalContext,
 } from "@/components/CustomApproval/Settings/components/CustomApproval/";
 import { FeatureAttention, FeatureModal } from "@/components/FeatureGuard";
-import {
-  featureToRef,
-  useWorkspaceApprovalSettingStore,
-} from "@/store";
+import { featureToRef, useWorkspaceApprovalSettingStore } from "@/store";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 
 interface LocalState {

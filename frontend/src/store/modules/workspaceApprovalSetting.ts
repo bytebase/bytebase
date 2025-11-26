@@ -79,7 +79,9 @@ export const useWorkspaceApprovalSettingStore = defineStore(
     };
 
     // Get rules for a specific source
-    const getRulesBySource = (source: WorkspaceApprovalSetting_Rule_Source): LocalApprovalRule[] => {
+    const getRulesBySource = (
+      source: WorkspaceApprovalSetting_Rule_Source
+    ): LocalApprovalRule[] => {
       return config.value.rules.filter((r) => r.source === source);
     };
 
@@ -96,7 +98,10 @@ export const useWorkspaceApprovalSettingStore = defineStore(
     };
 
     // Update an existing rule
-    const updateRule = async (uid: string, updates: Partial<LocalApprovalRule>) => {
+    const updateRule = async (
+      uid: string,
+      updates: Partial<LocalApprovalRule>
+    ) => {
       await useBackupAndUpdateConfig(async () => {
         const index = config.value.rules.findIndex((r) => r.uid === uid);
         if (index >= 0) {
@@ -121,11 +126,19 @@ export const useWorkspaceApprovalSettingStore = defineStore(
     };
 
     // Reorder rules (for drag-and-drop within a source)
-    const reorderRules = async (source: WorkspaceApprovalSetting_Rule_Source, fromIndex: number, toIndex: number) => {
+    const reorderRules = async (
+      source: WorkspaceApprovalSetting_Rule_Source,
+      fromIndex: number,
+      toIndex: number
+    ) => {
       await useBackupAndUpdateConfig(async () => {
         // Get all rules for this source
-        const sourceRules = config.value.rules.filter((r) => r.source === source);
-        const otherRules = config.value.rules.filter((r) => r.source !== source);
+        const sourceRules = config.value.rules.filter(
+          (r) => r.source === source
+        );
+        const otherRules = config.value.rules.filter(
+          (r) => r.source !== source
+        );
 
         // Reorder within source rules
         const [moved] = sourceRules.splice(fromIndex, 1);

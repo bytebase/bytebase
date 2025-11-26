@@ -342,7 +342,9 @@ export const getOptionConfigMap = (source: Risk_Source) => {
 };
 
 // Overload for new approval rule source enum
-export const approvalSourceText = (source: WorkspaceApprovalSetting_Rule_Source) => {
+export const approvalSourceText = (
+  source: WorkspaceApprovalSetting_Rule_Source
+) => {
   switch (source) {
     case WorkspaceApprovalSetting_Rule_Source.SOURCE_UNSPECIFIED:
       return t("common.all");
@@ -362,24 +364,48 @@ export const approvalSourceText = (source: WorkspaceApprovalSetting_Rule_Source)
 };
 
 // Map between WorkspaceApprovalSetting_Rule_Source and Factor lists
-export const ApprovalSourceFactorMap: Map<WorkspaceApprovalSetting_Rule_Source, Factor[]> = new Map([
-  [WorkspaceApprovalSetting_Rule_Source.DDL, RiskSourceFactorMap.get(Risk_Source.DDL) || []],
-  [WorkspaceApprovalSetting_Rule_Source.DML, RiskSourceFactorMap.get(Risk_Source.DML) || []],
-  [WorkspaceApprovalSetting_Rule_Source.CREATE_DATABASE, RiskSourceFactorMap.get(Risk_Source.CREATE_DATABASE) || []],
-  [WorkspaceApprovalSetting_Rule_Source.EXPORT_DATA, RiskSourceFactorMap.get(Risk_Source.DATA_EXPORT) || []],
-  [WorkspaceApprovalSetting_Rule_Source.REQUEST_ROLE, RiskSourceFactorMap.get(Risk_Source.REQUEST_ROLE) || []],
+export const ApprovalSourceFactorMap: Map<
+  WorkspaceApprovalSetting_Rule_Source,
+  Factor[]
+> = new Map([
+  [
+    WorkspaceApprovalSetting_Rule_Source.DDL,
+    RiskSourceFactorMap.get(Risk_Source.DDL) || [],
+  ],
+  [
+    WorkspaceApprovalSetting_Rule_Source.DML,
+    RiskSourceFactorMap.get(Risk_Source.DML) || [],
+  ],
+  [
+    WorkspaceApprovalSetting_Rule_Source.CREATE_DATABASE,
+    RiskSourceFactorMap.get(Risk_Source.CREATE_DATABASE) || [],
+  ],
+  [
+    WorkspaceApprovalSetting_Rule_Source.EXPORT_DATA,
+    RiskSourceFactorMap.get(Risk_Source.DATA_EXPORT) || [],
+  ],
+  [
+    WorkspaceApprovalSetting_Rule_Source.REQUEST_ROLE,
+    RiskSourceFactorMap.get(Risk_Source.REQUEST_ROLE) || [],
+  ],
 ]);
 
-export const getApprovalFactorList = (source: WorkspaceApprovalSetting_Rule_Source) => {
+export const getApprovalFactorList = (
+  source: WorkspaceApprovalSetting_Rule_Source
+) => {
   return ApprovalSourceFactorMap.get(source) ?? [];
 };
 
-export const getApprovalOptionConfigMap = (source: WorkspaceApprovalSetting_Rule_Source) => {
+export const getApprovalOptionConfigMap = (
+  source: WorkspaceApprovalSetting_Rule_Source
+) => {
   const riskSource = approvalSourceToRiskSource(source);
   return getOptionConfigMap(riskSource);
 };
 
-const approvalSourceToRiskSource = (source: WorkspaceApprovalSetting_Rule_Source): Risk_Source => {
+const approvalSourceToRiskSource = (
+  source: WorkspaceApprovalSetting_Rule_Source
+): Risk_Source => {
   switch (source) {
     case WorkspaceApprovalSetting_Rule_Source.DDL:
       return Risk_Source.DDL;

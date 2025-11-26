@@ -4,15 +4,13 @@ import type { ConditionGroupExpr } from "@/plugins/cel";
 import { resolveCELExpr, wrapAsGroup } from "@/plugins/cel";
 import type { LocalApprovalConfig, LocalApprovalRule } from "@/types";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
+import type { ApprovalFlow } from "@/types/proto-es/v1/issue_service_pb";
 import { ApprovalFlowSchema } from "@/types/proto-es/v1/issue_service_pb";
-import type {
-  ApprovalFlow,
-} from "@/types/proto-es/v1/issue_service_pb";
 import type { WorkspaceApprovalSetting } from "@/types/proto-es/v1/setting_service_pb";
 import {
+  WorkspaceApprovalSetting_Rule_Source,
   WorkspaceApprovalSetting_RuleSchema,
   WorkspaceApprovalSettingSchema,
-  WorkspaceApprovalSetting_Rule_Source,
 } from "@/types/proto-es/v1/setting_service_pb";
 import { batchConvertCELStringToParsedExpr } from "@/utils";
 import { displayRoleTitle } from "./role";
@@ -35,9 +33,12 @@ export const resolveLocalApprovalConfig = async (
 
     const rule: LocalApprovalRule = {
       uid: uuidv4(),
-      source: protoRule.source || WorkspaceApprovalSetting_Rule_Source.SOURCE_UNSPECIFIED,
+      source:
+        protoRule.source ||
+        WorkspaceApprovalSetting_Rule_Source.SOURCE_UNSPECIFIED,
       condition,
-      flow: protoRule.template?.flow || create(ApprovalFlowSchema, { roles: [] }),
+      flow:
+        protoRule.template?.flow || create(ApprovalFlowSchema, { roles: [] }),
     };
     rules.push(rule);
 

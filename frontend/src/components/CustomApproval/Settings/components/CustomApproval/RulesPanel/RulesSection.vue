@@ -41,9 +41,14 @@
 </template>
 
 <script lang="tsx" setup>
-import { HelpCircleIcon, PencilIcon, PlusIcon, TrashIcon } from "lucide-vue-next";
+import {
+  HelpCircleIcon,
+  PencilIcon,
+  PlusIcon,
+  TrashIcon,
+} from "lucide-vue-next";
 import type { DataTableColumn } from "naive-ui";
-import { NButton, NDataTable, NTooltip, NPopconfirm } from "naive-ui";
+import { NButton, NDataTable, NPopconfirm, NTooltip } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification, useWorkspaceApprovalSettingStore } from "@/store";

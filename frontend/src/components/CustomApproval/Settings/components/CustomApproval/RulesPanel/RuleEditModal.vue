@@ -90,7 +90,10 @@ import {
   batchConvertCELStringToParsedExpr,
   batchConvertParsedExprToCELString,
 } from "@/utils";
-import { getApprovalFactorList, getApprovalOptionConfigMap } from "../../common/utils";
+import {
+  getApprovalFactorList,
+  getApprovalOptionConfigMap,
+} from "../../common/utils";
 import { StepsTable } from "../common";
 import { useCustomApprovalContext } from "../context";
 
@@ -120,7 +123,9 @@ const state = reactive<LocalState>({
 });
 
 const factorList = computed(() => getApprovalFactorList(props.source));
-const optionConfigMap = computed(() => getApprovalOptionConfigMap(props.source));
+const optionConfigMap = computed(() =>
+  getApprovalOptionConfigMap(props.source)
+);
 
 const allowSave = computed(() => {
   if (!state.conditionExpr) return false;
