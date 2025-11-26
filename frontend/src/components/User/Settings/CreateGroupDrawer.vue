@@ -62,6 +62,7 @@
                   :multiple="false"
                   :size="'medium'"
                   :include-all="false"
+                  :disabled="!allowEdit"
                   :filter="
                     (user, _) =>
                       !state.group.members.find(
@@ -74,6 +75,7 @@
                 <GroupMemberRoleSelect
                   :value="member.role"
                   :size="'medium'"
+                  :disabled="!allowEdit"
                   @update:value="(role) => updateMemberRole(i, role)"
                 />
                 <div class="flex justify-end">
@@ -81,7 +83,7 @@
                     quaternary
                     size="tiny"
                     type="error"
-                    :disabled="disallowEditMember"
+                    :disabled="!allowEdit"
                     @click="deleteMember(i)"
                   >
                     <template #icon>
@@ -93,7 +95,7 @@
             </div>
             <div>
               <NButton
-                :disabled="!allowEdit || disallowEditMember"
+                :disabled="!allowEdit"
                 @click="addMember"
               >
                 {{ $t("settings.members.add-member") }}
@@ -154,7 +156,6 @@ import EmailInput from "@/components/EmailInput.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { Drawer, DrawerContent, UserSelect } from "@/components/v2";
 import {
-  extractGroupEmail,
   pushNotification,
   useCurrentUserV1,
   useGroupStore,
@@ -202,7 +203,7 @@ const currentUserV1 = useCurrentUserV1();
 const state = reactive<LocalState>({
   isRequesting: false,
   group: {
-    email: extractGroupEmail(props.group?.name ?? ""),
+    email: props.group?.email ?? "",
     title: props.group?.title ?? "",
     description: props.group?.description ?? "",
     members: cloneDeep(
@@ -225,8 +226,6 @@ watchEffect(async () => {
   }
 });
 
-const disallowEditMember = computed(() => !!props.group?.source);
-
 const isGroupOwner = computed(() => {
   return (
     props.group?.members.find(
@@ -240,6 +239,10 @@ const allowDelete = computed(() => {
 });
 
 const allowEdit = computed(() => {
+  if (!!props.group?.source) {
+    // do not support edit external group manually.
+    return false;
+  }
   if (isGroupOwner.value) {
     return true;
   }
@@ -262,7 +265,9 @@ const validGroup = computed(() => {
     }
   }
   return create(GroupSchema, {
-    name: `${groupNamePrefix}${state.group.email}`,
+    name: props.group
+      ? props.group.name
+      : `${groupNamePrefix}${state.group.email}`,
     title: state.group.title,
     description: state.group.description,
     members: [...memberMap.values()],

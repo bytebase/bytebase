@@ -18859,7 +18859,7 @@ Format: groups/{email} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the group to retrieve.
-Format: groups/{group}, group is an email. </p></td>
+Format: groups/{group}, the group should be email or uuid. </p></td>
                 </tr>
               
                 <tr>
@@ -18888,6 +18888,13 @@ Format: groups/{group}, group is an email. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The source system where the group originated (e.g., Entra ID for SCIM sync). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>email</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The unique email for the group. </p></td>
                 </tr>
               
             </tbody>

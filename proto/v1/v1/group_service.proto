@@ -215,7 +215,7 @@ message Group {
   };
 
   // The name of the group to retrieve.
-  // Format: groups/{group}, group is an email.
+  // Format: groups/{group}, the group should be email or uuid.
   string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The display title of the group.
@@ -229,4 +229,7 @@ message Group {
 
   // The source system where the group originated (e.g., Entra ID for SCIM sync).
   string source = 7;
+
+  // The unique email for the group.
+  string email = 8;
 }

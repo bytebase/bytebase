@@ -464,12 +464,15 @@ CREATE TABLE export_archive (
 );
 
 CREATE TABLE user_group (
-  email text PRIMARY KEY,
+  id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  email text,
   name text NOT NULL,
   description text NOT NULL DEFAULT '',
   -- Stored as GroupPayload (proto/store/store/group.proto)
   payload jsonb NOT NULL DEFAULT '{}'
 );
+
+CREATE UNIQUE INDEX idx_user_group_unique_email ON user_group(email) WHERE email IS NOT NULL;
 
 -- review config table.
 CREATE TABLE review_config (

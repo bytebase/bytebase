@@ -314,7 +314,7 @@ export declare const GroupMember_RoleSchema: GenEnum<GroupMember_Role>;
 export declare type Group = Message<"bytebase.v1.Group"> & {
   /**
    * The name of the group to retrieve.
-   * Format: groups/{group}, group is an email.
+   * Format: groups/{group}, the group should be email or uuid.
    *
    * @generated from field: string name = 1;
    */
@@ -347,6 +347,13 @@ export declare type Group = Message<"bytebase.v1.Group"> & {
    * @generated from field: string source = 7;
    */
   source: string;
+
+  /**
+   * The unique email for the group.
+   *
+   * @generated from field: string email = 8;
+   */
+  email: string;
 };
 
 /**

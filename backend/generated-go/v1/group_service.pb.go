@@ -592,7 +592,7 @@ func (x *GroupMember) GetRole() GroupMember_Role {
 type Group struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the group to retrieve.
-	// Format: groups/{group}, group is an email.
+	// Format: groups/{group}, the group should be email or uuid.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The display title of the group.
 	Title string `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
@@ -601,7 +601,9 @@ type Group struct {
 	// The members of the group.
 	Members []*GroupMember `protobuf:"bytes,5,rep,name=members,proto3" json:"members,omitempty"`
 	// The source system where the group originated (e.g., Entra ID for SCIM sync).
-	Source        string `protobuf:"bytes,7,opt,name=source,proto3" json:"source,omitempty"`
+	Source string `protobuf:"bytes,7,opt,name=source,proto3" json:"source,omitempty"`
+	// The unique email for the group.
+	Email         string `protobuf:"bytes,8,opt,name=email,proto3" json:"email,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -671,6 +673,13 @@ func (x *Group) GetSource() string {
 	return ""
 }
 
+func (x *Group) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
 var File_v1_group_service_proto protoreflect.FileDescriptor
 
 const file_v1_group_service_proto_rawDesc = "" +
@@ -711,13 +720,14 @@ const file_v1_group_service_proto_rawDesc = "" +
 	"\x10ROLE_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05OWNER\x10\x01\x12\n" +
 	"\n" +
-	"\x06MEMBER\x10\x02\"\xe1\x01\n" +
+	"\x06MEMBER\x10\x02\"\xf7\x01\n" +
 	"\x05Group\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12\x1e\n" +
 	"\x05title\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12*\n" +
 	"\vdescription\x18\x03 \x01(\tB\b\xbaH\x05r\x03\x18\xe8\aR\vdescription\x122\n" +
 	"\amembers\x18\x05 \x03(\v2\x18.bytebase.v1.GroupMemberR\amembers\x12\x16\n" +
-	"\x06source\x18\a \x01(\tR\x06source:'\xeaA$\n" +
+	"\x06source\x18\a \x01(\tR\x06source\x12\x14\n" +
+	"\x05email\x18\b \x01(\tR\x05email:'\xeaA$\n" +
 	"\x12bytebase.com/Group\x12\x0egroups/{group}2\xcf\x06\n" +
 	"\fGroupService\x12u\n" +
 	"\bGetGroup\x12\x1c.bytebase.v1.GetGroupRequest\x1a\x12.bytebase.v1.Group\"7\xdaA\x04name\x8a\xea0\rbb.groups.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x15\x12\x13/v1/{name=groups/*}\x12\x8b\x01\n" +

@@ -192,5 +192,8 @@ func (x *Group) Equal(y *Group) bool {
 	if x.Source != y.Source {
 		return false
 	}
+	if x.Email != y.Email {
+		return false
+	}
 	return true
 }

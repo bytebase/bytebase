@@ -6616,11 +6616,12 @@ A group of users within the workspace.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the group to retrieve. Format: groups/{group}, group is an email. |
+| name | [string](#string) |  | The name of the group to retrieve. Format: groups/{group}, the group should be email or uuid. |
 | title | [string](#string) |  | The display title of the group. |
 | description | [string](#string) |  | The description of the group. |
 | members | [GroupMember](#bytebase-v1-GroupMember) | repeated | The members of the group. |
 | source | [string](#string) |  | The source system where the group originated (e.g., Entra ID for SCIM sync). |
+| email | [string](#string) |  | The unique email for the group. |
 
 
 
