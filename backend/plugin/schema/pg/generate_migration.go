@@ -51,7 +51,15 @@ func generateMigration(diff *schema.MetadataDiff) (string, error) {
 
 // dropObjectsInOrder drops all objects in reverse topological order (most dependent first)
 func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
-	// First, drop all triggers that might depend on functions we're about to drop
+	// Drop event triggers first (before everything else)
+	// Event triggers are database-level objects that depend on functions
+	for _, etDiff := range diff.EventTriggerChanges {
+		if etDiff.Action == schema.MetadataDiffActionDrop {
+			writeDropEventTrigger(buf, etDiff.EventTriggerName)
+		}
+	}
+
+	// Next, drop all triggers that might depend on functions we're about to drop
 	// This is necessary because PostgreSQL doesn't allow dropping functions that are used by triggers
 	functionsBeingDropped := make(map[string]bool)
 	for _, funcDiff := range diff.FunctionChanges {
@@ -1399,6 +1407,24 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 		return err
 	}
 
+	// Create event triggers (last, as they depend on functions which may have been created)
+	for _, etDiff := range diff.EventTriggerChanges {
+		if etDiff.Action == schema.MetadataDiffActionCreate {
+			// Support both metadata and AST-only modes
+			if etDiff.NewEventTrigger != nil {
+				// Metadata mode: use event trigger metadata
+				if err := writeCreateEventTrigger(buf, etDiff.NewEventTrigger); err != nil {
+					return err
+				}
+			} else if etDiff.NewASTNode != nil {
+				// AST-only mode: extract SQL from AST node
+				if err := writeMigrationEventTriggerFromAST(buf, etDiff.NewASTNode); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
 	// Handle enum type comment changes
 	if err := generateEnumTypeCommentChanges(buf, diff); err != nil {
 		return err
@@ -2168,6 +2194,82 @@ func writeMigrationExtensionFromAST(out *strings.Builder, astNode any) error {
 	}
 
 	return errors.Errorf("unexpected AST node type for extension: %T", astNode)
+}
+
+func writeDropEventTrigger(out *strings.Builder, eventTriggerName string) {
+	_, _ = out.WriteString(`DROP EVENT TRIGGER IF EXISTS "`)
+	_, _ = out.WriteString(eventTriggerName)
+	_, _ = out.WriteString(`";`)
+	_, _ = out.WriteString("\n")
+}
+
+func writeCreateEventTrigger(out *strings.Builder, eventTrigger *storepb.EventTriggerMetadata) error {
+	// Use the stored definition if available
+	if eventTrigger.Definition != "" {
+		_, _ = out.WriteString(eventTrigger.Definition)
+		_, _ = out.WriteString(";")
+		_, _ = out.WriteString("\n")
+		return nil
+	}
+
+	// Otherwise, build the CREATE EVENT TRIGGER statement
+	_, _ = out.WriteString(`CREATE EVENT TRIGGER "`)
+	_, _ = out.WriteString(eventTrigger.Name)
+	_, _ = out.WriteString(`" ON `)
+	_, _ = out.WriteString(eventTrigger.Event)
+
+	// Add WHEN TAG IN clause if tags are specified
+	if len(eventTrigger.Tags) > 0 {
+		_, _ = out.WriteString("\n  WHEN TAG IN (")
+		for i, tag := range eventTrigger.Tags {
+			if i > 0 {
+				_, _ = out.WriteString(", ")
+			}
+			_, _ = out.WriteString("'")
+			_, _ = out.WriteString(tag)
+			_, _ = out.WriteString("'")
+		}
+		_, _ = out.WriteString(")")
+	}
+
+	// Add EXECUTE FUNCTION clause
+	_, _ = out.WriteString("\n  EXECUTE FUNCTION ")
+	if eventTrigger.FunctionSchema != "" {
+		_, _ = out.WriteString(`"`)
+		_, _ = out.WriteString(eventTrigger.FunctionSchema)
+		_, _ = out.WriteString(`".`)
+	}
+	_, _ = out.WriteString(`"`)
+	_, _ = out.WriteString(eventTrigger.FunctionName)
+	_, _ = out.WriteString(`"()`)
+	_, _ = out.WriteString(";")
+	_, _ = out.WriteString("\n")
+
+	return nil
+}
+
+func writeMigrationEventTriggerFromAST(out *strings.Builder, astNode any) error {
+	if astNode == nil {
+		return errors.New("AST node is nil")
+	}
+
+	// Try to cast to PostgreSQL CreateeventtrigstmtContext
+	if ctx, ok := astNode.(*pgparser.CreateeventtrigstmtContext); ok {
+		// Get text using token stream
+		if stream := ctx.GetParser().GetTokenStream(); stream != nil {
+			text := stream.GetTextFromInterval(antlr.Interval{
+				Start: ctx.GetStart().GetTokenIndex(),
+				Stop:  ctx.GetStop().GetTokenIndex(),
+			})
+			_, _ = out.WriteString(text)
+			_, _ = out.WriteString(";")
+			_, _ = out.WriteString("\n")
+			return nil
+		}
+		return errors.New("token stream not available for event trigger AST node")
+	}
+
+	return errors.Errorf("unexpected AST node type for event trigger: %T", astNode)
 }
 
 func writeCreateSchema(out *strings.Builder, schema string) error {
@@ -3688,6 +3790,23 @@ func writeCommentOnExtension(out *strings.Builder, extensionName, comment string
 	_, _ = out.WriteString("\n")
 }
 
+func writeCommentOnEventTrigger(out *strings.Builder, eventTriggerName, comment string) {
+	_, _ = out.WriteString(`COMMENT ON EVENT TRIGGER "`)
+	_, _ = out.WriteString(eventTriggerName)
+	_, _ = out.WriteString(`" IS `)
+	if comment == "" {
+		_, _ = out.WriteString(`NULL`)
+	} else {
+		_, _ = out.WriteString(`'`)
+		// Escape single quotes in the comment
+		escapedComment := strings.ReplaceAll(comment, "'", "''")
+		_, _ = out.WriteString(escapedComment)
+		_, _ = out.WriteString(`'`)
+	}
+	_, _ = out.WriteString(`;`)
+	_, _ = out.WriteString("\n")
+}
+
 func writeCommentOnTrigger(out *strings.Builder, schemaName, tableName, triggerName, comment string) {
 	// Parse table name to get schema and table separately
 	parts := strings.Split(tableName, ".")
@@ -3846,6 +3965,10 @@ func generateCommentChangesFromSDL(buf *strings.Builder, diff *schema.MetadataDi
 		case schema.CommentObjectTypeExtension:
 			// COMMENT ON EXTENSION
 			writeCommentOnExtension(buf, commentDiff.ObjectName, newComment)
+
+		case schema.CommentObjectTypeEventTrigger:
+			// COMMENT ON EVENT TRIGGER
+			writeCommentOnEventTrigger(buf, commentDiff.ObjectName, newComment)
 
 		case schema.CommentObjectTypeTrigger:
 			// COMMENT ON TRIGGER trigger_name ON table_name

@@ -345,6 +345,17 @@ func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.Da
 			}
 		}
 	}
+
+	// Construct event triggers (last, as they depend on functions).
+	for _, eventTrigger := range metadata.EventTriggers {
+		if eventTrigger.SkipDump {
+			continue
+		}
+		if err := writeEventTrigger(&buf, eventTrigger); err != nil {
+			return "", err
+		}
+	}
+
 	return buf.String(), nil
 }
 
@@ -710,7 +721,8 @@ func filterBackupSchemaIfNecessary(ctx schema.GetDefinitionContext, metadata *st
 	}
 
 	filtered := &storepb.DatabaseSchemaMetadata{
-		Extensions: metadata.Extensions,
+		Extensions:    metadata.Extensions,
+		EventTriggers: metadata.EventTriggers,
 	}
 	for _, schema := range metadata.Schemas {
 		if schema.Name == common.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES) {
@@ -768,6 +780,117 @@ func writeTriggerComment(out io.Writer, schema string, table string, trigger *st
 	}
 
 	if _, err := io.WriteString(out, escapeSingleQuote(trigger.Comment)); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `';`); err != nil {
+		return err
+	}
+
+	_, err := io.WriteString(out, "\n\n")
+	return err
+}
+
+func writeEventTrigger(out io.Writer, eventTrigger *storepb.EventTriggerMetadata) error {
+	// Use the stored definition if available
+	if eventTrigger.Definition != "" {
+		if _, err := io.WriteString(out, eventTrigger.Definition); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, ";\n\n"); err != nil {
+			return err
+		}
+	} else {
+		// Build the CREATE EVENT TRIGGER statement
+		if _, err := io.WriteString(out, `CREATE EVENT TRIGGER "`); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, eventTrigger.Name); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, `" ON `); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, eventTrigger.Event); err != nil {
+			return err
+		}
+
+		// Add WHEN TAG IN clause if tags are specified
+		if len(eventTrigger.Tags) > 0 {
+			if _, err := io.WriteString(out, "\n  WHEN TAG IN ("); err != nil {
+				return err
+			}
+			for i, tag := range eventTrigger.Tags {
+				if i > 0 {
+					if _, err := io.WriteString(out, ", "); err != nil {
+						return err
+					}
+				}
+				if _, err := io.WriteString(out, "'"); err != nil {
+					return err
+				}
+				if _, err := io.WriteString(out, tag); err != nil {
+					return err
+				}
+				if _, err := io.WriteString(out, "'"); err != nil {
+					return err
+				}
+			}
+			if _, err := io.WriteString(out, ")"); err != nil {
+				return err
+			}
+		}
+
+		// Add EXECUTE FUNCTION clause
+		if _, err := io.WriteString(out, "\n  EXECUTE FUNCTION "); err != nil {
+			return err
+		}
+		if eventTrigger.FunctionSchema != "" {
+			if _, err := io.WriteString(out, `"`); err != nil {
+				return err
+			}
+			if _, err := io.WriteString(out, eventTrigger.FunctionSchema); err != nil {
+				return err
+			}
+			if _, err := io.WriteString(out, `".`); err != nil {
+				return err
+			}
+		}
+		if _, err := io.WriteString(out, `"`); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, eventTrigger.FunctionName); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, `"();\n\n`); err != nil {
+			return err
+		}
+	}
+
+	// Write event trigger comment if present
+	if eventTrigger.Comment != "" {
+		if err := writeEventTriggerComment(out, eventTrigger); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func writeEventTriggerComment(out io.Writer, eventTrigger *storepb.EventTriggerMetadata) error {
+	if _, err := io.WriteString(out, `COMMENT ON EVENT TRIGGER "`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, eventTrigger.Name); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `" IS '`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, escapeSingleQuote(eventTrigger.Comment)); err != nil {
 		return err
 	}
 
@@ -2612,6 +2735,16 @@ func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 		}
 	}
 
+	// Write event triggers (last, as they depend on functions)
+	for _, eventTrigger := range metadata.EventTriggers {
+		if eventTrigger.SkipDump {
+			continue
+		}
+		if err := writeEventTrigger(&buf, eventTrigger); err != nil {
+			return "", err
+		}
+	}
+
 	return buf.String(), nil
 }
 
@@ -3723,6 +3856,30 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 			Name:    "extensions.sql",
 			Content: buf.String(),
 		})
+	}
+
+	// Generate event_triggers.sql file if there are any event triggers
+	if len(metadata.EventTriggers) > 0 {
+		var buf strings.Builder
+		for i, eventTrigger := range metadata.EventTriggers {
+			if eventTrigger.SkipDump {
+				continue
+			}
+			if i > 0 {
+				buf.WriteString("\n")
+			}
+
+			if err := writeEventTrigger(&buf, eventTrigger); err != nil {
+				return nil, errors.Wrapf(err, "failed to generate event trigger SDL for %s", eventTrigger.Name)
+			}
+		}
+
+		if buf.Len() > 0 {
+			files = append(files, schema.File{
+				Name:    "event_triggers.sql",
+				Content: buf.String(),
+			})
+		}
 	}
 
 	return &schema.MultiFileSchemaResult{Files: files}, nil

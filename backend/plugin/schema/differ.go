@@ -53,6 +53,9 @@ type MetadataDiff struct {
 	// Extension changes
 	ExtensionChanges []*ExtensionDiff
 
+	// Event trigger changes
+	EventTriggerChanges []*EventTriggerDiff
+
 	// Event changes
 	EventChanges []*EventDiff
 
@@ -277,6 +280,16 @@ type ExtensionDiff struct {
 	NewASTNode    any // For SDL/AST-only mode
 }
 
+// EventTriggerDiff represents changes to an event trigger.
+type EventTriggerDiff struct {
+	Action           MetadataDiffAction
+	EventTriggerName string
+	OldEventTrigger  *storepb.EventTriggerMetadata
+	NewEventTrigger  *storepb.EventTriggerMetadata
+	OldASTNode       any // For SDL/AST-only mode
+	NewASTNode       any // For SDL/AST-only mode
+}
+
 // EventDiff represents changes to an event.
 type EventDiff struct {
 	Action    MetadataDiffAction
@@ -300,6 +313,7 @@ const (
 	CommentObjectTypeTrigger          CommentObjectType = "TRIGGER"
 	CommentObjectTypeType             CommentObjectType = "TYPE"
 	CommentObjectTypeExtension        CommentObjectType = "EXTENSION"
+	CommentObjectTypeEventTrigger     CommentObjectType = "EVENT TRIGGER"
 )
 
 // CommentDiff represents changes to database object comments.
@@ -375,8 +389,9 @@ func GetDatabaseSchemaDiff(engine storepb.Engine, oldSchema, newSchema *model.Da
 		}
 	}
 
-	// Compare database-level objects (extensions)
+	// Compare database-level objects (extensions, event triggers)
 	compareExtensions(diff, oldMetadata, newMetadata)
+	compareEventTriggers(diff, oldMetadata, newMetadata)
 
 	// Sort all diff lists to ensure stable output order
 	sortDiffLists(diff)
@@ -2033,6 +2048,67 @@ func compareExtensions(diff *MetadataDiff, oldMetadata, newMetadata *storepb.Dat
 	}
 }
 
+// compareEventTriggers compares event triggers between old and new database metadata.
+func compareEventTriggers(diff *MetadataDiff, oldMetadata, newMetadata *storepb.DatabaseSchemaMetadata) {
+	// Build maps of event triggers
+	oldEventTriggerMap := make(map[string]*storepb.EventTriggerMetadata)
+	for _, eventTrigger := range oldMetadata.EventTriggers {
+		oldEventTriggerMap[eventTrigger.Name] = eventTrigger
+	}
+
+	newEventTriggerMap := make(map[string]*storepb.EventTriggerMetadata)
+	for _, eventTrigger := range newMetadata.EventTriggers {
+		newEventTriggerMap[eventTrigger.Name] = eventTrigger
+	}
+
+	// Check for dropped event triggers
+	for name, oldEventTrigger := range oldEventTriggerMap {
+		if _, exists := newEventTriggerMap[name]; !exists {
+			diff.EventTriggerChanges = append(diff.EventTriggerChanges, &EventTriggerDiff{
+				Action:           MetadataDiffActionDrop,
+				EventTriggerName: name,
+				OldEventTrigger:  oldEventTrigger,
+			})
+		}
+	}
+
+	// Check for new event triggers
+	for name, newEventTrigger := range newEventTriggerMap {
+		if _, exists := oldEventTriggerMap[name]; !exists {
+			diff.EventTriggerChanges = append(diff.EventTriggerChanges, &EventTriggerDiff{
+				Action:           MetadataDiffActionCreate,
+				EventTriggerName: name,
+				NewEventTrigger:  newEventTrigger,
+			})
+		}
+	}
+
+	// Check for modified event triggers
+	for name, newEventTrigger := range newEventTriggerMap {
+		if oldEventTrigger, exists := oldEventTriggerMap[name]; exists {
+			// Check if event trigger has changed
+			if oldEventTrigger.Definition != newEventTrigger.Definition ||
+				oldEventTrigger.Event != newEventTrigger.Event ||
+				oldEventTrigger.FunctionSchema != newEventTrigger.FunctionSchema ||
+				oldEventTrigger.FunctionName != newEventTrigger.FunctionName ||
+				oldEventTrigger.Enabled != newEventTrigger.Enabled ||
+				!slices.Equal(oldEventTrigger.Tags, newEventTrigger.Tags) {
+				// Use DROP + CREATE pattern for modifications (no CREATE OR REPLACE for event triggers)
+				diff.EventTriggerChanges = append(diff.EventTriggerChanges, &EventTriggerDiff{
+					Action:           MetadataDiffActionDrop,
+					EventTriggerName: name,
+					OldEventTrigger:  oldEventTrigger,
+				})
+				diff.EventTriggerChanges = append(diff.EventTriggerChanges, &EventTriggerDiff{
+					Action:           MetadataDiffActionCreate,
+					EventTriggerName: name,
+					NewEventTrigger:  newEventTrigger,
+				})
+			}
+		}
+	}
+}
+
 // compareEvents compares events between old and new schemas.
 func compareEvents(diff *MetadataDiff, _ string, oldSchema, newSchema *model.SchemaMetadata) {
 	oldSchemaProto := oldSchema.GetProto()
@@ -2157,8 +2233,9 @@ func FilterPostgresArchiveSchema(diff *MetadataDiff) *MetadataDiff {
 		}
 	}
 
-	// Extensions and Events are database-level objects, not schema-specific, so copy them all
+	// Extensions, Event triggers, and Events are database-level objects, not schema-specific, so copy them all
 	filtered.ExtensionChanges = diff.ExtensionChanges
+	filtered.EventTriggerChanges = diff.EventTriggerChanges
 	filtered.EventChanges = diff.EventChanges
 
 	return filtered
@@ -2379,6 +2456,14 @@ func sortDiffLists(diff *MetadataDiff) {
 	slices.SortFunc(diff.ExtensionChanges, func(a, b *ExtensionDiff) int {
 		if a.ExtensionName != b.ExtensionName {
 			return strings.Compare(a.ExtensionName, b.ExtensionName)
+		}
+		return strings.Compare(string(a.Action), string(b.Action))
+	})
+
+	// Sort event trigger changes by event trigger name, then action
+	slices.SortFunc(diff.EventTriggerChanges, func(a, b *EventTriggerDiff) int {
+		if a.EventTriggerName != b.EventTriggerName {
+			return strings.Compare(a.EventTriggerName, b.EventTriggerName)
 		}
 		return strings.Compare(string(a.Action), string(b.Action))
 	})
