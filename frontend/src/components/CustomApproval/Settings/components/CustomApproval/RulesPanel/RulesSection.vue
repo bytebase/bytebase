@@ -4,12 +4,20 @@
       <div class="font-medium text-base">
         {{ sourceDisplayText }}
       </div>
-      <NTooltip>
-        <template #trigger>
-          <HelpCircleIcon class="w-4 h-4 text-control-light cursor-help" />
-        </template>
-        {{ $t("custom-approval.rule.first-match-wins") }}
-      </NTooltip>
+      <div class="flex items-center gap-x-2">
+        <NButton size="small" @click="handleAddRule">
+          <template #icon>
+            <PlusIcon class="w-4" />
+          </template>
+          {{ $t("custom-approval.approval-flow.add-rule") }}
+        </NButton>
+        <NTooltip>
+          <template #trigger>
+            <HelpCircleIcon class="w-4 h-4 text-control-light cursor-help" />
+          </template>
+          {{ $t("custom-approval.rule.first-match-wins") }}
+        </NTooltip>
+      </div>
     </div>
 
     <NDataTable
@@ -20,15 +28,6 @@
       :bordered="true"
       :row-key="(row: LocalApprovalRule) => row.uid"
     />
-
-    <div class="mt-2">
-      <NButton size="small" @click="handleAddRule">
-        <template #icon>
-          <PlusIcon class="w-4" />
-        </template>
-        {{ $t("custom-approval.approval-flow.add-rule") }}
-      </NButton>
-    </div>
 
     <RuleEditModal
       v-model:show="showModal"
