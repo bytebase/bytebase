@@ -84,7 +84,8 @@ const toggleCheckAll = (on: boolean) => {
   }
 };
 
-const handleSearch = useDebounceFn(async (search: string) => {
+// Non-debounced function for initial load
+const loadOptions = async (search: string) => {
   if (!optionConfig.value.search) {
     state.rawOptionList = [...optionConfig.value.options];
     return;
@@ -97,12 +98,17 @@ const handleSearch = useDebounceFn(async (search: string) => {
   } finally {
     state.loading = false;
   }
-}, DEBOUNCE_SEARCH_DELAY);
+};
+
+// Debounced version for user-typed searches
+const handleSearch = useDebounceFn(loadOptions, DEBOUNCE_SEARCH_DELAY);
 
 watch(
   () => factor.value,
   async () => {
-    await handleSearch("");
+    // Use non-debounced loadOptions for initial load to ensure options
+    // are available immediately when the component renders
+    await loadOptions("");
     // valid initial value.
     const search = optionConfig.value.search;
     if (!search) {
