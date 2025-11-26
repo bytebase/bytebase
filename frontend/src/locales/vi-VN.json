@@ -1169,13 +1169,15 @@
     },
     "select-isolation-level": "Chọn mức độ cô lập",
     "isolation-level": {
-      "self": "Mức Độ Cô Lập"
+      "self": "Mức Độ Cô Lập",
+      "description": "Kiểm soát cách các giao dịch tương tác với các thay đổi đồng thời. Chỉ áp dụng khi Chế độ Giao dịch được bật."
     },
     "options": {
       "self": "Tùy chọn",
       "applies-to-all-tasks": "Áp dụng cho tất cả các nhiệm vụ",
       "applies-to-some-tasks": "Áp dụng cho một số tác vụ {count}/{total}",
-      "split-into-multiple-issues-tip": "Nếu bạn muốn cấu hình các tùy chọn khác nhau cho mỗi tác vụ, vui lòng chia thành nhiều vấn đề."
+      "split-into-multiple-issues-tip": "Nếu bạn muốn cấu hình các tùy chọn khác nhau cho mỗi tác vụ, vui lòng chia thành nhiều vấn đề.",
+      "no-options-available": "Không có tùy chọn nào khả dụng"
     },
     "editor": {
       "save-changes-before-continuing": "Vui lòng lưu hoặc hủy thay đổi của bạn trước khi tiếp tục",

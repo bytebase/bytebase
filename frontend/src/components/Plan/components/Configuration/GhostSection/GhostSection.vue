@@ -1,32 +1,24 @@
 <template>
-  <div class="flex flex-col items-start gap-1">
-    <div class="w-full flex items-center justify-between gap-3">
-      <div class="flex items-center gap-1">
-        <label class="text-sm text-main">
-          {{ $t("task.online-migration.self") }}
-        </label>
-        <NTooltip>
-          <template #trigger>
-            <heroicons:information-circle
-              class="w-4 h-4 text-control-light cursor-help"
+  <div class="flex flex-col gap-1">
+    <OptionRow>
+      <template #label>
+        {{ $t("task.online-migration.self") }}
+      </template>
+      <template #tooltip>
+        <i18n-t
+          tag="p"
+          keypath="issue.migration-mode.online.description"
+          class="whitespace-pre-line"
+        >
+          <template #link>
+            <LearnMoreLink
+              url="https://docs.bytebase.com/change-database/online-schema-migration-for-mysql?source=console"
+              color="light"
             />
           </template>
-          <template #default>
-            <i18n-t
-              tag="p"
-              keypath="issue.migration-mode.online.description"
-              class="whitespace-pre-line max-w-xs"
-            >
-              <template #link>
-                <!-- TODO: update docs for mariadb -->
-                <LearnMoreLink
-                  url="https://docs.bytebase.com/change-database/online-schema-migration-for-mysql?source=console"
-                  color="light"
-                />
-              </template>
-            </i18n-t>
-          </template>
-        </NTooltip>
+        </i18n-t>
+      </template>
+      <template #suffix>
         <NButton
           v-if="enabled && allowChange"
           tag="div"
@@ -37,13 +29,11 @@
           <template #icon>
             <WrenchIcon class="w-4 h-4" />
           </template>
-          <template #default>
-            {{ $t("task.online-migration.configure") }}
-          </template>
+          {{ $t("task.online-migration.configure") }}
         </NButton>
-      </div>
+      </template>
       <GhostSwitch />
-    </div>
+    </OptionRow>
 
     <GhostFlagsPanel
       :show="showFlagsPanel"
@@ -54,9 +44,10 @@
 
 <script lang="ts" setup>
 import { WrenchIcon } from "lucide-vue-next";
-import { NButton, NTooltip } from "naive-ui";
+import { NButton } from "naive-ui";
 import { ref } from "vue";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
+import OptionRow from "../OptionRow.vue";
 import { useGhostSettingContext } from "./context";
 import GhostFlagsPanel from "./GhostFlagsPanel.vue";
 import GhostSwitch from "./GhostSwitch.vue";

@@ -1,16 +1,26 @@
 <template>
   <div class="w-full flex-1 flex flex-col">
     <SpecListSection v-if="shouldShowSpecList" />
-    <div class="w-full flex-1 flex flex-col px-4 divide-y overflow-x-auto">
-      <TargetListSection />
-      <DataExportOptionsSection v-if="isDataExportPlan" />
-      <FailedTaskRunsSection v-if="!isCreating && rollout" />
-      <template v-if="!specHasRelease">
-        <SQLCheckV1Section v-if="isCreating" />
-        <PlanCheckSection v-else />
-      </template>
-      <div class="w-full flex-1 gap-y-3 py-3 flex flex-col">
-        <StatementSection />
+    <div
+      class="w-full flex-1 flex flex-col lg:flex-row px-4 gap-4 overflow-hidden"
+    >
+      <!-- Left: Targets + Statement -->
+      <div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+        <TargetListSection />
+        <DataExportOptionsSection v-if="isDataExportPlan" />
+        <FailedTaskRunsSection v-if="!isCreating && rollout" />
+        <div class="flex-1 py-3 flex flex-col">
+          <StatementSection />
+        </div>
+      </div>
+      <!-- Right: Checks + Options -->
+      <div
+        class="lg:w-80 shrink-0 flex flex-col divide-y lg:border-l lg:pl-4 overflow-y-auto"
+      >
+        <template v-if="!specHasRelease">
+          <SQLCheckV1Section v-if="isCreating" />
+          <PlanCheckSection v-else />
+        </template>
         <Configuration />
       </div>
     </div>

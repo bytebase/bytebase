@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full flex-1 flex pt-2 pb-4">
+  <div class="w-full flex-1 flex">
     <SpecDetailView v-if="specId" :key="specId" />
   </div>
 </template>

@@ -1169,13 +1169,15 @@
     },
     "select-isolation-level": "选择隔离级别",
     "isolation-level": {
-      "self": "隔离级别"
+      "self": "隔离级别",
+      "description": "控制事务如何处理并发更改。仅在事务模式开启时适用。"
     },
     "options": {
       "self": "配置项",
       "applies-to-all-tasks": "适用于所有任务",
       "applies-to-some-tasks": "适用于部分任务 {count}/{total}",
-      "split-into-multiple-issues-tip": "如果您想为每个任务设置不同的配置项，请拆分成多个工单。"
+      "split-into-multiple-issues-tip": "如果您想为每个任务设置不同的配置项，请拆分成多个工单。",
+      "no-options-available": "暂无可配置项"
     },
     "editor": {
       "save-changes-before-continuing": "请保存或取消更改，然后再继续",

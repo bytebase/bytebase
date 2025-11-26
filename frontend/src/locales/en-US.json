@@ -1169,13 +1169,15 @@
     },
     "select-isolation-level": "Select isolation level",
     "isolation-level": {
-      "self": "Isolation Level"
+      "self": "Isolation Level",
+      "description": "Controls how transactions interact with concurrent changes. Only applicable when Transaction Mode is ON."
     },
     "options": {
       "self": "Options",
       "applies-to-all-tasks": "Applies to all tasks",
       "applies-to-some-tasks": "Applies to some tasks {count}/{total}",
-      "split-into-multiple-issues-tip": "If you want to configure different options for each task, please split into multiple issues."
+      "split-into-multiple-issues-tip": "If you want to configure different options for each task, please split into multiple issues.",
+      "no-options-available": "No options available"
     },
     "editor": {
       "save-changes-before-continuing": "Please save or cancel your changes before continuing",

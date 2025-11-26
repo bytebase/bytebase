@@ -5,7 +5,7 @@
     </template>
     <!-- Default display mode: show all status counts with icons -->
     <template v-else>
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-3 flex-wrap">
         <div
           v-if="statusSummary.running > 0"
           class="flex items-center gap-1 text-control"

@@ -1169,13 +1169,15 @@
     },
     "select-isolation-level": "分離レベルを選択",
     "isolation-level": {
-      "self": "分離レベル"
+      "self": "分離レベル",
+      "description": "トランザクションが並行変更とどのように相互作用するかを制御します。トランザクションモードがオンの場合のみ適用されます。"
     },
     "options": {
       "self": "オプション",
       "applies-to-all-tasks": "すべてのタスクに適用",
       "applies-to-some-tasks": "一部のタスクに適用されます {count}/{total}",
-      "split-into-multiple-issues-tip": "タスクごとに異なるオプションを設定する場合は、複数の問題に分割してください。"
+      "split-into-multiple-issues-tip": "タスクごとに異なるオプションを設定する場合は、複数の問題に分割してください。",
+      "no-options-available": "利用可能なオプションはありません"
     },
     "editor": {
       "save-changes-before-continuing": "続行する前に変更を保存またはキャンセルしてください",

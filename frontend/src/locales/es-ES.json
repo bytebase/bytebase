@@ -1169,13 +1169,15 @@
     },
     "select-isolation-level": "Seleccionar nivel de aislamiento",
     "isolation-level": {
-      "self": "Nivel de Aislamiento"
+      "self": "Nivel de Aislamiento",
+      "description": "Controla cómo las transacciones interactúan con cambios concurrentes. Solo aplica cuando el Modo de Transacción está activado."
     },
     "options": {
       "self": "Opciones",
       "applies-to-all-tasks": "Se aplica a todas las tareas.",
       "applies-to-some-tasks": "Se aplica a algunas tareas {count}/{total}",
-      "split-into-multiple-issues-tip": "Si desea configurar diferentes opciones para cada tarea, divídala en varios problemas."
+      "split-into-multiple-issues-tip": "Si desea configurar diferentes opciones para cada tarea, divídala en varios problemas.",
+      "no-options-available": "No hay opciones disponibles"
     },
     "editor": {
       "save-changes-before-continuing": "Guarde o cancele sus cambios antes de continuar.",
