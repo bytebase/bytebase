@@ -2667,16 +2667,7 @@
     },
     "approval-flow": {
       "self": "Flujo de aprobación",
-      "approval-flows": "Flujos de Aprobación",
-      "approval-nodes": "Nodos de aprobación",
-      "delete": "Eliminar flujo de aprobación",
-      "select": "Seleccionar flujo de aprobación",
       "create-approval-flow": "Crear flujo de aprobación",
-      "edit-approval-flow": "Editar flujo de aprobación",
-      "built-in": "Flujos Integrados",
-      "built-in-description": "Los flujos integrados son de solo lectura y no se pueden eliminar.",
-      "custom": "Flujos Personalizados",
-      "no-custom-flows": "Aún no se han creado flujos de aprobación personalizados. Haga clic en 'Crear Flujo' para agregar uno.",
       "node": {
         "nodes": "Nodos de aprobación",
         "description": "Solo se requiere una aprobación en este nodo cuando hay múltiples aprobadores.",
@@ -2685,21 +2676,20 @@
         "add": "Agregar nodo",
         "delete": "Eliminar nodo de aprobación"
       },
-      "view-approval-flow": "Ver flujo de aprobación",
       "skip": "Omitir aprobación manual",
-      "risk-not-configured-tips": "Asegúrese de haber definido {link}.",
-      "the-related-risk-rules": "las reglas de riesgo relacionadas",
       "issue-review": {
         "sent-back": "Devuelto",
         "review-sent-back-by": "Reseña enviada por {user}"
-      }
+      },
+      "add-rule": "Agregar regla",
+      "edit-rule": "Editar regla"
     },
     "risk": {
       "risks": "Riesgo",
       "description": "El Centro de riesgo define los niveles de riesgo para diferentes operaciones de base de datos en diferentes condiciones. Y los niveles de riesgo determinan los flujos de aprobación personalizados correspondientes."
     },
     "rule": {
-      "rules": "Reglas"
+      "first-match-wins": "Las reglas se evalúan en orden. Se aplica la primera regla coincidente."
     },
     "issue-review": {
       "approve-issue": "¿Aprobar incidencia?",

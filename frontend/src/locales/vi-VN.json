@@ -2667,16 +2667,7 @@
     },
     "approval-flow": {
       "self": "Quy trình phê duyệt",
-      "approval-flows": "Quy trình phê duyệt",
-      "approval-nodes": "Nút phê duyệt",
-      "delete": "Xóa quy trình phê duyệt",
-      "select": "Chọn quy trình phê duyệt",
       "create-approval-flow": "Tạo quy trình phê duyệt",
-      "edit-approval-flow": "Chỉnh sửa quy trình phê duyệt",
-      "built-in": "Quy trình Tích hợp sẵn",
-      "built-in-description": "Các luồng tích hợp chỉ có thể đọc và không thể xóa.",
-      "custom": "Quy trình Tùy chỉnh",
-      "no-custom-flows": "Chưa có quy trình phê duyệt tùy chỉnh nào được tạo. Nhấp vào 'Tạo Quy trình' để thêm.",
       "node": {
         "nodes": "Nút phê duyệt",
         "description": "Chỉ cần một phê duyệt trên nút này khi có nhiều người phê duyệt.",
@@ -2685,21 +2676,20 @@
         "add": "Thêm nút",
         "delete": "Xóa nút phê duyệt"
       },
-      "view-approval-flow": "Xem quy trình phê duyệt",
       "skip": "Bỏ qua phê duyệt thủ công",
-      "risk-not-configured-tips": "Đảm bảo bạn đã xác định {link}.",
-      "the-related-risk-rules": "các quy tắc rủi ro liên quan",
       "issue-review": {
         "sent-back": "Đã gửi lại",
         "review-sent-back-by": "Đánh giá đã gửi lại bởi {user}"
-      }
+      },
+      "add-rule": "Thêm quy tắc",
+      "edit-rule": "Chỉnh sửa quy tắc"
     },
     "risk": {
       "risks": "Rủi ro",
       "description": "Trung tâm rủi ro xác định mức độ rủi ro cho các hoạt động cơ sở dữ liệu khác nhau trong các điều kiện khác nhau. Và mức độ rủi ro xác định quy trình phê duyệt tùy chỉnh tương ứng."
     },
     "rule": {
-      "rules": "Quy tắc"
+      "first-match-wins": "Các quy tắc được đánh giá theo thứ tự. Quy tắc phù hợp đầu tiên sẽ được áp dụng."
     },
     "issue-review": {
       "approve-issue": "Phê duyệt vấn đề?",
