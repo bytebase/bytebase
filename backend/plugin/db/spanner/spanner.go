@@ -4,6 +4,7 @@ package spanner
 import (
 	"context"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -22,6 +23,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -430,22 +432,71 @@ func convertSpannerValue(colType *sppb.Type, v *structpb.Value) *v1pb.RowValue {
 	case *structpb.Value_NullValue:
 		return util.NullRowValue
 	case *structpb.Value_StringValue:
-		// Spanner encodes INT64 as strings to preserve precision
-		if colType != nil && colType.Code == sppb.TypeCode_INT64 {
-			val, err := strconv.ParseInt(v.GetStringValue(), 10, 64)
+		stringValue := v.GetStringValue()
+		if colType == nil {
+			return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{
+				StringValue: stringValue,
+			}}
+		}
+
+		switch colType.Code {
+		case sppb.TypeCode_INT64:
+			// Spanner encodes INT64 as strings to preserve precision
+			val, err := strconv.ParseInt(stringValue, 10, 64)
 			if err != nil {
 				slog.Error("failed to parse INT64 string value", log.BBError(err))
 				return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{
-					StringValue: v.GetStringValue(),
+					StringValue: stringValue,
 				}}
 			}
 			return &v1pb.RowValue{Kind: &v1pb.RowValue_Int64Value{
 				Int64Value: val,
 			}}
+		case sppb.TypeCode_TIMESTAMP:
+			// Spanner encodes TIMESTAMP as RFC3339 string with nanosecond precision
+			t, err := time.Parse(time.RFC3339Nano, stringValue)
+			if err != nil {
+				slog.Error("failed to parse TIMESTAMP string value", log.BBError(err))
+				return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{
+					StringValue: stringValue,
+				}}
+			}
+			// Determine accuracy from the string
+			accuracy := int32(6) // Default to microsecond precision
+			if dotIndex := strings.Index(stringValue, "."); dotIndex >= 0 {
+				// Find the end of fractional seconds (before 'Z' or timezone)
+				endIndex := strings.IndexAny(stringValue[dotIndex:], "Z+-")
+				if endIndex > 0 {
+					accuracy = int32(endIndex - 1)
+					if accuracy > 9 {
+						accuracy = 9 // Cap at nanosecond precision
+					}
+				}
+			}
+			return &v1pb.RowValue{Kind: &v1pb.RowValue_TimestampValue{
+				TimestampValue: &v1pb.RowValue_Timestamp{
+					GoogleTimestamp: timestamppb.New(t),
+					Accuracy:        accuracy,
+				},
+			}}
+		case sppb.TypeCode_BYTES:
+			// Spanner encodes BYTES as base64 string
+			bytes, err := base64.StdEncoding.DecodeString(stringValue)
+			if err != nil {
+				slog.Error("failed to decode BYTES base64 string value", log.BBError(err))
+				return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{
+					StringValue: stringValue,
+				}}
+			}
+			return &v1pb.RowValue{Kind: &v1pb.RowValue_BytesValue{
+				BytesValue: bytes,
+			}}
+		default:
+			// DATE, JSON, STRING all stay as StringValue
+			return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{
+				StringValue: stringValue,
+			}}
 		}
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{
-			StringValue: v.GetStringValue(),
-		}}
 	case *structpb.Value_NumberValue:
 		// Check if this is INT64 to preserve precision
 		if colType != nil && colType.Code == sppb.TypeCode_INT64 {

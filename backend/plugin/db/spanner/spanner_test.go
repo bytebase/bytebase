@@ -3,10 +3,12 @@ package spanner
 import (
 	"math"
 	"testing"
+	"time"
 
 	sppb "cloud.google.com/go/spanner/apiv1/spannerpb"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
@@ -81,6 +83,17 @@ func TestGetColumnTypeName(t *testing.T) {
 		a.NoError(err)
 		a.Equal(tests[i].want, got)
 	}
+}
+
+// Helper function to create expected timestamp RowValue for tests
+func timestampRowValue(rfc3339 string, accuracy int32) *v1pb.RowValue {
+	t, _ := time.Parse(time.RFC3339Nano, rfc3339)
+	return &v1pb.RowValue{Kind: &v1pb.RowValue_TimestampValue{
+		TimestampValue: &v1pb.RowValue_Timestamp{
+			GoogleTimestamp: timestamppb.New(t),
+			Accuracy:        accuracy,
+		},
+	}}
 }
 
 func TestConvertSpannerValue(t *testing.T) {
@@ -245,6 +258,64 @@ func TestConvertSpannerValue(t *testing.T) {
 			}}),
 			expected: &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{
 				StringValue: `[{"id":1},{"id":2}]`,
+			}},
+		},
+		{
+			name:     "timestamp value",
+			colType:  &sppb.Type{Code: sppb.TypeCode_TIMESTAMP},
+			value:    structpb.NewStringValue("2024-01-15T10:30:45.123456Z"),
+			expected: timestampRowValue("2024-01-15T10:30:45.123456Z", 6),
+		},
+		{
+			name:     "timestamp with nanosecond precision",
+			colType:  &sppb.Type{Code: sppb.TypeCode_TIMESTAMP},
+			value:    structpb.NewStringValue("2024-01-15T10:30:45.123456789Z"),
+			expected: timestampRowValue("2024-01-15T10:30:45.123456789Z", 9),
+		},
+		{
+			name:     "timestamp without fractional seconds",
+			colType:  &sppb.Type{Code: sppb.TypeCode_TIMESTAMP},
+			value:    structpb.NewStringValue("2024-01-15T10:30:45Z"),
+			expected: timestampRowValue("2024-01-15T10:30:45Z", 6),
+		},
+		{
+			name:    "timestamp invalid format falls back to string",
+			colType: &sppb.Type{Code: sppb.TypeCode_TIMESTAMP},
+			value:   structpb.NewStringValue("not-a-timestamp"),
+			expected: &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{
+				StringValue: "not-a-timestamp",
+			}},
+		},
+		{
+			name:    "bytes value",
+			colType: &sppb.Type{Code: sppb.TypeCode_BYTES},
+			value:   structpb.NewStringValue("SGVsbG8gV29ybGQ="), // "Hello World" in base64
+			expected: &v1pb.RowValue{Kind: &v1pb.RowValue_BytesValue{
+				BytesValue: []byte("Hello World"),
+			}},
+		},
+		{
+			name:    "bytes invalid base64 falls back to string",
+			colType: &sppb.Type{Code: sppb.TypeCode_BYTES},
+			value:   structpb.NewStringValue("not-valid-base64!"),
+			expected: &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{
+				StringValue: "not-valid-base64!",
+			}},
+		},
+		{
+			name:    "date value",
+			colType: &sppb.Type{Code: sppb.TypeCode_DATE},
+			value:   structpb.NewStringValue("2024-01-15"),
+			expected: &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{
+				StringValue: "2024-01-15",
+			}},
+		},
+		{
+			name:    "json value",
+			colType: &sppb.Type{Code: sppb.TypeCode_JSON},
+			value:   structpb.NewStringValue(`{"name":"Alice","age":30}`),
+			expected: &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{
+				StringValue: `{"name":"Alice","age":30}`,
 			}},
 		},
 	}
