@@ -3,26 +3,23 @@ package cassandra
 import (
 	"context"
 	"database/sql"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"math/big"
-	"reflect"
 	"time"
-	"unicode/utf8"
 
 	"connectrpc.com/connect"
 	"github.com/cockroachdb/cockroachdb-parser/pkg/util/timeofday"
 	"github.com/gocql/gocql"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/runtime/protoimpl"
 	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gopkg.in/inf.v0"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -357,17 +354,19 @@ func convertRowValue(v any) *v1pb.RowValue {
 		}
 
 	default:
-		value, err := newValue(v)
+		// Handle complex types (LIST, MAP, SET, UDT) by converting to JSON strings
+		jsonBytes, err := json.Marshal(v)
 		if err != nil {
+			slog.Error("failed to marshal Cassandra complex value", log.BBError(err))
 			return &v1pb.RowValue{
 				Kind: &v1pb.RowValue_StringValue{
-					StringValue: fmt.Sprintf("failed to marshal value, err: %v", err),
+					StringValue: fmt.Sprintf("%v", v),
 				},
 			}
 		}
 		return &v1pb.RowValue{
-			Kind: &v1pb.RowValue_ValueValue{
-				ValueValue: value,
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: string(jsonBytes),
 			},
 		}
 	}
@@ -378,149 +377,4 @@ func formatAddress(host, port string) string {
 		return host
 	}
 	return host + ":" + port
-}
-
-func newValue(v any) (*structpb.Value, error) {
-	switch v := v.(type) {
-	case nil:
-		return newNullValue(), nil
-	case bool:
-		return newBoolValue(v), nil
-	case int:
-		return newNumberValue(float64(v)), nil
-	case int8:
-		return newNumberValue(float64(v)), nil
-	case int16:
-		return newNumberValue(float64(v)), nil
-	case int32:
-		return newNumberValue(float64(v)), nil
-	case int64:
-		return newNumberValue(float64(v)), nil
-	case uint:
-		return newNumberValue(float64(v)), nil
-	case uint8:
-		return newNumberValue(float64(v)), nil
-	case uint16:
-		return newNumberValue(float64(v)), nil
-	case uint32:
-		return newNumberValue(float64(v)), nil
-	case uint64:
-		return newNumberValue(float64(v)), nil
-	case float32:
-		return newNumberValue(float64(v)), nil
-	case float64:
-		return newNumberValue(float64(v)), nil
-	case json.Number:
-		n, err := v.Float64()
-		if err != nil {
-			return nil, protoimpl.X.NewError("invalid number format %q, expected a float64: %v", v, err)
-		}
-		return newNumberValue(n), nil
-	case string:
-		if !utf8.ValidString(v) {
-			return nil, protoimpl.X.NewError("invalid UTF-8 in string: %q", v)
-		}
-		return newStringValue(v), nil
-	case []byte:
-		s := base64.StdEncoding.EncodeToString(v)
-		return newStringValue(s), nil
-	case map[string]any:
-		v2, err := newStruct(v)
-		if err != nil {
-			return nil, err
-		}
-		return newStructValue(v2), nil
-	case []any:
-		v2, err := newList(v)
-		if err != nil {
-			return nil, err
-		}
-		return newListValue(v2), nil
-	default:
-		if reflect.TypeOf(v).Kind() == reflect.Ptr {
-			if reflect.ValueOf(v).IsNil() {
-				return newNullValue(), nil
-			}
-			return newValue(reflect.ValueOf(v).Elem().Interface())
-		}
-		if reflect.TypeOf(v).Kind() == reflect.Slice || reflect.TypeOf(v).Kind() == reflect.Array {
-			s := reflect.ValueOf(v)
-			x := &structpb.ListValue{Values: make([]*structpb.Value, s.Len())}
-			for i := 0; i < s.Len(); i++ {
-				v2, err := newValue(s.Index(i).Interface())
-				if err != nil {
-					return nil, err
-				}
-				x.Values[i] = v2
-			}
-			return newListValue(x), nil
-		}
-		if reflect.TypeOf(v).Kind() == reflect.Map {
-			m := reflect.ValueOf(v)
-			x := &structpb.Struct{Fields: make(map[string]*structpb.Value, m.Len())}
-			for _, k := range m.MapKeys() {
-				if !utf8.ValidString(k.String()) {
-					return nil, protoimpl.X.NewError("invalid UTF-8 in string: %q", k.String())
-				}
-				v2, err := newValue(m.MapIndex(k).Interface())
-				if err != nil {
-					return nil, err
-				}
-				x.Fields[k.String()] = v2
-			}
-			return newStructValue(x), nil
-		}
-		return nil, protoimpl.X.NewError("invalid type: %T", v)
-	}
-}
-
-func newList(v []any) (*structpb.ListValue, error) {
-	x := &structpb.ListValue{Values: make([]*structpb.Value, len(v))}
-	for i, v := range v {
-		var err error
-		x.Values[i], err = newValue(v)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return x, nil
-}
-
-func newStruct(v map[string]any) (*structpb.Struct, error) {
-	x := &structpb.Struct{Fields: make(map[string]*structpb.Value, len(v))}
-	for k, v := range v {
-		if !utf8.ValidString(k) {
-			return nil, protoimpl.X.NewError("invalid UTF-8 in string: %q", k)
-		}
-		var err error
-		x.Fields[k], err = newValue(v)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return x, nil
-}
-
-func newNullValue() *structpb.Value {
-	return &structpb.Value{Kind: &structpb.Value_NullValue{NullValue: structpb.NullValue_NULL_VALUE}}
-}
-
-func newBoolValue(v bool) *structpb.Value {
-	return &structpb.Value{Kind: &structpb.Value_BoolValue{BoolValue: v}}
-}
-
-func newNumberValue(v float64) *structpb.Value {
-	return &structpb.Value{Kind: &structpb.Value_NumberValue{NumberValue: v}}
-}
-
-func newStringValue(v string) *structpb.Value {
-	return &structpb.Value{Kind: &structpb.Value_StringValue{StringValue: v}}
-}
-
-func newStructValue(v *structpb.Struct) *structpb.Value {
-	return &structpb.Value{Kind: &structpb.Value_StructValue{StructValue: v}}
-}
-
-func newListValue(v *structpb.ListValue) *structpb.Value {
-	return &structpb.Value{Kind: &structpb.Value_ListValue{ListValue: v}}
 }
