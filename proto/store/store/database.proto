@@ -46,6 +46,10 @@ message DatabaseSchemaMetadata {
 
   // The search_path is the search path of a PostgreSQL database.
   string search_path = 10;
+
+  // The list of event triggers in a database (PostgreSQL specific).
+  // Event triggers are database-level objects, not schema-scoped.
+  repeated EventTriggerMetadata event_triggers = 11;
 }
 
 message LinkedDatabaseMetadata {
@@ -861,6 +865,38 @@ message ExtensionMetadata {
 
   // The description is the description of an extension.
   string description = 4;
+}
+
+// EventTriggerMetadata is the metadata for PostgreSQL event triggers.
+// Event triggers are database-level objects that fire on DDL events.
+message EventTriggerMetadata {
+  // The name of the event trigger.
+  string name = 1;
+
+  // The event type: DDL_COMMAND_START, DDL_COMMAND_END, SQL_DROP, TABLE_REWRITE.
+  string event = 2;
+
+  // The tags filter (e.g., ['CREATE TABLE', 'DROP TABLE']).
+  repeated string tags = 3;
+
+  // The schema of the function to execute.
+  string function_schema = 4;
+
+  // The name of the function to execute.
+  string function_name = 5;
+
+  // Whether the trigger is enabled.
+  bool enabled = 6;
+
+  // The full CREATE EVENT TRIGGER definition from pg_get_event_trigger_def().
+  // SDL output should prefer using this field.
+  string definition = 7;
+
+  // The comment on the event trigger.
+  string comment = 8;
+
+  // Skip dump flag (for extension-owned triggers).
+  bool skip_dump = 9;
 }
 
 // ForeignKeyMetadata is the metadata for foreign keys.

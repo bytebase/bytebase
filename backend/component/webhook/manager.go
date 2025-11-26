@@ -4,12 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/gosimple/slug"
-	"github.com/nyaruka/phonenumbers"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -32,6 +30,8 @@ type Manager struct {
 type Metadata struct {
 	Issue *store.IssueMessage
 }
+
+type UsersGetter func(ctx context.Context) ([]*store.UserMessage, error)
 
 // NewManager creates an activity manager.
 func NewManager(store *store.Store, iamManager *iam.Manager) *Manager {
@@ -68,7 +68,6 @@ func (m *Manager) CreateEvent(ctx context.Context, e *Event) {
 
 func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, eventType storepb.Activity_Type) (*webhook.Context, error) {
 	var webhookCtx webhook.Context
-	var mentions []string
 	var mentionUsers []*store.UserMessage
 
 	setting, err := m.store.GetWorkspaceGeneralSetting(ctx)
@@ -169,20 +168,13 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 	case storepb.Activity_NOTIFY_ISSUE_APPROVED:
 		title = "Issue approved"
 		titleZh = "工单审批通过"
-
 		mentionUsers = append(mentionUsers, e.Issue.Creator)
-		phone, err := maybeGetPhoneFromUser(e.Issue.Creator)
-		if err != nil {
-			slog.Warn("failed to parse phone number", slog.String("issue_title", e.Issue.Title), log.BBError(err))
-		} else if phone != "" {
-			mentions = append(mentions, phone)
-		}
 
 	case storepb.Activity_NOTIFY_PIPELINE_ROLLOUT:
 		u := e.IssueRolloutReady
 		title = "Issue is waiting for rollout"
 		titleZh = "工单待发布"
-		var usersGetters []func(context.Context) ([]*store.UserMessage, error)
+		var usersGetters []UsersGetter
 		if u.RolloutPolicy.GetAutomatic() {
 			usersGetters = append(usersGetters, getUsersFromUsers(e.Issue.Creator))
 		} else {
@@ -191,36 +183,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 				usersGetters = append(usersGetters, getUsersFromRole(m.store, role, e.Project.ResourceID))
 			}
 		}
-		mentionedUser := map[int]bool{}
-		for _, usersGetter := range usersGetters {
-			users, err := usersGetter(ctx)
-			if err != nil {
-				slog.Warn("failed to get users",
-					slog.String("issue_name", e.Issue.Title),
-					log.BBError(err))
-				return nil, err
-			}
-			for _, user := range users {
-				if mentionedUser[user.ID] {
-					continue
-				}
-				if user.MemberDeleted {
-					continue
-				}
-				mentionedUser[user.ID] = true
-				mentionUsers = append(mentionUsers, user)
-				phone, err := maybeGetPhoneFromUser(user)
-				if err != nil {
-					slog.Warn("failed to parse phone number",
-						slog.String("issue_name", e.Issue.Title),
-						log.BBError(err))
-					continue
-				}
-				if phone != "" {
-					mentions = append(mentions, phone)
-				}
-			}
-		}
+		mentionUsers = getUsersForDirectMessage(ctx, e, usersGetters...)
 
 	case storepb.Activity_ISSUE_APPROVAL_NOTIFY:
 		roleWithPrefix := e.IssueApprovalCreate.Role
@@ -228,31 +191,11 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 		title = "Issue approval needed"
 		titleZh = "工单待审批"
 
-		var usersGetter func(ctx context.Context) ([]*store.UserMessage, error)
-
+		var usersGetter UsersGetter
 		role := strings.TrimPrefix(roleWithPrefix, "roles/")
 		usersGetter = getUsersFromRole(m.store, role, e.Project.ResourceID)
+		mentionUsers = getUsersForDirectMessage(ctx, e, usersGetter)
 
-		users, err := usersGetter(ctx)
-		if err != nil {
-			slog.Warn("Failed to post webhook event after changing the issue approval node status, failed to get users",
-				slog.String("issue_name", e.Issue.Title),
-				log.BBError(err))
-			return nil, err
-		}
-		for _, user := range users {
-			mentionUsers = append(mentionUsers, user)
-			phone, err := maybeGetPhoneFromUser(user)
-			if err != nil {
-				slog.Warn("failed to parse phone number",
-					slog.String("issue_name", e.Issue.Title),
-					log.BBError(err))
-				continue
-			}
-			if phone != "" {
-				mentions = append(mentions, phone)
-			}
-		}
 	default:
 		// Unsupported event type
 		return nil, errors.Errorf("unsupported activity type %q for generating webhook context", e.Type)
@@ -276,15 +219,14 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 			Name:  common.FormatProject(e.Project.ResourceID),
 			Title: e.Project.Title,
 		},
-		Stage:               nil,
-		TaskResult:          nil,
-		Description:         e.Comment,
-		Link:                link,
-		ActorID:             e.Actor.ID,
-		ActorName:           e.Actor.Name,
-		ActorEmail:          e.Actor.Email,
-		MentionEndUsers:     mentionEndUsers,
-		MentionUsersByPhone: mentions,
+		Stage:           nil,
+		TaskResult:      nil,
+		Description:     e.Comment,
+		Link:            link,
+		ActorID:         e.Actor.ID,
+		ActorName:       e.Actor.Name,
+		ActorEmail:      e.Actor.Email,
+		MentionEndUsers: mentionEndUsers,
 	}
 	if e.Issue != nil {
 		webhookCtx.Issue = &webhook.Issue{
@@ -318,6 +260,34 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 	return &webhookCtx, nil
 }
 
+func getUsersForDirectMessage(ctx context.Context, e *Event, usersGetters ...UsersGetter) []*store.UserMessage {
+	mentionedUser := map[int]bool{}
+	mentionUsers := []*store.UserMessage{}
+
+	for _, usersGetter := range usersGetters {
+		users, err := usersGetter(ctx)
+		if err != nil {
+			slog.Warn("failed to get users",
+				slog.String("event", e.Type.String()),
+				slog.String("issue_name", e.Issue.Title),
+				slog.Int("issue_uid", e.Issue.UID),
+				log.BBError(err))
+			continue
+		}
+		for _, user := range users {
+			if mentionedUser[user.ID] {
+				continue
+			}
+			if user.MemberDeleted {
+				continue
+			}
+			mentionedUser[user.ID] = true
+			mentionUsers = append(mentionUsers, user)
+		}
+	}
+	return mentionUsers
+}
+
 func (m *Manager) postWebhookList(ctx context.Context, webhookCtx *webhook.Context, webhookList []*store.ProjectWebhookMessage) {
 	ctx = context.WithoutCancel(ctx)
 	setting, err := m.store.GetAppIMSetting(ctx)
@@ -337,7 +307,7 @@ func (m *Manager) postWebhookList(ctx context.Context, webhookCtx *webhook.Conte
 				return webhook.Post(hook.Payload.GetType(), *webhookCtx)
 			}); err != nil {
 				// The external webhook endpoint might be invalid which is out of our code control, so we just emit a warning
-				slog.Warn("Failed to post webhook event on activity",
+				slog.Warn("failed to post webhook event on activity",
 					slog.String("webhook type", hook.Payload.GetType().String()),
 					slog.String("webhook name", hook.Payload.GetTitle()),
 					slog.String("activity type", webhookCtx.EventType),
@@ -349,7 +319,7 @@ func (m *Manager) postWebhookList(ctx context.Context, webhookCtx *webhook.Conte
 	}
 }
 
-func getUsersFromRole(s *store.Store, role string, projectID string) func(context.Context) ([]*store.UserMessage, error) {
+func getUsersFromRole(s *store.Store, role string, projectID string) UsersGetter {
 	return func(ctx context.Context) ([]*store.UserMessage, error) {
 		projectIAM, err := s.GetProjectIamPolicy(ctx, projectID)
 		if err != nil {
@@ -364,30 +334,10 @@ func getUsersFromRole(s *store.Store, role string, projectID string) func(contex
 	}
 }
 
-func getUsersFromUsers(users ...*store.UserMessage) func(context.Context) ([]*store.UserMessage, error) {
+func getUsersFromUsers(users ...*store.UserMessage) UsersGetter {
 	return func(_ context.Context) ([]*store.UserMessage, error) {
 		return users, nil
 	}
-}
-
-func maybeGetPhoneFromUser(user *store.UserMessage) (string, error) {
-	if user == nil {
-		return "", nil
-	}
-	if user.Phone == "" {
-		return "", nil
-	}
-	phoneNumber, err := phonenumbers.Parse(user.Phone, "")
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to parse phone number %q", user.Phone)
-	}
-	if phoneNumber == nil {
-		return "", nil
-	}
-	if phoneNumber.NationalNumber == nil {
-		return "", nil
-	}
-	return strconv.FormatInt(int64(*phoneNumber.NationalNumber), 10), nil
 }
 
 // ChangeIssueStatus changes the status of an issue.
