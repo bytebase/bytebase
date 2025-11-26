@@ -84,23 +84,19 @@ func (m *DBConnectionManager) Close() error {
 	}
 
 	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if m.db == nil {
-		m.mu.Unlock()
-		return nil // Already closed
+		return nil
 	}
-	db := m.db
-	connStr := m.connStr
+
+	err := m.db.Close()
+	if m.connStr != "" {
+		stdlib.UnregisterConnConfig(m.connStr)
+	}
+
 	m.db = nil
 	m.connStr = ""
-	m.mu.Unlock()
-
-	var err error
-	if db != nil {
-		err = db.Close()
-	}
-	if connStr != "" {
-		stdlib.UnregisterConnConfig(connStr)
-	}
 	return err
 }
 
