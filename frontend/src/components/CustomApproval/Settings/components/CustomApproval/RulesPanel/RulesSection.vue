@@ -86,11 +86,7 @@ const columns = computed((): DataTableColumn<LocalApprovalRule>[] => [
     title: t("cel.condition.self"),
     key: "condition",
     ellipsis: { tooltip: true },
-    render: (row) => (
-      <code class="text-xs bg-control-bg px-1 py-0.5 rounded">
-        {row.condition || "true"}
-      </code>
-    ),
+    render: (row) => <code class="text-xs">{row.condition || "true"}</code>,
   },
   {
     title: t("custom-approval.approval-flow.self"),
