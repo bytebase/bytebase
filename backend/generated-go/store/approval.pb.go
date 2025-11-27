@@ -89,10 +89,8 @@ type IssuePayloadApproval struct {
 	ApprovalFindingDone bool `protobuf:"varint,3,opt,name=approval_finding_done,json=approvalFindingDone,proto3" json:"approval_finding_done,omitempty"`
 	// Error message if approval template finding failed.
 	ApprovalFindingError string `protobuf:"bytes,4,opt,name=approval_finding_error,json=approvalFindingError,proto3" json:"approval_finding_error,omitempty"`
-	// The assessed risk level for this issue.
-	RiskLevel     RiskLevel `protobuf:"varint,5,opt,name=risk_level,json=riskLevel,proto3,enum=bytebase.store.RiskLevel" json:"risk_level,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *IssuePayloadApproval) Reset() {
@@ -151,13 +149,6 @@ func (x *IssuePayloadApproval) GetApprovalFindingError() string {
 		return x.ApprovalFindingError
 	}
 	return ""
-}
-
-func (x *IssuePayloadApproval) GetRiskLevel() RiskLevel {
-	if x != nil {
-		return x.RiskLevel
-	}
-	return RiskLevel_RISK_LEVEL_UNSPECIFIED
 }
 
 // ApprovalTemplate defines the approval workflow and requirements for an issue.
@@ -329,14 +320,12 @@ var File_store_approval_proto protoreflect.FileDescriptor
 
 const file_store_approval_proto_rawDesc = "" +
 	"\n" +
-	"\x14store/approval.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\x9f\x04\n" +
+	"\x14store/approval.proto\x12\x0ebytebase.store\"\xf7\x03\n" +
 	"\x14IssuePayloadApproval\x12M\n" +
 	"\x11approval_template\x18\x01 \x01(\v2 .bytebase.store.ApprovalTemplateR\x10approvalTemplate\x12K\n" +
 	"\tapprovers\x18\x02 \x03(\v2-.bytebase.store.IssuePayloadApproval.ApproverR\tapprovers\x122\n" +
 	"\x15approval_finding_done\x18\x03 \x01(\bR\x13approvalFindingDone\x124\n" +
-	"\x16approval_finding_error\x18\x04 \x01(\tR\x14approvalFindingError\x128\n" +
-	"\n" +
-	"risk_level\x18\x05 \x01(\x0e2\x19.bytebase.store.RiskLevelR\triskLevel\x1a\xc6\x01\n" +
+	"\x16approval_finding_error\x18\x04 \x01(\tR\x14approvalFindingError\x1a\xc6\x01\n" +
 	"\bApprover\x12L\n" +
 	"\x06status\x18\x01 \x01(\x0e24.bytebase.store.IssuePayloadApproval.Approver.StatusR\x06status\x12!\n" +
 	"\fprincipal_id\x18\x02 \x01(\x05R\vprincipalId\"I\n" +
@@ -344,7 +333,8 @@ const file_store_approval_proto_rawDesc = "" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aPENDING\x10\x01\x12\f\n" +
 	"\bAPPROVED\x10\x02\x12\f\n" +
-	"\bREJECTED\x10\x03\"|\n" +
+	"\bREJECTED\x10\x03J\x04\b\x05\x10\x06R\n" +
+	"risk_level\"|\n" +
 	"\x10ApprovalTemplate\x120\n" +
 	"\x04flow\x18\x01 \x01(\v2\x1c.bytebase.store.ApprovalFlowR\x04flow\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12 \n" +
@@ -373,19 +363,17 @@ var file_store_approval_proto_goTypes = []any{
 	(*ApprovalTemplate)(nil),                  // 2: bytebase.store.ApprovalTemplate
 	(*ApprovalFlow)(nil),                      // 3: bytebase.store.ApprovalFlow
 	(*IssuePayloadApproval_Approver)(nil),     // 4: bytebase.store.IssuePayloadApproval.Approver
-	(RiskLevel)(0),                            // 5: bytebase.store.RiskLevel
 }
 var file_store_approval_proto_depIdxs = []int32{
 	2, // 0: bytebase.store.IssuePayloadApproval.approval_template:type_name -> bytebase.store.ApprovalTemplate
 	4, // 1: bytebase.store.IssuePayloadApproval.approvers:type_name -> bytebase.store.IssuePayloadApproval.Approver
-	5, // 2: bytebase.store.IssuePayloadApproval.risk_level:type_name -> bytebase.store.RiskLevel
-	3, // 3: bytebase.store.ApprovalTemplate.flow:type_name -> bytebase.store.ApprovalFlow
-	0, // 4: bytebase.store.IssuePayloadApproval.Approver.status:type_name -> bytebase.store.IssuePayloadApproval.Approver.Status
-	5, // [5:5] is the sub-list for method output_type
-	5, // [5:5] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	3, // 2: bytebase.store.ApprovalTemplate.flow:type_name -> bytebase.store.ApprovalFlow
+	0, // 3: bytebase.store.IssuePayloadApproval.Approver.status:type_name -> bytebase.store.IssuePayloadApproval.Approver.Status
+	4, // [4:4] is the sub-list for method output_type
+	4, // [4:4] is the sub-list for method input_type
+	4, // [4:4] is the sub-list for extension type_name
+	4, // [4:4] is the sub-list for extension extendee
+	0, // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_store_approval_proto_init() }
@@ -393,7 +381,6 @@ func file_store_approval_proto_init() {
 	if File_store_approval_proto != nil {
 		return
 	}
-	file_store_common_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

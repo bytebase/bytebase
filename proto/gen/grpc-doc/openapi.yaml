@@ -10869,6 +10869,15 @@ components:
                     items:
                         type: string
                     description: Labels attached to categorize and filter the issue.
+                riskLevel:
+                    enum:
+                        - RISK_LEVEL_UNSPECIFIED
+                        - LOW
+                        - MODERATE
+                        - HIGH
+                    type: string
+                    description: Risk level for the issue, calculated from statement types.
+                    format: enum
             description: Issue is the metadata for issues that track database operations and access requests.
         IssueComment:
             type: object
@@ -11039,15 +11048,6 @@ components:
                 approvalFindingError:
                     type: string
                     description: Error message if approval template finding failed.
-                riskLevel:
-                    enum:
-                        - RISK_LEVEL_UNSPECIFIED
-                        - LOW
-                        - MODERATE
-                        - HIGH
-                    type: string
-                    description: The assessed risk level for this issue.
-                    format: enum
             description: IssuePayloadApproval records the approval template used and approval history for an issue.
         IssuePayloadApproval_Approver:
             type: object

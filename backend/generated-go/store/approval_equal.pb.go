@@ -43,9 +43,6 @@ func (x *IssuePayloadApproval) Equal(y *IssuePayloadApproval) bool {
 	if x.ApprovalFindingError != y.ApprovalFindingError {
 		return false
 	}
-	if x.RiskLevel != y.RiskLevel {
-		return false
-	}
 	return true
 }
 
