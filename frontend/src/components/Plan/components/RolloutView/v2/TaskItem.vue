@@ -52,14 +52,11 @@
               {{ taskTypeDisplay }}
             </NTag>
             <!-- Scheduled time indicator -->
-            <span
+            <ScheduledTimeIndicator
               v-if="timingType === 'scheduled'"
-              class="flex items-center gap-x-1 text-xs text-blue-600"
+              :time="scheduledTime"
               :title="t('task.scheduled-time')"
-            >
-              <ClockIcon class="w-3 h-3" />
-              {{ timingDisplay }}
-            </span>
+            />
             <!-- Running indicator -->
             <span
               v-else-if="timingType === 'running'"
@@ -112,8 +109,17 @@
             <span>{{ t("common.type") }}: {{ taskTypeDisplay }}</span>
             <span v-if="executorEmail" class="text-gray-400">·</span>
             <span v-if="executorEmail">{{ t("task.executed-by") }}: {{ executorEmail }}</span>
-            <span v-if="timingDisplay" class="text-gray-400">·</span>
-            <span v-if="timingDisplay">{{ t("common.duration") }}: {{ timingDisplay }}</span>
+            <template v-if="timingType === 'scheduled'">
+              <span class="text-gray-400">·</span>
+              <ScheduledTimeIndicator
+                :time="scheduledTime"
+                :label="t('task.scheduled-time')"
+              />
+            </template>
+            <template v-else-if="timingDisplay">
+              <span class="text-gray-400">·</span>
+              <span>{{ t("common.duration") }}: {{ timingDisplay }}</span>
+            </template>
             <span v-if="affectedRowsDisplay" class="text-gray-400">·</span>
             <span v-if="affectedRowsDisplay">{{ t("task.affected-rows") }}: {{ affectedRowsDisplay }}</span>
           </div>
@@ -239,7 +245,6 @@ import { last } from "lodash-es";
 import {
   ChevronDownIcon,
   ChevronRightIcon,
-  ClockIcon,
   LoaderCircleIcon,
   PlayIcon,
   SkipForwardIcon,
@@ -264,6 +269,7 @@ import { useTaskActions } from "./composables/useTaskActions";
 import { useTaskRunSummary } from "./composables/useTaskRunSummary";
 import { useTaskStatement } from "./composables/useTaskStatement";
 import { useTaskTiming } from "./composables/useTaskTiming";
+import ScheduledTimeIndicator from "./ScheduledTimeIndicator.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -338,7 +344,7 @@ const latestTaskRun = computed(() => {
   return last(taskRunsForTask);
 });
 
-const { timingDisplay, timingType } = useTaskTiming(
+const { timingDisplay, timingType, scheduledTime } = useTaskTiming(
   () => props.task,
   () => latestTaskRun.value
 );
