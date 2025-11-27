@@ -65,6 +65,8 @@ import type { SearchParams, SearchScope } from "@/utils";
 import {
   CommonFilterScopeIdList,
   extractProjectResourceName,
+  getValueFromSearchParams,
+  getValuesFromSearchParams,
   hasProjectPermissionV2,
   hasWorkspacePermissionV2,
 } from "@/utils";
@@ -129,50 +131,29 @@ const scopeOptions = useCommonSearchScopeOptions([
 ]);
 
 const selectedInstance = computed(() => {
-  const instanceId = state.params.scopes.find(
-    (scope) => scope.id === "instance"
-  )?.value;
-  if (!instanceId) {
-    return;
-  }
-  return `${instanceNamePrefix}${instanceId}`;
+  return getValueFromSearchParams(state.params, "instance", instanceNamePrefix);
 });
 
 const selectedEnvironment = computed(() => {
-  const environmentId = state.params.scopes.find(
-    (scope) => scope.id === "environment"
-  )?.value;
-  if (!environmentId) {
-    return;
-  }
-  return `${environmentNamePrefix}${environmentId}`;
+  return getValueFromSearchParams(
+    state.params,
+    "environment",
+    environmentNamePrefix
+  );
 });
 
 const selectedLabels = computed(() => {
-  return state.params.scopes
-    .filter((scope) => scope.id === "label")
-    .map((scope) => scope.value);
+  return getValuesFromSearchParams(state.params, "label");
 });
 
 const selectedEngines = computed(() => {
-  return state.params.scopes
-    .filter((scope) => scope.id === "engine")
-    .map((scope) => {
-      // Convert string engine name to Engine enum
-      const engineKey = scope.value.toUpperCase();
-      return (
-        Engine[engineKey as keyof typeof Engine] ?? Engine.ENGINE_UNSPECIFIED
-      );
-    });
+  return getValuesFromSearchParams(state.params, "engine").map(
+    (engine) => Engine[engine as keyof typeof Engine]
+  );
 });
 
 const selectedDriftedValue = computed(() => {
-  const driftedValue = state.params.scopes.find(
-    (scope) => scope.id === "drifted"
-  )?.value;
-  if (driftedValue === undefined) {
-    return undefined;
-  }
+  const driftedValue = getValueFromSearchParams(state.params, "drifted");
   return driftedValue === "true" ? true : false;
 });
 

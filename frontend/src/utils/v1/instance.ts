@@ -97,10 +97,8 @@ export const supportedEngineV1List = () => {
     Engine.COSMOSDB,
     Engine.CASSANDRA,
     Engine.TRINO,
+    Engine.DORIS,
   ];
-  if (locale.value === "zh-CN") {
-    engines.push(Engine.DORIS);
-  }
   return engines;
 };
 

@@ -238,6 +238,8 @@ import {
   emptySQLEditorConnection,
   extractProjectResourceName,
   findAncestor,
+  getValueFromSearchParams,
+  getValuesFromSearchParams,
   isDatabaseV1Queryable,
   isDescendantOf,
   tryConnectToCoreSQLEditorTab,
@@ -615,31 +617,17 @@ useEmitteryEventListener(editorEvents, "tree-ready", async () => {
 });
 
 const selectedLabels = computed(() => {
-  return state.params.scopes
-    .filter((scope) => scope.id === "label")
-    .map((scope) => scope.value);
+  return getValuesFromSearchParams(state.params, "label");
 });
 
 const selectedInstance = computed(() => {
-  const instanceId = state.params.scopes.find(
-    (scope) => scope.id === "instance"
-  )?.value;
-  if (!instanceId) {
-    return;
-  }
-  return `${instanceNamePrefix}${instanceId}`;
+  return getValueFromSearchParams(state.params, "instance", instanceNamePrefix);
 });
 
 const selectedEngines = computed(() => {
-  return state.params.scopes
-    .filter((scope) => scope.id === "engine")
-    .map((scope) => {
-      // Convert from string engine name to proto-es enum value
-      const engineName = scope.value.toUpperCase();
-      return (
-        Engine[engineName as keyof typeof Engine] ?? Engine.ENGINE_UNSPECIFIED
-      );
-    });
+  return getValuesFromSearchParams(state.params, "engine").map(
+    (engine) => Engine[engine as keyof typeof Engine]
+  );
 });
 
 const filter = computed(

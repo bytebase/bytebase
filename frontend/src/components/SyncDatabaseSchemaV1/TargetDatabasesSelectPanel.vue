@@ -76,7 +76,11 @@ import {
 } from "@/store/modules/v1/common";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
 import type { SearchParams, SearchScope } from "@/utils";
-import { CommonFilterScopeIdList, extractProjectResourceName } from "@/utils";
+import {
+  CommonFilterScopeIdList,
+  extractProjectResourceName,
+  getValueFromSearchParams,
+} from "@/utils";
 import AdvancedSearch from "../AdvancedSearch";
 import { useCommonSearchScopeOptions } from "../AdvancedSearch/useCommonSearchScopeOptions";
 import { PagedDatabaseTable } from "../v2/Model/DatabaseV1Table";
@@ -135,23 +139,15 @@ const selectedDatabaseList = computed(() =>
 );
 
 const selectedInstance = computed(() => {
-  const instanceId = state.params.scopes.find(
-    (scope) => scope.id === "instance"
-  )?.value;
-  if (!instanceId) {
-    return;
-  }
-  return `${instanceNamePrefix}${instanceId}`;
+  return getValueFromSearchParams(state.params, "instance", instanceNamePrefix);
 });
 
 const selectedEnvironment = computed(() => {
-  const environmentId = state.params.scopes.find(
-    (scope) => scope.id === "environment"
-  )?.value;
-  if (!environmentId) {
-    return;
-  }
-  return `${environmentNamePrefix}${environmentId}`;
+  return getValueFromSearchParams(
+    state.params,
+    "environment",
+    environmentNamePrefix
+  );
 });
 
 const filter = computed(() => ({

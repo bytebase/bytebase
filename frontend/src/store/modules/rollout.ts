@@ -59,14 +59,12 @@ export const buildRolloutFindBySearchParams = (
   params: SearchParams,
   defaultFind?: Partial<RolloutFind>
 ) => {
-  const { scopes } = params;
-  const projectScope = scopes.find((s) => s.id === "project");
-
+  const projectScope = getValueFromSearchParams(params, "project");
   const updatedTsRange = getTsRangeFromSearchParams(params, "updated");
 
   const filter: RolloutFind = {
     ...defaultFind,
-    project: `projects/${projectScope?.value ?? "-"}`,
+    project: `projects/${projectScope || "-"}`,
     query: params.query,
     updatedTsAfter: updatedTsRange?.[0],
     updatedTsBefore: updatedTsRange?.[1],

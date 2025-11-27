@@ -4,12 +4,12 @@
       v-for="formatItem in availableExportFormats"
       :key="formatItem"
       :value="formatItem"
-      :label="exportFormatToString(formatItem)"
+      :label="ExportFormat[formatItem]"
     />
   </NRadioGroup>
   <template v-else>
     <span class="text-sm font-medium leading-6">{{
-      exportFormatToString(format)
+      ExportFormat[format]
     }}</span>
   </template>
 </template>
@@ -18,7 +18,6 @@
 import { NRadio, NRadioGroup } from "naive-ui";
 import { computed, onMounted } from "vue";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
-import { exportFormatToString } from "@/utils/v1/common-conversions";
 
 const props = defineProps<{
   format: ExportFormat;

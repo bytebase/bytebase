@@ -65,8 +65,7 @@ export const buildPlanFindBySearchParams = (
   params: SearchParams,
   defaultFind?: Partial<PlanFind>
 ) => {
-  const { scopes } = params;
-  const projectScope = scopes.find((s) => s.id === "project");
+  const projectScope = getValueFromSearchParams(params, "project");
 
   const createdTsRange = getTsRangeFromSearchParams(params, "created");
   const state = getValueFromSearchParams(params, "state", "" /* prefix='' */, [
@@ -76,7 +75,7 @@ export const buildPlanFindBySearchParams = (
 
   const filter: PlanFind = {
     ...defaultFind,
-    project: `projects/${projectScope?.value ?? "-"}`,
+    project: `projects/${projectScope || "-"}`,
     query: params.query,
     createdTsAfter: createdTsRange?.[0],
     createdTsBefore: createdTsRange?.[1],

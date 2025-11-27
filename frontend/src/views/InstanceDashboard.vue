@@ -98,7 +98,12 @@ import { environmentNamePrefix } from "@/store/modules/v1/common";
 import { isValidInstanceName } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
-import { hasWorkspacePermissionV2, type SearchParams } from "@/utils";
+import {
+  getValueFromSearchParams,
+  getValuesFromSearchParams,
+  hasWorkspacePermissionV2,
+  type SearchParams,
+} from "@/utils";
 
 interface LocalState {
   params: SearchParams;
@@ -138,44 +143,29 @@ const onInstanceCreated = (instance: Instance) => {
 };
 
 const selectedEnvironment = computed(() => {
-  const environmentId = state.params.scopes.find(
-    (scope) => scope.id === "environment"
-  )?.value;
-  if (!environmentId) {
-    return;
-  }
-  return `${environmentNamePrefix}${environmentId}`;
+  return getValueFromSearchParams(
+    state.params,
+    "environment",
+    environmentNamePrefix
+  );
 });
 
 const selectedHost = computed(() => {
-  return state.params.scopes.find((scope) => scope.id === "host")?.value ?? "";
+  return getValueFromSearchParams(state.params, "host");
 });
 
 const selectedPort = computed(() => {
-  return state.params.scopes.find((scope) => scope.id === "port")?.value ?? "";
+  return getValueFromSearchParams(state.params, "port");
 });
 
 const selectedEngines = computed(() => {
-  return state.params.scopes
-    .filter((scope) => scope.id === "engine")
-    .map((scope) => {
-      // Convert string scope value to Engine enum
-      const engineKey = scope.value.toUpperCase();
-      const engineValue = Engine[engineKey as keyof typeof Engine];
-      return typeof engineValue === "number"
-        ? engineValue
-        : Engine.ENGINE_UNSPECIFIED;
-    });
+  return getValuesFromSearchParams(state.params, "engine").map(
+    (engine) => Engine[engine as keyof typeof Engine]
+  );
 });
 
 const selectedLabels = computed(() => {
-  return state.params.scopes
-    .filter((scope) => scope.id === "label")
-    .map((scope) => {
-      // Parse label value format "key:value"
-      const [key, ...valueParts] = scope.value.split(":");
-      return { key, value: valueParts.join(":") };
-    });
+  return getValuesFromSearchParams(state.params, "label");
 });
 
 const filter = computed(() => ({

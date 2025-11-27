@@ -65,7 +65,11 @@ import { Drawer, PagedProjectTable } from "@/components/v2";
 import ProjectOperations from "@/components/v2/Model/Project/ProjectOperations.vue";
 import { useProjectV1Store, useUIStateStore } from "@/store";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import { hasWorkspacePermissionV2, type SearchParams } from "@/utils";
+import {
+  getValuesFromSearchParams,
+  hasWorkspacePermissionV2,
+  type SearchParams,
+} from "@/utils";
 
 interface LocalState {
   params: SearchParams;
@@ -96,9 +100,7 @@ const scopeOptions = useCommonSearchScopeOptions(["label"]);
 
 // Extract labels from the search scopes
 const selectedLabels = computed(() => {
-  return state.params.scopes
-    .filter((scope) => scope.id === "label")
-    .map((scope) => scope.value);
+  return getValuesFromSearchParams(state.params, "label");
 });
 
 const filter = computed(() => ({
