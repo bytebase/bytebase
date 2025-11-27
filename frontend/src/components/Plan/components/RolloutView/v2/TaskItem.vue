@@ -26,15 +26,21 @@
           <div
             :class="readonly ? '' : 'cursor-pointer hover:opacity-80'"
             class="transition-opacity"
-            @click="handleNavigateToDetail"
           >
             <TaskStatus :status="task.status" :size="isExpanded ? 'large' : 'small'" />
           </div>
-          <div
-            :class="readonly ? '' : 'cursor-pointer hover:opacity-80'"
-            class="transition-opacity shrink-0"
-            @click="handleNavigateToDetail"
+          <RouterLink
+            v-if="!readonly"
+            :to="`/${task.name}`"
+            class="transition-opacity shrink-0 hover:opacity-80"
           >
+            <DatabaseDisplay
+              :database="task.target"
+              :size="isExpanded ? 'large' : 'medium'"
+              :link="false"
+            />
+          </RouterLink>
+          <div v-else class="shrink-0">
             <DatabaseDisplay
               :database="task.target"
               :size="isExpanded ? 'large' : 'medium'"
@@ -78,14 +84,12 @@
 
       <!-- SQL preview - collapsed only -->
       <div v-if="!isExpanded" class="space-y-1">
-        <div class="flex flex-row justify-start items-start gap-2">
+        <div class="flex flex-row justify-start items-center gap-2">
           <NTag size="tiny" round class="opacity-80">
             {{ t("common.statement") }}
           </NTag>
           <div
-            :class="readonly ? '' : 'cursor-pointer'"
             class="text-xs text-gray-600 font-mono truncate min-w-0"
-            @click="handleNavigateToDetail"
           >
             {{ statementPreview }}
           </div>
@@ -174,14 +178,13 @@
                 <Timestamp :timestamp="latestTaskRun.updateTime" />
               </span>
             </div>
-            <a
+            <RouterLink
               v-if="!readonly"
-              href="javascript:void(0)"
+              :to="`/${task.name}`"
               class="text-xs text-blue-600 hover:text-blue-700"
-              @click="handleNavigateToDetail"
             >
               {{ t("rollout.task.view-full-details") }} →
-            </a>
+            </RouterLink>
           </div>
 
           <!-- Error message for failed tasks -->
@@ -245,6 +248,7 @@ import {
 import { NButton, NCheckbox, NTag } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
+import { RouterLink } from "vue-router";
 import BBSpin from "@/bbkit/BBSpin.vue";
 import HighlightCodeBlock from "@/components/HighlightCodeBlock.vue";
 import Timestamp from "@/components/misc/Timestamp.vue";
@@ -257,7 +261,6 @@ import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { getTaskTypeI18nKey } from "@/utils";
 import { useTaskActions } from "./composables/useTaskActions";
-import { useTaskNavigation } from "./composables/useTaskNavigation";
 import { useTaskRunSummary } from "./composables/useTaskRunSummary";
 import { useTaskStatement } from "./composables/useTaskStatement";
 import { useTaskTiming } from "./composables/useTaskTiming";
@@ -288,7 +291,6 @@ const {
   readonly: contextReadonly,
   events,
 } = usePlanContextWithRollout();
-const { navigateToTaskDetail } = useTaskNavigation();
 
 // Get the stage for the current task
 const stage = computed(() => {
@@ -411,11 +413,4 @@ const waitingMessage = computed(() => {
 
   return "";
 });
-
-const handleNavigateToDetail = () => {
-  if (props.readonly) {
-    return;
-  }
-  navigateToTaskDetail(props.task);
-};
 </script>
