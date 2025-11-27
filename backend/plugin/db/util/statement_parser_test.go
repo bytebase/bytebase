@@ -492,3 +492,137 @@ CREATE INDEX bytebase_idx_migration_history_namespace_created ON migration_histo
 		a.Equal(tc.want, got)
 	}
 }
+
+func TestIsSelect(t *testing.T) {
+	tests := []struct {
+		name     string
+		query    string
+		expected bool
+	}{
+		{
+			name:     "simple SELECT",
+			query:    "SELECT * FROM users",
+			expected: true,
+		},
+		{
+			name:     "SELECT with WHERE clause",
+			query:    "SELECT id, name FROM users WHERE age > 18",
+			expected: true,
+		},
+		{
+			name:     "SELECT lowercase",
+			query:    "select * from users",
+			expected: true,
+		},
+		{
+			name:     "CTE with SELECT (starts with WITH)",
+			query:    "WITH cte AS (SELECT * FROM users) SELECT * FROM cte",
+			expected: true,
+		},
+		{
+			name:     "INSERT statement",
+			query:    "INSERT INTO test_table (id, name) VALUES (1, 'test')",
+			expected: false,
+		},
+		{
+			name:     "UPDATE statement",
+			query:    "UPDATE test_table SET name = 'updated' WHERE id = 1",
+			expected: false,
+		},
+		{
+			name:     "DELETE statement",
+			query:    "DELETE FROM test_table WHERE id = 1",
+			expected: false,
+		},
+		{
+			name:     "CREATE TABLE",
+			query:    "CREATE TABLE test (id INT64, name STRING(100))",
+			expected: false,
+		},
+		{
+			name:     "DROP TABLE",
+			query:    "DROP TABLE test",
+			expected: false,
+		},
+		{
+			name:     "ALTER TABLE",
+			query:    "ALTER TABLE test ADD COLUMN age INT64",
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := require.New(t)
+			result := IsSelect(tt.query)
+			a.Equal(tt.expected, result)
+		})
+	}
+}
+
+func TestIsDDL(t *testing.T) {
+	tests := []struct {
+		name     string
+		query    string
+		expected bool
+	}{
+		{
+			name:     "CREATE TABLE",
+			query:    "CREATE TABLE test (id INT64, name STRING(100))",
+			expected: true,
+		},
+		{
+			name:     "DROP TABLE",
+			query:    "DROP TABLE test",
+			expected: true,
+		},
+		{
+			name:     "ALTER TABLE",
+			query:    "ALTER TABLE test ADD COLUMN age INT64",
+			expected: true,
+		},
+		{
+			name:     "CREATE INDEX",
+			query:    "CREATE INDEX idx_name ON test(name)",
+			expected: true,
+		},
+		{
+			name:     "DROP INDEX",
+			query:    "DROP INDEX idx_name",
+			expected: true,
+		},
+		{
+			name:     "ALTER lowercase",
+			query:    "alter table test drop column age",
+			expected: true,
+		},
+		{
+			name:     "SELECT statement",
+			query:    "SELECT * FROM users",
+			expected: false,
+		},
+		{
+			name:     "INSERT statement",
+			query:    "INSERT INTO test_table (id, name) VALUES (1, 'test')",
+			expected: false,
+		},
+		{
+			name:     "UPDATE statement",
+			query:    "UPDATE test_table SET name = 'updated' WHERE id = 1",
+			expected: false,
+		},
+		{
+			name:     "DELETE statement",
+			query:    "DELETE FROM test_table WHERE id = 1",
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := require.New(t)
+			result := IsDDL(tt.query)
+			a.Equal(tt.expected, result)
+		})
+	}
+}

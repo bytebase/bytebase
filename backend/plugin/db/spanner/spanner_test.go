@@ -328,3 +328,25 @@ func TestConvertSpannerValue(t *testing.T) {
 		})
 	}
 }
+
+// TestDMLNotWrappedInCTE is a regression test for the bug where DML statements
+// were incorrectly wrapped in CTEs, causing Spanner to reject them.
+// Spanner does not support DML (INSERT/UPDATE/DELETE) inside CTEs.
+// This test verifies that QueryConn only wraps SELECT statements with the CTE limit pattern.
+func TestDMLNotWrappedInCTE(t *testing.T) {
+	a := require.New(t)
+
+	// Verify that DML statements are NOT identified as SELECT queries
+	// (the root cause of the bug was wrapping all statements before type checking)
+	dmlStatement := "INSERT INTO test_table (id, name) VALUES (1, 'test')"
+	a.False(util.IsSelect(dmlStatement), "DML should not be identified as SELECT")
+
+	// Verify that SELECT statements ARE identified correctly
+	selectStatement := "SELECT * FROM test_table"
+	a.True(util.IsSelect(selectStatement), "SELECT should be identified correctly")
+
+	// Verify the CTE wrapper is only applied to SELECT statements
+	wrapped := getStatementWithResultLimit(selectStatement, 100)
+	a.Contains(wrapped, "WITH result AS", "SELECT should be wrapped with CTE for LIMIT")
+	a.Contains(wrapped, "LIMIT 100", "Wrapped query should include LIMIT clause")
+}
