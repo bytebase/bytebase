@@ -1,4 +1,5 @@
-import { toJson } from "@bufbuild/protobuf";
+import { toJson, toJsonString } from "@bufbuild/protobuf";
+import { ValueSchema } from "@bufbuild/protobuf/wkt";
 import dayjs from "dayjs";
 import { getDateForPbTimestampProtoEs } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
@@ -85,7 +86,7 @@ export const extractSQLRowValuePlain = (value: RowValue | undefined) => {
     return formatTimestampWithTz(value.kind.value);
   }
   if (value.kind?.case === "valueValue") {
-    return JSON.stringify(value.kind.value);
+    return toJsonString(ValueSchema, value.kind.value);
   }
 
   return Object.values(plainObject)[0];
