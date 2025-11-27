@@ -426,20 +426,6 @@ CREATE INDEX idx_worksheet_organizer_principal_id ON worksheet_organizer(princip
 
 CREATE INDEX idx_worksheet_organizer_payload ON worksheet_organizer USING GIN(payload);
 
--- risk stores the definition of a risk.
-CREATE TABLE risk (
-    id bigserial PRIMARY KEY,
-    source text NOT NULL CHECK (source LIKE 'bb.risk.%'),
-    -- Risk level: RISK_LEVEL_UNSPECIFIED, LOW, MODERATE, HIGH
-    level text NOT NULL,
-    name text NOT NULL,
-    active boolean NOT NULL,
-    -- Stored as google.type.Expr (from Google Common Expression Language)
-    expression jsonb NOT NULL
-);
-
-ALTER SEQUENCE risk_id_seq RESTART WITH 101;
-
 CREATE TABLE db_group (
     id bigserial PRIMARY KEY,
     project text NOT NULL REFERENCES project(resource_id),
