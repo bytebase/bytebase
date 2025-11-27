@@ -169,11 +169,9 @@
     "verify": "验证",
     "regenerate": "重新生成",
     "download": "下载",
-    "will-lose-unsaved-data": "这会丢失当前所有未保存的数据。",
     "deleted": "已删除",
     "active": "开启",
     "reopen": "重开",
-    "will-override-current-data": "将会覆盖当前数据。",
     "rollout": "发布",
     "upload": "上传",
     "clear": "清除",
@@ -2636,12 +2634,7 @@
   "custom-approval": {
     "self": "自定义审批",
     "risk-rule": {
-      "active": "开启",
-      "edit-rule": "编辑规则",
-      "delete": "删除安全规则",
       "risk": {
-        "self": "风险",
-        "select": "选择风险",
         "risk-level": {
           "default": "默认",
           "low": "低",
@@ -2657,19 +2650,9 @@
         }
       },
       "template": {
-        "templates": "模板",
-        "load": "加载",
-        "load-template": "加载模板",
-        "view": "查看模板"
       },
-      "rule-name": "规则名称",
-      "view-rule": "查看规则",
       "source": {
-        "select": "选择类型",
-        "self": "类型"
-      },
-      "input-rule-name": "输入规则名称",
-      "search": "搜索规则"
+      }
     },
     "approval-flow": {
       "self": "审批流",
@@ -2700,8 +2683,6 @@
       }
     },
     "risk": {
-      "risks": "风险",
-      "description": "风险中心定义了不同数据库操作在不同条件下的风险等级。而风险等级则会决定工单的自定义审批流程。"
     },
     "rule": {
       "first-match-wins": "规则按顺序评估，第一个匹配的规则将被应用。"

@@ -169,11 +169,9 @@
     "verify": "Verificar",
     "regenerate": "Regenerar",
     "download": "Descargar",
-    "will-lose-unsaved-data": "Se perderán los datos no guardados.",
     "deleted": "Eliminado",
     "active": "Activo",
     "reopen": "Reabrir",
-    "will-override-current-data": "Se sobrescribirán los datos actuales.",
     "rollout": "Implementar",
     "upload": "Subir",
     "clear": "Limpiar",
@@ -2636,12 +2634,7 @@
   "custom-approval": {
     "self": "Aprobación personalizada",
     "risk-rule": {
-      "active": "Activo",
-      "edit-rule": "Editar regla",
-      "delete": "Eliminar regla de seguridad",
       "risk": {
-        "self": "Riesgo",
-        "select": "Seleccionar riesgo",
         "risk-level": {
           "default": "Por defecto",
           "low": "Bajo",
@@ -2657,19 +2650,9 @@
         }
       },
       "template": {
-        "templates": "Plantillas",
-        "load": "Cargar",
-        "load-template": "Cargar plantilla",
-        "view": "Ver plantilla"
       },
-      "rule-name": "Nombre de la regla",
-      "view-rule": "Ver regla",
       "source": {
-        "select": "Seleccionar tipo",
-        "self": "Tipo"
-      },
-      "input-rule-name": "Ingrese el nombre de la regla",
-      "search": "Buscar regla"
+      }
     },
     "approval-flow": {
       "self": "Flujo de aprobación",
@@ -2700,8 +2683,6 @@
       }
     },
     "risk": {
-      "risks": "Riesgo",
-      "description": "El Centro de riesgo define los niveles de riesgo para diferentes operaciones de base de datos en diferentes condiciones. Y los niveles de riesgo determinan los flujos de aprobación personalizados correspondientes."
     },
     "rule": {
       "first-match-wins": "Las reglas se evalúan en orden. Se aplica la primera regla coincidente."

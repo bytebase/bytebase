@@ -169,11 +169,9 @@
     "verify": "確認する",
     "regenerate": "再生する",
     "download": "ダウンロード",
-    "will-lose-unsaved-data": "これにより、現在保存されていないデータはすべて失われます。",
     "deleted": "削除されました",
     "active": "アクティブ",
     "reopen": "再開",
-    "will-override-current-data": "現在のデータは上書きされます。",
     "rollout": "リリース",
     "upload": "アップロード",
     "clear": "クリア",
@@ -2636,12 +2634,7 @@
   "custom-approval": {
     "self": "カスタム承認",
     "risk-rule": {
-      "active": "オンにする",
-      "edit-rule": "ルールの編集",
-      "delete": "セキュリティルールを削除する",
       "risk": {
-        "self": "リスク",
-        "select": "リスクを選択する",
         "risk-level": {
           "default": "デフォルト",
           "low": "低",
@@ -2657,19 +2650,9 @@
         }
       },
       "template": {
-        "templates": "テンプレート",
-        "load": "負荷",
-        "load-template": "テンプレートをロードする",
-        "view": "テンプレートを表示"
       },
-      "rule-name": "ルール名",
-      "view-rule": "ルールを表示する",
       "source": {
-        "select": "タイプを選択してください",
-        "self": "タイプ"
-      },
-      "input-rule-name": "ルール名を入力してください",
-      "search": "検索ルール"
+      }
     },
     "approval-flow": {
       "self": "承認の流れ",
@@ -2700,8 +2683,6 @@
       }
     },
     "risk": {
-      "risks": "リスク",
-      "description": "リスク センターは、さまざまな条件下でのさまざまなデータベース操作のリスク レベルを定義します。リスク レベルによって、イシューのカスタム承認プロセスが決まります。"
     },
     "rule": {
       "first-match-wins": "ルールは順番に評価されます。最初に一致するルールが適用されます。"

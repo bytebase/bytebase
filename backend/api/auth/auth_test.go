@@ -44,12 +44,6 @@ func TestGetAllowMissingRequiredPermission(t *testing.T) {
 			wantErr:    false,
 		},
 		{
-			name:       "RiskService.UpdateRisk has annotation",
-			fullMethod: "/bytebase.v1.RiskService/UpdateRisk",
-			wantPerm:   "bb.risks.create",
-			wantErr:    false,
-		},
-		{
 			name:       "ReleaseService.UpdateRelease has annotation",
 			fullMethod: "/bytebase.v1.ReleaseService/UpdateRelease",
 			wantPerm:   "bb.releases.create",
