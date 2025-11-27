@@ -1,11 +1,9 @@
 package export
 
 import (
-	"bytes"
+	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"io"
-	"time"
 
 	"github.com/pkg/errors"
 
@@ -61,35 +59,16 @@ func convertValueToJSONValue(value *v1pb.RowValue) any {
 	case *v1pb.RowValue_BoolValue:
 		return value.GetBoolValue()
 	case *v1pb.RowValue_BytesValue:
-		binaryStr, err := convertBytesToBinaryString(value.GetBytesValue())
-		if err != nil {
-			return nil
-		}
-		return binaryStr
+		return base64.StdEncoding.EncodeToString(value.GetBytesValue())
 	case *v1pb.RowValue_NullValue:
 		return nil
 	case *v1pb.RowValue_TimestampValue:
-		return value.GetTimestampValue().GoogleTimestamp.AsTime().Format("2006-01-02 15:04:05.000000")
+		return formatTimestamp(value.GetTimestampValue())
 	case *v1pb.RowValue_TimestampTzValue:
-		t := value.GetTimestampTzValue().GoogleTimestamp.AsTime()
-		z := time.FixedZone(value.GetTimestampTzValue().GetZone(), int(value.GetTimestampTzValue().GetOffset()))
-		return t.In(z).Format(time.RFC3339Nano)
+		return formatTimestampTz(value.GetTimestampTzValue())
 	case *v1pb.RowValue_ValueValue:
 		return value.GetValueValue().String()
 	default:
 		return nil
 	}
-}
-
-func convertBytesToBinaryString(bs []byte) (string, error) {
-	var buf bytes.Buffer
-	if _, err := buf.WriteString("0b"); err != nil {
-		return "", err
-	}
-	for _, b := range bs {
-		if _, err := buf.WriteString(fmt.Sprintf("%08b", b)); err != nil {
-			return "", err
-		}
-	}
-	return buf.String(), nil
 }

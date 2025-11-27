@@ -193,7 +193,7 @@ func TestExportSQL(t *testing.T) {
 					},
 				},
 			},
-			want: "INSERT INTO `<table_name>` (`a`) VALUES (B'101');",
+			want: "INSERT INTO `<table_name>` (`a`) VALUES (0x05);",
 		},
 	}
 	a := assert.New(t)
@@ -265,7 +265,7 @@ func TestExportJSON(t *testing.T) {
 			},
 			want: `[
   {
-    "a": "0b00000101"
+    "a": "BQ=="
   }
 ]`,
 		},

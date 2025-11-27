@@ -1,11 +1,11 @@
 package export
 
 import (
+	"encoding/hex"
 	"fmt"
 	"io"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
@@ -107,12 +107,9 @@ func convertValueToBytesInSQL(engine storepb.Engine, value *v1pb.RowValue) []byt
 	case *v1pb.RowValue_NullValue:
 		return []byte("NULL")
 	case *v1pb.RowValue_TimestampValue:
-		return escapeSQLString(engine, []byte(value.GetTimestampValue().GoogleTimestamp.AsTime().Format("2006-01-02 15:04:05.000000")))
+		return escapeSQLString(engine, []byte(formatTimestamp(value.GetTimestampValue())))
 	case *v1pb.RowValue_TimestampTzValue:
-		t := value.GetTimestampTzValue().GoogleTimestamp.AsTime()
-		z := time.FixedZone(value.GetTimestampTzValue().GetZone(), int(value.GetTimestampTzValue().GetOffset()))
-		s := t.In(z).Format(time.RFC3339Nano)
-		return escapeSQLString(engine, []byte(s))
+		return escapeSQLString(engine, []byte(formatTimestampTz(value.GetTimestampTzValue())))
 	case *v1pb.RowValue_ValueValue:
 		return convertValueValueToBytes(value.GetValueValue())
 	default:
@@ -136,16 +133,10 @@ func escapeSQLString(engine storepb.Engine, v []byte) []byte {
 	}
 }
 
-func escapeSQLBytes(engine storepb.Engine, v []byte) []byte {
-	switch engine {
-	case storepb.Engine_MYSQL, storepb.Engine_MARIADB:
-		result := []byte("B'")
-		s := fmt.Sprintf("%b", v)
-		s = s[1 : len(s)-1]
-		result = append(result, []byte(s)...)
-		result = append(result, '\'')
-		return result
-	default:
-		return escapeSQLString(engine, v)
-	}
+func escapeSQLBytes(_ storepb.Engine, v []byte) []byte {
+	// Use hex encoding for all engines (SQL standard)
+	result := make([]byte, 2+hex.EncodedLen(len(v)))
+	copy(result, "0x")
+	hex.Encode(result[2:], v)
+	return result
 }

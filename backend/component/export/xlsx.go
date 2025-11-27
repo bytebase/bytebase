@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"strconv"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/xuri/excelize/v2"
@@ -111,12 +110,9 @@ func convertValueToStringInXLSX(value *v1pb.RowValue) string {
 	case *v1pb.RowValue_NullValue:
 		return ""
 	case *v1pb.RowValue_TimestampValue:
-		return value.GetTimestampValue().GoogleTimestamp.AsTime().Format("2006-01-02 15:04:05.000000")
+		return formatTimestamp(value.GetTimestampValue())
 	case *v1pb.RowValue_TimestampTzValue:
-		t := value.GetTimestampTzValue().GoogleTimestamp.AsTime()
-		z := time.FixedZone(value.GetTimestampTzValue().GetZone(), int(value.GetTimestampTzValue().GetOffset()))
-		s := t.In(z).Format(time.RFC3339Nano)
-		return s
+		return formatTimestampTz(value.GetTimestampTzValue())
 	case *v1pb.RowValue_ValueValue:
 		return value.GetValueValue().String()
 	default:
