@@ -3950,13 +3950,13 @@ func (v *CreateOrReplaceVisitor) visitCreateFunctionStmt(ctx *pgparser.Createfun
 		return nil
 	}
 
-	// Look for the FUNCTION keyword after CREATE
-	functionToken := v.findFunctionToken(ctx)
+	// Look for the FUNCTION/PROCEDURE keyword after CREATE
+	functionToken := v.findFunctionOrProcedureToken(ctx)
 	if functionToken == nil {
 		return nil
 	}
 
-	// Insert "OR REPLACE" between CREATE and FUNCTION
+	// Insert "OR REPLACE" between CREATE and FUNCTION/PROCEDURE
 	// We insert it right before the FUNCTION token
 	v.rewriter.InsertBefore("", functionToken.GetTokenIndex(), "OR REPLACE ")
 
@@ -3987,15 +3987,17 @@ func extractColumnDefinitionFromAST(columnASTNode pgparser.IColumnDefContext) st
 	return getTextFromAST(columnASTNode)
 }
 
-// findFunctionToken finds the FUNCTION token in the CREATE FUNCTION statement
-func (v *CreateOrReplaceVisitor) findFunctionToken(ctx *pgparser.CreatefunctionstmtContext) antlr.Token {
+// findFunctionOrProcedureToken finds the FUNCTION or PROCEDURE token in the CREATE FUNCTION/PROCEDURE statement
+func (v *CreateOrReplaceVisitor) findFunctionOrProcedureToken(ctx *pgparser.CreatefunctionstmtContext) antlr.Token {
 	// Get all tokens in the context range
 	start := ctx.GetStart().GetTokenIndex()
 	stop := ctx.GetStop().GetTokenIndex()
 
 	for i := start; i <= stop; i++ {
 		token := v.tokens.Get(i)
-		if token.GetTokenType() == pgparser.PostgreSQLParserFUNCTION {
+		// Check for both FUNCTION and PROCEDURE tokens since they share the same grammar rule
+		if token.GetTokenType() == pgparser.PostgreSQLParserFUNCTION ||
+			token.GetTokenType() == pgparser.PostgreSQLParserPROCEDURE {
 			return token
 		}
 	}
@@ -4003,11 +4005,11 @@ func (v *CreateOrReplaceVisitor) findFunctionToken(ctx *pgparser.Createfunctions
 	return nil
 }
 
-// hasOrReplace checks if the CREATE FUNCTION statement already contains "OR REPLACE"
+// hasOrReplace checks if the CREATE FUNCTION/PROCEDURE statement already contains "OR REPLACE"
 func (v *CreateOrReplaceVisitor) hasOrReplace(ctx *pgparser.CreatefunctionstmtContext) bool {
-	// Get all tokens in the context range between CREATE and FUNCTION
+	// Get all tokens in the context range between CREATE and FUNCTION/PROCEDURE
 	start := ctx.GetStart().GetTokenIndex()
-	functionToken := v.findFunctionToken(ctx)
+	functionToken := v.findFunctionOrProcedureToken(ctx)
 	if functionToken == nil {
 		return false
 	}
