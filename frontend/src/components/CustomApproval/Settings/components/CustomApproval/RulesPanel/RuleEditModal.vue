@@ -21,7 +21,7 @@
       <div class="flex-1 flex flex-col px-6 py-4 overflow-hidden gap-y-4">
         <div class="flex flex-col gap-y-2">
           <h3 class="font-medium text-sm text-control">
-            {{ $t("common.title") }}
+            {{ $t("common.title") }} <RequiredStar />
           </h3>
           <NInput
             v-model:value="state.title"
@@ -45,7 +45,7 @@
 
         <div class="flex-1 flex flex-col gap-y-2 overflow-y-auto">
           <h3 class="font-medium text-sm text-control">
-            {{ $t("cel.condition.self") }}
+            {{ $t("cel.condition.self") }} <RequiredStar />
           </h3>
           <div class="text-sm text-control-light">
             {{ $t("cel.condition.description-tips") }}
@@ -62,7 +62,7 @@
 
         <div class="flex flex-col gap-y-2">
           <h3 class="font-medium text-sm text-control">
-            {{ $t("custom-approval.approval-flow.node.nodes") }}
+            {{ $t("custom-approval.approval-flow.node.nodes") }} <RequiredStar />
           </h3>
           <div class="text-sm text-control-light">
             {{ $t("custom-approval.approval-flow.node.description") }}
@@ -99,6 +99,7 @@ import { cloneDeep, head } from "lodash-es";
 import { NButton, NInput, NModal } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import ExprEditor from "@/components/ExprEditor";
+import RequiredStar from "@/components/RequiredStar.vue";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import {
   buildCELExpr,
@@ -157,6 +158,7 @@ const optionConfigMap = computed(() =>
 );
 
 const allowSave = computed(() => {
+  if (!state.title.trim()) return false;
   if (!state.conditionExpr) return false;
   if (!validateSimpleExpr(state.conditionExpr)) return false;
   if (state.flow.roles.length === 0) return false;
