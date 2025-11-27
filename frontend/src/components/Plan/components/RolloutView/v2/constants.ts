@@ -7,3 +7,9 @@ export const DEFAULT_PAGE_SIZE = 10;
  * Maximum characters to show in collapsed SQL statement preview
  */
 export const STATEMENT_PREVIEW_LENGTH = 80;
+
+/**
+ * Maximum characters to display in expanded SQL statement view.
+ * Larger statements are truncated to avoid performance issues with syntax highlighting.
+ */
+export const MAX_STATEMENT_DISPLAY_SIZE = 10000;

@@ -1,6 +1,7 @@
+import { head } from "lodash-es";
 import { type Ref, ref, watch } from "vue";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
-import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import { isValidTaskName } from "@/utils";
 import { addToSet, deleteFromSet } from "../utils/reactivity";
 
 export interface UseTaskCollapseReturn {
@@ -14,7 +15,10 @@ export const useTaskCollapse = (tasks: Ref<Task[]>): UseTaskCollapseReturn => {
   const lastTaskNames = ref<string>("");
 
   const isTaskExpanded = (task: Task): boolean => {
-    return expandedTaskIds.value.has(task.name);
+    if (isValidTaskName(task.name)) {
+      return expandedTaskIds.value.has(task.name);
+    }
+    return false;
   };
 
   const toggleExpand = (task: Task) => {
@@ -43,14 +47,10 @@ export const useTaskCollapse = (tasks: Ref<Task[]>): UseTaskCollapseReturn => {
         // Clear expanded tasks from previous stage
         expandedTaskIds.value.clear();
 
-        // Auto-expand first non-completed task
-        const firstActiveTask = newTasks.find(
-          (task) =>
-            task.status !== Task_Status.DONE &&
-            task.status !== Task_Status.CANCELED
-        );
-        const taskToExpand = firstActiveTask || newTasks[0];
-        addToSet(expandedTaskIds, taskToExpand.name);
+        const taskToExpand = head(newTasks);
+        if (taskToExpand) {
+          addToSet(expandedTaskIds, taskToExpand.name);
+        }
       }
     },
     { immediate: true }

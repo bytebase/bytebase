@@ -61,15 +61,17 @@ const { events } = usePlanContextWithRollout();
 
 const { rollout, mergedStages, ready } = useRolloutViewContext();
 
-// Preload instances for all tasks to ensure engine icons display
-useTaskInstancePreload(() => mergedStages.value);
-
 const routeStageId = computed(() => route.params.stageId as string | undefined);
 
 const { selectedStage, isStageCreated } = useStageSelection(
   mergedStages,
   routeStageId,
   rollout
+);
+
+// Preload instances for tasks in the selected stage to ensure engine icons display
+useTaskInstancePreload(() =>
+  selectedStage.value ? [selectedStage.value] : []
 );
 
 // Stage action panel state

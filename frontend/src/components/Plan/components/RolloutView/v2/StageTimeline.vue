@@ -27,17 +27,15 @@
       class="overflow-y-auto px-3 pt-1 pb-3"
       :class="isInline ? 'max-h-48' : 'max-h-[calc(100vh-300px)]'"
     >
-      <div
-        v-if="isLoading"
-        class="py-4 text-sm text-gray-400 text-center"
-      >
-        {{ $t("common.loading") }}
+      <div v-if="isLoading" class="py-4 flex justify-center">
+        <BBSpin />
       </div>
       <div
         v-else-if="stageTaskRuns.length === 0"
-        class="py-4 text-sm text-gray-500 text-center"
+        class="py-4 text-sm text-gray-500 flex flex-col justify-center items-center gap-1"
       >
-        {{ $t("common.no-data") }}
+        <SquareChartGanttIcon :stroke-width="1" :size="36" />
+        <span>{{ $t("common.no-data") }}</span>
       </div>
       <NTimeline v-else size="medium">
         <NTimelineItem
@@ -134,9 +132,14 @@
 </template>
 
 <script lang="ts" setup>
-import { ChevronDownIcon, ChevronRightIcon } from "lucide-vue-next";
+import {
+  ChevronDownIcon,
+  ChevronRightIcon,
+  SquareChartGanttIcon,
+} from "lucide-vue-next";
 import { NTimeline, NTimelineItem, NTooltip } from "naive-ui";
 import { computed, ref } from "vue";
+import BBSpin from "@/bbkit/BBSpin.vue";
 import TaskRunDetail from "@/components/IssueV1/components/TaskRunSection/TaskRunDetail.vue";
 import TimestampDisplay from "@/components/misc/Timestamp.vue";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";

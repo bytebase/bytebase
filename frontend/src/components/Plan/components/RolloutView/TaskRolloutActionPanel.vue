@@ -96,38 +96,13 @@
                 <template #default="{ item: task }">
                   <div
                     :key="task.name"
-                    class="flex items-center text-sm"
+                    class="flex items-center text-sm gap-2"
                     :style="{ height: `${itemHeight}px` }"
                   >
-                    <NTag
-                      v-if="
-                        semanticTaskType(
-                          task.type,
-                          task.payload?.case === 'databaseUpdate'
-                            ? task.payload.value.databaseChangeType
-                            : undefined,
-                          task.payload?.case === 'databaseUpdate'
-                            ? task.payload.value.migrationType
-                            : undefined
-                        )
-                      "
-                      class="mr-2"
+                    <TaskStatus
+                      :status="task.status"
                       size="small"
-                    >
-                      <span class="inline-block text-center">
-                        {{
-                          semanticTaskType(
-                            task.type,
-                            task.payload?.case === "databaseUpdate"
-                              ? task.payload.value.databaseChangeType
-                              : undefined,
-                            task.payload?.case === "databaseUpdate"
-                              ? task.payload.value.migrationType
-                              : undefined
-                          )
-                        }}
-                      </span>
-                    </NTag>
+                    />
                     <TaskDatabaseName :task="task" />
                   </div>
                 </template>
@@ -139,37 +114,12 @@
                   <li
                     v-for="task in eligibleTasks"
                     :key="task.name"
-                    class="flex items-center"
+                    class="flex items-center gap-2"
                   >
-                    <NTag
-                      v-if="
-                        semanticTaskType(
-                          task.type,
-                          task.payload?.case === 'databaseUpdate'
-                            ? task.payload.value.databaseChangeType
-                            : undefined,
-                          task.payload?.case === 'databaseUpdate'
-                            ? task.payload.value.migrationType
-                            : undefined
-                        )
-                      "
-                      class="mr-2"
+                    <TaskStatus
+                      :status="task.status"
                       size="small"
-                    >
-                      <span class="inline-block text-center">
-                        {{
-                          semanticTaskType(
-                            task.type,
-                            task.payload?.case === "databaseUpdate"
-                              ? task.payload.value.databaseChangeType
-                              : undefined,
-                            task.payload?.case === "databaseUpdate"
-                              ? task.payload.value.migrationType
-                              : undefined
-                          )
-                        }}
-                      </span>
-                    </NTag>
+                    />
                     <TaskDatabaseName :task="task" />
                   </li>
                 </ul>
@@ -299,15 +249,14 @@ import {
   NRadio,
   NRadioGroup,
   NScrollbar,
-  NTag,
   NTooltip,
   NVirtualList,
 } from "naive-ui";
 import { computed, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import { semanticTaskType } from "@/components/IssueV1";
 import { ErrorList } from "@/components/IssueV1/components/common";
 import CommonDrawer from "@/components/IssueV1/components/Panel/CommonDrawer.vue";
+import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import { EnvironmentV1Name } from "@/components/v2";
 import { rolloutServiceClientConnect } from "@/grpcweb";
 import {

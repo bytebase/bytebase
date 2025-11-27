@@ -1,4 +1,3 @@
-import { head } from "lodash-es";
 import { type ComputedRef, computed, type Ref } from "vue";
 import type { Rollout, Stage } from "@/types/proto-es/v1/rollout_service_pb";
 import { isTaskRunning, isTaskUnfinished } from "../utils/taskStatus";
@@ -54,7 +53,9 @@ export const useStageSelection = (
 
   const selectedStage = computed(() => {
     const stages = mergedStages.value;
-    const createdStages = stages.filter(isStageCreated);
+    if (!routeStageId.value) {
+      return findSuitableStage(stages);
+    }
 
     // Always follow route params if stageId is provided (allow both created and uncreated)
     if (routeStageId.value) {
@@ -67,13 +68,7 @@ export const useStageSelection = (
       }
     }
 
-    // If no stageId in route, auto-select a suitable created stage
-    if (createdStages.length === 0) {
-      // If no created stages, fallback to the first uncreated stage
-      return head(stages);
-    }
-
-    return findSuitableStage(stages);
+    return undefined;
   });
 
   return {

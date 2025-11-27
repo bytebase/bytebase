@@ -1225,7 +1225,7 @@
       "self": "阶段 | 阶段",
       "start-stage": "开始该阶段",
       "run-stage": "运行阶段",
-      "create-stage": "创建阶段",
+      "confirm-create": "确定要为此阶段创建任务吗？",
       "back-to-stage": "返回阶段 {stage}",
       "no-stages": {
         "self": "没有阶段",
@@ -1236,7 +1236,8 @@
       "selected-count": "已选择 {count} 个任务",
       "no-tasks": "此阶段没有任务",
       "no-statement": "没有 SQL 语句",
-      "view-full-details": "查看完整详情"
+      "view-full-details": "查看详情",
+      "statement-truncated-hint": "由于语句过长，已被截断。"
     },
     "no-stages": "没有可用的阶段"
   },

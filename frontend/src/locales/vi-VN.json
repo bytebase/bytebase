@@ -1225,7 +1225,7 @@
       "self": "Giai đoạn | Các giai đoạn",
       "start-stage": "Giai đoạn bắt đầu",
       "run-stage": "Chạy sân khấu",
-      "create-stage": "Tạo sân khấu",
+      "confirm-create": "Bạn có chắc chắn muốn tạo tác vụ cho giai đoạn này không?",
       "back-to-stage": "Trở lại sân khấu {stage}",
       "no-stages": {
         "self": "Không có giai đoạn",
@@ -1236,7 +1236,8 @@
       "selected-count": "{count} nhiệm vụ đã chọn | {count} nhiệm vụ đã chọn",
       "no-tasks": "Không có nhiệm vụ nào ở giai đoạn này",
       "no-statement": "Không có câu lệnh SQL",
-      "view-full-details": "Xem chi tiết đầy đủ"
+      "view-full-details": "Xem chi tiết đầy đủ",
+      "statement-truncated-hint": "Câu lệnh bị cắt bớt do kích thước lớn."
     },
     "no-stages": "Không có giai đoạn nào có sẵn"
   },
