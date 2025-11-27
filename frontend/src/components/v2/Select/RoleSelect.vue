@@ -10,6 +10,7 @@
     :filterable="true"
     :render-label="renderLabel"
     :placeholder="$t('settings.members.select-role', multiple ? 2 : 1)"
+    to="body"
     @update:value="onValueUpdate"
   />
   <FeatureModal
