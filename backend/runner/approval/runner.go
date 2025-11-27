@@ -371,13 +371,6 @@ func (r *Runner) buildCELVariablesForDatabaseChange(ctx context.Context, issue *
 		return nil, false, errors.Errorf("plan %v not found", *issue.PlanUID)
 	}
 
-	// Check if we can conclude the operation type
-	riskSource := getRiskSourceFromPlan(plan.Config)
-	if riskSource == store.RiskSourceUnknown {
-		// Cannot determine source, return done=true with empty list (no approval needed)
-		return []map[string]any{{}}, true, nil
-	}
-
 	// Check plan check runs status
 	planCheckRuns, err := r.store.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{
 		PlanUID: &plan.UID,
@@ -671,31 +664,6 @@ func (r *Runner) getDatabaseMap(ctx context.Context, databases []string) (map[st
 		databaseMap[database] = db
 	}
 	return databaseMap, nil
-}
-
-func getRiskSourceFromPlan(config *storepb.PlanConfig) store.RiskSource {
-	for _, spec := range config.GetSpecs() {
-		switch v := spec.Config.(type) {
-		case *storepb.PlanConfig_Spec_CreateDatabaseConfig:
-			return store.RiskSourceDatabaseCreate
-		case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
-			switch v.ChangeDatabaseConfig.Type {
-			case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE:
-				// For MIGRATE type, check the migrate type
-				switch v.ChangeDatabaseConfig.MigrateType {
-				case storepb.MigrationType_DML:
-					return store.RiskSourceDatabaseDataUpdate
-				default:
-					return store.RiskSourceDatabaseSchemaUpdate
-				}
-			case storepb.PlanConfig_ChangeDatabaseConfig_SDL:
-				return store.RiskSourceDatabaseSchemaUpdate
-			default:
-				return store.RiskSourceDatabaseSchemaUpdate
-			}
-		}
-	}
-	return store.RiskSourceUnknown
 }
 
 // getApprovalSourceFromPlan determines the approval rule source enum from the plan config.
