@@ -83,18 +83,13 @@
               {{ taskRun.detail }}
             </div>
             <!-- Scheduled run time for pending -->
-            <div
-              v-if="
-                taskRun.status === TaskRun_Status.PENDING && taskRun.runTime
-              "
-              class="text-xs text-gray-500 mt-0.5 flex items-center gap-1"
-            >
-              {{ $t("task.scheduled-at") }}
-              <TimestampDisplay
-                :timestamp="taskRun.runTime"
-                custom-class="!text-xs !text-gray-500"
-              />
-            </div>
+            <ScheduledTimeIndicator
+              v-if="taskRun.status === TaskRun_Status.PENDING && taskRun.runTime"
+              :time="taskRun.runTime"
+              :label="$t('task.scheduled-at')"
+              format="datetime"
+              class="mt-0.5"
+            />
             <!-- Duration and Timestamp -->
             <div class="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
               <NTooltip v-if="getTaskRunDuration(taskRun)">
@@ -162,6 +157,7 @@ import {
   getTimelineType,
   mapTaskRunStatusToTaskStatus,
 } from "./composables/useTaskRunUtils";
+import ScheduledTimeIndicator from "./ScheduledTimeIndicator.vue";
 import StageTaskRunsRollback from "./StageTaskRunsRollback.vue";
 
 const props = withDefaults(
