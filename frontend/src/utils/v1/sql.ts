@@ -86,7 +86,7 @@ export const extractSQLRowValuePlain = (value: RowValue | undefined) => {
     return formatTimestampWithTz(value.kind.value);
   }
   if (value.kind?.case === "valueValue") {
-    return toJsonString(ValueSchema, value.kind.value)
+    return toJsonString(ValueSchema, value.kind.value);
   }
 
   return Object.values(plainObject)[0];
