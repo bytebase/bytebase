@@ -39,17 +39,20 @@
             </template>
             {{ $t("rollout.stage.run-stage") }}
           </NButton>
-          <NButton
+          <NPopconfirm
             v-else
-            type="primary"
-            :size="'small'"
-            @click="$emit('create-stage', selectedStage)"
+            @positive-click="$emit('create-stage', selectedStage)"
           >
-            <template #icon>
-              <PlusIcon :size="16" />
+            <template #trigger>
+              <NButton type="primary" :size="'small'">
+                <template #icon>
+                  <PlusIcon :size="16" />
+                </template>
+                {{ $t("common.create") }}
+              </NButton>
             </template>
-            {{ $t("rollout.stage.create-stage") }}
-          </NButton>
+            {{ $t("rollout.stage.confirm-create") }}
+          </NPopconfirm>
         </div>
       </div>
     </div>
@@ -102,7 +105,7 @@
 <script lang="ts" setup>
 import { useMediaQuery } from "@vueuse/core";
 import { PlayIcon, PlusIcon } from "lucide-vue-next";
-import { NButton, NTag } from "naive-ui";
+import { NButton, NPopconfirm, NTag } from "naive-ui";
 import { computed, ref } from "vue";
 import { EnvironmentV1Name } from "@/components/v2";
 import { useEnvironmentV1Store } from "@/store";

@@ -1,14 +1,25 @@
-import { computed, ref, watchEffect } from "vue";
+import { type ComputedRef, computed, type Ref, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useSheetV1Store } from "@/store";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { getSheetStatement, sheetNameOfTaskV1 } from "@/utils";
-import { STATEMENT_PREVIEW_LENGTH } from "../constants";
+import {
+  MAX_STATEMENT_DISPLAY_SIZE,
+  STATEMENT_PREVIEW_LENGTH,
+} from "../constants";
+
+export interface UseTaskStatementReturn {
+  loading: Ref<boolean>;
+  statement: Ref<string>;
+  statementPreview: ComputedRef<string>;
+  displayedStatement: ComputedRef<string>;
+  isStatementTruncated: ComputedRef<boolean>;
+}
 
 export const useTaskStatement = (
   task: () => Task,
   isExpanded: () => boolean
-) => {
+): UseTaskStatementReturn => {
   const { t } = useI18n();
   const sheetStore = useSheetV1Store();
 
@@ -45,6 +56,7 @@ export const useTaskStatement = (
     }
   });
 
+  // Preview for collapsed view (first line, truncated)
   const statementPreview = computed(() => {
     const stmt = statement.value;
     if (!stmt) {
@@ -56,9 +68,18 @@ export const useTaskStatement = (
       : firstLine;
   });
 
+  // Check if statement exceeds display limit
+  const isStatementTruncated = computed(() => {
+    return statement.value.length > MAX_STATEMENT_DISPLAY_SIZE;
+  });
+
+  // Statement for expanded view (truncated if too large for performance)
   const displayedStatement = computed(() => {
     if (!statement.value) {
       return t("rollout.task.no-statement");
+    }
+    if (isStatementTruncated.value) {
+      return statement.value.substring(0, MAX_STATEMENT_DISPLAY_SIZE);
     }
     return statement.value;
   });
@@ -68,5 +89,6 @@ export const useTaskStatement = (
     statement,
     statementPreview,
     displayedStatement,
+    isStatementTruncated,
   };
 };

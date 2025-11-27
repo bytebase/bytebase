@@ -1225,7 +1225,7 @@
       "self": "ステージ | ステージ",
       "start-stage": "スタートステージ",
       "run-stage": "ランステージ",
-      "create-stage": "ステージを作成",
+      "confirm-create": "このステージのタスクを作成してもよろしいですか？",
       "back-to-stage": "ステージに戻る {stage}",
       "no-stages": {
         "self": "ステージなし",
@@ -1236,7 +1236,8 @@
       "selected-count": "{count} 個のタスクが選択されました | {count} 個のタスクが選択されました",
       "no-tasks": "このステージにはタスクはありません",
       "no-statement": "SQL文なし",
-      "view-full-details": "詳細を表示"
+      "view-full-details": "詳細を表示",
+      "statement-truncated-hint": "サイズが大きいため、ステートメントは切り捨てられました。"
     },
     "no-stages": "利用可能なステージはありません"
   },

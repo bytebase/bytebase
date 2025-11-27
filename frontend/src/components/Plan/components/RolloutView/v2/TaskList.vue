@@ -16,6 +16,7 @@
         v-for="task in visibleTasks"
         :key="task.name"
         :task="task"
+        :stage="stage"
         :is-expanded="isTaskExpanded(task)"
         :is-selected="isTaskSelected(task)"
         :is-selectable="!readonly && isTaskSelectable(task)"

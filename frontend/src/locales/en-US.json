@@ -1225,7 +1225,7 @@
       "self": "Stage | Stages",
       "start-stage": "Start stage",
       "run-stage": "Run Stage",
-      "create-stage": "Create Stage",
+      "confirm-create": "Confirm to create tasks for this stage?",
       "back-to-stage": "Back to Stage {stage}",
       "no-stages": {
         "self": "No stages",
@@ -1236,7 +1236,8 @@
       "selected-count": "{count} task selected | {count} tasks selected",
       "no-tasks": "No tasks in this stage",
       "no-statement": "No SQL statement",
-      "view-full-details": "View Full Details"
+      "view-full-details": "View Details",
+      "statement-truncated-hint": "Statement truncated due to large size."
     },
     "no-stages": "No stages available"
   },

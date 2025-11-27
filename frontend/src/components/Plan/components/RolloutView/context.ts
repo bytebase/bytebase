@@ -1,7 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
 import type { InjectionKey } from "vue";
-import { computed, inject, onUnmounted, provide, ref } from "vue";
+import { computed, inject, nextTick, onUnmounted, provide, ref } from "vue";
 import { rolloutServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
 import { useCurrentProjectV1 } from "@/store";
@@ -72,7 +72,9 @@ export const provideRolloutViewContext = () => {
       console.error("Failed to fetch rollout preview:", error);
       rolloutPreview.value = create(RolloutSchema, {});
     } finally {
-      ready.value = true;
+      nextTick(() => {
+        ready.value = true;
+      });
     }
   };
 

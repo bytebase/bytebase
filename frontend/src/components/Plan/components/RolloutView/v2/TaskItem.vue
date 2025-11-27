@@ -70,6 +70,7 @@
 
         <!-- Expand/Collapse button -->
         <button
+          v-if="!readonly"
           class="shrink-0 p-1 hover:bg-gray-100 rounded transition-colors"
           :class="{ 'self-start': isExpanded }"
           @click.stop="emit('toggle-expand')"
@@ -161,36 +162,46 @@
 
         <!-- SQL Statement section -->
         <div>
-          <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center justify-between mb-1">
             <span class="text-sm font-medium text-gray-700">{{ t("common.statement") }}</span>
+            <RouterLink
+              v-if="!readonly"
+              :to="`/${task.name}`"
+            >
+            <NButton text icon-placement="right" size="tiny" type="info">
+              <template #icon>
+                <ArrowUpRightIcon />
+              </template>
+              {{ t("rollout.task.view-full-details") }}
+            </NButton>
+            </RouterLink>
           </div>
 
           <BBSpin v-if="loading" />
-          <HighlightCodeBlock
-            v-else
-            :code="displayedStatement"
-            language="sql"
-            :lazy="true"
-            class="text-sm whitespace-pre-wrap wrap-break-word max-h-64 overflow-auto rounded p-2 bg-white border border-gray-200"
-          />
+          <template v-else>
+            <HighlightCodeBlock
+              :code="displayedStatement"
+              language="sql"
+              :lazy="true"
+              class="text-sm whitespace-pre-wrap wrap-break-word max-h-64 overflow-auto rounded-t p-2 bg-white border border-gray-200"
+              :class="isStatementTruncated ? 'rounded-b-none border-b-0' : 'rounded-b'"
+            />
+            <div
+              v-if="isStatementTruncated"
+              class="px-3 py-1.5 text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-b"
+            >
+              {{ t("rollout.task.statement-truncated-hint") }}
+            </div>
+          </template>
         </div>
 
         <!-- Latest Task Run Info -->
         <div v-if="latestTaskRun">
-          <div class="flex items-center justify-between mb-2">
-            <div class="flex items-center gap-x-2">
-              <span class="text-sm font-medium text-gray-700">{{ t("task-run.latest") }}</span>
-              <span class="text-sm text-gray-500">
-                <Timestamp :timestamp="latestTaskRun.updateTime" />
-              </span>
-            </div>
-            <RouterLink
-              v-if="!readonly"
-              :to="`/${task.name}`"
-              class="text-xs text-blue-600 hover:text-blue-700"
-            >
-              {{ t("rollout.task.view-full-details") }} →
-            </RouterLink>
+          <div class="flex items-center gap-x-2 mb-2">
+            <span class="text-sm font-medium text-gray-700">{{ t("task-run.latest") }}</span>
+            <span class="text-sm text-gray-500">
+              <Timestamp :timestamp="latestTaskRun.updateTime" />
+            </span>
           </div>
 
           <!-- Error message for failed tasks -->
@@ -243,6 +254,7 @@
 <script lang="ts" setup>
 import { last } from "lodash-es";
 import {
+  ArrowUpRightIcon,
   ChevronDownIcon,
   ChevronRightIcon,
   LoaderCircleIcon,
@@ -262,7 +274,7 @@ import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay
 import TaskRolloutActionPanel from "@/components/Plan/components/RolloutView/TaskRolloutActionPanel.vue";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import { taskRunNamePrefix } from "@/store";
-import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
+import type { Stage, Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { getTaskTypeI18nKey } from "@/utils";
 import { useTaskActions } from "./composables/useTaskActions";
@@ -274,6 +286,7 @@ import ScheduledTimeIndicator from "./ScheduledTimeIndicator.vue";
 const props = withDefaults(
   defineProps<{
     task: Task;
+    stage: Stage;
     isExpanded: boolean;
     isSelected: boolean;
     isSelectable: boolean;
@@ -292,21 +305,10 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const {
-  rollout,
   taskRuns: allTaskRuns,
   readonly: contextReadonly,
   events,
 } = usePlanContextWithRollout();
-
-// Get the stage for the current task
-const stage = computed(() => {
-  for (const s of rollout.value.stages) {
-    if (s.tasks.some((t) => t.name === props.task.name)) {
-      return s;
-    }
-  }
-  return undefined;
-});
 
 // Task actions (Run/Skip/Cancel)
 const {
@@ -323,7 +325,7 @@ const {
   closeActionPanel,
 } = useTaskActions(
   () => props.task,
-  () => stage.value,
+  () => props.stage,
   { readonly: () => props.readonly || contextReadonly.value }
 );
 
@@ -332,10 +334,11 @@ const handleActionConfirm = () => {
   events.emit("status-changed", { eager: true });
 };
 
-const { loading, statementPreview, displayedStatement } = useTaskStatement(
-  () => props.task,
-  () => props.isExpanded
-);
+const { loading, statementPreview, displayedStatement, isStatementTruncated } =
+  useTaskStatement(
+    () => props.task,
+    () => props.isExpanded
+  );
 
 const latestTaskRun = computed(() => {
   const taskRunsForTask = allTaskRuns.value.filter((run) =>
