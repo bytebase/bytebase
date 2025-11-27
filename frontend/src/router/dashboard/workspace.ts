@@ -17,7 +17,6 @@ import {
   WORKSPACE_ROUTE_IM,
   WORKSPACE_ROUTE_LANDING,
   WORKSPACE_ROUTE_MEMBERS,
-  WORKSPACE_ROUTE_RISKS,
   WORKSPACE_ROUTE_ROLES,
   WORKSPACE_ROUTE_SCHEMA_TEMPLATE,
   WORKSPACE_ROUTE_SEMANTIC_TYPES,
@@ -236,16 +235,6 @@ const workspaceRoutes: RouteRecordRaw[] = [
           requiredPermissionList: () => ["bb.policies.get"],
         },
         component: () => import("@/views/SettingWorkspaceSchemaTemplate.vue"),
-        props: true,
-      },
-      {
-        path: "risks",
-        name: WORKSPACE_ROUTE_RISKS,
-        meta: {
-          title: () => t("custom-approval.risk.risks"),
-          requiredPermissionList: () => ["bb.settings.get", "bb.risks.list"],
-        },
-        component: () => import("@/views/SettingWorkspaceRiskCenter.vue"),
         props: true,
       },
       {

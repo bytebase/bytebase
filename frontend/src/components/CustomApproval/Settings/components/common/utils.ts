@@ -18,11 +18,9 @@ import {
   DEFAULT_PROJECT_NAME,
   PRESET_WORKSPACE_ROLES,
   PresetRiskLevelList,
-  useSupportedSourceList,
 } from "@/types";
 import { Engine, RiskLevel } from "@/types/proto-es/v1/common_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import { type Risk, Risk_Source } from "@/types/proto-es/v1/risk_service_pb";
 import { WorkspaceApprovalSetting_Rule_Source } from "@/types/proto-es/v1/setting_service_pb";
 import {
   displayRoleTitle,
@@ -49,25 +47,6 @@ import {
   CEL_ATTRIBUTE_STATEMENT_TEXT,
 } from "@/utils/cel-attributes";
 
-export const sourceText = (source: Risk_Source) => {
-  switch (source) {
-    case Risk_Source.SOURCE_UNSPECIFIED:
-      return t("common.all");
-    case Risk_Source.DDL:
-      return t("custom-approval.risk-rule.risk.namespace.ddl");
-    case Risk_Source.DML:
-      return t("custom-approval.risk-rule.risk.namespace.dml");
-    case Risk_Source.CREATE_DATABASE:
-      return t("custom-approval.risk-rule.risk.namespace.create_database");
-    case Risk_Source.DATA_EXPORT:
-      return t("custom-approval.risk-rule.risk.namespace.data_export");
-    case Risk_Source.REQUEST_ROLE:
-      return t("custom-approval.risk-rule.risk.namespace.request-role");
-    default:
-      return "UNRECOGNIZED";
-  }
-};
-
 export const levelText = (level: RiskLevel) => {
   switch (level) {
     case RiskLevel.RISK_LEVEL_UNSPECIFIED:
@@ -81,12 +60,6 @@ export const levelText = (level: RiskLevel) => {
     default:
       return String(level);
   }
-};
-
-export const orderByLevelDesc = (a: Risk, b: Risk): number => {
-  if (a.level !== b.level) return -(a.level - b.level);
-  if (a.name === b.name) return 0;
-  return a.name < b.name ? -1 : 1;
 };
 
 const commonFactorList: Factor[] = [
@@ -108,46 +81,6 @@ const migrationFactorList: Factor[] = [
   CEL_ATTRIBUTE_STATEMENT_SQL_TYPE,
   CEL_ATTRIBUTE_STATEMENT_TEXT,
 ] as const;
-
-export const RiskSourceFactorMap: Map<Risk_Source, Factor[]> = new Map([
-  [
-    Risk_Source.DDL,
-    [
-      ...commonFactorList,
-      ...schemaObjectNameFactorList,
-      ...migrationFactorList,
-    ],
-  ],
-  [
-    Risk_Source.DML,
-    [
-      ...commonFactorList,
-      ...schemaObjectNameFactorList,
-      ...migrationFactorList,
-    ],
-  ],
-  [
-    Risk_Source.CREATE_DATABASE,
-    [...commonFactorList, CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME],
-  ],
-  [
-    Risk_Source.DATA_EXPORT,
-    [...commonFactorList, ...schemaObjectNameFactorList],
-  ],
-  [
-    Risk_Source.REQUEST_ROLE,
-    [
-      CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID,
-      CEL_ATTRIBUTE_RESOURCE_PROJECT_ID,
-      CEL_ATTRIBUTE_REQUEST_EXPIRATION_DAYS,
-      CEL_ATTRIBUTE_REQUEST_ROLE,
-    ],
-  ],
-]);
-
-export const getFactorList = (source: Risk_Source) => {
-  return RiskSourceFactorMap.get(source) ?? [];
-};
 
 export const getRenderOptionFunc = (resource: {
   title: string | (() => VNode);
@@ -241,14 +174,7 @@ const getLevelOptions = () => {
   }));
 };
 
-const getSourceOptions = () => {
-  return useSupportedSourceList().value.map<SelectOption>((source) => ({
-    label: Risk_Source[source],
-    value: Risk_Source[source],
-  }));
-};
-
-const getSQLTypeOptions = (source: Risk_Source) => {
+const getSQLTypeOptions = (source: WorkspaceApprovalSetting_Rule_Source) => {
   const mapOptions = (values: readonly string[]) => {
     return values.map<SelectOption>((v) => ({
       label: v,
@@ -256,9 +182,9 @@ const getSQLTypeOptions = (source: Risk_Source) => {
     }));
   };
   switch (source) {
-    case Risk_Source.DDL:
+    case WorkspaceApprovalSetting_Rule_Source.DDL:
       return mapOptions(SQLTypeList.DDL);
-    case Risk_Source.DML:
+    case WorkspaceApprovalSetting_Rule_Source.DML:
       return mapOptions(SQLTypeList.DML);
   }
   // unsupported source
@@ -274,8 +200,78 @@ const getRoleOptions = () => {
     }));
 };
 
-export const getOptionConfigMap = (source: Risk_Source) => {
-  const factorList = getFactorList(source);
+// Overload for new approval rule source enum
+export const approvalSourceText = (
+  source: WorkspaceApprovalSetting_Rule_Source
+) => {
+  switch (source) {
+    case WorkspaceApprovalSetting_Rule_Source.SOURCE_UNSPECIFIED:
+      return t("common.all");
+    case WorkspaceApprovalSetting_Rule_Source.DDL:
+      return t("custom-approval.risk-rule.risk.namespace.ddl");
+    case WorkspaceApprovalSetting_Rule_Source.DML:
+      return t("custom-approval.risk-rule.risk.namespace.dml");
+    case WorkspaceApprovalSetting_Rule_Source.CREATE_DATABASE:
+      return t("custom-approval.risk-rule.risk.namespace.create_database");
+    case WorkspaceApprovalSetting_Rule_Source.EXPORT_DATA:
+      return t("custom-approval.risk-rule.risk.namespace.data_export");
+    case WorkspaceApprovalSetting_Rule_Source.REQUEST_ROLE:
+      return t("custom-approval.risk-rule.risk.namespace.request-role");
+    default:
+      return "UNRECOGNIZED";
+  }
+};
+
+// Map between WorkspaceApprovalSetting_Rule_Source and Factor lists
+export const ApprovalSourceFactorMap: Map<
+  WorkspaceApprovalSetting_Rule_Source,
+  Factor[]
+> = new Map([
+  [
+    WorkspaceApprovalSetting_Rule_Source.DDL,
+    [
+      ...commonFactorList,
+      ...schemaObjectNameFactorList,
+      ...migrationFactorList,
+    ],
+  ],
+  [
+    WorkspaceApprovalSetting_Rule_Source.DML,
+    [
+      ...commonFactorList,
+      ...schemaObjectNameFactorList,
+      ...migrationFactorList,
+    ],
+  ],
+  [
+    WorkspaceApprovalSetting_Rule_Source.CREATE_DATABASE,
+    [...commonFactorList, CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME],
+  ],
+  [
+    WorkspaceApprovalSetting_Rule_Source.EXPORT_DATA,
+    [...commonFactorList, ...schemaObjectNameFactorList],
+  ],
+  [
+    WorkspaceApprovalSetting_Rule_Source.REQUEST_ROLE,
+    [
+      CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID,
+      CEL_ATTRIBUTE_RESOURCE_PROJECT_ID,
+      CEL_ATTRIBUTE_REQUEST_EXPIRATION_DAYS,
+      CEL_ATTRIBUTE_REQUEST_ROLE,
+    ],
+  ],
+]);
+
+export const getApprovalFactorList = (
+  source: WorkspaceApprovalSetting_Rule_Source
+) => {
+  return ApprovalSourceFactorMap.get(source) ?? [];
+};
+
+export const getApprovalOptionConfigMap = (
+  source: WorkspaceApprovalSetting_Rule_Source
+) => {
+  const factorList = getApprovalFactorList(source);
   return factorList.reduce((map, factor) => {
     let options: SelectOption[] = [];
     switch (factor) {
@@ -322,9 +318,6 @@ export const getOptionConfigMap = (source: Risk_Source) => {
       case CEL_ATTRIBUTE_LEVEL:
         options = getLevelOptions();
         break;
-      case CEL_ATTRIBUTE_SOURCE:
-        options = getSourceOptions();
-        break;
       case CEL_ATTRIBUTE_STATEMENT_SQL_TYPE:
         options = getSQLTypeOptions(source);
         break;
@@ -339,85 +332,4 @@ export const getOptionConfigMap = (source: Risk_Source) => {
 
     return map;
   }, new Map<Factor, OptionConfig>());
-};
-
-// Overload for new approval rule source enum
-export const approvalSourceText = (
-  source: WorkspaceApprovalSetting_Rule_Source
-) => {
-  switch (source) {
-    case WorkspaceApprovalSetting_Rule_Source.SOURCE_UNSPECIFIED:
-      return t("common.all");
-    case WorkspaceApprovalSetting_Rule_Source.DDL:
-      return t("custom-approval.risk-rule.risk.namespace.ddl");
-    case WorkspaceApprovalSetting_Rule_Source.DML:
-      return t("custom-approval.risk-rule.risk.namespace.dml");
-    case WorkspaceApprovalSetting_Rule_Source.CREATE_DATABASE:
-      return t("custom-approval.risk-rule.risk.namespace.create_database");
-    case WorkspaceApprovalSetting_Rule_Source.EXPORT_DATA:
-      return t("custom-approval.risk-rule.risk.namespace.data_export");
-    case WorkspaceApprovalSetting_Rule_Source.REQUEST_ROLE:
-      return t("custom-approval.risk-rule.risk.namespace.request-role");
-    default:
-      return "UNRECOGNIZED";
-  }
-};
-
-// Map between WorkspaceApprovalSetting_Rule_Source and Factor lists
-export const ApprovalSourceFactorMap: Map<
-  WorkspaceApprovalSetting_Rule_Source,
-  Factor[]
-> = new Map([
-  [
-    WorkspaceApprovalSetting_Rule_Source.DDL,
-    RiskSourceFactorMap.get(Risk_Source.DDL) || [],
-  ],
-  [
-    WorkspaceApprovalSetting_Rule_Source.DML,
-    RiskSourceFactorMap.get(Risk_Source.DML) || [],
-  ],
-  [
-    WorkspaceApprovalSetting_Rule_Source.CREATE_DATABASE,
-    RiskSourceFactorMap.get(Risk_Source.CREATE_DATABASE) || [],
-  ],
-  [
-    WorkspaceApprovalSetting_Rule_Source.EXPORT_DATA,
-    RiskSourceFactorMap.get(Risk_Source.DATA_EXPORT) || [],
-  ],
-  [
-    WorkspaceApprovalSetting_Rule_Source.REQUEST_ROLE,
-    RiskSourceFactorMap.get(Risk_Source.REQUEST_ROLE) || [],
-  ],
-]);
-
-export const getApprovalFactorList = (
-  source: WorkspaceApprovalSetting_Rule_Source
-) => {
-  return ApprovalSourceFactorMap.get(source) ?? [];
-};
-
-export const getApprovalOptionConfigMap = (
-  source: WorkspaceApprovalSetting_Rule_Source
-) => {
-  const riskSource = approvalSourceToRiskSource(source);
-  return getOptionConfigMap(riskSource);
-};
-
-const approvalSourceToRiskSource = (
-  source: WorkspaceApprovalSetting_Rule_Source
-): Risk_Source => {
-  switch (source) {
-    case WorkspaceApprovalSetting_Rule_Source.DDL:
-      return Risk_Source.DDL;
-    case WorkspaceApprovalSetting_Rule_Source.DML:
-      return Risk_Source.DML;
-    case WorkspaceApprovalSetting_Rule_Source.CREATE_DATABASE:
-      return Risk_Source.CREATE_DATABASE;
-    case WorkspaceApprovalSetting_Rule_Source.EXPORT_DATA:
-      return Risk_Source.DATA_EXPORT;
-    case WorkspaceApprovalSetting_Rule_Source.REQUEST_ROLE:
-      return Risk_Source.REQUEST_ROLE;
-    default:
-      return Risk_Source.SOURCE_UNSPECIFIED;
-  }
 };
