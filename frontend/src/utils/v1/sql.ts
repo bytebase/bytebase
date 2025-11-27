@@ -1,4 +1,4 @@
-import { toJson } from "@bufbuild/protobuf";
+import { toJson, toJsonString } from "@bufbuild/protobuf";
 import dayjs from "dayjs";
 import { getDateForPbTimestampProtoEs } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
@@ -9,6 +9,7 @@ import type {
 } from "@/types/proto-es/v1/sql_service_pb";
 import { RowValueSchema } from "@/types/proto-es/v1/sql_service_pb";
 import { isNullOrUndefined } from "../util";
+import { ValueSchema } from "@bufbuild/protobuf/wkt";
 
 // extractSQLRowValuePlain extracts a plain value from a RowValue.
 export const extractSQLRowValuePlain = (value: RowValue | undefined) => {
@@ -85,7 +86,7 @@ export const extractSQLRowValuePlain = (value: RowValue | undefined) => {
     return formatTimestampWithTz(value.kind.value);
   }
   if (value.kind?.case === "valueValue") {
-    return JSON.stringify(value.kind.value);
+    return toJsonString(ValueSchema, value.kind.value)
   }
 
   return Object.values(plainObject)[0];
