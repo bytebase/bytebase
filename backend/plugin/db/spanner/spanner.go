@@ -285,6 +285,13 @@ func getColumnTypeName(columnType *sppb.Type) (string, error) {
 	return columnType.Code.String(), nil
 }
 
+// getStatementWithResultLimit wraps a SQL statement in a CTE to enforce a result limit.
+// This is a simple approach that works for SELECT queries but has a critical limitation:
+// Spanner does NOT support DML statements (INSERT/UPDATE/DELETE) inside CTEs.
+//
+// This function should ONLY be called for SELECT statements (verify with util.IsSelect first).
+// For a more robust parser-based approach that can handle complex queries, see the
+// PostgreSQL/MySQL implementations which parse and inject LIMIT clauses directly.
 func getStatementWithResultLimit(stmt string, limit int) string {
 	stmt = strings.TrimRightFunc(stmt, utils.IsSpaceOrSemicolon)
 	limitPart := fmt.Sprintf(" LIMIT %d", limit)
@@ -323,14 +330,15 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 
 	var results []*v1pb.QueryResult
 	for _, statement := range stmts {
-		if queryContext.Limit > 0 {
-			statement = getStatementWithResultLimit(statement, queryContext.Limit)
-		}
-
 		startTime := time.Now()
 		queryResult, err := func() (*v1pb.QueryResult, error) {
 			if util.IsSelect(statement) {
-				return d.querySingleSQL(ctx, statement, queryContext)
+				// Only apply limit wrapper for SELECT statements
+				limitedStatement := statement
+				if queryContext.Limit > 0 {
+					limitedStatement = getStatementWithResultLimit(statement, queryContext.Limit)
+				}
+				return d.querySingleSQL(ctx, limitedStatement, queryContext)
 			}
 			if util.IsDDL(statement) {
 				op, err := d.dbClient.UpdateDatabaseDdl(ctx, &databasepb.UpdateDatabaseDdlRequest{
