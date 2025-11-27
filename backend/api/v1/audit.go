@@ -299,12 +299,6 @@ func getRequestResource(request any) string {
 		return r.GetUser().GetName()
 	case *v1pb.LoginRequest:
 		return r.GetEmail()
-	case *v1pb.CreateRiskRequest:
-		return r.GetRisk().GetName()
-	case *v1pb.DeleteRiskRequest:
-		return r.Name
-	case *v1pb.UpdateRiskRequest:
-		return r.GetRisk().GetName()
 	case *v1pb.CreateInstanceRequest:
 		return r.GetInstance().GetName()
 	case *v1pb.UpdateInstanceRequest:
