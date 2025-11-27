@@ -61,8 +61,8 @@ func TestSQLExport(t *testing.T) {
 							statement: "SELECT * FROM Test1.tbl;",
 							content: `[
   {
-    "gender": "0b00000000",
-    "height": "0b01111111",
+    "gender": "AA==",
+    "height": "fw==",
     "id": 1,
     "name": "Alice"
   }
@@ -79,7 +79,7 @@ func TestSQLExport(t *testing.T) {
 					}{
 						{
 							statement: "SELECT * FROM Test1.tbl;",
-							content:   "id,name,gender,height\n1,\"Alice\",\"\x00\",\"\x7f\"",
+							content:   "id,name,gender,height\n1,\"Alice\",\"AA==\",\"fw==\"",
 						},
 					},
 				},
