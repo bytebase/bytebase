@@ -464,62 +464,37 @@ func (r *Runner) buildCELVariablesForDatabaseChange(ctx context.Context, issue *
 		}
 
 		// Add summary report data if available
-		if run, ok := latestPlanCheckRun[Key{
+		run, ok := latestPlanCheckRun[Key{
 			InstanceID:   instance.ResourceID,
 			DatabaseName: databaseName,
-		}]; ok {
-			foundReport := false
-			for _, result := range run.Result.Results {
-				report := result.GetSqlSummaryReport()
-				if report == nil {
-					continue
-				}
-				foundReport = true
-
-				// Calculate table rows from changed resources
-				var tableRows int64
-				var tableNames []string
-				for _, db := range report.GetChangedResources().GetDatabases() {
-					for _, sc := range db.GetSchemas() {
-						for _, tb := range sc.GetTables() {
-							tableRows += tb.GetTableRows()
-							tableNames = append(tableNames, tb.Name)
-						}
-					}
-				}
-
-				celVars[common.CELAttributeStatementAffectedRows] = report.AffectedRows
-				celVars[common.CELAttributeStatementTableRows] = tableRows
-
-				// Create CEL variables for each statement type and table combination
-				// to ensure we match the most appropriate approval rule
-				if len(report.StatementTypes) > 0 && len(tableNames) > 0 {
-					for _, statementType := range report.StatementTypes {
-						for _, tableName := range tableNames {
-							vars := maps.Clone(celVars)
-							vars[common.CELAttributeStatementSQLType] = statementType
-							vars[common.CELAttributeResourceTableName] = tableName
-							celVarsList = append(celVarsList, vars)
-						}
-					}
-				} else if len(report.StatementTypes) > 0 {
-					for _, statementType := range report.StatementTypes {
-						vars := maps.Clone(celVars)
-						vars[common.CELAttributeStatementSQLType] = statementType
-						celVarsList = append(celVarsList, vars)
-					}
-				} else {
-					celVarsList = append(celVarsList, celVars)
-				}
-				break // Use first report
-			}
-			// If no valid report was found, still append basic celVars
-			if !foundReport {
-				celVarsList = append(celVarsList, celVars)
-			}
-		} else {
+		}]
+		if !ok {
 			celVarsList = append(celVarsList, celVars)
+			continue
 		}
+
+		report := findSQLSummaryReport(run.Result.Results)
+		if report == nil {
+			celVarsList = append(celVarsList, celVars)
+			continue
+		}
+
+		// Calculate table rows from changed resources
+		var tableRows int64
+		var tableNames []string
+		for _, db := range report.GetChangedResources().GetDatabases() {
+			for _, sc := range db.GetSchemas() {
+				for _, tb := range sc.GetTables() {
+					tableRows += tb.GetTableRows()
+					tableNames = append(tableNames, tb.Name)
+				}
+			}
+		}
+
+		celVars[common.CELAttributeStatementAffectedRows] = report.AffectedRows
+		celVars[common.CELAttributeStatementTableRows] = tableRows
+
+		celVarsList = append(celVarsList, expandCELVars(celVars, report.StatementTypes, tableNames)...)
 	}
 
 	// If no tasks, return empty list (no approval needed)
@@ -625,10 +600,7 @@ func (r *Runner) buildCELVariablesForGrantRequest(ctx context.Context, issue *st
 		}
 		var celVarsList []map[string]any
 		for _, environment := range environments.GetEnvironments() {
-			celVars := make(map[string]any)
-			for k, v := range baseVars {
-				celVars[k] = v
-			}
+			celVars := maps.Clone(baseVars)
 			celVars[common.CELAttributeResourceEnvironmentID] = environment.Id
 			celVarsList = append(celVarsList, celVars)
 		}
@@ -646,10 +618,7 @@ func (r *Runner) buildCELVariablesForGrantRequest(ctx context.Context, issue *st
 
 	var celVarsList []map[string]any
 	for _, database := range databaseMap {
-		celVars := make(map[string]any)
-		for k, v := range baseVars {
-			celVars[k] = v
-		}
+		celVars := maps.Clone(baseVars)
 		if database.EffectiveEnvironmentID != nil {
 			celVars[common.CELAttributeResourceEnvironmentID] = *database.EffectiveEnvironmentID
 		} else {
@@ -781,4 +750,38 @@ func updateIssueApprovalPayload(ctx context.Context, s *store.Store, issue *stor
 		return errors.Wrap(err, "failed to update issue payload")
 	}
 	return nil
+}
+
+func findSQLSummaryReport(results []*storepb.PlanCheckRunResult_Result) *storepb.PlanCheckRunResult_Result_SqlSummaryReport {
+	for _, result := range results {
+		if report := result.GetSqlSummaryReport(); report != nil {
+			return report
+		}
+	}
+	return nil
+}
+
+// expandCELVars creates CEL variable maps for each combination of statement types and table names.
+func expandCELVars(base map[string]any, statementTypes, tableNames []string) []map[string]any {
+	if len(statementTypes) == 0 {
+		return []map[string]any{base}
+	}
+
+	// Use empty string as sentinel when no table names
+	if len(tableNames) == 0 {
+		tableNames = []string{""}
+	}
+
+	var result []map[string]any
+	for _, statementType := range statementTypes {
+		for _, tableName := range tableNames {
+			vars := maps.Clone(base)
+			vars[common.CELAttributeStatementSQLType] = statementType
+			if tableName != "" {
+				vars[common.CELAttributeResourceTableName] = tableName
+			}
+			result = append(result, vars)
+		}
+	}
+	return result
 }
