@@ -50,13 +50,15 @@ import {
   type DatabaseResource,
   DEBOUNCE_SEARCH_DELAY,
 } from "@/types";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
   CommonFilterScopeIdList,
   extractProjectResourceName,
   getDefaultPagination,
+  getValueFromSearchParams,
+  getValuesFromSearchParams,
   type SearchParams,
 } from "@/utils";
-import { convertScopeValueToEngine } from "@/utils/v1/common-conversions";
 import type { DatabaseTreeOption } from "./common";
 import {
   flattenTreeOptions,
@@ -167,27 +169,19 @@ const cascadeLoopTreeNode = (
 };
 
 const selectedInstance = computed(() => {
-  const instanceId = params.value.scopes.find(
-    (scope) => scope.id === "instance"
-  )?.value;
-  if (!instanceId) {
-    return;
-  }
-  return `${instanceNamePrefix}${instanceId}`;
+  return getValueFromSearchParams(params.value, "instance", instanceNamePrefix);
 });
 
 const selectedEnvironment = computed(() => {
-  const environmentId = params.value.scopes.find(
-    (scope) => scope.id === "environment"
-  )?.value;
-  if (!environmentId) {
-    return;
-  }
-  return `${environmentNamePrefix}${environmentId}`;
+  return getValueFromSearchParams(
+    params.value,
+    "environment",
+    environmentNamePrefix
+  );
 });
 
 const selectedTable = computed(() => {
-  return params.value.scopes.find((scope) => scope.id === "table")?.value;
+  return getValueFromSearchParams(params.value, "table");
 });
 
 const collectExpandedKeys = async ({
@@ -225,15 +219,13 @@ const filterTableList = computed(() => {
 });
 
 const selectedLabels = computed(() => {
-  return params.value.scopes
-    .filter((scope) => scope.id === "label")
-    .map((scope) => scope.value);
+  return getValuesFromSearchParams(params.value, "label");
 });
 
 const selectedEngines = computed(() => {
-  return params.value.scopes
-    .filter((scope) => scope.id === "engine")
-    .map((scope) => convertScopeValueToEngine(scope.value));
+  return getValuesFromSearchParams(params.value, "engine").map(
+    (engine) => Engine[engine as keyof typeof Engine]
+  );
 });
 
 const databaseFilter = computed(

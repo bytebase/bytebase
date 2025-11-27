@@ -34,6 +34,7 @@ import {
   UpdateInstanceRequestSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
 import { extractInstanceResourceName, hasWorkspacePermissionV2 } from "@/utils";
+import { getLabelFilter } from "./database";
 
 export interface InstanceFilter {
   environment?: string;
@@ -43,7 +44,7 @@ export interface InstanceFilter {
   query?: string;
   engines?: Engine[];
   state?: State;
-  labels?: { key: string; value: string }[];
+  labels?: string[];
 }
 
 const getListInstanceFilter = (params: InstanceFilter) => {
@@ -78,10 +79,8 @@ const getListInstanceFilter = (params: InstanceFilter) => {
   if (params.state === State.DELETED) {
     list.push(`state == "${State[params.state]}"`);
   }
-  if (params.labels && params.labels.length > 0) {
-    params.labels.forEach(({ key, value }) => {
-      list.push(`labels.${key} == "${value}"`);
-    });
+  if (params.labels) {
+    list.push(...getLabelFilter(params.labels));
   }
   return list.join(" && ");
 };

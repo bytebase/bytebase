@@ -253,8 +253,6 @@ import ErrorView from "./ErrorView";
 import SelectionCopyTooltips from "./SelectionCopyTooltips.vue";
 import VirtualDataBlock from "./VirtualDataBlock.vue";
 
-// Using conversion function from common-conversions.ts
-
 type LocalState = {
   search: string;
   vertical: boolean;

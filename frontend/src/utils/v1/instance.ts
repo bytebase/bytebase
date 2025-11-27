@@ -1,5 +1,5 @@
 import { computed, unref } from "vue";
-import { locale, t } from "@/plugins/i18n";
+import { t } from "@/plugins/i18n";
 import { useSubscriptionV1Store } from "@/store";
 import type { MaybeRef } from "@/types";
 import {
@@ -97,10 +97,8 @@ export const supportedEngineV1List = () => {
     Engine.COSMOSDB,
     Engine.CASSANDRA,
     Engine.TRINO,
+    Engine.DORIS,
   ];
-  if (locale.value === "zh-CN") {
-    engines.push(Engine.DORIS);
-  }
   return engines;
 };
 

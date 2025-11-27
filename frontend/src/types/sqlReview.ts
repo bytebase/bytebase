@@ -1,7 +1,6 @@
 import { t, te } from "@/plugins/i18n";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { SQLReviewRuleLevel } from "@/types/proto-es/v1/org_policy_service_pb";
-import { engineToString } from "@/utils/v1/common-conversions";
 import sqlReviewDevTemplate from "./sql-review.dev.yaml";
 import sqlReviewProdTemplate from "./sql-review.prod.yaml";
 import sqlReviewSampleTemplate from "./sql-review.sample.yaml";
@@ -794,7 +793,7 @@ export const getRuleLocalization = (
   let description = t(`sql-review.rule.${key}.description`);
 
   if (engine) {
-    const engineSpecificKey = `${key}.${engineToString(engine).toLowerCase()}`;
+    const engineSpecificKey = `${key}.${Engine[engine].toLowerCase()}`;
     if (te(`sql-review.rule.${engineSpecificKey}.title`)) {
       title = t(`sql-review.rule.${engineSpecificKey}.title`);
     }

@@ -137,6 +137,8 @@ import { State } from "@/types/proto-es/v1/common_pb";
 import type { SearchParams, SearchScope } from "@/utils";
 import {
   CommonFilterScopeIdList,
+  getValueFromSearchParams,
+  getValuesFromSearchParams,
   instanceV1HasCreateDatabase,
   instanceV1Name,
 } from "@/utils";
@@ -247,29 +249,19 @@ const environment = computed(() => {
 });
 
 const selectedEnvironment = computed(() => {
-  const environmentId = state.params.scopes.find(
-    (scope) => scope.id === "environment"
-  )?.value;
-  if (!environmentId) {
-    return;
-  }
-  return `${environmentNamePrefix}${environmentId}`;
+  return getValueFromSearchParams(
+    state.params,
+    "environment",
+    environmentNamePrefix
+  );
 });
 
 const selectedProject = computed(() => {
-  const projectId = state.params.scopes.find(
-    (scope) => scope.id === "project"
-  )?.value;
-  if (!projectId) {
-    return;
-  }
-  return `${projectNamePrefix}${projectId}`;
+  return getValueFromSearchParams(state.params, "project", projectNamePrefix);
 });
 
 const selectedLabels = computed(() => {
-  return state.params.scopes
-    .filter((scope) => scope.id === "label")
-    .map((scope) => scope.value);
+  return getValuesFromSearchParams(state.params, "label");
 });
 
 const filter = computed(() => ({
