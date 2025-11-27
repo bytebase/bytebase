@@ -108,7 +108,7 @@ func (s *IssueService) convertToIssue(ctx context.Context, issue *store.IssueMes
 	}
 
 	approval := issuePayload.GetApproval()
-	issueV1.RiskLevel = convertToIssueRiskLevel(approval.GetRiskLevel())
+	issueV1.RiskLevel = convertToIssueRiskLevel(issuePayload.GetRiskLevel())
 	if template := approval.GetApprovalTemplate(); template != nil {
 		issueV1.ApprovalTemplate = convertToApprovalTemplate(template)
 	}

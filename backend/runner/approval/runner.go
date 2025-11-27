@@ -128,46 +128,46 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		return true, nil
 	}
 
-	approvalTemplate, done, err := func() (*storepb.ApprovalTemplate, bool, error) {
+	approvalTemplate, celVarsList, done, err := func() (*storepb.ApprovalTemplate, []map[string]any, bool, error) {
 		// no need to find if feature is not enabled
 		if r.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_APPROVAL_WORKFLOW) != nil {
 			// nolint:nilerr
-			return nil, true, nil
+			return nil, nil, true, nil
 		}
 
 		// Step 1: Determine approval source from issue type
 		approvalSource, err := r.getApprovalSourceFromIssue(ctx, issue)
 		if err != nil {
-			return nil, false, errors.Wrap(err, "failed to get approval source from issue")
+			return nil, nil, false, errors.Wrap(err, "failed to get approval source from issue")
 		}
 		if approvalSource == storepb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED {
 			// Cannot determine source, no approval needed
-			return nil, true, nil
+			return nil, nil, true, nil
 		}
 
 		// Step 2: Build CEL variables for evaluation
 		celVarsList, done, err := r.buildCELVariablesForIssue(ctx, issue)
 		if err != nil {
-			return nil, false, errors.Wrap(err, "failed to build CEL variables for issue")
+			return nil, nil, false, errors.Wrap(err, "failed to build CEL variables for issue")
 		}
 		if !done {
 			// Not ready yet (e.g., waiting for plan check runs)
-			return nil, false, nil
+			return nil, nil, false, nil
 		}
 
 		// Step 3: Find matching approval template
 		approvalTemplate, err := getApprovalTemplate(approvalSetting, approvalSource, celVarsList)
 		if err != nil {
-			return nil, false, errors.Wrapf(err, "failed to get approval template for source: %v", approvalSource)
+			return nil, nil, false, errors.Wrapf(err, "failed to get approval template for source: %v", approvalSource)
 		}
 
-		return approvalTemplate, true, nil
+		return approvalTemplate, celVarsList, true, nil
 	}()
 	if err != nil {
 		if updateErr := updateIssueApprovalPayload(ctx, r.store, issue, &storepb.IssuePayloadApproval{
 			ApprovalFindingDone:  true,
 			ApprovalFindingError: err.Error(),
-		}); updateErr != nil {
+		}, storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED); updateErr != nil {
 			return false, multierr.Append(errors.Wrap(updateErr, "failed to update issue payload"), err)
 		}
 		return false, err
@@ -186,14 +186,23 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		}
 	}
 
+	// Calculate risk level from statement types
+	var riskLevel storepb.RiskLevel
+	if celVarsList != nil {
+		statementTypes := collectStatementTypes(celVarsList)
+		riskLevel = common.GetRiskLevelFromStatementTypes(statementTypes)
+	} else {
+		riskLevel = storepb.RiskLevel_LOW
+	}
+
 	payload.Approval = &storepb.IssuePayloadApproval{
 		ApprovalFindingDone: true,
-		RiskLevel:           storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, // Risk level no longer calculated after 3.13
 		ApprovalTemplate:    approvalTemplate,
 		Approvers:           nil,
 	}
+	payload.RiskLevel = riskLevel
 
-	if err := updateIssueApprovalPayload(ctx, r.store, issue, payload.Approval); err != nil {
+	if err := updateIssueApprovalPayload(ctx, r.store, issue, payload.Approval, riskLevel); err != nil {
 		return false, errors.Wrap(err, "failed to update issue payload")
 	}
 
@@ -741,10 +750,11 @@ func (r *Runner) getApprovalSourceFromIssue(ctx context.Context, issue *store.Is
 	}
 }
 
-func updateIssueApprovalPayload(ctx context.Context, s *store.Store, issue *store.IssueMessage, approval *storepb.IssuePayloadApproval) error {
+func updateIssueApprovalPayload(ctx context.Context, s *store.Store, issue *store.IssueMessage, approval *storepb.IssuePayloadApproval, riskLevel storepb.RiskLevel) error {
 	if _, err := s.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
 		PayloadUpsert: &storepb.Issue{
-			Approval: approval,
+			Approval:  approval,
+			RiskLevel: riskLevel,
 		},
 	}); err != nil {
 		return errors.Wrap(err, "failed to update issue payload")
@@ -781,6 +791,21 @@ func expandCELVars(base map[string]any, statementTypes, tableNames []string) []m
 				vars[common.CELAttributeResourceTableName] = tableName
 			}
 			result = append(result, vars)
+		}
+	}
+	return result
+}
+
+// collectStatementTypes extracts all statement types from CEL variables list.
+func collectStatementTypes(celVarsList []map[string]any) []string {
+	seen := make(map[string]bool)
+	var result []string
+	for _, vars := range celVarsList {
+		if sqlType, ok := vars[common.CELAttributeStatementSQLType].(string); ok && sqlType != "" {
+			if !seen[sqlType] {
+				seen[sqlType] = true
+				result = append(result, sqlType)
+			}
 		}
 	}
 	return result
