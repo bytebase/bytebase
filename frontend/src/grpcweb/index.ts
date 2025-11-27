@@ -18,7 +18,6 @@ import { ProjectService } from "@/types/proto-es/v1/project_service_pb";
 import { ReleaseService } from "@/types/proto-es/v1/release_service_pb";
 import { ReviewConfigService } from "@/types/proto-es/v1/review_config_service_pb";
 import { RevisionService } from "@/types/proto-es/v1/revision_service_pb";
-import { RiskService } from "@/types/proto-es/v1/risk_service_pb";
 import { RoleService } from "@/types/proto-es/v1/role_service_pb";
 import { RolloutService } from "@/types/proto-es/v1/rollout_service_pb";
 import { SettingService } from "@/types/proto-es/v1/setting_service_pb";
@@ -99,8 +98,6 @@ export const databaseGroupServiceClientConnect = createClient(
   DatabaseGroupService,
   transport
 );
-
-export const riskServiceClientConnect = createClient(RiskService, transport);
 
 export const orgPolicyServiceClientConnect = createClient(
   OrgPolicyService,
