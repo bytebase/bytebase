@@ -1,49 +1,47 @@
 <template>
-  <div class="gap-y-2">
-    <!-- Tasks Display -->
-    <div class="gap-y-3">
-      <!-- Task status summary with title -->
+  <!-- Tasks Display -->
+  <div class="flex flex-col gap-y-2">
+    <!-- Task status summary with title -->
+    <div
+      v-if="exportTasks.length > 0"
+      class="flex items-center justify-between"
+    >
+      <div class="flex items-center gap-2">
+        <h3 class="text-base font-medium">
+          {{ $t("common.task", exportTasks.length) }}
+        </h3>
+      </div>
+    </div>
+
+    <!-- Task status display -->
+    <div v-if="exportTasks.length > 0" class="flex flex-wrap gap-2">
       <div
-        v-if="exportTasks.length > 0"
-        class="flex items-center justify-between"
+        v-for="task in exportTasks"
+        :key="task.name"
+        class="inline-flex items-center gap-2 px-2 py-1.5 border rounded-sm transition-colors min-w-0"
       >
-        <div class="flex items-center gap-2">
-          <h3 class="text-base font-medium">
-            {{ $t("common.task", exportTasks.length) }}
-          </h3>
+        <!-- Task Status -->
+        <div class="shrink-0">
+          <TaskStatus :status="task.status" size="tiny" />
+        </div>
+
+        <!-- Database Display -->
+        <div class="flex-1 min-w-0">
+          <DatabaseDisplay
+            :database="task.target"
+            :show-environment="true"
+            size="medium"
+          />
         </div>
       </div>
+    </div>
 
-      <!-- Task status display -->
-      <div v-if="exportTasks.length > 0" class="flex flex-wrap gap-2">
-        <div
-          v-for="task in exportTasks"
-          :key="task.name"
-          class="inline-flex items-center gap-2 px-2 py-1.5 border rounded-sm transition-colors min-w-0"
-        >
-          <!-- Task Status -->
-          <div class="shrink-0">
-            <TaskStatus :status="task.status" size="tiny" />
-          </div>
-
-          <!-- Database Display -->
-          <div class="flex-1 min-w-0">
-            <DatabaseDisplay
-              :database="task.target"
-              :show-environment="true"
-              size="medium"
-            />
-          </div>
-        </div>
-      </div>
-
-      <!-- No tasks message -->
-      <div
-        v-else-if="exportTasks.length === 0"
-        class="text-center text-control-light py-8"
-      >
-        {{ $t("common.no-data") }}
-      </div>
+    <!-- No tasks message -->
+    <div
+      v-else-if="exportTasks.length === 0"
+      class="text-center text-control-light py-8"
+    >
+      {{ $t("common.no-data") }}
     </div>
   </div>
 </template>

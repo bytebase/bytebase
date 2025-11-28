@@ -1,11 +1,14 @@
 <template>
   <div class="flex items-center gap-x-2">
+    <!-- Rollout ready link for database change issues -->
+    <RolloutReadyLink v-if="shouldShowRolloutReadyLink" />
+
     <!-- Export Archive Download Action for export data issues (replaces primary action) -->
-    <ExportArchiveDownloadAction v-if="shouldShowExportDownload" />
+    <ExportArchiveDownloadAction v-else-if="shouldShowExportDownload" />
 
     <!-- Primary action button (hidden when export download is shown) -->
     <UnifiedActionButton
-      v-else-if="primaryAction && primaryAction.action !== 'EXPORT_DOWNLOAD'"
+      v-else-if="primaryAction"
       :action="primaryAction.action"
       :disabled="disabled || primaryAction.disabled"
       :disabled-tooltip="disabled ? disabledTooltip : primaryAction.description"
@@ -53,8 +56,9 @@ import {
   TaskRun_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import { extractTaskRunUID, extractTaskUID } from "@/utils";
-import { usePlanContext } from "../../../../logic";
+import { usePlanContext, useRolloutReadyLink } from "../../../../logic";
 import { ExportArchiveDownloadAction } from "../export";
+import RolloutReadyLink from "../RolloutReadyLink.vue";
 import type { ActionConfig, UnifiedAction } from "./types";
 import UnifiedActionButton from "./UnifiedActionButton.vue";
 
@@ -72,6 +76,7 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const { plan, issue, rollout, taskRuns } = usePlanContext();
 const currentUser = useCurrentUserV1();
+const { shouldShow: shouldShowRolloutReadyLink } = useRolloutReadyLink();
 
 // Check if this is a database export plan
 const isExportPlan = computed(() => {
@@ -169,8 +174,6 @@ const actionDisplayName = (action: UnifiedAction): string => {
       return isExportPlan.value ? t("common.export") : t("common.rollout");
     case "ROLLOUT_CANCEL":
       return t("common.cancel");
-    case "EXPORT_DOWNLOAD":
-      return t("common.download");
   }
 };
 
