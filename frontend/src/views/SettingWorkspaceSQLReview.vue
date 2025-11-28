@@ -34,11 +34,14 @@
     <NEmpty v-else class="py-12 border rounded-sm">
       <template #extra>
         <NButton
+          v-if="hasCreatePolicyPermission"
           :size="'small'"
           type="primary"
-          :disabled="!hasCreatePolicyPermission"
           @click="createSQLReview"
         >
+          <template #icon>
+            <PlusIcon class="h-4 w-4" />
+          </template>
           {{ $t("sql-review.create-policy") }}
         </NButton>
       </template>

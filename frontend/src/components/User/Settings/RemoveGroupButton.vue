@@ -1,18 +1,17 @@
 <template>
-  <NButton
+  <MiniActionButton
     v-if="allowDelete"
-    quaternary
-    size="small"
     type="error"
+    v-bind="$attrs"
     @click="handleDeleteGroup"
   >
-    <template #icon>
+    <template #default>
       <slot name="icon" />
     </template>
-    <template #default>
+    <template #text>
       <slot name="default" />
     </template>
-  </NButton>
+  </MiniActionButton>
 
   <ResourceOccupiedModal
     ref="resourceOccupiedModalRef"
@@ -25,9 +24,9 @@
 
 <script lang="tsx" setup>
 import { computedAsync } from "@vueuse/core";
-import { NButton } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { MiniActionButton } from "@/components/v2";
 import ResourceOccupiedModal from "@/components/v2/ResourceOccupiedModal/ResourceOccupiedModal.vue";
 import {
   extractGroupEmail,

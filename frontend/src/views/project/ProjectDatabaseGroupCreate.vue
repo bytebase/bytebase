@@ -1,6 +1,6 @@
 <template>
   <DatabaseGroupForm
-    class="flex-1"
+    class="h-full"
     :readonly="false"
     :project="project"
     @dismiss="() => router.back()"

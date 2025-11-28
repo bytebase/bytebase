@@ -108,6 +108,8 @@
         <div class="w-full flex justify-between items-center">
           <RemoveGroupButton
             v-if="!isCreating && allowDelete"
+            quaternary
+            size="small"
             :group="group!"
             @removed="$emit('close')"
           >

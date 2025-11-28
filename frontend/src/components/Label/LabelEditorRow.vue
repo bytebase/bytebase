@@ -30,17 +30,12 @@
             :status="errors.value.length > 0 ? 'error' : undefined"
             @update:value="$emit('update-value', $event)"
           />
-          <NButton
-            quaternary
-            size="tiny"
-            style="--n-padding: 0 6px"
+          <MiniActionButton
             :class="['ml-1', readonly ? 'invisible' : 'visible']"
             @click="$emit('remove')"
           >
-            <template #icon>
-              <heroicons:trash />
-            </template>
-          </NButton>
+            <Trash2Icon />
+          </MiniActionButton>
         </div>
         <div v-if="kv.message" class="textinfolabel">{{ kv.message }}</div>
       </div>
@@ -53,10 +48,12 @@
 </template>
 
 <script setup lang="ts">
-import { NButton, NInput } from "naive-ui";
+import { NInput } from "naive-ui";
 import { computed } from "vue";
 import ErrorList from "../misc/ErrorList.vue";
 import type { Label } from "./types";
+import { MiniActionButton } from "@/components/v2";
+import { Trash2Icon } from "lucide-vue-next";
 
 const props = defineProps<{
   kv: Label;

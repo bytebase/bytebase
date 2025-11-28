@@ -11,12 +11,12 @@
 </template>
 
 <script setup lang="tsx">
-import { CheckIcon, XIcon } from "lucide-vue-next";
+import { CheckIcon, PencilIcon, Trash2Icon, XIcon } from "lucide-vue-next";
 import type { DataTableColumn } from "naive-ui";
-import { NButton, NCheckbox, NDataTable } from "naive-ui";
+import { NCheckbox, NDataTable, NPopconfirm } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBButtonConfirm } from "@/bbkit";
+import { MiniActionButton } from "@/components/v2";
 import Resource from "@/components/v2/ResourceOccupiedModal/Resource.vue";
 import { pushNotification, useSQLReviewStore } from "@/store";
 import type { SQLReviewPolicy } from "@/types";
@@ -114,24 +114,24 @@ const columns = computed(
         render: (review: SQLReviewPolicy) => {
           return (
             <div class="flex items-center gap-x-2">
-              <NButton size="small" onClick={() => emit("edit", review)}>
-                {hasUpdatePolicyPermission.value
-                  ? t("common.edit")
-                  : t("common.view")}
-              </NButton>
               {hasDeletePolicyPermission.value && (
-                <BBButtonConfirm
-                  text={false}
-                  size={"small"}
-                  type={"DELETE"}
-                  hideIcon={true}
-                  buttonText={t("common.delete")}
-                  okText={t("common.delete")}
-                  confirmTitle={t("common.delete") + ` '${review.name}'?`}
-                  requireConfirm={true}
-                  onConfirm={() => emit("delete", review)}
-                />
+                <NPopconfirm
+                  positiveButtonProps={{ type: "error" }}
+                  onPositiveClick={() => emit("delete", review)}
+                >
+                  {{
+                    trigger: () => (
+                      <MiniActionButton type="error">
+                        <Trash2Icon />
+                      </MiniActionButton>
+                    ),
+                    default: () => t("common.delete") + ` '${review.name}'?`,
+                  }}
+                </NPopconfirm>
               )}
+              <MiniActionButton onClick={() => emit("edit", review)}>
+                <PencilIcon />
+              </MiniActionButton>
             </div>
           );
         },
