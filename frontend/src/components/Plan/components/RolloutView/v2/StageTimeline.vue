@@ -2,30 +2,20 @@
   <div>
     <!-- Header -->
     <div
-      class="flex items-center justify-between px-3 py-2"
-      @click="isInline && (isCollapsed = !isCollapsed)"
+      class="flex items-center justify-between"
+      :class="isSidebarMode ? 'px-3 py-2' : 'pb-2'"
     >
       <div class="flex items-center gap-2">
-        <!-- Only show toggle icon in inline mode -->
-        <component
-          :is="isCollapsed ? ChevronRightIcon : ChevronDownIcon"
-          v-if="isInline"
-          class="w-4 h-4 text-gray-500"
-        />
         <span class="text-sm font-medium text-gray-700">
           {{ $t("task.run-history") }}
         </span>
       </div>
     </div>
 
-    <!-- Rollback entry -->
-    <StageTaskRunsRollback :stage="stage" />
-
-    <!-- Timeline entries: always show in sidebar mode, toggle in inline mode -->
+    <!-- Timeline entries -->
     <div
-      v-if="isExpanded"
-      class="overflow-y-auto px-3 pt-1 pb-3"
-      :class="isInline ? 'max-h-48' : 'max-h-[calc(100vh-300px)]'"
+      class="overflow-y-auto pt-1 pb-3"
+      :class="isSidebarMode ? 'px-3 max-h-[calc(100vh-300px)]' : 'px-1'"
     >
       <div v-if="isLoading" class="py-4 flex justify-center">
         <BBSpin />
@@ -132,13 +122,9 @@
 </template>
 
 <script lang="ts" setup>
-import {
-  ChevronDownIcon,
-  ChevronRightIcon,
-  SquareChartGanttIcon,
-} from "lucide-vue-next";
+import { SquareChartGanttIcon } from "lucide-vue-next";
 import { NTimeline, NTimelineItem, NTooltip } from "naive-ui";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import BBSpin from "@/bbkit/BBSpin.vue";
 import TaskRunDetail from "@/components/IssueV1/components/TaskRunSection/TaskRunDetail.vue";
 import TimestampDisplay from "@/components/misc/Timestamp.vue";
@@ -161,23 +147,40 @@ import {
   mapTaskRunStatusToTaskStatus,
 } from "./composables/useTaskRunUtils";
 import ScheduledTimeIndicator from "./ScheduledTimeIndicator.vue";
-import StageTaskRunsRollback from "./StageTaskRunsRollback.vue";
 
 const props = withDefaults(
   defineProps<{
     stage: Stage | null | undefined;
     taskRuns: TaskRun[];
-    isInline?: boolean;
+    // "sidebar" - sticky sidebar on desktop with padding and max-height
+    // "drawer" - inside a drawer with minimal padding for drawer's own spacing
+    mode?: "sidebar" | "drawer";
   }>(),
   {
-    isInline: false,
+    mode: "sidebar",
   }
 );
 
+// Mode-based styling
+const isSidebarMode = computed(() => props.mode === "sidebar");
+
 const { project } = useCurrentProjectV1();
-const isCollapsed = ref(false);
 const { navigateToTaskDetail } = useTaskNavigation();
 const { lastRefreshTime } = useResourcePoller();
+
+// Track stage transitions to prevent flicker
+const isStageTransitioning = ref(false);
+const lastStageName = ref<string | undefined>(props.stage?.name);
+
+watch(
+  () => props.stage?.name,
+  (newName) => {
+    if (newName !== lastStageName.value) {
+      isStageTransitioning.value = true;
+      lastStageName.value = newName;
+    }
+  }
+);
 
 // Drawer state for task run detail
 const taskRunDetailContext = ref<{
@@ -186,9 +189,6 @@ const taskRunDetailContext = ref<{
 }>({
   show: false,
 });
-
-// In sidebar mode (not inline), always show expanded
-const isExpanded = computed(() => !props.isInline || !isCollapsed.value);
 
 // Filter task runs for this stage
 const stageTaskRuns = computed(() => {
@@ -200,9 +200,34 @@ const stageTaskRuns = computed(() => {
   );
 });
 
-// Check if we're still in initial loading state (never refreshed yet)
-const isLoading = computed(
-  () => lastRefreshTime.value === 0 && stageTaskRuns.value.length === 0
+// Check if we're loading (initial load or stage transition)
+const isLoading = computed(() => {
+  const hasNoRuns = stageTaskRuns.value.length === 0;
+  const isInitialLoad = lastRefreshTime.value === 0;
+  // Show loading during initial load or stage transition when no runs available
+  return hasNoRuns && (isInitialLoad || isStageTransitioning.value);
+});
+
+// Clear stage transition flag when we have data for the current stage
+watch(
+  stageTaskRuns,
+  (runs) => {
+    if (runs.length > 0) {
+      isStageTransitioning.value = false;
+    }
+  },
+  { immediate: true }
+);
+
+// Also clear transition flag after a short delay to handle stages with no runs
+watch(
+  () => props.stage?.name,
+  () => {
+    // Give time for data to load, then clear transition flag
+    setTimeout(() => {
+      isStageTransitioning.value = false;
+    }, 300);
+  }
 );
 
 // Maximum number of task runs to display in the timeline
