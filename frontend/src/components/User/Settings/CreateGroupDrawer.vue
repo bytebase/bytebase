@@ -54,11 +54,11 @@
             <div class="flex flex-col gap-y-2">
               <div
                 v-for="(member, i) in state.group.members"
-                :key="member.member"
+                :key="i"
                 class="w-full flex items-center gap-x-3"
               >
                 <UserSelect
-                  :user="getUserUidForMember(member)"
+                  :user="extractUserId(member.member)"
                   :multiple="false"
                   :size="'medium'"
                   :include-all="false"
@@ -69,7 +69,7 @@
                           member.member === `${userNamePrefix}${user.email}`
                       )
                   "
-                  @update:user="(uid) => updateMemberEmail(i, uid)"
+                  @update:user="(email) => updateMemberEmail(i, email)"
                 />
                 <GroupMemberRoleSelect
                   :value="member.role"
@@ -148,7 +148,7 @@ import { create } from "@bufbuild/protobuf";
 import { cloneDeep, isEqual } from "lodash-es";
 import { Trash2Icon } from "lucide-vue-next";
 import { NButton, NInput, NTooltip } from "naive-ui";
-import { computed, reactive, watchEffect } from "vue";
+import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import EmailInput from "@/components/EmailInput.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
@@ -158,7 +158,6 @@ import {
   pushNotification,
   useCurrentUserV1,
   useGroupStore,
-  useUserStore,
 } from "@/store";
 import {
   extractUserId,
@@ -195,7 +194,6 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const userStore = useUserStore();
 const groupStore = useGroupStore();
 const currentUserV1 = useCurrentUserV1();
 
@@ -217,13 +215,6 @@ const state = reactive<LocalState>({
 });
 
 const isCreating = computed(() => !props.group);
-
-watchEffect(async () => {
-  if (props.group) {
-    const memberUserIds = props.group.members.map((m) => m.member);
-    await userStore.batchGetUsers(memberUserIds);
-  }
-});
 
 const disallowEditMember = computed(() => !!props.group?.source);
 
@@ -297,28 +288,13 @@ const addMember = () => {
   state.group.members.push(member);
 };
 
-const getUserUidForMember = (member: GroupMember) => {
-  if (!member.member) {
-    return;
-  }
-  const user = userStore.getUserByIdentifier(member.member);
-  if (!user) {
-    return;
-  }
-  return extractUserId(user.name);
-};
-
-const updateMemberEmail = (index: number, uid: string | undefined) => {
-  if (!uid) {
-    return;
-  }
-  const user = userStore.getUserByIdentifier(uid);
-  if (!user) {
+const updateMemberEmail = (index: number, email: string | undefined) => {
+  if (!email) {
     return;
   }
   state.group.members[index] = {
     ...state.group.members[index],
-    member: `${userNamePrefix}${user.email}`,
+    member: `${userNamePrefix}${email}`,
   };
 };
 
