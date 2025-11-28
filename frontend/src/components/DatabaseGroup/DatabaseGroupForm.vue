@@ -1,46 +1,48 @@
 <template>
-  <div>
-    <div class="w-full">
-      <p class="font-medium text-main mb-2">{{ $t("common.name") }}</p>
-      <NInput
-        v-model:value="state.placeholder"
-        :disabled="readonly"
-        :maxlength="200"
-      />
-      <div class="mt-2">
-        <ResourceIdField
-          ref="resourceIdField"
-          editing-class="mt-4"
-          resource-type="database-group"
-          :readonly="!isCreating"
-          :value="state.resourceId"
-          :resource-title="state.placeholder"
-          :fetch-resource="
-            (id) =>
-              dbGroupStore.getOrFetchDBGroupByName(
-                `${props.project.name}/${databaseGroupNamePrefix}${id}`,
-                { silent: true, view: DatabaseGroupView.FULL }
-              )
-          "
+  <div class="flex flex-col">
+    <div class="flex-1">
+      <div class="w-full">
+        <p class="font-medium text-main mb-2">{{ $t("common.name") }}</p>
+        <NInput
+          v-model:value="state.placeholder"
+          :disabled="readonly"
+          :maxlength="200"
         />
+        <div class="mt-2">
+          <ResourceIdField
+            ref="resourceIdField"
+            editing-class="mt-4"
+            resource-type="database-group"
+            :readonly="!isCreating"
+            :value="state.resourceId"
+            :resource-title="state.placeholder"
+            :fetch-resource="
+              (id) =>
+                dbGroupStore.getOrFetchDBGroupByName(
+                  `${props.project.name}/${databaseGroupNamePrefix}${id}`,
+                  { silent: true, view: DatabaseGroupView.FULL }
+                )
+            "
+          />
+        </div>
       </div>
-    </div>
-    <NDivider />
-    <div class="w-full grid grid-cols-5 gap-x-6">
-      <div class="col-span-3">
-        <p class="pl-1 font-medium text-main mb-2">
-          {{ $t("database-group.condition.self") }}
-        </p>
-        <ExprEditor
-          :expr="state.expr"
-          :allow-admin="!readonly"
-          :enable-raw-expression="true"
-          :factor-list="FactorList"
-          :option-config-map="getDatabaseGroupOptionConfigMap(project.name)"
-        />
-      </div>
-      <div class="col-span-2">
-        <MatchedDatabaseView :project="project.name" :expr="state.expr" />
+      <NDivider />
+      <div class="w-full grid grid-cols-5 gap-x-6">
+        <div class="col-span-3">
+          <p class="pl-1 font-medium text-main mb-2">
+            {{ $t("database-group.condition.self") }}
+          </p>
+          <ExprEditor
+            :expr="state.expr"
+            :allow-admin="!readonly"
+            :enable-raw-expression="true"
+            :factor-list="FactorList"
+            :option-config-map="getDatabaseGroupOptionConfigMap(project.name)"
+          />
+        </div>
+        <div class="col-span-2">
+          <MatchedDatabaseView :project="project.name" :expr="state.expr" />
+        </div>
       </div>
     </div>
 
@@ -54,7 +56,7 @@
           </template>
           {{ $t("common.delete") }}
         </NButton>
-        <div class="flex-1 flex flex-row justify-end items-center gap-x-2">
+        <div class="flex-1 flex flex-row justify-end items-center gap-x-3">
           <NButton @click="$emit('dismiss')">{{ $t("common.cancel") }}</NButton>
           <NButton type="primary" :disabled="!allowConfirm" @click="doConfirm">
             {{ isCreating ? $t("common.save") : $t("common.confirm") }}
