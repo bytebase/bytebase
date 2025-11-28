@@ -186,14 +186,9 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		}
 	}
 
-	// Calculate risk level from statement types
-	var riskLevel storepb.RiskLevel
-	if celVarsList != nil {
-		statementTypes := collectStatementTypes(celVarsList)
-		riskLevel = common.GetRiskLevelFromStatementTypes(statementTypes)
-	} else {
-		riskLevel = storepb.RiskLevel_LOW
-	}
+	// Calculate risk level separately from approval flow
+	// TODO(p0ny): maybe move risk calculation to another runner in the future
+	riskLevel := calculateRiskLevelFromCELVars(celVarsList)
 
 	payload.Approval = &storepb.IssuePayloadApproval{
 		ApprovalFindingDone: true,
@@ -267,6 +262,16 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 	}()
 
 	return true, nil
+}
+
+// calculateRiskLevelFromCELVars calculates the risk level from CEL variables.
+// This is separated from approval flow generation to allow independent evolution.
+func calculateRiskLevelFromCELVars(celVarsList []map[string]any) storepb.RiskLevel {
+	if celVarsList == nil {
+		return storepb.RiskLevel_LOW
+	}
+	statementTypes := collectStatementTypes(celVarsList)
+	return common.GetRiskLevelFromStatementTypes(statementTypes)
 }
 
 // getApprovalTemplate finds the first matching approval template for the given source and CEL variables.
