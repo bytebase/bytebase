@@ -150,6 +150,7 @@ import { useCustomApprovalContext } from "../context";
 import {
   type ApprovalRuleTemplate,
   applyTemplateToState,
+  filterTemplatesBySource,
   useApprovalRuleTemplates,
 } from "./template";
 
@@ -174,7 +175,10 @@ const emit = defineEmits<{
 
 const context = useCustomApprovalContext();
 const { allowAdmin } = context;
-const templates = useApprovalRuleTemplates();
+const allTemplates = useApprovalRuleTemplates();
+const templates = computed(() =>
+  filterTemplatesBySource(allTemplates.value, props.source)
+);
 
 const state = reactive<LocalState>({
   title: "",
