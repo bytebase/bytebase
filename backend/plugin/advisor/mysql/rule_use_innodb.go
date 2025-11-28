@@ -14,7 +14,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -36,8 +35,8 @@ type UseInnoDBAdvisor struct {
 
 // Check checks for using InnoDB engine.
 func (*UseInnoDBAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	list, ok := checkCtx.AST.([]*base.ParseResult)
-	if !ok {
+	list, err := getANTLRTree(checkCtx)
+	if err != nil {
 		return nil, errors.Errorf("failed to convert to Tree")
 	}
 

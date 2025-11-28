@@ -36,7 +36,7 @@ func init() {
 }
 
 // WalkThrough walks through MySQL AST and updates the database metadata.
-func WalkThrough(d *model.DatabaseMetadata, ast any) *storepb.Advice {
+func WalkThrough(d *model.DatabaseMetadata, ast []base.AST) *storepb.Advice {
 	// We define the Catalog as Database -> Schema -> Table. The Schema is only for PostgreSQL.
 	// So we use a Schema whose name is empty for other engines, such as MySQL.
 	// If there is no empty-string-name schema, create it to avoid corner cases.
@@ -44,18 +44,28 @@ func WalkThrough(d *model.DatabaseMetadata, ast any) *storepb.Advice {
 		d.CreateSchema("")
 	}
 
-	nodeList, ok := ast.([]*base.ParseResult)
-	if !ok {
-		return &storepb.Advice{
-			Status:  storepb.Advice_ERROR,
-			Code:    code.Internal.Int32(),
-			Title:   fmt.Sprintf("invalid ast type %T", ast),
-			Content: fmt.Sprintf("invalid ast type %T", ast),
-			StartPosition: &storepb.Position{
-				Line: 0,
-			},
+	// Extract ParseResult from AST
+	var nodeList []*base.ParseResult
+	for _, unifiedAST := range ast {
+		antlrAST, ok := base.GetANTLRAST(unifiedAST)
+		if !ok {
+			return &storepb.Advice{
+				Status:  storepb.Advice_ERROR,
+				Code:    code.Internal.Int32(),
+				Title:   "MySQL walk-through expects ANTLR-based parser result",
+				Content: "MySQL walk-through expects ANTLR-based parser result",
+				StartPosition: &storepb.Position{
+					Line: 0,
+				},
+			}
 		}
+		nodeList = append(nodeList, &base.ParseResult{
+			Tree:     antlrAST.Tree,
+			Tokens:   antlrAST.Tokens,
+			BaseLine: base.GetLineOffset(antlrAST.StartPosition),
+		})
 	}
+
 	for _, node := range nodeList {
 		if advice := mysqlChangeState(d, node); advice != nil {
 			return advice

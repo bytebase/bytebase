@@ -3,15 +3,18 @@ package tidb
 import (
 	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func GetStatementTypes(asts any) ([]string, error) {
-	nodes, ok := asts.([]tidbast.StmtNode)
-	if !ok {
-		return nil, errors.Errorf("invalid ast type %T", asts)
-	}
+func GetStatementTypes(asts []base.AST) ([]string, error) {
 	sqlTypeSet := make(map[string]bool)
-	for _, node := range nodes {
+	for _, ast := range asts {
+		tidbAST, ok := GetTiDBAST(ast)
+		if !ok {
+			return nil, errors.New("expected TiDB AST")
+		}
+		node := tidbAST.Node
 		t := getStatementType(node)
 		sqlTypeSet[t] = true
 	}

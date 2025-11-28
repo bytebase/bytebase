@@ -12,7 +12,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -31,8 +30,8 @@ type WhereRequirementForSelectAdvisor struct {
 
 // Check checks for the WHERE clause requirement.
 func (*WhereRequirementForSelectAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmtList, ok := checkCtx.AST.([]*base.ParseResult)
-	if !ok {
+	root, err := getANTLRTree(checkCtx)
+	if err != nil {
 		return nil, errors.Errorf("failed to convert to StmtNode")
 	}
 
@@ -47,7 +46,7 @@ func (*WhereRequirementForSelectAdvisor) Check(_ context.Context, checkCtx advis
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
 
-	for _, stmtNode := range stmtList {
+	for _, stmtNode := range root {
 		rule.SetBaseLine(stmtNode.BaseLine)
 		checker.SetBaseLine(stmtNode.BaseLine)
 		antlr.ParseTreeWalkerDefault.Walk(checker, stmtNode.Tree)

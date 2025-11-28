@@ -19,9 +19,26 @@ func init() {
 }
 
 // parsePLSQLForRegistry is the ParseFunc for PL/SQL.
-// Returns []*base.ParseResult on success.
-func parsePLSQLForRegistry(statement string) (any, error) {
-	return ParsePLSQL(statement + ";")
+// Returns []base.AST with *ANTLRAST instances.
+func parsePLSQLForRegistry(statement string) ([]base.AST, error) {
+	parseResults, err := ParsePLSQL(statement + ";")
+	if err != nil {
+		return nil, err
+	}
+	return toAST(parseResults), nil
+}
+
+// toAST converts []*ParseResult to []base.AST.
+func toAST(results []*base.ParseResult) []base.AST {
+	var asts []base.AST
+	for _, r := range results {
+		asts = append(asts, &base.ANTLRAST{
+			StartPosition: &storepb.Position{Line: int32(r.BaseLine) + 1},
+			Tree:          r.Tree,
+			Tokens:        r.Tokens,
+		})
+	}
+	return asts
 }
 
 type Version struct {
@@ -121,16 +138,17 @@ func parsePLSQLInternal(sql string, baseLine int) (antlr.Tree, *antlr.CommonToke
 	p := parser.NewPlSqlParser(stream)
 	p.SetVersion12(true)
 
+	startPosition := &storepb.Position{Line: int32(baseLine) + 1}
 	lexerErrorListener := &base.ParseErrorListener{
-		Statement: sql,
-		BaseLine:  baseLine,
+		Statement:     sql,
+		StartPosition: startPosition,
 	}
 	lexer.RemoveErrorListeners()
 	lexer.AddErrorListener(lexerErrorListener)
 
 	parserErrorListener := &base.ParseErrorListener{
-		Statement: sql,
-		BaseLine:  baseLine,
+		Statement:     sql,
+		StartPosition: startPosition,
 	}
 	p.RemoveErrorListeners()
 	p.AddErrorListener(parserErrorListener)

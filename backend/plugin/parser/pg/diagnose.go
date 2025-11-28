@@ -8,13 +8,13 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/postgresql"
 
-	"github.com/bytebase/bytebase/backend/generated-go/store"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 func init() {
-	base.RegisterDiagnoseFunc(store.Engine_POSTGRES, Diagnose)
-	base.RegisterDiagnoseFunc(store.Engine_COCKROACHDB, Diagnose)
+	base.RegisterDiagnoseFunc(storepb.Engine_POSTGRES, Diagnose)
+	base.RegisterDiagnoseFunc(storepb.Engine_COCKROACHDB, Diagnose)
 }
 
 func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
@@ -39,15 +39,17 @@ func parsePostgreSQLStatement(statement string) *base.SyntaxError {
 	lexer := parser.NewPostgreSQLLexer(antlr.NewInputStream(statement))
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 	p := parser.NewPostgreSQLParser(stream)
+	startPosition := &storepb.Position{Line: 1}
 	lexerErrorListener := &base.ParseErrorListener{
-		Statement: statement,
+		Statement:     statement,
+		StartPosition: startPosition,
 	}
 	lexer.RemoveErrorListeners()
 	lexer.AddErrorListener(lexerErrorListener)
 
 	parserErrorListener := &base.ParseErrorListener{
-		Statement: statement,
-		BaseLine:  0,
+		Statement:     statement,
+		StartPosition: startPosition,
 	}
 	p.RemoveErrorListeners()
 	p.AddErrorListener(parserErrorListener)

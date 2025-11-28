@@ -17,9 +17,26 @@ func init() {
 }
 
 // parseRedshiftForRegistry is the ParseFunc for Redshift.
-// Returns []*base.ParseResult (list of AST nodes, one per statement) on success.
-func parseRedshiftForRegistry(statement string) (any, error) {
-	return ParseRedshift(statement)
+// Returns []base.AST with *ANTLRAST instances.
+func parseRedshiftForRegistry(statement string) ([]base.AST, error) {
+	parseResults, err := ParseRedshift(statement)
+	if err != nil {
+		return nil, err
+	}
+	return toAST(parseResults), nil
+}
+
+// toAST converts []*ParseResult to []base.AST.
+func toAST(results []*base.ParseResult) []base.AST {
+	var asts []base.AST
+	for _, r := range results {
+		asts = append(asts, &base.ANTLRAST{
+			StartPosition: &storepb.Position{Line: int32(r.BaseLine) + 1},
+			Tree:          r.Tree,
+			Tokens:        r.Tokens,
+		})
+	}
+	return asts
 }
 
 // ParseRedshift parses the given SQL statement and returns a list of ParseResults.
@@ -55,14 +72,17 @@ func parseSingleRedshift(statement string, baseLine int) (*base.ParseResult, err
 	p := parser.NewRedshiftParser(stream)
 
 	// Remove default error listener and add our own error listener.
+	startPosition := &storepb.Position{Line: int32(baseLine) + 1}
 	lexer.RemoveErrorListeners()
 	lexerErrorListener := &base.ParseErrorListener{
-		Statement: statement,
+		Statement:     statement,
+		StartPosition: startPosition,
 	}
 	lexer.AddErrorListener(lexerErrorListener)
 
 	parserErrorListener := &base.ParseErrorListener{
-		Statement: statement,
+		Statement:     statement,
+		StartPosition: startPosition,
 	}
 	p.RemoveErrorListeners()
 	p.AddErrorListener(parserErrorListener)

@@ -15,9 +15,26 @@ func init() {
 }
 
 // parsePostgreSQLForRegistry is the ParseFunc for PostgreSQL.
-// Returns *ParseResult containing the ANTLR tree.
-func parsePostgreSQLForRegistry(statement string) (any, error) {
-	return ParsePostgreSQL(statement)
+// Returns []base.AST with *ANTLRAST instances.
+func parsePostgreSQLForRegistry(statement string) ([]base.AST, error) {
+	parseResults, err := ParsePostgreSQL(statement)
+	if err != nil {
+		return nil, err
+	}
+	return toAST(parseResults), nil
+}
+
+// toAST converts []*ParseResult to []base.AST.
+func toAST(results []*base.ParseResult) []base.AST {
+	var asts []base.AST
+	for _, r := range results {
+		asts = append(asts, &base.ANTLRAST{
+			StartPosition: &storepb.Position{Line: int32(r.BaseLine) + 1},
+			Tree:          r.Tree,
+			Tokens:        r.Tokens,
+		})
+	}
+	return asts
 }
 
 // ParsePostgreSQL parses the given SQL and returns a list of ParseResult (one per statement).
@@ -49,16 +66,17 @@ func parseSinglePostgreSQL(sql string, baseLine int) (*base.ParseResult, error) 
 	lexer := parser.NewPostgreSQLLexer(antlr.NewInputStream(sql))
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 	p := parser.NewPostgreSQLParser(stream)
+	startPosition := &storepb.Position{Line: int32(baseLine) + 1}
 	lexerErrorListener := &base.ParseErrorListener{
-		Statement: sql,
-		BaseLine:  baseLine,
+		Statement:     sql,
+		StartPosition: startPosition,
 	}
 	lexer.RemoveErrorListeners()
 	lexer.AddErrorListener(lexerErrorListener)
 
 	parserErrorListener := &base.ParseErrorListener{
-		Statement: sql,
-		BaseLine:  baseLine,
+		Statement:     sql,
+		StartPosition: startPosition,
 	}
 	p.RemoveErrorListeners()
 	p.AddErrorListener(parserErrorListener)
@@ -90,13 +108,15 @@ func ParsePostgreSQLPLBlock(plBlock string) (*base.ParseResult, error) {
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 	p := parser.NewPostgreSQLParser(stream)
 	lexerErrorListener := &base.ParseErrorListener{
-		Statement: plBlock,
+		Statement:     plBlock,
+		StartPosition: &storepb.Position{Line: 1},
 	}
 	lexer.RemoveErrorListeners()
 	lexer.AddErrorListener(lexerErrorListener)
 
 	parserErrorListener := &base.ParseErrorListener{
-		Statement: plBlock,
+		Statement:     plBlock,
+		StartPosition: &storepb.Position{Line: 1},
 	}
 	p.RemoveErrorListeners()
 	p.AddErrorListener(parserErrorListener)

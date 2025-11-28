@@ -8,18 +8,21 @@ import (
 )
 
 // getANTLRTree extracts the ANTLR parse trees from the advisor context.
-// The AST must be pre-parsed and passed via checkCtx.AST (e.g., in tests or by the framework).
-// This enforces proper AST caching and makes any missing cache obvious.
-// Returns all parse results for multi-statement SQL review.
 func getANTLRTree(checkCtx advisor.Context) ([]*base.ParseResult, error) {
 	if checkCtx.AST == nil {
-		return nil, errors.New("AST is not provided in context - must be parsed before calling advisor")
+		return nil, errors.New("AST is not provided in context")
 	}
-
-	parseResults, ok := checkCtx.AST.([]*base.ParseResult)
-	if !ok {
-		return nil, errors.Errorf("AST type mismatch: expected []*base.ParseResult, got %T", checkCtx.AST)
+	var parseResults []*base.ParseResult
+	for _, unifiedAST := range checkCtx.AST {
+		antlrAST, ok := base.GetANTLRAST(unifiedAST)
+		if !ok {
+			return nil, errors.New("AST type mismatch: expected ANTLR-based parser result")
+		}
+		parseResults = append(parseResults, &base.ParseResult{
+			Tree:     antlrAST.Tree,
+			Tokens:   antlrAST.Tokens,
+			BaseLine: base.GetLineOffset(antlrAST.StartPosition),
+		})
 	}
-
 	return parseResults, nil
 }

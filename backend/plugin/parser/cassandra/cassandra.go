@@ -16,13 +16,26 @@ func init() {
 }
 
 // parseCassandraForRegistry is the ParseFunc for Cassandra.
-// Returns []*base.ParseResult on success.
-func parseCassandraForRegistry(statement string) (any, error) {
-	result, err := ParseCassandraSQL(statement)
+// Returns []base.AST with *ANTLRAST instances.
+func parseCassandraForRegistry(statement string) ([]base.AST, error) {
+	parseResults, err := ParseCassandraSQL(statement)
 	if err != nil {
 		return nil, err
 	}
-	return result, nil
+	return toAST(parseResults), nil
+}
+
+// toAST converts []*ParseResult to []base.AST.
+func toAST(results []*base.ParseResult) []base.AST {
+	var asts []base.AST
+	for _, r := range results {
+		asts = append(asts, &base.ANTLRAST{
+			StartPosition: &storepb.Position{Line: int32(r.BaseLine) + 1},
+			Tree:          r.Tree,
+			Tokens:        r.Tokens,
+		})
+	}
+	return asts
 }
 
 // ParseCassandraSQL parses the given CQL statement by using antlr4. Returns a list of AST and token stream if no error.
@@ -56,17 +69,18 @@ func parseSingleCassandraSQL(statement string, baseLine int) (*base.ParseResult,
 	p := cql.NewCqlParser(stream)
 
 	// Remove default error listener and add our own error listener.
+	startPosition := &storepb.Position{Line: int32(baseLine) + 1}
 	lexer.RemoveErrorListeners()
 	lexerErrorListener := &base.ParseErrorListener{
-		Statement: statement,
-		BaseLine:  baseLine,
+		Statement:     statement,
+		StartPosition: startPosition,
 	}
 	lexer.AddErrorListener(lexerErrorListener)
 
 	p.RemoveErrorListeners()
 	parserErrorListener := &base.ParseErrorListener{
-		Statement: statement,
-		BaseLine:  baseLine,
+		Statement:     statement,
+		StartPosition: startPosition,
 	}
 	p.AddErrorListener(parserErrorListener)
 

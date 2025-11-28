@@ -15,7 +15,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -187,14 +187,14 @@ func TestWalkThroughANTLR(t *testing.T) {
 		// Create DatabaseMetadata for walk-through
 		state := model.NewDatabaseMetadata(protoData, nil, nil, storepb.Engine_POSTGRES, !test.IgnoreCaseSensitive)
 
-		// Parse using ANTLR parser instead of legacy parser
-		parseResult, parseErr := pgparser.ParsePostgreSQL(test.Statement)
+		// Parse using base.Parse to get AST
+		unifiedASTs, parseErr := base.Parse(storepb.Engine_POSTGRES, test.Statement)
 		if parseErr != nil {
-			t.Fatalf("Failed to parse SQL with ANTLR: %v\nSQL: %s", parseErr, test.Statement)
+			t.Fatalf("Failed to parse SQL: %v\nSQL: %s", parseErr, test.Statement)
 		}
 
-		// Call WalkThrough with ANTLR tree
-		advice := WalkThrough(state, parseResult)
+		// Call WalkThrough with AST
+		advice := WalkThrough(state, unifiedASTs)
 		if advice != nil {
 			// Compare the advice fields
 			require.Equal(t, test.Advice.Code, advice.Code)

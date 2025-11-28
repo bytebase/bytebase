@@ -16,8 +16,8 @@ func init() {
 }
 
 // parseCockroachDBForRegistry is the ParseFunc for CockroachDB.
-// Returns statements.Statements (github.com/cockroachdb/cockroachdb-parser/pkg/sql/parser/statements) on success.
-func parseCockroachDBForRegistry(statement string) (any, error) {
+// Returns []base.AST with *CockroachDBAST instances.
+func parseCockroachDBForRegistry(statement string) ([]base.AST, error) {
 	result, err := ParseCockroachDBSQL(statement)
 	if err != nil {
 		return nil, err
@@ -25,7 +25,14 @@ func parseCockroachDBForRegistry(statement string) (any, error) {
 	if result == nil {
 		return nil, nil
 	}
-	return result.Stmts, nil
+	var asts []base.AST
+	for _, stmt := range result.Stmts {
+		asts = append(asts, &AST{
+			StartPosition: &storepb.Position{Line: 1},
+			Stmt:          stmt,
+		})
+	}
+	return asts, nil
 }
 
 type ParseResult struct {

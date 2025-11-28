@@ -17,9 +17,26 @@ func init() {
 }
 
 // parseSnowflakeForRegistry is the ParseFunc for Snowflake.
-// Returns []*base.ParseResult on success.
-func parseSnowflakeForRegistry(statement string) (any, error) {
-	return ParseSnowSQL(statement)
+// Returns []base.AST with *ANTLRAST instances.
+func parseSnowflakeForRegistry(statement string) ([]base.AST, error) {
+	parseResults, err := ParseSnowSQL(statement)
+	if err != nil {
+		return nil, err
+	}
+	return toAST(parseResults), nil
+}
+
+// toAST converts []*ParseResult to []base.AST.
+func toAST(results []*base.ParseResult) []base.AST {
+	var asts []base.AST
+	for _, r := range results {
+		asts = append(asts, &base.ANTLRAST{
+			StartPosition: &storepb.Position{Line: int32(r.BaseLine) + 1},
+			Tree:          r.Tree,
+			Tokens:        r.Tokens,
+		})
+	}
+	return asts
 }
 
 // ParseSnowSQL parses the given SQL and returns a list of ParseResult (one per statement).
@@ -55,17 +72,18 @@ func parseSingleSnowSQL(statement string, baseLine int) (*base.ParseResult, erro
 	p := parser.NewSnowflakeParser(stream)
 
 	// Remove default error listener and add our own error listener.
+	startPosition := &storepb.Position{Line: int32(baseLine) + 1}
 	lexer.RemoveErrorListeners()
 	lexerErrorListener := &base.ParseErrorListener{
-		Statement: statement,
-		BaseLine:  baseLine,
+		Statement:     statement,
+		StartPosition: startPosition,
 	}
 	lexer.AddErrorListener(lexerErrorListener)
 
 	p.RemoveErrorListeners()
 	parserErrorListener := &base.ParseErrorListener{
-		Statement: statement,
-		BaseLine:  baseLine,
+		Statement:     statement,
+		StartPosition: startPosition,
 	}
 	p.AddErrorListener(parserErrorListener)
 

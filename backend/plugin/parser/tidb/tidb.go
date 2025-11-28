@@ -29,14 +29,15 @@ func init() {
 }
 
 // ParseTiDBForSyntaxCheck parses TiDB SQL for syntax checking purposes.
-func ParseTiDBForSyntaxCheck(statement string) (any, error) {
+// Returns []base.AST with *TiDBAST instances.
+func ParseTiDBForSyntaxCheck(statement string) ([]base.AST, error) {
 	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_TIDB, statement)
 	if err != nil {
 		return nil, err
 	}
 
 	p := newTiDBParser()
-	var returnNodes []ast.StmtNode
+	var results []base.AST
 	for _, singleSQL := range singleSQLs {
 		nodes, _, err := p.Parse(singleSQL.Text, "", "")
 		if err != nil {
@@ -66,10 +67,13 @@ func ParseTiDBForSyntaxCheck(statement string) (any, error) {
 				return nil, errors.Wrapf(err, "failed to set line for create table statement at line %d", singleSQL.End.GetLine())
 			}
 		}
-		returnNodes = append(returnNodes, node)
+		results = append(results, &AST{
+			StartPosition: &storepb.Position{Line: int32(singleSQL.BaseLine) + 1},
+			Node:          node,
+		})
 	}
 
-	return returnNodes, nil
+	return results, nil
 }
 
 func newTiDBParser() *tidbparser.Parser {
@@ -124,16 +128,17 @@ func parseSingleStatement(baseLine int, statement string) (antlr.Tree, *antlr.Co
 
 	p := parser.NewTiDBParser(stream)
 
+	startPosition := &storepb.Position{Line: int32(baseLine) + 1}
 	lexerErrorListener := &base.ParseErrorListener{
-		Statement: statement,
-		BaseLine:  baseLine,
+		Statement:     statement,
+		StartPosition: startPosition,
 	}
 	lexer.RemoveErrorListeners()
 	lexer.AddErrorListener(lexerErrorListener)
 
 	parserErrorListener := &base.ParseErrorListener{
-		Statement: statement,
-		BaseLine:  baseLine,
+		Statement:     statement,
+		StartPosition: startPosition,
 	}
 	p.RemoveErrorListeners()
 	p.AddErrorListener(parserErrorListener)

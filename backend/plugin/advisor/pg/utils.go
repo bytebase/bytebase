@@ -40,9 +40,19 @@ func getANTLRTree(checkCtx advisor.Context) ([]*base.ParseResult, error) {
 		return nil, errors.New("AST is not provided in context - must be parsed before calling advisor")
 	}
 
-	parseResults, ok := checkCtx.AST.([]*base.ParseResult)
-	if !ok {
-		return nil, errors.Errorf("AST type mismatch: expected []*base.ParseResult, got %T", checkCtx.AST)
+	var parseResults []*base.ParseResult
+	for _, unifiedAST := range checkCtx.AST {
+		antlrAST, ok := base.GetANTLRAST(unifiedAST)
+		if !ok {
+			return nil, errors.New("AST type mismatch: expected ANTLR-based parser result")
+		}
+
+		// Reconstruct base.ParseResult from AST
+		parseResults = append(parseResults, &base.ParseResult{
+			Tree:     antlrAST.Tree,
+			Tokens:   antlrAST.Tokens,
+			BaseLine: base.GetLineOffset(antlrAST.StartPosition),
+		})
 	}
 
 	return parseResults, nil

@@ -7,6 +7,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
+
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 type statementTypeTest struct {
@@ -30,10 +33,10 @@ func TestGetStatementType(t *testing.T) {
 	a.NoError(yaml.Unmarshal(byteValue, &tests))
 
 	for _, test := range tests {
-		results, err := ParseTSQL(test.Statement)
+		asts, err := base.Parse(storepb.Engine_MSSQL, test.Statement)
 		a.NoError(err)
-		a.Len(results, 1)
-		sqlType, err := GetStatementTypes(results[0].Tree)
+		a.NotEmpty(asts)
+		sqlType, err := GetStatementTypes(asts)
 		a.NoError(err)
 		a.Equal(test.Want, sqlType)
 	}

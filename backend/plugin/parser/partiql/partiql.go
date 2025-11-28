@@ -17,13 +17,26 @@ func init() {
 }
 
 // parsePartiQLForRegistry is the ParseFunc for PartiQL.
-// Returns []*base.ParseResult on success.
-func parsePartiQLForRegistry(statement string) (any, error) {
-	result, err := ParsePartiQL(statement)
+// Returns []base.AST with *ANTLRAST instances.
+func parsePartiQLForRegistry(statement string) ([]base.AST, error) {
+	parseResults, err := ParsePartiQL(statement)
 	if err != nil {
 		return nil, err
 	}
-	return result, nil
+	return toAST(parseResults), nil
+}
+
+// toAST converts []*ParseResult to []base.AST.
+func toAST(results []*base.ParseResult) []base.AST {
+	var asts []base.AST
+	for _, r := range results {
+		asts = append(asts, &base.ANTLRAST{
+			StartPosition: &storepb.Position{Line: int32(r.BaseLine) + 1},
+			Tree:          r.Tree,
+			Tokens:        r.Tokens,
+		})
+	}
+	return asts
 }
 
 // ParsePartiQL parses the given PartiQL statement by using antlr4. Returns a list of AST and token stream if no error.
@@ -57,17 +70,18 @@ func parseSinglePartiQL(statement string, baseLine int) (*base.ParseResult, erro
 	p := parser.NewPartiQLParserParser(stream)
 
 	// Remove default error listener and add our own error listener.
+	startPosition := &storepb.Position{Line: int32(baseLine) + 1}
 	lexer.RemoveErrorListeners()
 	lexerErrorListener := &base.ParseErrorListener{
-		Statement: statement,
-		BaseLine:  baseLine,
+		Statement:     statement,
+		StartPosition: startPosition,
 	}
 	lexer.AddErrorListener(lexerErrorListener)
 
 	p.RemoveErrorListeners()
 	parserErrorListener := &base.ParseErrorListener{
-		Statement: statement,
-		BaseLine:  baseLine,
+		Statement:     statement,
+		StartPosition: startPosition,
 	}
 	p.AddErrorListener(parserErrorListener)
 

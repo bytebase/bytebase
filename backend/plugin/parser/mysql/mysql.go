@@ -23,9 +23,26 @@ func init() {
 }
 
 // parseMySQLForRegistry is the ParseFunc for MySQL, MariaDB, and OceanBase.
-// Returns []*ParseResult on success.
-func parseMySQLForRegistry(statement string) (any, error) {
-	return ParseMySQL(statement)
+// Returns []base.AST with *ANTLRAST instances.
+func parseMySQLForRegistry(statement string) ([]base.AST, error) {
+	parseResults, err := ParseMySQL(statement)
+	if err != nil {
+		return nil, err
+	}
+	return toAST(parseResults), nil
+}
+
+// toAST converts []*ParseResult to []base.AST.
+func toAST(results []*base.ParseResult) []base.AST {
+	var asts []base.AST
+	for _, r := range results {
+		asts = append(asts, &base.ANTLRAST{
+			StartPosition: &storepb.Position{Line: int32(r.BaseLine) + 1},
+			Tree:          r.Tree,
+			Tokens:        r.Tokens,
+		})
+	}
+	return asts
 }
 
 // ParseMySQL parses the given SQL statement and returns the AST.
@@ -157,14 +174,15 @@ func parseSingleStatement(baseLine int, statement string) (antlr.Tree, *antlr.Co
 
 	p := parser.NewMySQLParser(stream)
 
+	startPosition := &storepb.Position{Line: int32(baseLine) + 1}
 	lexerErrorListener := &base.ParseErrorListener{
-		BaseLine: baseLine,
+		StartPosition: startPosition,
 	}
 	lexer.RemoveErrorListeners()
 	lexer.AddErrorListener(lexerErrorListener)
 
 	parserErrorListener := &base.ParseErrorListener{
-		BaseLine: baseLine,
+		StartPosition: startPosition,
 	}
 	p.RemoveErrorListeners()
 	p.AddErrorListener(parserErrorListener)

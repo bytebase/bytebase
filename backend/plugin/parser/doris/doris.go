@@ -13,13 +13,26 @@ func init() {
 }
 
 // parseDorisForRegistry is the ParseFunc for Doris.
-// Returns []*base.ParseResult on success.
-func parseDorisForRegistry(statement string) (any, error) {
-	result, err := ParseDorisSQL(statement)
+// Returns []base.AST with *ANTLRAST instances.
+func parseDorisForRegistry(statement string) ([]base.AST, error) {
+	parseResults, err := ParseDorisSQL(statement)
 	if err != nil {
 		return nil, err
 	}
-	return result, nil
+	return toAST(parseResults), nil
+}
+
+// toAST converts []*ParseResult to []base.AST.
+func toAST(results []*base.ParseResult) []base.AST {
+	var asts []base.AST
+	for _, r := range results {
+		asts = append(asts, &base.ANTLRAST{
+			StartPosition: &storepb.Position{Line: int32(r.BaseLine) + 1},
+			Tree:          r.Tree,
+			Tokens:        r.Tokens,
+		})
+	}
+	return asts
 }
 
 // ParseDorisSQL parses the given SQL statement by using antlr4. Returns a list of AST and token stream if no error.
@@ -49,16 +62,17 @@ func parseSingleDorisSQL(statement string, baseLine int) (*base.ParseResult, err
 	lexer := parser.NewDorisSQLLexer(antlr.NewInputStream(statement))
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 	p := parser.NewDorisSQLParser(stream)
+	startPosition := &storepb.Position{Line: int32(baseLine) + 1}
 	lexerErrorListener := &base.ParseErrorListener{
-		Statement: statement,
-		BaseLine:  baseLine,
+		Statement:     statement,
+		StartPosition: startPosition,
 	}
 	lexer.RemoveErrorListeners()
 	lexer.AddErrorListener(lexerErrorListener)
 
 	parserErrorListener := &base.ParseErrorListener{
-		Statement: statement,
-		BaseLine:  baseLine,
+		Statement:     statement,
+		StartPosition: startPosition,
 	}
 	p.RemoveErrorListeners()
 	p.AddErrorListener(parserErrorListener)

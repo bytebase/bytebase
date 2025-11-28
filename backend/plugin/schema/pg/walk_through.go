@@ -25,19 +25,27 @@ func init() {
 }
 
 // WalkThrough walks through the PostgreSQL ANTLR parse tree and builds catalog metadata.
-func WalkThrough(d *model.DatabaseMetadata, ast any) *storepb.Advice {
-	// ANTLR-based walkthrough
-	parseResults, ok := ast.([]*base.ParseResult)
-	if !ok {
-		return &storepb.Advice{
-			Status:  storepb.Advice_ERROR,
-			Code:    code.Internal.Int32(),
-			Title:   fmt.Sprintf("PostgreSQL walk-through expects []*base.ParseResult, got %T", ast),
-			Content: fmt.Sprintf("PostgreSQL walk-through expects []*base.ParseResult, got %T", ast),
-			StartPosition: &storepb.Position{
-				Line: 0,
-			},
+func WalkThrough(d *model.DatabaseMetadata, ast []base.AST) *storepb.Advice {
+	// Extract ParseResult from AST
+	var parseResults []*base.ParseResult
+	for _, unifiedAST := range ast {
+		antlrAST, ok := base.GetANTLRAST(unifiedAST)
+		if !ok {
+			return &storepb.Advice{
+				Status:  storepb.Advice_ERROR,
+				Code:    code.Internal.Int32(),
+				Title:   "PostgreSQL walk-through expects ANTLR-based parser result",
+				Content: "PostgreSQL walk-through expects ANTLR-based parser result",
+				StartPosition: &storepb.Position{
+					Line: 0,
+				},
+			}
 		}
+		parseResults = append(parseResults, &base.ParseResult{
+			Tree:     antlrAST.Tree,
+			Tokens:   antlrAST.Tokens,
+			BaseLine: base.GetLineOffset(antlrAST.StartPosition),
+		})
 	}
 
 	// Build listener with database state

@@ -4,22 +4,26 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/tsql"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func GetStatementTypes(asts any) ([]string, error) {
-	node, ok := asts.(antlr.Tree)
-	if !ok {
-		return nil, errors.Errorf("invalid ast type %T", asts)
-	}
+func GetStatementTypes(asts []base.AST) ([]string, error) {
 	sqlTypeSet := make(map[string]bool)
-	for _, child := range node.GetChildren() {
-		_, ok := child.(*antlr.TerminalNodeImpl)
-		if ok {
-			continue
+	for _, ast := range asts {
+		antlrAST, ok := base.GetANTLRAST(ast)
+		if !ok {
+			return nil, errors.New("expected ANTLR AST for MSSQL")
 		}
+		for _, child := range antlrAST.Tree.GetChildren() {
+			_, ok := child.(*antlr.TerminalNodeImpl)
+			if ok {
+				continue
+			}
 
-		t := getStatementType(child)
-		sqlTypeSet[t] = true
+			t := getStatementType(child)
+			sqlTypeSet[t] = true
+		}
 	}
 	var sqlTypes []string
 	for sqlType := range sqlTypeSet {

@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -39,7 +40,7 @@ type getSequenceDefinition func(string, *storepb.SequenceMetadata) (string, erro
 type getDatabaseMetadata func(string) (*storepb.DatabaseSchemaMetadata, error)
 type generateMigration func(*MetadataDiff) (string, error)
 type getSDLDiff func(currentSDLText, previousUserSDLText string, currentSchema, previousSchema *model.DatabaseMetadata) (*MetadataDiff, error)
-type walkThrough func(*model.DatabaseMetadata, any) *storepb.Advice
+type walkThrough func(*model.DatabaseMetadata, []base.AST) *storepb.Advice
 
 type GetDefinitionContext struct {
 	SkipBackupSchema bool
@@ -277,7 +278,7 @@ func RegisterWalkThrough(engine storepb.Engine, f walkThrough) {
 	walkThroughs[engine] = f
 }
 
-func WalkThrough(engine storepb.Engine, d *model.DatabaseMetadata, ast any) *storepb.Advice {
+func WalkThrough(engine storepb.Engine, d *model.DatabaseMetadata, ast []base.AST) *storepb.Advice {
 	f, ok := walkThroughs[engine]
 	if !ok {
 		return nil
