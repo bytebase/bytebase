@@ -53,22 +53,18 @@
             </template>
             {{ $t("rollout.stage.confirm-create") }}
           </NPopconfirm>
+          <!-- Mobile: Timeline drawer trigger (rightmost) -->
+          <StageContentSidebar
+            v-if="!isWideScreen && isStageCreated(selectedStage)"
+            :stage="selectedStage"
+            :task-runs="taskRuns"
+          />
         </div>
       </div>
     </div>
 
     <!-- Main content area: responsive layout -->
-    <div class="flex" :class="isWideScreen ? 'flex-row' : 'flex-col'">
-      <!-- Timeline: inline above on narrow screen -->
-      <div v-if="!isWideScreen && isStageCreated(selectedStage)" class="mb-4">
-        <StageTimeline
-          :stage="selectedStage"
-          :task-runs="taskRuns"
-          :is-inline="true"
-          class="border-y"
-        />
-      </div>
-
+    <div class="flex flex-row">
       <!-- Task list content -->
       <div class="flex-1 min-w-0">
         <TaskList
@@ -79,19 +75,12 @@
         />
       </div>
 
-      <!-- Timeline: sidebar on wide screen (sticky) -->
-      <div
+      <!-- Desktop: Timeline sidebar -->
+      <StageContentSidebar
         v-if="isWideScreen && isStageCreated(selectedStage)"
-        class="shrink-0 pr-4 self-start sticky top-0"
-      >
-        <div class="w-64 border rounded-lg">
-          <StageTimeline
-            :stage="selectedStage"
-            :task-runs="taskRuns"
-            :is-inline="false"
-          />
-        </div>
-      </div>
+        :stage="selectedStage"
+        :task-runs="taskRuns"
+      />
     </div>
   </div>
 
@@ -103,7 +92,7 @@
 </template>
 
 <script lang="ts" setup>
-import { useMediaQuery } from "@vueuse/core";
+import { useWindowSize } from "@vueuse/core";
 import { PlayIcon, PlusIcon } from "lucide-vue-next";
 import { NButton, NPopconfirm, NTag } from "naive-ui";
 import { computed, ref } from "vue";
@@ -112,7 +101,7 @@ import { useEnvironmentV1Store } from "@/store";
 import type { Rollout, Stage } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { usePlanContextWithRollout } from "../../../logic";
-import StageTimeline from "./StageTimeline.vue";
+import StageContentSidebar from "./StageContentSidebar.vue";
 import TaskFilter from "./TaskFilter.vue";
 import TaskList from "./TaskList.vue";
 
@@ -130,8 +119,9 @@ defineEmits<{
 const environmentStore = useEnvironmentV1Store();
 const filterStatuses = ref<Task_Status[]>([]);
 
-// Responsive layout: sidebar on wide screen, inline on narrow
-const isWideScreen = useMediaQuery("(min-width: 1024px)");
+// Responsive layout: sidebar on wide screen (>= 768px), drawer on narrow
+const { width: windowWidth } = useWindowSize();
+const isWideScreen = computed(() => windowWidth.value >= 768);
 
 const { taskRuns } = usePlanContextWithRollout();
 
