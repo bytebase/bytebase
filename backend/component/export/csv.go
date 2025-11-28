@@ -1,7 +1,7 @@
 package export
 
 import (
-	"encoding/base64"
+	"encoding/hex"
 	"io"
 	"strconv"
 	"strings"
@@ -67,7 +67,8 @@ func convertValueToBytesInCSV(value *v1pb.RowValue) []byte {
 	case *v1pb.RowValue_BoolValue:
 		return []byte(strconv.FormatBool(value.GetBoolValue()))
 	case *v1pb.RowValue_BytesValue:
-		return quoteCSVString(base64.StdEncoding.EncodeToString(value.GetBytesValue()))
+		hexStr := "0x" + hex.EncodeToString(value.GetBytesValue())
+		return quoteCSVString(hexStr)
 	case *v1pb.RowValue_NullValue:
 		return []byte("")
 	case *v1pb.RowValue_TimestampValue:
