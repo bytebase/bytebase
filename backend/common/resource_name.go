@@ -24,7 +24,6 @@ const (
 	UserNamePrefix             = "users/"
 	IdentityProviderNamePrefix = "idps/"
 	SettingNamePrefix          = "settings/"
-	RiskPrefix                 = "risks/"
 	RolloutPrefix              = "rollouts/"
 	StagePrefix                = "stages/"
 	TaskPrefix                 = "tasks/"
@@ -208,19 +207,6 @@ func GetIdentityProviderID(name string) (string, error) {
 		return "", err
 	}
 	return tokens[0], nil
-}
-
-// GetRiskID returns the risk ID from a resource name.
-func GetRiskID(name string) (int64, error) {
-	tokens, err := GetNameParentTokens(name, RiskPrefix)
-	if err != nil {
-		return 0, err
-	}
-	riskID, err := strconv.ParseInt(tokens[0], 10, 64)
-	if err != nil {
-		return 0, errors.Errorf("invalid risk ID %q", tokens[0])
-	}
-	return riskID, nil
 }
 
 // GetProjectIDIssueUID returns the project ID and issue UID from the issue name.

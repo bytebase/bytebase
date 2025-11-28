@@ -140,12 +140,6 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 func (s *ReleaseService) checkReleaseVersioned(ctx context.Context, files []*v1pb.Release_File, databases []*store.DatabaseMessage, customRules string) (*v1pb.CheckReleaseResponse, error) {
 	resp := &v1pb.CheckReleaseResponse{}
 	var errorAdviceCount, warningAdviceCount int
-	var maxRiskLevel storepb.RiskLevel
-
-	risks, err := s.store.ListRisks(ctx)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list risks"))
-	}
 
 	releaseFileVersions := make([]string, 0, len(files))
 	for _, file := range files {
@@ -290,31 +284,6 @@ loop:
 				if summaryReport != nil {
 					checkResult.AffectedRows = summaryReport.AffectedRows
 					resp.AffectedRows += summaryReport.AffectedRows
-
-					environmentID := ""
-					if database.EffectiveEnvironmentID != nil {
-						environmentID = *database.EffectiveEnvironmentID
-					}
-					commonArgs := map[string]any{
-						common.CELAttributeResourceEnvironmentID: environmentID,
-						common.CELAttributeResourceProjectID:     database.ProjectID,
-						common.CELAttributeResourceInstanceID:    instance.ResourceID,
-						common.CELAttributeResourceDatabaseName:  database.DatabaseName,
-						common.CELAttributeResourceDBEngine:      engine.String(),
-						common.CELAttributeStatementText:         statement,
-					}
-					riskLevel, err := CalculateRiskLevelWithOptionalSummaryReport(ctx, risks, commonArgs, getRiskSourceFromChangeType(changeType), summaryReport)
-					if err != nil {
-						return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to calculate risk level"))
-					}
-					if riskLevel > maxRiskLevel {
-						maxRiskLevel = riskLevel
-					}
-					riskLevelEnum, err := convertRiskLevel(riskLevel)
-					if err != nil {
-						return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert risk level"))
-					}
-					checkResult.RiskLevel = riskLevelEnum
 				}
 				if common.EngineSupportSQLReview(engine) {
 					adviceStatus, sqlReviewAdvices, err := s.runSQLReviewCheckForFile(ctx, originMetadata, finalMetadata, instance, database, changeType, statement)
@@ -378,12 +347,6 @@ loop:
 			}
 		}
 	}
-
-	riskLevelEnum, err := convertRiskLevel(maxRiskLevel)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert risk level"))
-	}
-	resp.RiskLevel = riskLevelEnum
 
 	return resp, nil
 }
@@ -762,32 +725,6 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 		advices = append(advices, convertToV1Advice(advice))
 	}
 	return adviceLevel, advices, nil
-}
-
-func getRiskSourceFromChangeType(changeType storepb.PlanCheckRunConfig_ChangeDatabaseType) store.RiskSource {
-	switch changeType {
-	case storepb.PlanCheckRunConfig_DDL, storepb.PlanCheckRunConfig_DDL_GHOST:
-		return store.RiskSourceDatabaseSchemaUpdate
-	case storepb.PlanCheckRunConfig_DML:
-		return store.RiskSourceDatabaseDataUpdate
-	default:
-		return store.RiskSourceUnknown
-	}
-}
-
-func convertRiskLevel(riskLevel storepb.RiskLevel) (v1pb.RiskLevel, error) {
-	switch riskLevel {
-	case storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED:
-		return v1pb.RiskLevel_RISK_LEVEL_UNSPECIFIED, nil
-	case storepb.RiskLevel_LOW:
-		return v1pb.RiskLevel_LOW, nil
-	case storepb.RiskLevel_MODERATE:
-		return v1pb.RiskLevel_MODERATE, nil
-	case storepb.RiskLevel_HIGH:
-		return v1pb.RiskLevel_HIGH, nil
-	default:
-		return v1pb.RiskLevel_RISK_LEVEL_UNSPECIFIED, errors.Errorf("unexpected risk level %v", riskLevel)
-	}
 }
 
 // allowedSDLStatementTypes defines the whitelist of statement types allowed in SDL files.

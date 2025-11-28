@@ -641,7 +641,6 @@ IssuePayloadApproval records the approval template used and approval history for
 | approvers | [IssuePayloadApproval.Approver](#bytebase-store-IssuePayloadApproval-Approver) | repeated | List of approvers and their current status. |
 | approval_finding_done | [bool](#bool) |  | Whether the system has finished finding a matching approval template. False means the backend is still searching for matching templates. |
 | approval_finding_error | [string](#string) |  | Error message if approval template finding failed. |
-| risk_level | [RiskLevel](#bytebase-store-RiskLevel) |  | The assessed risk level for this issue. |
 
 
 
@@ -2750,6 +2749,7 @@ Issue is the metadata for issues that track database operations and access reque
 | approval | [IssuePayloadApproval](#bytebase-store-IssuePayloadApproval) |  | Approval information for the issue workflow. |
 | grant_request | [GrantRequest](#bytebase-store-GrantRequest) |  | Access grant request details if this is a grant request issue. |
 | labels | [string](#string) | repeated | Labels attached to categorize and filter the issue. |
+| risk_level | [RiskLevel](#bytebase-store-RiskLevel) |  | Risk level for the issue, calculated from statement types. |
 
 
 

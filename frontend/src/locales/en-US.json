@@ -169,11 +169,9 @@
     "verify": "Verify",
     "regenerate": "Regenerate",
     "download": "Download",
-    "will-lose-unsaved-data": "Will lose any unsaved data.",
     "deleted": "Deleted",
     "active": "Active",
     "reopen": "Reopen",
-    "will-override-current-data": "Will override current data.",
     "rollout": "Rollout",
     "upload": "Upload",
     "clear": "Clear",
@@ -2636,12 +2634,7 @@
   "custom-approval": {
     "self": "Custom Approval",
     "risk-rule": {
-      "active": "Active",
-      "edit-rule": "Edit rule",
-      "delete": "Delete Risk rule",
       "risk": {
-        "self": "Risk",
-        "select": "Select risk",
         "risk-level": {
           "default": "Default",
           "low": "Low",
@@ -2656,20 +2649,8 @@
           "request-role": "Request Role"
         }
       },
-      "template": {
-        "templates": "Templates",
-        "load": "Load",
-        "load-template": "Load template",
-        "view": "View template"
-      },
-      "rule-name": "Rule name",
-      "view-rule": "View rule",
-      "source": {
-        "select": "Select type",
-        "self": "Type"
-      },
-      "input-rule-name": "Input rule name",
-      "search": "Search rule"
+      "template": {},
+      "source": {}
     },
     "approval-flow": {
       "self": "Approval Flow",
@@ -2703,10 +2684,7 @@
         }
       }
     },
-    "risk": {
-      "risks": "Risks",
-      "description": "Risk Center defines the risk levels for different database operations under different conditions. And risk levels determine the corresponding custom approval flows."
-    },
+    "risk": {},
     "rule": {
       "first-match-wins": "Rules are evaluated in order. First matching rule applies."
     },

@@ -14,26 +14,6 @@ import (
 
 const celLimit = 1024 * 1024
 
-// RiskFactors are the variables when evaluating the risk level.
-var RiskFactors = []cel.EnvOption{
-	cel.Variable(CELAttributeResourceEnvironmentID, cel.StringType),
-	cel.Variable(CELAttributeResourceProjectID, cel.StringType),
-	cel.Variable(CELAttributeResourceInstanceID, cel.StringType),
-	cel.Variable(CELAttributeResourceDBEngine, cel.StringType),
-
-	cel.Variable(CELAttributeResourceDatabaseName, cel.StringType),
-	cel.Variable(CELAttributeResourceSchemaName, cel.StringType),
-	cel.Variable(CELAttributeResourceTableName, cel.StringType),
-
-	cel.Variable(CELAttributeStatementAffectedRows, cel.IntType),
-	cel.Variable(CELAttributeStatementTableRows, cel.IntType),
-	cel.Variable(CELAttributeStatementSQLType, cel.StringType),
-	cel.Variable(CELAttributeStatementText, cel.StringType),
-
-	cel.Variable(CELAttributeRequestExpirationDays, cel.IntType),
-	cel.Variable(CELAttributeRequestRole, cel.StringType),
-}
-
 // ApprovalFactors are the variables when finding the approval template.
 // After the risk layer removal (3.13), approval rules use the same variables as risk evaluation.
 var ApprovalFactors = []cel.EnvOption{
@@ -98,27 +78,6 @@ var DatabaseGroupCELAttributes = []cel.EnvOption{
 	cel.Variable(CELAttributeResourceDatabaseName, cel.StringType),
 	cel.Variable(CELAttributeResourceDatabaseLabels, cel.MapType(cel.StringType, cel.StringType)),
 	cel.ParserExpressionSizeLimit(celLimit),
-}
-
-// ConvertUnparsedRisk converts unparsed risk to parsed format.
-func ConvertUnparsedRisk(expression *expr.Expr) (*exprproto.ParsedExpr, error) {
-	if expression == nil || expression.Expression == "" {
-		return nil, nil
-	}
-	e, err := cel.NewEnv(RiskFactors...)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create cel env")
-	}
-
-	ast, issues := e.Parse(expression.Expression)
-	if issues != nil && issues.Err() != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse expression: %v", issues.Err()))
-	}
-	expr, err := cel.AstToParsedExpr(ast)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert ast to parsed expression: %v", err))
-	}
-	return expr, nil
 }
 
 // ConvertUnparsedApproval converts unparsed approval to parsed format.

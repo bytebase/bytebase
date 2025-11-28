@@ -2,8 +2,6 @@ syntax = "proto3";
 
 package bytebase.store;
 
-import "store/common.proto";
-
 option go_package = "generated-go/store";
 
 // IssuePayloadApproval records the approval template used and approval history for an issue.
@@ -39,8 +37,9 @@ message IssuePayloadApproval {
   // Error message if approval template finding failed.
   string approval_finding_error = 4;
 
-  // The assessed risk level for this issue.
-  RiskLevel risk_level = 5;
+  // Reserved: risk_level was moved to Issue message
+  reserved 5;
+  reserved "risk_level";
 }
 
 // ApprovalTemplate defines the approval workflow and requirements for an issue.

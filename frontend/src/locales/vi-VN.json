@@ -169,11 +169,9 @@
     "verify": "Xác minh",
     "regenerate": "Tạo lại",
     "download": "Tải xuống",
-    "will-lose-unsaved-data": "Sẽ mất dữ liệu chưa lưu.",
     "deleted": "Đã xóa",
     "active": "Tích cực",
     "reopen": "Mở lại",
-    "will-override-current-data": "Sẽ ghi đè dữ liệu hiện tại.",
     "rollout": "Triển khai",
     "upload": "Tải lên",
     "clear": "Xóa",
@@ -2636,12 +2634,7 @@
   "custom-approval": {
     "self": "Phê duyệt tùy chỉnh",
     "risk-rule": {
-      "active": "Đang hoạt động",
-      "edit-rule": "Chỉnh sửa quy tắc",
-      "delete": "Xóa quy tắc Rủi ro",
       "risk": {
-        "self": "Rủi ro",
-        "select": "Chọn rủi ro",
         "risk-level": {
           "default": "Mặc định",
           "low": "Thấp",
@@ -2656,20 +2649,8 @@
           "request-role": "Yêu cầu vai trò"
         }
       },
-      "template": {
-        "templates": "Mẫu",
-        "load": "Tải",
-        "load-template": "Tải mẫu",
-        "view": "Xem mẫu"
-      },
-      "rule-name": "Tên quy tắc",
-      "view-rule": "Xem quy tắc",
-      "source": {
-        "select": "Chọn loại",
-        "self": "Loại"
-      },
-      "input-rule-name": "Nhập tên quy tắc",
-      "search": "Tìm kiếm quy tắc"
+      "template": {},
+      "source": {}
     },
     "approval-flow": {
       "self": "Quy trình phê duyệt",
@@ -2703,10 +2684,7 @@
         }
       }
     },
-    "risk": {
-      "risks": "Rủi ro",
-      "description": "Trung tâm rủi ro xác định mức độ rủi ro cho các hoạt động cơ sở dữ liệu khác nhau trong các điều kiện khác nhau. Và mức độ rủi ro xác định quy trình phê duyệt tùy chỉnh tương ứng."
-    },
+    "risk": {},
     "rule": {
       "first-match-wins": "Các quy tắc được đánh giá theo thứ tự. Quy tắc phù hợp đầu tiên sẽ được áp dụng."
     },

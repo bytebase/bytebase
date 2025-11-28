@@ -89,7 +89,6 @@ func configureGrpcRouters(
 	releaseService := apiv1.NewReleaseService(stores, sheetManager, schemaSyncer, dbFactory, iamManager)
 	reviewConfigService := apiv1.NewReviewConfigService(stores, licenseService)
 	revisionService := apiv1.NewRevisionService(stores)
-	riskService := apiv1.NewRiskService(stores, iamManager, licenseService)
 	roleService := apiv1.NewRoleService(stores, iamManager, licenseService)
 	rolloutService := apiv1.NewRolloutService(stores, sheetManager, licenseService, dbFactory, stateCfg, webhookManager, profile, iamManager)
 	settingService := apiv1.NewSettingService(stores, profile, licenseService, stateCfg)
@@ -177,9 +176,6 @@ func configureGrpcRouters(
 	revisionPath, revisionHandler := v1connect.NewRevisionServiceHandler(revisionService, handlerOpts)
 	connectHandlers[revisionPath] = revisionHandler
 
-	riskPath, riskHandler := v1connect.NewRiskServiceHandler(riskService, handlerOpts)
-	connectHandlers[riskPath] = riskHandler
-
 	rolePath, roleHandler := v1connect.NewRoleServiceHandler(roleService, handlerOpts)
 	connectHandlers[rolePath] = roleHandler
 
@@ -227,7 +223,6 @@ func configureGrpcRouters(
 		v1connect.ReleaseServiceName,
 		v1connect.ReviewConfigServiceName,
 		v1connect.RevisionServiceName,
-		v1connect.RiskServiceName,
 		v1connect.RoleServiceName,
 		v1connect.RolloutServiceName,
 		v1connect.SettingServiceName,
@@ -309,9 +304,6 @@ func configureGrpcRouters(
 		return err
 	}
 	if err := v1pb.RegisterRevisionServiceHandler(ctx, mux, grpcConn); err != nil {
-		return err
-	}
-	if err := v1pb.RegisterRiskServiceHandler(ctx, mux, grpcConn); err != nil {
 		return err
 	}
 	if err := v1pb.RegisterRoleServiceHandler(ctx, mux, grpcConn); err != nil {

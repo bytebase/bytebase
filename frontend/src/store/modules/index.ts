@@ -8,7 +8,6 @@ export * from "./uistate";
 export * from "./sqlReview";
 export * from "./idp";
 export * from "./user";
-export * from "./risk";
 export * from "./workspaceApprovalSetting";
 export * from "./role";
 export * from "./dbGroup";

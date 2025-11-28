@@ -29,7 +29,6 @@ import {
   WORKSPACE_ROUTE_IM,
   WORKSPACE_ROUTE_LANDING,
   WORKSPACE_ROUTE_MEMBERS,
-  WORKSPACE_ROUTE_RISKS,
   WORKSPACE_ROUTE_ROLES,
   WORKSPACE_ROUTE_SCHEMA_TEMPLATE,
   WORKSPACE_ROUTE_SEMANTIC_TYPES,
@@ -193,11 +192,6 @@ export const useDashboardSidebar = () => {
           {
             title: t("sql-review.title"),
             name: WORKSPACE_ROUTE_SQL_REVIEW,
-            type: "route",
-          },
-          {
-            title: t("custom-approval.risk.risks"),
-            name: WORKSPACE_ROUTE_RISKS,
             type: "route",
           },
           {

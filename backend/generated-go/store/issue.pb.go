@@ -143,7 +143,9 @@ type Issue struct {
 	// Access grant request details if this is a grant request issue.
 	GrantRequest *GrantRequest `protobuf:"bytes,2,opt,name=grant_request,json=grantRequest,proto3" json:"grant_request,omitempty"`
 	// Labels attached to categorize and filter the issue.
-	Labels        []string `protobuf:"bytes,3,rep,name=labels,proto3" json:"labels,omitempty"`
+	Labels []string `protobuf:"bytes,3,rep,name=labels,proto3" json:"labels,omitempty"`
+	// Risk level for the issue, calculated from statement types.
+	RiskLevel     RiskLevel `protobuf:"varint,4,opt,name=risk_level,json=riskLevel,proto3,enum=bytebase.store.RiskLevel" json:"risk_level,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -197,6 +199,13 @@ func (x *Issue) GetLabels() []string {
 		return x.Labels
 	}
 	return nil
+}
+
+func (x *Issue) GetRiskLevel() RiskLevel {
+	if x != nil {
+		return x.RiskLevel
+	}
+	return RiskLevel_RISK_LEVEL_UNSPECIFIED
 }
 
 // GrantRequest contains details for requesting database access permissions.
@@ -278,11 +287,13 @@ var File_store_issue_proto protoreflect.FileDescriptor
 
 const file_store_issue_proto_rawDesc = "" +
 	"\n" +
-	"\x11store/issue.proto\x12\x0ebytebase.store\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\"\xcf\x02\n" +
+	"\x11store/issue.proto\x12\x0ebytebase.store\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\x1a\x12store/common.proto\"\x89\x03\n" +
 	"\x05Issue\x12@\n" +
 	"\bapproval\x18\x01 \x01(\v2$.bytebase.store.IssuePayloadApprovalR\bapproval\x12A\n" +
 	"\rgrant_request\x18\x02 \x01(\v2\x1c.bytebase.store.GrantRequestR\fgrantRequest\x12\x16\n" +
-	"\x06labels\x18\x03 \x03(\tR\x06labels\"_\n" +
+	"\x06labels\x18\x03 \x03(\tR\x06labels\x128\n" +
+	"\n" +
+	"risk_level\x18\x04 \x01(\x0e2\x19.bytebase.store.RiskLevelR\triskLevel\"_\n" +
 	"\x04Type\x12\x1a\n" +
 	"\x16ISSUE_TYPE_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fDATABASE_CHANGE\x10\x01\x12\x11\n" +
@@ -323,19 +334,21 @@ var file_store_issue_proto_goTypes = []any{
 	(*Issue)(nil),                // 2: bytebase.store.Issue
 	(*GrantRequest)(nil),         // 3: bytebase.store.GrantRequest
 	(*IssuePayloadApproval)(nil), // 4: bytebase.store.IssuePayloadApproval
-	(*expr.Expr)(nil),            // 5: google.type.Expr
-	(*durationpb.Duration)(nil),  // 6: google.protobuf.Duration
+	(RiskLevel)(0),               // 5: bytebase.store.RiskLevel
+	(*expr.Expr)(nil),            // 6: google.type.Expr
+	(*durationpb.Duration)(nil),  // 7: google.protobuf.Duration
 }
 var file_store_issue_proto_depIdxs = []int32{
 	4, // 0: bytebase.store.Issue.approval:type_name -> bytebase.store.IssuePayloadApproval
 	3, // 1: bytebase.store.Issue.grant_request:type_name -> bytebase.store.GrantRequest
-	5, // 2: bytebase.store.GrantRequest.condition:type_name -> google.type.Expr
-	6, // 3: bytebase.store.GrantRequest.expiration:type_name -> google.protobuf.Duration
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	5, // 2: bytebase.store.Issue.risk_level:type_name -> bytebase.store.RiskLevel
+	6, // 3: bytebase.store.GrantRequest.condition:type_name -> google.type.Expr
+	7, // 4: bytebase.store.GrantRequest.expiration:type_name -> google.protobuf.Duration
+	5, // [5:5] is the sub-list for method output_type
+	5, // [5:5] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_store_issue_proto_init() }
@@ -344,6 +357,7 @@ func file_store_issue_proto_init() {
 		return
 	}
 	file_store_approval_proto_init()
+	file_store_common_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

@@ -29,6 +29,9 @@ func (x *Issue) Equal(y *Issue) bool {
 			return false
 		}
 	}
+	if x.RiskLevel != y.RiskLevel {
+		return false
+	}
 	return true
 }
 
