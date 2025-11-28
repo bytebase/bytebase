@@ -260,7 +260,7 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) 
 	}
 
 	if issue != nil {
-		tasks := []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.Environment, taskUID)}
+		tasks := []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, common.FormatStageID(task.Environment), taskUID)}
 		if err := s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, tasks, storepb.TaskRun_PENDING, common.SystemBotID, ""); err != nil {
 			slog.Warn("failed to create issue comment", "issueUID", issue.UID, log.BBError(err))
 		}
@@ -672,7 +672,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 			if issue == nil {
 				return nil
 			}
-			tasks := []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.Environment, task.ID)}
+			tasks := []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, common.FormatStageID(task.Environment), task.ID)}
 			return s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, tasks, storepb.TaskRun_FAILED, common.SystemBotID, "")
 		}(); err != nil {
 			slog.Warn("failed to create issue comment", log.BBError(err))
@@ -716,7 +716,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 			if issue == nil {
 				return nil
 			}
-			tasks := []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.Environment, task.ID)}
+			tasks := []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, common.FormatStageID(task.Environment), task.ID)}
 			return s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, tasks, storepb.TaskRun_DONE, common.SystemBotID, "")
 		}(); err != nil {
 			slog.Warn("failed to create issue comment", log.BBError(err))
@@ -869,7 +869,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 					p := &storepb.IssueCommentPayload{
 						Event: &storepb.IssueCommentPayload_StageEnd_{
 							StageEnd: &storepb.IssueCommentPayload_StageEnd{
-								Stage: common.FormatStage(project.ResourceID, task.PipelineID, task.Environment),
+								Stage: common.FormatStage(project.ResourceID, task.PipelineID, common.FormatStageID(task.Environment)),
 							},
 						},
 					}
