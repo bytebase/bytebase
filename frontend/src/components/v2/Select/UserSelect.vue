@@ -22,7 +22,7 @@
 import { useDebounceFn } from "@vueuse/core";
 import { computed, onMounted, reactive, watch } from "vue";
 import { UserNameCell } from "@/components/v2/Model/cells";
-import { extractUserId, type UserFilter, useUserStore } from "@/store";
+import { type UserFilter, useUserStore } from "@/store";
 import { allUsersUser, DEBOUNCE_SEARCH_DELAY, isValidUserName } from "@/types";
 import { type User, UserType } from "@/types/proto-es/v1/user_service_pb";
 import { ensureUserFullName, getDefaultPagination } from "@/utils";
@@ -64,12 +64,15 @@ const emit = defineEmits<{
 interface LocalState {
   loading: boolean;
   rawUserList: User[];
+  // Track if initial fetch has been done to avoid redundant API calls
+  initialized: boolean;
 }
 
 const userStore = useUserStore();
 const state = reactive<LocalState>({
   loading: false,
   rawUserList: [],
+  initialized: false,
 });
 
 const getFilter = (search: string): UserFilter => {
@@ -92,9 +95,10 @@ const getFilter = (search: string): UserFilter => {
   };
 };
 
-const initSelectedUsers = async (userIds: string[]) => {
-  for (const userId of userIds) {
-    const userName = ensureUserFullName(userId);
+const initSelectedUsers = async (userEmails: string[]) => {
+  for (const email of userEmails) {
+    if (!email) continue;
+    const userName = ensureUserFullName(email);
     if (isValidUserName(userName)) {
       const user = await userStore.getOrFetchUserByIdentifier(userName);
       if (!state.rawUserList.find((u) => u.name === user.name)) {
@@ -113,11 +117,17 @@ const searchUsers = async (search: string) => {
 };
 
 const handleSearch = useDebounceFn(async (search: string) => {
+  // Skip if no search term and already initialized (lazy loading optimization)
+  if (!search && state.initialized) {
+    return;
+  }
+
   state.loading = true;
   try {
     const users = await searchUsers(search);
     state.rawUserList = users;
     if (!search) {
+      state.initialized = true;
       if (props.includeAllUsers) {
         state.rawUserList.unshift(allUsersUser());
       }
@@ -133,8 +143,16 @@ const handleSearch = useDebounceFn(async (search: string) => {
   }
 }, DEBOUNCE_SEARCH_DELAY);
 
+// Only fetch the selected user(s) on mount, not the entire user list.
+// The full list will be fetched lazily when dropdown is opened.
 onMounted(async () => {
-  await handleSearch("");
+  let users: string[] = []
+  if (props.user) {
+    users = [props.user]
+  } else if (props.users) {
+    users = props.users
+  }
+  await initSelectedUsers(users);
 });
 
 const renderLabel = (user: User) => {
@@ -159,7 +177,7 @@ const options = computed(() => {
   return state.rawUserList.map((user) => {
     return {
       resource: user,
-      value: extractUserId(user.name),
+      value: user.email,
       label: user.title,
     };
   });
@@ -179,9 +197,13 @@ const resetInvalidSelection = () => {
   if (state.loading) {
     return;
   }
+  // Don't reset selection before the full user list has been fetched
+  if (!state.initialized) {
+    return;
+  }
   if (
     props.user &&
-    !state.rawUserList.find((user) => extractUserId(user.name) === props.user)
+    !state.rawUserList.find((user) => user.email === props.user)
   ) {
     emit("update:user", undefined);
   }
