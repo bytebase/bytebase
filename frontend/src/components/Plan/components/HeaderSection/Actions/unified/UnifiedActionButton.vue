@@ -8,9 +8,6 @@
         :disabled="disabled"
         @click="$emit('perform-action', action)"
       >
-        <template v-if="action === 'EXPORT_DOWNLOAD'" #icon>
-          <DownloadIcon class="w-5 h-5" />
-        </template>
         {{ actionDisplayName(action) }}
       </NButton>
     </template>
@@ -21,7 +18,6 @@
 </template>
 
 <script setup lang="ts">
-import { DownloadIcon } from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
@@ -72,8 +68,6 @@ const actionDisplayName = (action: UnifiedAction): string => {
       return isExportPlan.value ? t("common.export") : t("common.rollout");
     case "ROLLOUT_CANCEL":
       return t("common.cancel");
-    case "EXPORT_DOWNLOAD":
-      return t("common.download");
   }
 };
 
@@ -82,7 +76,6 @@ const actionButtonProps = (action: UnifiedAction) => {
     case "ISSUE_REVIEW_APPROVE":
     case "ISSUE_CREATE":
     case "ROLLOUT_START":
-    case "EXPORT_DOWNLOAD":
       return {
         type: "primary" as const,
       };

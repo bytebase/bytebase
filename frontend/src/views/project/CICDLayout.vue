@@ -3,7 +3,7 @@
     <template v-if="ready">
       <PollerProvider>
         <div class="h-full flex flex-col">
-          <BannerSection :current-tab="tabKey" />
+          <BannerSection />
 
           <HeaderSection />
 

@@ -15,6 +15,7 @@
       </div>
       <!-- Right: Checks + Options -->
       <div
+        v-if="shouldShowSidebar"
         class="lg:w-80 shrink-0 flex flex-col divide-y lg:border-l lg:pl-4 overflow-y-auto"
       >
         <template v-if="!specHasRelease">
@@ -31,6 +32,7 @@
 import { computed, type Ref } from "vue";
 import { useCurrentProjectV1 } from "@/store";
 import { isValidReleaseName } from "@/types";
+import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { usePlanContext } from "../../logic/context";
 import Configuration from "../Configuration";
@@ -45,7 +47,7 @@ import SpecListSection from "./SpecListSection.vue";
 import TargetListSection from "./TargetListSection.vue";
 
 const { project } = useCurrentProjectV1();
-const { isCreating, plan, rollout } = usePlanContext();
+const { isCreating, plan, issue, rollout } = usePlanContext();
 
 const selectedSpec = useSelectedSpec();
 
@@ -65,6 +67,24 @@ const specHasRelease = computed(() => {
 const isDataExportPlan = computed(() => {
   return plan.value.specs.every(
     (spec) => spec.config.case === "exportDataConfig"
+  );
+});
+
+const isCreateDatabasePlan = computed(() => {
+  return plan.value.specs.every(
+    (spec) => spec.config.case === "createDatabaseConfig"
+  );
+});
+
+const isGrantRequestIssue = computed(() => {
+  return issue.value?.type === Issue_Type.GRANT_REQUEST;
+});
+
+const shouldShowSidebar = computed(() => {
+  return (
+    !isDataExportPlan.value &&
+    !isCreateDatabasePlan.value &&
+    !isGrantRequestIssue.value
   );
 });
 
