@@ -155,11 +155,7 @@ import { useI18n } from "vue-i18n";
 import EmailInput from "@/components/EmailInput.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { Drawer, DrawerContent, UserSelect } from "@/components/v2";
-import {
-  pushNotification,
-  useCurrentUserV1,
-  useGroupStore,
-} from "@/store";
+import { pushNotification, useCurrentUserV1, useGroupStore } from "@/store";
 import {
   extractUserId,
   groupNamePrefix,

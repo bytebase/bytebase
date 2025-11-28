@@ -146,11 +146,11 @@ const handleSearch = useDebounceFn(async (search: string) => {
 // Only fetch the selected user(s) on mount, not the entire user list.
 // The full list will be fetched lazily when dropdown is opened.
 onMounted(async () => {
-  let users: string[] = []
+  let users: string[] = [];
   if (props.user) {
-    users = [props.user]
+    users = [props.user];
   } else if (props.users) {
-    users = props.users
+    users = props.users;
   }
   await initSelectedUsers(users);
 });
