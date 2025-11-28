@@ -25,7 +25,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
 import { useRoute, useRouter } from "vue-router";
 import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
@@ -92,8 +92,25 @@ const defaultSearchParams = (): SearchParams => {
   };
 };
 
+// Track the initial URL query string to distinguish between user-provided URLs
+// and programmatic navigation to default state
+const initialQueryString = (route.query.q as string) || null;
+
+// Initialize params from URL query if present, otherwise use defaults
+const getInitialParams = (): SearchParams => {
+  if (initialQueryString) {
+    const urlParams = buildSearchParamsBySearchText(initialQueryString);
+    const readonlyParams: SearchParams = {
+      query: "",
+      scopes: [...readonlyScopes.value],
+    };
+    return mergeSearchParams(readonlyParams, urlParams);
+  }
+  return defaultSearchParams();
+};
+
 const state = reactive<LocalState>({
-  params: defaultSearchParams(),
+  params: getInitialParams(),
 });
 
 const mergedIssueFilter = computed(() => {
@@ -118,9 +135,17 @@ const fetchIssueList = async ({
   };
 };
 
+// Skip the first watch trigger since PagedTable already fetches on mount
+let isFirstFilterWatch = true;
 watch(
   () => JSON.stringify(mergedIssueFilter.value),
-  () => issuePagedTable.value?.refresh()
+  () => {
+    if (isFirstFilterWatch) {
+      isFirstFilterWatch = false;
+      return;
+    }
+    issuePagedTable.value?.refresh();
+  }
 );
 useRefreshIssueList(() => issuePagedTable.value?.refresh());
 
@@ -139,27 +164,6 @@ const isDefaultPreset = (params: SearchParams): boolean => {
   return paramsQuery === defaultQuery;
 };
 
-// Track the initial URL query string to distinguish between user-provided URLs
-// and programmatic navigation to default state
-const initialQueryString = ref<string | null>(null);
-
-// Initialize params from URL query on mount
-onMounted(() => {
-  const queryString = route.query.q as string;
-  initialQueryString.value = queryString || null;
-
-  if (queryString) {
-    const urlParams = buildSearchParamsBySearchText(queryString);
-    // Only add readonly scopes (project), don't merge with default preset
-    const readonlyParams: SearchParams = {
-      query: "",
-      scopes: [...readonlyScopes.value],
-    };
-    state.params = mergeSearchParams(readonlyParams, urlParams);
-  }
-  // No else - keep URL clean for default preset
-});
-
 // Sync params to URL query when params change
 let isUpdatingFromUrl = false;
 watch(
@@ -175,7 +179,7 @@ watch(
     // Only update URL if query string has actually changed
     if (queryString !== currentQuery) {
       // Special case: if at default preset and we didn't start with a URL, keep URL clean
-      if (isDefaultPreset(params) && !initialQueryString.value) {
+      if (isDefaultPreset(params) && !initialQueryString) {
         // Remove URL query
         if (route.query.q) {
           isUpdatingFromUrl = true;
