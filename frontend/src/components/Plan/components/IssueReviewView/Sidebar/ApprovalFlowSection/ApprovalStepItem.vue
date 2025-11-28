@@ -80,6 +80,7 @@ import {
   useCurrentUserV1,
   useGroupStore,
   useProjectIamPolicyStore,
+  useRoleStore,
   useUserStore,
 } from "@/store";
 import { userNamePrefix } from "@/store/modules/v1/common";
@@ -107,6 +108,7 @@ const { project } = useCurrentProjectV1();
 const groupStore = useGroupStore();
 const currentUser = useCurrentUserV1();
 const userStore = useUserStore();
+const roleStore = useRoleStore();
 const projectIamPolicyStore = useProjectIamPolicyStore();
 const currentUserEmail = computed(() => currentUser.value.email);
 
@@ -179,6 +181,10 @@ const roleName = computed((): string => {
       return t("role.workspace-dba.self");
     } else if (role === PresetRoleType.WORKSPACE_ADMIN) {
       return t("role.workspace-admin.self");
+    }
+    const customRole = roleStore.getRoleByName(role);
+    if (customRole) {
+      return customRole.title;
     }
   }
   return t("custom-approval.approval-flow.node.approver");

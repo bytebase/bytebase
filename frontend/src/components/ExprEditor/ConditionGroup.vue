@@ -38,7 +38,7 @@
       </div>
     </div>
 
-    <div v-if="root && args.length === 0" class="px-1.5 text-gray-500">
+    <div v-if="root && args.length === 0" class="text-gray-500">
       {{ $t("cel.condition.add-root-condition-placeholder") }}
     </div>
     <div

@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full flex flex-col gap-y-4">
+  <div class="w-full flex flex-col gap-y-6">
     <RulesSection
       v-for="source in supportedSourceList"
       :key="source"

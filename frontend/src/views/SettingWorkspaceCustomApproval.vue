@@ -1,6 +1,7 @@
 <template>
   <div class="w-full flex flex-col gap-y-4 text-sm">
     <FeatureAttention :feature="PlanFeature.FEATURE_APPROVAL_WORKFLOW" />
+    <BBAttention v-if="hasCustomApprovalFeature" type="info" :description="$t('custom-approval.rule.first-match-wins')" />
 
     <CustomApproval v-if="state.ready" />
     <div v-else class="w-full py-16 flex justify-center items-center">
@@ -17,7 +18,7 @@
 
 <script lang="ts" setup>
 import { onMounted, reactive, toRef } from "vue";
-import { BBSpin } from "@/bbkit";
+import { BBAttention, BBSpin } from "@/bbkit";
 import {
   CustomApproval,
   provideCustomApprovalContext,
