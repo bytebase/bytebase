@@ -2687,7 +2687,16 @@
         "review-sent-back-by": "Reseña enviada por {user}"
       },
       "add-rule": "Agregar regla",
-      "edit-rule": "Editar regla"
+      "edit-rule": "Editar regla",
+      "template": {
+        "presets-title": "Plantillas",
+        "presets": {
+          "fallback": "Regla de respaldo"
+        },
+        "preset-descriptions": {
+          "fallback": "Una regla general que coincide con todas las solicitudes. Colóquela al final de su lista de reglas."
+        }
+      }
     },
     "risk": {
       "risks": "Riesgo",

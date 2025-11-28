@@ -2687,7 +2687,16 @@
         "review-sent-back-by": "Đánh giá đã gửi lại bởi {user}"
       },
       "add-rule": "Thêm quy tắc",
-      "edit-rule": "Chỉnh sửa quy tắc"
+      "edit-rule": "Chỉnh sửa quy tắc",
+      "template": {
+        "presets-title": "Mẫu có sẵn",
+        "presets": {
+          "fallback": "Quy tắc dự phòng"
+        },
+        "preset-descriptions": {
+          "fallback": "Quy tắc bắt tất cả khớp với mọi yêu cầu. Đặt ở cuối danh sách quy tắc của bạn."
+        }
+      }
     },
     "risk": {
       "risks": "Rủi ro",

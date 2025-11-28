@@ -2687,7 +2687,16 @@
         "review-sent-back-by": "Review sent back by {user}"
       },
       "add-rule": "Add rule",
-      "edit-rule": "Edit rule"
+      "edit-rule": "Edit rule",
+      "template": {
+        "presets-title": "Presets",
+        "presets": {
+          "fallback": "Fallback Rule"
+        },
+        "preset-descriptions": {
+          "fallback": "A catch-all rule that matches all requests. Place at the end of your rules list."
+        }
+      }
     },
     "risk": {
       "risks": "Risks",
