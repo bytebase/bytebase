@@ -2649,10 +2649,8 @@
           "request-role": "请求角色"
         }
       },
-      "template": {
-      },
-      "source": {
-      }
+      "template": {},
+      "source": {}
     },
     "approval-flow": {
       "self": "审批流",
@@ -2682,8 +2680,7 @@
         }
       }
     },
-    "risk": {
-    },
+    "risk": {},
     "rule": {
       "first-match-wins": "规则按顺序评估，第一个匹配的规则将被应用。"
     },

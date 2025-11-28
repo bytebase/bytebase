@@ -2649,10 +2649,8 @@
           "request-role": "ロールのリクエスト"
         }
       },
-      "template": {
-      },
-      "source": {
-      }
+      "template": {},
+      "source": {}
     },
     "approval-flow": {
       "self": "承認の流れ",
@@ -2682,8 +2680,7 @@
         }
       }
     },
-    "risk": {
-    },
+    "risk": {},
     "rule": {
       "first-match-wins": "ルールは順番に評価されます。最初に一致するルールが適用されます。"
     },

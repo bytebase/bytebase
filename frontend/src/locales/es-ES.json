@@ -2649,10 +2649,8 @@
           "request-role": "Rol de solicitud"
         }
       },
-      "template": {
-      },
-      "source": {
-      }
+      "template": {},
+      "source": {}
     },
     "approval-flow": {
       "self": "Flujo de aprobación",
@@ -2682,8 +2680,7 @@
         }
       }
     },
-    "risk": {
-    },
+    "risk": {},
     "rule": {
       "first-match-wins": "Las reglas se evalúan en orden. Se aplica la primera regla coincidente."
     },

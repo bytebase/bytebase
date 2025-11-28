@@ -2649,10 +2649,8 @@
           "request-role": "Yêu cầu vai trò"
         }
       },
-      "template": {
-      },
-      "source": {
-      }
+      "template": {},
+      "source": {}
     },
     "approval-flow": {
       "self": "Quy trình phê duyệt",
@@ -2682,8 +2680,7 @@
         }
       }
     },
-    "risk": {
-    },
+    "risk": {},
     "rule": {
       "first-match-wins": "Các quy tắc được đánh giá theo thứ tự. Quy tắc phù hợp đầu tiên sẽ được áp dụng."
     },

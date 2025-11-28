@@ -2649,10 +2649,8 @@
           "request-role": "Request Role"
         }
       },
-      "template": {
-      },
-      "source": {
-      }
+      "template": {},
+      "source": {}
     },
     "approval-flow": {
       "self": "Approval Flow",
@@ -2682,8 +2680,7 @@
         }
       }
     },
-    "risk": {
-    },
+    "risk": {},
     "rule": {
       "first-match-wins": "Rules are evaluated in order. First matching rule applies."
     },
