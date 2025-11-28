@@ -1,10 +1,10 @@
 package export
 
 import (
+	"encoding/hex"
 	"io"
 	"strconv"
 	"strings"
-	"time"
 
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -67,15 +67,14 @@ func convertValueToBytesInCSV(value *v1pb.RowValue) []byte {
 	case *v1pb.RowValue_BoolValue:
 		return []byte(strconv.FormatBool(value.GetBoolValue()))
 	case *v1pb.RowValue_BytesValue:
-		return quoteCSVString(string(value.GetBytesValue()))
+		hexStr := "0x" + hex.EncodeToString(value.GetBytesValue())
+		return quoteCSVString(hexStr)
 	case *v1pb.RowValue_NullValue:
 		return []byte("")
 	case *v1pb.RowValue_TimestampValue:
-		return quoteCSVString(value.GetTimestampValue().GoogleTimestamp.AsTime().Format("2006-01-02 15:04:05.000000"))
+		return quoteCSVString(formatTimestamp(value.GetTimestampValue()))
 	case *v1pb.RowValue_TimestampTzValue:
-		t := value.GetTimestampTzValue().GoogleTimestamp.AsTime()
-		z := time.FixedZone(value.GetTimestampTzValue().GetZone(), int(value.GetTimestampTzValue().GetOffset()))
-		return quoteCSVString(t.In(z).Format(time.RFC3339Nano))
+		return quoteCSVString(formatTimestampTz(value.GetTimestampTzValue()))
 	case *v1pb.RowValue_ValueValue:
 		return convertValueValueToBytes(value.GetValueValue())
 	default:
