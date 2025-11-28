@@ -18,7 +18,7 @@
 
 <script lang="ts" setup>
 import { useDebounceFn } from "@vueuse/core";
-import { computed, h, reactive, watch, watchEffect } from "vue";
+import { computed, h, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useDatabaseV1Store } from "@/store";
 import { workspaceNamePrefix } from "@/store/modules/v1/common";
@@ -40,6 +40,8 @@ import ResourceSelect from "./ResourceSelect.vue";
 interface LocalState {
   loading: boolean;
   rawDatabaseList: ComposedDatabase[];
+  // Track if initial fetch has been done to avoid redundant API calls
+  initialized: boolean;
 }
 
 const props = withDefaults(
@@ -80,8 +82,9 @@ const { t } = useI18n();
 const databaseStore = useDatabaseV1Store();
 
 const state = reactive<LocalState>({
-  loading: true,
+  loading: false,
   rawDatabaseList: [],
+  initialized: false,
 });
 
 const initSelectedDatabases = async (databaseNames: string[]) => {
@@ -108,35 +111,52 @@ const searchDatabases = async (name: string) => {
   return databases;
 };
 
+const initDatabaseList = async () => {
+  if (props.includeAll) {
+    const dummyAll = {
+      ...unknownDatabase(),
+      databaseName: t("database.all"),
+    };
+    if (!state.rawDatabaseList.find((d) => d.name === dummyAll.name)) {
+      state.rawDatabaseList.unshift(dummyAll);
+    }
+  }
+  if (props.databaseName) {
+    await initSelectedDatabases([props.databaseName]);
+  }
+  if (props.databaseNames) {
+    await initSelectedDatabases(props.databaseNames);
+  }
+};
+
 const handleSearch = useDebounceFn(async (search: string) => {
+  // Skip if no search term and already initialized (lazy loading optimization)
+  if (!search && state.initialized) {
+    return;
+  }
+
   state.loading = true;
   try {
     const databases = await searchDatabases(search);
     state.rawDatabaseList = databases;
     if (!search) {
-      if (props.includeAll) {
-        const dummyAll = {
-          ...unknownDatabase(),
-          databaseName: t("database.all"),
-        };
-        state.rawDatabaseList.unshift(dummyAll);
-      }
-      if (props.databaseName) {
-        await initSelectedDatabases([props.databaseName]);
-      }
-      if (props.databaseNames) {
-        await initSelectedDatabases(props.databaseNames);
-      }
+      state.initialized = true;
+      await initDatabaseList();
     }
   } finally {
     state.loading = false;
   }
 }, DEBOUNCE_SEARCH_DELAY);
 
+// Only fetch selected database(s) on mount, not the entire list.
+// The full list will be fetched lazily when dropdown is opened.
+// Re-initialize when filter props change.
 watch(
   () => [props.environmentName, props.allowedEngineTypeList],
   () => {
-    handleSearch("");
+    state.initialized = false;
+    state.rawDatabaseList = [];
+    initDatabaseList();
   },
   {
     deep: true,
@@ -162,16 +182,20 @@ const options = computed(() => {
   });
 });
 
-watchEffect(() => {
-  if (!props.defaultSelectFirst || props.multiple) {
-    return;
-  }
-  if (options.value.length === 0) {
-    return;
-  }
+watch(
+  () => options.value,
+  () => {
+    if (!props.defaultSelectFirst || props.multiple) {
+      return;
+    }
+    if (options.value.length === 0) {
+      return;
+    }
 
-  emit("update:database-name", options.value[0].value);
-});
+    emit("update:database-name", options.value[0].value);
+  },
+  { immediate: true }
+);
 
 const renderLabel = (database: ComposedDatabase) => {
   const children = [h("div", {}, [database.databaseName])];
@@ -208,8 +232,10 @@ const renderLabel = (database: ComposedDatabase) => {
 // and emit the event.
 const resetInvalidSelection = () => {
   if (!props.autoReset || props.multiple) return;
+  if (state.loading) return;
+  // Don't reset selection before the full database list has been fetched
+  if (!state.initialized) return;
   if (
-    !state.loading &&
     props.databaseName &&
     !combinedDatabaseList.value.find((item) => item.name === props.databaseName)
   ) {

@@ -75,14 +75,17 @@ const emit = defineEmits<{
 interface LocalState {
   loading: boolean;
   rawProjectList: Project[];
+  // Track if initial fetch has been done to avoid redundant API calls
+  initialized: boolean;
 }
 
 const { t } = useI18n();
 const permissionStore = usePermissionStore();
 const projectStore = useProjectV1Store();
 const state = reactive<LocalState>({
-  loading: true,
+  loading: false,
   rawProjectList: [],
+  initialized: false,
 });
 
 const initSelectedProjects = async (projectNames: string[]) => {
@@ -150,6 +153,11 @@ const combinedProjectList = computed(() => {
 });
 
 const handleSearch = useDebounceFn(async (search: string) => {
+  // Skip if no search term and already initialized (lazy loading optimization)
+  if (!search && state.initialized) {
+    return;
+  }
+
   state.loading = true;
   try {
     const { projects } = await projectStore.fetchProjectList({
@@ -161,6 +169,7 @@ const handleSearch = useDebounceFn(async (search: string) => {
     });
     state.rawProjectList = projects;
     if (!search) {
+      state.initialized = true;
       await initProjectList();
     }
   } finally {
@@ -168,8 +177,10 @@ const handleSearch = useDebounceFn(async (search: string) => {
   }
 }, DEBOUNCE_SEARCH_DELAY);
 
+// Only fetch selected project(s) on mount, not the entire list.
+// The full list will be fetched lazily when dropdown is opened.
 onMounted(async () => {
-  await handleSearch("");
+  await initProjectList();
 });
 
 const options = computed(

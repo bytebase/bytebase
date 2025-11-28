@@ -36,6 +36,8 @@ import ResourceSelect from "./ResourceSelect.vue";
 interface LocalState {
   loading: boolean;
   rawInstanceList: Instance[];
+  // Track if initial fetch has been done to avoid redundant API calls
+  initialized: boolean;
 }
 
 const props = withDefaults(
@@ -61,8 +63,9 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const instanceStore = useInstanceV1Store();
 const state = reactive<LocalState>({
-  loading: true,
+  loading: false,
   rawInstanceList: [],
+  initialized: false,
 });
 
 const initSelectedInstance = async (instanceName: string) => {
@@ -87,27 +90,42 @@ const searchInstances = async (name: string) => {
   return instances;
 };
 
+const initInstanceList = async () => {
+  if (props.instanceName === UNKNOWN_INSTANCE_NAME) {
+    const dummyAll = {
+      ...unknownInstance(),
+      title: t("instance.all"),
+    };
+    if (!state.rawInstanceList.find((ins) => ins.name === dummyAll.name)) {
+      state.rawInstanceList.unshift(dummyAll);
+    }
+  } else if (props.instanceName) {
+    await initSelectedInstance(props.instanceName);
+  }
+};
+
 const handleSearch = useDebounceFn(async (search: string) => {
+  // Skip if no search term and already initialized (lazy loading optimization)
+  if (!search && state.initialized) {
+    return;
+  }
+
   state.loading = true;
   try {
     const instances = await searchInstances(search);
     state.rawInstanceList = instances;
     if (!search) {
-      if (props.instanceName === UNKNOWN_INSTANCE_NAME) {
-        const dummyAll = {
-          ...unknownInstance(),
-          title: t("instance.all"),
-        };
-        state.rawInstanceList.unshift(dummyAll);
-      } else if (props.instanceName) {
-        await initSelectedInstance(props.instanceName);
-      }
+      state.initialized = true;
+      await initInstanceList();
     }
   } finally {
     state.loading = false;
   }
 }, DEBOUNCE_SEARCH_DELAY);
 
+// Only fetch selected instance on mount, not the entire list.
+// The full list will be fetched lazily when dropdown is opened.
+// Re-initialize when filter props change.
 watch(
   [
     () => props.allowedEngineList,
@@ -115,7 +133,9 @@ watch(
     () => props.projectName,
   ],
   () => {
-    handleSearch("");
+    state.initialized = false;
+    state.rawInstanceList = [];
+    initInstanceList();
   },
   {
     immediate: true,
@@ -158,6 +178,10 @@ const resetInvalidSelection = () => {
     return;
   }
   if (state.loading) {
+    return;
+  }
+  // Don't reset selection before the full instance list has been fetched
+  if (!state.initialized) {
     return;
   }
   if (

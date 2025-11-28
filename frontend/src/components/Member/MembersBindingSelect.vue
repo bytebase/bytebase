@@ -74,15 +74,10 @@
 <script setup lang="ts">
 import { uniq } from "lodash-es";
 import { NRadio, NRadioGroup } from "naive-ui";
-import { computed, ref, watchEffect } from "vue";
+import { computed, ref } from "vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { GroupSelect, UserSelect } from "@/components/v2";
-import {
-  extractGroupEmail,
-  extractUserId,
-  useGroupStore,
-  useUserStore,
-} from "@/store";
+import { extractGroupEmail, extractUserId, useGroupStore } from "@/store";
 import { groupNamePrefix } from "@/store/modules/v1/common";
 import {
   getGroupEmailInBinding,
@@ -118,16 +113,7 @@ const emit = defineEmits<{
 }>();
 
 const memberType = ref<MemberType>("USERS");
-const userStore = useUserStore();
 const groupStore = useGroupStore();
-
-watchEffect(async () => {
-  await userStore.batchGetUsers(
-    props.value.map((binding) =>
-      binding.startsWith(groupBindingPrefix) ? "" : binding
-    )
-  );
-});
 
 const onTypeChange = (type: MemberType) => {
   emit("update:value", []);
@@ -145,11 +131,11 @@ const memberList = computed(() => {
       }
       list.push(group.name);
     } else {
-      const user = userStore.getUserByIdentifier(binding);
-      if (!user) {
-        continue;
+      // For users, extract email from binding format "user:{email}"
+      const email = extractUserId(binding);
+      if (email) {
+        list.push(email);
       }
-      list.push(extractUserId(user.name));
     }
   }
 
@@ -163,11 +149,8 @@ const onMemberListUpdate = (memberList: string[]) => {
         const email = extractGroupEmail(member);
         return getGroupEmailInBinding(email);
       }
-      const user = userStore.getUserByIdentifier(member);
-      if (!user) {
-        return "";
-      }
-      return getUserEmailInBinding(user.email);
+      // UserSelect now returns email directly
+      return getUserEmailInBinding(member);
     })
     .filter((binding) => binding);
 

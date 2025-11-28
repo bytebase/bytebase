@@ -53,11 +53,14 @@ defineEmits<{
 interface LocalState {
   loading: boolean;
   rawList: Group[];
+  // Track if initial fetch has been done to avoid redundant API calls
+  initialized: boolean;
 }
 
 const state = reactive<LocalState>({
   loading: false,
   rawList: [],
+  initialized: false,
 });
 
 const groupStore = useGroupStore();
@@ -73,12 +76,28 @@ const searchGroups = async (search: string) => {
   return groups;
 };
 
+const initSelectedGroups = async (groupNames: string[]) => {
+  if (groupNames.length === 0) return;
+  const groups = await groupStore.batchFetchGroups(groupNames);
+  for (const group of groups) {
+    if (!state.rawList.find((g) => g.name === group.name)) {
+      state.rawList.unshift(group);
+    }
+  }
+};
+
 const handleSearch = useDebounceFn(async (search: string) => {
+  // Skip if no search term and already initialized (lazy loading optimization)
+  if (!search && state.initialized) {
+    return;
+  }
+
   state.loading = true;
   try {
     const groups = await searchGroups(search);
     state.rawList = groups;
     if (!search) {
+      state.initialized = true;
       if (props.group) {
         await initSelectedGroups([props.group]);
       }
@@ -91,17 +110,14 @@ const handleSearch = useDebounceFn(async (search: string) => {
   }
 }, DEBOUNCE_SEARCH_DELAY);
 
-const initSelectedGroups = async (groupNames: string[]) => {
-  const groups = await groupStore.batchFetchGroups(groupNames);
-  for (const group of groups) {
-    if (!state.rawList.find((g) => g.name === group.name)) {
-      state.rawList.unshift(group);
-    }
-  }
-};
-
+// Only fetch selected group(s) on mount, not the entire list.
+// The full list will be fetched lazily when dropdown is opened.
 onMounted(async () => {
-  await handleSearch("");
+  if (props.group) {
+    await initSelectedGroups([props.group]);
+  } else if (props.groups) {
+    await initSelectedGroups(props.groups);
+  }
 });
 
 const options = computed(() => {
