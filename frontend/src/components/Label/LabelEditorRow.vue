@@ -48,12 +48,12 @@
 </template>
 
 <script setup lang="ts">
+import { Trash2Icon } from "lucide-vue-next";
 import { NInput } from "naive-ui";
 import { computed } from "vue";
+import { MiniActionButton } from "@/components/v2";
 import ErrorList from "../misc/ErrorList.vue";
 import type { Label } from "./types";
-import { MiniActionButton } from "@/components/v2";
-import { Trash2Icon } from "lucide-vue-next";
 
 const props = defineProps<{
   kv: Label;
