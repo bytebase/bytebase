@@ -2692,9 +2692,13 @@
       "template": {
         "presets-title": "预设模板",
         "presets": {
+          "drop-or-truncate": "删除/清空表",
+          "high-affected-rows": "高影响行数",
           "fallback": "兜底规则"
         },
         "preset-descriptions": {
+          "drop-or-truncate": "DROP TABLE 或 TRUNCATE 语句需要审批。",
+          "high-affected-rows": "影响行数超过 100 时需要审批。",
           "fallback": "匹配所有请求的兜底规则，请将其放在规则列表的末尾。"
         }
       }
