@@ -1,5 +1,5 @@
 <template>
-  <ProjectIssuesPanel :project="project" />
+  <ProjectIssuesPanel v-if="ready" :project="project" />
 </template>
 
 <script lang="ts" setup>
@@ -12,7 +12,7 @@ const props = defineProps<{
   projectId: string;
 }>();
 
-const { project } = useProjectByName(
+const { project, ready } = useProjectByName(
   computed(() => `${projectNamePrefix}${props.projectId}`)
 );
 </script>

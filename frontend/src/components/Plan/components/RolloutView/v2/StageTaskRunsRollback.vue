@@ -1,5 +1,5 @@
 <template>
-  <div v-if="rollbackableTaskRuns.length > 0" class="px-3 pb-3">
+  <div v-if="rollbackableTaskRuns.length > 0">
     <NButton size="small" text @click="showRollbackDrawer = true">
       <template #icon>
         <DatabaseBackupIcon :size="16" />

@@ -2688,7 +2688,20 @@
         "review-sent-back-by": "Đánh giá đã gửi lại bởi {user}"
       },
       "add-rule": "Thêm quy tắc",
-      "edit-rule": "Chỉnh sửa quy tắc"
+      "edit-rule": "Chỉnh sửa quy tắc",
+      "template": {
+        "presets-title": "Mẫu có sẵn",
+        "presets": {
+          "drop-or-truncate": "Xóa/Truncate Bảng",
+          "high-affected-rows": "Số Hàng Ảnh Hưởng Cao",
+          "fallback": "Quy tắc dự phòng"
+        },
+        "preset-descriptions": {
+          "drop-or-truncate": "Yêu cầu phê duyệt cho các câu lệnh DROP TABLE hoặc TRUNCATE.",
+          "high-affected-rows": "Yêu cầu phê duyệt khi số hàng bị ảnh hưởng vượt quá 100.",
+          "fallback": "Quy tắc bắt tất cả khớp với mọi yêu cầu. Đặt ở cuối danh sách quy tắc của bạn."
+        }
+      }
     },
     "risk": {
       "risks": "Rủi ro",

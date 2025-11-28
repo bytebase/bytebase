@@ -2688,7 +2688,20 @@
         "review-sent-back-by": "{user} から承認が返されました"
       },
       "add-rule": "ルールを追加",
-      "edit-rule": "ルールを編集"
+      "edit-rule": "ルールを編集",
+      "template": {
+        "presets-title": "プリセット",
+        "presets": {
+          "drop-or-truncate": "テーブル削除/切り捨て",
+          "high-affected-rows": "高影響行数",
+          "fallback": "フォールバックルール"
+        },
+        "preset-descriptions": {
+          "drop-or-truncate": "DROP TABLEまたはTRUNCATEステートメントには承認が必要です。",
+          "high-affected-rows": "影響行数が100を超える場合は承認が必要です。",
+          "fallback": "すべてのリクエストに一致するキャッチオールルール。ルールリストの最後に配置してください。"
+        }
+      }
     },
     "risk": {
       "risks": "リスク",
