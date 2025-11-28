@@ -58,10 +58,8 @@ const getListInstanceFilter = (params: InstanceFilter) => {
   if (isValidProjectName(params.project)) {
     list.push(`project == "${params.project}"`);
   }
-  if (params.environment !== undefined) {
-    list.push(
-      `environment == "${isValidEnvironmentName(params.environment) ? params.environment : ""}"`
-    );
+  if (isValidEnvironmentName(params.environment)) {
+    list.push(`environment == "${params.environment}"`);
   }
   if (params.host) {
     list.push(`host.matches("${params.host}")`);

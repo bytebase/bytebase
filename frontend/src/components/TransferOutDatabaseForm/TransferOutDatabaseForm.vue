@@ -9,19 +9,17 @@
       >
         <BBSpin />
       </div>
-      <div v-else class="gap-y-4 pb-4">
-        <div class="gap-y-4">
-          <span class="text-main text-base">
-            {{ $t("database.transfer.select-databases") }}
-            <span class="text-red-500">*</span>
-          </span>
-          <DatabaseV1Table
-            :database-list="databaseList"
-            :show-selection="true"
-            v-model:selected-database-names="selectedDatabaseNameList"
-          />
-        </div>
-        <NDivider class="w-full py-2" />
+      <div v-else class="flex flex-col gap-y-4 pb-4">
+        <span class="text-main text-base">
+          {{ $t("database.transfer.select-databases") }}
+          <span class="text-red-500">*</span>
+        </span>
+        <DatabaseV1Table
+          :database-list="databaseList"
+          :show-selection="true"
+          v-model:selected-database-names="selectedDatabaseNameList"
+        />
+        <NDivider class="w-full" />
         <NRadioGroup v-model:value="transfer" class="gap-x-4">
           <NRadio value="project">
             <span class="text-main text-base">

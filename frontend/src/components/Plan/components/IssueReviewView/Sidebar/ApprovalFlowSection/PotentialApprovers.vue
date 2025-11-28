@@ -22,7 +22,7 @@
       </div>
     </NPopover>
     <!-- Show user avatars when 3 or fewer users -->
-    <div v-else class="flex items-center gap-1">
+    <div v-else class="flex flex-col items-start gap-1">
       <UserView
         v-for="user in users"
         :key="user.email"

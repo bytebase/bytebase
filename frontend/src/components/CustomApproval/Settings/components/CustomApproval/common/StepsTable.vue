@@ -72,6 +72,7 @@ const columns = computed(
           if (props.editable) {
             return h(RoleSelect, {
               suffix: "",
+              placement: "top-start",
               value: stepData.role,
               style: "width: 80%",
               "onUpdate:value": (val: string | string[]) => {

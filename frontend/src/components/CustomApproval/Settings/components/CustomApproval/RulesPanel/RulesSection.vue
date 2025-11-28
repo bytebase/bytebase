@@ -4,20 +4,12 @@
       <div class="font-medium text-base">
         {{ sourceDisplayText }}
       </div>
-      <div class="flex items-center gap-x-2">
-        <NButton size="small" @click="handleAddRule">
-          <template #icon>
-            <PlusIcon class="w-4" />
-          </template>
-          {{ $t("custom-approval.approval-flow.add-rule") }}
-        </NButton>
-        <NTooltip>
-          <template #trigger>
-            <HelpCircleIcon class="w-4 h-4 text-control-light cursor-help" />
-          </template>
-          {{ $t("custom-approval.rule.first-match-wins") }}
-        </NTooltip>
-      </div>
+      <NButton size="small" @click="handleAddRule">
+        <template #icon>
+          <PlusIcon class="w-4" />
+        </template>
+        {{ $t("custom-approval.approval-flow.add-rule") }}
+      </NButton>
     </div>
 
     <NDataTable
@@ -40,16 +32,12 @@
 </template>
 
 <script lang="tsx" setup>
-import {
-  HelpCircleIcon,
-  PencilIcon,
-  PlusIcon,
-  TrashIcon,
-} from "lucide-vue-next";
+import { PencilIcon, PlusIcon, TrashIcon } from "lucide-vue-next";
 import type { DataTableColumn } from "naive-ui";
-import { NButton, NDataTable, NPopconfirm, NTooltip } from "naive-ui";
+import { NButton, NDataTable, NPopconfirm } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { MiniActionButton } from "@/components/v2";
 import { pushNotification, useWorkspaceApprovalSettingStore } from "@/store";
 import type { LocalApprovalRule } from "@/types";
 import type { WorkspaceApprovalSetting_Rule_Source } from "@/types/proto-es/v1/setting_service_pb";
@@ -79,6 +67,7 @@ const columns = computed((): DataTableColumn<LocalApprovalRule>[] => [
     title: t("common.title"),
     key: "title",
     width: 200,
+    resizable: true,
     ellipsis: { tooltip: true },
     render: (row) => row.title || "-",
   },
@@ -86,12 +75,14 @@ const columns = computed((): DataTableColumn<LocalApprovalRule>[] => [
     title: t("cel.condition.self"),
     key: "condition",
     ellipsis: { tooltip: true },
+    resizable: true,
     render: (row) => <code class="text-xs">{row.condition || "true"}</code>,
   },
   {
     title: t("custom-approval.approval-flow.self"),
     key: "flow",
     width: 280,
+    resizable: true,
     render: (row) => formatApprovalFlow(row.flow),
   },
   {
@@ -100,9 +91,9 @@ const columns = computed((): DataTableColumn<LocalApprovalRule>[] => [
     width: 100,
     render: (row) => (
       <div class="flex gap-x-1">
-        <NButton size="tiny" onClick={() => handleEditRule(row)}>
+        <MiniActionButton onClick={() => handleEditRule(row)}>
           <PencilIcon class="w-3" />
-        </NButton>
+        </MiniActionButton>
         <NPopconfirm
           onPositiveClick={() => handleDeleteRule(row)}
           positiveText={t("common.confirm")}
@@ -110,9 +101,9 @@ const columns = computed((): DataTableColumn<LocalApprovalRule>[] => [
         >
           {{
             trigger: () => (
-              <NButton size="tiny">
+              <MiniActionButton>
                 <TrashIcon class="w-3" />
-              </NButton>
+              </MiniActionButton>
             ),
             default: () => t("common.confirm") + "?",
           }}

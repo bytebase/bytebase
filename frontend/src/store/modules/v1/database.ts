@@ -112,10 +112,8 @@ const getListDatabaseFilter = (filter: DatabaseFilter): string => {
   if (isValidInstanceName(filter.instance)) {
     params.push(`instance == "${filter.instance}"`);
   }
-  if (filter.environment !== undefined) {
-    params.push(
-      `environment == "${isValidEnvironmentName(filter.environment) ? filter.environment : ""}"`
-    );
+  if (isValidEnvironmentName(filter.environment)) {
+    params.push(`environment == "${filter.environment}"`);
   }
   if (filter.excludeUnassigned) {
     params.push(`exclude_unassigned == true`);
