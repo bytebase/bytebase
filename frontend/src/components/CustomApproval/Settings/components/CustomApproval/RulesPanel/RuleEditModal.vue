@@ -19,6 +19,31 @@
       </div>
 
       <div class="flex-1 flex flex-col px-6 py-4 overflow-hidden gap-y-4">
+        <div v-if="mode === 'create'" class="flex flex-col gap-y-2">
+          <h3 class="font-medium text-sm text-control">
+            {{ $t("custom-approval.approval-flow.template.presets-title") }}
+          </h3>
+          <div class="flex flex-wrap gap-2">
+            <NTooltip
+              v-for="(template, index) in templates"
+              :key="index"
+              to="body"
+              :disabled="!template.description()"
+            >
+              <template #trigger>
+                <NButton
+                  size="small"
+                  :disabled="!allowAdmin"
+                  @click="applyTemplate(template)"
+                >
+                  {{ template.title() }}
+                </NButton>
+              </template>
+              {{ template.description() }}
+            </NTooltip>
+          </div>
+        </div>
+
         <div class="flex flex-col gap-y-2">
           <h3 class="font-medium text-sm text-control">
             {{ $t("common.title") }} <RequiredStar />
@@ -96,7 +121,7 @@
 <script lang="ts" setup>
 import { create as createProto } from "@bufbuild/protobuf";
 import { cloneDeep, head } from "lodash-es";
-import { NButton, NInput, NModal } from "naive-ui";
+import { NButton, NInput, NModal, NTooltip } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import ExprEditor from "@/components/ExprEditor";
 import RequiredStar from "@/components/RequiredStar.vue";
@@ -122,6 +147,11 @@ import {
 } from "../../common/utils";
 import { StepsTable } from "../common";
 import { useCustomApprovalContext } from "../context";
+import {
+  type ApprovalRuleTemplate,
+  applyTemplateToState,
+  useApprovalRuleTemplates,
+} from "./template";
 
 type LocalState = {
   title: string;
@@ -144,6 +174,7 @@ const emit = defineEmits<{
 
 const context = useCustomApprovalContext();
 const { allowAdmin } = context;
+const templates = useApprovalRuleTemplates();
 
 const state = reactive<LocalState>({
   title: "",
@@ -192,6 +223,13 @@ const resolveLocalState = async () => {
 
 const handleUpdate = () => {
   // Trigger reactivity
+};
+
+const applyTemplate = (template: ApprovalRuleTemplate) => {
+  const applied = applyTemplateToState(template);
+  state.title = applied.title;
+  state.conditionExpr = applied.conditionExpr;
+  state.flow = applied.flow;
 };
 
 const handleSave = async () => {

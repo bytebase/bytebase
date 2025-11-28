@@ -2688,7 +2688,16 @@
         "review-sent-back-by": "审批被 {user} 退回"
       },
       "add-rule": "添加规则",
-      "edit-rule": "编辑规则"
+      "edit-rule": "编辑规则",
+      "template": {
+        "presets-title": "预设模板",
+        "presets": {
+          "fallback": "兜底规则"
+        },
+        "preset-descriptions": {
+          "fallback": "匹配所有请求的兜底规则，请将其放在规则列表的末尾。"
+        }
+      }
     },
     "risk": {
       "risks": "风险",
