@@ -560,6 +560,17 @@ func FormatRollout(projectID string, pipelineUID int) string {
 	return fmt.Sprintf("%s/%s%d", FormatProject(projectID), RolloutPrefix, pipelineUID)
 }
 
+// EmptyStageID is the placeholder used for stages without environment or with deleted environments.
+const EmptyStageID = "-"
+
+// FormatStageID returns the stage ID, using EmptyStageID placeholder if environment is empty.
+func FormatStageID(environment string) string {
+	if environment == "" {
+		return EmptyStageID
+	}
+	return environment
+}
+
 // stageID is task environmentID.
 func FormatStage(projectID string, pipelineUID int, stageID string) string {
 	return fmt.Sprintf("%s/%s%s", FormatRollout(projectID, pipelineUID), StagePrefix, stageID)

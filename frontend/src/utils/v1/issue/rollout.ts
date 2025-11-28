@@ -145,9 +145,14 @@ export const findTaskByName = (
   rollout: Rollout | undefined,
   name: string
 ): Task => {
+  // Use task ID for comparison to handle legacy data with malformed stage IDs.
+  const targetTaskUID = extractTaskUID(name);
+  if (!targetTaskUID) {
+    return unknownTask();
+  }
   for (const stage of rollout?.stages ?? []) {
     for (const task of stage.tasks) {
-      if (task.name === name) {
+      if (extractTaskUID(task.name) === targetTaskUID) {
         return task;
       }
     }
@@ -159,7 +164,16 @@ export const findStageByName = (
   rollout: Rollout | undefined,
   name: string
 ): Stage => {
-  return (rollout?.stages ?? []).find((s) => s.name === name) ?? unknownStage();
+  // Use stage ID for comparison to handle legacy data with malformed stage IDs.
+  const targetStageUID = extractStageUID(name);
+  if (!targetStageUID) {
+    return unknownStage();
+  }
+  return (
+    (rollout?.stages ?? []).find(
+      (s) => extractStageUID(s.name) === targetStageUID
+    ) ?? unknownStage()
+  );
 };
 
 export const extractSchemaVersionFromTask = (task: Task): string => {

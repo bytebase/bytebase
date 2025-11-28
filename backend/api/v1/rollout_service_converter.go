@@ -15,22 +15,9 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-const (
-	// emptyStageID is the placeholder used for stages without environment or with deleted environments.
-	emptyStageID = "-"
-)
-
-// formatStageIDFromEnvironment returns the stage ID, using emptyStageID placeholder if environment is empty.
-func formatStageIDFromEnvironment(environment string) string {
-	if environment == "" {
-		return emptyStageID
-	}
-	return environment
-}
-
-// formatEnvironmentFromStageID converts stage ID back to environment, handling the emptyStageID placeholder.
+// formatEnvironmentFromStageID converts stage ID back to environment, handling the EmptyStageID placeholder.
 func formatEnvironmentFromStageID(stageID string) string {
-	if stageID == emptyStageID {
+	if stageID == common.EmptyStageID {
 		return ""
 	}
 	return stageID
@@ -49,7 +36,7 @@ func convertToTaskRuns(ctx context.Context, s *store.Store, stateCfg *state.Stat
 }
 
 func convertToTaskRun(ctx context.Context, s *store.Store, stateCfg *state.State, taskRun *store.TaskRunMessage) (*v1pb.TaskRun, error) {
-	stageID := formatStageIDFromEnvironment(taskRun.Environment)
+	stageID := common.FormatStageID(taskRun.Environment)
 	t := &v1pb.TaskRun{
 		Name:          common.FormatTaskRun(taskRun.ProjectID, taskRun.PipelineUID, stageID, taskRun.TaskUID, taskRun.ID),
 		Creator:       common.FormatUserEmail(taskRun.Creator.Email),
@@ -159,7 +146,7 @@ func convertToSchedulerInfoWaitingCause(ctx context.Context, s *store.Store, c *
 		if issue != nil {
 			issueName = common.FormatIssue(issue.Project.ResourceID, issue.UID)
 		}
-		stageID := formatStageIDFromEnvironment(task.Environment)
+		stageID := common.FormatStageID(task.Environment)
 		return &v1pb.TaskRun_SchedulerInfo_WaitingCause{
 			Cause: &v1pb.TaskRun_SchedulerInfo_WaitingCause_Task_{
 				Task: &v1pb.TaskRun_SchedulerInfo_WaitingCause_Task{
@@ -284,7 +271,7 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 	for _, environment := range environmentOrder {
 		tasks := tasksByEnv[environment]
 		if len(tasks) > 0 {
-			stageID := formatStageIDFromEnvironment(environment)
+			stageID := common.FormatStageID(environment)
 			stages = append(stages, &v1pb.Stage{
 				Name:        common.FormatStage(project.ResourceID, rollout.ID, stageID),
 				Id:          stageID,
@@ -297,7 +284,7 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 
 	for environment, tasks := range tasksByEnv {
 		if len(tasks) > 0 {
-			stageID := formatStageIDFromEnvironment(environment)
+			stageID := common.FormatStageID(environment)
 			stages = append([]*v1pb.Stage{
 				{
 					Name:        common.FormatStage(project.ResourceID, rollout.ID, stageID),
@@ -346,7 +333,7 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get instance %s", task.InstanceID)
 	}
-	stageID := formatStageIDFromEnvironment(task.Environment)
+	stageID := common.FormatStageID(task.Environment)
 	v1pbTask := &v1pb.Task{
 		Name:          common.FormatTask(project.ResourceID, task.PipelineID, stageID, task.ID),
 		SpecId:        task.Payload.GetSpecId(),
@@ -407,7 +394,7 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 		databaseChangeType = v1pb.DatabaseChangeType_DATABASE_CHANGE_TYPE_UNSPECIFIED
 	}
 
-	stageID := formatStageIDFromEnvironment(task.Environment)
+	stageID := common.FormatStageID(task.Environment)
 	v1pbTask := &v1pb.Task{
 		Name:          common.FormatTask(project.ResourceID, task.PipelineID, stageID, task.ID),
 		SpecId:        task.Payload.GetSpecId(),
@@ -445,7 +432,7 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 		return nil, errors.Errorf("database not found")
 	}
 
-	stageID := formatStageIDFromEnvironment(task.Environment)
+	stageID := common.FormatStageID(task.Environment)
 	v1pbTask := &v1pb.Task{
 		Name:          common.FormatTask(project.ResourceID, task.PipelineID, stageID, task.ID),
 		SpecId:        task.Payload.GetSpecId(),
@@ -495,7 +482,7 @@ func convertToTaskFromDatabaseDataExport(ctx context.Context, s *store.Store, pr
 			Password: &task.Payload.Password,
 		},
 	}
-	stageID := formatStageIDFromEnvironment(task.Environment)
+	stageID := common.FormatStageID(task.Environment)
 	v1pbTask := &v1pb.Task{
 		Name:    common.FormatTask(project.ResourceID, task.PipelineID, stageID, task.ID),
 		SpecId:  task.Payload.GetSpecId(),
