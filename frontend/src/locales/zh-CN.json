@@ -2820,7 +2820,8 @@
       "self": "条件"
     },
     "select": "选择数据库分组",
-    "no-matched-databases": "没有匹配的数据库"
+    "no-matched-databases": "没有匹配的数据库",
+    "delete-group": "删除数据库组 {name}"
   },
   "export-center": {
     "self": "导出中心",

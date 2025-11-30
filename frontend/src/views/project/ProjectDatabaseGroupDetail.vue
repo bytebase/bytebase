@@ -2,7 +2,7 @@
   <div
     v-if="databaseGroup"
     v-bind="$attrs"
-    class="h-full flex-1 relative flex flex-col gap-y-4"
+    class="min-h-full flex-1 relative flex flex-col gap-y-4 pt-4"
   >
     <FeatureAttention
       :feature="PlanFeature.FEATURE_DATABASE_GROUPS"
@@ -60,6 +60,7 @@ import { computed, reactive, watchEffect } from "vue";
 import DatabaseGroupForm from "@/components/DatabaseGroup/DatabaseGroupForm.vue";
 import FeatureAttention from "@/components/FeatureGuard/FeatureAttention.vue";
 import { AddSpecDrawer } from "@/components/Plan";
+import { useBodyLayoutContext } from "@/layouts/common";
 import { featureToRef, useDBGroupStore, useProjectByName } from "@/store";
 import {
   databaseGroupNamePrefix,
@@ -115,4 +116,8 @@ watchEffect(async () => {
     view: DatabaseGroupView.FULL,
   });
 });
+
+const { overrideMainContainerClass } = useBodyLayoutContext();
+
+overrideMainContainerClass("py-0!");
 </script>

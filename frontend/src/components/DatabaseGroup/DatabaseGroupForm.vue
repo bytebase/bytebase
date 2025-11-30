@@ -1,6 +1,6 @@
 <template>
-  <div class="flex flex-col">
-    <div class="flex-1">
+  <div class="flex-1 flex flex-col">
+    <div class="flex-1 mb-6">
       <div class="w-full">
         <p class="font-medium text-main mb-2">{{ $t("common.name") }}</p>
         <NInput
@@ -46,22 +46,27 @@
       </div>
     </div>
 
-    <div v-if="!readonly" class="sticky bottom-0 z-10 mt-4">
+    <div v-if="!isCreating" class="py-6 border-t">
+      <BBButtonConfirm
+        :type="'DELETE'"
+        :button-text="$t('database-group.delete-group')"
+        :ok-text="$t('common.delete')"
+        :confirm-title="
+          $t('database-group.delete-group', { name: databaseGroup?.title })
+        "
+        :require-confirm="true"
+        @confirm="doDelete"
+      />
+    </div>
+
+    <div v-if="!readonly" class="sticky bottom-0 z-10">
       <div
-        class="flex justify-between w-full pt-4 border-t border-block-border bg-white"
+        class="flex justify-end w-full py-4 border-t border-block-border bg-white gap-x-3"
       >
-        <NButton v-if="!isCreating" type="error" text @click="doDelete">
-          <template #icon>
-            <Trash2Icon class="w-4 h-auto" />
-          </template>
-          {{ $t("common.delete") }}
+        <NButton @click="$emit('dismiss')">{{ $t("common.cancel") }}</NButton>
+        <NButton type="primary" :disabled="!allowConfirm" @click="doConfirm">
+          {{ isCreating ? $t("common.save") : $t("common.confirm") }}
         </NButton>
-        <div class="flex-1 flex flex-row justify-end items-center gap-x-3">
-          <NButton @click="$emit('dismiss')">{{ $t("common.cancel") }}</NButton>
-          <NButton type="primary" :disabled="!allowConfirm" @click="doConfirm">
-            {{ isCreating ? $t("common.save") : $t("common.confirm") }}
-          </NButton>
-        </div>
       </div>
     </div>
   </div>
@@ -70,11 +75,11 @@
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
 import { cloneDeep, head, isEqual } from "lodash-es";
-import { Trash2Icon } from "lucide-vue-next";
-import { NButton, NDivider, NInput, useDialog } from "naive-ui";
+import { NButton, NDivider, NInput } from "naive-ui";
 import { computed, onMounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { BBButtonConfirm } from "@/bbkit";
 import ExprEditor from "@/components/ExprEditor";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import {
@@ -136,7 +141,6 @@ const state = reactive<LocalState>({
 });
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
 const router = useRouter();
-const dialog = useDialog();
 
 const isCreating = computed(() => props.databaseGroup === undefined);
 
@@ -167,25 +171,17 @@ onMounted(async () => {
   }
 });
 
-const doDelete = () => {
-  dialog.error({
-    title: "Confirm to delete",
-    positiveText: t("common.confirm"),
-    negativeText: t("common.cancel"),
-    onPositiveClick: async () => {
-      const databaseGroup = props.databaseGroup as DatabaseGroup;
-      await dbGroupStore.deleteDatabaseGroup(databaseGroup.name);
-      if (
-        router.currentRoute.value.name ===
-        PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL
-      ) {
-        router.replace({
-          name: PROJECT_V1_ROUTE_DATABASE_GROUPS,
-        });
-      }
-      emit("dismiss");
-    },
-  });
+const doDelete = async () => {
+  const databaseGroup = props.databaseGroup as DatabaseGroup;
+  await dbGroupStore.deleteDatabaseGroup(databaseGroup.name);
+  if (
+    router.currentRoute.value.name === PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL
+  ) {
+    router.replace({
+      name: PROJECT_V1_ROUTE_DATABASE_GROUPS,
+    });
+  }
+  emit("dismiss");
 };
 
 const allowConfirm = computed(() => {
