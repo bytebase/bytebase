@@ -48,7 +48,7 @@
         </div>
       </div>
 
-      <div class="py-6 lg:flex">
+      <div class="py-6">
         <ProjectArchiveRestoreButton :project="project" />
       </div>
 

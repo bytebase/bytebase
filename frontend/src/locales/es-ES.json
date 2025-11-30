@@ -2820,7 +2820,8 @@
       "self": "Condición"
     },
     "select": "Seleccionar grupo de bases de datos",
-    "no-matched-databases": "No hay bases de datos coincidentes"
+    "no-matched-databases": "No hay bases de datos coincidentes",
+    "delete-group": "Eliminar el grupo de bases de datos {name}"
   },
   "export-center": {
     "self": "centro de exportacion",

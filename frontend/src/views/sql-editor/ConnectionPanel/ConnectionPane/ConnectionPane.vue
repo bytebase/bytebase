@@ -224,6 +224,7 @@ import type {
 import {
   DEFAULT_SQL_EDITOR_TAB_MODE,
   getDataSourceTypeI18n,
+  isValidDatabaseGroupName,
   isValidDatabaseName,
   isValidProjectName,
   UNKNOWN_ENVIRONMENT_NAME,
@@ -320,7 +321,7 @@ const flattenSelectedDatabasesFromGroup = computed(() => {
   for (const groupName of tabStore.currentTab?.batchQueryContext
     ?.databaseGroups ?? []) {
     const group = dbGroupStore.getDBGroupByName(groupName);
-    if (!group) {
+    if (!isValidDatabaseGroupName(group.name)) {
       continue;
     }
     for (const db of group.matchedDatabases) {

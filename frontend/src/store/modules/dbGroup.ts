@@ -8,6 +8,7 @@ import { databaseGroupServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import { buildCELExpr } from "@/plugins/cel";
+import { isValidDatabaseGroupName, unknownDatabaseGroup } from "@/types";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import type { DatabaseGroup } from "@/types/proto-es/v1/database_group_service_pb";
 import {
@@ -71,23 +72,22 @@ export const useDBGroupStore = defineStore("db-group", () => {
 
   const getOrFetchDBGroupByName = async (
     name: string,
-    options?: Partial<{
-      skipCache: boolean;
-      silent: boolean;
-      view: DatabaseGroupView;
-    }>
+    options?: {
+      skipCache?: boolean;
+      silent?: boolean;
+      view?: DatabaseGroupView;
+    }
   ) => {
-    const { skipCache, silent, view } = {
-      ...{
-        skipCache: false,
-        silent: false,
-        view: DatabaseGroupView.BASIC,
-      },
-      ...options,
-    };
+    const {
+      skipCache = false,
+      silent = false,
+      view = DatabaseGroupView.BASIC,
+    } = options ?? {};
     if (!skipCache) {
-      const cached = cacheByName.getEntity([name, view]);
-      if (cached) return cached;
+      const cached = getDBGroupByName(name, view);
+      if (isValidDatabaseGroupName(cached.name)) {
+        return cached;
+      }
     }
 
     const request = create(GetDatabaseGroupRequestSchema, {
@@ -121,8 +121,8 @@ export const useDBGroupStore = defineStore("db-group", () => {
   const getDBGroupByName = (
     name: string,
     view?: DatabaseGroupView
-  ): DatabaseGroup | undefined => {
-    return getCacheWithFallback(name, view);
+  ): DatabaseGroup => {
+    return getCacheWithFallback(name, view) ?? unknownDatabaseGroup();
   };
 
   const createDatabaseGroup = async ({

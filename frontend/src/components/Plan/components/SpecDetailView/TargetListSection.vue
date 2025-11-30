@@ -41,7 +41,7 @@
             <DatabaseGroupIcon class="w-4 h-4 text-control-light shrink-0" />
             <DatabaseGroupName
               :database-group="
-                dbGroupStore.getDBGroupByName(target) as DatabaseGroup
+                dbGroupStore.getDBGroupByName(target)
               "
               :link="false"
               :plain="true"
@@ -51,6 +51,7 @@
               {{ $t("plan.targets.type.database-group") }}
             </NTag>
             <div
+              v-if="isValidDatabaseGroupName(dbGroupStore.getDBGroupByName(target).name)"
               class="flex items-center justify-end cursor-pointer opacity-60 hover:opacity-100"
               @click="gotoDatabaseGroupDetailPage(target)"
             >
@@ -94,6 +95,7 @@
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
+import { isEqual } from "lodash-es";
 import { ExternalLinkIcon } from "lucide-vue-next";
 import { NButton, NTag } from "naive-ui";
 import { computed, ref, watch } from "vue";
@@ -113,10 +115,7 @@ import {
   useProjectV1Store,
 } from "@/store";
 import { isValidDatabaseGroupName, isValidDatabaseName } from "@/types";
-import {
-  type DatabaseGroup,
-  DatabaseGroupView,
-} from "@/types/proto-es/v1/database_group_service_pb";
+import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { extractProjectResourceName } from "@/utils";
 import { usePlanContext } from "../../logic/context";
@@ -252,7 +251,11 @@ const gotoDatabaseGroupDetailPage = (dbGroup: string) => {
 // Watch for target changes and load data
 watch(
   targets,
-  () => {
+  (newTargets, oldTargets) => {
+    // Only reload if targets actually changed
+    if (isEqual(newTargets, oldTargets)) {
+      return;
+    }
     loadTargetData();
   },
   { immediate: true }

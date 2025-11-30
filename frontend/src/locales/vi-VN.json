@@ -2820,7 +2820,8 @@
       "self": "Điều kiện"
     },
     "select": "Chọn nhóm cơ sở dữ liệu",
-    "no-matched-databases": "Không có cơ sở dữ liệu phù hợp"
+    "no-matched-databases": "Không có cơ sở dữ liệu phù hợp",
+    "delete-group": "Xóa nhóm cơ sở dữ liệu {name}"
   },
   "export-center": {
     "self": "Trung tâm xuất",

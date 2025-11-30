@@ -42,7 +42,7 @@
                     />
                     <DatabaseGroupName
                       :database-group="
-                        dbGroupStore.getDBGroupByName(target) as DatabaseGroup
+                        dbGroupStore.getDBGroupByName(target)
                       "
                       :link="false"
                       :plain="true"
@@ -85,7 +85,6 @@ import {
   useDBGroupStore,
 } from "@/store";
 import { isValidDatabaseGroupName, isValidDatabaseName } from "@/types";
-import type { DatabaseGroup } from "@/types/proto-es/v1/database_group_service_pb";
 import DatabaseDisplay from "../common/DatabaseDisplay.vue";
 
 interface Props {

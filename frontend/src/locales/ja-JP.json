@@ -2820,7 +2820,8 @@
       "self": "状態"
     },
     "select": "データベースグループを選択",
-    "no-matched-databases": "一致するデータベースはありません"
+    "no-matched-databases": "一致するデータベースはありません",
+    "delete-group": "データベースグループを削除する"
   },
   "export-center": {
     "self": "エクスポートセンター",
