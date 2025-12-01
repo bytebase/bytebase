@@ -169,19 +169,10 @@ func (s *IssueService) getIssueFind(
 						return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`"task_type" should be string`))
 					}
 					switch taskType {
-					case "DDL":
+					case "DDL", "DML":
+						// DDL and DML are both DATABASE_MIGRATE tasks
 						issueFind.TaskTypes = &[]storepb.Task_Type{
 							storepb.Task_DATABASE_MIGRATE,
-						}
-						issueFind.MigrateTypes = &[]storepb.MigrationType{
-							storepb.MigrationType_DDL,
-						}
-					case "DML":
-						issueFind.TaskTypes = &[]storepb.Task_Type{
-							storepb.Task_DATABASE_MIGRATE,
-						}
-						issueFind.MigrateTypes = &[]storepb.MigrationType{
-							storepb.MigrationType_DML,
 						}
 					default:
 						return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`unknown value %q`, value))

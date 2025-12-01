@@ -11,7 +11,6 @@
     - [Engine](#bytebase-store-Engine)
     - [ExportFormat](#bytebase-store-ExportFormat)
     - [MaskingLevel](#bytebase-store-MaskingLevel)
-    - [MigrationType](#bytebase-store-MigrationType)
     - [RiskLevel](#bytebase-store-RiskLevel)
     - [SchemaChangeType](#bytebase-store-SchemaChangeType)
     - [VCSType](#bytebase-store-VCSType)
@@ -477,20 +476,6 @@ MaskingLevel represents the level of data masking applied to sensitive informati
 
 
 
-<a name="bytebase-store-MigrationType"></a>
-
-### MigrationType
-MigrationType represents the type of database migration.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| MIGRATION_TYPE_UNSPECIFIED | 0 |  |
-| DDL | 1 | DDL changes (Data Definition Language) for schema modifications. |
-| DML | 2 | DML changes (Data Manipulation Language) for data modifications. |
-| GHOST | 3 | Online schema migration using gh-ost tool. |
-
-
-
 <a name="bytebase-store-RiskLevel"></a>
 
 ### RiskLevel
@@ -900,7 +885,6 @@ Metadata about the request.
 | version | [string](#string) |  |  |
 | type | [ChangelogPayload.Type](#bytebase-store-ChangelogPayload-Type) |  |  |
 | git_commit | [string](#string) |  |  |
-| migration_type | [MigrationType](#bytebase-store-MigrationType) |  |  |
 
 
 
@@ -4012,7 +3996,7 @@ ISSUE_CREATE represents creating an issue. |
 | sheet_sha256 | [string](#string) |  | The SHA256 hash value of the sheet. |
 | type | [SchemaChangeType](#bytebase-store-SchemaChangeType) |  |  |
 | version | [string](#string) |  |  |
-| migration_type | [MigrationType](#bytebase-store-MigrationType) |  |  |
+| enable_ghost | [bool](#bool) |  | Whether to use gh-ost for online schema migration. |
 
 
 

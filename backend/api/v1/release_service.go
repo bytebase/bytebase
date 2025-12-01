@@ -468,6 +468,10 @@ func convertToReleaseFiles(ctx context.Context, s *store.Store, files []*storepb
 		if sheet == nil {
 			return nil, errors.Errorf("sheet %d not found in project %s", sheetUID, projectID)
 		}
+		migrationType := v1pb.Release_File_DDL
+		if f.EnableGhost {
+			migrationType = v1pb.Release_File_DDL_GHOST
+		}
 		v1Files = append(v1Files, &v1pb.Release_File{
 			Id:            f.Id,
 			Path:          f.Path,
@@ -477,7 +481,7 @@ func convertToReleaseFiles(ctx context.Context, s *store.Store, files []*storepb
 			Version:       f.Version,
 			Statement:     []byte(sheet.Statement),
 			StatementSize: sheet.Size,
-			MigrationType: v1pb.Release_File_MigrationType(f.MigrationType),
+			MigrationType: migrationType,
 		})
 	}
 	return v1Files, nil
@@ -516,13 +520,13 @@ func convertReleaseFiles(ctx context.Context, s *store.Store, files []*v1pb.Rele
 		}
 
 		rFiles = append(rFiles, &storepb.ReleasePayload_File{
-			Id:            f.Id,
-			Path:          f.Path,
-			Sheet:         f.Sheet,
-			SheetSha256:   sheet.GetSha256Hex(),
-			Type:          storepb.SchemaChangeType(f.Type),
-			Version:       f.Version,
-			MigrationType: storepb.MigrationType(f.MigrationType),
+			Id:          f.Id,
+			Path:        f.Path,
+			Sheet:       f.Sheet,
+			SheetSha256: sheet.GetSha256Hex(),
+			Type:        storepb.SchemaChangeType(f.Type),
+			Version:     f.Version,
+			EnableGhost: f.MigrationType == v1pb.Release_File_DDL_GHOST,
 		})
 	}
 	return rFiles, nil

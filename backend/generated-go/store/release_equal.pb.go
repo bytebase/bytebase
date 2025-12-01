@@ -28,7 +28,7 @@ func (x *ReleasePayload_File) Equal(y *ReleasePayload_File) bool {
 	if x.Version != y.Version {
 		return false
 	}
-	if x.MigrationType != y.MigrationType {
+	if x.EnableGhost != y.EnableGhost {
 		return false
 	}
 	return true
