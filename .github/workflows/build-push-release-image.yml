@@ -17,7 +17,7 @@ jobs:
       id-token: write
       actions: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Extract build args
         # Extract version from branch name
         # Example: branch name `release/1.0.0` sets up env.IMAGE_VERSION=1.0.0
