@@ -1,46 +1,50 @@
 <template>
   <div class="sqleditor--wrapper">
-    <Splitpanes
-      class="default-theme flex flex-col flex-1 overflow-hidden"
-      :dbl-click-splitter="false"
-    >
-      <Pane v-if="windowWidth >= 800" size="30">
+    <teleport v-if="hideSidebar" to="body">
+      <div
+        id="fff"
+        class="fixed rounded-full border border-control-border shadow-lg w-10 h-10 bottom-16 flex items-center justify-center bg-white hover:bg-control-bg cursor-pointer z-99999999 transition-all"
+        :class="[
+          state.sidebarExpanded ? 'left-[80%] -translate-x-5' : 'left-4',
+        ]"
+        style="
+          transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+          transition-duration: 300ms;
+        "
+        @click="state.sidebarExpanded = !state.sidebarExpanded"
+      >
+        <heroicons-outline:chevron-left
+          class="w-6 h-6 transition-transform"
+          :class="[state.sidebarExpanded ? '' : '-scale-100']"
+        />
+      </div>
+      <Drawer
+        v-model:show="state.sidebarExpanded"
+        width="80vw"
+        placement="left"
+      >
         <AsidePanel />
-      </Pane>
-      <template v-else>
-        <teleport to="body">
-          <div
-            id="fff"
-            class="fixed rounded-full border border-control-border shadow-lg w-10 h-10 bottom-16 flex items-center justify-center bg-white hover:bg-control-bg cursor-pointer z-99999999 transition-all"
-            :class="[
-              state.sidebarExpanded ? 'left-[80%] -translate-x-5' : 'left-4',
-            ]"
-            style="
-              transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-              transition-duration: 300ms;
-            "
-            @click="state.sidebarExpanded = !state.sidebarExpanded"
-          >
-            <heroicons-outline:chevron-left
-              class="w-6 h-6 transition-transform"
-              :class="[state.sidebarExpanded ? '' : '-scale-100']"
-            />
-          </div>
-          <Drawer
-            v-model:show="state.sidebarExpanded"
-            width="80vw"
-            placement="left"
-          >
-            <AsidePanel />
-          </Drawer>
-        </teleport>
+      </Drawer>
+    </teleport>
+    <NSplit
+      direction="horizontal"
+      :disabled="hideSidebar"
+      :size="hideSidebar ? 0 : state.sizebarSize"
+      :min="0.1"
+      :max="0.4"
+      :resize-trigger-size="1"
+      @update:size="size => state.sizebarSize = size"
+    >
+      <template #1>
+        <AsidePanel />
       </template>
-      <Pane class="relative flex flex-col">
-        <TabList />
-
-        <EditorPanel />
-      </Pane>
-    </Splitpanes>
+      <template #2>
+        <div class="h-full relative flex flex-col">
+          <TabList />
+          <EditorPanel />
+        </div>
+      </template>
+    </NSplit>
 
     <Quickstart v-if="actuatorStore.info?.enableSample" />
 
@@ -58,9 +62,9 @@
 
 <script lang="ts" setup>
 import { useWindowSize } from "@vueuse/core";
+import { NSplit } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { Pane, Splitpanes } from "splitpanes";
-import { reactive } from "vue";
+import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
 import IAMRemindModal from "@/components/IAMRemindModal.vue";
 import Quickstart from "@/components/Quickstart.vue";
@@ -82,10 +86,12 @@ import { provideCurrentTabViewStateContext } from "./EditorPanel/context/viewSta
 import TabList from "./TabList";
 
 type LocalState = {
+  sizebarSize: number;
   sidebarExpanded: boolean;
 };
 
 const state = reactive<LocalState>({
+  sizebarSize: 0.25,
   sidebarExpanded: false,
 });
 
@@ -105,6 +111,7 @@ const { project: projectName, projectContextReady } = storeToRefs(editorStore);
 const { currentTab, isDisconnected } = storeToRefs(tabStore);
 
 const { width: windowWidth } = useWindowSize();
+const hideSidebar = computed(() => windowWidth.value < 800);
 
 useEmitteryEventListener(
   editorEvents,
@@ -149,38 +156,6 @@ useEmitteryEventListener(editorEvents, "insert-at-caret", ({ content }) => {
   });
 });
 </script>
-
-<style lang="postcss">
-@import "splitpanes/dist/splitpanes.css";
-
-/* splitpanes pane style */
-.splitpanes.default-theme .splitpanes__pane {
-  background-color: transparent;
-}
-
-.splitpanes.default-theme .splitpanes__splitter {
-  background-color: rgb(var(--color-gray-100));
-  min-height: 8px;
-  min-width: 8px;
-}
-
-.splitpanes.default-theme .splitpanes__splitter:hover {
-  background-color: rgb(var(--color-accent));
-}
-
-.splitpanes.default-theme .splitpanes__splitter::before,
-.splitpanes.default-theme .splitpanes__splitter::after {
-  background-color: rgb(var(--color-gray-700));
-  opacity: 0.5;
-  color: white;
-}
-
-.splitpanes.default-theme .splitpanes__splitter:hover::before,
-.splitpanes.default-theme .splitpanes__splitter:hover::after {
-  background-color: white;
-  opacity: 1;
-}
-</style>
 
 <style scoped lang="postcss">
 .sqleditor--wrapper {

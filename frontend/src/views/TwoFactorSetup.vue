@@ -81,19 +81,13 @@
           </i18n-t>
         </p>
         <div class="w-full flex flex-col justify-center items-center pb-8">
-          <img
-            :src="state.qrcodeDataUrl"
-            class="border w-64 mt-4 rounded-lg"
-            alt=""
-          />
+          <NQrCode :value="otpauthUrl" :size="150" :padding="0" />
           <span class="mt-4 mb-2 text-sm font-medium">{{
             $t("two-factor.setup-steps.setup-auth-app.verify-code")
           }}</span>
-          <BBTextField
-            v-model:value="state.otpCode"
-            required
-            style="width: 16rem"
-            placeholder="XXXXXX"
+          <NInputOtp
+            v-model:value="state.otpCodes"
+            @finish="onOtpCodeFinish"
           />
         </div>
       </div>
@@ -119,11 +113,10 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import type { ConnectError } from "@connectrpc/connect";
-import * as QRCode from "qrcode";
-import { computed, onMounted, onUnmounted, reactive, watch } from "vue";
+import { NInputOtp, NQrCode } from "naive-ui";
+import { computed, onMounted, onUnmounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { BBTextField } from "@/bbkit";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import RecoveryCodesView from "@/components/RecoveryCodesView.vue";
 import TwoFactorSecretModal from "@/components/TwoFactorSecretModal.vue";
@@ -134,6 +127,7 @@ import { pushNotification, useCurrentUserV1, useUserStore } from "@/store";
 import { UpdateUserRequestSchema } from "@/types/proto-es/v1/user_service_pb";
 
 const issuerName = "Bytebase";
+const digits = 6;
 
 const SETUP_AUTH_APP_STEP = 0;
 const DOWNLOAD_RECOVERY_CODES_STEP = 1;
@@ -143,8 +137,7 @@ type Step = typeof SETUP_AUTH_APP_STEP | typeof DOWNLOAD_RECOVERY_CODES_STEP;
 interface LocalState {
   currentStep: Step;
   showSecretModal: boolean;
-  qrcodeDataUrl: string;
-  otpCode: string;
+  otpCodes: string[];
   recoveryCodesDownloaded: boolean;
   timeRemaining: string;
   isExpired: boolean;
@@ -161,8 +154,7 @@ const userStore = useUserStore();
 const state = reactive<LocalState>({
   currentStep: SETUP_AUTH_APP_STEP,
   showSecretModal: false,
-  qrcodeDataUrl: "",
-  otpCode: "",
+  otpCodes: [],
   recoveryCodesDownloaded: false,
   timeRemaining: "5:00",
   isExpired: false,
@@ -181,7 +173,9 @@ const stepTabList = computed(() => {
 
 const allowNext = computed(() => {
   if (state.currentStep === SETUP_AUTH_APP_STEP) {
-    return state.otpCode.length >= 6 && !state.isExpired;
+    return (
+      state.otpCodes.filter((v) => v).length === digits && !state.isExpired
+    );
   } else {
     return state.recoveryCodesDownloaded;
   }
@@ -226,7 +220,7 @@ const startCountdown = () => {
 };
 
 const handleRegenerateSecret = async () => {
-  state.otpCode = "";
+  state.otpCodes = [];
   await regenerateTempMfaSecret();
   startCountdown();
 };
@@ -257,7 +251,7 @@ const regenerateTempMfaSecret = async () => {
   );
 };
 
-const verifyTOPCode = async () => {
+const verifyOTPCode = async () => {
   try {
     await userStore.updateUser(
       create(UpdateUserRequestSchema, {
@@ -267,7 +261,7 @@ const verifyTOPCode = async () => {
         updateMask: create(FieldMaskSchema, {
           paths: [],
         }),
-        otpCode: state.otpCode,
+        otpCode: state.otpCodes.join(""),
       })
     );
   } catch (error) {
@@ -291,12 +285,28 @@ const cancelSetup = () => {
   }
 };
 
+const onOtpCodeFinish = async (value: string[]) => {
+  state.otpCodes = value;
+  const result = await verifyOTPCode();
+  if (result && state.currentStep === SETUP_AUTH_APP_STEP) {
+    state.currentStep++;
+  }
+};
+
 const tryChangeStep = async (nextStepIndex: number) => {
-  if (nextStepIndex === DOWNLOAD_RECOVERY_CODES_STEP) {
-    const result = await verifyTOPCode();
-    if (!result) {
-      return;
+  switch (nextStepIndex) {
+    case DOWNLOAD_RECOVERY_CODES_STEP: {
+      const result = await verifyOTPCode();
+      if (!result) {
+        return;
+      }
+      break;
     }
+    case SETUP_AUTH_APP_STEP:
+      state.otpCodes = [];
+      break;
+    default:
+      break;
   }
   state.currentStep = nextStepIndex as Step;
 };
@@ -332,12 +342,8 @@ const tryFinishSetup = async () => {
   }
 };
 
-watch(
-  [currentUser],
-  async () => {
-    const otpauthUrl = `otpauth://totp/${issuerName}:${currentUser.value.email}?algorithm=SHA1&digits=6&issuer=${issuerName}&period=30&secret=${currentUser.value.tempOtpSecret}`;
-    state.qrcodeDataUrl = await QRCode.toDataURL(otpauthUrl);
-  },
-  { deep: true, immediate: true }
+const otpauthUrl = computed(
+  () =>
+    `otpauth://totp/${issuerName}:${currentUser.value.email}?algorithm=SHA1&digits=${digits}&issuer=${issuerName}&period=30&secret=${currentUser.value.tempOtpSecret}`
 );
 </script>

@@ -85,8 +85,9 @@
       </template>
     </SQLReviewTabsByEngine>
 
+
+    <NDivider />
     <BBButtonConfirm
-      class="my-4!"
       :disabled="!hasDeleteReviwConfigPermission"
       :type="'DELETE'"
       :button-text="$t('sql-review.delete')"
@@ -145,7 +146,7 @@
 
 <script lang="tsx" setup>
 import { useTitle } from "@vueuse/core";
-import { NButton } from "naive-ui";
+import { NButton, NDivider } from "naive-ui";
 import {
   computed,
   nextTick,

@@ -4,26 +4,28 @@
     v-bind="$attrs"
   >
     <MaskSpinner v-if="combinedLoading" />
-    <Splitpanes
-      class="default-theme w-full flex-1 flex flex-row overflow-hidden relative"
+    <NSplit
+      :min="0.15"
+      :max="0.4"
+      :default-size="0.25"
+      :resize-trigger-size="1"
     >
-      <Pane min-size="15" size="25">
+      <template #1>
         <Aside
           v-if="ready"
           @update-is-editing="$emit('update-is-editing', $event)"
         />
-      </Pane>
-      <Pane min-size="60" size="75">
+      </template>
+      <template #2>
         <Editor v-if="ready" />
-      </Pane>
-    </Splitpanes>
+      </template>
+    </NSplit>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { cloneDeep } from "lodash-es";
-import { Pane, Splitpanes } from "splitpanes";
-import "splitpanes/dist/splitpanes.css";
+import { NSplit } from "naive-ui";
 import { computed, onMounted, toRef } from "vue";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
@@ -161,37 +163,3 @@ defineExpose({
   isDirty: context.isDirty,
 });
 </script>
-
-<style lang="postcss" scoped>
-/* splitpanes pane style */
-.bb-schema-editor :deep(.splitpanes.default-theme .splitpanes__pane) {
-  background-color: transparent;
-  transition: none !important;
-}
-
-.bb-schema-editor :deep(.splitpanes.default-theme .splitpanes__splitter) {
-  background-color: var(--color-gray-100);
-  border: none;
-}
-
-.bb-schema-editor :deep(.splitpanes.default-theme .splitpanes__splitter:hover) {
-  background-color: var(--color-indigo-300);
-}
-
-.bb-schema-editor
-  :deep(.splitpanes.default-theme .splitpanes__splitter::before),
-.bb-schema-editor
-  :deep(.splitpanes.default-theme .splitpanes__splitter::after) {
-  background-color: var(--color-gray-700);
-  opacity: 0.5;
-  color: white;
-}
-
-.bb-schema-editor
-  :deep(.splitpanes.default-theme .splitpanes__splitter:hover::before),
-.bb-schema-editor
-  :deep(.splitpanes.default-theme .splitpanes__splitter:hover::after) {
-  background-color: white;
-  opacity: 1;
-}
-</style>

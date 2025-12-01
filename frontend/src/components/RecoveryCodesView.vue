@@ -22,14 +22,14 @@
       </template>
     </BBAttention>
     <div
-      class="mt-8 w-full mx-auto flex flex-col justify-start items-start"
+      class="w-full mx-auto flex flex-col justify-start items-start"
       v-bind="$attrs"
     >
       <ul
         class="w-full grid grid-cols-2 list-disc list-inside mx-auto gap-4 gap-x-24 p-8 px-12 border rounded-md bg-gray-50"
       >
         <li v-for="code in props.recoveryCodes" :key="code">
-          <code class="-ml-2">{{ code }}</code>
+          <code class="ml-2">{{ code }}</code>
         </li>
       </ul>
     </div>

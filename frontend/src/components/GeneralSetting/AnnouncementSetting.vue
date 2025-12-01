@@ -15,7 +15,7 @@
       </span>
     </div>
     <div class="flex-1 lg:px-5">
-      <div class="mb-7 mt-5 lg:mt-0">
+      <div class="mt-5 lg:mt-0">
         <label class="flex items-center gap-x-2">
           <span class="font-medium">{{
             $t(
