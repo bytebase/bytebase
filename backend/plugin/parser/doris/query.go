@@ -179,3 +179,96 @@ func (l *queryValidateListener) EnterSupportedOtherStatementAlias(_ *parser.Supp
 func (l *queryValidateListener) EnterSupportedStatsStatementAlias(_ *parser.SupportedStatsStatementAliasContext) {
 	l.valid = false
 }
+
+// EnterSupportedDescribeStatementAlias is called for DESCRIBE statements (read-only).
+func (*queryValidateListener) EnterSupportedDescribeStatementAlias(_ *parser.SupportedDescribeStatementAliasContext) {
+	// DESCRIBE statements are allowed
+}
+
+// The following are SHOW statements nested within other statement categories.
+// They override the parent category's invalid setting.
+
+// SHOW statements in supportedLoadStatement
+func (l *queryValidateListener) EnterShowCreateLoad(_ *parser.ShowCreateLoadContext) {
+	l.valid = true
+}
+
+func (l *queryValidateListener) EnterShowCreateRoutineLoad(_ *parser.ShowCreateRoutineLoadContext) {
+	l.valid = true
+}
+
+func (l *queryValidateListener) EnterShowRoutineLoad(_ *parser.ShowRoutineLoadContext) {
+	l.valid = true
+}
+
+func (l *queryValidateListener) EnterShowRoutineLoadTask(_ *parser.ShowRoutineLoadTaskContext) {
+	l.valid = true
+}
+
+func (l *queryValidateListener) EnterShowIndexAnalyzer(_ *parser.ShowIndexAnalyzerContext) {
+	l.valid = true
+}
+
+func (l *queryValidateListener) EnterShowIndexTokenizer(_ *parser.ShowIndexTokenizerContext) {
+	l.valid = true
+}
+
+func (l *queryValidateListener) EnterShowIndexTokenFilter(_ *parser.ShowIndexTokenFilterContext) {
+	l.valid = true
+}
+
+func (l *queryValidateListener) EnterShowIndexCharFilter(_ *parser.ShowIndexCharFilterContext) {
+	l.valid = true
+}
+
+// SHOW statements in supportedAdminStatement
+func (l *queryValidateListener) EnterAdminShowReplicaDistribution(_ *parser.AdminShowReplicaDistributionContext) {
+	l.valid = true
+}
+
+func (l *queryValidateListener) EnterAdminShowReplicaStatus(_ *parser.AdminShowReplicaStatusContext) {
+	l.valid = true
+}
+
+func (l *queryValidateListener) EnterAdminShowTabletStorageFormat(_ *parser.AdminShowTabletStorageFormatContext) {
+	l.valid = true
+}
+
+// SHOW statements in supportedStatsStatement
+func (l *queryValidateListener) EnterShowAnalyze(_ *parser.ShowAnalyzeContext) {
+	l.valid = true
+}
+
+func (l *queryValidateListener) EnterShowQueuedAnalyzeJobs(_ *parser.ShowQueuedAnalyzeJobsContext) {
+	l.valid = true
+}
+
+func (l *queryValidateListener) EnterShowColumnHistogramStats(_ *parser.ShowColumnHistogramStatsContext) {
+	l.valid = true
+}
+
+func (l *queryValidateListener) EnterShowColumnStats(_ *parser.ShowColumnStatsContext) {
+	l.valid = true
+}
+
+func (l *queryValidateListener) EnterShowAnalyzeTask(_ *parser.ShowAnalyzeTaskContext) {
+	l.valid = true
+}
+
+func (l *queryValidateListener) EnterShowIndexStats(_ *parser.ShowIndexStatsContext) {
+	l.valid = true
+}
+
+func (l *queryValidateListener) EnterShowTableStats(_ *parser.ShowTableStatsContext) {
+	l.valid = true
+}
+
+// SHOW statements in materializedViewStatement
+func (l *queryValidateListener) EnterShowCreateMTMV(_ *parser.ShowCreateMTMVContext) {
+	l.valid = true
+}
+
+// SHOW statements in constraintStatement
+func (l *queryValidateListener) EnterShowConstraint(_ *parser.ShowConstraintContext) {
+	l.valid = true
+}

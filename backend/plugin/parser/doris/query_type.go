@@ -172,3 +172,91 @@ func (l *queryTypeListener) EnterSupportedOtherStatementAlias(_ *parser.Supporte
 func (l *queryTypeListener) EnterSupportedStatsStatementAlias(_ *parser.SupportedStatsStatementAliasContext) {
 	l.result = base.DDL
 }
+
+// The following are SHOW statements nested within other statement categories.
+// They override the parent category's DDL setting with SelectInfoSchema.
+
+// SHOW statements in supportedLoadStatement
+func (l *queryTypeListener) EnterShowCreateLoad(_ *parser.ShowCreateLoadContext) {
+	l.result = base.SelectInfoSchema
+}
+
+func (l *queryTypeListener) EnterShowCreateRoutineLoad(_ *parser.ShowCreateRoutineLoadContext) {
+	l.result = base.SelectInfoSchema
+}
+
+func (l *queryTypeListener) EnterShowRoutineLoad(_ *parser.ShowRoutineLoadContext) {
+	l.result = base.SelectInfoSchema
+}
+
+func (l *queryTypeListener) EnterShowRoutineLoadTask(_ *parser.ShowRoutineLoadTaskContext) {
+	l.result = base.SelectInfoSchema
+}
+
+func (l *queryTypeListener) EnterShowIndexAnalyzer(_ *parser.ShowIndexAnalyzerContext) {
+	l.result = base.SelectInfoSchema
+}
+
+func (l *queryTypeListener) EnterShowIndexTokenizer(_ *parser.ShowIndexTokenizerContext) {
+	l.result = base.SelectInfoSchema
+}
+
+func (l *queryTypeListener) EnterShowIndexTokenFilter(_ *parser.ShowIndexTokenFilterContext) {
+	l.result = base.SelectInfoSchema
+}
+
+func (l *queryTypeListener) EnterShowIndexCharFilter(_ *parser.ShowIndexCharFilterContext) {
+	l.result = base.SelectInfoSchema
+}
+
+// SHOW statements in supportedAdminStatement
+func (l *queryTypeListener) EnterAdminShowReplicaDistribution(_ *parser.AdminShowReplicaDistributionContext) {
+	l.result = base.SelectInfoSchema
+}
+
+func (l *queryTypeListener) EnterAdminShowReplicaStatus(_ *parser.AdminShowReplicaStatusContext) {
+	l.result = base.SelectInfoSchema
+}
+
+func (l *queryTypeListener) EnterAdminShowTabletStorageFormat(_ *parser.AdminShowTabletStorageFormatContext) {
+	l.result = base.SelectInfoSchema
+}
+
+// SHOW statements in supportedStatsStatement
+func (l *queryTypeListener) EnterShowAnalyze(_ *parser.ShowAnalyzeContext) {
+	l.result = base.SelectInfoSchema
+}
+
+func (l *queryTypeListener) EnterShowQueuedAnalyzeJobs(_ *parser.ShowQueuedAnalyzeJobsContext) {
+	l.result = base.SelectInfoSchema
+}
+
+func (l *queryTypeListener) EnterShowColumnHistogramStats(_ *parser.ShowColumnHistogramStatsContext) {
+	l.result = base.SelectInfoSchema
+}
+
+func (l *queryTypeListener) EnterShowColumnStats(_ *parser.ShowColumnStatsContext) {
+	l.result = base.SelectInfoSchema
+}
+
+func (l *queryTypeListener) EnterShowAnalyzeTask(_ *parser.ShowAnalyzeTaskContext) {
+	l.result = base.SelectInfoSchema
+}
+
+func (l *queryTypeListener) EnterShowIndexStats(_ *parser.ShowIndexStatsContext) {
+	l.result = base.SelectInfoSchema
+}
+
+func (l *queryTypeListener) EnterShowTableStats(_ *parser.ShowTableStatsContext) {
+	l.result = base.SelectInfoSchema
+}
+
+// SHOW statements in materializedViewStatement
+func (l *queryTypeListener) EnterShowCreateMTMV(_ *parser.ShowCreateMTMVContext) {
+	l.result = base.SelectInfoSchema
+}
+
+// SHOW statements in constraintStatement
+func (l *queryTypeListener) EnterShowConstraint(_ *parser.ShowConstraintContext) {
+	l.result = base.SelectInfoSchema
+}
