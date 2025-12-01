@@ -46,7 +46,7 @@
       </div>
     </div>
 
-    <div v-if="!isCreating" class="py-6 border-t">
+    <div v-if="!isCreating && allowDelete" class="py-6 border-t">
       <BBButtonConfirm
         :type="'DELETE'"
         :button-text="$t('database-group.delete-group')"
@@ -109,6 +109,7 @@ import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
   batchConvertCELStringToParsedExpr,
   batchConvertParsedExprToCELString,
+  hasProjectPermissionV2,
 } from "@/utils";
 import { ResourceIdField } from "../v2";
 import MatchedDatabaseView from "./MatchedDatabaseView.vue";
@@ -143,6 +144,10 @@ const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
 const router = useRouter();
 
 const isCreating = computed(() => props.databaseGroup === undefined);
+
+const allowDelete = computed(() => {
+  return hasProjectPermissionV2(props.project, "bb.projects.update");
+});
 
 onMounted(async () => {
   const databaseGroup = props.databaseGroup;

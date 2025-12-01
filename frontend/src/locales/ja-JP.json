@@ -243,6 +243,7 @@
     },
     "collapse": "閉じる",
     "show-more": "もっと見る",
+    "n-more": "+{n} もっと",
     "remaining": "残り",
     "line": "行",
     "column": "列",
@@ -1160,9 +1161,6 @@
     "targets": {
       "title": "ターゲット",
       "no-targets-found": "ターゲットが見つかりません",
-      "type": {
-        "database-group": "データベースグループ"
-      },
       "view-all": "すべて表示 ({count})"
     },
     "select-isolation-level": "分離レベルを選択",
@@ -2814,6 +2812,7 @@
   },
   "database-group": {
     "create": "新しいデータベースグループを作成する",
+    "deleted": "削除されたデータベースグループ",
     "matched-database": "マッチングデータベース",
     "unmatched-database": "データベースが一致しません",
     "condition": {

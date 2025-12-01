@@ -37,20 +37,7 @@
                     <DatabaseDisplay :database="target" show-environment />
                   </template>
                   <template v-else-if="isValidDatabaseGroupName(target)">
-                    <DatabaseGroupIcon
-                      class="w-4 h-4 text-control-light shrink-0"
-                    />
-                    <DatabaseGroupName
-                      :database-group="
-                        dbGroupStore.getDBGroupByName(target)
-                      "
-                      :link="false"
-                      :plain="true"
-                      class="text-sm"
-                    />
-                    <NTag size="tiny" round :bordered="false">
-                      {{ $t("plan.targets.type.database-group") }}
-                    </NTag>
+                    <DatabaseGroupTargetDisplay :target="target" />
                   </template>
                   <template v-else>
                     <!-- Unknown resource -->
@@ -73,19 +60,18 @@
 </template>
 
 <script setup lang="ts">
-import { NTag } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { BBSpin } from "@/bbkit";
-import DatabaseGroupIcon from "@/components/DatabaseGroupIcon.vue";
 import { Drawer, DrawerContent, SearchBox } from "@/components/v2";
-import DatabaseGroupName from "@/components/v2/Model/DatabaseGroupName.vue";
 import {
   batchGetOrFetchDatabases,
   useDatabaseV1Store,
   useDBGroupStore,
 } from "@/store";
 import { isValidDatabaseGroupName, isValidDatabaseName } from "@/types";
+import { usePlanContext } from "../../logic/context";
 import DatabaseDisplay from "../common/DatabaseDisplay.vue";
+import DatabaseGroupTargetDisplay from "./DatabaseGroupTargetDisplay.vue";
 
 interface Props {
   show: boolean;
@@ -104,11 +90,22 @@ defineEmits<{
 
 const databaseStore = useDatabaseV1Store();
 const dbGroupStore = useDBGroupStore();
+const { plan } = usePlanContext();
 
 const state = reactive<LocalState>({
   searchText: "",
   isLoading: false,
 });
+
+// Get databases from deployment mapping for a database group
+const getDatabasesForGroup = (groupName: string): string[] => {
+  const deployment = plan.value.deployment;
+  if (!deployment) return [];
+  const mapping = deployment.databaseGroupMappings.find(
+    (m: { databaseGroup: string }) => m.databaseGroup === groupName
+  );
+  return mapping?.databases ?? [];
+};
 
 const filteredTargets = computed(() => {
   if (!state.searchText) {
@@ -141,6 +138,9 @@ const loadAllTargets = async () => {
       if (isValidDatabaseGroupName(target)) {
         // If target is a valid database group name
         dbGroupTargets.push(target);
+        // Also collect databases from deployment mapping for this group
+        const mappedDatabases = getDatabasesForGroup(target);
+        databaseTargets.push(...mappedDatabases);
       } else if (isValidDatabaseName(target)) {
         databaseTargets.push(target);
       }

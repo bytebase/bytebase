@@ -243,6 +243,7 @@
     },
     "collapse": "Sụp đổ",
     "show-more": "Hiển thị thêm",
+    "n-more": "+{n} nữa",
     "remaining": "còn lại",
     "line": "Dòng",
     "column": "Cột",
@@ -1160,9 +1161,6 @@
     "targets": {
       "title": "Mục tiêu",
       "no-targets-found": "Không tìm thấy mục tiêu",
-      "type": {
-        "database-group": "Nhóm cơ sở dữ liệu"
-      },
       "view-all": "Xem tất cả ({count})"
     },
     "select-isolation-level": "Chọn mức độ cô lập",
@@ -2814,6 +2812,7 @@
   },
   "database-group": {
     "create": "Nhóm cơ sở dữ liệu mới",
+    "deleted": "Nhóm cơ sở dữ liệu đã xóa",
     "matched-database": "Cơ sở dữ liệu phù hợp",
     "unmatched-database": "Cơ sở dữ liệu không phù hợp",
     "condition": {

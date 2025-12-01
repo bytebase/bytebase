@@ -1,11 +1,14 @@
 <template>
   <component
-    :is="link ? 'router-link' : tag"
+    :is="isDeleted ? tag : link ? 'router-link' : tag"
     v-bind="bindings"
     class="inline-flex items-center gap-x-1"
-    :class="link && !plain && 'normal-link'"
+    :class="[
+      !isDeleted && link && !plain && 'normal-link',
+      isDeleted && 'text-control-light line-through',
+    ]"
   >
-    <span>{{ databaseGroup.title }}</span>
+    <span>{{ isDeleted ? $t("database-group.deleted") : databaseGroup.title }}</span>
   </component>
 </template>
 
@@ -13,6 +16,7 @@
 import { computed } from "vue";
 import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/router/dashboard/projectV1";
 import { getProjectNameAndDatabaseGroupName } from "@/store/modules/v1/common";
+import { isValidDatabaseGroupName } from "@/types";
 import type { DatabaseGroup } from "@/types/proto-es/v1/database_group_service_pb";
 
 const props = withDefaults(
@@ -28,6 +32,10 @@ const props = withDefaults(
     plain: false,
   }
 );
+
+const isDeleted = computed(() => {
+  return !isValidDatabaseGroupName(props.databaseGroup?.name);
+});
 
 const bindings = computed(() => {
   if (!props.databaseGroup) {
