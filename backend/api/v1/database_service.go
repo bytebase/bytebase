@@ -1078,6 +1078,7 @@ func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store
 		InstanceResource:     instanceResource,
 		BackupAvailable:      database.Metadata.GetBackupAvailable(),
 		Drifted:              database.Metadata.GetDrifted(),
+		VersionMismatch:      database.Metadata.GetVersionMismatch(),
 	}, nil
 }
 

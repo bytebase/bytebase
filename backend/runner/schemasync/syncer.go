@@ -417,11 +417,36 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 	}
 
 	// Check for schema drift only when not creating sync history
-	var drifted, skipped bool
+	var driftResult *DriftResult
 	if !createSyncHistory {
-		drifted, skipped, err = s.getSchemaDrifted(ctx, instance, database, string(rawDump))
+		driftResult, err = s.getSchemaDrifted(ctx, instance, database, string(rawDump))
 		if err != nil {
 			return 0, errors.Wrapf(err, "failed to get schema drifted for database %q", database.DatabaseName)
+		}
+
+		// Handle auto-baseline creation for version mismatch cases where we skip drift.
+		if driftResult.VersionMismatch && driftResult.Skipped {
+			syncHistory, err := s.store.CreateSyncHistory(ctx, database.InstanceID, database.DatabaseName, syncedDatabaseMetadata, string(rawDump))
+			if err != nil {
+				return 0, errors.Wrapf(err, "failed to create sync history for auto-baseline")
+			}
+			if _, err := s.store.CreateChangelog(ctx, &store.ChangelogMessage{
+				InstanceID:         database.InstanceID,
+				DatabaseName:       database.DatabaseName,
+				Status:             store.ChangelogStatusDone,
+				PrevSyncHistoryUID: &syncHistory,
+				SyncHistoryUID:     &syncHistory,
+				Payload: &storepb.ChangelogPayload{
+					Type:      storepb.ChangelogPayload_BASELINE,
+					GitCommit: s.profile.GitCommit,
+				},
+			}); err != nil {
+				return 0, errors.Wrapf(err, "failed to create auto-baseline changelog")
+			}
+			slog.Info("Auto-created baseline due to Bytebase version change",
+				slog.String("instance", database.InstanceID),
+				slog.String("database", database.DatabaseName),
+				slog.String("mode", instance.Metadata.GetSchemaDriftBaselineMode().String()))
 		}
 	}
 
@@ -431,8 +456,9 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 			md.LastSyncTime = timestamppb.Now()
 			md.BackupAvailable = s.databaseBackupAvailable(ctx, instance, syncedDatabaseMetadata)
 			md.Datashare = syncedDatabaseMetadata.Datashare
-			if !createSyncHistory {
-				md.Drifted = !skipped && drifted
+			if !createSyncHistory && driftResult != nil {
+				md.Drifted = !driftResult.Skipped && driftResult.Drifted
+				md.VersionMismatch = driftResult.VersionMismatch && !driftResult.Skipped && driftResult.Drifted
 			}
 		},
 	}
@@ -486,11 +512,23 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 	return err
 }
 
-func (s *Syncer) getSchemaDrifted(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, rawDump string) (drifted bool, skipped bool, err error) {
-	// Redis and MongoDB are schemaless.
+// DriftResult contains the results of schema drift detection.
+type DriftResult struct {
+	// Drifted is true if the current schema differs from the baseline.
+	Drifted bool
+	// Skipped is true if drift detection was skipped (e.g., auto-baseline was created).
+	Skipped bool
+	// VersionMismatch is true if the baseline was created with a different Bytebase version.
+	VersionMismatch bool
+}
+
+func (s *Syncer) getSchemaDrifted(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, rawDump string) (*DriftResult, error) {
+	// Redis, MongoDB, and Redshift are schemaless - skip drift detection.
 	if disableSchemaDriftCheck(instance.Metadata.GetEngine()) {
-		return false, false, nil
+		return &DriftResult{}, nil
 	}
+
+	// Fetch the most recent changelog with sync history.
 	limit := 1
 	list, err := s.store.ListChangelogs(ctx, &store.FindChangelogMessage{
 		InstanceID:     &database.InstanceID,
@@ -501,21 +539,88 @@ func (s *Syncer) getSchemaDrifted(ctx context.Context, instance *store.InstanceM
 		ShowFull:       true,
 	})
 	if err != nil {
-		return false, false, errors.Wrapf(err, "failed to list changelogs")
+		return nil, errors.Wrapf(err, "failed to list changelogs")
 	}
+
+	// No changelog means no baseline established yet - no drift possible.
 	if len(list) == 0 {
-		return false, false, nil
+		return &DriftResult{}, nil
 	}
 
 	changelog := list[0]
-	if changelog.Payload.GetGitCommit() != s.profile.GitCommit {
-		return false, true, nil
-	}
 	if changelog.SyncHistoryUID == nil {
-		return false, false, errors.Errorf("expect sync history but get nil")
+		return nil, errors.Errorf("changelog %d has HasSyncHistory=true but SyncHistoryUID is nil", changelog.UID)
 	}
-	latestSchema := string(rawDump)
-	return changelog.Schema != latestSchema, false, nil
+
+	schemasMatch := changelog.Schema == rawDump
+	gitCommitMatches := changelog.Payload.GetGitCommit() == s.profile.GitCommit
+
+	// If GitCommit matches, perform normal drift detection.
+	if gitCommitMatches {
+		return &DriftResult{
+			Drifted:         !schemasMatch,
+			Skipped:         false,
+			VersionMismatch: false,
+		}, nil
+	}
+
+	// GitCommit doesn't match - handle based on instance setting.
+	mode := instance.Metadata.GetSchemaDriftBaselineMode()
+
+	switch mode {
+	case storepb.SchemaDriftBaselineMode_AUTOMATIC:
+		// Always auto-baseline on version change, skip drift detection.
+		return &DriftResult{
+			Drifted:         false,
+			Skipped:         true,
+			VersionMismatch: true,
+		}, nil
+
+	case storepb.SchemaDriftBaselineMode_MANUAL:
+		// Never auto-baseline, always require manual action on version mismatch.
+		// Set Drifted=true even if schemas match, because in MANUAL mode the user
+		// explicitly wants to be notified of ANY version change and must manually
+		// create a new baseline. The versionMismatch flag tells the UI to show
+		// a more informative message.
+		return &DriftResult{
+			Drifted:         true,
+			Skipped:         false,
+			VersionMismatch: true,
+		}, nil
+
+	case storepb.SchemaDriftBaselineMode_SMART,
+		storepb.SchemaDriftBaselineMode_SCHEMA_DRIFT_BASELINE_MODE_UNSPECIFIED:
+		// Smart mode (default): auto-baseline if schemas match, warn if different.
+		if schemasMatch {
+			// Schemas match - safe to auto-baseline (format change is irrelevant).
+			return &DriftResult{
+				Drifted:         false,
+				Skipped:         true,
+				VersionMismatch: true,
+			}, nil
+		}
+		// Schemas differ - could be real drift or format change, warn user.
+		return &DriftResult{
+			Drifted:         true,
+			Skipped:         false,
+			VersionMismatch: true,
+		}, nil
+
+	default:
+		// Handle any unexpected enum values as SMART mode.
+		if schemasMatch {
+			return &DriftResult{
+				Drifted:         false,
+				Skipped:         true,
+				VersionMismatch: true,
+			}, nil
+		}
+		return &DriftResult{
+			Drifted:         true,
+			Skipped:         false,
+			VersionMismatch: true,
+		}, nil
+	}
 }
 
 func (s *Syncer) databaseBackupAvailable(ctx context.Context, instance *store.InstanceMessage, dbMetadata *storepb.DatabaseSchemaMetadata) bool {

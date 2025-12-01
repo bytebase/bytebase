@@ -416,6 +416,8 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 				return nil, connect.NewError(connect.CodeInvalidArgument, err)
 			}
 			patch.Metadata.Labels = req.Msg.Instance.Labels
+		case "schema_drift_baseline_mode":
+			patch.Metadata.SchemaDriftBaselineMode = storepb.SchemaDriftBaselineMode(req.Msg.Instance.SchemaDriftBaselineMode)
 		default:
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`unsupported update_mask "%s"`, path))
 		}
