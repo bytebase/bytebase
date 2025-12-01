@@ -56,6 +56,7 @@ import {
   emptySQLEditorConnection,
   extractInstanceResourceName,
   extractProjectResourceName,
+  extractWorksheetConnection,
   extractWorksheetUID,
   getDefaultPagination,
   getSheetStatement,
@@ -69,7 +70,6 @@ import {
   type AsidePanelTab,
   useSQLEditorContext,
 } from "@/views/sql-editor/context";
-import { extractWorksheetConnection } from "@/views/sql-editor/Sheet";
 
 const { t } = useI18n();
 const route = useRoute();
@@ -258,7 +258,7 @@ const prepareConnectionParams = async () => {
       (tab) => tab.connection.database === database.name
     );
     for (const tab of tabs) {
-      tabStore.removeTab(tab);
+      tabStore.closeTab(tab);
     }
     return false;
   }
@@ -432,6 +432,7 @@ onMounted(async () => {
     initializeProject(),
   ]);
 
+  await tabStore.maybeInitProject();
   await initializeConnectionFromQuery();
   syncURLWithConnection();
 });
@@ -443,7 +444,6 @@ useEmitteryEventListener(
     if (!project) {
       return;
     }
-    tabStore.maybeInitProject(project);
     nextTick(() => {
       restoreLastVisitedSidebarTab();
     });

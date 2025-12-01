@@ -13,7 +13,7 @@
       <Draggable
         id="tab-list"
         ref="tabListRef"
-        v-model="tabStore.tabIdList"
+        v-model="tabStore.tabList"
         item-key="id"
         animation="300"
         class="relative flex flex-nowrap overflow-hidden h-9 pt-0.5 hide-scrollbar"
@@ -26,16 +26,16 @@
         @end="state.dragging = false"
       >
         <template
-          #item="{ element: id, index }: { element: string; index: number }"
+          #item="{ element: tab, index }: { element: SQLEditorTab; index: number }"
         >
           <TabItem
-            :tab="tabStore.tabById(id)!"
+            :tab="tab"
             :index="index"
-            :data-tab-id="id"
-            @select="(tab) => handleSelectTab(tab)"
-            @close="(tab, index) => handleRemoveTab(tab, index)"
+            :data-tab-id="tab.id"
+            @select="(tab) => tabStore.setCurrentTabId(tab.id)"
+            @close="(tab) => handleRemoveTab(tab)"
             @contextmenu.stop.prevent="
-              contextMenuRef?.show(tabStore.tabById(id)!, index, $event)
+              contextMenuRef?.show(tab, index, $event)
             "
           />
         </template>
@@ -112,10 +112,6 @@ const scrollElement = computed((): HTMLElement | null | undefined => {
   return scrollbarRef.value?.scrollbarInstRef?.containerRef;
 });
 
-const handleSelectTab = async (tab: SQLEditorTab | undefined) => {
-  tabStore.setCurrentTabId(tab?.id ?? "");
-};
-
 const handleAddTab = () => {
   tabStore.addTab();
 
@@ -133,11 +129,7 @@ const handleAddTab = () => {
   });
 };
 
-const handleRemoveTab = async (
-  tab: SQLEditorTab,
-  index: number,
-  focusWhenConfirm = false
-) => {
+const handleRemoveTab = async (tab: SQLEditorTab, focusWhenConfirm = false) => {
   const _defer = defer<boolean>();
   if (tab.mode === "WORKSHEET" && tab.status === "DIRTY") {
     if (focusWhenConfirm) {
@@ -152,7 +144,7 @@ const handleRemoveTab = async (
       maskClosable: false,
       closeOnEsc: false,
       onPositiveClick() {
-        remove(index);
+        remove();
         $dialog.destroy();
         _defer.resolve(true);
       },
@@ -165,18 +157,13 @@ const handleRemoveTab = async (
       showIcon: false,
     });
   } else {
-    remove(index);
+    remove();
     _defer.resolve(true);
   }
 
-  function remove(index: number) {
-    tabStore.removeTab(tab);
+  function remove() {
+    tabStore.closeTab(tab);
     removeViewState(tab.id);
-
-    // select a tab near the removed tab.
-    const nextIndex = Math.min(index, tabStore.tabList.length - 1);
-    const nextTab = tabStore.tabList[nextIndex];
-    handleSelectTab(nextTab);
 
     nextTick(recalculateScrollState);
   }
@@ -245,28 +232,28 @@ useEmitteryEventListener(
   async ({ tab, index, action }) => {
     const { tabList } = tabStore;
 
-    const remove = async (tab: SQLEditorTab, index: number) => {
-      await handleRemoveTab(tab, index, true);
+    const remove = async (tab: SQLEditorTab) => {
+      await handleRemoveTab(tab, true);
       await new Promise((r) => requestAnimationFrame(r));
     };
 
     if (action === "CLOSE") {
-      await remove(tab, index);
+      await remove(tab);
       return;
     }
     const max = tabList.length - 1;
     if (action === "CLOSE_OTHERS") {
       for (let i = max; i > index; i--) {
-        await remove(tabList[i], i);
+        await remove(tabList[i]);
       }
       for (let i = index - 1; i >= 0; i--) {
-        await remove(tabList[i], i);
+        await remove(tabList[i]);
       }
       return;
     }
     if (action === "CLOSE_TO_THE_RIGHT") {
       for (let i = max; i > index; i--) {
-        await remove(tabList[i], i);
+        await remove(tabList[i]);
       }
       return;
     }
@@ -274,14 +261,14 @@ useEmitteryEventListener(
       for (let i = max; i >= 0; i--) {
         const tab = tabList[i];
         if (tab.status === "CLEAN") {
-          await remove(tab, i);
+          await remove(tab);
         }
       }
       return;
     }
     if (action === "CLOSE_ALL") {
       for (let i = max; i >= 0; i--) {
-        await remove(tabList[i], i);
+        await remove(tabList[i]);
       }
     }
   }

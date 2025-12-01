@@ -125,11 +125,12 @@ const creatorForSheet = (creator: string) => {
 
 const handleDeleteDraft = () => {
   if (props.node.worksheet && props.node.worksheet.name) {
-    const draft = tabStore.tabList.find(
+    const draft = tabStore.draftList.find(
       (t) => t.id === props.node.worksheet!.name
     );
     if (draft) {
-      tabStore.removeTab(draft);
+      tabStore.closeTab(draft);
+      tabStore.removeDraft(draft);
     }
     removeViewState(props.node.worksheet.name);
   }

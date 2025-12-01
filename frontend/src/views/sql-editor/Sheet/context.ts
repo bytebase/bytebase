@@ -10,7 +10,6 @@ import { t } from "@/plugins/i18n";
 import {
   pushNotification,
   useCurrentUserV1,
-  useDatabaseV1Store,
   useSQLEditorStore,
   useSQLEditorTabStore,
   useWorkSheetStore,
@@ -23,14 +22,13 @@ import {
 } from "@/types/proto-es/v1/worksheet_service_pb";
 import {
   emptySQLEditorConnection,
+  extractWorksheetConnection,
   getSheetStatement,
-  isDatabaseV1Queryable,
   isWorksheetReadableV1,
   suggestedTabTitleForSQLEditorConnection,
   useDynamicLocalStorage,
 } from "@/utils";
 import type { SQLEditorContext } from "../context";
-import { setDefaultDataSourceForConn } from "../EditorCommon";
 import { useFolderByView } from "./folder";
 import type { SheetViewMode } from "./types";
 
@@ -135,14 +133,12 @@ const useSheetTreeByView = (
       case "shared":
         return worksheetList.value.map(convertToWorksheetLikeItem);
       case "draft":
-        return tabStore.tabList
-          .filter((tab) => !tab.worksheet)
-          .map((tab) => ({
-            name: tab.id,
-            title: tab.title,
-            folders: [],
-            type: "draft",
-          }));
+        return tabStore.draftList.map((tab) => ({
+          name: tab.id,
+          title: tab.title,
+          folders: [],
+          type: "draft",
+        }));
       default:
         return [];
     }
@@ -313,7 +309,7 @@ const useSheetTreeByView = (
           );
           break;
         default:
-          return;
+          break;
       }
 
       rebuildTree();
@@ -542,26 +538,6 @@ export const provideSheetContext = () => {
   provide(KEY, context);
 
   return context;
-};
-
-export const extractWorksheetConnection = async (worksheet: Worksheet) => {
-  const connection = emptySQLEditorConnection();
-  if (worksheet.database) {
-    try {
-      const database = await useDatabaseV1Store().getOrFetchDatabaseByName(
-        worksheet.database
-      );
-      if (!isDatabaseV1Queryable(database)) {
-        return connection;
-      }
-      connection.instance = database.instance;
-      connection.database = database.name;
-      setDefaultDataSourceForConn(connection, database);
-    } catch {
-      // Skip.
-    }
-  }
-  return connection;
 };
 
 export const openWorksheetByName = async (

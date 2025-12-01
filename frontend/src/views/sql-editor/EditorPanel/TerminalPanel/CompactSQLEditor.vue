@@ -79,7 +79,7 @@ const tabStore = useSQLEditorTabStore();
 const { events: editorEvents } = useSQLEditorContext();
 const { connection, instance, database } = useConnectionOfCurrentSQLEditorTab();
 const language = useInstanceV1EditorLanguage(instance);
-const { currentTab, isSwitchingTab } = storeToRefs(tabStore);
+const { currentTab } = storeToRefs(tabStore);
 const pendingFormatContentCommand = ref(false);
 const dialect = computed((): SQLDialect => {
   const engine = instance.value.engine;
@@ -112,12 +112,6 @@ const debouncedEmitUpdate = debounce((value: string) => {
 }, 100);
 
 const handleChange = (value: string) => {
-  // When we are switching between tabs, the MonacoEditor emits a 'change'
-  // event, but we shouldn't update the current tab;
-  if (isSwitchingTab.value) {
-    return;
-  }
-
   // Use debounced emit to reduce excessive updates
   debouncedEmitUpdate(value);
 };
