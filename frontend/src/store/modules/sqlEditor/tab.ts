@@ -40,10 +40,7 @@ const PERSISTENT_TAB_FIELDS = [
   "batchQueryContext",
   "treeState",
 ] as const;
-type PersistentTab = Pick<
-  SQLEditorTab,
-  (typeof PERSISTENT_TAB_FIELDS)[number]
->;
+type PersistentTab = Pick<SQLEditorTab, (typeof PERSISTENT_TAB_FIELDS)[number]>;
 
 const LOCAL_STORAGE_KEY_PREFIX = "bb.sql-editor-tab";
 
@@ -110,9 +107,7 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     }
   );
 
-  const openTabList = useDynamicLocalStorage<
-    PersistentTab[]
-  >(
+  const openTabList = useDynamicLocalStorage<PersistentTab[]>(
     computed(() => `${keyNamespace.value}.opening-tab-list`),
     [],
     localStorage,
@@ -191,7 +186,7 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     const persistentTab = pick(
       newTab,
       ...PERSISTENT_TAB_FIELDS
-    ) as PersistentTab
+    ) as PersistentTab;
     const position = openTabList.value.findIndex(
       (item) => item.id === currentTabId.value
     );
