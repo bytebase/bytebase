@@ -33,7 +33,7 @@
             :index="index"
             :data-tab-id="tab.id"
             @select="(tab) => tabStore.setCurrentTabId(tab.id)"
-            @close="(tab, index) => handleRemoveTab(tab, index)"
+            @close="(tab) => handleRemoveTab(tab)"
             @contextmenu.stop.prevent="
               contextMenuRef?.show(tab, index, $event)
             "
@@ -131,7 +131,6 @@ const handleAddTab = () => {
 
 const handleRemoveTab = async (
   tab: SQLEditorTab,
-  index: number,
   focusWhenConfirm = false
 ) => {
   const _defer = defer<boolean>();
@@ -148,7 +147,7 @@ const handleRemoveTab = async (
       maskClosable: false,
       closeOnEsc: false,
       onPositiveClick() {
-        remove(index);
+        remove();
         $dialog.destroy();
         _defer.resolve(true);
       },
@@ -161,11 +160,11 @@ const handleRemoveTab = async (
       showIcon: false,
     });
   } else {
-    remove(index);
+    remove();
     _defer.resolve(true);
   }
 
-  function remove(index: number) {
+  function remove() {
     tabStore.closeTab(tab);
     removeViewState(tab.id);
 
@@ -236,28 +235,28 @@ useEmitteryEventListener(
   async ({ tab, index, action }) => {
     const { tabList } = tabStore;
 
-    const remove = async (tab: SQLEditorTab, index: number) => {
-      await handleRemoveTab(tab, index, true);
+    const remove = async (tab: SQLEditorTab) => {
+      await handleRemoveTab(tab, true);
       await new Promise((r) => requestAnimationFrame(r));
     };
 
     if (action === "CLOSE") {
-      await remove(tab, index);
+      await remove(tab);
       return;
     }
     const max = tabList.length - 1;
     if (action === "CLOSE_OTHERS") {
       for (let i = max; i > index; i--) {
-        await remove(tabList[i], i);
+        await remove(tabList[i]);
       }
       for (let i = index - 1; i >= 0; i--) {
-        await remove(tabList[i], i);
+        await remove(tabList[i]);
       }
       return;
     }
     if (action === "CLOSE_TO_THE_RIGHT") {
       for (let i = max; i > index; i--) {
-        await remove(tabList[i], i);
+        await remove(tabList[i]);
       }
       return;
     }
@@ -265,14 +264,14 @@ useEmitteryEventListener(
       for (let i = max; i >= 0; i--) {
         const tab = tabList[i];
         if (tab.status === "CLEAN") {
-          await remove(tab, i);
+          await remove(tab);
         }
       }
       return;
     }
     if (action === "CLOSE_ALL") {
       for (let i = max; i >= 0; i--) {
-        await remove(tabList[i], i);
+        await remove(tabList[i]);
       }
     }
   }
