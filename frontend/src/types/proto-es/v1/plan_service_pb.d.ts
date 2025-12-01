@@ -520,6 +520,13 @@ export declare type Plan_ChangeDatabaseConfig = Message<"bytebase.v1.Plan.Change
    * @generated from field: bool enable_prior_backup = 8;
    */
   enablePriorBackup: boolean;
+
+  /**
+   * Whether to use gh-ost for online schema migration.
+   *
+   * @generated from field: bool enable_ghost = 12;
+   */
+  enableGhost: boolean;
 };
 
 /**

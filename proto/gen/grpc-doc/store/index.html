@@ -8910,14 +8910,6 @@ Format: projects/{project}/releases/{release} </p></td>
                 </tr>
               
                 <tr>
-                  <td>migrate_type</td>
-                  <td><a href="#bytebase.store.MigrationType">MigrationType</a></td>
-                  <td></td>
-                  <td><p>The migration type for imperative schema migration.
-It is only set when type is MIGRATE. </p></td>
-                </tr>
-              
-                <tr>
                   <td>ghost_flags</td>
                   <td><a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry">PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry</a></td>
                   <td>repeated</td>
@@ -8929,6 +8921,13 @@ It is only set when type is MIGRATE. </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>If set, a backup of the modified data will be created automatically before any changes are applied. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>enable_ghost</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether to use gh-ost for online schema migration. </p></td>
                 </tr>
               
             </tbody>
@@ -9294,6 +9293,13 @@ Leave it empty if there is no need to encrypt the zip file. </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>If set, a backup of the modified data will be created automatically before any changes are applied. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>enable_ghost</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether to use gh-ost for online schema migration. </p></td>
                 </tr>
               
             </tbody>
@@ -12918,17 +12924,17 @@ Default to this mode.</p></td>
                 </tr>
               
                 <tr>
+                  <td>enable_ghost</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether to use gh-ost for online schema migration. </p></td>
+                </tr>
+              
+                <tr>
                   <td>task_release_source</td>
                   <td><a href="#bytebase.store.TaskReleaseSource">TaskReleaseSource</a></td>
                   <td></td>
                   <td><p>Source information if task is created from a release. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>migrate_type</td>
-                  <td><a href="#bytebase.store.MigrationType">MigrationType</a></td>
-                  <td></td>
-                  <td><p>The type of migration (DDL, DML, or GHOST). </p></td>
                 </tr>
               
                 <tr>

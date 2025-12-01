@@ -108,10 +108,10 @@ type Task struct {
 	EnablePriorBackup bool `protobuf:"varint,11,opt,name=enable_prior_backup,json=enablePriorBackup,proto3" json:"enable_prior_backup,omitempty"`
 	// Configuration flags for gh-ost migration tool.
 	Flags map[string]string `protobuf:"bytes,12,rep,name=flags,proto3" json:"flags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	// Whether to use gh-ost for online schema migration.
+	EnableGhost bool `protobuf:"varint,17,opt,name=enable_ghost,json=enableGhost,proto3" json:"enable_ghost,omitempty"`
 	// Source information if task is created from a release.
 	TaskReleaseSource *TaskReleaseSource `protobuf:"bytes,13,opt,name=task_release_source,json=taskReleaseSource,proto3" json:"task_release_source,omitempty"`
-	// The type of migration (DDL, DML, or GHOST).
-	MigrateType MigrationType `protobuf:"varint,16,opt,name=migrate_type,json=migrateType,proto3,enum=bytebase.store.MigrationType" json:"migrate_type,omitempty"`
 	// Password to encrypt the exported data archive.
 	Password string `protobuf:"bytes,14,opt,name=password,proto3" json:"password,omitempty"`
 	// Format of the exported data (SQL, CSV, JSON, etc).
@@ -234,18 +234,18 @@ func (x *Task) GetFlags() map[string]string {
 	return nil
 }
 
+func (x *Task) GetEnableGhost() bool {
+	if x != nil {
+		return x.EnableGhost
+	}
+	return false
+}
+
 func (x *Task) GetTaskReleaseSource() *TaskReleaseSource {
 	if x != nil {
 		return x.TaskReleaseSource
 	}
 	return nil
-}
-
-func (x *Task) GetMigrateType() MigrationType {
-	if x != nil {
-		return x.MigrateType
-	}
-	return MigrationType_MIGRATION_TYPE_UNSPECIFIED
 }
 
 func (x *Task) GetPassword() string {
@@ -313,7 +313,7 @@ var File_store_task_proto protoreflect.FileDescriptor
 
 const file_store_task_proto_rawDesc = "" +
 	"\n" +
-	"\x10store/task.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\xcd\x06\n" +
+	"\x10store/task.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\xae\x06\n" +
 	"\x04Task\x12\x18\n" +
 	"\askipped\x18\x01 \x01(\bR\askipped\x12%\n" +
 	"\x0eskipped_reason\x18\x02 \x01(\tR\rskippedReason\x12\x17\n" +
@@ -328,9 +328,9 @@ const file_store_task_proto_rawDesc = "" +
 	"\x0eschema_version\x18\n" +
 	" \x01(\tR\rschemaVersion\x12.\n" +
 	"\x13enable_prior_backup\x18\v \x01(\bR\x11enablePriorBackup\x125\n" +
-	"\x05flags\x18\f \x03(\v2\x1f.bytebase.store.Task.FlagsEntryR\x05flags\x12Q\n" +
-	"\x13task_release_source\x18\r \x01(\v2!.bytebase.store.TaskReleaseSourceR\x11taskReleaseSource\x12@\n" +
-	"\fmigrate_type\x18\x10 \x01(\x0e2\x1d.bytebase.store.MigrationTypeR\vmigrateType\x12\x1a\n" +
+	"\x05flags\x18\f \x03(\v2\x1f.bytebase.store.Task.FlagsEntryR\x05flags\x12!\n" +
+	"\fenable_ghost\x18\x11 \x01(\bR\venableGhost\x12Q\n" +
+	"\x13task_release_source\x18\r \x01(\v2!.bytebase.store.TaskReleaseSourceR\x11taskReleaseSource\x12\x1a\n" +
 	"\bpassword\x18\x0e \x01(\tR\bpassword\x124\n" +
 	"\x06format\x18\x0f \x01(\x0e2\x1c.bytebase.store.ExportFormatR\x06format\x1a8\n" +
 	"\n" +
@@ -366,19 +366,17 @@ var file_store_task_proto_goTypes = []any{
 	(*Task)(nil),              // 1: bytebase.store.Task
 	(*TaskReleaseSource)(nil), // 2: bytebase.store.TaskReleaseSource
 	nil,                       // 3: bytebase.store.Task.FlagsEntry
-	(MigrationType)(0),        // 4: bytebase.store.MigrationType
-	(ExportFormat)(0),         // 5: bytebase.store.ExportFormat
+	(ExportFormat)(0),         // 4: bytebase.store.ExportFormat
 }
 var file_store_task_proto_depIdxs = []int32{
 	3, // 0: bytebase.store.Task.flags:type_name -> bytebase.store.Task.FlagsEntry
 	2, // 1: bytebase.store.Task.task_release_source:type_name -> bytebase.store.TaskReleaseSource
-	4, // 2: bytebase.store.Task.migrate_type:type_name -> bytebase.store.MigrationType
-	5, // 3: bytebase.store.Task.format:type_name -> bytebase.store.ExportFormat
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	4, // 2: bytebase.store.Task.format:type_name -> bytebase.store.ExportFormat
+	3, // [3:3] is the sub-list for method output_type
+	3, // [3:3] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_store_task_proto_init() }

@@ -241,6 +241,9 @@ func (x *Plan_ChangeDatabaseConfig) Equal(y *Plan_ChangeDatabaseConfig) bool {
 	if x.EnablePriorBackup != y.EnablePriorBackup {
 		return false
 	}
+	if x.EnableGhost != y.EnableGhost {
+		return false
+	}
 	return true
 }
 

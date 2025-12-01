@@ -66,14 +66,13 @@ message PlanConfig {
     }
     Type type = 3;
 
-    // The migration type for imperative schema migration.
-    // It is only set when type is MIGRATE.
-    MigrationType migrate_type = 11;
-
     map<string, string> ghost_flags = 7;
 
     // If set, a backup of the modified data will be created automatically before any changes are applied.
     bool enable_prior_backup = 8;
+
+    // Whether to use gh-ost for online schema migration.
+    bool enable_ghost = 12;
   }
 
   message ExportDataConfig {

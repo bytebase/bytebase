@@ -98,7 +98,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	wantChangelogs := []*v1pb.Changelog{
 		{
 			Type:          v1pb.Changelog_MIGRATE,
-			MigrationType: v1pb.Changelog_DML,
+			MigrationType: v1pb.Changelog_DDL, // DML no longer tracked separately, all non-GHOST are DDL
 			Status:        v1pb.Changelog_DONE,
 			Schema:        dumpedSchema,
 			PrevSchema:    dumpedSchema,

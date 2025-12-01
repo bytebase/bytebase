@@ -87,8 +87,10 @@ type PlanCheckRunConfig struct {
 	GhostFlags         map[string]string                     `protobuf:"bytes,6,rep,name=ghost_flags,json=ghostFlags,proto3" json:"ghost_flags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// If set, a backup of the modified data will be created automatically before any changes are applied.
 	EnablePriorBackup bool `protobuf:"varint,7,opt,name=enable_prior_backup,json=enablePriorBackup,proto3" json:"enable_prior_backup,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	// Whether to use gh-ost for online schema migration.
+	EnableGhost   bool `protobuf:"varint,8,opt,name=enable_ghost,json=enableGhost,proto3" json:"enable_ghost,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *PlanCheckRunConfig) Reset() {
@@ -159,6 +161,13 @@ func (x *PlanCheckRunConfig) GetGhostFlags() map[string]string {
 func (x *PlanCheckRunConfig) GetEnablePriorBackup() bool {
 	if x != nil {
 		return x.EnablePriorBackup
+	}
+	return false
+}
+
+func (x *PlanCheckRunConfig) GetEnableGhost() bool {
+	if x != nil {
+		return x.EnableGhost
 	}
 	return false
 }
@@ -447,7 +456,7 @@ var File_store_plan_check_run_proto protoreflect.FileDescriptor
 
 const file_store_plan_check_run_proto_rawDesc = "" +
 	"\n" +
-	"\x1astore/plan_check_run.proto\x12\x0ebytebase.store\x1a\x12store/advice.proto\x1a\x15store/changelog.proto\x1a\x12store/common.proto\"\x8a\x04\n" +
+	"\x1astore/plan_check_run.proto\x12\x0ebytebase.store\x1a\x12store/advice.proto\x1a\x15store/changelog.proto\x1a\x12store/common.proto\"\xad\x04\n" +
 	"\x12PlanCheckRunConfig\x12\x1b\n" +
 	"\tsheet_uid\x18\x01 \x01(\x05R\bsheetUid\x12g\n" +
 	"\x14change_database_type\x18\x02 \x01(\x0e25.bytebase.store.PlanCheckRunConfig.ChangeDatabaseTypeR\x12changeDatabaseType\x12\x1f\n" +
@@ -456,7 +465,8 @@ const file_store_plan_check_run_proto_rawDesc = "" +
 	"\rdatabase_name\x18\x04 \x01(\tR\fdatabaseName\x12S\n" +
 	"\vghost_flags\x18\x06 \x03(\v22.bytebase.store.PlanCheckRunConfig.GhostFlagsEntryR\n" +
 	"ghostFlags\x12.\n" +
-	"\x13enable_prior_backup\x18\a \x01(\bR\x11enablePriorBackup\x1a=\n" +
+	"\x13enable_prior_backup\x18\a \x01(\bR\x11enablePriorBackup\x12!\n" +
+	"\fenable_ghost\x18\b \x01(\bR\venableGhost\x1a=\n" +
 	"\x0fGhostFlagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"d\n" +

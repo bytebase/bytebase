@@ -624,19 +624,11 @@ func convertTaskType(t *store.TaskMessage) (storepb.ChangelogPayload_Type, store
 	//exhaustive:enforce
 	switch t.Type {
 	case storepb.Task_DATABASE_MIGRATE:
-		// Determine migration type based on migrate_type
-		switch t.Payload.GetMigrateType() {
-		case storepb.MigrationType_DML:
-			return storepb.ChangelogPayload_MIGRATE, storepb.MigrationType_DML
-		case storepb.MigrationType_DDL:
-			return storepb.ChangelogPayload_MIGRATE, storepb.MigrationType_DDL
-		case storepb.MigrationType_GHOST:
+		// Determine migration type based on enable_ghost
+		if t.Payload.GetEnableGhost() {
 			return storepb.ChangelogPayload_MIGRATE, storepb.MigrationType_GHOST
-		case storepb.MigrationType_MIGRATION_TYPE_UNSPECIFIED:
-			return storepb.ChangelogPayload_MIGRATE, storepb.MigrationType_MIGRATION_TYPE_UNSPECIFIED
-		default:
-			return storepb.ChangelogPayload_MIGRATE, storepb.MigrationType_MIGRATION_TYPE_UNSPECIFIED
 		}
+		return storepb.ChangelogPayload_MIGRATE, storepb.MigrationType_DDL
 	case storepb.Task_DATABASE_SDL:
 		return storepb.ChangelogPayload_SDL, storepb.MigrationType_MIGRATION_TYPE_UNSPECIFIED
 	case
@@ -664,12 +656,7 @@ func isChangeDatabaseTask(task *store.TaskMessage) bool {
 	}
 }
 
-func needDump(task *store.TaskMessage, instance *store.InstanceMessage) bool {
-	// Skip dump for TiDB DML operations
-	if task.Type == storepb.Task_DATABASE_MIGRATE && task.Payload.GetMigrateType() == storepb.MigrationType_DML && instance.Metadata.GetEngine() == storepb.Engine_TIDB {
-		return false
-	}
-
+func needDump(task *store.TaskMessage, _ *store.InstanceMessage) bool {
 	//exhaustive:enforce
 	switch task.Type {
 	case storepb.Task_DATABASE_MIGRATE,

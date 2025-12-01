@@ -11697,6 +11697,9 @@ components:
                 enablePriorBackup:
                     type: boolean
                     description: If set, a backup of the modified data will be created automatically before any changes are applied.
+                enableGhost:
+                    type: boolean
+                    description: Whether to use gh-ost for online schema migration.
         Plan_CreateDatabaseConfig:
             required:
                 - target

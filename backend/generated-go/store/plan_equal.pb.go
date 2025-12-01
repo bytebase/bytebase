@@ -83,9 +83,6 @@ func (x *PlanConfig_ChangeDatabaseConfig) Equal(y *PlanConfig_ChangeDatabaseConf
 	if x.Type != y.Type {
 		return false
 	}
-	if x.MigrateType != y.MigrateType {
-		return false
-	}
 	if len(x.GhostFlags) != len(y.GhostFlags) {
 		return false
 	}
@@ -99,6 +96,9 @@ func (x *PlanConfig_ChangeDatabaseConfig) Equal(y *PlanConfig_ChangeDatabaseConf
 		}
 	}
 	if x.EnablePriorBackup != y.EnablePriorBackup {
+		return false
+	}
+	if x.EnableGhost != y.EnableGhost {
 		return false
 	}
 	return true

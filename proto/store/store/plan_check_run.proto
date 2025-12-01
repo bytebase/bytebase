@@ -19,6 +19,9 @@ message PlanCheckRunConfig {
   // If set, a backup of the modified data will be created automatically before any changes are applied.
   bool enable_prior_backup = 7;
 
+  // Whether to use gh-ost for online schema migration.
+  bool enable_ghost = 8;
+
   // ChangeDatabaseType extends MigrationType with additional execution contexts.
   // Note: DDL, DML, and DDL_GHOST values align with MigrationType enum values.
   enum ChangeDatabaseType {
