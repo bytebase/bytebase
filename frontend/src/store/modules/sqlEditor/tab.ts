@@ -1,8 +1,7 @@
 import type { MaybeRef } from "@vueuse/core";
-import { watchThrottled } from "@vueuse/core";
-import { head, omit, pick } from "lodash-es";
+import { head, pick } from "lodash-es";
 import { defineStore, storeToRefs } from "pinia";
-import { computed, nextTick, reactive, ref, unref, watch } from "vue";
+import { computed, reactive, unref, watch } from "vue";
 import type {
   BatchQueryContext,
   CoreSQLEditorTab,
@@ -10,16 +9,17 @@ import type {
   SQLEditorDatabaseQueryContext,
   SQLEditorTab,
 } from "@/types";
-import { DEFAULT_SQL_EDITOR_TAB_MODE, isValidDatabaseName } from "@/types";
+import { isValidDatabaseName } from "@/types";
 import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   defaultSQLEditorTab,
   emptySQLEditorConnection,
+  extractWorksheetConnection,
+  getSheetStatement,
   isDisconnectedSQLEditorTab,
   isSimilarSQLEditorTab,
   useDynamicLocalStorage,
-  WebStorageHelper,
 } from "@/utils";
 import {
   extractUserId,
@@ -27,168 +27,122 @@ import {
   useDatabaseV1ByName,
   useDatabaseV1Store,
   useEnvironmentV1Store,
+  useWorkSheetStore,
 } from "../v1";
 import { useCurrentUserV1 } from "../v1/auth";
 import { useSQLEditorStore } from "./editor";
-import {
-  EXTENDED_TAB_FIELDS,
-  type ExtendedTab,
-  useExtendedTabStore,
-} from "./extendedTab";
 import { useWebTerminalStore } from "./webTerminal";
 
-const LOCAL_STORAGE_KEY_PREFIX = "bb.sql-editor-tab";
-
-// Only store the core fields of a tab.
-// Don't store anything which might be too large.
 const PERSISTENT_TAB_FIELDS = [
   "id",
-  "title",
-  "connection",
-  "mode",
   "worksheet",
-  "status",
+  "mode",
+  "batchQueryContext",
+  "treeState",
 ] as const;
-type PersistentTab = Pick<SQLEditorTab, (typeof PERSISTENT_TAB_FIELDS)[number]>;
+export type PersistentTab = Pick<
+  SQLEditorTab,
+  (typeof PERSISTENT_TAB_FIELDS)[number]
+>;
 
-// `tabsById` stores all PersistentTab items across all projects
-const tabsById = reactive(new Map<string, SQLEditorTab>());
+const LOCAL_STORAGE_KEY_PREFIX = "bb.sql-editor-tab";
 
 export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
   // re-expose selected project in sqlEditorStore for shortcut
   const { project } = storeToRefs(useSQLEditorStore());
-
-  // states
-  const { fetchExtendedTab, saveExtendedTab, deleteExtendedTab } =
-    useExtendedTabStore();
+  const tabsById = reactive(new Map<string, SQLEditorTab>());
+  const worksheetStore = useWorkSheetStore();
 
   const me = useCurrentUserV1();
   const userUID = computed(() => extractUserId(me.value.name));
   const keyNamespace = computed(
-    () => `${LOCAL_STORAGE_KEY_PREFIX}.${userUID.value}`
+    () => `${LOCAL_STORAGE_KEY_PREFIX}.${project.value}.${userUID.value}`
   );
-  const getStorage = () => {
-    return new WebStorageHelper(keyNamespace.value);
-  };
-  const keyForTab = (id: string) => {
-    return `tab.${id}`;
-  };
 
-  const loadStoredTab = (id: string) => {
-    const stored = getStorage().load<PersistentTab | undefined>(
-      keyForTab(id),
-      undefined
-    );
-    if (!stored) {
-      return undefined;
-    }
-    const tab = reactive<SQLEditorTab>({
-      ...defaultSQLEditorTab(),
-      // Ignore extended fields stored in localStorage since they are migrated
-      // to extendedTabStore.
-      ...omit(stored, EXTENDED_TAB_FIELDS),
-      id,
-    });
-    if (tab.mode !== DEFAULT_SQL_EDITOR_TAB_MODE) {
-      // Do not enter ADMIN mode initially
-      tab.mode = DEFAULT_SQL_EDITOR_TAB_MODE;
-    }
+  const loadStoredTabs = async () => {
+    const validTabList: PersistentTab[] = [];
+    for (const tab of openTabList.value) {
+      let fullTab: SQLEditorTab | undefined;
+      if (tab.worksheet) {
+        const worksheet = await worksheetStore.getOrFetchWorksheetByName(
+          tab.worksheet,
+          true
+        );
+        if (!worksheet) {
+          continue;
+        }
+        const statement = getSheetStatement(worksheet);
+        const connection = await extractWorksheetConnection(worksheet);
 
-    fetchExtendedTab(tab, () => {
-      // When the first time of migration, the extended doc in IndexedDB is not
-      // found.
-      // Fallback to the original PersistentTab in LocalStorage if possible.
-      // This might happen only once to each user, since the second time when a
-      // tab is saved, extended fields will be migrated, and won't be saved to
-      // LocalStorage, so the fallback routine won't be hit.
-      const { statement } = stored as any;
-      if (statement) {
-        tab.statement = statement;
+        fullTab = {
+          ...defaultSQLEditorTab(),
+          ...tab,
+          connection,
+          worksheet: worksheet.name,
+          title: worksheet.title,
+          statement,
+          status: "CLEAN",
+        };
+      } else {
+        const draft = draftTabList.value.find((item) => item.id === tab.id);
+        if (!draft) {
+          continue;
+        }
+        fullTab = draft;
       }
-    });
+      if (!fullTab) {
+        continue;
+      }
 
-    // Don't watch the tab here - only watch the current active tab
-    tabsById.set(id, tab);
-    return tab;
+      validTabList.push(tab);
+      tabsById.set(tab.id, fullTab);
+    }
+
+    openTabList.value = validTabList;
   };
 
-  const tabIdListKey = computed(() => `${keyNamespace.value}.tab-id-list`);
-  const tabIdListMapByProject = useDynamicLocalStorage<
-    Record<string, string[]>
-  >(tabIdListKey, {});
-
-  const currentTabIdKey = computed(
-    () => `${keyNamespace.value}.current-tab-id`
+  const draftTabList = useDynamicLocalStorage<SQLEditorTab[]>(
+    computed(() => `${keyNamespace.value}.draft-tab-list`),
+    [],
+    localStorage,
+    {
+      listenToStorageChanges: true,
+    }
   );
-  const currentTabIdMapByProject = useDynamicLocalStorage<
-    Record<string, string | undefined>
-  >(currentTabIdKey, {}, localStorage, {
-    listenToStorageChanges: false,
-  });
 
-  const initializedProjects = new Set<string>();
-  const maybeInitProject = (project: string) => {
-    if (!project) {
-      return;
+  const openTabList = useDynamicLocalStorage<
+    PersistentTab[]
+  >(
+    computed(() => `${keyNamespace.value}.opening-tab-list`),
+    [],
+    localStorage,
+    {
+      listenToStorageChanges: false,
     }
-    if (initializedProjects.has(project)) {
-      return;
+  );
+
+  const currentTabId = useDynamicLocalStorage<string>(
+    computed(() => `${keyNamespace.value}.current-tab-id`),
+    "",
+    localStorage,
+    {
+      listenToStorageChanges: false,
     }
+  );
 
-    const storedTabIdList = tabIdListMapByProject.value[project] ?? [];
-    // Load tabs
-    const validTabIdList: string[] = [];
-    storedTabIdList.forEach((id) => {
-      const stored = loadStoredTab(id);
-      if (!stored) return;
-      validTabIdList.push(id);
-    });
-
-    tabIdListMapByProject.value[project] = validTabIdList;
-
-    // Load currentTabId
-    const storedCurrentTabId = currentTabIdMapByProject.value[project];
-    if (!storedCurrentTabId || !validTabIdList.includes(storedCurrentTabId)) {
-      // storedCurrentTabId is not in tabIdList
-      // fallback to the first tab or nothing
-      currentTabIdMapByProject.value[project] = head(validTabIdList) ?? "";
-    }
-
-    initializedProjects.add(project);
+  const maybeInitProject = async () => {
+    tabsById.clear();
+    await loadStoredTabs();
+    currentTabId.value = head(openTabList.value)?.id ?? "";
   };
 
-  // computed states
-  // `tabIdList` is the tabIdList in current project
-  // it's a combination of `project` and `tabIdListMapByProject`
-  const tabIdList = computed({
-    get() {
-      return tabIdListMapByProject.value[project.value] ?? [];
-    },
-    set(list) {
-      tabIdListMapByProject.value[project.value] = list;
-    },
-  });
-  // `currentTabId` is the currentTabId in current project
-  // it's a combination of `project` and `currentTabIdMapByProject`
-  const currentTabId = computed({
-    get() {
-      return currentTabIdMapByProject.value[project.value] ?? "";
-    },
-    set(id) {
-      currentTabIdMapByProject.value[project.value] = id;
-    },
-  });
   const tabById = (id: string) => {
-    const existed = tabsById.get(id);
-    if (existed) {
-      return existed;
-    }
-    const stored = loadStoredTab(id);
-    return stored;
+    return tabsById.get(id);
   };
+
   const tabList = computed(() => {
-    return tabIdList.value.map((id) => {
-      return tabById(id) ?? defaultSQLEditorTab();
+    return openTabList.value.map((item) => {
+      return tabById(item.id) ?? defaultSQLEditorTab();
     });
   });
   const currentTab = computed(() => {
@@ -232,41 +186,75 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
       ...defaultSQLEditorTab(),
       ...payload,
     });
-    const { id } = newTab;
-    const position = tabIdList.value.indexOf(currentTabId.value ?? "");
+    const { id, worksheet } = newTab;
+
+    const persistentTab = pick(
+      newTab,
+      ...PERSISTENT_TAB_FIELDS
+    ) as PersistentTab
+    const position = openTabList.value.findIndex(
+      (item) => item.id === currentTabId.value
+    );
     if (beside && position >= 0) {
-      tabIdList.value.splice(position + 1, 0, id);
+      openTabList.value.splice(position + 1, 0, persistentTab);
     } else {
-      tabIdList.value.push(id);
+      openTabList.value.push(persistentTab);
     }
+    if (!worksheet) {
+      draftTabList.value.push(newTab);
+    }
+
     setCurrentTabId(id);
     tabsById.set(id, newTab);
 
     return newTab;
   };
-  const removeTab = (tab: SQLEditorTab) => {
+
+  const removeDraft = (tab: SQLEditorTab) => {
+    const draftIndex = draftTabList.value.findIndex(
+      (item) => item.id === tab.id
+    );
+    if (draftIndex >= 0) {
+      draftTabList.value.splice(draftIndex, 1);
+    }
+  };
+
+  const closeTab = (tab: SQLEditorTab) => {
     const { id } = tab;
-    const position = tabIdList.value.indexOf(id);
-    if (position < 0) return;
-    tabIdList.value.splice(position, 1);
+    const position = openTabList.value.findIndex((item) => item.id === id);
+    if (position < 0) {
+      return;
+    }
+    openTabList.value.splice(position, 1);
     tabsById.delete(id);
-    getStorage().remove(keyForTab(id));
-    deleteExtendedTab(tab);
 
     if (tab.mode === "ADMIN") {
       useWebTerminalStore().clearQueryStateByTab(id);
     }
+
+    if (id === currentTabId.value) {
+      const nextIndex = Math.min(position, openTabList.value.length - 1);
+      const nextTab = openTabList.value[nextIndex];
+      setCurrentTabId(nextTab?.id ?? "");
+    }
   };
+
   const updateTab = (id: string, payload: Partial<SQLEditorTab>) => {
     const tab = tabById(id);
     if (!tab) return;
     Object.assign(tab, payload);
+
+    if (payload.worksheet) {
+      removeDraft(tab);
+    }
   };
+
   const updateCurrentTab = (payload: Partial<SQLEditorTab>) => {
     const id = currentTabId.value;
     if (!id) return;
     updateTab(id, payload);
   };
+
   const updateBatchQueryContext = (payload: Partial<BatchQueryContext>) => {
     const tab = currentTab.value;
     if (!tab) {
@@ -410,18 +398,13 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
       );
     }
   };
-  // Load tabs session from localStorage
-  // Reset if failed
-  const initAll = () => {
-    const projects = Object.keys(tabIdListMapByProject.value);
-    // initialize all stored projects
-    projects.forEach((project) => {
-      maybeInitProject(project);
-    });
-    // initialize current project if needed (when it's not stored)
-    maybeInitProject(project.value);
-  };
-  initAll();
+
+  watch(
+    () => project.value,
+    () => {
+      maybeInitProject();
+    }
+  );
 
   // some shortcuts
   const isDisconnected = computed(() => {
@@ -430,70 +413,16 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     return isDisconnectedSQLEditorTab(tab);
   });
 
-  const isSwitchingTab = ref(false);
-
-  // Track the currently watched tab to clean up old watchers
-  let currentWatchedTabStop: (() => void) | null = null;
-
-  watch(
-    currentTabId,
-    (tabId) => {
-      isSwitchingTab.value = true;
-      nextTick(() => {
-        isSwitchingTab.value = false;
-      });
-
-      // Clean up the old tab watcher
-      if (currentWatchedTabStop) {
-        currentWatchedTabStop();
-        currentWatchedTabStop = null;
-      }
-
-      // Watch only the current active tab
-      if (tabId) {
-        currentWatchedTabStop = watchThrottled(
-          () => {
-            // Get the tab from the reactive map each time
-            const activeTab = tabsById.get(tabId);
-            if (!activeTab) return null;
-            return {
-              persistent: pick(
-                activeTab,
-                ...PERSISTENT_TAB_FIELDS
-              ) as PersistentTab,
-              extended: pick(activeTab, ...EXTENDED_TAB_FIELDS) as ExtendedTab,
-            };
-          },
-          (value) => {
-            if (!value) return;
-            const { persistent, extended } = value;
-            getStorage().save<PersistentTab>(
-              keyForTab(persistent.id),
-              persistent
-            );
-            const activeTab = tabsById.get(persistent.id);
-            if (activeTab) {
-              saveExtendedTab(activeTab, extended);
-            }
-          },
-          { deep: true, immediate: true, throttle: 300, trailing: true }
-        );
-      }
-    },
-    {
-      immediate: true,
-    }
-  );
-
   return {
     project,
-    tabIdList,
     tabList,
+    draftList: computed(() => draftTabList.value),
     currentTabId,
     currentTab,
     tabById,
     addTab,
-    removeTab,
+    removeDraft,
+    closeTab,
     updateTab,
     updateCurrentTab,
     updateBatchQueryContext,
@@ -505,7 +434,6 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     selectOrAddSimilarNewTab,
     maybeInitProject,
     isDisconnected,
-    isSwitchingTab,
     isInBatchMode,
     supportBatchMode,
   };

@@ -1,9 +1,24 @@
-import { useCurrentUserV1, useProjectV1Store } from "@/store";
+import { head } from "lodash-es";
+import {
+  useCurrentUserV1,
+  useDatabaseV1Store,
+  useProjectV1Store,
+} from "@/store";
 import { extractUserId } from "@/store/modules/v1/common";
-import { UNKNOWN_PROJECT_NAME } from "@/types";
+import {
+  type ComposedDatabase,
+  type SQLEditorConnection,
+  UNKNOWN_PROJECT_NAME,
+} from "@/types";
+import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
 import type { Worksheet } from "@/types/proto-es/v1/worksheet_service_pb";
 import { Worksheet_Visibility } from "@/types/proto-es/v1/worksheet_service_pb";
-import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
+import {
+  emptySQLEditorConnection,
+  hasProjectPermissionV2,
+  hasWorkspacePermissionV2,
+  isDatabaseV1Queryable,
+} from "@/utils";
 
 export const extractWorksheetUID = (name: string) => {
   const pattern = /(?:^|\/)worksheets\/([^/]+)(?:$|\/)/;
@@ -72,4 +87,45 @@ export const isWorksheetWritableV1 = (sheet: Worksheet) => {
   }
 
   return false;
+};
+
+export const setDefaultDataSourceForConn = (
+  conn: SQLEditorConnection,
+  database: ComposedDatabase
+) => {
+  if (conn.dataSourceId) {
+    return;
+  }
+
+  // Default connect to the first read-only data source if available.
+  // Skip checking env/project policy for now.
+  const defaultDataSource =
+    head(
+      database.instanceResource.dataSources.filter(
+        (d) => d.type === DataSourceType.READ_ONLY
+      )
+    ) || head(database.instanceResource.dataSources);
+  if (defaultDataSource) {
+    conn.dataSourceId = defaultDataSource.id;
+  }
+};
+
+export const extractWorksheetConnection = async (worksheet: Worksheet) => {
+  const connection = emptySQLEditorConnection();
+  if (worksheet.database) {
+    try {
+      const database = await useDatabaseV1Store().getOrFetchDatabaseByName(
+        worksheet.database
+      );
+      if (!isDatabaseV1Queryable(database)) {
+        return connection;
+      }
+      connection.instance = database.instance;
+      connection.database = database.name;
+      setDefaultDataSourceForConn(connection, database);
+    } catch {
+      // Skip.
+    }
+  }
+  return connection;
 };

@@ -13,7 +13,7 @@
       <Draggable
         id="tab-list"
         ref="tabListRef"
-        v-model="tabStore.tabIdList"
+        v-model="tabStore.tabList"
         item-key="id"
         animation="300"
         class="relative flex flex-nowrap overflow-hidden h-9 pt-0.5 hide-scrollbar"
@@ -26,16 +26,16 @@
         @end="state.dragging = false"
       >
         <template
-          #item="{ element: id, index }: { element: string; index: number }"
+          #item="{ element: tab, index }: { element: SQLEditorTab; index: number }"
         >
           <TabItem
-            :tab="tabStore.tabById(id)!"
+            :tab="tab"
             :index="index"
-            :data-tab-id="id"
-            @select="(tab) => handleSelectTab(tab)"
+            :data-tab-id="tab.id"
+            @select="(tab) => tabStore.setCurrentTabId(tab.id)"
             @close="(tab, index) => handleRemoveTab(tab, index)"
             @contextmenu.stop.prevent="
-              contextMenuRef?.show(tabStore.tabById(id)!, index, $event)
+              contextMenuRef?.show(tab, index, $event)
             "
           />
         </template>
@@ -112,10 +112,6 @@ const scrollElement = computed((): HTMLElement | null | undefined => {
   return scrollbarRef.value?.scrollbarInstRef?.containerRef;
 });
 
-const handleSelectTab = async (tab: SQLEditorTab | undefined) => {
-  tabStore.setCurrentTabId(tab?.id ?? "");
-};
-
 const handleAddTab = () => {
   tabStore.addTab();
 
@@ -170,13 +166,8 @@ const handleRemoveTab = async (
   }
 
   function remove(index: number) {
-    tabStore.removeTab(tab);
+    tabStore.closeTab(tab);
     removeViewState(tab.id);
-
-    // select a tab near the removed tab.
-    const nextIndex = Math.min(index, tabStore.tabList.length - 1);
-    const nextTab = tabStore.tabList[nextIndex];
-    handleSelectTab(nextTab);
 
     nextTick(recalculateScrollState);
   }
