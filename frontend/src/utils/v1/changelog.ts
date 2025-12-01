@@ -5,7 +5,10 @@ import { useDatabaseV1Store, useDBSchemaV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { type AffectedTable, EmptyAffectedTable, UNKNOWN_ID } from "@/types";
 import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
-import { Changelog_Type, ChangelogSchema } from "@/types/proto-es/v1/database_service_pb";
+import {
+  Changelog_Type,
+  ChangelogSchema,
+} from "@/types/proto-es/v1/database_service_pb";
 import { databaseV1Url, extractDatabaseResourceName } from "./database";
 
 export const extractChangelogUID = (name: string) => {
