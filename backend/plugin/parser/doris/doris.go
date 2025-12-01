@@ -53,9 +53,9 @@ func ParseDorisSQL(statement string) ([]*ParseResult, error) {
 }
 
 func parseSingleDorisSQL(statement string, baseLine int) (*ParseResult, error) {
-	lexer := parser.NewDorisSQLLexer(antlr.NewInputStream(statement))
+	lexer := parser.NewDorisLexer(antlr.NewInputStream(statement))
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	p := parser.NewDorisSQLParser(stream)
+	p := parser.NewDorisParser(stream)
 	lexerErrorListener := &base.ParseErrorListener{
 		Statement: statement,
 		BaseLine:  baseLine,
@@ -72,7 +72,7 @@ func parseSingleDorisSQL(statement string, baseLine int) (*ParseResult, error) {
 
 	p.BuildParseTrees = true
 
-	tree := p.SqlStatements()
+	tree := p.MultiStatements()
 	if lexerErrorListener.Err != nil {
 		return nil, lexerErrorListener.Err
 	}

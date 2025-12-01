@@ -1,13 +1,22 @@
 package doris
 
-import parser "github.com/bytebase/parser/doris"
+import (
+	"strings"
 
-func NormalizeQualifiedName(ctx parser.IQualifiedNameContext) []string {
+	parser "github.com/bytebase/parser/doris"
+)
+
+// NormalizeMultipartIdentifier extracts parts from a MultipartIdentifierContext.
+func NormalizeMultipartIdentifier(ctx parser.IMultipartIdentifierContext) []string {
 	if ctx == nil {
 		return nil
 	}
 	var result []string
-	for _, id := range ctx.AllIdentifier() {
+	for _, part := range ctx.AllErrorCapturingIdentifier() {
+		if part == nil {
+			continue
+		}
+		id := part.Identifier()
 		if id == nil {
 			continue
 		}
@@ -16,19 +25,18 @@ func NormalizeQualifiedName(ctx parser.IQualifiedNameContext) []string {
 	return result
 }
 
+// NormalizeIdentifier extracts the identifier text from an IdentifierContext.
+// It removes backticks from quoted identifiers.
 func NormalizeIdentifier(ctx parser.IIdentifierContext) string {
 	if ctx == nil {
 		return ""
 	}
 
-	switch ctx.(type) {
-	case *parser.UnquotedIdentifierContext:
-		return ctx.GetText()
-	case *parser.DigitIdentifierContext:
-		return ctx.GetText()
-	case *parser.BackQuotedIdentifierContext:
-		return ctx.GetText()[1 : len(ctx.GetText())-1]
+	text := ctx.GetText()
+	// Check if it's a backtick-quoted identifier and remove the backticks
+	if strings.HasPrefix(text, "`") && strings.HasSuffix(text, "`") && len(text) >= 2 {
+		return text[1 : len(text)-1]
 	}
 
-	return ctx.GetText()
+	return text
 }
