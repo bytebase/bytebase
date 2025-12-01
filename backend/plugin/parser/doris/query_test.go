@@ -87,6 +87,21 @@ func TestValidateQuery(t *testing.T) {
 			valid:       false,
 			description: "DROP TABLE should be invalid",
 		},
+		{
+			statement:   "EXPLAIN INSERT INTO users (id, name) VALUES (1, 'test')",
+			valid:       true,
+			description: "EXPLAIN INSERT should be valid (read-only)",
+		},
+		{
+			statement:   "EXPLAIN UPDATE users SET name = 'test' WHERE id = 1",
+			valid:       true,
+			description: "EXPLAIN UPDATE should be valid (read-only)",
+		},
+		{
+			statement:   "EXPLAIN DELETE FROM users WHERE id = 1",
+			valid:       true,
+			description: "EXPLAIN DELETE should be valid (read-only)",
+		},
 	}
 
 	for _, tc := range tests {

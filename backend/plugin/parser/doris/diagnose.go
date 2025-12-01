@@ -26,9 +26,9 @@ func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]ba
 }
 
 func parseDorisStatement(statement string) *base.SyntaxError {
-	lexer := parser.NewDorisSQLLexer(antlr.NewInputStream(statement))
+	lexer := parser.NewDorisLexer(antlr.NewInputStream(statement))
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	p := parser.NewDorisSQLParser(stream)
+	p := parser.NewDorisParser(stream)
 	lexerErrorListener := &base.ParseErrorListener{
 		Statement: statement,
 	}
@@ -43,7 +43,7 @@ func parseDorisStatement(statement string) *base.SyntaxError {
 
 	p.BuildParseTrees = false
 
-	_ = p.SqlStatements()
+	_ = p.MultiStatements()
 	if lexerErrorListener.Err != nil {
 		return lexerErrorListener.Err
 	}

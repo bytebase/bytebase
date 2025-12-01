@@ -19,14 +19,14 @@ func TestQuerySpanExtractor_CTE(t *testing.T) {
 		{
 			name: "CTE with JOIN between CTE and physical table",
 			sql: `WITH summary AS (
-				SELECT 
+				SELECT
 					user_id,
 					SUM(amount) as total_amount
 				FROM orders
 				WHERE created_at > '2024-01-01'
 				GROUP BY user_id
 			)
-			SELECT 
+			SELECT
 				u.id,
 				u.name,
 				s.total_amount
@@ -40,10 +40,10 @@ func TestQuerySpanExtractor_CTE(t *testing.T) {
 		},
 		{
 			name: "Multiple CTEs with cross-database tables",
-			sql: `WITH 
+			sql: `WITH
 				cte1 AS (SELECT * FROM db1.table1),
 				cte2 AS (SELECT * FROM db2.table2 WHERE active = 1)
-			SELECT 
+			SELECT
 				c1.id,
 				c2.name
 			FROM cte1 c1
@@ -65,7 +65,7 @@ SELECT * FROM cte`,
 		},
 		{
 			name: "Multiple CTEs",
-			sql: `WITH 
+			sql: `WITH
 cte1 AS (SELECT * FROM table1),
 cte2 AS (SELECT * FROM table2)
 SELECT * FROM cte1 JOIN cte2`,
@@ -78,8 +78,8 @@ SELECT * FROM cte1 JOIN cte2`,
 		{
 			name: "CTE shadowing table name",
 			sql: `WITH products AS (
-				SELECT p.*, c.name as category_name 
-				FROM items p 
+				SELECT p.*, c.name as category_name
+				FROM items p
 				JOIN categories c ON p.category_id = c.id
 			)
 			SELECT * FROM products WHERE category_name = 'Electronics'`,
@@ -103,14 +103,14 @@ SELECT * FROM outer_cte`,
 		},
 		{
 			name: "CTE referencing another CTE",
-			sql: `WITH 
+			sql: `WITH
 				base_data AS (
-					SELECT id, name, department_id 
-					FROM employees 
+					SELECT id, name, department_id
+					FROM employees
 					WHERE active = true
 				),
 				dept_summary AS (
-					SELECT 
+					SELECT
 						d.name as dept_name,
 						COUNT(b.id) as emp_count
 					FROM base_data b

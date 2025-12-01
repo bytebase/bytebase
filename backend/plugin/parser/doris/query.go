@@ -32,134 +32,150 @@ func validateQuery(statement string) (bool, bool, error) {
 }
 
 type queryValidateListener struct {
-	*parser.BaseDorisSQLListener
+	*parser.BaseDorisParserListener
 
 	valid bool
 }
 
-func (l *queryValidateListener) EnterSingleStatement(ctx *parser.SingleStatementContext) {
+// EnterStatementDefault is called when entering the statementDefault production (SELECT queries).
+// SELECT statements are valid queries.
+func (l *queryValidateListener) EnterStatementDefault(ctx *parser.StatementDefaultContext) {
 	if !l.valid {
 		return
 	}
+	// SELECT queries are allowed
+	if ctx != nil && ctx.Query() != nil {
+		return
+	}
+}
 
-	stmt := ctx.Statement()
-	if stmt == nil {
+// EnterSupportedShowStatementAlias is called for all SHOW statements.
+// SHOW statements are valid read-only queries.
+func (*queryValidateListener) EnterSupportedShowStatementAlias(_ *parser.SupportedShowStatementAliasContext) {
+	// SHOW statements are allowed
+}
+
+// EnterSupportedDmlStatementAlias is called for DML statements (INSERT, UPDATE, DELETE).
+// DML statements are NOT valid read-only queries, unless they have an EXPLAIN prefix.
+func (l *queryValidateListener) EnterSupportedDmlStatementAlias(ctx *parser.SupportedDmlStatementAliasContext) {
+	if ctx == nil {
 		return
 	}
 
-	// Allow SELECT queries and SHOW statements
-	if stmt.QueryStatement() != nil {
-		return
+	// Check if this DML statement has an EXPLAIN prefix (read-only)
+	if dml := ctx.SupportedDmlStatement(); dml != nil {
+		hasExplain := false
+		switch stmt := dml.(type) {
+		case *parser.InsertTableContext:
+			hasExplain = stmt.Explain() != nil
+		case *parser.UpdateContext:
+			hasExplain = stmt.Explain() != nil
+		case *parser.DeleteContext:
+			hasExplain = stmt.Explain() != nil
+		case *parser.MergeIntoContext:
+			hasExplain = stmt.Explain() != nil
+		}
+
+		if hasExplain {
+			// EXPLAIN on DML is read-only, so it's valid
+			return
+		}
 	}
 
-	// Check for SHOW statements
-	if stmt.ShowAlterStatement() != nil ||
-		stmt.ShowAnalyzeStatement() != nil ||
-		stmt.ShowAuthenticationStatement() != nil ||
-		stmt.ShowAuthorStatement() != nil ||
-		stmt.ShowBackendBlackListStatement() != nil ||
-		stmt.ShowBackendsStatement() != nil ||
-		stmt.ShowBackupStatement() != nil ||
-		stmt.ShowBaselinePlanStatement() != nil ||
-		stmt.ShowBrokerStatement() != nil ||
-		stmt.ShowCatalogRecycleBinStatement() != nil ||
-		stmt.ShowCatalogsStatement() != nil ||
-		stmt.ShowCharsetStatement() != nil ||
-		stmt.ShowClustersStatement() != nil ||
-		stmt.ShowCollationStatement() != nil ||
-		stmt.ShowColumnStatement() != nil ||
-		stmt.ShowColumnStatsStatement() != nil ||
-		stmt.ShowComputeNodesStatement() != nil ||
-		stmt.ShowConvertLightSchemaChangeStatement() != nil ||
-		stmt.ShowCreateDbStatement() != nil ||
-		stmt.ShowCreateExternalCatalogStatement() != nil ||
-		stmt.ShowCreateGroupProviderStatement() != nil ||
-		stmt.ShowCreateLoadStatement() != nil ||
-		stmt.ShowCreateRepositoryStatement() != nil ||
-		stmt.ShowCreateRoutineLoadStatement() != nil ||
-		stmt.ShowCreateSecurityIntegrationStatement() != nil ||
-		stmt.ShowCreateTableStatement() != nil ||
-		stmt.ShowDataCacheRulesStatement() != nil ||
-		stmt.ShowDataDistributionStmt() != nil ||
-		stmt.ShowDataSkewStatement() != nil ||
-		stmt.ShowDataStmt() != nil ||
-		stmt.ShowDataTypesStatement() != nil ||
-		stmt.ShowDatabaseIdStatement() != nil ||
-		stmt.ShowDatabasesStatement() != nil ||
-		stmt.ShowDeleteStatement() != nil ||
-		stmt.ShowDictionaryStatement() != nil ||
-		stmt.ShowDynamicPartitionStatement() != nil ||
-		stmt.ShowEncryptKeysStatement() != nil ||
-		stmt.ShowEnginesStatement() != nil ||
-		stmt.ShowEventsStatement() != nil ||
-		stmt.ShowExportStatement() != nil ||
-		stmt.ShowFailPointStatement() != nil ||
-		stmt.ShowFrontendsDisksStatement() != nil ||
-		stmt.ShowFrontendsStatement() != nil ||
-		stmt.ShowFunctionsStatement() != nil ||
-		stmt.ShowGrantsStatement() != nil ||
-		stmt.ShowGroupProvidersStatement() != nil ||
-		stmt.ShowHistogramMetaStatement() != nil ||
-		stmt.ShowIndexStatement() != nil ||
-		stmt.ShowJobTaskStatement() != nil ||
-		stmt.ShowLastInsertStatement() != nil ||
-		stmt.ShowLoadProfileStatement() != nil ||
-		stmt.ShowLoadStatement() != nil ||
-		stmt.ShowLoadWarningsStatement() != nil ||
-		stmt.ShowMaterializedViewsStatement() != nil ||
-		stmt.ShowMigrationsStatement() != nil ||
-		stmt.ShowNodesStatement() != nil ||
-		stmt.ShowOpenTableStatement() != nil ||
-		stmt.ShowPartitionIdStatement() != nil ||
-		stmt.ShowPartitionsStatement() != nil ||
-		stmt.ShowPipeStatement() != nil ||
-		stmt.ShowPlanAdvisorStatement() != nil ||
-		stmt.ShowPluginsStatement() != nil ||
-		stmt.ShowPolicyStatement() != nil ||
-		stmt.ShowPrivilegesStatement() != nil ||
-		stmt.ShowProcStatement() != nil ||
-		stmt.ShowProcedureStatement() != nil ||
-		stmt.ShowProcesslistStatement() != nil ||
-		stmt.ShowProfilelistStatement() != nil ||
-		stmt.ShowQueryProfileStatement() != nil ||
-		stmt.ShowQueryStatsStatement() != nil ||
-		stmt.ShowRepositoriesStatement() != nil ||
-		stmt.ShowResourceGroupStatement() != nil ||
-		stmt.ShowResourceGroupUsageStatement() != nil ||
-		stmt.ShowResourceStatement() != nil ||
-		stmt.ShowRestoreStatement() != nil ||
-		stmt.ShowRolesStatement() != nil ||
-		stmt.ShowRoutineLoadStatement() != nil ||
-		stmt.ShowRoutineLoadTaskStatement() != nil ||
-		stmt.ShowRunningQueriesStatement() != nil ||
-		stmt.ShowSecurityIntegrationStatement() != nil ||
-		stmt.ShowSmallFilesStatement() != nil ||
-		stmt.ShowSnapshotStatement() != nil ||
-		stmt.ShowSqlBlackListStatement() != nil ||
-		stmt.ShowSqlBlockRuleStatement() != nil ||
-		stmt.ShowStatsMetaStatement() != nil ||
-		stmt.ShowStatusStatement() != nil ||
-		stmt.ShowStorageVolumesStatement() != nil ||
-		stmt.ShowStreamLoadStatement() != nil ||
-		stmt.ShowSyncJobStatement() != nil ||
-		stmt.ShowTableIdStatement() != nil ||
-		stmt.ShowTableStatement() != nil ||
-		stmt.ShowTableStatsStatement() != nil ||
-		stmt.ShowTableStatusStatement() != nil ||
-		stmt.ShowTabletStatement() != nil ||
-		stmt.ShowTemporaryTablesStatement() != nil ||
-		stmt.ShowTransactionStatement() != nil ||
-		stmt.ShowTrashStatement() != nil ||
-		stmt.ShowTriggersStatement() != nil ||
-		stmt.ShowUserPropertyStatement() != nil ||
-		stmt.ShowUserStatement() != nil ||
-		stmt.ShowVariablesStatement() != nil ||
-		stmt.ShowWarehousesStatement() != nil ||
-		stmt.ShowWarningStatement() != nil ||
-		stmt.ShowWhiteListStatement() != nil ||
-		stmt.ShowWorkloadGroupsStatement() != nil {
-		return
-	}
+	l.valid = false
+}
 
+// EnterSupportedCreateStatementAlias is called for CREATE statements.
+func (l *queryValidateListener) EnterSupportedCreateStatementAlias(_ *parser.SupportedCreateStatementAliasContext) {
+	l.valid = false
+}
+
+// EnterSupportedAlterStatementAlias is called for ALTER statements.
+func (l *queryValidateListener) EnterSupportedAlterStatementAlias(_ *parser.SupportedAlterStatementAliasContext) {
+	l.valid = false
+}
+
+// EnterSupportedDropStatementAlias is called for DROP statements.
+func (l *queryValidateListener) EnterSupportedDropStatementAlias(_ *parser.SupportedDropStatementAliasContext) {
+	l.valid = false
+}
+
+// EnterMaterializedViewStatementAlias is called for materialized view statements.
+func (l *queryValidateListener) EnterMaterializedViewStatementAlias(_ *parser.MaterializedViewStatementAliasContext) {
+	l.valid = false
+}
+
+// EnterConstraintStatementAlias is called for constraint statements.
+func (l *queryValidateListener) EnterConstraintStatementAlias(_ *parser.ConstraintStatementAliasContext) {
+	l.valid = false
+}
+
+// EnterSupportedLoadStatementAlias is called for LOAD statements.
+func (l *queryValidateListener) EnterSupportedLoadStatementAlias(_ *parser.SupportedLoadStatementAliasContext) {
+	l.valid = false
+}
+
+// EnterSupportedGrantRevokeStatementAlias is called for GRANT/REVOKE statements.
+func (l *queryValidateListener) EnterSupportedGrantRevokeStatementAlias(_ *parser.SupportedGrantRevokeStatementAliasContext) {
+	l.valid = false
+}
+
+// EnterSupportedAdminStatementAlias is called for ADMIN statements.
+func (l *queryValidateListener) EnterSupportedAdminStatementAlias(_ *parser.SupportedAdminStatementAliasContext) {
+	l.valid = false
+}
+
+// EnterSupportedTransactionStatementAlias is called for transaction statements.
+func (l *queryValidateListener) EnterSupportedTransactionStatementAlias(_ *parser.SupportedTransactionStatementAliasContext) {
+	l.valid = false
+}
+
+// EnterSupportedKillStatementAlias is called for KILL statements.
+func (l *queryValidateListener) EnterSupportedKillStatementAlias(_ *parser.SupportedKillStatementAliasContext) {
+	l.valid = false
+}
+
+// EnterSupportedJobStatementAlias is called for JOB statements.
+func (l *queryValidateListener) EnterSupportedJobStatementAlias(_ *parser.SupportedJobStatementAliasContext) {
+	l.valid = false
+}
+
+// EnterSupportedSetStatementAlias is called for SET statements.
+func (l *queryValidateListener) EnterSupportedSetStatementAlias(_ *parser.SupportedSetStatementAliasContext) {
+	l.valid = false
+}
+
+// EnterSupportedUnsetStatementAlias is called for UNSET statements.
+func (l *queryValidateListener) EnterSupportedUnsetStatementAlias(_ *parser.SupportedUnsetStatementAliasContext) {
+	l.valid = false
+}
+
+// EnterSupportedRefreshStatementAlias is called for REFRESH statements.
+func (l *queryValidateListener) EnterSupportedRefreshStatementAlias(_ *parser.SupportedRefreshStatementAliasContext) {
+	l.valid = false
+}
+
+// EnterSupportedCancelStatementAlias is called for CANCEL statements.
+func (l *queryValidateListener) EnterSupportedCancelStatementAlias(_ *parser.SupportedCancelStatementAliasContext) {
+	l.valid = false
+}
+
+// EnterSupportedRecoverStatementAlias is called for RECOVER statements.
+func (l *queryValidateListener) EnterSupportedRecoverStatementAlias(_ *parser.SupportedRecoverStatementAliasContext) {
+	l.valid = false
+}
+
+// EnterSupportedCleanStatementAlias is called for CLEAN statements.
+func (l *queryValidateListener) EnterSupportedCleanStatementAlias(_ *parser.SupportedCleanStatementAliasContext) {
+	l.valid = false
+}
+
+// EnterSupportedOtherStatementAlias is called for other unsupported statements.
+func (l *queryValidateListener) EnterSupportedOtherStatementAlias(_ *parser.SupportedOtherStatementAliasContext) {
+	l.valid = false
+}
+
+// EnterSupportedStatsStatementAlias is called for stats statements.
+func (l *queryValidateListener) EnterSupportedStatsStatementAlias(_ *parser.SupportedStatsStatementAliasContext) {
 	l.valid = false
 }

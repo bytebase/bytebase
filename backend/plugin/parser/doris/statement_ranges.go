@@ -19,9 +19,9 @@ func init() {
 
 func GetStatementRanges(_ context.Context, _ base.StatementRangeContext, statement string) ([]base.Range, error) {
 	createLexer := func(input antlr.CharStream) antlr.Lexer {
-		return parser.NewDorisSQLLexer(input)
+		return parser.NewDorisLexer(input)
 	}
 	stream := base.PrepareANTLRTokenStream(statement, createLexer)
-	ranges := base.GetANTLRStatementRangesUTF16Position(stream, parser.DorisSQLParserEOF, parser.DorisSQLParserSEMICOLON)
+	ranges := base.GetANTLRStatementRangesUTF16Position(stream, parser.DorisParserEOF, parser.DorisParserSEMICOLON)
 	return ranges, nil
 }
