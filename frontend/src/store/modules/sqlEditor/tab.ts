@@ -40,7 +40,7 @@ const PERSISTENT_TAB_FIELDS = [
   "batchQueryContext",
   "treeState",
 ] as const;
-export type PersistentTab = Pick<
+type PersistentTab = Pick<
   SQLEditorTab,
   (typeof PERSISTENT_TAB_FIELDS)[number]
 >;
