@@ -20,15 +20,6 @@
           />
         </div>
 
-        <!-- Options -->
-        <div class="flex flex-col gap-y-2">
-          <NCheckbox v-model:checked="enableGhost">
-            {{ $t("task.online-migration.self") }}
-          </NCheckbox>
-          <NCheckbox v-model:checked="enablePriorBackup">
-            {{ $t("task.prior-backup") }}
-          </NCheckbox>
-        </div>
       </div>
       <template #footer>
         <div class="w-full flex items-center justify-end">
@@ -53,7 +44,7 @@
 
 <script setup lang="ts">
 import { create as createProto } from "@bufbuild/protobuf";
-import { NButton, NCheckbox, useDialog } from "naive-ui";
+import { NButton, useDialog } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -101,8 +92,6 @@ const dbGroupStore = useDBGroupStore();
 const show = defineModel<boolean>("show", { default: false });
 
 const isCreating = ref(false);
-const enableGhost = ref(false);
-const enablePriorBackup = ref(false);
 
 const databaseSelectState = reactive<DatabaseSelectState>({
   changeSource: "DATABASE",
@@ -147,8 +136,6 @@ watch(show, (newVal) => {
     }
 
     isCreating.value = false;
-    enableGhost.value = false;
-    enablePriorBackup.value = false;
   }
 });
 
@@ -276,8 +263,6 @@ const handleConfirm = async () => {
         value: createProto(Plan_ChangeDatabaseConfigSchema, {
           targets,
           type: DatabaseChangeType.MIGRATE,
-          enableGhost: enableGhost.value,
-          enablePriorBackup: enablePriorBackup.value,
           sheet: localSheet.name,
         }),
       },
