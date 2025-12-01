@@ -34,20 +34,20 @@ const (
 // DatabaseGroupService manages database groups for organizing databases by criteria.
 type DatabaseGroupServiceClient interface {
 	// Lists database groups in a project.
-	// Permissions required: bb.projects.get
+	// Permissions required: bb.databaseGroups.list
 	ListDatabaseGroups(ctx context.Context, in *ListDatabaseGroupsRequest, opts ...grpc.CallOption) (*ListDatabaseGroupsResponse, error)
 	// Gets a database group by name.
-	// Permissions required: bb.projects.get
+	// Permissions required: bb.databaseGroups.get
 	GetDatabaseGroup(ctx context.Context, in *GetDatabaseGroupRequest, opts ...grpc.CallOption) (*DatabaseGroup, error)
 	// Creates a new database group.
-	// Permissions required: bb.projects.update
+	// Permissions required: bb.databaseGroups.create
 	CreateDatabaseGroup(ctx context.Context, in *CreateDatabaseGroupRequest, opts ...grpc.CallOption) (*DatabaseGroup, error)
 	// Updates a database group.
-	// Permissions required: bb.projects.update
-	// When allow_missing=true, also requires: bb.projects.update
+	// Permissions required: bb.databaseGroups.update
+	// When allow_missing=true, also requires: bb.databaseGroups.create
 	UpdateDatabaseGroup(ctx context.Context, in *UpdateDatabaseGroupRequest, opts ...grpc.CallOption) (*DatabaseGroup, error)
 	// Deletes a database group.
-	// Permissions required: bb.projects.update
+	// Permissions required: bb.databaseGroups.delete
 	DeleteDatabaseGroup(ctx context.Context, in *DeleteDatabaseGroupRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
@@ -116,20 +116,20 @@ func (c *databaseGroupServiceClient) DeleteDatabaseGroup(ctx context.Context, in
 // DatabaseGroupService manages database groups for organizing databases by criteria.
 type DatabaseGroupServiceServer interface {
 	// Lists database groups in a project.
-	// Permissions required: bb.projects.get
+	// Permissions required: bb.databaseGroups.list
 	ListDatabaseGroups(context.Context, *ListDatabaseGroupsRequest) (*ListDatabaseGroupsResponse, error)
 	// Gets a database group by name.
-	// Permissions required: bb.projects.get
+	// Permissions required: bb.databaseGroups.get
 	GetDatabaseGroup(context.Context, *GetDatabaseGroupRequest) (*DatabaseGroup, error)
 	// Creates a new database group.
-	// Permissions required: bb.projects.update
+	// Permissions required: bb.databaseGroups.create
 	CreateDatabaseGroup(context.Context, *CreateDatabaseGroupRequest) (*DatabaseGroup, error)
 	// Updates a database group.
-	// Permissions required: bb.projects.update
-	// When allow_missing=true, also requires: bb.projects.update
+	// Permissions required: bb.databaseGroups.update
+	// When allow_missing=true, also requires: bb.databaseGroups.create
 	UpdateDatabaseGroup(context.Context, *UpdateDatabaseGroupRequest) (*DatabaseGroup, error)
 	// Deletes a database group.
-	// Permissions required: bb.projects.update
+	// Permissions required: bb.databaseGroups.delete
 	DeleteDatabaseGroup(context.Context, *DeleteDatabaseGroupRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedDatabaseGroupServiceServer()
 }

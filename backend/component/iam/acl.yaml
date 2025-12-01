@@ -8,6 +8,11 @@ roles:
       - bb.changelogs.list
       - bb.databaseCatalogs.get
       - bb.databaseCatalogs.update
+      - bb.databaseGroups.create
+      - bb.databaseGroups.delete
+      - bb.databaseGroups.get
+      - bb.databaseGroups.list
+      - bb.databaseGroups.update
       - bb.databases.check
       - bb.databases.get
       - bb.databases.getSchema
@@ -120,6 +125,11 @@ roles:
       - bb.changelogs.list
       - bb.databaseCatalogs.get
       - bb.databaseCatalogs.update
+      - bb.databaseGroups.create
+      - bb.databaseGroups.delete
+      - bb.databaseGroups.get
+      - bb.databaseGroups.list
+      - bb.databaseGroups.update
       - bb.databases.check
       - bb.databases.get
       - bb.databases.getSchema
@@ -240,6 +250,11 @@ roles:
       - bb.changelogs.list
       - bb.databaseCatalogs.get
       - bb.databaseCatalogs.update
+      - bb.databaseGroups.create
+      - bb.databaseGroups.delete
+      - bb.databaseGroups.get
+      - bb.databaseGroups.list
+      - bb.databaseGroups.update
       - bb.databases.check
       - bb.databases.get
       - bb.databases.getSchema
@@ -300,6 +315,8 @@ roles:
       - bb.changelogs.get
       - bb.changelogs.list
       - bb.databaseCatalogs.get
+      - bb.databaseGroups.get
+      - bb.databaseGroups.list
       - bb.databases.check
       - bb.databases.get
       - bb.databases.getSchema
@@ -336,6 +353,8 @@ roles:
     title: SQL Editor User
     permissions:
       - bb.databaseCatalogs.get
+      - bb.databaseGroups.get
+      - bb.databaseGroups.list
       - bb.databases.check
       - bb.databases.get
       - bb.databases.getSchema
@@ -354,6 +373,8 @@ roles:
     permissions:
       - bb.databaseCatalogs.get
       - bb.changelogs.get
+      - bb.databaseGroups.get
+      - bb.databaseGroups.list
       - bb.databases.check
       - bb.databases.get
       - bb.databases.getSchema
@@ -395,6 +416,8 @@ roles:
     title: Project viewer
     permissions:
       - bb.databaseCatalogs.get
+      - bb.databaseGroups.get
+      - bb.databaseGroups.list
       - bb.databases.get
       - bb.databases.getSchema
       - bb.databases.list

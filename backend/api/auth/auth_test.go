@@ -40,7 +40,7 @@ func TestGetAllowMissingRequiredPermission(t *testing.T) {
 		{
 			name:       "DatabaseGroupService.UpdateDatabaseGroup has annotation",
 			fullMethod: "/bytebase.v1.DatabaseGroupService/UpdateDatabaseGroup",
-			wantPerm:   "bb.projects.update",
+			wantPerm:   "bb.databaseGroups.create",
 			wantErr:    false,
 		},
 		{

@@ -17,57 +17,57 @@ option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 // DatabaseGroupService manages database groups for organizing databases by criteria.
 service DatabaseGroupService {
   // Lists database groups in a project.
-  // Permissions required: bb.projects.get
+  // Permissions required: bb.databaseGroups.list
   rpc ListDatabaseGroups(ListDatabaseGroupsRequest) returns (ListDatabaseGroupsResponse) {
     option (google.api.http) = {get: "/v1/{parent=projects/*}/databaseGroups"};
     option (google.api.method_signature) = "parent";
-    option (bytebase.v1.permission) = "bb.projects.get";
+    option (bytebase.v1.permission) = "bb.databaseGroups.list";
     option (bytebase.v1.auth_method) = IAM;
   }
 
   // Gets a database group by name.
-  // Permissions required: bb.projects.get
+  // Permissions required: bb.databaseGroups.get
   rpc GetDatabaseGroup(GetDatabaseGroupRequest) returns (DatabaseGroup) {
     option (google.api.http) = {get: "/v1/{name=projects/*/databaseGroups/*}"};
     option (google.api.method_signature) = "name";
-    option (bytebase.v1.permission) = "bb.projects.get";
+    option (bytebase.v1.permission) = "bb.databaseGroups.get";
     option (bytebase.v1.auth_method) = IAM;
   }
 
   // Creates a new database group.
-  // Permissions required: bb.projects.update
+  // Permissions required: bb.databaseGroups.create
   rpc CreateDatabaseGroup(CreateDatabaseGroupRequest) returns (DatabaseGroup) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*}/databaseGroups"
       body: "database_group"
     };
     option (google.api.method_signature) = "parent,databaseGroup";
-    option (bytebase.v1.permission) = "bb.projects.update";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.permission) = "bb.databaseGroups.create";
+    option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
   }
 
   // Updates a database group.
-  // Permissions required: bb.projects.update
-  // When allow_missing=true, also requires: bb.projects.update
+  // Permissions required: bb.databaseGroups.update
+  // When allow_missing=true, also requires: bb.databaseGroups.create
   rpc UpdateDatabaseGroup(UpdateDatabaseGroupRequest) returns (DatabaseGroup) {
     option (google.api.http) = {
       patch: "/v1/{database_group.name=projects/*/databaseGroups/*}"
       body: "database_group"
     };
     option (google.api.method_signature) = "database_group,update_mask";
-    option (bytebase.v1.permission) = "bb.projects.update";
-    option (bytebase.v1.allow_missing_requires) = "bb.projects.update";
+    option (bytebase.v1.permission) = "bb.databaseGroups.update";
+    option (bytebase.v1.allow_missing_requires) = "bb.databaseGroups.create";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
   }
 
   // Deletes a database group.
-  // Permissions required: bb.projects.update
+  // Permissions required: bb.databaseGroups.delete
   rpc DeleteDatabaseGroup(DeleteDatabaseGroupRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=projects/*/databaseGroups/*}"};
     option (google.api.method_signature) = "name";
-    option (bytebase.v1.permission) = "bb.projects.update";
+    option (bytebase.v1.permission) = "bb.databaseGroups.delete";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
   }

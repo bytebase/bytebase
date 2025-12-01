@@ -18550,7 +18550,7 @@ The API will default to the BASIC view.</p></td>
                 <td><a href="#bytebase.v1.ListDatabaseGroupsRequest">ListDatabaseGroupsRequest</a></td>
                 <td><a href="#bytebase.v1.ListDatabaseGroupsResponse">ListDatabaseGroupsResponse</a></td>
                 <td><p>Lists database groups in a project.
-Permissions required: bb.projects.get</p></td>
+Permissions required: bb.databaseGroups.list</p></td>
               </tr>
             
               <tr>
@@ -18558,7 +18558,7 @@ Permissions required: bb.projects.get</p></td>
                 <td><a href="#bytebase.v1.GetDatabaseGroupRequest">GetDatabaseGroupRequest</a></td>
                 <td><a href="#bytebase.v1.DatabaseGroup">DatabaseGroup</a></td>
                 <td><p>Gets a database group by name.
-Permissions required: bb.projects.get</p></td>
+Permissions required: bb.databaseGroups.get</p></td>
               </tr>
             
               <tr>
@@ -18566,7 +18566,7 @@ Permissions required: bb.projects.get</p></td>
                 <td><a href="#bytebase.v1.CreateDatabaseGroupRequest">CreateDatabaseGroupRequest</a></td>
                 <td><a href="#bytebase.v1.DatabaseGroup">DatabaseGroup</a></td>
                 <td><p>Creates a new database group.
-Permissions required: bb.projects.update</p></td>
+Permissions required: bb.databaseGroups.create</p></td>
               </tr>
             
               <tr>
@@ -18574,8 +18574,8 @@ Permissions required: bb.projects.update</p></td>
                 <td><a href="#bytebase.v1.UpdateDatabaseGroupRequest">UpdateDatabaseGroupRequest</a></td>
                 <td><a href="#bytebase.v1.DatabaseGroup">DatabaseGroup</a></td>
                 <td><p>Updates a database group.
-Permissions required: bb.projects.update
-When allow_missing=true, also requires: bb.projects.update</p></td>
+Permissions required: bb.databaseGroups.update
+When allow_missing=true, also requires: bb.databaseGroups.create</p></td>
               </tr>
             
               <tr>
@@ -18583,7 +18583,7 @@ When allow_missing=true, also requires: bb.projects.update</p></td>
                 <td><a href="#bytebase.v1.DeleteDatabaseGroupRequest">DeleteDatabaseGroupRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
                 <td><p>Deletes a database group.
-Permissions required: bb.projects.update</p></td>
+Permissions required: bb.databaseGroups.delete</p></td>
               </tr>
             
           </tbody>

@@ -54,20 +54,20 @@ const (
 // DatabaseGroupServiceClient is a client for the bytebase.v1.DatabaseGroupService service.
 type DatabaseGroupServiceClient interface {
 	// Lists database groups in a project.
-	// Permissions required: bb.projects.get
+	// Permissions required: bb.databaseGroups.list
 	ListDatabaseGroups(context.Context, *connect.Request[v1.ListDatabaseGroupsRequest]) (*connect.Response[v1.ListDatabaseGroupsResponse], error)
 	// Gets a database group by name.
-	// Permissions required: bb.projects.get
+	// Permissions required: bb.databaseGroups.get
 	GetDatabaseGroup(context.Context, *connect.Request[v1.GetDatabaseGroupRequest]) (*connect.Response[v1.DatabaseGroup], error)
 	// Creates a new database group.
-	// Permissions required: bb.projects.update
+	// Permissions required: bb.databaseGroups.create
 	CreateDatabaseGroup(context.Context, *connect.Request[v1.CreateDatabaseGroupRequest]) (*connect.Response[v1.DatabaseGroup], error)
 	// Updates a database group.
-	// Permissions required: bb.projects.update
-	// When allow_missing=true, also requires: bb.projects.update
+	// Permissions required: bb.databaseGroups.update
+	// When allow_missing=true, also requires: bb.databaseGroups.create
 	UpdateDatabaseGroup(context.Context, *connect.Request[v1.UpdateDatabaseGroupRequest]) (*connect.Response[v1.DatabaseGroup], error)
 	// Deletes a database group.
-	// Permissions required: bb.projects.update
+	// Permissions required: bb.databaseGroups.delete
 	DeleteDatabaseGroup(context.Context, *connect.Request[v1.DeleteDatabaseGroupRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
@@ -152,20 +152,20 @@ func (c *databaseGroupServiceClient) DeleteDatabaseGroup(ctx context.Context, re
 // DatabaseGroupServiceHandler is an implementation of the bytebase.v1.DatabaseGroupService service.
 type DatabaseGroupServiceHandler interface {
 	// Lists database groups in a project.
-	// Permissions required: bb.projects.get
+	// Permissions required: bb.databaseGroups.list
 	ListDatabaseGroups(context.Context, *connect.Request[v1.ListDatabaseGroupsRequest]) (*connect.Response[v1.ListDatabaseGroupsResponse], error)
 	// Gets a database group by name.
-	// Permissions required: bb.projects.get
+	// Permissions required: bb.databaseGroups.get
 	GetDatabaseGroup(context.Context, *connect.Request[v1.GetDatabaseGroupRequest]) (*connect.Response[v1.DatabaseGroup], error)
 	// Creates a new database group.
-	// Permissions required: bb.projects.update
+	// Permissions required: bb.databaseGroups.create
 	CreateDatabaseGroup(context.Context, *connect.Request[v1.CreateDatabaseGroupRequest]) (*connect.Response[v1.DatabaseGroup], error)
 	// Updates a database group.
-	// Permissions required: bb.projects.update
-	// When allow_missing=true, also requires: bb.projects.update
+	// Permissions required: bb.databaseGroups.update
+	// When allow_missing=true, also requires: bb.databaseGroups.create
 	UpdateDatabaseGroup(context.Context, *connect.Request[v1.UpdateDatabaseGroupRequest]) (*connect.Response[v1.DatabaseGroup], error)
 	// Deletes a database group.
-	// Permissions required: bb.projects.update
+	// Permissions required: bb.databaseGroups.delete
 	DeleteDatabaseGroup(context.Context, *connect.Request[v1.DeleteDatabaseGroupRequest]) (*connect.Response[emptypb.Empty], error)
 }
 

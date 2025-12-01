@@ -5,6 +5,11 @@ permissions:
   - bb.changelogs.list
   - bb.databaseCatalogs.get
   - bb.databaseCatalogs.update
+  - bb.databaseGroups.create
+  - bb.databaseGroups.delete
+  - bb.databaseGroups.get
+  - bb.databaseGroups.list
+  - bb.databaseGroups.update
   - bb.databases.check
   - bb.databases.get
   - bb.databases.getSchema

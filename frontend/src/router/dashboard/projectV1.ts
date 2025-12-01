@@ -201,7 +201,7 @@ const projectV1Routes: RouteRecordRaw[] = [
             path: "create",
             name: PROJECT_V1_ROUTE_DATABASE_GROUPS_CREATE,
             meta: {
-              requiredPermissionList: () => ["bb.projects.update"],
+              requiredPermissionList: () => ["bb.databaseGroups.create"],
             },
             component: () =>
               import("@/views/project/ProjectDatabaseGroupCreate.vue"),

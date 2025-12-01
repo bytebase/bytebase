@@ -9,6 +9,11 @@ const (
 	PermissionChangelogsList          Permission = "bb.changelogs.list"
 	PermissionDatabaseCatalogsGet     Permission = "bb.databaseCatalogs.get"
 	PermissionDatabaseCatalogsUpdate  Permission = "bb.databaseCatalogs.update"
+	PermissionDatabaseGroupsCreate    Permission = "bb.databaseGroups.create"
+	PermissionDatabaseGroupsDelete    Permission = "bb.databaseGroups.delete"
+	PermissionDatabaseGroupsGet       Permission = "bb.databaseGroups.get"
+	PermissionDatabaseGroupsList      Permission = "bb.databaseGroups.list"
+	PermissionDatabaseGroupsUpdate    Permission = "bb.databaseGroups.update"
 	PermissionDatabasesCheck          Permission = "bb.databases.check"
 	PermissionDatabasesGet            Permission = "bb.databases.get"
 	PermissionDatabasesGetSchema      Permission = "bb.databases.getSchema"
@@ -121,6 +126,11 @@ var allPermissions = []Permission{
 	PermissionChangelogsList,
 	PermissionDatabaseCatalogsGet,
 	PermissionDatabaseCatalogsUpdate,
+	PermissionDatabaseGroupsCreate,
+	PermissionDatabaseGroupsDelete,
+	PermissionDatabaseGroupsGet,
+	PermissionDatabaseGroupsList,
+	PermissionDatabaseGroupsUpdate,
 	PermissionDatabasesCheck,
 	PermissionDatabasesGet,
 	PermissionDatabasesGetSchema,

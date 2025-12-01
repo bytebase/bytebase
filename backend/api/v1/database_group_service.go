@@ -86,18 +86,6 @@ func (s *DatabaseGroupService) CreateDatabaseGroup(ctx context.Context, req *con
 		return connect.NewResponse(result), nil
 	}
 
-	user, ok := GetUserFromContext(ctx)
-	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
-	}
-	hasPermission, err := s.iamManager.CheckPermission(ctx, iam.PermissionProjectsUpdate, user, project.ResourceID)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check permission with error"))
-	}
-	if !hasPermission {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", iam.PermissionProjectsUpdate))
-	}
-
 	databaseGroup, err := s.store.CreateDatabaseGroup(ctx, storeDatabaseGroup)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
@@ -145,12 +133,12 @@ func (s *DatabaseGroupService) UpdateDatabaseGroup(ctx context.Context, req *con
 	}
 	if existedDatabaseGroup == nil {
 		if req.Msg.AllowMissing {
-			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionProjectsUpdate, user, project.ResourceID)
+			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionDatabaseGroupsCreate, user, project.ResourceID)
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check permission"))
 			}
 			if !ok {
-				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", iam.PermissionProjectsUpdate))
+				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", iam.PermissionDatabaseGroupsCreate))
 			}
 			return s.CreateDatabaseGroup(ctx, connect.NewRequest(&v1pb.CreateDatabaseGroupRequest{
 				Parent:          common.FormatProject(project.ResourceID),
