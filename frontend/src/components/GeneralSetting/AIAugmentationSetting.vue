@@ -44,7 +44,7 @@
             />
           </div>
         </div>
-        <template v-if="state.enabled">
+        <NCollapseTransition :show="state.enabled" class="flex flex-col gap-y-4">
           <div>
             <label class="flex items-center gap-x-2 mb-2">
               <span class="font-medium">{{
@@ -153,7 +153,7 @@
               </span>
             </NTooltip>
           </div>
-        </template>
+        </NCollapseTransition>
       </div>
     </div>
   </div>
@@ -161,7 +161,7 @@
 
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
-import { NSelect, NTooltip } from "naive-ui";
+import { NCollapseTransition, NSelect, NTooltip } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, onMounted, reactive, ref, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";

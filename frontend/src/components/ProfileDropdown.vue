@@ -236,7 +236,12 @@ const options = computed((): DropdownOption[] => [
     key: "profile",
     type: "render",
     render() {
-      return <ProfilePreview link={props.link} />;
+      return (
+        <ProfilePreview
+          link={props.link}
+          onClick={() => (showDropdown.value = false)}
+        />
+      );
     },
   },
   {

@@ -39,7 +39,7 @@
       :allow-edit="allowEdit"
     />
 
-    <div v-if="allowEdit && isDirty" class="sticky -bottom-4 z-10">
+    <div v-if="allowEdit && isDirty" class="sticky bottom-0 z-10">
       <div
         class="flex justify-between w-full py-4 border-block-border bg-white"
       >
@@ -70,6 +70,7 @@ import {
   SecuritySetting,
 } from "@/components/GeneralSetting";
 import { useRouteChangeGuard } from "@/composables/useRouteChangeGuard";
+import { useBodyLayoutContext } from "@/layouts/common";
 import { pushNotification } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 
@@ -104,6 +105,10 @@ const settingRefList = computed(() => {
     auditLogStdoutSettingRef,
   ];
 });
+
+const { overrideMainContainerClass } = useBodyLayoutContext();
+
+overrideMainContainerClass("!pb-0");
 
 onMounted(async () => {
   await useSettingV1Store().fetchSettingList();

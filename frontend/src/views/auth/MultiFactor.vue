@@ -1,8 +1,8 @@
 <template>
   <div
-    class="mx-auto w-full h-full py-6 flex flex-col justify-center items-center bg-gray-100 rounded-lg"
+    class="mx-auto w-full h-full py-6 flex flex-col justify-center items-center"
   >
-    <div class="w-80 bg-white p-8 py-6 rounded-lg shadow-sm">
+    <NCard class="w-80 p-8 py-6 shadow-sm">
       <img
         class="h-12 w-auto mx-auto mb-8"
         src="@/assets/logo-full.svg"
@@ -13,14 +13,13 @@
         @submit.prevent="challenge"
       >
         <template v-if="state.selectedMFAType === 'OTP'">
-          <heroicons-outline:device-phone-mobile
+          <SmartphoneIcon
             class="w-8 h-auto opacity-60"
           />
           <p class="my-2 mb-4">{{ $t("multi-factor.auth-code") }}</p>
-          <BBTextField
-            v-model:value="state.otpCode"
-            placeholder="XXXXXX"
-            class="w-full"
+          <NInputOtp
+            v-model:value="state.otpCodes"
+            @finish="onOtpCodeFinish"
           />
         </template>
         <template v-else-if="state.selectedMFAType === 'RECOVERY_CODE'">
@@ -60,12 +59,13 @@
           </li>
         </ul>
       </div>
-    </div>
+    </NCard>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { NButton } from "naive-ui";
+import { SmartphoneIcon } from "lucide-vue-next";
+import { NButton, NCard, NInputOtp } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
@@ -76,7 +76,7 @@ type MFAType = "OTP" | "RECOVERY_CODE";
 
 interface LocalState {
   selectedMFAType: MFAType;
-  otpCode: string;
+  otpCodes: string[];
   recoveryCode: string;
 }
 
@@ -85,7 +85,7 @@ const route = useRoute();
 const authStore = useAuthStore();
 const state = reactive<LocalState>({
   selectedMFAType: "OTP",
-  otpCode: "",
+  otpCodes: [],
   recoveryCode: "",
 });
 
@@ -103,10 +103,15 @@ const challengeDescription = computed(() => {
   }
 });
 
+const onOtpCodeFinish = async (value: string[]) => {
+  state.otpCodes = value;
+  await challenge();
+};
+
 const challenge = async () => {
   const mfaContext: any = {};
   if (state.selectedMFAType === "OTP") {
-    mfaContext.otpCode = state.otpCode;
+    mfaContext.otpCode = state.otpCodes.join("");
   } else if (state.selectedMFAType === "RECOVERY_CODE") {
     mfaContext.recoveryCode = state.recoveryCode;
   }

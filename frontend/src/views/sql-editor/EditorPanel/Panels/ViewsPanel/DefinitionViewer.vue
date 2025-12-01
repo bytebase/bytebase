@@ -1,9 +1,13 @@
 <template>
-  <Splitpanes
-    class="default-theme flex flex-row items-stretch flex-1 w-full overflow-hidden"
-    @resized="handleAIPanelResize($event, 1)"
+  <NSplit
+    :disabled="!showAIPanel"
+    :size="editorPanelSize.size"
+    :min="editorPanelSize.min"
+    :max="editorPanelSize.max"
+    :resize-trigger-size="1"
+    @update:size="handleEditorPanelResize"
   >
-    <Pane>
+    <template #1>
       <MonacoEditor
         :content="content"
         :readonly="true"
@@ -11,29 +15,27 @@
         @select-content="handleSelectContent"
         @ready="handleEditorReady"
       />
-    </Pane>
-    <Pane
-      v-if="showAIPanel"
-      :size="AIPanelSize"
-      class="overflow-hidden flex flex-col"
-    >
-      <Suspense>
-        <AIChatToSQL key="ai-chat-to-sql" />
-        <template #fallback>
-          <div
-            class="w-full h-full grow flex flex-col items-center justify-center"
-          >
-            <BBSpin />
-          </div>
-        </template>
-      </Suspense>
-    </Pane>
-  </Splitpanes>
+    </template>
+    <template #2>
+      <div class="h-full overflow-hidden flex flex-col">
+        <Suspense>
+          <AIChatToSQL key="ai-chat-to-sql" />
+          <template #fallback>
+            <div
+              class="w-full h-full grow flex flex-col items-center justify-center"
+            >
+              <BBSpin />
+            </div>
+          </template>
+        </Suspense>
+      </div>
+    </template>
+  </NSplit>
 </template>
 
 <script setup lang="ts">
 import { computedAsync } from "@vueuse/core";
-import { Pane, Splitpanes } from "splitpanes";
+import { NSplit } from "naive-ui";
 import { computed, ref } from "vue";
 import { BBSpin } from "@/bbkit";
 import {
@@ -61,7 +63,8 @@ const emit = defineEmits<{
   (event: "back"): void;
 }>();
 
-const { showAIPanel, AIPanelSize, handleAIPanelResize } = useSQLEditorContext();
+const { showAIPanel, editorPanelSize, handleEditorPanelResize } =
+  useSQLEditorContext();
 const instanceEngine = computed(() => props.db.instanceResource.engine);
 const AIContext = useAIContext();
 const selectedStatement = ref("");

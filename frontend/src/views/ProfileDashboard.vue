@@ -28,18 +28,10 @@
                       :disabled="!allowSaveEdit"
                       @click.prevent="saveEdit"
                     >
-                      <template #icon>
-                        <heroicons-solid:save class="h-5 w-5" />
-                      </template>
                       {{ $t("common.save") }}
                     </NButton>
                   </template>
                   <NButton v-else @click.prevent="editUser">
-                    <template #icon>
-                      <heroicons-solid:pencil
-                        class="h-5 w-5 text-control-light"
-                      />
-                    </template>
                     {{ $t("common.edit") }}
                   </NButton>
                 </template>
@@ -155,11 +147,11 @@
             <FeatureBadge :feature="PlanFeature.FEATURE_TWO_FA" class="ml-2" />
           </span>
           <div class="flex gap-x-2">
+            <NButton v-if="isMFAEnabled" type="error" @click="disable2FA">
+              {{ $t("common.disable") }}
+            </NButton>
             <NButton v-if="user.email === currentUser.email" @click="enable2FA">
               {{ isMFAEnabled ? $t("common.edit") : $t("common.enable") }}
-            </NButton>
-            <NButton v-if="isMFAEnabled" @click="disable2FA">
-              {{ $t("common.disable") }}
             </NButton>
           </div>
         </div>
@@ -181,9 +173,9 @@
                 :options="dropDownOptions"
                 placement="bottom-end"
               >
-                <heroicons-outline:ellipsis-horizontal
-                  class="w-8 p-1 h-auto cursor-pointer hover:bg-gray-100 rounded-sm"
-                />
+                <MiniActionButton size="small">
+                  <EllipsisIcon class="w-8" />
+                </MiniActionButton>
               </NDropdown>
             </div>
           </div>
@@ -224,6 +216,7 @@ import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import type { ConnectError } from "@connectrpc/connect";
 import { computedAsync, useTitle } from "@vueuse/core";
 import { cloneDeep, isEqual } from "lodash-es";
+import { EllipsisIcon } from "lucide-vue-next";
 import type { DropdownOption } from "naive-ui";
 import { NButton, NDropdown, NInput, NTag } from "naive-ui";
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from "vue";
@@ -239,6 +232,7 @@ import RegenerateRecoveryCodesView from "@/components/RegenerateRecoveryCodesVie
 import { ActionConfirmModal } from "@/components/SchemaEditorLite";
 import UserPassword from "@/components/User/Settings/UserPassword.vue";
 import UserAvatar from "@/components/User/UserAvatar.vue";
+import { MiniActionButton } from "@/components/v2";
 import { useRouteChangeGuard } from "@/composables/useRouteChangeGuard";
 import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes";
 import {

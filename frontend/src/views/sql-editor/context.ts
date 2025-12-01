@@ -1,8 +1,8 @@
 import { useLocalStorage } from "@vueuse/core";
 import Emittery from "emittery";
 import { type IRange } from "monaco-editor";
-import type { InjectionKey, Ref } from "vue";
-import { inject, provide, ref } from "vue";
+import type { ComputedRef, InjectionKey, Ref } from "vue";
+import { computed, inject, provide, ref } from "vue";
 import { useProjectV1Store, useSQLEditorStore } from "@/store";
 import type { SQLEditorTab } from "@/types";
 import { isValidProjectName } from "@/types";
@@ -10,8 +10,7 @@ import type { GetSchemaStringRequest_ObjectType } from "@/types/proto-es/v1/data
 
 export type AsidePanelTab = "SCHEMA" | "WORKSHEET" | "HISTORY";
 
-// 30% by default
-export const storedAIPanelSize = useLocalStorage("bb.plugin.ai.panel-size", 30);
+const minimumEditorPanelSize = 0.5;
 
 export type SQLEditorEvents = Emittery<{
   "save-sheet": {
@@ -40,7 +39,11 @@ export type SQLEditorContext = {
   asidePanelTab: Ref<AsidePanelTab>;
   showConnectionPanel: Ref<boolean>;
   showAIPanel: Ref<boolean>;
-  AIPanelSize: Ref<number>;
+  editorPanelSize: ComputedRef<{
+    size: number;
+    min: number;
+    max: number;
+  }>;
   schemaViewer: Ref<
     | {
         schema?: string;
@@ -55,7 +58,7 @@ export type SQLEditorContext = {
   events: SQLEditorEvents;
 
   maybeSwitchProject: (project: string) => Promise<string | undefined>;
-  handleAIPanelResize: (panes: { size: number }[], index?: number) => void;
+  handleEditorPanelResize: (size: number) => void;
 };
 
 export const KEY = Symbol(
@@ -70,11 +73,31 @@ export const provideSQLEditorContext = () => {
   const editorStore = useSQLEditorStore();
   const projectStore = useProjectV1Store();
 
+  const aiPanelSize = useLocalStorage(
+    "bb.plugin.editor.ai-panel-size",
+    0.3 /* panel size should in [0.1, 1-minimumEditorPanelSize]*/
+  );
+  const showAIPanel = ref(false);
+  const editorPanelSize = computed(() => {
+    if (!showAIPanel.value) {
+      return {
+        size: 1,
+        max: 1,
+        min: 1,
+      };
+    }
+    return {
+      size: Math.max(1 - aiPanelSize.value, minimumEditorPanelSize),
+      max: 0.9,
+      min: minimumEditorPanelSize,
+    };
+  });
+
   const context: SQLEditorContext = {
     asidePanelTab: ref("WORKSHEET"),
     showConnectionPanel: ref(false),
-    showAIPanel: ref(false),
-    AIPanelSize: storedAIPanelSize,
+    showAIPanel,
+    editorPanelSize,
     schemaViewer: ref(undefined),
     pendingInsertAtCaret: ref(),
     events: new Emittery(),
@@ -95,16 +118,11 @@ export const provideSQLEditorContext = () => {
         editorStore.projectContextReady = true;
       }
     },
-    handleAIPanelResize: (panes, index = 0) => {
-      try {
-        if (!panes || !Array.isArray(panes) || panes.length <= index) return;
-        const pane = panes[index];
-        if (!pane || typeof pane.size !== "number") return;
-        storedAIPanelSize.value = pane.size;
-      } catch (error) {
-        // Silently ignore errors from splitpanes during initialization
-        console.debug("Splitpanes resize handler error (ignored):", error);
+    handleEditorPanelResize: (size: number) => {
+      if (size >= 1) {
+        return;
       }
+      aiPanelSize.value = 1 - size;
     },
   };
 
