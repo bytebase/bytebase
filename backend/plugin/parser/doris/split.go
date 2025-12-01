@@ -15,9 +15,9 @@ func init() {
 
 // SplitSQL splits the input into multiple SQL statements using semicolon as delimiter.
 func SplitSQL(statement string) ([]base.SingleSQL, error) {
-	lexer := parser.NewDorisSQLLexer(antlr.NewInputStream(statement))
+	lexer := parser.NewDorisLexer(antlr.NewInputStream(statement))
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 	stream.Fill()
 
-	return base.SplitSQLByLexer(stream, parser.DorisSQLLexerSEMICOLON, statement)
+	return base.SplitSQLByLexer(stream, parser.DorisLexerSEMICOLON, statement)
 }

@@ -88,7 +88,7 @@ func getAccessTables(database string, parseResult *ParseResult, ctes map[string]
 }
 
 type accessTableListener struct {
-	*parser.BaseDorisSQLListener
+	*parser.BaseDorisParserListener
 
 	defaultDatabase     string
 	sourceColumnSet     base.SourceColumnSet
@@ -107,12 +107,18 @@ func newAccessTableListener(database string, ctes map[string]bool, gCtx base.Get
 	}
 }
 
-func (l *accessTableListener) EnterTableAtom(ctx *parser.TableAtomContext) {
+// EnterTableName is called when entering a tableName production.
+func (l *accessTableListener) EnterTableName(ctx *parser.TableNameContext) {
 	if ctx == nil {
 		return
 	}
 
-	list := NormalizeQualifiedName(ctx.QualifiedName())
+	multipart := ctx.MultipartIdentifier()
+	if multipart == nil {
+		return
+	}
+
+	list := NormalizeMultipartIdentifier(multipart)
 	switch len(list) {
 	case 1:
 		// Check if this is a CTE reference
@@ -137,7 +143,7 @@ func (l *accessTableListener) EnterTableAtom(ctx *parser.TableAtomContext) {
 
 // cteListener extracts CTE names from WITH clauses
 type cteListener struct {
-	*parser.BaseDorisSQLListener
+	*parser.BaseDorisParserListener
 
 	ctes map[string]bool
 }
@@ -148,30 +154,22 @@ func newCTEListener() *cteListener {
 	}
 }
 
-// EnterWithClause is called when entering a WITH clause
-func (l *cteListener) EnterWithClause(ctx *parser.WithClauseContext) {
+// EnterCte is called when entering a CTE production.
+func (l *cteListener) EnterCte(ctx *parser.CteContext) {
 	if ctx == nil {
 		return
 	}
 
 	// Extract all CTEs from the WITH clause
-	for i := 0; i < ctx.GetChildCount(); i++ {
-		child := ctx.GetChild(i)
-		if cte, ok := child.(*parser.CommonTableExpressionContext); ok {
-			l.extractCTEName(cte)
+	for _, aliasQuery := range ctx.AllAliasQuery() {
+		if aliasQuery == nil {
+			continue
 		}
-	}
-}
-
-// extractCTEName extracts the CTE name from a CommonTableExpression context
-func (l *cteListener) extractCTEName(ctx *parser.CommonTableExpressionContext) {
-	if ctx == nil {
-		return
-	}
-
-	// Get the CTE identifier
-	if ctx.Identifier() != nil {
-		cteName := NormalizeIdentifier(ctx.Identifier())
+		id := aliasQuery.Identifier()
+		if id == nil {
+			continue
+		}
+		cteName := NormalizeIdentifier(id)
 		l.ctes[cteName] = true
 	}
 }

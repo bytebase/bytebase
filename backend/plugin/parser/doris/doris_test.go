@@ -27,7 +27,7 @@ func TestDorisSQLParser(t *testing.T) {
 	for _, test := range tests {
 		res, err := ParseDorisSQL(test.statement)
 		if len(res) > 0 {
-			_, ok := res[0].Tree.(*parser.SqlStatementsContext)
+			_, ok := res[0].Tree.(*parser.MultiStatementsContext)
 			require.True(t, ok)
 		}
 		if test.errorMessage == "" {
