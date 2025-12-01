@@ -3,7 +3,7 @@
     <NAlert type="info">
       <span>{{ $t("release.usage-description") }}</span>
       <LearnMoreLink
-        url="https://docs.bytebase.com/gitops/release/?source=console"
+        url="https://docs.bytebase.com/gitops/migration-based-workflow/release/?source=console"
         class="ml-1"
       />
     </NAlert>
