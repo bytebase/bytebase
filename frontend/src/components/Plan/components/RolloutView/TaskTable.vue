@@ -202,17 +202,7 @@ const columnList = computed((): DataTableColumn<Task>[] => {
         return (
           <div class="flex items-center gap-2">
             <DatabaseDisplay database={task.target} />
-            <NTag round size="small">
-              {semanticTaskType(
-                task.type,
-                task.payload?.case === "databaseUpdate"
-                  ? task.payload.value.databaseChangeType
-                  : undefined,
-                task.payload?.case === "databaseUpdate"
-                  ? task.payload.value.enableGhost
-                  : undefined
-              )}
-            </NTag>
+            <NTag round size="small">{semanticTaskType(task.type)}</NTag>
             {schemaVersion && (
               <NTag round size="small">
                 {schemaVersion}

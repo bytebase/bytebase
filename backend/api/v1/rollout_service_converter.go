@@ -391,7 +391,6 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 				Sheet:              common.FormatSheet(project.ResourceID, int(task.Payload.GetSheetId())),
 				SchemaVersion:      task.Payload.GetSchemaVersion(),
 				DatabaseChangeType: databaseChangeType,
-				EnableGhost:        task.Payload.GetEnableGhost(),
 			},
 		},
 	}

@@ -14091,9 +14091,6 @@ components:
                     type: string
                     description: The type of database change (MIGRATE or SDL).
                     format: enum
-                enableGhost:
-                    type: boolean
-                    description: Whether to use gh-ost for online schema migration.
             description: Payload for updating a database schema.
         TessellationConfig:
             type: object

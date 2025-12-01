@@ -9892,7 +9892,6 @@ Payload for updating a database schema.
 | sheet | [string](#string) |  | Format: projects/{project}/sheets/{sheet} |
 | schema_version | [string](#string) |  | The target schema version after this update. |
 | database_change_type | [DatabaseChangeType](#bytebase-v1-DatabaseChangeType) |  | The type of database change (MIGRATE or SDL). |
-| enable_ghost | [bool](#bool) |  | Whether to use gh-ost for online schema migration. |
 
 
 

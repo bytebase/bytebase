@@ -237,14 +237,8 @@ export const getTaskTypeI18nKey = (task: Task): string => {
     case Task_Type.DATABASE_CREATE:
       return "task.type.database-create";
     case Task_Type.DATABASE_MIGRATE:
-      // For migrate tasks, check if ghost mode is enabled
-      if (task.payload?.case === "databaseUpdate") {
-        if (task.payload.value.enableGhost) {
-          return "release.change-type.ddl-ghost";
-        }
-        return "release.change-type.ddl";
-      }
-      return "task.type.database-migrate";
+      // Ghost mode is indicated via spec.enableGhost, shown separately as a tag
+      return "release.change-type.ddl";
     case Task_Type.DATABASE_SDL:
       return "task.type.database-sdl";
     case Task_Type.DATABASE_EXPORT:

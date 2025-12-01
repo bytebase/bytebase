@@ -98,21 +98,11 @@ const schemaVersion = computed(() => {
 });
 
 const showGhostTag = computed(() => {
-  if (isCreating.value) {
-    const spec = specForTask(issue.value.planEntity, props.task);
-    return (
-      spec?.config?.case === "changeDatabaseConfig" &&
-      spec.config.value?.type === DatabaseChangeType.MIGRATE &&
-      spec.config.value?.enableGhost === true
-    );
-  }
-  // Check if it's a MIGRATE task with GHOST type
+  const spec = specForTask(issue.value.planEntity, props.task);
   return (
-    props.task.type === Task_Type.DATABASE_MIGRATE &&
-    props.task.payload?.case === "databaseUpdate" &&
-    props.task.payload.value.databaseChangeType ===
-      DatabaseChangeType.MIGRATE &&
-    props.task.payload.value.enableGhost === true
+    spec?.config?.case === "changeDatabaseConfig" &&
+    spec.config.value?.type === DatabaseChangeType.MIGRATE &&
+    spec.config.value?.enableGhost === true
   );
 });
 

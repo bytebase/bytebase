@@ -699,13 +699,6 @@ export declare type Task_DatabaseUpdate = Message<"bytebase.v1.Task.DatabaseUpda
    * @generated from field: bytebase.v1.DatabaseChangeType database_change_type = 3;
    */
   databaseChangeType: DatabaseChangeType;
-
-  /**
-   * Whether to use gh-ost for online schema migration.
-   *
-   * @generated from field: bool enable_ghost = 4;
-   */
-  enableGhost: boolean;
 };
 
 /**

@@ -2322,10 +2322,8 @@ type Task_DatabaseUpdate struct {
 	SchemaVersion string `protobuf:"bytes,2,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"`
 	// The type of database change (MIGRATE or SDL).
 	DatabaseChangeType DatabaseChangeType `protobuf:"varint,3,opt,name=database_change_type,json=databaseChangeType,proto3,enum=bytebase.v1.DatabaseChangeType" json:"database_change_type,omitempty"`
-	// Whether to use gh-ost for online schema migration.
-	EnableGhost   bool `protobuf:"varint,4,opt,name=enable_ghost,json=enableGhost,proto3" json:"enable_ghost,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *Task_DatabaseUpdate) Reset() {
@@ -2377,13 +2375,6 @@ func (x *Task_DatabaseUpdate) GetDatabaseChangeType() DatabaseChangeType {
 		return x.DatabaseChangeType
 	}
 	return DatabaseChangeType_DATABASE_CHANGE_TYPE_UNSPECIFIED
-}
-
-func (x *Task_DatabaseUpdate) GetEnableGhost() bool {
-	if x != nil {
-		return x.EnableGhost
-	}
-	return false
 }
 
 // Payload for exporting database data.
@@ -3741,7 +3732,7 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\x02id\x18\x03 \x01(\tB\x03\xe0A\x03R\x02id\x12 \n" +
 	"\venvironment\x18\x04 \x01(\tR\venvironment\x12'\n" +
 	"\x05tasks\x18\x05 \x03(\v2\x11.bytebase.v1.TaskR\x05tasks:M\xeaAJ\n" +
-	"\x12bytebase.com/Stage\x124projects/{project}/rollouts/{rollout}/stages/{stage}J\x04\b\x02\x10\x03\"\x96\f\n" +
+	"\x12bytebase.com/Stage\x124projects/{project}/rollouts/{rollout}/stages/{stage}J\x04\b\x02\x10\x03\"\xf3\v\n" +
 	"\x04Task\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x17\n" +
 	"\aspec_id\x18\x04 \x01(\tR\x06specId\x120\n" +
@@ -3762,12 +3753,11 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\x05sheet\x18\x04 \x01(\tR\x05sheet\x12#\n" +
 	"\rcharacter_set\x18\x05 \x01(\tR\fcharacterSet\x12\x1c\n" +
 	"\tcollation\x18\x06 \x01(\tR\tcollation\x12 \n" +
-	"\venvironment\x18\a \x01(\tR\venvironment\x1a\xc3\x01\n" +
+	"\venvironment\x18\a \x01(\tR\venvironment\x1a\xa0\x01\n" +
 	"\x0eDatabaseUpdate\x12\x14\n" +
 	"\x05sheet\x18\x01 \x01(\tR\x05sheet\x12%\n" +
 	"\x0eschema_version\x18\x02 \x01(\tR\rschemaVersion\x12Q\n" +
-	"\x14database_change_type\x18\x03 \x01(\x0e2\x1f.bytebase.v1.DatabaseChangeTypeR\x12databaseChangeType\x12!\n" +
-	"\fenable_ghost\x18\x04 \x01(\bR\venableGhost\x1a\xa3\x01\n" +
+	"\x14database_change_type\x18\x03 \x01(\x0e2\x1f.bytebase.v1.DatabaseChangeTypeR\x12databaseChangeType\x1a\xa3\x01\n" +
 	"\x12DatabaseDataExport\x12\x16\n" +
 	"\x06target\x18\x01 \x01(\tR\x06target\x12\x14\n" +
 	"\x05sheet\x18\x02 \x01(\tR\x05sheet\x121\n" +

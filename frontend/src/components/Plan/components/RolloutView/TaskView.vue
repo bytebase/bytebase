@@ -27,17 +27,7 @@
           </div>
           <div class="flex flex-row gap-x-2 flex-wrap">
             <NTag round>
-              {{
-                semanticTaskType(
-                  task.type,
-                  task.payload?.case === "databaseUpdate"
-                    ? task.payload.value.databaseChangeType
-                    : undefined,
-                  task.payload?.case === "databaseUpdate"
-                    ? task.payload.value.enableGhost
-                    : undefined
-                )
-              }}
+              {{ semanticTaskType(task.type) }}
             </NTag>
             <NTooltip v-if="schemaVersion">
               <template #trigger>
