@@ -59,104 +59,94 @@ func (exec *DatabaseMigrateExecutor) RunOnce(ctx context.Context, driverCtx cont
 
 	//exhaustive:enforce
 	switch migrateType {
-	case storepb.MigrationType_DDL:
-		return exec.runDDLMigration(ctx, driverCtx, task, taskRunUID)
-	case storepb.MigrationType_DML:
-		return exec.runDMLMigration(ctx, driverCtx, task, taskRunUID)
+	case storepb.MigrationType_DDL, storepb.MigrationType_DML, storepb.MigrationType_MIGRATION_TYPE_UNSPECIFIED:
+		return exec.runMigrationWithPriorBackup(ctx, driverCtx, task, taskRunUID)
 	case storepb.MigrationType_GHOST:
 		return exec.runGhostMigration(ctx, driverCtx, task, taskRunUID)
-	case storepb.MigrationType_MIGRATION_TYPE_UNSPECIFIED:
-		// Execute SQL without backup, same as DDL
-		return exec.runDDLMigration(ctx, driverCtx, task, taskRunUID)
 	default:
 		return false, nil, errors.Errorf("unsupported migrate type: %v", migrateType)
 	}
 }
 
-func (exec *DatabaseMigrateExecutor) runDDLMigration(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (bool, *storepb.TaskRunResult, error) {
+func (exec *DatabaseMigrateExecutor) runMigrationWithPriorBackup(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (bool, *storepb.TaskRunResult, error) {
 	sheetID := int(task.Payload.GetSheetId())
 	statement, err := exec.store.GetSheetStatementByID(ctx, sheetID)
 	if err != nil {
 		return true, nil, err
 	}
 
-	return runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.stateCfg, exec.schemaSyncer, exec.profile, task, taskRunUID, statement, task.Payload.GetSchemaVersion(), &sheetID)
-}
-
-func (exec *DatabaseMigrateExecutor) runDMLMigration(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (bool, *storepb.TaskRunResult, error) {
-	sheetID := int(task.Payload.GetSheetId())
-	statement, err := exec.store.GetSheetStatementByID(ctx, sheetID)
-	if err != nil {
-		return true, nil, err
-	}
-
-	instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
-	if err != nil {
-		return true, nil, errors.Wrap(err, "failed to get instance")
-	}
-	if instance == nil {
-		return true, nil, errors.Errorf("instance not found for task %v", task.ID)
-	}
-	database, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName})
-	if err != nil {
-		return true, nil, errors.Wrap(err, "failed to get database")
-	}
-	if database == nil {
-		return true, nil, errors.Errorf("database not found for task %v", task.ID)
-	}
-	issueN, err := exec.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
-	if err != nil {
-		return true, nil, errors.Wrapf(err, "failed to find issue for pipeline %v", task.PipelineID)
-	}
-
-	exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.DeployID, &storepb.TaskRunLog{
-		Type:             storepb.TaskRunLog_PRIOR_BACKUP_START,
-		PriorBackupStart: &storepb.TaskRunLog_PriorBackupStart{},
-	})
-
+	// Handle prior backup if enabled.
+	// TransformDMLToSelect will automatically filter out DDL statements,
+	// so this works correctly for mixed DDL+DML statements.
 	var priorBackupDetail *storepb.PriorBackupDetail
-	// Check if we should skip backup or not.
-	if common.EngineSupportPriorBackup(instance.Metadata.GetEngine()) {
-		var backupErr error
-		priorBackupDetail, backupErr = exec.backupData(ctx, driverCtx, statement, task.Payload, task, issueN, instance, database)
-		if backupErr != nil {
-			exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.DeployID, &storepb.TaskRunLog{
-				Type: storepb.TaskRunLog_PRIOR_BACKUP_END,
-				PriorBackupEnd: &storepb.TaskRunLog_PriorBackupEnd{
-					Error: backupErr.Error(),
-				},
-			})
-			// Create issue comment for backup error.
-			if issueN != nil {
-				if _, err := exec.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
-					IssueUID: issueN.UID,
-					Payload: &storepb.IssueCommentPayload{
-						Event: &storepb.IssueCommentPayload_TaskPriorBackup_{
-							TaskPriorBackup: &storepb.IssueCommentPayload_TaskPriorBackup{
-								Task:  common.FormatTask(issueN.Project.ResourceID, task.PipelineID, task.Environment, task.ID),
-								Error: backupErr.Error(),
+	if task.Payload.GetEnablePriorBackup() {
+		instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
+		if err != nil {
+			return true, nil, errors.Wrap(err, "failed to get instance")
+		}
+		if instance == nil {
+			return true, nil, errors.Errorf("instance not found for task %v", task.ID)
+		}
+		database, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName})
+		if err != nil {
+			return true, nil, errors.Wrap(err, "failed to get database")
+		}
+		if database == nil {
+			return true, nil, errors.Errorf("database not found for task %v", task.ID)
+		}
+		issueN, err := exec.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
+		if err != nil {
+			return true, nil, errors.Wrapf(err, "failed to find issue for pipeline %v", task.PipelineID)
+		}
+
+		exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.DeployID, &storepb.TaskRunLog{
+			Type:             storepb.TaskRunLog_PRIOR_BACKUP_START,
+			PriorBackupStart: &storepb.TaskRunLog_PriorBackupStart{},
+		})
+
+		// Check if we should skip backup or not.
+		if common.EngineSupportPriorBackup(instance.Metadata.GetEngine()) {
+			var backupErr error
+			priorBackupDetail, backupErr = exec.backupData(ctx, driverCtx, statement, task.Payload, task, issueN, instance, database)
+			if backupErr != nil {
+				exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.DeployID, &storepb.TaskRunLog{
+					Type: storepb.TaskRunLog_PRIOR_BACKUP_END,
+					PriorBackupEnd: &storepb.TaskRunLog_PriorBackupEnd{
+						Error: backupErr.Error(),
+					},
+				})
+				// Create issue comment for backup error.
+				if issueN != nil {
+					if _, err := exec.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+						IssueUID: issueN.UID,
+						Payload: &storepb.IssueCommentPayload{
+							Event: &storepb.IssueCommentPayload_TaskPriorBackup_{
+								TaskPriorBackup: &storepb.IssueCommentPayload_TaskPriorBackup{
+									Task:  common.FormatTask(issueN.Project.ResourceID, task.PipelineID, task.Environment, task.ID),
+									Error: backupErr.Error(),
+								},
 							},
 						},
-					},
-				}, common.SystemBotID); err != nil {
-					slog.Warn("failed to create issue comment", "task", task.ID, log.BBError(err), "backup error", backupErr)
+					}, common.SystemBotID); err != nil {
+						slog.Warn("failed to create issue comment", "task", task.ID, log.BBError(err), "backup error", backupErr)
+					}
 				}
+				// Check if we should skip backup error and continue to run migration.
+				skip, err := exec.shouldSkipBackupError(ctx, task)
+				if err != nil {
+					return true, nil, errors.Errorf("failed to check skip backup error or not: %v", err)
+				}
+				if !skip {
+					return true, nil, backupErr
+				}
+			} else {
+				exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.DeployID, &storepb.TaskRunLog{
+					Type: storepb.TaskRunLog_PRIOR_BACKUP_END,
+					PriorBackupEnd: &storepb.TaskRunLog_PriorBackupEnd{
+						PriorBackupDetail: priorBackupDetail,
+					},
+				})
 			}
-			// Check if we should skip backup error and continue to run migration.
-			skip, err := exec.shouldSkipBackupError(ctx, task)
-			if err != nil {
-				return true, nil, errors.Errorf("failed to check skip backup error or not: %v", err)
-			}
-			if !skip {
-				return true, nil, backupErr
-			}
-		} else {
-			exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.DeployID, &storepb.TaskRunLog{
-				Type: storepb.TaskRunLog_PRIOR_BACKUP_END,
-				PriorBackupEnd: &storepb.TaskRunLog_PriorBackupEnd{
-					PriorBackupDetail: priorBackupDetail,
-				},
-			})
 		}
 	}
 
