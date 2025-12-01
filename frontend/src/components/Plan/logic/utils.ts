@@ -22,15 +22,10 @@ export const getSpecTitle = (spec: Plan_Spec): string => {
     title = t("plan.spec.type.create-database");
   } else if (spec.config?.case === "changeDatabaseConfig") {
     const config = spec.config.value;
-    if (config.type === DatabaseChangeType.MIGRATE) {
-      if (config.enableGhost) {
-        title = t("plan.spec.type.ghost-migration");
-      } else {
-        title = t("plan.spec.type.schema-change");
-      }
-    } else if (config.type === DatabaseChangeType.SDL) {
+    if (config.type === DatabaseChangeType.SDL) {
       title = "SDL";
     } else {
+      // MIGRATE type (with or without ghost)
       title = t("plan.spec.type.database-change");
     }
   } else if (spec.config?.case === "exportDataConfig") {

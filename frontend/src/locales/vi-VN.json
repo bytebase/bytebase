@@ -1091,8 +1091,7 @@
       }
     },
     "title": {
-      "edit-schema": "Chỉnh sửa lược đồ",
-      "change-data": "Thay đổi dữ liệu",
+      "change-database": "Thay đổi cơ sở dữ liệu",
       "export-data": "Xuất dữ liệu",
       "create-database": "Tạo cơ sở dữ liệu",
       "request-role": "Yêu cầu vai trò",

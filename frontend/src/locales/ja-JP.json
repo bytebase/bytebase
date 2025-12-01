@@ -1091,8 +1091,7 @@
       }
     },
     "title": {
-      "edit-schema": "スキーマを編集",
-      "change-data": "データの変更",
+      "change-database": "データベースの変更",
       "export-data": "データをエクスポート",
       "create-database": "データベースを作成する",
       "request-role": "役割をリクエストする",

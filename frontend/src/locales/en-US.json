@@ -1091,8 +1091,7 @@
       }
     },
     "title": {
-      "edit-schema": "Edit schema",
-      "change-data": "Change data",
+      "change-database": "Change database",
       "export-data": "Export data",
       "create-database": "Create database",
       "request-role": "Request role",

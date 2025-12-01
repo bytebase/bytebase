@@ -1091,8 +1091,7 @@
       }
     },
     "title": {
-      "edit-schema": "Editar esquema",
-      "change-data": "Cambiar datos",
+      "change-database": "Modificar base de datos",
       "export-data": "Exportar datos",
       "create-database": "Crear base de datos",
       "request-role": "Rol de solicitud",
