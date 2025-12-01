@@ -28,7 +28,7 @@
       <div
         v-for="db in databases.slice(0, MAX_INLINE_DATABASES)"
         :key="db"
-        class="inline-flex items-center gap-x-1 px-2 py-1 border rounded-lg transition-all cursor-default"
+        class="inline-flex items-center gap-x-1 px-2 py-1 border rounded-lg transition-all cursor-default bg-gray-50"
       >
         <DatabaseDisplay :database="db" size="small" show-environment />
       </div>
