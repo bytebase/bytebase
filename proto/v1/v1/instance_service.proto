@@ -456,6 +456,10 @@ message Instance {
   // Labels are key-value pairs that can be attached to the instance.
   // For example, { "org_group": "infrastructure", "environment": "production" }
   map<string, string> labels = 17;
+
+  // How to handle schema drift baseline when Bytebase version changes.
+  // Default (UNSPECIFIED) is treated as SMART.
+  SchemaDriftBaselineMode schema_drift_baseline_mode = 18;
 }
 
 message DataSourceExternalSecret {
@@ -709,6 +713,18 @@ message SASLConfig {
     // Kerberos authentication configuration.
     KerberosConfig krb_config = 1;
   }
+}
+
+// Controls how schema drift baseline is handled on Bytebase version upgrades.
+enum SchemaDriftBaselineMode {
+  // Default behavior, treated as SMART.
+  SCHEMA_DRIFT_BASELINE_MODE_UNSPECIFIED = 0;
+  // Always auto-baseline on version upgrade, regardless of schema differences.
+  AUTOMATIC = 1;
+  // Auto-baseline only if schemas match; show warning if different.
+  SMART = 2;
+  // Never auto-baseline; always require manual action.
+  MANUAL = 3;
 }
 
 message KerberosConfig {

@@ -73,6 +73,9 @@ func (x *Instance) Equal(y *Instance) bool {
 			return false
 		}
 	}
+	if x.SchemaDriftBaselineMode != y.SchemaDriftBaselineMode {
+		return false
+	}
 	return true
 }
 

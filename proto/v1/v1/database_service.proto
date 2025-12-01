@@ -462,6 +462,11 @@ message Database {
 
   // The schema is drifted from the source of truth.
   bool drifted = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Indicates if the drift warning is due to Bytebase version mismatch.
+  // When true, the frontend shows a more specific message explaining
+  // the drift could be due to format changes vs actual schema drift.
+  bool version_mismatch = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // DatabaseMetadata is the metadata for databases.

@@ -41,6 +41,9 @@ func (x *DatabaseMetadata) Equal(y *DatabaseMetadata) bool {
 	if x.Version != y.Version {
 		return false
 	}
+	if x.VersionMismatch != y.VersionMismatch {
+		return false
+	}
 	return true
 }
 

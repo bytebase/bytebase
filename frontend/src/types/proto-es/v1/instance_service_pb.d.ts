@@ -641,6 +641,14 @@ export declare type Instance = Message<"bytebase.v1.Instance"> & {
    * @generated from field: map<string, string> labels = 17;
    */
   labels: { [key: string]: string };
+
+  /**
+   * How to handle schema drift baseline when Bytebase version changes.
+   * Default (UNSPECIFIED) is treated as SMART.
+   *
+   * @generated from field: bytebase.v1.SchemaDriftBaselineMode schema_drift_baseline_mode = 18;
+   */
+  schemaDriftBaselineMode: SchemaDriftBaselineMode;
 };
 
 /**
@@ -1525,6 +1533,46 @@ export enum DataSourceType {
  * Describes the enum bytebase.v1.DataSourceType.
  */
 export declare const DataSourceTypeSchema: GenEnum<DataSourceType>;
+
+/**
+ * Controls how schema drift baseline is handled on Bytebase version upgrades.
+ *
+ * @generated from enum bytebase.v1.SchemaDriftBaselineMode
+ */
+export enum SchemaDriftBaselineMode {
+  /**
+   * Default behavior, treated as SMART.
+   *
+   * @generated from enum value: SCHEMA_DRIFT_BASELINE_MODE_UNSPECIFIED = 0;
+   */
+  SCHEMA_DRIFT_BASELINE_MODE_UNSPECIFIED = 0,
+
+  /**
+   * Always auto-baseline on version upgrade, regardless of schema differences.
+   *
+   * @generated from enum value: AUTOMATIC = 1;
+   */
+  AUTOMATIC = 1,
+
+  /**
+   * Auto-baseline only if schemas match; show warning if different.
+   *
+   * @generated from enum value: SMART = 2;
+   */
+  SMART = 2,
+
+  /**
+   * Never auto-baseline; always require manual action.
+   *
+   * @generated from enum value: MANUAL = 3;
+   */
+  MANUAL = 3,
+}
+
+/**
+ * Describes the enum bytebase.v1.SchemaDriftBaselineMode.
+ */
+export declare const SchemaDriftBaselineModeSchema: GenEnum<SchemaDriftBaselineMode>;
 
 /**
  * InstanceService manages database instances and their connections.

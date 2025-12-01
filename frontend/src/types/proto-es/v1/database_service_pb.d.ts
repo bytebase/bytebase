@@ -618,6 +618,15 @@ export declare type Database = Message<"bytebase.v1.Database"> & {
    * @generated from field: bool drifted = 12;
    */
   drifted: boolean;
+
+  /**
+   * Indicates if the drift warning is due to Bytebase version mismatch.
+   * When true, the frontend shows a more specific message explaining
+   * the drift could be due to format changes vs actual schema drift.
+   *
+   * @generated from field: bool version_mismatch = 13;
+   */
+  versionMismatch: boolean;
 };
 
 /**

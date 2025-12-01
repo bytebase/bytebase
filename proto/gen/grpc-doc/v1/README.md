@@ -88,6 +88,7 @@
     - [DataSourceExternalSecret.AuthType](#bytebase-v1-DataSourceExternalSecret-AuthType)
     - [DataSourceExternalSecret.SecretType](#bytebase-v1-DataSourceExternalSecret-SecretType)
     - [DataSourceType](#bytebase-v1-DataSourceType)
+    - [SchemaDriftBaselineMode](#bytebase-v1-SchemaDriftBaselineMode)
   
     - [InstanceService](#bytebase-v1-InstanceService)
   
@@ -1571,6 +1572,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | sync_databases | [string](#string) | repeated | Enable sync for following databases. Default empty, means sync all schemas &amp; databases. |
 | last_sync_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The last time the instance was synced. |
 | labels | [Instance.LabelsEntry](#bytebase-v1-Instance-LabelsEntry) | repeated | Labels are key-value pairs that can be attached to the instance. For example, { &#34;org_group&#34;: &#34;infrastructure&#34;, &#34;environment&#34;: &#34;production&#34; } |
+| schema_drift_baseline_mode | [SchemaDriftBaselineMode](#bytebase-v1-SchemaDriftBaselineMode) |  | How to handle schema drift baseline when Bytebase version changes. Default (UNSPECIFIED) is treated as SMART. |
 
 
 
@@ -1902,6 +1904,20 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 | DATA_SOURCE_UNSPECIFIED | 0 | Unspecified data source type. |
 | ADMIN | 1 | Admin data source with write permissions. |
 | READ_ONLY | 2 | Read-only data source for query operations. |
+
+
+
+<a name="bytebase-v1-SchemaDriftBaselineMode"></a>
+
+### SchemaDriftBaselineMode
+Controls how schema drift baseline is handled on Bytebase version upgrades.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SCHEMA_DRIFT_BASELINE_MODE_UNSPECIFIED | 0 | Default behavior, treated as SMART. |
+| AUTOMATIC | 1 | Always auto-baseline on version upgrade, regardless of schema differences. |
+| SMART | 2 | Auto-baseline only if schemas match; show warning if different. |
+| MANUAL | 3 | Never auto-baseline; always require manual action. |
 
 
  
@@ -2266,6 +2282,7 @@ This field is populated when syncing from the database. When empty (e.g., when p
 | instance_resource | [InstanceResource](#bytebase-v1-InstanceResource) |  | The instance resource. |
 | backup_available | [bool](#bool) |  | The database is available for DML prior backup. |
 | drifted | [bool](#bool) |  | The schema is drifted from the source of truth. |
+| version_mismatch | [bool](#bool) |  | Indicates if the drift warning is due to Bytebase version mismatch. When true, the frontend shows a more specific message explaining the drift could be due to format changes vs actual schema drift. |
 
 
 

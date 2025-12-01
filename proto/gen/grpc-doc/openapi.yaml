@@ -9606,6 +9606,13 @@ components:
                     readOnly: true
                     type: boolean
                     description: The schema is drifted from the source of truth.
+                versionMismatch:
+                    readOnly: true
+                    type: boolean
+                    description: |-
+                        Indicates if the drift warning is due to Bytebase version mismatch.
+                         When true, the frontend shows a more specific message explaining
+                         the drift could be due to format changes vs actual schema drift.
         DatabaseCatalog:
             type: object
             properties:
@@ -9686,6 +9693,12 @@ components:
                 version:
                     type: string
                     description: The version of database schema.
+                versionMismatch:
+                    type: boolean
+                    description: |-
+                        Indicates if the drift warning is due to Bytebase version mismatch.
+                         When true, the frontend shows a more specific message explaining
+                         the drift could be due to format changes vs actual schema drift.
             description: DatabaseMetadata is the metadata for databases.
         DatabaseSDLSchema:
             type: object
@@ -10619,6 +10632,17 @@ components:
                     description: |-
                         Labels are key-value pairs that can be attached to the instance.
                          For example, { "org_group": "infrastructure", "environment": "production" }
+                schemaDriftBaselineMode:
+                    enum:
+                        - SCHEMA_DRIFT_BASELINE_MODE_UNSPECIFIED
+                        - AUTOMATIC
+                        - SMART
+                        - MANUAL
+                    type: string
+                    description: |-
+                        How to handle schema drift baseline when Bytebase version changes.
+                         Default (UNSPECIFIED) is treated as SMART.
+                    format: enum
             description: Instance is the proto for instances.
         InstanceResource:
             type: object

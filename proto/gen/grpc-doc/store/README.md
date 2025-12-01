@@ -145,6 +145,7 @@
     - [DataSourceExternalSecret.AuthType](#bytebase-store-DataSourceExternalSecret-AuthType)
     - [DataSourceExternalSecret.SecretType](#bytebase-store-DataSourceExternalSecret-SecretType)
     - [DataSourceType](#bytebase-store-DataSourceType)
+    - [SchemaDriftBaselineMode](#bytebase-store-SchemaDriftBaselineMode)
   
 - [store/instance_change_history.proto](#store_instance_change_history-proto)
     - [InstanceChangeHistoryPayload](#bytebase-store-InstanceChangeHistoryPayload)
@@ -1059,6 +1060,7 @@ DatabaseMetadata is the metadata for databases.
 | datashare | [bool](#bool) |  |  |
 | drifted | [bool](#bool) |  | The schema has drifted from the source of truth. |
 | version | [string](#string) |  | The version of database schema. |
+| version_mismatch | [bool](#bool) |  | Indicates if the drift warning is due to Bytebase version mismatch. When true, the frontend shows a more specific message explaining the drift could be due to format changes vs actual schema drift. |
 
 
 
@@ -2499,6 +2501,7 @@ Instance is the proto for instances.
 | last_sync_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | roles | [InstanceRole](#bytebase-store-InstanceRole) | repeated |  |
 | labels | [Instance.LabelsEntry](#bytebase-store-Instance-LabelsEntry) | repeated | Labels are key-value pairs that can be attached to the instance. For example, { &#34;org_group&#34;: &#34;infrastructure&#34;, &#34;environment&#34;: &#34;production&#34; } |
+| schema_drift_baseline_mode | [SchemaDriftBaselineMode](#bytebase-store-SchemaDriftBaselineMode) |  | How to handle schema drift baseline when Bytebase version changes. Default (UNSPECIFIED) is treated as SMART. |
 
 
 
@@ -2656,6 +2659,20 @@ InstanceRole is the API message for instance role.
 | DATA_SOURCE_UNSPECIFIED | 0 |  |
 | ADMIN | 1 |  |
 | READ_ONLY | 2 |  |
+
+
+
+<a name="bytebase-store-SchemaDriftBaselineMode"></a>
+
+### SchemaDriftBaselineMode
+Controls how schema drift baseline is handled on Bytebase version upgrades.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SCHEMA_DRIFT_BASELINE_MODE_UNSPECIFIED | 0 | Default behavior, treated as SMART. |
+| AUTOMATIC | 1 | Always auto-baseline on version upgrade, regardless of schema differences. |
+| SMART | 2 | Auto-baseline only if schemas match; show warning if different. |
+| MANUAL | 3 | Never auto-baseline; always require manual action. |
 
 
  

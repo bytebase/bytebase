@@ -352,6 +352,9 @@ func (x *Database) Equal(y *Database) bool {
 	if x.Drifted != y.Drifted {
 		return false
 	}
+	if x.VersionMismatch != y.VersionMismatch {
+		return false
+	}
 	return true
 }
 

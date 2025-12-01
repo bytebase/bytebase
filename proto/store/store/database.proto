@@ -16,6 +16,10 @@ message DatabaseMetadata {
   bool drifted = 6;
   // The version of database schema.
   string version = 7;
+  // Indicates if the drift warning is due to Bytebase version mismatch.
+  // When true, the frontend shows a more specific message explaining
+  // the drift could be due to format changes vs actual schema drift.
+  bool version_mismatch = 8;
 }
 
 // DatabaseSchemaMetadata is the schema metadata for databases.

@@ -734,6 +734,10 @@
                   <a href="#bytebase.store.DataSourceType"><span class="badge">E</span>DataSourceType</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.store.SchemaDriftBaselineMode"><span class="badge">E</span>SchemaDriftBaselineMode</a>
+                </li>
+              
               
               
             </ul>
@@ -3264,6 +3268,15 @@ from SQL files), the system cannot automatically drop the constraint. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The version of database schema. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>version_mismatch</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Indicates if the drift warning is due to Bytebase version mismatch.
+When true, the frontend shows a more specific message explaining
+the drift could be due to format changes vs actual schema drift. </p></td>
                 </tr>
               
             </tbody>
@@ -7543,6 +7556,14 @@ It is used to determine whether the table names and database names are case sens
 For example, { &#34;org_group&#34;: &#34;infrastructure&#34;, &#34;environment&#34;: &#34;production&#34; } </p></td>
                 </tr>
               
+                <tr>
+                  <td>schema_drift_baseline_mode</td>
+                  <td><a href="#bytebase.store.SchemaDriftBaselineMode">SchemaDriftBaselineMode</a></td>
+                  <td></td>
+                  <td><p>How to handle schema drift baseline when Bytebase version changes.
+Default (UNSPECIFIED) is treated as SMART. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -7913,6 +7934,41 @@ For MySQL, it is the global privileges as GRANT statements, which means it only 
                 <td>READ_ONLY</td>
                 <td>2</td>
                 <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.SchemaDriftBaselineMode">SchemaDriftBaselineMode</h3>
+        <p>Controls how schema drift baseline is handled on Bytebase version upgrades.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>SCHEMA_DRIFT_BASELINE_MODE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p>Default behavior, treated as SMART.</p></td>
+              </tr>
+            
+              <tr>
+                <td>AUTOMATIC</td>
+                <td>1</td>
+                <td><p>Always auto-baseline on version upgrade, regardless of schema differences.</p></td>
+              </tr>
+            
+              <tr>
+                <td>SMART</td>
+                <td>2</td>
+                <td><p>Auto-baseline only if schemas match; show warning if different.</p></td>
+              </tr>
+            
+              <tr>
+                <td>MANUAL</td>
+                <td>3</td>
+                <td><p>Never auto-baseline; always require manual action.</p></td>
               </tr>
             
           </tbody>

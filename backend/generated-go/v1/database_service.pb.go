@@ -1640,9 +1640,13 @@ type Database struct {
 	// The database is available for DML prior backup.
 	BackupAvailable bool `protobuf:"varint,11,opt,name=backup_available,json=backupAvailable,proto3" json:"backup_available,omitempty"`
 	// The schema is drifted from the source of truth.
-	Drifted       bool `protobuf:"varint,12,opt,name=drifted,proto3" json:"drifted,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Drifted bool `protobuf:"varint,12,opt,name=drifted,proto3" json:"drifted,omitempty"`
+	// Indicates if the drift warning is due to Bytebase version mismatch.
+	// When true, the frontend shows a more specific message explaining
+	// the drift could be due to format changes vs actual schema drift.
+	VersionMismatch bool `protobuf:"varint,13,opt,name=version_mismatch,json=versionMismatch,proto3" json:"version_mismatch,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *Database) Reset() {
@@ -1748,6 +1752,13 @@ func (x *Database) GetBackupAvailable() bool {
 func (x *Database) GetDrifted() bool {
 	if x != nil {
 		return x.Drifted
+	}
+	return false
+}
+
+func (x *Database) GetVersionMismatch() bool {
+	if x != nil {
+		return x.VersionMismatch
 	}
 	return false
 }
@@ -6135,7 +6146,7 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\tchangelog\x18\x03 \x01(\tH\x00R\tchangelogB\b\n" +
 	"\x06target\"(\n" +
 	"\x12DiffSchemaResponse\x12\x12\n" +
-	"\x04diff\x18\x01 \x01(\tR\x04diff\"\xde\x05\n" +
+	"\x04diff\x18\x01 \x01(\tR\x04diff\"\x8e\x06\n" +
 	"\bDatabase\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12-\n" +
 	"\x05state\x18\x03 \x01(\x0e2\x12.bytebase.v1.StateB\x03\xe0A\x03R\x05state\x12Q\n" +
@@ -6148,7 +6159,8 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\x11instance_resource\x18\n" +
 	" \x01(\v2\x1d.bytebase.v1.InstanceResourceB\x03\xe0A\x03R\x10instanceResource\x12.\n" +
 	"\x10backup_available\x18\v \x01(\bB\x03\xe0A\x03R\x0fbackupAvailable\x12\x1d\n" +
-	"\adrifted\x18\f \x01(\bB\x03\xe0A\x03R\adrifted\x1a9\n" +
+	"\adrifted\x18\f \x01(\bB\x03\xe0A\x03R\adrifted\x12.\n" +
+	"\x10version_mismatch\x18\r \x01(\bB\x03\xe0A\x03R\x0fversionMismatch\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:E\xeaAB\n" +

@@ -409,9 +409,13 @@ type DatabaseMetadata struct {
 	// The schema has drifted from the source of truth.
 	Drifted bool `protobuf:"varint,6,opt,name=drifted,proto3" json:"drifted,omitempty"`
 	// The version of database schema.
-	Version       string `protobuf:"bytes,7,opt,name=version,proto3" json:"version,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Version string `protobuf:"bytes,7,opt,name=version,proto3" json:"version,omitempty"`
+	// Indicates if the drift warning is due to Bytebase version mismatch.
+	// When true, the frontend shows a more specific message explaining
+	// the drift could be due to format changes vs actual schema drift.
+	VersionMismatch bool `protobuf:"varint,8,opt,name=version_mismatch,json=versionMismatch,proto3" json:"version_mismatch,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *DatabaseMetadata) Reset() {
@@ -484,6 +488,13 @@ func (x *DatabaseMetadata) GetVersion() string {
 		return x.Version
 	}
 	return ""
+}
+
+func (x *DatabaseMetadata) GetVersionMismatch() bool {
+	if x != nil {
+		return x.VersionMismatch
+	}
+	return false
 }
 
 // DatabaseSchemaMetadata is the schema metadata for databases.
@@ -4593,14 +4604,15 @@ var File_store_database_proto protoreflect.FileDescriptor
 
 const file_store_database_proto_rawDesc = "" +
 	"\n" +
-	"\x14store/database.proto\x12\x0ebytebase.store\x1a\x1fgoogle/protobuf/timestamp.proto\"\xd2\x02\n" +
+	"\x14store/database.proto\x12\x0ebytebase.store\x1a\x1fgoogle/protobuf/timestamp.proto\"\xfd\x02\n" +
 	"\x10DatabaseMetadata\x12D\n" +
 	"\x06labels\x18\x01 \x03(\v2,.bytebase.store.DatabaseMetadata.LabelsEntryR\x06labels\x12@\n" +
 	"\x0elast_sync_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\flastSyncTime\x12)\n" +
 	"\x10backup_available\x18\x03 \x01(\bR\x0fbackupAvailable\x12\x1c\n" +
 	"\tdatashare\x18\x04 \x01(\bR\tdatashare\x12\x18\n" +
 	"\adrifted\x18\x06 \x01(\bR\adrifted\x12\x18\n" +
-	"\aversion\x18\a \x01(\tR\aversion\x1a9\n" +
+	"\aversion\x18\a \x01(\tR\aversion\x12)\n" +
+	"\x10version_mismatch\x18\b \x01(\bR\x0fversionMismatch\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x84\x04\n" +

@@ -503,6 +503,10 @@
                   <a href="#bytebase.v1.DataSourceType"><span class="badge">E</span>DataSourceType</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.v1.SchemaDriftBaselineMode"><span class="badge">E</span>SchemaDriftBaselineMode</a>
+                </li>
+              
               
               
                 <li>
@@ -5095,6 +5099,14 @@ Default empty, means sync all schemas &amp; databases. </p></td>
 For example, { &#34;org_group&#34;: &#34;infrastructure&#34;, &#34;environment&#34;: &#34;production&#34; } </p></td>
                 </tr>
               
+                <tr>
+                  <td>schema_drift_baseline_mode</td>
+                  <td><a href="#bytebase.v1.SchemaDriftBaselineMode">SchemaDriftBaselineMode</a></td>
+                  <td></td>
+                  <td><p>How to handle schema drift baseline when Bytebase version changes.
+Default (UNSPECIFIED) is treated as SMART. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -5871,6 +5883,41 @@ In this situation, `update_mask` is ignored. </p></td>
                 <td>READ_ONLY</td>
                 <td>2</td>
                 <td><p>Read-only data source for query operations.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.SchemaDriftBaselineMode">SchemaDriftBaselineMode</h3>
+        <p>Controls how schema drift baseline is handled on Bytebase version upgrades.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>SCHEMA_DRIFT_BASELINE_MODE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p>Default behavior, treated as SMART.</p></td>
+              </tr>
+            
+              <tr>
+                <td>AUTOMATIC</td>
+                <td>1</td>
+                <td><p>Always auto-baseline on version upgrade, regardless of schema differences.</p></td>
+              </tr>
+            
+              <tr>
+                <td>SMART</td>
+                <td>2</td>
+                <td><p>Auto-baseline only if schemas match; show warning if different.</p></td>
+              </tr>
+            
+              <tr>
+                <td>MANUAL</td>
+                <td>3</td>
+                <td><p>Never auto-baseline; always require manual action.</p></td>
               </tr>
             
           </tbody>
@@ -7004,6 +7051,15 @@ https://cloud.google.com/resource-manager/docs/tags/tags-overview. </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>The schema is drifted from the source of truth. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>version_mismatch</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Indicates if the drift warning is due to Bytebase version mismatch.
+When true, the frontend shows a more specific message explaining
+the drift could be due to format changes vs actual schema drift. </p></td>
                 </tr>
               
             </tbody>
