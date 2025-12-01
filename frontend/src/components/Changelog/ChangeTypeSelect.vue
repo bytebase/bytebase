@@ -11,30 +11,29 @@
 <script setup lang="tsx">
 import { NSelect } from "naive-ui";
 import { computed } from "vue";
-import { Changelog_MigrationType } from "@/types/proto-es/v1/database_service_pb";
 
 defineProps<{
-  changeType?: Changelog_MigrationType;
+  changeType?: string;
 }>();
 
 const emit = defineEmits<{
-  (event: "update:change-type", changeType?: Changelog_MigrationType): void;
+  (event: "update:change-type", changeType?: string): void;
 }>();
 
 const options = computed(() => {
   return [
     {
-      value: Changelog_MigrationType.DDL,
+      value: "DDL",
       label: "DDL",
     },
     {
-      value: Changelog_MigrationType.DML,
+      value: "DML",
       label: "DML",
     },
   ];
 });
 
-const updateSelectedKey = (value: Changelog_MigrationType) => {
+const updateSelectedKey = (value: string) => {
   emit("update:change-type", value);
 };
 </script>

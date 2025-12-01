@@ -267,13 +267,8 @@ loop:
 				}
 
 				changeType := storepb.PlanCheckRunConfig_DDL
-				switch file.MigrationType {
-				case v1pb.Release_File_DDL_GHOST:
+				if file.EnableGhost {
 					changeType = storepb.PlanCheckRunConfig_DDL_GHOST
-				case v1pb.Release_File_DML:
-					changeType = storepb.PlanCheckRunConfig_DML
-				default:
-					// Keep DDL as default change type
 				}
 				// Get SQL summary report for the statement and target database.
 				// Including affected rows.

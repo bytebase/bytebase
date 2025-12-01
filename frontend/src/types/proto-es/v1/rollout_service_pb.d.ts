@@ -6,7 +6,7 @@ import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobu
 import type { Message } from "@bufbuild/protobuf";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import type { Plan } from "./plan_service_pb";
-import type { DatabaseChangeType, ExportFormat, MigrationType, Position } from "./common_pb";
+import type { DatabaseChangeType, ExportFormat, Position } from "./common_pb";
 
 /**
  * Describes the file v1/rollout_service.proto.
@@ -701,11 +701,11 @@ export declare type Task_DatabaseUpdate = Message<"bytebase.v1.Task.DatabaseUpda
   databaseChangeType: DatabaseChangeType;
 
   /**
-   * migration_type is only set when database_change_type is MIGRATE.
+   * Whether to use gh-ost for online schema migration.
    *
-   * @generated from field: bytebase.v1.MigrationType migration_type = 4;
+   * @generated from field: bool enable_ghost = 4;
    */
-  migrationType: MigrationType;
+  enableGhost: boolean;
 };
 
 /**

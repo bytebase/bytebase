@@ -17,7 +17,6 @@ import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   type Release_File,
-  Release_File_MigrationType,
   Release_File_Type,
 } from "@/types/proto-es/v1/release_service_pb";
 import { bytesToString, getReleaseFileStatement } from "@/utils";
@@ -105,19 +104,7 @@ const getReleaseFileTypeText = (file: Release_File) => {
     case Release_File_Type.DECLARATIVE:
       return "SDL";
     case Release_File_Type.VERSIONED:
-      switch (file.migrationType) {
-        case Release_File_MigrationType.DDL:
-          return "DDL";
-        case Release_File_MigrationType.DDL_GHOST:
-          return "DDL (gh-ost)";
-        case Release_File_MigrationType.DML:
-          return "DML";
-        case Release_File_MigrationType.MIGRATION_TYPE_UNSPECIFIED:
-          return "";
-        default:
-          file.migrationType satisfies never;
-          return "";
-      }
+      return file.enableGhost ? "DDL (gh-ost)" : "DDL";
     case Release_File_Type.TYPE_UNSPECIFIED:
       return "";
     default:

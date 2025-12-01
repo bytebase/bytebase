@@ -85,7 +85,7 @@
                           ? task.payload.value.databaseChangeType
                           : undefined,
                         task.payload?.case === 'databaseUpdate'
-                          ? task.payload.value.migrationType
+                          ? task.payload.value.enableGhost
                           : undefined
                       )
                     "
@@ -100,7 +100,7 @@
                             ? task.payload.value.databaseChangeType
                             : undefined,
                           task.payload?.case === "databaseUpdate"
-                            ? task.payload.value.migrationType
+                            ? task.payload.value.enableGhost
                             : undefined
                         )
                       }}

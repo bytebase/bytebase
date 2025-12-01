@@ -468,10 +468,6 @@ func convertToReleaseFiles(ctx context.Context, s *store.Store, files []*storepb
 		if sheet == nil {
 			return nil, errors.Errorf("sheet %d not found in project %s", sheetUID, projectID)
 		}
-		migrationType := v1pb.Release_File_DDL
-		if f.EnableGhost {
-			migrationType = v1pb.Release_File_DDL_GHOST
-		}
 		v1Files = append(v1Files, &v1pb.Release_File{
 			Id:            f.Id,
 			Path:          f.Path,
@@ -481,7 +477,7 @@ func convertToReleaseFiles(ctx context.Context, s *store.Store, files []*storepb
 			Version:       f.Version,
 			Statement:     []byte(sheet.Statement),
 			StatementSize: sheet.Size,
-			MigrationType: migrationType,
+			EnableGhost:   f.EnableGhost,
 		})
 	}
 	return v1Files, nil
@@ -526,7 +522,7 @@ func convertReleaseFiles(ctx context.Context, s *store.Store, files []*v1pb.Rele
 			SheetSha256: sheet.GetSha256Hex(),
 			Type:        storepb.SchemaChangeType(f.Type),
 			Version:     f.Version,
-			EnableGhost: f.MigrationType == v1pb.Release_File_DDL_GHOST,
+			EnableGhost: f.EnableGhost,
 		})
 	}
 	return rFiles, nil

@@ -227,7 +227,7 @@ func TestSQLExport(t *testing.T) {
 		a.Equal(1, len(database.InstanceResource.DataSources))
 		dataSource := database.InstanceResource.DataSources[0]
 
-		err = ctl.changeDatabase(ctx, ctl.project, database, sheet, v1pb.MigrationType_DDL)
+		err = ctl.changeDatabase(ctx, ctl.project, database, sheet, false)
 		a.NoError(err)
 
 		for _, exportTest := range tt.exportTests {

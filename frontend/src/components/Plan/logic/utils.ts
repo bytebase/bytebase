@@ -3,10 +3,7 @@ import { cloneDeep } from "lodash-es";
 import { planServiceClientConnect } from "@/grpcweb";
 import { t } from "@/plugins/i18n";
 import { projectNamePrefix, useProjectV1Store, useSheetV1Store } from "@/store";
-import {
-  DatabaseChangeType,
-  MigrationType,
-} from "@/types/proto-es/v1/common_pb";
+import { DatabaseChangeType } from "@/types/proto-es/v1/common_pb";
 import type { Plan, Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
@@ -26,9 +23,7 @@ export const getSpecTitle = (spec: Plan_Spec): string => {
   } else if (spec.config?.case === "changeDatabaseConfig") {
     const config = spec.config.value;
     if (config.type === DatabaseChangeType.MIGRATE) {
-      if (config.migrationType === MigrationType.DML) {
-        title = t("plan.spec.type.data-change");
-      } else if (config.migrationType === MigrationType.GHOST) {
+      if (config.enableGhost) {
         title = t("plan.spec.type.ghost-migration");
       } else {
         title = t("plan.spec.type.schema-change");

@@ -223,9 +223,6 @@ func (x *Plan_ChangeDatabaseConfig) Equal(y *Plan_ChangeDatabaseConfig) bool {
 	if x.Type != y.Type {
 		return false
 	}
-	if x.MigrationType != y.MigrationType {
-		return false
-	}
 	if len(x.GhostFlags) != len(y.GhostFlags) {
 		return false
 	}

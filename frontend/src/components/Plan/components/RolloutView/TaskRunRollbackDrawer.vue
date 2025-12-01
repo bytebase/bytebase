@@ -139,10 +139,7 @@ import {
   useCurrentProjectV1,
   useSheetV1Store,
 } from "@/store";
-import {
-  DatabaseChangeType,
-  MigrationType,
-} from "@/types/proto-es/v1/common_pb";
+import { DatabaseChangeType } from "@/types/proto-es/v1/common_pb";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import {
   CreatePlanRequestSchema,
@@ -317,7 +314,7 @@ const handleConfirm = async () => {
           value: create(Plan_ChangeDatabaseConfigSchema, {
             targets: [preview.task.target],
             type: DatabaseChangeType.MIGRATE,
-            migrationType: MigrationType.DML,
+            enableGhost: false,
             sheet: sheet.name,
           }),
         },

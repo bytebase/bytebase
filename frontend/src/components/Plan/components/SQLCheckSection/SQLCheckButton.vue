@@ -123,7 +123,7 @@ const runCheckInternal = async (statement: string) => {
           version: "0",
           type: Release_File_Type.VERSIONED,
           statement: new TextEncoder().encode(statement),
-          migrationType: migrationType.value,
+          enableGhost: migrationType.value,
         },
       ],
     },

@@ -19,7 +19,6 @@
     - [DatabaseChangeType](#bytebase-v1-DatabaseChangeType)
     - [Engine](#bytebase-v1-Engine)
     - [ExportFormat](#bytebase-v1-ExportFormat)
-    - [MigrationType](#bytebase-v1-MigrationType)
     - [RiskLevel](#bytebase-v1-RiskLevel)
     - [State](#bytebase-v1-State)
     - [VCSType](#bytebase-v1-VCSType)
@@ -159,7 +158,6 @@
     - [UpdateDatabaseRequest](#bytebase-v1-UpdateDatabaseRequest)
     - [ViewMetadata](#bytebase-v1-ViewMetadata)
   
-    - [Changelog.MigrationType](#bytebase-v1-Changelog-MigrationType)
     - [Changelog.Status](#bytebase-v1-Changelog-Status)
     - [Changelog.Type](#bytebase-v1-Changelog-Type)
     - [ChangelogView](#bytebase-v1-ChangelogView)
@@ -544,7 +542,6 @@
     - [UndeleteReleaseRequest](#bytebase-v1-UndeleteReleaseRequest)
     - [UpdateReleaseRequest](#bytebase-v1-UpdateReleaseRequest)
   
-    - [Release.File.MigrationType](#bytebase-v1-Release-File-MigrationType)
     - [Release.File.Type](#bytebase-v1-Release-File-Type)
   
     - [ReleaseService](#bytebase-v1-ReleaseService)
@@ -851,20 +848,6 @@ Data export format.
 | JSON | 2 | JavaScript Object Notation format. |
 | SQL | 3 | SQL statements format. |
 | XLSX | 4 | Microsoft Excel spreadsheet format. |
-
-
-
-<a name="bytebase-v1-MigrationType"></a>
-
-### MigrationType
-MigrationType is the type for imperative schema migration.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| MIGRATION_TYPE_UNSPECIFIED | 0 |  |
-| DDL | 1 | Used for DDL changes. |
-| DML | 2 | Used for DML changes. |
-| GHOST | 3 | Used for DDL changes using gh-ost. |
 
 
 
@@ -2202,7 +2185,6 @@ BoundingBox defines the spatial bounds for GEOMETRY spatial indexes.
 | revision | [string](#string) |  | Could be empty Or present but not found if deleted |
 | changed_resources | [ChangedResources](#bytebase-v1-ChangedResources) |  |  |
 | type | [Changelog.Type](#bytebase-v1-Changelog-Type) |  |  |
-| migration_type | [Changelog.MigrationType](#bytebase-v1-Changelog-MigrationType) |  |  |
 
 
 
@@ -3222,20 +3204,6 @@ ViewMetadata is the metadata for views.
 
 
  
-
-
-<a name="bytebase-v1-Changelog-MigrationType"></a>
-
-### Changelog.MigrationType
-MigrationType is the type for imperative schema migration.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| MIGRATION_TYPE_UNSPECIFIED | 0 |  |
-| DDL | 1 | Used for DDL changes. |
-| DML | 2 | Used for DML changes. |
-| GHOST | 3 | Used for DDL changes using gh-ost. |
-
 
 
 <a name="bytebase-v1-Changelog-Status"></a>
@@ -8391,7 +8359,6 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | sheet | [string](#string) |  | The resource name of the sheet. Format: projects/{project}/sheets/{sheet} |
 | release | [string](#string) |  | The resource name of the release. Format: projects/{project}/releases/{release} |
 | type | [DatabaseChangeType](#bytebase-v1-DatabaseChangeType) |  | Type is the database change type. |
-| migration_type | [MigrationType](#bytebase-v1-MigrationType) |  | migration_type is the migration type for imperative schema migration. It is only set when type is MIGRATE. |
 | ghost_flags | [Plan.ChangeDatabaseConfig.GhostFlagsEntry](#bytebase-v1-Plan-ChangeDatabaseConfig-GhostFlagsEntry) | repeated |  |
 | enable_prior_backup | [bool](#bool) |  | If set, a backup of the modified data will be created automatically before any changes are applied. |
 | enable_ghost | [bool](#bool) |  | Whether to use gh-ost for online schema migration. |
@@ -8917,7 +8884,7 @@ A SQL file in a release.
 | path | [string](#string) |  | The path of the file. e.g., `2.2/V0001_create_table.sql`. |
 | type | [Release.File.Type](#bytebase-v1-Release-File-Type) |  | The type of the file. |
 | version | [string](#string) |  | The version identifier for the file. |
-| migration_type | [Release.File.MigrationType](#bytebase-v1-Release-File-MigrationType) |  | The migration type of the file. For versioned files, it is the migration type of the file. For declarative files, this field is always DDL, thus meaningless. |
+| enable_ghost | [bool](#bool) |  | Whether to use gh-ost for online schema migration. |
 | sheet | [string](#string) |  | For inputs, we must either use `sheet` or `statement`. For outputs, we always use `sheet`. `statement` is the preview of the sheet content.
 
 The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
@@ -9014,20 +8981,6 @@ When paginating, all other parameters provided to `ListReleases` must match the 
 
 
  
-
-
-<a name="bytebase-v1-Release-File-MigrationType"></a>
-
-### Release.File.MigrationType
-The migration type for versioned files.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| MIGRATION_TYPE_UNSPECIFIED | 0 | Unspecified migration type. |
-| DDL | 1 | DDL (Data Definition Language) migration. |
-| DDL_GHOST | 2 | DDL migration using gh-ost for online schema changes. |
-| DML | 3 | DML (Data Manipulation Language) migration. |
-
 
 
 <a name="bytebase-v1-Release-File-Type"></a>
@@ -9939,7 +9892,7 @@ Payload for updating a database schema.
 | sheet | [string](#string) |  | Format: projects/{project}/sheets/{sheet} |
 | schema_version | [string](#string) |  | The target schema version after this update. |
 | database_change_type | [DatabaseChangeType](#bytebase-v1-DatabaseChangeType) |  | The type of database change (MIGRATE or SDL). |
-| migration_type | [MigrationType](#bytebase-v1-MigrationType) |  | migration_type is only set when database_change_type is MIGRATE. |
+| enable_ghost | [bool](#bool) |  | Whether to use gh-ost for online schema migration. |
 
 
 

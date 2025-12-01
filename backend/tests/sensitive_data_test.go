@@ -199,7 +199,7 @@ func TestSensitiveData(t *testing.T) {
 	sheet := sheetResp.Msg
 
 	// Create an issue that updates database schema.
-	err = ctl.changeDatabase(ctx, ctl.project, database, sheet, v1pb.MigrationType_DDL)
+	err = ctl.changeDatabase(ctx, ctl.project, database, sheet, false)
 	a.NoError(err)
 
 	// Create sensitive data in the database config.
@@ -245,7 +245,7 @@ func TestSensitiveData(t *testing.T) {
 	insertDataSheet := insertDataSheetResp.Msg
 
 	// Insert data into table tech_book.
-	err = ctl.changeDatabase(ctx, ctl.project, database, insertDataSheet, v1pb.MigrationType_DML)
+	err = ctl.changeDatabase(ctx, ctl.project, database, insertDataSheet, false)
 	a.NoError(err)
 
 	// Query masked data.

@@ -59,10 +59,7 @@ import { computed } from "vue";
 import { InstanceV1Name } from "@/components/v2";
 import { useCurrentProjectV1 } from "@/store";
 import { isValidDatabaseName } from "@/types";
-import {
-  DatabaseChangeType,
-  MigrationType,
-} from "@/types/proto-es/v1/common_pb";
+import { DatabaseChangeType } from "@/types/proto-es/v1/common_pb";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status, Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
 import {
@@ -106,7 +103,7 @@ const showGhostTag = computed(() => {
     return (
       spec?.config?.case === "changeDatabaseConfig" &&
       spec.config.value?.type === DatabaseChangeType.MIGRATE &&
-      spec.config.value?.migrationType === MigrationType.GHOST
+      spec.config.value?.enableGhost === true
     );
   }
   // Check if it's a MIGRATE task with GHOST type
@@ -115,7 +112,7 @@ const showGhostTag = computed(() => {
     props.task.payload?.case === "databaseUpdate" &&
     props.task.payload.value.databaseChangeType ===
       DatabaseChangeType.MIGRATE &&
-    props.task.payload.value.migrationType === MigrationType.GHOST
+    props.task.payload.value.enableGhost === true
   );
 });
 

@@ -103,7 +103,7 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	a.NoError(err)
 	sheet1 := sheet1Response.Msg
 
-	err = ctl.changeDatabase(ctx, ctl.project, database, sheet1, v1pb.MigrationType_DDL)
+	err = ctl.changeDatabase(ctx, ctl.project, database, sheet1, false)
 	a.NoError(err)
 
 	dbMetadataResponse, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, connect.NewRequest(&v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/schema", database.Name)}))
@@ -121,7 +121,7 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	a.NoError(err)
 	sheet2 := sheet2Response.Msg
 
-	err = ctl.changeDatabase(ctx, ctl.project, database, sheet2, v1pb.MigrationType_GHOST)
+	err = ctl.changeDatabase(ctx, ctl.project, database, sheet2, true)
 	a.NoError(err)
 	dbMetadataResponse, err = ctl.databaseServiceClient.GetDatabaseSchema(ctx, connect.NewRequest(&v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/schema", database.Name)}))
 	a.NoError(err)

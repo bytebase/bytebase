@@ -932,8 +932,7 @@
           "description": "Filtrar por base de datos"
         },
         "type": {
-          "title": "Tipo de cambio",
-          "description": "El tipo de cambio de base de datos para problemas"
+          "title": "Tipo de cambio"
         },
         "creator": {
           "title": "Creador",
@@ -1120,11 +1119,6 @@
     "plans": "Planes",
     "new-plan": "Nuevo plan",
     "add-spec": "Agregar especificación",
-    "change-type": "Cambiar tipo",
-    "schema-migration": "Migración de esquemas",
-    "schema-migration-description": "Cambios estructurales de la base de datos (DDL), incluidas tablas, columnas, índices, restricciones y modificaciones del esquema",
-    "data-change": "Cambio de datos",
-    "data-change-description": "Modificaciones del contenido de la base de datos (DML), incluidas inserciones, actualizaciones, eliminaciones y transformaciones de datos",
     "select-targets": "Seleccionar objetivos",
     "ready-for-review": "Listo para revisión",
     "overview": {
@@ -1141,7 +1135,6 @@
       "type": {
         "create-database": "Crear base de datos",
         "schema-change": "Cambio de esquema",
-        "data-change": "Cambio de datos",
         "ghost-migration": "Migración fantasma",
         "database-change": "Cambio de base de datos",
         "export-data": "Exportar datos",
@@ -2866,9 +2859,7 @@
     "and-n-more-files": "y {n} archivos más",
     "change-type": {
       "ddl": "DDL",
-      "ddl-ghost": "Fantasma DDL",
-      "dml": "DML",
-      "unspecified": "No especificado"
+      "ddl-ghost": "Fantasma DDL"
     },
     "file-type": {
       "versioned": "Versión",

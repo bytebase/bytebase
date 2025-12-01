@@ -37,7 +37,6 @@ import { default as ErrorList } from "@/components/misc/ErrorList.vue";
 import { targetsForSpec } from "@/components/Plan/logic";
 import { planServiceClientConnect } from "@/grpcweb";
 import { pushNotification } from "@/store";
-import { MigrationType } from "@/types/proto-es/v1/common_pb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { allowGhostForDatabase } from "./common";
 import { useGhostSettingContext } from "./context";
@@ -142,9 +141,7 @@ const toggleChecked = async (on: boolean) => {
       selectedSpec.value.config?.case !== "changeDatabaseConfig"
     )
       return;
-    selectedSpec.value.config.value.migrationType = on
-      ? MigrationType.GHOST
-      : MigrationType.DDL;
+    selectedSpec.value.config.value.enableGhost = on;
   } else {
     const planPatch = cloneDeep(plan.value);
     const spec = (planPatch?.specs || []).find((spec) => {
@@ -157,9 +154,7 @@ const toggleChecked = async (on: boolean) => {
       );
     }
 
-    spec.config.value.migrationType = on
-      ? MigrationType.GHOST
-      : MigrationType.DDL;
+    spec.config.value.enableGhost = on;
     const request = create(UpdatePlanRequestSchema, {
       plan: planPatch,
       updateMask: { paths: ["specs"] },

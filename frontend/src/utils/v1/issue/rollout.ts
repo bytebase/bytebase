@@ -14,7 +14,6 @@ import {
   unknownStage,
   unknownTask,
 } from "@/types";
-import { MigrationType } from "@/types/proto-es/v1/common_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
   type Rollout,
@@ -238,19 +237,12 @@ export const getTaskTypeI18nKey = (task: Task): string => {
     case Task_Type.DATABASE_CREATE:
       return "task.type.database-create";
     case Task_Type.DATABASE_MIGRATE:
-      // For migrate tasks, check the migration type from payload
+      // For migrate tasks, check if ghost mode is enabled
       if (task.payload?.case === "databaseUpdate") {
-        const migrationType = task.payload.value.migrationType;
-        switch (migrationType) {
-          case MigrationType.DDL:
-            return "release.change-type.ddl";
-          case MigrationType.DML:
-            return "release.change-type.dml";
-          case MigrationType.GHOST:
-            return "release.change-type.ddl-ghost";
-          default:
-            return "task.type.database-migrate";
+        if (task.payload.value.enableGhost) {
+          return "release.change-type.ddl-ghost";
         }
+        return "release.change-type.ddl";
       }
       return "task.type.database-migrate";
     case Task_Type.DATABASE_SDL:

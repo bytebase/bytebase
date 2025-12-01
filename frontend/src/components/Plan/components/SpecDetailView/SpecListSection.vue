@@ -28,10 +28,7 @@
             {{ $t("plan.navigator.statement-empty") }}
           </NTooltip>
           <NDropdown
-            v-if="
-              canModifySpecs &&
-              (canEditMigrationType(spec) || plan.specs.length > 1)
-            "
+            v-if="canModifySpecs && plan.specs.length > 1"
             :options="getDropdownOptions(spec)"
             trigger="click"
             placement="bottom-end"
@@ -67,22 +64,11 @@
     @created="handleSpecCreated"
   />
 
-  <EditMigrationTypeModal
-    v-if="editingSpec"
-    :show="showEditModal"
-    :migration-type="
-      editingSpec.config.case === 'changeDatabaseConfig'
-        ? editingSpec.config.value.migrationType
-        : MigrationType.DDL
-    "
-    @update:show="showEditModal = $event"
-    @save="handleSaveMigrationType"
-  />
 </template>
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
-import { MoreVerticalIcon, PencilIcon, TrashIcon } from "lucide-vue-next";
+import { MoreVerticalIcon, TrashIcon } from "lucide-vue-next";
 import type { DropdownOption } from "naive-ui";
 import { NButton, NDropdown, NTab, NTabs, NTooltip, useDialog } from "naive-ui";
 import { computed, h, nextTick, ref } from "vue";
@@ -95,7 +81,6 @@ import {
   useCurrentProjectV1,
   useSheetV1Store,
 } from "@/store";
-import { MigrationType } from "@/types/proto-es/v1/common_pb";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { extractSheetUID } from "@/utils";
@@ -106,7 +91,6 @@ import { getSpecTitle } from "../../logic/utils";
 import AddSpecDrawer from "../AddSpecDrawer.vue";
 import { useSpecsValidation } from "../common";
 import { useSelectedSpec } from "./context";
-import EditMigrationTypeModal from "./EditMigrationTypeModal.vue";
 
 const router = useRouter();
 const dialog = useDialog();
@@ -119,8 +103,6 @@ const { isSpecEmpty } = useSpecsValidation(computed(() => plan.value.specs));
 const { setEditingState } = useEditorState();
 
 const showAddSpecDrawer = ref(false);
-const editingSpec = ref<Plan_Spec | null>(null);
-const showEditModal = ref(false);
 
 // Allow adding/removing specs when:
 // 1. Plan is being created (isCreating = true), OR
@@ -217,19 +199,8 @@ const gotoSpec = (specId: string, enableEditing = false) => {
     });
 };
 
-const canEditMigrationType = (spec: Plan_Spec) => {
-  return spec.config.case === "changeDatabaseConfig";
-};
-
-const getDropdownOptions = (spec: Plan_Spec): DropdownOption[] => {
+const getDropdownOptions = (_spec: Plan_Spec): DropdownOption[] => {
   const options: DropdownOption[] = [];
-  if (canEditMigrationType(spec)) {
-    options.push({
-      key: "edit",
-      label: t("common.edit"),
-      icon: () => h(PencilIcon, { size: 16 }),
-    });
-  }
   if (plan.value.specs.length > 1) {
     options.push({
       key: "delete",
@@ -241,86 +212,9 @@ const getDropdownOptions = (spec: Plan_Spec): DropdownOption[] => {
 };
 
 const handleDropdownSelect = (key: string, spec: Plan_Spec) => {
-  if (key === "edit") {
-    handleOpenEditModal(spec);
-  } else if (key === "delete") {
+  if (key === "delete") {
     handleDeleteSpec(spec);
   }
-};
-
-const handleOpenEditModal = (spec: Plan_Spec) => {
-  if (spec.config.case === "changeDatabaseConfig") {
-    editingSpec.value = spec;
-    showEditModal.value = true;
-  }
-};
-
-const handleSaveMigrationType = async (newType: MigrationType) => {
-  const spec = editingSpec.value;
-  if (!spec || spec.config.case !== "changeDatabaseConfig") {
-    showEditModal.value = false;
-    editingSpec.value = null;
-    return;
-  }
-
-  const oldType = spec.config.value.migrationType;
-
-  if (oldType === newType) {
-    showEditModal.value = false;
-    editingSpec.value = null;
-    return;
-  }
-
-  // Find the spec in the plan's specs array
-  const specIndex = plan.value.specs.findIndex((s) => s.id === spec.id);
-  if (specIndex < 0) {
-    showEditModal.value = false;
-    editingSpec.value = null;
-    return;
-  }
-
-  // Update the spec in the plan
-  const targetSpec = plan.value.specs[specIndex];
-  if (targetSpec.config.case !== "changeDatabaseConfig") {
-    showEditModal.value = false;
-    editingSpec.value = null;
-    return;
-  }
-
-  // Update local state
-  targetSpec.config.value.migrationType = newType;
-
-  // If the plan is not being created (already exists), call UpdatePlan API
-  if (!isCreating.value) {
-    try {
-      const request = create(UpdatePlanRequestSchema, {
-        plan: plan.value,
-        updateMask: { paths: ["specs"] },
-      });
-      const response = await planServiceClientConnect.updatePlan(request);
-      Object.assign(plan.value, response);
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("common.updated"),
-      });
-    } catch (error) {
-      // If the API call fails, restore the old migration type
-      targetSpec.config.value.migrationType = oldType;
-      pushNotification({
-        module: "bytebase",
-        style: "CRITICAL",
-        title: t("common.error"),
-        description: `Failed to update migration type: ${error}`,
-      });
-      showEditModal.value = false;
-      editingSpec.value = null;
-      return;
-    }
-  }
-
-  showEditModal.value = false;
-  editingSpec.value = null;
 };
 
 const handleDeleteSpec = (spec: Plan_Spec) => {

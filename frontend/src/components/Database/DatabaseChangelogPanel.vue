@@ -38,10 +38,7 @@
           tooltip-mode="DISABLED-ONLY"
           :disabled="
             !selectedChangelogForRollback ||
-            getChangelogChangeType(
-              selectedChangelogForRollback.type,
-              selectedChangelogForRollback.migrationType
-            ) !== 'DDL'
+            getChangelogChangeType(selectedChangelogForRollback.type) !== 'DDL'
           "
           @click="rollback"
         >
@@ -140,7 +137,6 @@ import type { ComposedDatabase, SearchChangeLogParams, Table } from "@/types";
 import { DEFAULT_PROJECT_NAME } from "@/types";
 import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
 import {
-  Changelog_MigrationType,
   Changelog_Status,
   Changelog_Type,
   ChangelogView,
@@ -156,7 +152,7 @@ interface LocalState {
   selectedChangelogNames: string[];
   isExporting: boolean;
   selectedAffectedTables: Table[];
-  selectedChangeType?: Changelog_MigrationType;
+  selectedChangeType?: string;
 }
 
 const props = defineProps<{

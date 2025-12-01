@@ -12,15 +12,15 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
-func (ctl *controller) changeDatabase(ctx context.Context, project *v1pb.Project, database *v1pb.Database, sheet *v1pb.Sheet, migrationType v1pb.MigrationType) error {
+func (ctl *controller) changeDatabase(ctx context.Context, project *v1pb.Project, database *v1pb.Database, sheet *v1pb.Sheet, enableGhost bool) error {
 	spec := &v1pb.Plan_Spec{
 		Id: uuid.NewString(),
 		Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 			ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-				Targets:       []string{database.Name},
-				Sheet:         sheet.Name,
-				Type:          v1pb.DatabaseChangeType_MIGRATE,
-				MigrationType: migrationType,
+				Targets:     []string{database.Name},
+				Sheet:       sheet.Name,
+				Type:        v1pb.DatabaseChangeType_MIGRATE,
+				EnableGhost: enableGhost,
 			},
 		},
 	}
