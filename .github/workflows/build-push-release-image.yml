@@ -70,7 +70,7 @@ jobs:
           fi
       - name: Trigger docker-tag-latest workflow
         if: steps.check_latest.outputs.is_latest == 'true'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             await github.rest.actions.createWorkflowDispatch({
