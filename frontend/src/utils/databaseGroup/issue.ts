@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
 import type { LocationQueryRaw } from "vue-router";
+import { t } from "@/plugins/i18n";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import type { DatabaseGroup } from "@/types/proto-es/v1/database_group_service_pb";
 import { extractProjectResourceName } from "../v1";
@@ -11,9 +12,7 @@ export const generateDatabaseGroupIssueRoute = (
 ) => {
   const issueNameParts: string[] = [];
   issueNameParts.push(`[${databaseGroup.title}]`);
-  issueNameParts.push(
-    type === "bb.issue.database.schema.update" ? `Edit schema` : `Change data`
-  );
+  issueNameParts.push(t("issue.title.change-database"));
   const datetime = dayjs().format("@MM-DD HH:mm");
   const tz = "UTC" + dayjs().format("ZZ");
   issueNameParts.push(`${datetime} ${tz}`);
