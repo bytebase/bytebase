@@ -53,8 +53,7 @@ export default {
 import { useDropZone, useMutationObserver } from "@vueuse/core";
 import { head } from "lodash-es";
 import { NInput } from "naive-ui";
-import { computed, reactive, ref, watch } from "vue";
-import { onMounted } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
 import { pushNotification } from "@/store";

@@ -46,8 +46,8 @@ export const getValidIssueLabels = (
 
 <script setup lang="ts">
 import { ExternalLinkIcon } from "lucide-vue-next";
-import { NCheckbox, NSelect, NTag, NEmpty } from "naive-ui";
 import type { SelectOption } from "naive-ui";
+import { NCheckbox, NEmpty, NSelect, NTag } from "naive-ui";
 import type { SelectBaseOption } from "naive-ui/lib/select/src/interface";
 import { computed, h } from "vue";
 import { PROJECT_V1_ROUTE_SETTINGS } from "@/router/dashboard/projectV1";
