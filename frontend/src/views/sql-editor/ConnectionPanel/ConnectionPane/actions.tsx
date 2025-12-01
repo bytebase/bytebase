@@ -26,10 +26,10 @@ import {
   hasWorkspacePermissionV2,
   instanceV1HasAlterSchema,
   instanceV1HasReadonlyMode,
+  setDefaultDataSourceForConn,
   tryConnectToCoreSQLEditorTab,
 } from "@/utils";
 import { type SQLEditorContext, useSQLEditorContext } from "../../context";
-import { setDefaultDataSourceForConn } from "../../EditorCommon";
 
 type DropdownOptionWithTreeNode = DropdownOption & {
   onSelect: () => void;

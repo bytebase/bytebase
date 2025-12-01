@@ -462,7 +462,7 @@ const deleteWorksheets = async (worksheets: string[]) => {
   for (const worksheet of worksheets) {
     const tab = tabStore.tabList.find((tab) => tab.worksheet === worksheet);
     if (tab) {
-      tabStore.removeTab(tab);
+      tabStore.closeTab(tab);
       removeViewState(tab.id);
     }
   }

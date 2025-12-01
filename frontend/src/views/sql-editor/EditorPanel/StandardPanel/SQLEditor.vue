@@ -84,7 +84,7 @@ const {
   pendingInsertAtCaret,
   events: editorEvents,
 } = useSQLEditorContext();
-const { currentTab, isSwitchingTab } = storeToRefs(tabStore);
+const { currentTab } = storeToRefs(tabStore);
 const AIContext = useAIContext();
 
 const monacoEditorRef = ref<InstanceType<typeof MonacoEditor>>();
@@ -112,11 +112,6 @@ const filename = computed(() => {
 });
 
 const handleUpdateStatement = (value: string) => {
-  // When we are switching between tabs, the MonacoEditor emits a 'change'
-  // event, but we shouldn't update the current tab;
-  if (isSwitchingTab.value) {
-    return;
-  }
   const tab = currentTab.value;
   if (!tab || value === tab.statement) {
     return;
