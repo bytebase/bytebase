@@ -18,7 +18,6 @@ import {
   useUserStore,
 } from "@/store";
 import { isValidProjectName, SYSTEM_BOT_USER_NAME, UNKNOWN_ID } from "@/types";
-import { MigrationType } from "@/types/proto-es/v1/common_pb";
 import {
   Issue_ApprovalStatus,
   IssueStatus,
@@ -244,23 +243,6 @@ export const useIssueSearchScopeOptions = (
           UserType.USER,
           UserType.SERVICE_ACCOUNT,
         ]),
-      },
-      {
-        id: "taskType",
-        title: t("issue.advanced-search.scope.type.title"),
-        description: t("issue.advanced-search.scope.type.description"),
-        options: [
-          {
-            value: MigrationType[MigrationType.DDL],
-            keywords: ["ddl", "data definition language"],
-            render: () => renderSpan("Data Definition Language"),
-          },
-          {
-            value: MigrationType[MigrationType.DML],
-            keywords: ["dml", "data manipulation language"],
-            render: () => renderSpan("Data Manipulation Language"),
-          },
-        ],
       },
       {
         id: "issue-label",

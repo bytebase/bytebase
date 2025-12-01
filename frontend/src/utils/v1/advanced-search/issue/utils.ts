@@ -7,7 +7,6 @@ import {
 } from "@/store";
 import type { IssueFilter } from "@/types";
 import { unknownDatabase } from "@/types";
-import { MigrationType } from "@/types/proto-es/v1/common_pb";
 import {
   Issue_ApprovalStatus,
   IssueStatus,
@@ -25,7 +24,6 @@ export const buildIssueFilterBySearchParams = (
 ) => {
   const { query } = params;
   const projectScope = getValueFromSearchParams(params, "project");
-  const taskTypeScope = getValueFromSearchParams(params, "taskType");
   const databaseScope = getValueFromSearchParams(params, "database");
 
   let database = "";
@@ -48,7 +46,6 @@ export const buildIssueFilterBySearchParams = (
     project: `${projectNamePrefix}${projectScope || "-"}`,
     createdTsAfter: createdTsRange?.[0],
     createdTsBefore: createdTsRange?.[1],
-    taskType: MigrationType[taskTypeScope as keyof typeof MigrationType],
     creator: getValueFromSearchParams(params, "creator", userNamePrefix),
     currentApprover: getValueFromSearchParams(
       params,

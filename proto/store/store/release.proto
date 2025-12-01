@@ -26,7 +26,8 @@ message ReleasePayload {
     string sheet_sha256 = 4;
     SchemaChangeType type = 5;
     string version = 6;
-    MigrationType migration_type = 7;
+    // Whether to use gh-ost for online schema migration.
+    bool enable_ghost = 7;
   }
 
   message VCSSource {

@@ -57,11 +57,11 @@ func getReleaseFiles(w *world.World) ([]*v1pb.Release_File, string, error) {
 			return []*v1pb.Release_File{
 				{
 					// use file pattern as the path
-					Path:          w.FilePattern,
-					Type:          v1pb.Release_File_DECLARATIVE,
-					Version:       w.CurrentTime.Format(versionFormat),
-					MigrationType: v1pb.Release_File_DDL,
-					Statement:     contents,
+					Path:        w.FilePattern,
+					Type:        v1pb.Release_File_DECLARATIVE,
+					Version:     w.CurrentTime.Format(versionFormat),
+					EnableGhost: false,
+					Statement:   contents,
 				},
 			}, hex.EncodeToString(h.Sum(nil)), nil
 		}
@@ -79,11 +79,11 @@ func getReleaseFiles(w *world.World) ([]*v1pb.Release_File, string, error) {
 				return nil, "", errors.Wrapf(err, "failed to write file content")
 			}
 			files = append(files, &v1pb.Release_File{
-				Path:          m,
-				Type:          v1pb.Release_File_DECLARATIVE,
-				Version:       w.CurrentTime.Format(versionFormat),
-				MigrationType: v1pb.Release_File_DDL,
-				Statement:     content,
+				Path:        m,
+				Type:        v1pb.Release_File_DECLARATIVE,
+				Version:     w.CurrentTime.Format(versionFormat),
+				EnableGhost: false,
+				Statement:   content,
 			})
 		}
 		return files, hex.EncodeToString(h.Sum(nil)), nil
@@ -114,11 +114,11 @@ func getReleaseFiles(w *world.World) ([]*v1pb.Release_File, string, error) {
 			return nil, "", errors.Wrapf(err, "failed to write file content")
 		}
 		files = append(files, &v1pb.Release_File{
-			Path:          m,
-			Type:          v1pb.Release_File_VERSIONED,
-			Version:       version,
-			MigrationType: t,
-			Statement:     content,
+			Path:        m,
+			Type:        v1pb.Release_File_VERSIONED,
+			Version:     version,
+			EnableGhost: t,
+			Statement:   content,
 		})
 	}
 
@@ -140,13 +140,13 @@ func extractVersion(s string) string {
 
 var migrationTypeReg = regexp.MustCompile(`(?i)^--\s*migration-type:\s*(\w+)`)
 
-// extractMigrationTypeFromContent extracts migration type from SQL front matter comments.
-// Supported values: ghost
+// extractMigrationTypeFromContent extracts enable_ghost setting from SQL front matter comments.
+// Returns true if "-- migration-type: ghost" is found.
 // Example:
 //
 //	-- migration-type: ghost
 //	ALTER TABLE ...
-func extractMigrationTypeFromContent(content string) v1pb.Release_File_MigrationType {
+func extractMigrationTypeFromContent(content string) bool {
 	lines := strings.Split(content, "\n")
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
@@ -157,9 +157,9 @@ func extractMigrationTypeFromContent(content string) v1pb.Release_File_Migration
 		matches := migrationTypeReg.FindStringSubmatch(line)
 		if len(matches) >= 2 {
 			if strings.ToLower(matches[1]) == "ghost" {
-				return v1pb.Release_File_DDL_GHOST
+				return true
 			}
 		}
 	}
-	return v1pb.Release_File_MIGRATION_TYPE_UNSPECIFIED
+	return false
 }

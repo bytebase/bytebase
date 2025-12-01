@@ -78,32 +78,12 @@
                   class="flex items-center"
                 >
                   <NTag
-                    v-if="
-                      semanticTaskType(
-                        task.type,
-                        task.payload?.case === 'databaseUpdate'
-                          ? task.payload.value.databaseChangeType
-                          : undefined,
-                        task.payload?.case === 'databaseUpdate'
-                          ? task.payload.value.migrationType
-                          : undefined
-                      )
-                    "
+                    v-if="semanticTaskType(task.type)"
                     class="mr-2"
                     size="small"
                   >
                     <span class="inline-block text-center">
-                      {{
-                        semanticTaskType(
-                          task.type,
-                          task.payload?.case === "databaseUpdate"
-                            ? task.payload.value.databaseChangeType
-                            : undefined,
-                          task.payload?.case === "databaseUpdate"
-                            ? task.payload.value.migrationType
-                            : undefined
-                        )
-                      }}
+                      {{ semanticTaskType(task.type) }}
                     </span>
                   </NTag>
                   <RolloutTaskDatabaseName :task="task" />

@@ -1,10 +1,6 @@
 import { isDBGroupChangeSpec } from "@/components/Plan/logic";
 import type { ComposedDatabase } from "@/types";
-import {
-  DatabaseChangeType,
-  Engine,
-  MigrationType,
-} from "@/types/proto-es/v1/common_pb";
+import { DatabaseChangeType, Engine } from "@/types/proto-es/v1/common_pb";
 import { type Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { semverCompare } from "@/utils";
 
@@ -56,7 +52,7 @@ export const getGhostEnabledForSpec = (
     return undefined;
   }
   if (config.type === DatabaseChangeType.MIGRATE) {
-    return config.migrationType === MigrationType.GHOST;
+    return config.enableGhost === true;
   }
   return undefined;
 };

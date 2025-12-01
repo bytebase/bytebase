@@ -80,7 +80,7 @@
                 <div class="font-medium truncate">{{ file.path }}</div>
                 <div class="text-gray-500">
                   {{ file.version }} •
-                  {{ getChangeTypeText(file.migrationType) }}
+                  {{ getChangeTypeText(file.enableGhost) }}
                 </div>
               </div>
               <div
@@ -162,10 +162,7 @@ import { BBSpin } from "@/bbkit";
 import { useReleaseByName } from "@/store";
 import { getDateForPbTimestampProtoEs, isValidReleaseName } from "@/types";
 import { VCSType } from "@/types/proto-es/v1/common_pb";
-import {
-  Release_File_MigrationType,
-  Release_File_Type,
-} from "@/types/proto-es/v1/release_service_pb";
+import { Release_File_Type } from "@/types/proto-es/v1/release_service_pb";
 import { useSelectedSpec } from "../../SpecDetailView/context";
 
 const { t } = useI18n();
@@ -199,20 +196,10 @@ const displayedFiles = computed(() => {
   return release.value.files.slice(0, maxDisplayedFiles);
 });
 
-const getChangeTypeText = (migrationType: Release_File_MigrationType) => {
-  switch (migrationType) {
-    case Release_File_MigrationType.DDL:
-      return t("release.change-type.ddl");
-    case Release_File_MigrationType.DDL_GHOST:
-      return t("release.change-type.ddl-ghost");
-    case Release_File_MigrationType.DML:
-      return t("release.change-type.dml");
-    case Release_File_MigrationType.MIGRATION_TYPE_UNSPECIFIED:
-      return t("release.change-type.unspecified");
-    default:
-      migrationType satisfies never;
-      return t("release.change-type.unspecified");
-  }
+const getChangeTypeText = (enableGhost: boolean) => {
+  return enableGhost
+    ? t("release.change-type.ddl-ghost")
+    : t("release.change-type.ddl");
 };
 
 const getReleaseFileTypeText = (fileType: Release_File_Type) => {

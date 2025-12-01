@@ -471,8 +471,6 @@ message Task {
     string schema_version = 2;
     // The type of database change (MIGRATE or SDL).
     DatabaseChangeType database_change_type = 3;
-    // migration_type is only set when database_change_type is MIGRATE.
-    MigrationType migration_type = 4;
   }
 
   // Payload for exporting database data.

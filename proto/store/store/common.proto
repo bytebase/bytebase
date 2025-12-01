@@ -79,17 +79,6 @@ enum RiskLevel {
   HIGH = 3;
 }
 
-// MigrationType represents the type of database migration.
-enum MigrationType {
-  MIGRATION_TYPE_UNSPECIFIED = 0;
-  // DDL changes (Data Definition Language) for schema modifications.
-  DDL = 1;
-  // DML changes (Data Manipulation Language) for data modifications.
-  DML = 2;
-  // Online schema migration using gh-ost tool.
-  GHOST = 3;
-}
-
 // SchemaChangeType represents the strategy for schema changes.
 enum SchemaChangeType {
   SCHEMA_CHANGE_TYPE_UNSPECIFIED = 0;

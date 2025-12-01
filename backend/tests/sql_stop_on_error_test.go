@@ -252,7 +252,7 @@ func TestSQLQueryStopOnError(t *testing.T) {
 			a.NotNil(database.InstanceResource)
 			a.Equal(1, len(database.InstanceResource.DataSources))
 
-			err = ctl.changeDatabase(ctx, ctl.project, database, sheet, v1pb.MigrationType_DDL)
+			err = ctl.changeDatabase(ctx, ctl.project, database, sheet, false)
 			a.NoError(err)
 
 			// Execute the query using the Query API (not AdminExecute)
@@ -419,7 +419,7 @@ func TestSQLAdminExecuteStopOnError(t *testing.T) {
 			a.NotNil(database.InstanceResource)
 			a.Equal(1, len(database.InstanceResource.DataSources))
 
-			err = ctl.changeDatabase(ctx, ctl.project, database, sheet, v1pb.MigrationType_DDL)
+			err = ctl.changeDatabase(ctx, ctl.project, database, sheet, false)
 			a.NoError(err)
 
 			// Use AdminExecute (streaming API)

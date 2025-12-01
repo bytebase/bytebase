@@ -8888,14 +8888,6 @@ components:
                         - SDL
                     type: string
                     format: enum
-                migrationType:
-                    enum:
-                        - MIGRATION_TYPE_UNSPECIFIED
-                        - DDL
-                        - DML
-                        - GHOST
-                    type: string
-                    format: enum
         CheckConstraintMetadata:
             type: object
             properties:
@@ -11679,17 +11671,6 @@ components:
                     type: string
                     description: Type is the database change type.
                     format: enum
-                migrationType:
-                    enum:
-                        - MIGRATION_TYPE_UNSPECIFIED
-                        - DDL
-                        - DML
-                        - GHOST
-                    type: string
-                    description: |-
-                        migration_type is the migration type for imperative schema migration.
-                         It is only set when type is MIGRATE.
-                    format: enum
                 ghostFlags:
                     type: object
                     additionalProperties:
@@ -12357,18 +12338,9 @@ components:
                 version:
                     type: string
                     description: The version identifier for the file.
-                migrationType:
-                    enum:
-                        - MIGRATION_TYPE_UNSPECIFIED
-                        - DDL
-                        - DDL_GHOST
-                        - DML
-                    type: string
-                    description: |-
-                        The migration type of the file.
-                         For versioned files, it is the migration type of the file.
-                         For declarative files, this field is always DDL, thus meaningless.
-                    format: enum
+                enableGhost:
+                    type: boolean
+                    description: Whether to use gh-ost for online schema migration.
                 sheet:
                     type: string
                     description: |-
@@ -14118,15 +14090,6 @@ components:
                         - SDL
                     type: string
                     description: The type of database change (MIGRATE or SDL).
-                    format: enum
-                migrationType:
-                    enum:
-                        - MIGRATION_TYPE_UNSPECIFIED
-                        - DDL
-                        - DML
-                        - GHOST
-                    type: string
-                    description: migration_type is only set when database_change_type is MIGRATE.
                     format: enum
             description: Payload for updating a database schema.
         TessellationConfig:

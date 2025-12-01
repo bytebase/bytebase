@@ -496,7 +496,7 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 	}
 
 	// create pending changelog
-	changelogType, migrationType := convertTaskType(mc.task)
+	changelogType := convertTaskType(mc.task)
 	changelogUID, err := stores.CreateChangelog(ctx, &store.ChangelogMessage{
 		InstanceID:         mc.database.InstanceID,
 		DatabaseName:       mc.database.DatabaseName,
@@ -512,7 +512,6 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 			Version:          mc.version,
 			Type:             changelogType,
 			GitCommit:        mc.profile.GitCommit,
-			MigrationType:    migrationType,
 		}})
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to create changelog")
@@ -620,24 +619,20 @@ func shouldUpdateVersion(currentVersion, newVersion string) bool {
 	return current.LessThan(nv)
 }
 
-func convertTaskType(t *store.TaskMessage) (storepb.ChangelogPayload_Type, storepb.MigrationType) {
+func convertTaskType(t *store.TaskMessage) storepb.ChangelogPayload_Type {
 	//exhaustive:enforce
 	switch t.Type {
 	case storepb.Task_DATABASE_MIGRATE:
-		// Determine migration type based on enable_ghost
-		if t.Payload.GetEnableGhost() {
-			return storepb.ChangelogPayload_MIGRATE, storepb.MigrationType_GHOST
-		}
-		return storepb.ChangelogPayload_MIGRATE, storepb.MigrationType_DDL
+		return storepb.ChangelogPayload_MIGRATE
 	case storepb.Task_DATABASE_SDL:
-		return storepb.ChangelogPayload_SDL, storepb.MigrationType_MIGRATION_TYPE_UNSPECIFIED
+		return storepb.ChangelogPayload_SDL
 	case
 		storepb.Task_TASK_TYPE_UNSPECIFIED,
 		storepb.Task_DATABASE_CREATE,
 		storepb.Task_DATABASE_EXPORT:
-		return storepb.ChangelogPayload_TYPE_UNSPECIFIED, storepb.MigrationType_MIGRATION_TYPE_UNSPECIFIED
+		return storepb.ChangelogPayload_TYPE_UNSPECIFIED
 	default:
-		return storepb.ChangelogPayload_TYPE_UNSPECIFIED, storepb.MigrationType_MIGRATION_TYPE_UNSPECIFIED
+		return storepb.ChangelogPayload_TYPE_UNSPECIFIED
 	}
 }
 

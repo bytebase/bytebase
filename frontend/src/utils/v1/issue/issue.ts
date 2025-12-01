@@ -84,11 +84,10 @@ export const generateIssueTitle = (
   } else {
     if (type.startsWith("bb.issue.database")) {
       parts.push(
-        type === "bb.issue.database.schema.update"
-          ? t("issue.title.edit-schema")
-          : type === "bb.issue.database.data.update"
-            ? t("issue.title.change-data")
-            : t("issue.title.export-data")
+        type === "bb.issue.database.schema.update" ||
+          type === "bb.issue.database.data.update"
+          ? t("issue.title.change-database")
+          : t("issue.title.export-data")
       );
     } else {
       parts.push(t("issue.title.request-role"));

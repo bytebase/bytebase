@@ -117,7 +117,6 @@ func convertToPlanSpecChangeDatabaseConfig(config *storepb.PlanConfig_Spec_Chang
 			Sheet:             c.Sheet,
 			Release:           c.Release,
 			Type:              convertToPlanSpecChangeDatabaseConfigType(c.Type),
-			MigrationType:     convertToV1MigrationType(c.EnableGhost),
 			GhostFlags:        c.GhostFlags,
 			EnablePriorBackup: c.EnablePriorBackup,
 			EnableGhost:       c.EnableGhost,
@@ -136,14 +135,6 @@ func convertToPlanSpecChangeDatabaseConfigType(t storepb.PlanConfig_ChangeDataba
 	default:
 		return v1pb.DatabaseChangeType_DATABASE_CHANGE_TYPE_UNSPECIFIED
 	}
-}
-
-// convertToV1MigrationType converts store layer enable_ghost to API MigrationType.
-func convertToV1MigrationType(enableGhost bool) v1pb.MigrationType {
-	if enableGhost {
-		return v1pb.MigrationType_GHOST
-	}
-	return v1pb.MigrationType_DDL
 }
 
 func convertToPlanSpecExportDataConfig(config *storepb.PlanConfig_Spec_ExportDataConfig) *v1pb.Plan_Spec_ExportDataConfig {
@@ -257,9 +248,6 @@ func convertPlanSpecChangeDatabaseConfig(config *v1pb.Plan_Spec_ChangeDatabaseCo
 		storeType = storepb.PlanConfig_ChangeDatabaseConfig_TYPE_UNSPECIFIED
 	}
 
-	// Convert v1 MigrationType to enable_ghost
-	enableGhost := c.MigrationType == v1pb.MigrationType_GHOST
-
 	return &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
 		ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
 			Targets:           c.Targets,
@@ -268,7 +256,7 @@ func convertPlanSpecChangeDatabaseConfig(config *v1pb.Plan_Spec_ChangeDatabaseCo
 			Type:              storeType,
 			GhostFlags:        c.GhostFlags,
 			EnablePriorBackup: c.EnablePriorBackup,
-			EnableGhost:       enableGhost,
+			EnableGhost:       c.EnableGhost,
 		},
 	}
 }

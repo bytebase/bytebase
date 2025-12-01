@@ -80,8 +80,7 @@ const columnList = computed(() => {
       title: t("changelog.change-type"),
       width: 96,
       resizable: true,
-      render: (changelog) =>
-        getChangelogChangeType(changelog.type, changelog.migrationType),
+      render: (changelog) => getChangelogChangeType(changelog.type),
     },
     {
       key: "issue",

@@ -372,9 +372,6 @@ func (x *Task_DatabaseUpdate) Equal(y *Task_DatabaseUpdate) bool {
 	if x.DatabaseChangeType != y.DatabaseChangeType {
 		return false
 	}
-	if x.MigrationType != y.MigrationType {
-		return false
-	}
 	return true
 }
 

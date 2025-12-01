@@ -17,9 +17,7 @@
           <div class="flex items-center gap-x-2">
             <ChangelogStatusIcon :status="changelog.status" />
             <NTag round>
-              {{
-                getChangelogChangeType(changelog.type, changelog.migrationType)
-              }}
+              {{ getChangelogChangeType(changelog.type) }}
             </NTag>
             <NTag v-if="changelog.version" round>
               {{ $t("common.version") }} {{ changelog.version }}
@@ -142,7 +140,10 @@ import {
 } from "@/store";
 import { getDateForPbTimestampProtoEs } from "@/types";
 import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
-import { ChangelogView } from "@/types/proto-es/v1/database_service_pb";
+import {
+  Changelog_Type,
+  ChangelogView,
+} from "@/types/proto-es/v1/database_service_pb";
 import {
   extractIssueUID,
   getAffectedTableDisplayName,
@@ -225,12 +226,7 @@ const allowShowDiff = computed((): boolean => {
   if (!changelog.value) {
     return false;
   }
-  return (
-    getChangelogChangeType(
-      changelog.value.type,
-      changelog.value.migrationType
-    ) === "DDL"
-  );
+  return changelog.value.type === Changelog_Type.MIGRATE;
 });
 
 watch(

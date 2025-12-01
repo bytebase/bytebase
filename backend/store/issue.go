@@ -78,9 +78,8 @@ type FindIssueMessage struct {
 	CreatedAtAfter  *time.Time
 	Types           *[]storepb.Issue_Type
 
-	StatusList   []storepb.Issue_Status
-	TaskTypes    *[]storepb.Task_Type
-	MigrateTypes *[]storepb.MigrationType
+	StatusList []storepb.Issue_Status
+	TaskTypes  *[]storepb.Task_Type
 	// Any of the task in the issue changes the instance with InstanceResourceID.
 	InstanceResourceID *string
 	// Any of the task in the issue changes the database with InstanceID and DatabaseName.
@@ -326,15 +325,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		for _, t := range *v {
 			taskTypeStrings = append(taskTypeStrings, t.String())
 		}
-		if find.MigrateTypes != nil && len(*find.MigrateTypes) > 0 {
-			migrateTypeStrings := make([]string, 0, len(*find.MigrateTypes))
-			for _, mt := range *find.MigrateTypes {
-				migrateTypeStrings = append(migrateTypeStrings, mt.String())
-			}
-			where.And("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = plan.pipeline_id AND task.type = ANY(?) AND task.payload->>'migrateType' = ANY(?))", taskTypeStrings, migrateTypeStrings)
-		} else {
-			where.And("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = plan.pipeline_id AND task.type = ANY(?))", taskTypeStrings)
-		}
+		where.And("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = plan.pipeline_id AND task.type = ANY(?))", taskTypeStrings)
 	}
 	if v := find.EnvironmentID; v != nil {
 		where.And("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = plan.pipeline_id AND task.environment = ?)", *v)

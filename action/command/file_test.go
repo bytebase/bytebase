@@ -4,8 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 func TestExtractVersion(t *testing.T) {
@@ -101,33 +99,33 @@ func TestExtractVersion(t *testing.T) {
 
 func TestExtractMigrationTypeFromContent(t *testing.T) {
 	tests := []struct {
-		name     string
-		content  string
-		expected v1pb.Release_File_MigrationType
+		name        string
+		content     string
+		enableGhost bool
 	}{
 		{
 			name: "ghost type",
 			content: `-- migration-type: ghost
 ALTER TABLE large_table ADD COLUMN new_col VARCHAR(255);`,
-			expected: v1pb.Release_File_DDL_GHOST,
+			enableGhost: true,
 		},
 		{
 			name: "case insensitive Ghost",
 			content: `-- migration-type: Ghost
 ALTER TABLE large_table ADD COLUMN new_col VARCHAR(255);`,
-			expected: v1pb.Release_File_DDL_GHOST,
+			enableGhost: true,
 		},
 		{
 			name: "case insensitive GHOST",
 			content: `-- migration-type: GHOST
 ALTER TABLE large_table ADD COLUMN new_col VARCHAR(255);`,
-			expected: v1pb.Release_File_DDL_GHOST,
+			enableGhost: true,
 		},
 		{
 			name: "with extra spaces",
 			content: `--   migration-type:   ghost
 ALTER TABLE large_table ADD COLUMN new_col VARCHAR(255);`,
-			expected: v1pb.Release_File_DDL_GHOST,
+			enableGhost: true,
 		},
 		{
 			name: "with multiple comment lines",
@@ -137,62 +135,62 @@ ALTER TABLE large_table ADD COLUMN new_col VARCHAR(255);`,
 -- Date: 2024-01-01
 
 ALTER TABLE large_table ADD COLUMN new_col VARCHAR(255);`,
-			expected: v1pb.Release_File_DDL_GHOST,
+			enableGhost: true,
 		},
 		{
 			name: "no migration type specified",
 			content: `-- This is a migration file
 ALTER TABLE users ADD COLUMN age INT;`,
-			expected: v1pb.Release_File_MIGRATION_TYPE_UNSPECIFIED,
+			enableGhost: false,
 		},
 		{
-			name: "ddl type - should be unspecified",
+			name: "ddl type - should not enable ghost",
 			content: `-- migration-type: ddl
 ALTER TABLE users ADD COLUMN age INT;`,
-			expected: v1pb.Release_File_MIGRATION_TYPE_UNSPECIFIED,
+			enableGhost: false,
 		},
 		{
-			name: "dml type - should be unspecified",
+			name: "dml type - should not enable ghost",
 			content: `-- migration-type: dml
 UPDATE users SET active = true;`,
-			expected: v1pb.Release_File_MIGRATION_TYPE_UNSPECIFIED,
+			enableGhost: false,
 		},
 		{
 			name: "migration type after SQL statement",
 			content: `ALTER TABLE users ADD COLUMN age INT;
 -- migration-type: ghost`,
-			expected: v1pb.Release_File_MIGRATION_TYPE_UNSPECIFIED,
+			enableGhost: false,
 		},
 		{
 			name: "invalid migration type",
 			content: `-- migration-type: invalid
 ALTER TABLE users ADD COLUMN age INT;`,
-			expected: v1pb.Release_File_MIGRATION_TYPE_UNSPECIFIED,
+			enableGhost: false,
 		},
 		{
-			name:     "empty content",
-			content:  ``,
-			expected: v1pb.Release_File_MIGRATION_TYPE_UNSPECIFIED,
+			name:        "empty content",
+			content:     ``,
+			enableGhost: false,
 		},
 		{
 			name: "only comments with ghost",
 			content: `-- migration-type: ghost
 -- More comments`,
-			expected: v1pb.Release_File_DDL_GHOST,
+			enableGhost: true,
 		},
 		{
 			name: "with blank lines before statement",
 			content: `-- migration-type: ghost
 
 ALTER TABLE users ADD COLUMN age INT;`,
-			expected: v1pb.Release_File_DDL_GHOST,
+			enableGhost: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := extractMigrationTypeFromContent(tt.content)
-			require.Equal(t, tt.expected, result)
+			require.Equal(t, tt.enableGhost, result)
 		})
 	}
 }

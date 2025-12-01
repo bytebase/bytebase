@@ -84,7 +84,6 @@ const allowedScopes = computed((): SearchScopeId[] => {
     "instance",
     "database",
     "status",
-    "taskType",
     "issue-label",
     "project",
     "environment",

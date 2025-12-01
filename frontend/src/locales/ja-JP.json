@@ -932,10 +932,6 @@
           "title": "データベース",
           "description": "データベースに基づいてフィルタリングする"
         },
-        "type": {
-          "title": "種類の変更",
-          "description": "データベース変更タイプによる検索"
-        },
         "creator": {
           "title": "作成者",
           "description": "作成者で検索"
@@ -1093,8 +1089,7 @@
       }
     },
     "title": {
-      "edit-schema": "スキーマを編集",
-      "change-data": "データの変更",
+      "change-database": "データベースの変更",
       "export-data": "データをエクスポート",
       "create-database": "データベースを作成する",
       "request-role": "役割をリクエストする",
@@ -1121,11 +1116,6 @@
     "plans": "予定",
     "new-plan": "新しい計画",
     "add-spec": "仕様を追加",
-    "change-type": "変更タイプ",
-    "schema-migration": "スキーマの移行",
-    "schema-migration-description": "テーブル、列、インデックス、制約、スキーマの変更を含むデータベース構造の変更 (DDL)",
-    "data-change": "データの変更",
-    "data-change-description": "挿入、更新、削除、データ変換を含むデータベースコンテンツの変更（DML）",
     "select-targets": "ターゲットを選択",
     "ready-for-review": "レビュー準備完了",
     "overview": {
@@ -1141,9 +1131,6 @@
       "change": "変化",
       "type": {
         "create-database": "データベースの作成",
-        "schema-change": "スキーマの変更",
-        "data-change": "データの変更",
-        "ghost-migration": "ゴーストマイグレーション",
         "database-change": "データベースの変更",
         "export-data": "データのエクスポート",
         "unknown": "未知"
@@ -2865,9 +2852,7 @@
     "and-n-more-files": "および{n}個のファイル",
     "change-type": {
       "ddl": "DDL",
-      "ddl-ghost": "DDLゴースト",
-      "dml": "DML",
-      "unspecified": "未指定"
+      "ddl-ghost": "DDLゴースト"
     },
     "file-type": {
       "versioned": "バージョン",

@@ -68,9 +68,6 @@ export const buildIssueFilter = (find: IssueFilter): string => {
   if (find.type) {
     filter.push(`type == "${Issue_Type[find.type]}"`);
   }
-  if (find.taskType) {
-    filter.push(`task_type == "${find.taskType}"`);
-  }
   if (find.instance) {
     filter.push(`instance == "${find.instance}"`);
   }

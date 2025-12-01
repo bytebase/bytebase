@@ -515,7 +515,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 					// Check if enable_ghost changed for DATABASE_MIGRATE tasks
 					if newTaskType == storepb.Task_DATABASE_MIGRATE && task.Type == storepb.Task_DATABASE_MIGRATE {
 						if config, ok := spec.Config.(*v1pb.Plan_Spec_ChangeDatabaseConfig); ok {
-							newEnableGhost := config.ChangeDatabaseConfig.MigrationType == v1pb.MigrationType_GHOST
+							newEnableGhost := config.ChangeDatabaseConfig.EnableGhost
 							if newEnableGhost != task.Payload.GetEnableGhost() {
 								taskPatch.EnableGhost = &newEnableGhost
 								doUpdate = true
@@ -528,7 +528,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 							// Allow DATABASE_MIGRATE <-> DATABASE_SDL conversion
 							if newTaskType == storepb.Task_DATABASE_MIGRATE {
 								if config, ok := spec.Config.(*v1pb.Plan_Spec_ChangeDatabaseConfig); ok {
-									newEnableGhost := config.ChangeDatabaseConfig.MigrationType == v1pb.MigrationType_GHOST
+									newEnableGhost := config.ChangeDatabaseConfig.EnableGhost
 									taskPatch.EnableGhost = &newEnableGhost
 									doUpdate = true
 								}
@@ -544,7 +544,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 						if !ok {
 							return nil
 						}
-						if config.ChangeDatabaseConfig.Type != v1pb.DatabaseChangeType_MIGRATE || config.ChangeDatabaseConfig.MigrationType != v1pb.MigrationType_GHOST {
+						if config.ChangeDatabaseConfig.Type != v1pb.DatabaseChangeType_MIGRATE || !config.ChangeDatabaseConfig.EnableGhost {
 							return nil
 						}
 
@@ -569,7 +569,8 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 						if !ok {
 							return
 						}
-						if config.ChangeDatabaseConfig.Type != v1pb.DatabaseChangeType_MIGRATE || config.ChangeDatabaseConfig.MigrationType != v1pb.MigrationType_DML {
+						// Prior backup is allowed for non-ghost migrations
+						if config.ChangeDatabaseConfig.Type != v1pb.DatabaseChangeType_MIGRATE || config.ChangeDatabaseConfig.EnableGhost {
 							return
 						}
 

@@ -89,7 +89,6 @@ type ChangelogPayload struct {
 	Version       string                `protobuf:"bytes,6,opt,name=version,proto3" json:"version,omitempty"`
 	Type          ChangelogPayload_Type `protobuf:"varint,7,opt,name=type,proto3,enum=bytebase.store.ChangelogPayload_Type" json:"type,omitempty"`
 	GitCommit     string                `protobuf:"bytes,8,opt,name=git_commit,json=gitCommit,proto3" json:"git_commit,omitempty"`
-	MigrationType MigrationType         `protobuf:"varint,9,opt,name=migration_type,json=migrationType,proto3,enum=bytebase.store.MigrationType" json:"migration_type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -178,13 +177,6 @@ func (x *ChangelogPayload) GetGitCommit() string {
 		return x.GitCommit
 	}
 	return ""
-}
-
-func (x *ChangelogPayload) GetMigrationType() MigrationType {
-	if x != nil {
-		return x.MigrationType
-	}
-	return MigrationType_MIGRATION_TYPE_UNSPECIFIED
 }
 
 type ChangedResources struct {
@@ -584,7 +576,7 @@ var File_store_changelog_proto protoreflect.FileDescriptor
 
 const file_store_changelog_proto_rawDesc = "" +
 	"\n" +
-	"\x15store/changelog.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\xc0\x03\n" +
+	"\x15store/changelog.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\xfa\x02\n" +
 	"\x10ChangelogPayload\x12\x19\n" +
 	"\btask_run\x18\x01 \x01(\tR\ataskRun\x12\x14\n" +
 	"\x05issue\x18\x02 \x01(\tR\x05issue\x12\x1a\n" +
@@ -594,8 +586,7 @@ const file_store_changelog_proto_rawDesc = "" +
 	"\aversion\x18\x06 \x01(\tR\aversion\x129\n" +
 	"\x04type\x18\a \x01(\x0e2%.bytebase.store.ChangelogPayload.TypeR\x04type\x12\x1d\n" +
 	"\n" +
-	"git_commit\x18\b \x01(\tR\tgitCommit\x12D\n" +
-	"\x0emigration_type\x18\t \x01(\x0e2\x1d.bytebase.store.MigrationTypeR\rmigrationType\"@\n" +
+	"git_commit\x18\b \x01(\tR\tgitCommit\"@\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\f\n" +
 	"\bBASELINE\x10\x01\x12\v\n" +
@@ -654,28 +645,26 @@ var file_store_changelog_proto_goTypes = []any{
 	(*ChangedResourceView)(nil),      // 6: bytebase.store.ChangedResourceView
 	(*ChangedResourceFunction)(nil),  // 7: bytebase.store.ChangedResourceFunction
 	(*ChangedResourceProcedure)(nil), // 8: bytebase.store.ChangedResourceProcedure
-	(MigrationType)(0),               // 9: bytebase.store.MigrationType
-	(*Range)(nil),                    // 10: bytebase.store.Range
+	(*Range)(nil),                    // 9: bytebase.store.Range
 }
 var file_store_changelog_proto_depIdxs = []int32{
 	2,  // 0: bytebase.store.ChangelogPayload.changed_resources:type_name -> bytebase.store.ChangedResources
 	0,  // 1: bytebase.store.ChangelogPayload.type:type_name -> bytebase.store.ChangelogPayload.Type
-	9,  // 2: bytebase.store.ChangelogPayload.migration_type:type_name -> bytebase.store.MigrationType
-	3,  // 3: bytebase.store.ChangedResources.databases:type_name -> bytebase.store.ChangedResourceDatabase
-	4,  // 4: bytebase.store.ChangedResourceDatabase.schemas:type_name -> bytebase.store.ChangedResourceSchema
-	5,  // 5: bytebase.store.ChangedResourceSchema.tables:type_name -> bytebase.store.ChangedResourceTable
-	6,  // 6: bytebase.store.ChangedResourceSchema.views:type_name -> bytebase.store.ChangedResourceView
-	7,  // 7: bytebase.store.ChangedResourceSchema.functions:type_name -> bytebase.store.ChangedResourceFunction
-	8,  // 8: bytebase.store.ChangedResourceSchema.procedures:type_name -> bytebase.store.ChangedResourceProcedure
-	10, // 9: bytebase.store.ChangedResourceTable.ranges:type_name -> bytebase.store.Range
-	10, // 10: bytebase.store.ChangedResourceView.ranges:type_name -> bytebase.store.Range
-	10, // 11: bytebase.store.ChangedResourceFunction.ranges:type_name -> bytebase.store.Range
-	10, // 12: bytebase.store.ChangedResourceProcedure.ranges:type_name -> bytebase.store.Range
-	13, // [13:13] is the sub-list for method output_type
-	13, // [13:13] is the sub-list for method input_type
-	13, // [13:13] is the sub-list for extension type_name
-	13, // [13:13] is the sub-list for extension extendee
-	0,  // [0:13] is the sub-list for field type_name
+	3,  // 2: bytebase.store.ChangedResources.databases:type_name -> bytebase.store.ChangedResourceDatabase
+	4,  // 3: bytebase.store.ChangedResourceDatabase.schemas:type_name -> bytebase.store.ChangedResourceSchema
+	5,  // 4: bytebase.store.ChangedResourceSchema.tables:type_name -> bytebase.store.ChangedResourceTable
+	6,  // 5: bytebase.store.ChangedResourceSchema.views:type_name -> bytebase.store.ChangedResourceView
+	7,  // 6: bytebase.store.ChangedResourceSchema.functions:type_name -> bytebase.store.ChangedResourceFunction
+	8,  // 7: bytebase.store.ChangedResourceSchema.procedures:type_name -> bytebase.store.ChangedResourceProcedure
+	9,  // 8: bytebase.store.ChangedResourceTable.ranges:type_name -> bytebase.store.Range
+	9,  // 9: bytebase.store.ChangedResourceView.ranges:type_name -> bytebase.store.Range
+	9,  // 10: bytebase.store.ChangedResourceFunction.ranges:type_name -> bytebase.store.Range
+	9,  // 11: bytebase.store.ChangedResourceProcedure.ranges:type_name -> bytebase.store.Range
+	12, // [12:12] is the sub-list for method output_type
+	12, // [12:12] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_store_changelog_proto_init() }

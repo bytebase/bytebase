@@ -200,7 +200,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 		a.NoError(err)
 		sheet := sheetResp.Msg
 
-		err = ctl.changeDatabase(ctx, ctl.project, database, sheet, v1pb.MigrationType_DDL)
+		err = ctl.changeDatabase(ctx, ctl.project, database, sheet, false)
 		a.NoError(err)
 
 		results, err := ctl.adminQuery(ctx, database, tt.query)

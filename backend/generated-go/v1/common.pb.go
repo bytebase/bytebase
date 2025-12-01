@@ -392,62 +392,6 @@ func (DatabaseChangeType) EnumDescriptor() ([]byte, []int) {
 	return file_v1_common_proto_rawDescGZIP(), []int{4}
 }
 
-// MigrationType is the type for imperative schema migration.
-type MigrationType int32
-
-const (
-	MigrationType_MIGRATION_TYPE_UNSPECIFIED MigrationType = 0
-	// Used for DDL changes.
-	MigrationType_DDL MigrationType = 1
-	// Used for DML changes.
-	MigrationType_DML MigrationType = 2
-	// Used for DDL changes using gh-ost.
-	MigrationType_GHOST MigrationType = 3
-)
-
-// Enum value maps for MigrationType.
-var (
-	MigrationType_name = map[int32]string{
-		0: "MIGRATION_TYPE_UNSPECIFIED",
-		1: "DDL",
-		2: "DML",
-		3: "GHOST",
-	}
-	MigrationType_value = map[string]int32{
-		"MIGRATION_TYPE_UNSPECIFIED": 0,
-		"DDL":                        1,
-		"DML":                        2,
-		"GHOST":                      3,
-	}
-)
-
-func (x MigrationType) Enum() *MigrationType {
-	p := new(MigrationType)
-	*p = x
-	return p
-}
-
-func (x MigrationType) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (MigrationType) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_common_proto_enumTypes[5].Descriptor()
-}
-
-func (MigrationType) Type() protoreflect.EnumType {
-	return &file_v1_common_proto_enumTypes[5]
-}
-
-func (x MigrationType) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use MigrationType.Descriptor instead.
-func (MigrationType) EnumDescriptor() ([]byte, []int) {
-	return file_v1_common_proto_rawDescGZIP(), []int{5}
-}
-
 // RiskLevel is the risk level.
 type RiskLevel int32
 
@@ -489,11 +433,11 @@ func (x RiskLevel) String() string {
 }
 
 func (RiskLevel) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_common_proto_enumTypes[6].Descriptor()
+	return file_v1_common_proto_enumTypes[5].Descriptor()
 }
 
 func (RiskLevel) Type() protoreflect.EnumType {
-	return &file_v1_common_proto_enumTypes[6]
+	return &file_v1_common_proto_enumTypes[5]
 }
 
 func (x RiskLevel) Number() protoreflect.EnumNumber {
@@ -502,7 +446,7 @@ func (x RiskLevel) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use RiskLevel.Descriptor instead.
 func (RiskLevel) EnumDescriptor() ([]byte, []int) {
-	return file_v1_common_proto_rawDescGZIP(), []int{6}
+	return file_v1_common_proto_rawDescGZIP(), []int{5}
 }
 
 // Position in a text expressed as one-based line and one-based column.
@@ -702,12 +646,7 @@ const file_v1_common_proto_rawDesc = "" +
 	"\x12DatabaseChangeType\x12$\n" +
 	" DATABASE_CHANGE_TYPE_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aMIGRATE\x10\x02\x12\a\n" +
-	"\x03SDL\x10\x03*L\n" +
-	"\rMigrationType\x12\x1e\n" +
-	"\x1aMIGRATION_TYPE_UNSPECIFIED\x10\x00\x12\a\n" +
-	"\x03DDL\x10\x01\x12\a\n" +
-	"\x03DML\x10\x02\x12\t\n" +
-	"\x05GHOST\x10\x03*H\n" +
+	"\x03SDL\x10\x03*H\n" +
 	"\tRiskLevel\x12\x1a\n" +
 	"\x16RISK_LEVEL_UNSPECIFIED\x10\x00\x12\a\n" +
 	"\x03LOW\x10\x01\x12\f\n" +
@@ -727,7 +666,7 @@ func file_v1_common_proto_rawDescGZIP() []byte {
 	return file_v1_common_proto_rawDescData
 }
 
-var file_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 7)
+var file_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
 var file_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_v1_common_proto_goTypes = []any{
 	(State)(0),              // 0: bytebase.v1.State
@@ -735,10 +674,9 @@ var file_v1_common_proto_goTypes = []any{
 	(VCSType)(0),            // 2: bytebase.v1.VCSType
 	(ExportFormat)(0),       // 3: bytebase.v1.ExportFormat
 	(DatabaseChangeType)(0), // 4: bytebase.v1.DatabaseChangeType
-	(MigrationType)(0),      // 5: bytebase.v1.MigrationType
-	(RiskLevel)(0),          // 6: bytebase.v1.RiskLevel
-	(*Position)(nil),        // 7: bytebase.v1.Position
-	(*Range)(nil),           // 8: bytebase.v1.Range
+	(RiskLevel)(0),          // 5: bytebase.v1.RiskLevel
+	(*Position)(nil),        // 6: bytebase.v1.Position
+	(*Range)(nil),           // 7: bytebase.v1.Range
 }
 var file_v1_common_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -758,7 +696,7 @@ func file_v1_common_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_common_proto_rawDesc), len(file_v1_common_proto_rawDesc)),
-			NumEnums:      7,
+			NumEnums:      6,
 			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,

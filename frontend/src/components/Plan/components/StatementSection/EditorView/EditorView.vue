@@ -222,7 +222,6 @@ import {
 } from "@/store";
 import type { SQLDialect } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
-import { MigrationType } from "@/types/proto-es/v1/common_pb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
@@ -390,8 +389,8 @@ const shouldShowSchemaEditorButton = computed(() => {
   }
 
   // Now TypeScript knows config.value is Plan_ChangeDatabaseConfig
-  // Only for DDL (schema) changes
-  if (spec.config.value.migrationType !== MigrationType.DDL) {
+  // Only for regular DDL (not gh-ost) schema changes
+  if (spec.config.value.enableGhost) {
     return false;
   }
 

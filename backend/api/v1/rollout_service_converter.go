@@ -367,17 +367,11 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 		return nil, errors.Errorf("database not found")
 	}
 
-	// Determine DatabaseChangeType and MigrationType based on task type
+	// Determine DatabaseChangeType based on task type
 	var databaseChangeType v1pb.DatabaseChangeType
-	var migrationType v1pb.MigrationType
 	switch task.Type {
 	case storepb.Task_DATABASE_MIGRATE:
 		databaseChangeType = v1pb.DatabaseChangeType_MIGRATE
-		if task.Payload.GetEnableGhost() {
-			migrationType = v1pb.MigrationType_GHOST
-		} else {
-			migrationType = v1pb.MigrationType_DDL
-		}
 	case storepb.Task_DATABASE_SDL:
 		databaseChangeType = v1pb.DatabaseChangeType_SDL
 	default:
@@ -397,7 +391,6 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 				Sheet:              common.FormatSheet(project.ResourceID, int(task.Payload.GetSheetId())),
 				SchemaVersion:      task.Payload.GetSchemaVersion(),
 				DatabaseChangeType: databaseChangeType,
-				MigrationType:      migrationType,
 			},
 		},
 	}

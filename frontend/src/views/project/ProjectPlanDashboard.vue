@@ -77,10 +77,6 @@ import {
   usePlanStore,
 } from "@/store/modules/v1/plan";
 import { isValidDatabaseGroupName, SYSTEM_BOT_USER_NAME } from "@/types";
-import {
-  DatabaseChangeType,
-  MigrationType,
-} from "@/types/proto-es/v1/common_pb";
 import { type Plan, type Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { UserType } from "@/types/proto-es/v1/user_service_pb";
 import {
@@ -288,12 +284,8 @@ const allowToCreatePlan = computed(() => {
 });
 
 const handleSpecCreated = async (spec: Plan_Spec) => {
-  const template =
-    spec.config?.case === "changeDatabaseConfig" &&
-    spec.config.value.type === DatabaseChangeType.MIGRATE &&
-    spec.config.value.migrationType === MigrationType.DML
-      ? "bb.issue.database.data.update"
-      : "bb.issue.database.schema.update";
+  // Always use schema update template since we no longer distinguish DML from DDL
+  const template = "bb.issue.database.schema.update";
   const targets = targetsForSpec(spec);
   const isDatabaseGroup = targets.every((target) =>
     isValidDatabaseGroupName(target)

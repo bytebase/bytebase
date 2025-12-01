@@ -422,28 +422,20 @@ func getTaskCreatesFromChangeDatabaseConfigWithRelease(
 					return nil, errors.Wrapf(err, "failed to get sheet id from sheet %q in release file %q", file.Sheet, file.Id)
 				}
 
-				// Determine if ghost migration based on file migration type
-				enableGhost := file.MigrationType == storepb.MigrationType_GHOST
-
 				// Create task payload
 				payload := &storepb.Task{
 					SpecId:        spec.Id,
 					SheetId:       int32(sheetUID),
 					SchemaVersion: file.Version,
-					EnableGhost:   enableGhost,
+					EnableGhost:   file.EnableGhost,
 					TaskReleaseSource: &storepb.TaskReleaseSource{
 						File: common.FormatReleaseFile(c.Release, file.Id),
 					},
 				}
 
 				// Add ghost flags if this is a ghost migration
-				if enableGhost && c.GhostFlags != nil {
+				if file.EnableGhost && c.GhostFlags != nil {
 					payload.Flags = c.GhostFlags
-				}
-
-				// Enable prior backup for DML migrations
-				if file.MigrationType == storepb.MigrationType_DML {
-					payload.EnablePriorBackup = c.EnablePriorBackup
 				}
 
 				env := ""

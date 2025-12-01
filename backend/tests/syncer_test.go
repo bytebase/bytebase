@@ -237,7 +237,7 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 	sheet := sheetResp.Msg
 
 	// Create an issue that updates database schema.
-	err = ctl.changeDatabase(ctx, ctl.project, database, sheet, v1pb.MigrationType_DDL)
+	err = ctl.changeDatabase(ctx, ctl.project, database, sheet, false)
 	a.NoError(err)
 
 	latestSchemaMetadataResp, err := ctl.databaseServiceClient.GetDatabaseMetadata(ctx, connect.NewRequest(&v1pb.GetDatabaseMetadataRequest{
@@ -521,7 +521,7 @@ func TestSyncerForMySQL(t *testing.T) {
 	sheet := sheetResp.Msg
 
 	// Create an issue that updates database schema.
-	err = ctl.changeDatabase(ctx, ctl.project, database, sheet, v1pb.MigrationType_DDL)
+	err = ctl.changeDatabase(ctx, ctl.project, database, sheet, false)
 	a.NoError(err)
 
 	latestSchemaMetadataResp, err := ctl.databaseServiceClient.GetDatabaseMetadata(ctx, connect.NewRequest(&v1pb.GetDatabaseMetadataRequest{

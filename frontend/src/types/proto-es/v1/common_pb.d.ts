@@ -437,44 +437,6 @@ export enum DatabaseChangeType {
 export declare const DatabaseChangeTypeSchema: GenEnum<DatabaseChangeType>;
 
 /**
- * MigrationType is the type for imperative schema migration.
- *
- * @generated from enum bytebase.v1.MigrationType
- */
-export enum MigrationType {
-  /**
-   * @generated from enum value: MIGRATION_TYPE_UNSPECIFIED = 0;
-   */
-  MIGRATION_TYPE_UNSPECIFIED = 0,
-
-  /**
-   * Used for DDL changes.
-   *
-   * @generated from enum value: DDL = 1;
-   */
-  DDL = 1,
-
-  /**
-   * Used for DML changes.
-   *
-   * @generated from enum value: DML = 2;
-   */
-  DML = 2,
-
-  /**
-   * Used for DDL changes using gh-ost.
-   *
-   * @generated from enum value: GHOST = 3;
-   */
-  GHOST = 3,
-}
-
-/**
- * Describes the enum bytebase.v1.MigrationType.
- */
-export declare const MigrationTypeSchema: GenEnum<MigrationType>;
-
-/**
  * RiskLevel is the risk level.
  *
  * @generated from enum bytebase.v1.RiskLevel

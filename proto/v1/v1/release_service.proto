@@ -309,10 +309,8 @@ message Release {
     Type type = 5;
     // The version identifier for the file.
     string version = 6;
-    // The migration type of the file.
-    // For versioned files, it is the migration type of the file.
-    // For declarative files, this field is always DDL, thus meaningless.
-    MigrationType migration_type = 9;
+    // Whether to use gh-ost for online schema migration.
+    bool enable_ghost = 9;
 
     // For inputs, we must either use `sheet` or `statement`.
     // For outputs, we always use `sheet`. `statement` is the preview of the sheet content.
@@ -335,18 +333,6 @@ message Release {
       VERSIONED = 1;
       // Declarative schema definition file describing desired state.
       DECLARATIVE = 2;
-    }
-
-    // The migration type for versioned files.
-    enum MigrationType {
-      // Unspecified migration type.
-      MIGRATION_TYPE_UNSPECIFIED = 0;
-      // DDL (Data Definition Language) migration.
-      DDL = 1;
-      // DDL migration using gh-ost for online schema changes.
-      DDL_GHOST = 2;
-      // DML (Data Manipulation Language) migration.
-      DML = 3;
     }
   }
 

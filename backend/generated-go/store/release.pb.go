@@ -92,10 +92,11 @@ type ReleasePayload_File struct {
 	// Format: projects/{project}/sheets/{sheet}
 	Sheet string `protobuf:"bytes,3,opt,name=sheet,proto3" json:"sheet,omitempty"`
 	// The SHA256 hash value of the sheet.
-	SheetSha256   string           `protobuf:"bytes,4,opt,name=sheet_sha256,json=sheetSha256,proto3" json:"sheet_sha256,omitempty"`
-	Type          SchemaChangeType `protobuf:"varint,5,opt,name=type,proto3,enum=bytebase.store.SchemaChangeType" json:"type,omitempty"`
-	Version       string           `protobuf:"bytes,6,opt,name=version,proto3" json:"version,omitempty"`
-	MigrationType MigrationType    `protobuf:"varint,7,opt,name=migration_type,json=migrationType,proto3,enum=bytebase.store.MigrationType" json:"migration_type,omitempty"`
+	SheetSha256 string           `protobuf:"bytes,4,opt,name=sheet_sha256,json=sheetSha256,proto3" json:"sheet_sha256,omitempty"`
+	Type        SchemaChangeType `protobuf:"varint,5,opt,name=type,proto3,enum=bytebase.store.SchemaChangeType" json:"type,omitempty"`
+	Version     string           `protobuf:"bytes,6,opt,name=version,proto3" json:"version,omitempty"`
+	// Whether to use gh-ost for online schema migration.
+	EnableGhost   bool `protobuf:"varint,7,opt,name=enable_ghost,json=enableGhost,proto3" json:"enable_ghost,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -172,11 +173,11 @@ func (x *ReleasePayload_File) GetVersion() string {
 	return ""
 }
 
-func (x *ReleasePayload_File) GetMigrationType() MigrationType {
+func (x *ReleasePayload_File) GetEnableGhost() bool {
 	if x != nil {
-		return x.MigrationType
+		return x.EnableGhost
 	}
-	return MigrationType_MIGRATION_TYPE_UNSPECIFIED
+	return false
 }
 
 type ReleasePayload_VCSSource struct {
@@ -235,12 +236,12 @@ var File_store_release_proto protoreflect.FileDescriptor
 
 const file_store_release_proto_rawDesc = "" +
 	"\n" +
-	"\x13store/release.proto\x12\x0ebytebase.store\x1a\x19google/api/resource.proto\x1a\x12store/common.proto\"\x92\x04\n" +
+	"\x13store/release.proto\x12\x0ebytebase.store\x1a\x19google/api/resource.proto\x1a\x12store/common.proto\"\xef\x03\n" +
 	"\x0eReleasePayload\x12\x14\n" +
 	"\x05title\x18\x01 \x01(\tR\x05title\x129\n" +
 	"\x05files\x18\x02 \x03(\v2#.bytebase.store.ReleasePayload.FileR\x05files\x12G\n" +
 	"\n" +
-	"vcs_source\x18\x03 \x01(\v2(.bytebase.store.ReleasePayload.VCSSourceR\tvcsSource\x1a\x92\x02\n" +
+	"vcs_source\x18\x03 \x01(\v2(.bytebase.store.ReleasePayload.VCSSourceR\tvcsSource\x1a\xef\x01\n" +
 	"\x04File\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04path\x18\x02 \x01(\tR\x04path\x12-\n" +
@@ -248,8 +249,8 @@ const file_store_release_proto_rawDesc = "" +
 	"\x12bytebase.com/SheetR\x05sheet\x12!\n" +
 	"\fsheet_sha256\x18\x04 \x01(\tR\vsheetSha256\x124\n" +
 	"\x04type\x18\x05 \x01(\x0e2 .bytebase.store.SchemaChangeTypeR\x04type\x12\x18\n" +
-	"\aversion\x18\x06 \x01(\tR\aversion\x12D\n" +
-	"\x0emigration_type\x18\a \x01(\x0e2\x1d.bytebase.store.MigrationTypeR\rmigrationType\x1aQ\n" +
+	"\aversion\x18\x06 \x01(\tR\aversion\x12!\n" +
+	"\fenable_ghost\x18\a \x01(\bR\venableGhost\x1aQ\n" +
 	"\tVCSSource\x122\n" +
 	"\bvcs_type\x18\x01 \x01(\x0e2\x17.bytebase.store.VCSTypeR\avcsType\x12\x10\n" +
 	"\x03url\x18\x02 \x01(\tR\x03urlB\x8f\x01\n" +
@@ -273,20 +274,18 @@ var file_store_release_proto_goTypes = []any{
 	(*ReleasePayload_File)(nil),      // 1: bytebase.store.ReleasePayload.File
 	(*ReleasePayload_VCSSource)(nil), // 2: bytebase.store.ReleasePayload.VCSSource
 	(SchemaChangeType)(0),            // 3: bytebase.store.SchemaChangeType
-	(MigrationType)(0),               // 4: bytebase.store.MigrationType
-	(VCSType)(0),                     // 5: bytebase.store.VCSType
+	(VCSType)(0),                     // 4: bytebase.store.VCSType
 }
 var file_store_release_proto_depIdxs = []int32{
 	1, // 0: bytebase.store.ReleasePayload.files:type_name -> bytebase.store.ReleasePayload.File
 	2, // 1: bytebase.store.ReleasePayload.vcs_source:type_name -> bytebase.store.ReleasePayload.VCSSource
 	3, // 2: bytebase.store.ReleasePayload.File.type:type_name -> bytebase.store.SchemaChangeType
-	4, // 3: bytebase.store.ReleasePayload.File.migration_type:type_name -> bytebase.store.MigrationType
-	5, // 4: bytebase.store.ReleasePayload.VCSSource.vcs_type:type_name -> bytebase.store.VCSType
-	5, // [5:5] is the sub-list for method output_type
-	5, // [5:5] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	4, // 3: bytebase.store.ReleasePayload.VCSSource.vcs_type:type_name -> bytebase.store.VCSType
+	4, // [4:4] is the sub-list for method output_type
+	4, // [4:4] is the sub-list for method input_type
+	4, // [4:4] is the sub-list for extension type_name
+	4, // [4:4] is the sub-list for extension extendee
+	0, // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_store_release_proto_init() }

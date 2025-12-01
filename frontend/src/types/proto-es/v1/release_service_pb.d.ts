@@ -499,13 +499,11 @@ export declare type Release_File = Message<"bytebase.v1.Release.File"> & {
   version: string;
 
   /**
-   * The migration type of the file.
-   * For versioned files, it is the migration type of the file.
-   * For declarative files, this field is always DDL, thus meaningless.
+   * Whether to use gh-ost for online schema migration.
    *
-   * @generated from field: bytebase.v1.Release.File.MigrationType migration_type = 9;
+   * @generated from field: bool enable_ghost = 9;
    */
-  migrationType: Release_File_MigrationType;
+  enableGhost: boolean;
 
   /**
    * For inputs, we must either use `sheet` or `statement`.
@@ -578,46 +576,6 @@ export enum Release_File_Type {
  * Describes the enum bytebase.v1.Release.File.Type.
  */
 export declare const Release_File_TypeSchema: GenEnum<Release_File_Type>;
-
-/**
- * The migration type for versioned files.
- *
- * @generated from enum bytebase.v1.Release.File.MigrationType
- */
-export enum Release_File_MigrationType {
-  /**
-   * Unspecified migration type.
-   *
-   * @generated from enum value: MIGRATION_TYPE_UNSPECIFIED = 0;
-   */
-  MIGRATION_TYPE_UNSPECIFIED = 0,
-
-  /**
-   * DDL (Data Definition Language) migration.
-   *
-   * @generated from enum value: DDL = 1;
-   */
-  DDL = 1,
-
-  /**
-   * DDL migration using gh-ost for online schema changes.
-   *
-   * @generated from enum value: DDL_GHOST = 2;
-   */
-  DDL_GHOST = 2,
-
-  /**
-   * DML (Data Manipulation Language) migration.
-   *
-   * @generated from enum value: DML = 3;
-   */
-  DML = 3,
-}
-
-/**
- * Describes the enum bytebase.v1.Release.File.MigrationType.
- */
-export declare const Release_File_MigrationTypeSchema: GenEnum<Release_File_MigrationType>;
 
 /**
  * Version control system source information.

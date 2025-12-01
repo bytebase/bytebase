@@ -932,10 +932,6 @@
           "title": "Cơ sở dữ liệu",
           "description": "Lọc theo cơ sở dữ liệu"
         },
-        "type": {
-          "title": "Loại thay đổi",
-          "description": "Loại thay đổi cơ sở dữ liệu cho các vấn đề"
-        },
         "creator": {
           "title": "Người tạo",
           "description": "Tìm kiếm theo người sáng tạo"
@@ -1093,8 +1089,7 @@
       }
     },
     "title": {
-      "edit-schema": "Chỉnh sửa lược đồ",
-      "change-data": "Thay đổi dữ liệu",
+      "change-database": "Thay đổi cơ sở dữ liệu",
       "export-data": "Xuất dữ liệu",
       "create-database": "Tạo cơ sở dữ liệu",
       "request-role": "Yêu cầu vai trò",
@@ -1121,11 +1116,6 @@
     "plans": "Kế hoạch",
     "new-plan": "Kế hoạch mới",
     "add-spec": "Thêm thông số kỹ thuật",
-    "change-type": "Thay đổi loại",
-    "schema-migration": "Di chuyển lược đồ",
-    "schema-migration-description": "Thay đổi cấu trúc cơ sở dữ liệu (DDL) bao gồm bảng, cột, chỉ mục, ràng buộc và thay đổi lược đồ",
-    "data-change": "Thay đổi dữ liệu",
-    "data-change-description": "Sửa đổi nội dung cơ sở dữ liệu (DML) bao gồm chèn, cập nhật, xóa và chuyển đổi dữ liệu",
     "select-targets": "Chọn mục tiêu",
     "ready-for-review": "Sẵn sàng để xem xét",
     "overview": {
@@ -1141,9 +1131,6 @@
       "change": "Thay đổi",
       "type": {
         "create-database": "Tạo cơ sở dữ liệu",
-        "schema-change": "Thay đổi sơ đồ",
-        "data-change": "Thay đổi dữ liệu",
-        "ghost-migration": "Di cư của ma",
         "database-change": "Thay đổi cơ sở dữ liệu",
         "export-data": "Xuất dữ liệu",
         "unknown": "Không rõ"
@@ -2865,9 +2852,7 @@
     "and-n-more-files": "và {n} tập tin khác",
     "change-type": {
       "ddl": "DDL",
-      "ddl-ghost": "DDL Ma",
-      "dml": "DML",
-      "unspecified": "Không xác định"
+      "ddl-ghost": "DDL Ma"
     },
     "file-type": {
       "versioned": "Phiên bản",
