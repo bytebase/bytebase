@@ -10,6 +10,7 @@ import type {
 import {
   DataSource_AuthenticationType,
   DataSourceType,
+  SchemaDriftBaselineMode,
 } from "@/types/proto-es/v1/instance_service_pb";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { calcUpdateMask } from "@/utils";
@@ -83,6 +84,9 @@ export const extractBasicInfo = (instance: Instance | undefined): BasicInfo => {
     syncDatabases: instance?.syncDatabases ?? [],
     roles: instance?.roles ?? [],
     labels: instance?.labels ?? {},
+    schemaDriftBaselineMode:
+      instance?.schemaDriftBaselineMode ??
+      SchemaDriftBaselineMode.SCHEMA_DRIFT_BASELINE_MODE_UNSPECIFIED,
   };
 };
 
