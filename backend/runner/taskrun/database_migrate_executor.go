@@ -55,17 +55,10 @@ type DatabaseMigrateExecutor struct {
 
 // RunOnce will run the database migration task executor once.
 func (exec *DatabaseMigrateExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (bool, *storepb.TaskRunResult, error) {
-	migrateType := task.Payload.GetMigrateType()
-
-	//exhaustive:enforce
-	switch migrateType {
-	case storepb.MigrationType_DDL, storepb.MigrationType_DML, storepb.MigrationType_MIGRATION_TYPE_UNSPECIFIED:
-		return exec.runMigrationWithPriorBackup(ctx, driverCtx, task, taskRunUID)
-	case storepb.MigrationType_GHOST:
+	if task.Payload.GetEnableGhost() {
 		return exec.runGhostMigration(ctx, driverCtx, task, taskRunUID)
-	default:
-		return false, nil, errors.Errorf("unsupported migrate type: %v", migrateType)
 	}
+	return exec.runMigrationWithPriorBackup(ctx, driverCtx, task, taskRunUID)
 }
 
 func (exec *DatabaseMigrateExecutor) runMigrationWithPriorBackup(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (bool, *storepb.TaskRunResult, error) {

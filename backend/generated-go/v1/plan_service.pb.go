@@ -1393,8 +1393,10 @@ type Plan_ChangeDatabaseConfig struct {
 	GhostFlags    map[string]string `protobuf:"bytes,7,rep,name=ghost_flags,json=ghostFlags,proto3" json:"ghost_flags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// If set, a backup of the modified data will be created automatically before any changes are applied.
 	EnablePriorBackup bool `protobuf:"varint,8,opt,name=enable_prior_backup,json=enablePriorBackup,proto3" json:"enable_prior_backup,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	// Whether to use gh-ost for online schema migration.
+	EnableGhost   bool `protobuf:"varint,12,opt,name=enable_ghost,json=enableGhost,proto3" json:"enable_ghost,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Plan_ChangeDatabaseConfig) Reset() {
@@ -1472,6 +1474,13 @@ func (x *Plan_ChangeDatabaseConfig) GetGhostFlags() map[string]string {
 func (x *Plan_ChangeDatabaseConfig) GetEnablePriorBackup() bool {
 	if x != nil {
 		return x.EnablePriorBackup
+	}
+	return false
+}
+
+func (x *Plan_ChangeDatabaseConfig) GetEnableGhost() bool {
+	if x != nil {
+		return x.EnableGhost
 	}
 	return false
 }
@@ -1922,7 +1931,7 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\x04plan\x18\x01 \x01(\v2\x11.bytebase.v1.PlanB\x03\xe0A\x02R\x04plan\x12@\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskB\x03\xe0A\x02R\n" +
 	"updateMask\x12#\n" +
-	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"\x93\x11\n" +
+	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"\xb6\x11\n" +
 	"\x04Plan\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12(\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x19\n" +
@@ -1958,7 +1967,7 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\tcollation\x18\x05 \x01(\tB\x03\xe0A\x01R\tcollation\x12\x1d\n" +
 	"\acluster\x18\x06 \x01(\tB\x03\xe0A\x01R\acluster\x12\x19\n" +
 	"\x05owner\x18\a \x01(\tB\x03\xe0A\x01R\x05owner\x12%\n" +
-	"\venvironment\x18\t \x01(\tB\x03\xe0A\x01R\venvironment\x1a\xc7\x03\n" +
+	"\venvironment\x18\t \x01(\tB\x03\xe0A\x01R\venvironment\x1a\xea\x03\n" +
 	"\x14ChangeDatabaseConfig\x12\x18\n" +
 	"\atargets\x18\n" +
 	" \x03(\tR\atargets\x12\x14\n" +
@@ -1969,7 +1978,8 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\x0emigration_type\x18\v \x01(\x0e2\x1a.bytebase.v1.MigrationTypeR\rmigrationType\x12W\n" +
 	"\vghost_flags\x18\a \x03(\v26.bytebase.v1.Plan.ChangeDatabaseConfig.GhostFlagsEntryR\n" +
 	"ghostFlags\x12.\n" +
-	"\x13enable_prior_backup\x18\b \x01(\bR\x11enablePriorBackup\x1a=\n" +
+	"\x13enable_prior_backup\x18\b \x01(\bR\x11enablePriorBackup\x12!\n" +
+	"\fenable_ghost\x18\f \x01(\bR\venableGhost\x1a=\n" +
 	"\x0fGhostFlagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01J\x04\b\x05\x10\x06J\x04\b\x06\x10\a\x1a\xa3\x01\n" +

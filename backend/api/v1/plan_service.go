@@ -512,13 +512,12 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 						return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get task type from spec, err: %v", err))
 					}
 
-					// Check if migrate_type changed for DATABASE_MIGRATE tasks
+					// Check if enable_ghost changed for DATABASE_MIGRATE tasks
 					if newTaskType == storepb.Task_DATABASE_MIGRATE && task.Type == storepb.Task_DATABASE_MIGRATE {
-						// Get MigrationType from spec
 						if config, ok := spec.Config.(*v1pb.Plan_Spec_ChangeDatabaseConfig); ok {
-							newMigrateType := getMigrateTypeFromMigrationType(config.ChangeDatabaseConfig.MigrationType)
-							if newMigrateType != task.Payload.GetMigrateType() {
-								taskPatch.MigrateType = &newMigrateType
+							newEnableGhost := config.ChangeDatabaseConfig.MigrationType == v1pb.MigrationType_GHOST
+							if newEnableGhost != task.Payload.GetEnableGhost() {
+								taskPatch.EnableGhost = &newEnableGhost
 								doUpdate = true
 							}
 						}
@@ -529,8 +528,8 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 							// Allow DATABASE_MIGRATE <-> DATABASE_SDL conversion
 							if newTaskType == storepb.Task_DATABASE_MIGRATE {
 								if config, ok := spec.Config.(*v1pb.Plan_Spec_ChangeDatabaseConfig); ok {
-									newMigrateType := getMigrateTypeFromMigrationType(config.ChangeDatabaseConfig.MigrationType)
-									taskPatch.MigrateType = &newMigrateType
+									newEnableGhost := config.ChangeDatabaseConfig.MigrationType == v1pb.MigrationType_GHOST
+									taskPatch.EnableGhost = &newEnableGhost
 									doUpdate = true
 								}
 							}

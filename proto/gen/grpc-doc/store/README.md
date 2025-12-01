@@ -3117,9 +3117,9 @@ Status represents the current execution state of a task run.
 | sheet | [string](#string) |  | The resource name of the sheet. Format: projects/{project}/sheets/{sheet} |
 | release | [string](#string) |  | The resource name of the release. Format: projects/{project}/releases/{release} |
 | type | [PlanConfig.ChangeDatabaseConfig.Type](#bytebase-store-PlanConfig-ChangeDatabaseConfig-Type) |  |  |
-| migrate_type | [MigrationType](#bytebase-store-MigrationType) |  | The migration type for imperative schema migration. It is only set when type is MIGRATE. |
 | ghost_flags | [PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry](#bytebase-store-PlanConfig-ChangeDatabaseConfig-GhostFlagsEntry) | repeated |  |
 | enable_prior_backup | [bool](#bool) |  | If set, a backup of the modified data will be created automatically before any changes are applied. |
+| enable_ghost | [bool](#bool) |  | Whether to use gh-ost for online schema migration. |
 
 
 
@@ -3275,6 +3275,7 @@ Type is the database change type.
 | database_name | [string](#string) |  |  |
 | ghost_flags | [PlanCheckRunConfig.GhostFlagsEntry](#bytebase-store-PlanCheckRunConfig-GhostFlagsEntry) | repeated |  |
 | enable_prior_backup | [bool](#bool) |  | If set, a backup of the modified data will be created automatically before any changes are applied. |
+| enable_ghost | [bool](#bool) |  | Whether to use gh-ost for online schema migration. |
 
 
 
@@ -4900,8 +4901,8 @@ Task is the metadata for database operation tasks.
 | schema_version | [string](#string) |  | Schema version after migration is applied. |
 | enable_prior_backup | [bool](#bool) |  | Whether to create an automatic backup before applying changes. |
 | flags | [Task.FlagsEntry](#bytebase-store-Task-FlagsEntry) | repeated | Configuration flags for gh-ost migration tool. |
+| enable_ghost | [bool](#bool) |  | Whether to use gh-ost for online schema migration. |
 | task_release_source | [TaskReleaseSource](#bytebase-store-TaskReleaseSource) |  | Source information if task is created from a release. |
-| migrate_type | [MigrationType](#bytebase-store-MigrationType) |  | The type of migration (DDL, DML, or GHOST). |
 | password | [string](#string) |  | Password to encrypt the exported data archive. |
 | format | [ExportFormat](#bytebase-store-ExportFormat) |  | Format of the exported data (SQL, CSV, JSON, etc). |
 

@@ -8394,6 +8394,7 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | migration_type | [MigrationType](#bytebase-v1-MigrationType) |  | migration_type is the migration type for imperative schema migration. It is only set when type is MIGRATE. |
 | ghost_flags | [Plan.ChangeDatabaseConfig.GhostFlagsEntry](#bytebase-v1-Plan-ChangeDatabaseConfig-GhostFlagsEntry) | repeated |  |
 | enable_prior_backup | [bool](#bool) |  | If set, a backup of the modified data will be created automatically before any changes are applied. |
+| enable_ghost | [bool](#bool) |  | Whether to use gh-ost for online schema migration. |
 
 
 

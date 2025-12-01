@@ -306,15 +306,8 @@ func convertToTask(ctx context.Context, s *store.Store, project *store.ProjectMe
 	case storepb.Task_DATABASE_CREATE:
 		return convertToTaskFromDatabaseCreate(ctx, s, project, task)
 	case storepb.Task_DATABASE_MIGRATE:
-		// Handle DATABASE_MIGRATE based on migrate_type
-		switch task.Payload.GetMigrateType() {
-		case storepb.MigrationType_DDL, storepb.MigrationType_GHOST, storepb.MigrationType_MIGRATION_TYPE_UNSPECIFIED:
-			return convertToTaskFromSchemaUpdate(ctx, s, project, task)
-		case storepb.MigrationType_DML:
-			return convertToTaskFromDataUpdate(ctx, s, project, task)
-		default:
-			return nil, errors.Errorf("unsupported migrate type %v", task.Payload.GetMigrateType())
-		}
+		// All DATABASE_MIGRATE tasks are treated as schema updates (DDL or GHOST)
+		return convertToTaskFromSchemaUpdate(ctx, s, project, task)
 	case storepb.Task_DATABASE_SDL:
 		return convertToTaskFromSchemaUpdate(ctx, s, project, task)
 	case storepb.Task_DATABASE_EXPORT:
@@ -380,12 +373,9 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 	switch task.Type {
 	case storepb.Task_DATABASE_MIGRATE:
 		databaseChangeType = v1pb.DatabaseChangeType_MIGRATE
-		switch task.Payload.GetMigrateType() {
-		case storepb.MigrationType_DDL:
-			migrationType = v1pb.MigrationType_DDL
-		case storepb.MigrationType_GHOST:
+		if task.Payload.GetEnableGhost() {
 			migrationType = v1pb.MigrationType_GHOST
-		default:
+		} else {
 			migrationType = v1pb.MigrationType_DDL
 		}
 	case storepb.Task_DATABASE_SDL:
@@ -411,47 +401,6 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 			},
 		},
 	}
-	if task.UpdatedAt != nil {
-		v1pbTask.UpdateTime = timestamppb.New(*task.UpdatedAt)
-	}
-	if task.RunAt != nil {
-		v1pbTask.RunTime = timestamppb.New(*task.RunAt)
-	}
-	return v1pbTask, nil
-}
-
-func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
-	if task.DatabaseName == nil {
-		return nil, errors.Errorf("data update task database is nil")
-	}
-	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName, ShowDeleted: true})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database")
-	}
-	if database == nil {
-		return nil, errors.Errorf("database not found")
-	}
-
-	stageID := common.FormatStageID(task.Environment)
-	v1pbTask := &v1pb.Task{
-		Name:          common.FormatTask(project.ResourceID, task.PipelineID, stageID, task.ID),
-		SpecId:        task.Payload.GetSpecId(),
-		Type:          convertToTaskType(task),
-		Status:        convertToTaskStatus(task.LatestTaskRunStatus, task.Payload.GetSkipped()),
-		SkippedReason: task.Payload.GetSkippedReason(),
-		Target:        fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
-		Payload:       nil,
-	}
-	v1pbTaskPayload := &v1pb.Task_DatabaseUpdate_{
-		DatabaseUpdate: &v1pb.Task_DatabaseUpdate{
-			Sheet:              common.FormatSheet(project.ResourceID, int(task.Payload.GetSheetId())),
-			SchemaVersion:      task.Payload.GetSchemaVersion(),
-			DatabaseChangeType: v1pb.DatabaseChangeType_MIGRATE,
-			MigrationType:      v1pb.MigrationType_DML,
-		},
-	}
-
-	v1pbTask.Payload = v1pbTaskPayload
 	if task.UpdatedAt != nil {
 		v1pbTask.UpdateTime = timestamppb.New(*task.UpdatedAt)
 	}
@@ -537,20 +486,6 @@ func convertToTaskType(task *store.TaskMessage) v1pb.Task_Type {
 		return v1pb.Task_TYPE_UNSPECIFIED
 	default:
 		return v1pb.Task_TYPE_UNSPECIFIED
-	}
-}
-
-// getMigrateTypeFromMigrationType converts v1pb.MigrationType to storepb.MigrationType
-func getMigrateTypeFromMigrationType(migrationType v1pb.MigrationType) storepb.MigrationType {
-	switch migrationType {
-	case v1pb.MigrationType_DDL:
-		return storepb.MigrationType_DDL
-	case v1pb.MigrationType_GHOST:
-		return storepb.MigrationType_GHOST
-	case v1pb.MigrationType_DML:
-		return storepb.MigrationType_DML
-	default:
-		return storepb.MigrationType_MIGRATION_TYPE_UNSPECIFIED
 	}
 }
 

@@ -55,10 +55,10 @@ func (x *Task) Equal(y *Task) bool {
 			return false
 		}
 	}
-	if !x.TaskReleaseSource.Equal(y.TaskReleaseSource) {
+	if x.EnableGhost != y.EnableGhost {
 		return false
 	}
-	if x.MigrateType != y.MigrateType {
+	if !x.TaskReleaseSource.Equal(y.TaskReleaseSource) {
 		return false
 	}
 	if x.Password != y.Password {

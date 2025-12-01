@@ -675,23 +675,12 @@ func (r *Runner) getDatabaseMap(ctx context.Context, databases []string) (map[st
 // This is used after the risk layer removal to directly filter approval rules by source.
 func getApprovalSourceFromPlan(config *storepb.PlanConfig) storepb.WorkspaceApprovalSetting_Rule_Source {
 	for _, spec := range config.GetSpecs() {
-		switch v := spec.Config.(type) {
+		switch spec.Config.(type) {
 		case *storepb.PlanConfig_Spec_CreateDatabaseConfig:
 			return storepb.WorkspaceApprovalSetting_Rule_CREATE_DATABASE
 		case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
-			switch v.ChangeDatabaseConfig.Type {
-			case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE:
-				switch v.ChangeDatabaseConfig.MigrateType {
-				case storepb.MigrationType_DML:
-					return storepb.WorkspaceApprovalSetting_Rule_DML
-				default:
-					return storepb.WorkspaceApprovalSetting_Rule_DDL
-				}
-			case storepb.PlanConfig_ChangeDatabaseConfig_SDL:
-				return storepb.WorkspaceApprovalSetting_Rule_DDL
-			default:
-				return storepb.WorkspaceApprovalSetting_Rule_DDL
-			}
+			// All DATABASE_MIGRATE and SDL operations use DDL approval rules
+			return storepb.WorkspaceApprovalSetting_Rule_DDL
 		case *storepb.PlanConfig_Spec_ExportDataConfig:
 			return storepb.WorkspaceApprovalSetting_Rule_EXPORT_DATA
 		}

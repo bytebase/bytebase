@@ -88,13 +88,9 @@ func getPlanCheckRunsFromSpec(ctx context.Context, s *store.Store, plan *store.P
 func getPlanCheckRunsFromChangeDatabaseConfigDatabaseGroupTarget(ctx context.Context, s *store.Store, plan *store.PlanMessage, config *storepb.PlanConfig_ChangeDatabaseConfig) ([]*store.PlanCheckRunMessage, error) {
 	switch config.Type {
 	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE:
-		// Only DDL, DML, and MIGRATE_TYPE_UNSPECIFIED (treated as DDL) migrate types are supported for database group targets
-		switch config.MigrateType {
-		case storepb.MigrationType_DDL:
-		case storepb.MigrationType_DML:
-		case storepb.MigrationType_MIGRATION_TYPE_UNSPECIFIED:
-		default:
-			return nil, errors.Errorf("unsupported migrate type %q for database group target", config.MigrateType)
+		// Ghost migrations are not supported for database group targets
+		if config.EnableGhost {
+			return nil, errors.Errorf("ghost migration is not supported for database group target")
 		}
 	default:
 		return nil, errors.Errorf("unsupported change database config type %q for database group target", config.Type)
@@ -195,7 +191,7 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 		Type:    store.PlanCheckDatabaseConnect,
 		Config: &storepb.PlanCheckRunConfig{
 			SheetUid:           int32(sheetUID),
-			ChangeDatabaseType: convertToChangeDatabaseType(config.Type, config.MigrateType),
+			ChangeDatabaseType: convertToChangeDatabaseType(config.Type, config.EnableGhost),
 			InstanceId:         instance.ResourceID,
 			DatabaseName:       database.DatabaseName,
 		},
@@ -207,7 +203,7 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 		Type:    store.PlanCheckDatabaseStatementAdvise,
 		Config: &storepb.PlanCheckRunConfig{
 			SheetUid:           int32(sheetUID),
-			ChangeDatabaseType: convertToChangeDatabaseType(config.Type, config.MigrateType),
+			ChangeDatabaseType: convertToChangeDatabaseType(config.Type, config.EnableGhost),
 			InstanceId:         instance.ResourceID,
 			DatabaseName:       database.DatabaseName,
 			EnablePriorBackup:  config.EnablePriorBackup,
@@ -219,19 +215,19 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 		Type:    store.PlanCheckDatabaseStatementSummaryReport,
 		Config: &storepb.PlanCheckRunConfig{
 			SheetUid:           int32(sheetUID),
-			ChangeDatabaseType: convertToChangeDatabaseType(config.Type, config.MigrateType),
+			ChangeDatabaseType: convertToChangeDatabaseType(config.Type, config.EnableGhost),
 			InstanceId:         instance.ResourceID,
 			DatabaseName:       database.DatabaseName,
 		},
 	})
-	if config.Type == storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE && config.MigrateType == storepb.MigrationType_GHOST {
+	if config.Type == storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE && config.EnableGhost {
 		planCheckRuns = append(planCheckRuns, &store.PlanCheckRunMessage{
 			PlanUID: plan.UID,
 			Status:  store.PlanCheckRunStatusRunning,
 			Type:    store.PlanCheckDatabaseGhostSync,
 			Config: &storepb.PlanCheckRunConfig{
 				SheetUid:           int32(sheetUID),
-				ChangeDatabaseType: convertToChangeDatabaseType(config.Type, config.MigrateType),
+				ChangeDatabaseType: convertToChangeDatabaseType(config.Type, config.EnableGhost),
 				InstanceId:         instance.ResourceID,
 				DatabaseName:       database.DatabaseName,
 				GhostFlags:         config.GhostFlags,
@@ -242,19 +238,13 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 	return planCheckRuns, nil
 }
 
-func convertToChangeDatabaseType(t storepb.PlanConfig_ChangeDatabaseConfig_Type, migrateType storepb.MigrationType) storepb.PlanCheckRunConfig_ChangeDatabaseType {
+func convertToChangeDatabaseType(t storepb.PlanConfig_ChangeDatabaseConfig_Type, enableGhost bool) storepb.PlanCheckRunConfig_ChangeDatabaseType {
 	switch t {
 	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE:
-		switch migrateType {
-		case storepb.MigrationType_DDL:
-			return storepb.PlanCheckRunConfig_DDL
-		case storepb.MigrationType_GHOST:
+		if enableGhost {
 			return storepb.PlanCheckRunConfig_DDL_GHOST
-		case storepb.MigrationType_DML:
-			return storepb.PlanCheckRunConfig_DML
-		default:
-			return storepb.PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED
 		}
+		return storepb.PlanCheckRunConfig_DDL
 	case storepb.PlanConfig_ChangeDatabaseConfig_SDL:
 		return storepb.PlanCheckRunConfig_SDL
 	default:

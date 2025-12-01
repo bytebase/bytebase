@@ -335,6 +335,9 @@ message Plan {
 
     // If set, a backup of the modified data will be created automatically before any changes are applied.
     bool enable_prior_backup = 8;
+
+    // Whether to use gh-ost for online schema migration.
+    bool enable_ghost = 12;
   }
 
   message ExportDataConfig {

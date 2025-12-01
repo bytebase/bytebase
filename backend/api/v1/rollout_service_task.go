@@ -301,22 +301,13 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(
 			env = *database.EffectiveEnvironmentID
 		}
 
-		// Determine task migrate type from plan config migrate type
-		var taskMigrateType storepb.MigrationType
+		// Handle ghost flags if ghost migration is enabled
 		var flags map[string]string
-		switch c.MigrateType {
-		case storepb.MigrationType_DDL:
-			taskMigrateType = storepb.MigrationType_DDL
-		case storepb.MigrationType_DML:
-			taskMigrateType = storepb.MigrationType_DML
-		case storepb.MigrationType_GHOST:
-			taskMigrateType = storepb.MigrationType_GHOST
+		if c.EnableGhost {
 			if _, err := ghost.GetUserFlags(c.GhostFlags); err != nil {
 				return nil, errors.Wrapf(err, "invalid ghost flags %q", c.GhostFlags)
 			}
 			flags = c.GhostFlags
-		default:
-			taskMigrateType = storepb.MigrationType_DDL
 		}
 
 		taskCreate := &store.TaskMessage{
@@ -329,7 +320,7 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(
 				SheetId:           int32(sheetUID),
 				Flags:             flags,
 				EnablePriorBackup: c.EnablePriorBackup,
-				MigrateType:       taskMigrateType,
+				EnableGhost:       c.EnableGhost,
 			},
 		}
 		return []*store.TaskMessage{taskCreate}, nil
@@ -431,38 +422,27 @@ func getTaskCreatesFromChangeDatabaseConfigWithRelease(
 					return nil, errors.Wrapf(err, "failed to get sheet id from sheet %q in release file %q", file.Sheet, file.Id)
 				}
 
-				// Determine migrate type based on file change type
-				var migrateType storepb.MigrationType
-				switch file.MigrationType {
-				case storepb.MigrationType_DDL:
-					migrateType = storepb.MigrationType_DDL
-				case storepb.MigrationType_GHOST:
-					migrateType = storepb.MigrationType_GHOST
-				case storepb.MigrationType_DML:
-					migrateType = storepb.MigrationType_DML
-				case storepb.MigrationType_MIGRATION_TYPE_UNSPECIFIED:
-					migrateType = storepb.MigrationType_MIGRATION_TYPE_UNSPECIFIED
-				default:
-					return nil, errors.Errorf("unsupported release file migration type %q", file.MigrationType)
-				}
+				// Determine if ghost migration based on file migration type
+				enableGhost := file.MigrationType == storepb.MigrationType_GHOST
 
 				// Create task payload
 				payload := &storepb.Task{
 					SpecId:        spec.Id,
 					SheetId:       int32(sheetUID),
 					SchemaVersion: file.Version,
-					MigrateType:   migrateType,
+					EnableGhost:   enableGhost,
 					TaskReleaseSource: &storepb.TaskReleaseSource{
 						File: common.FormatReleaseFile(c.Release, file.Id),
 					},
 				}
 
 				// Add ghost flags if this is a ghost migration
-				if migrateType == storepb.MigrationType_GHOST && c.GhostFlags != nil {
+				if enableGhost && c.GhostFlags != nil {
 					payload.Flags = c.GhostFlags
 				}
 
-				if migrateType == storepb.MigrationType_DML {
+				// Enable prior backup for DML migrations
+				if file.MigrationType == storepb.MigrationType_DML {
 					payload.EnablePriorBackup = c.EnablePriorBackup
 				}
 
