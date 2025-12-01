@@ -3632,7 +3632,7 @@ paths:
                 - DatabaseGroupService
             description: |-
                 Lists database groups in a project.
-                 Permissions required: bb.projects.get
+                 Permissions required: bb.databaseGroups.list
             operationId: DatabaseGroupService_ListDatabaseGroups
             parameters:
                 - name: project
@@ -3669,7 +3669,7 @@ paths:
                 - DatabaseGroupService
             description: |-
                 Creates a new database group.
-                 Permissions required: bb.projects.update
+                 Permissions required: bb.databaseGroups.create
             operationId: DatabaseGroupService_CreateDatabaseGroup
             parameters:
                 - name: project
@@ -3718,7 +3718,7 @@ paths:
                 - DatabaseGroupService
             description: |-
                 Gets a database group by name.
-                 Permissions required: bb.projects.get
+                 Permissions required: bb.databaseGroups.get
             operationId: DatabaseGroupService_GetDatabaseGroup
             parameters:
                 - name: project
@@ -3761,7 +3761,7 @@ paths:
                 - DatabaseGroupService
             description: |-
                 Deletes a database group.
-                 Permissions required: bb.projects.update
+                 Permissions required: bb.databaseGroups.delete
             operationId: DatabaseGroupService_DeleteDatabaseGroup
             parameters:
                 - name: project
@@ -3791,8 +3791,8 @@ paths:
                 - DatabaseGroupService
             description: |-
                 Updates a database group.
-                 Permissions required: bb.projects.update
-                 When allow_missing=true, also requires: bb.projects.update
+                 Permissions required: bb.databaseGroups.update
+                 When allow_missing=true, also requires: bb.databaseGroups.create
             operationId: DatabaseGroupService_UpdateDatabaseGroup
             parameters:
                 - name: project

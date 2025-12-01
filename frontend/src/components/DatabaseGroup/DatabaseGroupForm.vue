@@ -146,7 +146,7 @@ const router = useRouter();
 const isCreating = computed(() => props.databaseGroup === undefined);
 
 const allowDelete = computed(() => {
-  return hasProjectPermissionV2(props.project, "bb.projects.update");
+  return hasProjectPermissionV2(props.project, "bb.databaseGroups.delete");
 });
 
 onMounted(async () => {

@@ -310,7 +310,7 @@ export declare const DatabaseGroupViewSchema: GenEnum<DatabaseGroupView>;
 export declare const DatabaseGroupService: GenService<{
   /**
    * Lists database groups in a project.
-   * Permissions required: bb.projects.get
+   * Permissions required: bb.databaseGroups.list
    *
    * @generated from rpc bytebase.v1.DatabaseGroupService.ListDatabaseGroups
    */
@@ -321,7 +321,7 @@ export declare const DatabaseGroupService: GenService<{
   },
   /**
    * Gets a database group by name.
-   * Permissions required: bb.projects.get
+   * Permissions required: bb.databaseGroups.get
    *
    * @generated from rpc bytebase.v1.DatabaseGroupService.GetDatabaseGroup
    */
@@ -332,7 +332,7 @@ export declare const DatabaseGroupService: GenService<{
   },
   /**
    * Creates a new database group.
-   * Permissions required: bb.projects.update
+   * Permissions required: bb.databaseGroups.create
    *
    * @generated from rpc bytebase.v1.DatabaseGroupService.CreateDatabaseGroup
    */
@@ -343,8 +343,8 @@ export declare const DatabaseGroupService: GenService<{
   },
   /**
    * Updates a database group.
-   * Permissions required: bb.projects.update
-   * When allow_missing=true, also requires: bb.projects.update
+   * Permissions required: bb.databaseGroups.update
+   * When allow_missing=true, also requires: bb.databaseGroups.create
    *
    * @generated from rpc bytebase.v1.DatabaseGroupService.UpdateDatabaseGroup
    */
@@ -355,7 +355,7 @@ export declare const DatabaseGroupService: GenService<{
   },
   /**
    * Deletes a database group.
-   * Permissions required: bb.projects.update
+   * Permissions required: bb.databaseGroups.delete
    *
    * @generated from rpc bytebase.v1.DatabaseGroupService.DeleteDatabaseGroup
    */

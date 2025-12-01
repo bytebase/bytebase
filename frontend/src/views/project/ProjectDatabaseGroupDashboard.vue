@@ -80,7 +80,7 @@ const state = reactive<LocalState>({
 });
 
 const allowCreate = computed(() =>
-  hasProjectPermissionV2(project.value, "bb.projects.update")
+  hasProjectPermissionV2(project.value, "bb.databaseGroups.create")
 );
 
 const hasDBGroupFeature = computed(() =>
