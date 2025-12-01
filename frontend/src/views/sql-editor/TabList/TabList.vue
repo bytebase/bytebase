@@ -129,10 +129,7 @@ const handleAddTab = () => {
   });
 };
 
-const handleRemoveTab = async (
-  tab: SQLEditorTab,
-  focusWhenConfirm = false
-) => {
+const handleRemoveTab = async (tab: SQLEditorTab, focusWhenConfirm = false) => {
   const _defer = defer<boolean>();
   if (tab.mode === "WORKSHEET" && tab.status === "DIRTY") {
     if (focusWhenConfirm) {
