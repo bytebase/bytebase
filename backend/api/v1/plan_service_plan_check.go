@@ -110,7 +110,7 @@ func getPlanCheckRunsFromChangeDatabaseConfigDatabaseGroupTarget(ctx context.Con
 		return nil, errors.Wrapf(err, "failed to get database group %q", target)
 	}
 	if len(databaseGroup.MatchedDatabases) == 0 {
-		return nil, nil
+		return nil, errors.Errorf("no matched databases found in database group %q", target)
 	}
 
 	sheetUIDs, err := getSheetUIDsFromChangeDatabaseConfig(config)
