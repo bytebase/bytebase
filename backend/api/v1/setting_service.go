@@ -165,6 +165,9 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 	}
 
 	var storeSettingValue string
+	var resetAuditLogStdout bool
+	var resetClassification bool
+
 	switch apiSettingName {
 	case storepb.SettingName_WORKSPACE_PROFILE:
 		if request.Msg.UpdateMask == nil {
@@ -270,6 +273,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 						return nil, connect.NewError(connect.CodePermissionDenied, err)
 					}
 				}
+				resetAuditLogStdout = true
 				oldSetting.EnableAuditLogStdout = payload.EnableAuditLogStdout
 			default:
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %v", path))
@@ -388,16 +392,6 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %v", path))
 			}
 		}
-		if request.Msg.ValidateOnly {
-			return connect.NewResponse(&v1pb.Setting{
-				Name: request.Msg.Setting.Name,
-				Value: &v1pb.Value{
-					Value: &v1pb.Value_AppImSettingValue{
-						AppImSettingValue: &v1pb.AppIMSetting{},
-					},
-				},
-			}), nil
-		}
 
 		bytes, err := protojson.Marshal(payload)
 		if err != nil {
@@ -437,6 +431,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal setting for %s with error: %v", apiSettingName, err))
 		}
+		resetClassification = true
 		storeSettingValue = string(bytes)
 	case storepb.SettingName_SEMANTIC_TYPES:
 		storeSemanticTypeSetting := convertSemanticTypeSetting(request.Msg.Setting.Value.GetSemanticTypeSettingValue())
@@ -557,6 +552,14 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 	default:
 		storeSettingValue = request.Msg.Setting.Value.GetStringValue()
 	}
+
+	if request.Msg.ValidateOnly {
+		return connect.NewResponse(&v1pb.Setting{
+			Name:  request.Msg.Setting.Name,
+			Value: request.Msg.Setting.Value,
+		}), nil
+	}
+
 	setting, err := s.store.UpsertSettingV2(ctx, &store.SetSettingMessage{
 		Name:  apiSettingName,
 		Value: storeSettingValue,
@@ -565,44 +568,46 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to set setting: %v", err))
 	}
 
-	settingMessage, err := convertToSettingMessage(setting, s.profile)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
-	}
-
 	// Dynamically update audit logger runtime flag if enable_audit_log_stdout was changed
-	if apiSettingName == storepb.SettingName_WORKSPACE_PROFILE {
-		for _, path := range request.Msg.UpdateMask.Paths {
-			if path == "value.workspace_profile_setting_value.enable_audit_log_stdout" {
-				if workspaceValue := settingMessage.GetValue().GetWorkspaceProfileSettingValue(); workspaceValue != nil {
-					s.profile.RuntimeEnableAuditLogStdout.Store(workspaceValue.EnableAuditLogStdout)
-					if workspaceValue.EnableAuditLogStdout {
-						slog.Info("audit logging to stdout enabled")
-					} else {
-						slog.Info("audit logging to stdout disabled")
-					}
-				}
-				break
-			}
+	if resetAuditLogStdout {
+		workspaceProfile, err := s.store.GetWorkspaceGeneralSetting(ctx)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get workspace setting message: %v", err))
 		}
+		s.profile.RuntimeEnableAuditLogStdout.Store(workspaceProfile.EnableAuditLogStdout)
 	}
 
-	// it's a temporary solution to map the classification to all projects before we support it in the UX.
-	if apiSettingName == storepb.SettingName_DATA_CLASSIFICATION && len(settingMessage.Value.GetDataClassificationSettingValue().Configs) == 1 {
-		classificationID := settingMessage.Value.GetDataClassificationSettingValue().Configs[0].Id
+	// It's a temporary solution to map the classification to all projects before we support it in the UX.
+	if resetClassification {
+		classification, err := s.store.GetDataClassificationSetting(ctx)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get classification setting message: %v", err))
+		}
+		var classificationID string
+		if len(classification.Configs) > 0 {
+			classificationID = classification.Configs[0].Id
+		}
+
 		projects, err := s.store.ListProjectV2(ctx, &store.FindProjectMessage{ShowDeleted: false})
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list projects with error: %v", err))
 		}
+
+		batchUpdate := []*store.UpdateProjectMessage{}
 		for _, project := range projects {
-			patch := &store.UpdateProjectMessage{
+			batchUpdate = append(batchUpdate, &store.UpdateProjectMessage{
 				ResourceID:                 project.ResourceID,
 				DataClassificationConfigID: &classificationID,
-			}
-			if _, err = s.store.UpdateProjectV2(ctx, patch); err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to patch project %s with error: %v", project.Title, err))
-			}
+			})
 		}
+		if _, err = s.store.BatchUpdateProjectsV2(ctx, batchUpdate); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to patch project classification with error: %v", err))
+		}
+	}
+
+	settingMessage, err := convertToSettingMessage(setting, s.profile)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
 	}
 
 	return connect.NewResponse(settingMessage), nil
