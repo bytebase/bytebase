@@ -931,9 +931,6 @@
           "title": "データベース",
           "description": "データベースに基づいてフィルタリングする"
         },
-        "type": {
-          "title": "種類の変更"
-        },
         "creator": {
           "title": "作成者",
           "description": "作成者で検索"
@@ -1133,8 +1130,6 @@
       "change": "変化",
       "type": {
         "create-database": "データベースの作成",
-        "schema-change": "スキーマの変更",
-        "ghost-migration": "ゴーストマイグレーション",
         "database-change": "データベースの変更",
         "export-data": "データのエクスポート",
         "unknown": "未知"

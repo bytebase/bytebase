@@ -931,9 +931,6 @@
           "title": "Cơ sở dữ liệu",
           "description": "Lọc theo cơ sở dữ liệu"
         },
-        "type": {
-          "title": "Loại thay đổi"
-        },
         "creator": {
           "title": "Người tạo",
           "description": "Tìm kiếm theo người sáng tạo"
@@ -1133,8 +1130,6 @@
       "change": "Thay đổi",
       "type": {
         "create-database": "Tạo cơ sở dữ liệu",
-        "schema-change": "Thay đổi sơ đồ",
-        "ghost-migration": "Di cư của ma",
         "database-change": "Thay đổi cơ sở dữ liệu",
         "export-data": "Xuất dữ liệu",
         "unknown": "Không rõ"

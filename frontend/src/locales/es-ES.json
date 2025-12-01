@@ -931,9 +931,6 @@
           "title": "Base de datos",
           "description": "Filtrar por base de datos"
         },
-        "type": {
-          "title": "Tipo de cambio"
-        },
         "creator": {
           "title": "Creador",
           "description": "Búsqueda por creador"
@@ -1133,8 +1130,6 @@
       "change": "Cambiar",
       "type": {
         "create-database": "Crear base de datos",
-        "schema-change": "Cambio de esquema",
-        "ghost-migration": "Migración fantasma",
         "database-change": "Cambio de base de datos",
         "export-data": "Exportar datos",
         "unknown": "Desconocido"

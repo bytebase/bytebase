@@ -931,9 +931,6 @@
           "title": "数据库",
           "description": "根据数据库过滤"
         },
-        "type": {
-          "title": "变更类型"
-        },
         "creator": {
           "title": "创建人",
           "description": "根据创建人搜索"
@@ -1133,8 +1130,6 @@
       "change": "变更项",
       "type": {
         "create-database": "创建数据库",
-        "schema-change": "Schema 变更",
-        "ghost-migration": "在线大表变更",
         "database-change": "数据库变更",
         "export-data": "导出数据",
         "unknown": "未知"

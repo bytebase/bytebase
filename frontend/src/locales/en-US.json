@@ -931,9 +931,6 @@
           "title": "Database",
           "description": "Filter by database"
         },
-        "type": {
-          "title": "Change Type"
-        },
         "creator": {
           "title": "Creator",
           "description": "Search by the creator"
@@ -1133,8 +1130,6 @@
       "change": "Change",
       "type": {
         "create-database": "Create Database",
-        "schema-change": "Schema Change",
-        "ghost-migration": "Ghost Migration",
         "database-change": "Database Change",
         "export-data": "Export Data",
         "unknown": "Unknown"
