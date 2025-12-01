@@ -140,7 +140,10 @@ import {
 } from "@/store";
 import { getDateForPbTimestampProtoEs } from "@/types";
 import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
-import { ChangelogView } from "@/types/proto-es/v1/database_service_pb";
+import {
+  Changelog_Type,
+  ChangelogView,
+} from "@/types/proto-es/v1/database_service_pb";
 import {
   extractIssueUID,
   getAffectedTableDisplayName,
@@ -223,7 +226,7 @@ const allowShowDiff = computed((): boolean => {
   if (!changelog.value) {
     return false;
   }
-  return getChangelogChangeType(changelog.value.type) === "DDL";
+  return changelog.value.type === Changelog_Type.MIGRATE;
 });
 
 watch(

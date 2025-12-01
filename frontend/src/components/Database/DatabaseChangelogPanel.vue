@@ -35,7 +35,7 @@
           tooltip-mode="DISABLED-ONLY"
           :disabled="
             !selectedChangelogForRollback ||
-            getChangelogChangeType(selectedChangelogForRollback.type) !== 'DDL'
+            selectedChangelogForRollback.type !== Changelog_Type.MIGRATE
           "
           @click="rollback"
         >
@@ -140,7 +140,6 @@ import {
   UpdateDatabaseRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
 import { extractProjectResourceName } from "@/utils";
-import { getChangelogChangeType } from "@/utils/v1/changelog";
 
 interface LocalState {
   showBaselineModal: boolean;
