@@ -88,11 +88,11 @@ export const semanticTaskType = (type: Task_Type) => {
       return t("db.create");
     case Task_Type.DATABASE_MIGRATE:
       // Ghost mode is indicated via spec.enableGhost, shown separately as a tag
-      return "DDL";
+      return t("issue.title.change-database");
     case Task_Type.DATABASE_SDL:
       return "SDL";
     case Task_Type.DATABASE_EXPORT:
-      return "Export";
+      return t("issue.title.export-data");
   }
   return type.toString();
 };

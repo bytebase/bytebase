@@ -104,7 +104,9 @@ const getReleaseFileTypeText = (file: Release_File) => {
     case Release_File_Type.DECLARATIVE:
       return "SDL";
     case Release_File_Type.VERSIONED:
-      return file.enableGhost ? "DDL (gh-ost)" : "DDL";
+      return file.enableGhost
+        ? `${t("issue.title.change-database")} (gh-ost)`
+        : t("issue.title.change-database");
     case Release_File_Type.TYPE_UNSPECIFIED:
       return "";
     default:
