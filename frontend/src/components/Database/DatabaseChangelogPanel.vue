@@ -8,9 +8,6 @@
             :database="database"
           />
         </div>
-        <div class="w-40">
-          <ChangeTypeSelect v-model:change-type="state.selectedChangeType" />
-        </div>
       </div>
       <div class="flex flex-row justify-end items-center grow gap-x-2">
         <BBSpin
@@ -122,7 +119,6 @@ import { BBAlert, BBSpin } from "@/bbkit";
 import {
   AffectedTablesSelect,
   ChangelogDataTable,
-  ChangeTypeSelect,
 } from "@/components/Changelog";
 import { useDatabaseDetailContext } from "@/components/Database/context";
 import { TooltipButton } from "@/components/v2";
@@ -152,7 +148,6 @@ interface LocalState {
   selectedChangelogNames: string[];
   isExporting: boolean;
   selectedAffectedTables: Table[];
-  selectedChangeType?: string;
 }
 
 const props = defineProps<{
@@ -177,20 +172,11 @@ const state = reactive<LocalState>({
 const searchChangeLogParams = computed(
   (): SearchChangeLogParams => ({
     tables: state.selectedAffectedTables,
-    types: state.selectedChangeType
-      ? [Changelog_Type[Changelog_Type.MIGRATE]]
-      : undefined,
   })
 );
 
 const searchChangelogFilter = computed(() => {
   const filter: string[] = [];
-  if (
-    searchChangeLogParams.value.types &&
-    searchChangeLogParams.value.types.length > 0
-  ) {
-    filter.push(`type = "${searchChangeLogParams.value.types.join(" | ")}"`);
-  }
   if (
     searchChangeLogParams.value.tables &&
     searchChangeLogParams.value.tables.length > 0
