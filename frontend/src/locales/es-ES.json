@@ -243,6 +243,7 @@
     },
     "collapse": "Colapsar",
     "show-more": "Mostrar más",
+    "n-more": "+{n} más",
     "remaining": "restante",
     "line": "Línea",
     "column": "Columna",
@@ -1160,9 +1161,6 @@
     "targets": {
       "title": "Objetivos",
       "no-targets-found": "No se encontraron objetivos",
-      "type": {
-        "database-group": "Grupo de bases de datos"
-      },
       "view-all": "Ver todo ({count})"
     },
     "select-isolation-level": "Seleccionar nivel de aislamiento",
@@ -2814,6 +2812,7 @@
   },
   "database-group": {
     "create": "Crear grupo de bases de datos",
+    "deleted": "Grupo de bases de datos eliminado",
     "matched-database": "Base de datos coincidente",
     "unmatched-database": "Base de datos no coincidente",
     "condition": {

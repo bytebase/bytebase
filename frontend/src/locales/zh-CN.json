@@ -243,6 +243,7 @@
     },
     "collapse": "收起",
     "show-more": "显示更多",
+    "n-more": "+{n} 更多",
     "remaining": "剩余",
     "line": "行",
     "column": "列",
@@ -1160,9 +1161,6 @@
     "targets": {
       "title": "目标库",
       "no-targets-found": "未找到目标库",
-      "type": {
-        "database-group": "数据库组"
-      },
       "view-all": "查看全部 ({count})"
     },
     "select-isolation-level": "选择隔离级别",
@@ -2814,6 +2812,7 @@
   },
   "database-group": {
     "create": "新建数据库分组",
+    "deleted": "已删除的数据库组",
     "matched-database": "相匹配的数据库",
     "unmatched-database": "不匹配的数据库",
     "condition": {

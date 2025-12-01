@@ -6,6 +6,7 @@ import {
   useProjectIamPolicyStore,
 } from "@/store";
 import { roleNamePrefix, userNamePrefix } from "@/store/modules/v1/common";
+import { isValidDatabaseName } from "@/types";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
@@ -57,8 +58,10 @@ export const canRolloutTasks = (tasks: Task[], issue?: Issue): boolean => {
   return tasks.every((task) => {
     // Get database from task target
     const database = databaseStore.getDatabaseByName(task.target);
-    if (!database || !database.effectiveEnvironment) {
-      return false;
+    // If database is not in cache or is unknown, skip environment policy check
+    // and allow rollout (user already lacks bb.taskRuns.create, so this is a fallback).
+    if (!isValidDatabaseName(database.name) || !database.effectiveEnvironment) {
+      return true;
     }
 
     // Get rollout policy for the environment

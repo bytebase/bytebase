@@ -38,25 +38,7 @@
             <DatabaseDisplay :database="target" show-environment />
           </template>
           <template v-else-if="isValidDatabaseGroupName(target)">
-            <DatabaseGroupIcon class="w-4 h-4 text-control-light shrink-0" />
-            <DatabaseGroupName
-              :database-group="
-                dbGroupStore.getDBGroupByName(target)
-              "
-              :link="false"
-              :plain="true"
-              class="text-sm"
-            />
-            <NTag size="tiny" round :bordered="false">
-              {{ $t("plan.targets.type.database-group") }}
-            </NTag>
-            <div
-              v-if="isValidDatabaseGroupName(dbGroupStore.getDBGroupByName(target).name)"
-              class="flex items-center justify-end cursor-pointer opacity-60 hover:opacity-100"
-              @click="gotoDatabaseGroupDetailPage(target)"
-            >
-              <ExternalLinkIcon class="w-4 h-auto" />
-            </div>
+            <DatabaseGroupTargetDisplay :target="target" class="px-1 py-1" />
           </template>
           <template v-else>
             <!-- Unknown resource -->
@@ -96,19 +78,13 @@
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
 import { isEqual } from "lodash-es";
-import { ExternalLinkIcon } from "lucide-vue-next";
-import { NButton, NTag } from "naive-ui";
+import { NButton } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
 import { BBSpin } from "@/bbkit";
-import DatabaseGroupIcon from "@/components/DatabaseGroupIcon.vue";
-import DatabaseGroupName from "@/components/v2/Model/DatabaseGroupName.vue";
 import { planServiceClientConnect } from "@/grpcweb";
-import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/router/dashboard/projectV1";
 import {
   batchGetOrFetchDatabases,
-  getProjectNameAndDatabaseGroupName,
   projectNamePrefix,
   pushNotification,
   useDBGroupStore,
@@ -122,12 +98,12 @@ import { usePlanContext } from "../../logic/context";
 import DatabaseDisplay from "../common/DatabaseDisplay.vue";
 import AllTargetsDrawer from "./AllTargetsDrawer.vue";
 import { useSelectedSpec } from "./context";
+import DatabaseGroupTargetDisplay from "./DatabaseGroupTargetDisplay.vue";
 import TargetsSelectorDrawer from "./TargetsSelectorDrawer.vue";
 
 const DEFAULT_VISIBLE_TARGETS = 20;
 
 const { t } = useI18n();
-const router = useRouter();
 const { plan, isCreating, readonly } = usePlanContext();
 const selectedSpec = useSelectedSpec();
 const dbGroupStore = useDBGroupStore();
@@ -147,6 +123,16 @@ const targets = computed(() => {
   }
   return [];
 });
+
+// Get databases from deployment mapping for a database group
+const getDatabasesForGroup = (groupName: string): string[] => {
+  const deployment = plan.value.deployment;
+  if (!deployment) return [];
+  const mapping = deployment.databaseGroupMappings.find(
+    (m: { databaseGroup: string }) => m.databaseGroup === groupName
+  );
+  return mapping?.databases ?? [];
+};
 
 const project = computed(() => {
   if (!plan.value?.name) return undefined;
@@ -212,6 +198,9 @@ const loadTargetData = async () => {
     for (const target of visibleTargets) {
       if (isValidDatabaseGroupName(target)) {
         dbGroupTargets.push(target);
+        // Also collect databases from deployment mapping for this group
+        const mappedDatabases = getDatabasesForGroup(target);
+        databaseTargets.push(...mappedDatabases);
       } else {
         databaseTargets.push(target);
       }
@@ -233,19 +222,6 @@ const loadTargetData = async () => {
   } finally {
     isLoadingTargets.value = false;
   }
-};
-
-const gotoDatabaseGroupDetailPage = (dbGroup: string) => {
-  const [projectId, databaseGroupName] =
-    getProjectNameAndDatabaseGroupName(dbGroup);
-  const url = router.resolve({
-    name: PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
-    params: {
-      projectId,
-      databaseGroupName,
-    },
-  }).fullPath;
-  window.open(url, "_blank");
 };
 
 // Watch for target changes and load data

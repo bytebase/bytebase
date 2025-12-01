@@ -1262,6 +1262,9 @@ func getPlanDeployment(ctx context.Context, s *store.Store, specs []*storepb.Pla
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get database group")
 		}
+		if databaseGroup == nil {
+			return nil, errors.Errorf("database group %q not found", name)
+		}
 
 		matchedDatabases, err := utils.GetMatchedDatabasesInDatabaseGroup(ctx, databaseGroup, allDatabases)
 		if err != nil {

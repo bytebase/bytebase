@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -102,10 +103,14 @@ func getPlanCheckRunsFromChangeDatabaseConfigDatabaseGroupTarget(ctx context.Con
 
 	databaseGroup, err := getDatabaseGroupByName(ctx, s, target, v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_FULL)
 	if err != nil {
+		// If database group was deleted, skip plan checks for it.
+		if connect.CodeOf(err) == connect.CodeNotFound {
+			return nil, nil
+		}
 		return nil, errors.Wrapf(err, "failed to get database group %q", target)
 	}
 	if len(databaseGroup.MatchedDatabases) == 0 {
-		return nil, errors.Errorf("no matched databases found in database group %q", target)
+		return nil, nil
 	}
 
 	sheetUIDs, err := getSheetUIDsFromChangeDatabaseConfig(config)

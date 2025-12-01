@@ -243,6 +243,7 @@
     },
     "collapse": "Collapse",
     "show-more": "Show more",
+    "n-more": "+{n} more",
     "remaining": "remaining",
     "line": "Line",
     "column": "Column",
@@ -1160,9 +1161,6 @@
     "targets": {
       "title": "Targets",
       "no-targets-found": "No targets found",
-      "type": {
-        "database-group": "Database Group"
-      },
       "view-all": "View all ({count})"
     },
     "select-isolation-level": "Select isolation level",
@@ -2814,6 +2812,7 @@
   },
   "database-group": {
     "create": "New database group",
+    "deleted": "Deleted database group",
     "matched-database": "Matched database",
     "unmatched-database": "Unmatched database",
     "condition": {
