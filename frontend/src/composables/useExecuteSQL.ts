@@ -327,15 +327,12 @@ const useExecuteSQL = () => {
       flattenNoSQLResult(resultSet);
     }
 
-    if (resultSet.error) {
-      // The error message should be consistent with the one from the backend.
-      if (isOnlySelectError(resultSet)) {
-        // Show a tips to navigate to issue creation
-        // if the user is allowed to create issue in the project.
-        if (hasPermissionToCreateChangeDatabaseIssue(database)) {
-          sqlEditorStore.isShowExecutingHint = true;
-          sqlEditorStore.executingHintDatabase = database;
-        }
+    if (isOnlySelectError(resultSet)) {
+      // Show a tips to navigate to issue creation
+      // if the user is allowed to create issue in the project.
+      if (hasPermissionToCreateChangeDatabaseIssue(database)) {
+        sqlEditorStore.isShowExecutingHint = true;
+        sqlEditorStore.executingHintDatabase = database;
       }
       return finish(resultSet);
     }
