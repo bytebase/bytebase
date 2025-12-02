@@ -352,6 +352,13 @@
       "connection-limit": "Esperando conexiones disponibles",
       "parallel-tasks-limit": "Esperando a que se completen otras tareas",
       "blocking-task": "Esperando otra tarea"
+    },
+    "type": {
+      "database-create": "Crear base de datos",
+      "migrate": "Migrar",
+      "database-sdl": "SDL",
+      "database-export": "Exportar datos",
+      "general": "General"
     }
   },
   "task-run": {

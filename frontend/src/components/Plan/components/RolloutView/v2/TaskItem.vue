@@ -275,8 +275,7 @@ import TaskRolloutActionPanel from "@/components/Plan/components/RolloutView/Tas
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import { taskRunNamePrefix } from "@/store";
 import type { Stage, Task } from "@/types/proto-es/v1/rollout_service_pb";
-import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
-import { getTaskTypeI18nKey } from "@/utils";
+import { Task_Status, Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
 import { useTaskActions } from "./composables/useTaskActions";
 import { useTaskRunSummary } from "./composables/useTaskRunSummary";
 import { useTaskStatement } from "./composables/useTaskStatement";
@@ -364,8 +363,20 @@ const affectedRowsDisplay = computed(() => {
 });
 
 const taskTypeDisplay = computed(() => {
-  const i18nKey = getTaskTypeI18nKey(props.task);
-  return i18nKey ? t(i18nKey) : "";
+  switch (props.task.type) {
+    case Task_Type.DATABASE_CREATE:
+      return t("task.type.database-create");
+    case Task_Type.DATABASE_MIGRATE:
+      return t("task.type.migrate");
+    case Task_Type.DATABASE_SDL:
+      return t("task.type.database-sdl");
+    case Task_Type.DATABASE_EXPORT:
+      return t("task.type.database-export");
+    case Task_Type.GENERAL:
+      return t("task.type.general");
+    default:
+      return "";
+  }
 });
 
 const errorPreview = computed(() => {
