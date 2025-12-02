@@ -22,32 +22,25 @@ const (
 )
 
 // ChangeDatabaseType extends MigrationType with additional execution contexts.
-// Note: DDL, DML, and DDL_GHOST values align with MigrationType enum values.
 type PlanCheckRunConfig_ChangeDatabaseType int32
 
 const (
 	PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED PlanCheckRunConfig_ChangeDatabaseType = 0
-	PlanCheckRunConfig_DDL                              PlanCheckRunConfig_ChangeDatabaseType = 1
-	PlanCheckRunConfig_DML                              PlanCheckRunConfig_ChangeDatabaseType = 2
-	PlanCheckRunConfig_SDL                              PlanCheckRunConfig_ChangeDatabaseType = 3
-	PlanCheckRunConfig_DDL_GHOST                        PlanCheckRunConfig_ChangeDatabaseType = 4
+	PlanCheckRunConfig_CHANGE_DATABASE                  PlanCheckRunConfig_ChangeDatabaseType = 1
+	PlanCheckRunConfig_SDL                              PlanCheckRunConfig_ChangeDatabaseType = 2
 )
 
 // Enum value maps for PlanCheckRunConfig_ChangeDatabaseType.
 var (
 	PlanCheckRunConfig_ChangeDatabaseType_name = map[int32]string{
 		0: "CHANGE_DATABASE_TYPE_UNSPECIFIED",
-		1: "DDL",
-		2: "DML",
-		3: "SDL",
-		4: "DDL_GHOST",
+		1: "CHANGE_DATABASE",
+		2: "SDL",
 	}
 	PlanCheckRunConfig_ChangeDatabaseType_value = map[string]int32{
 		"CHANGE_DATABASE_TYPE_UNSPECIFIED": 0,
-		"DDL":                              1,
-		"DML":                              2,
-		"SDL":                              3,
-		"DDL_GHOST":                        4,
+		"CHANGE_DATABASE":                  1,
+		"SDL":                              2,
 	}
 )
 
@@ -456,7 +449,7 @@ var File_store_plan_check_run_proto protoreflect.FileDescriptor
 
 const file_store_plan_check_run_proto_rawDesc = "" +
 	"\n" +
-	"\x1astore/plan_check_run.proto\x12\x0ebytebase.store\x1a\x12store/advice.proto\x1a\x15store/changelog.proto\x1a\x12store/common.proto\"\xad\x04\n" +
+	"\x1astore/plan_check_run.proto\x12\x0ebytebase.store\x1a\x12store/advice.proto\x1a\x15store/changelog.proto\x1a\x12store/common.proto\"\xa1\x04\n" +
 	"\x12PlanCheckRunConfig\x12\x1b\n" +
 	"\tsheet_uid\x18\x01 \x01(\x05R\bsheetUid\x12g\n" +
 	"\x14change_database_type\x18\x02 \x01(\x0e25.bytebase.store.PlanCheckRunConfig.ChangeDatabaseTypeR\x12changeDatabaseType\x12\x1f\n" +
@@ -469,13 +462,11 @@ const file_store_plan_check_run_proto_rawDesc = "" +
 	"\fenable_ghost\x18\b \x01(\bR\venableGhost\x1a=\n" +
 	"\x0fGhostFlagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"d\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"X\n" +
 	"\x12ChangeDatabaseType\x12$\n" +
-	" CHANGE_DATABASE_TYPE_UNSPECIFIED\x10\x00\x12\a\n" +
-	"\x03DDL\x10\x01\x12\a\n" +
-	"\x03DML\x10\x02\x12\a\n" +
-	"\x03SDL\x10\x03\x12\r\n" +
-	"\tDDL_GHOST\x10\x04\"\xb6\x06\n" +
+	" CHANGE_DATABASE_TYPE_UNSPECIFIED\x10\x00\x12\x13\n" +
+	"\x0fCHANGE_DATABASE\x10\x01\x12\a\n" +
+	"\x03SDL\x10\x02\"\xb6\x06\n" +
 	"\x12PlanCheckRunResult\x12C\n" +
 	"\aresults\x18\x01 \x03(\v2).bytebase.store.PlanCheckRunResult.ResultR\aresults\x12\x14\n" +
 	"\x05error\x18\x02 \x01(\tR\x05error\x1a\xc4\x05\n" +

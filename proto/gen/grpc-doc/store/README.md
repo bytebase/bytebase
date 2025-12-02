@@ -3355,15 +3355,12 @@ Type is the database change type.
 
 ### PlanCheckRunConfig.ChangeDatabaseType
 ChangeDatabaseType extends MigrationType with additional execution contexts.
-Note: DDL, DML, and DDL_GHOST values align with MigrationType enum values.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | CHANGE_DATABASE_TYPE_UNSPECIFIED | 0 |  |
-| DDL | 1 |  |
-| DML | 2 |  |
-| SDL | 3 |  |
-| DDL_GHOST | 4 |  |
+| CHANGE_DATABASE | 1 |  |
+| SDL | 2 |  |
 
 
  
