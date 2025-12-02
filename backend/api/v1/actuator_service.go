@@ -170,13 +170,19 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 	// Check if sample instances are available
 	hasSampleInstances, _ := s.store.HasSampleInstances(ctx)
 
+	// Prefer command-line flag over database value for external URL
+	externalURL := setting.ExternalUrl
+	if s.profile.ExternalURL != "" {
+		externalURL = s.profile.ExternalURL
+	}
+
 	serverInfo := v1pb.ActuatorInfo{
 		Version:                s.profile.Version,
 		GitCommit:              s.profile.GitCommit,
 		Saas:                   s.profile.SaaS,
 		Demo:                   s.profile.Demo,
 		NeedAdminSetup:         count == 0,
-		ExternalUrl:            setting.ExternalUrl,
+		ExternalUrl:            externalURL,
 		DisallowSignup:         setting.DisallowSignup || s.profile.SaaS,
 		Require_2Fa:            setting.Require_2Fa,
 		LastActiveTime:         timestamppb.New(time.Unix(s.profile.LastActiveTS.Load(), 0)),
@@ -187,6 +193,7 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 		DisallowPasswordSignin: setting.DisallowPasswordSignin,
 		PasswordRestriction:    passwordSetting,
 		EnableSample:           hasSampleInstances,
+		ExternalUrlFromFlag:    s.profile.ExternalURL != "",
 	}
 
 	stats, err := s.store.StatUsers(ctx)

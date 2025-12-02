@@ -5787,6 +5787,7 @@ Actuator concept is similar to the Spring Boot Actuator.
 | activated_instance_count | [int32](#int32) |  | The number of activated database instances. |
 | total_instance_count | [int32](#int32) |  | The total number of database instances. |
 | enable_sample | [bool](#bool) |  | Whether sample data setup is enabled. |
+| external_url_from_flag | [bool](#bool) |  | Whether the external URL is set via command-line flag (and thus cannot be changed via UI). |
 
 
 

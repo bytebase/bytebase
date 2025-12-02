@@ -195,6 +195,10 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 				if s.profile.SaaS {
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("feature %s is unavailable in current mode", settingName))
 				}
+				// Prevent changing external URL via UI when it's set via command-line flag
+				if s.profile.ExternalURL != "" {
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("external URL is managed via --external-url command-line flag and cannot be changed through the UI"))
+				}
 				if payload.ExternalUrl != "" {
 					externalURL, err := common.NormalizeExternalURL(payload.ExternalUrl)
 					if err != nil {

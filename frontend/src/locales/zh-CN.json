@@ -633,7 +633,9 @@
         },
         "external-url": {
           "self": "External URL",
-          "description": "用户或回调能访问到的 Bytebase URL，必须以 http:// 或 https:// 开头。"
+          "description": "用户或回调能访问到的 Bytebase URL，必须以 http:// 或 https:// 开头。",
+          "managed-by-flag": "此设置由 --external-url 命令行参数管理",
+          "cannot-edit-flag": "外部 URL 无法更改，因为它是通过 --external-url 命令行参数设置的"
         },
         "sign-in-frequency": {
           "self": "登录频率",

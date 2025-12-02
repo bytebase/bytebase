@@ -633,7 +633,9 @@
         },
         "external-url": {
           "self": "External URL",
-          "description": "The external URL where user visits Bytebase, must start with http:// or https://."
+          "description": "The external URL where user visits Bytebase, must start with http:// or https://.",
+          "managed-by-flag": "This setting is managed via the --external-url command-line flag",
+          "cannot-edit-flag": "External URL cannot be changed because it is set via --external-url command-line flag"
         },
         "sign-in-frequency": {
           "self": "Sign-in frequency",

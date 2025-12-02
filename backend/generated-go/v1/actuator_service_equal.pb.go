@@ -186,5 +186,8 @@ func (x *ActuatorInfo) Equal(y *ActuatorInfo) bool {
 	if x.EnableSample != y.EnableSample {
 		return false
 	}
+	if x.ExternalUrlFromFlag != y.ExternalUrlFromFlag {
+		return false
+	}
 	return true
 }

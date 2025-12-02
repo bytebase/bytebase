@@ -633,7 +633,9 @@
         },
         "external-url": {
           "self": "外部URL",
-          "description": "ユーザーまたはコールバックがアクセスできる Bytebase URL は、http:// または https:// で始まる必要があります。"
+          "description": "ユーザーまたはコールバックがアクセスできる Bytebase URL は、http:// または https:// で始まる必要があります。",
+          "managed-by-flag": "この設定は --external-url コマンドラインフラグによって管理されています",
+          "cannot-edit-flag": "外部URLは --external-url コマンドラインフラグで設定されているため変更できません"
         },
         "sign-in-frequency": {
           "self": "ログイン頻度",

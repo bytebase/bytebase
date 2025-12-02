@@ -987,7 +987,9 @@ func (s *ProjectService) TestWebhook(ctx context.Context, req *connect.Request[v
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get workspace setting"))
 	}
-	if setting.ExternalUrl == "" {
+	// Use command-line flag value if set, otherwise use database value
+	externalURL := common.GetEffectiveExternalURL(s.profile.ExternalURL, setting.ExternalUrl)
+	if externalURL == "" {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf(setupExternalURLError))
 	}
 
@@ -1028,7 +1030,7 @@ func (s *ProjectService) TestWebhook(ctx context.Context, req *connect.Request[v
 			Title:       fmt.Sprintf("Test webhook %q", webhook.Payload.GetTitle()),
 			TitleZh:     fmt.Sprintf("测试 webhook %q", webhook.Payload.GetTitle()),
 			Description: "This is a test",
-			Link:        fmt.Sprintf("%s/projects/%s/webhooks/%s", setting.ExternalUrl, project.ResourceID, fmt.Sprintf("%s-%d", slug.Make(webhook.Payload.GetTitle()), webhook.ID)),
+			Link:        fmt.Sprintf("%s/projects/%s/webhooks/%s", externalURL, project.ResourceID, fmt.Sprintf("%s-%d", slug.Make(webhook.Payload.GetTitle()), webhook.ID)),
 			ActorID:     common.SystemBotID,
 			ActorName:   "Bytebase",
 			ActorEmail:  s.store.GetSystemBotUser(ctx).Email,

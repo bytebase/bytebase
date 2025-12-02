@@ -25,16 +25,26 @@
             url="https://docs.bytebase.com/get-started/self-host/external-url?source=console"
           />
         </div>
-        <NTooltip placement="top-start" :disabled="allowEdit">
+        <div v-if="externalUrlFromFlag" class="mb-2 text-sm text-accent">
+          {{ $t("settings.general.workspace.external-url.managed-by-flag") }}
+        </div>
+        <NTooltip
+          placement="top-start"
+          :disabled="allowEdit && !externalUrlFromFlag"
+        >
           <template #trigger>
             <NInput
               v-model:value="state.externalUrl"
               class="mb-4 w-full"
-              :disabled="!allowEdit || isSaaSMode"
+              :disabled="!allowEdit || isSaaSMode || externalUrlFromFlag"
             />
           </template>
           <span class="text-sm text-gray-400 -translate-y-2">
-            {{ $t("settings.general.workspace.only-admin-can-edit") }}
+            {{
+              externalUrlFromFlag
+                ? $t("settings.general.workspace.external-url.cannot-edit-flag")
+                : $t("settings.general.workspace.only-admin-can-edit")
+            }}
           </span>
         </NTooltip>
       </div>
@@ -116,6 +126,10 @@ const { isSaaSMode } = storeToRefs(actuatorV1Store);
 
 const state = reactive<LocalState>(getInitialState());
 const showModal = ref(false);
+
+const externalUrlFromFlag = computed(() => {
+  return actuatorV1Store.serverInfo?.externalUrlFromFlag ?? false;
+});
 
 const allowSave = computed((): boolean => {
   return !isEqual(state, getInitialState());

@@ -7964,6 +7964,10 @@ components:
                     readOnly: true
                     type: boolean
                     description: Whether sample data setup is enabled.
+                externalUrlFromFlag:
+                    readOnly: true
+                    type: boolean
+                    description: Whether the external URL is set via command-line flag (and thus cannot be changed via UI).
             description: |-
                 System information and configuration for the Bytebase instance.
                  Actuator concept is similar to the Spring Boot Actuator.

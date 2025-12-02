@@ -633,7 +633,9 @@
         },
         "external-url": {
           "self": "URL Externa",
-          "description": "La URL externa donde el usuario visita Bytebase, debe comenzar con http:// o https://."
+          "description": "La URL externa donde el usuario visita Bytebase, debe comenzar con http:// o https://.",
+          "managed-by-flag": "Esta configuración está gestionada a través del parámetro de línea de comandos --external-url",
+          "cannot-edit-flag": "La URL externa no se puede cambiar porque está configurada mediante el parámetro de línea de comandos --external-url"
         },
         "sign-in-frequency": {
           "self": "Frecuencia de inicio de sesión",

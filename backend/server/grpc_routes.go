@@ -79,7 +79,7 @@ func configureGrpcRouters(
 	databaseGroupService := apiv1.NewDatabaseGroupService(stores, profile, iamManager, licenseService)
 	databaseService := apiv1.NewDatabaseService(stores, schemaSyncer, licenseService, profile, iamManager)
 	groupService := apiv1.NewGroupService(stores, iamManager, licenseService)
-	identityProviderService := apiv1.NewIdentityProviderService(stores, licenseService)
+	identityProviderService := apiv1.NewIdentityProviderService(stores, licenseService, profile)
 	instanceRoleService := apiv1.NewInstanceRoleService(stores, dbFactory)
 	instanceService := apiv1.NewInstanceService(stores, profile, licenseService, metricReporter, stateCfg, dbFactory, schemaSyncer, iamManager, sampleInstanceManager)
 	issueService := apiv1.NewIssueService(stores, webhookManager, stateCfg, licenseService, profile, iamManager, metricReporter)

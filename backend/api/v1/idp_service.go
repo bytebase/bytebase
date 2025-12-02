@@ -12,6 +12,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -27,13 +28,15 @@ type IdentityProviderService struct {
 	v1connect.UnimplementedIdentityProviderServiceHandler
 	store          *store.Store
 	licenseService *enterprise.LicenseService
+	profile        *config.Profile
 }
 
 // NewIdentityProviderService creates a new IdentityProviderService.
-func NewIdentityProviderService(store *store.Store, licenseService *enterprise.LicenseService) *IdentityProviderService {
+func NewIdentityProviderService(store *store.Store, licenseService *enterprise.LicenseService, profile *config.Profile) *IdentityProviderService {
 	return &IdentityProviderService{
 		store:          store,
 		licenseService: licenseService,
+		profile:        profile,
 	}
 }
 
@@ -71,7 +74,9 @@ func (s *IdentityProviderService) CreateIdentityProvider(ctx context.Context, re
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get workspace setting"))
 	}
-	if setting.ExternalUrl == "" {
+	// Use command-line flag value if set, otherwise use database value
+	externalURL := common.GetEffectiveExternalURL(s.profile.ExternalURL, setting.ExternalUrl)
+	if externalURL == "" {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf(setupExternalURLError))
 	}
 
@@ -228,7 +233,9 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, req 
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get workspace setting"))
 	}
-	if setting.ExternalUrl == "" {
+	// Use command-line flag value if set, otherwise use database value
+	externalURL := common.GetEffectiveExternalURL(s.profile.ExternalURL, setting.ExternalUrl)
+	if externalURL == "" {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf(setupExternalURLError))
 	}
 

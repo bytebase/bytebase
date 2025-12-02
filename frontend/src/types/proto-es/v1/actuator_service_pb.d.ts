@@ -285,6 +285,13 @@ export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
    * @generated from field: bool enable_sample = 26;
    */
   enableSample: boolean;
+
+  /**
+   * Whether the external URL is set via command-line flag (and thus cannot be changed via UI).
+   *
+   * @generated from field: bool external_url_from_flag = 27;
+   */
+  externalUrlFromFlag: boolean;
 };
 
 /**
