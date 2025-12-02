@@ -533,18 +533,6 @@
       "title": "Các trường được nối phải có kiểu dữ liệu, bộ ký tự giống hệt nhau",
       "description": "Nếu kiểu dữ liệu, bộ ký tự của các cột nối không giống hệt nhau, cơ sở dữ liệu có thể không xác định chính xác các hàng phù hợp, dẫn đến kết quả không chính xác hoặc không đầy đủ."
     },
-    "statement-disallow-mix-ddl-dml": {
-      "title": "Không cho phép trộn lẫn DDL và DML",
-      "description": "Để có hiệu suất tối ưu và tính toàn vẹn dữ liệu, hãy tránh kết hợp các câu lệnh DDL và DML trong cùng một tập lệnh."
-    },
-    "statement-disallow-mix-in-ddl": {
-      "title": "Không cho phép trộn lẫn các câu lệnh trong tác vụ cập nhật lược đồ",
-      "description": "Để có hiệu suất tối ưu và tính toàn vẹn dữ liệu, hãy tránh kết hợp các câu lệnh DDL và DML trong cùng một tập lệnh."
-    },
-    "statement-disallow-mix-in-dml": {
-      "title": "Không cho phép trộn lẫn các câu lệnh trong tác vụ cập nhật dữ liệu",
-      "description": "Để có hiệu suất tối ưu và tính toàn vẹn dữ liệu, hãy tránh kết hợp các câu lệnh DDL và DML trong cùng một tập lệnh."
-    },
     "statement-prior-backup-check": {
       "title": "Kiểm tra sao lưu trước khi thay đổi dữ liệu",
       "description": "Quy tắc này sẽ kiểm tra xem có thể tạo bản sao lưu trước khi thay đổi dữ liệu hay không. Để biết thêm chi tiết, bao gồm cơ sở dữ liệu đích sao lưu tồn tại và không cho phép câu lệnh DDL."
