@@ -16,6 +16,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/state"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -89,6 +90,10 @@ type migrateContext struct {
 	changelog int64
 
 	changeHistoryPayload *storepb.InstanceChangeHistoryPayload
+
+	// needDump indicates whether schema dump is needed before/after migration.
+	// False for pure DML (INSERT, UPDATE, DELETE) since they don't change schema.
+	needDump bool
 }
 
 func getCreateTaskRunLog(ctx context.Context, taskRunUID int, s *store.Store, profile *config.Profile) func(t time.Time, e *storepb.TaskRunLog) error {
@@ -138,6 +143,10 @@ func runMigrationWithFunc(
 	if err != nil {
 		return true, nil, err
 	}
+
+	// Pre-compute whether schema dump is needed.
+	// Skip dump for pure DML statements (INSERT, UPDATE, DELETE) as they don't change schema.
+	mc.needDump = computeNeedDump(task.Type, mc.instance.Metadata.GetEngine(), statement)
 
 	skipped, err := doMigrationWithFunc(ctx, driverCtx, store, stateCfg, profile, statement, mc, execFunc)
 	if err != nil {
@@ -484,7 +493,7 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 
 	// sync history
 	var syncHistoryPrevUID *int64
-	if needDump(mc.task, mc.instance) {
+	if mc.needDump {
 		opts.LogDatabaseSyncStart()
 		syncHistoryPrev, err := mc.syncer.SyncDatabaseSchemaToHistory(ctx, mc.database)
 		if err != nil {
@@ -527,7 +536,7 @@ func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateCo
 		UID: mc.changelog,
 	}
 
-	if needDump(mc.task, mc.instance) {
+	if mc.needDump {
 		opts.LogDatabaseSyncStart()
 		syncHistory, err := mc.syncer.SyncDatabaseSchemaToHistory(ctx, mc.database)
 		if err != nil {
@@ -651,11 +660,15 @@ func isChangeDatabaseTask(task *store.TaskMessage) bool {
 	}
 }
 
-func needDump(task *store.TaskMessage, _ *store.InstanceMessage) bool {
+// computeNeedDump determines if schema dump is needed based on task type and statements.
+func computeNeedDump(taskType storepb.Task_Type, engine storepb.Engine, statement string) bool {
 	//exhaustive:enforce
-	switch task.Type {
-	case storepb.Task_DATABASE_MIGRATE,
-		storepb.Task_DATABASE_SDL,
+	switch taskType {
+	case storepb.Task_DATABASE_MIGRATE:
+		// For DATABASE_MIGRATE, skip dump if all statements are DML
+		// (INSERT, UPDATE, DELETE) since they don't change schema.
+		return !base.IsAllDML(engine, statement)
+	case storepb.Task_DATABASE_SDL,
 		storepb.Task_DATABASE_CREATE:
 		return true
 	case
