@@ -1,0 +1,107 @@
+# 敏感数据分级与审批流功能相关的忽略文件
+
+# 构建产物
+bin/
+build/
+release/
+
+# 测试覆盖率报告
+coverage/
+*.out
+*.html
+
+# protobuf 生成的代码
+backend/api/v1/gen/
+
+# 日志文件
+*.log
+logs/
+
+# 临时文件
+*.tmp
+*.temp
+
+# IDE 配置
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+
+# 数据库文件
+*.db
+*.sqlite
+*.sqlite3
+
+# 环境变量文件
+.env
+.env.local
+.env.*.local
+
+# 文档构建产物
+docs/_build/
+docs/_static/
+docs/_templates/
+
+# 示例程序输出
+examples/output/
+
+# 依赖缓存
+vendor/
+
+# Go 模块缓存
+go.sum
+
+# 敏感数据分级与审批流功能特定的忽略项
+# 审批流程配置文件
+*.flow.json
+*.approval.json
+
+# 敏感数据规则文件
+*.sensitive.json
+*.rules.json
+
+# 测试数据
+testdata/
+*.test.json
+
+# 性能测试结果
+benchmark/
+*.benchmark
+
+# 监控数据
+metrics/
+*.metrics
+
+# 安全相关文件
+*.key
+*.pem
+*.cert
+
+# 备份文件
+*.bak
+*.backup
+
+# 临时配置文件
+*.config.tmp
+*.settings.tmp
+
+# 构建日志
+build.log
+compile.log
+
+# 调试文件
+debug/
+*.debug
+
+# 覆盖率数据
+*.coverage
+*.prof
+
+# 性能分析文件
+*.pprof
+*.trace

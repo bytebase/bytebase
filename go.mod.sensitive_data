@@ -1,0 +1,69 @@
+module github.com/bytebase/bytebase
+
+go 1.18
+
+require (
+	github.com/bytebase/bytebase v1.0.0
+	github.com/google/uuid v1.3.0
+	github.com/rs/zerolog v1.26.1
+	google.golang.org/grpc v1.46.2
+	google.golang.org/protobuf v1.28.0
+
+gorm.io/driver/mysql v1.3.8
+
+gorm.io/driver/postgres v1.3.8
+
+gorm.io/gorm v1.23.11
+)
+
+require (
+	github.com/bytebase/bytebase-proto v0.0.0-20220526062833-8f8f8f8f8f8f // indirect
+	github.com/go-sql-driver/mysql v1.6.0 // indirect
+	github.com/jackc/pgx/v4 v4.17.0 // indirect
+	github.com/lib/pq v1.10.6 // indirect
+	github.com/mattn/go-sqlite3 v1.14.16 // indirect
+	github.com/spf13/cobra v1.5.0 // indirect
+	github.com/spf13/viper v1.13.0 // indirect
+	golang.org/x/net v0.0.0-20220526062833-8f8f8f8f8f8f // indirect
+	golang.org/x/sys v0.0.0-20220526062833-8f8f8f8f8f8f // indirect
+	golang.org/x/text v0.3.7 // indirect
+	google.golang.org/genproto v0.0.0-20220526062833-8f8f8f8f8f8f // indirect
+)
+
+go 1.18
+
+replace github.com/bytebase/bytebase => ./
+
+replace github.com/bytebase/bytebase-proto => ../bytebase-proto
+
+replace golang.org/x/net => github.com/golang/net v0.0.0-20220526062833-8f8f8f8f8f8f
+
+replace golang.org/x/sys => github.com/golang/sys v0.0.0-20220526062833-8f8f8f8f8f8f
+
+replace golang.org/x/text => github.com/golang/text v0.3.7
+
+replace google.golang.org/genproto => github.com/googleapis/go-genproto v0.0.0-20220526062833-8f8f8f8f8f8f
+
+replace github.com/jackc/pgx/v4 => github.com/jackc/pgx/v4 v4.17.0
+
+replace github.com/lib/pq => github.com/lib/pq v1.10.6
+
+replace github.com/mattn/go-sqlite3 => github.com/mattn/go-sqlite3 v1.14.16
+
+replace github.com/spf13/cobra => github.com/spf13/cobra v1.5.0
+
+replace github.com/spf13/viper => github.com/spf13/viper v1.13.0
+
+replace gorm.io/driver/mysql => gorm.io/driver/mysql v1.3.8
+
+replace gorm.io/driver/postgres => gorm.io/driver/postgres v1.3.8
+
+replace gorm.io/gorm => gorm.io/gorm v1.23.11
+
+replace github.com/google/uuid => github.com/google/uuid v1.3.0
+
+replace github.com/rs/zerolog => github.com/rs/zerolog v1.26.1
+
+replace google.golang.org/grpc => google.golang.org/grpc v1.46.2
+
+replace google.golang.org/protobuf => google.golang.org/protobuf v1.28.0

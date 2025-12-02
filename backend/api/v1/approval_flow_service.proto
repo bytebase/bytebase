@@ -1,0 +1,336 @@
+// Copyright 2024 Bytebase Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/bytebase/bytebase/backend/api/v1";
+
+// ApprovalFlowService provides services for managing approval flows.
+service ApprovalFlowService {
+  // CreateApprovalFlow creates a new approval flow.
+  rpc CreateApprovalFlow(CreateApprovalFlowRequest) returns (ApprovalFlow) {
+    option (google.api.http) = {
+      post: "/v1/approval-flows"
+      body: "approval_flow"
+    };
+  }
+
+  // GetApprovalFlow retrieves an approval flow by ID.
+  rpc GetApprovalFlow(GetApprovalFlowRequest) returns (ApprovalFlow) {
+    option (google.api.http) = {
+      get: "/v1/approval-flows/{name}"
+    };
+  }
+
+  // ListApprovalFlows lists all approval flows.
+  rpc ListApprovalFlows(ListApprovalFlowsRequest) returns (ListApprovalFlowsResponse) {
+    option (google.api.http) = {
+      get: "/v1/approval-flows"
+    };
+  }
+
+  // UpdateApprovalFlow updates an approval flow.
+  rpc UpdateApprovalFlow(UpdateApprovalFlowRequest) returns (ApprovalFlow) {
+    option (google.api.http) = {
+      patch: "/v1/approval-flows/{approval_flow.name}"
+      body: "approval_flow"
+    };
+  }
+
+  // DeleteApprovalFlow deletes an approval flow.
+  rpc DeleteApprovalFlow(DeleteApprovalFlowRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v1/approval-flows/{name}"
+    };
+  }
+
+  // SubmitApproval submits an approval request.
+  rpc SubmitApproval(SubmitApprovalRequest) returns (ApprovalRequest) {
+    option (google.api.http) = {
+      post: "/v1/approval-requests"
+      body: "approval_request"
+    };
+  }
+
+  // GetApprovalRequest retrieves an approval request by ID.
+  rpc GetApprovalRequest(GetApprovalRequest) returns (ApprovalRequest) {
+    option (google.api.http) = {
+      get: "/v1/approval-requests/{name}"
+    };
+  }
+
+  // ListApprovalRequests lists all approval requests.
+  rpc ListApprovalRequests(ListApprovalRequestsRequest) returns (ListApprovalRequestsResponse) {
+    option (google.api.http) = {
+      get: "/v1/approval-requests"
+    };
+  }
+
+  // ApproveRequest approves an approval request.
+  rpc ApproveRequest(ApproveRequest) returns (ApprovalRequest) {
+    option (google.api.http) = {
+      post: "/v1/approval-requests/{name}:approve"
+      body: "*"
+    };
+  }
+
+  // RejectRequest rejects an approval request.
+  rpc RejectRequest(RejectRequest) returns (ApprovalRequest) {
+    option (google.api.http) = {
+      post: "/v1/approval-requests/{name}:reject"
+      body: "*"
+    };
+  }
+}
+
+// ApprovalFlow represents an approval flow.
+message ApprovalFlow {
+  // Resource name, format: "approval-flows/{approval_flow_id}"
+  string name = 1;
+
+  // Display name of the approval flow.
+  string display_name = 2;
+
+  // Description of the approval flow.
+  string description = 3;
+
+  // Sensitivity level this approval flow applies to.
+  int32 sensitivity_level = 4;
+
+  // Approval steps in order.
+  repeated ApprovalStep steps = 5;
+
+  // Time when the approval flow was created.
+  google.protobuf.Timestamp create_time = 6;
+
+  // Time when the approval flow was last updated.
+  google.protobuf.Timestamp update_time = 7;
+}
+
+// ApprovalStep represents a step in an approval flow.
+message ApprovalStep {
+  // Step number.
+  int32 step_number = 1;
+
+  // Approver type (e.g., "DBA", "Manager", "TeamLead").
+  string approver_type = 2;
+
+  // Approver IDs (user IDs or group IDs).
+  repeated string approver_ids = 3;
+
+  // Whether this step is optional.
+  bool optional = 4;
+
+  // Timeout duration in seconds.
+  int32 timeout_seconds = 5;
+}
+
+// ApprovalRequest represents an approval request.
+message ApprovalRequest {
+  // Resource name, format: "approval-requests/{approval_request_id}"
+  string name = 1;
+
+  // Title of the approval request.
+  string title = 2;
+
+  // Description of the approval request.
+  string description = 3;
+
+  // Associated issue ID.
+  string issue_id = 4;
+
+  // Sensitivity level of the request.
+  int32 sensitivity_level = 5;
+
+  // Approval flow ID.
+  string approval_flow_id = 6;
+
+  // Current status of the approval request.
+  ApprovalStatus status = 7;
+
+  // Submitter user ID.
+  string submitter = 8;
+
+  // Current step number.
+  int32 current_step = 9;
+
+  // Approval history.
+  repeated ApprovalHistory history = 10;
+
+  // Time when the approval request was created.
+  google.protobuf.Timestamp create_time = 11;
+
+  // Time when the approval request was last updated.
+  google.protobuf.Timestamp update_time = 12;
+}
+
+// ApprovalStatus represents the status of an approval request.
+enum ApprovalStatus {
+  // Unspecified status.
+  APPROVAL_STATUS_UNSPECIFIED = 0;
+
+  // Approval request is pending.
+  APPROVAL_STATUS_PENDING = 1;
+
+  // Approval request is approved.
+  APPROVAL_STATUS_APPROVED = 2;
+
+  // Approval request is rejected.
+  APPROVAL_STATUS_REJECTED = 3;
+
+  // Approval request is canceled.
+  APPROVAL_STATUS_CANCELED = 4;
+
+  // Approval request is timed out.
+  APPROVAL_STATUS_TIMED_OUT = 5;
+}
+
+// ApprovalHistory represents a history entry for an approval request.
+message ApprovalHistory {
+  // Step number.
+  int32 step = 1;
+
+  // Action taken (APPROVE, REJECT, SKIP).
+  ApprovalAction action = 2;
+
+  // Actor user ID.
+  string actor = 3;
+
+  // Comment.
+  string comment = 4;
+
+  // Time when the action was taken.
+  google.protobuf.Timestamp time = 5;
+}
+
+// ApprovalAction represents an action in the approval history.
+enum ApprovalAction {
+  // Unspecified action.
+  APPROVAL_ACTION_UNSPECIFIED = 0;
+
+  // Approve action.
+  APPROVAL_ACTION_APPROVE = 1;
+
+  // Reject action.
+  APPROVAL_ACTION_REJECT = 2;
+
+  // Skip action.
+  APPROVAL_ACTION_SKIP = 3;
+}
+
+// CreateApprovalFlowRequest is the request message for CreateApprovalFlow.
+message CreateApprovalFlowRequest {
+  // The approval flow to create.
+  ApprovalFlow approval_flow = 1;
+}
+
+// GetApprovalFlowRequest is the request message for GetApprovalFlow.
+message GetApprovalFlowRequest {
+  // Resource name, format: "approval-flows/{approval_flow_id}"
+  string name = 1;
+}
+
+// ListApprovalFlowsRequest is the request message for ListApprovalFlows.
+message ListApprovalFlowsRequest {
+  // Filter for listing approval flows.
+  string filter = 1;
+
+  // Maximum number of results to return.
+  int32 page_size = 2;
+
+  // Page token for pagination.
+  string page_token = 3;
+}
+
+// ListApprovalFlowsResponse is the response message for ListApprovalFlows.
+message ListApprovalFlowsResponse {
+  // List of approval flows.
+  repeated ApprovalFlow approval_flows = 1;
+
+  // Next page token.
+  string next_page_token = 2;
+}
+
+// UpdateApprovalFlowRequest is the request message for UpdateApprovalFlow.
+message UpdateApprovalFlowRequest {
+  // The approval flow to update.
+  ApprovalFlow approval_flow = 1;
+
+  // Mask specifying which fields to update.
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+// DeleteApprovalFlowRequest is the request message for DeleteApprovalFlow.
+message DeleteApprovalFlowRequest {
+  // Resource name, format: "approval-flows/{approval_flow_id}"
+  string name = 1;
+}
+
+// SubmitApprovalRequest is the request message for SubmitApproval.
+message SubmitApprovalRequest {
+  // The approval request to submit.
+  ApprovalRequest approval_request = 1;
+}
+
+// GetApprovalRequest is the request message for GetApprovalRequest.
+message GetApprovalRequest {
+  // Resource name, format: "approval-requests/{approval_request_id}"
+  string name = 1;
+}
+
+// ListApprovalRequestsRequest is the request message for ListApprovalRequests.
+message ListApprovalRequestsRequest {
+  // Filter for listing approval requests.
+  string filter = 1;
+
+  // Maximum number of results to return.
+  int32 page_size = 2;
+
+  // Page token for pagination.
+  string page_token = 3;
+}
+
+// ListApprovalRequestsResponse is the response message for ListApprovalRequests.
+message ListApprovalRequestsResponse {
+  // List of approval requests.
+  repeated ApprovalRequest approval_requests = 1;
+
+  // Next page token.
+  string next_page_token = 2;
+}
+
+// ApproveRequest is the request message for ApproveRequest.
+message ApproveRequest {
+  // Resource name, format: "approval-requests/{approval_request_id}"
+  string name = 1;
+
+  // Comment.
+  string comment = 2;
+}
+
+// RejectRequest is the request message for RejectRequest.
+message RejectRequest {
+  // Resource name, format: "approval-requests/{approval_request_id}"
+  string name = 1;
+
+  // Comment.
+  string comment = 2;
+}

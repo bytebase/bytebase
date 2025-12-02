@@ -1,0 +1,160 @@
+// Copyright 2024 Bytebase Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/bytebase/bytebase/backend/api/v1";
+
+// SensitiveLevelService provides services for managing sensitive data levels.
+service SensitiveLevelService {
+  // CreateSensitiveLevel creates a new sensitive data level.
+  rpc CreateSensitiveLevel(CreateSensitiveLevelRequest) returns (SensitiveLevel) {
+    option (google.api.http) = {
+      post: "/v1/sensitive-levels"
+      body: "sensitive_level"
+    };
+  }
+
+  // GetSensitiveLevel retrieves a sensitive data level by ID.
+  rpc GetSensitiveLevel(GetSensitiveLevelRequest) returns (SensitiveLevel) {
+    option (google.api.http) = {
+      get: "/v1/sensitive-levels/{name}"
+    };
+  }
+
+  // ListSensitiveLevels lists all sensitive data levels.
+  rpc ListSensitiveLevels(ListSensitiveLevelsRequest) returns (ListSensitiveLevelsResponse) {
+    option (google.api.http) = {
+      get: "/v1/sensitive-levels"
+    };
+  }
+
+  // UpdateSensitiveLevel updates a sensitive data level.
+  rpc UpdateSensitiveLevel(UpdateSensitiveLevelRequest) returns (SensitiveLevel) {
+    option (google.api.http) = {
+      patch: "/v1/sensitive-levels/{sensitive_level.name}"
+      body: "sensitive_level"
+    };
+  }
+
+  // DeleteSensitiveLevel deletes a sensitive data level.
+  rpc DeleteSensitiveLevel(DeleteSensitiveLevelRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v1/sensitive-levels/{name}"
+    };
+  }
+}
+
+// SensitiveLevel represents a sensitive data level.
+message SensitiveLevel {
+  // Resource name, format: "sensitive-levels/{sensitive_level_id}"
+  string name = 1;
+
+  // Display name of the sensitive data level.
+  string display_name = 2;
+
+  // Description of the sensitive data level.
+  string description = 3;
+
+  // Sensitivity level (1-5, higher is more sensitive).
+  int32 level = 4;
+
+  // Database instance ID this level applies to.
+  string instance_id = 5;
+
+  // Database name this level applies to.
+  string database_name = 6;
+
+  // Table name this level applies to.
+  string table_name = 7;
+
+  // Field rules for identifying sensitive data.
+  repeated FieldRule field_rules = 8;
+
+  // Time when the sensitive level was created.
+  google.protobuf.Timestamp create_time = 9;
+
+  // Time when the sensitive level was last updated.
+  google.protobuf.Timestamp update_time = 10;
+}
+
+// FieldRule represents a rule for identifying sensitive fields.
+message FieldRule {
+  // Field name to match.
+  string field_name = 1;
+
+  // Field type to match (e.g., VARCHAR, TEXT, INT).
+  string field_type = 2;
+
+  // Regular expression to match field values.
+  string regex_pattern = 3;
+
+  // Description of the field rule.
+  string description = 4;
+}
+
+// CreateSensitiveLevelRequest is the request message for CreateSensitiveLevel.
+message CreateSensitiveLevelRequest {
+  // The sensitive data level to create.
+  SensitiveLevel sensitive_level = 1;
+}
+
+// GetSensitiveLevelRequest is the request message for GetSensitiveLevel.
+message GetSensitiveLevelRequest {
+  // Resource name, format: "sensitive-levels/{sensitive_level_id}"
+  string name = 1;
+}
+
+// ListSensitiveLevelsRequest is the request message for ListSensitiveLevels.
+message ListSensitiveLevelsRequest {
+  // Filter for listing sensitive levels.
+  string filter = 1;
+
+  // Maximum number of results to return.
+  int32 page_size = 2;
+
+  // Page token for pagination.
+  string page_token = 3;
+}
+
+// ListSensitiveLevelsResponse is the response message for ListSensitiveLevels.
+message ListSensitiveLevelsResponse {
+  // List of sensitive levels.
+  repeated SensitiveLevel sensitive_levels = 1;
+
+  // Next page token.
+  string next_page_token = 2;
+}
+
+// UpdateSensitiveLevelRequest is the request message for UpdateSensitiveLevel.
+message UpdateSensitiveLevelRequest {
+  // The sensitive data level to update.
+  SensitiveLevel sensitive_level = 1;
+
+  // Mask specifying which fields to update.
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+// DeleteSensitiveLevelRequest is the request message for DeleteSensitiveLevel.
+message DeleteSensitiveLevelRequest {
+  // Resource name, format: "sensitive-levels/{sensitive_level_id}"
+  string name = 1;
+}

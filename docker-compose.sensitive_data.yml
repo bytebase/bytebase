@@ -1,0 +1,188 @@
+# Copyright 2024 Bytebase Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Docker Compose configuration for sensitive data and approval flow services
+
+version: '3.8'
+
+services:
+  # PostgreSQL database for sensitive data and approval flow
+  postgres:
+    image: postgres:15-alpine
+    container_name: sensitive_data_postgres
+    environment:
+      POSTGRES_DB: sensitive_data
+      POSTGRES_USER: sensitive_data_user
+      POSTGRES_PASSWORD: sensitive_data_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sensitive_data_user -d sensitive_data"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Redis for caching and messaging
+  redis:
+    image: redis:7-alpine
+    container_name: sensitive_data_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Sensitive level service
+  sensitive-level-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.sensitive_level
+    container_name: sensitive_level_service
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: sensitive_data
+      DB_USER: sensitive_data_user
+      DB_PASSWORD: sensitive_data_password
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      GRPC_PORT: 50051
+      HTTP_PORT: 8080
+      LOG_LEVEL: info
+    ports:
+      - "50051:50051"
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Approval flow service
+  approval-flow-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.approval_flow
+    container_name: approval_flow_service
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: sensitive_data
+      DB_USER: sensitive_data_user
+      DB_PASSWORD: sensitive_data_password
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      GRPC_PORT: 50052
+      HTTP_PORT: 8081
+      LOG_LEVEL: info
+      SENSITIVE_LEVEL_SERVICE_ADDR: sensitive-level-service:50051
+    ports:
+      - "50052:50052"
+      - "8081:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      sensitive-level-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # API Gateway (optional)
+  api-gateway:
+    image: nginx:alpine
+    container_name: sensitive_data_api_gateway
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./docker/nginx/certs:/etc/nginx/certs:ro
+    depends_on:
+      sensitive-level-service:
+        condition: service_healthy
+      approval-flow-service:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Prometheus for monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: sensitive_data_prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    depends_on:
+      sensitive-level-service:
+        condition: service_healthy
+      approval-flow-service:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Grafana for visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: sensitive_data_grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./docker/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      prometheus:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  default:
+    name: sensitive_data_network
+    driver: bridge
