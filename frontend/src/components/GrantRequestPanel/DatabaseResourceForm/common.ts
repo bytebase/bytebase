@@ -6,6 +6,7 @@ import {
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
 import type { ComposedDatabase, DatabaseResource } from "@/types";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { TableMetadata } from "@/types/proto-es/v1/database_service_pb";
 import { hasSchemaProperty } from "@/utils";
 
@@ -118,6 +119,10 @@ export const getSchemaOrTableTreeOptions = ({
   filterValueList?: string[];
   includeCloumn: boolean;
 }) => {
+  if (database.instanceResource.engine === Engine.MONGODB) {
+    // do not support table level select for MongoDB.
+    return [];
+  }
   const dbSchemaStore = useDBSchemaV1Store();
   const databaseMetadata = dbSchemaStore.getDatabaseMetadataWithoutDefault(
     database.name

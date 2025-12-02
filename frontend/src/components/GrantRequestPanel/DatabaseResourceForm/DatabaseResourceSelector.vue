@@ -318,7 +318,7 @@ onMounted(async () => {
     })
   );
 
-  const newCheckedKeys = new Set(selectedKeys);
+  const newCheckedKeys = new Set<string>([]);
   const newIndeterminateKeys = new Set<string>([]);
   const newExpandedKeys = new Set(
     // expand parents for selected keys
@@ -346,6 +346,7 @@ onMounted(async () => {
     if (!checkedNode) {
       continue;
     }
+    newCheckedKeys.add(selectedKey);
     // loop to check and expand all children
     cascadeLoopTreeNode(checkedNode, (treeNode) => {
       newCheckedKeys.add(treeNode.value);
