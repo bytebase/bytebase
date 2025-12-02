@@ -4,7 +4,7 @@ import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { sheetNameOfTaskV1 } from "@/utils";
 
 /**
- * Prefetches sheets for visible tasks in parallel to improve performance
+ * Prefetches sheets for the given tasks in parallel.
  */
 export const useSheetPreload = (tasks: () => Task[]) => {
   const sheetStore = useSheetV1Store();
@@ -13,31 +13,30 @@ export const useSheetPreload = (tasks: () => Task[]) => {
   watch(
     tasks,
     (currentTasks) => {
-      const uniqueSheetNames = new Set<string>();
-
-      // Extract all unique sheet names from tasks
+      // Extract unique sheet names
+      const sheetNames = new Set<string>();
       for (const task of currentTasks) {
         const sheetName = sheetNameOfTaskV1(task);
         if (sheetName) {
-          uniqueSheetNames.add(sheetName);
+          sheetNames.add(sheetName);
         }
       }
 
-      // Only fetch sheets we haven't fetched yet
-      const newSheets = Array.from(uniqueSheetNames).filter(
+      // Filter to only unfetched sheets
+      const newSheets = Array.from(sheetNames).filter(
         (name) => !fetchedSheets.value.has(name)
       );
 
-      if (newSheets.length > 0) {
-        // Batch fetch new sheets in parallel
-        Promise.all(
-          newSheets.map((sheetName) =>
-            sheetStore.getOrFetchSheetByName(sheetName, "BASIC")
-          )
-        );
+      if (newSheets.length === 0) return;
 
-        // Mark these sheets as fetched
-        newSheets.forEach((name) => fetchedSheets.value.add(name));
+      // Batch fetch in parallel
+      Promise.all(
+        newSheets.map((name) => sheetStore.getOrFetchSheetByName(name, "BASIC"))
+      );
+
+      // Mark as fetched
+      for (const name of newSheets) {
+        fetchedSheets.value.add(name);
       }
     },
     { immediate: true }

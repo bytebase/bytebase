@@ -3,15 +3,10 @@ import { useI18n } from "vue-i18n";
 import { useSheetV1Store } from "@/store";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { getSheetStatement, sheetNameOfTaskV1 } from "@/utils";
-import {
-  MAX_STATEMENT_DISPLAY_SIZE,
-  STATEMENT_PREVIEW_LENGTH,
-} from "../constants";
+import { MAX_STATEMENT_DISPLAY_SIZE } from "../constants";
 
 export interface UseTaskStatementReturn {
   loading: Ref<boolean>;
-  statement: Ref<string>;
-  statementPreview: ComputedRef<string>;
   displayedStatement: ComputedRef<string>;
   isStatementTruncated: ComputedRef<boolean>;
 }
@@ -26,46 +21,35 @@ export const useTaskStatement = (
   const loading = ref(false);
   const statement = ref("");
 
-  // Load statement - uses cached version for collapsed view, lazy loads for expanded view
+  // Only fetch statement when expanded (no preview needed for collapsed view)
   watchEffect(async () => {
+    if (!isExpanded()) {
+      // Skip fetching for collapsed tasks
+      return;
+    }
+
     const sheetName = sheetNameOfTaskV1(task());
     if (!sheetName) {
       statement.value = "";
       return;
     }
 
-    // Check cache first for both expanded and collapsed views
+    // Check cache first
     const cachedSheet = sheetStore.getSheetByName(sheetName);
-
     if (cachedSheet) {
-      // Use cached statement immediately
       statement.value = getSheetStatement(cachedSheet);
-    } else if (isExpanded()) {
-      // Only fetch if expanded and not in cache
-      loading.value = true;
-      try {
-        await sheetStore.getOrFetchSheetByName(sheetName);
-        const sheet = sheetStore.getSheetByName(sheetName);
-        statement.value = sheet ? getSheetStatement(sheet) : "";
-      } finally {
-        loading.value = false;
-      }
-    } else {
-      // Collapsed and not in cache: show empty (will be loaded when expanded)
-      statement.value = "";
+      return;
     }
-  });
 
-  // Preview for collapsed view (first line, truncated)
-  const statementPreview = computed(() => {
-    const stmt = statement.value;
-    if (!stmt) {
-      return t("rollout.task.no-statement");
+    // Fetch if not in cache
+    loading.value = true;
+    try {
+      await sheetStore.getOrFetchSheetByName(sheetName);
+      const sheet = sheetStore.getSheetByName(sheetName);
+      statement.value = sheet ? getSheetStatement(sheet) : "";
+    } finally {
+      loading.value = false;
     }
-    const firstLine = stmt.split("\n")[0];
-    return firstLine.length > STATEMENT_PREVIEW_LENGTH
-      ? firstLine.substring(0, STATEMENT_PREVIEW_LENGTH) + "..."
-      : firstLine;
   });
 
   // Check if statement exceeds display limit
@@ -86,8 +70,6 @@ export const useTaskStatement = (
 
   return {
     loading,
-    statement,
-    statementPreview,
     displayedStatement,
     isStatementTruncated,
   };

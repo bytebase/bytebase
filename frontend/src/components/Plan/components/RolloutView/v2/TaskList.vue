@@ -106,10 +106,14 @@ const loadMoreTasks = () => {
   );
 };
 
-// Prefetch sheets for visible tasks to improve performance
-useSheetPreload(() => visibleTasks.value);
+const { expandedTaskIds, isTaskExpanded, toggleExpand } =
+  useTaskCollapse(filteredTasks);
 
-const { isTaskExpanded, toggleExpand } = useTaskCollapse(filteredTasks);
+// Prefetch sheets for expanded tasks only (statements not shown in collapsed view)
+const expandedTasks = computed(() =>
+  visibleTasks.value.filter((task) => expandedTaskIds.value.has(task.name))
+);
+useSheetPreload(() => expandedTasks.value);
 
 const {
   selectedTasks,

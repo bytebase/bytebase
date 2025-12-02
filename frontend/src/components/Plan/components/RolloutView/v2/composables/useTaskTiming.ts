@@ -2,14 +2,13 @@ import type { ComputedRef } from "vue";
 import { computed } from "vue";
 import type { Task, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
-import { formatDuration } from "./useTaskRunUtils";
+import { getTaskRunDuration } from "./useTaskRunUtils";
 
 export type TimingType = "scheduled" | "running" | "completed" | "none";
 
 export interface UseTaskTimingReturn {
   timingDisplay: ComputedRef<string>;
   timingType: ComputedRef<TimingType>;
-  duration: ComputedRef<number | undefined>;
   scheduledTime: ComputedRef<Date | undefined>;
 }
 
@@ -17,22 +16,6 @@ export const useTaskTiming = (
   task: () => Task,
   latestTaskRun: () => TaskRun | undefined
 ): UseTaskTimingReturn => {
-  const duration = computed(() => {
-    const taskRun = latestTaskRun();
-    if (!taskRun) return undefined;
-
-    const startTime = taskRun.startTime;
-    const updateTime = taskRun.updateTime;
-
-    if (!startTime || !updateTime) {
-      return undefined;
-    }
-
-    const startMs = Number(startTime.seconds) * 1000;
-    const updateMs = Number(updateTime.seconds) * 1000;
-    return updateMs - startMs;
-  });
-
   const scheduledTime = computed(() => {
     const currentTask = task();
     if (currentTask.status === Task_Status.PENDING && currentTask.runTime) {
@@ -57,10 +40,9 @@ export const useTaskTiming = (
     }
 
     if (
-      (status === Task_Status.DONE ||
-        status === Task_Status.FAILED ||
-        status === Task_Status.CANCELED) &&
-      duration.value !== undefined
+      status === Task_Status.DONE ||
+      status === Task_Status.FAILED ||
+      status === Task_Status.CANCELED
     ) {
       return "completed";
     }
@@ -69,15 +51,8 @@ export const useTaskTiming = (
   });
 
   const timingDisplay = computed(() => {
+    const taskRun = latestTaskRun();
     const type = timingType.value;
-
-    if (type === "completed" && duration.value !== undefined) {
-      return formatDuration(duration.value);
-    }
-
-    if (type === "running" && duration.value !== undefined) {
-      return formatDuration(duration.value);
-    }
 
     if (type === "scheduled" && scheduledTime.value) {
       return scheduledTime.value.toLocaleTimeString([], {
@@ -86,13 +61,17 @@ export const useTaskTiming = (
       });
     }
 
+    // Use getTaskRunDuration for running and completed tasks
+    if ((type === "running" || type === "completed") && taskRun) {
+      return getTaskRunDuration(taskRun);
+    }
+
     return "";
   });
 
   return {
     timingDisplay,
     timingType,
-    duration,
     scheduledTime,
   };
 };
