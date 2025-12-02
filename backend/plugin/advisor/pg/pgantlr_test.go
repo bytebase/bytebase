@@ -50,8 +50,6 @@ func TestPostgreSQLANTLRRules(t *testing.T) {
 		advisor.SchemaRuleStatementDisallowAddColumnWithDefault,
 		advisor.SchemaRuleStatementDisallowAddNotNull,
 		advisor.SchemaRuleStatementDisallowCommit,
-		advisor.SchemaRuleStatementDisallowMixInDDL,
-		advisor.SchemaRuleStatementDisallowMixInDML,
 		advisor.SchemaRuleStatementDisallowOnDelCascade,
 		advisor.SchemaRuleStatementDisallowRemoveTblCascade,
 		advisor.SchemaRuleStatementDMLDryRun,

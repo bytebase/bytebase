@@ -306,8 +306,6 @@ func buildRuleTypeMapping() map[string]string {
 		string(advisor.SchemaRuleStatementMaximumJoinTableCount):                 "SchemaRuleStatementMaximumJoinTableCount",
 		string(advisor.SchemaRuleStatementMaximumStatementsInTransaction):        "SchemaRuleStatementMaximumStatementsInTransaction",
 		string(advisor.SchemaRuleStatementJoinStrictColumnAttrs):                 "SchemaRuleStatementJoinStrictColumnAttrs",
-		string(advisor.SchemaRuleStatementDisallowMixInDDL):                      "SchemaRuleStatementDisallowMixInDDL",
-		string(advisor.SchemaRuleStatementDisallowMixInDML):                      "SchemaRuleStatementDisallowMixInDML",
 		string(advisor.SchemaRuleStatementPriorBackupCheck):                      "SchemaRuleStatementPriorBackupCheck",
 		string(advisor.SchemaRuleStatementNonTransactional):                      "SchemaRuleStatementNonTransactional",
 		string(advisor.SchemaRuleStatementAddColumnWithoutPosition):              "SchemaRuleStatementAddColumnWithoutPosition",

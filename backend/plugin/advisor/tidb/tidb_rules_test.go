@@ -113,9 +113,6 @@ func TestTiDBRules(t *testing.T) {
 
 		// advisor.SchemaRuleCollationAllowlist enforce the collation allowlist.
 		advisor.SchemaRuleCollationAllowlist,
-
-		advisor.SchemaRuleStatementDisallowMixInDDL,
-		advisor.SchemaRuleStatementDisallowMixInDML,
 	}
 
 	for _, rule := range tidbRules {

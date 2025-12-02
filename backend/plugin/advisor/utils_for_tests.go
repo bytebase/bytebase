@@ -404,8 +404,6 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType, dbType storepb.Eng
 		SchemaRuleStatementCreateSpecifySchema,
 		SchemaRuleStatementCheckSetRoleVariable,
 		SchemaRuleStatementWhereDisallowFunctionsAndCalculations,
-		SchemaRuleStatementDisallowMixInDDL,
-		SchemaRuleStatementDisallowMixInDML,
 		SchemaRuleStatementPriorBackupCheck,
 		SchemaRuleStatementJoinStrictColumnAttrs,
 		SchemaRuleStatementMaxExecutionTime,
