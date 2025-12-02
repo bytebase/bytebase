@@ -679,8 +679,7 @@ func getApprovalSourceFromPlan(config *storepb.PlanConfig) storepb.WorkspaceAppr
 		case *storepb.PlanConfig_Spec_CreateDatabaseConfig:
 			return storepb.WorkspaceApprovalSetting_Rule_CREATE_DATABASE
 		case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
-			// All DATABASE_MIGRATE and SDL operations use DDL approval rules
-			return storepb.WorkspaceApprovalSetting_Rule_DDL
+			return storepb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE
 		case *storepb.PlanConfig_Spec_ExportDataConfig:
 			return storepb.WorkspaceApprovalSetting_Rule_EXPORT_DATA
 		}

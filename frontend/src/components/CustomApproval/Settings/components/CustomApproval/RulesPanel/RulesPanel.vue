@@ -14,8 +14,7 @@ import { WorkspaceApprovalSetting_Rule_Source } from "@/types/proto-es/v1/settin
 import RulesSection from "./RulesSection.vue";
 
 const supportedSourceList = computed(() => [
-  WorkspaceApprovalSetting_Rule_Source.DDL,
-  WorkspaceApprovalSetting_Rule_Source.DML,
+  WorkspaceApprovalSetting_Rule_Source.CHANGE_DATABASE,
   WorkspaceApprovalSetting_Rule_Source.CREATE_DATABASE,
   WorkspaceApprovalSetting_Rule_Source.EXPORT_DATA,
   WorkspaceApprovalSetting_Rule_Source.REQUEST_ROLE,

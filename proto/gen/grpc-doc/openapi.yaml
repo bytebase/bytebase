@@ -14553,8 +14553,7 @@ components:
                 source:
                     enum:
                         - SOURCE_UNSPECIFIED
-                        - DDL
-                        - DML
+                        - CHANGE_DATABASE
                         - CREATE_DATABASE
                         - EXPORT_DATA
                         - REQUEST_ROLE

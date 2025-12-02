@@ -223,30 +223,27 @@ type WorkspaceApprovalSetting_Rule_Source int32
 
 const (
 	WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED WorkspaceApprovalSetting_Rule_Source = 0
-	WorkspaceApprovalSetting_Rule_DDL                WorkspaceApprovalSetting_Rule_Source = 1
-	WorkspaceApprovalSetting_Rule_DML                WorkspaceApprovalSetting_Rule_Source = 2
-	WorkspaceApprovalSetting_Rule_CREATE_DATABASE    WorkspaceApprovalSetting_Rule_Source = 3
-	WorkspaceApprovalSetting_Rule_EXPORT_DATA        WorkspaceApprovalSetting_Rule_Source = 4
-	WorkspaceApprovalSetting_Rule_REQUEST_ROLE       WorkspaceApprovalSetting_Rule_Source = 5
+	WorkspaceApprovalSetting_Rule_CHANGE_DATABASE    WorkspaceApprovalSetting_Rule_Source = 1
+	WorkspaceApprovalSetting_Rule_CREATE_DATABASE    WorkspaceApprovalSetting_Rule_Source = 2
+	WorkspaceApprovalSetting_Rule_EXPORT_DATA        WorkspaceApprovalSetting_Rule_Source = 3
+	WorkspaceApprovalSetting_Rule_REQUEST_ROLE       WorkspaceApprovalSetting_Rule_Source = 4
 )
 
 // Enum value maps for WorkspaceApprovalSetting_Rule_Source.
 var (
 	WorkspaceApprovalSetting_Rule_Source_name = map[int32]string{
 		0: "SOURCE_UNSPECIFIED",
-		1: "DDL",
-		2: "DML",
-		3: "CREATE_DATABASE",
-		4: "EXPORT_DATA",
-		5: "REQUEST_ROLE",
+		1: "CHANGE_DATABASE",
+		2: "CREATE_DATABASE",
+		3: "EXPORT_DATA",
+		4: "REQUEST_ROLE",
 	}
 	WorkspaceApprovalSetting_Rule_Source_value = map[string]int32{
 		"SOURCE_UNSPECIFIED": 0,
-		"DDL":                1,
-		"DML":                2,
-		"CREATE_DATABASE":    3,
-		"EXPORT_DATA":        4,
-		"REQUEST_ROLE":       5,
+		"CHANGE_DATABASE":    1,
+		"CREATE_DATABASE":    2,
+		"EXPORT_DATA":        3,
+		"REQUEST_ROLE":       4,
 	}
 )
 
@@ -2550,20 +2547,19 @@ const file_store_setting_proto_rawDesc = "" +
 	"\x17ALERT_LEVEL_UNSPECIFIED\x10\x00\x12\x14\n" +
 	"\x10ALERT_LEVEL_INFO\x10\x01\x12\x17\n" +
 	"\x13ALERT_LEVEL_WARNING\x10\x02\x12\x18\n" +
-	"\x14ALERT_LEVEL_CRITICAL\x10\x03\"\x91\x03\n" +
+	"\x14ALERT_LEVEL_CRITICAL\x10\x03\"\x94\x03\n" +
 	"\x18WorkspaceApprovalSetting\x12C\n" +
-	"\x05rules\x18\x01 \x03(\v2-.bytebase.store.WorkspaceApprovalSetting.RuleR\x05rules\x1a\xaf\x02\n" +
+	"\x05rules\x18\x01 \x03(\v2-.bytebase.store.WorkspaceApprovalSetting.RuleR\x05rules\x1a\xb2\x02\n" +
 	"\x04Rule\x12<\n" +
 	"\btemplate\x18\x01 \x01(\v2 .bytebase.store.ApprovalTemplateR\btemplate\x12/\n" +
 	"\tcondition\x18\x02 \x01(\v2\x11.google.type.ExprR\tcondition\x12L\n" +
-	"\x06source\x18\x03 \x01(\x0e24.bytebase.store.WorkspaceApprovalSetting.Rule.SourceR\x06source\"j\n" +
+	"\x06source\x18\x03 \x01(\x0e24.bytebase.store.WorkspaceApprovalSetting.Rule.SourceR\x06source\"m\n" +
 	"\x06Source\x12\x16\n" +
-	"\x12SOURCE_UNSPECIFIED\x10\x00\x12\a\n" +
-	"\x03DDL\x10\x01\x12\a\n" +
-	"\x03DML\x10\x02\x12\x13\n" +
-	"\x0fCREATE_DATABASE\x10\x03\x12\x0f\n" +
-	"\vEXPORT_DATA\x10\x04\x12\x10\n" +
-	"\fREQUEST_ROLE\x10\x05\"\xd0\x06\n" +
+	"\x12SOURCE_UNSPECIFIED\x10\x00\x12\x13\n" +
+	"\x0fCHANGE_DATABASE\x10\x01\x12\x13\n" +
+	"\x0fCREATE_DATABASE\x10\x02\x12\x0f\n" +
+	"\vEXPORT_DATA\x10\x03\x12\x10\n" +
+	"\fREQUEST_ROLE\x10\x04\"\xd0\x06\n" +
 	"\x15SchemaTemplateSetting\x12\\\n" +
 	"\x0ffield_templates\x18\x01 \x03(\v23.bytebase.store.SchemaTemplateSetting.FieldTemplateR\x0efieldTemplates\x12S\n" +
 	"\fcolumn_types\x18\x02 \x03(\v20.bytebase.store.SchemaTemplateSetting.ColumnTypeR\vcolumnTypes\x12\\\n" +

@@ -101,11 +101,10 @@ message WorkspaceApprovalSetting {
     Source source = 3;
     enum Source {
       SOURCE_UNSPECIFIED = 0;
-      DDL = 1;
-      DML = 2;
-      CREATE_DATABASE = 3;
-      EXPORT_DATA = 4;
-      REQUEST_ROLE = 5;
+      CHANGE_DATABASE = 1;
+      CREATE_DATABASE = 2;
+      EXPORT_DATA = 3;
+      REQUEST_ROLE = 4;
     }
   }
   repeated Rule rules = 1;
