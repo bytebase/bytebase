@@ -39,6 +39,7 @@ type Context struct {
 	DBSchema              *storepb.DatabaseSchemaMetadata
 	ChangeType            storepb.PlanCheckRunConfig_ChangeDatabaseType
 	EnablePriorBackup     bool
+	EnableGhost           bool
 	ListDatabaseNamesFunc base.ListDatabaseNamesFunc
 	InstanceID            string
 	IsObjectCaseSensitive bool
