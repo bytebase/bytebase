@@ -148,7 +148,7 @@ func TestDirectApprovalRuleMatching(t *testing.T) {
 	// Note: The status may be SKIPPED/APPROVED if the user is a workspace owner
 	// who can self-approve, but the template should still be assigned
 	a.NotNil(issue.ApprovalTemplate, "Approval template should be assigned")
-	a.Equal("Prod DDL Approval", issue.GetApprovalTemplate().GetTitle(), "Correct approval template should be applied")
+	a.Equal("Prod Change Database Approval", issue.GetApprovalTemplate().GetTitle(), "Correct approval template should be applied")
 }
 
 // TestApprovalRuleFirstMatchWins tests that the first matching approval rule is applied
@@ -296,7 +296,7 @@ func TestApprovalRuleFirstMatchWins(t *testing.T) {
 	a.NotEqual(v1pb.Issue_ERROR, issue.ApprovalStatus)
 
 	// Verify the first rule was applied (not the catch-all)
-	a.Equal("Prod DDL - First Rule", issue.GetApprovalTemplate().GetTitle(), "First matching rule should be applied")
+	a.Equal("Prod Change Database - First Rule", issue.GetApprovalTemplate().GetTitle(), "First matching rule should be applied")
 }
 
 // TestApprovalRuleNoMatch tests that issues without matching approval rules
