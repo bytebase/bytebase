@@ -196,8 +196,6 @@
     - [PlanCheckRunResult.Result.SqlReviewReport](#bytebase-store-PlanCheckRunResult-Result-SqlReviewReport)
     - [PlanCheckRunResult.Result.SqlSummaryReport](#bytebase-store-PlanCheckRunResult-Result-SqlSummaryReport)
   
-    - [PlanCheckRunConfig.ChangeDatabaseType](#bytebase-store-PlanCheckRunConfig-ChangeDatabaseType)
-  
 - [store/policy.proto](#store_policy-proto)
     - [Binding](#bytebase-store-Binding)
     - [DataSourceQueryPolicy](#bytebase-store-DataSourceQueryPolicy)
@@ -3252,12 +3250,12 @@ Type is the database change type.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | sheet_uid | [int32](#int32) |  |  |
-| change_database_type | [PlanCheckRunConfig.ChangeDatabaseType](#bytebase-store-PlanCheckRunConfig-ChangeDatabaseType) |  |  |
 | instance_id | [string](#string) |  |  |
 | database_name | [string](#string) |  |  |
 | ghost_flags | [PlanCheckRunConfig.GhostFlagsEntry](#bytebase-store-PlanCheckRunConfig-GhostFlagsEntry) | repeated |  |
 | enable_prior_backup | [bool](#bool) |  | If set, a backup of the modified data will be created automatically before any changes are applied. |
 | enable_ghost | [bool](#bool) |  | Whether to use gh-ost for online schema migration. |
+| enable_sdl | [bool](#bool) |  | Whether this is a Schema Definition Language (SDL) change. |
 
 
 
@@ -3349,22 +3347,6 @@ Type is the database change type.
 
 
  
-
-
-<a name="bytebase-store-PlanCheckRunConfig-ChangeDatabaseType"></a>
-
-### PlanCheckRunConfig.ChangeDatabaseType
-ChangeDatabaseType extends MigrationType with additional execution contexts.
-Note: DDL, DML, and DDL_GHOST values align with MigrationType enum values.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| CHANGE_DATABASE_TYPE_UNSPECIFIED | 0 |  |
-| DDL | 1 |  |
-| DML | 2 |  |
-| SDL | 3 |  |
-| DDL_GHOST | 4 |  |
-
 
  
 

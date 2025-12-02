@@ -53,8 +53,8 @@ func (*OnlineMigrationAdvisor) Check(ctx context.Context, checkCtx advisor.Conte
 	dbMetadata := model.NewDatabaseMetadata(checkCtx.DBSchema, nil, nil, storepb.Engine_MYSQL, checkCtx.IsObjectCaseSensitive)
 	title := string(checkCtx.Rule.Type)
 
-	// Check gh-ost database existence first if the change type is gh-ost.
-	if checkCtx.ChangeType == storepb.PlanCheckRunConfig_DDL_GHOST {
+	// Check gh-ost database existence first if gh-ost is enabled.
+	if checkCtx.EnableGhost {
 		ghostDatabaseName := common.BackupDatabaseNameOfEngine(storepb.Engine_MYSQL)
 		if !advisor.DatabaseExists(ctx, checkCtx, ghostDatabaseName) {
 			return []*storepb.Advice{
@@ -98,7 +98,7 @@ func (*OnlineMigrationAdvisor) Check(ctx context.Context, checkCtx advisor.Conte
 	// needs online migration.
 	// Advise to enable online migration for the issue, or return OK if it's already enabled.
 	if len(adviceList) == 1 && len(stmtList) == 1 {
-		if checkCtx.ChangeType == storepb.PlanCheckRunConfig_DDL_GHOST {
+		if checkCtx.EnableGhost {
 			return nil, nil
 		}
 
@@ -109,7 +109,7 @@ func (*OnlineMigrationAdvisor) Check(ctx context.Context, checkCtx advisor.Conte
 	// No statement needs online migration.
 	// Advise to disable online migration if it's enabled.
 	if len(adviceList) == 0 {
-		if checkCtx.ChangeType == storepb.PlanCheckRunConfig_DDL_GHOST {
+		if checkCtx.EnableGhost {
 			return []*storepb.Advice{{
 				Status:  level,
 				Code:    code.AdviseNoOnlineMigration.Int32(),

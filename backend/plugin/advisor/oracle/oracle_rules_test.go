@@ -29,8 +29,6 @@ func TestOracleRules(t *testing.T) {
 		advisor.SchemaRuleTableNameNoKeyword,
 		advisor.SchemaRuleIdentifierNoKeyword,
 		advisor.SchemaRuleIdentifierCase,
-		advisor.SchemaRuleStatementDisallowMixInDDL,
-		advisor.SchemaRuleStatementDisallowMixInDML,
 		advisor.SchemaRuleTableCommentConvention,
 		advisor.SchemaRuleColumnCommentConvention,
 	}

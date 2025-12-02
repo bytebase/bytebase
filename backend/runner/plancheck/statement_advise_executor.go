@@ -45,8 +45,6 @@ type StatementAdviseExecutor struct {
 
 // Run will run the plan check statement advise executor once, and run its sub-advisors one-by-one.
 func (e *StatementAdviseExecutor) Run(ctx context.Context, config *storepb.PlanCheckRunConfig) ([]*storepb.PlanCheckRunResult_Result, error) {
-	changeType := config.ChangeDatabaseType
-
 	sheetUID := int(config.SheetUid)
 	sheet, err := e.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID})
 	if err != nil {
@@ -70,6 +68,8 @@ func (e *StatementAdviseExecutor) Run(ctx context.Context, config *storepb.PlanC
 		return nil, err
 	}
 	enablePriorBackup := config.EnablePriorBackup
+	enableGhost := config.EnableGhost
+	enableSDL := config.EnableSdl
 
 	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &config.InstanceId})
 	if err != nil {
@@ -97,7 +97,7 @@ func (e *StatementAdviseExecutor) Run(ctx context.Context, config *storepb.PlanC
 		return nil, errors.Errorf("database not found %q", config.DatabaseName)
 	}
 
-	results, err := e.runReview(ctx, instance, database, changeType, statement, enablePriorBackup)
+	results, err := e.runReview(ctx, instance, database, statement, enablePriorBackup, enableGhost, enableSDL)
 	if err != nil {
 		return nil, err
 	}
@@ -120,9 +120,10 @@ func (e *StatementAdviseExecutor) runReview(
 	ctx context.Context,
 	instance *store.InstanceMessage,
 	database *store.DatabaseMessage,
-	changeType storepb.PlanCheckRunConfig_ChangeDatabaseType,
 	statement string,
 	enablePriorBackup bool,
+	enableGhost bool,
+	enableSDL bool,
 ) ([]*storepb.PlanCheckRunResult_Result, error) {
 	dbMetadata, err := e.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 		InstanceID:   database.InstanceID,
@@ -173,12 +174,13 @@ func (e *StatementAdviseExecutor) runReview(
 		Charset:                  dbMetadata.GetProto().CharacterSet,
 		Collation:                dbMetadata.GetProto().Collation,
 		DBSchema:                 dbMetadata.GetProto(),
-		ChangeType:               changeType,
+		EnableSDL:                enableSDL,
 		DBType:                   instance.Metadata.GetEngine(),
 		OriginalMetadata:         originMetadata,
 		FinalMetadata:            finalMetadata,
 		Driver:                   connection,
 		EnablePriorBackup:        enablePriorBackup,
+		EnableGhost:              enableGhost,
 		UsePostgresDatabaseOwner: useDatabaseOwner,
 		ListDatabaseNamesFunc:    e.buildListDatabaseNamesFunc(),
 		InstanceID:               instance.ResourceID,

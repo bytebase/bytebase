@@ -36,7 +36,7 @@ type BuiltinPriorBackupCheckAdvisor struct {
 
 // Check checks for disallow mix DDL and DML.
 func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	if !checkCtx.EnablePriorBackup || checkCtx.ChangeType != storepb.PlanCheckRunConfig_DML {
+	if !checkCtx.EnablePriorBackup {
 		return nil, nil
 	}
 

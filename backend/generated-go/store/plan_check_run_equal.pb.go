@@ -13,9 +13,6 @@ func (x *PlanCheckRunConfig) Equal(y *PlanCheckRunConfig) bool {
 	if x.SheetUid != y.SheetUid {
 		return false
 	}
-	if x.ChangeDatabaseType != y.ChangeDatabaseType {
-		return false
-	}
 	if x.InstanceId != y.InstanceId {
 		return false
 	}
@@ -38,6 +35,9 @@ func (x *PlanCheckRunConfig) Equal(y *PlanCheckRunConfig) bool {
 		return false
 	}
 	if x.EnableGhost != y.EnableGhost {
+		return false
+	}
+	if x.EnableSdl != y.EnableSdl {
 		return false
 	}
 	return true

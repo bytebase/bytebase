@@ -940,10 +940,6 @@
                 </li>
               
               
-                <li>
-                  <a href="#bytebase.store.PlanCheckRunConfig.ChangeDatabaseType"><span class="badge">E</span>PlanCheckRunConfig.ChangeDatabaseType</a>
-                </li>
-              
               
               
             </ul>
@@ -9199,13 +9195,6 @@ Leave it empty if there is no need to encrypt the zip file. </p></td>
                 </tr>
               
                 <tr>
-                  <td>change_database_type</td>
-                  <td><a href="#bytebase.store.PlanCheckRunConfig.ChangeDatabaseType">PlanCheckRunConfig.ChangeDatabaseType</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>instance_id</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -9238,6 +9227,13 @@ Leave it empty if there is no need to encrypt the zip file. </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>Whether to use gh-ost for online schema migration. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>enable_sdl</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether this is a Schema Definition Language (SDL) change. </p></td>
                 </tr>
               
             </tbody>
@@ -9438,47 +9434,6 @@ Leave it empty if there is no need to encrypt the zip file. </p></td>
         
       
 
-      
-        <h3 id="bytebase.store.PlanCheckRunConfig.ChangeDatabaseType">PlanCheckRunConfig.ChangeDatabaseType</h3>
-        <p>ChangeDatabaseType extends MigrationType with additional execution contexts.</p><p>Note: DDL, DML, and DDL_GHOST values align with MigrationType enum values.</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>CHANGE_DATABASE_TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DDL</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DML</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>SDL</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DDL_GHOST</td>
-                <td>4</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
       
 
       

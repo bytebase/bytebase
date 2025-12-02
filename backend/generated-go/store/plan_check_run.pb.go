@@ -21,74 +21,18 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// ChangeDatabaseType extends MigrationType with additional execution contexts.
-// Note: DDL, DML, and DDL_GHOST values align with MigrationType enum values.
-type PlanCheckRunConfig_ChangeDatabaseType int32
-
-const (
-	PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED PlanCheckRunConfig_ChangeDatabaseType = 0
-	PlanCheckRunConfig_DDL                              PlanCheckRunConfig_ChangeDatabaseType = 1
-	PlanCheckRunConfig_DML                              PlanCheckRunConfig_ChangeDatabaseType = 2
-	PlanCheckRunConfig_SDL                              PlanCheckRunConfig_ChangeDatabaseType = 3
-	PlanCheckRunConfig_DDL_GHOST                        PlanCheckRunConfig_ChangeDatabaseType = 4
-)
-
-// Enum value maps for PlanCheckRunConfig_ChangeDatabaseType.
-var (
-	PlanCheckRunConfig_ChangeDatabaseType_name = map[int32]string{
-		0: "CHANGE_DATABASE_TYPE_UNSPECIFIED",
-		1: "DDL",
-		2: "DML",
-		3: "SDL",
-		4: "DDL_GHOST",
-	}
-	PlanCheckRunConfig_ChangeDatabaseType_value = map[string]int32{
-		"CHANGE_DATABASE_TYPE_UNSPECIFIED": 0,
-		"DDL":                              1,
-		"DML":                              2,
-		"SDL":                              3,
-		"DDL_GHOST":                        4,
-	}
-)
-
-func (x PlanCheckRunConfig_ChangeDatabaseType) Enum() *PlanCheckRunConfig_ChangeDatabaseType {
-	p := new(PlanCheckRunConfig_ChangeDatabaseType)
-	*p = x
-	return p
-}
-
-func (x PlanCheckRunConfig_ChangeDatabaseType) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (PlanCheckRunConfig_ChangeDatabaseType) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_plan_check_run_proto_enumTypes[0].Descriptor()
-}
-
-func (PlanCheckRunConfig_ChangeDatabaseType) Type() protoreflect.EnumType {
-	return &file_store_plan_check_run_proto_enumTypes[0]
-}
-
-func (x PlanCheckRunConfig_ChangeDatabaseType) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use PlanCheckRunConfig_ChangeDatabaseType.Descriptor instead.
-func (PlanCheckRunConfig_ChangeDatabaseType) EnumDescriptor() ([]byte, []int) {
-	return file_store_plan_check_run_proto_rawDescGZIP(), []int{0, 0}
-}
-
 type PlanCheckRunConfig struct {
-	state              protoimpl.MessageState                `protogen:"open.v1"`
-	SheetUid           int32                                 `protobuf:"varint,1,opt,name=sheet_uid,json=sheetUid,proto3" json:"sheet_uid,omitempty"`
-	ChangeDatabaseType PlanCheckRunConfig_ChangeDatabaseType `protobuf:"varint,2,opt,name=change_database_type,json=changeDatabaseType,proto3,enum=bytebase.store.PlanCheckRunConfig_ChangeDatabaseType" json:"change_database_type,omitempty"`
-	InstanceId         string                                `protobuf:"bytes,3,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
-	DatabaseName       string                                `protobuf:"bytes,4,opt,name=database_name,json=databaseName,proto3" json:"database_name,omitempty"`
-	GhostFlags         map[string]string                     `protobuf:"bytes,6,rep,name=ghost_flags,json=ghostFlags,proto3" json:"ghost_flags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	SheetUid     int32                  `protobuf:"varint,1,opt,name=sheet_uid,json=sheetUid,proto3" json:"sheet_uid,omitempty"`
+	InstanceId   string                 `protobuf:"bytes,3,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
+	DatabaseName string                 `protobuf:"bytes,4,opt,name=database_name,json=databaseName,proto3" json:"database_name,omitempty"`
+	GhostFlags   map[string]string      `protobuf:"bytes,6,rep,name=ghost_flags,json=ghostFlags,proto3" json:"ghost_flags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// If set, a backup of the modified data will be created automatically before any changes are applied.
 	EnablePriorBackup bool `protobuf:"varint,7,opt,name=enable_prior_backup,json=enablePriorBackup,proto3" json:"enable_prior_backup,omitempty"`
 	// Whether to use gh-ost for online schema migration.
-	EnableGhost   bool `protobuf:"varint,8,opt,name=enable_ghost,json=enableGhost,proto3" json:"enable_ghost,omitempty"`
+	EnableGhost bool `protobuf:"varint,8,opt,name=enable_ghost,json=enableGhost,proto3" json:"enable_ghost,omitempty"`
+	// Whether this is a Schema Definition Language (SDL) change.
+	EnableSdl     bool `protobuf:"varint,9,opt,name=enable_sdl,json=enableSdl,proto3" json:"enable_sdl,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -130,13 +74,6 @@ func (x *PlanCheckRunConfig) GetSheetUid() int32 {
 	return 0
 }
 
-func (x *PlanCheckRunConfig) GetChangeDatabaseType() PlanCheckRunConfig_ChangeDatabaseType {
-	if x != nil {
-		return x.ChangeDatabaseType
-	}
-	return PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED
-}
-
 func (x *PlanCheckRunConfig) GetInstanceId() string {
 	if x != nil {
 		return x.InstanceId
@@ -168,6 +105,13 @@ func (x *PlanCheckRunConfig) GetEnablePriorBackup() bool {
 func (x *PlanCheckRunConfig) GetEnableGhost() bool {
 	if x != nil {
 		return x.EnableGhost
+	}
+	return false
+}
+
+func (x *PlanCheckRunConfig) GetEnableSdl() bool {
+	if x != nil {
+		return x.EnableSdl
 	}
 	return false
 }
@@ -456,26 +400,21 @@ var File_store_plan_check_run_proto protoreflect.FileDescriptor
 
 const file_store_plan_check_run_proto_rawDesc = "" +
 	"\n" +
-	"\x1astore/plan_check_run.proto\x12\x0ebytebase.store\x1a\x12store/advice.proto\x1a\x15store/changelog.proto\x1a\x12store/common.proto\"\xad\x04\n" +
+	"\x1astore/plan_check_run.proto\x12\x0ebytebase.store\x1a\x12store/advice.proto\x1a\x15store/changelog.proto\x1a\x12store/common.proto\"\x83\x03\n" +
 	"\x12PlanCheckRunConfig\x12\x1b\n" +
-	"\tsheet_uid\x18\x01 \x01(\x05R\bsheetUid\x12g\n" +
-	"\x14change_database_type\x18\x02 \x01(\x0e25.bytebase.store.PlanCheckRunConfig.ChangeDatabaseTypeR\x12changeDatabaseType\x12\x1f\n" +
+	"\tsheet_uid\x18\x01 \x01(\x05R\bsheetUid\x12\x1f\n" +
 	"\vinstance_id\x18\x03 \x01(\tR\n" +
 	"instanceId\x12#\n" +
 	"\rdatabase_name\x18\x04 \x01(\tR\fdatabaseName\x12S\n" +
 	"\vghost_flags\x18\x06 \x03(\v22.bytebase.store.PlanCheckRunConfig.GhostFlagsEntryR\n" +
 	"ghostFlags\x12.\n" +
 	"\x13enable_prior_backup\x18\a \x01(\bR\x11enablePriorBackup\x12!\n" +
-	"\fenable_ghost\x18\b \x01(\bR\venableGhost\x1a=\n" +
+	"\fenable_ghost\x18\b \x01(\bR\venableGhost\x12\x1d\n" +
+	"\n" +
+	"enable_sdl\x18\t \x01(\bR\tenableSdl\x1a=\n" +
 	"\x0fGhostFlagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"d\n" +
-	"\x12ChangeDatabaseType\x12$\n" +
-	" CHANGE_DATABASE_TYPE_UNSPECIFIED\x10\x00\x12\a\n" +
-	"\x03DDL\x10\x01\x12\a\n" +
-	"\x03DML\x10\x02\x12\a\n" +
-	"\x03SDL\x10\x03\x12\r\n" +
-	"\tDDL_GHOST\x10\x04\"\xb6\x06\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01J\x04\b\x02\x10\x03\"\xb6\x06\n" +
 	"\x12PlanCheckRunResult\x12C\n" +
 	"\aresults\x18\x01 \x03(\v2).bytebase.store.PlanCheckRunResult.ResultR\aresults\x12\x14\n" +
 	"\x05error\x18\x02 \x01(\tR\x05error\x1a\xc4\x05\n" +
@@ -508,35 +447,32 @@ func file_store_plan_check_run_proto_rawDescGZIP() []byte {
 	return file_store_plan_check_run_proto_rawDescData
 }
 
-var file_store_plan_check_run_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_store_plan_check_run_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_store_plan_check_run_proto_goTypes = []any{
-	(PlanCheckRunConfig_ChangeDatabaseType)(0), // 0: bytebase.store.PlanCheckRunConfig.ChangeDatabaseType
-	(*PlanCheckRunConfig)(nil),                 // 1: bytebase.store.PlanCheckRunConfig
-	(*PlanCheckRunResult)(nil),                 // 2: bytebase.store.PlanCheckRunResult
-	nil,                                        // 3: bytebase.store.PlanCheckRunConfig.GhostFlagsEntry
-	(*PlanCheckRunResult_Result)(nil),          // 4: bytebase.store.PlanCheckRunResult.Result
-	(*PlanCheckRunResult_Result_SqlSummaryReport)(nil), // 5: bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport
-	(*PlanCheckRunResult_Result_SqlReviewReport)(nil),  // 6: bytebase.store.PlanCheckRunResult.Result.SqlReviewReport
-	(Advice_Status)(0),       // 7: bytebase.store.Advice.Status
-	(*ChangedResources)(nil), // 8: bytebase.store.ChangedResources
-	(*Position)(nil),         // 9: bytebase.store.Position
+	(*PlanCheckRunConfig)(nil),        // 0: bytebase.store.PlanCheckRunConfig
+	(*PlanCheckRunResult)(nil),        // 1: bytebase.store.PlanCheckRunResult
+	nil,                               // 2: bytebase.store.PlanCheckRunConfig.GhostFlagsEntry
+	(*PlanCheckRunResult_Result)(nil), // 3: bytebase.store.PlanCheckRunResult.Result
+	(*PlanCheckRunResult_Result_SqlSummaryReport)(nil), // 4: bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport
+	(*PlanCheckRunResult_Result_SqlReviewReport)(nil),  // 5: bytebase.store.PlanCheckRunResult.Result.SqlReviewReport
+	(Advice_Status)(0),       // 6: bytebase.store.Advice.Status
+	(*ChangedResources)(nil), // 7: bytebase.store.ChangedResources
+	(*Position)(nil),         // 8: bytebase.store.Position
 }
 var file_store_plan_check_run_proto_depIdxs = []int32{
-	0, // 0: bytebase.store.PlanCheckRunConfig.change_database_type:type_name -> bytebase.store.PlanCheckRunConfig.ChangeDatabaseType
-	3, // 1: bytebase.store.PlanCheckRunConfig.ghost_flags:type_name -> bytebase.store.PlanCheckRunConfig.GhostFlagsEntry
-	4, // 2: bytebase.store.PlanCheckRunResult.results:type_name -> bytebase.store.PlanCheckRunResult.Result
-	7, // 3: bytebase.store.PlanCheckRunResult.Result.status:type_name -> bytebase.store.Advice.Status
-	5, // 4: bytebase.store.PlanCheckRunResult.Result.sql_summary_report:type_name -> bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport
-	6, // 5: bytebase.store.PlanCheckRunResult.Result.sql_review_report:type_name -> bytebase.store.PlanCheckRunResult.Result.SqlReviewReport
-	8, // 6: bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport.changed_resources:type_name -> bytebase.store.ChangedResources
-	9, // 7: bytebase.store.PlanCheckRunResult.Result.SqlReviewReport.start_position:type_name -> bytebase.store.Position
-	9, // 8: bytebase.store.PlanCheckRunResult.Result.SqlReviewReport.end_position:type_name -> bytebase.store.Position
-	9, // [9:9] is the sub-list for method output_type
-	9, // [9:9] is the sub-list for method input_type
-	9, // [9:9] is the sub-list for extension type_name
-	9, // [9:9] is the sub-list for extension extendee
-	0, // [0:9] is the sub-list for field type_name
+	2, // 0: bytebase.store.PlanCheckRunConfig.ghost_flags:type_name -> bytebase.store.PlanCheckRunConfig.GhostFlagsEntry
+	3, // 1: bytebase.store.PlanCheckRunResult.results:type_name -> bytebase.store.PlanCheckRunResult.Result
+	6, // 2: bytebase.store.PlanCheckRunResult.Result.status:type_name -> bytebase.store.Advice.Status
+	4, // 3: bytebase.store.PlanCheckRunResult.Result.sql_summary_report:type_name -> bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport
+	5, // 4: bytebase.store.PlanCheckRunResult.Result.sql_review_report:type_name -> bytebase.store.PlanCheckRunResult.Result.SqlReviewReport
+	7, // 5: bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport.changed_resources:type_name -> bytebase.store.ChangedResources
+	8, // 6: bytebase.store.PlanCheckRunResult.Result.SqlReviewReport.start_position:type_name -> bytebase.store.Position
+	8, // 7: bytebase.store.PlanCheckRunResult.Result.SqlReviewReport.end_position:type_name -> bytebase.store.Position
+	8, // [8:8] is the sub-list for method output_type
+	8, // [8:8] is the sub-list for method input_type
+	8, // [8:8] is the sub-list for extension type_name
+	8, // [8:8] is the sub-list for extension extendee
+	0, // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_store_plan_check_run_proto_init() }
@@ -556,14 +492,13 @@ func file_store_plan_check_run_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_plan_check_run_proto_rawDesc), len(file_store_plan_check_run_proto_rawDesc)),
-			NumEnums:      1,
+			NumEnums:      0,
 			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_store_plan_check_run_proto_goTypes,
 		DependencyIndexes: file_store_plan_check_run_proto_depIdxs,
-		EnumInfos:         file_store_plan_check_run_proto_enumTypes,
 		MessageInfos:      file_store_plan_check_run_proto_msgTypes,
 	}.Build()
 	File_store_plan_check_run_proto = out.File
