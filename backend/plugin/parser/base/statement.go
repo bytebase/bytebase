@@ -46,3 +46,40 @@ func FilterEmptyStatementsWithIndexes(list []Statement) ([]Statement, []int32) {
 	}
 	return result, originalIndex
 }
+
+// SingleSQLToStatement converts a SingleSQL to a Statement without AST.
+// The AST field will be nil. Use this for incremental migration.
+func SingleSQLToStatement(sql SingleSQL) Statement {
+	return Statement{
+		Text:            sql.Text,
+		Empty:           sql.Empty,
+		StartPosition:   sql.Start,
+		EndPosition:     sql.End,
+		ByteOffsetStart: sql.ByteOffsetStart,
+		ByteOffsetEnd:   sql.ByteOffsetEnd,
+		AST:             nil,
+	}
+}
+
+// SingleSQLsToStatements converts a slice of SingleSQL to Statements without AST.
+func SingleSQLsToStatements(sqls []SingleSQL) []Statement {
+	result := make([]Statement, len(sqls))
+	for i, sql := range sqls {
+		result[i] = SingleSQLToStatement(sql)
+	}
+	return result
+}
+
+// StatementToSingleSQL converts a Statement back to SingleSQL.
+// The AST is discarded. Use this for backward compatibility.
+func StatementToSingleSQL(stmt Statement) SingleSQL {
+	return SingleSQL{
+		Text:            stmt.Text,
+		Empty:           stmt.Empty,
+		Start:           stmt.StartPosition,
+		End:             stmt.EndPosition,
+		ByteOffsetStart: stmt.ByteOffsetStart,
+		ByteOffsetEnd:   stmt.ByteOffsetEnd,
+		// Note: BaseLine is not preserved as Statement uses 1-based StartPosition
+	}
+}
