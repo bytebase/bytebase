@@ -11,6 +11,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/webhook"
@@ -24,6 +25,7 @@ import (
 type Manager struct {
 	store      *store.Store
 	iamManager *iam.Manager
+	profile    *config.Profile
 }
 
 // Metadata is the activity metadata.
@@ -34,10 +36,11 @@ type Metadata struct {
 type UsersGetter func(ctx context.Context) ([]*store.UserMessage, error)
 
 // NewManager creates an activity manager.
-func NewManager(store *store.Store, iamManager *iam.Manager) *Manager {
+func NewManager(store *store.Store, iamManager *iam.Manager, profile *config.Profile) *Manager {
 	return &Manager{
 		store:      store,
 		iamManager: iamManager,
+		profile:    profile,
 	}
 }
 
@@ -75,15 +78,18 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 		return nil, errors.Wrapf(err, "failed to get workspace setting")
 	}
 
+	// Use command-line flag value if set, otherwise use database value
+	externalURL := common.GetEffectiveExternalURL(m.profile.ExternalURL, setting.ExternalUrl)
+
 	level := webhook.WebhookInfo
 	title := ""
 	titleZh := ""
 	link := ""
 	if e.Issue != nil {
 		// TODO(steven): Remove the slug dependency when the legacy issue page is removed.
-		link = fmt.Sprintf("%s/projects/%s/issues/%s-%d", setting.ExternalUrl, e.Project.ResourceID, slug.Make(e.Issue.Title), e.Issue.UID)
+		link = fmt.Sprintf("%s/projects/%s/issues/%s-%d", externalURL, e.Project.ResourceID, slug.Make(e.Issue.Title), e.Issue.UID)
 	} else if e.Rollout != nil {
-		link = fmt.Sprintf("%s/projects/%s/rollouts/%d", setting.ExternalUrl, e.Project.ResourceID, e.Rollout.UID)
+		link = fmt.Sprintf("%s/projects/%s/rollouts/%d", externalURL, e.Project.ResourceID, e.Rollout.UID)
 	}
 	switch e.Type {
 	case storepb.Activity_ISSUE_CREATE:

@@ -633,7 +633,9 @@
         },
         "external-url": {
           "self": "URL bên ngoài",
-          "description": "URL bên ngoài mà người dùng truy cập Bytebase, phải bắt đầu bằng http:// hoặc https://."
+          "description": "URL bên ngoài mà người dùng truy cập Bytebase, phải bắt đầu bằng http:// hoặc https://.",
+          "managed-by-flag": "Cài đặt này được quản lý thông qua tham số dòng lệnh --external-url",
+          "cannot-edit-flag": "Không thể thay đổi URL bên ngoài vì nó được đặt thông qua tham số dòng lệnh --external-url"
         },
         "sign-in-frequency": {
           "self": "Tần suất đăng nhập",

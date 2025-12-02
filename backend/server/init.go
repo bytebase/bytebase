@@ -146,32 +146,15 @@ func (s *Server) initializeSetting(ctx context.Context) error {
 		return err
 	}
 
-	// initial workspace profile setting
-	workspaceProfileSetting, err := s.store.GetSettingV2(ctx, storepb.SettingName_WORKSPACE_PROFILE)
-	if err != nil {
-		return err
-	}
-
+	// Initialize workspace profile setting only if it doesn't exist
 	workspaceProfilePayload := &storepb.WorkspaceProfileSetting{
-		ExternalUrl:            s.profile.ExternalURL,
-		EnableMetricCollection: true, // Default to enabled for new installations
+		EnableMetricCollection: true,
 	}
-	if workspaceProfileSetting != nil {
-		workspaceProfilePayload = new(storepb.WorkspaceProfileSetting)
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(workspaceProfileSetting.Value), workspaceProfilePayload); err != nil {
-			return err
-		}
-		if s.profile.ExternalURL != "" {
-			workspaceProfilePayload.ExternalUrl = s.profile.ExternalURL
-		}
-	}
-
 	bytes, err := protojson.Marshal(workspaceProfilePayload)
 	if err != nil {
 		return err
 	}
-
-	if _, err := s.store.UpsertSettingV2(ctx, &store.SetSettingMessage{
+	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:  storepb.SettingName_WORKSPACE_PROFILE,
 		Value: string(bytes),
 	}); err != nil {

@@ -179,7 +179,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create iam manager")
 	}
-	s.webhookManager = webhook.NewManager(stores, s.iamManager)
+	s.webhookManager = webhook.NewManager(stores, s.iamManager, profile)
 	s.dbFactory = dbfactory.New(s.store, s.licenseService)
 
 	// Configure echo server.
@@ -214,7 +214,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	// LSP server.
 	s.lspServer = lsp.NewServer(s.store, profile, secret, s.stateCfg, s.iamManager, s.licenseService)
 
-	directorySyncServer := directorysync.NewService(s.store, s.licenseService, s.iamManager)
+	directorySyncServer := directorysync.NewService(s.store, s.licenseService, s.iamManager, profile)
 
 	if err := configureGrpcRouters(ctx, s.echoServer, s.store, sheetManager, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, secret, s.sampleInstanceManager); err != nil {
 		return nil, errors.Wrapf(err, "failed to configure gRPC routers")

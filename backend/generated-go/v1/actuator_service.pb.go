@@ -331,9 +331,11 @@ type ActuatorInfo struct {
 	// The total number of database instances.
 	TotalInstanceCount int32 `protobuf:"varint,25,opt,name=total_instance_count,json=totalInstanceCount,proto3" json:"total_instance_count,omitempty"`
 	// Whether sample data setup is enabled.
-	EnableSample  bool `protobuf:"varint,26,opt,name=enable_sample,json=enableSample,proto3" json:"enable_sample,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	EnableSample bool `protobuf:"varint,26,opt,name=enable_sample,json=enableSample,proto3" json:"enable_sample,omitempty"`
+	// Whether the external URL is set via command-line flag (and thus cannot be changed via UI).
+	ExternalUrlFromFlag bool `protobuf:"varint,27,opt,name=external_url_from_flag,json=externalUrlFromFlag,proto3" json:"external_url_from_flag,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *ActuatorInfo) Reset() {
@@ -520,6 +522,13 @@ func (x *ActuatorInfo) GetEnableSample() bool {
 	return false
 }
 
+func (x *ActuatorInfo) GetExternalUrlFromFlag() bool {
+	if x != nil {
+		return x.ExternalUrlFromFlag
+	}
+	return false
+}
+
 // User statistics by type and state.
 type ActuatorInfo_StatUser struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -599,7 +608,7 @@ const file_v1_actuator_service_proto_rawDesc = "" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskB\x03\xe0A\x02R\n" +
 	"updateMask\x12#\n" +
 	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"\x14\n" +
-	"\x12DeleteCacheRequest\"\xe5\b\n" +
+	"\x12DeleteCacheRequest\"\x9f\t\n" +
 	"\fActuatorInfo\x12\x1d\n" +
 	"\aversion\x18\x01 \x01(\tB\x03\xe0A\x03R\aversion\x12\"\n" +
 	"\n" +
@@ -626,7 +635,8 @@ const file_v1_actuator_service_proto_rawDesc = "" +
 	"user_stats\x18\x17 \x03(\v2\".bytebase.v1.ActuatorInfo.StatUserB\x03\xe0A\x03R\tuserStats\x12=\n" +
 	"\x18activated_instance_count\x18\x18 \x01(\x05B\x03\xe0A\x03R\x16activatedInstanceCount\x125\n" +
 	"\x14total_instance_count\x18\x19 \x01(\x05B\x03\xe0A\x03R\x12totalInstanceCount\x12(\n" +
-	"\renable_sample\x18\x1a \x01(\bB\x03\xe0A\x03R\fenableSample\x1a~\n" +
+	"\renable_sample\x18\x1a \x01(\bB\x03\xe0A\x03R\fenableSample\x128\n" +
+	"\x16external_url_from_flag\x18\x1b \x01(\bB\x03\xe0A\x03R\x13externalUrlFromFlag\x1a~\n" +
 	"\bStatUser\x122\n" +
 	"\tuser_type\x18\x01 \x01(\x0e2\x15.bytebase.v1.UserTypeR\buserType\x12(\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x14\n" +
