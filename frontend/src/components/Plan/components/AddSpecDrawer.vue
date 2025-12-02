@@ -69,7 +69,6 @@ const props = defineProps<{
   title?: string;
   preSelectedDatabases?: ComposedDatabase[];
   preSelectedDatabaseGroup?: string;
-  projectName?: string;
 }>();
 
 const emit = defineEmits<{
