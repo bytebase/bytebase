@@ -41,8 +41,9 @@ const (
 type Manager struct {
 	sync.Mutex
 
-	store    *store.Store
-	astCache *lru.LRU[astHashKey, *Result]
+	store          *store.Store
+	astCache       *lru.LRU[astHashKey, *Result]
+	statementCache *lru.LRU[astHashKey, *StatementResult]
 }
 
 type astHashKey struct {
@@ -53,8 +54,9 @@ type astHashKey struct {
 // NewManager creates a new sheet manager.
 func NewManager(store *store.Store) *Manager {
 	return &Manager{
-		store:    store,
-		astCache: lru.NewLRU[astHashKey, *Result](8, nil, 3*time.Minute),
+		store:          store,
+		astCache:       lru.NewLRU[astHashKey, *Result](8, nil, 3*time.Minute),
+		statementCache: lru.NewLRU[astHashKey, *StatementResult](8, nil, 3*time.Minute),
 	}
 }
 
@@ -192,6 +194,13 @@ type Result struct {
 	advices []*storepb.Advice
 }
 
+// StatementResult holds the cached parsing results with the unified Statement type.
+type StatementResult struct {
+	sync.Mutex
+	statements []base.Statement
+	advices    []*storepb.Advice
+}
+
 // GetASTsForChecks gets the ASTs of statement with caching, and it should only be used
 // for plan checks because it involves some truncating.
 func (sm *Manager) GetASTsForChecks(dbType storepb.Engine, statement string) ([]base.AST, []*storepb.Advice) {
@@ -219,6 +228,36 @@ func (sm *Manager) GetASTsForChecks(dbType storepb.Engine, statement string) ([]
 		result.ast = ast
 	}
 	return result.ast, result.advices
+}
+
+// GetStatementsForChecks gets the unified Statements (with both text and AST) with caching.
+// This is the new unified API that returns complete Statement objects.
+// Use this for new code that needs both text and AST information.
+func (sm *Manager) GetStatementsForChecks(dbType storepb.Engine, statement string) ([]base.Statement, []*storepb.Advice) {
+	var result *StatementResult
+	h := xxh3.HashString(statement)
+	key := astHashKey{hash: h, engine: dbType}
+	sm.Lock()
+	if v, ok := sm.statementCache.Get(key); ok {
+		result = v
+	} else {
+		result = &StatementResult{}
+		sm.statementCache.Add(key, result)
+	}
+	sm.Unlock()
+
+	result.Lock()
+	defer result.Unlock()
+	if result.statements != nil || result.advices != nil {
+		return result.statements, result.advices
+	}
+	statements, err := base.ParseStatements(dbType, statement)
+	if err != nil {
+		result.advices = convertErrorToAdvice(err)
+	} else {
+		result.statements = statements
+	}
+	return result.statements, result.advices
 }
 
 func convertErrorToAdvice(err error) []*storepb.Advice {
