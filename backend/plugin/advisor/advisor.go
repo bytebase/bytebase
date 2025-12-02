@@ -37,7 +37,7 @@ func NewStatusBySQLReviewRuleLevel(level storepb.SQLReviewRuleLevel) (storepb.Ad
 // Context is the context for advisor.
 type Context struct {
 	DBSchema              *storepb.DatabaseSchemaMetadata
-	ChangeType            storepb.PlanCheckRunConfig_ChangeDatabaseType
+	EnableSDL             bool
 	EnablePriorBackup     bool
 	EnableGhost           bool
 	ListDatabaseNamesFunc base.ListDatabaseNamesFunc

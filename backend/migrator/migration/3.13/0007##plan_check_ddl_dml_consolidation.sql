@@ -1,17 +1,16 @@
--- Consolidate ChangeDatabaseType in plan_check_run configs.
--- DDL(1), DML(2), DDL_GHOST(4) -> CHANGE_DATABASE
--- SDL(3) -> SDL
+-- Consolidate ChangeDatabaseType enum to EnableSDL boolean in plan_check_run configs.
+-- DDL(1), DML(2), DDL_GHOST(4) -> enableSdl: false (or absent)
+-- SDL(3) -> enableSdl: true
 
--- Update DDL, DML, DDL_GHOST to CHANGE_DATABASE
+-- Set enableSdl = true for SDL configs
 UPDATE plan_check_run
-SET config = jsonb_set(config, '{changeDatabaseType}', '"CHANGE_DATABASE"')
-WHERE config->>'changeDatabaseType' IN ('DDL', 'DML', 'DDL_GHOST');
-
--- Update SDL to new value (stays as SDL but enum value changes from 3 to 2)
--- Note: protojson serializes as string, so we update the string value
-UPDATE plan_check_run
-SET config = jsonb_set(config, '{changeDatabaseType}', '"SDL"')
+SET config = jsonb_set(config, '{enableSdl}', 'true')
 WHERE config->>'changeDatabaseType' = 'SDL';
+
+-- Remove the deprecated changeDatabaseType field from all configs
+UPDATE plan_check_run
+SET config = config - 'changeDatabaseType'
+WHERE config ? 'changeDatabaseType';
 
 -- Remove disallow-mix rules from review_config if they exist
 UPDATE review_config

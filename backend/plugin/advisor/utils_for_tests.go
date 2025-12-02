@@ -151,9 +151,9 @@ var (
 
 // TestCase is the data struct for test.
 type TestCase struct {
-	Statement  string                                        `yaml:"statement"`
-	ChangeType storepb.PlanCheckRunConfig_ChangeDatabaseType `yaml:"changeType"`
-	Want       []*storepb.Advice                             `yaml:"want,omitempty"`
+	Statement string            `yaml:"statement"`
+	EnableSDL bool              `yaml:"enableSDL"`
+	Want      []*storepb.Advice `yaml:"want,omitempty"`
 }
 
 // RunSQLReviewRuleTest helps to test the SQL review rule.
@@ -244,7 +244,7 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 			Driver:                   nil,
 			CurrentDatabase:          curDB,
 			DBSchema:                 schemaMetadata,
-			ChangeType:               tc.ChangeType,
+			EnableSDL:                tc.EnableSDL,
 			EnablePriorBackup:        true, // Enable backup for testing
 			NoAppendBuiltin:          true,
 			UsePostgresDatabaseOwner: true,

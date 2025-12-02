@@ -189,17 +189,19 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 		return nil, errors.Errorf("sheet %d not found in project %s", sheetUID, plan.ProjectID)
 	}
 
+	enableSDL := config.Type == storepb.PlanConfig_ChangeDatabaseConfig_SDL
+
 	var planCheckRuns []*store.PlanCheckRunMessage
 	planCheckRuns = append(planCheckRuns, &store.PlanCheckRunMessage{
 		PlanUID: plan.UID,
 		Status:  store.PlanCheckRunStatusRunning,
 		Type:    store.PlanCheckDatabaseConnect,
 		Config: &storepb.PlanCheckRunConfig{
-			SheetUid:           int32(sheetUID),
-			ChangeDatabaseType: convertToChangeDatabaseType(config.Type),
-			InstanceId:         instance.ResourceID,
-			DatabaseName:       database.DatabaseName,
-			EnableGhost:        config.EnableGhost,
+			SheetUid:     int32(sheetUID),
+			InstanceId:   instance.ResourceID,
+			DatabaseName: database.DatabaseName,
+			EnableGhost:  config.EnableGhost,
+			EnableSdl:    enableSDL,
 		},
 	})
 
@@ -208,12 +210,12 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 		Status:  store.PlanCheckRunStatusRunning,
 		Type:    store.PlanCheckDatabaseStatementAdvise,
 		Config: &storepb.PlanCheckRunConfig{
-			SheetUid:           int32(sheetUID),
-			ChangeDatabaseType: convertToChangeDatabaseType(config.Type),
-			InstanceId:         instance.ResourceID,
-			DatabaseName:       database.DatabaseName,
-			EnablePriorBackup:  config.EnablePriorBackup,
-			EnableGhost:        config.EnableGhost,
+			SheetUid:          int32(sheetUID),
+			InstanceId:        instance.ResourceID,
+			DatabaseName:      database.DatabaseName,
+			EnablePriorBackup: config.EnablePriorBackup,
+			EnableGhost:       config.EnableGhost,
+			EnableSdl:         enableSDL,
 		},
 	})
 	planCheckRuns = append(planCheckRuns, &store.PlanCheckRunMessage{
@@ -221,11 +223,11 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 		Status:  store.PlanCheckRunStatusRunning,
 		Type:    store.PlanCheckDatabaseStatementSummaryReport,
 		Config: &storepb.PlanCheckRunConfig{
-			SheetUid:           int32(sheetUID),
-			ChangeDatabaseType: convertToChangeDatabaseType(config.Type),
-			InstanceId:         instance.ResourceID,
-			DatabaseName:       database.DatabaseName,
-			EnableGhost:        config.EnableGhost,
+			SheetUid:     int32(sheetUID),
+			InstanceId:   instance.ResourceID,
+			DatabaseName: database.DatabaseName,
+			EnableGhost:  config.EnableGhost,
+			EnableSdl:    enableSDL,
 		},
 	})
 	if config.Type == storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE && config.EnableGhost {
@@ -234,28 +236,17 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 			Status:  store.PlanCheckRunStatusRunning,
 			Type:    store.PlanCheckDatabaseGhostSync,
 			Config: &storepb.PlanCheckRunConfig{
-				SheetUid:           int32(sheetUID),
-				ChangeDatabaseType: convertToChangeDatabaseType(config.Type),
-				InstanceId:         instance.ResourceID,
-				DatabaseName:       database.DatabaseName,
-				EnableGhost:        config.EnableGhost,
-				GhostFlags:         config.GhostFlags,
+				SheetUid:     int32(sheetUID),
+				InstanceId:   instance.ResourceID,
+				DatabaseName: database.DatabaseName,
+				EnableGhost:  config.EnableGhost,
+				EnableSdl:    enableSDL,
+				GhostFlags:   config.GhostFlags,
 			},
 		})
 	}
 
 	return planCheckRuns, nil
-}
-
-func convertToChangeDatabaseType(t storepb.PlanConfig_ChangeDatabaseConfig_Type) storepb.PlanCheckRunConfig_ChangeDatabaseType {
-	switch t {
-	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE:
-		return storepb.PlanCheckRunConfig_CHANGE_DATABASE
-	case storepb.PlanConfig_ChangeDatabaseConfig_SDL:
-		return storepb.PlanCheckRunConfig_SDL
-	default:
-		return storepb.PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED
-	}
 }
 
 func getSheetUIDsFromChangeDatabaseConfig(config *storepb.PlanConfig_ChangeDatabaseConfig) ([]int, error) {
