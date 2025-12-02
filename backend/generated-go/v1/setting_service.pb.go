@@ -225,30 +225,27 @@ type WorkspaceApprovalSetting_Rule_Source int32
 
 const (
 	WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED WorkspaceApprovalSetting_Rule_Source = 0
-	WorkspaceApprovalSetting_Rule_DDL                WorkspaceApprovalSetting_Rule_Source = 1
-	WorkspaceApprovalSetting_Rule_DML                WorkspaceApprovalSetting_Rule_Source = 2
-	WorkspaceApprovalSetting_Rule_CREATE_DATABASE    WorkspaceApprovalSetting_Rule_Source = 3
-	WorkspaceApprovalSetting_Rule_EXPORT_DATA        WorkspaceApprovalSetting_Rule_Source = 4
-	WorkspaceApprovalSetting_Rule_REQUEST_ROLE       WorkspaceApprovalSetting_Rule_Source = 5
+	WorkspaceApprovalSetting_Rule_CHANGE_DATABASE    WorkspaceApprovalSetting_Rule_Source = 1
+	WorkspaceApprovalSetting_Rule_CREATE_DATABASE    WorkspaceApprovalSetting_Rule_Source = 2
+	WorkspaceApprovalSetting_Rule_EXPORT_DATA        WorkspaceApprovalSetting_Rule_Source = 3
+	WorkspaceApprovalSetting_Rule_REQUEST_ROLE       WorkspaceApprovalSetting_Rule_Source = 4
 )
 
 // Enum value maps for WorkspaceApprovalSetting_Rule_Source.
 var (
 	WorkspaceApprovalSetting_Rule_Source_name = map[int32]string{
 		0: "SOURCE_UNSPECIFIED",
-		1: "DDL",
-		2: "DML",
-		3: "CREATE_DATABASE",
-		4: "EXPORT_DATA",
-		5: "REQUEST_ROLE",
+		1: "CHANGE_DATABASE",
+		2: "CREATE_DATABASE",
+		3: "EXPORT_DATA",
+		4: "REQUEST_ROLE",
 	}
 	WorkspaceApprovalSetting_Rule_Source_value = map[string]int32{
 		"SOURCE_UNSPECIFIED": 0,
-		"DDL":                1,
-		"DML":                2,
-		"CREATE_DATABASE":    3,
-		"EXPORT_DATA":        4,
-		"REQUEST_ROLE":       5,
+		"CHANGE_DATABASE":    1,
+		"CREATE_DATABASE":    2,
+		"EXPORT_DATA":        3,
+		"REQUEST_ROLE":       4,
 	}
 )
 
@@ -2182,7 +2179,7 @@ type WorkspaceApprovalSetting_Rule struct {
 	// request.expiration_days: the role expiration days for the request, support "==", "!=", "<", "<=", ">", ">=" operations.
 	// request.role: the request role full name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
 	//
-	// When source is DDL/DML, support: statement.*, resource.* (excluding request.*)
+	// When source is CHANGE_DATABASE, support: statement.*, resource.* (excluding request.*)
 	// When source is CREATE_DATABASE, support: resource.environment_id, resource.project_id, resource.db_engine, resource.database_name
 	// When source is EXPORT_DATA, support: resource.environment_id, resource.project_id, resource.db_engine, resource.database_name, resource.schema_name, resource.table_name
 	// When source is REQUEST_ROLE, support: resource.project_id, request.expiration_days, request.role
@@ -2190,8 +2187,6 @@ type WorkspaceApprovalSetting_Rule struct {
 	// For examples:
 	// resource.environment_id == "prod" && statement.affected_rows >= 100
 	// resource.table_name.matches("sensitive_.*") && resource.db_engine == "MYSQL"
-	//
-	// Legacy format (deprecated): source == "DDL" && level == "HIGH"
 	Condition     *expr.Expr                           `protobuf:"bytes,2,opt,name=condition,proto3" json:"condition,omitempty"`
 	Source        WorkspaceApprovalSetting_Rule_Source `protobuf:"varint,3,opt,name=source,proto3,enum=bytebase.v1.WorkspaceApprovalSetting_Rule_Source" json:"source,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -3206,20 +3201,19 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x17ALERT_LEVEL_UNSPECIFIED\x10\x00\x12\b\n" +
 	"\x04INFO\x10\x01\x12\v\n" +
 	"\aWARNING\x10\x02\x12\f\n" +
-	"\bCRITICAL\x10\x03\"\x88\x03\n" +
+	"\bCRITICAL\x10\x03\"\x8b\x03\n" +
 	"\x18WorkspaceApprovalSetting\x12@\n" +
-	"\x05rules\x18\x01 \x03(\v2*.bytebase.v1.WorkspaceApprovalSetting.RuleR\x05rules\x1a\xa9\x02\n" +
+	"\x05rules\x18\x01 \x03(\v2*.bytebase.v1.WorkspaceApprovalSetting.RuleR\x05rules\x1a\xac\x02\n" +
 	"\x04Rule\x129\n" +
 	"\btemplate\x18\x01 \x01(\v2\x1d.bytebase.v1.ApprovalTemplateR\btemplate\x12/\n" +
 	"\tcondition\x18\x02 \x01(\v2\x11.google.type.ExprR\tcondition\x12I\n" +
-	"\x06source\x18\x03 \x01(\x0e21.bytebase.v1.WorkspaceApprovalSetting.Rule.SourceR\x06source\"j\n" +
+	"\x06source\x18\x03 \x01(\x0e21.bytebase.v1.WorkspaceApprovalSetting.Rule.SourceR\x06source\"m\n" +
 	"\x06Source\x12\x16\n" +
-	"\x12SOURCE_UNSPECIFIED\x10\x00\x12\a\n" +
-	"\x03DDL\x10\x01\x12\a\n" +
-	"\x03DML\x10\x02\x12\x13\n" +
-	"\x0fCREATE_DATABASE\x10\x03\x12\x0f\n" +
-	"\vEXPORT_DATA\x10\x04\x12\x10\n" +
-	"\fREQUEST_ROLE\x10\x05\"\xb2\x06\n" +
+	"\x12SOURCE_UNSPECIFIED\x10\x00\x12\x13\n" +
+	"\x0fCHANGE_DATABASE\x10\x01\x12\x13\n" +
+	"\x0fCREATE_DATABASE\x10\x02\x12\x0f\n" +
+	"\vEXPORT_DATA\x10\x03\x12\x10\n" +
+	"\fREQUEST_ROLE\x10\x04\"\xb2\x06\n" +
 	"\x15SchemaTemplateSetting\x12Y\n" +
 	"\x0ffield_templates\x18\x01 \x03(\v20.bytebase.v1.SchemaTemplateSetting.FieldTemplateR\x0efieldTemplates\x12P\n" +
 	"\fcolumn_types\x18\x02 \x03(\v2-.bytebase.v1.SchemaTemplateSetting.ColumnTypeR\vcolumnTypes\x12Y\n" +

@@ -38,10 +38,7 @@ export const useApprovalRuleTemplates = () => {
           args: [CEL_ATTRIBUTE_STATEMENT_SQL_TYPE, ["DROP_TABLE", "TRUNCATE"]],
         }),
         roles: [PresetRoleType.PROJECT_OWNER, PresetRoleType.WORKSPACE_DBA],
-        sources: [
-          WorkspaceApprovalSetting_Rule_Source.DDL,
-          WorkspaceApprovalSetting_Rule_Source.DML,
-        ],
+        sources: [WorkspaceApprovalSetting_Rule_Source.CHANGE_DATABASE],
       },
       {
         title: () =>
@@ -59,10 +56,7 @@ export const useApprovalRuleTemplates = () => {
           args: [CEL_ATTRIBUTE_STATEMENT_AFFECTED_ROWS, 100],
         }),
         roles: [PresetRoleType.PROJECT_OWNER, PresetRoleType.WORKSPACE_DBA],
-        sources: [
-          WorkspaceApprovalSetting_Rule_Source.DDL,
-          WorkspaceApprovalSetting_Rule_Source.DML,
-        ],
+        sources: [WorkspaceApprovalSetting_Rule_Source.CHANGE_DATABASE],
       },
       {
         title: () =>

@@ -60,13 +60,13 @@ func TestDirectApprovalRuleMatching(t *testing.T) {
 					WorkspaceApprovalSettingValue: &v1pb.WorkspaceApprovalSetting{
 						Rules: []*v1pb.WorkspaceApprovalSetting_Rule{
 							{
-								Source: v1pb.WorkspaceApprovalSetting_Rule_DDL,
+								Source: v1pb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE,
 								Condition: &expr.Expr{
 									Expression: `resource.db_engine == "SQLITE"`, // Use db_engine to test CEL with variables
 								},
 								Template: &v1pb.ApprovalTemplate{
-									Title:       "Prod DDL Approval",
-									Description: "Requires workspace owner approval for DDL in prod",
+									Title:       "Prod Change Database Approval",
+									Description: "Requires workspace owner approval for database changes in prod",
 									Flow: &v1pb.ApprovalFlow{
 										Roles: []string{"roles/workspaceOwner"},
 									},
@@ -148,7 +148,7 @@ func TestDirectApprovalRuleMatching(t *testing.T) {
 	// Note: The status may be SKIPPED/APPROVED if the user is a workspace owner
 	// who can self-approve, but the template should still be assigned
 	a.NotNil(issue.ApprovalTemplate, "Approval template should be assigned")
-	a.Equal("Prod DDL Approval", issue.GetApprovalTemplate().GetTitle(), "Correct approval template should be applied")
+	a.Equal("Prod Change Database Approval", issue.GetApprovalTemplate().GetTitle(), "Correct approval template should be applied")
 }
 
 // TestApprovalRuleFirstMatchWins tests that the first matching approval rule is applied
@@ -198,13 +198,13 @@ func TestApprovalRuleFirstMatchWins(t *testing.T) {
 					WorkspaceApprovalSettingValue: &v1pb.WorkspaceApprovalSetting{
 						Rules: []*v1pb.WorkspaceApprovalSetting_Rule{
 							{
-								// Rule 1: Specific - prod environment DDL
-								Source: v1pb.WorkspaceApprovalSetting_Rule_DDL,
+								// Rule 1: Specific - prod environment
+								Source: v1pb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE,
 								Condition: &expr.Expr{
 									Expression: `resource.environment_id == "prod"`,
 								},
 								Template: &v1pb.ApprovalTemplate{
-									Title: "Prod DDL - First Rule",
+									Title: "Prod Change Database - First Rule",
 									Flow: &v1pb.ApprovalFlow{
 										Roles: []string{"roles/workspaceOwner"},
 									},
@@ -212,12 +212,12 @@ func TestApprovalRuleFirstMatchWins(t *testing.T) {
 							},
 							{
 								// Rule 2: Catch-all - matches everything
-								Source: v1pb.WorkspaceApprovalSetting_Rule_DDL,
+								Source: v1pb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE,
 								Condition: &expr.Expr{
 									Expression: `true`,
 								},
 								Template: &v1pb.ApprovalTemplate{
-									Title: "Catch-all DDL - Second Rule",
+									Title: "Catch-all Change Database - Second Rule",
 									Flow: &v1pb.ApprovalFlow{
 										Roles: []string{"roles/projectOwner", "roles/workspaceOwner"},
 									},
@@ -296,7 +296,7 @@ func TestApprovalRuleFirstMatchWins(t *testing.T) {
 	a.NotEqual(v1pb.Issue_ERROR, issue.ApprovalStatus)
 
 	// Verify the first rule was applied (not the catch-all)
-	a.Equal("Prod DDL - First Rule", issue.GetApprovalTemplate().GetTitle(), "First matching rule should be applied")
+	a.Equal("Prod Change Database - First Rule", issue.GetApprovalTemplate().GetTitle(), "First matching rule should be applied")
 }
 
 // TestApprovalRuleNoMatch tests that issues without matching approval rules
@@ -344,7 +344,7 @@ func TestApprovalRuleNoMatch(t *testing.T) {
 					WorkspaceApprovalSettingValue: &v1pb.WorkspaceApprovalSetting{
 						Rules: []*v1pb.WorkspaceApprovalSetting_Rule{
 							{
-								Source: v1pb.WorkspaceApprovalSetting_Rule_DDL,
+								Source: v1pb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE,
 								Condition: &expr.Expr{
 									Expression: `resource.environment_id == "prod"`,
 								},

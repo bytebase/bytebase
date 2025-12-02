@@ -181,10 +181,8 @@ const getSQLTypeOptions = (source: WorkspaceApprovalSetting_Rule_Source) => {
     }));
   };
   switch (source) {
-    case WorkspaceApprovalSetting_Rule_Source.DDL:
-      return mapOptions(SQLTypeList.DDL);
-    case WorkspaceApprovalSetting_Rule_Source.DML:
-      return mapOptions(SQLTypeList.DML);
+    case WorkspaceApprovalSetting_Rule_Source.CHANGE_DATABASE:
+      return mapOptions([...SQLTypeList.DDL, ...SQLTypeList.DML]);
   }
   // unsupported source
   return [];
@@ -206,10 +204,8 @@ export const approvalSourceText = (
   switch (source) {
     case WorkspaceApprovalSetting_Rule_Source.SOURCE_UNSPECIFIED:
       return t("common.all");
-    case WorkspaceApprovalSetting_Rule_Source.DDL:
-      return t("custom-approval.risk-rule.risk.namespace.ddl");
-    case WorkspaceApprovalSetting_Rule_Source.DML:
-      return t("custom-approval.risk-rule.risk.namespace.dml");
+    case WorkspaceApprovalSetting_Rule_Source.CHANGE_DATABASE:
+      return t("custom-approval.risk-rule.risk.namespace.change_database");
     case WorkspaceApprovalSetting_Rule_Source.CREATE_DATABASE:
       return t("custom-approval.risk-rule.risk.namespace.create_database");
     case WorkspaceApprovalSetting_Rule_Source.EXPORT_DATA:
@@ -227,15 +223,7 @@ export const ApprovalSourceFactorMap: Map<
   Factor[]
 > = new Map([
   [
-    WorkspaceApprovalSetting_Rule_Source.DDL,
-    [
-      ...commonFactorList,
-      ...schemaObjectNameFactorList,
-      ...migrationFactorList,
-    ],
-  ],
-  [
-    WorkspaceApprovalSetting_Rule_Source.DML,
+    WorkspaceApprovalSetting_Rule_Source.CHANGE_DATABASE,
     [
       ...commonFactorList,
       ...schemaObjectNameFactorList,

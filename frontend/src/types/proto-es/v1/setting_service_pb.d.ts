@@ -727,7 +727,7 @@ export declare type WorkspaceApprovalSetting_Rule = Message<"bytebase.v1.Workspa
    * request.expiration_days: the role expiration days for the request, support "==", "!=", "<", "<=", ">", ">=" operations.
    * request.role: the request role full name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
    *
-   * When source is DDL/DML, support: statement.*, resource.* (excluding request.*)
+   * When source is CHANGE_DATABASE, support: statement.*, resource.* (excluding request.*)
    * When source is CREATE_DATABASE, support: resource.environment_id, resource.project_id, resource.db_engine, resource.database_name
    * When source is EXPORT_DATA, support: resource.environment_id, resource.project_id, resource.db_engine, resource.database_name, resource.schema_name, resource.table_name
    * When source is REQUEST_ROLE, support: resource.project_id, request.expiration_days, request.role
@@ -735,8 +735,6 @@ export declare type WorkspaceApprovalSetting_Rule = Message<"bytebase.v1.Workspa
    * For examples:
    * resource.environment_id == "prod" && statement.affected_rows >= 100
    * resource.table_name.matches("sensitive_.*") && resource.db_engine == "MYSQL"
-   *
-   * Legacy format (deprecated): source == "DDL" && level == "HIGH"
    *
    * @generated from field: google.type.Expr condition = 2;
    */
@@ -764,29 +762,24 @@ export enum WorkspaceApprovalSetting_Rule_Source {
   SOURCE_UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: DDL = 1;
+   * @generated from enum value: CHANGE_DATABASE = 1;
    */
-  DDL = 1,
+  CHANGE_DATABASE = 1,
 
   /**
-   * @generated from enum value: DML = 2;
+   * @generated from enum value: CREATE_DATABASE = 2;
    */
-  DML = 2,
+  CREATE_DATABASE = 2,
 
   /**
-   * @generated from enum value: CREATE_DATABASE = 3;
+   * @generated from enum value: EXPORT_DATA = 3;
    */
-  CREATE_DATABASE = 3,
+  EXPORT_DATA = 3,
 
   /**
-   * @generated from enum value: EXPORT_DATA = 4;
+   * @generated from enum value: REQUEST_ROLE = 4;
    */
-  EXPORT_DATA = 4,
-
-  /**
-   * @generated from enum value: REQUEST_ROLE = 5;
-   */
-  REQUEST_ROLE = 5,
+  REQUEST_ROLE = 4,
 }
 
 /**

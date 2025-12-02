@@ -2629,8 +2629,7 @@
           "high": "High"
         },
         "namespace": {
-          "dml": "DML",
-          "ddl": "DDL",
+          "change_database": "Change Database",
           "create_database": "Create Database",
           "data_export": "Export Data",
           "request-role": "Request Role"
