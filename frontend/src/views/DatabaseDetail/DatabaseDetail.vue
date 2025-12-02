@@ -227,7 +227,6 @@ import {
   databaseNamePrefix,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
-import { UNKNOWN_PROJECT_NAME } from "@/types";
 import {
   extractProjectResourceName,
   instanceV1HasAlterSchema,
