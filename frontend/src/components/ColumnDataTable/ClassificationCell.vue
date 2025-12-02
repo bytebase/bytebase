@@ -7,7 +7,7 @@
     <template v-if="!readonly && !disabled">
       <NPopconfirm v-if="classification" @positive-click="removeClassification">
         <template #trigger>
-          <MiniActionButton>
+          <MiniActionButton @click.stop="">
             <XIcon class="w-3 h-3" />
           </MiniActionButton>
         </template>
