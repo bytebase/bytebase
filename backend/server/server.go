@@ -16,6 +16,7 @@ import (
 	"golang.org/x/net/http2"
 
 	directorysync "github.com/bytebase/bytebase/backend/api/directory-sync"
+	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/api/lsp"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -187,7 +188,8 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 
 	s.metricReporter = metricreport.NewReporter(s.store, s.licenseService, s.profile)
 	s.schemaSyncer = schemasync.NewSyncer(stores, s.dbFactory, s.profile, s.stateCfg, s.licenseService)
-	s.approvalRunner = approval.NewRunner(stores, sheetManager, s.dbFactory, s.stateCfg, s.webhookManager, s.licenseService)
+	sensitiveDataService := apiv1.NewSensitiveDataService(stores)
+	s.approvalRunner = approval.NewRunner(stores, sheetManager, s.dbFactory, s.stateCfg, s.webhookManager, s.licenseService, sensitiveDataService)
 
 	s.taskSchedulerV2 = taskrun.NewSchedulerV2(stores, s.stateCfg, s.webhookManager, profile, s.licenseService)
 	s.taskSchedulerV2.Register(storepb.Task_DATABASE_CREATE, taskrun.NewDatabaseCreateExecutor(stores, s.dbFactory, s.schemaSyncer, s.stateCfg, profile))

@@ -122,7 +122,76 @@ func (s *Server) initializeSetting(ctx context.Context) error {
 	}
 
 	// initial data classification setting
-	dataClassificationSettingValue, err := protojson.Marshal(&storepb.DataClassificationSetting{})
+	initialDataClassification := &storepb.DataClassificationSetting{
+		Configs: []*storepb.DataClassificationSetting_DataClassificationConfig{
+			{
+				Id:    "default-sensitive-classification",
+				Title: "默认敏感数据分级",
+				Levels: []*storepb.DataClassificationSetting_DataClassificationConfig_Level{
+					{
+						Id:          "high",
+						Title:       "高敏感",
+						Description: "包含用户核心隐私数据，如密码、银行卡号、身份证号等",
+					},
+					{
+						Id:          "medium",
+						Title:       "中敏感",
+						Description: "包含用户个人可识别信息，如手机号、邮箱、地址等",
+					},
+					{
+						Id:          "low",
+						Title:       "低敏感",
+						Description: "包含用户基础信息，如用户名、头像URL等",
+					},
+				},
+				Classification: map[string]*storepb.DataClassificationSetting_DataClassificationConfig_DataClassification{
+					"password": {
+						Id:          "password",
+						Title:       "密码",
+						Description: "用户登录密码或支付密码",
+						LevelId:     "high",
+					},
+					"phone": {
+						Id:          "phone",
+						Title:       "手机号",
+						Description: "用户手机号码",
+						LevelId:     "medium",
+					},
+					"email": {
+						Id:          "email",
+						Title:       "邮箱",
+						Description: "用户电子邮箱",
+						LevelId:     "medium",
+					},
+					"id_card": {
+						Id:          "id_card",
+						Title:       "身份证号",
+						Description: "居民身份证号码",
+						LevelId:     "high",
+					},
+					"bank_card": {
+						Id:          "bank_card",
+						Title:       "银行卡号",
+						Description: "银行借记卡/信用卡号码",
+						LevelId:     "high",
+					},
+					"address": {
+						Id:          "address",
+						Title:       "地址",
+						Description: "用户居住或工作地址",
+						LevelId:     "low",
+					},
+					"username": {
+						Id:          "username",
+						Title:       "用户名",
+						Description: "用户账号名称",
+						LevelId:     "low",
+					},
+				},
+			},
+		},
+	}
+	dataClassificationSettingValue, err := protojson.Marshal(initialDataClassification)
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal initial data classification setting")
 	}

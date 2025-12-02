@@ -32,23 +32,25 @@ import (
 
 // Runner is the runner for finding approval templates for issues.
 type Runner struct {
-	store          *store.Store
-	sheetManager   *sheet.Manager
-	dbFactory      *dbfactory.DBFactory
-	stateCfg       *state.State
-	webhookManager *webhook.Manager
-	licenseService *enterprise.LicenseService
+	store                 *store.Store
+	sheetManager          *sheet.Manager
+	dbFactory             *dbfactory.DBFactory
+	stateCfg              *state.State
+	webhookManager        *webhook.Manager
+	licenseService        *enterprise.LicenseService
+	sensitiveDataService *apiv1.SensitiveDataService
 }
 
 // NewRunner creates a new runner.
-func NewRunner(store *store.Store, sheetManager *sheet.Manager, dbFactory *dbfactory.DBFactory, stateCfg *state.State, webhookManager *webhook.Manager, licenseService *enterprise.LicenseService) *Runner {
+func NewRunner(store *store.Store, sheetManager *sheet.Manager, dbFactory *dbfactory.DBFactory, stateCfg *state.State, webhookManager *webhook.Manager, licenseService *enterprise.LicenseService, sensitiveDataService *apiv1.SensitiveDataService) *Runner {
 	return &Runner{
-		store:          store,
-		sheetManager:   sheetManager,
-		dbFactory:      dbFactory,
-		stateCfg:       stateCfg,
-		webhookManager: webhookManager,
-		licenseService: licenseService,
+		store:                 store,
+		sheetManager:          sheetManager,
+		dbFactory:             dbFactory,
+		stateCfg:              stateCfg,
+		webhookManager:        webhookManager,
+		licenseService:        licenseService,
+		sensitiveDataService: sensitiveDataService,
 	}
 }
 
@@ -468,6 +470,25 @@ func (r *Runner) buildCELVariablesForDatabaseChange(ctx context.Context, issue *
 			common.CELAttributeResourceDatabaseName:  databaseName,
 			common.CELAttributeResourceDBEngine:      instance.Metadata.GetEngine().String(),
 			common.CELAttributeStatementText:         taskStatement,
+		}
+
+		// Detect sensitive data level
+		if r.sensitiveDataService != nil && taskStatement != "" {
+			// Get data classification setting for the project
+			setting, err := r.store.GetDataClassificationSettingV2(ctx, &store.FindDataClassificationSettingMessage{
+				ProjectID: issue.Project.ID,
+			})
+			if err != nil {
+				slog.Error("failed to get data classification setting", log.BBError(err))
+			} else if setting != nil {
+				// Detect sensitive columns in the SQL statement
+				detectionResult, err := r.sensitiveDataService.DetectSensitiveColumns(ctx, taskStatement, instance.Metadata.GetEngine(), setting)
+				if err != nil {
+					slog.Error("failed to detect sensitive columns", log.BBError(err))
+				} else if detectionResult != nil && detectionResult.HighestSensitiveLevel != "" {
+					celVars[common.CELAttributeResourceClassificationLevel] = detectionResult.HighestSensitiveLevel
+				}
+			}
 		}
 
 		// Add summary report data if available
