@@ -1,0 +1,308 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+import "google/type/expr.proto";
+
+option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
+
+// SensitiveApprovalService manages sensitive data classification and approval workflows.
+service SensitiveApprovalService {
+  // Sensitive Level APIs
+  rpc ListSensitiveLevels(ListSensitiveLevelsRequest) returns (ListSensitiveLevelsResponse) {
+    option (google.api.http) = {get: "/v1/sensitive-levels"};
+    option (bytebase.v1.permission) = "bb.sensitive-level.list";
+  }
+  
+  rpc GetSensitiveLevel(GetSensitiveLevelRequest) returns (SensitiveLevel) {
+    option (google.api.http) = {get: "/v1/{name=sensitive-levels/*}"};
+    option (bytebase.v1.permission) = "bb.sensitive-level.get";
+  }
+  
+  rpc CreateSensitiveLevel(CreateSensitiveLevelRequest) returns (SensitiveLevel) {
+    option (google.api.http) = {
+      post: "/v1/sensitive-levels"
+      body: "sensitive_level"
+    };
+    option (bytebase.v1.permission) = "bb.sensitive-level.create";
+  }
+  
+  rpc UpdateSensitiveLevel(UpdateSensitiveLevelRequest) returns (SensitiveLevel) {
+    option (google.api.http) = {
+      patch: "/v1/{sensitive_level.name=sensitive-levels/*}"
+      body: "sensitive_level"
+    };
+    option (bytebase.v1.permission) = "bb.sensitive-level.update";
+  }
+  
+  rpc DeleteSensitiveLevel(DeleteSensitiveLevelRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/v1/{name=sensitive-levels/*}"};
+    option (bytebase.v1.permission) = "bb.sensitive-level.delete";
+  }
+  
+  // Approval Flow APIs
+  rpc ListApprovalFlows(ListApprovalFlowsRequest) returns (ListApprovalFlowsResponse) {
+    option (google.api.http) = {get: "/v1/approval-flows"};
+    option (bytebase.v1.permission) = "bb.approval-flow.list";
+  }
+  
+  rpc GetApprovalFlow(GetApprovalFlowRequest) returns (ApprovalFlow) {
+    option (google.api.http) = {get: "/v1/{name=approval-flows/*}"};
+    option (bytebase.v1.permission) = "bb.approval-flow.get";
+  }
+  
+  rpc CreateApprovalFlow(CreateApprovalFlowRequest) returns (ApprovalFlow) {
+    option (google.api.http) = {
+      post: "/v1/approval-flows"
+      body: "approval_flow"
+    };
+    option (bytebase.v1.permission) = "bb.approval-flow.create";
+  }
+  
+  rpc UpdateApprovalFlow(UpdateApprovalFlowRequest) returns (ApprovalFlow) {
+    option (google.api.http) = {
+      patch: "/v1/{approval_flow.name=approval-flows/*}"
+      body: "approval_flow"
+    };
+    option (bytebase.v1.permission) = "bb.approval-flow.update";
+  }
+  
+  rpc DeleteApprovalFlow(DeleteApprovalFlowRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/v1/{name=approval-flows/*}"};
+    option (bytebase.v1.permission) = "bb.approval-flow.delete";
+  }
+}
+
+// SensitiveLevel represents a sensitive data classification level.
+message SensitiveLevel {
+  option (google.api.resource) = {
+    type: "bytebase.com/SensitiveLevel"
+    pattern: "sensitive-levels/{sensitive_level}"
+  };
+  
+  // The resource name of the sensitive level.
+  string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  
+  // The display name of the sensitive level.
+  string display_name = 2 [(google.api.field_behavior) = REQUIRED];
+  
+  // The severity level: HIGH, MEDIUM, LOW.
+  enum Severity {
+    SEVERITY_UNSPECIFIED = 0;
+    SEVERITY_HIGH = 1;
+    SEVERITY_MEDIUM = 2;
+    SEVERITY_LOW = 3;
+  }
+  Severity severity = 3 [(google.api.field_behavior) = REQUIRED];
+  
+  // Description of the sensitive level.
+  string description = 4;
+  
+  // The color associated with this sensitive level for UI display.
+  string color = 5;
+  
+  // Matching rules for identifying sensitive fields.
+  repeated FieldMatchRule field_match_rules = 6;
+  
+  // Output only. The time this sensitive level was created.
+  google.protobuf.Timestamp create_time = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  
+  // Output only. The time this sensitive level was last updated.
+  google.protobuf.Timestamp update_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// FieldMatchRule defines how to match sensitive fields.
+message FieldMatchRule {
+  // The type of matching rule.
+  enum RuleType {
+    RULE_TYPE_UNSPECIFIED = 0;
+    // Match by field name (exact match).
+    RULE_TYPE_FIELD_NAME = 1;
+    // Match by field name pattern (glob pattern).
+    RULE_TYPE_FIELD_NAME_PATTERN = 2;
+    // Match by data type (e.g., VARCHAR, INT).
+    RULE_TYPE_DATA_TYPE = 3;
+    // Match by regex pattern.
+    RULE_TYPE_REGEX = 4;
+  }
+  RuleType rule_type = 1 [(google.api.field_behavior) = REQUIRED];
+  
+  // The pattern to match.
+  string pattern = 2 [(google.api.field_behavior) = REQUIRED];
+  
+  // The database engine this rule applies to (optional).
+  Engine engine = 3;
+  
+  // The table name pattern this rule applies to (optional).
+  string table_name_pattern = 4;
+}
+
+// ApprovalFlow defines the approval workflow for sensitive data changes.
+message ApprovalFlow {
+  option (google.api.resource) = {
+    type: "bytebase.com/ApprovalFlow"
+    pattern: "approval-flows/{approval_flow}"
+  };
+  
+  // The resource name of the approval flow.
+  string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  
+  // The name of the approval flow.
+  string name = 2 [(google.api.field_behavior) = REQUIRED];
+  
+  // Description of the approval flow.
+  string description = 3;
+  
+  // The sensitive severity level this approval flow applies to.
+  SensitiveLevel.Severity sensitive_severity = 4 [(google.api.field_behavior) = REQUIRED];
+  
+  // The approval steps in order.
+  repeated ApprovalStep steps = 5 [(google.api.field_behavior) = REQUIRED];
+  
+  // Output only. The time this approval flow was created.
+  google.protobuf.Timestamp create_time = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+  
+  // Output only. The time this approval flow was last updated.
+  google.protobuf.Timestamp update_time = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// ApprovalStep represents a single step in the approval workflow.
+message ApprovalStep {
+  // The type of approver.
+  enum ApproverType {
+    APPROVER_TYPE_UNSPECIFIED = 0;
+    // Approve by specific users.
+    APPROVER_TYPE_USERS = 1;
+    // Approve by a role.
+    APPROVER_TYPE_ROLE = 2;
+    // Approve by department manager.
+    APPROVER_TYPE_DEPARTMENT_MANAGER = 3;
+    // Approve by DBA.
+    APPROVER_TYPE_DBA = 4;
+  }
+  ApproverType approver_type = 1 [(google.api.field_behavior) = REQUIRED];
+  
+  // The list of approver identifiers (user IDs or role IDs).
+  repeated string approvers = 2 [(google.api.field_behavior) = REQUIRED];
+  
+  // The timeout duration for this approval step (in seconds).
+  int32 timeout_seconds = 3;
+  
+  // Whether multiple approvers are required (all must approve).
+  bool require_all_approvers = 4;
+}
+
+// ListSensitiveLevelsRequest is the request message for listing sensitive levels.
+message ListSensitiveLevelsRequest {
+  // The parent resource name.
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+  
+  // The maximum number of sensitive levels to return.
+  int32 page_size = 2;
+  
+  // The page token to use for pagination.
+  string page_token = 3;
+  
+  // Filter sensitive levels by severity.
+  SensitiveLevel.Severity severity_filter = 4;
+}
+
+// ListSensitiveLevelsResponse is the response message for listing sensitive levels.
+message ListSensitiveLevelsResponse {
+  // The list of sensitive levels.
+  repeated SensitiveLevel sensitive_levels = 1;
+  
+  // The next page token.
+  string next_page_token = 2;
+}
+
+// GetSensitiveLevelRequest is the request message for getting a sensitive level.
+message GetSensitiveLevelRequest {
+  // The resource name of the sensitive level.
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+// CreateSensitiveLevelRequest is the request message for creating a sensitive level.
+message CreateSensitiveLevelRequest {
+  // The parent resource name.
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+  
+  // The sensitive level to create.
+  SensitiveLevel sensitive_level = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+// UpdateSensitiveLevelRequest is the request message for updating a sensitive level.
+message UpdateSensitiveLevelRequest {
+  // The sensitive level to update.
+  SensitiveLevel sensitive_level = 1 [(google.api.field_behavior) = REQUIRED];
+  
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+// DeleteSensitiveLevelRequest is the request message for deleting a sensitive level.
+message DeleteSensitiveLevelRequest {
+  // The resource name of the sensitive level.
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+// ListApprovalFlowsRequest is the request message for listing approval flows.
+message ListApprovalFlowsRequest {
+  // The parent resource name.
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+  
+  // The maximum number of approval flows to return.
+  int32 page_size = 2;
+  
+  // The page token to use for pagination.
+  string page_token = 3;
+  
+  // Filter approval flows by sensitive severity.
+  SensitiveLevel.Severity sensitive_severity_filter = 4;
+}
+
+// ListApprovalFlowsResponse is the response message for listing approval flows.
+message ListApprovalFlowsResponse {
+  // The list of approval flows.
+  repeated ApprovalFlow approval_flows = 1;
+  
+  // The next page token.
+  string next_page_token = 2;
+}
+
+// GetApprovalFlowRequest is the request message for getting an approval flow.
+message GetApprovalFlowRequest {
+  // The resource name of the approval flow.
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+// CreateApprovalFlowRequest is the request message for creating an approval flow.
+message CreateApprovalFlowRequest {
+  // The parent resource name.
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+  
+  // The approval flow to create.
+  ApprovalFlow approval_flow = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+// UpdateApprovalFlowRequest is the request message for updating an approval flow.
+message UpdateApprovalFlowRequest {
+  // The approval flow to update.
+  ApprovalFlow approval_flow = 1 [(google.api.field_behavior) = REQUIRED];
+  
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+// DeleteApprovalFlowRequest is the request message for deleting an approval flow.
+message DeleteApprovalFlowRequest {
+  // The resource name of the approval flow.
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
