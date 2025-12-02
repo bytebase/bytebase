@@ -352,6 +352,13 @@
       "connection-limit": "Đang chờ kết nối khả dụng",
       "parallel-tasks-limit": "Đang chờ các tác vụ khác hoàn thành",
       "blocking-task": "Đang chờ nhiệm vụ khác"
+    },
+    "type": {
+      "database-create": "Tạo cơ sở dữ liệu",
+      "migrate": "Di chuyển",
+      "database-sdl": "SDL",
+      "database-export": "Xuất dữ liệu",
+      "general": "Chung"
     }
   },
   "task-run": {

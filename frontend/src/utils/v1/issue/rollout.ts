@@ -232,24 +232,6 @@ export const stringifyTaskStatus = (
   }
 };
 
-export const getTaskTypeI18nKey = (task: Task): string => {
-  switch (task.type) {
-    case Task_Type.DATABASE_CREATE:
-      return "task.type.database-create";
-    case Task_Type.DATABASE_MIGRATE:
-      // Ghost mode is indicated via spec.enableGhost, shown separately as a tag
-      return "release.change-type.ddl";
-    case Task_Type.DATABASE_SDL:
-      return "task.type.database-sdl";
-    case Task_Type.DATABASE_EXPORT:
-      return "task.type.database-export";
-    case Task_Type.GENERAL:
-      return "task.type.general";
-    default:
-      return "";
-  }
-};
-
 export const getStageStatus = (stage: Stage): Task_Status => {
   const tasks = stage.tasks;
   if (tasks.length === 0) return Task_Status.NOT_STARTED;

@@ -352,6 +352,13 @@
       "connection-limit": "利用可能な接続を待機しています",
       "parallel-tasks-limit": "他のタスクが完了するのを待っています",
       "blocking-task": "別のタスクを待っています"
+    },
+    "type": {
+      "database-create": "データベース作成",
+      "migrate": "マイグレーション",
+      "database-sdl": "SDL",
+      "database-export": "データエクスポート",
+      "general": "一般"
     }
   },
   "task-run": {

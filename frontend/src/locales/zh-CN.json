@@ -352,6 +352,13 @@
       "connection-limit": "等待可用连接",
       "parallel-tasks-limit": "等待其他任务完成",
       "blocking-task": "等待另一个任务"
+    },
+    "type": {
+      "database-create": "创建数据库",
+      "migrate": "变更",
+      "database-sdl": "SDL",
+      "database-export": "导出数据",
+      "general": "通用"
     }
   },
   "task-run": {
