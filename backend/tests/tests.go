@@ -213,6 +213,8 @@ func (ctl *controller) StartServerWithExternalPg(ctx context.Context) (context.C
 }
 
 func (ctl *controller) initWorkspaceProfile(ctx context.Context) error {
+	// Don't set external_url in the database if it's set via profile (command-line flag),
+	// as our validation will reject it. The profile value takes precedence at runtime.
 	_, err := ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
 		AllowMissing: true,
 		Setting: &v1pb.Setting{
@@ -220,7 +222,6 @@ func (ctl *controller) initWorkspaceProfile(ctx context.Context) error {
 			Value: &v1pb.Value{
 				Value: &v1pb.Value_WorkspaceProfileSettingValue{
 					WorkspaceProfileSettingValue: &v1pb.WorkspaceProfileSetting{
-						ExternalUrl:    ctl.profile.ExternalURL,
 						DisallowSignup: false,
 					},
 				},
@@ -229,7 +230,6 @@ func (ctl *controller) initWorkspaceProfile(ctx context.Context) error {
 		UpdateMask: &fieldmaskpb.FieldMask{
 			Paths: []string{
 				"value.workspace_profile_setting_value.disallow_signup",
-				"value.workspace_profile_setting_value.external_url",
 			},
 		},
 	}))
