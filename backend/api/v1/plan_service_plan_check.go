@@ -196,9 +196,10 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 		Type:    store.PlanCheckDatabaseConnect,
 		Config: &storepb.PlanCheckRunConfig{
 			SheetUid:           int32(sheetUID),
-			ChangeDatabaseType: convertToChangeDatabaseType(config.Type, config.EnableGhost),
+			ChangeDatabaseType: convertToChangeDatabaseType(config.Type),
 			InstanceId:         instance.ResourceID,
 			DatabaseName:       database.DatabaseName,
+			EnableGhost:        config.EnableGhost,
 		},
 	})
 
@@ -208,10 +209,11 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 		Type:    store.PlanCheckDatabaseStatementAdvise,
 		Config: &storepb.PlanCheckRunConfig{
 			SheetUid:           int32(sheetUID),
-			ChangeDatabaseType: convertToChangeDatabaseType(config.Type, config.EnableGhost),
+			ChangeDatabaseType: convertToChangeDatabaseType(config.Type),
 			InstanceId:         instance.ResourceID,
 			DatabaseName:       database.DatabaseName,
 			EnablePriorBackup:  config.EnablePriorBackup,
+			EnableGhost:        config.EnableGhost,
 		},
 	})
 	planCheckRuns = append(planCheckRuns, &store.PlanCheckRunMessage{
@@ -220,9 +222,10 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 		Type:    store.PlanCheckDatabaseStatementSummaryReport,
 		Config: &storepb.PlanCheckRunConfig{
 			SheetUid:           int32(sheetUID),
-			ChangeDatabaseType: convertToChangeDatabaseType(config.Type, config.EnableGhost),
+			ChangeDatabaseType: convertToChangeDatabaseType(config.Type),
 			InstanceId:         instance.ResourceID,
 			DatabaseName:       database.DatabaseName,
+			EnableGhost:        config.EnableGhost,
 		},
 	})
 	if config.Type == storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE && config.EnableGhost {
@@ -232,9 +235,10 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 			Type:    store.PlanCheckDatabaseGhostSync,
 			Config: &storepb.PlanCheckRunConfig{
 				SheetUid:           int32(sheetUID),
-				ChangeDatabaseType: convertToChangeDatabaseType(config.Type, config.EnableGhost),
+				ChangeDatabaseType: convertToChangeDatabaseType(config.Type),
 				InstanceId:         instance.ResourceID,
 				DatabaseName:       database.DatabaseName,
+				EnableGhost:        config.EnableGhost,
 				GhostFlags:         config.GhostFlags,
 			},
 		})
@@ -243,13 +247,10 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 	return planCheckRuns, nil
 }
 
-func convertToChangeDatabaseType(t storepb.PlanConfig_ChangeDatabaseConfig_Type, enableGhost bool) storepb.PlanCheckRunConfig_ChangeDatabaseType {
+func convertToChangeDatabaseType(t storepb.PlanConfig_ChangeDatabaseConfig_Type) storepb.PlanCheckRunConfig_ChangeDatabaseType {
 	switch t {
 	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE:
-		if enableGhost {
-			return storepb.PlanCheckRunConfig_DDL_GHOST
-		}
-		return storepb.PlanCheckRunConfig_DDL
+		return storepb.PlanCheckRunConfig_CHANGE_DATABASE
 	case storepb.PlanConfig_ChangeDatabaseConfig_SDL:
 		return storepb.PlanCheckRunConfig_SDL
 	default:
