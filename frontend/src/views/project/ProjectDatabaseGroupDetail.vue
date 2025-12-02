@@ -20,7 +20,9 @@
         <template #trigger>
           <NButton
             :disabled="!hasMatchedDatabases"
-            @click="state.showChangeDatabaseDrawer = true"
+            @click="() => {
+              preCreateIssue(project.name, [databaseGroupResourceName])
+            }"
           >
             {{ $t("database.change-database") }}
           </NButton>
@@ -41,15 +43,6 @@
       :database-group="databaseGroup"
       @dismiss="state.editing = false"
     />
-
-    <AddSpecDrawer
-      v-if="databaseGroup"
-      v-model:show="state.showChangeDatabaseDrawer"
-      :title="$t('database.change-database')"
-      :project-name="project.name"
-      :pre-selected-database-group="databaseGroupResourceName"
-      :use-legacy-issue-flow="true"
-    />
   </div>
 </template>
 
@@ -59,7 +52,7 @@ import { NButton, NTooltip } from "naive-ui";
 import { computed, reactive, watchEffect } from "vue";
 import DatabaseGroupForm from "@/components/DatabaseGroup/DatabaseGroupForm.vue";
 import FeatureAttention from "@/components/FeatureGuard/FeatureAttention.vue";
-import { AddSpecDrawer } from "@/components/Plan";
+import { preCreateIssue } from "@/components/Plan/logic/issue";
 import { useBodyLayoutContext } from "@/layouts/common";
 import { featureToRef, useDBGroupStore, useProjectByName } from "@/store";
 import {
@@ -72,7 +65,6 @@ import { hasPermissionToCreateChangeDatabaseIssueInProject } from "@/utils";
 
 interface LocalState {
   editing: boolean;
-  showChangeDatabaseDrawer: boolean;
 }
 
 const props = defineProps<{
@@ -87,7 +79,6 @@ const { project } = useProjectByName(
 );
 const state = reactive<LocalState>({
   editing: false,
-  showChangeDatabaseDrawer: false,
 });
 
 const databaseGroupResourceName = computed(() => {
