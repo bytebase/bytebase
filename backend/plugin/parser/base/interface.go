@@ -29,6 +29,7 @@ var (
 	transformDMLToSelect    = make(map[storepb.Engine]TransformDMLToSelectFunc)
 	generateRestoreSQL      = make(map[storepb.Engine]GenerateRestoreSQLFunc)
 	parsers                 = make(map[storepb.Engine]ParseFunc)
+	statementParsers        = make(map[storepb.Engine]ParseStatementsFunc)
 )
 
 type ValidateSQLForEditorFunc func(string) (bool, bool, error)
@@ -50,6 +51,10 @@ type GenerateRestoreSQLFunc func(ctx context.Context, rCtx RestoreContext, state
 // Each parser package is responsible for creating AST instances with the appropriate data.
 // Parser packages can return *ANTLRAST for ANTLR-based parsers or their own concrete types.
 type ParseFunc func(statement string) ([]AST, error)
+
+// ParseStatementsFunc is the interface for parsing SQL statements and returning []Statement.
+// This is the new unified parsing function that returns complete Statement objects.
+type ParseStatementsFunc func(statement string) ([]Statement, error)
 
 func RegisterQueryValidator(engine storepb.Engine, f ValidateSQLForEditorFunc) {
 	mux.Lock()
@@ -269,6 +274,25 @@ func Parse(engine storepb.Engine, statement string) ([]AST, error) {
 	f, ok := parsers[engine]
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported", engine)
+	}
+	return f(statement)
+}
+
+func RegisterParseStatementsFunc(engine storepb.Engine, f ParseStatementsFunc) {
+	mux.Lock()
+	defer mux.Unlock()
+	if _, dup := statementParsers[engine]; dup {
+		panic(fmt.Sprintf("RegisterParseStatementsFunc called twice %s", engine))
+	}
+	statementParsers[engine] = f
+}
+
+// ParseStatements parses the SQL statement and returns Statement objects with both text and AST.
+// This is the new unified parsing function.
+func ParseStatements(engine storepb.Engine, statement string) ([]Statement, error) {
+	f, ok := statementParsers[engine]
+	if !ok {
+		return nil, errors.Errorf("engine %s is not supported for ParseStatements", engine)
 	}
 	return f(statement)
 }
