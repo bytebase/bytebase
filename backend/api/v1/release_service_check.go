@@ -266,9 +266,9 @@ loop:
 					}
 				}
 
-				changeType := storepb.PlanCheckRunConfig_DDL
+				changeType := storepb.PlanCheckRunConfig_CHANGE_DATABASE
 				if file.EnableGhost {
-					changeType = storepb.PlanCheckRunConfig_DDL_GHOST
+					changeType = storepb.PlanCheckRunConfig_CHANGE_DATABASE
 				}
 				// Get SQL summary report for the statement and target database.
 				// Including affected rows.
