@@ -1,11 +1,8 @@
 import Emittery from "emittery";
 import type { Ref } from "vue";
 import { inject, provide, computed } from "vue";
-import { supportSetClassificationFromComment } from "@/components/ColumnDataTable/utils";
-import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { DatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import type { DataClassificationSetting_DataClassificationConfig as DataClassificationConfig } from "@/types/proto-es/v1/setting_service_pb";
 import type { RebuildMetadataEditReset } from "../algorithm/rebuild";
 import type { EditTarget, RolloutObject } from "../types";
 import { useEditCatalogs } from "./config";
@@ -35,7 +32,6 @@ export type SchemaEditorOptions = {
 export const provideSchemaEditorContext = (params: {
   readonly: Ref<boolean>;
   project: Ref<Project>;
-  classificationConfig: Ref<DataClassificationConfig | undefined>;
   targets: Ref<EditTarget[]>;
   selectedRolloutObjects: Ref<RolloutObject[] | undefined>;
   hidePreview: Ref<boolean>;
@@ -58,15 +54,6 @@ export const provideSchemaEditorContext = (params: {
     ),
     ...useScrollStatus(),
     ...useSelection(params.selectedRolloutObjects, events),
-    showClassificationColumn: (
-      engine: Engine,
-      classificationFromConfig: boolean
-    ) => {
-      return supportSetClassificationFromComment(
-        engine,
-        classificationFromConfig
-      );
-    },
   };
 
   provide(KEY, context);

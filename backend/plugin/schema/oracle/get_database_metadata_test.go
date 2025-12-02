@@ -1015,13 +1015,6 @@ func compareColumnMetadata(t *testing.T, dbCol, parsedCol *storepb.ColumnMetadat
 			tableName, colName, dbCol.Comment, parsedCol.Comment)
 	}
 
-	// 9. User Comment
-	if dbCol.UserComment != "" || parsedCol.UserComment != "" {
-		require.Equal(t, dbCol.UserComment, parsedCol.UserComment,
-			"user comments should match for column %s.%s: db=%s, parsed=%s",
-			tableName, colName, dbCol.UserComment, parsedCol.UserComment)
-	}
-
 	// 10. On Update (MySQL-specific, but include for completeness)
 	if dbCol.OnUpdate != "" || parsedCol.OnUpdate != "" {
 		require.Equal(t, dbCol.OnUpdate, parsedCol.OnUpdate,

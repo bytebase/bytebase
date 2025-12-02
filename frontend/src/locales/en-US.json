@@ -1731,11 +1731,7 @@
     "transfer-database-to": "Transfer databases to target project",
     "classification": {
       "self": "Classification",
-      "description": "Use data classification to manage masking policy for many columns by controlling only a small number of classifications.",
-      "sync-from-comment": "Sync classification from comment",
-      "sync-from-comment-tip": "Once enabled, the classification will sync from the table/column comment. The comment should follow \"{format}\" format.",
-      "sync-from-comment-enable-warning": "Classification will change with the DDL and sync from the original comment.",
-      "sync-from-comment-disable-warning": "Classification won't change with the DDL, you can change it anytime on the database detail page."
+      "description": "Use data classification to manage masking policy for many columns by controlling only a small number of classifications."
     },
     "partitioned": "Partitioned",
     "partition-tables": "Partition tables",

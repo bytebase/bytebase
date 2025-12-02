@@ -669,7 +669,6 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 	defer driver.Close(ctx)
 	connection := driver.GetDB()
 
-	classificationConfig := getClassificationByProject(ctx, s.store, database.ProjectID)
 	context := advisor.Context{
 		Charset:                  dbMetadataProto.CharacterSet,
 		Collation:                dbMetadataProto.Collation,
@@ -680,7 +679,6 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 		FinalMetadata:            finalMetadata,
 		Driver:                   connection,
 		CurrentDatabase:          database.DatabaseName,
-		ClassificationConfig:     classificationConfig,
 		UsePostgresDatabaseOwner: useDatabaseOwner,
 		ListDatabaseNamesFunc:    BuildListDatabaseNamesFunc(s.store),
 		InstanceID:               instance.ResourceID,

@@ -2225,8 +2225,7 @@ ColumnMetadata is the metadata for columns.
 | type | [string](#string) |  | The type is the type of a column. |
 | character_set | [string](#string) |  | The character_set is the character_set of a column. |
 | collation | [string](#string) |  | The collation is the collation of a column. |
-| comment | [string](#string) |  | The comment is the comment of a column. classification and user_comment is parsed from the comment. |
-| user_comment | [string](#string) |  | The user_comment is the user comment of a column parsed from the comment. |
+| comment | [string](#string) |  | The comment is the comment of a column. |
 | generation | [GenerationMetadata](#bytebase-v1-GenerationMetadata) |  | The generation is the generation of a column. |
 | is_identity | [bool](#bool) |  |  |
 | identity_generation | [ColumnMetadata.IdentityGeneration](#bytebase-v1-ColumnMetadata-IdentityGeneration) |  | The identity_generation is for identity columns, PG only. |
@@ -3060,8 +3059,7 @@ TableMetadata is the metadata for tables.
 | index_size | [int64](#int64) |  | The index_size is the estimated index size of a table. |
 | data_free | [int64](#int64) |  | The data_free is the estimated free data size of a table. |
 | create_options | [string](#string) |  | The create_options is the create option of a table. |
-| comment | [string](#string) |  | The comment is the comment of a table. classification and user_comment is parsed from the comment. |
-| user_comment | [string](#string) |  | The user_comment is the user comment of a table parsed from the comment. |
+| comment | [string](#string) |  | The comment is the comment of a table. |
 | foreign_keys | [ForeignKeyMetadata](#bytebase-v1-ForeignKeyMetadata) | repeated | The foreign_keys is the list of foreign keys in a table. |
 | partitions | [TablePartitionMetadata](#bytebase-v1-TablePartitionMetadata) | repeated | The partitions is the list of partitions in a table. |
 | check_constraints | [CheckConstraintMetadata](#bytebase-v1-CheckConstraintMetadata) | repeated | The check_constraints is the list of check constraints in a table. |
@@ -4957,7 +4955,6 @@ ProjectService manages projects that group databases and changes.
 | title | [string](#string) |  |  |
 | levels | [DataClassificationSetting.DataClassificationConfig.Level](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-Level) | repeated | levels is user defined level list for classification. The order for the level decides its priority. |
 | classification | [DataClassificationSetting.DataClassificationConfig.ClassificationEntry](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-ClassificationEntry) | repeated | classification is the id - DataClassification map. The id should in [0-9]&#43;-[0-9]&#43;-[0-9]&#43; format. |
-| classification_from_config | [bool](#bool) |  | If true, we will only store the classification in the config. Otherwise we will get the classification from table/column comment, and write back to the schema metadata. |
 
 
 
@@ -7691,7 +7688,6 @@ OrgPolicyService manages organizational policies at various resource levels.
 | source_catalog | [DatabaseCatalog](#bytebase-v1-DatabaseCatalog) |  |  |
 | target_catalog | [DatabaseCatalog](#bytebase-v1-DatabaseCatalog) |  |  |
 | engine | [Engine](#bytebase-v1-Engine) |  | The database engine of the schema. |
-| classification_from_config | [bool](#bool) |  | If false, we will build the raw common by classification in database config. |
 
 
 

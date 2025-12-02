@@ -540,9 +540,6 @@ func (x *DiffMetadataRequest) Equal(y *DiffMetadataRequest) bool {
 	if x.Engine != y.Engine {
 		return false
 	}
-	if x.ClassificationFromConfig != y.ClassificationFromConfig {
-		return false
-	}
 	return true
 }
 

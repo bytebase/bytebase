@@ -1611,12 +1611,9 @@ type DiffMetadataRequest struct {
 	SourceCatalog  *DatabaseCatalog  `protobuf:"bytes,5,opt,name=source_catalog,json=sourceCatalog,proto3" json:"source_catalog,omitempty"`
 	TargetCatalog  *DatabaseCatalog  `protobuf:"bytes,6,opt,name=target_catalog,json=targetCatalog,proto3" json:"target_catalog,omitempty"`
 	// The database engine of the schema.
-	Engine Engine `protobuf:"varint,3,opt,name=engine,proto3,enum=bytebase.v1.Engine" json:"engine,omitempty"`
-	// If false, we will build the raw common by classification in database
-	// config.
-	ClassificationFromConfig bool `protobuf:"varint,4,opt,name=classification_from_config,json=classificationFromConfig,proto3" json:"classification_from_config,omitempty"`
-	unknownFields            protoimpl.UnknownFields
-	sizeCache                protoimpl.SizeCache
+	Engine        Engine `protobuf:"varint,3,opt,name=engine,proto3,enum=bytebase.v1.Engine" json:"engine,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *DiffMetadataRequest) Reset() {
@@ -1682,13 +1679,6 @@ func (x *DiffMetadataRequest) GetEngine() Engine {
 		return x.Engine
 	}
 	return Engine_ENGINE_UNSPECIFIED
-}
-
-func (x *DiffMetadataRequest) GetClassificationFromConfig() bool {
-	if x != nil {
-		return x.ClassificationFromConfig
-	}
-	return false
 }
 
 type DiffMetadataResponse struct {
@@ -2892,14 +2882,13 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\x06schema\x18\t \x01(\tH\x00R\x06schema\x88\x01\x01B\t\n" +
 	"\a_schemaJ\x04\b\x02\x10\x03\"*\n" +
 	"\x0eExportResponse\x12\x18\n" +
-	"\acontent\x18\x01 \x01(\fR\acontent\"\xa4\x03\n" +
+	"\acontent\x18\x01 \x01(\fR\acontent\"\xe6\x02\n" +
 	"\x13DiffMetadataRequest\x12K\n" +
 	"\x0fsource_metadata\x18\x01 \x01(\v2\x1d.bytebase.v1.DatabaseMetadataB\x03\xe0A\x02R\x0esourceMetadata\x12K\n" +
 	"\x0ftarget_metadata\x18\x02 \x01(\v2\x1d.bytebase.v1.DatabaseMetadataB\x03\xe0A\x02R\x0etargetMetadata\x12C\n" +
 	"\x0esource_catalog\x18\x05 \x01(\v2\x1c.bytebase.v1.DatabaseCatalogR\rsourceCatalog\x12C\n" +
 	"\x0etarget_catalog\x18\x06 \x01(\v2\x1c.bytebase.v1.DatabaseCatalogR\rtargetCatalog\x12+\n" +
-	"\x06engine\x18\x03 \x01(\x0e2\x13.bytebase.v1.EngineR\x06engine\x12<\n" +
-	"\x1aclassification_from_config\x18\x04 \x01(\bR\x18classificationFromConfig\"*\n" +
+	"\x06engine\x18\x03 \x01(\x0e2\x13.bytebase.v1.EngineR\x06engine\"*\n" +
 	"\x14DiffMetadataResponse\x12\x12\n" +
 	"\x04diff\x18\x01 \x01(\tR\x04diff\"q\n" +
 	"\x1bSearchQueryHistoriesRequest\x12\x1b\n" +

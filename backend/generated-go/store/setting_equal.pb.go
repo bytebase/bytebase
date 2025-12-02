@@ -302,9 +302,6 @@ func (x *DataClassificationSetting_DataClassificationConfig) Equal(y *DataClassi
 			return false
 		}
 	}
-	if x.ClassificationFromConfig != y.ClassificationFromConfig {
-		return false
-	}
 	return true
 }
 

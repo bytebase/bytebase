@@ -2472,12 +2472,8 @@ type DataClassificationSetting_DataClassificationConfig struct {
 	// classification is the id - DataClassification map.
 	// The id should in [0-9]+-[0-9]+-[0-9]+ format.
 	Classification map[string]*DataClassificationSetting_DataClassificationConfig_DataClassification `protobuf:"bytes,4,rep,name=classification,proto3" json:"classification,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	// If true, we will only store the classification in the config.
-	// Otherwise we will get the classification from table/column comment,
-	// and write back to the schema metadata.
-	ClassificationFromConfig bool `protobuf:"varint,5,opt,name=classification_from_config,json=classificationFromConfig,proto3" json:"classification_from_config,omitempty"`
-	unknownFields            protoimpl.UnknownFields
-	sizeCache                protoimpl.SizeCache
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *DataClassificationSetting_DataClassificationConfig) Reset() {
@@ -2536,13 +2532,6 @@ func (x *DataClassificationSetting_DataClassificationConfig) GetClassification()
 		return x.Classification
 	}
 	return nil
-}
-
-func (x *DataClassificationSetting_DataClassificationConfig) GetClassificationFromConfig() bool {
-	if x != nil {
-		return x.ClassificationFromConfig
-	}
-	return false
 }
 
 type DataClassificationSetting_DataClassificationConfig_Level struct {
@@ -3251,15 +3240,14 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x06engine\x18\x02 \x01(\x0e2\x13.bytebase.v1.EngineR\x06engine\x12\x1a\n" +
 	"\bcategory\x18\x03 \x01(\tR\bcategory\x120\n" +
 	"\x05table\x18\x04 \x01(\v2\x1a.bytebase.v1.TableMetadataR\x05table\x123\n" +
-	"\acatalog\x18\x05 \x01(\v2\x19.bytebase.v1.TableCatalogR\acatalog\"\xc8\x06\n" +
+	"\acatalog\x18\x05 \x01(\v2\x19.bytebase.v1.TableCatalogR\acatalog\"\x8a\x06\n" +
 	"\x19DataClassificationSetting\x12Y\n" +
-	"\aconfigs\x18\x01 \x03(\v2?.bytebase.v1.DataClassificationSetting.DataClassificationConfigR\aconfigs\x1a\xcf\x05\n" +
+	"\aconfigs\x18\x01 \x03(\v2?.bytebase.v1.DataClassificationSetting.DataClassificationConfigR\aconfigs\x1a\x91\x05\n" +
 	"\x18DataClassificationConfig\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12]\n" +
 	"\x06levels\x18\x03 \x03(\v2E.bytebase.v1.DataClassificationSetting.DataClassificationConfig.LevelR\x06levels\x12{\n" +
-	"\x0eclassification\x18\x04 \x03(\v2S.bytebase.v1.DataClassificationSetting.DataClassificationConfig.ClassificationEntryR\x0eclassification\x12<\n" +
-	"\x1aclassification_from_config\x18\x05 \x01(\bR\x18classificationFromConfig\x1aO\n" +
+	"\x0eclassification\x18\x04 \x03(\v2S.bytebase.v1.DataClassificationSetting.DataClassificationConfig.ClassificationEntryR\x0eclassification\x1aO\n" +
 	"\x05Level\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12 \n" +

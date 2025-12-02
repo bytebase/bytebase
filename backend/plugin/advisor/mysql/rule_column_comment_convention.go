@@ -46,7 +46,7 @@ func (*ColumnCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor
 	}
 
 	// Create the rule
-	rule := NewColumnCommentConventionRule(level, string(checkCtx.Rule.Type), payload, checkCtx.ClassificationConfig)
+	rule := NewColumnCommentConventionRule(level, string(checkCtx.Rule.Type), payload)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
@@ -63,19 +63,17 @@ func (*ColumnCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor
 // ColumnCommentConventionRule checks for column comment convention.
 type ColumnCommentConventionRule struct {
 	BaseRule
-	payload              *advisor.CommentConventionRulePayload
-	classificationConfig *storepb.DataClassificationSetting_DataClassificationConfig
+	payload *advisor.CommentConventionRulePayload
 }
 
 // NewColumnCommentConventionRule creates a new ColumnCommentConventionRule.
-func NewColumnCommentConventionRule(level storepb.Advice_Status, title string, payload *advisor.CommentConventionRulePayload, classificationConfig *storepb.DataClassificationSetting_DataClassificationConfig) *ColumnCommentConventionRule {
+func NewColumnCommentConventionRule(level storepb.Advice_Status, title string, payload *advisor.CommentConventionRulePayload) *ColumnCommentConventionRule {
 	return &ColumnCommentConventionRule{
 		BaseRule: BaseRule{
 			level: level,
 			title: title,
 		},
-		payload:              payload,
-		classificationConfig: classificationConfig,
+		payload: payload,
 	}
 }
 
@@ -202,18 +200,6 @@ func (r *ColumnCommentConventionRule) checkFieldDefinition(tableName, columnName
 				Content:       fmt.Sprintf("The length of column `%s`.`%s` comment should be within %d characters", tableName, columnName, r.payload.MaxLength),
 				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
 			})
-		}
-
-		if r.payload.RequiredClassification {
-			if classification, _ := common.GetClassificationAndUserComment(comment, r.classificationConfig); classification == "" {
-				r.AddAdvice(&storepb.Advice{
-					Status:        r.level,
-					Code:          code.CommentMissingClassification.Int32(),
-					Title:         r.title,
-					Content:       fmt.Sprintf("Column `%s`.`%s` comment requires classification", tableName, columnName),
-					StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
-				})
-			}
 		}
 
 		break

@@ -339,11 +339,7 @@ message TableMetadata {
   string create_options = 10;
 
   // The comment is the comment of a table.
-  // classification and user_comment is parsed from the comment.
   string comment = 11;
-
-  // The user_comment is the user comment of a table parsed from the comment.
-  string user_comment = 14;
 
   // The foreign_keys is the list of foreign keys in a table.
   repeated ForeignKeyMetadata foreign_keys = 12;
@@ -507,11 +503,7 @@ message ColumnMetadata {
   string collation = 9;
 
   // The comment is the comment of a column.
-  // classification and user_comment is parsed from the comment.
   string comment = 10;
-
-  // The user_comment is the user comment of a table parsed from the comment.
-  string user_comment = 12;
 
   // The generation is for generated columns.
   GenerationMetadata generation = 14;

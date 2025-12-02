@@ -29,8 +29,6 @@ import {
   ValueSchema as SettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
 import { EngineIcon } from "../Icon";
-import ClassificationLevelBadge from "./ClassificationLevelBadge.vue";
-import { classificationConfig } from "./utils";
 
 const props = defineProps<{
   engine?: Engine;
@@ -64,31 +62,7 @@ const columns = computed(
           </div>
         ),
       },
-      {
-        title: t("settings.sensitive-data.semantic-types.table.semantic-type"),
-        key: "semanticType",
-        render: (item) => {
-          const semanticType = getSemanticType(item.catalog?.semanticType);
-          if (semanticType) {
-            return semanticType.title;
-          }
-          return <span class="text-control-placeholder italic">N/A</span>;
-        },
-      },
     ];
-
-    if (classificationConfig.value) {
-      cols.push({
-        title: t("schema-template.classification.self"),
-        key: "classification",
-        render: (item) => (
-          <ClassificationLevelBadge
-            classification={item.catalog?.classification}
-            classificationConfig={classificationConfig.value!}
-          />
-        ),
-      });
-    }
 
     cols.push(
       {
@@ -104,7 +78,7 @@ const columns = computed(
       {
         title: t("schema-template.form.comment"),
         key: "comment",
-        render: (item) => item.column?.userComment ?? "",
+        render: (item) => item.column?.comment ?? "",
       },
       {
         title: t("common.labels"),

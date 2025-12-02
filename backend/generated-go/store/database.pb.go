@@ -1647,10 +1647,7 @@ type TableMetadata struct {
 	// The create_options is the create option of a table.
 	CreateOptions string `protobuf:"bytes,10,opt,name=create_options,json=createOptions,proto3" json:"create_options,omitempty"`
 	// The comment is the comment of a table.
-	// classification and user_comment is parsed from the comment.
 	Comment string `protobuf:"bytes,11,opt,name=comment,proto3" json:"comment,omitempty"`
-	// The user_comment is the user comment of a table parsed from the comment.
-	UserComment string `protobuf:"bytes,14,opt,name=user_comment,json=userComment,proto3" json:"user_comment,omitempty"`
 	// The foreign_keys is the list of foreign keys in a table.
 	ForeignKeys []*ForeignKeyMetadata `protobuf:"bytes,12,rep,name=foreign_keys,json=foreignKeys,proto3" json:"foreign_keys,omitempty"`
 	// The partitions is the list of partitions in a table.
@@ -1786,13 +1783,6 @@ func (x *TableMetadata) GetCreateOptions() string {
 func (x *TableMetadata) GetComment() string {
 	if x != nil {
 		return x.Comment
-	}
-	return ""
-}
-
-func (x *TableMetadata) GetUserComment() string {
-	if x != nil {
-		return x.UserComment
 	}
 	return ""
 }
@@ -2215,10 +2205,7 @@ type ColumnMetadata struct {
 	// The collation is the collation of a column.
 	Collation string `protobuf:"bytes,9,opt,name=collation,proto3" json:"collation,omitempty"`
 	// The comment is the comment of a column.
-	// classification and user_comment is parsed from the comment.
 	Comment string `protobuf:"bytes,10,opt,name=comment,proto3" json:"comment,omitempty"`
-	// The user_comment is the user comment of a table parsed from the comment.
-	UserComment string `protobuf:"bytes,12,opt,name=user_comment,json=userComment,proto3" json:"user_comment,omitempty"`
 	// The generation is for generated columns.
 	Generation *GenerationMetadata `protobuf:"bytes,14,opt,name=generation,proto3" json:"generation,omitempty"`
 	IsIdentity bool                `protobuf:"varint,17,opt,name=is_identity,json=isIdentity,proto3" json:"is_identity,omitempty"`
@@ -2352,13 +2339,6 @@ func (x *ColumnMetadata) GetCollation() string {
 func (x *ColumnMetadata) GetComment() string {
 	if x != nil {
 		return x.Comment
-	}
-	return ""
-}
-
-func (x *ColumnMetadata) GetUserComment() string {
-	if x != nil {
-		return x.UserComment
 	}
 	return ""
 }
@@ -4739,7 +4719,7 @@ const file_store_database_proto_rawDesc = "" +
 	"\x10MODE_UNSPECIFIED\x10\x00\x12\x10\n" +
 	"\fMODE_DEFAULT\x10\x01\x12\x14\n" +
 	"\x10MODE_APPEND_ONLY\x10\x02\x12\x14\n" +
-	"\x10MODE_INSERT_ONLY\x10\x03\"\x97\b\n" +
+	"\x10MODE_INSERT_ONLY\x10\x03\"\xf4\a\n" +
 	"\rTableMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x128\n" +
 	"\acolumns\x18\x02 \x03(\v2\x1e.bytebase.store.ColumnMetadataR\acolumns\x127\n" +
@@ -4754,8 +4734,7 @@ const file_store_database_proto_rawDesc = "" +
 	"\tdata_free\x18\t \x01(\x03R\bdataFree\x12%\n" +
 	"\x0ecreate_options\x18\n" +
 	" \x01(\tR\rcreateOptions\x12\x18\n" +
-	"\acomment\x18\v \x01(\tR\acomment\x12!\n" +
-	"\fuser_comment\x18\x0e \x01(\tR\vuserComment\x12E\n" +
+	"\acomment\x18\v \x01(\tR\acomment\x12E\n" +
 	"\fforeign_keys\x18\f \x03(\v2\".bytebase.store.ForeignKeyMetadataR\vforeignKeys\x12F\n" +
 	"\n" +
 	"partitions\x18\x0f \x03(\v2&.bytebase.store.TablePartitionMetadataR\n" +
@@ -4807,7 +4786,7 @@ const file_store_database_proto_rawDesc = "" +
 	"\vLINEAR_HASH\x10\x06\x12\a\n" +
 	"\x03KEY\x10\a\x12\x0e\n" +
 	"\n" +
-	"LINEAR_KEY\x10\b\"\xfb\x05\n" +
+	"LINEAR_KEY\x10\b\"\xd8\x05\n" +
 	"\x0eColumnMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
 	"\bposition\x18\x02 \x01(\x05R\bposition\x12\x18\n" +
@@ -4819,8 +4798,7 @@ const file_store_database_proto_rawDesc = "" +
 	"\rcharacter_set\x18\b \x01(\tR\fcharacterSet\x12\x1c\n" +
 	"\tcollation\x18\t \x01(\tR\tcollation\x12\x18\n" +
 	"\acomment\x18\n" +
-	" \x01(\tR\acomment\x12!\n" +
-	"\fuser_comment\x18\f \x01(\tR\vuserComment\x12B\n" +
+	" \x01(\tR\acomment\x12B\n" +
 	"\n" +
 	"generation\x18\x0e \x01(\v2\".bytebase.store.GenerationMetadataR\n" +
 	"generation\x12\x1f\n" +

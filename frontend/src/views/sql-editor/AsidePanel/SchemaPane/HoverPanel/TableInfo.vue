@@ -72,6 +72,6 @@ const collation = computed(() => {
 });
 
 const comment = computed(() => {
-  return tableMetadata.value.userComment;
+  return tableMetadata.value.comment;
 });
 </script>

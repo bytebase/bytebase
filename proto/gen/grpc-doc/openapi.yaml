@@ -9039,12 +9039,7 @@ components:
                     description: The collation is the collation of a column.
                 comment:
                     type: string
-                    description: |-
-                        The comment is the comment of a column.
-                         classification and user_comment is parsed from the comment.
-                userComment:
-                    type: string
-                    description: The user_comment is the user comment of a column parsed from the comment.
+                    description: The comment is the comment of a column.
                 generation:
                     allOf:
                         - $ref: '#/components/schemas/GenerationMetadata'
@@ -9261,12 +9256,6 @@ components:
                     description: |-
                         classification is the id - DataClassification map.
                          The id should in [0-9]+-[0-9]+-[0-9]+ format.
-                classificationFromConfig:
-                    type: boolean
-                    description: |-
-                        If true, we will only store the classification in the config.
-                         Otherwise we will get the classification from table/column comment,
-                         and write back to the schema metadata.
         DataSource:
             type: object
             properties:
@@ -9774,11 +9763,6 @@ components:
                     type: string
                     description: The database engine of the schema.
                     format: enum
-                classificationFromConfig:
-                    type: boolean
-                    description: |-
-                        If false, we will build the raw common by classification in database
-                         config.
         DiffMetadataResponse:
             type: object
             properties:
@@ -13659,12 +13643,7 @@ components:
                     description: The create_options is the create option of a table.
                 comment:
                     type: string
-                    description: |-
-                        The comment is the comment of a table.
-                         classification and user_comment is parsed from the comment.
-                userComment:
-                    type: string
-                    description: The user_comment is the user comment of a table parsed from the comment.
+                    description: The comment is the comment of a table.
                 foreignKeys:
                     type: array
                     items:

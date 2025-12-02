@@ -1119,14 +1119,6 @@ export declare type DiffMetadataRequest = Message<"bytebase.v1.DiffMetadataReque
    * @generated from field: bytebase.v1.Engine engine = 3;
    */
   engine: Engine;
-
-  /**
-   * If false, we will build the raw common by classification in database
-   * config.
-   *
-   * @generated from field: bool classification_from_config = 4;
-   */
-  classificationFromConfig: boolean;
 };
 
 /**

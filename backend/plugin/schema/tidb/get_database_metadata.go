@@ -181,7 +181,6 @@ func (m *metadataExtractor) processCreateTable(stmt *ast.CreateTableStmt) error 
 				// Handle comment - extract from various expression types
 				if comment := m.extractCommentFromExpr(option.Expr); comment != "" {
 					column.Comment = comment
-					column.UserComment = comment
 				}
 			case ast.ColumnOptionOnUpdate:
 				if onUpdate := m.getExpressionValue(option.Expr); onUpdate != "" {
@@ -299,7 +298,6 @@ func (m *metadataExtractor) processCreateTable(stmt *ast.CreateTableStmt) error 
 			table.Collation = option.StrValue
 		case ast.TableOptionComment:
 			table.Comment = option.StrValue
-			table.UserComment = option.StrValue
 			// Check for TiDB-specific features in the comment
 			m.processTiDBTableComment(option.StrValue, table)
 		case ast.TableOptionAutoIncrement:

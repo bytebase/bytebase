@@ -365,12 +365,11 @@ func (m CompletionMap) insertAllColumns(c *Completer) {
 				if !column.Nullable {
 					definition += ", NOT NULL"
 				}
-				comment := column.UserComment
 				m.Insert(base.Candidate{
 					Type:       base.CandidateTypeColumn,
 					Text:       c.quotedIdentifierIfNeeded(column.Name),
 					Definition: definition,
-					Comment:    comment,
+					Comment:    column.Comment,
 				})
 			}
 		}
@@ -411,12 +410,11 @@ func (m CompletionMap) insertColumns(c *Completer, schemas, tables map[string]bo
 				if !column.Nullable {
 					definition += ", NOT NULL"
 				}
-				comment := column.UserComment
 				m.Insert(base.Candidate{
 					Type:       base.CandidateTypeColumn,
 					Text:       c.quotedIdentifierIfNeeded(column.Name),
 					Definition: definition,
-					Comment:    comment,
+					Comment:    column.Comment,
 				})
 			}
 		}

@@ -10,7 +10,6 @@ export interface Column extends ColumnDefaultValue {
   type: string;
   nullable: boolean;
   comment: string;
-  userComment: string;
   status: Status;
 }
 
@@ -37,7 +36,6 @@ export interface Table {
   rowCount: bigint;
   dataSize: bigint;
   comment: string;
-  userComment: string;
   columnList: Column[];
   primaryKey: PrimaryKey;
   foreignKeyList: ForeignKey[];

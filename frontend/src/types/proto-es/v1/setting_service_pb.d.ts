@@ -965,15 +965,6 @@ export declare type DataClassificationSetting_DataClassificationConfig = Message
    * @generated from field: map<string, bytebase.v1.DataClassificationSetting.DataClassificationConfig.DataClassification> classification = 4;
    */
   classification: { [key: string]: DataClassificationSetting_DataClassificationConfig_DataClassification };
-
-  /**
-   * If true, we will only store the classification in the config.
-   * Otherwise we will get the classification from table/column comment,
-   * and write back to the schema metadata.
-   *
-   * @generated from field: bool classification_from_config = 5;
-   */
-  classificationFromConfig: boolean;
 };
 
 /**

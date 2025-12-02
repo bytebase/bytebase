@@ -22,7 +22,7 @@
           </div>
         </div>
 
-        <div class="w-full mb-6 flex flex-col gap-y-1">
+        <div class="w-full flex flex-col gap-y-1">
           <label for="engine" class="textlabel">
             {{ $t("database.engine") }}
           </label>
@@ -47,55 +47,6 @@
               placeholder="column name"
               :disabled="readonly"
             />
-          </div>
-
-          <div class="sm:col-span-1 sm:col-start-1">
-            <label for="semantic-types" class="textlabel">
-              {{
-                $t("settings.sensitive-data.semantic-types.table.semantic-type")
-              }}
-            </label>
-            <div class="flex items-center gap-x-2 mt-3 text-sm">
-              {{ columnSemanticType?.title }}
-              <div v-if="!readonly" class="flex items-center">
-                <MiniActionButton
-                  v-if="columnSemanticType"
-                  @click.prevent="onSemanticTypeApply('')"
-                >
-                  <XIcon class="w-4 h-4" />
-                </MiniActionButton>
-                <MiniActionButton
-                  @click.prevent="state.showSemanticTypesDrawer = true"
-                >
-                  <PencilIcon class="w-4 h-4" />
-                </MiniActionButton>
-              </div>
-            </div>
-          </div>
-
-          <div v-if="classificationConfig" class="sm:col-span-2">
-            <label for="column-name" class="textlabel">
-              {{ $t("schema-template.classification.self") }}
-            </label>
-            <div class="flex items-center gap-x-2 mt-3">
-              <ClassificationLevelBadge
-                :classification="state.catalog?.classification"
-                :classification-config="classificationConfig"
-              />
-              <div v-if="!readonly" class="flex items-center">
-                <MiniActionButton
-                  v-if="state.catalog?.classification"
-                  @click.prevent="state.catalog!.classification = ''"
-                >
-                  <XIcon class="w-4 h-4" />
-                </MiniActionButton>
-                <MiniActionButton
-                  @click.prevent="state.showClassificationDrawer = true"
-                >
-                  <PencilIcon class="w-4 h-4" />
-                </MiniActionButton>
-              </div>
-            </div>
           </div>
 
           <!-- type -->
@@ -170,26 +121,13 @@
               {{ $t("schema-template.form.comment") }}
             </label>
             <NInput
-              v-model:value="state.column!.userComment"
+              v-model:value="state.column!.comment"
               type="textarea"
               :autosize="{ minRows: 3, maxRows: 3 }"
               :disabled="readonly"
             />
           </div>
         </div>
-      </div>
-
-      <div class="flex flex-col gap-y-1 border-t border-block-border pt-6">
-        <label for="category" class="textlabel">
-          {{ $t("common.labels") }}
-        </label>
-        <LabelListEditor
-          ref="labelListEditorRef"
-          v-model:kv-list="state.kvList"
-          :readonly="!!readonly"
-          :show-errors="dirty"
-          class="max-w-120"
-        />
       </div>
     </div>
 
@@ -211,41 +149,22 @@
       </div>
     </template>
   </DrawerContent>
-
-  <SelectClassificationDrawer
-    v-if="classificationConfig"
-    :show="state.showClassificationDrawer"
-    :classification-config="classificationConfig"
-    @dismiss="state.showClassificationDrawer = false"
-    @apply="onClassificationSelect"
-  />
-
-  <SemanticTypesDrawer
-    :show="state.showSemanticTypesDrawer"
-    :semantic-type-list="semanticTypeList"
-    @dismiss="state.showSemanticTypesDrawer = false"
-    @apply="onSemanticTypeApply($event)"
-  />
 </template>
 
 <script lang="ts" setup>
 import { create as createProto } from "@bufbuild/protobuf";
 import { cloneDeep, isEqual } from "lodash-es";
-import { PencilIcon, XIcon } from "lucide-vue-next";
 import type { SelectOption } from "naive-ui";
 import { NButton, NInput, NSwitch } from "naive-ui";
-import { computed, reactive, watch } from "vue";
+import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { LabelListEditor } from "@/components/Label";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { DefaultValueCell } from "@/components/SchemaEditorLite/Panels/TableColumnEditor/components";
 import type { DefaultValue } from "@/components/SchemaEditorLite/utils";
-import SemanticTypesDrawer from "@/components/SensitiveData/components/SemanticTypesDrawer.vue";
 import {
   DrawerContent,
   DropdownInput,
   InstanceEngineRadioGrid,
-  MiniActionButton,
 } from "@/components/v2";
 import { useNotificationStore, useSettingV1Store } from "@/store";
 import { ColumnCatalogSchema } from "@/types/proto-es/v1/database_catalog_service_pb";
@@ -260,14 +179,8 @@ import {
   Setting_SettingName,
   ValueSchema as SettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
-import {
-  convertKVListToLabels,
-  convertLabelsToKVList,
-  getDataTypeSuggestionList,
-} from "@/utils";
-import ClassificationLevelBadge from "./ClassificationLevelBadge.vue";
-import SelectClassificationDrawer from "./SelectClassificationDrawer.vue";
-import { categoryList, classificationConfig, engineList } from "./utils";
+import { getDataTypeSuggestionList } from "@/utils";
+import { categoryList, engineList } from "./utils";
 
 const props = defineProps<{
   create: boolean;
@@ -278,9 +191,6 @@ const props = defineProps<{
 const emit = defineEmits(["dismiss"]);
 
 interface LocalState extends SchemaTemplateSetting_FieldTemplate {
-  showClassificationDrawer: boolean;
-  showSemanticTypesDrawer: boolean;
-  kvList: { key: string; value: string }[];
   column: ColumnMetadata;
 }
 
@@ -292,57 +202,9 @@ const state = reactive<LocalState>({
     catalog: createProto(ColumnCatalogSchema, props.template.catalog ?? {}),
   }),
   column: createProto(ColumnMetadataSchema, props.template.column ?? {}),
-  showClassificationDrawer: false,
-  showSemanticTypesDrawer: false,
-  kvList: [],
 });
 const { t } = useI18n();
 const settingStore = useSettingV1Store();
-
-const semanticTypeList = computed(() => {
-  const setting = settingStore.getSettingByName(
-    Setting_SettingName.SEMANTIC_TYPES
-  );
-  if (!setting?.value?.value) return [];
-  const value = setting.value.value;
-  if (value.case === "semanticTypeSettingValue") {
-    return value.value.types ?? [];
-  }
-  return [];
-});
-
-const columnSemanticType = computed(() => {
-  if (!state.catalog?.semanticType) {
-    return;
-  }
-  return semanticTypeList.value.find(
-    (data) => data.id === state.catalog?.semanticType
-  );
-});
-
-const convert = () => {
-  return convertLabelsToKVList(
-    props.template.catalog?.labels ?? {},
-    true /* sort */
-  );
-};
-
-watch(
-  () => props.template.catalog?.labels,
-  () => {
-    state.kvList = convert();
-  },
-  {
-    immediate: true,
-    deep: true,
-  }
-);
-
-const dirty = computed(() => {
-  const original = convert();
-  const local = state.kvList;
-  return !isEqual(original, local);
-});
 
 const dataTypeOptions = computed(() => {
   return getDataTypeSuggestionList(state.engine).map<SelectOption>(
@@ -380,6 +242,7 @@ const schemaTemplateColumnTypes = computed(() => {
   }
   return [];
 });
+
 const schemaTemplateColumnTypeOptions = computed(() => {
   return schemaTemplateColumnTypes.value.map<SelectOption>((type) => ({
     label: type,
@@ -403,15 +266,7 @@ const submit = async () => {
     engine: state.engine,
     category: state.category,
     column: state.column,
-    catalog: createProto(ColumnCatalogSchema, {
-      semanticType: state.catalog?.semanticType || "",
-      classification: state.catalog?.classification || "",
-      name: state.column?.name || "",
-      labels: convertKVListToLabels(
-        state.kvList.filter((item) => item.key),
-        false /* !omitEmpty */
-      ),
-    }),
+    catalog: createProto(ColumnCatalogSchema, {}),
   });
   const setting = await settingStore.fetchSettingByName(
     Setting_SettingName.SCHEMA_TEMPLATE
@@ -451,24 +306,8 @@ const submit = async () => {
   emit("dismiss");
 };
 
-const onClassificationSelect = (id: string) => {
-  if (!state.catalog) {
-    return;
-  }
-  state.catalog.classification = id;
-};
-
 const handleColumnDefaultSelect = (defaultValue: DefaultValue) => {
   state.column.hasDefault = defaultValue.hasDefault;
   state.column.default = defaultValue.default;
-};
-
-const onSemanticTypeApply = async (semanticType: string) => {
-  state.catalog = createProto(ColumnCatalogSchema, {
-    name: state.catalog?.name,
-    labels: state.catalog?.labels,
-    classification: state.catalog?.classification,
-    semanticType,
-  });
 };
 </script>

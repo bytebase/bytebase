@@ -47,7 +47,6 @@ import type { DataTableColumn, DataTableInst } from "naive-ui";
 import { NCheckbox, NDataTable } from "naive-ui";
 import { computed, h, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.vue";
 import { Drawer, DrawerContent, InlineInput } from "@/components/v2";
 import type { ComposedDatabase } from "@/types";
 import {
@@ -105,8 +104,6 @@ const {
   useConsumePendingScrollToTable,
   getAllTablesSelectionState,
   updateAllTablesSelection,
-  showClassificationColumn,
-  classificationConfig,
 } = useSchemaEditorContext();
 
 const dataTableRef = ref<DataTableInst>();
@@ -155,30 +152,6 @@ const catalogForTable = (table: string) => {
       },
     })
   );
-};
-
-const showClassification = computed(() => {
-  return showClassificationColumn(
-    engine.value,
-    classificationConfig.value?.classificationFromConfig ?? false
-  );
-});
-
-const onClassificationSelect = (classificationId: string) => {
-  const table = state.activeTable;
-  if (!table) return;
-
-  upsertTableCatalog(
-    {
-      database: props.db.name,
-      schema: props.schema.name,
-      table: table.name,
-    },
-    (config) => (config.classification = classificationId)
-  );
-
-  state.activeTable = undefined;
-  markEditStatus(props.db, metadataForTable(table), "updated");
 };
 
 const metadataForTable = (table: TableMetadata) => {
@@ -254,28 +227,6 @@ const columns = computed(() => {
       },
     },
     {
-      key: "classification",
-      title: t("schema-editor.column.classification"),
-      resizable: true,
-      minWidth: 140,
-      maxWidth: 320,
-      hide: !showClassification.value,
-      render: (table) => {
-        const catalog = catalogForTable(table.name);
-        return h(ClassificationCell, {
-          classification: catalog.classification,
-          readonly: readonly.value,
-          disabled: isDroppedSchema.value || isDroppedTable(table),
-          engine: engine.value,
-          classificationConfig: classificationConfig.value,
-          onApply: (id: string) => {
-            state.activeTable = table;
-            onClassificationSelect(id);
-          },
-        });
-      },
-    },
-    {
       key: "engine",
       title: t("schema-editor.database.engine"),
       resizable: true,
@@ -303,7 +254,7 @@ const columns = computed(() => {
       className: "input-cell",
       render: (table) => {
         return h(InlineInput, {
-          value: table.userComment,
+          value: table.comment,
           disabled:
             readonly.value || isDroppedSchema.value || isDroppedTable(table),
           placeholder: "comment",
@@ -313,7 +264,7 @@ const columns = computed(() => {
             "--n-text-color-disabled": "rgb(var(--color-main))",
           },
           "onUpdate:value": (value) => {
-            table.userComment = value;
+            table.comment = value;
             markEditStatus(props.db, metadataForTable(table), "updated");
           },
         });

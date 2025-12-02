@@ -1731,11 +1731,7 @@
     "transfer-database-to": "データベースをターゲットプロジェクトに転送します",
     "classification": {
       "self": "分類",
-      "description": "データ分類を使用して、少数の分類のみを制御することで、多数の列のマスキング ポリシーを管理します。",
-      "sync-from-comment": "コメントからカテゴリと評価を同期する",
-      "sync-from-comment-tip": "有効にすると、分類評価がテーブルまたは列のコメントから同期されます。コメントは「{format}」形式に従う必要があります。",
-      "sync-from-comment-enable-warning": "分類評価は DDL とともに変更され、元の注釈と同期されます。",
-      "sync-from-comment-disable-warning": "分類評価は DDL によって変更されません。データベースの詳細ページでいつでも変更できます。"
+      "description": "データ分類を使用して、少数の分類のみを制御することで、多数の列のマスキング ポリシーを管理します。"
     },
     "partitioned": "パーティション",
     "partition-tables": "パーティションテーブル",

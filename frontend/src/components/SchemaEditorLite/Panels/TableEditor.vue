@@ -275,7 +275,6 @@ const convertNewColumnToOld = (
     type: newColumn.type,
     characterSet: newColumn.characterSet,
     collation: newColumn.collation,
-    userComment: newColumn.userComment,
     comment: newColumn.comment,
     // classification, labels, effectiveMaskingLevel are not available in old proto types
   });

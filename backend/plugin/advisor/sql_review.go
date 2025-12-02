@@ -319,9 +319,8 @@ type RequiredColumnRulePayload struct {
 
 // CommentConventionRulePayload is the payload for comment convention rule.
 type CommentConventionRulePayload struct {
-	Required               bool `json:"required"`
-	RequiredClassification bool `json:"requiredClassification"`
-	MaxLength              int  `json:"maxLength"`
+	Required  bool `json:"required"`
+	MaxLength int  `json:"maxLength"`
 }
 
 // NumberTypeRulePayload is the number type payload.

@@ -622,11 +622,10 @@ func convertDataClassificationSettingConfig(c *v1pb.DataClassificationSetting_Da
 	}
 
 	return &storepb.DataClassificationSetting_DataClassificationConfig{
-		Id:                       c.Id,
-		Title:                    c.Title,
-		Levels:                   convertDataClassificationSettingLevels(c.Levels),
-		Classification:           convertDataClassificationSettingClassification(c.Classification),
-		ClassificationFromConfig: c.ClassificationFromConfig,
+		Id:             c.Id,
+		Title:          c.Title,
+		Levels:         convertDataClassificationSettingLevels(c.Levels),
+		Classification: convertDataClassificationSettingClassification(c.Classification),
 	}
 }
 
@@ -682,11 +681,10 @@ func convertToDataClassificationSettingConfig(c *storepb.DataClassificationSetti
 	}
 
 	return &v1pb.DataClassificationSetting_DataClassificationConfig{
-		Id:                       c.Id,
-		Title:                    c.Title,
-		Levels:                   convertToDataClassificationSettingLevels(c.Levels),
-		Classification:           convertToDataClassificationSettingClassification(c.Classification),
-		ClassificationFromConfig: c.ClassificationFromConfig,
+		Id:             c.Id,
+		Title:          c.Title,
+		Levels:         convertToDataClassificationSettingLevels(c.Levels),
+		Classification: convertToDataClassificationSettingClassification(c.Classification),
 	}
 }
 
