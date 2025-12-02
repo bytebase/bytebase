@@ -19,20 +19,18 @@
     </div>
 
     <!-- Task content -->
-    <div class="w-full" :class="isExpanded ? 'p-4 space-y-3' : 'py-3 px-4'">
+    <div class="w-full" :class="isExpanded ? 'p-4 space-y-3' : 'py-2.5 px-4'">
       <!-- Header section -->
-      <div class="flex items-center justify-between gap-x-3 mb-2">
+      <div
+        class="flex items-center justify-between gap-x-3"
+        :class="{ 'mb-2': isExpanded }"
+      >
         <div class="flex items-center gap-x-2 flex-1 min-w-0">
-          <div
-            :class="readonly ? '' : 'cursor-pointer hover:opacity-80'"
-            class="transition-opacity"
-          >
-            <TaskStatus :status="task.status" :size="isExpanded ? 'large' : 'small'" />
-          </div>
+          <TaskStatus :status="task.status" :size="isExpanded ? 'large' : 'small'" />
           <RouterLink
             v-if="!readonly"
             :to="`/${task.name}`"
-            class="transition-opacity shrink-0 hover:opacity-80"
+            class="shrink-0 hover:opacity-80 transition-opacity"
           >
             <DatabaseDisplay
               :database="task.target"
@@ -40,31 +38,38 @@
               :link="false"
             />
           </RouterLink>
-          <div v-else class="shrink-0">
-            <DatabaseDisplay
-              :database="task.target"
-              :size="isExpanded ? 'large' : 'medium'"
-              :link="false"
-            />
-          </div>
-          <div v-if="!isExpanded" class="flex items-center gap-x-2 ml-auto shrink-0">
-            <NTag size="tiny" round class="opacity-80">
+          <DatabaseDisplay
+            v-else
+            :database="task.target"
+            :size="isExpanded ? 'large' : 'medium'"
+            :link="false"
+            class="shrink-0"
+          />
+          <!-- Collapsed view: contextual info + type -->
+          <div v-if="!isExpanded" class="flex items-center gap-x-1.5 ml-auto shrink-0 text-xs text-gray-500">
+            <!-- Status-contextual info first -->
+            <template v-if="timingType === 'scheduled'">
+              <ScheduledTimeIndicator
+                :time="scheduledTime"
+                :title="t('task.scheduled-time')"
+              />
+              <span class="text-gray-300">·</span>
+            </template>
+            <template v-else-if="timingType === 'running'">
+              <span class="flex items-center gap-x-1 text-blue-600">
+                <LoaderCircleIcon class="w-3 h-3 animate-spin" />
+                {{ timingDisplay }}
+              </span>
+              <span class="text-gray-300">·</span>
+            </template>
+            <template v-else-if="collapsedContextInfo">
+              <span>{{ collapsedContextInfo }}</span>
+              <span class="text-gray-300">·</span>
+            </template>
+            <!-- Task type last -->
+            <NTag round size="tiny" class="opacity-80">
               {{ taskTypeDisplay }}
             </NTag>
-            <!-- Scheduled time indicator -->
-            <ScheduledTimeIndicator
-              v-if="timingType === 'scheduled'"
-              :time="scheduledTime"
-              :title="t('task.scheduled-time')"
-            />
-            <!-- Running indicator -->
-            <span
-              v-else-if="timingType === 'running'"
-              class="flex items-center gap-x-1 text-xs text-yellow-600"
-            >
-              <LoaderCircleIcon class="w-3 h-3 animate-spin" />
-              {{ timingDisplay }}
-            </span>
           </div>
         </div>
 
@@ -75,35 +80,22 @@
           :class="{ 'self-start': isExpanded }"
           @click.stop="emit('toggle-expand')"
         >
-          <ChevronRightIcon v-if="!isExpanded" class="w-4 h-4 text-gray-600" />
-          <ChevronDownIcon v-else class="w-4 h-4 text-gray-600" />
+          <ChevronRightIcon v-if="!isExpanded" class="w-4 h-4 text-gray-500" />
+          <ChevronDownIcon v-else class="w-4 h-4 text-gray-500" />
         </button>
       </div>
 
-      <!-- SQL preview - collapsed only -->
-      <div v-if="!isExpanded" class="space-y-1">
-        <div class="flex flex-row justify-start items-center gap-2">
-          <NTag size="tiny" round class="opacity-80">
-            {{ t("common.statement") }}
-          </NTag>
-          <div
-            class="text-xs text-gray-600 font-mono truncate min-w-0"
-          >
-            {{ statementPreview }}
-          </div>
-        </div>
-        <!-- Error preview for failed tasks -->
-        <div v-if="errorPreview" class="text-xs text-red-600 truncate pl-1">
-          {{ t("common.error") }}: {{ errorPreview }}
-        </div>
-        <!-- Skipped reason -->
-        <div v-if="task.status === Task_Status.SKIPPED && task.skippedReason" class="text-xs text-gray-500 italic truncate pl-1">
-          {{ task.skippedReason }}
-        </div>
+      <!-- Collapsed: contextual status line (error/skip only) -->
+      <div
+        v-if="!isExpanded && collapsedStatusText"
+        class="text-xs truncate mt-1"
+        :class="task.status === Task_Status.FAILED ? 'text-red-600' : 'text-gray-500 italic'"
+      >
+        {{ collapsedStatusText }}
       </div>
 
       <!-- Task metadata - expanded only -->
-      <div v-else class="space-y-3">
+      <div v-if="isExpanded" class="space-y-3">
         <!-- Task information line with quick actions -->
         <div class="flex items-center justify-between gap-x-2">
           <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-600">
@@ -275,8 +267,9 @@ import TaskRolloutActionPanel from "@/components/Plan/components/RolloutView/Tas
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import { taskRunNamePrefix } from "@/store";
 import type { Stage, Task } from "@/types/proto-es/v1/rollout_service_pb";
-import { Task_Status, Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
+import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { useTaskActions } from "./composables/useTaskActions";
+import { useTaskDisplay } from "./composables/useTaskDisplay";
 import { useTaskRunSummary } from "./composables/useTaskRunSummary";
 import { useTaskStatement } from "./composables/useTaskStatement";
 import { useTaskTiming } from "./composables/useTaskTiming";
@@ -333,11 +326,10 @@ const handleActionConfirm = () => {
   events.emit("status-changed", { eager: true });
 };
 
-const { loading, statementPreview, displayedStatement, isStatementTruncated } =
-  useTaskStatement(
-    () => props.task,
-    () => props.isExpanded
-  );
+const { loading, displayedStatement, isStatementTruncated } = useTaskStatement(
+  () => props.task,
+  () => props.isExpanded
+);
 
 const latestTaskRun = computed(() => {
   const taskRunsForTask = allTaskRuns.value.filter((run) =>
@@ -362,75 +354,18 @@ const affectedRowsDisplay = computed(() => {
   return `${rows.toLocaleString()} row${rows === BigInt(1) ? "" : "s"}`;
 });
 
-const taskTypeDisplay = computed(() => {
-  switch (props.task.type) {
-    case Task_Type.DATABASE_CREATE:
-      return t("task.type.database-create");
-    case Task_Type.DATABASE_MIGRATE:
-      return t("task.type.migrate");
-    case Task_Type.DATABASE_SDL:
-      return t("task.type.database-sdl");
-    case Task_Type.DATABASE_EXPORT:
-      return t("task.type.database-export");
-    case Task_Type.GENERAL:
-      return t("task.type.general");
-    default:
-      return "";
-  }
-});
-
-const errorPreview = computed(() => {
-  if (props.task.status !== Task_Status.FAILED) return "";
-  const detail = latestTaskRun.value?.detail || "";
-  const firstLine = detail.split("\n")[0];
-  const maxLength = 80;
-  return firstLine.length > maxLength
-    ? firstLine.substring(0, maxLength) + "..."
-    : firstLine;
-});
-
-const executorEmail = computed(() => {
-  const creator = latestTaskRun.value?.creator || "";
-  // Extract email from format: users/email@example.com
-  const match = creator.match(/users\/([^/]+)/);
-  return match?.[1] || "";
-});
-
-const resultSummary = computed(() => {
-  const taskRun = latestTaskRun.value;
-  if (!taskRun) return "";
-
-  // For migrations and SDL, show schema version
-  if (taskRun.schemaVersion) {
-    return t("task.result.schema-version", { version: taskRun.schemaVersion });
-  }
-
-  // For exports, show archive status
-  if (taskRun.exportArchiveStatus) {
-    return t("task.result.export-archive-ready");
-  }
-
-  return "";
-});
-
-const waitingMessage = computed(() => {
-  const taskRun = latestTaskRun.value;
-  if (!taskRun || props.task.status !== Task_Status.PENDING) return "";
-
-  const schedulerInfo = taskRun.schedulerInfo;
-  if (!schedulerInfo?.waitingCause) return "";
-
-  const cause = schedulerInfo.waitingCause.cause;
-  if (cause.case === "connectionLimit") {
-    return t("task.waiting.connection-limit");
-  }
-  if (cause.case === "parallelTasksLimit") {
-    return t("task.waiting.parallel-tasks-limit");
-  }
-  if (cause.case === "task") {
-    return t("task.waiting.blocking-task");
-  }
-
-  return "";
-});
+// Task display formatting (type, executor, messages, collapsed view info)
+const {
+  taskTypeDisplay,
+  executorEmail,
+  resultSummary,
+  waitingMessage,
+  collapsedContextInfo,
+  collapsedStatusText,
+} = useTaskDisplay(
+  () => props.task,
+  () => latestTaskRun.value,
+  () => timingDisplay.value,
+  () => affectedRowsDisplay.value
+);
 </script>
