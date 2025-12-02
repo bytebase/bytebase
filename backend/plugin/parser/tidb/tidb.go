@@ -26,6 +26,7 @@ import (
 
 func init() {
 	base.RegisterParseFunc(storepb.Engine_TIDB, ParseTiDBForSyntaxCheck)
+	base.RegisterParseStatementsFunc(storepb.Engine_TIDB, parseTiDBStatements)
 }
 
 // ParseTiDBForSyntaxCheck parses TiDB SQL for syntax checking purposes.
@@ -74,6 +75,43 @@ func ParseTiDBForSyntaxCheck(statement string) ([]base.AST, error) {
 	}
 
 	return results, nil
+}
+
+// parseTiDBStatements is the ParseStatementsFunc for TiDB.
+// Returns []Statement with both text and AST populated.
+func parseTiDBStatements(statement string) ([]base.Statement, error) {
+	// First split to get SingleSQL with text and positions
+	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_TIDB, statement)
+	if err != nil {
+		return nil, err
+	}
+
+	// Then parse to get ASTs
+	asts, err := ParseTiDBForSyntaxCheck(statement)
+	if err != nil {
+		return nil, err
+	}
+
+	// Combine: SingleSQL provides text/positions, AST provides parsed tree
+	var statements []base.Statement
+	astIndex := 0
+	for _, sql := range singleSQLs {
+		stmt := base.Statement{
+			Text:            sql.Text,
+			Empty:           sql.Empty,
+			StartPosition:   sql.Start,
+			EndPosition:     sql.End,
+			ByteOffsetStart: sql.ByteOffsetStart,
+			ByteOffsetEnd:   sql.ByteOffsetEnd,
+		}
+		if !sql.Empty && astIndex < len(asts) {
+			stmt.AST = asts[astIndex]
+			astIndex++
+		}
+		statements = append(statements, stmt)
+	}
+
+	return statements, nil
 }
 
 func newTiDBParser() *tidbparser.Parser {

@@ -14,6 +14,7 @@ import (
 
 func init() {
 	base.RegisterParseFunc(storepb.Engine_DYNAMODB, parsePartiQLForRegistry)
+	base.RegisterParseStatementsFunc(storepb.Engine_DYNAMODB, parsePartiQLStatements)
 }
 
 // parsePartiQLForRegistry is the ParseFunc for PartiQL.
@@ -37,6 +38,47 @@ func toAST(results []*base.ParseResult) []base.AST {
 		})
 	}
 	return asts
+}
+
+// parsePartiQLStatements is the ParseStatementsFunc for PartiQL (DynamoDB).
+// Returns []Statement with both text and AST populated.
+func parsePartiQLStatements(statement string) ([]base.Statement, error) {
+	// First split to get SingleSQL with text and positions
+	singleSQLs, err := SplitSQL(statement)
+	if err != nil {
+		return nil, err
+	}
+
+	// Then parse to get ASTs
+	parseResults, err := ParsePartiQL(statement)
+	if err != nil {
+		return nil, err
+	}
+
+	// Combine: SingleSQL provides text/positions, ParseResult provides AST
+	var statements []base.Statement
+	astIndex := 0
+	for _, sql := range singleSQLs {
+		stmt := base.Statement{
+			Text:            sql.Text,
+			Empty:           sql.Empty,
+			StartPosition:   sql.Start,
+			EndPosition:     sql.End,
+			ByteOffsetStart: sql.ByteOffsetStart,
+			ByteOffsetEnd:   sql.ByteOffsetEnd,
+		}
+		if !sql.Empty && astIndex < len(parseResults) {
+			stmt.AST = &base.ANTLRAST{
+				StartPosition: &storepb.Position{Line: int32(parseResults[astIndex].BaseLine) + 1},
+				Tree:          parseResults[astIndex].Tree,
+				Tokens:        parseResults[astIndex].Tokens,
+			}
+			astIndex++
+		}
+		statements = append(statements, stmt)
+	}
+
+	return statements, nil
 }
 
 // ParsePartiQL parses the given PartiQL statement by using antlr4. Returns a list of AST and token stream if no error.

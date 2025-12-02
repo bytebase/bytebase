@@ -15,6 +15,7 @@ import (
 
 func init() {
 	base.RegisterParseFunc(storepb.Engine_MSSQL, parseTSQLForRegistry)
+	base.RegisterParseStatementsFunc(storepb.Engine_MSSQL, parseTSQLStatements)
 }
 
 // parseTSQLForRegistry is the ParseFunc for T-SQL.
@@ -38,6 +39,47 @@ func toAST(results []*base.ParseResult) []base.AST {
 		})
 	}
 	return asts
+}
+
+// parseTSQLStatements is the ParseStatementsFunc for T-SQL (MSSQL).
+// Returns []Statement with both text and AST populated.
+func parseTSQLStatements(statement string) ([]base.Statement, error) {
+	// First split to get SingleSQL with text and positions
+	singleSQLs, err := SplitSQL(statement)
+	if err != nil {
+		return nil, err
+	}
+
+	// Then parse to get ASTs
+	parseResults, err := ParseTSQL(statement)
+	if err != nil {
+		return nil, err
+	}
+
+	// Combine: SingleSQL provides text/positions, ParseResult provides AST
+	var statements []base.Statement
+	astIndex := 0
+	for _, sql := range singleSQLs {
+		stmt := base.Statement{
+			Text:            sql.Text,
+			Empty:           sql.Empty,
+			StartPosition:   sql.Start,
+			EndPosition:     sql.End,
+			ByteOffsetStart: sql.ByteOffsetStart,
+			ByteOffsetEnd:   sql.ByteOffsetEnd,
+		}
+		if !sql.Empty && astIndex < len(parseResults) {
+			stmt.AST = &base.ANTLRAST{
+				StartPosition: &storepb.Position{Line: int32(parseResults[astIndex].BaseLine) + 1},
+				Tree:          parseResults[astIndex].Tree,
+				Tokens:        parseResults[astIndex].Tokens,
+			}
+			astIndex++
+		}
+		statements = append(statements, stmt)
+	}
+
+	return statements, nil
 }
 
 // ParseTSQL parses the given SQL and returns a list of ParseResult (one per statement).
