@@ -12,6 +12,7 @@ import (
 
 func init() {
 	base.RegisterParseFunc(storepb.Engine_POSTGRES, parsePostgreSQLForRegistry)
+	base.RegisterGetStatementTypes(storepb.Engine_POSTGRES, GetStatementTypesForRegistry)
 }
 
 // parsePostgreSQLForRegistry is the ParseFunc for PostgreSQL.

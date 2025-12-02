@@ -16,6 +16,7 @@ import (
 
 func init() {
 	base.RegisterParseFunc(storepb.Engine_ORACLE, parsePLSQLForRegistry)
+	base.RegisterGetStatementTypes(storepb.Engine_ORACLE, GetStatementTypes)
 }
 
 // parsePLSQLForRegistry is the ParseFunc for PL/SQL.

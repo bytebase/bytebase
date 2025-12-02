@@ -43,3 +43,17 @@ func GetStatementTypes(asts []base.AST) ([]StatementTypeWithPosition, error) {
 
 	return allResults, nil
 }
+
+// GetStatementTypesForRegistry returns only the statement types as strings.
+// This is used for registration with base.RegisterGetStatementTypes.
+func GetStatementTypesForRegistry(asts []base.AST) ([]string, error) {
+	results, err := GetStatementTypes(asts)
+	if err != nil {
+		return nil, err
+	}
+	types := make([]string, len(results))
+	for i, r := range results {
+		types[i] = r.Type
+	}
+	return types, nil
+}

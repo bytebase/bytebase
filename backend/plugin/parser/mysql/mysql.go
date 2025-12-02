@@ -20,6 +20,9 @@ func init() {
 	base.RegisterParseFunc(storepb.Engine_MYSQL, parseMySQLForRegistry)
 	base.RegisterParseFunc(storepb.Engine_MARIADB, parseMySQLForRegistry)
 	base.RegisterParseFunc(storepb.Engine_OCEANBASE, parseMySQLForRegistry)
+	base.RegisterGetStatementTypes(storepb.Engine_MYSQL, GetStatementTypes)
+	base.RegisterGetStatementTypes(storepb.Engine_MARIADB, GetStatementTypes)
+	base.RegisterGetStatementTypes(storepb.Engine_OCEANBASE, GetStatementTypes)
 }
 
 // parseMySQLForRegistry is the ParseFunc for MySQL, MariaDB, and OceanBase.
