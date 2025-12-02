@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common/qb"
@@ -58,7 +60,7 @@ func (m *DBConnectionManager) Initialize(ctx context.Context) error {
 	}
 
 	// Create initial connection
-	db, err := createConnection(ctx, pgURL)
+	db, err := createConnectionWithTracer(ctx, pgURL)
 	if err != nil {
 		return err
 	}
@@ -79,10 +81,16 @@ func (m *DBConnectionManager) Close() error {
 		m.watcher.Close()
 	}
 
-	if m.db != nil {
-		return m.db.Close()
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if m.db == nil {
+		return nil
 	}
-	return nil
+
+	err := m.db.Close()
+	m.db = nil
+	return err
 }
 
 // startFileWatcher starts watching the PG_URL file for changes.
@@ -138,8 +146,8 @@ func (m *DBConnectionManager) reloadConnection(ctx context.Context, filePath str
 
 	slog.Info("PG URL file content updated, reconnecting database")
 
-	// Create new connection
-	newDB, err := createConnection(ctx, newURL)
+	// Create new connection first (zero downtime)
+	newDB, err := createConnectionWithTracer(ctx, newURL)
 	if err != nil {
 		slog.Error("Failed to create new database connection", "error", err)
 		return
@@ -192,11 +200,14 @@ func readURLFromFile(path string) (string, error) {
 	return strings.TrimSpace(string(content)), nil
 }
 
-func createConnection(ctx context.Context, pgURL string) (*sql.DB, error) {
-	db, err := sql.Open("pgx", pgURL)
+func createConnectionWithTracer(ctx context.Context, pgURL string) (*sql.DB, error) {
+	pgxConfig, err := pgx.ParseConfig(pgURL)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to open database connection")
+		return nil, errors.Wrap(err, "failed to parse database URL")
 	}
+
+	pgxConfig.Tracer = &metadataDBTracer{}
+	db := stdlib.OpenDB(*pgxConfig)
 
 	// Validate connection
 	if err := db.PingContext(ctx); err != nil {
