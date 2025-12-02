@@ -2230,7 +2230,6 @@
       "not-null": "不可为空",
       "primary": "主键",
       "foreign-key": "外键",
-      "classification": "分类分级",
       "on-update": "更新时"
     },
     "default": {
@@ -2735,7 +2734,6 @@
       "on-update": "更新时"
     },
     "classification": {
-      "self": "数据分类分级",
       "select": "选择分类",
       "search": "搜索分类"
     }

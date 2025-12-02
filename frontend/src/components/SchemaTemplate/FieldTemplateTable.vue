@@ -170,23 +170,4 @@ const deleteTemplate = async (id: string) => {
     });
   }
 };
-
-const semanticTypeList = computed(() => {
-  const setting = settingStore.getSettingByName(
-    Setting_SettingName.SEMANTIC_TYPES
-  );
-  if (!setting?.value?.value) return [];
-  const value = setting.value.value;
-  if (value.case === "semanticTypeSettingValue") {
-    return value.value.types ?? [];
-  }
-  return [];
-});
-
-const getSemanticType = (semanticType: string | undefined) => {
-  if (!semanticType) {
-    return;
-  }
-  return semanticTypeList.value.find((data) => data.id === semanticType);
-};
 </script>

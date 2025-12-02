@@ -1685,28 +1685,6 @@ func (*SQLService) getUser(ctx context.Context) (*store.UserMessage, error) {
 	return user, nil
 }
 
-func getClassificationByProject(ctx context.Context, stores *store.Store, projectID string) *storepb.DataClassificationSetting_DataClassificationConfig {
-	project, err := stores.GetProjectV2(ctx, &store.FindProjectMessage{
-		ResourceID: &projectID,
-	})
-	if err != nil {
-		slog.Warn("failed to find project", slog.String("project", projectID), log.BBError(err))
-		return nil
-	}
-	if project == nil {
-		return nil
-	}
-	if project.DataClassificationConfigID == "" {
-		return nil
-	}
-	classificationConfig, err := stores.GetDataClassificationConfigByID(ctx, project.DataClassificationConfigID)
-	if err != nil {
-		slog.Warn("failed to find classification", slog.String("project", projectID), slog.String("classification", project.DataClassificationConfigID), log.BBError(err))
-		return nil
-	}
-	return classificationConfig
-}
-
 func getUseDatabaseOwner(ctx context.Context, stores *store.Store, instance *store.InstanceMessage, database *store.DatabaseMessage) (bool, error) {
 	if instance.Metadata.GetEngine() != storepb.Engine_POSTGRES {
 		return false, nil

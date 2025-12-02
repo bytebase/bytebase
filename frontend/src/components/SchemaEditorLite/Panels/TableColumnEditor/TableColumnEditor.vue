@@ -42,7 +42,6 @@ import { InlineInput } from "@/components/v2";
 import { pushNotification, useSettingV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import type { ColumnCatalog } from "@/types/proto-es/v1/database_catalog_service_pb";
 import type {
   ColumnMetadata,
   DatabaseMetadata,

@@ -2230,7 +2230,6 @@
       "not-null": "No nulo",
       "primary": "Primaria",
       "foreign-key": "Clave foránea",
-      "classification": "Clasificación",
       "on-update": "En actualización"
     },
     "default": {
@@ -2735,7 +2734,6 @@
       "on-update": "En actualización"
     },
     "classification": {
-      "self": "Clasificación de datos",
       "select": "Seleccionar clasificación",
       "search": "Clasificación de búsqueda"
     }

@@ -40,7 +40,6 @@
 </template>
 
 <script lang="ts" setup>
-import { create } from "@bufbuild/protobuf";
 import { useElementSize } from "@vueuse/core";
 import { pick } from "lodash-es";
 import type { DataTableColumn, DataTableInst } from "naive-ui";
@@ -49,10 +48,6 @@ import { computed, h, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { Drawer, DrawerContent, InlineInput } from "@/components/v2";
 import type { ComposedDatabase } from "@/types";
-import {
-  TableCatalog_ColumnsSchema,
-  TableCatalogSchema,
-} from "@/types/proto-es/v1/database_catalog_service_pb";
 import type {
   DatabaseMetadata,
   SchemaMetadata,
@@ -98,7 +93,6 @@ const {
   markEditStatus,
   removeEditStatus,
   getSchemaStatus,
-  getTableCatalog,
   getTableStatus,
   upsertTableCatalog,
   useConsumePendingScrollToTable,
@@ -136,23 +130,6 @@ const filteredTables = computed(() => {
 const engine = computed(() => {
   return props.db.instanceResource.engine;
 });
-
-const catalogForTable = (table: string) => {
-  return (
-    getTableCatalog({
-      database: props.db.name,
-      schema: props.schema.name,
-      table,
-    }) ??
-    create(TableCatalogSchema, {
-      name: table,
-      kind: {
-        case: "columns",
-        value: create(TableCatalog_ColumnsSchema, {}),
-      },
-    })
-  );
-};
 
 const metadataForTable = (table: TableMetadata) => {
   return {

@@ -2230,7 +2230,6 @@
       "not-null": "Không Null",
       "primary": "Chính",
       "foreign-key": "Khóa ngoại",
-      "classification": "Phân loại",
       "on-update": "Khi cập nhật"
     },
     "default": {
@@ -2735,7 +2734,6 @@
       "on-update": "Khi cập nhật"
     },
     "classification": {
-      "self": "Phân loại dữ liệu",
       "select": "Chọn phân loại",
       "search": "Tìm kiếm phân loại"
     }

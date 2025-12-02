@@ -2230,7 +2230,6 @@
       "not-null": "空にすることはできません",
       "primary": "主キー",
       "foreign-key": "外部キー",
-      "classification": "分類と格付け",
       "on-update": "アップデート時"
     },
     "default": {
@@ -2735,7 +2734,6 @@
       "on-update": "アップデート時"
     },
     "classification": {
-      "self": "データの分類とグレーディング",
       "select": "カテゴリを選択してください",
       "search": "カテゴリを検索する"
     }
