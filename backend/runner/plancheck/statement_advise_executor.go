@@ -70,6 +70,7 @@ func (e *StatementAdviseExecutor) Run(ctx context.Context, config *storepb.PlanC
 		return nil, err
 	}
 	enablePriorBackup := config.EnablePriorBackup
+	enableGhost := config.EnableGhost
 
 	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &config.InstanceId})
 	if err != nil {
@@ -97,7 +98,7 @@ func (e *StatementAdviseExecutor) Run(ctx context.Context, config *storepb.PlanC
 		return nil, errors.Errorf("database not found %q", config.DatabaseName)
 	}
 
-	results, err := e.runReview(ctx, instance, database, changeType, statement, enablePriorBackup)
+	results, err := e.runReview(ctx, instance, database, changeType, statement, enablePriorBackup, enableGhost)
 	if err != nil {
 		return nil, err
 	}
@@ -123,6 +124,7 @@ func (e *StatementAdviseExecutor) runReview(
 	changeType storepb.PlanCheckRunConfig_ChangeDatabaseType,
 	statement string,
 	enablePriorBackup bool,
+	enableGhost bool,
 ) ([]*storepb.PlanCheckRunResult_Result, error) {
 	dbMetadata, err := e.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 		InstanceID:   database.InstanceID,
@@ -179,6 +181,7 @@ func (e *StatementAdviseExecutor) runReview(
 		FinalMetadata:            finalMetadata,
 		Driver:                   connection,
 		EnablePriorBackup:        enablePriorBackup,
+		EnableGhost:              enableGhost,
 		UsePostgresDatabaseOwner: useDatabaseOwner,
 		ListDatabaseNamesFunc:    e.buildListDatabaseNamesFunc(),
 		InstanceID:               instance.ResourceID,
