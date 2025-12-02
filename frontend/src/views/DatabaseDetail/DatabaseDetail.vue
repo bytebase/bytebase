@@ -188,6 +188,7 @@
     />
   </Drawer>
 
+  <!-- TODO(ed): the pre-selected-databases not work -->
   <AddSpecDrawer
     v-model:show="state.showChangeDatabaseDrawer"
     :title="$t('database.change-database')"

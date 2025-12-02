@@ -476,10 +476,6 @@ message DiffMetadataRequest {
 
   // The database engine of the schema.
   Engine engine = 3;
-
-  // If false, we will build the raw common by classification in database
-  // config.
-  bool classification_from_config = 4;
 }
 
 message DiffMetadataResponse {

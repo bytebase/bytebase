@@ -725,10 +725,6 @@ func columnsEqual(engine storepb.Engine, col1, col2 *storepb.ColumnMetadata) boo
 	if col1.IdentitySeed != col2.IdentitySeed {
 		return false
 	}
-	// Compare user comment
-	if col1.UserComment != col2.UserComment {
-		return false
-	}
 	return true
 }
 

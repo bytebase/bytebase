@@ -9,7 +9,6 @@ import type {
 export const ComparableTableFields: (keyof TableMetadata)[] = [
   "name",
   "comment",
-  "userComment",
   "collation",
   "engine",
 ];
@@ -33,7 +32,6 @@ export const ComparableTablePartitionFields: (keyof TablePartitionMetadata)[] =
 export const ComparableColumnFields: (keyof ColumnMetadata)[] = [
   "name",
   "comment",
-  "userComment",
   "type",
   "hasDefault",
   "default",

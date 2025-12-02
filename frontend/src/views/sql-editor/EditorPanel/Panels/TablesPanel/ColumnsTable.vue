@@ -129,7 +129,7 @@ const columns = computed(() => {
       className: "overflow-hidden",
       render: (column) => {
         return h(EllipsisCell, {
-          content: column.userComment,
+          content: column.comment,
           downGrade,
         });
       },

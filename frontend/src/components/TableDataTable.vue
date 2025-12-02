@@ -206,7 +206,7 @@ const columns = computed(() => {
         tooltip: true,
       },
       render: (row) => {
-        return row.userComment;
+        return row.comment;
       },
     },
   ];

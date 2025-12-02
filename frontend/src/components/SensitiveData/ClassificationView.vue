@@ -7,31 +7,6 @@
         class="ml-1"
       />
     </div>
-    <div>
-      <div class="flex items-center gap-x-2">
-        <NSwitch
-          :value="!state.classification.classificationFromConfig"
-          :disabled="
-            !allowEdit || !hasClassificationFeature || !hasClassificationConfig
-          "
-          @update:value="onClassificationConfigChange"
-        />
-        <div class="font-medium leading-7 text-main">
-          {{ $t("database.classification.sync-from-comment") }}
-        </div>
-      </div>
-      <i18n-t
-        class="textinfolabel mt-1"
-        tag="div"
-        keypath="database.classification.sync-from-comment-tip"
-      >
-        <template #format>
-          <span class="font-semibold">{classification id}-{comment}</span>
-        </template>
-      </i18n-t>
-    </div>
-
-    <NDivider class="my-2" />
 
     <div class="flex items-center justify-between">
       <div class="textinfolabel">
@@ -95,7 +70,7 @@
 import { create } from "@bufbuild/protobuf";
 import { head, isEmpty, isEqual } from "lodash-es";
 import { UploadIcon } from "lucide-vue-next";
-import { NButton, NDivider, NSwitch, useDialog } from "naive-ui";
+import { NButton, useDialog } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
@@ -145,13 +120,8 @@ const formerConfig = computed(() => {
     title: classification?.title || "",
     levels: classification?.levels || [],
     classification: classification?.classification || {},
-    classificationFromConfig: classification?.classificationFromConfig || false,
   });
 });
-
-const hasClassificationConfig = computed(
-  () => settingStore.classification.length > 0
-);
 
 const state = reactive<LocalState>({
   showExampleModal: false,
@@ -162,7 +132,6 @@ const state = reactive<LocalState>({
       title: "",
       levels: [],
       classification: {},
-      classificationFromConfig: false,
     }
   ),
 });
@@ -175,7 +144,6 @@ watchEffect(() => {
     title: config.title,
     levels: config.levels,
     classification: config.classification,
-    classificationFromConfig: config.classificationFromConfig,
   });
 });
 
@@ -190,22 +158,6 @@ const allowSave = computed(() => {
     !isEqual(formerConfig.value, state.classification)
   );
 });
-
-const onClassificationConfigChange = (fromComment: boolean) => {
-  $dialog.warning({
-    title: t("common.warning"),
-    content: fromComment
-      ? t("database.classification.sync-from-comment-enable-warning")
-      : t("database.classification.sync-from-comment-disable-warning"),
-    style: "z-index: 100000",
-    negativeText: t("common.cancel"),
-    positiveText: t("common.confirm"),
-    onPositiveClick: async () => {
-      state.classification.classificationFromConfig = !fromComment;
-      await upsertSetting();
-    },
-  });
-};
 
 const saveChanges = async () => {
   if (Object.keys(formerConfig.value.classification).length !== 0) {

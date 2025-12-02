@@ -227,7 +227,7 @@ const columns = computed(() => {
       width: 140,
       ellipsis: true,
       render: (column) => {
-        return column.userComment;
+        return column.comment;
       },
     },
     {

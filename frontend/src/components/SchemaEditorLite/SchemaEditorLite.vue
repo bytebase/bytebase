@@ -74,19 +74,9 @@ const combinedLoading = computed(() => {
   return props.loading || !ready.value;
 });
 
-const classificationConfig = computed(() => {
-  if (!props.project.dataClassificationConfigId) {
-    return;
-  }
-  return settingStore.getProjectClassification(
-    props.project.dataClassificationConfigId
-  );
-});
-
 const context = provideSchemaEditorContext({
   targets,
   project: toRef(props, "project"),
-  classificationConfig,
   readonly: toRef(props, "readonly"),
   selectedRolloutObjects: toRef(props, "selectedRolloutObjects"),
   hidePreview: toRef(props, "hidePreview"),

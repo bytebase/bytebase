@@ -738,9 +738,6 @@ func (x *TableMetadata) Equal(y *TableMetadata) bool {
 	if x.Comment != y.Comment {
 		return false
 	}
-	if x.UserComment != y.UserComment {
-		return false
-	}
 	if len(x.ForeignKeys) != len(y.ForeignKeys) {
 		return false
 	}
@@ -899,9 +896,6 @@ func (x *ColumnMetadata) Equal(y *ColumnMetadata) bool {
 		return false
 	}
 	if x.Comment != y.Comment {
-		return false
-	}
-	if x.UserComment != y.UserComment {
 		return false
 	}
 	if !x.Generation.Equal(y.Generation) {

@@ -27,8 +27,6 @@ import {
   ValueSchema as SettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
 import { EngineIcon } from "../Icon";
-import ClassificationLevelBadge from "./ClassificationLevelBadge.vue";
-import { classificationConfig } from "./utils";
 
 const props = defineProps<{
   engine?: Engine;
@@ -64,23 +62,10 @@ const columns = computed(
       },
     ];
 
-    if (classificationConfig.value) {
-      cols.push({
-        title: t("schema-template.classification.self"),
-        key: "classification",
-        render: (item) => (
-          <ClassificationLevelBadge
-            classification={item.catalog?.classification}
-            classificationConfig={classificationConfig.value!}
-          />
-        ),
-      });
-    }
-
     cols.push({
       title: t("schema-template.form.comment"),
       key: "comment",
-      render: (item) => item.table?.userComment ?? "",
+      render: (item) => item.table?.comment ?? "",
     });
 
     if (!props.readonly) {

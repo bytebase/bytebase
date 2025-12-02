@@ -481,11 +481,6 @@ func normalizeParserMetadata(metadata *storepb.DatabaseSchemaMetadata) {
 			for _, col := range table.Columns {
 				// Normalize default expressions
 				normalizeDefaultExpression(col)
-
-				// Clear comment fields that may not match exactly
-				if col.Comment == "" {
-					col.UserComment = ""
-				}
 			}
 
 			for _, idx := range table.Indexes {

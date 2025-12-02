@@ -33,31 +33,6 @@
             class="grid-cols-4 gap-2"
           />
         </div>
-
-        <div v-if="classificationConfig" class="sm:col-span-2 sm:col-start-1">
-          <label for="column-name" class="textlabel">
-            {{ $t("schema-template.classification.self") }}
-          </label>
-          <div class="flex items-center gap-x-2 mt-1">
-            <ClassificationLevelBadge
-              :classification="tableClassificationId"
-              :classification-config="classificationConfig"
-            />
-            <div v-if="!readonly" class="flex">
-              <MiniActionButton
-                v-if="tableClassificationId"
-                @click.prevent="tableClassificationId = ''"
-              >
-                <XIcon class="w-4 h-4" />
-              </MiniActionButton>
-              <MiniActionButton
-                @click.prevent="state.showClassificationDrawer = true"
-              >
-                <PencilIcon class="w-4 h-4" />
-              </MiniActionButton>
-            </div>
-          </div>
-        </div>
       </div>
       <div class="flex flex-col gap-y-6 border-t border-block-border pt-6">
         <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-4">
@@ -81,7 +56,7 @@
               {{ $t("schema-template.form.comment") }}
             </label>
             <NInput
-              v-model:value="tableMetadata.userComment"
+              v-model:value="tableMetadata.comment"
               type="textarea"
               :autosize="{ minRows: 3, maxRows: 3 }"
               :disabled="readonly"
@@ -119,8 +94,6 @@
               :allow-change-primary-keys="true"
               :allow-reorder-columns="allowReorderColumns"
               :max-body-height="640"
-              :show-database-catalog-column="true"
-              :show-classification-column="'ALWAYS'"
             />
           </div>
         </div>
@@ -160,20 +133,12 @@
       </div>
     </DrawerContent>
   </Drawer>
-
-  <SelectClassificationDrawer
-    v-if="classificationConfig"
-    :show="state.showClassificationDrawer"
-    :classification-config="classificationConfig"
-    @dismiss="state.showClassificationDrawer = false"
-    @apply="(id) => (tableClassificationId = id)"
-  />
 </template>
 
 <script lang="ts" setup>
 import { create as createProto } from "@bufbuild/protobuf";
 import { cloneDeep, isEqual } from "lodash-es";
-import { PencilIcon, PlusIcon, XIcon } from "lucide-vue-next";
+import { PlusIcon } from "lucide-vue-next";
 import type { SelectOption } from "naive-ui";
 import { NButton, NInput } from "naive-ui";
 import { computed, onMounted, reactive, ref, toRef } from "vue";
@@ -190,7 +155,6 @@ import {
   DrawerContent,
   DropdownInput,
   InstanceEngineRadioGrid,
-  MiniActionButton,
 } from "@/components/v2";
 import { pushNotification, useSettingV1Store } from "@/store";
 import { unknownProject } from "@/types";
@@ -208,11 +172,8 @@ import {
 } from "@/types/proto-es/v1/setting_service_pb";
 import { instanceV1AllowsReorderColumns } from "@/utils";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
-import ClassificationLevelBadge from "./ClassificationLevelBadge.vue";
-import SelectClassificationDrawer from "./SelectClassificationDrawer.vue";
 import {
   categoryList,
-  classificationConfig,
   engineList,
   mockMetadataFromTableTemplate,
   rebuildTableTemplateFromMetadata,
@@ -227,7 +188,6 @@ const props = defineProps<{
 const emit = defineEmits(["dismiss"]);
 
 interface LocalState {
-  showClassificationDrawer: boolean;
   showFieldTemplateDrawer: boolean;
 }
 
@@ -257,7 +217,6 @@ const targets = computed(() => {
 const context = provideSchemaEditorContext({
   targets,
   project: ref(unknownProject()),
-  classificationConfig,
   readonly: toRef(props, "readonly"),
   selectedRolloutObjects: ref(undefined),
   hidePreview: ref(false),
@@ -286,7 +245,6 @@ onMounted(() => {
 });
 
 const state = reactive<LocalState>({
-  showClassificationDrawer: false,
   showFieldTemplateDrawer: false,
 });
 const { t } = useI18n();
@@ -299,24 +257,6 @@ const tableCatalog = computed(() =>
     table: tableMetadata.value.name,
   })
 );
-
-const tableClassificationId = computed({
-  get() {
-    return tableCatalog.value?.classification;
-  },
-  set(id) {
-    context.upsertTableCatalog(
-      {
-        database: editing.value.databaseCatalog.name,
-        schema: schemaMetadata.value.name,
-        table: tableMetadata.value.name,
-      },
-      (catalog) => {
-        catalog.classification = id ?? "";
-      }
-    );
-  },
-});
 
 const metadataForColumn = (column: ColumnMetadata) => {
   const { databaseMetadata: database } = editing.value;

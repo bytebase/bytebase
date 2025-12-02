@@ -46,7 +46,7 @@ func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 	}
 
 	// Create the rule
-	rule := NewTableCommentConventionRule(level, string(checkCtx.Rule.Type), payload, checkCtx.ClassificationConfig)
+	rule := NewTableCommentConventionRule(level, string(checkCtx.Rule.Type), payload)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
@@ -63,19 +63,17 @@ func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 // TableCommentConventionRule checks for table comment convention.
 type TableCommentConventionRule struct {
 	BaseRule
-	payload              *advisor.CommentConventionRulePayload
-	classificationConfig *storepb.DataClassificationSetting_DataClassificationConfig
+	payload *advisor.CommentConventionRulePayload
 }
 
 // NewTableCommentConventionRule creates a new TableCommentConventionRule.
-func NewTableCommentConventionRule(level storepb.Advice_Status, title string, payload *advisor.CommentConventionRulePayload, classificationConfig *storepb.DataClassificationSetting_DataClassificationConfig) *TableCommentConventionRule {
+func NewTableCommentConventionRule(level storepb.Advice_Status, title string, payload *advisor.CommentConventionRulePayload) *TableCommentConventionRule {
 	return &TableCommentConventionRule{
 		BaseRule: BaseRule{
 			level: level,
 			title: title,
 		},
-		payload:              payload,
-		classificationConfig: classificationConfig,
+		payload: payload,
 	}
 }
 
@@ -126,17 +124,6 @@ func (r *TableCommentConventionRule) checkCreateTable(ctx *mysql.CreateTableCont
 			Content:       fmt.Sprintf("The length of table `%s` comment should be within %d characters", tableName, r.payload.MaxLength),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
 		})
-	}
-	if r.payload.RequiredClassification {
-		if classification, _ := common.GetClassificationAndUserComment(comment, r.classificationConfig); classification == "" {
-			r.AddAdvice(&storepb.Advice{
-				Status:        r.level,
-				Code:          code.CommentMissingClassification.Int32(),
-				Title:         r.title,
-				Content:       fmt.Sprintf("Table `%s` comment requires classification", tableName),
-				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
-			})
-		}
 	}
 }
 

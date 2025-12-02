@@ -1685,28 +1685,6 @@ func (*SQLService) getUser(ctx context.Context) (*store.UserMessage, error) {
 	return user, nil
 }
 
-func getClassificationByProject(ctx context.Context, stores *store.Store, projectID string) *storepb.DataClassificationSetting_DataClassificationConfig {
-	project, err := stores.GetProjectV2(ctx, &store.FindProjectMessage{
-		ResourceID: &projectID,
-	})
-	if err != nil {
-		slog.Warn("failed to find project", slog.String("project", projectID), log.BBError(err))
-		return nil
-	}
-	if project == nil {
-		return nil
-	}
-	if project.DataClassificationConfigID == "" {
-		return nil
-	}
-	classificationConfig, err := stores.GetDataClassificationConfigByID(ctx, project.DataClassificationConfigID)
-	if err != nil {
-		slog.Warn("failed to find classification", slog.String("project", projectID), slog.String("classification", project.DataClassificationConfigID), log.BBError(err))
-		return nil
-	}
-	return classificationConfig
-}
-
 func getUseDatabaseOwner(ctx context.Context, stores *store.Store, instance *store.InstanceMessage, database *store.DatabaseMessage) (bool, error) {
 	if instance.Metadata.GetEngine() != storepb.Engine_POSTGRES {
 		return false, nil
@@ -1736,17 +1714,11 @@ func (*SQLService) DiffMetadata(_ context.Context, req *connect.Request[v1pb.Dif
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("source_metadata and target_metadata are required"))
 	}
 	storeSourceMetadata := convertV1DatabaseMetadata(request.SourceMetadata)
-
-	sourceConfig := convertDatabaseCatalog(request.GetSourceCatalog())
-	sanitizeCommentForSchemaMetadata(storeSourceMetadata, model.NewDatabaseMetadata(storeSourceMetadata, nil, sourceConfig, storepb.Engine(request.Engine), true /* isObjectCaseSensitive */), request.ClassificationFromConfig)
-
 	storeTargetMetadata := convertV1DatabaseMetadata(request.TargetMetadata)
 
-	targetConfig := convertDatabaseCatalog(request.GetTargetCatalog())
 	if err := checkDatabaseMetadata(storepb.Engine(request.Engine), storeTargetMetadata); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrap(err, "invalid target metadata"))
 	}
-	sanitizeCommentForSchemaMetadata(storeTargetMetadata, model.NewDatabaseMetadata(storeTargetMetadata, nil, targetConfig, storepb.Engine(request.Engine), true /* isObjectCaseSensitive */), request.ClassificationFromConfig)
 
 	// Convert metadata to model.DatabaseMetadata for diffing
 	isObjectCaseSensitive := true
@@ -1768,40 +1740,6 @@ func (*SQLService) DiffMetadata(_ context.Context, req *connect.Request[v1pb.Dif
 	return connect.NewResponse(&v1pb.DiffMetadataResponse{
 		Diff: diff,
 	}), nil
-}
-
-func sanitizeCommentForSchemaMetadata(dbMetadata *storepb.DatabaseSchemaMetadata, dbModelConfig *model.DatabaseMetadata, classificationFromConfig bool) {
-	for _, schema := range dbMetadata.Schemas {
-		schemaMetadata := dbModelConfig.GetSchemaMetadata(schema.Name)
-		for _, table := range schema.Tables {
-			classificationID := ""
-			if !classificationFromConfig {
-				if schemaMetadata != nil {
-					if tableMetadata := schemaMetadata.GetTable(table.Name); tableMetadata != nil {
-						if tableCatalog := tableMetadata.GetCatalog(); tableCatalog != nil {
-							classificationID = tableCatalog.Classification
-						}
-					}
-				}
-			}
-			table.Comment = common.GetCommentFromClassificationAndUserComment(classificationID, table.UserComment)
-			for _, col := range table.Columns {
-				classificationID := ""
-				if !classificationFromConfig {
-					if schemaMetadata != nil {
-						if tableMetadata := schemaMetadata.GetTable(table.Name); tableMetadata != nil {
-							if columnMetadata := tableMetadata.GetColumn(col.Name); columnMetadata != nil {
-								if columnCatalog := columnMetadata.GetCatalog(); columnCatalog != nil {
-									classificationID = columnCatalog.Classification
-								}
-							}
-						}
-					}
-				}
-				col.Comment = common.GetCommentFromClassificationAndUserComment(classificationID, col.UserComment)
-			}
-		}
-	}
 }
 
 // GetQueriableDataSource try to returns the RO data source, and will returns the admin data source if not exist the RO data source.

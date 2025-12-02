@@ -1219,18 +1219,10 @@ export declare type TableMetadata = Message<"bytebase.v1.TableMetadata"> & {
 
   /**
    * The comment is the comment of a table.
-   * classification and user_comment is parsed from the comment.
    *
    * @generated from field: string comment = 11;
    */
   comment: string;
-
-  /**
-   * The user_comment is the user comment of a table parsed from the comment.
-   *
-   * @generated from field: string user_comment = 14;
-   */
-  userComment: string;
 
   /**
    * The foreign_keys is the list of foreign keys in a table.
@@ -1557,18 +1549,10 @@ export declare type ColumnMetadata = Message<"bytebase.v1.ColumnMetadata"> & {
 
   /**
    * The comment is the comment of a column.
-   * classification and user_comment is parsed from the comment.
    *
    * @generated from field: string comment = 11;
    */
   comment: string;
-
-  /**
-   * The user_comment is the user comment of a column parsed from the comment.
-   *
-   * @generated from field: string user_comment = 13;
-   */
-  userComment: string;
 
   /**
    * The generation is the generation of a column.

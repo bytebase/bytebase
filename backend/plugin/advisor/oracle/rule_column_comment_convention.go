@@ -43,7 +43,7 @@ func (*ColumnCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor
 		return nil, err
 	}
 
-	rule := NewColumnCommentConventionRule(level, string(checkCtx.Rule.Type), checkCtx.CurrentDatabase, payload, checkCtx.ClassificationConfig)
+	rule := NewColumnCommentConventionRule(level, string(checkCtx.Rule.Type), checkCtx.CurrentDatabase, payload)
 	checker := NewGenericChecker([]Rule{rule})
 
 	for _, stmtNode := range stmtList {
@@ -59,9 +59,8 @@ func (*ColumnCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor
 type ColumnCommentConventionRule struct {
 	BaseRule
 
-	currentDatabase      string
-	payload              *advisor.CommentConventionRulePayload
-	classificationConfig *storepb.DataClassificationSetting_DataClassificationConfig
+	currentDatabase string
+	payload         *advisor.CommentConventionRulePayload
 
 	tableName     string
 	columnNames   []string
@@ -70,15 +69,14 @@ type ColumnCommentConventionRule struct {
 }
 
 // NewColumnCommentConventionRule creates a new ColumnCommentConventionRule.
-func NewColumnCommentConventionRule(level storepb.Advice_Status, title string, currentDatabase string, payload *advisor.CommentConventionRulePayload, classificationConfig *storepb.DataClassificationSetting_DataClassificationConfig) *ColumnCommentConventionRule {
+func NewColumnCommentConventionRule(level storepb.Advice_Status, title string, currentDatabase string, payload *advisor.CommentConventionRulePayload) *ColumnCommentConventionRule {
 	return &ColumnCommentConventionRule{
-		BaseRule:             NewBaseRule(level, title, 0),
-		currentDatabase:      currentDatabase,
-		payload:              payload,
-		classificationConfig: classificationConfig,
-		columnNames:          []string{},
-		columnComment:        make(map[string]string),
-		columnLine:           make(map[string]int),
+		BaseRule:        NewBaseRule(level, title, 0),
+		currentDatabase: currentDatabase,
+		payload:         payload,
+		columnNames:     []string{},
+		columnComment:   make(map[string]string),
+		columnLine:      make(map[string]int),
 	}
 }
 
@@ -175,16 +173,6 @@ func (r *ColumnCommentConventionRule) GetAdviceList() ([]*storepb.Advice, error)
 					fmt.Sprintf("Column %s comment is too long. The length of comment should be within %d characters", normalizeIdentifierName(columnName), r.payload.MaxLength),
 					common.ConvertANTLRLineToPosition(r.columnLine[columnName]),
 				)
-			}
-			if r.payload.RequiredClassification {
-				if classification, _ := common.GetClassificationAndUserComment(comment, r.classificationConfig); classification == "" {
-					r.AddAdvice(
-						r.level,
-						code.CommentMissingClassification.Int32(),
-						fmt.Sprintf("Column %s comment requires classification", normalizeIdentifierName(columnName)),
-						common.ConvertANTLRLineToPosition(r.columnLine[columnName]),
-					)
-				}
 			}
 		}
 	}

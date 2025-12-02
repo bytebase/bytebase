@@ -21,8 +21,8 @@
     <InfoItem v-if="collation" :title="$t('db.collation')">
       {{ collation }}
     </InfoItem>
-    <InfoItem v-if="columnMetadata.userComment" :title="$t('database.comment')">
-      {{ columnMetadata.userComment }}
+    <InfoItem v-if="columnMetadata.comment" :title="$t('database.comment')">
+      {{ columnMetadata.comment }}
     </InfoItem>
   </div>
 </template>

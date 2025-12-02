@@ -45,10 +45,9 @@ func (*ColumnCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor
 		return nil, err
 	}
 	checker := &columnCommentConventionChecker{
-		level:                level,
-		title:                string(checkCtx.Rule.Type),
-		payload:              payload,
-		classificationConfig: checkCtx.ClassificationConfig,
+		level:   level,
+		title:   string(checkCtx.Rule.Type),
+		payload: payload,
 	}
 
 	for _, stmt := range stmtList {
@@ -61,13 +60,12 @@ func (*ColumnCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor
 }
 
 type columnCommentConventionChecker struct {
-	adviceList           []*storepb.Advice
-	level                storepb.Advice_Status
-	title                string
-	text                 string
-	line                 int
-	payload              *advisor.CommentConventionRulePayload
-	classificationConfig *storepb.DataClassificationSetting_DataClassificationConfig
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
+	title      string
+	text       string
+	line       int
+	payload    *advisor.CommentConventionRulePayload
 }
 
 type columnCommentData struct {
@@ -140,17 +138,6 @@ func (checker *columnCommentConventionChecker) Enter(in ast.Node) (ast.Node, boo
 				Content:       fmt.Sprintf("The length of column `%s`.`%s` comment should be within %d characters", column.table, column.column, checker.payload.MaxLength),
 				StartPosition: common.ConvertANTLRLineToPosition(column.line),
 			})
-		}
-		if checker.payload.RequiredClassification {
-			if classification, _ := common.GetClassificationAndUserComment(column.comment, checker.classificationConfig); classification == "" {
-				checker.adviceList = append(checker.adviceList, &storepb.Advice{
-					Status:        checker.level,
-					Code:          code.CommentMissingClassification.Int32(),
-					Title:         checker.title,
-					Content:       fmt.Sprintf("Column `%s`.`%s` comment requires classification", column.table, column.column),
-					StartPosition: common.ConvertANTLRLineToPosition(column.line),
-				})
-			}
 		}
 	}
 

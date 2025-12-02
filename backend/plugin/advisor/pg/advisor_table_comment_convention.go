@@ -8,7 +8,6 @@ import (
 
 	parser "github.com/bytebase/parser/postgresql"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
@@ -48,11 +47,10 @@ func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 			level: level,
 			title: string(checkCtx.Rule.Type),
 		},
-		payload:              payload,
-		classificationConfig: checkCtx.ClassificationConfig,
-		statementsText:       checkCtx.Statements,
-		createdTables:        make(map[string]*tableInfo),
-		tableComments:        make(map[string]*tableCommentInfo),
+		payload:        payload,
+		statementsText: checkCtx.Statements,
+		createdTables:  make(map[string]*tableInfo),
+		tableComments:  make(map[string]*tableCommentInfo),
 	}
 
 	checker := NewGenericChecker([]Rule{rule})
@@ -94,20 +92,6 @@ func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 					},
 				})
 			}
-			if rule.payload.RequiredClassification {
-				if classification, _ := common.GetClassificationAndUserComment(comment, rule.classificationConfig); classification == "" {
-					rule.AddAdvice(&storepb.Advice{
-						Status:  rule.level,
-						Code:    code.CommentMissingClassification.Int32(),
-						Title:   rule.title,
-						Content: fmt.Sprintf("Table `%s` comment requires classification", tableInfo.displayName),
-						StartPosition: &storepb.Position{
-							Line:   int32(tableCommentInfo.line),
-							Column: 0,
-						},
-					})
-				}
-			}
 		}
 	}
 
@@ -129,9 +113,8 @@ type tableCommentInfo struct {
 type tableCommentConventionRule struct {
 	BaseRule
 
-	payload              *advisor.CommentConventionRulePayload
-	classificationConfig *storepb.DataClassificationSetting_DataClassificationConfig
-	statementsText       string
+	payload        *advisor.CommentConventionRulePayload
+	statementsText string
 
 	createdTables map[string]*tableInfo
 	tableComments map[string]*tableCommentInfo

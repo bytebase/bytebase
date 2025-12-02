@@ -44,10 +44,9 @@ func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 		return nil, err
 	}
 	checker := &tableCommentConventionChecker{
-		level:                level,
-		title:                string(checkCtx.Rule.Type),
-		payload:              payload,
-		classificationConfig: checkCtx.ClassificationConfig,
+		level:   level,
+		title:   string(checkCtx.Rule.Type),
+		payload: payload,
 	}
 
 	for _, stmt := range stmtList {
@@ -60,13 +59,12 @@ func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 }
 
 type tableCommentConventionChecker struct {
-	adviceList           []*storepb.Advice
-	level                storepb.Advice_Status
-	title                string
-	text                 string
-	line                 int
-	payload              *advisor.CommentConventionRulePayload
-	classificationConfig *storepb.DataClassificationSetting_DataClassificationConfig
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
+	title      string
+	text       string
+	line       int
+	payload    *advisor.CommentConventionRulePayload
 }
 
 // Enter implements the ast.Visitor interface.
@@ -90,17 +88,6 @@ func (checker *tableCommentConventionChecker) Enter(in ast.Node) (ast.Node, bool
 				Content:       fmt.Sprintf("The length of table `%s` comment should be within %d characters", node.Table.Name.O, checker.payload.MaxLength),
 				StartPosition: common.ConvertANTLRLineToPosition(checker.line),
 			})
-		}
-		if checker.payload.RequiredClassification {
-			if classification, _ := common.GetClassificationAndUserComment(comment, checker.classificationConfig); classification == "" {
-				checker.adviceList = append(checker.adviceList, &storepb.Advice{
-					Status:        checker.level,
-					Code:          code.CommentMissingClassification.Int32(),
-					Title:         checker.title,
-					Content:       fmt.Sprintf("Table `%s` comment requires classification", node.Table.Name.O),
-					StartPosition: common.ConvertANTLRLineToPosition(checker.line),
-				})
-			}
 		}
 	}
 

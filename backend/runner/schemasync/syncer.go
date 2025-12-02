@@ -391,30 +391,7 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 		dbMetadata = model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{}, nil, &storepb.DatabaseConfig{}, instance.Metadata.GetEngine(), store.IsObjectCaseSensitive(instance))
 	}
 
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-		ResourceID: &database.ProjectID,
-	})
-	if err != nil {
-		return 0, errors.Wrapf(err, `failed to get project by id "%s"`, database.ProjectID)
-	}
-	classificationConfig, err := s.store.GetDataClassificationConfigByID(ctx, project.DataClassificationConfigID)
-	if err != nil {
-		return 0, errors.Wrapf(err, `failed to get classification config by id "%s"`, project.DataClassificationConfigID)
-	}
-
-	if instance.Metadata.GetEngine() != storepb.Engine_MYSQL && instance.Metadata.GetEngine() != storepb.Engine_POSTGRES {
-		// Force to disable classification from comment if the engine is not MYSQL or PG.
-		classificationConfig.ClassificationFromConfig = true
-	}
-
 	dbConfig := dbMetadata.GetConfig()
-	if classificationConfig.ClassificationFromConfig {
-		// Only set the user comment from the database comment.
-		setUserCommentFromComment(syncedDatabaseMetadata)
-	} else {
-		// Extract classification from comments and update the config in place.
-		dbConfig = updateClassificationFromComment(syncedDatabaseMetadata, dbMetadata, classificationConfig)
-	}
 
 	// Check for schema drift only when not creating sync history
 	var drifted, skipped bool
@@ -560,55 +537,6 @@ func (s *Syncer) databaseBackupAvailable(ctx context.Context, instance *store.In
 		return false
 	}
 	return false
-}
-
-func updateClassificationFromComment(syncedDatabaseMetadata *storepb.DatabaseSchemaMetadata, dbMetadata *model.DatabaseMetadata, classificationConfig *storepb.DataClassificationSetting_DataClassificationConfig) *storepb.DatabaseConfig {
-	dbConfig := &storepb.DatabaseConfig{Name: syncedDatabaseMetadata.Name}
-
-	for _, schema := range syncedDatabaseMetadata.Schemas {
-		schemaCatalog := &storepb.SchemaCatalog{Name: schema.Name}
-		existSchema := dbMetadata.GetSchemaMetadata(schema.Name)
-
-		for _, table := range schema.Tables {
-			classification, userComment := common.GetClassificationAndUserComment(table.Comment, classificationConfig)
-			table.UserComment = userComment
-
-			tableCatalog := &storepb.TableCatalog{Name: table.Name, Classification: classification}
-			existTable := existSchema.GetTable(table.Name)
-			if existTable != nil {
-				if existTableCatalog := existTable.GetCatalog(); existTableCatalog != nil {
-					tableCatalog.Classification = existTableCatalog.Classification
-				}
-			}
-			for _, col := range table.Columns {
-				colClassification, colUserComment := common.GetClassificationAndUserComment(col.Comment, classificationConfig)
-				col.UserComment = colUserComment
-
-				columnCatalog := &storepb.ColumnCatalog{Name: col.Name, Classification: colClassification}
-				if existColumn := existTable.GetColumn(col.Name); existColumn != nil {
-					if existColumnCatalog := existColumn.GetCatalog(); existColumnCatalog != nil {
-						columnCatalog.SemanticType = existColumnCatalog.SemanticType
-						columnCatalog.Labels = existColumnCatalog.Labels
-					}
-				}
-				tableCatalog.Columns = append(tableCatalog.Columns, columnCatalog)
-			}
-			schemaCatalog.Tables = append(schemaCatalog.Tables, tableCatalog)
-		}
-		dbConfig.Schemas = append(dbConfig.Schemas, schemaCatalog)
-	}
-	return dbConfig
-}
-
-func setUserCommentFromComment(dbMetadata *storepb.DatabaseSchemaMetadata) {
-	for _, schema := range dbMetadata.Schemas {
-		for _, table := range schema.Tables {
-			table.UserComment = table.Comment
-			for _, col := range table.Columns {
-				col.UserComment = col.Comment
-			}
-		}
-	}
 }
 
 func getOrDefaultSyncInterval(instance *store.InstanceMessage) time.Duration {

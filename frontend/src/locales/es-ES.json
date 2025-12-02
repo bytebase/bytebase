@@ -1731,11 +1731,7 @@
     "transfer-database-to": "Transferir bases de datos al proyecto de destino",
     "classification": {
       "self": "Clasificación",
-      "description": "Utilice la clasificación de datos para administrar la política de enmascaramiento para muchas columnas controlando solo una pequeña cantidad de clasificaciones.",
-      "sync-from-comment": "Sincronizar clasificación desde comentario",
-      "sync-from-comment-tip": "Una vez habilitada, la clasificación se sincronizará desde el comentario de tabla/columna. El comentario debe seguir el formato \"{format}\".",
-      "sync-from-comment-enable-warning": "La clasificación cambiará con el DDL y se sincronizará con el comentario original.",
-      "sync-from-comment-disable-warning": "La clasificación no cambiará con el DDL; puede cambiarla en cualquier momento en la página de detalles de la base de datos."
+      "description": "Utilice la clasificación de datos para administrar la política de enmascaramiento para muchas columnas controlando solo una pequeña cantidad de clasificaciones."
     },
     "partitioned": "Particionado",
     "partition-tables": "Tablas de particiones",
@@ -2234,7 +2230,6 @@
       "not-null": "No nulo",
       "primary": "Primaria",
       "foreign-key": "Clave foránea",
-      "classification": "Clasificación",
       "on-update": "En actualización"
     },
     "default": {
@@ -2739,7 +2734,6 @@
       "on-update": "En actualización"
     },
     "classification": {
-      "self": "Clasificación de datos",
       "select": "Seleccionar clasificación",
       "search": "Clasificación de búsqueda"
     }

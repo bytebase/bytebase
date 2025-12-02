@@ -2,7 +2,6 @@ import { create } from "@bufbuild/protobuf";
 import { cloneDeep } from "lodash-es";
 import { t } from "@/plugins/i18n";
 import { pushNotification, useDatabaseCatalogV1Store } from "@/store";
-import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
   ColumnCatalog,
   TableCatalog,
@@ -13,22 +12,6 @@ import {
   TableCatalog_ColumnsSchema,
   TableCatalogSchema,
 } from "@/types/proto-es/v1/database_catalog_service_pb";
-
-export const supportClassificationFromCommentFeature = (engine: Engine) => {
-  return engine === Engine.MYSQL || engine === Engine.POSTGRES;
-};
-
-export const supportSetClassificationFromComment = (
-  engine: Engine,
-  classificationFromConfig: boolean
-) => {
-  if (!supportClassificationFromCommentFeature(engine)) {
-    // Only support get classification from comment for MYSQL and PG.
-    return false;
-  }
-
-  return !classificationFromConfig;
-};
 
 export const updateColumnCatalog = async ({
   database,

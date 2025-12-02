@@ -3,13 +3,11 @@ package plancheck
 import (
 	"context"
 	"fmt"
-	"log/slog"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 
@@ -171,11 +169,6 @@ func (e *StatementAdviseExecutor) runReview(
 	defer driver.Close(ctx)
 	connection := driver.GetDB()
 
-	// Database secrets feature has been removed
-	// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
-	// Database secrets feature removed - using original statement directly
-	classificationConfig := getClassificationByProject(ctx, e.store, database.ProjectID)
-
 	adviceList, err := advisor.SQLReviewCheck(ctx, e.sheetManager, statement, reviewConfig.SqlReviewRules, advisor.Context{
 		Charset:                  dbMetadata.GetProto().CharacterSet,
 		Collation:                dbMetadata.GetProto().Collation,
@@ -186,7 +179,6 @@ func (e *StatementAdviseExecutor) runReview(
 		FinalMetadata:            finalMetadata,
 		Driver:                   connection,
 		EnablePriorBackup:        enablePriorBackup,
-		ClassificationConfig:     classificationConfig,
 		UsePostgresDatabaseOwner: useDatabaseOwner,
 		ListDatabaseNamesFunc:    e.buildListDatabaseNamesFunc(),
 		InstanceID:               instance.ResourceID,
@@ -253,26 +245,4 @@ func (e *StatementAdviseExecutor) buildListDatabaseNamesFunc() parserbase.ListDa
 		}
 		return names, nil
 	}
-}
-
-func getClassificationByProject(ctx context.Context, stores *store.Store, projectID string) *storepb.DataClassificationSetting_DataClassificationConfig {
-	project, err := stores.GetProjectV2(ctx, &store.FindProjectMessage{
-		ResourceID: &projectID,
-	})
-	if err != nil {
-		slog.Warn("failed to find project", slog.String("project", projectID), log.BBError(err))
-		return nil
-	}
-	if project == nil {
-		return nil
-	}
-	if project.DataClassificationConfigID == "" {
-		return nil
-	}
-	classificationConfig, err := stores.GetDataClassificationConfigByID(ctx, project.DataClassificationConfigID)
-	if err != nil {
-		slog.Warn("failed to find classification", slog.String("project", projectID), slog.String("classification", project.DataClassificationConfigID), log.BBError(err))
-		return nil
-	}
-	return classificationConfig
 }

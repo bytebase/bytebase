@@ -240,12 +240,11 @@ func (m CompletionMap) insertAllColumns(c *Completer) {
 					if !column.Nullable {
 						definition += ", NOT NULL"
 					}
-					comment := column.UserComment
 					m[columnID] = base.Candidate{
 						Type:       base.CandidateTypeColumn,
 						Text:       c.quotedIdentifierIfNeeded(column.Name),
 						Definition: definition,
-						Comment:    comment,
+						Comment:    column.Comment,
 						Priority:   c.getPriority(c.defaultCatalog, schema, table),
 					}
 				}
@@ -330,12 +329,11 @@ func (m CompletionMap) insertMetadataColumns(c *Completer, catalog string, schem
 				if !column.Nullable {
 					definition += ", NOT NULL"
 				}
-				comment := column.UserComment
 				m[columnID] = base.Candidate{
 					Type:       base.CandidateTypeColumn,
 					Text:       c.quotedIdentifierIfNeeded(column.Name),
 					Definition: definition,
-					Comment:    comment,
+					Comment:    column.Comment,
 					Priority:   c.getPriority(c.defaultCatalog, schema, table),
 				}
 			}

@@ -1731,11 +1731,7 @@
     "transfer-database-to": "将数据库转移到目标项目",
     "classification": {
       "self": "分类分级",
-      "description": "通过分类分级，来批量管理列的脱敏规则。",
-      "sync-from-comment": "从注释中同步分类分级",
-      "sync-from-comment-tip": "启用后，分类分级将从表或列的注释同步。注释应遵循“{format}”格式。",
-      "sync-from-comment-enable-warning": "分类分级将随着 DDL 而改变，并与原始注释同步。",
-      "sync-from-comment-disable-warning": "分类分级不会随着DDL而改变，您可以在数据库详细信息页面上随时更改它。"
+      "description": "通过分类分级，来批量管理列的脱敏规则。"
     },
     "partitioned": "分区",
     "partition-tables": "分区表",
@@ -2234,7 +2230,6 @@
       "not-null": "不可为空",
       "primary": "主键",
       "foreign-key": "外键",
-      "classification": "分类分级",
       "on-update": "更新时"
     },
     "default": {
@@ -2739,7 +2734,6 @@
       "on-update": "更新时"
     },
     "classification": {
-      "self": "数据分类分级",
       "select": "选择分类",
       "search": "搜索分类"
     }

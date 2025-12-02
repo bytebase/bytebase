@@ -196,7 +196,6 @@ const convertNewTableToOld = (newTable: NewTableMetadata): TableMetadata => {
     columns: newTable.columns.map(convertNewColumnToOld),
     engine: newTable.engine,
     collation: newTable.collation,
-    userComment: newTable.userComment,
     comment: newTable.comment,
     indexes: [], // Initialize empty, will be handled separately if needed
     partitions: [], // Initialize empty, will be handled separately if needed
@@ -218,7 +217,6 @@ const convertNewColumnToOld = (
     type: newColumn.type,
     characterSet: newColumn.characterSet,
     collation: newColumn.collation,
-    userComment: newColumn.userComment,
     comment: newColumn.comment,
     // classification, labels, effectiveMaskingLevel are not available in old proto types
   });

@@ -23,53 +23,25 @@
       class="schema-editor-table-column-editor"
     />
   </div>
-
-  <SemanticTypesDrawer
-    v-if="state.pendingUpdateColumn"
-    :show="state.showSemanticTypesDrawer"
-    :semantic-type-list="semanticTypeList"
-    @dismiss="state.showSemanticTypesDrawer = false"
-    @apply="onSemanticTypeApply($event)"
-  />
-
-  <LabelEditorDrawer
-    v-if="state.pendingUpdateColumn"
-    :show="state.showLabelsDrawer"
-    :readonly="false"
-    :title="
-      $t('db.labels-for-resource', {
-        resource: `'${state.pendingUpdateColumn.name}'`,
-      })
-    "
-    :labels="[catalogForColumn(state.pendingUpdateColumn.name).labels]"
-    @dismiss="state.showLabelsDrawer = false"
-    @apply="onLabelsApply"
-  />
 </template>
 
 <script lang="ts" setup>
-import { create } from "@bufbuild/protobuf";
 import { useElementSize } from "@vueuse/core";
 import { pick, pull } from "lodash-es";
 import type { DataTableColumn, DataTableInst } from "naive-ui";
 import { NCheckbox, NDataTable } from "naive-ui";
-import { computed, h, reactive, ref } from "vue";
+import { computed, h, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.vue";
-import LabelEditorDrawer from "@/components/LabelEditorDrawer.vue";
 import {
   changeColumnNameInPrimaryKey,
   removeColumnFromAllForeignKeys,
   removeColumnPrimaryKey,
   upsertColumnPrimaryKey,
 } from "@/components/SchemaEditorLite";
-import SemanticTypesDrawer from "@/components/SensitiveData/components/SemanticTypesDrawer.vue";
 import { InlineInput } from "@/components/v2";
-import { hasFeature, pushNotification, useSettingV1Store } from "@/store";
+import { pushNotification, useSettingV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import type { ColumnCatalog } from "@/types/proto-es/v1/database_catalog_service_pb";
-import { ColumnCatalogSchema } from "@/types/proto-es/v1/database_catalog_service_pb";
 import type {
   ColumnMetadata,
   DatabaseMetadata,
@@ -78,7 +50,6 @@ import type {
   TableMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
-import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { arraySwap } from "@/utils";
 import { useSchemaEditorContext } from "../../context";
 import type { EditStatus } from "../../types";
@@ -88,18 +59,10 @@ import {
   DataTypeCell,
   DefaultValueCell,
   ForeignKeyCell,
-  LabelsCell,
   OperationCell,
   ReorderCell,
   SelectionCell,
-  SemanticTypeCell,
 } from "./components";
-
-interface LocalState {
-  pendingUpdateColumn?: ColumnMetadata;
-  showSemanticTypesDrawer: boolean;
-  showLabelsDrawer: boolean;
-}
 
 const props = withDefaults(
   defineProps<{
@@ -115,8 +78,6 @@ const props = withDefaults(
     allowChangePrimaryKeys?: boolean;
     allowReorderColumns?: boolean;
     maxBodyHeight?: number;
-    showDatabaseCatalogColumn?: boolean;
-    showClassificationColumn?: "ALWAYS" | "AUTO";
     filterColumn?: (column: ColumnMetadata) => boolean;
     disableAlterColumn?: (column: ColumnMetadata) => boolean;
   }>(),
@@ -127,8 +88,6 @@ const props = withDefaults(
     allowChangePrimaryKeys: false,
     allowReorderColumns: false,
     maxBodyHeight: undefined,
-    showDatabaseCatalogColumn: false,
-    showClassificationColumn: "AUTO",
     filterColumn: (_: ColumnMetadata) => true,
     disableAlterColumn: (_: ColumnMetadata) => false,
   }
@@ -147,19 +106,11 @@ const emit = defineEmits<{
   ): void;
 }>();
 
-const state = reactive<LocalState>({
-  showSemanticTypesDrawer: false,
-  showLabelsDrawer: false,
-});
-
 const {
-  classificationConfig,
-  showClassificationColumn: canShowClassificationColumn,
   selectionEnabled,
   markEditStatus,
   removeEditStatus,
   getColumnStatus,
-  getColumnCatalog,
   removeColumnCatalog,
   upsertColumnCatalog,
   useConsumePendingScrollToColumn,
@@ -218,27 +169,6 @@ const markColumnStatus = (
     return;
   }
   markEditStatus(props.db, metadataForColumn(column), status);
-};
-
-const semanticTypeList = computed(() => {
-  const setting = settingStore.getSettingByName(
-    Setting_SettingName.SEMANTIC_TYPES
-  );
-  if (setting?.value?.value?.case === "semanticTypeSettingValue") {
-    return setting.value.value.value.types ?? [];
-  }
-  return [];
-});
-
-const catalogForColumn = (column: string) => {
-  return (
-    getColumnCatalog({
-      database: props.db.name,
-      schema: props.schema.name,
-      table: props.table.name,
-      column,
-    }) ?? create(ColumnCatalogSchema, { name: column })
-  );
 };
 
 const primaryKey = computed(() => {
@@ -300,26 +230,6 @@ const handleRestoreColumn = (column: ColumnMetadata) => {
     return;
   }
   removeEditStatus(props.db, metadataForColumn(column), /* recursive */ false);
-};
-
-const showClassification = computed(() => {
-  return (
-    props.showClassificationColumn === "ALWAYS" ||
-    canShowClassificationColumn(
-      props.engine,
-      classificationConfig.value?.classificationFromConfig ?? false
-    )
-  );
-});
-
-const openSemanticTypeDrawer = (column: ColumnMetadata) => {
-  state.pendingUpdateColumn = column;
-  state.showSemanticTypesDrawer = true;
-};
-
-const openLabelsDrawer = (column: ColumnMetadata) => {
-  state.pendingUpdateColumn = column;
-  state.showLabelsDrawer = true;
 };
 
 const columns = computed(() => {
@@ -421,52 +331,6 @@ const columns = computed(() => {
       },
     },
     {
-      key: "semantic-types",
-      title: t("settings.sensitive-data.semantic-types.table.semantic-type"),
-      resizable: true,
-      minWidth: 140,
-      maxWidth: 320,
-      hide:
-        !props.showDatabaseCatalogColumn ||
-        !hasFeature(PlanFeature.FEATURE_DATA_MASKING),
-      render: (column) => {
-        return h(SemanticTypeCell, {
-          database: props.database.name,
-          schema: props.schema.name,
-          table: props.table.name,
-          column: column.name,
-          readonly: props.readonly,
-          disabled:
-            props.disableChangeTable || props.disableAlterColumn(column),
-          semanticTypeList: semanticTypeList.value,
-          onRemove: () => onSemanticTypeRemove(column),
-          onEdit: () => openSemanticTypeDrawer(column),
-        });
-      },
-    },
-    {
-      key: "classification",
-      title: t("schema-editor.column.classification"),
-      hide: !showClassification.value,
-      resizable: true,
-      minWidth: 140,
-      maxWidth: 320,
-      render: (column) => {
-        const config = catalogForColumn(column.name);
-        return h(ClassificationCell, {
-          classification: config.classification,
-          readonly: props.readonly,
-          disabled: props.disableChangeTable,
-          engine: props.engine,
-          classificationConfig: classificationConfig.value,
-          onApply: (id: string) => {
-            state.pendingUpdateColumn = column;
-            onClassificationSelect(id);
-          },
-        });
-      },
-    },
-    {
       key: "type",
       title: t("schema-editor.column.type"),
       resizable: true,
@@ -535,7 +399,7 @@ const columns = computed(() => {
       className: "input-cell",
       render: (column) => {
         return h(InlineInput, {
-          value: column.userComment,
+          value: column.comment,
           disabled: props.readonly || props.disableAlterColumn(column),
           placeholder: "comment",
           style: {
@@ -544,7 +408,7 @@ const columns = computed(() => {
             "--n-text-color-disabled": "rgb(var(--color-main))",
           },
           "onUpdate:value": (value: string) => {
-            column.userComment = value;
+            column.comment = value;
             markColumnStatus(column, "updated");
           },
         });
@@ -615,25 +479,6 @@ const columns = computed(() => {
       },
     },
     {
-      key: "labels",
-      title: t("common.labels"),
-      resizable: true,
-      minWidth: 140,
-      maxWidth: 320,
-      hide: !props.showDatabaseCatalogColumn,
-      render: (column) => {
-        return h(LabelsCell, {
-          database: props.database.name,
-          schema: props.schema.name,
-          table: props.table.name,
-          column: column.name,
-          readonly: props.readonly,
-          disabled: props.disableChangeTable,
-          onEdit: () => openLabelsDrawer(column),
-        });
-      },
-    },
-    {
       key: "operations",
       title: "",
       resizable: false,
@@ -687,60 +532,6 @@ const handleColumnDefaultSelect = (
 ) => {
   Object.assign(column, defaultValue);
   markColumnStatus(column, "updated");
-};
-
-const onSemanticTypeApply = async (semanticTypeId: string) => {
-  if (!state.pendingUpdateColumn) {
-    return;
-  }
-
-  updateColumnConfig(state.pendingUpdateColumn, (catalog) => {
-    catalog.semanticType = semanticTypeId;
-  });
-};
-
-const onSemanticTypeRemove = async (column: ColumnMetadata) => {
-  markColumnStatus(column, "updated");
-  updateColumnConfig(column, (catalog) => {
-    catalog.semanticType = "";
-  });
-};
-
-const onClassificationSelect = (classificationId: string) => {
-  if (!state.pendingUpdateColumn) {
-    return;
-  }
-
-  markColumnStatus(state.pendingUpdateColumn, "updated");
-  updateColumnConfig(state.pendingUpdateColumn, (catalog) => {
-    catalog.classification = classificationId;
-  });
-};
-
-const updateColumnConfig = (
-  column: ColumnMetadata,
-  update: (config: ColumnCatalog) => void
-) => {
-  upsertColumnCatalog(
-    {
-      database: props.db.name,
-      schema: props.schema.name,
-      table: props.table.name,
-      column: column.name,
-    },
-    update
-  );
-  markColumnStatus(column, "updated");
-};
-
-const onLabelsApply = (labelsList: { [key: string]: string }[]) => {
-  if (!state.pendingUpdateColumn) {
-    return;
-  }
-  updateColumnConfig(state.pendingUpdateColumn, (catalog) => {
-    catalog.labels = labelsList[0];
-  });
-  markColumnStatus(state.pendingUpdateColumn, "updated");
 };
 
 const classesForRow = (column: ColumnMetadata) => {

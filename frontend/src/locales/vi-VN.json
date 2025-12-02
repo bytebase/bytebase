@@ -1731,11 +1731,7 @@
     "transfer-database-to": "Chuyển cơ sở dữ liệu sang dự án đích",
     "classification": {
       "self": "Phân loại",
-      "description": "Sử dụng phân loại dữ liệu để quản lý chính sách che giấu cho nhiều cột bằng cách chỉ kiểm soát một số lượng nhỏ các phân loại.",
-      "sync-from-comment": "Đồng bộ phân loại từ bình luận",
-      "sync-from-comment-tip": "Khi được bật, phân loại sẽ đồng bộ từ bình luận bảng/cột. Bình luận phải tuân theo định dạng \"{format}\".",
-      "sync-from-comment-enable-warning": "Phân loại sẽ thay đổi theo DDL và đồng bộ từ bình luận gốc.",
-      "sync-from-comment-disable-warning": "Phân loại sẽ không thay đổi theo DDL, bạn có thể thay đổi nó bất cứ lúc nào trên trang chi tiết cơ sở dữ liệu."
+      "description": "Sử dụng phân loại dữ liệu để quản lý chính sách che giấu cho nhiều cột bằng cách chỉ kiểm soát một số lượng nhỏ các phân loại."
     },
     "partitioned": "Đã phân vùng",
     "partition-tables": "Bảng phân vùng",
@@ -2234,7 +2230,6 @@
       "not-null": "Không Null",
       "primary": "Chính",
       "foreign-key": "Khóa ngoại",
-      "classification": "Phân loại",
       "on-update": "Khi cập nhật"
     },
     "default": {
@@ -2739,7 +2734,6 @@
       "on-update": "Khi cập nhật"
     },
     "classification": {
-      "self": "Phân loại dữ liệu",
       "select": "Chọn phân loại",
       "search": "Tìm kiếm phân loại"
     }

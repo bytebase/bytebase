@@ -114,8 +114,7 @@
                   "name": "t",
                   "type": "text",
                   "comment": "123",
-                  "position": 1,
-                  "userComment": "123"
+                  "position": 1
                 },
                 {
                   "name": "g",

@@ -8,7 +8,6 @@ import (
 
 	parser "github.com/bytebase/parser/postgresql"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
@@ -43,10 +42,9 @@ func (*ColumnCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor
 	}
 
 	rule := &columnCommentConventionRule{
-		level:                level,
-		title:                string(checkCtx.Rule.Type),
-		payload:              payload,
-		classificationConfig: checkCtx.ClassificationConfig,
+		level:   level,
+		title:   string(checkCtx.Rule.Type),
+		payload: payload,
 	}
 
 	checker := NewGenericChecker([]Rule{rule})
@@ -79,10 +77,9 @@ type commentInfo struct {
 type columnCommentConventionRule struct {
 	BaseRule
 
-	level                storepb.Advice_Status
-	title                string
-	payload              *advisor.CommentConventionRulePayload
-	classificationConfig *storepb.DataClassificationSetting_DataClassificationConfig
+	level   storepb.Advice_Status
+	title   string
+	payload *advisor.CommentConventionRulePayload
 
 	columns  []columnInfo
 	comments []commentInfo
@@ -257,22 +254,6 @@ func (r *columnCommentConventionRule) generateAdvice() []*storepb.Advice {
 						Column: 0,
 					},
 				})
-			}
-
-			// Check classification
-			if r.payload.RequiredClassification {
-				if classification, _ := common.GetClassificationAndUserComment(comment, r.classificationConfig); classification == "" {
-					adviceList = append(adviceList, &storepb.Advice{
-						Status:  r.level,
-						Code:    code.CommentMissingClassification.Int32(),
-						Title:   r.title,
-						Content: fmt.Sprintf("Column `%s.%s` comment requires classification", col.table, col.column),
-						StartPosition: &storepb.Position{
-							Line:   int32(matchedComment.line),
-							Column: 0,
-						},
-					})
-				}
 			}
 		}
 	}
