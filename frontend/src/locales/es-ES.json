@@ -490,7 +490,7 @@
       "assign-role": "Asignar rol | Asignar roles"
     },
     "im-integration": {
-      "description": "Envíe mensajes directos a los usuarios para eventos de problemas específicos. Funciona con el webhook del proyecto."
+      "description": "La integración de IM se utilizará para enviar mensajes directos a los usuarios para eventos de incidencias específicos. Funciona con el webhook del proyecto."
     },
     "sso": {
       "create": "Crear SSO",

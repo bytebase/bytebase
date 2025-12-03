@@ -441,6 +441,38 @@ export declare type AppIMSetting_DingTalk = Message<"bytebase.v1.AppIMSetting.Di
 export declare const AppIMSetting_DingTalkSchema: GenMessage<AppIMSetting_DingTalk>;
 
 /**
+ * @generated from message bytebase.v1.AppIMSetting.Teams
+ */
+export declare type AppIMSetting_Teams = Message<"bytebase.v1.AppIMSetting.Teams"> & {
+  /**
+   * Azure AD tenant ID (Directory ID).
+   *
+   * @generated from field: string tenant_id = 1;
+   */
+  tenantId: string;
+
+  /**
+   * Azure AD application (client) ID.
+   *
+   * @generated from field: string client_id = 2;
+   */
+  clientId: string;
+
+  /**
+   * Azure AD client secret.
+   *
+   * @generated from field: string client_secret = 3;
+   */
+  clientSecret: string;
+};
+
+/**
+ * Describes the message bytebase.v1.AppIMSetting.Teams.
+ * Use `create(AppIMSetting_TeamsSchema)` to create a new message.
+ */
+export declare const AppIMSetting_TeamsSchema: GenMessage<AppIMSetting_Teams>;
+
+/**
  * @generated from message bytebase.v1.AppIMSetting.IMSetting
  */
 export declare type AppIMSetting_IMSetting = Message<"bytebase.v1.AppIMSetting.IMSetting"> & {
@@ -482,6 +514,12 @@ export declare type AppIMSetting_IMSetting = Message<"bytebase.v1.AppIMSetting.I
      */
     value: AppIMSetting_DingTalk;
     case: "dingtalk";
+  } | {
+    /**
+     * @generated from field: bytebase.v1.AppIMSetting.Teams teams = 7;
+     */
+    value: AppIMSetting_Teams;
+    case: "teams";
   } | { case: undefined; value?: undefined };
 };
 

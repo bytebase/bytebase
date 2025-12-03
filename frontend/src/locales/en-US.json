@@ -490,7 +490,7 @@
       "assign-role": "Assign role | Assign roles"
     },
     "im-integration": {
-      "description": "Push direct messages to users for specific issue events. Works with project webhook."
+      "description": "The IM integration will be used to push direct messages to users for specific issue events. Works with the project webhook."
     },
     "sso": {
       "create": "Create SSO",

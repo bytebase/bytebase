@@ -490,7 +490,7 @@
       "assign-role": "分配角色 | 分配角色"
     },
     "im-integration": {
-      "description": "针对特定工单事件向用户推送私信消息。需要与项目 webhook 配合使用。"
+      "description": "即时通讯集成用于针对特定工单事件向用户推送私信消息。需要与项目 webhook 配合使用。"
     },
     "sso": {
       "create": "创建 SSO",

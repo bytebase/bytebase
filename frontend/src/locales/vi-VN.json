@@ -490,7 +490,7 @@
       "assign-role": "Gán vai trò | Gán vai trò"
     },
     "im-integration": {
-      "description": "Đẩy tin nhắn trực tiếp đến người dùng cho các sự kiện vấn đề cụ thể. Hoạt động với webhook của dự án."
+      "description": "Tích hợp IM sẽ được sử dụng để đẩy tin nhắn trực tiếp đến người dùng cho các sự kiện vấn đề cụ thể. Hoạt động với webhook của dự án."
     },
     "sso": {
       "create": "Tạo SSO",
