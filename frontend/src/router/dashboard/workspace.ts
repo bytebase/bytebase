@@ -1,4 +1,3 @@
-import { startCase } from "lodash-es";
 import type { RouteRecordRaw } from "vue-router";
 import DummyRootView from "@/DummyRootView";
 import { t } from "@/plugins/i18n";

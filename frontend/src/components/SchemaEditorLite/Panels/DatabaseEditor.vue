@@ -117,7 +117,6 @@
 </template>
 
 <script lang="ts" setup>
-import { create } from "@bufbuild/protobuf";
 import { head, sumBy } from "lodash-es";
 import { PlusIcon } from "lucide-vue-next";
 import { NButton, NSelect, NTooltip } from "naive-ui";
@@ -126,16 +125,9 @@ import SchemaDiagram, { SchemaDiagramIcon } from "@/components/SchemaDiagram";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
-  ColumnMetadata,
   DatabaseMetadata,
-  ColumnMetadata as NewColumnMetadata,
-  TableMetadata as NewTableMetadata,
   SchemaMetadata,
   TableMetadata,
-} from "@/types/proto-es/v1/database_service_pb";
-import {
-  ColumnMetadataSchema,
-  TableMetadataSchema,
 } from "@/types/proto-es/v1/database_service_pb";
 import { useSchemaEditorContext } from "../context";
 import TableNameModal from "../Modals/TableNameModal.vue";
@@ -161,39 +153,6 @@ const emit = defineEmits<{
   (event: "update:selected-schema-name", schema: string | undefined): void;
 }>();
 
-// Conversion function for TableMetadata at service boundaries
-const convertNewTableToOld = (newTable: NewTableMetadata): TableMetadata => {
-  return create(TableMetadataSchema, {
-    name: newTable.name,
-    columns: newTable.columns.map(convertNewColumnToOld),
-    engine: newTable.engine,
-    collation: newTable.collation,
-    comment: newTable.comment,
-    indexes: [], // Initialize empty, will be handled separately if needed
-    partitions: [], // Initialize empty, will be handled separately if needed
-    foreignKeys: [], // Initialize empty, will be handled separately if needed
-  });
-};
-
-// Conversion function for ColumnMetadata at service boundaries
-const convertNewColumnToOld = (
-  newColumn: NewColumnMetadata
-): ColumnMetadata => {
-  return create(ColumnMetadataSchema, {
-    name: newColumn.name,
-    position: newColumn.position,
-    hasDefault: newColumn.hasDefault,
-    default: newColumn.default,
-    onUpdate: newColumn.onUpdate,
-    nullable: newColumn.nullable,
-    type: newColumn.type,
-    characterSet: newColumn.characterSet,
-    collation: newColumn.collation,
-    comment: newColumn.comment,
-    // classification, labels, effectiveMaskingLevel are not available in old proto types
-  });
-};
-
 type SubTabType = "table-list" | "schema-diagram";
 
 interface LocalState {
@@ -206,16 +165,7 @@ interface LocalState {
 }
 
 const context = useSchemaEditorContext();
-const {
-  readonly,
-  selectionEnabled,
-  events,
-  addTab,
-  getSchemaStatus,
-  markEditStatus,
-  upsertTableCatalog,
-  queuePendingScrollToTable,
-} = context;
+const { readonly, selectionEnabled, addTab, getSchemaStatus } = context;
 const state = reactive<LocalState>({
   selectedSubTab: "table-list",
   showFeatureModal: false,

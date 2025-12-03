@@ -171,7 +171,6 @@ import type {
   ColumnMetadata,
   DatabaseMetadata,
   ForeignKeyMetadata,
-  ColumnMetadata as NewColumnMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
@@ -227,29 +226,10 @@ const {
   getTableStatus,
   getColumnStatus,
   getDatabaseCatalog,
-  upsertColumnCatalog,
   queuePendingScrollToColumn,
   selectionEnabled,
 } = useSchemaEditorContext();
 
-// Conversion function for ColumnMetadata at service boundaries
-const convertNewColumnToOld = (
-  newColumn: NewColumnMetadata
-): ColumnMetadata => {
-  return create(ColumnMetadataSchema, {
-    name: newColumn.name,
-    position: newColumn.position,
-    hasDefault: newColumn.hasDefault,
-    default: newColumn.default,
-    onUpdate: newColumn.onUpdate,
-    nullable: newColumn.nullable,
-    type: newColumn.type,
-    characterSet: newColumn.characterSet,
-    collation: newColumn.collation,
-    comment: newColumn.comment,
-    // classification, labels, effectiveMaskingLevel are not available in old proto types
-  });
-};
 const engine = computed((): Engine => {
   return props.db.instanceResource.engine;
 });

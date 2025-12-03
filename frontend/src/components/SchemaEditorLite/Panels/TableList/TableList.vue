@@ -29,7 +29,7 @@ import { useElementSize } from "@vueuse/core";
 import { pick } from "lodash-es";
 import type { DataTableColumn, DataTableInst } from "naive-ui";
 import { NCheckbox, NDataTable } from "naive-ui";
-import { computed, h, reactive, ref } from "vue";
+import { computed, h, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { InlineInput } from "@/components/v2";
 import type { ComposedDatabase } from "@/types";
@@ -62,11 +62,6 @@ const emit = defineEmits<{
   ): void;
 }>();
 
-interface LocalState {
-  showFeatureModal: boolean;
-  activeTable?: TableMetadata;
-}
-
 const { t } = useI18n();
 const {
   readonly,
@@ -76,7 +71,6 @@ const {
   removeEditStatus,
   getSchemaStatus,
   getTableStatus,
-  upsertTableCatalog,
   useConsumePendingScrollToTable,
   getAllTablesSelectionState,
   updateAllTablesSelection,
@@ -97,19 +91,12 @@ const tableBodyHeight = computed(() => {
 });
 // Use this to avoid unnecessary initial rendering
 const layoutReady = computed(() => tableHeaderHeight.value > 0);
-const state = reactive<LocalState>({
-  showFeatureModal: false,
-});
 const filteredTables = computed(() => {
   const keyword = props.searchPattern?.trim();
   if (!keyword) {
     return props.tables;
   }
   return props.tables.filter((table) => table.name.includes(keyword));
-});
-
-const engine = computed(() => {
-  return props.db.instanceResource.engine;
 });
 
 const metadataForTable = (table: TableMetadata) => {

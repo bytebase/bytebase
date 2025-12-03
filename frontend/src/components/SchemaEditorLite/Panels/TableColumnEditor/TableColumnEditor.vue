@@ -39,7 +39,7 @@ import {
   upsertColumnPrimaryKey,
 } from "@/components/SchemaEditorLite";
 import { InlineInput } from "@/components/v2";
-import { pushNotification, useSettingV1Store } from "@/store";
+import { pushNotification } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
@@ -49,7 +49,6 @@ import type {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
-import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { arraySwap } from "@/utils";
 import { useSchemaEditorContext } from "../../context";
 import type { EditStatus } from "../../types";
@@ -138,7 +137,6 @@ const tableBodyHeight = computed(() => {
 // Use this to avoid unnecessary initial rendering
 const layoutReady = computed(() => tableHeaderHeight.value > 0);
 const { t } = useI18n();
-const settingStore = useSettingV1Store();
 
 const metadataForColumn = (column: ColumnMetadata) => {
   return {
