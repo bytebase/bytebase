@@ -252,6 +252,7 @@ import { useRouter } from "vue-router";
 import { BBAttention, BBButtonConfirm } from "@/bbkit";
 import RequiredStar from "@/components/RequiredStar.vue";
 import FormLayout from "@/components/v2/Form/FormLayout.vue";
+import { useBodyLayoutContext } from "@/layouts/common";
 import {
   PROJECT_V1_ROUTE_WEBHOOK_DETAIL,
   PROJECT_V1_ROUTE_WEBHOOKS,
@@ -299,6 +300,9 @@ const { t } = useI18n();
 const settingStore = useSettingV1Store();
 const projectStore = useProjectV1Store();
 const projectWebhookV1Store = useProjectWebhookV1Store();
+const { overrideMainContainerClass } = useBodyLayoutContext();
+
+overrideMainContainerClass("!pb-0");
 
 const state = reactive<LocalState>({
   webhook: cloneDeep(props.webhook),

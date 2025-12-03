@@ -18,7 +18,7 @@
         </h2>
       </div>
 
-      <div class="flex-1 flex flex-col px-6 py-4 overflow-hidden gap-y-4">
+      <div class="flex-1 flex flex-col px-6 py-4 gap-y-4 overflow-y-auto">
         <div v-if="mode === 'create'" class="flex flex-col gap-y-2">
           <h3 class="font-medium text-sm text-control">
             {{ $t("custom-approval.approval-flow.template.presets-title") }}
@@ -68,7 +68,7 @@
           />
         </div>
 
-        <div class="flex-1 flex flex-col gap-y-2 overflow-y-auto">
+        <div class="flex-1 flex flex-col gap-y-2">
           <h3 class="font-medium text-sm text-control">
             {{ $t("cel.condition.self") }} <RequiredStar />
           </h3>

@@ -1,6 +1,6 @@
 <template>
   <div class="h-full flex flex-col">
-    <div class="flex-1 pb-4">
+    <div class="flex-1 mb-6">
       <slot name="title">
         <div v-if="title" class="text-lg leading-6 font-medium text-main">
           {{ title }}
@@ -9,9 +9,12 @@
       </slot>
       <slot name="body" />
     </div>
-    <div class="w-full sticky bottom-0 pb-2 bg-white">
-      <NDivider />
-      <slot name="footer" />
+    <div class="w-full sticky bottom-0 z-10">
+      <div
+        class="w-full py-4 border-t border-block-border bg-white"
+      >
+        <slot name="footer" />
+      </div>
     </div>
   </div>
 </template>
