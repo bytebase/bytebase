@@ -160,10 +160,8 @@ import WorkspaceInstanceLicenseStats from "@/components/WorkspaceInstanceLicense
 import {
   pushNotification,
   useActuatorV1Store,
-  useSettingV1Store,
   useSubscriptionV1Store,
 } from "@/store";
-import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
@@ -178,7 +176,6 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const subscriptionStore = useSubscriptionV1Store();
-const settingV1Store = useSettingV1Store();
 const actuatorStore = useActuatorV1Store();
 
 const state = reactive<LocalState>({
@@ -207,12 +204,7 @@ const userLimit = computed((): string => {
 const workspaceIdField = ref<HTMLInputElement | null>(null);
 
 const workspaceId = computed(() => {
-  const setting = settingV1Store.getSettingByName(
-    Setting_SettingName.WORKSPACE_ID
-  );
-  return setting?.value?.value?.case === "stringValue"
-    ? setting.value.value.value
-    : "";
+  return actuatorStore.serverInfo?.workspaceId ?? "";
 });
 
 const selectWorkspaceId = () => {

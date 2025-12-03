@@ -81,12 +81,9 @@ type Setting_SettingName int32
 
 const (
 	Setting_SETTING_NAME_UNSPECIFIED Setting_SettingName = 0
-	Setting_AUTH_SECRET              Setting_SettingName = 1
 	Setting_BRANDING_LOGO            Setting_SettingName = 2
-	Setting_WORKSPACE_ID             Setting_SettingName = 3
 	Setting_WORKSPACE_PROFILE        Setting_SettingName = 4
 	Setting_WORKSPACE_APPROVAL       Setting_SettingName = 5
-	Setting_ENTERPRISE_LICENSE       Setting_SettingName = 7
 	Setting_APP_IM                   Setting_SettingName = 8
 	Setting_WATERMARK                Setting_SettingName = 9
 	Setting_AI                       Setting_SettingName = 10
@@ -101,12 +98,9 @@ const (
 var (
 	Setting_SettingName_name = map[int32]string{
 		0:  "SETTING_NAME_UNSPECIFIED",
-		1:  "AUTH_SECRET",
 		2:  "BRANDING_LOGO",
-		3:  "WORKSPACE_ID",
 		4:  "WORKSPACE_PROFILE",
 		5:  "WORKSPACE_APPROVAL",
-		7:  "ENTERPRISE_LICENSE",
 		8:  "APP_IM",
 		9:  "WATERMARK",
 		10: "AI",
@@ -118,12 +112,9 @@ var (
 	}
 	Setting_SettingName_value = map[string]int32{
 		"SETTING_NAME_UNSPECIFIED": 0,
-		"AUTH_SECRET":              1,
 		"BRANDING_LOGO":            2,
-		"WORKSPACE_ID":             3,
 		"WORKSPACE_PROFILE":        4,
 		"WORKSPACE_APPROVAL":       5,
-		"ENTERPRISE_LICENSE":       7,
 		"APP_IM":                   8,
 		"WATERMARK":                9,
 		"AI":                       10,
@@ -2888,18 +2879,15 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\rvalidate_only\x18\x02 \x01(\bR\fvalidateOnly\x12#\n" +
 	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\x12;\n" +
 	"\vupdate_mask\x18\x04 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask\"\xb7\x03\n" +
+	"updateMask\"\xfc\x02\n" +
 	"\aSetting\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\bR\x04name\x124\n" +
-	"\x05value\x18\x02 \x01(\v2\x19.bytebase.v1.SettingValueB\x03\xe0A\x02R\x05value\"\xad\x02\n" +
+	"\x05value\x18\x02 \x01(\v2\x19.bytebase.v1.SettingValueB\x03\xe0A\x02R\x05value\"\xf2\x01\n" +
 	"\vSettingName\x12\x1c\n" +
-	"\x18SETTING_NAME_UNSPECIFIED\x10\x00\x12\x0f\n" +
-	"\vAUTH_SECRET\x10\x01\x12\x11\n" +
-	"\rBRANDING_LOGO\x10\x02\x12\x10\n" +
-	"\fWORKSPACE_ID\x10\x03\x12\x15\n" +
+	"\x18SETTING_NAME_UNSPECIFIED\x10\x00\x12\x11\n" +
+	"\rBRANDING_LOGO\x10\x02\x12\x15\n" +
 	"\x11WORKSPACE_PROFILE\x10\x04\x12\x16\n" +
-	"\x12WORKSPACE_APPROVAL\x10\x05\x12\x16\n" +
-	"\x12ENTERPRISE_LICENSE\x10\a\x12\n" +
+	"\x12WORKSPACE_APPROVAL\x10\x05\x12\n" +
 	"\n" +
 	"\x06APP_IM\x10\b\x12\r\n" +
 	"\tWATERMARK\x10\t\x12\x06\n" +
