@@ -100,6 +100,7 @@ import {
   emptySearchParams,
   getValueFromSearchParams,
   getValuesFromSearchParams,
+  mergeSearchParams,
   minmax,
   upsertScope,
   useDynamicLocalStorage,
@@ -631,7 +632,28 @@ const applyCacheOrDefaults = () => {
   }
   const cached = cachedQuery.value;
   if (cached) {
-    emit("update:params", buildSearchParamsBySearchText(cached));
+    const params = buildSearchParamsBySearchText(cached);
+    // Filter and merge cached params with existing scopes (preserving readonly)
+    const existedScopes = props.params.scopes.reduce((map, scope) => {
+      map.set(scope.id, scope.readonly ?? false);
+      return map;
+    }, new Map<SearchScopeId, boolean>());
+    params.scopes = params.scopes
+      .filter((scope) => {
+        const option = props.scopeOptions.find((op) => op.id === scope.id);
+        if (!option) {
+          return false;
+        }
+        if (existedScopes.has(option.id)) {
+          return option.allowMultiple ?? false;
+        }
+        return true;
+      })
+      .map((scope) => ({
+        ...scope,
+        readonly: existedScopes.get(scope.id),
+      }));
+    emit("update:params", mergeSearchParams(cloneDeep(props.params), params));
   } else {
     emit("update:params", props.defaultParams);
   }
