@@ -33,7 +33,7 @@
       <!-- Show More button -->
       <div
         v-if="hasMoreTasks"
-        class="flex justify-center py-4"
+        class="flex justify-center"
       >
         <button
           class="px-4 py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors"
@@ -51,7 +51,6 @@ import { computed, ref, watch } from "vue";
 import { usePlanContextWithRollout } from "@/components/Plan/logic/context";
 import type { Rollout, Stage } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
-import { useSheetPreload } from "./composables/useSheetPreload";
 import { useTaskCollapse } from "./composables/useTaskCollapse";
 import { useTaskSelection } from "./composables/useTaskSelection";
 import { DEFAULT_PAGE_SIZE } from "./constants";
@@ -106,14 +105,7 @@ const loadMoreTasks = () => {
   );
 };
 
-const { expandedTaskIds, isTaskExpanded, toggleExpand } =
-  useTaskCollapse(filteredTasks);
-
-// Prefetch sheets for expanded tasks only (statements not shown in collapsed view)
-const expandedTasks = computed(() =>
-  visibleTasks.value.filter((task) => expandedTaskIds.value.has(task.name))
-);
-useSheetPreload(() => expandedTasks.value);
+const { isTaskExpanded, toggleExpand } = useTaskCollapse(filteredTasks);
 
 const {
   selectedTasks,

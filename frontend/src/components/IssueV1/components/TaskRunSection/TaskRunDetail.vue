@@ -77,7 +77,7 @@ watch(
   async () => {
     // Prepare the sheet data from task run.
     if (props.taskRun.sheet) {
-      await sheetStore.getOrFetchSheetByName(props.taskRun.sheet, "FULL");
+      await sheetStore.getOrFetchSheetByName(props.taskRun.sheet);
     }
   },
   { immediate: true }
