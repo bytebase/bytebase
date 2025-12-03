@@ -151,7 +151,7 @@ const me = useCurrentUserV1();
 const cachedQuery = useDynamicLocalStorage<string>(
   computed(
     () =>
-      `bb.advanced-search.${me.value.name}.${router.currentRoute.value.name?.toString()}`
+      `bb.advanced-search.${me.value.name}.${router.currentRoute.value.path}`
   ),
   ""
 );
@@ -634,10 +634,21 @@ onMounted(() => {
       map.set(scope.id, scope.readonly ?? false);
       return map;
     }, new Map<SearchScopeId, boolean>());
-    params.scopes = params.scopes.map((scope) => ({
-      ...scope,
-      readonly: existedScopes.get(scope.id),
-    }));
+    params.scopes = params.scopes
+      .filter((scope) => {
+        const option = props.scopeOptions.find((op) => op.id === scope.id)
+        if (!option) {
+          return false;
+        }
+        if (existedScopes.has(option.id)) {
+          return option.allowMultiple ?? false;
+        }
+        return true;
+      })
+      .map((scope) => ({
+        ...scope,
+        readonly: existedScopes.get(scope.id),
+      }));
     emit("update:params", mergeSearchParams(cloneDeep(props.params), params));
   }
 });

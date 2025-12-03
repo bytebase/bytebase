@@ -276,6 +276,7 @@ import {
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { projectWebhookV1Slug } from "../utils";
 import WebhookTypeIcon from "./Project/WebhookTypeIcon.vue";
+import { useBodyLayoutContext } from "@/layouts/common";
 
 interface LocalState {
   webhook: Webhook;
@@ -299,6 +300,9 @@ const { t } = useI18n();
 const settingStore = useSettingV1Store();
 const projectStore = useProjectV1Store();
 const projectWebhookV1Store = useProjectWebhookV1Store();
+const { overrideMainContainerClass } = useBodyLayoutContext();
+
+overrideMainContainerClass("!pb-0");
 
 const state = reactive<LocalState>({
   webhook: cloneDeep(props.webhook),

@@ -13,6 +13,8 @@ import { useRouter } from "vue-router";
 import GrantAccessForm from "@/components/SensitiveData/GrantAccessForm.vue";
 import { useProjectByName } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
+import { useBodyLayoutContext } from "@/layouts/common";
+
 
 const props = defineProps<{
   projectId: string;
@@ -22,4 +24,8 @@ const { project } = useProjectByName(
   computed(() => `${projectNamePrefix}${props.projectId}`)
 );
 const router = useRouter();
+
+const { overrideMainContainerClass } = useBodyLayoutContext();
+
+overrideMainContainerClass("!pb-0");
 </script>
