@@ -44,27 +44,6 @@ type PersistentTab = Pick<SQLEditorTab, (typeof PERSISTENT_TAB_FIELDS)[number]>;
 
 const LOCAL_STORAGE_KEY_PREFIX = "bb.sql-editor-tab";
 
-// Convert plain object from localStorage to Map for databaseQueryContexts
-const convertDatabaseQueryContexts = (
-  tab: SQLEditorTab
-): Map<string, SQLEditorDatabaseQueryContext[]> | undefined => {
-  const contexts = tab.databaseQueryContexts;
-  if (!contexts) {
-    return undefined;
-  }
-  if (contexts instanceof Map) {
-    return contexts;
-  }
-  // Convert plain object to Map (happens when loaded from localStorage)
-  const map = new Map<string, SQLEditorDatabaseQueryContext[]>();
-  for (const [key, value] of Object.entries(contexts)) {
-    if (Array.isArray(value)) {
-      map.set(key, value);
-    }
-  }
-  return map.size > 0 ? map : undefined;
-};
-
 export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
   // re-expose selected project in sqlEditorStore for shortcut
   const { project } = storeToRefs(useSQLEditorStore());
@@ -76,54 +55,6 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
   const keyNamespace = computed(
     () => `${LOCAL_STORAGE_KEY_PREFIX}.${project.value}.${userUID.value}`
   );
-
-  const loadStoredTabs = async () => {
-    const validTabList: PersistentTab[] = [];
-    for (const tab of openTabList.value) {
-      let fullTab: SQLEditorTab | undefined;
-      if (tab.worksheet) {
-        const worksheet = await worksheetStore.getOrFetchWorksheetByName(
-          tab.worksheet,
-          true
-        );
-        if (!worksheet) {
-          continue;
-        }
-        const statement = getSheetStatement(worksheet);
-        const connection = await extractWorksheetConnection(worksheet);
-
-        fullTab = {
-          ...defaultSQLEditorTab(),
-          ...tab,
-          connection,
-          worksheet: worksheet.name,
-          title: worksheet.title,
-          statement,
-          status: "CLEAN",
-          databaseQueryContexts: convertDatabaseQueryContexts(
-            tab as unknown as SQLEditorTab
-          ),
-        };
-      } else {
-        const draft = draftTabList.value.find((item) => item.id === tab.id);
-        if (!draft) {
-          continue;
-        }
-        fullTab = {
-          ...draft,
-          databaseQueryContexts: convertDatabaseQueryContexts(draft),
-        };
-      }
-      if (!fullTab) {
-        continue;
-      }
-
-      validTabList.push(tab);
-      tabsById.set(tab.id, fullTab);
-    }
-
-    openTabList.value = validTabList;
-  };
 
   const draftTabList = useDynamicLocalStorage<SQLEditorTab[]>(
     computed(() => `${keyNamespace.value}.draft-tab-list`),
@@ -151,6 +82,52 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
       listenToStorageChanges: false,
     }
   );
+
+  const loadStoredTabs = async () => {
+    const validTabList: PersistentTab[] = [];
+    for (const tab of openTabList.value) {
+      let fullTab: SQLEditorTab | undefined;
+      if (tab.worksheet) {
+        const worksheet = await worksheetStore.getOrFetchWorksheetByName(
+          tab.worksheet,
+          true
+        );
+        if (!worksheet) {
+          continue;
+        }
+        const statement = getSheetStatement(worksheet);
+        const connection = await extractWorksheetConnection(worksheet);
+
+        fullTab = {
+          ...defaultSQLEditorTab(),
+          ...tab,
+          connection,
+          worksheet: worksheet.name,
+          title: worksheet.title,
+          statement,
+          status: "CLEAN",
+          databaseQueryContexts: undefined,
+        };
+      } else {
+        const draft = draftTabList.value.find((item) => item.id === tab.id);
+        if (!draft) {
+          continue;
+        }
+        fullTab = {
+          ...draft,
+          databaseQueryContexts: undefined,
+        };
+      }
+      if (!fullTab) {
+        continue;
+      }
+
+      validTabList.push(tab);
+      tabsById.set(tab.id, fullTab);
+    }
+
+    openTabList.value = validTabList;
+  };
 
   const maybeInitProject = async () => {
     tabsById.clear();
