@@ -44,6 +44,27 @@ type PersistentTab = Pick<SQLEditorTab, (typeof PERSISTENT_TAB_FIELDS)[number]>;
 
 const LOCAL_STORAGE_KEY_PREFIX = "bb.sql-editor-tab";
 
+// Convert plain object from localStorage to Map for databaseQueryContexts
+const convertDatabaseQueryContexts = (
+  tab: SQLEditorTab
+): Map<string, SQLEditorDatabaseQueryContext[]> | undefined => {
+  const contexts = tab.databaseQueryContexts;
+  if (!contexts) {
+    return undefined;
+  }
+  if (contexts instanceof Map) {
+    return contexts;
+  }
+  // Convert plain object to Map (happens when loaded from localStorage)
+  const map = new Map<string, SQLEditorDatabaseQueryContext[]>();
+  for (const [key, value] of Object.entries(contexts)) {
+    if (Array.isArray(value)) {
+      map.set(key, value);
+    }
+  }
+  return map.size > 0 ? map : undefined;
+};
+
 export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
   // re-expose selected project in sqlEditorStore for shortcut
   const { project } = storeToRefs(useSQLEditorStore());
@@ -79,13 +100,19 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
           title: worksheet.title,
           statement,
           status: "CLEAN",
+          databaseQueryContexts: convertDatabaseQueryContexts(
+            tab as unknown as SQLEditorTab
+          ),
         };
       } else {
         const draft = draftTabList.value.find((item) => item.id === tab.id);
         if (!draft) {
           continue;
         }
-        fullTab = draft;
+        fullTab = {
+          ...draft,
+          databaseQueryContexts: convertDatabaseQueryContexts(draft),
+        };
       }
       if (!fullTab) {
         continue;
