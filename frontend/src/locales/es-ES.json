@@ -2656,6 +2656,8 @@
       },
       "add-rule": "Agregar regla",
       "edit-rule": "Editar regla",
+      "fallback-rules": "Reglas de respaldo",
+      "fallback-rules-hint": "Las reglas de respaldo solo se evalúan cuando ninguna otra regla coincide.",
       "template": {
         "presets-title": "Plantillas",
         "presets": {

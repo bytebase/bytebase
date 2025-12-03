@@ -2656,6 +2656,8 @@
       },
       "add-rule": "添加规则",
       "edit-rule": "编辑规则",
+      "fallback-rules": "兜底规则",
+      "fallback-rules-hint": "兜底规则仅在没有其他规则匹配时才会被评估。",
       "template": {
         "presets-title": "预设模板",
         "presets": {

@@ -2656,6 +2656,8 @@
       },
       "add-rule": "Add rule",
       "edit-rule": "Edit rule",
+      "fallback-rules": "Fallback Rules",
+      "fallback-rules-hint": "Fallback rules are evaluated only when no other rules match.",
       "template": {
         "presets-title": "Presets",
         "presets": {

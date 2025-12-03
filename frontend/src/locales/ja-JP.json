@@ -2656,6 +2656,8 @@
       },
       "add-rule": "ルールを追加",
       "edit-rule": "ルールを編集",
+      "fallback-rules": "フォールバックルール",
+      "fallback-rules-hint": "フォールバックルールは、他のルールが一致しない場合にのみ評価されます。",
       "template": {
         "presets-title": "プリセット",
         "presets": {

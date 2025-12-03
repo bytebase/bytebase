@@ -300,6 +300,18 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 			if _, err := common.ConvertUnparsedApproval(rule.Condition); err != nil {
 				return nil, err
 			}
+
+			// For SOURCE_UNSPECIFIED (fallback) rules, validate that only project_id is used
+			if rule.Source == v1pb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED {
+				conditionExpr := ""
+				if rule.Condition != nil {
+					conditionExpr = rule.Condition.Expression
+				}
+				if err := common.ValidateFallbackApprovalExpr(conditionExpr); err != nil {
+					return nil, err
+				}
+			}
+
 			if err := validateApprovalTemplate(rule.Template); err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid approval template: %v, err: %v", rule.Template, err))
 			}
