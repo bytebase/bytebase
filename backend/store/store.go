@@ -154,6 +154,14 @@ func (s *Store) GetDB() *sql.DB {
 	return s.dbConnManager.GetDB()
 }
 
+// DeleteCache deletes the cache.
+func (s *Store) DeleteCache() {
+	s.settingCache.Purge()
+	s.policyCache.Purge()
+	s.userEmailCache.Purge()
+	s.userIDCache.Purge()
+}
+
 func getInstanceCacheKey(instanceID string) string {
 	return instanceID
 }
