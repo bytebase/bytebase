@@ -3,7 +3,7 @@
     <!-- Show tooltip with text when there are more than 3 users -->
     <NPopover
       v-if="users.length > 3"
-      placement="bottom-start"
+      placement="bottom-end"
       :show-arrow="false"
     >
       <template #trigger>
