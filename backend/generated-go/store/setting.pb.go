@@ -2243,7 +2243,7 @@ var File_store_setting_proto protoreflect.FileDescriptor
 
 const file_store_setting_proto_rawDesc = "" +
 	"\n" +
-	"\x13store/setting.proto\x12\x0ebytebase.store\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\x1a\x12store/common.proto\x1a\x14store/database.proto\x1a\x1bstore/project_webhook.proto\"\x85\x06\n" +
+	"\x13store/setting.proto\x12\x0ebytebase.store\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\x1a\x1bstore/project_webhook.proto\"\x85\x06\n" +
 	"\x17WorkspaceProfileSetting\x12!\n" +
 	"\fexternal_url\x18\x01 \x01(\tR\vexternalUrl\x12'\n" +
 	"\x0fdisallow_signup\x18\x02 \x01(\bR\x0edisallowSignup\x12\x1f\n" +
@@ -2531,8 +2531,6 @@ func file_store_setting_proto_init() {
 		return
 	}
 	file_store_approval_proto_init()
-	file_store_common_proto_init()
-	file_store_database_proto_init()
 	file_store_project_webhook_proto_init()
 	file_store_setting_proto_msgTypes[5].OneofWrappers = []any{
 		(*Algorithm_FullMask_)(nil),

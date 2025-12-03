@@ -2799,7 +2799,7 @@ var File_v1_setting_service_proto protoreflect.FileDescriptor
 
 const file_v1_setting_service_proto_rawDesc = "" +
 	"\n" +
-	"\x18v1/setting_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a google/protobuf/field_mask.proto\x1a\x16google/type/expr.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a!v1/database_catalog_service.proto\x1a\x19v1/database_service.proto\x1a\x16v1/issue_service.proto\x1a\x18v1/project_service.proto\"\x15\n" +
+	"\x18v1/setting_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a google/protobuf/field_mask.proto\x1a\x16google/type/expr.proto\x1a\x13v1/annotation.proto\x1a\x16v1/issue_service.proto\x1a\x18v1/project_service.proto\"\x15\n" +
 	"\x13ListSettingsRequest\"H\n" +
 	"\x14ListSettingsResponse\x120\n" +
 	"\bsettings\x18\x01 \x03(\v2\x14.bytebase.v1.SettingR\bsettings\"E\n" +
@@ -3154,9 +3154,6 @@ func file_v1_setting_service_proto_init() {
 		return
 	}
 	file_v1_annotation_proto_init()
-	file_v1_common_proto_init()
-	file_v1_database_catalog_service_proto_init()
-	file_v1_database_service_proto_init()
 	file_v1_issue_service_proto_init()
 	file_v1_project_service_proto_init()
 	file_v1_setting_service_proto_msgTypes[6].OneofWrappers = []any{

@@ -5,8 +5,6 @@ package bytebase.store;
 import "google/protobuf/duration.proto";
 import "google/type/expr.proto";
 import "store/approval.proto";
-import "store/common.proto";
-import "store/database.proto";
 import "store/project_webhook.proto";
 
 option go_package = "generated-go/store";
