@@ -18,7 +18,6 @@ import {
   WORKSPACE_ROUTE_LANDING,
   WORKSPACE_ROUTE_MEMBERS,
   WORKSPACE_ROUTE_ROLES,
-  WORKSPACE_ROUTE_SCHEMA_TEMPLATE,
   WORKSPACE_ROUTE_SEMANTIC_TYPES,
   WORKSPACE_ROUTE_SQL_REVIEW,
   WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
@@ -225,16 +224,6 @@ const workspaceRoutes: RouteRecordRaw[] = [
           requiredPermissionList: () => ["bb.settings.get"],
         },
         component: () => import("@/views/SettingWorkspaceCustomApproval.vue"),
-        props: true,
-      },
-      {
-        path: "schema-template",
-        name: WORKSPACE_ROUTE_SCHEMA_TEMPLATE,
-        meta: {
-          title: () => startCase(t("schema-template.self")),
-          requiredPermissionList: () => ["bb.policies.get"],
-        },
-        component: () => import("@/views/SettingWorkspaceSchemaTemplate.vue"),
         props: true,
       },
       {

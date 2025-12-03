@@ -283,10 +283,6 @@
     - [ListSettingsResponse](#bytebase-v1-ListSettingsResponse)
     - [PasswordRestrictionSetting](#bytebase-v1-PasswordRestrictionSetting)
     - [SCIMSetting](#bytebase-v1-SCIMSetting)
-    - [SchemaTemplateSetting](#bytebase-v1-SchemaTemplateSetting)
-    - [SchemaTemplateSetting.ColumnType](#bytebase-v1-SchemaTemplateSetting-ColumnType)
-    - [SchemaTemplateSetting.FieldTemplate](#bytebase-v1-SchemaTemplateSetting-FieldTemplate)
-    - [SchemaTemplateSetting.TableTemplate](#bytebase-v1-SchemaTemplateSetting-TableTemplate)
     - [SemanticTypeSetting](#bytebase-v1-SemanticTypeSetting)
     - [SemanticTypeSetting.SemanticType](#bytebase-v1-SemanticTypeSetting-SemanticType)
     - [Setting](#bytebase-v1-Setting)
@@ -5153,78 +5149,6 @@ The response message for getting a setting.
 
 
 
-<a name="bytebase-v1-SchemaTemplateSetting"></a>
-
-### SchemaTemplateSetting
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| field_templates | [SchemaTemplateSetting.FieldTemplate](#bytebase-v1-SchemaTemplateSetting-FieldTemplate) | repeated |  |
-| column_types | [SchemaTemplateSetting.ColumnType](#bytebase-v1-SchemaTemplateSetting-ColumnType) | repeated |  |
-| table_templates | [SchemaTemplateSetting.TableTemplate](#bytebase-v1-SchemaTemplateSetting-TableTemplate) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-SchemaTemplateSetting-ColumnType"></a>
-
-### SchemaTemplateSetting.ColumnType
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| engine | [Engine](#bytebase-v1-Engine) |  |  |
-| enabled | [bool](#bool) |  |  |
-| types | [string](#string) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-SchemaTemplateSetting-FieldTemplate"></a>
-
-### SchemaTemplateSetting.FieldTemplate
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  |  |
-| engine | [Engine](#bytebase-v1-Engine) |  |  |
-| category | [string](#string) |  |  |
-| column | [ColumnMetadata](#bytebase-v1-ColumnMetadata) |  |  |
-| catalog | [ColumnCatalog](#bytebase-v1-ColumnCatalog) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-SchemaTemplateSetting-TableTemplate"></a>
-
-### SchemaTemplateSetting.TableTemplate
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  |  |
-| engine | [Engine](#bytebase-v1-Engine) |  |  |
-| category | [string](#string) |  |  |
-| table | [TableMetadata](#bytebase-v1-TableMetadata) |  |  |
-| catalog | [TableCatalog](#bytebase-v1-TableCatalog) |  |  |
-
-
-
-
-
-
 <a name="bytebase-v1-SemanticTypeSetting"></a>
 
 ### SemanticTypeSetting
@@ -5307,7 +5231,6 @@ The data in setting value.
 | app_im_setting_value | [AppIMSetting](#bytebase-v1-AppIMSetting) |  |  |
 | workspace_profile_setting_value | [WorkspaceProfileSetting](#bytebase-v1-WorkspaceProfileSetting) |  | reserved 4; // was AgentPluginSetting agent_plugin_setting_value |
 | workspace_approval_setting_value | [WorkspaceApprovalSetting](#bytebase-v1-WorkspaceApprovalSetting) |  |  |
-| schema_template_setting_value | [SchemaTemplateSetting](#bytebase-v1-SchemaTemplateSetting) |  |  |
 | data_classification_setting_value | [DataClassificationSetting](#bytebase-v1-DataClassificationSetting) |  |  |
 | semantic_type_setting_value | [SemanticTypeSetting](#bytebase-v1-SemanticTypeSetting) |  |  |
 | scim_setting | [SCIMSetting](#bytebase-v1-SCIMSetting) |  |  |
@@ -5457,12 +5380,10 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | WORKSPACE_ID | 3 |  |
 | WORKSPACE_PROFILE | 4 |  |
 | WORKSPACE_APPROVAL | 5 |  |
-| WORKSPACE_EXTERNAL_APPROVAL | 6 |  |
 | ENTERPRISE_LICENSE | 7 |  |
 | APP_IM | 8 |  |
 | WATERMARK | 9 |  |
 | AI | 10 |  |
-| SCHEMA_TEMPLATE | 13 |  |
 | DATA_CLASSIFICATION | 14 |  |
 | SEMANTIC_TYPES | 15 |  |
 | SCIM | 17 |  |

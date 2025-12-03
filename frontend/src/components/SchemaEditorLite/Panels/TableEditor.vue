@@ -42,16 +42,6 @@
               <PlusIcon class="w-4 h-auto mr-1 text-gray-400" />
               {{ $t("schema-editor.actions.add-column") }}
             </NButton>
-            <NButton
-              size="small"
-              :disabled="disableChangeTable"
-              @click="state.showSchemaTemplateDrawer = true"
-            >
-              <template #icon>
-                <PlusIcon class="w-4 h-auto mr-1 text-gray-400" />
-              </template>
-              {{ $t("schema-editor.actions.add-from-template") }}
-            </NButton>
           </template>
           <NButton
             v-if="showIndexes"
@@ -162,21 +152,6 @@
     :foreign-key="editForeignKeyContext.foreignKey"
     @close="state.showEditColumnForeignKeyModal = false"
   />
-
-  <Drawer
-    :show="state.showSchemaTemplateDrawer"
-    @close="state.showSchemaTemplateDrawer = false"
-  >
-    <DrawerContent :title="$t('schema-template.field-template.self')">
-      <div class="w-[calc(100vw-36rem)] min-w-5xl max-w-[calc(100vw-8rem)]">
-        <FieldTemplates
-          :engine="engine"
-          :readonly="true"
-          @apply="handleApplyColumnTemplate"
-        />
-      </div>
-    </DrawerContent>
-  </Drawer>
 </template>
 
 <script lang="ts" setup>
@@ -186,7 +161,6 @@ import { ArrowLeftIcon, PlusIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { IndexIcon, TablePartitionIcon } from "@/components/Icon";
-import { Drawer, DrawerContent } from "@/components/v2";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
@@ -208,9 +182,7 @@ import {
   TablePartitionMetadata_Type,
   TablePartitionMetadataSchema,
 } from "@/types/proto-es/v1/database_service_pb";
-import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto-es/v1/setting_service_pb";
 import { instanceV1AllowsReorderColumns, randomString } from "@/utils";
-import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
 import { useSchemaEditorContext } from "../context";
 import EditColumnForeignKeyModal from "../Modals/EditColumnForeignKeyModal.vue";
 import {
@@ -242,7 +214,6 @@ const props = withDefaults(
 interface LocalState {
   mode: EditMode;
   showEditColumnForeignKeyModal: boolean;
-  showSchemaTemplateDrawer: boolean;
   showFeatureModal: boolean;
 }
 
@@ -285,7 +256,6 @@ const engine = computed((): Engine => {
 const state = reactive<LocalState>({
   mode: "COLUMNS",
   showEditColumnForeignKeyModal: false,
-  showSchemaTemplateDrawer: false,
   showFeatureModal: false,
 });
 
@@ -390,47 +360,6 @@ const handleAddColumn = () => {
     },
   });
 
-  events.emit("rebuild-tree", {
-    openFirstChild: false,
-  });
-};
-
-const handleApplyColumnTemplate = (
-  template: SchemaTemplateSetting_FieldTemplate
-) => {
-  state.showSchemaTemplateDrawer = false;
-  if (!template.column) {
-    return;
-  }
-  if (template.engine !== engine.value) {
-    return;
-  }
-  const column = convertNewColumnToOld(template.column);
-  /* eslint-disable-next-line vue/no-mutating-props */
-  props.table.columns.push(column);
-  if (template.catalog) {
-    upsertColumnCatalog(
-      {
-        database: props.db.name,
-        schema: props.schema.name,
-        table: props.table.name,
-        column: template.column.name,
-      },
-      (catalog) => {
-        Object.assign(catalog, template.catalog);
-      }
-    );
-  }
-  markColumnStatus(column, "created");
-  queuePendingScrollToColumn({
-    db: props.db,
-    metadata: {
-      database: props.database,
-      schema: props.schema,
-      table: props.table,
-      column,
-    },
-  });
   events.emit("rebuild-tree", {
     openFirstChild: false,
   });

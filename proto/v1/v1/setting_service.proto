@@ -102,12 +102,12 @@ message Setting {
     WORKSPACE_ID = 3;
     WORKSPACE_PROFILE = 4;
     WORKSPACE_APPROVAL = 5;
-    WORKSPACE_EXTERNAL_APPROVAL = 6;
+    reserved 6; // was WORKSPACE_EXTERNAL_APPROVAL
     ENTERPRISE_LICENSE = 7;
     APP_IM = 8;
     WATERMARK = 9;
     AI = 10;
-    SCHEMA_TEMPLATE = 13;
+    reserved 13; // was SCHEMA_TEMPLATE
     DATA_CLASSIFICATION = 14;
     SEMANTIC_TYPES = 15;
     SCIM = 17;
@@ -128,6 +128,7 @@ message Setting {
 // The data in setting value.
 message Value {
   reserved 18;
+  reserved 9; // was SchemaTemplateSetting schema_template_setting_value
 
   // Value is a oneof field for setting value.
   oneof value {
@@ -137,7 +138,6 @@ message Value {
     // reserved 4; // was AgentPluginSetting agent_plugin_setting_value
     WorkspaceProfileSetting workspace_profile_setting_value = 5;
     WorkspaceApprovalSetting workspace_approval_setting_value = 6;
-    SchemaTemplateSetting schema_template_setting_value = 9;
     DataClassificationSetting data_classification_setting_value = 10;
     SemanticTypeSetting semantic_type_setting_value = 11;
     SCIMSetting scim_setting = 14;
@@ -286,46 +286,6 @@ message WorkspaceApprovalSetting {
     }
   }
   repeated Rule rules = 1;
-}
-
-message SchemaTemplateSetting {
-  message FieldTemplate {
-    string id = 1;
-
-    Engine engine = 2;
-
-    string category = 3;
-
-    ColumnMetadata column = 4;
-
-    ColumnCatalog catalog = 5;
-  }
-
-  repeated FieldTemplate field_templates = 1;
-
-  message ColumnType {
-    Engine engine = 1;
-
-    bool enabled = 2;
-
-    repeated string types = 3;
-  }
-
-  repeated ColumnType column_types = 2;
-
-  message TableTemplate {
-    string id = 1;
-
-    Engine engine = 2;
-
-    string category = 3;
-
-    TableMetadata table = 4;
-
-    TableCatalog catalog = 5;
-  }
-
-  repeated TableTemplate table_templates = 3;
 }
 
 message DataClassificationSetting {

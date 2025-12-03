@@ -19,7 +19,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
-	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/plugin/webhook/dingtalk"
 	"github.com/bytebase/bytebase/backend/plugin/webhook/feishu"
 	"github.com/bytebase/bytebase/backend/plugin/webhook/lark"
@@ -61,8 +60,6 @@ var whitelistSettings = []storepb.SettingName{
 	storepb.SettingName_AI,
 	storepb.SettingName_WORKSPACE_APPROVAL,
 	storepb.SettingName_WORKSPACE_PROFILE,
-	storepb.SettingName_WORKSPACE_EXTERNAL_APPROVAL,
-	storepb.SettingName_SCHEMA_TEMPLATE,
 	storepb.SettingName_DATA_CLASSIFICATION,
 	storepb.SettingName_SEMANTIC_TYPES,
 	storepb.SettingName_SCIM,
@@ -403,22 +400,6 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		}
 		storeSettingValue = string(bytes)
 
-	case storepb.SettingName_SCHEMA_TEMPLATE:
-		schemaTemplateSetting := request.Msg.Setting.Value.GetSchemaTemplateSettingValue()
-		if schemaTemplateSetting == nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("value cannot be nil when setting schema template setting"))
-		}
-
-		if err := s.validateSchemaTemplate(ctx, schemaTemplateSetting); err != nil {
-			return nil, err
-		}
-
-		payload := convertV1SchemaTemplateSetting(schemaTemplateSetting)
-		bytes, err := protojson.Marshal(payload)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal external approval setting, error: %v", err))
-		}
-		storeSettingValue = string(bytes)
 	case storepb.SettingName_DATA_CLASSIFICATION:
 		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DATA_CLASSIFICATION); err != nil {
 			return nil, connect.NewError(connect.CodePermissionDenied, err)
@@ -643,81 +624,6 @@ var disallowedDomains = map[string]bool{
 	"126.com":        true,
 	"qq.com":         true,
 	"yeah.net":       true,
-}
-
-func (s *SettingService) validateSchemaTemplate(ctx context.Context, schemaTemplateSetting *v1pb.SchemaTemplateSetting) error {
-	oldStoreSetting, err := s.store.GetSettingV2(ctx, storepb.SettingName_SCHEMA_TEMPLATE)
-	if err != nil {
-		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get setting %q: %v", storepb.SettingName_SCHEMA_TEMPLATE, err))
-	}
-	settingValue := "{}"
-	if oldStoreSetting != nil {
-		settingValue = oldStoreSetting.Value
-	}
-
-	value := new(storepb.SchemaTemplateSetting)
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(settingValue), value); err != nil {
-		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %v with error: %v", storepb.SettingName_SCHEMA_TEMPLATE, err))
-	}
-	v1Value := convertToSchemaTemplateSetting(value)
-
-	// validate the changed field(column) template.
-	oldFieldTemplateMap := map[string]*v1pb.SchemaTemplateSetting_FieldTemplate{}
-	for _, template := range v1Value.FieldTemplates {
-		oldFieldTemplateMap[template.Id] = template
-	}
-	for _, template := range schemaTemplateSetting.FieldTemplates {
-		oldTemplate, ok := oldFieldTemplateMap[template.Id]
-		if ok && oldTemplate.Equal(template) {
-			continue
-		}
-		tableMetadata := &v1pb.TableMetadata{
-			Name:    "temp_table",
-			Columns: []*v1pb.ColumnMetadata{template.Column},
-		}
-		if err := validateTableMetadata(template.Engine, tableMetadata); err != nil {
-			return err
-		}
-	}
-
-	// validate the changed table template.
-	oldTableTemplateMap := map[string]*v1pb.SchemaTemplateSetting_TableTemplate{}
-	for _, template := range v1Value.TableTemplates {
-		oldTableTemplateMap[template.Id] = template
-	}
-	for _, template := range schemaTemplateSetting.TableTemplates {
-		oldTemplate, ok := oldTableTemplateMap[template.Id]
-		if ok && oldTemplate.Equal(template) {
-			continue
-		}
-		if err := validateTableMetadata(template.Engine, template.Table); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func validateTableMetadata(engine v1pb.Engine, tableMetadata *v1pb.TableMetadata) error {
-	tempSchema := &v1pb.SchemaMetadata{
-		Name:   "",
-		Tables: []*v1pb.TableMetadata{tableMetadata},
-	}
-	if engine == v1pb.Engine_POSTGRES {
-		tempSchema.Name = "temp_schema"
-	}
-	tempMetadata := &v1pb.DatabaseMetadata{
-		Name:    "temp_database",
-		Schemas: []*v1pb.SchemaMetadata{tempSchema},
-	}
-	tempStoreSchemaMetadata := convertV1DatabaseMetadata(tempMetadata)
-	if err := checkDatabaseMetadata(storepb.Engine(engine), tempStoreSchemaMetadata); err != nil {
-		return errors.Wrap(err, "failed to check database metadata")
-	}
-	if _, err := schema.GetDatabaseDefinition(storepb.Engine(engine), schema.GetDefinitionContext{}, tempStoreSchemaMetadata); err != nil {
-		return errors.Wrap(err, "failed to transform database metadata to schema string")
-	}
-	return nil
 }
 
 func settingInWhitelist(name storepb.SettingName) bool {

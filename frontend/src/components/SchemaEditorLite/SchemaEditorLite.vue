@@ -55,13 +55,6 @@ const emit = defineEmits<{
 
 const settingStore = useSettingV1Store();
 
-// Prepare schema template contexts.
-onMounted(async () => {
-  await settingStore.getOrFetchSettingByName(
-    Setting_SettingName.SCHEMA_TEMPLATE
-  );
-});
-
 const targets = computed(() => {
   return props.targets ?? [];
 });

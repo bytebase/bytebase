@@ -509,20 +509,7 @@ const isColumnPrimaryKey = (column: ColumnMetadata): boolean => {
 };
 
 const schemaTemplateColumnTypes = computed(() => {
-  const setting = settingStore.getSettingByName(
-    Setting_SettingName.SCHEMA_TEMPLATE
-  );
-  if (setting?.value?.value?.case === "schemaTemplateSettingValue") {
-    const columnTypes = setting.value.value.value.columnTypes;
-    if (columnTypes && columnTypes.length > 0) {
-      const columnType = columnTypes.find(
-        (columnType) => columnType.engine === props.engine
-      );
-      if (columnType && columnType.enabled) {
-        return columnType.types;
-      }
-    }
-  }
+  // SchemaTemplate feature has been removed
   return [];
 });
 

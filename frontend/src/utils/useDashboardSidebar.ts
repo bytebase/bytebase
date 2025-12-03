@@ -30,7 +30,6 @@ import {
   WORKSPACE_ROUTE_LANDING,
   WORKSPACE_ROUTE_MEMBERS,
   WORKSPACE_ROUTE_ROLES,
-  WORKSPACE_ROUTE_SCHEMA_TEMPLATE,
   WORKSPACE_ROUTE_SEMANTIC_TYPES,
   WORKSPACE_ROUTE_SQL_REVIEW,
   WORKSPACE_ROUTE_USER_PROFILE,
@@ -197,11 +196,6 @@ export const useDashboardSidebar = () => {
           {
             title: t("custom-approval.self"),
             name: WORKSPACE_ROUTE_CUSTOM_APPROVAL,
-            type: "route",
-          },
-          {
-            title: t("schema-template.self"),
-            name: WORKSPACE_ROUTE_SCHEMA_TEMPLATE,
             type: "route",
           },
         ],
