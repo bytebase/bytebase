@@ -128,7 +128,7 @@
               ref="userPasswordRef"
               v-model:password="state.editingUser!.password"
               v-model:password-confirm="state.passwordConfirm"
-              :password-restriction="passwordRestriction"
+              :password-restriction="passwordRestrictionSetting"
             />
           </div>
         </dl>

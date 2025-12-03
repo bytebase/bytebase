@@ -17,7 +17,7 @@
           v-model:password="state.password"
           v-model:password-confirm="state.passwordConfirm"
           :show-learn-more="false"
-          :password-restriction="passwordRestriction"
+          :password-restriction="passwordRestrictionSetting"
         />
         <NButton
           type="primary"
