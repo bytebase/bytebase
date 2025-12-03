@@ -1662,7 +1662,6 @@
     "edit-environment": "環境の編集",
     "mixed-values-for-label": "タグの値が異なります",
     "mixed-label-values-warning": "一部のタグには異なる値があり、タグの編集はバッチで適用されます",
-    "change-data": "データ変更",
     "table-detail": "テーブルの詳細",
     "batch-action-permission-denied": "データベース {action} に対する権限がありません",
     "batch-action-disabled": "異なるプロジェクトのデータベース {action} を比較できません",

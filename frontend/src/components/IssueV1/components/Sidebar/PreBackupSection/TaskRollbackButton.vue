@@ -80,7 +80,7 @@ const createRestoreIssue = async () => {
   const sqlStorageKey = `bb.issues.sql.${uuidv4()}`;
   useStorageStore().put(sqlStorageKey, statement);
   const query: LocationQueryRaw = {
-    template: "bb.issue.database.data.update",
+    template: "bb.issue.database.update",
     name: `Rollback ${selectedTask.value.target} in issue#${extractIssueUID(issue.value.name)}`,
     databaseList: selectedTask.value.target,
     description: `This issue is created to rollback the data of ${selectedTask.value.target} in issue #${extractIssueUID(issue.value.name)}`,

@@ -284,8 +284,7 @@ const allowToCreatePlan = computed(() => {
 });
 
 const handleSpecCreated = async (spec: Plan_Spec) => {
-  // Always use schema update template since we no longer distinguish DML from DDL
-  const template = "bb.issue.database.schema.update";
+  const template = "bb.issue.database.update";
   const targets = targetsForSpec(spec);
   const isDatabaseGroup = targets.every((target) =>
     isValidDatabaseGroupName(target)

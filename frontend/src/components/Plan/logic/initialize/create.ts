@@ -68,11 +68,7 @@ export const createPlanSkeleton = async (
 export const buildPlan = async (params: CreatePlanParams) => {
   if (
     !includes(
-      [
-        "bb.issue.database.data.update",
-        "bb.issue.database.schema.update",
-        "bb.issue.database.data.export",
-      ],
+      ["bb.issue.database.update", "bb.issue.database.data.export"],
       params.template
     )
   ) {
@@ -121,8 +117,7 @@ const buildSpecForTargetsV1 = async (
     id: uuidv4(),
   });
   switch (template) {
-    case "bb.issue.database.data.update":
-    case "bb.issue.database.schema.update": {
+    case "bb.issue.database.update": {
       spec.config = {
         case: "changeDatabaseConfig",
         value: createProto(Plan_ChangeDatabaseConfigSchema, {
@@ -130,9 +125,7 @@ const buildSpecForTargetsV1 = async (
           sheet,
           type: DatabaseChangeType.MIGRATE,
           enableGhost: false,
-          enablePriorBackup:
-            template === "bb.issue.database.data.update" &&
-            project.autoEnableBackup,
+          enablePriorBackup: project.autoEnableBackup,
         }),
       };
       break;

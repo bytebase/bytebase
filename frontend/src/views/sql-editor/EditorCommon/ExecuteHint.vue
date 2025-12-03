@@ -95,13 +95,13 @@ const actions = computed(() => {
 
 const descriptions = computed(() => {
   const descriptions = {
-    want: t("database.change-data").toLowerCase(),
+    want: t("database.change-database").toLowerCase(),
     action: "",
     reaction: "",
   };
   const { admin, issue } = actions.value;
   if (issue) {
-    descriptions.action = t("database.change-data");
+    descriptions.action = t("database.change-database");
     descriptions.reaction = t("sql-editor.and-submit-an-issue");
   } else if (admin) {
     descriptions.action = t("sql-editor.admin-mode.self");
@@ -137,8 +137,8 @@ const gotoCreateIssue = async () => {
       issueSlug: "create",
     },
     query: {
-      template: "bb.issue.database.data.update", // Default to DML issue template.
-      name: `[${db.databaseName}] Update from SQL Editor`,
+      template: "bb.issue.database.update",
+      name: `[${db.databaseName}] Change from SQL Editor`,
       databaseList: db.name,
       sqlStorageKey,
     },
