@@ -6,7 +6,7 @@ import type { DatabaseGroup } from "@/types/proto-es/v1/database_group_service_p
 import { extractProjectResourceName } from "../v1";
 
 export const generateDatabaseGroupIssueRoute = (
-  type: "bb.issue.database.schema.update" | "bb.issue.database.data.update",
+  type: "bb.issue.database.update",
   databaseGroup: DatabaseGroup,
   sql = ""
 ) => {

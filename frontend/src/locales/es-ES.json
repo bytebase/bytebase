@@ -1662,7 +1662,6 @@
     "edit-environment": "Editar entorno",
     "mixed-values-for-label": "Esta etiqueta seleccionada tiene valores mixtos.",
     "mixed-label-values-warning": "Algunos de los recursos seleccionados tienen valores mixtos para la misma clave",
-    "change-data": "Cambiar datos",
     "table-detail": "Detalle de la tabla",
     "batch-action-permission-denied": "No tengo permiso para {action} para bases de datos",
     "batch-action-disabled": "No se puede {action} para las bases de datos de diferentes proyectos",

@@ -29,7 +29,7 @@ const showDatabaseDriftedWarningDialog = () => {
 };
 
 export const preCreateIssue = async (project: string, targets: string[]) => {
-  const type = "bb.issue.database.schema.update";
+  const type = "bb.issue.database.update";
   const databaseStore = useDatabaseV1Store();
   const dbGroupStore = useDBGroupStore();
 
