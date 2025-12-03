@@ -125,6 +125,7 @@ import SchemaDiagram, { SchemaDiagramIcon } from "@/components/SchemaDiagram";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
+  ColumnMetadata,
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
