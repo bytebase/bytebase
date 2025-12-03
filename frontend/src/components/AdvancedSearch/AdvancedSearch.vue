@@ -116,9 +116,9 @@ const props = withDefaults(
     placeholder?: string | undefined;
     autofocus?: boolean;
     overrideRouteQuery?: boolean;
-    // When provided, AdvancedSearch will restore from cache if available,
-    // otherwise use these defaults. This signals that the parent doesn't have
-    // URL params and wants AdvancedSearch to decide between cache vs defaults.
+    // Fallback params when no URL params and no cache.
+    // Precedence: URL params > cache > defaultParams.
+    // Readonly scopes from props.params are always preserved.
     defaultParams?: SearchParams;
   }>(),
   {
