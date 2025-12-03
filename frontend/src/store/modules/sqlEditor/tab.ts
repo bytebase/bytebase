@@ -56,48 +56,6 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     () => `${LOCAL_STORAGE_KEY_PREFIX}.${project.value}.${userUID.value}`
   );
 
-  const loadStoredTabs = async () => {
-    const validTabList: PersistentTab[] = [];
-    for (const tab of openTabList.value) {
-      let fullTab: SQLEditorTab | undefined;
-      if (tab.worksheet) {
-        const worksheet = await worksheetStore.getOrFetchWorksheetByName(
-          tab.worksheet,
-          true
-        );
-        if (!worksheet) {
-          continue;
-        }
-        const statement = getSheetStatement(worksheet);
-        const connection = await extractWorksheetConnection(worksheet);
-
-        fullTab = {
-          ...defaultSQLEditorTab(),
-          ...tab,
-          connection,
-          worksheet: worksheet.name,
-          title: worksheet.title,
-          statement,
-          status: "CLEAN",
-        };
-      } else {
-        const draft = draftTabList.value.find((item) => item.id === tab.id);
-        if (!draft) {
-          continue;
-        }
-        fullTab = draft;
-      }
-      if (!fullTab) {
-        continue;
-      }
-
-      validTabList.push(tab);
-      tabsById.set(tab.id, fullTab);
-    }
-
-    openTabList.value = validTabList;
-  };
-
   const draftTabList = useDynamicLocalStorage<SQLEditorTab[]>(
     computed(() => `${keyNamespace.value}.draft-tab-list`),
     [],
@@ -124,6 +82,52 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
       listenToStorageChanges: false,
     }
   );
+
+  const loadStoredTabs = async () => {
+    const validTabList: PersistentTab[] = [];
+    for (const tab of openTabList.value) {
+      let fullTab: SQLEditorTab | undefined;
+      if (tab.worksheet) {
+        const worksheet = await worksheetStore.getOrFetchWorksheetByName(
+          tab.worksheet,
+          true
+        );
+        if (!worksheet) {
+          continue;
+        }
+        const statement = getSheetStatement(worksheet);
+        const connection = await extractWorksheetConnection(worksheet);
+
+        fullTab = {
+          ...defaultSQLEditorTab(),
+          ...tab,
+          connection,
+          worksheet: worksheet.name,
+          title: worksheet.title,
+          statement,
+          status: "CLEAN",
+          databaseQueryContexts: undefined,
+        };
+      } else {
+        const draft = draftTabList.value.find((item) => item.id === tab.id);
+        if (!draft) {
+          continue;
+        }
+        fullTab = {
+          ...draft,
+          databaseQueryContexts: undefined,
+        };
+      }
+      if (!fullTab) {
+        continue;
+      }
+
+      validTabList.push(tab);
+      tabsById.set(tab.id, fullTab);
+    }
+
+    openTabList.value = validTabList;
+  };
 
   const maybeInitProject = async () => {
     tabsById.clear();
