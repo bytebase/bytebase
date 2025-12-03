@@ -2895,12 +2895,9 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | SETTING_NAME_UNSPECIFIED | 0 |  |
-| AUTH_SECRET | 1 |  |
 | BRANDING_LOGO | 2 |  |
-| WORKSPACE_ID | 3 |  |
 | WORKSPACE_PROFILE | 4 |  |
 | WORKSPACE_APPROVAL | 5 |  |
-| ENTERPRISE_LICENSE | 7 |  |
 | APP_IM | 8 |  |
 | WATERMARK | 9 |  |
 | AI | 10 |  |

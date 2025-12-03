@@ -52,20 +52,11 @@ func NewSettingService(
 	}
 }
 
-// Some settings contain secret info so we only return settings that are needed by the client.
-var whitelistSettings = []storepb.SettingName{
-	storepb.SettingName_BRANDING_LOGO,
-	storepb.SettingName_WORKSPACE_ID,
-	storepb.SettingName_APP_IM,
-	storepb.SettingName_WATERMARK,
-	storepb.SettingName_AI,
-	storepb.SettingName_WORKSPACE_APPROVAL,
-	storepb.SettingName_WORKSPACE_PROFILE,
-	storepb.SettingName_DATA_CLASSIFICATION,
-	storepb.SettingName_SEMANTIC_TYPES,
-	storepb.SettingName_SCIM,
-	storepb.SettingName_PASSWORD_RESTRICTION,
-	storepb.SettingName_ENVIRONMENT,
+// Backend-only settings that should never be exposed via the API.
+var disallowedSettings = []storepb.SettingName{
+	storepb.SettingName_AUTH_SECRET,        // Internal authentication secret
+	storepb.SettingName_WORKSPACE_ID,       // Exposed via ActuatorInfo instead
+	storepb.SettingName_ENTERPRISE_LICENSE, // Managed via SubscriptionService
 }
 
 // ListSettings lists all settings.
@@ -77,7 +68,7 @@ func (s *SettingService) ListSettings(ctx context.Context, _ *connect.Request[v1
 
 	response := &v1pb.ListSettingsResponse{}
 	for _, setting := range settings {
-		if !settingInWhitelist(setting.Name) {
+		if isSettingDisallowed(setting.Name) {
 			continue
 		}
 		settingMessage, err := convertToSettingMessage(setting, s.profile)
@@ -102,7 +93,7 @@ func (s *SettingService) GetSetting(ctx context.Context, request *connect.Reques
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid setting name: %v", err))
 	}
-	if !settingInWhitelist(apiSettingName) {
+	if isSettingDisallowed(apiSettingName) {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("setting is not available"))
 	}
 
@@ -648,9 +639,9 @@ var disallowedDomains = map[string]bool{
 	"yeah.net":       true,
 }
 
-func settingInWhitelist(name storepb.SettingName) bool {
-	for _, whitelist := range whitelistSettings {
-		if name == whitelist {
+func isSettingDisallowed(name storepb.SettingName) bool {
+	for _, disallowed := range disallowedSettings {
+		if name == disallowed {
 			return true
 		}
 	}

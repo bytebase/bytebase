@@ -179,18 +179,12 @@ func convertStoreSettingNameToV1(storeName storepb.SettingName) v1pb.Setting_Set
 	switch storeName {
 	case storepb.SettingName_SETTING_NAME_UNSPECIFIED:
 		return v1pb.Setting_SETTING_NAME_UNSPECIFIED
-	case storepb.SettingName_AUTH_SECRET:
-		return v1pb.Setting_AUTH_SECRET
 	case storepb.SettingName_BRANDING_LOGO:
 		return v1pb.Setting_BRANDING_LOGO
-	case storepb.SettingName_WORKSPACE_ID:
-		return v1pb.Setting_WORKSPACE_ID
 	case storepb.SettingName_WORKSPACE_PROFILE:
 		return v1pb.Setting_WORKSPACE_PROFILE
 	case storepb.SettingName_WORKSPACE_APPROVAL:
 		return v1pb.Setting_WORKSPACE_APPROVAL
-	case storepb.SettingName_ENTERPRISE_LICENSE:
-		return v1pb.Setting_ENTERPRISE_LICENSE
 	case storepb.SettingName_APP_IM:
 		return v1pb.Setting_APP_IM
 	case storepb.SettingName_WATERMARK:
@@ -207,6 +201,8 @@ func convertStoreSettingNameToV1(storeName storepb.SettingName) v1pb.Setting_Set
 		return v1pb.Setting_PASSWORD_RESTRICTION
 	case storepb.SettingName_ENVIRONMENT:
 		return v1pb.Setting_ENVIRONMENT
+	case storepb.SettingName_AUTH_SECRET, storepb.SettingName_WORKSPACE_ID, storepb.SettingName_ENTERPRISE_LICENSE:
+		// Backend-only settings, not exposed in v1 API
 	default:
 	}
 	return v1pb.Setting_SETTING_NAME_UNSPECIFIED
@@ -218,18 +214,12 @@ func convertV1SettingNameToStore(v1Name v1pb.Setting_SettingName) storepb.Settin
 	switch v1Name {
 	case v1pb.Setting_SETTING_NAME_UNSPECIFIED:
 		return storepb.SettingName_SETTING_NAME_UNSPECIFIED
-	case v1pb.Setting_AUTH_SECRET:
-		return storepb.SettingName_AUTH_SECRET
 	case v1pb.Setting_BRANDING_LOGO:
 		return storepb.SettingName_BRANDING_LOGO
-	case v1pb.Setting_WORKSPACE_ID:
-		return storepb.SettingName_WORKSPACE_ID
 	case v1pb.Setting_WORKSPACE_PROFILE:
 		return storepb.SettingName_WORKSPACE_PROFILE
 	case v1pb.Setting_WORKSPACE_APPROVAL:
 		return storepb.SettingName_WORKSPACE_APPROVAL
-	case v1pb.Setting_ENTERPRISE_LICENSE:
-		return storepb.SettingName_ENTERPRISE_LICENSE
 	case v1pb.Setting_APP_IM:
 		return storepb.SettingName_APP_IM
 	case v1pb.Setting_WATERMARK:

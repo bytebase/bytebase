@@ -159,19 +159,9 @@ export enum Setting_SettingName {
   SETTING_NAME_UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: AUTH_SECRET = 1;
-   */
-  AUTH_SECRET = 1,
-
-  /**
    * @generated from enum value: BRANDING_LOGO = 2;
    */
   BRANDING_LOGO = 2,
-
-  /**
-   * @generated from enum value: WORKSPACE_ID = 3;
-   */
-  WORKSPACE_ID = 3,
 
   /**
    * @generated from enum value: WORKSPACE_PROFILE = 4;
@@ -182,11 +172,6 @@ export enum Setting_SettingName {
    * @generated from enum value: WORKSPACE_APPROVAL = 5;
    */
   WORKSPACE_APPROVAL = 5,
-
-  /**
-   * @generated from enum value: ENTERPRISE_LICENSE = 7;
-   */
-  ENTERPRISE_LICENSE = 7,
 
   /**
    * @generated from enum value: APP_IM = 8;
