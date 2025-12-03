@@ -554,7 +554,7 @@ INSERT INTO setting (name, value) VALUES ('ENTERPRISE_LICENSE', '');
 INSERT INTO setting (name, value) VALUES ('APP_IM', '{}');
 INSERT INTO setting (name, value) VALUES ('WATERMARK', '0');
 INSERT INTO setting (name, value) VALUES ('DATA_CLASSIFICATION', '{}');
-INSERT INTO setting (name, value) VALUES ('WORKSPACE_APPROVAL', '{}');
+INSERT INTO setting (name, value) VALUES ('WORKSPACE_APPROVAL', '{"rules":[{"template":{"flow":{"roles":["roles/projectOwner"]},"title":"Fallback Rule","description":"Requires project owner approval when no other rules match."},"condition":{"expression":"true"}}]}');
 INSERT INTO setting (name, value) VALUES ('PASSWORD_RESTRICTION', '{"minLength":8}');
 INSERT INTO setting (name, value) VALUES ('WORKSPACE_PROFILE', '{"enableMetricCollection":true}');
 INSERT INTO setting (name, value) VALUES ('ENVIRONMENT', '{"environments":[{"title":"Test","id":"test"},{"title":"Prod","id":"prod"}]}');
