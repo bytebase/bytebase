@@ -636,7 +636,7 @@ onMounted(() => {
     }, new Map<SearchScopeId, boolean>());
     params.scopes = params.scopes
       .filter((scope) => {
-        const option = props.scopeOptions.find((op) => op.id === scope.id)
+        const option = props.scopeOptions.find((op) => op.id === scope.id);
         if (!option) {
           return false;
         }

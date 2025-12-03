@@ -11,10 +11,9 @@
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import GrantAccessForm from "@/components/SensitiveData/GrantAccessForm.vue";
+import { useBodyLayoutContext } from "@/layouts/common";
 import { useProjectByName } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import { useBodyLayoutContext } from "@/layouts/common";
-
 
 const props = defineProps<{
   projectId: string;

@@ -252,6 +252,7 @@ import { useRouter } from "vue-router";
 import { BBAttention, BBButtonConfirm } from "@/bbkit";
 import RequiredStar from "@/components/RequiredStar.vue";
 import FormLayout from "@/components/v2/Form/FormLayout.vue";
+import { useBodyLayoutContext } from "@/layouts/common";
 import {
   PROJECT_V1_ROUTE_WEBHOOK_DETAIL,
   PROJECT_V1_ROUTE_WEBHOOKS,
@@ -276,7 +277,6 @@ import {
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { projectWebhookV1Slug } from "../utils";
 import WebhookTypeIcon from "./Project/WebhookTypeIcon.vue";
-import { useBodyLayoutContext } from "@/layouts/common";
 
 interface LocalState {
   webhook: Webhook;

@@ -107,10 +107,12 @@ export const useSQLEditorTreeByEnvironment = (
           environment,
         },
       });
-      response.push(...databases.filter((db) => {
-        const dbEnv = db.effectiveEnvironment || unknownEnv.name;
-        return dbEnv === environment;
-      }));
+      response.push(
+        ...databases.filter((db) => {
+          const dbEnv = db.effectiveEnvironment || unknownEnv.name;
+          return dbEnv === environment;
+        })
+      );
       pageToken = nextPageToken;
 
       if (!pageToken) {
