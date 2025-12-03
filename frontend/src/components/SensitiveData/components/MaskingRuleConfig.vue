@@ -175,7 +175,7 @@ const semanticTypeSettingValue = computed(() => {
   const semanticTypeSetting = settingStore.getSettingByName(
     Setting_SettingName.SEMANTIC_TYPES
   );
-  if (semanticTypeSetting?.value?.value?.case === "semanticTypeSettingValue") {
+  if (semanticTypeSetting?.value?.value?.case === "semanticType") {
     return semanticTypeSetting.value.value.value.types ?? [];
   }
   return [];

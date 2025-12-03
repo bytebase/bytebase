@@ -28,7 +28,7 @@ type SettingMessage struct {
 	Value string
 }
 
-func (s *Store) GetPasswordRestrictionSetting(ctx context.Context) (*storepb.PasswordRestrictionSetting, error) {
+func (s *Store) GetPasswordRestriction(ctx context.Context) (*storepb.PasswordRestrictionSetting, error) {
 	passwordRestriction := &storepb.PasswordRestrictionSetting{
 		MinLength: 8,
 	}
@@ -158,7 +158,7 @@ func (s *Store) GetAISetting(ctx context.Context) (*storepb.AISetting, error) {
 	return aiSetting, nil
 }
 
-func (s *Store) GetEnvironmentSetting(ctx context.Context) (*storepb.EnvironmentSetting, error) {
+func (s *Store) GetEnvironment(ctx context.Context) (*storepb.EnvironmentSetting, error) {
 	envSetting := &storepb.EnvironmentSetting{}
 	setting, err := s.GetSettingV2(ctx, storepb.SettingName_ENVIRONMENT)
 	if err != nil {

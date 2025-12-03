@@ -1,14 +1,14 @@
 import { toJson, toJsonString } from "@bufbuild/protobuf";
-import { ValueSchema } from "@bufbuild/protobuf/wkt";
+import { SettingValueSchema } from "@bufbuild/protobuf/wkt";
 import dayjs from "dayjs";
 import { getDateForPbTimestampProtoEs } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
   RowValue,
-  RowValue_Timestamp,
-  RowValue_TimestampTZ,
+  RowSettingValue_Timestamp,
+  RowSettingValue_TimestampTZ,
 } from "@/types/proto-es/v1/sql_service_pb";
-import { RowValueSchema } from "@/types/proto-es/v1/sql_service_pb";
+import { RowSettingValueSchema } from "@/types/proto-es/v1/sql_service_pb";
 import { isNullOrUndefined } from "../util";
 
 // extractSQLRowValuePlain extracts a plain value from a RowValue.
@@ -17,7 +17,7 @@ export const extractSQLRowValuePlain = (value: RowValue | undefined) => {
     return null;
   }
 
-  const plainObject = toJson(RowValueSchema, value);
+  const plainObject = toJson(RowSettingValueSchema, value);
   if (plainObject === null) {
     return undefined;
   }
@@ -86,13 +86,13 @@ export const extractSQLRowValuePlain = (value: RowValue | undefined) => {
     return formatTimestampWithTz(value.kind.value);
   }
   if (value.kind?.case === "valueValue") {
-    return toJsonString(ValueSchema, value.kind.value);
+    return toJsonString(SettingValueSchema, value.kind.value);
   }
 
   return Object.values(plainObject)[0];
 };
 
-const formatTimestamp = (timestamp: RowValue_Timestamp) => {
+const formatTimestamp = (timestamp: RowSettingValue_Timestamp) => {
   const fullDayjs = dayjs(
     getDateForPbTimestampProtoEs(timestamp.googleTimestamp)
   ).utc();
@@ -107,7 +107,9 @@ const formatTimestamp = (timestamp: RowValue_Timestamp) => {
   return formattedTimestamp;
 };
 
-const formatTimestampWithTz = (timestampTzValue: RowValue_TimestampTZ) => {
+const formatTimestampWithTz = (
+  timestampTzValue: RowSettingValue_TimestampTZ
+) => {
   const fullDayjs = dayjs(
     getDateForPbTimestampProtoEs(timestampTzValue.googleTimestamp)
   )
@@ -304,7 +306,7 @@ const extractSQLRowValueRaw = (value: RowValue | undefined) => {
   if (typeof value === "undefined" || value.kind?.case === "nullValue") {
     return null;
   }
-  const j = toJson(RowValueSchema, value);
+  const j = toJson(RowSettingValueSchema, value);
   if (j === null) {
     return undefined;
   }

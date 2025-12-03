@@ -85,8 +85,6 @@ message UpdateSettingRequest {
 
 // The schema of setting.
 message Setting {
-  reserved 16;
-
   option (google.api.resource) = {
     type: "bytebase.com/Setting"
     pattern: "settings/{setting}"
@@ -99,12 +97,10 @@ message Setting {
     WORKSPACE_ID = 3;
     WORKSPACE_PROFILE = 4;
     WORKSPACE_APPROVAL = 5;
-    reserved 6; // was WORKSPACE_EXTERNAL_APPROVAL
     ENTERPRISE_LICENSE = 7;
     APP_IM = 8;
     WATERMARK = 9;
     AI = 10;
-    reserved 13; // was SCHEMA_TEMPLATE
     DATA_CLASSIFICATION = 14;
     SEMANTIC_TYPES = 15;
     SCIM = 17;
@@ -112,35 +108,29 @@ message Setting {
     ENVIRONMENT = 19;
   }
 
-  // The resource name of the setting. Must be one of the following forms:
-  //
-  // - `setting/{setting}`
-  // For example, "settings/bb.branding.logo"
-  string name = 1;
+  // The resource name of the setting.
+  // Format: settings/{setting}
+  // Example: "settings/SEMANTIC_TYPES"
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
 
   // The configuration value of the setting.
-  Value value = 2;
+  SettingValue value = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
 // The data in setting value.
-message Value {
-  reserved 18;
-  reserved 9; // was SchemaTemplateSetting schema_template_setting_value
-
-  // Value is a oneof field for setting value.
+message SettingValue {
   oneof value {
     // Defines this value as being a string value.
     string string_value = 1;
-    AppIMSetting app_im_setting_value = 3;
-    // reserved 4; // was AgentPluginSetting agent_plugin_setting_value
-    WorkspaceProfileSetting workspace_profile_setting_value = 5;
-    WorkspaceApprovalSetting workspace_approval_setting_value = 6;
-    DataClassificationSetting data_classification_setting_value = 10;
-    SemanticTypeSetting semantic_type_setting_value = 11;
-    SCIMSetting scim_setting = 14;
-    PasswordRestrictionSetting password_restriction_setting = 15;
-    AISetting ai_setting = 16;
-    EnvironmentSetting environment_setting = 17;
+    AppIMSetting app_im = 3;
+    WorkspaceProfileSetting workspace_profile = 5;
+    WorkspaceApprovalSetting workspace_approval = 6;
+    DataClassificationSetting data_classification = 10;
+    SemanticTypeSetting semantic_type = 11;
+    SCIMSetting scim = 14;
+    PasswordRestrictionSetting password_restriction = 15;
+    AISetting ai = 16;
+    EnvironmentSetting environment = 17;
   }
 }
 

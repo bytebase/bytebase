@@ -621,13 +621,12 @@ func (x *UpdateSettingRequest) GetUpdateMask() *fieldmaskpb.FieldMask {
 // The schema of setting.
 type Setting struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The resource name of the setting. Must be one of the following forms:
-	//
-	// - `setting/{setting}`
-	// For example, "settings/bb.branding.logo"
+	// The resource name of the setting.
+	// Format: settings/{setting}
+	// Example: "settings/SEMANTIC_TYPES"
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The configuration value of the setting.
-	Value         *Value `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+	Value         *SettingValue `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -669,7 +668,7 @@ func (x *Setting) GetName() string {
 	return ""
 }
 
-func (x *Setting) GetValue() *Value {
+func (x *Setting) GetValue() *SettingValue {
 	if x != nil {
 		return x.Value
 	}
@@ -677,41 +676,39 @@ func (x *Setting) GetValue() *Value {
 }
 
 // The data in setting value.
-type Value struct {
+type SettingValue struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Value is a oneof field for setting value.
-	//
 	// Types that are valid to be assigned to Value:
 	//
-	//	*Value_StringValue
-	//	*Value_AppImSettingValue
-	//	*Value_WorkspaceProfileSettingValue
-	//	*Value_WorkspaceApprovalSettingValue
-	//	*Value_DataClassificationSettingValue
-	//	*Value_SemanticTypeSettingValue
-	//	*Value_ScimSetting
-	//	*Value_PasswordRestrictionSetting
-	//	*Value_AiSetting
-	//	*Value_EnvironmentSetting
-	Value         isValue_Value `protobuf_oneof:"value"`
+	//	*SettingValue_StringValue
+	//	*SettingValue_AppIm
+	//	*SettingValue_WorkspaceProfile
+	//	*SettingValue_WorkspaceApproval
+	//	*SettingValue_DataClassification
+	//	*SettingValue_SemanticType
+	//	*SettingValue_Scim
+	//	*SettingValue_PasswordRestriction
+	//	*SettingValue_Ai
+	//	*SettingValue_Environment
+	Value         isSettingValue_Value `protobuf_oneof:"value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *Value) Reset() {
-	*x = Value{}
+func (x *SettingValue) Reset() {
+	*x = SettingValue{}
 	mi := &file_v1_setting_service_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *Value) String() string {
+func (x *SettingValue) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Value) ProtoMessage() {}
+func (*SettingValue) ProtoMessage() {}
 
-func (x *Value) ProtoReflect() protoreflect.Message {
+func (x *SettingValue) ProtoReflect() protoreflect.Message {
 	mi := &file_v1_setting_service_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -723,173 +720,172 @@ func (x *Value) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Value.ProtoReflect.Descriptor instead.
-func (*Value) Descriptor() ([]byte, []int) {
+// Deprecated: Use SettingValue.ProtoReflect.Descriptor instead.
+func (*SettingValue) Descriptor() ([]byte, []int) {
 	return file_v1_setting_service_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *Value) GetValue() isValue_Value {
+func (x *SettingValue) GetValue() isSettingValue_Value {
 	if x != nil {
 		return x.Value
 	}
 	return nil
 }
 
-func (x *Value) GetStringValue() string {
+func (x *SettingValue) GetStringValue() string {
 	if x != nil {
-		if x, ok := x.Value.(*Value_StringValue); ok {
+		if x, ok := x.Value.(*SettingValue_StringValue); ok {
 			return x.StringValue
 		}
 	}
 	return ""
 }
 
-func (x *Value) GetAppImSettingValue() *AppIMSetting {
+func (x *SettingValue) GetAppIm() *AppIMSetting {
 	if x != nil {
-		if x, ok := x.Value.(*Value_AppImSettingValue); ok {
-			return x.AppImSettingValue
+		if x, ok := x.Value.(*SettingValue_AppIm); ok {
+			return x.AppIm
 		}
 	}
 	return nil
 }
 
-func (x *Value) GetWorkspaceProfileSettingValue() *WorkspaceProfileSetting {
+func (x *SettingValue) GetWorkspaceProfile() *WorkspaceProfileSetting {
 	if x != nil {
-		if x, ok := x.Value.(*Value_WorkspaceProfileSettingValue); ok {
-			return x.WorkspaceProfileSettingValue
+		if x, ok := x.Value.(*SettingValue_WorkspaceProfile); ok {
+			return x.WorkspaceProfile
 		}
 	}
 	return nil
 }
 
-func (x *Value) GetWorkspaceApprovalSettingValue() *WorkspaceApprovalSetting {
+func (x *SettingValue) GetWorkspaceApproval() *WorkspaceApprovalSetting {
 	if x != nil {
-		if x, ok := x.Value.(*Value_WorkspaceApprovalSettingValue); ok {
-			return x.WorkspaceApprovalSettingValue
+		if x, ok := x.Value.(*SettingValue_WorkspaceApproval); ok {
+			return x.WorkspaceApproval
 		}
 	}
 	return nil
 }
 
-func (x *Value) GetDataClassificationSettingValue() *DataClassificationSetting {
+func (x *SettingValue) GetDataClassification() *DataClassificationSetting {
 	if x != nil {
-		if x, ok := x.Value.(*Value_DataClassificationSettingValue); ok {
-			return x.DataClassificationSettingValue
+		if x, ok := x.Value.(*SettingValue_DataClassification); ok {
+			return x.DataClassification
 		}
 	}
 	return nil
 }
 
-func (x *Value) GetSemanticTypeSettingValue() *SemanticTypeSetting {
+func (x *SettingValue) GetSemanticType() *SemanticTypeSetting {
 	if x != nil {
-		if x, ok := x.Value.(*Value_SemanticTypeSettingValue); ok {
-			return x.SemanticTypeSettingValue
+		if x, ok := x.Value.(*SettingValue_SemanticType); ok {
+			return x.SemanticType
 		}
 	}
 	return nil
 }
 
-func (x *Value) GetScimSetting() *SCIMSetting {
+func (x *SettingValue) GetScim() *SCIMSetting {
 	if x != nil {
-		if x, ok := x.Value.(*Value_ScimSetting); ok {
-			return x.ScimSetting
+		if x, ok := x.Value.(*SettingValue_Scim); ok {
+			return x.Scim
 		}
 	}
 	return nil
 }
 
-func (x *Value) GetPasswordRestrictionSetting() *PasswordRestrictionSetting {
+func (x *SettingValue) GetPasswordRestriction() *PasswordRestrictionSetting {
 	if x != nil {
-		if x, ok := x.Value.(*Value_PasswordRestrictionSetting); ok {
-			return x.PasswordRestrictionSetting
+		if x, ok := x.Value.(*SettingValue_PasswordRestriction); ok {
+			return x.PasswordRestriction
 		}
 	}
 	return nil
 }
 
-func (x *Value) GetAiSetting() *AISetting {
+func (x *SettingValue) GetAi() *AISetting {
 	if x != nil {
-		if x, ok := x.Value.(*Value_AiSetting); ok {
-			return x.AiSetting
+		if x, ok := x.Value.(*SettingValue_Ai); ok {
+			return x.Ai
 		}
 	}
 	return nil
 }
 
-func (x *Value) GetEnvironmentSetting() *EnvironmentSetting {
+func (x *SettingValue) GetEnvironment() *EnvironmentSetting {
 	if x != nil {
-		if x, ok := x.Value.(*Value_EnvironmentSetting); ok {
-			return x.EnvironmentSetting
+		if x, ok := x.Value.(*SettingValue_Environment); ok {
+			return x.Environment
 		}
 	}
 	return nil
 }
 
-type isValue_Value interface {
-	isValue_Value()
+type isSettingValue_Value interface {
+	isSettingValue_Value()
 }
 
-type Value_StringValue struct {
+type SettingValue_StringValue struct {
 	// Defines this value as being a string value.
 	StringValue string `protobuf:"bytes,1,opt,name=string_value,json=stringValue,proto3,oneof"`
 }
 
-type Value_AppImSettingValue struct {
-	AppImSettingValue *AppIMSetting `protobuf:"bytes,3,opt,name=app_im_setting_value,json=appImSettingValue,proto3,oneof"`
+type SettingValue_AppIm struct {
+	AppIm *AppIMSetting `protobuf:"bytes,3,opt,name=app_im,json=appIm,proto3,oneof"`
 }
 
-type Value_WorkspaceProfileSettingValue struct {
-	// reserved 4; // was AgentPluginSetting agent_plugin_setting_value
-	WorkspaceProfileSettingValue *WorkspaceProfileSetting `protobuf:"bytes,5,opt,name=workspace_profile_setting_value,json=workspaceProfileSettingValue,proto3,oneof"`
+type SettingValue_WorkspaceProfile struct {
+	WorkspaceProfile *WorkspaceProfileSetting `protobuf:"bytes,5,opt,name=workspace_profile,json=workspaceProfile,proto3,oneof"`
 }
 
-type Value_WorkspaceApprovalSettingValue struct {
-	WorkspaceApprovalSettingValue *WorkspaceApprovalSetting `protobuf:"bytes,6,opt,name=workspace_approval_setting_value,json=workspaceApprovalSettingValue,proto3,oneof"`
+type SettingValue_WorkspaceApproval struct {
+	WorkspaceApproval *WorkspaceApprovalSetting `protobuf:"bytes,6,opt,name=workspace_approval,json=workspaceApproval,proto3,oneof"`
 }
 
-type Value_DataClassificationSettingValue struct {
-	DataClassificationSettingValue *DataClassificationSetting `protobuf:"bytes,10,opt,name=data_classification_setting_value,json=dataClassificationSettingValue,proto3,oneof"`
+type SettingValue_DataClassification struct {
+	DataClassification *DataClassificationSetting `protobuf:"bytes,10,opt,name=data_classification,json=dataClassification,proto3,oneof"`
 }
 
-type Value_SemanticTypeSettingValue struct {
-	SemanticTypeSettingValue *SemanticTypeSetting `protobuf:"bytes,11,opt,name=semantic_type_setting_value,json=semanticTypeSettingValue,proto3,oneof"`
+type SettingValue_SemanticType struct {
+	SemanticType *SemanticTypeSetting `protobuf:"bytes,11,opt,name=semantic_type,json=semanticType,proto3,oneof"`
 }
 
-type Value_ScimSetting struct {
-	ScimSetting *SCIMSetting `protobuf:"bytes,14,opt,name=scim_setting,json=scimSetting,proto3,oneof"`
+type SettingValue_Scim struct {
+	Scim *SCIMSetting `protobuf:"bytes,14,opt,name=scim,proto3,oneof"`
 }
 
-type Value_PasswordRestrictionSetting struct {
-	PasswordRestrictionSetting *PasswordRestrictionSetting `protobuf:"bytes,15,opt,name=password_restriction_setting,json=passwordRestrictionSetting,proto3,oneof"`
+type SettingValue_PasswordRestriction struct {
+	PasswordRestriction *PasswordRestrictionSetting `protobuf:"bytes,15,opt,name=password_restriction,json=passwordRestriction,proto3,oneof"`
 }
 
-type Value_AiSetting struct {
-	AiSetting *AISetting `protobuf:"bytes,16,opt,name=ai_setting,json=aiSetting,proto3,oneof"`
+type SettingValue_Ai struct {
+	Ai *AISetting `protobuf:"bytes,16,opt,name=ai,proto3,oneof"`
 }
 
-type Value_EnvironmentSetting struct {
-	EnvironmentSetting *EnvironmentSetting `protobuf:"bytes,17,opt,name=environment_setting,json=environmentSetting,proto3,oneof"`
+type SettingValue_Environment struct {
+	Environment *EnvironmentSetting `protobuf:"bytes,17,opt,name=environment,proto3,oneof"`
 }
 
-func (*Value_StringValue) isValue_Value() {}
+func (*SettingValue_StringValue) isSettingValue_Value() {}
 
-func (*Value_AppImSettingValue) isValue_Value() {}
+func (*SettingValue_AppIm) isSettingValue_Value() {}
 
-func (*Value_WorkspaceProfileSettingValue) isValue_Value() {}
+func (*SettingValue_WorkspaceProfile) isSettingValue_Value() {}
 
-func (*Value_WorkspaceApprovalSettingValue) isValue_Value() {}
+func (*SettingValue_WorkspaceApproval) isSettingValue_Value() {}
 
-func (*Value_DataClassificationSettingValue) isValue_Value() {}
+func (*SettingValue_DataClassification) isSettingValue_Value() {}
 
-func (*Value_SemanticTypeSettingValue) isValue_Value() {}
+func (*SettingValue_SemanticType) isSettingValue_Value() {}
 
-func (*Value_ScimSetting) isValue_Value() {}
+func (*SettingValue_Scim) isSettingValue_Value() {}
 
-func (*Value_PasswordRestrictionSetting) isValue_Value() {}
+func (*SettingValue_PasswordRestriction) isSettingValue_Value() {}
 
-func (*Value_AiSetting) isValue_Value() {}
+func (*SettingValue_Ai) isSettingValue_Value() {}
 
-func (*Value_EnvironmentSetting) isValue_Value() {}
+func (*SettingValue_Environment) isSettingValue_Value() {}
 
 type AppIMSetting struct {
 	state         protoimpl.MessageState    `protogen:"open.v1"`
@@ -2813,10 +2809,10 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\rvalidate_only\x18\x02 \x01(\bR\fvalidateOnly\x12#\n" +
 	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\x12;\n" +
 	"\vupdate_mask\x18\x04 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask\"\xb8\x03\n" +
-	"\aSetting\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12(\n" +
-	"\x05value\x18\x02 \x01(\v2\x12.bytebase.v1.ValueR\x05value\"\xb9\x02\n" +
+	"updateMask\"\xb7\x03\n" +
+	"\aSetting\x12\x17\n" +
+	"\x04name\x18\x01 \x01(\tB\x03\xe0A\bR\x04name\x124\n" +
+	"\x05value\x18\x02 \x01(\v2\x19.bytebase.v1.SettingValueB\x03\xe0A\x02R\x05value\"\xad\x02\n" +
 	"\vSettingName\x12\x1c\n" +
 	"\x18SETTING_NAME_UNSPECIFIED\x10\x00\x12\x0f\n" +
 	"\vAUTH_SECRET\x10\x01\x12\x11\n" +
@@ -2834,23 +2830,21 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x0eSEMANTIC_TYPES\x10\x0f\x12\b\n" +
 	"\x04SCIM\x10\x11\x12\x18\n" +
 	"\x14PASSWORD_RESTRICTION\x10\x12\x12\x0f\n" +
-	"\vENVIRONMENT\x10\x13\"\x04\b\x06\x10\x06\"\x04\b\r\x10\r:-\xeaA*\n" +
-	"\x14bytebase.com/Setting\x12\x12settings/{setting}J\x04\b\x10\x10\x11\"\x81\a\n" +
-	"\x05Value\x12#\n" +
-	"\fstring_value\x18\x01 \x01(\tH\x00R\vstringValue\x12L\n" +
-	"\x14app_im_setting_value\x18\x03 \x01(\v2\x19.bytebase.v1.AppIMSettingH\x00R\x11appImSettingValue\x12m\n" +
-	"\x1fworkspace_profile_setting_value\x18\x05 \x01(\v2$.bytebase.v1.WorkspaceProfileSettingH\x00R\x1cworkspaceProfileSettingValue\x12p\n" +
-	" workspace_approval_setting_value\x18\x06 \x01(\v2%.bytebase.v1.WorkspaceApprovalSettingH\x00R\x1dworkspaceApprovalSettingValue\x12s\n" +
-	"!data_classification_setting_value\x18\n" +
-	" \x01(\v2&.bytebase.v1.DataClassificationSettingH\x00R\x1edataClassificationSettingValue\x12a\n" +
-	"\x1bsemantic_type_setting_value\x18\v \x01(\v2 .bytebase.v1.SemanticTypeSettingH\x00R\x18semanticTypeSettingValue\x12=\n" +
-	"\fscim_setting\x18\x0e \x01(\v2\x18.bytebase.v1.SCIMSettingH\x00R\vscimSetting\x12k\n" +
-	"\x1cpassword_restriction_setting\x18\x0f \x01(\v2'.bytebase.v1.PasswordRestrictionSettingH\x00R\x1apasswordRestrictionSetting\x127\n" +
-	"\n" +
-	"ai_setting\x18\x10 \x01(\v2\x16.bytebase.v1.AISettingH\x00R\taiSetting\x12R\n" +
-	"\x13environment_setting\x18\x11 \x01(\v2\x1f.bytebase.v1.EnvironmentSettingH\x00R\x12environmentSettingB\a\n" +
-	"\x05valueJ\x04\b\x12\x10\x13J\x04\b\t\x10\n" +
-	"\"\xd3\x06\n" +
+	"\vENVIRONMENT\x10\x13:-\xeaA*\n" +
+	"\x14bytebase.com/Setting\x12\x12settings/{setting}\"\xbe\x05\n" +
+	"\fSettingValue\x12#\n" +
+	"\fstring_value\x18\x01 \x01(\tH\x00R\vstringValue\x122\n" +
+	"\x06app_im\x18\x03 \x01(\v2\x19.bytebase.v1.AppIMSettingH\x00R\x05appIm\x12S\n" +
+	"\x11workspace_profile\x18\x05 \x01(\v2$.bytebase.v1.WorkspaceProfileSettingH\x00R\x10workspaceProfile\x12V\n" +
+	"\x12workspace_approval\x18\x06 \x01(\v2%.bytebase.v1.WorkspaceApprovalSettingH\x00R\x11workspaceApproval\x12Y\n" +
+	"\x13data_classification\x18\n" +
+	" \x01(\v2&.bytebase.v1.DataClassificationSettingH\x00R\x12dataClassification\x12G\n" +
+	"\rsemantic_type\x18\v \x01(\v2 .bytebase.v1.SemanticTypeSettingH\x00R\fsemanticType\x12.\n" +
+	"\x04scim\x18\x0e \x01(\v2\x18.bytebase.v1.SCIMSettingH\x00R\x04scim\x12\\\n" +
+	"\x14password_restriction\x18\x0f \x01(\v2'.bytebase.v1.PasswordRestrictionSettingH\x00R\x13passwordRestriction\x12(\n" +
+	"\x02ai\x18\x10 \x01(\v2\x16.bytebase.v1.AISettingH\x00R\x02ai\x12C\n" +
+	"\venvironment\x18\x11 \x01(\v2\x1f.bytebase.v1.EnvironmentSettingH\x00R\venvironmentB\a\n" +
+	"\x05value\"\xd3\x06\n" +
 	"\fAppIMSetting\x12?\n" +
 	"\bsettings\x18\x01 \x03(\v2#.bytebase.v1.AppIMSetting.IMSettingR\bsettings\x1a\"\n" +
 	"\x05Slack\x12\x19\n" +
@@ -3050,7 +3044,7 @@ var file_v1_setting_service_proto_goTypes = []any{
 	(*GetSettingResponse)(nil),                                       // 9: bytebase.v1.GetSettingResponse
 	(*UpdateSettingRequest)(nil),                                     // 10: bytebase.v1.UpdateSettingRequest
 	(*Setting)(nil),                                                  // 11: bytebase.v1.Setting
-	(*Value)(nil),                                                    // 12: bytebase.v1.Value
+	(*SettingValue)(nil),                                             // 12: bytebase.v1.SettingValue
 	(*AppIMSetting)(nil),                                             // 13: bytebase.v1.AppIMSetting
 	(*WorkspaceProfileSetting)(nil),                                  // 14: bytebase.v1.WorkspaceProfileSetting
 	(*Announcement)(nil),                                             // 15: bytebase.v1.Announcement
@@ -3092,16 +3086,16 @@ var file_v1_setting_service_proto_depIdxs = []int32{
 	11, // 1: bytebase.v1.GetSettingResponse.setting:type_name -> bytebase.v1.Setting
 	11, // 2: bytebase.v1.UpdateSettingRequest.setting:type_name -> bytebase.v1.Setting
 	43, // 3: bytebase.v1.UpdateSettingRequest.update_mask:type_name -> google.protobuf.FieldMask
-	12, // 4: bytebase.v1.Setting.value:type_name -> bytebase.v1.Value
-	13, // 5: bytebase.v1.Value.app_im_setting_value:type_name -> bytebase.v1.AppIMSetting
-	14, // 6: bytebase.v1.Value.workspace_profile_setting_value:type_name -> bytebase.v1.WorkspaceProfileSetting
-	16, // 7: bytebase.v1.Value.workspace_approval_setting_value:type_name -> bytebase.v1.WorkspaceApprovalSetting
-	17, // 8: bytebase.v1.Value.data_classification_setting_value:type_name -> bytebase.v1.DataClassificationSetting
-	18, // 9: bytebase.v1.Value.semantic_type_setting_value:type_name -> bytebase.v1.SemanticTypeSetting
-	20, // 10: bytebase.v1.Value.scim_setting:type_name -> bytebase.v1.SCIMSetting
-	21, // 11: bytebase.v1.Value.password_restriction_setting:type_name -> bytebase.v1.PasswordRestrictionSetting
-	22, // 12: bytebase.v1.Value.ai_setting:type_name -> bytebase.v1.AISetting
-	23, // 13: bytebase.v1.Value.environment_setting:type_name -> bytebase.v1.EnvironmentSetting
+	12, // 4: bytebase.v1.Setting.value:type_name -> bytebase.v1.SettingValue
+	13, // 5: bytebase.v1.SettingValue.app_im:type_name -> bytebase.v1.AppIMSetting
+	14, // 6: bytebase.v1.SettingValue.workspace_profile:type_name -> bytebase.v1.WorkspaceProfileSetting
+	16, // 7: bytebase.v1.SettingValue.workspace_approval:type_name -> bytebase.v1.WorkspaceApprovalSetting
+	17, // 8: bytebase.v1.SettingValue.data_classification:type_name -> bytebase.v1.DataClassificationSetting
+	18, // 9: bytebase.v1.SettingValue.semantic_type:type_name -> bytebase.v1.SemanticTypeSetting
+	20, // 10: bytebase.v1.SettingValue.scim:type_name -> bytebase.v1.SCIMSetting
+	21, // 11: bytebase.v1.SettingValue.password_restriction:type_name -> bytebase.v1.PasswordRestrictionSetting
+	22, // 12: bytebase.v1.SettingValue.ai:type_name -> bytebase.v1.AISetting
+	23, // 13: bytebase.v1.SettingValue.environment:type_name -> bytebase.v1.EnvironmentSetting
 	29, // 14: bytebase.v1.AppIMSetting.settings:type_name -> bytebase.v1.AppIMSetting.IMSetting
 	44, // 15: bytebase.v1.WorkspaceProfileSetting.token_duration:type_name -> google.protobuf.Duration
 	15, // 16: bytebase.v1.WorkspaceProfileSetting.announcement:type_name -> bytebase.v1.Announcement
@@ -3157,16 +3151,16 @@ func file_v1_setting_service_proto_init() {
 	file_v1_issue_service_proto_init()
 	file_v1_project_service_proto_init()
 	file_v1_setting_service_proto_msgTypes[6].OneofWrappers = []any{
-		(*Value_StringValue)(nil),
-		(*Value_AppImSettingValue)(nil),
-		(*Value_WorkspaceProfileSettingValue)(nil),
-		(*Value_WorkspaceApprovalSettingValue)(nil),
-		(*Value_DataClassificationSettingValue)(nil),
-		(*Value_SemanticTypeSettingValue)(nil),
-		(*Value_ScimSetting)(nil),
-		(*Value_PasswordRestrictionSetting)(nil),
-		(*Value_AiSetting)(nil),
-		(*Value_EnvironmentSetting)(nil),
+		(*SettingValue_StringValue)(nil),
+		(*SettingValue_AppIm)(nil),
+		(*SettingValue_WorkspaceProfile)(nil),
+		(*SettingValue_WorkspaceApproval)(nil),
+		(*SettingValue_DataClassification)(nil),
+		(*SettingValue_SemanticType)(nil),
+		(*SettingValue_Scim)(nil),
+		(*SettingValue_PasswordRestriction)(nil),
+		(*SettingValue_Ai)(nil),
+		(*SettingValue_Environment)(nil),
 	}
 	file_v1_setting_service_proto_msgTypes[13].OneofWrappers = []any{
 		(*Algorithm_FullMask_)(nil),

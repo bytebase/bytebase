@@ -303,7 +303,7 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 }
 
 func (s *UserService) validatePassword(ctx context.Context, password string) error {
-	passwordRestriction, err := s.store.GetPasswordRestrictionSetting(ctx)
+	passwordRestriction, err := s.store.GetPasswordRestriction(ctx)
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get password restriction with error: %v", err))
 	}

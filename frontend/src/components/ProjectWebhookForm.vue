@@ -351,7 +351,7 @@ const imSetting = computed(() => {
   const setting = settingStore.getSettingByName(Setting_SettingName.APP_IM);
   if (!setting?.value?.value) return undefined;
   const value = setting.value.value;
-  if (value.case === "appImSettingValue") {
+  if (value.case === "appIm") {
     return value.value;
   }
   return undefined;

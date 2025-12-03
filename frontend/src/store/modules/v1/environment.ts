@@ -83,7 +83,7 @@ const getEnvironmentSetting = async (
     contextValues: createContextValues().set(silentContextKey, silent),
   });
   // Extract environments from proto-es format
-  if (response.value?.value?.case === "environmentSetting") {
+  if (response.value?.value?.case === "environment") {
     const settingEnvironments = response.value.value.value.environments ?? [];
     return convertToEnvironments(settingEnvironments);
   }
@@ -97,7 +97,7 @@ const updateEnvironmentSetting = async (
     name: `settings/${Setting_SettingName[Setting_SettingName.ENVIRONMENT]}`,
     value: {
       value: {
-        case: "environmentSetting",
+        case: "environment",
         value: environment,
       },
     },
@@ -110,7 +110,7 @@ const updateEnvironmentSetting = async (
   const response = await settingServiceClientConnect.updateSetting(request);
 
   // Extract environments from proto-es response
-  if (response.value?.value?.case === "environmentSetting") {
+  if (response.value?.value?.case === "environment") {
     const settingEnvironments = response.value.value.value.environments ?? [];
     return convertToEnvironments(settingEnvironments);
   }

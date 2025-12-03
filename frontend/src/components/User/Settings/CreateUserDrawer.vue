@@ -91,7 +91,7 @@
               ref="userPasswordRef"
               v-model:password="state.user.password"
               v-model:password-confirm="state.passwordConfirm"
-              :password-restriction="passwordRestrictionSetting"
+              :password-restriction="passwordRestriction"
             />
           </template>
         </div>

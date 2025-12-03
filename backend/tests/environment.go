@@ -19,7 +19,7 @@ func (ctl *controller) getEnvironment(ctx context.Context, id string) (*v1pb.Env
 	if err != nil {
 		return nil, err
 	}
-	for _, environment := range resp.Msg.Value.GetEnvironmentSetting().GetEnvironments() {
+	for _, environment := range resp.Msg.Value.GetEnvironment().GetEnvironments() {
 		if environment.Id == id {
 			return environment, nil
 		}
@@ -39,7 +39,7 @@ func (ctl *controller) createEnvironment(ctx context.Context, id, title string) 
 	if err != nil {
 		return nil, err
 	}
-	environments := resp.Msg.Value.GetEnvironmentSetting().GetEnvironments()
+	environments := resp.Msg.Value.GetEnvironment().GetEnvironments()
 	environments = append(environments, &v1pb.EnvironmentSetting_Environment{
 		Id:    id,
 		Title: title,
@@ -48,16 +48,16 @@ func (ctl *controller) createEnvironment(ctx context.Context, id, title string) 
 		connect.NewRequest(&v1pb.UpdateSettingRequest{
 			Setting: &v1pb.Setting{
 				Name: "settings/" + v1pb.Setting_ENVIRONMENT.String(),
-				Value: &v1pb.Value{
-					Value: &v1pb.Value_EnvironmentSetting{
-						EnvironmentSetting: &v1pb.EnvironmentSetting{
+				Value: &v1pb.SettingValue{
+					Value: &v1pb.SettingValue_Environment{
+						Environment: &v1pb.EnvironmentSetting{
 							Environments: environments,
 						},
 					},
 				},
 			},
 			UpdateMask: &fieldmaskpb.FieldMask{
-				Paths: []string{"environment_setting"},
+				Paths: []string{"environment"},
 			},
 		}))
 	if err != nil {

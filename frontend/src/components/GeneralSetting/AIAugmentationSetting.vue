@@ -173,7 +173,7 @@ import {
   AISetting_Provider,
   AISettingSchema,
   Setting_SettingName,
-  ValueSchema as SettingValueSchema,
+  SettingValueSchema as SettingSettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
 
 interface LocalState {
@@ -204,7 +204,7 @@ const state = reactive<LocalState>({
 
 const aiSetting = computed(() => {
   const setting = settingV1Store.getSettingByName(Setting_SettingName.AI);
-  if (setting?.value?.value?.case === "aiSetting") {
+  if (setting?.value?.value?.case === "ai") {
     return setting.value.value.value;
   }
   return undefined;
@@ -330,9 +330,9 @@ const toggleAIEnabled = (on: boolean) => {
 const updateAISetting = async () => {
   await settingV1Store.upsertSetting({
     name: Setting_SettingName.AI,
-    value: create(SettingValueSchema, {
+    value: create(SettingSettingValueSchema, {
       value: {
-        case: "aiSetting",
+        case: "ai",
         value: create(AISettingSchema, {
           enabled: state.enabled,
           apiKey: state.apiKey,

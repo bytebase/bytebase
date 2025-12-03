@@ -143,7 +143,7 @@ const onUpdate = async () => {
         externalUrl: state.externalUrl,
       },
       updateMask: create(FieldMaskSchema, {
-        paths: ["value.workspace_profile_setting_value.external_url"],
+        paths: ["value.workspace_profile.external_url"],
       }),
     });
   }
@@ -153,7 +153,7 @@ const onUpdate = async () => {
         databaseChangeMode: state.databaseChangeMode,
       },
       updateMask: create(FieldMaskSchema, {
-        paths: ["value.workspace_profile_setting_value.database_change_mode"],
+        paths: ["value.workspace_profile.database_change_mode"],
       }),
     });
     if (state.databaseChangeMode === DatabaseChangeMode.EDITOR) {

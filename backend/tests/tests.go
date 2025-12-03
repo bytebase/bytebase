@@ -219,9 +219,9 @@ func (ctl *controller) initWorkspaceProfile(ctx context.Context) error {
 		AllowMissing: true,
 		Setting: &v1pb.Setting{
 			Name: "settings/" + v1pb.Setting_WORKSPACE_PROFILE.String(),
-			Value: &v1pb.Value{
-				Value: &v1pb.Value_WorkspaceProfileSettingValue{
-					WorkspaceProfileSettingValue: &v1pb.WorkspaceProfileSetting{
+			Value: &v1pb.SettingValue{
+				Value: &v1pb.SettingValue_WorkspaceProfile{
+					WorkspaceProfile: &v1pb.WorkspaceProfileSetting{
 						DisallowSignup: false,
 					},
 				},
@@ -229,7 +229,7 @@ func (ctl *controller) initWorkspaceProfile(ctx context.Context) error {
 		},
 		UpdateMask: &fieldmaskpb.FieldMask{
 			Paths: []string{
-				"value.workspace_profile_setting_value.disallow_signup",
+				"value.workspace_profile.disallow_signup",
 			},
 		},
 	}))

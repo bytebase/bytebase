@@ -1221,7 +1221,7 @@ func getPlanSpecDatabaseGroups(specs []*storepb.PlanConfig_Spec) []string {
 
 // getAllEnvironmentIDs returns all environment IDs from the store.
 func getAllEnvironmentIDs(ctx context.Context, s *store.Store) ([]string, error) {
-	environments, err := s.GetEnvironmentSetting(ctx)
+	environments, err := s.GetEnvironment(ctx)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list environments")
 	}

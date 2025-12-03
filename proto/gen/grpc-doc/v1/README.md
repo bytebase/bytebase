@@ -137,8 +137,8 @@
     - [SemanticTypeSetting](#bytebase-v1-SemanticTypeSetting)
     - [SemanticTypeSetting.SemanticType](#bytebase-v1-SemanticTypeSetting-SemanticType)
     - [Setting](#bytebase-v1-Setting)
+    - [SettingValue](#bytebase-v1-SettingValue)
     - [UpdateSettingRequest](#bytebase-v1-UpdateSettingRequest)
-    - [Value](#bytebase-v1-Value)
     - [WorkspaceApprovalSetting](#bytebase-v1-WorkspaceApprovalSetting)
     - [WorkspaceApprovalSetting.Rule](#bytebase-v1-WorkspaceApprovalSetting-Rule)
     - [WorkspaceProfileSetting](#bytebase-v1-WorkspaceProfileSetting)
@@ -2694,10 +2694,32 @@ The schema of setting.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The resource name of the setting. Must be one of the following forms:
+| name | [string](#string) |  | The resource name of the setting. Format: settings/{setting} Example: &#34;settings/SEMANTIC_TYPES&#34; |
+| value | [SettingValue](#bytebase-v1-SettingValue) |  | The configuration value of the setting. |
 
-- `setting/{setting}` For example, &#34;settings/bb.branding.logo&#34; |
-| value | [Value](#bytebase-v1-Value) |  | The configuration value of the setting. |
+
+
+
+
+
+<a name="bytebase-v1-SettingValue"></a>
+
+### SettingValue
+The data in setting value.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| string_value | [string](#string) |  | Defines this value as being a string value. |
+| app_im | [AppIMSetting](#bytebase-v1-AppIMSetting) |  |  |
+| workspace_profile | [WorkspaceProfileSetting](#bytebase-v1-WorkspaceProfileSetting) |  |  |
+| workspace_approval | [WorkspaceApprovalSetting](#bytebase-v1-WorkspaceApprovalSetting) |  |  |
+| data_classification | [DataClassificationSetting](#bytebase-v1-DataClassificationSetting) |  |  |
+| semantic_type | [SemanticTypeSetting](#bytebase-v1-SemanticTypeSetting) |  |  |
+| scim | [SCIMSetting](#bytebase-v1-SCIMSetting) |  |  |
+| password_restriction | [PasswordRestrictionSetting](#bytebase-v1-PasswordRestrictionSetting) |  |  |
+| ai | [AISetting](#bytebase-v1-AISetting) |  |  |
+| environment | [EnvironmentSetting](#bytebase-v1-EnvironmentSetting) |  |  |
 
 
 
@@ -2716,30 +2738,6 @@ The request message for updating or creating a setting.
 | validate_only | [bool](#bool) |  | validate_only is a flag to indicate whether to validate the setting value, server would not persist the setting value if it is true. |
 | allow_missing | [bool](#bool) |  |  |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-Value"></a>
-
-### Value
-The data in setting value.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| string_value | [string](#string) |  | Defines this value as being a string value. |
-| app_im_setting_value | [AppIMSetting](#bytebase-v1-AppIMSetting) |  |  |
-| workspace_profile_setting_value | [WorkspaceProfileSetting](#bytebase-v1-WorkspaceProfileSetting) |  | reserved 4; // was AgentPluginSetting agent_plugin_setting_value |
-| workspace_approval_setting_value | [WorkspaceApprovalSetting](#bytebase-v1-WorkspaceApprovalSetting) |  |  |
-| data_classification_setting_value | [DataClassificationSetting](#bytebase-v1-DataClassificationSetting) |  |  |
-| semantic_type_setting_value | [SemanticTypeSetting](#bytebase-v1-SemanticTypeSetting) |  |  |
-| scim_setting | [SCIMSetting](#bytebase-v1-SCIMSetting) |  |  |
-| password_restriction_setting | [PasswordRestrictionSetting](#bytebase-v1-PasswordRestrictionSetting) |  |  |
-| ai_setting | [AISetting](#bytebase-v1-AISetting) |  |  |
-| environment_setting | [EnvironmentSetting](#bytebase-v1-EnvironmentSetting) |  |  |
 
 
 

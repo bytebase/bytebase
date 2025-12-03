@@ -13,10 +13,10 @@ import {
   type PasswordRestrictionSetting,
   PasswordRestrictionSettingSchema,
   type Setting,
+  type SettingValue,
   Setting_SettingName,
   SettingSchema,
-  type Value as SettingValue,
-  ValueSchema as SettingValueSchema,
+  SettingValueSchema,
   UpdateSettingRequestSchema,
   type WorkspaceProfileSetting,
   WorkspaceProfileSettingSchema,
@@ -38,7 +38,7 @@ export const useSettingV1Store = defineStore("setting_v1", {
       );
       if (!setting?.value?.value) return undefined;
       const value = setting.value.value;
-      if (value.case === "workspaceProfileSettingValue") {
+      if (value.case === "workspaceProfile") {
         return value.value;
       }
       return undefined;
@@ -60,7 +60,7 @@ export const useSettingV1Store = defineStore("setting_v1", {
       );
       if (!setting?.value?.value) return [];
       const value = setting.value.value;
-      if (value.case === "dataClassificationSettingValue") {
+      if (value.case === "dataClassification") {
         return value.value.configs;
       }
       return [];
@@ -76,7 +76,7 @@ export const useSettingV1Store = defineStore("setting_v1", {
         });
       }
       const value = setting.value.value;
-      if (value.case === "passwordRestrictionSetting") {
+      if (value.case === "passwordRestriction") {
         return value.value;
       }
       return create(PasswordRestrictionSettingSchema, {
@@ -94,7 +94,7 @@ export const useSettingV1Store = defineStore("setting_v1", {
       );
       if (!setting?.value?.value) return undefined;
       const value = setting.value.value;
-      if (value.case === "dataClassificationSettingValue") {
+      if (value.case === "dataClassification") {
         return value.value.configs.find(
           (config) => config.id === classificationId
         );
@@ -185,9 +185,9 @@ export const useSettingV1Store = defineStore("setting_v1", {
       );
       await this.upsertSetting({
         name: Setting_SettingName.WORKSPACE_PROFILE,
-        value: create(SettingValueSchema, {
+        value: create(SettingSettingValueSchema, {
           value: {
-            case: "workspaceProfileSettingValue",
+            case: "workspaceProfile",
             value: profileSetting,
           },
         }),

@@ -698,11 +698,11 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.UpdateSettingRequest"><span class="badge">M</span>UpdateSettingRequest</a>
+                  <a href="#bytebase.v1.SettingValue"><span class="badge">M</span>SettingValue</a>
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.Value"><span class="badge">M</span>Value</a>
+                  <a href="#bytebase.v1.UpdateSettingRequest"><span class="badge">M</span>UpdateSettingRequest</a>
                 </li>
               
                 <li>
@@ -7917,17 +7917,103 @@ are /[a-z][0-9]-/. </p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The resource name of the setting. Must be one of the following forms:
-
-- `setting/{setting}`
-For example, &#34;settings/bb.branding.logo&#34; </p></td>
+                  <td><p>The resource name of the setting.
+Format: settings/{setting}
+Example: &#34;settings/SEMANTIC_TYPES&#34; </p></td>
                 </tr>
               
                 <tr>
                   <td>value</td>
-                  <td><a href="#bytebase.v1.Value">Value</a></td>
+                  <td><a href="#bytebase.v1.SettingValue">SettingValue</a></td>
                   <td></td>
                   <td><p>The configuration value of the setting. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.SettingValue">SettingValue</h3>
+        <p>The data in setting value.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>string_value</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Defines this value as being a string value. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>app_im</td>
+                  <td><a href="#bytebase.v1.AppIMSetting">AppIMSetting</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>workspace_profile</td>
+                  <td><a href="#bytebase.v1.WorkspaceProfileSetting">WorkspaceProfileSetting</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>workspace_approval</td>
+                  <td><a href="#bytebase.v1.WorkspaceApprovalSetting">WorkspaceApprovalSetting</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>data_classification</td>
+                  <td><a href="#bytebase.v1.DataClassificationSetting">DataClassificationSetting</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>semantic_type</td>
+                  <td><a href="#bytebase.v1.SemanticTypeSetting">SemanticTypeSetting</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>scim</td>
+                  <td><a href="#bytebase.v1.SCIMSetting">SCIMSetting</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>password_restriction</td>
+                  <td><a href="#bytebase.v1.PasswordRestrictionSetting">PasswordRestrictionSetting</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ai</td>
+                  <td><a href="#bytebase.v1.AISetting">AISetting</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>environment</td>
+                  <td><a href="#bytebase.v1.EnvironmentSetting">EnvironmentSetting</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -7972,93 +8058,6 @@ server would not persist the setting value if it is true. </p></td>
                 <tr>
                   <td>update_mask</td>
                   <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.Value">Value</h3>
-        <p>The data in setting value.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>string_value</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Defines this value as being a string value. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>app_im_setting_value</td>
-                  <td><a href="#bytebase.v1.AppIMSetting">AppIMSetting</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>workspace_profile_setting_value</td>
-                  <td><a href="#bytebase.v1.WorkspaceProfileSetting">WorkspaceProfileSetting</a></td>
-                  <td></td>
-                  <td><p>reserved 4; // was AgentPluginSetting agent_plugin_setting_value </p></td>
-                </tr>
-              
-                <tr>
-                  <td>workspace_approval_setting_value</td>
-                  <td><a href="#bytebase.v1.WorkspaceApprovalSetting">WorkspaceApprovalSetting</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>data_classification_setting_value</td>
-                  <td><a href="#bytebase.v1.DataClassificationSetting">DataClassificationSetting</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>semantic_type_setting_value</td>
-                  <td><a href="#bytebase.v1.SemanticTypeSetting">SemanticTypeSetting</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>scim_setting</td>
-                  <td><a href="#bytebase.v1.SCIMSetting">SCIMSetting</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>password_restriction_setting</td>
-                  <td><a href="#bytebase.v1.PasswordRestrictionSetting">PasswordRestrictionSetting</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>ai_setting</td>
-                  <td><a href="#bytebase.v1.AISetting">AISetting</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>environment_setting</td>
-                  <td><a href="#bytebase.v1.EnvironmentSetting">EnvironmentSetting</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>

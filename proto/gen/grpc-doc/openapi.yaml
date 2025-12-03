@@ -12886,20 +12886,46 @@ components:
                     description: The current etag of the policy.
             description: Request message for setting an IAM policy.
         Setting:
+            required:
+                - value
             type: object
             properties:
                 name:
                     type: string
                     description: |-
-                        The resource name of the setting. Must be one of the following forms:
-
-                         - `setting/{setting}`
-                         For example, "settings/bb.branding.logo"
+                        The resource name of the setting.
+                         Format: settings/{setting}
+                         Example: "settings/SEMANTIC_TYPES"
                 value:
                     allOf:
-                        - $ref: '#/components/schemas/Value'
+                        - $ref: '#/components/schemas/SettingValue'
                     description: The configuration value of the setting.
             description: The schema of setting.
+        SettingValue:
+            type: object
+            properties:
+                stringValue:
+                    type: string
+                    description: Defines this value as being a string value.
+                appIm:
+                    $ref: '#/components/schemas/AppIMSetting'
+                workspaceProfile:
+                    $ref: '#/components/schemas/WorkspaceProfileSetting'
+                workspaceApproval:
+                    $ref: '#/components/schemas/WorkspaceApprovalSetting'
+                dataClassification:
+                    $ref: '#/components/schemas/DataClassificationSetting'
+                semanticType:
+                    $ref: '#/components/schemas/SemanticTypeSetting'
+                scim:
+                    $ref: '#/components/schemas/SCIMSetting'
+                passwordRestriction:
+                    $ref: '#/components/schemas/PasswordRestrictionSetting'
+                ai:
+                    $ref: '#/components/schemas/AISetting'
+                environment:
+                    $ref: '#/components/schemas/EnvironmentSetting'
+            description: The data in setting value.
         Sheet:
             required:
                 - name
@@ -13688,33 +13714,6 @@ components:
                 source:
                     type: string
                     description: source means where the user comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID.
-        Value:
-            type: object
-            properties:
-                stringValue:
-                    type: string
-                    description: Defines this value as being a string value.
-                appImSettingValue:
-                    $ref: '#/components/schemas/AppIMSetting'
-                workspaceProfileSettingValue:
-                    allOf:
-                        - $ref: '#/components/schemas/WorkspaceProfileSetting'
-                    description: reserved 4; // was AgentPluginSetting agent_plugin_setting_value
-                workspaceApprovalSettingValue:
-                    $ref: '#/components/schemas/WorkspaceApprovalSetting'
-                dataClassificationSettingValue:
-                    $ref: '#/components/schemas/DataClassificationSetting'
-                semanticTypeSettingValue:
-                    $ref: '#/components/schemas/SemanticTypeSetting'
-                scimSetting:
-                    $ref: '#/components/schemas/SCIMSetting'
-                passwordRestrictionSetting:
-                    $ref: '#/components/schemas/PasswordRestrictionSetting'
-                aiSetting:
-                    $ref: '#/components/schemas/AISetting'
-                environmentSetting:
-                    $ref: '#/components/schemas/EnvironmentSetting'
-            description: The data in setting value.
         Webhook:
             required:
                 - type
