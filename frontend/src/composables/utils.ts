@@ -6,7 +6,7 @@ import type { SQLResultSetV1 } from "@/types";
 import type { QueryRow, RowValue } from "@/types/proto-es/v1/sql_service_pb";
 import {
   QueryRowSchema,
-  RowSettingValueSchema,
+  RowValueSchema,
 } from "@/types/proto-es/v1/sql_service_pb";
 
 type NoSQLRowData = {
@@ -106,7 +106,7 @@ const convertAnyToRowValue = (
     case "number": {
       if (Math.floor(value) === value) {
         return {
-          value: createProto(RowSettingValueSchema, {
+          value: createProto(RowValueSchema, {
             kind: {
               case: "int32Value",
               value: value,
@@ -116,7 +116,7 @@ const convertAnyToRowValue = (
         };
       }
       return {
-        value: createProto(RowSettingValueSchema, {
+        value: createProto(RowValueSchema, {
           kind: {
             case: "floatValue",
             value: value,
@@ -127,7 +127,7 @@ const convertAnyToRowValue = (
     }
     case "string":
       return {
-        value: createProto(RowSettingValueSchema, {
+        value: createProto(RowValueSchema, {
           kind: {
             case: "stringValue",
             value: value,
@@ -137,7 +137,7 @@ const convertAnyToRowValue = (
       };
     case "undefined":
       return {
-        value: createProto(RowSettingValueSchema, {
+        value: createProto(RowValueSchema, {
           kind: {
             case: "nullValue",
             value: NullValue.NULL_VALUE,
@@ -147,7 +147,7 @@ const convertAnyToRowValue = (
       };
     case "boolean":
       return {
-        value: createProto(RowSettingValueSchema, {
+        value: createProto(RowValueSchema, {
           kind: {
             case: "boolValue",
             value: value,
@@ -157,7 +157,7 @@ const convertAnyToRowValue = (
       };
     case "bigint":
       return {
-        value: createProto(RowSettingValueSchema, {
+        value: createProto(RowValueSchema, {
           kind: {
             case: "stringValue",
             value: value.toString(),
@@ -168,7 +168,7 @@ const convertAnyToRowValue = (
     case "object": {
       if (value === null) {
         return {
-          value: createProto(RowSettingValueSchema, {
+          value: createProto(RowValueSchema, {
             kind: {
               case: "nullValue",
               value: NullValue.NULL_VALUE,
@@ -179,7 +179,7 @@ const convertAnyToRowValue = (
       }
       if (Array.isArray(value)) {
         return {
-          value: createProto(RowSettingValueSchema, {
+          value: createProto(RowValueSchema, {
             kind: {
               case: "stringValue",
               value: JSON.stringify(value.map(flattenNoSQLColumn)),
@@ -190,7 +190,7 @@ const convertAnyToRowValue = (
       }
       if (value instanceof Date) {
         return {
-          value: createProto(RowSettingValueSchema, {
+          value: createProto(RowValueSchema, {
             kind: {
               case: "timestampValue",
               value: {
@@ -211,7 +211,7 @@ const convertAnyToRowValue = (
         return convertAnyToRowValue(formatted, !nested);
       } else {
         return {
-          value: createProto(RowSettingValueSchema, {
+          value: createProto(RowValueSchema, {
             kind: {
               case: "stringValue",
               value: JSON.stringify(value),
@@ -223,7 +223,7 @@ const convertAnyToRowValue = (
     }
     default:
       return {
-        value: createProto(RowSettingValueSchema, {
+        value: createProto(RowValueSchema, {
           kind: {
             case: "stringValue",
             value: JSON.stringify(value),
@@ -253,7 +253,7 @@ export const flattenNoSQLResult = (resultSet: SQLResultSetV1) => {
       const data = JSON.parse(row.values[0].kind.value);
       const values: RowValue[] = Array.from({ length: columns.length }).map(
         (_) =>
-          createProto(RowSettingValueSchema, {
+          createProto(RowValueSchema, {
             kind: {
               case: "nullValue",
               value: NullValue.NULL_VALUE,

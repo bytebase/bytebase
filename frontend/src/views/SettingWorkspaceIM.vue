@@ -246,7 +246,7 @@ import {
   AppIMSetting_WecomSchema,
   AppIMSettingSchema,
   Setting_SettingName,
-  SettingSettingValueSchema,
+  SettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
 
 interface LocalState {

@@ -86,7 +86,7 @@ export const extractSQLRowValuePlain = (value: RowValue | undefined) => {
     return formatTimestampWithTz(value.kind.value);
   }
   if (value.kind?.case === "valueValue") {
-    return toJsonString(SettingValueSchema, value.kind.value);
+    return toJsonString(ValueSchema, value.kind.value);
   }
 
   return Object.values(plainObject)[0];
@@ -107,9 +107,7 @@ const formatTimestamp = (timestamp: RowValue_Timestamp) => {
   return formattedTimestamp;
 };
 
-const formatTimestampWithTz = (
-  timestampTzValue: RowValue_TimestampTZ
-) => {
+const formatTimestampWithTz = (timestampTzValue: RowValue_TimestampTZ) => {
   const fullDayjs = dayjs(
     getDateForPbTimestampProtoEs(timestampTzValue.googleTimestamp)
   )

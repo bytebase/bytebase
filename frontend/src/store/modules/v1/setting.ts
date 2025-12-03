@@ -185,7 +185,7 @@ export const useSettingV1Store = defineStore("setting_v1", {
       );
       await this.upsertSetting({
         name: Setting_SettingName.WORKSPACE_PROFILE,
-        value: create(SettingSettingValueSchema, {
+        value: create(SettingValueSchema, {
           value: {
             case: "workspaceProfile",
             value: profileSetting,
