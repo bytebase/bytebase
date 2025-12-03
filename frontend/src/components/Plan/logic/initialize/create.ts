@@ -1,8 +1,8 @@
 import { create as createProto } from "@bufbuild/protobuf";
-import { cloneDeep, head, includes } from "lodash-es";
+import { head, includes } from "lodash-es";
 import { v4 as uuidv4 } from "uuid";
 import { useRoute } from "vue-router";
-import { useProjectV1Store, useSheetV1Store } from "@/store";
+import { useProjectV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { IssueType } from "@/types";
 import {
@@ -17,7 +17,7 @@ import {
   PlanSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import { extractSheetUID, getSheetStatement, setSheetStatement } from "@/utils";
+import { extractSheetUID, setSheetStatement } from "@/utils";
 import { sheetNameForSpec, targetsForSpec } from "../plan";
 import { getLocalSheetByName, getNextLocalSheetUID } from "../sheet";
 import { extractInitialSQLFromQuery } from "./util";
@@ -112,28 +112,10 @@ export const buildPlan = async (params: CreatePlanParams) => {
 
 const buildSpecForTargetsV1 = async (
   targets: string[],
-  { project, template, query }: CreatePlanParams,
+  { project, template }: CreatePlanParams,
   sheetUID?: string
 ) => {
-  let sheet = `${project.name}/sheets/${sheetUID ?? getNextLocalSheetUID()}`;
-  if (query.sheetId) {
-    const remoteSheet = await useSheetV1Store().getOrFetchSheetByUID(
-      query.sheetId,
-      "FULL"
-    );
-    if (remoteSheet) {
-      // make a local copy for remote sheet for further editing
-      console.debug(
-        "copy remote sheet to local for further editing",
-        remoteSheet
-      );
-      const localSheet = getLocalSheetByName(sheet);
-      localSheet.payload = cloneDeep(remoteSheet.payload);
-      const statement = getSheetStatement(remoteSheet);
-      setSheetStatement(localSheet, statement);
-      sheet = remoteSheet.name;
-    }
-  }
+  const sheet = `${project.name}/sheets/${sheetUID ?? getNextLocalSheetUID()}`;
 
   const spec = createProto(Plan_SpecSchema, {
     id: uuidv4(),
