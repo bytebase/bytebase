@@ -78,7 +78,7 @@ func GetTokenDuration(ctx context.Context, store *store.Store, licenseService *e
 	if err != nil {
 		return tokenDuration
 	}
-	passwordRestriction, err := store.GetPasswordRestrictionSetting(ctx)
+	passwordRestriction, err := store.GetPasswordRestriction(ctx)
 	if err != nil {
 		return tokenDuration
 	}

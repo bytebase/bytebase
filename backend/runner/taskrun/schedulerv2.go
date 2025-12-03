@@ -117,7 +117,7 @@ func (s *SchedulerV2) runOnce(ctx context.Context) {
 }
 
 func (s *SchedulerV2) scheduleAutoRolloutTasks(ctx context.Context) error {
-	environments, err := s.store.GetEnvironmentSetting(ctx)
+	environments, err := s.store.GetEnvironment(ctx)
 	if err != nil {
 		return errors.Wrapf(err, "failed to list environments")
 	}
@@ -1037,7 +1037,7 @@ func isSequentialTask(task *store.TaskMessage) bool {
 
 // getAllEnvironmentIDs returns all environment IDs from the store.
 func getAllEnvironmentIDs(ctx context.Context, s *store.Store) ([]string, error) {
-	environments, err := s.GetEnvironmentSetting(ctx)
+	environments, err := s.GetEnvironment(ctx)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list environments")
 	}

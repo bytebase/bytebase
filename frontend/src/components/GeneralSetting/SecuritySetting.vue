@@ -51,7 +51,7 @@ import { Switch } from "@/components/v2";
 import { featureToRef, useSettingV1Store } from "@/store";
 import {
   Setting_SettingName,
-  ValueSchema as SettingValueSchema,
+  SettingValueSchema as SettingSettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { FeatureBadge } from "../FeatureGuard";
@@ -103,7 +103,7 @@ const handleWatermarkToggle = async () => {
   const value = enableWatermark.value ? "1" : "0";
   await settingV1Store.upsertSetting({
     name: Setting_SettingName.WATERMARK,
-    value: create(SettingValueSchema, {
+    value: create(SettingSettingValueSchema, {
       value: {
         case: "stringValue",
         value: value,

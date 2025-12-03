@@ -26,6 +26,7 @@
       :mode="modalMode"
       :source="source"
       :rule="editingRule"
+      :is-fallback="isFallback"
       @save="handleSaveRule"
     />
   </div>
@@ -40,7 +41,7 @@ import { useI18n } from "vue-i18n";
 import { MiniActionButton } from "@/components/v2";
 import { pushNotification, useWorkspaceApprovalSettingStore } from "@/store";
 import type { LocalApprovalRule } from "@/types";
-import type { WorkspaceApprovalSetting_Rule_Source } from "@/types/proto-es/v1/setting_service_pb";
+import { WorkspaceApprovalSetting_Rule_Source } from "@/types/proto-es/v1/setting_service_pb";
 import { formatApprovalFlow } from "@/utils";
 import { approvalSourceText } from "../../common/utils";
 import { useCustomApprovalContext } from "../context";
@@ -49,6 +50,10 @@ import RuleEditModal from "./RuleEditModal.vue";
 const props = defineProps<{
   source: WorkspaceApprovalSetting_Rule_Source;
 }>();
+
+const isFallback = computed(
+  () => props.source === WorkspaceApprovalSetting_Rule_Source.SOURCE_UNSPECIFIED
+);
 
 const { t } = useI18n();
 const store = useWorkspaceApprovalSettingStore();

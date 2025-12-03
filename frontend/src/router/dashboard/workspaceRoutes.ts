@@ -13,7 +13,6 @@ export const WORKSPACE_ROUTE_SQL_REVIEW = "workspace.sql-review";
 export const WORKSPACE_ROUTE_SQL_REVIEW_CREATE = `${WORKSPACE_ROUTE_SQL_REVIEW}.create`;
 export const WORKSPACE_ROUTE_SQL_REVIEW_DETAIL = `${WORKSPACE_ROUTE_SQL_REVIEW}.detail`;
 
-export const WORKSPACE_ROUTE_SCHEMA_TEMPLATE = "workspace.schema-template";
 export const WORKSPACE_ROUTE_CUSTOM_APPROVAL = "workspace.custom-approval";
 export const WORKSPACE_ROUTE_GLOBAL_MASKING = "workspace.global-masking";
 export const WORKSPACE_ROUTE_SEMANTIC_TYPES = "workspace.semantic-types";

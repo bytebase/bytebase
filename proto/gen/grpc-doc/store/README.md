@@ -279,10 +279,6 @@
     - [EnvironmentSetting.Environment.TagsEntry](#bytebase-store-EnvironmentSetting-Environment-TagsEntry)
     - [PasswordRestrictionSetting](#bytebase-store-PasswordRestrictionSetting)
     - [SCIMSetting](#bytebase-store-SCIMSetting)
-    - [SchemaTemplateSetting](#bytebase-store-SchemaTemplateSetting)
-    - [SchemaTemplateSetting.ColumnType](#bytebase-store-SchemaTemplateSetting-ColumnType)
-    - [SchemaTemplateSetting.FieldTemplate](#bytebase-store-SchemaTemplateSetting-FieldTemplate)
-    - [SchemaTemplateSetting.TableTemplate](#bytebase-store-SchemaTemplateSetting-TableTemplate)
     - [SemanticTypeSetting](#bytebase-store-SemanticTypeSetting)
     - [SemanticTypeSetting.SemanticType](#bytebase-store-SemanticTypeSetting-SemanticType)
     - [WorkspaceApprovalSetting](#bytebase-store-WorkspaceApprovalSetting)
@@ -4552,78 +4548,6 @@ ISSUE_CREATE represents creating an issue. |
 
 
 
-<a name="bytebase-store-SchemaTemplateSetting"></a>
-
-### SchemaTemplateSetting
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| field_templates | [SchemaTemplateSetting.FieldTemplate](#bytebase-store-SchemaTemplateSetting-FieldTemplate) | repeated |  |
-| column_types | [SchemaTemplateSetting.ColumnType](#bytebase-store-SchemaTemplateSetting-ColumnType) | repeated |  |
-| table_templates | [SchemaTemplateSetting.TableTemplate](#bytebase-store-SchemaTemplateSetting-TableTemplate) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-store-SchemaTemplateSetting-ColumnType"></a>
-
-### SchemaTemplateSetting.ColumnType
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| engine | [Engine](#bytebase-store-Engine) |  |  |
-| enabled | [bool](#bool) |  |  |
-| types | [string](#string) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-store-SchemaTemplateSetting-FieldTemplate"></a>
-
-### SchemaTemplateSetting.FieldTemplate
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  |  |
-| engine | [Engine](#bytebase-store-Engine) |  |  |
-| category | [string](#string) |  |  |
-| column | [ColumnMetadata](#bytebase-store-ColumnMetadata) |  |  |
-| catalog | [ColumnCatalog](#bytebase-store-ColumnCatalog) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-SchemaTemplateSetting-TableTemplate"></a>
-
-### SchemaTemplateSetting.TableTemplate
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  |  |
-| engine | [Engine](#bytebase-store-Engine) |  |  |
-| category | [string](#string) |  |  |
-| table | [TableMetadata](#bytebase-store-TableMetadata) |  |  |
-| catalog | [TableCatalog](#bytebase-store-TableCatalog) |  |  |
-
-
-
-
-
-
 <a name="bytebase-store-SemanticTypeSetting"></a>
 
 ### SemanticTypeSetting
@@ -4787,12 +4711,10 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | WORKSPACE_ID | 3 |  |
 | WORKSPACE_PROFILE | 4 |  |
 | WORKSPACE_APPROVAL | 5 |  |
-| WORKSPACE_EXTERNAL_APPROVAL | 6 |  |
 | ENTERPRISE_LICENSE | 7 |  |
 | APP_IM | 8 |  |
 | WATERMARK | 9 |  |
 | AI | 10 |  |
-| SCHEMA_TEMPLATE | 13 |  |
 | DATA_CLASSIFICATION | 14 |  |
 | SEMANTIC_TYPES | 15 |  |
 | SCIM | 17 |  |

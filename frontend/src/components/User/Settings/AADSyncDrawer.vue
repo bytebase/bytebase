@@ -135,7 +135,7 @@ import { pushNotification, useSettingV1Store } from "@/store";
 import {
   SCIMSettingSchema,
   Setting_SettingName,
-  ValueSchema as SettingValueSchema,
+  SettingValueSchema as SettingSettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
@@ -180,7 +180,7 @@ const scimUrl = computed(() => {
 
 const scimToken = computed(() => {
   const setting = settingV1Store.getSettingByName(Setting_SettingName.SCIM);
-  return setting?.value?.value?.case === "scimSetting"
+  return setting?.value?.value?.case === "scim"
     ? (setting.value.value.value.token ?? "")
     : "";
 });
@@ -210,9 +210,9 @@ const resetToken = () => {
       settingV1Store
         .upsertSetting({
           name: Setting_SettingName.SCIM,
-          value: create(SettingValueSchema, {
+          value: create(SettingSettingValueSchema, {
             value: {
-              case: "scimSetting",
+              case: "scim",
               value: create(SCIMSettingSchema, {
                 token: "",
               }),

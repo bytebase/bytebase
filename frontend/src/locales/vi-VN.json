@@ -344,15 +344,6 @@
     },
     "executed-by": "Được thực hiện bởi",
     "affected-rows": "Hàng bị ảnh hưởng",
-    "result": {
-      "schema-version": "Sơ đồ: {version}",
-      "export-archive-ready": "Lưu trữ: Sẵn sàng để tải xuống"
-    },
-    "waiting": {
-      "connection-limit": "Đang chờ kết nối khả dụng",
-      "parallel-tasks-limit": "Đang chờ các tác vụ khác hoàn thành",
-      "blocking-task": "Đang chờ nhiệm vụ khác"
-    },
     "type": {
       "database-create": "Tạo cơ sở dữ liệu",
       "migrate": "Di chuyển",
@@ -366,7 +357,6 @@
     "history": "Lịch sử thực hiện nhiệm vụ",
     "latest-logs": "Nhật ký mới nhất",
     "latest": "Thực hiện mới nhất",
-    "no-detail": "Không có thông tin chi tiết về việc thực hiện",
     "status": {
       "enqueued": "Đang chờ thực thi.",
       "enqueued-with-rollout-time": "Đang chờ thực thi sau {time}.",
@@ -1271,7 +1261,6 @@
     "start-to-sync-schema": "Bắt đầu đồng bộ hóa lược đồ",
     "failed-to-sync-schema": "Không đồng bộ hóa được lược đồ",
     "successfully-synced-schema": "Đã đồng bộ hóa lược đồ thành công",
-    "create": "Tạo cơ sở dữ liệu",
     "procedures": "Thủ tục",
     "partitions": "Phân vùng",
     "packages": "Gói",
@@ -2199,7 +2188,6 @@
       "drop-table": "Xóa bảng",
       "restore": "Khôi phục",
       "add-column": "Thêm cột",
-      "add-from-template": "Thêm từ mẫu",
       "drop-column": "Xóa cột",
       "create-procedure": "Tạo thủ tục",
       "create-function": "Tạo hàm",
@@ -2657,6 +2645,8 @@
       },
       "add-rule": "Thêm quy tắc",
       "edit-rule": "Chỉnh sửa quy tắc",
+      "fallback-rules": "Quy tắc dự phòng",
+      "fallback-rules-hint": "Quy tắc dự phòng chỉ được đánh giá khi không có quy tắc nào khác khớp.",
       "template": {
         "presets-title": "Mẫu có sẵn",
         "presets": {
@@ -2698,41 +2688,6 @@
     }
   },
   "schema-template": {
-    "self": "Mẫu lược đồ",
-    "field-template": {
-      "self": "Mẫu trường",
-      "description": "Bạn có thể xác định trước mẫu trường, sau đó áp dụng mẫu trong quá trình thay đổi lược đồ."
-    },
-    "column-type-restriction": {
-      "self": "Hạn chế loại cột",
-      "description": "Bạn có thể hạn chế các loại cột được phép cho từng công cụ cơ sở dữ liệu.",
-      "allow-all": "Cho phép tất cả",
-      "allow-limited-types": "Cho phép các loại hạn chế",
-      "back-to-edit": "Quay lại chỉnh sửa",
-      "add-and-save": "Thêm và lưu",
-      "messages": {
-        "unable-to-update": "Không thể cập nhật hạn chế",
-        "following-column-types-are-used": "Các loại cột sau vẫn được sử dụng bởi mẫu trường",
-        "one-allowed-type-per-line": "Một loại dữ liệu được phép trên mỗi dòng"
-      }
-    },
-    "table-template": {
-      "self": "Mẫu bảng",
-      "description": "Bạn có thể xác định trước mẫu bảng, sau đó áp dụng mẫu trong quá trình thay đổi lược đồ."
-    },
-    "search-by-name-or-comment": "Tìm kiếm theo tên hoặc bình luận",
-    "form": {
-      "category": "Danh mục",
-      "category-desc": "Chọn một danh mục hiện có hoặc tạo một danh mục mới",
-      "unclassified": "Chưa phân loại",
-      "column-name": "Tên cột",
-      "column-type": "Loại cột",
-      "default-value": "Mặc định",
-      "comment": "Bình luận",
-      "nullable": "Có thể null",
-      "table-name": "Tên bảng",
-      "on-update": "Khi cập nhật"
-    },
     "classification": {
       "select": "Chọn phân loại",
       "search": "Tìm kiếm phân loại"

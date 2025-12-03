@@ -34,7 +34,7 @@ const state = reactive<LocalState>({
 const settingV1Store = useSettingV1Store();
 const aiSetting = computed(() => {
   const setting = settingV1Store.getSettingByName(Setting_SettingName.AI);
-  if (setting?.value?.value?.case === "aiSetting") {
+  if (setting?.value?.value?.case === "ai") {
     return setting.value.value.value;
   }
   return create(AISettingSchema, {});

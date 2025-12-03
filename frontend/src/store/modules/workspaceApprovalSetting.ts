@@ -10,7 +10,7 @@ import {
   GetSettingRequestSchema,
   Setting_SettingName,
   SettingSchema,
-  ValueSchema as SettingValueSchema,
+  SettingValueSchema as SettingSettingValueSchema,
   UpdateSettingRequestSchema,
   WorkspaceApprovalSetting_Rule_Source,
 } from "@/types/proto-es/v1/setting_service_pb";
@@ -30,7 +30,7 @@ export const useWorkspaceApprovalSettingStore = defineStore(
     });
 
     const setConfigSetting = async (setting: Setting) => {
-      if (setting.value?.value?.case === "workspaceApprovalSettingValue") {
+      if (setting.value?.value?.case === "workspaceApproval") {
         const _config = setting.value.value.value;
         config.value = await resolveLocalApprovalConfig(_config);
       }
@@ -53,9 +53,9 @@ export const useWorkspaceApprovalSettingStore = defineStore(
 
       const setting = create(SettingSchema, {
         name: SETTING_NAME,
-        value: create(SettingValueSchema, {
+        value: create(SettingSettingValueSchema, {
           value: {
-            case: "workspaceApprovalSettingValue",
+            case: "workspaceApproval",
             value: approvalSetting,
           },
         }),

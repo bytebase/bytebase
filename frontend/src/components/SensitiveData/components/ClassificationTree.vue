@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-y-4 h-full">
+  <div class="divide-block-border space-y-4 h-full">
     <SearchBox
       v-model:value="state.searchText"
       style="max-width: 100%"
@@ -29,9 +29,9 @@
 import type { TreeOption } from "naive-ui";
 import { NTree } from "naive-ui";
 import { computed, h, reactive } from "vue";
+import { SearchBox } from "@/components/v2";
 import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto-es/v1/setting_service_pb";
 import { getHighlightHTMLByKeyWords } from "@/utils";
-import { SearchBox } from "../v2";
 import ClassificationLevelBadge from "./ClassificationLevelBadge.vue";
 
 const props = defineProps<{

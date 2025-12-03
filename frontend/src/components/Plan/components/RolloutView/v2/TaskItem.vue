@@ -85,13 +85,21 @@
         </button>
       </div>
 
-      <!-- Collapsed: contextual status line (error/skip only) -->
+      <!-- Collapsed: contextual status line (time + error/skip) -->
       <div
-        v-if="!isExpanded && collapsedStatusText"
-        class="text-xs truncate mt-1"
-        :class="task.status === Task_Status.FAILED ? 'text-red-600' : 'text-gray-500 italic'"
+        v-if="!isExpanded && (latestTaskRun?.createTime || collapsedStatusText)"
+        class="flex items-center gap-x-2 text-xs mt-1"
       >
-        {{ collapsedStatusText }}
+        <NTag v-if="latestTaskRun?.createTime" size="tiny" round>
+          <Timestamp :timestamp="latestTaskRun.createTime" />
+        </NTag>
+        <span
+          v-if="collapsedStatusText"
+          class="truncate"
+          :class="task.status === Task_Status.FAILED ? 'text-red-600' : 'text-gray-500 italic'"
+        >
+          {{ collapsedStatusText }}
+        </span>
       </div>
 
       <!-- Task metadata - expanded only -->
@@ -100,8 +108,6 @@
         <div class="flex items-center justify-between gap-x-2">
           <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-600">
             <span>{{ t("common.type") }}: {{ taskTypeDisplay }}</span>
-            <span v-if="executorEmail" class="text-gray-400">·</span>
-            <span v-if="executorEmail">{{ t("task.executed-by") }}: {{ executorEmail }}</span>
             <template v-if="timingType === 'scheduled'">
               <span class="text-gray-400">·</span>
               <ScheduledTimeIndicator
@@ -109,12 +115,6 @@
                 :label="t('task.scheduled-time')"
               />
             </template>
-            <template v-else-if="timingDisplay">
-              <span class="text-gray-400">·</span>
-              <span>{{ t("common.duration") }}: {{ timingDisplay }}</span>
-            </template>
-            <span v-if="affectedRowsDisplay" class="text-gray-400">·</span>
-            <span v-if="affectedRowsDisplay">{{ t("task.affected-rows") }}: {{ affectedRowsDisplay }}</span>
           </div>
           <!-- Quick action buttons -->
           <div v-if="hasActions" class="flex items-center gap-x-2 shrink-0">
@@ -188,46 +188,14 @@
         </div>
 
         <!-- Latest Task Run Info -->
-        <div v-if="latestTaskRun">
-          <div class="flex items-center gap-x-2 mb-2">
-            <span class="text-sm font-medium text-gray-700">{{ t("task-run.latest") }}</span>
-            <span class="text-sm text-gray-500">
-              <Timestamp :timestamp="latestTaskRun.updateTime" />
-            </span>
-          </div>
-
-          <!-- Error message for failed tasks -->
-          <div v-if="task.status === Task_Status.FAILED && latestTaskRun.detail" class="mb-2 p-2 bg-red-50 border border-red-200 rounded">
-            <div class="text-sm text-red-600 whitespace-pre-wrap">
-              {{ latestTaskRun.detail }}
-            </div>
-          </div>
-
-          <!-- Waiting message for pending tasks -->
-          <div v-else-if="waitingMessage" class="mb-2 p-2 bg-blue-50 border border-blue-200 rounded">
-            <div class="text-sm text-blue-700 flex items-center gap-x-1">
-              <span>⏳</span>
-              <span>{{ waitingMessage }}</span>
-            </div>
-          </div>
-
-          <!-- Success message with result summary -->
-          <div v-else-if="task.status === Task_Status.DONE">
-            <div class="flex items-center gap-x-2 text-sm text-green-700 mb-1">
-              <span>✓</span>
-              <span>{{ t("common.success") }}</span>
-              <span v-if="resultSummary" class="text-gray-600">· {{ resultSummary }}</span>
-            </div>
-          </div>
-
-          <!-- Default detail display for other statuses -->
-          <div v-else-if="latestTaskRun.detail" class="text-sm text-gray-700 whitespace-pre-wrap">
-            {{ latestTaskRun.detail }}
-          </div>
-          <div v-else class="text-xs text-gray-500 italic">
-            {{ t("task-run.no-detail") }}
-          </div>
-        </div>
+        <LatestTaskRunInfo
+          v-if="latestTaskRun"
+          :task="task"
+          :task-run="latestTaskRun"
+          :sheet="taskSheet"
+          :executor-email="executorEmail"
+          :duration="timingType !== 'scheduled' ? timingDisplay : undefined"
+        />
       </div>
     </div>
 
@@ -265,14 +233,16 @@ import { usePlanContextWithRollout } from "@/components/Plan";
 import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay.vue";
 import TaskRolloutActionPanel from "@/components/Plan/components/RolloutView/TaskRolloutActionPanel.vue";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
-import { taskRunNamePrefix } from "@/store";
+import { taskRunNamePrefix, useSheetV1Store } from "@/store";
 import type { Stage, Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import { sheetNameOfTaskV1 } from "@/utils";
 import { useTaskActions } from "./composables/useTaskActions";
 import { useTaskDisplay } from "./composables/useTaskDisplay";
-import { useTaskRunSummary } from "./composables/useTaskRunSummary";
+import { useTaskRunLogSummary } from "./composables/useTaskRunLogSummary";
 import { useTaskStatement } from "./composables/useTaskStatement";
 import { useTaskTiming } from "./composables/useTaskTiming";
+import LatestTaskRunInfo from "./LatestTaskRunInfo.vue";
 import ScheduledTimeIndicator from "./ScheduledTimeIndicator.vue";
 
 const props = withDefaults(
@@ -331,6 +301,14 @@ const { loading, displayedStatement, isStatementTruncated } = useTaskStatement(
   () => props.isExpanded
 );
 
+// Get sheet for extracting individual commands in log display
+const sheetStore = useSheetV1Store();
+const taskSheet = computed(() => {
+  const sheetName = sheetNameOfTaskV1(props.task);
+  if (!sheetName) return undefined;
+  return sheetStore.getSheetByName(sheetName);
+});
+
 const latestTaskRun = computed(() => {
   const taskRunsForTask = allTaskRuns.value.filter((run) =>
     run.name.startsWith(`${props.task.name}/${taskRunNamePrefix}`)
@@ -343,14 +321,15 @@ const { timingDisplay, timingType, scheduledTime } = useTaskTiming(
   () => latestTaskRun.value
 );
 
-const { totalAffectedRows } = useTaskRunSummary(
+const { summary: taskRunLogSummary } = useTaskRunLogSummary(
   () => latestTaskRun.value,
   () => props.isExpanded
 );
 
 const affectedRowsDisplay = computed(() => {
-  const rows = totalAffectedRows.value;
-  if (rows === undefined) return "";
+  if (!taskRunLogSummary.value.hasAffectedRows) return "";
+  const rows = taskRunLogSummary.value.totalAffectedRows;
+  if (rows <= BigInt(0)) return "";
   return `${rows.toLocaleString()} row${rows === BigInt(1) ? "" : "s"}`;
 });
 
@@ -358,8 +337,6 @@ const affectedRowsDisplay = computed(() => {
 const {
   taskTypeDisplay,
   executorEmail,
-  resultSummary,
-  waitingMessage,
   collapsedContextInfo,
   collapsedStatusText,
 } = useTaskDisplay(

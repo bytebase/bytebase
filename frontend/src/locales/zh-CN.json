@@ -344,15 +344,6 @@
     },
     "executed-by": "执行者",
     "affected-rows": "影响行数",
-    "result": {
-      "schema-version": "版本: {version}",
-      "export-archive-ready": "归档: 可下载"
-    },
-    "waiting": {
-      "connection-limit": "等待可用连接",
-      "parallel-tasks-limit": "等待其他任务完成",
-      "blocking-task": "等待另一个任务"
-    },
     "type": {
       "database-create": "创建数据库",
       "migrate": "变更",
@@ -366,7 +357,6 @@
     "history": "执行记录",
     "latest-logs": "执行日志",
     "latest": "最新执行",
-    "no-detail": "暂无执行详情",
     "status": {
       "enqueued": "等待执行。",
       "enqueued-with-rollout-time": "等待执行，{time}后执行。",
@@ -1271,7 +1261,6 @@
     "start-to-sync-schema": "开始同步 schema",
     "failed-to-sync-schema": "同步 schema 失败",
     "successfully-synced-schema": "Schema 同步完成",
-    "create": "创建数据库",
     "procedures": "存储过程",
     "partitions": "分区",
     "packages": "包",
@@ -2199,7 +2188,6 @@
       "drop-table": "删除表",
       "restore": "恢复",
       "add-column": "添加列",
-      "add-from-template": "从模板添加",
       "drop-column": "删除列",
       "create-procedure": "新建存储过程",
       "create-function": "新建函数",
@@ -2657,6 +2645,8 @@
       },
       "add-rule": "添加规则",
       "edit-rule": "编辑规则",
+      "fallback-rules": "兜底规则",
+      "fallback-rules-hint": "兜底规则仅在没有其他规则匹配时才会被评估。",
       "template": {
         "presets-title": "预设模板",
         "presets": {
@@ -2698,41 +2688,6 @@
     }
   },
   "schema-template": {
-    "self": "Schema 模板",
-    "field-template": {
-      "self": "字段模板",
-      "description": "预定义字段模板，之后可以在变更或设计 Schema 时应用这些模板。"
-    },
-    "column-type-restriction": {
-      "self": "列类型约束",
-      "description": "在每一个数据库引擎上，您可以限制允许使用的列类型。",
-      "allow-all": "允许所有类型",
-      "allow-limited-types": "只允许部分类型",
-      "back-to-edit": "返回编辑",
-      "add-and-save": "添加并保存",
-      "messages": {
-        "unable-to-update": "无法更新限制",
-        "following-column-types-are-used": "以下列类型仍在字段模板中使用。",
-        "one-allowed-type-per-line": "每行放一个允许的数据类型"
-      }
-    },
-    "table-template": {
-      "self": "表模板",
-      "description": "预定义表模板，之后可以在变更或设计 Schema 时应用这些模板。"
-    },
-    "search-by-name-or-comment": "根据名称或备注搜索",
-    "form": {
-      "category": "分类",
-      "category-desc": "选择一个已有分类，或者创建新分类",
-      "unclassified": "未分类",
-      "column-name": "字段名",
-      "column-type": "字段类型",
-      "default-value": "默认值",
-      "comment": "备注",
-      "nullable": "可为空",
-      "table-name": "表名",
-      "on-update": "更新时"
-    },
     "classification": {
       "select": "选择分类",
       "search": "搜索分类"

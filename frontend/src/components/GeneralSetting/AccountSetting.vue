@@ -216,20 +216,16 @@ const onUpdate = async () => {
     state.disallowSignup !==
     settingV1Store.workspaceProfileSetting?.disallowSignup
   ) {
-    updateMaskPaths.push(
-      "value.workspace_profile_setting_value.disallow_signup"
-    );
+    updateMaskPaths.push("value.workspace_profile.disallow_signup");
   }
   if (state.require2fa !== settingV1Store.workspaceProfileSetting?.require2fa) {
-    updateMaskPaths.push("value.workspace_profile_setting_value.require_2fa");
+    updateMaskPaths.push("value.workspace_profile.require_2fa");
   }
   if (
     state.disallowPasswordSignin !==
     settingV1Store.workspaceProfileSetting?.disallowPasswordSignin
   ) {
-    updateMaskPaths.push(
-      "value.workspace_profile_setting_value.disallow_password_signin"
-    );
+    updateMaskPaths.push("value.workspace_profile.disallow_password_signin");
   }
 
   if (updateMaskPaths.length > 0) {

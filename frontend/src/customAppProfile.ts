@@ -10,7 +10,7 @@ import {
 export const overrideAppProfile = () => {
   const setting = useSettingByName(Setting_SettingName.WORKSPACE_PROFILE);
   const databaseChangeMode = computed(() => {
-    if (setting.value?.value?.value?.case === "workspaceProfileSettingValue") {
+    if (setting.value?.value?.value?.case === "workspaceProfile") {
       const mode = setting.value.value.value.value.databaseChangeMode;
       if (mode === DatabaseChangeMode.EDITOR) return DatabaseChangeMode.EDITOR;
     }

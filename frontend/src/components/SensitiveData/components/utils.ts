@@ -26,7 +26,7 @@ export const getClassificationLevelOptions = () => {
   }
 
   const config =
-    setting.value.value.case === "dataClassificationSettingValue"
+    setting.value.value.case === "dataClassification"
       ? setting.value.value.value.configs
       : [];
   if (config.length === 0) {

@@ -286,7 +286,7 @@ import {
   AppIMSetting_WecomSchema,
   AppIMSettingSchema,
   Setting_SettingName,
-  ValueSchema as SettingValueSchema,
+  SettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
 
 interface LocalState {
@@ -387,7 +387,7 @@ const onDeleteIM = async (index: number, type: Webhook_Type) => {
       name: Setting_SettingName.APP_IM,
       value: create(SettingValueSchema, {
         value: {
-          case: "appImSettingValue",
+          case: "appIm",
           value: create(AppIMSettingSchema, {
             settings: imSetting.value.settings.filter(
               (setting) => setting.type !== type
@@ -424,19 +424,19 @@ const onSaveIM = async (index: number, type: Webhook_Type) => {
   const updateMask: string[] = [];
   switch (type) {
     case Webhook_Type.SLACK:
-      updateMask.push("value.app_im_setting_value.slack");
+      updateMask.push("value.app_im.slack");
       break;
     case Webhook_Type.FEISHU:
-      updateMask.push("value.app_im_setting_value.feishu");
+      updateMask.push("value.app_im.feishu");
       break;
     case Webhook_Type.WECOM:
-      updateMask.push("value.app_im_setting_value.wecom");
+      updateMask.push("value.app_im.wecom");
       break;
     case Webhook_Type.LARK:
-      updateMask.push("value.app_im_setting_value.lark");
+      updateMask.push("value.app_im.lark");
       break;
     case Webhook_Type.DINGTALK:
-      updateMask.push("value.app_im_setting_value.dingtalk");
+      updateMask.push("value.app_im.dingtalk");
       break;
     case Webhook_Type.TEAMS:
       updateMask.push("value.app_im_setting_value.teams");
@@ -537,7 +537,7 @@ const onSaveIM = async (index: number, type: Webhook_Type) => {
       name: Setting_SettingName.APP_IM,
       value: create(SettingValueSchema, {
         value: {
-          case: "appImSettingValue",
+          case: "appIm",
           value: pendingUpdate,
         },
       }),
@@ -573,7 +573,7 @@ const fillMask = (data: IMSettingPayloadValue): IMSettingPayloadValue => {
 
 const imSetting = computed(() => {
   const setting = settingStore.getSettingByName(Setting_SettingName.APP_IM);
-  if (setting?.value?.value?.case !== "appImSettingValue") {
+  if (setting?.value?.value?.case !== "appIm") {
     return create(AppIMSettingSchema, {
       settings: [],
     });

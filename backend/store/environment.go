@@ -10,7 +10,7 @@ import (
 )
 
 func (s *Store) GetEnvironmentByID(ctx context.Context, id string) (*storepb.EnvironmentSetting_Environment, error) {
-	environments, err := s.GetEnvironmentSetting(ctx)
+	environments, err := s.GetEnvironment(ctx)
 	if err != nil {
 		return nil, err
 	}

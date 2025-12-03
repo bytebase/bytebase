@@ -19,6 +19,13 @@
       </div>
 
       <div class="flex-1 flex flex-col px-6 py-4 gap-y-4 overflow-y-auto">
+        <div
+          v-if="isFallback"
+          class="text-sm text-amber-600 bg-amber-50 p-3 rounded"
+        >
+          {{ $t("custom-approval.approval-flow.fallback-rules-hint") }}
+        </div>
+
         <div v-if="mode === 'create'" class="flex flex-col gap-y-2">
           <h3 class="font-medium text-sm text-control">
             {{ $t("custom-approval.approval-flow.template.presets-title") }}
@@ -166,6 +173,7 @@ const props = defineProps<{
   mode: "create" | "edit";
   source: WorkspaceApprovalSetting_Rule_Source;
   rule?: LocalApprovalRule;
+  isFallback?: boolean;
 }>();
 
 const emit = defineEmits<{

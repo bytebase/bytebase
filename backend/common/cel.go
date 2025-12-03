@@ -37,6 +37,35 @@ var ApprovalFactors = []cel.EnvOption{
 	cel.ParserExpressionSizeLimit(celLimit),
 }
 
+// FallbackApprovalFactors are the variables for SOURCE_UNSPECIFIED fallback rules.
+// These rules can only use resource.project_id since it's the only variable
+// guaranteed to be available across all issue types.
+var FallbackApprovalFactors = []cel.EnvOption{
+	cel.Variable(CELAttributeResourceProjectID, cel.StringType),
+	cel.ParserExpressionSizeLimit(celLimit),
+}
+
+// ValidateFallbackApprovalExpr validates that a CEL expression only uses
+// variables allowed in fallback approval rules (only resource.project_id).
+func ValidateFallbackApprovalExpr(expression string) error {
+	if expression == "" || expression == "true" {
+		return nil
+	}
+
+	e, err := cel.NewEnv(FallbackApprovalFactors...)
+	if err != nil {
+		return errors.Wrap(err, "failed to create CEL env")
+	}
+
+	_, issues := e.Compile(expression)
+	if issues != nil && issues.Err() != nil {
+		return connect.NewError(connect.CodeInvalidArgument,
+			errors.Errorf("fallback rules can only use resource.project_id in conditions: %v", issues.Err()))
+	}
+
+	return nil
+}
+
 // IAMPolicyConditionCELAttributes are the variables when evaluating IAM policy condition.
 var IAMPolicyConditionCELAttributes = []cel.EnvOption{
 	cel.Variable(CELAttributeResourceEnvironmentID, cel.StringType),

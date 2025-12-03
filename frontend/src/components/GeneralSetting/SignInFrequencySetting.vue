@@ -172,7 +172,7 @@ const handleFrequencySettingChange = async () => {
       }),
     },
     updateMask: create(FieldMaskSchema, {
-      paths: ["value.workspace_profile_setting_value.token_duration"],
+      paths: ["value.workspace_profile.token_duration"],
     }),
   });
 };
@@ -186,7 +186,7 @@ const handleInactivityTimeoutSettingChange = async () => {
       }),
     },
     updateMask: create(FieldMaskSchema, {
-      paths: ["value.workspace_profile_setting_value.inactive_session_timeout"],
+      paths: ["value.workspace_profile.inactive_session_timeout"],
     }),
   });
 };

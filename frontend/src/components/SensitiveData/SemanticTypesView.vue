@@ -48,7 +48,7 @@ import type { SemanticTypeSetting_SemanticType } from "@/types/proto-es/v1/setti
 import {
   SemanticTypeSetting_SemanticTypeSchema,
   Setting_SettingName,
-  ValueSchema as SettingValueSchema,
+  SettingValueSchema as SettingSettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
@@ -79,7 +79,7 @@ const semanticTypeSettingValue = computed(() => {
   const semanticTypeSetting = settingStore.getSettingByName(
     Setting_SettingName.SEMANTIC_TYPES
   );
-  return semanticTypeSetting?.value?.value?.case === "semanticTypeSettingValue"
+  return semanticTypeSetting?.value?.value?.case === "semanticType"
     ? (semanticTypeSetting.value.value.value.types ?? [])
     : [];
 });
@@ -118,9 +118,9 @@ const onRemove = async (index: number) => {
 
   await settingStore.upsertSetting({
     name: Setting_SettingName.SEMANTIC_TYPES,
-    value: create(SettingValueSchema, {
+    value: create(SettingSettingValueSchema, {
       value: {
-        case: "semanticTypeSettingValue",
+        case: "semanticType",
         value: {
           types: state.semanticItemList
             .filter((data) => data.mode === "NORMAL")
@@ -159,9 +159,9 @@ const onUpsert = async (
 ) => {
   await settingStore.upsertSetting({
     name: Setting_SettingName.SEMANTIC_TYPES,
-    value: create(SettingValueSchema, {
+    value: create(SettingSettingValueSchema, {
       value: {
-        case: "semanticTypeSettingValue",
+        case: "semanticType",
         value: {
           types: semanticItemList,
         },
@@ -186,7 +186,7 @@ const onCancel = (index: number) => {
       Setting_SettingName.SEMANTIC_TYPES
     );
     const types =
-      semanticTypeSetting?.value?.value?.case === "semanticTypeSettingValue"
+      semanticTypeSetting?.value?.value?.case === "semanticType"
         ? (semanticTypeSetting.value.value.value.types ?? [])
         : [];
     const origin = types.find((s) => s.id === item.item.id);

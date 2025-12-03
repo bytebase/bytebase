@@ -344,15 +344,6 @@
     },
     "executed-by": "Ejecutado por",
     "affected-rows": "Filas afectadas",
-    "result": {
-      "schema-version": "Esquema: {version}",
-      "export-archive-ready": "Archivo: Listo para descargar"
-    },
-    "waiting": {
-      "connection-limit": "Esperando conexiones disponibles",
-      "parallel-tasks-limit": "Esperando a que se completen otras tareas",
-      "blocking-task": "Esperando otra tarea"
-    },
     "type": {
       "database-create": "Crear base de datos",
       "migrate": "Migrar",
@@ -366,7 +357,6 @@
     "history": "Historial de ejecución de tareas",
     "latest-logs": "Últimos registros",
     "latest": "Última ejecución",
-    "no-detail": "No hay detalles de ejecución disponibles.",
     "status": {
       "enqueued": "Esperando a ser ejecutada.",
       "enqueued-with-rollout-time": "Esperando para ejecutar, {time} para ejecutar.",
@@ -1271,7 +1261,6 @@
     "start-to-sync-schema": "Comenzar a sincronizar el esquema",
     "failed-to-sync-schema": "No se pudo sincronizar el esquema",
     "successfully-synced-schema": "Esquema sincronizado correctamente",
-    "create": "Crear base de datos",
     "procedures": "Trámites",
     "partitions": "Particiones",
     "packages": "Paquetes",
@@ -2199,7 +2188,6 @@
       "drop-table": "Eliminar tabla",
       "restore": "Restaurar",
       "add-column": "Agregar columna",
-      "add-from-template": "Agregar desde plantilla",
       "drop-column": "Eliminar columna",
       "create-procedure": "Crear procedimiento",
       "create-function": "Crear función",
@@ -2657,6 +2645,8 @@
       },
       "add-rule": "Agregar regla",
       "edit-rule": "Editar regla",
+      "fallback-rules": "Reglas de respaldo",
+      "fallback-rules-hint": "Las reglas de respaldo solo se evalúan cuando ninguna otra regla coincide.",
       "template": {
         "presets-title": "Plantillas",
         "presets": {
@@ -2698,41 +2688,6 @@
     }
   },
   "schema-template": {
-    "self": "Plantilla de esquema",
-    "field-template": {
-      "self": "Plantilla de campo",
-      "description": "Predefina la plantilla de campo, luego aplique la plantilla durante el cambio de esquema."
-    },
-    "column-type-restriction": {
-      "self": "Restricción de tipos de columna",
-      "description": "Para cada motor de base de datos, puede limitar los tipos de columna permitidos.",
-      "allow-all": "Permitir todos los tipos",
-      "allow-limited-types": "Permitir solo algunos tipos",
-      "back-to-edit": "Volver a editar",
-      "add-and-save": "Agregar y guardar",
-      "messages": {
-        "unable-to-update": "No se puede actualizar la restricción",
-        "following-column-types-are-used": "Los siguientes tipos de columna todavía se usan en la plantilla de campos.",
-        "one-allowed-type-per-line": "Un tipo permitido por línea"
-      }
-    },
-    "table-template": {
-      "self": "Plantilla de tabla",
-      "description": "Puede predefinir la plantilla de tabla y luego aplicar la plantilla durante el cambio de esquema."
-    },
-    "search-by-name-or-comment": "Buscar por nombre o comentario",
-    "form": {
-      "category": "Categoría",
-      "category-desc": "Seleccione una categoría existente o cree una nueva",
-      "unclassified": "Desclasificada",
-      "column-name": "Nombre de la columna",
-      "column-type": "Tipo de columna",
-      "default-value": "Por defecto",
-      "comment": "Comentario",
-      "nullable": "Anulable",
-      "table-name": "Nombre de la tabla",
-      "on-update": "En actualización"
-    },
     "classification": {
       "select": "Seleccionar clasificación",
       "search": "Clasificación de búsqueda"
