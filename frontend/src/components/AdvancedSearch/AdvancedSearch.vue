@@ -100,7 +100,6 @@ import {
   emptySearchParams,
   getValueFromSearchParams,
   getValuesFromSearchParams,
-  mergeSearchParams,
   minmax,
   upsertScope,
   useDynamicLocalStorage,
@@ -117,12 +116,17 @@ const props = withDefaults(
     placeholder?: string | undefined;
     autofocus?: boolean;
     overrideRouteQuery?: boolean;
+    // When provided, AdvancedSearch will restore from cache if available,
+    // otherwise use these defaults. This signals that the parent doesn't have
+    // URL params and wants AdvancedSearch to decide between cache vs defaults.
+    defaultParams?: SearchParams;
   }>(),
   {
     scopeOptions: () => [],
     autofocus: false,
     placeholder: undefined,
     overrideRouteQuery: true,
+    defaultParams: undefined,
   }
 );
 
@@ -623,33 +627,39 @@ const scrollScopeTagIntoViewIfNeeded = (id: SearchScopeId) => {
   });
 };
 
+// Check if params has meaningful content (non-empty)
+const hasParams = (params: SearchParams): boolean => {
+  return params.query.trim().length > 0 || params.scopes.length > 0;
+};
+
 onMounted(() => {
   if (props.autofocus) {
     inputRef.value?.inputElRef?.focus();
   }
+
+  // Precedence: URL params > cache > defaultParams
+  // Parent passes non-empty params only when URL has ?q=...
+  if (hasParams(props.params)) {
+    // URL had params - use as-is
+    return;
+  }
+
+  // No URL params - check cache
   const qs = cachedQuery.value;
   if (qs.length > 0) {
+    // Cache exists: restore from cache
     const params = buildSearchParamsBySearchText(qs);
-    const existedScopes = props.params.scopes.reduce((map, scope) => {
-      map.set(scope.id, scope.readonly ?? false);
-      return map;
-    }, new Map<SearchScopeId, boolean>());
-    params.scopes = params.scopes
-      .filter((scope) => {
-        const option = props.scopeOptions.find((op) => op.id === scope.id);
-        if (!option) {
-          return false;
-        }
-        if (existedScopes.has(option.id)) {
-          return option.allowMultiple ?? false;
-        }
-        return true;
-      })
-      .map((scope) => ({
-        ...scope,
-        readonly: existedScopes.get(scope.id),
-      }));
-    emit("update:params", mergeSearchParams(cloneDeep(props.params), params));
+    // Filter to only include scopes that are valid for this search context
+    params.scopes = params.scopes.filter((scope) => {
+      return props.scopeOptions.find((op) => op.id === scope.id);
+    });
+    emit("update:params", params);
+    return;
+  }
+
+  // No cache: use defaults if provided
+  if (props.defaultParams) {
+    emit("update:params", cloneDeep(props.defaultParams));
   }
 });
 
