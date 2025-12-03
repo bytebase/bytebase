@@ -30,6 +30,8 @@ import (
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/metric"
+	metriccollector "github.com/bytebase/bytebase/backend/metric/collector"
 	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/runner/approval"
@@ -165,9 +167,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	// Cache the license.
 	s.licenseService.LoadSubscription(ctx)
 
-	if err := s.initializeSetting(ctx); err != nil {
-		return nil, errors.Wrap(err, "failed to init config")
-	}
+	// Settings are now initialized in the database schema (LATEST.sql)
 	secret, err := s.store.GetSecret(ctx)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get secret")
@@ -328,4 +328,13 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// initMetricReporter initializes the metric reporter.
+func (s *Server) initMetricReporter() {
+	s.metricReporter = metricreport.NewReporter(s.store, s.licenseService, s.profile)
+	s.metricReporter.Register(metric.InstanceCountMetricName, metriccollector.NewInstanceCountCollector(s.store))
+	s.metricReporter.Register(metric.IssueCountMetricName, metriccollector.NewIssueCountCollector(s.store))
+	s.metricReporter.Register(metric.ProjectCountMetricName, metriccollector.NewProjectCountCollector(s.store))
+	s.metricReporter.Register(metric.UserCountMetricName, metriccollector.NewUserCountCollector(s.store))
 }
