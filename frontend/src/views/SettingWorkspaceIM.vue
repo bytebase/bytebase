@@ -17,6 +17,9 @@
           type="primary"
           @click="() => onAddIM(availableImSettings[0].value)"
         >
+          <template #icon>
+            <PlusIcon class="h-4 w-4" />
+          </template>
           {{ $t("settings.im.add-im-integration") }}
         </NButton>
       </template>
@@ -157,6 +160,38 @@
               />
             </div>
           </div>
+          <div
+            v-else-if="item.type === Webhook_Type.TEAMS"
+            class="flex flex-col gap-y-4"
+          >
+            <div>
+              <div class="textlabel">Tenant ID</div>
+              <BBTextField
+                class="mt-2"
+                :disabled="!props.allowEdit"
+                :placeholder="t('common.sensitive-placeholder')"
+                v-model:value="(item.payload.value as AppIMSetting_Teams).tenantId"
+              />
+            </div>
+            <div>
+              <div class="textlabel">Client ID</div>
+              <BBTextField
+                class="mt-2"
+                :disabled="!props.allowEdit"
+                :placeholder="t('common.sensitive-placeholder')"
+                v-model:value="(item.payload.value as AppIMSetting_Teams).clientId"
+              />
+            </div>
+            <div>
+              <div class="textlabel">Client Secret</div>
+              <BBTextField
+                class="mt-2"
+                :disabled="!props.allowEdit"
+                :placeholder="t('common.sensitive-placeholder')"
+                v-model:value="(item.payload.value as AppIMSetting_Teams).clientSecret"
+              />
+            </div>
+          </div>
         </div>
 
         <div class="flex items-center justify-between mt-4 gap-x-2">
@@ -210,6 +245,9 @@
           secondary
           @click="() => onAddIM(availableImSettings[0].value)"
         >
+          <template #icon>
+            <PlusIcon class="h-4 w-4" />
+          </template>
           {{ $t("settings.im.add-another-im") }}
         </NButton>
       </div>
@@ -218,10 +256,10 @@
 </template>
 
 <script lang="tsx" setup>
-import { create } from "@bufbuild/protobuf";
+import { clone, create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
-import { cloneDeep, isEqual } from "lodash-es";
-import { Trash2Icon } from "lucide-vue-next";
+import { isEqual } from "lodash-es";
+import { PlusIcon, Trash2Icon } from "lucide-vue-next";
 import { NButton, NEmpty, NPopconfirm, NSelect } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -242,6 +280,8 @@ import {
   AppIMSetting_LarkSchema,
   type AppIMSetting_Slack,
   AppIMSetting_SlackSchema,
+  type AppIMSetting_Teams,
+  AppIMSetting_TeamsSchema,
   type AppIMSetting_Wecom,
   AppIMSetting_WecomSchema,
   AppIMSettingSchema,
@@ -260,6 +300,7 @@ type IMSettingPayloadValue =
   | AppIMSetting_Wecom
   | AppIMSetting_Lark
   | AppIMSetting_DingTalk
+  | AppIMSetting_Teams
   | undefined;
 
 const props = defineProps<{
@@ -323,6 +364,15 @@ const onAddIM = (type: Webhook_Type) => {
         },
       });
       break;
+    case Webhook_Type.TEAMS:
+      setting = create(AppIMSetting_IMSettingSchema, {
+        type,
+        payload: {
+          case: "teams",
+          value: create(AppIMSetting_TeamsSchema, {}),
+        },
+      });
+      break;
   }
   if (!setting) {
     return;
@@ -359,7 +409,10 @@ const onDiscardIM = (index: number, type: Webhook_Type) => {
     (setting) => setting.type === type
   );
   if (oldSetting) {
-    state.setting.settings[index] = cloneDeep(oldSetting);
+    state.setting.settings[index] = clone(
+      AppIMSetting_IMSettingSchema,
+      oldSetting
+    );
   } else {
     state.setting.settings.splice(index, 1);
   }
@@ -385,17 +438,99 @@ const onSaveIM = async (index: number, type: Webhook_Type) => {
     case Webhook_Type.DINGTALK:
       updateMask.push("value.app_im_setting_value.dingtalk");
       break;
+    case Webhook_Type.TEAMS:
+      updateMask.push("value.app_im_setting_value.teams");
+      break;
   }
 
   const setting = state.setting.settings[index];
   const oldIndex = imSetting.value.settings.findIndex(
     (setting) => setting.type === type
   );
-  const pendingUpdate = cloneDeep(imSetting.value);
+
+  // Reconstruct the setting with proper oneof payload to avoid Vue reactivity issues
+  const reconstructSetting = (): AppIMSetting_IMSetting => {
+    const payloadValue = setting.payload.value;
+    switch (type) {
+      case Webhook_Type.SLACK:
+        return create(AppIMSetting_IMSettingSchema, {
+          type,
+          payload: {
+            case: "slack",
+            value: create(
+              AppIMSetting_SlackSchema,
+              payloadValue as AppIMSetting_Slack
+            ),
+          },
+        });
+      case Webhook_Type.FEISHU:
+        return create(AppIMSetting_IMSettingSchema, {
+          type,
+          payload: {
+            case: "feishu",
+            value: create(
+              AppIMSetting_FeishuSchema,
+              payloadValue as AppIMSetting_Feishu
+            ),
+          },
+        });
+      case Webhook_Type.WECOM:
+        return create(AppIMSetting_IMSettingSchema, {
+          type,
+          payload: {
+            case: "wecom",
+            value: create(
+              AppIMSetting_WecomSchema,
+              payloadValue as AppIMSetting_Wecom
+            ),
+          },
+        });
+      case Webhook_Type.LARK:
+        return create(AppIMSetting_IMSettingSchema, {
+          type,
+          payload: {
+            case: "lark",
+            value: create(
+              AppIMSetting_LarkSchema,
+              payloadValue as AppIMSetting_Lark
+            ),
+          },
+        });
+      case Webhook_Type.DINGTALK:
+        return create(AppIMSetting_IMSettingSchema, {
+          type,
+          payload: {
+            case: "dingtalk",
+            value: create(
+              AppIMSetting_DingTalkSchema,
+              payloadValue as AppIMSetting_DingTalk
+            ),
+          },
+        });
+      case Webhook_Type.TEAMS:
+        return create(AppIMSetting_IMSettingSchema, {
+          type,
+          payload: {
+            case: "teams",
+            value: create(
+              AppIMSetting_TeamsSchema,
+              payloadValue as AppIMSetting_Teams
+            ),
+          },
+        });
+      default:
+        return setting;
+    }
+  };
+
+  const reconstructedSetting = reconstructSetting();
+
+  // Use protobuf clone to properly preserve oneof discriminators
+  const pendingUpdate = clone(AppIMSettingSchema, imSetting.value);
   if (oldIndex < 0) {
-    pendingUpdate.settings.push(setting);
+    pendingUpdate.settings.push(reconstructedSetting);
   } else {
-    pendingUpdate.settings[oldIndex] = setting;
+    pendingUpdate.settings[oldIndex] = reconstructedSetting;
   }
   try {
     await settingStore.upsertSetting({
@@ -482,6 +617,8 @@ const getImLabel = (type: Webhook_Type): string => {
       return t("common.wecom");
     case Webhook_Type.DINGTALK:
       return t("common.dingtalk");
+    case Webhook_Type.TEAMS:
+      return t("common.teams");
     default:
       return "";
   }
@@ -494,6 +631,7 @@ const availableImSettings = computed(() => {
     Webhook_Type.LARK,
     Webhook_Type.WECOM,
     Webhook_Type.DINGTALK,
+    Webhook_Type.TEAMS,
   ]
     .filter((type) => !isConfigured(type) && !isExisted(type))
     .map((type) => ({
@@ -513,7 +651,7 @@ const renderOption = ({ value }: { value: Webhook_Type }) => {
 watch(
   () => imSetting.value,
   (setting) => {
-    state.setting = cloneDeep(setting);
+    state.setting = clone(AppIMSettingSchema, setting);
   },
   { once: true, immediate: true }
 );

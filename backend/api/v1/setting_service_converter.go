@@ -518,45 +518,55 @@ func convertAppIMSetting(v1Setting *v1pb.AppIMSetting) (*storepb.AppIMSetting, e
 		imSetting := &storepb.AppIMSetting_IMSetting{
 			Type: storepb.ProjectWebhook_Type(setting.Type),
 		}
-		switch payload := setting.Payload.(type) {
-		case *v1pb.AppIMSetting_IMSetting_Slack:
+		// Handle based on Type field since protobuf-es may serialize oneof incorrectly.
+		// The oneof payload type may not match the Type field due to serialization issues.
+		switch setting.Type {
+		case v1pb.Webhook_SLACK:
 			imSetting.Payload = &storepb.AppIMSetting_IMSetting_Slack{
 				Slack: &storepb.AppIMSetting_Slack{
-					Token: payload.Slack.Token,
+					Token: setting.GetSlack().GetToken(),
 				},
 			}
-		case *v1pb.AppIMSetting_IMSetting_Feishu:
+		case v1pb.Webhook_FEISHU:
 			imSetting.Payload = &storepb.AppIMSetting_IMSetting_Feishu{
 				Feishu: &storepb.AppIMSetting_Feishu{
-					AppId:     payload.Feishu.AppId,
-					AppSecret: payload.Feishu.AppSecret,
+					AppId:     setting.GetFeishu().GetAppId(),
+					AppSecret: setting.GetFeishu().GetAppSecret(),
 				},
 			}
-		case *v1pb.AppIMSetting_IMSetting_Wecom:
+		case v1pb.Webhook_WECOM:
 			imSetting.Payload = &storepb.AppIMSetting_IMSetting_Wecom{
 				Wecom: &storepb.AppIMSetting_Wecom{
-					CorpId:  payload.Wecom.CorpId,
-					AgentId: payload.Wecom.AgentId,
-					Secret:  payload.Wecom.Secret,
+					CorpId:  setting.GetWecom().GetCorpId(),
+					AgentId: setting.GetWecom().GetAgentId(),
+					Secret:  setting.GetWecom().GetSecret(),
 				},
 			}
-		case *v1pb.AppIMSetting_IMSetting_Lark:
+		case v1pb.Webhook_LARK:
 			imSetting.Payload = &storepb.AppIMSetting_IMSetting_Lark{
 				Lark: &storepb.AppIMSetting_Lark{
-					AppId:     payload.Lark.AppId,
-					AppSecret: payload.Lark.AppSecret,
+					AppId:     setting.GetLark().GetAppId(),
+					AppSecret: setting.GetLark().GetAppSecret(),
 				},
 			}
-		case *v1pb.AppIMSetting_IMSetting_Dingtalk:
+		case v1pb.Webhook_DINGTALK:
 			imSetting.Payload = &storepb.AppIMSetting_IMSetting_Dingtalk{
 				Dingtalk: &storepb.AppIMSetting_DingTalk{
-					ClientId:     payload.Dingtalk.ClientId,
-					ClientSecret: payload.Dingtalk.ClientSecret,
-					RobotCode:    payload.Dingtalk.RobotCode,
+					ClientId:     setting.GetDingtalk().GetClientId(),
+					ClientSecret: setting.GetDingtalk().GetClientSecret(),
+					RobotCode:    setting.GetDingtalk().GetRobotCode(),
+				},
+			}
+		case v1pb.Webhook_TEAMS:
+			imSetting.Payload = &storepb.AppIMSetting_IMSetting_Teams{
+				Teams: &storepb.AppIMSetting_Teams{
+					TenantId:     setting.GetTeams().GetTenantId(),
+					ClientId:     setting.GetTeams().GetClientId(),
+					ClientSecret: setting.GetTeams().GetClientSecret(),
 				},
 			}
 		default:
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport im type %v", setting.Type.String()))
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported im type %v", setting.Type.String()))
 		}
 		storeSetting.Settings = append(storeSetting.Settings, imSetting)
 	}
@@ -594,6 +604,10 @@ func convertToAppIMSetting(storeSetting *storepb.AppIMSetting) *v1pb.AppIMSettin
 		case storepb.ProjectWebhook_DINGTALK:
 			imSetting.Payload = &v1pb.AppIMSetting_IMSetting_Dingtalk{
 				Dingtalk: &v1pb.AppIMSetting_DingTalk{},
+			}
+		case storepb.ProjectWebhook_TEAMS:
+			imSetting.Payload = &v1pb.AppIMSetting_IMSetting_Teams{
+				Teams: &v1pb.AppIMSetting_Teams{},
 			}
 		default:
 		}

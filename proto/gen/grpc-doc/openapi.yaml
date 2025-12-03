@@ -8193,6 +8193,8 @@ components:
                     $ref: '#/components/schemas/AppIMSetting_Lark'
                 dingtalk:
                     $ref: '#/components/schemas/AppIMSetting_DingTalk'
+                teams:
+                    $ref: '#/components/schemas/AppIMSetting_Teams'
         AppIMSetting_Lark:
             type: object
             properties:
@@ -8208,6 +8210,21 @@ components:
                 token:
                     writeOnly: true
                     type: string
+        AppIMSetting_Teams:
+            type: object
+            properties:
+                tenantId:
+                    writeOnly: true
+                    type: string
+                    description: Azure AD tenant ID (Directory ID).
+                clientId:
+                    writeOnly: true
+                    type: string
+                    description: Azure AD application (client) ID.
+                clientSecret:
+                    writeOnly: true
+                    type: string
+                    description: Azure AD client secret.
         AppIMSetting_Wecom:
             type: object
             properties:

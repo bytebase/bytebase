@@ -267,6 +267,7 @@
     - [AppIMSetting.IMSetting](#bytebase-store-AppIMSetting-IMSetting)
     - [AppIMSetting.Lark](#bytebase-store-AppIMSetting-Lark)
     - [AppIMSetting.Slack](#bytebase-store-AppIMSetting-Slack)
+    - [AppIMSetting.Teams](#bytebase-store-AppIMSetting-Teams)
     - [AppIMSetting.Wecom](#bytebase-store-AppIMSetting-Wecom)
     - [DataClassificationSetting](#bytebase-store-DataClassificationSetting)
     - [DataClassificationSetting.DataClassificationConfig](#bytebase-store-DataClassificationSetting-DataClassificationConfig)
@@ -4310,6 +4311,7 @@ ISSUE_CREATE represents creating an issue. |
 | wecom | [AppIMSetting.Wecom](#bytebase-store-AppIMSetting-Wecom) |  |  |
 | lark | [AppIMSetting.Lark](#bytebase-store-AppIMSetting-Lark) |  |  |
 | dingtalk | [AppIMSetting.DingTalk](#bytebase-store-AppIMSetting-DingTalk) |  |  |
+| teams | [AppIMSetting.Teams](#bytebase-store-AppIMSetting-Teams) |  |  |
 
 
 
@@ -4341,6 +4343,23 @@ ISSUE_CREATE represents creating an issue. |
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | token | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-AppIMSetting-Teams"></a>
+
+### AppIMSetting.Teams
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| tenant_id | [string](#string) |  | Azure AD tenant ID (Directory ID). |
+| client_id | [string](#string) |  | Azure AD application (client) ID. |
+| client_secret | [string](#string) |  | Azure AD client secret. |
 
 
 

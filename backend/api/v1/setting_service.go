@@ -24,6 +24,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/webhook/feishu"
 	"github.com/bytebase/bytebase/backend/plugin/webhook/lark"
 	"github.com/bytebase/bytebase/backend/plugin/webhook/slack"
+	"github.com/bytebase/bytebase/backend/plugin/webhook/teams"
 	"github.com/bytebase/bytebase/backend/plugin/webhook/wecom"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -389,6 +390,15 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found dingtalk setting"))
 				}
 				if err := dingtalk.Validate(ctx, dingtalkSetting.GetDingtalk().GetClientId(), dingtalkSetting.GetDingtalk().GetClientSecret(), dingtalkSetting.GetDingtalk().GetRobotCode(), user.Phone); err != nil {
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("validation failed, error: %v", err))
+				}
+
+			case "value.app_im_setting_value.teams":
+				teamsSetting := findIMSetting(storepb.ProjectWebhook_TEAMS)
+				if teamsSetting == nil || teamsSetting.GetTeams() == nil {
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found teams setting"))
+				}
+				if err := teams.Validate(ctx, teamsSetting.GetTeams().GetTenantId(), teamsSetting.GetTeams().GetClientId(), teamsSetting.GetTeams().GetClientSecret(), user.Email); err != nil {
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("validation failed, error: %v", err))
 				}
 

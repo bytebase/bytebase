@@ -271,6 +271,14 @@ message AppIMSetting {
     string client_secret = 2;
     string robot_code = 3;
   }
+  message Teams {
+    // Azure AD tenant ID (Directory ID).
+    string tenant_id = 1;
+    // Azure AD application (client) ID.
+    string client_id = 2;
+    // Azure AD client secret.
+    string client_secret = 3;
+  }
 
   message IMSetting {
     ProjectWebhook.Type type = 1;
@@ -280,6 +288,7 @@ message AppIMSetting {
       Wecom wecom = 4;
       Lark lark = 5;
       DingTalk dingtalk = 6;
+      Teams teams = 7;
     }
   }
 

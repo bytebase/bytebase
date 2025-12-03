@@ -2307,6 +2307,69 @@ func (x *AppIMSetting_DingTalk) GetRobotCode() string {
 	return ""
 }
 
+type AppIMSetting_Teams struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Azure AD tenant ID (Directory ID).
+	TenantId string `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
+	// Azure AD application (client) ID.
+	ClientId string `protobuf:"bytes,2,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
+	// Azure AD client secret.
+	ClientSecret  string `protobuf:"bytes,3,opt,name=client_secret,json=clientSecret,proto3" json:"client_secret,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AppIMSetting_Teams) Reset() {
+	*x = AppIMSetting_Teams{}
+	mi := &file_store_setting_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AppIMSetting_Teams) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AppIMSetting_Teams) ProtoMessage() {}
+
+func (x *AppIMSetting_Teams) ProtoReflect() protoreflect.Message {
+	mi := &file_store_setting_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AppIMSetting_Teams.ProtoReflect.Descriptor instead.
+func (*AppIMSetting_Teams) Descriptor() ([]byte, []int) {
+	return file_store_setting_proto_rawDescGZIP(), []int{7, 5}
+}
+
+func (x *AppIMSetting_Teams) GetTenantId() string {
+	if x != nil {
+		return x.TenantId
+	}
+	return ""
+}
+
+func (x *AppIMSetting_Teams) GetClientId() string {
+	if x != nil {
+		return x.ClientId
+	}
+	return ""
+}
+
+func (x *AppIMSetting_Teams) GetClientSecret() string {
+	if x != nil {
+		return x.ClientSecret
+	}
+	return ""
+}
+
 type AppIMSetting_IMSetting struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	Type  ProjectWebhook_Type    `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.store.ProjectWebhook_Type" json:"type,omitempty"`
@@ -2317,6 +2380,7 @@ type AppIMSetting_IMSetting struct {
 	//	*AppIMSetting_IMSetting_Wecom
 	//	*AppIMSetting_IMSetting_Lark
 	//	*AppIMSetting_IMSetting_Dingtalk
+	//	*AppIMSetting_IMSetting_Teams
 	Payload       isAppIMSetting_IMSetting_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2324,7 +2388,7 @@ type AppIMSetting_IMSetting struct {
 
 func (x *AppIMSetting_IMSetting) Reset() {
 	*x = AppIMSetting_IMSetting{}
-	mi := &file_store_setting_proto_msgTypes[31]
+	mi := &file_store_setting_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2336,7 +2400,7 @@ func (x *AppIMSetting_IMSetting) String() string {
 func (*AppIMSetting_IMSetting) ProtoMessage() {}
 
 func (x *AppIMSetting_IMSetting) ProtoReflect() protoreflect.Message {
-	mi := &file_store_setting_proto_msgTypes[31]
+	mi := &file_store_setting_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2349,7 +2413,7 @@ func (x *AppIMSetting_IMSetting) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AppIMSetting_IMSetting.ProtoReflect.Descriptor instead.
 func (*AppIMSetting_IMSetting) Descriptor() ([]byte, []int) {
-	return file_store_setting_proto_rawDescGZIP(), []int{7, 5}
+	return file_store_setting_proto_rawDescGZIP(), []int{7, 6}
 }
 
 func (x *AppIMSetting_IMSetting) GetType() ProjectWebhook_Type {
@@ -2411,6 +2475,15 @@ func (x *AppIMSetting_IMSetting) GetDingtalk() *AppIMSetting_DingTalk {
 	return nil
 }
 
+func (x *AppIMSetting_IMSetting) GetTeams() *AppIMSetting_Teams {
+	if x != nil {
+		if x, ok := x.Payload.(*AppIMSetting_IMSetting_Teams); ok {
+			return x.Teams
+		}
+	}
+	return nil
+}
+
 type isAppIMSetting_IMSetting_Payload interface {
 	isAppIMSetting_IMSetting_Payload()
 }
@@ -2435,6 +2508,10 @@ type AppIMSetting_IMSetting_Dingtalk struct {
 	Dingtalk *AppIMSetting_DingTalk `protobuf:"bytes,6,opt,name=dingtalk,proto3,oneof"`
 }
 
+type AppIMSetting_IMSetting_Teams struct {
+	Teams *AppIMSetting_Teams `protobuf:"bytes,7,opt,name=teams,proto3,oneof"`
+}
+
 func (*AppIMSetting_IMSetting_Slack) isAppIMSetting_IMSetting_Payload() {}
 
 func (*AppIMSetting_IMSetting_Feishu) isAppIMSetting_IMSetting_Payload() {}
@@ -2444,6 +2521,8 @@ func (*AppIMSetting_IMSetting_Wecom) isAppIMSetting_IMSetting_Payload() {}
 func (*AppIMSetting_IMSetting_Lark) isAppIMSetting_IMSetting_Payload() {}
 
 func (*AppIMSetting_IMSetting_Dingtalk) isAppIMSetting_IMSetting_Payload() {}
+
+func (*AppIMSetting_IMSetting_Teams) isAppIMSetting_IMSetting_Payload() {}
 
 type EnvironmentSetting_Environment struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -2461,7 +2540,7 @@ type EnvironmentSetting_Environment struct {
 
 func (x *EnvironmentSetting_Environment) Reset() {
 	*x = EnvironmentSetting_Environment{}
-	mi := &file_store_setting_proto_msgTypes[32]
+	mi := &file_store_setting_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2473,7 +2552,7 @@ func (x *EnvironmentSetting_Environment) String() string {
 func (*EnvironmentSetting_Environment) ProtoMessage() {}
 
 func (x *EnvironmentSetting_Environment) ProtoReflect() protoreflect.Message {
-	mi := &file_store_setting_proto_msgTypes[32]
+	mi := &file_store_setting_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2636,7 +2715,7 @@ const file_store_setting_proto_rawDesc = "" +
 	"\x15MASK_TYPE_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05INNER\x10\x01\x12\t\n" +
 	"\x05OUTER\x10\x02B\x06\n" +
-	"\x04mask\"\xb8\x06\n" +
+	"\x04mask\"\xdc\a\n" +
 	"\fAppIMSetting\x12B\n" +
 	"\bsettings\x18\x01 \x03(\v2&.bytebase.store.AppIMSetting.IMSettingR\bsettings\x1a\x1d\n" +
 	"\x05Slack\x12\x14\n" +
@@ -2657,14 +2736,19 @@ const file_store_setting_proto_rawDesc = "" +
 	"\tclient_id\x18\x01 \x01(\tR\bclientId\x12#\n" +
 	"\rclient_secret\x18\x02 \x01(\tR\fclientSecret\x12\x1d\n" +
 	"\n" +
-	"robot_code\x18\x03 \x01(\tR\trobotCode\x1a\x84\x03\n" +
+	"robot_code\x18\x03 \x01(\tR\trobotCode\x1af\n" +
+	"\x05Teams\x12\x1b\n" +
+	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x1b\n" +
+	"\tclient_id\x18\x02 \x01(\tR\bclientId\x12#\n" +
+	"\rclient_secret\x18\x03 \x01(\tR\fclientSecret\x1a\xc0\x03\n" +
 	"\tIMSetting\x127\n" +
 	"\x04type\x18\x01 \x01(\x0e2#.bytebase.store.ProjectWebhook.TypeR\x04type\x12:\n" +
 	"\x05slack\x18\x02 \x01(\v2\".bytebase.store.AppIMSetting.SlackH\x00R\x05slack\x12=\n" +
 	"\x06feishu\x18\x03 \x01(\v2#.bytebase.store.AppIMSetting.FeishuH\x00R\x06feishu\x12:\n" +
 	"\x05wecom\x18\x04 \x01(\v2\".bytebase.store.AppIMSetting.WecomH\x00R\x05wecom\x127\n" +
 	"\x04lark\x18\x05 \x01(\v2!.bytebase.store.AppIMSetting.LarkH\x00R\x04lark\x12C\n" +
-	"\bdingtalk\x18\x06 \x01(\v2%.bytebase.store.AppIMSetting.DingTalkH\x00R\bdingtalkB\t\n" +
+	"\bdingtalk\x18\x06 \x01(\v2%.bytebase.store.AppIMSetting.DingTalkH\x00R\bdingtalk\x12:\n" +
+	"\x05teams\x18\a \x01(\v2\".bytebase.store.AppIMSetting.TeamsH\x00R\x05teamsB\t\n" +
 	"\apayload\"#\n" +
 	"\vSCIMSetting\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\"\x9a\x03\n" +
@@ -2742,7 +2826,7 @@ func file_store_setting_proto_rawDescGZIP() []byte {
 }
 
 var file_store_setting_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
-var file_store_setting_proto_msgTypes = make([]protoimpl.MessageInfo, 34)
+var file_store_setting_proto_msgTypes = make([]protoimpl.MessageInfo, 35)
 var file_store_setting_proto_goTypes = []any{
 	(SettingName)(0),                                                 // 0: bytebase.store.SettingName
 	(DatabaseChangeMode)(0),                                          // 1: bytebase.store.DatabaseChangeMode
@@ -2781,25 +2865,26 @@ var file_store_setting_proto_goTypes = []any{
 	(*AppIMSetting_Wecom)(nil),               // 34: bytebase.store.AppIMSetting.Wecom
 	(*AppIMSetting_Lark)(nil),                // 35: bytebase.store.AppIMSetting.Lark
 	(*AppIMSetting_DingTalk)(nil),            // 36: bytebase.store.AppIMSetting.DingTalk
-	(*AppIMSetting_IMSetting)(nil),           // 37: bytebase.store.AppIMSetting.IMSetting
-	(*EnvironmentSetting_Environment)(nil),   // 38: bytebase.store.EnvironmentSetting.Environment
-	nil,                                      // 39: bytebase.store.EnvironmentSetting.Environment.TagsEntry
-	(*durationpb.Duration)(nil),              // 40: google.protobuf.Duration
-	(*ApprovalTemplate)(nil),                 // 41: bytebase.store.ApprovalTemplate
-	(*expr.Expr)(nil),                        // 42: google.type.Expr
-	(Engine)(0),                              // 43: bytebase.store.Engine
-	(*ColumnMetadata)(nil),                   // 44: bytebase.store.ColumnMetadata
-	(*ColumnCatalog)(nil),                    // 45: bytebase.store.ColumnCatalog
-	(*TableMetadata)(nil),                    // 46: bytebase.store.TableMetadata
-	(*TableCatalog)(nil),                     // 47: bytebase.store.TableCatalog
-	(ProjectWebhook_Type)(0),                 // 48: bytebase.store.ProjectWebhook.Type
+	(*AppIMSetting_Teams)(nil),               // 37: bytebase.store.AppIMSetting.Teams
+	(*AppIMSetting_IMSetting)(nil),           // 38: bytebase.store.AppIMSetting.IMSetting
+	(*EnvironmentSetting_Environment)(nil),   // 39: bytebase.store.EnvironmentSetting.Environment
+	nil,                                      // 40: bytebase.store.EnvironmentSetting.Environment.TagsEntry
+	(*durationpb.Duration)(nil),              // 41: google.protobuf.Duration
+	(*ApprovalTemplate)(nil),                 // 42: bytebase.store.ApprovalTemplate
+	(*expr.Expr)(nil),                        // 43: google.type.Expr
+	(Engine)(0),                              // 44: bytebase.store.Engine
+	(*ColumnMetadata)(nil),                   // 45: bytebase.store.ColumnMetadata
+	(*ColumnCatalog)(nil),                    // 46: bytebase.store.ColumnCatalog
+	(*TableMetadata)(nil),                    // 47: bytebase.store.TableMetadata
+	(*TableCatalog)(nil),                     // 48: bytebase.store.TableCatalog
+	(ProjectWebhook_Type)(0),                 // 49: bytebase.store.ProjectWebhook.Type
 }
 var file_store_setting_proto_depIdxs = []int32{
-	40, // 0: bytebase.store.WorkspaceProfileSetting.token_duration:type_name -> google.protobuf.Duration
+	41, // 0: bytebase.store.WorkspaceProfileSetting.token_duration:type_name -> google.protobuf.Duration
 	7,  // 1: bytebase.store.WorkspaceProfileSetting.announcement:type_name -> bytebase.store.Announcement
-	40, // 2: bytebase.store.WorkspaceProfileSetting.maximum_role_expiration:type_name -> google.protobuf.Duration
+	41, // 2: bytebase.store.WorkspaceProfileSetting.maximum_role_expiration:type_name -> google.protobuf.Duration
 	1,  // 3: bytebase.store.WorkspaceProfileSetting.database_change_mode:type_name -> bytebase.store.DatabaseChangeMode
-	40, // 4: bytebase.store.WorkspaceProfileSetting.inactive_session_timeout:type_name -> google.protobuf.Duration
+	41, // 4: bytebase.store.WorkspaceProfileSetting.inactive_session_timeout:type_name -> google.protobuf.Duration
 	2,  // 5: bytebase.store.Announcement.level:type_name -> bytebase.store.Announcement.AlertLevel
 	18, // 6: bytebase.store.WorkspaceApprovalSetting.rules:type_name -> bytebase.store.WorkspaceApprovalSetting.Rule
 	19, // 7: bytebase.store.SchemaTemplateSetting.field_templates:type_name -> bytebase.store.SchemaTemplateSetting.FieldTemplate
@@ -2811,38 +2896,39 @@ var file_store_setting_proto_depIdxs = []int32{
 	28, // 13: bytebase.store.Algorithm.range_mask:type_name -> bytebase.store.Algorithm.RangeMask
 	29, // 14: bytebase.store.Algorithm.md5_mask:type_name -> bytebase.store.Algorithm.MD5Mask
 	30, // 15: bytebase.store.Algorithm.inner_outer_mask:type_name -> bytebase.store.Algorithm.InnerOuterMask
-	37, // 16: bytebase.store.AppIMSetting.settings:type_name -> bytebase.store.AppIMSetting.IMSetting
-	40, // 17: bytebase.store.PasswordRestrictionSetting.password_rotation:type_name -> google.protobuf.Duration
+	38, // 16: bytebase.store.AppIMSetting.settings:type_name -> bytebase.store.AppIMSetting.IMSetting
+	41, // 17: bytebase.store.PasswordRestrictionSetting.password_rotation:type_name -> google.protobuf.Duration
 	5,  // 18: bytebase.store.AISetting.provider:type_name -> bytebase.store.AISetting.Provider
-	38, // 19: bytebase.store.EnvironmentSetting.environments:type_name -> bytebase.store.EnvironmentSetting.Environment
-	41, // 20: bytebase.store.WorkspaceApprovalSetting.Rule.template:type_name -> bytebase.store.ApprovalTemplate
-	42, // 21: bytebase.store.WorkspaceApprovalSetting.Rule.condition:type_name -> google.type.Expr
+	39, // 19: bytebase.store.EnvironmentSetting.environments:type_name -> bytebase.store.EnvironmentSetting.Environment
+	42, // 20: bytebase.store.WorkspaceApprovalSetting.Rule.template:type_name -> bytebase.store.ApprovalTemplate
+	43, // 21: bytebase.store.WorkspaceApprovalSetting.Rule.condition:type_name -> google.type.Expr
 	3,  // 22: bytebase.store.WorkspaceApprovalSetting.Rule.source:type_name -> bytebase.store.WorkspaceApprovalSetting.Rule.Source
-	43, // 23: bytebase.store.SchemaTemplateSetting.FieldTemplate.engine:type_name -> bytebase.store.Engine
-	44, // 24: bytebase.store.SchemaTemplateSetting.FieldTemplate.column:type_name -> bytebase.store.ColumnMetadata
-	45, // 25: bytebase.store.SchemaTemplateSetting.FieldTemplate.catalog:type_name -> bytebase.store.ColumnCatalog
-	43, // 26: bytebase.store.SchemaTemplateSetting.ColumnType.engine:type_name -> bytebase.store.Engine
-	43, // 27: bytebase.store.SchemaTemplateSetting.TableTemplate.engine:type_name -> bytebase.store.Engine
-	46, // 28: bytebase.store.SchemaTemplateSetting.TableTemplate.table:type_name -> bytebase.store.TableMetadata
-	47, // 29: bytebase.store.SchemaTemplateSetting.TableTemplate.catalog:type_name -> bytebase.store.TableCatalog
+	44, // 23: bytebase.store.SchemaTemplateSetting.FieldTemplate.engine:type_name -> bytebase.store.Engine
+	45, // 24: bytebase.store.SchemaTemplateSetting.FieldTemplate.column:type_name -> bytebase.store.ColumnMetadata
+	46, // 25: bytebase.store.SchemaTemplateSetting.FieldTemplate.catalog:type_name -> bytebase.store.ColumnCatalog
+	44, // 26: bytebase.store.SchemaTemplateSetting.ColumnType.engine:type_name -> bytebase.store.Engine
+	44, // 27: bytebase.store.SchemaTemplateSetting.TableTemplate.engine:type_name -> bytebase.store.Engine
+	47, // 28: bytebase.store.SchemaTemplateSetting.TableTemplate.table:type_name -> bytebase.store.TableMetadata
+	48, // 29: bytebase.store.SchemaTemplateSetting.TableTemplate.catalog:type_name -> bytebase.store.TableCatalog
 	23, // 30: bytebase.store.DataClassificationSetting.DataClassificationConfig.levels:type_name -> bytebase.store.DataClassificationSetting.DataClassificationConfig.Level
 	25, // 31: bytebase.store.DataClassificationSetting.DataClassificationConfig.classification:type_name -> bytebase.store.DataClassificationSetting.DataClassificationConfig.ClassificationEntry
 	24, // 32: bytebase.store.DataClassificationSetting.DataClassificationConfig.ClassificationEntry.value:type_name -> bytebase.store.DataClassificationSetting.DataClassificationConfig.DataClassification
 	12, // 33: bytebase.store.SemanticTypeSetting.SemanticType.algorithm:type_name -> bytebase.store.Algorithm
 	31, // 34: bytebase.store.Algorithm.RangeMask.slices:type_name -> bytebase.store.Algorithm.RangeMask.Slice
 	4,  // 35: bytebase.store.Algorithm.InnerOuterMask.type:type_name -> bytebase.store.Algorithm.InnerOuterMask.MaskType
-	48, // 36: bytebase.store.AppIMSetting.IMSetting.type:type_name -> bytebase.store.ProjectWebhook.Type
+	49, // 36: bytebase.store.AppIMSetting.IMSetting.type:type_name -> bytebase.store.ProjectWebhook.Type
 	32, // 37: bytebase.store.AppIMSetting.IMSetting.slack:type_name -> bytebase.store.AppIMSetting.Slack
 	33, // 38: bytebase.store.AppIMSetting.IMSetting.feishu:type_name -> bytebase.store.AppIMSetting.Feishu
 	34, // 39: bytebase.store.AppIMSetting.IMSetting.wecom:type_name -> bytebase.store.AppIMSetting.Wecom
 	35, // 40: bytebase.store.AppIMSetting.IMSetting.lark:type_name -> bytebase.store.AppIMSetting.Lark
 	36, // 41: bytebase.store.AppIMSetting.IMSetting.dingtalk:type_name -> bytebase.store.AppIMSetting.DingTalk
-	39, // 42: bytebase.store.EnvironmentSetting.Environment.tags:type_name -> bytebase.store.EnvironmentSetting.Environment.TagsEntry
-	43, // [43:43] is the sub-list for method output_type
-	43, // [43:43] is the sub-list for method input_type
-	43, // [43:43] is the sub-list for extension type_name
-	43, // [43:43] is the sub-list for extension extendee
-	0,  // [0:43] is the sub-list for field type_name
+	37, // 42: bytebase.store.AppIMSetting.IMSetting.teams:type_name -> bytebase.store.AppIMSetting.Teams
+	40, // 43: bytebase.store.EnvironmentSetting.Environment.tags:type_name -> bytebase.store.EnvironmentSetting.Environment.TagsEntry
+	44, // [44:44] is the sub-list for method output_type
+	44, // [44:44] is the sub-list for method input_type
+	44, // [44:44] is the sub-list for extension type_name
+	44, // [44:44] is the sub-list for extension extendee
+	0,  // [0:44] is the sub-list for field type_name
 }
 
 func init() { file_store_setting_proto_init() }
@@ -2861,12 +2947,13 @@ func file_store_setting_proto_init() {
 		(*Algorithm_InnerOuterMask_)(nil),
 	}
 	file_store_setting_proto_msgTypes[18].OneofWrappers = []any{}
-	file_store_setting_proto_msgTypes[31].OneofWrappers = []any{
+	file_store_setting_proto_msgTypes[32].OneofWrappers = []any{
 		(*AppIMSetting_IMSetting_Slack)(nil),
 		(*AppIMSetting_IMSetting_Feishu)(nil),
 		(*AppIMSetting_IMSetting_Wecom)(nil),
 		(*AppIMSetting_IMSetting_Lark)(nil),
 		(*AppIMSetting_IMSetting_Dingtalk)(nil),
+		(*AppIMSetting_IMSetting_Teams)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -2874,7 +2961,7 @@ func file_store_setting_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_setting_proto_rawDesc), len(file_store_setting_proto_rawDesc)),
 			NumEnums:      6,
-			NumMessages:   34,
+			NumMessages:   35,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

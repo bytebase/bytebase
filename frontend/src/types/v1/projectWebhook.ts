@@ -48,7 +48,7 @@ export const projectWebhookV1TypeItemList = (): ProjectWebhookV1TypeItem[] => {
       urlPlaceholder: "https://acme123.webhook.office.com/webhookb2/...",
       docUrl:
         "https://docs.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook",
-      supportDirectMessage: false,
+      supportDirectMessage: true,
     },
     {
       type: Webhook_Type.DINGTALK,

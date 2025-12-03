@@ -231,6 +231,25 @@ func (x *AppIMSetting_DingTalk) Equal(y *AppIMSetting_DingTalk) bool {
 	return true
 }
 
+func (x *AppIMSetting_Teams) Equal(y *AppIMSetting_Teams) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.TenantId != y.TenantId {
+		return false
+	}
+	if x.ClientId != y.ClientId {
+		return false
+	}
+	if x.ClientSecret != y.ClientSecret {
+		return false
+	}
+	return true
+}
+
 func (x *AppIMSetting_IMSetting) Equal(y *AppIMSetting_IMSetting) bool {
 	if x == y {
 		return true
@@ -254,6 +273,9 @@ func (x *AppIMSetting_IMSetting) Equal(y *AppIMSetting_IMSetting) bool {
 		return false
 	}
 	if !x.GetDingtalk().Equal(y.GetDingtalk()) {
+		return false
+	}
+	if !x.GetTeams().Equal(y.GetTeams()) {
 		return false
 	}
 	return true

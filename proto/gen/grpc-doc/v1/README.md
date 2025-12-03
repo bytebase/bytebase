@@ -268,6 +268,7 @@
     - [AppIMSetting.IMSetting](#bytebase-v1-AppIMSetting-IMSetting)
     - [AppIMSetting.Lark](#bytebase-v1-AppIMSetting-Lark)
     - [AppIMSetting.Slack](#bytebase-v1-AppIMSetting-Slack)
+    - [AppIMSetting.Teams](#bytebase-v1-AppIMSetting-Teams)
     - [AppIMSetting.Wecom](#bytebase-v1-AppIMSetting-Wecom)
     - [DataClassificationSetting](#bytebase-v1-DataClassificationSetting)
     - [DataClassificationSetting.DataClassificationConfig](#bytebase-v1-DataClassificationSetting-DataClassificationConfig)
@@ -4874,6 +4875,7 @@ ProjectService manages projects that group databases and changes.
 | wecom | [AppIMSetting.Wecom](#bytebase-v1-AppIMSetting-Wecom) |  |  |
 | lark | [AppIMSetting.Lark](#bytebase-v1-AppIMSetting-Lark) |  |  |
 | dingtalk | [AppIMSetting.DingTalk](#bytebase-v1-AppIMSetting-DingTalk) |  |  |
+| teams | [AppIMSetting.Teams](#bytebase-v1-AppIMSetting-Teams) |  |  |
 
 
 
@@ -4905,6 +4907,23 @@ ProjectService manages projects that group databases and changes.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | token | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-AppIMSetting-Teams"></a>
+
+### AppIMSetting.Teams
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| tenant_id | [string](#string) |  | Azure AD tenant ID (Directory ID). |
+| client_id | [string](#string) |  | Azure AD application (client) ID. |
+| client_secret | [string](#string) |  | Azure AD client secret. |
 
 
 
