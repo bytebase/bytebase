@@ -1,14 +1,14 @@
 import { toJson, toJsonString } from "@bufbuild/protobuf";
-import { SettingValueSchema } from "@bufbuild/protobuf/wkt";
+import { ValueSchema } from "@bufbuild/protobuf/wkt";
 import dayjs from "dayjs";
 import { getDateForPbTimestampProtoEs } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
   RowValue,
-  RowSettingValue_Timestamp,
-  RowSettingValue_TimestampTZ,
+  RowValue_Timestamp,
+  RowValue_TimestampTZ,
 } from "@/types/proto-es/v1/sql_service_pb";
-import { RowSettingValueSchema } from "@/types/proto-es/v1/sql_service_pb";
+import { RowValueSchema } from "@/types/proto-es/v1/sql_service_pb";
 import { isNullOrUndefined } from "../util";
 
 // extractSQLRowValuePlain extracts a plain value from a RowValue.
@@ -17,7 +17,7 @@ export const extractSQLRowValuePlain = (value: RowValue | undefined) => {
     return null;
   }
 
-  const plainObject = toJson(RowSettingValueSchema, value);
+  const plainObject = toJson(RowValueSchema, value);
   if (plainObject === null) {
     return undefined;
   }
@@ -92,7 +92,7 @@ export const extractSQLRowValuePlain = (value: RowValue | undefined) => {
   return Object.values(plainObject)[0];
 };
 
-const formatTimestamp = (timestamp: RowSettingValue_Timestamp) => {
+const formatTimestamp = (timestamp: RowValue_Timestamp) => {
   const fullDayjs = dayjs(
     getDateForPbTimestampProtoEs(timestamp.googleTimestamp)
   ).utc();
@@ -108,7 +108,7 @@ const formatTimestamp = (timestamp: RowSettingValue_Timestamp) => {
 };
 
 const formatTimestampWithTz = (
-  timestampTzValue: RowSettingValue_TimestampTZ
+  timestampTzValue: RowValue_TimestampTZ
 ) => {
   const fullDayjs = dayjs(
     getDateForPbTimestampProtoEs(timestampTzValue.googleTimestamp)
@@ -306,7 +306,7 @@ const extractSQLRowValueRaw = (value: RowValue | undefined) => {
   if (typeof value === "undefined" || value.kind?.case === "nullValue") {
     return null;
   }
-  const j = toJson(RowSettingValueSchema, value);
+  const j = toJson(RowValueSchema, value);
   if (j === null) {
     return undefined;
   }
