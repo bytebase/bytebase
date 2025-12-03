@@ -627,9 +627,11 @@ const scrollScopeTagIntoViewIfNeeded = (id: SearchScopeId) => {
   });
 };
 
-// Check if params has meaningful content (non-empty)
+// Check if params has meaningful content (non-empty, excluding readonly scopes)
 const hasParams = (params: SearchParams): boolean => {
-  return params.query.trim().length > 0 || params.scopes.length > 0;
+  if (params.query.trim().length > 0) return true;
+  // Readonly scopes don't count as "URL params" - they're set by parent
+  return params.scopes.some((s) => !s.readonly);
 };
 
 onMounted(() => {
@@ -644,22 +646,35 @@ onMounted(() => {
     return;
   }
 
+  // Preserve readonly scopes from props.params (e.g., project=xx in ProjectDatabasesPanel)
+  const readonlyScopes = props.params.scopes.filter((s) => s.readonly);
+
   // No URL params - check cache
   const qs = cachedQuery.value;
   if (qs.length > 0) {
     // Cache exists: restore from cache
     const params = buildSearchParamsBySearchText(qs);
     // Filter to only include scopes that are valid for this search context
+    // and not already covered by readonly scopes
+    const readonlyScopeIds = new Set(readonlyScopes.map((s) => s.id));
     params.scopes = params.scopes.filter((scope) => {
+      if (readonlyScopeIds.has(scope.id)) return false;
       return props.scopeOptions.find((op) => op.id === scope.id);
     });
+    // Prepend readonly scopes
+    params.scopes = [...readonlyScopes, ...params.scopes];
     emit("update:params", params);
     return;
   }
 
   // No cache: use defaults if provided
   if (props.defaultParams) {
-    emit("update:params", cloneDeep(props.defaultParams));
+    const params = cloneDeep(props.defaultParams);
+    // Prepend readonly scopes
+    const readonlyScopeIds = new Set(readonlyScopes.map((s) => s.id));
+    params.scopes = params.scopes.filter((s) => !readonlyScopeIds.has(s.id));
+    params.scopes = [...readonlyScopes, ...params.scopes];
+    emit("update:params", params);
   }
 });
 
