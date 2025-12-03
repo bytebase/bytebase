@@ -56,9 +56,9 @@ func TestDirectApprovalRuleMatching(t *testing.T) {
 		AllowMissing: true,
 		Setting: &v1pb.Setting{
 			Name: "settings/WORKSPACE_APPROVAL",
-			Value: &v1pb.Value{
-				Value: &v1pb.Value_WorkspaceApprovalSettingValue{
-					WorkspaceApprovalSettingValue: &v1pb.WorkspaceApprovalSetting{
+			Value: &v1pb.SettingValue{
+				Value: &v1pb.SettingValue_WorkspaceApproval{
+					WorkspaceApproval: &v1pb.WorkspaceApprovalSetting{
 						Rules: []*v1pb.WorkspaceApprovalSetting_Rule{
 							{
 								Source: v1pb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE,
@@ -194,9 +194,9 @@ func TestApprovalRuleFirstMatchWins(t *testing.T) {
 		AllowMissing: true,
 		Setting: &v1pb.Setting{
 			Name: "settings/WORKSPACE_APPROVAL",
-			Value: &v1pb.Value{
-				Value: &v1pb.Value_WorkspaceApprovalSettingValue{
-					WorkspaceApprovalSettingValue: &v1pb.WorkspaceApprovalSetting{
+			Value: &v1pb.SettingValue{
+				Value: &v1pb.SettingValue_WorkspaceApproval{
+					WorkspaceApproval: &v1pb.WorkspaceApprovalSetting{
 						Rules: []*v1pb.WorkspaceApprovalSetting_Rule{
 							{
 								// Rule 1: Specific - prod environment
@@ -340,9 +340,9 @@ func TestApprovalRuleNoMatch(t *testing.T) {
 		AllowMissing: true,
 		Setting: &v1pb.Setting{
 			Name: "settings/WORKSPACE_APPROVAL",
-			Value: &v1pb.Value{
-				Value: &v1pb.Value_WorkspaceApprovalSettingValue{
-					WorkspaceApprovalSettingValue: &v1pb.WorkspaceApprovalSetting{
+			Value: &v1pb.SettingValue{
+				Value: &v1pb.SettingValue_WorkspaceApproval{
+					WorkspaceApproval: &v1pb.WorkspaceApprovalSetting{
 						Rules: []*v1pb.WorkspaceApprovalSetting_Rule{
 							{
 								Source: v1pb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE,
@@ -453,9 +453,9 @@ func TestFallbackRuleValidation(t *testing.T) {
 		AllowMissing: true,
 		Setting: &v1pb.Setting{
 			Name: "settings/WORKSPACE_APPROVAL",
-			Value: &v1pb.Value{
-				Value: &v1pb.Value_WorkspaceApprovalSettingValue{
-					WorkspaceApprovalSettingValue: &v1pb.WorkspaceApprovalSetting{
+			Value: &v1pb.SettingValue{
+				Value: &v1pb.SettingValue_WorkspaceApproval{
+					WorkspaceApproval: &v1pb.WorkspaceApprovalSetting{
 						Rules: []*v1pb.WorkspaceApprovalSetting_Rule{
 							{
 								Source: v1pb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED,
@@ -480,9 +480,9 @@ func TestFallbackRuleValidation(t *testing.T) {
 		AllowMissing: true,
 		Setting: &v1pb.Setting{
 			Name: "settings/WORKSPACE_APPROVAL",
-			Value: &v1pb.Value{
-				Value: &v1pb.Value_WorkspaceApprovalSettingValue{
-					WorkspaceApprovalSettingValue: &v1pb.WorkspaceApprovalSetting{
+			Value: &v1pb.SettingValue{
+				Value: &v1pb.SettingValue_WorkspaceApproval{
+					WorkspaceApproval: &v1pb.WorkspaceApprovalSetting{
 						Rules: []*v1pb.WorkspaceApprovalSetting_Rule{
 							{
 								Source: v1pb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED,
@@ -547,9 +547,9 @@ func TestFallbackRuleMatchesWhenSourceSpecificDoesNot(t *testing.T) {
 		AllowMissing: true,
 		Setting: &v1pb.Setting{
 			Name: "settings/WORKSPACE_APPROVAL",
-			Value: &v1pb.Value{
-				Value: &v1pb.Value_WorkspaceApprovalSettingValue{
-					WorkspaceApprovalSettingValue: &v1pb.WorkspaceApprovalSetting{
+			Value: &v1pb.SettingValue{
+				Value: &v1pb.SettingValue_WorkspaceApproval{
+					WorkspaceApproval: &v1pb.WorkspaceApprovalSetting{
 						Rules: []*v1pb.WorkspaceApprovalSetting_Rule{
 							{
 								// Source-specific: only matches prod
@@ -687,9 +687,9 @@ func TestSourceSpecificRuleTakesPriorityOverFallback(t *testing.T) {
 		AllowMissing: true,
 		Setting: &v1pb.Setting{
 			Name: "settings/WORKSPACE_APPROVAL",
-			Value: &v1pb.Value{
-				Value: &v1pb.Value_WorkspaceApprovalSettingValue{
-					WorkspaceApprovalSettingValue: &v1pb.WorkspaceApprovalSetting{
+			Value: &v1pb.SettingValue{
+				Value: &v1pb.SettingValue_WorkspaceApproval{
+					WorkspaceApproval: &v1pb.WorkspaceApprovalSetting{
 						Rules: []*v1pb.WorkspaceApprovalSetting_Rule{
 							{
 								// Fallback rule FIRST in list

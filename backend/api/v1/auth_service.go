@@ -247,7 +247,7 @@ func (s *AuthService) needResetPassword(ctx context.Context, user *store.UserMes
 		return false
 	}
 
-	passwordRestriction, err := s.store.GetPasswordRestrictionSetting(ctx)
+	passwordRestriction, err := s.store.GetPasswordRestriction(ctx)
 	if err != nil {
 		slog.Error("failed to get password restriction", log.BBError(err))
 		return false

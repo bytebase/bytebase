@@ -105,7 +105,7 @@ func (x *Setting) Equal(y *Setting) bool {
 	return true
 }
 
-func (x *Value) Equal(y *Value) bool {
+func (x *SettingValue) Equal(y *SettingValue) bool {
 	if x == y {
 		return true
 	}
@@ -115,31 +115,31 @@ func (x *Value) Equal(y *Value) bool {
 	if x.GetStringValue() != y.GetStringValue() {
 		return false
 	}
-	if !x.GetAppImSettingValue().Equal(y.GetAppImSettingValue()) {
+	if !x.GetAppIm().Equal(y.GetAppIm()) {
 		return false
 	}
-	if !x.GetWorkspaceProfileSettingValue().Equal(y.GetWorkspaceProfileSettingValue()) {
+	if !x.GetWorkspaceProfile().Equal(y.GetWorkspaceProfile()) {
 		return false
 	}
-	if !x.GetWorkspaceApprovalSettingValue().Equal(y.GetWorkspaceApprovalSettingValue()) {
+	if !x.GetWorkspaceApproval().Equal(y.GetWorkspaceApproval()) {
 		return false
 	}
-	if !x.GetDataClassificationSettingValue().Equal(y.GetDataClassificationSettingValue()) {
+	if !x.GetDataClassification().Equal(y.GetDataClassification()) {
 		return false
 	}
-	if !x.GetSemanticTypeSettingValue().Equal(y.GetSemanticTypeSettingValue()) {
+	if !x.GetSemanticType().Equal(y.GetSemanticType()) {
 		return false
 	}
-	if !x.GetScimSetting().Equal(y.GetScimSetting()) {
+	if !x.GetScim().Equal(y.GetScim()) {
 		return false
 	}
-	if !x.GetPasswordRestrictionSetting().Equal(y.GetPasswordRestrictionSetting()) {
+	if !x.GetPasswordRestriction().Equal(y.GetPasswordRestriction()) {
 		return false
 	}
-	if !x.GetAiSetting().Equal(y.GetAiSetting()) {
+	if !x.GetAi().Equal(y.GetAi()) {
 		return false
 	}
-	if !x.GetEnvironmentSetting().Equal(y.GetEnvironmentSetting()) {
+	if !x.GetEnvironment().Equal(y.GetEnvironment()) {
 		return false
 	}
 	return true

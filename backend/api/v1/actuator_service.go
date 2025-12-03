@@ -146,7 +146,7 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspace setting"))
 	}
 
-	passwordRestrictionSetting, err := s.store.GetPasswordRestrictionSetting(ctx)
+	passwordRestrictionSetting, err := s.store.GetPasswordRestriction(ctx)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find password restriction setting"))
 	}
@@ -271,7 +271,7 @@ func (s *ActuatorService) getUsedFeatures(ctx context.Context) ([]v1pb.PlanFeatu
 	}
 
 	// environment tier
-	environments, err := s.store.GetEnvironmentSetting(ctx)
+	environments, err := s.store.GetEnvironment(ctx)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get environment setting")
 	}

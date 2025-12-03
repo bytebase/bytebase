@@ -638,7 +638,7 @@ func (r *Runner) buildCELVariablesForGrantRequest(ctx context.Context, issue *st
 
 	// If no specific databases, create one entry per environment
 	if len(factors.Databases) == 0 {
-		environments, err := r.store.GetEnvironmentSetting(ctx)
+		environments, err := r.store.GetEnvironment(ctx)
 		if err != nil {
 			return nil, false, err
 		}

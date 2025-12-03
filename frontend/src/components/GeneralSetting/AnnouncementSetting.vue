@@ -146,7 +146,7 @@ const updateAnnouncementSetting = async () => {
       announcement: { ...state },
     },
     updateMask: create(FieldMaskSchema, {
-      paths: ["value.workspace_profile_setting_value.announcement"],
+      paths: ["value.workspace_profile.announcement"],
     }),
   });
 };

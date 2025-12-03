@@ -170,7 +170,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		if request.Msg.UpdateMask == nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask is required"))
 		}
-		payload := convertWorkspaceProfileSetting(request.Msg.Setting.Value.GetWorkspaceProfileSettingValue())
+		payload := convertWorkspaceProfileSetting(request.Msg.Setting.Value.GetWorkspaceProfile())
 		oldSetting, err := s.store.GetWorkspaceGeneralSetting(ctx)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find setting %s with error: %v", apiSettingName, err))
@@ -178,7 +178,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 
 		for _, path := range request.Msg.UpdateMask.Paths {
 			switch path {
-			case "value.workspace_profile_setting_value.disallow_signup":
+			case "value.workspace_profile.disallow_signup":
 				if s.profile.SaaS {
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("feature %s is unavailable in current mode", settingName))
 				}
@@ -188,7 +188,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 					}
 				}
 				oldSetting.DisallowSignup = payload.DisallowSignup
-			case "value.workspace_profile_setting_value.external_url":
+			case "value.workspace_profile.external_url":
 				if s.profile.SaaS {
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("feature %s is unavailable in current mode", settingName))
 				}
@@ -204,12 +204,12 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 					payload.ExternalUrl = externalURL
 				}
 				oldSetting.ExternalUrl = payload.ExternalUrl
-			case "value.workspace_profile_setting_value.require_2fa":
+			case "value.workspace_profile.require_2fa":
 				if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_TWO_FA); err != nil {
 					return nil, connect.NewError(connect.CodePermissionDenied, err)
 				}
 				oldSetting.Require_2Fa = payload.Require_2Fa
-			case "value.workspace_profile_setting_value.token_duration":
+			case "value.workspace_profile.token_duration":
 				if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_SIGN_IN_FREQUENCY_CONTROL); err != nil {
 					return nil, connect.NewError(connect.CodePermissionDenied, err)
 				}
@@ -217,17 +217,17 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("refresh token duration should be at least one hour"))
 				}
 				oldSetting.TokenDuration = payload.TokenDuration
-			case "value.workspace_profile_setting_value.inactive_session_timeout":
+			case "value.workspace_profile.inactive_session_timeout":
 				if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_SIGN_IN_FREQUENCY_CONTROL); err != nil {
 					return nil, connect.NewError(connect.CodePermissionDenied, err)
 				}
 				oldSetting.InactiveSessionTimeout = payload.InactiveSessionTimeout
-			case "value.workspace_profile_setting_value.announcement":
+			case "value.workspace_profile.announcement":
 				if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DASHBOARD_ANNOUNCEMENT); err != nil {
 					return nil, connect.NewError(connect.CodePermissionDenied, err)
 				}
 				oldSetting.Announcement = payload.Announcement
-			case "value.workspace_profile_setting_value.maximum_role_expiration":
+			case "value.workspace_profile.maximum_role_expiration":
 				if payload.MaximumRoleExpiration != nil {
 					// If the value is less than or equal to 0, we will remove the setting. AKA no limit.
 					if payload.MaximumRoleExpiration.Seconds <= 0 {
@@ -235,21 +235,21 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 					}
 				}
 				oldSetting.MaximumRoleExpiration = payload.MaximumRoleExpiration
-			case "value.workspace_profile_setting_value.domains":
+			case "value.workspace_profile.domains":
 				if err := validateDomains(payload.Domains); err != nil {
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid domains, error %v", err))
 				}
 				oldSetting.Domains = payload.Domains
-			case "value.workspace_profile_setting_value.enforce_identity_domain":
+			case "value.workspace_profile.enforce_identity_domain":
 				if payload.EnforceIdentityDomain {
 					if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_USER_EMAIL_DOMAIN_RESTRICTION); err != nil {
 						return nil, connect.NewError(connect.CodePermissionDenied, err)
 					}
 				}
 				oldSetting.EnforceIdentityDomain = payload.EnforceIdentityDomain
-			case "value.workspace_profile_setting_value.database_change_mode":
+			case "value.workspace_profile.database_change_mode":
 				oldSetting.DatabaseChangeMode = payload.DatabaseChangeMode
-			case "value.workspace_profile_setting_value.disallow_password_signin":
+			case "value.workspace_profile.disallow_password_signin":
 				if payload.DisallowPasswordSignin {
 					// We should still allow users to turn it off.
 					if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DISALLOW_PASSWORD_SIGNIN); err != nil {
@@ -265,9 +265,9 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 					}
 				}
 				oldSetting.DisallowPasswordSignin = payload.DisallowPasswordSignin
-			case "value.workspace_profile_setting_value.enable_metric_collection":
+			case "value.workspace_profile.enable_metric_collection":
 				oldSetting.EnableMetricCollection = payload.EnableMetricCollection
-			case "value.workspace_profile_setting_value.enable_audit_log_stdout":
+			case "value.workspace_profile.enable_audit_log_stdout":
 				if payload.EnableAuditLogStdout {
 					// Require TEAM or ENTERPRISE license
 					if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_AUDIT_LOG); err != nil {
@@ -295,7 +295,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		}
 
 		payload := &storepb.WorkspaceApprovalSetting{}
-		for _, rule := range request.Msg.Setting.Value.GetWorkspaceApprovalSettingValue().Rules {
+		for _, rule := range request.Msg.Setting.Value.GetWorkspaceApproval().Rules {
 			// Validate the condition.
 			if _, err := common.ConvertUnparsedApproval(rule.Condition); err != nil {
 				return nil, err
@@ -339,7 +339,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		storeSettingValue = request.Msg.Setting.Value.GetStringValue()
 
 	case storepb.SettingName_APP_IM:
-		payload, err := convertAppIMSetting(request.Msg.Setting.Value.GetAppImSettingValue())
+		payload, err := convertAppIMSetting(request.Msg.Setting.Value.GetAppIm())
 		if err != nil {
 			return nil, err
 		}
@@ -356,7 +356,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 
 		for _, path := range request.Msg.GetUpdateMask().GetPaths() {
 			switch path {
-			case "value.app_im_setting_value.slack":
+			case "value.app_im.slack":
 				slackSetting := findIMSetting(storepb.ProjectWebhook_SLACK)
 				if slackSetting == nil || slackSetting.GetSlack() == nil {
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found slack setting"))
@@ -365,7 +365,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("validation failed, error: %v", err))
 				}
 
-			case "value.app_im_setting_value.feishu":
+			case "value.app_im.feishu":
 				feishuSetting := findIMSetting(storepb.ProjectWebhook_FEISHU)
 				if feishuSetting == nil || feishuSetting.GetFeishu() == nil {
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found feishu setting"))
@@ -374,7 +374,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("validation failed, error: %v", err))
 				}
 
-			case "value.app_im_setting_value.wecom":
+			case "value.app_im.wecom":
 				wecomSetting := findIMSetting(storepb.ProjectWebhook_WECOM)
 				if wecomSetting == nil || wecomSetting.GetWecom() == nil {
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found wecom setting"))
@@ -383,7 +383,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("validation failed, error: %v", err))
 				}
 
-			case "value.app_im_setting_value.lark":
+			case "value.app_im.lark":
 				larkSetting := findIMSetting(storepb.ProjectWebhook_LARK)
 				if larkSetting == nil || larkSetting.GetLark() == nil {
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found lark setting"))
@@ -392,7 +392,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("validation failed, error: %v", err))
 				}
 
-			case "value.app_im_setting_value.dingtalk":
+			case "value.app_im.dingtalk":
 				dingtalkSetting := findIMSetting(storepb.ProjectWebhook_DINGTALK)
 				if dingtalkSetting == nil || dingtalkSetting.GetDingtalk() == nil {
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found dingtalk setting"))
@@ -416,7 +416,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DATA_CLASSIFICATION); err != nil {
 			return nil, connect.NewError(connect.CodePermissionDenied, err)
 		}
-		payload := convertDataClassificationSetting(request.Msg.Setting.Value.GetDataClassificationSettingValue())
+		payload := convertDataClassificationSetting(request.Msg.Setting.Value.GetDataClassification())
 		// it's a temporary solution to limit only 1 classification config before we support manage it in the UX.
 		if len(payload.Configs) > 1 {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("only support define 1 classification config for now"))
@@ -431,7 +431,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		resetClassification = true
 		storeSettingValue = string(bytes)
 	case storepb.SettingName_SEMANTIC_TYPES:
-		storeSemanticTypeSetting := convertSemanticTypeSetting(request.Msg.Setting.Value.GetSemanticTypeSettingValue())
+		storeSemanticTypeSetting := convertSemanticTypeSetting(request.Msg.Setting.Value.GetSemanticType())
 		idMap := make(map[string]bool)
 		for _, tp := range storeSemanticTypeSetting.Types {
 			if tp.Title == "" {
@@ -474,7 +474,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_PASSWORD_RESTRICTIONS); err != nil {
 			return nil, connect.NewError(connect.CodePermissionDenied, err)
 		}
-		passwordSetting := convertPasswordRestrictionSetting(request.Msg.Setting.Value.GetPasswordRestrictionSetting())
+		passwordSetting := convertPasswordRestrictionSetting(request.Msg.Setting.Value.GetPasswordRestriction())
 		if passwordSetting.MinLength < 8 {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid password minimum length, should no less than 8"))
 		}
@@ -484,7 +484,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		}
 		storeSettingValue = string(bytes)
 	case storepb.SettingName_AI:
-		aiSetting := convertAISetting(request.Msg.Setting.Value.GetAiSetting())
+		aiSetting := convertAISetting(request.Msg.Setting.Value.GetAi())
 		if aiSetting.Enabled {
 			if aiSetting.Endpoint == "" || aiSetting.Model == "" {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("API endpoint and model are required"))
@@ -495,7 +495,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 					return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal existed ai setting with error: %v", err))
 				}
 				if aiSetting.ApiKey == "" {
-					aiSetting.ApiKey = existedAISetting.Value.GetAiSetting().GetApiKey()
+					aiSetting.ApiKey = existedAISetting.Value.GetAi().GetApiKey()
 				}
 			}
 			if aiSetting.ApiKey == "" {
@@ -509,12 +509,12 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		}
 		storeSettingValue = string(bytes)
 	case storepb.SettingName_ENVIRONMENT:
-		if serr := s.validateEnvironments(request.Msg.Setting.Value.GetEnvironmentSetting().GetEnvironments()); serr != nil {
+		if serr := s.validateEnvironments(request.Msg.Setting.Value.GetEnvironment().GetEnvironments()); serr != nil {
 			return nil, serr
 		}
 
-		environmentSetting := convertEnvironmentSetting(request.Msg.Setting.Value.GetEnvironmentSetting())
-		oldEnvironmentSetting, err := s.store.GetEnvironmentSetting(ctx)
+		environmentSetting := convertEnvironmentSetting(request.Msg.Setting.Value.GetEnvironment())
+		oldEnvironmentSetting, err := s.store.GetEnvironment(ctx)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get old environment setting with error: %v", err))
 		}

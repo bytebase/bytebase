@@ -84,7 +84,7 @@ const settingV1Store = useSettingV1Store();
 
 const openAIEnabled = computed(() => {
   const setting = settingV1Store.getSettingByName(Setting_SettingName.AI);
-  return setting?.value?.value?.case === "aiSetting"
+  return setting?.value?.value?.case === "ai"
     ? setting.value.value.value.enabled
     : false;
 });

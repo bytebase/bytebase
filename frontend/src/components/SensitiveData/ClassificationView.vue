@@ -86,7 +86,7 @@ import {
   DataClassificationSetting_DataClassificationConfigSchema,
   DataClassificationSettingSchema,
   Setting_SettingName,
-  ValueSchema as SettingValueSchema,
+  SettingValueSchema as SettingSettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
@@ -181,9 +181,9 @@ const saveChanges = async () => {
 const upsertSetting = async () => {
   await settingStore.upsertSetting({
     name: Setting_SettingName.DATA_CLASSIFICATION,
-    value: create(SettingValueSchema, {
+    value: create(SettingSettingValueSchema, {
       value: {
-        case: "dataClassificationSettingValue",
+        case: "dataClassification",
         value: create(DataClassificationSettingSchema, {
           configs: [state.classification],
         }),

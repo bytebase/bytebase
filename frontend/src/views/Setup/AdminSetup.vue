@@ -216,7 +216,7 @@ const tryFinishSetup = async () => {
         databaseChangeMode: state.mode,
       },
       updateMask: create(FieldMaskSchema, {
-        paths: ["value.workspace_profile_setting_value.database_change_mode"],
+        paths: ["value.workspace_profile.database_change_mode"],
       }),
     });
     onCancel(getHomePageByMode(state.mode));
@@ -232,7 +232,7 @@ onMounted(async () => {
     );
     return onCancel(
       getHomePageByMode(
-        profileSetting?.value?.value?.case === "workspaceProfileSettingValue"
+        profileSetting?.value?.value?.case === "workspaceProfile"
           ? profileSetting.value.value.value.databaseChangeMode
           : undefined
       )

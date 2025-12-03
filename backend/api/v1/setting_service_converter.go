@@ -24,9 +24,9 @@ func convertToSettingMessage(setting *store.SettingMessage, profile *config.Prof
 		v1Value := convertToAppIMSetting(storeValue)
 		return &v1pb.Setting{
 			Name: settingName,
-			Value: &v1pb.Value{
-				Value: &v1pb.Value_AppImSettingValue{
-					AppImSettingValue: v1Value,
+			Value: &v1pb.SettingValue{
+				Value: &v1pb.SettingValue_AppIm{
+					AppIm: v1Value,
 				},
 			},
 		}, nil
@@ -39,9 +39,9 @@ func convertToSettingMessage(setting *store.SettingMessage, profile *config.Prof
 		v1Value.DisallowSignup = v1Value.DisallowSignup || profile.SaaS
 		return &v1pb.Setting{
 			Name: settingName,
-			Value: &v1pb.Value{
-				Value: &v1pb.Value_WorkspaceProfileSettingValue{
-					WorkspaceProfileSettingValue: v1Value,
+			Value: &v1pb.SettingValue{
+				Value: &v1pb.SettingValue_WorkspaceProfile{
+					WorkspaceProfile: v1Value,
 				},
 			},
 		}, nil
@@ -61,9 +61,9 @@ func convertToSettingMessage(setting *store.SettingMessage, profile *config.Prof
 		}
 		return &v1pb.Setting{
 			Name: settingName,
-			Value: &v1pb.Value{
-				Value: &v1pb.Value_WorkspaceApprovalSettingValue{
-					WorkspaceApprovalSettingValue: v1Value,
+			Value: &v1pb.SettingValue{
+				Value: &v1pb.SettingValue_WorkspaceApproval{
+					WorkspaceApproval: v1Value,
 				},
 			},
 		}, nil
@@ -74,9 +74,9 @@ func convertToSettingMessage(setting *store.SettingMessage, profile *config.Prof
 		}
 		return &v1pb.Setting{
 			Name: settingName,
-			Value: &v1pb.Value{
-				Value: &v1pb.Value_DataClassificationSettingValue{
-					DataClassificationSettingValue: convertToDataClassificationSetting(storeValue),
+			Value: &v1pb.SettingValue{
+				Value: &v1pb.SettingValue_DataClassification{
+					DataClassification: convertToDataClassificationSetting(storeValue),
 				},
 			},
 		}, nil
@@ -87,9 +87,9 @@ func convertToSettingMessage(setting *store.SettingMessage, profile *config.Prof
 		}
 		return &v1pb.Setting{
 			Name: settingName,
-			Value: &v1pb.Value{
-				Value: &v1pb.Value_SemanticTypeSettingValue{
-					SemanticTypeSettingValue: convertToSemanticTypeSetting(storeValue),
+			Value: &v1pb.SettingValue{
+				Value: &v1pb.SettingValue_SemanticType{
+					SemanticType: convertToSemanticTypeSetting(storeValue),
 				},
 			},
 		}, nil
@@ -100,9 +100,9 @@ func convertToSettingMessage(setting *store.SettingMessage, profile *config.Prof
 		}
 		return &v1pb.Setting{
 			Name: settingName,
-			Value: &v1pb.Value{
-				Value: &v1pb.Value_ScimSetting{
-					ScimSetting: convertToSCIMSetting(storeValue),
+			Value: &v1pb.SettingValue{
+				Value: &v1pb.SettingValue_Scim{
+					Scim: convertToSCIMSetting(storeValue),
 				},
 			},
 		}, nil
@@ -113,9 +113,9 @@ func convertToSettingMessage(setting *store.SettingMessage, profile *config.Prof
 		}
 		return &v1pb.Setting{
 			Name: settingName,
-			Value: &v1pb.Value{
-				Value: &v1pb.Value_PasswordRestrictionSetting{
-					PasswordRestrictionSetting: convertToPasswordRestrictionSetting(storeValue),
+			Value: &v1pb.SettingValue{
+				Value: &v1pb.SettingValue_PasswordRestriction{
+					PasswordRestriction: convertToPasswordRestrictionSetting(storeValue),
 				},
 			},
 		}, nil
@@ -128,9 +128,9 @@ func convertToSettingMessage(setting *store.SettingMessage, profile *config.Prof
 		storeValue.ApiKey = ""
 		return &v1pb.Setting{
 			Name: settingName,
-			Value: &v1pb.Value{
-				Value: &v1pb.Value_AiSetting{
-					AiSetting: convertToAISetting(storeValue),
+			Value: &v1pb.SettingValue{
+				Value: &v1pb.SettingValue_Ai{
+					Ai: convertToAISetting(storeValue),
 				},
 			},
 		}, nil
@@ -141,17 +141,17 @@ func convertToSettingMessage(setting *store.SettingMessage, profile *config.Prof
 		}
 		return &v1pb.Setting{
 			Name: settingName,
-			Value: &v1pb.Value{
-				Value: &v1pb.Value_EnvironmentSetting{
-					EnvironmentSetting: storeValue,
+			Value: &v1pb.SettingValue{
+				Value: &v1pb.SettingValue_Environment{
+					Environment: storeValue,
 				},
 			},
 		}, nil
 	default:
 		return &v1pb.Setting{
 			Name: settingName,
-			Value: &v1pb.Value{
-				Value: &v1pb.Value_StringValue{
+			Value: &v1pb.SettingValue{
+				Value: &v1pb.SettingValue_StringValue{
 					StringValue: setting.Value,
 				},
 			},

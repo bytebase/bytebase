@@ -122,13 +122,11 @@ defineExpose({
     }
     const updateMask: string[] = [];
     if (initialState.value.enableRestriction !== state.enableRestriction) {
-      updateMask.push(
-        "value.workspace_profile_setting_value.enforce_identity_domain"
-      );
+      updateMask.push("value.workspace_profile.enforce_identity_domain");
     }
 
     if (!isEqual(validDomains.value, initialState.value.domains)) {
-      updateMask.push("value.workspace_profile_setting_value.domains");
+      updateMask.push("value.workspace_profile.domains");
     }
     if (updateMask.length > 0) {
       await settingV1Store.updateWorkspaceProfile({
