@@ -23,6 +23,195 @@
     - [State](#bytebase-v1-State)
     - [VCSType](#bytebase-v1-VCSType)
   
+- [v1/issue_service.proto](#v1_issue_service-proto)
+    - [ApprovalFlow](#bytebase-v1-ApprovalFlow)
+    - [ApprovalTemplate](#bytebase-v1-ApprovalTemplate)
+    - [ApproveIssueRequest](#bytebase-v1-ApproveIssueRequest)
+    - [BatchUpdateIssuesStatusRequest](#bytebase-v1-BatchUpdateIssuesStatusRequest)
+    - [BatchUpdateIssuesStatusResponse](#bytebase-v1-BatchUpdateIssuesStatusResponse)
+    - [CreateIssueCommentRequest](#bytebase-v1-CreateIssueCommentRequest)
+    - [CreateIssueRequest](#bytebase-v1-CreateIssueRequest)
+    - [GetIssueRequest](#bytebase-v1-GetIssueRequest)
+    - [GrantRequest](#bytebase-v1-GrantRequest)
+    - [Issue](#bytebase-v1-Issue)
+    - [Issue.Approver](#bytebase-v1-Issue-Approver)
+    - [Issue.TaskStatusCountEntry](#bytebase-v1-Issue-TaskStatusCountEntry)
+    - [IssueComment](#bytebase-v1-IssueComment)
+    - [IssueComment.Approval](#bytebase-v1-IssueComment-Approval)
+    - [IssueComment.IssueUpdate](#bytebase-v1-IssueComment-IssueUpdate)
+    - [IssueComment.StageEnd](#bytebase-v1-IssueComment-StageEnd)
+    - [IssueComment.TaskPriorBackup](#bytebase-v1-IssueComment-TaskPriorBackup)
+    - [IssueComment.TaskPriorBackup.Table](#bytebase-v1-IssueComment-TaskPriorBackup-Table)
+    - [IssueComment.TaskUpdate](#bytebase-v1-IssueComment-TaskUpdate)
+    - [ListIssueCommentsRequest](#bytebase-v1-ListIssueCommentsRequest)
+    - [ListIssueCommentsResponse](#bytebase-v1-ListIssueCommentsResponse)
+    - [ListIssuesRequest](#bytebase-v1-ListIssuesRequest)
+    - [ListIssuesResponse](#bytebase-v1-ListIssuesResponse)
+    - [RejectIssueRequest](#bytebase-v1-RejectIssueRequest)
+    - [RequestIssueRequest](#bytebase-v1-RequestIssueRequest)
+    - [SearchIssuesRequest](#bytebase-v1-SearchIssuesRequest)
+    - [SearchIssuesResponse](#bytebase-v1-SearchIssuesResponse)
+    - [UpdateIssueCommentRequest](#bytebase-v1-UpdateIssueCommentRequest)
+    - [UpdateIssueRequest](#bytebase-v1-UpdateIssueRequest)
+  
+    - [Issue.ApprovalStatus](#bytebase-v1-Issue-ApprovalStatus)
+    - [Issue.Approver.Status](#bytebase-v1-Issue-Approver-Status)
+    - [Issue.Type](#bytebase-v1-Issue-Type)
+    - [IssueComment.Approval.Status](#bytebase-v1-IssueComment-Approval-Status)
+    - [IssueComment.TaskUpdate.Status](#bytebase-v1-IssueComment-TaskUpdate-Status)
+    - [IssueStatus](#bytebase-v1-IssueStatus)
+  
+    - [IssueService](#bytebase-v1-IssueService)
+  
+- [v1/iam_policy.proto](#v1_iam_policy-proto)
+    - [Binding](#bytebase-v1-Binding)
+    - [BindingDelta](#bytebase-v1-BindingDelta)
+    - [GetIamPolicyRequest](#bytebase-v1-GetIamPolicyRequest)
+    - [IamPolicy](#bytebase-v1-IamPolicy)
+    - [PolicyDelta](#bytebase-v1-PolicyDelta)
+    - [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest)
+  
+    - [BindingDelta.Action](#bytebase-v1-BindingDelta-Action)
+  
+- [v1/project_service.proto](#v1_project_service-proto)
+    - [Activity](#bytebase-v1-Activity)
+    - [AddWebhookRequest](#bytebase-v1-AddWebhookRequest)
+    - [BatchDeleteProjectsRequest](#bytebase-v1-BatchDeleteProjectsRequest)
+    - [BatchGetIamPolicyRequest](#bytebase-v1-BatchGetIamPolicyRequest)
+    - [BatchGetIamPolicyResponse](#bytebase-v1-BatchGetIamPolicyResponse)
+    - [BatchGetIamPolicyResponse.PolicyResult](#bytebase-v1-BatchGetIamPolicyResponse-PolicyResult)
+    - [CreateProjectRequest](#bytebase-v1-CreateProjectRequest)
+    - [DeleteProjectRequest](#bytebase-v1-DeleteProjectRequest)
+    - [GetProjectRequest](#bytebase-v1-GetProjectRequest)
+    - [Label](#bytebase-v1-Label)
+    - [ListProjectsRequest](#bytebase-v1-ListProjectsRequest)
+    - [ListProjectsResponse](#bytebase-v1-ListProjectsResponse)
+    - [Project](#bytebase-v1-Project)
+    - [Project.ExecutionRetryPolicy](#bytebase-v1-Project-ExecutionRetryPolicy)
+    - [Project.LabelsEntry](#bytebase-v1-Project-LabelsEntry)
+    - [RemoveWebhookRequest](#bytebase-v1-RemoveWebhookRequest)
+    - [SearchProjectsRequest](#bytebase-v1-SearchProjectsRequest)
+    - [SearchProjectsResponse](#bytebase-v1-SearchProjectsResponse)
+    - [TestWebhookRequest](#bytebase-v1-TestWebhookRequest)
+    - [TestWebhookResponse](#bytebase-v1-TestWebhookResponse)
+    - [UndeleteProjectRequest](#bytebase-v1-UndeleteProjectRequest)
+    - [UpdateProjectRequest](#bytebase-v1-UpdateProjectRequest)
+    - [UpdateWebhookRequest](#bytebase-v1-UpdateWebhookRequest)
+    - [Webhook](#bytebase-v1-Webhook)
+  
+    - [Activity.Type](#bytebase-v1-Activity-Type)
+    - [Webhook.Type](#bytebase-v1-Webhook-Type)
+  
+    - [ProjectService](#bytebase-v1-ProjectService)
+  
+- [v1/setting_service.proto](#v1_setting_service-proto)
+    - [AISetting](#bytebase-v1-AISetting)
+    - [Algorithm](#bytebase-v1-Algorithm)
+    - [Algorithm.FullMask](#bytebase-v1-Algorithm-FullMask)
+    - [Algorithm.InnerOuterMask](#bytebase-v1-Algorithm-InnerOuterMask)
+    - [Algorithm.MD5Mask](#bytebase-v1-Algorithm-MD5Mask)
+    - [Algorithm.RangeMask](#bytebase-v1-Algorithm-RangeMask)
+    - [Algorithm.RangeMask.Slice](#bytebase-v1-Algorithm-RangeMask-Slice)
+    - [Announcement](#bytebase-v1-Announcement)
+    - [AppIMSetting](#bytebase-v1-AppIMSetting)
+    - [AppIMSetting.DingTalk](#bytebase-v1-AppIMSetting-DingTalk)
+    - [AppIMSetting.Feishu](#bytebase-v1-AppIMSetting-Feishu)
+    - [AppIMSetting.IMSetting](#bytebase-v1-AppIMSetting-IMSetting)
+    - [AppIMSetting.Lark](#bytebase-v1-AppIMSetting-Lark)
+    - [AppIMSetting.Slack](#bytebase-v1-AppIMSetting-Slack)
+    - [AppIMSetting.Wecom](#bytebase-v1-AppIMSetting-Wecom)
+    - [DataClassificationSetting](#bytebase-v1-DataClassificationSetting)
+    - [DataClassificationSetting.DataClassificationConfig](#bytebase-v1-DataClassificationSetting-DataClassificationConfig)
+    - [DataClassificationSetting.DataClassificationConfig.ClassificationEntry](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-ClassificationEntry)
+    - [DataClassificationSetting.DataClassificationConfig.DataClassification](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-DataClassification)
+    - [DataClassificationSetting.DataClassificationConfig.Level](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-Level)
+    - [EnvironmentSetting](#bytebase-v1-EnvironmentSetting)
+    - [EnvironmentSetting.Environment](#bytebase-v1-EnvironmentSetting-Environment)
+    - [EnvironmentSetting.Environment.TagsEntry](#bytebase-v1-EnvironmentSetting-Environment-TagsEntry)
+    - [GetSettingRequest](#bytebase-v1-GetSettingRequest)
+    - [GetSettingResponse](#bytebase-v1-GetSettingResponse)
+    - [ListSettingsRequest](#bytebase-v1-ListSettingsRequest)
+    - [ListSettingsResponse](#bytebase-v1-ListSettingsResponse)
+    - [PasswordRestrictionSetting](#bytebase-v1-PasswordRestrictionSetting)
+    - [SCIMSetting](#bytebase-v1-SCIMSetting)
+    - [SemanticTypeSetting](#bytebase-v1-SemanticTypeSetting)
+    - [SemanticTypeSetting.SemanticType](#bytebase-v1-SemanticTypeSetting-SemanticType)
+    - [Setting](#bytebase-v1-Setting)
+    - [UpdateSettingRequest](#bytebase-v1-UpdateSettingRequest)
+    - [Value](#bytebase-v1-Value)
+    - [WorkspaceApprovalSetting](#bytebase-v1-WorkspaceApprovalSetting)
+    - [WorkspaceApprovalSetting.Rule](#bytebase-v1-WorkspaceApprovalSetting-Rule)
+    - [WorkspaceProfileSetting](#bytebase-v1-WorkspaceProfileSetting)
+  
+    - [AISetting.Provider](#bytebase-v1-AISetting-Provider)
+    - [Algorithm.InnerOuterMask.MaskType](#bytebase-v1-Algorithm-InnerOuterMask-MaskType)
+    - [Announcement.AlertLevel](#bytebase-v1-Announcement-AlertLevel)
+    - [DatabaseChangeMode](#bytebase-v1-DatabaseChangeMode)
+    - [Setting.SettingName](#bytebase-v1-Setting-SettingName)
+    - [WorkspaceApprovalSetting.Rule.Source](#bytebase-v1-WorkspaceApprovalSetting-Rule-Source)
+  
+    - [SettingService](#bytebase-v1-SettingService)
+  
+- [v1/user_service.proto](#v1_user_service-proto)
+    - [BatchGetUsersRequest](#bytebase-v1-BatchGetUsersRequest)
+    - [BatchGetUsersResponse](#bytebase-v1-BatchGetUsersResponse)
+    - [CreateUserRequest](#bytebase-v1-CreateUserRequest)
+    - [DeleteUserRequest](#bytebase-v1-DeleteUserRequest)
+    - [GetUserRequest](#bytebase-v1-GetUserRequest)
+    - [ListUsersRequest](#bytebase-v1-ListUsersRequest)
+    - [ListUsersResponse](#bytebase-v1-ListUsersResponse)
+    - [UndeleteUserRequest](#bytebase-v1-UndeleteUserRequest)
+    - [UpdateUserRequest](#bytebase-v1-UpdateUserRequest)
+    - [User](#bytebase-v1-User)
+    - [User.Profile](#bytebase-v1-User-Profile)
+  
+    - [UserType](#bytebase-v1-UserType)
+  
+    - [UserService](#bytebase-v1-UserService)
+  
+- [v1/actuator_service.proto](#v1_actuator_service-proto)
+    - [ActuatorInfo](#bytebase-v1-ActuatorInfo)
+    - [ActuatorInfo.StatUser](#bytebase-v1-ActuatorInfo-StatUser)
+    - [DeleteCacheRequest](#bytebase-v1-DeleteCacheRequest)
+    - [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest)
+    - [GetResourcePackageRequest](#bytebase-v1-GetResourcePackageRequest)
+    - [ResourcePackage](#bytebase-v1-ResourcePackage)
+    - [SetupSampleRequest](#bytebase-v1-SetupSampleRequest)
+    - [UpdateActuatorInfoRequest](#bytebase-v1-UpdateActuatorInfoRequest)
+  
+    - [ActuatorService](#bytebase-v1-ActuatorService)
+  
+- [v1/audit_log_service.proto](#v1_audit_log_service-proto)
+    - [AuditData](#bytebase-v1-AuditData)
+    - [AuditLog](#bytebase-v1-AuditLog)
+    - [ExportAuditLogsRequest](#bytebase-v1-ExportAuditLogsRequest)
+    - [ExportAuditLogsResponse](#bytebase-v1-ExportAuditLogsResponse)
+    - [RequestMetadata](#bytebase-v1-RequestMetadata)
+    - [SearchAuditLogsRequest](#bytebase-v1-SearchAuditLogsRequest)
+    - [SearchAuditLogsResponse](#bytebase-v1-SearchAuditLogsResponse)
+  
+    - [AuditLog.Severity](#bytebase-v1-AuditLog-Severity)
+  
+    - [AuditLogService](#bytebase-v1-AuditLogService)
+  
+- [v1/auth_service.proto](#v1_auth_service-proto)
+    - [IdentityProviderContext](#bytebase-v1-IdentityProviderContext)
+    - [LoginRequest](#bytebase-v1-LoginRequest)
+    - [LoginResponse](#bytebase-v1-LoginResponse)
+    - [LogoutRequest](#bytebase-v1-LogoutRequest)
+    - [OAuth2IdentityProviderContext](#bytebase-v1-OAuth2IdentityProviderContext)
+    - [OIDCIdentityProviderContext](#bytebase-v1-OIDCIdentityProviderContext)
+  
+    - [AuthService](#bytebase-v1-AuthService)
+  
+- [v1/cel_service.proto](#v1_cel_service-proto)
+    - [BatchDeparseRequest](#bytebase-v1-BatchDeparseRequest)
+    - [BatchDeparseResponse](#bytebase-v1-BatchDeparseResponse)
+    - [BatchParseRequest](#bytebase-v1-BatchParseRequest)
+    - [BatchParseResponse](#bytebase-v1-BatchParseResponse)
+  
+    - [CelService](#bytebase-v1-CelService)
+  
 - [v1/database_catalog_service.proto](#v1_database_catalog_service-proto)
     - [ColumnCatalog](#bytebase-v1-ColumnCatalog)
     - [ColumnCatalog.LabelsEntry](#bytebase-v1-ColumnCatalog-LabelsEntry)
@@ -40,6 +229,20 @@
     - [ObjectSchema.Type](#bytebase-v1-ObjectSchema-Type)
   
     - [DatabaseCatalogService](#bytebase-v1-DatabaseCatalogService)
+  
+- [v1/database_group_service.proto](#v1_database_group_service-proto)
+    - [CreateDatabaseGroupRequest](#bytebase-v1-CreateDatabaseGroupRequest)
+    - [DatabaseGroup](#bytebase-v1-DatabaseGroup)
+    - [DatabaseGroup.Database](#bytebase-v1-DatabaseGroup-Database)
+    - [DeleteDatabaseGroupRequest](#bytebase-v1-DeleteDatabaseGroupRequest)
+    - [GetDatabaseGroupRequest](#bytebase-v1-GetDatabaseGroupRequest)
+    - [ListDatabaseGroupsRequest](#bytebase-v1-ListDatabaseGroupsRequest)
+    - [ListDatabaseGroupsResponse](#bytebase-v1-ListDatabaseGroupsResponse)
+    - [UpdateDatabaseGroupRequest](#bytebase-v1-UpdateDatabaseGroupRequest)
+  
+    - [DatabaseGroupView](#bytebase-v1-DatabaseGroupView)
+  
+    - [DatabaseGroupService](#bytebase-v1-DatabaseGroupService)
   
 - [v1/instance_role_service.proto](#v1_instance_role_service-proto)
     - [GetInstanceRoleRequest](#bytebase-v1-GetInstanceRoleRequest)
@@ -171,213 +374,6 @@
     - [TaskMetadata.State](#bytebase-v1-TaskMetadata-State)
   
     - [DatabaseService](#bytebase-v1-DatabaseService)
-  
-- [v1/issue_service.proto](#v1_issue_service-proto)
-    - [ApprovalFlow](#bytebase-v1-ApprovalFlow)
-    - [ApprovalTemplate](#bytebase-v1-ApprovalTemplate)
-    - [ApproveIssueRequest](#bytebase-v1-ApproveIssueRequest)
-    - [BatchUpdateIssuesStatusRequest](#bytebase-v1-BatchUpdateIssuesStatusRequest)
-    - [BatchUpdateIssuesStatusResponse](#bytebase-v1-BatchUpdateIssuesStatusResponse)
-    - [CreateIssueCommentRequest](#bytebase-v1-CreateIssueCommentRequest)
-    - [CreateIssueRequest](#bytebase-v1-CreateIssueRequest)
-    - [GetIssueRequest](#bytebase-v1-GetIssueRequest)
-    - [GrantRequest](#bytebase-v1-GrantRequest)
-    - [Issue](#bytebase-v1-Issue)
-    - [Issue.Approver](#bytebase-v1-Issue-Approver)
-    - [Issue.TaskStatusCountEntry](#bytebase-v1-Issue-TaskStatusCountEntry)
-    - [IssueComment](#bytebase-v1-IssueComment)
-    - [IssueComment.Approval](#bytebase-v1-IssueComment-Approval)
-    - [IssueComment.IssueUpdate](#bytebase-v1-IssueComment-IssueUpdate)
-    - [IssueComment.StageEnd](#bytebase-v1-IssueComment-StageEnd)
-    - [IssueComment.TaskPriorBackup](#bytebase-v1-IssueComment-TaskPriorBackup)
-    - [IssueComment.TaskPriorBackup.Table](#bytebase-v1-IssueComment-TaskPriorBackup-Table)
-    - [IssueComment.TaskUpdate](#bytebase-v1-IssueComment-TaskUpdate)
-    - [ListIssueCommentsRequest](#bytebase-v1-ListIssueCommentsRequest)
-    - [ListIssueCommentsResponse](#bytebase-v1-ListIssueCommentsResponse)
-    - [ListIssuesRequest](#bytebase-v1-ListIssuesRequest)
-    - [ListIssuesResponse](#bytebase-v1-ListIssuesResponse)
-    - [RejectIssueRequest](#bytebase-v1-RejectIssueRequest)
-    - [RequestIssueRequest](#bytebase-v1-RequestIssueRequest)
-    - [SearchIssuesRequest](#bytebase-v1-SearchIssuesRequest)
-    - [SearchIssuesResponse](#bytebase-v1-SearchIssuesResponse)
-    - [UpdateIssueCommentRequest](#bytebase-v1-UpdateIssueCommentRequest)
-    - [UpdateIssueRequest](#bytebase-v1-UpdateIssueRequest)
-  
-    - [Issue.ApprovalStatus](#bytebase-v1-Issue-ApprovalStatus)
-    - [Issue.Approver.Status](#bytebase-v1-Issue-Approver-Status)
-    - [Issue.Type](#bytebase-v1-Issue-Type)
-    - [IssueComment.Approval.Status](#bytebase-v1-IssueComment-Approval-Status)
-    - [IssueComment.TaskUpdate.Status](#bytebase-v1-IssueComment-TaskUpdate-Status)
-    - [IssueStatus](#bytebase-v1-IssueStatus)
-  
-    - [IssueService](#bytebase-v1-IssueService)
-  
-- [v1/iam_policy.proto](#v1_iam_policy-proto)
-    - [Binding](#bytebase-v1-Binding)
-    - [BindingDelta](#bytebase-v1-BindingDelta)
-    - [GetIamPolicyRequest](#bytebase-v1-GetIamPolicyRequest)
-    - [IamPolicy](#bytebase-v1-IamPolicy)
-    - [PolicyDelta](#bytebase-v1-PolicyDelta)
-    - [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest)
-  
-    - [BindingDelta.Action](#bytebase-v1-BindingDelta-Action)
-  
-- [v1/project_service.proto](#v1_project_service-proto)
-    - [Activity](#bytebase-v1-Activity)
-    - [AddWebhookRequest](#bytebase-v1-AddWebhookRequest)
-    - [BatchDeleteProjectsRequest](#bytebase-v1-BatchDeleteProjectsRequest)
-    - [BatchGetIamPolicyRequest](#bytebase-v1-BatchGetIamPolicyRequest)
-    - [BatchGetIamPolicyResponse](#bytebase-v1-BatchGetIamPolicyResponse)
-    - [BatchGetIamPolicyResponse.PolicyResult](#bytebase-v1-BatchGetIamPolicyResponse-PolicyResult)
-    - [CreateProjectRequest](#bytebase-v1-CreateProjectRequest)
-    - [DeleteProjectRequest](#bytebase-v1-DeleteProjectRequest)
-    - [GetProjectRequest](#bytebase-v1-GetProjectRequest)
-    - [Label](#bytebase-v1-Label)
-    - [ListProjectsRequest](#bytebase-v1-ListProjectsRequest)
-    - [ListProjectsResponse](#bytebase-v1-ListProjectsResponse)
-    - [Project](#bytebase-v1-Project)
-    - [Project.ExecutionRetryPolicy](#bytebase-v1-Project-ExecutionRetryPolicy)
-    - [Project.LabelsEntry](#bytebase-v1-Project-LabelsEntry)
-    - [RemoveWebhookRequest](#bytebase-v1-RemoveWebhookRequest)
-    - [SearchProjectsRequest](#bytebase-v1-SearchProjectsRequest)
-    - [SearchProjectsResponse](#bytebase-v1-SearchProjectsResponse)
-    - [TestWebhookRequest](#bytebase-v1-TestWebhookRequest)
-    - [TestWebhookResponse](#bytebase-v1-TestWebhookResponse)
-    - [UndeleteProjectRequest](#bytebase-v1-UndeleteProjectRequest)
-    - [UpdateProjectRequest](#bytebase-v1-UpdateProjectRequest)
-    - [UpdateWebhookRequest](#bytebase-v1-UpdateWebhookRequest)
-    - [Webhook](#bytebase-v1-Webhook)
-  
-    - [Activity.Type](#bytebase-v1-Activity-Type)
-    - [Webhook.Type](#bytebase-v1-Webhook-Type)
-  
-    - [ProjectService](#bytebase-v1-ProjectService)
-  
-- [v1/setting_service.proto](#v1_setting_service-proto)
-    - [AISetting](#bytebase-v1-AISetting)
-    - [Algorithm](#bytebase-v1-Algorithm)
-    - [Algorithm.FullMask](#bytebase-v1-Algorithm-FullMask)
-    - [Algorithm.InnerOuterMask](#bytebase-v1-Algorithm-InnerOuterMask)
-    - [Algorithm.MD5Mask](#bytebase-v1-Algorithm-MD5Mask)
-    - [Algorithm.RangeMask](#bytebase-v1-Algorithm-RangeMask)
-    - [Algorithm.RangeMask.Slice](#bytebase-v1-Algorithm-RangeMask-Slice)
-    - [Announcement](#bytebase-v1-Announcement)
-    - [AppIMSetting](#bytebase-v1-AppIMSetting)
-    - [AppIMSetting.DingTalk](#bytebase-v1-AppIMSetting-DingTalk)
-    - [AppIMSetting.Feishu](#bytebase-v1-AppIMSetting-Feishu)
-    - [AppIMSetting.IMSetting](#bytebase-v1-AppIMSetting-IMSetting)
-    - [AppIMSetting.Lark](#bytebase-v1-AppIMSetting-Lark)
-    - [AppIMSetting.Slack](#bytebase-v1-AppIMSetting-Slack)
-    - [AppIMSetting.Wecom](#bytebase-v1-AppIMSetting-Wecom)
-    - [DataClassificationSetting](#bytebase-v1-DataClassificationSetting)
-    - [DataClassificationSetting.DataClassificationConfig](#bytebase-v1-DataClassificationSetting-DataClassificationConfig)
-    - [DataClassificationSetting.DataClassificationConfig.ClassificationEntry](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-ClassificationEntry)
-    - [DataClassificationSetting.DataClassificationConfig.DataClassification](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-DataClassification)
-    - [DataClassificationSetting.DataClassificationConfig.Level](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-Level)
-    - [EnvironmentSetting](#bytebase-v1-EnvironmentSetting)
-    - [EnvironmentSetting.Environment](#bytebase-v1-EnvironmentSetting-Environment)
-    - [EnvironmentSetting.Environment.TagsEntry](#bytebase-v1-EnvironmentSetting-Environment-TagsEntry)
-    - [GetSettingRequest](#bytebase-v1-GetSettingRequest)
-    - [GetSettingResponse](#bytebase-v1-GetSettingResponse)
-    - [ListSettingsRequest](#bytebase-v1-ListSettingsRequest)
-    - [ListSettingsResponse](#bytebase-v1-ListSettingsResponse)
-    - [PasswordRestrictionSetting](#bytebase-v1-PasswordRestrictionSetting)
-    - [SCIMSetting](#bytebase-v1-SCIMSetting)
-    - [SchemaTemplateSetting](#bytebase-v1-SchemaTemplateSetting)
-    - [SchemaTemplateSetting.ColumnType](#bytebase-v1-SchemaTemplateSetting-ColumnType)
-    - [SchemaTemplateSetting.FieldTemplate](#bytebase-v1-SchemaTemplateSetting-FieldTemplate)
-    - [SchemaTemplateSetting.TableTemplate](#bytebase-v1-SchemaTemplateSetting-TableTemplate)
-    - [SemanticTypeSetting](#bytebase-v1-SemanticTypeSetting)
-    - [SemanticTypeSetting.SemanticType](#bytebase-v1-SemanticTypeSetting-SemanticType)
-    - [Setting](#bytebase-v1-Setting)
-    - [UpdateSettingRequest](#bytebase-v1-UpdateSettingRequest)
-    - [Value](#bytebase-v1-Value)
-    - [WorkspaceApprovalSetting](#bytebase-v1-WorkspaceApprovalSetting)
-    - [WorkspaceApprovalSetting.Rule](#bytebase-v1-WorkspaceApprovalSetting-Rule)
-    - [WorkspaceProfileSetting](#bytebase-v1-WorkspaceProfileSetting)
-  
-    - [AISetting.Provider](#bytebase-v1-AISetting-Provider)
-    - [Algorithm.InnerOuterMask.MaskType](#bytebase-v1-Algorithm-InnerOuterMask-MaskType)
-    - [Announcement.AlertLevel](#bytebase-v1-Announcement-AlertLevel)
-    - [DatabaseChangeMode](#bytebase-v1-DatabaseChangeMode)
-    - [Setting.SettingName](#bytebase-v1-Setting-SettingName)
-    - [WorkspaceApprovalSetting.Rule.Source](#bytebase-v1-WorkspaceApprovalSetting-Rule-Source)
-  
-    - [SettingService](#bytebase-v1-SettingService)
-  
-- [v1/user_service.proto](#v1_user_service-proto)
-    - [BatchGetUsersRequest](#bytebase-v1-BatchGetUsersRequest)
-    - [BatchGetUsersResponse](#bytebase-v1-BatchGetUsersResponse)
-    - [CreateUserRequest](#bytebase-v1-CreateUserRequest)
-    - [DeleteUserRequest](#bytebase-v1-DeleteUserRequest)
-    - [GetUserRequest](#bytebase-v1-GetUserRequest)
-    - [ListUsersRequest](#bytebase-v1-ListUsersRequest)
-    - [ListUsersResponse](#bytebase-v1-ListUsersResponse)
-    - [UndeleteUserRequest](#bytebase-v1-UndeleteUserRequest)
-    - [UpdateUserRequest](#bytebase-v1-UpdateUserRequest)
-    - [User](#bytebase-v1-User)
-    - [User.Profile](#bytebase-v1-User-Profile)
-  
-    - [UserType](#bytebase-v1-UserType)
-  
-    - [UserService](#bytebase-v1-UserService)
-  
-- [v1/actuator_service.proto](#v1_actuator_service-proto)
-    - [ActuatorInfo](#bytebase-v1-ActuatorInfo)
-    - [ActuatorInfo.StatUser](#bytebase-v1-ActuatorInfo-StatUser)
-    - [DeleteCacheRequest](#bytebase-v1-DeleteCacheRequest)
-    - [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest)
-    - [GetResourcePackageRequest](#bytebase-v1-GetResourcePackageRequest)
-    - [ResourcePackage](#bytebase-v1-ResourcePackage)
-    - [SetupSampleRequest](#bytebase-v1-SetupSampleRequest)
-    - [UpdateActuatorInfoRequest](#bytebase-v1-UpdateActuatorInfoRequest)
-  
-    - [ActuatorService](#bytebase-v1-ActuatorService)
-  
-- [v1/audit_log_service.proto](#v1_audit_log_service-proto)
-    - [AuditData](#bytebase-v1-AuditData)
-    - [AuditLog](#bytebase-v1-AuditLog)
-    - [ExportAuditLogsRequest](#bytebase-v1-ExportAuditLogsRequest)
-    - [ExportAuditLogsResponse](#bytebase-v1-ExportAuditLogsResponse)
-    - [RequestMetadata](#bytebase-v1-RequestMetadata)
-    - [SearchAuditLogsRequest](#bytebase-v1-SearchAuditLogsRequest)
-    - [SearchAuditLogsResponse](#bytebase-v1-SearchAuditLogsResponse)
-  
-    - [AuditLog.Severity](#bytebase-v1-AuditLog-Severity)
-  
-    - [AuditLogService](#bytebase-v1-AuditLogService)
-  
-- [v1/auth_service.proto](#v1_auth_service-proto)
-    - [IdentityProviderContext](#bytebase-v1-IdentityProviderContext)
-    - [LoginRequest](#bytebase-v1-LoginRequest)
-    - [LoginResponse](#bytebase-v1-LoginResponse)
-    - [LogoutRequest](#bytebase-v1-LogoutRequest)
-    - [OAuth2IdentityProviderContext](#bytebase-v1-OAuth2IdentityProviderContext)
-    - [OIDCIdentityProviderContext](#bytebase-v1-OIDCIdentityProviderContext)
-  
-    - [AuthService](#bytebase-v1-AuthService)
-  
-- [v1/cel_service.proto](#v1_cel_service-proto)
-    - [BatchDeparseRequest](#bytebase-v1-BatchDeparseRequest)
-    - [BatchDeparseResponse](#bytebase-v1-BatchDeparseResponse)
-    - [BatchParseRequest](#bytebase-v1-BatchParseRequest)
-    - [BatchParseResponse](#bytebase-v1-BatchParseResponse)
-  
-    - [CelService](#bytebase-v1-CelService)
-  
-- [v1/database_group_service.proto](#v1_database_group_service-proto)
-    - [CreateDatabaseGroupRequest](#bytebase-v1-CreateDatabaseGroupRequest)
-    - [DatabaseGroup](#bytebase-v1-DatabaseGroup)
-    - [DatabaseGroup.Database](#bytebase-v1-DatabaseGroup-Database)
-    - [DeleteDatabaseGroupRequest](#bytebase-v1-DeleteDatabaseGroupRequest)
-    - [GetDatabaseGroupRequest](#bytebase-v1-GetDatabaseGroupRequest)
-    - [ListDatabaseGroupsRequest](#bytebase-v1-ListDatabaseGroupsRequest)
-    - [ListDatabaseGroupsResponse](#bytebase-v1-ListDatabaseGroupsResponse)
-    - [UpdateDatabaseGroupRequest](#bytebase-v1-UpdateDatabaseGroupRequest)
-  
-    - [DatabaseGroupView](#bytebase-v1-DatabaseGroupView)
-  
-    - [DatabaseGroupService](#bytebase-v1-DatabaseGroupService)
   
 - [v1/group_service.proto](#v1_group_service-proto)
     - [BatchGetGroupsRequest](#bytebase-v1-BatchGetGroupsRequest)
@@ -900,6 +896,2828 @@ Version control system type.
 
 
 
+<a name="v1_issue_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/issue_service.proto
+
+
+
+<a name="bytebase-v1-ApprovalFlow"></a>
+
+### ApprovalFlow
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| roles | [string](#string) | repeated | The roles required for approval in order. |
+
+
+
+
+
+
+<a name="bytebase-v1-ApprovalTemplate"></a>
+
+### ApprovalTemplate
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| flow | [ApprovalFlow](#bytebase-v1-ApprovalFlow) |  | The approval flow definition. |
+| title | [string](#string) |  | The title of the approval template. |
+| description | [string](#string) |  | The description of the approval template. |
+
+
+
+
+
+
+<a name="bytebase-v1-ApproveIssueRequest"></a>
+
+### ApproveIssueRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the issue to add an approver. Format: projects/{project}/issues/{issue} |
+| comment | [string](#string) |  | The comment explaining the approval decision. |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchUpdateIssuesStatusRequest"></a>
+
+### BatchUpdateIssuesStatusRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent resource shared by all issues being updated. Format: projects/{project} If the operation spans parents, a dash (-) may be accepted as a wildcard. We only support updating the status of databases for now. |
+| issues | [string](#string) | repeated | The list of issues to update. Format: projects/{project}/issues/{issue} |
+| status | [IssueStatus](#bytebase-v1-IssueStatus) |  | The new status. |
+| reason | [string](#string) |  | The reason for the status change. |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchUpdateIssuesStatusResponse"></a>
+
+### BatchUpdateIssuesStatusResponse
+
+
+
+
+
+
+
+<a name="bytebase-v1-CreateIssueCommentRequest"></a>
+
+### CreateIssueCommentRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The issue name Format: projects/{project}/issues/{issue} |
+| issue_comment | [IssueComment](#bytebase-v1-IssueComment) |  | The comment to create. |
+
+
+
+
+
+
+<a name="bytebase-v1-CreateIssueRequest"></a>
+
+### CreateIssueRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent, which owns this collection of issues. Format: projects/{project} |
+| issue | [Issue](#bytebase-v1-Issue) |  | The issue to create. |
+
+
+
+
+
+
+<a name="bytebase-v1-GetIssueRequest"></a>
+
+### GetIssueRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the issue to retrieve. Format: projects/{project}/issues/{issue} |
+| force | [bool](#bool) |  | If set to true, bypass cache and fetch the latest data. |
+
+
+
+
+
+
+<a name="bytebase-v1-GrantRequest"></a>
+
+### GrantRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| role | [string](#string) |  | The requested role. Format: roles/EXPORTER. |
+| user | [string](#string) |  | The user to be granted. Format: users/{email}. |
+| condition | [google.type.Expr](#google-type-Expr) |  | The condition for the role. Same as the condition in IAM Binding message. |
+| expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for which the grant is valid. |
+
+
+
+
+
+
+<a name="bytebase-v1-Issue"></a>
+
+### Issue
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the issue. Format: projects/{project}/issues/{issue} |
+| title | [string](#string) |  | The title of the issue. |
+| description | [string](#string) |  | The description of the issue. |
+| type | [Issue.Type](#bytebase-v1-Issue-Type) |  |  |
+| status | [IssueStatus](#bytebase-v1-IssueStatus) |  | The status of the issue. |
+| approvers | [Issue.Approver](#bytebase-v1-Issue-Approver) | repeated |  |
+| approval_template | [ApprovalTemplate](#bytebase-v1-ApprovalTemplate) |  | The approval template for the issue. |
+| creator | [string](#string) |  | Format: users/hello@world.com |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| plan | [string](#string) |  | The plan associated with the issue. Can be empty. Format: projects/{project}/plans/{plan} |
+| rollout | [string](#string) |  | The rollout associated with the issue. Can be empty. Format: projects/{project}/rollouts/{rollout} |
+| grant_request | [GrantRequest](#bytebase-v1-GrantRequest) |  | Used if the issue type is GRANT_REQUEST. |
+| releasers | [string](#string) | repeated | The releasers of the pending stage of the issue rollout, judging from the rollout policy. Format: - roles/workspaceOwner - roles/workspaceDBA - roles/projectOwner - roles/projectReleaser |
+| risk_level | [RiskLevel](#bytebase-v1-RiskLevel) |  | The risk level of the issue. |
+| task_status_count | [Issue.TaskStatusCountEntry](#bytebase-v1-Issue-TaskStatusCountEntry) | repeated | The status count of the issue. Keys are the following: - NOT_STARTED - SKIPPED - PENDING - RUNNING - DONE - FAILED - CANCELED |
+| labels | [string](#string) | repeated | Labels attached to the issue for categorization and filtering. |
+| approval_status | [Issue.ApprovalStatus](#bytebase-v1-Issue-ApprovalStatus) |  |  |
+| approval_status_error | [string](#string) |  | Only populated when approval_status == ERROR |
+
+
+
+
+
+
+<a name="bytebase-v1-Issue-Approver"></a>
+
+### Issue.Approver
+Approvers and their approval status for the issue.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| status | [Issue.Approver.Status](#bytebase-v1-Issue-Approver-Status) |  | The new status. |
+| principal | [string](#string) |  | Format: users/hello@world.com |
+
+
+
+
+
+
+<a name="bytebase-v1-Issue-TaskStatusCountEntry"></a>
+
+### Issue.TaskStatusCountEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [int32](#int32) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-IssueComment"></a>
+
+### IssueComment
+A comment on an issue.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: projects/{project}/issues/{issue}/issueComments/{issueComment-uid} |
+| comment | [string](#string) |  | The text content of the comment. |
+| payload | [string](#string) |  | TODO: use struct message instead. |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| creator | [string](#string) |  | Format: users/{email} |
+| approval | [IssueComment.Approval](#bytebase-v1-IssueComment-Approval) |  | Approval event. |
+| issue_update | [IssueComment.IssueUpdate](#bytebase-v1-IssueComment-IssueUpdate) |  | Issue update event. |
+| stage_end | [IssueComment.StageEnd](#bytebase-v1-IssueComment-StageEnd) |  | Stage end event. |
+| task_update | [IssueComment.TaskUpdate](#bytebase-v1-IssueComment-TaskUpdate) |  | Task update event. |
+| task_prior_backup | [IssueComment.TaskPriorBackup](#bytebase-v1-IssueComment-TaskPriorBackup) |  | Task prior backup event. |
+
+
+
+
+
+
+<a name="bytebase-v1-IssueComment-Approval"></a>
+
+### IssueComment.Approval
+Approval event information.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| status | [IssueComment.Approval.Status](#bytebase-v1-IssueComment-Approval-Status) |  | The approval status. |
+
+
+
+
+
+
+<a name="bytebase-v1-IssueComment-IssueUpdate"></a>
+
+### IssueComment.IssueUpdate
+Issue update event information.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| from_title | [string](#string) | optional |  |
+| to_title | [string](#string) | optional |  |
+| from_description | [string](#string) | optional |  |
+| to_description | [string](#string) | optional |  |
+| from_status | [IssueStatus](#bytebase-v1-IssueStatus) | optional |  |
+| to_status | [IssueStatus](#bytebase-v1-IssueStatus) | optional |  |
+| from_labels | [string](#string) | repeated |  |
+| to_labels | [string](#string) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-IssueComment-StageEnd"></a>
+
+### IssueComment.StageEnd
+Stage end event information.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| stage | [string](#string) |  | The stage that ended. |
+
+
+
+
+
+
+<a name="bytebase-v1-IssueComment-TaskPriorBackup"></a>
+
+### IssueComment.TaskPriorBackup
+Task prior backup event information.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| task | [string](#string) |  | The task for which backup was performed. |
+| tables | [IssueComment.TaskPriorBackup.Table](#bytebase-v1-IssueComment-TaskPriorBackup-Table) | repeated | The tables that were backed up. |
+| original_line | [int32](#int32) | optional | The original line number in the statement. |
+| database | [string](#string) |  | The database that was backed up. |
+| error | [string](#string) |  | Error message if backup failed. |
+
+
+
+
+
+
+<a name="bytebase-v1-IssueComment-TaskPriorBackup-Table"></a>
+
+### IssueComment.TaskPriorBackup.Table
+Table identification.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema | [string](#string) |  | The schema name. |
+| table | [string](#string) |  | The table name. |
+
+
+
+
+
+
+<a name="bytebase-v1-IssueComment-TaskUpdate"></a>
+
+### IssueComment.TaskUpdate
+Task update event information.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| tasks | [string](#string) | repeated | The tasks that were updated. |
+| from_sheet | [string](#string) | optional | Format: projects/{project}/sheets/{sheet} |
+| to_sheet | [string](#string) | optional | Format: projects/{project}/sheets/{sheet} |
+| to_status | [IssueComment.TaskUpdate.Status](#bytebase-v1-IssueComment-TaskUpdate-Status) | optional |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ListIssueCommentsRequest"></a>
+
+### ListIssueCommentsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | Format: projects/{projects}/issues/{issue} |
+| page_size | [int32](#int32) |  | The maximum number of issue comments to return. The service may return fewer than this value. If unspecified, at most 10 issue comments will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListIssueComments` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListIssueComments` must match the call that provided the page token. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListIssueCommentsResponse"></a>
+
+### ListIssueCommentsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| issue_comments | [IssueComment](#bytebase-v1-IssueComment) | repeated | The issue comments from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListIssuesRequest"></a>
+
+### ListIssuesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent, which owns this collection of issues. Format: projects/{project} |
+| page_size | [int32](#int32) |  | The maximum number of issues to return. The service may return fewer than this value. If unspecified, at most 10 issues will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListIssues` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListIssues` must match the call that provided the page token. |
+| filter | [string](#string) |  | Filter is used to filter issues returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filters: - creator: issue creator full name in &#34;users/{email or id}&#34; format, support &#34;==&#34; operator. - status: the issue status, support &#34;==&#34; and &#34;in&#34; operator, check the IssueStatus enum for the values. - create_time: issue create time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34; or &#34;&lt;=&#34; operator. - type: the issue type, support &#34;==&#34; and &#34;in&#34; operator, check the Type enum in the Issue message for the values. - task_type: support &#34;==&#34; operator, the value can be &#34;DDL&#34;, &#34;DML&#34; or &#34;DATA_EXPORT&#34; - instance: the instance full name in the &#34;instances/{id}&#34; format, support &#34;==&#34; operator. - database: the database full name in the &#34;instances/{id}/databases/{name}&#34; format, support &#34;==&#34; operator. - environment: the database full name in the &#34;environments/{name}&#34; format, support &#34;==&#34; operator. - labels: the issue labels, support &#34;==&#34; and &#34;in&#34; operator. - approval_status: issue approval status, support &#34;==&#34; operator. - current_approver: the issue approver, should in &#34;users/{email} format&#34;, support &#34;==&#34; operator.
+
+For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; status in [&#34;OPEN&#34;, &#34;DONE&#34;] status == &#34;CANCELED&#34; &amp;&amp; type == &#34;DATABASE_CHANGE&#34; instance == &#34;instances/sample&#34; &amp;&amp; labels in [&#34;label1&#34;, &#34;label2&#34;] create_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34; environment == &#34;environments/test&#34; |
+| query | [string](#string) |  | Query is the query statement. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListIssuesResponse"></a>
+
+### ListIssuesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| issues | [Issue](#bytebase-v1-Issue) | repeated | The issues from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-RejectIssueRequest"></a>
+
+### RejectIssueRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the issue to add a rejection. Format: projects/{project}/issues/{issue} |
+| comment | [string](#string) |  | The comment explaining the rejection decision. |
+
+
+
+
+
+
+<a name="bytebase-v1-RequestIssueRequest"></a>
+
+### RequestIssueRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the issue to request a issue. Format: projects/{project}/issues/{issue} |
+| comment | [string](#string) |  | The comment explaining the request. |
+
+
+
+
+
+
+<a name="bytebase-v1-SearchIssuesRequest"></a>
+
+### SearchIssuesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent, which owns this collection of issues. Format: projects/{project} Use &#34;projects/-&#34; to list all issues from all projects. |
+| page_size | [int32](#int32) |  | The maximum number of issues to return. The service may return fewer than this value. If unspecified, at most 10 issues will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `SearchIssues` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `SearchIssues` must match the call that provided the page token. |
+| filter | [string](#string) |  | Filter is used to filter issues returned in the list. Check the filter field in the ListIssuesRequest message. |
+| query | [string](#string) |  | Query is the query statement. |
+
+
+
+
+
+
+<a name="bytebase-v1-SearchIssuesResponse"></a>
+
+### SearchIssuesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| issues | [Issue](#bytebase-v1-Issue) | repeated | The issues from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateIssueCommentRequest"></a>
+
+### UpdateIssueCommentRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The issue name Format: projects/{project}/issues/{issue} |
+| issue_comment | [IssueComment](#bytebase-v1-IssueComment) |  | The comment to update. |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+| allow_missing | [bool](#bool) |  | If set to true, and the issue comment is not found, a new issue comment will be created. In this situation, `update_mask` is ignored. |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateIssueRequest"></a>
+
+### UpdateIssueRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| issue | [Issue](#bytebase-v1-Issue) |  | The issue to update.
+
+The issue&#39;s `name` field is used to identify the issue to update. Format: projects/{project}/issues/{issue} |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+| allow_missing | [bool](#bool) |  | If set to true, and the issue is not found, a new issue will be created. In this situation, `update_mask` is ignored. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-Issue-ApprovalStatus"></a>
+
+### Issue.ApprovalStatus
+The overall approval status for the issue.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| APPROVAL_STATUS_UNSPECIFIED | 0 | Unspecified approval status. |
+| CHECKING | 1 | Approval checks are being evaluated. |
+| PENDING | 2 | Approval is pending. |
+| APPROVED | 3 | Issue has been approved. |
+| REJECTED | 4 | Issue has been rejected. |
+| SKIPPED | 5 | Approval was skipped. |
+| ERROR | 6 | Error occurred during approval evaluation. |
+
+
+
+<a name="bytebase-v1-Issue-Approver-Status"></a>
+
+### Issue.Approver.Status
+The approval status of an approver.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 | Unspecified status. |
+| PENDING | 1 | Awaiting approval. |
+| APPROVED | 2 | Approved. |
+| REJECTED | 3 | Rejected. |
+
+
+
+<a name="bytebase-v1-Issue-Type"></a>
+
+### Issue.Type
+The type of issue.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 | Unspecified issue type. |
+| DATABASE_CHANGE | 1 | Database schema or data change. |
+| GRANT_REQUEST | 2 | Database access grant request. |
+| DATABASE_EXPORT | 3 | Database data export request. |
+
+
+
+<a name="bytebase-v1-IssueComment-Approval-Status"></a>
+
+### IssueComment.Approval.Status
+Approval status values.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 | Unspecified status. |
+| PENDING | 1 | Approval pending. |
+| APPROVED | 2 | Approved. |
+| REJECTED | 3 | Rejected. |
+
+
+
+<a name="bytebase-v1-IssueComment-TaskUpdate-Status"></a>
+
+### IssueComment.TaskUpdate.Status
+Task status values.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 | Unspecified status. |
+| PENDING | 1 | Task is pending. |
+| RUNNING | 2 | Task is running. |
+| DONE | 3 | Task is done. |
+| FAILED | 4 | Task failed. |
+| SKIPPED | 5 | Task was skipped. |
+| CANCELED | 6 | Task was canceled. |
+
+
+
+<a name="bytebase-v1-IssueStatus"></a>
+
+### IssueStatus
+The status of an issue.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ISSUE_STATUS_UNSPECIFIED | 0 | Unspecified status. |
+| OPEN | 1 | Issue is open and active. |
+| DONE | 2 | Issue is completed. |
+| CANCELED | 3 | Issue is canceled. |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-IssueService"></a>
+
+### IssueService
+IssueService manages issues for tracking database changes and tasks.
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetIssue | [GetIssueRequest](#bytebase-v1-GetIssueRequest) | [Issue](#bytebase-v1-Issue) | Retrieves an issue by name. Permissions required: bb.issues.get |
+| CreateIssue | [CreateIssueRequest](#bytebase-v1-CreateIssueRequest) | [Issue](#bytebase-v1-Issue) | Creates a new issue for database changes or tasks. Permissions required: bb.issues.create |
+| ListIssues | [ListIssuesRequest](#bytebase-v1-ListIssuesRequest) | [ListIssuesResponse](#bytebase-v1-ListIssuesResponse) | Lists issues in a project. Permissions required: bb.issues.list |
+| SearchIssues | [SearchIssuesRequest](#bytebase-v1-SearchIssuesRequest) | [SearchIssuesResponse](#bytebase-v1-SearchIssuesResponse) | Search for issues that the caller has the bb.issues.get permission on and also satisfy the specified filter &amp; query. Permissions required: bb.issues.get |
+| UpdateIssue | [UpdateIssueRequest](#bytebase-v1-UpdateIssueRequest) | [Issue](#bytebase-v1-Issue) | Updates an issue&#39;s properties such as title, description, or labels. Permissions required: bb.issues.update |
+| ListIssueComments | [ListIssueCommentsRequest](#bytebase-v1-ListIssueCommentsRequest) | [ListIssueCommentsResponse](#bytebase-v1-ListIssueCommentsResponse) | Lists comments on an issue. Permissions required: bb.issueComments.list |
+| CreateIssueComment | [CreateIssueCommentRequest](#bytebase-v1-CreateIssueCommentRequest) | [IssueComment](#bytebase-v1-IssueComment) | Adds a comment to an issue. Permissions required: bb.issueComments.create |
+| UpdateIssueComment | [UpdateIssueCommentRequest](#bytebase-v1-UpdateIssueCommentRequest) | [IssueComment](#bytebase-v1-IssueComment) | Updates an existing issue comment. Permissions required: bb.issueComments.update |
+| BatchUpdateIssuesStatus | [BatchUpdateIssuesStatusRequest](#bytebase-v1-BatchUpdateIssuesStatusRequest) | [BatchUpdateIssuesStatusResponse](#bytebase-v1-BatchUpdateIssuesStatusResponse) | Updates the status of multiple issues in a single operation. Permissions required: bb.issues.update |
+| ApproveIssue | [ApproveIssueRequest](#bytebase-v1-ApproveIssueRequest) | [Issue](#bytebase-v1-Issue) | Approves an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step. Permissions required: None (determined by approval flow) |
+| RejectIssue | [RejectIssueRequest](#bytebase-v1-RejectIssueRequest) | [Issue](#bytebase-v1-Issue) | Rejects an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step. Permissions required: None (determined by approval flow) |
+| RequestIssue | [RequestIssueRequest](#bytebase-v1-RequestIssueRequest) | [Issue](#bytebase-v1-Issue) | Requests changes on an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step. Permissions required: None (determined by approval flow) |
+
+ 
+
+
+
+<a name="v1_iam_policy-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/iam_policy.proto
+
+
+
+<a name="bytebase-v1-Binding"></a>
+
+### Binding
+Binding associates members with a role and optional conditions.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| role | [string](#string) |  | The role that is assigned to the members. Format: roles/{role} |
+| members | [string](#string) | repeated | Specifies the principals requesting access for a Bytebase resource. For users, the member should be: user:{email} For groups, the member should be: group:{email} |
+| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding, only used in the project IAM policy. If the condition evaluates to true, then this binding applies to the current request. If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Support variables: resource.database: the database full name in &#34;instances/{instance}/databases/{database}&#34; format, used by the &#34;roles/sqlEditorUser&#34; role, support &#34;==&#34; operator. resource.schema_name: the schema name, used by the &#34;roles/sqlEditorUser&#34; role, support &#34;==&#34; operator. resource.table_name: the table name, used by the &#34;roles/sqlEditorUser&#34; role, support &#34;==&#34; operator. request.time: the expiration. Only support &#34;&lt;&#34; operation in `request.time &lt; timestamp(&#34;{ISO datetime string format}&#34;)`.
+
+For example: resource.database == &#34;instances/local-pg/databases/postgres&#34; &amp;&amp; resource.schema_name in [&#34;public&#34;,&#34;another_schema&#34;] resource.database == &#34;instances/local-pg/databases/bytebase&#34; &amp;&amp; resource.schema_name == &#34;public&#34; &amp;&amp; resource.table_name in [&#34;audit_log&#34;] request.time &lt; timestamp(&#34;2025-04-26T11:24:48.655Z&#34;) |
+| parsed_expr | [google.api.expr.v1alpha1.Expr](#google-api-expr-v1alpha1-Expr) |  | The parsed expression of the condition. |
+
+
+
+
+
+
+<a name="bytebase-v1-BindingDelta"></a>
+
+### BindingDelta
+A single change to a binding.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| action | [BindingDelta.Action](#bytebase-v1-BindingDelta-Action) |  | The action that was performed on a Binding. |
+| role | [string](#string) |  | Role that is assigned to `members`. For example, `roles/projectOwner`. |
+| member | [string](#string) |  | Follows the same format of Binding.members. |
+| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding. |
+
+
+
+
+
+
+<a name="bytebase-v1-GetIamPolicyRequest"></a>
+
+### GetIamPolicyRequest
+Request message for getting an IAM policy.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| resource | [string](#string) |  | The name of the resource to get the IAM policy. Format: projects/{project} Format: workspaces/{workspace} |
+
+
+
+
+
+
+<a name="bytebase-v1-IamPolicy"></a>
+
+### IamPolicy
+IAM policy that binds members to roles.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| bindings | [Binding](#bytebase-v1-Binding) | repeated | Collection of binding. A binding binds one or more project members to a single project role. |
+| etag | [string](#string) |  | The current etag of the policy. If an etag is provided and does not match the current etag of the policy, the call will be blocked and an ABORTED error will be returned. |
+
+
+
+
+
+
+<a name="bytebase-v1-PolicyDelta"></a>
+
+### PolicyDelta
+Describes changes between two IAM policies.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| binding_deltas | [BindingDelta](#bytebase-v1-BindingDelta) | repeated | The delta for Bindings between two policies. |
+
+
+
+
+
+
+<a name="bytebase-v1-SetIamPolicyRequest"></a>
+
+### SetIamPolicyRequest
+Request message for setting an IAM policy.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| resource | [string](#string) |  | The name of the resource to set the IAM policy. Format: projects/{project} Format: workspaces/{workspace} |
+| policy | [IamPolicy](#bytebase-v1-IamPolicy) |  |  |
+| etag | [string](#string) |  | The current etag of the policy. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-BindingDelta-Action"></a>
+
+### BindingDelta.Action
+Type of action performed on a binding.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ACTION_UNSPECIFIED | 0 | Unspecified action. |
+| ADD | 1 | Add a binding. |
+| REMOVE | 2 | Remove a binding. |
+
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="v1_project_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/project_service.proto
+
+
+
+<a name="bytebase-v1-Activity"></a>
+
+### Activity
+Activity types for webhook notifications.
+
+
+
+
+
+
+<a name="bytebase-v1-AddWebhookRequest"></a>
+
+### AddWebhookRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| project | [string](#string) |  | The name of the project to add the webhook to. Format: projects/{project} |
+| webhook | [Webhook](#bytebase-v1-Webhook) |  | The webhook to add. |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchDeleteProjectsRequest"></a>
+
+### BatchDeleteProjectsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| names | [string](#string) | repeated | The names of the projects to delete. Format: projects/{project} |
+| force | [bool](#bool) |  | If set to true, any databases from this project will be moved to default project. Sheets are not moved since BYTEBASE_ARTIFACT sheets belong to the issue and issue project. Open issues will remain open but associated with the deleted project. If set to false, the operation will fail if the project has databases or open issues. |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchGetIamPolicyRequest"></a>
+
+### BatchGetIamPolicyRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| scope | [string](#string) |  | The scope of the batch get. Typically it&#39;s &#34;projects/-&#34;. |
+| names | [string](#string) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchGetIamPolicyResponse"></a>
+
+### BatchGetIamPolicyResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| policy_results | [BatchGetIamPolicyResponse.PolicyResult](#bytebase-v1-BatchGetIamPolicyResponse-PolicyResult) | repeated | The policy results for each requested project. |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchGetIamPolicyResponse-PolicyResult"></a>
+
+### BatchGetIamPolicyResponse.PolicyResult
+Result for a single project&#39;s IAM policy.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| project | [string](#string) |  | The project resource name. |
+| policy | [IamPolicy](#bytebase-v1-IamPolicy) |  | The IAM policy for the project. |
+
+
+
+
+
+
+<a name="bytebase-v1-CreateProjectRequest"></a>
+
+### CreateProjectRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| project | [Project](#bytebase-v1-Project) |  | The project to create. |
+| project_id | [string](#string) |  | The ID to use for the project, which will become the final component of the project&#39;s resource name.
+
+This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
+
+
+
+
+
+
+<a name="bytebase-v1-DeleteProjectRequest"></a>
+
+### DeleteProjectRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the project to delete. Format: projects/{project} |
+| force | [bool](#bool) |  | If set to true, any databases from this project will be moved to default project. Sheets are not moved since BYTEBASE_ARTIFACT sheets belong to the issue and issue project. Open issues will remain open but associated with the deleted project. If set to false, the operation will fail if the project has databases or open issues. |
+| purge | [bool](#bool) |  | If set to true, permanently purge the soft-deleted project and all related resources. This operation is irreversible. Following AIP-165, this should only be used for administrative cleanup of old soft-deleted projects. The project must already be soft-deleted for this to work. |
+
+
+
+
+
+
+<a name="bytebase-v1-GetProjectRequest"></a>
+
+### GetProjectRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the project to retrieve. Format: projects/{project} |
+
+
+
+
+
+
+<a name="bytebase-v1-Label"></a>
+
+### Label
+A label for categorizing and organizing issues.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| value | [string](#string) |  | The label value/name. |
+| color | [string](#string) |  | The color code for the label (e.g., hex color). |
+| group | [string](#string) |  | The group this label belongs to. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListProjectsRequest"></a>
+
+### ListProjectsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| page_size | [int32](#int32) |  | The maximum number of projects to return. The service may return fewer than this value. If unspecified, at most 10 projects will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListProjects` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListProjects` must match the call that provided the page token. |
+| show_deleted | [bool](#bool) |  | Show deleted projects if specified. |
+| filter | [string](#string) |  | Filter the project. Check filter for SearchProjectsRequest for details. Supports filtering by name, resource_id, state, and labels (e.g., labels.environment == &#34;production&#34;). |
+
+
+
+
+
+
+<a name="bytebase-v1-ListProjectsResponse"></a>
+
+### ListProjectsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| projects | [Project](#bytebase-v1-Project) | repeated | The projects from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-Project"></a>
+
+### Project
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the project. Format: projects/{project} |
+| state | [State](#bytebase-v1-State) |  | The lifecycle state of the project. |
+| title | [string](#string) |  | The title or name of a project. It&#39;s not unique within the workspace. |
+| webhooks | [Webhook](#bytebase-v1-Webhook) | repeated | The list of webhooks configured for the project. |
+| data_classification_config_id | [string](#string) |  | The data classification configuration ID for the project. |
+| issue_labels | [Label](#bytebase-v1-Label) | repeated | Labels available for tagging issues in this project. |
+| force_issue_labels | [bool](#bool) |  | Force issue labels to be used when creating an issue. |
+| allow_modify_statement | [bool](#bool) |  | Allow modifying SQL statements after issue is created. |
+| auto_resolve_issue | [bool](#bool) |  | Enable automatic issue resolution when tasks complete. |
+| enforce_issue_title | [bool](#bool) |  | Enforce issue title to be created by user instead of generated by Bytebase. |
+| auto_enable_backup | [bool](#bool) |  | Whether to automatically enable backup for database changes. |
+| skip_backup_errors | [bool](#bool) |  | Whether to skip backup errors and continue with data migration. |
+| postgres_database_tenant_mode | [bool](#bool) |  | Whether to enable database tenant mode for PostgreSQL. If enabled, issues will include &#34;set role &lt;db_owner&gt;&#34; statement. |
+| allow_self_approval | [bool](#bool) |  | Whether to allow issue creators to self-approve their own issues. |
+| execution_retry_policy | [Project.ExecutionRetryPolicy](#bytebase-v1-Project-ExecutionRetryPolicy) |  | Execution retry policy for task runs. |
+| ci_sampling_size | [int32](#int32) |  | The maximum number of database rows to sample during CI data validation. Without specification, sampling is disabled, resulting in full validation. |
+| parallel_tasks_per_rollout | [int32](#int32) |  | The maximum number of parallel tasks allowed during rollout execution. |
+| labels | [Project.LabelsEntry](#bytebase-v1-Project-LabelsEntry) | repeated | Labels are key-value pairs that can be attached to the project. For example, { &#34;environment&#34;: &#34;production&#34;, &#34;team&#34;: &#34;backend&#34; } |
+| enforce_sql_review | [bool](#bool) |  | Whether to enforce SQL review checks to pass before issue creation. If enabled, issues cannot be created when SQL review finds errors. |
+
+
+
+
+
+
+<a name="bytebase-v1-Project-ExecutionRetryPolicy"></a>
+
+### Project.ExecutionRetryPolicy
+Execution retry policy configuration.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| maximum_retries | [int32](#int32) |  | The maximum number of retries for lock timeout errors. |
+
+
+
+
+
+
+<a name="bytebase-v1-Project-LabelsEntry"></a>
+
+### Project.LabelsEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-RemoveWebhookRequest"></a>
+
+### RemoveWebhookRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| webhook | [Webhook](#bytebase-v1-Webhook) |  | The webhook to remove. Identified by its url. |
+
+
+
+
+
+
+<a name="bytebase-v1-SearchProjectsRequest"></a>
+
+### SearchProjectsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| show_deleted | [bool](#bool) |  | Show deleted projects if specified. |
+| filter | [string](#string) |  | Filter the project. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filters: - name: the project name, support &#34;==&#34; and &#34;.matches()&#34; operator. - resource_id: the project id, support &#34;==&#34; and &#34;.matches()&#34; operator. - exclude_default: if not include the default project, should be &#34;true&#34; or &#34;false&#34;, support &#34;==&#34; operator. - state: check the State enum for the values, support &#34;==&#34; operator. - labels.{key}: the project label, support &#34;==&#34; and &#34;in&#34; operators.
+
+For example: name == &#34;project name&#34; name.matches(&#34;project name&#34;) resource_id == &#34;project id&#34; resource_id.matches(&#34;project id&#34;) exclude_default == true state == &#34;DELETED&#34; labels.environment == &#34;production&#34; labels.tier == &#34;critical&#34; labels.environment in [&#34;staging&#34;, &#34;prod&#34;] You can combine filter conditions like: name == &#34;project name&#34; &amp;&amp; resource_id.matches(&#34;project id&#34;) name.matches(&#34;project name&#34;) || resource_id == &#34;project id&#34; labels.environment == &#34;production&#34; &amp;&amp; labels.tier == &#34;critical&#34; |
+| page_size | [int32](#int32) |  | The maximum number of projects to return. The service may return fewer than this value. If unspecified, at most 10 projects will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `SearchProjects` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `SearchProjects` must match the call that provided the page token. |
+
+
+
+
+
+
+<a name="bytebase-v1-SearchProjectsResponse"></a>
+
+### SearchProjectsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| projects | [Project](#bytebase-v1-Project) | repeated | The projects from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-TestWebhookRequest"></a>
+
+### TestWebhookRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| project | [string](#string) |  | The name of the project which owns the webhook to test. Format: projects/{project} |
+| webhook | [Webhook](#bytebase-v1-Webhook) |  | The webhook to test. Identified by its url. |
+
+
+
+
+
+
+<a name="bytebase-v1-TestWebhookResponse"></a>
+
+### TestWebhookResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| error | [string](#string) |  | The result of the test, empty if the test is successful. |
+
+
+
+
+
+
+<a name="bytebase-v1-UndeleteProjectRequest"></a>
+
+### UndeleteProjectRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the deleted project. Format: projects/{project} |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateProjectRequest"></a>
+
+### UpdateProjectRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| project | [Project](#bytebase-v1-Project) |  | The project to update.
+
+The project&#39;s `name` field is used to identify the project to update. Format: projects/{project} |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+| allow_missing | [bool](#bool) |  | If set to true, and the project is not found, a new project will be created. In this situation, `update_mask` is ignored. |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateWebhookRequest"></a>
+
+### UpdateWebhookRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| webhook | [Webhook](#bytebase-v1-Webhook) |  | The webhook to modify. |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+| allow_missing | [bool](#bool) |  | If set to true, and the webhook is not found, a new webhook will be created. In this situation, `update_mask` is ignored. |
+
+
+
+
+
+
+<a name="bytebase-v1-Webhook"></a>
+
+### Webhook
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | name is the name of the webhook, generated by the server. format: projects/{project}/webhooks/{webhook} |
+| type | [Webhook.Type](#bytebase-v1-Webhook-Type) |  | type is the type of the webhook. |
+| title | [string](#string) |  | title is the title of the webhook. |
+| url | [string](#string) |  | url is the url of the webhook, should be unique within the project. |
+| direct_message | [bool](#bool) |  | if direct_message is set, the notification is sent directly to the persons and url will be ignored. IM integration setting should be set for this function to work. |
+| notification_types | [Activity.Type](#bytebase-v1-Activity-Type) | repeated | notification_types is the list of activities types that the webhook is interested in. Bytebase will only send notifications to the webhook if the activity type is in the list. It should not be empty, and should be a subset of the following: - ISSUE_CREATE - ISSUE_COMMENT_CREATE - ISSUE_FIELD_UPDATE - ISSUE_STATUS_UPDATE - ISSUE_APPROVAL_NOTIFY - ISSUE_PIPELINE_STAGE_STATUS_UPDATE - ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE - NOTIFY_ISSUE_APPROVED - NOTIFY_PIPELINE_ROLLOUT |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-Activity-Type"></a>
+
+### Activity.Type
+Activity type enumeration.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 | Unspecified type. |
+| NOTIFY_ISSUE_APPROVED | 23 | Notifications via webhooks.
+
+NOTIFY_ISSUE_APPROVED represents the issue approved notification. |
+| NOTIFY_PIPELINE_ROLLOUT | 24 | NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification. |
+| ISSUE_CREATE | 1 | Issue related activity types.
+
+ISSUE_CREATE represents creating an issue. |
+| ISSUE_COMMENT_CREATE | 2 | ISSUE_COMMENT_CREATE represents commenting on an issue. |
+| ISSUE_FIELD_UPDATE | 3 | ISSUE_FIELD_UPDATE represents updating the issue field, likes title, description, etc. |
+| ISSUE_STATUS_UPDATE | 4 | ISSUE_STATUS_UPDATE represents the issue status change, including OPEN, CLOSE, CANCEL fow now. |
+| ISSUE_APPROVAL_NOTIFY | 21 | ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval. |
+| ISSUE_PIPELINE_STAGE_STATUS_UPDATE | 5 | ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now. |
+| ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE | 22 | ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED. |
+
+
+
+<a name="bytebase-v1-Webhook-Type"></a>
+
+### Webhook.Type
+Webhook integration type.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 | Unspecified type. |
+| SLACK | 1 | Slack integration. |
+| DISCORD | 2 | Discord integration. |
+| TEAMS | 3 | Microsoft Teams integration. |
+| DINGTALK | 4 | DingTalk integration. |
+| FEISHU | 5 | Feishu integration. |
+| WECOM | 6 | WeCom (WeChat Work) integration. |
+| LARK | 8 | Lark integration. |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-ProjectService"></a>
+
+### ProjectService
+ProjectService manages projects that group databases and changes.
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetProject | [GetProjectRequest](#bytebase-v1-GetProjectRequest) | [Project](#bytebase-v1-Project) | GetProject retrieves a project by name. Users with &#34;bb.projects.get&#34; permission on the workspace or the project owner can access this method. Permissions required: bb.projects.get |
+| ListProjects | [ListProjectsRequest](#bytebase-v1-ListProjectsRequest) | [ListProjectsResponse](#bytebase-v1-ListProjectsResponse) | Lists all projects in the workspace with optional filtering. Permissions required: bb.projects.list |
+| SearchProjects | [SearchProjectsRequest](#bytebase-v1-SearchProjectsRequest) | [SearchProjectsResponse](#bytebase-v1-SearchProjectsResponse) | Searches for projects with advanced filtering capabilities. Permissions required: bb.projects.get (or project-level bb.projects.get for specific projects) |
+| CreateProject | [CreateProjectRequest](#bytebase-v1-CreateProjectRequest) | [Project](#bytebase-v1-Project) | Creates a new project in the workspace. Permissions required: bb.projects.create |
+| UpdateProject | [UpdateProjectRequest](#bytebase-v1-UpdateProjectRequest) | [Project](#bytebase-v1-Project) | Updates an existing project&#39;s properties. Permissions required: bb.projects.update |
+| DeleteProject | [DeleteProjectRequest](#bytebase-v1-DeleteProjectRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes (soft-delete or purge) a project. Permissions required: bb.projects.delete |
+| UndeleteProject | [UndeleteProjectRequest](#bytebase-v1-UndeleteProjectRequest) | [Project](#bytebase-v1-Project) | Restores a soft-deleted project. Permissions required: bb.projects.undelete |
+| BatchDeleteProjects | [BatchDeleteProjectsRequest](#bytebase-v1-BatchDeleteProjectsRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes multiple projects in a single operation. Permissions required: bb.projects.delete |
+| GetIamPolicy | [GetIamPolicyRequest](#bytebase-v1-GetIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) | Retrieves the IAM policy for a project. Permissions required: bb.projects.getIamPolicy |
+| BatchGetIamPolicy | [BatchGetIamPolicyRequest](#bytebase-v1-BatchGetIamPolicyRequest) | [BatchGetIamPolicyResponse](#bytebase-v1-BatchGetIamPolicyResponse) | Deprecated. No permission check implemented. Permissions required: None |
+| SetIamPolicy | [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) | Sets the IAM policy for a project. Permissions required: bb.projects.setIamPolicy |
+| AddWebhook | [AddWebhookRequest](#bytebase-v1-AddWebhookRequest) | [Project](#bytebase-v1-Project) | Adds a webhook to a project for notifications. Permissions required: bb.projects.update |
+| UpdateWebhook | [UpdateWebhookRequest](#bytebase-v1-UpdateWebhookRequest) | [Project](#bytebase-v1-Project) | Updates an existing webhook configuration. Permissions required: bb.projects.update |
+| RemoveWebhook | [RemoveWebhookRequest](#bytebase-v1-RemoveWebhookRequest) | [Project](#bytebase-v1-Project) | Removes a webhook from a project. Permissions required: bb.projects.update |
+| TestWebhook | [TestWebhookRequest](#bytebase-v1-TestWebhookRequest) | [TestWebhookResponse](#bytebase-v1-TestWebhookResponse) | Tests a webhook by sending a test notification. Permissions required: bb.projects.update |
+
+ 
+
+
+
+<a name="v1_setting_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/setting_service.proto
+
+
+
+<a name="bytebase-v1-AISetting"></a>
+
+### AISetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| enabled | [bool](#bool) |  |  |
+| provider | [AISetting.Provider](#bytebase-v1-AISetting-Provider) |  |  |
+| endpoint | [string](#string) |  |  |
+| api_key | [string](#string) |  |  |
+| model | [string](#string) |  |  |
+| version | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-Algorithm"></a>
+
+### Algorithm
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| full_mask | [Algorithm.FullMask](#bytebase-v1-Algorithm-FullMask) |  |  |
+| range_mask | [Algorithm.RangeMask](#bytebase-v1-Algorithm-RangeMask) |  |  |
+| md5_mask | [Algorithm.MD5Mask](#bytebase-v1-Algorithm-MD5Mask) |  |  |
+| inner_outer_mask | [Algorithm.InnerOuterMask](#bytebase-v1-Algorithm-InnerOuterMask) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-Algorithm-FullMask"></a>
+
+### Algorithm.FullMask
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| substitution | [string](#string) |  | substitution is the string used to replace the original value, the max length of the string is 16 bytes. |
+
+
+
+
+
+
+<a name="bytebase-v1-Algorithm-InnerOuterMask"></a>
+
+### Algorithm.InnerOuterMask
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| prefix_len | [int32](#int32) |  |  |
+| suffix_len | [int32](#int32) |  |  |
+| type | [Algorithm.InnerOuterMask.MaskType](#bytebase-v1-Algorithm-InnerOuterMask-MaskType) |  |  |
+| substitution | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-Algorithm-MD5Mask"></a>
+
+### Algorithm.MD5Mask
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| salt | [string](#string) |  | salt is the salt value to generate a different hash that with the word alone. |
+
+
+
+
+
+
+<a name="bytebase-v1-Algorithm-RangeMask"></a>
+
+### Algorithm.RangeMask
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| slices | [Algorithm.RangeMask.Slice](#bytebase-v1-Algorithm-RangeMask-Slice) | repeated | We store it as a repeated field to face the fact that the original value may have multiple parts should be masked. But frontend can be started with a single rule easily. |
+
+
+
+
+
+
+<a name="bytebase-v1-Algorithm-RangeMask-Slice"></a>
+
+### Algorithm.RangeMask.Slice
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| start | [int32](#int32) |  | start is the start index of the original value, start from 0 and should be less than stop. |
+| end | [int32](#int32) |  | stop is the stop index of the original value, should be less than the length of the original value. |
+| substitution | [string](#string) |  | substitution is the string used to replace the OriginalValue[start:end). |
+
+
+
+
+
+
+<a name="bytebase-v1-Announcement"></a>
+
+### Announcement
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| level | [Announcement.AlertLevel](#bytebase-v1-Announcement-AlertLevel) |  | The alert level of announcement |
+| text | [string](#string) |  | The text of announcement |
+| link | [string](#string) |  | The optional link, user can follow the link to check extra details |
+
+
+
+
+
+
+<a name="bytebase-v1-AppIMSetting"></a>
+
+### AppIMSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| settings | [AppIMSetting.IMSetting](#bytebase-v1-AppIMSetting-IMSetting) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-AppIMSetting-DingTalk"></a>
+
+### AppIMSetting.DingTalk
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| client_id | [string](#string) |  |  |
+| client_secret | [string](#string) |  |  |
+| robot_code | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-AppIMSetting-Feishu"></a>
+
+### AppIMSetting.Feishu
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| app_id | [string](#string) |  |  |
+| app_secret | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-AppIMSetting-IMSetting"></a>
+
+### AppIMSetting.IMSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [Webhook.Type](#bytebase-v1-Webhook-Type) |  |  |
+| slack | [AppIMSetting.Slack](#bytebase-v1-AppIMSetting-Slack) |  |  |
+| feishu | [AppIMSetting.Feishu](#bytebase-v1-AppIMSetting-Feishu) |  |  |
+| wecom | [AppIMSetting.Wecom](#bytebase-v1-AppIMSetting-Wecom) |  |  |
+| lark | [AppIMSetting.Lark](#bytebase-v1-AppIMSetting-Lark) |  |  |
+| dingtalk | [AppIMSetting.DingTalk](#bytebase-v1-AppIMSetting-DingTalk) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-AppIMSetting-Lark"></a>
+
+### AppIMSetting.Lark
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| app_id | [string](#string) |  |  |
+| app_secret | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-AppIMSetting-Slack"></a>
+
+### AppIMSetting.Slack
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| token | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-AppIMSetting-Wecom"></a>
+
+### AppIMSetting.Wecom
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| corp_id | [string](#string) |  |  |
+| agent_id | [string](#string) |  |  |
+| secret | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-DataClassificationSetting"></a>
+
+### DataClassificationSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| configs | [DataClassificationSetting.DataClassificationConfig](#bytebase-v1-DataClassificationSetting-DataClassificationConfig) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-DataClassificationSetting-DataClassificationConfig"></a>
+
+### DataClassificationSetting.DataClassificationConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | id is the uuid for classification. Each project can chose one classification config. |
+| title | [string](#string) |  |  |
+| levels | [DataClassificationSetting.DataClassificationConfig.Level](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-Level) | repeated | levels is user defined level list for classification. The order for the level decides its priority. |
+| classification | [DataClassificationSetting.DataClassificationConfig.ClassificationEntry](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-ClassificationEntry) | repeated | classification is the id - DataClassification map. The id should in [0-9]&#43;-[0-9]&#43;-[0-9]&#43; format. |
+
+
+
+
+
+
+<a name="bytebase-v1-DataClassificationSetting-DataClassificationConfig-ClassificationEntry"></a>
+
+### DataClassificationSetting.DataClassificationConfig.ClassificationEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [DataClassificationSetting.DataClassificationConfig.DataClassification](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-DataClassification) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-DataClassificationSetting-DataClassificationConfig-DataClassification"></a>
+
+### DataClassificationSetting.DataClassificationConfig.DataClassification
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | id is the classification id in [0-9]&#43;-[0-9]&#43;-[0-9]&#43; format. |
+| title | [string](#string) |  |  |
+| description | [string](#string) |  |  |
+| level_id | [string](#string) | optional |  |
+
+
+
+
+
+
+<a name="bytebase-v1-DataClassificationSetting-DataClassificationConfig-Level"></a>
+
+### DataClassificationSetting.DataClassificationConfig.Level
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  |  |
+| title | [string](#string) |  |  |
+| description | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-EnvironmentSetting"></a>
+
+### EnvironmentSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| environments | [EnvironmentSetting.Environment](#bytebase-v1-EnvironmentSetting-Environment) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-EnvironmentSetting-Environment"></a>
+
+### EnvironmentSetting.Environment
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The resource name of the environment. Format: environments/{environment}. Output only. |
+| id | [string](#string) |  | The resource id of the environment. This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
+| title | [string](#string) |  | The display name of the environment. |
+| tags | [EnvironmentSetting.Environment.TagsEntry](#bytebase-v1-EnvironmentSetting-Environment-TagsEntry) | repeated |  |
+| color | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-EnvironmentSetting-Environment-TagsEntry"></a>
+
+### EnvironmentSetting.Environment.TagsEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-GetSettingRequest"></a>
+
+### GetSettingRequest
+The request message for getting a setting.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The resource name of the setting. |
+
+
+
+
+
+
+<a name="bytebase-v1-GetSettingResponse"></a>
+
+### GetSettingResponse
+The response message for getting a setting.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| setting | [Setting](#bytebase-v1-Setting) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ListSettingsRequest"></a>
+
+### ListSettingsRequest
+
+
+
+
+
+
+
+<a name="bytebase-v1-ListSettingsResponse"></a>
+
+### ListSettingsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| settings | [Setting](#bytebase-v1-Setting) | repeated | The settings from the specified request. |
+
+
+
+
+
+
+<a name="bytebase-v1-PasswordRestrictionSetting"></a>
+
+### PasswordRestrictionSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| min_length | [int32](#int32) |  | min_length is the minimum length for password, should no less than 8. |
+| require_number | [bool](#bool) |  | require_number requires the password must contains at least one number. |
+| require_letter | [bool](#bool) |  | require_letter requires the password must contains at least one letter, regardless of upper case or lower case |
+| require_uppercase_letter | [bool](#bool) |  | require_uppercase_letter requires the password must contains at least one upper case letter. |
+| require_special_character | [bool](#bool) |  | require_special_character requires the password must contains at least one special character. |
+| require_reset_password_for_first_login | [bool](#bool) |  | require_reset_password_for_first_login requires users to reset their password after the 1st login. |
+| password_rotation | [google.protobuf.Duration](#google-protobuf-Duration) |  | password_rotation requires users to reset their password after the duration. |
+
+
+
+
+
+
+<a name="bytebase-v1-SCIMSetting"></a>
+
+### SCIMSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| token | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SemanticTypeSetting"></a>
+
+### SemanticTypeSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| types | [SemanticTypeSetting.SemanticType](#bytebase-v1-SemanticTypeSetting-SemanticType) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SemanticTypeSetting-SemanticType"></a>
+
+### SemanticTypeSetting.SemanticType
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | id is the uuid for semantic type. |
+| title | [string](#string) |  | the title of the semantic type, it should not be empty. |
+| description | [string](#string) |  | the description of the semantic type, it can be empty. |
+| algorithm | [Algorithm](#bytebase-v1-Algorithm) |  |  |
+| icon | [string](#string) |  | icon is the icon for semantic type, it can be emoji or base64 encoded image. |
+
+
+
+
+
+
+<a name="bytebase-v1-Setting"></a>
+
+### Setting
+The schema of setting.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The resource name of the setting. Must be one of the following forms:
+
+- `setting/{setting}` For example, &#34;settings/bb.branding.logo&#34; |
+| value | [Value](#bytebase-v1-Value) |  | The configuration value of the setting. |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateSettingRequest"></a>
+
+### UpdateSettingRequest
+The request message for updating or creating a setting.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| setting | [Setting](#bytebase-v1-Setting) |  | The setting to update. |
+| validate_only | [bool](#bool) |  | validate_only is a flag to indicate whether to validate the setting value, server would not persist the setting value if it is true. |
+| allow_missing | [bool](#bool) |  |  |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-Value"></a>
+
+### Value
+The data in setting value.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| string_value | [string](#string) |  | Defines this value as being a string value. |
+| app_im_setting_value | [AppIMSetting](#bytebase-v1-AppIMSetting) |  |  |
+| workspace_profile_setting_value | [WorkspaceProfileSetting](#bytebase-v1-WorkspaceProfileSetting) |  | reserved 4; // was AgentPluginSetting agent_plugin_setting_value |
+| workspace_approval_setting_value | [WorkspaceApprovalSetting](#bytebase-v1-WorkspaceApprovalSetting) |  |  |
+| data_classification_setting_value | [DataClassificationSetting](#bytebase-v1-DataClassificationSetting) |  |  |
+| semantic_type_setting_value | [SemanticTypeSetting](#bytebase-v1-SemanticTypeSetting) |  |  |
+| scim_setting | [SCIMSetting](#bytebase-v1-SCIMSetting) |  |  |
+| password_restriction_setting | [PasswordRestrictionSetting](#bytebase-v1-PasswordRestrictionSetting) |  |  |
+| ai_setting | [AISetting](#bytebase-v1-AISetting) |  |  |
+| environment_setting | [EnvironmentSetting](#bytebase-v1-EnvironmentSetting) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-WorkspaceApprovalSetting"></a>
+
+### WorkspaceApprovalSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| rules | [WorkspaceApprovalSetting.Rule](#bytebase-v1-WorkspaceApprovalSetting-Rule) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-WorkspaceApprovalSetting-Rule"></a>
+
+### WorkspaceApprovalSetting.Rule
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| template | [ApprovalTemplate](#bytebase-v1-ApprovalTemplate) |  |  |
+| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with the rule. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+The `source` field filters which rules apply. The `condition` field then evaluates with full context.
+
+All supported variables: statement.affected_rows: affected row count in the DDL/DML, support &#34;==&#34;, &#34;!=&#34;, &#34;&lt;&#34;, &#34;&lt;=&#34;, &#34;&gt;&#34;, &#34;&gt;=&#34; operations. statement.table_rows: table row count number, support &#34;==&#34;, &#34;!=&#34;, &#34;&lt;&#34;, &#34;&lt;=&#34;, &#34;&gt;&#34;, &#34;&gt;=&#34; operations. resource.environment_id: the environment resource id, support &#34;==&#34;, &#34;!=&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34; operations. resource.project_id: the project resource id, support &#34;==&#34;, &#34;!=&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34;, &#34;contains()&#34;, &#34;matches()&#34;, &#34;startsWith()&#34;, &#34;endsWith()&#34; operations. resource.db_engine: the database engine type, support &#34;==&#34;, &#34;!=&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34; operations. Check the Engine enum for values. statement.sql_type: the SQL type, support &#34;==&#34;, &#34;!=&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34; operations. resource.database_name: the database name, support &#34;==&#34;, &#34;!=&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34;, &#34;contains()&#34;, &#34;matches()&#34;, &#34;startsWith()&#34;, &#34;endsWith()&#34; operations. resource.schema_name: the schema name, support &#34;==&#34;, &#34;!=&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34;, &#34;contains()&#34;, &#34;matches()&#34;, &#34;startsWith()&#34;, &#34;endsWith()&#34; operations. resource.table_name: the table name, support &#34;==&#34;, &#34;!=&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34;, &#34;contains()&#34;, &#34;matches()&#34;, &#34;startsWith()&#34;, &#34;endsWith()&#34; operations. statement.text: the SQL statement, support &#34;contains()&#34;, &#34;matches()&#34;, &#34;startsWith()&#34;, &#34;endsWith()&#34; operations. request.expiration_days: the role expiration days for the request, support &#34;==&#34;, &#34;!=&#34;, &#34;&lt;&#34;, &#34;&lt;=&#34;, &#34;&gt;&#34;, &#34;&gt;=&#34; operations. request.role: the request role full name, support &#34;==&#34;, &#34;!=&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34;, &#34;contains()&#34;, &#34;matches()&#34;, &#34;startsWith()&#34;, &#34;endsWith()&#34; operations.
+
+When source is CHANGE_DATABASE, support: statement.*, resource.* (excluding request.*) When source is CREATE_DATABASE, support: resource.environment_id, resource.project_id, resource.db_engine, resource.database_name When source is EXPORT_DATA, support: resource.environment_id, resource.project_id, resource.db_engine, resource.database_name, resource.schema_name, resource.table_name When source is REQUEST_ROLE, support: resource.project_id, request.expiration_days, request.role
+
+For examples: resource.environment_id == &#34;prod&#34; &amp;&amp; statement.affected_rows &gt;= 100 resource.table_name.matches(&#34;sensitive_.*&#34;) &amp;&amp; resource.db_engine == &#34;MYSQL&#34; |
+| source | [WorkspaceApprovalSetting.Rule.Source](#bytebase-v1-WorkspaceApprovalSetting-Rule-Source) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-WorkspaceProfileSetting"></a>
+
+### WorkspaceProfileSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| external_url | [string](#string) |  | The external URL is used for sso authentication callback. |
+| disallow_signup | [bool](#bool) |  | Disallow self-service signup, users can only be invited by the owner. |
+| require_2fa | [bool](#bool) |  | Require 2FA for all users. |
+| token_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for token. |
+| announcement | [Announcement](#bytebase-v1-Announcement) |  | The setting of custom announcement |
+| maximum_role_expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The max duration for role expired. |
+| domains | [string](#string) | repeated | The workspace domain, e.g., bytebase.com. |
+| enforce_identity_domain | [bool](#bool) |  | Only user and group from the domains can be created and login. |
+| database_change_mode | [DatabaseChangeMode](#bytebase-v1-DatabaseChangeMode) |  | The workspace database change mode. |
+| disallow_password_signin | [bool](#bool) |  | Whether to disallow password signin. (Except workspace admins) |
+| enable_metric_collection | [bool](#bool) |  | Whether to enable metric collection for the workspace. |
+| inactive_session_timeout | [google.protobuf.Duration](#google-protobuf-Duration) |  | The session expiration time if not activity detected for the user. Value &lt;= 0 means no limit. |
+| enable_audit_log_stdout | [bool](#bool) |  | Whether to enable audit logging to stdout in structured JSON format. Requires TEAM or ENTERPRISE license. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-AISetting-Provider"></a>
+
+### AISetting.Provider
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| PROVIDER_UNSPECIFIED | 0 |  |
+| OPEN_AI | 1 |  |
+| CLAUDE | 2 |  |
+| GEMINI | 3 |  |
+| AZURE_OPENAI | 4 |  |
+
+
+
+<a name="bytebase-v1-Algorithm-InnerOuterMask-MaskType"></a>
+
+### Algorithm.InnerOuterMask.MaskType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| MASK_TYPE_UNSPECIFIED | 0 |  |
+| INNER | 1 |  |
+| OUTER | 2 |  |
+
+
+
+<a name="bytebase-v1-Announcement-AlertLevel"></a>
+
+### Announcement.AlertLevel
+We support three levels of AlertLevel: INFO, WARNING, and ERROR.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ALERT_LEVEL_UNSPECIFIED | 0 |  |
+| INFO | 1 |  |
+| WARNING | 2 |  |
+| CRITICAL | 3 |  |
+
+
+
+<a name="bytebase-v1-DatabaseChangeMode"></a>
+
+### DatabaseChangeMode
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| DATABASE_CHANGE_MODE_UNSPECIFIED | 0 |  |
+| PIPELINE | 1 | A more advanced database change process, including custom approval workflows and other advanced features. Default to this mode. |
+| EDITOR | 2 | A simple database change process in SQL editor. Users can execute SQL directly. |
+
+
+
+<a name="bytebase-v1-Setting-SettingName"></a>
+
+### Setting.SettingName
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SETTING_NAME_UNSPECIFIED | 0 |  |
+| AUTH_SECRET | 1 |  |
+| BRANDING_LOGO | 2 |  |
+| WORKSPACE_ID | 3 |  |
+| WORKSPACE_PROFILE | 4 |  |
+| WORKSPACE_APPROVAL | 5 |  |
+| ENTERPRISE_LICENSE | 7 |  |
+| APP_IM | 8 |  |
+| WATERMARK | 9 |  |
+| AI | 10 |  |
+| DATA_CLASSIFICATION | 14 |  |
+| SEMANTIC_TYPES | 15 |  |
+| SCIM | 17 |  |
+| PASSWORD_RESTRICTION | 18 |  |
+| ENVIRONMENT | 19 |  |
+
+
+
+<a name="bytebase-v1-WorkspaceApprovalSetting-Rule-Source"></a>
+
+### WorkspaceApprovalSetting.Rule.Source
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SOURCE_UNSPECIFIED | 0 |  |
+| CHANGE_DATABASE | 1 |  |
+| CREATE_DATABASE | 2 |  |
+| EXPORT_DATA | 3 |  |
+| REQUEST_ROLE | 4 |  |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-SettingService"></a>
+
+### SettingService
+SettingService manages workspace-level settings and configurations.
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| ListSettings | [ListSettingsRequest](#bytebase-v1-ListSettingsRequest) | [ListSettingsResponse](#bytebase-v1-ListSettingsResponse) | Lists all workspace settings. Permissions required: bb.settings.list |
+| GetSetting | [GetSettingRequest](#bytebase-v1-GetSettingRequest) | [Setting](#bytebase-v1-Setting) | Retrieves a workspace setting by name. Permissions required: bb.settings.get |
+| UpdateSetting | [UpdateSettingRequest](#bytebase-v1-UpdateSettingRequest) | [Setting](#bytebase-v1-Setting) | Updates a workspace setting. Permissions required: bb.settings.set |
+
+ 
+
+
+
+<a name="v1_user_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/user_service.proto
+
+
+
+<a name="bytebase-v1-BatchGetUsersRequest"></a>
+
+### BatchGetUsersRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| names | [string](#string) | repeated | The user names to retrieve. Format: users/{user uid or user email} |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchGetUsersResponse"></a>
+
+### BatchGetUsersResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| users | [User](#bytebase-v1-User) | repeated | The users from the specified request. |
+
+
+
+
+
+
+<a name="bytebase-v1-CreateUserRequest"></a>
+
+### CreateUserRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| user | [User](#bytebase-v1-User) |  | The user to create. |
+
+
+
+
+
+
+<a name="bytebase-v1-DeleteUserRequest"></a>
+
+### DeleteUserRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the user to delete. Format: users/{user} |
+
+
+
+
+
+
+<a name="bytebase-v1-GetUserRequest"></a>
+
+### GetUserRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the user to retrieve. Format: users/{user uid or user email} |
+
+
+
+
+
+
+<a name="bytebase-v1-ListUsersRequest"></a>
+
+### ListUsersRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| page_size | [int32](#int32) |  | The maximum number of users to return. The service may return fewer than this value. If unspecified, at most 10 users will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListUsers` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListUsers` must match the call that provided the page token. |
+| show_deleted | [bool](#bool) |  | Show deleted users if specified. |
+| filter | [string](#string) |  | Filter is used to filter users returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filter: - name: the user name, support &#34;==&#34; and &#34;.matches()&#34; operator. - email: the user email, support &#34;==&#34; and &#34;.matches()&#34; operator. - user_type: the type, check UserType enum for values, support &#34;==&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34; operator. - state: check State enum for values, support &#34;==&#34; operator. - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator.
+
+For example: name == &#34;ed&#34; name.matches(&#34;ed&#34;) email == &#34;ed@bytebase.com&#34; email.matches(&#34;ed&#34;) user_type == &#34;SERVICE_ACCOUNT&#34; user_type in [&#34;SERVICE_ACCOUNT&#34;, &#34;USER&#34;] !(user_type in [&#34;SERVICE_ACCOUNT&#34;, &#34;USER&#34;]) state == &#34;DELETED&#34; project == &#34;projects/sample-project&#34; You can combine filter conditions like: name.matches(&#34;ed&#34;) &amp;&amp; project == &#34;projects/sample-project&#34; (name == &#34;ed&#34; || email == &#34;ed@bytebase.com&#34;) &amp;&amp; project == &#34;projects/sample-project&#34; |
+
+
+
+
+
+
+<a name="bytebase-v1-ListUsersResponse"></a>
+
+### ListUsersResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| users | [User](#bytebase-v1-User) | repeated | The users from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-UndeleteUserRequest"></a>
+
+### UndeleteUserRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the deleted user. Format: users/{user} |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateUserRequest"></a>
+
+### UpdateUserRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| user | [User](#bytebase-v1-User) |  | The user to update.
+
+The user&#39;s `name` field is used to identify the user to update. Format: users/{user} |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+| otp_code | [string](#string) | optional | The otp_code is used to verify the user&#39;s identity by MFA. |
+| regenerate_temp_mfa_secret | [bool](#bool) |  | The regenerate_temp_mfa_secret flag means to regenerate temporary MFA secret for user. This is used for MFA setup. The temporary MFA secret and recovery codes will be returned in the response. |
+| regenerate_recovery_codes | [bool](#bool) |  | The regenerate_recovery_codes flag means to regenerate recovery codes for user. |
+| allow_missing | [bool](#bool) |  | If set to true, and the user is not found, a new user will be created. In this situation, `update_mask` is ignored. |
+
+
+
+
+
+
+<a name="bytebase-v1-User"></a>
+
+### User
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the user. Format: users/{user}. {user} is a system-generated unique ID. |
+| state | [State](#bytebase-v1-State) |  | The lifecycle state of the user account. |
+| email | [string](#string) |  | The email address of the user, used for login and notifications. |
+| title | [string](#string) |  | The display title or full name of the user. |
+| user_type | [UserType](#bytebase-v1-UserType) |  | The type of user account. |
+| password | [string](#string) |  | The password for authentication. Only used during user creation or password updates. |
+| service_key | [string](#string) |  | The service key for service account authentication. Only used for service accounts. |
+| mfa_enabled | [bool](#bool) |  | The mfa_enabled flag means if the user has enabled MFA. |
+| temp_otp_secret | [string](#string) |  | Temporary OTP secret used during MFA setup and regeneration. |
+| temp_recovery_codes | [string](#string) | repeated | Temporary recovery codes used during MFA setup and regeneration. |
+| temp_otp_secret_created_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Timestamp when temp_otp_secret was created. Used by frontend to show countdown timer. |
+| phone | [string](#string) |  | Should be a valid E.164 compliant phone number. Could be empty. |
+| profile | [User.Profile](#bytebase-v1-User-Profile) |  | User profile metadata. |
+| groups | [string](#string) | repeated | The groups for the user. Format: groups/{email} |
+
+
+
+
+
+
+<a name="bytebase-v1-User-Profile"></a>
+
+### User.Profile
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| last_login_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The last time the user successfully logged in. |
+| last_change_password_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The last time the user changed their password. |
+| source | [string](#string) |  | source means where the user comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-UserType"></a>
+
+### UserType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| USER_TYPE_UNSPECIFIED | 0 | Unspecified user type. |
+| USER | 1 | Regular human user account. |
+| SYSTEM_BOT | 2 | System-managed bot account for automated operations. |
+| SERVICE_ACCOUNT | 3 | Service account for API integrations. |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-UserService"></a>
+
+### UserService
+UserService manages user accounts and authentication.
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetUser | [GetUserRequest](#bytebase-v1-GetUserRequest) | [User](#bytebase-v1-User) | Get the user. Any authenticated user can get the user. Permissions required: bb.users.get |
+| BatchGetUsers | [BatchGetUsersRequest](#bytebase-v1-BatchGetUsersRequest) | [BatchGetUsersResponse](#bytebase-v1-BatchGetUsersResponse) | Get the users in batch. Any authenticated user can batch get users. Permissions required: bb.users.get |
+| GetCurrentUser | [.google.protobuf.Empty](#google-protobuf-Empty) | [User](#bytebase-v1-User) | Get the current authenticated user. Permissions required: None |
+| ListUsers | [ListUsersRequest](#bytebase-v1-ListUsersRequest) | [ListUsersResponse](#bytebase-v1-ListUsersResponse) | List all users. Any authenticated user can list users. Permissions required: bb.users.list |
+| CreateUser | [CreateUserRequest](#bytebase-v1-CreateUserRequest) | [User](#bytebase-v1-User) | Creates a user. When Disallow Signup is enabled, requires bb.users.create permission; otherwise any user can sign up. Permissions required: bb.users.create (only when Disallow Signup is enabled) |
+| UpdateUser | [UpdateUserRequest](#bytebase-v1-UpdateUserRequest) | [User](#bytebase-v1-User) | Updates a user. Users can update their own profile, or users with bb.users.update permission can update any user. Permissions required: bb.users.update (or self) |
+| DeleteUser | [DeleteUserRequest](#bytebase-v1-DeleteUserRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a user. Requires bb.users.delete permission with additional validation: the last remaining workspace admin cannot be deleted. Permissions required: bb.users.delete |
+| UndeleteUser | [UndeleteUserRequest](#bytebase-v1-UndeleteUserRequest) | [User](#bytebase-v1-User) | Restores a deleted user. Permissions required: bb.users.undelete |
+
+ 
+
+
+
+<a name="v1_actuator_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/actuator_service.proto
+
+
+
+<a name="bytebase-v1-ActuatorInfo"></a>
+
+### ActuatorInfo
+System information and configuration for the Bytebase instance.
+Actuator concept is similar to the Spring Boot Actuator.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| version | [string](#string) |  | The Bytebase server version. |
+| git_commit | [string](#string) |  | The git commit hash of the build. |
+| readonly | [bool](#bool) |  | Whether the Bytebase instance is running in read-only mode. |
+| saas | [bool](#bool) |  | Whether the Bytebase instance is running in SaaS mode where some features cannot be edited by users. |
+| demo | [bool](#bool) |  | Whether the Bytebase instance is running in demo mode. |
+| host | [string](#string) |  | The host address of the Bytebase instance. |
+| port | [string](#string) |  | The port number of the Bytebase instance. |
+| external_url | [string](#string) |  | The external URL where users or webhook callbacks access Bytebase. |
+| need_admin_setup | [bool](#bool) |  | Whether the Bytebase instance requires initial admin setup. |
+| disallow_signup | [bool](#bool) |  | Whether self-service user signup is disabled. |
+| last_active_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The last time any API call was made, refreshed on each request. |
+| require_2fa | [bool](#bool) |  | Whether two-factor authentication is required for all users. |
+| workspace_id | [string](#string) |  | The unique identifier for the workspace. |
+| debug | [bool](#bool) |  | Whether debug mode is enabled. |
+| unlicensed_features | [string](#string) | repeated | List of features that are not licensed. |
+| disallow_password_signin | [bool](#bool) |  | Whether password-based signin is disabled (except for workspace admins). |
+| password_restriction | [PasswordRestrictionSetting](#bytebase-v1-PasswordRestrictionSetting) |  | Password complexity and restriction requirements. |
+| docker | [bool](#bool) |  | Whether the Bytebase instance is running in Docker. |
+| user_stats | [ActuatorInfo.StatUser](#bytebase-v1-ActuatorInfo-StatUser) | repeated | Statistics about users in the system. |
+| activated_instance_count | [int32](#int32) |  | The number of activated database instances. |
+| total_instance_count | [int32](#int32) |  | The total number of database instances. |
+| enable_sample | [bool](#bool) |  | Whether sample data setup is enabled. |
+| external_url_from_flag | [bool](#bool) |  | Whether the external URL is set via command-line flag (and thus cannot be changed via UI). |
+
+
+
+
+
+
+<a name="bytebase-v1-ActuatorInfo-StatUser"></a>
+
+### ActuatorInfo.StatUser
+User statistics by type and state.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| user_type | [UserType](#bytebase-v1-UserType) |  | The type of user. |
+| state | [State](#bytebase-v1-State) |  | The state of the user. |
+| count | [int32](#int32) |  | The count of users matching this type and state. |
+
+
+
+
+
+
+<a name="bytebase-v1-DeleteCacheRequest"></a>
+
+### DeleteCacheRequest
+Request message for deleting cache.
+
+
+
+
+
+
+<a name="bytebase-v1-GetActuatorInfoRequest"></a>
+
+### GetActuatorInfoRequest
+Request message for getting actuator information.
+
+
+
+
+
+
+<a name="bytebase-v1-GetResourcePackageRequest"></a>
+
+### GetResourcePackageRequest
+Request message for getting branding resources.
+
+
+
+
+
+
+<a name="bytebase-v1-ResourcePackage"></a>
+
+### ResourcePackage
+Custom branding resources for the Bytebase instance.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| logo | [bytes](#bytes) |  | The branding logo. |
+
+
+
+
+
+
+<a name="bytebase-v1-SetupSampleRequest"></a>
+
+### SetupSampleRequest
+Request message for setting up sample data.
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateActuatorInfoRequest"></a>
+
+### UpdateActuatorInfoRequest
+Request message for updating actuator information.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| actuator | [ActuatorInfo](#bytebase-v1-ActuatorInfo) |  | The actuator to update. |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+| allow_missing | [bool](#bool) |  | If set to true, and the actuator is not found, a new actuator will be created. In this situation, `update_mask` is ignored. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-ActuatorService"></a>
+
+### ActuatorService
+ActuatorService manages system health and operational information.
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetActuatorInfo | [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest) | [ActuatorInfo](#bytebase-v1-ActuatorInfo) | Gets system information and health status of the Bytebase instance. Permissions required: None |
+| UpdateActuatorInfo | [UpdateActuatorInfoRequest](#bytebase-v1-UpdateActuatorInfoRequest) | [ActuatorInfo](#bytebase-v1-ActuatorInfo) | Updates system configuration settings for the Bytebase instance. Permissions required: bb.settings.set |
+| SetupSample | [SetupSampleRequest](#bytebase-v1-SetupSampleRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Sets up sample data for demonstration and testing purposes. Permissions required: bb.projects.create |
+| DeleteCache | [DeleteCacheRequest](#bytebase-v1-DeleteCacheRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Clears the system cache to force data refresh. Permissions required: None |
+| GetResourcePackage | [GetResourcePackageRequest](#bytebase-v1-GetResourcePackageRequest) | [ResourcePackage](#bytebase-v1-ResourcePackage) | Gets custom branding resources such as logos. Permissions required: None |
+
+ 
+
+
+
+<a name="v1_audit_log_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/audit_log_service.proto
+
+
+
+<a name="bytebase-v1-AuditData"></a>
+
+### AuditData
+Additional audit data specific to certain operations.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| policy_delta | [PolicyDelta](#bytebase-v1-PolicyDelta) |  | Changes to IAM policies. |
+
+
+
+
+
+
+<a name="bytebase-v1-AuditLog"></a>
+
+### AuditLog
+Audit log entry recording system activity or API call.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the log. Formats: - projects/{project}/auditLogs/{uid} - workspaces/{workspace}/auditLogs/{uid} |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the audit log was created. |
+| user | [string](#string) |  | The user who performed the action. Format: users/{email} |
+| method | [string](#string) |  | The method or action being audited. For example: /bytebase.v1.SQLService/Query or bb.project.repository.push |
+| severity | [AuditLog.Severity](#bytebase-v1-AuditLog-Severity) |  | The severity level of this audit log entry. |
+| resource | [string](#string) |  | The resource associated with this audit log. |
+| request | [string](#string) |  | The request payload in JSON format. |
+| response | [string](#string) |  | The response payload in JSON format. Some fields may be omitted if they are too large or contain sensitive information. |
+| status | [google.rpc.Status](#google-rpc-Status) |  | The status of the operation. |
+| latency | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration of the operation. |
+| service_data | [google.protobuf.Any](#google-protobuf-Any) |  | Service-specific metadata about the request, response, and activities. |
+| request_metadata | [RequestMetadata](#bytebase-v1-RequestMetadata) |  | Metadata about the request context. |
+
+
+
+
+
+
+<a name="bytebase-v1-ExportAuditLogsRequest"></a>
+
+### ExportAuditLogsRequest
+Request message for exporting audit logs.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  |  |
+| filter | [string](#string) |  | The filter of the log. It should be a valid CEL expression. Check the filter field in the SearchAuditLogsRequest message. |
+| order_by | [string](#string) |  | The order by of the log. Only support order by create_time. For example: - order_by = &#34;create_time asc&#34; - order_by = &#34;create_time desc&#34; |
+| format | [ExportFormat](#bytebase-v1-ExportFormat) |  | The export format. |
+| page_size | [int32](#int32) |  | The maximum number of logs to return. The service may return fewer than this value. If unspecified, at most 10 log entries will be returned. The maximum value is 5000; values above 5000 will be coerced to 5000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ExportAuditLogs` call. Provide this to retrieve the subsequent page. |
+
+
+
+
+
+
+<a name="bytebase-v1-ExportAuditLogsResponse"></a>
+
+### ExportAuditLogsResponse
+Response message for exporting audit logs.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| content | [bytes](#bytes) |  | The exported audit log content in the requested format. |
+| next_page_token | [string](#string) |  | A token to retrieve next page of log entities. Pass this value in the page_token field in the subsequent call to retrieve the next page of log entities. |
+
+
+
+
+
+
+<a name="bytebase-v1-RequestMetadata"></a>
+
+### RequestMetadata
+Metadata about the incoming request.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| caller_ip | [string](#string) |  | The IP address of the request originator. |
+| caller_supplied_user_agent | [string](#string) |  | The user agent string provided by the caller. This is supplied by the client and is not authenticated. |
+
+
+
+
+
+
+<a name="bytebase-v1-SearchAuditLogsRequest"></a>
+
+### SearchAuditLogsRequest
+Request message for searching audit logs.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  |  |
+| filter | [string](#string) |  | The filter of the log. It should be a valid CEL expression. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filter: - method: the API name, can be found in the docs, should start with &#34;/bytebase.v1.&#34; prefix. For example &#34;/bytebase.v1.UserService/CreateUser&#34;. Support &#34;==&#34; operator. - severity: support &#34;==&#34; operator, check Severity enum in AuditLog message for values. - user: the actor, should in &#34;users/{email}&#34; format, support &#34;==&#34; operator. - create_time: support &#34;&gt;=&#34; and &#34;&lt;=&#34; operator.
+
+For example: - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39; &amp;&amp; user == &#39;users/bb@bytebase.com&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39; &amp;&amp; create_time &lt;= &#39;2021-01-01T00:00:00Z&#39; &amp;&amp; create_time &gt;= &#39;2020-01-01T00:00:00Z&#39;&#34; |
+| order_by | [string](#string) |  | The order by of the log. Only support order by create_time. For example: - order_by = &#34;create_time asc&#34; - order_by = &#34;create_time desc&#34; |
+| page_size | [int32](#int32) |  | The maximum number of logs to return. The service may return fewer than this value. If unspecified, at most 10 log entries will be returned. The maximum value is 5000; values above 5000 will be coerced to 5000. |
+| page_token | [string](#string) |  | A page token, received from a previous `SearchLogs` call. Provide this to retrieve the subsequent page. |
+
+
+
+
+
+
+<a name="bytebase-v1-SearchAuditLogsResponse"></a>
+
+### SearchAuditLogsResponse
+Response message for searching audit logs.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| audit_logs | [AuditLog](#bytebase-v1-AuditLog) | repeated |  |
+| next_page_token | [string](#string) |  | A token to retrieve next page of log entities. Pass this value in the page_token field in the subsequent call to retrieve the next page of log entities. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-AuditLog-Severity"></a>
+
+### AuditLog.Severity
+Severity level for audit log entries.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SEVERITY_UNSPECIFIED | 0 | Unspecified severity level. |
+| DEBUG | 1 | Debug-level information. |
+| INFO | 2 | Informational messages. |
+| NOTICE | 3 | Notable events. |
+| WARNING | 4 | Warning conditions. |
+| ERROR | 5 | Error conditions. |
+| CRITICAL | 6 | Critical conditions. |
+| ALERT | 7 | Action must be taken immediately. |
+| EMERGENCY | 8 | System is unusable. |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-AuditLogService"></a>
+
+### AuditLogService
+AuditLogService manages audit logs for system activities and API calls.
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| SearchAuditLogs | [SearchAuditLogsRequest](#bytebase-v1-SearchAuditLogsRequest) | [SearchAuditLogsResponse](#bytebase-v1-SearchAuditLogsResponse) | Searches audit logs with optional filtering and pagination. Permissions required: bb.auditLogs.search |
+| ExportAuditLogs | [ExportAuditLogsRequest](#bytebase-v1-ExportAuditLogsRequest) | [ExportAuditLogsResponse](#bytebase-v1-ExportAuditLogsResponse) | Exports audit logs in a specified format for external analysis. Permissions required: bb.auditLogs.export |
+
+ 
+
+
+
+<a name="v1_auth_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/auth_service.proto
+
+
+
+<a name="bytebase-v1-IdentityProviderContext"></a>
+
+### IdentityProviderContext
+Context for identity provider authentication.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| oauth2_context | [OAuth2IdentityProviderContext](#bytebase-v1-OAuth2IdentityProviderContext) |  | OAuth2 authentication context. |
+| oidc_context | [OIDCIdentityProviderContext](#bytebase-v1-OIDCIdentityProviderContext) |  | OpenID Connect authentication context. |
+
+
+
+
+
+
+<a name="bytebase-v1-LoginRequest"></a>
+
+### LoginRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| email | [string](#string) |  | User&#39;s email address. |
+| password | [string](#string) |  | User&#39;s password for authentication. |
+| web | [bool](#bool) |  | If web is set, we will set access token, refresh token, and user to the cookie. |
+| idp_name | [string](#string) |  | The name of the identity provider. Format: idps/{idp} |
+| idp_context | [IdentityProviderContext](#bytebase-v1-IdentityProviderContext) |  | The idp_context is using to get the user information from identity provider. |
+| otp_code | [string](#string) | optional | The otp_code is used to verify the user&#39;s identity by MFA. |
+| recovery_code | [string](#string) | optional | The recovery_code is used to recovery the user&#39;s identity with MFA. |
+| mfa_temp_token | [string](#string) | optional | The mfa_temp_token is used to verify the user&#39;s identity by MFA. |
+
+
+
+
+
+
+<a name="bytebase-v1-LoginResponse"></a>
+
+### LoginResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| token | [string](#string) |  | Access token for authenticated requests. |
+| mfa_temp_token | [string](#string) | optional | Temporary token for MFA verification. |
+| require_reset_password | [bool](#bool) |  | Whether user must reset password before continuing. |
+| user | [User](#bytebase-v1-User) |  | The user from the successful login. |
+
+
+
+
+
+
+<a name="bytebase-v1-LogoutRequest"></a>
+
+### LogoutRequest
+Request to logout current user session.
+
+
+
+
+
+
+<a name="bytebase-v1-OAuth2IdentityProviderContext"></a>
+
+### OAuth2IdentityProviderContext
+OAuth2 authentication context.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| code | [string](#string) |  | Authorization code from OAuth2 provider. |
+
+
+
+
+
+
+<a name="bytebase-v1-OIDCIdentityProviderContext"></a>
+
+### OIDCIdentityProviderContext
+OpenID Connect authentication context.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| code | [string](#string) |  | Authorization code from OIDC provider. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-AuthService"></a>
+
+### AuthService
+AuthService handles user authentication operations.
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| Login | [LoginRequest](#bytebase-v1-LoginRequest) | [LoginResponse](#bytebase-v1-LoginResponse) | Authenticates a user and returns access tokens. Permissions required: None |
+| Logout | [LogoutRequest](#bytebase-v1-LogoutRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Logs out the current user session. Permissions required: None |
+
+ 
+
+
+
+<a name="v1_cel_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/cel_service.proto
+
+
+
+<a name="bytebase-v1-BatchDeparseRequest"></a>
+
+### BatchDeparseRequest
+Request message for batch deparsing CEL expressions.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| expressions | [google.api.expr.v1alpha1.Expr](#google-api-expr-v1alpha1-Expr) | repeated | The CEL expression ASTs to deparse. |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchDeparseResponse"></a>
+
+### BatchDeparseResponse
+Response message for batch deparsing CEL expressions.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| expressions | [string](#string) | repeated | The deparsed CEL expressions as strings. |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchParseRequest"></a>
+
+### BatchParseRequest
+Request message for batch parsing CEL expressions.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| expressions | [string](#string) | repeated | The CEL expression strings to parse. |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchParseResponse"></a>
+
+### BatchParseResponse
+Response message for batch parsing CEL expressions.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| expressions | [google.api.expr.v1alpha1.Expr](#google-api-expr-v1alpha1-Expr) | repeated | The parsed CEL expressions as AST. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-CelService"></a>
+
+### CelService
+CelService manages CEL (Common Expression Language) parsing and formatting operations.
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| BatchParse | [BatchParseRequest](#bytebase-v1-BatchParseRequest) | [BatchParseResponse](#bytebase-v1-BatchParseResponse) | Parses multiple CEL expression strings into AST representations. Permissions required: None |
+| BatchDeparse | [BatchDeparseRequest](#bytebase-v1-BatchDeparseRequest) | [BatchDeparseResponse](#bytebase-v1-BatchDeparseResponse) | Converts multiple CEL AST representations back into expression strings. Permissions required: None |
+
+ 
+
+
+
 <a name="v1_database_catalog_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -1135,6 +3953,187 @@ DatabaseCatalogService manages database schema metadata and classification.
 | ----------- | ------------ | ------------- | ------------|
 | GetDatabaseCatalog | [GetDatabaseCatalogRequest](#bytebase-v1-GetDatabaseCatalogRequest) | [DatabaseCatalog](#bytebase-v1-DatabaseCatalog) | Gets the catalog metadata for a database. Permissions required: bb.databaseCatalogs.get |
 | UpdateDatabaseCatalog | [UpdateDatabaseCatalogRequest](#bytebase-v1-UpdateDatabaseCatalogRequest) | [DatabaseCatalog](#bytebase-v1-DatabaseCatalog) | Updates catalog metadata such as classifications and labels. Permissions required: bb.databaseCatalogs.update |
+
+ 
+
+
+
+<a name="v1_database_group_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/database_group_service.proto
+
+
+
+<a name="bytebase-v1-CreateDatabaseGroupRequest"></a>
+
+### CreateDatabaseGroupRequest
+Request message for creating a database group.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent resource where this database group will be created. Format: projects/{project} |
+| database_group | [DatabaseGroup](#bytebase-v1-DatabaseGroup) |  | The database group to create. |
+| database_group_id | [string](#string) |  | The ID to use for the database group, which will become the final component of the database group&#39;s resource name.
+
+This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
+| validate_only | [bool](#bool) |  | If set, validate the create request and preview the full database group response, but do not actually create it. |
+
+
+
+
+
+
+<a name="bytebase-v1-DatabaseGroup"></a>
+
+### DatabaseGroup
+A group of databases matched by expressions.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the database group. Format: projects/{project}/databaseGroups/{databaseGroup} |
+| title | [string](#string) |  | The short name used in actual databases specified by users. |
+| database_expr | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this database group. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Support variables: resource.environment_id: the environment resource id. Support &#34;==&#34;, &#34;!=&#34;, &#34;in [XX]&#34;, &#34;!(in [xx])&#34; operations. resource.instance_id: the instance resource id. Support &#34;==&#34;, &#34;!=&#34;, &#34;in [XX]&#34;, &#34;!(in [xx])&#34;, &#34;contains&#34;, &#34;matches&#34;, &#34;startsWith&#34;, &#34;endsWith&#34; operations. resource.database_name: the database name. Support &#34;==&#34;, &#34;!=&#34;, &#34;in [XX]&#34;, &#34;!(in [xx])&#34;, &#34;contains&#34;, &#34;matches&#34;, &#34;startsWith&#34;, &#34;endsWith&#34; operations. resource.database_labels: the database labels. Support map access operations. All variables should join with &#34;&amp;&amp;&#34; condition.
+
+For example: resource.environment_id == &#34;test&#34; &amp;&amp; resource.database_name.startsWith(&#34;sample_&#34;) resource.database_labels[&#34;tenant&#34;] == &#34;tenant1&#34; |
+| matched_databases | [DatabaseGroup.Database](#bytebase-v1-DatabaseGroup-Database) | repeated | The list of databases that match the database group condition. |
+
+
+
+
+
+
+<a name="bytebase-v1-DatabaseGroup-Database"></a>
+
+### DatabaseGroup.Database
+A database within a database group.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The resource name of the database. Format: instances/{instance}/databases/{database} |
+
+
+
+
+
+
+<a name="bytebase-v1-DeleteDatabaseGroupRequest"></a>
+
+### DeleteDatabaseGroupRequest
+Request message for deleting a database group.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the database group to delete. Format: projects/{project}/databaseGroups/{databaseGroup} |
+
+
+
+
+
+
+<a name="bytebase-v1-GetDatabaseGroupRequest"></a>
+
+### GetDatabaseGroupRequest
+Request message for getting a database group.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the database group to retrieve. Format: projects/{project}/databaseGroups/{databaseGroup} |
+| view | [DatabaseGroupView](#bytebase-v1-DatabaseGroupView) |  | The view to return. Defaults to DATABASE_GROUP_VIEW_BASIC. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListDatabaseGroupsRequest"></a>
+
+### ListDatabaseGroupsRequest
+Request message for listing database groups.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent resource whose database groups are to be listed. Format: projects/{project} |
+| view | [DatabaseGroupView](#bytebase-v1-DatabaseGroupView) |  | The view to return. Defaults to DATABASE_GROUP_VIEW_BASIC. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListDatabaseGroupsResponse"></a>
+
+### ListDatabaseGroupsResponse
+Response message for listing database groups.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| database_groups | [DatabaseGroup](#bytebase-v1-DatabaseGroup) | repeated | The database groups from the specified request. |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateDatabaseGroupRequest"></a>
+
+### UpdateDatabaseGroupRequest
+Request message for updating a database group.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| database_group | [DatabaseGroup](#bytebase-v1-DatabaseGroup) |  | The database group to update.
+
+The database group&#39;s `name` field is used to identify the database group to update. Format: projects/{project}/databaseGroups/{databaseGroup} |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+| allow_missing | [bool](#bool) |  | If set to true, and the database group is not found, a new database group will be created. In this situation, `update_mask` is ignored. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-DatabaseGroupView"></a>
+
+### DatabaseGroupView
+View options for database group responses.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| DATABASE_GROUP_VIEW_UNSPECIFIED | 0 | The default / unset value. The API will default to the BASIC view. |
+| DATABASE_GROUP_VIEW_BASIC | 1 | Include basic information about the database group, but exclude the list of matched databases and unmatched databases. |
+| DATABASE_GROUP_VIEW_FULL | 2 | Include everything. |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-DatabaseGroupService"></a>
+
+### DatabaseGroupService
+DatabaseGroupService manages database groups for organizing databases by criteria.
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| ListDatabaseGroups | [ListDatabaseGroupsRequest](#bytebase-v1-ListDatabaseGroupsRequest) | [ListDatabaseGroupsResponse](#bytebase-v1-ListDatabaseGroupsResponse) | Lists database groups in a project. Permissions required: bb.databaseGroups.list |
+| GetDatabaseGroup | [GetDatabaseGroupRequest](#bytebase-v1-GetDatabaseGroupRequest) | [DatabaseGroup](#bytebase-v1-DatabaseGroup) | Gets a database group by name. Permissions required: bb.databaseGroups.get |
+| CreateDatabaseGroup | [CreateDatabaseGroupRequest](#bytebase-v1-CreateDatabaseGroupRequest) | [DatabaseGroup](#bytebase-v1-DatabaseGroup) | Creates a new database group. Permissions required: bb.databaseGroups.create |
+| UpdateDatabaseGroup | [UpdateDatabaseGroupRequest](#bytebase-v1-UpdateDatabaseGroupRequest) | [DatabaseGroup](#bytebase-v1-DatabaseGroup) | Updates a database group. Permissions required: bb.databaseGroups.update When allow_missing=true, also requires: bb.databaseGroups.create |
+| DeleteDatabaseGroup | [DeleteDatabaseGroupRequest](#bytebase-v1-DeleteDatabaseGroupRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a database group. Permissions required: bb.databaseGroups.delete |
 
  
 
@@ -3392,3084 +6391,6 @@ DatabaseService manages databases and their schemas.
 | ListChangelogs | [ListChangelogsRequest](#bytebase-v1-ListChangelogsRequest) | [ListChangelogsResponse](#bytebase-v1-ListChangelogsResponse) | Lists migration history for a database. Permissions required: bb.changelogs.list |
 | GetChangelog | [GetChangelogRequest](#bytebase-v1-GetChangelogRequest) | [Changelog](#bytebase-v1-Changelog) | Retrieves a specific changelog entry. Permissions required: bb.changelogs.get |
 | GetSchemaString | [GetSchemaStringRequest](#bytebase-v1-GetSchemaStringRequest) | [GetSchemaStringResponse](#bytebase-v1-GetSchemaStringResponse) | Generates schema DDL for a database object. Permissions required: bb.databases.getSchema |
-
- 
-
-
-
-<a name="v1_issue_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/issue_service.proto
-
-
-
-<a name="bytebase-v1-ApprovalFlow"></a>
-
-### ApprovalFlow
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| roles | [string](#string) | repeated | The roles required for approval in order. |
-
-
-
-
-
-
-<a name="bytebase-v1-ApprovalTemplate"></a>
-
-### ApprovalTemplate
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| flow | [ApprovalFlow](#bytebase-v1-ApprovalFlow) |  | The approval flow definition. |
-| title | [string](#string) |  | The title of the approval template. |
-| description | [string](#string) |  | The description of the approval template. |
-
-
-
-
-
-
-<a name="bytebase-v1-ApproveIssueRequest"></a>
-
-### ApproveIssueRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the issue to add an approver. Format: projects/{project}/issues/{issue} |
-| comment | [string](#string) |  | The comment explaining the approval decision. |
-
-
-
-
-
-
-<a name="bytebase-v1-BatchUpdateIssuesStatusRequest"></a>
-
-### BatchUpdateIssuesStatusRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource shared by all issues being updated. Format: projects/{project} If the operation spans parents, a dash (-) may be accepted as a wildcard. We only support updating the status of databases for now. |
-| issues | [string](#string) | repeated | The list of issues to update. Format: projects/{project}/issues/{issue} |
-| status | [IssueStatus](#bytebase-v1-IssueStatus) |  | The new status. |
-| reason | [string](#string) |  | The reason for the status change. |
-
-
-
-
-
-
-<a name="bytebase-v1-BatchUpdateIssuesStatusResponse"></a>
-
-### BatchUpdateIssuesStatusResponse
-
-
-
-
-
-
-
-<a name="bytebase-v1-CreateIssueCommentRequest"></a>
-
-### CreateIssueCommentRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The issue name Format: projects/{project}/issues/{issue} |
-| issue_comment | [IssueComment](#bytebase-v1-IssueComment) |  | The comment to create. |
-
-
-
-
-
-
-<a name="bytebase-v1-CreateIssueRequest"></a>
-
-### CreateIssueRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent, which owns this collection of issues. Format: projects/{project} |
-| issue | [Issue](#bytebase-v1-Issue) |  | The issue to create. |
-
-
-
-
-
-
-<a name="bytebase-v1-GetIssueRequest"></a>
-
-### GetIssueRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the issue to retrieve. Format: projects/{project}/issues/{issue} |
-| force | [bool](#bool) |  | If set to true, bypass cache and fetch the latest data. |
-
-
-
-
-
-
-<a name="bytebase-v1-GrantRequest"></a>
-
-### GrantRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| role | [string](#string) |  | The requested role. Format: roles/EXPORTER. |
-| user | [string](#string) |  | The user to be granted. Format: users/{email}. |
-| condition | [google.type.Expr](#google-type-Expr) |  | The condition for the role. Same as the condition in IAM Binding message. |
-| expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for which the grant is valid. |
-
-
-
-
-
-
-<a name="bytebase-v1-Issue"></a>
-
-### Issue
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the issue. Format: projects/{project}/issues/{issue} |
-| title | [string](#string) |  | The title of the issue. |
-| description | [string](#string) |  | The description of the issue. |
-| type | [Issue.Type](#bytebase-v1-Issue-Type) |  |  |
-| status | [IssueStatus](#bytebase-v1-IssueStatus) |  | The status of the issue. |
-| approvers | [Issue.Approver](#bytebase-v1-Issue-Approver) | repeated |  |
-| approval_template | [ApprovalTemplate](#bytebase-v1-ApprovalTemplate) |  | The approval template for the issue. |
-| creator | [string](#string) |  | Format: users/hello@world.com |
-| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| plan | [string](#string) |  | The plan associated with the issue. Can be empty. Format: projects/{project}/plans/{plan} |
-| rollout | [string](#string) |  | The rollout associated with the issue. Can be empty. Format: projects/{project}/rollouts/{rollout} |
-| grant_request | [GrantRequest](#bytebase-v1-GrantRequest) |  | Used if the issue type is GRANT_REQUEST. |
-| releasers | [string](#string) | repeated | The releasers of the pending stage of the issue rollout, judging from the rollout policy. Format: - roles/workspaceOwner - roles/workspaceDBA - roles/projectOwner - roles/projectReleaser |
-| risk_level | [RiskLevel](#bytebase-v1-RiskLevel) |  | The risk level of the issue. |
-| task_status_count | [Issue.TaskStatusCountEntry](#bytebase-v1-Issue-TaskStatusCountEntry) | repeated | The status count of the issue. Keys are the following: - NOT_STARTED - SKIPPED - PENDING - RUNNING - DONE - FAILED - CANCELED |
-| labels | [string](#string) | repeated | Labels attached to the issue for categorization and filtering. |
-| approval_status | [Issue.ApprovalStatus](#bytebase-v1-Issue-ApprovalStatus) |  |  |
-| approval_status_error | [string](#string) |  | Only populated when approval_status == ERROR |
-
-
-
-
-
-
-<a name="bytebase-v1-Issue-Approver"></a>
-
-### Issue.Approver
-Approvers and their approval status for the issue.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| status | [Issue.Approver.Status](#bytebase-v1-Issue-Approver-Status) |  | The new status. |
-| principal | [string](#string) |  | Format: users/hello@world.com |
-
-
-
-
-
-
-<a name="bytebase-v1-Issue-TaskStatusCountEntry"></a>
-
-### Issue.TaskStatusCountEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [int32](#int32) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-IssueComment"></a>
-
-### IssueComment
-A comment on an issue.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | Format: projects/{project}/issues/{issue}/issueComments/{issueComment-uid} |
-| comment | [string](#string) |  | The text content of the comment. |
-| payload | [string](#string) |  | TODO: use struct message instead. |
-| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| creator | [string](#string) |  | Format: users/{email} |
-| approval | [IssueComment.Approval](#bytebase-v1-IssueComment-Approval) |  | Approval event. |
-| issue_update | [IssueComment.IssueUpdate](#bytebase-v1-IssueComment-IssueUpdate) |  | Issue update event. |
-| stage_end | [IssueComment.StageEnd](#bytebase-v1-IssueComment-StageEnd) |  | Stage end event. |
-| task_update | [IssueComment.TaskUpdate](#bytebase-v1-IssueComment-TaskUpdate) |  | Task update event. |
-| task_prior_backup | [IssueComment.TaskPriorBackup](#bytebase-v1-IssueComment-TaskPriorBackup) |  | Task prior backup event. |
-
-
-
-
-
-
-<a name="bytebase-v1-IssueComment-Approval"></a>
-
-### IssueComment.Approval
-Approval event information.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| status | [IssueComment.Approval.Status](#bytebase-v1-IssueComment-Approval-Status) |  | The approval status. |
-
-
-
-
-
-
-<a name="bytebase-v1-IssueComment-IssueUpdate"></a>
-
-### IssueComment.IssueUpdate
-Issue update event information.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| from_title | [string](#string) | optional |  |
-| to_title | [string](#string) | optional |  |
-| from_description | [string](#string) | optional |  |
-| to_description | [string](#string) | optional |  |
-| from_status | [IssueStatus](#bytebase-v1-IssueStatus) | optional |  |
-| to_status | [IssueStatus](#bytebase-v1-IssueStatus) | optional |  |
-| from_labels | [string](#string) | repeated |  |
-| to_labels | [string](#string) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-IssueComment-StageEnd"></a>
-
-### IssueComment.StageEnd
-Stage end event information.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| stage | [string](#string) |  | The stage that ended. |
-
-
-
-
-
-
-<a name="bytebase-v1-IssueComment-TaskPriorBackup"></a>
-
-### IssueComment.TaskPriorBackup
-Task prior backup event information.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| task | [string](#string) |  | The task for which backup was performed. |
-| tables | [IssueComment.TaskPriorBackup.Table](#bytebase-v1-IssueComment-TaskPriorBackup-Table) | repeated | The tables that were backed up. |
-| original_line | [int32](#int32) | optional | The original line number in the statement. |
-| database | [string](#string) |  | The database that was backed up. |
-| error | [string](#string) |  | Error message if backup failed. |
-
-
-
-
-
-
-<a name="bytebase-v1-IssueComment-TaskPriorBackup-Table"></a>
-
-### IssueComment.TaskPriorBackup.Table
-Table identification.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| schema | [string](#string) |  | The schema name. |
-| table | [string](#string) |  | The table name. |
-
-
-
-
-
-
-<a name="bytebase-v1-IssueComment-TaskUpdate"></a>
-
-### IssueComment.TaskUpdate
-Task update event information.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| tasks | [string](#string) | repeated | The tasks that were updated. |
-| from_sheet | [string](#string) | optional | Format: projects/{project}/sheets/{sheet} |
-| to_sheet | [string](#string) | optional | Format: projects/{project}/sheets/{sheet} |
-| to_status | [IssueComment.TaskUpdate.Status](#bytebase-v1-IssueComment-TaskUpdate-Status) | optional |  |
-
-
-
-
-
-
-<a name="bytebase-v1-ListIssueCommentsRequest"></a>
-
-### ListIssueCommentsRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | Format: projects/{projects}/issues/{issue} |
-| page_size | [int32](#int32) |  | The maximum number of issue comments to return. The service may return fewer than this value. If unspecified, at most 10 issue comments will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListIssueComments` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListIssueComments` must match the call that provided the page token. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListIssueCommentsResponse"></a>
-
-### ListIssueCommentsResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| issue_comments | [IssueComment](#bytebase-v1-IssueComment) | repeated | The issue comments from the specified request. |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListIssuesRequest"></a>
-
-### ListIssuesRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent, which owns this collection of issues. Format: projects/{project} |
-| page_size | [int32](#int32) |  | The maximum number of issues to return. The service may return fewer than this value. If unspecified, at most 10 issues will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListIssues` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListIssues` must match the call that provided the page token. |
-| filter | [string](#string) |  | Filter is used to filter issues returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-
-Supported filters: - creator: issue creator full name in &#34;users/{email or id}&#34; format, support &#34;==&#34; operator. - status: the issue status, support &#34;==&#34; and &#34;in&#34; operator, check the IssueStatus enum for the values. - create_time: issue create time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34; or &#34;&lt;=&#34; operator. - type: the issue type, support &#34;==&#34; and &#34;in&#34; operator, check the Type enum in the Issue message for the values. - task_type: support &#34;==&#34; operator, the value can be &#34;DDL&#34;, &#34;DML&#34; or &#34;DATA_EXPORT&#34; - instance: the instance full name in the &#34;instances/{id}&#34; format, support &#34;==&#34; operator. - database: the database full name in the &#34;instances/{id}/databases/{name}&#34; format, support &#34;==&#34; operator. - environment: the database full name in the &#34;environments/{name}&#34; format, support &#34;==&#34; operator. - labels: the issue labels, support &#34;==&#34; and &#34;in&#34; operator. - approval_status: issue approval status, support &#34;==&#34; operator. - current_approver: the issue approver, should in &#34;users/{email} format&#34;, support &#34;==&#34; operator.
-
-For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; status in [&#34;OPEN&#34;, &#34;DONE&#34;] status == &#34;CANCELED&#34; &amp;&amp; type == &#34;DATABASE_CHANGE&#34; instance == &#34;instances/sample&#34; &amp;&amp; labels in [&#34;label1&#34;, &#34;label2&#34;] create_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34; environment == &#34;environments/test&#34; |
-| query | [string](#string) |  | Query is the query statement. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListIssuesResponse"></a>
-
-### ListIssuesResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| issues | [Issue](#bytebase-v1-Issue) | repeated | The issues from the specified request. |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
-
-
-
-
-
-
-<a name="bytebase-v1-RejectIssueRequest"></a>
-
-### RejectIssueRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the issue to add a rejection. Format: projects/{project}/issues/{issue} |
-| comment | [string](#string) |  | The comment explaining the rejection decision. |
-
-
-
-
-
-
-<a name="bytebase-v1-RequestIssueRequest"></a>
-
-### RequestIssueRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the issue to request a issue. Format: projects/{project}/issues/{issue} |
-| comment | [string](#string) |  | The comment explaining the request. |
-
-
-
-
-
-
-<a name="bytebase-v1-SearchIssuesRequest"></a>
-
-### SearchIssuesRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent, which owns this collection of issues. Format: projects/{project} Use &#34;projects/-&#34; to list all issues from all projects. |
-| page_size | [int32](#int32) |  | The maximum number of issues to return. The service may return fewer than this value. If unspecified, at most 10 issues will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `SearchIssues` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `SearchIssues` must match the call that provided the page token. |
-| filter | [string](#string) |  | Filter is used to filter issues returned in the list. Check the filter field in the ListIssuesRequest message. |
-| query | [string](#string) |  | Query is the query statement. |
-
-
-
-
-
-
-<a name="bytebase-v1-SearchIssuesResponse"></a>
-
-### SearchIssuesResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| issues | [Issue](#bytebase-v1-Issue) | repeated | The issues from the specified request. |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
-
-
-
-
-
-
-<a name="bytebase-v1-UpdateIssueCommentRequest"></a>
-
-### UpdateIssueCommentRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The issue name Format: projects/{project}/issues/{issue} |
-| issue_comment | [IssueComment](#bytebase-v1-IssueComment) |  | The comment to update. |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
-| allow_missing | [bool](#bool) |  | If set to true, and the issue comment is not found, a new issue comment will be created. In this situation, `update_mask` is ignored. |
-
-
-
-
-
-
-<a name="bytebase-v1-UpdateIssueRequest"></a>
-
-### UpdateIssueRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| issue | [Issue](#bytebase-v1-Issue) |  | The issue to update.
-
-The issue&#39;s `name` field is used to identify the issue to update. Format: projects/{project}/issues/{issue} |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
-| allow_missing | [bool](#bool) |  | If set to true, and the issue is not found, a new issue will be created. In this situation, `update_mask` is ignored. |
-
-
-
-
-
- 
-
-
-<a name="bytebase-v1-Issue-ApprovalStatus"></a>
-
-### Issue.ApprovalStatus
-The overall approval status for the issue.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| APPROVAL_STATUS_UNSPECIFIED | 0 | Unspecified approval status. |
-| CHECKING | 1 | Approval checks are being evaluated. |
-| PENDING | 2 | Approval is pending. |
-| APPROVED | 3 | Issue has been approved. |
-| REJECTED | 4 | Issue has been rejected. |
-| SKIPPED | 5 | Approval was skipped. |
-| ERROR | 6 | Error occurred during approval evaluation. |
-
-
-
-<a name="bytebase-v1-Issue-Approver-Status"></a>
-
-### Issue.Approver.Status
-The approval status of an approver.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| STATUS_UNSPECIFIED | 0 | Unspecified status. |
-| PENDING | 1 | Awaiting approval. |
-| APPROVED | 2 | Approved. |
-| REJECTED | 3 | Rejected. |
-
-
-
-<a name="bytebase-v1-Issue-Type"></a>
-
-### Issue.Type
-The type of issue.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 | Unspecified issue type. |
-| DATABASE_CHANGE | 1 | Database schema or data change. |
-| GRANT_REQUEST | 2 | Database access grant request. |
-| DATABASE_EXPORT | 3 | Database data export request. |
-
-
-
-<a name="bytebase-v1-IssueComment-Approval-Status"></a>
-
-### IssueComment.Approval.Status
-Approval status values.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| STATUS_UNSPECIFIED | 0 | Unspecified status. |
-| PENDING | 1 | Approval pending. |
-| APPROVED | 2 | Approved. |
-| REJECTED | 3 | Rejected. |
-
-
-
-<a name="bytebase-v1-IssueComment-TaskUpdate-Status"></a>
-
-### IssueComment.TaskUpdate.Status
-Task status values.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| STATUS_UNSPECIFIED | 0 | Unspecified status. |
-| PENDING | 1 | Task is pending. |
-| RUNNING | 2 | Task is running. |
-| DONE | 3 | Task is done. |
-| FAILED | 4 | Task failed. |
-| SKIPPED | 5 | Task was skipped. |
-| CANCELED | 6 | Task was canceled. |
-
-
-
-<a name="bytebase-v1-IssueStatus"></a>
-
-### IssueStatus
-The status of an issue.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ISSUE_STATUS_UNSPECIFIED | 0 | Unspecified status. |
-| OPEN | 1 | Issue is open and active. |
-| DONE | 2 | Issue is completed. |
-| CANCELED | 3 | Issue is canceled. |
-
-
- 
-
- 
-
-
-<a name="bytebase-v1-IssueService"></a>
-
-### IssueService
-IssueService manages issues for tracking database changes and tasks.
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| GetIssue | [GetIssueRequest](#bytebase-v1-GetIssueRequest) | [Issue](#bytebase-v1-Issue) | Retrieves an issue by name. Permissions required: bb.issues.get |
-| CreateIssue | [CreateIssueRequest](#bytebase-v1-CreateIssueRequest) | [Issue](#bytebase-v1-Issue) | Creates a new issue for database changes or tasks. Permissions required: bb.issues.create |
-| ListIssues | [ListIssuesRequest](#bytebase-v1-ListIssuesRequest) | [ListIssuesResponse](#bytebase-v1-ListIssuesResponse) | Lists issues in a project. Permissions required: bb.issues.list |
-| SearchIssues | [SearchIssuesRequest](#bytebase-v1-SearchIssuesRequest) | [SearchIssuesResponse](#bytebase-v1-SearchIssuesResponse) | Search for issues that the caller has the bb.issues.get permission on and also satisfy the specified filter &amp; query. Permissions required: bb.issues.get |
-| UpdateIssue | [UpdateIssueRequest](#bytebase-v1-UpdateIssueRequest) | [Issue](#bytebase-v1-Issue) | Updates an issue&#39;s properties such as title, description, or labels. Permissions required: bb.issues.update |
-| ListIssueComments | [ListIssueCommentsRequest](#bytebase-v1-ListIssueCommentsRequest) | [ListIssueCommentsResponse](#bytebase-v1-ListIssueCommentsResponse) | Lists comments on an issue. Permissions required: bb.issueComments.list |
-| CreateIssueComment | [CreateIssueCommentRequest](#bytebase-v1-CreateIssueCommentRequest) | [IssueComment](#bytebase-v1-IssueComment) | Adds a comment to an issue. Permissions required: bb.issueComments.create |
-| UpdateIssueComment | [UpdateIssueCommentRequest](#bytebase-v1-UpdateIssueCommentRequest) | [IssueComment](#bytebase-v1-IssueComment) | Updates an existing issue comment. Permissions required: bb.issueComments.update |
-| BatchUpdateIssuesStatus | [BatchUpdateIssuesStatusRequest](#bytebase-v1-BatchUpdateIssuesStatusRequest) | [BatchUpdateIssuesStatusResponse](#bytebase-v1-BatchUpdateIssuesStatusResponse) | Updates the status of multiple issues in a single operation. Permissions required: bb.issues.update |
-| ApproveIssue | [ApproveIssueRequest](#bytebase-v1-ApproveIssueRequest) | [Issue](#bytebase-v1-Issue) | Approves an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step. Permissions required: None (determined by approval flow) |
-| RejectIssue | [RejectIssueRequest](#bytebase-v1-RejectIssueRequest) | [Issue](#bytebase-v1-Issue) | Rejects an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step. Permissions required: None (determined by approval flow) |
-| RequestIssue | [RequestIssueRequest](#bytebase-v1-RequestIssueRequest) | [Issue](#bytebase-v1-Issue) | Requests changes on an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step. Permissions required: None (determined by approval flow) |
-
- 
-
-
-
-<a name="v1_iam_policy-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/iam_policy.proto
-
-
-
-<a name="bytebase-v1-Binding"></a>
-
-### Binding
-Binding associates members with a role and optional conditions.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| role | [string](#string) |  | The role that is assigned to the members. Format: roles/{role} |
-| members | [string](#string) | repeated | Specifies the principals requesting access for a Bytebase resource. For users, the member should be: user:{email} For groups, the member should be: group:{email} |
-| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding, only used in the project IAM policy. If the condition evaluates to true, then this binding applies to the current request. If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-
-Support variables: resource.database: the database full name in &#34;instances/{instance}/databases/{database}&#34; format, used by the &#34;roles/sqlEditorUser&#34; role, support &#34;==&#34; operator. resource.schema_name: the schema name, used by the &#34;roles/sqlEditorUser&#34; role, support &#34;==&#34; operator. resource.table_name: the table name, used by the &#34;roles/sqlEditorUser&#34; role, support &#34;==&#34; operator. request.time: the expiration. Only support &#34;&lt;&#34; operation in `request.time &lt; timestamp(&#34;{ISO datetime string format}&#34;)`.
-
-For example: resource.database == &#34;instances/local-pg/databases/postgres&#34; &amp;&amp; resource.schema_name in [&#34;public&#34;,&#34;another_schema&#34;] resource.database == &#34;instances/local-pg/databases/bytebase&#34; &amp;&amp; resource.schema_name == &#34;public&#34; &amp;&amp; resource.table_name in [&#34;audit_log&#34;] request.time &lt; timestamp(&#34;2025-04-26T11:24:48.655Z&#34;) |
-| parsed_expr | [google.api.expr.v1alpha1.Expr](#google-api-expr-v1alpha1-Expr) |  | The parsed expression of the condition. |
-
-
-
-
-
-
-<a name="bytebase-v1-BindingDelta"></a>
-
-### BindingDelta
-A single change to a binding.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| action | [BindingDelta.Action](#bytebase-v1-BindingDelta-Action) |  | The action that was performed on a Binding. |
-| role | [string](#string) |  | Role that is assigned to `members`. For example, `roles/projectOwner`. |
-| member | [string](#string) |  | Follows the same format of Binding.members. |
-| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding. |
-
-
-
-
-
-
-<a name="bytebase-v1-GetIamPolicyRequest"></a>
-
-### GetIamPolicyRequest
-Request message for getting an IAM policy.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| resource | [string](#string) |  | The name of the resource to get the IAM policy. Format: projects/{project} Format: workspaces/{workspace} |
-
-
-
-
-
-
-<a name="bytebase-v1-IamPolicy"></a>
-
-### IamPolicy
-IAM policy that binds members to roles.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| bindings | [Binding](#bytebase-v1-Binding) | repeated | Collection of binding. A binding binds one or more project members to a single project role. |
-| etag | [string](#string) |  | The current etag of the policy. If an etag is provided and does not match the current etag of the policy, the call will be blocked and an ABORTED error will be returned. |
-
-
-
-
-
-
-<a name="bytebase-v1-PolicyDelta"></a>
-
-### PolicyDelta
-Describes changes between two IAM policies.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| binding_deltas | [BindingDelta](#bytebase-v1-BindingDelta) | repeated | The delta for Bindings between two policies. |
-
-
-
-
-
-
-<a name="bytebase-v1-SetIamPolicyRequest"></a>
-
-### SetIamPolicyRequest
-Request message for setting an IAM policy.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| resource | [string](#string) |  | The name of the resource to set the IAM policy. Format: projects/{project} Format: workspaces/{workspace} |
-| policy | [IamPolicy](#bytebase-v1-IamPolicy) |  |  |
-| etag | [string](#string) |  | The current etag of the policy. |
-
-
-
-
-
- 
-
-
-<a name="bytebase-v1-BindingDelta-Action"></a>
-
-### BindingDelta.Action
-Type of action performed on a binding.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ACTION_UNSPECIFIED | 0 | Unspecified action. |
-| ADD | 1 | Add a binding. |
-| REMOVE | 2 | Remove a binding. |
-
-
- 
-
- 
-
- 
-
-
-
-<a name="v1_project_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/project_service.proto
-
-
-
-<a name="bytebase-v1-Activity"></a>
-
-### Activity
-Activity types for webhook notifications.
-
-
-
-
-
-
-<a name="bytebase-v1-AddWebhookRequest"></a>
-
-### AddWebhookRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| project | [string](#string) |  | The name of the project to add the webhook to. Format: projects/{project} |
-| webhook | [Webhook](#bytebase-v1-Webhook) |  | The webhook to add. |
-
-
-
-
-
-
-<a name="bytebase-v1-BatchDeleteProjectsRequest"></a>
-
-### BatchDeleteProjectsRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| names | [string](#string) | repeated | The names of the projects to delete. Format: projects/{project} |
-| force | [bool](#bool) |  | If set to true, any databases from this project will be moved to default project. Sheets are not moved since BYTEBASE_ARTIFACT sheets belong to the issue and issue project. Open issues will remain open but associated with the deleted project. If set to false, the operation will fail if the project has databases or open issues. |
-
-
-
-
-
-
-<a name="bytebase-v1-BatchGetIamPolicyRequest"></a>
-
-### BatchGetIamPolicyRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| scope | [string](#string) |  | The scope of the batch get. Typically it&#39;s &#34;projects/-&#34;. |
-| names | [string](#string) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-BatchGetIamPolicyResponse"></a>
-
-### BatchGetIamPolicyResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| policy_results | [BatchGetIamPolicyResponse.PolicyResult](#bytebase-v1-BatchGetIamPolicyResponse-PolicyResult) | repeated | The policy results for each requested project. |
-
-
-
-
-
-
-<a name="bytebase-v1-BatchGetIamPolicyResponse-PolicyResult"></a>
-
-### BatchGetIamPolicyResponse.PolicyResult
-Result for a single project&#39;s IAM policy.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| project | [string](#string) |  | The project resource name. |
-| policy | [IamPolicy](#bytebase-v1-IamPolicy) |  | The IAM policy for the project. |
-
-
-
-
-
-
-<a name="bytebase-v1-CreateProjectRequest"></a>
-
-### CreateProjectRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| project | [Project](#bytebase-v1-Project) |  | The project to create. |
-| project_id | [string](#string) |  | The ID to use for the project, which will become the final component of the project&#39;s resource name.
-
-This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
-
-
-
-
-
-
-<a name="bytebase-v1-DeleteProjectRequest"></a>
-
-### DeleteProjectRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the project to delete. Format: projects/{project} |
-| force | [bool](#bool) |  | If set to true, any databases from this project will be moved to default project. Sheets are not moved since BYTEBASE_ARTIFACT sheets belong to the issue and issue project. Open issues will remain open but associated with the deleted project. If set to false, the operation will fail if the project has databases or open issues. |
-| purge | [bool](#bool) |  | If set to true, permanently purge the soft-deleted project and all related resources. This operation is irreversible. Following AIP-165, this should only be used for administrative cleanup of old soft-deleted projects. The project must already be soft-deleted for this to work. |
-
-
-
-
-
-
-<a name="bytebase-v1-GetProjectRequest"></a>
-
-### GetProjectRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the project to retrieve. Format: projects/{project} |
-
-
-
-
-
-
-<a name="bytebase-v1-Label"></a>
-
-### Label
-A label for categorizing and organizing issues.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| value | [string](#string) |  | The label value/name. |
-| color | [string](#string) |  | The color code for the label (e.g., hex color). |
-| group | [string](#string) |  | The group this label belongs to. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListProjectsRequest"></a>
-
-### ListProjectsRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| page_size | [int32](#int32) |  | The maximum number of projects to return. The service may return fewer than this value. If unspecified, at most 10 projects will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListProjects` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListProjects` must match the call that provided the page token. |
-| show_deleted | [bool](#bool) |  | Show deleted projects if specified. |
-| filter | [string](#string) |  | Filter the project. Check filter for SearchProjectsRequest for details. Supports filtering by name, resource_id, state, and labels (e.g., labels.environment == &#34;production&#34;). |
-
-
-
-
-
-
-<a name="bytebase-v1-ListProjectsResponse"></a>
-
-### ListProjectsResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| projects | [Project](#bytebase-v1-Project) | repeated | The projects from the specified request. |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
-
-
-
-
-
-
-<a name="bytebase-v1-Project"></a>
-
-### Project
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the project. Format: projects/{project} |
-| state | [State](#bytebase-v1-State) |  | The lifecycle state of the project. |
-| title | [string](#string) |  | The title or name of a project. It&#39;s not unique within the workspace. |
-| webhooks | [Webhook](#bytebase-v1-Webhook) | repeated | The list of webhooks configured for the project. |
-| data_classification_config_id | [string](#string) |  | The data classification configuration ID for the project. |
-| issue_labels | [Label](#bytebase-v1-Label) | repeated | Labels available for tagging issues in this project. |
-| force_issue_labels | [bool](#bool) |  | Force issue labels to be used when creating an issue. |
-| allow_modify_statement | [bool](#bool) |  | Allow modifying SQL statements after issue is created. |
-| auto_resolve_issue | [bool](#bool) |  | Enable automatic issue resolution when tasks complete. |
-| enforce_issue_title | [bool](#bool) |  | Enforce issue title to be created by user instead of generated by Bytebase. |
-| auto_enable_backup | [bool](#bool) |  | Whether to automatically enable backup for database changes. |
-| skip_backup_errors | [bool](#bool) |  | Whether to skip backup errors and continue with data migration. |
-| postgres_database_tenant_mode | [bool](#bool) |  | Whether to enable database tenant mode for PostgreSQL. If enabled, issues will include &#34;set role &lt;db_owner&gt;&#34; statement. |
-| allow_self_approval | [bool](#bool) |  | Whether to allow issue creators to self-approve their own issues. |
-| execution_retry_policy | [Project.ExecutionRetryPolicy](#bytebase-v1-Project-ExecutionRetryPolicy) |  | Execution retry policy for task runs. |
-| ci_sampling_size | [int32](#int32) |  | The maximum number of database rows to sample during CI data validation. Without specification, sampling is disabled, resulting in full validation. |
-| parallel_tasks_per_rollout | [int32](#int32) |  | The maximum number of parallel tasks allowed during rollout execution. |
-| labels | [Project.LabelsEntry](#bytebase-v1-Project-LabelsEntry) | repeated | Labels are key-value pairs that can be attached to the project. For example, { &#34;environment&#34;: &#34;production&#34;, &#34;team&#34;: &#34;backend&#34; } |
-| enforce_sql_review | [bool](#bool) |  | Whether to enforce SQL review checks to pass before issue creation. If enabled, issues cannot be created when SQL review finds errors. |
-
-
-
-
-
-
-<a name="bytebase-v1-Project-ExecutionRetryPolicy"></a>
-
-### Project.ExecutionRetryPolicy
-Execution retry policy configuration.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| maximum_retries | [int32](#int32) |  | The maximum number of retries for lock timeout errors. |
-
-
-
-
-
-
-<a name="bytebase-v1-Project-LabelsEntry"></a>
-
-### Project.LabelsEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-RemoveWebhookRequest"></a>
-
-### RemoveWebhookRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| webhook | [Webhook](#bytebase-v1-Webhook) |  | The webhook to remove. Identified by its url. |
-
-
-
-
-
-
-<a name="bytebase-v1-SearchProjectsRequest"></a>
-
-### SearchProjectsRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| show_deleted | [bool](#bool) |  | Show deleted projects if specified. |
-| filter | [string](#string) |  | Filter the project. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-
-Supported filters: - name: the project name, support &#34;==&#34; and &#34;.matches()&#34; operator. - resource_id: the project id, support &#34;==&#34; and &#34;.matches()&#34; operator. - exclude_default: if not include the default project, should be &#34;true&#34; or &#34;false&#34;, support &#34;==&#34; operator. - state: check the State enum for the values, support &#34;==&#34; operator. - labels.{key}: the project label, support &#34;==&#34; and &#34;in&#34; operators.
-
-For example: name == &#34;project name&#34; name.matches(&#34;project name&#34;) resource_id == &#34;project id&#34; resource_id.matches(&#34;project id&#34;) exclude_default == true state == &#34;DELETED&#34; labels.environment == &#34;production&#34; labels.tier == &#34;critical&#34; labels.environment in [&#34;staging&#34;, &#34;prod&#34;] You can combine filter conditions like: name == &#34;project name&#34; &amp;&amp; resource_id.matches(&#34;project id&#34;) name.matches(&#34;project name&#34;) || resource_id == &#34;project id&#34; labels.environment == &#34;production&#34; &amp;&amp; labels.tier == &#34;critical&#34; |
-| page_size | [int32](#int32) |  | The maximum number of projects to return. The service may return fewer than this value. If unspecified, at most 10 projects will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `SearchProjects` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `SearchProjects` must match the call that provided the page token. |
-
-
-
-
-
-
-<a name="bytebase-v1-SearchProjectsResponse"></a>
-
-### SearchProjectsResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| projects | [Project](#bytebase-v1-Project) | repeated | The projects from the specified request. |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
-
-
-
-
-
-
-<a name="bytebase-v1-TestWebhookRequest"></a>
-
-### TestWebhookRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| project | [string](#string) |  | The name of the project which owns the webhook to test. Format: projects/{project} |
-| webhook | [Webhook](#bytebase-v1-Webhook) |  | The webhook to test. Identified by its url. |
-
-
-
-
-
-
-<a name="bytebase-v1-TestWebhookResponse"></a>
-
-### TestWebhookResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| error | [string](#string) |  | The result of the test, empty if the test is successful. |
-
-
-
-
-
-
-<a name="bytebase-v1-UndeleteProjectRequest"></a>
-
-### UndeleteProjectRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the deleted project. Format: projects/{project} |
-
-
-
-
-
-
-<a name="bytebase-v1-UpdateProjectRequest"></a>
-
-### UpdateProjectRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| project | [Project](#bytebase-v1-Project) |  | The project to update.
-
-The project&#39;s `name` field is used to identify the project to update. Format: projects/{project} |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
-| allow_missing | [bool](#bool) |  | If set to true, and the project is not found, a new project will be created. In this situation, `update_mask` is ignored. |
-
-
-
-
-
-
-<a name="bytebase-v1-UpdateWebhookRequest"></a>
-
-### UpdateWebhookRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| webhook | [Webhook](#bytebase-v1-Webhook) |  | The webhook to modify. |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
-| allow_missing | [bool](#bool) |  | If set to true, and the webhook is not found, a new webhook will be created. In this situation, `update_mask` is ignored. |
-
-
-
-
-
-
-<a name="bytebase-v1-Webhook"></a>
-
-### Webhook
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | name is the name of the webhook, generated by the server. format: projects/{project}/webhooks/{webhook} |
-| type | [Webhook.Type](#bytebase-v1-Webhook-Type) |  | type is the type of the webhook. |
-| title | [string](#string) |  | title is the title of the webhook. |
-| url | [string](#string) |  | url is the url of the webhook, should be unique within the project. |
-| direct_message | [bool](#bool) |  | if direct_message is set, the notification is sent directly to the persons and url will be ignored. IM integration setting should be set for this function to work. |
-| notification_types | [Activity.Type](#bytebase-v1-Activity-Type) | repeated | notification_types is the list of activities types that the webhook is interested in. Bytebase will only send notifications to the webhook if the activity type is in the list. It should not be empty, and should be a subset of the following: - ISSUE_CREATE - ISSUE_COMMENT_CREATE - ISSUE_FIELD_UPDATE - ISSUE_STATUS_UPDATE - ISSUE_APPROVAL_NOTIFY - ISSUE_PIPELINE_STAGE_STATUS_UPDATE - ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE - NOTIFY_ISSUE_APPROVED - NOTIFY_PIPELINE_ROLLOUT |
-
-
-
-
-
- 
-
-
-<a name="bytebase-v1-Activity-Type"></a>
-
-### Activity.Type
-Activity type enumeration.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 | Unspecified type. |
-| NOTIFY_ISSUE_APPROVED | 23 | Notifications via webhooks.
-
-NOTIFY_ISSUE_APPROVED represents the issue approved notification. |
-| NOTIFY_PIPELINE_ROLLOUT | 24 | NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification. |
-| ISSUE_CREATE | 1 | Issue related activity types.
-
-ISSUE_CREATE represents creating an issue. |
-| ISSUE_COMMENT_CREATE | 2 | ISSUE_COMMENT_CREATE represents commenting on an issue. |
-| ISSUE_FIELD_UPDATE | 3 | ISSUE_FIELD_UPDATE represents updating the issue field, likes title, description, etc. |
-| ISSUE_STATUS_UPDATE | 4 | ISSUE_STATUS_UPDATE represents the issue status change, including OPEN, CLOSE, CANCEL fow now. |
-| ISSUE_APPROVAL_NOTIFY | 21 | ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval. |
-| ISSUE_PIPELINE_STAGE_STATUS_UPDATE | 5 | ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now. |
-| ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE | 22 | ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED. |
-
-
-
-<a name="bytebase-v1-Webhook-Type"></a>
-
-### Webhook.Type
-Webhook integration type.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 | Unspecified type. |
-| SLACK | 1 | Slack integration. |
-| DISCORD | 2 | Discord integration. |
-| TEAMS | 3 | Microsoft Teams integration. |
-| DINGTALK | 4 | DingTalk integration. |
-| FEISHU | 5 | Feishu integration. |
-| WECOM | 6 | WeCom (WeChat Work) integration. |
-| LARK | 8 | Lark integration. |
-
-
- 
-
- 
-
-
-<a name="bytebase-v1-ProjectService"></a>
-
-### ProjectService
-ProjectService manages projects that group databases and changes.
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| GetProject | [GetProjectRequest](#bytebase-v1-GetProjectRequest) | [Project](#bytebase-v1-Project) | GetProject retrieves a project by name. Users with &#34;bb.projects.get&#34; permission on the workspace or the project owner can access this method. Permissions required: bb.projects.get |
-| ListProjects | [ListProjectsRequest](#bytebase-v1-ListProjectsRequest) | [ListProjectsResponse](#bytebase-v1-ListProjectsResponse) | Lists all projects in the workspace with optional filtering. Permissions required: bb.projects.list |
-| SearchProjects | [SearchProjectsRequest](#bytebase-v1-SearchProjectsRequest) | [SearchProjectsResponse](#bytebase-v1-SearchProjectsResponse) | Searches for projects with advanced filtering capabilities. Permissions required: bb.projects.get (or project-level bb.projects.get for specific projects) |
-| CreateProject | [CreateProjectRequest](#bytebase-v1-CreateProjectRequest) | [Project](#bytebase-v1-Project) | Creates a new project in the workspace. Permissions required: bb.projects.create |
-| UpdateProject | [UpdateProjectRequest](#bytebase-v1-UpdateProjectRequest) | [Project](#bytebase-v1-Project) | Updates an existing project&#39;s properties. Permissions required: bb.projects.update |
-| DeleteProject | [DeleteProjectRequest](#bytebase-v1-DeleteProjectRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes (soft-delete or purge) a project. Permissions required: bb.projects.delete |
-| UndeleteProject | [UndeleteProjectRequest](#bytebase-v1-UndeleteProjectRequest) | [Project](#bytebase-v1-Project) | Restores a soft-deleted project. Permissions required: bb.projects.undelete |
-| BatchDeleteProjects | [BatchDeleteProjectsRequest](#bytebase-v1-BatchDeleteProjectsRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes multiple projects in a single operation. Permissions required: bb.projects.delete |
-| GetIamPolicy | [GetIamPolicyRequest](#bytebase-v1-GetIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) | Retrieves the IAM policy for a project. Permissions required: bb.projects.getIamPolicy |
-| BatchGetIamPolicy | [BatchGetIamPolicyRequest](#bytebase-v1-BatchGetIamPolicyRequest) | [BatchGetIamPolicyResponse](#bytebase-v1-BatchGetIamPolicyResponse) | Deprecated. No permission check implemented. Permissions required: None |
-| SetIamPolicy | [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) | Sets the IAM policy for a project. Permissions required: bb.projects.setIamPolicy |
-| AddWebhook | [AddWebhookRequest](#bytebase-v1-AddWebhookRequest) | [Project](#bytebase-v1-Project) | Adds a webhook to a project for notifications. Permissions required: bb.projects.update |
-| UpdateWebhook | [UpdateWebhookRequest](#bytebase-v1-UpdateWebhookRequest) | [Project](#bytebase-v1-Project) | Updates an existing webhook configuration. Permissions required: bb.projects.update |
-| RemoveWebhook | [RemoveWebhookRequest](#bytebase-v1-RemoveWebhookRequest) | [Project](#bytebase-v1-Project) | Removes a webhook from a project. Permissions required: bb.projects.update |
-| TestWebhook | [TestWebhookRequest](#bytebase-v1-TestWebhookRequest) | [TestWebhookResponse](#bytebase-v1-TestWebhookResponse) | Tests a webhook by sending a test notification. Permissions required: bb.projects.update |
-
- 
-
-
-
-<a name="v1_setting_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/setting_service.proto
-
-
-
-<a name="bytebase-v1-AISetting"></a>
-
-### AISetting
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| enabled | [bool](#bool) |  |  |
-| provider | [AISetting.Provider](#bytebase-v1-AISetting-Provider) |  |  |
-| endpoint | [string](#string) |  |  |
-| api_key | [string](#string) |  |  |
-| model | [string](#string) |  |  |
-| version | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-Algorithm"></a>
-
-### Algorithm
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| full_mask | [Algorithm.FullMask](#bytebase-v1-Algorithm-FullMask) |  |  |
-| range_mask | [Algorithm.RangeMask](#bytebase-v1-Algorithm-RangeMask) |  |  |
-| md5_mask | [Algorithm.MD5Mask](#bytebase-v1-Algorithm-MD5Mask) |  |  |
-| inner_outer_mask | [Algorithm.InnerOuterMask](#bytebase-v1-Algorithm-InnerOuterMask) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-Algorithm-FullMask"></a>
-
-### Algorithm.FullMask
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| substitution | [string](#string) |  | substitution is the string used to replace the original value, the max length of the string is 16 bytes. |
-
-
-
-
-
-
-<a name="bytebase-v1-Algorithm-InnerOuterMask"></a>
-
-### Algorithm.InnerOuterMask
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| prefix_len | [int32](#int32) |  |  |
-| suffix_len | [int32](#int32) |  |  |
-| type | [Algorithm.InnerOuterMask.MaskType](#bytebase-v1-Algorithm-InnerOuterMask-MaskType) |  |  |
-| substitution | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-Algorithm-MD5Mask"></a>
-
-### Algorithm.MD5Mask
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| salt | [string](#string) |  | salt is the salt value to generate a different hash that with the word alone. |
-
-
-
-
-
-
-<a name="bytebase-v1-Algorithm-RangeMask"></a>
-
-### Algorithm.RangeMask
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| slices | [Algorithm.RangeMask.Slice](#bytebase-v1-Algorithm-RangeMask-Slice) | repeated | We store it as a repeated field to face the fact that the original value may have multiple parts should be masked. But frontend can be started with a single rule easily. |
-
-
-
-
-
-
-<a name="bytebase-v1-Algorithm-RangeMask-Slice"></a>
-
-### Algorithm.RangeMask.Slice
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| start | [int32](#int32) |  | start is the start index of the original value, start from 0 and should be less than stop. |
-| end | [int32](#int32) |  | stop is the stop index of the original value, should be less than the length of the original value. |
-| substitution | [string](#string) |  | substitution is the string used to replace the OriginalValue[start:end). |
-
-
-
-
-
-
-<a name="bytebase-v1-Announcement"></a>
-
-### Announcement
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| level | [Announcement.AlertLevel](#bytebase-v1-Announcement-AlertLevel) |  | The alert level of announcement |
-| text | [string](#string) |  | The text of announcement |
-| link | [string](#string) |  | The optional link, user can follow the link to check extra details |
-
-
-
-
-
-
-<a name="bytebase-v1-AppIMSetting"></a>
-
-### AppIMSetting
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| settings | [AppIMSetting.IMSetting](#bytebase-v1-AppIMSetting-IMSetting) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-AppIMSetting-DingTalk"></a>
-
-### AppIMSetting.DingTalk
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| client_id | [string](#string) |  |  |
-| client_secret | [string](#string) |  |  |
-| robot_code | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-AppIMSetting-Feishu"></a>
-
-### AppIMSetting.Feishu
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| app_id | [string](#string) |  |  |
-| app_secret | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-AppIMSetting-IMSetting"></a>
-
-### AppIMSetting.IMSetting
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| type | [Webhook.Type](#bytebase-v1-Webhook-Type) |  |  |
-| slack | [AppIMSetting.Slack](#bytebase-v1-AppIMSetting-Slack) |  |  |
-| feishu | [AppIMSetting.Feishu](#bytebase-v1-AppIMSetting-Feishu) |  |  |
-| wecom | [AppIMSetting.Wecom](#bytebase-v1-AppIMSetting-Wecom) |  |  |
-| lark | [AppIMSetting.Lark](#bytebase-v1-AppIMSetting-Lark) |  |  |
-| dingtalk | [AppIMSetting.DingTalk](#bytebase-v1-AppIMSetting-DingTalk) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-AppIMSetting-Lark"></a>
-
-### AppIMSetting.Lark
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| app_id | [string](#string) |  |  |
-| app_secret | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-AppIMSetting-Slack"></a>
-
-### AppIMSetting.Slack
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| token | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-AppIMSetting-Wecom"></a>
-
-### AppIMSetting.Wecom
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| corp_id | [string](#string) |  |  |
-| agent_id | [string](#string) |  |  |
-| secret | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-DataClassificationSetting"></a>
-
-### DataClassificationSetting
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| configs | [DataClassificationSetting.DataClassificationConfig](#bytebase-v1-DataClassificationSetting-DataClassificationConfig) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-DataClassificationSetting-DataClassificationConfig"></a>
-
-### DataClassificationSetting.DataClassificationConfig
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | id is the uuid for classification. Each project can chose one classification config. |
-| title | [string](#string) |  |  |
-| levels | [DataClassificationSetting.DataClassificationConfig.Level](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-Level) | repeated | levels is user defined level list for classification. The order for the level decides its priority. |
-| classification | [DataClassificationSetting.DataClassificationConfig.ClassificationEntry](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-ClassificationEntry) | repeated | classification is the id - DataClassification map. The id should in [0-9]&#43;-[0-9]&#43;-[0-9]&#43; format. |
-
-
-
-
-
-
-<a name="bytebase-v1-DataClassificationSetting-DataClassificationConfig-ClassificationEntry"></a>
-
-### DataClassificationSetting.DataClassificationConfig.ClassificationEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [DataClassificationSetting.DataClassificationConfig.DataClassification](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-DataClassification) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-DataClassificationSetting-DataClassificationConfig-DataClassification"></a>
-
-### DataClassificationSetting.DataClassificationConfig.DataClassification
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | id is the classification id in [0-9]&#43;-[0-9]&#43;-[0-9]&#43; format. |
-| title | [string](#string) |  |  |
-| description | [string](#string) |  |  |
-| level_id | [string](#string) | optional |  |
-
-
-
-
-
-
-<a name="bytebase-v1-DataClassificationSetting-DataClassificationConfig-Level"></a>
-
-### DataClassificationSetting.DataClassificationConfig.Level
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  |  |
-| title | [string](#string) |  |  |
-| description | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-EnvironmentSetting"></a>
-
-### EnvironmentSetting
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| environments | [EnvironmentSetting.Environment](#bytebase-v1-EnvironmentSetting-Environment) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-EnvironmentSetting-Environment"></a>
-
-### EnvironmentSetting.Environment
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The resource name of the environment. Format: environments/{environment}. Output only. |
-| id | [string](#string) |  | The resource id of the environment. This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
-| title | [string](#string) |  | The display name of the environment. |
-| tags | [EnvironmentSetting.Environment.TagsEntry](#bytebase-v1-EnvironmentSetting-Environment-TagsEntry) | repeated |  |
-| color | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-EnvironmentSetting-Environment-TagsEntry"></a>
-
-### EnvironmentSetting.Environment.TagsEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-GetSettingRequest"></a>
-
-### GetSettingRequest
-The request message for getting a setting.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The resource name of the setting. |
-
-
-
-
-
-
-<a name="bytebase-v1-GetSettingResponse"></a>
-
-### GetSettingResponse
-The response message for getting a setting.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| setting | [Setting](#bytebase-v1-Setting) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-ListSettingsRequest"></a>
-
-### ListSettingsRequest
-
-
-
-
-
-
-
-<a name="bytebase-v1-ListSettingsResponse"></a>
-
-### ListSettingsResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| settings | [Setting](#bytebase-v1-Setting) | repeated | The settings from the specified request. |
-
-
-
-
-
-
-<a name="bytebase-v1-PasswordRestrictionSetting"></a>
-
-### PasswordRestrictionSetting
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| min_length | [int32](#int32) |  | min_length is the minimum length for password, should no less than 8. |
-| require_number | [bool](#bool) |  | require_number requires the password must contains at least one number. |
-| require_letter | [bool](#bool) |  | require_letter requires the password must contains at least one letter, regardless of upper case or lower case |
-| require_uppercase_letter | [bool](#bool) |  | require_uppercase_letter requires the password must contains at least one upper case letter. |
-| require_special_character | [bool](#bool) |  | require_special_character requires the password must contains at least one special character. |
-| require_reset_password_for_first_login | [bool](#bool) |  | require_reset_password_for_first_login requires users to reset their password after the 1st login. |
-| password_rotation | [google.protobuf.Duration](#google-protobuf-Duration) |  | password_rotation requires users to reset their password after the duration. |
-
-
-
-
-
-
-<a name="bytebase-v1-SCIMSetting"></a>
-
-### SCIMSetting
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| token | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-SchemaTemplateSetting"></a>
-
-### SchemaTemplateSetting
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| field_templates | [SchemaTemplateSetting.FieldTemplate](#bytebase-v1-SchemaTemplateSetting-FieldTemplate) | repeated |  |
-| column_types | [SchemaTemplateSetting.ColumnType](#bytebase-v1-SchemaTemplateSetting-ColumnType) | repeated |  |
-| table_templates | [SchemaTemplateSetting.TableTemplate](#bytebase-v1-SchemaTemplateSetting-TableTemplate) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-SchemaTemplateSetting-ColumnType"></a>
-
-### SchemaTemplateSetting.ColumnType
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| engine | [Engine](#bytebase-v1-Engine) |  |  |
-| enabled | [bool](#bool) |  |  |
-| types | [string](#string) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-SchemaTemplateSetting-FieldTemplate"></a>
-
-### SchemaTemplateSetting.FieldTemplate
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  |  |
-| engine | [Engine](#bytebase-v1-Engine) |  |  |
-| category | [string](#string) |  |  |
-| column | [ColumnMetadata](#bytebase-v1-ColumnMetadata) |  |  |
-| catalog | [ColumnCatalog](#bytebase-v1-ColumnCatalog) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-SchemaTemplateSetting-TableTemplate"></a>
-
-### SchemaTemplateSetting.TableTemplate
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  |  |
-| engine | [Engine](#bytebase-v1-Engine) |  |  |
-| category | [string](#string) |  |  |
-| table | [TableMetadata](#bytebase-v1-TableMetadata) |  |  |
-| catalog | [TableCatalog](#bytebase-v1-TableCatalog) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-SemanticTypeSetting"></a>
-
-### SemanticTypeSetting
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| types | [SemanticTypeSetting.SemanticType](#bytebase-v1-SemanticTypeSetting-SemanticType) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-SemanticTypeSetting-SemanticType"></a>
-
-### SemanticTypeSetting.SemanticType
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | id is the uuid for semantic type. |
-| title | [string](#string) |  | the title of the semantic type, it should not be empty. |
-| description | [string](#string) |  | the description of the semantic type, it can be empty. |
-| algorithm | [Algorithm](#bytebase-v1-Algorithm) |  |  |
-| icon | [string](#string) |  | icon is the icon for semantic type, it can be emoji or base64 encoded image. |
-
-
-
-
-
-
-<a name="bytebase-v1-Setting"></a>
-
-### Setting
-The schema of setting.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The resource name of the setting. Must be one of the following forms:
-
-- `setting/{setting}` For example, &#34;settings/bb.branding.logo&#34; |
-| value | [Value](#bytebase-v1-Value) |  | The configuration value of the setting. |
-
-
-
-
-
-
-<a name="bytebase-v1-UpdateSettingRequest"></a>
-
-### UpdateSettingRequest
-The request message for updating or creating a setting.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| setting | [Setting](#bytebase-v1-Setting) |  | The setting to update. |
-| validate_only | [bool](#bool) |  | validate_only is a flag to indicate whether to validate the setting value, server would not persist the setting value if it is true. |
-| allow_missing | [bool](#bool) |  |  |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-Value"></a>
-
-### Value
-The data in setting value.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| string_value | [string](#string) |  | Defines this value as being a string value. |
-| app_im_setting_value | [AppIMSetting](#bytebase-v1-AppIMSetting) |  |  |
-| workspace_profile_setting_value | [WorkspaceProfileSetting](#bytebase-v1-WorkspaceProfileSetting) |  | reserved 4; // was AgentPluginSetting agent_plugin_setting_value |
-| workspace_approval_setting_value | [WorkspaceApprovalSetting](#bytebase-v1-WorkspaceApprovalSetting) |  |  |
-| schema_template_setting_value | [SchemaTemplateSetting](#bytebase-v1-SchemaTemplateSetting) |  |  |
-| data_classification_setting_value | [DataClassificationSetting](#bytebase-v1-DataClassificationSetting) |  |  |
-| semantic_type_setting_value | [SemanticTypeSetting](#bytebase-v1-SemanticTypeSetting) |  |  |
-| scim_setting | [SCIMSetting](#bytebase-v1-SCIMSetting) |  |  |
-| password_restriction_setting | [PasswordRestrictionSetting](#bytebase-v1-PasswordRestrictionSetting) |  |  |
-| ai_setting | [AISetting](#bytebase-v1-AISetting) |  |  |
-| environment_setting | [EnvironmentSetting](#bytebase-v1-EnvironmentSetting) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-WorkspaceApprovalSetting"></a>
-
-### WorkspaceApprovalSetting
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| rules | [WorkspaceApprovalSetting.Rule](#bytebase-v1-WorkspaceApprovalSetting-Rule) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-WorkspaceApprovalSetting-Rule"></a>
-
-### WorkspaceApprovalSetting.Rule
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| template | [ApprovalTemplate](#bytebase-v1-ApprovalTemplate) |  |  |
-| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with the rule. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-
-The `source` field filters which rules apply. The `condition` field then evaluates with full context.
-
-All supported variables: statement.affected_rows: affected row count in the DDL/DML, support &#34;==&#34;, &#34;!=&#34;, &#34;&lt;&#34;, &#34;&lt;=&#34;, &#34;&gt;&#34;, &#34;&gt;=&#34; operations. statement.table_rows: table row count number, support &#34;==&#34;, &#34;!=&#34;, &#34;&lt;&#34;, &#34;&lt;=&#34;, &#34;&gt;&#34;, &#34;&gt;=&#34; operations. resource.environment_id: the environment resource id, support &#34;==&#34;, &#34;!=&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34; operations. resource.project_id: the project resource id, support &#34;==&#34;, &#34;!=&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34;, &#34;contains()&#34;, &#34;matches()&#34;, &#34;startsWith()&#34;, &#34;endsWith()&#34; operations. resource.db_engine: the database engine type, support &#34;==&#34;, &#34;!=&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34; operations. Check the Engine enum for values. statement.sql_type: the SQL type, support &#34;==&#34;, &#34;!=&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34; operations. resource.database_name: the database name, support &#34;==&#34;, &#34;!=&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34;, &#34;contains()&#34;, &#34;matches()&#34;, &#34;startsWith()&#34;, &#34;endsWith()&#34; operations. resource.schema_name: the schema name, support &#34;==&#34;, &#34;!=&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34;, &#34;contains()&#34;, &#34;matches()&#34;, &#34;startsWith()&#34;, &#34;endsWith()&#34; operations. resource.table_name: the table name, support &#34;==&#34;, &#34;!=&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34;, &#34;contains()&#34;, &#34;matches()&#34;, &#34;startsWith()&#34;, &#34;endsWith()&#34; operations. statement.text: the SQL statement, support &#34;contains()&#34;, &#34;matches()&#34;, &#34;startsWith()&#34;, &#34;endsWith()&#34; operations. request.expiration_days: the role expiration days for the request, support &#34;==&#34;, &#34;!=&#34;, &#34;&lt;&#34;, &#34;&lt;=&#34;, &#34;&gt;&#34;, &#34;&gt;=&#34; operations. request.role: the request role full name, support &#34;==&#34;, &#34;!=&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34;, &#34;contains()&#34;, &#34;matches()&#34;, &#34;startsWith()&#34;, &#34;endsWith()&#34; operations.
-
-When source is CHANGE_DATABASE, support: statement.*, resource.* (excluding request.*) When source is CREATE_DATABASE, support: resource.environment_id, resource.project_id, resource.db_engine, resource.database_name When source is EXPORT_DATA, support: resource.environment_id, resource.project_id, resource.db_engine, resource.database_name, resource.schema_name, resource.table_name When source is REQUEST_ROLE, support: resource.project_id, request.expiration_days, request.role
-
-For examples: resource.environment_id == &#34;prod&#34; &amp;&amp; statement.affected_rows &gt;= 100 resource.table_name.matches(&#34;sensitive_.*&#34;) &amp;&amp; resource.db_engine == &#34;MYSQL&#34; |
-| source | [WorkspaceApprovalSetting.Rule.Source](#bytebase-v1-WorkspaceApprovalSetting-Rule-Source) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-WorkspaceProfileSetting"></a>
-
-### WorkspaceProfileSetting
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| external_url | [string](#string) |  | The external URL is used for sso authentication callback. |
-| disallow_signup | [bool](#bool) |  | Disallow self-service signup, users can only be invited by the owner. |
-| require_2fa | [bool](#bool) |  | Require 2FA for all users. |
-| token_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for token. |
-| announcement | [Announcement](#bytebase-v1-Announcement) |  | The setting of custom announcement |
-| maximum_role_expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The max duration for role expired. |
-| domains | [string](#string) | repeated | The workspace domain, e.g., bytebase.com. |
-| enforce_identity_domain | [bool](#bool) |  | Only user and group from the domains can be created and login. |
-| database_change_mode | [DatabaseChangeMode](#bytebase-v1-DatabaseChangeMode) |  | The workspace database change mode. |
-| disallow_password_signin | [bool](#bool) |  | Whether to disallow password signin. (Except workspace admins) |
-| enable_metric_collection | [bool](#bool) |  | Whether to enable metric collection for the workspace. |
-| inactive_session_timeout | [google.protobuf.Duration](#google-protobuf-Duration) |  | The session expiration time if not activity detected for the user. Value &lt;= 0 means no limit. |
-| enable_audit_log_stdout | [bool](#bool) |  | Whether to enable audit logging to stdout in structured JSON format. Requires TEAM or ENTERPRISE license. |
-
-
-
-
-
- 
-
-
-<a name="bytebase-v1-AISetting-Provider"></a>
-
-### AISetting.Provider
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| PROVIDER_UNSPECIFIED | 0 |  |
-| OPEN_AI | 1 |  |
-| CLAUDE | 2 |  |
-| GEMINI | 3 |  |
-| AZURE_OPENAI | 4 |  |
-
-
-
-<a name="bytebase-v1-Algorithm-InnerOuterMask-MaskType"></a>
-
-### Algorithm.InnerOuterMask.MaskType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| MASK_TYPE_UNSPECIFIED | 0 |  |
-| INNER | 1 |  |
-| OUTER | 2 |  |
-
-
-
-<a name="bytebase-v1-Announcement-AlertLevel"></a>
-
-### Announcement.AlertLevel
-We support three levels of AlertLevel: INFO, WARNING, and ERROR.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ALERT_LEVEL_UNSPECIFIED | 0 |  |
-| INFO | 1 |  |
-| WARNING | 2 |  |
-| CRITICAL | 3 |  |
-
-
-
-<a name="bytebase-v1-DatabaseChangeMode"></a>
-
-### DatabaseChangeMode
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| DATABASE_CHANGE_MODE_UNSPECIFIED | 0 |  |
-| PIPELINE | 1 | A more advanced database change process, including custom approval workflows and other advanced features. Default to this mode. |
-| EDITOR | 2 | A simple database change process in SQL editor. Users can execute SQL directly. |
-
-
-
-<a name="bytebase-v1-Setting-SettingName"></a>
-
-### Setting.SettingName
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| SETTING_NAME_UNSPECIFIED | 0 |  |
-| AUTH_SECRET | 1 |  |
-| BRANDING_LOGO | 2 |  |
-| WORKSPACE_ID | 3 |  |
-| WORKSPACE_PROFILE | 4 |  |
-| WORKSPACE_APPROVAL | 5 |  |
-| WORKSPACE_EXTERNAL_APPROVAL | 6 |  |
-| ENTERPRISE_LICENSE | 7 |  |
-| APP_IM | 8 |  |
-| WATERMARK | 9 |  |
-| AI | 10 |  |
-| SCHEMA_TEMPLATE | 13 |  |
-| DATA_CLASSIFICATION | 14 |  |
-| SEMANTIC_TYPES | 15 |  |
-| SCIM | 17 |  |
-| PASSWORD_RESTRICTION | 18 |  |
-| ENVIRONMENT | 19 |  |
-
-
-
-<a name="bytebase-v1-WorkspaceApprovalSetting-Rule-Source"></a>
-
-### WorkspaceApprovalSetting.Rule.Source
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| SOURCE_UNSPECIFIED | 0 |  |
-| CHANGE_DATABASE | 1 |  |
-| CREATE_DATABASE | 2 |  |
-| EXPORT_DATA | 3 |  |
-| REQUEST_ROLE | 4 |  |
-
-
- 
-
- 
-
-
-<a name="bytebase-v1-SettingService"></a>
-
-### SettingService
-SettingService manages workspace-level settings and configurations.
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| ListSettings | [ListSettingsRequest](#bytebase-v1-ListSettingsRequest) | [ListSettingsResponse](#bytebase-v1-ListSettingsResponse) | Lists all workspace settings. Permissions required: bb.settings.list |
-| GetSetting | [GetSettingRequest](#bytebase-v1-GetSettingRequest) | [Setting](#bytebase-v1-Setting) | Retrieves a workspace setting by name. Permissions required: bb.settings.get |
-| UpdateSetting | [UpdateSettingRequest](#bytebase-v1-UpdateSettingRequest) | [Setting](#bytebase-v1-Setting) | Updates a workspace setting. Permissions required: bb.settings.set |
-
- 
-
-
-
-<a name="v1_user_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/user_service.proto
-
-
-
-<a name="bytebase-v1-BatchGetUsersRequest"></a>
-
-### BatchGetUsersRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| names | [string](#string) | repeated | The user names to retrieve. Format: users/{user uid or user email} |
-
-
-
-
-
-
-<a name="bytebase-v1-BatchGetUsersResponse"></a>
-
-### BatchGetUsersResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| users | [User](#bytebase-v1-User) | repeated | The users from the specified request. |
-
-
-
-
-
-
-<a name="bytebase-v1-CreateUserRequest"></a>
-
-### CreateUserRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| user | [User](#bytebase-v1-User) |  | The user to create. |
-
-
-
-
-
-
-<a name="bytebase-v1-DeleteUserRequest"></a>
-
-### DeleteUserRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the user to delete. Format: users/{user} |
-
-
-
-
-
-
-<a name="bytebase-v1-GetUserRequest"></a>
-
-### GetUserRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the user to retrieve. Format: users/{user uid or user email} |
-
-
-
-
-
-
-<a name="bytebase-v1-ListUsersRequest"></a>
-
-### ListUsersRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| page_size | [int32](#int32) |  | The maximum number of users to return. The service may return fewer than this value. If unspecified, at most 10 users will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListUsers` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListUsers` must match the call that provided the page token. |
-| show_deleted | [bool](#bool) |  | Show deleted users if specified. |
-| filter | [string](#string) |  | Filter is used to filter users returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-
-Supported filter: - name: the user name, support &#34;==&#34; and &#34;.matches()&#34; operator. - email: the user email, support &#34;==&#34; and &#34;.matches()&#34; operator. - user_type: the type, check UserType enum for values, support &#34;==&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34; operator. - state: check State enum for values, support &#34;==&#34; operator. - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator.
-
-For example: name == &#34;ed&#34; name.matches(&#34;ed&#34;) email == &#34;ed@bytebase.com&#34; email.matches(&#34;ed&#34;) user_type == &#34;SERVICE_ACCOUNT&#34; user_type in [&#34;SERVICE_ACCOUNT&#34;, &#34;USER&#34;] !(user_type in [&#34;SERVICE_ACCOUNT&#34;, &#34;USER&#34;]) state == &#34;DELETED&#34; project == &#34;projects/sample-project&#34; You can combine filter conditions like: name.matches(&#34;ed&#34;) &amp;&amp; project == &#34;projects/sample-project&#34; (name == &#34;ed&#34; || email == &#34;ed@bytebase.com&#34;) &amp;&amp; project == &#34;projects/sample-project&#34; |
-
-
-
-
-
-
-<a name="bytebase-v1-ListUsersResponse"></a>
-
-### ListUsersResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| users | [User](#bytebase-v1-User) | repeated | The users from the specified request. |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
-
-
-
-
-
-
-<a name="bytebase-v1-UndeleteUserRequest"></a>
-
-### UndeleteUserRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the deleted user. Format: users/{user} |
-
-
-
-
-
-
-<a name="bytebase-v1-UpdateUserRequest"></a>
-
-### UpdateUserRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| user | [User](#bytebase-v1-User) |  | The user to update.
-
-The user&#39;s `name` field is used to identify the user to update. Format: users/{user} |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
-| otp_code | [string](#string) | optional | The otp_code is used to verify the user&#39;s identity by MFA. |
-| regenerate_temp_mfa_secret | [bool](#bool) |  | The regenerate_temp_mfa_secret flag means to regenerate temporary MFA secret for user. This is used for MFA setup. The temporary MFA secret and recovery codes will be returned in the response. |
-| regenerate_recovery_codes | [bool](#bool) |  | The regenerate_recovery_codes flag means to regenerate recovery codes for user. |
-| allow_missing | [bool](#bool) |  | If set to true, and the user is not found, a new user will be created. In this situation, `update_mask` is ignored. |
-
-
-
-
-
-
-<a name="bytebase-v1-User"></a>
-
-### User
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the user. Format: users/{user}. {user} is a system-generated unique ID. |
-| state | [State](#bytebase-v1-State) |  | The lifecycle state of the user account. |
-| email | [string](#string) |  | The email address of the user, used for login and notifications. |
-| title | [string](#string) |  | The display title or full name of the user. |
-| user_type | [UserType](#bytebase-v1-UserType) |  | The type of user account. |
-| password | [string](#string) |  | The password for authentication. Only used during user creation or password updates. |
-| service_key | [string](#string) |  | The service key for service account authentication. Only used for service accounts. |
-| mfa_enabled | [bool](#bool) |  | The mfa_enabled flag means if the user has enabled MFA. |
-| temp_otp_secret | [string](#string) |  | Temporary OTP secret used during MFA setup and regeneration. |
-| temp_recovery_codes | [string](#string) | repeated | Temporary recovery codes used during MFA setup and regeneration. |
-| temp_otp_secret_created_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Timestamp when temp_otp_secret was created. Used by frontend to show countdown timer. |
-| phone | [string](#string) |  | Should be a valid E.164 compliant phone number. Could be empty. |
-| profile | [User.Profile](#bytebase-v1-User-Profile) |  | User profile metadata. |
-| groups | [string](#string) | repeated | The groups for the user. Format: groups/{email} |
-
-
-
-
-
-
-<a name="bytebase-v1-User-Profile"></a>
-
-### User.Profile
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| last_login_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The last time the user successfully logged in. |
-| last_change_password_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The last time the user changed their password. |
-| source | [string](#string) |  | source means where the user comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID. |
-
-
-
-
-
- 
-
-
-<a name="bytebase-v1-UserType"></a>
-
-### UserType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| USER_TYPE_UNSPECIFIED | 0 | Unspecified user type. |
-| USER | 1 | Regular human user account. |
-| SYSTEM_BOT | 2 | System-managed bot account for automated operations. |
-| SERVICE_ACCOUNT | 3 | Service account for API integrations. |
-
-
- 
-
- 
-
-
-<a name="bytebase-v1-UserService"></a>
-
-### UserService
-UserService manages user accounts and authentication.
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| GetUser | [GetUserRequest](#bytebase-v1-GetUserRequest) | [User](#bytebase-v1-User) | Get the user. Any authenticated user can get the user. Permissions required: bb.users.get |
-| BatchGetUsers | [BatchGetUsersRequest](#bytebase-v1-BatchGetUsersRequest) | [BatchGetUsersResponse](#bytebase-v1-BatchGetUsersResponse) | Get the users in batch. Any authenticated user can batch get users. Permissions required: bb.users.get |
-| GetCurrentUser | [.google.protobuf.Empty](#google-protobuf-Empty) | [User](#bytebase-v1-User) | Get the current authenticated user. Permissions required: None |
-| ListUsers | [ListUsersRequest](#bytebase-v1-ListUsersRequest) | [ListUsersResponse](#bytebase-v1-ListUsersResponse) | List all users. Any authenticated user can list users. Permissions required: bb.users.list |
-| CreateUser | [CreateUserRequest](#bytebase-v1-CreateUserRequest) | [User](#bytebase-v1-User) | Creates a user. When Disallow Signup is enabled, requires bb.users.create permission; otherwise any user can sign up. Permissions required: bb.users.create (only when Disallow Signup is enabled) |
-| UpdateUser | [UpdateUserRequest](#bytebase-v1-UpdateUserRequest) | [User](#bytebase-v1-User) | Updates a user. Users can update their own profile, or users with bb.users.update permission can update any user. Permissions required: bb.users.update (or self) |
-| DeleteUser | [DeleteUserRequest](#bytebase-v1-DeleteUserRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a user. Requires bb.users.delete permission with additional validation: the last remaining workspace admin cannot be deleted. Permissions required: bb.users.delete |
-| UndeleteUser | [UndeleteUserRequest](#bytebase-v1-UndeleteUserRequest) | [User](#bytebase-v1-User) | Restores a deleted user. Permissions required: bb.users.undelete |
-
- 
-
-
-
-<a name="v1_actuator_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/actuator_service.proto
-
-
-
-<a name="bytebase-v1-ActuatorInfo"></a>
-
-### ActuatorInfo
-System information and configuration for the Bytebase instance.
-Actuator concept is similar to the Spring Boot Actuator.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| version | [string](#string) |  | The Bytebase server version. |
-| git_commit | [string](#string) |  | The git commit hash of the build. |
-| readonly | [bool](#bool) |  | Whether the Bytebase instance is running in read-only mode. |
-| saas | [bool](#bool) |  | Whether the Bytebase instance is running in SaaS mode where some features cannot be edited by users. |
-| demo | [bool](#bool) |  | Whether the Bytebase instance is running in demo mode. |
-| host | [string](#string) |  | The host address of the Bytebase instance. |
-| port | [string](#string) |  | The port number of the Bytebase instance. |
-| external_url | [string](#string) |  | The external URL where users or webhook callbacks access Bytebase. |
-| need_admin_setup | [bool](#bool) |  | Whether the Bytebase instance requires initial admin setup. |
-| disallow_signup | [bool](#bool) |  | Whether self-service user signup is disabled. |
-| last_active_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The last time any API call was made, refreshed on each request. |
-| require_2fa | [bool](#bool) |  | Whether two-factor authentication is required for all users. |
-| workspace_id | [string](#string) |  | The unique identifier for the workspace. |
-| debug | [bool](#bool) |  | Whether debug mode is enabled. |
-| unlicensed_features | [string](#string) | repeated | List of features that are not licensed. |
-| disallow_password_signin | [bool](#bool) |  | Whether password-based signin is disabled (except for workspace admins). |
-| password_restriction | [PasswordRestrictionSetting](#bytebase-v1-PasswordRestrictionSetting) |  | Password complexity and restriction requirements. |
-| docker | [bool](#bool) |  | Whether the Bytebase instance is running in Docker. |
-| user_stats | [ActuatorInfo.StatUser](#bytebase-v1-ActuatorInfo-StatUser) | repeated | Statistics about users in the system. |
-| activated_instance_count | [int32](#int32) |  | The number of activated database instances. |
-| total_instance_count | [int32](#int32) |  | The total number of database instances. |
-| enable_sample | [bool](#bool) |  | Whether sample data setup is enabled. |
-| external_url_from_flag | [bool](#bool) |  | Whether the external URL is set via command-line flag (and thus cannot be changed via UI). |
-
-
-
-
-
-
-<a name="bytebase-v1-ActuatorInfo-StatUser"></a>
-
-### ActuatorInfo.StatUser
-User statistics by type and state.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| user_type | [UserType](#bytebase-v1-UserType) |  | The type of user. |
-| state | [State](#bytebase-v1-State) |  | The state of the user. |
-| count | [int32](#int32) |  | The count of users matching this type and state. |
-
-
-
-
-
-
-<a name="bytebase-v1-DeleteCacheRequest"></a>
-
-### DeleteCacheRequest
-Request message for deleting cache.
-
-
-
-
-
-
-<a name="bytebase-v1-GetActuatorInfoRequest"></a>
-
-### GetActuatorInfoRequest
-Request message for getting actuator information.
-
-
-
-
-
-
-<a name="bytebase-v1-GetResourcePackageRequest"></a>
-
-### GetResourcePackageRequest
-Request message for getting branding resources.
-
-
-
-
-
-
-<a name="bytebase-v1-ResourcePackage"></a>
-
-### ResourcePackage
-Custom branding resources for the Bytebase instance.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| logo | [bytes](#bytes) |  | The branding logo. |
-
-
-
-
-
-
-<a name="bytebase-v1-SetupSampleRequest"></a>
-
-### SetupSampleRequest
-Request message for setting up sample data.
-
-
-
-
-
-
-<a name="bytebase-v1-UpdateActuatorInfoRequest"></a>
-
-### UpdateActuatorInfoRequest
-Request message for updating actuator information.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| actuator | [ActuatorInfo](#bytebase-v1-ActuatorInfo) |  | The actuator to update. |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
-| allow_missing | [bool](#bool) |  | If set to true, and the actuator is not found, a new actuator will be created. In this situation, `update_mask` is ignored. |
-
-
-
-
-
- 
-
- 
-
- 
-
-
-<a name="bytebase-v1-ActuatorService"></a>
-
-### ActuatorService
-ActuatorService manages system health and operational information.
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| GetActuatorInfo | [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest) | [ActuatorInfo](#bytebase-v1-ActuatorInfo) | Gets system information and health status of the Bytebase instance. Permissions required: None |
-| UpdateActuatorInfo | [UpdateActuatorInfoRequest](#bytebase-v1-UpdateActuatorInfoRequest) | [ActuatorInfo](#bytebase-v1-ActuatorInfo) | Updates system configuration settings for the Bytebase instance. Permissions required: bb.settings.set |
-| SetupSample | [SetupSampleRequest](#bytebase-v1-SetupSampleRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Sets up sample data for demonstration and testing purposes. Permissions required: bb.projects.create |
-| DeleteCache | [DeleteCacheRequest](#bytebase-v1-DeleteCacheRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Clears the system cache to force data refresh. Permissions required: None |
-| GetResourcePackage | [GetResourcePackageRequest](#bytebase-v1-GetResourcePackageRequest) | [ResourcePackage](#bytebase-v1-ResourcePackage) | Gets custom branding resources such as logos. Permissions required: None |
-
- 
-
-
-
-<a name="v1_audit_log_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/audit_log_service.proto
-
-
-
-<a name="bytebase-v1-AuditData"></a>
-
-### AuditData
-Additional audit data specific to certain operations.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| policy_delta | [PolicyDelta](#bytebase-v1-PolicyDelta) |  | Changes to IAM policies. |
-
-
-
-
-
-
-<a name="bytebase-v1-AuditLog"></a>
-
-### AuditLog
-Audit log entry recording system activity or API call.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the log. Formats: - projects/{project}/auditLogs/{uid} - workspaces/{workspace}/auditLogs/{uid} |
-| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the audit log was created. |
-| user | [string](#string) |  | The user who performed the action. Format: users/{email} |
-| method | [string](#string) |  | The method or action being audited. For example: /bytebase.v1.SQLService/Query or bb.project.repository.push |
-| severity | [AuditLog.Severity](#bytebase-v1-AuditLog-Severity) |  | The severity level of this audit log entry. |
-| resource | [string](#string) |  | The resource associated with this audit log. |
-| request | [string](#string) |  | The request payload in JSON format. |
-| response | [string](#string) |  | The response payload in JSON format. Some fields may be omitted if they are too large or contain sensitive information. |
-| status | [google.rpc.Status](#google-rpc-Status) |  | The status of the operation. |
-| latency | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration of the operation. |
-| service_data | [google.protobuf.Any](#google-protobuf-Any) |  | Service-specific metadata about the request, response, and activities. |
-| request_metadata | [RequestMetadata](#bytebase-v1-RequestMetadata) |  | Metadata about the request context. |
-
-
-
-
-
-
-<a name="bytebase-v1-ExportAuditLogsRequest"></a>
-
-### ExportAuditLogsRequest
-Request message for exporting audit logs.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  |  |
-| filter | [string](#string) |  | The filter of the log. It should be a valid CEL expression. Check the filter field in the SearchAuditLogsRequest message. |
-| order_by | [string](#string) |  | The order by of the log. Only support order by create_time. For example: - order_by = &#34;create_time asc&#34; - order_by = &#34;create_time desc&#34; |
-| format | [ExportFormat](#bytebase-v1-ExportFormat) |  | The export format. |
-| page_size | [int32](#int32) |  | The maximum number of logs to return. The service may return fewer than this value. If unspecified, at most 10 log entries will be returned. The maximum value is 5000; values above 5000 will be coerced to 5000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ExportAuditLogs` call. Provide this to retrieve the subsequent page. |
-
-
-
-
-
-
-<a name="bytebase-v1-ExportAuditLogsResponse"></a>
-
-### ExportAuditLogsResponse
-Response message for exporting audit logs.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| content | [bytes](#bytes) |  | The exported audit log content in the requested format. |
-| next_page_token | [string](#string) |  | A token to retrieve next page of log entities. Pass this value in the page_token field in the subsequent call to retrieve the next page of log entities. |
-
-
-
-
-
-
-<a name="bytebase-v1-RequestMetadata"></a>
-
-### RequestMetadata
-Metadata about the incoming request.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| caller_ip | [string](#string) |  | The IP address of the request originator. |
-| caller_supplied_user_agent | [string](#string) |  | The user agent string provided by the caller. This is supplied by the client and is not authenticated. |
-
-
-
-
-
-
-<a name="bytebase-v1-SearchAuditLogsRequest"></a>
-
-### SearchAuditLogsRequest
-Request message for searching audit logs.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  |  |
-| filter | [string](#string) |  | The filter of the log. It should be a valid CEL expression. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-
-Supported filter: - method: the API name, can be found in the docs, should start with &#34;/bytebase.v1.&#34; prefix. For example &#34;/bytebase.v1.UserService/CreateUser&#34;. Support &#34;==&#34; operator. - severity: support &#34;==&#34; operator, check Severity enum in AuditLog message for values. - user: the actor, should in &#34;users/{email}&#34; format, support &#34;==&#34; operator. - create_time: support &#34;&gt;=&#34; and &#34;&lt;=&#34; operator.
-
-For example: - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39; &amp;&amp; user == &#39;users/bb@bytebase.com&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39; &amp;&amp; create_time &lt;= &#39;2021-01-01T00:00:00Z&#39; &amp;&amp; create_time &gt;= &#39;2020-01-01T00:00:00Z&#39;&#34; |
-| order_by | [string](#string) |  | The order by of the log. Only support order by create_time. For example: - order_by = &#34;create_time asc&#34; - order_by = &#34;create_time desc&#34; |
-| page_size | [int32](#int32) |  | The maximum number of logs to return. The service may return fewer than this value. If unspecified, at most 10 log entries will be returned. The maximum value is 5000; values above 5000 will be coerced to 5000. |
-| page_token | [string](#string) |  | A page token, received from a previous `SearchLogs` call. Provide this to retrieve the subsequent page. |
-
-
-
-
-
-
-<a name="bytebase-v1-SearchAuditLogsResponse"></a>
-
-### SearchAuditLogsResponse
-Response message for searching audit logs.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| audit_logs | [AuditLog](#bytebase-v1-AuditLog) | repeated |  |
-| next_page_token | [string](#string) |  | A token to retrieve next page of log entities. Pass this value in the page_token field in the subsequent call to retrieve the next page of log entities. |
-
-
-
-
-
- 
-
-
-<a name="bytebase-v1-AuditLog-Severity"></a>
-
-### AuditLog.Severity
-Severity level for audit log entries.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| SEVERITY_UNSPECIFIED | 0 | Unspecified severity level. |
-| DEBUG | 1 | Debug-level information. |
-| INFO | 2 | Informational messages. |
-| NOTICE | 3 | Notable events. |
-| WARNING | 4 | Warning conditions. |
-| ERROR | 5 | Error conditions. |
-| CRITICAL | 6 | Critical conditions. |
-| ALERT | 7 | Action must be taken immediately. |
-| EMERGENCY | 8 | System is unusable. |
-
-
- 
-
- 
-
-
-<a name="bytebase-v1-AuditLogService"></a>
-
-### AuditLogService
-AuditLogService manages audit logs for system activities and API calls.
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| SearchAuditLogs | [SearchAuditLogsRequest](#bytebase-v1-SearchAuditLogsRequest) | [SearchAuditLogsResponse](#bytebase-v1-SearchAuditLogsResponse) | Searches audit logs with optional filtering and pagination. Permissions required: bb.auditLogs.search |
-| ExportAuditLogs | [ExportAuditLogsRequest](#bytebase-v1-ExportAuditLogsRequest) | [ExportAuditLogsResponse](#bytebase-v1-ExportAuditLogsResponse) | Exports audit logs in a specified format for external analysis. Permissions required: bb.auditLogs.export |
-
- 
-
-
-
-<a name="v1_auth_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/auth_service.proto
-
-
-
-<a name="bytebase-v1-IdentityProviderContext"></a>
-
-### IdentityProviderContext
-Context for identity provider authentication.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| oauth2_context | [OAuth2IdentityProviderContext](#bytebase-v1-OAuth2IdentityProviderContext) |  | OAuth2 authentication context. |
-| oidc_context | [OIDCIdentityProviderContext](#bytebase-v1-OIDCIdentityProviderContext) |  | OpenID Connect authentication context. |
-
-
-
-
-
-
-<a name="bytebase-v1-LoginRequest"></a>
-
-### LoginRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| email | [string](#string) |  | User&#39;s email address. |
-| password | [string](#string) |  | User&#39;s password for authentication. |
-| web | [bool](#bool) |  | If web is set, we will set access token, refresh token, and user to the cookie. |
-| idp_name | [string](#string) |  | The name of the identity provider. Format: idps/{idp} |
-| idp_context | [IdentityProviderContext](#bytebase-v1-IdentityProviderContext) |  | The idp_context is using to get the user information from identity provider. |
-| otp_code | [string](#string) | optional | The otp_code is used to verify the user&#39;s identity by MFA. |
-| recovery_code | [string](#string) | optional | The recovery_code is used to recovery the user&#39;s identity with MFA. |
-| mfa_temp_token | [string](#string) | optional | The mfa_temp_token is used to verify the user&#39;s identity by MFA. |
-
-
-
-
-
-
-<a name="bytebase-v1-LoginResponse"></a>
-
-### LoginResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| token | [string](#string) |  | Access token for authenticated requests. |
-| mfa_temp_token | [string](#string) | optional | Temporary token for MFA verification. |
-| require_reset_password | [bool](#bool) |  | Whether user must reset password before continuing. |
-| user | [User](#bytebase-v1-User) |  | The user from the successful login. |
-
-
-
-
-
-
-<a name="bytebase-v1-LogoutRequest"></a>
-
-### LogoutRequest
-Request to logout current user session.
-
-
-
-
-
-
-<a name="bytebase-v1-OAuth2IdentityProviderContext"></a>
-
-### OAuth2IdentityProviderContext
-OAuth2 authentication context.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| code | [string](#string) |  | Authorization code from OAuth2 provider. |
-
-
-
-
-
-
-<a name="bytebase-v1-OIDCIdentityProviderContext"></a>
-
-### OIDCIdentityProviderContext
-OpenID Connect authentication context.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| code | [string](#string) |  | Authorization code from OIDC provider. |
-
-
-
-
-
- 
-
- 
-
- 
-
-
-<a name="bytebase-v1-AuthService"></a>
-
-### AuthService
-AuthService handles user authentication operations.
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| Login | [LoginRequest](#bytebase-v1-LoginRequest) | [LoginResponse](#bytebase-v1-LoginResponse) | Authenticates a user and returns access tokens. Permissions required: None |
-| Logout | [LogoutRequest](#bytebase-v1-LogoutRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Logs out the current user session. Permissions required: None |
-
- 
-
-
-
-<a name="v1_cel_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/cel_service.proto
-
-
-
-<a name="bytebase-v1-BatchDeparseRequest"></a>
-
-### BatchDeparseRequest
-Request message for batch deparsing CEL expressions.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| expressions | [google.api.expr.v1alpha1.Expr](#google-api-expr-v1alpha1-Expr) | repeated | The CEL expression ASTs to deparse. |
-
-
-
-
-
-
-<a name="bytebase-v1-BatchDeparseResponse"></a>
-
-### BatchDeparseResponse
-Response message for batch deparsing CEL expressions.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| expressions | [string](#string) | repeated | The deparsed CEL expressions as strings. |
-
-
-
-
-
-
-<a name="bytebase-v1-BatchParseRequest"></a>
-
-### BatchParseRequest
-Request message for batch parsing CEL expressions.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| expressions | [string](#string) | repeated | The CEL expression strings to parse. |
-
-
-
-
-
-
-<a name="bytebase-v1-BatchParseResponse"></a>
-
-### BatchParseResponse
-Response message for batch parsing CEL expressions.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| expressions | [google.api.expr.v1alpha1.Expr](#google-api-expr-v1alpha1-Expr) | repeated | The parsed CEL expressions as AST. |
-
-
-
-
-
- 
-
- 
-
- 
-
-
-<a name="bytebase-v1-CelService"></a>
-
-### CelService
-CelService manages CEL (Common Expression Language) parsing and formatting operations.
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| BatchParse | [BatchParseRequest](#bytebase-v1-BatchParseRequest) | [BatchParseResponse](#bytebase-v1-BatchParseResponse) | Parses multiple CEL expression strings into AST representations. Permissions required: None |
-| BatchDeparse | [BatchDeparseRequest](#bytebase-v1-BatchDeparseRequest) | [BatchDeparseResponse](#bytebase-v1-BatchDeparseResponse) | Converts multiple CEL AST representations back into expression strings. Permissions required: None |
-
- 
-
-
-
-<a name="v1_database_group_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/database_group_service.proto
-
-
-
-<a name="bytebase-v1-CreateDatabaseGroupRequest"></a>
-
-### CreateDatabaseGroupRequest
-Request message for creating a database group.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource where this database group will be created. Format: projects/{project} |
-| database_group | [DatabaseGroup](#bytebase-v1-DatabaseGroup) |  | The database group to create. |
-| database_group_id | [string](#string) |  | The ID to use for the database group, which will become the final component of the database group&#39;s resource name.
-
-This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
-| validate_only | [bool](#bool) |  | If set, validate the create request and preview the full database group response, but do not actually create it. |
-
-
-
-
-
-
-<a name="bytebase-v1-DatabaseGroup"></a>
-
-### DatabaseGroup
-A group of databases matched by expressions.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the database group. Format: projects/{project}/databaseGroups/{databaseGroup} |
-| title | [string](#string) |  | The short name used in actual databases specified by users. |
-| database_expr | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this database group. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-
-Support variables: resource.environment_id: the environment resource id. Support &#34;==&#34;, &#34;!=&#34;, &#34;in [XX]&#34;, &#34;!(in [xx])&#34; operations. resource.instance_id: the instance resource id. Support &#34;==&#34;, &#34;!=&#34;, &#34;in [XX]&#34;, &#34;!(in [xx])&#34;, &#34;contains&#34;, &#34;matches&#34;, &#34;startsWith&#34;, &#34;endsWith&#34; operations. resource.database_name: the database name. Support &#34;==&#34;, &#34;!=&#34;, &#34;in [XX]&#34;, &#34;!(in [xx])&#34;, &#34;contains&#34;, &#34;matches&#34;, &#34;startsWith&#34;, &#34;endsWith&#34; operations. resource.database_labels: the database labels. Support map access operations. All variables should join with &#34;&amp;&amp;&#34; condition.
-
-For example: resource.environment_id == &#34;test&#34; &amp;&amp; resource.database_name.startsWith(&#34;sample_&#34;) resource.database_labels[&#34;tenant&#34;] == &#34;tenant1&#34; |
-| matched_databases | [DatabaseGroup.Database](#bytebase-v1-DatabaseGroup-Database) | repeated | The list of databases that match the database group condition. |
-
-
-
-
-
-
-<a name="bytebase-v1-DatabaseGroup-Database"></a>
-
-### DatabaseGroup.Database
-A database within a database group.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The resource name of the database. Format: instances/{instance}/databases/{database} |
-
-
-
-
-
-
-<a name="bytebase-v1-DeleteDatabaseGroupRequest"></a>
-
-### DeleteDatabaseGroupRequest
-Request message for deleting a database group.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the database group to delete. Format: projects/{project}/databaseGroups/{databaseGroup} |
-
-
-
-
-
-
-<a name="bytebase-v1-GetDatabaseGroupRequest"></a>
-
-### GetDatabaseGroupRequest
-Request message for getting a database group.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the database group to retrieve. Format: projects/{project}/databaseGroups/{databaseGroup} |
-| view | [DatabaseGroupView](#bytebase-v1-DatabaseGroupView) |  | The view to return. Defaults to DATABASE_GROUP_VIEW_BASIC. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListDatabaseGroupsRequest"></a>
-
-### ListDatabaseGroupsRequest
-Request message for listing database groups.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource whose database groups are to be listed. Format: projects/{project} |
-| view | [DatabaseGroupView](#bytebase-v1-DatabaseGroupView) |  | The view to return. Defaults to DATABASE_GROUP_VIEW_BASIC. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListDatabaseGroupsResponse"></a>
-
-### ListDatabaseGroupsResponse
-Response message for listing database groups.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| database_groups | [DatabaseGroup](#bytebase-v1-DatabaseGroup) | repeated | The database groups from the specified request. |
-
-
-
-
-
-
-<a name="bytebase-v1-UpdateDatabaseGroupRequest"></a>
-
-### UpdateDatabaseGroupRequest
-Request message for updating a database group.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| database_group | [DatabaseGroup](#bytebase-v1-DatabaseGroup) |  | The database group to update.
-
-The database group&#39;s `name` field is used to identify the database group to update. Format: projects/{project}/databaseGroups/{databaseGroup} |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
-| allow_missing | [bool](#bool) |  | If set to true, and the database group is not found, a new database group will be created. In this situation, `update_mask` is ignored. |
-
-
-
-
-
- 
-
-
-<a name="bytebase-v1-DatabaseGroupView"></a>
-
-### DatabaseGroupView
-View options for database group responses.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| DATABASE_GROUP_VIEW_UNSPECIFIED | 0 | The default / unset value. The API will default to the BASIC view. |
-| DATABASE_GROUP_VIEW_BASIC | 1 | Include basic information about the database group, but exclude the list of matched databases and unmatched databases. |
-| DATABASE_GROUP_VIEW_FULL | 2 | Include everything. |
-
-
- 
-
- 
-
-
-<a name="bytebase-v1-DatabaseGroupService"></a>
-
-### DatabaseGroupService
-DatabaseGroupService manages database groups for organizing databases by criteria.
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| ListDatabaseGroups | [ListDatabaseGroupsRequest](#bytebase-v1-ListDatabaseGroupsRequest) | [ListDatabaseGroupsResponse](#bytebase-v1-ListDatabaseGroupsResponse) | Lists database groups in a project. Permissions required: bb.databaseGroups.list |
-| GetDatabaseGroup | [GetDatabaseGroupRequest](#bytebase-v1-GetDatabaseGroupRequest) | [DatabaseGroup](#bytebase-v1-DatabaseGroup) | Gets a database group by name. Permissions required: bb.databaseGroups.get |
-| CreateDatabaseGroup | [CreateDatabaseGroupRequest](#bytebase-v1-CreateDatabaseGroupRequest) | [DatabaseGroup](#bytebase-v1-DatabaseGroup) | Creates a new database group. Permissions required: bb.databaseGroups.create |
-| UpdateDatabaseGroup | [UpdateDatabaseGroupRequest](#bytebase-v1-UpdateDatabaseGroupRequest) | [DatabaseGroup](#bytebase-v1-DatabaseGroup) | Updates a database group. Permissions required: bb.databaseGroups.update When allow_missing=true, also requires: bb.databaseGroups.create |
-| DeleteDatabaseGroup | [DeleteDatabaseGroupRequest](#bytebase-v1-DeleteDatabaseGroupRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a database group. Permissions required: bb.databaseGroups.delete |
 
  
 

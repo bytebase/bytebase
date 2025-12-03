@@ -29,16 +29,6 @@
               </template>
               {{ $t("schema-editor.actions.create-table") }}
             </NButton>
-            <NButton
-              v-if="!readonly"
-              :disabled="!allowCreateTable"
-              @click="state.showSchemaTemplateDrawer = true"
-            >
-              <template #icon>
-                <PlusIcon class="w-4 h-4" />
-              </template>
-              {{ $t("schema-editor.actions.add-from-template") }}
-            </NButton>
             <div
               v-if="selectionEnabled"
               class="text-sm flex flex-row items-center gap-x-2"
@@ -124,47 +114,22 @@
     mode="create"
     @close="state.tableNameModalContext = undefined"
   />
-
-  <Drawer
-    :show="state.showSchemaTemplateDrawer"
-    @close="state.showSchemaTemplateDrawer = false"
-  >
-    <DrawerContent :title="$t('schema-template.table-template.self')">
-      <div class="w-[calc(100vw-36rem)] min-w-5xl max-w-[calc(100vw-8rem)]">
-        <TableTemplates
-          :engine="engine"
-          :readonly="true"
-          @apply="handleApplyTemplate"
-        />
-      </div>
-    </DrawerContent>
-  </Drawer>
 </template>
 
 <script lang="ts" setup>
-import { create } from "@bufbuild/protobuf";
 import { head, sumBy } from "lodash-es";
 import { PlusIcon } from "lucide-vue-next";
 import { NButton, NSelect, NTooltip } from "naive-ui";
 import { computed, nextTick, reactive, watch } from "vue";
 import SchemaDiagram, { SchemaDiagramIcon } from "@/components/SchemaDiagram";
-import { Drawer, DrawerContent } from "@/components/v2";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
   ColumnMetadata,
   DatabaseMetadata,
-  ColumnMetadata as NewColumnMetadata,
-  TableMetadata as NewTableMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
-import {
-  ColumnMetadataSchema,
-  TableMetadataSchema,
-} from "@/types/proto-es/v1/database_service_pb";
-import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto-es/v1/setting_service_pb";
-import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
 import { useSchemaEditorContext } from "../context";
 import TableNameModal from "../Modals/TableNameModal.vue";
 import TableList from "./TableList";
@@ -189,45 +154,11 @@ const emit = defineEmits<{
   (event: "update:selected-schema-name", schema: string | undefined): void;
 }>();
 
-// Conversion function for TableMetadata at service boundaries
-const convertNewTableToOld = (newTable: NewTableMetadata): TableMetadata => {
-  return create(TableMetadataSchema, {
-    name: newTable.name,
-    columns: newTable.columns.map(convertNewColumnToOld),
-    engine: newTable.engine,
-    collation: newTable.collation,
-    comment: newTable.comment,
-    indexes: [], // Initialize empty, will be handled separately if needed
-    partitions: [], // Initialize empty, will be handled separately if needed
-    foreignKeys: [], // Initialize empty, will be handled separately if needed
-  });
-};
-
-// Conversion function for ColumnMetadata at service boundaries
-const convertNewColumnToOld = (
-  newColumn: NewColumnMetadata
-): ColumnMetadata => {
-  return create(ColumnMetadataSchema, {
-    name: newColumn.name,
-    position: newColumn.position,
-    hasDefault: newColumn.hasDefault,
-    default: newColumn.default,
-    onUpdate: newColumn.onUpdate,
-    nullable: newColumn.nullable,
-    type: newColumn.type,
-    characterSet: newColumn.characterSet,
-    collation: newColumn.collation,
-    comment: newColumn.comment,
-    // classification, labels, effectiveMaskingLevel are not available in old proto types
-  });
-};
-
 type SubTabType = "table-list" | "schema-diagram";
 
 interface LocalState {
   selectedSubTab: SubTabType;
   showFeatureModal: boolean;
-  showSchemaTemplateDrawer: boolean;
   tableNameModalContext?: {
     schema: SchemaMetadata;
   };
@@ -235,20 +166,10 @@ interface LocalState {
 }
 
 const context = useSchemaEditorContext();
-const {
-  readonly,
-  selectionEnabled,
-  events,
-  addTab,
-  getSchemaStatus,
-  markEditStatus,
-  upsertTableCatalog,
-  queuePendingScrollToTable,
-} = context;
+const { readonly, selectionEnabled, addTab, getSchemaStatus } = context;
 const state = reactive<LocalState>({
   selectedSubTab: "table-list",
   showFeatureModal: false,
-  showSchemaTemplateDrawer: false,
 });
 const engine = computed(() => {
   return props.db.instanceResource.engine;
@@ -358,61 +279,5 @@ const tryEditColumn = async (
     //   scrollIntoView(input);
     // }
   }
-};
-
-const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
-  state.showSchemaTemplateDrawer = false;
-  if (!template.table) {
-    return;
-  }
-  if (template.engine !== engine.value) {
-    return;
-  }
-
-  const table = convertNewTableToOld(template.table);
-  const schema = selectedSchema.value;
-  if (!schema) {
-    return;
-  }
-  schema.tables.push(table);
-  const metadataForTable = () => {
-    return {
-      database: props.database,
-      schema,
-      table,
-    };
-  };
-  const { db } = props;
-  if (template.catalog) {
-    upsertTableCatalog(
-      {
-        database: props.db.name,
-        schema: schema.name,
-        table: table.name,
-      },
-      (catalog) => {
-        Object.assign(catalog, template.catalog);
-      }
-    );
-  }
-  markEditStatus(db, metadataForTable(), "created");
-  table.columns.forEach((column) => {
-    markEditStatus(db, { ...metadataForTable(), column }, "created");
-  });
-
-  addTab({
-    type: "table",
-    database: db,
-    metadata: metadataForTable(),
-  });
-
-  queuePendingScrollToTable({
-    db,
-    metadata: metadataForTable(),
-  });
-
-  events.emit("rebuild-tree", {
-    openFirstChild: false,
-  });
 };
 </script>

@@ -5,14 +5,14 @@ package bytebase.store;
 import "google/protobuf/duration.proto";
 import "google/type/expr.proto";
 import "store/approval.proto";
-import "store/common.proto";
-import "store/database.proto";
 import "store/project_webhook.proto";
 
 option go_package = "generated-go/store";
 
 enum SettingName {
   reserved 16;
+  reserved 6; // was WORKSPACE_EXTERNAL_APPROVAL
+  reserved 13; // was SCHEMA_TEMPLATE
 
   SETTING_NAME_UNSPECIFIED = 0;
   AUTH_SECRET = 1;
@@ -20,12 +20,10 @@ enum SettingName {
   WORKSPACE_ID = 3;
   WORKSPACE_PROFILE = 4;
   WORKSPACE_APPROVAL = 5;
-  WORKSPACE_EXTERNAL_APPROVAL = 6;
   ENTERPRISE_LICENSE = 7;
   APP_IM = 8;
   WATERMARK = 9;
   AI = 10;
-  SCHEMA_TEMPLATE = 13;
   DATA_CLASSIFICATION = 14;
   SEMANTIC_TYPES = 15;
   SCIM = 17;
@@ -108,46 +106,6 @@ message WorkspaceApprovalSetting {
     }
   }
   repeated Rule rules = 1;
-}
-
-message SchemaTemplateSetting {
-  message FieldTemplate {
-    string id = 1;
-
-    Engine engine = 2;
-
-    string category = 3;
-
-    ColumnMetadata column = 4;
-
-    ColumnCatalog catalog = 5;
-  }
-
-  repeated FieldTemplate field_templates = 1;
-
-  message ColumnType {
-    Engine engine = 1;
-
-    bool enabled = 2;
-
-    repeated string types = 3;
-  }
-
-  repeated ColumnType column_types = 2;
-
-  message TableTemplate {
-    string id = 1;
-
-    Engine engine = 2;
-
-    string category = 3;
-
-    TableMetadata table = 4;
-
-    TableCatalog catalog = 5;
-  }
-
-  repeated TableTemplate table_templates = 3;
 }
 
 message DataClassificationSetting {

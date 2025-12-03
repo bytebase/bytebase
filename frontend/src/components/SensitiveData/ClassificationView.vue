@@ -91,8 +91,8 @@ import {
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import LearnMoreLink from "../LearnMoreLink.vue";
-import ClassificationTree from "../SchemaTemplate/ClassificationTree.vue";
 import SingleFileSelector from "../SingleFileSelector.vue";
+import ClassificationTree from "./components/ClassificationTree.vue";
 import DataExampleModal from "./components/DataExampleModal.vue";
 
 const uploader = ref<HTMLInputElement | null>(null);

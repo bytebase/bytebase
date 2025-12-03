@@ -26,13 +26,11 @@
 <script lang="ts" setup>
 import { cloneDeep } from "lodash-es";
 import { NSplit } from "naive-ui";
-import { computed, onMounted, toRef } from "vue";
+import { computed, toRef } from "vue";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import { useSettingV1Store } from "@/store";
 import type { DatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import Aside from "./Aside";
 import { useAlgorithm } from "./algorithm";
 import { provideSchemaEditorContext } from "./context";
@@ -52,15 +50,6 @@ const emit = defineEmits<{
   (event: "update:selected-rollout-objects", objects: RolloutObject[]): void;
   (event: "update-is-editing", objects: RolloutObject[]): void;
 }>();
-
-const settingStore = useSettingV1Store();
-
-// Prepare schema template contexts.
-onMounted(async () => {
-  await settingStore.getOrFetchSettingByName(
-    Setting_SettingName.SCHEMA_TEMPLATE
-  );
-});
 
 const targets = computed(() => {
   return props.targets ?? [];

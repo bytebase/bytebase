@@ -2199,7 +2199,6 @@
       "drop-table": "テーブルの削除",
       "restore": "復元する",
       "add-column": "列の追加",
-      "add-from-template": "テンプレートから追加",
       "drop-column": "列の削除",
       "create-procedure": "プロシージャの作成",
       "create-function": "関数の作成",
@@ -2698,41 +2697,6 @@
     }
   },
   "schema-template": {
-    "self": "スキーマテンプレート",
-    "field-template": {
-      "self": "フィールドテンプレート",
-      "description": "後でスキーマを変更または設計するときに適用できる、事前定義されたフィールド テンプレート。"
-    },
-    "column-type-restriction": {
-      "self": "列の型の制約",
-      "description": "各データベース エンジンで、許可される列の種類を制限できます。",
-      "allow-all": "すべてのタイプが許可される",
-      "allow-limited-types": "一部のタイプのみが許可されます",
-      "back-to-edit": "編集に戻る",
-      "add-and-save": "追加して保存",
-      "messages": {
-        "unable-to-update": "制限を更新できません",
-        "following-column-types-are-used": "次のタイプは引き続きフィールド テンプレートで使用されます。",
-        "one-allowed-type-per-line": "許可されるデータ型を 1 行に 1 つずつ入力します"
-      }
-    },
-    "table-template": {
-      "self": "テーブルテンプレート",
-      "description": "後でスキーマを変更または設計するときに適用できるテーブル テンプレートを事前定義します。"
-    },
-    "search-by-name-or-comment": "名前やメモで検索",
-    "form": {
-      "category": "分類",
-      "category-desc": "既存のカテゴリを選択するか、新しいカテゴリを作成します",
-      "unclassified": "未分類",
-      "column-name": "フィールド名",
-      "column-type": "フィールドタイプ",
-      "default-value": "デフォルト値",
-      "comment": "コメント",
-      "nullable": "null も可能",
-      "table-name": "テーブル名",
-      "on-update": "アップデート時"
-    },
     "classification": {
       "select": "カテゴリを選択してください",
       "search": "カテゴリを検索する"

@@ -67,21 +67,6 @@ func convertToSettingMessage(setting *store.SettingMessage, profile *config.Prof
 				},
 			},
 		}, nil
-	case storepb.SettingName_SCHEMA_TEMPLATE:
-		storeValue := new(storepb.SchemaTemplateSetting)
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), storeValue); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", setting.Name, err))
-		}
-
-		sts := convertToSchemaTemplateSetting(storeValue)
-		return &v1pb.Setting{
-			Name: settingName,
-			Value: &v1pb.Value{
-				Value: &v1pb.Value_SchemaTemplateSettingValue{
-					SchemaTemplateSettingValue: sts,
-				},
-			},
-		}, nil
 	case storepb.SettingName_DATA_CLASSIFICATION:
 		storeValue := new(storepb.DataClassificationSetting)
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), storeValue); err != nil {
@@ -204,8 +189,6 @@ func convertStoreSettingNameToV1(storeName storepb.SettingName) v1pb.Setting_Set
 		return v1pb.Setting_WORKSPACE_PROFILE
 	case storepb.SettingName_WORKSPACE_APPROVAL:
 		return v1pb.Setting_WORKSPACE_APPROVAL
-	case storepb.SettingName_WORKSPACE_EXTERNAL_APPROVAL:
-		return v1pb.Setting_WORKSPACE_EXTERNAL_APPROVAL
 	case storepb.SettingName_ENTERPRISE_LICENSE:
 		return v1pb.Setting_ENTERPRISE_LICENSE
 	case storepb.SettingName_APP_IM:
@@ -214,8 +197,6 @@ func convertStoreSettingNameToV1(storeName storepb.SettingName) v1pb.Setting_Set
 		return v1pb.Setting_WATERMARK
 	case storepb.SettingName_AI:
 		return v1pb.Setting_AI
-	case storepb.SettingName_SCHEMA_TEMPLATE:
-		return v1pb.Setting_SCHEMA_TEMPLATE
 	case storepb.SettingName_DATA_CLASSIFICATION:
 		return v1pb.Setting_DATA_CLASSIFICATION
 	case storepb.SettingName_SEMANTIC_TYPES:
@@ -247,8 +228,6 @@ func convertV1SettingNameToStore(v1Name v1pb.Setting_SettingName) storepb.Settin
 		return storepb.SettingName_WORKSPACE_PROFILE
 	case v1pb.Setting_WORKSPACE_APPROVAL:
 		return storepb.SettingName_WORKSPACE_APPROVAL
-	case v1pb.Setting_WORKSPACE_EXTERNAL_APPROVAL:
-		return storepb.SettingName_WORKSPACE_EXTERNAL_APPROVAL
 	case v1pb.Setting_ENTERPRISE_LICENSE:
 		return storepb.SettingName_ENTERPRISE_LICENSE
 	case v1pb.Setting_APP_IM:
@@ -257,8 +236,6 @@ func convertV1SettingNameToStore(v1Name v1pb.Setting_SettingName) storepb.Settin
 		return storepb.SettingName_WATERMARK
 	case v1pb.Setting_AI:
 		return storepb.SettingName_AI
-	case v1pb.Setting_SCHEMA_TEMPLATE:
-		return storepb.SettingName_SCHEMA_TEMPLATE
 	case v1pb.Setting_DATA_CLASSIFICATION:
 		return storepb.SettingName_DATA_CLASSIFICATION
 	case v1pb.Setting_SEMANTIC_TYPES:
@@ -272,100 +249,6 @@ func convertV1SettingNameToStore(v1Name v1pb.Setting_SettingName) storepb.Settin
 	default:
 		return storepb.SettingName_SETTING_NAME_UNSPECIFIED
 	}
-}
-
-func convertToSchemaTemplateSetting(template *storepb.SchemaTemplateSetting) *v1pb.SchemaTemplateSetting {
-	v1Setting := new(v1pb.SchemaTemplateSetting)
-	for _, v := range template.ColumnTypes {
-		v1Setting.ColumnTypes = append(v1Setting.ColumnTypes, &v1pb.SchemaTemplateSetting_ColumnType{
-			Engine:  convertToEngine(v.Engine),
-			Enabled: v.Enabled,
-			Types:   v.Types,
-		})
-	}
-	for _, v := range template.FieldTemplates {
-		if v == nil {
-			continue
-		}
-		t := &v1pb.SchemaTemplateSetting_FieldTemplate{
-			Id:       v.Id,
-			Engine:   convertToEngine(v.Engine),
-			Category: v.Category,
-		}
-		if v.Column != nil {
-			t.Column = convertStoreColumnMetadata(v.Column)
-		}
-		if v.Catalog != nil {
-			t.Catalog = convertColumnCatalog(v.Catalog)
-		}
-		v1Setting.FieldTemplates = append(v1Setting.FieldTemplates, t)
-	}
-	for _, v := range template.TableTemplates {
-		if v == nil {
-			continue
-		}
-		t := &v1pb.SchemaTemplateSetting_TableTemplate{
-			Id:       v.Id,
-			Engine:   convertToEngine(v.Engine),
-			Category: v.Category,
-		}
-		if v.Table != nil {
-			t.Table = convertStoreTableMetadata(v.Table)
-		}
-		if v.Catalog != nil {
-			t.Catalog = convertTableCatalog(v.Catalog)
-		}
-		v1Setting.TableTemplates = append(v1Setting.TableTemplates, t)
-	}
-
-	return v1Setting
-}
-
-func convertV1SchemaTemplateSetting(template *v1pb.SchemaTemplateSetting) *storepb.SchemaTemplateSetting {
-	v1Setting := new(storepb.SchemaTemplateSetting)
-	for _, v := range template.ColumnTypes {
-		v1Setting.ColumnTypes = append(v1Setting.ColumnTypes, &storepb.SchemaTemplateSetting_ColumnType{
-			Engine:  convertEngine(v.Engine),
-			Enabled: v.Enabled,
-			Types:   v.Types,
-		})
-	}
-	for _, v := range template.FieldTemplates {
-		if v == nil {
-			continue
-		}
-		t := &storepb.SchemaTemplateSetting_FieldTemplate{
-			Id:       v.Id,
-			Engine:   convertEngine(v.Engine),
-			Category: v.Category,
-		}
-		if v.Column != nil {
-			t.Column = convertV1ColumnMetadata(v.Column)
-		}
-		if v.Catalog != nil {
-			t.Catalog = convertV1ColumnCatalog(v.Catalog)
-		}
-		v1Setting.FieldTemplates = append(v1Setting.FieldTemplates, t)
-	}
-	for _, v := range template.TableTemplates {
-		if v == nil {
-			continue
-		}
-		t := &storepb.SchemaTemplateSetting_TableTemplate{
-			Id:       v.Id,
-			Engine:   convertEngine(v.Engine),
-			Category: v.Category,
-		}
-		if v.Table != nil {
-			t.Table = convertV1TableMetadata(v.Table)
-		}
-		if v.Catalog != nil {
-			t.Catalog = convertV1TableCatalog(v.Catalog)
-		}
-		v1Setting.TableTemplates = append(v1Setting.TableTemplates, t)
-	}
-
-	return v1Setting
 }
 
 func convertToEnvironmentSetting(value string) (*v1pb.EnvironmentSetting, error) {

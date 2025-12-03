@@ -124,9 +124,6 @@ func (x *Value) Equal(y *Value) bool {
 	if !x.GetWorkspaceApprovalSettingValue().Equal(y.GetWorkspaceApprovalSettingValue()) {
 		return false
 	}
-	if !x.GetSchemaTemplateSettingValue().Equal(y.GetSchemaTemplateSettingValue()) {
-		return false
-	}
 	if !x.GetDataClassificationSettingValue().Equal(y.GetDataClassificationSettingValue()) {
 		return false
 	}
@@ -383,114 +380,6 @@ func (x *WorkspaceApprovalSetting) Equal(y *WorkspaceApprovalSetting) bool {
 	}
 	for i := 0; i < len(x.Rules); i++ {
 		if !x.Rules[i].Equal(y.Rules[i]) {
-			return false
-		}
-	}
-	return true
-}
-
-func (x *SchemaTemplateSetting_FieldTemplate) Equal(y *SchemaTemplateSetting_FieldTemplate) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Id != y.Id {
-		return false
-	}
-	if x.Engine != y.Engine {
-		return false
-	}
-	if x.Category != y.Category {
-		return false
-	}
-	if !x.Column.Equal(y.Column) {
-		return false
-	}
-	if !x.Catalog.Equal(y.Catalog) {
-		return false
-	}
-	return true
-}
-
-func (x *SchemaTemplateSetting_ColumnType) Equal(y *SchemaTemplateSetting_ColumnType) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Engine != y.Engine {
-		return false
-	}
-	if x.Enabled != y.Enabled {
-		return false
-	}
-	if len(x.Types) != len(y.Types) {
-		return false
-	}
-	for i := 0; i < len(x.Types); i++ {
-		if x.Types[i] != y.Types[i] {
-			return false
-		}
-	}
-	return true
-}
-
-func (x *SchemaTemplateSetting_TableTemplate) Equal(y *SchemaTemplateSetting_TableTemplate) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Id != y.Id {
-		return false
-	}
-	if x.Engine != y.Engine {
-		return false
-	}
-	if x.Category != y.Category {
-		return false
-	}
-	if !x.Table.Equal(y.Table) {
-		return false
-	}
-	if !x.Catalog.Equal(y.Catalog) {
-		return false
-	}
-	return true
-}
-
-func (x *SchemaTemplateSetting) Equal(y *SchemaTemplateSetting) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if len(x.FieldTemplates) != len(y.FieldTemplates) {
-		return false
-	}
-	for i := 0; i < len(x.FieldTemplates); i++ {
-		if !x.FieldTemplates[i].Equal(y.FieldTemplates[i]) {
-			return false
-		}
-	}
-	if len(x.ColumnTypes) != len(y.ColumnTypes) {
-		return false
-	}
-	for i := 0; i < len(x.ColumnTypes); i++ {
-		if !x.ColumnTypes[i].Equal(y.ColumnTypes[i]) {
-			return false
-		}
-	}
-	if len(x.TableTemplates) != len(y.TableTemplates) {
-		return false
-	}
-	for i := 0; i < len(x.TableTemplates); i++ {
-		if !x.TableTemplates[i].Equal(y.TableTemplates[i]) {
 			return false
 		}
 	}

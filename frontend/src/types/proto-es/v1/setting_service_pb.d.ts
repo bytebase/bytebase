@@ -8,9 +8,6 @@ import type { Duration, FieldMask } from "@bufbuild/protobuf/wkt";
 import type { Webhook_Type } from "./project_service_pb";
 import type { ApprovalTemplate } from "./issue_service_pb";
 import type { Expr } from "../google/type/expr_pb";
-import type { Engine } from "./common_pb";
-import type { ColumnMetadata, TableMetadata } from "./database_service_pb";
-import type { ColumnCatalog, TableCatalog } from "./database_catalog_service_pb";
 
 /**
  * Describes the file v1/setting_service.proto.
@@ -188,11 +185,6 @@ export enum Setting_SettingName {
   WORKSPACE_APPROVAL = 5,
 
   /**
-   * @generated from enum value: WORKSPACE_EXTERNAL_APPROVAL = 6;
-   */
-  WORKSPACE_EXTERNAL_APPROVAL = 6,
-
-  /**
    * @generated from enum value: ENTERPRISE_LICENSE = 7;
    */
   ENTERPRISE_LICENSE = 7,
@@ -211,11 +203,6 @@ export enum Setting_SettingName {
    * @generated from enum value: AI = 10;
    */
   AI = 10,
-
-  /**
-   * @generated from enum value: SCHEMA_TEMPLATE = 13;
-   */
-  SCHEMA_TEMPLATE = 13,
 
   /**
    * @generated from enum value: DATA_CLASSIFICATION = 14;
@@ -287,12 +274,6 @@ export declare type Value = Message<"bytebase.v1.Value"> & {
      */
     value: WorkspaceApprovalSetting;
     case: "workspaceApprovalSettingValue";
-  } | {
-    /**
-     * @generated from field: bytebase.v1.SchemaTemplateSetting schema_template_setting_value = 9;
-     */
-    value: SchemaTemplateSetting;
-    case: "schemaTemplateSettingValue";
   } | {
     /**
      * @generated from field: bytebase.v1.DataClassificationSetting data_classification_setting_value = 10;
@@ -786,130 +767,6 @@ export enum WorkspaceApprovalSetting_Rule_Source {
  * Describes the enum bytebase.v1.WorkspaceApprovalSetting.Rule.Source.
  */
 export declare const WorkspaceApprovalSetting_Rule_SourceSchema: GenEnum<WorkspaceApprovalSetting_Rule_Source>;
-
-/**
- * @generated from message bytebase.v1.SchemaTemplateSetting
- */
-export declare type SchemaTemplateSetting = Message<"bytebase.v1.SchemaTemplateSetting"> & {
-  /**
-   * @generated from field: repeated bytebase.v1.SchemaTemplateSetting.FieldTemplate field_templates = 1;
-   */
-  fieldTemplates: SchemaTemplateSetting_FieldTemplate[];
-
-  /**
-   * @generated from field: repeated bytebase.v1.SchemaTemplateSetting.ColumnType column_types = 2;
-   */
-  columnTypes: SchemaTemplateSetting_ColumnType[];
-
-  /**
-   * @generated from field: repeated bytebase.v1.SchemaTemplateSetting.TableTemplate table_templates = 3;
-   */
-  tableTemplates: SchemaTemplateSetting_TableTemplate[];
-};
-
-/**
- * Describes the message bytebase.v1.SchemaTemplateSetting.
- * Use `create(SchemaTemplateSettingSchema)` to create a new message.
- */
-export declare const SchemaTemplateSettingSchema: GenMessage<SchemaTemplateSetting>;
-
-/**
- * @generated from message bytebase.v1.SchemaTemplateSetting.FieldTemplate
- */
-export declare type SchemaTemplateSetting_FieldTemplate = Message<"bytebase.v1.SchemaTemplateSetting.FieldTemplate"> & {
-  /**
-   * @generated from field: string id = 1;
-   */
-  id: string;
-
-  /**
-   * @generated from field: bytebase.v1.Engine engine = 2;
-   */
-  engine: Engine;
-
-  /**
-   * @generated from field: string category = 3;
-   */
-  category: string;
-
-  /**
-   * @generated from field: bytebase.v1.ColumnMetadata column = 4;
-   */
-  column?: ColumnMetadata;
-
-  /**
-   * @generated from field: bytebase.v1.ColumnCatalog catalog = 5;
-   */
-  catalog?: ColumnCatalog;
-};
-
-/**
- * Describes the message bytebase.v1.SchemaTemplateSetting.FieldTemplate.
- * Use `create(SchemaTemplateSetting_FieldTemplateSchema)` to create a new message.
- */
-export declare const SchemaTemplateSetting_FieldTemplateSchema: GenMessage<SchemaTemplateSetting_FieldTemplate>;
-
-/**
- * @generated from message bytebase.v1.SchemaTemplateSetting.ColumnType
- */
-export declare type SchemaTemplateSetting_ColumnType = Message<"bytebase.v1.SchemaTemplateSetting.ColumnType"> & {
-  /**
-   * @generated from field: bytebase.v1.Engine engine = 1;
-   */
-  engine: Engine;
-
-  /**
-   * @generated from field: bool enabled = 2;
-   */
-  enabled: boolean;
-
-  /**
-   * @generated from field: repeated string types = 3;
-   */
-  types: string[];
-};
-
-/**
- * Describes the message bytebase.v1.SchemaTemplateSetting.ColumnType.
- * Use `create(SchemaTemplateSetting_ColumnTypeSchema)` to create a new message.
- */
-export declare const SchemaTemplateSetting_ColumnTypeSchema: GenMessage<SchemaTemplateSetting_ColumnType>;
-
-/**
- * @generated from message bytebase.v1.SchemaTemplateSetting.TableTemplate
- */
-export declare type SchemaTemplateSetting_TableTemplate = Message<"bytebase.v1.SchemaTemplateSetting.TableTemplate"> & {
-  /**
-   * @generated from field: string id = 1;
-   */
-  id: string;
-
-  /**
-   * @generated from field: bytebase.v1.Engine engine = 2;
-   */
-  engine: Engine;
-
-  /**
-   * @generated from field: string category = 3;
-   */
-  category: string;
-
-  /**
-   * @generated from field: bytebase.v1.TableMetadata table = 4;
-   */
-  table?: TableMetadata;
-
-  /**
-   * @generated from field: bytebase.v1.TableCatalog catalog = 5;
-   */
-  catalog?: TableCatalog;
-};
-
-/**
- * Describes the message bytebase.v1.SchemaTemplateSetting.TableTemplate.
- * Use `create(SchemaTemplateSetting_TableTemplateSchema)` to create a new message.
- */
-export declare const SchemaTemplateSetting_TableTemplateSchema: GenMessage<SchemaTemplateSetting_TableTemplate>;
 
 /**
  * @generated from message bytebase.v1.DataClassificationSetting

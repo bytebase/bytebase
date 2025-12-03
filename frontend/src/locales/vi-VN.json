@@ -2199,7 +2199,6 @@
       "drop-table": "Xóa bảng",
       "restore": "Khôi phục",
       "add-column": "Thêm cột",
-      "add-from-template": "Thêm từ mẫu",
       "drop-column": "Xóa cột",
       "create-procedure": "Tạo thủ tục",
       "create-function": "Tạo hàm",
@@ -2698,41 +2697,6 @@
     }
   },
   "schema-template": {
-    "self": "Mẫu lược đồ",
-    "field-template": {
-      "self": "Mẫu trường",
-      "description": "Bạn có thể xác định trước mẫu trường, sau đó áp dụng mẫu trong quá trình thay đổi lược đồ."
-    },
-    "column-type-restriction": {
-      "self": "Hạn chế loại cột",
-      "description": "Bạn có thể hạn chế các loại cột được phép cho từng công cụ cơ sở dữ liệu.",
-      "allow-all": "Cho phép tất cả",
-      "allow-limited-types": "Cho phép các loại hạn chế",
-      "back-to-edit": "Quay lại chỉnh sửa",
-      "add-and-save": "Thêm và lưu",
-      "messages": {
-        "unable-to-update": "Không thể cập nhật hạn chế",
-        "following-column-types-are-used": "Các loại cột sau vẫn được sử dụng bởi mẫu trường",
-        "one-allowed-type-per-line": "Một loại dữ liệu được phép trên mỗi dòng"
-      }
-    },
-    "table-template": {
-      "self": "Mẫu bảng",
-      "description": "Bạn có thể xác định trước mẫu bảng, sau đó áp dụng mẫu trong quá trình thay đổi lược đồ."
-    },
-    "search-by-name-or-comment": "Tìm kiếm theo tên hoặc bình luận",
-    "form": {
-      "category": "Danh mục",
-      "category-desc": "Chọn một danh mục hiện có hoặc tạo một danh mục mới",
-      "unclassified": "Chưa phân loại",
-      "column-name": "Tên cột",
-      "column-type": "Loại cột",
-      "default-value": "Mặc định",
-      "comment": "Bình luận",
-      "nullable": "Có thể null",
-      "table-name": "Tên bảng",
-      "on-update": "Khi cập nhật"
-    },
     "classification": {
       "select": "Chọn phân loại",
       "search": "Tìm kiếm phân loại"
