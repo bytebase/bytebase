@@ -6,6 +6,7 @@
         class="flex-1"
         :params="params"
         :scope-options="scopeOptions"
+        :default-params="defaultParams"
         @update:params="$emit('update:params', $event)"
       />
       <TimeRange
@@ -59,11 +60,13 @@ const props = withDefaults(
     autofocus?: boolean;
     components?: SearchComponent[];
     componentProps?: Partial<Record<SearchComponent, any>>;
+    defaultParams?: SearchParams;
   }>(),
   {
     overrideScopeIdList: () => [],
     components: () => ["searchbox", "time-range", "presets", "status"],
     componentProps: undefined,
+    defaultParams: undefined,
   }
 );
 

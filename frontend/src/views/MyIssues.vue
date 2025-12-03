@@ -3,6 +3,7 @@
     <IssueSearch
       v-model:params="state.params"
       :components="['searchbox', 'time-range', 'presets', 'status']"
+      :default-params="computedDefaultParams"
       class="px-4 pb-2"
     />
 
@@ -84,9 +85,13 @@ const defaultSearchParams = (): SearchParams => {
   };
 };
 
+// Initialize with empty params - AdvancedSearch will set from cache or defaults
 const state = reactive<LocalState>({
-  params: defaultSearchParams(),
+  params: { query: "", scopes: [] },
 });
+
+// Always provide defaultParams for AdvancedSearch to use as fallback
+const computedDefaultParams = computed(() => defaultSearchParams());
 
 const mergedIssueFilter = computed(() => {
   return buildIssueFilterBySearchParams(state.params);

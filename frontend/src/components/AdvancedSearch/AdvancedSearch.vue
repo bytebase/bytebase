@@ -100,7 +100,6 @@ import {
   emptySearchParams,
   getValueFromSearchParams,
   getValuesFromSearchParams,
-  mergeSearchParams,
   minmax,
   upsertScope,
   useDynamicLocalStorage,
@@ -117,12 +116,17 @@ const props = withDefaults(
     placeholder?: string | undefined;
     autofocus?: boolean;
     overrideRouteQuery?: boolean;
+    // Fallback params when no URL params and no cache.
+    // Precedence: URL params > cache > defaultParams.
+    // Readonly scopes from props.params are always preserved.
+    defaultParams?: SearchParams;
   }>(),
   {
     scopeOptions: () => [],
     autofocus: false,
     placeholder: undefined,
     overrideRouteQuery: true,
+    defaultParams: undefined,
   }
 );
 
@@ -623,33 +627,54 @@ const scrollScopeTagIntoViewIfNeeded = (id: SearchScopeId) => {
   });
 };
 
+// Check if params has meaningful content (non-empty, excluding readonly scopes)
+const hasParams = (params: SearchParams): boolean => {
+  if (params.query.trim().length > 0) return true;
+  // Readonly scopes don't count as "URL params" - they're set by parent
+  return params.scopes.some((s) => !s.readonly);
+};
+
 onMounted(() => {
   if (props.autofocus) {
     inputRef.value?.inputElRef?.focus();
   }
+
+  // Precedence: URL params > cache > defaultParams
+  // Parent passes non-empty params only when URL has ?q=...
+  if (hasParams(props.params)) {
+    // URL had params - use as-is
+    return;
+  }
+
+  // Preserve readonly scopes from props.params (e.g., project=xx in ProjectDatabasesPanel)
+  const readonlyScopes = props.params.scopes.filter((s) => s.readonly);
+
+  // No URL params - check cache
   const qs = cachedQuery.value;
   if (qs.length > 0) {
+    // Cache exists: restore from cache
     const params = buildSearchParamsBySearchText(qs);
-    const existedScopes = props.params.scopes.reduce((map, scope) => {
-      map.set(scope.id, scope.readonly ?? false);
-      return map;
-    }, new Map<SearchScopeId, boolean>());
-    params.scopes = params.scopes
-      .filter((scope) => {
-        const option = props.scopeOptions.find((op) => op.id === scope.id);
-        if (!option) {
-          return false;
-        }
-        if (existedScopes.has(option.id)) {
-          return option.allowMultiple ?? false;
-        }
-        return true;
-      })
-      .map((scope) => ({
-        ...scope,
-        readonly: existedScopes.get(scope.id),
-      }));
-    emit("update:params", mergeSearchParams(cloneDeep(props.params), params));
+    // Filter to only include scopes that are valid for this search context
+    // and not already covered by readonly scopes
+    const readonlyScopeIds = new Set(readonlyScopes.map((s) => s.id));
+    params.scopes = params.scopes.filter((scope) => {
+      if (readonlyScopeIds.has(scope.id)) return false;
+      return props.scopeOptions.find((op) => op.id === scope.id);
+    });
+    // Prepend readonly scopes
+    params.scopes = [...readonlyScopes, ...params.scopes];
+    emit("update:params", params);
+    return;
+  }
+
+  // No cache: use defaults if provided
+  if (props.defaultParams) {
+    const params = cloneDeep(props.defaultParams);
+    // Prepend readonly scopes
+    const readonlyScopeIds = new Set(readonlyScopes.map((s) => s.id));
+    params.scopes = params.scopes.filter((s) => !readonlyScopeIds.has(s.id));
+    params.scopes = [...readonlyScopes, ...params.scopes];
+    emit("update:params", params);
   }
 });
 
