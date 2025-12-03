@@ -2,6 +2,7 @@
   <div class="flex flex-col gap-y-2">
     <IssueSearch
       v-model:params="state.params"
+      :default-params="defaultSearchParams()"
       :components="['searchbox', 'time-range', 'presets', 'status']"
     />
 
@@ -164,8 +165,29 @@ const isDefaultPreset = (params: SearchParams): boolean => {
   return paramsQuery === defaultQuery;
 };
 
-// Sync params to URL query when params change
+// Sync URL to params when route query changes
 let isUpdatingFromUrl = false;
+watch(
+  () => route.query.q as string | undefined,
+  (newQuery) => {
+    if (isUpdatingFromUrl) {
+      return;
+    }
+
+    // When URL query is set, update params from URL
+    // (When URL query is cleared, AdvancedSearch handles cache vs defaults)
+    if (newQuery) {
+      const urlParams = buildSearchParamsBySearchText(newQuery);
+      const readonlyParams: SearchParams = {
+        query: "",
+        scopes: [...readonlyScopes.value],
+      };
+      state.params = mergeSearchParams(readonlyParams, urlParams);
+    }
+  }
+);
+
+// Sync params to URL query when params change
 watch(
   () => state.params,
   (params) => {
@@ -178,36 +200,22 @@ watch(
 
     // Only update URL if query string has actually changed
     if (queryString !== currentQuery) {
-      // Special case: if at default preset and we didn't start with a URL, keep URL clean
-      if (isDefaultPreset(params) && !initialQueryString) {
-        // Remove URL query
-        if (route.query.q) {
-          isUpdatingFromUrl = true;
-          router
-            .replace({
-              query: {
-                ...route.query,
-                q: undefined,
-              },
-            })
-            .finally(() => {
-              isUpdatingFromUrl = false;
-            });
-        }
-      } else {
-        // Update URL normally
-        isUpdatingFromUrl = true;
-        router
-          .replace({
-            query: {
-              ...route.query,
-              q: queryString || undefined,
-            },
-          })
-          .finally(() => {
-            isUpdatingFromUrl = false;
-          });
+      // Special case: if at default preset and URL is clean, keep URL clean
+      if (isDefaultPreset(params) && !currentQuery) {
+        return;
       }
+      // Update URL
+      isUpdatingFromUrl = true;
+      router
+        .replace({
+          query: {
+            ...route.query,
+            q: queryString || undefined,
+          },
+        })
+        .finally(() => {
+          isUpdatingFromUrl = false;
+        });
     }
   },
   { deep: true }

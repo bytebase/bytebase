@@ -100,7 +100,6 @@ import {
   emptySearchParams,
   getValueFromSearchParams,
   getValuesFromSearchParams,
-  mergeSearchParams,
   minmax,
   upsertScope,
   useDynamicLocalStorage,
@@ -113,12 +112,14 @@ import ValueMenu from "./ValueMenu.vue";
 const props = withDefaults(
   defineProps<{
     params: SearchParams;
+    defaultParams?: SearchParams;
     scopeOptions?: ScopeOption[];
     placeholder?: string | undefined;
     autofocus?: boolean;
     overrideRouteQuery?: boolean;
   }>(),
   {
+    defaultParams: undefined,
     scopeOptions: () => [],
     autofocus: false,
     placeholder: undefined,
@@ -623,35 +624,43 @@ const scrollScopeTagIntoViewIfNeeded = (id: SearchScopeId) => {
   });
 };
 
+// Decide between cache and defaults when URL has no query
+const applyCacheOrDefaults = () => {
+  if (!props.defaultParams) {
+    return;
+  }
+  const cached = cachedQuery.value;
+  if (cached) {
+    emit("update:params", buildSearchParamsBySearchText(cached));
+  } else {
+    emit("update:params", props.defaultParams);
+  }
+};
+
 onMounted(() => {
   if (props.autofocus) {
     inputRef.value?.inputElRef?.focus();
   }
-  const qs = cachedQuery.value;
-  if (qs.length > 0) {
-    const params = buildSearchParamsBySearchText(qs);
-    const existedScopes = props.params.scopes.reduce((map, scope) => {
-      map.set(scope.id, scope.readonly ?? false);
-      return map;
-    }, new Map<SearchScopeId, boolean>());
-    params.scopes = params.scopes
-      .filter((scope) => {
-        const option = props.scopeOptions.find((op) => op.id === scope.id);
-        if (!option) {
-          return false;
-        }
-        if (existedScopes.has(option.id)) {
-          return option.allowMultiple ?? false;
-        }
-        return true;
-      })
-      .map((scope) => ({
-        ...scope,
-        readonly: existedScopes.get(scope.id),
-      }));
-    emit("update:params", mergeSearchParams(cloneDeep(props.params), params));
+
+  // Skip if URL has query parameter (URL takes precedence)
+  const urlHasQuery = !!router.currentRoute.value.query.q;
+  if (urlHasQuery) {
+    return;
   }
+
+  applyCacheOrDefaults();
 });
+
+// Watch for URL query changes (SPA navigation)
+watch(
+  () => router.currentRoute.value.query.q,
+  (newQuery, oldQuery) => {
+    // When navigating from URL with query to clean URL
+    if (oldQuery && !newQuery) {
+      applyCacheOrDefaults();
+    }
+  }
+);
 
 watch(
   () => state.menuView,

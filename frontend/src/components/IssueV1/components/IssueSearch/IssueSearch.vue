@@ -5,6 +5,7 @@
       <AdvancedSearch
         class="flex-1"
         :params="params"
+        :default-params="defaultParams"
         :scope-options="scopeOptions"
         @update:params="$emit('update:params', $event)"
       />
@@ -55,12 +56,14 @@ export type SearchComponent = "searchbox" | "presets" | "status" | "time-range";
 const props = withDefaults(
   defineProps<{
     params: SearchParams;
+    defaultParams?: SearchParams;
     overrideScopeIdList?: SearchScopeId[];
     autofocus?: boolean;
     components?: SearchComponent[];
     componentProps?: Partial<Record<SearchComponent, any>>;
   }>(),
   {
+    defaultParams: undefined,
     overrideScopeIdList: () => [],
     components: () => ["searchbox", "time-range", "presets", "status"],
     componentProps: undefined,
