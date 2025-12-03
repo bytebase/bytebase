@@ -344,15 +344,6 @@
     },
     "executed-by": "Executed by",
     "affected-rows": "Affected rows",
-    "result": {
-      "schema-version": "Schema: {version}",
-      "export-archive-ready": "Archive: Ready for download"
-    },
-    "waiting": {
-      "connection-limit": "Waiting for available connections",
-      "parallel-tasks-limit": "Waiting for other tasks to complete",
-      "blocking-task": "Waiting for another task"
-    },
     "type": {
       "database-create": "Create Database",
       "migrate": "Migrate",
@@ -366,7 +357,6 @@
     "history": "Execution History",
     "latest-logs": "Latest Logs",
     "latest": "Latest Execution",
-    "no-detail": "No execution details available",
     "status": {
       "enqueued": "Waiting for execution.",
       "enqueued-with-rollout-time": "Waiting to execute after {time}.",
@@ -1271,7 +1261,6 @@
     "start-to-sync-schema": "Start to sync schema",
     "failed-to-sync-schema": "Failed to sync schema",
     "successfully-synced-schema": "Successfully synced schema",
-    "create": "Create database",
     "procedures": "Procedures",
     "partitions": "Partitions",
     "packages": "Packages",

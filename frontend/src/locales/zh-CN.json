@@ -344,15 +344,6 @@
     },
     "executed-by": "执行者",
     "affected-rows": "影响行数",
-    "result": {
-      "schema-version": "版本: {version}",
-      "export-archive-ready": "归档: 可下载"
-    },
-    "waiting": {
-      "connection-limit": "等待可用连接",
-      "parallel-tasks-limit": "等待其他任务完成",
-      "blocking-task": "等待另一个任务"
-    },
     "type": {
       "database-create": "创建数据库",
       "migrate": "变更",
@@ -366,7 +357,6 @@
     "history": "执行记录",
     "latest-logs": "执行日志",
     "latest": "最新执行",
-    "no-detail": "暂无执行详情",
     "status": {
       "enqueued": "等待执行。",
       "enqueued-with-rollout-time": "等待执行，{time}后执行。",
@@ -1271,7 +1261,6 @@
     "start-to-sync-schema": "开始同步 schema",
     "failed-to-sync-schema": "同步 schema 失败",
     "successfully-synced-schema": "Schema 同步完成",
-    "create": "创建数据库",
     "procedures": "存储过程",
     "partitions": "分区",
     "packages": "包",
