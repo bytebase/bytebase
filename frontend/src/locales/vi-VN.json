@@ -779,6 +779,7 @@
         "self": "Loại ngữ nghĩa",
         "label": "Các cột có cùng loại ngữ nghĩa sẽ sử dụng cùng một thuật toán che.",
         "use-predefined-type": "Sử dụng Loại định nghĩa trước",
+        "add-from-template": "Thêm từ mẫu",
         "table": {
           "icon": "Biểu tượng",
           "semantic-type": "Loại ngữ nghĩa",
