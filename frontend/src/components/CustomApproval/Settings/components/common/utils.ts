@@ -203,7 +203,7 @@ export const approvalSourceText = (
 ) => {
   switch (source) {
     case WorkspaceApprovalSetting_Rule_Source.SOURCE_UNSPECIFIED:
-      return t("common.all");
+      return t("custom-approval.approval-flow.fallback-rules");
     case WorkspaceApprovalSetting_Rule_Source.CHANGE_DATABASE:
       return t("custom-approval.risk-rule.risk.namespace.change_database");
     case WorkspaceApprovalSetting_Rule_Source.CREATE_DATABASE:
@@ -251,7 +251,11 @@ export const ApprovalSourceFactorMap: Map<
 
 export const getApprovalFactorList = (
   source: WorkspaceApprovalSetting_Rule_Source
-) => {
+): Factor[] => {
+  // Fallback rules (SOURCE_UNSPECIFIED) can only use resource.project_id
+  if (source === WorkspaceApprovalSetting_Rule_Source.SOURCE_UNSPECIFIED) {
+    return [CEL_ATTRIBUTE_RESOURCE_PROJECT_ID] as Factor[];
+  }
   return ApprovalSourceFactorMap.get(source) ?? [];
 };
 

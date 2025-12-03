@@ -2657,6 +2657,8 @@
       },
       "add-rule": "Thêm quy tắc",
       "edit-rule": "Chỉnh sửa quy tắc",
+      "fallback-rules": "Quy tắc dự phòng",
+      "fallback-rules-hint": "Quy tắc dự phòng chỉ được đánh giá khi không có quy tắc nào khác khớp.",
       "template": {
         "presets-title": "Mẫu có sẵn",
         "presets": {
