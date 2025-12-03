@@ -224,7 +224,7 @@ func postMessage(context webhook.Context) error {
 
 // getAdaptiveCard creates an Adaptive Card for Teams direct messages.
 func getAdaptiveCard(context webhook.Context) *AdaptiveCard {
-	var body []interface{}
+	var body []any
 
 	// Title
 	body = append(body, textBlock{
@@ -265,7 +265,7 @@ func getAdaptiveCard(context webhook.Context) *AdaptiveCard {
 	}
 
 	// Actions
-	var actions []interface{}
+	var actions []any
 	actions = append(actions, actionOpenURL{
 		Type:  "Action.OpenUrl",
 		Title: "View in Bytebase",

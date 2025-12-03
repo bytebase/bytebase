@@ -434,8 +434,8 @@ type activity struct {
 }
 
 type attachment struct {
-	ContentType string      `json:"contentType"`
-	Content     interface{} `json:"content"`
+	ContentType string `json:"contentType"`
+	Content     any    `json:"content"`
 }
 
 // AdaptiveCard represents a Microsoft Adaptive Card.
@@ -443,10 +443,10 @@ type attachment struct {
 // Adaptive Card designer: https://adaptivecards.io/designer/
 // Adaptive Card documentation: https://learn.microsoft.com/en-us/adaptive-cards/
 type AdaptiveCard struct {
-	Type    string        `json:"type"`
-	Version string        `json:"version"`
-	Body    []interface{} `json:"body"`
-	Actions []interface{} `json:"actions,omitempty"`
+	Type    string `json:"type"`
+	Version string `json:"version"`
+	Body    []any  `json:"body"`
+	Actions []any  `json:"actions,omitempty"`
 }
 
 type textBlock struct {
