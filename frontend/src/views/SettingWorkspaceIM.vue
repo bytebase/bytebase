@@ -335,7 +335,7 @@ const onDeleteIM = async (index: number, type: Webhook_Type) => {
   if (isConfigured(type)) {
     await settingStore.upsertSetting({
       name: Setting_SettingName.APP_IM,
-      value: create(SettingSettingValueSchema, {
+      value: create(SettingValueSchema, {
         value: {
           case: "appIm",
           value: create(AppIMSettingSchema, {
@@ -400,7 +400,7 @@ const onSaveIM = async (index: number, type: Webhook_Type) => {
   try {
     await settingStore.upsertSetting({
       name: Setting_SettingName.APP_IM,
-      value: create(SettingSettingValueSchema, {
+      value: create(SettingValueSchema, {
         value: {
           case: "appIm",
           value: pendingUpdate,
