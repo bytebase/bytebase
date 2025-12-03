@@ -6,6 +6,6 @@ export const TASK_STATUS_FILTERS: Task_Status[] = [
   Task_Status.PENDING,
   Task_Status.NOT_STARTED,
   Task_Status.CANCELED,
-  Task_Status.SKIPPED,
   Task_Status.DONE,
+  Task_Status.SKIPPED,
 ];

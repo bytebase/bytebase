@@ -9,8 +9,6 @@ const MAX_ERROR_PREVIEW_LENGTH = 100;
 export interface UseTaskDisplayReturn {
   taskTypeDisplay: ComputedRef<string>;
   executorEmail: ComputedRef<string>;
-  resultSummary: ComputedRef<string>;
-  waitingMessage: ComputedRef<string>;
   collapsedContextInfo: ComputedRef<string>;
   collapsedStatusText: ComputedRef<string>;
 }
@@ -50,40 +48,6 @@ export const useTaskDisplay = (
     return match?.[1] || "";
   });
 
-  const resultSummary = computed(() => {
-    const taskRun = latestTaskRun();
-    if (!taskRun) return "";
-
-    if (taskRun.schemaVersion) {
-      return t("task.result.schema-version", {
-        version: taskRun.schemaVersion,
-      });
-    }
-    if (taskRun.exportArchiveStatus) {
-      return t("task.result.export-archive-ready");
-    }
-    return "";
-  });
-
-  const waitingMessage = computed(() => {
-    const taskRun = latestTaskRun();
-    if (!taskRun || task().status !== Task_Status.PENDING) return "";
-
-    const cause = taskRun.schedulerInfo?.waitingCause?.cause;
-    if (!cause) return "";
-
-    switch (cause.case) {
-      case "connectionLimit":
-        return t("task.waiting.connection-limit");
-      case "parallelTasksLimit":
-        return t("task.waiting.parallel-tasks-limit");
-      case "task":
-        return t("task.waiting.blocking-task");
-      default:
-        return "";
-    }
-  });
-
   // Collapsed view: contextual info (duration, affected rows for completed tasks)
   const collapsedContextInfo = computed(() => {
     if (task().status !== Task_Status.DONE) return "";
@@ -119,8 +83,6 @@ export const useTaskDisplay = (
   return {
     taskTypeDisplay,
     executorEmail,
-    resultSummary,
-    waitingMessage,
     collapsedContextInfo,
     collapsedStatusText,
   };

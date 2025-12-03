@@ -344,15 +344,6 @@
     },
     "executed-by": "Được thực hiện bởi",
     "affected-rows": "Hàng bị ảnh hưởng",
-    "result": {
-      "schema-version": "Sơ đồ: {version}",
-      "export-archive-ready": "Lưu trữ: Sẵn sàng để tải xuống"
-    },
-    "waiting": {
-      "connection-limit": "Đang chờ kết nối khả dụng",
-      "parallel-tasks-limit": "Đang chờ các tác vụ khác hoàn thành",
-      "blocking-task": "Đang chờ nhiệm vụ khác"
-    },
     "type": {
       "database-create": "Tạo cơ sở dữ liệu",
       "migrate": "Di chuyển",
@@ -366,7 +357,6 @@
     "history": "Lịch sử thực hiện nhiệm vụ",
     "latest-logs": "Nhật ký mới nhất",
     "latest": "Thực hiện mới nhất",
-    "no-detail": "Không có thông tin chi tiết về việc thực hiện",
     "status": {
       "enqueued": "Đang chờ thực thi.",
       "enqueued-with-rollout-time": "Đang chờ thực thi sau {time}.",
@@ -1271,7 +1261,6 @@
     "start-to-sync-schema": "Bắt đầu đồng bộ hóa lược đồ",
     "failed-to-sync-schema": "Không đồng bộ hóa được lược đồ",
     "successfully-synced-schema": "Đã đồng bộ hóa lược đồ thành công",
-    "create": "Tạo cơ sở dữ liệu",
     "procedures": "Thủ tục",
     "partitions": "Phân vùng",
     "packages": "Gói",

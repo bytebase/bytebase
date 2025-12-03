@@ -20,7 +20,6 @@ export const useTaskRunLogStore = defineStore("taskRunLog", () => {
 
     // Return empty log if not found
     const emptyLog = create(TaskRunLogSchema, {});
-    taskRunLogByName.set(taskRunName, emptyLog);
     return emptyLog;
   };
 

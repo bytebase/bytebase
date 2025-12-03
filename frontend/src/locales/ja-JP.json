@@ -344,15 +344,6 @@
     },
     "executed-by": "実行者",
     "affected-rows": "影響を受けた行数",
-    "result": {
-      "schema-version": "スキーマ: {version}",
-      "export-archive-ready": "アーカイブ: ダウンロード可能"
-    },
-    "waiting": {
-      "connection-limit": "利用可能な接続を待機しています",
-      "parallel-tasks-limit": "他のタスクが完了するのを待っています",
-      "blocking-task": "別のタスクを待っています"
-    },
     "type": {
       "database-create": "データベース作成",
       "migrate": "マイグレーション",
@@ -366,7 +357,6 @@
     "history": "タスク実行履歴",
     "latest-logs": "最新のログ",
     "latest": "最新の実行",
-    "no-detail": "実行の詳細は不明です",
     "status": {
       "enqueued": "処刑を待っています。",
       "enqueued-with-rollout-time": "実行を待機しています。{time} の後に実行されます。",
@@ -1271,7 +1261,6 @@
     "start-to-sync-schema": "スキーマの同期を開始します",
     "failed-to-sync-schema": "スキーマの同期に失敗しました",
     "successfully-synced-schema": "スキーマの同期が完了しました",
-    "create": "データベースの作成",
     "procedures": "ストアドプロシージャ",
     "partitions": "パーティション",
     "packages": "パッケージ",

@@ -9,7 +9,7 @@ export interface UseStageStatusReturn {
 
 /**
  * Composable for computing stage status based on its tasks
- * Priority order follows TASK_STATUS_FILTERS: FAILED > RUNNING > PENDING > NOT_STARTED > CANCELED > SKIPPED > DONE
+ * Priority order follows TASK_STATUS_FILTERS: RUNNING > FAILED > PENDING > NOT_STARTED > CANCELED > DONE > SKIPPED
  */
 export const useStageStatus = (
   stage: ComputedRef<Stage> | Stage,

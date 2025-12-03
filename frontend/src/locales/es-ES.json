@@ -344,15 +344,6 @@
     },
     "executed-by": "Ejecutado por",
     "affected-rows": "Filas afectadas",
-    "result": {
-      "schema-version": "Esquema: {version}",
-      "export-archive-ready": "Archivo: Listo para descargar"
-    },
-    "waiting": {
-      "connection-limit": "Esperando conexiones disponibles",
-      "parallel-tasks-limit": "Esperando a que se completen otras tareas",
-      "blocking-task": "Esperando otra tarea"
-    },
     "type": {
       "database-create": "Crear base de datos",
       "migrate": "Migrar",
@@ -366,7 +357,6 @@
     "history": "Historial de ejecución de tareas",
     "latest-logs": "Últimos registros",
     "latest": "Última ejecución",
-    "no-detail": "No hay detalles de ejecución disponibles.",
     "status": {
       "enqueued": "Esperando a ser ejecutada.",
       "enqueued-with-rollout-time": "Esperando para ejecutar, {time} para ejecutar.",
@@ -1271,7 +1261,6 @@
     "start-to-sync-schema": "Comenzar a sincronizar el esquema",
     "failed-to-sync-schema": "No se pudo sincronizar el esquema",
     "successfully-synced-schema": "Esquema sincronizado correctamente",
-    "create": "Crear base de datos",
     "procedures": "Trámites",
     "partitions": "Particiones",
     "packages": "Paquetes",

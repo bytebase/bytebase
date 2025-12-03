@@ -1,17 +1,17 @@
 <template>
-  <NTooltip v-if="hasValidTimestamp" :disabled="!showTooltip">
+  <NTooltip v-if="hasValidTimestamp" :disabled="!showTooltip" class="text-sm">
     <template #trigger>
-      <span class="text-sm text-control-light" :class="customClass">
+      <span class="text-control-light" :class="customClass">
         {{ humanizedTime }}
       </span>
     </template>
     <template #default>
-      <div class="text-sm whitespace-nowrap">
+      <div class="whitespace-nowrap">
         {{ fullDateTime }}
       </div>
     </template>
   </NTooltip>
-  <span v-else class="text-sm text-control-light" :class="customClass">
+  <span v-else class="text-control-light" :class="customClass">
     {{ fallbackText }}
   </span>
 </template>
