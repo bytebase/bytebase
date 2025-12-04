@@ -609,6 +609,14 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
    * @generated from field: bool enable_audit_log_stdout = 15;
    */
   enableAuditLogStdout: boolean;
+
+  /**
+   * Whether to display watermark on pages.
+   * Requires ENTERPRISE license.
+   *
+   * @generated from field: bool watermark = 16;
+   */
+  watermark: boolean;
 };
 
 /**

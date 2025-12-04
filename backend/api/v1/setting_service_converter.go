@@ -299,6 +299,7 @@ func convertWorkspaceProfileSetting(v1Setting *v1pb.WorkspaceProfileSetting) *st
 		DisallowPasswordSignin: v1Setting.DisallowPasswordSignin,
 		EnableMetricCollection: v1Setting.EnableMetricCollection,
 		EnableAuditLogStdout:   v1Setting.EnableAuditLogStdout,
+		Watermark:              v1Setting.Watermark,
 	}
 
 	// Convert announcement if present
@@ -342,6 +343,7 @@ func convertToWorkspaceProfileSetting(storeSetting *storepb.WorkspaceProfileSett
 		DisallowPasswordSignin: storeSetting.DisallowPasswordSignin,
 		EnableMetricCollection: storeSetting.EnableMetricCollection,
 		EnableAuditLogStdout:   storeSetting.EnableAuditLogStdout,
+		Watermark:              storeSetting.Watermark,
 	}
 
 	if storeSetting.Announcement != nil {

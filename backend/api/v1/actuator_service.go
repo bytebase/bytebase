@@ -245,14 +245,6 @@ func (s *ActuatorService) getUsedFeatures(ctx context.Context) ([]v1pb.PlanFeatu
 		features = append(features, v1pb.PlanFeature_FEATURE_CUSTOM_LOGO)
 	}
 
-	watermark, err := s.store.GetSettingV2(ctx, storepb.SettingName_WATERMARK)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get watermark setting")
-	}
-	if watermark != nil && watermark.Value == "1" {
-		features = append(features, v1pb.PlanFeature_FEATURE_WATERMARK)
-	}
-
 	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get workspace general setting")
@@ -268,6 +260,9 @@ func (s *ActuatorService) getUsedFeatures(ctx context.Context) ([]v1pb.PlanFeatu
 	}
 	if setting.GetAnnouncement().GetText() != "" {
 		features = append(features, v1pb.PlanFeature_FEATURE_DASHBOARD_ANNOUNCEMENT)
+	}
+	if setting.Watermark {
+		features = append(features, v1pb.PlanFeature_FEATURE_WATERMARK)
 	}
 
 	// environment tier

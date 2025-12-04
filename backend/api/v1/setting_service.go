@@ -268,6 +268,13 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 				}
 				resetAuditLogStdout = true
 				oldSetting.EnableAuditLogStdout = payload.EnableAuditLogStdout
+			case "value.workspace_profile.watermark":
+				if payload.Watermark {
+					if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_WATERMARK); err != nil {
+						return nil, connect.NewError(connect.CodePermissionDenied, err)
+					}
+				}
+				oldSetting.Watermark = payload.Watermark
 			default:
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %v", path))
 			}
@@ -454,11 +461,6 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal setting for %s with error: %v", apiSettingName, err))
 		}
 		storeSettingValue = string(bytes)
-	case storepb.SettingName_WATERMARK:
-		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_WATERMARK); err != nil {
-			return nil, connect.NewError(connect.CodePermissionDenied, err)
-		}
-		storeSettingValue = request.Msg.Setting.Value.GetStringValue()
 	case storepb.SettingName_SCIM:
 		scimToken, err := common.RandomString(32)
 		if err != nil {
