@@ -880,6 +880,7 @@ Metadata about the request.
 | version | [string](#string) |  |  |
 | type | [ChangelogPayload.Type](#bytebase-store-ChangelogPayload-Type) |  |  |
 | git_commit | [string](#string) |  |  |
+| dump_version | [int32](#int32) |  | Dump format version for drift detection reliability. Engine-specific version stored when baseline/migration is created. 0 = legacy changelog (pre-versioning). |
 
 
 

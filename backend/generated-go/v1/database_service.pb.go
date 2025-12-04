@@ -5776,8 +5776,11 @@ type Changelog struct {
 	Revision         string            `protobuf:"bytes,15,opt,name=revision,proto3" json:"revision,omitempty"`
 	ChangedResources *ChangedResources `protobuf:"bytes,16,opt,name=changed_resources,json=changedResources,proto3" json:"changed_resources,omitempty"`
 	Type             Changelog_Type    `protobuf:"varint,17,opt,name=type,proto3,enum=bytebase.v1.Changelog_Type" json:"type,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	// True if this changelog's dump version differs from current engine dump version.
+	// When true and drift is detected, the drift may be a false positive from Bytebase upgrade.
+	DumpVersionMismatch bool `protobuf:"varint,18,opt,name=dump_version_mismatch,json=dumpVersionMismatch,proto3" json:"dump_version_mismatch,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *Changelog) Reset() {
@@ -5920,6 +5923,13 @@ func (x *Changelog) GetType() Changelog_Type {
 		return x.Type
 	}
 	return Changelog_TYPE_UNSPECIFIED
+}
+
+func (x *Changelog) GetDumpVersionMismatch() bool {
+	if x != nil {
+		return x.DumpVersionMismatch
+	}
+	return false
 }
 
 type GetSchemaStringRequest struct {
@@ -6542,7 +6552,7 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\x13GetChangelogRequest\x12:\n" +
 	"\x04name\x18\x01 \x01(\tB&\xe0A\x02\xfaA \n" +
 	"\x1ebytebase.com/DatabaseChangelogR\x04name\x12.\n" +
-	"\x04view\x18\x02 \x01(\x0e2\x1a.bytebase.v1.ChangelogViewR\x04view\"\xd7\x06\n" +
+	"\x04view\x18\x02 \x01(\x0e2\x1a.bytebase.v1.ChangelogViewR\x04view\"\x8b\a\n" +
 	"\tChangelog\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12;\n" +
 	"\vcreate_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
@@ -6563,7 +6573,8 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\aversion\x18\x0e \x01(\tR\aversion\x12\x1a\n" +
 	"\brevision\x18\x0f \x01(\tR\brevision\x12J\n" +
 	"\x11changed_resources\x18\x10 \x01(\v2\x1d.bytebase.v1.ChangedResourcesR\x10changedResources\x12/\n" +
-	"\x04type\x18\x11 \x01(\x0e2\x1b.bytebase.v1.Changelog.TypeR\x04type\"C\n" +
+	"\x04type\x18\x11 \x01(\x0e2\x1b.bytebase.v1.Changelog.TypeR\x04type\x122\n" +
+	"\x15dump_version_mismatch\x18\x12 \x01(\bR\x13dumpVersionMismatch\"C\n" +
 	"\x06Status\x12\x16\n" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aPENDING\x10\x01\x12\b\n" +

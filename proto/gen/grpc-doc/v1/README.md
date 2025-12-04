@@ -5197,6 +5197,7 @@ BoundingBox defines the spatial bounds for GEOMETRY spatial indexes.
 | revision | [string](#string) |  | Could be empty Or present but not found if deleted |
 | changed_resources | [ChangedResources](#bytebase-v1-ChangedResources) |  |  |
 | type | [Changelog.Type](#bytebase-v1-Changelog-Type) |  |  |
+| dump_version_mismatch | [bool](#bool) |  | True if this changelog&#39;s dump version differs from current engine dump version. When true and drift is detected, the drift may be a false positive from Bytebase upgrade. |
 
 
 

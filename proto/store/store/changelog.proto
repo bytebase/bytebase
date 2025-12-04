@@ -33,6 +33,11 @@ message ChangelogPayload {
   Type type = 7;
 
   string git_commit = 8;
+
+  // Dump format version for drift detection reliability.
+  // Engine-specific version stored when baseline/migration is created.
+  // 0 = legacy changelog (pre-versioning).
+  int32 dump_version = 9;
 }
 
 message ChangedResources {

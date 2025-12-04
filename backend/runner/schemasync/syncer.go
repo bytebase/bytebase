@@ -25,6 +25,7 @@ import (
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -394,9 +395,9 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 	dbConfig := dbMetadata.GetConfig()
 
 	// Check for schema drift only when not creating sync history
-	var drifted, skipped bool
+	var drifted bool
 	if !createSyncHistory {
-		drifted, skipped, err = s.getSchemaDrifted(ctx, instance, database, string(rawDump))
+		drifted, err = s.getSchemaDrifted(ctx, instance, database, string(rawDump))
 		if err != nil {
 			return 0, errors.Wrapf(err, "failed to get schema drifted for database %q", database.DatabaseName)
 		}
@@ -409,7 +410,7 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 			md.BackupAvailable = s.databaseBackupAvailable(ctx, instance, syncedDatabaseMetadata)
 			md.Datashare = syncedDatabaseMetadata.Datashare
 			if !createSyncHistory {
-				md.Drifted = !skipped && drifted
+				md.Drifted = drifted
 			}
 		},
 	}
@@ -463,10 +464,10 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 	return err
 }
 
-func (s *Syncer) getSchemaDrifted(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, rawDump string) (drifted bool, skipped bool, err error) {
+func (s *Syncer) getSchemaDrifted(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, rawDump string) (drifted bool, err error) {
 	// Redis and MongoDB are schemaless.
 	if disableSchemaDriftCheck(instance.Metadata.GetEngine()) {
-		return false, false, nil
+		return false, nil
 	}
 	limit := 1
 	list, err := s.store.ListChangelogs(ctx, &store.FindChangelogMessage{
@@ -478,21 +479,46 @@ func (s *Syncer) getSchemaDrifted(ctx context.Context, instance *store.InstanceM
 		ShowFull:       true,
 	})
 	if err != nil {
-		return false, false, errors.Wrapf(err, "failed to list changelogs")
+		return false, errors.Wrapf(err, "failed to list changelogs")
 	}
 	if len(list) == 0 {
-		return false, false, nil
+		return false, nil
 	}
 
 	changelog := list[0]
-	if changelog.Payload.GetGitCommit() != s.profile.GitCommit {
-		return false, true, nil
-	}
 	if changelog.SyncHistoryUID == nil {
-		return false, false, errors.Errorf("expect sync history but get nil")
+		return false, errors.Errorf("expect sync history but get nil")
 	}
+
+	// Get current dump version for this engine
+	currentVersion := schema.GetDumpFormatVersion(instance.Metadata.GetEngine())
+	baselineVersion := changelog.Payload.GetDumpVersion()
+	versionMismatch := baselineVersion != currentVersion
+
+	// Always compare schemas
 	latestSchema := string(rawDump)
-	return changelog.Schema != latestSchema, false, nil
+	drifted = changelog.Schema != latestSchema
+
+	// If versions mismatch but schemas match, update the baseline version (auto-heal).
+	// This is safe because identical strings mean the format change didn't affect this database's output.
+	if versionMismatch && !drifted {
+		if err := s.store.UpdateChangelog(ctx, &store.UpdateChangelogMessage{
+			UID:         changelog.UID,
+			DumpVersion: &currentVersion,
+		}); err != nil {
+			slog.Warn("Failed to update changelog format version",
+				slog.String("database", database.DatabaseName),
+				log.BBError(err))
+			// Non-fatal: continue with drift detection result
+		} else {
+			slog.Info("Updated changelog format version (schemas match)",
+				slog.String("database", database.DatabaseName),
+				slog.Int("old_version", int(baselineVersion)),
+				slog.Int("new_version", int(currentVersion)))
+		}
+	}
+
+	return drifted, nil
 }
 
 func (s *Syncer) databaseBackupAvailable(ctx context.Context, instance *store.InstanceMessage, dbMetadata *storepb.DatabaseSchemaMetadata) bool {

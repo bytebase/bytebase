@@ -69,6 +69,7 @@ type UpdateChangelogMessage struct {
 	SyncHistoryUID *int64
 	RevisionUID    *int64
 	Status         *ChangelogStatus
+	DumpVersion    *int32
 }
 
 func (s *Store) CreateChangelog(ctx context.Context, create *ChangelogMessage) (int64, error) {
@@ -129,6 +130,9 @@ func (s *Store) UpdateChangelog(ctx context.Context, update *UpdateChangelogMess
 	}
 	if v := update.Status; v != nil {
 		set.Comma("status = ?", *v)
+	}
+	if v := update.DumpVersion; v != nil {
+		set.Comma("payload = payload || jsonb_build_object('dumpVersion', ?::INT)", *v)
 	}
 
 	if set.Len() == 0 {

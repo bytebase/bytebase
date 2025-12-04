@@ -34,6 +34,9 @@ func (x *ChangelogPayload) Equal(y *ChangelogPayload) bool {
 	if x.GitCommit != y.GitCommit {
 		return false
 	}
+	if x.DumpVersion != y.DumpVersion {
+		return false
+	}
 	return true
 }
 

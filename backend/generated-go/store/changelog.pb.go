@@ -85,10 +85,14 @@ type ChangelogPayload struct {
 	ChangedResources *ChangedResources `protobuf:"bytes,4,opt,name=changed_resources,json=changedResources,proto3" json:"changed_resources,omitempty"`
 	// The sheet that holds the content.
 	// Format: projects/{project}/sheets/{sheet}
-	Sheet         string                `protobuf:"bytes,5,opt,name=sheet,proto3" json:"sheet,omitempty"`
-	Version       string                `protobuf:"bytes,6,opt,name=version,proto3" json:"version,omitempty"`
-	Type          ChangelogPayload_Type `protobuf:"varint,7,opt,name=type,proto3,enum=bytebase.store.ChangelogPayload_Type" json:"type,omitempty"`
-	GitCommit     string                `protobuf:"bytes,8,opt,name=git_commit,json=gitCommit,proto3" json:"git_commit,omitempty"`
+	Sheet     string                `protobuf:"bytes,5,opt,name=sheet,proto3" json:"sheet,omitempty"`
+	Version   string                `protobuf:"bytes,6,opt,name=version,proto3" json:"version,omitempty"`
+	Type      ChangelogPayload_Type `protobuf:"varint,7,opt,name=type,proto3,enum=bytebase.store.ChangelogPayload_Type" json:"type,omitempty"`
+	GitCommit string                `protobuf:"bytes,8,opt,name=git_commit,json=gitCommit,proto3" json:"git_commit,omitempty"`
+	// Dump format version for drift detection reliability.
+	// Engine-specific version stored when baseline/migration is created.
+	// 0 = legacy changelog (pre-versioning).
+	DumpVersion   int32 `protobuf:"varint,9,opt,name=dump_version,json=dumpVersion,proto3" json:"dump_version,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -177,6 +181,13 @@ func (x *ChangelogPayload) GetGitCommit() string {
 		return x.GitCommit
 	}
 	return ""
+}
+
+func (x *ChangelogPayload) GetDumpVersion() int32 {
+	if x != nil {
+		return x.DumpVersion
+	}
+	return 0
 }
 
 type ChangedResources struct {
@@ -576,7 +587,7 @@ var File_store_changelog_proto protoreflect.FileDescriptor
 
 const file_store_changelog_proto_rawDesc = "" +
 	"\n" +
-	"\x15store/changelog.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\xfa\x02\n" +
+	"\x15store/changelog.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\x9d\x03\n" +
 	"\x10ChangelogPayload\x12\x19\n" +
 	"\btask_run\x18\x01 \x01(\tR\ataskRun\x12\x14\n" +
 	"\x05issue\x18\x02 \x01(\tR\x05issue\x12\x1a\n" +
@@ -586,7 +597,8 @@ const file_store_changelog_proto_rawDesc = "" +
 	"\aversion\x18\x06 \x01(\tR\aversion\x129\n" +
 	"\x04type\x18\a \x01(\x0e2%.bytebase.store.ChangelogPayload.TypeR\x04type\x12\x1d\n" +
 	"\n" +
-	"git_commit\x18\b \x01(\tR\tgitCommit\"@\n" +
+	"git_commit\x18\b \x01(\tR\tgitCommit\x12!\n" +
+	"\fdump_version\x18\t \x01(\x05R\vdumpVersion\"@\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\f\n" +
 	"\bBASELINE\x10\x01\x12\v\n" +

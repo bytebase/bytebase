@@ -17,6 +17,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -513,14 +514,15 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 		PrevSyncHistoryUID: syncHistoryPrevUID,
 		SyncHistoryUID:     nil,
 		Payload: &storepb.ChangelogPayload{
-			TaskRun:          mc.taskRunName,
-			Issue:            mc.issueName,
-			Revision:         0,
+			TaskRun:                 mc.taskRunName,
+			Issue:                   mc.issueName,
+			Revision:                0,
 			ChangedResources: mc.changeHistoryPayload.GetChangedResources(),
 			Sheet:            mc.sheetName,
 			Version:          mc.version,
 			Type:             changelogType,
 			GitCommit:        mc.profile.GitCommit,
+			DumpVersion:      schema.GetDumpFormatVersion(mc.instance.Metadata.GetEngine()),
 		}})
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to create changelog")

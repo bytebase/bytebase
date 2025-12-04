@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -22,6 +23,14 @@ func (s *DatabaseService) ListChangelogs(ctx context.Context, req *connect.Reque
 	}
 	if database == nil || database.Deleted {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", req.Msg.Parent))
+	}
+
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+	if instance == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", database.InstanceID))
 	}
 
 	offset, err := parseLimitAndOffset(&pageSize{
@@ -77,7 +86,7 @@ func (s *DatabaseService) ListChangelogs(ctx context.Context, req *connect.Reque
 	}
 
 	// no subsequent pages
-	converted := s.convertToChangelogs(database, changelogs)
+	converted := s.convertToChangelogs(database, changelogs, instance.Metadata.GetEngine())
 	return connect.NewResponse(&v1pb.ListChangelogsResponse{
 		Changelogs:    converted,
 		NextPageToken: nextPageToken,
@@ -127,38 +136,45 @@ func (s *DatabaseService) GetChangelog(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", databaseName))
 	}
 
-	converted := s.convertToChangelog(database, changelog)
+	converted := s.convertToChangelog(database, changelog, instance.Metadata.GetEngine())
 	return connect.NewResponse(converted), nil
 }
 
-func (s *DatabaseService) convertToChangelogs(d *store.DatabaseMessage, cs []*store.ChangelogMessage) []*v1pb.Changelog {
+func (s *DatabaseService) convertToChangelogs(d *store.DatabaseMessage, cs []*store.ChangelogMessage, engine storepb.Engine) []*v1pb.Changelog {
 	var changelogs []*v1pb.Changelog
 	for _, c := range cs {
-		changelog := s.convertToChangelog(d, c)
+		changelog := s.convertToChangelog(d, c, engine)
 		changelogs = append(changelogs, changelog)
 	}
 	return changelogs
 }
 
-func (*DatabaseService) convertToChangelog(d *store.DatabaseMessage, c *store.ChangelogMessage) *v1pb.Changelog {
+func (*DatabaseService) convertToChangelog(d *store.DatabaseMessage, c *store.ChangelogMessage, engine storepb.Engine) *v1pb.Changelog {
 	changelogType := convertToChangelogType(c.Payload.GetType())
+
+	// Compute dump version mismatch
+	storedVersion := c.Payload.GetDumpVersion()
+	currentVersion := schema.GetDumpFormatVersion(engine)
+	dumpVersionMismatch := storedVersion != currentVersion
+
 	cl := &v1pb.Changelog{
-		Name:             common.FormatChangelog(d.InstanceID, d.DatabaseName, c.UID),
-		CreateTime:       timestamppb.New(c.CreatedAt),
-		Status:           convertToChangelogStatus(c.Status),
-		Statement:        "",
-		StatementSize:    0,
-		StatementSheet:   "",
-		Schema:           "",
-		SchemaSize:       0,
-		PrevSchema:       "",
-		PrevSchemaSize:   0,
-		Issue:            c.Payload.GetIssue(),
-		TaskRun:          c.Payload.GetTaskRun(),
-		Version:          c.Payload.GetVersion(),
-		Revision:         "",
-		ChangedResources: convertToChangedResources(c.Payload.GetChangedResources()),
-		Type:             changelogType,
+		Name:                            common.FormatChangelog(d.InstanceID, d.DatabaseName, c.UID),
+		CreateTime:                      timestamppb.New(c.CreatedAt),
+		Status:                          convertToChangelogStatus(c.Status),
+		Statement:                       "",
+		StatementSize:                   0,
+		StatementSheet:                  "",
+		Schema:                          "",
+		SchemaSize:                      0,
+		PrevSchema:                      "",
+		PrevSchemaSize:                  0,
+		Issue:                           c.Payload.GetIssue(),
+		TaskRun:                         c.Payload.GetTaskRun(),
+		Version:                         c.Payload.GetVersion(),
+		Revision:                        "",
+		ChangedResources:    convertToChangedResources(c.Payload.GetChangedResources()),
+		Type:                changelogType,
+		DumpVersionMismatch: dumpVersionMismatch,
 	}
 
 	if sheet := c.Payload.GetSheet(); sheet != "" {
