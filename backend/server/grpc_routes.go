@@ -98,6 +98,9 @@ func configureGrpcRouters(
 	userService := apiv1.NewUserService(stores, secret, licenseService, metricReporter, profile, stateCfg, iamManager)
 	worksheetService := apiv1.NewWorksheetService(stores, iamManager)
 	workspaceService := apiv1.NewWorkspaceService(stores, iamManager)
+	// Sensitive Data and Approval Flow services
+	sensitiveDataService := apiv1.NewSensitiveDataService(stores)
+	approvalFlowService := apiv1.NewApprovalFlowService(stores)
 
 	onPanic := func(_ context.Context, s connect.Spec, _ http.Header, p any) error {
 		stack := stacktrace.TakeStacktrace(20 /* n */, 5 /* skip */)
@@ -203,6 +206,13 @@ func configureGrpcRouters(
 	workspacePath, workspaceHandler := v1connect.NewWorkspaceServiceHandler(workspaceService, handlerOpts)
 	connectHandlers[workspacePath] = workspaceHandler
 
+	// Register Sensitive Data and Approval Flow services
+	sensitiveDataPath, sensitiveDataHandler := v1connect.NewSensitiveDataServiceHandler(sensitiveDataService, handlerOpts)
+	connectHandlers[sensitiveDataPath] = sensitiveDataHandler
+
+	approvalFlowPath, approvalFlowHandler := v1connect.NewApprovalFlowServiceHandler(approvalFlowService, handlerOpts)
+	connectHandlers[approvalFlowPath] = approvalFlowHandler
+
 	// grpc reflection handlers.
 	reflector := grpcreflect.NewStaticReflector(
 		v1connect.ActuatorServiceName,
@@ -232,6 +242,8 @@ func configureGrpcRouters(
 		v1connect.UserServiceName,
 		v1connect.WorksheetServiceName,
 		v1connect.WorkspaceServiceName,
+		v1connect.SensitiveDataServiceName,
+		v1connect.ApprovalFlowServiceName,
 	)
 	reflectPath, reflectHandler := grpcreflect.NewHandlerV1(reflector)
 	connectHandlers[reflectPath] = reflectHandler
@@ -331,6 +343,12 @@ func configureGrpcRouters(
 		return err
 	}
 	if err := v1pb.RegisterWorkspaceServiceHandler(ctx, mux, grpcConn); err != nil {
+		return err
+	}
+	if err := v1pb.RegisterSensitiveDataServiceHandler(ctx, mux, grpcConn); err != nil {
+		return err
+	}
+	if err := v1pb.RegisterApprovalFlowServiceHandler(ctx, mux, grpcConn); err != nil {
 		return err
 	}
 	// Register echo routes for mux and connectHandlers

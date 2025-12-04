@@ -2,30 +2,7 @@ import { startCase } from "lodash-es";
 import type { RouteRecordRaw } from "vue-router";
 import DummyRootView from "@/DummyRootView";
 import { t } from "@/plugins/i18n";
-import {
-  DATABASE_ROUTE_DASHBOARD,
-  ENVIRONMENT_V1_ROUTE_DASHBOARD,
-  INSTANCE_ROUTE_DASHBOARD,
-  PROJECT_V1_ROUTE_DASHBOARD,
-  WORKSPACE_ROOT_MODULE,
-  WORKSPACE_ROUTE_AUDIT_LOG,
-  WORKSPACE_ROUTE_CUSTOM_APPROVAL,
-  WORKSPACE_ROUTE_DATA_CLASSIFICATION,
-  WORKSPACE_ROUTE_GLOBAL_MASKING,
-  WORKSPACE_ROUTE_IDENTITY_PROVIDER_DETAIL,
-  WORKSPACE_ROUTE_IDENTITY_PROVIDERS,
-  WORKSPACE_ROUTE_IM,
-  WORKSPACE_ROUTE_LANDING,
-  WORKSPACE_ROUTE_MEMBERS,
-  WORKSPACE_ROUTE_ROLES,
-  WORKSPACE_ROUTE_SCHEMA_TEMPLATE,
-  WORKSPACE_ROUTE_SEMANTIC_TYPES,
-  WORKSPACE_ROUTE_SQL_REVIEW,
-  WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
-  WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
-  WORKSPACE_ROUTE_USER_PROFILE,
-  WORKSPACE_ROUTE_USERS,
-} from "./workspaceRoutes";
+import {  DATABASE_ROUTE_DASHBOARD,  ENVIRONMENT_V1_ROUTE_DASHBOARD,  INSTANCE_ROUTE_DASHBOARD,  PROJECT_V1_ROUTE_DASHBOARD,  WORKSPACE_ROOT_MODULE,  WORKSPACE_ROUTE_AUDIT_LOG,  WORKSPACE_ROUTE_CUSTOM_APPROVAL,  WORKSPACE_ROUTE_CUSTOM_APPROVAL_VISUALIZATION,  WORKSPACE_ROUTE_DATA_CLASSIFICATION,  WORKSPACE_ROUTE_GLOBAL_MASKING,  WORKSPACE_ROUTE_IDENTITY_PROVIDER_DETAIL,  WORKSPACE_ROUTE_IDENTITY_PROVIDERS,  WORKSPACE_ROUTE_IM,  WORKSPACE_ROUTE_LANDING,  WORKSPACE_ROUTE_MEMBERS,  WORKSPACE_ROUTE_ROLES,  WORKSPACE_ROUTE_SCHEMA_TEMPLATE,  WORKSPACE_ROUTE_SEMANTIC_TYPES,  WORKSPACE_ROUTE_SQL_REVIEW,  WORKSPACE_ROUTE_SQL_REVIEW_CREATE,  WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,  WORKSPACE_ROUTE_USER_PROFILE,  WORKSPACE_ROUTE_USERS,} from "./workspaceRoutes";
 
 const rootRoute: RouteRecordRaw = {
   path: "",
@@ -217,16 +194,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
     },
     props: true,
     children: [
-      {
-        path: "custom-approval",
-        name: WORKSPACE_ROUTE_CUSTOM_APPROVAL,
-        meta: {
-          title: () => t("custom-approval.self"),
-          requiredPermissionList: () => ["bb.settings.get"],
-        },
-        component: () => import("@/views/SettingWorkspaceCustomApproval.vue"),
-        props: true,
-      },
+      {        path: "custom-approval",        name: WORKSPACE_ROUTE_CUSTOM_APPROVAL,        meta: {          title: () => t("custom-approval.self"),          requiredPermissionList: () => ["bb.settings.get"],        },        component: () => import("@/views/SettingWorkspaceCustomApproval.vue"),        props: true,      },      {        path: "custom-approval/visualization",        name: WORKSPACE_ROUTE_CUSTOM_APPROVAL_VISUALIZATION,        meta: {          title: () => t("custom-approval.visualization"),          requiredPermissionList: () => ["bb.settings.get"],        },        component: () => import("@/views/SettingWorkspaceCustomApprovalVisualization.vue"),        props: true,      },
       {
         path: "schema-template",
         name: WORKSPACE_ROUTE_SCHEMA_TEMPLATE,

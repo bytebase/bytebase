@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+package bytebase.store;
+
+option go_package = "generated-go/store";
+
+// SensitiveDataLevel represents the sensitivity level of data.
+enum SensitiveDataLevel {
+  SENSITIVE_DATA_LEVEL_UNSPECIFIED = 0;
+  // High sensitivity data requires 2-level approval.
+  HIGH = 1;
+  // Medium sensitivity data requires 1-level approval.
+  MEDIUM = 2;
+  // Low sensitivity data requires no approval.
+  LOW = 3;
+}
+
+// SensitiveDataRule defines a rule for identifying sensitive data in database tables.
+message SensitiveDataRule {
+  // Unique identifier for the rule.
+  int32 id = 1;
+  // Name of the rule.
+  string name = 2;
+  // Description of the rule.
+  string description = 3;
+  // Sensitivity level for this rule.
+  SensitiveDataLevel level = 4;
+  // Database table name pattern (supports wildcard).
+  string table_pattern = 5;
+  // Field name pattern (supports wildcard).
+  string field_pattern = 6;
+  // Data type of the field (e.g., VARCHAR, INT).
+  string data_type = 7;
+  // Regular expression pattern for field values.
+  string regex_pattern = 8;
+  // Whether the rule is enabled.
+  bool enabled = 9;
+  // Creation timestamp.
+  int64 created_ts = 10;
+  // Last update timestamp.
+  int64 updated_ts = 11;
+}
+
+// SensitiveDataMapping maps a database table field to a sensitivity level.
+message SensitiveDataMapping {
+  // Unique identifier for the mapping.
+  int32 id = 1;
+  // Database instance ID.
+  int32 instance_id = 2;
+  // Database name.
+  string database_name = 3;
+  // Table name.
+  string table_name = 4;
+  // Field name.
+  string field_name = 5;
+  // Sensitivity level for this field.
+  SensitiveDataLevel level = 6;
+  // The rule ID that matched this field.
+  int32 rule_id = 7;
+  // Creation timestamp.
+  int64 created_ts = 8;
+  // Last update timestamp.
+  int64 updated_ts = 9;
+}

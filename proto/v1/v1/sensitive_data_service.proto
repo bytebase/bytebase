@@ -1,0 +1,228 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "v1/v1/common.proto";
+import "store/store/sensitive_data.proto";
+
+option go_package = "generated-go/v1";
+
+// SensitiveDataService provides APIs for managing sensitive data rules and mappings.
+service SensitiveDataService {
+  // ListSensitiveDataRules lists all sensitive data rules.
+  rpc ListSensitiveDataRules(ListSensitiveDataRulesRequest) returns (ListSensitiveDataRulesResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/sensitive-data-rules"
+    };
+  }
+
+  // GetSensitiveDataRule gets a specific sensitive data rule by ID.
+  rpc GetSensitiveDataRule(GetSensitiveDataRuleRequest) returns (GetSensitiveDataRuleResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/sensitive-data-rules/{rule_id}"
+    };
+  }
+
+  // CreateSensitiveDataRule creates a new sensitive data rule.
+  rpc CreateSensitiveDataRule(CreateSensitiveDataRuleRequest) returns (CreateSensitiveDataRuleResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/sensitive-data-rules"
+      body: "rule"
+    };
+  }
+
+  // UpdateSensitiveDataRule updates an existing sensitive data rule.
+  rpc UpdateSensitiveDataRule(UpdateSensitiveDataRuleRequest) returns (UpdateSensitiveDataRuleResponse) {
+    option (google.api.http) = {
+      patch: "/api/v1/sensitive-data-rules/{rule_id}"
+      body: "rule"
+    };
+  }
+
+  // DeleteSensitiveDataRule deletes a sensitive data rule.
+  rpc DeleteSensitiveDataRule(DeleteSensitiveDataRuleRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/api/v1/sensitive-data-rules/{rule_id}"
+    };
+  }
+
+  // ListSensitiveDataMappings lists all sensitive data mappings.
+  rpc ListSensitiveDataMappings(ListSensitiveDataMappingsRequest) returns (ListSensitiveDataMappingsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/sensitive-data-mappings"
+    };
+  }
+
+  // GetSensitiveDataMapping gets a specific sensitive data mapping by ID.
+  rpc GetSensitiveDataMapping(GetSensitiveDataMappingRequest) returns (GetSensitiveDataMappingResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/sensitive-data-mappings/{mapping_id}"
+    };
+  }
+
+  // CreateSensitiveDataMapping creates a new sensitive data mapping.
+  rpc CreateSensitiveDataMapping(CreateSensitiveDataMappingRequest) returns (CreateSensitiveDataMappingResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/sensitive-data-mappings"
+      body: "mapping"
+    };
+  }
+
+  // UpdateSensitiveDataMapping updates an existing sensitive data mapping.
+  rpc UpdateSensitiveDataMapping(UpdateSensitiveDataMappingRequest) returns (UpdateSensitiveDataMappingResponse) {
+    option (google.api.http) = {
+      patch: "/api/v1/sensitive-data-mappings/{mapping_id}"
+      body: "mapping"
+    };
+  }
+
+  // DeleteSensitiveDataMapping deletes a sensitive data mapping.
+  rpc DeleteSensitiveDataMapping(DeleteSensitiveDataMappingRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/api/v1/sensitive-data-mappings/{mapping_id}"
+    };
+  }
+}
+
+// ListSensitiveDataRulesRequest is the request message for ListSensitiveDataRules.
+message ListSensitiveDataRulesRequest {
+  // Page size for pagination.
+  int32 page_size = 1;
+  // Page token for pagination.
+  string page_token = 2;
+  // Filter by sensitivity level.
+  bytebase.store.SensitiveDataLevel level = 3;
+  // Filter by enabled status.
+  bool enabled = 4;
+}
+
+// ListSensitiveDataRulesResponse is the response message for ListSensitiveDataRules.
+message ListSensitiveDataRulesResponse {
+  // List of sensitive data rules.
+  repeated bytebase.store.SensitiveDataRule rules = 1;
+  // Next page token for pagination.
+  string next_page_token = 2;
+  // Total number of rules.
+  int32 total_size = 3;
+}
+
+// GetSensitiveDataRuleRequest is the request message for GetSensitiveDataRule.
+message GetSensitiveDataRuleRequest {
+  // ID of the rule to get.
+  int32 rule_id = 1;
+}
+
+// GetSensitiveDataRuleResponse is the response message for GetSensitiveDataRule.
+message GetSensitiveDataRuleResponse {
+  // The requested sensitive data rule.
+  bytebase.store.SensitiveDataRule rule = 1;
+}
+
+// CreateSensitiveDataRuleRequest is the request message for CreateSensitiveDataRule.
+message CreateSensitiveDataRuleRequest {
+  // The sensitive data rule to create.
+  bytebase.store.SensitiveDataRule rule = 1;
+}
+
+// CreateSensitiveDataRuleResponse is the response message for CreateSensitiveDataRule.
+message CreateSensitiveDataRuleResponse {
+  // The created sensitive data rule.
+  bytebase.store.SensitiveDataRule rule = 1;
+}
+
+// UpdateSensitiveDataRuleRequest is the request message for UpdateSensitiveDataRule.
+message UpdateSensitiveDataRuleRequest {
+  // ID of the rule to update.
+  int32 rule_id = 1;
+  // The updated sensitive data rule.
+  bytebase.store.SensitiveDataRule rule = 2;
+  // Field mask specifying which fields to update.
+  google.protobuf.FieldMask update_mask = 3;
+}
+
+// UpdateSensitiveDataRuleResponse is the response message for UpdateSensitiveDataRule.
+message UpdateSensitiveDataRuleResponse {
+  // The updated sensitive data rule.
+  bytebase.store.SensitiveDataRule rule = 1;
+}
+
+// DeleteSensitiveDataRuleRequest is the request message for DeleteSensitiveDataRule.
+message DeleteSensitiveDataRuleRequest {
+  // ID of the rule to delete.
+  int32 rule_id = 1;
+}
+
+// ListSensitiveDataMappingsRequest is the request message for ListSensitiveDataMappings.
+message ListSensitiveDataMappingsRequest {
+  // Page size for pagination.
+  int32 page_size = 1;
+  // Page token for pagination.
+  string page_token = 2;
+  // Filter by instance ID.
+  int32 instance_id = 3;
+  // Filter by database name.
+  string database_name = 4;
+  // Filter by table name.
+  string table_name = 5;
+  // Filter by sensitivity level.
+  bytebase.store.SensitiveDataLevel level = 6;
+}
+
+// ListSensitiveDataMappingsResponse is the response message for ListSensitiveDataMappings.
+message ListSensitiveDataMappingsResponse {
+  // List of sensitive data mappings.
+  repeated bytebase.store.SensitiveDataMapping mappings = 1;
+  // Next page token for pagination.
+  string next_page_token = 2;
+  // Total number of mappings.
+  int32 total_size = 3;
+}
+
+// GetSensitiveDataMappingRequest is the request message for GetSensitiveDataMapping.
+message GetSensitiveDataMappingRequest {
+  // ID of the mapping to get.
+  int32 mapping_id = 1;
+}
+
+// GetSensitiveDataMappingResponse is the response message for GetSensitiveDataMapping.
+message GetSensitiveDataMappingResponse {
+  // The requested sensitive data mapping.
+  bytebase.store.SensitiveDataMapping mapping = 1;
+}
+
+// CreateSensitiveDataMappingRequest is the request message for CreateSensitiveDataMapping.
+message CreateSensitiveDataMappingRequest {
+  // The sensitive data mapping to create.
+  bytebase.store.SensitiveDataMapping mapping = 1;
+}
+
+// CreateSensitiveDataMappingResponse is the response message for CreateSensitiveDataMapping.
+message CreateSensitiveDataMappingResponse {
+  // The created sensitive data mapping.
+  bytebase.store.SensitiveDataMapping mapping = 1;
+}
+
+// UpdateSensitiveDataMappingRequest is the request message for UpdateSensitiveDataMapping.
+message UpdateSensitiveDataMappingRequest {
+  // ID of the mapping to update.
+  int32 mapping_id = 1;
+  // The updated sensitive data mapping.
+  bytebase.store.SensitiveDataMapping mapping = 2;
+  // Field mask specifying which fields to update.
+  google.protobuf.FieldMask update_mask = 3;
+}
+
+// UpdateSensitiveDataMappingResponse is the response message for UpdateSensitiveDataMapping.
+message UpdateSensitiveDataMappingResponse {
+  // The updated sensitive data mapping.
+  bytebase.store.SensitiveDataMapping mapping = 1;
+}
+
+// DeleteSensitiveDataMappingRequest is the request message for DeleteSensitiveDataMapping.
+message DeleteSensitiveDataMappingRequest {
+  // ID of the mapping to delete.
+  int32 mapping_id = 1;
+}

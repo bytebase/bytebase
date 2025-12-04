@@ -16,26 +16,7 @@ import type { SidebarItem } from "@/components/v2/Sidebar/type";
 import { getFlattenRoutes } from "@/components/v2/Sidebar/utils.ts";
 import { t } from "@/plugins/i18n";
 import workspaceRoutes from "@/router/dashboard/workspace";
-import {
-  DATABASE_ROUTE_DASHBOARD,
-  ENVIRONMENT_V1_ROUTE_DASHBOARD,
-  INSTANCE_ROUTE_DASHBOARD,
-  PROJECT_V1_ROUTE_DASHBOARD,
-  WORKSPACE_ROUTE_AUDIT_LOG,
-  WORKSPACE_ROUTE_CUSTOM_APPROVAL,
-  WORKSPACE_ROUTE_DATA_CLASSIFICATION,
-  WORKSPACE_ROUTE_GLOBAL_MASKING,
-  WORKSPACE_ROUTE_IDENTITY_PROVIDERS,
-  WORKSPACE_ROUTE_IM,
-  WORKSPACE_ROUTE_LANDING,
-  WORKSPACE_ROUTE_MEMBERS,
-  WORKSPACE_ROUTE_ROLES,
-  WORKSPACE_ROUTE_SCHEMA_TEMPLATE,
-  WORKSPACE_ROUTE_SEMANTIC_TYPES,
-  WORKSPACE_ROUTE_SQL_REVIEW,
-  WORKSPACE_ROUTE_USER_PROFILE,
-  WORKSPACE_ROUTE_USERS,
-} from "@/router/dashboard/workspaceRoutes";
+import {  DATABASE_ROUTE_DASHBOARD,  ENVIRONMENT_V1_ROUTE_DASHBOARD,  INSTANCE_ROUTE_DASHBOARD,  PROJECT_V1_ROUTE_DASHBOARD,  WORKSPACE_ROUTE_AUDIT_LOG,  WORKSPACE_ROUTE_CUSTOM_APPROVAL,  WORKSPACE_ROUTE_CUSTOM_APPROVAL_VISUALIZATION,  WORKSPACE_ROUTE_DATA_CLASSIFICATION,  WORKSPACE_ROUTE_GLOBAL_MASKING,  WORKSPACE_ROUTE_IDENTITY_PROVIDERS,  WORKSPACE_ROUTE_IM,  WORKSPACE_ROUTE_LANDING,  WORKSPACE_ROUTE_MEMBERS,  WORKSPACE_ROUTE_ROLES,  WORKSPACE_ROUTE_SCHEMA_TEMPLATE,  WORKSPACE_ROUTE_SEMANTIC_TYPES,  WORKSPACE_ROUTE_SQL_REVIEW,  WORKSPACE_ROUTE_USER_PROFILE,  WORKSPACE_ROUTE_USERS,} from "@/router/dashboard/workspaceRoutes";
 import {
   SETTING_ROUTE_WORKSPACE_ARCHIVE,
   SETTING_ROUTE_WORKSPACE_GENERAL,
@@ -194,11 +175,7 @@ export const useDashboardSidebar = () => {
             name: WORKSPACE_ROUTE_SQL_REVIEW,
             type: "route",
           },
-          {
-            title: t("custom-approval.self"),
-            name: WORKSPACE_ROUTE_CUSTOM_APPROVAL,
-            type: "route",
-          },
+          {            title: t("custom-approval.self"),            name: WORKSPACE_ROUTE_CUSTOM_APPROVAL,            type: "route",          },          {            title: t("custom-approval.visualization"),            name: WORKSPACE_ROUTE_CUSTOM_APPROVAL_VISUALIZATION,            type: "route",          },
           {
             title: t("schema-template.self"),
             name: WORKSPACE_ROUTE_SCHEMA_TEMPLATE,

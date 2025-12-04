@@ -54,6 +54,52 @@ message ApprovalTemplate {
 
 // ApprovalFlow defines the sequence of approvals required.
 message ApprovalFlow {
-  // List of role names that must approve, in order.
-  repeated string roles = 1;
+  // List of approval stages, in order.
+  repeated ApprovalStage stages = 1;
+  // Whether the flow is enabled.
+  bool enabled = 2;
+}
+
+// ApprovalStage defines a single stage in an approval flow.
+message ApprovalStage {
+  // Unique identifier for the stage.
+  int32 id = 1;
+  // Name of the stage.
+  string name = 2;
+  // Description of the stage.
+  string description = 3;
+  // List of role names that must approve this stage.
+  repeated string roles = 4;
+  // Number of approvals required from the roles (default: 1).
+  int32 required_approvals = 5;
+  // Timeout for this stage in seconds (0 means no timeout).
+  int32 timeout_seconds = 6;
+}
+
+// ApprovalHistory records the history of approval actions for an issue.
+message ApprovalHistory {
+  // Unique identifier for the history entry.
+  int32 id = 1;
+  // Issue ID.
+  int32 issue_id = 2;
+  // Stage ID.
+  int32 stage_id = 3;
+  // Approver principal ID.
+  int32 approver_id = 4;
+  // Action taken (approved or rejected).
+  Approver.Status action = 5;
+  // Comment provided by the approver.
+  string comment = 6;
+  // Timestamp of the action.
+  int64 created_ts = 7;
+}
+
+// ApprovalNotification defines notification settings for approval actions.
+message ApprovalNotification {
+  // Whether email notifications are enabled.
+  bool email_enabled = 1;
+  // Whether in-app notifications are enabled.
+  bool in_app_enabled = 2;
+  // List of additional recipients for email notifications.
+  repeated string email_recipients = 3;
 }

@@ -1,0 +1,298 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "v1/v1/common.proto";
+import "store/store/approval.proto";
+import "store/store/sensitive_data.proto";
+
+option go_package = "generated-go/v1";
+
+// ApprovalFlowService provides APIs for managing approval flows and settings.
+service ApprovalFlowService {
+  // ListApprovalFlows lists all approval flows.
+  rpc ListApprovalFlows(ListApprovalFlowsRequest) returns (ListApprovalFlowsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/approval-flows"
+    };
+  }
+
+  // GetApprovalFlow gets a specific approval flow by ID.
+  rpc GetApprovalFlow(GetApprovalFlowRequest) returns (GetApprovalFlowResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/approval-flows/{flow_id}"
+    };
+  }
+
+  // CreateApprovalFlow creates a new approval flow.
+  rpc CreateApprovalFlow(CreateApprovalFlowRequest) returns (CreateApprovalFlowResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/approval-flows"
+      body: "flow"
+    };
+  }
+
+  // UpdateApprovalFlow updates an existing approval flow.
+  rpc UpdateApprovalFlow(UpdateApprovalFlowRequest) returns (UpdateApprovalFlowResponse) {
+    option (google.api.http) = {
+      patch: "/api/v1/approval-flows/{flow_id}"
+      body: "flow"
+    };
+  }
+
+  // DeleteApprovalFlow deletes an approval flow.
+  rpc DeleteApprovalFlow(DeleteApprovalFlowRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/api/v1/approval-flows/{flow_id}"
+    };
+  }
+
+  // ListApprovalTemplates lists all approval templates.
+  rpc ListApprovalTemplates(ListApprovalTemplatesRequest) returns (ListApprovalTemplatesResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/approval-templates"
+    };
+  }
+
+  // GetApprovalTemplate gets a specific approval template by ID.
+  rpc GetApprovalTemplate(GetApprovalTemplateRequest) returns (GetApprovalTemplateResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/approval-templates/{template_id}"
+    };
+  }
+
+  // CreateApprovalTemplate creates a new approval template.
+  rpc CreateApprovalTemplate(CreateApprovalTemplateRequest) returns (CreateApprovalTemplateResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/approval-templates"
+      body: "template"
+    };
+  }
+
+  // UpdateApprovalTemplate updates an existing approval template.
+  rpc UpdateApprovalTemplate(UpdateApprovalTemplateRequest) returns (UpdateApprovalTemplateResponse) {
+    option (google.api.http) = {
+      patch: "/api/v1/approval-templates/{template_id}"
+      body: "template"
+    };
+  }
+
+  // DeleteApprovalTemplate deletes an approval template.
+  rpc DeleteApprovalTemplate(DeleteApprovalTemplateRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/api/v1/approval-templates/{template_id}"
+    };
+  }
+
+  // ListApprovalHistories lists approval histories for an issue.
+  rpc ListApprovalHistories(ListApprovalHistoriesRequest) returns (ListApprovalHistoriesResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/issues/{issue_id}/approval-histories"
+    };
+  }
+
+  // ApproveIssue approves an issue at the current stage.
+  rpc ApproveIssue(ApproveIssueRequest) returns (ApproveIssueResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/issues/{issue_id}/approve"
+      body: "*"
+    };
+  }
+
+  // RejectIssue rejects an issue at the current stage.
+  rpc RejectIssue(RejectIssueRequest) returns (RejectIssueResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/issues/{issue_id}/reject"
+      body: "*"
+    };
+  }
+}
+
+// ListApprovalFlowsRequest is the request message for ListApprovalFlows.
+message ListApprovalFlowsRequest {
+  // Page size for pagination.
+  int32 page_size = 1;
+  // Page token for pagination.
+  string page_token = 2;
+  // Filter by enabled status.
+  bool enabled = 3;
+}
+
+// ListApprovalFlowsResponse is the response message for ListApprovalFlows.
+message ListApprovalFlowsResponse {
+  // List of approval flows.
+  repeated bytebase.store.ApprovalFlow flows = 1;
+  // Next page token for pagination.
+  string next_page_token = 2;
+  // Total number of flows.
+  int32 total_size = 3;
+}
+
+// GetApprovalFlowRequest is the request message for GetApprovalFlow.
+message GetApprovalFlowRequest {
+  // ID of the flow to get.
+  int32 flow_id = 1;
+}
+
+// GetApprovalFlowResponse is the response message for GetApprovalFlow.
+message GetApprovalFlowResponse {
+  // The requested approval flow.
+  bytebase.store.ApprovalFlow flow = 1;
+}
+
+// CreateApprovalFlowRequest is the request message for CreateApprovalFlow.
+message CreateApprovalFlowRequest {
+  // The approval flow to create.
+  bytebase.store.ApprovalFlow flow = 1;
+}
+
+// CreateApprovalFlowResponse is the response message for CreateApprovalFlow.
+message CreateApprovalFlowResponse {
+  // The created approval flow.
+  bytebase.store.ApprovalFlow flow = 1;
+}
+
+// UpdateApprovalFlowRequest is the request message for UpdateApprovalFlow.
+message UpdateApprovalFlowRequest {
+  // ID of the flow to update.
+  int32 flow_id = 1;
+  // The updated approval flow.
+  bytebase.store.ApprovalFlow flow = 2;
+  // Field mask specifying which fields to update.
+  google.protobuf.FieldMask update_mask = 3;
+}
+
+// UpdateApprovalFlowResponse is the response message for UpdateApprovalFlow.
+message UpdateApprovalFlowResponse {
+  // The updated approval flow.
+  bytebase.store.ApprovalFlow flow = 1;
+}
+
+// DeleteApprovalFlowRequest is the request message for DeleteApprovalFlow.
+message DeleteApprovalFlowRequest {
+  // ID of the flow to delete.
+  int32 flow_id = 1;
+}
+
+// ListApprovalTemplatesRequest is the request message for ListApprovalTemplates.
+message ListApprovalTemplatesRequest {
+  // Page size for pagination.
+  int32 page_size = 1;
+  // Page token for pagination.
+  string page_token = 2;
+  // Filter by sensitivity level.
+  bytebase.store.SensitiveDataLevel level = 3;
+}
+
+// ListApprovalTemplatesResponse is the response message for ListApprovalTemplates.
+message ListApprovalTemplatesResponse {
+  // List of approval templates.
+  repeated bytebase.store.ApprovalTemplate templates = 1;
+  // Next page token for pagination.
+  string next_page_token = 2;
+  // Total number of templates.
+  int32 total_size = 3;
+}
+
+// GetApprovalTemplateRequest is the request message for GetApprovalTemplate.
+message GetApprovalTemplateRequest {
+  // ID of the template to get.
+  int32 template_id = 1;
+}
+
+// GetApprovalTemplateResponse is the response message for GetApprovalTemplate.
+message GetApprovalTemplateResponse {
+  // The requested approval template.
+  bytebase.store.ApprovalTemplate template = 1;
+}
+
+// CreateApprovalTemplateRequest is the request message for CreateApprovalTemplate.
+message CreateApprovalTemplateRequest {
+  // The approval template to create.
+  bytebase.store.ApprovalTemplate template = 1;
+}
+
+// CreateApprovalTemplateResponse is the response message for CreateApprovalTemplate.
+message CreateApprovalTemplateResponse {
+  // The created approval template.
+  bytebase.store.ApprovalTemplate template = 1;
+}
+
+// UpdateApprovalTemplateRequest is the request message for UpdateApprovalTemplate.
+message UpdateApprovalTemplateRequest {
+  // ID of the template to update.
+  int32 template_id = 1;
+  // The updated approval template.
+  bytebase.store.ApprovalTemplate template = 2;
+  // Field mask specifying which fields to update.
+  google.protobuf.FieldMask update_mask = 3;
+}
+
+// UpdateApprovalTemplateResponse is the response message for UpdateApprovalTemplate.
+message UpdateApprovalTemplateResponse {
+  // The updated approval template.
+  bytebase.store.ApprovalTemplate template = 1;
+}
+
+// DeleteApprovalTemplateRequest is the request message for DeleteApprovalTemplate.
+message DeleteApprovalTemplateRequest {
+  // ID of the template to delete.
+  int32 template_id = 1;
+}
+
+// ListApprovalHistoriesRequest is the request message for ListApprovalHistories.
+message ListApprovalHistoriesRequest {
+  // ID of the issue.
+  int32 issue_id = 1;
+  // Page size for pagination.
+  int32 page_size = 2;
+  // Page token for pagination.
+  string page_token = 3;
+}
+
+// ListApprovalHistoriesResponse is the response message for ListApprovalHistories.
+message ListApprovalHistoriesResponse {
+  // List of approval histories.
+  repeated bytebase.store.ApprovalHistory histories = 1;
+  // Next page token for pagination.
+  string next_page_token = 2;
+  // Total number of histories.
+  int32 total_size = 3;
+}
+
+// ApproveIssueRequest is the request message for ApproveIssue.
+message ApproveIssueRequest {
+  // ID of the issue to approve.
+  int32 issue_id = 1;
+  // Comment for the approval.
+  string comment = 2;
+}
+
+// ApproveIssueResponse is the response message for ApproveIssue.
+message ApproveIssueResponse {
+  // Whether the approval was successful.
+  bool success = 1;
+  // Current stage after approval.
+  int32 current_stage = 2;
+  // Whether the issue is fully approved.
+  bool fully_approved = 3;
+}
+
+// RejectIssueRequest is the request message for RejectIssue.
+message RejectIssueRequest {
+  // ID of the issue to reject.
+  int32 issue_id = 1;
+  // Comment for the rejection.
+  string comment = 2;
+}
+
+// RejectIssueResponse is the response message for RejectIssue.
+message RejectIssueResponse {
+  // Whether the rejection was successful.
+  bool success = 1;
+  // Reason for rejection.
+  string reason = 2;
+}
