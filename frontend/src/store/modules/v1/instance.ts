@@ -117,9 +117,10 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
         ),
       }
     );
-    const instances = upsertInstances([response]);
-
-    return instances[0];
+    if (!validateOnly) {
+      upsertInstances([response]);
+    }
+    return response;
   };
   const updateInstance = async (instance: Instance, updateMask: string[]) => {
     const request = create(UpdateInstanceRequestSchema, {
@@ -245,8 +246,10 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     const response = await instanceServiceClientConnect.addDataSource(request, {
       contextValues: createContextValues().set(silentContextKey, validateOnly),
     });
-    const [updatedInstance] = upsertInstances([response]);
-    return updatedInstance;
+    if (!validateOnly) {
+      upsertInstances([response]);
+    }
+    return response;
   };
   const updateDataSource = async ({
     instance,
@@ -274,8 +277,10 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
         ),
       }
     );
-    const [updatedInstance] = upsertInstances([response]);
-    return updatedInstance;
+    if (!validateOnly) {
+      upsertInstances([response]);
+    }
+    return response;
   };
   const deleteDataSource = async (
     instance: Instance,
